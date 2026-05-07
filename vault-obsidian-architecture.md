@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** 19.0 — 2026-05-07  
+**Versión:** 20.0 — 2026-05-07  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -243,7 +243,7 @@ vault-backups/
 
 ---
 
-## Las 36 Tools del Vault — Referencia Completa
+## Las 37 Tools del Vault — Referencia Completa
 
 > **Tools vs Skills:** las 34 **tools** son funciones atómicas registradas en el harness — cada una hace exactamente una cosa. Una **skill** es un protocolo de múltiples pasos (secuencia de tools + lógica de decisión) que el agente ejecuta para un objetivo complejo. Las skills no son tools adicionales — son instrucciones de orquestación referenciadas en los casos de uso concretos (ej: `security-auditor`, `vault-migrator`). Un agente puede implementar skills como instrucciones en su system prompt o como flujos de trabajo.
 
@@ -414,12 +414,24 @@ Regenera `99_Index/graph.json` escaneando todos los wiki-links `[[nota]]` del va
 **Retorna:**
 ```json
 {
-  "nodes": [{ "id": "arquitectura-mi-api", "path": "01_Projects/mi-api/architecture.md", "title": "Arquitectura" }],
-  "edges": [{ "from": "arquitectura-mi-api", "to": "patron-repository", "label": "[[patron-repository]]" }],
-  "orphans":      ["07_Knowledge/apis/legacy-api.md"],
-  "brokenLinks":  [{ "from": "01_Projects/mi-api/status.md", "link": "nota-que-no-existe" }]
+  "ok": true,
+  "savedTo": "99_Index/graph.json",
+  "stats": {
+    "totalNodes": 55,
+    "totalEdges": 40,
+    "orphanNotes": 22,
+    "brokenLinks": 16
+  },
+  "orphans": [
+    { "path": "07_Knowledge/apis/legacy-api.md", "title": "Legacy API", "type": "07_Knowledge" }
+  ],
+  "brokenLinks": [
+    { "from": "01_Projects/mi-api/status.md", "link": "nota-que-no-existe", "targetPath": "nota-que-no-existe" }
+  ]
 }
 ```
+
+`orphans` y `brokenLinks` muestran hasta 10 entradas; el total completo queda en `stats`. El grafo completo (todos los nodos y aristas) se persiste en `99_Index/graph.json`.
 
 **Cuándo usar:** después de eliminar o renombrar notas, después de una migración, al detectar AP-14 (broken links), periódicamente como mantenimiento del grafo de conocimiento.
 
@@ -2079,6 +2091,37 @@ Genera o actualiza `99_Index/index.md` con un índice maestro del vault completo
 
 ---
 
+#### `vault_reindex(dry_run?, graph?)`
+
+Reconstruye `99_Index/search-index.json` desde cero escaneando todas las notas existentes en las secciones del vault. **Tool de recuperación** — usar cuando el índice está vacío, corrupto o desincronizado respecto a las notas reales.
+
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `dry_run` | boolean | `false` | Si `true`, muestra qué notas serían indexadas sin escribir el archivo |
+| `graph` | boolean | `false` | Si `true`, también reconstruye `graph.json` después del reindex |
+
+**Comportamiento:**
+- Escanea solo notas dentro de las 13 secciones estándar (`00_System` … `11_Code`) — ignora archivos en la raíz del vault (`vault-obsidian-architecture.md`, `scripts/`, etc.)
+- Parsea frontmatter de cada nota para extraer `title`, `tags`, `updatedAt`
+- Genera `99_Index/search-index.json` con `{ notes: [...], rebuiltAt, totalNotes }`
+- Sobreescribe cualquier índice previo (incluyendo el vacío `{}`)
+- Con `--check`: retorna JSON con estado del índice sin modificarlo (útil en scripts de CI y session-start hooks)
+
+**Retorna:**
+```json
+{ "ok": true, "indexed": 54, "skipped": 0, "dry_run": false, "path": "99_Index/search-index.json", "graph": { "totalNodes": 55, "totalEdges": 40, "orphanNotes": 22, "brokenLinks": 16 } }
+```
+
+**Cuándo usar:**
+- Al inicio de cualquier sesión con un vault gestionado por un LLM remoto — verificar con `--check` si el índice tiene notas; si retorna `index_empty_or_missing` → ejecutar `vault_reindex` antes de cualquier otra operación
+- Después de operaciones masivas fuera del flujo normal (migración manual, copia de archivos, edición directa sin vault_write)
+- Para recuperar vaults con `search-index.json` vacío (`{}`) o corrupto
+
+> **Regla para LLMs remotos:** todo agente cuyo harness no garantice que `vault_write` es la única interfaz de escritura (API sin tools, contexto limitado, o LLM que escribe archivos directamente) DEBE llamar `vault_reindex` al inicio de sesión como primer paso obligatorio.
+
+---
+
 ## Compatibilidad con Obsidian Desktop
 
 El vault en `{data-dir}/vault/` puede abrirse **directamente** en Obsidian desktop:
@@ -2176,7 +2219,7 @@ La UI del vault incluye `mermaid.js` (CDN). Al abrir una nota, el viewer detecta
 
 | Nivel | Dependencias | Capacidades |
 |---|---|---|
-| **MVP v19** (este doc) | Zero — solo `node:fs`, `node:path`, `node:crypto` | 36 tools, auto-context injection, ERD + infra auto-map, code-map, backups con manifiesto, rollback de migración, escáner de seguridad OWASP, índices de navegación auto-generados, Mermaid en UI |
+| **MVP v20** (este doc) | Zero — solo `node:fs`, `node:path`, `node:crypto` | 37 tools, auto-context injection, ERD + infra auto-map, code-map, backups con manifiesto, rollback de migración, escáner de seguridad OWASP, índices de navegación auto-generados, reindex de recuperación, Mermaid en UI |
 | **Búsqueda semántica** | `minisearch` o `lunr` | TF-IDF ponderado en lugar de word-count |
 | **Frontmatter robusto** | `gray-matter` | Parsing correcto de YAML complejo |
 | **RAG real** | embeddings + pgvector o hnswlib | Búsqueda semántica por similitud vectorial |
@@ -2529,6 +2572,34 @@ agente → vault_backup(label:"pre-migration-proyecto-x")   ← Fase 0: punto de
 
 ---
 
+### AP-15 — Archivos externos depositados en la raíz del vault
+
+**Síntoma:** El directorio raíz del vault contiene archivos que no son notas del proyecto: el archivo de especificación (`vault-obsidian-architecture.md`), un README, una copia del estándar, o el directorio `scripts/` colocado dentro del vault. Cuando `vault_graph` escanea el vault, parsea estos archivos como si fueran notas del proyecto y trata todos sus `[[wiki-links]]` de ejemplo como links reales — generando decenas de broken links ficticios que contaminan el grafo y bajan el health score artificialmente.
+
+**Por qué ocurre:** El agente LLM no tiene claro dónde termina el vault y dónde comienza el proyecto. Al recibir el estándar como contexto, lo guarda en el primer directorio disponible (la raíz del vault). También ocurre cuando los scripts del harness se ubican dentro del vault en lugar de en un directorio hermano.
+
+**Señal de alarma:** `vault_graph()` reporta `brokenLinks` con destinos como `"nota"`, `"nombre-nota"`, `"img.png"`, `"X"` — todos placeholders de ejemplos del estándar. El archivo `vault_graph.py` (o equivalente) muestra `from: "vault-obsidian-architecture"` como origen de decenas de broken links.
+
+**Regla:** La raíz del vault solo debe contener las carpetas numeradas del estándar (`00_System` … `11_Code`, `99_Index`), `.history/` y `vault-backups/`. **Ningún archivo `.md` suelto en la raíz del vault.** Los scripts del harness deben vivir en un directorio hermano: `vault-{nombre}/` y `scripts/` son carpetas al mismo nivel, no anidadas.
+
+**Layout correcto:**
+```
+proyecto/
+├── vault-{nombre}/     ← SOLO contiene carpetas numeradas + .history/
+│   ├── 00_System/
+│   ├── 01_Projects/
+│   └── 99_Index/
+├── scripts/            ← harness scripts, FUERA del vault
+└── vault-obsidian-architecture.md  ← spec, FUERA del vault
+```
+
+**Prevención en el estándar:**
+- `vault_graph` y `vault_reindex` filtran activamente archivos fuera de las 13 secciones estándar — los root-level `.md` no se indexan ni se parsean
+- Al inicializar un vault: crear la carpeta `vault-{nombre}/` y mover todos los `.md` de especificación y scripts fuera de ella antes de la primera operación
+- `vault_validate(check:"structure")` puede extenderse para detectar `.md` en la raíz del vault y reportarlos como AP-15
+
+---
+
 ## Inicializar un vault desde cero
 
 Secuencia mínima para crear un vault operativo en un proyecto nuevo (sin documentación preexistente):
@@ -2566,6 +2637,68 @@ Secuencia mínima para crear un vault operativo en un proyecto nuevo (sin docume
 ```
 
 > **El vault está operativo cuando `vault_audit()` retorna score 100 y `vault_validate()` retorna sin errores.** A partir de ahí, cada sesión de trabajo agrega conocimiento incremental.
+
+---
+
+## Protocolo de sesión para LLMs remotos
+
+> Esta sección aplica a agentes que operan via API remota (DeepSeek, GPT-4, Gemini, Claude API) o cualquier LLM cuyo harness no garantice que `vault_write` es la única interfaz de escritura — por ejemplo, harnesses que pasan herramientas de sistema de archivos directas, o agentes que escriben archivos sin pasar por el script de vault.
+
+### Por qué los LLMs remotos son diferentes
+
+Un LLM local con acceso a `vault_write.py` mantiene el `search-index.json` sincronizado en cada escritura. Un LLM remoto (DeepSeek ejecutándose en un harness externo) puede:
+- Escribir archivos directamente sin llamar a `vault_write` → search-index queda desactualizado
+- Crear `.md` en la raíz del vault en lugar de en secciones numeradas → contaminación AP-15
+- Generar timestamps solo con fecha (`2026-05-07`) en lugar de ISO 8601 completo → AP-13
+- Crear notas vacías o con solo frontmatter → AP-11
+- Escribir `[[wiki-link]]` a notas que no existen → AP-14
+
+### Protocolo de inicio de sesión (obligatorio para LLMs remotos)
+
+```
+PASO 1 — Verificar índice antes de cualquier operación:
+  vault_reindex --check
+  → si retorna index_empty_or_missing → ejecutar vault_reindex antes de continuar
+  → si retorna index_ok → continuar normalmente
+
+PASO 2 — Verificar estructura del vault (no hay archivos en la raíz):
+  vault_validate(check:"structure")
+  → si hay .md en la raíz → moverlos fuera del vault (AP-15)
+
+PASO 3 — Baseline de salud:
+  vault_audit()
+  → anotar el healthScore inicial de la sesión
+
+PASO 4 — Operar normalmente (toda escritura debe pasar por vault_write)
+
+PASO 5 — Al cerrar la sesión:
+  vault_reindex --graph   ← reconstruye índice + grafo con el estado final
+  vault_audit()           ← verificar que healthScore ≥ baseline de inicio
+```
+
+### Reglas específicas para LLMs remotos
+
+1. **Timestamps completos:** usar siempre ISO 8601 con zona horaria UTC (`2026-05-07T14:30:22.000Z`). Si el harness no lo provee, la implementación de `vault_write` lo genera automáticamente — nunca escribir solo la fecha.
+
+2. **No colocar archivos en la raíz del vault:** las secciones `00_System` … `11_Code` y `99_Index` son los únicos destinos válidos. Un archivo `.md` directamente en `vault-{nombre}/` contamina el grafo (AP-15).
+
+3. **vault_reindex como herramienta de recuperación:** si en cualquier momento `vault_search()` retorna 0 resultados para queries que deberían tener resultados, ejecutar `vault_reindex` antes de diagnosticar otros problemas.
+
+4. **wiki-links solo a notas verificadas:** antes de escribir `[[nombre-nota]]`, ejecutar `vault_search(query:"nombre-nota")` para confirmar que la nota existe. Si no existe, escribir el nombre en texto plano.
+
+5. **Contenido mínimo real:** toda nota nueva debe tener al menos 3 líneas de contenido real (no frontmatter, no `TODO`, no guiones vacíos). `vault_write` lo aplica automáticamente vía content gate.
+
+### Compatibilidad con harnesses de terceros
+
+El estándar es agnóstico al LLM y al harness. Para adoptar en un harness existente:
+
+| Tipo de harness | Integración recomendada |
+|---|---|
+| Claude API con tool_use | Registrar las 37 tools como tools del sistema; vault_write es la interfaz de escritura |
+| OpenAI function calling | Mismo patrón; vault_write como función de escritura |
+| LangChain / LlamaIndex | Implementar tools como `Tool(name="vault_write", func=vault_write)` |
+| Harness propio (DeepSeek, local) | Exponer scripts vía `subprocess` o como MCP tools; incluir `vault_reindex` como herramienta disponible |
+| Agente sin herramientas de vault | Usar `vault_reindex` manualmente al inicio y fin de cada sesión como mínimo viable |
 
 ---
 
@@ -2814,7 +2947,7 @@ temp/
 | Vector DB | Costoso en recursos; el score ponderado por palabras es suficiente para <10K notas |
 | Obsidian plugins | Solo funciona en Obsidian, no en el loop del agente |
 
-**Markdown + carpetas numeradas + 32 tools especializadas** es el punto óptimo para agentes LLM:
+**Markdown + carpetas numeradas + 37 tools especializadas** es el punto óptimo para agentes LLM:
 - Zero dependencias externas
 - Legible por humanos en cualquier editor
 - Compatible con Obsidian si el usuario quiere abrirlo visualmente
@@ -2831,6 +2964,23 @@ temp/
 > Formato: [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).  
 > Cuando el proyecto usa **git**, cada versión incluye el hash del commit que la introdujo (`git: abcd123`).  
 > El hash permite navegar al estado exacto del código: `git show abcd123 -- docs/vault-obsidian-architecture.md`.
+
+---
+
+### v20 — 2026-05-07 `git: —`
+
+**37ª tool (vault_reindex) + AP-15 + Protocolo para LLMs remotos + 3 parches de scripts**
+
+**Agregado**
+- Tool `vault_reindex(dry_run?, graph?)` en Grupo 15: reconstruye `search-index.json` desde cero escaneando todas las notas en secciones del vault. Herramienta de recuperación para vaults con índice vacío (`{}`) o corrupto — el caso más común en harnesses que no usan `vault_write` como única interfaz. `--check` mode para session-start validation.
+- AP-15: Archivos externos en la raíz del vault — el anti-patrón de colocar `vault-obsidian-architecture.md`, scripts/ o cualquier `.md` suelto en la raíz. Causa: el grafo parsea sus `[[wiki-links]]` de ejemplo como broken links reales del proyecto (decenas de falsos positivos). Layout correcto: vault/ y scripts/ son hermanos, no anidados.
+- Sección `## Protocolo de sesión para LLMs remotos`: guía específica para DeepSeek, GPT, Gemini, Claude API y cualquier LLM que no garantice vault_write como única interfaz. Incluye: protocolo de 5 pasos (check→validate→baseline→operate→close), 5 reglas específicas, tabla de compatibilidad con harnesses de terceros.
+
+**Corregido en scripts (vault_write.py, vault_graph.py)**
+- `vault_write.py`: timestamps corregidos a ISO 8601 con UTC (`2026-05-07T14:30:22.000Z`) en lugar de timezone-naive. Agregado content gate: notas nuevas con <3 líneas reales retornan `{ ok:false, error:"content_too_short" }`. Campo de retorno `historySaved` renombrado a `created` (boolean: `true` cuando la nota es nueva, `false` cuando se actualiza).
+- `vault_graph.py`: solo escanea archivos dentro de las 13 secciones estándar — ignora archivos en raíz del vault, `scripts/`, `README.md` en raíz, etc. (fix para AP-15). Reemplazada función `slug_to_path` (solo buscaba en raíz) por `_build_slug_map` + `_resolve_link`: resolución recursiva por stem, path relativo y últimas 2 partes del path — resuelve `[[identity]]` → `00_System/identity.md`. Normalización de backslashes en paths Windows para evitar falsos orphans. Contrato `Retorna:` actualizado para reflejar el formato real (stats summary + listas top-10, no arrays completos).
+- Conteo de tools actualizado: 36 → 37.
+- Nuevos scripts implementados: `vault_section_index.py`, `vault_master_index.py` (cierran la deuda de contratos de Grupo 15 definidos en v19). Total: 44 scripts Python.
 
 ---
 
