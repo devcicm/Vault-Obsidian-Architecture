@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
-**Autor:** Remote Agent / Claude Code  
-**Versión:** 5.0 — 2026-05-02  
+**Autor:** CARLOS IVAN CM  
+**Versión:** 18.0 — 2026-05-06  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -35,7 +35,7 @@ Legible por humanos, indexable por máquinas, compatible con git, abre en cualqu
 Construyen un grafo de conocimiento navegable. El agente conecta proyectos, decisiones, patrones e infraestructura sin base de datos de grafos.
 
 ### 3. Versionado automático con `.history/`
-Cada `vault_write` sobre una nota existente copia la versión anterior a `.history/{ruta-plana}-{timestamp}.md`. Permite `vault_diff` sin git.
+Cada `vault_write` sobre una nota existente copia la versión anterior a `.history/{ruta__plana}-{YYYY-MM-DDTHH-mm-ss}.md` (separadores de directorio reemplazados por `__`). Permite `vault_diff` sin git.
 
 ### 4. Separación por responsabilidad en carpetas numeradas
 El prefijo numérico garantiza orden consistente en cualquier explorador y establece precedencia clara de la información.
@@ -56,31 +56,45 @@ Los patrones tienen estado evolutivo: `planificado → en_progreso → implement
 
 ## Estructura del Vault
 
+**Convención de nombre:** el directorio raíz del vault debe llamarse `vault-{nombre}` donde `{nombre}` es el slug del proyecto o contexto (ej: `vault-mi-proyecto`, `vault-ans`, `vault-homelab`). Este prefijo permite identificar vaults a simple vista en cualquier explorador de archivos y distinguirlos del directorio de backups hermano.
+
+> **Regla para el agente:** al crear un vault nuevo, SIEMPRE usar el prefijo `vault-` en el nombre del directorio. Nunca crear el vault en un directorio sin este prefijo.
+
 ```
-data/vault/
-│
+vault-{nombre}/          ← raíz del vault (SIEMPRE con prefijo vault-)
 ├── 00_System/
-│   ├── identity.md           — quién es el agente, capacidades, propósito
-│   ├── rules.md              — reglas de comportamiento y límites
-│   └── tool-contracts.md     — qué tools existen, qué hacen, cuándo usarlas
-│
-├── 01_Projects/
+├── identity.md              — quién es el agente, capacidades, propósito
+├── rules.md                 — reglas de comportamiento y límites
+├── tool-contracts.md        — qué tools existen, qué hacen, cuándo usarlas
+└── backups/
+    └── {tipo}-{YYYY-MM-DD}-{slug}.md  — registro de backup ejecutado (vault, db, archivos)
+
+01_Projects/
 │   └── {slug}/
 │       ├── overview.md       — descripción ejecutiva, stack técnico
 │       ├── architecture.md   — arquitectura técnica detallada
 │       ├── status.md         — estado actual, blockers (auto-actualizado por vault_project_status)
 │       ├── directives.md     — estándares, convenciones, restricciones del proyecto
 │       ├── changelog.md      — historial append-only (auto-actualizado)
-│       └── decisions.md      — ADRs específicos del proyecto
+│       ├── decisions.md      — ADRs específicos del proyecto
+│       └── envs.md           — variables de entorno por ambiente (dev/staging/prod): nombre, propósito, sensible, dónde se configura — nunca los valores reales
 │
 ├── 02_Observability/
 │   ├── errors/
 │   │   └── {YYYY-MM-DD}-{slug}.md   — error, stack trace, contexto, solución
 │   ├── antipatterns/
 │   │   └── {slug}.md                — antipatrón, por qué es problemático, alternativa
-│   └── vulnerabilities/
-│       ├── security-scan-{proyecto}-{fecha}.md  — reporte consolidado de vault_security_scan
-│       └── {ruleId}-{slug}-{fecha}.md           — hallazgo individual (crítico/alto) con mitigación
+│   ├── vulnerabilities/
+│   │   ├── security-scan-{proyecto}-{fecha}.md  — reporte consolidado de vault_security_scan
+│   │   └── {ruleId}-{slug}-{fecha}.md           — hallazgo individual (crítico/alto) con mitigación
+│   ├── waf/
+│   │   └── {proyecto}-{slug}.md     — regla de firewall activada, bypass detectado, contexto de la amenaza
+│   ├── metrics/
+│   │   └── {proyecto}-{slug}.md     — SLI/KPI: qué se mide, servicio, valor objetivo, unidad, herramienta de recolección
+│   ├── alerts/
+│   │   └── {proyecto}-{slug}.md     — regla de alerta: condición, umbral, canal de notificación, link al runbook de respuesta
+│   └── slos/
+│       └── {proyecto}-{slug}.md     — SLO: indicador medido (SLI), objetivo (%), ventana de tiempo, política de burn rate
 │
 ├── 03_Decisions/
 │   └── {YYYY-MM-DD}-{slug}.md       — ADR: contexto, opciones evaluadas, decisión, consecuencias
@@ -107,20 +121,40 @@ data/vault/
 │   │   └── {proyecto}-{slug}.md      — diagrama de componentes/módulos
 │   ├── sequence/
 │   │   └── {proyecto}-{slug}.md      — diagrama de secuencia de flujos
-│   └── dependency/
-│       └── {proyecto}-{slug}.md      — grafo de dependencias entre módulos/paquetes
+│   ├── dependency/
+│   │   └── {proyecto}-{slug}.md      — grafo de dependencias entre módulos/paquetes
+│   └── flow/
+│       └── {proyecto}-{slug}.md      — flujos generales, decisiones de proceso, diagramas de negocio
 │
 ├── 07_Knowledge/
 │   ├── glossary/
+│   │   ├── {dominio}/               — subcarpeta por área de dominio (ej: finanzas/, ia/, ecommerce/)
+│   │   │   └── {slug}.md
 │   │   └── {slug}.md                — término de dominio o negocio con su definición completa
 │   ├── apis/
+│   │   ├── {proveedor-o-proyecto}/  — subcarpeta por proveedor o proyecto (ej: proveedor-externo/, mi-api/, servicio-pago/)
+│   │   │   └── {endpoint-slug}.md
 │   │   └── {slug}.md                — API externa/interna: endpoints, auth, rate limits, ejemplos
 │   ├── concepts/
+│   │   ├── {proyecto}/              — subcarpeta por proyecto (ej: mi-servicio/, ecommerce/)
+│   │   │   └── {slug}.md
 │   │   └── {slug}.md                — cómo funciona algo técnico en este proyecto específico
 │   ├── business-rules/
+│   │   ├── {modulo-o-dominio}/      — subcarpeta por módulo o área de negocio (ej: facturacion/, inventario/)
+│   │   │   └── {slug}.md
 │   │   └── {slug}.md                — regla de negocio no obvia, con contexto y excepciones
-│   └── configs/
-│       └── {slug}.md                — configuración importante de herramienta o entorno
+│   ├── configs/
+│   │   ├── {herramienta}/           — subcarpeta por herramienta o entorno (ej: nginx/, postgres/, node/)
+│   │   │   └── {slug}.md
+│   │   └── {slug}.md                — configuración importante de herramienta o entorno
+│   ├── dependencies/
+│   │   ├── {proyecto}/              — subcarpeta por proyecto (ej: api-gateway/, ecommerce/)
+│   │   │   └── {package-slug}.md   — paquete/librería: nombre, versión, propósito, por qué se eligió, alternativas descartadas
+│   │   └── {package-slug}.md
+│   └── frameworks/
+│       ├── {proyecto}/              — subcarpeta por proyecto
+│       │   └── {framework-slug}.md — framework: rol en el proyecto, convenciones adoptadas, decisiones de configuración
+│       └── {framework-slug}.md
 │
 ├── 08_Runbooks/
 │   ├── deploy/
@@ -133,40 +167,87 @@ data/vault/
 │   │   └── {proyecto}-{slug}.md     — cómo revertir un deploy o migración
 │   ├── maintenance/
 │   │   └── {proyecto}-{slug}.md     — tareas periódicas de mantenimiento
+│   ├── pipeline/
+│   │   └── {proyecto}-{slug}.md     — cómo ejecutar, reparar o reintentar un pipeline CI/CD: qué hace cada etapa, cómo diagnosticar fallos
 │   └── incident/
 │       └── {proyecto}-{slug}.md     — respuesta a incidentes: pasos de contención y recuperación
 │
 ├── 09_Infrastructure/
 │   ├── servers/
+│   │   ├── {entorno}/               — subcarpeta por entorno (ej: homelab/, produccion/, staging/)
+│   │   │   └── {nombre}.md
 │   │   └── {nombre}.md              — servidor físico, VM o VPS: IP, OS, recursos, rol
 │   ├── services/
+│   │   ├── {proyecto}/              — subcarpeta por proyecto o stack (ej: mi-servicio/, ecommerce/)
+│   │   │   └── {nombre}.md
 │   │   └── {nombre}.md              — servicio desplegado: puerto, versión, dependencias
 │   ├── databases/
+│   │   ├── {proyecto}/              — subcarpeta por proyecto (ej: erp/, analytics/)
+│   │   │   └── {nombre}.md
 │   │   └── {nombre}.md              — BD, cache, cola: tipo, versión, host, esquema
 │   ├── network/
+│   │   ├── {entorno}/               — subcarpeta por entorno o ubicación (ej: homelab/, cloud/)
+│   │   │   └── {nombre}.md
 │   │   └── {nombre}.md              — nginx, proxy, firewall, VLAN, DNS, CDN
 │   ├── containers/
+│   │   ├── {proyecto}/              — subcarpeta por proyecto o stack (ej: docker-compose/, k8s/)
+│   │   │   └── {nombre}.md
 │   │   └── {nombre}.md              — contenedor Docker, LXC, pod Kubernetes
+│   ├── pipelines/
+│   │   ├── {proyecto}/              — subcarpeta por proyecto
+│   │   │   └── {nombre}.md
+│   │   └── {nombre}.md              — pipeline CI/CD: plataforma (GitHub Actions/GitLab CI/Jenkins), etapas, triggers, artefactos generados
+│   ├── secrets/
+│   │   ├── {proyecto}/              — subcarpeta por proyecto
+│   │   │   └── {nombre}.md
+│   │   └── {nombre}.md              — secreto documentado: nombre de la variable, proveedor de gestión, scope, política de rotación — NUNCA el valor real
 │   ├── .infra-index.json            — índice estructurado de componentes (fuente de verdad del mapa)
 │   └── infra-map.md                 — mapa de red Mermaid auto-generado (todas las conexiones)
 │
 ├── 10_Migrated/                     — documentación externa migrada por vault_migrate_docs
+│   ├── _staging/                    — zona de aterrizaje: TODOS los docs llegan aquí primero
+│   │   └── {slug}.md                — copia del original convertida a Markdown + frontmatter, sin distribuir aún
 │   ├── direct/
-│   │   └── {slug}.md                — archivo migrado con relación DIRECTA al proyecto (menciona nombre, módulos, stack)
+│   │   └── {slug}.md                — stub de archivo distribuido con relación DIRECTA (link → destino final)
 │   ├── indirect/
-│   │   └── {slug}.md                — archivo migrado con relación técnica INDIRECTA (contenido reutilizable)
+│   │   └── {slug}.md                — stub de archivo distribuido con relación INDIRECTA (link → destino final)
 │   ├── excluded/
 │   │   └── {slug}.md                — stub de archivo EXCLUIDO (sin relación ni directa ni indirecta)
-│   └── _report-{proyecto}-{fecha}.md — reporte de migración con clasificación completa, tabla de decisiones
+│   └── _report-{proyecto}-{fecha}.md — reporte de migración: staging → clasificación → distribución
+│
+├── 11_Code/                         ← ★ documentación de código (vault_code_module/relation/map)
+│   ├── .code-index.json             — índice estructurado: módulos documentados + relaciones (fuente de verdad del mapa)
+│   └── {project-slug}/
+│       ├── code-map.md              — diagrama Mermaid auto-generado de relaciones entre módulos
+│       └── {file-slug}.md           — documentación de un archivo de código: ruta, propósito, exports, imports, cardinalidad
 │
 └── 99_Index/
-    ├── search-index.json            — índice full-text (score ponderado: título×4, palabras, preview)
-    └── graph.json                   — grafo de nodos y aristas de wiki-links
+    ├── search-index.json        — índice full-text (score ponderado: título×4, palabras, preview)
+    └── graph.json               — grafo de nodos y aristas de wiki-links
+```
+
+> **Nota sobre el orden numérico:** `11_Code` aparece después de `10_Migrated` respetando el orden numérico. La sección de documentación de código se numeró 11 al agregarse posteriormente al diseño original de 10 carpetas. `99_Index` usa el prefijo alto para quedar siempre al final del árbol en cualquier explorador.
+
+**Directorio de backups físicos** (hermano del vault, fuera de su árbol para no incluirse en copias propias):
+
+```
+vault-backups/
+├── .backup-registry.json                 — log centralizado de todos los backups realizados
+└── vault-{YYYY-MM-DD-HHMMSS}[-label]/    ← una carpeta por snapshot del vault
+    ├── .manifest.json                    — inventario: secciones, notas, archivos, KB por carpeta
+    ├── 00_System/                        ┐
+    ├── 01_Projects/                      │
+    ├── ...                               │ copia exacta del vault en el momento del backup
+    └── 99_Index/                         ┘
 ```
 
 ---
 
-## Las 22 Tools del Vault — Referencia Completa
+## Las 34 Tools del Vault — Referencia Completa
+
+> **Tools vs Skills:** las 34 **tools** son funciones atómicas registradas en el harness — cada una hace exactamente una cosa. Una **skill** es un protocolo de múltiples pasos (secuencia de tools + lógica de decisión) que el agente ejecuta para un objetivo complejo. Las skills no son tools adicionales — son instrucciones de orquestación referenciadas en los casos de uso concretos (ej: `security-auditor`, `vault-migrator`). Un agente puede implementar skills como instrucciones en su system prompt o como flujos de trabajo.
+
+> **Convención de parámetro `project`:** en todas las tools, `project` es siempre un **slug kebab-case** del nombre del proyecto (ej: `"mi-api"`, `"vault-ans"`, `"ecommerce-backend"`). Nunca usar el nombre con espacios ni mayúsculas. El slug es el identificador canónico que determina las rutas de carpeta en el vault.
 
 ---
 
@@ -179,19 +260,27 @@ data/vault/
 Crea o actualiza cualquier nota del vault con frontmatter YAML correcto.
 
 **Parámetros:**
-| Parámetro | Tipo | Descripción |
-|---|---|---|
-| `folder` | string | Ruta relativa al vault root (ej: `"01_Projects/mi-api"`, `"03_Decisions"`) |
-| `title` | string | Título de la nota — también determina el nombre del archivo vía slugify |
-| `content` | string | Contenido completo en Markdown |
-| `tags` | string[] | Tags para búsqueda e indexación |
-| `meta` | object | Campos adicionales de frontmatter (ej: `{ status: "en_desarrollo" }`) |
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `folder` | string | — | Ruta relativa al vault root (ej: `"01_Projects/mi-api"`, `"03_Decisions"`) |
+| `title` | string | — | Título de la nota — también determina el nombre del archivo (normalizado a kebab-case) |
+| `content` | string | — | Contenido completo en Markdown |
+| `tags` | string[] | `[]` | Tags para búsqueda e indexación |
+| `meta` | object | `{}` | Campos adicionales de frontmatter (ej: `{ status: "en_desarrollo" }`) |
 
 **Comportamiento:**
 - Si la nota existe → copia la versión anterior a `.history/` con timestamp antes de sobreescribir
 - Genera automáticamente: `id` (UUID), `createdAt`, `updatedAt`
 - Actualiza `99_Index/search-index.json` con la nueva nota
-- Retorna la ruta relativa creada
+
+**Retorna:**
+```json
+{ "ok": true, "path": "01_Projects/mi-api/status.md", "id": "uuid", "created": true }
+```
+
+**Regla de escritura atómica (content gate):** Cuando `vault_write` crea una nota nueva (la nota no existía), valida que `content` tenga al menos 3 líneas con texto real (excluye frontmatter, líneas `TODO`, guiones vacíos y líneas en blanco). Si el contenido no pasa el gate, retorna `{ ok: false, error: "content_too_short" }` — la nota no se crea. Esta regla **no aplica** al agregar contenido a una nota existente (usar `vault_append` para eso) ni a notas del sistema (`00_System/`).
+
+> **Regla de wiki-links:** solo agregar `[[nombre-nota]]` en el contenido cuando la nota destino ya existe en el vault. Antes de escribir un wiki-link: `vault_search(query:"nombre-nota")` → si no hay resultado → escribir el nombre en texto plano hasta que la nota exista. Escribir `[[]]` o `[[ ]]` está prohibido (ver AP-14).
 
 **Cuándo usar:** documentación de proyecto, notas de arquitectura, ADRs, runbooks manuales, cualquier nota sin tool específica.
 
@@ -200,6 +289,11 @@ Crea o actualiza cualquier nota del vault con frontmatter YAML correcto.
 #### `vault_read(path)`
 
 Lee una nota por ruta relativa y retorna su contenido estructurado.
+
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `path` | string | — | Ruta relativa al vault root (ej: `"01_Projects/mi-api/status.md"`) |
 
 **Retorna:**
 ```json
@@ -227,6 +321,11 @@ Agrega contenido a una nota existente sin crear versión histórica (append es n
 | `section` | string | null | Agregar dentro de una sección `## Heading` específica |
 | `timestamped` | boolean | true | Si true, agrega `**YYYY-MM-DD HH:MM**` antes del contenido |
 
+**Retorna:**
+```json
+{ "ok": true, "path": "04_Sessions/2026-05-06.md", "appended": true }
+```
+
 **Cuándo usar:** changelog diario, session logs, agregar entradas a decision logs o runbooks sin reescribir todo, registrar nuevos hallazgos en notas existentes.
 
 ---
@@ -238,13 +337,19 @@ Búsqueda full-text ponderada en el vault.
 **Algoritmo de score:** `título×4 + coincidencias_en_palabras + coincidencias_en_preview`
 
 **Parámetros:**
-| Parámetro | Descripción |
-|---|---|
-| `query` | Términos a buscar (multiple palabras, separadas por espacio) |
-| `folder` | Restringir búsqueda a una carpeta (ej: `"02_Observability"`) |
-| `tag` | Filtrar por tag del frontmatter |
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `query` | string | — | Términos a buscar (múltiples palabras separadas por espacio) |
+| `folder` | string | — | Restringir búsqueda a una carpeta y **todos sus subdirectorios** recursivamente (ej: `"02_Observability"` incluye `02_Observability/errors/`, `02_Observability/waf/`, etc.) |
+| `tag` | string | — | Filtrar por tag del frontmatter |
 
-**Retorna:** hasta 20 resultados ordenados por score, con preview de 200 chars.
+**Retorna:**
+```json
+[
+  { "path": "03_Decisions/2026-05-01-auth.md", "title": "ADR Auth JWT", "score": 9, "preview": "Decidimos usar JWT porque..." }
+]
+```
+Hasta 20 resultados ordenados por score descendente, con preview de 200 chars.
 
 **Cuándo usar (OBLIGATORIO):** siempre antes de crear una nota nueva (evitar duplicados), antes de responder sobre errores conocidos, antes de tomar una decisión ya documentada.
 
@@ -254,8 +359,26 @@ Búsqueda full-text ponderada en el vault.
 
 Lista notas del vault ordenadas por `updatedAt` descendente.
 
-**Sin `folder`:** retorna la estructura de carpetas raíz con iconos y descripciones.  
-**Con `folder`:** retorna las notas de esa carpeta con metadata completa (título, tags, status, preview, fecha).
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `folder` | string | — | Carpeta a listar (ej: `"01_Projects"`). Sin valor: retorna estructura raíz del vault |
+| `status` | string | — | Filtrar por campo `status` del frontmatter (ej: `"en_progreso"`) |
+| `limit` | number | 50 | Máximo de notas a retornar |
+
+**Retorna:**
+```json
+{
+  "folder": "01_Projects",
+  "total": 12,
+  "notes": [
+    { "path": "01_Projects/mi-api/status.md", "title": "Status", "tags": ["backend"], "status": "en_desarrollo", "updatedAt": "2026-05-06T14:00:00Z", "preview": "Estado actual: ..." }
+  ]
+}
+```
+Sin `folder`: retorna la estructura de carpetas raíz con descripciones de cada sección.
+
+**Cuándo usar:** explorar qué notas existen en una sección, listar todos los proyectos, revisar patrones por estado, navegar el vault sin saber rutas exactas.
 
 ---
 
@@ -263,7 +386,22 @@ Lista notas del vault ordenadas por `updatedAt` descendente.
 
 Compara versión actual vs versión anterior en `.history/`.
 
-**Retorna:** líneas `+` (agregadas) y `-` (eliminadas), lista de todas las versiones históricas disponibles.
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `path` | string | — | Ruta relativa de la nota a comparar |
+| `version` | string | última | Nombre del archivo en `.history/` a comparar (sin valor: usa la versión histórica más reciente) |
+
+**Retorna:**
+```json
+{
+  "path": "01_Projects/mi-api/architecture.md",
+  "compared_against": "01_Projects__mi-api__architecture-2026-05-01T12-00-00.md",
+  "added":   ["+ ## Sección nueva agregada", "+ descripción..."],
+  "removed": ["- ## Sección eliminada", "- contenido anterior..."],
+  "history": ["01_Projects__mi-api__architecture-2026-05-01T12-00-00.md", "..."]
+}
+```
 
 **Cuándo usar:** auditoría de cambios en arquitectura, ver qué decidimos diferente, comparar estado anterior vs actual de un proyecto.
 
@@ -273,7 +411,17 @@ Compara versión actual vs versión anterior en `.history/`.
 
 Regenera `99_Index/graph.json` escaneando todos los wiki-links `[[nota]]` del vault.
 
-**Retorna:** nodos (notas), aristas (relaciones), notas huérfanas (sin backlinks), enlaces rotos (apuntan a notas inexistentes).
+**Retorna:**
+```json
+{
+  "nodes": [{ "id": "arquitectura-mi-api", "path": "01_Projects/mi-api/architecture.md", "title": "Arquitectura" }],
+  "edges": [{ "from": "arquitectura-mi-api", "to": "patron-repository", "label": "[[patron-repository]]" }],
+  "orphans":      ["07_Knowledge/apis/legacy-api.md"],
+  "brokenLinks":  [{ "from": "01_Projects/mi-api/status.md", "link": "nota-que-no-existe" }]
+}
+```
+
+**Cuándo usar:** después de eliminar o renombrar notas, después de una migración, al detectar AP-14 (broken links), periódicamente como mantenimiento del grafo de conocimiento.
 
 ---
 
@@ -292,12 +440,31 @@ Registra errores, antipatrones, vulnerabilidades y reglas WAF con trazabilidad c
 | `antipattern` | `02_Observability/antipatterns/` | Código o arquitectura problemática detectada |
 | `vulnerability` | `02_Observability/vulnerabilities/` | CVE, OWASP, injection, XSS, SSRF, etc. |
 | `waf` | `02_Observability/waf/` | Regla de firewall activada, bypass detectado |
+| `metric` | `02_Observability/metrics/` | SLI/KPI definido o actualizado: servicio, qué se mide, objetivo, unidad, herramienta |
+| `alert` | `02_Observability/alerts/` | Regla de alerta: condición, umbral, canal, severidad, link al runbook de respuesta |
+| `slo` | `02_Observability/slos/` | SLO definido: indicador (SLI), objetivo (%), ventana de tiempo, política de burn rate |
 
-**Severidades:** `critical` · `high` · `medium` · `low` · `info`
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `type` | string | — | Tipo de registro: `error` · `antipattern` · `vulnerability` · `waf` · `metric` · `alert` · `slo` |
+| `title` | string | — | Título descriptivo del hallazgo |
+| `description` | string | — | Qué ocurrió o qué se detectó |
+| `context` | string | — | Dónde: archivo, línea, servicio, endpoint, condición de activación |
+| `severity` | string | `medium` | `critical` · `high` · `medium` · `low` · `info` |
+| `project` | string | — | Slug del proyecto al que pertenece el hallazgo |
+| `mitigation` | string | — | Acción correctiva aplicada o recomendada |
+
+**Retorna:**
+```json
+{ "ok": true, "path": "02_Observability/errors/2026-05-06-null-ref-auth.md", "type": "error", "severity": "high" }
+```
 
 **Nota importante:** separada de `vault_write` porque los errores tienen ciclo de vida acumulativo — nunca se borran, tienen campos específicos de trazabilidad (severidad, contexto, mitigación), y se registran siempre de forma append, nunca sobreescribiendo.
 
 **Relación con `vault_security_scan`:** `vault_log_error(type:'vulnerability')` se usa para hallazgos individuales detectados manualmente o por revisión de código. `vault_security_scan` es el escáner automatizado que crea el reporte consolidado + notas individuales para hallazgos críticos/altos.
+
+**Cuándo usar:** al detectar cualquier error, antipatrón o vulnerabilidad durante el desarrollo o revisión de código — registrar inmediatamente para que quede trazabilidad antes de la mitigación.
 
 ---
 
@@ -305,9 +472,69 @@ Registra errores, antipatrones, vulnerabilidades y reglas WAF con trazabilidad c
 
 Actualiza `01_Projects/{slug}/status.md` y hace append a `changelog.md`.
 
-**Estados:** `en_desarrollo` · `en_revision` · `bloqueado` · `completado` · `archivado` · `en_produccion`
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `project` | string | — | Slug del proyecto (ej: `"mi-api"`) |
+| `status` | string | — | Estado actual: `en_desarrollo` · `en_revision` · `bloqueado` · `completado` · `archivado` · `en_produccion` |
+| `summary` | string | — | Resumen de qué se hizo o qué cambió en esta sesión |
+| `modified_files` | string[] | `[]` | Lista de archivos modificados en esta sesión |
+
+**Retorna:**
+```json
+{ "ok": true, "statusPath": "01_Projects/mi-api/status.md", "changelogPath": "01_Projects/mi-api/changelog.md", "status": "en_desarrollo" }
+```
 
 **Cuándo usar:** al finalizar cualquier sesión de trabajo en un proyecto, cuando el estado cambia, cuando hay blockers nuevos.
+
+---
+
+#### `vault_env_save(project, environment, vars, description?)`
+
+Documenta las variables de entorno de un proyecto por ambiente. Nunca almacena valores reales — solo estructura, propósito y metadatos de gestión.
+
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `project` | string | — | Slug kebab-case del proyecto (ej: `"mi-api"`) |
+| `environment` | string | — | Nombre del ambiente: `dev` · `staging` · `production` · `test` · `ci` u otro |
+| `vars` | object[] | — | Array de variables — ver esquema abajo |
+| `description` | string | `""` | Contexto general del ambiente |
+
+**Esquema de cada variable en `vars`:**
+| Campo | Tipo | Default | Descripción |
+|---|---|---|---|
+| `name` | string | — | Nombre de la variable (ej: `DATABASE_URL`, `API_KEY`) |
+| `description` | string | — | Para qué sirve — qué configura o activa |
+| `required` | boolean | `false` | Si el sistema falla sin ella |
+| `default` | string | `""` | Valor por defecto si no es sensible y tiene uno (omitir si sensible) |
+| `sensitive` | boolean | `false` | `true` si contiene credenciales, tokens o datos privados |
+| `provider` | string | `"env-file"` | Dónde se gestiona: `env-file` · `k8s-secret` · `vault` · `ci-secrets` · `manual` |
+
+**Comportamiento:**
+- Crea o actualiza `01_Projects/{slug}/envs.md`
+- Upsert por ambiente: si el ambiente ya existe, reemplaza su tabla; si es nuevo, agrega una sección `## {environment}`
+- Genera tabla Markdown por ambiente: `Nombre | Descripción | Requerida | Default | Sensible | Proveedor`
+- Variables `sensitive:true` muestran `🔒 (secreto)` en la columna Default — nunca el valor real
+
+**Retorna:**
+```json
+{ "ok": true, "path": "01_Projects/mi-api/envs.md", "environment": "production", "varCount": 4 }
+```
+
+**Ejemplo de `envs.md` generado:**
+```markdown
+## production
+
+| Nombre | Descripción | Requerida | Default | Sensible | Proveedor |
+|---|---|---|---|---|---|
+| `PORT` | Puerto en que escucha el servidor | ✓ | `3000` | — | env-file |
+| `DATABASE_URL` | Cadena de conexión a la base de datos | ✓ | 🔒 (secreto) | 🔒 | k8s-secret |
+| `LOG_LEVEL` | Nivel de verbosidad de logs | — | `info` | — | env-file |
+| `JWT_SECRET` | Clave para firmar tokens de sesión | ✓ | 🔒 (secreto) | 🔒 | vault |
+```
+
+**Cuándo usar:** al documentar un proyecto nuevo, al agregar una variable de entorno, al cambiar el proveedor de un secreto, al onboardear a alguien al proyecto (el `envs.md` es la referencia de configuración sin exponer credenciales).
 
 ---
 
@@ -334,11 +561,28 @@ planificado ──→ en_progreso ──→ implementado
                              └─→ refactoring
 ```
 
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `project` | string | — | Slug del proyecto |
+| `name` | string | — | Nombre del patrón (ej: `"Repository"`, `"Circuit-Breaker"`) |
+| `type` | string | — | Categoría: `design` · `architecture` · `code` · `integration` |
+| `status` | string | — | Estado actual: `planificado` · `en_progreso` · `implementado` · `deprecado` · `refactoring` |
+| `description` | string | — | Descripción del patrón en el contexto de este proyecto |
+| `files` | string[] | `[]` | Archivos donde está implementado el patrón |
+| `related_patterns` | string[] | `[]` | Nombres de patrones relacionados (se convierten en wiki-links) |
+| `notes` | string | — | Observaciones, invariantes o decisiones no obvias |
+
 **Comportamiento especial:**
 - Si el patrón ya existía con diferente status → registra la transición en `## Evolución` con timestamp
 - Crea/actualiza automáticamente `{proyecto}-patterns-index.md` con entrada del patrón
 - Los `related_patterns` se convierten en wiki-links `[[patron]]`
 - Los `files` quedan documentados como la implementación viva del patrón
+
+**Retorna:**
+```json
+{ "ok": true, "path": "05_Patterns/architecture/mi-api-hexagonal.md", "status": "implementado", "transition": "en_progreso → implementado" }
+```
 
 **Cuándo usar (OBLIGATORIO):**
 - Al escribir código que implementa un patrón → llamar inmediatamente
@@ -352,7 +596,14 @@ planificado ──→ en_progreso ──→ implementado
 
 Lista patrones registrados agrupados por estado.
 
-**Respuesta:**
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `project` | string | — | Filtrar por proyecto |
+| `type` | string | — | Filtrar por tipo: `design` · `architecture` · `code` · `integration` |
+| `status` | string | — | Filtrar por estado: `planificado` · `en_progreso` · `implementado` · `deprecado` |
+
+**Retorna:**
 ```json
 {
   "total": 8,
@@ -378,7 +629,15 @@ Lista patrones registrados agrupados por estado.
 
 Guarda un diagrama en el vault. Los diagramas Mermaid se renderizan automáticamente en la UI.
 
-**Formatos (`diagram_type`):** `mermaid` · `ascii` · `plantuml`
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `project` | string | — | Slug del proyecto |
+| `title` | string | — | Título del diagrama (determina el nombre de archivo) |
+| `diagram_type` | string | — | Formato: `mermaid` · `ascii` · `plantuml` |
+| `category` | string | — | Tipo de diagrama — ver tabla de categorías |
+| `content` | string | — | Código interno del diagrama **sin** backticks de bloque — la tool los agrega |
+| `description` | string | — | Descripción breve de qué representa el diagrama |
 
 **Categorías (`category`):**
 | Categoría | Subcarpeta | Uso |
@@ -389,7 +648,12 @@ Guarda un diagrama en el vault. Los diagramas Mermaid se renderizan automáticam
 | `dependency` | `06_Diagrams/dependency/` | Grafo de dependencias entre paquetes o módulos |
 | `flow` | `06_Diagrams/flow/` | Flujos generales, decisiones, procesos de negocio |
 
-**Nota:** `content` es solo el código interno del diagrama, sin los backticks. La tool los agrega automáticamente.
+**Retorna:**
+```json
+{ "ok": true, "path": "06_Diagrams/sequence/mi-api-auth-flow.md", "diagram_type": "mermaid", "category": "sequence" }
+```
+
+**Cuándo usar:** al documentar la arquitectura de un servicio, al capturar un flujo de ejecución no obvio, al crear el mapa de dependencias entre módulos.
 
 ---
 
@@ -421,7 +685,37 @@ Agrega una relación de cardinalidad o dependencia y **auto-genera el ERD Mermai
 3. Si son module/service/class → usa `graph TD` Mermaid con flechas
 4. Sobreescribe `{proyecto}-erd.md` con el ERD completo actualizado
 
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `project` | string | — | Slug del proyecto |
+| `from_entity` | string | — | Nombre de la entidad origen |
+| `to_entity` | string | — | Nombre de la entidad destino |
+| `relation_type` | string | — | Tipo de relación — ver tabla |
+| `cardinality` | string | — | Cardinalidad: `1:1` · `1:N` · `N:M` |
+| `label` | string | — | Etiqueta descriptiva de la arista en el ERD |
+| `description` | string | — | Contexto adicional sobre la relación |
+| `entity_type` | string | — | Tipo de entidad: `database` · `module` · `service` · `class` · `api` · `component` |
+
 **Deduplicación:** no agrega la misma relación (from+to+relation_type) dos veces.
+
+**Retorna:**
+```json
+{ "ok": true, "erdPath": "06_Diagrams/entity/mi-api-erd.md", "relationsTotal": 8, "deduplicated": false }
+```
+
+**Cuándo usar:** al modelar el esquema de base de datos, al mapear dependencias entre servicios, al documentar la arquitectura de módulos de código.
+
+**Diferencia con `vault_diagram_save`:**
+
+| Criterio | `vault_relation_add` | `vault_diagram_save` |
+|---|---|---|
+| Fuente de verdad | Sí — persiste en `{proyecto}-relations.json` | No — el diagrama es el archivo final |
+| Auto-actualización | Sí — regenera el ERD en cada llamada | No — manual, solo al llamarla explícitamente |
+| Cuándo usarla | Relaciones de datos o módulos evolutivas (se agregan incrementalmente) | Diagramas estáticos de arquitectura: secuencia, flujo, componentes, dependencias |
+| ERD de dominio | **Preferir `vault_relation_add`** — el ERD queda sincronizado con el grafo de relaciones | Solo si el ERD ya fue generado y se quiere guardar una versión estática de referencia |
+
+**Regla:** para ERDs y grafos de dependencias → `vault_relation_add`. Para diagramas de secuencia, flujo, componentes o cualquier diagrama sin fuente de datos incremental → `vault_diagram_save`.
 
 ---
 
@@ -441,12 +735,48 @@ Guarda conocimiento acumulado que no encaja en decisiones (ADR) ni en errores.
 | `concept` | `07_Knowledge/concepts/` | Cómo funciona algo técnico en **este proyecto específico** (no documentación genérica) |
 | `business-rule` | `07_Knowledge/business-rules/` | Regla de negocio no obvia: cuándo aplica, excepciones, quién la definió |
 | `config` | `07_Knowledge/configs/` | Configuración importante de herramienta, entorno o servicio |
+| `dependency` | `07_Knowledge/dependencies/` | Paquete o librería instalada: nombre, versión, propósito exacto en el proyecto, por qué se eligió, alternativas descartadas, caveats conocidos |
+| `framework` | `07_Knowledge/frameworks/` | Framework completo usado en el proyecto: rol, convenciones adoptadas, decisiones de configuración, patrones que impone |
 
 **Cuándo usar:**
 - Al aprender cómo funciona una API externa → `category: "api"` con todos los detalles
 - Al descubrir una regla de negocio → `category: "business-rule"` inmediatamente
 - Al configurar una herramienta con parámetros no obvios → `category: "config"`
 - Al descubrir cómo funciona un mecanismo específico del proyecto → `category: "concept"`
+- Al instalar un paquete o librería (`npm install`, `pip install`, etc.) → `category: "dependency"` OBLIGATORIO — documentar propósito y razón de elección
+- Al incorporar un framework al proyecto → `category: "framework"` con rol, convenciones y configuración adoptada
+
+**Estructura de una nota `dependency` (contenido mínimo requerido):**
+```markdown
+## {nombre-paquete} v{versión}
+
+**Propósito:** para qué se usa exactamente en este proyecto (no la descripción genérica del paquete).
+
+**Por qué se eligió:** razón específica sobre las alternativas (ej: "vs axios: fetch nativo suficiente; vs got: zero-deps preferido").
+
+**Alternativas descartadas:** lista con razón de descarte.
+
+**Uso en el proyecto:** dónde y cómo se usa (archivos, módulos).
+
+**Configuración relevante:** parámetros no obvios aplicados.
+
+**Caveats:** comportamientos no intuitivos, bugs conocidos, limitaciones.
+```
+
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `category` | string | — | Categoría — ver tabla de categorías |
+| `title` | string | — | Título de la nota de conocimiento |
+| `content` | string | — | Contenido Markdown completo |
+| `project` | string | — | Slug del proyecto al que pertenece |
+| `tags` | string[] | `[]` | Tags para búsqueda |
+| `related` | string[] | `[]` | Notas relacionadas (se convierten en wiki-links) |
+
+**Retorna:**
+```json
+{ "ok": true, "path": "07_Knowledge/apis/mi-api/pagos-api.md", "category": "api" }
+```
 
 **Diferencia con `vault_write`:** `vault_knowledge_save` fuerza la subcarpeta correcta dentro de `07_Knowledge/` y añade metadata de categoría. `vault_write` es para cualquier nota genérica.
 
@@ -456,7 +786,22 @@ Guarda conocimiento acumulado que no encaja en decisiones (ADR) ni en errores.
 
 Busca y recupera conocimiento acumulado. Si hay un match fuerte y único, retorna el contenido completo de la nota automáticamente.
 
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `query` | string | — | Términos de búsqueda |
+| `category` | string | — | Filtrar por categoría: `glossary` · `api` · `concept` · `business-rule` · `config` · `dependency` · `framework` |
+| `project` | string | — | Filtrar por proyecto |
+
 **Auto-read:** si solo hay 1 resultado con score >> resto → retorna `topContent` con el cuerpo completo de la nota.
+
+**Retorna:**
+```json
+{
+  "results": [{ "path": "07_Knowledge/apis/pagos-api.md", "title": "Pagos API", "score": 12, "preview": "..." }],
+  "topContent": "## Pagos API\n\n..."
+}
+```
 
 **Cuándo usar:** antes de preguntarle al usuario algo que el agente debería saber, antes de trabajar con una API documentada, antes de aplicar una regla de negocio.
 
@@ -502,6 +847,44 @@ Audita la salud completa del vault y retorna un reporte con score.
 
 ---
 
+#### `vault_validate(path?, folder?, check?)`
+
+Valida frontmatter YAML, campos requeridos, estructura de carpetas e integridad de índices. Más quirúrgico que `vault_audit`: opera nota a nota y no calcula un health score global.
+
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `path` | string | — | Ruta relativa a una nota específica |
+| `folder` | string | — | Carpeta a validar (todas las notas dentro) |
+| `check` | string | `"all"` | Qué validar: `"frontmatter"`, `"structure"`, `"indexes"`, `"all"` |
+
+**Validaciones por tipo:**
+
+| Check | Qué verifica |
+|---|---|
+| `frontmatter` | YAML parseable, campos `id` y `title` presentes, tipos correctos |
+| `structure` | Que existan las carpetas numeradas del estándar (`00_System` … `10_Migrated`) |
+| `indexes` | Que `99_Index/search-index.json` y `99_Index/graph.json` sean legibles |
+| `all` | Las tres anteriores combinadas |
+
+**Retorna:**
+```json
+{
+  "valid":   ["01_Projects/mi-api/status.md", "..."],
+  "invalid": [{ "path": "07_Knowledge/api.md", "error": "Missing: id" }],
+  "structure": { "expected": 11, "missing": [] },
+  "indexes":   { "required": 2, "invalid": [] }
+}
+```
+
+**Diferencia con `vault_audit`:** `vault_audit` mide salud del vault (orphans, stale, broken links, score). `vault_validate` verifica contratos estructurales — frontmatter correcto, carpetas presentes, índices legibles — sin necesidad de leer el contenido completo de cada nota.
+
+> **Nota de implementación:** el check `structure` verifica las 11 carpetas numeradas obligatorias (`00_System` … `10_Migrated`). Las carpetas `11_Code` y `99_Index` son opcionales en el check de estructura (un vault sin código documentado no necesita `11_Code`; `99_Index` se crea automáticamente al hacer la primera búsqueda). El check `indexes` verifica específicamente que `99_Index/search-index.json` y `99_Index/graph.json` sean legibles cuando existan.
+
+**Cuándo usar:** antes de una migración (pre-flight), al detectar AP-12 o AP-13, al integrar notas de fuentes externas que pueden tener frontmatter no estándar.
+
+---
+
 ### Grupo 7 — Runbooks Operacionales
 
 ---
@@ -518,6 +901,7 @@ Guarda un procedimiento operacional paso a paso.
 | `setup` | `08_Runbooks/setup/` | Configurar el entorno de desarrollo, instalar dependencias |
 | `rollback` | `08_Runbooks/rollback/` | Revertir deploy, rollback de migración de BD |
 | `maintenance` | `08_Runbooks/maintenance/` | Limpiar logs, rotar backups, actualizar certificados |
+| `pipeline` | `08_Runbooks/pipeline/` | Cómo lanzar, reparar o reintentar un pipeline CI/CD — qué hace cada etapa, cómo diagnosticar fallos comunes |
 | `incident` | `08_Runbooks/incident/` | Respuesta a caída de producción, breach de seguridad |
 
 **Parámetro `steps`:** array de objetos con:
@@ -534,13 +918,39 @@ Guarda un procedimiento operacional paso a paso.
 ]
 ```
 
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `project` | string | — | Slug del proyecto |
+| `title` | string | — | Título descriptivo del procedimiento |
+| `trigger` | string | — | Cuándo ejecutar este runbook (condición o evento) |
+| `category` | string | — | Tipo de runbook — ver tabla de categorías |
+| `steps` | object[] | — | Array de pasos: `{ step, command?, note? }` |
+| `estimated_time` | string | — | Tiempo estimado de ejecución (ej: `"15 min"`) |
+| `prerequisites` | string[] | `[]` | Requisitos previos antes de ejecutar |
+
 **Comportamiento:** crea la nota con secciones `## Trigger`, `## Prerequisitos`, `## Pasos`, `## Historial de ejecuciones`. Los comandos se formatean en bloques de código bash.
+
+**Retorna:**
+```json
+{ "ok": true, "path": "08_Runbooks/deploy/mi-api-deploy-produccion.md", "category": "deploy" }
+```
+
+**Cuándo usar:** al documentar por primera vez un procedimiento operacional recurrente, al formalizar un proceso que se ha ejecutado ad-hoc varias veces.
 
 ---
 
 #### `vault_runbook_log(path, outcome, notes?, duration?)`
 
 Registra la ejecución de un runbook con su resultado.
+
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `path` | string | — | Ruta relativa al runbook ejecutado |
+| `outcome` | string | — | Resultado: `success` · `failed` · `partial` |
+| `notes` | string | — | Observaciones, errores encontrados o desvíos del procedimiento |
+| `duration` | string | — | Tiempo real de ejecución (ej: `"8 min"`) |
 
 **Outcomes:** `success` ✅ · `failed` ❌ · `partial` ⚠️
 
@@ -549,7 +959,12 @@ Registra la ejecución de un runbook con su resultado.
 - Incrementa el contador `executions` en el frontmatter
 - Cada entrada incluye: icono de outcome, timestamp, duración, notas
 
-**Cuándo usar:** siempre después de ejecutar un procedimiento documentado — builds el historial operacional del equipo.
+**Retorna:**
+```json
+{ "ok": true, "path": "08_Runbooks/deploy/mi-api-deploy-produccion.md", "outcome": "success", "executions": 4 }
+```
+
+**Cuándo usar:** siempre después de ejecutar un procedimiento documentado — construye el historial operacional del equipo.
 
 ---
 
@@ -576,6 +991,8 @@ Registra un componente de infraestructura y auto-actualiza el mapa de red Mermai
 | `network` | `network/` | VLAN, switch, router, VPN, DNS |
 | `firewall` | `network/` | iptables, pfSense, Cloudflare WAF |
 | `cdn` | `network/` | Cloudflare, Fastly, AWS CloudFront |
+| `pipeline` | `pipelines/` | Pipeline CI/CD: GitHub Actions, GitLab CI, Jenkins — etapas, triggers, artefactos |
+| `secret` | `secrets/` | Secreto gestionado: variable, proveedor (vault/env-file/k8s-secret), scope, rotación — **nunca el valor real** |
 
 **Parámetro `config`:** objeto libre con los campos técnicos relevantes:
 ```json
@@ -595,9 +1012,20 @@ Registra un componente de infraestructura y auto-actualiza el mapa de red Mermai
   "region": "us-east-1",
   "image": "postgres:16-alpine",
   "replicas": 3,
-  "vlan": "100"
+  "vlan": "100",
+  "platform": "github-actions",
+  "trigger": "push:main",
+  "stages": ["lint", "test", "build", "deploy"],
+  "artifact": "dist/app.tar.gz",
+  "environment": "production",
+  "provider": "env-file",
+  "scope": "project",
+  "rotation_policy": "manual-trimestral",
+  "owner": "infraestructura"
 }
 ```
+
+> Para `type:'secret'`: usar solo campos de metadatos (`provider`, `scope`, `rotation_policy`, `owner`). **Nunca incluir el valor real del secreto en `config` ni en ningún campo.**
 
 **Parámetro `connections`:** array de conexiones salientes:
 ```json
@@ -610,6 +1038,19 @@ Registra un componente de infraestructura y auto-actualiza el mapa de red Mermai
 
 **Ubicaciones (`location`):**
 `local` · `homelab` · `vps` · `cloud-aws` · `cloud-gcp` · `cloud-azure` · `cloud-other` · `datacenter` · `hybrid`
+
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `name` | string | — | Nombre del componente (ej: `"postgres-primary"`, `"nginx-lb"`) |
+| `type` | string | — | Tipo de componente — ver tabla de tipos |
+| `description` | string | — | Descripción funcional del componente |
+| `config` | object | — | Objeto libre con campos técnicos relevantes (ver esquema) |
+| `connections` | object[] | `[]` | Conexiones salientes: `{ to, protocol, port, description }` |
+| `location` | string | — | Ubicación: `local` · `homelab` · `vps` · `cloud-aws` · `cloud-gcp` · `cloud-azure` · `datacenter` · `hybrid` |
+| `project` | string | — | Slug del proyecto al que pertenece |
+| `status` | string | `"activo"` | Estado: `activo` · `inactivo` · `mantenimiento` · `deprecado` |
+| `tags` | string[] | `[]` | Tags para búsqueda y filtrado |
 
 **Auto-generación del mapa de red:**
 1. Persiste el componente en `09_Infrastructure/.infra-index.json`
@@ -643,6 +1084,11 @@ graph LR
   app_backend -->|"TCP:6379"| redis_cache
 ```
 
+**Retorna:**
+```json
+{ "ok": true, "path": "09_Infrastructure/services/mi-api/app-backend.md", "type": "service", "infraMapUpdated": true }
+```
+
 **Cuándo usar:** al documentar cualquier servidor, servicio o componente de red por primera vez. Al actualizar configuraciones (IP cambia, versión actualizada, nuevo puerto). Al agregar un nuevo servicio que se conecta a la infraestructura existente.
 
 ---
@@ -651,7 +1097,16 @@ graph LR
 
 Regenera el mapa de red Mermaid desde el índice `.infra-index.json`.
 
-**Parámetros opcionales:** filtrar por proyecto o por ubicación para generar mapas parciales.
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `project` | string | — | Filtrar mapa por proyecto (solo componentes con ese project tag) |
+| `location` | string | — | Filtrar por ubicación: `homelab` · `cloud-aws` · etc. |
+
+**Retorna:**
+```json
+{ "ok": true, "path": "09_Infrastructure/infra-map.md", "nodesTotal": 8, "edgesTotal": 12 }
+```
 
 **Cuándo usar:** si el mapa se desfasó, para generar una vista parcial (solo homelab, solo cloud), al inicio de trabajo en infraestructura para tener el mapa actualizado.
 
@@ -674,26 +1129,79 @@ Migra documentación existente al vault en formato Obsidian-compatible. Classifi
 | `formats` | string[] | `[".md",".txt",".html",".rst",".adoc"]` | Extensiones de archivo a procesar |
 | `dry_run` | boolean | `false` | Si `true`, solo clasifica y devuelve el reporte sin escribir en el vault |
 
+> **Archivos de código fuente — NUNCA se migran.** `vault_migrate_docs` procesa exclusivamente documentación (Markdown, PDF, DOCX, TXT, etc.). Los archivos `.js`, `.mjs`, `.ts`, `.py`, `.go`, etc. no se copian ni mueven — su ruta en disco es su identidad. Para documentar código usa `vault_code_module` (Grupo 12), que crea documentación en `11_Code/` sin tocar el archivo original.
+
+**Protocolo de migración segura — 5 fases con gates de validación:**
+
+```
+FASE 0 — PRE-FLIGHT (obligatorio, nunca saltar)
+  vault_backup(label:"pre-migration-{proyecto}")   ← punto de retorno garantizado
+  vault_audit()                                     ← baseline del vault antes de tocar nada
+  Inspección del source: contar .md, detectar vacíos (<100 chars), detectar duplicados
+  Declarar canonical por tema (qué archivo gana si hay contenido duplicado)
+  ─── GATE: ¿el vault baseline es ≥ 80? Si no, resolver issues antes de migrar ───
+
+FASE 1 — REVISIÓN DEL PLAN con gate de contenido mínimo
+  vault_migrate_docs(source_path, project, dry_run:true)  ← plan sin ejecutar
+  Revisar plan: ¿algún archivo tiene <100 chars de contenido real?
+  Archivos que no pasan el gate → excluir del source explícitamente antes de continuar
+  ─── GATE: el plan clasificado no tiene archivos vacíos ni binarios no soportados ───
+
+FASE 2 — MIGRACIÓN COMPLETA (staging → clasificación → distribución)
+  vault_migrate_docs(source_path, project, dry_run:false)
+  ← ejecuta en una sola llamada: staging en _staging/ → clasificación → distribución → reporte
+  ← NOTA: la herramienta no se detiene entre staging y distribución — el control está en Fase 1
+  ─── GATE: revisar el reporte _report-{proyecto}-{fecha}.md → ¿destinos correctos? ───
+
+FASE 3 — VERIFICACIÓN DE LINKS
+  vault_graph()  ← debe retornar 0 broken links
+  Si hay broken links → vault_write para corregir referencias rotas
+  ─── GATE: vault_graph() retorna brokenLinks: [] ───
+
+FASE 4 — VERIFICACIÓN POST-MIGRACIÓN
+  vault_audit() → health score debe ser ≥ baseline de Fase 0
+  Si score bajó: identificar causa antes de declarar la migración exitosa
+  Conservar _report-{proyecto}-{fecha}.md hasta confirmación explícita del usuario
+  vault_migrate_rollback disponible hasta que el usuario confirme que está satisfecho
+```
+
 **Clasificación de relevancia:**
 
-| Nivel | Criterio | Destino |
+| Nivel | Criterio | Destino final |
 |---|---|---|
-| **Directo** | El archivo menciona el nombre del proyecto, sus módulos, stack o keywords con frecuencia ≥ 3 ocurrencias | Carpeta específica del proyecto según tipo de contenido |
-| **Indirecto** | Contenido técnico genérico reutilizable (≥ 4 términos técnicos) sin referencias directas al proyecto | `10_Migrated/indirect/` |
-| **Excluido** | Sin relación técnica ni de dominio con el proyecto | Stub en `10_Migrated/excluded/` con preview truncado |
+| **Directo** | Menciona el nombre del proyecto, módulos, stack o keywords con frecuencia ≥ 3 | Carpeta definitiva del vault según tipo de contenido |
+| **Indirecto** | Contenido técnico genérico reutilizable (≥ 4 términos técnicos) sin referencias directas | Carpeta definitiva según tipo + stub en `indirect/` |
+| **Excluido** | Sin relación técnica ni de dominio con el proyecto | Stub en `10_Migrated/excluded/` — no se distribuye |
 
-**Detección automática de carpeta destino según contenido:**
+**Detección automática de carpeta destino — orden de prioridad:**
 
-| Señal en contenido | Carpeta destino |
-|---|---|
-| `readme`, `overview`, `introduction` | `01_Projects/{proyecto}/` |
-| `api`, `endpoint`, `swagger`, `route` | `07_Knowledge/apis/` |
-| `deploy`, `install`, `setup`, `rollback` | `08_Runbooks/setup/` |
-| `architecture`, `pattern`, `design`, `schema` | `05_Patterns/architecture/` |
-| `error`, `bug`, `exception`, `fix` | `02_Observability/errors/` |
-| `config`, `env`, `variable`, `setting` | `07_Knowledge/configs/` |
-| `glossary`, `term`, `definition` | `07_Knowledge/glossary/` |
-| excluido | `10_Migrated/excluded/` |
+> **Importante:** reportes y decisiones tienen prioridad absoluta sobre el contenido temático. Un documento que habla de APIs pero es un reporte de auditoría NO va a `07_Knowledge/apis/` — va a `03_Decisions/` o permanece en `10_Migrated/`. La detección evalúa las señales en el orden de la tabla: la primera que coincide gana.
+
+| Prioridad | Señal en contenido o nombre de archivo | Tipo | Carpeta destino |
+|---|---|---|---|
+| 1 | `decision`, `adr`, `architecture decision`, `we decided`, `options considered` | **Decisión (ADR)** | `03_Decisions/` — nunca a knowledge ni patterns |
+| 2 | `report`, `reporte`, `audit report`, `scan result`, `finding`, `assessment`, `_report-` en nombre | **Reporte** | permanece en `10_Migrated/direct/` con stub — no se distribuye a secciones temáticas |
+| 3 | `readme`, `overview`, `introduction` | Descripción de proyecto | `01_Projects/{proyecto}/` |
+| 4 | `api`, `endpoint`, `swagger`, `openapi`, `route`, `rest`, `graphql` | Conocimiento de API | `07_Knowledge/apis/{proyecto-o-proveedor}/` |
+| 5 | `framework`, `react`, `vue`, `express`, `django`, `nextjs`, `laravel` | Framework | `07_Knowledge/frameworks/{proyecto}/` |
+| 6 | `package`, `dependency`, `npm`, `pip`, `library`, `libreria`, `paquete` | Dependencia | `07_Knowledge/dependencies/{proyecto}/` |
+| 7 | `deploy`, `install`, `setup`, `rollback`, `how to` | Runbook operacional | `08_Runbooks/setup/` |
+| 8 | `architecture`, `pattern`, `design`, `schema`, `diagram` | Patrón arquitectónico | `05_Patterns/architecture/` |
+| 9 | `error`, `bug`, `exception`, `fix`, `incident` | Observabilidad | `02_Observability/errors/` |
+| 10 | `config`, `env`, `variable`, `setting`, `.env`, `yaml` | Configuración | `07_Knowledge/configs/{herramienta}/` |
+| 11 | `glossary`, `term`, `definition`, `glosario` | Glosario | `07_Knowledge/glossary/{dominio}/` |
+| 12 | `service`, `server`, `infra`, `host`, `ip`, `port` | Infraestructura | `09_Infrastructure/services/{proyecto}/` |
+| — | sin coincidencia relevante | Excluido | `10_Migrated/excluded/` |
+
+**Diferencia clave entre reporte, decisión y conocimiento:**
+
+| Tipo | Propósito | Destino | Nunca en... |
+|---|---|---|---|
+| **Reporte** | Resultado puntual de un proceso (auditoría, migración, escaneo) — snapshot en el tiempo, no referencia permanente | `10_Migrated/direct/` o su sección de observabilidad correspondiente | `07_Knowledge/`, `03_Decisions/`, `05_Patterns/` |
+| **Decisión (ADR)** | Registro de por qué se eligió una opción sobre otras — contexto + alternativas + consecuencias | `03_Decisions/` exclusivamente | `07_Knowledge/`, `05_Patterns/`, `10_Migrated/` |
+| **Conocimiento** | Referencia permanente y reutilizable — cómo funciona algo, qué hace una API, qué significa un término | `07_Knowledge/{categoria}/{subcarpeta}/` | `03_Decisions/`, `10_Migrated/` |
+
+**Subcarpetas dentro de categorías:** cuando se distribuye a una categoría que soporta subcarpetas (`apis/`, `configs/`, `glossary/`, `services/`, `servers/`, etc.), la tool detecta automáticamente el subfolder adecuado (por proyecto, proveedor, herramienta o entorno) y lo crea si no existe. Esto evita que las categorías se conviertan en listas planas ilegibles conforme crecen.
 
 **Conversiones aplicadas para compatibilidad Obsidian:**
 
@@ -701,26 +1209,43 @@ Migra documentación existente al vault en formato Obsidian-compatible. Classifi
 |---|---|---|
 | Links internos | `[texto](archivo.md)` | `[[archivo]]` |
 | Imágenes | `![alt](ruta/img.png)` | `![[img.png]]` |
-| Frontmatter existente | Cualquier formato | YAML re-generado con `id`, `title`, `type`, `migrated_from`, `relevance`, `project`, `tags` |
+| Frontmatter existente | Cualquier formato | YAML re-generado con `id`, `title`, `type`, `migrated_from`, `relevance`, `project`, `tags`, `staged_at`, `distributed_to` |
 | Nombres de archivo | `My Doc File.md`, `README.MD` | `my-doc-file.md` (kebab-case, sin caracteres especiales) |
 | HTML | Tags HTML completos | Texto plano normalizado |
 | RST / ADoc | Directivas RST | Markdown equivalente |
 | Binarios | `*.exe`, `*.png`, etc. | Omitidos con nota en el reporte de errores |
 
-**Flujo recomendado (2 pasos):**
+**Flujo recomendado (secuencia segura):**
 ```
-1. vault_migrate_docs(source_path, project, dry_run=true)
-   → Muestra clasificación al usuario sin escribir nada
+vault_backup(label:"pre-migration-{proyecto}")          ← Fase 0: punto de retorno
+vault_audit()                                           ← Fase 0: baseline
+vault_migrate_docs(source_path, project, dry_run:true)  ← Fase 1: revisar plan
+→ excluir archivos vacíos o duplicados del source antes de continuar
+vault_migrate_docs(source_path, project, dry_run:false) ← Fase 2: staging+clasificación+distribución
+→ revisar reporte _report-{proyecto}-{fecha}.md: ¿destinos correctos?
+vault_graph()                                           ← Fase 3 gate: 0 broken links
+vault_audit()                                           ← Fase 4: score ≥ baseline
+→ vault_migrate_rollback disponible si la distribución no convenció
+```
 
-2. Usuario confirma → vault_migrate_docs(source_path, project, dry_run=false)
-   → Escribe todas las notas + genera _report-{proyecto}-{fecha}.md
+**Retorna:**
+```json
+{
+  "ok": true, "dryRun": false, "project": "mi-proyecto",
+  "totalScanned": 45, "totalStaged": 38,
+  "distributed": { "direct": 20, "indirect": 12, "excluded": 6 },
+  "subfoldersCreated": ["03_Decisions", "07_Knowledge/apis/mi-proveedor"],
+  "stubsCreated": 32,
+  "reportFile": "10_Migrated/_report-mi-proyecto-2026-05-06.md"
+}
 ```
 
 **Salida del reporte `10_Migrated/_report-{proyecto}-{fecha}.md`:**
-- Resumen: total archivos, directos/indirectos/excluidos/errores
-- Tabla de archivos directamente relacionados con link a nota migrada
-- Tabla de archivos indirectamente relacionados
+- Resumen: total archivos en staging, directos/indirectos/excluidos/errores
+- Tabla de archivos directos con link al destino final en el vault
+- Tabla de archivos indirectos con link al destino final
 - Tabla de archivos excluidos con razón de exclusión
+- Nuevas subcarpetas creadas durante la distribución
 - Lista de errores (binarios, permisos, encoding)
 
 **Cuándo usar:**
@@ -729,11 +1254,680 @@ Migra documentación existente al vault en formato Obsidian-compatible. Classifi
 - Para auditar qué documentación existente tiene relevancia real para el proyecto activo
 - Antes de archivar un repositorio: migrar su README, docs/ y ADRs al vault
 
-**Skill `vault-migrator`:** skill especializada que ejecuta el protocolo completo con `dry_run` previo + confirmación + `vault_audit` post-migración.
+**Skill `vault-migrator`:** skill especializada que ejecuta el protocolo completo: `dry_run` previo + confirmación + migración con staging + distribución automática a subcarpetas + `vault_audit` post-migración.
+
+**Seguridad — el backup es responsabilidad del agente, no de la tool:**
+`vault_migrate_docs` no llama a `vault_backup` internamente. El backup debe hacerse explícitamente en Fase 0 antes de ejecutar la migración (ver protocolo arriba). Ante cualquier problema después de la distribución: `vault_migrate_rollback` (quirúrgico) o `vault_restore` (completo desde el snapshot pre-migración).
 
 ---
 
-### Grupo 10 — Auditoría de Seguridad
+#### `vault_migrate_rollback(report_path, confirm)`
+
+Deshace una migración ejecutada por `vault_migrate_docs` usando su reporte como mapa de reversión. Operación **quirúrgica** — solo elimina lo que la migración creó, sin tocar el resto del vault.
+
+**Cuándo usar vs `vault_restore`:**
+
+| Situación | Herramienta correcta |
+|---|---|
+| La migración distribuyó archivos en carpetas incorrectas | `vault_migrate_rollback` — elimina solo lo migrado |
+| El vault quedó en estado inconsistente más allá de la migración | `vault_restore` — restaura el snapshot completo |
+| Quieres re-migrar con diferentes `keywords` o `formats` | `vault_migrate_rollback` primero, luego `vault_migrate_docs` de nuevo |
+| Se corrompieron notas preexistentes (no relacionadas con la migración) | `vault_restore` desde backup `pre-migration-{proyecto}` |
+
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `report_path` | string | — | Ruta relativa al reporte de migración: `10_Migrated/_report-{proyecto}-{fecha}.md` |
+| `confirm` | boolean | `false` | `false` → retorna preview sin ejecutar; `true` → ejecuta el rollback |
+
+**Qué revierte exactamente:**
+
+```
+Lee _report-{proyecto}-{fecha}.md → extrae tabla de archivos distribuidos
+
+Para cada archivo distribuido (direct + indirect):
+  1. Elimina la nota del vault en su destino definitivo (ej: 07_Knowledge/apis/mi-api.md)
+  2. Elimina el stub correspondiente en 10_Migrated/direct/ o indirect/
+  3. Actualiza 99_Index/search-index.json (remueve las entradas)
+
+Para archivos excluidos:
+  4. Elimina los stubs en 10_Migrated/excluded/
+
+Limpieza final:
+  5. Vacía 10_Migrated/_staging/ si quedaron archivos
+  6. Elimina el propio _report-{proyecto}-{fecha}.md
+  7. Reconstruye el índice de búsqueda completo
+```
+
+> **Los archivos originales en el source_path NO se tocan** — `vault_migrate_docs` nunca mueve ni elimina los originals. El rollback solo limpia lo que se copió al vault.
+
+**Secuencia recomendada antes de ejecutar:**
+
+```
+1. vault_migrate_rollback(report_path, confirm:false)
+   → muestra lista de lo que se eliminaría, sin ejecutar
+
+2. Revisar la lista — confirmar que son solo los archivos de esa migración
+
+3. vault_migrate_rollback(report_path, confirm:true)
+   → ejecuta el rollback
+
+4. vault_audit()
+   → verificar que el vault quedó limpio
+```
+
+**Retorna con `confirm:false` (preview):**
+```json
+{
+  "ok": true, "preview": true,
+  "reportPath": "10_Migrated/_report-mi-proyecto-2026-05-06.md",
+  "toDelete": ["07_Knowledge/apis/x.md", "05_Patterns/y.md"],
+  "notFound": [],
+  "totalInReport": 40, "existingFiles": 40,
+  "message": "Preview: 40 files would be deleted. Run with confirm=true to execute."
+}
+```
+
+**Retorna con `confirm:true` (ejecución):**
+```json
+{
+  "ok": true, "preview": false,
+  "deleted": ["07_Knowledge/apis/x.md", "..."],
+  "deletedCount": 40,
+  "notFound": [],
+  "errors": [],
+  "indexEntriesRemoved": 40,
+  "reportDeleted": true,
+  "message": "Rollback complete: 40 files removed, 40 index entries removed."
+}
+```
+
+**Caso de uso típico:**
+```
+# La migración distribuyó 40 archivos pero varios quedaron en carpetas incorrectas
+vault_migrate_rollback("10_Migrated/_report-mi-proyecto-2026-05-06.md", confirm:false)
+→ preview: toDelete: ["07_Knowledge/apis/x.md", "05_Patterns/y.md", ...40 archivos]
+
+# Confirmar que es solo lo de esa migración, luego:
+vault_migrate_rollback("10_Migrated/_report-mi-proyecto-2026-05-06.md", confirm:true)
+→ { ok:true, deletedCount:40, indexEntriesRemoved:40, reportDeleted:true }
+
+# Re-migrar con mejores keywords
+vault_migrate_docs(source_path, project, keywords:["nuevo","contexto"], dry_run:true)
+```
+
+---
+
+#### `vault_merge(source, conflict?, action?)`
+
+Fusiona un vault externo en el vault activo, o detecta/fusiona notas duplicadas dentro del propio vault.
+
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `source` | string | — | Ruta al vault externo a fusionar. **Requerido solo para `action:"merge"`** — ignorado en `"detect"` y `"dedup"` |
+| `conflict` | string | `"skip"` | Política de conflicto al fusionar vault externo: `"skip"` (conserva el local), `"overwrite"` (usa el externo), `"rename"` (renombra el externo con timestamp) |
+| `action` | string | `"merge"` | `"merge"` fusiona vault externo; `"detect"` detecta duplicados internos; `"dedup"` fusiona duplicados internos conservando el más reciente |
+
+**Comportamiento al fusionar vault externo (`action:"merge"`):**
+- Agrega `mergedFrom` y `mergedAt` al frontmatter de cada nota importada
+- Respeta la estructura de carpetas del vault destino
+- Excluye `.history/` y archivos que empiezan con `_` del source
+- Retorna: `{ merged, skipped, conflicts }`
+
+**Comportamiento de detección de duplicados (`action:"detect"`):**
+- Compara nombres de nota normalizados (sin guiones, sin mayúsculas)
+- Detecta notas con el mismo stem en distintas carpetas
+- Retorna: `{ duplicates: { "nombre-normalizado": ["ruta-a", "ruta-b"] } }`
+
+**Comportamiento de deduplicación (`action:"dedup"`):**
+- Determina la nota canonical por recencia: usa `updatedAt` del frontmatter; si no existe o es inválido, fallback a `mtime` del archivo en disco
+- Concatena el cuerpo de las demás debajo de la canonical, separado por `---` (sin su frontmatter)
+- Elimina las notas no-canonical
+- Retorna: `{ merged: N }` — **irreversible**, hacer `vault_backup` antes
+
+**Retorna:**
+```json
+{
+  "ok": true,
+  "action": "merge",
+  "merged": 23,
+  "skipped": 4,
+  "conflicts": 2
+}
+```
+
+**Cuándo usar:**
+- Al consolidar dos repos que aplicaban el estándar por separado
+- Al absorber un vault de proyecto terminado en el vault principal
+- Antes de una migración masiva: `action:"detect"` para ver duplicados que `vault_migrate_docs` encontraría en staging
+
+> **Guardia de seguridad:** `action:"dedup"` es destructivo — elimina notas no-canonical. Siempre `vault_backup()` antes de ejecutar.
+
+---
+
+### Grupo 10 — Línea de Tiempo y Contexto Histórico
+
+---
+
+#### `vault_timeline(query?, project?, from?, to?, sources?, limit?)`
+
+Reconstruye la trayectoria cronológica de un tema cruzando todas las secciones del vault en una sola llamada. Devuelve un array de eventos ordenados por fecha.
+
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `query` | string | `""` | Tema a trazar (ej: `"database"`, `"autenticación"`). Vacío = toda la actividad |
+| `project` | string | — | Filtrar por proyecto |
+| `from` | string | — | Fecha inicio `YYYY-MM-DD` |
+| `to` | string | hoy | Fecha fin `YYYY-MM-DD` |
+| `sources` | string[] | todas | Secciones a incluir: `sessions`, `changelog`, `decisions`, `errors`, `patterns`, `infra`, `knowledge`, `dependencies`, `runbooks` |
+| `limit` | number | 40 | Máximo de eventos |
+
+**Cómo procesa cada fuente:**
+
+| Source | Estrategia |
+|---|---|
+| `sessions` | Lee `04_Sessions/YYYY-MM-DD.md`, parsea línea a línea el log `**ts** [tipo] texto`, filtra por query |
+| `changelog` | Parsea bloques `### vX — YYYY-MM-DD`, filtra por contenido de cambios |
+| `decisions / errors / patterns / infra / knowledge / runbooks` | Usa el search index, filtra por query y rango de fechas |
+| `dependencies` | Busca en `07_Knowledge/dependencies/` y `07_Knowledge/frameworks/` |
+
+**Cada evento retornado:**
+```json
+{
+  "date":    "2026-04-12",
+  "source":  "changelog",
+  "type":    "version",
+  "title":   "v1.2 — Implementación del schema de BD",
+  "excerpt": "added: db_query tool, migrations | changed: schema users",
+  "git_hash": "a3f82b1",
+  "path":    "01_Projects/mi-api/changelog.md"
+}
+```
+
+**Retorna:**
+```json
+{
+  "ok": true, "query": "database", "project": "mi-api",
+  "total": 18, "shown": 18,
+  "bySource": { "sessions": 4, "changelog": 3, "decisions": 2, "errors": 5, "patterns": 2, "dependencies": 2 },
+  "events": [...],
+  "hint": "Usa vault_read(path) en cualquier evento para ver el contenido completo."
+}
+```
+
+**Cuándo usar (OBLIGATORIO):**
+- Usuario pregunta `"¿cómo se implementó X?"` → `vault_timeline(query:"X")` antes de responder
+- `"¿qué pasó con Y durante el desarrollo?"` → `vault_timeline(query:"Y", project:"...")`
+- `"muéstrame la historia de Z"` → `vault_timeline(query:"Z")`
+- Antes de tomar una decisión técnica sobre un tema ya trabajado → revisar su timeline primero
+
+**Diferencia con `vault_search`:** `vault_search` encuentra notas relevantes sin orden temporal. `vault_timeline` construye una narrativa cronológica cruzando múltiples secciones — es la respuesta a "¿qué pasó y en qué orden?" no solo "¿dónde está esto documentado?"
+
+---
+
+### Grupo 11 — Vista consolidada del proyecto
+
+---
+
+#### `vault_project_overview(project, description?, runtime?, extra_sections?)`
+
+Crea o actualiza `01_Projects/{slug}/overview.md` — el documento de referencia rápida de un proyecto. Consolida automáticamente en una sola nota todo el conocimiento disperso en el vault que pertenece a ese proyecto: stack técnico, dependencias, frameworks, decisiones ADR, patrones activos e infraestructura relacionada.
+
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `project` | string | — | Nombre o slug del proyecto |
+| `description` | string | `""` | Descripción breve (1-2 líneas). Solo se usa en la creación inicial; en actualizaciones se preserva la descripción existente |
+| `runtime` | string | `""` | Runtime/entorno principal (ej: `"Node.js 20"`, `"Python 3.11"`). Si se omite, se intenta preservar el valor ya escrito en el overview |
+| `extra_sections` | object | `{}` | Secciones adicionales a agregar/sobreescribir. Clave = título de sección (sin `##`), valor = contenido Markdown |
+
+**Qué recolecta automáticamente del vault:**
+
+| Sección | Fuente en el vault | Condición de inclusión |
+|---|---|---|
+| **Stack técnico** | `07_Knowledge/framework/*` | Tag del proyecto presente en frontmatter |
+| **Dependencias** | `07_Knowledge/dependency/*` | Tag del proyecto presente en frontmatter |
+| **Decisiones ADR** | `03_Decisions/*` | Tag del proyecto presente en frontmatter |
+| **Patrones activos** | `05_Patterns/*` | Tag del proyecto + status ≠ `deprecado` |
+| **Infraestructura** | `09_Infrastructure/*` | Tag del proyecto presente en frontmatter |
+
+**Formato del overview generado:**
+
+```markdown
+---
+id: "uuid"
+title: "Overview: mi-proyecto"
+project: "mi-proyecto"
+type: "project-overview"
+updatedAt: "2026-05-06T..."
+---
+
+## Descripción
+API REST de gestión de usuarios con autenticación JWT.
+
+_Actualizado: 2026-05-06 · deps: 4 · frameworks: 1 · ADRs: 2 · patrones: 3_
+
+## Stack técnico
+- **Runtime:** Node.js 20
+- **Framework:** [[07_Knowledge/framework/express|Express v4]]
+
+## Dependencias (4)
+| Paquete | Descripción |
+|---|---|
+| [[07_Knowledge/dependency/jsonwebtoken\|jsonwebtoken]] | Firma y verificación de tokens JWT... |
+| [[07_Knowledge/dependency/prisma\|Prisma]] | ORM type-safe con migraciones... |
+
+## Decisiones técnicas (ADR)
+- [[03_Decisions/2026-05-01-elegir-prisma-vs-typeorm]] · `implementado`
+
+## Patrones activos (3)
+- [[05_Patterns/architecture/mi-proyecto-hexagonal|Hexagonal]] · `implementado`
+
+## Infraestructura
+- [[09_Infrastructure/databases/postgres-primary|postgres-primary [database]]]
+```
+
+**Comportamiento en actualizaciones:** La sección `## Descripción` y `## Stack técnico → Runtime` se preservan del overview anterior si no se pasan nuevos valores. Las secciones de deps, frameworks, ADRs, patrones e infra se reconstruyen completamente desde el índice en cada llamada — siempre reflejan el estado actual del vault.
+
+**Cuándo usar:**
+- Al iniciar un proyecto nuevo → crear el overview con `description` y `runtime`
+- Después de registrar una dependencia o framework → actualizar el overview para que aparezca
+- Cuando el usuario pregunta "¿qué stack usa este proyecto?" o "¿qué dependencias tiene X?"
+- Al finalizar una sesión de trabajo intenso en un proyecto → actualizar para que la próxima sesión arranque con contexto completo
+
+**Retorna:**
+```json
+{ "ok": true, "path": "01_Projects/mi-api/overview.md", "sections": ["Stack técnico", "Dependencias", "Decisiones técnicas", "Patrones activos", "Infraestructura"] }
+```
+
+**Diferencia con `vault_project_status`:** `vault_project_status` registra el estado operacional del proyecto (en_desarrollo, bloqueado, completado) con un resumen de qué se hizo. `vault_project_overview` consolida el conocimiento técnico estructural del proyecto — no qué se hizo hoy, sino qué es este proyecto y cómo está construido.
+
+---
+
+### Grupo 12 — Documentación de Código ★ Corazón del proyecto
+
+> **Principio fundamental:** el código fuente nunca se mueve. Las tools de este grupo crean documentación *sobre* los archivos de código en `11_Code/`, usando la ruta en disco como identificador canónico. La estructura del proyecto queda intacta.
+
+---
+
+#### `vault_code_module(project, file_path, description, language?, exports?, imports_from?, responsibilities?, notes?, tags?)`
+
+Crea o actualiza la nota de documentación de un archivo de código en `11_Code/{project}/{file-slug}.md`. Es la herramienta central para entender el propósito, la interfaz pública y las dependencias de cada módulo del proyecto.
+
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `project` | string | — | Nombre o slug del proyecto |
+| `file_path` | string | — | **Ruta real del archivo en disco** — relativa al root del proyecto o absoluta. Identificador canónico. El archivo NO se mueve ni copia |
+| `description` | string | — | Propósito en 1-3 líneas: ¿qué problema resuelve? ¿por qué existe este archivo? |
+| `language` | string | — | Lenguaje del archivo (`"javascript"`, `"typescript"`, `"python"`, etc.) |
+| `exports` | string[] | `[]` | Símbolos exportados. Formato recomendado: `["nombreFn(params) — descripción breve"]` |
+| `imports_from` | string[] | `[]` | Módulos o archivos de los que importa. Ej: `["node:fs", "../utils.mjs"]` |
+| `responsibilities` | string[] | `[]` | Responsabilidades principales del módulo (bullets concisos) |
+| `notes` | string | — | Invariantes, limitaciones, decisiones de diseño no obvias |
+| `tags` | string[] | `[]` | Tags adicionales para búsqueda |
+
+**Formato de la nota generada (`11_Code/{project}/{file-slug}.md`):**
+
+```markdown
+---
+id: "uuid"
+title: "store.mjs"
+project: "{proyecto}"
+file_path: "src/{modulo}/store.mjs"
+type: "code-module"
+language: "javascript"
+createdAt: "2026-05-06T..."
+updatedAt: "2026-05-06T..."
+tags: ["{proyecto}", "code", "store-mjs"]
+---
+
+**Ruta:** `src/{modulo}/store.mjs`  ·  **Lenguaje:** `javascript`
+
+## Propósito
+Gestión del almacenamiento persistente del módulo: mantiene el manifiesto de
+metadatos y expone operaciones CRUD sobre los recursos gestionados.
+
+## Exportaciones
+- `load() — carga el manifiesto desde disco`
+- `save(data) — persiste el manifiesto`
+- `store(name, buffer) — almacena un recurso, retorna { id, path }`
+- `remove(id) — elimina recurso del disco`
+- `list() — lista todos los recursos almacenados`
+
+## Importaciones desde
+- `node:path`
+- `node:fs/promises`
+- `node:crypto`
+
+## Responsabilidades
+- Mantener el manifiesto como fuente de verdad de recursos persistidos
+- Generar IDs únicos para cada entrada nueva
+- Organizar archivos por ID para evitar colisiones de nombres
+
+## Notas
+Sin dependencias npm — solo node built-ins.
+```
+
+**Comportamiento en actualizaciones:** upsert por `file_path` en el índice — si ya existe, sobreescribe la nota y actualiza el índice. Si existen relaciones registradas para ese archivo, regenera `code-map.md` automáticamente.
+
+**Retorna:**
+```json
+{ "ok": true, "path": "11_Code/mi-api/store-mjs.md", "project": "mi-api", "file_path": "src/store.mjs", "mapRegenerated": false }
+```
+
+**Cuándo usar:**
+- Al crear o refactorizar cualquier módulo significativo del proyecto
+- Cuando el usuario pregunta "¿qué hace `X` archivo?", "¿qué exporta?", "¿quién usa esto?"
+- Al inicio de un proyecto para mapear la arquitectura de código existente
+- Después de `vault_code_relation` para completar la documentación de los nodos del mapa
+
+---
+
+#### `vault_code_relation(project, from_file, to_file, relation_type, cardinality?, label?)`
+
+Registra una relación de cardinalidad entre dos archivos de código y **auto-regenera `code-map.md`**. La relación persiste en `11_Code/.code-index.json` — el mapa siempre refleja el estado actual del grafo.
+
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `project` | string | — | Slug kebab-case del proyecto |
+| `from_file` | string | — | Ruta del archivo **origen** (quién depende / quién llama) |
+| `to_file` | string | — | Ruta del archivo **destino** (de quién se depende / a quién se llama) |
+| `relation_type` | string | — | Tipo de relación — ver tabla |
+| `cardinality` | string | — | `1:1` · `1:N` · `N:1` · `N:M` (opcional) |
+| `label` | string | `""` | Etiqueta adicional libre (ej: `"solo en tests"`, `"async"`) |
+
+**Tipos de relación:**
+| `relation_type` | Semántica | Flecha en Mermaid |
+|---|---|---|
+| `imports` | A importa B directamente | `-->` |
+| `extends` | A hereda de clase B | `-->` |
+| `implements` | A implementa interfaz/contrato B | `-.->` |
+| `calls` | A invoca funciones de B | `-->` |
+| `uses` | A usa B sin dependencia dura | `-->` |
+| `re-exports` | A re-exporta símbolos de B | `==>` |
+| `depends_on` | Dependencia general | `-->` |
+
+**Cardinalidad:**
+| Valor | Cuándo usarla |
+|---|---|
+| `1:1` | Un módulo importa a otro directamente (relación única) |
+| `1:N` | Un módulo llama a muchas funciones de otro (orquestador → helper) |
+| `N:1` | Muchos módulos dependen de uno central (hub) |
+| `N:M` | Muchos módulos se llaman mutuamente (ej: middleware bidireccional) |
+
+**Deduplicación:** no registra la misma relación `(from, to, type)` dos veces. Si ya existe, igualmente regenera el mapa.
+
+**Retorna:** `{ ok, from, to, relation_type, cardinality, already_existed, mapPath, nodes, edges }`
+
+**Cuándo usar:** al documentar que un módulo importa, llama o extiende a otro; al mapear las dependencias de un proyecto nuevo; después de refactorizar para actualizar las relaciones que cambiaron. Llamar antes de `vault_code_map` si se quiere el mapa actualizado después de agregar varias relaciones en bloque.
+
+---
+
+#### `vault_code_map(project)`
+
+Genera o regenera el mapa visual Mermaid del proyecto en `11_Code/{project}/code-map.md`. Consolida todos los módulos y relaciones del `.code-index.json`. Los nodos muestran solo el nombre del archivo; las aristas llevan el `relation_type` + `cardinality` si existe.
+
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `project` | string | — | Slug del proyecto cuyo code-map se regenera |
+
+**Retorna:**
+```json
+{ "ok": true, "path": "11_Code/mi-api/code-map.md", "modules": 6, "relations": 8 }
+```
+
+**Cuándo usar:**
+- Para obtener una vista visual completa de la arquitectura de código
+- Después de agregar múltiples relaciones en bloque
+- Cuando el mapa pudo quedar desincronizado (restauración, edición manual del índice)
+
+**Ejemplo de `code-map.md` generado:**
+
+```mermaid
+graph TD
+  N0["server.mjs"]
+  N1["store.mjs"]
+  N2["browser.mjs"]
+  N3["cdp-client.mjs"]
+  N4["loader.mjs"]
+  N0 -->|"imports 1:1"| N1
+  N0 -->|"imports 1:1"| N2
+  N0 -->|"imports 1:1"| N4
+  N2 -->|"imports 1:1"| N3
+  N3 -.->|"implements"| N5["WebSocket RFC 6455"]
+```
+
+**`.code-index.json` — estructura interna:**
+
+```json
+{
+  "modules": [
+    {
+      "docId": "uuid",
+      "project": "{proyecto}",
+      "filePath": "src/{modulo}/store.mjs",
+      "title": "store.mjs",
+      "relPath": "11_Code/{proyecto}/store-mjs.md",
+      "exports": ["load", "save", "store"],
+      "language": "javascript",
+      "updatedAt": "2026-05-06T..."
+    }
+  ],
+  "relations": [
+    {
+      "from": "src/server.mjs",
+      "to": "src/{modulo}/store.mjs",
+      "type": "imports",
+      "cardinality": "1:1",
+      "label": "",
+      "project": "{proyecto}",
+      "addedAt": "2026-05-06T..."
+    }
+  ]
+}
+```
+
+---
+
+### Grupo 13 — Backups: vault, base de datos y archivos
+
+> **Capas de protección:**
+> - `.history/` por nota → protege ediciones accidentales individuales (automático en `vault_write`)
+> - `vault_backup` → snapshot completo del vault antes de operaciones masivas
+> - Backup de BD/archivos → el agente ejecuta el comando de backup y documenta el resultado en `00_System/backups/`
+
+---
+
+#### `vault_backup(label?)`
+
+Crea un snapshot completo del vault con **manifiesto detallado** de cada sección incluida.
+
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `label` | string | `""` | Etiqueta descriptiva del snapshot (ej: `"antes-de-migracion"`, `"estado-estable"`). Se normaliza a kebab-case y se agrega al nombre del directorio |
+
+**Comportamiento:**
+1. Copia recursiva completa de `{data-dir}/vault/` → `vault-backups/vault-{ts}[-label]/`
+2. Escanea el backup y genera `.manifest.json` con desglose por sección
+3. Registra el backup en `.backup-registry.json` (log centralizado)
+
+**`.manifest.json` generado dentro de cada backup:**
+```json
+{
+  "name": "vault-2026-05-06-143022-antes-de-migracion",
+  "label": "antes-de-migracion",
+  "createdAt": "2026-05-06T14:30:22.000Z",
+  "vault": {
+    "sections": [
+      { "folder": "00_System",         "notes": 3,  "files": 3,  "sizeKB": 12  },
+      { "folder": "01_Projects",       "notes": 15, "files": 15, "sizeKB": 48  },
+      { "folder": "02_Observability",  "notes": 8,  "files": 8,  "sizeKB": 32  },
+      { "folder": "03_Decisions",      "notes": 4,  "files": 4,  "sizeKB": 16  },
+      { "folder": "04_Sessions",       "notes": 12, "files": 12, "sizeKB": 28  },
+      { "folder": "05_Patterns",       "notes": 6,  "files": 6,  "sizeKB": 24  },
+      { "folder": "06_Diagrams",       "notes": 5,  "files": 7,  "sizeKB": 18  },
+      { "folder": "07_Knowledge",      "notes": 20, "files": 22, "sizeKB": 64  },
+      { "folder": "08_Runbooks",       "notes": 4,  "files": 4,  "sizeKB": 20  },
+      { "folder": "09_Infrastructure", "notes": 5,  "files": 6,  "sizeKB": 22  },
+      { "folder": "10_Migrated",       "notes": 3,  "files": 3,  "sizeKB": 10  },
+      { "folder": "11_Code",           "notes": 8,  "files": 9,  "sizeKB": 30  },
+      { "folder": "99_Index",          "notes": 0,  "files": 2,  "sizeKB": 96  }
+    ],
+    "totals": { "notes": 93, "files": 101, "sizeKB": 420 }
+  }
+}
+```
+
+**Retorna:**
+```json
+{ "ok": true, "name": "vault-2026-05-06-143022-pre-migration", "path": "vault-backups/vault-2026-05-06-143022-pre-migration/", "manifest": { "sections": [...], "totals": { "notes": 93, "files": 101, "sizeKB": 420 } } }
+```
+
+**Cuándo usar:** antes de cualquier migración, antes de eliminar o reorganizar notas masivamente, antes de aplicar `vault_restore`, como checkpoint de estado estable del vault.
+
+---
+
+#### `vault_backup_list()`
+
+Lista todos los backups desde el registro centralizado `.backup-registry.json`. Si el registry no existe (backups creados con versión anterior), hace fallback leyendo los `.manifest.json` individuales.
+
+**Retorna:**
+```json
+{ "ok": true, "total": 3, "backups": [{ "name": "vault-2026-05-06-143022-pre-migration", "label": "pre-migration", "createdAt": "2026-05-06T14:30:22Z", "noteCount": 93, "fileCount": 101, "sizeKB": 420 }] }
+```
+
+**Cuándo usar:** para elegir el snapshot correcto antes de `vault_restore`, para auditar el historial de backups, para verificar que el backup pre-migración existe antes de ejecutar `vault_migrate_docs`.
+
+**`.backup-registry.json` — estructura:**
+```json
+{
+  "backups": [
+    {
+      "name":      "vault-2026-05-06-143022-antes-de-migracion",
+      "label":     "antes-de-migracion",
+      "createdAt": "2026-05-06T14:30:22.000Z",
+      "noteCount": 93,
+      "fileCount": 101,
+      "sizeKB":    420,
+      "sections":  ["00_System","01_Projects","02_Observability","03_Decisions","04_Sessions",
+                    "05_Patterns","06_Diagrams","07_Knowledge","08_Runbooks","09_Infrastructure",
+                    "10_Migrated","11_Code","99_Index"]
+    }
+  ]
+}
+```
+
+---
+
+#### `vault_restore(backup_name, confirm)`
+
+Restaura el vault desde un backup. **Operación destructiva** — sobreescribe el contenido actual del vault. Reconstruye el índice de búsqueda automáticamente tras restaurar.
+
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `backup_name` | string | — | Nombre exacto del backup (obtenido de `vault_backup_list`) |
+| `confirm` | boolean | `false` | `false` → rechaza la operación con un mensaje informativo; `true` → ejecuta la restauración |
+
+**Secuencia recomendada antes de restaurar:**
+```
+1. vault_backup(label:"pre-restore")              ← backup del estado actual
+2. vault_backup_list()                            ← ver registry con nombre y contenido del backup objetivo
+3. vault_restore(backup_name:"vault-...", confirm:true)
+```
+
+**Retorna:**
+```json
+{ "ok": true, "restored_from": "vault-2026-05-06-143022-pre-migration", "noteCount": 93, "message": "Vault restored successfully. Search index rebuilt." }
+```
+
+**Cuándo usar:** cuando el vault quedó en estado inconsistente más allá de lo que `vault_migrate_rollback` puede corregir, o cuando una sesión de ediciones masivas dejó el vault en un estado no deseado.
+
+---
+
+#### Backups externos — Base de datos y archivos
+
+Cuando el usuario pide hacer backup de una base de datos o de archivos del proyecto, el agente **ejecuta el backup y luego documenta el resultado** en el vault bajo `00_System/backups/`. No existe una vault-tool específica para esto — se usa la herramienta de ejecución de comandos del harness (`cmd_exec`, `bash_exec`, o equivalente según la implementación) para el backup, y `vault_write` para documentar el resultado.
+
+> **Nota sobre `cmd_exec`:** es una herramienta del harness del agente (no parte de las 34 vault-tools) que permite ejecutar comandos de shell. Su nombre puede variar según la implementación: `cmd_exec`, `bash_exec`, `run_command`, etc. Si el harness no la expone, el agente debe indicar al usuario que ejecute el comando manualmente.
+
+**Flujo para backup de base de datos:**
+
+```
+1. cmd_exec — ejecutar el comando de backup según el motor:
+   PostgreSQL : pg_dump -Fc -d {db} -f {ruta}/{db}-{fecha}.dump
+   MySQL/MariaDB: mysqldump {db} > {ruta}/{db}-{fecha}.sql
+   SQLite      : sqlite3 {archivo.db} ".backup '{ruta}/{db}-{fecha}.db'"
+   MongoDB     : mongodump --db {db} --out {ruta}/{db}-{fecha}/
+
+2. cmd_exec — verificar el archivo generado (tamaño, existencia):
+   Windows: Get-Item {ruta}/{archivo} | Select Name, Length
+   Unix   : ls -lh {ruta}/{archivo}
+
+3. vault_write — documentar el backup en 00_System/backups/:
+   folder  : "00_System/backups"
+   title   : "db-{nombre}-{YYYY-MM-DD}"
+   content : (ver formato abajo)
+```
+
+**Formato de nota de backup en `00_System/backups/db-{nombre}-{fecha}.md`:**
+
+```markdown
+---
+type: "backup-db"
+db_name: "{nombre-de-la-base}"
+engine: "postgresql"   # postgresql | mysql | sqlite | mongodb
+status: "ok"           # ok | error | partial
+createdAt: "2026-05-06T14:30:00Z"
+tags: ["{proyecto}", "backup", "database"]
+---
+
+## Base de datos: {nombre}
+
+**Motor:** PostgreSQL · **Host:** localhost · **Puerto:** 5432
+
+## Archivo generado
+- **Ruta:** `/backups/{nombre}-2026-05-06.dump`
+- **Tamaño:** 24 MB
+- **Formato:** pg_dump custom (-Fc) — restaurar con pg_restore
+
+## Contenido
+- **Tablas:** users, orders, products, inventory (42 tablas en total)
+- **Registros estimados:** 120,000
+- **Esquemas incluidos:** public, audit
+
+## Cómo restaurar
+```bash
+pg_restore -d {nombre} -Fc /backups/{nombre}-2026-05-06.dump
+```
+
+## Notas
+Backup previo a migración de esquema v3 → v4 (columna archived en orders).
+```
+
+**Flujo para backup de archivos o directorio:**
+
+```
+1. cmd_exec — comprimir el directorio:
+   Windows: Compress-Archive -Path {ruta} -DestinationPath {dest}-{fecha}.zip
+   Unix   : tar -czf {dest}-{fecha}.tar.gz -C {padre} {directorio}
+
+2. vault_write — documentar en 00_System/backups/:
+   title   : "files-{descripcion}-{YYYY-MM-DD}"
+   content : ruta del archivo, tamaño, qué contiene, por qué se hizo el backup
+```
+
+**Regla:** todo backup ejecutado por el agente — de vault, BD o archivos — debe tener su nota en `00_System/backups/` para poder rastrear qué copias existen, cuándo se hicieron y cómo restaurarlas.
+
+---
+
+### Grupo 14 — Auditoría de Seguridad
 
 ---
 
@@ -754,7 +1948,7 @@ Escanea archivos de código fuente en busca de vulnerabilidades de seguridad con
 
 | Categoría | Reglas | Qué detecta |
 |---|---|---|
-| `secrets` | 7 | API keys, passwords, JWT secrets, private keys, tokens de AWS/GitHub/NVIDIA/OpenAI, connection strings con credenciales |
+| `secrets` | 7 | API keys, passwords, JWT secrets, private keys, tokens de proveedores cloud/AI, connection strings con credenciales |
 | `injection` | 6 | SQL (concatenación + template literals), NoSQL MongoDB, LDAP, XPath, Server-Side Template Injection |
 | `command_injection` | 2 | `exec/spawn` con input de usuario, `shell:true` con variables externas, `eval()` con input externo |
 | `xss` | 6 | `innerHTML` sin sanitizar, `document.write`, `res.send` con HTML dinámico, `dangerouslySetInnerHTML`, `javascript:` URIs, `srcdoc` dinámico |
@@ -834,9 +2028,9 @@ Escanea archivos de código fuente en busca de vulnerabilidades de seguridad con
 
 ## Compatibilidad con Obsidian Desktop
 
-El vault en `data/vault/` puede abrirse **directamente** en Obsidian desktop:
+El vault en `{data-dir}/vault/` puede abrirse **directamente** en Obsidian desktop:
 
-1. En Obsidian: `Open folder as vault` → seleccionar `data/vault/`
+1. En Obsidian: `Open folder as vault` → seleccionar `{data-dir}/vault/`
 2. Obsidian reconoce automáticamente:
    - Frontmatter YAML entre `---` delimitadores
    - Wiki-links `[[nota]]` y backlinks automáticos
@@ -849,18 +2043,19 @@ El vault en `data/vault/` puede abrirse **directamente** en Obsidian desktop:
 
 | Carpeta | Propósito en Obsidian |
 |---|---|
-| `00_System` | Identidad y reglas del agente |
-| `01_Projects` | Un subfolder por proyecto, navegable |
-| `02_Observability` | Historial de errores, antipatrones, trazas |
+| `00_System` | Identidad, reglas y contratos del agente; historial de backups ejecutados |
+| `01_Projects` | Un subfolder por proyecto con overview, arquitectura, estado, decisiones y variables de entorno |
+| `02_Observability` | Errores, antipatrones, vulnerabilidades, WAF, métricas, alertas y SLOs — historial acumulativo |
 | `03_Decisions` | ADRs navegables con wiki-links |
 | `04_Sessions` | Logs de sesión por día |
 | `05_Patterns` | Patrones con estado evolutivo en metadatos |
-| `06_Diagrams` | Diagramas Mermaid renderizados |
-| `07_Knowledge` | Glosario, APIs, reglas de negocio |
-| `08_Runbooks` | Procedimientos operacionales |
-| `09_Infrastructure` | Mapa de red y servidores |
+| `06_Diagrams` | Diagramas Mermaid renderizados: ERD, componentes, secuencia, dependencias, flujos |
+| `07_Knowledge` | Glosario, APIs, conceptos, reglas de negocio, configuraciones, dependencias, frameworks |
+| `08_Runbooks` | Procedimientos operacionales: deploy, rollback, debug, pipeline, incident, mantenimiento |
+| `09_Infrastructure` | Mapa de red, servidores, servicios, bases de datos, contenedores, pipelines CI/CD, secrets |
 | `10_Migrated` | Documentación externa migrada y clasificada |
-| `02_Observability/vulnerabilities` | Hallazgos de seguridad con OWASP/CWE, código y mitigación |
+| `11_Code` | Mapa de código por proyecto: módulos documentados, exports, imports y grafo de relaciones Mermaid |
+| `99_Index` | Índices internos del vault: `search-index.json` (búsqueda full-text) y `graph.json` (grafo de wiki-links). No contiene notas Markdown — Obsidian lo muestra como archivos JSON navegables |
 
 **Plugins de Obsidian recomendados:**
 - **Mermaid** (built-in desde v1.0): renderiza los ERDs e infra-maps
@@ -872,7 +2067,7 @@ El vault en `data/vault/` puede abrirse **directamente** en Obsidian desktop:
 
 ## Auto-features del Harness
 
-### Auto-context injection (nuevo en v3)
+### Auto-context injection
 En `buildMessages()`, antes de cada llamada al LLM:
 ```
 1. Toma el último mensaje del usuario
@@ -928,7 +2123,7 @@ La UI del vault incluye `mermaid.js` (CDN). Al abrir una nota, el viewer detecta
 
 | Nivel | Dependencias | Capacidades |
 |---|---|---|
-| **MVP v5** (este doc) | Zero — solo `node:fs`, `node:path`, `node:crypto` | 22 tools, auto-context injection, ERD + infra auto-map, Mermaid en UI, escáner de seguridad OWASP |
+| **MVP v18** (este doc) | Zero — solo `node:fs`, `node:path`, `node:crypto` | 34 tools, auto-context injection, ERD + infra auto-map, code-map, backups con manifiesto, rollback de migración, escáner de seguridad OWASP, Mermaid en UI |
 | **Búsqueda semántica** | `minisearch` o `lunr` | TF-IDF ponderado en lugar de word-count |
 | **Frontmatter robusto** | `gray-matter` | Parsing correcto de YAML complejo |
 | **RAG real** | embeddings + pgvector o hnswlib | Búsqueda semántica por similitud vectorial |
@@ -1013,6 +2208,377 @@ agente → vault_search("SQL injection", folder="02_Observability/vulnerabilitie
        → responde con ubicación (src/users.js:42), mitigación recomendada, fecha de detección
 ```
 
+### "Migra la documentación del proyecto X al vault"
+```
+agente → vault_backup(label:"pre-migration-proyecto-x")   ← Fase 0: punto de retorno
+       → vault_audit()                                     ← Fase 0: baseline (ej: score 87)
+       → inspeccionar source: contar .md, detectar vacíos y duplicados
+       → vault_migrate_docs(source_path, "proyecto-x", dry_run:true)
+       → revisar plan: excluir archivos con <100 chars, resolver duplicados (elegir canonical)
+       → vault_migrate_docs(source_path, "proyecto-x", dry_run:false)  ← solo staging
+       → inspeccionar _staging/: confirmar que todos tienen contenido real
+       → clasificar (direct/indirect/excluded) resolviendo conflictos de destino
+       → distribuir en orden topológico: primero notas sin wiki-links, luego dependientes
+       → vault_search() antes de cada [[wiki-link]] → solo linkear si la nota ya existe
+       → vault_graph()                                     ← Fase 3 gate: 0 broken links
+       → vault_audit()                                     ← Fase 4: score ≥ 87 (baseline)
+       → conservar _report-proyecto-x-{fecha}.md hasta confirmación del usuario
+       → vault_migrate_rollback disponible si la distribución no convenció
+```
+
+---
+
+## Anti-patrones de implementación — Guía de prevención
+
+> Esta sección documenta los patrones de fallo más comunes observados al aplicar el estándar en repositorios reales con documentación preexistente. Cada anti-patrón incluye cómo detectarlo, por qué ocurre y cómo el estándar lo previene.
+
+---
+
+### AP-01 — Documentación alucinada
+
+**Síntoma:** El vault contiene notas que describen tools, funciones o comportamientos que no existen en el código real. El agente los lee, los asume válidos e intenta usarlos — fallando silenciosamente o tomando decisiones basadas en información falsa.
+
+**Por qué ocurre:** Al migrar docs de versiones anteriores o de sesiones de planificación, se mezclan especificaciones aspiracionales con implementaciones reales. También ocurre cuando el agente escribe docs sobre funciones que planea crear y luego no las implementa.
+
+**Señal de alarma:** Un agente intenta llamar una herramienta que no está en el `TOOL_REGISTRY`. Docs que mencionan funciones con nombres muy específicos que no aparecen en ningún `grep` del codebase.
+
+**Regla de oro:** Solo documenta lo que puedes ejecutar hoy. Si es planificado, usar `vault_pattern_save(status:"planificado")` — nunca `vault_write` con descripciones de tools inexistentes.
+
+**Prevención en el estándar:**
+- `vault_security_scan` incluye categoría `dependencies` que detecta `require()` con paths dinámicos — aplicar criterio similar a la documentación
+- Al hacer `vault_audit()`, revisar manualmente cualquier nota en `07_Knowledge/apis/` que mencione funciones no encontradas con `fs_search`
+- Antes de documentar una tool: `cmd_exec("grep -r 'nombreFuncion' src/")` — si no existe, no documentar como implementada
+
+---
+
+### AP-02 — Proliferación de versiones del mismo documento
+
+**Síntoma:** El mismo contenido existe en múltiples archivos con nombres ligeramente distintos. Por ejemplo: `CLAUDE.md`, `ans-CLAUDE.md`, `ai-agent-playbook.md`, `mcp-agent-guide.md` — todos documentando las mismas capacidades del agente con variaciones menores. Genera ~140KB de redundancia y ambigüedad sobre cuál es el canonical.
+
+**Por qué ocurre:** Cada sesión de actualización crea un nuevo archivo en lugar de actualizar el existente. Los archivos históricos nunca se archivan. `vault_migrate_docs` detecta duplicados en migraciones masivas, pero no en creación incremental.
+
+**Señal de alarma:** Dos notas con score alto en `vault_search` para la misma query. `vault_audit()` reporta múltiples notas con títulos similares sin backlinks cruzados.
+
+**Regla:** Un tema = un archivo canonical. Antes de crear una nota nueva, `vault_search(query)` primero — si existe una nota similar, actualizar con `vault_write` (que versiona automáticamente en `.history/`) en lugar de crear otra.
+
+**Prevención en el estándar:**
+- `vault_search` tiene uso `OBLIGATORIO` antes de crear cualquier nota nueva — esta regla previene el 80% de las duplicaciones
+- Al identificar un duplicado: mover el archivo no-canonical a `10_Migrated/direct/` con un stub que apunte al canonical — preserva historial sin contaminar el vault activo
+- El `.history/` automático de `vault_write` elimina la necesidad de crear "versión backup" como archivo separado
+
+---
+
+### AP-03 — Stubs sin política de expansión
+
+> **Distinción con AP-11:** un stub (AP-03) tiene información real pero incompleta — existe propósito declarado y algún dato útil. Un skeleton (AP-11) no tiene ningún contenido real: solo frontmatter + placeholders. El umbral que los separa es: ≥ 3 líneas de texto real = stub aceptable; 0 líneas reales = skeleton que no debe existir.
+
+**Síntoma:** Notas con frontmatter + título + algo de contexto, pero insuficientes para ser operativas. No aportan valor inmediato. Con el tiempo se acumulan silenciosamente y bajan el score de documentación.
+
+**Por qué ocurre:** El agente crea la estructura del vault anticipadamente ("voy a necesitar documentar esto"), pero la sesión termina antes de completarla. La nota queda como stub indefinidamente.
+
+**Señal de alarma:** `vault_audit()` detecta notas sin backlinks y sin actualización en >14 días. Notas con entre 3 y 10 líneas de contenido real que no han sido tocadas en 7+ días.
+
+**Regla del stub:** Si no puedes completar una nota en la sesión actual, no la crees. Si debes crearla para mantener un wiki-link, usa `meta: { status: "stub", expand_by: "YYYY-MM-DD" }` y anótala en `04_Sessions/YYYY-MM-DD.md` como tarea pendiente.
+
+**Prevención en el estándar:**
+- `vault_audit()` penaliza notas sin backlinks (−2) y stale (−1) — el health score refleja acumulación de stubs
+- El campo `status` en frontmatter permite filtrar stubs con `vault_list(status:"stub")`
+- Umbral de acción: si una nota tiene <10 líneas de contenido real (excluyendo frontmatter) tras 7 días de su creación → expandir o eliminar
+
+---
+
+### AP-04 — Features aspiracionales documentadas como implementadas
+
+**Síntoma:** Un `features-log.md` o sección de estado lista 30+ features como "Activo" o "Implementado", pero al revisar el código muchas son aspiracionales, planificadas o parciales. El agente asume que puede usar esas features y falla.
+
+**Por qué ocurre:** La documentación se escribe al inicio del sprint con optimismo, pero no se actualiza cuando las features quedan a medias o se posponen. Los estados no tienen semántica clara.
+
+**Señal de alarma:** Una feature está marcada como "implementada" pero `cmd_exec("grep -r 'nombreFeature' src/")` no la encuentra. El agente falla al intentar invocar un comportamiento documentado.
+
+**Regla:** Todo lo que no está en producción hoy es `planificado` o `en_progreso`. `implementado` significa: existe en el código, está testeado, está en uso.
+
+**Prevención en el estándar:**
+- `vault_pattern_save` tiene ciclo de vida explícito: `planificado → en_progreso → implementado | deprecado | refactoring` — usar siempre este flujo, nunca saltar a `implementado` sin que el código lo respalde
+- `vault_project_status(status:"en_produccion")` se usa cuando el feature está desplegado y en uso real — no cuando está mergeado
+- Los patterns con status `en_progreso` por >7 días sin actualización son penalizados por `vault_audit()` (−3) — esto genera presión para actualizar el estado o admitir que es `planificado`
+
+---
+
+### AP-05 — Múltiples fuentes de verdad para el mismo dato
+
+**Síntoma:** La misma IP, puerto, versión o nombre de host aparece con valores distintos en diferentes notas. Por ejemplo: un nodo documentado como `10.10.10.45` en un archivo y `10.10.10.50` en otro. Un agente que siga estas instrucciones apuntará al host incorrecto.
+
+**Por qué ocurre:** Los valores se copian de documento en documento en lugar de referenciar la fuente autoritativa. Cuando la configuración cambia, solo se actualiza en un lugar.
+
+**Señal de alarma:** `grep -r "10.10.10." vault/` muestra valores distintos para el mismo hostname. Al actualizar infra, hay que editar N archivos en lugar de 1.
+
+**Regla de la fuente única:** Para cada clase de dato (IPs, versiones, variables de entorno, nombres de servicio), declarar **una sola fuente de verdad** y referenciarla. No copiar el valor en el vault — documentar dónde está.
+
+**Prevención en el estándar:**
+- `vault_infra_save` persiste en `.infra-index.json` — ese es el canonical para IPs y puertos de infraestructura. Las notas de runbooks deben referenciar el servicio por nombre, no hardcodear IPs
+- `vault_env_save` documenta que la variable `DB_HOST` existe y su proveedor — nunca el valor. La fuente real es el `.env` o el secret manager
+- `00_System/identity.md` es el lugar para declarar cuál archivo del proyecto es la fuente de verdad de cada tipo de dato (ej: `mcp_config.json` para nodos, `package.json` para versión)
+
+---
+
+### AP-06 — Templates sin instancias reales
+
+**Síntoma:** El vault tiene `metric-template.md`, `alert-template.md`, `slo-template.md` — pero no hay ningún SLO, métrica ni alerta real del sistema documentada. Los templates existen, la capacidad no se usa.
+
+**Por qué ocurre:** Crear el template se percibe como "configurar la capacidad". En realidad, la capacidad solo existe cuando hay al menos una instancia real que la usa.
+
+**Señal de alarma:** `vault_list(folder:"02_Observability/slos")` retorna solo `slo-template.md`. `vault_list(folder:"02_Observability/metrics")` retorna solo `metric-template.md`.
+
+**Regla del template:** Al crear un template, crear también la primera instancia real con datos reales del proyecto. Un template sin instancias es documentación de intención, no de capacidad.
+
+**Prevención en el estándar:**
+- Al aplicar el vault por primera vez: crear mínimo 1 SLO real (ej: `deploy_success_rate ≥ 95% rolling 30d`), 1 métrica real (ej: latencia de despliegue P95) y 1 alerta real
+- `vault_audit()` puede reportar carpetas con solo 1 nota (el template) como señal de capacidad no adoptada
+- `vault_log_error(type:"slo")` es el camino directo — se usa cuando hay un dato real que documentar, no cuando se "planea" tener SLOs
+
+---
+
+### AP-07 — ADRs incompletos
+
+**Síntoma:** Existe un ADR que registra la decisión tomada, pero no las opciones evaluadas ni las consecuencias esperadas. Un ADR sin opciones evaluadas no permite entender por qué se eligió esa opción sobre las alternativas — pierde su valor como herramienta de trazabilidad.
+
+**Por qué ocurre:** La decisión ya se tomó y documentarla "por encima" es suficiente para el momento. Las consecuencias se omiten porque son inciertas.
+
+**Señal de alarma:** Un ADR con sección `## Decisión` pero sin `## Opciones evaluadas` ni `## Consecuencias`.
+
+**Regla:** Un ADR sin opciones evaluadas no es un ADR — es una nota. Mínimo requerido: contexto + al menos 2 opciones comparadas + decisión + consecuencias conocidas al momento de decidir.
+
+**Prevención en el estándar:**
+- `vault_knowledge_save(category:"api")` tiene estructura mínima documentada — los ADRs deben tener equivalente
+- El template `03_Decisions/adr-template.md` hace obligatorias las secciones de opciones y consecuencias — usarlo siempre
+- `vault_audit()`: penalizar ADRs con <4 secciones de contenido (`##`) como "incompleto"
+
+---
+
+### AP-08 — Documentación anclada a versiones obsoletas
+
+**Síntoma:** Una nota documenta el comportamiento de `v0.3.0` pero el sistema está en `v0.7.0`. El agente lee la doc y aplica instrucciones que ya no corresponden al estado real del código.
+
+**Por qué ocurre:** La documentación no se actualiza al mismo tiempo que el código. No hay mecanismo que vincule "este código cambió" con "estas docs deben revisarse".
+
+**Señal de alarma:** El campo `updatedAt` del frontmatter es muy anterior a `updatedAt` de los archivos de código relacionados. La nota menciona un número de versión que no es la actual.
+
+**Regla del ciclo de vida:** Al hacer `vault_project_status()` con archivos modificados, revisar las notas relacionadas en el vault y actualizarlas si el comportamiento documentado cambió.
+
+**Prevención en el estándar:**
+- `vault_project_status(modified_files:[...])` registra qué archivos cambiaron — usar esto como trigger para revisar notas relacionadas en `07_Knowledge/`, `08_Runbooks/` y `05_Patterns/`
+- `vault_audit()` detecta notas stale (>30 días sin actualización) — penaliza con −1, fuerza revisión
+- Al inicio de cada sesión en un proyecto: `vault_timeline(project:"X", from:"hace-30-dias")` para ver qué cambió y qué docs pueden estar desactualizadas
+
+---
+
+### AP-09 — Runbooks fuera de estructura
+
+**Síntoma:** Todos los runbooks están en `08_Runbooks/deploy/` aunque algunos son de setup, debug o rollback. Sin subcarpetas, la categoría pierde su valor como señal de búsqueda.
+
+**Por qué ocurre:** El agente usa la primera categoría que conoce o la más cercana al contexto actual. La estructura de subcarpetas no se respeta en la creación.
+
+**Señal de alarma:** `vault_list(folder:"08_Runbooks/deploy")` retorna >5 runbooks mezclados de tipos distintos. `vault_list(folder:"08_Runbooks/debug")` retorna 0.
+
+**Prevención en el estándar:**
+- `vault_runbook_save(category:...)` fuerza la elección explícita de categoría — nunca escribir runbooks con `vault_write` directamente a `08_Runbooks/`
+- Categorías disponibles como referencia rápida: `deploy` · `debug` · `setup` · `rollback` · `maintenance` · `pipeline` · `incident`
+- Si el runbook cubre múltiples categorías, dividirlo en notas separadas o elegir la categoría dominante
+
+---
+
+### AP-10 — Migración sin plan de rollback
+
+**Síntoma:** Se ejecuta `vault_migrate_docs` sobre un repo grande, la distribución automática coloca archivos en carpetas incorrectas, y no hay forma de revertir sin eliminar el vault completo o hacer rollback manual archivo por archivo.
+
+**Por qué ocurre:** La migración se trata como una operación de un solo sentido. Se asume que el `dry_run` es suficiente garantía, pero los destinos de distribución automática no siempre coinciden con la intención real — especialmente en repos con documentación heterogénea.
+
+**Señal de alarma:** Después de `vault_migrate_docs`, `vault_audit()` reporta muchos archivos en carpetas incorrectas o `vault_search()` retorna docs irrelevantes en categorías equivocadas. No existe `_report-{proyecto}-{fecha}.md` porque se ejecutó sin capturar el reporte.
+
+**Regla:** Toda migración es reversible. El reporte de migración es el mapa de reversión — nunca eliminarlo hasta confirmar que la distribución fue correcta.
+
+**Prevención en el estándar:**
+- `vault_migrate_docs` genera automáticamente backup `pre-migration` antes de distribuir — disponible para `vault_restore` si el rollback quirúrgico no alcanza
+- `vault_migrate_rollback(report_path, confirm:false)` muestra el preview de lo que se eliminaría antes de ejecutar
+- Secuencia obligatoria: `dry_run:true` → revisar → `dry_run:false` → revisar reporte → confirmar o `vault_migrate_rollback`
+- El reporte `_report-{proyecto}-{fecha}.md` en `10_Migrated/` se conserva siempre hasta que el usuario lo elimina explícitamente
+
+---
+
+### AP-11 — Skeleton files — frontmatter válido, contenido vacío
+
+> **Distinción con AP-03:** un skeleton no tiene ningún contenido real — solo frontmatter + `TODO`/placeholders/guiones. Un stub (AP-03) tiene al menos 3 líneas reales pero incompletas. El content gate de `vault_write` previene skeletons en creación; `vault_audit()` los detecta si ya existen.
+
+**Síntoma:** Notas con frontmatter completo y correcto, pero cuyo cuerpo contiene solo `TODO: Add content here`, guiones vacíos (`- `), secciones sin texto o placeholders literales. El agente las trata como notas reales — las incluye en el índice, las inyecta en contexto — y consume tokens sin recibir información.
+
+**Por qué ocurre:** El agente crea la estructura anticipando que llenará el contenido luego. La sesión termina, la nota queda como skeleton indefinidamente.
+
+**Señal de alarma:** `vault_search()` retorna una nota con score alto pero al leerla solo hay placeholders. `vault_audit()` reporta notas sin backlinks con `updatedAt` idéntico al `createdAt` — nunca se tocaron después de crearse.
+
+**Regla:** Una nota sin al menos 3 líneas de texto real no debe existir. Si el contenido no está listo, no crear la nota — anotar la intención en `04_Sessions/YYYY-MM-DD.md`. El content gate de `vault_write` lo bloquea automáticamente en creación.
+
+**Prevención en el estándar:**
+- El content gate de `vault_write` rechaza notas nuevas con < 3 líneas de contenido real → retorna `content_too_short`
+- `vault_audit()` detecta notas donde el contenido (excluyendo frontmatter) tiene < 3 líneas no vacías → reporta como `skeleton`
+- Al hacer `vault_write`, si `content` contiene solo "TODO", "placeholder", "Add content here" → el gate lo rechaza antes de escribir
+
+---
+
+### AP-12 — Frontmatter inconsistente entre notas del mismo tipo
+
+**Síntoma:** Notas del mismo tipo tienen campos diferentes en su frontmatter: algunas tienen `relevance`, otras no; algunas usan timestamps con comillas (`"2026-05-06T..."`), otras sin (`2026-05-06T...Z`); algunas tienen `migratedFrom` con ruta relativa (`10_Migrated/docs/`), otras con ruta absoluta del sistema operativo (`C:\Users\...`). Los parsers de YAML y las queries de `vault_list` se comportan de forma impredecible.
+
+**Por qué ocurre:** Las notas se crean en sesiones distintas con versiones distintas del harness, o con `vault_write` manual que no normaliza los campos. Las migraciones desde diferentes fuentes introducen formatos distintos para el mismo campo.
+
+**Señal de alarma:** `vault_list(tag:"X")` retorna solo la mitad de las notas esperadas. Dos notas idénticas tienen IDs distintos porque se crearon por caminos distintos.
+
+**Regla:** El frontmatter es un contrato. Los campos obligatorios (`id`, `title`, `type`, `createdAt`, `updatedAt`, `tags`) deben existir en todas las notas y con el mismo tipo de dato siempre.
+
+**Prevención en el estándar:**
+- `vault_write` es la única forma de crear notas — garantiza normalización de frontmatter: IDs como UUID sin comillas, timestamps como `ISO 8601` completo con zona horaria (`Z`), tags como array YAML
+- `migratedFrom` siempre como ruta relativa al vault root — nunca rutas absolutas del SO
+- `vault_audit()` debe validar consistencia de tipos en frontmatter: detectar timestamps incompletos (`T...` literal), arrays escritos como string, campos faltantes en notas del mismo `type`
+
+---
+
+### AP-13 — Timestamps inválidos o incompletos en frontmatter
+
+**Síntoma:** El campo `createdAt` o `updatedAt` contiene valores como `"2026-05-06T..."` (literal con puntos suspensivos), sin zona horaria, o completamente vacíos. El sistema de versionado y auditoría no puede ordenar ni comparar versiones.
+
+**Por qué ocurre:** El timestamp se genera con un template que no se completó, o se copió de un ejemplo sin reemplazar el placeholder. También ocurre al editar el frontmatter manualmente con un editor de texto.
+
+**Señal de alarma:** `vault_diff()` no puede establecer cuál versión es más reciente. `vault_timeline()` ordena eventos incorrectamente porque algunos timestamps no son parseable. `vault_audit()` no puede calcular si una nota es "stale" (>30 días).
+
+**Regla:** Todo timestamp en frontmatter debe ser ISO 8601 completo con zona horaria UTC: `2026-05-06T14:30:22.000Z`. Sin excepción. Un timestamp incompleto es peor que no tenerlo — actúa como dato pero no lo es.
+
+**Prevención en el estándar:**
+- `vault_write` genera `createdAt` y `updatedAt` automáticamente con `new Date().toISOString()` — nunca dejar que el usuario los escriba manualmente
+- `vault_audit()` debe detectar timestamps que no matchean el patrón `^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}` → reportar como `invalid_timestamp`
+- Al encontrar un timestamp inválido: corregirlo con `vault_write` (que lo regenera) antes de usar `vault_diff` o `vault_timeline` sobre esa nota
+
+---
+
+### AP-14 — Wiki-links rotos o vacíos
+
+**Síntoma:** El vault contiene wiki-links como `[[]]`, `[[ ]]` (con espacios), o `[[nombre-de-nota]]` que no apuntan a ninguna nota existente. Un agente que siga estos links no encontrará nada — o peor, encontrará una nota diferente si hay una con nombre similar.
+
+**Por qué ocurre:** Links creados anticipando una nota que aún no existe. Links que apuntaban a notas que luego fueron renombradas, movidas a `10_Migrated/` o eliminadas. Links vacíos copiados de templates sin rellenar.
+
+**Señal de alarma:** `vault_graph()` reporta `brokenLinks: [...]` con la lista de links que no resuelven a ninguna nota. `vault_audit()` penaliza −2 por link roto.
+
+**Regla:** Un wiki-link solo se escribe cuando la nota destino ya existe. Si la nota destino no existe todavía, anotar la intención en texto plano — nunca como `[[]]`.
+
+**Prevención en el estándar:**
+- `vault_graph()` debe ejecutarse periódicamente y ante cualquier eliminación masiva de notas — reporta broken links antes de que contaminen el vault
+- `vault_audit()` ya penaliza broken links (−2 por link) — el health score baja visiblemente con pocos broken links
+- Al mover notas a `10_Migrated/` con `vault_migrate_docs`: los stubs generados en `direct/` e `indirect/` mantienen el nombre original como anchor, evitando que los links del vault rompan
+- `vault_migrate_rollback` restaura el estado anterior incluyendo los links — no deja broken links tras una migración revertida
+
+---
+
+## Inicializar un vault desde cero
+
+Secuencia mínima para crear un vault operativo en un proyecto nuevo (sin documentación preexistente):
+
+```
+1. Crear el directorio raíz: vault-{nombre}/   ← siempre con prefijo vault-
+   Con las 11 carpetas numeradas: mkdir 00_System 01_Projects ... 10_Migrated 99_Index
+
+2. vault_write(folder:"00_System", title:"identity", content:"
+   ## Quién soy
+   [descripción del agente y su propósito en este proyecto]
+
+   ## Proyecto activo
+   [nombre del proyecto, stack principal, repositorio]
+
+   ## Fuentes de verdad
+   - Versión: package.json / pyproject.toml
+   - Hosts/IPs: [archivo de inventario o config]
+   - Variables de entorno: .env.example
+   ")
+
+3. vault_write(folder:"00_System", title:"rules", content:"
+   ## Reglas de comportamiento
+   [límites, estándares de código, convenciones del proyecto]
+   ")
+
+4. vault_project_overview(project:"{slug}", description:"...", runtime:"...")
+   → crea 01_Projects/{slug}/overview.md como punto de entrada del proyecto
+
+5. vault_audit()
+   → debe retornar healthScore: 100 (vault vacío, sin orphans, sin broken links)
+
+6. vault_validate(check:"structure")
+   → debe retornar structure.missing: []
+```
+
+> **El vault está operativo cuando `vault_audit()` retorna score 100 y `vault_validate()` retorna sin errores.** A partir de ahí, cada sesión de trabajo agrega conocimiento incremental.
+
+---
+
+## Checklist de implementación en repositorio existente
+
+> Antes de aplicar el vault a un repo con documentación preexistente, ejecutar este checklist en orden. Previene el 90% de los anti-patrones anteriores.
+
+### Fase 0 — Auditoría previa (antes de migrar nada)
+
+```
+□ vault_search() en el vault vacío para verificar que está limpio
+□ Listar TODA la documentación existente: find . -name "*.md" | wc -l
+□ Identificar el canonical para cada tema (README, CLAUDE.md, ADRs, etc.)
+□ Detectar duplicados: archivos con nombres similares o contenido parecido
+□ Identificar docs aspiracionales vs docs de implementación real
+□ Declarar en 00_System/identity.md cuál archivo es la fuente de verdad para:
+    - versión del proyecto (ej: package.json, pyproject.toml)
+    - hosts/IPs de infraestructura (ej: inventory.yml, config.json)
+    - variables de entorno (ej: .env.example)
+```
+
+### Fase 1 — Migración selectiva (no migrar todo)
+
+```
+□ vault_backup(label:"pre-migration") — snapshot antes de cualquier migración
+□ vault_migrate_docs(dry_run:true) — revisar el plan ANTES de ejecutar
+□ Migrar SOLO documentación activa y válida
+□ Archivos hallucinados → eliminar del origen, NO migrar
+□ Duplicados → migrar solo el canonical; los demás a 10_Migrated/direct/ con stub
+□ Docs aspiracionales → migrar a 10_Migrated/ con tag "planificado", no a secciones activas
+□ vault_migrate_docs(dry_run:false) → revisar _report-{proyecto}-{fecha}.md
+□ Si la distribución no fue correcta → vault_migrate_rollback(report_path, confirm:true)
+□ Conservar el reporte hasta confirmar que la distribución es correcta
+□ vault_audit() post-migración → resolver orphans y broken links antes de continuar
+```
+
+### Fase 2 — Establecer fuentes canónicas
+
+```
+□ vault_infra_save() para CADA componente de infra con IP/puerto real (fuente: config existente)
+□ vault_env_save() para CADA ambiente con variables reales (sin valores, solo estructura)
+□ vault_pattern_save() para patrones con su estado real (implementado vs planificado)
+□ Verificar: todos los ADRs tienen opciones evaluadas y consecuencias
+□ Verificar: todos los runbooks están en la subcategoría correcta
+```
+
+### Fase 3 — Activar capacidades de observabilidad
+
+```
+□ Crear al menos 1 SLO real con vault_log_error(type:"slo") — no dejar solo el template
+□ Crear al menos 1 métrica real con vault_log_error(type:"metric")
+□ Crear al menos 1 alerta real con vault_log_error(type:"alert")
+□ Registrar los errores/incidentes conocidos del proyecto en 02_Observability/errors/
+□ vault_security_scan(path:"src/") — registrar hallazgos reales desde el primer día
+```
+
+### Fase 4 — Verificación final
+
+```
+□ vault_audit() → health score ≥ 80 antes de declarar el vault "operativo"
+□ vault_graph() → sin broken links
+□ vault_timeline(project:"X") → la línea de tiempo tiene eventos reales
+□ Verificar que no hay notas con más de 30 días sin actualizar que sean activas
+□ Documentar en 04_Sessions/ el proceso de implementación como referencia
+```
+
 ---
 
 ## Por qué este diseño vs alternativas
@@ -1029,7 +2595,7 @@ agente → vault_search("SQL injection", folder="02_Observability/vulnerabilitie
 | Vector DB | Costoso en recursos; el score ponderado por palabras es suficiente para <10K notas |
 | Obsidian plugins | Solo funciona en Obsidian, no en el loop del agente |
 
-**Markdown + carpetas numeradas + 22 tools especializadas** es el punto óptimo para agentes LLM:
+**Markdown + carpetas numeradas + 32 tools especializadas** es el punto óptimo para agentes LLM:
 - Zero dependencias externas
 - Legible por humanos en cualquier editor
 - Compatible con Obsidian si el usuario quiere abrirlo visualmente
@@ -1041,8 +2607,329 @@ agente → vault_search("SQL injection", folder="02_Observability/vulnerabilitie
 
 ---
 
-*v1 · 2026-05-01 — vault core (9 tools: write, read, append, search, list, log_error, project_status, diff, graph)*  
-*v2 · 2026-05-01 — patrones y diagramas (+ 4 tools: pattern_save, pattern_list, diagram_save, relation_add)*  
-*v3 · 2026-05-01 — knowledge, runbooks, infraestructura, auto-context injection (+ 7 tools: knowledge_save, knowledge_get, audit, runbook_save, runbook_log, infra_save, infra_map)*  
-*v4 · 2026-05-02 — migración de documentación, compatibilidad Obsidian desktop (+ 1 tool: migrate_docs; + 1 skill: vault-migrator; + carpeta 10_Migrated con clasificación directa/indirecta/excluida)*  
-*v5 · 2026-05-02 — auditoría de seguridad (+ 1 tool: vault_security_scan con 45 reglas en 13 categorías, cobertura OWASP Top 10 completa; + 1 skill: security-auditor; getMitigation() con mitigaciones específicas por regla)*
+## Changelog
+
+> Formato: [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).  
+> Cuando el proyecto usa **git**, cada versión incluye el hash del commit que la introdujo (`git: abcd123`).  
+> El hash permite navegar al estado exacto del código: `git show abcd123 -- docs/vault-obsidian-architecture.md`.
+
+---
+
+### v18 — 2026-05-06 `git: —`
+
+**Auditoría de inconsistencias — 21 correcciones de ambigüedad, anti-patrones y contratos rotos**
+
+**Corregido**
+- Header de versión: 16.0 → 17.0 (era incorrecto tras agregar v17 al changelog sin actualizar el header)
+- `vault_write` content gate: eliminada referencia al parámetro `action:"create"` inexistente en la firma. La regla ahora expresa "al crear una nota nueva" en lugar de un parámetro que el agente no puede pasar
+- `vault_migrate_rollback` Retorna: campos corregidos para coincidir con la implementación real (`deletedCount`, `indexEntriesRemoved`, `reportDeleted`, `message` — no los campos ficticios `removed_notes`/`indexRebuilt`)
+- Conteo de tools: 32 → 34 en la tabla "Niveles de implementación" (y referencia `MVP v13` → `MVP v17`)
+- `vault_migrate_docs` protocolo: el paso `dry_run:false` no deposita "SOLO en _staging/" — ejecuta staging+clasificación+distribución en una sola llamada. El control de calidad está en el `dry_run:true` previo. Protocolo de 5 fases reestructurado para reflejar la realidad
+- Afirmación falsa eliminada: `vault_migrate_docs` NO llama internamente a `vault_backup`. El backup es responsabilidad explícita del agente en Fase 0
+- 5 tablas de parámetros corregidas de 3 columnas a 4 columnas (Parámetro|Tipo|**Default**|Descripción): `vault_migrate_rollback`, `vault_env_save`, `vault_code_relation`, `vault_backup`, `vault_restore`
+- Umbrales de "contenido mínimo" unificados: 3 líneas (content gate de vault_write y detección de skeleton en vault_audit). El umbral de migración (100 chars) es independiente — aplica al source antes de migrar, no al vault
+- AP-03 vs AP-11: definición diferencial explícita. AP-03 = stub con ≥3 líneas reales pero incompleto; AP-11 = 0 líneas reales. Umbrales de prevención unificados al mismo número (3 líneas)
+- `.history/` formato unificado: `{ruta__plana}-{YYYY-MM-DDTHH-mm-ss}.md` con doble guión bajo (eliminada versión con guión simple del Principio 3)
+- `vault_merge` parámetro `source`: marcado como "Requerido solo para `action:"merge"`" — no para detect/dedup
+- Orden del árbol de estructura: `11_Code` movido a su posición numérica correcta (después de `10_Migrated`), con nota explicativa del prefijo 99 para el índice
+
+**Agregado**
+- Glosario de conceptos al inicio de la sección de tools: distinción Tools vs Skills, convención del parámetro `project` (siempre slug kebab-case)
+- `vault_search` folder: aclarado que filtra recursivamente incluyendo todos los subdirectorios
+- `vault_merge action:"dedup"`: documentado el fallback a `mtime` cuando `updatedAt` no existe o es inválido
+- `vault_code_relation`: sección `Cuándo usar` agregada (era la única tool sin ella)
+- `vault_relation_add`: tabla de decisión vs `vault_diagram_save` — cuándo usar cada una para ERDs
+- `cmd_exec`: definido como herramienta del harness externa a las 34 vault-tools, con nota sobre nombres alternativos según implementación
+- Skills `vault-migrator` y `security-auditor`: definidas como protocolos de orquestación (no tools adicionales)
+- `vault_validate`: nota sobre carpetas opcionales (`11_Code`, `99_Index`) vs obligatorias (00–10)
+- `99_Index` agregada a la tabla "Carpetas visibles en Obsidian"
+- Sección "Inicializar un vault desde cero": secuencia de 6 pasos para crear un vault nuevo sin documentación preexistente
+- `vault_restore` parámetro `confirm`: aclarado que `false` rechaza la operación (no ejecuta), `true` ejecuta
+
+---
+
+### v17 — 2026-05-06 `git: —`
+
+**Convención de nombre de vault: prefijo `vault-*` obligatorio**
+
+**Agregado**
+- Convención de nombre en `## Estructura del Vault`: el directorio raíz del vault debe llamarse `vault-{nombre}` (ej: `vault-mi-proyecto`, `vault-ans`, `vault-homelab`). Regla explícita para el agente: SIEMPRE usar el prefijo `vault-` al crear un vault nuevo.
+
+---
+
+### v16 — 2026-05-06 `git: —`
+
+**2 tools nuevas documentadas + implementación de `vault_migrate_rollback.py`**
+
+**Agregado**
+- Tool `vault_validate(path?, folder?, check?)` en Grupo 6 (Salud del Vault): valida frontmatter YAML (campos `id` y `title` requeridos), estructura de carpetas numeradas y legibilidad de índices. Más quirúrgico que `vault_audit` — opera nota a nota sin calcular health score. Previene AP-12 y AP-13 proactivamente.
+- Tool `vault_merge(source, conflict?, action?)` en Grupo 9 (Migración): fusiona vault externo en el vault activo (`action:"merge"`, modos `skip/overwrite/rename`); detecta duplicados internos (`action:"detect"`); fusiona duplicados conservando el más reciente (`action:"dedup"`, destructivo — requiere backup previo).
+- Script `vault_migrate_rollback.py` implementado en el repo: parsea `_report-{proyecto}-{fecha}.md`, extrae rutas distribuidas y stubs, preview con `confirm=false`, ejecución con `confirm=true`, limpia `search-index.json` de las entradas eliminadas y borra el reporte.
+
+---
+
+### v15 — 2026-05-06 `git: —`
+
+**Protocolo de migración segura — prevención de skeleton files (AP-11) y wiki-links rotos (AP-14)**
+
+**Agregado**
+- `vault_migrate_docs`: flujo de 3 fases reemplazado por protocolo de 5 fases con gates de validación explícitos entre cada fase (Fase 0 pre-flight → Fase 1 staging con content gate → Fase 2 clasificación con resolución de duplicados → Fase 3 distribución topológica → Fase 4 verificación post-migración). Cada gate debe pasar antes de continuar a la siguiente fase.
+- Regla de escritura atómica en `vault_write`: `action:"create"` requiere mínimo 3 líneas de contenido real (excluye frontmatter, `TODO`, guiones vacíos). Si el contenido no está listo → retorna `content_too_short` → la nota no se crea. No aplica a `action:"append"` ni a notas del sistema.
+- Regla de wiki-links en `vault_write`: solo escribir `[[nombre-nota]]` cuando la nota destino ya existe. Verificar con `vault_search` antes de linkear. `[[]]` y `[[ ]]` están prohibidos.
+- Caso de uso concreto: "Migra la documentación del proyecto X al vault" — secuencia completa de 5 fases con comandos exactos.
+
+---
+
+### v14 — 2026-05-06 `git: —`
+
+**4 anti-patrones adicionales encontrados por inspección directa de vault real**
+
+**Agregado**
+- AP-11: Skeleton files — frontmatter válido, cuerpo con `TODO`/placeholders/guiones vacíos. El agente los indexa y consume contexto sin recibir información. Prevención: mínimo una sección con 2 líneas reales; `vault_audit()` detecta notas <5 líneas de contenido real.
+- AP-12: Frontmatter inconsistente entre notas del mismo tipo — campos faltantes, tipos mezclados (timestamp con/sin comillas, `migratedFrom` relativo vs absoluto). Rompe `vault_list`, búsquedas y deduplicación. Prevención: `vault_write` como único punto de creación; nunca editar frontmatter manualmente.
+- AP-13: Timestamps inválidos o incompletos — `"2026-05-06T..."` literal con puntos suspensivos, sin zona horaria. `vault_diff` y `vault_timeline` no pueden ordenar versiones. Prevención: `vault_write` genera timestamps con `new Date().toISOString()` automáticamente; `vault_audit()` valida patrón ISO 8601.
+- AP-14: Wiki-links rotos o vacíos — `[[]]`, `[[ ]]`, links a notas renombradas o eliminadas. Agentes siguen links que no resuelven. Prevención: `vault_graph()` reporta `brokenLinks[]`; `vault_audit()` penaliza −2 por link roto; links solo se escriben cuando la nota destino ya existe.
+
+---
+
+### v13 — 2026-05-06 `git: —`
+
+**Rollback quirúrgico de migración — `vault_migrate_rollback` + AP-10**
+
+**Agregado**
+- Tool `vault_migrate_rollback(report_path, confirm)`: deshace una migración usando el `_report-{proyecto}-{fecha}.md` como mapa. Elimina solo las notas y stubs creados por esa migración — el resto del vault no se toca. Guard `confirm:false` muestra preview antes de ejecutar. Los archivos del `source_path` original nunca se modifican.
+- Tabla de decisión `vault_migrate_rollback` vs `vault_restore`: rollback quirúrgico cuando solo la distribución fue incorrecta; restore completo cuando el vault quedó en estado inconsistente más amplio.
+- Comportamiento de seguridad en `vault_migrate_docs`: backup automático `pre-migration-{proyecto}-{fecha}` antes de ejecutar Fase 2 (distribución). El reporte se conserva hasta confirmación explícita del usuario.
+- AP-10 en anti-patrones: migración sin plan de rollback — síntoma, causa, señal de alarma y prevención.
+- Checklist de migración actualizado: `vault_backup` antes de migrar + paso de rollback si la distribución no fue correcta.
+
+---
+
+### v12 — 2026-05-06 `git: —`
+
+**Anti-patrones de implementación + checklist para repos existentes — extraídos de auditoría real**
+
+**Agregado**
+- Sección `Anti-patrones de implementación — Guía de prevención`: 9 anti-patrones documentados con síntoma, causa, señal de alarma y prevención específica usando las tools del estándar.
+  - AP-01: Documentación alucinada (herramientas que no existen en el código)
+  - AP-02: Proliferación de versiones del mismo documento (~140KB de redundancia)
+  - AP-03: Stubs sin política de expansión (notas <30 líneas abandonadas)
+  - AP-04: Features aspiracionales documentadas como implementadas
+  - AP-05: Múltiples fuentes de verdad para el mismo dato (IPs inconsistentes)
+  - AP-06: Templates sin instancias reales (SLOs/métricas/alertas sin usar)
+  - AP-07: ADRs incompletos (sin opciones evaluadas ni consecuencias)
+  - AP-08: Documentación anclada a versiones obsoletas
+  - AP-09: Runbooks fuera de estructura (todos en deploy/ independientemente del tipo)
+- `Checklist de implementación en repositorio existente`: 4 fases ordenadas — auditoría previa, migración selectiva, fuentes canónicas, activación de observabilidad — con criterio de éxito: `vault_audit() ≥ 80` antes de declarar el vault operativo.
+- Árbol actualizado: `06_Diagrams/flow/` y `02_Observability/waf/` faltaban en el árbol pero estaban en las tools.
+
+**Correcciones**
+- Grupos reordenados y renumerados correctamente: 10=Timeline, 11=Vista consolidada, 12=Código, 13=Backups, 14=Seguridad.
+- `vault_timeline` tenía grupo propio de nombre pero estaba físicamente dentro del Grupo 9 — ahora tiene su propio encabezado `Grupo 10`.
+- Versión actualizada de `5.0` a `11.0` (luego `12.0`), "22 tools" corregido a "31 tools", "MVP v5" a "MVP v11".
+- `data/vault/` en sección Obsidian → `{data-dir}/vault/`.
+- Tabla de Obsidian expandida con `11_Code`, `09_Infrastructure/pipelines`, `09_Infrastructure/secrets` y subfolders de `02_Observability`.
+
+---
+
+### v11 — 2026-05-06 `git: —`
+
+**Cobertura DevOps completa expandiendo secciones existentes — observabilidad, CI/CD, secrets, variables de entorno**
+
+**Árbol ampliado**
+- `01_Projects/{slug}/envs.md` — variables de entorno por ambiente: nombre, propósito, si es sensible, proveedor de gestión — nunca valores reales.
+- `02_Observability/metrics/` — SLIs y KPIs: qué se mide, servicio, objetivo, unidad, herramienta de recolección.
+- `02_Observability/alerts/` — reglas de alerta: condición, umbral, canal de notificación, link al runbook de respuesta.
+- `02_Observability/slos/` — SLOs: indicador (SLI), objetivo (%), ventana de tiempo, política de burn rate.
+- `08_Runbooks/pipeline/` — procedimientos para ejecutar, reparar o reintentar pipelines CI/CD.
+- `09_Infrastructure/pipelines/` — definición de pipelines CI/CD: plataforma, etapas, triggers, artefactos.
+- `09_Infrastructure/secrets/` — secretos gestionados: metadatos de qué existe, proveedor, scope, rotación — nunca el valor real.
+
+**Tools extendidas**
+- `vault_log_error`: nuevos tipos `metric`, `alert`, `slo` → subsecciones de `02_Observability/`.
+- `vault_runbook_save`: nueva categoría `pipeline` → `08_Runbooks/pipeline/`.
+- `vault_infra_save`: nuevos tipos `pipeline` (→ `pipelines/`) y `secret` (→ `secrets/`). Campos de `config` documentados para ambos tipos. Guard explícito: `type:'secret'` nunca almacena el valor real.
+
+**Nueva tool**
+- `vault_env_save(project, environment, vars[], description?)`: crea/actualiza `01_Projects/{slug}/envs.md`. Upsert por ambiente con tabla Markdown: nombre, descripción, requerida, default, sensible, proveedor. Variables `sensitive:true` muestran `🔒 (secreto)` — el valor nunca se escribe.
+
+---
+
+### v10 — 2026-05-06 `git: —`
+
+**Backups completos: vault + BD + archivos — Grupo 13; manifiesto y registry; correcciones de doc**
+
+**Agregado**
+- Tool `vault_backup(label?)`: snapshot completo del vault a `vault-backups/vault-{ts}[-label]/`. Genera `.manifest.json` con desglose por sección (folder, notes, files, sizeKB) y agrega entrada al `.backup-registry.json` centralizado. Retorna `manifest.vault` con `sections[]` y `totals`.
+- Tool `vault_backup_list()`: lee `.backup-registry.json` (O(1)) con fallback a leer manifests individuales. Retorna por cada backup: `name`, `label`, `createdAt`, `noteCount`, `fileCount`, `sizeKB`, `sections[]`.
+- Tool `vault_restore(backup_name, confirm)`: sobreescribe vault con backup seleccionado. Guard `confirm:true` obligatorio. Reconstruye índice de búsqueda automáticamente.
+- `vault-backups/.backup-registry.json` — log cronológico centralizado de todos los snapshots de vault (más reciente primero).
+- `.manifest.json` dentro de cada backup — inventario completo: `sections[{ folder, notes, files, sizeKB }]` + `totals`.
+- `00_System/backups/` — nueva subcarpeta en el árbol del vault: registro documental de todos los backups ejecutados por el agente (vault, BD, archivos).
+- Flujo documentado para backup de BD: `cmd_exec` (pg_dump/mysqldump/sqlite3/mongodump) + `vault_write` → `00_System/backups/db-{nombre}-{fecha}.md` con motor, tablas, tamaño, ruta del dump y comando de restauración.
+- Flujo documentado para backup de archivos: `cmd_exec` (Compress-Archive/tar) + `vault_write` → `00_System/backups/files-{desc}-{fecha}.md`.
+- Helpers internos para copia recursiva, conteo de notas/archivos, cálculo de tamaño, construcción de manifiesto y gestión del registry.
+
+**Correcciones de documento**
+- Árbol de `Estructura del Vault` restaurado con `00_System/` en raíz (sin wrapper de directorio de datos específico).
+- `vault-backups/` mostrado como directorio hermano del vault, en bloque separado.
+- Ejemplos del Grupo 12 reemplazados por nombres genéricos (`{proyecto}`, `server.mjs`, `store.mjs`) — el doc es un estándar reutilizable, no debe contener nombres específicos de ninguna implementación.
+- Regla establecida: todo backup ejecutado por el agente (vault, BD, archivos) debe tener nota en `00_System/backups/`.
+
+**Capas de protección del vault**
+1. `.history/` por nota — protege ediciones accidentales (automático desde v1)
+2. `vault_backup` snapshot — protege pérdidas catastróficas (carpetas borradas, restauraciones fallidas)
+3. `00_System/backups/` — trazabilidad documental de qué, cuándo y cómo restaurar
+
+---
+
+### v9 — 2026-05-06 `git: —`
+
+**Documentación de código con cardinalidad — Grupo 12 (11_Code/)**
+
+**Agregado**
+- Carpeta `11_Code/` en la estructura del vault — corazón del proyecto: documentación de archivos de código fuente con propósito, exports, imports, responsabilidades y relaciones de cardinalidad.
+- Tool `vault_code_module`: crea/actualiza `11_Code/{project}/{file-slug}.md`. `file_path` es el identificador canónico — el archivo en disco no se mueve ni copia nunca. Campos: `file_path`, `description`, `language`, `exports`, `imports_from`, `responsibilities`, `notes`. Upsert por `filePath` en el índice.
+- Tool `vault_code_relation`: registra relación de cardinalidad entre dos archivos (`imports`, `extends`, `implements`, `calls`, `uses`, `re-exports`, `depends_on`), con `cardinality` opcional (`1:1`, `1:N`, `N:1`, `N:M`) y `label` libre. Deduplicación por `(from, to, type)`. Auto-regenera `code-map.md`.
+- Tool `vault_code_map`: genera/regenera `11_Code/{project}/code-map.md` con diagrama Mermaid `graph TD` — nodos = archivos, aristas = relaciones con tipo y cardinalidad.
+- `11_Code/.code-index.json` — fuente de verdad: array `modules[]` + array `relations[]` por proyecto.
+- Helper `regenerateCodeMap(projectSlug)` compartido entre `vault_code_relation` y `vault_code_map`.
+- Nota en sección `vault_migrate_docs`: archivos de código fuente (`.js`, `.ts`, `.py`, etc.) **nunca** se migran — solo documentación.
+- Grupo 12 documentado en este archivo con formatos de nota, `.code-index.json`, tabla de tipos de relación, tabla de cardinalidades y ejemplo de `code-map.md`.
+
+**Principio establecido**
+- `vault_code_module` = documentación del archivo (qué es, qué hace, qué exporta).
+- `vault_code_relation` = cardinalidad entre archivos (cómo se conectan).
+- `vault_code_map` = vista visual del grafo completo de código.
+
+---
+
+### v8 — 2026-05-06 `git: —`
+
+**Vista consolidada del proyecto — vault_project_overview**
+
+**Agregado**
+- Tool `vault_project_overview`: crea/actualiza `01_Projects/{slug}/overview.md` con vista estructural consolidada del proyecto.
+- Auto-colecta desde el vault index filtrado por tag de proyecto: dependencias (`07_Knowledge/dependency/`), frameworks (`07_Knowledge/framework/`), decisiones (`03_Decisions/`), patrones activos (`05_Patterns/`, excluye deprecated), infraestructura (`09_Infrastructure/`).
+- Parámetro `extra_sections` (objeto `{ "Título": "contenido" }`) para secciones adicionales libres.
+- Preservación en re-ejecución: description y runtime se leen del archivo existente si no se pasan como parámetros — evita sobreescribir datos manuales al re-generar.
+- Retorna `{ ok, path, action:'created'|'updated', stats: { frameworks, dependencies, decisions, patterns, infra }, summary }`.
+- Documentado en Grupo 10 de este archivo (Grupo de Auditoría de Seguridad renombrado a Grupo 11).
+
+**Diferencia conceptual establecida**
+- `vault_project_overview` = qué ES el proyecto (stack, deps, decisiones, patrones, infra).
+- `vault_project_status` = en qué ESTADO está el proyecto (progreso, blockers, qué se hizo hoy).
+
+---
+
+### v7 — 2026-05-06 `git: —`
+
+**Dependencies, frameworks y vault_timeline**
+
+**Agregado**
+- Categorías `dependency` y `framework` en `vault_knowledge_save` — documentación obligatoria al instalar paquetes o incorporar frameworks.
+- Carpetas `07_Knowledge/dependencies/{proyecto}/` y `07_Knowledge/frameworks/{proyecto}/` en estructura del vault.
+- Estructura mínima requerida para notas `dependency`: propósito, por qué se eligió, alternativas descartadas, uso en proyecto, configuración relevante, caveats.
+- Tool `vault_timeline`: reconstruye la trayectoria cronológica de un tema cruzando sesiones, changelog, decisiones, errores, patrones, infra, knowledge y dependencies en una sola llamada.
+- Source `dependencies` en `vault_timeline` — busca en `07_Knowledge/dependencies/` y `07_Knowledge/frameworks/`.
+- Prioridades 5 y 6 en tabla de detección de `vault_migrate_docs` para frameworks y dependencias.
+- Regla en system prompt: `vault_knowledge_save(category:'dependency')` SIEMPRE al instalar un paquete.
+
+**Modificado**
+- `vault_knowledge_save`: enum ampliado a 7 categorías (`+ dependency, framework`).
+- `vault_migrate_docs`: tabla de prioridades extendida a 12 niveles; señales para `framework`, `package`, `npm`, `pip`, `library` ruteadas a `07_Knowledge/frameworks/` y `dependencies/`.
+- `vault_timeline`: ALL_SOURCES incluye `dependencies`; SOURCE_MAP incluye las nuevas carpetas.
+
+---
+
+### v6 — 2026-05-06 `git: —`
+
+**Migración con staging y subcarpetas por tema**
+
+**Agregado**
+- `10_Migrated/_staging/` como zona de aterrizaje obligatoria: todos los docs aterrizan aquí antes de clasificarse o distribuirse.
+- Flujo de migración en **3 fases explícitas**: Staging → Clasificación → Distribución. Antes era directo al destino sin paso intermedio.
+- Subcarpetas por tema en `07_Knowledge`: `apis/{proveedor}/`, `configs/{herramienta}/`, `glossary/{dominio}/`, `concepts/{proyecto}/`, `business-rules/{modulo}/`.
+- Subcarpetas por entorno/proyecto en `09_Infrastructure`: `services/{proyecto}/`, `servers/{entorno}/`, `databases/{proyecto}/`, `network/{entorno}/`, `containers/{proyecto}/`.
+- Tabla de prioridad de detección de destino con orden explícito (10 niveles) — la primera señal que coincide gana.
+- Distinción formal **Reporte / Decisión / Conocimiento**: define qué es cada tipo, su destino correcto y adónde nunca debe ir.
+- Frontmatter extendido: nuevos campos `staged_at` y `distributed_to` en notas migradas.
+
+**Modificado**
+- `vault_migrate_docs`: flujo actualizado a 3 fases; stubs en `direct/` e `indirect/` ahora incluyen link al destino final.
+- Reporte de migración incluye sección de nuevas subcarpetas creadas durante la distribución.
+- `vault-migrator` skill: ahora incluye distribución automática a subcarpetas + `vault_audit` post-migración.
+
+---
+
+### v5 — 2026-05-02 `git: —`
+
+**Auditoría de seguridad**
+
+**Agregado**
+- Tool `vault_security_scan`: escáner estático con 45 reglas en 13 categorías, cobertura OWASP Top 10 completa.
+- Skill `security-auditor`: protocolo completo de auditoría (`vault_security_scan` + revisión manual + `npm audit` + plan de remediación).
+- `getMitigation()`: mitigaciones específicas por cada `ruleId` — no genéricas.
+- Outputs en vault: reporte consolidado en `02_Observability/vulnerabilities/`, nota individual por hallazgo crítico/alto, resumen ejecutivo en `03_Decisions/`.
+- Secretos detectados redactados como `[REDACTED]` en todos los outputs del vault.
+- Tabla de mapeo OWASP Top 10 (2021) → categorías cubiertas.
+
+---
+
+### v4 — 2026-05-02 `git: —`
+
+**Migración de documentación y compatibilidad Obsidian**
+
+**Agregado**
+- Tool `vault_migrate_docs`: migración de documentación externa con clasificación en 3 niveles (direct/indirect/excluded).
+- Carpeta `10_Migrated/` con subcarpetas `direct/`, `indirect/`, `excluded/`.
+- Reporte de migración `_report-{proyecto}-{fecha}.md` con tabla de decisiones.
+- Skill `vault-migrator`: protocolo con `dry_run` previo + confirmación.
+- Conversiones automáticas para compatibilidad Obsidian: wiki-links, imágenes, frontmatter, kebab-case.
+- Sección de compatibilidad con Obsidian Desktop + plugins recomendados.
+
+---
+
+### v3 — 2026-05-01 `git: —`
+
+**Knowledge, runbooks, infraestructura y auto-context injection**
+
+**Agregado**
+- Tools: `vault_knowledge_save`, `vault_knowledge_get` — conocimiento estructurado por categoría (glossary, api, concept, business-rule, config).
+- Tools: `vault_runbook_save`, `vault_runbook_log` — procedimientos operacionales con historial de ejecuciones.
+- Tools: `vault_infra_save`, `vault_infra_map` — registro de infraestructura y mapa de red Mermaid auto-generado.
+- Tool `vault_audit` — health score del vault con detección de huérfanas, obsoletas, patrones atascados y links rotos.
+- Auto-context injection en `buildMessages()`: inyecta las 4 notas más relevantes del vault en cada llamada al LLM (RAG sin embeddings).
+- Carpetas `07_Knowledge/`, `08_Runbooks/`, `09_Infrastructure/`.
+- Mermaid rendering en la UI del vault.
+
+---
+
+### v2 — 2026-05-01 `git: —`
+
+**Patrones y diagramas**
+
+**Agregado**
+- Tool `vault_pattern_save` — registro de patrones con ciclo de vida (planificado → en_progreso → implementado | deprecado | refactoring).
+- Tool `vault_pattern_list` — listado agrupado por estado.
+- Tool `vault_diagram_save` — diagramas Mermaid/ASCII/PlantUML en 5 categorías (entity, component, sequence, dependency, flow).
+- Tool `vault_relation_add` — cardinalidad entre entidades con auto-generación del ERD Mermaid.
+- Carpetas `05_Patterns/` y `06_Diagrams/`.
+- Auto-actualización del `{proyecto}-patterns-index.md` en cada `vault_pattern_save`.
+- ERD auto-generado en `vault_relation_add`: detecta si es DB-like (`erDiagram`) o module/service (`graph TD`).
+
+---
+
+### v1 — 2026-05-01 `git: —`
+
+**Vault core**
+
+**Agregado**
+- Diseño inicial del Vault Obsidian como patrón de memoria persistente para agentes LLM.
+- 9 tools core: `vault_write`, `vault_read`, `vault_append`, `vault_search`, `vault_list`, `vault_log_error`, `vault_project_status`, `vault_diff`, `vault_graph`.
+- Carpetas: `00_System/`, `01_Projects/`, `02_Observability/`, `03_Decisions/`, `04_Sessions/`, `99_Index/`.
+- Frontmatter YAML universal: `id`, `title`, `createdAt`, `updatedAt`, `tags`.
+- Versionado automático en `.history/` en cada `vault_write` sobre nota existente.
+- Índice full-text `99_Index/search-index.json` con score ponderado (título×4, palabras, preview).
+- Grafo de wiki-links `99_Index/graph.json`.
+- Auto-session logging: `vaultAppendSessionEntry` al inicio y fin de cada turno.
