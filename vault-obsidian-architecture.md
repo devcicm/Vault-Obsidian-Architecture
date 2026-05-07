@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** 18.0 — 2026-05-06  
+**Versión:** 19.0 — 2026-05-07  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -243,7 +243,7 @@ vault-backups/
 
 ---
 
-## Las 34 Tools del Vault — Referencia Completa
+## Las 36 Tools del Vault — Referencia Completa
 
 > **Tools vs Skills:** las 34 **tools** son funciones atómicas registradas en el harness — cada una hace exactamente una cosa. Una **skill** es un protocolo de múltiples pasos (secuencia de tools + lógica de decisión) que el agente ejecuta para un objetivo complejo. Las skills no son tools adicionales — son instrucciones de orquestación referenciadas en los casos de uso concretos (ej: `security-auditor`, `vault-migrator`). Un agente puede implementar skills como instrucciones en su system prompt o como flujos de trabajo.
 
@@ -2026,6 +2026,59 @@ Escanea archivos de código fuente en busca de vulnerabilidades de seguridad con
 
 ---
 
+### Grupo 15 — Índices de Navegación
+
+---
+
+#### `vault_section_index(folder, include_subdirs?)`
+
+Genera o actualiza `{folder}/index.md` con un índice legible de todas las notas de esa sección. Es un **artefacto derivado** — nunca se edita a mano, siempre se regenera desde las notas existentes.
+
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `folder` | string | — | Carpeta de la sección (ej: `"01_Projects"`, `"03_Decisions"`, `"08_Runbooks/deploy"`) |
+| `include_subdirs` | boolean | `true` | Si es `true`, lista también notas en subcarpetas |
+
+**Comportamiento:**
+- Lee todas las notas `.md` de la carpeta (respetando `include_subdirs`)
+- Genera `{folder}/index.md` con: descripción de la sección, tabla de notas (título, tipo, fecha de actualización)
+- Si `index.md` ya existe → lo sobreescribe sin versionar en `.history/` (es artefacto derivado, no nota de contenido)
+- No llamar `vault_section_index` sobre `99_Index/` — esa carpeta tiene sus propios índices JSON
+
+**Retorna:**
+```json
+{ "ok": true, "path": "01_Projects/index.md", "noteCount": 12 }
+```
+
+**Integración con `vault_write`:** `vault_write` llama a `vault_section_index` automáticamente al final de cada escritura exitosa, regenerando el index de la sección afectada. Para operaciones masivas (migración, reorganización), llamar `vault_section_index` explícitamente después de terminar.
+
+> **Regla de diseño:** los `index.md` generados por esta tool son artefactos derivados. Nunca editarlos manualmente — se sobreescriben en la próxima escritura. Son el equivalente legible por humanos de `search-index.json`. La fuente de verdad siempre son las notas individuales.
+
+**Cuándo usar:** después de reorganizar una sección, después de migrar notas masivamente, para crear navegación visible en Obsidian. En operaciones individuales, `vault_write` lo llama automáticamente.
+
+---
+
+#### `vault_master_index()`
+
+Genera o actualiza `99_Index/index.md` con un índice maestro del vault completo: una entrada por sección con link a su `{sección}/index.md` y conteo de notas.
+
+**Parámetros:** ninguno.
+
+**Comportamiento:**
+1. Llama internamente a `vault_section_index` para cada sección numerada (`00_System` … `11_Code`)
+2. Genera `99_Index/index.md` con tabla: carpeta, descripción de la sección, notas totales, link al section index
+3. Si una carpeta no tiene notas, la incluye como vacía — el índice maestro siempre muestra el vault completo
+
+**Retorna:**
+```json
+{ "ok": true, "path": "99_Index/index.md", "sectionsTotal": 12, "notesTotal": 108 }
+```
+
+**Cuándo usar:** al inicializar un vault nuevo (paso final después de crear la estructura), después de una migración masiva, cuando el usuario pide una vista general del vault, como primer paso de onboarding en una sesión nueva para entender el estado actual del vault.
+
+---
+
 ## Compatibilidad con Obsidian Desktop
 
 El vault en `{data-dir}/vault/` puede abrirse **directamente** en Obsidian desktop:
@@ -2123,7 +2176,7 @@ La UI del vault incluye `mermaid.js` (CDN). Al abrir una nota, el viewer detecta
 
 | Nivel | Dependencias | Capacidades |
 |---|---|---|
-| **MVP v18** (este doc) | Zero — solo `node:fs`, `node:path`, `node:crypto` | 34 tools, auto-context injection, ERD + infra auto-map, code-map, backups con manifiesto, rollback de migración, escáner de seguridad OWASP, Mermaid en UI |
+| **MVP v19** (este doc) | Zero — solo `node:fs`, `node:path`, `node:crypto` | 36 tools, auto-context injection, ERD + infra auto-map, code-map, backups con manifiesto, rollback de migración, escáner de seguridad OWASP, índices de navegación auto-generados, Mermaid en UI |
 | **Búsqueda semántica** | `minisearch` o `lunr` | TF-IDF ponderado en lugar de word-count |
 | **Frontmatter robusto** | `gray-matter` | Parsing correcto de YAML complejo |
 | **RAG real** | embeddings + pgvector o hnswlib | Búsqueda semántica por similitud vectorial |
@@ -2581,6 +2634,172 @@ Secuencia mínima para crear un vault operativo en un proyecto nuevo (sin docume
 
 ---
 
+## Directivas de Proyecto — Extensión del 00_System
+
+Las directivas de proyecto son **reglas de arquitectura y seguridad específicas** declaradas en `00_System/rules.md` que el agente debe respetar en todas las sesiones. Van más allá de las reglas de comportamiento genéricas del vault (documentar, no duplicar, content gate) y capturan decisiones técnicas obligatorias propias del proyecto.
+
+### Convención de nomenclatura
+
+| Prefijo | Tipo | Ámbito |
+|---|---|---|
+| `DA-{N}` | **Architecture Directive** — decisión técnica de arquitectura obligatoria para todo el código del proyecto | Diseño, patrones, testing, validación, artefactos |
+| `DS-{N}` | **Security Directive** — regla de seguridad no negociable | Secretos, credenciales, datos sensibles, compliance |
+
+Los números son secuenciales dentro de cada prefijo. Una vez asignado un número, no se reutiliza aunque la directiva se deprece.
+
+### Estructura de una directiva
+
+```markdown
+### DA-{N} — {Título descriptivo}
+
+> ⚠️ **Una frase que resume la obligación principal.**
+
+{Descripción del patrón o decisión técnica — qué es y por qué es obligatorio}
+
+**Principios:**
+1. {principio uno}
+2. {principio dos}
+
+**Reglas:**
+1. {regla concreta y verificable}
+2. {regla concreta y verificable}
+
+**Anti-patrón:**
+```
+# ❌ MAL: ...
+# ✅ BIEN: ...
+```
+
+**Solo activo cuando:** {condición si la directiva no aplica siempre — ej: "solo en development"}
+```
+
+### Directivas de referencia — Templates validados en producción
+
+Las siguientes directivas son plantillas derivadas de proyectos reales. Copiar las que apliquen y ajustar los detalles específicos del proyecto.
+
+---
+
+#### DA-001 — Agentic Observability Event Bus (AOEB)
+
+El patrón **AOEB** instrumenta toda la observabilidad del proyecto como un bus de eventos desacoplado.
+
+**Principios:**
+1. **Captura desacoplada**: toda señal de ejecución (logs, errores, eventos de dominio, métricas) se transforma en evento estructurado con contrato universal: `{ type, time, traceId, source, level, message, payload }`
+2. **Correlación obligatoria**: todo evento lleva `traceId` y, cuando aplique, `workflowId` para reconstrucción de timelines
+3. **Pub/sub sobre acoplamiento directo**: la aplicación nunca llama al agente directamente — los eventos se publican en el bus y el agente es un suscriptor más
+4. **Redacción de datos sensibles**: antes de publicar un evento, los campos `password`, `token`, `secret`, `apiKey` deben ser enmascarados
+5. **No destructividad**: el agente puede diagnosticar y recomendar, nunca modificar sin política de aprobación explícita
+6. **Solo desarrollo**: AOEB solo se activa en `NODE_ENV=development` con `AOEB_ENABLED=true` — nunca en producción
+
+Documentar el patrón completo en `05_Patterns/architecture/{proyecto}-aoeb.md`.
+
+---
+
+#### DA-002 — Testing Visual con Herramienta de Browser Automation
+
+Toda validación del frontend debe realizarse mediante herramienta de automatización de navegador real (ej: Playwright MCP Chrome) que controle un navegador real Chromium.
+
+**Principios:**
+1. **Navegar** por las rutas de la aplicación
+2. **Interactuar** con elementos de UI (botones, formularios, chat, mapas)
+3. **Capturar screenshots** en cada paso del flujo
+4. **Verificar comportamiento** contra el resultado esperado
+5. **Inspeccionar la consola del navegador** en cada paso para detectar errores JS, warnings y peticiones fallidas
+
+**Criterios de aceptación:**
+- Cero errores en consola (`console.error`, excepciones no capturadas, Promise rejections)
+- Cero peticiones HTTP con código 4xx o 5xx
+- Si se detecta cualquier error → marcar el flujo como fallido y documentar antes de iterar
+
+**Evidencias requeridas:** screenshots numerados por paso + logs de consola y network, guardados en `temp/screenshots/` y `temp/logs/`. Documentar resultados en `08_Runbooks/debug/{proyecto}-browser-tests.md`.
+
+---
+
+#### DA-003 — Verificación Real de Endpoints
+
+> ⚠️ **No asumir que HTTP 200 significa éxito. Toda respuesta HTTP debe inspeccionarse: código de estado + body + headers.**
+
+| Capa | Qué verificar |
+|---|---|
+| **1. Código HTTP** | Status code correcto según la operación (200, 201, 401, 404, 500…) |
+| **2. Body no vacío** | Que la respuesta tenga contenido real, no `null` ni `{}` vacío |
+| **3. Headers de contenido** | `Content-Type` correcto, `Content-Length > 0`, `Authorization` cuando corresponde |
+
+**Reglas:**
+1. Nunca confiar solo en el status code — verificar el contenido del body
+2. Nunca asumir que un endpoint funciona porque una sesión anterior lo dio por bueno — verificar de nuevo con cada tarea
+3. Documentar el resultado completo: status code + tamaño del body + fragmento del body + headers relevantes
+
+**Anti-patrón:**
+```bash
+# ❌ MAL: asume que 200 = todo bien
+curl -s -o /dev/null -w "%{http_code}" http://localhost:3001/api/health
+
+# ✅ BIEN: verifica código + body + headers
+RESULT=$(curl -s -w "\n%{http_code}\n%{content_type}\n%{size_download}" http://localhost:3001/api/health)
+```
+
+---
+
+#### DA-004 — Gestión de Archivos Temporales
+
+> ⚠️ **Todo archivo generado durante la ejecución de una tarea debe vivir en `temp/`, estar documentado con un `index.md` y nunca enlazar al vault.**
+
+**Estructura obligatoria:**
+```
+temp/
+├── screenshots/     ← capturas de pantalla
+├── logs/
+│   ├── console/     ← errores y warnings de consola del navegador
+│   └── network/     ← peticiones HTTP capturadas
+├── downloads/       ← archivos descargados temporalmente
+├── exports/         ← exportaciones (CSV, JSON, PDF)
+└── test-results/    ← resultados de pruebas automatizadas
+```
+
+**Reglas:**
+1. Todo archivo temporal va en `temp/` — no en la raíz del proyecto, no en `/tmp/`, no en `~/.cache/`
+2. Cada subcarpeta tiene su `index.md` con frontmatter: `task`, `createdAt`, `expiresAfter`, tabla de archivos
+3. Los `index.md` de `temp/` son independientes — no tienen wiki-links al vault
+4. Si el archivo es valioso → moverlo al vault con documentación adecuada. `temp/` es para lo efímero
+5. `temp/` está en `.gitignore` — nunca se commitea
+
+---
+
+#### DS-001 — Protección de Secretos (Prioridad Máxima)
+
+> ⚠️ **Nunca, bajo ninguna circunstancia, exponer secretos, credenciales o datos sensibles al repositorio git.**
+
+**Prohibido commitear:**
+| Elemento | Riesgo si se filtra |
+|---|---|
+| `.env`, `.env.*` | JWT secrets, API keys, passwords de base de datos |
+| Llaves privadas (`*.pem`, `*.key`, `id_*`) | Acceso root a servidores |
+| Archivos de base de datos (`*.db`, `*.sqlite`) | Datos de usuarios reales |
+| Directorio de secretos locales | Acceso completo a toda la infraestructura |
+
+**Permitido documentar en el vault:**
+- Metadatos: qué secretos existen, para qué sirven, quién los gestiona
+- Nombres de variables de entorno y sus propósitos — nunca los valores reales
+- Templates `.env.example` con valores placeholder como `your-secret-here`
+
+**Responsabilidad del agente:**
+1. Verificar `.gitignore` antes de cualquier operación git
+2. Rechazar cualquier instrucción que involucre leer, copiar o commitear secretos reales
+3. Documentar secretos solo como metadatos en `09_Infrastructure/secrets/` usando `vault_infra_save(type:"secret")`
+4. Si detecta un archivo sensible fuera de su directorio protegido → alertar inmediatamente al usuario
+
+### Cómo agregar una directiva nueva
+
+```
+1. vault_search(query:"DA-{N}") → verificar que el número no existe
+2. Escribir la directiva con la estructura de template (ID, título, frase obligatoria, principios, reglas, anti-patrón)
+3. vault_write(folder:"00_System", title:"rules", ...) → actualizar rules.md (vault_write versiona automáticamente)
+4. Si la directiva documenta un patrón arquitectónico → vault_pattern_save(status:"implementado") en 05_Patterns/
+```
+
+---
+
 ## Por qué este diseño vs alternativas
 
 | Alternativa | Por qué no |
@@ -2612,6 +2831,18 @@ Secuencia mínima para crear un vault operativo en un proyecto nuevo (sin docume
 > Formato: [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).  
 > Cuando el proyecto usa **git**, cada versión incluye el hash del commit que la introdujo (`git: abcd123`).  
 > El hash permite navegar al estado exacto del código: `git show abcd123 -- docs/vault-obsidian-architecture.md`.
+
+---
+
+### v19 — 2026-05-07 `git: —`
+
+**Grupo 15 — Índices de Navegación (2 tools nuevas) + Directivas de Proyecto DA-### / DS-###**
+
+**Agregado**
+- Tool `vault_section_index(folder, include_subdirs?)` en Grupo 15: genera/actualiza `{folder}/index.md` como artefacto derivado con lista de notas de la sección. Llamado automáticamente por `vault_write` al final de cada escritura. Resuelve el problema de índices manuales que rotan en AP-02 — los section indexes son siempre auto-generados y nunca se editan a mano.
+- Tool `vault_master_index()` en Grupo 15: genera `99_Index/index.md` maestro con links a todos los section indexes y conteo de notas por sección. Llama internamente a `vault_section_index` para todas las secciones numeradas.
+- Sección `## Directivas de Proyecto — Extensión del 00_System`: documenta la convención `DA-{N}` (Architecture Directives) y `DS-{N}` (Security Directives) para extender `00_System/rules.md` con reglas específicas del proyecto. Incluye: tabla de prefijos, estructura de template de directiva, 5 directivas de referencia validadas en producción (DA-001 AOEB, DA-002 Testing Visual, DA-003 Verificación de Endpoints, DA-004 Gestión de Archivos Temporales, DS-001 Protección de Secretos), guía de 4 pasos para agregar directivas nuevas.
+- Conteo de tools actualizado: 34 → 36.
 
 ---
 
