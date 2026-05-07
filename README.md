@@ -33,13 +33,14 @@ Este estándar define cómo construir un vault de conocimiento que el agente lee
 Contiene:
 - 8 principios de diseño
 - Estructura de carpetas con 13 secciones numeradas
-- **34 tools documentadas** con contratos exactos (parámetros, retorno, cuándo usar)
+- **37 tools documentadas** con contratos exactos (parámetros, retorno, cuándo usar)
 - Protocolo de migración segura en 5 fases con gates de validación
 - 15+ anti-patrones con señales de alarma y prevención
 - 12 casos de uso concretos con flujos paso a paso
+- Protocolo de sesión para LLMs remotos (DeepSeek, GPT, Gemini, Claude API)
 - Guía de inicialización desde cero
 - Compatibilidad con Obsidian Desktop
-- Changelog completo (v1 → v18)
+- Changelog completo (v1 → v20)
 
 ---
 
@@ -64,7 +65,7 @@ vault-{nombre}/
 
 ---
 
-## Las 34 tools — resumen por grupo
+## Las 37 tools — resumen por grupo
 
 | Grupo | Tools |
 |---|---|
@@ -82,12 +83,13 @@ vault-{nombre}/
 | 12 — Código | `vault_code_module`, `vault_code_relation`, `vault_code_map` |
 | 13 — Backups | `vault_backup`, `vault_backup_list`, `vault_restore` |
 | 14 — Seguridad | `vault_security_scan` |
+| 15 — Índices de navegación | `vault_section_index`, `vault_master_index`, `vault_reindex` |
 
 ---
 
 ## Implementación de referencia
 
-Este repositorio incluye una implementación de referencia en Python (`scripts/`) con los 41 scripts que implementan las 34 tools del estándar.
+Este repositorio incluye una implementación de referencia en Python (`scripts/`) con los 44 scripts que implementan las 37 tools del estándar.
 
 **Requisitos:** Python 3.9+ · PyYAML (`pip install pyyaml`)
 
@@ -113,7 +115,7 @@ python scripts/vault_backup.py --label "pre-migration"
 El estándar es agnóstico al lenguaje y al agente. Para adoptarlo:
 
 1. Crear la estructura de carpetas definida en el spec
-2. Implementar las 34 tools en el lenguaje del harness (Python, Node.js, Go, etc.)
+2. Implementar las 37 tools en el lenguaje del harness (Python, Node.js, Go, etc.)
 3. Cargar el spec como system prompt o instrucción del agente
 4. El agente opera sobre el vault usando solo las tools — nunca acceso directo a archivos
 
