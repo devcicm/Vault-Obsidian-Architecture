@@ -33,7 +33,7 @@ SYSTEM_DIR = VAULT_ROOT / "00_System"
 VERSION_FILE = SYSTEM_DIR / "standard-version.json"
 IDENTITY_FILE = SYSTEM_DIR / "identity.md"
 
-CURRENT_VERSION = "v25"
+CURRENT_VERSION = "v26"
 
 MIGRATIONS: Dict[str, Dict[str, Any]] = {
     "v21": {
@@ -105,9 +105,23 @@ MIGRATIONS: Dict[str, Dict[str, Any]] = {
             "vault_standard_upgrade: version gap detection and migration",
         ],
     },
+    "v26": {
+        "description": "emit_ok envelope, contracts, manifest, test runner, profiles, validate",
+        "add_folders": [],
+        "update_identity": {"tools_count": "53", "groups_count": "23"},
+        "notes": [
+            "vault_compact_contracts: genera tool-contracts.{json,md} desde los scripts",
+            "vault_manifest: genera tools-manifest.json con estado active/deprecated/internal",
+            "vault_test_runner: smoke/contracts/errors test suite (56/56 passing)",
+            "vault_errors: emit_ok(), envelope tool+timestamp automatico en wrap_main",
+            "vault_standard_upgrade: --validate compliance check, --set-profile minimal|standard|full",
+            "vault_audit: excluye index.md/README.md de AP-17 (eran falsos positivos)",
+            "vault_project_status: statusPath -> path; vault_relation_add: erdPath -> path",
+        ],
+    },
 }
 
-VERSION_ORDER = ["v19", "v20", "v21", "v22", "v23", "v24", "v25"]
+VERSION_ORDER = ["v19", "v20", "v21", "v22", "v23", "v24", "v25", "v26"]
 
 
 def _version_index(v: str) -> int:

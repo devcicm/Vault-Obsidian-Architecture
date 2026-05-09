@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v25 — 2026-05-09  
+**Versión:** v26 — 2026-05-09  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -3939,7 +3939,31 @@ temp/
 
 ---
 
-### v25 — 2026-05-09 `git: —`
+### v26 — 2026-05-09 `git: 17d2a8e`
+
+**6 mejoras de madurez — sin eliminar ni romper nada**
+
+**Agregado**
+- **`vault_compact_contracts.py` (Grupo nuevo — Contratos):** introspecciona los 53 scripts via argparse y genera `00_System/tool-contracts.{json,md}`. El agente carga ~250 líneas en lugar del spec completo de 4382. Soporta `--profile minimal|standard|full`.
+- **`vault_manifest.py` (Grupo nuevo — Manifiesto):** genera `00_System/tools-manifest.json` con estado de cada tool (`active` / `deprecated` / `internal` / `meta`). 46 activas, 5 deprecated, 2 internas.
+- **`vault_test_runner.py` (Meta — Test suite):** test suite stdlib-only con modos `--smoke` (56/56), `--contracts` (happy-path en vault temporal), `--errors` (error-paths). Detecta BOM, imports rotos, salida no-JSON, campos faltantes.
+- **`vault_standard_upgrade --validate`:** compliance check post-migración no bloqueante: carpetas, `frontmatter_compliance`, `audit_score`. Retorna `compliance_score` y `gaps`.
+- **`vault_standard_upgrade --set-profile`:** escribe `profile: minimal|standard|full` en `standard-version.json`. `vault_compact_contracts` lo lee para filtrar qué tools documentar.
+- **`emit_ok(tool, data)` en `vault_errors.py`:** produce envelope uniforme `{ok:true, tool, timestamp, ...data}` y registra en trace log.
+- **Envelope automático en `wrap_main`:** captura stdout via `io.StringIO` e inyecta `tool` + `timestamp` en todo output `ok:true` sin modificar los 53 scripts individualmente.
+- **Deprecation notices:** 5 scripts legacy (`vault_migrate`, `vault_reorganize`, `vault_tools`, `vault_create`, `vault_render`) emiten `_deprecation` en stderr — no-breaking.
+
+**Modificado**
+- `vault_errors.py`: `emit_ok()`, `_inject_tool_envelope()`, `_write_output()`, stdout capture con `io.StringIO` en `wrap_main`.
+- `vault_project_status.py`: campo `statusPath` → `path` (normalización de envelope).
+- `vault_relation_add.py`: campo `erdPath` → `path` (normalización de envelope).
+- `vault_audit.py`: `_detect_canonical_shadow()` excluye `index.md`/`README.md` — eran 126 falsos positivos AP-17 por diseño.
+- `vault_standard_upgrade.py`: flags `--validate` y `--set-profile`.
+- 7 scripts legacy: BOM stripped, `import sys` y `from vault_errors import wrap_main` añadidos.
+
+---
+
+### v25 — 2026-05-09 `git: 01213c6`
 
 **Grupos 22-23 — AP-17~21, PAT-1~5, versionado del estándar y change log**
 
