@@ -225,9 +225,14 @@ def _detect_broken_links(notes: List[Path], all_stems: Set[str]) -> List[Dict[st
 
 def _detect_canonical_shadow(notes: List[Path]) -> List[Dict[str, Any]]:
     """AP-17: detect pairs of notes with fuzzy title similarity >85% (SequenceMatcher ratio)."""
+    # Exclude structural files — identical names across sections are by design, not duplicates
+    _EXCLUDED_STEMS = {"index", "readme", "change-log", "changelog", "gitkeep"}
+
     pairs = []
     items = []
     for n in notes:
+        if n.stem.lower() in _EXCLUDED_STEMS:
+            continue
         fm = _read_frontmatter(n)
         title = fm.get("title", n.stem).lower()
         rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
