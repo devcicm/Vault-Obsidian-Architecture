@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** 20.0 — 2026-05-07  
+**Versión:** v25 — 2026-05-09  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -215,11 +215,58 @@ vault-{nombre}/          ← raíz del vault (SIEMPRE con prefijo vault-)
 │   │   └── {slug}.md                — stub de archivo EXCLUIDO (sin relación ni directa ni indirecta)
 │   └── _report-{proyecto}-{fecha}.md — reporte de migración: staging → clasificación → distribución
 │
-├── 11_Code/                         ← ★ documentación de código (vault_code_module/relation/map)
-│   ├── .code-index.json             — índice estructurado: módulos documentados + relaciones (fuente de verdad del mapa)
+├── 11_Code/                         ← ★ documentación de código (vault_code_module/relation/map/query)
+│   ├── .code-index.json             — índice estructurado: módulos, relaciones, métodos y clases indexados (fuente de verdad)
 │   └── {project-slug}/
 │       ├── code-map.md              — diagrama Mermaid auto-generado de relaciones entre módulos
-│       └── {file-slug}.md           — documentación de un archivo de código: ruta, propósito, exports, imports, cardinalidad
+│       └── {file-slug}.md           — doc IEEE 1016: propósito, métodos, clases, constantes, excepciones, classDiagram
+│
+├── 12_Bibliography/                 ← referencias externas consultadas por el agente (web, papers, docs, APIs)
+│   ├── web/
+│   │   └── {slug}.md               — página web, artículo, post de blog
+│   ├── papers/
+│   │   └── {slug}.md               — paper académico, RFC, especificación técnica
+│   ├── docs/
+│   │   └── {slug}.md               — documentación oficial de herramienta o librería
+│   ├── apis/
+│   │   └── {slug}.md               — referencia de API externa consultada
+│   └── books/
+│       └── {slug}.md               — libro o capítulo específico
+│
+├── 13_Flows/                        ← ★ workflow, pipeline, lifecycle y dataflow (vault_flow_save)
+│   ├── workflow/
+│   │   └── {project}-{slug}.md     — proceso de negocio multi-actor con pasos, actores, triggers y Mermaid flowchart TD
+│   ├── pipeline/
+│   │   └── {project}-{slug}.md     — CI/CD o data pipeline: etapas, artefactos, triggers — Mermaid flowchart LR
+│   ├── lifecycle/
+│   │   └── {project}-{slug}.md     — ciclo de vida de entidad/componente: estados, transiciones — Mermaid stateDiagram-v2
+│   └── dataflow/
+│       └── {project}-{slug}.md     — transformación de datos: fuente → proceso → destino — Mermaid flowchart TD
+│
+├── 14_Requirements/                 ← ★ requerimientos del sistema (vault_requirement_save — ISO/IEC/IEEE 29148)
+│   ├── .requirements-index.json     — índice: req_id, tipo, prioridad, estado, trazabilidad
+│   └── {project}/
+│       └── req-{n}-{slug}.md        — requerimiento: descripción, criterios de aceptación, trazabilidad a código
+│
+├── 15_Tests/                        ← ★ casos de prueba (vault_test_save — ISO/IEC/IEEE 29119-3)
+│   ├── .tests-index.json            — índice: test_id, tipo, estado, trazabilidad a requisito y código
+│   ├── unit/
+│   │   └── {project}-{slug}.md      — test unitario: precondiciones, pasos, resultado esperado
+│   ├── integration/
+│   │   └── {project}-{slug}.md      — test de integración
+│   ├── e2e/
+│   │   └── {project}-{slug}.md      — test end-to-end
+│   ├── performance/
+│   │   └── {project}-{slug}.md      — test de rendimiento: SLA, p99, carga
+│   ├── security/
+│   │   └── {project}-{slug}.md      — test de seguridad: OWASP, penetración
+│   └── acceptance/
+│       └── {project}-{slug}.md      — test de aceptación: criterios del usuario
+│
+├── 16_AI_Governance/                ← ★ gobernanza de IA (vault_ai_decision — ISO/IEC 42001:2023)
+│   ├── .decisions-log.json          — registro de decisiones: decision_id, tipo, impacto, aprobación humana
+│   └── decisions/
+│       └── {project}-{slug}.md      — decisión de IA: descripción, justificación, alternativas, riesgos
 │
 └── 99_Index/
     ├── search-index.json        — índice full-text (score ponderado: título×4, palabras, preview)
@@ -243,9 +290,9 @@ vault-backups/
 
 ---
 
-## Las 37 Tools del Vault — Referencia Completa
+## Las 53 Tools del Vault — Referencia Completa
 
-> **Tools vs Skills:** las 34 **tools** son funciones atómicas registradas en el harness — cada una hace exactamente una cosa. Una **skill** es un protocolo de múltiples pasos (secuencia de tools + lógica de decisión) que el agente ejecuta para un objetivo complejo. Las skills no son tools adicionales — son instrucciones de orquestación referenciadas en los casos de uso concretos (ej: `security-auditor`, `vault-migrator`). Un agente puede implementar skills como instrucciones en su system prompt o como flujos de trabajo.
+> **Tools vs Skills:** las 53 **tools** son funciones atómicas registradas en el harness — cada una hace exactamente una cosa. Una **skill** es un protocolo de múltiples pasos (secuencia de tools + lógica de decisión) que el agente ejecuta para un objetivo complejo. Las skills no son tools adicionales — son instrucciones de orquestación referenciadas en los casos de uso concretos (ej: `security-auditor`, `vault-migrator`). Un agente puede implementar skills como instrucciones en su system prompt o como flujos de trabajo.
 
 > **Convención de parámetro `project`:** en todas las tools, `project` es siempre un **slug kebab-case** del nombre del proyecto (ej: `"mi-api"`, `"vault-ans"`, `"ecommerce-backend"`). Nunca usar el nombre con espacios ni mayúsculas. El slug es el identificador canónico que determina las rutas de carpeta en el vault.
 
@@ -652,13 +699,17 @@ Guarda un diagrama en el vault. Los diagramas Mermaid se renderizan automáticam
 | `description` | string | — | Descripción breve de qué representa el diagrama |
 
 **Categorías (`category`):**
-| Categoría | Subcarpeta | Uso |
-|---|---|---|
-| `entity` | `06_Diagrams/entity/` | Diagramas ER, relaciones entre entidades de dominio |
-| `component` | `06_Diagrams/component/` | Módulos, servicios, capas de la aplicación |
-| `sequence` | `06_Diagrams/sequence/` | Flujos de ejecución, llamadas entre servicios |
-| `dependency` | `06_Diagrams/dependency/` | Grafo de dependencias entre paquetes o módulos |
-| `flow` | `06_Diagrams/flow/` | Flujos generales, decisiones, procesos de negocio |
+| Categoría | Subcarpeta | Uso | Mermaid típico |
+|---|---|---|---|
+| `entity` | `06_Diagrams/entity/` | Diagramas ER, relaciones entre entidades de dominio | `erDiagram` |
+| `component` | `06_Diagrams/component/` | Módulos, servicios, capas de la aplicación | `graph TD` |
+| `sequence` | `06_Diagrams/sequence/` | Flujos de ejecución, llamadas entre servicios | `sequenceDiagram` |
+| `dependency` | `06_Diagrams/dependency/` | Grafo de dependencias entre paquetes o módulos | `graph LR` |
+| `flow` | `06_Diagrams/flow/` | Flujos generales, decisiones, procesos de negocio | `flowchart TD` |
+| `state` | `06_Diagrams/state/` | Máquinas de estado, state machines de componentes | `stateDiagram-v2` |
+| `lifecycle` | `06_Diagrams/lifecycle/` | Ciclos de vida de entidades o componentes con fases | `stateDiagram-v2` |
+
+> **`state` vs `13_Flows/lifecycles/`:** usa `06_Diagrams/state/` para diagramas de presentación sin semántica estructurada. Usa `vault_flow_save --type lifecycle` (Grupo 18) cuando necesites también pasos, actores, triggers y condiciones consultables por el agente.
 
 **Retorna:**
 ```json
@@ -836,6 +887,8 @@ Audita la salud completa del vault y retorna un reporte con score.
 | **Patrones atascados** | `en_progreso` por >7 días sin actualización | −3 por patrón |
 | **Proyectos sin status** | `status.md` no actualizado en >14 días | −5 por proyecto |
 | **Links rotos** | Wiki-links `[[X]]` que no apuntan a ninguna nota existente | −2 por link |
+| **Canonical shadow** (AP-17) | Par de notas con `SequenceMatcher ratio ≥ 0.85` en títulos | −2 por par |
+| **Duplicados cross-folder** (AP-18) | Contenido byte-idéntico (MD5) entre carpetas distintas | −3 por par |
 
 **Score:** 100 − penalizaciones (mínimo 0)
 
@@ -845,13 +898,15 @@ Audita la salud completa del vault y retorna un reporte con score.
   "healthScore": 87,
   "stats": { "total": 42, "byFolder": { "01_Projects": 8, "05_Patterns": 12, ... } },
   "issues": {
-    "orphans":       [{ "path": "...", "title": "...", "daysOld": 15 }],
-    "stale":         [...],
-    "stuckPatterns": [...],
-    "staleProjects": [...],
-    "brokenLinks":   [{ "from": "...", "link": "..." }]
+    "orphans":              [{ "path": "...", "title": "...", "daysOld": 15 }],
+    "stale":                [...],
+    "stuckPatterns":        [...],
+    "staleProjects":        [...],
+    "brokenLinks":          [{ "from": "...", "link": "..." }],
+    "canonicalShadow":      [{ "noteA": "...", "noteB": "...", "titleA": "...", "titleB": "...", "similarity": 0.91 }],
+    "crossFolderDuplicates":[{ "hash": "md5hex", "files": ["...", "..."] }]
   },
-  "summary": "Score: 87/100 · 42 notas · 3 huérfanas · 1 link roto"
+  "summary": "Score: 87/100 · 42 notas · 3 huerfanas · 1 link roto · 2 pares AP-17"
 }
 ```
 
@@ -891,7 +946,7 @@ Valida frontmatter YAML, campos requeridos, estructura de carpetas e integridad 
 
 **Diferencia con `vault_audit`:** `vault_audit` mide salud del vault (orphans, stale, broken links, score). `vault_validate` verifica contratos estructurales — frontmatter correcto, carpetas presentes, índices legibles — sin necesidad de leer el contenido completo de cada nota.
 
-> **Nota de implementación:** el check `structure` verifica las 11 carpetas numeradas obligatorias (`00_System` … `10_Migrated`). Las carpetas `11_Code` y `99_Index` son opcionales en el check de estructura (un vault sin código documentado no necesita `11_Code`; `99_Index` se crea automáticamente al hacer la primera búsqueda). El check `indexes` verifica específicamente que `99_Index/search-index.json` y `99_Index/graph.json` sean legibles cuando existan.
+> **Nota de implementación:** el check `structure` verifica las 17 carpetas estándar del vault (`00_System` … `16_AI_Governance`). Las carpetas `11_Code` y `99_Index` son opcionales en el check de estructura (un vault sin código documentado no necesita `11_Code`; `99_Index` se crea automáticamente al hacer la primera búsqueda). Las carpetas `14_Requirements`, `15_Tests`, `16_AI_Governance` se crean con `vault_standard_upgrade --to latest` si el vault es previo a v24. El check `indexes` verifica específicamente que `99_Index/search-index.json` y `99_Index/graph.json` sean legibles cuando existan.
 
 **Cuándo usar:** antes de una migración (pre-flight), al detectar AP-12 o AP-13, al integrar notas de fuentes externas que pueden tener frontmatter no estándar.
 
@@ -1523,22 +1578,22 @@ _Actualizado: 2026-05-06 · deps: 4 · frameworks: 1 · ADRs: 2 · patrones: 3_
 
 ## Stack técnico
 - **Runtime:** Node.js 20
-- **Framework:** [[07_Knowledge/framework/express|Express v4]]
+
+## Frameworks
+- [[express|Express v4]]
 
 ## Dependencias (4)
-| Paquete | Descripción |
-|---|---|
-| [[07_Knowledge/dependency/jsonwebtoken\|jsonwebtoken]] | Firma y verificación de tokens JWT... |
-| [[07_Knowledge/dependency/prisma\|Prisma]] | ORM type-safe con migraciones... |
+- [[jsonwebtoken|jsonwebtoken]]
+- [[prisma|Prisma]]
 
-## Decisiones técnicas (ADR)
-- [[03_Decisions/2026-05-01-elegir-prisma-vs-typeorm]] · `implementado`
+## Decisiones técnicas (ADR) (2)
+- [[2026-05-01-elegir-prisma-vs-typeorm|Elegir Prisma vs TypeORM]]
 
 ## Patrones activos (3)
-- [[05_Patterns/architecture/mi-proyecto-hexagonal|Hexagonal]] · `implementado`
+- [[mi-proyecto-hexagonal|Hexagonal]] · `implementado`
 
-## Infraestructura
-- [[09_Infrastructure/databases/postgres-primary|postgres-primary [database]]]
+## Infraestructura (1)
+- [[postgres-primary|postgres-primary]]
 ```
 
 **Comportamiento en actualizaciones:** La sección `## Descripción` y `## Stack técnico → Runtime` se preservan del overview anterior si no se pasan nuevos valores. Las secciones de deps, frameworks, ADRs, patrones e infra se reconstruyen completamente desde el índice en cada llamada — siempre reflejan el estado actual del vault.
@@ -1562,78 +1617,147 @@ _Actualizado: 2026-05-06 · deps: 4 · frameworks: 1 · ADRs: 2 · patrones: 3_
 
 > **Principio fundamental:** el código fuente nunca se mueve. Las tools de este grupo crean documentación *sobre* los archivos de código en `11_Code/`, usando la ruta en disco como identificador canónico. La estructura del proyecto queda intacta.
 
+> **Norma aplicada:** la documentación de cada módulo sigue los viewpoints de **IEEE 1016:2009** (Software Design Descriptions): contexto, interfaz, datos, operaciones y dependencias. El tipo de componente sigue **ISO/IEC 12207:2017**: `module`, `component`, `service`, `library`, `script`.
+
 ---
 
-#### `vault_code_module(project, file_path, description, language?, exports?, imports_from?, responsibilities?, notes?, tags?)`
+#### `vault_code_module(project, file_path, description, language?, iso_type?, methods?, classes?, constants?, exceptions?, exports?, imports_from?, responsibilities?, notes?, tags?)`
 
-Crea o actualiza la nota de documentación de un archivo de código en `11_Code/{project}/{file-slug}.md`. Es la herramienta central para entender el propósito, la interfaz pública y las dependencias de cada módulo del proyecto.
+Crea o actualiza la nota de documentación IEEE 1016 de un archivo de código en `11_Code/{project}/{file-slug}.md`. Cuando se proveen `--classes`, genera automáticamente un bloque `classDiagram` Mermaid en la nota. Los campos `methods[]` y `classes[]` se indexan en `.code-index.json` para permitir búsqueda por nombre de método o clase con `vault_code_query`.
 
 **Parámetros:**
 | Parámetro | Tipo | Default | Descripción |
 |---|---|---|---|
 | `project` | string | — | Nombre o slug del proyecto |
-| `file_path` | string | — | **Ruta real del archivo en disco** — relativa al root del proyecto o absoluta. Identificador canónico. El archivo NO se mueve ni copia |
+| `file_path` | string | — | **Ruta real del archivo en disco** — identificador canónico. El archivo NO se mueve ni copia |
 | `description` | string | — | Propósito en 1-3 líneas: ¿qué problema resuelve? ¿por qué existe este archivo? |
-| `language` | string | — | Lenguaje del archivo (`"javascript"`, `"typescript"`, `"python"`, etc.) |
-| `exports` | string[] | `[]` | Símbolos exportados. Formato recomendado: `["nombreFn(params) — descripción breve"]` |
-| `imports_from` | string[] | `[]` | Módulos o archivos de los que importa. Ej: `["node:fs", "../utils.mjs"]` |
-| `responsibilities` | string[] | `[]` | Responsabilidades principales del módulo (bullets concisos) |
+| `language` | string | — | Lenguaje del archivo (`"python"`, `"javascript"`, `"typescript"`, etc.) |
+| `iso_type` | string | — | Tipo ISO/IEC 12207: `module` · `component` · `service` · `library` · `script` |
+| `methods` | object[] | `[]` | IEEE 1016 Operations viewpoint — ver estructura abajo |
+| `classes` | object[] | `[]` | IEEE 1016 Data viewpoint — ver estructura abajo. Auto-genera `classDiagram` |
+| `constants` | object[] | `[]` | Constantes del módulo con nombre, valor, tipo y descripción |
+| `exceptions` | object[] | `[]` | Excepciones lanzadas con nombre y condición de lanzamiento |
+| `exports` | string[] | `[]` | Símbolos exportados. Formato: `["nombreFn(params) — descripción"]` |
+| `imports_from` | string[] | `[]` | Módulos de los que importa. Ej: `["node:fs", "../utils.mjs"]` |
+| `responsibilities` | string[] | `[]` | Responsabilidades principales del módulo |
 | `notes` | string | — | Invariantes, limitaciones, decisiones de diseño no obvias |
 | `tags` | string[] | `[]` | Tags adicionales para búsqueda |
+
+**Estructura de `methods[]` (IEEE 1016 Operations viewpoint):**
+```json
+[{
+  "name": "login",
+  "signature": "(str, str) -> AuthToken",
+  "description": "Authenticates user and returns token",
+  "params": [
+    {"name": "user", "type": "str", "desc": "Username or email"},
+    {"name": "password", "type": "str", "desc": "Plain text password"}
+  ],
+  "returns": {"type": "AuthToken", "desc": "JWT token with expiry"},
+  "raises": ["AuthError", "RateLimitError"]
+}]
+```
+
+**Estructura de `classes[]` (IEEE 1016 Data viewpoint):**
+```json
+[{
+  "name": "UserService",
+  "description": "Handles all user-related business logic",
+  "extends": "BaseService",
+  "implements": ["IUserService"],
+  "properties": [
+    {"name": "db", "type": "Database", "desc": "Database connection"}
+  ],
+  "methods": ["login", "logout", "register"]
+}]
+```
+
+**Estructura de `constants[]`:**
+```json
+[{"name": "MAX_RETRY", "value": "3", "type": "int", "description": "Max retry attempts on transient errors"}]
+```
+
+**Estructura de `exceptions[]`:**
+```json
+[{"name": "AuthError", "raised_when": "Invalid credentials or expired session"}]
+```
 
 **Formato de la nota generada (`11_Code/{project}/{file-slug}.md`):**
 
 ```markdown
 ---
-id: "uuid"
-title: "store.mjs"
-project: "{proyecto}"
-file_path: "src/{modulo}/store.mjs"
-type: "code-module"
-language: "javascript"
-createdAt: "2026-05-06T..."
-updatedAt: "2026-05-06T..."
-tags: ["{proyecto}", "code", "store-mjs"]
+id: uuid
+title: auth.py
+project: mi-api
+file_path: src/auth.py
+type: code-module
+language: python
+iso_type: service
+createdAt: 2026-05-08T...
+updatedAt: 2026-05-08T...
+tags: ["mi-api", "code", "auth", "service"]
 ---
 
-**Ruta:** `src/{modulo}/store.mjs`  ·  **Lenguaje:** `javascript`
+**Ruta:** `src/auth.py`  |  **Lenguaje:** `python`  |  **Tipo ISO:** `service`
 
-## Propósito
-Gestión del almacenamiento persistente del módulo: mantiene el manifiesto de
-metadatos y expone operaciones CRUD sobre los recursos gestionados.
+## Proposito
+Servicio de autenticación: login, logout y validación de tokens JWT.
 
-## Exportaciones
-- `load() — carga el manifiesto desde disco`
-- `save(data) — persiste el manifiesto`
-- `store(name, buffer) — almacena un recurso, retorna { id, path }`
-- `remove(id) — elimina recurso del disco`
-- `list() — lista todos los recursos almacenados`
+## Metodos
+| Metodo | Firma | Descripcion |
+|---|---|---|
+| `login` | `(str, str) -> AuthToken` | Autentica usuario y retorna token |
 
-## Importaciones desde
-- `node:path`
-- `node:fs/promises`
-- `node:crypto`
+**`login`**
+Parametros:
+- `user` (str) — Username o email
+- `password` (str) — Contraseña en texto plano
+- **Retorna** `AuthToken` — JWT con expiración
 
-## Responsabilidades
-- Mantener el manifiesto como fuente de verdad de recursos persistidos
-- Generar IDs únicos para cada entrada nueva
-- Organizar archivos por ID para evitar colisiones de nombres
+## Clases
+### `UserService` (extends `BaseService`) (implements `IUserService`)
+Maneja toda la lógica de negocio de usuarios.
 
-## Notas
-Sin dependencias npm — solo node built-ins.
+**Metodos:**
+- `login()` — Autentica usuario
+
+## Diagrama de Clases
+
+```mermaid
+classDiagram
+    BaseService <|-- UserService
+    IUserService <|.. UserService
+    class UserService{
+        +Database db
+        +login()
+    }
 ```
 
-**Comportamiento en actualizaciones:** upsert por `file_path` en el índice — si ya existe, sobreescribe la nota y actualiza el índice. Si existen relaciones registradas para ese archivo, regenera `code-map.md` automáticamente.
+## Constantes
+| Nombre | Valor | Tipo | Descripcion |
+|---|---|---|---|
+| `MAX_RETRY` | `3` | `int` | Max retry attempts |
+
+## Excepciones
+| Excepcion | Cuando se lanza |
+|---|---|
+| `AuthError` | Credenciales inválidas |
+```
+
+**Comportamiento en actualizaciones:** upsert por `file_path` — sobreescribe nota y actualiza índice. Los campos `methods[]` y `classes[]` se indexan para `vault_code_query`.
 
 **Retorna:**
 ```json
-{ "ok": true, "path": "11_Code/mi-api/store-mjs.md", "project": "mi-api", "file_path": "src/store.mjs", "mapRegenerated": false }
+{ "ok": true, "path": "11_Code/mi-api/auth.md", "project": "mi-api", "file_path": "src/auth.py", "action": "created", "has_class_diagram": true, "mapRegenerated": false }
 ```
 
+**Protocolo de documentación de código (IEEE 1016):**
+> Si el archivo tiene más de 2 funciones/métodos o 1 clase, usar `--methods` y `--classes` respectivamente. La documentación debe ser comprensible sin leer el código fuente (**ISO/IEC/IEEE 26512**).
+
 **Cuándo usar:**
-- Al crear o refactorizar cualquier módulo significativo del proyecto
-- Cuando el usuario pregunta "¿qué hace `X` archivo?", "¿qué exporta?", "¿quién usa esto?"
-- Al inicio de un proyecto para mapear la arquitectura de código existente
+- Al crear o refactorizar cualquier módulo significativo
+- Cuando el usuario pregunta "¿qué hace `X` archivo?", "¿qué métodos tiene?", "¿qué clases define?"
+- Al inicio de un proyecto para mapear la arquitectura de código existente con `--scan-path`
 - Después de `vault_code_relation` para completar la documentación de los nodos del mapa
 
 ---
@@ -1714,7 +1838,7 @@ graph TD
   N3 -.->|"implements"| N5["WebSocket RFC 6455"]
 ```
 
-**`.code-index.json` — estructura interna:**
+**`.code-index.json` — estructura interna (v23 con métodos y clases indexados):**
 
 ```json
 {
@@ -1722,27 +1846,81 @@ graph TD
     {
       "docId": "uuid",
       "project": "{proyecto}",
-      "filePath": "src/{modulo}/store.mjs",
-      "title": "store.mjs",
-      "relPath": "11_Code/{proyecto}/store-mjs.md",
-      "exports": ["load", "save", "store"],
-      "language": "javascript",
-      "updatedAt": "2026-05-06T..."
+      "filePath": "src/auth.py",
+      "title": "auth.py",
+      "relPath": "11_Code/{proyecto}/auth.md",
+      "exports": ["login", "logout"],
+      "language": "python",
+      "iso_type": "service",
+      "methods": ["login", "logout", "refresh"],
+      "classes": ["UserService"],
+      "updatedAt": "2026-05-08T..."
     }
   ],
   "relations": [
     {
-      "from": "src/server.mjs",
-      "to": "src/{modulo}/store.mjs",
+      "from": "src/server.py",
+      "to": "src/auth.py",
       "type": "imports",
       "cardinality": "1:1",
       "label": "",
       "project": "{proyecto}",
-      "addedAt": "2026-05-06T..."
+      "addedAt": "2026-05-08T..."
     }
   ]
 }
 ```
+
+---
+
+#### `vault_code_query(project, file?, method?, class?, list?, deps?)`
+
+Consulta recursiva del índice de código. Permite al agente obtener documentación completa de un archivo, buscar un método por nombre o listar todos los módulos del proyecto sin leer archivos `.md` manualmente.
+
+**Modos:**
+
+| Flag | Descripción |
+|---|---|
+| `--file PATH` | Documentación completa de un archivo (búsqueda por substring en `filePath`) |
+| `--method NOMBRE` | Busca qué módulos tienen ese método indexado |
+| `--class NOMBRE` | Busca qué módulos definen esa clase |
+| `--list` | Lista todos los módulos del proyecto con sus métodos y clases indexados |
+| `--deps` | Agrega relaciones entrantes/salientes (usar junto con `--file`) |
+
+**Retorna para `--file`:**
+```json
+{
+  "ok": true,
+  "file_path": "src/auth.py",
+  "title": "auth.py",
+  "language": "python",
+  "iso_type": "service",
+  "description": "Servicio de autenticación...",
+  "methods_index": ["login", "logout"],
+  "classes_index": ["UserService"],
+  "methods_doc": "## Metodos\n| Metodo | ...",
+  "classes_doc": "## Clases\n### UserService...",
+  "relations": { "outgoing": [...], "incoming": [...] }
+}
+```
+
+**Retorna para `--method login`:**
+```json
+{
+  "ok": true,
+  "query": "login",
+  "count": 2,
+  "matches": [
+    {"file_path": "src/auth.py", "title": "auth.py", "matched_methods": ["login"]}
+  ]
+}
+```
+
+**Cuándo usar:**
+- Cuando el usuario pregunta "¿qué hace `auth.py`?" → `vault_code_query --file auth.py`
+- "¿Dónde está definido el método `login`?" → `vault_code_query --method login`
+- "¿Qué módulos tiene este proyecto?" → `vault_code_query --list`
+- Antes de documentar relaciones: verificar qué ya está documentado
 
 ---
 
@@ -1867,7 +2045,7 @@ Restaura el vault desde un backup. **Operación destructiva** — sobreescribe e
 
 Cuando el usuario pide hacer backup de una base de datos o de archivos del proyecto, el agente **ejecuta el backup y luego documenta el resultado** en el vault bajo `00_System/backups/`. No existe una vault-tool específica para esto — se usa la herramienta de ejecución de comandos del harness (`cmd_exec`, `bash_exec`, o equivalente según la implementación) para el backup, y `vault_write` para documentar el resultado.
 
-> **Nota sobre `cmd_exec`:** es una herramienta del harness del agente (no parte de las 34 vault-tools) que permite ejecutar comandos de shell. Su nombre puede variar según la implementación: `cmd_exec`, `bash_exec`, `run_command`, etc. Si el harness no la expone, el agente debe indicar al usuario que ejecute el comando manualmente.
+> **Nota sobre `cmd_exec`:** es una herramienta del harness del agente (no parte de las 37 vault-tools) que permite ejecutar comandos de shell. Su nombre puede variar según la implementación: `cmd_exec`, `bash_exec`, `run_command`, etc. Si el harness no la expone, el agente debe indicar al usuario que ejecute el comando manualmente.
 
 **Flujo para backup de base de datos:**
 
@@ -2078,13 +2256,13 @@ Genera o actualiza `99_Index/index.md` con un índice maestro del vault completo
 **Parámetros:** ninguno.
 
 **Comportamiento:**
-1. Llama internamente a `vault_section_index` para cada sección numerada (`00_System` … `11_Code`)
+1. Llama internamente a `vault_section_index` para cada sección numerada (`00_System` … `16_AI_Governance`)
 2. Genera `99_Index/index.md` con tabla: carpeta, descripción de la sección, notas totales, link al section index
 3. Si una carpeta no tiene notas, la incluye como vacía — el índice maestro siempre muestra el vault completo
 
 **Retorna:**
 ```json
-{ "ok": true, "path": "99_Index/index.md", "sectionsTotal": 12, "notesTotal": 108 }
+{ "ok": true, "path": "99_Index/index.md", "sectionsTotal": 17, "notesTotal": 108 }
 ```
 
 **Cuándo usar:** al inicializar un vault nuevo (paso final después de crear la estructura), después de una migración masiva, cuando el usuario pide una vista general del vault, como primer paso de onboarding en una sesión nueva para entender el estado actual del vault.
@@ -2100,9 +2278,10 @@ Reconstruye `99_Index/search-index.json` desde cero escaneando todas las notas e
 |---|---|---|---|
 | `dry_run` | boolean | `false` | Si `true`, muestra qué notas serían indexadas sin escribir el archivo |
 | `graph` | boolean | `false` | Si `true`, también reconstruye `graph.json` después del reindex |
+| `--check` | flag | — | Retorna estado del índice sin modificarlo (`index_ok` o `index_empty_or_missing`) |
 
 **Comportamiento:**
-- Escanea solo notas dentro de las 13 secciones estándar (`00_System` … `11_Code`) — ignora archivos en la raíz del vault (`vault-obsidian-architecture.md`, `scripts/`, etc.)
+- Escanea solo notas dentro de las 17 secciones estándar (`00_System` … `16_AI_Governance`) — ignora archivos en la raíz del vault (`vault-obsidian-architecture.md`, `scripts/`, etc.)
 - Parsea frontmatter de cada nota para extraer `title`, `tags`, `updatedAt`
 - Genera `99_Index/search-index.json` con `{ notes: [...], rebuiltAt, totalNotes }`
 - Sobreescribe cualquier índice previo (incluyendo el vacío `{}`)
@@ -2119,6 +2298,474 @@ Reconstruye `99_Index/search-index.json` desde cero escaneando todas las notas e
 - Para recuperar vaults con `search-index.json` vacío (`{}`) o corrupto
 
 > **Regla para LLMs remotos:** todo agente cuyo harness no garantice que `vault_write` es la única interfaz de escritura (API sin tools, contexto limitado, o LLM que escribe archivos directamente) DEBE llamar `vault_reindex` al inicio de sesión como primer paso obligatorio.
+
+---
+
+### Grupo 16 — Bibliografía y Referencias Externas
+
+Registra fuentes externas consultadas por el agente durante una sesión de trabajo: páginas web, papers, documentación oficial, APIs. Establece trazabilidad de dónde provino el conocimiento incorporado al vault.
+
+**Principio:** si el agente hace una búsqueda web o consulta documentación externa para responder una pregunta o tomar una decisión, debe dejar registro de la fuente antes de cerrar la sesión. Sin bibliografía, el vault no puede distinguir entre conocimiento derivado de código real y conocimiento sintetizado por el agente.
+
+---
+
+#### `vault_bibliography_save(title, url, summary, source_type, project?, agent?, tags?)`
+
+Guarda una referencia externa en `12_Bibliography/{source_type}/`.
+
+**Parámetros:**
+| Parámetro | Tipo | Requerido | Descripción |
+|---|---|---|---|
+| `title` | string | sí | Título de la fuente |
+| `url` | string | sí | URL completa de la fuente |
+| `summary` | string | sí | Resumen de qué información útil aportó — mínimo 2 oraciones |
+| `source_type` | string | sí | `web` \| `paper` \| `docs` \| `api` \| `book` |
+| `project` | string | no | Proyecto al que aplica esta referencia |
+| `agent` | string | no | Identificador del agente que consultó la fuente (`claude`, `codex`, `gpt`, etc.) |
+| `tags` | array | no | Etiquetas de clasificación temática |
+
+**Categorías y rutas:**
+| `source_type` | Carpeta destino | Cuándo usar |
+|---|---|---|
+| `web` | `12_Bibliography/web/` | Página web, artículo, post de blog, Stack Overflow |
+| `paper` | `12_Bibliography/papers/` | Paper académico, RFC, especificación técnica (IETF, W3C) |
+| `docs` | `12_Bibliography/docs/` | Documentación oficial de librería, framework o herramienta |
+| `api` | `12_Bibliography/apis/` | Referencia de API externa consultada (OpenAPI, Swagger, portal dev) |
+| `book` | `12_Bibliography/books/` | Libro técnico o capítulo específico |
+
+**Frontmatter generado:**
+```yaml
+---
+title: Dining Philosophers Problem — Wikipedia
+id: {uuid}
+url: https://en.wikipedia.org/wiki/Dining_philosophers_problem
+source_type: web
+project: mi-proyecto
+agent: claude
+accessed_at: 2026-05-07T14:30:22.000Z
+tags: ["concurrency", "deadlock", "algorithms"]
+---
+```
+
+**Retorna:**
+```json
+{ "ok": true, "path": "12_Bibliography/web/dining-philosophers-problem.md", "source_type": "web" }
+```
+
+**Cuándo usar:** cuando el agente consulta una fuente externa para fundamentar una decisión, explicar un concepto, o incorporar conocimiento al vault. Llamar `vault_bibliography_save` antes de cerrar la sesión, no después de cada búsqueda individual.
+
+---
+
+### Grupo 17 — Detección de Drift de Documentación
+
+Detecta qué archivos del proyecto fueron modificados en la sesión actual y cuáles de esos cambios quedaron sin documentar en el vault. Cierra el loop entre "qué trabajó el agente" y "qué documentó el agente".
+
+**Problema que resuelve:** los agentes LLM tienden a documentar solo lo que recuerdan haber tocado. Sin una herramienta de verificación explícita, los cambios en archivos de código, configuración o infraestructura se pierden silenciosamente. `vault_drift_detect` hace auditable la cobertura documental de cada sesión.
+
+**Backends soportados:**
+- **git**: usa `git diff` y `git log` para detectar cambios — preciso, sin overhead, no requiere snapshot previo si el proyecto ya tiene commits
+- **hash**: calcula MD5 de todos los archivos al inicio de sesión y compara al final — funciona en cualquier directorio sin git
+
+---
+
+#### `vault_drift_detect(path, project, mode, extensions?)`
+
+**Parámetros:**
+| Parámetro | Tipo | Requerido | Descripción |
+|---|---|---|---|
+| `path` | string | sí | Ruta raíz del proyecto a escanear |
+| `project` | string | sí | Slug del proyecto (para cruzar con vault) |
+| `mode` | string | sí | `snapshot` \| `status` \| `report` |
+| `extensions` | array | no | Extensiones a rastrear. Default: todas las de código/config |
+
+**Modos:**
+
+| Modo | Cuándo usar | Qué hace |
+|---|---|---|
+| `snapshot` | Inicio de sesión | Guarda baseline en `00_System/.session-snapshot.json`. Con git: guarda el commit HEAD. Sin git: calcula MD5 de todos los archivos. |
+| `status` | Bajo demanda | Lista archivos modificados sin cruzar con vault. Útil para revisión rápida. |
+| `report` | Fin de sesión | Lista cambios + cruza contra vault. Reporta documentados vs sin documentar con sugerencia de tool. |
+
+**Frontmatter del snapshot (`00_System/.session-snapshot.json`):**
+```json
+{
+  "ans": {
+    "project": "ans",
+    "path": "/path/to/project",
+    "timestamp": "2026-05-08T14:30:00.000Z",
+    "git": true,
+    "git_commit": "a8257bd936247b9f833958410b677e30aef5ede3",
+    "files": {}
+  }
+}
+```
+
+**Retorna (modo `report`):**
+```json
+{
+  "ok": true,
+  "mode": "report",
+  "project": "ans",
+  "backend": "git",
+  "since": "2026-05-08T14:30:00.000Z",
+  "summary": {
+    "total_changed": 12,
+    "added": 3,
+    "modified": 8,
+    "deleted": 1,
+    "documented": 7,
+    "undocumented": 4,
+    "coverage_pct": 64
+  },
+  "documented": [
+    { "file": "src/auth.py", "vault_path": "11_Code/ans/auth-py.md", "source": "code-index", "updatedAt": "2026-05-08T15:00:00.000Z" }
+  ],
+  "undocumented": [
+    { "file": "src/routes.py", "suggestion": "vault_code_module" },
+    { "file": "docker-compose.yml", "suggestion": "vault_knowledge_save --category config" }
+  ],
+  "deleted": ["src/legacy.py"],
+  "action_required": true,
+  "message": "4 file(s) changed without vault documentation. Coverage: 64%."
+}
+```
+
+**Archivos ignorados automáticamente:** binarios (`.exe`, `.dll`, `.so`), certificados (`.pem`, `.key`, `.pub`), runtime (`.pid`, `.lock`, `.log`), modelos ML (`.safetensors`, `.gguf`, `.onnx`), imágenes, directorios generados (`node_modules`, `dist`, `__pycache__`, etc.).
+
+**Cuándo usar:**
+- `--mode snapshot` como primer paso obligatorio al iniciar una sesión de trabajo
+- `--mode report` como último paso antes de cerrar la sesión — verificar que `undocumented: []` o justificar cada archivo pendiente
+- `--mode status` en cualquier momento para ver el estado actual de cambios sin overhead de cruce con vault
+
+> **Integración con el protocolo de sesión:** `vault_drift_detect --mode report` se convierte en el Paso 5b del protocolo de LLMs remotos. Si `action_required: true`, el agente debe documentar los archivos faltantes antes de declarar la sesión cerrada.
+
+---
+
+### Grupo 18 — Flows: Workflows, Pipelines, Lifecycles y Dataflows
+
+> **Propósito:** documentar procesos dinámicos con semántica estructurada (pasos, actores, triggers, condiciones) más una representación gráfica Mermaid embebida. A diferencia de `vault_diagram_save`, las notas de `13_Flows/` son consultables y actualizables por el agente como documentación viva.
+
+---
+
+#### `vault_flow_save(project, name, type, description, mermaid, steps?, actors?, triggers?, pre_conditions?, post_conditions?, related_code?)`
+
+Guarda un flow documentado en `13_Flows/{type}/{project}-{slug}.md`.
+
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `project` | string | — | Slug del proyecto |
+| `name` | string | — | Nombre del flow |
+| `type` | string | — | `workflow` · `pipeline` · `lifecycle` · `dataflow` |
+| `description` | string | — | Qué hace este flow en 1-3 líneas |
+| `mermaid` | string | — | Código Mermaid del diagrama (sin backticks) |
+| `steps` | object[] | `[]` | Pasos estructurados: `[{step, name, actor, action}]` |
+| `actors` | string | — | Comma-separated: sistemas/usuarios involucrados |
+| `triggers` | string | — | Qué inicia este flow |
+| `pre_conditions` | string | — | Estado requerido antes del flow |
+| `post_conditions` | string | — | Estado garantizado al terminar |
+| `related_code` | string | — | Comma-separated: `file_paths` de código relacionado |
+
+**Tipos de flow y Mermaid recomendado:**
+| Tipo | Carpeta | Mermaid recomendado | Cuándo usar |
+|---|---|---|---|
+| `workflow` | `13_Flows/workflows/` | `flowchart TD` | Proceso de negocio multi-actor con decisiones |
+| `pipeline` | `13_Flows/pipelines/` | `flowchart LR` | CI/CD, data pipeline, ETL con etapas lineales |
+| `lifecycle` | `13_Flows/lifecycles/` | `stateDiagram-v2` | Estados y transiciones de entidad/componente |
+| `dataflow` | `13_Flows/dataflows/` | `flowchart TD` | Transformación de datos: fuente → proceso → destino |
+
+**Ejemplo de nota generada para `workflow`:**
+```markdown
+---
+id: uuid
+title: User Registration Flow
+project: mi-api
+flow_type: workflow
+type: flow
+createdAt: 2026-05-08T...
+updatedAt: 2026-05-08T...
+tags: ["mi-api", "flow", "workflow"]
+---
+
+**Proyecto:** `mi-api`  |  **Tipo:** `workflow`
+
+## Descripcion
+Proceso completo de registro de usuario con verificación de email.
+
+## Metadata
+| Campo | Valor |
+|---|---|
+| **Trigger** | Usuario accede a /register |
+| **Actores** | `User`, `API`, `Database`, `EmailService` |
+| **Pre-condicion** | Usuario no registrado |
+| **Post-condicion** | Usuario activo en BD, email de bienvenida enviado |
+
+## Diagrama
+
+```mermaid
+flowchart TD
+  A[User fills form] --> B[POST /register]
+  B --> C{Email exists?}
+  C -->|No| D[Create user in DB]
+  C -->|Yes| E[Return 409]
+  D --> F[Send welcome email]
+```
+
+## Pasos
+| # | Nombre | Actor | Accion |
+|---|---|---|---|
+| 1 | Submit form | `User` | POST /register |
+| 2 | Validate email | `API` | Check DB uniqueness |
+| 3 | Create user | `Database` | INSERT user record |
+| 4 | Send email | `EmailService` | Dispatch welcome email |
+```
+
+**Retorna:**
+```json
+{ "ok": true, "path": "13_Flows/workflow/mi-api-user-registration-flow.md", "type": "workflow", "action": "created" }
+```
+
+**Cuándo usar:**
+- Al documentar un proceso de negocio con múltiples actores y pasos
+- Al modelar el ciclo de vida de una entidad (Order, Payment, Session)
+- Al documentar un pipeline CI/CD con sus etapas y artefactos
+- Al mapear flujos de datos entre sistemas (ETL, event sourcing)
+
+---
+
+### Grupo 19 — Requerimientos (ISO/IEC/IEEE 29148:2018)
+
+> **Norma:** ISO/IEC/IEEE 29148:2018 — *Systems and Software Engineering — Requirements Engineering*. Define los atributos obligatorios de un requerimiento bien formado: identificación única, trazabilidad, criterios de aceptación verificables y estado de ciclo de vida.
+
+---
+
+#### `vault_requirement_save(project, title, description, type, priority, acceptance_criteria?, source?, status?, related_code?, tags?)`
+
+Guarda un requerimiento en `14_Requirements/{project}/req-{n}-{slug}.md` con ID secuencial auto-generado.
+
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `project` | string | — | Slug del proyecto |
+| `title` | string | — | Nombre conciso del requerimiento |
+| `description` | string | — | Descripción completa: qué debe hacer el sistema |
+| `type` | string | — | `functional` · `non-functional` · `constraint` · `assumption` |
+| `priority` | string | — | MoSCoW: `must-have` · `should-have` · `nice-to-have` · `wont-have` |
+| `acceptance_criteria` | string[] | `[]` | Criterios verificables y testables (IEEE 29148 §5.2.5) |
+| `source` | string | — | Quién solicitó este requerimiento (stakeholder, normativa, decisión técnica) |
+| `status` | string | `draft` | Ciclo de vida: `draft` → `reviewed` → `approved` → `implemented` → `verified` → `obsolete` |
+| `related_code` | string | — | Comma-separated: rutas de archivos que implementan este requerimiento |
+
+**Tipos de requerimiento:**
+| Tipo | Descripción |
+|---|---|
+| `functional` | Comportamiento observable del sistema: "El sistema debe..." |
+| `non-functional` | Atributo de calidad: rendimiento, seguridad, disponibilidad (ISO 25010) |
+| `constraint` | Restricción externa: legal, regulatoria, de infraestructura |
+| `assumption` | Suposición del contexto que puede invalidar el requerimiento si es falsa |
+
+**Retorna:**
+```json
+{ "ok": true, "path": "14_Requirements/mi-api/req-001-user-authentication.md", "req_id": "REQ-001", "action": "created" }
+```
+
+**Trazabilidad:** el campo `related_code` conecta cada requerimiento con su implementación. Combinado con `vault_test_save --related_requirement REQ-001`, cierra el ciclo requerimiento → código → test.
+
+**Cuándo usar:**
+- Al inicio de un proyecto para documentar los requerimientos clave antes de codificar
+- Cuando el usuario define una feature nueva — documentar antes de implementar
+- Para requerimientos no-funcionales (SLA, seguridad, GDPR) que deben ser verificables
+
+---
+
+### Grupo 20 — Tests (ISO/IEC/IEEE 29119-3:2021)
+
+> **Norma:** ISO/IEC/IEEE 29119-3:2021 — *Software and Systems Engineering — Software Testing — Part 3: Test Documentation*. Define la estructura mínima de un caso de prueba: identificación, precondiciones, pasos, resultado esperado y trazabilidad al requerimiento.
+
+---
+
+#### `vault_test_save(project, title, test_type, description, preconditions?, steps?, expected_result?, related_requirement?, related_code?, status?, tags?)`
+
+Guarda un caso de prueba en `15_Tests/{test_type}/{project}-{slug}.md` con ID secuencial auto-generado.
+
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `project` | string | — | Slug del proyecto |
+| `title` | string | — | Nombre descriptivo del caso de prueba |
+| `test_type` | string | — | Tipo de prueba — ver tabla |
+| `description` | string | — | Qué comportamiento verifica este test |
+| `preconditions` | string | — | Estado requerido antes de ejecutar el test |
+| `steps` | object[] | `[]` | Pasos: `[{step, action, expected}]` |
+| `expected_result` | string | — | Resultado final esperado al completar todos los pasos |
+| `related_requirement` | string | — | ID de requerimiento: `REQ-001` (trazabilidad IEEE 29148 → 29119) |
+| `related_code` | string | — | Comma-separated: archivos que este test verifica |
+| `status` | string | `not_run` | `not_run` · `pass` · `fail` · `blocked` · `skip` |
+
+**Tipos de test:**
+| Tipo | Carpeta | Descripción |
+|---|---|---|
+| `unit` | `15_Tests/unit/` | Función o clase individual, sin dependencias externas |
+| `integration` | `15_Tests/integration/` | Interacción entre módulos o con servicios externos |
+| `e2e` | `15_Tests/e2e/` | Flujo completo de usuario de principio a fin |
+| `performance` | `15_Tests/performance/` | SLA, latencia, throughput, carga |
+| `security` | `15_Tests/security/` | OWASP, inyección, autenticación, autorización |
+| `acceptance` | `15_Tests/acceptance/` | Criterios de aceptación del usuario / cliente |
+
+**Retorna:**
+```json
+{ "ok": true, "path": "15_Tests/unit/mi-api-login-success.md", "test_id": "TEST-001", "action": "created" }
+```
+
+**Cuándo usar:**
+- Al documentar la estrategia de testing de un módulo nuevo
+- Cuando hay un bug — crear un test de regresión antes de corregirlo
+- Para tests de aceptación que verifican los criterios de `vault_requirement_save`
+
+---
+
+### Grupo 21 — Gobernanza de IA (ISO/IEC 42001:2023)
+
+> **Norma:** ISO/IEC 42001:2023 — *Artificial Intelligence Management System (AIMS)*. Requiere que los sistemas de IA documenten sus decisiones significativas, mantengan trazabilidad de outputs, gestionen riesgos y tengan mecanismos de supervisión humana. Directamente aplicable al vault como infraestructura de agentes LLM.
+
+---
+
+#### `vault_ai_decision(project, title, decision_type, description, rationale, alternatives?, risks?, impact_level?, reversible?, human_approved?, related_code?, tags?)`
+
+Registra una decisión significativa tomada por un agente de IA en `16_AI_Governance/decisions/{project}-{slug}.md`.
+
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `project` | string | — | Slug del proyecto |
+| `title` | string | — | Nombre de la decisión (conciso, accionable) |
+| `decision_type` | string | — | Tipo — ver tabla |
+| `description` | string | — | Qué se decidió exactamente |
+| `rationale` | string | — | Por qué se tomó esta decisión (evidencia, restricciones, objetivos) |
+| `alternatives` | string[] | `[]` | Alternativas consideradas y por qué se descartaron |
+| `risks` | string[] | `[]` | Riesgos identificados de esta decisión |
+| `impact_level` | string | `medium` | `low` · `medium` · `high` · `critical` |
+| `reversible` | bool | `true` | Si la decisión puede deshacerse sin pérdida de datos |
+| `human_approved` | bool | `false` | Si un humano revisó y aprobó explícitamente |
+| `related_code` | string | — | Comma-separated: archivos afectados por esta decisión |
+
+**Tipos de decisión:**
+| Tipo | Ejemplos |
+|---|---|
+| `architectural` | Elegir JWT vs sessions, microservicios vs monolito, REST vs GraphQL |
+| `security` | Algoritmo de hash, política de contraseñas, manejo de secretos |
+| `data-model` | Estructura de tablas, tipos de datos, estrategia de particionado |
+| `algorithm` | Algoritmo de ranking, estrategia de cache, política de retry |
+| `configuration` | Parámetros de infraestructura, timeouts, límites de recursos |
+| `process` | Flujo de trabajo, convenciones de código, estrategia de branching |
+
+**Retorna:**
+```json
+{ "ok": true, "path": "16_AI_Governance/decisions/mi-api-use-jwt.md", "decision_id": "AID-001", "impact_level": "medium", "action": "created" }
+```
+
+**Regla de gobernanza ISO 42001:**
+> Toda decisión con `impact_level: high` o `critical` debe tener `human_approved: true` antes de implementarse. El agente debe pausar y solicitar confirmación explícita del usuario antes de ejecutar cambios de alto impacto.
+
+**Cuándo usar:**
+- Antes de aplicar un cambio arquitectónico importante
+- Al elegir entre dos alternativas técnicas con trade-offs no triviales
+- Al tomar cualquier decisión irreversible (`reversible: false`)
+- Al final de una sesión: registrar las decisiones significativas tomadas
+
+---
+
+### Grupo 22 — Versionado del Estándar
+
+> **Propósito:** Detectar la brecha entre la versión del estándar aplicada en un vault existente y la versión actual, y aplicar las migraciones pendientes (nuevas carpetas, nuevos campos, nuevas reglas) de forma idempotente.
+
+---
+
+#### `vault_standard_upgrade(from_version?, to_version?, check_only?, init_version?, agent?)`
+
+Detecta y aplica migraciones entre versiones del estándar. Lee `00_System/standard-version.json` para obtener la versión actual aplicada.
+
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `from_version` | string | auto | Versión actual del vault (lee `standard-version.json` si se omite) |
+| `to_version` | string | `v25` | Versión objetivo (`latest` = versión actual del estándar) |
+| `check_only` | bool | `false` | Solo reportar migraciones pendientes sin aplicar nada |
+| `init_version` | string | — | Inicializar `standard-version.json` con esta versión (vault nuevo) |
+| `agent` | string | `claude` | Nombre del agente para audit trail |
+
+**Retorna (modo upgrade):**
+```json
+{ "ok": true, "action": "upgraded", "from": "v20", "to": "v25", "migrations_applied": [...], "folders_created": [...], "version_file": "00_System/standard-version.json" }
+```
+
+**Retorna (modo check):**
+```json
+{ "ok": true, "action": "check", "current_version": "v20", "target_version": "v25", "pending_count": 5, "pending_migrations": [{ "version": "v21", "description": "...", "folders_to_create": [...] }] }
+```
+
+**Versiones disponibles:** v19, v20, v21, v22, v23, v24, v25
+
+**Cuándo usar:**
+- Al instalar el estándar en un vault existente: `vault_standard_upgrade --check --from v{actual}` primero
+- Al inicio de sesión en un vault que no ha sido actualizado: detectar brecha y preguntar al usuario si aplica
+- Al crear un vault nuevo: `vault_standard_upgrade --init v25`
+
+**Archivo `00_System/standard-version.json`:**
+```json
+{
+  "applied_version": "v25",
+  "applied_at": "2026-05-09T...",
+  "applied_by": "claude",
+  "migrations_applied": ["v21", "v22", "v23", "v24", "v25"]
+}
+```
+
+---
+
+### Grupo 23 — Change Log de Notas
+
+> **Propósito:** Registrar el ciclo de vida completo de las notas del vault (created/updated/deleted/moved) con trazabilidad de razón y agente. Obligatorio antes de cualquier eliminación — sin este registro, los agentes futuros no pueden reconstruir la intención detrás de los cambios.
+
+---
+
+#### `vault_change_log(action, path, reason, agent?, new_path?)`
+
+Registra un evento de cambio en el vault. Escribe en dos destinos: `00_System/change-log.md` (tabla Markdown, legible en Obsidian) y `00_System/.change-log.json` (array JSON, queryable por agentes).
+
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `action` | string | — | `created` · `updated` · `deleted` · `moved` |
+| `path` | string | — | Ruta relativa al vault root de la nota afectada |
+| `reason` | string | — | Por qué se realizó el cambio (requerido, no vacío) |
+| `agent` | string | `claude` | Agente que realizó el cambio |
+| `new_path` | string | — | Nueva ruta (requerida solo para `action: moved`) |
+
+**Retorna:**
+```json
+{ "ok": true, "id": "uuid", "action": "deleted", "path": "07_Knowledge/old.md", "log_md": "00_System/change-log.md", "log_json": "00_System/.change-log.json" }
+```
+
+#### `vault_change_log(query, project?, action?, last?)`
+
+Consulta el log de cambios.
+
+**Parámetros de query:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `query` | bool | `true` | Activar modo consulta |
+| `project` | string | — | Filtrar por proyecto (substring match en path) |
+| `action` | string | — | Filtrar por tipo de acción |
+| `last` | int | 20 | Máximo de entradas a retornar |
+
+**Retorna:**
+```json
+{ "ok": true, "total": 45, "returned": 10, "entries": [{ "id": "...", "action": "deleted", "path": "...", "reason": "...", "agent": "claude", "timestamp": "..." }] }
+```
+
+**Regla de gobernanza:**
+> **OBLIGATORIO:** antes de eliminar cualquier nota del vault, el agente DEBE llamar `vault_change_log(action:"deleted", path:X, reason:Y)`. Sin este registro, la eliminación viola el protocolo de gobernanza del vault. Esta regla aplica también a movimientos a `10_Migrated/`.
 
 ---
 
@@ -2362,6 +3009,8 @@ agente → vault_backup(label:"pre-migration-proyecto-x")   ← Fase 0: punto de
 - Al identificar un duplicado: mover el archivo no-canonical a `10_Migrated/direct/` con un stub que apunte al canonical — preserva historial sin contaminar el vault activo
 - El `.history/` automático de `vault_write` elimina la necesidad de crear "versión backup" como archivo separado
 
+> **v25 — Subcategorías:** (a) **same-folder** — dos notas en la misma carpeta; resolución: eliminar la no-canonical con `vault_change_log --action deleted`. (b) **cross-folder** (AP-18) — mismo contenido en carpetas distintas detectado por hash MD5; `vault_audit()` reporta en `crossFolderDuplicates`. (c) **canonical-shadow** (AP-17) — nota thin creada por `vault_project_overview` cuando ya existe la canónica rica; `vault_audit()` detecta pares con `SequenceMatcher ratio > 0.85` y los reporta en `canonicalShadow`.
+
 ---
 
 ### AP-03 — Stubs sin política de expansión
@@ -2518,6 +3167,8 @@ agente → vault_backup(label:"pre-migration-proyecto-x")   ← Fase 0: punto de
 - `vault_audit()` detecta notas donde el contenido (excluyendo frontmatter) tiene < 3 líneas no vacías → reporta como `skeleton`
 - Al hacer `vault_write`, si `content` contiene solo "TODO", "placeholder", "Add content here" → el gate lo rechaza antes de escribir
 
+> **v25 — Variante AP-20 (deceptive skeleton):** nota que pasa el content gate de 3 líneas porque tiene bullets, pero >50% de los bullets están vacíos (`- `, `- [ ]`, `- []`). `vault_write` rechaza con `content_empty_list` si `empty_item_ratio > 50%`. Métrica: `len(empty_bullets) / len(bullets)`.
+
 ---
 
 ### AP-12 — Frontmatter inconsistente entre notas del mismo tipo
@@ -2570,6 +3221,8 @@ agente → vault_backup(label:"pre-migration-proyecto-x")   ← Fase 0: punto de
 - Al mover notas a `10_Migrated/` con `vault_migrate_docs`: los stubs generados en `direct/` e `indirect/` mantienen el nombre original como anchor, evitando que los links del vault rompan
 - `vault_migrate_rollback` restaura el estado anterior incluyendo los links — no deja broken links tras una migración revertida
 
+> **v25 — Dos causas raíz distintas:** (a) **wrong stem** — el link apunta a un nombre que no coincide con el stem del archivo destino; se corrige renombrando el link o el archivo. (b) **path-anchored links** (AP-21) — `[[carpeta/nota]]` en lugar de `[[nota]]`; Obsidian no resuelve paths, solo stems. `vault_write` rechaza con `path_anchored_wikilinks` cualquier link con `/`. `vault_section_index` genera solo `[[stem|título]]` para evitar este error en índices automáticos.
+
 ---
 
 ### AP-15 — Archivos externos depositados en la raíz del vault
@@ -2597,6 +3250,198 @@ proyecto/
 - `vault_graph` y `vault_reindex` filtran activamente archivos fuera de las 13 secciones estándar — los root-level `.md` no se indexan ni se parsean
 - Al inicializar un vault: crear la carpeta `vault-{nombre}/` y mover todos los `.md` de especificación y scripts fuera de ella antes de la primera operación
 - `vault_validate(check:"structure")` puede extenderse para detectar `.md` en la raíz del vault y reportarlos como AP-15
+
+---
+
+### AP-16 — Sin identificador de agente en frontmatter
+
+**Síntoma:** Notas en el vault no tienen el campo `agent:` en el frontmatter. El vault acumula conocimiento sin que sea posible determinar qué agente lo generó — si fue producido por un LLM específico (y cuál), por un humano, o por un script automatizado.
+
+**Por qué importa:** cuando múltiples agentes colaboran en el mismo vault (Claude + Codex + humano), la ausencia del campo `agent:` hace imposible auditar la procedencia del conocimiento. Si una nota contiene una alucinación, no hay forma de determinar qué agente la produjo ni cuántas notas similares del mismo agente pueden estar afectadas.
+
+**Señal de alarma:** `vault_audit()` reporta notas sin campo `agent:` como advertencia. Ningún mecanismo de trazabilidad puede reconstruir la cadena `agente → decisión → nota`.
+
+**Regla:** Todo agente que crea o modifica una nota DEBE incluir el campo `agent:` con su identificador. Valores estándar:
+
+| Valor | Cuándo usar |
+|---|---|
+| `claude` | Cualquier modelo Claude (Anthropic) |
+| `codex` | OpenAI Codex / ChatGPT con tool use |
+| `gpt` | GPT-4, GPT-4o u otras variantes OpenAI |
+| `gemini` | Google Gemini |
+| `deepseek` | DeepSeek models |
+| `human` | El usuario escribió o editó la nota directamente |
+| `script` | Script automatizado (no LLM) generó la nota |
+
+**Prevención:**
+- `vault_write` acepta `agent` como parámetro y lo incluye en frontmatter
+- Si el harness no pasa el parámetro, `vault_write` omite el campo (no bloquea) pero el campo queda vacío — auditable luego por `vault_audit`
+- Al configurar un agente en un harness nuevo, incluir `agent: {nombre}` en el system prompt como instrucción permanente
+
+---
+
+### AP-17 — Canonical-shadow duplication
+
+**Síntoma:** `vault_project_overview` (u otra herramienta) crea una nota thin ("shadow") sobre un tema para el que ya existe una nota canónica rica en el vault. Resultado: dos notas sobre el mismo tema, una con contenido real y otra que es prácticamente un duplicado vacío.
+
+**Por qué ocurre:** El agente llama `vault_project_overview` sin verificar si ya existe documentación del proyecto en otra carpeta. La shadow tiene un título ligeramente distinto (ej: `ANS Status` vs `ANS — Estado del Proyecto`) y pasa desapercibida.
+
+**Señal de alarma:** `vault_audit()` reporta pares en `canonicalShadow` con `similarity ≥ 0.85` (SequenceMatcher ratio). Si la shadow tiene menos contenido que la canónica, es candidata a eliminación.
+
+**Regla:** Un dominio = una nota canónica rica. El resto son wiki-links hacia ella. Antes de crear una nota de resumen o overview, buscar con `vault_search` si ya existe una canónica.
+
+**Prevención:** `vault_audit()` detecta pares via `difflib.SequenceMatcher(ratio > 0.85)`. Resolución: identificar la canónica (más contenido, más backlinks), mover la shadow a `10_Migrated/` con `vault_change_log --action moved`, actualizar los links que apuntaban a la shadow.
+
+---
+
+### AP-18 — Cross-folder content duplication
+
+**Síntoma:** El mismo contenido (byte-idéntico) existe en dos carpetas distintas del vault. Por ejemplo: el mismo runbook en `08_Runbooks/` y en `10_Migrated/docs/`, o la misma decisión en `03_Decisions/` y `07_Knowledge/`. Los agentes actualizan una copia y dejan la otra obsoleta.
+
+**Por qué ocurre:** Migración masiva que no eliminó la fuente original. Copia manual entre carpetas. `vault_migrate_docs` que no limpió el origen tras completarse.
+
+**Señal de alarma:** `vault_audit()` reporta pares en `crossFolderDuplicates` con hash MD5 idéntico. Las dos notas tienen exactamente el mismo contenido pero viven en folders distintos.
+
+**Regla:** Cada nota tiene exactamente una ubicación canónica. Si el mismo contenido debe ser referenciado desde múltiples secciones, usar wiki-links — nunca copiar el archivo.
+
+**Prevención:** `vault_audit()` calcula MD5 del contenido de cada nota y detecta colisiones cross-folder. Resolución: identificar cuál es la ubicación correcta según la taxonomía del vault, eliminar la copia incorrecta con `vault_change_log --action deleted`.
+
+---
+
+### AP-19 — Shadow indexing
+
+**Síntoma:** Un agente crea `indice-de-knowledge.md` o `knowledge-index.md` manualmente cuando ya existe `07_Knowledge/index.md` generado por `vault_section_index`. El resultado son dos índices en la misma sección: uno actualizado automáticamente y otro obsoleto desde el momento en que fue creado.
+
+**Por qué ocurre:** El agente no sabe que `vault_section_index` es la única fuente autorizada de índices de sección. Crea el suyo propio cuando no encuentra un índice obvio.
+
+**Señal de alarma:** Una carpeta contiene dos archivos que actúan como índice: el `index.md` generado automáticamente y una nota con "indice" en el título. El shadow index estará desactualizado en la primera escritura posterior.
+
+**Regla:** `vault_section_index` es la única herramienta que puede crear índices de sección. `vault_write` rechaza títulos que contengan "indice" o "index" si ya existe `index.md` en esa carpeta.
+
+**Prevención:** No crear índices manualmente. Si necesitas un índice, llamar `vault_section_index --folder {carpeta}` — se regenera automáticamente tras cada `vault_write`. El shadow index debe eliminarse con `vault_change_log --action deleted`.
+
+---
+
+### AP-20 — Deceptive skeleton (empty-list)
+
+**Síntoma:** Una nota parece tener contenido porque tiene bullets, pero los bullets están vacíos: `- `, `- [ ]`, `- []`. Pasa el content gate de 3 líneas porque técnicamente tiene líneas — pero no aporta información real. El agente la lee, no encuentra nada útil, y pierde contexto en el intento.
+
+**Por qué ocurre:** El agente genera la estructura de la nota (headers + lista) pero no tiene el contenido para llenarla en el momento. En lugar de no crear la nota, la crea con la estructura vacía.
+
+**Señal de alarma:** `vault_write` retorna `content_empty_list` al intentar guardar. `vault_audit()` puede detectar notas existentes con `empty_item_ratio > 50%`.
+
+**Regla:** Si los bullets están vacíos, el contenido no existe. No crear la nota hasta tener al menos 50% de bullets con contenido real. `vault_write` bloquea automáticamente con `content_empty_list` si `empty_bullets / total_bullets > 0.5`.
+
+**Prevención:** Guard en `vault_write`: `re.findall(r"^\s*[-*]\s*(.*)", content, re.MULTILINE)` → si `len(empty) / len(total) > 0.5` → rechazar con error `AP-20`.
+
+---
+
+### AP-21 — Path-anchored wiki-links
+
+**Síntoma:** El vault contiene links como `[[07_Knowledge/jwt]]` o `[[concepts/jwt]]` en lugar de `[[jwt]]`. Obsidian resuelve wiki-links únicamente por stem — nunca por path. Estos links siempre aparecen como broken, aunque la nota destino exista con ese nombre en exactamente esa ruta.
+
+**Por qué ocurre:** El agente o script incluye el path relativo pensando que ayuda a desambiguar. En el vault ANS se encontraron 160 links path-anchored que causaban broken links masivos y un health score artificialmente bajo.
+
+**Señal de alarma:** `vault_audit()` reporta broken links con `/` en el nombre del link destino. `vault_graph()` muestra decenas de broken links que en realidad son notas existentes.
+
+**Regla:** Los wiki-links en Obsidian son SOLO por stem: `[[jwt]]`, `[[auth-flow]]`. Nunca incluir carpeta ni extensión. `vault_write` rechaza cualquier nota que contenga `[[path/stem]]` con error `path_anchored_wikilinks`.
+
+**Prevención:**
+- Guard en `vault_write`: `re.findall(r"\[\[[^\]]*\/[^\]]*\]\]", content)` → si hay matches → rechazar con `AP-21`
+- `vault_section_index` genera únicamente `[[stem|título]]` (sin path) desde v25
+- Para corregir links existentes: `grep -r "\[\[.*/" vault/` → reemplazar `[[carpeta/nota]]` por `[[nota]]`
+
+---
+
+## Patrones recomendados
+
+Los siguientes patrones fueron identificados en auditorías reales de vaults en producción. Complementan los antipatrones: donde los APs describen qué no hacer, los PATs describen qué sí funciona.
+
+---
+
+### PAT-1 — Canonical source anchoring
+
+**Regla:** Un dominio = una nota canónica rica. Todas las referencias desde otros contextos son wiki-links hacia esa nota canónica, nunca copias del contenido.
+
+**Cómo aplicar:**
+1. Al crear documentación sobre un tema (ej: JWT), crear UNA nota canónica en la sección más apropiada (`07_Knowledge/concepts/jwt.md`).
+2. En notas de otros proyectos o secciones, referenciar con `[[jwt]]` — nunca copiar el contenido.
+3. Si la misma nota necesita aparecer en múltiples contextos, crear una nota "bridge" mínima que tenga el wiki-link y 1-2 líneas de contexto local.
+
+**Señal de implementación correcta:** `vault_audit()` muestra 0 `canonicalShadow` y 0 `crossFolderDuplicates`. Cada tema tiene exactamente una nota con backlinks desde múltiples lugares.
+
+---
+
+### PAT-2 — Stub enrichment gradient
+
+**Regla:** Un stub con ≥ 3 líneas reales no se elimina — se enriquece progresivamente en cada sesión que lo toca. La eliminación solo se aplica a skeletons (0 líneas reales) y deceptive skeletons (AP-20).
+
+**Cómo aplicar:**
+1. Al encontrar un stub durante una sesión: si tienes información relevante, enriquecer con al menos 3 líneas adicionales antes de continuar.
+2. Usar `meta: { status: "stub", expand_by: "YYYY-MM-DD" }` para marcar stubs con fecha límite de expansión.
+3. `vault_audit()` reporta stubs sin actualización en >14 días — esos son los candidatos a eliminar (no todos los stubs).
+
+**Señal de implementación correcta:** Los stubs del vault tienen `status: stub` y fecha `expand_by`. Los stubs sin esa metadata son sospechosos de ser skeletons disfrazados.
+
+---
+
+### PAT-3 — Duplicate chain resolution
+
+**Algoritmo estándar para resolver duplicados detectados por `vault_audit()` (canonicalShadow o crossFolderDuplicates):**
+
+```
+1. Identificar la nota canónica:
+   - Mayor número de backlinks (vault_graph)
+   - Más contenido (líneas de texto real)
+   - Ubicación más apropiada según taxonomía del vault
+
+2. Registrar la eliminación ANTES de borrar:
+   vault_change_log --action deleted --path {nota-no-canonica} \
+     --reason "Duplicate of {nota-canonica}" --agent {agente}
+
+3. Mover la no-canónica a 10_Migrated/:
+   vault_change_log --action moved --path {nota-no-canonica} \
+     --new_path 10_Migrated/duplicates/{slug}.md \
+     --reason "Archived: canonical is {nota-canonica}"
+
+4. Actualizar wiki-links rotos:
+   grep -r "[[stem-no-canonica]]" vault/ → reemplazar con [[stem-canonica]]
+
+5. Verificar con vault_audit() que canonicalShadow se redujo
+```
+
+---
+
+### PAT-4 — Phased audit execution
+
+**Regla:** Las auditorías masivas del vault se ejecutan en 4 fases atómicas y verificables. Cada fase completa antes de iniciar la siguiente.
+
+| Fase | Qué hace | Herramienta | Criterio de completitud |
+|---|---|---|---|
+| 1. Snapshot | Captura estado inicial | `vault_drift_detect --snapshot` | Archivo `.drift-snapshot.json` creado |
+| 2. Detección | Identifica issues sin modificar nada | `vault_audit()` | JSON con todos los issues, sin cambios al vault |
+| 3. Resolución | Aplica fixes en orden de menor a mayor riesgo | `vault_write`, `vault_change_log` | Cada fix verificado antes del siguiente |
+| 4. Verificación | Compara contra snapshot inicial | `vault_drift_detect --report` | Score mejorado, 0 regresiones |
+
+**Por qué importa:** Auditorías no-faseadas mezclan detección y corrección, generando loops donde la corrección de un issue introduce otro. La fase de snapshot permite rollback si algo sale mal.
+
+---
+
+### PAT-5 — Frontmatter as provenance chain
+
+**Regla:** Los campos `migratedFrom` + `createdAt` + `updatedAt` + `agent` forman una cadena de custodia completa para cada nota. Sin esta cadena, es imposible auditar de dónde vino un dato o qué agente lo introdujo.
+
+**Campos obligatorios de provenance:**
+
+| Campo | Quién lo llena | Cuándo |
+|---|---|---|
+| `id` | `vault_write` automático | Al crear la nota |
+| `createdAt` | `vault_write` automático | Al crear la nota |
+| `updatedAt` | `vault_write` automático | En cada actualización |
+| `agent` | El agente que escribe | En cada `vault_write` call |
+| `migratedFrom` | `vault_migrate_docs` | Solo en migraciones |
+
+**Señal de implementación correcta:** `vault_audit()` reporta 0 notas sin campo `agent`. Cualquier nota puede rastrearse hasta el agente que la creó y cuándo.
 
 ---
 
@@ -2656,6 +3501,11 @@ Un LLM local con acceso a `vault_write.py` mantiene el `search-index.json` sincr
 ### Protocolo de inicio de sesión (obligatorio para LLMs remotos)
 
 ```
+PASO 0 — Verificar versión del estándar (una vez al instalar/actualizar el agente):
+  vault_standard_upgrade --check
+  → si hay migraciones pendientes → vault_standard_upgrade --to latest
+  → si retorna "up to date" → continuar
+
 PASO 1 — Verificar índice antes de cualquier operación:
   vault_reindex --check
   → si retorna index_empty_or_missing → ejecutar vault_reindex antes de continuar
@@ -2672,8 +3522,10 @@ PASO 3 — Baseline de salud:
 PASO 4 — Operar normalmente (toda escritura debe pasar por vault_write)
 
 PASO 5 — Al cerrar la sesión:
-  vault_reindex --graph   ← reconstruye índice + grafo con el estado final
-  vault_audit()           ← verificar que healthScore ≥ baseline de inicio
+  vault_drift_detect --mode report  ← verificar cobertura documental
+  → si action_required: true → documentar archivos faltantes antes de continuar
+  vault_reindex --graph             ← reconstruye índice + grafo con el estado final
+  vault_audit()                     ← verificar que healthScore ≥ baseline de inicio
 ```
 
 ### Reglas específicas para LLMs remotos
@@ -2688,6 +3540,21 @@ PASO 5 — Al cerrar la sesión:
 
 5. **Contenido mínimo real:** toda nota nueva debe tener al menos 3 líneas de contenido real (no frontmatter, no `TODO`, no guiones vacíos). `vault_write` lo aplica automáticamente vía content gate.
 
+6. **Identificador de agente (`agent:`):** todo agente debe incluir el campo `agent:` en el frontmatter de cada nota que cree o modifique. Valores estándar: `claude`, `codex`, `gpt`, `gemini`, `deepseek`, `human`. Sin este campo, el vault no puede determinar qué agente generó qué conocimiento — crítico para auditorías de confianza y detección de alucinaciones. Ejemplo:
+   ```yaml
+   ---
+   title: Dining Philosophers Problem
+   agent: claude
+   ---
+   ```
+   `vault_write` acepta el campo `agent` como parámetro opcional y lo incluye en el frontmatter. Si el agente no lo pasa, la nota queda sin `agent:` — no bloquea la escritura, pero sí se reporta como advertencia en `vault_audit`.
+
+7. **Registrar eliminaciones con `vault_change_log`:** antes de eliminar cualquier nota (incluyendo moverla a `10_Migrated/`), el agente DEBE llamar `vault_change_log(action:"deleted", path:X, reason:Y)`. Sin este registro, los agentes futuros no pueden determinar por qué desapareció una nota — lo que lleva a recrearla (creando duplicados) o a asumir incorrectamente que nunca existió. Ejemplo:
+   ```
+   vault_change_log --action deleted --path "07_Knowledge/old-concept.md" \
+     --reason "Duplicate of glossary/jwt.md" --agent claude
+   ```
+
 ### Compatibilidad con harnesses de terceros
 
 El estándar es agnóstico al LLM y al harness. Para adoptar en un harness existente:
@@ -2699,6 +3566,56 @@ El estándar es agnóstico al LLM y al harness. Para adoptar en un harness exist
 | LangChain / LlamaIndex | Implementar tools como `Tool(name="vault_write", func=vault_write)` |
 | Harness propio (DeepSeek, local) | Exponer scripts vía `subprocess` o como MCP tools; incluir `vault_reindex` como herramienta disponible |
 | Agente sin herramientas de vault | Usar `vault_reindex` manualmente al inicio y fin de cada sesión como mínimo viable |
+
+---
+
+## Configuración de VAULT_ROOT en los scripts
+
+Todos los scripts Python del vault calculan la ruta raíz del vault mediante la constante `VAULT_ROOT`. Su valor correcto depende de **dónde están ubicados los scripts** respecto al vault.
+
+### Caso A — Scripts dentro del vault (estructura estándar)
+
+```
+vault-{nombre}/
+├── scripts/           ← scripts aquí
+└── 00_System/
+```
+
+En este caso `Path(__file__).parent.parent` apunta correctamente al vault:
+
+```python
+VAULT_ROOT = Path(__file__).parent.parent  # correcto para estructura estándar
+```
+
+Este es el layout que producen los templates del estándar. `parent` sube de `scripts/` al vault raíz.
+
+### Caso B — Scripts fuera del vault (repo con vault como subdirectorio)
+
+```
+mi-repo/
+├── scripts/           ← scripts aquí (fuera del vault)
+├── src/
+└── vault-{nombre}/    ← vault aquí (subdirectorio del repo)
+```
+
+En este caso `Path(__file__).parent.parent` apuntaría al repo (`mi-repo/`), **no al vault**. Consecuencia: las tools crearían `02_Observability/`, `99_Index/`, `.history/` directamente en la raíz del repo, fuera del vault — múltiples fuentes de verdad, AP-05.
+
+**Fix obligatorio** — usar la ruta explícita al vault:
+
+```python
+VAULT_ROOT = Path(__file__).resolve().parent.parent / "vault-{nombre}"
+# Ejemplo: Path(__file__).resolve().parent.parent / "vault-grooming-scheduler"
+```
+
+> **Regla de verificación:** antes de ejecutar cualquier script por primera vez en un repo nuevo, verificar que `VAULT_ROOT` apunta al directorio correcto:
+> ```python
+> python -c "from pathlib import Path; print(Path('scripts/vault_write.py').resolve().parent.parent)"
+> ```
+> El resultado debe coincidir con el directorio que contiene `00_System/`, `99_Index/`, etc.
+
+### Cómo detectar el problema
+
+Si tras ejecutar `vault_write` aparecen carpetas como `02_Observability/` o `99_Index/` en la raíz del repo (al mismo nivel que `src/`, `package.json`, etc.) en lugar de dentro del vault, `VAULT_ROOT` está mal configurado. Corregir el valor en **todos** los scripts antes de continuar — un solo script con ruta incorrecta puede crear divergencia silenciosa.
 
 ---
 
@@ -2763,6 +3680,61 @@ El estándar es agnóstico al LLM y al harness. Para adoptar en un harness exist
 □ vault_timeline(project:"X") → la línea de tiempo tiene eventos reales
 □ Verificar que no hay notas con más de 30 días sin actualizar que sean activas
 □ Documentar en 04_Sessions/ el proceso de implementación como referencia
+```
+
+---
+
+## Versionado del estándar
+
+El estándar sigue versionado simplificado `vNN` (entero incremental). Cada versión se describe en el Changelog.
+
+### Tabla de versiones
+
+| Versión | Fecha | Cambios principales |
+|---|---|---|
+| v19 | 2026-04 | Base inicial: 37 tools, 11 carpetas, content gate, AP-01~14 |
+| v20 | 2026-04 | AP-15 (archivos en raíz), AP-16 (agent field), 12_Bibliography, vault_drift_detect |
+| v21 | 2026-04 | vault_drift_detect como herramienta oficial (Grupo 17), snapshot/report gates en protocolo |
+| v22 | 2026-05 | Protocolo de sesión LLMs remotos, vault_reindex actualizado, reglas 1-6 |
+| v23 | 2026-05-08 | 13_Flows, vault_flow_save, vault_code_query, IEEE 1016 en vault_code_module, state/lifecycle en vault_diagram_save |
+| v24 | 2026-05-09 | ISO 25010/29148/29119/42001: vault_requirement_save, vault_test_save, vault_ai_decision, --quality en vault_code_module |
+| v25 | 2026-05-09 | AP-17~21, PAT-1~5, vault_write guards (AP-20/21), vault_section_index stem-only, vault_audit AP-17/18, vault_standard_upgrade, vault_change_log |
+
+### Cómo instalar el estándar en un vault existente
+
+```
+1. Copiar los scripts al directorio hermano del vault (no dentro del vault):
+   vault-{nombre}/        ← vault root
+   scripts/               ← scripts del estándar (hermano del vault)
+
+2. Detectar la brecha de versión:
+   python vault_standard_upgrade.py --check --from v{version-actual}
+   → lista todas las migraciones pendientes sin aplicar nada
+
+3. Si la versión actual es desconocida, estimar por las carpetas presentes:
+   - Sin 12_Bibliography/ → v20 o anterior
+   - Sin 13_Flows/ → v22 o anterior
+   - Sin 14_Requirements/ → v23 o anterior
+
+4. Aplicar las migraciones:
+   python vault_standard_upgrade.py --from v{version-actual} --to latest
+
+5. Verificar:
+   python vault_standard_upgrade.py --check
+   → debe retornar "Vault is up to date at v25"
+```
+
+### Archivo `00_System/standard-version.json`
+
+Todo vault gestionado por este estándar debe tener este archivo en `00_System/`. Se crea con `vault_standard_upgrade --init v{version}` al instalar el estándar en un vault nuevo, o con `--from --to` al actualizar.
+
+```json
+{
+  "applied_version": "v25",
+  "applied_at": "2026-05-09T...",
+  "applied_by": "claude",
+  "migrations_applied": ["v21", "v22", "v23", "v24", "v25"]
+}
 ```
 
 ---
@@ -2947,7 +3919,7 @@ temp/
 | Vector DB | Costoso en recursos; el score ponderado por palabras es suficiente para <10K notas |
 | Obsidian plugins | Solo funciona en Obsidian, no en el loop del agente |
 
-**Markdown + carpetas numeradas + 37 tools especializadas** es el punto óptimo para agentes LLM:
+**Markdown + carpetas numeradas + 53 tools especializadas** es el punto óptimo para agentes LLM:
 - Zero dependencias externas
 - Legible por humanos en cualquier editor
 - Compatible con Obsidian si el usuario quiere abrirlo visualmente
@@ -2964,6 +3936,100 @@ temp/
 > Formato: [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).  
 > Cuando el proyecto usa **git**, cada versión incluye el hash del commit que la introdujo (`git: abcd123`).  
 > El hash permite navegar al estado exacto del código: `git show abcd123 -- docs/vault-obsidian-architecture.md`.
+
+---
+
+### v25 — 2026-05-09 `git: —`
+
+**Grupos 22-23 — AP-17~21, PAT-1~5, versionado del estándar y change log**
+
+**Agregado**
+- **AP-17 — Canonical-shadow duplication:** `vault_audit()` detecta pares de notas con `SequenceMatcher ratio ≥ 0.85` en títulos. Reporta en `issues.canonicalShadow`. Penalización: −2 por par en health score.
+- **AP-18 — Cross-folder content duplication:** `vault_audit()` calcula MD5 de cada nota y detecta colisiones entre carpetas distintas. Reporta en `issues.crossFolderDuplicates`. Penalización: −3 por par.
+- **AP-19 — Shadow indexing:** regla documentada: `vault_section_index` es la única herramienta para índices de sección. No crear índices manuales.
+- **AP-20 — Deceptive skeleton (empty-list):** guard en `vault_write`: rechaza si `empty_bullets / total_bullets > 0.5`. Error: `content_empty_list`.
+- **AP-21 — Path-anchored wiki-links:** guard en `vault_write`: rechaza links con `/` (`[[carpeta/nota]]`). Error: `path_anchored_wikilinks`. `vault_section_index` genera solo `[[stem|título]]` desde v25.
+- **PAT-1 a PAT-5:** sección nueva `## Patrones recomendados` — canonical source anchoring, stub enrichment gradient, duplicate chain resolution, phased audit execution, frontmatter as provenance chain.
+- **Refinamientos a APs existentes:** AP-02 (subcategorías same-folder/cross-folder/canonical-shadow), AP-11 (variante AP-20 deceptive skeleton), AP-14 (dos causas raíz: wrong stem vs path-anchored).
+- **Grupo 22 — `vault_standard_upgrade`:** detecta brecha de versión, aplica migraciones (carpetas + identity), modo `--check` sin modificar, modo `--init` para vaults nuevos. Mantiene `00_System/standard-version.json`.
+- **Grupo 23 — `vault_change_log`:** registra created/updated/deleted/moved en `00_System/change-log.md` + `.change-log.json`. Modo `--query` con filtros. **Obligatorio antes de eliminar cualquier nota.**
+- **Sección `## Versionado del estándar`:** tabla v19→v25, instrucción de instalación en vault existente, formato de `standard-version.json`.
+- **Regla 7 en Protocolo de sesión:** antes de eliminar una nota → `vault_change_log --action deleted`.
+- Scripts: `vault_standard_upgrade.py` (nuevo), `vault_change_log.py` (nuevo). Total: 53 scripts.
+
+**Modificado**
+- `vault_write.py`: guards AP-20 y AP-21 en content validation.
+- `vault_section_index.py`: generación de links cambiada a `[[stem|título]]` (sin path).
+- `vault_audit.py`: nuevas detecciones `_detect_canonical_shadow()` (AP-17) y `_detect_cross_folder_duplicates()` (AP-18). Resultado incluye `canonicalShadow` y `crossFolderDuplicates` en `issues`.
+
+---
+
+### v24 — 2026-05-09 `git: —`
+
+**Grupos 19-21 — ISO/IEC 25010 + ISO/IEC/IEEE 29148 + 29119 + ISO/IEC 42001**
+
+**Agregado**
+- Carpetas `14_Requirements/`, `15_Tests/` (con 6 subcarpetas por tipo), `16_AI_Governance/decisions/` en la estructura del vault.
+- **Grupo 19 — Requerimientos** (ISO/IEC/IEEE 29148:2018): `vault_requirement_save` con IDs secuenciales `REQ-{n}`, tipos MoSCoW, criterios de aceptación verificables, trazabilidad a código. Índice `.requirements-index.json`.
+- **Grupo 20 — Tests** (ISO/IEC/IEEE 29119-3:2021): `vault_test_save` con IDs `TEST-{n}`, 6 tipos de test (unit/integration/e2e/performance/security/acceptance), trazabilidad a requerimiento y código. Índice `.tests-index.json`.
+- **Grupo 21 — Gobernanza de IA** (ISO/IEC 42001:2023 AIMS): `vault_ai_decision` con IDs `AID-{n}`, 6 tipos de decisión, niveles de impacto, registro de alternativas y riesgos, flag `human_approved`. Regla: decisiones `high`/`critical` requieren `human_approved: true`. Índice `.decisions-log.json`.
+- **ISO/IEC 25010:2023** integrado en `vault_code_module`: nuevo parámetro `--quality` con 8 atributos de calidad (security, maintainability, reliability, etc.), rating 1-5 con estrellas ★/☆. Campo `quality` indexado en `.code-index.json`.
+- Scripts: `vault_requirement_save.py`, `vault_test_save.py`, `vault_ai_decision.py` (nuevos). Total: 51 scripts.
+
+**Modificado**
+- `vault_code_module.py`: parámetro `--quality`, sección `## Calidad (ISO 25010)` en notas, campo `quality` en índice.
+- Árbol de carpetas: `14_Requirements/`, `15_Tests/`, `16_AI_Governance/` añadidas.
+
+---
+
+### v23 — 2026-05-08 `git: —`
+
+**Grupo 18 — Flows + Documentación de Código IEEE 1016 + vault_code_query**
+
+**Agregado**
+- Carpeta `13_Flows/` con 4 subcarpetas: `workflow/`, `pipeline/`, `lifecycle/`, `dataflow/`.
+- Grupo 18 — Flows: `vault_flow_save(project, name, type, description, mermaid, steps?, actors?, triggers?, pre_conditions?, post_conditions?, related_code?)`. Tipos: `workflow`, `pipeline`, `lifecycle`, `dataflow`. Cada nota incluye diagrama Mermaid embebido + tabla de pasos + metadata (trigger, actores, condiciones). Almacena en `13_Flows/{type}/`.
+- `vault_code_query(project, file?, method?, class?, list?, deps?)` — consulta recursiva del índice de código. Modos: `--file` (doc completa), `--method` (búsqueda por método), `--class` (búsqueda por clase), `--list` (listado del proyecto), `--deps` (árbol de dependencias).
+- `vault_code_module` extendido con viewpoints IEEE 1016: `--methods`, `--classes`, `--constants`, `--exceptions`, `--iso_type`. Cuando se provee `--classes`, genera automáticamente un bloque `classDiagram` Mermaid en la nota. Los campos `methods[]` y `classes[]` se indexan en `.code-index.json`.
+- Categorías `state` y `lifecycle` agregadas a `vault_diagram_save` (7 categorías totales).
+- Sección ISO en Grupo 12: referencia a IEEE 1016:2009, ISO/IEC 12207:2017, ISO/IEC/IEEE 26512:2018.
+- Protocolo de documentación de código: si el archivo tiene >2 funciones o ≥1 clase, usar `--methods` y `--classes`.
+- Scripts: `vault_flow_save.py` (nuevo), `vault_code_query.py` (nuevo). Total: 48 scripts.
+
+**Modificado**
+- `.code-index.json` extendido: campos `iso_type`, `methods[]`, `classes[]` por módulo.
+- Árbol de carpetas actualizado: `13_Flows/` añadida, `11_Code` actualizado.
+- Contrato de `vault_code_module` reescrito con nuevos parámetros y ejemplo IEEE 1016.
+- Contrato de `vault_diagram_save` con columna "Mermaid típico" y nuevas categorías `state`/`lifecycle`.
+
+---
+
+### v22 — 2026-05-08 `git: —`
+
+**Grupo 17 — vault_drift_detect + integración en protocolo de sesión**
+
+**Agregado**
+- Grupo 17 — Detección de Drift de Documentación: tool `vault_drift_detect(path, project, mode, extensions?)` con 3 modos (`snapshot`, `status`, `report`), soporte dual git/hash, cross-reference contra `11_Code/.code-index.json` y `99_Index/search-index.json`, filtrado automático de binarios/certs/runtime/ML models, sugerencias de tool por tipo de archivo.
+- `vault_drift_detect --mode snapshot` añadido como Paso 0b del protocolo de inicio de sesión.
+- `vault_drift_detect --mode report` añadido como Paso 5b del protocolo de cierre de sesión — gate obligatorio antes de `vault_reindex` y `vault_audit`.
+- Script `vault_drift_detect.py` implementado (46 scripts totales). Propagado a ANS y dating-agent.
+
+---
+
+### v21 — 2026-05-07 `git: —`
+
+**Grupo 16 — Bibliografía + AP-16 + campo agent: + sección VAULT_ROOT + fix CDF-008**
+
+**Agregado**
+- Carpeta `12_Bibliography/` en estructura del vault: 5 subcategorías (`web/`, `papers/`, `docs/`, `apis/`, `books/`) para registrar fuentes externas consultadas por el agente.
+- Grupo 16 — Bibliografía y Referencias Externas: tool `vault_bibliography_save(title, url, summary, source_type, project?, agent?, tags?)` con contrato completo, frontmatter generado y tabla de categorías.
+- Campo `agent:` en frontmatter: campo opcional estándar que identifica qué agente creó/modificó la nota (`claude`, `codex`, `gpt`, `gemini`, `deepseek`, `human`, `script`). Documentado en Protocolo de sesión para LLMs remotos como Regla 6.
+- Sección `## Configuración de VAULT_ROOT en los scripts`: explica los dos casos (scripts dentro del vault vs scripts en directorio hermano del repo), el bug que produce cada configuración, y cómo verificar que `VAULT_ROOT` apunta al directorio correcto antes de ejecutar cualquier script.
+- AP-16 — Sin identificador de agente en frontmatter: tabla de valores estándar, cuándo aplica, cómo `vault_write` lo soporta.
+
+**Corregido**
+- CDF-008 (Codex): dos menciones de "34 tools" en líneas 248 y 1870 actualizadas a "37 tools".
+- CDF-005 (Codex): `VAULT_ROOT` corregido en todos los scripts del dating agent (35 scripts) de `Path(__file__).parent.parent` a `Path(__file__).resolve().parent.parent / "vault-grooming-scheduler"`.
 
 ---
 
