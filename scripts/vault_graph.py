@@ -12,6 +12,7 @@ Usage:
 import json
 import re
 import sys
+from vault_errors import wrap_main
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Set
@@ -211,4 +212,4 @@ Notas:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(wrap_main(main, "vault_graph"))

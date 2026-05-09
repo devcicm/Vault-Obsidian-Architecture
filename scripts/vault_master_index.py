@@ -11,6 +11,7 @@ Usage:
 
 import json
 import sys
+from vault_errors import wrap_main
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict
@@ -151,4 +152,4 @@ Notas:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(wrap_main(main, "vault_master_index"))

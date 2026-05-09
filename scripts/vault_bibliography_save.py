@@ -14,6 +14,7 @@ import argparse
 import json
 import re
 import sys
+from vault_errors import wrap_main
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -158,4 +159,4 @@ Notas:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(wrap_main(main, "vault_bibliography_save"))

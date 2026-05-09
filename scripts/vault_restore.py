@@ -13,6 +13,7 @@ import argparse
 import json
 import shutil
 import sys
+from vault_errors import wrap_main
 from pathlib import Path
 from typing import Any, Dict
 
@@ -105,4 +106,4 @@ Notas:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(wrap_main(main, "vault_restore"))

@@ -24,6 +24,7 @@ import json
 import re
 import subprocess
 import sys
+from vault_errors import wrap_main
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -567,4 +568,4 @@ Notas:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(wrap_main(main, "vault_drift_detect"))

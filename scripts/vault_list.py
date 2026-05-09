@@ -17,6 +17,7 @@ import json
 import os
 import re
 import sys
+from vault_errors import wrap_main
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -200,4 +201,4 @@ Notas:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(wrap_main(main, "vault_list"))

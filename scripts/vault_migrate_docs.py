@@ -18,6 +18,7 @@ import json
 import re
 import shutil
 import sys
+from vault_errors import wrap_main
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -433,4 +434,4 @@ Notas:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(wrap_main(main, "vault_migrate_docs"))

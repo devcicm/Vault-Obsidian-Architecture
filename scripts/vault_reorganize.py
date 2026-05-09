@@ -253,4 +253,4 @@ Notas:
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(wrap_main(main, "vault_reorganize"))

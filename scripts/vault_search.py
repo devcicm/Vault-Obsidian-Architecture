@@ -15,6 +15,7 @@ import argparse
 import json
 import re
 import sys
+from vault_errors import wrap_main
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -152,4 +153,4 @@ Notas:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(wrap_main(main, "vault_search"))
