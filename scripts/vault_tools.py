@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Tools - Script unificado para operaciones del vault
 """
@@ -12,14 +12,14 @@ from datetime import datetime
 from collections import Counter
 
 
-VAULT_DIR = Path(__file__).parent.parent
+VAULT_ROOT = Path(__file__).parent.parent
 
 
 class VaultTools:
     """Herramientas del vault"""
 
     def __init__(self):
-        self.vault = VAULT_DIR
+        self.vault = VAULT_ROOT
 
     def search(self, query: str, folder: str = None, limit: int = 20):
         """Buscar notas por contenido"""
@@ -281,11 +281,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Ejemplos:
-  python vault_tools.py search --query "mcp tools"
+  python vault_tools.py search --query "deploy"
   python vault_tools.py search --query "deploy" --folder "08_Runbooks" --limit 10
   python vault_tools.py list --folder "01_Projects"
   python vault_tools.py stats
-  python vault_tools.py diff --note "01_Projects/ans/overview.md"
+  python vault_tools.py diff --note "01_Projects/mi-api/overview.md"
   python vault_tools.py graph
   python vault_tools.py backup --output vault-backup-2024.zip
   python vault_tools.py export --folder "07_Knowledge"

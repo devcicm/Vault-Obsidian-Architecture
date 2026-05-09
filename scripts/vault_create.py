@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Create - Crear notas desde CLI
 """
@@ -9,10 +9,10 @@ from pathlib import Path
 from datetime import datetime
 
 
-VAULT_DIR = Path(__file__).parent.parent
+VAULT_ROOT = Path(__file__).parent.parent
 
 
-def create_note(title: str, folder: str = "01_Projects/ans", content: str = "", tags: list = None, status: str = None):
+def create_note(title: str, folder: str = "01_Projects", content: str = "", tags: list = None, status: str = None):
     """Crear una nota nueva"""
 
     # Generate slug
@@ -42,11 +42,11 @@ updatedAt: {datetime.now().isoformat()[:19]}Z
     full = fm + content
 
     # Save
-    dest = VAULT_DIR / folder / f"{slug}.md"
+    dest = VAULT_ROOT / folder / f"{slug}.md"
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(full, encoding="utf-8")
 
-    return {"created": str(dest.relative_to(VAULT_DIR)), "title": title}
+    return {"created": str(dest.relative_to(VAULT_ROOT)), "title": title}
 
 
 def create_from_template(template: str, **kwargs):
@@ -143,7 +143,7 @@ Notas:
 """,
     )
     parser.add_argument("title", help="Titulo de la nota")
-    parser.add_argument("--folder", "-f", default="01_Projects/ans", help="Carpeta destino")
+    parser.add_argument("--folder", "-f", default="01_Projects", help="Carpeta destino (e.g. 01_Projects/mi-api)")
     parser.add_argument("--content", "-c", default="", help="Contenido")
     parser.add_argument("--tags", "-t", nargs="*", default=[], help="Tags")
     parser.add_argument("--status", "-s", help="Status")

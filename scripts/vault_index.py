@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Index - Generar indice markdown desde JSON
 """
@@ -8,12 +8,12 @@ import argparse
 from pathlib import Path
 
 
-VAULT_DIR = Path(__file__).parent.parent
+VAULT_ROOT = Path(__file__).parent.parent
 
 
 def generate_index(output="INDEX.md"):
     """Generar indice markdown"""
-    index_file = VAULT_DIR / "99_Index" / "search-index.json"
+    index_file = VAULT_ROOT / "99_Index" / "search-index.json"
 
     if not index_file.exists():
         return {"error": "No search-index.json found"}
@@ -39,7 +39,7 @@ def generate_index(output="INDEX.md"):
             md += f"- [[{note['title']}]] - {note.get('path', '')}\n"
         md += "\n"
 
-    dest = VAULT_DIR / output
+    dest = VAULT_ROOT / output
     dest.write_text(md, encoding="utf-8")
 
     return {"generated": len(data.get("notes", 0)), "file": str(dest)}

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Migration Script
 Migrate documentation from any source to vault with classification.
@@ -12,7 +12,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import Tuple, List
 
-VAULT_DIR = Path(__file__).parent.parent
+VAULT_ROOT = Path(__file__).parent.parent
 
 # Generic structural keywords — expand via --keywords CLI arg for project-specific terms
 DEFAULT_KEYWORDS: List[str] = ["deploy", "runner", "config", "api", "service", "guide", "spec"]
@@ -104,7 +104,7 @@ def migrate(source_path: str, project: str, dry_run: bool = True, keywords: List
 
     # Ensure directories exist
     for relevance in ["direct", "indirect", "excluded"]:
-        (VAULT_DIR / "10_Migrated" / relevance).mkdir(parents=True, exist_ok=True)
+        (VAULT_ROOT / "10_Migrated" / relevance).mkdir(parents=True, exist_ok=True)
 
     # Find all md files
     md_files = list(source.rglob("*.md")) if source.is_dir() else [source]
@@ -129,9 +129,9 @@ def migrate(source_path: str, project: str, dry_run: bool = True, keywords: List
 
             # Destino
             if dry_run:
-                dest = VAULT_DIR / f"DRY_RUN/{md_file.parent.name}-{md_file.name}"
+                dest = VAULT_ROOT / f"DRY_RUN/{md_file.parent.name}-{md_file.name}"
             else:
-                dest = VAULT_DIR / f"10_Migrated/{relevance}/{md_file.parent.name}-{md_file.name}"
+                dest = VAULT_ROOT / f"10_Migrated/{relevance}/{md_file.parent.name}-{md_file.name}"
 
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_text(full_content, encoding="utf-8")

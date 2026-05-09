@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Dataset - Gestión de keywords y búsqueda avanzada tipo LINQ
 """
@@ -21,30 +21,23 @@ except ImportError:
     NLTK_AVAILABLE = False
 
 
-VAULT_DIR = Path(__file__).parent.parent
-KEYWORDS_FILE = VAULT_DIR / "99_Index" / "keywords-index.json"
-NOTES_FILE = VAULT_DIR / "99_Index" / "notes-keywords.json"
+VAULT_ROOT = Path(__file__).parent.parent
+KEYWORDS_FILE = VAULT_ROOT / "99_Index" / "keywords-index.json"
+NOTES_FILE = VAULT_ROOT / "99_Index" / "notes-keywords.json"
 
 
-# Default dictionary keywords (fallback)
+# Default dictionary keywords (generic — extend via --keywords for project-specific terms)
 DEFAULT_KEYWORDS = [
-    "ansible",
-    "mcp",
-    "toon",
-    "proxmox",
-    "executor",
-    "playbook",
     "deploy",
     "runner",
     "vault",
     "node",
     "server",
     "docker",
-    "lxc",
     "container",
     "infrastructure",
     "automation",
-    " orchestration",
+    "orchestration",
     "config",
     "policy",
     "security",
@@ -188,7 +181,7 @@ def extract_all(mode: str = "nltk", custom_keywords: list = None):
     keywords_by_file = {}
     notes_data = {}
 
-    notes = [n for n in VAULT_DIR.rglob("*.md") if ".history" not in str(n) and not n.name.startswith("_")]
+    notes = [n for n in VAULT_ROOT.rglob("*.md") if ".history" not in str(n) and not n.name.startswith("_")]
 
     for md in notes:
         try:
@@ -205,14 +198,14 @@ def extract_all(mode: str = "nltk", custom_keywords: list = None):
 
             # Agregar al contador global
             keywords_global.update(keywords)
-            keywords_by_file[str(md.relative_to(VAULT_DIR))] = keywords
+            keywords_by_file[str(md.relative_to(VAULT_ROOT))] = keywords
 
             # Datos de la nota
             title = md.stem.replace("-", " ").title()
-            notes_data[str(md.relative_to(VAULT_DIR))] = {
+            notes_data[str(md.relative_to(VAULT_ROOT))] = {
                 "title": title,
                 "keywords": keywords,
-                "path": str(md.relative_to(VAULT_DIR)),
+                "path": str(md.relative_to(VAULT_ROOT)),
             }
         except:
             pass

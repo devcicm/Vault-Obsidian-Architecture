@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Render - Renderizar Mermaid diagrams
 """
@@ -10,7 +10,7 @@ import argparse
 from pathlib import Path
 
 
-VAULT_DIR = Path(__file__).parent.parent
+VAULT_ROOT = Path(__file__).parent.parent
 
 
 def render_mermaid(chart_type: str = None, output: str = None):
@@ -19,7 +19,7 @@ def render_mermaid(chart_type: str = None, output: str = None):
     # Find all mermaid blocks
     mermaid_blocks = []
 
-    for md in VAULT_DIR.rglob("*.md"):
+    for md in VAULT_ROOT.rglob("*.md"):
         if ".history" in str(md) or md.name.startswith("_"):
             continue
 
@@ -49,7 +49,7 @@ def render_mermaid(chart_type: str = None, output: str = None):
                     continue
 
                 mermaid_blocks.append(
-                    {"file": str(md.relative_to(VAULT_DIR)), "type": chart_type_detected, "chart": match}
+                    {"file": str(md.relative_to(VAULT_ROOT)), "type": chart_type_detected, "chart": match}
                 )
         except:
             pass
@@ -59,7 +59,7 @@ def render_mermaid(chart_type: str = None, output: str = None):
 
     if output:
         # Render to file
-        output_dir = VAULT_DIR / "06_Diagrams" / "rendered"
+        output_dir = VAULT_ROOT / "06_Diagrams" / "rendered"
         output_dir.mkdir(parents=True, exist_ok=True)
 
         for block in mermaid_blocks:
@@ -76,7 +76,7 @@ def generate_diagram_from_relations():
     """Generar diagrama desde relaciones"""
 
     # Load graph
-    graph_file = VAULT_DIR / "99_Index" / "graph.json"
+    graph_file = VAULT_ROOT / "99_Index" / "graph.json"
     if not graph_file.exists():
         return {"error": "No graph.json found"}
 
@@ -113,7 +113,7 @@ def generate_diagram_from_relations():
 
     md += "```\n"
 
-    dest = VAULT_DIR / "06_Diagrams" / "generated" / "relations.md"
+    dest = VAULT_ROOT / "06_Diagrams" / "generated" / "relations.md"
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(md, encoding="utf-8")
 
@@ -125,7 +125,7 @@ def check_mermaid_syntax():
 
     issues = []
 
-    for md in VAULT_DIR.rglob("*.md"):
+    for md in VAULT_ROOT.rglob("*.md"):
         if ".history" in str(md) or md.name.startswith("_"):
             continue
 
@@ -138,13 +138,13 @@ def check_mermaid_syntax():
             for match in matches:
                 # Basic syntax check
                 if match.count("{") != match.count("}"):
-                    issues.append((str(md.relative_to(VAULT_DIR)), "Mismatched braces"))
+                    issues.append((str(md.relative_to(VAULT_ROOT)), "Mismatched braces"))
                 if match.count("[") % 2 != 0:
-                    issues.append((str(md.relative_to(VAULT_DIR)), "Mismatched brackets"))
+                    issues.append((str(md.relative_to(VAULT_ROOT)), "Mismatched brackets"))
         except:
             pass
 
-    return {"checked": len(list(VAULT_DIR.rglob("*.md"))), "issues": issues}
+    return {"checked": len(list(VAULT_ROOT.rglob("*.md"))), "issues": issues}
 
 
 def main():

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Reorganize Script
 Move notes from 10_Migrated to proper sections.
@@ -11,7 +11,7 @@ from datetime import datetime
 from collections import Counter
 
 
-VAULT_DIR = Path(__file__).parent.parent
+VAULT_ROOT = Path(__file__).parent.parent
 
 
 def _detect_dest(note: Path, project: str) -> str:
@@ -73,7 +73,7 @@ def reorganize(project: str = "mi-proyecto", dry_run: bool = False):
     No usa rutas hardcodeadas — infiere el destino de cada nota por frontmatter
     y patrones de nombre. Compatible con cualquier proyecto.
     """
-    migrated_root = VAULT_DIR / "10_Migrated"
+    migrated_root = VAULT_ROOT / "10_Migrated"
     if not migrated_root.exists():
         return [], []
 
@@ -82,13 +82,13 @@ def reorganize(project: str = "mi-proyecto", dry_run: bool = False):
     skipped = []
 
     for note in migrated_root.rglob("*.md"):
-        rel = str(note.relative_to(VAULT_DIR)).replace("\\", "/")
+        rel = str(note.relative_to(VAULT_ROOT)).replace("\\", "/")
         dest_folder = _detect_dest(note, project)
         slug = note.stem.lower()
         # Strip common prefixes left by vault_migrate (e.g. "agents-", "direct-")
         slug = re.sub(r"^(direct|indirect|agents|guides|deployment|architecture|project|informacion.decrepita)-", "", slug)
         dest_rel = f"{dest_folder}/{slug}.md"
-        dest_path = VAULT_DIR / dest_rel
+        dest_path = VAULT_ROOT / dest_rel
 
         if dest_path.exists():
             skipped.append({"src": rel, "dest": dest_rel, "reason": "already_exists"})
@@ -120,25 +120,25 @@ def audit():
     empty = []
     broken = []
 
-    all_notes = {n.stem for n in VAULT_DIR.rglob("*.md") if ".history" not in str(n) and not n.name.startswith("_")}
+    all_notes = {n.stem for n in VAULT_ROOT.rglob("*.md") if ".history" not in str(n) and not n.name.startswith("_")}
 
-    for md in VAULT_DIR.rglob("*.md"):
+    for md in VAULT_ROOT.rglob("*.md"):
         if ".history" in str(md) or md.name.startswith("_"):
             continue
 
         total += 1
-        folder = str(md.parent.relative_to(VAULT_DIR))
+        folder = str(md.parent.relative_to(VAULT_ROOT))
         by_folder[folder] += 1
 
         # Check empty
         if md.stat().st_size < 50:
-            empty.append(str(md.relative_to(VAULT_DIR)))
+            empty.append(str(md.relative_to(VAULT_ROOT)))
 
         # Check frontmatter
         try:
             content = md.read_text(encoding="utf-8", errors="ignore")
             if not content.startswith("---"):
-                no_fm.append(str(md.relative_to(VAULT_DIR)))
+                no_fm.append(str(md.relative_to(VAULT_ROOT)))
 
             # Check broken links
             for match in re.finditer(r"\[\[([^\]]+)\]\]", content):
@@ -167,12 +167,12 @@ def regenerate_indexes():
     graph = {"nodes": [], "edges": []}
     search_index = {"version": "1.0", "updatedAt": datetime.now().isoformat()[:19], "notes": []}
 
-    for md in VAULT_DIR.rglob("*.md"):
+    for md in VAULT_ROOT.rglob("*.md"):
         if ".history" in str(md) or md.name.startswith("_"):
             continue
 
         title = md.stem.replace("-", " ").replace("_", " ").title()
-        path = str(md.relative_to(VAULT_DIR))
+        path = str(md.relative_to(VAULT_ROOT))
 
         graph["nodes"].append({"id": md.stem, "title": title, "path": path})
         search_index["notes"].append(
@@ -189,8 +189,8 @@ def regenerate_indexes():
             pass
 
     # Save
-    (VAULT_DIR / "99_Index/graph.json").write_text(json.dumps(graph, indent=2), encoding="utf-8")
-    (VAULT_DIR / "99_Index/search-index.json").write_text(json.dumps(search_index, indent=2), encoding="utf-8")
+    (VAULT_ROOT / "99_Index/graph.json").write_text(json.dumps(graph, indent=2), encoding="utf-8")
+    (VAULT_ROOT / "99_Index/search-index.json").write_text(json.dumps(search_index, indent=2), encoding="utf-8")
 
     return len(graph["nodes"]), len(graph["edges"])
 

@@ -7,7 +7,7 @@ Saves findings to vault with OWASP/CWE mapping.
 Redacts secrets in output.
 
 Usage:
-    python vault_security_scan.py --path "src/" --project "ans"
+    python vault_security_scan.py --path "src/" --project "mi-api"
     python vault_security_scan.py --path "src/" --project "mi-api" --categories "secrets,injection" --save_findings true
 """
 
@@ -635,7 +635,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Ejemplos:
-  python vault_security_scan.py --path "src/" --project "ans"
+  python vault_security_scan.py --path "src/" --project "mi-api"
   python vault_security_scan.py --path "src/" --project "mi-api" --categories "secrets" "injection" --save_findings true
   python vault_security_scan.py --path "C:/repos/backend/src" --project "backend" --depth 5
   python vault_security_scan.py --path "src/" --project "mi-api" --categories "all" --save_findings false
