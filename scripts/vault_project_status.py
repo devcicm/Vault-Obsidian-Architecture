@@ -128,7 +128,7 @@ tags: ["status", "{project}"]
         "ok": True,
         "project": project,
         "status": status,
-        "statusPath": str(status_file.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(status_file.relative_to(VAULT_ROOT)).replace("\\", "/"),
         "changelogPath": str(changelog_file.relative_to(VAULT_ROOT)).replace("\\", "/"),
     }
 

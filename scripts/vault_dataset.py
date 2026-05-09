@@ -1,8 +1,10 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Vault Dataset - Gestión de keywords y búsqueda avanzada tipo LINQ
 """
 
+import sys
+from vault_errors import wrap_main
 import json
 import re
 import argparse

@@ -15,6 +15,7 @@ Uso en cualquier tool:
         sys.exit(wrap_main(main, "vault_write"))
 """
 
+import io
 import json
 import os
 import queue
@@ -419,6 +420,55 @@ def emit_error(
     return entry
 
 
+def emit_ok(tool: str, data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Produce envelope de éxito uniforme y registra en trace log.
+
+    Retorno: {ok: true, tool: str, timestamp: str, **data}
+    """
+    result = {
+        "ok": True,
+        "tool": tool,
+        "timestamp": datetime.now().isoformat()[:19] + "Z",
+        **data,
+    }
+    log_trace(result)
+    return result
+
+
+def _inject_tool_envelope(text: str, tool_name: str) -> str:
+    """Inyecta tool+timestamp en el JSON de salida si aún no los tiene."""
+    text = text.strip()
+    if not text:
+        return text
+    try:
+        data = json.loads(text)
+        if isinstance(data, dict) and data.get("ok") is True and "tool" not in data:
+            data["tool"] = tool_name
+            data["timestamp"] = datetime.now().isoformat()[:19] + "Z"
+            log_trace(data)
+        return json.dumps(data, ensure_ascii=False)
+    except Exception:
+        return text
+
+
+def _write_output(text: str, stdout_ref=None) -> None:
+    """Escribe texto a stdout (con soporte de buffer para UTF-8)."""
+    target = stdout_ref or sys.stdout
+    try:
+        buf = getattr(target, "buffer", None)
+        if buf:
+            buf.write((text + "\n").encode("utf-8"))
+            buf.flush()
+        else:
+            print(text, file=target)
+    except Exception:
+        try:
+            print(text)
+        except Exception:
+            pass
+
+
 def log_trace(entry: Dict[str, Any]) -> None:
     """Añade entrada al trace log con rotación a TRACE_MAX_ENTRIES."""
     try:
@@ -471,36 +521,40 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
             code = e.code if isinstance(e.code, int) else (1 if e.code else 0)
             return code
 
+    # Guardar referencia real de stdout antes de redirigir en el thread.
+    _real_stdout = sys.stdout
+
     # Daemon thread: si el proceso termina (timeout), el thread muere con él.
     result_q: queue.Queue = queue.Queue()
 
     def _target():
+        captured = io.StringIO()
+        sys.stdout = captured
         try:
-            result_q.put(("ok", _run()))
+            exit_code = _run()
+            result_q.put(("ok", exit_code, captured.getvalue()))
         except Exception as exc:
-            result_q.put(("exc", exc))
+            result_q.put(("exc", exc, captured.getvalue()))
+        finally:
+            sys.stdout = _real_stdout
 
     t = threading.Thread(target=_target, daemon=True)
     t.start()
     t.join(timeout=limit)
 
     if t.is_alive():
-        # Thread sigue vivo → timeout
+        # Thread sigue vivo → timeout; sys.stdout puede estar redirigido, usar ref guardada.
         err = emit_error(
             tool=tool_name,
             code="TOOL_TIMEOUT",
             message=f"La tool '{tool_name}' excedio el limite de {limit}s y fue terminada.",
         )
-        output = json.dumps(err, ensure_ascii=False)
-        try:
-            sys.stdout.buffer.write((output + "\n").encode("utf-8"))
-        except Exception:
-            print(output)
+        _write_output(json.dumps(err, ensure_ascii=False), _real_stdout)
         # Daemon thread morirá cuando el proceso termine (sys.exit a continuación).
         return 1
 
     try:
-        kind, value = result_q.get_nowait()
+        kind, value, captured_text = result_q.get_nowait()
     except queue.Empty:
         return 1
 
@@ -511,13 +565,13 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
             message=f"{type(value).__name__}: {value}",
             exception=value,
         )
-        output = json.dumps(err, ensure_ascii=False)
-        try:
-            sys.stdout.buffer.write((output + "\n").encode("utf-8"))
-        except Exception:
-            print(output)
+        _write_output(json.dumps(err, ensure_ascii=False), _real_stdout)
         return 1
 
+    # Inyectar envelope tool+timestamp en el JSON capturado.
+    output = _inject_tool_envelope(captured_text, tool_name)
+    if output:
+        _write_output(output, _real_stdout)
     return value
 
 

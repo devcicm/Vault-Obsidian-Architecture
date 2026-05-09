@@ -1,8 +1,10 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Vault Render - Renderizar Mermaid diagrams
 """
 
+import sys
+from vault_errors import wrap_main
 import re
 import json
 import subprocess
@@ -148,6 +150,8 @@ def check_mermaid_syntax():
 
 
 def main():
+    # Deprecation notice
+    print(json.dumps({"_deprecation": {"use_instead": "vault_diagram_save", "since": "v26"}}), file=sys.stderr)
     parser = argparse.ArgumentParser(
         description="Vault Render",
         formatter_class=argparse.RawDescriptionHelpFormatter,

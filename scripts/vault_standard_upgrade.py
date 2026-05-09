@@ -131,6 +131,84 @@ def _write_version_file(data: Dict[str, Any]) -> None:
     VERSION_FILE.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
+# Standard folder structure (v25)
+STANDARD_FOLDERS = [
+    "00_System", "01_Projects", "02_Observability", "03_Decisions", "04_Sessions",
+    "05_Patterns", "06_Diagrams", "07_Knowledge", "08_Runbooks", "09_Infrastructure",
+    "10_Migrated", "11_Code", "12_Bibliography", "13_Flows", "14_Requirements",
+    "15_Tests", "16_AI_Governance", "99_Index",
+]
+
+FM_REQUIRED_FIELDS = ("id", "title", "createdAt")
+
+
+def _run_compliance_check(target_version: str) -> Dict[str, Any]:
+    """Non-blocking compliance check: folders, frontmatter, audit health."""
+    gaps: List[Dict[str, Any]] = []
+
+    # 1. Folder check
+    missing_folders = [f for f in STANDARD_FOLDERS if not (VAULT_ROOT / f).exists()]
+    folders_ok = len(missing_folders) == 0
+    if missing_folders:
+        gaps.append({"type": "missing_folders", "count": len(missing_folders), "severity": "warning", "detail": missing_folders})
+
+    # 2. Frontmatter compliance
+    md_files = list(VAULT_ROOT.rglob("*.md"))
+    md_files = [f for f in md_files if not any(p.startswith(".") for p in f.parts)]
+    total_md = len(md_files)
+    compliant_md = 0
+
+    if total_md > 0:
+        import re
+        for md_path in md_files:
+            try:
+                text = md_path.read_text(encoding="utf-8", errors="replace")
+                fm_match = re.match(r"^---\n(.*?)\n---", text, re.DOTALL)
+                if fm_match:
+                    fm_text = fm_match.group(1)
+                    if all(f"{field}:" in fm_text for field in FM_REQUIRED_FIELDS):
+                        compliant_md += 1
+            except Exception:
+                pass
+        frontmatter_compliance = round(compliant_md / total_md, 2)
+    else:
+        frontmatter_compliance = 1.0
+
+    if frontmatter_compliance < 0.5:
+        gaps.append({"type": "low_frontmatter_compliance", "count": total_md - compliant_md, "severity": "warning",
+                     "detail": f"{compliant_md}/{total_md} notes have required frontmatter fields"})
+
+    # 3. Audit health score (import vault_audit if available)
+    audit_score = None
+    try:
+        import importlib.util
+        audit_spec = importlib.util.spec_from_file_location("vault_audit", SCRIPTS_DIR / "vault_audit.py")
+        if audit_spec:
+            vault_audit_mod = importlib.util.module_from_spec(audit_spec)
+            audit_spec.loader.exec_module(vault_audit_mod)
+            audit_result = vault_audit_mod.vault_audit()
+            audit_score = audit_result.get("healthScore")
+    except Exception:
+        pass
+
+    compliance_score = round((
+        (1.0 if folders_ok else max(0, 1 - len(missing_folders) / len(STANDARD_FOLDERS))) * 0.4 +
+        frontmatter_compliance * 0.4 +
+        ((audit_score or 0) / 100) * 0.2
+    ), 2)
+
+    return {
+        "applied_version": target_version,
+        "compliance_score": compliance_score,
+        "folders_ok": folders_ok,
+        "missing_folders": missing_folders,
+        "frontmatter_compliance": frontmatter_compliance,
+        "notes_checked": total_md,
+        "audit_score": audit_score,
+        "gaps": gaps,
+    }
+
+
 def _pending_migrations(from_version: str, to_version: str) -> List[str]:
     from_idx = _version_index(from_version)
     to_idx = _version_index(to_version)
@@ -171,7 +249,22 @@ def vault_standard_upgrade(
     check_only: bool = False,
     init_version: Optional[str] = None,
     agent: str = "claude",
+    set_profile: Optional[str] = None,
+    validate: bool = False,
 ) -> Dict[str, Any]:
+    # Handle --set-profile independently
+    if set_profile is not None:
+        state = _read_version_file()
+        state["profile"] = set_profile
+        if not state.get("applied_version"):
+            state["applied_version"] = CURRENT_VERSION
+        _write_version_file(state)
+        result: Dict[str, Any] = {"ok": True, "action": "set_profile", "profile": set_profile,
+                                   "path": str(VERSION_FILE.relative_to(VAULT_ROOT)).replace("\\", "/")}
+        if validate:
+            result["compliance"] = _run_compliance_check(state.get("applied_version", CURRENT_VERSION))
+        return result
+
     if init_version:
         data = {
             "applied_version": init_version,
@@ -180,7 +273,11 @@ def vault_standard_upgrade(
             "migrations_applied": [],
         }
         _write_version_file(data)
-        return {"ok": True, "action": "init", "applied_version": init_version, "path": str(VERSION_FILE.relative_to(VAULT_ROOT)).replace("\\", "/")}
+        result = {"ok": True, "action": "init", "applied_version": init_version,
+                  "path": str(VERSION_FILE.relative_to(VAULT_ROOT)).replace("\\", "/")}
+        if validate:
+            result["compliance"] = _run_compliance_check(init_version)
+        return result
 
     state = _read_version_file()
     current_applied = from_version or state.get("applied_version") or "v20"
@@ -191,13 +288,16 @@ def vault_standard_upgrade(
     pending = _pending_migrations(current_applied, to_version)
 
     if not pending:
-        return {
+        result = {
             "ok": True,
             "action": "none",
             "message": f"Vault is up to date at {current_applied}. No migrations needed.",
             "current_version": current_applied,
             "target_version": to_version,
         }
+        if validate:
+            result["compliance"] = _run_compliance_check(current_applied)
+        return result
 
     if check_only:
         pending_details = []
@@ -209,7 +309,7 @@ def vault_standard_upgrade(
                 "folders_to_create": [f for f in m.get("add_folders", []) if not (VAULT_ROOT / f).exists()],
                 "notes": m.get("notes", []),
             })
-        return {
+        result = {
             "ok": True,
             "action": "check",
             "current_version": current_applied,
@@ -217,14 +317,17 @@ def vault_standard_upgrade(
             "pending_count": len(pending),
             "pending_migrations": pending_details,
         }
+        if validate:
+            result["compliance"] = _run_compliance_check(current_applied)
+        return result
 
-    applied = []
+    applied_list = []
     all_folders_created = []
 
     for version in pending:
-        result = _apply_migration(version, dry_run=False)
-        applied.append(result)
-        all_folders_created.extend(result["folders_created"])
+        migration_result = _apply_migration(version, dry_run=False)
+        applied_list.append(migration_result)
+        all_folders_created.extend(migration_result["folders_created"])
 
     state["applied_version"] = to_version
     state["applied_at"] = _utcnow()
@@ -234,15 +337,18 @@ def vault_standard_upgrade(
     state["migrations_applied"] = already
     _write_version_file(state)
 
-    return {
+    result = {
         "ok": True,
         "action": "upgraded",
         "from": current_applied,
         "to": to_version,
-        "migrations_applied": applied,
+        "migrations_applied": applied_list,
         "folders_created": all_folders_created,
         "version_file": str(VERSION_FILE.relative_to(VAULT_ROOT)).replace("\\", "/"),
     }
+    if validate:
+        result["compliance"] = _run_compliance_check(to_version)
+    return result
 
 
 def main() -> int:
@@ -279,6 +385,10 @@ Notas:
     parser.add_argument("--check", action="store_true", help="Report pending migrations without applying them")
     parser.add_argument("--init", dest="init_version", help="Initialize standard-version.json with given version")
     parser.add_argument("--agent", default="claude", help="Agent name for audit trail (default: claude)")
+    parser.add_argument("--set-profile", dest="set_profile", choices=["minimal", "standard", "full"],
+                        help="Set the tool profile in standard-version.json (minimal=10, standard=30, full=53)")
+    parser.add_argument("--validate", action="store_true",
+                        help="Run compliance check: folders, frontmatter, health score (non-blocking)")
 
     args = parser.parse_args()
 
@@ -288,6 +398,8 @@ Notas:
         check_only=args.check,
         init_version=args.init_version,
         agent=args.agent,
+        set_profile=args.set_profile,
+        validate=args.validate,
     )
 
     print(json.dumps(result, indent=2, ensure_ascii=False))

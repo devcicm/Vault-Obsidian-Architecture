@@ -1,15 +1,17 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Vault Tools - Script unificado para operaciones del vault
 """
 
 import json
 import re
+import sys
 import shutil
 import argparse
 from pathlib import Path
 from datetime import datetime
 from collections import Counter
+from vault_errors import wrap_main
 
 
 VAULT_ROOT = Path(__file__).parent.parent
@@ -276,6 +278,8 @@ class VaultTools:
 
 
 def main():
+    # Deprecation notice
+    print(json.dumps({"_deprecation": {"use_instead": "individual tools", "since": "v26"}}), file=sys.stderr)
     parser = argparse.ArgumentParser(
         description="Vault Tools",
         formatter_class=argparse.RawDescriptionHelpFormatter,

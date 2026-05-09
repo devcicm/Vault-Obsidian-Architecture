@@ -140,7 +140,7 @@ def vault_relation_add(
             erd_path = ENTITY_DIR / f"{slugify(project)}-erd.md"
             return {
                 "ok": True,
-                "erdPath": str(erd_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+                "path": str(erd_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
                 "relationsTotal": len(relations),
                 "deduplicated": True,
             }
@@ -176,7 +176,7 @@ def vault_relation_add(
 
     return {
         "ok": True,
-        "erdPath": str(erd_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(erd_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
         "relationsTotal": len(relations),
         "deduplicated": False,
     }

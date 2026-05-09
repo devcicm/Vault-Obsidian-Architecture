@@ -1,9 +1,11 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Vault Migration Script
 Migrate documentation from any source to vault with classification.
 """
 
+import sys
+from vault_errors import wrap_main
 import os
 import re
 import json
@@ -176,6 +178,8 @@ def migrate(source_path: str, project: str, dry_run: bool = True, keywords: List
 
 
 def main():
+    # Deprecation notice
+    print(json.dumps({"_deprecation": {"use_instead": "vault_migrate_docs", "since": "v26"}}), file=sys.stderr)
     import argparse
     parser = argparse.ArgumentParser(
         description="Vault Migration Script -- Migrate documentation to vault with classification",

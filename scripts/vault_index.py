@@ -1,8 +1,10 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Vault Index - Generar indice markdown desde JSON
 """
 
+import sys
+from vault_errors import wrap_main
 import json
 import argparse
 from pathlib import Path

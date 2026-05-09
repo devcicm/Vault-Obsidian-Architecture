@@ -1,8 +1,11 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Vault Create - Crear notas desde CLI
 """
 
+import json
+import sys
+from vault_errors import wrap_main
 import argparse
 import uuid
 from pathlib import Path
@@ -125,6 +128,8 @@ Elegimos Opción N porque...
 
 
 def main():
+    # Deprecation notice
+    print(json.dumps({"_deprecation": {"use_instead": "vault_write", "since": "v26"}}), file=sys.stderr)
     parser = argparse.ArgumentParser(
         description="Vault Create - Crear notas",
         formatter_class=argparse.RawDescriptionHelpFormatter,

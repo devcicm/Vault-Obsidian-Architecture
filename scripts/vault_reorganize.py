@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Vault Reorganize Script
 Move notes from 10_Migrated to proper sections.
@@ -6,9 +6,11 @@ Move notes from 10_Migrated to proper sections.
 
 import json
 import re
+import sys
 from pathlib import Path
 from datetime import datetime
 from collections import Counter
+from vault_errors import wrap_main
 
 
 VAULT_ROOT = Path(__file__).parent.parent
@@ -196,6 +198,8 @@ def regenerate_indexes():
 
 
 def main():
+    # Deprecation notice
+    print(json.dumps({"_deprecation": {"use_instead": "vault_migrate_docs", "since": "v26"}}), file=sys.stderr)
     import argparse
     parser = argparse.ArgumentParser(
         description="Vault Reorganize Script -- Move notes from 10_Migrated to proper sections",
