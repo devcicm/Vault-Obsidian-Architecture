@@ -119,13 +119,26 @@ def vault_code_module(
     safe_project = slugify(project)
     fslug = file_slug(file_path)
 
-    note_path = CODE_DIR / safe_project / f"{fslug}.md"
-
     if language and language.lower() not in LANGUAGES:
         return {"ok": False, "error": f"Language '{language}' not recognized. Use: {LANGUAGES}"}
 
     if iso_type and iso_type.lower() not in ISO_TYPES:
         return {"ok": False, "error": f"iso_type '{iso_type}' not recognized. Use: {ISO_TYPES}"}
+
+    # AP-17 guard: check .code-index.json for existing note with same file_path.
+    # vault_write and vault_code_module may derive different slugs for the same source file.
+    # The index is the canonical source of truth for which slug was used first.
+    note_path = CODE_DIR / safe_project / f"{fslug}.md"
+    index = load_index()
+    for existing_mod in index.get("modules", []):
+        if existing_mod.get("filePath") == file_path and existing_mod.get("project") == project:
+            canonical_rel = existing_mod.get("relPath", "")
+            canonical_path = VAULT_ROOT / canonical_rel if canonical_rel else None
+            if canonical_path and canonical_path.exists() and canonical_path != note_path:
+                # Use the canonical path instead of generating a different slug
+                note_path = canonical_path
+                fslug = canonical_path.stem
+            break
 
     now = _utcnow()
     created_at = now
@@ -457,8 +470,14 @@ Notas:
             return None
         try:
             return json.loads(val)
-        except json.JSONDecodeError as e:
-            print(json.dumps({"ok": False, "error": f"Invalid JSON in --{name}: {e}"}))
+        except json.JSONDecodeError:
+            # Accept comma-separated string as fallback for list-type args
+            # e.g. --exports "Foo,Bar,Baz" → ["Foo", "Bar", "Baz"]
+            if name in ("exports", "imports", "responsibilities", "tags"):
+                parts = [p.strip() for p in val.split(",") if p.strip()]
+                if parts:
+                    return parts
+            print(json.dumps({"ok": False, "error": f"Invalid JSON in --{name}. Expected JSON array or comma-separated list."}))
             sys.exit(1)
 
     result = vault_code_module(

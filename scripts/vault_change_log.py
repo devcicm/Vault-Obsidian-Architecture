@@ -193,12 +193,16 @@ Notas:
     parser.add_argument("--path", help="Vault-relative path of the affected note")
     parser.add_argument("--new_path", help="New path (required for action 'moved')")
     parser.add_argument("--reason", help="Why this change was made (required)")
+    parser.add_argument("--summary", help="Alias for --reason (accepted for compatibility)")
     parser.add_argument("--agent", default="claude", help="Agent name (default: claude)")
     parser.add_argument("--query", action="store_true", help="Query mode: return recent log entries")
     parser.add_argument("--project", help="Filter query by project name (substring match on path)")
     parser.add_argument("--last", type=int, default=20, help="Number of entries to return in query (default: 20)")
 
     args = parser.parse_args()
+
+    # --summary is a documented alias for --reason
+    reason = args.reason or args.summary
 
     if args.query:
         result = vault_change_log_query(
@@ -211,13 +215,13 @@ Notas:
             parser.error("--action is required (or use --query mode)")
         if not args.path:
             parser.error("--path is required")
-        if not args.reason:
-            parser.error("--reason is required")
+        if not reason:
+            parser.error("--reason (or --summary) is required")
 
         result = vault_change_log_add(
             action=args.action,
             path=args.path,
-            reason=args.reason,
+            reason=reason,
             agent=args.agent,
             new_path=args.new_path,
         )

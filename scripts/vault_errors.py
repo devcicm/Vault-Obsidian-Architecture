@@ -16,12 +16,18 @@ Uso en cualquier tool:
 """
 
 import json
+import os
+import queue
 import sys
+import threading
 import traceback
 import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
+
+# Timeout en segundos para cualquier tool. Override via env: VAULT_TOOL_TIMEOUT=120
+TOOL_TIMEOUT_SECONDS: int = int(os.environ.get("VAULT_TOOL_TIMEOUT", "60"))
 
 VAULT_ROOT = Path(__file__).parent.parent
 TRACE_FILE = VAULT_ROOT / "00_System" / ".tool-trace.json"
@@ -348,6 +354,18 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         }
     },
 
+    # ── Lifecycle ─────────────────────────────────────────────────────────────
+    "TOOL_TIMEOUT": {
+        "category": "infrastructure",
+        "severity": "error",
+        "message": "La tool excedió el timeout configurado y fue terminada.",
+        "recovery": {
+            "action": "retry",
+            "hint": "Reducir el alcance de la operación (usar --folder, --limit, --project) o aumentar VAULT_TOOL_TIMEOUT env var.",
+            "docs": None
+        }
+    },
+
     # ── Catch-all ─────────────────────────────────────────────────────────────
     "UNEXPECTED_ERROR": {
         "category": "infrastructure",
@@ -427,30 +445,71 @@ def log_trace(entry: Dict[str, Any]) -> None:
         pass  # Trace log failure must never crash the tool itself
 
 
-def wrap_main(fn: Callable, tool_name: str) -> int:
+def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
     """
-    Envuelve main() para capturar cualquier excepción no manejada y emitir
-    JSON válido en lugar de un traceback. Retorna exit code (0 o 1).
+    Envuelve main() para:
+    - Capturar excepciones no manejadas → emitir JSON estructurado en lugar de traceback
+    - Aplicar timeout (default: TOOL_TIMEOUT_SECONDS) — la tool muere limpiamente si cuelga
+    - Registrar todo en 00_System/.tool-trace.json
 
     Uso:
         if __name__ == "__main__":
             sys.exit(wrap_main(main, "vault_write"))
+
+    Override de timeout para una tool específica:
+        sys.exit(wrap_main(main, "vault_backup", timeout=120))
     """
+    limit = timeout if timeout is not None else TOOL_TIMEOUT_SECONDS
+
+    def _run():
+        try:
+            result = fn()
+            if result is None:
+                return 0
+            return int(result)
+        except SystemExit as e:
+            code = e.code if isinstance(e.code, int) else (1 if e.code else 0)
+            return code
+
+    # Daemon thread: si el proceso termina (timeout), el thread muere con él.
+    result_q: queue.Queue = queue.Queue()
+
+    def _target():
+        try:
+            result_q.put(("ok", _run()))
+        except Exception as exc:
+            result_q.put(("exc", exc))
+
+    t = threading.Thread(target=_target, daemon=True)
+    t.start()
+    t.join(timeout=limit)
+
+    if t.is_alive():
+        # Thread sigue vivo → timeout
+        err = emit_error(
+            tool=tool_name,
+            code="TOOL_TIMEOUT",
+            message=f"La tool '{tool_name}' excedio el limite de {limit}s y fue terminada.",
+        )
+        output = json.dumps(err, ensure_ascii=False)
+        try:
+            sys.stdout.buffer.write((output + "\n").encode("utf-8"))
+        except Exception:
+            print(output)
+        # Daemon thread morirá cuando el proceso termine (sys.exit a continuación).
+        return 1
+
     try:
-        result = fn()
-        if result is None:
-            return 0
-        return int(result)
-    except SystemExit as e:
-        # main() llamó sys.exit() — respetar el código
-        code = e.code if isinstance(e.code, int) else (1 if e.code else 0)
-        return code
-    except Exception as exc:
+        kind, value = result_q.get_nowait()
+    except queue.Empty:
+        return 1
+
+    if kind == "exc":
         err = emit_error(
             tool=tool_name,
             code="UNEXPECTED_ERROR",
-            message=f"{type(exc).__name__}: {exc}",
-            exception=exc,
+            message=f"{type(value).__name__}: {value}",
+            exception=value,
         )
         output = json.dumps(err, ensure_ascii=False)
         try:
@@ -458,6 +517,8 @@ def wrap_main(fn: Callable, tool_name: str) -> int:
         except Exception:
             print(output)
         return 1
+
+    return value
 
 
 def query_trace(
