@@ -13,20 +13,24 @@ from datetime import datetime
 from typing import Tuple, List
 
 VAULT_DIR = Path(__file__).parent.parent
-KEYWORDS = ["ans", "mcp", "toon", "ansible", "proxmox", "executor", "playbook", "deploy", "runner"]
+
+# Generic structural keywords — expand via --keywords CLI arg for project-specific terms
+DEFAULT_KEYWORDS: List[str] = ["deploy", "runner", "config", "api", "service", "guide", "spec"]
 
 
-def classify_file(filepath: Path) -> Tuple[str, int]:
-    """Clasifica relevancia basada en keywords"""
+def classify_file(filepath: Path, keywords: List[str]) -> Tuple[str, int]:
+    """Clasifica relevancia basada en keywords y patrones estructurales."""
     try:
         content = filepath.read_text(encoding="utf-8", errors="ignore")
-    except:
+    except Exception:
         return "excluded", 0
 
-    keyword_count = sum(len(re.findall(kw, content, re.IGNORECASE)) for kw in KEYWORDS)
+    keyword_count = sum(len(re.findall(kw, content, re.IGNORECASE)) for kw in keywords)
     name_lower = filepath.name.lower()
 
-    if any(sig in content.lower() for sig in ["# ansible", "mcp server", "toon command", "proxmox"]):
+    # Structural signals — generic, not project-specific
+    structural_signals = ["# config", "## architecture", "## deploy", "## api", "## setup"]
+    if any(sig in content.lower() for sig in structural_signals):
         if keyword_count >= 3:
             return "direct", keyword_count
 
@@ -45,10 +49,9 @@ def classify_file(filepath: Path) -> Tuple[str, int]:
         return "excluded", 0
 
 
-def detect_folder(filepath: Path, content: str) -> str:
-    """Detecta carpeta destino según contenido"""
+def detect_folder(filepath: Path, content: str, project: str) -> str:
+    """Detecta carpeta destino según contenido y nombre de archivo."""
     name_lower = filepath.name.lower()
-    content_lower = content.lower()
 
     if "architecture" in name_lower or "pattern" in name_lower:
         return "05_Patterns/architecture"
@@ -61,10 +64,10 @@ def detect_folder(filepath: Path, content: str) -> str:
     if "guide" in name_lower:
         return "07_Knowledge/configs"
     if "project" in name_lower or "evaluation" in name_lower:
-        return "01_Projects/ans"
+        return f"01_Projects/{project}"
     if "agent" in name_lower or "ai_" in name_lower:
-        return "01_Projects/ans"
-    return "01_Projects/ans"
+        return f"01_Projects/{project}"
+    return f"01_Projects/{project}"
 
 
 def convert_links(content: str) -> str:
@@ -74,7 +77,7 @@ def convert_links(content: str) -> str:
     return content
 
 
-def generate_frontmatter(title: str, tags: List[str], relevance: str, project: str = "ans") -> str:
+def generate_frontmatter(title: str, tags: List[str], relevance: str, project: str) -> str:
     """Genera frontmatter YAML"""
     return f"""---
 id: {str(uuid.uuid4())[:8]}
@@ -88,9 +91,10 @@ migratedFrom: docs/
 ---"""
 
 
-def migrate(source_path: str, project: str = "ans", dry_run: bool = True):
+def migrate(source_path: str, project: str, dry_run: bool = True, keywords: List[str] = None):
     """Migra documentación al vault"""
     source = Path(source_path)
+    kw = keywords if keywords else DEFAULT_KEYWORDS
 
     if not source.exists():
         print(f"Error: {source_path} no existe")
@@ -106,7 +110,7 @@ def migrate(source_path: str, project: str = "ans", dry_run: bool = True):
     md_files = list(source.rglob("*.md")) if source.is_dir() else [source]
 
     for md_file in md_files:
-        relevance, count = classify_file(md_file)
+        relevance, count = classify_file(md_file, kw)
 
         if relevance == "excluded":
             results["excluded"].append((str(md_file.relative_to(source)), "Sin relevancia"))
@@ -118,7 +122,7 @@ def migrate(source_path: str, project: str = "ans", dry_run: bool = True):
 
             title = md_file.stem.replace("-", " ").replace("_", " ").title()
             tags = [md_file.parent.name, "migrated"]
-            folder = detect_folder(md_file, content)
+            folder = detect_folder(md_file, content, project)
 
             fm = generate_frontmatter(title, tags, relevance, project)
             full_content = fm + "\n\n" + content
@@ -178,10 +182,10 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Ejemplos:
-  python vault_migrate.py --source docs/
-  python vault_migrate.py --source docs/ --dry-run
-  python vault_migrate.py --source /ruta/a/mis-docs --project mi-proyecto
-  python vault_migrate.py --source docs/ --no-dry-run
+  python vault_migrate.py --source docs/ --project mi-api
+  python vault_migrate.py --source docs/ --project mi-api --dry-run
+  python vault_migrate.py --source /ruta/docs --project mi-api --keywords "django,celery,redis"
+  python vault_migrate.py --source docs/ --project mi-api --no-dry-run
 
 Notas:
   - VAULT_ROOT se detecta automaticamente desde la ubicacion del script
@@ -191,13 +195,15 @@ Notas:
   - Destino final: 10_Migrated/{direct|indirect}/
 """,
     )
-    parser.add_argument("--source", default="docs/", help="Directorio o archivo fuente a migrar")
-    parser.add_argument("--project", default="ans", help="Slug del proyecto (default: ans)")
+    parser.add_argument("--source", required=True, help="Directorio o archivo fuente a migrar")
+    parser.add_argument("--project", required=True, help="Slug del proyecto destino (e.g. mi-api)")
+    parser.add_argument("--keywords", help="Keywords adicionales separadas por coma (e.g. 'django,celery,redis')")
     parser.add_argument("--dry-run", action="store_true", default=True, help="Simular sin escribir (default: True)")
     parser.add_argument("--no-dry-run", dest="dry_run", action="store_false", help="Ejecutar migracion real")
 
     args = parser.parse_args()
-    migrate(args.source, project=args.project, dry_run=args.dry_run)
+    extra_kw = [k.strip() for k in args.keywords.split(",")] if args.keywords else []
+    migrate(args.source, project=args.project, dry_run=args.dry_run, keywords=DEFAULT_KEYWORDS + extra_kw)
 
 
 if __name__ == "__main__":

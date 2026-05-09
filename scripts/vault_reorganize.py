@@ -14,91 +14,102 @@ from collections import Counter
 VAULT_DIR = Path(__file__).parent.parent
 
 
-def reorganize():
-    """Reorganiza notas de 10_Migrated a secciones propias"""
+def _detect_dest(note: Path, project: str) -> str:
+    """Infiere la sección destino a partir del nombre y frontmatter de la nota.
 
-    moves = [
-        # 01_Projects/ans/ - Project specific
-        ("10_Migrated/direct/agents-AI_AGENT_PLAYBOOK.md", "01_Projects/ans/ai-agent-playbook.md"),
-        ("10_Migrated/direct/agents-AI_AGENT_INSTRUCTIONS.md", "01_Projects/ans/ai-agent-instructions.md"),
-        ("10_Migrated/direct/agents-CLAUDE_CODE_SETUP.md", "01_Projects/ans/claude-code-setup.md"),
-        ("10_Migrated/direct/project-FEATURES_LOG.md", "01_Projects/ans/features-log.md"),
-        ("10_Migrated/direct/project-MASTER_INDEX.md", "01_Projects/ans/master-index.md"),
-        ("10_Migrated/direct/ROOT-README.md", "01_Projects/ans/readme.md"),
-        ("10_Migrated/direct/ROOT-CLAUDE.md", "01_Projects/ans/claude.md"),
-        # 05_Patterns - Patterns
-        ("10_Migrated/direct/architecture-ARCHITECTURE_WHITEPAPER.md", "05_Patterns/architecture/ans-architecture.md"),
-        ("10_Migrated/direct/architecture-AI_INTEGRATION_SPEC.md", "05_Patterns/architecture/ai-integration.md"),
-        ("10_Migrated/direct/architecture-DEPLOY_SYSTEM.md", "05_Patterns/architecture/deploy-system.md"),
-        ("10_Migrated/direct/architecture-LOCAL_RUNNER_IMPLEMENTATION.md", "05_Patterns/code/local-runner.md"),
-        ("10_Migrated/direct/guides-RESILIENCE_GUIDE.md", "05_Patterns/code/resilience.md"),
-        ("10_Migrated/direct/guides-GUIDE_PLAYBOOK_VERSIONING.md", "05_Patterns/code/playbook-versioning.md"),
-        ("10_Migrated/indirect/agents-FILE_FACTORY_GUIDE.md", "05_Patterns/integration/file-factory.md"),
-        # 07_Knowledge - Knowledge
-        ("10_Migrated/direct/informacion-decrepita-MCP_CAPABILITIES.md", "07_Knowledge/apis/mcp-capabilities.md"),
-        ("10_Migrated/direct/informacion-decrepita-MCP_AGENT_GUIDE.md", "07_Knowledge/concepts/mcp-agent-guide.md"),
-        ("10_Migrated/direct/guides-ANSIBLE_BINARIES_GUIDE.md", "07_Knowledge/configs/ansible-binaries.md"),
-        (
-            "10_Migrated/direct/informacion-decrepita-TECHNICAL_ENVIRONMENT_GUIDE.md",
-            "07_Knowledge/configs/technical-environment.md",
-        ),
-        (
-            "10_Migrated/direct/informacion-decrepita-DEPLOYMENT_PROFILES.md",
-            "07_Knowledge/configs/deployment-profiles.md",
-        ),
-        (
-            "10_Migrated/direct/informacion-decrepita-STORAGE_RESILIENCE_GUIDE.md",
-            "07_Knowledge/concepts/storage-resilience.md",
-        ),
-        (
-            "10_Migrated/direct/informacion-decrepita-GUIDE_TRANSFER_SYSTEM.md",
-            "07_Knowledge/concepts/transfer-system.md",
-        ),
-        (
-            "10_Migrated/direct/informacion-decrepita-GUIDE_DRIFT_AND_SYNC_ANALYSIS.md",
-            "07_Knowledge/concepts/drift-sync.md",
-        ),
-        ("10_Migrated/direct/CENTRALIZATION_GUIDE.md", "07_Knowledge/configs/centralization.md"),
-        # 08_Runbooks - Runbooks
-        ("10_Migrated/direct/deployment-RUNBOOK.md", "08_Runbooks/deploy/system-runbook.md"),
-        ("10_Migrated/direct/deployment-DEPLOYMENT_WORKFLOW.md", "08_Runbooks/deploy/deployment-workflow.md"),
-        ("10_Migrated/direct/deployment-CASE_STUDY_PROXMOX.md", "08_Runbooks/deploy/proxmox-case-study.md"),
-        ("10_Migrated/direct/deployment-NODE_INSTALLATION_GUIDE.md", "08_Runbooks/setup/node-installation.md"),
-        ("10_Migrated/direct/informacion-decrepita-PROXMOX_REPO_FIX.md", "08_Runbooks/debug/proxmox-repo-fix.md"),
-        (
-            "10_Migrated/direct/informacion-decrepita-MIKROTIK_RESCUE_GUIDE.md",
-            "08_Runbooks/incident/mikrotik-rescue.md",
-        ),
-        # 09_Infrastructure
-        ("09_Infrastructure/servers/proxmox-main.md", "09_Infrastructure/servers/proxmox-main.md"),
-        ("09_Infrastructure/services/ans-orchestrator.md", "09_Infrastructure/services/ans-orchestrator.md"),
-    ]
+    Orden de resolución:
+    1. Campo `folder:` en frontmatter (el agente puede haber anotado el destino)
+    2. Patrones en el nombre del archivo
+    3. Fallback: 01_Projects/{project}/
+    """
+    # 1. Read frontmatter hint
+    try:
+        content = note.read_text(encoding="utf-8", errors="ignore")
+        if content.startswith("---"):
+            for line in content.split("---", 2)[1].splitlines():
+                if line.lower().startswith("folder:"):
+                    folder = line.split(":", 1)[1].strip().strip("\"'")
+                    if folder:
+                        return folder
+    except Exception:
+        pass
+
+    # 2. Name-based pattern matching
+    name = note.stem.lower().replace("-", "_")
+    if any(x in name for x in ("architecture", "pattern", "design")):
+        return "05_Patterns/architecture"
+    if any(x in name for x in ("integration", "adapter", "connector")):
+        return "05_Patterns/integration"
+    if any(x in name for x in ("code", "module", "class", "function", "lib")):
+        return "05_Patterns/code"
+    if any(x in name for x in ("deploy", "install", "setup", "provision")):
+        return "08_Runbooks/deploy"
+    if any(x in name for x in ("runbook", "workflow", "procedure")):
+        return "08_Runbooks/deploy"
+    if any(x in name for x in ("debug", "fix", "troubleshoot", "incident")):
+        return "08_Runbooks/debug"
+    if any(x in name for x in ("api", "endpoint", "openapi", "swagger")):
+        return "07_Knowledge/apis"
+    if any(x in name for x in ("concept", "glossary", "theory", "overview")):
+        return "07_Knowledge/concepts"
+    if any(x in name for x in ("config", "guide", "env", "settings")):
+        return "07_Knowledge/configs"
+    if any(x in name for x in ("framework", "library", "sdk", "tool")):
+        return "07_Knowledge/frameworks"
+    if any(x in name for x in ("dependency", "package", "dep_")):
+        return "07_Knowledge/dependencies"
+    if any(x in name for x in ("infra", "server", "database", "network", "storage")):
+        return "09_Infrastructure/servers"
+    if any(x in name for x in ("decision", "adr", "tradeoff")):
+        return "03_Decisions"
+
+    # 3. Fallback
+    return f"01_Projects/{project}"
+
+
+def reorganize(project: str = "mi-proyecto", dry_run: bool = False):
+    """Mueve notas de 10_Migrated a secciones propias via deteccion automatica.
+
+    No usa rutas hardcodeadas — infiere el destino de cada nota por frontmatter
+    y patrones de nombre. Compatible con cualquier proyecto.
+    """
+    migrated_root = VAULT_DIR / "10_Migrated"
+    if not migrated_root.exists():
+        return [], []
 
     moved = []
     missing = []
+    skipped = []
 
-    for src, dest_rel in moves:
-        src_path = VAULT_DIR / src
+    for note in migrated_root.rglob("*.md"):
+        rel = str(note.relative_to(VAULT_DIR)).replace("\\", "/")
+        dest_folder = _detect_dest(note, project)
+        slug = note.stem.lower()
+        # Strip common prefixes left by vault_migrate (e.g. "agents-", "direct-")
+        slug = re.sub(r"^(direct|indirect|agents|guides|deployment|architecture|project|informacion.decrepita)-", "", slug)
+        dest_rel = f"{dest_folder}/{slug}.md"
         dest_path = VAULT_DIR / dest_rel
 
-        if src_path.exists():
+        if dest_path.exists():
+            skipped.append({"src": rel, "dest": dest_rel, "reason": "already_exists"})
+            continue
+
+        if dry_run:
+            moved.append({"src": rel, "dest": dest_rel, "dry_run": True})
+            continue
+
+        try:
+            content = note.read_text(encoding="utf-8", errors="ignore")
+            # Fix path-anchored wiki-links left by migration
+            content = re.sub(r"\[\[10_Migrated/[^|/\]]*?/([^\]|]+)", r"[[\1", content)
             dest_path.parent.mkdir(parents=True, exist_ok=True)
-
-            content = src_path.read_text(encoding="utf-8", errors="ignore")
-
-            # Update location in frontmatter
-            if "migratedFrom:" in content:
-                content = content.replace("migratedFrom: ", "migratedFrom: 10_Migrated/")
-
-            # Fix reference links
-            content = content.replace("[[10_Migrated/", "[[")
-
             dest_path.write_text(content, encoding="utf-8")
-            moved.append(dest_rel)
-        else:
-            missing.append(src)
+            note.unlink()
+            moved.append({"src": rel, "dest": dest_rel})
+        except Exception as e:
+            missing.append({"src": rel, "error": str(e)})
 
-    return moved, missing
+    return moved, missing, skipped
 
 
 def audit():
@@ -191,13 +202,15 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Ejemplos:
-  python vault_reorganize.py reorganize
+  python vault_reorganize.py reorganize --project mi-api
+  python vault_reorganize.py reorganize --project mi-api --dry-run
   python vault_reorganize.py audit
   python vault_reorganize.py index
 
 Notas:
   - VAULT_ROOT se detecta automaticamente desde la ubicacion del script
-  - 'reorganize' mueve notas de 10_Migrated a sus secciones destino y regenera indices
+  - 'reorganize' detecta automaticamente la seccion destino de cada nota en 10_Migrated/
+  - El destino se infiere por frontmatter 'folder:' o por patrones en el nombre del archivo
   - 'audit' reporta total de notas, archivos vacios, sin frontmatter y links rotos
   - 'index' regenera 99_Index/graph.json y 99_Index/search-index.json
 """,
@@ -207,15 +220,18 @@ Notas:
         choices=["reorganize", "audit", "index"],
         help="Accion a ejecutar",
     )
+    parser.add_argument("--project", default="mi-proyecto", help="Slug del proyecto (fallback destino, default: mi-proyecto)")
+    parser.add_argument("--dry-run", action="store_true", help="Mostrar movimientos sin ejecutarlos")
     args = parser.parse_args()
 
     if args.action == "reorganize":
-        moved, missing = reorganize()
-        print(f"Moved: {len(moved)} files")
+        moved, missing, skipped = reorganize(project=args.project, dry_run=args.dry_run)
+        print(f"{'[DRY-RUN] ' if args.dry_run else ''}Moved: {len(moved)} | Errors: {len(missing)} | Skipped: {len(skipped)}")
+        for m in moved:
+            print(f"  {m['src']} -> {m['dest']}")
         if missing:
-            print(f"Missing: {len(missing)}")
-            for m in missing:
-                print(f"  - {m}")
+            for e in missing:
+                print(f"  ERROR: {e}")
 
         nodes, edges = regenerate_indexes()
         print(f"Indexes regenerated: {nodes} nodes, {edges} edges")
