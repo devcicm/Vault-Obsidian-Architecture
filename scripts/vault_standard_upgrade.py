@@ -33,7 +33,7 @@ SYSTEM_DIR = VAULT_ROOT / "00_System"
 VERSION_FILE = SYSTEM_DIR / "standard-version.json"
 IDENTITY_FILE = SYSTEM_DIR / "identity.md"
 
-CURRENT_VERSION = "v26"
+CURRENT_VERSION = "v27"
 
 MIGRATIONS: Dict[str, Dict[str, Any]] = {
     "v21": {
@@ -119,9 +119,28 @@ MIGRATIONS: Dict[str, Dict[str, Any]] = {
             "vault_project_status: statusPath -> path; vault_relation_add: erdPath -> path",
         ],
     },
+    "v27": {
+        "description": "Data Quality framework, CIA schema, 8 Data Fundamentals, graph-aware propagation",
+        "add_folders": [],
+        "update_identity": {"tools_count": "57", "groups_count": "25"},
+        "notes": [
+            "vault_fundamentals: 8 Data Fundamentals registry (INTEGRIDAD, CONSISTENCIA, COMPLETITUD, EXACTITUD, VALIDEZ, ACTUALIDAD, AUTENTICIDAD, NO_REPUDIO)",
+            "vault_quality_check: DQ scorer extended to 9 dimensions matching the 8 fundamentals + uniqueness",
+            "vault_impact: BFS impact analysis on reverse backlink graph (uses 99_Index/graph.json)",
+            "vault_propagate: 3 strategies (conservative/transitive/critical-path), 3 actions (notify/queue/reindex)",
+            "vault_validate: CIA field validation + agent field validation (F7 AUTENTICIDAD)",
+            "vault_change_log: --propagate flag triggers vault_impact + vault_propagate; provides F8 NO_REPUDIO",
+            "vault_audit: --refresh-dq flag, dqHealth block, propagationPending, CIA-weighted health score",
+            "vault_manifest: DQ/CIA/data_fundamentals metadata per tool, 'Data Quality' + 'Propagación' groups",
+            "00_System/data-fundamentals.json: canonical registry of the 8 fundamentals (regenerable)",
+            "00_System/data-fundamentals.md: human-readable reference with verification rules per principle",
+            "00_System/quality-index.json: DQ scores per note with file_lock coordination",
+            "00_System/propagation-queue.json: pending propagation items with priority",
+        ],
+    },
 }
 
-VERSION_ORDER = ["v19", "v20", "v21", "v22", "v23", "v24", "v25", "v26"]
+VERSION_ORDER = ["v19", "v20", "v21", "v22", "v23", "v24", "v25", "v26", "v27"]
 
 
 def _version_index(v: str) -> int:

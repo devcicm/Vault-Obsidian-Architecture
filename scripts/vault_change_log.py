@@ -22,6 +22,7 @@ Usage:
 
 import argparse
 import json
+import subprocess
 import sys
 from vault_errors import wrap_main
 import uuid
@@ -40,6 +41,9 @@ LOG_MD = SYSTEM_DIR / "change-log.md"
 LOG_JSON = SYSTEM_DIR / ".change-log.json"
 
 VALID_ACTIONS = ["created", "updated", "deleted", "moved"]
+VALID_PROPAGATE_STRATEGIES = ["conservative", "transitive", "critical-path"]
+
+SCRIPTS_DIR = Path(__file__).parent
 
 
 def _read_json_log() -> List[Dict[str, Any]]:
@@ -86,12 +90,35 @@ def _append_md_log(entry: Dict[str, Any]) -> None:
         f.write(row)
 
 
+def _run_propagation(path: str, strategy: str) -> Dict[str, Any]:
+    """Internal: trigger vault_impact + vault_propagate after recording a change."""
+    cmd = [
+        sys.executable,
+        str(SCRIPTS_DIR / "vault_propagate.py"),
+        "--changed", path,
+        "--strategy", strategy,
+        "--action", "notify,queue",
+    ]
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        data = json.loads(result.stdout)
+        return {
+            "ok": data.get("ok", False),
+            "impacted_count": data.get("impacted_count", 0),
+            "strategy": strategy,
+            "queued": data.get("queued", []),
+        }
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
 def vault_change_log_add(
     action: str,
     path: str,
     reason: str,
     agent: str = "claude",
     new_path: Optional[str] = None,
+    propagate: Optional[str] = None,
 ) -> Dict[str, Any]:
     action = action.lower()
     if action not in VALID_ACTIONS:
@@ -102,6 +129,9 @@ def vault_change_log_add(
 
     if action == "moved" and not new_path:
         return {"ok": False, "error": "new_path is required for action 'moved'"}
+
+    if propagate and propagate not in VALID_PROPAGATE_STRATEGIES:
+        return {"ok": False, "error": f"Invalid propagate strategy '{propagate}'. Valid: {VALID_PROPAGATE_STRATEGIES}"}
 
     entry: Dict[str, Any] = {
         "id": str(uuid.uuid4()),
@@ -118,7 +148,7 @@ def vault_change_log_add(
     _write_json_log(entries)
     _append_md_log(entry)
 
-    return {
+    response: Dict[str, Any] = {
         "ok": True,
         "id": entry["id"],
         "action": action,
@@ -126,6 +156,16 @@ def vault_change_log_add(
         "log_md": str(LOG_MD.relative_to(VAULT_ROOT)).replace("\\", "/"),
         "log_json": str(LOG_JSON.relative_to(VAULT_ROOT)).replace("\\", "/"),
     }
+
+    if propagate:
+        prop_result = _run_propagation(path, propagate)
+        response["propagation_triggered"] = prop_result.get("ok", False)
+        response["propagation_strategy"] = propagate
+        response["impacted_count"] = prop_result.get("impacted_count", 0)
+        if not prop_result.get("ok"):
+            response["propagation_error"] = prop_result.get("error")
+
+    return response
 
 
 def vault_change_log_query(
@@ -195,6 +235,8 @@ Notas:
     parser.add_argument("--reason", help="Why this change was made (required)")
     parser.add_argument("--summary", help="Alias for --reason (accepted for compatibility)")
     parser.add_argument("--agent", default="claude", help="Agent name (default: claude)")
+    parser.add_argument("--propagate", choices=VALID_PROPAGATE_STRATEGIES, metavar="STRATEGY",
+                        help="After recording, trigger propagation: conservative|transitive|critical-path")
     parser.add_argument("--query", action="store_true", help="Query mode: return recent log entries")
     parser.add_argument("--project", help="Filter query by project name (substring match on path)")
     parser.add_argument("--last", type=int, default=20, help="Number of entries to return in query (default: 20)")
@@ -224,6 +266,7 @@ Notas:
             reason=reason,
             agent=args.agent,
             new_path=args.new_path,
+            propagate=args.propagate,
         )
 
     print(json.dumps(result, indent=2, ensure_ascii=False))

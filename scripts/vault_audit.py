@@ -12,20 +12,34 @@ Usage:
 import argparse
 import hashlib
 import json
+import os
 import re
+import subprocess
 import sys
 from vault_errors import wrap_main
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 VAULT_ROOT = Path(__file__).parent.parent
+SCRIPTS_DIR = Path(__file__).parent
+SYSTEM_DIR = VAULT_ROOT / "00_System"
+QUALITY_INDEX = SYSTEM_DIR / "quality-index.json"
+PROPAGATION_QUEUE = SYSTEM_DIR / "propagation-queue.json"
+
 SKIP_FOLDERS = {"10_Migrated", "vault-backups", ".history"}
 STALE_DAYS = 30
 STUCK_PATTERN_DAYS = 7
 STALE_PROJECT_DAYS = 14
+
+VAULT_DQ_CACHE_MINUTES = int(os.environ.get("VAULT_DQ_CACHE_MINUTES", "30"))
+
+# Archivos estructurales: auto-generados o de convención, no son "notas de contenido"
+# Se excluyen de: orphans, stale, AP-17, duplicados
+# Se INCLUYEN en: fuentes de backlinks, broken links detection
+_STRUCTURAL_NAMES = frozenset({"index.md", "readme.md"})
 
 PLACEHOLDER_PATTERNS = [
     "yyyy", "nombre", "link-a", "{slug}", "archivo",
@@ -39,10 +53,16 @@ def _is_skipped(path: Path) -> bool:
     return any(skip in path_str for skip in SKIP_FOLDERS)
 
 
-def _get_active_notes(project: Optional[str] = None) -> List[Path]:
+def _is_structural(path: Path) -> bool:
+    return path.name.lower() in _STRUCTURAL_NAMES
+
+
+def _get_active_notes(project: Optional[str] = None, include_structural: bool = False) -> List[Path]:
     notes = []
     for n in VAULT_ROOT.rglob("*.md"):
         if _is_skipped(n) or n.name.startswith("_"):
+            continue
+        if not include_structural and _is_structural(n):
             continue
         if project:
             rel = str(n.relative_to(VAULT_ROOT))
@@ -280,26 +300,140 @@ def _detect_cross_folder_duplicates(notes: List[Path]) -> List[Dict[str, Any]]:
     return duplicates
 
 
-def vault_audit(project: Optional[str] = None) -> Dict[str, Any]:
+def _read_quality_index() -> Optional[Dict[str, Any]]:
+    if not QUALITY_INDEX.exists():
+        return None
+    try:
+        return json.loads(QUALITY_INDEX.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+
+def _dq_is_stale(qi: Dict[str, Any]) -> bool:
+    generated_at = qi.get("generated_at", "")
+    if not generated_at:
+        return True
+    try:
+        dt = datetime.fromisoformat(generated_at.replace("Z", "+00:00"))
+        age_minutes = (datetime.now(timezone.utc) - dt).total_seconds() / 60
+        return age_minutes > VAULT_DQ_CACHE_MINUTES
+    except Exception:
+        return True
+
+
+def _dq_is_locked() -> bool:
+    lock_dir = QUALITY_INDEX.parent / f".{QUALITY_INDEX.name}.lock"
+    return lock_dir.exists()
+
+
+def _refresh_dq_if_needed() -> Dict[str, Any]:
+    """Attempt to refresh quality-index.json if absent or stale. Returns dqHealth dict."""
+    qi = _read_quality_index()
+
+    needs_refresh = (qi is None) or _dq_is_stale(qi)
+
+    if needs_refresh and _dq_is_locked():
+        dq_status = "update_in_progress"
+    elif needs_refresh:
+        # Trigger refresh via subprocess
+        cmd = [sys.executable, str(SCRIPTS_DIR / "vault_quality_check.py")]
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+            qi_new = _read_quality_index()
+            if result.returncode == 0 and qi_new:
+                qi = qi_new
+                dq_status = "fresh"
+            else:
+                dq_status = "stale" if qi else "unavailable"
+        except Exception:
+            dq_status = "stale" if qi else "unavailable"
+    else:
+        dq_status = "fresh"
+
+    overall = qi.get("overall_dq_score") if qi else None
+    below = qi.get("notes_below_07") if qi else None
+    generated_at = qi.get("generated_at") if qi else None
+    generated_by = qi.get("generated_by") if qi else None
+
+    dq_health: Dict[str, Any] = {
+        "dq_status": dq_status,
+        "threshold": 0.7,
+    }
+    if overall is not None:
+        dq_health["overall_dq_score"] = overall
+    if below is not None:
+        dq_health["notes_below_threshold"] = below
+    if generated_at:
+        dq_health["generated_at"] = generated_at
+    if generated_by:
+        dq_health["generated_by"] = generated_by
+
+    return dq_health
+
+
+def _read_propagation_pending() -> List[Dict[str, Any]]:
+    """Read propagation-queue.json and return pending items sorted by priority."""
+    if not PROPAGATION_QUEUE.exists():
+        return []
+    try:
+        data = json.loads(PROPAGATION_QUEUE.read_text(encoding="utf-8"))
+        pending = data.get("pending", [])
+        risk_order = {"critical": 4, "high": 3, "medium": 2, "low": 1}
+        pending.sort(key=lambda e: (-risk_order.get(e.get("priority", "low"), 1), e.get("queued_at", "")))
+        return [{"path": e["path"], "since": e.get("queued_at", ""), "priority": e.get("priority", "low")} for e in pending]
+    except Exception:
+        return []
+
+
+def _cia_score_penalty(notes: List[Path], stale: List[Dict[str, Any]], propagation_pending: List[Dict[str, Any]]) -> int:
+    """Extra health score penalty from CIA-weighted stale notes and propagation_pending."""
+    penalty = 0
+    stale_paths = {s["path"] for s in stale}
+    pending_paths = {p["path"] for p in propagation_pending}
+
+    for n in notes:
+        rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+        fm = _read_frontmatter(n)
+        integrity = fm.get("cia_integrity", "medium").lower()
+        if rel in stale_paths and integrity in ("critical",):
+            penalty += 5
+        if rel in pending_paths:
+            penalty += 2
+
+    return penalty
+
+
+def vault_audit(project: Optional[str] = None, refresh_dq: bool = False) -> Dict[str, Any]:
     """
     Run health audit on the active vault.
 
     Args:
-        project: Optional project slug to filter audit scope.
+        project:    Optional project slug to filter audit scope.
+        refresh_dq: If True, refresh quality-index.json if stale (VAULT_DQ_CACHE_MINUTES threshold).
 
     Returns:
-        { healthScore, stats: {total, byFolder}, issues: {orphans, stale, stuckPatterns, staleProjects, brokenLinks}, summary }
+        { healthScore, stats, issues, dqHealth?, propagationPending?, summary }
     """
-    notes = _get_active_notes(project)
-    backlinks, all_stems = _build_indexes(notes)
+    # content_notes: notas reales (excluye index.md/README.md)
+    # all_notes: incluye estructurales — para que sus links cuenten como backlinks
+    content_notes = _get_active_notes(project, include_structural=False)
+    all_notes = _get_active_notes(project, include_structural=True)
 
-    orphans = _detect_orphans(notes, backlinks)
-    stale = _detect_stale(notes)
-    stuck_patterns = _detect_stuck_patterns(notes)
-    stale_projects = _detect_stale_projects(notes)
-    broken_links = _detect_broken_links(notes, all_stems)
-    canonical_shadow = _detect_canonical_shadow(notes)
-    cross_folder_dupes = _detect_cross_folder_duplicates(notes)
+    # Indexes construidos desde all_notes para que index.md contribuya backlinks
+    backlinks, all_stems = _build_indexes(all_notes)
+
+    orphans = _detect_orphans(content_notes, backlinks)
+    stale = _detect_stale(content_notes)
+    stuck_patterns = _detect_stuck_patterns(content_notes)
+    stale_projects = _detect_stale_projects(content_notes)
+    # broken_links en all_notes: index.md roto también importa
+    broken_links = _detect_broken_links(all_notes, all_stems)
+    canonical_shadow = _detect_canonical_shadow(content_notes)
+    cross_folder_dupes = _detect_cross_folder_duplicates(content_notes)
+
+    # DQ + propagation data (loaded regardless of refresh_dq; only refresh triggers subprocess)
+    dq_health = _refresh_dq_if_needed() if refresh_dq else None
+    propagation_pending = _read_propagation_pending()
 
     score = 100
     score -= min(30, len(orphans) * 2)
@@ -309,14 +443,16 @@ def vault_audit(project: Optional[str] = None) -> Dict[str, Any]:
     score -= min(20, len(broken_links) * 2)
     score -= min(10, len(canonical_shadow) * 2)
     score -= min(10, len(cross_folder_dupes) * 3)
+    # CIA integrity + propagation_pending adjustments
+    score -= min(15, _cia_score_penalty(content_notes, stale, propagation_pending))
     score = max(0, score)
 
     by_folder: Dict[str, int] = defaultdict(int)
-    for n in notes:
+    for n in content_notes:
         parts = n.relative_to(VAULT_ROOT).parts
         by_folder[parts[0] if parts else "root"] += 1
 
-    summary_parts = [f"Score: {score}/100", f"{len(notes)} notas"]
+    summary_parts = [f"Score: {score}/100", f"{len(content_notes)} notas"]
     if orphans:
         summary_parts.append(f"{len(orphans)} huerfanas")
     if broken_links:
@@ -331,11 +467,11 @@ def vault_audit(project: Optional[str] = None) -> Dict[str, Any]:
     if cross_folder_dupes:
         summary_parts.append(f"{len(cross_folder_dupes)} duplicados AP-18")
 
-    return {
+    result: Dict[str, Any] = {
         "ok": True,
         "healthScore": score,
         "stats": {
-            "total": len(notes),
+            "total": len(content_notes),
             "byFolder": dict(sorted(by_folder.items())),
         },
         "issues": {
@@ -349,6 +485,14 @@ def vault_audit(project: Optional[str] = None) -> Dict[str, Any]:
         },
         "summary": " · ".join(summary_parts),
     }
+
+    if dq_health is not None:
+        result["dqHealth"] = dq_health
+
+    if propagation_pending:
+        result["propagationPending"] = propagation_pending
+
+    return result
 
 
 def _audit_external_path(path: Path) -> Dict[str, Any]:
@@ -423,6 +567,8 @@ Notas:
     )
     parser.add_argument("--project", help="Optional project slug to filter audit scope")
     parser.add_argument("--path", help="External directory path to audit instead of vault")
+    parser.add_argument("--refresh-dq", action="store_true",
+                        help="Refresh quality-index.json if stale and include dqHealth in output")
     args = parser.parse_args()
 
     if args.path:
@@ -432,7 +578,7 @@ Notas:
             return 1
         result = _audit_external_path(ext_path)
     else:
-        result = vault_audit(args.project)
+        result = vault_audit(args.project, refresh_dq=args.refresh_dq)
 
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0 if result.get("ok") else 1

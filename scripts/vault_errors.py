@@ -25,14 +25,17 @@ import traceback
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
+from vault_io import atomic_write_text, file_lock
 
 # Timeout en segundos para cualquier tool. Override via env: VAULT_TOOL_TIMEOUT=120
 TOOL_TIMEOUT_SECONDS: int = int(os.environ.get("VAULT_TOOL_TIMEOUT", "60"))
 
 VAULT_ROOT = Path(__file__).parent.parent
 TRACE_FILE = VAULT_ROOT / "00_System" / ".tool-trace.json"
+TOKENS_FILE = VAULT_ROOT / "00_System" / ".tool-tokens.json"
 TRACE_MAX_ENTRIES = 500
+TOKENS_MAX_ENTRIES = 2000
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Catálogo de errores — error_code → metadata + recovery hints
@@ -212,6 +215,16 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "action": "fix_input",
             "hint": "Reemplazar [[carpeta/nota]] por [[nota]] en todos los links del contenido.",
             "docs": "vault-obsidian-architecture.md §AP-21"
+        }
+    },
+    "WIKILINK_SYNTAX_ERROR": {
+        "category": "governance",
+        "severity": "error",
+        "message": "Wiki-link mal formado: corchetes extra, cierre/apertura faltante, target vacio o brackets anidados.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Usar exactamente [[nombre-nota]] o [[nombre-nota|alias]]. No usar [[[...]]], [[...]]], [[]], [[carpeta/nota]], ni links sin cierre.",
+            "docs": "vault-obsidian-architecture.md AP-21"
         }
     },
     "AP17_DUPLICATE_TITLE": {
@@ -469,14 +482,99 @@ def _write_output(text: str, stdout_ref=None) -> None:
             pass
 
 
+def _append_trace_entry(entry: Dict[str, Any], use_atomic: bool) -> None:
+    """Lee, rota y escribe el trace file. Compartido entre ruta con lock y fallback sin lock."""
+    if TRACE_FILE.exists():
+        try:
+            entries: List[Dict] = json.loads(TRACE_FILE.read_text(encoding="utf-8"))
+            if not isinstance(entries, list):
+                entries = []
+        except Exception:
+            entries = []
+    else:
+        entries = []
+
+    entries.append(entry)
+    if len(entries) > TRACE_MAX_ENTRIES:
+        entries = entries[-TRACE_MAX_ENTRIES:]
+
+    text = json.dumps(entries, indent=2, ensure_ascii=False)
+    if use_atomic:
+        atomic_write_text(TRACE_FILE, text)
+    else:
+        TRACE_FILE.write_text(text, encoding="utf-8")
+
+
 def log_trace(entry: Dict[str, Any]) -> None:
     """Añade entrada al trace log con rotación a TRACE_MAX_ENTRIES."""
     try:
         TRACE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            with file_lock(TRACE_FILE, timeout=5):
+                _append_trace_entry(entry, use_atomic=True)
+            return
+        except TimeoutError:
+            pass  # lock timeout — fallback a escritura directa
+        _append_trace_entry(entry, use_atomic=False)
+    except Exception:
+        pass  # Trace log failure must never crash the tool itself
 
-        if TRACE_FILE.exists():
+
+def _count_tokens(text: str) -> Tuple[int, str]:
+    """
+    Count tokens using the best available tokenizer.
+    Chain: anthropic (local) → tiktoken → chars//4 heuristic.
+    Returns (token_count, provider_used).
+    """
+    if not text:
+        return 0, "heuristic"
+
+    # 1. Anthropic tokenizer (local, no API call)
+    try:
+        import anthropic  # type: ignore
+        client = anthropic.Anthropic(api_key="dummy")  # key not needed for count_tokens
+        count = client.count_tokens(text)
+        return count, "anthropic"
+    except Exception:
+        pass
+
+    # 2. tiktoken (OpenAI tokenizer — close approximation for Claude)
+    try:
+        import tiktoken  # type: ignore
+        enc = tiktoken.get_encoding("cl100k_base")
+        return len(enc.encode(text)), "tiktoken"
+    except Exception:
+        pass
+
+    # 3. Heuristic fallback: regex-based word/symbol split (~4 chars per word-piece)
+    import re as _re
+    pieces = _re.findall(r"[A-Za-z0-9_]+|[^\sA-Za-z0-9_]", text)
+    total = sum(max(1, (len(p) + 3) // 4) if _re.match(r"^[A-Za-z0-9_]+$", p) else 1 for p in pieces)
+    return max(1, total), "heuristic"
+
+
+def log_token_usage(tool: str, input_text: str, output_text: str) -> None:
+    """
+    Record token usage for a tool invocation to .tool-tokens.json.
+    Called by wrap_main when VAULT_COUNT_TOKENS=1.
+    """
+    try:
+        in_tokens, provider = _count_tokens(input_text)
+        out_tokens, _ = _count_tokens(output_text)
+
+        entry = {
+            "tool": tool,
+            "timestamp": datetime.now().isoformat()[:19] + "Z",
+            "input_tokens": in_tokens,
+            "output_tokens": out_tokens,
+            "total_tokens": in_tokens + out_tokens,
+            "provider": provider,
+        }
+
+        TOKENS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        if TOKENS_FILE.exists():
             try:
-                entries: List[Dict] = json.loads(TRACE_FILE.read_text(encoding="utf-8"))
+                entries: List[Dict] = json.loads(TOKENS_FILE.read_text(encoding="utf-8"))
                 if not isinstance(entries, list):
                     entries = []
             except Exception:
@@ -485,14 +583,12 @@ def log_trace(entry: Dict[str, Any]) -> None:
             entries = []
 
         entries.append(entry)
+        if len(entries) > TOKENS_MAX_ENTRIES:
+            entries = entries[-TOKENS_MAX_ENTRIES:]
 
-        # Rotate
-        if len(entries) > TRACE_MAX_ENTRIES:
-            entries = entries[-TRACE_MAX_ENTRIES:]
-
-        TRACE_FILE.write_text(json.dumps(entries, indent=2, ensure_ascii=False), encoding="utf-8")
+        TOKENS_FILE.write_text(json.dumps(entries, indent=2, ensure_ascii=False), encoding="utf-8")
     except Exception:
-        pass  # Trace log failure must never crash the tool itself
+        pass  # Token logging must never crash a tool
 
 
 def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
@@ -572,6 +668,12 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
     output = _inject_tool_envelope(captured_text, tool_name)
     if output:
         _write_output(output, _real_stdout)
+
+    # Registrar tokens si el modo está activo.
+    if os.environ.get("VAULT_COUNT_TOKENS") == "1":
+        input_text = " ".join(sys.argv)
+        log_token_usage(tool_name, input_text, captured_text)
+
     return value
 
 

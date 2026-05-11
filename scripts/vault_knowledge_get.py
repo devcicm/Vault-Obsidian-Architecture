@@ -108,6 +108,7 @@ def vault_knowledge_get(
         return {
             "ok": True,
             "query": query,
+            "total": 0,
             "results": [],
             "message": "No knowledge notes found matching query",
         }

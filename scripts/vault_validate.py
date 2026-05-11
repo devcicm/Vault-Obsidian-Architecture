@@ -14,6 +14,7 @@ Usage:
 
 import argparse
 import json
+import re
 import sys
 from vault_errors import wrap_main
 import yaml
@@ -21,6 +22,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 VAULT_ROOT = Path(__file__).parent.parent
+
+CIA_INTEGRITY_VALUES = {"critical", "high", "medium", "low"}
+CIA_AVAILABILITY_VALUES = {"high", "medium", "low"}
+CIA_SENSITIVITY_VALUES = {"public", "internal", "restricted"}
 
 REQUIRED_FOLDERS = [
     "00_System",
@@ -40,6 +45,33 @@ REQUIRED_INDEXES = [
     "99_Index/search-index.json",
     "99_Index/graph.json",
 ]
+
+
+def _validate_cia_fields(data: Dict[str, Any]) -> List[str]:
+    """Validate optional CIA fields if present. Returns list of error messages."""
+    errors: List[str] = []
+    if "cia_integrity" in data:
+        v = str(data["cia_integrity"]).lower()
+        if v not in CIA_INTEGRITY_VALUES:
+            errors.append(f"cia_integrity '{v}' must be one of: {sorted(CIA_INTEGRITY_VALUES)}")
+    if "cia_availability" in data:
+        v = str(data["cia_availability"]).lower()
+        if v not in CIA_AVAILABILITY_VALUES:
+            errors.append(f"cia_availability '{v}' must be one of: {sorted(CIA_AVAILABILITY_VALUES)}")
+    if "cia_sensitivity" in data:
+        v = str(data["cia_sensitivity"]).lower()
+        if v not in CIA_SENSITIVITY_VALUES:
+            errors.append(f"cia_sensitivity '{v}' must be one of: {sorted(CIA_SENSITIVITY_VALUES)}")
+    if "dq_validated_at" in data:
+        val = str(data["dq_validated_at"])
+        if not re.match(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}", val):
+            errors.append(f"dq_validated_at '{val}' must be ISO 8601 (YYYY-MM-DDTHH:MM:SS...)")
+    # F7 AUTENTICIDAD: agent field (AP-16) — if present, must be non-empty
+    if "agent" in data:
+        val = str(data["agent"]).strip()
+        if not val:
+            errors.append("agent field present but empty (F7 AUTENTICIDAD requires non-empty value)")
+    return errors
 
 
 def validate_frontmatter(note_path: Path) -> Dict[str, Any]:
@@ -67,6 +99,10 @@ def validate_frontmatter(note_path: Path) -> Dict[str, Any]:
     missing = [f for f in ("id", "title") if f not in data]
     if missing:
         return {"valid": False, "error": f"Missing required fields: {missing}", "data": data}
+
+    cia_errors = _validate_cia_fields(data)
+    if cia_errors:
+        return {"valid": False, "error": f"CIA field errors: {'; '.join(cia_errors)}", "data": data}
 
     return {"valid": True, "data": data}
 
@@ -183,6 +219,9 @@ Ejemplos:
 Notas:
   - VAULT_ROOT se detecta automaticamente desde la ubicacion del script
   - --check all valida frontmatter, estructura de carpetas e indices JSON
+  - Campos CIA opcionales validados si presentes: cia_integrity (critical|high|medium|low),
+    cia_availability (high|medium|low), cia_sensitivity (public|internal|restricted),
+    dq_validated_at (ISO 8601 — escrito por vault_quality_check, no editar a mano)
 """,
     )
     parser.add_argument("--path", help="Relative path to a specific note")

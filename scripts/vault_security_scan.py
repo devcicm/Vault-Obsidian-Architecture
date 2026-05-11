@@ -582,7 +582,8 @@ def vault_security_scan(
     categories: Optional[List[str]] = None,
     save_findings: bool = True,
 ) -> Dict[str, Any]:
-    scan_path = Path(path)
+    p = Path(path)
+    scan_path = p if p.is_absolute() else VAULT_ROOT / p
     if not scan_path.exists():
         return {"ok": False, "error": f"Path not found: {path}"}
 

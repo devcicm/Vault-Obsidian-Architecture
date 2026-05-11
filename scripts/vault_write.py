@@ -149,6 +149,7 @@ def vault_write(
     if not _check_content_gate(content, folder):
         return {
             "ok": False,
+            "error_code": "content_too_short",
             "error": "content_too_short",
             "message": "Minimum 3 real lines of content required. If content is not ready, do not create the note.",
         }
@@ -160,6 +161,7 @@ def vault_write(
         if len(empty_bullets) / len(bullets) > 0.5:
             return {
                 "ok": False,
+                "error_code": "content_empty_list",
                 "error": "content_empty_list",
                 "message": f"AP-20: >{int(len(empty_bullets)/len(bullets)*100)}% of bullets are empty. Fill content before saving.",
             }
@@ -169,6 +171,7 @@ def vault_write(
     if path_links:
         return {
             "ok": False,
+            "error_code": "path_anchored_wikilinks",
             "error": "path_anchored_wikilinks",
             "message": f"AP-21: path-anchored wiki-links detected: {path_links}. Use [[note-name]] without folder path.",
         }

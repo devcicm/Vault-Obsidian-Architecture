@@ -2,8 +2,9 @@
 
 **Estándar de diseño para dotar a agentes LLM de memoria documental persistente usando Obsidian como backend.**
 
-[![Version](https://img.shields.io/badge/version-v25-blue)](./vault-obsidian-architecture.md)
-[![Tools](https://img.shields.io/badge/tools-53-green)](./scripts/)
+[![Version](https://img.shields.io/badge/version-v27-blue)](./vault-obsidian-architecture.md)
+[![Tools](https://img.shields.io/badge/tools-53_active-green)](./scripts/)
+[![Scripts](https://img.shields.io/badge/scripts-66_total-lightblue)](./scripts/)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow)](./scripts/)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](./LICENSE)
 
@@ -33,22 +34,85 @@ Este estándar define cómo construir un vault de conocimiento que el agente lee
 
 ## El documento
 
-**[vault-obsidian-architecture.md](./vault-obsidian-architecture.md)** — la especificación completa (v25).
+**[vault-obsidian-architecture.md](./vault-obsidian-architecture.md)** — la especificación completa (v27).
 
 Contiene:
 - 8 principios de diseño
 - Estructura de carpetas con **17 secciones numeradas** (00–16 + 99_Index)
 - **53 tools documentadas** con contratos exactos (parámetros, retorno, cuándo usar)
-- **23 grupos** de tools organizados por dominio
+- **26 grupos** de tools organizados por dominio
 - **21 antipatrones** (AP-01 a AP-21) con señales de alarma y prevención automática
 - **5 patrones recomendados** (PAT-1 a PAT-5)
+- **8 Fundamentos de Datos** (F1–F8): INTEGRIDAD, CONSISTENCIA, COMPLETITUD, EXACTITUD, VALIDEZ, ACTUALIDAD, AUTENTICIDAD, NO_REPUDIO
+- **CIA schema** en frontmatter: clasificación por integridad, disponibilidad y sensibilidad por nota
+- **Data Quality framework**: scoring multidimensional (9 dimensiones) por nota con índice persistente
+- **Propagación graph-aware**: análisis de impacto BFS + estrategias de acción sobre el grafo de wiki-links
+- **Spec-driven memory**: memoria agéntica unificada con contratos, trazabilidad F1–F8 y loop de validación
 - Protocolo de sesión para LLMs remotos (DeepSeek, GPT, Gemini, Claude API)
-- Sistema de versionado del estándar con migraciones automáticas (v19 → v25)
+- Sistema de versionado del estándar con migraciones automáticas (v19 → v27)
 - Sistema de change log de gobernanza (quién eliminó qué y por qué)
 - Observabilidad de tools: error taxonomy, trace log, timeouts
 - Guía de inicialización desde cero
 - Compatibilidad con Obsidian Desktop
-- Changelog completo (v1 → v25)
+- Changelog completo (v1 → v27)
+
+---
+
+## Novedades v27 — Data Quality, CIA y Propagación de Cambios
+
+### CIA Schema en frontmatter
+
+Tres campos opcionales nuevos en cualquier nota:
+
+```yaml
+cia_integrity:    high        # critical|high|medium|low
+cia_availability: high        # high|medium|low
+cia_sensitivity:  internal    # public|internal|restricted
+dq_validated_at:  "2026-05-11T12:00:00Z"
+```
+
+Las notas `cia_integrity: critical/high` tienen umbrales de actualidad más estrictos (15 días vs 30) y penalizan más el health score cuando están stale.
+
+### Data Quality framework
+
+`vault_quality_check` evalúa 9 dimensiones por nota y genera `00_System/quality-index.json`:
+
+| Dimensión | Qué mide |
+|---|---|
+| integrity | Frontmatter estructuralmente completo |
+| consistency | Wiki-links resueltos, type coincide con carpeta |
+| completeness | ≥3 líneas de contenido, updatedAt presente |
+| accuracy | Documentación refleja realidad del código |
+| validity | Campos CIA y status en valores permitidos |
+| timeliness | Nota actualizada según umbral CIA |
+| authenticity | Campo `agent` presente |
+| non_repudiation | Referenciada en change-log |
+| uniqueness | Sin duplicados AP-17/AP-18 |
+
+### Propagación graph-aware
+
+```bash
+# Analizar impacto de un cambio sobre el grafo de backlinks
+python scripts/vault_impact.py --changed "01_Projects/api/overview.md"
+
+# Propagar: marcar notas afectadas + encolar para revisión
+python scripts/vault_propagate.py --changed "overview.md" --strategy conservative --action notify,queue
+
+# Integrado en change_log (semi-automático)
+python scripts/vault_change_log.py --action updated --path "overview.md" --reason "..." --propagate conservative
+```
+
+### Spec-driven memory
+
+`vault_spec_memory` genera `00_System/spec-memory.json` — documento unificado que combina:
+- Contratos declarativos de los 53 tools (args requeridos, campos de retorno, error codes)
+- Trazabilidad F1–F8 → tools
+- Estado del sistema (DQ health, propagation queue, change log)
+- Loop de validación con detección de spec drift
+
+```bash
+python scripts/vault_spec_memory.py --validate --summary
+```
 
 ---
 
@@ -56,7 +120,7 @@ Contiene:
 
 ```
 vault-{nombre}/
-├── 00_System/          — identidad, reglas, contratos, change-log, standard-version
+├── 00_System/          — identidad, reglas, contratos, change-log, standard-version, quality-index, spec-memory
 ├── 01_Projects/        — proyectos: overview, arquitectura, estado, decisiones, envs
 ├── 02_Observability/   — errores, antipatrones, vulnerabilidades, métricas, alertas, SLOs
 ├── 03_Decisions/       — ADRs (Architecture Decision Records)
@@ -105,12 +169,20 @@ vault-{nombre}/
 | 21 — IA Governance | `vault_ai_decision` |
 | 22 — Versionado | `vault_standard_upgrade` |
 | 23 — Change Log | `vault_change_log` |
+| 24 — Data Quality | `vault_quality_check`, `vault_fundamentals` |
+| 25 — Propagación | `vault_impact`, `vault_propagate` |
+| 26 — Tokens | `vault_tokens`, `vault_token_counter`, `vault_token_service` |
 
 ---
 
 ## Implementación de referencia
 
-Este repositorio incluye una implementación de referencia en Python (`scripts/`) con los **53 scripts** que implementan las tools del estándar, más `vault_errors.py` — módulo de observabilidad centralizado.
+Este repositorio incluye una implementación de referencia en Python (`scripts/`) con **66 scripts** totales:
+
+- **53 tools activas** (agente-facing) en 26 grupos
+- **5 tools legacy** deprecadas (vault_migrate, vault_reorganize, vault_tools, vault_create, vault_render)
+- **4 tools internas** (vault_io, vault_link_safety, vault_dataset, vault_index)
+- **4 tools meta** (vault_test_runner, vault_compact_contracts, vault_manifest, vault_spec_memory)
 
 **Requisitos:** Python 3.9+ · sin dependencias externas obligatorias
 
@@ -124,20 +196,23 @@ python scripts/vault_standard_upgrade.py --check
 # Guardar una nota (con guards AP-20 y AP-21)
 python scripts/vault_write.py --folder "01_Projects/mi-api" --title "Architecture" --content "## Stack\n..."
 
-# Buscar en el vault
-python scripts/vault_search.py --query "autenticación JWT"
-
-# Auditar el estado del vault (detecta AP-17 y AP-18)
+# Auditar el estado del vault (health score + DQ)
 python scripts/vault_audit.py
+
+# Data Quality — scoring completo del vault
+python scripts/vault_quality_check.py --min-score 0.7
+
+# Analizar impacto de cambios en el grafo
+python scripts/vault_impact.py --changed "01_Projects/api/overview.md"
+
+# Spec-driven memory — contratos + trazabilidad + validación
+python scripts/vault_spec_memory.py --validate --summary
 
 # Registrar eliminación antes de borrar (gobernanza)
 python scripts/vault_change_log.py --action deleted --path "07_Knowledge/old.md" --reason "Duplicado"
-
-# Consultar trace log de errores de tools
-python scripts/vault_errors.py query --last 10
 ```
 
-Ver **[scripts/README.md](./scripts/README.md)** para la referencia completa de los 53 scripts con parámetros, ejemplos y protocolo de sesión.
+Ver **[scripts/README.md](./scripts/README.md)** para la referencia completa con parámetros, ejemplos y protocolo de sesión.
 
 ---
 
@@ -147,14 +222,32 @@ Ver **[scripts/README.md](./scripts/README.md)** para la referencia completa de 
 # Inicio
 python scripts/vault_standard_upgrade.py --check   # 0. verificar versión del estándar
 python scripts/vault_reindex.py --check            # 1. verificar índice
-python scripts/vault_audit.py                      # 2. baseline de salud
+python scripts/vault_audit.py                      # 2. baseline de salud + DQ score
 python scripts/vault_drift_detect.py --path "." --project {slug} --mode snapshot
 
 # Cierre
 python scripts/vault_drift_detect.py --path "." --project {slug} --mode report
 python scripts/vault_reindex.py --graph
 python scripts/vault_audit.py                      # healthScore ≥ baseline
+python scripts/vault_spec_memory.py --check        # actualizar spec-memory.json
 ```
+
+---
+
+## Los 8 Fundamentos de Datos (F1–F8)
+
+Cada tool está mapeada a uno o más fundamentos. `vault_fundamentals` es el registro canónico.
+
+| ID | Principio | Dimensión DQ | Tools clave |
+|---|---|---|---|
+| F1 | INTEGRIDAD | integrity | vault_write, vault_validate, vault_quality_check |
+| F2 | CONSISTENCIA | consistency | vault_audit, vault_graph, vault_impact, vault_propagate |
+| F3 | COMPLETITUD | completeness | vault_write, vault_append, vault_knowledge_save |
+| F4 | EXACTITUD | accuracy | vault_drift_detect, vault_diff |
+| F5 | VALIDEZ | validity | vault_validate, vault_security_scan |
+| F6 | ACTUALIDAD | timeliness | vault_audit, vault_drift_detect, vault_backup |
+| F7 | AUTENTICIDAD | authenticity | vault_write, vault_ai_decision, vault_bibliography_save |
+| F8 | NO_REPUDIO | non_repudiation | vault_change_log, vault_log_error, vault_timeline |
 
 ---
 

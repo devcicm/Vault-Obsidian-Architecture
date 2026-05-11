@@ -34,74 +34,74 @@ PYTHON = sys.executable
 # ──────────────────────────────────────────────────────────────────────────────
 
 # Tools that take --folder --title --content as minimum args
-_WRITE_ARGS = ["--folder", "01_Projects/smoke", "--title", "SmokTest", "--content", "## Test\n\nSmoke test content.\n"]
+_WRITE_ARGS = ["--folder", "01_Projects/smoke", "--title", "SmokTest", "--content", "## Test\n\nSmoke test content.\n\nAdditional detail for minimum content gate.\n"]
 
 TOOL_CONTRACTS: List[Dict[str, Any]] = [
     # Group 1 — Core
     {"name": "vault_write",           "args": _WRITE_ARGS, "required_ok_fields": ["path"]},
     {"name": "vault_read",            "args": ["--path", "01_Projects/smoke/smoktest.md"], "required_ok_fields": ["path"]},
     {"name": "vault_search",          "args": ["--query", "smoke"], "required_ok_fields": ["results"]},
-    {"name": "vault_list",            "args": ["--folder", "01_Projects"], "required_ok_fields": ["files"]},
+    {"name": "vault_list",            "args": ["--folder", "01_Projects"], "required_ok_fields": ["notes"]},
     {"name": "vault_append",          "args": ["--path", "01_Projects/smoke/smoktest.md", "--content", "appended"], "required_ok_fields": ["path"]},
-    {"name": "vault_diff",            "args": ["--path", "01_Projects/smoke/smoktest.md"], "required_ok_fields": []},
-    {"name": "vault_merge",           "args": ["--path", "01_Projects/smoke/smoktest.md", "--content", "## Merged\n\ncontent"], "required_ok_fields": ["path"]},
+    {"name": "vault_diff",            "args": ["--path", "01_Projects/smoke/smoktest.md"], "required_ok_fields": ["path", "changed"]},
+    {"name": "vault_merge",           "args": ["--action", "detect"], "required_ok_fields": ["action"]},
     # Group 2 — Observability
-    {"name": "vault_log_error",       "args": ["--tool", "smoke", "--error", "test error"], "required_ok_fields": []},
+    {"name": "vault_log_error",       "args": ["--type", "error", "--title", "Smoke Error", "--description", "test error"], "required_ok_fields": []},
     # Group 3 — Patterns
-    {"name": "vault_pattern_save",    "args": ["--name", "smoke-pat", "--description", "Test pattern", "--content", "## Pattern\n\nDesc."], "required_ok_fields": ["path"]},
+    {"name": "vault_pattern_save",    "args": ["--project", "smoke", "--name", "smoke-pat", "--type", "code", "--status", "implementado"], "required_ok_fields": ["path"]},
     {"name": "vault_pattern_list",    "args": [], "required_ok_fields": ["patterns"]},
     # Group 4 — Diagrams
-    {"name": "vault_diagram_save",    "args": ["--project", "smoke", "--name", "test-diag", "--content", "graph TD\n  A-->B"], "required_ok_fields": ["path"]},
+    {"name": "vault_diagram_save",    "args": ["--project", "smoke", "--title", "test-diag", "--diagram_type", "mermaid", "--category", "flow", "--content", "graph TD\n  A-->B"], "required_ok_fields": ["path"]},
     {"name": "vault_relation_add",    "args": ["--project", "smoke", "--from", "A", "--to", "B", "--relation_type", "uses"], "required_ok_fields": ["path"]},
     # Group 5 — Knowledge
     {"name": "vault_knowledge_save",  "args": ["--title", "smoke-kw", "--category", "concept", "--content", "## Concept\n\nDesc."], "required_ok_fields": ["path"]},
-    {"name": "vault_knowledge_get",   "args": ["--title", "smoke-kw"], "required_ok_fields": []},
+    {"name": "vault_knowledge_get",   "args": ["--query", "smoke-kw"], "required_ok_fields": ["results", "query", "total"]},
     # Group 6 — Vault health
     {"name": "vault_audit",           "args": [], "required_ok_fields": ["healthScore"]},
-    {"name": "vault_validate",        "args": ["--path", "01_Projects/smoke/smoktest.md"], "required_ok_fields": []},
+    {"name": "vault_validate",        "args": ["--path", "01_Projects/smoke/smoktest.md", "--check", "frontmatter"], "required_ok_fields": []},
     {"name": "vault_graph",           "args": [], "required_ok_fields": []},
     # Group 7 — Runbooks
-    {"name": "vault_runbook_save",    "args": ["--name", "smoke-rb", "--steps", "step 1\nstep 2"], "required_ok_fields": ["path"]},
-    {"name": "vault_runbook_log",     "args": ["--runbook", "smoke-rb", "--status", "ok", "--notes", "ran fine"], "required_ok_fields": []},
+    {"name": "vault_runbook_save",    "args": ["--project", "smoke", "--title", "smoke-rb", "--trigger", "smoke test", "--category", "setup", "--steps", '[{"step":"step1"}]'], "required_ok_fields": ["path"]},
+    {"name": "vault_runbook_log",     "args": ["--path", "08_Runbooks/setup/smoke-smoke-rb.md", "--outcome", "success", "--notes", "ran fine"], "required_ok_fields": []},
     # Group 8 — Infrastructure
-    {"name": "vault_infra_save",      "args": ["--name", "smoke-srv", "--type", "server", "--description", "test"], "required_ok_fields": ["path"]},
-    {"name": "vault_infra_map",       "args": [], "required_ok_fields": []},
-    {"name": "vault_env_save",        "args": ["--project", "smoke", "--env", "dev", "--vars", '{"KEY":"val"}'], "required_ok_fields": ["path"]},
+    {"name": "vault_infra_save",      "args": ["--name", "smoke-srv", "--type", "server", "--description", "test", "--config", '{"host":"localhost"}'], "required_ok_fields": ["path"]},
+    {"name": "vault_infra_map",       "args": [], "required_ok_fields": ["path", "nodesTotal"]},
+    {"name": "vault_env_save",        "args": ["--project", "smoke", "--environment", "dev", "--vars", '[{"name":"DEBUG","description":"Enable debug mode","required":false,"sensitive":false,"provider":"env-file"}]'], "required_ok_fields": ["path"]},
     # Group 9 — Migration
-    {"name": "vault_migrate_docs",    "args": ["--project", "smoke", "--source", "10_Migrated"], "required_ok_fields": []},
-    {"name": "vault_migrate_rollback","args": ["--project", "smoke"], "required_ok_fields": []},
+    {"name": "vault_migrate_docs",    "args": ["--source_path", "../10_Migrated", "--project", "smoke"], "required_ok_fields": []},
+    {"name": "vault_migrate_rollback","args": ["--report_path", "10_Migrated/_report-smoke.md"], "required_ok_fields": []},
     # Group 10 — Timeline
-    {"name": "vault_timeline",        "args": ["--project", "smoke"], "required_ok_fields": []},
+    {"name": "vault_timeline",        "args": ["--project", "smoke"], "required_ok_fields": ["query"]},
     # Group 11 — Project view
     {"name": "vault_project_status",  "args": ["--project", "smoke", "--status", "en_desarrollo", "--summary", "smoke"], "required_ok_fields": ["path"]},
     {"name": "vault_project_overview","args": ["--project", "smoke"], "required_ok_fields": ["path"]},
     # Group 12 — Code
     {"name": "vault_code_module",     "args": ["--project", "smoke", "--file_path", "src/smoke.py", "--description", "smoke module"], "required_ok_fields": ["path"]},
-    {"name": "vault_code_relation",   "args": ["--project", "smoke", "--from_module", "smoke", "--to_module", "main", "--type", "imports"], "required_ok_fields": []},
-    {"name": "vault_code_map",        "args": ["--project", "smoke"], "required_ok_fields": []},
-    {"name": "vault_code_query",      "args": ["--project", "smoke"], "required_ok_fields": []},
+    {"name": "vault_code_relation",   "args": ["--project", "smoke", "--from_file", "src/smoke.py", "--to_file", "src/main.py", "--relation_type", "imports"], "required_ok_fields": []},
+    {"name": "vault_code_map",        "args": ["--project", "smoke"], "required_ok_fields": ["path"]},
+    {"name": "vault_code_query",      "args": ["--project", "smoke", "--list"], "required_ok_fields": []},
     # Group 13 — Backups
-    {"name": "vault_backup",          "args": ["--label", "smoke-bk"], "required_ok_fields": []},
-    {"name": "vault_backup_list",     "args": [], "required_ok_fields": []},
-    {"name": "vault_restore",         "args": ["--label", "smoke-bk"], "required_ok_fields": []},
+    {"name": "vault_backup",          "args": ["--label", "smoke-bk"], "required_ok_fields": ["name", "path"]},
+    {"name": "vault_backup_list",     "args": [], "required_ok_fields": ["total"]},
+    # vault_restore omitted: requires --confirm true which would destroy the temp vault
     # Group 14 — Security
-    {"name": "vault_security_scan",   "args": ["--path", "01_Projects/smoke"], "required_ok_fields": []},
+    {"name": "vault_security_scan",   "args": ["--path", "01_Projects/smoke"], "required_ok_fields": ["riskLevel"]},
     # Group 15 — Indexes
-    {"name": "vault_section_index",   "args": ["--folder", "01_Projects"], "required_ok_fields": []},
-    {"name": "vault_master_index",    "args": [], "required_ok_fields": []},
-    {"name": "vault_reindex",         "args": [], "required_ok_fields": []},
+    {"name": "vault_section_index",   "args": ["--folder", "01_Projects"], "required_ok_fields": ["path"]},
+    {"name": "vault_master_index",    "args": [], "required_ok_fields": ["path"]},
+    {"name": "vault_reindex",         "args": [], "required_ok_fields": ["indexed"]},
     # Group 16 — Bibliography
-    {"name": "vault_bibliography_save","args": ["--title", "Smoke Ref", "--url", "https://example.com", "--summary", "test ref"], "required_ok_fields": ["path"]},
+    {"name": "vault_bibliography_save","args": ["--title", "Smoke Ref", "--url", "https://example.com", "--summary", "test ref", "--source_type", "web"], "required_ok_fields": ["path"]},
     # Group 17 — Drift
-    {"name": "vault_drift_detect",    "args": ["--path", ".", "--project", "smoke", "--mode", "snapshot"], "required_ok_fields": []},
+    {"name": "vault_drift_detect",    "args": ["--path", ".", "--project", "smoke", "--mode", "snapshot"], "required_ok_fields": ["mode"]},
     # Group 18 — Flows
-    {"name": "vault_flow_save",       "args": ["--name", "smoke-flow", "--description", "test", "--steps", "step1\nstep2"], "required_ok_fields": ["path"]},
+    {"name": "vault_flow_save",       "args": ["--project", "smoke", "--name", "smoke-flow", "--type", "workflow", "--description", "test flow", "--mermaid", "flowchart TD\n  A-->B"], "required_ok_fields": ["path"]},
     # Group 19 — Requirements
-    {"name": "vault_requirement_save","args": ["--project", "smoke", "--title", "REQ-01", "--description", "Must smoke"], "required_ok_fields": ["path"]},
+    {"name": "vault_requirement_save","args": ["--project", "smoke", "--title", "REQ-01", "--description", "Must smoke", "--type", "functional", "--priority", "must-have"], "required_ok_fields": ["path"]},
     # Group 20 — Tests
-    {"name": "vault_test_save",       "args": ["--project", "smoke", "--title", "TC-01", "--description", "Smoke test case"], "required_ok_fields": ["path"]},
+    {"name": "vault_test_save",       "args": ["--project", "smoke", "--title", "TC-01", "--test_type", "unit", "--description", "Smoke test case"], "required_ok_fields": ["path"]},
     # Group 21 — AI Governance
-    {"name": "vault_ai_decision",     "args": ["--title", "smoke-ai", "--decision", "used smoke", "--rationale", "testing"], "required_ok_fields": ["path"]},
+    {"name": "vault_ai_decision",     "args": ["--project", "smoke", "--title", "smoke-ai", "--decision_type", "architectural", "--description", "smoke decision", "--rationale", "testing"], "required_ok_fields": ["path"]},
     # Group 22 — Versioning
     {"name": "vault_standard_upgrade","args": ["--check"], "required_ok_fields": []},
     # Group 23 — Change Log
@@ -111,7 +111,7 @@ TOOL_CONTRACTS: List[Dict[str, Any]] = [
 # Error-path test cases: (script, args, expected_ok_false)
 ERROR_CASES: List[Dict[str, Any]] = [
     {"name": "vault_write",        "args": ["--folder", "01_Projects"], "desc": "missing --title"},
-    {"name": "vault_write",        "args": _WRITE_ARGS + ["--content", "- item\n- \n- \n- \n- \n"], "desc": "AP-20 empty bullets", "expect_error_code": "AP20_EMPTY_LIST"},
+    {"name": "vault_write",        "args": ["--folder", "01_Projects/smoke", "--title", "SmokTest", "--content", "First line.\nSecond line.\nThird line.\n- valid bullet\n- \n- \n- \n- \n"], "desc": "AP-20 empty bullets", "expect_error_code": "content_empty_list"},
     {"name": "vault_read",         "args": ["--path", "nonexistent/path.md"], "desc": "file not found"},
     {"name": "vault_append",       "args": ["--path", "nonexistent.md", "--content", "x"], "desc": "file not found"},
     {"name": "vault_project_status","args": ["--project", "smoke", "--status", "invalid_status", "--summary", "x"], "desc": "invalid status"},
@@ -233,6 +233,17 @@ def _run_contracts_in_vault(vault_dir: Path) -> Dict[str, Any]:
     (vault_dir / "00_System" / "standard-version.json").write_text(
         json.dumps({"version": 25, "profile": "full", "upgradedAt": "2026-01-01T00:00:00Z"}),
         encoding="utf-8"
+    )
+
+    # Stub migration report for vault_migrate_rollback contract test
+    (vault_dir / "10_Migrated" / "_report-smoke.md").write_text(
+        "---\ntitle: smoke migration report\nid: smoke-report\n---\n\n"
+        "## Archivos Distribuidos\n\n"
+        "| Archivo | Destino | Relevancia |\n|---|---|---|\n"
+        "| `note.md` | [[01_Projects/smoke/note.md]] | high |\n\n"
+        "## Stubs Creados\n\n"
+        "- `note.md` → [[10_Migrated/note.md]]\n",
+        encoding="utf-8",
     )
 
     passed, failed, skipped, errors = 0, 0, 0, []
