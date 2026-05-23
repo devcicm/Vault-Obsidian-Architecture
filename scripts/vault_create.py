@@ -67,7 +67,7 @@ def create_from_template(template: str, **kwargs):
 - Prioridad:
 
 ## Componentes
-- 
+-
 
 ## Pendientes
 - [ ]
@@ -81,10 +81,10 @@ def create_from_template(template: str, **kwargs):
 {template_description}
 
 ## Prerequisitos
-- 
+-
 
 ## Pasos
-1. 
+1.
 
 ## Verificación
 -
@@ -101,7 +101,7 @@ def create_from_template(template: str, **kwargs):
 Describe el contexto y el problema
 
 ## Opciones Evaluadas
-### Opción 1: 
+### Opción 1:
 - Pros:
 - Contras:
 
@@ -114,10 +114,10 @@ Elegimos Opción N porque...
 
 ## Consecuencias
 ### Positivas
-- 
+-
 
 ### Negativas
-- 
+-
 
 ## Notas
 """,

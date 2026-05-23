@@ -59,8 +59,8 @@ def generate_metric_content(title: str, description: str, severity: str, project
 
 ## METRIC
 
-**Fecha:** {_utcnow()}  
-**Severidad:** {severity.upper()}  
+**Fecha:** {_utcnow()}
+**Severidad:** {severity.upper()}
 **Proyecto:** {project or "General"}
 
 ---
@@ -93,8 +93,8 @@ def generate_alert_content(title: str, description: str, severity: str, project:
 
 ## ALERT
 
-**Fecha:** {_utcnow()}  
-**Severidad:** {severity.upper()}  
+**Fecha:** {_utcnow()}
+**Severidad:** {severity.upper()}
 **Proyecto:** {project or "General"}
 
 ---
@@ -127,8 +127,8 @@ def generate_slo_content(title: str, description: str, severity: str, project: s
 
 ## SLO
 
-**Fecha:** {_utcnow()}  
-**Severidad:** {severity.upper()}  
+**Fecha:** {_utcnow()}
+**Severidad:** {severity.upper()}
 **Proyecto:** {project or "General"}
 
 ---

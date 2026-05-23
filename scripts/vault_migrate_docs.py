@@ -311,8 +311,8 @@ def vault_migrate_docs(
 
 > Este archivo fue migrado a: [[{str(dest_path_rels)}|{dest_folder}/{dest_name}]]
 
-**Origen:** `{staged["originalPath"]}`  
-**Relevancia:** {relevance}  
+**Origen:** `{staged["originalPath"]}`
+**Relevancia:** {relevance}
 **Migrado:** {datetime.now().strftime("%Y-%m-%d")}
 
 ---

@@ -281,11 +281,11 @@ def search_keywords(
 
 def list_keywords(limit: int = 30):
     """Listar keywords globales"""
-    
+
     if not NOTES_FILE.exists():
         print("Keywords not indexed. Run: python vault_dataset.py extract")
         return
-    
+
     data = json.loads(NOTES_FILE.read_text(encoding="utf-8"))
     keywords = data.get("keywords", {})
 
