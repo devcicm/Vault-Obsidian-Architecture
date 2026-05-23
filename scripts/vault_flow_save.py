@@ -22,6 +22,7 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
+from vault_io import atomic_write_text, assert_within_vault
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -100,6 +101,11 @@ def vault_flow_save(
     actors_list = [a.strip() for a in actors.split(",")] if actors else []
     related_list = [r.strip() for r in related_code.split(",")] if related_code else []
 
+    try:
+        assert_within_vault(note_path, VAULT_ROOT)
+    except ValueError as exc:
+        return {"ok": False, "error_code": "INVALID_PATH", "error": "INVALID_PATH", "message": str(exc)}
+
     frontmatter = [
         "---",
         f"id: {note_id}",
@@ -110,6 +116,10 @@ def vault_flow_save(
         f"createdAt: {created_at}",
         f"updatedAt: {now}",
         f"tags: {json.dumps(list(dict.fromkeys(tag_list)))}",
+        f"cia_integrity: medium",
+        f"cia_availability: medium",
+        f"cia_sensitivity: internal",
+        f"agent: system",
         "---",
     ]
 
@@ -150,8 +160,7 @@ def vault_flow_save(
     final_content = "\n".join(frontmatter) + "\n\n" + "\n\n".join(body)
 
     flow_dir.mkdir(parents=True, exist_ok=True)
-    with open(note_path, "w", encoding="utf-8") as f:
-        f.write(final_content)
+    atomic_write_text(note_path, final_content)
 
     return {
         "ok": True,

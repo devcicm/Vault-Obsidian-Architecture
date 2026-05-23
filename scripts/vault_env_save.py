@@ -15,6 +15,7 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
+from vault_io import atomic_write_text, assert_within_vault
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -116,6 +117,11 @@ def vault_env_save(
 
     final_description = description or existing_description
 
+    try:
+        assert_within_vault(envs_path, VAULT_ROOT)
+    except ValueError as exc:
+        return {"ok": False, "error_code": "INVALID_PATH", "error": "INVALID_PATH", "message": str(exc)}
+
     frontmatter = ["---"]
     frontmatter.append(f"title: Environment Variables - {project}")
     frontmatter.append(f"project: {project}")
@@ -123,6 +129,10 @@ def vault_env_save(
     frontmatter.append(f"updatedAt: {timestamp}")
     if final_description:
         frontmatter.append(f"description: {final_description}")
+    frontmatter.append(f"cia_integrity: high")
+    frontmatter.append(f"cia_availability: medium")
+    frontmatter.append(f"cia_sensitivity: restricted")
+    frontmatter.append(f"agent: system")
     frontmatter.append("---")
 
     body = [f"# Environment Variables: {project}\n"]
@@ -140,8 +150,7 @@ def vault_env_save(
         body.append(generate_envs_table(processed_envs[env_name]))
         body.append("")
 
-    with open(envs_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(frontmatter) + "\n\n" + "\n".join(body))
+    atomic_write_text(envs_path, "\n".join(frontmatter) + "\n\n" + "\n".join(body))
 
     return {
         "ok": True,

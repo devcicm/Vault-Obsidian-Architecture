@@ -16,6 +16,7 @@ import os
 import re
 import sys
 from vault_errors import wrap_main
+from vault_io import atomic_write_text, atomic_write_json, assert_within_vault
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -88,8 +89,7 @@ def load_pattern_index() -> Dict[str, Any]:
 
 def save_pattern_index(data: Dict[str, Any]) -> None:
     INDEX_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(INDEX_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+    atomic_write_json(INDEX_FILE, data)
 
 
 def vault_pattern_save(
@@ -146,6 +146,11 @@ def vault_pattern_save(
         for rp in related_patterns:
             wiki_links.append(f"[[{rp}]]")
 
+    try:
+        assert_within_vault(pattern_path, VAULT_ROOT)
+    except ValueError as exc:
+        return {"ok": False, "error_code": "INVALID_PATH", "error": "INVALID_PATH", "message": str(exc)}
+
     frontmatter = ["---"]
     frontmatter.append(f"title: {name}")
     frontmatter.append(f"id: {existing_id or str(uuid.uuid4())}")
@@ -160,6 +165,10 @@ def vault_pattern_save(
     if related_patterns:
         frontmatter.append(f"relatedPatterns: {json.dumps(related_patterns)}")
 
+    frontmatter.append(f"cia_integrity: medium")
+    frontmatter.append(f"cia_availability: medium")
+    frontmatter.append(f"cia_sensitivity: internal")
+    frontmatter.append(f"agent: system")
     frontmatter.append("---")
 
     body_sections = []
@@ -189,8 +198,7 @@ def vault_pattern_save(
     final_content = "\n\n".join(["\n".join(frontmatter)] + body_sections)
 
     pattern_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(pattern_path, "w", encoding="utf-8") as f:
-        f.write(final_content)
+    atomic_write_text(pattern_path, final_content)
 
     index = load_pattern_index()
     pattern_entry = {

@@ -18,6 +18,7 @@ import re
 import shutil
 import sys
 from vault_errors import wrap_main
+from vault_io import atomic_write_text, atomic_write_json, assert_within_vault
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -64,7 +65,8 @@ def generate_frontmatter(
     existing_id: Optional[str] = None,
     existing_created: Optional[str] = None,
 ) -> str:
-    """Generate YAML frontmatter with metadata."""
+    """Generate YAML frontmatter with v27-compliant metadata (CIA + agent fields)."""
+    meta = meta or {}
     frontmatter = ["---"]
     frontmatter.append(f"title: {title}")
     frontmatter.append(f"id: {existing_id or str(uuid.uuid4())}")
@@ -74,12 +76,17 @@ def generate_frontmatter(
     if tags:
         frontmatter.append(f"tags: {json.dumps(tags)}")
 
-    if meta:
-        for key, value in meta.items():
-            if isinstance(value, str):
-                frontmatter.append(f"{key}: {value}")
-            else:
-                frontmatter.append(f"{key}: {json.dumps(value)}")
+    # v27 CIA schema — defaults overridable via meta
+    frontmatter.append(f"cia_integrity: {meta.pop('cia_integrity', 'medium')}")
+    frontmatter.append(f"cia_availability: {meta.pop('cia_availability', 'medium')}")
+    frontmatter.append(f"cia_sensitivity: {meta.pop('cia_sensitivity', 'internal')}")
+    frontmatter.append(f"agent: {meta.pop('agent', 'system')}")
+
+    for key, value in meta.items():
+        if isinstance(value, str):
+            frontmatter.append(f"{key}: {value}")
+        else:
+            frontmatter.append(f"{key}: {json.dumps(value)}")
 
     frontmatter.append("---")
     return "\n".join(frontmatter)
@@ -95,8 +102,9 @@ def update_search_index(vault_path: str, title: str, content: str, tags: List[st
     INDEX_FILE.parent.mkdir(parents=True, exist_ok=True)
 
     try:
-        with open(INDEX_FILE, "r", encoding="utf-8") as f:
-            index = json.load(f)
+        index = json.loads(INDEX_FILE.read_text(encoding="utf-8"))
+        if not isinstance(index, dict):
+            index = {"notes": []}
     except (FileNotFoundError, json.JSONDecodeError):
         index = {"notes": []}
 
@@ -122,8 +130,7 @@ def update_search_index(vault_path: str, title: str, content: str, tags: List[st
         else:
             index["notes"].append(note_entry)
 
-    with open(INDEX_FILE, "w", encoding="utf-8") as f:
-        json.dump(index, f, indent=2, ensure_ascii=False)
+    atomic_write_json(INDEX_FILE, index)
 
 
 def vault_write(
@@ -176,9 +183,18 @@ def vault_write(
             "message": f"AP-21: path-anchored wiki-links detected: {path_links}. Use [[note-name]] without folder path.",
         }
 
-    # Determine filename
+    # Determine filename and validate path stays inside vault
     filename = f"{slugify(title)}.md"
     vault_path = VAULT_ROOT / folder / filename
+    try:
+        assert_within_vault(vault_path, VAULT_ROOT)
+    except ValueError as exc:
+        return {
+            "ok": False,
+            "error_code": "INVALID_PATH",
+            "error": "INVALID_PATH",
+            "message": str(exc),
+        }
     existing_id = None
     existing_created = None
 
@@ -189,11 +205,8 @@ def vault_write(
         history_path = HISTORY_DIR / history_filename
         HISTORY_DIR.mkdir(parents=True, exist_ok=True)
 
-        with open(vault_path, "r", encoding="utf-8") as f:
-            existing_content = f.read()
-
-        with open(history_path, "w", encoding="utf-8") as f:
-            f.write(existing_content)
+        existing_content = vault_path.read_text(encoding="utf-8")
+        atomic_write_text(history_path, existing_content)
 
         # Extract existing frontmatter data
         frontmatter_match = re.match(r"^---\n(.*?)\n---", existing_content, re.DOTALL)
@@ -215,8 +228,7 @@ def vault_write(
 
     final_content = f"{frontmatter}\n\n{content}"
 
-    with open(vault_path, "w", encoding="utf-8") as f:
-        f.write(final_content)
+    atomic_write_text(vault_path, final_content)
 
     # Update search index
     update_search_index(str(vault_path.relative_to(VAULT_ROOT)), title, content, tags, is_new=(existing_id is None))

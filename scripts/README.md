@@ -1,12 +1,14 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture v25**. Implementan las 53 tools del vault como ejecutables CLI independientes + 1 módulo de observabilidad.
+Scripts Python del estándar **Vault Obsidian Architecture v27**. Implementan las 53 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad.
 
-- **54 archivos** — 53 tools + `vault_errors.py` (observabilidad)
+- **66 archivos** — 53 tools activas + 5 deprecadas + 4 internas + 4 meta + `vault_errors.py`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
-- **VAULT_ROOT** apunta a la raíz del vault (`parent.parent` de este directorio)
+- **VAULT_ROOT** = `Path(__file__).parent.parent` — apunta a la raíz del vault; todos los `--folder`/`--path` se validan con `assert_within_vault()` para prevenir escrituras fuera del vault
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
 - **JSON siempre** — cualquier error devuelve `{"ok": false, "error_code": "...", "recovery": {...}}`
+- **Frontmatter v27** — todas las notas generadas incluyen `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`
+- **Escrituras atómicas** — notas y JSON críticos usan `atomic_write_text`/`atomic_write_json` de `vault_io.py`
 
 ---
 
@@ -37,8 +39,13 @@ Scripts Python del estándar **Vault Obsidian Architecture v25**. Implementan la
 | [Grupo 21 — IA Governance](#grupo-21--ia-governance) | vault_ai_decision |
 | [Grupo 22 — Versionado del Estándar](#grupo-22--versionado-del-estándar) | vault_standard_upgrade |
 | [Grupo 23 — Change Log](#grupo-23--change-log) | vault_change_log |
+| [Grupo 24 — Data Quality](#grupo-24--data-quality) | vault_quality_check, vault_fundamentals |
+| [Grupo 25 — Propagación](#grupo-25--propagación) | vault_impact, vault_propagate |
+| [Grupo 26 — Tokens](#grupo-26--tokens) | vault_tokens, vault_token_counter, vault_token_service |
 | [Observabilidad de Tools](#observabilidad-de-tools) | vault_errors |
-| [Utilidades internas](#utilidades-internas) | vault_index, vault_dataset, vault_render, vault_create, vault_tools, vault_reorganize, vault_migrate |
+| [Utilidades internas](#utilidades-internas) | vault_index, vault_dataset, vault_io, vault_link_safety |
+| [Deprecadas](#deprecadas) | vault_create, vault_migrate, vault_reorganize, vault_tools, vault_render |
+| [Meta / Build](#meta--build) | vault_manifest, vault_compact_contracts, vault_test_runner, vault_spec_memory |
 
 ---
 
@@ -856,19 +863,117 @@ python vault_errors.py catalog --code AP21_PATH_WIKILINKS
 
 ---
 
+## Grupo 24 — Data Quality
+
+### `vault_quality_check.py`
+Evalúa 9 dimensiones de calidad (integrity, consistency, completeness, accuracy, validity, timeliness, authenticity, non_repudiation, uniqueness) por nota y genera `00_System/quality-index.json`. Respeta umbrales CIA: notas `cia_integrity: critical/high` tienen límite de 15 días vs 30 días.
+
+```bash
+python vault_quality_check.py                     # score completo del vault
+python vault_quality_check.py --min-score 0.7    # falla si score < 0.7
+python vault_quality_check.py --folder 01_Projects/mi-api
+```
+
+### `vault_fundamentals.py`
+Registro canónico de los 8 Fundamentos de Datos (F1–F8): INTEGRIDAD, CONSISTENCIA, COMPLETITUD, EXACTITUD, VALIDEZ, ACTUALIDAD, AUTENTICIDAD, NO_REPUDIO. Cada tool está mapeada a uno o más fundamentos.
+
+```bash
+python vault_fundamentals.py                      # lista F1–F8 con tools mapeadas
+python vault_fundamentals.py --fundamental F1     # detalle de un fundamento
+```
+
+---
+
+## Grupo 25 — Propagación
+
+### `vault_impact.py`
+Analiza el impacto de un cambio sobre el grafo de wiki-links usando BFS. Devuelve lista de notas afectadas por nivel de distancia.
+
+```bash
+python vault_impact.py --changed "01_Projects/api/overview.md"
+python vault_impact.py --changed "overview.md" --depth 3
+```
+
+### `vault_propagate.py`
+Propaga el impacto: marca notas afectadas como stale, las encola para revisión, o actualiza sus timestamps. Estrategias: `conservative` (solo directas), `aggressive` (todo el subgrafo).
+
+```bash
+python vault_propagate.py --changed "overview.md" --strategy conservative --action notify,queue
+python vault_propagate.py --changed "overview.md" --strategy aggressive --action mark_stale
+```
+
+---
+
+## Grupo 26 — Tokens
+
+### `vault_tokens.py`
+Cuenta tokens de notas usando la cadena: `anthropic` → `tiktoken` → heurística regex. Útil para estimar context window antes de inyectar notas al agente.
+
+### `vault_token_counter.py`
+Contador interactivo de tokens para un archivo o string dado.
+
+### `vault_token_service.py`
+Servicio de conteo de tokens con cache. Usado internamente por `wrap_main` cuando `VAULT_COUNT_TOKENS=1`.
+
+---
+
+## Observabilidad de Tools
+
+### `vault_errors.py`
+Módulo de observabilidad centralizado. Todas las 53 tools lo importan. No es un tool de usuario — es la capa de seguridad del runtime.
+
+**Funciones principales:**
+- `wrap_main(fn, tool_name)` — envuelve `main()` con timeout (60s) y catch de excepciones no manejadas. Emite JSON estructurado en lugar de traceback.
+- `emit_error(tool, code, message)` — construye error estructurado y lo registra en `00_System/.tool-trace.json`.
+- `query_trace(tool, severity, category, last)` — para agentes que necesitan diagnóstico de fallos.
+
+**Timeout:** configurable via `VAULT_TOOL_TIMEOUT` env var (segundos). Default: 60.
+
+```bash
+python vault_errors.py query --last 10
+python vault_errors.py query --tool vault_write --severity error
+python vault_errors.py catalog --code AP21_PATH_WIKILINKS
+```
+
+---
+
 ## Utilidades internas
 
-Scripts usados internamente o herramientas legacy. No forman parte de los 23 grupos del estándar.
+Scripts de I/O y utilidades internas. No forman parte de los 26 grupos del estándar.
 
 | Script | Descripción |
 |---|---|
+| `vault_io.py` | Primitivas atómicas: `atomic_write_text`, `atomic_write_json`, `file_lock`, `assert_within_vault` |
 | `vault_index.py` | Actualiza `search-index.json` — llamado internamente por `vault_write` |
 | `vault_dataset.py` | Extrae keywords con TF-IDF para búsqueda avanzada |
-| `vault_render.py` | Renderiza notas a HTML/Markdown enriquecido |
-| `vault_create.py` | Inicializa la estructura de carpetas de un vault nuevo |
-| `vault_tools.py` | Wrapper CLI legacy — reemplazado por los scripts individuales |
-| `vault_reorganize.py` | Reorganiza notas legacy — reemplazado por `vault_migrate_docs` |
-| `vault_migrate.py` | Migración simple legacy — reemplazado por `vault_migrate_docs` |
+| `vault_link_safety.py` | Valida wiki-links antes de guardar (AP-21) |
+
+---
+
+## Deprecadas
+
+Mantenidas solo para compatibilidad. Emiten `_deprecation` en la respuesta JSON. **No usar en nuevos proyectos.**
+
+| Script | Reemplazado por |
+|---|---|
+| `vault_create.py` | `vault_write` (desde v21) |
+| `vault_migrate.py` | `vault_migrate_docs` |
+| `vault_reorganize.py` | `vault_migrate_docs` |
+| `vault_tools.py` | Scripts individuales por grupo |
+| `vault_render.py` | Obsidian Desktop renderiza nativo |
+
+---
+
+## Meta / Build
+
+Tooling interno para generación y validación del estándar. No forman parte de la superficie de 53 tools.
+
+| Script | Descripción |
+|---|---|
+| `vault_manifest.py` | Genera `00_System/tools-manifest.json` con metadata de las 66 tools |
+| `vault_compact_contracts.py` | Genera `00_System/tool-contracts.md` compacto desde el spec |
+| `vault_test_runner.py` | Suite de smoke tests, contract tests y error taxonomy tests |
+| `vault_spec_memory.py` | Genera `00_System/spec-memory.json` — contratos + trazabilidad F1–F8 + estado DQ |
 
 ---
 

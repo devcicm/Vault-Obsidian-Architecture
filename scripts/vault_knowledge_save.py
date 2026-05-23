@@ -16,6 +16,7 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
+from vault_io import atomic_write_text, assert_within_vault
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -68,6 +69,11 @@ def vault_knowledge_save(
 
     timestamp = _utcnow()
 
+    try:
+        assert_within_vault(note_path, VAULT_ROOT)
+    except ValueError as exc:
+        return {"ok": False, "error_code": "INVALID_PATH", "error": "INVALID_PATH", "message": str(exc)}
+
     frontmatter = ["---"]
     frontmatter.append(f"title: {title}")
     frontmatter.append(f"id: {str(uuid.uuid4())}")
@@ -80,9 +86,12 @@ def vault_knowledge_save(
     if tags:
         frontmatter.append(f"tags: {json.dumps(tags)}")
     if related:
-        related_links = " ".join(f"[[{r}]]" for r in related)
         frontmatter.append(f"related: {json.dumps(related)}")
 
+    frontmatter.append(f"cia_integrity: medium")
+    frontmatter.append(f"cia_availability: medium")
+    frontmatter.append(f"cia_sensitivity: internal")
+    frontmatter.append(f"agent: system")
     frontmatter.append("---")
 
     if category in ["dependency", "framework"]:
@@ -104,8 +113,7 @@ def vault_knowledge_save(
     final_content = "\n".join(frontmatter) + "\n\n" + "\n\n".join(body_sections)
 
     folder.mkdir(parents=True, exist_ok=True)
-    with open(note_path, "w", encoding="utf-8") as f:
-        f.write(final_content)
+    atomic_write_text(note_path, final_content)
 
     return {
         "ok": True,

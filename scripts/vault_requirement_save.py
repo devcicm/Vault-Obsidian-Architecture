@@ -18,6 +18,7 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
+from vault_io import atomic_write_text, atomic_write_json, assert_within_vault
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -55,8 +56,7 @@ def load_index() -> Dict[str, Any]:
 
 def save_index(data: Dict[str, Any]) -> None:
     REQ_DIR.mkdir(parents=True, exist_ok=True)
-    with open(INDEX_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+    atomic_write_json(INDEX_FILE, data)
 
 
 def vault_requirement_save(
@@ -93,8 +93,15 @@ def vault_requirement_save(
     filename = f"req-{req_number:03d}-{title_slug}.md"
     note_path = REQ_DIR / safe_project / filename
 
+    try:
+        assert_within_vault(note_path, VAULT_ROOT)
+    except ValueError as exc:
+        return {"ok": False, "error_code": "INVALID_PATH", "error": "INVALID_PATH", "message": str(exc)}
+
     tags_list = list(tags or [])
     tags_list.extend([safe_project, "requirement", req_type, priority])
+
+    cia_integrity = "high" if priority == "must-have" else "medium"
 
     frontmatter = ["---"]
     frontmatter.append(f"id: {note_id}")
@@ -108,6 +115,10 @@ def vault_requirement_save(
     frontmatter.append(f"updatedAt: {now}")
     if tags_list:
         frontmatter.append(f"tags: {json.dumps(list(dict.fromkeys(tags_list)))}")
+    frontmatter.append(f"cia_integrity: {cia_integrity}")
+    frontmatter.append(f"cia_availability: medium")
+    frontmatter.append(f"cia_sensitivity: internal")
+    frontmatter.append(f"agent: system")
     frontmatter.append("---")
 
     body_sections = []
@@ -138,8 +149,7 @@ def vault_requirement_save(
     final_content = "\n".join(frontmatter) + "\n\n" + "\n\n".join(body_sections)
 
     note_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(note_path, "w", encoding="utf-8") as f:
-        f.write(final_content)
+    atomic_write_text(note_path, final_content)
 
     entry = {
         "docId": note_id,

@@ -56,6 +56,27 @@ def file_lock(target: Path, timeout: float = 30.0, stale_after: float = 120.0) -
             pass
 
 
+def assert_within_vault(path: Path, vault_root: Path) -> Path:
+    """Resolve *path* and verify it stays inside *vault_root*.
+
+    Protects against:
+    - Absolute --folder args: Path("/vault") / "/etc" → "/etc" (pathlib replaces base)
+    - Path traversal: --folder "../../outside"
+
+    Returns the resolved absolute path on success; raises ValueError otherwise.
+    """
+    resolved = path.resolve()
+    vault_resolved = vault_root.resolve()
+    try:
+        resolved.relative_to(vault_resolved)
+    except ValueError:
+        raise ValueError(
+            f"Path '{path}' resolves to '{resolved}' which is outside "
+            f"vault root '{vault_resolved}'. Use a relative path within the vault."
+        )
+    return resolved
+
+
 def atomic_write_text(path: Path, text: str, encoding: str = "utf-8") -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temp = path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")

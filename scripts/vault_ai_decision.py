@@ -19,6 +19,7 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
+from vault_io import atomic_write_text, atomic_write_json, assert_within_vault
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -56,8 +57,7 @@ def load_index() -> Dict[str, Any]:
 
 def save_index(data: Dict[str, Any]) -> None:
     GOVERNANCE_DIR.mkdir(parents=True, exist_ok=True)
-    with open(INDEX_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+    atomic_write_json(INDEX_FILE, data)
 
 
 def vault_ai_decision(
@@ -94,8 +94,15 @@ def vault_ai_decision(
     filename = f"{safe_project}-{title_slug}.md"
     note_path = DECISIONS_DIR / filename
 
+    try:
+        assert_within_vault(note_path, VAULT_ROOT)
+    except ValueError as exc:
+        return {"ok": False, "error_code": "INVALID_PATH", "error": "INVALID_PATH", "message": str(exc)}
+
     tags_list = list(tags or [])
     tags_list.extend([safe_project, "ai-decision", decision_type, impact_level])
+
+    cia_integrity = "high" if impact_level in ("high", "critical") else "medium"
 
     frontmatter = ["---"]
     frontmatter.append(f"id: {note_id}")
@@ -110,6 +117,10 @@ def vault_ai_decision(
     frontmatter.append(f"updatedAt: {now}")
     if tags_list:
         frontmatter.append(f"tags: {json.dumps(list(dict.fromkeys(tags_list)))}")
+    frontmatter.append(f"cia_integrity: {cia_integrity}")
+    frontmatter.append(f"cia_availability: medium")
+    frontmatter.append(f"cia_sensitivity: internal")
+    frontmatter.append(f"agent: system")
     frontmatter.append("---")
 
     body_sections = []
@@ -153,8 +164,7 @@ def vault_ai_decision(
     final_content = "\n".join(frontmatter) + "\n\n" + "\n\n".join(body_sections)
 
     note_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(note_path, "w", encoding="utf-8") as f:
-        f.write(final_content)
+    atomic_write_text(note_path, final_content)
 
     entry = {
         "docId": note_id,

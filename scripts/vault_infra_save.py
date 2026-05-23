@@ -15,6 +15,7 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
+from vault_io import atomic_write_text, atomic_write_json, assert_within_vault
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -81,8 +82,7 @@ def load_index() -> Dict[str, Any]:
 
 def save_index(data: Dict[str, Any]) -> None:
     INFRA_DIR.mkdir(parents=True, exist_ok=True)
-    with open(INDEX_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+    atomic_write_json(INDEX_FILE, data)
 
 
 def generate_infra_map(components: List[Dict], project: Optional[str] = None, location: Optional[str] = None) -> str:
@@ -155,8 +155,7 @@ def save_infra_map(components: List[Dict], project: Optional[str] = None, locati
     frontmatter.append("---")
     frontmatter.append("\n## Network Map\n\n```mermaid\n" + mermaid_content + "\n```\n")
 
-    with open(map_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(frontmatter))
+    atomic_write_text(map_path, "\n".join(frontmatter))
 
     return map_path
 
@@ -187,6 +186,14 @@ def vault_infra_save(
 
     timestamp = _utcnow()
 
+    try:
+        assert_within_vault(note_path, VAULT_ROOT)
+    except ValueError as exc:
+        return {"ok": False, "error_code": "INVALID_PATH", "error": "INVALID_PATH", "message": str(exc)}
+
+    cia_sensitivity = "restricted" if component_type == "secret" else "internal"
+    cia_integrity = "high" if component_type in ("server", "database", "secret") else "medium"
+
     frontmatter = ["---"]
     frontmatter.append(f"title: {name}")
     frontmatter.append(f"id: {str(uuid.uuid4())}")
@@ -200,6 +207,10 @@ def vault_infra_save(
         frontmatter.append(f"status: {status}")
     if tags:
         frontmatter.append(f"tags: {json.dumps(tags)}")
+    frontmatter.append(f"cia_integrity: {cia_integrity}")
+    frontmatter.append(f"cia_availability: high")
+    frontmatter.append(f"cia_sensitivity: {cia_sensitivity}")
+    frontmatter.append(f"agent: system")
     frontmatter.append("---")
 
     body_sections = [f"## Descripción\n\n{description}\n"]
@@ -259,8 +270,7 @@ def vault_infra_save(
     final_content = "\n".join(frontmatter) + "\n\n" + "\n\n".join(body_sections)
 
     folder.mkdir(parents=True, exist_ok=True)
-    with open(note_path, "w", encoding="utf-8") as f:
-        f.write(final_content)
+    atomic_write_text(note_path, final_content)
 
     index = load_index()
 

@@ -15,6 +15,7 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
+from vault_io import atomic_write_text, assert_within_vault
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -60,6 +61,12 @@ def vault_runbook_save(
 
     timestamp = _utcnow()
 
+    note_path_candidate = folder / filename
+    try:
+        assert_within_vault(note_path_candidate, VAULT_ROOT)
+    except ValueError as exc:
+        return {"ok": False, "error_code": "INVALID_PATH", "error": "INVALID_PATH", "message": str(exc)}
+
     frontmatter = ["---"]
     frontmatter.append(f"title: {title}")
     frontmatter.append(f"id: {str(uuid.uuid4())}")
@@ -72,6 +79,10 @@ def vault_runbook_save(
     frontmatter.append(f"updatedAt: {timestamp}")
     if estimated_time:
         frontmatter.append(f"estimatedTime: {estimated_time}")
+    frontmatter.append(f"cia_integrity: medium")
+    frontmatter.append(f"cia_availability: high")
+    frontmatter.append(f"cia_sensitivity: internal")
+    frontmatter.append(f"agent: system")
     frontmatter.append("---")
 
     body_sections = []
@@ -99,8 +110,7 @@ def vault_runbook_save(
     final_content = "\n".join(frontmatter) + "\n\n" + "\n\n".join(body_sections)
 
     folder.mkdir(parents=True, exist_ok=True)
-    with open(note_path, "w", encoding="utf-8") as f:
-        f.write(final_content)
+    atomic_write_text(note_path, final_content)
 
     return {
         "ok": True,

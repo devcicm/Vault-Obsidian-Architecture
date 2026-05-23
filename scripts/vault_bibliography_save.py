@@ -15,6 +15,7 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
+from vault_io import atomic_write_text, assert_within_vault
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -81,6 +82,11 @@ def vault_bibliography_save(
 
     tags = tags or []
 
+    try:
+        assert_within_vault(note_path, VAULT_ROOT)
+    except ValueError as exc:
+        return {"ok": False, "error_code": "INVALID_PATH", "error": "INVALID_PATH", "message": str(exc)}
+
     frontmatter_lines = ["---"]
     frontmatter_lines.append(f"title: {title}")
     frontmatter_lines.append(f"id: {note_id}")
@@ -88,12 +94,14 @@ def vault_bibliography_save(
     frontmatter_lines.append(f"source_type: {source_type}")
     if project:
         frontmatter_lines.append(f"project: {project}")
-    if agent:
-        frontmatter_lines.append(f"agent: {agent}")
+    frontmatter_lines.append(f"agent: {agent or 'system'}")
     frontmatter_lines.append(f"accessed_at: {now}")
     if tags:
         tags_str = json.dumps(tags, ensure_ascii=False)
         frontmatter_lines.append(f"tags: {tags_str}")
+    frontmatter_lines.append(f"cia_integrity: medium")
+    frontmatter_lines.append(f"cia_availability: low")
+    frontmatter_lines.append(f"cia_sensitivity: public")
     frontmatter_lines.append("---")
 
     body = f"\n# {title}\n\n"
@@ -107,8 +115,7 @@ def vault_bibliography_save(
 
     content = "\n".join(frontmatter_lines) + body
 
-    with open(note_path, "w", encoding="utf-8") as f:
-        f.write(content)
+    atomic_write_text(note_path, content)
 
     return {
         "ok": True,
