@@ -2,7 +2,7 @@
 
 **Estándar de diseño para dotar a agentes LLM de memoria documental persistente usando Obsidian como backend.**
 
-[![Version](https://img.shields.io/badge/version-v27-blue)](./vault-obsidian-architecture.md)
+[![Version](https://img.shields.io/badge/version-v28-blue)](./vault-obsidian-architecture.md)
 [![Tools](https://img.shields.io/badge/tools-53_active-green)](./scripts/)
 [![Scripts](https://img.shields.io/badge/scripts-66_total-lightblue)](./scripts/)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow)](./scripts/)
@@ -34,7 +34,7 @@ Este estándar define cómo construir un vault de conocimiento que el agente lee
 
 ## El documento
 
-**[vault-obsidian-architecture.md](./vault-obsidian-architecture.md)** — la especificación completa (v27).
+**[vault-obsidian-architecture.md](./vault-obsidian-architecture.md)** — la especificación completa (v28).
 
 Contiene:
 - 8 principios de diseño
@@ -48,13 +48,55 @@ Contiene:
 - **Data Quality framework**: scoring multidimensional (9 dimensiones) por nota con índice persistente
 - **Propagación graph-aware**: análisis de impacto BFS + estrategias de acción sobre el grafo de wiki-links
 - **Spec-driven memory**: memoria agéntica unificada con contratos, trazabilidad F1–F8 y loop de validación
+- **Seguridad confirmada** en campo: `assert_within_vault()` + CIA + atomic writes en 12 scripts de escritura
+- **Implementación de referencia** `vault-electron-fingerprint`: vault completo v28, 100/100, 13 notas, 0 issues
+- **Mapa canónico script→carpeta**: tabla authoritative que resuelve discrepancias entre spec y código
+- **Protocolo de inicialización corregido** con comandos exactos y `.gitignore` para consumer repos
 - Protocolo de sesión para LLMs remotos (DeepSeek, GPT, Gemini, Claude API)
-- Sistema de versionado del estándar con migraciones automáticas (v19 → v27)
+- Sistema de versionado del estándar con migraciones automáticas (v19 → v28)
 - Sistema de change log de gobernanza (quién eliminó qué y por qué)
 - Observabilidad de tools: error taxonomy, trace log, timeouts
-- Guía de inicialización desde cero
 - Compatibilidad con Obsidian Desktop
-- Changelog completo (v1 → v27)
+- Changelog completo (v1 → v28)
+
+---
+
+## Novedades v28 — Validación en campo, seguridad y protocolo corregido
+
+### Implementación de referencia
+
+El vault `vault-electron-fingerprint` documenta un sistema de control de asistencia con autenticación biométrica (ElectronJS + TypeScript + .NET C# + DP4500 sensor). Al cierre: **100/100 health score**, 13 notas, 0 huérfanas, 0 links rotos.
+
+### Seguridad confirmada en campo
+
+- `assert_within_vault()` en `vault_io.py` previene path traversal absoluto y relativo en todos los scripts
+- CIA frontmatter (`cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`) en los 12 scripts de escritura
+- `atomic_write_text` / `atomic_write_json` en todos los paths críticos
+
+### Mapa canónico script→carpeta
+
+Nueva tabla authoritative que resuelve discrepancias entre el árbol de carpetas del spec y las constantes `_DIR` reales de los scripts. Ver sección "Mapa canónico" en la especificación.
+
+### Protocolo de inicialización corregido
+
+```bash
+# El flag --upgrade no existe. Flujo correcto para vault nuevo:
+python scripts/vault_standard_upgrade.py --init v28
+# Crear carpetas manualmente o con bootstrap script
+python scripts/vault_standard_upgrade.py --to v28
+# Generar section indexes para evitar links rotos:
+for folder in 00_System 01_Projects ...; do
+  python scripts/vault_section_index.py --folder "$folder"
+done
+python scripts/vault_audit.py   # debe dar 100/100 con vault vacío
+```
+
+### Consumer repo .gitignore
+
+```gitignore
+.claude/
+vault-*/scripts/
+```
 
 ---
 

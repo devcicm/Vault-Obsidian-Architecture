@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v27 — 2026-05-11  
+**Versión:** v28 — 2026-05-23  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -2704,7 +2704,7 @@ Detecta y aplica migraciones entre versiones del estándar. Lee `00_System/stand
 { "ok": true, "action": "check", "current_version": "v20", "target_version": "v25", "pending_count": 5, "pending_migrations": [{ "version": "v21", "description": "...", "folders_to_create": [...] }] }
 ```
 
-**Versiones disponibles:** v19, v20, v21, v22, v23, v24, v25, v26, v27
+**Versiones disponibles:** v19, v20, v21, v22, v23, v24, v25, v26, v27, v28
 
 **Cuándo usar:**
 - Al instalar el estándar en un vault existente: `vault_standard_upgrade --check --from v{actual}` primero
@@ -3701,41 +3701,107 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v25 | 2026-05-09 | AP-17~21, PAT-1~5, vault_write guards (AP-20/21), vault_section_index stem-only, vault_audit AP-17/18, vault_standard_upgrade, vault_change_log |
 | v26 | 2026-05-09 | vault_compact_contracts, vault_manifest, vault_test_runner, --validate y --set-profile en upgrade, envelope `ok:true` via wrap_main, deprecation notices |
 | v27 | 2026-05-11 | CIA schema en frontmatter, vault_quality_check (9 dimensiones), vault_fundamentals (F1-F8 registry), vault_impact + vault_propagate (BFS graph-aware), vault_spec_memory (spec-driven memory + validation loop), vault_tokens (observabilidad), 100% DQ annotation, 53/53 tools mapeadas a fundamentos |
+| v28 | 2026-05-23 | Validación en campo (vault-electron-fingerprint, 100/100), seguridad confirmada (assert_within_vault + CIA + atomic writes en 12 scripts), protocolo de inicialización corregido, mapa canónico script→carpeta, gitignore pattern consumidores, nota compatibilidad Windows/PowerShell |
+
+### Cómo inicializar el estándar en un vault nuevo (v28)
+
+> **Corrección v28:** el flag `--upgrade` no existe. El flujo correcto es el siguiente.
+
+```bash
+# 1. Copiar scripts DENTRO del vault (colocation recomendada desde v28):
+#    vault-{nombre}/scripts/  ← scripts del estándar, gitignoreados en el consumer repo
+#    vault-{nombre}/          ← vault root
+
+# 2. Registrar la versión:
+python vault_standard_upgrade.py --init v28
+
+# 3. Crear las carpetas estándar (el --init NO las crea):
+mkdir -p 00_System 01_Projects 02_Observability 05_Patterns 06_Diagrams \
+         07_Knowledge 08_Runbooks 09_Infrastructure 10_Migrated 11_Code \
+         12_Bibliography 13_Flows 14_Requirements 15_Tests 16_AI_Governance 99_Index
+
+# 4. Verificar que no haya migraciones pendientes:
+python vault_standard_upgrade.py --to v28
+# → "Vault is up to date at v28. No migrations needed."
+
+# 5. Generar section indexes para evitar links rotos en vault_master_index:
+for folder in 00_System 01_Projects 02_Observability 05_Patterns 06_Diagrams \
+              07_Knowledge 08_Runbooks 09_Infrastructure 10_Migrated 11_Code \
+              12_Bibliography 13_Flows 14_Requirements 15_Tests 16_AI_Governance 99_Index; do
+  python vault_section_index.py --folder "$folder"
+done
+
+# 6. Baseline health check:
+python vault_audit.py
+# → Score 100/100 con vault vacío (solo indexes generados)
+```
+
+**Patrón `.gitignore` para repos consumidores:**
+```gitignore
+# Claude Code session data
+.claude/
+
+# Vault scripts (versionados en Vault-Obsidian-Architecture, no aquí)
+vault-*/scripts/
+```
 
 ### Cómo instalar el estándar en un vault existente
 
+```bash
+# Detectar la brecha de versión:
+python vault_standard_upgrade.py --check
+# → lista migraciones pendientes sin aplicar nada
+
+# Si la versión actual es desconocida, estimar por carpetas presentes:
+# - Sin 12_Bibliography/ → v20 o anterior
+# - Sin 13_Flows/        → v22 o anterior
+# - Sin 14_Requirements/ → v23 o anterior
+# - Sin 00_System/standard-version.json → v19 o anterior
+
+# Aplicar las migraciones pendientes:
+python vault_standard_upgrade.py --to v28
+
+# Verificar:
+python vault_standard_upgrade.py --check
+# → "Vault is up to date at v28. No migrations needed."
 ```
-1. Copiar los scripts al directorio hermano del vault (no dentro del vault):
-   vault-{nombre}/        ← vault root
-   scripts/               ← scripts del estándar (hermano del vault)
 
-2. Detectar la brecha de versión:
-   python vault_standard_upgrade.py --check --from v{version-actual}
-   → lista todas las migraciones pendientes sin aplicar nada
+### Mapa canónico script → carpeta (v28)
 
-3. Si la versión actual es desconocida, estimar por las carpetas presentes:
-   - Sin 12_Bibliography/ → v20 o anterior
-   - Sin 13_Flows/ → v22 o anterior
-   - Sin 14_Requirements/ → v23 o anterior
+Tabla authoritative de qué constante `_DIR` usa cada grupo de tools. Prevalece sobre cualquier descripción en la estructura del árbol.
 
-4. Aplicar las migraciones:
-   python vault_standard_upgrade.py --from v{version-actual} --to latest
+| Carpeta real | Tools que escriben aquí | Subcarpetas |
+|---|---|---|
+| `00_System/` | `vault_audit`, `vault_change_log`, `vault_compact_contracts`, `vault_drift_detect`, `vault_fundamentals`, `vault_manifest`, `vault_propagate`, `vault_quality_check`, `vault_spec_memory`, `vault_standard_upgrade`, `vault_token_*` | `token-usage/` |
+| `01_Projects/` | `vault_env_save`, `vault_project_overview`, `vault_project_status` | `{slug}/` |
+| `02_Observability/` | `vault_log_error`, `vault_security_scan` | `errors/`, `antipatterns/`, `vulnerabilities/`, `waf/`, `metrics/`, `alerts/`, `slos/` |
+| `05_Patterns/` | `vault_pattern_save`, `vault_pattern_list` | `design/`, `architecture/`, `code/`, `integration/` |
+| `06_Diagrams/` | `vault_diagram_save`, `vault_relation_add` | `entity/`, `component/`, `sequence/`, `dependency/`, `flow/`, `state/`, `lifecycle/` |
+| `07_Knowledge/` | `vault_knowledge_save`, `vault_knowledge_get` | `glossary/`, `apis/`, `concepts/`, `business-rules/`, `config/`, `dependencies/`, `frameworks/` |
+| `08_Runbooks/` | `vault_runbook_save`, `vault_runbook_log` | `deploy/`, `debug/`, `setup/`, `rollback/`, `maintenance/`, `pipeline/`, `incident/` |
+| `09_Infrastructure/` | `vault_infra_save`, `vault_infra_map` | `servers/`, `vms/`, `containers/`, `services/`, `databases/`, `network/`, `pipelines/`, `secrets/` |
+| `10_Migrated/` | `vault_migrate_docs` | `_staging/`, `direct/`, `indirect/`, `excluded/` |
+| `11_Code/` | `vault_code_module`, `vault_code_map`, `vault_code_query`, `vault_code_relation` | `{project-slug}/` |
+| `12_Bibliography/` | `vault_bibliography_save` | `web/`, `papers/`, `docs/`, `apis/`, `books/` |
+| `13_Flows/` | `vault_flow_save` | `workflow/`, `pipeline/`, `lifecycle/`, `dataflow/` |
+| `14_Requirements/` | `vault_requirement_save` | `{project}/` |
+| `15_Tests/` | `vault_test_save` | `unit/`, `integration/`, `e2e/`, `performance/`, `security/`, `acceptance/` |
+| `16_AI_Governance/` | `vault_ai_decision` | `decisions/` |
+| `99_Index/` | `vault_master_index`, `vault_reindex`, `vault_graph`, `vault_impact` | — |
+| `.history/` | `vault_write`, `vault_read` (lectura de historial) | ruta plana con `__` como separador |
 
-5. Verificar:
-   python vault_standard_upgrade.py --check
-   → debe retornar "Vault is up to date at v25"
-```
+> **Nota:** `03_Decisions/` y `04_Sessions/` aparecen en la estructura conceptual del vault (documentación de sesión y ADRs genéricos) pero ningún script actual tiene una constante `_DIR` que apunte a ellas directamente — se escriben via `vault_write` con `--folder 03_Decisions`. El resto de carpetas del árbol son generadas automáticamente por las tools especializadas.
 
 ### Archivo `00_System/standard-version.json`
 
-Todo vault gestionado por este estándar debe tener este archivo en `00_System/`. Se crea con `vault_standard_upgrade --init v{version}` al instalar el estándar en un vault nuevo, o con `--from --to` al actualizar.
+Todo vault gestionado por este estándar debe tener este archivo en `00_System/`. Se crea con `vault_standard_upgrade --init v{version}` al instalar el estándar en un vault nuevo.
 
 ```json
 {
-  "applied_version": "v25",
-  "applied_at": "2026-05-09T...",
+  "applied_version": "v28",
+  "applied_at": "2026-05-23T...",
   "applied_by": "claude",
-  "migrations_applied": ["v21", "v22", "v23", "v24", "v25"]
+  "migrations_applied": ["v21", "v22", "v23", "v24", "v25", "v26", "v27", "v28"]
 }
 ```
 
@@ -3964,6 +4030,37 @@ temp/
 - `vault_knowledge_get.py`: añadido campo `total` en todos los paths de retorno (incluyendo resultados vacíos), normalizando el contrato.
 - `vault_test_runner.py`: 15 `required_ok_fields` vacíos sustituidos por campos reales (vault_diff, vault_merge, vault_knowledge_get, vault_infra_map, vault_backup, vault_backup_list, vault_security_scan, vault_section_index, vault_master_index, vault_reindex, vault_drift_detect, vault_timeline, vault_code_map). Contratos pasan 45/45.
 - `vault_manifest.py`: nuevas categorías en TOOL_GROUPS: `Data Quality`, `Propagación`, `Tokens`. `META_TOOLS` incluye `vault_spec_memory`.
+
+---
+
+### v28 — 2026-05-23 `git: (pendiente)`
+
+**Validación en campo, seguridad confirmada y protocolo de inicialización corregido**
+
+**Agregado**
+- **Implementación de referencia `vault-electron-fingerprint`:** primer vault de producción inicializado y validado sobre proyecto real (ElectronJS + TypeScript + better-sqlite3 + motor biométrico .NET DP4500). Health score 100/100 al cierre: 13 notas, 0 huérfanas, 0 links rotos, 21 entradas en search index. Publicado en rama `sistema-asistencia` del repo `ElectronJS---Autenticacion-por-huella-dactilar`.
+- **Mapa canónico script→carpeta:** tabla authoritative de qué tool escribe en qué directorio real (corrige discrepancias entre spec y constantes `_DIR` de los scripts). Ver sección "Mapa de Carpetas por Tool" más abajo.
+- **Nota de compatibilidad Windows/PowerShell:** argumentos JSON con `<`, `>` u otros caracteres especiales de shell deben pasarse via Bash (no PowerShell 5.1). PowerShell 5.1 expande y mangle el JSON antes de que Python lo reciba. Usar la herramienta Bash, o pasar el JSON desde un archivo temporal.
+- **Patrón `.gitignore` para repos consumidores:** `vault-*/scripts/` debe ignorarse en repos que usan el vault como sub-directorio. Los scripts vienen de este repo y no deben re-versionarse en el consumer.
+- **Grupo 26 — Validación de campo (conceptual):** documenta el ciclo completo init → doc → audit → push como flujo verificado.
+
+**Corregido (security hardening confirmado en campo)**
+- **`assert_within_vault()` en `vault_io.py`:** previene path traversal absoluto (`Path(root) / "/etc"` → `Path("/etc")`) y relativo (`../../`). Todos los 12 scripts de escritura la llaman antes de cualquier `open()`. Validado en vault-electron-fingerprint sin incidentes.
+- **CIA frontmatter obligatorio en 12 scripts de escritura:** `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent` presentes en cada nota generada. Valores por defecto semánticamente ajustados por tipo de componente (ej: `secret` → `restricted`, `server` → `high/high/internal`).
+- **Escrituras atómicas en todos los paths críticos:** `atomic_write_text` / `atomic_write_json` en `vault_write`, `vault_runbook_save`, `vault_pattern_save`, `vault_knowledge_save`, `vault_ai_decision`, `vault_diagram_save`, `vault_requirement_save`, `vault_test_save`, `vault_flow_save`, `vault_bibliography_save`, `vault_env_save`, `vault_infra_save`. Elimina escrituras parciales en caso de kill del proceso.
+
+**Corregido (protocolo de inicialización)**
+- El flag `--upgrade` no existe en `vault_standard_upgrade.py`. El flujo correcto para un vault nuevo es:
+  1. `python vault_standard_upgrade.py --init v28` — registra versión en `00_System/standard-version.json`
+  2. Crear manualmente las carpetas del mapa canónico (o via script de bootstrap)
+  3. `python vault_standard_upgrade.py --to v28` — verifica que no hay migraciones pendientes
+  4. `python vault_section_index.py --folder {cada-sección}` — genera `index.md` por sección para que `vault_master_index` no genere links rotos
+  5. `python vault_audit.py` — baseline health check (debe ser 100/100 con vault vacío)
+- Añadido `.gitignore` pattern: `vault-*/scripts/` y `.claude/` en repos consumidores.
+
+**Modificado**
+- `vault_standard_upgrade.py`: `CURRENT_VERSION = "v28"`, v28 añadido a `MIGRATIONS` y `VERSION_ORDER`.
+- `vault-obsidian-architecture.md`: versión bumpeada a v28, tabla de versiones actualizada, sección de instalación corregida.
 
 ---
 

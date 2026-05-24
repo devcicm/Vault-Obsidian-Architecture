@@ -1,13 +1,13 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture v27**. Implementan las 53 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad.
+Scripts Python del estándar **Vault Obsidian Architecture v28**. Implementan las 53 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad.
 
 - **66 archivos** — 53 tools activas + 5 deprecadas + 4 internas + 4 meta + `vault_errors.py`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
 - **VAULT_ROOT** = `Path(__file__).parent.parent` — apunta a la raíz del vault; todos los `--folder`/`--path` se validan con `assert_within_vault()` para prevenir escrituras fuera del vault
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
 - **JSON siempre** — cualquier error devuelve `{"ok": false, "error_code": "...", "recovery": {...}}`
-- **Frontmatter v27** — todas las notas generadas incluyen `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`
+- **Frontmatter v28** — todas las notas generadas incluyen `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`
 - **Escrituras atómicas** — notas y JSON críticos usan `atomic_write_text`/`atomic_write_json` de `vault_io.py`
 
 ---

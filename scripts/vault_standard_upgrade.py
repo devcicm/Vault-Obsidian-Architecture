@@ -33,7 +33,7 @@ SYSTEM_DIR = VAULT_ROOT / "00_System"
 VERSION_FILE = SYSTEM_DIR / "standard-version.json"
 IDENTITY_FILE = SYSTEM_DIR / "identity.md"
 
-CURRENT_VERSION = "v27"
+CURRENT_VERSION = "v28"
 
 MIGRATIONS: Dict[str, Dict[str, Any]] = {
     "v21": {
@@ -138,9 +138,24 @@ MIGRATIONS: Dict[str, Dict[str, Any]] = {
             "00_System/propagation-queue.json: pending propagation items with priority",
         ],
     },
+    "v28": {
+        "description": "Field validation, security hardening confirmed, initialization protocol, reference implementation",
+        "add_folders": [],
+        "update_identity": {"tools_count": "57", "groups_count": "26"},
+        "notes": [
+            "assert_within_vault() en vault_io.py: previene path traversal (absolutos y ../) en todos los scripts de escritura",
+            "CIA frontmatter obligatorio en 12 scripts de escritura: cia_integrity, cia_availability, cia_sensitivity, agent",
+            "atomic_write_text / atomic_write_json en todos los paths criticos — elimina escrituras parciales",
+            "Protocolo de inicializacion corregido: --init v28 (no --upgrade); vault_section_index para todas las secciones",
+            "gitignore pattern: vault-*/scripts/ en repos consumidores (scripts no se re-versionan)",
+            "Shell compatibility: args JSON con <> requieren Bash en Windows; PowerShell 5.1 los mangla",
+            "Implementacion de referencia: vault-electron-fingerprint (ElectronJS + DP4500), 13 notas, score 100/100",
+            "Mapa canonico script→carpeta: corrige discrepancias entre spec y implementacion real",
+        ],
+    },
 }
 
-VERSION_ORDER = ["v19", "v20", "v21", "v22", "v23", "v24", "v25", "v26", "v27"]
+VERSION_ORDER = ["v19", "v20", "v21", "v22", "v23", "v24", "v25", "v26", "v27", "v28"]
 
 
 def _version_index(v: str) -> int:
