@@ -1,6 +1,6 @@
 # Vault Obsidian Architecture
 
-**Estándar de diseño para dotar a agentes LLM de memoria documental persistente usando Obsidian como backend.**
+**Estándar de diseño para dotar a agentes LLM de memoria documental persistente.**
 
 [![Version](https://img.shields.io/badge/version-v28-blue)](./vault-obsidian-architecture.md)
 [![Tools](https://img.shields.io/badge/tools-53_active-green)](./scripts/)
@@ -10,181 +10,124 @@
 
 ---
 
-## ¿Qué es esto?
+## El problema
 
-Un patrón técnico completo para que cualquier agente LLM (Claude, GPT-4, Gemini, modelos locales) mantenga memoria entre sesiones usando una carpeta de archivos Markdown estructurada.
+Los agentes LLM tienen memoria efímera. Cada sesión empieza desde cero aunque el proyecto lleve meses en desarrollo:
 
-Sin bases de datos. Sin embeddings. Sin infraestructura adicional. Solo archivos Markdown + YAML frontmatter + un conjunto de herramientas bien definidas.
+- Repiten errores ya resueltos
+- No conocen el estado real del proyecto
+- Las decisiones técnicas no tienen trazabilidad
+- La infraestructura y reglas de negocio deben re-explicarse cada vez
+
+**Este estándar resuelve eso** definiendo un vault de conocimiento que el agente lee, actualiza y navega como memoria persistente — sin bases de datos, sin embeddings, sin infraestructura adicional.
 
 > El agente no necesita Obsidian instalado. Necesita el patrón y las tools.
 
 ---
 
-## El problema que resuelve
+## Qué es un vault
 
-Los agentes LLM olvidan todo al terminar cada sesión:
-- No saben en qué estado quedó el proyecto
-- Repiten errores ya resueltos
-- No tienen contexto de decisiones técnicas anteriores
-- La infraestructura, patrones y reglas de negocio deben re-explicarse cada vez
-
-Este estándar define cómo construir un vault de conocimiento que el agente lee, actualiza y navega como memoria persistente.
-
----
-
-## El documento
-
-**[vault-obsidian-architecture.md](./vault-obsidian-architecture.md)** — la especificación completa (v28).
-
-Contiene:
-- 8 principios de diseño
-- Estructura de carpetas con **17 secciones numeradas** (00–16 + 99_Index)
-- **53 tools documentadas** con contratos exactos (parámetros, retorno, cuándo usar)
-- **26 grupos** de tools organizados por dominio
-- **21 antipatrones** (AP-01 a AP-21) con señales de alarma y prevención automática
-- **5 patrones recomendados** (PAT-1 a PAT-5)
-- **8 Fundamentos de Datos** (F1–F8): INTEGRIDAD, CONSISTENCIA, COMPLETITUD, EXACTITUD, VALIDEZ, ACTUALIDAD, AUTENTICIDAD, NO_REPUDIO
-- **CIA schema** en frontmatter: clasificación por integridad, disponibilidad y sensibilidad por nota
-- **Data Quality framework**: scoring multidimensional (9 dimensiones) por nota con índice persistente
-- **Propagación graph-aware**: análisis de impacto BFS + estrategias de acción sobre el grafo de wiki-links
-- **Spec-driven memory**: memoria agéntica unificada con contratos, trazabilidad F1–F8 y loop de validación
-- **Seguridad confirmada** en campo: `assert_within_vault()` + CIA + atomic writes en 12 scripts de escritura
-- **Implementación de referencia** `vault-electron-fingerprint`: vault completo v28, 100/100, 13 notas, 0 issues
-- **Mapa canónico script→carpeta**: tabla authoritative que resuelve discrepancias entre spec y código
-- **Protocolo de inicialización corregido** con comandos exactos y `.gitignore` para consumer repos
-- Protocolo de sesión para LLMs remotos (DeepSeek, GPT, Gemini, Claude API)
-- Sistema de versionado del estándar con migraciones automáticas (v19 → v28)
-- Sistema de change log de gobernanza (quién eliminó qué y por qué)
-- Observabilidad de tools: error taxonomy, trace log, timeouts
-- Compatibilidad con Obsidian Desktop
-- Changelog completo (v1 → v28)
-
----
-
-## Novedades v28 — Validación en campo, seguridad y protocolo corregido
-
-### Implementación de referencia
-
-El vault `vault-electron-fingerprint` documenta un sistema de control de asistencia con autenticación biométrica (ElectronJS + TypeScript + .NET C# + DP4500 sensor). Al cierre: **100/100 health score**, 13 notas, 0 huérfanas, 0 links rotos.
-
-### Seguridad confirmada en campo
-
-- `assert_within_vault()` en `vault_io.py` previene path traversal absoluto y relativo en todos los scripts
-- CIA frontmatter (`cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`) en los 12 scripts de escritura
-- `atomic_write_text` / `atomic_write_json` en todos los paths críticos
-
-### Mapa canónico script→carpeta
-
-Nueva tabla authoritative que resuelve discrepancias entre el árbol de carpetas del spec y las constantes `_DIR` reales de los scripts. Ver sección "Mapa canónico" en la especificación.
-
-### Protocolo de inicialización corregido
-
-```bash
-# El flag --upgrade no existe. Flujo correcto para vault nuevo:
-python scripts/vault_standard_upgrade.py --init v28
-# Crear carpetas manualmente o con bootstrap script
-python scripts/vault_standard_upgrade.py --to v28
-# Generar section indexes para evitar links rotos:
-for folder in 00_System 01_Projects ...; do
-  python scripts/vault_section_index.py --folder "$folder"
-done
-python scripts/vault_audit.py   # debe dar 100/100 con vault vacío
+```
+vault-{nombre}/          ← carpeta raíz (prefijo vault- obligatorio)
+├── 00_System/           — identidad, reglas, contratos del agente
+├── 01_Projects/         — overview, envs, estado por proyecto
+├── 02_Observability/    — errores, vulnerabilidades, métricas, SLOs
+├── 05_Patterns/         — patrones con ciclo de vida evolutivo
+├── 06_Diagrams/         — ERDs y diagramas Mermaid auto-generados
+├── 07_Knowledge/        — glosario, APIs, conceptos, reglas de negocio
+├── 08_Runbooks/         — procedimientos operacionales paso a paso
+├── 09_Infrastructure/   — servidores, servicios, redes, pipelines CI/CD
+├── 10_Migrated/         — documentación externa en tránsito
+├── 11_Code/             — documentación de código IEEE 1016 por módulo
+├── 12_Bibliography/     — fuentes externas consultadas por el agente
+├── 13_Flows/            — flujos de trabajo, pipelines, ciclos de vida
+├── 14_Requirements/     — requerimientos ISO 29148
+├── 15_Tests/            — casos de test ISO 29119
+├── 16_AI_Governance/    — decisiones de agentes IA (ISO 42001)
+└── 99_Index/            — search-index.json, graph.json
 ```
 
-### Consumer repo .gitignore
+Formato: **Markdown + YAML frontmatter + wiki-links**. Compatible con git, abre en cualquier editor, renderable en Obsidian Desktop.
+
+---
+
+## Quick Start
+
+### 1. Clonar e instalar
+
+```bash
+git clone https://github.com/devcicm/Vault-Obsidian-Architecture.git
+```
+
+Los scripts no tienen dependencias externas. Solo Python 3.9+.
+
+### 2. Inicializar un vault nuevo
+
+```bash
+# Crear la carpeta del vault
+mkdir vault-mi-proyecto
+cd vault-mi-proyecto
+
+# Copiar scripts (se gitignorean en el consumer repo)
+cp -r ../Vault-Obsidian-Architecture/scripts ./scripts
+
+# Registrar versión del estándar
+python scripts/vault_standard_upgrade.py --init v28
+
+# Crear las 16 carpetas estándar
+mkdir -p 00_System 01_Projects 02_Observability 05_Patterns 06_Diagrams \
+         07_Knowledge 08_Runbooks 09_Infrastructure 10_Migrated 11_Code \
+         12_Bibliography 13_Flows 14_Requirements 15_Tests 16_AI_Governance 99_Index
+
+# Verificar y generar section indexes
+python scripts/vault_standard_upgrade.py --to v28
+for folder in 00_System 01_Projects 02_Observability 05_Patterns 06_Diagrams \
+              07_Knowledge 08_Runbooks 09_Infrastructure 10_Migrated 11_Code \
+              12_Bibliography 13_Flows 14_Requirements 15_Tests 16_AI_Governance 99_Index; do
+  python scripts/vault_section_index.py --folder "$folder"
+done
+
+# Health check baseline (debe dar 100/100 con vault vacío)
+python scripts/vault_audit.py
+```
+
+### 3. `.gitignore` para el consumer repo
 
 ```gitignore
 .claude/
 vault-*/scripts/
 ```
 
----
-
-## Novedades v27 — Data Quality, CIA y Propagación de Cambios
-
-### CIA Schema en frontmatter
-
-Tres campos opcionales nuevos en cualquier nota:
-
-```yaml
-cia_integrity:    high        # critical|high|medium|low
-cia_availability: high        # high|medium|low
-cia_sensitivity:  internal    # public|internal|restricted
-dq_validated_at:  "2026-05-11T12:00:00Z"
-```
-
-Las notas `cia_integrity: critical/high` tienen umbrales de actualidad más estrictos (15 días vs 30) y penalizan más el health score cuando están stale.
-
-### Data Quality framework
-
-`vault_quality_check` evalúa 9 dimensiones por nota y genera `00_System/quality-index.json`:
-
-| Dimensión | Qué mide |
-|---|---|
-| integrity | Frontmatter estructuralmente completo |
-| consistency | Wiki-links resueltos, type coincide con carpeta |
-| completeness | ≥3 líneas de contenido, updatedAt presente |
-| accuracy | Documentación refleja realidad del código |
-| validity | Campos CIA y status en valores permitidos |
-| timeliness | Nota actualizada según umbral CIA |
-| authenticity | Campo `agent` presente |
-| non_repudiation | Referenciada en change-log |
-| uniqueness | Sin duplicados AP-17/AP-18 |
-
-### Propagación graph-aware
+### 4. Documentar el proyecto
 
 ```bash
-# Analizar impacto de un cambio sobre el grafo de backlinks
-python scripts/vault_impact.py --changed "01_Projects/api/overview.md"
+# Identidad del vault
+python scripts/vault_write.py --folder "00_System" \
+  --title "Vault Identity" \
+  --meta '{"cia_integrity":"high","agent":"claude","type":"identity"}' \
+  --content "Vault del proyecto X. Agente: claude."
 
-# Propagar: marcar notas afectadas + encolar para revisión
-python scripts/vault_propagate.py --changed "overview.md" --strategy conservative --action notify,queue
+# Overview del proyecto
+python scripts/vault_project_overview.py \
+  --project "mi-proyecto" \
+  --description "Descripción del proyecto" \
+  --runtime "Node.js 20"
 
-# Integrado en change_log (semi-automático)
-python scripts/vault_change_log.py --action updated --path "overview.md" --reason "..." --propagate conservative
-```
+# Documentar un módulo (IEEE 1016)
+python scripts/vault_code_module.py \
+  --project "mi-proyecto" \
+  --file_path "src/services/AuthService.ts" \
+  --description "Servicio de autenticación JWT" \
+  --language typescript \
+  --iso_type service
 
-### Spec-driven memory
-
-`vault_spec_memory` genera `00_System/spec-memory.json` — documento unificado que combina:
-- Contratos declarativos de los 53 tools (args requeridos, campos de retorno, error codes)
-- Trazabilidad F1–F8 → tools
-- Estado del sistema (DQ health, propagation queue, change log)
-- Loop de validación con detección de spec drift
-
-```bash
-python scripts/vault_spec_memory.py --validate --summary
-```
-
----
-
-## Estructura del vault definida
-
-```
-vault-{nombre}/
-├── 00_System/          — identidad, reglas, contratos, change-log, standard-version, quality-index, spec-memory
-├── 01_Projects/        — proyectos: overview, arquitectura, estado, decisiones, envs
-├── 02_Observability/   — errores, antipatrones, vulnerabilidades, métricas, alertas, SLOs
-├── 03_Decisions/       — ADRs (Architecture Decision Records)
-├── 04_Sessions/        — logs de sesión diarios
-├── 05_Patterns/        — patrones con ciclo de vida evolutivo
-├── 06_Diagrams/        — ERDs y diagramas Mermaid auto-generados
-├── 07_Knowledge/       — glosario, APIs, conceptos, reglas de negocio, configs
-├── 08_Runbooks/        — procedimientos operacionales
-├── 09_Infrastructure/  — servidores, servicios, redes, pipelines CI/CD
-├── 10_Migrated/        — documentación externa en tránsito
-├── 11_Code/            — documentación de código IEEE 1016 por módulo
-├── 12_Bibliography/    — fuentes externas consultadas por el agente
-├── 13_Flows/           — flujos de trabajo, pipelines, ciclos de vida
-├── 14_Requirements/    — requerimientos ISO 29148
-├── 15_Tests/           — casos de test ISO 29119
-├── 16_AI_Governance/   — decisiones de agentes IA (ISO 42001)
-└── 99_Index/           — search-index.json, graph.json, keywords-index.json
+# Auditar el vault
+python scripts/vault_audit.py
 ```
 
 ---
 
-## Las 53 tools — resumen por grupo
+## Las 53 tools — 26 grupos
 
 | Grupo | Tools |
 |---|---|
@@ -215,95 +158,139 @@ vault-{nombre}/
 | 25 — Propagación | `vault_impact`, `vault_propagate` |
 | 26 — Tokens | `vault_tokens`, `vault_token_counter`, `vault_token_service` |
 
----
-
-## Implementación de referencia
-
-Este repositorio incluye una implementación de referencia en Python (`scripts/`) con **66 scripts** totales:
-
-- **53 tools activas** (agente-facing) en 26 grupos
-- **5 tools legacy** deprecadas (vault_migrate, vault_reorganize, vault_tools, vault_create, vault_render)
-- **4 tools internas** (vault_io, vault_link_safety, vault_dataset, vault_index)
-- **4 tools meta** (vault_test_runner, vault_compact_contracts, vault_manifest, vault_spec_memory)
-
-**Requisitos:** Python 3.9+ · sin dependencias externas obligatorias
-
-**Ciclo de vida finito:** todas las tools tienen timeout automático de 60s (configurable via `VAULT_TOOL_TIMEOUT`). Cualquier fallo devuelve `{"ok": false, "error_code": "...", "recovery": {...}}`.
-
-**Uso básico:**
-```bash
-# Verificar versión del estándar antes de cada sesión
-python scripts/vault_standard_upgrade.py --check
-
-# Guardar una nota (con guards AP-20 y AP-21)
-python scripts/vault_write.py --folder "01_Projects/mi-api" --title "Architecture" --content "## Stack\n..."
-
-# Auditar el estado del vault (health score + DQ)
-python scripts/vault_audit.py
-
-# Data Quality — scoring completo del vault
-python scripts/vault_quality_check.py --min-score 0.7
-
-# Analizar impacto de cambios en el grafo
-python scripts/vault_impact.py --changed "01_Projects/api/overview.md"
-
-# Spec-driven memory — contratos + trazabilidad + validación
-python scripts/vault_spec_memory.py --validate --summary
-
-# Registrar eliminación antes de borrar (gobernanza)
-python scripts/vault_change_log.py --action deleted --path "07_Knowledge/old.md" --reason "Duplicado"
-```
-
-Ver **[scripts/README.md](./scripts/README.md)** para la referencia completa con parámetros, ejemplos y protocolo de sesión.
+Ver **[scripts/README.md](./scripts/README.md)** para contratos completos con parámetros, ejemplos y protocolo de sesión.
 
 ---
 
 ## Protocolo de sesión (resumen)
 
 ```bash
-# Inicio
-python scripts/vault_standard_upgrade.py --check   # 0. verificar versión del estándar
-python scripts/vault_reindex.py --check            # 1. verificar índice
-python scripts/vault_audit.py                      # 2. baseline de salud + DQ score
+# Inicio de sesión
+python scripts/vault_standard_upgrade.py --check        # verificar versión
+python scripts/vault_reindex.py                         # actualizar índice
+python scripts/vault_audit.py                           # baseline de salud
 python scripts/vault_drift_detect.py --path "." --project {slug} --mode snapshot
 
-# Cierre
+# Cierre de sesión
 python scripts/vault_drift_detect.py --path "." --project {slug} --mode report
 python scripts/vault_reindex.py --graph
-python scripts/vault_audit.py                      # healthScore ≥ baseline
-python scripts/vault_spec_memory.py --check        # actualizar spec-memory.json
+python scripts/vault_audit.py                           # healthScore ≥ baseline
+python scripts/vault_spec_memory.py --check             # actualizar spec-memory
 ```
 
 ---
 
-## Los 8 Fundamentos de Datos (F1–F8)
+## CIA schema + Data Quality (v27–v28)
+
+Cada nota generada incluye clasificación de seguridad y calidad:
+
+```yaml
+cia_integrity:    high        # critical | high | medium | low
+cia_availability: medium      # high | medium | low
+cia_sensitivity:  internal    # public | internal | restricted
+agent:            claude      # quién generó la nota (F7 AUTENTICIDAD)
+```
+
+`vault_quality_check` evalúa 9 dimensiones por nota (integridad, consistencia, completitud, exactitud, validez, actualidad, autenticidad, no-repudio, unicidad) y genera `00_System/quality-index.json`.
+
+### 8 Fundamentos de Datos (F1–F8)
 
 Cada tool está mapeada a uno o más fundamentos. `vault_fundamentals` es el registro canónico.
 
-| ID | Principio | Dimensión DQ | Tools clave |
-|---|---|---|---|
-| F1 | INTEGRIDAD | integrity | vault_write, vault_validate, vault_quality_check |
-| F2 | CONSISTENCIA | consistency | vault_audit, vault_graph, vault_impact, vault_propagate |
-| F3 | COMPLETITUD | completeness | vault_write, vault_append, vault_knowledge_save |
-| F4 | EXACTITUD | accuracy | vault_drift_detect, vault_diff |
-| F5 | VALIDEZ | validity | vault_validate, vault_security_scan |
-| F6 | ACTUALIDAD | timeliness | vault_audit, vault_drift_detect, vault_backup |
-| F7 | AUTENTICIDAD | authenticity | vault_write, vault_ai_decision, vault_bibliography_save |
-| F8 | NO_REPUDIO | non_repudiation | vault_change_log, vault_log_error, vault_timeline |
+| ID | Principio | Tools clave |
+|---|---|---|
+| F1 | INTEGRIDAD | `vault_write`, `vault_validate`, `vault_quality_check` |
+| F2 | CONSISTENCIA | `vault_audit`, `vault_graph`, `vault_impact`, `vault_propagate` |
+| F3 | COMPLETITUD | `vault_write`, `vault_append`, `vault_knowledge_save` |
+| F4 | EXACTITUD | `vault_drift_detect`, `vault_diff` |
+| F5 | VALIDEZ | `vault_validate`, `vault_security_scan` |
+| F6 | ACTUALIDAD | `vault_audit`, `vault_drift_detect`, `vault_backup` |
+| F7 | AUTENTICIDAD | `vault_write`, `vault_ai_decision`, `vault_bibliography_save` |
+| F8 | NO_REPUDIO | `vault_change_log`, `vault_log_error`, `vault_timeline` |
 
 ---
 
-## Adopción
+## Seguridad (v28)
 
-El estándar es agnóstico al lenguaje y al agente. Para adoptarlo:
+Todas las tools de escritura incluyen tres capas de protección:
 
-1. Ejecutar `vault_standard_upgrade --check` si ya tienes un vault (detecta brechas)
-2. Crear la estructura de 17 carpetas definida en el spec
-3. Implementar las 53 tools en el lenguaje del harness (Python, Node.js, Go, etc.)
-4. Cargar el spec como system prompt o instrucción del agente
-5. El agente opera sobre el vault usando solo las tools — nunca acceso directo a archivos
+| Capa | Mecanismo | Qué previene |
+|---|---|---|
+| Path validation | `assert_within_vault()` en `vault_io.py` | Path traversal absoluto (`/etc/passwd`) y relativo (`../../`) |
+| Atomic writes | `atomic_write_text` / `atomic_write_json` | Escrituras parciales por kill del proceso |
+| CIA frontmatter | Campos obligatorios en los 12 scripts de escritura | Notas sin clasificación de seguridad |
 
-**Obsidian Desktop:** el vault puede abrirse directamente en Obsidian. Los diagramas Mermaid se renderizan automáticamente.
+---
+
+## Implementaciones de referencia
+
+### vault-electron-fingerprint
+
+Sistema de control de asistencia con autenticación biométrica.
+
+- **Stack:** ElectronJS 31 + TypeScript + better-sqlite3 + motor .NET C# (sensor DP4500)
+- **Vault:** 13 notas — arquitectura, ERD, 2 flujos biométricos, BiometricService (IEEE 1016), API engine, schema SQLite, infra map, envs
+- **Health score al cierre:** 100/100 · 0 huérfanas · 0 links rotos · 21 entradas en search index
+- **Repo:** [ElectronJS---Autenticacion-por-huella-dactilar](https://github.com/devcicm/ElectronJS---Autenticacion-por-huella-dactilar) · rama `sistema-asistencia` · carpeta `vault-electron-fingerprint/`
+
+---
+
+## La especificación completa
+
+**[vault-obsidian-architecture.md](./vault-obsidian-architecture.md)** — v28, 4500+ líneas.
+
+Contiene:
+- 8 principios de diseño
+- 53 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
+- 21 antipatrones (AP-01–AP-21) con detección automática
+- 5 patrones recomendados (PAT-1–PAT-5)
+- 8 Fundamentos de Datos (F1–F8) con trazabilidad a tools
+- CIA schema completo con semántica por tipo de nota
+- Data Quality framework (9 dimensiones, índice persistente)
+- Propagación graph-aware (BFS sobre wiki-links, 3 estrategias)
+- Spec-driven memory (contratos + trazabilidad + loop de validación)
+- Mapa canónico script→carpeta (tabla authoritative)
+- Protocolo de inicialización corregido con comandos exactos
+- Protocolo de sesión para LLMs remotos (Claude API, GPT, Gemini, DeepSeek)
+- Sistema de versionado con migraciones automáticas (v19 → v28)
+- Changelog completo (v1 → v28)
+- Compatibilidad con Obsidian Desktop
+
+---
+
+## Scripts — estructura del repositorio
+
+```
+scripts/                    ← 66 archivos Python (una tool = un script CLI)
+├── vault_io.py             — I/O base: assert_within_vault, atomic_write_text/json, file_lock
+├── vault_errors.py         — wrap_main (timeout 60s), emit_ok, trace log
+├── vault_write.py          — tool principal de escritura (guards AP-20, AP-21)
+├── vault_audit.py          — health score (CIA-weighted), DQ health, propagation pending
+├── vault_standard_upgrade.py — migraciones v19→v28, --init, --check, --validate
+├── vault_code_module.py    — documentación IEEE 1016 para módulos de código
+├── vault_flow_save.py      — flujos con Mermaid embebido
+├── vault_infra_save.py     — componentes de infraestructura + mapa de red auto-generado
+├── vault_knowledge_save.py — conocimiento estructurado por categoría
+├── vault_diagram_save.py   — diagramas Mermaid/ASCII/PlantUML
+├── ...                     — 56 scripts adicionales
+└── README.md               — referencia completa de parámetros y ejemplos
+```
+
+**Requisitos:** Python 3.9+ · sin dependencias externas obligatorias  
+**Timeout automático:** todas las tools ≤ 60s (configurable via `VAULT_TOOL_TIMEOUT`)  
+**JSON siempre:** cualquier error devuelve `{"ok": false, "error_code": "...", "recovery": {...}}`
+
+---
+
+## Compatibilidad
+
+| Entorno | Soporte |
+|---|---|
+| Bash / Linux / macOS | Completo |
+| PowerShell 5.1 (Windows) | Completo — args JSON con `<>` requieren Bash o archivo temporal |
+| Claude Code (CLI) | Nativo — tools invocables como subprocess |
+| Claude API / GPT / Gemini | Mediante harness que expone las tools como function calls |
+| Obsidian Desktop | Compatible — Mermaid rendering, wiki-links nativos, Graph view |
 
 ---
 
