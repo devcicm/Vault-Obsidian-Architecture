@@ -403,6 +403,57 @@ def _cia_score_penalty(notes: List[Path], stale: List[Dict[str, Any]], propagati
     return penalty
 
 
+TAG_REGISTRY = VAULT_ROOT / "00_System" / "tag-registry.json"
+
+
+def _read_tag_health() -> Optional[Dict[str, Any]]:
+    """Load tag-registry.json and return tag health summary. Returns None if registry absent."""
+    if not TAG_REGISTRY.exists():
+        return None
+    try:
+        registry = json.loads(TAG_REGISTRY.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+    tags = registry.get("tags", {})
+    untagged = registry.get("untagged_notes", [])
+
+    orphaned = [t for t, info in tags.items() if info.get("count", 0) == 0]
+
+    tag_names = list(tags.keys())
+    near_dupes = 0
+    seen_pairs: set = set()
+    for i, tag_a in enumerate(tag_names):
+        for tag_b in tag_names[i + 1:]:
+            pair = tuple(sorted([tag_a, tag_b]))
+            if pair in seen_pairs:
+                continue
+            a, b = tag_a.lower(), tag_b.lower()
+            if a in b or b in a:
+                score = 0.85
+            else:
+                common = sum(1 for x, y in zip(a, b) if x == y)
+                score = common / max(len(a), len(b))
+            if score >= 0.6:
+                seen_pairs.add(pair)
+                near_dupes += 1
+
+    tag_health_score = 100
+    tag_health_score -= len(orphaned) * 5
+    tag_health_score -= near_dupes * 3
+    tag_health_score -= min(len(untagged) * 2, 30)
+    tag_health_score = max(0, tag_health_score)
+
+    return {
+        "total_tags": len(tags),
+        "orphaned_tags": orphaned,
+        "near_duplicate_pairs": near_dupes,
+        "untagged_notes_count": len(untagged),
+        "tag_health_score": tag_health_score,
+        "registry_at": registry.get("updatedAt", "?"),
+    }
+
+
 def vault_audit(project: Optional[str] = None, refresh_dq: bool = False) -> Dict[str, Any]:
     """
     Run health audit on the active vault.
@@ -491,6 +542,10 @@ def vault_audit(project: Optional[str] = None, refresh_dq: bool = False) -> Dict
 
     if propagation_pending:
         result["propagationPending"] = propagation_pending
+
+    tag_health = _read_tag_health()
+    if tag_health is not None:
+        result["tagHealth"] = tag_health
 
     return result
 

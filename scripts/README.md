@@ -1,13 +1,13 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture v28**. Implementan las 53 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad.
+Scripts Python del estándar **Vault Obsidian Architecture v29**. Implementan las 59 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad.
 
-- **66 archivos** — 53 tools activas + 5 deprecadas + 4 internas + 4 meta + `vault_errors.py`
+- **68 archivos** — 59 tools activas + 5 deprecadas + 4 internas + 4 meta + `vault_errors.py`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
 - **VAULT_ROOT** = `Path(__file__).parent.parent` — apunta a la raíz del vault; todos los `--folder`/`--path` se validan con `assert_within_vault()` para prevenir escrituras fuera del vault
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
 - **JSON siempre** — cualquier error devuelve `{"ok": false, "error_code": "...", "recovery": {...}}`
-- **Frontmatter v28** — todas las notas generadas incluyen `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`
+- **Frontmatter v29** — todas las notas generadas incluyen `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`
 - **Escrituras atómicas** — notas y JSON críticos usan `atomic_write_text`/`atomic_write_json` de `vault_io.py`
 
 ---
@@ -42,6 +42,7 @@ Scripts Python del estándar **Vault Obsidian Architecture v28**. Implementan la
 | [Grupo 24 — Data Quality](#grupo-24--data-quality) | vault_quality_check, vault_fundamentals |
 | [Grupo 25 — Propagación](#grupo-25--propagación) | vault_impact, vault_propagate |
 | [Grupo 26 — Tokens](#grupo-26--tokens) | vault_tokens, vault_token_counter, vault_token_service |
+| [Grupo 27 — Session Delta y Tags](#grupo-27--session-delta-y-tags) | vault_delta, vault_tags |
 | [Observabilidad de Tools](#observabilidad-de-tools) | vault_errors |
 | [Utilidades internas](#utilidades-internas) | vault_index, vault_dataset, vault_io, vault_link_safety |
 | [Deprecadas](#deprecadas) | vault_create, vault_migrate, vault_reorganize, vault_tools, vault_render |
@@ -815,10 +816,61 @@ python vault_change_log.py --query --action deleted
 
 ---
 
+## Grupo 27 — Session Delta y Tags
+
+### `vault_delta.py`
+Detección de cambios entre sesiones via SHA-256 de contenido. Compara hashes actuales contra `99_Index/hash-index.json`, luego expande el conjunto cambiado via BFS sobre el grafo inverso de backlinks para encontrar notas transitivamente obsoletas.
+
+```bash
+python vault_delta.py --snapshot              # guardar baseline al inicio de sesión
+python vault_delta.py                         # detectar cambios + actualizar hash-index
+python vault_delta.py --dry-run               # detectar sin actualizar
+python vault_delta.py --project mi-api        # acotar a un proyecto
+python vault_delta.py --min-risk high         # solo stale_deps de riesgo high/critical
+```
+
+**Output:**
+```json
+{
+  "ok": true,
+  "changed": ["07_Knowledge/concepts/sqlite-schema.md"],
+  "added": [],
+  "deleted": [],
+  "stale_deps": [{"path": "...", "distance": 1, "cia_integrity": "high", "stale_risk": 1.5, "via": "..."}],
+  "summary": "1 modificada(s) · 2 dependencia(s) potencialmente obsoleta(s)"
+}
+```
+
+### `vault_tags.py`
+Registro canónico de tags. Construye y mantiene `00_System/tag-registry.json` escaneando todos los frontmatter. Detecta tags huérfanos, near-duplicados y notas sin tags. Genera `99_Index/tag-index.md` con backlinks por tag.
+
+```bash
+python vault_tags.py                          # rebuildar registry + tag-index.md
+python vault_tags.py --audit                  # reporte de salud de tags
+python vault_tags.py --suggest "01_Projects/mi-api/overview.md"
+python vault_tags.py --rename "api-rest" "rest-api"
+python vault_tags.py --dry-run
+```
+
+**Output `--audit`:**
+```json
+{
+  "ok": true,
+  "health_score": 87,
+  "total_tags": 14,
+  "orphaned_tags": ["unused-tag"],
+  "near_duplicate_pairs": [{"tag_a": "sqlite", "tag_b": "sqlite3", "score": 0.85}],
+  "singleton_tags": ["rare-tag"],
+  "untagged_notes": ["01_Projects/mi-api/status.md"]
+}
+```
+
+---
+
 ## Observabilidad de Tools
 
 ### `vault_errors.py`
-Módulo de observabilidad centralizado. Todas las 53 tools lo importan. No es un tool de usuario — es la capa de seguridad del runtime.
+Módulo de observabilidad centralizado. Todas las 59 tools lo importan. No es un tool de usuario — es la capa de seguridad del runtime.
 
 **Funciones principales:**
 - `wrap_main(fn, tool_name)` — envuelve `main()` con timeout (60s) y catch de excepciones no manejadas. Emite JSON estructurado en lugar de traceback.
@@ -914,13 +966,6 @@ Contador interactivo de tokens para un archivo o string dado.
 
 ### `vault_token_service.py`
 Servicio de conteo de tokens con cache. Usado internamente por `wrap_main` cuando `VAULT_COUNT_TOKENS=1`.
-
----
-
-## Observabilidad de Tools
-
-### `vault_errors.py`
-Módulo de observabilidad centralizado. Todas las 53 tools lo importan. No es un tool de usuario — es la capa de seguridad del runtime.
 
 **Funciones principales:**
 - `wrap_main(fn, tool_name)` — envuelve `main()` con timeout (60s) y catch de excepciones no manejadas. Emite JSON estructurado en lugar de traceback.

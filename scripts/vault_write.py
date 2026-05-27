@@ -47,6 +47,43 @@ def _check_content_gate(content: str, folder: str) -> bool:
 VAULT_ROOT = Path(__file__).parent.parent
 HISTORY_DIR = VAULT_ROOT / ".history"
 INDEX_FILE = VAULT_ROOT / "99_Index" / "search-index.json"
+TAG_REGISTRY = VAULT_ROOT / "00_System" / "tag-registry.json"
+
+
+def _tag_suggestions(new_tags: List[str]) -> List[Dict[str, Any]]:
+    """Return canonical similar tags for any new_tags not yet in registry. Non-blocking."""
+    if not TAG_REGISTRY.exists():
+        return []
+    try:
+        registry = json.loads(TAG_REGISTRY.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    canonical: set = set(registry.get("tags", {}).keys())
+    suggestions = []
+    for tag in new_tags:
+        if tag in canonical:
+            continue
+        for candidate in canonical:
+            # simple similarity: exact prefix/substring
+            a, b = tag.lower(), candidate.lower()
+            if a == b:
+                continue
+            if a in b or b in a:
+                score = 0.85
+            else:
+                common_prefix = sum(1 for x, y in zip(a, b) if x == y)
+                if common_prefix >= 3:
+                    score = 0.6 + (common_prefix / max(len(a), len(b))) * 0.2
+                else:
+                    score = sum(1 for x, y in zip(a, b) if x == y) / max(len(a), len(b))
+            if score >= 0.6:
+                suggestions.append({
+                    "new_tag": tag,
+                    "similar_canonical": candidate,
+                    "score": round(score, 2),
+                    "count": registry["tags"].get(candidate, {}).get("count", 0),
+                })
+    return sorted(suggestions, key=lambda x: -x["score"])[:10]
 
 
 def slugify(title: str) -> str:
@@ -248,7 +285,9 @@ def vault_write(
     except Exception:
         pass  # section index failure never blocks the write
 
-    return {
+    tag_suggestions = _tag_suggestions(tags)
+
+    result: Dict[str, Any] = {
         "ok": True,
         "path": str(vault_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
         "id": existing_id or str(uuid.uuid4()),
@@ -258,6 +297,9 @@ def vault_write(
         "created": existing_id is None,
         "message": f"Note {'created' if existing_id is None else 'updated'} successfully",
     }
+    if tag_suggestions:
+        result["tag_suggestions"] = tag_suggestions
+    return result
 
 
 def main():

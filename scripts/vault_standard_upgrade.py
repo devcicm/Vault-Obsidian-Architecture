@@ -33,7 +33,7 @@ SYSTEM_DIR = VAULT_ROOT / "00_System"
 VERSION_FILE = SYSTEM_DIR / "standard-version.json"
 IDENTITY_FILE = SYSTEM_DIR / "identity.md"
 
-CURRENT_VERSION = "v28"
+CURRENT_VERSION = "v29"
 
 MIGRATIONS: Dict[str, Dict[str, Any]] = {
     "v21": {
@@ -153,9 +153,22 @@ MIGRATIONS: Dict[str, Dict[str, Any]] = {
             "Mapa canonico script→carpeta: corrige discrepancias entre spec y implementacion real",
         ],
     },
+    "v29": {
+        "description": "Session delta detection, Merkle backup integrity, canonical tag registry, hash-index.json",
+        "add_folders": [],
+        "update_identity": {"tools_count": "59", "groups_count": "27"},
+        "notes": [
+            "vault_delta.py (NUEVO): deteccion de cambios entre sesiones via SHA-256 + BFS sobre grafo inverso de backlinks",
+            "vault_tags.py (NUEVO): registro canonico de tags, auditoria de orphans/near-dupes, tag-index.md con wiki-links",
+            "vault_backup.py: Merkle tree en .manifest.json (merkle_root, merkle_file_count) + --verify para verificacion de integridad",
+            "vault_reindex.py: escribe 99_Index/hash-index.json con {hash, size, cia_integrity} por nota",
+            "vault_write.py: tag_suggestions no-bloqueante en output cuando nuevos tags tienen similares canonicos",
+            "vault_audit.py: bloque tagHealth en output (total_tags, orphaned_tags, near_dupes, untagged_notes_count, tag_health_score)",
+        ],
+    },
 }
 
-VERSION_ORDER = ["v19", "v20", "v21", "v22", "v23", "v24", "v25", "v26", "v27", "v28"]
+VERSION_ORDER = ["v19", "v20", "v21", "v22", "v23", "v24", "v25", "v26", "v27", "v28", "v29"]
 
 
 def _version_index(v: str) -> int:

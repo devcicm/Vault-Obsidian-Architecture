@@ -2,9 +2,9 @@
 
 **Estándar de diseño para dotar a agentes LLM de memoria documental persistente.**
 
-[![Version](https://img.shields.io/badge/version-v28-blue)](./vault-obsidian-architecture.md)
-[![Tools](https://img.shields.io/badge/tools-53_active-green)](./scripts/)
-[![Scripts](https://img.shields.io/badge/scripts-66_total-lightblue)](./scripts/)
+[![Version](https://img.shields.io/badge/version-v29-blue)](./vault-obsidian-architecture.md)
+[![Tools](https://img.shields.io/badge/tools-59_active-green)](./scripts/)
+[![Scripts](https://img.shields.io/badge/scripts-68_total-lightblue)](./scripts/)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow)](./scripts/)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](./LICENSE)
 
@@ -127,7 +127,7 @@ python scripts/vault_audit.py
 
 ---
 
-## Las 53 tools — 26 grupos
+## Las 59 tools — 27 grupos
 
 | Grupo | Tools |
 |---|---|
@@ -157,6 +157,7 @@ python scripts/vault_audit.py
 | 24 — Data Quality | `vault_quality_check`, `vault_fundamentals` |
 | 25 — Propagación | `vault_impact`, `vault_propagate` |
 | 26 — Tokens | `vault_tokens`, `vault_token_counter`, `vault_token_service` |
+| 27 — Session Delta y Tags | `vault_delta`, `vault_tags` |
 
 Ver **[scripts/README.md](./scripts/README.md)** para contratos completos con parámetros, ejemplos y protocolo de sesión.
 
@@ -167,12 +168,15 @@ Ver **[scripts/README.md](./scripts/README.md)** para contratos completos con pa
 ```bash
 # Inicio de sesión
 python scripts/vault_standard_upgrade.py --check        # verificar versión
-python scripts/vault_reindex.py                         # actualizar índice
-python scripts/vault_audit.py                           # baseline de salud
+python scripts/vault_reindex.py                         # actualizar índice + hash-index
+python scripts/vault_audit.py                           # baseline de salud + tagHealth
+python scripts/vault_delta.py --snapshot                # guardar baseline de hashes
 python scripts/vault_drift_detect.py --path "." --project {slug} --mode snapshot
 
 # Cierre de sesión
+python scripts/vault_delta.py                           # qué cambió, qué está stale
 python scripts/vault_drift_detect.py --path "." --project {slug} --mode report
+python scripts/vault_tags.py                            # actualizar tag registry
 python scripts/vault_reindex.py --graph
 python scripts/vault_audit.py                           # healthScore ≥ baseline
 python scripts/vault_spec_memory.py --check             # actualizar spec-memory
@@ -261,7 +265,7 @@ Contiene:
 ## Scripts — estructura del repositorio
 
 ```
-scripts/                    ← 66 archivos Python (una tool = un script CLI)
+scripts/                    ← 68 archivos Python (una tool = un script CLI)
 ├── vault_io.py             — I/O base: assert_within_vault, atomic_write_text/json, file_lock
 ├── vault_errors.py         — wrap_main (timeout 60s), emit_ok, trace log
 ├── vault_write.py          — tool principal de escritura (guards AP-20, AP-21)

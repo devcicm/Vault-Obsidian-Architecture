@@ -20,16 +20,19 @@ Session-start check:
 """
 
 import argparse
+import hashlib
 import json
 import re
 import sys
 from vault_errors import wrap_main
+from vault_io import atomic_write_json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
 VAULT_ROOT = Path(__file__).parent.parent
 INDEX_FILE = VAULT_ROOT / "99_Index" / "search-index.json"
+HASH_INDEX  = VAULT_ROOT / "99_Index" / "hash-index.json"
 
 VAULT_SECTIONS = {
     "00_System", "01_Projects", "02_Observability", "03_Decisions",
@@ -86,6 +89,7 @@ def _check_index() -> bool:
 
 def vault_reindex(dry_run: bool = False, rebuild_graph: bool = False) -> Dict[str, Any]:
     notes: List[Dict[str, Any]] = []
+    hash_notes: Dict[str, Any] = {}
     skipped = 0
 
     vault_files = [
@@ -110,6 +114,8 @@ def vault_reindex(dry_run: bool = False, rebuild_graph: bool = False) -> Dict[st
             tags = [t.strip() for t in tags.split(",") if t.strip()]
         updated = meta.get("updatedAt") or meta.get("createdAt") or ""
 
+        note_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()
+
         notes.append({
             "path": rel_path,
             "title": title,
@@ -117,16 +123,27 @@ def vault_reindex(dry_run: bool = False, rebuild_graph: bool = False) -> Dict[st
             "tags": tags,
             "updatedAt": updated,
         })
+        hash_notes[rel_path] = {
+            "hash": note_hash,
+            "size": len(content.encode("utf-8")),
+            "cia_integrity": meta.get("cia_integrity", "medium"),
+        }
 
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
     index_data = {
         "notes": notes,
-        "rebuiltAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+        "rebuiltAt": now,
         "totalNotes": len(notes),
+    }
+    hash_index_data = {
+        "snapshot_at": now,
+        "notes": hash_notes,
     }
 
     if not dry_run:
         INDEX_FILE.parent.mkdir(parents=True, exist_ok=True)
-        INDEX_FILE.write_text(json.dumps(index_data, indent=2, ensure_ascii=False), encoding="utf-8")
+        atomic_write_json(INDEX_FILE, index_data)
+        atomic_write_json(HASH_INDEX, hash_index_data)
 
     result: Dict[str, Any] = {
         "ok": True,
@@ -134,6 +151,7 @@ def vault_reindex(dry_run: bool = False, rebuild_graph: bool = False) -> Dict[st
         "skipped": skipped,
         "dry_run": dry_run,
         "path": str(INDEX_FILE.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "hash_index": str(HASH_INDEX.relative_to(VAULT_ROOT)).replace("\\", "/"),
     }
 
     if rebuild_graph and not dry_run:
