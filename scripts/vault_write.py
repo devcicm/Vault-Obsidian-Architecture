@@ -95,6 +95,36 @@ def slugify(title: str) -> str:
     return slug
 
 
+def _check_bracket_balance(content: str) -> Optional[str]:
+    """AP-22: detect unbalanced [[ ]] brackets outside code blocks."""
+    clean = re.sub(r"```[\s\S]*?```", "", content)
+    clean = re.sub(r"`[^`]+`", "", clean)
+    opens = len(re.findall(r"\[\[", clean))
+    closes = len(re.findall(r"\]\]", clean))
+    if opens != closes:
+        return f"AP-22: corchetes desbalanceados — {opens} '[[' vs {closes} ']]'"
+    empty = re.findall(r"\[\[\s*\]\]", clean)
+    if empty:
+        return f"AP-22: wiki-links vacios detectados: {empty[:3]}"
+    return None
+
+
+def _collect_ghost_links(wiki_links: List[str]) -> List[str]:
+    """Return links whose target note does not exist anywhere in the vault (non-blocking)."""
+    all_stems = {
+        p.stem.lower().replace("-", "").replace("_", "").replace(" ", "")
+        for p in VAULT_ROOT.rglob("*.md")
+        if ".history" not in str(p)
+    }
+    ghost = []
+    for link in wiki_links:
+        stem = link.split("|")[0].strip()
+        normalized = stem.lower().replace("-", "").replace("_", "").replace(" ", "")
+        if normalized not in all_stems:
+            ghost.append(link)
+    return ghost
+
+
 def generate_frontmatter(
     title: str,
     tags: Optional[List[str]] = None,
@@ -220,6 +250,16 @@ def vault_write(
             "message": f"AP-21: path-anchored wiki-links detected: {path_links}. Use [[note-name]] without folder path.",
         }
 
+    # AP-22 guard: unbalanced or empty wiki-link brackets
+    bracket_error = _check_bracket_balance(content)
+    if bracket_error:
+        return {
+            "ok": False,
+            "error_code": "malformed_wikilinks",
+            "error": "malformed_wikilinks",
+            "message": bracket_error,
+        }
+
     # Determine filename and validate path stays inside vault
     filename = f"{slugify(title)}.md"
     vault_path = VAULT_ROOT / folder / filename
@@ -286,6 +326,7 @@ def vault_write(
         pass  # section index failure never blocks the write
 
     tag_suggestions = _tag_suggestions(tags)
+    ghost_links = _collect_ghost_links(wiki_links)
 
     result: Dict[str, Any] = {
         "ok": True,
@@ -297,6 +338,8 @@ def vault_write(
         "created": existing_id is None,
         "message": f"Note {'created' if existing_id is None else 'updated'} successfully",
     }
+    if ghost_links:
+        result["ghost_links"] = ghost_links
     if tag_suggestions:
         result["tag_suggestions"] = tag_suggestions
     return result

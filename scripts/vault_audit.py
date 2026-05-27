@@ -278,6 +278,30 @@ def _detect_canonical_shadow(notes: List[Path]) -> List[Dict[str, Any]]:
     return pairs
 
 
+def _detect_malformed_wikilinks(notes: List[Path]) -> List[Dict[str, Any]]:
+    """AP-22: detect notes with unbalanced [[ ]] or empty [[]] wiki-links."""
+    malformed = []
+    for n in notes:
+        try:
+            content = n.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            continue
+        clean = re.sub(r"```[\s\S]*?```", "", content)
+        clean = re.sub(r"`[^`]+`", "", clean)
+        opens = len(re.findall(r"\[\[", clean))
+        closes = len(re.findall(r"\]\]", clean))
+        empty = re.findall(r"\[\[\s*\]\]", clean)
+        if opens != closes or empty:
+            rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+            malformed.append({
+                "path": rel,
+                "opens": opens,
+                "closes": closes,
+                "empty_links": len(empty),
+            })
+    return malformed
+
+
 def _detect_cross_folder_duplicates(notes: List[Path]) -> List[Dict[str, Any]]:
     """AP-18: detect byte-identical content across different folders via MD5 hash."""
     hash_map: Dict[str, List[str]] = defaultdict(list)
@@ -481,6 +505,7 @@ def vault_audit(project: Optional[str] = None, refresh_dq: bool = False) -> Dict
     broken_links = _detect_broken_links(all_notes, all_stems)
     canonical_shadow = _detect_canonical_shadow(content_notes)
     cross_folder_dupes = _detect_cross_folder_duplicates(content_notes)
+    malformed_wikilinks = _detect_malformed_wikilinks(all_notes)
 
     # DQ + propagation data (loaded regardless of refresh_dq; only refresh triggers subprocess)
     dq_health = _refresh_dq_if_needed() if refresh_dq else None
@@ -494,6 +519,7 @@ def vault_audit(project: Optional[str] = None, refresh_dq: bool = False) -> Dict
     score -= min(20, len(broken_links) * 2)
     score -= min(10, len(canonical_shadow) * 2)
     score -= min(10, len(cross_folder_dupes) * 3)
+    score -= min(20, len(malformed_wikilinks) * 5)
     # CIA integrity + propagation_pending adjustments
     score -= min(15, _cia_score_penalty(content_notes, stale, propagation_pending))
     score = max(0, score)
@@ -517,6 +543,8 @@ def vault_audit(project: Optional[str] = None, refresh_dq: bool = False) -> Dict
         summary_parts.append(f"{len(canonical_shadow)} pares AP-17")
     if cross_folder_dupes:
         summary_parts.append(f"{len(cross_folder_dupes)} duplicados AP-18")
+    if malformed_wikilinks:
+        summary_parts.append(f"{len(malformed_wikilinks)} corchetes AP-22")
 
     result: Dict[str, Any] = {
         "ok": True,
@@ -533,6 +561,7 @@ def vault_audit(project: Optional[str] = None, refresh_dq: bool = False) -> Dict
             "brokenLinks": broken_links,
             "canonicalShadow": canonical_shadow,
             "crossFolderDuplicates": cross_folder_dupes,
+            "malformedWikilinks": malformed_wikilinks,
         },
         "summary": " · ".join(summary_parts),
     }
