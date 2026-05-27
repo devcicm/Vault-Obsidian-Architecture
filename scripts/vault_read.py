@@ -16,6 +16,7 @@ import os
 import re
 import sys
 from vault_errors import wrap_main
+from vault_io import assert_within_vault
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -91,6 +92,10 @@ def vault_read(path: str) -> Dict[str, Any]:
         Dict with meta, body, wikiLinks, and historyVersions
     """
     note_path = VAULT_ROOT / path
+    try:
+        assert_within_vault(note_path, VAULT_ROOT)
+    except ValueError as exc:
+        return {"ok": False, "error_code": "INVALID_PATH", "error": str(exc)}
 
     if not note_path.exists():
         return {"ok": False, "error": f"Note not found: {path}", "path": path}

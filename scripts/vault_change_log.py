@@ -25,6 +25,7 @@ import json
 import subprocess
 import sys
 from vault_errors import wrap_main
+from vault_io import atomic_write_text
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -57,26 +58,27 @@ def _read_json_log() -> List[Dict[str, Any]]:
 
 def _write_json_log(entries: List[Dict[str, Any]]) -> None:
     SYSTEM_DIR.mkdir(parents=True, exist_ok=True)
-    LOG_JSON.write_text(json.dumps(entries, indent=2, ensure_ascii=False), encoding="utf-8")
+    atomic_write_text(LOG_JSON, json.dumps(entries, indent=2, ensure_ascii=False))
 
 
 def _append_md_log(entry: Dict[str, Any]) -> None:
     SYSTEM_DIR.mkdir(parents=True, exist_ok=True)
 
-    header_needed = not LOG_MD.exists()
-    if not header_needed:
-        existing = LOG_MD.read_text(encoding="utf-8")
-        header_needed = "| Timestamp |" not in existing
+    HEADER = (
+        "# Change Log\n\n"
+        "Registro automatico de cambios en el vault.\n\n"
+        "| Timestamp | Action | Path | New Path | Reason | Agent |\n"
+        "|---|---|---|---|---|---|\n"
+    )
 
-    if header_needed:
-        header = (
-            "# Change Log\n\n"
-            "Registro automatico de cambios en el vault.\n\n"
-            "| Timestamp | Action | Path | New Path | Reason | Agent |\n"
-            "|---|---|---|---|---|---|\n"
-        )
-        with open(LOG_MD, "w", encoding="utf-8") as f:
-            f.write(header)
+    existing = ""
+    if LOG_MD.exists():
+        try:
+            existing = LOG_MD.read_text(encoding="utf-8")
+        except OSError:
+            pass
+    if "| Timestamp |" not in existing:
+        existing = HEADER
 
     ts = entry.get("timestamp", "")[:19]
     action = entry.get("action", "")
@@ -86,8 +88,7 @@ def _append_md_log(entry: Dict[str, Any]) -> None:
     agent = entry.get("agent", "")
 
     row = f"| {ts} | `{action}` | `{path}` | `{new_path}` | {reason} | {agent} |\n"
-    with open(LOG_MD, "a", encoding="utf-8") as f:
-        f.write(row)
+    atomic_write_text(LOG_MD, existing + row)
 
 
 def _run_propagation(path: str, strategy: str) -> Dict[str, Any]:

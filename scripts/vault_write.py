@@ -18,7 +18,7 @@ import re
 import shutil
 import sys
 from vault_errors import wrap_main
-from vault_io import atomic_write_text, atomic_write_json, assert_within_vault
+from vault_io import atomic_write_text, atomic_write_json, atomic_update_json, assert_within_vault
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -165,20 +165,11 @@ def extract_wiki_links(content: str) -> List[str]:
 
 
 def update_search_index(vault_path: str, title: str, content: str, tags: List[str], is_new: bool = True) -> None:
-    """Update search index with new or updated note."""
+    """Update search index with new or updated note (lock-protected read-modify-write)."""
     INDEX_FILE.parent.mkdir(parents=True, exist_ok=True)
 
-    try:
-        index = json.loads(INDEX_FILE.read_text(encoding="utf-8"))
-        if not isinstance(index, dict):
-            index = {"notes": []}
-    except (FileNotFoundError, json.JSONDecodeError):
-        index = {"notes": []}
-
-    # Generate preview (first 200 chars of content without frontmatter)
     body = content.split("---", 2)[-1] if content.startswith("---") else content
     preview = body.strip()[:200].replace("\n", " ")
-
     note_entry = {
         "path": vault_path,
         "title": title,
@@ -187,17 +178,17 @@ def update_search_index(vault_path: str, title: str, content: str, tags: List[st
         "updatedAt": _utcnow(),
     }
 
-    if is_new:
-        index["notes"].append(note_entry)
-    else:
-        for i, note in enumerate(index["notes"]):
-            if note["path"] == vault_path:
-                index["notes"][i] = note_entry
-                break
-        else:
-            index["notes"].append(note_entry)
+    def _update(index: Dict[str, Any]) -> Dict[str, Any]:
+        notes = index.get("notes", [])
+        for i, note in enumerate(notes):
+            if note.get("path") == vault_path:
+                notes[i] = note_entry
+                return index
+        notes.append(note_entry)
+        index["notes"] = notes
+        return index
 
-    atomic_write_json(INDEX_FILE, index)
+    atomic_update_json(INDEX_FILE, {"notes": []}, _update)
 
 
 def vault_write(

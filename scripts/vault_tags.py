@@ -32,6 +32,7 @@ from vault_io import atomic_write_json, atomic_write_text, assert_within_vault
 VAULT_ROOT = Path(__file__).parent.parent
 TAG_REGISTRY  = VAULT_ROOT / "00_System" / "tag-registry.json"
 TAG_INDEX_MD  = VAULT_ROOT / "99_Index" / "tag-index.md"
+SEARCH_INDEX  = VAULT_ROOT / "99_Index" / "search-index.json"
 
 VAULT_SECTIONS = {
     "00_System", "01_Projects", "02_Observability", "03_Decisions",
@@ -101,6 +102,8 @@ def _similarity_score(a: str, b: str) -> float:
     a, b = a.lower(), b.lower()
     if a == b:
         return 1.0
+    if not a or not b:
+        return 0.0
     if a in b or b in a:
         return 0.85
     # common prefix length
@@ -334,6 +337,24 @@ def vault_tags_suggest(note_path_str: str) -> Dict[str, Any]:
     }
 
 
+def _update_search_index_tags(old_tag: str, new_tag: str, updated_paths: List[str]) -> None:
+    """Patch search-index.json so renamed tags are reflected without a full reindex."""
+    if not SEARCH_INDEX.exists():
+        return
+    try:
+        index = json.loads(SEARCH_INDEX.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return
+    path_set = set(updated_paths)
+    changed = False
+    for note in index.get("notes", []):
+        if note.get("path") in path_set and old_tag in note.get("tags", []):
+            note["tags"] = [new_tag if t == old_tag else t for t in note["tags"]]
+            changed = True
+    if changed:
+        atomic_write_json(SEARCH_INDEX, index)
+
+
 def vault_tags_rename(old_tag: str, new_tag: str, dry_run: bool = False) -> Dict[str, Any]:
     if not old_tag or not new_tag:
         return {"ok": False, "error": "old_tag y new_tag son requeridos"}
@@ -372,6 +393,7 @@ def vault_tags_rename(old_tag: str, new_tag: str, dry_run: bool = False) -> Dict
 
     if not dry_run and updated_notes:
         vault_tags_rebuild(dry_run=False)
+        _update_search_index_tags(old_tag, new_tag, updated_notes)
 
     return {
         "ok": True,

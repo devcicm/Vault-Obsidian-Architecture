@@ -19,6 +19,7 @@ import re
 import shutil
 import sys
 from vault_errors import wrap_main
+from vault_io import atomic_write_text
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -262,8 +263,7 @@ def vault_migrate_docs(
 
     for staged in staged_results:
         staged_path = STAGING_DIR / staged["stagedName"]
-        with open(staged_path, "w", encoding="utf-8") as f:
-            f.write(staged["content"])
+        atomic_write_text(staged_path, staged["content"])
 
     classified: List[Dict[str, Any]] = []
     subfolders_created: List[str] = []
@@ -320,8 +320,7 @@ def vault_migrate_docs(
 _{staged["preview"][:200]}..._
 """
         stub_path = MIGRATED_DIR / dest_folder / f"_stub-{dest_name}"
-        with open(stub_path, "w", encoding="utf-8") as f:
-            f.write(stub_content)
+        atomic_write_text(stub_path, stub_content)
 
         stubs_created.append({"originalName": staged["originalName"], "stub": str(stub_path.relative_to(VAULT_ROOT))})
 
@@ -376,8 +375,7 @@ _{staged["preview"][:200]}..._
             report_lines.append(f"| `{e['path']}` | {e['reason']} |")
         report_lines.append("")
 
-    with open(report_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(report_lines))
+    atomic_write_text(report_path, "\n".join(report_lines))
 
     return {
         "ok": True,

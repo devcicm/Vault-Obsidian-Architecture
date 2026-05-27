@@ -18,6 +18,7 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
+from vault_io import atomic_write_text
 from datetime import datetime, timezone
 
 
@@ -197,8 +198,7 @@ def vault_log_error(
     folder_path.mkdir(parents=True, exist_ok=True)
 
     file_path = folder_path / filename
-    with open(file_path, "w", encoding="utf-8") as f:
-        f.write(content)
+    atomic_write_text(file_path, content)
 
     return {
         "ok": True,

@@ -17,6 +17,7 @@ import re
 import shutil
 import sys
 from vault_errors import wrap_main
+from vault_io import atomic_write_json
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -138,8 +139,7 @@ def load_registry() -> Dict[str, Any]:
 
 def save_registry(registry: Dict[str, Any]) -> None:
     BACKUP_ROOT.mkdir(parents=True, exist_ok=True)
-    with open(REGISTRY_FILE, "w", encoding="utf-8") as f:
-        json.dump(registry, f, indent=2, ensure_ascii=False)
+    atomic_write_json(REGISTRY_FILE, registry)
 
 
 def vault_backup(label: Optional[str] = None) -> Dict[str, Any]:
@@ -180,8 +180,7 @@ def vault_backup(label: Optional[str] = None) -> Dict[str, Any]:
     }
 
     manifest_path = backup_path / ".manifest.json"
-    with open(manifest_path, "w", encoding="utf-8") as f:
-        json.dump(manifest, f, indent=2, ensure_ascii=False)
+    atomic_write_json(manifest_path, manifest)
 
     registry = load_registry()
     registry["backups"].insert(

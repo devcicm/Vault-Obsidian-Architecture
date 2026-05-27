@@ -15,6 +15,7 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
+from vault_io import atomic_write_text, assert_within_vault
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -37,6 +38,10 @@ def vault_append(path: str, content: str, section: Optional[str] = None, timesta
         Dict with success status and details
     """
     note_path = VAULT_ROOT / path
+    try:
+        assert_within_vault(note_path, VAULT_ROOT)
+    except ValueError as exc:
+        return {"ok": False, "error_code": "INVALID_PATH", "error": str(exc)}
 
     if not note_path.exists():
         return {"ok": False, "error": f"Note not found: {path}", "path": path}
@@ -78,8 +83,7 @@ def vault_append(path: str, content: str, section: Optional[str] = None, timesta
         existing_content += append_text
 
     # Write back
-    with open(note_path, "w", encoding="utf-8") as f:
-        f.write(existing_content)
+    atomic_write_text(note_path, existing_content)
 
     return {
         "ok": True,
