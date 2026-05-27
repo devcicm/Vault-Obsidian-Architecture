@@ -304,17 +304,18 @@ def vault_write(
     # Extract wiki-links for graph
     wiki_links = extract_wiki_links(content)
 
-    # Auto-regenerate section index (derived artifact — never blocks write)
+    # Regenerate section index in background — fire-and-forget, never blocks write
     try:
         import subprocess
         _section_index_script = Path(__file__).parent / "vault_section_index.py"
         if _section_index_script.exists():
-            subprocess.run(
+            subprocess.Popen(
                 [sys.executable, str(_section_index_script), "--folder", folder.split("/")[0]],
-                capture_output=True, timeout=10
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
             )
     except Exception:
-        pass  # section index failure never blocks the write
+        pass
 
     tag_suggestions = _tag_suggestions(tags)
     ghost_links = _collect_ghost_links(wiki_links)

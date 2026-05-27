@@ -92,7 +92,7 @@ def _append_md_log(entry: Dict[str, Any]) -> None:
 
 
 def _run_propagation(path: str, strategy: str) -> Dict[str, Any]:
-    """Internal: trigger vault_impact + vault_propagate after recording a change."""
+    """Fire vault_propagate in background — does not block the changelog response."""
     cmd = [
         sys.executable,
         str(SCRIPTS_DIR / "vault_propagate.py"),
@@ -101,14 +101,8 @@ def _run_propagation(path: str, strategy: str) -> Dict[str, Any]:
         "--action", "notify,queue",
     ]
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-        data = json.loads(result.stdout)
-        return {
-            "ok": data.get("ok", False),
-            "impacted_count": data.get("impacted_count", 0),
-            "strategy": strategy,
-            "queued": data.get("queued", []),
-        }
+        subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return {"ok": True, "strategy": strategy, "queued_async": True}
     except Exception as e:
         return {"ok": False, "error": str(e)}
 

@@ -351,7 +351,7 @@ def _dq_is_locked() -> bool:
 
 
 def _refresh_dq_if_needed() -> Dict[str, Any]:
-    """Attempt to refresh quality-index.json if absent or stale. Returns dqHealth dict."""
+    """Return dqHealth from current quality-index.json and trigger background refresh if stale."""
     qi = _read_quality_index()
 
     needs_refresh = (qi is None) or _dq_is_stale(qi)
@@ -359,16 +359,14 @@ def _refresh_dq_if_needed() -> Dict[str, Any]:
     if needs_refresh and _dq_is_locked():
         dq_status = "update_in_progress"
     elif needs_refresh:
-        # Trigger refresh via subprocess
-        cmd = [sys.executable, str(SCRIPTS_DIR / "vault_quality_check.py")]
+        # Fire quality_check in background — do NOT wait; read stale data immediately
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
-            qi_new = _read_quality_index()
-            if result.returncode == 0 and qi_new:
-                qi = qi_new
-                dq_status = "fresh"
-            else:
-                dq_status = "stale" if qi else "unavailable"
+            subprocess.Popen(
+                [sys.executable, str(SCRIPTS_DIR / "vault_quality_check.py")],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            dq_status = "refreshing_in_background" if qi else "unavailable"
         except Exception:
             dq_status = "stale" if qi else "unavailable"
     else:
