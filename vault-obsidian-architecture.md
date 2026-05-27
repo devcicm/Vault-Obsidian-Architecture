@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v28 — 2026-05-23  
+**Versión:** v29 — 2026-05-27  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -2704,7 +2704,7 @@ Detecta y aplica migraciones entre versiones del estándar. Lee `00_System/stand
 { "ok": true, "action": "check", "current_version": "v20", "target_version": "v25", "pending_count": 5, "pending_migrations": [{ "version": "v21", "description": "...", "folders_to_create": [...] }] }
 ```
 
-**Versiones disponibles:** v19, v20, v21, v22, v23, v24, v25, v26, v27, v28
+**Versiones disponibles:** v19, v20, v21, v22, v23, v24, v25, v26, v27, v28, v29
 
 **Cuándo usar:**
 - Al instalar el estándar en un vault existente: `vault_standard_upgrade --check --from v{actual}` primero
@@ -3702,6 +3702,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v26 | 2026-05-09 | vault_compact_contracts, vault_manifest, vault_test_runner, --validate y --set-profile en upgrade, envelope `ok:true` via wrap_main, deprecation notices |
 | v27 | 2026-05-11 | CIA schema en frontmatter, vault_quality_check (9 dimensiones), vault_fundamentals (F1-F8 registry), vault_impact + vault_propagate (BFS graph-aware), vault_spec_memory (spec-driven memory + validation loop), vault_tokens (observabilidad), 100% DQ annotation, 53/53 tools mapeadas a fundamentos |
 | v28 | 2026-05-23 | Validación en campo (vault-electron-fingerprint, 100/100), seguridad confirmada (assert_within_vault + CIA + atomic writes en 12 scripts), protocolo de inicialización corregido, mapa canónico script→carpeta, gitignore pattern consumidores, nota compatibilidad Windows/PowerShell |
+| v29 | 2026-05-27 | vault_delta (SHA-256 session delta + BFS stale impact), vault_tags (tag registry canónico, orphan/near-dup audit, rename), vault_backup Merkle tree + --verify, vault_reindex escribe hash-index.json, vault_write tag suggestions + AP-22 bracket guard, vault_audit tagHealth + malformedWikilinks |
 
 ### Cómo inicializar el estándar en un vault nuevo (v28)
 
@@ -3798,10 +3799,10 @@ Todo vault gestionado por este estándar debe tener este archivo en `00_System/`
 
 ```json
 {
-  "applied_version": "v28",
-  "applied_at": "2026-05-23T...",
+  "applied_version": "v29",
+  "applied_at": "2026-05-27T...",
   "applied_by": "claude",
-  "migrations_applied": ["v21", "v22", "v23", "v24", "v25", "v26", "v27", "v28"]
+  "migrations_applied": ["v21", "v22", "v23", "v24", "v25", "v26", "v27", "v28", "v29"]
 }
 ```
 
@@ -4033,7 +4034,36 @@ temp/
 
 ---
 
-### v28 — 2026-05-23 `git: (pendiente)`
+### v29 — 2026-05-27 `git: d7e252a`
+
+**Session delta, Merkle integrity, canonical tag registry, bracket sanity**
+
+**Agregado**
+
+- **`vault_delta.py` (Grupo 27 — Session Delta y Tags):** detección de cambios entre sesiones via SHA-256 de contenido. Compara `99_Index/hash-index.json` contra el estado actual, calcula `changed/added/deleted`, y expande el conjunto cambiado via BFS sobre el grafo inverso de backlinks para encontrar notas transitivamente obsoletas (`stale_deps`). Cada nodo en `stale_deps` incluye `distance`, `cia_integrity` y `stale_risk = cia_weight / (distance+1)`. Flags: `--snapshot` (guardar baseline), `--dry-run`, `--project {slug}`, `--min-risk {critical|high|medium|low}`.
+
+- **`vault_tags.py` (Grupo 27 — Session Delta y Tags):** registro canónico de tags en `00_System/tag-registry.json`. Escanea todos los frontmatter del vault y mantiene `{tag: {notes, count}}`. Genera `99_Index/tag-index.md` con wiki-links agrupados por tag. Detecta: orphaned tags (count=0), near-duplicate pairs (score ≥ 0.6 via exact/substring/prefix/char-ratio), singleton tags, notas sin tags. Subcomandos: default (rebuild), `--audit` (health score 0–100), `--suggest PATH` (tags canónicos similares para una nota nueva), `--rename OLD NEW` (renombrar en todas las notas + rebuild), `--dry-run`.
+
+- **`vault_backup.py` — Merkle tree:** `_merkle_root(sorted_leaves)` construye árbol binario determinístico sobre todas las copias de archivo. `merkle_root` y `merkle_file_count` se escriben en `.manifest.json` al hacer backup. `vault_backup_verify(backup_name)` recomputa el árbol y compara roots. Flag `--verify BACKUP_NAME`. Útil para: (1) verificar integridad post-transferencia, (2) detectar corrupción silenciosa en backups archivados.
+
+- **`vault_reindex.py` — hash-index.json:** ahora escribe `99_Index/hash-index.json` con `{path: {hash, size, cia_integrity}}` por nota, junto al search-index existente. Permite a `vault_delta` comparar contra un baseline persistente sin re-leer todos los archivos.
+
+- **`vault_write.py` — tag suggestions:** tras escribir, carga `00_System/tag-registry.json` (si existe) y calcula si algún tag nuevo tiene un canónico similar (score ≥ 0.6). Añade `tag_suggestions` al output (no-bloqueante). El agente puede leerlo y preguntar al usuario si prefiere consolidar antes de confirmar.
+
+- **`vault_audit.py` — tagHealth block:** incluye `tagHealth` en el output cuando `00_System/tag-registry.json` existe: `{total_tags, orphaned_tags, near_duplicate_pairs, untagged_notes_count, tag_health_score}`. El score se descuenta −5 por orphaned, −3 por near-dupe, −2 por nota sin tag (cap −30).
+
+- **AP-22 — Bracket sanity (vault_write + vault_audit):**
+  - `vault_write` rechaza (bloqueante) cualquier nota con `[[` sin `]]` matching, o `[[]]` vacíos. Detecta en contenido limpio (excluye bloques de código).
+  - `vault_write` advierte (no-bloqueante) con `ghost_links: [...]` cuando un `[[target]]` no existe en ninguna nota del vault.
+  - `vault_audit` escanea todas las notas existentes con `_detect_malformed_wikilinks()` y reporta en `issues.malformedWikilinks`. Penaliza −5 por nota afectada (cap −20).
+
+**Modificado**
+- `vault_standard_upgrade.py`: `CURRENT_VERSION = "v29"`, v29 añadido a `MIGRATIONS` y `VERSION_ORDER`.
+- `README.md` + `scripts/README.md`: badges v29, 27 grupos, Grupo 27 documentado, protocolo de sesión actualizado con `vault_delta --snapshot` y `vault_tags`.
+
+---
+
+### v28 — 2026-05-23 `git: 3c59324`
 
 **Validación en campo, seguridad confirmada y protocolo de inicialización corregido**
 

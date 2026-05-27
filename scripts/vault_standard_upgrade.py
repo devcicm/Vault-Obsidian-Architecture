@@ -164,6 +164,7 @@ MIGRATIONS: Dict[str, Dict[str, Any]] = {
             "vault_reindex.py: escribe 99_Index/hash-index.json con {hash, size, cia_integrity} por nota",
             "vault_write.py: tag_suggestions no-bloqueante en output cuando nuevos tags tienen similares canonicos",
             "vault_audit.py: bloque tagHealth en output (total_tags, orphaned_tags, near_dupes, untagged_notes_count, tag_health_score)",
+            "AP-22 (vault_write + vault_audit): corchetes desbalanceados o [[]] vacios → error bloqueante; ghost_links (targets inexistentes) → warning no-bloqueante en output",
         ],
     },
 }
