@@ -4061,6 +4061,39 @@ temp/
 - `vault_standard_upgrade.py`: `CURRENT_VERSION = "v29"`, v29 añadido a `MIGRATIONS` y `VERSION_ORDER`.
 - `README.md` + `scripts/README.md`: badges v29, 27 grupos, Grupo 27 documentado, protocolo de sesión actualizado con `vault_delta --snapshot` y `vault_tags`.
 
+**Corregido (audit de seguridad y runtime — `git: 2395b80, 36dce2d`)**
+
+Auditoría sistemática de los 68 scripts detectó 10 bugs activos. Severidades y fixes:
+
+| Severidad | Archivo | Bug | Fix aplicado |
+|---|---|---|---|
+| Crítico | `vault_append.py` | Path traversal — `note_path = VAULT_ROOT / path` sin validación | `assert_within_vault()` añadido |
+| Crítico | `vault_read.py` | Path traversal — mismo patrón | `assert_within_vault()` añadido |
+| Crítico | `vault_tags.py:_similarity_score` | `ZeroDivisionError` cuando un tag es string vacío (`max(len(""),len("")) = 0`) | Guard `if not a or not b: return 0.0` |
+| Crítico | `vault_append.py` | `open(path, "w")` no atómico — escritura parcial si el proceso muere | `atomic_write_text()` |
+| Alto | `vault_backup.py` | `open(REGISTRY_FILE, "w")` y `open(manifest_path, "w")` no atómicos | `atomic_write_json()` en ambos |
+| Alto | `vault_change_log.py` | `open(LOG_MD, "w")` y `open(LOG_MD, "a")` no atómicos | `atomic_write_text()` sobre lectura previa |
+| Alto | `vault_log_error.py` | `open(file_path, "w")` no atómico | `atomic_write_text()` |
+| Alto | `vault_migrate_docs.py` | 3 × `open(path, "w")` no atómicos (staged, stub, report) | `atomic_write_text()` en los tres |
+| Alto | `vault_tags.py:vault_tags_rename` | `search-index.json` no se actualizaba al renombrar tags — index quedaba stale | `_update_search_index_tags(old, new, paths)` patcha el index sin reindex completo |
+| Medio | `vault_write.py:update_search_index` | Race condition read-modify-write sin lock — dos writes concurrentes se perdían mutuamente | `atomic_update_json()` (lock + read-modify-write atómico) |
+
+**Operaciones secundarias convertidas a fire-and-forget (no-bloqueantes):**
+
+Tres subprocesos usaban `subprocess.run()` con timeouts largos, bloqueando la respuesta principal:
+
+| Tool | Operación secundaria | Antes | Después |
+|---|---|---|---|
+| `vault_write` | Regenerar `section_index` | `subprocess.run(timeout=10)` — bloquea hasta 10s | `subprocess.Popen(DEVNULL)` — 0ms |
+| `vault_audit` | Refresh `quality_check` | `subprocess.run(timeout=120)` — bloquea hasta **120s** | `Popen` en background; devuelve datos disponibles con `dq_status: "refreshing_in_background"` |
+| `vault_change_log` | Trigger `vault_propagate` | `subprocess.run(timeout=60)` — bloquea hasta 60s | `Popen`; devuelve `queued_async: true` inmediatamente |
+
+`vault_reindex --graph` se mantiene síncrono: el usuario lo invocó explícitamente y necesita el resultado en el mismo output.
+
+**Cobertura de `assert_within_vault()` tras el audit:**
+
+Antes de v29 el hardening de v27–v28 cubría los 12 scripts de _creación_ (vault_write, vault_knowledge_save, etc.). El audit descubrió que `vault_append` y `vault_read` — scripts de _modificación y lectura_ — accedían a `VAULT_ROOT / user_input` sin validación. Ambos corregidos. La cobertura es ahora completa sobre todos los scripts que construyen paths desde input externo.
+
 ---
 
 ### v28 — 2026-05-23 `git: 3c59324`
