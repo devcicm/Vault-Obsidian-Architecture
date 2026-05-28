@@ -1,0 +1,460 @@
+{
+  "version": "v29",
+  "updated_at": "2026-05-28T20:30:40.000Z",
+  "total": 27,
+  "antipatterns": 22,
+  "patterns": 5,
+  "by_severity": {
+    "critical": 6,
+    "high": 8,
+    "medium": 7,
+    "low": 1,
+    "N/A": 5
+  },
+  "by_category": {
+    "content-quality": 8,
+    "structure": 8,
+    "frontmatter": 4,
+    "linking": 3,
+    "process": 4
+  },
+  "by_enforcement": {
+    "guard": 3,
+    "audit": 7,
+    "guard+audit": 2,
+    "manual": 10,
+    "recommended": 5
+  },
+  "norms": [
+    {
+      "code": "AP-01",
+      "name": "Documentación alucinada",
+      "type": "antipattern",
+      "category": "content-quality",
+      "severity": "high",
+      "enforcement": "manual",
+      "description": "Documentar herramientas, endpoints, funciones o comportamientos que no existen en el código real. El agente genera información convincente pero incorrecta.",
+      "signal": "Referencias a scripts/tools que no existen en el repo; funciones con firmas que no coinciden con el código.",
+      "prevention": "Verificar existencia real antes de documentar. vault_read + grep sobre el código fuente.",
+      "tools_enforcing": [],
+      "tools_detecting": [],
+      "introduced_version": "v19"
+    },
+    {
+      "code": "AP-02",
+      "name": "Proliferación de versiones del mismo documento",
+      "type": "antipattern",
+      "category": "structure",
+      "severity": "high",
+      "enforcement": "audit",
+      "description": "Múltiples notas describiendo la misma entidad: status-v1.md, status-v2.md, status-final.md, status-final2.md. Variantes: same-folder (AP-02), cross-folder (AP-18), canonical-shadow (AP-17).",
+      "signal": "vault_audit reporta canonicalShadow o crossFolderDuplicates.",
+      "prevention": "Una nota por entidad. Usar .history/ para versiones anteriores (vault_write lo gestiona automáticamente).",
+      "tools_enforcing": [],
+      "tools_detecting": [
+        "vault_audit"
+      ],
+      "introduced_version": "v19"
+    },
+    {
+      "code": "AP-03",
+      "name": "Stubs sin política de expansión",
+      "type": "antipattern",
+      "category": "content-quality",
+      "severity": "medium",
+      "enforcement": "audit",
+      "description": "Nota con contenido real pero incompleto (≥3 líneas reales) sin fecha de expansión. Distinción con AP-11: AP-03 tiene información útil, AP-11 no tiene ningún contenido real.",
+      "signal": "vault_audit reporta notas con status:stub sin campo expand_by o con expand_by vencido.",
+      "prevention": "Agregar meta: {status: stub, expand_by: YYYY-MM-DD} al crear stubs. Enriquecer en cada sesión.",
+      "tools_enforcing": [],
+      "tools_detecting": [
+        "vault_audit"
+      ],
+      "introduced_version": "v19"
+    },
+    {
+      "code": "AP-04",
+      "name": "Features aspiracionales documentadas como implementadas",
+      "type": "antipattern",
+      "category": "content-quality",
+      "severity": "high",
+      "enforcement": "manual",
+      "description": "Documentar comportamientos futuros o planeados como si ya existieran. Confunde al agente sobre el estado real del sistema.",
+      "signal": "Notas sin campo status o con status:planned que describen funcionalidad en presente.",
+      "prevention": "Usar status: planned/in-progress/implemented. Nunca describir en presente algo que no está deployado.",
+      "tools_enforcing": [],
+      "tools_detecting": [],
+      "introduced_version": "v19"
+    },
+    {
+      "code": "AP-05",
+      "name": "Múltiples fuentes de verdad para el mismo dato",
+      "type": "antipattern",
+      "category": "structure",
+      "severity": "critical",
+      "enforcement": "manual",
+      "description": "El mismo dato (IP, URL, versión, configuración) aparece en múltiples notas con valores inconsistentes. Causa decisiones del agente basadas en datos erróneos.",
+      "signal": "IPs/URLs/versiones que difieren entre notas del mismo proyecto.",
+      "prevention": "PAT-1 (canonical source anchoring): una nota canónica por dato, las demás hacen [[wiki-link]] a ella.",
+      "tools_enforcing": [],
+      "tools_detecting": [],
+      "introduced_version": "v19"
+    },
+    {
+      "code": "AP-06",
+      "name": "Templates sin instancias reales",
+      "type": "antipattern",
+      "category": "content-quality",
+      "severity": "low",
+      "enforcement": "manual",
+      "description": "Archivos de template (SLOs, métricas, alertas, ADRs) que existen en el vault pero nunca se han instanciado con datos reales.",
+      "signal": "Notas con status:template que no tienen notas derivadas con wiki-link hacia ellas.",
+      "prevention": "Si un template no tiene instancias en 30 días, moverlo a 10_Migrated/ o eliminarlo.",
+      "tools_enforcing": [],
+      "tools_detecting": [],
+      "introduced_version": "v19"
+    },
+    {
+      "code": "AP-07",
+      "name": "ADRs incompletos",
+      "type": "antipattern",
+      "category": "process",
+      "severity": "medium",
+      "enforcement": "manual",
+      "description": "ADRs (Architecture Decision Records) sin secciones Contexto, Opciones evaluadas y Consecuencias. Un ADR sin estas secciones no aporta valor de auditoría.",
+      "signal": "Notas en 03_Decisions/ sin secciones ## Contexto, ## Opciones, ## Consecuencias.",
+      "prevention": "Usar vault_write con template de ADR completo. vault_audit puede extenderse para validar secciones.",
+      "tools_enforcing": [],
+      "tools_detecting": [],
+      "introduced_version": "v19"
+    },
+    {
+      "code": "AP-08",
+      "name": "Documentación anclada a versiones obsoletas",
+      "type": "antipattern",
+      "category": "content-quality",
+      "severity": "medium",
+      "enforcement": "manual",
+      "description": "Notas que mencionan versiones específicas de librerías, APIs o protocolos que ya fueron actualizadas, sin indicar que el contenido puede estar desactualizado.",
+      "signal": "Notas con versiones hardcodeadas (v1.2.3) y updatedAt > 90 días.",
+      "prevention": "Agregar campo version_pinned al frontmatter con la versión referenciada. vault_audit puede alertar.",
+      "tools_enforcing": [],
+      "tools_detecting": [],
+      "introduced_version": "v19"
+    },
+    {
+      "code": "AP-09",
+      "name": "Runbooks fuera de estructura",
+      "type": "antipattern",
+      "category": "process",
+      "severity": "medium",
+      "enforcement": "manual",
+      "description": "Procedimientos operativos guardados en carpetas genéricas (07_Knowledge/, 01_Projects/) en lugar de 06_Runbooks/. Dificulta la localización en incidentes.",
+      "signal": "Notas con title que contiene 'runbook', 'procedure', 'how-to' fuera de 06_Runbooks/.",
+      "prevention": "Todo runbook va en 06_Runbooks/{proyecto}/. vault_migrate_docs para moverlos.",
+      "tools_enforcing": [],
+      "tools_detecting": [],
+      "introduced_version": "v19"
+    },
+    {
+      "code": "AP-10",
+      "name": "Migración sin plan de rollback",
+      "type": "antipattern",
+      "category": "process",
+      "severity": "high",
+      "enforcement": "manual",
+      "description": "Ejecutar vault_migrate_docs sin tener vault_migrate_rollback disponible o sin snapshot previo. Si la migración introduce errores, no hay manera de revertir.",
+      "signal": "vault_migrate_docs ejecutado sin llamar vault_drift_detect --snapshot primero.",
+      "prevention": "PAT-4 (phased audit): siempre snapshot → migrate → verify → rollback si falla.",
+      "tools_enforcing": [],
+      "tools_detecting": [],
+      "introduced_version": "v19"
+    },
+    {
+      "code": "AP-11",
+      "name": "Skeleton files — frontmatter válido, contenido vacío",
+      "type": "antipattern",
+      "category": "content-quality",
+      "severity": "critical",
+      "enforcement": "guard",
+      "description": "Nota creada con frontmatter correcto pero cuerpo vacío o solo con TODO/placeholders. El agente indexa la nota pero no recibe información útil de ella. Distinción con AP-03: AP-11 = 0 líneas reales; AP-03 = ≥3 líneas reales pero incompleto.",
+      "signal": "vault_write rechaza con error_code: content_too_short.",
+      "prevention": "vault_write exige ≥3 líneas de contenido real (00_System exempt). No crear notas que no estén listas.",
+      "tools_enforcing": [
+        "vault_write"
+      ],
+      "tools_detecting": [
+        "vault_audit"
+      ],
+      "introduced_version": "v19"
+    },
+    {
+      "code": "AP-12",
+      "name": "Frontmatter inconsistente entre notas del mismo tipo",
+      "type": "antipattern",
+      "category": "frontmatter",
+      "severity": "high",
+      "enforcement": "audit",
+      "description": "Notas del mismo tipo con campos faltantes, tipos mezclados (timestamp con/sin comillas, migratedFrom relativo vs absoluto). Rompe vault_list, búsquedas y deduplicación.",
+      "signal": "vault_validate reporta campos faltantes. vault_audit detecta inconsistencias de tipo.",
+      "prevention": "vault_write como único punto de creación; nunca editar frontmatter manualmente.",
+      "tools_enforcing": [
+        "vault_write"
+      ],
+      "tools_detecting": [
+        "vault_validate",
+        "vault_audit"
+      ],
+      "introduced_version": "v19"
+    },
+    {
+      "code": "AP-13",
+      "name": "Timestamps inválidos o incompletos en frontmatter",
+      "type": "antipattern",
+      "category": "frontmatter",
+      "severity": "high",
+      "enforcement": "audit",
+      "description": "Timestamps solo con fecha (2026-05-07), con '...' literal, sin zona horaria o en formato no ISO 8601. vault_diff y vault_timeline no pueden ordenar versiones.",
+      "signal": "vault_audit detecta createdAt/updatedAt que no coinciden con patrón ISO 8601.",
+      "prevention": "vault_write genera timestamps con datetime.now(timezone.utc).isoformat() automáticamente.",
+      "tools_enforcing": [
+        "vault_write"
+      ],
+      "tools_detecting": [
+        "vault_audit"
+      ],
+      "introduced_version": "v19"
+    },
+    {
+      "code": "AP-14",
+      "name": "Wiki-links rotos o vacíos",
+      "type": "antipattern",
+      "category": "linking",
+      "severity": "critical",
+      "enforcement": "guard+audit",
+      "description": "[[]] vacíos, [[ ]] con espacio, links a notas renombradas/eliminadas, o links con path (AP-21). Dos causas raíz: (a) wrong stem, (b) path-anchored. El agente sigue links que no resuelven.",
+      "signal": "vault_audit reporta brokenLinks[]. vault_write rechaza [[]] y [[folder/nota]].",
+      "prevention": "Solo escribir [[wiki-link]] cuando la nota destino ya existe. vault_search() antes de linkar.",
+      "tools_enforcing": [
+        "vault_write"
+      ],
+      "tools_detecting": [
+        "vault_audit",
+        "vault_graph"
+      ],
+      "introduced_version": "v19"
+    },
+    {
+      "code": "AP-15",
+      "name": "Archivos externos depositados en la raíz del vault",
+      "type": "antipattern",
+      "category": "structure",
+      "severity": "high",
+      "enforcement": "manual",
+      "description": "Archivos .md colocados directamente en vault-{nombre}/ en lugar de en secciones numeradas. vault_graph parsea sus [[wiki-links]] como broken links reales del proyecto.",
+      "signal": "vault_graph reporta decenas de orphans y broken links falsos.",
+      "prevention": "Layout correcto: vault/ y scripts/ son hermanos, nunca anidados. Solo 00_System…11_Code y 99_Index son destinos válidos.",
+      "tools_enforcing": [],
+      "tools_detecting": [
+        "vault_audit"
+      ],
+      "introduced_version": "v20"
+    },
+    {
+      "code": "AP-16",
+      "name": "Sin identificador de agente en frontmatter",
+      "type": "antipattern",
+      "category": "frontmatter",
+      "severity": "medium",
+      "enforcement": "audit",
+      "description": "Nota sin campo agent: en el frontmatter. Sin este campo es imposible auditar qué agente creó o modificó la nota (PAT-5: frontmatter as provenance chain).",
+      "signal": "vault_audit reporta notas sin campo agent.",
+      "prevention": "vault_write agrega agent: automáticamente. Valores estándar: claude, system, human.",
+      "tools_enforcing": [
+        "vault_write"
+      ],
+      "tools_detecting": [
+        "vault_audit"
+      ],
+      "introduced_version": "v20"
+    },
+    {
+      "code": "AP-17",
+      "name": "Canonical-shadow duplication",
+      "type": "antipattern",
+      "category": "structure",
+      "severity": "medium",
+      "enforcement": "audit",
+      "description": "Par de notas con SequenceMatcher ratio ≥ 0.85 en títulos. Típicamente una nota thin creada cuando ya existía la canónica rica. Penalización vault_audit: −2 por par.",
+      "signal": "vault_audit reporta canonicalShadow[] con similarity ≥ 0.85.",
+      "prevention": "PAT-3: buscar con vault_search() antes de crear. Si existe una nota similar, enriquecer en lugar de crear.",
+      "tools_enforcing": [],
+      "tools_detecting": [
+        "vault_audit"
+      ],
+      "introduced_version": "v25"
+    },
+    {
+      "code": "AP-18",
+      "name": "Cross-folder content duplication",
+      "type": "antipattern",
+      "category": "structure",
+      "severity": "high",
+      "enforcement": "audit",
+      "description": "Mismo contenido byte-idéntico (MD5) en carpetas distintas. Penalización vault_audit: −3 por par.",
+      "signal": "vault_audit reporta crossFolderDuplicates[].",
+      "prevention": "PAT-1: una nota canónica, las demás hacen [[wiki-link]]. Usar vault_change_log --action deleted antes de borrar.",
+      "tools_enforcing": [],
+      "tools_detecting": [
+        "vault_audit"
+      ],
+      "introduced_version": "v25"
+    },
+    {
+      "code": "AP-19",
+      "name": "Shadow indexing",
+      "type": "antipattern",
+      "category": "structure",
+      "severity": "medium",
+      "enforcement": "manual",
+      "description": "Índices de sección creados manualmente, duplicando lo que vault_section_index genera automáticamente. Los índices manuales rotan en AP-02 con el tiempo.",
+      "signal": "Múltiples index.md o README.md en una sección que no fueron generados por vault_section_index.",
+      "prevention": "vault_section_index es la única herramienta para índices. No editar index.md manualmente.",
+      "tools_enforcing": [],
+      "tools_detecting": [],
+      "introduced_version": "v25"
+    },
+    {
+      "code": "AP-20",
+      "name": "Deceptive skeleton (empty-list)",
+      "type": "antipattern",
+      "category": "content-quality",
+      "severity": "critical",
+      "enforcement": "guard",
+      "description": "Nota que pasa el content gate de 3 líneas porque tiene bullets, pero >50% de los bullets están vacíos (- , - [ ], - []). Variante de AP-11 que evade el guard básico.",
+      "signal": "vault_write rechaza con error_code: content_empty_list.",
+      "prevention": "vault_write rechaza si empty_bullets/total_bullets > 0.5. Completar los bullets antes de guardar.",
+      "tools_enforcing": [
+        "vault_write"
+      ],
+      "tools_detecting": [],
+      "introduced_version": "v25"
+    },
+    {
+      "code": "AP-21",
+      "name": "Path-anchored wiki-links",
+      "type": "antipattern",
+      "category": "linking",
+      "severity": "critical",
+      "enforcement": "guard",
+      "description": "[[carpeta/nota]] en lugar de [[nota]]. Obsidian no resuelve paths, solo stems. El link siempre aparece roto en el grafo.",
+      "signal": "vault_write rechaza con error_code: path_anchored_wikilinks.",
+      "prevention": "Siempre [[stem]] o [[stem|título visible]]. vault_section_index genera solo [[stem|título]] desde v25.",
+      "tools_enforcing": [
+        "vault_write"
+      ],
+      "tools_detecting": [],
+      "introduced_version": "v25"
+    },
+    {
+      "code": "AP-22",
+      "name": "Bracket sanity — corchetes desbalanceados o vacíos",
+      "type": "antipattern",
+      "category": "linking",
+      "severity": "critical",
+      "enforcement": "guard+audit",
+      "description": "Corchetes [[ sin ]] matching, o [[]] vacíos. Se detecta fuera de bloques de código. vault_write bloquea (hard stop). vault_write también advierte (non-blocking) si [[target]] no existe: ghost_links[].",
+      "signal": "vault_write rechaza con error_code: malformed_wikilinks. vault_audit reporta malformedWikilinks[].",
+      "prevention": "Cada [[ debe tener su ]]. Nunca escribir [[]] vacíos. Verificar que el target exista antes de linkar.",
+      "tools_enforcing": [
+        "vault_write"
+      ],
+      "tools_detecting": [
+        "vault_audit"
+      ],
+      "introduced_version": "v29"
+    },
+    {
+      "code": "PAT-1",
+      "name": "Canonical source anchoring",
+      "type": "pattern",
+      "category": "structure",
+      "severity": "N/A",
+      "enforcement": "recommended",
+      "description": "Un dominio = una nota canónica rica. Todas las referencias desde otros contextos son [[wiki-links]] a esa nota canónica, nunca copias del contenido.",
+      "signal": "vault_audit muestra 0 canonicalShadow y 0 crossFolderDuplicates.",
+      "prevention": "N/A — es el patrón correcto. Aplicar siempre al crear documentación.",
+      "tools_enforcing": [],
+      "tools_detecting": [
+        "vault_audit"
+      ],
+      "introduced_version": "v25"
+    },
+    {
+      "code": "PAT-2",
+      "name": "Stub enrichment gradient",
+      "type": "pattern",
+      "category": "content-quality",
+      "severity": "N/A",
+      "enforcement": "recommended",
+      "description": "Un stub con ≥3 líneas reales se enriquece progresivamente en cada sesión que lo toca. La eliminación solo aplica a skeletons (AP-11) y deceptive skeletons (AP-20).",
+      "signal": "Stubs del vault tienen status:stub y fecha expand_by.",
+      "prevention": "N/A — es el patrón correcto.",
+      "tools_enforcing": [],
+      "tools_detecting": [
+        "vault_audit"
+      ],
+      "introduced_version": "v25"
+    },
+    {
+      "code": "PAT-3",
+      "name": "Duplicate chain resolution",
+      "type": "pattern",
+      "category": "structure",
+      "severity": "N/A",
+      "enforcement": "recommended",
+      "description": "Algoritmo estándar para resolver duplicados: identificar canónica (más backlinks, más contenido, ubicación más apropiada) → change_log --action deleted → mover a 10_Migrated/ → actualizar wiki-links rotos → verificar con vault_audit.",
+      "signal": "vault_audit canonicalShadow reducido después de aplicar.",
+      "prevention": "N/A — es el algoritmo de resolución.",
+      "tools_enforcing": [],
+      "tools_detecting": [
+        "vault_audit"
+      ],
+      "introduced_version": "v25"
+    },
+    {
+      "code": "PAT-4",
+      "name": "Phased audit execution",
+      "type": "pattern",
+      "category": "process",
+      "severity": "N/A",
+      "enforcement": "recommended",
+      "description": "Las auditorías masivas se ejecutan en 4 fases atómicas: 1-Snapshot (vault_drift_detect --snapshot), 2-Detección (vault_audit), 3-Resolución (vault_write, vault_change_log), 4-Verificación (vault_drift_detect --report).",
+      "signal": "0 regresiones entre snapshot y estado final.",
+      "prevention": "N/A — es el protocolo de auditoría.",
+      "tools_enforcing": [],
+      "tools_detecting": [
+        "vault_drift_detect"
+      ],
+      "introduced_version": "v25"
+    },
+    {
+      "code": "PAT-5",
+      "name": "Frontmatter as provenance chain",
+      "type": "pattern",
+      "category": "frontmatter",
+      "severity": "N/A",
+      "enforcement": "recommended",
+      "description": "Los campos id + createdAt + updatedAt + agent + migratedFrom (si aplica) forman una cadena de custodia completa. Sin esta cadena es imposible auditar de dónde vino un dato o qué agente lo introdujo.",
+      "signal": "vault_audit reporta 0 notas sin campo agent.",
+      "prevention": "N/A — vault_write genera estos campos automáticamente.",
+      "tools_enforcing": [
+        "vault_write"
+      ],
+      "tools_detecting": [
+        "vault_audit"
+      ],
+      "introduced_version": "v25"
+    }
+  ]
+}

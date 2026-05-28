@@ -216,7 +216,9 @@ def vault_write(
             "ok": False,
             "error_code": "content_too_short",
             "error": "content_too_short",
-            "message": "Minimum 3 real lines of content required. If content is not ready, do not create the note.",
+            "norm_code": "AP-11",
+            "norm_name": "Skeleton files — frontmatter válido, contenido vacío",
+            "message": "AP-11: minimum 3 real lines of content required. If content is not ready, do not create the note.",
         }
 
     # AP-20 guard: deceptive skeleton — reject if >50% of bullets are empty
@@ -228,6 +230,8 @@ def vault_write(
                 "ok": False,
                 "error_code": "content_empty_list",
                 "error": "content_empty_list",
+                "norm_code": "AP-20",
+                "norm_name": "Deceptive skeleton (empty-list)",
                 "message": f"AP-20: >{int(len(empty_bullets)/len(bullets)*100)}% of bullets are empty. Fill content before saving.",
             }
 
@@ -238,6 +242,8 @@ def vault_write(
             "ok": False,
             "error_code": "path_anchored_wikilinks",
             "error": "path_anchored_wikilinks",
+            "norm_code": "AP-21",
+            "norm_name": "Path-anchored wiki-links",
             "message": f"AP-21: path-anchored wiki-links detected: {path_links}. Use [[note-name]] without folder path.",
         }
 
@@ -248,6 +254,8 @@ def vault_write(
             "ok": False,
             "error_code": "malformed_wikilinks",
             "error": "malformed_wikilinks",
+            "norm_code": "AP-22",
+            "norm_name": "Bracket sanity — corchetes desbalanceados o vacíos",
             "message": bracket_error,
         }
 
