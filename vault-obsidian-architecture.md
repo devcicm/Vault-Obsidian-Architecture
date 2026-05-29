@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v29 — 2026-05-27  
+**Versión:** v30 — 2026-05-28  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -290,7 +290,7 @@ vault-backups/
 
 ---
 
-## Las 53 Tools del Vault — Referencia Completa
+## Las 61 Tools del Vault — Referencia Completa
 
 > **Tools vs Skills:** las 53 **tools** son funciones atómicas registradas en el harness — cada una hace exactamente una cosa. Una **skill** es un protocolo de múltiples pasos (secuencia de tools + lógica de decisión) que el agente ejecuta para un objetivo complejo. Las skills no son tools adicionales — son instrucciones de orquestación referenciadas en los casos de uso concretos (ej: `security-auditor`, `vault-migrator`). Un agente puede implementar skills como instrucciones en su system prompt o como flujos de trabajo.
 
@@ -2769,6 +2769,208 @@ Consulta el log de cambios.
 
 ---
 
+### Grupo 24 — Data Quality (v27)
+
+> **Propósito:** scoring multidimensional de calidad de contenido y registro canónico de los fundamentos de datos.
+
+#### `vault_quality_check(project?)`
+
+Scoring por nota con 9 dimensiones DQ (integrity, consistency, completeness, accuracy, validity, timeliness, authenticity, non_repudiation, uniqueness). Genera `00_System/quality-index.json`. `vault_audit` lo consume para el bloque `dqHealth`.
+
+**Retorna:** `{ ok, overall_dq_score, notes_below_07, generated_at, generated_by }`
+
+#### `vault_fundamentals(action?)`
+
+Registro canónico de los **8 Fundamentos de Datos** (F1 INTEGRIDAD … F8 NO_REPUDIO). Mapea cada fundamento a su dimensión DQ, frontmatter fields y tools que lo implementan. Genera `00_System/data-fundamentals.json` + `.md`.
+
+**Cuándo usar:** para auditar cobertura de fundamentos, para entender qué tool implementa qué garantía de calidad.
+
+---
+
+### Grupo 25 — Propagación de Cambios (v27)
+
+> **Propósito:** detectar notas transitivamente obsoletas tras modificar un nodo del grafo y aplicar estrategias de propagación.
+
+#### `vault_impact(changed?, since?, max_hops?, min_risk?)`
+
+Análisis BFS sobre el grafo inverso de backlinks. Desde notas cambiadas calcula `stale_risk = cia_weight / (distance+1)`. Puede leer cambios desde el change-log (`--since`).
+
+**Retorna:** `{ ok, changed, stale_deps: [{path, distance, stale_risk, chain}] }`
+
+#### `vault_propagate(changed, strategy, action?)`
+
+Aplica estrategias sobre el resultado de impact:
+- `conservative` — solo dependencias directas (dist=1)
+- `transitive` — BFS completo hasta `max_hops`
+- `critical-path` — solo nodos con `cia_integrity: high|critical`
+
+Acciones: `notify` (marca `propagation_pending` en frontmatter), `queue` (escribe `00_System/propagation-queue.json`), `reindex`.
+
+---
+
+### Grupo 26 — Tokens y Observabilidad (v27)
+
+> **Propósito:** medir y registrar consumo de tokens LLM por sesión y proyecto.
+
+#### `vault_tokens(project?, last?)`
+
+Lee `00_System/token-log.json` y devuelve resumen de tokens consumidos por sesión/proyecto/modelo.
+
+#### `vault_token_counter(tokens, project?, model?)`
+
+Registra consumo puntual de tokens. Append atómico a `00_System/token-log.json`.
+
+#### `vault_token_service(action, project?)`
+
+Servicio de token tracking con `file_lock` para escrituras concurrentes seguras. Acciones: `log`, `summary`, `reset`.
+
+---
+
+### Grupo 27 — Session Delta y Tags (v29)
+
+> **Propósito:** detectar cambios entre sesiones y mantener un registro canónico de tags.
+
+#### `vault_delta(dry_run?, project?, min_risk?, snapshot_only?)`
+
+Compara `99_Index/hash-index.json` (baseline de la sesión anterior) contra el estado actual del vault via SHA-256 por nota. Calcula `changed/added/deleted` y expande el conjunto via BFS sobre el grafo inverso para encontrar `stale_deps` transitivos.
+
+**Flags:** `--snapshot` (guarda baseline antes de la sesión), `--dry-run`, `--project {slug}`, `--min-risk critical|high|medium|low`
+
+**Retorna:** `{ ok, changed: [...], added: [...], deleted: [...], stale_deps: [{path, distance, stale_risk}] }`
+
+**Cuándo usar:** al inicio de cada sesión con `--snapshot` para capturar estado baseline; al final para ver qué cambió.
+
+#### `vault_tags(dry_run?, project?)`
+
+Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `{tag: {notes, count}}`, genera `99_Index/tag-index.md` con wiki-links agrupados por tag.
+
+**Subcomandos:** default (rebuild), `--audit` (health score 0–100 con penalizaciones por orphans/near-dupes/notas sin tag), `--suggest PATH` (tags canónicos similares), `--rename OLD NEW` (renombrar en todas las notas + rebuild).
+
+---
+
+### Grupo 28 — Normas y Etiquetas de Código (v30)
+
+> **Propósito:** gestionar el catálogo canónico de normas (AP-XX, PAT-X, SP-XX, CN-XX) y aplicar etiquetas de norma como comentarios `@norm` en archivos de código fuente. Cierra el ciclo de trazabilidad: vault note ↔ norma ↔ código.
+
+---
+
+#### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
+
+Catálogo embebido de las **34 normas** del estándar (22 AP + 5 PAT + 3 SP + 3 CN + 1 AP-23). Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+
+**Operaciones:**
+
+| Operación | Parámetros | Descripción |
+|---|---|---|
+| `--list` | `[--type ap\|pat\|sp\|cn] [--category] [--severity] [--sort code\|severity\|category]` | Tabla filtrable y ordenable de normas |
+| `--show CODE` | `AP-22`, `SP-01`, `CN-01`, etc. | Detalle completo: descripción, señal, prevención, tools, versión |
+| `--scan --path RUTA` | Ruta relativa de nota | Detecta qué normas aplican por análisis de frontmatter + contenido + wiki-links |
+| `--apply CODE --path RUTA` | Código de norma + ruta de nota | Agrega `norm_refs: [CODE]` al frontmatter (notas .md) |
+| `--rebuild` | — | Regenera `00_System/norm-registry.json` desde el catálogo embebido |
+
+**Retorna `--list`:**
+```json
+{ "ok": true, "total": 34, "norms": [{ "code": "AP-22", "name": "Bracket sanity", "type": "antipattern", "category": "linking", "severity": "critical", "enforcement": "guard+audit" }] }
+```
+
+**Retorna `--show AP-22`:**
+```json
+{ "ok": true, "norm": { "code": "AP-22", "name": "...", "description": "...", "signal": "...", "prevention": "...", "tools_enforcing": ["vault_write"], "tools_detecting": ["vault_audit"], "introduced_version": "v29" } }
+```
+
+**Retorna `--scan --path 07_Knowledge/concepts/jwt.md`:**
+```json
+{ "ok": true, "path": "07_Knowledge/concepts/jwt.md", "applicable_norms": [{ "code": "AP-14", "name": "Wiki-links rotos o vacíos", "reason": "wiki-links posiblemente rotos: ['old-note']" }], "total": 1 }
+```
+
+**Cuándo usar:** al inicio de sesión para refrescar el catálogo (`--list`); cuando vault_write retorna un error con `norm_code` para entender la regla (`--show`); antes de crear una nota para ver qué normas aplican (`--scan`).
+
+**Compute `norm_refs` automático en vault_write:** desde v30, `vault_write` llama internamente a `compute_norm_refs(folder, content, wiki_links)` (función en `vault_norms.py`) y embebe `norm_refs` en el frontmatter de cada nota al crearla/actualizarla:
+
+```yaml
+---
+title: ADR-001 Auth Decision
+norm_refs: ["AP-07","AP-11","AP-12","AP-13","AP-16","AP-21","AP-22","CN-01","CN-02","SP-01","SP-02"]
+agent: claude
+---
+```
+
+Reglas de cálculo de `norm_refs`:
+
+| Condición | Normas añadidas |
+|---|---|
+| Siempre (universal) | `AP-11, AP-12, AP-13, AP-16, CN-01, CN-02, SP-01` |
+| Nota tiene wiki-links | `+ AP-14, AP-21, AP-22, SP-02` |
+| Nota tiene bullets | `+ AP-20` |
+| Carpeta `03_Decisions/` | `+ AP-07` |
+| Contenido > 500 líneas | `+ AP-23` + `ap23_warning` en respuesta |
+
+---
+
+#### `vault_code_tag(define?, apply?, remove?, scan?, list?, tag_note?)`
+
+Embebe etiquetas `@norm` como comentarios en la **cabecera** de archivos de código fuente (.cs, .ts, .py, .js, .go, .java, .sql, …). Acepta cualquier código: custom (`cr-0989`, `impl-001`, `bus-004`) o del catálogo del estándar (`AP-22`, `SP-01`, `CN-01`).
+
+Registry: `00_System/code-tag-registry.json` — mapea `código → {name, description, files[], vault_note}`.
+
+**Operaciones:**
+
+| Operación | Parámetros | Descripción |
+|---|---|---|
+| `--define CODE --name NAME` | `[--description] [--files]` | Registra etiqueta personalizada; aplica a archivos opcionalmente |
+| `--apply CODE --file FILE` | `[--name NAME]` | Embebe `@norm` en cabecera del archivo |
+| `--remove CODE --file FILE` | — | Elimina línea `@norm` del archivo |
+| `--scan --file FILE` | — | Lista todos los `@norm` presentes en un archivo |
+| `--list` | `[--file FILE] [--prefix PREFIX]` | Lista tags registrados, filtrable por archivo o prefijo |
+| `--tag-note CODE` | — | Crea nota en `11_Code/` documentando el tag con sus archivos |
+
+**Formatos de comentario por extensión:**
+
+| Extensiones | Formato |
+|---|---|
+| `.cs .ts .js .java .go .cpp .swift .rs` | `// @norm cr-0989    — Cola de prioridad` |
+| `.py .rb .sh .yml .yaml` | `# @norm cr-0989    — Cola de prioridad` |
+| `.html .xml .svg` | `<!-- @norm cr-0989 — Cola de prioridad -->` |
+| `.css .scss .sass` | `/* @norm cr-0989   — Cola de prioridad */` |
+| `.sql` | `-- @norm cr-0989   — Cola de prioridad` |
+| `.md` | ⚠ usar `vault_norms --apply` (frontmatter `norm_refs`) |
+
+**Ejemplo de resultado en código:**
+```csharp
+// @norm cr-0989    — Cola de prioridad
+// @norm AP-22      — Bracket sanity — corchetes desbalanceados o vacíos
+using System;
+
+public class QueueService { ... }
+```
+
+**Flujo típico:**
+```bash
+# 1. Definir etiqueta personalizada
+vault_code_tag --define cr-0989 --name "Cola de prioridad" --description "FIFO con pesos"
+
+# 2. Aplicar a archivo de código
+vault_code_tag --apply cr-0989 --file "src/services/colas.cs"
+
+# 3. Aplicar norma del estándar directamente a código
+vault_code_tag --apply AP-22 --file "scripts/vault_write.py"
+
+# 4. Ver qué normas tiene un archivo
+vault_code_tag --scan --file "src/services/colas.cs"
+
+# 5. Crear nota vault documentando la etiqueta
+vault_code_tag --tag-note cr-0989
+```
+
+**Retorna `--scan`:**
+```json
+{ "ok": true, "file": "src/services/colas.cs", "total": 2, "tags": [{ "code": "cr-0989", "name": "Cola de prioridad", "description": "FIFO con pesos", "vault_note": "11_Code/cr-0989-cola-de-prioridad.md" }, { "code": "ap-22", "name": "Bracket sanity..." }] }
+```
+
+**Cuándo usar:** al crear o modificar un archivo de código que implementa una regla documentada en el vault; para rastrear qué normas aplican a cada módulo del proyecto; para generar un inventario de compliance del código.
+
+---
+
 ## Compatibilidad con Obsidian Desktop
 
 El vault en `{data-dir}/vault/` puede abrirse **directamente** en Obsidian desktop:
@@ -3353,6 +3555,40 @@ proyecto/
 
 ---
 
+### AP-22 — Bracket sanity — corchetes desbalanceados o vacíos
+
+**Síntoma:** Contenido con `[[` sin su `]]` de cierre, o `[[]]` vacíos. El parser de wiki-links rompe el grafo y el agente puede procesar links incompletos como texto literal.
+
+**Por qué ocurre:** Edición manual del frontmatter o del cuerpo de la nota; pegado de texto con corchetes que no son wiki-links; template incompleto con `[[...]]` de placeholder.
+
+**Señal de alarma:** `vault_write` rechaza con `error_code: malformed_wikilinks`. `vault_audit()` reporta en `issues.malformedWikilinks[]` con `norm_code: "AP-22"`.
+
+**Regla:** Cada `[[` debe tener exactamente su `]]` de cierre. `[[]]` vacíos están prohibidos. La detección se hace sobre el contenido limpio (excluye bloques de código y code spans).
+
+**Prevención:**
+- Guard en `vault_write` (`_check_bracket_balance()`): rechaza si `opens ≠ closes` o hay `[[]]` — error `malformed_wikilinks`
+- `vault_audit._detect_malformed_wikilinks()`: escanea notas existentes; penaliza −5 por nota afectada (cap −20)
+- `vault_write` también advierte (no-bloqueante) con `ghost_links: [...]` cuando `[[target]]` existe pero la nota no existe en el vault
+
+---
+
+### AP-23 — Note complexity ceiling — nota demasiado larga
+
+**Síntoma:** Una nota supera las 500 líneas de contenido real. El agente consume demasiado contexto leyéndola completa y tiene dificultad para mantener coherencia entre sus secciones.
+
+**Por qué ocurre:** Acumulación progresiva sin aplicar PAT-2 (stub enrichment gradient) — la nota se va enriqueciendo indefinidamente en lugar de dividirse en sub-notas canónicas.
+
+**Señal de alarma:** `vault_write` retorna `ap23_warning` en la respuesta JSON: `"AP-23: note has NNN lines — consider splitting"`. `vault_norms --scan --path nota.md` reporta AP-23.
+
+**Regla:** Al superar 500 líneas, crear sub-notas en la misma carpeta y reemplazar la sección correspondiente con `[[sub-nota|título]]`. La nota original actúa como índice/resumen con links a las sub-notas.
+
+**Prevención:**
+- `vault_write` detecta y advierte (no bloquea) con `ap23_warning`
+- Aplicar PAT-1 (canonical source anchoring): fragmentar por dominio cohesivo, no por tamaño arbitrario
+- Umbral: 500 líneas reales (sin frontmatter)
+
+---
+
 ## Patrones recomendados
 
 Los siguientes patrones fueron identificados en auditorías reales de vaults en producción. Complementan los antipatrones: donde los APs describen qué no hacer, los PATs describen qué sí funciona.
@@ -3442,6 +3678,126 @@ Los siguientes patrones fueron identificados en auditorías reales de vaults en 
 | `migratedFrom` | `vault_migrate_docs` | Solo en migraciones |
 
 **Señal de implementación correcta:** `vault_audit()` reporta 0 notas sin campo `agent`. Cualquier nota puede rastrearse hasta el agente que la creó y cuándo.
+
+---
+
+## Protocolo de sesión — SP-XX (v30)
+
+Los SP (Session Protocol) codifican las reglas de comportamiento del agente durante una sesión de trabajo. Complementan los PATs: donde los PATs describen patrones de contenido, los SPs describen protocolo de operación.
+
+---
+
+### SP-01 — Delete protocol — change_log obligatorio antes de eliminar
+
+**Regla:** Antes de eliminar cualquier nota del vault, el agente DEBE registrar la eliminación:
+```bash
+vault_change_log --action deleted --path <nota> --reason <motivo>
+```
+Sin este registro, la nota desaparece sin rastro auditado. Los agentes futuros no pueden reconstruir si la nota fue eliminada intencionalmente o por error.
+
+**Enforcement:** manual — el guard no existe en vault_write (que no borra), sino como gobernanza declarada.
+
+**Señal de violación:** Nota que no aparece en `00_System/.change-log.json` con `action: deleted` antes de su desaparición.
+
+**norm_refs:** `SP-01` se incluye automáticamente en el `norm_refs` de todas las notas creadas por `vault_write` — indica que esa nota está sujeta al delete protocol.
+
+---
+
+### SP-02 — Forward-link verification — buscar antes de linkar
+
+**Regla:** Antes de escribir `[[nombre-nota]]` en contenido, verificar que la nota destino ya existe:
+```bash
+vault_search --query "nombre-nota"
+```
+Si no hay resultado, escribir el nombre en **texto plano** hasta que la nota exista.
+
+`vault_write` no bloquea por links a notas inexistentes, pero advierte con `ghost_links: [...]` en la respuesta — el agente debe revisar y decidir si crear las notas target antes de continuar.
+
+**Enforcement:** guard no-bloqueante — `vault_write` retorna `ghost_links[]`.
+
+**Señal de violación:** `vault_write` retorna `ghost_links: ["nombre-nota"]`. `vault_audit()` reporta en `issues.brokenLinks` con `norm_code: "AP-14"`.
+
+---
+
+### SP-03 — Session snapshot — delta antes de operaciones masivas
+
+**Regla:** Antes de cualquier operación masiva (migración, rename en lote, vault_tags --rename múltiple, delete en lote), capturar snapshot:
+```bash
+vault_delta --snapshot
+```
+Permite detectar regresiones y calcular el impacto real de la operación comparando el estado post-operación contra el baseline.
+
+**Enforcement:** manual (convención).
+
+**Señal de violación:** No existe `99_Index/hash-index.json` antes de la operación, o el snapshot fue capturado después en lugar de antes.
+
+**Relación con PAT-4:** SP-03 es el paso 1 de PAT-4 (Phased audit execution). PAT-4 describe el ciclo completo; SP-03 la regla atómica del snapshot inicial.
+
+---
+
+## Convenciones de nomenclatura — CN-XX (v30)
+
+Las CN (Convention Naming) codifican las convenciones de nombres y estructura que están implícitas en las tools pero no tenían código de norma propio.
+
+---
+
+### CN-01 — Kebab-case filenames
+
+**Regla:** Los archivos `.md` del vault usan kebab-case: minúsculas, palabras separadas por guiones, sin espacios ni caracteres especiales.
+
+`vault_write` aplica `slugify(title)` automáticamente:
+- `"ADR-001 Auth Decision"` → `adr-001-auth-decision.md`
+- `"JWT Refresh Tokens"` → `jwt-refresh-tokens.md`
+
+**Enforcement:** guard — `vault_write` siempre aplica slugify. Crear archivos `.md` manualmente sin pasar por `vault_write` viola CN-01.
+
+**Señal de violación:** Archivos con espacios, mayúsculas o caracteres especiales en el nombre detectados por `vault_validate(check:"structure")`.
+
+---
+
+### CN-02 — Numbered folder structure — secciones numeradas como únicos destinos
+
+**Regla:** Solo las 13 secciones numeradas son destinos válidos para notas del vault:
+
+| Sección | Propósito |
+|---|---|
+| `00_System` | Configuración, índices del sistema, change-log, registros |
+| `01_Projects` | Estado de proyectos, status, overview |
+| `02_Observability` | Métricas, logs, alertas, dashboards |
+| `03_Decisions` | ADRs, decisiones técnicas |
+| `04_Specs` | Especificaciones funcionales y técnicas |
+| `05_Patterns` | Patrones de diseño activos |
+| `06_Runbooks` | Procedimientos operacionales |
+| `07_Knowledge` | Base de conocimiento, conceptos, glosario |
+| `08_Integrations` | Documentación de integraciones externas |
+| `09_Architecture` | Diagramas, mapas de infraestructura, ERDs |
+| `10_Migrated` | Notas archivadas o migradas |
+| `11_Code` | Módulos, APIs, contratos de código |
+| `99_Index` | Índices generados automáticamente |
+
+Crear carpetas ad-hoc o escribir `.md` directamente en la raíz del vault viola CN-02 (y AP-15).
+
+**Enforcement:** manual + `vault_write` que requiere `--folder` con una de estas secciones.
+
+---
+
+### CN-03 — Standard status vocabulary — vocabulario canónico de meta.status
+
+**Regla:** El campo `meta.status` (o `status` en frontmatter) debe usar solo los 7 valores del vocabulario estándar:
+
+| Valor | Cuándo usar |
+|---|---|
+| `planned` | Decisión o feature documentada pero no implementada |
+| `in-progress` | En desarrollo activo |
+| `implemented` | Completamente implementada y en producción |
+| `deprecated` | Reemplazada por algo nuevo, no eliminar aún |
+| `archived` | Sin uso activo, movida a 10_Migrated/ |
+| `stub` | Nota incompleta con `expand_by` pendiente (ver PAT-2) |
+| `template` | Plantilla sin instanciar |
+
+**Enforcement:** manual. `vault_validate` puede extenderse para validar valores.
+
+**Señal de violación:** `vault_list` filtra por `status` y retorna 0 resultados cuando el valor no coincide con el vocabulario.
 
 ---
 
@@ -3703,6 +4059,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v27 | 2026-05-11 | CIA schema en frontmatter, vault_quality_check (9 dimensiones), vault_fundamentals (F1-F8 registry), vault_impact + vault_propagate (BFS graph-aware), vault_spec_memory (spec-driven memory + validation loop), vault_tokens (observabilidad), 100% DQ annotation, 53/53 tools mapeadas a fundamentos |
 | v28 | 2026-05-23 | Validación en campo (vault-electron-fingerprint, 100/100), seguridad confirmada (assert_within_vault + CIA + atomic writes en 12 scripts), protocolo de inicialización corregido, mapa canónico script→carpeta, gitignore pattern consumidores, nota compatibilidad Windows/PowerShell |
 | v29 | 2026-05-27 | vault_delta (SHA-256 session delta + BFS stale impact), vault_tags (tag registry canónico, orphan/near-dup audit, rename), vault_backup Merkle tree + --verify, vault_reindex escribe hash-index.json, vault_write tag suggestions + AP-22 bracket guard, vault_audit tagHealth + malformedWikilinks |
+| v30 | 2026-05-28 | vault_norms (catálogo AP-XX/PAT-X/SP-XX/CN-XX, 34 normas, list/show/scan/apply/rebuild), vault_code_tag (@norm en código fuente, prefijo libre, 8 formatos de comentario), norm_refs auto-embed en frontmatter via vault_write, AP-23 + SP-01~03 + CN-01~03, norm_code en errores de vault_write + issues de vault_audit |
 
 ### Cómo inicializar el estándar en un vault nuevo (v28)
 
@@ -4031,6 +4388,36 @@ temp/
 - `vault_knowledge_get.py`: añadido campo `total` en todos los paths de retorno (incluyendo resultados vacíos), normalizando el contrato.
 - `vault_test_runner.py`: 15 `required_ok_fields` vacíos sustituidos por campos reales (vault_diff, vault_merge, vault_knowledge_get, vault_infra_map, vault_backup, vault_backup_list, vault_security_scan, vault_section_index, vault_master_index, vault_reindex, vault_drift_detect, vault_timeline, vault_code_map). Contratos pasan 45/45.
 - `vault_manifest.py`: nuevas categorías en TOOL_GROUPS: `Data Quality`, `Propagación`, `Tokens`. `META_TOOLS` incluye `vault_spec_memory`.
+
+---
+
+### v30 — 2026-05-28 `git: 23c8d3b`
+
+**Catálogo canónico de normas, etiquetas en código fuente, norm_refs en frontmatter**
+
+**Agregado**
+
+- **`vault_norms.py` (Grupo 28 — Normas y Etiquetas de Código):** catálogo embebido de las 34 normas del estándar como `NORM_CATALOG` en el script (fuente de verdad). Proyección: `00_System/norm-registry.json`. Operaciones: `--list` (filtrable por type/category/severity, ordenable), `--show CODE` (detalle completo con descripción/señal/prevención/tools), `--scan --path RUTA` (detecta normas aplicables a una nota por análisis de frontmatter + contenido + wiki-links), `--apply CODE --path RUTA` (agrega `norm_refs` al frontmatter de una nota), `--rebuild` (regenera norm-registry.json). Función pública `compute_norm_refs(folder, content, wiki_links)` consumida por `vault_write`.
+
+- **`vault_code_tag.py` (Grupo 28 — Normas y Etiquetas de Código):** embebe etiquetas `@norm` como comentarios en la cabecera de archivos de código fuente. Acepta códigos custom (prefijo libre: `cr-0989`, `impl-001`, `bus-004`) y códigos del catálogo estándar (`AP-22`, `SP-01`, `CN-01`). Soporta 8 formatos de comentario según extensión (line `//`, hash `#`, open_close `<!-- -->`, block `/* */`, dash `--`). Registry: `00_System/code-tag-registry.json`. Operaciones: `--define`, `--apply`, `--remove`, `--scan`, `--list`, `--tag-note`.
+
+- **`norm_refs` auto-embed en frontmatter (vault_write):** `vault_write` llama `compute_norm_refs(folder, content, wiki_links)` y escribe `norm_refs: [...]` en el frontmatter de cada nota al crearla/actualizarla. Reglas: universal siempre (AP-11/12/13/16, CN-01/02, SP-01); condicional por wiki-links (+AP-14/21/22, SP-02); condicional por bullets (+AP-20); condicional por folder 03_Decisions (+AP-07); condicional por >500 líneas (+AP-23 + `ap23_warning`). `norm_refs` también se incluye en la respuesta JSON.
+
+- **AP-23 — Note complexity ceiling:** nota > 500 líneas → advertencia no-bloqueante `ap23_warning`. Resolución: dividir en sub-notas con `[[wiki-links]]` desde la nota original como índice.
+
+- **SP-01~03 — Session Protocol:** tres normas que codifican el protocolo de sesión del agente: SP-01 delete protocol (change_log antes de borrar), SP-02 forward-link verification (search antes de linkar, ghost_links warning), SP-03 session snapshot (vault_delta --snapshot antes de ops masivas).
+
+- **CN-01~03 — Naming Conventions:** tres convenciones de nomenclatura: CN-01 kebab-case filenames (vault_write slugify), CN-02 numbered folder structure (13 secciones canónicas), CN-03 standard status vocabulary (7 valores: planned/in-progress/implemented/deprecated/archived/stub/template).
+
+- **`norm_code` + `norm_name` en errores de guards (vault_write):** los 4 guards (AP-11 content_too_short, AP-20 content_empty_list, AP-21 path_anchored_wikilinks, AP-22 malformed_wikilinks) ahora incluyen `norm_code` y `norm_name` en la respuesta de error para correlación directa con el catálogo.
+
+- **`norm_code` en issues de vault_audit:** cada entrada en `issues.brokenLinks`, `issues.canonicalShadow`, `issues.crossFolderDuplicates`, `issues.malformedWikilinks` incluye `norm_code` (AP-14, AP-17, AP-18, AP-22 respectivamente). El resultado incluye `norm_refs` map código→nombre.
+
+- **Documentación de Grupos 24–27 en spec:** los grupos Data Quality (24), Propagación (25), Tokens (26) y Session Delta/Tags (27), documentados en changelogs desde v27–v29, ahora tienen sección formal en "Las 61 Tools del Vault".
+
+**Archivos del sistema:**
+- `00_System/norm-registry.json` — 34 normas, clasificadas por severidad/categoría/enforcement
+- `00_System/code-tag-registry.json` — etiquetas personalizadas y del estándar aplicadas a código
 
 ---
 
