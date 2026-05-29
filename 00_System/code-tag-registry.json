@@ -1,0 +1,26 @@
+{
+  "version": "v30",
+  "tags": {
+    "cr-0989": {
+      "name": "Cola de prioridad",
+      "description": "Implementacion FIFO con pesos para el sistema de asistencia",
+      "files": [
+        "C:\\Users\\Carlos Ivan\\Documents\\GitHub\\Vault-Obsidian-Architecture\\scripts\\..\\test_colas.cs"
+      ],
+      "vault_note": null,
+      "created_at": "2026-05-29T10:02:30.000Z",
+      "created_by": "claude"
+    },
+    "ap-22": {
+      "name": "Bracket sanity — corchetes desbalanceados o vacíos",
+      "description": "",
+      "files": [
+        "C:\\Users\\Carlos Ivan\\Documents\\GitHub\\Vault-Obsidian-Architecture\\scripts\\..\\test_colas.cs"
+      ],
+      "vault_note": null,
+      "created_at": "",
+      "created_by": "auto"
+    }
+  },
+  "updated_at": "2026-05-29T10:03:30.000Z"
+}
