@@ -19,6 +19,7 @@ import shutil
 import sys
 from vault_errors import wrap_main
 from vault_io import atomic_write_text, atomic_write_json, atomic_update_json, assert_within_vault
+from vault_norms import compute_norm_refs
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -131,8 +132,9 @@ def generate_frontmatter(
     meta: Optional[Dict[str, Any]] = None,
     existing_id: Optional[str] = None,
     existing_created: Optional[str] = None,
+    norm_refs: Optional[List[str]] = None,
 ) -> str:
-    """Generate YAML frontmatter with v27-compliant metadata (CIA + agent fields)."""
+    """Generate YAML frontmatter with v27-compliant metadata (CIA + agent + norm_refs fields)."""
     meta = meta or {}
     frontmatter = ["---"]
     frontmatter.append(f"title: {title}")
@@ -142,6 +144,9 @@ def generate_frontmatter(
 
     if tags:
         frontmatter.append(f"tags: {json.dumps(tags)}")
+
+    if norm_refs:
+        frontmatter.append(f"norm_refs: {json.dumps(norm_refs)}")
 
     # v27 CIA schema — defaults overridable via meta
     frontmatter.append(f"cia_integrity: {meta.pop('cia_integrity', 'medium')}")
@@ -299,8 +304,16 @@ def vault_write(
     # Create folder if not exists
     vault_path.parent.mkdir(parents=True, exist_ok=True)
 
+    # Compute applicable norm_refs before generating frontmatter
+    wiki_links = extract_wiki_links(content)
+    norm_refs = compute_norm_refs(folder, content, wiki_links)
+
+    # AP-23 advisory: note exceeds complexity ceiling
+    line_count = len(content.split("\n"))
+    ap23_warning = line_count > 500
+
     # Generate frontmatter and write file
-    frontmatter = generate_frontmatter(title, tags, meta, existing_id, existing_created)
+    frontmatter = generate_frontmatter(title, tags, meta, existing_id, existing_created, norm_refs)
 
     final_content = f"{frontmatter}\n\n{content}"
 
@@ -308,9 +321,6 @@ def vault_write(
 
     # Update search index
     update_search_index(str(vault_path.relative_to(VAULT_ROOT)), title, content, tags, is_new=(existing_id is None))
-
-    # Extract wiki-links for graph
-    wiki_links = extract_wiki_links(content)
 
     # Regenerate section index in background — fire-and-forget, never blocks write
     try:
@@ -335,9 +345,12 @@ def vault_write(
         "filename": filename,
         "tags": tags,
         "wikiLinks": wiki_links,
+        "norm_refs": norm_refs,
         "created": existing_id is None,
         "message": f"Note {'created' if existing_id is None else 'updated'} successfully",
     }
+    if ap23_warning:
+        result["ap23_warning"] = f"AP-23: note has {line_count} lines — consider splitting into sub-notes (threshold: 500)"
     if ghost_links:
         result["ghost_links"] = ghost_links
     if tag_suggestions:

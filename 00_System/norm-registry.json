@@ -1,28 +1,28 @@
 {
   "version": "v29",
-  "updated_at": "2026-05-28T20:30:40.000Z",
-  "total": 27,
-  "antipatterns": 22,
+  "updated_at": "2026-05-29T09:47:37.000Z",
+  "total": 34,
+  "antipatterns": 29,
   "patterns": 5,
   "by_severity": {
-    "critical": 6,
-    "high": 8,
-    "medium": 7,
-    "low": 1,
+    "critical": 7,
+    "high": 11,
+    "medium": 9,
+    "low": 2,
     "N/A": 5
   },
   "by_category": {
-    "content-quality": 8,
+    "content-quality": 9,
     "structure": 8,
     "frontmatter": 4,
     "linking": 3,
     "process": 4
   },
   "by_enforcement": {
-    "guard": 3,
-    "audit": 7,
+    "guard": 5,
+    "audit": 8,
     "guard+audit": 2,
-    "manual": 10,
+    "manual": 14,
     "recommended": 5
   },
   "norms": [
@@ -455,6 +455,128 @@
         "vault_audit"
       ],
       "introduced_version": "v25"
+    },
+    {
+      "code": "AP-23",
+      "name": "Note complexity ceiling — nota demasiado larga",
+      "type": "antipattern",
+      "category": "content-quality",
+      "severity": "medium",
+      "enforcement": "audit",
+      "description": "Una nota con más de 500 líneas de contenido real se vuelve difícil de mantener y consume excesivo contexto del LLM. Debe dividirse en sub-notas canónicas interconectadas con [[wiki-links]] desde la nota original.",
+      "signal": "vault_write advierte en la respuesta con ap23_warning cuando content > 500 líneas. vault_norms --scan reporta AP-23 en notas largas.",
+      "prevention": "Al superar 500 líneas, crear sub-notas en la misma carpeta y reemplazar la sección con [[sub-nota|título]]. La nota original actúa como índice/resumen.",
+      "tools_enforcing": [],
+      "tools_detecting": [
+        "vault_write",
+        "vault_norms"
+      ],
+      "introduced_version": "v30"
+    },
+    {
+      "code": "SP-01",
+      "name": "Delete protocol — change_log obligatorio antes de eliminar",
+      "type": "antipattern",
+      "category": "session-protocol",
+      "severity": "critical",
+      "enforcement": "manual",
+      "description": "Antes de eliminar cualquier nota del vault, el agente DEBE llamar: vault_change_log --action deleted --path <nota> --reason <motivo>. Sin este registro, la nota desaparece sin rastro auditado.",
+      "signal": "Nota eliminada que no aparece en 00_System/.change-log.json con action: deleted.",
+      "prevention": "Regla de gobernanza: verificar en .change-log.json antes de delete. Si no hay entrada → llamar vault_change_log primero, luego eliminar.",
+      "tools_enforcing": [
+        "vault_change_log"
+      ],
+      "tools_detecting": [
+        "vault_audit"
+      ],
+      "introduced_version": "v30"
+    },
+    {
+      "code": "SP-02",
+      "name": "Forward-link verification — buscar antes de linkar",
+      "type": "antipattern",
+      "category": "session-protocol",
+      "severity": "high",
+      "enforcement": "guard",
+      "description": "Antes de escribir [[nombre-nota]] en contenido, verificar que la nota destino ya existe: vault_search(query:'nombre-nota'). Si no hay resultado, escribir en texto plano hasta que la nota exista. vault_write advierte con ghost_links[] (no bloquea) si el target no existe.",
+      "signal": "vault_write retorna ghost_links[] en la respuesta de éxito.",
+      "prevention": "vault_search() antes de cada [[wiki-link]] nuevo. No crear links especulativos.",
+      "tools_enforcing": [
+        "vault_write"
+      ],
+      "tools_detecting": [
+        "vault_graph",
+        "vault_audit"
+      ],
+      "introduced_version": "v30"
+    },
+    {
+      "code": "SP-03",
+      "name": "Session snapshot pattern — delta antes de operaciones masivas",
+      "type": "antipattern",
+      "category": "session-protocol",
+      "severity": "medium",
+      "enforcement": "manual",
+      "description": "Antes de cualquier operación masiva (migración, rename en lote, vault_tags --rename múltiple, delete en lote), capturar snapshot con vault_delta --snapshot. Permite detectar regresiones y calcular impacto real de la operación.",
+      "signal": "Operación masiva sin snapshot previo → no hay baseline para detectar regresiones.",
+      "prevention": "PAT-4 (phased audit): snapshot → operación → vault_audit() → comparar score. vault_delta --snapshot antes de cada sesión con cambios masivos.",
+      "tools_enforcing": [],
+      "tools_detecting": [
+        "vault_delta"
+      ],
+      "introduced_version": "v30"
+    },
+    {
+      "code": "CN-01",
+      "name": "Kebab-case filenames — nombres de archivo en minúsculas con guiones",
+      "type": "antipattern",
+      "category": "convention",
+      "severity": "high",
+      "enforcement": "guard",
+      "description": "Los archivos .md del vault deben usar kebab-case: minúsculas, palabras separadas por guiones, sin espacios ni caracteres especiales. vault_write aplica slugify() automáticamente al título para generar el filename. Ej: 'ADR-001 Auth Decision' → adr-001-auth-decision.md.",
+      "signal": "Archivos con espacios, mayúsculas o caracteres especiales en el nombre.",
+      "prevention": "Siempre usar vault_write para crear notas. Nunca crear archivos .md directamente.",
+      "tools_enforcing": [
+        "vault_write"
+      ],
+      "tools_detecting": [
+        "vault_validate"
+      ],
+      "introduced_version": "v30"
+    },
+    {
+      "code": "CN-02",
+      "name": "Numbered folder structure — secciones numeradas como únicos destinos",
+      "type": "antipattern",
+      "category": "convention",
+      "severity": "high",
+      "enforcement": "manual",
+      "description": "Solo las 13 secciones numeradas son destinos válidos para notas: 00_System, 01_Projects, 02_Observability, 03_Decisions, 04_Specs, 05_Patterns, 06_Runbooks, 07_Knowledge, 08_Integrations, 09_Architecture, 10_Migrated, 11_Code, 99_Index. Crear carpetas ad-hoc o escribir en la raíz viola este estándar (ver AP-15).",
+      "signal": "Carpeta con nombre que no sigue el patrón NN_Nombre en el vault.",
+      "prevention": "Elegir la sección más apropiada del vocabulario estándar. AP-15 para raíz del vault.",
+      "tools_enforcing": [
+        "vault_write"
+      ],
+      "tools_detecting": [
+        "vault_validate"
+      ],
+      "introduced_version": "v30"
+    },
+    {
+      "code": "CN-03",
+      "name": "Standard status vocabulary — vocabulario canónico de meta.status",
+      "type": "antipattern",
+      "category": "convention",
+      "severity": "low",
+      "enforcement": "manual",
+      "description": "El campo meta.status (o status en frontmatter) debe usar solo valores del vocabulario estándar: planned | in-progress | implemented | deprecated | archived | stub | template. Valores fuera del vocabulario rompen filtros de vault_list y vault_audit.",
+      "signal": "vault_list filtra por status y retorna 0 cuando el valor es no-estándar.",
+      "prevention": "Usar solo los 7 valores del vocabulario. vault_validate puede extenderse para validarlos.",
+      "tools_enforcing": [],
+      "tools_detecting": [
+        "vault_validate"
+      ],
+      "introduced_version": "v30"
     }
   ]
 }

@@ -513,16 +513,199 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "tools_detecting": ["vault_audit"],
         "introduced_version": "v25",
     },
+    # ── Anti-patrón AP-23 ──────────────────────────────────────────────────────
+    {
+        "code": "AP-23",
+        "name": "Note complexity ceiling — nota demasiado larga",
+        "type": "antipattern",
+        "category": "content-quality",
+        "severity": "medium",
+        "enforcement": "audit",
+        "description": (
+            "Una nota con más de 500 líneas de contenido real se vuelve difícil de mantener "
+            "y consume excesivo contexto del LLM. Debe dividirse en sub-notas canónicas "
+            "interconectadas con [[wiki-links]] desde la nota original."
+        ),
+        "signal": "vault_write advierte en la respuesta con ap23_warning cuando content > 500 líneas. "
+                  "vault_norms --scan reporta AP-23 en notas largas.",
+        "prevention": (
+            "Al superar 500 líneas, crear sub-notas en la misma carpeta y reemplazar la sección "
+            "con [[sub-nota|título]]. La nota original actúa como índice/resumen."
+        ),
+        "tools_enforcing": [],
+        "tools_detecting": ["vault_write", "vault_norms"],
+        "introduced_version": "v30",
+    },
+    # ── Protocolo de sesión SP-XX ──────────────────────────────────────────────
+    {
+        "code": "SP-01",
+        "name": "Delete protocol — change_log obligatorio antes de eliminar",
+        "type": "antipattern",
+        "category": "session-protocol",
+        "severity": "critical",
+        "enforcement": "manual",
+        "description": (
+            "Antes de eliminar cualquier nota del vault, el agente DEBE llamar: "
+            "vault_change_log --action deleted --path <nota> --reason <motivo>. "
+            "Sin este registro, la nota desaparece sin rastro auditado."
+        ),
+        "signal": "Nota eliminada que no aparece en 00_System/.change-log.json con action: deleted.",
+        "prevention": (
+            "Regla de gobernanza: verificar en .change-log.json antes de delete. "
+            "Si no hay entrada → llamar vault_change_log primero, luego eliminar."
+        ),
+        "tools_enforcing": ["vault_change_log"],
+        "tools_detecting": ["vault_audit"],
+        "introduced_version": "v30",
+    },
+    {
+        "code": "SP-02",
+        "name": "Forward-link verification — buscar antes de linkar",
+        "type": "antipattern",
+        "category": "session-protocol",
+        "severity": "high",
+        "enforcement": "guard",
+        "description": (
+            "Antes de escribir [[nombre-nota]] en contenido, verificar que la nota destino "
+            "ya existe: vault_search(query:'nombre-nota'). Si no hay resultado, escribir "
+            "en texto plano hasta que la nota exista. "
+            "vault_write advierte con ghost_links[] (no bloquea) si el target no existe."
+        ),
+        "signal": "vault_write retorna ghost_links[] en la respuesta de éxito.",
+        "prevention": "vault_search() antes de cada [[wiki-link]] nuevo. No crear links especulativos.",
+        "tools_enforcing": ["vault_write"],
+        "tools_detecting": ["vault_graph", "vault_audit"],
+        "introduced_version": "v30",
+    },
+    {
+        "code": "SP-03",
+        "name": "Session snapshot pattern — delta antes de operaciones masivas",
+        "type": "antipattern",
+        "category": "session-protocol",
+        "severity": "medium",
+        "enforcement": "manual",
+        "description": (
+            "Antes de cualquier operación masiva (migración, rename en lote, vault_tags --rename "
+            "múltiple, delete en lote), capturar snapshot con vault_delta --snapshot. "
+            "Permite detectar regresiones y calcular impacto real de la operación."
+        ),
+        "signal": "Operación masiva sin snapshot previo → no hay baseline para detectar regresiones.",
+        "prevention": (
+            "PAT-4 (phased audit): snapshot → operación → vault_audit() → comparar score. "
+            "vault_delta --snapshot antes de cada sesión con cambios masivos."
+        ),
+        "tools_enforcing": [],
+        "tools_detecting": ["vault_delta"],
+        "introduced_version": "v30",
+    },
+    # ── Convenciones de nomenclatura CN-XX ────────────────────────────────────
+    {
+        "code": "CN-01",
+        "name": "Kebab-case filenames — nombres de archivo en minúsculas con guiones",
+        "type": "antipattern",
+        "category": "convention",
+        "severity": "high",
+        "enforcement": "guard",
+        "description": (
+            "Los archivos .md del vault deben usar kebab-case: minúsculas, palabras separadas "
+            "por guiones, sin espacios ni caracteres especiales. "
+            "vault_write aplica slugify() automáticamente al título para generar el filename. "
+            "Ej: 'ADR-001 Auth Decision' → adr-001-auth-decision.md."
+        ),
+        "signal": "Archivos con espacios, mayúsculas o caracteres especiales en el nombre.",
+        "prevention": "Siempre usar vault_write para crear notas. Nunca crear archivos .md directamente.",
+        "tools_enforcing": ["vault_write"],
+        "tools_detecting": ["vault_validate"],
+        "introduced_version": "v30",
+    },
+    {
+        "code": "CN-02",
+        "name": "Numbered folder structure — secciones numeradas como únicos destinos",
+        "type": "antipattern",
+        "category": "convention",
+        "severity": "high",
+        "enforcement": "manual",
+        "description": (
+            "Solo las 13 secciones numeradas son destinos válidos para notas: "
+            "00_System, 01_Projects, 02_Observability, 03_Decisions, 04_Specs, "
+            "05_Patterns, 06_Runbooks, 07_Knowledge, 08_Integrations, 09_Architecture, "
+            "10_Migrated, 11_Code, 99_Index. "
+            "Crear carpetas ad-hoc o escribir en la raíz viola este estándar (ver AP-15)."
+        ),
+        "signal": "Carpeta con nombre que no sigue el patrón NN_Nombre en el vault.",
+        "prevention": "Elegir la sección más apropiada del vocabulario estándar. AP-15 para raíz del vault.",
+        "tools_enforcing": ["vault_write"],
+        "tools_detecting": ["vault_validate"],
+        "introduced_version": "v30",
+    },
+    {
+        "code": "CN-03",
+        "name": "Standard status vocabulary — vocabulario canónico de meta.status",
+        "type": "antipattern",
+        "category": "convention",
+        "severity": "low",
+        "enforcement": "manual",
+        "description": (
+            "El campo meta.status (o status en frontmatter) debe usar solo valores del vocabulario "
+            "estándar: planned | in-progress | implemented | deprecated | archived | stub | template. "
+            "Valores fuera del vocabulario rompen filtros de vault_list y vault_audit."
+        ),
+        "signal": "vault_list filtra por status y retorna 0 cuando el valor es no-estándar.",
+        "prevention": "Usar solo los 7 valores del vocabulario. vault_validate puede extenderse para validarlos.",
+        "tools_enforcing": [],
+        "tools_detecting": ["vault_validate"],
+        "introduced_version": "v30",
+    },
 ]
 
 # Índice rápido por código
 _NORM_BY_CODE: Dict[str, Dict[str, Any]] = {n["code"]: n for n in NORM_CATALOG}
 
 _SEVERITY_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3, "N/A": 4}
-_CATEGORY_ORDER = {"linking": 0, "content-quality": 1, "structure": 2, "frontmatter": 3, "process": 4}
+_CATEGORY_ORDER = {
+    "linking": 0,
+    "content-quality": 1,
+    "structure": 2,
+    "frontmatter": 3,
+    "process": 4,
+    "session-protocol": 5,
+    "convention": 6,
+}
 
 
 # ─── Funciones públicas ────────────────────────────────────────────────────────
+
+def compute_norm_refs(folder: str, content: str, wiki_links: List[str]) -> List[str]:
+    """
+    Compute the list of norm codes that apply to a note based on its folder and content.
+    Used by vault_write to auto-embed norm_refs in frontmatter.
+
+    Rules:
+      - Universal (every note):    AP-11, AP-12, AP-13, AP-16, CN-01, CN-02, SP-01
+      - Wiki-links present:        + AP-14, AP-21, AP-22, SP-02
+      - Bullet-heavy content:      + AP-20
+      - 03_Decisions/ folder:      + AP-07
+      - 06_Runbooks/ folder:       + AP-09 excluded (note IS in correct folder)
+      - Content > 500 lines:       + AP-23 (advisory)
+    """
+    refs: set = {"AP-11", "AP-12", "AP-13", "AP-16", "CN-01", "CN-02", "SP-01"}
+
+    if wiki_links:
+        refs.update({"AP-14", "AP-21", "AP-22", "SP-02"})
+
+    bullets = re.findall(r"^\s*[-*]\s*(.*)", content, re.MULTILINE)
+    if bullets:
+        refs.add("AP-20")
+
+    folder_lower = folder.lower()
+    if folder_lower.startswith("03_decisions") or "decisions" in folder_lower:
+        refs.add("AP-07")
+
+    if len(content.split("\n")) > 500:
+        refs.add("AP-23")
+
+    return sorted(refs)
+
 
 def vault_norms_list(
     norm_type: Optional[str] = None,
