@@ -347,6 +347,17 @@ DQ_METADATA: Dict[str, Dict[str, Any]] = {
         "cia_scope": ["integrity", "availability"],
         "propagation_aware": False,
     },
+    # ── Normas y Etiquetas de Código (v30) ──────────────────────────────────
+    "vault_norms": {
+        "dq_dimensions": ["validity", "integrity", "consistency"],
+        "cia_scope": ["integrity"],
+        "propagation_aware": False,
+    },
+    "vault_code_tag": {
+        "dq_dimensions": ["integrity", "authenticity"],
+        "cia_scope": ["integrity"],
+        "propagation_aware": False,
+    },
 }
 
 
@@ -401,6 +412,12 @@ TOOL_GROUPS: Dict[str, str] = {
     "vault_fundamentals": "Data Quality",
     "vault_impact": "Propagación",
     "vault_propagate": "Propagación",
+    # v29 Session Delta y Tags
+    "vault_delta": "Session Delta y Tags",
+    "vault_tags": "Session Delta y Tags",
+    # v30 Normas y Etiquetas de Código
+    "vault_norms": "Normas y Etiquetas",
+    "vault_code_tag": "Normas y Etiquetas",
     # Legacy
     "vault_migrate": "Migración (legacy)", "vault_reorganize": "Migración (legacy)",
     "vault_tools": "misc (legacy)", "vault_create": "Core (legacy)", "vault_render": "Diagramas (legacy)",

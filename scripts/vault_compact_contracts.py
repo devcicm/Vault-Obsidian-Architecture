@@ -23,6 +23,7 @@ import json
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from vault_errors import wrap_main
 
 SCRIPTS_DIR = Path(__file__).parent
 VAULT_ROOT = SCRIPTS_DIR.parent
@@ -329,4 +330,4 @@ Ejemplos:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(wrap_main(main, "vault_compact_contracts"))

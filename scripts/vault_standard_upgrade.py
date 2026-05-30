@@ -33,7 +33,7 @@ SYSTEM_DIR = VAULT_ROOT / "00_System"
 VERSION_FILE = SYSTEM_DIR / "standard-version.json"
 IDENTITY_FILE = SYSTEM_DIR / "identity.md"
 
-CURRENT_VERSION = "v29"
+CURRENT_VERSION = "v30"
 
 MIGRATIONS: Dict[str, Dict[str, Any]] = {
     "v21": {
@@ -167,9 +167,25 @@ MIGRATIONS: Dict[str, Dict[str, Any]] = {
             "AP-22 (vault_write + vault_audit): corchetes desbalanceados o [[]] vacios → error bloqueante; ghost_links (targets inexistentes) → warning no-bloqueante en output",
         ],
     },
+    "v30": {
+        "description": "Norm catalog (AP/PAT/SP/CN), norm_refs auto-embed, vault_norms, vault_code_tag, 34 norms total",
+        "add_folders": [],
+        "update_identity": {"tools_count": "61", "groups_count": "28"},
+        "notes": [
+            "vault_norms.py (NUEVO): catálogo canónico de 34 normas (AP-01~23, PAT-1~5, SP-01~03, CN-01~03) con list/show/scan/apply/rebuild",
+            "vault_code_tag.py (NUEVO): embebe @norm comments en headers de archivos fuente (5 estilos: line/hash/block/open_close/dash)",
+            "vault_write.py: auto-embebe norm_refs en frontmatter via compute_norm_refs(); errores incluyen norm_code + norm_name",
+            "vault_audit.py: issues incluyen norm_code por entrada (AP-14/17/18/22); resultado incluye mapa norm_refs",
+            "AP-23 (NUEVO): note complexity ceiling — notas >500 líneas deben dividirse",
+            "SP-01~03 (NUEVO): protocolo de sesión — delete protocol, forward-link verification, session snapshot",
+            "CN-01~03 (NUEVO): convenciones de nomenclatura — kebab-case, numbered folders, status vocabulary",
+            "00_System/norm-registry.json: proyección del catálogo para consumo de tools",
+            "00_System/code-tag-registry.json: registro de etiquetas de código custom (@norm tags)",
+        ],
+    },
 }
 
-VERSION_ORDER = ["v19", "v20", "v21", "v22", "v23", "v24", "v25", "v26", "v27", "v28", "v29"]
+VERSION_ORDER = ["v19", "v20", "v21", "v22", "v23", "v24", "v25", "v26", "v27", "v28", "v29", "v30"]
 
 
 def _version_index(v: str) -> int:
@@ -448,7 +464,7 @@ Notas:
     parser.add_argument("--init", dest="init_version", help="Initialize standard-version.json with given version")
     parser.add_argument("--agent", default="claude", help="Agent name for audit trail (default: claude)")
     parser.add_argument("--set-profile", dest="set_profile", choices=["minimal", "standard", "full"],
-                        help="Set the tool profile in standard-version.json (minimal=10, standard=30, full=53)")
+                        help="Set the tool profile in standard-version.json (minimal=10, standard=30, full=61)")
     parser.add_argument("--validate", action="store_true",
                         help="Run compliance check: folders, frontmatter, health score (non-blocking)")
 

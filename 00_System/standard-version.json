@@ -1,0 +1,17 @@
+{
+  "applied_version": "v30",
+  "applied_at": "2026-05-30T19:35:52.000Z",
+  "applied_by": "claude",
+  "migrations_applied": [
+    "v21",
+    "v22",
+    "v23",
+    "v24",
+    "v25",
+    "v26",
+    "v27",
+    "v28",
+    "v29",
+    "v30"
+  ]
+}

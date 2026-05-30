@@ -2,9 +2,9 @@
 
 **Estándar de diseño para dotar a agentes LLM de memoria documental persistente.**
 
-[![Version](https://img.shields.io/badge/version-v29-blue)](./vault-obsidian-architecture.md)
-[![Tools](https://img.shields.io/badge/tools-59_active-green)](./scripts/)
-[![Scripts](https://img.shields.io/badge/scripts-68_total-lightblue)](./scripts/)
+[![Version](https://img.shields.io/badge/version-v30-blue)](./vault-obsidian-architecture.md)
+[![Tools](https://img.shields.io/badge/tools-57_active-green)](./scripts/)
+[![Scripts](https://img.shields.io/badge/scripts-71_total-lightblue)](./scripts/)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow)](./scripts/)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](./LICENSE)
 
@@ -127,7 +127,7 @@ python scripts/vault_audit.py
 
 ---
 
-## Las 59 tools — 27 grupos
+## Las 61 tools — 28 grupos
 
 | Grupo | Tools |
 |---|---|
@@ -158,6 +158,7 @@ python scripts/vault_audit.py
 | 25 — Propagación | `vault_impact`, `vault_propagate` |
 | 26 — Tokens | `vault_tokens`, `vault_token_counter`, `vault_token_service` |
 | 27 — Session Delta y Tags | `vault_delta`, `vault_tags` |
+| 28 — Normas y Etiquetas | `vault_norms`, `vault_code_tag` |
 
 Ver **[scripts/README.md](./scripts/README.md)** para contratos completos con parámetros, ejemplos y protocolo de sesión.
 
@@ -241,13 +242,13 @@ Sistema de control de asistencia con autenticación biométrica.
 
 ## La especificación completa
 
-**[vault-obsidian-architecture.md](./vault-obsidian-architecture.md)** — v28, 4500+ líneas.
+**[vault-obsidian-architecture.md](./vault-obsidian-architecture.md)** — v30, 4800+ líneas.
 
 Contiene:
 - 8 principios de diseño
-- 53 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
-- 21 antipatrones (AP-01–AP-21) con detección automática
-- 5 patrones recomendados (PAT-1–PAT-5)
+- 61 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
+- 34 normas: 23 antipatrones (AP-01–AP-23), 5 patrones (PAT-1–PAT-5), 3 SP, 3 CN
+- norm_refs auto-embebido en frontmatter + vault_code_tag para etiquetas en código fuente
 - 8 Fundamentos de Datos (F1–F8) con trazabilidad a tools
 - CIA schema completo con semántica por tipo de nota
 - Data Quality framework (9 dimensiones, índice persistente)
@@ -265,12 +266,12 @@ Contiene:
 ## Scripts — estructura del repositorio
 
 ```
-scripts/                    ← 68 archivos Python (una tool = un script CLI)
+scripts/                    ← 71 archivos Python (una tool = un script CLI)
 ├── vault_io.py             — I/O base: assert_within_vault, atomic_write_text/json, file_lock
 ├── vault_errors.py         — wrap_main (timeout 60s), emit_ok, trace log
-├── vault_write.py          — tool principal de escritura (guards AP-20, AP-21)
-├── vault_audit.py          — health score (CIA-weighted), DQ health, propagation pending
-├── vault_standard_upgrade.py — migraciones v19→v28, --init, --check, --validate
+├── vault_write.py          — tool principal de escritura (guards AP-20, AP-21, norm_refs auto-embed)
+├── vault_audit.py          — health score (CIA-weighted), DQ health, propagation pending, norm_code
+├── vault_standard_upgrade.py — migraciones v19→v30, --init, --check, --validate
 ├── vault_code_module.py    — documentación IEEE 1016 para módulos de código
 ├── vault_flow_save.py      — flujos con Mermaid embebido
 ├── vault_infra_save.py     — componentes de infraestructura + mapa de red auto-generado
