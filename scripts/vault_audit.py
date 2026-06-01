@@ -324,6 +324,38 @@ def _detect_cross_folder_duplicates(notes: List[Path]) -> List[Dict[str, Any]]:
     return duplicates
 
 
+def _detect_empty_indexes() -> List[Dict[str, Any]]:
+    """AP-11/AP-03: detect section folders whose index.md has no real notes.
+
+    Scans every top-level vault folder for real notes (excludes index.md / README.md).
+    Reports folders that exist but have zero content notes — their index is a stub.
+    """
+    empty = []
+    try:
+        for section_dir in sorted(VAULT_ROOT.iterdir()):
+            if not section_dir.is_dir():
+                continue
+            name = section_dir.name
+            if name.startswith(".") or name in ("scripts", ".history", "vault-backups"):
+                continue
+            real_notes = [
+                p for p in section_dir.rglob("*.md")
+                if p.name.lower() not in ("index.md", "readme.md")
+                and not any(part.startswith(".") for part in p.parts)
+            ]
+            index_md = section_dir / "index.md"
+            if len(real_notes) == 0:
+                empty.append({
+                    "norm_code": "AP-03",
+                    "folder": name,
+                    "index_exists": index_md.exists(),
+                    "note": "Seccion sin notas — index es stub sin contenido real",
+                })
+    except Exception:
+        pass
+    return empty
+
+
 def _read_quality_index() -> Optional[Dict[str, Any]]:
     if not QUALITY_INDEX.exists():
         return None
@@ -504,6 +536,7 @@ def vault_audit(project: Optional[str] = None, refresh_dq: bool = False) -> Dict
     canonical_shadow = _detect_canonical_shadow(content_notes)
     cross_folder_dupes = _detect_cross_folder_duplicates(content_notes)
     malformed_wikilinks = _detect_malformed_wikilinks(all_notes)
+    empty_indexes = _detect_empty_indexes()
 
     # DQ + propagation data (loaded regardless of refresh_dq; only refresh triggers subprocess)
     dq_health = _refresh_dq_if_needed() if refresh_dq else None
@@ -518,6 +551,7 @@ def vault_audit(project: Optional[str] = None, refresh_dq: bool = False) -> Dict
     score -= min(10, len(canonical_shadow) * 2)
     score -= min(10, len(cross_folder_dupes) * 3)
     score -= min(20, len(malformed_wikilinks) * 5)
+    score -= min(10, len(empty_indexes) * 2)
     # CIA integrity + propagation_pending adjustments
     score -= min(15, _cia_score_penalty(content_notes, stale, propagation_pending))
     score = max(0, score)
@@ -543,6 +577,8 @@ def vault_audit(project: Optional[str] = None, refresh_dq: bool = False) -> Dict
         summary_parts.append(f"{len(cross_folder_dupes)} duplicados AP-18")
     if malformed_wikilinks:
         summary_parts.append(f"{len(malformed_wikilinks)} corchetes AP-22")
+    if empty_indexes:
+        summary_parts.append(f"{len(empty_indexes)} secciones vacias AP-03")
 
     result: Dict[str, Any] = {
         "ok": True,
@@ -560,6 +596,7 @@ def vault_audit(project: Optional[str] = None, refresh_dq: bool = False) -> Dict
             "canonicalShadow": [{"norm_code": "AP-17", **e} for e in canonical_shadow],
             "crossFolderDuplicates": [{"norm_code": "AP-18", **e} for e in cross_folder_dupes],
             "malformedWikilinks": [{"norm_code": "AP-22", **e} for e in malformed_wikilinks],
+            "emptyIndexes": empty_indexes,
         },
         "norm_refs": {
             "AP-14": "Wiki-links rotos o vacíos",
