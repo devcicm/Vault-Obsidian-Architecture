@@ -15,15 +15,27 @@ def _detect_vault_root() -> Path:
 
     Priority order:
     1. VAULT_ROOT env var (explicit override)
-    2. vault-* subdirectory with 99_Index/ inside (scripts beside the vault)
-    3. Parent of scripts/ directory (legacy / scripts-inside-vault layout)
+    2. vault-* subdirectory beside scripts/ (consumer repo layout):
+       - First pass: prefer dirs that already have 00_System/, 99_Index/ or .obsidian/
+       - Second pass: accept any vault-* dir (fresh install, nothing initialized yet)
+       vault-backups* dirs are excluded from both passes.
+    3. Parent of scripts/ directory (scripts-inside-vault layout, source repo)
     """
     if env := os.environ.get("VAULT_ROOT"):
         return Path(env).resolve()
     project_root = Path(__file__).parent.parent.resolve()
-    for subdir in sorted(project_root.iterdir()):
-        if subdir.is_dir() and subdir.name.startswith("vault-") and (subdir / "99_Index").exists():
-            return subdir
+    _MARKERS = {"00_System", "99_Index", ".obsidian"}
+    candidates = [
+        s for s in sorted(project_root.iterdir())
+        if s.is_dir() and s.name.startswith("vault-") and not s.name.startswith("vault-backups")
+    ]
+    # Prefer candidates that already have vault content (initialized vault)
+    for c in candidates:
+        if any((c / m).exists() for m in _MARKERS):
+            return c
+    # Accept any vault-* dir (fresh vault, nothing initialized yet)
+    if candidates:
+        return candidates[0]
     return project_root
 
 
