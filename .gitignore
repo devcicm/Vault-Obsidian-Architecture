@@ -3,9 +3,8 @@ __pycache__/
 *.pyc
 
 # Vault runtime content — este repo es spec, no vault
-# vault_standard_upgrade crea estas carpetas al ejecutarse; no deben versionarse aquí
-00_System/.tool-trace.json
-00_System/.tool-tokens.json
+# Los scripts generan estas carpetas al ejecutarse; no deben versionarse aquí
+00_System/
 01_Projects/
 02_Observability/
 03_Decisions/
