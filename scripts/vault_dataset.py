@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Dataset - Gestión de keywords y búsqueda avanzada tipo LINQ
 """
@@ -23,7 +23,7 @@ except ImportError:
     NLTK_AVAILABLE = False
 
 
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 KEYWORDS_FILE = VAULT_ROOT / "99_Index" / "keywords-index.json"
 NOTES_FILE = VAULT_ROOT / "99_Index" / "notes-keywords.json"
 

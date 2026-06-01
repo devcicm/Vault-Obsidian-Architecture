@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Standard Upgrade Tool -- Detect and apply migrations between standard versions.
 
@@ -28,7 +28,7 @@ def _utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 SYSTEM_DIR = VAULT_ROOT / "00_System"
 VERSION_FILE = SYSTEM_DIR / "standard-version.json"
 IDENTITY_FILE = SYSTEM_DIR / "identity.md"

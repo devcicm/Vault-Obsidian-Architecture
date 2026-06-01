@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Drift Detect — Detect undocumented file changes
 
@@ -34,7 +34,7 @@ def _utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 SNAPSHOT_FILE = VAULT_ROOT / "00_System" / ".session-snapshot.json"
 
 TRACK_EXTENSIONS = {

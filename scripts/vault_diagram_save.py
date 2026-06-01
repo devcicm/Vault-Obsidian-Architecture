@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Diagram Save Tool — Save diagrams in the vault
 
@@ -15,7 +15,7 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
-from vault_io import atomic_write_text, assert_within_vault
+from vault_io import atomic_write_text, assert_within_vault, VAULT_ROOT
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -25,7 +25,6 @@ from typing import Any, Dict, List, Optional
 def _utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
-VAULT_ROOT = Path(__file__).parent.parent
 DIAGRAMS_DIR = VAULT_ROOT / "06_Diagrams"
 
 CATEGORIES = ["entity", "component", "sequence", "dependency", "flow", "state", "lifecycle"]

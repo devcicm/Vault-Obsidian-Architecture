@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Tags — Registro canonico de tags, auditoria y control de consistencia.
 
@@ -27,9 +27,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from vault_errors import wrap_main
-from vault_io import atomic_write_json, atomic_write_text, assert_within_vault
+from vault_io import atomic_write_json, atomic_write_text, assert_within_vault, VAULT_ROOT
 
-VAULT_ROOT = Path(__file__).parent.parent
 TAG_REGISTRY  = VAULT_ROOT / "00_System" / "tag-registry.json"
 TAG_INDEX_MD  = VAULT_ROOT / "99_Index" / "tag-index.md"
 SEARCH_INDEX  = VAULT_ROOT / "99_Index" / "search-index.json"

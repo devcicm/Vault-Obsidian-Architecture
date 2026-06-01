@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 vault_quality_check.py — Data Quality (DQ) scorer for vault notes.
 
@@ -45,9 +45,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from vault_errors import wrap_main
-from vault_io import atomic_write_json, file_lock
+from vault_io import atomic_write_json, file_lock, VAULT_ROOT
 
-VAULT_ROOT = Path(__file__).parent.parent
 SYSTEM_DIR = VAULT_ROOT / "00_System"
 QUALITY_INDEX = SYSTEM_DIR / "quality-index.json"
 CHANGE_LOG_JSON = SYSTEM_DIR / ".change-log.json"

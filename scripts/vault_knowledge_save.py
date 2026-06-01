@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Knowledge Save Tool — Save domain knowledge
 
@@ -16,7 +16,7 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
-from vault_io import atomic_write_text, assert_within_vault
+from vault_io import atomic_write_text, assert_within_vault, VAULT_ROOT
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -26,7 +26,6 @@ def _utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 from typing import Any, Dict, List, Optional
 
-VAULT_ROOT = Path(__file__).parent.parent
 KNOWLEDGE_DIR = VAULT_ROOT / "07_Knowledge"
 
 CATEGORIES = ["glossary", "api", "concept", "business-rule", "config", "dependency", "framework"]

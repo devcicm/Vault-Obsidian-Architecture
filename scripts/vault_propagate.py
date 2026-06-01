@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 vault_propagate.py — Propagation strategies for graph-aware change management.
 
@@ -33,9 +33,8 @@ from typing import Any, Dict, List, Optional, Set
 
 from vault_errors import wrap_main
 from vault_impact import vault_impact
-from vault_io import atomic_write_json, file_lock
+from vault_io import atomic_write_json, file_lock, VAULT_ROOT
 
-VAULT_ROOT = Path(__file__).parent.parent
 SYSTEM_DIR = VAULT_ROOT / "00_System"
 SCRIPTS_DIR = Path(__file__).parent
 PROPAGATION_QUEUE = SYSTEM_DIR / "propagation-queue.json"

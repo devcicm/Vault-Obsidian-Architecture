@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Merge — Merge an external vault or deduplicate internal notes.
 
@@ -23,7 +23,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 
 
 def _read_note(path: Path) -> str:

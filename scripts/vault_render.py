@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Render - Renderizar Mermaid diagrams
 """
@@ -12,7 +12,7 @@ import argparse
 from pathlib import Path
 
 
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 
 
 def render_mermaid(chart_type: str = None, output: str = None):

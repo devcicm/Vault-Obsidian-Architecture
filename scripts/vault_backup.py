@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Backup Tool — Full vault snapshot with manifest
 
@@ -17,7 +17,7 @@ import re
 import shutil
 import sys
 from vault_errors import wrap_main
-from vault_io import atomic_write_json
+from vault_io import atomic_write_jsonVAULT_ROOT
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -27,7 +27,6 @@ from typing import Any, Dict, List, Optional, Tuple
 def _utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
-VAULT_ROOT = Path(__file__).parent.parent
 BACKUP_ROOT = Path(__file__).parent.parent.parent / "vault-backups"
 INDEX_FILE = VAULT_ROOT / "99_Index" / "search-index.json"
 REGISTRY_FILE = BACKUP_ROOT / ".backup-registry.json"

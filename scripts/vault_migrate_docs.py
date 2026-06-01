@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Migrate Docs Tool — Migrate existing documentation to vault (3-phase flow)
 
@@ -19,13 +19,12 @@ import re
 import shutil
 import sys
 from vault_errors import wrap_main
-from vault_io import atomic_write_text
+from vault_io import atomic_write_textVAULT_ROOT
 import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-VAULT_ROOT = Path(__file__).parent.parent
 MIGRATED_DIR = VAULT_ROOT / "10_Migrated"
 STAGING_DIR = MIGRATED_DIR / "_staging"
 FORMATS = [".md", ".txt", ".html", ".rst", ".adoc"]

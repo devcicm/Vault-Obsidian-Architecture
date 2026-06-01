@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Code Relation Tool — Register relations between code files
 
@@ -24,7 +24,7 @@ from typing import Any, Dict, List, Optional
 def _utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 CODE_DIR = VAULT_ROOT / "11_Code"
 INDEX_FILE = CODE_DIR / ".code-index.json"
 

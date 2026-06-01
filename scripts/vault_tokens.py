@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 vault_tokens.py -- Token usage analytics for vault tools.
 
@@ -24,7 +24,7 @@ from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main, emit_error
 
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 TOKENS_FILE = VAULT_ROOT / "00_System" / ".tool-tokens.json"
 
 

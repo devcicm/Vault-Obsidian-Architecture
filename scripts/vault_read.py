@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Read Tool — Read note with metadata
 
@@ -16,13 +16,12 @@ import os
 import re
 import sys
 from vault_errors import wrap_main
-from vault_io import assert_within_vault
+from vault_io import assert_within_vaultVAULT_ROOT
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 # Configuration
-VAULT_ROOT = Path(__file__).parent.parent
 HISTORY_DIR = VAULT_ROOT / ".history"
 
 

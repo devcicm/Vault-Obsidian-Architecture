@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Search Tool — Full-text weighted search
 
@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 # Configuration
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 INDEX_FILE = VAULT_ROOT / "99_Index" / "search-index.json"
 
 

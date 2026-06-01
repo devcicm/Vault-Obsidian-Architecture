@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 vault_impact.py — BFS impact analysis on the vault backlink graph.
 
@@ -28,7 +28,7 @@ from typing import Any, Dict, List, Optional, Set
 
 from vault_errors import wrap_main
 
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 GRAPH_FILE = VAULT_ROOT / "99_Index" / "graph.json"
 CHANGE_LOG_JSON = VAULT_ROOT / "00_System" / ".change-log.json"
 

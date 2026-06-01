@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Code Query Tool -- Recursive query of the code documentation index
 
@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 CODE_DIR = VAULT_ROOT / "11_Code"
 INDEX_FILE = CODE_DIR / ".code-index.json"
 

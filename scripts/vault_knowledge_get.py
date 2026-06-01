@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Knowledge Get Tool — Search and retrieve domain knowledge
 
@@ -19,7 +19,7 @@ from vault_errors import wrap_main
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 KNOWLEDGE_DIR = VAULT_ROOT / "07_Knowledge"
 INDEX_FILE = VAULT_ROOT / "99_Index" / "search-index.json"
 

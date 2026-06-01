@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Index - Generar indice markdown desde JSON
 """
@@ -10,7 +10,7 @@ import argparse
 from pathlib import Path
 
 
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 
 
 def generate_index(output="INDEX.md"):

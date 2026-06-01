@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 vault_errors.py — Observabilidad y trazabilidad centralizada para vault tools.
 
@@ -26,12 +26,11 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
-from vault_io import atomic_write_text, file_lock
+from vault_io import atomic_write_text, file_lock, VAULT_ROOT
 
 # Timeout en segundos para cualquier tool. Override via env: VAULT_TOOL_TIMEOUT=120
 TOOL_TIMEOUT_SECONDS: int = int(os.environ.get("VAULT_TOOL_TIMEOUT", "60"))
 
-VAULT_ROOT = Path(__file__).parent.parent
 TRACE_FILE = VAULT_ROOT / "00_System" / ".tool-trace.json"
 TOKENS_FILE = VAULT_ROOT / "00_System" / ".tool-tokens.json"
 TRACE_MAX_ENTRIES = 500
@@ -49,7 +48,7 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "message": "El directorio raíz del vault no existe o no es accesible.",
         "recovery": {
             "action": "fix_input",
-            "hint": "Verificar que el script esté en <vault>/scripts/ y que VAULT_ROOT = Path(__file__).parent.parent sea válido.",
+            "hint": "Verificar que el vault tenga carpeta 99_Index/ para que _detect_vault_root() lo detecte, o definir la env var VAULT_ROOT con la ruta absoluta al vault.",
             "docs": "vault-obsidian-architecture.md §Estructura de carpetas"
         }
     },

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault List Tool — List notes in vault
 
@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 # Configuration
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 
 # Folder descriptions
 FOLDER_DESCRIPTIONS = {

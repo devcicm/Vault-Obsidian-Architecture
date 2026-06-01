@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Graph Tool — Generate wiki-links graph
 
@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Set
 
 # Configuration
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 GRAPH_FILE = VAULT_ROOT / "99_Index" / "graph.json"
 
 # Only scan notes inside these standard sections — never root files or scripts/

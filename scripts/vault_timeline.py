@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Timeline Tool — Reconstruct chronological trajectory of a topic
 
@@ -22,7 +22,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 INDEX_FILE = VAULT_ROOT / "99_Index" / "search-index.json"
 
 ALL_SOURCES = [

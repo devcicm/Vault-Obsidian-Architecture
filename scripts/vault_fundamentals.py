@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 vault_fundamentals.py — Data Fundamentals registry & checker.
 
@@ -30,9 +30,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
-from vault_io import atomic_write_json, atomic_write_text
+from vault_io import atomic_write_json, atomic_write_text, VAULT_ROOT
 
-VAULT_ROOT = Path(__file__).parent.parent
 SCRIPTS_DIR = Path(__file__).parent
 SYSTEM_DIR = VAULT_ROOT / "00_System"
 FUNDAMENTALS_JSON = SYSTEM_DIR / "data-fundamentals.json"

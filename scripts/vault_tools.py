@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Tools - Script unificado para operaciones del vault
 """
@@ -14,7 +14,7 @@ from collections import Counter
 from vault_errors import wrap_main
 
 
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 
 
 class VaultTools:

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Backup List Tool — List all vault backups from registry
 
@@ -15,7 +15,7 @@ from vault_errors import wrap_main
 from pathlib import Path
 from typing import Any, Dict
 
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 BACKUP_ROOT = Path(__file__).parent.parent.parent / "vault-backups"
 REGISTRY_FILE = BACKUP_ROOT / ".backup-registry.json"
 

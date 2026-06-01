@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Validate — Validates frontmatter, folder structure, and index integrity.
 
@@ -21,7 +21,7 @@ import yaml
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 
 CIA_INTEGRITY_VALUES = {"critical", "high", "medium", "low"}
 CIA_AVAILABILITY_VALUES = {"high", "medium", "low"}

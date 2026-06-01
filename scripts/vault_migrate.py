@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Migration Script
 Migrate documentation from any source to vault with classification.
@@ -14,7 +14,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import Tuple, List
 
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 
 # Generic structural keywords — expand via --keywords CLI arg for project-specific terms
 DEFAULT_KEYWORDS: List[str] = ["deploy", "runner", "config", "api", "service", "guide", "spec"]

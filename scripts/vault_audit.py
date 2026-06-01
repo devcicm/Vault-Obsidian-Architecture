@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Audit — Health check for the active vault.
 
@@ -23,7 +23,7 @@ from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 SCRIPTS_DIR = Path(__file__).parent
 SYSTEM_DIR = VAULT_ROOT / "00_System"
 QUALITY_INDEX = SYSTEM_DIR / "quality-index.json"

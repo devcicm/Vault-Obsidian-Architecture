@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Runbook Log Tool — Log runbook execution
 
@@ -19,7 +19,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 
 OUTCOMES = ["success", "failed", "partial"]
 OUTCOME_ICONS = {"success": "✅", "failed": "❌", "partial": "⚠️"}

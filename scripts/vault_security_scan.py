@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Security Scan Tool — Scan code for vulnerabilities
 
@@ -30,7 +30,7 @@ def _utcdate() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
 
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 OBSERVABILITY_DIR = VAULT_ROOT / "02_Observability"
 VULNERABILITIES_DIR = OBSERVABILITY_DIR / "vulnerabilities"
 

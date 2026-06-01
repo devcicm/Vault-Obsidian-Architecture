@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Test Save Tool -- Save test cases and test documentation (ISO/IEC/IEEE 29119-3)
 
@@ -17,7 +17,7 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
-from vault_io import atomic_write_text, atomic_write_json, assert_within_vault
+from vault_io import atomic_write_text, atomic_write_json, assert_within_vault, VAULT_ROOT
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -28,7 +28,6 @@ def _utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
-VAULT_ROOT = Path(__file__).parent.parent
 TESTS_DIR = VAULT_ROOT / "15_Tests"
 INDEX_FILE = TESTS_DIR / ".tests-index.json"
 

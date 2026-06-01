@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Diff Tool — Compare note versions or two arbitrary files.
 
@@ -22,7 +22,7 @@ from vault_errors import wrap_main
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 HISTORY_DIR = VAULT_ROOT / ".history"
 
 

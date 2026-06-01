@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Reorganize Script
 Move notes from 10_Migrated to proper sections.
@@ -13,7 +13,7 @@ from collections import Counter
 from vault_errors import wrap_main
 
 
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 
 
 def _detect_dest(note: Path, project: str) -> str:

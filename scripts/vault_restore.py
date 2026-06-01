@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Restore Tool — Restore vault from backup
 
@@ -17,7 +17,7 @@ from vault_errors import wrap_main
 from pathlib import Path
 from typing import Any, Dict
 
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 BACKUP_ROOT = Path(__file__).parent.parent.parent / "vault-backups"
 INDEX_FILE = VAULT_ROOT / "99_Index" / "search-index.json"
 

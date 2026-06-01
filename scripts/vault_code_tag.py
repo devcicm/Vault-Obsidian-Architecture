@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Code Tag — Aplica etiquetas de norma (@norm) a archivos de código fuente.
 
@@ -28,11 +28,10 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
-from vault_io import atomic_write_json
+from vault_io import atomic_write_jsonVAULT_ROOT
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-VAULT_ROOT = Path(__file__).parent.parent
 CODE_TAG_REGISTRY = VAULT_ROOT / "00_System" / "code-tag-registry.json"
 
 # ─── Formatos de comentario por extensión ─────────────────────────────────────

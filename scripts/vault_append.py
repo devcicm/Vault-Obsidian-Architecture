@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Append Tool — Append content to existing note
 
@@ -15,13 +15,12 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
-from vault_io import atomic_write_text, assert_within_vault
+from vault_io import atomic_write_text, assert_within_vault, VAULT_ROOT
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
 # Configuration
-VAULT_ROOT = Path(__file__).parent.parent
 
 
 def vault_append(path: str, content: str, section: Optional[str] = None, timestamped: bool = True) -> dict:

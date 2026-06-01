@@ -10,6 +10,26 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Iterator
 
 
+def _detect_vault_root() -> Path:
+    """Auto-detect vault root.
+
+    Priority order:
+    1. VAULT_ROOT env var (explicit override)
+    2. vault-* subdirectory with 99_Index/ inside (scripts beside the vault)
+    3. Parent of scripts/ directory (legacy / scripts-inside-vault layout)
+    """
+    if env := os.environ.get("VAULT_ROOT"):
+        return Path(env).resolve()
+    project_root = Path(__file__).parent.parent.resolve()
+    for subdir in sorted(project_root.iterdir()):
+        if subdir.is_dir() and subdir.name.startswith("vault-") and (subdir / "99_Index").exists():
+            return subdir
+    return project_root
+
+
+VAULT_ROOT: Path = _detect_vault_root()
+
+
 @contextmanager
 def file_lock(target: Path, timeout: float = 30.0, stale_after: float = 120.0) -> Iterator[Path]:
     """Create an atomic directory lock near the target file.

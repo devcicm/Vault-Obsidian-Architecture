@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Create - Crear notas desde CLI
 """
@@ -12,7 +12,7 @@ from pathlib import Path
 from datetime import datetime
 
 
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 
 
 def create_note(title: str, folder: str = "01_Projects", content: str = "", tags: list = None, status: str = None):

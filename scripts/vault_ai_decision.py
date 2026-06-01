@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault AI Decision Tool -- Log AI agent decisions (ISO/IEC 42001:2023 AIMS)
 
@@ -19,7 +19,7 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
-from vault_io import atomic_write_text, atomic_write_json, assert_within_vault
+from vault_io import atomic_write_text, atomic_write_json, assert_within_vault, VAULT_ROOT
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -30,7 +30,6 @@ def _utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
-VAULT_ROOT = Path(__file__).parent.parent
 GOVERNANCE_DIR = VAULT_ROOT / "16_AI_Governance"
 DECISIONS_DIR = GOVERNANCE_DIR / "decisions"
 INDEX_FILE = GOVERNANCE_DIR / ".decisions-log.json"

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Reindex — Rebuild search-index.json (and optionally graph.json) from existing vault notes.
 
@@ -25,12 +25,11 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
-from vault_io import atomic_write_json
+from vault_io import atomic_write_jsonVAULT_ROOT
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
-VAULT_ROOT = Path(__file__).parent.parent
 INDEX_FILE = VAULT_ROOT / "99_Index" / "search-index.json"
 HASH_INDEX  = VAULT_ROOT / "99_Index" / "hash-index.json"
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Change Log Tool -- Record note lifecycle events in the vault.
 
@@ -25,7 +25,7 @@ import json
 import subprocess
 import sys
 from vault_errors import wrap_main
-from vault_io import atomic_write_text
+from vault_io import atomic_write_textVAULT_ROOT
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -36,7 +36,6 @@ def _utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
-VAULT_ROOT = Path(__file__).parent.parent
 SYSTEM_DIR = VAULT_ROOT / "00_System"
 LOG_MD = SYSTEM_DIR / "change-log.md"
 LOG_JSON = SYSTEM_DIR / ".change-log.json"

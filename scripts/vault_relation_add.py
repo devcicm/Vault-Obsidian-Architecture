@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Relation Add Tool — Add entity relations and auto-generate ERD
 
@@ -25,7 +25,7 @@ def _utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 from typing import Any, Dict, List, Optional
 
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 DIAGRAMS_DIR = VAULT_ROOT / "06_Diagrams"
 ENTITY_DIR = DIAGRAMS_DIR / "entity"
 RELATIONS_FILE = ENTITY_DIR / "relations.json"

@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """
-vault_compact_contracts.py — Genera contratos compactos de las 53 vault tools.
+vault_compact_contracts.py — Genera contratos compactos de las 57 vault tools activas.
 
 Lee cada script via introspección de argparse + docstring y genera:
   - 00_System/tool-contracts.json  (machine-readable, ~250 líneas)
   - 00_System/tool-contracts.md    (human-readable, tabla por grupo)
 
-El agente puede cargar tool-contracts.json en lugar del spec completo (4382 líneas).
+El agente puede cargar tool-contracts.json en lugar del spec completo.
 
 Usage:
     python vault_compact_contracts.py                      # genera ambos archivos (perfil actual)
     python vault_compact_contracts.py --profile minimal    # solo las 10 tools core
     python vault_compact_contracts.py --profile standard   # 30 tools
-    python vault_compact_contracts.py --profile full       # las 53 tools
+    python vault_compact_contracts.py --profile full       # las 57 tools activas
     python vault_compact_contracts.py --check              # muestra contratos sin escribir
 """
 
@@ -60,6 +60,11 @@ GROUPS: List[Dict[str, Any]] = [
     {"id": 21, "name": "IA Governance", "tools": ["vault_ai_decision"]},
     {"id": 22, "name": "Versionado",    "tools": ["vault_standard_upgrade"]},
     {"id": 23, "name": "Change Log",    "tools": ["vault_change_log"]},
+    {"id": 24, "name": "Data Quality",  "tools": ["vault_quality_check","vault_fundamentals"]},
+    {"id": 25, "name": "Propagación",   "tools": ["vault_impact","vault_propagate"]},
+    {"id": 26, "name": "Tokens",        "tools": ["vault_tokens","vault_token_counter","vault_token_service"]},
+    {"id": 27, "name": "Session Delta y Tags", "tools": ["vault_delta","vault_tags"]},
+    {"id": 28, "name": "Normas y Etiquetas",   "tools": ["vault_norms","vault_code_tag"]},
 ]
 
 # Build tool → group lookup

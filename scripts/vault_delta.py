@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Delta — Deteccion de cambios entre sesiones via hashes de contenido.
 
@@ -27,9 +27,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 from vault_errors import wrap_main
-from vault_io import atomic_write_json
+from vault_io import atomic_write_jsonVAULT_ROOT
 
-VAULT_ROOT = Path(__file__).parent.parent
 HASH_INDEX = VAULT_ROOT / "99_Index" / "hash-index.json"
 GRAPH_FILE  = VAULT_ROOT / "99_Index" / "graph.json"
 

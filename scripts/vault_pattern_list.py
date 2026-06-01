@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Pattern List Tool — List patterns by project and status
 
@@ -19,7 +19,7 @@ from vault_errors import wrap_main
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 PATTERNS_DIR = VAULT_ROOT / "05_Patterns"
 INDEX_FILE = PATTERNS_DIR / "index.json"
 

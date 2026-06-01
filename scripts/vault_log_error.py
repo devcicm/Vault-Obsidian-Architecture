@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Log Error Tool — Log errors, antipatterns, vulnerabilities, metrics, alerts, and SLOs
 
@@ -18,7 +18,7 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
-from vault_io import atomic_write_text
+from vault_io import atomic_write_textVAULT_ROOT
 from datetime import datetime, timezone
 
 
@@ -27,7 +27,6 @@ def _utcnow() -> str:
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-VAULT_ROOT = Path(__file__).parent.parent
 
 TYPE_FOLDERS = {
     "error": "02_Observability/errors",

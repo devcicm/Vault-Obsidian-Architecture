@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Migrate Rollback — Surgical undo of vault_migrate_docs
 
@@ -19,7 +19,7 @@ from vault_errors import wrap_main
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 INDEX_FILE = VAULT_ROOT / "99_Index" / "search-index.json"
 
 

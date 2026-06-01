@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Write Tool — Core writing tool for Obsidian vault
 
@@ -18,7 +18,7 @@ import re
 import shutil
 import sys
 from vault_errors import wrap_main
-from vault_io import atomic_write_text, atomic_write_json, atomic_update_json, assert_within_vault
+from vault_io import atomic_write_text, atomic_write_json, atomic_update_json, assert_within_vault, VAULT_ROOT
 from vault_norms import compute_norm_refs
 import uuid
 from datetime import datetime, timezone
@@ -45,7 +45,6 @@ def _check_content_gate(content: str, folder: str) -> bool:
     return len(real_lines) >= 3
 
 # Configuration
-VAULT_ROOT = Path(__file__).parent.parent
 HISTORY_DIR = VAULT_ROOT / ".history"
 INDEX_FILE = VAULT_ROOT / "99_Index" / "search-index.json"
 TAG_REGISTRY = VAULT_ROOT / "00_System" / "tag-registry.json"

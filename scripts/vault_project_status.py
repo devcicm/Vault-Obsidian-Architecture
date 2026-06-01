@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Project Status Tool — Update project status
 
@@ -24,7 +24,7 @@ def _utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 # Configuration
-VAULT_ROOT = Path(__file__).parent.parent
+from vault_io import VAULT_ROOT
 
 # Valid states
 VALID_STATES = ["en_desarrollo", "en_revision", "bloqueado", "completado", "archivado", "en_produccion"]

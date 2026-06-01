@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Vault Env Save Tool — Document environment variables by project and environment
 
@@ -15,7 +15,7 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
-from vault_io import atomic_write_text, assert_within_vault
+from vault_io import atomic_write_text, assert_within_vault, VAULT_ROOT
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -24,7 +24,6 @@ from typing import Any, Dict, List, Optional
 def _utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
-VAULT_ROOT = Path(__file__).parent.parent
 PROJECTS_DIR = VAULT_ROOT / "01_Projects"
 
 PROVIDERS = ["env-file", "k8s-secret", "vault", "ci-secrets", "manual"]
