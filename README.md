@@ -63,27 +63,33 @@ Los scripts no tienen dependencias externas. Solo Python 3.9+.
 
 ### 2. Inicializar un vault nuevo
 
+La estructura correcta para un consumer repo es:
+
+```
+mi-repo/
+├── scripts/          ← copiar aquí (gitignoreados)
+├── vault-mi-proyecto/ ← vault vive aquí
+└── ...resto del proyecto
+```
+
+`vault_io.py` detecta automáticamente el directorio `vault-*/` al ejecutarse. No requiere configuración de path.
+
 ```bash
-# Crear la carpeta del vault
+# Crear el directorio del vault dentro del repo
 mkdir vault-mi-proyecto
-cd vault-mi-proyecto
 
-# Copiar scripts (se gitignorean en el consumer repo)
-cp -r ../Vault-Obsidian-Architecture/scripts ./scripts
+# Copiar scripts al repo (fuera del vault, gitignoreados)
+cp -r Vault-Obsidian-Architecture/scripts ./scripts
 
-# Registrar versión del estándar
-python scripts/vault_standard_upgrade.py --init v28
+# Inicializar y aplicar migraciones hasta v30 (crea las 16 carpetas estándar)
+python scripts/vault_standard_upgrade.py --init v30
+python scripts/vault_standard_upgrade.py --to v30
 
-# Crear las 16 carpetas estándar
-mkdir -p 00_System 01_Projects 02_Observability 05_Patterns 06_Diagrams \
-         07_Knowledge 08_Runbooks 09_Infrastructure 10_Migrated 11_Code \
-         12_Bibliography 13_Flows 14_Requirements 15_Tests 16_AI_Governance 99_Index
-
-# Verificar y generar section indexes
-python scripts/vault_standard_upgrade.py --to v28
-for folder in 00_System 01_Projects 02_Observability 05_Patterns 06_Diagrams \
-              07_Knowledge 08_Runbooks 09_Infrastructure 10_Migrated 11_Code \
-              12_Bibliography 13_Flows 14_Requirements 15_Tests 16_AI_Governance 99_Index; do
+# Generar índices de sección
+for folder in 00_System 01_Projects 02_Observability 03_Decisions 04_Sessions \
+              05_Patterns 06_Diagrams 07_Knowledge 08_Runbooks 09_Infrastructure \
+              10_Migrated 11_Code 12_Bibliography 13_Flows 14_Requirements \
+              15_Tests 16_AI_Governance 99_Index; do
   python scripts/vault_section_index.py --folder "$folder"
 done
 
@@ -96,6 +102,7 @@ python scripts/vault_audit.py
 ```gitignore
 .claude/
 vault-*/scripts/
+vault-backups/
 ```
 
 ### 4. Documentar el proyecto
@@ -257,8 +264,8 @@ Contiene:
 - Mapa canónico script→carpeta (tabla authoritative)
 - Protocolo de inicialización corregido con comandos exactos
 - Protocolo de sesión para LLMs remotos (Claude API, GPT, Gemini, DeepSeek)
-- Sistema de versionado con migraciones automáticas (v19 → v28)
-- Changelog completo (v1 → v28)
+- Sistema de versionado con migraciones automáticas (v19 → v30)
+- Changelog completo (v1 → v30)
 - Compatibilidad con Obsidian Desktop
 
 ---
@@ -267,7 +274,7 @@ Contiene:
 
 ```
 scripts/                    ← 71 archivos Python (una tool = un script CLI)
-├── vault_io.py             — I/O base: assert_within_vault, atomic_write_text/json, file_lock
+├── vault_io.py             — I/O base: _detect_vault_root, assert_within_vault, atomic_write_text/json, file_lock
 ├── vault_errors.py         — wrap_main (timeout 60s), emit_ok, trace log
 ├── vault_write.py          — tool principal de escritura (guards AP-20, AP-21, norm_refs auto-embed)
 ├── vault_audit.py          — health score (CIA-weighted), DQ health, propagation pending, norm_code
