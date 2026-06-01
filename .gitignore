@@ -2,3 +2,26 @@
 __pycache__/
 *.pyc
 
+# Vault runtime content — este repo es spec, no vault
+# vault_standard_upgrade crea estas carpetas al ejecutarse; no deben versionarse aquí
+00_System/.tool-trace.json
+00_System/.tool-tokens.json
+01_Projects/
+02_Observability/
+03_Decisions/
+04_Sessions/
+05_Patterns/
+06_Diagrams/
+07_Knowledge/
+08_Runbooks/
+09_Infrastructure/
+10_Migrated/
+11_Code/
+12_Bibliography/
+13_Flows/
+14_Requirements/
+15_Tests/
+16_AI_Governance/
+99_Index/
+.history/
+vault-backups/
