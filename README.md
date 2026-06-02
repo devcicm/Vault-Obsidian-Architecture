@@ -2,9 +2,9 @@
 
 **Estándar de diseño para dotar a agentes LLM de memoria documental persistente.**
 
-[![Version](https://img.shields.io/badge/version-v30-blue)](./vault-obsidian-architecture.md)
-[![Tools](https://img.shields.io/badge/tools-57_active-green)](./scripts/)
-[![Scripts](https://img.shields.io/badge/scripts-71_total-lightblue)](./scripts/)
+[![Version](https://img.shields.io/badge/version-v31-blue)](./vault-obsidian-architecture.md)
+[![Tools](https://img.shields.io/badge/tools-62_active-green)](./scripts/)
+[![Scripts](https://img.shields.io/badge/scripts-75_total-lightblue)](./scripts/)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow)](./scripts/)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](./LICENSE)
 
@@ -134,7 +134,7 @@ python scripts/vault_audit.py
 
 ---
 
-## Las 61 tools — 28 grupos
+## Las 62 tools activas — 30 grupos
 
 | Grupo | Tools |
 |---|---|
@@ -159,13 +159,15 @@ python scripts/vault_audit.py
 | 19 — Requerimientos | `vault_requirement_save` |
 | 20 — Tests | `vault_test_save` |
 | 21 — IA Governance | `vault_ai_decision` |
-| 22 — Versionado | `vault_standard_upgrade` |
+| 22 — Versionado | `vault_standard_upgrade`, `vault_onboard` |
 | 23 — Change Log | `vault_change_log` |
 | 24 — Data Quality | `vault_quality_check`, `vault_fundamentals` |
 | 25 — Propagación | `vault_impact`, `vault_propagate` |
 | 26 — Tokens | `vault_tokens`, `vault_token_counter`, `vault_token_service` |
 | 27 — Session Delta y Tags | `vault_delta`, `vault_tags` |
 | 28 — Normas y Etiquetas | `vault_norms`, `vault_code_tag` |
+| 29 — Producción y SRE | `vault_incident_save`, `vault_slo_save` |
+| 30 — Release y Entornos | `vault_env_matrix`, `vault_release_save` |
 
 Ver **[scripts/README.md](./scripts/README.md)** para contratos completos con parámetros, ejemplos y protocolo de sesión.
 

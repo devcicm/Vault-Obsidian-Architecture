@@ -58,13 +58,15 @@ GROUPS: List[Dict[str, Any]] = [
     {"id": 19, "name": "Requerimientos","tools": ["vault_requirement_save"]},
     {"id": 20, "name": "Tests",         "tools": ["vault_test_save"]},
     {"id": 21, "name": "IA Governance", "tools": ["vault_ai_decision"]},
-    {"id": 22, "name": "Versionado",    "tools": ["vault_standard_upgrade"]},
+    {"id": 22, "name": "Versionado",    "tools": ["vault_standard_upgrade","vault_onboard"]},
     {"id": 23, "name": "Change Log",    "tools": ["vault_change_log"]},
     {"id": 24, "name": "Data Quality",  "tools": ["vault_quality_check","vault_fundamentals"]},
     {"id": 25, "name": "Propagación",   "tools": ["vault_impact","vault_propagate"]},
     {"id": 26, "name": "Tokens",        "tools": ["vault_tokens","vault_token_counter","vault_token_service"]},
     {"id": 27, "name": "Session Delta y Tags", "tools": ["vault_delta","vault_tags"]},
     {"id": 28, "name": "Normas y Etiquetas",   "tools": ["vault_norms","vault_code_tag"]},
+    {"id": 29, "name": "Producción y SRE",     "tools": ["vault_incident_save","vault_slo_save"]},
+    {"id": 30, "name": "Release y Entornos",   "tools": ["vault_env_matrix","vault_release_save"]},
 ]
 
 # Build tool → group lookup
