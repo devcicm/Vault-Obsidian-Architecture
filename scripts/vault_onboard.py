@@ -155,23 +155,120 @@ def _count_lines(path: Path) -> int:
 
 # ── Git history ───────────────────────────────────────────────────────────────
 
+SNAP_BRANCH_PATTERN = re.compile(
+    r"\b(snap|snapshot|backup|archive|bk|old|fork|copy|clone|save|freeze|"
+    r"preserved?|legacy|history|original|before|prior|stable)\b",
+    re.I,
+)
+
+
+def _parse_commits(raw: str) -> List[Dict[str, Any]]:
+    commits = []
+    for line in raw.splitlines():
+        parts = line.split("|", 3)
+        if len(parts) == 4:
+            commits.append({
+                "hash": parts[0][:8],
+                "date": parts[1][:10],
+                "message": parts[2].strip(),
+                "author": parts[3].strip(),
+            })
+    return commits
+
+
+def _scan_all_branches(project_path: Path) -> List[Dict[str, Any]]:
+    """List all local + remote branches with their oldest commit date."""
+    branches_raw = _run_git(
+        project_path,
+        ["branch", "-a", "--format=%(refname:short)|%(objectname:short)"],
+    ) or ""
+    branches = []
+    for line in branches_raw.splitlines():
+        parts = line.strip().split("|", 1)
+        if not parts[0]:
+            continue
+        name = parts[0].strip()
+        if "HEAD" in name:
+            continue
+        # Get oldest commit on this branch (not reachable from others)
+        oldest_raw = _run_git(
+            project_path,
+            ["log", name, "--pretty=format:%ai|%s", "--reverse", "-n1"],
+        ) or ""
+        newest_raw = _run_git(
+            project_path,
+            ["log", name, "--pretty=format:%ai", "-n1"],
+        ) or ""
+        count_raw = _run_git(
+            project_path,
+            ["rev-list", "--count", name],
+        ) or "0"
+        oldest_date = oldest_raw.split("|")[0][:10] if oldest_raw else ""
+        is_snap = bool(SNAP_BRANCH_PATTERN.search(name))
+        branches.append({
+            "name": name,
+            "oldest_date": oldest_date,
+            "newest_date": newest_raw[:10],
+            "commit_count": int(count_raw.strip()) if count_raw.strip().isdigit() else 0,
+            "is_snap_branch": is_snap,
+        })
+    return branches
+
+
 def _extract_git_history(project_path: Path, max_commits: int = 500) -> Dict[str, Any]:
     check = _run_git(project_path, ["rev-parse", "--is-inside-work-tree"])
     if check != "true":
         return {"is_git": False}
 
+    # Current branch name
+    current_branch = _run_git(project_path, ["branch", "--show-current"]) or "HEAD"
+
+    # ── Full log across ALL branches (--all) ──────────────────────────────────
     log_raw = _run_git(
+        project_path,
+        ["log", "--all", f"--pretty=format:%H|%ai|%s|%an", f"-n{max_commits}"],
+    ) or ""
+    commits_all = _parse_commits(log_raw)
+
+    # Current branch log (for apparent age)
+    log_current = _run_git(
         project_path,
         ["log", f"--pretty=format:%H|%ai|%s|%an", f"-n{max_commits}"],
     ) or ""
+    commits_current = _parse_commits(log_current)
 
-    commits = []
-    for line in log_raw.splitlines():
+    # ── Reflog (catches orphan / pre-rebase / detached HEAD history) ──────────
+    reflog_raw = _run_git(
+        project_path,
+        ["reflog", "--pretty=format:%H|%ai|%gs|%an", f"-n{min(max_commits, 300)}"],
+    ) or ""
+    reflog_commits = []
+    known_hashes = {c["hash"] for c in commits_all}
+    for line in reflog_raw.splitlines():
         parts = line.split("|", 3)
-        if len(parts) == 4:
-            commits.append({"hash": parts[0][:8], "date": parts[1][:10],
-                            "message": parts[2], "author": parts[3]})
+        if len(parts) == 4 and parts[0][:8] not in known_hashes:
+            reflog_commits.append({
+                "hash": parts[0][:8], "date": parts[1][:10],
+                "message": f"[reflog] {parts[2].strip()}", "author": parts[3].strip(),
+                "source": "reflog",
+            })
 
+    # ── Stash list ────────────────────────────────────────────────────────────
+    stash_raw = _run_git(
+        project_path,
+        ["stash", "list", "--pretty=format:%gd|%ai|%s"],
+    ) or ""
+    stashes = []
+    for line in stash_raw.splitlines():
+        parts = line.split("|", 2)
+        if len(parts) == 3:
+            stashes.append({"ref": parts[0], "date": parts[1][:10], "message": parts[2].strip()})
+
+    # ── All branches with dates ───────────────────────────────────────────────
+    branches = _scan_all_branches(project_path)
+    snap_branches = [b for b in branches if b["is_snap_branch"]]
+
+    # ── Tags ─────────────────────────────────────────────────────────────────
     tags_raw = _run_git(
         project_path,
         ["tag", "-l", "--sort=version:refname",
@@ -183,20 +280,54 @@ def _extract_git_history(project_path: Path, max_commits: int = 500) -> Dict[str
         if len(parts) == 2 and parts[1].strip():
             tags.append({"name": parts[0], "date": parts[1].strip()[:10]})
 
-    contributors = list(dict.fromkeys(c["author"] for c in commits))
+    # ── True vs apparent age ──────────────────────────────────────────────────
+    # Merge all known commit dates (all branches + reflog)
+    all_dates = [c["date"] for c in commits_all + reflog_commits if c.get("date")]
+    for b in branches:
+        if b.get("oldest_date"):
+            all_dates.append(b["oldest_date"])
 
-    # Commits touching many files = architectural refactors
-    key_commits = [c for c in commits if DECISION_KEYWORDS.search(c["message"])][:10]
+    true_first_date  = min(all_dates) if all_dates else ""
+    apparent_first_date = commits_current[-1]["date"] if commits_current else true_first_date
+
+    hidden_history = False
+    hidden_months  = 0
+    if true_first_date and apparent_first_date and true_first_date < apparent_first_date:
+        try:
+            t = datetime.fromisoformat(true_first_date)
+            a = datetime.fromisoformat(apparent_first_date)
+            hidden_months = max(0, (a.year - t.year) * 12 + (a.month - t.month))
+            hidden_history = hidden_months > 1
+        except Exception:
+            pass
+
+    contributors = list(dict.fromkeys(c["author"] for c in commits_all if c.get("author")))
+    key_commits  = [c for c in commits_all if DECISION_KEYWORDS.search(c.get("message", ""))][:10]
+
+    # Build unified commit list: all_branches + reflog for phase detection
+    all_commits_unified = commits_all + reflog_commits
+    all_commits_unified.sort(key=lambda c: c.get("date", ""), reverse=True)
 
     return {
         "is_git": True,
-        "first_commit": commits[-1] if commits else None,
-        "last_commit":  commits[0]  if commits else None,
-        "total_commits": len(commits),
+        "current_branch": current_branch,
+        "first_commit":  {"date": true_first_date, "message": "", "author": ""},
+        "last_commit":   commits_all[0] if commits_all else None,
+        "apparent_first_date": apparent_first_date,
+        "true_first_date": true_first_date,
+        "hidden_history": hidden_history,
+        "hidden_months": hidden_months,
+        "total_commits": len(commits_all),
+        "total_commits_with_reflog": len(all_commits_unified),
         "contributors": contributors[:8],
         "tags": tags,
-        "commits": commits,
+        "commits": all_commits_unified,        # unified for phase detection
+        "commits_current": commits_current,    # current branch only
         "key_commits": key_commits,
+        "branches": branches,
+        "snap_branches": snap_branches,
+        "stashes": stashes,
+        "reflog_extra_commits": len(reflog_commits),
     }
 
 
@@ -634,6 +765,34 @@ def _onboard_01_projects(
             marker = f" ({p['tag']})" if p.get("tag") else ""
             timeline_md += f"- **{p['month_start']}** — {p['label']}{marker}: {p['item_count']} commits\n"
 
+    # Branch info
+    hidden_history = history.get("hidden_history", False)
+    true_first = history.get("true_first_date", "")
+    apparent_first = history.get("apparent_first_date", "")
+    snap_branches = history.get("snap_branches", [])
+    branch_count = len(history.get("branches", []))
+    stash_count = len(history.get("stashes", []))
+
+    hidden_md = ""
+    if hidden_history:
+        hidden_md = f"""
+## Advertencia: historia oculta detectada
+
+| | |
+|---|---|
+| Antigüedad aparente | {apparent_first} |
+| Antigüedad real (cross-branch) | {true_first} |
+| Historia oculta | **{history.get('hidden_months', 0)} meses** |
+| Ramas snap/backup | {len(snap_branches)} detectadas |
+
+Ver ADR de arqueologia: [[adr-001-historia-oculta-branch-archaeology]]
+"""
+
+    branches_md = ""
+    if branch_count > 1:
+        snap_names = ", ".join(f"`{b['name']}`" for b in snap_branches[:4])
+        branches_md = f"\n**Ramas totales:** {branch_count} | Snap/backup: {len(snap_branches)} ({snap_names or 'ninguna'})"
+
     body = f"""# {project} — Overview
 
 > Stub generado por vault_onboard v2 — enriquecer con vault_project_overview.
@@ -652,15 +811,18 @@ def _onboard_01_projects(
 | Versión actual | {meta.get('version') or '—'} |
 | Fuente | {meta.get('source') or '—'} |
 | Historia desde | {history_source} |
-
+{hidden_md}
 ## Historial del proyecto
 
 | | |
 |---|---|
-| Primer commit/archivo | {first['date'] if first else '—'} |
+| Primer commit/archivo (real) | {true_first or (first['date'] if first else '—')} |
+| Primer commit (rama actual) | {apparent_first or '—'} |
 | Último commit/archivo | {last['date'] if last else '—'} |
-| Total commits | {history.get('total_commits', '—')} |
+| Total commits (todas las ramas) | {history.get('total_commits', '—')} |
 | Fases detectadas | {len(phases)} |
+| Stashes pendientes | {stash_count} |
+{branches_md}
 {timeline_md}
 ## Versiones detectadas
 
@@ -677,7 +839,7 @@ def _onboard_01_projects(
 ## Próximos pasos
 
 - Verificar descripción y stack con el equipo
-- Completar base de datos, caches, queues
+- {'Revisar historia oculta en [[adr-001-historia-oculta-branch-archaeology]]' if hidden_history else 'Completar base de datos, caches, queues'}
 - Revisar ADRs en [[03_Decisions]]
 - Ver módulos en [[11_Code]]
 """
@@ -756,6 +918,84 @@ def _onboard_03_decisions(
 ) -> List[Tuple[str, str]]:
     results = []
     adr_counter = [1]
+
+    # ── Branch archaeology — historia oculta detectada ────────────────────────
+    if history.get("hidden_history"):
+        apparent = history.get("apparent_first_date", "—")
+        true_start = history.get("true_first_date", "—")
+        hidden_months = history.get("hidden_months", 0)
+        snap_branches = history.get("snap_branches", [])
+        all_branches = history.get("branches", [])
+        current_branch = history.get("current_branch", "HEAD")
+        reflog_extra = history.get("reflog_extra_commits", 0)
+
+        snap_md = "\n".join(
+            f"- `{b['name']}` — oldest: {b['oldest_date']} | commits: {b['commit_count']}"
+            for b in snap_branches
+        ) or "— No detectadas (historia encontrada via reflog o commits huérfanos)"
+
+        all_branches_md = "\n".join(
+            f"- `{b['name']}` — {b['oldest_date']} → {b['newest_date']} ({b['commit_count']} commits)"
+            for b in sorted(all_branches, key=lambda x: x.get("oldest_date", ""))[:12]
+        ) or "— No detectadas"
+
+        body = f"""# ADR-{adr_counter[0]:03d} — Historia oculta detectada (branch archaeology)
+
+> Generado por vault_onboard al detectar historia anterior a la rama actual.
+> Esto indica que el proyecto existia antes del estado actual de la rama `{current_branch}`.
+
+**Status:** critical-finding
+
+## Hallazgo
+
+| | |
+|---|---|
+| Antigüedad aparente (rama {current_branch}) | desde {apparent} |
+| Antigüedad real (cross-branch) | desde {true_start} |
+| Historia oculta | **{hidden_months} meses** no visibles en rama actual |
+| Commits extra en reflog | {reflog_extra} |
+
+## Ramas con historia antigua detectadas
+
+{snap_md}
+
+## Todas las ramas del repositorio
+
+{all_branches_md}
+
+## Qué pudo haber pasado
+
+- Se creó un "snap" o backup de la rama main y se trabajó en una nueva rama desde ese punto
+- La rama actual fue creada a partir de una exportacion / fork de la rama original
+- Se hizo `git checkout --orphan` perdiendo la conexion con el historial anterior
+- Los commits antiguos estan en ramas `snap-*`, `backup-*`, `archive-*` o similares
+
+## Accion recomendada
+
+1. Revisar cada rama snap/backup listada arriba con: `git log <rama> --oneline | head -20`
+2. Si contiene historia util, documentar en 04_Sessions con las fechas reales
+3. Considerar `git merge --allow-unrelated-histories <rama-antigua>` si corresponde
+4. Actualizar overview del proyecto con la fecha real de inicio: {true_start}
+
+## Para enriquecer
+
+```bash
+# Ver historial de una rama snap
+git log <nombre-rama-snap> --oneline --graph | head -30
+
+# Comparar ramas
+git log {current_branch}...<nombre-rama-snap> --oneline
+```
+"""
+        results.append(_write(
+            "03_Decisions",
+            f"{_slug(f'adr-{adr_counter[0]:03d}-historia-oculta-branch-archaeology')}.md",
+            f"ADR-{adr_counter[0]:03d} — Historia oculta detectada (branch archaeology)",
+            ["adr", "branch-archaeology", "historia-oculta", project],
+            {"agent": agent, "project": project, "cia_integrity": "high"},
+            body, dry_run,
+        ))
+        adr_counter[0] += 1
 
     # From key commits (decision keywords)
     for commit in history.get("key_commits", [])[:5]:
@@ -1523,11 +1763,20 @@ def vault_onboard(
         "dry_run": dry_run,
         "git_history": {
             "is_git": history.get("is_git", False),
-            "first": (history.get("first_commit") or history.get("first_file") or {}).get("date"),
+            "current_branch": history.get("current_branch", ""),
+            "apparent_first_date": history.get("apparent_first_date", ""),
+            "true_first_date": history.get("true_first_date", ""),
+            "hidden_history": history.get("hidden_history", False),
+            "hidden_months": history.get("hidden_months", 0),
             "last":  (history.get("last_commit") or history.get("last_modified") or {}).get("date"),
             "total_commits": history.get("total_commits", 0),
+            "total_commits_with_reflog": history.get("total_commits_with_reflog", 0),
             "contributors": history.get("contributors", []),
             "tags": [t["name"] for t in history.get("tags", [])],
+            "branches": len(history.get("branches", [])),
+            "snap_branches": [b["name"] for b in history.get("snap_branches", [])],
+            "stashes": len(history.get("stashes", [])),
+            "reflog_extra_commits": history.get("reflog_extra_commits", 0),
             "phases_detected": len(phases),
         },
         "discovered": {
