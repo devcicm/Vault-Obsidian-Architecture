@@ -308,7 +308,7 @@ def vault_migrate_docs(
 
         stub_content = f"""# {Path(staged["originalName"]).stem}
 
-> Este archivo fue migrado a: [[{str(dest_path_rels)}|{dest_folder}/{dest_name}]]
+> Este archivo fue migrado a: [[{safe_wikilink(str(dest_path_rels))}|{safe_wikilink(dest_folder)}/{safe_wikilink(dest_name)}]]
 
 **Origen:** `{staged["originalPath"]}`
 **Relevancia:** {relevance}
@@ -352,13 +352,13 @@ _{staged["preview"][:200]}..._
         report_lines.append("## Archivos Distribuidos\n\n| Archivo Original | Destino | Relevancia |")
         report_lines.append("|---|---|---|")
         for d in distributed:
-            report_lines.append(f"| `{d['originalName']}` | [[{d['destPath']}]] | {d['relevance']} |")
+            report_lines.append(f"| `{d['originalName']}` | [[{safe_wikilink(d['destPath'])}]] | {d['relevance']} |")
         report_lines.append("")
 
     if stubs_created:
         report_lines.append("## Stubs Creados\n\n")
         for s in stubs_created:
-            report_lines.append(f"- `{s['originalName']}` → [[{s['stub']}]]")
+            report_lines.append(f"- `{s['originalName']}` → [[{safe_wikilink(s['stub'])}]]")
         report_lines.append("")
 
     if subfolders_created:

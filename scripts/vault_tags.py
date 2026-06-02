@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from vault_errors import wrap_main
-from vault_io import atomic_write_json, atomic_write_text, assert_within_vault, VAULT_ROOT
+from vault_io import atomic_write_json, atomic_write_text, assert_within_vault, VAULT_ROOT, safe_wikilink
 
 TAG_REGISTRY  = VAULT_ROOT / "00_System" / "tag-registry.json"
 TAG_INDEX_MD  = VAULT_ROOT / "99_Index" / "tag-index.md"
@@ -176,7 +176,7 @@ def _generate_tag_index_md(tag_map: Dict[str, List[str]], untagged: List[str]) -
         lines.append("")
         for note_path in notes:
             stem = Path(note_path).stem
-            lines.append(f"- [[{stem}]]")
+            lines.append(f"- [[{safe_wikilink(stem)}]]")
         lines.append("")
 
     if untagged:

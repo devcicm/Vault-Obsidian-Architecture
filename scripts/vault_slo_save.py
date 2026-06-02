@@ -33,7 +33,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT, assert_within_vault, atomic_write_text
+from vault_io import VAULT_ROOT, assert_within_vault, atomic_write_text, update_section_index
 from vault_norms import compute_norm_refs
 
 FOLDER = "02_Observability/slos"
@@ -298,11 +298,7 @@ def vault_slo_save(
     assert_within_vault(path, VAULT_ROOT)
     atomic_write_text(path, full)
 
-    try:
-        from vault_section_index import vault_section_index
-        vault_section_index("02_Observability")
-    except Exception:
-        pass
+    update_section_index("02_Observability")
 
     return {
         "ok": True,

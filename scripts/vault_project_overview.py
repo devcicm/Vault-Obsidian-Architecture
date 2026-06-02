@@ -225,21 +225,21 @@ def vault_project_overview(
         body_sections.append("## Frameworks\n")
         for fw in frameworks:
             stem = Path(fw["path"]).stem
-            body_sections.append(f"- [[{stem}|{fw['title']}]]")
+            body_sections.append(f"- [[{safe_wikilink(stem)}|{safe_wikilink(fw['title'])}]]")
         body_sections.append("")
 
     if dependencies:
         body_sections.append(f"## Dependencias ({len(dependencies)})\n")
         for dep in dependencies:
             stem = Path(dep["path"]).stem
-            body_sections.append(f"- [[{stem}|{dep['title']}]]")
+            body_sections.append(f"- [[{safe_wikilink(stem)}|{safe_wikilink(dep['title'])}]]")
         body_sections.append("")
 
     if decisions:
         body_sections.append(f"## Decisiones técnicas (ADR) ({len(decisions)})\n")
         for dec in decisions:
             stem = Path(dec["path"]).stem
-            body_sections.append(f"- [[{stem}|{dec['title']}]]")
+            body_sections.append(f"- [[{safe_wikilink(stem)}|{safe_wikilink(dec['title'])}]]")
         body_sections.append("")
 
     if patterns:
@@ -248,7 +248,7 @@ def vault_project_overview(
             stem = Path(pat["path"]).stem
             title = pat["title"]
             status = pat.get("status", "")
-            body_sections.append(f"- [[{stem}|{title}]] · `{status}`")
+            body_sections.append(f"- [[{safe_wikilink(stem)}|{safe_wikilink(title)}]] · `{status}`")
         body_sections.append("")
 
     sections_written = []
@@ -268,7 +268,7 @@ def vault_project_overview(
         body_sections.append(f"## Infraestructura ({len(infrastructure)})\n")
         for inf in infrastructure:
             stem = Path(inf["path"]).stem
-            body_sections.append(f"- [[{stem}|{inf['title']}]]")
+            body_sections.append(f"- [[{safe_wikilink(stem)}|{safe_wikilink(inf['title'])}]]")
         body_sections.append("")
         sections_written.append("Infraestructura")
 

@@ -3,6 +3,7 @@
 
 import json
 import os
+import re
 import time
 import uuid
 from contextlib import contextmanager
@@ -118,6 +119,37 @@ def atomic_write_text(path: Path, text: str, encoding: str = "utf-8") -> None:
 
 def atomic_write_json(path: Path, data: Dict[str, Any]) -> None:
     atomic_write_text(path, json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def safe_wikilink(text: str) -> str:
+    """Sanitize text for safe use inside [[...]] wiki-links (AP-22 guard).
+
+    Removes or replaces characters that break Obsidian wiki-link syntax:
+    [ ] | newlines backslash quotes. Returns a safe fallback if result is empty.
+    """
+    if not text or not text.strip():
+        return "nota-sin-titulo"
+    sanitized = re.sub(r'[\[\]\|\n\r"\\]', '-', text.strip())
+    sanitized = re.sub(r'-{2,}', '-', sanitized).strip('-')
+    return sanitized or "nota-sin-titulo"
+
+
+def update_section_index(folder: str) -> None:
+    """Regenerate section index without silently discarding errors.
+
+    Calls vault_section_index and logs failures to the trace log instead of
+    swallowing them with bare except/pass. Safe to call from any tool.
+    """
+    try:
+        from vault_section_index import vault_section_index  # type: ignore
+        vault_section_index(folder)
+    except Exception as exc:
+        try:
+            from vault_errors import emit_error  # type: ignore
+            emit_error("update_section_index", "UNEXPECTED_ERROR",
+                       f"Failed to update index for {folder}: {exc}")
+        except Exception:
+            pass  # logging failure must never crash the caller
 
 
 def atomic_update_json(

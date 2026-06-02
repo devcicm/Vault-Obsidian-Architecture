@@ -30,7 +30,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT, assert_within_vault, atomic_write_text
+from vault_io import VAULT_ROOT, assert_within_vault, atomic_write_text, file_lock, update_section_index
 from vault_norms import compute_norm_refs
 
 RELEASE_FOLDER  = "08_Runbooks/deploy"
@@ -213,28 +213,24 @@ def vault_release_save(
     if breaking_changes:
         changelog_entry += "\n**Breaking changes:**\n" + breaking_md + "\n"
 
-    if changelog_path.exists():
-        existing = changelog_path.read_text(encoding="utf-8", errors="replace")
-        if version not in existing:
-            # Insert after first ## header
-            parts = existing.split("\n\n", 1)
-            updated = parts[0] + "\n" + changelog_entry + ("\n\n" + parts[1] if len(parts) > 1 else "")
-            atomic_write_text(changelog_path, updated)
-    else:
-        changelog_header = f"""# {project} — Changelog
+    with file_lock(changelog_path, timeout=10):
+        if changelog_path.exists():
+            existing = changelog_path.read_text(encoding="utf-8", errors="replace")
+            if version not in existing:
+                parts = existing.split("\n\n", 1)
+                updated = parts[0] + "\n" + changelog_entry + ("\n\n" + parts[1] if len(parts) > 1 else "")
+                atomic_write_text(changelog_path, updated)
+        else:
+            changelog_header = f"""# {project} — Changelog
 
 > Historial de versiones del proyecto.
 > ISO/IEC 12207:2017 §6.3.7 — Release management
 
 """
-        atomic_write_text(changelog_path, changelog_header + changelog_entry)
+            atomic_write_text(changelog_path, changelog_header + changelog_entry)
 
-    try:
-        from vault_section_index import vault_section_index
-        vault_section_index("08_Runbooks")
-        vault_section_index("01_Projects")
-    except Exception:
-        pass
+    update_section_index("08_Runbooks")
+    update_section_index("01_Projects")
 
     return {
         "ok": True,
