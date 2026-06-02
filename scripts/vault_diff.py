@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Vault Diff Tool — Compare note versions or two arbitrary files.
 

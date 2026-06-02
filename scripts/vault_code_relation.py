@@ -1,235 +1,235 @@
-﻿#!/usr/bin/env python3
-"""
-Vault Code Relation Tool — Register relations between code files
-
-Adds a cardinality relation between two code files and auto-regenerates code-map.md.
-Relation persisted in 11_Code/.code-index.json.
-
-Usage:
-    python vault_code_relation.py --project "ans" --from_file "src/server.py" --to_file "src/core/models.py" --relation_type "imports" --cardinality "1:1"
-    python vault_code_relation.py --project "ans" --from_file "src/api.py" --to_file "src/service.py" --relation_type "calls" --cardinality "1:N"
-"""
-
-import argparse
-import json
-import re
-import sys
-from vault_errors import wrap_main
-import uuid
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Any, Dict, List, Optional
-
-
-def _utcnow() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-
+#!/usr/bin/env python3
+"""
+Vault Code Relation Tool — Register relations between code files
+
+Adds a cardinality relation between two code files and auto-regenerates code-map.md.
+Relation persisted in 11_Code/.code-index.json.
+
+Usage:
+    python vault_code_relation.py --project "ans" --from_file "src/server.py" --to_file "src/core/models.py" --relation_type "imports" --cardinality "1:1"
+    python vault_code_relation.py --project "ans" --from_file "src/api.py" --to_file "src/service.py" --relation_type "calls" --cardinality "1:N"
+"""
+
+import argparse
+import json
+import re
+import sys
+from vault_errors import wrap_main
+import uuid
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+
+def _utcnow() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
 from vault_io import VAULT_ROOT
-CODE_DIR = VAULT_ROOT / "11_Code"
-INDEX_FILE = CODE_DIR / ".code-index.json"
-
-RELATION_TYPES = [
-    "imports",
-    "extends",
-    "implements",
-    "calls",
-    "uses",
-    "re-exports",
-    "depends_on",
-]
-
-CARDINALITIES = ["1:1", "1:N", "N:1", "N:M"]
-
-
-def slugify(text: str) -> str:
-    slug = text.lower()
-    slug = re.sub(r"[^\w\s-]", "", slug)
-    slug = re.sub(r"[\s_]+", "-", slug)
-    slug = re.sub(r"^-+|-+$", "", slug)
-    return slug
-
-
-def load_index() -> Dict[str, Any]:
-    try:
-        with open(INDEX_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {"modules": [], "relations": []}
-
-
-def save_index(data: Dict[str, Any]) -> None:
-    CODE_DIR.mkdir(parents=True, exist_ok=True)
-    with open(INDEX_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-
-
-def get_module_nodes(index: Dict[str, Any], project: str) -> List[Dict]:
-    return [m for m in index.get("modules", []) if m.get("project", "").lower() == project.lower()]
-
-
-def generate_code_map(project: str, index: Dict[str, Any]) -> str:
-    modules = get_module_nodes(index, project)
-    relations = [r for r in index.get("relations", []) if r.get("project", "").lower() == project.lower()]
-
-    if not modules:
-        return "graph TD\n    empty[No modules documented]"
-
-    lines = ["graph TD"]
-    node_map = {}
-
-    for i, mod in enumerate(modules):
-        title = mod.get("title", mod.get("filePath", ""))
-        slug = slugify(Path(mod.get("filePath", title)).stem)
-        node_id = f"N{i}"
-        lines.append(f'    {node_id}["{title}"]')
-        node_map[mod["filePath"]] = node_id
-
-    for rel in relations:
-        from_path = rel.get("from", "")
-        to_path = rel.get("to", "")
-        rel_type = rel.get("type", "")
-        cardinality = rel.get("cardinality", "")
-        label = rel.get("label", "")
-
-        from_id = node_map.get(from_path)
-        to_id = node_map.get(to_path)
-
-        if from_id and to_id:
-            label_str = f"{rel_type}"
-            if cardinality:
-                label_str += f" {cardinality}"
-            if label:
-                label_str += f" ({label})"
-
-            arrow = "-->"
-            if rel_type == "implements":
-                arrow = "-.->"
-            elif rel_type == "re-exports":
-                arrow = "==>"
-
-            lines.append(f'    {from_id} {arrow}|"{label_str}"| {to_id}')
-
-    return "\n".join(lines)
-
-
-def save_code_map(project: str, mermaid_content: str) -> Path:
-    safe_project = slugify(project)
-    map_dir = CODE_DIR / safe_project
-    map_dir.mkdir(parents=True, exist_ok=True)
-    map_path = map_dir / "code-map.md"
-
-    timestamp = _utcnow()
-
-    frontmatter = ["---"]
-    frontmatter.append(f"title: Code Map - {project}")
-    frontmatter.append(f"project: {project}")
-    frontmatter.append(f"type: code-map")
-    frontmatter.append(f"updatedAt: {timestamp}")
-    frontmatter.append("---")
-    frontmatter.append(f"\n## Code Map: {project}\n")
-    frontmatter.append(f"```mermaid\n{mermaid_content}\n```\n")
-
-    with open(map_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(frontmatter))
-
-    return map_path
-
-
-def vault_code_relation(
-    project: str,
-    from_file: str,
-    to_file: str,
-    relation_type: str,
-    cardinality: Optional[str] = None,
-    label: Optional[str] = None,
-) -> Dict[str, Any]:
-    relation_type = relation_type.lower()
-
-    if relation_type not in RELATION_TYPES:
-        return {"ok": False, "error": f"Relation type inválido: {relation_type}. Válidos: {RELATION_TYPES}"}
-
-    if cardinality and cardinality not in CARDINALITIES:
-        return {"ok": False, "error": f"Cardinality inválida: {cardinality}. Válidos: {CARDINALITIES}"}
-
-    index = load_index()
-    already_existed = False
-
-    for rel in index["relations"]:
-        if rel["from"] == from_file and rel["to"] == to_file and rel["type"] == relation_type:
-            already_existed = True
-            break
-
-    index["relations"].append(
-        {
-            "id": str(uuid.uuid4()),
-            "from": from_file,
-            "to": to_file,
-            "type": relation_type,
-            "cardinality": cardinality,
-            "label": label,
-            "project": project,
-            "addedAt": _utcnow(),
-        }
-    )
-
-    save_index(index)
-
-    modules = get_module_nodes(index, project)
-    relations = [r for r in index["relations"] if r.get("project", "").lower() == project.lower()]
-    mermaid_content = generate_code_map(project, index)
-    map_path = save_code_map(project, mermaid_content)
-
-    return {
-        "ok": True,
-        "from": from_file,
-        "to": to_file,
-        "relation_type": relation_type,
-        "cardinality": cardinality,
-        "already_existed": already_existed,
-        "mapPath": str(map_path.relative_to(VAULT_ROOT)),
-        "nodes": len(modules),
-        "edges": len(relations),
-        "message": f"Relation added: {from_file} --[{relation_type}]--> {to_file}. Code map updated.",
-    }
-
-
-def main():
-    parser = argparse.ArgumentParser(
-        description="Vault Code Relation Tool",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Ejemplos:
-  python vault_code_relation.py --project "ans" --from_file "src/server.py" --to_file "src/core/models.py" --relation_type "imports" --cardinality "1:1"
-  python vault_code_relation.py --project "ans" --from_file "src/api.py" --to_file "src/service.py" --relation_type "calls" --cardinality "1:N"
-  python vault_code_relation.py --project "mi-api" --from_file "src/auth.js" --to_file "src/db.js" --relation_type "depends_on"
-  python vault_code_relation.py --project "backend" --from_file "src/BaseRepo.py" --to_file "src/UserRepo.py" --relation_type "extends" --cardinality "1:1"
-
-Notas:
-  - VAULT_ROOT se detecta automaticamente desde la ubicacion del script
-  - Tipos de relacion: imports, extends, implements, calls, uses, re-exports, depends_on
-  - Cardinalidades: 1:1, 1:N, N:1, N:M
-  - Regenera automaticamente code-map.md
-""",
-    )
-    parser.add_argument("--project", required=True, help="Project slug")
-    parser.add_argument("--from_file", required=True, help="Source file path")
-    parser.add_argument("--to_file", required=True, help="Target file path")
-    parser.add_argument("--relation_type", required=True, help=f"Relation type: {RELATION_TYPES}")
-    parser.add_argument("--cardinality", help=f"Cardinality: {CARDINALITIES}")
-    parser.add_argument("--label", help="Additional label")
-
-    args = parser.parse_args()
-    result = vault_code_relation(
-        args.project,
-        args.from_file,
-        args.to_file,
-        args.relation_type,
-        args.cardinality,
-        args.label,
-    )
-    print(json.dumps(result, indent=2, ensure_ascii=False))
-    return 0 if result["ok"] else 1
-
-
-if __name__ == "__main__":
-    sys.exit(wrap_main(main, "vault_code_relation"))
+CODE_DIR = VAULT_ROOT / "11_Code"
+INDEX_FILE = CODE_DIR / ".code-index.json"
+
+RELATION_TYPES = [
+    "imports",
+    "extends",
+    "implements",
+    "calls",
+    "uses",
+    "re-exports",
+    "depends_on",
+]
+
+CARDINALITIES = ["1:1", "1:N", "N:1", "N:M"]
+
+
+def slugify(text: str) -> str:
+    slug = text.lower()
+    slug = re.sub(r"[^\w\s-]", "", slug)
+    slug = re.sub(r"[\s_]+", "-", slug)
+    slug = re.sub(r"^-+|-+$", "", slug)
+    return slug
+
+
+def load_index() -> Dict[str, Any]:
+    try:
+        with open(INDEX_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {"modules": [], "relations": []}
+
+
+def save_index(data: Dict[str, Any]) -> None:
+    CODE_DIR.mkdir(parents=True, exist_ok=True)
+    with open(INDEX_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+
+def get_module_nodes(index: Dict[str, Any], project: str) -> List[Dict]:
+    return [m for m in index.get("modules", []) if m.get("project", "").lower() == project.lower()]
+
+
+def generate_code_map(project: str, index: Dict[str, Any]) -> str:
+    modules = get_module_nodes(index, project)
+    relations = [r for r in index.get("relations", []) if r.get("project", "").lower() == project.lower()]
+
+    if not modules:
+        return "graph TD\n    empty[No modules documented]"
+
+    lines = ["graph TD"]
+    node_map = {}
+
+    for i, mod in enumerate(modules):
+        title = mod.get("title", mod.get("filePath", ""))
+        slug = slugify(Path(mod.get("filePath", title)).stem)
+        node_id = f"N{i}"
+        lines.append(f'    {node_id}["{title}"]')
+        node_map[mod["filePath"]] = node_id
+
+    for rel in relations:
+        from_path = rel.get("from", "")
+        to_path = rel.get("to", "")
+        rel_type = rel.get("type", "")
+        cardinality = rel.get("cardinality", "")
+        label = rel.get("label", "")
+
+        from_id = node_map.get(from_path)
+        to_id = node_map.get(to_path)
+
+        if from_id and to_id:
+            label_str = f"{rel_type}"
+            if cardinality:
+                label_str += f" {cardinality}"
+            if label:
+                label_str += f" ({label})"
+
+            arrow = "-->"
+            if rel_type == "implements":
+                arrow = "-.->"
+            elif rel_type == "re-exports":
+                arrow = "==>"
+
+            lines.append(f'    {from_id} {arrow}|"{label_str}"| {to_id}')
+
+    return "\n".join(lines)
+
+
+def save_code_map(project: str, mermaid_content: str) -> Path:
+    safe_project = slugify(project)
+    map_dir = CODE_DIR / safe_project
+    map_dir.mkdir(parents=True, exist_ok=True)
+    map_path = map_dir / "code-map.md"
+
+    timestamp = _utcnow()
+
+    frontmatter = ["---"]
+    frontmatter.append(f"title: Code Map - {project}")
+    frontmatter.append(f"project: {project}")
+    frontmatter.append(f"type: code-map")
+    frontmatter.append(f"updatedAt: {timestamp}")
+    frontmatter.append("---")
+    frontmatter.append(f"\n## Code Map: {project}\n")
+    frontmatter.append(f"```mermaid\n{mermaid_content}\n```\n")
+
+    with open(map_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(frontmatter))
+
+    return map_path
+
+
+def vault_code_relation(
+    project: str,
+    from_file: str,
+    to_file: str,
+    relation_type: str,
+    cardinality: Optional[str] = None,
+    label: Optional[str] = None,
+) -> Dict[str, Any]:
+    relation_type = relation_type.lower()
+
+    if relation_type not in RELATION_TYPES:
+        return {"ok": False, "error": f"Relation type inválido: {relation_type}. Válidos: {RELATION_TYPES}"}
+
+    if cardinality and cardinality not in CARDINALITIES:
+        return {"ok": False, "error": f"Cardinality inválida: {cardinality}. Válidos: {CARDINALITIES}"}
+
+    index = load_index()
+    already_existed = False
+
+    for rel in index["relations"]:
+        if rel["from"] == from_file and rel["to"] == to_file and rel["type"] == relation_type:
+            already_existed = True
+            break
+
+    index["relations"].append(
+        {
+            "id": str(uuid.uuid4()),
+            "from": from_file,
+            "to": to_file,
+            "type": relation_type,
+            "cardinality": cardinality,
+            "label": label,
+            "project": project,
+            "addedAt": _utcnow(),
+        }
+    )
+
+    save_index(index)
+
+    modules = get_module_nodes(index, project)
+    relations = [r for r in index["relations"] if r.get("project", "").lower() == project.lower()]
+    mermaid_content = generate_code_map(project, index)
+    map_path = save_code_map(project, mermaid_content)
+
+    return {
+        "ok": True,
+        "from": from_file,
+        "to": to_file,
+        "relation_type": relation_type,
+        "cardinality": cardinality,
+        "already_existed": already_existed,
+        "mapPath": str(map_path.relative_to(VAULT_ROOT)),
+        "nodes": len(modules),
+        "edges": len(relations),
+        "message": f"Relation added: {from_file} --[{relation_type}]--> {to_file}. Code map updated.",
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Vault Code Relation Tool",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Ejemplos:
+  python vault_code_relation.py --project "ans" --from_file "src/server.py" --to_file "src/core/models.py" --relation_type "imports" --cardinality "1:1"
+  python vault_code_relation.py --project "ans" --from_file "src/api.py" --to_file "src/service.py" --relation_type "calls" --cardinality "1:N"
+  python vault_code_relation.py --project "mi-api" --from_file "src/auth.js" --to_file "src/db.js" --relation_type "depends_on"
+  python vault_code_relation.py --project "backend" --from_file "src/BaseRepo.py" --to_file "src/UserRepo.py" --relation_type "extends" --cardinality "1:1"
+
+Notas:
+  - VAULT_ROOT se detecta automaticamente desde la ubicacion del script
+  - Tipos de relacion: imports, extends, implements, calls, uses, re-exports, depends_on
+  - Cardinalidades: 1:1, 1:N, N:1, N:M
+  - Regenera automaticamente code-map.md
+""",
+    )
+    parser.add_argument("--project", required=True, help="Project slug")
+    parser.add_argument("--from_file", required=True, help="Source file path")
+    parser.add_argument("--to_file", required=True, help="Target file path")
+    parser.add_argument("--relation_type", required=True, help=f"Relation type: {RELATION_TYPES}")
+    parser.add_argument("--cardinality", help=f"Cardinality: {CARDINALITIES}")
+    parser.add_argument("--label", help="Additional label")
+
+    args = parser.parse_args()
+    result = vault_code_relation(
+        args.project,
+        args.from_file,
+        args.to_file,
+        args.relation_type,
+        args.cardinality,
+        args.label,
+    )
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+    return 0 if result["ok"] else 1
+
+
+if __name__ == "__main__":
+    sys.exit(wrap_main(main, "vault_code_relation"))

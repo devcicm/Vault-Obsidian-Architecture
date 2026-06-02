@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Vault Norms — Catálogo canónico de normas del estándar Vault Obsidian Architecture.
 
@@ -21,7 +21,7 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
-from vault_io import atomic_write_jsonVAULT_ROOT
+from vault_io import atomic_write_json, VAULT_ROOT
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 

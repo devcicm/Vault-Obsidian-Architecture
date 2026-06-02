@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 vault_tokens.py -- Token usage analytics for vault tools.
 

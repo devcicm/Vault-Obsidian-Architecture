@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 vault_quality_check.py — Data Quality (DQ) scorer for vault notes.
 

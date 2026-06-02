@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 vault_impact.py — BFS impact analysis on the vault backlink graph.
 

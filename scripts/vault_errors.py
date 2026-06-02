@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 vault_errors.py — Observabilidad y trazabilidad centralizada para vault tools.
 

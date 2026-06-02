@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Vault Tags — Registro canonico de tags, auditoria y control de consistencia.
 

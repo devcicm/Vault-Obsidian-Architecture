@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 vault_propagate.py — Propagation strategies for graph-aware change management.
 
