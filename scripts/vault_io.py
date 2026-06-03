@@ -37,6 +37,13 @@ def _detect_vault_root() -> Path:
     # Accept any vault-* dir (fresh vault, nothing initialized yet)
     if candidates:
         return candidates[0]
+    # Last resort fallback: parent.parent.
+    # If that path is the spec repo (has vault-obsidian-architecture.md),
+    # redirect vault content to vault-sandbox/ to avoid polluting the spec root.
+    if (project_root / "vault-obsidian-architecture.md").exists():
+        sandbox = project_root / "vault-sandbox"
+        sandbox.mkdir(exist_ok=True)
+        return sandbox
     return project_root
 
 

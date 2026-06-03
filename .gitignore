@@ -3,7 +3,9 @@ __pycache__/
 *.pyc
 
 # Vault runtime content — este repo es spec, no vault
-# Los scripts generan estas carpetas al ejecutarse; no deben versionarse aquí
+# Los scripts redirigen contenido a vault-sandbox/ cuando detectan el repo spec
+# (ver _detect_vault_root en vault_io.py)
+vault-sandbox/
 00_System/
 01_Projects/
 02_Observability/
