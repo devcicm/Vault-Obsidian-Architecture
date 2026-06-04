@@ -33,7 +33,7 @@ SYSTEM_DIR = VAULT_ROOT / "00_System"
 VERSION_FILE = SYSTEM_DIR / "standard-version.json"
 IDENTITY_FILE = SYSTEM_DIR / "identity.md"
 
-CURRENT_VERSION = "v31"
+CURRENT_VERSION = "v32"
 
 MIGRATIONS: Dict[str, Dict[str, Any]] = {
     "v21": {
@@ -201,9 +201,26 @@ MIGRATIONS: Dict[str, Dict[str, Any]] = {
             "09_Infrastructure/envs/: subcarpeta para environment matrix",
         ],
     },
+    "v32": {
+        "description": "Gestión de riesgos y calidad: risk management, privacy/GDPR, non-conformidades (ISO 31000, ISO 27005, ISO 27701, ISO 9001)",
+        "add_folders": [
+            "02_Observability/risks",
+            "02_Observability/quality",
+            "09_Infrastructure/privacy",
+        ],
+        "update_identity": {"tools_count": "65", "groups_count": "31"},
+        "notes": [
+            "vault_risk_save.py (NUEVO): riesgos Likelihood×Impact con ISO 31000:2018 §6.4 + ISO/IEC 27005:2022 §8-9",
+            "vault_privacy_save.py (NUEVO): inventario PII/GDPR con ISO/IEC 27701:2019 + GDPR Art.30 + DPIA auto-detect",
+            "vault_ncr_save.py (NUEVO): no-conformidades NCR-YYYY-NNN con ISO 9001:2015 §10.2 + 5-Whys",
+            "02_Observability/risks/: riesgos operativos, de seguridad, financieros, legales",
+            "02_Observability/quality/: no conformidades y acciones correctivas",
+            "09_Infrastructure/privacy/: inventario de tratamiento de datos personales",
+        ],
+    },
 }
 
-VERSION_ORDER = ["v19", "v20", "v21", "v22", "v23", "v24", "v25", "v26", "v27", "v28", "v29", "v30", "v31"]
+VERSION_ORDER = ["v19", "v20", "v21", "v22", "v23", "v24", "v25", "v26", "v27", "v28", "v29", "v30", "v31", "v32"]
 
 
 def _version_index(v: str) -> int:

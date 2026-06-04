@@ -67,6 +67,7 @@ GROUPS: List[Dict[str, Any]] = [
     {"id": 28, "name": "Normas y Etiquetas",   "tools": ["vault_norms","vault_code_tag"]},
     {"id": 29, "name": "Producción y SRE",     "tools": ["vault_incident_save","vault_slo_save"]},
     {"id": 30, "name": "Release y Entornos",   "tools": ["vault_env_matrix","vault_release_save"]},
+    {"id": 31, "name": "Riesgos y Calidad",    "tools": ["vault_risk_save","vault_privacy_save","vault_ncr_save"]},
 ]
 
 # Build tool → group lookup

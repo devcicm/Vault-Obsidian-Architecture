@@ -2,9 +2,9 @@
 
 **Estándar de diseño para dotar a agentes LLM de memoria documental persistente.**
 
-[![Version](https://img.shields.io/badge/version-v31-blue)](./vault-obsidian-architecture.md)
-[![Tools](https://img.shields.io/badge/tools-62_active-green)](./scripts/)
-[![Scripts](https://img.shields.io/badge/scripts-75_total-lightblue)](./scripts/)
+[![Version](https://img.shields.io/badge/version-v32-blue)](./vault-obsidian-architecture.md)
+[![Tools](https://img.shields.io/badge/tools-65_active-green)](./scripts/)
+[![Scripts](https://img.shields.io/badge/scripts-78_total-lightblue)](./scripts/)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow)](./scripts/)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](./LICENSE)
 
@@ -134,7 +134,7 @@ python scripts/vault_audit.py
 
 ---
 
-## Las 62 tools activas — 30 grupos
+## Las 65 tools activas — 31 grupos
 
 | Grupo | Tools |
 |---|---|
@@ -168,6 +168,7 @@ python scripts/vault_audit.py
 | 28 — Normas y Etiquetas | `vault_norms`, `vault_code_tag` |
 | 29 — Producción y SRE | `vault_incident_save`, `vault_slo_save` |
 | 30 — Release y Entornos | `vault_env_matrix`, `vault_release_save` |
+| 31 — Riesgos y Calidad | `vault_risk_save`, `vault_privacy_save`, `vault_ncr_save` |
 
 Ver **[scripts/README.md](./scripts/README.md)** para contratos completos con parámetros, ejemplos y protocolo de sesión.
 
