@@ -22,7 +22,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 SCRIPTS_DIR = Path(__file__).parent
-VAULT_ROOT = SCRIPTS_DIR.parent
+
+from vault_io import VAULT_ROOT  # noqa: E402
 SYSTEM_DIR = VAULT_ROOT / "00_System"
 MANIFEST_FILE = SYSTEM_DIR / "tools-manifest.json"
 

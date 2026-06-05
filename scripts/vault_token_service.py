@@ -14,11 +14,10 @@ from typing import Any, Dict, List, Tuple
 from urllib.parse import urlparse
 
 from vault_errors import wrap_main
-from vault_io import atomic_write_json, file_lock
+from vault_io import VAULT_ROOT, atomic_write_json, file_lock
 
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
-VAULT_ROOT = SCRIPTS_DIR.parent
 USAGE_DIR = VAULT_ROOT / "00_System" / "token-usage"
 FLOW_DIR = USAGE_DIR / "flows"
 PID_FILE = USAGE_DIR / "token-service.pid"

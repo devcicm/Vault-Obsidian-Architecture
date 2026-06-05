@@ -31,7 +31,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 SCRIPTS_DIR = Path(__file__).parent
-VAULT_ROOT = SCRIPTS_DIR.parent
+
+from vault_errors import wrap_main
+from vault_io import VAULT_ROOT  # noqa: E402
 SYSTEM_DIR = VAULT_ROOT / "00_System"
 SPEC_MEMORY_FILE = SYSTEM_DIR / "spec-memory.json"
 QUALITY_INDEX = SYSTEM_DIR / "quality-index.json"
@@ -39,8 +41,6 @@ PROPAGATION_QUEUE = SYSTEM_DIR / "propagation-queue.json"
 CHANGE_LOG = SYSTEM_DIR / ".change-log.json"
 STANDARD_VERSION_FILE = SYSTEM_DIR / "standard-version.json"
 PYTHON = sys.executable
-
-from vault_errors import wrap_main
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Declared returns per tool — ground truth from TOOL_CONTRACTS

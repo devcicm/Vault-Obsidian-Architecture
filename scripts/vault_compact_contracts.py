@@ -26,7 +26,8 @@ from typing import Any, Dict, List, Optional
 from vault_errors import wrap_main
 
 SCRIPTS_DIR = Path(__file__).parent
-VAULT_ROOT = SCRIPTS_DIR.parent
+
+from vault_io import VAULT_ROOT  # noqa: E402
 SYSTEM_DIR = VAULT_ROOT / "00_System"
 CONTRACTS_JSON = SYSTEM_DIR / "tool-contracts.json"
 CONTRACTS_MD = SYSTEM_DIR / "tool-contracts.md"
