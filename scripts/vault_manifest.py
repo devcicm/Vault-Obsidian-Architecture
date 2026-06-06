@@ -1,31 +1,45 @@
 #!/usr/bin/env python3
 """
-vault_manifest.py — Genera manifiesto de tools con estado (active/deprecated/internal).
+vault_manifest.py — Genera manifiesto de tools + bootstraps/actualiza tool-spec.json.
 
-Escribe 00_System/tools-manifest.json con el estado de cada tool:
-  {name, status, group, replaced_by?, deprecated_since?}
+Modos:
+  normal        Escribe 00_System/tools-manifest.json desde tool-spec.json (spec-driven).
+                Si tool-spec.json no existe, usa datos hardcodeados como fallback.
+  --bootstrap   Genera scripts/tool-spec.json combinando datos hardcodeados + introspección.
+                Ejecutar una sola vez (o al agregar datos nuevos al spec).
+  --validate    Delega a vault_spec_validate.py — muestra drift entre spec e implementación.
+  --check       Muestra el manifiesto sin escribir.
 
-Las tools deprecadas emiten _deprecation en su output JSON (campo adicional, no rompe nada).
-Las tools internas (vault_index, vault_dataset) están disponibles pero no expuestas al agente.
+Flujo spec-driven:
+  1. python vault_manifest.py --bootstrap     ← genera tool-spec.json inicial
+  2. Editar tool-spec.json antes de cada nueva tool
+  3. Implementar el script
+  4. python vault_manifest.py --validate      ← verificar conformidad
+  5. python vault_manifest.py                 ← actualizar tools-manifest.json
 
 Usage:
-    python vault_manifest.py                # genera/actualiza tools-manifest.json
-    python vault_manifest.py --check        # muestra manifiesto sin escribir
+    python vault_manifest.py                     # genera tools-manifest.json desde spec
+    python vault_manifest.py --bootstrap         # (re)genera tool-spec.json
+    python vault_manifest.py --validate          # muestra drift spec vs implementación
+    python vault_manifest.py --check             # muestra sin escribir
     python vault_manifest.py --status active     # filtra por estado
     python vault_manifest.py --status deprecated # lista tools deprecadas
 """
 
 import argparse
 import json
+import re
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 SCRIPTS_DIR = Path(__file__).parent
 
 from vault_io import VAULT_ROOT  # noqa: E402
 SYSTEM_DIR = VAULT_ROOT / "00_System"
 MANIFEST_FILE = SYSTEM_DIR / "tools-manifest.json"
+SPEC_FILE = SCRIPTS_DIR / "tool-spec.json"
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Tool status registry
@@ -400,6 +414,164 @@ DQ_METADATA: Dict[str, Dict[str, Any]] = {
 }
 
 
+# ──────────────────────────────────────────────────────────────────────────────
+# Spec-driven helpers
+# ──────────────────────────────────────────────────────────────────────────────
+
+def _load_spec() -> Optional[Dict[str, Any]]:
+    """Carga tool-spec.json si existe. Retorna None si no existe (fallback a hardcoded)."""
+    if not SPEC_FILE.exists():
+        return None
+    try:
+        return json.loads(SPEC_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+
+def _build_manifest_from_spec(spec: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Genera la lista de entradas del manifiesto desde tool-spec.json."""
+    manifest = []
+    for name, entry in sorted(spec.get("tools", {}).items()):
+        m: Dict[str, Any] = {
+            "name": name,
+            "status": entry.get("status", "active"),
+            "group": entry.get("group", "misc"),
+        }
+        if entry.get("status") == "deprecated":
+            m["replaced_by"]      = entry.get("replaced_by", "")
+            m["deprecated_since"] = entry.get("deprecated_since", "")
+            m["reason"]           = entry.get("deprecation_reason", "")
+        if entry.get("status") in ("internal", "meta"):
+            m["note"] = "Not exposed to agent"
+        dq = entry.get("dq", {})
+        if dq:
+            m.update(dq)
+        funds = entry.get("fundamentals", [])
+        if funds:
+            m["data_fundamentals"] = funds
+        manifest.append(m)
+    return manifest
+
+
+def _extract_required_flags(source: str) -> List[str]:
+    """Extrae --flags marcados required=True en argparse."""
+    flags: List[str] = []
+    lines = source.splitlines()
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        if "add_argument(" in line:
+            call = line
+            depth = call.count("(") - call.count(")")
+            j = i + 1
+            while depth > 0 and j < len(lines):
+                call += " " + lines[j].strip()
+                depth += lines[j].count("(") - lines[j].count(")")
+                j += 1
+            names = re.findall(r"""add_argument\(\s*["']([^"']+)["']""", call)
+            if names:
+                flag = names[0]
+                is_required = "required=True" in call or not flag.startswith("-")
+                if is_required and flag.startswith("-"):
+                    flags.append(flag)
+        i += 1
+    return flags
+
+
+def _bootstrap_spec() -> Dict[str, Any]:
+    """
+    Genera tool-spec.json combinando datos hardcodeados + introspección de scripts.
+    Incluye declared_returns desde vault_spec_memory.DECLARED_RETURNS.
+    """
+    # Import DECLARED_RETURNS (fuente actual de retornos declarados)
+    _dr: Dict[str, List[str]] = {}
+    try:
+        from vault_spec_memory import DECLARED_RETURNS as _DR
+        _dr = _DR
+    except ImportError:
+        pass
+
+    # Import GROUPS desde vault_compact_contracts para group_id
+    _group_by_tool: Dict[str, Dict] = {}
+    try:
+        from vault_compact_contracts import GROUPS as _GROUPS
+        for g in _GROUPS:
+            for t in g["tools"]:
+                _group_by_tool[t] = g
+    except ImportError:
+        pass
+
+    # Combinar todos los nombres de tools conocidos
+    all_names: Set[str] = set(TOOL_GROUPS.keys())
+    all_names.update(_group_by_tool.keys())
+    # Descubrir scripts activos que puedan no estar en el registry
+    for p in SCRIPTS_DIR.glob("vault_*.py"):
+        stem = p.stem
+        if stem not in ("vault_errors", "vault_io"):
+            all_names.add(stem)
+
+    tools: Dict[str, Any] = {}
+    for name in sorted(all_names):
+        # Estado
+        if name in DEPRECATED_TOOLS:
+            status = "deprecated"
+        elif name in INTERNAL_TOOLS:
+            status = "internal"
+        elif name in META_TOOLS:
+            status = "meta"
+        else:
+            status = "active"
+
+        # Grupo
+        gdata = _group_by_tool.get(name, {})
+        group_name = gdata.get("name", TOOL_GROUPS.get(name, "misc"))
+        group_id   = gdata.get("id", 0)
+
+        # Args (introspección del script)
+        required_args: List[str] = []
+        script_path = SCRIPTS_DIR / f"{name}.py"
+        if script_path.exists():
+            try:
+                src = script_path.read_text(encoding="utf-8", errors="replace")
+                required_args = _extract_required_flags(src)
+            except Exception:
+                pass
+
+        entry: Dict[str, Any] = {
+            "group":            group_name,
+            "group_id":         group_id,
+            "status":           status,
+            "required_args":    required_args,
+            "declared_returns": _dr.get(name, []),
+            "dq":               DQ_METADATA.get(name, {
+                "dq_dimensions":    [],
+                "cia_scope":        [],
+                "propagation_aware": False,
+            }),
+            "fundamentals": _FUND_BY_TOOL.get(name, []),
+        }
+
+        if name in DEPRECATED_TOOLS:
+            dep = DEPRECATED_TOOLS[name]
+            entry["replaced_by"]        = dep["replaced_by"]
+            entry["deprecated_since"]   = dep["since"]
+            entry["deprecation_reason"] = dep["reason"]
+
+        tools[name] = entry
+
+    return {
+        "version":     "v32",
+        "schema":      "1.0",
+        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "description": (
+            "Spec-driven tool contracts. "
+            "Editar este archivo ANTES de implementar una nueva tool. "
+            "Validar con: python vault_spec_validate.py"
+        ),
+        "tools": tools,
+    }
+
+
 def _derive_fundamentals_by_tool() -> Dict[str, List[str]]:
     """Single source of truth: derive data_fundamentals per tool from vault_fundamentals registry."""
     try:
@@ -525,48 +697,99 @@ def _build_manifest() -> List[Dict[str, Any]]:
     return manifest
 
 
+def _read_version() -> str:
+    try:
+        sv = SYSTEM_DIR / "standard-version.json"
+        if sv.exists():
+            v = json.loads(sv.read_text(encoding="utf-8")).get("version", "unknown")
+            return f"v{v}" if isinstance(v, int) else str(v)
+    except Exception:
+        pass
+    return "unknown"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="vault_manifest -- genera manifiesto de estado de las vault tools",
+        description="vault_manifest — manifiesto de tools (spec-driven desde tool-spec.json)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Ejemplos:
-  python vault_manifest.py                     # genera 00_System/tools-manifest.json
-  python vault_manifest.py --check             # muestra sin escribir
+  python vault_manifest.py --bootstrap         # genera tool-spec.json (primera vez o al actualizar)
+  python vault_manifest.py                     # genera 00_System/tools-manifest.json desde spec
+  python vault_manifest.py --validate          # muestra drift entre spec e implementación
+  python vault_manifest.py --check             # muestra manifiesto sin escribir
   python vault_manifest.py --status deprecated # lista solo tools deprecadas
   python vault_manifest.py --status active     # lista solo tools activas
 """,
     )
-    parser.add_argument("--check", action="store_true", help="Mostrar manifiesto sin escribir archivo")
-    parser.add_argument("--status", choices=["active", "deprecated", "internal", "meta"], help="Filtrar por estado")
+    parser.add_argument("--bootstrap", action="store_true",
+                        help="Genera/actualiza scripts/tool-spec.json desde datos hardcodeados + introspección")
+    parser.add_argument("--validate", action="store_true",
+                        help="Valida conformidad implementación vs spec (delega a vault_spec_validate)")
+    parser.add_argument("--check",  action="store_true", help="Mostrar manifiesto sin escribir")
+    parser.add_argument("--status", choices=["active", "deprecated", "internal", "meta"],
+                        help="Filtrar por estado")
 
     args = parser.parse_args()
 
-    manifest = _build_manifest()
+    # ── Modo bootstrap ──────────────────────────────────────────────────────
+    if args.bootstrap:
+        spec = _bootstrap_spec()
+        SPEC_FILE.write_text(json.dumps(spec, indent=2, ensure_ascii=False), encoding="utf-8")
+        tool_count = len(spec["tools"])
+        active = sum(1 for e in spec["tools"].values() if e["status"] == "active")
+        print(json.dumps({
+            "ok": True,
+            "action": "bootstrap",
+            "spec_file": str(SPEC_FILE.relative_to(SCRIPTS_DIR)),
+            "tools_total": tool_count,
+            "tools_active": active,
+            "version": spec["version"],
+            "next_step": "Commit tool-spec.json. Desde ahora editar spec ANTES de implementar.",
+        }, indent=2, ensure_ascii=False))
+        return 0
+
+    # ── Modo validate ──────────────────────────────────────────────────────
+    if args.validate:
+        try:
+            from vault_spec_validate import load_spec, run_validation, _print_report
+            spec = load_spec()
+            validation = run_validation(spec)
+            _print_report(validation)
+            return 0 if validation["ok"] else 1
+        except ImportError:
+            print(json.dumps({"ok": False, "error": "vault_spec_validate.py no encontrado"}))
+            return 1
+
+    # ── Modo normal (genera manifiesto) ────────────────────────────────────
+    spec = _load_spec()
+    if spec is not None:
+        manifest = _build_manifest_from_spec(spec)
+        source_label = "tool-spec.json"
+    else:
+        # Fallback hardcodeado — advertir
+        import sys as _sys
+        print(
+            '{"warning": "tool-spec.json no encontrado — usando datos hardcodeados. '
+            'Ejecutar: python vault_manifest.py --bootstrap"}',
+            file=_sys.stderr,
+        )
+        manifest = _build_manifest()
+        source_label = "hardcoded (fallback)"
 
     if args.status:
         manifest = [e for e in manifest if e["status"] == args.status]
 
-    # Read standard version from 00_System/standard-version.json if available
-    _version = "unknown"
-    try:
-        _sv = SYSTEM_DIR / "standard-version.json"
-        if _sv.exists():
-            import json as _j
-            _version = _j.loads(_sv.read_text(encoding="utf-8")).get("version", "unknown")
-            _version = f"v{_version}" if isinstance(_version, int) else str(_version)
-    except Exception:
-        pass
-
     result: Dict[str, Any] = {
         "ok": True,
-        "standard_version": _version,
-        "generated_at": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "total": len(manifest),
-        "active": sum(1 for e in manifest if e["status"] == "active"),
+        "standard_version": _read_version(),
+        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "source": source_label,
+        "total":      len(manifest),
+        "active":     sum(1 for e in manifest if e["status"] == "active"),
         "deprecated": sum(1 for e in manifest if e["status"] == "deprecated"),
-        "internal": sum(1 for e in manifest if e["status"] == "internal"),
-        "meta": sum(1 for e in manifest if e["status"] == "meta"),
+        "internal":   sum(1 for e in manifest if e["status"] == "internal"),
+        "meta":       sum(1 for e in manifest if e["status"] == "meta"),
         "tools": manifest,
     }
 
@@ -579,8 +802,9 @@ Ejemplos:
 
     print(json.dumps({
         "ok": True,
-        "total": result["total"],
-        "active": result["active"],
+        "source": source_label,
+        "total":      result["total"],
+        "active":     result["active"],
         "deprecated": result["deprecated"],
         "path": str(MANIFEST_FILE.relative_to(VAULT_ROOT)).replace("\\", "/"),
     }, indent=2, ensure_ascii=False))

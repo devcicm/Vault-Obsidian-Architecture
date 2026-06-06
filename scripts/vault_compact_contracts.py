@@ -34,10 +34,13 @@ CONTRACTS_MD = SYSTEM_DIR / "tool-contracts.md"
 VERSION_FILE = SYSTEM_DIR / "standard-version.json"
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Group metadata
+# Group metadata — leído desde tool-spec.json (spec-driven).
+# Fallback al hardcodeado si el spec no existe aún.
 # ──────────────────────────────────────────────────────────────────────────────
 
-GROUPS: List[Dict[str, Any]] = [
+_SPEC_FILE = SCRIPTS_DIR / "tool-spec.json"
+
+_GROUPS_HARDCODED: List[Dict[str, Any]] = [
     {"id": 1,  "name": "Core",          "tools": ["vault_write","vault_read","vault_search","vault_list","vault_append","vault_diff","vault_merge"]},
     {"id": 2,  "name": "Observabilidad","tools": ["vault_log_error"]},
     {"id": 3,  "name": "Patrones",      "tools": ["vault_pattern_save","vault_pattern_list"]},
@@ -70,6 +73,27 @@ GROUPS: List[Dict[str, Any]] = [
     {"id": 30, "name": "Release y Entornos",   "tools": ["vault_env_matrix","vault_release_save"]},
     {"id": 31, "name": "Riesgos y Calidad",    "tools": ["vault_risk_save","vault_privacy_save","vault_ncr_save"]},
 ]
+
+
+def _load_groups() -> List[Dict[str, Any]]:
+    """Reconstruye la lista GROUPS desde tool-spec.json. Fallback a hardcoded."""
+    if not _SPEC_FILE.exists():
+        return _GROUPS_HARDCODED
+    try:
+        spec = json.loads(_SPEC_FILE.read_text(encoding="utf-8"))
+        by_group: Dict[int, Dict[str, Any]] = {}
+        for name, entry in spec.get("tools", {}).items():
+            gid  = entry.get("group_id", 0)
+            gname = entry.get("group", "misc")
+            if gid not in by_group:
+                by_group[gid] = {"id": gid, "name": gname, "tools": []}
+            by_group[gid]["tools"].append(name)
+        return sorted(by_group.values(), key=lambda g: g["id"]) or _GROUPS_HARDCODED
+    except Exception:
+        return _GROUPS_HARDCODED
+
+
+GROUPS: List[Dict[str, Any]] = _load_groups()
 
 # Build tool → group lookup
 _TOOL_GROUP: Dict[str, Dict] = {}

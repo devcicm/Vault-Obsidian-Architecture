@@ -43,65 +43,83 @@ STANDARD_VERSION_FILE = SYSTEM_DIR / "standard-version.json"
 PYTHON = sys.executable
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Declared returns per tool — ground truth from TOOL_CONTRACTS
-# (what the agent MUST find in a successful ok:true response)
+# Declared returns per tool — leídos desde tool-spec.json (spec-driven).
+# Fallback al dict hardcodeado si el archivo de spec no existe aún.
+# Fuente canónica: scripts/tool-spec.json (editar antes de implementar).
 # ──────────────────────────────────────────────────────────────────────────────
 
-DECLARED_RETURNS: Dict[str, List[str]] = {
-    "vault_write":            ["path", "id"],
-    "vault_read":             ["path", "content"],
-    "vault_search":           ["results"],
-    "vault_list":             ["notes"],
-    "vault_append":           ["path"],
-    "vault_diff":             ["path", "changed"],
-    "vault_merge":            ["action"],
-    "vault_log_error":        [],
-    "vault_pattern_save":     ["path"],
-    "vault_pattern_list":     ["patterns"],
-    "vault_diagram_save":     ["path"],
-    "vault_relation_add":     ["path"],
-    "vault_knowledge_save":   ["path"],
-    "vault_knowledge_get":    ["results", "query", "total"],
-    "vault_audit":            ["healthScore"],
-    "vault_validate":         [],
-    "vault_graph":            [],
-    "vault_runbook_save":     ["path"],
-    "vault_runbook_log":      [],
-    "vault_infra_save":       ["path"],
-    "vault_infra_map":        ["path", "nodesTotal"],
-    "vault_env_save":         ["path"],
-    "vault_migrate_docs":     [],
-    "vault_migrate_rollback": [],
-    "vault_timeline":         ["query"],
-    "vault_project_status":   ["path"],
-    "vault_project_overview": ["path"],
-    "vault_code_module":      ["path"],
-    "vault_code_relation":    [],
-    "vault_code_map":         ["path"],
-    "vault_code_query":       [],
-    "vault_backup":           ["name", "path"],
-    "vault_backup_list":      ["total"],
-    "vault_restore":          [],
-    "vault_security_scan":    ["riskLevel"],
-    "vault_section_index":    ["path"],
-    "vault_master_index":     ["path"],
-    "vault_reindex":          ["indexed"],
-    "vault_bibliography_save": ["path"],
-    "vault_drift_detect":     ["mode"],
-    "vault_flow_save":        ["path"],
-    "vault_requirement_save": ["path"],
-    "vault_test_save":        ["path"],
-    "vault_ai_decision":      ["path"],
-    "vault_standard_upgrade": [],
-    "vault_change_log":       ["id"],
-    "vault_quality_check":    [],
-    "vault_fundamentals":     [],
-    "vault_impact":           [],
-    "vault_propagate":        [],
-    "vault_tokens":           [],
-    "vault_token_counter":    [],
-    "vault_token_service":    [],
-}
+_SPEC_FILE = SCRIPTS_DIR / "tool-spec.json"
+
+def _load_declared_returns() -> Dict[str, List[str]]:
+    """Carga declared_returns desde tool-spec.json. Fallback a hardcoded si no existe."""
+    if _SPEC_FILE.exists():
+        try:
+            spec = json.loads(_SPEC_FILE.read_text(encoding="utf-8"))
+            return {
+                name: entry.get("declared_returns", [])
+                for name, entry in spec.get("tools", {}).items()
+            }
+        except Exception:
+            pass
+    # Fallback hardcodeado (pre-spec-driven)
+    return {
+        "vault_write":            ["path", "id"],
+        "vault_read":             ["path", "body"],
+        "vault_search":           ["results"],
+        "vault_list":             ["notes"],
+        "vault_append":           ["path"],
+        "vault_diff":             ["path", "changed"],
+        "vault_merge":            ["action"],
+        "vault_log_error":        [],
+        "vault_pattern_save":     ["path"],
+        "vault_pattern_list":     ["patterns"],
+        "vault_diagram_save":     ["path"],
+        "vault_relation_add":     ["path"],
+        "vault_knowledge_save":   ["path"],
+        "vault_knowledge_get":    ["results", "query", "total"],
+        "vault_audit":            ["healthScore"],
+        "vault_validate":         [],
+        "vault_graph":            [],
+        "vault_runbook_save":     ["path"],
+        "vault_runbook_log":      [],
+        "vault_infra_save":       ["path"],
+        "vault_infra_map":        ["path", "nodesTotal"],
+        "vault_env_save":         ["path"],
+        "vault_migrate_docs":     [],
+        "vault_migrate_rollback": [],
+        "vault_timeline":         ["query"],
+        "vault_project_status":   ["path"],
+        "vault_project_overview": ["path"],
+        "vault_code_module":      ["path"],
+        "vault_code_relation":    [],
+        "vault_code_map":         ["path"],
+        "vault_code_query":       [],
+        "vault_backup":           ["name", "path"],
+        "vault_backup_list":      ["total"],
+        "vault_restore":          [],
+        "vault_security_scan":    ["riskLevel"],
+        "vault_section_index":    ["path"],
+        "vault_master_index":     ["path"],
+        "vault_reindex":          ["indexed"],
+        "vault_bibliography_save": ["path"],
+        "vault_drift_detect":     ["mode"],
+        "vault_flow_save":        ["path"],
+        "vault_requirement_save": ["path"],
+        "vault_test_save":        ["path"],
+        "vault_ai_decision":      ["path"],
+        "vault_standard_upgrade": [],
+        "vault_change_log":       ["id"],
+        "vault_quality_check":    [],
+        "vault_fundamentals":     [],
+        "vault_impact":           [],
+        "vault_propagate":        [],
+        "vault_tokens":           [],
+        "vault_token_counter":    [],
+        "vault_token_service":    [],
+    }
+
+
+DECLARED_RETURNS: Dict[str, List[str]] = _load_declared_returns()
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Introspection helpers

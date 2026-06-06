@@ -1,0 +1,1743 @@
+{
+  "version": "v32",
+  "schema": "1.0",
+  "generated_at": "2026-06-05T07:59:13Z",
+  "description": "Spec-driven tool contracts. Editar este archivo ANTES de implementar una nueva tool. Validar con: python vault_spec_validate.py",
+  "tools": {
+    "vault_ai_decision": {
+      "group": "IA Governance",
+      "group_id": 21,
+      "status": "active",
+      "required_args": [
+        "--project",
+        "--title",
+        "--decision_type",
+        "--description",
+        "--rationale"
+      ],
+      "declared_returns": [
+        "path"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "authenticity",
+          "non_repudiation"
+        ],
+        "cia_scope": [
+          "integrity",
+          "sensitivity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F7",
+        "F8"
+      ]
+    },
+    "vault_append": {
+      "group": "Core",
+      "group_id": 1,
+      "status": "active",
+      "required_args": [
+        "--path",
+        "--content"
+      ],
+      "declared_returns": [
+        "path"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "integrity",
+          "authenticity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F3",
+        "F7"
+      ]
+    },
+    "vault_audit": {
+      "group": "Salud",
+      "group_id": 6,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "healthScore"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "completeness",
+          "uniqueness",
+          "consistency",
+          "timeliness"
+        ],
+        "cia_scope": [
+          "integrity",
+          "availability"
+        ],
+        "propagation_aware": true
+      },
+      "fundamentals": [
+        "F2",
+        "F3",
+        "F6"
+      ]
+    },
+    "vault_backup": {
+      "group": "Backups",
+      "group_id": 13,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "name",
+        "path"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "integrity"
+        ],
+        "cia_scope": [
+          "integrity",
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F6",
+        "F8"
+      ]
+    },
+    "vault_backup_list": {
+      "group": "Backups",
+      "group_id": 13,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "total"
+      ],
+      "dq": {
+        "dq_dimensions": [],
+        "cia_scope": [
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F2"
+      ]
+    },
+    "vault_bibliography_save": {
+      "group": "Bibliografía",
+      "group_id": 16,
+      "status": "active",
+      "required_args": [
+        "--title",
+        "--url",
+        "--summary",
+        "--source_type"
+      ],
+      "declared_returns": [
+        "path"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "authenticity"
+        ],
+        "cia_scope": [
+          "integrity",
+          "authenticity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F7"
+      ]
+    },
+    "vault_change_log": {
+      "group": "Change Log",
+      "group_id": 23,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "id"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "non_repudiation"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": true
+      },
+      "fundamentals": [
+        "F8"
+      ]
+    },
+    "vault_code_map": {
+      "group": "Código",
+      "group_id": 12,
+      "status": "active",
+      "required_args": [
+        "--project"
+      ],
+      "declared_returns": [
+        "path"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency"
+        ],
+        "cia_scope": [
+          "availability"
+        ],
+        "propagation_aware": true
+      },
+      "fundamentals": [
+        "F2",
+        "F4"
+      ]
+    },
+    "vault_code_module": {
+      "group": "Código",
+      "group_id": 12,
+      "status": "active",
+      "required_args": [
+        "--project"
+      ],
+      "declared_returns": [
+        "path"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "integrity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F3",
+        "F4"
+      ]
+    },
+    "vault_code_query": {
+      "group": "Código",
+      "group_id": 12,
+      "status": "active",
+      "required_args": [
+        "--project"
+      ],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [],
+        "cia_scope": [
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F2"
+      ]
+    },
+    "vault_code_relation": {
+      "group": "Código",
+      "group_id": 12,
+      "status": "active",
+      "required_args": [
+        "--project",
+        "--from_file",
+        "--to_file",
+        "--relation_type"
+      ],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "consistency"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": true
+      },
+      "fundamentals": [
+        "F2"
+      ]
+    },
+    "vault_code_tag": {
+      "group": "Normas y Etiquetas",
+      "group_id": 28,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "integrity",
+          "authenticity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": []
+    },
+    "vault_compact_contracts": {
+      "group": "meta",
+      "group_id": 0,
+      "status": "meta",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "completeness",
+          "validity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": []
+    },
+    "vault_create": {
+      "group": "Core (legacy)",
+      "group_id": 0,
+      "status": "deprecated",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [],
+        "cia_scope": [],
+        "propagation_aware": false
+      },
+      "fundamentals": [],
+      "replaced_by": "vault_write",
+      "deprecated_since": "v21",
+      "deprecation_reason": "vault_write handles all note creation with AP guards"
+    },
+    "vault_dataset": {
+      "group": "internal",
+      "group_id": 0,
+      "status": "internal",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [],
+        "cia_scope": [],
+        "propagation_aware": false
+      },
+      "fundamentals": []
+    },
+    "vault_delta": {
+      "group": "Session Delta y Tags",
+      "group_id": 27,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [],
+        "cia_scope": [],
+        "propagation_aware": false
+      },
+      "fundamentals": []
+    },
+    "vault_diagram_save": {
+      "group": "Diagramas",
+      "group_id": 4,
+      "status": "active",
+      "required_args": [
+        "--project",
+        "--title",
+        "--diagram_type",
+        "--category",
+        "--content"
+      ],
+      "declared_returns": [
+        "path"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "integrity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F3",
+        "F7"
+      ]
+    },
+    "vault_diff": {
+      "group": "Core",
+      "group_id": 1,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "path",
+        "changed"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "integrity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F4",
+        "F6"
+      ]
+    },
+    "vault_drift_detect": {
+      "group": "Drift",
+      "group_id": 17,
+      "status": "active",
+      "required_args": [
+        "--path",
+        "--project"
+      ],
+      "declared_returns": [
+        "mode"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "timeliness",
+          "accuracy"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F4",
+        "F6"
+      ]
+    },
+    "vault_env_matrix": {
+      "group": "Release y Entornos",
+      "group_id": 30,
+      "status": "active",
+      "required_args": [
+        "--project",
+        "--env"
+      ],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "integrity",
+          "consistency"
+        ],
+        "cia_scope": [
+          "integrity",
+          "availability",
+          "sensitivity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": []
+    },
+    "vault_env_save": {
+      "group": "Infraestructura",
+      "group_id": 8,
+      "status": "active",
+      "required_args": [
+        "--project",
+        "--environment",
+        "--vars"
+      ],
+      "declared_returns": [
+        "path"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "integrity"
+        ],
+        "cia_scope": [
+          "integrity",
+          "sensitivity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F3",
+        "F5",
+        "F7"
+      ]
+    },
+    "vault_flow_save": {
+      "group": "Flujos",
+      "group_id": 18,
+      "status": "active",
+      "required_args": [
+        "--project",
+        "--name",
+        "--type",
+        "--description",
+        "--mermaid"
+      ],
+      "declared_returns": [
+        "path"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "integrity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F3",
+        "F7"
+      ]
+    },
+    "vault_fundamentals": {
+      "group": "Data Quality",
+      "group_id": 24,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [],
+        "cia_scope": [
+          "integrity",
+          "availability",
+          "sensitivity"
+        ],
+        "propagation_aware": false,
+        "is_registry": true
+      },
+      "fundamentals": [
+        "F1",
+        "F2",
+        "F4",
+        "F5",
+        "F6",
+        "F8"
+      ]
+    },
+    "vault_graph": {
+      "group": "Salud",
+      "group_id": 6,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "consistency"
+        ],
+        "cia_scope": [
+          "availability"
+        ],
+        "propagation_aware": true
+      },
+      "fundamentals": [
+        "F2"
+      ]
+    },
+    "vault_impact": {
+      "group": "Propagación",
+      "group_id": 25,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "consistency"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": true
+      },
+      "fundamentals": [
+        "F2"
+      ]
+    },
+    "vault_incident_save": {
+      "group": "Producción y SRE",
+      "group_id": 29,
+      "status": "active",
+      "required_args": [
+        "--project",
+        "--title"
+      ],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "integrity",
+          "non_repudiation",
+          "timeliness"
+        ],
+        "cia_scope": [
+          "integrity",
+          "availability"
+        ],
+        "propagation_aware": true
+      },
+      "fundamentals": []
+    },
+    "vault_index": {
+      "group": "internal",
+      "group_id": 0,
+      "status": "internal",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [],
+        "cia_scope": [],
+        "propagation_aware": false
+      },
+      "fundamentals": []
+    },
+    "vault_infra_map": {
+      "group": "Infraestructura",
+      "group_id": 8,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "path",
+        "nodesTotal"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency"
+        ],
+        "cia_scope": [
+          "availability"
+        ],
+        "propagation_aware": true
+      },
+      "fundamentals": [
+        "F2"
+      ]
+    },
+    "vault_infra_save": {
+      "group": "Infraestructura",
+      "group_id": 8,
+      "status": "active",
+      "required_args": [
+        "--name",
+        "--type",
+        "--description",
+        "--config"
+      ],
+      "declared_returns": [
+        "path"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "integrity"
+        ],
+        "cia_scope": [
+          "integrity",
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F3",
+        "F7"
+      ]
+    },
+    "vault_knowledge_get": {
+      "group": "Conocimiento",
+      "group_id": 5,
+      "status": "active",
+      "required_args": [
+        "--query"
+      ],
+      "declared_returns": [
+        "results",
+        "query",
+        "total"
+      ],
+      "dq": {
+        "dq_dimensions": [],
+        "cia_scope": [
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F2",
+        "F3"
+      ]
+    },
+    "vault_knowledge_save": {
+      "group": "Conocimiento",
+      "group_id": 5,
+      "status": "active",
+      "required_args": [
+        "--category"
+      ],
+      "declared_returns": [
+        "path"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "integrity",
+          "authenticity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F3",
+        "F7"
+      ]
+    },
+    "vault_link_safety": {
+      "group": "misc",
+      "group_id": 0,
+      "status": "internal",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [],
+        "cia_scope": [],
+        "propagation_aware": false
+      },
+      "fundamentals": []
+    },
+    "vault_list": {
+      "group": "Core",
+      "group_id": 1,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "notes"
+      ],
+      "dq": {
+        "dq_dimensions": [],
+        "cia_scope": [
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F2"
+      ]
+    },
+    "vault_log_error": {
+      "group": "Observabilidad",
+      "group_id": 2,
+      "status": "active",
+      "required_args": [
+        "--type",
+        "--title",
+        "--description"
+      ],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "non_repudiation",
+          "integrity"
+        ],
+        "cia_scope": [
+          "integrity",
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F8"
+      ]
+    },
+    "vault_manifest": {
+      "group": "meta",
+      "group_id": 0,
+      "status": "meta",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "completeness",
+          "validity",
+          "authenticity"
+        ],
+        "cia_scope": [
+          "integrity",
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": []
+    },
+    "vault_master_index": {
+      "group": "Índices",
+      "group_id": 15,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "path"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency"
+        ],
+        "cia_scope": [
+          "availability"
+        ],
+        "propagation_aware": true
+      },
+      "fundamentals": [
+        "F2",
+        "F3"
+      ]
+    },
+    "vault_merge": {
+      "group": "Core",
+      "group_id": 1,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "action"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency",
+          "uniqueness"
+        ],
+        "cia_scope": [
+          "integrity",
+          "availability"
+        ],
+        "propagation_aware": true
+      },
+      "fundamentals": [
+        "F2"
+      ]
+    },
+    "vault_migrate": {
+      "group": "Migración (legacy)",
+      "group_id": 0,
+      "status": "deprecated",
+      "required_args": [
+        "--source",
+        "--project"
+      ],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [],
+        "cia_scope": [],
+        "propagation_aware": false
+      },
+      "fundamentals": [],
+      "replaced_by": "vault_migrate_docs",
+      "deprecated_since": "v25",
+      "deprecation_reason": "vault_migrate_docs is the canonical migration tool with full project support"
+    },
+    "vault_migrate_docs": {
+      "group": "Migración",
+      "group_id": 9,
+      "status": "active",
+      "required_args": [
+        "--source_path",
+        "--project"
+      ],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "integrity",
+          "completeness"
+        ],
+        "cia_scope": [
+          "integrity",
+          "availability"
+        ],
+        "propagation_aware": true
+      },
+      "fundamentals": [
+        "F2",
+        "F4"
+      ]
+    },
+    "vault_migrate_rollback": {
+      "group": "Migración",
+      "group_id": 9,
+      "status": "active",
+      "required_args": [
+        "--report_path"
+      ],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "integrity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": true
+      },
+      "fundamentals": [
+        "F1",
+        "F8"
+      ]
+    },
+    "vault_ncr_save": {
+      "group": "Riesgos y Calidad",
+      "group_id": 31,
+      "status": "active",
+      "required_args": [
+        "--project",
+        "--title"
+      ],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "integrity",
+          "non_repudiation",
+          "timeliness"
+        ],
+        "cia_scope": [
+          "integrity",
+          "availability"
+        ],
+        "propagation_aware": true
+      },
+      "fundamentals": []
+    },
+    "vault_norms": {
+      "group": "Normas y Etiquetas",
+      "group_id": 28,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "validity",
+          "integrity",
+          "consistency"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": []
+    },
+    "vault_onboard": {
+      "group": "Versionado",
+      "group_id": 22,
+      "status": "active",
+      "required_args": [
+        "--project",
+        "--path"
+      ],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [],
+        "cia_scope": [],
+        "propagation_aware": false
+      },
+      "fundamentals": []
+    },
+    "vault_pattern_list": {
+      "group": "Patrones",
+      "group_id": 3,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "patterns"
+      ],
+      "dq": {
+        "dq_dimensions": [],
+        "cia_scope": [
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F2"
+      ]
+    },
+    "vault_pattern_save": {
+      "group": "Patrones",
+      "group_id": 3,
+      "status": "active",
+      "required_args": [
+        "--project",
+        "--name",
+        "--type",
+        "--status"
+      ],
+      "declared_returns": [
+        "path"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "integrity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F7"
+      ]
+    },
+    "vault_privacy_save": {
+      "group": "Riesgos y Calidad",
+      "group_id": 31,
+      "status": "active",
+      "required_args": [
+        "--project",
+        "--title",
+        "--purpose",
+        "--legal_basis"
+      ],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "integrity",
+          "non_repudiation",
+          "compliance"
+        ],
+        "cia_scope": [
+          "integrity",
+          "sensitivity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": []
+    },
+    "vault_project_overview": {
+      "group": "Vista proyecto",
+      "group_id": 11,
+      "status": "active",
+      "required_args": [
+        "--project"
+      ],
+      "declared_returns": [
+        "path"
+      ],
+      "dq": {
+        "dq_dimensions": [],
+        "cia_scope": [
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F2",
+        "F3"
+      ]
+    },
+    "vault_project_status": {
+      "group": "Vista proyecto",
+      "group_id": 11,
+      "status": "active",
+      "required_args": [
+        "--project",
+        "--status",
+        "--summary"
+      ],
+      "declared_returns": [
+        "path"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "integrity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F3",
+        "F6"
+      ]
+    },
+    "vault_propagate": {
+      "group": "Propagación",
+      "group_id": 25,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "consistency",
+          "timeliness"
+        ],
+        "cia_scope": [
+          "integrity",
+          "availability"
+        ],
+        "propagation_aware": true
+      },
+      "fundamentals": [
+        "F2"
+      ]
+    },
+    "vault_quality_check": {
+      "group": "Data Quality",
+      "group_id": 24,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "integrity",
+          "consistency",
+          "completeness",
+          "accuracy",
+          "validity",
+          "timeliness",
+          "authenticity",
+          "non_repudiation",
+          "uniqueness"
+        ],
+        "cia_scope": [
+          "integrity",
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F2",
+        "F3",
+        "F4",
+        "F5",
+        "F6",
+        "F7",
+        "F8"
+      ]
+    },
+    "vault_read": {
+      "group": "Core",
+      "group_id": 1,
+      "status": "active",
+      "required_args": [
+        "--path"
+      ],
+      "declared_returns": [
+        "path",
+        "body"
+      ],
+      "dq": {
+        "dq_dimensions": [],
+        "cia_scope": [
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F3"
+      ]
+    },
+    "vault_reindex": {
+      "group": "Índices",
+      "group_id": 15,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "indexed"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency"
+        ],
+        "cia_scope": [
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F2"
+      ]
+    },
+    "vault_relation_add": {
+      "group": "Diagramas",
+      "group_id": 4,
+      "status": "active",
+      "required_args": [
+        "--project",
+        "--from",
+        "--to",
+        "--relation_type"
+      ],
+      "declared_returns": [
+        "path"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": true
+      },
+      "fundamentals": [
+        "F2"
+      ]
+    },
+    "vault_release_save": {
+      "group": "Release y Entornos",
+      "group_id": 30,
+      "status": "active",
+      "required_args": [
+        "--project",
+        "--version"
+      ],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "integrity",
+          "non_repudiation"
+        ],
+        "cia_scope": [
+          "integrity",
+          "availability"
+        ],
+        "propagation_aware": true
+      },
+      "fundamentals": []
+    },
+    "vault_render": {
+      "group": "Diagramas (legacy)",
+      "group_id": 0,
+      "status": "deprecated",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [],
+        "cia_scope": [],
+        "propagation_aware": false
+      },
+      "fundamentals": [],
+      "replaced_by": "vault_diagram_save",
+      "deprecated_since": "v22",
+      "deprecation_reason": "vault_diagram_save generates Mermaid diagrams with ERD support"
+    },
+    "vault_reorganize": {
+      "group": "Migración (legacy)",
+      "group_id": 0,
+      "status": "deprecated",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [],
+        "cia_scope": [],
+        "propagation_aware": false
+      },
+      "fundamentals": [],
+      "replaced_by": "vault_migrate_docs",
+      "deprecated_since": "v25",
+      "deprecation_reason": "Dynamic dest detection is handled by vault_migrate_docs"
+    },
+    "vault_requirement_save": {
+      "group": "Requerimientos",
+      "group_id": 19,
+      "status": "active",
+      "required_args": [
+        "--project",
+        "--title",
+        "--description",
+        "--type",
+        "--priority"
+      ],
+      "declared_returns": [
+        "path"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "integrity",
+          "completeness"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F3",
+        "F7"
+      ]
+    },
+    "vault_restore": {
+      "group": "Backups",
+      "group_id": 13,
+      "status": "active",
+      "required_args": [
+        "--backup_name"
+      ],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "integrity"
+        ],
+        "cia_scope": [
+          "integrity",
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F8"
+      ]
+    },
+    "vault_risk_save": {
+      "group": "Riesgos y Calidad",
+      "group_id": 31,
+      "status": "active",
+      "required_args": [
+        "--project",
+        "--title"
+      ],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "validity",
+          "integrity",
+          "accuracy"
+        ],
+        "cia_scope": [
+          "integrity",
+          "availability",
+          "sensitivity"
+        ],
+        "propagation_aware": true
+      },
+      "fundamentals": []
+    },
+    "vault_runbook_log": {
+      "group": "Runbooks",
+      "group_id": 7,
+      "status": "active",
+      "required_args": [
+        "--path",
+        "--outcome"
+      ],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "non_repudiation"
+        ],
+        "cia_scope": [
+          "integrity",
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F8"
+      ]
+    },
+    "vault_runbook_save": {
+      "group": "Runbooks",
+      "group_id": 7,
+      "status": "active",
+      "required_args": [
+        "--project",
+        "--title",
+        "--trigger",
+        "--category",
+        "--steps"
+      ],
+      "declared_returns": [
+        "path"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "integrity",
+          "completeness"
+        ],
+        "cia_scope": [
+          "integrity",
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F3"
+      ]
+    },
+    "vault_search": {
+      "group": "Core",
+      "group_id": 1,
+      "status": "active",
+      "required_args": [
+        "--query"
+      ],
+      "declared_returns": [
+        "results"
+      ],
+      "dq": {
+        "dq_dimensions": [],
+        "cia_scope": [
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F2"
+      ]
+    },
+    "vault_section_index": {
+      "group": "Índices",
+      "group_id": 15,
+      "status": "active",
+      "required_args": [
+        "--folder"
+      ],
+      "declared_returns": [
+        "path"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency"
+        ],
+        "cia_scope": [
+          "availability"
+        ],
+        "propagation_aware": true
+      },
+      "fundamentals": [
+        "F2"
+      ]
+    },
+    "vault_security_scan": {
+      "group": "Seguridad",
+      "group_id": 14,
+      "status": "active",
+      "required_args": [
+        "--path"
+      ],
+      "declared_returns": [
+        "riskLevel"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "validity",
+          "integrity"
+        ],
+        "cia_scope": [
+          "integrity",
+          "sensitivity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F5"
+      ]
+    },
+    "vault_slo_save": {
+      "group": "Producción y SRE",
+      "group_id": 29,
+      "status": "active",
+      "required_args": [
+        "--project",
+        "--service",
+        "--slo_type",
+        "--target"
+      ],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "validity",
+          "accuracy",
+          "timeliness"
+        ],
+        "cia_scope": [
+          "integrity",
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": []
+    },
+    "vault_spec_memory": {
+      "group": "meta",
+      "group_id": 0,
+      "status": "meta",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "integrity",
+          "consistency",
+          "completeness",
+          "validity",
+          "timeliness",
+          "authenticity",
+          "non_repudiation"
+        ],
+        "cia_scope": [
+          "integrity",
+          "availability"
+        ],
+        "propagation_aware": true
+      },
+      "fundamentals": []
+    },
+    "vault_spec_validate": {
+      "group": "misc",
+      "group_id": 0,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [],
+        "cia_scope": [],
+        "propagation_aware": false
+      },
+      "fundamentals": []
+    },
+    "vault_standard_upgrade": {
+      "group": "Versionado",
+      "group_id": 22,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "integrity"
+        ],
+        "cia_scope": [
+          "integrity",
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F8"
+      ]
+    },
+    "vault_tags": {
+      "group": "Session Delta y Tags",
+      "group_id": 27,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [],
+        "cia_scope": [],
+        "propagation_aware": false
+      },
+      "fundamentals": []
+    },
+    "vault_test_runner": {
+      "group": "meta",
+      "group_id": 0,
+      "status": "meta",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "validity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": []
+    },
+    "vault_test_save": {
+      "group": "Tests",
+      "group_id": 20,
+      "status": "active",
+      "required_args": [
+        "--project",
+        "--title",
+        "--test_type",
+        "--description"
+      ],
+      "declared_returns": [
+        "path"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "integrity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F3",
+        "F7"
+      ]
+    },
+    "vault_timeline": {
+      "group": "Línea de tiempo",
+      "group_id": 10,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "query"
+      ],
+      "dq": {
+        "dq_dimensions": [],
+        "cia_scope": [
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F6",
+        "F8"
+      ]
+    },
+    "vault_token_counter": {
+      "group": "Tokens",
+      "group_id": 26,
+      "status": "active",
+      "required_args": [
+        "--flow-id",
+        "--flow-id",
+        "--text",
+        "--text",
+        "--flow-id",
+        "--flow-id"
+      ],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [],
+        "cia_scope": [
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F3",
+        "F6"
+      ]
+    },
+    "vault_token_service": {
+      "group": "Tokens",
+      "group_id": 26,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [],
+        "cia_scope": [
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F3",
+        "F6"
+      ]
+    },
+    "vault_tokens": {
+      "group": "Tokens",
+      "group_id": 26,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [],
+        "cia_scope": [
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F3",
+        "F6"
+      ]
+    },
+    "vault_tools": {
+      "group": "misc (legacy)",
+      "group_id": 0,
+      "status": "deprecated",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [],
+        "cia_scope": [],
+        "propagation_aware": false
+      },
+      "fundamentals": [],
+      "replaced_by": "See individual tools",
+      "deprecated_since": "v22",
+      "deprecation_reason": "Monolithic script superseded by dedicated tools per group"
+    },
+    "vault_validate": {
+      "group": "Salud",
+      "group_id": 6,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "validity",
+          "integrity",
+          "authenticity"
+        ],
+        "cia_scope": [
+          "integrity",
+          "availability",
+          "sensitivity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F5",
+        "F7"
+      ]
+    },
+    "vault_write": {
+      "group": "Core",
+      "group_id": 1,
+      "status": "active",
+      "required_args": [
+        "--folder"
+      ],
+      "declared_returns": [
+        "path",
+        "id"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "integrity",
+          "authenticity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F3",
+        "F7"
+      ]
+    }
+  }
+}
