@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v30 — 2026-05-28  
+**Versión:** v33 — 2026-06-06  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -290,9 +290,9 @@ vault-backups/
 
 ---
 
-## Las 61 Tools del Vault — Referencia Completa
+## Las 65 Tools del Vault — Referencia Completa
 
-> **Tools vs Skills:** las 53 **tools** son funciones atómicas registradas en el harness — cada una hace exactamente una cosa. Una **skill** es un protocolo de múltiples pasos (secuencia de tools + lógica de decisión) que el agente ejecuta para un objetivo complejo. Las skills no son tools adicionales — son instrucciones de orquestación referenciadas en los casos de uso concretos (ej: `security-auditor`, `vault-migrator`). Un agente puede implementar skills como instrucciones en su system prompt o como flujos de trabajo.
+> **Tools vs Skills:** las 65 **tools** son funciones atómicas registradas en el harness — cada una hace exactamente una cosa. Una **skill** es un protocolo de múltiples pasos (secuencia de tools + lógica de decisión) que el agente ejecuta para un objetivo complejo. Las skills no son tools adicionales — son instrucciones de orquestación referenciadas en los casos de uso concretos (ej: `security-auditor`, `vault-migrator`). Un agente puede implementar skills como instrucciones en su system prompt o como flujos de trabajo.
 
 > **Convención de parámetro `project`:** en todas las tools, `project` es siempre un **slug kebab-case** del nombre del proyecto (ej: `"mi-api"`, `"vault-ans"`, `"ecommerce-backend"`). Nunca usar el nombre con espacios ni mayúsculas. El slug es el identificador canónico que determina las rutas de carpeta en el vault.
 
@@ -2971,6 +2971,204 @@ vault_code_tag --tag-note cr-0989
 
 ---
 
+### Grupo 29 — Producción y SRE (v31)
+
+> **Propósito:** documentar eventos operacionales en producción — incidentes con ciclo de vida y SLOs con error budget. Alineado a ISO 20000-1:2018, ISO 22301:2019 e ISO/IEC 25010:2023.
+
+---
+
+#### `vault_incident_save(project, title, severity, description?, ...)`
+
+Registra un incidente con ciclo de vida completo. Escribe en `02_Observability/incidents/{project}-{YYYY-MM-DD}-{slug}.md`.
+
+| Parámetro | Tipo | Descripción |
+|---|---|---|
+| `--project` | str (requerido) | Slug del proyecto |
+| `--title` | str (requerido) | Título del incidente |
+| `--severity` | P1\|P2\|P3\|P4 | Severidad (P1=crítico, P4=bajo) |
+| `--status` | str | detected/investigating/identified/mitigating/resolved/closed/post-mortem |
+| `--detected_at` | ISO datetime | Cuándo se detectó |
+| `--resolved_at` | ISO datetime | Para cálculo automático de MTTR |
+| `--root_cause` | str | Causa raíz identificada |
+| `--action_items` | JSON list | Lista de acciones correctivas |
+| `--affected_services` | JSON list | Servicios impactados |
+
+**Retorna:**
+```json
+{ "ok": true, "path": "02_Observability/incidents/...", "incident_id": "INC-...", "severity": "P1", "mttr_minutes": 45 }
+```
+
+**Normas ISO:** 20000-1:2018 §8.6 (Incident management) · 22301:2019 §8.4 (Business continuity) · 27001:2022 A.16.
+
+---
+
+#### `vault_slo_save(project, service, slo_type, target, window?, ...)`
+
+Define o actualiza un SLO con cálculo automático de error budget. Escribe en `02_Observability/slos/{project}-{service}-{slo_type}.md`.
+
+| Parámetro | Tipo | Descripción |
+|---|---|---|
+| `--project` | str (requerido) | Slug del proyecto |
+| `--service` | str (requerido) | Nombre del servicio |
+| `--slo_type` | str (requerido) | availability/latency/error_rate/throughput/durability/freshness/saturation |
+| `--target` | float (requerido) | Target SLO (ej: 99.9 para 99.9%) |
+| `--window` | str | Ventana de medición (default: 30d) |
+| `--description` | str | Descripción del SLO |
+
+**Error budget automático calculado:**
+- `allowed_failure_pct` = 100 − target
+- `allowed_downtime_minutes` para ventana 30d
+- Tabla de burn rates: 14.4× (1h alerta), 6× (6h), 1× (30d)
+
+**Retorna:**
+```json
+{ "ok": true, "path": "02_Observability/slos/...", "slo_type": "availability", "target": 99.9, "error_budget_minutes": 43.2 }
+```
+
+**Normas ISO:** 20000-1:2018 §8.3 (Service level management) · ISO/IEC 25010:2023 (Quality in use).
+
+---
+
+### Grupo 30 — Release y Entornos (v31)
+
+> **Propósito:** documentar releases con changelog automático y matrices de variables de entorno por ambiente. Alineado a ISO 12207:2017 y ISO 20000-1:2018.
+
+---
+
+#### `vault_release_save(project, version, release_type, ...)`
+
+Registra un release y actualiza `01_Projects/{project}/changelog.md` automáticamente con `file_lock` (atómico). Escribe en `08_Runbooks/deploy/{project}-release-{version}.md`.
+
+| Parámetro | Tipo | Descripción |
+|---|---|---|
+| `--project` | str (requerido) | Slug del proyecto |
+| `--version` | str (requerido) | Versión semver (ej: `1.4.2`) |
+| `--release_type` | str | major/minor/patch/hotfix/rollback |
+| `--summary` | str | Resumen del release |
+| `--breaking_changes` | JSON list | Lista de breaking changes |
+| `--features` | JSON list | Nuevas funcionalidades |
+| `--fixes` | JSON list | Bugs corregidos |
+| `--rollback_plan` | str | Plan de rollback |
+| `--deployed_by` | str | Quién desplegó |
+
+**Retorna:**
+```json
+{ "ok": true, "path": "08_Runbooks/deploy/...", "version": "1.4.2", "changelog_updated": true }
+```
+
+**Normas ISO:** 12207:2017 §6.3.7 (Release management) · 20000-1:2018 §8.5.2 (Release and deployment).
+
+---
+
+#### `vault_env_matrix(project, env, variables?, ...)`
+
+Documenta variables de entorno por ambiente sin almacenar valores secretos — solo nombres y clasificación. Escribe en `09_Infrastructure/envs/{project}-{env}.md`.
+
+| Parámetro | Tipo | Descripción |
+|---|---|---|
+| `--project` | str (requerido) | Slug del proyecto |
+| `--env` | str (requerido) | dev/staging/prod/dr/perf |
+| `--variables` | JSON list | Lista de `{name, classification?, description?}` |
+| `--services` | JSON list | Servicios dependientes |
+
+**Clasificación automática de variables** por nombre:
+`SECRET_*` → secret · `*_URL/*_DSN` → connection · `FEATURE_*` → feature_flag · `LOG_*` → logging · otros → config.
+
+**Retorna:**
+```json
+{ "ok": true, "path": "09_Infrastructure/envs/...", "env": "prod", "variables_count": 12 }
+```
+
+**Normas ISO:** 12207:2017 §6.3.4 · 20000-1 §8.5 · 27001 A.12 (Operations security).
+
+---
+
+### Grupo 31 — Riesgos y Calidad (v32)
+
+> **Propósito:** documentar riesgos técnicos/operacionales, registros de privacidad GDPR y no conformidades ISO 9001. Tier 1 de gobernanza — herramientas de decisión, no solo documentación.
+
+---
+
+#### `vault_risk_save(project, title, risk_type, likelihood, impact, treatment, ...)`
+
+Registra un riesgo con score, nivel de criticidad y controles. Escribe en `02_Observability/risks/{project}-{slug}.md`.
+
+| Parámetro | Tipo | Descripción |
+|---|---|---|
+| `--project` | str (requerido) | Slug del proyecto |
+| `--title` | str (requerido) | Título del riesgo |
+| `--risk_type` | str | security/operational/financial/legal/reputational/technical |
+| `--likelihood` | int 1–5 | Probabilidad de ocurrencia |
+| `--impact` | int 1–5 | Impacto si ocurre |
+| `--treatment` | str | accept/mitigate/transfer/avoid |
+| `--controls` | JSON list | Controles aplicados o planeados |
+| `--owner` | str | Responsable del riesgo |
+
+**Score automático:** `likelihood × impact` → Low (1–5) / Medium (6–12) / High (13–19) / Critical (20–25).  
+**CIA automático** por tipo y nivel de impacto.
+
+**Retorna:**
+```json
+{ "ok": true, "path": "02_Observability/risks/...", "risk_score": 15, "risk_level": "High", "treatment": "mitigate" }
+```
+
+**Normas ISO:** 31000:2018 (Risk management) · 27005:2022 (Information security risk).
+
+---
+
+#### `vault_privacy_save(project, title, purpose, legal_basis, pii_categories, retention_period, ...)`
+
+Documenta un registro de actividad de tratamiento GDPR (Art. 30 RGPD) con detección automática de DPIA. Escribe en `09_Infrastructure/privacy/{project}-{slug}.md`.
+
+| Parámetro | Tipo | Descripción |
+|---|---|---|
+| `--project` | str (requerido) | Slug del proyecto |
+| `--title` | str (requerido) | Nombre del tratamiento |
+| `--purpose` | str (requerido) | Finalidad del tratamiento |
+| `--legal_basis` | str (requerido) | consent/contract/legal_obligation/vital_interests/public_task/legitimate_interests |
+| `--pii_categories` | JSON list | Categorías de datos personales tratados |
+| `--retention_period` | str (requerido) | Período de retención |
+| `--data_subjects` | JSON list | Tipos de interesados |
+| `--processors` | JSON list | Encargados del tratamiento |
+
+**DPIA auto-requerida** si: datos biométricos/salud/menores, o ≥5 categorías PII.  
+**Tabla de derechos** Art. 15–21 con SLA incluida automáticamente.
+
+**Retorna:**
+```json
+{ "ok": true, "path": "09_Infrastructure/privacy/...", "dpia_required": true, "legal_basis": "contract", "pii_count": 3 }
+```
+
+**Normas ISO:** 27701:2019 (Privacy information management) · GDPR Art. 30 + Art. 35.
+
+---
+
+#### `vault_ncr_save(project, title, ncr_type, severity, detected_by, ...)`
+
+Registra una no conformidad con ID auto-generado `NCR-YYYY-NNN`, plantilla 5-Whys y tabla de verificación de eficacia. Escribe en `02_Observability/quality/{project}-{YYYY-MM}-{slug}.md`.
+
+| Parámetro | Tipo | Descripción |
+|---|---|---|
+| `--project` | str (requerido) | Slug del proyecto |
+| `--title` | str (requerido) | Descripción de la no conformidad |
+| `--ncr_type` | str | product/process/service/documentation/audit |
+| `--severity` | str | critical/major/minor/observation |
+| `--detected_by` | str | audit/customer/internal/automated/security_scan/code_review |
+| `--root_cause` | str | Causa raíz identificada |
+| `--corrective_actions` | JSON list | Acciones correctivas a implementar |
+| `--immediate_action` | str | Contención inmediata aplicada |
+| `--owner` | str | Responsable de cierre |
+| `--target_date` | str | Fecha límite ISO (YYYY-MM-DD) |
+
+**Retorna:**
+```json
+{ "ok": true, "path": "02_Observability/quality/...", "ncr_id": "NCR-2026-347", "severity": "major", "status": "open" }
+```
+
+**Normas ISO:** 9001:2015 §10.2 (Nonconformity and corrective action) · 9001:2015 §9.2 (Internal audit) · ISO/IEC 25010:2023.
+
+---
+
 ## Compatibilidad con Obsidian Desktop
 
 El vault en `{data-dir}/vault/` puede abrirse **directamente** en Obsidian desktop:
@@ -4388,6 +4586,92 @@ temp/
 - `vault_knowledge_get.py`: añadido campo `total` en todos los paths de retorno (incluyendo resultados vacíos), normalizando el contrato.
 - `vault_test_runner.py`: 15 `required_ok_fields` vacíos sustituidos por campos reales (vault_diff, vault_merge, vault_knowledge_get, vault_infra_map, vault_backup, vault_backup_list, vault_security_scan, vault_section_index, vault_master_index, vault_reindex, vault_drift_detect, vault_timeline, vault_code_map). Contratos pasan 45/45.
 - `vault_manifest.py`: nuevas categorías en TOOL_GROUPS: `Data Quality`, `Propagación`, `Tokens`. `META_TOOLS` incluye `vault_spec_memory`.
+
+---
+
+### v33 — 2026-06-06 `git: e048b5e`
+
+**Spec-driven design — tool-spec.json + vault_spec_validate**
+
+**Agregado**
+
+- **`tool-spec.json` (scripts/tool-spec.json):** fuente de verdad formal de los contratos de las 78 tools. Contiene por tool: `group`, `group_id`, `status`, `required_args`, `declared_returns`, `dq_metadata`, `fundamentals`. Debe editarse **antes** de implementar una nueva tool — spec primero, código después.
+
+- **`vault_spec_validate.py` (Meta — Validación spec-driven):** valida que las implementaciones cumplan `tool-spec.json`. Exit 1 en drift → gate de CI. Tres checks por tool: `script_exists` (scripts/{name}.py debe existir), `args_match` (required_args del spec deben estar en argparse del script), `returns_match` (declared_returns deben aparecer en return{} del script via análisis AST + regex). Modos: `--tool NAME` (una sola), `--report` (human-readable), `--strict` (falla si hay scripts sin spec). Baseline: **78/78 PASS**.
+
+- **Flujo spec-driven canónico:**
+  1. Editar `tool-spec.json` (declarar spec completo)
+  2. Implementar `scripts/{name}.py`
+  3. `python vault_spec_validate.py --tool {name}` — verificar conformidad
+  4. `python vault_manifest.py` — actualizar manifest desde spec
+
+**Modificado**
+
+- **`vault_manifest.py`:** modo `--bootstrap` genera `tool-spec.json` inicial combinando datos hardcodeados + introspección AST. Modo `--validate` delega a `vault_spec_validate`. Modo normal lee desde `tool-spec.json` en lugar de dicts hardcodeados. Fallback al hardcodeado si el spec no existe aún.
+
+- **`vault_spec_memory.py`:** `DECLARED_RETURNS` cargado desde `tool-spec.json`. Fallback al dict hardcodeado si spec no existe. Elimina duplicación entre los dos archivos.
+
+- **`vault_compact_contracts.py`:** `GROUPS` reconstruido desde `tool-spec.json` en lugar del array hardcodeado. Fallback a lista estática.
+
+**Corregido (drift real detectado)**
+
+- `vault_read` declaraba `"content"` como return key pero el script retorna `"body"`. Inconsistencia que existía desde el principio, invisible sin el spec-driven validator. Corregido en `tool-spec.json` y en el fallback hardcodeado de `vault_spec_memory.py`.
+
+- **`vault_compact_contracts`, `vault_manifest`, `vault_spec_memory`, `vault_token_service`:** calculaban `VAULT_ROOT = SCRIPTS_DIR.parent` hardcodeado, ignorando `_detect_vault_root()` y el guard `vault-sandbox`. Resultado: creaban `00_System/` en la raíz del spec repo. Fix: todos importan `from vault_io import VAULT_ROOT`. Directorio espurio `00_System/` eliminado del spec repo root. `git: 55580ae`.
+
+---
+
+### v32 — 2026-06-04 `git: b3172ff`
+
+**Riesgos, Privacidad y Calidad — ISO 31000 + ISO 27701 + ISO 9001**
+
+**Agregado**
+
+- **`vault_risk_save.py` (Grupo 31 — Riesgos y Calidad):** documenta riesgos técnicos/operacionales con score automático (likelihood × impact → Low/Medium/High/Critical 1–25). 6 tipos de riesgo, 4 tratamientos (accept/mitigate/transfer/avoid), CIA auto-calculado por tipo e impacto, controles asociados. Escribe en `02_Observability/risks/`. Normas: ISO 31000:2018 + ISO/IEC 27005:2022.
+
+- **`vault_privacy_save.py` (Grupo 31 — Riesgos y Calidad):** registro de actividad de tratamiento GDPR (Art. 30). 6 bases legales (Art. 6), 15 categorías PII, detección automática de DPIA requerida (datos biométricos/salud/menores o ≥5 categorías). Tabla de derechos del interesado Art. 15–21 con SLA. Escribe en `09_Infrastructure/privacy/`. Normas: ISO/IEC 27701:2019 + GDPR Art. 30 + Art. 35.
+
+- **`vault_ncr_save.py` (Grupo 31 — Riesgos y Calidad):** no conformidades ISO 9001 con IDs auto-generados `NCR-YYYY-NNN`. 5 tipos, 4 severidades, 6 fuentes de detección. Plantilla 5-Whys + tabla de verificación de eficacia. Escribe en `02_Observability/quality/`. Normas: ISO 9001:2015 §10.2 + §9.2 + ISO/IEC 25010:2023.
+
+- **Grupo 31 — Riesgos y Calidad** añadido a `vault_manifest`, `vault_compact_contracts`, `vault_standard_upgrade`.
+
+**Corregido (auditoría AP-22 + errores silenciosos)**
+
+- **`safe_wikilink(text)` en `vault_io.py`:** sanitiza texto para `[[...]]` — elimina `[`, `]`, `|`, `\n`, `\r`, `"`, `\`. Fallback a `"nota-sin-titulo"` si queda vacío. Aplicado en 15 sitios a través de 10 scripts.
+
+- **`update_section_index(folder)` en `vault_io.py`:** reemplaza `except Exception: pass` en 5 scripts — los errores de section index ahora se loguean via `emit_error` en lugar de silenciarse mientras la tool retorna `ok: true`.
+
+- **YAML frontmatter roto:** `title: {variable}` sin comillas rompe YAML si el título contiene `:` o `"`. Fix: `json.dumps(title)` en `vault_knowledge_save`, `vault_pattern_save`, `vault_runbook_save`.
+
+- **`vault_section_index.py`:** añadido `assert_within_vault` para section_path, index_path y sub_index. `safe_wikilink` aplicado en generación de links de tabla.
+
+- **`vault_release_save.py`:** read-modify-write en changelog sin lock — race condition. Fix: `with file_lock(changelog_path, timeout=10)`.
+
+- **`_detect_vault_root()` en `vault_io.py`:** fallback cuando no hay `vault-*/` encontrado ahora redirige a `vault-sandbox/` si el directorio raíz contiene `vault-obsidian-architecture.md` (spec repo). Previene creación de carpetas vault en el spec repo. `git: febbd12`.
+
+---
+
+### v31 — 2026-06-02 `git: 1e224cf`
+
+**Producción, SRE, Release y Entornos — ISO 20000 + ISO 22301 + ISO 12207**
+
+**Agregado**
+
+- **`vault_incident_save.py` (Grupo 29 — Producción y SRE):** incidentes con ciclo de vida completo. Severidades P1–P4 con targets de respuesta/resolución. Cálculo automático de MTTR. Estados: detected/investigating/identified/mitigating/resolved/closed/post-mortem. Escribe en `02_Observability/incidents/`. Normas: ISO 20000-1:2018 §8.6 + ISO 22301:2019 §8.4 + ISO 27001:2022 A.16.
+
+- **`vault_slo_save.py` (Grupo 29 — Producción y SRE):** SLOs con error budget automático. 7 tipos: availability/latency/error_rate/throughput/durability/freshness/saturation. Cálculo de `allowed_failure_pct`, `allowed_downtime_minutes` y tabla de burn rates (14.4×, 6×, 1×). Escribe en `02_Observability/slos/`. Normas: ISO 20000-1:2018 §8.3 + ISO/IEC 25010:2023.
+
+- **`vault_release_save.py` (Grupo 30 — Release y Entornos):** releases con changelog automático y `file_lock` atómico sobre `01_Projects/{project}/changelog.md`. Tipos: major/minor/patch/hotfix/rollback. Escribe en `08_Runbooks/deploy/`. Normas: ISO 12207:2017 §6.3.7 + ISO 20000-1:2018 §8.5.2.
+
+- **`vault_env_matrix.py` (Grupo 30 — Release y Entornos):** matrices de variables de entorno por ambiente (dev/staging/prod/dr/perf). Nunca almacena valores secretos — solo nombres y clasificación automática (secret/connection/feature_flag/logging/tuning/config). Escribe en `09_Infrastructure/envs/`. Normas: ISO 12207:2017 §6.3.4 + ISO 20000-1 §8.5 + ISO 27001 A.12.
+
+- **`vault_onboard.py` v2 — Branch archaeology:** `_extract_git_history()` usa `git log --all`, `git branch -a`, `git reflog` y `git stash list` para detectar historia oculta en ramas snap/backup/archive/legacy. Calcula `true_first_date` vs `apparent_first_date` y `hidden_months`. `_detect_phases()` agrupa commits por mes con gap >45 días = nueva fase. `--git-phases`, `--max-commits`, `--no-git` flags añadidos. `git: 0d0e0bd`.
+
+- **Grupos 29, 30** añadidos a `vault_manifest`, `vault_compact_contracts`, `vault_standard_upgrade`.
+
+- **subprocess encoding fix universal:** `decode("utf-8", errors="replace")` en lugar de `text=True` — previene `UnicodeDecodeError` en Windows con caracteres especiales en mensajes de commit (em-dash, acentos). Aplicado en `vault_onboard.py` y scripts que usan subprocess con git.
+
+- **`file_lock` en `vault_io.py`:** context manager para atomic read-modify-write — usado en vault_release_save para serializar acceso a changelog compartido.
 
 ---
 

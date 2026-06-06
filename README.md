@@ -1,4 +1,4 @@
-# Vault Obsidian Architecture
+﻿# Vault Obsidian Architecture
 
 **Estándar de diseño para dotar a agentes LLM de memoria documental persistente.**
 
@@ -252,23 +252,24 @@ Sistema de control de asistencia con autenticación biométrica.
 
 ## La especificación completa
 
-**[vault-obsidian-architecture.md](./vault-obsidian-architecture.md)** — v30, 4800+ líneas.
+**[vault-obsidian-architecture.md](./vault-obsidian-architecture.md)** — v33, 5500+ líneas.
 
 Contiene:
 - 8 principios de diseño
-- 61 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
+- 65 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
 - 34 normas: 23 antipatrones (AP-01–AP-23), 5 patrones (PAT-1–PAT-5), 3 SP, 3 CN
 - norm_refs auto-embebido en frontmatter + vault_code_tag para etiquetas en código fuente
 - 8 Fundamentos de Datos (F1–F8) con trazabilidad a tools
 - CIA schema completo con semántica por tipo de nota
 - Data Quality framework (9 dimensiones, índice persistente)
 - Propagación graph-aware (BFS sobre wiki-links, 3 estrategias)
-- Spec-driven memory (contratos + trazabilidad + loop de validación)
+- **Spec-driven design:** tool-spec.json + vault_spec_validate — contratos formales antes de implementar
+- Grupos 29-31: Producción/SRE, Release/Entornos, Riesgos/Calidad (ISO 20000, 22301, 12207, 31000, 27701, 9001)
 - Mapa canónico script→carpeta (tabla authoritative)
 - Protocolo de inicialización corregido con comandos exactos
 - Protocolo de sesión para LLMs remotos (Claude API, GPT, Gemini, DeepSeek)
-- Sistema de versionado con migraciones automáticas (v19 → v30)
-- Changelog completo (v1 → v30)
+- Sistema de versionado con migraciones automáticas (v19 → v33)
+- Changelog completo (v1 → v33)
 - Compatibilidad con Obsidian Desktop
 
 ---
