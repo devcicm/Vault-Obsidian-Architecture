@@ -29,6 +29,7 @@ def _utcnow() -> str:
 
 
 from vault_io import VAULT_ROOT
+from vault_registry import standard_folders
 SYSTEM_DIR = VAULT_ROOT / "00_System"
 VERSION_FILE = SYSTEM_DIR / "standard-version.json"
 IDENTITY_FILE = SYSTEM_DIR / "identity.md"
@@ -244,13 +245,7 @@ def _write_version_file(data: Dict[str, Any]) -> None:
     VERSION_FILE.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
-# Standard folder structure (v25)
-STANDARD_FOLDERS = [
-    "00_System", "01_Projects", "02_Observability", "03_Decisions", "04_Sessions",
-    "05_Patterns", "06_Diagrams", "07_Knowledge", "08_Runbooks", "09_Infrastructure",
-    "10_Migrated", "11_Code", "12_Bibliography", "13_Flows", "14_Requirements",
-    "15_Tests", "16_AI_Governance", "99_Index",
-]
+STANDARD_FOLDERS = standard_folders()  # from vault_registry — fuente unica
 
 FM_REQUIRED_FIELDS = ("id", "title", "createdAt")
 

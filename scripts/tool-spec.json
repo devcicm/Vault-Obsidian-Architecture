@@ -1499,7 +1499,7 @@
       "fundamentals": []
     },
     "vault_spec_validate": {
-      "group": "misc",
+      "group": "meta",
       "group_id": 0,
       "status": "active",
       "required_args": [],
@@ -1737,6 +1737,26 @@
         "F1",
         "F3",
         "F7"
+      ]
+    },
+    "vault_registry": {
+      "group": "meta",
+      "group_id": 0,
+      "status": "meta",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "consistency",
+          "validity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F2"
       ]
     }
   }

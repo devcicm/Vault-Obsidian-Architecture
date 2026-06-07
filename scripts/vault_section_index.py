@@ -21,81 +21,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_io import VAULT_ROOT, assert_within_vault, safe_wikilink
-
-SECTION_DESCRIPTIONS = {
-    "00_System": "Identidad, reglas y configuración del agente",
-    "01_Projects": "Estado, contexto y progreso de proyectos activos",
-    "02_Observability": "Errores, métricas, alertas y observabilidad",
-    "03_Decisions": "Decisiones de arquitectura y diseño (ADRs)",
-    "04_Sessions": "Diarios de sesión y contexto de trabajo",
-    "05_Patterns": "Patrones reutilizables de código y arquitectura",
-    "06_Diagrams": "Diagramas y representaciones visuales",
-    "07_Knowledge": "Base de conocimiento técnico y conceptual",
-    "08_Runbooks": "Procedimientos operativos paso a paso",
-    "09_Infrastructure": "Infraestructura, entornos y configuraciones",
-    "10_Migrated": "Documentos migrados de otras fuentes",
-    "11_Code": "Módulos de código y relaciones entre ellos",
-    "12_Bibliography": "Fuentes externas: artículos, papers, APIs, libros y docs consultados",
-    "13_Flows": "Flujos de trabajo, pipelines, ciclos de vida y diagramas de flujo",
-    "14_Requirements": "Requerimientos funcionales y no funcionales (ISO 29148)",
-    "15_Tests": "Casos de prueba y resultados (ISO 29119): unit, integration, e2e, performance",
-    "16_AI_Governance": "Decisiones y auditorías de agentes IA (ISO 42001)",
-    "99_Index": "Índices de navegación del vault",
-}
-
-# Descripciones para subcarpetas estándar
-SUBSECTION_DESCRIPTIONS = {
-    # 02_Observability (v31-v32)
-    "02_Observability/incidents": "Incidentes de producción con ciclo de vida P1-P4 (ISO 20000-1 §8.6)",
-    "02_Observability/slos":      "SLO definitions con error budget y burn rates (ISO 20000-1 §8.3)",
-    "02_Observability/risks":     "Registro de riesgos con score y tratamiento (ISO 31000:2018)",
-    "02_Observability/quality":   "No conformidades NCR-YYYY-NNN y acciones correctivas (ISO 9001 §10.2)",
-    # 08_Runbooks (v31)
-    "08_Runbooks/deploy":         "Release notes y procedimientos de despliegue (ISO 12207 §6.3.7)",
-    # 09_Infrastructure (v31-v32)
-    "09_Infrastructure/envs":     "Variables de entorno por archivo .env (vault_env_save)",
-    "09_Infrastructure/env-matrix": "Matriz de entornos dev/staging/prod por proyecto (vault_env_matrix, ISO 12207 §6.3.4)",
-    "09_Infrastructure/privacy":  "Registros de tratamiento de datos personales GDPR Art.30 (ISO 27701:2019)",
-    # 12_Bibliography
-    "12_Bibliography/web":    "Referencias web: artículos, blog posts, documentación online",
-    "12_Bibliography/papers": "Papers académicos y técnicos",
-    "12_Bibliography/docs":   "Documentación oficial de herramientas y frameworks",
-    "12_Bibliography/apis":   "Referencias de APIs y especificaciones de interfaces",
-    "12_Bibliography/books":  "Libros técnicos consultados",
-    # 13_Flows
-    "13_Flows/workflow":      "Flujos de trabajo y procesos de negocio",
-    "13_Flows/pipeline":      "Pipelines de CI/CD, datos o procesamiento",
-    "13_Flows/lifecycle":     "Ciclos de vida de entidades, tickets o deploys",
-    "13_Flows/dataflow":      "Flujos de datos entre componentes o servicios",
-    # 15_Tests
-    "15_Tests/unit":          "Tests unitarios por módulo o función",
-    "15_Tests/integration":   "Tests de integración entre componentes",
-    "15_Tests/e2e":           "Tests end-to-end sobre flujos completos",
-    "15_Tests/performance":   "Tests de rendimiento, carga y estrés",
-    "15_Tests/security":      "Tests de seguridad y penetración",
-    "15_Tests/acceptance":    "Tests de aceptación con criterios de usuario",
-    # 16_AI_Governance
-    "16_AI_Governance/decisions": "Decisiones formales de agentes IA con trazabilidad ISO 42001",
-}
-
-# Tool sugerida para poblar cada sección (usada en hint de sección vacía)
-SECTION_TOOLS = {
-    "01_Projects":  "vault_project_overview --project <slug>",
-    "02_Observability": "vault_log_error --project <slug> --error <msg>",
-    "03_Decisions": "vault_write --folder 03_Decisions --title <adr>",
-    "04_Sessions":  "vault_write --folder 04_Sessions --title <fecha>",
-    "05_Patterns":  "vault_pattern_save --name <pattern>",
-    "06_Diagrams":  "vault_diagram_save --project <slug> --type erd",
-    "07_Knowledge": "vault_knowledge_save --title <concept>",
-    "08_Runbooks":  "vault_runbook_save --title <runbook>",
-    "09_Infrastructure": "vault_infra_save --project <slug>",
-    "11_Code":      "vault_code_module --project <slug> --file_path <path>",
-    "12_Bibliography": "vault_bibliography_save --title <ref> --type web",
-    "13_Flows":     "vault_flow_save --project <slug> --title <flow>",
-    "14_Requirements": "vault_requirement_save --project <slug> --title <req>",
-    "15_Tests":     "vault_test_save --project <slug> --title <test>",
-    "16_AI_Governance": "vault_ai_decision --project <slug> --title <decision>",
-}
+from vault_registry import section_description, section_tool_hint
 
 
 def _utcnow() -> str:
@@ -144,14 +70,10 @@ def _collect_notes(section_path: Path, include_subdirs: bool) -> List[Dict[str, 
 def _build_index_content(folder: str, notes: List[Dict[str, Any]], now: str) -> str:
     """Render index.md content — always populated even when section is empty."""
     folder_key = folder.replace("\\", "/")
-    top_key = folder_key.split("/")[0]
 
-    description = (
-        SUBSECTION_DESCRIPTIONS.get(folder_key)
-        or SECTION_DESCRIPTIONS.get(top_key)
-        or f"Subcarpeta de {top_key}"
-    )
-    tool_hint = SECTION_TOOLS.get(top_key, "vault_write --folder " + folder_key + " --title <titulo>")
+    description = section_description(folder_key)
+    hint = section_tool_hint(folder_key)
+    tool_hint = hint if hint else f"vault_write --folder {folder_key} --title <titulo>"
 
     lines = [
         f"# {folder_key} — Índice",

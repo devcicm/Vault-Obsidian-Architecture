@@ -33,6 +33,7 @@ from typing import Any, Dict, List, Optional, Set
 
 from vault_errors import wrap_main
 from vault_io import VAULT_ROOT
+from vault_registry import folder_owner, check_folder_collisions
 
 SCRIPTS_DIR = Path(__file__).parent
 SPEC_FILE = SCRIPTS_DIR / "tool-spec.json"
@@ -206,6 +207,23 @@ def validate_tool(name: str, spec_entry: Dict[str, Any]) -> Dict[str, Any]:
                 "check": "returns_match",
                 "missing_in_impl": missing_returns,
                 "detail": f"En spec pero no encontrado en return{{}} del script: {missing_returns}",
+            })
+
+    # Check 4: folder_ownership — FOLDER constante del script debe coincidir con registry
+    folder_match = re.search(r'^FOLDER\s*=\s*["\']([^"\']+)["\']', source, re.MULTILINE)
+    if folder_match:
+        impl_folder = folder_match.group(1)
+        registry_owner = folder_owner(impl_folder)
+        if registry_owner is not None and registry_owner != name:
+            result["drifts"].append({
+                "check": "folder_ownership",
+                "impl_folder": impl_folder,
+                "registry_owner": registry_owner,
+                "detail": (
+                    f"'{name}' declara FOLDER='{impl_folder}' pero vault_registry "
+                    f"registra a '{registry_owner}' como owner. "
+                    f"Añadir subfolder exclusivo en vault_registry.SUBFOLDERS."
+                ),
             })
 
     if result["drifts"]:
