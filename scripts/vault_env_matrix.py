@@ -9,7 +9,7 @@ Estándar aplicado:
 
 Nunca almacena valores de secretos — solo nombres de variables y su clasificación.
 
-Escribe en: 09_Infrastructure/envs/{project}-{env}.md
+Escribe en: 09_Infrastructure/env-matrix/{project}-{env}.md
 
 Usage:
     python vault_env_matrix.py --project my-api --env prod \\
@@ -31,7 +31,7 @@ from vault_errors import wrap_main
 from vault_io import VAULT_ROOT, assert_within_vault, atomic_write_text, update_section_index
 from vault_norms import compute_norm_refs
 
-FOLDER = "09_Infrastructure/envs"
+FOLDER = "09_Infrastructure/env-matrix"
 
 ENV_PROFILES: Dict[str, Dict[str, Any]] = {
     "dev": {

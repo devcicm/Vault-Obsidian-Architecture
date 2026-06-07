@@ -45,21 +45,36 @@ SECTION_DESCRIPTIONS = {
 
 # Descripciones para subcarpetas estándar
 SUBSECTION_DESCRIPTIONS = {
+    # 02_Observability (v31-v32)
+    "02_Observability/incidents": "Incidentes de producción con ciclo de vida P1-P4 (ISO 20000-1 §8.6)",
+    "02_Observability/slos":      "SLO definitions con error budget y burn rates (ISO 20000-1 §8.3)",
+    "02_Observability/risks":     "Registro de riesgos con score y tratamiento (ISO 31000:2018)",
+    "02_Observability/quality":   "No conformidades NCR-YYYY-NNN y acciones correctivas (ISO 9001 §10.2)",
+    # 08_Runbooks (v31)
+    "08_Runbooks/deploy":         "Release notes y procedimientos de despliegue (ISO 12207 §6.3.7)",
+    # 09_Infrastructure (v31-v32)
+    "09_Infrastructure/envs":     "Variables de entorno por archivo .env (vault_env_save)",
+    "09_Infrastructure/env-matrix": "Matriz de entornos dev/staging/prod por proyecto (vault_env_matrix, ISO 12207 §6.3.4)",
+    "09_Infrastructure/privacy":  "Registros de tratamiento de datos personales GDPR Art.30 (ISO 27701:2019)",
+    # 12_Bibliography
     "12_Bibliography/web":    "Referencias web: artículos, blog posts, documentación online",
     "12_Bibliography/papers": "Papers académicos y técnicos",
     "12_Bibliography/docs":   "Documentación oficial de herramientas y frameworks",
     "12_Bibliography/apis":   "Referencias de APIs y especificaciones de interfaces",
     "12_Bibliography/books":  "Libros técnicos consultados",
+    # 13_Flows
     "13_Flows/workflow":      "Flujos de trabajo y procesos de negocio",
     "13_Flows/pipeline":      "Pipelines de CI/CD, datos o procesamiento",
     "13_Flows/lifecycle":     "Ciclos de vida de entidades, tickets o deploys",
     "13_Flows/dataflow":      "Flujos de datos entre componentes o servicios",
+    # 15_Tests
     "15_Tests/unit":          "Tests unitarios por módulo o función",
     "15_Tests/integration":   "Tests de integración entre componentes",
     "15_Tests/e2e":           "Tests end-to-end sobre flujos completos",
     "15_Tests/performance":   "Tests de rendimiento, carga y estrés",
     "15_Tests/security":      "Tests de seguridad y penetración",
     "15_Tests/acceptance":    "Tests de aceptación con criterios de usuario",
+    # 16_AI_Governance
     "16_AI_Governance/decisions": "Decisiones formales de agentes IA con trazabilidad ISO 42001",
 }
 
