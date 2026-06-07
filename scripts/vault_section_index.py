@@ -67,8 +67,26 @@ def _collect_notes(section_path: Path, include_subdirs: bool) -> List[Dict[str, 
     return notes
 
 
-def _build_index_content(folder: str, notes: List[Dict[str, Any]], now: str) -> str:
-    """Render index.md content — always populated even when section is empty."""
+def _breadcrumb(folder_key: str) -> str:
+    """Build navigation breadcrumb for a section or subsection index."""
+    parts = folder_key.split("/")
+    if len(parts) == 1:
+        # Top-level section → link to master index only
+        return f"> [[99_Index/index|← Índice Maestro]]"
+    else:
+        # Subsection → link to parent section index + master index
+        parent = parts[0]
+        parent_name = safe_wikilink(section_description(parent).split(",")[0][:30])
+        return f"> [[{parent}/index|← {parent}]]  ·  [[99_Index/index|Índice Maestro]]"
+
+
+def _build_index_content(
+    folder: str,
+    notes: List[Dict[str, Any]],
+    now: str,
+    subdirs: Optional[List[str]] = None,
+) -> str:
+    """Render index.md with navigation, notes table and subcarpeta listing."""
     folder_key = folder.replace("\\", "/")
 
     description = section_description(folder_key)
@@ -78,30 +96,47 @@ def _build_index_content(folder: str, notes: List[Dict[str, Any]], now: str) -> 
     lines = [
         f"# {folder_key} — Índice",
         "",
+        _breadcrumb(folder_key),
         f"> **Propósito:** {description}",
         f"> Generado automáticamente · {now} · {len(notes)} nota(s)",
         "",
     ]
 
+    # Subcarpetas — listed before notes for discoverability
+    if subdirs:
+        lines += ["## Subcarpetas", ""]
+        lines += ["| Subcarpeta | Propósito |", "|---|---|"]
+        for sub in sorted(subdirs):
+            sub_key = sub.replace("\\", "/")
+            sub_desc = section_description(sub_key)
+            sub_stem = safe_wikilink(sub_key.split("/")[-1])
+            sub_link = f"[[{sub_key}/index|{sub_stem}]]"
+            lines.append(f"| {sub_link} | {sub_desc} |")
+        lines.append("")
+
     if notes:
         lines += [
+            "## Notas" if subdirs else "",
+            "",
             "| Nota | Tipo | Actualizado |",
             "|---|---|---|",
         ]
         for n in notes:
-            stem = safe_wikilink(Path(n["path"]).stem)
+            note_path = n["path"].replace("\\", "/")
+            # Build link relative to section root (include subfolder prefix)
+            stem = safe_wikilink(Path(note_path).stem)
             title = safe_wikilink(n["title"])
             link = f"[[{stem}|{title}]]"
             lines.append(f"| {link} | {n['type']} | {n['updatedAt']} |")
     else:
         lines += [
-            "## Estado",
+            "## Notas",
             "",
-            "Sección sin notas. Añade la primera con:",
+            "_Sección sin notas. Añade la primera con:_",
             "",
-            f"```bash",
+            "```bash",
             f"python scripts/{tool_hint}",
-            f"```",
+            "```",
             "",
             "Una vez creada la primera nota, este índice se regenera automáticamente.",
         ]
@@ -112,7 +147,7 @@ def _build_index_content(folder: str, notes: List[Dict[str, Any]], now: str) -> 
 
 def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, Any]:
     """
-    Generate or update {folder}/index.md with a readable index of all notes.
+    Generate or update {folder}/index.md with navigation, notes table and subdir listing.
     Always produces populated content — never a bare empty file.
     Also generates index.md for each immediate subdirectory when include_subdirs=True.
 
@@ -136,23 +171,33 @@ def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, 
     now = _utcnow()
     notes = _collect_notes(section_path, include_subdirs)
 
-    # Write main section index
-    index_path = section_path / "index.md"
-    assert_within_vault(index_path, VAULT_ROOT)
-    index_path.write_text(_build_index_content(folder, notes, now), encoding="utf-8")
-
-    # Generate index.md for each immediate subdirectory
+    # Discover immediate subdirectories (for subdir listing in index)
+    subdir_folders: List[str] = []
     subdir_indexes: List[str] = []
     if include_subdirs:
         for sub in sorted(section_path.iterdir()):
             if not sub.is_dir() or sub.name.startswith("."):
                 continue
             sub_folder = str(sub.relative_to(VAULT_ROOT)).replace("\\", "/")
+            subdir_folders.append(sub_folder)
+
+            # Generate sub-section index (no nested subdirs to avoid deep recursion)
             sub_notes = _collect_notes(sub, include_subdirs=True)
             sub_index = sub / "index.md"
             assert_within_vault(sub_index, VAULT_ROOT)
-            sub_index.write_text(_build_index_content(sub_folder, sub_notes, now), encoding="utf-8")
+            sub_index.write_text(
+                _build_index_content(sub_folder, sub_notes, now, subdirs=None),
+                encoding="utf-8",
+            )
             subdir_indexes.append(str(sub_index.relative_to(VAULT_ROOT)).replace("\\", "/"))
+
+    # Write main section index — includes subdir listing
+    index_path = section_path / "index.md"
+    assert_within_vault(index_path, VAULT_ROOT)
+    index_path.write_text(
+        _build_index_content(folder, notes, now, subdirs=subdir_folders or None),
+        encoding="utf-8",
+    )
 
     return {
         "ok": True,

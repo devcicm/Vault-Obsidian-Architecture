@@ -122,6 +122,39 @@ def atomic_write_text(path: Path, text: str, encoding: str = "utf-8") -> None:
     temp = path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
     temp.write_text(text, encoding=encoding)
     os.replace(temp, path)
+    _auto_section_index(path)
+
+
+# Sections that manage their own indexes — skip auto-trigger for these
+_SKIP_AUTO_INDEX = frozenset({"00_System", "99_Index", ".history", "vault-backups"})
+
+
+def _auto_section_index(path: Path) -> None:
+    """Auto-trigger section index update after writing any vault .md note.
+
+    Called internally by atomic_write_text. Covers all tools without requiring
+    each one to explicitly call update_section_index — single responsibility point.
+
+    Skips: non-.md files, index.md itself, system/index sections, paths outside vault.
+    Uses lazy import to avoid circular dependency with vault_section_index.
+    """
+    if path.suffix != ".md" or path.name == "index.md":
+        return
+    try:
+        rel = path.relative_to(VAULT_ROOT)
+    except ValueError:
+        return  # path outside vault root
+    parts = rel.parts
+    if len(parts) < 2:
+        return
+    section = parts[0]
+    if section in _SKIP_AUTO_INDEX:
+        return
+    try:
+        from vault_section_index import vault_section_index  # lazy — avoids circular import
+        vault_section_index(section)
+    except Exception:
+        pass  # index failure must never block the write that triggered it
 
 
 def atomic_write_json(path: Path, data: Dict[str, Any]) -> None:
