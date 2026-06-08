@@ -119,7 +119,8 @@ def assert_within_vault(path: Path, vault_root: Path) -> Path:
 
 def atomic_write_text(path: Path, text: str, encoding: str = "utf-8") -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    temp = path.with_name(f".{path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
+    # Short temp name avoids Windows MAX_PATH (260 chars) on deep vault paths
+    temp = path.parent / f".tmp.{os.getpid()}.{uuid.uuid4().hex[:8]}"
     temp.write_text(text, encoding=encoding)
     os.replace(temp, path)
     _auto_section_index(path)
