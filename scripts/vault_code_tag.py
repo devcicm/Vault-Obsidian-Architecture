@@ -1,21 +1,34 @@
 #!/usr/bin/env python3
 """
-Vault Code Tag — Aplica etiquetas de norma (@norm) a archivos de código fuente.
+Vault Code Tag — Trazabilidad bidireccional código ↔ vault.
 
-Permite definir etiquetas personalizadas (cr-0989, impl-001, bus-004, etc.)
-y embebelas como comentarios en la cabecera de archivos de código.
-Crea trazabilidad bidireccional: vault note ↔ código fuente.
+Dos tipos de etiqueta embebida en la cabecera de archivos fuente:
+
+  @vault:  referencia a la nota vault que documenta este archivo
+           → cierra el ciclo: el código sabe dónde está su documentación
+  @norm:   referencia a norma del estándar (AP-XX, SP-XX, CN-XX) o código custom
+
+Orden canónico de cabecera (siempre @vault primero):
+  // @vault: 11_Code/my-api/auth-service   — AuthService (service)
+  // @norm  AP-22      — Bracket sanity guard
+  // @norm  SP-01      — Delete protocol
 
 Flujo típico:
-  1. vault_code_tag --define cr-0989 --name "Cola de prioridad" --description "FIFO con pesos"
-  2. vault_code_tag --apply cr-0989 --file src/services/colas.cs
-  3. vault_code_tag --scan --file src/services/colas.cs
-  4. vault_code_tag --list
+  1. vault_code_module --project my-api --file_path src/auth.ts ... --tag-source
+     → crea nota en vault Y embebe @vault: en src/auth.ts automáticamente
+
+  2. vault_code_tag --link-vault 11_Code/my-api/auth-service --file src/auth.ts
+     → embebe @vault: manualmente si la nota ya existía
+
+  3. vault_code_sync --project my-api
+     → audita todos los módulos: detecta archivos sin @vault: y notas sin source_file
 
 Usage:
     python vault_code_tag.py --define cr-0989 --name "Cola de prioridad" --description "FIFO con pesos"
     python vault_code_tag.py --apply cr-0989 --file "src/services/colas.cs"
     python vault_code_tag.py --apply AP-22 --file "scripts/vault_write.py" --name "Bracket sanity guard"
+    python vault_code_tag.py --link-vault 11_Code/my-api/auth-service --file "src/auth.ts" --title "AuthService"
+    python vault_code_tag.py --unlink-vault --file "src/auth.ts"
     python vault_code_tag.py --remove cr-0989 --file "src/services/colas.cs"
     python vault_code_tag.py --scan --file "src/services/colas.cs"
     python vault_code_tag.py --list
@@ -79,8 +92,23 @@ _COMMENT_TEMPLATES = {
     "dash":       "-- @norm {code:<10} — {name}",
 }
 
+# @vault: templates — note path without .md extension, aligned for readability
+_VAULT_TAG_TEMPLATES = {
+    "line":       "// @vault: {note_path}  — {title}",
+    "hash":       "# @vault: {note_path}  — {title}",
+    "open_close": "<!-- @vault: {note_path}  — {title} -->",
+    "block":      "/* @vault: {note_path}  — {title} */",
+    "dash":       "-- @vault: {note_path}  — {title}",
+}
+
 _NORM_TAG_PATTERN = re.compile(
     r"^(?://|#|<!--|/\*|--)\s*@norm\s+(\S+)\s*[—\-]+\s*(.*?)(?:\s*(?:-->|\*/))?\s*$",
+    re.MULTILINE,
+)
+
+# Matches: // @vault: 11_Code/project/module  — Title (type)
+_VAULT_TAG_PATTERN = re.compile(
+    r"^(?://|#|<!--|/\*|--)\s*@vault:\s*(\S+)\s*[—\-]+\s*(.*?)(?:\s*(?:-->|\*/))?\s*$",
     re.MULTILINE,
 )
 
@@ -327,7 +355,7 @@ def vault_code_tag_remove(code: str, file_path_str: str) -> Dict[str, Any]:
 
 
 def vault_code_tag_scan(file_path_str: str) -> Dict[str, Any]:
-    """List all @norm tags present in a code file."""
+    """List all @vault: and @norm tags present in a code file."""
     file_path = Path(file_path_str)
     if not file_path.is_absolute():
         file_path = Path.cwd() / file_path
@@ -340,11 +368,19 @@ def vault_code_tag_scan(file_path_str: str) -> Dict[str, Any]:
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
-    tags_found = _extract_tags_from_content(content)
+    # Extract @vault: reference (at most one per file)
+    vault_ref = _extract_vault_ref_from_content(content)
 
-    # Enrich with registry info
+    # Verify vault note exists if referenced
+    vault_note_exists = False
+    if vault_ref:
+        note_path = VAULT_ROOT / (vault_ref["note_path"] + ".md")
+        vault_note_exists = note_path.exists()
+
+    # Extract @norm tags
+    norm_tags = _extract_tags_from_content(content)
     reg = _read_registry()
-    for t in tags_found:
+    for t in norm_tags:
         entry = reg.get("tags", {}).get(t["code"].lower())
         if entry:
             t["description"] = entry.get("description", "")
@@ -353,8 +389,11 @@ def vault_code_tag_scan(file_path_str: str) -> Dict[str, Any]:
     return {
         "ok": True,
         "file": str(file_path),
-        "total": len(tags_found),
-        "tags": tags_found,
+        "vault_ref": vault_ref,
+        "vault_note_exists": vault_note_exists,
+        "norm_tags_total": len(norm_tags),
+        "norm_tags": norm_tags,
+        "linked": vault_ref is not None,
     }
 
 
@@ -450,14 +489,141 @@ Nombre: {name}
     return result
 
 
+# ─── @vault: link / unlink ────────────────────────────────────────────────────
+
+def vault_code_tag_link_vault(
+    note_path_rel: str,
+    file_path_str: str,
+    title: str = "",
+) -> Dict[str, Any]:
+    """Embed a @vault: reference in the header of a source file.
+
+    The @vault: tag is always placed FIRST in the tag block (before @norm lines)
+    to make the vault documentation reference the most prominent annotation.
+
+    Args:
+        note_path_rel: Path to vault note relative to vault root, WITHOUT .md extension
+                       e.g. "11_Code/my-api/auth-service"
+        file_path_str: Absolute or CWD-relative path to the source file
+        title:         Short description shown after — in the tag (40 chars max)
+    """
+    file_path = Path(file_path_str)
+    if not file_path.is_absolute():
+        file_path = Path.cwd() / file_path
+
+    if not file_path.exists():
+        return {"ok": False, "error_code": "FILE_NOT_FOUND",
+                "detail": f"Source file not found: {file_path}"}
+
+    style = _comment_style(file_path)
+    if style == "none":
+        return {"ok": False, "error_code": "UNSUPPORTED_FORMAT",
+                "detail": "Use frontmatter norm_refs for .md files."}
+
+    # Normalize note path: strip .md if accidentally included, use forward slashes
+    note_ref = note_path_rel.replace("\\", "/").removesuffix(".md")
+    tag_title = (title or note_ref.split("/")[-1])[:60]
+
+    tmpl = _VAULT_TAG_TEMPLATES.get(style, _VAULT_TAG_TEMPLATES["line"])
+    vault_comment = tmpl.format(note_path=note_ref, title=tag_title)
+
+    try:
+        original = file_path.read_text(encoding="utf-8", errors="ignore")
+    except Exception as e:
+        return {"ok": False, "error_code": "READ_ERROR", "detail": str(e)}
+
+    # If there's already a @vault: tag, replace it (idempotent)
+    existing = _VAULT_TAG_PATTERN.search(original)
+    if existing:
+        if existing.group(1).strip() == note_ref:
+            return {"ok": True, "action": "already_present",
+                    "file": str(file_path), "note": note_ref}
+        # Different vault reference — replace with new one
+        new_content = _VAULT_TAG_PATTERN.sub(vault_comment, original, count=1)
+        action = "replaced"
+    else:
+        # No @vault: yet — insert before any @norm block (or at top after shebang)
+        lines = original.splitlines(keepends=True)
+        insert_at = 1 if (lines and lines[0].startswith("#!")) else 0
+        offset = _line_offset(lines, insert_at)
+        new_content = original[:offset] + vault_comment + "\n" + original[offset:]
+        action = "linked"
+
+    try:
+        from vault_io import atomic_write_text
+        atomic_write_text(file_path, new_content)
+    except Exception as e:
+        return {"ok": False, "error_code": "WRITE_ERROR", "detail": str(e)}
+
+    # Register in code-tag-registry under a synthetic key
+    reg = _read_registry()
+    vault_key = f"vault:{note_ref.replace('/', ':')}"
+    tags = reg.setdefault("tags", {})
+    if vault_key not in tags:
+        from datetime import datetime, timezone
+        tags[vault_key] = {
+            "name": tag_title,
+            "description": f"Vault note: {note_ref}",
+            "files": [],
+            "vault_note": note_ref + ".md",
+            "created_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+            "created_by": "vault_code_tag",
+            "tag_type": "vault_ref",
+        }
+    file_str = str(file_path)
+    if file_str not in tags[vault_key].get("files", []):
+        tags[vault_key].setdefault("files", []).append(file_str)
+    _save_registry(reg)
+
+    return {
+        "ok": True,
+        "action": action,
+        "file": str(file_path),
+        "note": note_ref,
+        "comment": vault_comment,
+    }
+
+
+def vault_code_tag_unlink_vault(file_path_str: str) -> Dict[str, Any]:
+    """Remove the @vault: tag from a source file."""
+    file_path = Path(file_path_str)
+    if not file_path.is_absolute():
+        file_path = Path.cwd() / file_path
+
+    if not file_path.exists():
+        return {"ok": False, "error_code": "FILE_NOT_FOUND",
+                "detail": f"File not found: {file_path}"}
+
+    try:
+        content = file_path.read_text(encoding="utf-8", errors="ignore")
+    except Exception as e:
+        return {"ok": False, "error_code": "READ_ERROR", "detail": str(e)}
+
+    new_content, count = _VAULT_TAG_PATTERN.subn("", content)
+    if count == 0:
+        return {"ok": True, "action": "not_found", "file": str(file_path)}
+
+    from vault_io import atomic_write_text
+    atomic_write_text(file_path, new_content)
+    return {"ok": True, "action": "unlinked", "file": str(file_path), "lines_removed": count}
+
+
 # ─── Helpers ──────────────────────────────────────────────────────────────────
+
+def _extract_vault_ref_from_content(content: str) -> Optional[Dict[str, str]]:
+    """Extract the @vault: reference from file content, if present."""
+    m = _VAULT_TAG_PATTERN.search(content)
+    if not m:
+        return None
+    return {"note_path": m.group(1).strip(), "title": m.group(2).strip()}
+
 
 def _extract_tags_from_content(content: str) -> List[Dict[str, str]]:
     tags = []
     for m in _NORM_TAG_PATTERN.finditer(content):
         code = m.group(1).strip()
         name = m.group(2).strip()
-        tags.append({"code": code, "name": name})
+        tags.append({"code": code, "name": name, "tag_type": "norm"})
     return tags
 
 
@@ -511,20 +677,23 @@ Formatos de comentario por extensión:
     )
 
     # Operations
-    parser.add_argument("--define", metavar="CODE", help="Definir/actualizar una etiqueta personalizada")
-    parser.add_argument("--apply", metavar="CODE", help="Aplicar @norm a un archivo de código")
-    parser.add_argument("--remove", metavar="CODE", help="Eliminar @norm de un archivo")
-    parser.add_argument("--scan", action="store_true", help="Listar todos los @norm en un archivo")
-    parser.add_argument("--list", action="store_true", help="Listar todos los tags registrados")
-    parser.add_argument("--tag-note", metavar="CODE", help="Crear nota en vault para este tag")
+    parser.add_argument("--define",       metavar="CODE",       help="Definir/actualizar una etiqueta @norm personalizada")
+    parser.add_argument("--apply",        metavar="CODE",       help="Aplicar @norm a un archivo de código")
+    parser.add_argument("--remove",       metavar="CODE",       help="Eliminar @norm de un archivo")
+    parser.add_argument("--link-vault",   metavar="NOTE_PATH",  help="Embeber @vault: en archivo fuente (ruta nota sin .md)")
+    parser.add_argument("--unlink-vault", action="store_true",  help="Eliminar @vault: de un archivo fuente")
+    parser.add_argument("--scan",         action="store_true",  help="Listar @vault: y @norm en un archivo")
+    parser.add_argument("--list",         action="store_true",  help="Listar todos los tags registrados")
+    parser.add_argument("--tag-note",     metavar="CODE",       help="Crear nota en vault para este tag")
 
     # Parameters
-    parser.add_argument("--file", help="Ruta al archivo de código (absoluta o relativa al CWD)")
-    parser.add_argument("--name", help="Nombre descriptivo del tag (para --define o --apply)")
+    parser.add_argument("--file",        help="Ruta al archivo de código (absoluta o relativa al CWD)")
+    parser.add_argument("--title",       help="Título para --link-vault (se muestra tras — en el tag)")
+    parser.add_argument("--name",        help="Nombre descriptivo del tag (para --define o --apply)")
     parser.add_argument("--description", default="", help="Descripción detallada del tag")
-    parser.add_argument("--files", nargs="*", help="Lista de archivos para --define (aplica inmediatamente)")
-    parser.add_argument("--prefix", help="Filtrar --list por prefijo (ej: cr, impl, bus)")
-    parser.add_argument("--agent", default="claude", help="Agente que ejecuta la operación")
+    parser.add_argument("--files",       nargs="*", help="Lista de archivos para --define (aplica inmediatamente)")
+    parser.add_argument("--prefix",      help="Filtrar --list por prefijo (ej: cr, impl, bus)")
+    parser.add_argument("--agent",       default="claude", help="Agente que ejecuta la operación")
 
     args = parser.parse_args()
 
@@ -546,6 +715,18 @@ Formatos de comentario por extensión:
             file_path_str=args.file,
             name_override=args.name,
         )
+    elif args.link_vault:
+        if not args.file:
+            parser.error("--link-vault requiere --file")
+        result = vault_code_tag_link_vault(
+            note_path_rel=args.link_vault,
+            file_path_str=args.file,
+            title=args.title or "",
+        )
+    elif args.unlink_vault:
+        if not args.file:
+            parser.error("--unlink-vault requiere --file")
+        result = vault_code_tag_unlink_vault(args.file)
     elif args.remove:
         if not args.file:
             parser.error("--remove requiere --file")

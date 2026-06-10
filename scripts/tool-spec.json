@@ -274,7 +274,12 @@
       "group_id": 28,
       "status": "active",
       "required_args": [],
-      "declared_returns": [],
+      "declared_returns": [
+        "ok",
+        "action",
+        "file",
+        "code"
+      ],
       "dq": {
         "dq_dimensions": [
           "integrity",
@@ -1757,6 +1762,31 @@
       },
       "fundamentals": [
         "F2"
+      ]
+    },
+    "vault_code_sync": {
+      "group": "Código",
+      "group_id": 12,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "status",
+        "summary"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency",
+          "integrity",
+          "completeness"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F2",
+        "F4"
       ]
     }
   }
