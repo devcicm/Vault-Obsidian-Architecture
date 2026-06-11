@@ -2,9 +2,9 @@
 
 **Estándar de diseño para dotar a agentes LLM de memoria documental persistente.**
 
-[![Version](https://img.shields.io/badge/version-v32-blue)](./vault-obsidian-architecture.md)
-[![Tools](https://img.shields.io/badge/tools-65_active-green)](./scripts/)
-[![Scripts](https://img.shields.io/badge/scripts-78_total-lightblue)](./scripts/)
+[![Version](https://img.shields.io/badge/version-v33-blue)](./vault-obsidian-architecture.md)
+[![Tools](https://img.shields.io/badge/tools-66_active-green)](./scripts/)
+[![Scripts](https://img.shields.io/badge/scripts-83_total-lightblue)](./scripts/)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow)](./scripts/)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](./LICENSE)
 
@@ -120,13 +120,18 @@ python scripts/vault_project_overview.py \
   --description "Descripción del proyecto" \
   --runtime "Node.js 20"
 
-# Documentar un módulo (IEEE 1016)
+# Documentar un módulo (IEEE 1016) e inyectar @vault: en el archivo fuente
 python scripts/vault_code_module.py \
   --project "mi-proyecto" \
   --file_path "src/services/AuthService.ts" \
   --description "Servicio de autenticación JWT" \
   --language typescript \
-  --iso_type service
+  --iso_type service \
+  --tag-source
+
+# Auditar trazabilidad bidireccional código ↔ vault
+python scripts/vault_code_sync.py --project "mi-proyecto" --report
+python scripts/vault_code_sync.py --project "mi-proyecto" --fix   # inyecta @vault: donde falte
 
 # Auditar el vault
 python scripts/vault_audit.py
@@ -134,7 +139,7 @@ python scripts/vault_audit.py
 
 ---
 
-## Las 65 tools activas — 31 grupos
+## Las 66 tools activas — 31 grupos
 
 | Grupo | Tools |
 |---|---|
@@ -149,7 +154,7 @@ python scripts/vault_audit.py
 | 9 — Migración | `vault_migrate_docs`, `vault_migrate_rollback` |
 | 10 — Línea de tiempo | `vault_timeline` |
 | 11 — Vista del proyecto | `vault_project_status`, `vault_project_overview` |
-| 12 — Código | `vault_code_module`, `vault_code_relation`, `vault_code_map`, `vault_code_query` |
+| 12 — Código | `vault_code_module`, `vault_code_relation`, `vault_code_map`, `vault_code_query`, `vault_code_sync` |
 | 13 — Backups | `vault_backup`, `vault_backup_list`, `vault_restore` |
 | 14 — Seguridad | `vault_security_scan` |
 | 15 — Índices | `vault_section_index`, `vault_master_index`, `vault_reindex` |
@@ -256,7 +261,7 @@ Sistema de control de asistencia con autenticación biométrica.
 
 Contiene:
 - 8 principios de diseño
-- 65 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
+- 66 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
 - 34 normas: 23 antipatrones (AP-01–AP-23), 5 patrones (PAT-1–PAT-5), 3 SP, 3 CN
 - norm_refs auto-embebido en frontmatter + vault_code_tag para etiquetas en código fuente
 - 8 Fundamentos de Datos (F1–F8) con trazabilidad a tools
@@ -264,6 +269,7 @@ Contiene:
 - Data Quality framework (9 dimensiones, índice persistente)
 - Propagación graph-aware (BFS sobre wiki-links, 3 estrategias)
 - **Spec-driven design:** tool-spec.json + vault_spec_validate — contratos formales antes de implementar
+- **Trazabilidad bidireccional:** @vault: tag en código fuente + vault_code_sync para auditar gaps código↔vault
 - Grupos 29-31: Producción/SRE, Release/Entornos, Riesgos/Calidad (ISO 20000, 22301, 12207, 31000, 27701, 9001)
 - Mapa canónico script→carpeta (tabla authoritative)
 - Protocolo de inicialización corregido con comandos exactos
@@ -277,18 +283,19 @@ Contiene:
 ## Scripts — estructura del repositorio
 
 ```
-scripts/                    ← 71 archivos Python (una tool = un script CLI)
+scripts/                    ← 83 archivos Python (una tool = un script CLI)
 ├── vault_io.py             — I/O base: _detect_vault_root, assert_within_vault, atomic_write_text/json, file_lock
 ├── vault_errors.py         — wrap_main (timeout 60s), emit_ok, trace log
 ├── vault_write.py          — tool principal de escritura (guards AP-20, AP-21, norm_refs auto-embed)
 ├── vault_audit.py          — health score (CIA-weighted), DQ health, propagation pending, norm_code
 ├── vault_standard_upgrade.py — migraciones v19→v30, --init, --check, --validate
-├── vault_code_module.py    — documentación IEEE 1016 para módulos de código
+├── vault_code_module.py    — documentación IEEE 1016 para módulos de código (--tag-source inyecta @vault:)
+├── vault_code_sync.py      — auditoría bidireccional código↔vault (complete/missing_tag/orphan, --fix)
 ├── vault_flow_save.py      — flujos con Mermaid embebido
 ├── vault_infra_save.py     — componentes de infraestructura + mapa de red auto-generado
 ├── vault_knowledge_save.py — conocimiento estructurado por categoría
 ├── vault_diagram_save.py   — diagramas Mermaid/ASCII/PlantUML
-├── ...                     — 56 scripts adicionales
+├── ...                     — 78 scripts adicionales
 └── README.md               — referencia completa de parámetros y ejemplos
 ```
 
