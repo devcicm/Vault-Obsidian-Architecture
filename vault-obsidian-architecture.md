@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v33 — 2026-06-06  
+**Versión:** v34 — 2026-06-12  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -215,7 +215,7 @@ vault-{nombre}/          ← raíz del vault (SIEMPRE con prefijo vault-)
 │   │   └── {slug}.md                — stub de archivo EXCLUIDO (sin relación ni directa ni indirecta)
 │   └── _report-{proyecto}-{fecha}.md — reporte de migración: staging → clasificación → distribución
 │
-├── 11_Code/                         ← ★ documentación de código (vault_code_module/relation/map/query)
+├── 11_Code/                         ← ★ documentación de código (vault_code_module/relation/map/query/sync)
 │   ├── .code-index.json             — índice estructurado: módulos, relaciones, métodos y clases indexados (fuente de verdad)
 │   └── {project-slug}/
 │       ├── code-map.md              — diagrama Mermaid auto-generado de relaciones entre módulos
@@ -290,9 +290,9 @@ vault-backups/
 
 ---
 
-## Las 65 Tools del Vault — Referencia Completa
+## Las 66 Tools del Vault — Referencia Completa
 
-> **Tools vs Skills:** las 65 **tools** son funciones atómicas registradas en el harness — cada una hace exactamente una cosa. Una **skill** es un protocolo de múltiples pasos (secuencia de tools + lógica de decisión) que el agente ejecuta para un objetivo complejo. Las skills no son tools adicionales — son instrucciones de orquestación referenciadas en los casos de uso concretos (ej: `security-auditor`, `vault-migrator`). Un agente puede implementar skills como instrucciones en su system prompt o como flujos de trabajo.
+> **Tools vs Skills:** las 66 **tools** son funciones atómicas registradas en el harness — cada una hace exactamente una cosa. Una **skill** es un protocolo de múltiples pasos (secuencia de tools + lógica de decisión) que el agente ejecuta para un objetivo complejo. Las skills no son tools adicionales — son instrucciones de orquestación referenciadas en los casos de uso concretos (ej: `security-auditor`, `vault-migrator`). Un agente puede implementar skills como instrucciones en su system prompt o como flujos de trabajo.
 
 > **Convención de parámetro `project`:** en todas las tools, `project` es siempre un **slug kebab-case** del nombre del proyecto (ej: `"mi-api"`, `"vault-ans"`, `"ecommerce-backend"`). Nunca usar el nombre con espacios ni mayúsculas. El slug es el identificador canónico que determina las rutas de carpeta en el vault.
 
@@ -1621,7 +1621,7 @@ _Actualizado: 2026-05-06 · deps: 4 · frameworks: 1 · ADRs: 2 · patrones: 3_
 
 ---
 
-#### `vault_code_module(project, file_path, description, language?, iso_type?, methods?, classes?, constants?, exceptions?, exports?, imports_from?, responsibilities?, notes?, tags?)`
+#### `vault_code_module(project, file_path, description, language?, iso_type?, methods?, classes?, constants?, exceptions?, exports?, imports_from?, responsibilities?, notes?, tags?, tag_source?)`
 
 Crea o actualiza la nota de documentación IEEE 1016 de un archivo de código en `11_Code/{project}/{file-slug}.md`. Cuando se proveen `--classes`, genera automáticamente un bloque `classDiagram` Mermaid en la nota. Los campos `methods[]` y `classes[]` se indexan en `.code-index.json` para permitir búsqueda por nombre de método o clase con `vault_code_query`.
 
@@ -1642,6 +1642,7 @@ Crea o actualiza la nota de documentación IEEE 1016 de un archivo de código en
 | `responsibilities` | string[] | `[]` | Responsabilidades principales del módulo |
 | `notes` | string | — | Invariantes, limitaciones, decisiones de diseño no obvias |
 | `tags` | string[] | `[]` | Tags adicionales para búsqueda |
+| `tag_source` | bool | `false` | Si `true`, inyecta `@vault:` en el archivo fuente después de crear la nota — trazabilidad bidireccional en un paso |
 
 **Estructura de `methods[]` (IEEE 1016 Operations viewpoint):**
 ```json
@@ -1748,7 +1749,7 @@ classDiagram
 
 **Retorna:**
 ```json
-{ "ok": true, "path": "11_Code/mi-api/auth.md", "project": "mi-api", "file_path": "src/auth.py", "action": "created", "has_class_diagram": true, "mapRegenerated": false }
+{ "ok": true, "path": "11_Code/mi-api/auth.md", "project": "mi-api", "file_path": "src/auth.py", "action": "created", "has_class_diagram": true, "mapRegenerated": false, "source_tagged": true, "tag_action": "inserted" }
 ```
 
 **Protocolo de documentación de código (IEEE 1016):**
@@ -1759,6 +1760,7 @@ classDiagram
 - Cuando el usuario pregunta "¿qué hace `X` archivo?", "¿qué métodos tiene?", "¿qué clases define?"
 - Al inicio de un proyecto para mapear la arquitectura de código existente con `--scan-path`
 - Después de `vault_code_relation` para completar la documentación de los nodos del mapa
+- Con `--tag-source` al documentar por primera vez: crea nota + inyecta `@vault:` en el archivo fuente en un solo paso. Usar `vault_code_sync --fix` para backfill en proyectos existentes
 
 ---
 
@@ -1921,6 +1923,61 @@ Consulta recursiva del índice de código. Permite al agente obtener documentaci
 - "¿Dónde está definido el método `login`?" → `vault_code_query --method login`
 - "¿Qué módulos tiene este proyecto?" → `vault_code_query --list`
 - Antes de documentar relaciones: verificar qué ya está documentado
+
+---
+
+#### `vault_code_sync(project?, scan_dir?, fix?, dry_run?)`
+
+Audita la trazabilidad bidireccional entre notas del vault (`11_Code/{project}/`) y archivos de código fuente. En **Pass 1** recorre cada nota con `source_file` en frontmatter y clasifica el estado de la relación código↔vault. En **Pass 2** escanea archivos fuente en busca de `@vault:` que apunten a notas inexistentes (refs huérfanas). Con `--fix` inyecta el tag `@vault:` en los archivos pendientes.
+
+**Estados posibles por nota:**
+
+| Estado | Condición |
+|---|---|
+| `complete` | Archivo fuente existe y tiene `@vault:` apuntando a la nota correcta |
+| `missing_tag` | Archivo fuente existe pero no tiene `@vault:` — candidato a `--fix` |
+| `missing_file` | La nota declara `source_file:` pero el archivo no existe en disco |
+| `no_source_ref` | Nota en `11_Code/` sin frontmatter `source_file` — no auditada |
+| `orphan_vault_ref` | Archivo fuente tiene `@vault:` a nota que no existe en el vault |
+
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `project` | string | — | Slug del proyecto (omitir = todos los proyectos en `11_Code/`) |
+| `scan_dir` | string | — | Directorio de código fuente para detectar refs huérfanas (Pass 2) |
+| `fix` | bool | `false` | Inyectar `@vault:` en archivos `missing_tag` automáticamente |
+| `dry_run` | bool | `false` | Mostrar qué se haría sin modificar archivos |
+
+**Retorna:**
+```json
+{
+  "ok": true,
+  "status": "clean",
+  "project": "mi-api",
+  "dry_run": false,
+  "summary": {
+    "total_notes_checked": 8,
+    "complete": 6,
+    "missing_tag": 2,
+    "missing_file": 0,
+    "no_source_ref": 0,
+    "orphan_vault_refs": 0,
+    "fix_applied": 2
+  },
+  "complete": [{ "note": "11_Code/mi-api/auth.md", "source_file": "src/auth.ts" }],
+  "missing_tag": [{ "note": "11_Code/mi-api/routes.md", "source_file": "src/routes.ts", "fix_applied": true }],
+  "missing_file": [],
+  "no_source_ref": [],
+  "orphan_vault_refs": []
+}
+```
+
+**Cuándo usar:**
+- Auditoría de cierre de sesión: verificar que todos los módulos documentados tienen `@vault:` en su código fuente
+- Backfill en proyectos existentes: `vault_code_sync --project {slug} --fix`
+- Detectar refs huérfanas cuando se eliminó o renombró una nota vault
+- CI gate: `python scripts/vault_code_sync.py --project {slug}` — retorna exit 0 si `status: clean`
+- Antes de sincronizar al equipo: confirmar trazabilidad completa con `--report`
 
 ---
 
@@ -4586,6 +4643,28 @@ temp/
 - `vault_knowledge_get.py`: añadido campo `total` en todos los paths de retorno (incluyendo resultados vacíos), normalizando el contrato.
 - `vault_test_runner.py`: 15 `required_ok_fields` vacíos sustituidos por campos reales (vault_diff, vault_merge, vault_knowledge_get, vault_infra_map, vault_backup, vault_backup_list, vault_security_scan, vault_section_index, vault_master_index, vault_reindex, vault_drift_detect, vault_timeline, vault_code_map). Contratos pasan 45/45.
 - `vault_manifest.py`: nuevas categorías en TOOL_GROUPS: `Data Quality`, `Propagación`, `Tokens`. `META_TOOLS` incluye `vault_spec_memory`.
+
+---
+
+### v34 — 2026-06-12 `git: 2f23ad5`
+
+**Trazabilidad bidireccional código↔vault — @vault: tag + vault_code_sync**
+
+**Agregado**
+
+- **`@vault:` tag en código fuente:** nuevo tipo de etiqueta que vincula un archivo de código a su nota en `11_Code/`. Formato: `// @vault: 11_Code/{project}/{slug}  — título (tipo)`. Se inserta ANTES del bloque `@norm` si existe. Soporta todos los estilos de comentario: `//`, `#`, `<!--`, `/*`, `--`. El tag convierte la relación vault→código en **bidireccional**.
+
+- **`vault_code_sync.py` (Grupo 12 — Documentación de Código):** auditoría bidireccional entre notas `11_Code/` y archivos fuente. 5 estados: `complete`, `missing_tag`, `missing_file`, `no_source_ref`, `orphan_vault_ref`. Pass 2 detecta refs huérfanas. Con `--fix` inyecta `@vault:` en archivos `missing_tag`. Modes: `--report` (human-readable), `--dry-run`, `--scan-dir`. Registrado en `tool-spec.json` — **80/80 PASS** post-adición.
+
+- **`vault_code_module --tag-source`:** flag que, tras crear o actualizar la nota IEEE 1016, inyecta automáticamente `@vault:` en el archivo fuente. Documentación + trazabilidad en un paso. Retorna `source_tagged`, `tag_action`, `tag_warning`.
+
+- **`vault_code_tag --link-vault NOTE_PATH --file FILE [--title TITLE]`:** nuevo subcomando CLI para vincular un archivo de código a una nota vault existente en un paso. `--unlink-vault` elimina el tag.
+
+**Modificado**
+
+- **`vault_code_tag.py`:** soporte `@vault:` tag type. `_VAULT_TAG_TEMPLATES` para todos los estilos de comentario. `_VAULT_TAG_PATTERN` regex. `vault_code_tag_scan()` retorna `vault_ref`, `vault_note_exists` y `norm_tags` separados. `vault_code_tag_link_vault()` / `vault_code_tag_unlink_vault()` como funciones públicas.
+
+- **`vault_code_module.py`:** parámetro `tag_source: bool`. Tras crear la nota, si `tag_source=True` y el archivo fuente existe en disco, llama `vault_code_tag_link_vault()`. El campo `source_tagged` indica el resultado en el JSON de retorno.
 
 ---
 
