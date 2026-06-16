@@ -2780,6 +2780,103 @@ Detecta y aplica migraciones entre versiones del estándar. Lee `00_System/stand
 
 ---
 
+#### `vault_onboard(project, path, depth?, max_modules?, lang?, dry_run?, agent?, skip?, git_phases?, max_commits?, no_git?)`
+
+Documenta un proyecto **existente** al vault en un solo paso. Cubre 13 secciones del vault generando notas a partir de análisis estático del código fuente, `package.json`/`requirements.txt`/`go.mod`, README, y del historial git (ramas, fases temporales, ADRs retroactivos, stashes ocultos). Idempotente: si una nota ya existe, fusiona las secciones faltantes sin sobrescribir.
+
+**Branch archaeology (v2):** detecta historia oculta en ramas tipo `snap/*`, `backup/*`, `archive/*`, `legacy/*`, y en el reflog. Calcula `true_first_date` vs `apparent_first_date` para revelar meses de desarrollo previos al primer commit de `main`.
+
+**Secciones documentadas automáticamente:**
+
+| Sección | Contenido generado | Flag `--skip` |
+|---|---|---|
+| `01_Projects` | Overview con runtime, framework, contributors, fechas git, versiones (tags) | `01` |
+| `02_Observability` | TODO/FIXME/HACK/BUG detectados en código fuente | `02` |
+| `03_Decisions` | ADRs retroactivos desde mensajes de commits arquitectónicos | `03` |
+| `04_Sessions` | Una nota por fase temporal del proyecto (gap >45 días = nueva fase) | `04` |
+| `05_Patterns` | Patrones inferidos por naming de archivos (service, repository, factory...) | `05` |
+| `06_Diagrams` | Arquitectura Mermaid desde estructura de carpetas `src/` | `06` |
+| `07_Knowledge` | Conceptos desde headers del README + dependencias clave (frameworks) | `07` |
+| `08_Runbooks` | Scripts `npm run`, `Makefile`, CI jobs → runbooks paso a paso | `08` |
+| `09_Infrastructure` | Docker Compose, env vars detectadas, esquemas de BD | `09` |
+| `11_Code` | Stubs IEEE 1016 por módulo detectado (priorizado por tipo: service > controller > ...) | `11` |
+| `13_Flows` | GitHub Actions / CI workflows → notas de flujo con Mermaid | `13` |
+| `14_Requirements` | Features/user stories del README → requerimientos ISO 29148 | `14` |
+| `15_Tests` | Inventario de archivos de test por tipo (unit/integration/e2e) | `15` |
+
+**Parámetros:**
+| Parámetro | Tipo | Default | Descripción |
+|---|---|---|---|
+| `project` | string | — | Slug kebab-case del proyecto |
+| `path` | string | — | Ruta al directorio raíz del proyecto a onboardear |
+| `depth` | int | `3` | Profundidad de escaneo de directorios para módulos |
+| `max_modules` | int | `20` | Máximo de módulos de código a documentar en `11_Code/` |
+| `lang` | string | auto | Forzar lenguaje (`typescript`, `python`, `go`, etc.) si la detección falla |
+| `dry_run` | bool | `false` | Simular — muestra qué se crearía sin escribir nada |
+| `agent` | string | `claude` | Nombre del agente para frontmatter `agent:` |
+| `skip` | list | `[]` | Secciones a omitir: `01 02 03 04 05 06 07 08 09 11 13 14 15` |
+| `git_phases` | int | `8` | Máximo de fases git a detectar (gaps >45 días) |
+| `max_commits` | int | `500` | Máximo de commits a analizar en `git log` |
+| `no_git` | bool | `false` | Ignorar git — usar `mtime` de archivos para el historial |
+
+**Retorna:**
+```json
+{
+  "ok": true,
+  "project": "my-api",
+  "path_scanned": "/home/user/my-api",
+  "dry_run": false,
+  "git_history": {
+    "is_git": true,
+    "current_branch": "main",
+    "apparent_first_date": "2026-01-15",
+    "true_first_date": "2025-12-01",
+    "hidden_history": true,
+    "hidden_months": 1,
+    "last": "2026-05-20",
+    "total_commits": 145,
+    "total_commits_with_reflog": 162,
+    "contributors": ["alice", "bob"],
+    "tags": ["v1.0.0", "v2.0.0"],
+    "branches": 4,
+    "snap_branches": ["snap/backup-2026-01"],
+    "stashes": 0,
+    "phases_detected": 3
+  },
+  "discovered": {
+    "runtime": "Node.js 20",
+    "language": "typescript",
+    "framework": "express",
+    "description": "REST API for authentication service",
+    "module_count": 12,
+    "has_infra": true
+  },
+  "created": {
+    "overview": "01_Projects/my-api-overview.md",
+    "sessions": ["04_Sessions/my-api-phase-1.md", "04_Sessions/my-api-phase-2.md"],
+    "decisions": ["03_Decisions/my-api-arquitectura-inicial.md"],
+    "observability": "02_Observability/my-api-todos.md",
+    "modules": ["11_Code/my-api/auth-service.md", "11_Code/my-api/user-repository.md"]
+  },
+  "merge_stats": { "created": 10, "merged": 2, "skipped": 0, "dry_run": 0 },
+  "warnings": [],
+  "next_steps": [
+    "vault_project_overview --project my-api  # enriquecer overview",
+    "vault_code_module --project my-api --file_path src/auth.ts ...  # enriquecer módulos",
+    "vault_audit  # verificar health score"
+  ]
+}
+```
+
+**Cuándo usar:**
+- Al comenzar a trabajar en un proyecto ya existente que no tiene vault: documentar el estado actual en < 1 min
+- Al incorporarse a un equipo: onboardear el repo para conocer su historia, patrones y decisiones técnicas
+- Con `--dry-run` primero para revisar qué se generaría antes de escribir
+- Con `--skip 03 05` para excluir secciones que ya están documentadas o no aplican
+- Después del onboard: enriquecer los stubs con `vault_code_module --tag-source` y `vault_project_overview`
+
+---
+
 ### Grupo 23 — Change Log de Notas
 
 > **Propósito:** Registrar el ciclo de vida completo de las notas del vault (created/updated/deleted/moved) con trazabilidad de razón y agente. Obligatorio antes de cualquier eliminación — sin este registro, los agentes futuros no pueden reconstruir la intención detrás de los cambios.
@@ -2964,67 +3061,98 @@ Reglas de cálculo de `norm_refs`:
 
 ---
 
-#### `vault_code_tag(define?, apply?, remove?, scan?, list?, tag_note?)`
+#### `vault_code_tag(define?, apply?, remove?, scan?, list?, tag_note?, link_vault?, unlink_vault?)`
 
-Embebe etiquetas `@norm` como comentarios en la **cabecera** de archivos de código fuente (.cs, .ts, .py, .js, .go, .java, .sql, …). Acepta cualquier código: custom (`cr-0989`, `impl-001`, `bus-004`) o del catálogo del estándar (`AP-22`, `SP-01`, `CN-01`).
+Embebe dos tipos de etiqueta de trazabilidad en la **cabecera** de archivos de código fuente. Soporta todos los lenguajes principales mediante 5 formatos de comentario.
 
-Registry: `00_System/code-tag-registry.json` — mapea `código → {name, description, files[], vault_note}`.
+- **`@vault:`** — referencia a la nota del vault que documenta este archivo. Cierra el ciclo código↔vault.
+- **`@norm:`** — referencia a norma del estándar (AP-XX, SP-XX, CN-XX) o código custom.
+
+Orden canónico en cabecera: `@vault:` siempre ANTES de los bloques `@norm`.
+
+Registry `@norm`: `00_System/code-tag-registry.json` — mapea `código → {name, description, files[], vault_note}`.
 
 **Operaciones:**
 
-| Operación | Parámetros | Descripción |
+| Operación | Parámetros clave | Descripción |
 |---|---|---|
-| `--define CODE --name NAME` | `[--description] [--files]` | Registra etiqueta personalizada; aplica a archivos opcionalmente |
+| `--link-vault NOTE_PATH --file FILE` | `[--title TITLE]` | Embebe `@vault:` en el archivo apuntando a la nota vault. Idempotente: reemplaza si ya existe un `@vault:` distinto |
+| `--unlink-vault --file FILE` | — | Elimina el tag `@vault:` del archivo |
+| `--define CODE --name NAME` | `[--description] [--files]` | Registra etiqueta `@norm` personalizada; aplica a archivos opcionalmente |
 | `--apply CODE --file FILE` | `[--name NAME]` | Embebe `@norm` en cabecera del archivo |
 | `--remove CODE --file FILE` | — | Elimina línea `@norm` del archivo |
-| `--scan --file FILE` | — | Lista todos los `@norm` presentes en un archivo |
-| `--list` | `[--file FILE] [--prefix PREFIX]` | Lista tags registrados, filtrable por archivo o prefijo |
-| `--tag-note CODE` | — | Crea nota en `11_Code/` documentando el tag con sus archivos |
+| `--scan --file FILE` | — | Lista `@vault:` y `@norm` presentes en un archivo |
+| `--list` | `[--file FILE] [--prefix PREFIX]` | Lista tags `@norm` registrados, filtrable por archivo o prefijo |
+| `--tag-note CODE` | — | Crea nota en `11_Code/` documentando el tag `@norm` con sus archivos |
 
 **Formatos de comentario por extensión:**
 
-| Extensiones | Formato |
-|---|---|
-| `.cs .ts .js .java .go .cpp .swift .rs` | `// @norm cr-0989    — Cola de prioridad` |
-| `.py .rb .sh .yml .yaml` | `# @norm cr-0989    — Cola de prioridad` |
-| `.html .xml .svg` | `<!-- @norm cr-0989 — Cola de prioridad -->` |
-| `.css .scss .sass` | `/* @norm cr-0989   — Cola de prioridad */` |
-| `.sql` | `-- @norm cr-0989   — Cola de prioridad` |
-| `.md` | ⚠ usar `vault_norms --apply` (frontmatter `norm_refs`) |
+| Extensiones | `@vault:` | `@norm` |
+|---|---|---|
+| `.cs .ts .js .java .go .cpp .swift .rs` | `// @vault: 11_Code/proj/mod  — Título` | `// @norm AP-22     — Bracket sanity` |
+| `.py .rb .sh .yml .yaml` | `# @vault: 11_Code/proj/mod  — Título` | `# @norm AP-22     — Bracket sanity` |
+| `.html .xml .svg` | `<!-- @vault: 11_Code/proj/mod  — Título -->` | `<!-- @norm AP-22 — Bracket sanity -->` |
+| `.css .scss .sass` | `/* @vault: 11_Code/proj/mod  — Título */` | `/* @norm AP-22   — Bracket sanity */` |
+| `.sql` | `-- @vault: 11_Code/proj/mod  — Título` | `-- @norm AP-22   — Bracket sanity` |
+| `.md` | — no aplica | ⚠ usar `vault_norms --apply` (frontmatter `norm_refs`) |
 
-**Ejemplo de resultado en código:**
-```csharp
-// @norm cr-0989    — Cola de prioridad
-// @norm AP-22      — Bracket sanity — corchetes desbalanceados o vacíos
-using System;
-
-public class QueueService { ... }
+**Cabecera canónica resultado en código:**
+```typescript
+// @vault: 11_Code/my-api/queue-service  — QueueService.ts (service)
+// @norm  cr-0989    — Cola de prioridad FIFO con pesos
+// @norm  AP-22      — Bracket sanity — corchetes desbalanceados o vacíos
+import { Injectable } from '@nestjs/common';
 ```
 
 **Flujo típico:**
 ```bash
-# 1. Definir etiqueta personalizada
-vault_code_tag --define cr-0989 --name "Cola de prioridad" --description "FIFO con pesos"
+# Trazabilidad bidireccional en un paso (recomendado)
+vault_code_module --project my-api --file_path src/services/QueueService.ts \
+  --description "Cola de prioridad FIFO" --iso_type service --tag-source
+# → crea nota en vault Y embebe @vault: automáticamente
 
-# 2. Aplicar a archivo de código
-vault_code_tag --apply cr-0989 --file "src/services/colas.cs"
+# Alternativamente: vincular una nota existente manualmente
+vault_code_tag --link-vault 11_Code/my-api/queue-service \
+  --file src/services/QueueService.ts --title "QueueService.ts (service)"
 
-# 3. Aplicar norma del estándar directamente a código
-vault_code_tag --apply AP-22 --file "scripts/vault_write.py"
+# Añadir normas al mismo archivo
+vault_code_tag --apply AP-22 --file src/services/QueueService.ts
 
-# 4. Ver qué normas tiene un archivo
-vault_code_tag --scan --file "src/services/colas.cs"
+# Ver el estado completo de un archivo
+vault_code_tag --scan --file src/services/QueueService.ts
 
-# 5. Crear nota vault documentando la etiqueta
-vault_code_tag --tag-note cr-0989
+# Desvincular si se renombró la nota
+vault_code_tag --unlink-vault --file src/services/QueueService.ts
 ```
 
 **Retorna `--scan`:**
 ```json
-{ "ok": true, "file": "src/services/colas.cs", "total": 2, "tags": [{ "code": "cr-0989", "name": "Cola de prioridad", "description": "FIFO con pesos", "vault_note": "11_Code/cr-0989-cola-de-prioridad.md" }, { "code": "ap-22", "name": "Bracket sanity..." }] }
+{
+  "ok": true,
+  "file": "src/services/QueueService.ts",
+  "linked": true,
+  "vault_ref": { "note_path": "11_Code/my-api/queue-service", "title": "QueueService.ts (service)" },
+  "vault_note_exists": true,
+  "norm_tags_total": 2,
+  "norm_tags": [
+    { "code": "cr-0989", "name": "Cola de prioridad", "description": "FIFO con pesos", "vault_note": null },
+    { "code": "ap-22",   "name": "Bracket sanity", "description": "..." }
+  ]
+}
 ```
 
-**Cuándo usar:** al crear o modificar un archivo de código que implementa una regla documentada en el vault; para rastrear qué normas aplican a cada módulo del proyecto; para generar un inventario de compliance del código.
+**Retorna `--link-vault`:**
+```json
+{ "ok": true, "action": "linked", "file": "src/services/QueueService.ts", "note": "11_Code/my-api/queue-service" }
+```
+`action` puede ser: `linked` (nuevo), `replaced` (había otro `@vault:` diferente), `already_present` (idempotente).
+
+**Cuándo usar:**
+- `--link-vault` al documentar un módulo existente que ya tiene nota en vault pero le falta el tag
+- `--tag-source` en `vault_code_module` para el flujo nuevo (más cómodo que `--link-vault` manual)
+- `--scan` para auditar el estado de trazabilidad de un archivo individualmente
+- `vault_code_sync` para auditar trazabilidad de **todo el proyecto** de una vez
+- `--unlink-vault` cuando se elimina o renombra la nota vault referenciada
 
 ---
 
