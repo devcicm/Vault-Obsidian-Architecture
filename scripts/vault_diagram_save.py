@@ -70,6 +70,9 @@ def vault_diagram_save(
 ) -> Dict[str, Any]:
     diagram_type = diagram_type.lower()
     category = category.lower()
+    # Agents often pass Mermaid content with literal \n escape sequences
+    # (via JSON tool calls or CLI). Convert to real newlines so diagrams render.
+    content = content.replace('\\n', '\n')
 
     if diagram_type not in DIAGRAM_TYPES:
         return {"ok": False, "error": f"Tipo inválido: {diagram_type}. Válidos: {DIAGRAM_TYPES}"}

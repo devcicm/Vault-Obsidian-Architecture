@@ -287,7 +287,8 @@ def vault_pattern_save(
 
         for rp in related_patterns:
 
-            wiki_links.append(f"[[{safe_wikilink(rp)}]]")
+            slug = f"{safe_project}-{slugify(rp)}"
+            wiki_links.append(f"[[{slug}|{safe_wikilink(rp)}]]")
 
 
 
