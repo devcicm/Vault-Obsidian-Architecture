@@ -334,6 +334,13 @@ def _detect_orphans(notes: List[Path], backlinks: Dict[str, Set[str]]) -> List[D
 
             continue
 
+        # Session notes are inherently orphan — each session is the start
+        # of a new conversation. They are referenced by date, not by other
+        # notes. Excluding them from orphan detection avoids false positives.
+        if rel.startswith("04_Sessions/"):
+
+            continue
+
         if backlinks.get(n.stem):
 
             continue
@@ -491,6 +498,19 @@ def _detect_broken_links(notes: List[Path], all_stems: Set[str]) -> List[Dict[st
 
     broken = []
 
+    # Pre-compute a set of relative paths for path-anchored link resolution.
+    # Wiki-links like [[02_Observability/antipatterns/ap-foo]] should resolve
+    # to a file at that relative path. The audit was treating them as broken
+    # because stem-only normalization doesn't match the full path.
+    all_paths: Set[str] = set()
+    for n in VAULT_ROOT.rglob("*.md"):
+        if ".history" not in str(n):
+            rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+            # Add both with and without .md extension
+            all_paths.add(rel.lower())
+            if rel.lower().endswith(".md"):
+                all_paths.add(rel[:-3].lower())
+
     for n in notes:
 
         rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
@@ -510,9 +530,17 @@ def _detect_broken_links(notes: List[Path], all_stems: Set[str]) -> List[Dict[st
 
         for link in _extract_wiki_links(content):
 
-            if _normalize(link) not in all_stems:
+            if _normalize(link) in all_stems:
+                continue
 
-                broken.append({"from": rel, "link": link})
+            # Try path-anchored resolution: the link might be a relative
+            # file path that Obsidian can resolve. Check if a file exists
+            # at this path (case-insensitive).
+            link_normalized = link.lower().replace("\\", "/")
+            if link_normalized in all_paths:
+                continue
+
+            broken.append({"from": rel, "link": link})
 
     return broken
 
@@ -545,6 +573,12 @@ def _detect_canonical_shadow(notes: List[Path]) -> List[Dict[str, Any]]:
         # Spec/reference files have the same title by design (it's the spec).
         # Exclude them from canonical-shadow detection.
         if n.name == "vault-obsidian-architecture.md" or "/scripts/" in rel or rel.startswith("scripts/"):
+            continue
+
+        # Session notes have similar titles by design (e.g. "2026-06-13",
+        # "2026-06-14"). They're daily logs, not duplicates.
+        if rel.startswith("04_Sessions/"):
+
             continue
 
         # Scaffolds (vault_init primers) are templates by design — all have

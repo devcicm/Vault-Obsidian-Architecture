@@ -44,7 +44,8 @@ def _detect_vault_root() -> Path:
     # has 00_System.
     candidates = [
         s for s in sorted(project_root.iterdir())
-        if s.is_dir() and s.name.startswith("vault-")
+        if s.is_dir()
+        and (s.name.startswith("vault-") or s.name == "vault")
         and not s.name.startswith("vault-backups")
         and s.name != "vault-sandbox"
         and not s.name.endswith(".bak")
