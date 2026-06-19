@@ -156,8 +156,18 @@ def vault_init(target_version: str = "v32", run_audit: bool = True, clean: bool 
         "commands": str(commands_note.relative_to(VAULT_ROOT)).replace("\\", "/") if commands_note.exists() else None,
     }
 
-    return result
+    # Promote healthScore + noteCount to top-level so the spec contract is satisfied.
+    # They are computed in step 5 (audit) and step 4 (reindex).
+    if "healthScore" not in result:
+        for step in result["steps"]:
+            if step.get("step") == "audit":
+                out = step.get("output", {})
+                if isinstance(out, dict):
+                    result["healthScore"] = out.get("healthScore")
+                    result["noteCount"] = out.get("stats", {}).get("total", 0)
+                    break
 
+    return result
 
 def main() -> int:
     parser = argparse.ArgumentParser(

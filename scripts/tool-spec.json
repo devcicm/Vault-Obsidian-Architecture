@@ -1795,8 +1795,7 @@
       "status": "active",
       "required_args": [],
       "declared_returns": [
-        "healthScore",
-        "noteCount"
+        "ok"
       ],
       "dq": {
         "dq_dimensions": [
