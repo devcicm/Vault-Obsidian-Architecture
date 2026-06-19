@@ -1,8 +1,8 @@
 {
-  "version": "v32",
+  "version": "v34",
   "schema": "1.0",
-  "generated_at": "2026-06-19T09:55:00Z",
-  "description": "Spec-driven tool contracts. Editar este archivo ANTES de implementar una nueva tool. Validar con: python vault_spec_validate.py — v32.1: added vault_init for one-command bootstrap.",
+  "generated_at": "2026-06-19T10:41:43.000Z",
+  "description": "Spec-driven tool contracts. Editar este archivo ANTES de implementar una nueva tool. Validar con: python vault_spec_validate.py. v34.0: 68 active tools across 32 groups + vault_init bootstrap + nextActions prescriptivo en audit + fixes de deteccion de vault_root (excluye vault-sandbox y *.bak) y exclusiones en broken-link/malformed/canonical-shadow para spec files y scripts/.",
   "tools": {
     "vault_ai_decision": {
       "group": "IA Governance",
@@ -1815,5 +1815,12 @@
         "F6"
       ]
     }
+  },
+  "_counts": {
+    "active": 68,
+    "deprecated": 5,
+    "total": 81,
+    "active_groups": 32,
+    "schema_version": "1.0"
   }
 }

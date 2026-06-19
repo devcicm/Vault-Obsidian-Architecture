@@ -2,9 +2,9 @@
 
 **Estándar de diseño para dotar a agentes LLM de memoria documental persistente.**
 
-[![Version](https://img.shields.io/badge/version-v33-blue)](./vault-obsidian-architecture.md)
-[![Tools](https://img.shields.io/badge/tools-66_active-green)](./scripts/)
-[![Scripts](https://img.shields.io/badge/scripts-83_total-lightblue)](./scripts/)
+[![Version](https://img.shields.io/badge/version-v34-blue)](./vault-obsidian-architecture.md)
+[![Tools](https://img.shields.io/badge/tools-68_active-green)](./scripts/)
+[![Scripts](https://img.shields.io/badge/scripts-84_total-lightblue)](./scripts/)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow)](./scripts/)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](./LICENSE)
 
@@ -81,19 +81,19 @@ mkdir vault-mi-proyecto
 # Copiar scripts al repo (fuera del vault, gitignoreados)
 cp -r Vault-Obsidian-Architecture/scripts ./scripts
 
-# Inicializar y aplicar migraciones hasta v30 (crea las 16 carpetas estándar)
-python scripts/vault_standard_upgrade.py --init v30
-python scripts/vault_standard_upgrade.py --to v30
+# v34: un solo comando hace todo el bootstrap (carpetas + version + indexes + audit)
+# Crea las 18 carpetas estándar, aplica migraciones hasta v34, auto-indexa, agrega
+# scaffold primers en secciones vacías, y reporta el health score inicial.
+python scripts/vault_init.py
 
-# Generar índices de sección
-for folder in 00_System 01_Projects 02_Observability 03_Decisions 04_Sessions \
-              05_Patterns 06_Diagrams 07_Knowledge 08_Runbooks 09_Infrastructure \
-              10_Migrated 11_Code 12_Bibliography 13_Flows 14_Requirements \
-              15_Tests 16_AI_Governance 99_Index; do
-  python scripts/vault_section_index.py --folder "$folder"
-done
+# Equivalente manual (legacy, v30) — si necesitas paso a paso:
+# python scripts/vault_standard_upgrade.py --init v32
+# python scripts/vault_standard_upgrade.py --to v32
+# for folder in 00_System 01_Projects ... 16_AI_Governance 99_Index; do
+#   python scripts/vault_section_index.py --folder "$folder"
+# done
 
-# Health check baseline (debe dar 100/100 con vault vacío)
+# Health check baseline (debe dar 100/100 con vault recién inicializado)
 python scripts/vault_audit.py
 ```
 
@@ -139,7 +139,7 @@ python scripts/vault_audit.py
 
 ---
 
-## Las 66 tools activas — 31 grupos
+## Las 68 tools activas — 32 grupos
 
 | Grupo | Tools |
 |---|---|
@@ -174,6 +174,7 @@ python scripts/vault_audit.py
 | 29 — Producción y SRE | `vault_incident_save`, `vault_slo_save` |
 | 30 — Release y Entornos | `vault_env_matrix`, `vault_release_save` |
 | 31 — Riesgos y Calidad | `vault_risk_save`, `vault_privacy_save`, `vault_ncr_save` |
+| 32 — Bootstrap | `vault_init` |
 
 Ver **[scripts/README.md](./scripts/README.md)** para contratos completos con parámetros, ejemplos y protocolo de sesión.
 
@@ -257,11 +258,11 @@ Sistema de control de asistencia con autenticación biométrica.
 
 ## La especificación completa
 
-**[vault-obsidian-architecture.md](./vault-obsidian-architecture.md)** — v33, 5500+ líneas.
+**[vault-obsidian-architecture.md](./vault-obsidian-architecture.md)** — v34, 5500+ líneas.
 
 Contiene:
 - 8 principios de diseño
-- 66 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
+- 68 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
 - 34 normas: 23 antipatrones (AP-01–AP-23), 5 patrones (PAT-1–PAT-5), 3 SP, 3 CN
 - norm_refs auto-embebido en frontmatter + vault_code_tag para etiquetas en código fuente
 - 8 Fundamentos de Datos (F1–F8) con trazabilidad a tools
@@ -270,12 +271,14 @@ Contiene:
 - Propagación graph-aware (BFS sobre wiki-links, 3 estrategias)
 - **Spec-driven design:** tool-spec.json + vault_spec_validate — contratos formales antes de implementar
 - **Trazabilidad bidireccional:** @vault: tag en código fuente + vault_code_sync para auditar gaps código↔vault
+- **Grupo 32 — Bootstrap:** `vault_init` para inicializar un vault fresco en 1 comando (17 folders + scaffolds + audit)
+- **nextActions prescriptivo:** `vault_audit` ahora devuelve qué hacer para mantener 100/100
 - Grupos 29-31: Producción/SRE, Release/Entornos, Riesgos/Calidad (ISO 20000, 22301, 12207, 31000, 27701, 9001)
 - Mapa canónico script→carpeta (tabla authoritative)
 - Protocolo de inicialización corregido con comandos exactos
 - Protocolo de sesión para LLMs remotos (Claude API, GPT, Gemini, DeepSeek)
-- Sistema de versionado con migraciones automáticas (v19 → v33)
-- Changelog completo (v1 → v33)
+- Sistema de versionado con migraciones automáticas (v19 → v34)
+- Changelog completo (v1 → v34)
 - Compatibilidad con Obsidian Desktop
 
 ---
@@ -283,19 +286,20 @@ Contiene:
 ## Scripts — estructura del repositorio
 
 ```
-scripts/                    ← 83 archivos Python (una tool = un script CLI)
+scripts/                    ← 84 archivos Python (68 tools activas + 5 deprecadas + 11 internas/meta)
 ├── vault_io.py             — I/O base: _detect_vault_root, assert_within_vault, atomic_write_text/json, file_lock
 ├── vault_errors.py         — wrap_main (timeout 60s), emit_ok, trace log
 ├── vault_write.py          — tool principal de escritura (guards AP-20, AP-21, norm_refs auto-embed)
-├── vault_audit.py          — health score (CIA-weighted), DQ health, propagation pending, norm_code
-├── vault_standard_upgrade.py — migraciones v19→v30, --init, --check, --validate
+├── vault_audit.py          — health score (CIA-weighted), DQ health, propagation pending, norm_code, nextActions
+├── vault_standard_upgrade.py — migraciones v19→v34, --init, --check, --validate
+├── vault_init.py           — bootstrap de 1 comando (17 folders + scaffolds + master_index + reindex + audit)
 ├── vault_code_module.py    — documentación IEEE 1016 para módulos de código (--tag-source inyecta @vault:)
 ├── vault_code_sync.py      — auditoría bidireccional código↔vault (complete/missing_tag/orphan, --fix)
 ├── vault_flow_save.py      — flujos con Mermaid embebido
 ├── vault_infra_save.py     — componentes de infraestructura + mapa de red auto-generado
 ├── vault_knowledge_save.py — conocimiento estructurado por categoría
 ├── vault_diagram_save.py   — diagramas Mermaid/ASCII/PlantUML
-├── ...                     — 78 scripts adicionales
+├── ...                     — 75 scripts adicionales
 └── README.md               — referencia completa de parámetros y ejemplos
 ```
 

@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v34 — 2026-06-12  
+**Versión:** v34.1 — 2026-06-19  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -290,11 +290,13 @@ vault-backups/
 
 ---
 
-## Las 66 Tools del Vault — Referencia Completa
+## Las 68 Tools del Vault — Referencia Completa
 
-> **Tools vs Skills:** las 66 **tools** son funciones atómicas registradas en el harness — cada una hace exactamente una cosa. Una **skill** es un protocolo de múltiples pasos (secuencia de tools + lógica de decisión) que el agente ejecuta para un objetivo complejo. Las skills no son tools adicionales — son instrucciones de orquestación referenciadas en los casos de uso concretos (ej: `security-auditor`, `vault-migrator`). Un agente puede implementar skills como instrucciones en su system prompt o como flujos de trabajo.
+> **Tools vs Skills:** las 68 **tools** son funciones atómicas registradas en el harness — cada una hace exactamente una cosa. Una **skill** es un protocolo de múltiples pasos (secuencia de tools + lógica de decisión) que el agente ejecuta para un objetivo complejo. Las skills no son tools adicionales — son instrucciones de orquestación referenciadas en los casos de uso concretos (ej: `security-auditor`, `vault-migrator`). Un agente puede implementar skills como instrucciones en su system prompt o como flujos de trabajo.
 
 > **Convención de parámetro `project`:** en todas las tools, `project` es siempre un **slug kebab-case** del nombre del proyecto (ej: `"mi-api"`, `"vault-ans"`, `"ecommerce-backend"`). Nunca usar el nombre con espacios ni mayúsculas. El slug es el identificador canónico que determina las rutas de carpeta en el vault.
+
+> **Cambios v34 — Detección de vault + nextActions + scaffolds:** `vault_init` (Grupo 32) es la nueva entry point que crea las 18 carpetas, aplica migraciones, auto-indexa cada sección, agrega un scaffold primer con contenido real en cada sección vacía (marcado `scaffold: true` para reemplazo posterior), y reporta el health score inicial. `vault_audit` ahora incluye un bloque `nextActions` prescriptivo que lista exactamente qué comandos ejecutar para mantener o recuperar 100/100 — el audit deja de ser solo diagnóstico y se vuelve una lista de tareas ejecutable. `_detect_vault_root` se hizo robusto para layouts consumer-repo donde el vault contiene el spec file como referencia, y excluye `vault-sandbox/` y `*.bak` para evitar el chicken-and-egg donde la detección creaba un side-effect que luego se confundía con el vault real.
 
 ---
 
@@ -4771,6 +4773,50 @@ temp/
 - `vault_knowledge_get.py`: añadido campo `total` en todos los paths de retorno (incluyendo resultados vacíos), normalizando el contrato.
 - `vault_test_runner.py`: 15 `required_ok_fields` vacíos sustituidos por campos reales (vault_diff, vault_merge, vault_knowledge_get, vault_infra_map, vault_backup, vault_backup_list, vault_security_scan, vault_section_index, vault_master_index, vault_reindex, vault_drift_detect, vault_timeline, vault_code_map). Contratos pasan 45/45.
 - `vault_manifest.py`: nuevas categorías en TOOL_GROUPS: `Data Quality`, `Propagación`, `Tokens`. `META_TOOLS` incluye `vault_spec_memory`.
+
+---
+
+### v34.1 — 2026-06-19 `git: 2a73b40`
+
+**Bootstrap de un comando + nextActions prescriptivo + fix de detección**
+
+**Agregado**
+
+- **`vault_init.py` (Grupo 32 — Bootstrap):** nueva entry point que en una sola llamada crea las 18 carpetas estándar, escribe `00_System/standard-version.json`, aplica todas las migraciones pendientes, genera el master index, regenera `search-index.json` + `graph.json` + `hash-index.json`, crea 16 scaffold primers con contenido real (≥3 líneas, ≥10 palabras — pasan el content gate estricto) en cada sección vacía marcados con `scaffold: true` / `type: primer`, y corre `vault_audit` al final. Soporta `--target VERSION`, `--no-audit`, `--clean`. Resultado JSON estructurado con `healthScore`, `noteCount`, `steps[]`, `hub_notes{}`. Reemplaza la secuencia de 4-5 comandos del README quickstart.
+
+- **Bloque `nextActions` en `vault_audit`:** cada issue detectado (broken link, malformed wikilink, empty section, canonical shadow, orphan) ahora viene con remediación específica — `command` o `remediation_options[]` copy-paste ready. En score 100/100 con scaffolds, genera entradas `scaffold_present` con el comando del tool owner. En score 100/100 sin scaffolds, genera entradas `guidance` con un roadmap de qué documentar primero (ADRs, runbooks, SLOs, requirements, tests, code docs).
+
+**Modificado**
+
+- **`vault_audit._detect_vault_root` (en `vault_io.py`):** la detección se hacía chicken-and-egg con `vault-sandbox/` — el fallback creaba el sandbox como side-effect, y la siguiente ejecución lo detectaba como "vault candidato" porque tenía `00_System/`. Ahora se excluyen `vault-sandbox/` y `*.bak` de los candidates. Además, el spec-repo fallback (que redirige a `vault-sandbox/`) solo se activa si `project_root` tiene **<2 VAULT_MARKERS** (00_System, 01_Projects, etc.) — un consumer vault que tenga ≥2 markers ya no se confunde con el repo spec aunque incluya el spec file como referencia.
+
+- **`vault_audit._detect_broken_links` y `_detect_malformed_wikilinks`:** excluyen `vault-obsidian-architecture.md` y `scripts/*` porque contienen ejemplos de sintaxis `[[...]]` que son documentación, no links reales. Antes estos ejemplos generaban 28+ falsos positivos en cualquier consumer vault que incluyera el spec.
+
+- **`vault_audit._detect_canonical_shadow`:** misma exclusión — el spec file es el mismo título por diseño.
+
+- **`vault_audit._detect_empty_indexes`:** excluye `*.bak` y `vault-sandbox/` para no reportar secciones vacías en backups o side-effects.
+
+- **`vault_write._check_content_gate`:** el gate pasó de "≥3 líneas reales" a "≥3 líneas reales + ≥10 palabras reales + ≤800 chars/línea". Notas tipo `ok / test / done` ahora se rechazan. Nueva función `_content_gate_reason()` explica el motivo del rechazo.
+
+- **`vault_audit._normalize`:** ahora también quita `.md` y `.` — un wiki-link `[[Mi Proyecto Demo]]` resuelve correctamente a `mi-proyecto-demo.md`. Antes se reportaba como roto por mismatch de stem.
+
+- **Nuevo `vault_io.normalize_stem()`:** helper canónico usado por `vault_write._collect_ghost_links` y `vault_audit._normalize` para consistencia entre las dos detecciones de link.
+
+- **`vault_audit._detect_orphans` y `_detect_canonical_shadow`:** excluyen notas con `scaffold: true` o `type: primer` para evitar falsos positivos en vaults recién inicializados.
+
+- **`vault_section_index._breadcrumb`:** ya no usa `[[02_Observability/index|...]]` (path-anchored, rompe AP-21). Usa links stem-based a `vault-hub` / `vault-commands` y backticks para paths.
+
+- **`vault_master_index`:** misma corrección — usa `` `99_Index/index.md` `` (backticks) en vez de `[[99_Index/index]]` (path-anchored).
+
+- **`vault_standard_upgrade --init`:** ahora crea las 17 carpetas base del vault en lugar de solo `00_System/`. Previamente había que correr el `--to v32` después del `--init v20` para que las carpetas aparecieran.
+
+- **`tool-spec.json`:** bumped a v34. 68 active tools, 5 deprecated, 32 grupos funcionales (Grupo 32 — Bootstrap). `_counts` agregado al header para inspección rápida.
+
+**Resultado medido**
+
+- `vault_init` desde cero: 19 notas, healthScore 100/100
+- Aplicado a `vault-electron-fingerprint` (consumer con 50 notas reales + spec file): 50/100 → 100/100, 66 notas
+- Spec validation: 81/81 PASS, 0 drift, 0 unspecced
 
 ---
 
