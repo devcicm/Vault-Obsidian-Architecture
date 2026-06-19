@@ -1,8 +1,8 @@
 {
   "version": "v32",
   "schema": "1.0",
-  "generated_at": "2026-06-05T07:59:13Z",
-  "description": "Spec-driven tool contracts. Editar este archivo ANTES de implementar una nueva tool. Validar con: python vault_spec_validate.py",
+  "generated_at": "2026-06-19T09:55:00Z",
+  "description": "Spec-driven tool contracts. Editar este archivo ANTES de implementar una nueva tool. Validar con: python vault_spec_validate.py — v32.1: added vault_init for one-command bootstrap.",
   "tools": {
     "vault_ai_decision": {
       "group": "IA Governance",
@@ -1787,6 +1787,33 @@
       "fundamentals": [
         "F2",
         "F4"
+      ]
+    },
+    "vault_init": {
+      "group": "Bootstrap",
+      "group_id": 32,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "healthScore",
+        "noteCount"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "completeness",
+          "consistency"
+        ],
+        "cia_scope": [
+          "integrity",
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F2",
+        "F3",
+        "F6"
       ]
     }
   }

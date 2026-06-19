@@ -157,7 +157,13 @@ def vault_master_index() -> Dict[str, Any]:
 
         count = r["noteCount"]
 
-        index_link = f"[[{section}/index]]" if r["ok"] else "_vacía_"
+        # AP-21 compliance: NO path-anchored wiki-links. Use the section folder
+        # name in backticks + plain text. The reader navigates by opening the
+        # section's index.md from the editor.
+        if r["ok"]:
+            index_link = f"`{section}/index.md`"
+        else:
+            index_link = "_(vacía)_"
 
         lines.append(f"| `{section}` | {desc} | {count} | {index_link} |")
 
@@ -171,6 +177,10 @@ def vault_master_index() -> Dict[str, Any]:
 
         "",
 
+        "> **Navegación:** [[vault-hub|Hub]]  ·  [[vault-commands|Comandos]]",
+
+        "",
+
         "## Índices técnicos",
 
         "",
@@ -179,9 +189,11 @@ def vault_master_index() -> Dict[str, Any]:
 
         "|---|---|",
 
-        "| [[99_Index/search-index|search-index.json]] | Índice de búsqueda full-text (auto-generado por vault_write) |",
+        "| `99_Index/search-index.json` | Índice de búsqueda full-text (auto-generado por vault_write) |",
 
-        "| [[99_Index/graph|graph.json]] | Grafo de wiki-links, orphans y broken links (vault_graph) |",
+        "| `99_Index/graph.json` | Grafo de wiki-links, orphans y broken links (vault_graph) |",
+
+        "| `99_Index/hash-index.json` | Hash + size + CIA por nota (auto-generado por vault_reindex) |",
 
         "",
 

@@ -381,8 +381,43 @@ def vault_standard_upgrade(
             "migrations_applied": [],
         }
         _write_version_file(data)
-        result = {"ok": True, "action": "init", "applied_version": init_version,
-                  "path": str(VERSION_FILE.relative_to(VAULT_ROOT)).replace("\\", "/")}
+
+        # Create the 17 base section folders so the container is self-bootstrapping.
+        # Without this, --init only writes the version file and the consumer is left
+        # with a single 00_System/ folder. The full structure must exist before any
+        # vault_write / vault_section_index call can succeed.
+        base_folders_created: List[str] = []
+        for folder in STANDARD_FOLDERS:
+            folder_path = VAULT_ROOT / folder
+            if not folder_path.exists():
+                folder_path.mkdir(parents=True, exist_ok=True)
+                base_folders_created.append(folder)
+            # Always ensure .gitkeep exists so empty sections survive commits
+            gitkeep = folder_path / ".gitkeep"
+            if not gitkeep.exists():
+                gitkeep.touch()
+
+        # Auto-generate section indexes for every base folder. This makes the vault
+        # navigable from the first commit — no manual `for folder in ...; do vault_section_index` loop.
+        from vault_section_index import vault_section_index  # lazy — avoid circular import
+        sections_indexed: List[str] = []
+        for folder in STANDARD_FOLDERS:
+            try:
+                res = vault_section_index(folder, include_subdirs=True)
+                if res.get("ok"):
+                    sections_indexed.append(folder)
+            except Exception:
+                # index failure must never block init
+                pass
+
+        result = {
+            "ok": True,
+            "action": "init",
+            "applied_version": init_version,
+            "path": str(VERSION_FILE.relative_to(VAULT_ROOT)).replace("\\", "/"),
+            "base_folders_created": base_folders_created,
+            "sections_indexed": sections_indexed,
+        }
         if validate:
             result["compliance"] = _run_compliance_check(init_version)
         return result

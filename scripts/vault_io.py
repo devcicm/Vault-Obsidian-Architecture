@@ -175,6 +175,21 @@ def safe_wikilink(text: str) -> str:
     return sanitized or "nota-sin-titulo"
 
 
+def normalize_stem(s: str) -> str:
+    """Canonical form for fuzzy stem comparison (vault_write + vault_audit).
+
+    Strips case, dashes, underscores, spaces, dots, and the .md suffix.
+    Used to detect whether a wiki-link target actually exists anywhere in
+    the vault regardless of how it was written (kebab-case, snake_case, spaces).
+
+    Examples:
+        normalize_stem("Mi Proyecto Demo")   -> "miproyectodemo"
+        normalize_stem("mi-proyecto-demo.md") -> "miproyectodemo"
+        normalize_stem("mi_proyecto_demo")    -> "miproyectodemo"
+    """
+    return s.lower().replace("-", "").replace("_", "").replace(" ", "").replace(".", "").removesuffix("md")
+
+
 def update_section_index(folder: str) -> None:
     """Regenerate section index without silently discarding errors.
 

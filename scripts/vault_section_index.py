@@ -28,6 +28,209 @@ def _utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
+HUB_NOTE = VAULT_ROOT / "00_System" / "vault-hub.md"
+COMMANDS_NOTE = VAULT_ROOT / "00_System" / "vault-commands.md"
+
+
+def _ensure_hub_notes() -> None:
+    """Idempotently create 00_System/vault-hub.md and vault-commands.md.
+
+    The hub note is the single authoritative entry point — it links to every
+    section index using stems Obsidian can resolve. The commands note is the
+    single authoritative reference for execution commands — no command should
+    appear inline in any other auto-generated file.
+
+    Both are user-editable: if the file already exists we leave it alone.
+    This protects manual edits while still bootstrapping a fresh vault.
+    """
+    if not HUB_NOTE.exists():
+        hub_content = (
+            "---\n"
+            "title: Vault Hub\n"
+            "id: vault-hub\n"
+            "createdAt: " + _utcnow() + "\n"
+            "updatedAt: " + _utcnow() + "\n"
+            "cia_integrity: high\n"
+            "cia_availability: high\n"
+            "cia_sensitivity: internal\n"
+            "agent: system\n"
+            "tags: [\"nav\", \"hub\"]\n"
+            "norm_refs: [\"CN-01\"]\n"
+            "---\n"
+            "\n"
+            "# Vault Hub — Punto único de navegación\n"
+            "\n"
+            "> Esta nota es el **único hub** del vault. Todos los índices de sección "
+            "y el índice maestro apuntan aquí. Si acabas de llegar al vault, lee primero esto.\n"
+            "\n"
+            "## Navegación principal\n"
+            "\n"
+            "- [[vault-commands|Comandos del vault]] — referencia unificada de comandos CLI\n"
+            "- `99_Index/index.md` (Índice Maestro) — tabla resumen con conteo de notas por sección\n"
+            "\n"
+            "## Secciones\n"
+            "\n"
+            "| Sección | Descripción | Índice |\n"
+            "|---|---|---|\n"
+        )
+        for section in [
+            "00_System", "01_Projects", "02_Observability", "03_Decisions",
+            "04_Sessions", "05_Patterns", "06_Diagrams", "07_Knowledge",
+            "08_Runbooks", "09_Infrastructure", "10_Migrated", "11_Code",
+            "12_Bibliography", "13_Flows", "14_Requirements", "15_Tests",
+            "16_AI_Governance", "99_Index",
+        ]:
+            desc = section_description(section)
+            hub_content += f"| `{section}` | {desc} | `{section}/index.md` |\n"
+        hub_content += (
+            "\n"
+            "## Protocolo de sesión\n"
+            "\n"
+            "Inicio:\n"
+            "1. `python scripts/vault_standard_upgrade.py --check`\n"
+            "2. `python scripts/vault_reindex.py`\n"
+            "3. `python scripts/vault_audit.py`\n"
+            "\n"
+            "Cierre:\n"
+            "1. `python scripts/vault_audit.py`\n"
+            "2. `python scripts/vault_tags.py`\n"
+            "3. `python scripts/vault_reindex.py --graph`\n"
+            "\n"
+            "Para detalles de cada comando, ver [[vault-commands|vault-commands]].\n"
+        )
+        HUB_NOTE.write_text(hub_content, encoding="utf-8")
+
+    if not COMMANDS_NOTE.exists():
+        commands_content = (
+            "---\n"
+            "title: Vault Commands\n"
+            "id: vault-commands\n"
+            "createdAt: " + _utcnow() + "\n"
+            "updatedAt: " + _utcnow() + "\n"
+            "cia_integrity: high\n"
+            "cia_availability: high\n"
+            "cia_sensitivity: internal\n"
+            "agent: system\n"
+            "tags: [\"nav\", \"commands\"]\n"
+            "norm_refs: [\"CN-01\"]\n"
+            "---\n"
+            "\n"
+            "# Vault Commands — Referencia unificada de comandos CLI\n"
+            "\n"
+            "> Esta nota es la **referencia única de comandos** del vault. Ningún "
+            "otro archivo (incluyendo índices auto-generados y stubs de sección) "
+            "debería embeber un bloque `python scripts/...` inline. Si necesitas un "
+            "comando nuevo, agrégalo aquí.\n"
+            "\n"
+            "Los ejemplos asumen que el CWD es la raíz del repositorio consumidor.\n"
+            "\n"
+            "## Inicialización\n"
+            "\n"
+            "```bash\n"
+            "# Inicializar un vault nuevo con todas las carpetas y auto-indexar\n"
+            "python scripts/vault_standard_upgrade.py --init v32\n"
+            "\n"
+            "# Aplicar migraciones pendientes (v20 → v32)\n"
+            "python scripts/vault_standard_upgrade.py --to v32\n"
+            "\n"
+            "# Verificar estado de versión y carpetas\n"
+            "python scripts/vault_standard_upgrade.py --check\n"
+            "```\n"
+            "\n"
+            "## Bootstrap de un vault fresco (todo en uno)\n"
+            "\n"
+            "```bash\n"
+            "# Equivalente a: init v32 + aplicar migraciones + auto-indexar todas las secciones\n"
+            "python scripts/vault_init.py\n"
+            "```\n"
+            "\n"
+            "## Escritura y lectura de notas\n"
+            "\n"
+            "```bash\n"
+            "# Crear o actualizar una nota\n"
+            "python scripts/vault_write.py --folder \"01_Projects/mi-api\" --title \"Status\" --content \"# Status\\n\\nActivo\"\n"
+            "\n"
+            "# Leer una nota por ruta\n"
+            "python scripts/vault_read.py --path \"01_Projects/mi-api/status.md\"\n"
+            "\n"
+            "# Buscar full-text\n"
+            "python scripts/vault_search.py --query \"circuit breaker\"\n"
+            "\n"
+            "# Listar notas de una carpeta\n"
+            "python scripts/vault_list.py --folder \"01_Projects\"\n"
+            "\n"
+            "# Agregar contenido al final (changelogs, session logs)\n"
+            "python scripts/vault_append.py --path \"04_Sessions/2026-06-19.md\" --content \"## Tasks\\n\\n- [x] Fix init\"\n"
+            "```\n"
+            "\n"
+            "## Índices\n"
+            "\n"
+            "```bash\n"
+            "# Regenerar índice de una sección\n"
+            "python scripts/vault_section_index.py --folder \"01_Projects\"\n"
+            "\n"
+            "# Regenerar TODOS los índices de sección + el master index\n"
+            "python scripts/vault_master_index.py\n"
+            "\n"
+            "# Regenerar search-index.json + graph.json + hash-index.json\n"
+            "python scripts/vault_reindex.py --graph\n"
+            "```\n"
+            "\n"
+            "## Salud y auditoría\n"
+            "\n"
+            "```bash\n"
+            "# Health score + issues (link rotos, orphan notes, etc.)\n"
+            "python scripts/vault_audit.py\n"
+            "\n"
+            "# Validar contratos de las tools\n"
+            "python scripts/vault_spec_validate.py\n"
+            "\n"
+            "# Validar estructura del vault (notas, frontmatter, CIA)\n"
+            "python scripts/vault_validate.py\n"
+            "```\n"
+            "\n"
+            "## Comandos por sección\n"
+            "\n"
+        )
+        for section, hint in [
+            ("00_System", None),
+            ("01_Projects", "vault_project_overview --project <slug>"),
+            ("02_Observability", "vault_log_error --project <slug> --error <msg>"),
+            ("03_Decisions", "vault_write --folder 03_Decisions --title <adr>"),
+            ("04_Sessions", "vault_write --folder 04_Sessions --title YYYY-MM-DD"),
+            ("05_Patterns", "vault_pattern_save --name <pattern>"),
+            ("06_Diagrams", "vault_diagram_save --project <slug> --type erd"),
+            ("07_Knowledge", "vault_knowledge_save --title <concept>"),
+            ("08_Runbooks", "vault_runbook_save --title <runbook>"),
+            ("09_Infrastructure", "vault_infra_save --project <slug>"),
+            ("10_Migrated", "vault_migrate_docs --source <path>"),
+            ("11_Code", "vault_code_module --project <slug> --file_path <path>"),
+            ("12_Bibliography", "vault_bibliography_save --title <ref> --type web"),
+            ("13_Flows", "vault_flow_save --project <slug> --title <flow>"),
+            ("14_Requirements", "vault_requirement_save --project <slug> --title <req>"),
+            ("15_Tests", "vault_test_save --project <slug> --title <test>"),
+            ("16_AI_Governance", "vault_ai_decision --project <slug> --title <decision>"),
+        ]:
+            if hint:
+                commands_content += f"- **{section}** — `{hint}`\n"
+        commands_content += (
+            "\n"
+            "## Backups\n"
+            "\n"
+            "```bash\n"
+            "# Crear snapshot con Merkle tree para verificación de integridad\n"
+            "python scripts/vault_backup.py\n"
+            "\n"
+            "# Listar backups disponibles\n"
+            "python scripts/vault_backup_list.py\n"
+            "\n"
+            "# Restaurar desde un backup\n"
+            "python scripts/vault_restore.py --name <backup-name>\n"
+            "```\n"
+        )
+        COMMANDS_NOTE.write_text(commands_content, encoding="utf-8")
+
+
 def _parse_frontmatter(content: str) -> Dict[str, Any]:
     meta: Dict[str, Any] = {}
     m = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
@@ -68,16 +271,23 @@ def _collect_notes(section_path: Path, include_subdirs: bool) -> List[Dict[str, 
 
 
 def _breadcrumb(folder_key: str) -> str:
-    """Build navigation breadcrumb for a section or subsection index."""
+    """Build navigation breadcrumb for a section or subsection index.
+
+    AP-21 compliance: NEVER use path-anchored wiki-links like [[folder/index]]
+    in the breadcrumb — Obsidian resolves by stem only, and `index` is a
+    generic stem shared by every section. Use plain-text navigation with a
+    single link to the hub note `00_System/vault-hub.md`, which is the only
+    authoritative entry point.
+    """
     parts = folder_key.split("/")
     if len(parts) == 1:
-        # Top-level section → link to master index only
-        return f"> [[99_Index/index|← Índice Maestro]]"
+        return "> **←** [[vault-hub|Hub]]  ·  [[vault-commands|Comandos]]  ·  _99_Index/index.md_"
     else:
-        # Subsection → link to parent section index + master index
         parent = parts[0]
-        parent_name = safe_wikilink(section_description(parent).split(",")[0][:30])
-        return f"> [[{parent}/index|← {parent}]]  ·  [[99_Index/index|Índice Maestro]]"
+        return (
+            f"> **←** [[vault-hub|Hub]]  ·  [[vault-commands|Comandos]]  "
+            f"·  _99_Index/index.md_  ·  _{parent}/"
+        )
 
 
 def _build_index_content(
@@ -103,15 +313,19 @@ def _build_index_content(
     ]
 
     # Subcarpetas — listed before notes for discoverability
+    # AP-21 compliance: NO path-anchored wiki-links like [[02_Observability/errors/index]].
+    # Obsidian resolves by stem only, and `index` is a generic stem.
+    # Use plain-text path + a separate row pointing to vault-hub for navigation.
     if subdirs:
         lines += ["## Subcarpetas", ""]
-        lines += ["| Subcarpeta | Propósito |", "|---|---|"]
+        lines += ["| Carpeta | Propósito |", "|---|---|"]
         for sub in sorted(subdirs):
             sub_key = sub.replace("\\", "/")
             sub_desc = section_description(sub_key)
-            sub_stem = safe_wikilink(sub_key.split("/")[-1])
-            sub_link = f"[[{sub_key}/index|{sub_stem}]]"
-            lines.append(f"| {sub_link} | {sub_desc} |")
+            sub_name = sub_key.split("/")[-1]
+            lines.append(f"| `{sub_key}/` | {sub_desc} |")
+        lines.append("")
+        lines.append("> Para navegar a una subcarpeta, abre `{folder}/{subcarpeta}/index.md` desde tu editor, o usa el [[vault-hub|Hub]].")
         lines.append("")
 
     if notes:
@@ -123,20 +337,27 @@ def _build_index_content(
         ]
         for n in notes:
             note_path = n["path"].replace("\\", "/")
-            # Build link relative to section root (include subfolder prefix)
+            # AP-21 compliance: stem-only wiki-link, no folder prefix.
             stem = safe_wikilink(Path(note_path).stem)
             title = safe_wikilink(n["title"])
             link = f"[[{stem}|{title}]]"
             lines.append(f"| {link} | {n['type']} | {n['updatedAt']} |")
     else:
+        # Empty section — minimal stub, NO inline bash block. All execution
+        # commands live in `00_System/vault-commands.md` (the centralized
+        # reference). This keeps the section index clean and avoids
+        # duplicating the same command block in 16 places.
         lines += [
             "## Notas",
             "",
-            "_Sección sin notas. Añade la primera con:_",
+            "_Sección sin notas._",
             "",
-            "```bash",
-            f"python scripts/{tool_hint}",
-            "```",
+            f"> **Propósito:** {description}",
+            "",
+            f"Para poblar esta sección consulta la **referencia unificada de comandos** en [[vault-commands|vault-commands]] "
+            f"(entrada _{folder_key}_).",
+            "",
+            f"> **Comando sugerido:** `{tool_hint}`",
             "",
             "Una vez creada la primera nota, este índice se regenera automáticamente.",
         ]
@@ -159,6 +380,15 @@ def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, 
         {"ok": True, "path": "01_Projects/index.md", "noteCount": 12, "is_empty": False,
          "subdirIndexes": [...]}
     """
+    # Ensure the hub notes exist (idempotent — only creates on first call).
+    # This makes the vault self-bootstrapping: a single call to vault_section_index
+    # for any section creates vault-hub.md and vault-commands.md if missing.
+    try:
+        _ensure_hub_notes()
+    except Exception:
+        # hub note creation must never block the indexer
+        pass
+
     section_path = VAULT_ROOT / folder
     if not section_path.exists():
         return {"ok": False, "error": "folder_not_found", "folder": folder}

@@ -48,7 +48,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 
 
-from vault_io import VAULT_ROOT
+from vault_io import VAULT_ROOT, normalize_stem as _normalize
 
 SCRIPTS_DIR = Path(__file__).parent
 
@@ -250,7 +250,13 @@ def _extract_wiki_links(content: str) -> List[str]:
 
 def _normalize(s: str) -> str:
 
-    return s.lower().replace("-", "").replace("_", "")
+    """Normalize a stem for fuzzy comparison.
+
+    Strips: case, dashes, underscores, spaces, dots, and the .md suffix.
+    Matches vault_write._collect_ghost_links normalization so a wiki-link
+    like `[[Mi Proyecto Demo]]` correctly resolves to `mi-proyecto-demo.md`.
+    """
+    return s.lower().replace("-", "").replace("_", "").replace(" ", "").replace(".", "").removesuffix("md")
 
 
 
