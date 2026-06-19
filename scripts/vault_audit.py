@@ -495,6 +495,11 @@ def _detect_broken_links(notes: List[Path], all_stems: Set[str]) -> List[Dict[st
 
         rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
 
+        # Spec/reference files contain wiki-link SYNTAX examples that are
+        # documentation, not real links. Exclude them from broken-link detection.
+        if n.name == "vault-obsidian-architecture.md" or "/scripts/" in rel or rel.startswith("scripts/"):
+            continue
+
         try:
 
             content = n.read_text(encoding="utf-8", errors="ignore")
@@ -535,6 +540,13 @@ def _detect_canonical_shadow(notes: List[Path]) -> List[Dict[str, Any]]:
 
             continue
 
+        rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+
+        # Spec/reference files have the same title by design (it's the spec).
+        # Exclude them from canonical-shadow detection.
+        if n.name == "vault-obsidian-architecture.md" or "/scripts/" in rel or rel.startswith("scripts/"):
+            continue
+
         # Scaffolds (vault_init primers) are templates by design — all have
         # similar titles and structure. Excluding them avoids false positives.
         try:
@@ -548,8 +560,6 @@ def _detect_canonical_shadow(notes: List[Path]) -> List[Dict[str, Any]]:
         fm = _read_frontmatter(n)
 
         title = fm.get("title", n.stem).lower()
-
-        rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
 
         items.append((rel, title))
 
@@ -603,6 +613,13 @@ def _detect_malformed_wikilinks(notes: List[Path]) -> List[Dict[str, Any]]:
 
     for n in notes:
 
+        rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+
+        # Spec/reference files contain unbalanced bracket examples as part
+        # of documenting the syntax. Exclude them from AP-22 detection.
+        if n.name == "vault-obsidian-architecture.md" or "/scripts/" in rel or rel.startswith("scripts/"):
+            continue
+
         try:
 
             content = n.read_text(encoding="utf-8", errors="ignore")
@@ -622,8 +639,6 @@ def _detect_malformed_wikilinks(notes: List[Path]) -> List[Dict[str, Any]]:
         empty = re.findall(r"\[\[\s*\]\]", clean)
 
         if opens != closes or empty:
-
-            rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
 
             malformed.append({
 
@@ -712,6 +727,12 @@ def _detect_empty_indexes() -> List[Dict[str, Any]]:
             name = section_dir.name
 
             if name.startswith(".") or name in ("scripts", ".history", "vault-backups"):
+
+                continue
+
+            # Skip backup directories created by vault_init --clean or
+            # manual copies. These shouldn't be treated as vault sections.
+            if name.endswith(".bak") or ".bak-" in name or name == "vault-sandbox":
 
                 continue
 

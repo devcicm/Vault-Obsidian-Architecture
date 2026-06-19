@@ -17,18 +17,37 @@ def _detect_vault_root() -> Path:
     Priority order:
     1. VAULT_ROOT env var (explicit override)
     2. vault-* subdirectory beside scripts/ (consumer repo layout):
-       - First pass: prefer dirs that already have 00_System/, 99_Index/ or .obsidian/
+       - First pass: prefer dirs that already have 00_System/, 99_Index/ or .obsidian
        - Second pass: accept any vault-* dir (fresh install, nothing initialized yet)
-       vault-backups* dirs are excluded from both passes.
-    3. Parent of scripts/ directory (scripts-inside-vault layout, source repo)
+       vault-backups* AND vault-sandbox* dirs are excluded from both passes
+       (vault-sandbox is a side-effect of the spec-repo fallback, not a real vault).
+    3. scripts/ parent (scripts-inside-vault layout) IF it has vault structure
+       (00_System/01_Projects/etc. directly under it). Previously this fallback
+       only triggered when the parent had vault-obsidian-architecture.md, which
+       caused a bug: any consumer vault that included the spec as a reference
+       doc got misidentified as the spec repo and redirected to vault-sandbox/.
+    4. Spec-repo sandbox: if the parent has vault-obsidian-architecture.md
+       AND no vault structure markers, treat as spec repo and use vault-sandbox/.
     """
     if env := os.environ.get("VAULT_ROOT"):
         return Path(env).resolve()
     project_root = Path(__file__).parent.parent.resolve()
     _MARKERS = {"00_System", "99_Index", ".obsidian"}
+    # Strong vault structure marker — at least 2 of these folders must exist
+    # at the root level for the directory to be considered a vault.
+    _VAULT_MARKERS = {"00_System", "01_Projects", "02_Observability",
+                      "03_Decisions", "99_Index", ".obsidian"}
+    # Exclude vault-sandbox and *.bak from candidates — they're side-effects
+    # of the spec-repo fallback or backups, not real vaults. Excluding them
+    # prevents a chicken-and-egg situation where the old detection created
+    # vault-sandbox/ and the new detection picks it as the vault because it
+    # has 00_System.
     candidates = [
         s for s in sorted(project_root.iterdir())
-        if s.is_dir() and s.name.startswith("vault-") and not s.name.startswith("vault-backups")
+        if s.is_dir() and s.name.startswith("vault-")
+        and not s.name.startswith("vault-backups")
+        and s.name != "vault-sandbox"
+        and not s.name.endswith(".bak")
     ]
     # Prefer candidates that already have vault content (initialized vault)
     for c in candidates:
@@ -37,9 +56,15 @@ def _detect_vault_root() -> Path:
     # Accept any vault-* dir (fresh vault, nothing initialized yet)
     if candidates:
         return candidates[0]
-    # Last resort fallback: parent.parent.
-    # If that path is the spec repo (has vault-obsidian-architecture.md),
-    # redirect vault content to vault-sandbox/ to avoid polluting the spec root.
+    # Check if project_root itself IS a vault (scripts-inside-vault layout).
+    # This is the case when the consumer has 00_System/01_Projects/etc. directly
+    # under the same dir that contains scripts/ — common when a project ships
+    # the spec file as a reference doc and the vault sits at the same level.
+    marker_count = sum(1 for m in _VAULT_MARKERS if (project_root / m).exists())
+    if marker_count >= 2:
+        return project_root
+    # Spec repo fallback: parent has vault-obsidian-architecture.md AND no
+    # vault structure (i.e., this IS the spec repo, not a consumer vault).
     if (project_root / "vault-obsidian-architecture.md").exists():
         sandbox = project_root / "vault-sandbox"
         sandbox.mkdir(exist_ok=True)
