@@ -60,7 +60,7 @@ PROPAGATION_QUEUE = SYSTEM_DIR / "propagation-queue.json"
 
 
 
-SKIP_FOLDERS = {"10_Migrated", "vault-backups", ".history"}
+SKIP_FOLDERS = {"vault-backups", ".history"}
 
 STALE_DAYS = 30
 
@@ -338,6 +338,19 @@ def _detect_orphans(notes: List[Path], backlinks: Dict[str, Set[str]]) -> List[D
 
             continue
 
+        # Scaffolds (vault_init primers) are placeholders by design —
+        # they don't need inbound links. The user is expected to replace
+        # them with real content; the nextActions block in the audit output
+        # reminds them to do so. Excluding scaffolds avoids false-positive
+        # orphan warnings on a freshly initialized vault.
+        try:
+
+            text = n.read_text(encoding="utf-8", errors="replace")
+            if "scaffold: true" in text or "type: primer" in text:
+                continue
+        except Exception:
+            pass
+
         fm = _read_frontmatter(n)
 
         days_old = (now - _note_updated_at(n)).days
@@ -521,6 +534,16 @@ def _detect_canonical_shadow(notes: List[Path]) -> List[Dict[str, Any]]:
         if n.stem.lower() in _EXCLUDED_STEMS:
 
             continue
+
+        # Scaffolds (vault_init primers) are templates by design — all have
+        # similar titles and structure. Excluding them avoids false positives.
+        try:
+
+            text = n.read_text(encoding="utf-8", errors="replace")
+            if "scaffold: true" in text or "type: primer" in text:
+                continue
+        except Exception:
+            pass
 
         fm = _read_frontmatter(n)
 
@@ -723,6 +746,149 @@ def _detect_empty_indexes() -> List[Dict[str, Any]]:
         pass
 
     return empty
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# nextActions helpers — used by vault_audit to prescribe remediation
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Per-section tool hint — mirrors the registry so the suggested command is
+# correct even if the registry changes.
+_SECTION_TOOL_HINT: Dict[str, str] = {
+    "01_Projects":       "vault_project_overview --project <slug> --description '...' --runtime 'Node.js 20'",
+    "02_Observability":  "vault_log_error --project <slug> --error '<msg>'",
+    "03_Decisions":      "vault_write --folder 03_Decisions --title 'ADR-001 <titulo>' --content '...'",
+    "04_Sessions":       "vault_write --folder 04_Sessions --title '$(date +%Y-%m-%d)' --content '...'",
+    "05_Patterns":       "vault_pattern_save --project <slug> --name <patron> --status planificado",
+    "06_Diagrams":       "vault_diagram_save --project <slug> --type erd --content '...'",
+    "07_Knowledge":      "vault_knowledge_save --project <slug> --title <concepto> --category concept",
+    "08_Runbooks":       "vault_runbook_save --project <slug> --title <runbook> --steps '...'",
+    "09_Infrastructure": "vault_infra_save --project <slug> --name <servicio> --type server",
+    "10_Migrated":       "vault_migrate_docs --source <path>",
+    "11_Code":           "vault_code_module --project <slug> --file_path <path> --description '...'",
+    "12_Bibliography":   "vault_bibliography_save --title <ref> --type web --url '...'",
+    "13_Flows":          "vault_flow_save --project <slug> --title <flow> --type workflow",
+    "14_Requirements":   "vault_requirement_save --project <slug> --title 'REQ-001 ...'",
+    "15_Tests":          "vault_test_save --project <slug> --title <test> --type unit",
+    "16_AI_Governance":  "vault_ai_decision --project <slug> --title <decision> --decision_type architecture",
+}
+
+
+def _suggest_command_for_folder(folder: str) -> str:
+    """Return a copy-paste ready command for populating an empty section."""
+    hint = _SECTION_TOOL_HINT.get(folder)
+    if hint:
+        return f"python scripts/{hint}"
+    return f"python scripts/vault_write --folder {folder} --title '<titulo>' --content '...'"
+
+
+def _detect_scaffold_only_sections(content_notes: List[Path]) -> List[str]:
+    """Return sections that contain ONLY a vault_init primer (scaffold:true).
+
+    These sections are at 100/100 thanks to the primer but the user should
+    replace it with real content. Used by nextActions when score == 100.
+    """
+    sections_with_scaffold: Dict[str, bool] = {}
+    sections_with_real: Dict[str, bool] = {}
+    for n in content_notes:
+        rel = n.relative_to(VAULT_ROOT)
+        if not rel.parts:
+            continue
+        section = rel.parts[0]
+        try:
+            text = n.read_text(encoding="utf-8", errors="replace")
+            is_scaffold = "scaffold: true" in text or "type: primer" in text
+        except Exception:
+            is_scaffold = False
+        if is_scaffold:
+            sections_with_scaffold[section] = True
+        else:
+            sections_with_real[section] = True
+    result = []
+    for sec, has_scaffold in sections_with_scaffold.items():
+        if has_scaffold and not sections_with_real.get(sec, False):
+            result.append(sec)
+    return sorted(result)
+
+
+def _get_roadmap_for_populated_vault(content_notes: List[Path]) -> List[Dict[str, Any]]:
+    """When score == 100 AND no scaffolds, suggest what to document NEXT.
+
+    This is the "what to do once everything is green" guidance: documented
+    ADRs, runbooks, requirements, tests, SLOs, etc. Each item is ordered
+    by the value it adds to the vault's coverage of the standard.
+    """
+    by_folder: Dict[str, int] = {}
+    for n in content_notes:
+        rel = n.relative_to(VAULT_ROOT)
+        if rel.parts:
+            by_folder[rel.parts[0]] = by_folder.get(rel.parts[0], 0) + 1
+
+    actions: List[Dict[str, Any]] = []
+    # Progression: once green, the next valuable things to add.
+    if by_folder.get("01_Projects", 0) < 3:
+        actions.append({
+            "priority": "high",
+            "category": "guidance",
+            "description": "Documenta cada proyecto activo con `vault_project_overview` (mínimo 3 proyectos para cobertura significativa).",
+            "command": "python scripts/vault_project_overview.py --project <slug> --description '...' --runtime '...'",
+        })
+    if by_folder.get("03_Decisions", 0) < 2:
+        actions.append({
+            "priority": "high",
+            "category": "guidance",
+            "description": "Registra tus decisiones arquitectónicas (ADRs). Mínimo 2 para mostrar el proceso.",
+            "command": "python scripts/vault_write.py --folder 03_Decisions --title 'ADR-001 ...' --content '## Contexto\\n\\n## Opciones\\n\\n## Decision\\n\\n## Consecuencias'",
+        })
+    if by_folder.get("08_Runbooks", 0) < 1:
+        actions.append({
+            "priority": "medium",
+            "category": "guidance",
+            "description": "Crea al menos un runbook para el procedimiento más crítico (deploy, rollback, incident response).",
+            "command": "python scripts/vault_runbook_save.py --project <slug> --title 'Deploy' --steps '...'",
+        })
+    if by_folder.get("02_Observability", 0) < 1:
+        actions.append({
+            "priority": "medium",
+            "category": "guidance",
+            "description": "Registra SLOs y métricas operacionales con `vault_slo_save` y `vault_log_error`.",
+            "command": "python scripts/vault_slo_save.py --project <slug> --title 'API Availability' --sli 'requests < 500ms' --objective 99.9",
+        })
+    if by_folder.get("14_Requirements", 0) < 1:
+        actions.append({
+            "priority": "medium",
+            "category": "guidance",
+            "description": "Documenta los requerimientos formales (ISO 29148) con trazabilidad a tests y código.",
+            "command": "python scripts/vault_requirement_save.py --project <slug> --title 'REQ-001 ...'",
+        })
+    if by_folder.get("15_Tests", 0) < 1:
+        actions.append({
+            "priority": "medium",
+            "category": "guidance",
+            "description": "Registra los casos de test formales (ISO 29119) con trazabilidad a requirements.",
+            "command": "python scripts/vault_test_save.py --project <slug> --title 'Test: ...' --type unit",
+        })
+    if by_folder.get("11_Code", 0) < 1:
+        actions.append({
+            "priority": "medium",
+            "category": "guidance",
+            "description": "Documenta tus módulos de código siguiendo IEEE 1016 con `vault_code_module --tag-source` para inyectar trazabilidad bidireccional.",
+            "command": "python scripts/vault_code_module.py --project <slug> --file_path <path> --description '...' --tag-source",
+        })
+    if by_folder.get("16_AI_Governance", 0) < 1 and len(content_notes) > 20:
+        actions.append({
+            "priority": "low",
+            "category": "guidance",
+            "description": "Una vez que el vault tenga >20 notas, registra decisiones de agentes IA (ISO 42001) en `16_AI_Governance/`.",
+            "command": "python scripts/vault_ai_decision.py --project <slug> --title '<decision>' --decision_type architecture",
+        })
+    if not actions:
+        actions.append({
+            "priority": "low",
+            "category": "guidance",
+            "description": "Vault maduro. Siguiente: ejecuta `python scripts/vault_backup.py` para crear un snapshot con Merkle tree, y `python scripts/vault_drift_detect.py --path . --project <slug> --mode report` para detectar drift desde el último backup.",
+        })
+    return actions
 
 
 
@@ -1227,6 +1393,95 @@ def vault_audit(project: Optional[str] = None, refresh_dq: bool = False) -> Dict
         "summary": " · ".join(summary_parts),
 
     }
+
+    # nextActions: lista prescriptiva y ejecutable de lo que el agente (o el
+    # humano) debe hacer para mantener o recuperar 100/100. Cada acción tiene:
+    #   - priority: high | medium | low
+    #   - category: empty_section | broken_link | malformed_wikilink | orphan |
+    #               stale | scaffold_present | guidance
+    #   - description: qué pasa y por qué importa
+    #   - command: comando CLI sugerido (si aplica) — copy-paste ready
+    #   - norm: AP-XX al que aplica
+    #
+    # Esto convierte el audit de "diagnóstico" a "agente prescriptivo" — el
+    # usuario (o un agente LLM leyendo el output) sabe exactamente qué ejecutar.
+    next_actions: List[Dict[str, Any]] = []
+
+    # Empty sections: sugerir el comando del tool owner
+    for e in empty_indexes:
+        folder = e["folder"]
+        next_actions.append({
+            "priority": "high" if folder in ("01_Projects", "00_System") else "medium",
+            "category": "empty_section",
+            "folder": folder,
+            "description": f"{folder} no tiene notas — la sección existe pero su contenido está vacío.",
+            "command": _suggest_command_for_folder(folder),
+            "norm": "AP-03",
+        })
+
+    # Broken links: 3 opciones
+    for bl in broken_links:
+        target = bl.get("link", "")
+        src = bl.get("from", "")
+        # build a clean slug from the target for the suggested filename
+        slug = target.lower().replace(" ", "-")
+        next_actions.append({
+            "priority": "high",
+            "category": "broken_link",
+            "from": src,
+            "link": target,
+            "description": f"Wiki-link [[{target}]] en `{src}` no resuelve a ninguna nota del vault.",
+            "remediation_options": [
+                f"Crear la nota destino: `python scripts/vault_write.py --folder \"<carpeta>\" --title \"{target}\" --content \"...\"`",
+                f"Editar `{src}` y corregir el link a una nota que sí exista.",
+                f"Eliminar el link de `{src}` si ya no aplica.",
+            ],
+            "norm": "AP-14",
+        })
+
+    # Malformed wikilinks
+    for ml in malformed_wikilinks:
+        next_actions.append({
+            "priority": "high",
+            "category": "malformed_wikilink",
+            "from": ml.get("from", ""),
+            "description": f"Corchetes desbalanceados o wiki-link vacío en `{ml.get('from', '')}`.",
+            "command": f"Revisar `{ml.get('from', '')}` y corregir la sintaxis `[[...]]`.",
+            "norm": "AP-22",
+        })
+
+    # Orphans: notas sin backlinks
+    for orph in orphans:
+        next_actions.append({
+            "priority": "low",
+            "category": "orphan",
+            "path": orph.get("path", ""),
+            "description": f"Nota `{orph.get('path', '')}` no tiene wiki-links entrantes — está huérfana.",
+            "command": "Añadir un wiki-link desde otra nota del vault, o marcar la nota como reference (no necesita backlinks).",
+            "norm": "AP-13",
+        })
+
+    # Guidance cuando score == 100: qué documentar primero (siguiente paso)
+    if score >= 100:
+        # Detectar secciones que aún tienen solo el primer scaffold
+        # para sugerir reemplazo por contenido real
+        scaffold_reminders = _detect_scaffold_only_sections(content_notes)
+        for sec in scaffold_reminders:
+            next_actions.append({
+                "priority": "high",
+                "category": "scaffold_present",
+                "folder": sec,
+                "description": f"{sec} solo tiene el primer scaffold — listo para reemplazar con contenido real.",
+                "command": _suggest_command_for_folder(sec),
+                "norm": "CN-01",
+            })
+        if not next_actions:
+            # Vault is at 100/100 and fully populated — provide a roadmap
+            next_actions.extend(_get_roadmap_for_populated_vault(content_notes))
+
+    if next_actions:
+        result["nextActions"] = next_actions
+        result["nextActionsCount"] = len(next_actions)
 
 
 
