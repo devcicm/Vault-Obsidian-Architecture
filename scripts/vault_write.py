@@ -70,6 +70,8 @@ def _check_content_gate(content: str, folder: str) -> bool:
     - ≥ 3 real lines (excluding blank, TODO-only, lone-dashes, lone-headings)
     - ≥ 10 real words across those lines (reject lorem-ipsum stubs and 1-word lines)
     - No line longer than 800 chars (reject minified blobs that hide emptiness)
+    - Bracket balance: opens == closes for [[...]] (AP-24 prevention)
+    - No empty [[]] wiki-links (AP-22 prevention, mild)
 
     Previous version (3 real lines) allowed trivial notes like:
         "ok
@@ -102,6 +104,23 @@ def _check_content_gate(content: str, folder: str) -> bool:
     # Reject minified blobs
     if any(len(l) > 800 for l in real_lines):
         return False
+    # AP-24 prevention: reject notes with bracket imbalance in [[...]] patterns.
+    # Strip code blocks + inline code so literal `[[` in regex examples don't trigger.
+    clean = re.sub(r"```[\s\S]*?```", "", content)
+    clean = re.sub(r"`[^`\n]+`", "", clean)
+    opens = len(re.findall(r"\[\[", clean))
+    closes = len(re.findall(r"\]\]", clean))
+    if opens != closes:
+        return False
+    # AP-22 prevention (soft): reject notes with empty [[]] wiki-links.
+    # These pass the strict gate otherwise but pollute the search index with
+    # literal `[[]]` as text. Allow them only in spec/example documentation
+    # where they're meaningful; for regular notes, reject.
+    if folder.startswith("00_System"):
+        # 00_System holds meta docs that legitimately show syntax examples
+        return True
+    if re.search(r"\[\[\s*\]\]", clean):
+        return False
     return True
 
 
@@ -129,6 +148,25 @@ def _content_gate_reason(content: str, folder: str) -> Optional[str]:
         return f"only {len(words)} real word(s) (need ≥10)"
     if any(len(l) > 800 for l in real_lines):
         return "line longer than 800 chars (minified blob?)"
+    # AP-24 / AP-22 reasons — checked AFTER basic quality gates
+    clean = re.sub(r"```[\s\S]*?```", "", content)
+    clean = re.sub(r"`[^`\n]+`", "", clean)
+    opens = len(re.findall(r"\[\[", clean))
+    closes = len(re.findall(r"\]\]", clean))
+    if opens != closes:
+        diff = abs(opens - closes)
+        which = "open" if opens > closes else "close"
+        return (
+            f"AP-24: bracket imbalance ({opens} `[[` vs {closes} `]]`, "
+            f"{diff} stray `{which}` bracket(s)). "
+            "Every `[[` needs a matching `]]`."
+        )
+    if re.search(r"\[\[\s*\]\]", clean):
+        n = len(re.findall(r"\[\[\s*\]\]", clean))
+        return (
+            f"AP-22: {n} empty `[[]]` wiki-link(s). "
+            "Empty wiki-links pollute the search index — remove them or replace with real targets."
+        )
     return None
 
 

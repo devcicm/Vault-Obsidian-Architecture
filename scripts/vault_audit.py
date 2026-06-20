@@ -102,6 +102,9 @@ def _is_skipped(path: Path) -> bool:
 
     path_str = str(path.relative_to(VAULT_ROOT))
 
+    if ".vault-fix-backup-" in path_str:
+        return True
+
     return any(skip in path_str for skip in SKIP_FOLDERS)
 
 
@@ -641,52 +644,217 @@ def _detect_canonical_shadow(notes: List[Path]) -> List[Dict[str, Any]]:
 
 def _detect_malformed_wikilinks(notes: List[Path]) -> List[Dict[str, Any]]:
 
-    """AP-22: detect notes with unbalanced [[ ]] or empty [[]] wiki-links."""
+    """AP-22 / AP-24: detect notes with malformed wiki-link brackets.
 
-    malformed = []
+    Returns a list of findings with:
+      - path: relative path of the offending note
+      - norm_code: AP-22 (empty [[]]) or AP-24 (imbalance: opens != closes,
+        nested brackets, inverted, or stray brackets)
+      - kind: empty | imbalance_open | imbalance_close | nested | inverted
+      - opens / closes: bracket counts (after stripping code blocks)
+      - snippets: list of {line, text} with the offending context (first 3)
+      - examples: short strings demonstrating each problem (first 3)
+
+    Excluded:
+      - vault-obsidian-architecture.md (the spec itself documents [[...]] syntax)
+      - /scripts/* (tools contain regex examples that legitimately use brackets)
+      - .bak backups (side-effects of upgrades)
+      - sandbox directories (test fixtures)
+    """
+
+    findings: List[Dict[str, Any]] = []
+
+    # Patterns
+    RE_OPEN = re.compile(r"\[\[")
+    RE_CLOSE = re.compile(r"\]\]")
+    RE_EMPTY = re.compile(r"\[\[\s*\]\]")
+    RE_NESTED_OPEN = re.compile(r"\[\[\[\[")  # [[[[ (4+ opens in a row)
+    RE_NESTED_CLOSE = re.compile(r"\]\]\]\]")  # ]]]] (4+ closes in a row)
+    # NOTE: "inverted" detection (]] … [[) is done via stack-based scanning
+    # below — a naive regex here would false-positive on legitimate wiki-links
+    # where `]]` from one link precedes `[[` of another link on a later line.
 
     for n in notes:
 
         rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
 
         # Spec/reference files contain unbalanced bracket examples as part
-        # of documenting the syntax. Exclude them from AP-22 detection.
-        if n.name == "vault-obsidian-architecture.md" or "/scripts/" in rel or rel.startswith("scripts/"):
+        # of documenting the syntax. Exclude them.
+        if (
+            n.name == "vault-obsidian-architecture.md"
+            or "/scripts/" in rel
+            or rel.startswith("scripts/")
+            or ".bak" in rel
+            or ".vault-fix-backup-" in rel
+            or "vault-sandbox" in rel
+        ):
             continue
 
         try:
-
             content = n.read_text(encoding="utf-8", errors="ignore")
-
         except Exception:
-
             continue
 
+        # Strip code blocks and inline code so we don't count regex examples
         clean = re.sub(r"```[\s\S]*?```", "", content)
+        clean = re.sub(r"`[^`\n]+`", "", clean)
 
-        clean = re.sub(r"`[^`]+`", "", clean)
+        opens = len(RE_OPEN.findall(clean))
+        closes = len(RE_CLOSE.findall(clean))
+        empty_matches = list(RE_EMPTY.finditer(clean))
+        nested_open = list(RE_NESTED_OPEN.finditer(clean))
+        nested_close = list(RE_NESTED_CLOSE.finditer(clean))
 
-        opens = len(re.findall(r"\[\[", clean))
+        # Stack-based detection of stray closes (inverted order) and unclosed
+        # opens. More reliable than a regex pattern across the full text,
+        # which would false-positive on legitimate links where `]]` from one
+        # link precedes `[[` of another link on a later line.
+        stack_depth = 0
+        stray_closes = 0
+        stray_close_examples: List[str] = []
+        i = 0
+        while i < len(clean):
+            if clean[i:i+2] == "[[":
+                stack_depth += 1
+                i += 2
+            elif clean[i:i+2] == "]]":
+                if stack_depth == 0:
+                    stray_closes += 1
+                    start = max(0, i - 12)
+                    end = min(len(clean), i + 14)
+                    stray_close_examples.append(clean[start:end].replace("\n", " "))
+                else:
+                    stack_depth -= 1
+                i += 2
+            else:
+                i += 1
+        leftover_opens = stack_depth
 
-        closes = len(re.findall(r"\]\]", clean))
+        # Detect when an imbalance is fully resolvable by nested-collapse fixes
+        # (so we don't false-block apply mode for fixable pathologies).
+        resolvable = (
+            leftover_opens <= len(nested_open) * 2
+            and stray_closes <= len(nested_close) * 2
+        )
 
-        empty = re.findall(r"\[\[\s*\]\]", clean)
+        # Collect all bracket problems found in this note (filled below).
+        problems: List[Dict[str, Any]] = []
 
-        if opens != closes or empty:
-
-            malformed.append({
-
-                "path": rel,
-
-                "opens": opens,
-
-                "closes": closes,
-
-                "empty_links": len(empty),
-
+        # AP-22: empty [[]] (no info — safe to auto-fix)
+        if empty_matches:
+            examples = [m.group(0) for m in empty_matches[:3]]
+            problems.append({
+                "kind": "empty",
+                "norm_code": "AP-22",
+                "count": len(empty_matches),
+                "examples": examples,
+                "auto_fixable": True,
+                "fix_hint": "Eliminar `[[]]` (vacío sin info)",
             })
 
-    return malformed
+        # AP-24: nested [[ [[ — auto-fixable (collapse)
+        if nested_open:
+            examples = [m.group(0) for m in nested_open[:3]]
+            problems.append({
+                "kind": "nested_open",
+                "norm_code": "AP-24",
+                "count": len(nested_open),
+                "examples": examples,
+                "auto_fixable": True,
+                "fix_hint": "Colapsar `[[[[` → `[[` (dobles corchetes anidados)",
+            })
+
+        # AP-24: nested ]] ]] — auto-fixable (collapse)
+        if nested_close:
+            examples = [m.group(0) for m in nested_close[:3]]
+            problems.append({
+                "kind": "nested_close",
+                "norm_code": "AP-24",
+                "count": len(nested_close),
+                "examples": examples,
+                "auto_fixable": True,
+                "fix_hint": "Colapsar `]]]]` → `]]` (dobles corchetes anidados)",
+            })
+
+        # AP-24: inverted ]] [[ detected via stack (manual review when unresolvable)
+        if stray_closes > 0 and not resolvable:
+            problems.append({
+                "kind": "inverted",
+                "norm_code": "AP-24",
+                "count": stray_closes,
+                "examples": stray_close_examples[:3],
+                "auto_fixable": False,
+                "fix_hint": "Orden invertido `]]…[[` (stray close sin open previo). Probable copy-paste mal pegado.",
+            })
+        elif stray_closes > 0 and resolvable:
+            problems.append({
+                "kind": "inverted_resolvable",
+                "norm_code": "AP-24",
+                "count": stray_closes,
+                "examples": stray_close_examples[:3],
+                "auto_fixable": True,
+                "fix_hint": "Stray closes se resolverán al colapsar `]]]]` con nested_close",
+            })
+
+        # AP-24: leftover opens at EOF (manual review when unresolvable)
+        if leftover_opens > 0 and not resolvable:
+            problems.append({
+                "kind": "unclosed_open",
+                "norm_code": "AP-24",
+                "count": leftover_opens,
+                "auto_fixable": False,
+                "fix_hint": f"{leftover_opens} `[[` sin cerrar al final del texto",
+            })
+        elif leftover_opens > 0 and resolvable:
+            problems.append({
+                "kind": "unclosed_open_resolvable",
+                "norm_code": "AP-24",
+                "count": leftover_opens,
+                "auto_fixable": True,
+                "fix_hint": "Opens sin cerrar se resolverán al colapsar `[[[[` con nested_open",
+            })
+
+        if not problems:
+            continue
+
+        # Collect snippets with line + context for the first 3 problems
+        snippets: List[Dict[str, Any]] = []
+        for prob in problems[:3]:
+            pattern_str = prob.get("examples", [""])
+            if not pattern_str or pattern_str == [""]:
+                # For imbalance, find the first stray bracket
+                if prob["kind"] in ("imbalance_open", "imbalance_close"):
+                    target = "[[" if prob["kind"] == "imbalance_open" else "]]"
+                    for i, line in enumerate(content.split("\n"), start=1):
+                        if target in line:
+                            snippets.append({"line": i, "text": line.strip()[:160]})
+                            break
+            else:
+                first_ex = prob["examples"][0]
+                for i, line in enumerate(content.split("\n"), start=1):
+                    if first_ex in line:
+                        snippets.append({"line": i, "text": line.strip()[:160]})
+                        break
+
+        # Pick primary norm_code (AP-24 wins over AP-22 if both present)
+        primary_norm = "AP-24" if any(p["norm_code"] == "AP-24" for p in problems) else "AP-22"
+        kinds = sorted({p["kind"] for p in problems})
+        counts = {p["kind"]: p["count"] for p in problems}
+
+        findings.append({
+            "path": rel,
+            "from": rel,  # alias for consistency with brokenLinks output
+            "norm_code": primary_norm,
+            "kinds": kinds,
+            "counts": counts,
+            "opens": opens,
+            "closes": closes,
+            "auto_fixable": all(p["auto_fixable"] for p in problems),
+            "snippets": snippets,
+            "problems": problems,
+        })
+
+    return findings
 
 
 
@@ -1337,7 +1505,12 @@ def vault_audit(project: Optional[str] = None, refresh_dq: bool = False) -> Dict
 
     score -= min(10, len(cross_folder_dupes) * 3)
 
-    score -= min(20, len(malformed_wikilinks) * 5)
+    # AP-22 (empty [[]]) penaliza menos que AP-24 (imbalance real).
+    # Auto-fixables tienen penalización baja; imbalance real penaliza más.
+    ap22_count = sum(1 for m in malformed_wikilinks if m.get("norm_code") == "AP-22")
+    ap24_count = sum(1 for m in malformed_wikilinks if m.get("norm_code") == "AP-24")
+    score -= min(5, ap22_count * 2)  # AP-22 leve (vacíos sin info)
+    score -= min(15, ap24_count * 5)  # AP-24 grave (brackets rotos)
 
     score -= min(10, len(empty_indexes) * 2)
 
@@ -1389,7 +1562,14 @@ def vault_audit(project: Optional[str] = None, refresh_dq: bool = False) -> Dict
 
     if malformed_wikilinks:
 
-        summary_parts.append(f"{len(malformed_wikilinks)} corchetes AP-22")
+        ap22_count = sum(1 for m in malformed_wikilinks if m.get("norm_code") == "AP-22")
+        ap24_count = sum(1 for m in malformed_wikilinks if m.get("norm_code") == "AP-24")
+        parts = []
+        if ap22_count:
+            parts.append(f"{ap22_count} AP-22")
+        if ap24_count:
+            parts.append(f"{ap24_count} AP-24")
+        summary_parts.append(f"{len(malformed_wikilinks)} brackets rotos ({', '.join(parts)})")
 
     if empty_indexes:
 
@@ -1441,7 +1621,11 @@ def vault_audit(project: Optional[str] = None, refresh_dq: bool = False) -> Dict
 
             "AP-18": "Cross-folder content duplication",
 
-            "AP-22": "Bracket sanity — corchetes desbalanceados o vacíos",
+            "AP-22": "Bracket sanity — wiki-links vacíos [[]]",
+
+            "AP-23": "Note complexity ceiling — nota demasiado larga",
+
+            "AP-24": "Bracket imbalance — corchetes sin pareja, anidados o invertidos",
 
         },
 
@@ -1494,16 +1678,44 @@ def vault_audit(project: Optional[str] = None, refresh_dq: bool = False) -> Dict
             "norm": "AP-14",
         })
 
-    # Malformed wikilinks
+    # Malformed wikilinks (AP-22 + AP-24)
     for ml in malformed_wikilinks:
-        next_actions.append({
-            "priority": "high",
-            "category": "malformed_wikilink",
-            "from": ml.get("from", ""),
-            "description": f"Corchetes desbalanceados o wiki-link vacío en `{ml.get('from', '')}`.",
-            "command": f"Revisar `{ml.get('from', '')}` y corregir la sintaxis `[[...]]`.",
-            "norm": "AP-22",
-        })
+        kinds = ml.get("kinds", [])
+        auto_fixable = ml.get("auto_fixable", False)
+        norm = ml.get("norm_code", "AP-22")
+        path = ml.get("from", ml.get("path", ""))
+        if auto_fixable:
+            cmd = f"python scripts/vault_fix_brackets.py --apply {path}"
+            desc_kind = ", ".join(kinds)
+            next_actions.append({
+                "priority": "medium",
+                "category": "malformed_wikilink",
+                "from": path,
+                "kinds": kinds,
+                "description": (
+                    f"Brackets auto-arreglables ({desc_kind}) en `{path}`. "
+                    "Ejecutar fix sin riesgo."
+                ),
+                "command": cmd,
+                "norm": norm,
+            })
+        else:
+            snippet = ""
+            if ml.get("snippets"):
+                s = ml["snippets"][0]
+                snippet = f" Línea {s['line']}: `{s['text']}`."
+            next_actions.append({
+                "priority": "high",
+                "category": "malformed_wikilink",
+                "from": path,
+                "kinds": kinds,
+                "description": (
+                    f"Brackets imbalanceados ({', '.join(kinds)}) en `{path}`."
+                    f"{snippet} Revisar manualmente — fix automático NO seguro."
+                ),
+                "command": f"Revisar `{path}` y corregir `[[` / `]]` huérfanos.",
+                "norm": norm,
+            })
 
     # Orphans: notas sin backlinks
     for orph in orphans:

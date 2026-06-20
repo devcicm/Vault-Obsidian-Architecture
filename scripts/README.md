@@ -1,8 +1,8 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture v34**. Implementan las 68 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad.
+Scripts Python del estándar **Vault Obsidian Architecture v34**. Implementan las 69 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad.
 
-- **84 archivos** — 68 tools activas + 5 deprecadas + 11 internas/meta + `vault_errors.py`
+- **85 archivos** — 69 tools activas + 5 deprecadas + 11 internas/meta + `vault_errors.py`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
 - **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault (`scripts/` con 00_System al lado); excluye automáticamente `vault-sandbox/` y `*.bak` para evitar loops
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
@@ -46,6 +46,7 @@ Scripts Python del estándar **Vault Obsidian Architecture v34**. Implementan la
 | [Grupo 25 — Propagación](#grupo-25--propagación) | vault_impact, vault_propagate |
 | [Grupo 26 — Tokens](#grupo-26--tokens) | vault_tokens, vault_token_counter, vault_token_service |
 | [Grupo 27 — Session Delta y Tags](#grupo-27--session-delta-y-tags) | vault_delta, vault_tags |
+| [Grupo 33 — Corrección automática](#grupo-33--corrección-automática) | vault_fix_brackets |
 | [Observabilidad de Tools](#observabilidad-de-tools) | vault_errors |
 | [Utilidades internas](#utilidades-internas) | vault_index, vault_dataset, vault_io, vault_link_safety |
 | [Deprecadas](#deprecadas) | vault_create, vault_migrate, vault_reorganize, vault_tools, vault_render |
@@ -304,6 +305,61 @@ Genera `99_Index/graph.json` con nodos (notas), aristas (wiki-links), orphans y 
 python vault_graph.py
 python vault_graph.py --project mi-api
 ```
+
+---
+
+## Grupo 33 — Corrección automática
+
+Tool companion de `vault_audit`. Detecta y arregla automáticamente las pathologies de corchetes en wiki-links (`AP-22` empty `[[]]`, `AP-24` nested/inverted/imbalance) que el audit reporta en `issues.malformedWikilinks[]`. El auto-fix es seguro: solo toca las patologías reversibles y deja backup atómico en `VAULT_ROOT/.vault-fix-backup-YYYYMMDD-HHMMSS/` antes de modificar nada.
+
+### `vault_fix_brackets.py`
+
+Detecta y (opcionalmente) corrige brackets malformados en wiki-links.
+
+```bash
+# Dry-run: detecta y reporta qué arreglaría (default)
+python vault_fix_brackets.py
+
+# Aplica los auto-fixes seguros (con backup automático)
+python vault_fix_brackets.py --apply
+
+# Solo audita una nota o carpeta específica
+python vault_fix_brackets.py --path "02_Observability/errors/foo.md"
+
+# Solo corrige un tipo de pathology
+python vault_fix_brackets.py --only empty --apply
+python vault_fix_brackets.py --only nested --apply
+
+# Incluye el sandbox de tests en el escaneo (default: excluido)
+python vault_fix_brackets.py --include-sandbox
+```
+
+**Kinds detectados:**
+
+| Kind | Norm | Auto-fixable | Qué hace |
+|---|---|---|---|
+| `empty` | AP-22 | ✅ | `[[]]` / `[[ ]]` → eliminado |
+| `nested_open` | AP-24 | ✅ | `[[[[` → `[[` (colapsa anidados) |
+| `nested_close` | AP-24 | ✅ | `]]]]` → `]]` (colapsa anidados) |
+| `inverted` | AP-24 | ❌ | `]]…[[` orden invertido, requiere revisión manual |
+| `unclosed_open` | AP-24 | ❌ | `[[` sin cerrar al EOF, requiere revisión manual |
+| `inverted_resolvable` | AP-24 | ✅ | Stray closes que se resuelven al colapsar nested |
+| `unclosed_open_resolvable` | AP-24 | ✅ | Opens sin cerrar que se resuelven al colapsar nested |
+
+**Exclusiones automáticas:**
+- `vault-obsidian-architecture.md` (el spec documenta la sintaxis `[[...]]`)
+- `scripts/` (los tools contienen regex examples con brackets legítimos)
+- `*.bak` (backups de upgrades)
+- `vault-sandbox/` (test fixtures, requiere `--include-sandbox`)
+- `.vault-fix-backup-*` (backups propios del fix)
+
+**Garantías de seguridad:**
+- Solo modifica notas dentro de `VAULT_ROOT` (path traversal bloqueado por `vault_io.assert_within_vault`)
+- Backup atómico en `.vault-fix-backup-YYYYMMDD-HHMMSS/` antes de cada escritura
+- Solo aplica cambios a notas marcadas como `auto_fixable: true` en el dry-run
+- El kind `imbalance_*` NUNCA se auto-arregla — siempre requiere revisión manual
+
+**Relación con `vault_audit`:** el bloque `nextActions` del audit ahora incluye `command: "python scripts/vault_fix_brackets.py --apply <path>"` para cada nota auto-fixeable, y `command: "Revisar <path>..."` para las que requieren revisión manual. El fix-tool y el audit comparten los mismos patrones de detección (`RE_EMPTY`, `RE_NESTED_*`, stack-based walk).
 
 ---
 

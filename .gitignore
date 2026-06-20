@@ -26,3 +26,6 @@ vault-sandbox/
 99_Index/
 .history/
 vault-backups/
+.vault-fix-backup-*/
+.claude/
+debug_brackets.py

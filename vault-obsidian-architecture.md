@@ -290,7 +290,7 @@ vault-backups/
 
 ---
 
-## Las 68 Tools del Vault — Referencia Completa
+## Las 69 Tools del Vault — Referencia Completa
 
 > **Tools vs Skills:** las 68 **tools** son funciones atómicas registradas en el harness — cada una hace exactamente una cosa. Una **skill** es un protocolo de múltiples pasos (secuencia de tools + lógica de decisión) que el agente ejecuta para un objetivo complejo. Las skills no son tools adicionales — son instrucciones de orquestación referenciadas en los casos de uso concretos (ej: `security-auditor`, `vault-migrator`). Un agente puede implementar skills como instrucciones en su system prompt o como flujos de trabajo.
 
@@ -3091,18 +3091,18 @@ Registry `@norm`: `00_System/code-tag-registry.json` — mapea `código → {nam
 
 | Extensiones | `@vault:` | `@norm` |
 |---|---|---|
-| `.cs .ts .js .java .go .cpp .swift .rs` | `// @vault: 11_Code/proj/mod  — Título` | `// @norm AP-22     — Bracket sanity` |
-| `.py .rb .sh .yml .yaml` | `# @vault: 11_Code/proj/mod  — Título` | `# @norm AP-22     — Bracket sanity` |
-| `.html .xml .svg` | `<!-- @vault: 11_Code/proj/mod  — Título -->` | `<!-- @norm AP-22 — Bracket sanity -->` |
-| `.css .scss .sass` | `/* @vault: 11_Code/proj/mod  — Título */` | `/* @norm AP-22   — Bracket sanity */` |
-| `.sql` | `-- @vault: 11_Code/proj/mod  — Título` | `-- @norm AP-22   — Bracket sanity` |
+| `.cs .ts .js .java .go .cpp .swift .rs` | `// @vault: 11_Code/proj/mod  — Título` | `// @norm AP-24     — Bracket imbalance` |
+| `.py .rb .sh .yml .yaml` | `# @vault: 11_Code/proj/mod  — Título` | `# @norm AP-24     — Bracket imbalance` |
+| `.html .xml .svg` | `<!-- @vault: 11_Code/proj/mod  — Título -->` | `<!-- @norm AP-24 — Bracket imbalance -->` |
+| `.css .scss .sass` | `/* @vault: 11_Code/proj/mod  — Título */` | `/* @norm AP-24   — Bracket imbalance */` |
+| `.sql` | `-- @vault: 11_Code/proj/mod  — Título` | `-- @norm AP-24   — Bracket imbalance` |
 | `.md` | — no aplica | ⚠ usar `vault_norms --apply` (frontmatter `norm_refs`) |
 
 **Cabecera canónica resultado en código:**
 ```typescript
 // @vault: 11_Code/my-api/queue-service  — QueueService.ts (service)
 // @norm  cr-0989    — Cola de prioridad FIFO con pesos
-// @norm  AP-22      — Bracket sanity — corchetes desbalanceados o vacíos
+// @norm  AP-24      — Bracket imbalance — corchetes sin pareja, anidados o invertidos
 import { Injectable } from '@nestjs/common';
 ```
 
@@ -3940,20 +3940,22 @@ proyecto/
 
 ---
 
-### AP-22 — Bracket sanity — corchetes desbalanceados o vacíos
+### AP-22 — Bracket sanity — wiki-links vacíos `[[]]`
 
-**Síntoma:** Contenido con `[[` sin su `]]` de cierre, o `[[]]` vacíos. El parser de wiki-links rompe el grafo y el agente puede procesar links incompletos como texto literal.
+**Síntoma:** Notas contienen `[[]]` o `[[ ]]` (sin target entre los corchetes). El search-index guarda la cadena literal `[[]]` como texto vacío, contaminando los resultados de `vault_search` y rompiendo el grafo de backlinks.
 
-**Por qué ocurre:** Edición manual del frontmatter o del cuerpo de la nota; pegado de texto con corchetes que no son wiki-links; template incompleto con `[[...]]` de placeholder.
+**Por qué ocurre:** Placeholders no reemplazados por el agente (ej: `[[nombre-de-sección]]` dejado como esqueleto); copy-paste de snippets donde el target se borró pero los corchetes quedaron.
 
-**Señal de alarma:** `vault_write` rechaza con `error_code: malformed_wikilinks`. `vault_audit()` reporta en `issues.malformedWikilinks[]` con `norm_code: "AP-22"`.
+**Señal de alarma:** `vault_write` rechaza con `error_code: malformed_wikilinks` y razón `"AP-22: N empty [[]] wiki-link(s)"`. `vault_audit()` reporta en `issues.malformedWikilinks[]` con `norm_code: "AP-22"` y `kind: "empty"`.
 
-**Regla:** Cada `[[` debe tener exactamente su `]]` de cierre. `[[]]` vacíos están prohibidos. La detección se hace sobre el contenido limpio (excluye bloques de código y code spans).
+**Regla:** `[[]]` y `[[ ]]` están prohibidos en notas de cualquier carpeta **excepto `00_System/`** (que contiene documentación meta que muestra sintaxis `[[...]]` como ejemplo). Cada `[[` debe apuntar a un target real (existente o por crear).
+
+**Severidad:** Leve. Penaliza −2 por nota afectada (cap −5).
 
 **Prevención:**
-- Guard en `vault_write` (`_check_bracket_balance()`): rechaza si `opens ≠ closes` o hay `[[]]` — error `malformed_wikilinks`
-- `vault_audit._detect_malformed_wikilinks()`: escanea notas existentes; penaliza −5 por nota afectada (cap −20)
-- `vault_write` también advierte (no-bloqueante) con `ghost_links: [...]` cuando `[[target]]` existe pero la nota no existe en el vault
+- Guard en `vault_write._check_content_gate`: rechaza si hay `[[\s*]]` (excepto `00_System/`)
+- `vault_audit._detect_malformed_wikilinks`: emite finding con `norm_code: "AP-22"`, `kind: "empty"`, `auto_fixable: True`
+- **`vault_fix_brackets.py --only empty --apply`** (Grupo 33 — Corrección automática): elimina los `[[]]` y colapsa espacios adyacentes. Backup atómico antes de modificar.
 
 ---
 
@@ -3971,6 +3973,37 @@ proyecto/
 - `vault_write` detecta y advierte (no bloquea) con `ap23_warning`
 - Aplicar PAT-1 (canonical source anchoring): fragmentar por dominio cohesivo, no por tamaño arbitrario
 - Umbral: 500 líneas reales (sin frontmatter)
+
+---
+
+### AP-24 — Bracket imbalance — corchetes sin pareja, anidados o invertidos
+
+**Síntoma:** Notas con `[[` sin su `]]` correspondiente, `[[[[` o `]]]]` (dobles anidados), u orden invertido `]]…[[` (stray close sin open previo). El parser de wiki-links no puede reconstruir el link; `vault_search` devuelve `[[a]]` como link a una nota llamada literalmente `a`, y los huérfanos no se detectan correctamente.
+
+**Por qué ocurre:** Edición manual con copy-paste mal pegado; agente que escribe `[[a]` y se queda corto; templates con placeholders `[[[` abiertos sin cerrar; markdown anidado como `[[a [[b]] c]]` que confunde al parser.
+
+**Señal de alarma:** `vault_write` rechaza con `error_code: malformed_wikilinks` y razón `"AP-24: bracket imbalance (X [[ vs Y ]])"`. `vault_audit()` reporta en `issues.malformedWikilinks[]` con `norm_code: "AP-24"` y `kinds` específicos.
+
+**Kinds detectados (stack-based walk sobre contenido limpio):**
+
+| Kind | Patrón | Auto-fixable | Acción |
+|---|---|---|---|
+| `nested_open` | `[[[[` (4+ opens consecutivos) | ✅ | Colapsar a `[[` |
+| `nested_close` | `]]]]` (4+ closes consecutivos) | ✅ | Colapsar a `]]` |
+| `inverted` | `]]…[[` (stray close sin open previo) | ❌ | Revisión manual |
+| `unclosed_open` | `[[` sin cerrar al EOF | ❌ | Revisión manual |
+| `inverted_resolvable` | `]]` stray que se resuelve al colapsar nested_close | ✅ | Aplicar nested_close primero |
+| `unclosed_open_resolvable` | `[[` sin cerrar que se resuelve al colapsar nested_open | ✅ | Aplicar nested_open primero |
+
+**Regla:** Cada `[[` debe tener exactamente su `]]` de cierre, en el orden correcto, sin anidamiento excesivo. Los kinds auto-fixables (nested_*_*) son seguros de aplicar porque el colapso es determinístico y reversible (el backup atómico permite rollback). Los kinds manuales (`inverted`, `unclosed_open`) requieren decisión humana: ¿el `]]` extra es un corchete literal que debería escaparse, o un `[[` que falta?
+
+**Severidad:** Grave. Penaliza −5 por nota afectada (cap −15).
+
+**Prevención:**
+- Guard en `vault_write._check_content_gate`: rechaza si `opens ≠ closes` (medidos sobre contenido limpio, excluyendo code blocks y code spans)
+- `vault_audit._detect_malformed_wikilinks`: emite finding con `norm_code: "AP-24"`, lista de `kinds` con conteo, `auto_fixable` global, snippets con `line`+`text`, y `fix_hint` por kind
+- **`vault_fix_brackets.py --apply`** (Grupo 33 — Corrección automática): aplica todos los kinds auto-fixables en una pasada; los kinds manuales se reportan en `findings_manual_review` con `fix_hint` accionable
+- `nextActions` del audit distingue `priority: medium` (auto-fixeable → sugiere `vault_fix_brackets --apply`) vs `priority: high` (manual → sugiere revisar el archivo)
 
 ---
 
@@ -4776,6 +4809,36 @@ temp/
 
 ---
 
+### v34.2 — 2026-06-20 `git: pending`
+
+**AP-22 split (empty only) + AP-24 (bracket imbalance) + Grupo 33 — Corrección automática**
+
+**Agregado**
+
+- **`vault_fix_brackets.py` (Grupo 33 — Corrección automática):** companion tool de `vault_audit` que detecta y arregla brackets malformados en wiki-links. Modos: dry-run (default, reporta JSON), `--apply` (aplica auto-fixes seguros con backup atómico en `.vault-fix-backup-YYYYMMDD-HHMMSS/`), `--only KIND` (filtra por tipo), `--path PATH` (limita a nota/carpeta), `--include-sandbox` (incluye `vault-sandbox/`). Auto-fixable: `empty` (AP-22), `nested_open`/`nested_close` (AP-24), `inverted_resolvable`/`unclosed_open_resolvable` (AP-24 via nested collapse). Manual review only: `inverted`, `unclosed_open` — detectados pero no modificados. Exclusiones automáticas: `vault-obsidian-architecture.md`, `scripts/`, `*.bak`, `.vault-fix-backup-*`. Path traversal bloqueado por `vault_io.assert_within_vault`. Backups gitignored via `.vault-fix-backup-*/` pattern.
+
+- **Norma `AP-24` (Bracket imbalance — corchetes sin pareja, anidados o invertidos):** nueva norma que cubre las pathologies de imbalance (`opens ≠ closes`), nested (`[[[[`, `]]]]`), inverted (`]]…[[`), y unclosed (`[[` sin cerrar). Severidad grave: penaliza −5 por nota afectada (cap −15). Auto-fixable cuando el collapse de nested resuelve el imbalance (`*_resolvable` kinds); manual review cuando no es resoluble determinísticamente.
+
+- **Norma `AP-22` refinada (Bracket sanity — wiki-links vacíos `[[]]`):** antes cubría tanto imbalance como empty. Ahora se enfoca solo en `[[]]` / `[[ ]]` vacíos. Severidad leve: penaliza −2 por nota afectada (cap −5). Excepción para `00_System/` que contiene ejemplos de sintaxis como documentación meta.
+
+- **`vault_audit._detect_malformed_wikilinks` mejorado:** stack-based walk sobre contenido limpio (excluye code blocks y code spans) para detectar `inverted` y `unclosed_open` con precisión — antes la regex global false-positiveaba en links legítimos donde `]]` de un link precede `[[` de otro en otra línea. Cada finding ahora incluye `kinds` (lista), `counts` (dict kind→n), `auto_fixable` (bool global), `snippets` (primeros 3 con `line`+`text`), y `problems[]` (detalle por kind con `examples`, `fix_hint`).
+
+- **`vault_write._check_content_gate`:** ahora rechaza AP-22 (empty `[[]]`) con razón específica, además del AP-24 (imbalance `opens ≠ closes`). Excepción AP-22 para `00_System/`.
+
+- **`vault_audit._is_skipped` y `vault_fix_brackets.EXCLUDE_PATH_SUBSTRINGS`:** añadido `.vault-fix-backup-*` para que los backups generados por el fix no se re-escaneen como contenido nuevo del vault (bug sistémico detectado al aplicar `--apply`: el score bajó de 72 a 63 porque el backup aparecía como nota nueva con todas las pathologies originales).
+
+**Modificado**
+
+- **`nextActions` del audit — categoria `malformed_wikilink`:** ahora distingue entre auto-fixeable (`priority: medium`, `command: "python scripts/vault_fix_brackets.py --apply <path>"`) y manual review (`priority: high`, incluye `snippet` con línea+texto y `command: "Revisar <path> y corregir [[ / ]] huérfanos."`). El audit deja de ser solo diagnóstico y se vuelve lista de tareas ejecutable para bracket pathologies.
+
+- **`vault_audit._compute_score`:** scoring diferenciado — AP-22 cap −5 (leve), AP-24 cap −15 (grave). Antes era un solo bucket AP-22 con cap −20.
+
+**Resultado medido**
+
+- `vault_fix_brackets.py --apply` sobre `vault-sandbox/` con 2 notas de test: 1 archivo arreglado completamente (auto-fixable), 1 archivo con 2 inverted `]]` reportado para revisión manual. Score del vault: 72 → 74 (mejora por eliminación del `[[]]` vacío que también rompía el grafo).
+
+---
+
 ### v34.1 — 2026-06-19 `git: 2a73b40`
 
 **Bootstrap de un comando + nextActions prescriptivo + fix de detección**
@@ -4810,7 +4873,7 @@ temp/
 
 - **`vault_standard_upgrade --init`:** ahora crea las 17 carpetas base del vault en lugar de solo `00_System/`. Previamente había que correr el `--to v32` después del `--init v20` para que las carpetas aparecieran.
 
-- **`tool-spec.json`:** bumped a v34. 68 active tools, 5 deprecated, 32 grupos funcionales (Grupo 32 — Bootstrap). `_counts` agregado al header para inspección rápida.
+- **`tool-spec.json`:** bumped a v34. 69 active tools, 5 deprecated, 33 grupos funcionales (Grupo 32 — Bootstrap, Grupo 33 — Corrección automática). `_counts` agregado al header para inspección rápida.
 
 **Resultado medido**
 
@@ -4819,8 +4882,6 @@ temp/
 - Spec validation: 81/81 PASS, 0 drift, 0 unspecced
 
 ---
-
-### v34 — 2026-06-12 `git: 2f23ad5`
 
 **Trazabilidad bidireccional código↔vault — @vault: tag + vault_code_sync**
 
