@@ -1467,9 +1467,9 @@ def vault_audit(project: Optional[str] = None, refresh_dq: bool = False) -> Dict
 
     stale_projects = _detect_stale_projects(content_notes)
 
-    # broken_links en all_notes: index.md roto también importa
+    # broken_links en all_notes: index.md roto también importa (fix 2026-06-21: scope bug — antes pasaba content_notes)
 
-    broken_links = _detect_broken_links(content_notes, all_stems)
+    broken_links = _detect_broken_links(all_notes, all_stems)
 
     canonical_shadow = _detect_canonical_shadow(content_notes)
 

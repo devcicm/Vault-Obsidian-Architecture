@@ -4809,6 +4809,29 @@ temp/
 
 ---
 
+### v34.3 — 2026-06-21 `git: pending`
+
+**Fix de scope bug en `vault_audit._detect_broken_links`**
+
+**Fixed**
+
+- **`vault_audit._detect_broken_links`:** el código pasaba `content_notes` (notas que pasan el content gate) en lugar de `all_notes` (todo el universo de notas del vault). Esto causaba que los `[[wiki-links]]` dentro de archivos `index.md` y otras notas con frontmatter mínimo no se escanearan para detectar destinos rotos. Bug detectado por inspección: el comentario decía "all_notes: index.md roto también importa" pero el código pasaba `content_notes`. Fix de 1 línea: pasar `all_notes` como debe ser. Descubierto al propagar el fix a consumer vaults.
+
+**Resultado medido post-fix**
+
+- Source vault: 8 broken_links adicionales detectados (antes 0 por el bug) — todos en `01_Projects/builderx/index.md`.
+- BuilderX: 62 broken_links (antes 0).
+- /ans: 119 broken_links (antes 0).
+- SMART POS CR, PROYECTO_SAAS_VCLOUD, ElectronJS-fingerprint: 0 broken_links adicionales (los links funcionaban correctamente, scope era correcto en estos consumers por motivos distintos — se mantuvieron sus versiones por compatibilidad).
+
+**Notas**
+
+- No requiere bump de `tool-spec.json` (no cambia contrato público — `_detect_broken_links` es interno).
+- No requiere bump de `README.md` ni `scripts/README.md` (cambio interno en scope de una función).
+- `vault_io.normalize_stem()` también se incluye en el sync porque `vault_audit._detect_broken_links` ya lo usa internamente desde v34.1.
+
+---
+
 ### v34.2 — 2026-06-20 `git: pending`
 
 **AP-22 split (empty only) + AP-24 (bracket imbalance) + Grupo 33 — Corrección automática**
