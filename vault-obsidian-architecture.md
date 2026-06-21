@@ -4809,7 +4809,7 @@ temp/
 
 ---
 
-### v34.3 — 2026-06-21 `git: pending`
+### v34.3 — 2026-06-21 `git: c364e16`
 
 **Fix de scope bug en `vault_audit._detect_broken_links`**
 
