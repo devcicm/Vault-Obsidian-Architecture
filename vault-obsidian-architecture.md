@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v34.1 — 2026-06-19  
+**Versión:** v34.3 — 2026-06-21  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -65,7 +65,7 @@ vault-{nombre}/          ← raíz del vault (SIEMPRE con prefijo vault-)
 ├── 00_System/
 ├── identity.md              — quién es el agente, capacidades, propósito
 ├── rules.md                 — reglas de comportamiento y límites
-├── tool-contracts.md        — qué tools existen, qué hacen, cuándo usarlas
+├── tool-contracts.md        — qué tools existen, comando para ejecutarlas, output que devuelven
 └── backups/
     └── {tipo}-{YYYY-MM-DD}-{slug}.md  — registro de backup ejecutado (vault, db, archivos)
 
@@ -4896,7 +4896,7 @@ temp/
 
 - **`vault_standard_upgrade --init`:** ahora crea las 17 carpetas base del vault en lugar de solo `00_System/`. Previamente había que correr el `--to v32` después del `--init v20` para que las carpetas aparecieran.
 
-- **`tool-spec.json`:** bumped a v34. 69 active tools, 5 deprecated, 33 grupos funcionales (Grupo 32 — Bootstrap, Grupo 33 — Corrección automática). `_counts` agregado al header para inspección rápida.
+- **`tool-spec.json`:** bumped a v34. 68 active tools, 5 deprecated, 33 grupos funcionales (Grupo 32 — Bootstrap, Grupo 33 — Corrección automática). `_counts` agregado al header para inspección rápida.
 
 **Resultado medido**
 
@@ -5140,7 +5140,7 @@ Antes de v29 el hardening de v27–v28 cubría los 12 scripts de _creación_ (va
 **6 mejoras de madurez — sin eliminar ni romper nada**
 
 **Agregado**
-- **`vault_compact_contracts.py` (Grupo nuevo — Contratos):** introspecciona los 53 scripts via argparse y genera `00_System/tool-contracts.{json,md}`. El agente carga ~250 líneas en lugar del spec completo de 4382. Soporta `--profile minimal|standard|full`.
+- **`vault_compact_contracts.py` (Grupo nuevo — Contratos):** introspecciona scripts via argparse + tool-spec.json y genera `00_System/tool-contracts.{json,md}` con: nombre, descripción, **comando explícito** (ej: `python scripts/vault_write.py --folder <folder>`), y **output** (campos JSON devueltos). El agente carga ~400 líneas en lugar del spec completo. Soporta `--profile minimal|standard|full`.
 - **`vault_manifest.py` (Grupo nuevo — Manifiesto):** genera `00_System/tools-manifest.json` con estado de cada tool (`active` / `deprecated` / `internal` / `meta`). 46 activas, 5 deprecated, 2 internas.
 - **`vault_test_runner.py` (Meta — Test suite):** test suite stdlib-only con modos `--smoke` (56/56), `--contracts` (happy-path en vault temporal), `--errors` (error-paths). Detecta BOM, imports rotos, salida no-JSON, campos faltantes.
 - **`vault_standard_upgrade --validate`:** compliance check post-migración no bloqueante: carpetas, `frontmatter_compliance`, `audit_score`. Retorna `compliance_score` y `gaps`.
