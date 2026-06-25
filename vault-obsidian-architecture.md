@@ -1272,6 +1272,73 @@ FASE 4 — VERIFICACIÓN POST-MIGRACIÓN
 
 **Subcarpetas dentro de categorías:** cuando se distribuye a una categoría que soporta subcarpetas (`apis/`, `configs/`, `glossary/`, `services/`, `servers/`, etc.), la tool detecta automáticamente el subfolder adecuado (por proyecto, proveedor, herramienta o entorno) y lo crea si no existe. Esto evita que las categorías se conviertan en listas planas ilegibles conforme crecen.
 
+---
+
+### Convención de Nomenclatura: Sufijos Explícitos para Eliminar Ambigüedad
+
+**Problema resuelto:** Un mismo término (ej: "redis", "postgres", "nginx") puede aplicar a múltiples grupos. Un agente que ve solo el nombre no sabe si debe documentar como:
+- Componente de infraestructura desplegado (`09_Infrastructure/`)
+- Configuración de herramienta (`07_Knowledge/configs/`)
+- Librería/paquete importado en código (`07_Knowledge/dependencies/`)
+- Concepto técnico (`07_Knowledge/concepts/`)
+
+**Solución:** Usar sufijos explícitos en los nombres de notas para eliminar la ambigüedad. Cada nombre de nota DEBE incluir el sufijo que indica su tipo.
+
+#### Tabla de Sufijos
+
+| Sufijo | Significado | Ejemplo | Carpeta destino |
+|--------|-------------|---------|-----------------|
+| `-runtime` | Componente de infraestructura desplegado y ejecutándose | `redis-runtime` | `09_Infrastructure/databases/` (type: queue) |
+| `-config` | Configuración de una herramienta/servicio | `nginx-config` | `07_Knowledge/configs/nginx.md` |
+| `-client` | Librería/paquete importado en código | `redis-client` | `07_Knowledge/dependencies/redis.md` |
+| `-server` | Servidor físico o VM | `proxmox-server` | `09_Infrastructure/servers/` |
+| `-service` | Servicio/aplicación desplegada | `api-gateway-service` | `09_Infrastructure/services/` |
+| `-db` | Base de datos desplegada | `postgres-db` | `09_Infrastructure/databases/` |
+| `-concept` | Concepto técnico/teórico | `jwt-concept` | `07_Knowledge/concepts/` |
+| `-api` | Documentación de API externa | `stripe-api` | `07_Knowledge/apis/` |
+| `-framework` | Framework usado en el proyecto | `react-framework` | `07_Knowledge/frameworks/` |
+| `-pattern` | Patrón arquitectónico | `cqrs-pattern` | `05_Patterns/architecture/` |
+| `-runbook` | Procedimiento operacional | `deploy-runbook` | `08_Runbooks/` |
+
+#### Regla de Clasificación por Contexto
+
+| Contexto del término | Sufijo requerido | Grupo destino |
+|---------------------|------------------|---------------|
+| Se conecta a otros servicios, tiene IP/puerto, está desplegado | `-runtime`, `-server`, `-service`, `-db` | **09_Infrastructure/** |
+| Es importado en código (`import X`, `require('X')`, `npm install X`) | `-client`, `-framework` | **07_Knowledge/dependencies/** o **07_Knowledge/frameworks/** |
+| Describe cómo configurar algo (parámetros, variables de entorno) | `-config` | **07_Knowledge/configs/** |
+| Explica qué es algo teóricamente (no cómo usarlo en este proyecto) | `-concept` | **07_Knowledge/concepts/** |
+| Es un procedimiento paso a paso | `-runbook` | **08_Runbooks/** |
+| Es un patrón de diseño/arquitectura | `-pattern` | **05_Patterns/** |
+
+#### Ejemplos de Decisión
+
+| Término encontrado | Pregunta | Respuesta → Nombre |
+|-------------------|----------|-------------------|
+| redis | ¿Es un servicio desplegado con IP/puerto? | `redis-runtime` → `09_Infrastructure/databases/` |
+| redis | ¿Se importa en código (`pip install redis`)? | `redis-client` → `07_Knowledge/dependencies/` |
+| redis | ¿Es la configuración del servicio redis? | `redis-config` → `07_Knowledge/configs/` |
+| postgres | ¿Es un servidor de BD desplegado? | `postgres-db` → `09_Infrastructure/databases/` |
+| postgres | ¿Es la librería cliente (`pip install psycopg2`)? | `postgres-client` → `07_Knowledge/dependencies/` |
+| nginx | ¿Es el servidor web desplegado? | `nginx-runtime` → `09_Infrastructure/services/` |
+| nginx | ¿Es la configuración del nginx? | `nginx-config` → `07_Knowledge/configs/` |
+| kubernetes | ¿Es el cluster desplegado? | `k8s-runtime` → `09_Infrastructure/services/` |
+| kubernetes | ¿Es la librería cliente Python? | `kubernetes-client` → `07_Knowledge/dependencies/` |
+| docker | ¿Es el runtime de contenedores? | `docker-runtime` → `09_Infrastructure/containers/` |
+| docker | ¿Es el archivo Dockerfile o docker-compose? | `docker-config` → `07_Knowledge/configs/` |
+
+#### Regla de Desempate
+
+Si un término aplica a múltiples contextos:
+1. **Prioridad absoluta:** El contexto de deployment supera a todos los demás (si está desplegado, es `-runtime`)
+2. **Segunda prioridad:** Si se importa en código → `-client` o `-framework`
+3. **Tercera prioridad:** Si solo se configura → `-config`
+4. **Última prioridad:** Solo si no aplica nada anterior → `-concept`
+
+> **Ejemplo:** Redis puede tener both `-client` (librería Python) AND `-runtime` (servicio desplegado) como notas separadas. NO son la misma nota.
+
+---
+
 **Conversiones aplicadas para compatibilidad Obsidian:**
 
 | Elemento | Antes | Después |

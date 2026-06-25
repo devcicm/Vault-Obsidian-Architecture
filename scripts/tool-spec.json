@@ -1,8 +1,8 @@
 {
-  "version": "v35.0",
+  "version": "v36.0",
   "schema": "1.0",
-  "generated_at": "2026-06-25T00:00:00.000Z",
-  "description": "Spec-driven tool contracts. Editar este archivo ANTES de implementar una nueva tool. Validar con: python vault_spec_validate.py. v35.0: Centralized vault_lib with utcnow/strip_code_blocks (eliminates 44 duplicate functions). Fixed critical bugs: undefined clean var in vault_write, path traversal in vault_fix_brackets, path validation order in vault_read. Fixed vault_compact_contracts output location.",
+  "generated_at": "2026-06-25T02:00:00.000Z",
+  "description": "Spec-driven tool contracts. Editar este archivo ANTES de implementar una nueva tool. Validar con: python vault_spec_validate.py. v36.0: Added naming convention with explicit suffixes (-runtime, -config, -client, -db, etc.) to eliminate ambiguity. Added detect_ambiguity() and suggest_suffix() functions to vault_migrate.py. Updated manifest with complete disambiguation rules for terms like redis, postgres, nginx, docker, kubernetes, etc.",
   "tools": {
     "vault_ai_decision": {
       "group": "IA Governance",
