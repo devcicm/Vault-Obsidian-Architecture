@@ -26,10 +26,25 @@ from typing import Any, Dict, List, Optional
 from vault_errors import wrap_main
 
 SCRIPTS_DIR = Path(__file__).parent
+PROJECT_ROOT = SCRIPTS_DIR.parent
 
 from vault_io import VAULT_ROOT  # noqa: E402
 
-SYSTEM_DIR = VAULT_ROOT / "00_System"
+
+def _resolve_output_dir() -> Path:
+    """Resolve output directory for contracts.
+
+    If running from spec repo (has vault-obsidian-architecture.md), write to vault-sandbox.
+    Otherwise write to VAULT_ROOT/00_System (consumer vault).
+    """
+    if (PROJECT_ROOT / "vault-obsidian-architecture.md").exists():
+        sandbox = PROJECT_ROOT / "vault-sandbox" / "00_System"
+        if sandbox.exists():
+            return sandbox
+    return VAULT_ROOT / "00_System"
+
+
+SYSTEM_DIR = _resolve_output_dir()
 CONTRACTS_JSON = SYSTEM_DIR / "tool-contracts.json"
 CONTRACTS_MD = SYSTEM_DIR / "tool-contracts.md"
 VERSION_FILE = SYSTEM_DIR / "standard-version.json"
