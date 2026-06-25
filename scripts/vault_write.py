@@ -22,8 +22,6 @@ Usage:
 
 """
 
-
-
 import argparse
 
 import json
@@ -38,29 +36,35 @@ import sys
 
 from vault_errors import wrap_main
 
-from vault_io import atomic_write_text, atomic_write_json, atomic_update_json, assert_within_vault, VAULT_ROOT, normalize_stem
+from vault_io import (
+    atomic_write_text,
+    atomic_write_json,
+    atomic_update_json,
+    assert_within_vault,
+    VAULT_ROOT,
+    normalize_stem,
+)
+from vault_encoding import (
+    sanitize_content,
+    normalize_to_nfc,
+    sanitize_filename,
+    detect_issues,
+)
+from vault_regex import (
+    detect_bracket_anomalies,
+    detect_path_anchored,
+    fix_nested_brackets,
+    fix_whitespace_in_links,
+    WIKILINK_MAX_LEN,
+)
+from vault_lib import utcnow, strip_code_blocks, Config
 from vault_norms import compute_norm_refs
 
 import uuid
 
-from datetime import datetime, timezone
-
 from pathlib import Path
 
 from typing import Any, Dict, List, Optional
-
-
-
-
-
-def _utcnow() -> str:
-
-    """Return current UTC time as ISO 8601 with Z suffix."""
-
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-
-
-
 
 
 def _check_content_gate(content: str, folder: str) -> bool:
@@ -82,7 +86,8 @@ def _check_content_gate(content: str, folder: str) -> bool:
     if folder.startswith("00_System"):
         return True
     real_lines = [
-        l for l in content.split("\n")
+        l
+        for l in content.split("\n")
         if l.strip()
         and not l.strip().startswith("TODO")
         and l.strip() not in ("-", "- ", "---")
@@ -104,21 +109,31 @@ def _check_content_gate(content: str, folder: str) -> bool:
     # Reject minified blobs
     if any(len(l) > 800 for l in real_lines):
         return False
-    # AP-24 prevention: reject notes with bracket imbalance in [[...]] patterns.
-    # Strip code blocks + inline code so literal `[[` in regex examples don't trigger.
-    clean = re.sub(r"```[\s\S]*?```", "", content)
-    clean = re.sub(r"`[^`\n]+`", "", clean)
-    opens = len(re.findall(r"\[\[", clean))
-    closes = len(re.findall(r"\]\]", clean))
-    if opens != closes:
+    # AP-21 prevention: reject path-anchored wiki-links [[folder/note]]
+    path_anchored = detect_path_anchored(content)
+    if path_anchored:
         return False
+
+    # AP-24 prevention: detect bracket anomalies (nested, mixed, etc)
+    anomalies = detect_bracket_anomalies(content)
+    if anomalies:
+        # Try auto-fix first
+        fixed_content = fix_nested_brackets(content)
+        fixed_content = fix_whitespace_in_links(fixed_content)
+        # Check again after auto-fix
+        remaining = detect_bracket_anomalies(fixed_content)
+        # Filter out empty links (handled separately)
+        remaining_non_empty = [r for r in remaining if r["type"] != "empty"]
+        if remaining_non_empty:
+            return False
+
     # AP-22 prevention (soft): reject notes with empty [[]] wiki-links.
     # These pass the strict gate otherwise but pollute the search index with
     # literal `[[]]` as text. Allow them only in spec/example documentation
     # where they're meaningful; for regular notes, reject.
     if folder.startswith("00_System"):
-        # 00_System holds meta docs that legitimately show syntax examples
         return True
+    clean = strip_code_blocks(content)
     if re.search(r"\[\[\s*\]\]", clean):
         return False
     return True
@@ -129,7 +144,8 @@ def _content_gate_reason(content: str, folder: str) -> Optional[str]:
     if folder.startswith("00_System"):
         return None
     real_lines = [
-        l for l in content.split("\n")
+        l
+        for l in content.split("\n")
         if l.strip()
         and not l.strip().startswith("TODO")
         and l.strip() not in ("-", "- ", "---")
@@ -148,19 +164,29 @@ def _content_gate_reason(content: str, folder: str) -> Optional[str]:
         return f"only {len(words)} real word(s) (need ≥10)"
     if any(len(l) > 800 for l in real_lines):
         return "line longer than 800 chars (minified blob?)"
+
+    # AP-21: path-anchored wiki-links check
+    path_anchored = detect_path_anchored(content)
+    if path_anchored:
+        return f"AP-21: path-anchored wiki-links detected: {path_anchored}. Use [[note-name]] without folder path."
+
     # AP-24 / AP-22 reasons — checked AFTER basic quality gates
-    clean = re.sub(r"```[\s\S]*?```", "", content)
-    clean = re.sub(r"`[^`\n]+`", "", clean)
-    opens = len(re.findall(r"\[\[", clean))
-    closes = len(re.findall(r"\]\]", clean))
-    if opens != closes:
-        diff = abs(opens - closes)
-        which = "open" if opens > closes else "close"
-        return (
-            f"AP-24: bracket imbalance ({opens} `[[` vs {closes} `]]`, "
-            f"{diff} stray `{which}` bracket(s)). "
-            "Every `[[` needs a matching `]]`."
-        )
+    # First try auto-fix
+    fixed_content = fix_nested_brackets(content)
+    fixed_content = fix_whitespace_in_links(fixed_content)
+
+    # Check for remaining anomalies
+    anomalies = detect_bracket_anomalies(fixed_content)
+    if anomalies:
+        empty_anomalies = [a for a in anomalies if a["type"] == "empty"]
+        non_empty_anomalies = [a for a in anomalies if a["type"] != "empty"]
+
+        if non_empty_anomalies:
+            examples = [a["example"] for a in non_empty_anomalies[:3]]
+            return f"AP-24: bracket anomalies detected: {examples}. These will be auto-fixed on save."
+
+    # Check empty links
+    clean = strip_code_blocks(content)
     if re.search(r"\[\[\s*\]\]", clean):
         n = len(re.findall(r"\[\[\s*\]\]", clean))
         return (
@@ -179,23 +205,16 @@ INDEX_FILE = VAULT_ROOT / "99_Index" / "search-index.json"
 TAG_REGISTRY = VAULT_ROOT / "00_System" / "tag-registry.json"
 
 
-
-
-
 def _tag_suggestions(new_tags: List[str]) -> List[Dict[str, Any]]:
-
     """Return canonical similar tags for any new_tags not yet in registry. Non-blocking."""
 
     if not TAG_REGISTRY.exists():
-
         return []
 
     try:
-
         registry = json.loads(TAG_REGISTRY.read_text(encoding="utf-8"))
 
     except Exception:
-
         return []
 
     canonical: set = set(registry.get("tags", {}).keys())
@@ -203,105 +222,71 @@ def _tag_suggestions(new_tags: List[str]) -> List[Dict[str, Any]]:
     suggestions = []
 
     for tag in new_tags:
-
         if tag in canonical:
-
             continue
 
         for candidate in canonical:
-
             # simple similarity: exact prefix/substring
 
             a, b = tag.lower(), candidate.lower()
 
             if a == b:
-
                 continue
 
             if a in b or b in a:
-
                 score = 0.85
 
             else:
-
                 common_prefix = sum(1 for x, y in zip(a, b) if x == y)
 
                 if common_prefix >= 3:
-
                     score = 0.6 + (common_prefix / max(len(a), len(b))) * 0.2
 
                 else:
-
                     score = sum(1 for x, y in zip(a, b) if x == y) / max(len(a), len(b))
 
             if score >= 0.6:
-
-                suggestions.append({
-
-                    "new_tag": tag,
-
-                    "similar_canonical": candidate,
-
-                    "score": round(score, 2),
-
-                    "count": registry["tags"].get(candidate, {}).get("count", 0),
-
-                })
+                suggestions.append(
+                    {
+                        "new_tag": tag,
+                        "similar_canonical": candidate,
+                        "score": round(score, 2),
+                        "count": registry["tags"].get(candidate, {}).get("count", 0),
+                    }
+                )
 
     return sorted(suggestions, key=lambda x: -x["score"])[:10]
 
 
-
-
-
 def slugify(title: str) -> str:
+    """Convert title to kebab-case filename.
 
-    """Convert title to kebab-case filename."""
-
-    slug = title.lower()
-
-    slug = re.sub(r"[^\w\s-]", "", slug)
-
-    slug = re.sub(r"[\s_]+", "-", slug)
-
-    slug = re.sub(r"^-+|-+$", "", slug)
-
-    return slug
-
-
-
+    Uses vault_encoding.sanitize_filename for cross-platform safety.
+    """
+    # Use the encoding module's sanitize_filename for proper handling
+    # of Unicode, invisible chars, and cross-platform compatibility
+    return sanitize_filename(title, max_length=200)
 
 
 def _check_bracket_balance(content: str) -> Optional[str]:
-
     """AP-22: detect unbalanced [[ ]] brackets outside code blocks."""
-
-    clean = re.sub(r"```[\s\S]*?```", "", content)
-
-    clean = re.sub(r"`[^`]+`", "", clean)
-
+    clean = strip_code_blocks(content)
     opens = len(re.findall(r"\[\[", clean))
 
     closes = len(re.findall(r"\]\]", clean))
 
     if opens != closes:
-
         return f"AP-22: corchetes desbalanceados — {opens} '[[' vs {closes} ']]'"
 
     empty = re.findall(r"\[\[\s*\]\]", clean)
 
     if empty:
-
         return f"AP-22: wiki-links vacios detectados: {empty[:3]}"
 
     return None
 
 
-
-
-
 def _collect_ghost_links(wiki_links: List[str]) -> List[str]:
-
     """Return links whose target note does not exist anywhere in the vault (non-blocking)."""
 
     all_stems = {
@@ -320,25 +305,14 @@ def _collect_ghost_links(wiki_links: List[str]) -> List[str]:
     return ghost
 
 
-
-
-
 def generate_frontmatter(
-
     title: str,
-
     tags: Optional[List[str]] = None,
-
     meta: Optional[Dict[str, Any]] = None,
-
     existing_id: Optional[str] = None,
-
     existing_created: Optional[str] = None,
-
     norm_refs: Optional[List[str]] = None,
-
 ) -> str:
-
     """Generate YAML frontmatter with v27-compliant metadata (CIA + agent + norm_refs fields)."""
 
     meta = meta or {}
@@ -349,23 +323,15 @@ def generate_frontmatter(
 
     frontmatter.append(f"id: {existing_id or str(uuid.uuid4())}")
 
-    frontmatter.append(f"createdAt: {existing_created or _utcnow()}")
+    frontmatter.append(f"createdAt: {existing_created or utcnow()}")
 
-    frontmatter.append(f"updatedAt: {_utcnow()}")
-
-
+    frontmatter.append(f"updatedAt: {utcnow()}")
 
     if tags:
-
         frontmatter.append(f"tags: {json.dumps(tags)}")
 
-
-
     if norm_refs:
-
         frontmatter.append(f"norm_refs: {json.dumps(norm_refs)}")
-
-
 
     # v27 CIA schema — defaults overridable via meta
 
@@ -377,74 +343,48 @@ def generate_frontmatter(
 
     frontmatter.append(f"agent: {meta.pop('agent', 'system')}")
 
-
-
     for key, value in meta.items():
-
         if isinstance(value, str):
-
             frontmatter.append(f"{key}: {value}")
 
         else:
-
             frontmatter.append(f"{key}: {json.dumps(value)}")
-
-
 
     frontmatter.append("---")
 
     return "\n".join(frontmatter)
 
 
-
-
-
 def extract_wiki_links(content: str) -> List[str]:
-
     """Extract wiki-links [[note]] from content."""
 
     return re.findall(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]", content)
 
 
-
-
-
-def update_search_index(vault_path: str, title: str, content: str, tags: List[str], is_new: bool = True) -> None:
-
+def update_search_index(
+    vault_path: str, title: str, content: str, tags: List[str], is_new: bool = True
+) -> None:
     """Update search index with new or updated note (lock-protected read-modify-write)."""
 
     INDEX_FILE.parent.mkdir(parents=True, exist_ok=True)
-
-
 
     body = content.split("---", 2)[-1] if content.startswith("---") else content
 
     preview = body.strip()[:200].replace("\n", " ")
 
     note_entry = {
-
         "path": vault_path,
-
         "title": title,
-
         "preview": preview,
-
         "tags": tags,
-
-        "updatedAt": _utcnow(),
-
+        "updatedAt": utcnow(),
     }
 
-
-
     def _update(index: Dict[str, Any]) -> Dict[str, Any]:
-
         notes = index.get("notes", [])
 
         for i, note in enumerate(notes):
-
             if note.get("path") == vault_path:
-
                 notes[i] = note_entry
 
                 return index
@@ -455,20 +395,16 @@ def update_search_index(vault_path: str, title: str, content: str, tags: List[st
 
         return index
 
-
-
     atomic_update_json(INDEX_FILE, {"notes": []}, _update)
 
 
-
-
-
 def vault_write(
-
-    folder: str, title: str, content: str, tags: Optional[List[str]] = None, meta: Optional[Dict[str, Any]] = None
-
+    folder: str,
+    title: str,
+    content: str,
+    tags: Optional[List[str]] = None,
+    meta: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
-
     """
 
     Create or update a note in the vault.
@@ -499,107 +435,93 @@ def vault_write(
 
     meta = meta or {}
 
-
-
     # Content gate: new notes must pass strict content quality gate (00_System exempt)
 
     if not _check_content_gate(content, folder):
-
         reason = _content_gate_reason(content, folder) or "insufficient content"
 
         return {
-
             "ok": False,
-
             "error_code": "content_too_short",
-
             "error": "content_too_short",
-
             "norm_code": "AP-11",
-
             "norm_name": "Skeleton files — frontmatter válido, contenido vacío",
-
-            "message": "AP-11: content rejected - " + reason + ". If content is not ready, do not create the note.",
-
+            "message": "AP-11: content rejected - "
+            + reason
+            + ". If content is not ready, do not create the note.",
         }
-
-
 
     # AP-20 guard: deceptive skeleton — reject if >50% of bullets are empty
 
     bullets = re.findall(r"^\s*[-*]\s*(.*)", content, re.MULTILINE)
 
     if bullets:
-
-        empty_bullets = [b for b in bullets if not b.strip() or b.strip() in ("[]", "[[]]", "-", "[ ]")]
+        empty_bullets = [
+            b
+            for b in bullets
+            if not b.strip() or b.strip() in ("[]", "[[]]", "-", "[ ]")
+        ]
 
         if len(empty_bullets) / len(bullets) > 0.5:
-
             return {
-
                 "ok": False,
-
                 "error_code": "content_empty_list",
-
                 "error": "content_empty_list",
-
                 "norm_code": "AP-20",
-
                 "norm_name": "Deceptive skeleton (empty-list)",
-
-                "message": f"AP-20: >{int(len(empty_bullets)/len(bullets)*100)}% of bullets are empty. Fill content before saving.",
-
+                "message": f"AP-20: >{int(len(empty_bullets) / len(bullets) * 100)}% of bullets are empty. Fill content before saving.",
             }
-
-
 
     # AP-21 guard: path-anchored wiki-links — reject [[folder/note]] patterns
 
     path_links = re.findall(r"\[\[[^\]]*\/[^\]]*\]\]", content)
 
     if path_links:
-
         return {
-
             "ok": False,
-
             "error_code": "path_anchored_wikilinks",
-
             "error": "path_anchored_wikilinks",
-
             "norm_code": "AP-21",
-
             "norm_name": "Path-anchored wiki-links",
-
             "message": f"AP-21: path-anchored wiki-links detected: {path_links}. Use [[note-name]] without folder path.",
-
         }
-
-
 
     # AP-22 guard: unbalanced or empty wiki-link brackets
 
     bracket_error = _check_bracket_balance(content)
 
     if bracket_error:
-
         return {
-
             "ok": False,
-
             "error_code": "malformed_wikilinks",
-
             "error": "malformed_wikilinks",
-
             "norm_code": "AP-22",
-
             "norm_name": "Bracket sanity — corchetes desbalanceados o vacíos",
-
             "message": bracket_error,
-
         }
 
+    # Mermaid guard: validate syntax in ```mermaid blocks
+    mermaid_pattern = r"```mermaid\s*\n(.*?)```"
+    mermaid_blocks = re.findall(mermaid_pattern, content, re.DOTALL)
+    if mermaid_blocks:
+        try:
+            from vault_mermaid_check import validate_mermaid
 
+            for block in mermaid_blocks:
+                errors = validate_mermaid(block)
+                if errors:
+                    error_types = [e["type"] for e in errors]
+                    return {
+                        "ok": False,
+                        "error_code": "mermaid_syntax_error",
+                        "error": "mermaid_syntax_error",
+                        "norm_code": "AP-25",
+                        "norm_name": "Mermaid syntax errors",
+                        "message": f"AP-25: Errores en diagrama Mermaid: {error_types}. Corregir antes de guardar.",
+                        "details": errors[:3],
+                    }
+        except ImportError:
+            pass
 
     # Determine filename and validate path stays inside vault
 
@@ -608,78 +530,81 @@ def vault_write(
     vault_path = VAULT_ROOT / folder / filename
 
     try:
-
         assert_within_vault(vault_path, VAULT_ROOT)
 
     except ValueError as exc:
-
         return {
-
             "ok": False,
-
             "error_code": "INVALID_PATH",
-
             "error": "INVALID_PATH",
-
             "message": str(exc),
-
         }
 
     existing_id = None
 
     existing_created = None
 
-
-
     # If note exists, backup to history
 
     if vault_path.exists():
-
         timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
 
-        history_filename = f"{folder.replace('/', '__')}__{slugify(title)}-{timestamp}.md"
+        history_filename = (
+            f"{folder.replace('/', '__')}__{slugify(title)}-{timestamp}.md"
+        )
 
         history_path = HISTORY_DIR / history_filename
 
         HISTORY_DIR.mkdir(parents=True, exist_ok=True)
 
-
-
         existing_content = vault_path.read_text(encoding="utf-8")
 
         atomic_write_text(history_path, existing_content)
 
+    # Check if note exists in a different folder (auto-move suggestion)
+    else:
+        search_index = VAULT_ROOT / "99_Index" / "search-index.json"
+        if search_index.exists():
+            try:
+                import json as json_module
 
+                index_data = json_module.loads(search_index.read_text(encoding="utf-8"))
+                note_stem = slugify(title)
+                for note in index_data.get("notes", []):
+                    if note.get("stem") == note_stem:
+                        current_path = note.get("path", "")
+                        if current_path and current_path != f"{folder}/{note_stem}.md":
+                            return {
+                                "ok": False,
+                                "error_code": "note_moved",
+                                "error": "note_moved",
+                                "message": f"La nota existe en: {current_path}. Usar vault_move para reubicarla o especificar otra carpeta.",
+                                "suggestion": f'python scripts/vault_move.py --from "{current_path}" --to "{folder}/{note_stem}.md"',
+                                "current_path": current_path,
+                            }
+            except Exception:
+                pass
 
         # Extract existing frontmatter data
 
         frontmatter_match = re.match(r"^---\n(.*?)\n---", existing_content, re.DOTALL)
 
         if frontmatter_match:
-
             for line in frontmatter_match.group(1).split("\n"):
-
                 if ":" in line:
-
                     key, value = line.split(":", 1)
 
                     value = value.strip().strip("\"'")
 
                     if key == "id":
-
                         existing_id = value
 
                     elif key == "createdAt":
-
                         existing_created = value
-
-
 
     # Create folder if not exists
 
     vault_path.parent.mkdir(parents=True, exist_ok=True)
-
-
 
     # Compute applicable norm_refs before generating frontmatter
 
@@ -687,116 +612,88 @@ def vault_write(
 
     norm_refs = compute_norm_refs(folder, content, wiki_links)
 
-
-
     # AP-23 advisory: note exceeds complexity ceiling
 
     line_count = len(content.split("\n"))
 
     ap23_warning = line_count > 500
 
-
-
     # Generate frontmatter and write file
 
-    frontmatter = generate_frontmatter(title, tags, meta, existing_id, existing_created, norm_refs)
-
-
+    frontmatter = generate_frontmatter(
+        title, tags, meta, existing_id, existing_created, norm_refs
+    )
 
     final_content = f"{frontmatter}\n\n{content}"
 
-
-
     atomic_write_text(vault_path, final_content)
-
-
 
     # Update search index
 
-    update_search_index(str(vault_path.relative_to(VAULT_ROOT)), title, content, tags, is_new=(existing_id is None))
-
-
+    update_search_index(
+        str(vault_path.relative_to(VAULT_ROOT)),
+        title,
+        content,
+        tags,
+        is_new=(existing_id is None),
+    )
 
     # Regenerate section index in background — fire-and-forget, never blocks write
 
     try:
-
         import subprocess
 
         _section_index_script = Path(__file__).parent / "vault_section_index.py"
 
         if _section_index_script.exists():
-
             subprocess.Popen(
-
-                [sys.executable, str(_section_index_script), "--folder", folder.split("/")[0]],
-
+                [
+                    sys.executable,
+                    str(_section_index_script),
+                    "--folder",
+                    folder.split("/")[0],
+                ],
                 stdout=subprocess.DEVNULL,
-
                 stderr=subprocess.DEVNULL,
-
             )
 
     except Exception:
-
         pass
-
-
 
     tag_suggestions = _tag_suggestions(tags)
 
     ghost_links = _collect_ghost_links(wiki_links)
 
-
-
     result: Dict[str, Any] = {
-
         "ok": True,
-
         "path": str(vault_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
-
         "id": existing_id or str(uuid.uuid4()),
-
         "filename": filename,
-
         "tags": tags,
-
         "wikiLinks": wiki_links,
-
         "norm_refs": norm_refs,
-
         "created": existing_id is None,
-
         "message": f"Note {'created' if existing_id is None else 'updated'} successfully",
-
     }
 
     if ap23_warning:
-
-        result["ap23_warning"] = f"AP-23: note has {line_count} lines — consider splitting into sub-notes (threshold: 500)"
+        result["ap23_warning"] = (
+            f"AP-23: note has {line_count} lines — consider splitting into sub-notes (threshold: 500)"
+        )
 
     if ghost_links:
-
         result["ghost_links"] = ghost_links
 
     if tag_suggestions:
-
         result["tag_suggestions"] = tag_suggestions
 
     return result
 
 
-
-
-
 def main():
-
     parser = argparse.ArgumentParser(
-
         description="Vault Write Tool",
-
         formatter_class=argparse.RawDescriptionHelpFormatter,
-
         epilog="""
 
 Ejemplos:
@@ -820,42 +717,52 @@ Notas:
   - Solo se procesan archivos .md en --scan-path
 
 """,
-
     )
 
-    parser.add_argument("--folder", required=True, help="Folder path relative to vault root")
+    parser.add_argument(
+        "--folder", required=True, help="Folder path relative to vault root"
+    )
 
-    parser.add_argument("--title", help="Note title (optional when --scan-path is used)")
+    parser.add_argument(
+        "--title", help="Note title (optional when --scan-path is used)"
+    )
 
-    parser.add_argument("--content", help="Markdown content (use @file:path to read from file; optional when --scan-path is used)")
+    parser.add_argument(
+        "--content",
+        help="Markdown content (use @file:path to read from file; optional when --scan-path is used)",
+    )
 
     parser.add_argument("--tags", nargs="*", help="Tags for search")
 
-    parser.add_argument("--meta", type=json.loads, help="Additional frontmatter as JSON")
+    parser.add_argument(
+        "--meta", type=json.loads, help="Additional frontmatter as JSON"
+    )
 
-    parser.add_argument("--meta-file", help="Path to JSON file with additional frontmatter (avoids shell quoting issues)")
+    parser.add_argument(
+        "--meta-file",
+        help="Path to JSON file with additional frontmatter (avoids shell quoting issues)",
+    )
 
-    parser.add_argument("--scan-path", help="Directory to scan for .md files and write each one to --folder")
-
-
+    parser.add_argument(
+        "--scan-path",
+        help="Directory to scan for .md files and write each one to --folder",
+    )
 
     args = parser.parse_args()
-
-
 
     # --scan-path mode: scan directory for .md files
 
     if args.scan_path:
-
         scan_dir = Path(args.scan_path)
 
         if not scan_dir.exists():
-
-            print(json.dumps({"ok": False, "error": f"scan-path not found: {args.scan_path}"}))
+            print(
+                json.dumps(
+                    {"ok": False, "error": f"scan-path not found: {args.scan_path}"}
+                )
+            )
 
             return 1
-
-
 
         md_files = list(scan_dir.rglob("*.md"))
 
@@ -863,39 +770,30 @@ Notas:
 
         skipped = []
 
-
-
         meta = args.meta
 
         if args.meta_file:
-
             with open(args.meta_file, "r", encoding="utf-8") as f:
-
                 meta = json.load(f)
 
-
-
         for md_file in md_files:
-
             try:
-
                 file_content = md_file.read_text(encoding="utf-8")
 
             except Exception as e:
-
                 skipped.append({"file": str(md_file), "reason": str(e)})
 
                 continue
-
-
 
             # Extract title from first # Heading or use filename
 
             heading_match = re.search(r"^#\s+(.+)$", file_content, re.MULTILINE)
 
-            title = heading_match.group(1).strip() if heading_match else md_file.stem.replace("-", " ").replace("_", " ").title()
-
-
+            title = (
+                heading_match.group(1).strip()
+                if heading_match
+                else md_file.stem.replace("-", " ").replace("_", " ").title()
+            )
 
             # Check if note already exists
 
@@ -904,94 +802,85 @@ Notas:
             vault_path = VAULT_ROOT / args.folder / filename
 
             if vault_path.exists():
-
-                skipped.append({"file": str(md_file), "reason": "already exists in vault"})
+                skipped.append(
+                    {"file": str(md_file), "reason": "already exists in vault"}
+                )
 
                 continue
-
-
 
             result = vault_write(args.folder, title, file_content, args.tags, meta)
 
             if result["ok"]:
-
                 written.append(result["path"])
 
             else:
-
-                skipped.append({"file": str(md_file), "reason": result.get("error", "unknown")})
-
-
+                skipped.append(
+                    {"file": str(md_file), "reason": result.get("error", "unknown")}
+                )
 
         scan_result = {
-
             "ok": True,
-
             "scanned": len(md_files),
-
             "written": written,
-
             "skipped": skipped,
-
         }
 
         print(json.dumps(scan_result, indent=2, ensure_ascii=False))
 
         return 0
 
-
-
     # Standard single-note mode
 
     if not args.title:
-
         parser.error("--title is required when --scan-path is not used")
 
     if not args.content:
-
         parser.error("--content is required when --scan-path is not used")
-
-
 
     # Read content from file if @file:path
 
     if args.content.startswith("@file:"):
-
         file_path = Path(args.content[6:])
 
         with open(file_path, "r", encoding="utf-8") as f:
-
             content = f.read()
 
     else:
-
         content = args.content
 
+    # Sanitize title and content to fix encoding issues from IA or cross-platform
+    title = args.title
+    if title:
+        title, title_fixes = sanitize_content(title, dry_run=False)
+        if title_fixes:
+            result = {
+                "ok": False,
+                "error": "encoding_issue_in_title",
+                "message": "El título contiene caracteres problemáticos que fueron corregidos.",
+                "fixes": title_fixes,
+                "suggestion": f"Usa el título corregido: {title}",
+            }
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+            return 1
 
+    if content:
+        content, content_fixes = sanitize_content(content, dry_run=False)
+        # Log fixes but continue (content fixes are auto-applied)
+        if content_fixes:
+            pass  # Already logged in sanitize_content -> atomic_write_text
 
     meta = args.meta
 
     if args.meta_file:
-
         with open(args.meta_file, "r", encoding="utf-8") as f:
-
             meta = json.load(f)
 
-
-
-    result = vault_write(args.folder, args.title, content, args.tags, meta)
-
-
+    result = vault_write(args.folder, title, content, args.tags, meta)
 
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
     return 0 if result["ok"] else 1
 
 
-
-
-
 if __name__ == "__main__":
-
     sys.exit(wrap_main(main, "vault_write"))
-

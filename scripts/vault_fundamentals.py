@@ -30,6 +30,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
+from vault_lib import utcnow
 from vault_io import atomic_write_json, atomic_write_text, VAULT_ROOT
 
 SCRIPTS_DIR = Path(__file__).parent
@@ -55,12 +56,24 @@ FUNDAMENTALS: List[Dict[str, Any]] = [
             "No hay corrupción de delimitadores '---'",
         ],
         "frontmatter_fields": ["id", "title", "createdAt"],
-        "tools": ["vault_quality_check", "vault_validate", "vault_write",
-                  "vault_read", "vault_pattern_save", "vault_diagram_save",
-                  "vault_flow_save", "vault_requirement_save", "vault_test_save",
-                  "vault_infra_save", "vault_env_save", "vault_restore",
-                  "vault_migrate_rollback", "vault_security_scan",
-                  "vault_standard_upgrade", "vault_fundamentals"],
+        "tools": [
+            "vault_quality_check",
+            "vault_validate",
+            "vault_write",
+            "vault_read",
+            "vault_pattern_save",
+            "vault_diagram_save",
+            "vault_flow_save",
+            "vault_requirement_save",
+            "vault_test_save",
+            "vault_infra_save",
+            "vault_env_save",
+            "vault_restore",
+            "vault_migrate_rollback",
+            "vault_security_scan",
+            "vault_standard_upgrade",
+            "vault_fundamentals",
+        ],
     },
     {
         "id": "F2",
@@ -74,12 +87,30 @@ FUNDAMENTALS: List[Dict[str, Any]] = [
             "Los índices JSON están sincronizados con el contenido",
         ],
         "frontmatter_fields": ["type"],
-        "tools": ["vault_quality_check", "vault_audit", "vault_graph", "vault_reindex",
-                  "vault_impact", "vault_propagate", "vault_relation_add", "vault_code_relation", "vault_merge",
-                  "vault_search", "vault_list", "vault_knowledge_get", "vault_pattern_list",
-                  "vault_infra_map", "vault_code_map", "vault_code_query",
-                  "vault_backup_list", "vault_migrate_docs", "vault_master_index",
-                  "vault_section_index", "vault_project_overview", "vault_fundamentals"],
+        "tools": [
+            "vault_quality_check",
+            "vault_audit",
+            "vault_graph",
+            "vault_reindex",
+            "vault_impact",
+            "vault_propagate",
+            "vault_relation_add",
+            "vault_code_relation",
+            "vault_merge",
+            "vault_search",
+            "vault_list",
+            "vault_knowledge_get",
+            "vault_pattern_list",
+            "vault_infra_map",
+            "vault_code_map",
+            "vault_code_query",
+            "vault_backup_list",
+            "vault_migrate_docs",
+            "vault_master_index",
+            "vault_section_index",
+            "vault_project_overview",
+            "vault_fundamentals",
+        ],
     },
     {
         "id": "F3",
@@ -93,13 +124,29 @@ FUNDAMENTALS: List[Dict[str, Any]] = [
             "Campos opcionales recomendados populados (tags, status, type)",
         ],
         "frontmatter_fields": ["updatedAt", "tags", "status", "type"],
-        "tools": ["vault_quality_check", "vault_write", "vault_audit",
-                  "vault_append", "vault_knowledge_save", "vault_runbook_save",
-                  "vault_read", "vault_knowledge_get", "vault_diagram_save",
-                  "vault_flow_save", "vault_requirement_save", "vault_test_save",
-                  "vault_infra_save", "vault_code_module", "vault_env_save",
-                  "vault_master_index", "vault_project_status", "vault_project_overview",
-                  "vault_token_counter", "vault_token_service", "vault_tokens"],
+        "tools": [
+            "vault_quality_check",
+            "vault_write",
+            "vault_audit",
+            "vault_append",
+            "vault_knowledge_save",
+            "vault_runbook_save",
+            "vault_read",
+            "vault_knowledge_get",
+            "vault_diagram_save",
+            "vault_flow_save",
+            "vault_requirement_save",
+            "vault_test_save",
+            "vault_infra_save",
+            "vault_code_module",
+            "vault_env_save",
+            "vault_master_index",
+            "vault_project_status",
+            "vault_project_overview",
+            "vault_token_counter",
+            "vault_token_service",
+            "vault_tokens",
+        ],
     },
     {
         "id": "F4",
@@ -114,9 +161,15 @@ FUNDAMENTALS: List[Dict[str, Any]] = [
             "La documentación refleja el estado real del código (drift detection)",
         ],
         "frontmatter_fields": ["type", "path"],
-        "tools": ["vault_quality_check", "vault_drift_detect",
-                  "vault_diff", "vault_code_map", "vault_code_module",
-                  "vault_migrate_docs", "vault_fundamentals"],
+        "tools": [
+            "vault_quality_check",
+            "vault_drift_detect",
+            "vault_diff",
+            "vault_code_map",
+            "vault_code_module",
+            "vault_migrate_docs",
+            "vault_fundamentals",
+        ],
     },
     {
         "id": "F5",
@@ -130,9 +183,20 @@ FUNDAMENTALS: List[Dict[str, Any]] = [
             "Timestamps en formato ISO 8601",
             "IDs siguen el formato del esquema",
         ],
-        "frontmatter_fields": ["status", "type", "cia_integrity", "cia_availability", "cia_sensitivity"],
-        "tools": ["vault_validate", "vault_quality_check",
-                  "vault_env_save", "vault_security_scan", "vault_fundamentals"],
+        "frontmatter_fields": [
+            "status",
+            "type",
+            "cia_integrity",
+            "cia_availability",
+            "cia_sensitivity",
+        ],
+        "tools": [
+            "vault_validate",
+            "vault_quality_check",
+            "vault_env_save",
+            "vault_security_scan",
+            "vault_fundamentals",
+        ],
     },
     {
         "id": "F6",
@@ -146,10 +210,19 @@ FUNDAMENTALS: List[Dict[str, Any]] = [
             "updatedAt presente y no en el futuro",
         ],
         "frontmatter_fields": ["updatedAt", "evergreen", "cia_integrity"],
-        "tools": ["vault_quality_check", "vault_audit", "vault_drift_detect",
-                  "vault_diff", "vault_backup", "vault_project_status",
-                  "vault_timeline", "vault_token_counter", "vault_token_service",
-                  "vault_tokens", "vault_fundamentals"],
+        "tools": [
+            "vault_quality_check",
+            "vault_audit",
+            "vault_drift_detect",
+            "vault_diff",
+            "vault_backup",
+            "vault_project_status",
+            "vault_timeline",
+            "vault_token_counter",
+            "vault_token_service",
+            "vault_tokens",
+            "vault_fundamentals",
+        ],
     },
     {
         "id": "F7",
@@ -162,11 +235,22 @@ FUNDAMENTALS: List[Dict[str, Any]] = [
             "Valor de agent no vacío y reconocible (claude, user, etc.)",
         ],
         "frontmatter_fields": ["agent"],
-        "tools": ["vault_quality_check", "vault_validate", "vault_write",
-                  "vault_append", "vault_knowledge_save", "vault_bibliography_save", "vault_ai_decision",
-                  "vault_pattern_save", "vault_diagram_save", "vault_flow_save",
-                  "vault_requirement_save", "vault_test_save", "vault_infra_save",
-                  "vault_env_save"],
+        "tools": [
+            "vault_quality_check",
+            "vault_validate",
+            "vault_write",
+            "vault_append",
+            "vault_knowledge_save",
+            "vault_bibliography_save",
+            "vault_ai_decision",
+            "vault_pattern_save",
+            "vault_diagram_save",
+            "vault_flow_save",
+            "vault_requirement_save",
+            "vault_test_save",
+            "vault_infra_save",
+            "vault_env_save",
+        ],
     },
     {
         "id": "F8",
@@ -180,16 +264,21 @@ FUNDAMENTALS: List[Dict[str, Any]] = [
             "Eliminaciones registradas obligatoriamente antes de borrar",
         ],
         "frontmatter_fields": [],
-        "tools": ["vault_change_log", "vault_quality_check",
-                  "vault_log_error", "vault_ai_decision", "vault_runbook_log",
-                  "vault_backup", "vault_restore", "vault_migrate_rollback",
-                  "vault_standard_upgrade", "vault_timeline", "vault_fundamentals"],
+        "tools": [
+            "vault_change_log",
+            "vault_quality_check",
+            "vault_log_error",
+            "vault_ai_decision",
+            "vault_runbook_log",
+            "vault_backup",
+            "vault_restore",
+            "vault_migrate_rollback",
+            "vault_standard_upgrade",
+            "vault_timeline",
+            "vault_fundamentals",
+        ],
     },
 ]
-
-
-def _utcnow() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
 def _read_frontmatter(path: Path) -> Dict[str, str]:
@@ -227,6 +316,7 @@ def _has_change_log_entry(rel_path: str) -> bool:
 # Per-note verification
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 def check_note(rel_path: str) -> Dict[str, Any]:
     """Verify all 8 fundamentals for a single note. Returns pass/fail per principle."""
     note_path = VAULT_ROOT / rel_path
@@ -235,29 +325,52 @@ def check_note(rel_path: str) -> Dict[str, Any]:
 
     fm = _read_frontmatter(note_path)
     content = note_path.read_text(encoding="utf-8", errors="ignore")
-    body = content.split("---", 2)[2] if content.startswith("---") and "---" in content[3:] else content
+    body = (
+        content.split("---", 2)[2]
+        if content.startswith("---") and "---" in content[3:]
+        else content
+    )
     body_lines = [l for l in body.splitlines() if l.strip()]
 
     results: Dict[str, Dict[str, Any]] = {}
 
     # F1 INTEGRIDAD
-    f1_pass = bool(fm) and all(fm.get(f, "").strip() for f in ("id", "title", "createdAt"))
-    results["F1"] = {"name": "INTEGRIDAD", "pass": f1_pass, "issues": [] if f1_pass else ["Missing structural fields or frontmatter unparseable"]}
+    f1_pass = bool(fm) and all(
+        fm.get(f, "").strip() for f in ("id", "title", "createdAt")
+    )
+    results["F1"] = {
+        "name": "INTEGRIDAD",
+        "pass": f1_pass,
+        "issues": []
+        if f1_pass
+        else ["Missing structural fields or frontmatter unparseable"],
+    }
 
     # F2 CONSISTENCIA — type matches folder
     section_type_map = {
-        "01_Projects": "project", "03_Decisions": "decision", "04_Sessions": "session",
-        "05_Patterns": "pattern", "06_Diagrams": "diagram", "07_Knowledge": "knowledge",
-        "08_Runbooks": "runbook", "09_Infrastructure": "infra", "11_Code": "code",
-        "12_Bibliography": "bibliography", "13_Flows": "flow", "14_Requirements": "requirement",
-        "15_Tests": "test", "16_AI_Governance": "ai_decision",
+        "01_Projects": "project",
+        "03_Decisions": "decision",
+        "04_Sessions": "session",
+        "05_Patterns": "pattern",
+        "06_Diagrams": "diagram",
+        "07_Knowledge": "knowledge",
+        "08_Runbooks": "runbook",
+        "09_Infrastructure": "infra",
+        "11_Code": "code",
+        "12_Bibliography": "bibliography",
+        "13_Flows": "flow",
+        "14_Requirements": "requirement",
+        "15_Tests": "test",
+        "16_AI_Governance": "ai_decision",
     }
     folder = rel_path.split("/")[0] if "/" in rel_path else ""
     expected_type = section_type_map.get(folder)
     actual_type = fm.get("type", "").lower()
     f2_issues = []
     if expected_type and actual_type and actual_type != expected_type:
-        f2_issues.append(f"type '{actual_type}' does not match folder section (expected '{expected_type}')")
+        f2_issues.append(
+            f"type '{actual_type}' does not match folder section (expected '{expected_type}')"
+        )
     results["F2"] = {"name": "CONSISTENCIA", "pass": not f2_issues, "issues": f2_issues}
 
     # F3 COMPLETITUD
@@ -265,7 +378,9 @@ def check_note(rel_path: str) -> Dict[str, Any]:
     if not fm.get("updatedAt"):
         f3_issues.append("Missing updatedAt")
     if len(body_lines) < 3:
-        f3_issues.append(f"Body has only {len(body_lines)} content line(s), expected ≥3")
+        f3_issues.append(
+            f"Body has only {len(body_lines)} content line(s), expected ≥3"
+        )
     results["F3"] = {"name": "COMPLETITUD", "pass": not f3_issues, "issues": f3_issues}
 
     # F4 EXACTITUD
@@ -275,13 +390,29 @@ def check_note(rel_path: str) -> Dict[str, Any]:
     if fm.get("path"):
         declared = fm.get("path", "").replace("\\", "/")
         if declared and declared != rel_path:
-            f4_issues.append(f"path field='{declared}' differs from actual path='{rel_path}'")
+            f4_issues.append(
+                f"path field='{declared}' differs from actual path='{rel_path}'"
+            )
     results["F4"] = {"name": "EXACTITUD", "pass": not f4_issues, "issues": f4_issues}
 
     # F5 VALIDEZ
-    valid_status = {"active", "draft", "review", "archived", "deprecated", "en_progreso",
-                    "en_desarrollo", "in_progress", "done", "blocked", "pending",
-                    "completado", "completed", "cancelado", "cancelled"}
+    valid_status = {
+        "active",
+        "draft",
+        "review",
+        "archived",
+        "deprecated",
+        "en_progreso",
+        "en_desarrollo",
+        "in_progress",
+        "done",
+        "blocked",
+        "pending",
+        "completado",
+        "completed",
+        "cancelado",
+        "cancelled",
+    }
     valid_cia_i = {"critical", "high", "medium", "low"}
     valid_cia_a = {"high", "medium", "low"}
     valid_cia_s = {"public", "internal", "restricted"}
@@ -305,10 +436,16 @@ def check_note(rel_path: str) -> Dict[str, Any]:
             try:
                 dt = datetime.fromisoformat(updated[:19])
                 days = (datetime.now() - dt).days
-                threshold = 15 if fm.get("cia_integrity", "medium").lower() in ("critical", "high") else 30
+                threshold = (
+                    15
+                    if fm.get("cia_integrity", "medium").lower() in ("critical", "high")
+                    else 30
+                )
                 if days > threshold:
                     f6_pass = False
-                    f6_issues.append(f"{days} days since update (threshold {threshold}d)")
+                    f6_issues.append(
+                        f"{days} days since update (threshold {threshold}d)"
+                    )
             except Exception:
                 f6_issues.append(f"Could not parse updatedAt: {updated}")
                 f6_pass = False
@@ -316,11 +453,19 @@ def check_note(rel_path: str) -> Dict[str, Any]:
 
     # F7 AUTENTICIDAD
     f7_pass = bool(fm.get("agent", "").strip())
-    results["F7"] = {"name": "AUTENTICIDAD", "pass": f7_pass, "issues": [] if f7_pass else ["Missing 'agent' field in frontmatter (AP-16)"]}
+    results["F7"] = {
+        "name": "AUTENTICIDAD",
+        "pass": f7_pass,
+        "issues": [] if f7_pass else ["Missing 'agent' field in frontmatter (AP-16)"],
+    }
 
     # F8 NO_REPUDIO
     f8_pass = _has_change_log_entry(rel_path)
-    results["F8"] = {"name": "NO_REPUDIO", "pass": f8_pass, "issues": [] if f8_pass else ["No change-log entry references this note"]}
+    results["F8"] = {
+        "name": "NO_REPUDIO",
+        "pass": f8_pass,
+        "issues": [] if f8_pass else ["No change-log entry references this note"],
+    }
 
     passed = sum(1 for r in results.values() if r["pass"])
     return {
@@ -336,6 +481,7 @@ def check_note(rel_path: str) -> Dict[str, Any]:
 # ──────────────────────────────────────────────────────────────────────────────
 # Coverage report
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def coverage_report() -> Dict[str, Any]:
     """Return matrix of which tools implement which fundamentals."""
@@ -357,11 +503,12 @@ def coverage_report() -> Dict[str, Any]:
 # Registry generation
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 def export_registry() -> Dict[str, Any]:
     """Write 00_System/data-fundamentals.json with the canonical registry."""
     data = {
         "version": "v27",
-        "generated_at": _utcnow(),
+        "generated_at": utcnow(),
         "generated_by": "vault_fundamentals",
         "source": "fundamentos de datos.txt",
         "total": len(FUNDAMENTALS),
@@ -385,8 +532,8 @@ def export_doc() -> Dict[str, Any]:
         "title: Fundamentos de Datos",
         "type: knowledge",
         "agent: vault_fundamentals",
-        f"createdAt: {_utcnow()}",
-        f"updatedAt: {_utcnow()}",
+        f"createdAt: {utcnow()}",
+        f"updatedAt: {utcnow()}",
         "cia_integrity: high",
         "cia_availability: high",
         "evergreen: true",
@@ -402,7 +549,9 @@ def export_doc() -> Dict[str, Any]:
     ]
     for f in FUNDAMENTALS:
         tools_str = ", ".join(f["tools"])
-        lines.append(f"| {f['id']}  | {f['name']:16} | {f['dq_dimension']:17} | {tools_str} |")
+        lines.append(
+            f"| {f['id']}  | {f['name']:16} | {f['dq_dimension']:17} | {tools_str} |"
+        )
 
     lines.extend(["", "---", ""])
 
@@ -418,7 +567,9 @@ def export_doc() -> Dict[str, Any]:
             lines.append(f"- {v}")
         lines.append("")
         if f["frontmatter_fields"]:
-            lines.append(f"**Campos frontmatter:** `{', '.join(f['frontmatter_fields'])}`")
+            lines.append(
+                f"**Campos frontmatter:** `{', '.join(f['frontmatter_fields'])}`"
+            )
             lines.append("")
         lines.append(f"**Implementado por:** {', '.join(f['tools'])}")
         lines.append("")
@@ -429,7 +580,9 @@ def export_doc() -> Dict[str, Any]:
     lines.append("")
     lines.append("```bash")
     lines.append("# Verificar fundamentos de una nota")
-    lines.append("python scripts/vault_fundamentals.py --check 01_Projects/api/overview.md")
+    lines.append(
+        "python scripts/vault_fundamentals.py --check 01_Projects/api/overview.md"
+    )
     lines.append("")
     lines.append("# Ver cobertura por tool")
     lines.append("python scripts/vault_fundamentals.py --coverage")
@@ -449,6 +602,7 @@ def export_doc() -> Dict[str, Any]:
 # ──────────────────────────────────────────────────────────────────────────────
 # CLI
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(
@@ -471,9 +625,15 @@ Notas:
 """,
     )
     parser.add_argument("--list", action="store_true", help="List all 8 fundamentals")
-    parser.add_argument("--check", metavar="PATH", help="Verify fundamentals for a single note")
-    parser.add_argument("--coverage", action="store_true", help="Per-tool coverage report")
-    parser.add_argument("--doc", action="store_true", help="Generate data-fundamentals.md")
+    parser.add_argument(
+        "--check", metavar="PATH", help="Verify fundamentals for a single note"
+    )
+    parser.add_argument(
+        "--coverage", action="store_true", help="Per-tool coverage report"
+    )
+    parser.add_argument(
+        "--doc", action="store_true", help="Generate data-fundamentals.md"
+    )
 
     args = parser.parse_args()
 
@@ -482,7 +642,12 @@ Notas:
             "ok": True,
             "total": len(FUNDAMENTALS),
             "fundamentals": [
-                {"id": f["id"], "name": f["name"], "dq_dimension": f["dq_dimension"], "description": f["description"]}
+                {
+                    "id": f["id"],
+                    "name": f["name"],
+                    "dq_dimension": f["dq_dimension"],
+                    "description": f["description"],
+                }
                 for f in FUNDAMENTALS
             ],
         }

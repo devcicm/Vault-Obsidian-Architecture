@@ -16,16 +16,12 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
-from datetime import datetime, timezone
+from vault_lib import utcnow
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_io import VAULT_ROOT, assert_within_vault, safe_wikilink
 from vault_registry import section_description, section_tool_hint
-
-
-def _utcnow() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
 HUB_NOTE = VAULT_ROOT / "00_System" / "vault-hub.md"
@@ -48,14 +44,14 @@ def _ensure_hub_notes() -> None:
             "---\n"
             "title: Vault Hub\n"
             "id: vault-hub\n"
-            "createdAt: " + _utcnow() + "\n"
-            "updatedAt: " + _utcnow() + "\n"
+            "createdAt: " + utcnow() + "\n"
+            "updatedAt: " + utcnow() + "\n"
             "cia_integrity: high\n"
             "cia_availability: high\n"
             "cia_sensitivity: internal\n"
             "agent: system\n"
-            "tags: [\"nav\", \"hub\"]\n"
-            "norm_refs: [\"CN-01\"]\n"
+            'tags: ["nav", "hub"]\n'
+            'norm_refs: ["CN-01"]\n'
             "---\n"
             "\n"
             "# Vault Hub — Punto único de navegación\n"
@@ -74,11 +70,24 @@ def _ensure_hub_notes() -> None:
             "|---|---|---|\n"
         )
         for section in [
-            "00_System", "01_Projects", "02_Observability", "03_Decisions",
-            "04_Sessions", "05_Patterns", "06_Diagrams", "07_Knowledge",
-            "08_Runbooks", "09_Infrastructure", "10_Migrated", "11_Code",
-            "12_Bibliography", "13_Flows", "14_Requirements", "15_Tests",
-            "16_AI_Governance", "99_Index",
+            "00_System",
+            "01_Projects",
+            "02_Observability",
+            "03_Decisions",
+            "04_Sessions",
+            "05_Patterns",
+            "06_Diagrams",
+            "07_Knowledge",
+            "08_Runbooks",
+            "09_Infrastructure",
+            "10_Migrated",
+            "11_Code",
+            "12_Bibliography",
+            "13_Flows",
+            "14_Requirements",
+            "15_Tests",
+            "16_AI_Governance",
+            "99_Index",
         ]:
             desc = section_description(section)
             hub_content += f"| `{section}` | {desc} | `{section}/index.md` |\n"
@@ -105,14 +114,14 @@ def _ensure_hub_notes() -> None:
             "---\n"
             "title: Vault Commands\n"
             "id: vault-commands\n"
-            "createdAt: " + _utcnow() + "\n"
-            "updatedAt: " + _utcnow() + "\n"
+            "createdAt: " + utcnow() + "\n"
+            "updatedAt: " + utcnow() + "\n"
             "cia_integrity: high\n"
             "cia_availability: high\n"
             "cia_sensitivity: internal\n"
             "agent: system\n"
-            "tags: [\"nav\", \"commands\"]\n"
-            "norm_refs: [\"CN-01\"]\n"
+            'tags: ["nav", "commands"]\n'
+            'norm_refs: ["CN-01"]\n'
             "---\n"
             "\n"
             "# Vault Commands — Referencia unificada de comandos CLI\n"
@@ -148,26 +157,26 @@ def _ensure_hub_notes() -> None:
             "\n"
             "```bash\n"
             "# Crear o actualizar una nota\n"
-            "python scripts/vault_write.py --folder \"01_Projects/mi-api\" --title \"Status\" --content \"# Status\\n\\nActivo\"\n"
+            'python scripts/vault_write.py --folder "01_Projects/mi-api" --title "Status" --content "# Status\\n\\nActivo"\n'
             "\n"
             "# Leer una nota por ruta\n"
-            "python scripts/vault_read.py --path \"01_Projects/mi-api/status.md\"\n"
+            'python scripts/vault_read.py --path "01_Projects/mi-api/status.md"\n'
             "\n"
             "# Buscar full-text\n"
-            "python scripts/vault_search.py --query \"circuit breaker\"\n"
+            'python scripts/vault_search.py --query "circuit breaker"\n'
             "\n"
             "# Listar notas de una carpeta\n"
-            "python scripts/vault_list.py --folder \"01_Projects\"\n"
+            'python scripts/vault_list.py --folder "01_Projects"\n'
             "\n"
             "# Agregar contenido al final (changelogs, session logs)\n"
-            "python scripts/vault_append.py --path \"04_Sessions/2026-06-19.md\" --content \"## Tasks\\n\\n- [x] Fix init\"\n"
+            'python scripts/vault_append.py --path "04_Sessions/2026-06-19.md" --content "## Tasks\\n\\n- [x] Fix init"\n'
             "```\n"
             "\n"
             "## Índices\n"
             "\n"
             "```bash\n"
             "# Regenerar índice de una sección\n"
-            "python scripts/vault_section_index.py --folder \"01_Projects\"\n"
+            'python scripts/vault_section_index.py --folder "01_Projects"\n'
             "\n"
             "# Regenerar TODOS los índices de sección + el master index\n"
             "python scripts/vault_master_index.py\n"
@@ -207,9 +216,15 @@ def _ensure_hub_notes() -> None:
             ("11_Code", "vault_code_module --project <slug> --file_path <path>"),
             ("12_Bibliography", "vault_bibliography_save --title <ref> --type web"),
             ("13_Flows", "vault_flow_save --project <slug> --title <flow>"),
-            ("14_Requirements", "vault_requirement_save --project <slug> --title <req>"),
+            (
+                "14_Requirements",
+                "vault_requirement_save --project <slug> --title <req>",
+            ),
             ("15_Tests", "vault_test_save --project <slug> --title <test>"),
-            ("16_AI_Governance", "vault_ai_decision --project <slug> --title <decision>"),
+            (
+                "16_AI_Governance",
+                "vault_ai_decision --project <slug> --title <decision>",
+            ),
         ]:
             if hint:
                 commands_content += f"- **{section}** — `{hint}`\n"
@@ -248,7 +263,11 @@ def _parse_frontmatter(content: str) -> Dict[str, Any]:
 
 def _collect_notes(section_path: Path, include_subdirs: bool) -> List[Dict[str, Any]]:
     """Scan folder and return metadata list for all real notes (excludes index.md)."""
-    candidates = list(section_path.rglob("*.md")) if include_subdirs else list(section_path.glob("*.md"))
+    candidates = (
+        list(section_path.rglob("*.md"))
+        if include_subdirs
+        else list(section_path.glob("*.md"))
+    )
     notes: List[Dict[str, Any]] = []
     for note_path in sorted(candidates):
         if note_path.name == "index.md":
@@ -261,12 +280,14 @@ def _collect_notes(section_path: Path, include_subdirs: bool) -> List[Dict[str, 
             continue
         meta = _parse_frontmatter(content)
         rel = str(note_path.relative_to(section_path)).replace("\\", "/")
-        notes.append({
-            "title": meta.get("title") or note_path.stem,
-            "path": rel,
-            "type": meta.get("type") or "",
-            "updatedAt": meta.get("updatedAt") or meta.get("createdAt") or "",
-        })
+        notes.append(
+            {
+                "title": meta.get("title") or note_path.stem,
+                "path": rel,
+                "type": meta.get("type") or "",
+                "updatedAt": meta.get("updatedAt") or meta.get("createdAt") or "",
+            }
+        )
     return notes
 
 
@@ -325,7 +346,9 @@ def _build_index_content(
             sub_name = sub_key.split("/")[-1]
             lines.append(f"| `{sub_key}/` | {sub_desc} |")
         lines.append("")
-        lines.append("> Para navegar a una subcarpeta, abre `{folder}/{subcarpeta}/index.md` desde tu editor, o usa el [[vault-hub|Hub]].")
+        lines.append(
+            "> Para navegar a una subcarpeta, abre `{folder}/{subcarpeta}/index.md` desde tu editor, o usa el [[vault-hub|Hub]]."
+        )
         lines.append("")
 
     if notes:
@@ -398,7 +421,7 @@ def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, 
     except ValueError as e:
         return {"ok": False, "error": "path_traversal", "detail": str(e)}
 
-    now = _utcnow()
+    now = utcnow()
     notes = _collect_notes(section_path, include_subdirs)
 
     # Discover immediate subdirectories (for subdir listing in index)
@@ -419,7 +442,9 @@ def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, 
                 _build_index_content(sub_folder, sub_notes, now, subdirs=None),
                 encoding="utf-8",
             )
-            subdir_indexes.append(str(sub_index.relative_to(VAULT_ROOT)).replace("\\", "/"))
+            subdir_indexes.append(
+                str(sub_index.relative_to(VAULT_ROOT)).replace("\\", "/")
+            )
 
     # Write main section index — includes subdir listing
     index_path = section_path / "index.md"
@@ -455,8 +480,12 @@ Notas:
   - El index.md generado es un artefacto derivado -- no editar manualmente
 """,
     )
-    parser.add_argument("--folder", required=True, help="Section folder relative to vault root")
-    parser.add_argument("--no-subdirs", action="store_true", help="Exclude notes in subdirectories")
+    parser.add_argument(
+        "--folder", required=True, help="Section folder relative to vault root"
+    )
+    parser.add_argument(
+        "--no-subdirs", action="store_true", help="Exclude notes in subdirectories"
+    )
     args = parser.parse_args()
 
     result = vault_section_index(args.folder, include_subdirs=not args.no_subdirs)

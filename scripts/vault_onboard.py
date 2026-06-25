@@ -42,32 +42,62 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from vault_errors import wrap_main
+from vault_lib import utcnow
 from vault_io import VAULT_ROOT, assert_within_vault, atomic_write_text
 from vault_norms import compute_norm_refs
 
 # ── Language / extension maps ─────────────────────────────────────────────────
 
 LANG_BY_EXT: Dict[str, str] = {
-    ".ts": "typescript", ".tsx": "typescript",
-    ".js": "javascript", ".jsx": "javascript", ".mjs": "javascript", ".cjs": "javascript",
-    ".py": "python", ".cs": "csharp", ".go": "go", ".rs": "rust",
-    ".java": "java", ".rb": "ruby", ".php": "php",
-    ".cpp": "cpp", ".cc": "cpp", ".cxx": "cpp", ".c": "c",
-    ".kt": "kotlin", ".swift": "swift", ".dart": "dart",
-    ".ex": "elixir", ".exs": "elixir",
+    ".ts": "typescript",
+    ".tsx": "typescript",
+    ".js": "javascript",
+    ".jsx": "javascript",
+    ".mjs": "javascript",
+    ".cjs": "javascript",
+    ".py": "python",
+    ".cs": "csharp",
+    ".go": "go",
+    ".rs": "rust",
+    ".java": "java",
+    ".rb": "ruby",
+    ".php": "php",
+    ".cpp": "cpp",
+    ".cc": "cpp",
+    ".cxx": "cpp",
+    ".c": "c",
+    ".kt": "kotlin",
+    ".swift": "swift",
+    ".dart": "dart",
+    ".ex": "elixir",
+    ".exs": "elixir",
 }
 
 SKIP_DIRS = {
-    "node_modules", ".git", "dist", "build", "out", "bin", "obj",
-    "__pycache__", ".venv", "venv", "vendor", "third_party",
-    ".idea", ".vscode", "coverage", ".nyc_output",
-    "vault-backups", "scripts",
+    "node_modules",
+    ".git",
+    "dist",
+    "build",
+    "out",
+    "bin",
+    "obj",
+    "__pycache__",
+    ".venv",
+    "venv",
+    "vendor",
+    "third_party",
+    ".idea",
+    ".vscode",
+    "coverage",
+    ".nyc_output",
+    "vault-backups",
+    "scripts",
 }
 
 SKIP_DIRS_TEST = {"test", "tests", "spec", "specs", "__tests__", "e2e", "fixtures"}
 
 MODULE_TYPE_PATTERNS: List[Tuple[re.Pattern, str]] = [
-    (re.compile(r"service",              re.I), "service"),
+    (re.compile(r"service", re.I), "service"),
     (re.compile(r"controller|handler|route", re.I), "controller"),
     (re.compile(r"repository|store|dao|gateway", re.I), "repository"),
     (re.compile(r"model|entity|schema|dto", re.I), "model"),
@@ -80,8 +110,16 @@ MODULE_TYPE_PATTERNS: List[Tuple[re.Pattern, str]] = [
 ]
 
 MODULE_PRIORITY = [
-    "service", "controller", "repository", "manager",
-    "model", "middleware", "factory", "interface", "utility", "config",
+    "service",
+    "controller",
+    "repository",
+    "manager",
+    "model",
+    "middleware",
+    "factory",
+    "interface",
+    "utility",
+    "config",
 ]
 
 DECISION_KEYWORDS = re.compile(
@@ -109,16 +147,15 @@ TEST_PATTERNS = [
 
 # ── Utilities ─────────────────────────────────────────────────────────────────
 
-def _utcnow() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-
 
 def _slug(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
 
 
 def _date_str(ts: float) -> str:
-    return datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    return datetime.fromtimestamp(ts, tz=timezone.utc).strftime(
+        "%Y-%m-%dT%H:%M:%S.000Z"
+    )
 
 
 def _month_key(date_str: str) -> str:
@@ -129,7 +166,8 @@ def _run_git(project_path: Path, args: List[str], timeout: int = 10) -> Optional
     try:
         r = subprocess.run(
             ["git", "-C", str(project_path)] + args,
-            capture_output=True, timeout=timeout,
+            capture_output=True,
+            timeout=timeout,
         )
         if r.returncode != 0:
             return None
@@ -167,21 +205,26 @@ def _parse_commits(raw: str) -> List[Dict[str, Any]]:
     for line in raw.splitlines():
         parts = line.split("|", 3)
         if len(parts) == 4:
-            commits.append({
-                "hash": parts[0][:8],
-                "date": parts[1][:10],
-                "message": parts[2].strip(),
-                "author": parts[3].strip(),
-            })
+            commits.append(
+                {
+                    "hash": parts[0][:8],
+                    "date": parts[1][:10],
+                    "message": parts[2].strip(),
+                    "author": parts[3].strip(),
+                }
+            )
     return commits
 
 
 def _scan_all_branches(project_path: Path) -> List[Dict[str, Any]]:
     """List all local + remote branches with their oldest commit date."""
-    branches_raw = _run_git(
-        project_path,
-        ["branch", "-a", "--format=%(refname:short)|%(objectname:short)"],
-    ) or ""
+    branches_raw = (
+        _run_git(
+            project_path,
+            ["branch", "-a", "--format=%(refname:short)|%(objectname:short)"],
+        )
+        or ""
+    )
     branches = []
     for line in branches_raw.splitlines():
         parts = line.strip().split("|", 1)
@@ -191,27 +234,40 @@ def _scan_all_branches(project_path: Path) -> List[Dict[str, Any]]:
         if "HEAD" in name:
             continue
         # Get oldest commit on this branch (not reachable from others)
-        oldest_raw = _run_git(
-            project_path,
-            ["log", name, "--pretty=format:%ai|%s", "--reverse", "-n1"],
-        ) or ""
-        newest_raw = _run_git(
-            project_path,
-            ["log", name, "--pretty=format:%ai", "-n1"],
-        ) or ""
-        count_raw = _run_git(
-            project_path,
-            ["rev-list", "--count", name],
-        ) or "0"
+        oldest_raw = (
+            _run_git(
+                project_path,
+                ["log", name, "--pretty=format:%ai|%s", "--reverse", "-n1"],
+            )
+            or ""
+        )
+        newest_raw = (
+            _run_git(
+                project_path,
+                ["log", name, "--pretty=format:%ai", "-n1"],
+            )
+            or ""
+        )
+        count_raw = (
+            _run_git(
+                project_path,
+                ["rev-list", "--count", name],
+            )
+            or "0"
+        )
         oldest_date = oldest_raw.split("|")[0][:10] if oldest_raw else ""
         is_snap = bool(SNAP_BRANCH_PATTERN.search(name))
-        branches.append({
-            "name": name,
-            "oldest_date": oldest_date,
-            "newest_date": newest_raw[:10],
-            "commit_count": int(count_raw.strip()) if count_raw.strip().isdigit() else 0,
-            "is_snap_branch": is_snap,
-        })
+        branches.append(
+            {
+                "name": name,
+                "oldest_date": oldest_date,
+                "newest_date": newest_raw[:10],
+                "commit_count": int(count_raw.strip())
+                if count_raw.strip().isdigit()
+                else 0,
+                "is_snap_branch": is_snap,
+            }
+        )
     return branches
 
 
@@ -224,56 +280,81 @@ def _extract_git_history(project_path: Path, max_commits: int = 500) -> Dict[str
     current_branch = _run_git(project_path, ["branch", "--show-current"]) or "HEAD"
 
     # ── Full log across ALL branches (--all) ──────────────────────────────────
-    log_raw = _run_git(
-        project_path,
-        ["log", "--all", f"--pretty=format:%H|%ai|%s|%an", f"-n{max_commits}"],
-    ) or ""
+    log_raw = (
+        _run_git(
+            project_path,
+            ["log", "--all", f"--pretty=format:%H|%ai|%s|%an", f"-n{max_commits}"],
+        )
+        or ""
+    )
     commits_all = _parse_commits(log_raw)
 
     # Current branch log (for apparent age)
-    log_current = _run_git(
-        project_path,
-        ["log", f"--pretty=format:%H|%ai|%s|%an", f"-n{max_commits}"],
-    ) or ""
+    log_current = (
+        _run_git(
+            project_path,
+            ["log", f"--pretty=format:%H|%ai|%s|%an", f"-n{max_commits}"],
+        )
+        or ""
+    )
     commits_current = _parse_commits(log_current)
 
     # ── Reflog (catches orphan / pre-rebase / detached HEAD history) ──────────
-    reflog_raw = _run_git(
-        project_path,
-        ["reflog", "--pretty=format:%H|%ai|%gs|%an", f"-n{min(max_commits, 300)}"],
-    ) or ""
+    reflog_raw = (
+        _run_git(
+            project_path,
+            ["reflog", "--pretty=format:%H|%ai|%gs|%an", f"-n{min(max_commits, 300)}"],
+        )
+        or ""
+    )
     reflog_commits = []
     known_hashes = {c["hash"] for c in commits_all}
     for line in reflog_raw.splitlines():
         parts = line.split("|", 3)
         if len(parts) == 4 and parts[0][:8] not in known_hashes:
-            reflog_commits.append({
-                "hash": parts[0][:8], "date": parts[1][:10],
-                "message": f"[reflog] {parts[2].strip()}", "author": parts[3].strip(),
-                "source": "reflog",
-            })
+            reflog_commits.append(
+                {
+                    "hash": parts[0][:8],
+                    "date": parts[1][:10],
+                    "message": f"[reflog] {parts[2].strip()}",
+                    "author": parts[3].strip(),
+                    "source": "reflog",
+                }
+            )
 
     # ── Stash list ────────────────────────────────────────────────────────────
-    stash_raw = _run_git(
-        project_path,
-        ["stash", "list", "--pretty=format:%gd|%ai|%s"],
-    ) or ""
+    stash_raw = (
+        _run_git(
+            project_path,
+            ["stash", "list", "--pretty=format:%gd|%ai|%s"],
+        )
+        or ""
+    )
     stashes = []
     for line in stash_raw.splitlines():
         parts = line.split("|", 2)
         if len(parts) == 3:
-            stashes.append({"ref": parts[0], "date": parts[1][:10], "message": parts[2].strip()})
+            stashes.append(
+                {"ref": parts[0], "date": parts[1][:10], "message": parts[2].strip()}
+            )
 
     # ── All branches with dates ───────────────────────────────────────────────
     branches = _scan_all_branches(project_path)
     snap_branches = [b for b in branches if b["is_snap_branch"]]
 
     # ── Tags ─────────────────────────────────────────────────────────────────
-    tags_raw = _run_git(
-        project_path,
-        ["tag", "-l", "--sort=version:refname",
-         "--format=%(refname:short)|%(creatordate:short)"],
-    ) or ""
+    tags_raw = (
+        _run_git(
+            project_path,
+            [
+                "tag",
+                "-l",
+                "--sort=version:refname",
+                "--format=%(refname:short)|%(creatordate:short)",
+            ],
+        )
+        or ""
+    )
     tags = []
     for line in tags_raw.splitlines():
         parts = line.split("|", 1)
@@ -287,12 +368,18 @@ def _extract_git_history(project_path: Path, max_commits: int = 500) -> Dict[str
         if b.get("oldest_date"):
             all_dates.append(b["oldest_date"])
 
-    true_first_date  = min(all_dates) if all_dates else ""
-    apparent_first_date = commits_current[-1]["date"] if commits_current else true_first_date
+    true_first_date = min(all_dates) if all_dates else ""
+    apparent_first_date = (
+        commits_current[-1]["date"] if commits_current else true_first_date
+    )
 
     hidden_history = False
-    hidden_months  = 0
-    if true_first_date and apparent_first_date and true_first_date < apparent_first_date:
+    hidden_months = 0
+    if (
+        true_first_date
+        and apparent_first_date
+        and true_first_date < apparent_first_date
+    ):
         try:
             t = datetime.fromisoformat(true_first_date)
             a = datetime.fromisoformat(apparent_first_date)
@@ -301,8 +388,12 @@ def _extract_git_history(project_path: Path, max_commits: int = 500) -> Dict[str
         except Exception:
             pass
 
-    contributors = list(dict.fromkeys(c["author"] for c in commits_all if c.get("author")))
-    key_commits  = [c for c in commits_all if DECISION_KEYWORDS.search(c.get("message", ""))][:10]
+    contributors = list(
+        dict.fromkeys(c["author"] for c in commits_all if c.get("author"))
+    )
+    key_commits = [
+        c for c in commits_all if DECISION_KEYWORDS.search(c.get("message", ""))
+    ][:10]
 
     # Build unified commit list: all_branches + reflog for phase detection
     all_commits_unified = commits_all + reflog_commits
@@ -311,8 +402,8 @@ def _extract_git_history(project_path: Path, max_commits: int = 500) -> Dict[str
     return {
         "is_git": True,
         "current_branch": current_branch,
-        "first_commit":  {"date": true_first_date, "message": "", "author": ""},
-        "last_commit":   commits_all[0] if commits_all else None,
+        "first_commit": {"date": true_first_date, "message": "", "author": ""},
+        "last_commit": commits_all[0] if commits_all else None,
         "apparent_first_date": apparent_first_date,
         "true_first_date": true_first_date,
         "hidden_history": hidden_history,
@@ -321,8 +412,8 @@ def _extract_git_history(project_path: Path, max_commits: int = 500) -> Dict[str
         "total_commits_with_reflog": len(all_commits_unified),
         "contributors": contributors[:8],
         "tags": tags,
-        "commits": all_commits_unified,        # unified for phase detection
-        "commits_current": commits_current,    # current branch only
+        "commits": all_commits_unified,  # unified for phase detection
+        "commits_current": commits_current,  # current branch only
         "key_commits": key_commits,
         "branches": branches,
         "snap_branches": snap_branches,
@@ -343,20 +434,32 @@ def _extract_file_history(project_path: Path) -> Dict[str, Any]:
             continue
         try:
             stat = f.stat()
-            files.append({
-                "path": str(f.relative_to(project_path)).replace("\\", "/"),
-                "ctime": stat.st_ctime,
-                "mtime": stat.st_mtime,
-                "date": _date_str(stat.st_mtime)[:10],
-            })
+            files.append(
+                {
+                    "path": str(f.relative_to(project_path)).replace("\\", "/"),
+                    "ctime": stat.st_ctime,
+                    "mtime": stat.st_mtime,
+                    "date": _date_str(stat.st_mtime)[:10],
+                }
+            )
         except Exception:
             pass
 
     files.sort(key=lambda x: x["ctime"])
     return {
         "is_git": False,
-        "first_file": {"path": files[0]["path"], "date": _date_str(files[0]["ctime"])[:10]} if files else None,
-        "last_modified": {"path": files[-1]["path"], "date": _date_str(files[-1]["mtime"])[:10]} if files else None,
+        "first_file": {
+            "path": files[0]["path"],
+            "date": _date_str(files[0]["ctime"])[:10],
+        }
+        if files
+        else None,
+        "last_modified": {
+            "path": files[-1]["path"],
+            "date": _date_str(files[-1]["mtime"])[:10],
+        }
+        if files
+        else None,
         "files": files,
         "commits": [],
         "tags": [],
@@ -365,14 +468,20 @@ def _extract_file_history(project_path: Path) -> Dict[str, Any]:
     }
 
 
-def _detect_phases(history: Dict[str, Any], max_phases: int = 8) -> List[Dict[str, Any]]:
+def _detect_phases(
+    history: Dict[str, Any], max_phases: int = 8
+) -> List[Dict[str, Any]]:
     """Cluster git commits (or file mtimes) into phases by month."""
     if history["is_git"]:
-        items = [{"date": c["date"], "message": c["message"], "author": c.get("author", "")}
-                 for c in history.get("commits", [])]
+        items = [
+            {"date": c["date"], "message": c["message"], "author": c.get("author", "")}
+            for c in history.get("commits", [])
+        ]
     else:
-        items = [{"date": f["date"][:10], "message": f["path"], "author": ""}
-                 for f in history.get("files", [])]
+        items = [
+            {"date": f["date"][:10], "message": f["path"], "author": ""}
+            for f in history.get("files", [])
+        ]
 
     if not items:
         return []
@@ -392,8 +501,8 @@ def _detect_phases(history: Dict[str, Any], max_phases: int = 8) -> List[Dict[st
         if i == 0:
             current = [month]
         else:
-            prev_year, prev_mon = int(months[i-1][:4]), int(months[i-1][5:7])
-            cur_year,  cur_mon  = int(month[:4]), int(month[5:7])
+            prev_year, prev_mon = int(months[i - 1][:4]), int(months[i - 1][5:7])
+            cur_year, cur_mon = int(month[:4]), int(month[5:7])
             gap = (cur_year - prev_year) * 12 + (cur_mon - prev_mon)
             if gap <= 1:
                 current.append(month)
@@ -416,7 +525,7 @@ def _detect_phases(history: Dict[str, Any], max_phases: int = 8) -> List[Dict[st
             all_items.extend(by_month[m])
 
         first_date = group[0] + "-01"
-        last_date  = group[-1] + "-28"
+        last_date = group[-1] + "-28"
 
         # Find tag in this period
         tag_label = next((tag_dates[m] for m in group if m in tag_dates), None)
@@ -429,32 +538,37 @@ def _detect_phases(history: Dict[str, Any], max_phases: int = 8) -> List[Dict[st
             label = f"Fase {idx + 1}"
 
         # Top messages
-        highlights = list(dict.fromkeys(
-            i["message"] for i in all_items if i["message"]
-        ))[:5]
+        highlights = list(
+            dict.fromkeys(i["message"] for i in all_items if i["message"])
+        )[:5]
 
         # Most active authors
-        authors = list(dict.fromkeys(i["author"] for i in all_items if i.get("author")))[:3]
+        authors = list(
+            dict.fromkeys(i["author"] for i in all_items if i.get("author"))
+        )[:3]
 
-        result.append({
-            "label": label,
-            "label_slug": _slug(label),
-            "month_start": group[0],
-            "month_end": group[-1],
-            "first_date": first_date,
-            "last_date": last_date,
-            "item_count": len(all_items),
-            "highlights": highlights,
-            "authors": authors,
-            "tag": tag_label,
-            "is_first": idx == 0,
-            "is_last": idx == len(phases) - 1,
-        })
+        result.append(
+            {
+                "label": label,
+                "label_slug": _slug(label),
+                "month_start": group[0],
+                "month_end": group[-1],
+                "first_date": first_date,
+                "last_date": last_date,
+                "item_count": len(all_items),
+                "highlights": highlights,
+                "authors": authors,
+                "tag": tag_label,
+                "is_first": idx == 0,
+                "is_last": idx == len(phases) - 1,
+            }
+        )
 
     return result
 
 
 # ── Project meta ──────────────────────────────────────────────────────────────
+
 
 def _read_package_json(project_path: Path) -> Dict[str, Any]:
     pj = project_path / "package.json"
@@ -467,12 +581,18 @@ def _read_package_json(project_path: Path) -> Dict[str, Any]:
         all_deps = deps + dev_deps
         framework = ""
         for d in all_deps:
-            if d == "electron":         framework = "Electron"
-            elif d == "next":           framework = "Next.js"
-            elif d == "react":          framework = framework or "React"
-            elif d == "vue":            framework = framework or "Vue"
-            elif d == "@nestjs/core":   framework = "NestJS"
-            elif d in ("express", "fastify", "koa"):  framework = framework or d.capitalize()
+            if d == "electron":
+                framework = "Electron"
+            elif d == "next":
+                framework = "Next.js"
+            elif d == "react":
+                framework = framework or "React"
+            elif d == "vue":
+                framework = framework or "Vue"
+            elif d == "@nestjs/core":
+                framework = "NestJS"
+            elif d in ("express", "fastify", "koa"):
+                framework = framework or d.capitalize()
         node_ver = data.get("engines", {}).get("node", "")
         return {
             "name": data.get("name", ""),
@@ -498,13 +618,17 @@ def _read_pyproject(project_path: Path) -> Dict[str, Any]:
             text = fp.read_text(encoding="utf-8")
             name = re.search(r'name\s*=\s*["\']([^"\']+)', text)
             desc = re.search(r'description\s*=\s*["\']([^"\']+)', text)
-            ver  = re.search(r'version\s*=\s*["\']([^"\']+)', text)
+            ver = re.search(r'version\s*=\s*["\']([^"\']+)', text)
             return {
                 "name": name.group(1) if name else "",
                 "description": desc.group(1) if desc else "",
                 "version": ver.group(1) if ver else "",
-                "runtime": "Python", "framework": "", "source": fname,
-                "scripts": {}, "key_deps": [], "all_deps": [],
+                "runtime": "Python",
+                "framework": "",
+                "source": fname,
+                "scripts": {},
+                "key_deps": [],
+                "all_deps": [],
             }
         except Exception:
             continue
@@ -517,10 +641,15 @@ def _read_csproj(project_path: Path) -> Dict[str, Any]:
             text = csproj.read_text(encoding="utf-8", errors="replace")
             framework = re.search(r"<TargetFramework>([^<]+)", text)
             return {
-                "name": csproj.stem, "description": "", "version": "",
+                "name": csproj.stem,
+                "description": "",
+                "version": "",
                 "runtime": "dotnet",
                 "framework": framework.group(1) if framework else "",
-                "source": csproj.name, "scripts": {}, "key_deps": [], "all_deps": [],
+                "source": csproj.name,
+                "scripts": {},
+                "key_deps": [],
+                "all_deps": [],
             }
         except Exception:
             continue
@@ -536,14 +665,18 @@ def _read_readme(project_path: Path) -> Tuple[str, List[str]]:
         try:
             text = fp.read_text(encoding="utf-8", errors="replace")
             headers = re.findall(r"^## (.+)$", text, re.MULTILINE)
-            lines = [l for l in text.splitlines() if l.strip() and not l.startswith("#")]
+            lines = [
+                l for l in text.splitlines() if l.strip() and not l.startswith("#")
+            ]
             return " ".join(lines)[:500], headers
         except Exception:
             pass
     return "", []
 
 
-def _detect_project_meta(project_path: Path, lang_hint: Optional[str]) -> Dict[str, Any]:
+def _detect_project_meta(
+    project_path: Path, lang_hint: Optional[str]
+) -> Dict[str, Any]:
     meta: Dict[str, Any] = {}
     for reader in (_read_package_json, _read_pyproject, _read_csproj):
         result = reader(project_path)
@@ -570,8 +703,13 @@ def _detect_project_meta(project_path: Path, lang_hint: Optional[str]) -> Dict[s
 
 # ── Module scanner ────────────────────────────────────────────────────────────
 
-def _scan_modules(project_path: Path, depth: int, language: str, max_modules: int) -> List[Dict]:
-    relevant_exts = {ext for ext, lang in LANG_BY_EXT.items() if lang == language} or set(LANG_BY_EXT.keys())
+
+def _scan_modules(
+    project_path: Path, depth: int, language: str, max_modules: int
+) -> List[Dict]:
+    relevant_exts = {
+        ext for ext, lang in LANG_BY_EXT.items() if lang == language
+    } or set(LANG_BY_EXT.keys())
     found = []
 
     def _scan(dir_path: Path, d: int) -> None:
@@ -590,12 +728,15 @@ def _scan_modules(project_path: Path, depth: int, language: str, max_modules: in
                 _scan(entry, d + 1)
             elif entry.is_file() and entry.suffix.lower() in relevant_exts:
                 rel = str(entry.relative_to(project_path)).replace("\\", "/")
-                found.append({
-                    "name": entry.stem, "file_path": rel,
-                    "type": _infer_module_type(entry.name),
-                    "size_lines": _count_lines(entry),
-                    "slug": _slug(entry.stem),
-                })
+                found.append(
+                    {
+                        "name": entry.stem,
+                        "file_path": rel,
+                        "type": _infer_module_type(entry.name),
+                        "size_lines": _count_lines(entry),
+                        "slug": _slug(entry.stem),
+                    }
+                )
 
     _scan(project_path, 0)
 
@@ -611,8 +752,15 @@ def _scan_modules(project_path: Path, depth: int, language: str, max_modules: in
 
 # ── Infrastructure scanner ────────────────────────────────────────────────────
 
+
 def _detect_infra(project_path: Path) -> Dict[str, Any]:
-    infra: Dict[str, Any] = {"services": [], "envs": [], "ports": [], "files": [], "base_image": ""}
+    infra: Dict[str, Any] = {
+        "services": [],
+        "envs": [],
+        "ports": [],
+        "files": [],
+        "base_image": "",
+    }
     for fname in ("docker-compose.yml", "docker-compose.yaml", "compose.yml"):
         fp = project_path / fname
         if not fp.exists():
@@ -620,7 +768,9 @@ def _detect_infra(project_path: Path) -> Dict[str, Any]:
         infra["files"].append(fname)
         try:
             text = fp.read_text(encoding="utf-8", errors="replace")
-            infra["services"].extend(re.findall(r"^\s{2}(\w[\w-]+):\s*$", text, re.MULTILINE))
+            infra["services"].extend(
+                re.findall(r"^\s{2}(\w[\w-]+):\s*$", text, re.MULTILINE)
+            )
             infra["ports"].extend(re.findall(r'"?(\d+:\d+)"?', text)[:10])
         except Exception:
             pass
@@ -632,7 +782,9 @@ def _detect_infra(project_path: Path) -> Dict[str, Any]:
                 m = re.search(r"^FROM\s+(\S+)", text, re.MULTILINE)
                 if m:
                     infra["base_image"] = m.group(1)
-                infra["ports"].extend(re.findall(r"^EXPOSE\s+(\d+)", text, re.MULTILINE))
+                infra["ports"].extend(
+                    re.findall(r"^EXPOSE\s+(\d+)", text, re.MULTILINE)
+                )
             except Exception:
                 pass
     for ef in (".env.example", ".env.local", ".env.sample", ".env.template"):
@@ -640,9 +792,13 @@ def _detect_infra(project_path: Path) -> Dict[str, Any]:
         if fp.exists():
             infra["files"].append(ef)
             try:
-                keys = [l.split("=")[0].strip() for l in
-                        fp.read_text(encoding="utf-8", errors="replace").splitlines()
-                        if l.strip() and not l.startswith("#") and "=" in l]
+                keys = [
+                    l.split("=")[0].strip()
+                    for l in fp.read_text(
+                        encoding="utf-8", errors="replace"
+                    ).splitlines()
+                    if l.strip() and not l.startswith("#") and "=" in l
+                ]
                 infra["envs"].extend(keys[:20])
             except Exception:
                 pass
@@ -653,6 +809,7 @@ def _detect_infra(project_path: Path) -> Dict[str, Any]:
 
 
 # ── Merge helper ──────────────────────────────────────────────────────────────
+
 
 def _existing_h2_sections(text: str) -> set:
     return set(re.findall(r"^## (.+)$", text, re.MULTILINE))
@@ -696,11 +853,15 @@ def _merge_stub(vault_path: Path, new_content: str, dry_run: bool) -> str:
 
 # ── Frontmatter ───────────────────────────────────────────────────────────────
 
+
 def _make_frontmatter(
-    title: str, folder: str, tags: List[str],
-    extra: Dict[str, Any], content: str,
+    title: str,
+    folder: str,
+    tags: List[str],
+    extra: Dict[str, Any],
+    content: str,
 ) -> str:
-    now = _utcnow()
+    now = utcnow()
     norm_refs = compute_norm_refs(folder, content, [])
     lines = [
         "---",
@@ -725,8 +886,13 @@ def _make_frontmatter(
 
 
 def _write(
-    folder: str, filename: str, title: str, tags: List[str],
-    extra: Dict[str, Any], body: str, dry_run: bool,
+    folder: str,
+    filename: str,
+    title: str,
+    tags: List[str],
+    extra: Dict[str, Any],
+    body: str,
+    dry_run: bool,
 ) -> Tuple[str, str]:
     content = body
     fm = _make_frontmatter(title, folder, tags, extra, content)
@@ -739,12 +905,18 @@ def _write(
 
 # ── Section strategies ────────────────────────────────────────────────────────
 
+
 def _onboard_01_projects(
-    project: str, meta: Dict, history: Dict, phases: List[Dict], agent: str, dry_run: bool
+    project: str,
+    meta: Dict,
+    history: Dict,
+    phases: List[Dict],
+    agent: str,
+    dry_run: bool,
 ) -> List[Tuple[str, str]]:
     first = history.get("first_commit") or history.get("first_file")
-    last  = history.get("last_commit") or history.get("last_modified")
-    tags  = history.get("tags", [])
+    last = history.get("last_commit") or history.get("last_modified")
+    tags = history.get("tags", [])
     contributors = history.get("contributors", [])
     is_git = history.get("is_git", False)
     history_source = "git log" if is_git else "mtime de archivos"
@@ -752,11 +924,25 @@ def _onboard_01_projects(
     runtime = meta.get("runtime", "")
     framework = meta.get("framework", "")
     runtime_str = f"{runtime} / {framework}".strip(" /") if framework else runtime
-    description = (meta.get("description") or meta.get("readme_excerpt") or "_Pendiente de documentar._")[:400]
+    description = (
+        meta.get("description")
+        or meta.get("readme_excerpt")
+        or "_Pendiente de documentar._"
+    )[:400]
 
-    versions_md = "\n".join(f"- `{t['name']}` — {t['date']}" for t in tags[:8]) or "— Sin tags detectados"
-    contributors_md = "\n".join(f"- {c}" for c in contributors) or "— Desconocidos (sin git)"
-    scripts_md = "\n".join(f"- `{k}`: `{v}`" for k, v in list((meta.get("scripts") or {}).items())[:8]) or "— No detectados"
+    versions_md = (
+        "\n".join(f"- `{t['name']}` — {t['date']}" for t in tags[:8])
+        or "— Sin tags detectados"
+    )
+    contributors_md = (
+        "\n".join(f"- {c}" for c in contributors) or "— Desconocidos (sin git)"
+    )
+    scripts_md = (
+        "\n".join(
+            f"- `{k}`: `{v}`" for k, v in list((meta.get("scripts") or {}).items())[:8]
+        )
+        or "— No detectados"
+    )
 
     timeline_md = ""
     if phases:
@@ -782,7 +968,7 @@ def _onboard_01_projects(
 |---|---|
 | Antigüedad aparente | {apparent_first} |
 | Antigüedad real (cross-branch) | {true_first} |
-| Historia oculta | **{history.get('hidden_months', 0)} meses** |
+| Historia oculta | **{history.get("hidden_months", 0)} meses** |
 | Ramas snap/backup | {len(snap_branches)} detectadas |
 
 Ver ADR de arqueologia: [[adr-001-historia-oculta-branch-archaeology]]
@@ -805,21 +991,21 @@ Ver ADR de arqueologia: [[adr-001-historia-oculta-branch-archaeology]]
 
 | Campo | Valor |
 |---|---|
-| Runtime | {runtime_str or '—'} |
-| Lenguaje | {meta.get('language') or '—'} |
-| Framework | {meta.get('framework') or '—'} |
-| Versión actual | {meta.get('version') or '—'} |
-| Fuente | {meta.get('source') or '—'} |
+| Runtime | {runtime_str or "—"} |
+| Lenguaje | {meta.get("language") or "—"} |
+| Framework | {meta.get("framework") or "—"} |
+| Versión actual | {meta.get("version") or "—"} |
+| Fuente | {meta.get("source") or "—"} |
 | Historia desde | {history_source} |
 {hidden_md}
 ## Historial del proyecto
 
 | | |
 |---|---|
-| Primer commit/archivo (real) | {true_first or (first['date'] if first else '—')} |
-| Primer commit (rama actual) | {apparent_first or '—'} |
-| Último commit/archivo | {last['date'] if last else '—'} |
-| Total commits (todas las ramas) | {history.get('total_commits', '—')} |
+| Primer commit/archivo (real) | {true_first or (first["date"] if first else "—")} |
+| Primer commit (rama actual) | {apparent_first or "—"} |
+| Último commit/archivo | {last["date"] if last else "—"} |
+| Total commits (todas las ramas) | {history.get("total_commits", "—")} |
 | Fases detectadas | {len(phases)} |
 | Stashes pendientes | {stash_count} |
 {branches_md}
@@ -839,39 +1025,55 @@ Ver ADR de arqueologia: [[adr-001-historia-oculta-branch-archaeology]]
 ## Próximos pasos
 
 - Verificar descripción y stack con el equipo
-- {'Revisar historia oculta en [[adr-001-historia-oculta-branch-archaeology]]' if hidden_history else 'Completar base de datos, caches, queues'}
+- {"Revisar historia oculta en [[adr-001-historia-oculta-branch-archaeology]]" if hidden_history else "Completar base de datos, caches, queues"}
 - Revisar ADRs en [[03_Decisions]]
 - Ver módulos en [[11_Code]]
 """
-    return [_write(
-        f"01_Projects/{project}", "overview.md",
-        f"{project} — Overview",
-        ["project", "overview", project],
-        {"agent": agent, "project": project},
-        body, dry_run,
-    )]
+    return [
+        _write(
+            f"01_Projects/{project}",
+            "overview.md",
+            f"{project} — Overview",
+            ["project", "overview", project],
+            {"agent": agent, "project": project},
+            body,
+            dry_run,
+        )
+    ]
 
 
 def _onboard_02_observability(
     project: str, project_path: Path, modules: List[Dict], agent: str, dry_run: bool
 ) -> List[Tuple[str, str]]:
     issues: Dict[str, List[Dict]] = {"high": [], "medium": [], "low": []}
-    severity_map = {"FIXME": "high", "BUG": "high", "HACK": "medium", "TODO": "low", "XXX": "low"}
+    severity_map = {
+        "FIXME": "high",
+        "BUG": "high",
+        "HACK": "medium",
+        "TODO": "low",
+        "XXX": "low",
+    }
 
     for mod in modules[:30]:
         fp = project_path / mod["file_path"]
         if not fp.exists():
             continue
         try:
-            for lineno, line in enumerate(fp.open(encoding="utf-8", errors="replace"), 1):
+            for lineno, line in enumerate(
+                fp.open(encoding="utf-8", errors="replace"), 1
+            ):
                 m = TODO_PATTERN.search(line)
                 if m:
                     keyword = m.group(1).upper()
                     sev = severity_map.get(keyword, "low")
-                    issues[sev].append({
-                        "file": mod["file_path"], "line": lineno,
-                        "keyword": keyword, "text": m.group(2).strip()[:100],
-                    })
+                    issues[sev].append(
+                        {
+                            "file": mod["file_path"],
+                            "line": lineno,
+                            "keyword": keyword,
+                            "text": m.group(2).strip()[:100],
+                        }
+                    )
         except Exception:
             pass
 
@@ -880,37 +1082,44 @@ def _onboard_02_observability(
         return []
 
     def _issue_md(items: List[Dict]) -> str:
-        return "\n".join(f"- `{i['file']}:{i['line']}` — **{i['keyword']}**: {i['text']}" for i in items[:15])
+        return "\n".join(
+            f"- `{i['file']}:{i['line']}` — **{i['keyword']}**: {i['text']}"
+            for i in items[:15]
+        )
 
     body = f"""# {project} — Deuda técnica detectada
 
 > Generado por vault_onboard desde análisis estático de comentarios. Verificar manualmente.
 
-**Total:** {total} items | High: {len(issues['high'])} | Medium: {len(issues['medium'])} | Low: {len(issues['low'])}
+**Total:** {total} items | High: {len(issues["high"])} | Medium: {len(issues["medium"])} | Low: {len(issues["low"])}
 
 ## Alta prioridad (FIXME / BUG)
 
-{_issue_md(issues['high']) or '— Ninguno detectado'}
+{_issue_md(issues["high"]) or "— Ninguno detectado"}
 
 ## Media prioridad (HACK)
 
-{_issue_md(issues['medium']) or '— Ninguno detectado'}
+{_issue_md(issues["medium"]) or "— Ninguno detectado"}
 
 ## Baja prioridad (TODO / XXX)
 
-{_issue_md(issues['low']) or '— Ninguno detectado'}
+{_issue_md(issues["low"]) or "— Ninguno detectado"}
 
 ## Siguiente acción
 
 Revisar cada item y crear issue o registrar con vault_log_error.
 """
-    return [_write(
-        "02_Observability/issues", f"{_slug(project)}-debt.md",
-        f"{project} — Deuda técnica detectada",
-        ["observability", "debt", project],
-        {"agent": agent, "project": project, "cia_integrity": "high"},
-        body, dry_run,
-    )]
+    return [
+        _write(
+            "02_Observability/issues",
+            f"{_slug(project)}-debt.md",
+            f"{project} — Deuda técnica detectada",
+            ["observability", "debt", project],
+            {"agent": agent, "project": project, "cia_integrity": "high"},
+            body,
+            dry_run,
+        )
+    ]
 
 
 def _onboard_03_decisions(
@@ -929,15 +1138,23 @@ def _onboard_03_decisions(
         current_branch = history.get("current_branch", "HEAD")
         reflog_extra = history.get("reflog_extra_commits", 0)
 
-        snap_md = "\n".join(
-            f"- `{b['name']}` — oldest: {b['oldest_date']} | commits: {b['commit_count']}"
-            for b in snap_branches
-        ) or "— No detectadas (historia encontrada via reflog o commits huérfanos)"
+        snap_md = (
+            "\n".join(
+                f"- `{b['name']}` — oldest: {b['oldest_date']} | commits: {b['commit_count']}"
+                for b in snap_branches
+            )
+            or "— No detectadas (historia encontrada via reflog o commits huérfanos)"
+        )
 
-        all_branches_md = "\n".join(
-            f"- `{b['name']}` — {b['oldest_date']} → {b['newest_date']} ({b['commit_count']} commits)"
-            for b in sorted(all_branches, key=lambda x: x.get("oldest_date", ""))[:12]
-        ) or "— No detectadas"
+        all_branches_md = (
+            "\n".join(
+                f"- `{b['name']}` — {b['oldest_date']} → {b['newest_date']} ({b['commit_count']} commits)"
+                for b in sorted(all_branches, key=lambda x: x.get("oldest_date", ""))[
+                    :12
+                ]
+            )
+            or "— No detectadas"
+        )
 
         body = f"""# ADR-{adr_counter[0]:03d} — Historia oculta detectada (branch archaeology)
 
@@ -987,14 +1204,17 @@ git log <nombre-rama-snap> --oneline --graph | head -30
 git log {current_branch}...<nombre-rama-snap> --oneline
 ```
 """
-        results.append(_write(
-            "03_Decisions",
-            f"{_slug(f'adr-{adr_counter[0]:03d}-historia-oculta-branch-archaeology')}.md",
-            f"ADR-{adr_counter[0]:03d} — Historia oculta detectada (branch archaeology)",
-            ["adr", "branch-archaeology", "historia-oculta", project],
-            {"agent": agent, "project": project, "cia_integrity": "high"},
-            body, dry_run,
-        ))
+        results.append(
+            _write(
+                "03_Decisions",
+                f"{_slug(f'adr-{adr_counter[0]:03d}-historia-oculta-branch-archaeology')}.md",
+                f"ADR-{adr_counter[0]:03d} — Historia oculta detectada (branch archaeology)",
+                ["adr", "branch-archaeology", "historia-oculta", project],
+                {"agent": agent, "project": project, "cia_integrity": "high"},
+                body,
+                dry_run,
+            )
+        )
         adr_counter[0] += 1
 
     # From key commits (decision keywords)
@@ -1002,13 +1222,13 @@ git log {current_branch}...<nombre-rama-snap> --oneline
         title = f"ADR-{adr_counter[0]:03d} — {commit['message'][:60]} (retroactivo)"
         body = f"""# {title}
 
-**Fecha detectada:** {commit['date']} (commit `{commit.get('hash', '?')}`)
-**Autor:** {commit.get('author', '—')}
+**Fecha detectada:** {commit["date"]} (commit `{commit.get("hash", "?")}`)
+**Autor:** {commit.get("author", "—")}
 **Status:** implemented
 
 ## Contexto detectado
 
-Commit: "{commit['message']}"
+Commit: "{commit["message"]}"
 Fuente: historial git del proyecto
 
 ## Decisión
@@ -1025,12 +1245,17 @@ _Pendiente de verificar con el equipo._
 python scripts/vault_write.py --folder 03_Decisions --title "{title}"
 ```
 """
-        results.append(_write(
-            "03_Decisions", f"{_slug(f'adr-{adr_counter[0]:03d}-retroactivo')}.md",
-            title, ["adr", "retroactivo", project],
-            {"agent": agent, "project": project},
-            body, dry_run,
-        ))
+        results.append(
+            _write(
+                "03_Decisions",
+                f"{_slug(f'adr-{adr_counter[0]:03d}-retroactivo')}.md",
+                title,
+                ["adr", "retroactivo", project],
+                {"agent": agent, "project": project},
+                body,
+                dry_run,
+            )
+        )
         adr_counter[0] += 1
 
     # From CHANGELOG.md / DECISIONS.md / ARCHITECTURE.md
@@ -1057,12 +1282,17 @@ python scripts/vault_write.py --folder 03_Decisions --title "{title}"
 
 Revisar el archivo y extraer ADRs individuales con vault_write.
 """
-            results.append(_write(
-                "03_Decisions", f"{_slug(f'adr-{adr_counter[0]:03d}-{fname}')}.md",
-                title, ["adr", "retroactivo", project],
-                {"agent": agent, "project": project},
-                body, dry_run,
-            ))
+            results.append(
+                _write(
+                    "03_Decisions",
+                    f"{_slug(f'adr-{adr_counter[0]:03d}-{fname}')}.md",
+                    title,
+                    ["adr", "retroactivo", project],
+                    {"agent": agent, "project": project},
+                    body,
+                    dry_run,
+                )
+            )
             adr_counter[0] += 1
         except Exception:
             pass
@@ -1080,9 +1310,15 @@ def _onboard_04_sessions(
         month = phase["month_start"]
         label = phase["label"]
         slug_label = phase["label_slug"]
-        highlights_md = "\n".join(f"- {h}" for h in phase["highlights"][:5]) or "— Sin datos"
-        authors_md = ", ".join(phase["authors"]) if phase["authors"] else "— Desconocidos"
-        tag_md = f"\nVersión: **{phase['tag']}** (tag detectado)" if phase.get("tag") else ""
+        highlights_md = (
+            "\n".join(f"- {h}" for h in phase["highlights"][:5]) or "— Sin datos"
+        )
+        authors_md = (
+            ", ".join(phase["authors"]) if phase["authors"] else "— Desconocidos"
+        )
+        tag_md = (
+            f"\nVersión: **{phase['tag']}** (tag detectado)" if phase.get("tag") else ""
+        )
         source_note = "git log" if is_git else "mtime de archivos"
         item_label = "Commits" if is_git else "Archivos modificados"
 
@@ -1099,8 +1335,8 @@ def _onboard_04_sessions(
 
 > Fase del proyecto reconstruida desde {source_note}.
 
-**Período:** {phase['first_date']} → {phase['last_date']}
-**{item_label}:** {phase['item_count']} | **Contribuidores:** {authors_md}
+**Período:** {phase["first_date"]} → {phase["last_date"]}
+**{item_label}:** {phase["item_count"]} | **Contribuidores:** {authors_md}
 **Estado:** {status_str}{tag_md}
 
 ## Cambios destacados
@@ -1117,13 +1353,17 @@ _Enriquecer con decisiones, incidentes o hitos relevantes de este período._
 python scripts/vault_write.py --folder 04_Sessions --title "{month} sesion de trabajo"
 ```
 """
-        results.append(_write(
-            "04_Sessions", f"{month}-{slug_label}.md",
-            f"{month} — {label}",
-            ["session", "historial", project, month[:4]],
-            {"agent": agent, "project": project, "period": month},
-            body, dry_run,
-        ))
+        results.append(
+            _write(
+                "04_Sessions",
+                f"{month}-{slug_label}.md",
+                f"{month} — {label}",
+                ["session", "historial", project, month[:4]],
+                {"agent": agent, "project": project, "period": month},
+                body,
+                dry_run,
+            )
+        )
 
     return results
 
@@ -1136,12 +1376,36 @@ def _onboard_05_patterns(
         pattern_counts[mod["type"]] += 1
 
     PATTERN_RULES = [
-        ("service",     2, "Service Layer",    "architecture", "Separación de lógica de negocio en servicios"),
-        ("controller",  1, "MVC / Layered",    "architecture", "Separación de responsabilidades en capas"),
-        ("repository",  1, "Repository",       "design",       "Abstracción del acceso a datos"),
-        ("factory",     1, "Factory",          "design",       "Creación de objetos encapsulada"),
-        ("middleware",  1, "Middleware Chain",  "architecture", "Procesamiento encadenado de requests"),
-        ("manager",     1, "Manager / Coordinator", "design",  "Coordinación de múltiples servicios"),
+        (
+            "service",
+            2,
+            "Service Layer",
+            "architecture",
+            "Separación de lógica de negocio en servicios",
+        ),
+        (
+            "controller",
+            1,
+            "MVC / Layered",
+            "architecture",
+            "Separación de responsabilidades en capas",
+        ),
+        ("repository", 1, "Repository", "design", "Abstracción del acceso a datos"),
+        ("factory", 1, "Factory", "design", "Creación de objetos encapsulada"),
+        (
+            "middleware",
+            1,
+            "Middleware Chain",
+            "architecture",
+            "Procesamiento encadenado de requests",
+        ),
+        (
+            "manager",
+            1,
+            "Manager / Coordinator",
+            "design",
+            "Coordinación de múltiples servicios",
+        ),
     ]
 
     results = []
@@ -1171,20 +1435,28 @@ python scripts/vault_pattern_save.py --project {project} --name "{_slug(pname)}"
   --pattern_type {pcat} --status implementado
 ```
 """
-            results.append(_write(
-                f"05_Patterns/{pcat}",
-                f"{_slug(project)}-{_slug(pname)}.md",
-                pname,
-                ["pattern", pcat, project, mtype],
-                {"agent": agent, "project": project, "pattern_type": pcat},
-                body, dry_run,
-            ))
+            results.append(
+                _write(
+                    f"05_Patterns/{pcat}",
+                    f"{_slug(project)}-{_slug(pname)}.md",
+                    pname,
+                    ["pattern", pcat, project, mtype],
+                    {"agent": agent, "project": project, "pattern_type": pcat},
+                    body,
+                    dry_run,
+                )
+            )
 
     return results
 
 
 def _onboard_06_diagrams(
-    project: str, project_path: Path, meta: Dict, modules: List[Dict], agent: str, dry_run: bool
+    project: str,
+    project_path: Path,
+    meta: Dict,
+    modules: List[Dict],
+    agent: str,
+    dry_run: bool,
 ) -> List[Tuple[str, str]]:
     # Build Mermaid graph from module type groups
     groups: Dict[str, List[str]] = defaultdict(list)
@@ -1201,8 +1473,8 @@ def _onboard_06_diagrams(
 
 > Diagrama generado por vault_onboard desde estructura de archivos. Verificar y ajustar.
 
-**Lenguaje:** {meta.get('language', '—')}
-**Framework:** {meta.get('framework', '—')}
+**Lenguaje:** {meta.get("language", "—")}
+**Framework:** {meta.get("framework", "—")}
 
 ## Diagrama
 
@@ -1218,13 +1490,22 @@ python scripts/vault_diagram_save.py --project {project} \\
   --content "..."
 ```
 """
-    return [_write(
-        "06_Diagrams/component", f"{_slug(project)}-architecture.md",
-        f"{project} — Arquitectura de componentes",
-        ["diagram", "architecture", project],
-        {"agent": agent, "project": project, "diagramType": "mermaid", "category": "component"},
-        body, dry_run,
-    )]
+    return [
+        _write(
+            "06_Diagrams/component",
+            f"{_slug(project)}-architecture.md",
+            f"{project} — Arquitectura de componentes",
+            ["diagram", "architecture", project],
+            {
+                "agent": agent,
+                "project": project,
+                "diagramType": "mermaid",
+                "category": "component",
+            },
+            body,
+            dry_run,
+        )
+    ]
 
 
 def _onboard_07_knowledge(
@@ -1234,10 +1515,20 @@ def _onboard_07_knowledge(
     all_deps = meta.get("all_deps", [])
 
     # README headers → concepts
-    SKIP_HEADERS = {"installation", "install", "usage", "license", "contributing",
-                    "changelog", "table of contents", "prerequisites", "getting started"}
-    headers = [h for h in meta.get("readme_headers", [])
-               if h.lower() not in SKIP_HEADERS][:8]
+    SKIP_HEADERS = {
+        "installation",
+        "install",
+        "usage",
+        "license",
+        "contributing",
+        "changelog",
+        "table of contents",
+        "prerequisites",
+        "getting started",
+    }
+    headers = [
+        h for h in meta.get("readme_headers", []) if h.lower() not in SKIP_HEADERS
+    ][:8]
 
     for header in headers:
         slug = _slug(header)
@@ -1256,25 +1547,40 @@ _Pendiente. Leer la sección del README y documentar aquí._
 
 - [[{_slug(project)}-overview]]
 """
-        results.append(_write(
-            "07_Knowledge/concepts", f"{slug}.md",
-            header,
-            ["concept", project, "readme"],
-            {"agent": agent, "project": project, "category": "concept"},
-            body, dry_run,
-        ))
+        results.append(
+            _write(
+                "07_Knowledge/concepts",
+                f"{slug}.md",
+                header,
+                ["concept", project, "readme"],
+                {"agent": agent, "project": project, "category": "concept"},
+                body,
+                dry_run,
+            )
+        )
 
     # Key framework deps → framework entries
     KNOWN_FRAMEWORKS = {
-        "electron", "react", "vue", "next", "express", "fastify", "koa",
-        "@nestjs/core", "django", "flask", "fastapi", "spring", "rails",
+        "electron",
+        "react",
+        "vue",
+        "next",
+        "express",
+        "fastify",
+        "koa",
+        "@nestjs/core",
+        "django",
+        "flask",
+        "fastapi",
+        "spring",
+        "rails",
     }
     frameworks_found = [d for d in all_deps if d.lower() in KNOWN_FRAMEWORKS][:4]
     for dep in frameworks_found:
         slug = _slug(dep.replace("@", "").replace("/", "-"))
         body = f"""# {dep}
 
-> Dependencia clave detectada en {meta.get('source', 'package.json')} del proyecto {project}.
+> Dependencia clave detectada en {meta.get("source", "package.json")} del proyecto {project}.
 
 **Tipo:** framework
 **Proyecto que lo usa:** [[{_slug(project)}-overview]]
@@ -1286,13 +1592,17 @@ python scripts/vault_knowledge_save.py --category framework \\
   --title "{dep}" --content "..." --project {project}
 ```
 """
-        results.append(_write(
-            "07_Knowledge/frameworks", f"{slug}.md",
-            dep,
-            ["framework", project, slug],
-            {"agent": agent, "project": project, "category": "framework"},
-            body, dry_run,
-        ))
+        results.append(
+            _write(
+                "07_Knowledge/frameworks",
+                f"{slug}.md",
+                dep,
+                ["framework", project, slug],
+                {"agent": agent, "project": project, "category": "framework"},
+                body,
+                dry_run,
+            )
+        )
 
     return results[:15]
 
@@ -1304,16 +1614,29 @@ def _onboard_08_runbooks(
     scripts = meta.get("scripts", {})
 
     RUNBOOK_CATEGORY = {
-        "dev": "setup", "start": "setup", "serve": "setup",
-        "build": "pipeline", "compile": "pipeline", "bundle": "pipeline",
-        "test": "debug", "lint": "debug", "typecheck": "debug",
-        "deploy": "deploy", "release": "deploy",
-        "migrate": "maintenance", "seed": "maintenance", "clean": "maintenance",
+        "dev": "setup",
+        "start": "setup",
+        "serve": "setup",
+        "build": "pipeline",
+        "compile": "pipeline",
+        "bundle": "pipeline",
+        "test": "debug",
+        "lint": "debug",
+        "typecheck": "debug",
+        "deploy": "deploy",
+        "release": "deploy",
+        "migrate": "maintenance",
+        "seed": "maintenance",
+        "clean": "maintenance",
     }
 
     for script_name, script_cmd in list(scripts.items())[:8]:
         category = next(
-            (cat for key, cat in RUNBOOK_CATEGORY.items() if key in script_name.lower()),
+            (
+                cat
+                for key, cat in RUNBOOK_CATEGORY.items()
+                if key in script_name.lower()
+            ),
             "maintenance",
         )
         body = f"""# npm run {script_name}
@@ -1342,14 +1665,22 @@ python scripts/vault_runbook_save.py --project {project} \\
   --category {category} --steps '[{{"step":"npm run {script_name}"}}]'
 ```
 """
-        results.append(_write(
-            f"08_Runbooks/{category}", f"{_slug(project)}-npm-{_slug(script_name)}.md",
-            f"npm run {script_name}",
-            ["runbook", category, project, "npm"],
-            {"agent": agent, "project": project, "category": category,
-             "cia_availability": "high"},
-            body, dry_run,
-        ))
+        results.append(
+            _write(
+                f"08_Runbooks/{category}",
+                f"{_slug(project)}-npm-{_slug(script_name)}.md",
+                f"npm run {script_name}",
+                ["runbook", category, project, "npm"],
+                {
+                    "agent": agent,
+                    "project": project,
+                    "category": category,
+                    "cia_availability": "high",
+                },
+                body,
+                dry_run,
+            )
+        )
 
     # Makefile targets
     makefile = project_path / "Makefile"
@@ -1357,7 +1688,11 @@ python scripts/vault_runbook_save.py --project {project} \\
         try:
             text = makefile.read_text(encoding="utf-8", errors="replace")
             targets = re.findall(r"^([a-z][\w-]+)\s*:", text, re.MULTILINE)
-            phony = set(re.findall(r"^\.PHONY\s*:(.*)", text, re.MULTILINE)[0].split()) if re.findall(r"^\.PHONY", text, re.MULTILINE) else set()
+            phony = (
+                set(re.findall(r"^\.PHONY\s*:(.*)", text, re.MULTILINE)[0].split())
+                if re.findall(r"^\.PHONY", text, re.MULTILINE)
+                else set()
+            )
             for target in [t for t in targets if t not in phony][:4]:
                 body = f"""# make {target}
 
@@ -1370,13 +1705,17 @@ python scripts/vault_runbook_save.py --project {project} \\
 
 1. `make {target}`
 """
-                results.append(_write(
-                    "08_Runbooks/pipeline", f"{_slug(project)}-make-{_slug(target)}.md",
-                    f"make {target}",
-                    ["runbook", "make", project],
-                    {"agent": agent, "project": project, "category": "pipeline"},
-                    body, dry_run,
-                ))
+                results.append(
+                    _write(
+                        "08_Runbooks/pipeline",
+                        f"{_slug(project)}-make-{_slug(target)}.md",
+                        f"make {target}",
+                        ["runbook", "make", project],
+                        {"agent": agent, "project": project, "category": "pipeline"},
+                        body,
+                        dry_run,
+                    )
+                )
         except Exception:
             pass
 
@@ -1388,8 +1727,12 @@ def _onboard_09_infrastructure(
 ) -> List[Tuple[str, str]]:
     if not infra.get("files"):
         return []
-    services_md = "\n".join(f"- `{s}`" for s in infra.get("services", [])) or "— No detectados"
-    ports_md = "\n".join(f"- `{p}`" for p in set(infra.get("ports", []))) or "— No detectados"
+    services_md = (
+        "\n".join(f"- `{s}`" for s in infra.get("services", [])) or "— No detectados"
+    )
+    ports_md = (
+        "\n".join(f"- `{p}`" for p in set(infra.get("ports", []))) or "— No detectados"
+    )
     envs_md = "\n".join(f"- `{e}`" for e in infra.get("envs", [])) or "— No detectadas"
     files_md = "\n".join(f"- `{f}`" for f in infra.get("files", []))
     body = f"""# {project} — Infraestructura
@@ -1414,7 +1757,7 @@ def _onboard_09_infrastructure(
 
 ## Imagen base Docker
 
-{infra.get('base_image') or '— No detectada'}
+{infra.get("base_image") or "— No detectada"}
 
 ## Para enriquecer
 
@@ -1423,13 +1766,17 @@ python scripts/vault_infra_save.py --project {project} --component "..."
 python scripts/vault_env_save.py --project {project} --env_file ".env"
 ```
 """
-    return [_write(
-        f"09_Infrastructure/{project}", "infra.md",
-        f"{project} — Infraestructura",
-        ["infrastructure", project],
-        {"agent": agent, "project": project, "cia_availability": "high"},
-        body, dry_run,
-    )]
+    return [
+        _write(
+            f"09_Infrastructure/{project}",
+            "infra.md",
+            f"{project} — Infraestructura",
+            ["infrastructure", project],
+            {"agent": agent, "project": project, "cia_availability": "high"},
+            body,
+            dry_run,
+        )
+    ]
 
 
 def _onboard_11_code(
@@ -1437,14 +1784,14 @@ def _onboard_11_code(
 ) -> List[Tuple[str, str]]:
     results = []
     for mod in modules:
-        body = f"""# {mod['name']} — {mod['type'].capitalize()}
+        body = f"""# {mod["name"]} — {mod["type"].capitalize()}
 
 > Stub generado por vault_onboard. Enriquecer con vault_code_module.
 
-**Archivo:** `{mod['file_path']}`
+**Archivo:** `{mod["file_path"]}`
 **Lenguaje:** {language}
-**Tipo inferido:** {mod['type']}
-**Líneas:** {mod['size_lines']}
+**Tipo inferido:** {mod["type"]}
+**Líneas:** {mod["size_lines"]}
 
 ## Propósito
 
@@ -1455,20 +1802,28 @@ _Pendiente. Leer el archivo y documentar con vault_code_module._
 ```bash
 python scripts/vault_code_module.py \\
   --project {project} \\
-  --file_path "{mod['file_path']}" \\
+  --file_path "{mod["file_path"]}" \\
   --description "..." \\
   --language {language} \\
-  --iso_type {mod['type']}
+  --iso_type {mod["type"]}
 ```
 """
-        results.append(_write(
-            f"11_Code/{project}", f"{mod['slug']}.md",
-            f"{mod['name']} — {mod['type'].capitalize()}",
-            ["stub", "code", project, mod["type"]],
-            {"agent": agent, "project": project,
-             "source_file": mod["file_path"], "language": language},
-            body, dry_run,
-        ))
+        results.append(
+            _write(
+                f"11_Code/{project}",
+                f"{mod['slug']}.md",
+                f"{mod['name']} — {mod['type'].capitalize()}",
+                ["stub", "code", project, mod["type"]],
+                {
+                    "agent": agent,
+                    "project": project,
+                    "source_file": mod["file_path"],
+                    "language": language,
+                },
+                body,
+                dry_run,
+            )
+        )
     return results
 
 
@@ -1482,7 +1837,11 @@ def _onboard_13_flows(
     for wf_file in sorted(workflows_dir.glob("*.yml"))[:5]:
         try:
             text = wf_file.read_text(encoding="utf-8", errors="replace")
-            triggers = re.findall(r"^\s+(push|pull_request|workflow_dispatch|schedule|release):", text, re.MULTILINE)
+            triggers = re.findall(
+                r"^\s+(push|pull_request|workflow_dispatch|schedule|release):",
+                text,
+                re.MULTILINE,
+            )
             jobs = re.findall(r"^\s{2}([\w-]+):\s*$", text, re.MULTILINE)
             jobs_md = "\n".join(f"- `{j}`" for j in jobs[:8]) or "— No detectados"
             triggers_md = ", ".join(set(triggers)) or "— No detectados"
@@ -1505,13 +1864,17 @@ python scripts/vault_flow_save.py --project {project} \\
   --name "{wf_name}" --flow_type pipeline --description "..."
 ```
 """
-            results.append(_write(
-                "13_Flows/pipeline", f"{_slug(project)}-{_slug(wf_name)}.md",
-                f"CI: {wf_name}",
-                ["flow", "pipeline", "ci", project],
-                {"agent": agent, "project": project, "flow_type": "pipeline"},
-                body, dry_run,
-            ))
+            results.append(
+                _write(
+                    "13_Flows/pipeline",
+                    f"{_slug(project)}-{_slug(wf_name)}.md",
+                    f"CI: {wf_name}",
+                    ["flow", "pipeline", "ci", project],
+                    {"agent": agent, "project": project, "flow_type": "pipeline"},
+                    body,
+                    dry_run,
+                )
+            )
         except Exception:
             pass
     return results
@@ -1522,11 +1885,17 @@ def _onboard_14_requirements(
 ) -> List[Tuple[str, str]]:
     results = []
     readme_text, _ = _read_readme(
-        VAULT_ROOT.parent if not VAULT_ROOT.name.startswith("vault-") else VAULT_ROOT.parent
+        VAULT_ROOT.parent
+        if not VAULT_ROOT.name.startswith("vault-")
+        else VAULT_ROOT.parent
     )
     # Find bullet points under ## Features or ## Requirements
     headers = meta.get("readme_headers", [])
-    feature_headers = [h for h in headers if re.search(r"feature|requirement|funcionalidad|funciones", h, re.I)]
+    feature_headers = [
+        h
+        for h in headers
+        if re.search(r"feature|requirement|funcionalidad|funciones", h, re.I)
+    ]
     if not feature_headers:
         return []
 
@@ -1542,11 +1911,14 @@ def _onboard_14_requirements(
                 for fh in feature_headers[:2]:
                     section_match = re.search(
                         rf"^## {re.escape(fh)}\s*\n(.*?)(?=^## |\Z)",
-                        full_text, re.MULTILINE | re.DOTALL
+                        full_text,
+                        re.MULTILINE | re.DOTALL,
                     )
                     if not section_match:
                         continue
-                    bullets = re.findall(r"^[-*]\s+(.+)$", section_match.group(1), re.MULTILINE)
+                    bullets = re.findall(
+                        r"^[-*]\s+(.+)$", section_match.group(1), re.MULTILINE
+                    )
                     for i, bullet in enumerate(bullets[:10], 1):
                         req_id = f"REQ-{i:03d}"
                         body = f"""# {req_id} — {bullet[:80]}
@@ -1574,15 +1946,22 @@ python scripts/vault_requirement_save.py --project {project} \\
   --title "{req_id} — ..." --req_type functional --priority must-have
 ```
 """
-                        results.append(_write(
-                            f"14_Requirements/{project}",
-                            f"{_slug(req_id)}.md",
-                            f"{req_id} — {bullet[:60]}",
-                            ["requirement", "functional", project],
-                            {"agent": agent, "project": project, "req_type": "functional",
-                             "priority": "must-have"},
-                            body, dry_run,
-                        ))
+                        results.append(
+                            _write(
+                                f"14_Requirements/{project}",
+                                f"{_slug(req_id)}.md",
+                                f"{req_id} — {bullet[:60]}",
+                                ["requirement", "functional", project],
+                                {
+                                    "agent": agent,
+                                    "project": project,
+                                    "req_type": "functional",
+                                    "priority": "must-have",
+                                },
+                                body,
+                                dry_run,
+                            )
+                        )
             except Exception:
                 pass
             break
@@ -1593,8 +1972,9 @@ python scripts/vault_requirement_save.py --project {project} \\
 def _onboard_15_tests(
     project: str, project_path: Path, meta: Dict, agent: str, dry_run: bool
 ) -> List[Tuple[str, str]]:
-    relevant_exts = {ext for ext, lang in LANG_BY_EXT.items()
-                     if lang == meta.get("language", "")} or set(LANG_BY_EXT.keys())
+    relevant_exts = {
+        ext for ext, lang in LANG_BY_EXT.items() if lang == meta.get("language", "")
+    } or set(LANG_BY_EXT.keys())
 
     by_type: Dict[str, List[str]] = defaultdict(list)
     for f in project_path.rglob("*"):
@@ -1636,25 +2016,30 @@ python scripts/vault_test_save.py --project {project} \\
   --title "Test suite {ttype}" --test_type {ttype} --description "..."
 ```
 """
-        results.append(_write(
-            f"15_Tests/{ttype}",
-            f"{_slug(project)}-inventory.md",
-            f"{project} — Tests {ttype}",
-            ["test", ttype, project],
-            {"agent": agent, "project": project, "test_type": ttype},
-            body, dry_run,
-        ))
+        results.append(
+            _write(
+                f"15_Tests/{ttype}",
+                f"{_slug(project)}-inventory.md",
+                f"{project} — Tests {ttype}",
+                ["test", ttype, project],
+                {"agent": agent, "project": project, "test_type": ttype},
+                body,
+                dry_run,
+            )
+        )
 
     return results
 
 
 # ── Index update ──────────────────────────────────────────────────────────────
 
+
 def _update_indexes(sections: List[str], dry_run: bool) -> List[str]:
     if dry_run:
         return [f"{s}/index.md" for s in sections]
     try:
         from vault_section_index import vault_section_index
+
         updated = []
         for folder in sections:
             if (VAULT_ROOT / folder).exists():
@@ -1668,15 +2053,27 @@ def _update_indexes(sections: List[str], dry_run: bool) -> List[str]:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
+
 def vault_onboard(
-    project: str, path: str, depth: int = 3, max_modules: int = 20,
-    lang_hint: Optional[str] = None, dry_run: bool = False,
-    agent: str = "claude", skip: Optional[List[str]] = None,
-    git_phases: int = 8, max_commits: int = 500, no_git: bool = False,
+    project: str,
+    path: str,
+    depth: int = 3,
+    max_modules: int = 20,
+    lang_hint: Optional[str] = None,
+    dry_run: bool = False,
+    agent: str = "claude",
+    skip: Optional[List[str]] = None,
+    git_phases: int = 8,
+    max_commits: int = 500,
+    no_git: bool = False,
 ) -> Dict[str, Any]:
     project_path = Path(path).resolve()
     if not project_path.exists():
-        return {"ok": False, "error": "project_path_not_found", "path": str(project_path)}
+        return {
+            "ok": False,
+            "error": "project_path_not_found",
+            "path": str(project_path),
+        }
 
     skip = set(skip or [])
     warnings: List[str] = []
@@ -1709,7 +2106,9 @@ def vault_onboard(
         history = _extract_git_history(project_path, max_commits)
         if not history.get("is_git"):
             history = _extract_file_history(project_path)
-            warnings.append("No es un repo git — usando mtime de archivos para el historial")
+            warnings.append(
+                "No es un repo git — usando mtime de archivos para el historial"
+            )
 
     phases = _detect_phases(history, max_phases=git_phases)
 
@@ -1719,21 +2118,38 @@ def vault_onboard(
 
     # 4. Apply section strategies
     if "01" not in skip:
-        _record(_onboard_01_projects(project, meta, history, phases, agent, dry_run), "overview")
+        _record(
+            _onboard_01_projects(project, meta, history, phases, agent, dry_run),
+            "overview",
+        )
     if "04" not in skip:
-        _record(_onboard_04_sessions(project, phases, history, agent, dry_run), "sessions")
+        _record(
+            _onboard_04_sessions(project, phases, history, agent, dry_run), "sessions"
+        )
     if "03" not in skip:
-        _record(_onboard_03_decisions(project, history, project_path, agent, dry_run), "decisions")
+        _record(
+            _onboard_03_decisions(project, history, project_path, agent, dry_run),
+            "decisions",
+        )
     if "02" not in skip:
-        _record(_onboard_02_observability(project, project_path, modules, agent, dry_run), "observability")
+        _record(
+            _onboard_02_observability(project, project_path, modules, agent, dry_run),
+            "observability",
+        )
     if "05" not in skip:
         _record(_onboard_05_patterns(project, modules, agent, dry_run), "patterns")
     if "06" not in skip:
-        _record(_onboard_06_diagrams(project, project_path, meta, modules, agent, dry_run), "diagrams")
+        _record(
+            _onboard_06_diagrams(project, project_path, meta, modules, agent, dry_run),
+            "diagrams",
+        )
     if "07" not in skip:
         _record(_onboard_07_knowledge(project, meta, agent, dry_run), "knowledge")
     if "08" not in skip:
-        _record(_onboard_08_runbooks(project, meta, project_path, agent, dry_run), "runbooks")
+        _record(
+            _onboard_08_runbooks(project, meta, project_path, agent, dry_run),
+            "runbooks",
+        )
     if "09" not in skip:
         _record(_onboard_09_infrastructure(project, infra, agent, dry_run), "infra")
     if "11" not in skip:
@@ -1747,10 +2163,21 @@ def vault_onboard(
 
     # 5. Update indexes
     sections_to_index = [
-        s for s in [
-            "01_Projects", "02_Observability", "03_Decisions", "04_Sessions",
-            "05_Patterns", "06_Diagrams", "07_Knowledge", "08_Runbooks",
-            "09_Infrastructure", "11_Code", "13_Flows", "14_Requirements", "15_Tests",
+        s
+        for s in [
+            "01_Projects",
+            "02_Observability",
+            "03_Decisions",
+            "04_Sessions",
+            "05_Patterns",
+            "06_Diagrams",
+            "07_Knowledge",
+            "08_Runbooks",
+            "09_Infrastructure",
+            "11_Code",
+            "13_Flows",
+            "14_Requirements",
+            "15_Tests",
         ]
         if not skip.intersection({s[:2]})
     ]
@@ -1768,7 +2195,9 @@ def vault_onboard(
             "true_first_date": history.get("true_first_date", ""),
             "hidden_history": history.get("hidden_history", False),
             "hidden_months": history.get("hidden_months", 0),
-            "last":  (history.get("last_commit") or history.get("last_modified") or {}).get("date"),
+            "last": (
+                history.get("last_commit") or history.get("last_modified") or {}
+            ).get("date"),
             "total_commits": history.get("total_commits", 0),
             "total_commits_with_reflog": history.get("total_commits_with_reflog", 0),
             "contributors": history.get("contributors", []),
@@ -1783,7 +2212,9 @@ def vault_onboard(
             "runtime": meta.get("runtime", ""),
             "language": language,
             "framework": meta.get("framework", ""),
-            "description": (meta.get("description") or meta.get("readme_excerpt") or "")[:120],
+            "description": (
+                meta.get("description") or meta.get("readme_excerpt") or ""
+            )[:120],
             "module_count": len(modules),
             "has_infra": bool(infra.get("files")),
         },
@@ -1810,25 +2241,36 @@ Ejemplos:
   python vault_onboard.py --project my-api --path . --no-git --git-phases 6
 """,
     )
-    parser.add_argument("--project",    required=True)
-    parser.add_argument("--path",       required=True)
-    parser.add_argument("--depth",      type=int, default=3)
+    parser.add_argument("--project", required=True)
+    parser.add_argument("--path", required=True)
+    parser.add_argument("--depth", type=int, default=3)
     parser.add_argument("--max-modules", dest="max_modules", type=int, default=20)
-    parser.add_argument("--lang",       dest="lang_hint")
-    parser.add_argument("--dry-run",    action="store_true")
-    parser.add_argument("--agent",      default="claude")
-    parser.add_argument("--skip",       nargs="+", default=[],
-                        help="Secciones a omitir: 01 02 03 04 05 06 07 08 09 11 13 14 15")
+    parser.add_argument("--lang", dest="lang_hint")
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--agent", default="claude")
+    parser.add_argument(
+        "--skip",
+        nargs="+",
+        default=[],
+        help="Secciones a omitir: 01 02 03 04 05 06 07 08 09 11 13 14 15",
+    )
     parser.add_argument("--git-phases", dest="git_phases", type=int, default=8)
     parser.add_argument("--max-commits", dest="max_commits", type=int, default=500)
-    parser.add_argument("--no-git",     action="store_true")
+    parser.add_argument("--no-git", action="store_true")
 
     args = parser.parse_args()
     result = vault_onboard(
-        project=args.project, path=args.path, depth=args.depth,
-        max_modules=args.max_modules, lang_hint=args.lang_hint,
-        dry_run=args.dry_run, agent=args.agent, skip=args.skip,
-        git_phases=args.git_phases, max_commits=args.max_commits, no_git=args.no_git,
+        project=args.project,
+        path=args.path,
+        depth=args.depth,
+        max_modules=args.max_modules,
+        lang_hint=args.lang_hint,
+        dry_run=args.dry_run,
+        agent=args.agent,
+        skip=args.skip,
+        git_phases=args.git_phases,
+        max_commits=args.max_commits,
+        no_git=args.no_git,
     )
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0 if result.get("ok") else 1

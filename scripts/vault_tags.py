@@ -22,30 +22,45 @@ import json
 import re
 import sys
 from collections import defaultdict
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from vault_errors import wrap_main
-from vault_io import atomic_write_json, atomic_write_text, assert_within_vault, VAULT_ROOT, safe_wikilink
+from vault_lib import utcnow
+from vault_io import (
+    atomic_write_json,
+    atomic_write_text,
+    assert_within_vault,
+    VAULT_ROOT,
+    safe_wikilink,
+)
 
-TAG_REGISTRY  = VAULT_ROOT / "00_System" / "tag-registry.json"
-TAG_INDEX_MD  = VAULT_ROOT / "99_Index" / "tag-index.md"
-SEARCH_INDEX  = VAULT_ROOT / "99_Index" / "search-index.json"
+TAG_REGISTRY = VAULT_ROOT / "00_System" / "tag-registry.json"
+TAG_INDEX_MD = VAULT_ROOT / "99_Index" / "tag-index.md"
+SEARCH_INDEX = VAULT_ROOT / "99_Index" / "search-index.json"
 
 VAULT_SECTIONS = {
-    "00_System", "01_Projects", "02_Observability", "03_Decisions",
-    "04_Sessions", "05_Patterns", "06_Diagrams", "07_Knowledge",
-    "08_Runbooks", "09_Infrastructure", "10_Migrated", "11_Code",
-    "12_Bibliography", "13_Flows", "14_Requirements", "15_Tests",
-    "16_AI_Governance", "99_Index",
+    "00_System",
+    "01_Projects",
+    "02_Observability",
+    "03_Decisions",
+    "04_Sessions",
+    "05_Patterns",
+    "06_Diagrams",
+    "07_Knowledge",
+    "08_Runbooks",
+    "09_Infrastructure",
+    "10_Migrated",
+    "11_Code",
+    "12_Bibliography",
+    "13_Flows",
+    "14_Requirements",
+    "15_Tests",
+    "16_AI_Governance",
+    "99_Index",
 }
 
 SKIP_NAMES = frozenset({"index.md", "readme.md"})
-
-
-def _utcnow() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
 def _is_vault_note(path: Path) -> bool:
@@ -118,7 +133,9 @@ def _similarity_score(a: str, b: str) -> float:
     return common / max(len(a), len(b))
 
 
-def _find_similar_tags(new_tag: str, existing_tags: Set[str], threshold: float = 0.6) -> List[Dict[str, Any]]:
+def _find_similar_tags(
+    new_tag: str, existing_tags: Set[str], threshold: float = 0.6
+) -> List[Dict[str, Any]]:
     """Return existing tags similar to new_tag, sorted by similarity desc."""
     results = []
     for tag in existing_tags:
@@ -152,7 +169,7 @@ def _scan_all_notes() -> Tuple[Dict[str, List[str]], List[str]]:
 
 
 def _generate_tag_index_md(tag_map: Dict[str, List[str]], untagged: List[str]) -> str:
-    now = _utcnow()
+    now = utcnow()
     lines = [
         "---",
         "title: Tag Index",
@@ -184,7 +201,7 @@ def _generate_tag_index_md(tag_map: Dict[str, List[str]], untagged: List[str]) -
         lines.append("")
         for note_path in sorted(untagged):
             stem = Path(note_path).stem
-            lines.append(f"- [[{stem}]] — `{note_path}`")
+            lines.append(f"- [[{safe_wikilink(stem)}]] — `{note_path}`")
         lines.append("")
 
     return "\n".join(lines)
@@ -194,7 +211,7 @@ def vault_tags_rebuild(dry_run: bool = False) -> Dict[str, Any]:
     tag_map, untagged = _scan_all_notes()
 
     registry = {
-        "updatedAt": _utcnow(),
+        "updatedAt": utcnow(),
         "total_tags": len(tag_map),
         "total_tagged_notes": sum(len(v) for v in tag_map.values()),
         "total_untagged_notes": len(untagged),
@@ -226,7 +243,10 @@ def vault_tags_rebuild(dry_run: bool = False) -> Dict[str, Any]:
 
 def vault_tags_audit() -> Dict[str, Any]:
     if not TAG_REGISTRY.exists():
-        return {"ok": False, "error": "tag-registry.json no encontrado. Ejecutar vault_tags.py primero."}
+        return {
+            "ok": False,
+            "error": "tag-registry.json no encontrado. Ejecutar vault_tags.py primero.",
+        }
 
     try:
         registry = json.loads(TAG_REGISTRY.read_text(encoding="utf-8"))
@@ -244,19 +264,24 @@ def vault_tags_audit() -> Dict[str, Any]:
     near_dupes: List[Dict[str, Any]] = []
     seen_pairs: Set[Tuple[str, str]] = set()
     for i, tag_a in enumerate(tag_names):
-        for tag_b in tag_names[i+1:]:
+        for tag_b in tag_names[i + 1 :]:
             pair = tuple(sorted([tag_a, tag_b]))
             if pair in seen_pairs:
                 continue
             score = _similarity_score(tag_a, tag_b)
             if score >= 0.6:
                 seen_pairs.add(pair)
-                near_dupes.append({
-                    "tag_a": tag_a,
-                    "tag_b": tag_b,
-                    "score": round(score, 2),
-                    "counts": {"a": tags[tag_a]["count"], "b": tags[tag_b]["count"]},
-                })
+                near_dupes.append(
+                    {
+                        "tag_a": tag_a,
+                        "tag_b": tag_b,
+                        "score": round(score, 2),
+                        "counts": {
+                            "a": tags[tag_a]["count"],
+                            "b": tags[tag_b]["count"],
+                        },
+                    }
+                )
     near_dupes.sort(key=lambda x: -x["score"])
 
     # Singleton tags (count == 1, not linked elsewhere)
@@ -322,7 +347,11 @@ def vault_tags_suggest(note_path_str: str) -> Dict[str, Any]:
                 candidates[tag] = max(candidates.get(tag, 0), score)
 
     suggestions = [
-        {"tag": tag, "score": round(score, 2), "count": registry["tags"].get(tag, {}).get("count", 0)}
+        {
+            "tag": tag,
+            "score": round(score, 2),
+            "count": registry["tags"].get(tag, {}).get("count", 0),
+        }
         for tag, score in sorted(candidates.items(), key=lambda x: -x[1])
         if tag not in existing_tags
     ][:10]
@@ -336,7 +365,9 @@ def vault_tags_suggest(note_path_str: str) -> Dict[str, Any]:
     }
 
 
-def _update_search_index_tags(old_tag: str, new_tag: str, updated_paths: List[str]) -> None:
+def _update_search_index_tags(
+    old_tag: str, new_tag: str, updated_paths: List[str]
+) -> None:
     """Patch search-index.json so renamed tags are reflected without a full reindex."""
     if not SEARCH_INDEX.exists():
         return
@@ -354,7 +385,9 @@ def _update_search_index_tags(old_tag: str, new_tag: str, updated_paths: List[st
         atomic_write_json(SEARCH_INDEX, index)
 
 
-def vault_tags_rename(old_tag: str, new_tag: str, dry_run: bool = False) -> Dict[str, Any]:
+def vault_tags_rename(
+    old_tag: str, new_tag: str, dry_run: bool = False
+) -> Dict[str, Any]:
     if not old_tag or not new_tag:
         return {"ok": False, "error": "old_tag y new_tag son requeridos"}
 
@@ -425,9 +458,18 @@ Notas:
 """,
     )
     parser.add_argument("--audit", action="store_true", help="Reporte de salud de tags")
-    parser.add_argument("--suggest", metavar="PATH", help="Sugerir tags canonicos para una nota")
-    parser.add_argument("--rename", nargs=2, metavar=("OLD", "NEW"), help="Renombrar tag en todas las notas")
-    parser.add_argument("--dry-run", action="store_true", help="Simular sin escribir archivos")
+    parser.add_argument(
+        "--suggest", metavar="PATH", help="Sugerir tags canonicos para una nota"
+    )
+    parser.add_argument(
+        "--rename",
+        nargs=2,
+        metavar=("OLD", "NEW"),
+        help="Renombrar tag en todas las notas",
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Simular sin escribir archivos"
+    )
 
     args = parser.parse_args()
 

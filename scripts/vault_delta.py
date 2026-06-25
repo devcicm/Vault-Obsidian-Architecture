@@ -22,31 +22,40 @@ import hashlib
 import json
 import sys
 from collections import defaultdict, deque
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 from vault_errors import wrap_main
+from vault_lib import utcnow
 from vault_io import atomic_write_json, VAULT_ROOT
 
 HASH_INDEX = VAULT_ROOT / "99_Index" / "hash-index.json"
-GRAPH_FILE  = VAULT_ROOT / "99_Index" / "graph.json"
+GRAPH_FILE = VAULT_ROOT / "99_Index" / "graph.json"
 
 VAULT_SECTIONS = {
-    "00_System", "01_Projects", "02_Observability", "03_Decisions",
-    "04_Sessions", "05_Patterns", "06_Diagrams", "07_Knowledge",
-    "08_Runbooks", "09_Infrastructure", "10_Migrated", "11_Code",
-    "12_Bibliography", "13_Flows", "14_Requirements", "15_Tests",
-    "16_AI_Governance", "99_Index",
+    "00_System",
+    "01_Projects",
+    "02_Observability",
+    "03_Decisions",
+    "04_Sessions",
+    "05_Patterns",
+    "06_Diagrams",
+    "07_Knowledge",
+    "08_Runbooks",
+    "09_Infrastructure",
+    "10_Migrated",
+    "11_Code",
+    "12_Bibliography",
+    "13_Flows",
+    "14_Requirements",
+    "15_Tests",
+    "16_AI_Governance",
+    "99_Index",
 }
 
 CIA_WEIGHT = {"critical": 4, "high": 3, "medium": 2, "low": 1}
 RISK_THRESHOLDS = {"critical": 8, "high": 4, "medium": 2, "low": 0}
 MIN_RISK_ORDER = ["critical", "high", "medium", "low"]
-
-
-def _utcnow() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
 def _is_vault_note(path: Path) -> bool:
@@ -125,7 +134,11 @@ def _compute_delta(
         if path not in current:
             deleted.append(path)
 
-    return {"changed": sorted(changed), "added": sorted(added), "deleted": sorted(deleted)}
+    return {
+        "changed": sorted(changed),
+        "added": sorted(added),
+        "deleted": sorted(deleted),
+    }
 
 
 def _build_reverse_graph(graph: Dict[str, Any]) -> Dict[str, List[str]]:
@@ -160,13 +173,15 @@ def _bfs_impact(
         weight = CIA_WEIGHT.get(cia, 2)
         stale_risk = round(weight / (dist + 1), 3)
 
-        results.append({
-            "path": node,
-            "distance": dist,
-            "cia_integrity": cia,
-            "stale_risk": stale_risk,
-            "via": via,
-        })
+        results.append(
+            {
+                "path": node,
+                "distance": dist,
+                "cia_integrity": cia,
+                "stale_risk": stale_risk,
+                "via": via,
+            }
+        )
 
         for neighbor in reverse_graph.get(node, []):
             if neighbor not in visited:
@@ -194,7 +209,7 @@ def vault_delta(
 
     if snapshot_only:
         if not dry_run:
-            atomic_write_json(HASH_INDEX, {"snapshot_at": _utcnow(), "notes": current})
+            atomic_write_json(HASH_INDEX, {"snapshot_at": utcnow(), "notes": current})
         return {
             "ok": True,
             "action": "snapshot",
@@ -216,7 +231,8 @@ def vault_delta(
             raw_impact = _bfs_impact(changed_set, reverse, current)
             if min_risk:
                 stale_deps = [
-                    d for d in raw_impact
+                    d
+                    for d in raw_impact
                     if _risk_passes(d["stale_risk"], d["cia_integrity"], min_risk)
                 ]
             else:
@@ -225,7 +241,7 @@ def vault_delta(
             stale_deps = [{"error": str(exc)}]
 
     if not dry_run:
-        atomic_write_json(HASH_INDEX, {"snapshot_at": _utcnow(), "notes": current})
+        atomic_write_json(HASH_INDEX, {"snapshot_at": utcnow(), "notes": current})
 
     total_changed = len(delta["changed"]) + len(delta["added"]) + len(delta["deleted"])
     parts = []
@@ -236,8 +252,12 @@ def vault_delta(
     if delta["deleted"]:
         parts.append(f"{len(delta['deleted'])} eliminada(s)")
     summary = (
-        (", ".join(parts) + f" · {len(stale_deps)} dependencia(s) potencialmente obsoleta(s)")
-        if parts else "Sin cambios desde el ultimo snapshot"
+        (
+            ", ".join(parts)
+            + f" · {len(stale_deps)} dependencia(s) potencialmente obsoleta(s)"
+        )
+        if parts
+        else "Sin cambios desde el ultimo snapshot"
     )
 
     return {
@@ -276,11 +296,20 @@ Notas:
   - --min-risk acepta: critical, high, medium, low
 """,
     )
-    parser.add_argument("--dry-run", action="store_true", help="Detectar cambios sin actualizar hash-index")
-    parser.add_argument("--snapshot", action="store_true", help="Solo guardar snapshot sin comparar")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Detectar cambios sin actualizar hash-index",
+    )
+    parser.add_argument(
+        "--snapshot", action="store_true", help="Solo guardar snapshot sin comparar"
+    )
     parser.add_argument("--project", help="Acotar deteccion a un proyecto slug")
-    parser.add_argument("--min-risk", choices=["critical", "high", "medium", "low"],
-                        help="Filtrar stale_deps por nivel minimo de riesgo")
+    parser.add_argument(
+        "--min-risk",
+        choices=["critical", "high", "medium", "low"],
+        help="Filtrar stale_deps por nivel minimo de riesgo",
+    )
 
     args = parser.parse_args()
     result = vault_delta(

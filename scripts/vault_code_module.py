@@ -18,30 +18,51 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
+from vault_lib import utcnow
 import uuid
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-def _utcnow() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-
 from vault_io import VAULT_ROOT, atomic_write_text, atomic_write_json
+
 CODE_DIR = VAULT_ROOT / "11_Code"
 INDEX_FILE = CODE_DIR / ".code-index.json"
 
 LANGUAGES = [
-    "javascript", "typescript", "python", "go", "rust", "java",
-    "c", "cpp", "csharp", "ruby", "php", "bash", "shell",
-    "yaml", "json", "toml", "html", "css", "sql", "markdown",
+    "javascript",
+    "typescript",
+    "python",
+    "go",
+    "rust",
+    "java",
+    "c",
+    "cpp",
+    "csharp",
+    "ruby",
+    "php",
+    "bash",
+    "shell",
+    "yaml",
+    "json",
+    "toml",
+    "html",
+    "css",
+    "sql",
+    "markdown",
 ]
 
 ISO_TYPES = ["module", "component", "service", "library", "script"]
 
 QUALITY_ATTRIBUTES = [
-    "functional_suitability", "performance_efficiency", "compatibility",
-    "usability", "reliability", "security", "maintainability", "portability"
+    "functional_suitability",
+    "performance_efficiency",
+    "compatibility",
+    "usability",
+    "reliability",
+    "security",
+    "maintainability",
+    "portability",
 ]
 
 
@@ -81,7 +102,7 @@ def _build_class_diagram(classes: List[Dict[str, Any]]) -> str:
 
         if extends:
             lines.append(f"    {extends} <|-- {name}")
-        for iface in (implements if isinstance(implements, list) else []):
+        for iface in implements if isinstance(implements, list) else []:
             lines.append(f"    {iface} <|.. {name}")
 
         lines.append(f"    class {name}{{")
@@ -93,7 +114,7 @@ def _build_class_diagram(classes: List[Dict[str, Any]]) -> str:
             if isinstance(meth, str):
                 lines.append(f"        +{meth}()")
             elif isinstance(meth, dict):
-                lines.append(f"        +{meth.get('name','')}()")
+                lines.append(f"        +{meth.get('name', '')}()")
         lines.append("    }")
     return "\n".join(lines)
 
@@ -120,10 +141,16 @@ def vault_code_module(
     fslug = file_slug(file_path)
 
     if language and language.lower() not in LANGUAGES:
-        return {"ok": False, "error": f"Language '{language}' not recognized. Use: {LANGUAGES}"}
+        return {
+            "ok": False,
+            "error": f"Language '{language}' not recognized. Use: {LANGUAGES}",
+        }
 
     if iso_type and iso_type.lower() not in ISO_TYPES:
-        return {"ok": False, "error": f"iso_type '{iso_type}' not recognized. Use: {ISO_TYPES}"}
+        return {
+            "ok": False,
+            "error": f"iso_type '{iso_type}' not recognized. Use: {ISO_TYPES}",
+        }
 
     # AP-17 guard: check .code-index.json for existing note with same file_path.
     # vault_write and vault_code_module may derive different slugs for the same source file.
@@ -131,16 +158,23 @@ def vault_code_module(
     note_path = CODE_DIR / safe_project / f"{fslug}.md"
     index = load_index()
     for existing_mod in index.get("modules", []):
-        if existing_mod.get("filePath") == file_path and existing_mod.get("project") == project:
+        if (
+            existing_mod.get("filePath") == file_path
+            and existing_mod.get("project") == project
+        ):
             canonical_rel = existing_mod.get("relPath", "")
             canonical_path = VAULT_ROOT / canonical_rel if canonical_rel else None
-            if canonical_path and canonical_path.exists() and canonical_path != note_path:
+            if (
+                canonical_path
+                and canonical_path.exists()
+                and canonical_path != note_path
+            ):
                 # Use the canonical path instead of generating a different slug
                 note_path = canonical_path
                 fslug = canonical_path.stem
             break
 
-    now = _utcnow()
+    now = utcnow()
     created_at = now
     existing_id = None
 
@@ -212,13 +246,17 @@ def vault_code_module(
                     rows.append("")
                     rows.append("Parametros:")
                     for p in params:
-                        rows.append(f"- `{p.get('name','')}` ({p.get('type','')}) — {p.get('desc','')}")
+                        rows.append(
+                            f"- `{p.get('name', '')}` ({p.get('type', '')}) — {p.get('desc', '')}"
+                        )
                 if ret and isinstance(ret, dict):
-                    rows.append(f"- **Retorna** `{ret.get('type','')}` — {ret.get('desc','')}")
+                    rows.append(
+                        f"- **Retorna** `{ret.get('type', '')}` — {ret.get('desc', '')}"
+                    )
                 if raises:
                     rows.append("")
                     rows.append("Lanza:")
-                    for r in (raises if isinstance(raises, list) else [raises]):
+                    for r in raises if isinstance(raises, list) else [raises]:
                         rows.append(f"- `{r}`")
         body_sections.append("\n".join(rows))
 
@@ -235,7 +273,12 @@ def vault_code_module(
             if extends:
                 header_parts.append(f"(extends `{extends}`)")
             if implements:
-                ifaces = ", ".join(f"`{i}`" for i in (implements if isinstance(implements, list) else [implements]))
+                ifaces = ", ".join(
+                    f"`{i}`"
+                    for i in (
+                        implements if isinstance(implements, list) else [implements]
+                    )
+                )
                 header_parts.append(f"(implements {ifaces})")
             class_lines.append(" ".join(header_parts))
 
@@ -246,7 +289,9 @@ def vault_code_module(
             if props:
                 class_lines.append("**Propiedades:**")
                 for p in props:
-                    class_lines.append(f"- `{p.get('name','')}` ({p.get('type','')}) — {p.get('desc','')}")
+                    class_lines.append(
+                        f"- `{p.get('name', '')}` ({p.get('type', '')}) — {p.get('desc', '')}"
+                    )
                 class_lines.append("")
 
             meths = cls.get("methods", [])
@@ -256,7 +301,9 @@ def vault_code_module(
                     if isinstance(m, str):
                         class_lines.append(f"- `{m}()`")
                     elif isinstance(m, dict):
-                        class_lines.append(f"- `{m.get('name','')}()` — {m.get('description','')}")
+                        class_lines.append(
+                            f"- `{m.get('name', '')}()` — {m.get('description', '')}"
+                        )
                 class_lines.append("")
 
         body_sections.append("\n".join(class_lines))
@@ -267,25 +314,41 @@ def vault_code_module(
 
     # IEEE 1016 — Data viewpoint: constants
     if constants:
-        rows = ["## Constantes\n", "| Nombre | Valor | Tipo | Descripcion |", "|---|---|---|---|"]
+        rows = [
+            "## Constantes\n",
+            "| Nombre | Valor | Tipo | Descripcion |",
+            "|---|---|---|---|",
+        ]
         for c in constants:
-            rows.append(f"| `{c.get('name','')}` | `{c.get('value','')}` | `{c.get('type','')}` | {c.get('description','')} |")
+            rows.append(
+                f"| `{c.get('name', '')}` | `{c.get('value', '')}` | `{c.get('type', '')}` | {c.get('description', '')} |"
+            )
         body_sections.append("\n".join(rows))
 
     # IEEE 1016 — Error handling
     if exceptions:
         rows = ["## Excepciones\n", "| Excepcion | Cuando se lanza |", "|---|---|"]
         for e in exceptions:
-            rows.append(f"| `{e.get('name','')}` | {e.get('raised_when', e.get('description',''))} |")
+            rows.append(
+                f"| `{e.get('name', '')}` | {e.get('raised_when', e.get('description', ''))} |"
+            )
         body_sections.append("\n".join(rows))
 
     # ISO 25010 — Quality model
     if quality:
-        rows = ["## Calidad (ISO 25010)\n", "| Atributo | Rating | Notas |", "|---|---|---|"]
+        rows = [
+            "## Calidad (ISO 25010)\n",
+            "| Atributo | Rating | Notas |",
+            "|---|---|---|",
+        ]
         for q in quality:
             attr = q.get("attribute", "")
             rating = q.get("rating", "")
-            stars = "★" * int(rating) + "☆" * (5 - int(rating)) if str(rating).isdigit() else str(rating)
+            stars = (
+                "★" * int(rating) + "☆" * (5 - int(rating))
+                if str(rating).isdigit()
+                else str(rating)
+            )
             notes_q = q.get("notes", "")
             rows.append(f"| `{attr}` | {stars} ({rating}/5) | {notes_q} |")
         body_sections.append("\n".join(rows))
@@ -368,13 +431,18 @@ def vault_code_module(
 
     # Bidirectional link: embed @vault: in the source file
     if tag_source:
-        abs_file = Path(file_path) if Path(file_path).is_absolute() else Path.cwd() / file_path
+        abs_file = (
+            Path(file_path) if Path(file_path).is_absolute() else Path.cwd() / file_path
+        )
         if abs_file.exists():
             try:
                 from vault_code_tag import vault_code_tag_link_vault
+
                 tag_title = f"{Path(file_path).name} ({iso_type or 'module'})"
                 note_ref = note_rel.removesuffix(".md")
-                tag_result = vault_code_tag_link_vault(note_ref, str(abs_file), title=tag_title)
+                tag_result = vault_code_tag_link_vault(
+                    note_ref, str(abs_file), title=tag_title
+                )
                 result["source_tagged"] = tag_result.get("ok", False)
                 result["tag_action"] = tag_result.get("action", "error")
                 if not tag_result.get("ok"):
@@ -382,17 +450,29 @@ def vault_code_module(
             except Exception as e:
                 result["tag_warning"] = f"Could not tag source: {e}"
         else:
-            result["tag_warning"] = f"Source file not found on disk: {abs_file} — @vault: not injected"
+            result["tag_warning"] = (
+                f"Source file not found on disk: {abs_file} — @vault: not injected"
+            )
 
     return result
 
 
 def main():
     EXT_LANGUAGE_MAP = {
-        ".py": "python", ".js": "javascript", ".ts": "typescript",
-        ".mjs": "javascript", ".jsx": "javascript", ".tsx": "typescript",
-        ".go": "go", ".java": "java", ".rb": "ruby", ".rs": "rust",
-        ".cpp": "cpp", ".c": "c", ".cs": "csharp", ".php": "php",
+        ".py": "python",
+        ".js": "javascript",
+        ".ts": "typescript",
+        ".mjs": "javascript",
+        ".jsx": "javascript",
+        ".tsx": "typescript",
+        ".go": "go",
+        ".java": "java",
+        ".rb": "ruby",
+        ".rs": "rust",
+        ".cpp": "cpp",
+        ".c": "c",
+        ".cs": "csharp",
+        ".php": "php",
     }
     CODE_EXTS = set(EXT_LANGUAGE_MAP.keys())
 
@@ -427,33 +507,65 @@ Notas:
 """,
     )
     parser.add_argument("--project", required=True, help="Project slug")
-    parser.add_argument("--file_path", help="Real file path on disk (canonical identifier)")
+    parser.add_argument(
+        "--file_path", help="Real file path on disk (canonical identifier)"
+    )
     parser.add_argument("--description", help="Purpose of the file in 1-3 lines")
     parser.add_argument("--language", help=f"Language: {LANGUAGES}")
     parser.add_argument("--iso_type", help=f"ISO/IEC 12207 component type: {ISO_TYPES}")
     parser.add_argument("--exports", help="JSON array of exported symbols")
-    parser.add_argument("--imports", dest="imports_from", help="JSON array of imported modules")
+    parser.add_argument(
+        "--imports", dest="imports_from", help="JSON array of imported modules"
+    )
     parser.add_argument("--responsibilities", help="JSON array of responsibilities")
     parser.add_argument("--notes", help="Additional notes")
     parser.add_argument("--tags", nargs="*", help="Additional tags")
-    parser.add_argument("--methods", help='JSON array of methods: [{name, signature, description, params:[{name,type,desc}], returns:{type,desc}, raises:[str]}]')
-    parser.add_argument("--classes", help='JSON array of classes: [{name, description, extends?, implements?:[], properties:[{name,type,desc}], methods:[str]}]')
-    parser.add_argument("--constants", help='JSON array of constants: [{name, value, type, description}]')
-    parser.add_argument("--exceptions", help='JSON array of exceptions: [{name, description, raised_when}]')
-    parser.add_argument("--quality", help='JSON array ISO 25010: [{attribute, rating(1-5), notes}]')
-    parser.add_argument("--scan-path", help="Directory to scan recursively for code files and document each one")
-    parser.add_argument("--tag-source", action="store_true",
-                        help="Embed @vault: reference in the source file after creating the vault note")
+    parser.add_argument(
+        "--methods",
+        help="JSON array of methods: [{name, signature, description, params:[{name,type,desc}], returns:{type,desc}, raises:[str]}]",
+    )
+    parser.add_argument(
+        "--classes",
+        help="JSON array of classes: [{name, description, extends?, implements?:[], properties:[{name,type,desc}], methods:[str]}]",
+    )
+    parser.add_argument(
+        "--constants",
+        help="JSON array of constants: [{name, value, type, description}]",
+    )
+    parser.add_argument(
+        "--exceptions",
+        help="JSON array of exceptions: [{name, description, raised_when}]",
+    )
+    parser.add_argument(
+        "--quality", help="JSON array ISO 25010: [{attribute, rating(1-5), notes}]"
+    )
+    parser.add_argument(
+        "--scan-path",
+        help="Directory to scan recursively for code files and document each one",
+    )
+    parser.add_argument(
+        "--tag-source",
+        action="store_true",
+        help="Embed @vault: reference in the source file after creating the vault note",
+    )
 
     args = parser.parse_args()
 
     if args.scan_path:
         scan_dir = Path(args.scan_path)
         if not scan_dir.exists():
-            print(json.dumps({"ok": False, "error": f"scan-path not found: {args.scan_path}"}))
+            print(
+                json.dumps(
+                    {"ok": False, "error": f"scan-path not found: {args.scan_path}"}
+                )
+            )
             return 1
 
-        code_files = [f for f in scan_dir.rglob("*") if f.is_file() and f.suffix.lower() in CODE_EXTS]
+        code_files = [
+            f
+            for f in scan_dir.rglob("*")
+            if f.is_file() and f.suffix.lower() in CODE_EXTS
+        ]
         documented = []
         skipped = []
 
@@ -463,7 +575,9 @@ Notas:
             except ValueError:
                 rel_path = str(code_file).replace("\\", "/")
 
-            detected_language = args.language or EXT_LANGUAGE_MAP.get(code_file.suffix.lower())
+            detected_language = args.language or EXT_LANGUAGE_MAP.get(
+                code_file.suffix.lower()
+            )
 
             fslug_val = file_slug(str(code_file))
             safe_project = slugify(args.project)
@@ -473,15 +587,35 @@ Notas:
                 continue
 
             result = vault_code_module(
-                args.project, rel_path, code_file.name,
-                detected_language, None, None, None, None, args.tags,
+                args.project,
+                rel_path,
+                code_file.name,
+                detected_language,
+                None,
+                None,
+                None,
+                None,
+                args.tags,
             )
             if result.get("ok"):
                 documented.append(result["path"])
             else:
-                skipped.append({"file": rel_path, "reason": result.get("error", "unknown")})
+                skipped.append(
+                    {"file": rel_path, "reason": result.get("error", "unknown")}
+                )
 
-        print(json.dumps({"ok": True, "scanned": len(code_files), "documented": documented, "skipped": skipped}, indent=2, ensure_ascii=False))
+        print(
+            json.dumps(
+                {
+                    "ok": True,
+                    "scanned": len(code_files),
+                    "documented": documented,
+                    "skipped": skipped,
+                },
+                indent=2,
+                ensure_ascii=False,
+            )
+        )
         return 0
 
     if not args.file_path:
@@ -501,7 +635,14 @@ Notas:
                 parts = [p.strip() for p in val.split(",") if p.strip()]
                 if parts:
                     return parts
-            print(json.dumps({"ok": False, "error": f"Invalid JSON in --{name}. Expected JSON array or comma-separated list."}))
+            print(
+                json.dumps(
+                    {
+                        "ok": False,
+                        "error": f"Invalid JSON in --{name}. Expected JSON array or comma-separated list.",
+                    }
+                )
+            )
             sys.exit(1)
 
     result = vault_code_module(

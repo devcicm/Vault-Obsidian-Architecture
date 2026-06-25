@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Tuple
 from urllib.parse import urlparse
 
 from vault_errors import wrap_main
+from vault_lib import utcnow
 from vault_io import VAULT_ROOT, atomic_write_json, file_lock
 
 
@@ -24,10 +25,6 @@ PID_FILE = USAGE_DIR / "token-service.pid"
 PORT_FILE = USAGE_DIR / "token-service.port"
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8765
-
-
-def _utcnow() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
 def estimate_tokens(text: str) -> int:
@@ -62,7 +59,7 @@ def _read_json(path: Path, default: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _default_flow(flow_id: str, operation: str = "") -> Dict[str, Any]:
-    now = _utcnow()
+    now = utcnow()
     return {
         "flow_id": flow_id,
         "operation": operation,
@@ -104,7 +101,10 @@ def _update_totals(flow: Dict[str, Any], event: Dict[str, Any]) -> None:
 
 
 def start_flow(payload: Dict[str, Any]) -> Dict[str, Any]:
-    flow_id = payload.get("flow_id") or f"flow-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}"
+    flow_id = (
+        payload.get("flow_id")
+        or f"flow-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}"
+    )
     operation = payload.get("operation", "")
     path = _flow_path(flow_id)
     FLOW_DIR.mkdir(parents=True, exist_ok=True)
@@ -115,11 +115,15 @@ def start_flow(payload: Dict[str, Any]) -> Dict[str, Any]:
         flow["flow_id"] = flow_id
         flow["operation"] = operation or flow.get("operation", "")
         flow["status"] = "active"
-        flow["updatedAt"] = _utcnow()
+        flow["updatedAt"] = utcnow()
         if isinstance(payload.get("budget"), dict):
             flow["budget"] = payload["budget"]
         atomic_write_json(path, flow)
-    return {"ok": True, "flow_id": flow_id, "path": str(path.relative_to(VAULT_ROOT)).replace("\\", "/")}
+    return {
+        "ok": True,
+        "flow_id": flow_id,
+        "path": str(path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+    }
 
 
 def add_event(payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -132,7 +136,7 @@ def add_event(payload: Dict[str, Any]) -> Dict[str, Any]:
     tokens = payload.get("tokens")
     token_count = int(tokens) if tokens is not None else estimate_tokens(str(text))
     event = {
-        "ts": _utcnow(),
+        "ts": utcnow(),
         "source": payload.get("source", "agent"),
         "phase": payload.get("phase", ""),
         "tool": payload.get("tool", ""),
@@ -147,7 +151,7 @@ def add_event(payload: Dict[str, Any]) -> Dict[str, Any]:
     with file_lock(path):
         flow = _read_json(path, _default_flow(flow_id))
         flow["status"] = "active"
-        flow["updatedAt"] = _utcnow()
+        flow["updatedAt"] = utcnow()
         flow.setdefault("events", []).append(event)
         _update_totals(flow, event)
         atomic_write_json(path, flow)
@@ -162,7 +166,7 @@ def end_flow(payload: Dict[str, Any]) -> Dict[str, Any]:
     with file_lock(path):
         flow = _read_json(path, _default_flow(flow_id))
         flow["status"] = "ended"
-        flow["updatedAt"] = _utcnow()
+        flow["updatedAt"] = utcnow()
         flow["endedAt"] = flow["updatedAt"]
         atomic_write_json(path, flow)
     return {"ok": True, "flow_id": flow_id, "totals": flow.get("totals", {})}
@@ -181,7 +185,7 @@ def service_status() -> Dict[str, Any]:
         "ok": True,
         "service": "vault_token_service",
         "pid": os.getpid(),
-        "time": _utcnow(),
+        "time": utcnow(),
         "usageDir": str(USAGE_DIR.relative_to(VAULT_ROOT)).replace("\\", "/"),
     }
 

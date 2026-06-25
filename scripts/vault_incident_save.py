@@ -29,7 +29,13 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT, assert_within_vault, atomic_write_text, update_section_index
+from vault_lib import utcnow
+from vault_io import (
+    VAULT_ROOT,
+    assert_within_vault,
+    atomic_write_text,
+    update_section_index,
+)
 from vault_norms import compute_norm_refs
 
 FOLDER = "02_Observability/incidents"
@@ -66,15 +72,20 @@ SEVERITY_LEVELS = {
     },
 }
 
-VALID_STATUS = ["detected", "investigating", "identified", "mitigating", "resolved", "closed", "post-mortem"]
-
-
-def _utcnow() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+VALID_STATUS = [
+    "detected",
+    "investigating",
+    "identified",
+    "mitigating",
+    "resolved",
+    "closed",
+    "post-mortem",
+]
 
 
 def _slug(text: str) -> str:
     import re
+
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")[:60]
 
 
@@ -111,16 +122,22 @@ def vault_incident_save(
 ) -> Dict[str, Any]:
     severity = severity.upper()
     if severity not in SEVERITY_LEVELS:
-        return {"ok": False, "error_code": "INVALID_SEVERITY",
-                "message": f"severity debe ser P1, P2, P3 o P4. Recibido: {severity}",
-                "recovery": {"hint": "Usar --severity P1|P2|P3|P4"}}
+        return {
+            "ok": False,
+            "error_code": "INVALID_SEVERITY",
+            "message": f"severity debe ser P1, P2, P3 o P4. Recibido: {severity}",
+            "recovery": {"hint": "Usar --severity P1|P2|P3|P4"},
+        }
 
     if status not in VALID_STATUS:
-        return {"ok": False, "error_code": "INVALID_STATUS",
-                "message": f"status inválido: {status}",
-                "recovery": {"hint": f"Valores válidos: {', '.join(VALID_STATUS)}"}}
+        return {
+            "ok": False,
+            "error_code": "INVALID_STATUS",
+            "message": f"status inválido: {status}",
+            "recovery": {"hint": f"Valores válidos: {', '.join(VALID_STATUS)}"},
+        }
 
-    now = _utcnow()
+    now = utcnow()
     detected_at = detected_at or now
     date_prefix = detected_at[:10]
     sev_info = SEVERITY_LEVELS[severity]
@@ -131,37 +148,42 @@ def vault_incident_save(
     affected_services = affected_services or []
 
     # Build content
-    timeline_md = "\n".join(
-        f"| {e.get('time', '—')} | {e.get('event', '')} | {e.get('who', '')} |"
-        for e in timeline
-    ) or "| — | Sin eventos registrados | |"
+    timeline_md = (
+        "\n".join(
+            f"| {e.get('time', '—')} | {e.get('event', '')} | {e.get('who', '')} |"
+            for e in timeline
+        )
+        or "| — | Sin eventos registrados | |"
+    )
 
-    actions_md = "\n".join(f"- [ ] {a}" for a in action_items) or "— Pendiente de definir"
+    actions_md = (
+        "\n".join(f"- [ ] {a}" for a in action_items) or "— Pendiente de definir"
+    )
     services_md = ", ".join(f"`{s}`" for s in affected_services) or "— No especificados"
 
     body = f"""# Incidente: {title}
 
-> **{severity} — {sev_info['label']}**: {sev_info['description']}
+> **{severity} — {sev_info["label"]}**: {sev_info["description"]}
 > ISO 20000-1:2018 §8.6 | ISO 22301:2019 §8.4
 
 ## Datos del incidente
 
 | Campo | Valor |
 |---|---|
-| **Severidad** | {severity} — {sev_info['label']} |
+| **Severidad** | {severity} — {sev_info["label"]} |
 | **Status** | {status} |
 | **Detectado** | {detected_at} |
-| **Resuelto** | {resolved_at or '— En curso'} |
+| **Resuelto** | {resolved_at or "— En curso"} |
 | **MTTR** | {mttr} |
 | **Servicios afectados** | {services_md} |
-| **RTO objetivo** | {rto or sev_info['resolution_target']} |
-| **RPO objetivo** | {rpo or '—'} |
-| **Target respuesta (ISO 20000)** | {sev_info['response_target']} |
-| **Target resolución (ISO 20000)** | {sev_info['resolution_target']} |
+| **RTO objetivo** | {rto or sev_info["resolution_target"]} |
+| **RPO objetivo** | {rpo or "—"} |
+| **Target respuesta (ISO 20000)** | {sev_info["response_target"]} |
+| **Target resolución (ISO 20000)** | {sev_info["resolution_target"]} |
 
 ## Impacto
 
-{impact or '_Pendiente de documentar el impacto en usuarios y negocio._'}
+{impact or "_Pendiente de documentar el impacto en usuarios y negocio._"}
 
 ## Timeline del incidente
 
@@ -171,7 +193,7 @@ def vault_incident_save(
 
 ## Causa raíz (RCA)
 
-{root_cause or '_Pendiente de análisis de causa raíz._'}
+{root_cause or "_Pendiente de análisis de causa raíz._"}
 
 ## Action items (post-mortem)
 
@@ -209,7 +231,7 @@ _Qué salió bien, qué salió mal, qué hacer diferente._
     norm_refs = compute_norm_refs(FOLDER, body, [])
     fm_lines = [
         "---",
-        f"title: \"Incidente: {title}\"",
+        f'title: "Incidente: {title}"',
         f"id: {uuid.uuid4()}",
         f"createdAt: {now}",
         f"updatedAt: {now}",
@@ -271,20 +293,20 @@ Ejemplos:
     --action_items '["Agregar monitoreo de índices","Revisar checklist de migraciones"]'
 """,
     )
-    parser.add_argument("--project",    required=True)
-    parser.add_argument("--title",      required=True)
-    parser.add_argument("--severity",   default="P3", choices=["P1", "P2", "P3", "P4"])
-    parser.add_argument("--status",     default="detected", choices=VALID_STATUS)
+    parser.add_argument("--project", required=True)
+    parser.add_argument("--title", required=True)
+    parser.add_argument("--severity", default="P3", choices=["P1", "P2", "P3", "P4"])
+    parser.add_argument("--status", default="detected", choices=VALID_STATUS)
     parser.add_argument("--detected_at")
     parser.add_argument("--resolved_at")
-    parser.add_argument("--impact",     default="")
+    parser.add_argument("--impact", default="")
     parser.add_argument("--root_cause", default="")
-    parser.add_argument("--timeline",   default="[]")
+    parser.add_argument("--timeline", default="[]")
     parser.add_argument("--action_items", default="[]")
     parser.add_argument("--affected_services", default="[]")
-    parser.add_argument("--rto",        default="")
-    parser.add_argument("--rpo",        default="")
-    parser.add_argument("--agent",      default="claude")
+    parser.add_argument("--rto", default="")
+    parser.add_argument("--rpo", default="")
+    parser.add_argument("--agent", default="claude")
 
     args = parser.parse_args()
     try:
@@ -292,16 +314,26 @@ Ejemplos:
         action_items = json.loads(args.action_items)
         affected_services = json.loads(args.affected_services)
     except json.JSONDecodeError as e:
-        print(json.dumps({"ok": False, "error_code": "INVALID_JSON", "message": str(e)}))
+        print(
+            json.dumps({"ok": False, "error_code": "INVALID_JSON", "message": str(e)})
+        )
         return 1
 
     result = vault_incident_save(
-        project=args.project, title=args.title, severity=args.severity,
-        status=args.status, detected_at=args.detected_at, resolved_at=args.resolved_at,
-        impact=args.impact, root_cause=args.root_cause,
-        timeline=timeline, action_items=action_items,
+        project=args.project,
+        title=args.title,
+        severity=args.severity,
+        status=args.status,
+        detected_at=args.detected_at,
+        resolved_at=args.resolved_at,
+        impact=args.impact,
+        root_cause=args.root_cause,
+        timeline=timeline,
+        action_items=action_items,
         affected_services=affected_services,
-        rto=args.rto, rpo=args.rpo, agent=args.agent,
+        rto=args.rto,
+        rpo=args.rpo,
+        agent=args.agent,
     )
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0 if result.get("ok") else 1

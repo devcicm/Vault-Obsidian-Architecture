@@ -16,15 +16,13 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
-from datetime import datetime, timezone
+from vault_lib import utcnow
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-def _utcnow() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-
 from vault_io import VAULT_ROOT, atomic_write_text, safe_wikilink
+
 INDEX_FILE = VAULT_ROOT / "99_Index" / "search-index.json"
 
 
@@ -176,7 +174,7 @@ def vault_project_overview(
     project_dir.mkdir(parents=True, exist_ok=True)
 
     overview_path = project_dir / "overview.md"
-    timestamp = _utcnow()
+    timestamp = utcnow()
 
     existing_description = ""
     existing_runtime = ""
@@ -225,21 +223,27 @@ def vault_project_overview(
         body_sections.append("## Frameworks\n")
         for fw in frameworks:
             stem = Path(fw["path"]).stem
-            body_sections.append(f"- [[{safe_wikilink(stem)}|{safe_wikilink(fw['title'])}]]")
+            body_sections.append(
+                f"- [[{safe_wikilink(stem)}|{safe_wikilink(fw['title'])}]]"
+            )
         body_sections.append("")
 
     if dependencies:
         body_sections.append(f"## Dependencias ({len(dependencies)})\n")
         for dep in dependencies:
             stem = Path(dep["path"]).stem
-            body_sections.append(f"- [[{safe_wikilink(stem)}|{safe_wikilink(dep['title'])}]]")
+            body_sections.append(
+                f"- [[{safe_wikilink(stem)}|{safe_wikilink(dep['title'])}]]"
+            )
         body_sections.append("")
 
     if decisions:
         body_sections.append(f"## Decisiones técnicas (ADR) ({len(decisions)})\n")
         for dec in decisions:
             stem = Path(dec["path"]).stem
-            body_sections.append(f"- [[{safe_wikilink(stem)}|{safe_wikilink(dec['title'])}]]")
+            body_sections.append(
+                f"- [[{safe_wikilink(stem)}|{safe_wikilink(dec['title'])}]]"
+            )
         body_sections.append("")
 
     if patterns:
@@ -248,7 +252,9 @@ def vault_project_overview(
             stem = Path(pat["path"]).stem
             title = pat["title"]
             status = pat.get("status", "")
-            body_sections.append(f"- [[{safe_wikilink(stem)}|{safe_wikilink(title)}]] · `{status}`")
+            body_sections.append(
+                f"- [[{safe_wikilink(stem)}|{safe_wikilink(title)}]] · `{status}`"
+            )
         body_sections.append("")
 
     sections_written = []
@@ -268,7 +274,9 @@ def vault_project_overview(
         body_sections.append(f"## Infraestructura ({len(infrastructure)})\n")
         for inf in infrastructure:
             stem = Path(inf["path"]).stem
-            body_sections.append(f"- [[{safe_wikilink(stem)}|{safe_wikilink(inf['title'])}]]")
+            body_sections.append(
+                f"- [[{safe_wikilink(stem)}|{safe_wikilink(inf['title'])}]]"
+            )
         body_sections.append("")
         sections_written.append("Infraestructura")
 
@@ -309,7 +317,9 @@ Notas:
     parser.add_argument("--description", help="Project description")
     parser.add_argument("--runtime", help="Runtime (e.g., 'Python 3.10')")
 
-    parser.add_argument("--extra_sections", help="Extra sections as JSON object: {\"Title\": \"content\"}")
+    parser.add_argument(
+        "--extra_sections", help='Extra sections as JSON object: {"Title": "content"}'
+    )
     args = parser.parse_args()
 
     extra_sections = None
@@ -319,7 +329,9 @@ Notas:
         except json.JSONDecodeError:
             pass
 
-    result = vault_project_overview(args.project, args.description, args.runtime, extra_sections)
+    result = vault_project_overview(
+        args.project, args.description, args.runtime, extra_sections
+    )
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0 if result["ok"] else 1
 

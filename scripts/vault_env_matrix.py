@@ -23,12 +23,17 @@ import argparse
 import json
 import sys
 import uuid
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT, assert_within_vault, atomic_write_text, update_section_index
+from vault_lib import utcnow
+from vault_io import (
+    VAULT_ROOT,
+    assert_within_vault,
+    atomic_write_text,
+    update_section_index,
+)
 from vault_norms import compute_norm_refs
 
 FOLDER = "09_Infrastructure/env-matrix"
@@ -81,15 +86,21 @@ ENV_PROFILES: Dict[str, Dict[str, Any]] = {
     },
 }
 
-SECRET_PREFIXES = ("SECRET", "KEY", "TOKEN", "PASSWORD", "PASS", "CREDENTIAL", "PRIVATE", "AUTH")
-
-
-def _utcnow() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+SECRET_PREFIXES = (
+    "SECRET",
+    "KEY",
+    "TOKEN",
+    "PASSWORD",
+    "PASS",
+    "CREDENTIAL",
+    "PRIVATE",
+    "AUTH",
+)
 
 
 def _slug(text: str) -> str:
     import re
+
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
 
 
@@ -123,12 +134,13 @@ def vault_env_matrix(
 ) -> Dict[str, Any]:
     if env not in ENV_PROFILES:
         return {
-            "ok": False, "error_code": "INVALID_ENV",
+            "ok": False,
+            "error_code": "INVALID_ENV",
             "message": f"env debe ser: {', '.join(ENV_PROFILES.keys())}",
         }
 
     profile = ENV_PROFILES[env]
-    now = _utcnow()
+    now = utcnow()
     services = services or []
     features = features or {}
     env_vars = env_vars or []
@@ -141,29 +153,34 @@ def vault_env_matrix(
 
     services_md = "\n".join(f"- `{s}`" for s in services) or "— Sin servicios definidos"
 
-    features_md = "\n".join(
-        f"| `{k}` | {'✓ Activo' if v else '✗ Inactivo'} |"
-        for k, v in features.items()
-    ) or "| — | Sin feature flags definidos |"
+    features_md = (
+        "\n".join(
+            f"| `{k}` | {'✓ Activo' if v else '✗ Inactivo'} |"
+            for k, v in features.items()
+        )
+        or "| — | Sin feature flags definidos |"
+    )
 
     def _vars_section(cls: str, emoji: str) -> str:
         vars_list = var_groups.get(cls, [])
         if not vars_list:
             return ""
-        return f"\n**{emoji} {cls.replace('_', ' ').capitalize()}:**\n" + "\n".join(f"- `{v}`" for v in vars_list)
+        return f"\n**{emoji} {cls.replace('_', ' ').capitalize()}:**\n" + "\n".join(
+            f"- `{v}`" for v in vars_list
+        )
 
     vars_md = (
-        _vars_section("secret", "🔒") +
-        _vars_section("connection", "🔗") +
-        _vars_section("feature_flag", "🚩") +
-        _vars_section("tuning", "⚙️") +
-        _vars_section("logging", "📋") +
-        _vars_section("config", "📌")
+        _vars_section("secret", "🔒")
+        + _vars_section("connection", "🔗")
+        + _vars_section("feature_flag", "🚩")
+        + _vars_section("tuning", "⚙️")
+        + _vars_section("logging", "📋")
+        + _vars_section("config", "📌")
     ) or "— Sin variables documentadas"
 
-    body = f"""# Entorno: {project} — {profile['label']} ({env.upper()})
+    body = f"""# Entorno: {project} — {profile["label"]} ({env.upper()})
 
-> {profile['description']}
+> {profile["description"]}
 > ISO/IEC 12207:2017 §6.3.4 — Configuration management
 > ISO 20000-1:2018 §8.5 — Configuration and asset management
 > ISO/IEC 27001:2022 A.12 — Operations security
@@ -172,14 +189,14 @@ def vault_env_matrix(
 
 | Campo | Valor |
 |---|---|
-| **Entorno** | {env.upper()} — {profile['label']} |
-| **Clasificación ISO** | {profile['iso_classification']} |
-| **Runtime** | {runtime or '— Pendiente'} |
-| **Región / Zona** | {region or '— Pendiente'} |
-| **Escala** | {scale or profile['typical_scale']} |
-| **Trigger de deploy** | {profile['deploy_trigger']} |
-| **Política de datos** | {profile['data_policy']} |
-| **Sensibilidad** | {profile['cia_sensitivity']} |
+| **Entorno** | {env.upper()} — {profile["label"]} |
+| **Clasificación ISO** | {profile["iso_classification"]} |
+| **Runtime** | {runtime or "— Pendiente"} |
+| **Región / Zona** | {region or "— Pendiente"} |
+| **Escala** | {scale or profile["typical_scale"]} |
+| **Trigger de deploy** | {profile["deploy_trigger"]} |
+| **Política de datos** | {profile["data_policy"]} |
+| **Sensibilidad** | {profile["cia_sensitivity"]} |
 
 ## Servicios en este entorno
 
@@ -203,11 +220,11 @@ _Documentar qué es diferente en este entorno vs producción: datos, escala, ser
 
 ## Procedimiento de deploy
 
-{deploy_procedure or '_Pendiente. Usar vault_release_save para documentar el proceso._'}
+{deploy_procedure or "_Pendiente. Usar vault_release_save para documentar el proceso._"}
 
 ## Procedimiento de rollback
 
-{rollback_procedure or '_Pendiente. Documentar cómo revertir un deploy en este entorno._'}
+{rollback_procedure or "_Pendiente. Documentar cómo revertir un deploy en este entorno._"}
 
 ## Accesos requeridos
 
@@ -233,7 +250,7 @@ _Documentar qué es diferente en este entorno vs producción: datos, escala, ser
     norm_refs = compute_norm_refs(FOLDER, body, [])
     fm_lines = [
         "---",
-        f"title: \"Entorno: {project} — {profile['label']} ({env.upper()})\"",
+        f'title: "Entorno: {project} — {profile["label"]} ({env.upper()})"',
         f"id: {uuid.uuid4()}",
         f"createdAt: {now}",
         f"updatedAt: {now}",
@@ -281,7 +298,7 @@ def main() -> int:
         description="vault_env_matrix — Documenta matrix de entornos (ISO 20000-1 / ISO 12207)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=f"""
-Entornos disponibles: {', '.join(ENV_PROFILES.keys())}
+Entornos disponibles: {", ".join(ENV_PROFILES.keys())}
 
 Ejemplos:
   python vault_env_matrix.py --project my-api --env prod \\
@@ -291,33 +308,41 @@ Ejemplos:
     --runtime "Node.js 20 LTS" --region "us-east-1"
 """,
     )
-    parser.add_argument("--project",  required=True)
-    parser.add_argument("--env",      required=True, choices=list(ENV_PROFILES.keys()))
+    parser.add_argument("--project", required=True)
+    parser.add_argument("--env", required=True, choices=list(ENV_PROFILES.keys()))
     parser.add_argument("--services", default="[]")
     parser.add_argument("--features", default="{}")
     parser.add_argument("--env_vars", default="[]")
-    parser.add_argument("--runtime",  default="")
-    parser.add_argument("--region",   default="")
-    parser.add_argument("--scale",    default="")
+    parser.add_argument("--runtime", default="")
+    parser.add_argument("--region", default="")
+    parser.add_argument("--scale", default="")
     parser.add_argument("--deploy_procedure", default="")
     parser.add_argument("--rollback_procedure", default="")
-    parser.add_argument("--agent",    default="claude")
+    parser.add_argument("--agent", default="claude")
 
     args = parser.parse_args()
     try:
-        services  = json.loads(args.services)
-        features  = json.loads(args.features)
-        env_vars  = json.loads(args.env_vars)
+        services = json.loads(args.services)
+        features = json.loads(args.features)
+        env_vars = json.loads(args.env_vars)
     except json.JSONDecodeError as e:
-        print(json.dumps({"ok": False, "error_code": "INVALID_JSON", "message": str(e)}))
+        print(
+            json.dumps({"ok": False, "error_code": "INVALID_JSON", "message": str(e)})
+        )
         return 1
 
     result = vault_env_matrix(
-        project=args.project, env=args.env, services=services,
-        features=features, env_vars=env_vars,
-        runtime=args.runtime, region=args.region, scale=args.scale,
+        project=args.project,
+        env=args.env,
+        services=services,
+        features=features,
+        env_vars=env_vars,
+        runtime=args.runtime,
+        region=args.region,
+        scale=args.scale,
         deploy_procedure=args.deploy_procedure,
-        rollback_procedure=args.rollback_procedure, agent=args.agent,
+        rollback_procedure=args.rollback_procedure,
+        agent=args.agent,
     )
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0 if result.get("ok") else 1

@@ -34,55 +34,73 @@ import argparse
 import json
 import sys
 import uuid
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT, assert_within_vault, atomic_write_text, update_section_index
+from vault_lib import utcnow
+from vault_io import (
+    VAULT_ROOT,
+    assert_within_vault,
+    atomic_write_text,
+    update_section_index,
+)
 from vault_norms import compute_norm_refs
 
 FOLDER = "02_Observability/quality"
 
 NCR_TYPES: Dict[str, str] = {
-    "product":       "El producto/software no cumple con requisitos funcionales o de calidad",
-    "process":       "Un proceso no se ejecutó según el procedimiento definido",
-    "service":       "El servicio entregado no cumplió con el SLA o requisitos del cliente",
+    "product": "El producto/software no cumple con requisitos funcionales o de calidad",
+    "process": "Un proceso no se ejecutó según el procedimiento definido",
+    "service": "El servicio entregado no cumplió con el SLA o requisitos del cliente",
     "documentation": "Documentación faltante, incorrecta o desactualizada",
-    "audit":         "Hallazgo de auditoría interna o externa",
+    "audit": "Hallazgo de auditoría interna o externa",
 }
 
 SEVERITY_LEVELS: Dict[str, str] = {
     "critical": "Fallo que impacta directamente la seguridad, conformidad legal o entrega al cliente",
-    "major":    "Desvío significativo que requiere acción correctiva antes de continuar",
-    "minor":    "Desvío menor que no impide operación pero debe corregirse",
+    "major": "Desvío significativo que requiere acción correctiva antes de continuar",
+    "minor": "Desvío menor que no impide operación pero debe corregirse",
     "observation": "Oportunidad de mejora — no es non-conformidad estricta",
 }
 
-DETECTED_BY = ["audit", "customer", "internal", "automated", "security_scan", "code_review"]
+DETECTED_BY = [
+    "audit",
+    "customer",
+    "internal",
+    "automated",
+    "security_scan",
+    "code_review",
+]
 VALID_STATUS = ["open", "in_progress", "pending_verification", "closed", "cancelled"]
-
-
-def _utcnow() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
 def _slug(text: str) -> str:
     import re
+
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")[:60]
 
 
 def _ncr_id(date_str: str) -> str:
     year = date_str[:4]
     import random
+
     return f"NCR-{year}-{random.randint(100, 999)}"
 
 
 def _cia_from_severity(severity: str, ncr_type: str) -> Dict[str, str]:
     if severity == "critical":
-        return {"integrity": "high", "availability": "high", "sensitivity": "restricted"}
+        return {
+            "integrity": "high",
+            "availability": "high",
+            "sensitivity": "restricted",
+        }
     if severity == "major":
-        return {"integrity": "high", "availability": "medium", "sensitivity": "internal"}
+        return {
+            "integrity": "high",
+            "availability": "medium",
+            "sensitivity": "internal",
+        }
     return {"integrity": "medium", "availability": "medium", "sensitivity": "internal"}
 
 
@@ -103,26 +121,39 @@ def vault_ncr_save(
     agent: str = "claude",
 ) -> Dict[str, Any]:
     if ncr_type not in NCR_TYPES:
-        return {"ok": False, "error_code": "INVALID_NCR_TYPE",
-                "message": f"ncr_type debe ser: {', '.join(NCR_TYPES.keys())}"}
+        return {
+            "ok": False,
+            "error_code": "INVALID_NCR_TYPE",
+            "message": f"ncr_type debe ser: {', '.join(NCR_TYPES.keys())}",
+        }
     if severity not in SEVERITY_LEVELS:
-        return {"ok": False, "error_code": "INVALID_SEVERITY",
-                "message": f"severity debe ser: {', '.join(SEVERITY_LEVELS.keys())}"}
+        return {
+            "ok": False,
+            "error_code": "INVALID_SEVERITY",
+            "message": f"severity debe ser: {', '.join(SEVERITY_LEVELS.keys())}",
+        }
     if detected_by not in DETECTED_BY:
-        return {"ok": False, "error_code": "INVALID_DETECTED_BY",
-                "message": f"detected_by debe ser: {', '.join(DETECTED_BY)}"}
+        return {
+            "ok": False,
+            "error_code": "INVALID_DETECTED_BY",
+            "message": f"detected_by debe ser: {', '.join(DETECTED_BY)}",
+        }
     if status not in VALID_STATUS:
-        return {"ok": False, "error_code": "INVALID_STATUS",
-                "message": f"status debe ser: {', '.join(VALID_STATUS)}"}
+        return {
+            "ok": False,
+            "error_code": "INVALID_STATUS",
+            "message": f"status debe ser: {', '.join(VALID_STATUS)}",
+        }
 
-    now = _utcnow()
+    now = utcnow()
     ncr_id = _ncr_id(now)
     corrective_actions = corrective_actions or []
     cia = _cia_from_severity(severity, ncr_type)
 
-    actions_md = "\n".join(
-        f"- [ ] {a}" for a in corrective_actions
-    ) or "— Sin acciones correctivas definidas aún"
+    actions_md = (
+        "\n".join(f"- [ ] {a}" for a in corrective_actions)
+        or "— Sin acciones correctivas definidas aún"
+    )
 
     body = f"""# NCR: {title}
 
@@ -138,21 +169,21 @@ def vault_ncr_save(
 | **Severidad** | {severity.upper()} |
 | **Detectada por** | {detected_by} |
 | **Status** | {status} |
-| **Propietario** | {owner or '— Sin asignar'} |
-| **Fecha límite** | {target_date or '— Sin definir'} |
-| **Requisito relacionado** | {related_requirement or '— No especificado'} |
+| **Propietario** | {owner or "— Sin asignar"} |
+| **Fecha límite** | {target_date or "— Sin definir"} |
+| **Requisito relacionado** | {related_requirement or "— No especificado"} |
 
 ## Descripción (ISO 9001 §10.2.1.a)
 
-{description or '_Pendiente: describir qué se encontró fuera de conformidad y dónde._'}
+{description or "_Pendiente: describir qué se encontró fuera de conformidad y dónde._"}
 
 ## Acción inmediata / Contención (ISO 9001 §10.2.1.b)
 
-{immediate_action or '_Pendiente: acción tomada para contener el problema inmediatamente._'}
+{immediate_action or "_Pendiente: acción tomada para contener el problema inmediatamente._"}
 
 ## Análisis de causa raíz (ISO 9001 §10.2.1.c)
 
-{root_cause or '_Pendiente: identificar la causa raíz usando 5-Whys, Ishikawa o similar._'}
+{root_cause or "_Pendiente: identificar la causa raíz usando 5-Whys, Ishikawa o similar._"}
 
 ### 5-Whys (completar si aplica)
 
@@ -242,9 +273,9 @@ def main() -> int:
         description="vault_ncr_save — Registra no conformidades y acciones correctivas (ISO 9001:2015)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=f"""
-Tipos NCR:   {', '.join(NCR_TYPES.keys())}
-Severidades: {', '.join(SEVERITY_LEVELS.keys())}
-Detectado por: {', '.join(DETECTED_BY)}
+Tipos NCR:   {", ".join(NCR_TYPES.keys())}
+Severidades: {", ".join(SEVERITY_LEVELS.keys())}
+Detectado por: {", ".join(DETECTED_BY)}
 
 Ejemplos:
   python vault_ncr_save.py --project my-api \\
@@ -256,36 +287,47 @@ Ejemplos:
     --corrective_actions '["Validación con Zod","Test de regresión"]'
 """,
     )
-    parser.add_argument("--project",    required=True)
-    parser.add_argument("--title",      required=True)
-    parser.add_argument("--ncr_type",   default="process", choices=list(NCR_TYPES.keys()))
-    parser.add_argument("--severity",   default="major",   choices=list(SEVERITY_LEVELS.keys()))
+    parser.add_argument("--project", required=True)
+    parser.add_argument("--title", required=True)
+    parser.add_argument("--ncr_type", default="process", choices=list(NCR_TYPES.keys()))
+    parser.add_argument(
+        "--severity", default="major", choices=list(SEVERITY_LEVELS.keys())
+    )
     parser.add_argument("--detected_by", default="internal", choices=DETECTED_BY)
-    parser.add_argument("--description",  default="")
-    parser.add_argument("--root_cause",   default="")
+    parser.add_argument("--description", default="")
+    parser.add_argument("--root_cause", default="")
     parser.add_argument("--immediate_action", default="")
     parser.add_argument("--corrective_actions", default="[]")
     parser.add_argument("--target_date", default="")
-    parser.add_argument("--status",     default="open", choices=VALID_STATUS)
-    parser.add_argument("--owner",      default="")
+    parser.add_argument("--status", default="open", choices=VALID_STATUS)
+    parser.add_argument("--owner", default="")
     parser.add_argument("--related_requirement", default="")
-    parser.add_argument("--agent",      default="claude")
+    parser.add_argument("--agent", default="claude")
 
     args = parser.parse_args()
     try:
         corrective_actions = json.loads(args.corrective_actions)
     except json.JSONDecodeError as e:
-        print(json.dumps({"ok": False, "error_code": "INVALID_JSON", "message": str(e)}))
+        print(
+            json.dumps({"ok": False, "error_code": "INVALID_JSON", "message": str(e)})
+        )
         return 1
 
     result = vault_ncr_save(
-        project=args.project, title=args.title, ncr_type=args.ncr_type,
-        severity=args.severity, detected_by=args.detected_by,
-        description=args.description, root_cause=args.root_cause,
+        project=args.project,
+        title=args.title,
+        ncr_type=args.ncr_type,
+        severity=args.severity,
+        detected_by=args.detected_by,
+        description=args.description,
+        root_cause=args.root_cause,
         immediate_action=args.immediate_action,
-        corrective_actions=corrective_actions, target_date=args.target_date,
-        status=args.status, owner=args.owner,
-        related_requirement=args.related_requirement, agent=args.agent,
+        corrective_actions=corrective_actions,
+        target_date=args.target_date,
+        status=args.status,
+        owner=args.owner,
+        related_requirement=args.related_requirement,
+        agent=args.agent,
     )
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0 if result.get("ok") else 1

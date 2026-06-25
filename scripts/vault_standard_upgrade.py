@@ -19,22 +19,19 @@ import argparse
 import json
 import sys
 from vault_errors import wrap_main
+from vault_lib import utcnow
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-
-def _utcnow() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-
-
 from vault_io import VAULT_ROOT
 from vault_registry import standard_folders
+
 SYSTEM_DIR = VAULT_ROOT / "00_System"
 VERSION_FILE = SYSTEM_DIR / "standard-version.json"
 IDENTITY_FILE = SYSTEM_DIR / "identity.md"
 
-CURRENT_VERSION = "v32"
+CURRENT_VERSION = "v34"
 
 MIGRATIONS: Dict[str, Dict[str, Any]] = {
     "v21": {
@@ -219,9 +216,76 @@ MIGRATIONS: Dict[str, Dict[str, Any]] = {
             "09_Infrastructure/privacy/: inventario de tratamiento de datos personales",
         ],
     },
+    "v33": {
+        "description": "Regex validation module, bracket auto-fix, enhanced content gate",
+        "add_folders": [],
+        "fixes": ["bracket_anomalies", "path_anchored_links"],
+        "update_identity": {"tools_count": "67", "groups_count": "33"},
+        "notes": [
+            "vault_regex.py (NUEVO): módulo de validación regex para wiki-links",
+            "detect_bracket_anomalies(): detecta [[[[, ]]]], [[]] (AP-22)",
+            "detect_path_anchored(): detecta [[/note]] (AP-21)",
+            "fix_nested_brackets(): auto-corrección de corchetes anidados",
+            "fix_whitespace_in_links(): auto-corrección de espacios en links",
+            "vault_fix_brackets.py: usa vault_regex para detección más sensible (3+ corchetes)",
+            "vault_write.py: AP-21 detection, anomaly detection con auto-fix",
+            "vault_audit.py: mayor sensibilidad (3+ vs 4+)",
+        ],
+    },
+    "v34": {
+        "description": "MCP orchestrator, catalog system, auto-context persistence, session management",
+        "add_folders": [],
+        "fixes": [],
+        "update_identity": {"tools_count": "69", "groups_count": "33"},
+        "notes": [
+            "vault_mcp.py (NUEVO): orquestador central del vault",
+            "vault_mcp_catalog.py: catálogo de 69 tools con validators",
+            "vault_mcp_context.py: gestión de contexto persistido",
+            "00_System/vault_context.json: contexto persistido del vault",
+            "Sistema de sostenibilidad de versiones: upgrades aplican fixes automáticos",
+            "content gate mejorado con validación de wiki-links",
+        ],
+    },
 }
 
-VERSION_ORDER = ["v19", "v20", "v21", "v22", "v23", "v24", "v25", "v26", "v27", "v28", "v29", "v30", "v31", "v32"]
+VERSION_ORDER = [
+    "v19",
+    "v20",
+    "v21",
+    "v22",
+    "v23",
+    "v24",
+    "v25",
+    "v26",
+    "v27",
+    "v28",
+    "v29",
+    "v30",
+    "v31",
+    "v32",
+    "v33",
+    "v34",
+]
+
+
+FIX_TYPES = {
+    "bracket_anomalies": {
+        "tool": "vault_fix_brackets",
+        "auto_apply": True,
+        "dry_run_first": True,
+        "description": "Corrige [[[[, ]]]], [[]], [[ ]] (AP-22)",
+    },
+    "path_anchored_links": {
+        "tool": "vault_regex",
+        "auto_apply": True,
+        "description": "Corrige [[/note]] → [[note]] (AP-21)",
+    },
+    "empty_bullets": {
+        "tool": "vault_write",
+        "auto_apply": False,
+        "description": "AP-20: bullets vacíos - warning only",
+    },
+}
 
 
 def _version_index(v: str) -> int:
@@ -233,16 +297,28 @@ def _version_index(v: str) -> int:
 
 def _read_version_file() -> Dict[str, Any]:
     if not VERSION_FILE.exists():
-        return {"applied_version": None, "applied_at": None, "applied_by": None, "migrations_applied": []}
+        return {
+            "applied_version": None,
+            "applied_at": None,
+            "applied_by": None,
+            "migrations_applied": [],
+        }
     try:
         return json.loads(VERSION_FILE.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, IOError):
-        return {"applied_version": None, "applied_at": None, "applied_by": None, "migrations_applied": []}
+        return {
+            "applied_version": None,
+            "applied_at": None,
+            "applied_by": None,
+            "migrations_applied": [],
+        }
 
 
 def _write_version_file(data: Dict[str, Any]) -> None:
     SYSTEM_DIR.mkdir(parents=True, exist_ok=True)
-    VERSION_FILE.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+    VERSION_FILE.write_text(
+        json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
 
 
 STANDARD_FOLDERS = standard_folders()  # from vault_registry — fuente unica
@@ -258,7 +334,14 @@ def _run_compliance_check(target_version: str) -> Dict[str, Any]:
     missing_folders = [f for f in STANDARD_FOLDERS if not (VAULT_ROOT / f).exists()]
     folders_ok = len(missing_folders) == 0
     if missing_folders:
-        gaps.append({"type": "missing_folders", "count": len(missing_folders), "severity": "warning", "detail": missing_folders})
+        gaps.append(
+            {
+                "type": "missing_folders",
+                "count": len(missing_folders),
+                "severity": "warning",
+                "detail": missing_folders,
+            }
+        )
 
     # 2. Frontmatter compliance
     md_files = list(VAULT_ROOT.rglob("*.md"))
@@ -268,6 +351,7 @@ def _run_compliance_check(target_version: str) -> Dict[str, Any]:
 
     if total_md > 0:
         import re
+
         for md_path in md_files:
             try:
                 text = md_path.read_text(encoding="utf-8", errors="replace")
@@ -283,14 +367,23 @@ def _run_compliance_check(target_version: str) -> Dict[str, Any]:
         frontmatter_compliance = 1.0
 
     if frontmatter_compliance < 0.5:
-        gaps.append({"type": "low_frontmatter_compliance", "count": total_md - compliant_md, "severity": "warning",
-                     "detail": f"{compliant_md}/{total_md} notes have required frontmatter fields"})
+        gaps.append(
+            {
+                "type": "low_frontmatter_compliance",
+                "count": total_md - compliant_md,
+                "severity": "warning",
+                "detail": f"{compliant_md}/{total_md} notes have required frontmatter fields",
+            }
+        )
 
     # 3. Audit health score (import vault_audit if available)
     audit_score = None
     try:
         import importlib.util
-        audit_spec = importlib.util.spec_from_file_location("vault_audit", SCRIPTS_DIR / "vault_audit.py")
+
+        audit_spec = importlib.util.spec_from_file_location(
+            "vault_audit", SCRIPTS_DIR / "vault_audit.py"
+        )
         if audit_spec:
             vault_audit_mod = importlib.util.module_from_spec(audit_spec)
             audit_spec.loader.exec_module(vault_audit_mod)
@@ -299,11 +392,19 @@ def _run_compliance_check(target_version: str) -> Dict[str, Any]:
     except Exception:
         pass
 
-    compliance_score = round((
-        (1.0 if folders_ok else max(0, 1 - len(missing_folders) / len(STANDARD_FOLDERS))) * 0.4 +
-        frontmatter_compliance * 0.4 +
-        ((audit_score or 0) / 100) * 0.2
-    ), 2)
+    compliance_score = round(
+        (
+            (
+                1.0
+                if folders_ok
+                else max(0, 1 - len(missing_folders) / len(STANDARD_FOLDERS))
+            )
+            * 0.4
+            + frontmatter_compliance * 0.4
+            + ((audit_score or 0) / 100) * 0.2
+        ),
+        2,
+    )
 
     return {
         "applied_version": target_version,
@@ -322,24 +423,88 @@ def _pending_migrations(from_version: str, to_version: str) -> List[str]:
     to_idx = _version_index(to_version)
     if from_idx < 0 or to_idx < 0:
         return []
-    return [v for v in VERSION_ORDER if _version_index(v) > from_idx and _version_index(v) <= to_idx and v in MIGRATIONS]
+    return [
+        v
+        for v in VERSION_ORDER
+        if _version_index(v) > from_idx
+        and _version_index(v) <= to_idx
+        and v in MIGRATIONS
+    ]
 
 
-def _apply_migration(version: str, dry_run: bool) -> Dict[str, Any]:
+def _apply_migration(
+    version: str, dry_run: bool, fixes_only: bool = False
+) -> Dict[str, Any]:
     migration = MIGRATIONS[version]
     folders_created = []
     folders_skipped = []
+    fixes_applied = []
+    fixes_failed = []
 
-    for folder in migration.get("add_folders", []):
-        folder_path = VAULT_ROOT / folder
-        if folder_path.exists():
-            folders_skipped.append(folder)
-        else:
-            if not dry_run:
-                folder_path.mkdir(parents=True, exist_ok=True)
-                gitkeep = folder_path / ".gitkeep"
-                gitkeep.touch()
-            folders_created.append(folder)
+    if not fixes_only:
+        for folder in migration.get("add_folders", []):
+            folder_path = VAULT_ROOT / folder
+            if folder_path.exists():
+                folders_skipped.append(folder)
+            else:
+                if not dry_run:
+                    folder_path.mkdir(parents=True, exist_ok=True)
+                    gitkeep = folder_path / ".gitkeep"
+                    gitkeep.touch()
+                folders_created.append(folder)
+
+    fixes = migration.get("fixes", [])
+    for fix_type in fixes:
+        fix_config = FIX_TYPES.get(fix_type)
+        if not fix_config:
+            continue
+
+        tool_name = fix_config["tool"]
+        if dry_run:
+            fixes_applied.append(
+                {
+                    "type": fix_type,
+                    "tool": tool_name,
+                    "description": fix_config["description"],
+                    "action": "dry_run - would execute",
+                }
+            )
+            continue
+
+        try:
+            import subprocess
+
+            result = subprocess.run(
+                [
+                    "python",
+                    f"vault_{tool_name.split('_')[1] if '_' in tool_name else tool_name}.py",
+                ],
+                cwd=str(SCRIPTS_DIR),
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+            if result.returncode == 0:
+                fixes_applied.append(
+                    {
+                        "type": fix_type,
+                        "tool": tool_name,
+                        "description": fix_config["description"],
+                        "action": "applied",
+                    }
+                )
+            else:
+                fixes_failed.append(
+                    {
+                        "type": fix_type,
+                        "tool": tool_name,
+                        "error": result.stderr[:500] if result.stderr else "unknown",
+                    }
+                )
+        except Exception as e:
+            fixes_failed.append(
+                {"type": fix_type, "tool": tool_name, "error": str(e)[:500]}
+            )
 
     return {
         "version": version,
@@ -348,6 +513,8 @@ def _apply_migration(version: str, dry_run: bool) -> Dict[str, Any]:
         "folders_skipped": folders_skipped,
         "notes": migration.get("notes", []),
         "identity_updates": migration.get("update_identity", {}),
+        "fixes_applied": fixes_applied,
+        "fixes_failed": fixes_failed,
     }
 
 
@@ -359,6 +526,9 @@ def vault_standard_upgrade(
     agent: str = "claude",
     set_profile: Optional[str] = None,
     validate: bool = False,
+    fixes_only: bool = False,
+    dry_run: bool = False,
+    report_mode: bool = False,
 ) -> Dict[str, Any]:
     # Handle --set-profile independently
     if set_profile is not None:
@@ -367,16 +537,22 @@ def vault_standard_upgrade(
         if not state.get("applied_version"):
             state["applied_version"] = CURRENT_VERSION
         _write_version_file(state)
-        result: Dict[str, Any] = {"ok": True, "action": "set_profile", "profile": set_profile,
-                                   "path": str(VERSION_FILE.relative_to(VAULT_ROOT)).replace("\\", "/")}
+        result: Dict[str, Any] = {
+            "ok": True,
+            "action": "set_profile",
+            "profile": set_profile,
+            "path": str(VERSION_FILE.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        }
         if validate:
-            result["compliance"] = _run_compliance_check(state.get("applied_version", CURRENT_VERSION))
+            result["compliance"] = _run_compliance_check(
+                state.get("applied_version", CURRENT_VERSION)
+            )
         return result
 
     if init_version:
         data = {
             "applied_version": init_version,
-            "applied_at": _utcnow(),
+            "applied_at": utcnow(),
             "applied_by": agent,
             "migrations_applied": [],
         }
@@ -399,7 +575,10 @@ def vault_standard_upgrade(
 
         # Auto-generate section indexes for every base folder. This makes the vault
         # navigable from the first commit — no manual `for folder in ...; do vault_section_index` loop.
-        from vault_section_index import vault_section_index  # lazy — avoid circular import
+        from vault_section_index import (
+            vault_section_index,
+        )  # lazy — avoid circular import
+
         sections_indexed: List[str] = []
         for folder in STANDARD_FOLDERS:
             try:
@@ -430,6 +609,35 @@ def vault_standard_upgrade(
 
     pending = _pending_migrations(current_applied, to_version)
 
+    if report_mode:
+        all_fixes = []
+        for v in pending:
+            migration = MIGRATIONS.get(v, {})
+            fixes = migration.get("fixes", [])
+            for fix_type in fixes:
+                fix_config = FIX_TYPES.get(fix_type, {})
+                all_fixes.append(
+                    {
+                        "version": v,
+                        "type": fix_type,
+                        "tool": fix_config.get("tool"),
+                        "description": fix_config.get("description"),
+                        "auto_apply": fix_config.get("auto_apply", False),
+                    }
+                )
+        result = {
+            "ok": True,
+            "action": "report",
+            "current_version": current_applied,
+            "target_version": to_version,
+            "pending_migrations": len(pending),
+            "available_fixes": all_fixes,
+            "fix_types": list(FIX_TYPES.keys()),
+        }
+        if validate:
+            result["compliance"] = _run_compliance_check(current_applied)
+        return result
+
     if not pending:
         result = {
             "ok": True,
@@ -446,12 +654,18 @@ def vault_standard_upgrade(
         pending_details = []
         for v in pending:
             m = MIGRATIONS[v]
-            pending_details.append({
-                "version": v,
-                "description": m["description"],
-                "folders_to_create": [f for f in m.get("add_folders", []) if not (VAULT_ROOT / f).exists()],
-                "notes": m.get("notes", []),
-            })
+            pending_details.append(
+                {
+                    "version": v,
+                    "description": m["description"],
+                    "folders_to_create": [
+                        f
+                        for f in m.get("add_folders", [])
+                        if not (VAULT_ROOT / f).exists()
+                    ],
+                    "notes": m.get("notes", []),
+                }
+            )
         result = {
             "ok": True,
             "action": "check",
@@ -466,27 +680,50 @@ def vault_standard_upgrade(
 
     applied_list = []
     all_folders_created = []
+    all_fixes_applied = []
+    all_fixes_failed = []
 
     for version in pending:
-        migration_result = _apply_migration(version, dry_run=False)
+        migration_result = _apply_migration(
+            version, dry_run=dry_run, fixes_only=fixes_only
+        )
         applied_list.append(migration_result)
-        all_folders_created.extend(migration_result["folders_created"])
+        all_folders_created.extend(migration_result.get("folders_created", []))
+        all_fixes_applied.extend(migration_result.get("fixes_applied", []))
+        all_fixes_failed.extend(migration_result.get("fixes_failed", []))
+
+    if dry_run:
+        return {
+            "ok": True,
+            "action": "dry_run",
+            "current_version": current_applied,
+            "target_version": to_version,
+            "would_apply": applied_list,
+            "would_create_folders": all_folders_created,
+            "would_apply_fixes": all_fixes_applied,
+        }
 
     state["applied_version"] = to_version
-    state["applied_at"] = _utcnow()
+    state["applied_at"] = utcnow()
     state["applied_by"] = agent
     already = state.get("migrations_applied", [])
     already.extend(pending)
     state["migrations_applied"] = already
+    if all_fixes_applied:
+        state["fixes_applied"] = all_fixes_applied
+    if all_fixes_failed:
+        state["fixes_failed"] = all_fixes_failed
     _write_version_file(state)
 
     result = {
         "ok": True,
-        "action": "upgraded",
+        "action": "upgraded" if not fixes_only else "fixes_applied",
         "from": current_applied,
         "to": to_version,
         "migrations_applied": applied_list,
         "folders_created": all_folders_created,
+        "fixes_applied": all_fixes_applied,
+        "fixes_failed": all_fixes_failed,
         "version_file": str(VERSION_FILE.relative_to(VAULT_ROOT)).replace("\\", "/"),
     }
     if validate:
@@ -515,23 +752,67 @@ Ejemplos:
   # Modo check desde una version especifica
   python vault_standard_upgrade.py --check --from v20
 
-Notas:
+ Notas:
   - VAULT_ROOT se detecta automaticamente desde la ubicacion del script
   - Sin --from, lee la version actual de 00_System/standard-version.json
   - --check no modifica nada, solo reporta
   - --init crea 00_System/standard-version.json si no existe
-  - Versiones disponibles: v19, v20, v21, v22, v23, v24, v25
+  - --fixes-only solo ejecuta fixes sin aplicar migraciones
+  - --dry-run simula todo sin aplicar cambios
+  - --report genera reporte de fixes disponibles
+  - Versiones disponibles: v19 a v34
 """,
     )
-    parser.add_argument("--from", dest="from_version", help="Current vault version (reads standard-version.json if omitted)")
-    parser.add_argument("--to", dest="to_version", default=CURRENT_VERSION, help=f"Target version (default: {CURRENT_VERSION}, or 'latest')")
-    parser.add_argument("--check", action="store_true", help="Report pending migrations without applying them")
-    parser.add_argument("--init", dest="init_version", help="Initialize standard-version.json with given version")
-    parser.add_argument("--agent", default="claude", help="Agent name for audit trail (default: claude)")
-    parser.add_argument("--set-profile", dest="set_profile", choices=["minimal", "standard", "full"],
-                        help="Set the tool profile in standard-version.json (minimal=10, standard=30, full=61)")
-    parser.add_argument("--validate", action="store_true",
-                        help="Run compliance check: folders, frontmatter, health score (non-blocking)")
+    parser.add_argument(
+        "--from",
+        dest="from_version",
+        help="Current vault version (reads standard-version.json if omitted)",
+    )
+    parser.add_argument(
+        "--to",
+        dest="to_version",
+        default=CURRENT_VERSION,
+        help=f"Target version (default: {CURRENT_VERSION}, or 'latest')",
+    )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Report pending migrations without applying them",
+    )
+    parser.add_argument(
+        "--init",
+        dest="init_version",
+        help="Initialize standard-version.json with given version",
+    )
+    parser.add_argument(
+        "--agent", default="claude", help="Agent name for audit trail (default: claude)"
+    )
+    parser.add_argument(
+        "--set-profile",
+        dest="set_profile",
+        choices=["minimal", "standard", "full"],
+        help="Set the tool profile in standard-version.json (minimal=10, standard=30, full=61)",
+    )
+    parser.add_argument(
+        "--validate",
+        action="store_true",
+        help="Run compliance check: folders, frontmatter, health score (non-blocking)",
+    )
+    parser.add_argument(
+        "--fixes-only",
+        action="store_true",
+        help="Only execute fixes without applying migrations",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Simulate everything without applying any changes",
+    )
+    parser.add_argument(
+        "--report",
+        action="store_true",
+        help="Generate health report without making changes",
+    )
 
     args = parser.parse_args()
 
@@ -543,6 +824,9 @@ Notas:
         agent=args.agent,
         set_profile=args.set_profile,
         validate=args.validate,
+        fixes_only=args.fixes_only,
+        dry_run=args.dry_run,
+        report_mode=args.report,
     )
 
     print(json.dumps(result, indent=2, ensure_ascii=False))

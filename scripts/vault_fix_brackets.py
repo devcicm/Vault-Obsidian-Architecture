@@ -53,14 +53,24 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT, atomic_write_text
+from vault_io import VAULT_ROOT, atomic_write_text, assert_within_vault
+from vault_lib import utcnow, strip_code_blocks
+from vault_regex import (
+    RE_EMPTY_LINK,
+    RE_NESTED_OPEN_3,
+    RE_NESTED_CLOSE_3,
+    fix_nested_brackets,
+    fix_whitespace_in_links,
+    detect_bracket_anomalies,
+)
 
 
-# ---- Detection patterns (mirror vault_audit for consistency) ----
-RE_EMPTY = re.compile(r"\[\[\s*\]\]")
-RE_NESTED_OPEN = re.compile(r"\{\{\{")
-RE_NESTED_OPEN_4 = re.compile(r"\[\[\[\[")  # exactly 4+ opens
-RE_NESTED_CLOSE_4 = re.compile(r"\]\]\]\]")  # exactly 4+ closes
+# ---- Detection patterns (using vault_regex for consistency) ----
+RE_EMPTY = RE_EMPTY_LINK
+RE_NESTED_OPEN = RE_NESTED_OPEN_3  # 3+ opens - more sensitive
+RE_NESTED_CLOSE = RE_NESTED_CLOSE_3  # 3+ closes - more sensitive
+RE_NESTED_OPEN_4 = re.compile(r"\[\[\[\[")  # keep legacy for compatibility
+RE_NESTED_CLOSE_4 = re.compile(r"\]\]\]\]")  # keep legacy for compatibility
 
 # Excluded paths — same as vault_audit
 EXCLUDE_NAMES = {"vault-obsidian-architecture.md"}
@@ -83,17 +93,6 @@ def _is_in_test_sandbox() -> bool:
     return VAULT_ROOT.name == "vault-sandbox"
 
 
-def _utcnow() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-
-
-def _strip_code(content: str) -> str:
-    """Remove fenced code blocks and inline code (mirrors vault_audit logic)."""
-    out = re.sub(r"```[\s\S]*?```", "", content)
-    out = re.sub(r"`[^`\n]+`", "", out)
-    return out
-
-
 def _analyze_note(content: str) -> Dict[str, Any]:
     """Return bracket analysis for one note. Mirrors vault_audit._detect_malformed_wikilinks.
 
@@ -101,14 +100,14 @@ def _analyze_note(content: str) -> Dict[str, Any]:
     balance is 0 (because some OTHER [[b]] closed earlier) but a LOCAL
     bracket was opened without ever closing.
     """
-    clean = _strip_code(content)
+    clean = strip_code_blocks(content)
     empty_matches = list(RE_EMPTY.finditer(clean))
     nested_open_matches = list(RE_NESTED_OPEN_4.finditer(clean))
     nested_close_matches = list(RE_NESTED_CLOSE_4.finditer(clean))
     opens = len(re.findall(r"\[\[", clean))
     closes = len(re.findall(r"\]\]", clean))
 
-# Stack-based detection: walk the cleaned text, track bracket depth.
+    # Stack-based detection: walk the cleaned text, track bracket depth.
     # A stray `]]` with depth==0 → imbalance_close.
     # A `[[` that never closes (we hit EOF with depth>0) → imbalance_open.
     #
@@ -133,11 +132,11 @@ def _analyze_note(content: str) -> Dict[str, Any]:
 
     i = 0
     while i < len(virtual):
-        if virtual[i:i + 2] == "[[":
+        if virtual[i : i + 2] == "[[":
             stack_depth += 1
             max_depth = max(max_depth, stack_depth)
             i += 2
-        elif virtual[i:i + 2] == "]]":
+        elif virtual[i : i + 2] == "]]":
             if stack_depth == 0:
                 stray_closes += 1
                 start = max(0, i - 10)
@@ -155,31 +154,37 @@ def _analyze_note(content: str) -> Dict[str, Any]:
     problems: List[Dict[str, Any]] = []
 
     if empty_matches:
-        problems.append({
-            "kind": "empty",
-            "norm_code": "AP-22",
-            "count": len(empty_matches),
-            "examples": [m.group(0) for m in empty_matches[:3]],
-            "auto_fixable": True,
-        })
+        problems.append(
+            {
+                "kind": "empty",
+                "norm_code": "AP-22",
+                "count": len(empty_matches),
+                "examples": [m.group(0) for m in empty_matches[:3]],
+                "auto_fixable": True,
+            }
+        )
 
     if nested_open_matches:
-        problems.append({
-            "kind": "nested_open",
-            "norm_code": "AP-24",
-            "count": len(nested_open_matches),
-            "examples": [m.group(0) for m in nested_open_matches[:3]],
-            "auto_fixable": True,
-        })
+        problems.append(
+            {
+                "kind": "nested_open",
+                "norm_code": "AP-24",
+                "count": len(nested_open_matches),
+                "examples": [m.group(0) for m in nested_open_matches[:3]],
+                "auto_fixable": True,
+            }
+        )
 
     if nested_close_matches:
-        problems.append({
-            "kind": "nested_close",
-            "norm_code": "AP-24",
-            "count": len(nested_close_matches),
-            "examples": [m.group(0) for m in nested_close_matches[:3]],
-            "auto_fixable": True,
-        })
+        problems.append(
+            {
+                "kind": "nested_close",
+                "norm_code": "AP-24",
+                "count": len(nested_close_matches),
+                "examples": [m.group(0) for m in nested_close_matches[:3]],
+                "auto_fixable": True,
+            }
+        )
 
     # Local imbalance detection — fires when stack-based scan finds stranded
     # brackets even if global balance is 0.
@@ -191,8 +196,10 @@ def _analyze_note(content: str) -> Dict[str, Any]:
     # Resolvable = (leftover_opens + stray_closes) is fully accounted for
     # by the nested counts that auto-fix will collapse.
     resolvable = (
-        leftover_opens <= len(nested_open_matches) * 2  # each [[[[ has 2 stray opens after collapse
-        and stray_closes <= len(nested_close_matches) * 2  # each ]]]] has 2 stray closes after collapse
+        leftover_opens
+        <= len(nested_open_matches) * 2  # each [[[[ has 2 stray opens after collapse
+        and stray_closes
+        <= len(nested_close_matches) * 2  # each ]]]] has 2 stray closes after collapse
     )
     # IMPORTANT: stray_closes and leftover_opens are computed on the VIRTUAL
     # post-fix text. So a value of 0 means the nested collapse fully resolved
@@ -201,49 +208,57 @@ def _analyze_note(content: str) -> Dict[str, Any]:
 
     if leftover_opens > 0 and not resolvable:
         # Imbalance can't be fixed by nested collapse — manual review needed
-        problems.append({
-            "kind": "imbalance_open",
-            "norm_code": "AP-24",
-            "count": leftover_opens,
-            "opens": opens,
-            "closes": closes,
-            "auto_fixable": False,
-            "fix_hint": f"{leftover_opens} `[[` sin `]]` correspondiente (no cerrado al final del texto)",
-        })
+        problems.append(
+            {
+                "kind": "imbalance_open",
+                "norm_code": "AP-24",
+                "count": leftover_opens,
+                "opens": opens,
+                "closes": closes,
+                "auto_fixable": False,
+                "fix_hint": f"{leftover_opens} `[[` sin `]]` correspondiente (no cerrado al final del texto)",
+            }
+        )
     elif leftover_opens > 0 and resolvable:
         # Track as a "shadow" imbalance that nested fixes will resolve
-        problems.append({
-            "kind": "imbalance_open_resolvable",
-            "norm_code": "AP-24",
-            "count": leftover_opens,
-            "opens": opens,
-            "closes": closes,
-            "auto_fixable": True,
-            "fix_hint": "Imbalance se resolverá al colapsar `[[[[` con nested_open",
-        })
+        problems.append(
+            {
+                "kind": "imbalance_open_resolvable",
+                "norm_code": "AP-24",
+                "count": leftover_opens,
+                "opens": opens,
+                "closes": closes,
+                "auto_fixable": True,
+                "fix_hint": "Imbalance se resolverá al colapsar `[[[[` con nested_open",
+            }
+        )
 
     if stray_closes > 0 and not resolvable:
-        problems.append({
-            "kind": "imbalance_close",
-            "norm_code": "AP-24",
-            "count": stray_closes,
-            "opens": opens,
-            "closes": closes,
-            "examples": inverted_examples[:3],
-            "auto_fixable": False,
-            "fix_hint": f"{stray_closes} `]]` sin `[[` anterior (orden invertido)",
-        })
+        problems.append(
+            {
+                "kind": "imbalance_close",
+                "norm_code": "AP-24",
+                "count": stray_closes,
+                "opens": opens,
+                "closes": closes,
+                "examples": inverted_examples[:3],
+                "auto_fixable": False,
+                "fix_hint": f"{stray_closes} `]]` sin `[[` anterior (orden invertido)",
+            }
+        )
     elif stray_closes > 0 and resolvable:
-        problems.append({
-            "kind": "imbalance_close_resolvable",
-            "norm_code": "AP-24",
-            "count": stray_closes,
-            "opens": opens,
-            "closes": closes,
-            "examples": inverted_examples[:3],
-            "auto_fixable": True,
-            "fix_hint": "Imbalance se resolverá al colapsar `]]]]` con nested_close",
-        })
+        problems.append(
+            {
+                "kind": "imbalance_close_resolvable",
+                "norm_code": "AP-24",
+                "count": stray_closes,
+                "opens": opens,
+                "closes": closes,
+                "examples": inverted_examples[:3],
+                "auto_fixable": True,
+                "fix_hint": "Imbalance se resolverá al colapsar `]]]]` con nested_close",
+            }
+        )
 
     return {
         "opens": opens,
@@ -299,7 +314,12 @@ def _collect_notes(path_arg: Optional[str]) -> List[Path]:
     if path_arg:
         target = Path(path_arg)
         if not target.is_absolute():
-            target = (VAULT_ROOT / path_arg).resolve()
+            target = VAULT_ROOT / path_arg
+        try:
+            target = assert_within_vault(target, VAULT_ROOT)
+        except ValueError:
+            return []
+        target = target.resolve()
         if not target.exists():
             return []
         if target.is_file():
@@ -396,13 +416,15 @@ def vault_fix_brackets(
             new_content = _apply_fixes(content, kinds)
             if new_content != content:
                 files_to_backup.append(n)
-                fixes_applied.append({
-                    "path": rel,
-                    "kinds_applied": kinds,
-                    "before_chars": len(content),
-                    "after_chars": len(new_content),
-                    "delta": len(new_content) - len(content),
-                })
+                fixes_applied.append(
+                    {
+                        "path": rel,
+                        "kinds_applied": kinds,
+                        "before_chars": len(content),
+                        "after_chars": len(new_content),
+                        "delta": len(new_content) - len(content),
+                    }
+                )
 
     backup_dir: Optional[str] = None
     if apply and files_to_backup:
@@ -428,7 +450,7 @@ def vault_fix_brackets(
         "ok": True,
         "tool": "vault_fix_brackets",
         "vault_root": str(VAULT_ROOT),
-        "timestamp": _utcnow(),
+        "timestamp": utcnow(),
         "mode": "apply" if apply else "dry-run",
         "scanned": scanned,
         "skipped": skipped,
@@ -443,7 +465,9 @@ def vault_fix_brackets(
         "hint": (
             "Run with --apply to apply the safe fixes. Manual-review findings "
             "(imbalance, inverted) require human decision."
-        ) if not apply else None,
+        )
+        if not apply
+        else None,
     }
 
 
@@ -472,14 +496,29 @@ Kinds (for --only):
   imbalance_*   AP-24 — manual review only (not auto-fixed)
 """,
     )
-    parser.add_argument("--apply", action="store_true",
-                        help="Apply safe fixes (default: dry-run)")
-    parser.add_argument("--path", help="Limit to a specific note or folder (relative to VAULT_ROOT)")
-    parser.add_argument("--only", action="append",
-                        choices=["empty", "nested_open", "nested_close", "imbalance_open", "imbalance_close"],
-                        help="Only fix specific kinds (can repeat)")
-    parser.add_argument("--include-sandbox", action="store_true",
-                        help="Include vault-sandbox/ in scan (test fixtures)")
+    parser.add_argument(
+        "--apply", action="store_true", help="Apply safe fixes (default: dry-run)"
+    )
+    parser.add_argument(
+        "--path", help="Limit to a specific note or folder (relative to VAULT_ROOT)"
+    )
+    parser.add_argument(
+        "--only",
+        action="append",
+        choices=[
+            "empty",
+            "nested_open",
+            "nested_close",
+            "imbalance_open",
+            "imbalance_close",
+        ],
+        help="Only fix specific kinds (can repeat)",
+    )
+    parser.add_argument(
+        "--include-sandbox",
+        action="store_true",
+        help="Include vault-sandbox/ in scan (test fixtures)",
+    )
     args = parser.parse_args()
 
     result = vault_fix_brackets(

@@ -28,52 +28,69 @@ import argparse
 import json
 import sys
 import uuid
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT, assert_within_vault, atomic_write_text, update_section_index
+from vault_lib import utcnow
+from vault_io import (
+    VAULT_ROOT,
+    assert_within_vault,
+    atomic_write_text,
+    update_section_index,
+)
 from vault_norms import compute_norm_refs
 
 FOLDER = "02_Observability/risks"
 
 RISK_TYPES = {
-    "security":      "Confidencialidad, integridad o disponibilidad de activos de información",
-    "operational":   "Fallo en procesos, personas, sistemas o eventos externos",
-    "financial":     "Pérdida económica directa o indirecta",
-    "legal":         "Incumplimiento regulatorio, contractual o normativo",
-    "reputational":  "Daño a la imagen o confianza de stakeholders",
-    "technical":     "Deuda técnica, obsolescencia o dependencias críticas",
+    "security": "Confidencialidad, integridad o disponibilidad de activos de información",
+    "operational": "Fallo en procesos, personas, sistemas o eventos externos",
+    "financial": "Pérdida económica directa o indirecta",
+    "legal": "Incumplimiento regulatorio, contractual o normativo",
+    "reputational": "Daño a la imagen o confianza de stakeholders",
+    "technical": "Deuda técnica, obsolescencia o dependencias críticas",
 }
 
-LIKELIHOOD_LABELS = {1: "Raro", 2: "Improbable", 3: "Posible", 4: "Probable", 5: "Casi certero"}
-IMPACT_LABELS     = {1: "Negligible", 2: "Menor", 3: "Moderado", 4: "Mayor", 5: "Catastrófico"}
+LIKELIHOOD_LABELS = {
+    1: "Raro",
+    2: "Improbable",
+    3: "Posible",
+    4: "Probable",
+    5: "Casi certero",
+}
+IMPACT_LABELS = {
+    1: "Negligible",
+    2: "Menor",
+    3: "Moderado",
+    4: "Mayor",
+    5: "Catastrófico",
+}
 
 VALID_TREATMENTS = ["accept", "mitigate", "transfer", "avoid"]
-VALID_STATUS     = ["open", "in_treatment", "accepted", "closed"]
+VALID_STATUS = ["open", "in_treatment", "accepted", "closed"]
 
 TREATMENT_DESC = {
-    "accept":   "Riesgo aceptado — dentro del apetito de riesgo definido",
+    "accept": "Riesgo aceptado — dentro del apetito de riesgo definido",
     "mitigate": "Controles implementados para reducir probabilidad o impacto",
     "transfer": "Riesgo transferido a tercero (seguro, proveedor, contrato)",
-    "avoid":    "Actividad eliminada para suprimir el riesgo",
+    "avoid": "Actividad eliminada para suprimir el riesgo",
 }
-
-
-def _utcnow() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
 def _slug(text: str) -> str:
     import re
+
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")[:60]
 
 
 def _risk_level(score: int) -> str:
-    if score <= 5:   return "Low"
-    if score <= 12:  return "Medium"
-    if score <= 19:  return "High"
+    if score <= 5:
+        return "Low"
+    if score <= 12:
+        return "Medium"
+    if score <= 19:
+        return "High"
     return "Critical"
 
 
@@ -102,30 +119,47 @@ def vault_risk_save(
     agent: str = "claude",
 ) -> Dict[str, Any]:
     if risk_type not in RISK_TYPES:
-        return {"ok": False, "error_code": "INVALID_RISK_TYPE",
-                "message": f"risk_type debe ser: {', '.join(RISK_TYPES.keys())}"}
+        return {
+            "ok": False,
+            "error_code": "INVALID_RISK_TYPE",
+            "message": f"risk_type debe ser: {', '.join(RISK_TYPES.keys())}",
+        }
     if not (1 <= likelihood <= 5):
-        return {"ok": False, "error_code": "INVALID_LIKELIHOOD",
-                "message": "likelihood debe ser 1–5"}
+        return {
+            "ok": False,
+            "error_code": "INVALID_LIKELIHOOD",
+            "message": "likelihood debe ser 1–5",
+        }
     if not (1 <= impact <= 5):
-        return {"ok": False, "error_code": "INVALID_IMPACT",
-                "message": "impact debe ser 1–5"}
+        return {
+            "ok": False,
+            "error_code": "INVALID_IMPACT",
+            "message": "impact debe ser 1–5",
+        }
     if treatment not in VALID_TREATMENTS:
-        return {"ok": False, "error_code": "INVALID_TREATMENT",
-                "message": f"treatment debe ser: {', '.join(VALID_TREATMENTS)}"}
+        return {
+            "ok": False,
+            "error_code": "INVALID_TREATMENT",
+            "message": f"treatment debe ser: {', '.join(VALID_TREATMENTS)}",
+        }
     if status not in VALID_STATUS:
-        return {"ok": False, "error_code": "INVALID_STATUS",
-                "message": f"status debe ser: {', '.join(VALID_STATUS)}"}
+        return {
+            "ok": False,
+            "error_code": "INVALID_STATUS",
+            "message": f"status debe ser: {', '.join(VALID_STATUS)}",
+        }
 
-    now = _utcnow()
+    now = utcnow()
     score = likelihood * impact
     level = _risk_level(score)
-    cia   = _risk_cia(risk_type, impact)
+    cia = _risk_cia(risk_type, impact)
     affected_assets = affected_assets or []
-    controls        = controls or []
+    controls = controls or []
 
-    assets_md   = "\n".join(f"- `{a}`" for a in affected_assets) or "— No especificados"
-    controls_md = "\n".join(f"- [ ] {c}" for c in controls) or "— Sin controles definidos"
+    assets_md = "\n".join(f"- `{a}`" for a in affected_assets) or "— No especificados"
+    controls_md = (
+        "\n".join(f"- [ ] {c}" for c in controls) or "— Sin controles definidos"
+    )
 
     body = f"""# Riesgo: {title}
 
@@ -139,7 +173,7 @@ def vault_risk_save(
 | **Tipo** | {risk_type} — {RISK_TYPES[risk_type][:60]} |
 | **Status** | {status} |
 | **Tratamiento** | {treatment} — {TREATMENT_DESC[treatment]} |
-| **Propietario** | {owner or '— Sin asignar'} |
+| **Propietario** | {owner or "— Sin asignar"} |
 
 ## Análisis de riesgo (ISO 31000 §6.4)
 
@@ -151,11 +185,11 @@ def vault_risk_save(
 
 ## Amenaza
 
-{threat or '_Pendiente: describir el evento o agente que puede explotar esta vulnerabilidad._'}
+{threat or "_Pendiente: describir el evento o agente que puede explotar esta vulnerabilidad._"}
 
 ## Vulnerabilidad
 
-{vulnerability or '_Pendiente: describir la debilidad que permite que la amenaza se materialice._'}
+{vulnerability or "_Pendiente: describir la debilidad que permite que la amenaza se materialice._"}
 
 ## Activos afectados
 
@@ -247,8 +281,8 @@ def main() -> int:
         description="vault_risk_save — Registra riesgos (ISO 31000:2018 / ISO/IEC 27005:2022)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=f"""
-Tipos de riesgo: {', '.join(RISK_TYPES.keys())}
-Tratamientos:   {', '.join(VALID_TREATMENTS)}
+Tipos de riesgo: {", ".join(RISK_TYPES.keys())}
+Tratamientos:   {", ".join(VALID_TREATMENTS)}
 Escala:         1=mínimo  5=máximo  (likelihood e impact)
 
 Risk levels:  Low 1-5 | Medium 6-12 | High 13-19 | Critical 20-25
@@ -266,34 +300,46 @@ Ejemplos:
     --treatment transfer --status accepted
 """,
     )
-    parser.add_argument("--project",    required=True)
-    parser.add_argument("--title",      required=True)
-    parser.add_argument("--risk_type",  default="operational", choices=list(RISK_TYPES.keys()))
-    parser.add_argument("--likelihood", type=int, default=3, choices=[1,2,3,4,5])
-    parser.add_argument("--impact",     type=int, default=3, choices=[1,2,3,4,5])
-    parser.add_argument("--threat",     default="")
+    parser.add_argument("--project", required=True)
+    parser.add_argument("--title", required=True)
+    parser.add_argument(
+        "--risk_type", default="operational", choices=list(RISK_TYPES.keys())
+    )
+    parser.add_argument("--likelihood", type=int, default=3, choices=[1, 2, 3, 4, 5])
+    parser.add_argument("--impact", type=int, default=3, choices=[1, 2, 3, 4, 5])
+    parser.add_argument("--threat", default="")
     parser.add_argument("--vulnerability", default="")
     parser.add_argument("--affected_assets", default="[]")
-    parser.add_argument("--treatment",  default="mitigate", choices=VALID_TREATMENTS)
-    parser.add_argument("--controls",   default="[]")
-    parser.add_argument("--status",     default="open", choices=VALID_STATUS)
-    parser.add_argument("--owner",      default="")
-    parser.add_argument("--agent",      default="claude")
+    parser.add_argument("--treatment", default="mitigate", choices=VALID_TREATMENTS)
+    parser.add_argument("--controls", default="[]")
+    parser.add_argument("--status", default="open", choices=VALID_STATUS)
+    parser.add_argument("--owner", default="")
+    parser.add_argument("--agent", default="claude")
 
     args = parser.parse_args()
     try:
         affected_assets = json.loads(args.affected_assets)
-        controls        = json.loads(args.controls)
+        controls = json.loads(args.controls)
     except json.JSONDecodeError as e:
-        print(json.dumps({"ok": False, "error_code": "INVALID_JSON", "message": str(e)}))
+        print(
+            json.dumps({"ok": False, "error_code": "INVALID_JSON", "message": str(e)})
+        )
         return 1
 
     result = vault_risk_save(
-        project=args.project, title=args.title, risk_type=args.risk_type,
-        likelihood=args.likelihood, impact=args.impact,
-        threat=args.threat, vulnerability=args.vulnerability,
-        affected_assets=affected_assets, treatment=args.treatment,
-        controls=controls, status=args.status, owner=args.owner, agent=args.agent,
+        project=args.project,
+        title=args.title,
+        risk_type=args.risk_type,
+        likelihood=args.likelihood,
+        impact=args.impact,
+        threat=args.threat,
+        vulnerability=args.vulnerability,
+        affected_assets=affected_assets,
+        treatment=args.treatment,
+        controls=controls,
+        status=args.status,
+        owner=args.owner,
+        agent=args.agent,
     )
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0 if result.get("ok") else 1

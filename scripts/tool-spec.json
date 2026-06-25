@@ -1,8 +1,8 @@
 {
-  "version": "v34",
+  "version": "v35.0",
   "schema": "1.0",
-  "generated_at": "2026-06-19T10:41:43.000Z",
-  "description": "Spec-driven tool contracts. Editar este archivo ANTES de implementar una nueva tool. Validar con: python vault_spec_validate.py. v34.0: 68 active tools across 32 groups + vault_init bootstrap + nextActions prescriptivo en audit + fixes de deteccion de vault_root (excluye vault-sandbox y *.bak) y exclusiones en broken-link/malformed/canonical-shadow para spec files y scripts/.",
+  "generated_at": "2026-06-25T00:00:00.000Z",
+  "description": "Spec-driven tool contracts. Editar este archivo ANTES de implementar una nueva tool. Validar con: python vault_spec_validate.py. v35.0: Centralized vault_lib with utcnow/strip_code_blocks (eliminates 44 duplicate functions). Fixed critical bugs: undefined clean var in vault_write, path traversal in vault_fix_brackets, path validation order in vault_read. Fixed vault_compact_contracts output location.",
   "tools": {
     "vault_ai_decision": {
       "group": "IA Governance",

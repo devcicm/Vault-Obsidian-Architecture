@@ -34,22 +34,35 @@ from pathlib import Path
 
 from vault_errors import wrap_main
 from vault_io import VAULT_ROOT
-from vault_registry import standard_folders, ORDERED_SECTIONS, section_description, section_tool_hint
-
-
-def _utcnow():
-    from datetime import datetime, timezone
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+from vault_lib import utcnow
+from vault_registry import (
+    standard_folders,
+    ORDERED_SECTIONS,
+    section_description,
+    section_tool_hint,
+)
 
 
 # Sections that get a scaffold primer on init. 00_System is excluded because
 # vault-hub.md + vault-commands.md already provide structure. All other
 # standard sections get a primer so the vault starts at 100/100.
 _SCAFFOLD_SECTIONS = [
-    "01_Projects", "02_Observability", "03_Decisions", "04_Sessions",
-    "05_Patterns", "06_Diagrams", "07_Knowledge", "08_Runbooks",
-    "09_Infrastructure", "10_Migrated", "11_Code", "12_Bibliography",
-    "13_Flows", "14_Requirements", "15_Tests", "16_AI_Governance",
+    "01_Projects",
+    "02_Observability",
+    "03_Decisions",
+    "04_Sessions",
+    "05_Patterns",
+    "06_Diagrams",
+    "07_Knowledge",
+    "08_Runbooks",
+    "09_Infrastructure",
+    "10_Migrated",
+    "11_Code",
+    "12_Bibliography",
+    "13_Flows",
+    "14_Requirements",
+    "15_Tests",
+    "16_AI_Governance",
     "99_Index",
 ]
 
@@ -66,10 +79,16 @@ def _create_scaffold_note(section: str) -> Dict[str, Any]:
     """
     primer_path = VAULT_ROOT / section / f"00-{section.lower()}-primer.md"
     if primer_path.exists():
-        return {"section": section, "path": str(primer_path.relative_to(VAULT_ROOT)).replace("\\", "/"), "created": False}
+        return {
+            "section": section,
+            "path": str(primer_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+            "created": False,
+        }
 
     description = section_description(section)
-    tool_hint = section_tool_hint(section) or f"vault_write --folder {section} --title <titulo>"
+    tool_hint = (
+        section_tool_hint(section) or f"vault_write --folder {section} --title <titulo>"
+    )
 
     # Build content that is real documentation (passes content gate) but
     # explicitly says it's a primer. Real words count: 40+ per primer.
@@ -101,16 +120,16 @@ python scripts/{tool_hint}
         "---\n"
         f"title: {section} — Guía rápida\n"
         f"id: {section.lower()}-primer\n"
-        f"createdAt: {_utcnow()}\n"
-        f"updatedAt: {_utcnow()}\n"
+        f"createdAt: {utcnow()}\n"
+        f"updatedAt: {utcnow()}\n"
         f"cia_integrity: medium\n"
         f"cia_availability: medium\n"
         f"cia_sensitivity: internal\n"
         f"agent: vault_init\n"
-        f"tags: [\"primer\", \"scaffold\", \"onboarding\"]\n"
+        f'tags: ["primer", "scaffold", "onboarding"]\n'
         f"scaffold: true\n"
         f"type: primer\n"
-        f"norm_refs: [\"CN-01\"]\n"
+        f'norm_refs: ["CN-01"]\n'
         "---\n"
         "\n"
     )
@@ -123,7 +142,9 @@ python scripts/{tool_hint}
     }
 
 
-def vault_init(target_version: str = "v32", run_audit: bool = True, clean: bool = False) -> dict:
+def vault_init(
+    target_version: str = "v32", run_audit: bool = True, clean: bool = False
+) -> dict:
     """Inicializa un vault fresco en VAULT_ROOT.
 
     Returns a structured result suitable for both CLI JSON output and tests.
@@ -138,7 +159,9 @@ def vault_init(target_version: str = "v32", run_audit: bool = True, clean: bool 
     # Safety: refuse to run if VAULT_ROOT looks wrong (sandbox not detected)
     if not VAULT_ROOT.exists() or not VAULT_ROOT.is_dir():
         result["ok"] = False
-        result["error"] = f"VAULT_ROOT does not exist or is not a directory: {VAULT_ROOT}"
+        result["error"] = (
+            f"VAULT_ROOT does not exist or is not a directory: {VAULT_ROOT}"
+        )
         return result
 
     # Step 0: --clean wipes existing content (only if explicitly asked)
@@ -165,7 +188,13 @@ def vault_init(target_version: str = "v32", run_audit: bool = True, clean: bool 
         gitkeep = folder_path / ".gitkeep"
         if not gitkeep.exists():
             gitkeep.touch()
-    result["steps"].append({"step": "folders", "created": folders_created, "total": len(standard_folders())})
+    result["steps"].append(
+        {
+            "step": "folders",
+            "created": folders_created,
+            "total": len(standard_folders()),
+        }
+    )
 
     # Step 1.5: create a primer note in each content section so the vault
     # starts at healthScore 100/100. Each primer has real content (passes
@@ -180,17 +209,33 @@ def vault_init(target_version: str = "v32", run_audit: bool = True, clean: bool 
                 scaffolds_created.append(res)
         except Exception as exc:
             # scaffold failure must never block init
-            result["steps"].append({"step": "scaffold_error", "section": section, "error": str(exc)})
-    result["steps"].append({"step": "scaffolds", "created": scaffolds_created, "total": len(_SCAFFOLD_SECTIONS)})
+            result["steps"].append(
+                {"step": "scaffold_error", "section": section, "error": str(exc)}
+            )
+    result["steps"].append(
+        {
+            "step": "scaffolds",
+            "created": scaffolds_created,
+            "total": len(_SCAFFOLD_SECTIONS),
+        }
+    )
 
     # Step 2: run vault_standard_upgrade --init <target>
     # We invoke the script as a subprocess to reuse its full logic
     import subprocess
+
     scripts_dir = Path(__file__).parent
     upgrade_script = scripts_dir / "vault_standard_upgrade.py"
     if upgrade_script.exists():
         proc = subprocess.run(
-            [sys.executable, str(upgrade_script), "--init", target_version, "--agent", "vault_init"],
+            [
+                sys.executable,
+                str(upgrade_script),
+                "--init",
+                target_version,
+                "--agent",
+                "vault_init",
+            ],
             capture_output=True,
             text=True,
         )
@@ -198,7 +243,9 @@ def vault_init(target_version: str = "v32", run_audit: bool = True, clean: bool 
             upgrade_data = json.loads(proc.stdout)
             result["steps"].append({"step": "init", "output": upgrade_data})
         except json.JSONDecodeError:
-            result["steps"].append({"step": "init", "raw_stdout": proc.stdout, "raw_stderr": proc.stderr})
+            result["steps"].append(
+                {"step": "init", "raw_stdout": proc.stdout, "raw_stderr": proc.stderr}
+            )
 
     # Step 3: run vault_master_index which also indexes all sections
     master_script = scripts_dir / "vault_master_index.py"
@@ -212,7 +259,13 @@ def vault_init(target_version: str = "v32", run_audit: bool = True, clean: bool 
             master_data = json.loads(proc.stdout)
             result["steps"].append({"step": "master_index", "output": master_data})
         except json.JSONDecodeError:
-            result["steps"].append({"step": "master_index", "raw_stdout": proc.stdout, "raw_stderr": proc.stderr})
+            result["steps"].append(
+                {
+                    "step": "master_index",
+                    "raw_stdout": proc.stdout,
+                    "raw_stderr": proc.stderr,
+                }
+            )
 
     # Step 4: run vault_reindex --graph to populate graph.json + search-index.json + hash-index.json
     reindex_script = scripts_dir / "vault_reindex.py"
@@ -226,7 +279,13 @@ def vault_init(target_version: str = "v32", run_audit: bool = True, clean: bool 
             reindex_data = json.loads(proc.stdout)
             result["steps"].append({"step": "reindex", "output": reindex_data})
         except json.JSONDecodeError:
-            result["steps"].append({"step": "reindex", "raw_stdout": proc.stdout, "raw_stderr": proc.stderr})
+            result["steps"].append(
+                {
+                    "step": "reindex",
+                    "raw_stdout": proc.stdout,
+                    "raw_stderr": proc.stderr,
+                }
+            )
 
     # Step 5: optional vault_audit
     if run_audit:
@@ -243,14 +302,24 @@ def vault_init(target_version: str = "v32", run_audit: bool = True, clean: bool 
                 result["healthScore"] = audit_data.get("healthScore")
                 result["noteCount"] = audit_data.get("stats", {}).get("total", 0)
             except json.JSONDecodeError:
-                result["steps"].append({"step": "audit", "raw_stdout": proc.stdout, "raw_stderr": proc.stderr})
+                result["steps"].append(
+                    {
+                        "step": "audit",
+                        "raw_stdout": proc.stdout,
+                        "raw_stderr": proc.stderr,
+                    }
+                )
 
     # Step 6: report on hub notes
     hub_note = VAULT_ROOT / "00_System" / "vault-hub.md"
     commands_note = VAULT_ROOT / "00_System" / "vault-commands.md"
     result["hub_notes"] = {
-        "hub": str(hub_note.relative_to(VAULT_ROOT)).replace("\\", "/") if hub_note.exists() else None,
-        "commands": str(commands_note.relative_to(VAULT_ROOT)).replace("\\", "/") if commands_note.exists() else None,
+        "hub": str(hub_note.relative_to(VAULT_ROOT)).replace("\\", "/")
+        if hub_note.exists()
+        else None,
+        "commands": str(commands_note.relative_to(VAULT_ROOT)).replace("\\", "/")
+        if commands_note.exists()
+        else None,
     }
 
     # Promote healthScore + noteCount to top-level so the spec contract is satisfied.
@@ -266,17 +335,18 @@ def vault_init(target_version: str = "v32", run_audit: bool = True, clean: bool 
 
     return result
 
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Vault Init — bootstrap a fresh vault in one command",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Ejemplos:
-  # Bootstrap con versión por defecto (v32)
+    Ejemplos:
+  # Bootstrap con versión por defecto (v34)
   python vault_init.py
 
   # Migrar a una versión específica
-  python vault_init.py --target v32
+  python vault_init.py --target v34
 
   # Bootstrap sin ejecutar vault_audit al final
   python vault_init.py --no-audit
@@ -291,10 +361,17 @@ Notas:
   - --clean borra TODO el contenido del vault actual excepto .locks
         """,
     )
-    parser.add_argument("--target", default="v32", help="Target vault version (default: v32)")
-    parser.add_argument("--no-audit", action="store_true", help="Skip final vault_audit run")
-    parser.add_argument("--clean", action="store_true",
-                        help="Wipe existing vault content before init (DANGEROUS)")
+    parser.add_argument(
+        "--target", default="v34", help="Target vault version (default: v34)"
+    )
+    parser.add_argument(
+        "--no-audit", action="store_true", help="Skip final vault_audit run"
+    )
+    parser.add_argument(
+        "--clean",
+        action="store_true",
+        help="Wipe existing vault content before init (DANGEROUS)",
+    )
     args = parser.parse_args()
 
     result = vault_init(

@@ -45,6 +45,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from vault_errors import wrap_main
+from vault_lib import utcnow
 from vault_io import atomic_write_json, file_lock, VAULT_ROOT
 
 SYSTEM_DIR = VAULT_ROOT / "00_System"
@@ -53,11 +54,20 @@ CHANGE_LOG_JSON = SYSTEM_DIR / ".change-log.json"
 
 # F4 accuracy: section → expected type mapping
 SECTION_TYPE_MAP: Dict[str, str] = {
-    "01_Projects": "project", "03_Decisions": "decision", "04_Sessions": "session",
-    "05_Patterns": "pattern", "06_Diagrams": "diagram", "07_Knowledge": "knowledge",
-    "08_Runbooks": "runbook", "09_Infrastructure": "infra", "11_Code": "code",
-    "12_Bibliography": "bibliography", "13_Flows": "flow", "14_Requirements": "requirement",
-    "15_Tests": "test", "16_AI_Governance": "ai_decision",
+    "01_Projects": "project",
+    "03_Decisions": "decision",
+    "04_Sessions": "session",
+    "05_Patterns": "pattern",
+    "06_Diagrams": "diagram",
+    "07_Knowledge": "knowledge",
+    "08_Runbooks": "runbook",
+    "09_Infrastructure": "infra",
+    "11_Code": "code",
+    "12_Bibliography": "bibliography",
+    "13_Flows": "flow",
+    "14_Requirements": "requirement",
+    "15_Tests": "test",
+    "16_AI_Governance": "ai_decision",
 }
 
 SKIP_FOLDERS = {"10_Migrated", "vault-backups", ".history"}
@@ -71,25 +81,56 @@ CIA_AVAILABILITY_VALUES = {"high", "medium", "low"}
 CIA_SENSITIVITY_VALUES = {"public", "internal", "restricted"}
 
 STATUS_VALUES = {
-    "active", "draft", "review", "archived", "deprecated",
-    "en_progreso", "en_desarrollo", "in_progress", "done", "blocked", "pending",
-    "completado", "completed", "cancelado", "cancelled",
+    "active",
+    "draft",
+    "review",
+    "archived",
+    "deprecated",
+    "en_progreso",
+    "en_desarrollo",
+    "in_progress",
+    "done",
+    "blocked",
+    "pending",
+    "completado",
+    "completed",
+    "cancelado",
+    "cancelled",
 }
 TYPE_VALUES = {
-    "project", "decision", "session", "pattern", "diagram", "knowledge",
-    "runbook", "infra", "migration", "flow", "requirement", "test",
-    "ai_decision", "bibliography", "code", "note",
+    "project",
+    "decision",
+    "session",
+    "pattern",
+    "diagram",
+    "knowledge",
+    "runbook",
+    "infra",
+    "migration",
+    "flow",
+    "requirement",
+    "test",
+    "ai_decision",
+    "bibliography",
+    "code",
+    "note",
 }
 
 PLACEHOLDER_PATTERNS = [
-    "yyyy", "nombre", "link-a", "{slug}", "archivo",
-    "patron", "imagen", "img", "prisma", "postgres",
-    "express", "hexagonal", "jsonwebtoken",
+    "yyyy",
+    "nombre",
+    "link-a",
+    "{slug}",
+    "archivo",
+    "patron",
+    "imagen",
+    "img",
+    "prisma",
+    "postgres",
+    "express",
+    "hexagonal",
+    "jsonwebtoken",
 ]
-
-
-def _utcnow() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
 def _is_skipped(path: Path) -> bool:
@@ -116,7 +157,8 @@ def _get_content_notes(scope: Optional[str] = None) -> List[Path]:
 
 def _get_all_notes() -> List[Path]:
     return [
-        n for n in VAULT_ROOT.rglob("*.md")
+        n
+        for n in VAULT_ROOT.rglob("*.md")
         if not _is_skipped(n) and ".history" not in str(n)
     ]
 
@@ -143,7 +185,7 @@ def _read_frontmatter_raw(path: Path) -> Tuple[Dict[str, str], str]:
 def _parse_date(val: str) -> Optional[datetime]:
     for fmt in ("%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d"):
         try:
-            return datetime.strptime(val[:19], fmt[:len(val[:19])])
+            return datetime.strptime(val[:19], fmt[: len(val[:19])])
         except ValueError:
             continue
     try:
@@ -182,6 +224,7 @@ def _build_all_stems() -> Set[str]:
 
 # ── Dimension scorers ──────────────────────────────────────────────────────────
 
+
 def _score_completeness(fm: Dict[str, str], body: str) -> Tuple[float, List[str]]:
     required = ["id", "title", "createdAt", "updatedAt"]
     present = [f for f in required if fm.get(f, "").strip()]
@@ -189,14 +232,18 @@ def _score_completeness(fm: Dict[str, str], body: str) -> Tuple[float, List[str]
     field_score = len(present) / len(required)
 
     body_lines = [l for l in body.splitlines() if l.strip()]
-    content_score = 1.0 if len(body_lines) >= 3 else (0.5 if len(body_lines) >= 1 else 0.0)
+    content_score = (
+        1.0 if len(body_lines) >= 3 else (0.5 if len(body_lines) >= 1 else 0.0)
+    )
 
     score = round(field_score * 0.75 + content_score * 0.25, 3)
     issues = []
     if missing:
         issues.append(f"completeness: missing fields {missing}")
     if len(body_lines) < 3:
-        issues.append(f"completeness: body has only {len(body_lines)} content line(s), expected ≥3")
+        issues.append(
+            f"completeness: body has only {len(body_lines)} content line(s), expected ≥3"
+        )
     return score, issues
 
 
@@ -231,9 +278,15 @@ def _score_timeliness(fm: Dict[str, str], path: Path) -> Tuple[float, List[str]]
         return 1.0, []
 
     integrity = fm.get("cia_integrity", "medium").lower()
-    threshold = TIMELINESS_HIGH_DAYS if integrity in ("critical", "high") else TIMELINESS_DEFAULT_DAYS
+    threshold = (
+        TIMELINESS_HIGH_DAYS
+        if integrity in ("critical", "high")
+        else TIMELINESS_DEFAULT_DAYS
+    )
 
-    updated_str = fm.get("updatedAt") or fm.get("updated_at") or fm.get("createdAt") or ""
+    updated_str = (
+        fm.get("updatedAt") or fm.get("updated_at") or fm.get("createdAt") or ""
+    )
     dt = _parse_date(updated_str) if updated_str else None
     if dt is None:
         try:
@@ -279,7 +332,10 @@ def _score_uniqueness(
 
 # ── Fundamentals (F1, F4, F7, F8) scorers ────────────────────────────────────
 
-def _score_integrity(fm: Dict[str, str], frontmatter_parsed: bool) -> Tuple[float, List[str]]:
+
+def _score_integrity(
+    fm: Dict[str, str], frontmatter_parsed: bool
+) -> Tuple[float, List[str]]:
     """F1 INTEGRIDAD — frontmatter parseable + structural minimum fields."""
     issues = []
     if not frontmatter_parsed:
@@ -302,12 +358,16 @@ def _score_accuracy(rel_path: str, fm: Dict[str, str]) -> Tuple[float, List[str]
 
     score = 1.0
     if expected_type and actual_type and actual_type != expected_type:
-        issues.append(f"accuracy: type='{actual_type}' does not match folder section (expected '{expected_type}')")
+        issues.append(
+            f"accuracy: type='{actual_type}' does not match folder section (expected '{expected_type}')"
+        )
         score -= 0.5
 
     declared_path = fm.get("path", "").replace("\\", "/")
     if declared_path and declared_path != rel_path:
-        issues.append(f"accuracy: path field='{declared_path}' differs from actual path='{rel_path}'")
+        issues.append(
+            f"accuracy: path field='{declared_path}' differs from actual path='{rel_path}'"
+        )
         score -= 0.5
 
     return max(0.0, round(score, 3)), issues
@@ -321,7 +381,9 @@ def _score_authenticity(fm: Dict[str, str]) -> Tuple[float, List[str]]:
     return 0.0, ["authenticity: missing 'agent' field in frontmatter (AP-16)"]
 
 
-def _score_non_repudiation(rel_path: str, change_log_paths: Set[str]) -> Tuple[float, List[str]]:
+def _score_non_repudiation(
+    rel_path: str, change_log_paths: Set[str]
+) -> Tuple[float, List[str]]:
     """F8 NO REPUDIO — at least one change-log entry references this note."""
     if rel_path in change_log_paths:
         return 1.0, []
@@ -346,6 +408,7 @@ def _load_change_log_paths() -> Set[str]:
 
 
 # ── AP-17 / AP-18 pre-computation ────────────────────────────────────────────
+
 
 def _compute_ap17(notes: List[Path]) -> Set[str]:
     """Return set of vault-relative paths involved in AP-17 title-similarity pairs."""
@@ -391,6 +454,7 @@ def _compute_ap18(notes: List[Path]) -> Set[str]:
 
 
 # ── Main scoring ──────────────────────────────────────────────────────────────
+
 
 def vault_quality_check(
     scope: Optional[str] = None,
@@ -438,13 +502,30 @@ def vault_quality_check(
         u_score, u_issues = _score_uniqueness(note, ap17, ap18)
 
         # Global = mean of 9 dimensions (8 fundamentals + uniqueness)
-        dim_scores = [i_score, c_score, v_score, t_score, k_score, a_score, au_score, nr_score, u_score]
+        dim_scores = [
+            i_score,
+            c_score,
+            v_score,
+            t_score,
+            k_score,
+            a_score,
+            au_score,
+            nr_score,
+            u_score,
+        ]
         overall = round(sum(dim_scores) / len(dim_scores), 3)
         total_score += overall
 
         all_issues = (
-            i_issues + c_issues + v_issues + t_issues + k_issues +
-            a_issues + au_issues + nr_issues + u_issues
+            i_issues
+            + c_issues
+            + v_issues
+            + t_issues
+            + k_issues
+            + a_issues
+            + au_issues
+            + nr_issues
+            + u_issues
         )
 
         scored[rel] = {
@@ -467,10 +548,14 @@ def vault_quality_check(
     total = len(scored)
     overall_dq = round(total_score / total, 3) if total else 0.0
 
-    below_threshold = sum(1 for v in scored.values() if v["overall"] < min_score or (min_score == 0.0 and False))
+    below_threshold = sum(
+        1
+        for v in scored.values()
+        if v["overall"] < min_score or (min_score == 0.0 and False)
+    )
     below_07 = sum(1 for v in scored.values() if v["overall"] < 0.7)
 
-    generated_at = _utcnow()
+    generated_at = utcnow()
     index_data: Dict[str, Any] = {
         "generated_at": generated_at,
         "generated_by": "vault_quality_check",
@@ -491,7 +576,8 @@ def vault_quality_check(
 
     # Filter output for response
     filtered = {
-        rel: data for rel, data in scored.items()
+        rel: data
+        for rel, data in scored.items()
         if (min_score == 0.0 or data["overall"] < min_score)
         and (not integrity_filter or data["cia_integrity"] == integrity_filter.lower())
     }
@@ -533,10 +619,30 @@ Notas:
   - F8 NO_REPUDIO: requiere entrada en 00_System/.change-log.json para la nota
 """,
     )
-    parser.add_argument("--path", dest="scope", metavar="FOLDER", help="Vault-relative folder prefix to scope the check")
-    parser.add_argument("--min-score", type=float, default=0.0, metavar="SCORE", help="Report only notes with overall score below this (0.0-1.0)")
-    parser.add_argument("--integrity", metavar="LEVEL", choices=["critical", "high", "medium", "low"], help="Filter output by CIA integrity level")
-    parser.add_argument("--check", action="store_true", help="Compute scores without writing quality-index.json")
+    parser.add_argument(
+        "--path",
+        dest="scope",
+        metavar="FOLDER",
+        help="Vault-relative folder prefix to scope the check",
+    )
+    parser.add_argument(
+        "--min-score",
+        type=float,
+        default=0.0,
+        metavar="SCORE",
+        help="Report only notes with overall score below this (0.0-1.0)",
+    )
+    parser.add_argument(
+        "--integrity",
+        metavar="LEVEL",
+        choices=["critical", "high", "medium", "low"],
+        help="Filter output by CIA integrity level",
+    )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Compute scores without writing quality-index.json",
+    )
 
     args = parser.parse_args()
     result = vault_quality_check(

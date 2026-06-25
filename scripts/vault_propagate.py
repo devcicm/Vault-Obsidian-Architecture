@@ -27,11 +27,11 @@ import json
 import re
 import subprocess
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 from vault_errors import wrap_main
+from vault_lib import utcnow
 from vault_impact import vault_impact
 from vault_io import atomic_write_json, file_lock, VAULT_ROOT
 
@@ -45,23 +45,21 @@ VALID_STRATEGIES = ("conservative", "transitive", "critical-path")
 VALID_ACTIONS = ("notify", "queue", "reindex")
 
 
-def _utcnow() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-
-
 def _read_propagation_queue() -> Dict[str, Any]:
     if not PROPAGATION_QUEUE.exists():
-        return {"updated_at": _utcnow(), "pending": []}
+        return {"updated_at": utcnow(), "pending": []}
     try:
         data = json.loads(PROPAGATION_QUEUE.read_text(encoding="utf-8"))
-        return data if isinstance(data, dict) else {"updated_at": _utcnow(), "pending": []}
+        return (
+            data if isinstance(data, dict) else {"updated_at": utcnow(), "pending": []}
+        )
     except Exception:
-        return {"updated_at": _utcnow(), "pending": []}
+        return {"updated_at": utcnow(), "pending": []}
 
 
 def _write_propagation_queue(data: Dict[str, Any]) -> None:
     SYSTEM_DIR.mkdir(parents=True, exist_ok=True)
-    data["updated_at"] = _utcnow()
+    data["updated_at"] = utcnow()
     with file_lock(PROPAGATION_QUEUE, timeout=30.0):
         atomic_write_json(PROPAGATION_QUEUE, data)
 
@@ -79,7 +77,7 @@ def _action_notify(note_path: str, timestamp: str) -> bool:
                 fm_block = parts[1]
                 # Remove existing propagation_pending if present
                 fm_block = re.sub(r"\npropagation_pending:.*", "", fm_block)
-                fm_block = fm_block.rstrip() + f"\npropagation_pending: \"{timestamp}\"\n"
+                fm_block = fm_block.rstrip() + f'\npropagation_pending: "{timestamp}"\n'
                 new_content = "---" + fm_block + "---" + parts[2]
                 full_path.write_text(new_content, encoding="utf-8")
                 return True
@@ -101,19 +99,23 @@ def _action_queue(
     # Dedup: update existing entry if already queued
     existing = next((e for e in pending if e["path"] == note_path), None)
     if existing:
-        existing["queued_at"] = _utcnow()
-        existing["triggered_by"] = list(set(existing.get("triggered_by", []) + triggered_by))
+        existing["queued_at"] = utcnow()
+        existing["triggered_by"] = list(
+            set(existing.get("triggered_by", []) + triggered_by)
+        )
         existing["distance"] = min(existing.get("distance", distance), distance)
         existing["priority"] = stale_risk
     else:
-        pending.append({
-            "path": note_path,
-            "queued_at": _utcnow(),
-            "triggered_by": triggered_by,
-            "distance": distance,
-            "priority": stale_risk,
-            "action_required": "review_content",
-        })
+        pending.append(
+            {
+                "path": note_path,
+                "queued_at": utcnow(),
+                "triggered_by": triggered_by,
+                "distance": distance,
+                "priority": stale_risk,
+                "action_required": "review_content",
+            }
+        )
 
     queue["pending"] = pending
     _write_propagation_queue(queue)
@@ -123,7 +125,12 @@ def _action_reindex(folders: Set[str]) -> List[str]:
     """Call vault_section_index for each affected top-level folder."""
     reindexed = []
     for folder in sorted(folders):
-        cmd = [sys.executable, str(SCRIPTS_DIR / "vault_section_index.py"), "--folder", folder]
+        cmd = [
+            sys.executable,
+            str(SCRIPTS_DIR / "vault_section_index.py"),
+            "--folder",
+            folder,
+        ]
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
             if result.returncode == 0:
@@ -158,11 +165,17 @@ def vault_propagate(
 
     strategy = strategy.lower()
     if strategy not in VALID_STRATEGIES:
-        return {"ok": False, "error": f"Invalid strategy '{strategy}'. Must be one of: {VALID_STRATEGIES}"}
+        return {
+            "ok": False,
+            "error": f"Invalid strategy '{strategy}'. Must be one of: {VALID_STRATEGIES}",
+        }
 
     invalid_actions = [a for a in actions if a not in VALID_ACTIONS]
     if invalid_actions:
-        return {"ok": False, "error": f"Invalid actions: {invalid_actions}. Must be in: {VALID_ACTIONS}"}
+        return {
+            "ok": False,
+            "error": f"Invalid actions: {invalid_actions}. Must be in: {VALID_ACTIONS}",
+        }
 
     # Get impact
     hops = 1 if strategy == "conservative" else max_hops
@@ -188,11 +201,11 @@ def vault_propagate(
             "notified": [],
             "queued": [],
             "reindexed": [],
-            "timestamp": _utcnow(),
+            "timestamp": utcnow(),
             "message": "No notes require propagation with this strategy",
         }
 
-    timestamp = _utcnow()
+    timestamp = utcnow()
     notified: List[str] = []
     queued: List[str] = []
     affected_folders: Set[str] = set()
@@ -237,9 +250,18 @@ def vault_propagate_queue_report(min_priority: Optional[str] = None) -> Dict[str
 
     if min_priority:
         min_level = RISK_ORDER.get(min_priority.lower(), 1)
-        pending = [e for e in pending if RISK_ORDER.get(e.get("priority", "low"), 1) >= min_level]
+        pending = [
+            e
+            for e in pending
+            if RISK_ORDER.get(e.get("priority", "low"), 1) >= min_level
+        ]
 
-    pending.sort(key=lambda e: (-RISK_ORDER.get(e.get("priority", "low"), 1), e.get("queued_at", "")))
+    pending.sort(
+        key=lambda e: (
+            -RISK_ORDER.get(e.get("priority", "low"), 1),
+            e.get("queued_at", ""),
+        )
+    )
 
     return {
         "ok": True,
@@ -308,14 +330,50 @@ Ejemplos:
   python vault_propagate.py --since "2026-05-09" --strategy conservative --action queue
 """,
     )
-    parser.add_argument("--changed", nargs="+", metavar="PATH", default=[], help="Vault-relative paths of changed notes")
-    parser.add_argument("--strategy", default="conservative", choices=list(VALID_STRATEGIES), help="Propagation strategy (default: conservative)")
-    parser.add_argument("--action", default="notify,queue", metavar="ACTIONS", help="Comma-separated actions: notify,queue,reindex (default: notify,queue)")
-    parser.add_argument("--max-hops", type=int, default=5, metavar="N", help="Max BFS depth for transitive strategy (default: 5)")
-    parser.add_argument("--since", metavar="DATE", help="Augment --changed from change log since this date (YYYY-MM-DD)")
-    parser.add_argument("--queue-report", action="store_true", help="List pending propagation items")
-    parser.add_argument("--min-priority", choices=["critical", "high", "medium", "low"], help="Filter queue-report by minimum priority")
-    parser.add_argument("--clear", metavar="PATH", help="Mark a note as reviewed (remove propagation_pending)")
+    parser.add_argument(
+        "--changed",
+        nargs="+",
+        metavar="PATH",
+        default=[],
+        help="Vault-relative paths of changed notes",
+    )
+    parser.add_argument(
+        "--strategy",
+        default="conservative",
+        choices=list(VALID_STRATEGIES),
+        help="Propagation strategy (default: conservative)",
+    )
+    parser.add_argument(
+        "--action",
+        default="notify,queue",
+        metavar="ACTIONS",
+        help="Comma-separated actions: notify,queue,reindex (default: notify,queue)",
+    )
+    parser.add_argument(
+        "--max-hops",
+        type=int,
+        default=5,
+        metavar="N",
+        help="Max BFS depth for transitive strategy (default: 5)",
+    )
+    parser.add_argument(
+        "--since",
+        metavar="DATE",
+        help="Augment --changed from change log since this date (YYYY-MM-DD)",
+    )
+    parser.add_argument(
+        "--queue-report", action="store_true", help="List pending propagation items"
+    )
+    parser.add_argument(
+        "--min-priority",
+        choices=["critical", "high", "medium", "low"],
+        help="Filter queue-report by minimum priority",
+    )
+    parser.add_argument(
+        "--clear",
+        metavar="PATH",
+        help="Mark a note as reviewed (remove propagation_pending)",
+    )
 
     args = parser.parse_args()
 
@@ -325,7 +383,9 @@ Ejemplos:
         result = vault_propagate_clear(args.clear)
     else:
         if not args.changed and not args.since:
-            parser.error("Provide --changed PATH [PATH ...] or --since DATE (or use --queue-report / --clear)")
+            parser.error(
+                "Provide --changed PATH [PATH ...] or --since DATE (or use --queue-report / --clear)"
+            )
 
         actions = [a.strip() for a in args.action.split(",") if a.strip()]
         result = vault_propagate(

@@ -26,8 +26,6 @@ Usage:
 
 """
 
-
-
 import argparse
 
 import json
@@ -37,54 +35,31 @@ import re
 import sys
 
 from vault_errors import wrap_main
-
+from vault_lib import utcnow
 from vault_io import atomic_write_text, VAULT_ROOT, safe_wikilink
 from datetime import datetime, timezone
 
-
-
-
-
-def _utcnow() -> str:
-
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 from pathlib import Path
 
 from typing import Any, Dict, Optional
 
 
-
-
-
 TYPE_FOLDERS = {
-
     "error": "02_Observability/errors",
-
     "antipattern": "02_Observability/antipatterns",
-
     "vulnerability": "02_Observability/vulnerabilities",
-
     "waf": "02_Observability/waf",
-
     "metric": "02_Observability/metrics",
-
     "alert": "02_Observability/alerts",
-
     "slo": "02_Observability/slos",
-
 }
-
 
 
 SEVERITIES = ["critical", "high", "medium", "low", "info"]
 
 
-
-
-
 def slugify(text: str) -> str:
-
     slug = text.lower()
 
     slug = re.sub(r"[^\w\s-]", "", slug)
@@ -96,11 +71,9 @@ def slugify(text: str) -> str:
     return slug
 
 
-
-
-
-def generate_metric_content(title: str, description: str, severity: str, project: str, meta: Dict[str, Any]) -> str:
-
+def generate_metric_content(
+    title: str, description: str, severity: str, project: str, meta: Dict[str, Any]
+) -> str:
     service = meta.get("service", "N/A")
 
     value = meta.get("value", "N/A")
@@ -119,7 +92,7 @@ def generate_metric_content(title: str, description: str, severity: str, project
 
 
 
-**Fecha:** {_utcnow()}
+**Fecha:** {utcnow()}
 
 **Severidad:** {severity.upper()}
 
@@ -164,11 +137,9 @@ def generate_metric_content(title: str, description: str, severity: str, project
     return content
 
 
-
-
-
-def generate_alert_content(title: str, description: str, severity: str, project: str, meta: Dict[str, Any]) -> str:
-
+def generate_alert_content(
+    title: str, description: str, severity: str, project: str, meta: Dict[str, Any]
+) -> str:
     condition = meta.get("condition", "N/A")
 
     threshold = meta.get("threshold", "")
@@ -187,7 +158,7 @@ def generate_alert_content(title: str, description: str, severity: str, project:
 
 
 
-**Fecha:** {_utcnow()}
+**Fecha:** {utcnow()}
 
 **Severidad:** {severity.upper()}
 
@@ -228,17 +199,14 @@ def generate_alert_content(title: str, description: str, severity: str, project:
 """
 
     if runbook:
-
         content += f"| Runbook | [[{safe_wikilink(runbook)}]] |\n"
 
     return content
 
 
-
-
-
-def generate_slo_content(title: str, description: str, severity: str, project: str, meta: Dict[str, Any]) -> str:
-
+def generate_slo_content(
+    title: str, description: str, severity: str, project: str, meta: Dict[str, Any]
+) -> str:
     sli = meta.get("sli", "N/A")
 
     objective = meta.get("objective", "")
@@ -255,7 +223,7 @@ def generate_slo_content(title: str, description: str, severity: str, project: s
 
 
 
-**Fecha:** {_utcnow()}
+**Fecha:** {utcnow()}
 
 **Severidad:** {severity.upper()}
 
@@ -300,46 +268,31 @@ def generate_slo_content(title: str, description: str, severity: str, project: s
     return content
 
 
-
-
-
 def vault_log_error(
-
     error_type: str,
-
     title: str,
-
     description: str,
-
     context: str = "",
-
     severity: str = "medium",
-
     project: str = "",
-
     mitigation: str = "",
-
     meta: Optional[Dict[str, Any]] = None,
-
 ) -> Dict[str, Any]:
-
     if error_type not in TYPE_FOLDERS:
-
-        return {"ok": False, "error": f"Tipo inválido: {error_type}. Válidos: {list(TYPE_FOLDERS.keys())}"}
-
-
+        return {
+            "ok": False,
+            "error": f"Tipo inválido: {error_type}. Válidos: {list(TYPE_FOLDERS.keys())}",
+        }
 
     if severity not in SEVERITIES:
-
-        return {"ok": False, "error": f"Severity inválida: {severity}. Válidos: {SEVERITIES}"}
-
-
+        return {
+            "ok": False,
+            "error": f"Severity inválida: {severity}. Válidos: {SEVERITIES}",
+        }
 
     folder = TYPE_FOLDERS[error_type]
 
     meta = meta or {}
-
-
 
     date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
@@ -347,27 +300,21 @@ def vault_log_error(
 
     filename = f"{date}-{safe_slug}.md"
 
-
-
     if error_type == "metric":
-
         content = generate_metric_content(title, description, severity, project, meta)
 
     elif error_type == "alert":
-
         content = generate_alert_content(title, description, severity, project, meta)
 
     elif error_type == "slo":
-
         content = generate_slo_content(title, description, severity, project, meta)
 
     else:
-
         content_lines = [f"# {title}\n"]
 
         content_lines.append(f"## {error_type.upper()}\n")
 
-        content_lines.append(f"**Fecha:** {_utcnow()}")
+        content_lines.append(f"**Fecha:** {utcnow()}")
 
         content_lines.append(f"**Severidad:** {severity.upper()}")
 
@@ -376,57 +323,35 @@ def vault_log_error(
         content_lines.append("---\n\n## Descripción\n\n" + description)
 
         if context:
-
             content_lines.append("\n\n---\n\n## Contexto\n\n" + context)
 
         if mitigation:
-
             content_lines.append("\n\n---\n\n## Mitigación\n\n" + mitigation)
 
         content = "\n".join(content_lines)
-
-
 
     folder_path = VAULT_ROOT / folder
 
     folder_path.mkdir(parents=True, exist_ok=True)
 
-
-
     file_path = folder_path / filename
 
     atomic_write_text(file_path, content)
 
-
-
     return {
-
         "ok": True,
-
         "path": str(file_path.relative_to(VAULT_ROOT)),
-
         "type": error_type,
-
         "severity": severity,
-
         "title": title,
-
         "message": f"{error_type.capitalize()} logged successfully",
-
     }
 
 
-
-
-
 def main():
-
     parser = argparse.ArgumentParser(
-
         description="Vault Log Error Tool",
-
         formatter_class=argparse.RawDescriptionHelpFormatter,
-
         epilog="""
 
 Ejemplos:
@@ -450,7 +375,6 @@ Notas:
   - Severidades: critical, high, medium, low, info
 
 """,
-
     )
 
     parser.add_argument("--type", required=True, choices=list(TYPE_FOLDERS.keys()))
@@ -469,44 +393,26 @@ Notas:
 
     parser.add_argument("--meta", help="Additional metadata as JSON")
 
-
-
     args = parser.parse_args()
-
-
 
     meta = None
 
     if args.meta:
-
         try:
-
             meta = json.loads(args.meta)
 
         except json.JSONDecodeError:
-
             pass
 
-
-
     result = vault_log_error(
-
         args.type,
-
         args.title,
-
         args.description,
-
         args.context,
-
         args.severity,
-
         args.project,
-
         args.mitigation,
-
         meta,
-
     )
 
     print(json.dumps(result, indent=2, ensure_ascii=False))
@@ -514,10 +420,5 @@ Notas:
     return 0 if result.get("ok") else 1
 
 
-
-
-
 if __name__ == "__main__":
-
     sys.exit(wrap_main(main, "vault_log_error"))
-
