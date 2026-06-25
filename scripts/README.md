@@ -1,6 +1,6 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture v34**. Implementan las 69 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad.
+Scripts Python del estándar **Vault Obsidian Architecture v36**. Implementan las 69 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad.
 
 - **85 archivos** — 69 tools activas + 5 deprecadas + 11 internas/meta + `vault_errors.py`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
@@ -12,6 +12,7 @@ Scripts Python del estándar **Vault Obsidian Architecture v34**. Implementan la
 - **nextActions prescriptivo** — vault_audit devuelve un bloque `nextActions` con comandos copy-paste para mantener 100/100
 - **Scaffolds auto-creados** — `vault_init` crea primers en secciones vacías para que el vault arranque en 100/100
 - **Escrituras atómicas** — notas y JSON críticos usan `atomic_write_text`/`atomic_write_json` de `vault_io.py`
+- **Convención de nomenclatura** — usa sufijos explícitos para eliminar ambigüedad: `-runtime`, `-config`, `-client`, `-db`, `-server`, `-service`, `-concept`, `-api`, `-framework`, `-pattern`, `-runbook`. Ej: `redis-runtime` (infra) vs `redis-client` (dependency) vs `redis-config` (config)
 
 ---
 
