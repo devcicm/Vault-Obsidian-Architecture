@@ -3079,7 +3079,7 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **34 normas** del estándar (22 AP + 5 PAT + 3 SP + 3 CN + 1 AP-23). Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **37 normas** del estándar (24 AP + 5 PAT + 3 SP + 3 CN + 1 AP-23 + 1 AP-24 + 1 AP-25). Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
 
 **Operaciones:**
 

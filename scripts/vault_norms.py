@@ -526,7 +526,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "interconectadas con [[wiki-links]] desde la nota original."
         ),
         "signal": "vault_write advierte en la respuesta con ap23_warning cuando content > 500 líneas. "
-                  "vault_norms --scan reporta AP-23 en notas largas.",
+        "vault_norms --scan reporta AP-23 en notas largas.",
         "prevention": (
             "Al superar 500 líneas, crear sub-notas en la misma carpeta y reemplazar la sección "
             "con [[sub-nota|título]]. La nota original actúa como índice/resumen."
@@ -534,6 +534,63 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "tools_enforcing": [],
         "tools_detecting": ["vault_write", "vault_norms"],
         "introduced_version": "v30",
+    },
+    # ── Anti-patrón AP-24 ──────────────────────────────────────────────────────
+    {
+        "code": "AP-24",
+        "name": "Bracket imbalance — corchetes sin pareja, anidados o invertidos",
+        "type": "antipattern",
+        "category": "linking",
+        "severity": "high",
+        "enforcement": "guard+audit",
+        "description": (
+            "Wiki-links malformados por desbalance de corchetes. Tres variantes: "
+            "(1) apertura sin cierre ([[nota sin ]]), (2) cierre sin apertura (]] sin [[), "
+            "(3) anidamiento incorrecto ([[[[nota]]]] o [[nota]]]]). En Obsidian el link "
+            "se renderiza como texto literal, no como enlace navegable. Rompe la trazabilidad "
+            "y produce falsos negativos en vault_audit --broken-links."
+        ),
+        "signal": (
+            "vault_write content_gate detecta balance desigual en línea y rechaza la escritura. "
+            "vault_audit penaliza con -5 por nota afectada. vault_fix_brackets intenta auto-fix "
+            "(eliminación de corchetes extra o inyección de cierre)."
+        ),
+        "prevention": (
+            "Usar siempre el formato [[stem]] o [[stem|alias]]. Validar balance con "
+            "vault_render_check --fix antes de commit. El content_gate de vault_write "
+            "rechaza contenido con bracket imbalance."
+        ),
+        "tools_enforcing": ["vault_write", "vault_fix_brackets"],
+        "tools_detecting": ["vault_audit", "vault_render_check"],
+        "introduced_version": "v34.2",
+    },
+    # ── Anti-patrón AP-25 ──────────────────────────────────────────────────────
+    {
+        "code": "AP-25",
+        "name": "Mermaid diagram syntax errors — nodos/tipos no definidos",
+        "type": "antipattern",
+        "category": "content-quality",
+        "severity": "medium",
+        "enforcement": "audit",
+        "description": (
+            "Diagramas Mermaid con sintaxis inválida: tipos de diagrama no reconocidos "
+            "(unknown_type), nodos referenciados pero no definidos (undefined_node), "
+            "flechas huérfanas, o sintaxis de etiquetas incorrecta. El diagrama no se "
+            "renderiza en Obsidian y pierde su valor documental."
+        ),
+        "signal": (
+            "vault_audit detecta errores con vault_mermaid_check.scan_vault() y los reporta "
+            "como AP-25 con penalización -2 por error. La nota se marca como mermaidError "
+            "en el output del audit."
+        ),
+        "prevention": (
+            "Validar con vault_mermaid_check antes de commit. Usar tipos conocidos "
+            "(graph TD, flowchart LR, sequenceDiagram, classDiagram, etc.). "
+            "Asegurar que cada nodo referenciado en una flecha exista como definición previa."
+        ),
+        "tools_enforcing": [],
+        "tools_detecting": ["vault_audit", "vault_mermaid_check"],
+        "introduced_version": "v34.2",
     },
     # ── Protocolo de sesión SP-XX ──────────────────────────────────────────────
     {
@@ -674,6 +731,7 @@ _CATEGORY_ORDER = {
 
 # ─── Funciones públicas ────────────────────────────────────────────────────────
 
+
 def compute_norm_refs(folder: str, content: str, wiki_links: List[str]) -> List[str]:
     """
     Compute the list of norm codes that apply to a note based on its folder and content.
@@ -739,14 +797,16 @@ def vault_norms_list(
 
     rows = []
     for n in norms:
-        rows.append({
-            "code": n["code"],
-            "name": n["name"],
-            "type": n["type"],
-            "category": n["category"],
-            "severity": n["severity"],
-            "enforcement": n["enforcement"],
-        })
+        rows.append(
+            {
+                "code": n["code"],
+                "name": n["name"],
+                "type": n["type"],
+                "category": n["category"],
+                "severity": n["severity"],
+                "enforcement": n["enforcement"],
+            }
+        )
 
     return {
         "ok": True,
@@ -760,7 +820,10 @@ def vault_norms_show(code: str) -> Dict[str, Any]:
     code = code.upper()
     norm = _NORM_BY_CODE.get(code)
     if not norm:
-        return {"ok": False, "error": f"Norm '{code}' not found. Valid codes: {sorted(_NORM_BY_CODE.keys())}"}
+        return {
+            "ok": False,
+            "error": f"Norm '{code}' not found. Valid codes: {sorted(_NORM_BY_CODE.keys())}",
+        }
     return {"ok": True, "norm": dict(norm)}
 
 
@@ -805,7 +868,9 @@ def vault_norms_scan(path: str) -> Dict[str, Any]:
 
     # Content length
     body = content.split("---", 2)[-1] if has_frontmatter else content
-    real_lines = [l for l in body.split("\n") if l.strip() and not l.strip().startswith("TODO")]
+    real_lines = [
+        l for l in body.split("\n") if l.strip() and not l.strip().startswith("TODO")
+    ]
     if len(real_lines) == 0:
         _add("AP-11", "sin contenido real — skeleton file")
     elif len(real_lines) < 3:
@@ -814,10 +879,14 @@ def vault_norms_scan(path: str) -> Dict[str, Any]:
     # Bullet ratio (AP-20)
     bullets = re.findall(r"^\s*[-*]\s*(.*)", body, re.MULTILINE)
     if bullets:
-        empty = [b for b in bullets if not b.strip() or b.strip() in ("[]", "[[]]", "-", "[ ]")]
+        empty = [
+            b
+            for b in bullets
+            if not b.strip() or b.strip() in ("[]", "[[]]", "-", "[ ]")
+        ]
         ratio = len(empty) / len(bullets)
         if ratio > 0.5:
-            _add("AP-20", f"{int(ratio*100)}% de bullets vacíos — deceptive skeleton")
+            _add("AP-20", f"{int(ratio * 100)}% de bullets vacíos — deceptive skeleton")
 
     # Wiki-link checks
     clean = re.sub(r"```[\s\S]*?```", "", body)
@@ -844,8 +913,15 @@ def vault_norms_scan(path: str) -> Dict[str, Any]:
             if ".history" not in str(p)
         }
         ghost = [
-            l for l in wiki_links
-            if l.split("|")[0].strip().lower().replace("-", "").replace("_", "").replace(" ", "") not in all_stems
+            l
+            for l in wiki_links
+            if l.split("|")[0]
+            .strip()
+            .lower()
+            .replace("-", "")
+            .replace("_", "")
+            .replace(" ", "")
+            not in all_stems
         ]
         if ghost:
             _add("AP-14", f"wiki-links posiblemente rotos: {ghost[:3]}")
@@ -860,12 +936,26 @@ def vault_norms_scan(path: str) -> Dict[str, Any]:
     if "03_Decisions" in rel or "adr" in rel.lower():
         sections = re.findall(r"^#{1,3}\s+(.+)", body, re.MULTILINE)
         section_names = [s.lower() for s in sections]
-        missing = [s for s in ("contexto", "context", "opciones", "options", "consecuencias", "consequences")
-                   if not any(s in n for n in section_names)]
+        missing = [
+            s
+            for s in (
+                "contexto",
+                "context",
+                "opciones",
+                "options",
+                "consecuencias",
+                "consequences",
+            )
+            if not any(s in n for n in section_names)
+        ]
         if missing:
-            _add("AP-07", f"ADR posiblemente incompleto (secciones faltantes detectadas)")
+            _add(
+                "AP-07", f"ADR posiblemente incompleto (secciones faltantes detectadas)"
+            )
 
-    if "06_Runbooks" not in rel and any(kw in note_path.stem.lower() for kw in ("runbook", "procedure", "playbook")):
+    if "06_Runbooks" not in rel and any(
+        kw in note_path.stem.lower() for kw in ("runbook", "procedure", "playbook")
+    ):
         _add("AP-09", "runbook fuera de 06_Runbooks/")
 
     # Always recommend PAT-5 (provenance chain)
@@ -896,7 +986,10 @@ def vault_norms_apply(code: str, path: str) -> Dict[str, Any]:
         return {"ok": False, "error": str(e)}
 
     if not content.startswith("---"):
-        return {"ok": False, "error": "Note has no YAML frontmatter. Use vault_write to create proper notes."}
+        return {
+            "ok": False,
+            "error": "Note has no YAML frontmatter. Use vault_write to create proper notes.",
+        }
 
     parts = content.split("---", 2)
     if len(parts) < 3:
@@ -912,12 +1005,23 @@ def vault_norms_apply(code: str, path: str) -> Dict[str, Any]:
         try:
             existing_refs = json.loads(existing_raw)
         except json.JSONDecodeError:
-            existing_refs = [r.strip().strip('"') for r in existing_raw.strip("[]").split(",") if r.strip()]
+            existing_refs = [
+                r.strip().strip('"')
+                for r in existing_raw.strip("[]").split(",")
+                if r.strip()
+            ]
         if code in existing_refs:
-            return {"ok": True, "path": path, "norm_refs": existing_refs, "message": f"{code} already present"}
+            return {
+                "ok": True,
+                "path": path,
+                "norm_refs": existing_refs,
+                "message": f"{code} already present",
+            }
         existing_refs.append(code)
         new_refs_line = f"norm_refs: {json.dumps(existing_refs)}"
-        fm_block = re.sub(r"^norm_refs:\s*.+$", new_refs_line, fm_block, flags=re.MULTILINE)
+        fm_block = re.sub(
+            r"^norm_refs:\s*.+$", new_refs_line, fm_block, flags=re.MULTILINE
+        )
     else:
         # Insert norm_refs after last field in frontmatter
         new_refs_line = f"norm_refs: {json.dumps([code])}"
@@ -926,11 +1030,14 @@ def vault_norms_apply(code: str, path: str) -> Dict[str, Any]:
     new_content = f"---{fm_block}---{body}"
 
     from vault_io import atomic_write_text
+
     atomic_write_text(note_path, new_content)
 
     # Read back to return final norm_refs
     norm_refs_match2 = re.search(r"^norm_refs:\s*(.+)$", fm_block, re.MULTILINE)
-    final_refs = json.loads(norm_refs_match2.group(1).strip()) if norm_refs_match2 else [code]
+    final_refs = (
+        json.loads(norm_refs_match2.group(1).strip()) if norm_refs_match2 else [code]
+    )
 
     return {
         "ok": True,
@@ -956,7 +1063,13 @@ def vault_norms_rebuild() -> Dict[str, Any]:
         },
         "by_category": {
             cat: len([n for n in NORM_CATALOG if n["category"] == cat])
-            for cat in ("content-quality", "structure", "frontmatter", "linking", "process")
+            for cat in (
+                "content-quality",
+                "structure",
+                "frontmatter",
+                "linking",
+                "process",
+            )
         },
         "by_enforcement": {
             enf: len([n for n in NORM_CATALOG if n["enforcement"] == enf])
@@ -979,6 +1092,7 @@ def vault_norms_rebuild() -> Dict[str, Any]:
 
 
 # ─── CLI ───────────────────────────────────────────────────────────────────────
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(
@@ -1009,19 +1123,44 @@ Ejemplos:
     )
 
     parser.add_argument("--list", action="store_true", help="Listar normas")
-    parser.add_argument("--show", metavar="CODE", help="Mostrar detalle de una norma (ej: AP-22)")
-    parser.add_argument("--scan", action="store_true", help="Escanear nota para detectar normas aplicables")
-    parser.add_argument("--apply", metavar="CODE", help="Agregar referencia de norma al frontmatter")
-    parser.add_argument("--rebuild", action="store_true", help="Regenerar norm-registry.json")
-    parser.add_argument("--path", help="Ruta relativa de la nota (para --scan y --apply)")
-    parser.add_argument("--type", choices=["ap", "pat", "antipattern", "pattern"], help="Filtrar por tipo")
-    parser.add_argument("--category",
-                        choices=["content-quality", "structure", "frontmatter", "linking", "process"],
-                        help="Filtrar por categoría")
-    parser.add_argument("--severity", choices=["critical", "high", "medium", "low"],
-                        help="Filtrar por severidad")
-    parser.add_argument("--sort", choices=["code", "severity", "category", "enforcement"], default="code",
-                        help="Ordenar por (default: code)")
+    parser.add_argument(
+        "--show", metavar="CODE", help="Mostrar detalle de una norma (ej: AP-22)"
+    )
+    parser.add_argument(
+        "--scan",
+        action="store_true",
+        help="Escanear nota para detectar normas aplicables",
+    )
+    parser.add_argument(
+        "--apply", metavar="CODE", help="Agregar referencia de norma al frontmatter"
+    )
+    parser.add_argument(
+        "--rebuild", action="store_true", help="Regenerar norm-registry.json"
+    )
+    parser.add_argument(
+        "--path", help="Ruta relativa de la nota (para --scan y --apply)"
+    )
+    parser.add_argument(
+        "--type",
+        choices=["ap", "pat", "antipattern", "pattern"],
+        help="Filtrar por tipo",
+    )
+    parser.add_argument(
+        "--category",
+        choices=["content-quality", "structure", "frontmatter", "linking", "process"],
+        help="Filtrar por categoría",
+    )
+    parser.add_argument(
+        "--severity",
+        choices=["critical", "high", "medium", "low"],
+        help="Filtrar por severidad",
+    )
+    parser.add_argument(
+        "--sort",
+        choices=["code", "severity", "category", "enforcement"],
+        default="code",
+        help="Ordenar por (default: code)",
+    )
 
     args = parser.parse_args()
 
