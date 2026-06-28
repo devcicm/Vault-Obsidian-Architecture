@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
 """vault_sdd_init — Thin wrapper for the vault-sdd-init skill.
 
-This script is the entry point for the skill declared in
-00_System/skills/vault-sdd-init.md. It orchestrates the generation
-of the 14 SDD documents by delegating to specialized generators.
+This script is the entry point for the vault-sdd-init skill (v1.0).
+Skill documentation lives at docs/SKILLS.md (in this repo, NOT in
+a vault folder — the spec repo must not contain vault structure).
+
+It orchestrates the generation of the 14 SDD documents by delegating
+to specialized generators.
 
 Usage:
     python scripts/vault_sdd_init.py --bilingual
     python scripts/vault_sdd_init.py --bilingual --dry-run
     python scripts/vault_sdd_init.py --bilingual --force
     python scripts/vault_sdd_init.py --vault-root /path/to/vault --bilingual
+
+See docs/SKILLS.md for full documentation.
 """
 
 import argparse
