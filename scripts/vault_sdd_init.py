@@ -1006,11 +1006,14 @@ def main() -> int:
         content = generator(vault_root, drift)
         atomic_write_text(target, content)
         generated.append(fname)
-        print(f"  ✓ {fname}")
+        print(f"  [OK] {fname}")
 
-    integrity = generate_integrity_report(vault_root, drift, generated)
+    # After all MD files are written, generate integrity + gaps
+    integrity = generate_integrity_report(
+        vault_root, drift, generated + ["integrity-report.json", "gaps.md"]
+    )
     atomic_write_json(sdd_dir / "integrity-report.json", integrity)
-    print(f"  ✓ integrity-report.json")
+    print(f"  [OK] integrity-report.json")
 
     gaps_content = generate_gaps_md(vault_root, drift)
     gaps_path = sdd_dir / "gaps.md"
@@ -1018,12 +1021,12 @@ def main() -> int:
         existing = gaps_path.read_text(encoding="utf-8")
         if "# Gaps" not in existing or len(existing) < 200:
             atomic_write_text(gaps_path, gaps_content)
-            print(f"  ✓ gaps.md (updated)")
+            print(f"  [OK] gaps.md (updated)")
         else:
-            print(f"  • gaps.md (preserved — manual content detected)")
+            print(f"  [SKIP] gaps.md (preserved - manual content detected)")
     else:
         atomic_write_text(gaps_path, gaps_content)
-        print(f"  ✓ gaps.md")
+        print(f"  [OK] gaps.md")
 
     print()
     print(f"Generated {len(generated) + 2} files in {sdd_dir}")

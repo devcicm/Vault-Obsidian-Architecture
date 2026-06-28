@@ -1,0 +1,47 @@
+{
+  "ok": true,
+  "tool": "vault_sdd_init",
+  "skill_version": "1.0",
+  "vault_version": "v36.0",
+  "generated_at": "2026-06-28T01:44:41.000Z",
+  "generated_files": [
+    "README.md",
+    "00-principles.md",
+    "01-state-machines.md",
+    "02-implementation.md",
+    "03-usage.md",
+    "04-antipatterns.md",
+    "05-reference-matrix.md",
+    "06-documentation-methodology.md",
+    "07-process-antipatterns.md",
+    "08-roadmap.md",
+    "09-metrics.md",
+    "10-appendices.md",
+    "integrity-report.json",
+    "gaps.md"
+  ],
+  "expected_files": [
+    "README.md",
+    "00-principles.md",
+    "01-state-machines.md",
+    "02-implementation.md",
+    "03-usage.md",
+    "04-antipatterns.md",
+    "05-reference-matrix.md",
+    "06-documentation-methodology.md",
+    "07-process-antipatterns.md",
+    "08-roadmap.md",
+    "09-metrics.md",
+    "10-appendices.md",
+    "integrity-report.json",
+    "gaps.md"
+  ],
+  "missing_files": [],
+  "drift": {
+    "version": "v36.0",
+    "missing_norms": [],
+    "warnings": []
+  },
+  "checks_passed": true,
+  "warnings": []
+}

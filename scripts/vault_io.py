@@ -246,7 +246,9 @@ def atomic_write_text(
 
 
 # Sections that manage their own indexes — skip auto-trigger for these
-_SKIP_AUTO_INDEX = frozenset({"00_System", "99_Index", ".history", "vault-backups"})
+_SKIP_AUTO_INDEX = frozenset(
+    {"00_System", "99_Index", ".history", "vault-backups", "docs"}
+)
 
 
 def _auto_section_index(path: Path) -> None:
