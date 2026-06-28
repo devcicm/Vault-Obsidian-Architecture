@@ -37,112 +37,112 @@ from typing import Dict, List, Optional
 
 SECTIONS: List[Dict[str, Optional[str]]] = [
     {
-        "folder":      "00_System",
-        "name":        "Sistema",
+        "folder": "00_System",
+        "name": "Sistema",
         "description": "Identidad, reglas y configuración del agente",
-        "tool_hint":   None,
+        "tool_hint": None,
     },
     {
-        "folder":      "01_Projects",
-        "name":        "Proyectos",
+        "folder": "01_Projects",
+        "name": "Proyectos",
         "description": "Estado, contexto y progreso de proyectos activos",
-        "tool_hint":   "vault_project_overview --project <slug>",
+        "tool_hint": "vault_project_overview --project <slug>",
     },
     {
-        "folder":      "02_Observability",
-        "name":        "Observabilidad",
+        "folder": "02_Observability",
+        "name": "Observabilidad",
         "description": "Errores, métricas, alertas e incidentes",
-        "tool_hint":   "vault_log_error --project <slug> --error <msg>",
+        "tool_hint": "vault_log_error --project <slug> --error <msg>",
     },
     {
-        "folder":      "03_Decisions",
-        "name":        "Decisiones",
+        "folder": "03_Decisions",
+        "name": "Decisiones",
         "description": "Decisiones de arquitectura y diseño (ADRs)",
-        "tool_hint":   "vault_write --folder 03_Decisions --title <adr>",
+        "tool_hint": "vault_write --folder 03_Decisions --title <adr>",
     },
     {
-        "folder":      "04_Sessions",
-        "name":        "Sesiones",
+        "folder": "04_Sessions",
+        "name": "Sesiones",
         "description": "Diarios de sesión y contexto de trabajo",
-        "tool_hint":   "vault_write --folder 04_Sessions --title <fecha>",
+        "tool_hint": "vault_write --folder 04_Sessions --title <fecha>",
     },
     {
-        "folder":      "05_Patterns",
-        "name":        "Patrones",
+        "folder": "05_Patterns",
+        "name": "Patrones",
         "description": "Patrones reutilizables de código y arquitectura",
-        "tool_hint":   "vault_pattern_save --name <pattern>",
+        "tool_hint": "vault_pattern_save --name <pattern>",
     },
     {
-        "folder":      "06_Diagrams",
-        "name":        "Diagramas",
+        "folder": "06_Diagrams",
+        "name": "Diagramas",
         "description": "Diagramas y representaciones visuales",
-        "tool_hint":   "vault_diagram_save --project <slug> --type erd",
+        "tool_hint": "vault_diagram_save --project <slug> --type erd",
     },
     {
-        "folder":      "07_Knowledge",
-        "name":        "Conocimiento",
+        "folder": "07_Knowledge",
+        "name": "Conocimiento",
         "description": "Base de conocimiento técnico y conceptual",
-        "tool_hint":   "vault_knowledge_save --title <concept>",
+        "tool_hint": "vault_knowledge_save --title <concept>",
     },
     {
-        "folder":      "08_Runbooks",
-        "name":        "Runbooks",
+        "folder": "08_Runbooks",
+        "name": "Runbooks",
         "description": "Procedimientos operativos paso a paso",
-        "tool_hint":   "vault_runbook_save --title <runbook>",
+        "tool_hint": "vault_runbook_save --title <runbook>",
     },
     {
-        "folder":      "09_Infrastructure",
-        "name":        "Infraestructura",
+        "folder": "09_Infrastructure",
+        "name": "Infraestructura",
         "description": "Infraestructura, entornos y configuraciones",
-        "tool_hint":   "vault_infra_save --project <slug>",
+        "tool_hint": "vault_infra_save --project <slug>",
     },
     {
-        "folder":      "10_Migrated",
-        "name":        "Migrados",
+        "folder": "10_Migrated",
+        "name": "Migrados",
         "description": "Documentos migrados de otras fuentes",
-        "tool_hint":   "vault_migrate_docs --source <path>",
+        "tool_hint": "vault_migrate_docs --source <path>",
     },
     {
-        "folder":      "11_Code",
-        "name":        "Código",
+        "folder": "11_Code",
+        "name": "Código",
         "description": "Módulos de código y relaciones entre ellos",
-        "tool_hint":   "vault_code_module --project <slug> --file_path <path>",
+        "tool_hint": "vault_code_module --project <slug> --file_path <path>",
     },
     {
-        "folder":      "12_Bibliography",
-        "name":        "Bibliografía",
+        "folder": "12_Bibliography",
+        "name": "Bibliografía",
         "description": "Fuentes externas: artículos, papers, APIs, libros y docs consultados",
-        "tool_hint":   "vault_bibliography_save --title <ref> --type web",
+        "tool_hint": "vault_bibliography_save --title <ref> --type web",
     },
     {
-        "folder":      "13_Flows",
-        "name":        "Flujos",
+        "folder": "13_Flows",
+        "name": "Flujos",
         "description": "Flujos de trabajo, pipelines, ciclos de vida y diagramas de flujo",
-        "tool_hint":   "vault_flow_save --project <slug> --title <flow>",
+        "tool_hint": "vault_flow_save --project <slug> --title <flow>",
     },
     {
-        "folder":      "14_Requirements",
-        "name":        "Requerimientos",
+        "folder": "14_Requirements",
+        "name": "Requerimientos",
         "description": "Requerimientos funcionales y no funcionales (ISO 29148)",
-        "tool_hint":   "vault_requirement_save --project <slug> --title <req>",
+        "tool_hint": "vault_requirement_save --project <slug> --title <req>",
     },
     {
-        "folder":      "15_Tests",
-        "name":        "Tests",
+        "folder": "15_Tests",
+        "name": "Tests",
         "description": "Casos de prueba y resultados (ISO 29119): unit, integration, e2e, performance",
-        "tool_hint":   "vault_test_save --project <slug> --title <test>",
+        "tool_hint": "vault_test_save --project <slug> --title <test>",
     },
     {
-        "folder":      "16_AI_Governance",
-        "name":        "IA Governance",
+        "folder": "16_AI_Governance",
+        "name": "IA Governance",
         "description": "Decisiones y auditorías de agentes IA (ISO 42001)",
-        "tool_hint":   "vault_ai_decision --project <slug> --title <decision>",
+        "tool_hint": "vault_ai_decision --project <slug> --title <decision>",
     },
     {
-        "folder":      "99_Index",
-        "name":        "Índices",
+        "folder": "99_Index",
+        "name": "Índices",
         "description": "Índices de navegación del vault",
-        "tool_hint":   None,
+        "tool_hint": None,
     },
 ]
 
@@ -164,115 +164,199 @@ SECTIONS: List[Dict[str, Optional[str]]] = [
 #   Para compartir una sección raíz (ej: 09_Infrastructure) use subfolders separados.
 
 SUBFOLDERS: Dict[str, Dict[str, Optional[str]]] = {
-
     # ── 02_Observability ────────────────────────────────────────────────────
+    "02_Observability/errors": {
+        "description": "Errores de runtime, compilación o lógica con stack trace y solución",
+        "owner": "vault_log_error",
+    },
+    "02_Observability/antipatterns": {
+        "description": "Código o arquitectura problemática: detección, por qué es problemático, alternativa",
+        "owner": "vault_log_error",
+    },
+    "02_Observability/vulnerabilities": {
+        "description": "Hallazgos de seguridad: CVE, OWASP, injection, XSS, SSRF, etc.",
+        "owner": "vault_log_error",
+    },
+    "02_Observability/waf": {
+        "description": "Reglas de firewall activadas, bypass detectado, contexto de amenaza",
+        "owner": "vault_log_error",
+    },
+    "02_Observability/metrics": {
+        "description": "SLIs y KPIs: qué se mide, servicio, valor objetivo, unidad, herramienta",
+        "owner": "vault_log_error",
+    },
+    "02_Observability/alerts": {
+        "description": "Reglas de alerta: condición, umbral, canal, severidad, link al runbook",
+        "owner": "vault_log_error",
+    },
     "02_Observability/incidents": {
         "description": "Incidentes de producción con ciclo de vida P1-P4 (ISO 20000-1 §8.6)",
-        "owner":       "vault_incident_save",
+        "owner": "vault_incident_save",
     },
     "02_Observability/slos": {
         "description": "SLO definitions con error budget y burn rates (ISO 20000-1 §8.3)",
-        "owner":       "vault_slo_save",
+        "owner": "vault_slo_save",
     },
     "02_Observability/risks": {
         "description": "Registro de riesgos con score likelihood×impact (ISO 31000:2018)",
-        "owner":       "vault_risk_save",
+        "owner": "vault_risk_save",
     },
     "02_Observability/quality": {
         "description": "No conformidades NCR-YYYY-NNN y acciones correctivas (ISO 9001:2015 §10.2)",
-        "owner":       "vault_ncr_save",
+        "owner": "vault_ncr_save",
     },
-
+    # ── 05_Patterns ───────────────────────────────────────────────────────────
+    "05_Patterns/design": {
+        "description": "Patrones de diseño GoF: Singleton, Factory, Observer, Strategy, Decorator, Proxy, Command, Adapter, Facade",
+        "owner": "vault_pattern_save",
+    },
+    "05_Patterns/architecture": {
+        "description": "Patrones arquitectónicos: MVC, Hexagonal, Event-Driven, CQRS, Microservices, Monolith, BFF, Clean Architecture",
+        "owner": "vault_pattern_save",
+    },
+    "05_Patterns/code": {
+        "description": "Patrones de código: Retry, Circuit-Breaker, Cache-Aside, Saga, Idempotency, Rate-Limit, Bulkhead",
+        "owner": "vault_pattern_save",
+    },
+    "05_Patterns/integration": {
+        "description": "Patrones de integración: REST, GraphQL, WebSocket, Pub-Sub, Webhook, gRPC, Message-Queue, Batch",
+        "owner": "vault_pattern_save",
+    },
+    # ── 06_Diagrams ───────────────────────────────────────────────────────────
+    "06_Diagrams/entity": {
+        "description": "Diagramas ER y relaciones entre entidades de dominio (Mermaid erDiagram)",
+        "owner": "vault_relation_add",
+    },
+    "06_Diagrams/component": {
+        "description": "Diagramas de componentes y módulos de la aplicación (Mermaid graph TD)",
+        "owner": "vault_diagram_save",
+    },
+    "06_Diagrams/sequence": {
+        "description": "Diagramas de secuencia de flujos de ejecución (Mermaid sequenceDiagram)",
+        "owner": "vault_diagram_save",
+    },
+    "06_Diagrams/dependency": {
+        "description": "Grafo de dependencias entre paquetes o módulos (Mermaid graph LR)",
+        "owner": "vault_diagram_save",
+    },
+    "06_Diagrams/flow": {
+        "description": "Flujos generales, decisiones de proceso, diagramas de negocio (Mermaid flowchart TD)",
+        "owner": "vault_diagram_save",
+    },
+    # ── 07_Knowledge ──────────────────────────────────────────────────────────
+    "07_Knowledge/glossary": {
+        "description": "Glosario de términos de dominio o negocio con definición y contexto",
+        "owner": "vault_knowledge_save",
+    },
+    "07_Knowledge/apis": {
+        "description": "Documentación de APIs: endpoints, auth, rate limits, ejemplos de request/response",
+        "owner": "vault_knowledge_save",
+    },
+    "07_Knowledge/concepts": {
+        "description": "Conceptos técnicos específicos del proyecto (no documentación genérica)",
+        "owner": "vault_knowledge_save",
+    },
+    "07_Knowledge/business-rules": {
+        "description": "Reglas de negocio no obvias: cuándo aplican, excepciones, quién las definió",
+        "owner": "vault_knowledge_save",
+    },
+    "07_Knowledge/configs": {
+        "description": "Configuración importante de herramientas, entornos o servicios",
+        "owner": "vault_knowledge_save",
+    },
+    "07_Knowledge/dependencies": {
+        "description": "Paquetes o librerías: nombre, versión, propósito, por qué se eligió, alternativas",
+        "owner": "vault_knowledge_save",
+    },
+    "07_Knowledge/frameworks": {
+        "description": "Frameworks usados: rol, convenciones adoptadas, decisiones de configuración",
+        "owner": "vault_knowledge_save",
+    },
     # ── 08_Runbooks ─────────────────────────────────────────────────────────
     "08_Runbooks/deploy": {
         "description": "Release notes y procedimientos de despliegue (ISO 12207:2017 §6.3.7)",
-        "owner":       "vault_release_save",
+        "owner": "vault_release_save",
     },
-
     # ── 09_Infrastructure ───────────────────────────────────────────────────
     "09_Infrastructure/envs": {
         "description": "Variables de entorno estáticas por archivo .env — una nota por env file",
-        "owner":       "vault_env_save",
+        "owner": "vault_env_save",
     },
     "09_Infrastructure/env-matrix": {
         "description": "Matriz multi-entorno dev/staging/prod/dr/perf (ISO 12207:2017 §6.3.4)",
-        "owner":       "vault_env_matrix",
+        "owner": "vault_env_matrix",
     },
     "09_Infrastructure/privacy": {
         "description": "Registros de tratamiento de datos personales GDPR Art.30 (ISO 27701:2019)",
-        "owner":       "vault_privacy_save",
+        "owner": "vault_privacy_save",
     },
-
     # ── 12_Bibliography ─────────────────────────────────────────────────────
     "12_Bibliography/web": {
         "description": "Referencias web: artículos, blog posts, documentación online",
-        "owner":       "vault_bibliography_save",
+        "owner": "vault_bibliography_save",
     },
     "12_Bibliography/papers": {
         "description": "Papers académicos y técnicos",
-        "owner":       "vault_bibliography_save",
+        "owner": "vault_bibliography_save",
     },
     "12_Bibliography/docs": {
         "description": "Documentación oficial de herramientas y frameworks",
-        "owner":       "vault_bibliography_save",
+        "owner": "vault_bibliography_save",
     },
     "12_Bibliography/apis": {
         "description": "Referencias de APIs y especificaciones de interfaces",
-        "owner":       "vault_bibliography_save",
+        "owner": "vault_bibliography_save",
     },
     "12_Bibliography/books": {
         "description": "Libros técnicos consultados",
-        "owner":       "vault_bibliography_save",
+        "owner": "vault_bibliography_save",
     },
-
     # ── 13_Flows ────────────────────────────────────────────────────────────
     "13_Flows/workflow": {
         "description": "Flujos de trabajo y procesos de negocio",
-        "owner":       "vault_flow_save",
+        "owner": "vault_flow_save",
     },
     "13_Flows/pipeline": {
         "description": "Pipelines de CI/CD, datos o procesamiento",
-        "owner":       "vault_flow_save",
+        "owner": "vault_flow_save",
     },
     "13_Flows/lifecycle": {
         "description": "Ciclos de vida de entidades, tickets o deploys",
-        "owner":       "vault_flow_save",
+        "owner": "vault_flow_save",
     },
     "13_Flows/dataflow": {
         "description": "Flujos de datos entre componentes o servicios",
-        "owner":       "vault_flow_save",
+        "owner": "vault_flow_save",
     },
-
     # ── 15_Tests ────────────────────────────────────────────────────────────
     "15_Tests/unit": {
         "description": "Tests unitarios por módulo o función",
-        "owner":       "vault_test_save",
+        "owner": "vault_test_save",
     },
     "15_Tests/integration": {
         "description": "Tests de integración entre componentes",
-        "owner":       "vault_test_save",
+        "owner": "vault_test_save",
     },
     "15_Tests/e2e": {
         "description": "Tests end-to-end sobre flujos completos",
-        "owner":       "vault_test_save",
+        "owner": "vault_test_save",
     },
     "15_Tests/performance": {
         "description": "Tests de rendimiento, carga y estrés",
-        "owner":       "vault_test_save",
+        "owner": "vault_test_save",
     },
     "15_Tests/security": {
         "description": "Tests de seguridad y penetración",
-        "owner":       "vault_test_save",
+        "owner": "vault_test_save",
     },
     "15_Tests/acceptance": {
         "description": "Tests de aceptación con criterios de usuario",
-        "owner":       "vault_test_save",
+        "owner": "vault_test_save",
     },
-
     # ── 16_AI_Governance ────────────────────────────────────────────────────
     "16_AI_Governance/decisions": {
         "description": "Decisiones formales de agentes IA con trazabilidad ISO 42001",
-        "owner":       "vault_ai_decision",
+        "owner": "vault_ai_decision",
     },
 }
 
@@ -348,11 +432,13 @@ def check_folder_collisions() -> List[Dict[str, str]]:
         if not owner:
             continue
         if folder in seen and seen[folder] != owner:
-            conflicts.append({
-                "folder":  folder,
-                "owner_a": seen[folder],
-                "owner_b": owner,
-            })
+            conflicts.append(
+                {
+                    "folder": folder,
+                    "owner_a": seen[folder],
+                    "owner_b": owner,
+                }
+            )
         else:
             seen[folder] = owner
     return conflicts

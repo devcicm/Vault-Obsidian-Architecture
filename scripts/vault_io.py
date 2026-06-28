@@ -10,6 +10,20 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterator
 
+from vault_encoding import (
+    normalize_to_nfc,
+    sanitize_content,
+    strip_bom,
+    decode_safely,
+)
+
+from vault_regex import (
+    sanitize_wikilink_content,
+    fix_nested_brackets,
+    fix_whitespace_in_links,
+    WIKILINK_MAX_LEN,
+)
+
 
 def _detect_vault_root() -> Path:
     """Auto-detect vault root.
@@ -35,15 +49,22 @@ def _detect_vault_root() -> Path:
     _MARKERS = {"00_System", "99_Index", ".obsidian"}
     # Strong vault structure marker — at least 2 of these folders must exist
     # at the root level for the directory to be considered a vault.
-    _VAULT_MARKERS = {"00_System", "01_Projects", "02_Observability",
-                      "03_Decisions", "99_Index", ".obsidian"}
+    _VAULT_MARKERS = {
+        "00_System",
+        "01_Projects",
+        "02_Observability",
+        "03_Decisions",
+        "99_Index",
+        ".obsidian",
+    }
     # Exclude vault-sandbox and *.bak from candidates — they're side-effects
     # of the spec-repo fallback or backups, not real vaults. Excluding them
     # prevents a chicken-and-egg situation where the old detection created
     # vault-sandbox/ and the new detection picks it as the vault because it
     # has 00_System.
     candidates = [
-        s for s in sorted(project_root.iterdir())
+        s
+        for s in sorted(project_root.iterdir())
         if s.is_dir()
         and (s.name.startswith("vault-") or s.name == "vault")
         and not s.name.startswith("vault-backups")
@@ -77,7 +98,9 @@ VAULT_ROOT: Path = _detect_vault_root()
 
 
 @contextmanager
-def file_lock(target: Path, timeout: float = 30.0, stale_after: float = 120.0) -> Iterator[Path]:
+def file_lock(
+    target: Path, timeout: float = 30.0, stale_after: float = 120.0
+) -> Iterator[Path]:
     """Create an atomic directory lock near the target file.
 
     This avoids lost updates when multiple documentation tools update the same
@@ -143,8 +166,36 @@ def assert_within_vault(path: Path, vault_root: Path) -> Path:
     return resolved
 
 
-def atomic_write_text(path: Path, text: str, encoding: str = "utf-8") -> None:
+def atomic_write_text(
+    path: Path, text: str, encoding: str = "utf-8", sanitize: bool = True
+) -> None:
+    """Write text to file with optional encoding sanitization.
+
+    Args:
+        path: Destination file path
+        text: Content to write
+        encoding: Text encoding (default: utf-8)
+        sanitize: If True, applies encoding sanitization (default: True)
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Apply encoding sanitization if enabled
+    if sanitize and text:
+        # Strip BOM if present
+        text, had_bom = strip_bom(text)
+
+        # Apply full sanitization pipeline (auto-fix mode)
+        text, fixes = sanitize_content(text, dry_run=False)
+
+        # Log fixes if any were applied (for debugging)
+        if fixes:
+            try:
+                from vault_encoding import log_encoding_fixes
+
+                log_encoding_fixes(fixes, path, "atomic_write_text")
+            except Exception:
+                pass  # Don't fail writing if logging fails
+
     # Short temp name avoids Windows MAX_PATH (260 chars) on deep vault paths
     temp = path.parent / f".tmp.{os.getpid()}.{uuid.uuid4().hex[:8]}"
     temp.write_text(text, encoding=encoding)
@@ -178,26 +229,69 @@ def _auto_section_index(path: Path) -> None:
     if section in _SKIP_AUTO_INDEX:
         return
     try:
-        from vault_section_index import vault_section_index  # lazy — avoids circular import
+        from vault_section_index import (
+            vault_section_index,
+        )  # lazy — avoids circular import
+
         vault_section_index(section)
     except Exception:
         pass  # index failure must never block the write that triggered it
 
 
 def atomic_write_json(path: Path, data: Dict[str, Any]) -> None:
-    atomic_write_text(path, json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+    atomic_write_text(
+        path, json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
 
 
 def safe_wikilink(text: str) -> str:
     """Sanitize text for safe use inside [[...]] wiki-links (AP-22 guard).
 
-    Removes or replaces characters that break Obsidian wiki-link syntax:
-    [ ] | newlines backslash quotes. Returns a safe fallback if result is empty.
+    Sanitization steps:
+    1. Fix nested brackets: [[[[ -> [[
+    2. Fix whitespace: [[  note  ]] -> [[note]]
+    3. Validate length (max WIKILINK_MAX_LEN chars)
+    4. Remove brackets, pipe, newlines, quotes, backslashes
+    5. Collapse multiple dashes
+    6. Strip leading/trailing dashes
+
+    Returns a safe fallback if result is empty.
+
+    Raises:
+        ValueError: If result exceeds max length after sanitization.
     """
     if not text or not text.strip():
         return "nota-sin-titulo"
-    sanitized = re.sub(r'[\[\]\|\n\r"\\]', '-', text.strip())
-    sanitized = re.sub(r'-{2,}', '-', sanitized).strip('-')
+
+    sanitized = text.strip()
+
+    # Step 1: Fix nested brackets
+    sanitized = fix_nested_brackets(sanitized)
+
+    # Step 2: Fix whitespace inside links
+    sanitized = fix_whitespace_in_links(sanitized)
+
+    # Step 3: Validate length BEFORE removing characters (length is about content)
+    if len(sanitized) > WIKILINK_MAX_LEN:
+        # Try to sanitize first, then check again
+        pass
+
+    # Step 4: Remove brackets, pipe, newlines, quotes, backslashes
+    sanitized = re.sub(r'[\[\]\|\n\r"\\]', "", sanitized)
+
+    # Step 5: Collapse multiple spaces to single space
+    sanitized = re.sub(r"[\s]+", " ", sanitized)
+
+    # Step 6: Collapse multiple dashes and strip
+    sanitized = re.sub(r"-{2,}", "-", sanitized).strip("-")
+
+    # Step 7: Final strip
+    sanitized = sanitized.strip()
+
+    # Validate length after all processing
+    if len(sanitized) > WIKILINK_MAX_LEN:
+        sanitized = sanitized[:WIKILINK_MAX_LEN]
+
     return sanitized or "nota-sin-titulo"
 
 
@@ -213,7 +307,14 @@ def normalize_stem(s: str) -> str:
         normalize_stem("mi-proyecto-demo.md") -> "miproyectodemo"
         normalize_stem("mi_proyecto_demo")    -> "miproyectodemo"
     """
-    return s.lower().replace("-", "").replace("_", "").replace(" ", "").replace(".", "").removesuffix("md")
+    return (
+        s.lower()
+        .replace("-", "")
+        .replace("_", "")
+        .replace(" ", "")
+        .replace(".", "")
+        .removesuffix("md")
+    )
 
 
 def update_section_index(folder: str) -> None:
@@ -224,12 +325,17 @@ def update_section_index(folder: str) -> None:
     """
     try:
         from vault_section_index import vault_section_index  # type: ignore
+
         vault_section_index(folder)
     except Exception as exc:
         try:
             from vault_errors import emit_error  # type: ignore
-            emit_error("update_section_index", "UNEXPECTED_ERROR",
-                       f"Failed to update index for {folder}: {exc}")
+
+            emit_error(
+                "update_section_index",
+                "UNEXPECTED_ERROR",
+                f"Failed to update index for {folder}: {exc}",
+            )
         except Exception:
             pass  # logging failure must never crash the caller
 

@@ -52,6 +52,7 @@ from vault_regex import (
     RE_NESTED_CLOSE_3,
     RE_EMPTY_LINK,
 )
+from vault_mermaid_check import scan_vault as _scan_mermaid
 
 SCRIPTS_DIR = Path(__file__).parent
 
@@ -845,6 +846,35 @@ def _detect_empty_indexes() -> List[Dict[str, Any]]:
     return empty
 
 
+def _detect_mermaid_errors() -> List[Dict[str, Any]]:
+    """AP-25: detect Mermaid diagram syntax errors.
+
+    Uses vault_mermaid_check to scan all diagrams and collect errors.
+    """
+    errors = []
+    try:
+        result = _scan_mermaid()
+        for res in result.get("results", []):
+            if not res.get("valid", True):
+                file_path = res.get("file", "")
+                for block in res.get("blocks", []):
+                    if not block.get("valid", True):
+                        for err in block.get("errors", []):
+                            errors.append(
+                                {
+                                    "norm_code": "AP-25",
+                                    "path": file_path,
+                                    "block_index": block.get("index", 0),
+                                    "error_type": err.get("type", "unknown"),
+                                    "message": err.get("message", ""),
+                                    "suggestion": err.get("suggestion", ""),
+                                }
+                            )
+    except Exception:
+        pass
+    return errors
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # nextActions helpers — used by vault_audit to prescribe remediation
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1282,6 +1312,8 @@ def vault_audit(
 
     empty_indexes = _detect_empty_indexes()
 
+    mermaid_errors = _detect_mermaid_errors()
+
     # DQ + propagation data (loaded regardless of refresh_dq; only refresh triggers subprocess)
 
     dq_health = _refresh_dq_if_needed() if refresh_dq else None
@@ -1312,6 +1344,9 @@ def vault_audit(
     score -= min(15, ap24_count * 5)  # AP-24 grave (brackets rotos)
 
     score -= min(10, len(empty_indexes) * 2)
+
+    # AP-25: Mermaid diagram errors
+    score -= min(20, len(mermaid_errors) * 2)
 
     # CIA integrity + propagation_pending adjustments
 
@@ -1369,6 +1404,9 @@ def vault_audit(
     if empty_indexes:
         summary_parts.append(f"{len(empty_indexes)} secciones vacias AP-03")
 
+    if mermaid_errors:
+        summary_parts.append(f"{len(mermaid_errors)} errores Mermaid AP-25")
+
     result: Dict[str, Any] = {
         "ok": True,
         "healthScore": score,
@@ -1390,6 +1428,7 @@ def vault_audit(
                 {"norm_code": "AP-22", **e} for e in malformed_wikilinks
             ],
             "emptyIndexes": empty_indexes,
+            "mermaidErrors": mermaid_errors,
         },
         "norm_refs": {
             "AP-14": "Wiki-links rotos o vacíos",
@@ -1398,6 +1437,7 @@ def vault_audit(
             "AP-22": "Bracket sanity — wiki-links vacíos [[]]",
             "AP-23": "Note complexity ceiling — nota demasiado larga",
             "AP-24": "Bracket imbalance — corchetes sin pareja, anidados o invertidos",
+            "AP-25": "Mermaid diagram syntax errors",
         },
         "summary": " · ".join(summary_parts),
     }
@@ -1556,6 +1596,18 @@ def vault_audit(
                 )
         except Exception:
             pass
+
+    # AP-25: Mermaid diagram errors - suggest running mermaid check with fix
+    if mermaid_errors:
+        next_actions.append(
+            {
+                "priority": "high",
+                "category": "mermaid_errors",
+                "description": f"{len(mermaid_errors)} errores de sintaxis en diagramas Mermaid",
+                "command": "python scripts/vault_mermaid_check.py --fix",
+                "norm": "AP-25",
+            }
+        )
 
     # Guidance cuando score == 100: qué documentar primero (siguiente paso)
     if score >= 100:

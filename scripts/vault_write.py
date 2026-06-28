@@ -544,6 +544,8 @@ def vault_write(
 
     existing_created = None
 
+    existing_content = ""
+
     # If note exists, backup to history
 
     if vault_path.exists():
