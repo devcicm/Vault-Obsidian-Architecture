@@ -31,7 +31,7 @@ SYSTEM_DIR = VAULT_ROOT / "00_System"
 VERSION_FILE = SYSTEM_DIR / "standard-version.json"
 IDENTITY_FILE = SYSTEM_DIR / "identity.md"
 
-CURRENT_VERSION = "v34"
+CURRENT_VERSION = "v36.0"
 
 MIGRATIONS: Dict[str, Dict[str, Any]] = {
     "v21": {
@@ -246,6 +246,45 @@ MIGRATIONS: Dict[str, Dict[str, Any]] = {
             "content gate mejorado con validación de wiki-links",
         ],
     },
+    "v35": {
+        "description": (
+            "NORM_CATALOG completeness: AP-24 (bracket imbalance) and AP-25 "
+            "(mermaid syntax errors) registered as first-class norms. "
+            "Trace file unification: .tool-trace.json consolidated to "
+            "00_System/.tool-trace.json only (eliminating the duplicate "
+            "at VAULT_ROOT/.tool-trace.json produced by vault_encoding)."
+        ),
+        "tools_count": "92",
+        "update_identity": True,
+        "notes": [
+            "AP-24 y AP-25 ahora son detectables por vault_norms --list",
+            "vault_audit penaliza con AP-24 (-5/nota) y AP-25 (-2/error)",
+            "Single source of truth para trace",
+            "Eliminada la divergencia que producía traces incompletos",
+        ],
+    },
+    "v36": {
+        "description": (
+            "SDD (Spec-Driven Development) introduction. atomic_write_text "
+            "now cleans temp file on failure (eliminates disk-fill risk). "
+            "Vault secret scanning integrated into atomic_write_text hook. "
+            "CI workflow (.github/workflows/vault-ci.yml) with pytest + "
+            "vault_validate + vault_audit + vault_spec_validate. "
+            "Dual SDD: docs/sdd/ (project) + 00_System/skills/vault-sdd-init.md "
+            "(skill for other agents to generate their own SDD)."
+        ),
+        "tools_count": "95",
+        "update_identity": True,
+        "notes": [
+            "vault_secret_scan.py (NUEVO): hook pre-write que aborta si detecta secrets",
+            "atomic_write_text garantiza cleanup en error (no temp files huérfanos)",
+            "vault_id_check.py: id estable + dedupe de duplicados",
+            "vault_render_check.py: AP-26 auto-fix (pipes sin escapar, brackets)",
+            "vault_history_compact.py: rotación .history/ (10 versiones/nota)",
+            "Skill vault-sdd-init en 00_System/skills/ con logo ASCII",
+            "docs/sdd/ generado con 14 archivos bilingües (ES/EN)",
+        ],
+    },
 }
 
 VERSION_ORDER = [
@@ -265,6 +304,8 @@ VERSION_ORDER = [
     "v32",
     "v33",
     "v34",
+    "v35",
+    "v36",
 ]
 
 
