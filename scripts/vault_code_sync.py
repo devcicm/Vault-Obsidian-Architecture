@@ -35,11 +35,32 @@ CODE_DIR = VAULT_ROOT / "11_Code"
 CODE_INDEX = CODE_DIR / ".code-index.json"
 
 # Extensions considered source code (auditable for @vault: tags)
-_CODE_EXTS = frozenset({
-    ".ts", ".tsx", ".js", ".jsx", ".mjs", ".py", ".cs", ".java",
-    ".go", ".rs", ".cpp", ".c", ".h", ".kt", ".swift", ".rb",
-    ".php", ".dart", ".scala", ".sh", ".bash", ".r",
-})
+_CODE_EXTS = frozenset(
+    {
+        ".ts",
+        ".tsx",
+        ".js",
+        ".jsx",
+        ".mjs",
+        ".py",
+        ".cs",
+        ".java",
+        ".go",
+        ".rs",
+        ".cpp",
+        ".c",
+        ".h",
+        ".kt",
+        ".swift",
+        ".rb",
+        ".php",
+        ".dart",
+        ".scala",
+        ".sh",
+        ".bash",
+        ".r",
+    }
+)
 
 _VAULT_TAG_PATTERN = re.compile(
     r"^(?://|#|<!--|/\*|--)\s*@vault:\s*(\S+)\s*[—\-]+",
@@ -51,16 +72,7 @@ _VAULT_TAG_PATTERN = re.compile(
 # Internal helpers
 # ──────────────────────────────────────────────────────────────────────────────
 
-def _parse_frontmatter(content: str) -> Dict[str, str]:
-    meta: Dict[str, str] = {}
-    m = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
-    if not m:
-        return meta
-    for line in m.group(1).splitlines():
-        if ":" in line:
-            key, _, val = line.partition(":")
-            meta[key.strip()] = val.strip().strip("\"'")
-    return meta
+from vault_lib import parse_frontmatter
 
 
 def _vault_ref_in_file(file_path: Path) -> Optional[str]:
@@ -83,7 +95,7 @@ def _collect_code_notes(project: Optional[str]) -> List[Tuple[Path, Dict[str, st
         if p.name == "index.md":
             continue
         try:
-            meta = _parse_frontmatter(p.read_text(encoding="utf-8", errors="ignore"))
+            meta = parse_frontmatter(p.read_text(encoding="utf-8", errors="ignore"))
             notes.append((p, meta))
         except Exception:
             continue
@@ -93,6 +105,7 @@ def _collect_code_notes(project: Optional[str]) -> List[Tuple[Path, Dict[str, st
 # ──────────────────────────────────────────────────────────────────────────────
 # Audit
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def vault_code_sync(
     project: Optional[str] = None,
@@ -134,14 +147,19 @@ def vault_code_sync(
             no_source_ref.append({"note": note_rel})
             continue
 
-        source_path = (Path(source_file_str) if Path(source_file_str).is_absolute()
-                       else Path.cwd() / source_file_str)
+        source_path = (
+            Path(source_file_str)
+            if Path(source_file_str).is_absolute()
+            else Path.cwd() / source_file_str
+        )
 
         if not source_path.exists():
-            missing_file.append({
-                "note": note_rel,
-                "source_file_declared": source_file_str,
-            })
+            missing_file.append(
+                {
+                    "note": note_rel,
+                    "source_file_declared": source_file_str,
+                }
+            )
             continue
 
         existing_ref = _vault_ref_in_file(source_path)
@@ -155,22 +173,27 @@ def vault_code_sync(
         if fix and not dry_run:
             try:
                 from vault_code_tag import vault_code_tag_link_vault
+
                 title = meta.get("title", note_path.stem)
                 iso_type = meta.get("iso_type", "module")
                 tag_title = f"{Path(source_file_str).name} ({iso_type})"
-                tag_result = vault_code_tag_link_vault(note_ref, str(source_path), tag_title)
+                tag_result = vault_code_tag_link_vault(
+                    note_ref, str(source_path), tag_title
+                )
                 fix_applied = tag_result.get("ok", False)
                 if fix_applied:
                     fixed += 1
             except Exception:
                 pass
 
-        missing_tag.append({
-            "note": note_rel,
-            "source_file": source_file_str,
-            "existing_vault_ref": existing_ref,
-            "fix_applied": fix_applied,
-        })
+        missing_tag.append(
+            {
+                "note": note_rel,
+                "source_file": source_file_str,
+                "existing_vault_ref": existing_ref,
+                "fix_applied": fix_applied,
+            }
+        )
 
     # ── Pass 2: scan source files for orphan @vault: refs ────────────────────
     scan_roots: List[Path] = []
@@ -190,8 +213,10 @@ def vault_code_sync(
                     if fp.is_absolute() and fp.parent.exists():
                         root = fp.parent
                         while root.parent != root and root not in scan_roots:
-                            if any(r.is_relative_to(root) or root.is_relative_to(r)
-                                   for r in scan_roots):
+                            if any(
+                                r.is_relative_to(root) or root.is_relative_to(r)
+                                for r in scan_roots
+                            ):
                                 break
                             scan_roots.append(root)
                             break
@@ -209,23 +234,29 @@ def vault_code_sync(
                 continue
             ref = _vault_ref_in_file(src_file)
             if ref and ref not in all_note_refs:
-                orphan_vault_refs.append({
-                    "source_file": str(src_file),
-                    "vault_ref_declared": ref,
-                    "note": f"Vault note {ref}.md not found in {CODE_DIR.name}/",
-                })
+                orphan_vault_refs.append(
+                    {
+                        "source_file": str(src_file),
+                        "vault_ref_declared": ref,
+                        "note": f"Vault note {ref}.md not found in {CODE_DIR.name}/",
+                    }
+                )
 
     summary = {
         "total_notes_checked": len(notes),
-        "complete":          len(complete),
-        "missing_tag":       len(missing_tag),
-        "missing_file":      len(missing_file),
-        "no_source_ref":     len(no_source_ref),
+        "complete": len(complete),
+        "missing_tag": len(missing_tag),
+        "missing_file": len(missing_file),
+        "no_source_ref": len(no_source_ref),
         "orphan_vault_refs": len(orphan_vault_refs),
-        "fix_applied":       fixed,
+        "fix_applied": fixed,
     }
 
-    status = "clean" if not missing_tag and not missing_file and not orphan_vault_refs else "gaps_found"
+    status = (
+        "clean"
+        if not missing_tag and not missing_file and not orphan_vault_refs
+        else "gaps_found"
+    )
 
     return {
         "ok": True,
@@ -244,6 +275,7 @@ def vault_code_sync(
 # ──────────────────────────────────────────────────────────────────────────────
 # Human-readable report
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def _print_report(result: Dict[str, Any]) -> None:
     s = result["summary"]
@@ -288,6 +320,7 @@ def _print_report(result: Dict[str, Any]) -> None:
 # CLI
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="vault_code_sync — audita trazabilidad bidireccional código ↔ vault",
@@ -308,14 +341,21 @@ Ejemplos:
   python vault_code_sync.py --scan-dir src/
 """,
     )
-    parser.add_argument("--project",  help="Slug del proyecto (omitir = todos)")
-    parser.add_argument("--scan-dir", help="Directorio de código fuente a escanear para refs huérfanas")
-    parser.add_argument("--fix",      action="store_true",
-                        help="Inyectar @vault: en archivos sin tag")
-    parser.add_argument("--dry-run",  action="store_true",
-                        help="Mostrar qué se haría sin modificar archivos")
-    parser.add_argument("--report",   action="store_true",
-                        help="Salida human-readable en lugar de JSON")
+    parser.add_argument("--project", help="Slug del proyecto (omitir = todos)")
+    parser.add_argument(
+        "--scan-dir", help="Directorio de código fuente a escanear para refs huérfanas"
+    )
+    parser.add_argument(
+        "--fix", action="store_true", help="Inyectar @vault: en archivos sin tag"
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Mostrar qué se haría sin modificar archivos",
+    )
+    parser.add_argument(
+        "--report", action="store_true", help="Salida human-readable en lugar de JSON"
+    )
 
     args = parser.parse_args()
 

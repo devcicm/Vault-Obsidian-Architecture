@@ -29,6 +29,7 @@ from typing import Any, Dict, List, Optional, Set
 from vault_errors import wrap_main
 
 from vault_io import VAULT_ROOT
+
 GRAPH_FILE = VAULT_ROOT / "99_Index" / "graph.json"
 CHANGE_LOG_JSON = VAULT_ROOT / "00_System" / ".change-log.json"
 
@@ -47,22 +48,7 @@ RISK_LEVELS = [
 ]
 
 
-def _read_frontmatter(path: Path) -> Dict[str, str]:
-    try:
-        content = path.read_text(encoding="utf-8", errors="ignore")
-        if not content.startswith("---"):
-            return {}
-        parts = content.split("---", 2)
-        if len(parts) < 3:
-            return {}
-        fm: Dict[str, str] = {}
-        for line in parts[1].splitlines():
-            if ":" in line:
-                k, _, v = line.partition(":")
-                fm[k.strip()] = v.strip().strip("\"'")
-        return fm
-    except Exception:
-        return {}
+from vault_lib import read_frontmatter
 
 
 def _load_graph() -> Optional[Dict[str, Any]]:
@@ -138,7 +124,13 @@ def vault_impact(
                 changed_notes.append(p)
 
     if not changed_notes:
-        return {"ok": True, "changed_notes": [], "impact_radius": 0, "impacted": [], "summary": "No changed notes provided"}
+        return {
+            "ok": True,
+            "changed_notes": [],
+            "impact_radius": 0,
+            "impacted": [],
+            "summary": "No changed notes provided",
+        }
 
     graph = _load_graph()
     if graph is None:
@@ -171,7 +163,7 @@ def vault_impact(
             continue
 
         note_path = VAULT_ROOT / node
-        fm = _read_frontmatter(note_path)
+        fm = read_frontmatter(note_path)
         integrity = fm.get("cia_integrity", "medium").lower()
         stale_risk = _compute_stale_risk(dist, integrity)
 
@@ -193,7 +185,9 @@ def vault_impact(
     impacted = list(visited.values())
     if min_risk:
         min_level = risk_order.get(min_risk.lower(), 1)
-        impacted = [n for n in impacted if risk_order.get(n["stale_risk"], 1) >= min_level]
+        impacted = [
+            n for n in impacted if risk_order.get(n["stale_risk"], 1) >= min_level
+        ]
 
     impacted.sort(key=lambda n: (-n["distance"], n["path"]))
 
@@ -240,10 +234,31 @@ Notas:
   - stale_risk = distance x CIA_weight (critical=4, high=3, medium=2, low=1)
 """,
     )
-    parser.add_argument("--changed", nargs="+", metavar="PATH", default=[], help="Vault-relative paths of changed notes")
-    parser.add_argument("--since", metavar="DATE", help="Include notes changed since this date (YYYY-MM-DD) from change log")
-    parser.add_argument("--max-hops", type=int, default=10, metavar="N", help="Maximum BFS depth (default: 10)")
-    parser.add_argument("--min-risk", choices=["critical", "high", "medium", "low"], metavar="LEVEL", help="Filter by minimum stale_risk level")
+    parser.add_argument(
+        "--changed",
+        nargs="+",
+        metavar="PATH",
+        default=[],
+        help="Vault-relative paths of changed notes",
+    )
+    parser.add_argument(
+        "--since",
+        metavar="DATE",
+        help="Include notes changed since this date (YYYY-MM-DD) from change log",
+    )
+    parser.add_argument(
+        "--max-hops",
+        type=int,
+        default=10,
+        metavar="N",
+        help="Maximum BFS depth (default: 10)",
+    )
+    parser.add_argument(
+        "--min-risk",
+        choices=["critical", "high", "medium", "low"],
+        metavar="LEVEL",
+        help="Filter by minimum stale_risk level",
+    )
 
     args = parser.parse_args()
 

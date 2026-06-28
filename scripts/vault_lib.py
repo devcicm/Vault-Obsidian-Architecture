@@ -21,6 +21,25 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 
 # ============================================================
+# SLUGIFY
+# ============================================================
+
+
+def slugify(text: str) -> str:
+    """Convert text to URL-safe slug (lowercase, hyphens, no special chars)."""
+    slug = text.lower()
+    slug = re.sub(r"[^\w\s-]", "", slug)
+    slug = re.sub(r"[\s_]+", "-", slug)
+    slug = re.sub(r"^-+|-+$", "", slug)
+    return slug
+
+
+def slugify_strict(text: str) -> str:
+    """Strict slug: no leading/trailing hyphens, no consecutive hyphens."""
+    return re.sub(r"-{2,}", "-", slugify(text)).strip("-")
+
+
+# ============================================================
 # CONSTANTES DE CONFIGURACIÓN
 # ============================================================
 
@@ -72,6 +91,93 @@ class Config:
 def utcnow() -> str:
     """Return current UTC time as ISO 8601 with Z suffix."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
+
+def utcnow_compact() -> str:
+    """Return UTC as compact string: YYYYMMDD-HHMMSS."""
+    return datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+
+
+def utcnow_filename() -> str:
+    """Return UTC as filename-safe string: YYYY-MM-DD-HHMMSS."""
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d-%H%M%S")
+
+
+def utcnow_date() -> str:
+    """Return UTC date only: YYYY-MM-DD."""
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+
+def utcnow_iso() -> str:
+    """Return UTC as full ISO 8601 with timezone."""
+    return datetime.now(timezone.utc).isoformat()[:19] + "Z"
+
+
+# ============================================================
+# FRONTMATTER UTILITIES
+# ============================================================
+
+
+def parse_frontmatter(content: str) -> Dict[str, Any]:
+    """Extract frontmatter YAML fields as a dict from markdown content.
+
+    Supports multiline values (indented continuation). Returns empty dict
+    if no valid frontmatter block is found.
+    """
+    import yaml  # optional dependency
+
+    match = re.match(r"^---\s*\n(.*?)\n---\s*\n?", content, re.DOTALL)
+    if not match:
+        return {}
+    try:
+        return yaml.safe_load(match.group(1)) or {}
+    except yaml.YAMLError:
+        return {}
+
+
+def parse_frontmatter_with_body(content: str) -> Tuple[Dict[str, Any], str]:
+    """Extract frontmatter dict and body string from markdown content.
+
+    Returns ({}, content) if no frontmatter block is found.
+    """
+    import yaml
+
+    match = re.match(r"^---\s*\n(.*?)\n---\s*\n?(.*)", content, re.DOTALL)
+    if not match:
+        return {}, content
+    try:
+        fm = yaml.safe_load(match.group(1)) or {}
+        return fm, match.group(2)
+    except yaml.YAMLError:
+        return {}, content
+
+
+def serialize_frontmatter(frontmatter: Dict[str, Any]) -> str:
+    """Serialize a dict to YAML frontmatter block (including --- delimiters).
+
+    Returns '' if the dict is empty.
+    """
+    if not frontmatter:
+        return ""
+    import yaml
+
+    lines = [
+        "---",
+        yaml.dump(frontmatter, default_flow_style=False, allow_unicode=True).strip(),
+        "---",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def read_frontmatter(path: Path) -> Dict[str, Any]:
+    """Read file at path and return its frontmatter as a dict."""
+    import yaml
+
+    try:
+        content = path.read_text(encoding="utf-8")
+    except OSError:
+        return {}
+    return parse_frontmatter(content)
 
 
 # ============================================================

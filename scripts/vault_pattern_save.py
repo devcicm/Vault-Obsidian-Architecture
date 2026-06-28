@@ -31,7 +31,7 @@ import re
 import sys
 
 from vault_errors import wrap_main
-from vault_lib import utcnow
+from vault_lib import utcnow, slugify
 from vault_io import (
     atomic_write_text,
     atomic_write_json,
@@ -69,18 +69,6 @@ VALID_TRANSITIONS = {
     "deprecado": ["implementado", "en_progreso"],
     "refactoring": ["implementado", "en_progreso", "deprecado"],
 }
-
-
-def slugify(text: str) -> str:
-    slug = text.lower()
-
-    slug = re.sub(r"[^\w\s-]", "", slug)
-
-    slug = re.sub(r"[\s_]+", "-", slug)
-
-    slug = re.sub(r"^-+|-+$", "", slug)
-
-    return slug
 
 
 def get_pattern_path(project: str, name: str, pattern_type: str) -> Path:

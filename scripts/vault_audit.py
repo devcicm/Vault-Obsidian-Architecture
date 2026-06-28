@@ -137,34 +137,11 @@ def _get_active_notes(
     return notes
 
 
-def _read_frontmatter(path: Path) -> Dict[str, str]:
-    try:
-        content = path.read_text(encoding="utf-8", errors="ignore")
-
-        if not content.startswith("---"):
-            return {}
-
-        parts = content.split("---", 2)
-
-        if len(parts) < 3:
-            return {}
-
-        fm: Dict[str, str] = {}
-
-        for line in parts[1].splitlines():
-            if ":" in line:
-                k, _, v = line.partition(":")
-
-                fm[k.strip()] = v.strip().strip("\"'")
-
-        return fm
-
-    except Exception:
-        return {}
+from vault_lib import read_frontmatter
 
 
 def _note_updated_at(path: Path) -> datetime:
-    fm = _read_frontmatter(path)
+    fm = read_frontmatter(path)
 
     for field in ("updatedAt", "updated_at", "createdAt"):
         val = fm.get(field, "")
@@ -270,7 +247,7 @@ def _build_indexes(notes: List[Path]) -> Tuple[Dict[str, Set[str]], Set[str]]:
 def _detect_orphans(
     notes: List[Path], backlinks: Dict[str, Set[str]]
 ) -> List[Dict[str, Any]]:
-    now = datetime.now()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
 
     orphans = []
 
@@ -301,7 +278,7 @@ def _detect_orphans(
         except Exception:
             pass
 
-        fm = _read_frontmatter(n)
+        fm = read_frontmatter(n)
 
         days_old = (now - _note_updated_at(n)).days
 
@@ -317,7 +294,7 @@ def _detect_orphans(
 
 
 def _detect_stale(notes: List[Path]) -> List[Dict[str, Any]]:
-    now = datetime.now()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
 
     stale = []
 
@@ -330,7 +307,7 @@ def _detect_stale(notes: List[Path]) -> List[Dict[str, Any]]:
         days = (now - _note_updated_at(n)).days
 
         if days > STALE_DAYS:
-            fm = _read_frontmatter(n)
+            fm = read_frontmatter(n)
 
             stale.append(
                 {
@@ -344,7 +321,7 @@ def _detect_stale(notes: List[Path]) -> List[Dict[str, Any]]:
 
 
 def _detect_stuck_patterns(notes: List[Path]) -> List[Dict[str, Any]]:
-    now = datetime.now()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
 
     stuck = []
 
@@ -354,7 +331,7 @@ def _detect_stuck_patterns(notes: List[Path]) -> List[Dict[str, Any]]:
         if "05_Patterns" not in rel:
             continue
 
-        fm = _read_frontmatter(n)
+        fm = read_frontmatter(n)
 
         status = fm.get("status", "").lower().replace("-", "_")
 
@@ -377,7 +354,7 @@ def _detect_stuck_patterns(notes: List[Path]) -> List[Dict[str, Any]]:
 
 
 def _detect_stale_projects(notes: List[Path]) -> List[Dict[str, Any]]:
-    now = datetime.now()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
 
     stale_projects = []
 
@@ -390,7 +367,7 @@ def _detect_stale_projects(notes: List[Path]) -> List[Dict[str, Any]]:
         days = (now - _note_updated_at(n)).days
 
         if days > STALE_PROJECT_DAYS:
-            fm = _read_frontmatter(n)
+            fm = read_frontmatter(n)
 
             stale_projects.append(
                 {
@@ -495,7 +472,7 @@ def _detect_canonical_shadow(notes: List[Path]) -> List[Dict[str, Any]]:
         except Exception:
             pass
 
-        fm = _read_frontmatter(n)
+        fm = read_frontmatter(n)
 
         title = fm.get("title", n.stem).lower()
 
@@ -1175,7 +1152,7 @@ def _cia_score_penalty(
     for n in notes:
         rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
 
-        fm = _read_frontmatter(n)
+        fm = read_frontmatter(n)
 
         integrity = fm.get("cia_integrity", "medium").lower()
 

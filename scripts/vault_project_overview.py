@@ -16,7 +16,7 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
-from vault_lib import utcnow
+from vault_lib import utcnow, slugify
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -24,14 +24,6 @@ from typing import Any, Dict, List, Optional
 from vault_io import VAULT_ROOT, atomic_write_text, safe_wikilink
 
 INDEX_FILE = VAULT_ROOT / "99_Index" / "search-index.json"
-
-
-def slugify(text: str) -> str:
-    slug = text.lower()
-    slug = re.sub(r"[^\w\s-]", "", slug)
-    slug = re.sub(r"[\s_]+", "-", slug)
-    slug = re.sub(r"^-+|-+$", "", slug)
-    return slug
 
 
 def parse_frontmatter(content: str) -> Dict[str, Any]:

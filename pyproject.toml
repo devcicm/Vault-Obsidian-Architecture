@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vault-obsidian-architecture"
+version = "36.0"
+description = "Spec-Driven Development vault toolkit — persistent documental memory for LLM agents"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { file = "LICENSE" }
+authors = [{ name = "CARLOS IVAN CM" }]
+keywords = [
+    "obsidian", "vault", "markdown", "knowledge-management",
+    "spec-driven-development", "documentation", "llm",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Documentation",
+    "Topic :: Text Processing :: Markup :: Markdown",
+]
+
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "pytest-cov>=4.0", "ruff>=0.3.0"]
+
+[project.urls]
+Homepage = "https://github.com/devcicm/Vault-Obsidian-Architecture"
+
+[tool.setuptools]
+packages = []
+
+[tool.setuptools.package-data]
+scripts = ["tool-spec.json", "vault-obsidian-architecture.md", "README.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.setuptools.exclude-package-data]
+"*" = ["*.bak-*", "scripts.bak-*", ".history/*", "vault-backups/*"]

@@ -16,7 +16,7 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
-from vault_lib import utcnow
+from vault_lib import parse_frontmatter, utcnow
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -246,21 +246,6 @@ def _ensure_hub_notes() -> None:
         COMMANDS_NOTE.write_text(commands_content, encoding="utf-8")
 
 
-def _parse_frontmatter(content: str) -> Dict[str, Any]:
-    meta: Dict[str, Any] = {}
-    m = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
-    if not m:
-        return meta
-    for line in m.group(1).split("\n"):
-        if ":" not in line:
-            continue
-        key, _, val = line.partition(":")
-        key = key.strip()
-        val = val.strip().strip("\"'")
-        meta[key] = val
-    return meta
-
-
 def _collect_notes(section_path: Path, include_subdirs: bool) -> List[Dict[str, Any]]:
     """Scan folder and return metadata list for all real notes (excludes index.md)."""
     candidates = (
@@ -278,7 +263,7 @@ def _collect_notes(section_path: Path, include_subdirs: bool) -> List[Dict[str, 
             content = note_path.read_text(encoding="utf-8")
         except (UnicodeDecodeError, PermissionError):
             continue
-        meta = _parse_frontmatter(content)
+        meta = parse_frontmatter(content)
         rel = str(note_path.relative_to(section_path)).replace("\\", "/")
         notes.append(
             {

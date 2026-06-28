@@ -18,7 +18,7 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
-from vault_lib import utcnow
+from vault_lib import utcnow, slugify
 import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -64,14 +64,6 @@ QUALITY_ATTRIBUTES = [
     "maintainability",
     "portability",
 ]
-
-
-def slugify(text: str) -> str:
-    slug = text.lower()
-    slug = re.sub(r"[^\w\s-]", "", slug)
-    slug = re.sub(r"[\s_]+", "-", slug)
-    slug = re.sub(r"^-+|-+$", "", slug)
-    return slug
 
 
 def file_slug(file_path: str) -> str:

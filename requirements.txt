@@ -1,0 +1,6 @@
+# Vault Obsidian Architecture — Runtime dependencies
+# v36: zero external dependencies — pure stdlib (Python 3.9+)
+#
+# For full metadata see pyproject.toml.
+
+# (no runtime deps)

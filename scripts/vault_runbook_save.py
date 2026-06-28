@@ -29,7 +29,7 @@ import re
 import sys
 
 from vault_errors import wrap_main
-from vault_lib import utcnow
+from vault_lib import utcnow, slugify
 from vault_io import atomic_write_text, assert_within_vault, VAULT_ROOT, safe_wikilink
 import uuid
 
@@ -50,18 +50,6 @@ CATEGORIES = [
     "pipeline",
     "incident",
 ]
-
-
-def slugify(text: str) -> str:
-    slug = text.lower()
-
-    slug = re.sub(r"[^\w\s-]", "", slug)
-
-    slug = re.sub(r"[\s_]+", "-", slug)
-
-    slug = re.sub(r"^-+|-+$", "", slug)
-
-    return slug
 
 
 def vault_runbook_save(

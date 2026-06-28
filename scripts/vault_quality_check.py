@@ -294,7 +294,7 @@ def _score_timeliness(fm: Dict[str, str], path: Path) -> Tuple[float, List[str]]
         except Exception:
             return 0.5, ["timeliness: could not determine last updated date"]
 
-    days = (datetime.now() - dt).days
+    days = (datetime.now(timezone.utc).replace(tzinfo=None) - dt).days
     if days <= threshold:
         return 1.0, []
 

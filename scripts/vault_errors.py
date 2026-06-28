@@ -23,7 +23,7 @@ import sys
 import threading
 import traceback
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from vault_io import atomic_write_text, file_lock, VAULT_ROOT
@@ -40,7 +40,6 @@ TOKENS_MAX_ENTRIES = 2000
 # Catálogo de errores — error_code → metadata + recovery hints
 # ──────────────────────────────────────────────────────────────────────────────
 ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
-
     # ── Infrastructure ────────────────────────────────────────────────────────
     "VAULT_NOT_FOUND": {
         "category": "infrastructure",
@@ -49,8 +48,8 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "recovery": {
             "action": "fix_input",
             "hint": "Verificar que el vault tenga carpeta 99_Index/ para que _detect_vault_root() lo detecte, o definir la env var VAULT_ROOT con la ruta absoluta al vault.",
-            "docs": "vault-obsidian-architecture.md §Estructura de carpetas"
-        }
+            "docs": "vault-obsidian-architecture.md §Estructura de carpetas",
+        },
     },
     "FOLDER_NOT_FOUND": {
         "category": "infrastructure",
@@ -61,8 +60,8 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "tool": "vault_standard_upgrade",
             "args": ["--check"],
             "hint": "Ejecutar vault_standard_upgrade --check para detectar carpetas faltantes y aplicar migraciones.",
-            "docs": "vault-obsidian-architecture.md §Versionado del estándar"
-        }
+            "docs": "vault-obsidian-architecture.md §Versionado del estándar",
+        },
     },
     "FILE_NOT_FOUND": {
         "category": "infrastructure",
@@ -73,8 +72,8 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "tool": "vault_search",
             "args": ["--query", "<title>"],
             "hint": "Usar vault_search para localizar la nota por título o contenido.",
-            "docs": "vault-obsidian-architecture.md §Grupo 1 — Búsqueda"
-        }
+            "docs": "vault-obsidian-architecture.md §Grupo 1 — Búsqueda",
+        },
     },
     "FILE_WRITE_ERROR": {
         "category": "infrastructure",
@@ -83,8 +82,8 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "recovery": {
             "action": "manual",
             "hint": "Verificar permisos del directorio destino y que no haya otro proceso bloqueando el archivo.",
-            "docs": None
-        }
+            "docs": None,
+        },
     },
     "FILE_READ_ERROR": {
         "category": "infrastructure",
@@ -93,8 +92,8 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "recovery": {
             "action": "fix_input",
             "hint": "El archivo puede tener encoding no UTF-8. Abrirlo en Obsidian y guardarlo de nuevo.",
-            "docs": None
-        }
+            "docs": None,
+        },
     },
     "INDEX_NOT_FOUND": {
         "category": "infrastructure",
@@ -105,8 +104,8 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "tool": "vault_reindex",
             "args": [],
             "hint": "Ejecutar vault_reindex para regenerar todos los índices (graph.json, search-index.json).",
-            "docs": "vault-obsidian-architecture.md §Grupo 10 — Indexación"
-        }
+            "docs": "vault-obsidian-architecture.md §Grupo 10 — Indexación",
+        },
     },
     "HISTORY_NOT_FOUND": {
         "category": "infrastructure",
@@ -115,8 +114,8 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "recovery": {
             "action": "manual",
             "hint": "El plugin Obsidian File Recovery / Vault History debe estar habilitado para generar .history/.",
-            "docs": None
-        }
+            "docs": None,
+        },
     },
     "BACKUP_ERROR": {
         "category": "infrastructure",
@@ -125,10 +124,9 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "recovery": {
             "action": "manual",
             "hint": "Verificar espacio en disco y permisos del directorio destino.",
-            "docs": None
-        }
+            "docs": None,
+        },
     },
-
     # ── Validation ────────────────────────────────────────────────────────────
     "MISSING_REQUIRED_ARG": {
         "category": "validation",
@@ -137,8 +135,8 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "recovery": {
             "action": "fix_input",
             "hint": "Ejecutar el script con --help para ver los argumentos requeridos.",
-            "docs": None
-        }
+            "docs": None,
+        },
     },
     "INVALID_PATH": {
         "category": "validation",
@@ -147,8 +145,8 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "recovery": {
             "action": "fix_input",
             "hint": "Las rutas deben ser relativas al vault root. Ejemplo: 01_Projects/mi-api/overview.md",
-            "docs": "vault-obsidian-architecture.md §Estructura de carpetas"
-        }
+            "docs": "vault-obsidian-architecture.md §Estructura de carpetas",
+        },
     },
     "INVALID_FOLDER": {
         "category": "validation",
@@ -159,8 +157,8 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "tool": "vault_audit",
             "args": [],
             "hint": "Usar una carpeta de la estructura estándar (01_Projects, 03_Decisions, 05_Patterns, etc.).",
-            "docs": "vault-obsidian-architecture.md §Estructura de carpetas"
-        }
+            "docs": "vault-obsidian-architecture.md §Estructura de carpetas",
+        },
     },
     "INVALID_ACTION": {
         "category": "validation",
@@ -169,8 +167,8 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "recovery": {
             "action": "fix_input",
             "hint": "Ejecutar el script con --help para ver las acciones disponibles.",
-            "docs": None
-        }
+            "docs": None,
+        },
     },
     "FRONTMATTER_MISSING": {
         "category": "validation",
@@ -181,8 +179,8 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "tool": "vault_write",
             "args": ["--path", "<path>", "--title", "<title>"],
             "hint": "Usar vault_write para reescribir la nota con frontmatter completo.",
-            "docs": "vault-obsidian-architecture.md §Frontmatter obligatorio"
-        }
+            "docs": "vault-obsidian-architecture.md §Frontmatter obligatorio",
+        },
     },
     "FRONTMATTER_PARSE_ERROR": {
         "category": "validation",
@@ -191,10 +189,9 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "recovery": {
             "action": "manual",
             "hint": "Abrir la nota en Obsidian y corregir el bloque --- manualmente.",
-            "docs": "vault-obsidian-architecture.md §Frontmatter obligatorio"
-        }
+            "docs": "vault-obsidian-architecture.md §Frontmatter obligatorio",
+        },
     },
-
     # ── Governance (antipatrones del estándar) ────────────────────────────────
     "AP20_EMPTY_LIST": {
         "category": "governance",
@@ -203,8 +200,8 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "recovery": {
             "action": "fix_input",
             "hint": "Completar o eliminar los bullets vacíos antes de guardar. Una nota con contenido mínimo es mejor que una con esqueleto vacío.",
-            "docs": "vault-obsidian-architecture.md §AP-20"
-        }
+            "docs": "vault-obsidian-architecture.md §AP-20",
+        },
     },
     "AP21_PATH_WIKILINKS": {
         "category": "governance",
@@ -213,8 +210,8 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "recovery": {
             "action": "fix_input",
             "hint": "Reemplazar [[carpeta/nota]] por [[nota]] en todos los links del contenido.",
-            "docs": "vault-obsidian-architecture.md §AP-21"
-        }
+            "docs": "vault-obsidian-architecture.md §AP-21",
+        },
     },
     "WIKILINK_SYNTAX_ERROR": {
         "category": "governance",
@@ -223,8 +220,8 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "recovery": {
             "action": "fix_input",
             "hint": "Usar exactamente [[nombre-nota]] o [[nombre-nota|alias]]. No usar [[[...]]], [[...]]], [[]], [[carpeta/nota]], ni links sin cierre.",
-            "docs": "vault-obsidian-architecture.md AP-21"
-        }
+            "docs": "vault-obsidian-architecture.md AP-21",
+        },
     },
     "AP17_DUPLICATE_TITLE": {
         "category": "governance",
@@ -235,8 +232,8 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "tool": "vault_audit",
             "args": [],
             "hint": "Ejecutar vault_audit para identificar pares duplicados y decidir cuál es la nota canónica.",
-            "docs": "vault-obsidian-architecture.md §AP-17, PAT-3"
-        }
+            "docs": "vault-obsidian-architecture.md §AP-17, PAT-3",
+        },
     },
     "AP18_HASH_DUPLICATE": {
         "category": "governance",
@@ -247,8 +244,8 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "tool": "vault_audit",
             "args": [],
             "hint": "Ejecutar vault_audit --hash para identificar duplicados exactos cross-folder.",
-            "docs": "vault-obsidian-architecture.md §AP-18, PAT-3"
-        }
+            "docs": "vault-obsidian-architecture.md §AP-18, PAT-3",
+        },
     },
     "AP19_SHADOW_INDEX": {
         "category": "governance",
@@ -259,8 +256,8 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "tool": "vault_section_index",
             "args": ["--folder", "<folder>"],
             "hint": "Usar vault_section_index para actualizar el índice existente en lugar de crear uno nuevo.",
-            "docs": "vault-obsidian-architecture.md §AP-19"
-        }
+            "docs": "vault-obsidian-architecture.md §AP-19",
+        },
     },
     "CONTENT_TOO_SHORT": {
         "category": "governance",
@@ -269,10 +266,9 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "recovery": {
             "action": "fix_input",
             "hint": "Agregar al menos 3 líneas de contenido sustantivo. Un stub mínimo tiene: título, descripción de 1 línea, 1 referencia.",
-            "docs": "vault-obsidian-architecture.md §PAT-2"
-        }
+            "docs": "vault-obsidian-architecture.md §PAT-2",
+        },
     },
-
     # ── IO ────────────────────────────────────────────────────────────────────
     "ENCODING_ERROR": {
         "category": "io",
@@ -281,8 +277,8 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "recovery": {
             "action": "manual",
             "hint": "El archivo tiene encoding no UTF-8. Abrirlo en un editor que soporte recodificación y guardarlo como UTF-8.",
-            "docs": None
-        }
+            "docs": None,
+        },
     },
     "JSON_PARSE_ERROR": {
         "category": "io",
@@ -293,8 +289,8 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "tool": "vault_reindex",
             "args": [],
             "hint": "Ejecutar vault_reindex para regenerar los índices desde cero.",
-            "docs": None
-        }
+            "docs": None,
+        },
     },
     "JSON_WRITE_ERROR": {
         "category": "io",
@@ -303,10 +299,9 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "recovery": {
             "action": "manual",
             "hint": "Revisar el contenido de la nota: puede contener caracteres de control no serializables.",
-            "docs": None
-        }
+            "docs": None,
+        },
     },
-
     # ── Dependency ────────────────────────────────────────────────────────────
     "DEPENDENCY_MISSING": {
         "category": "dependency",
@@ -315,8 +310,8 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "recovery": {
             "action": "manual",
             "hint": "Instalar la dependencia con pip. Ejemplo: pip install nltk",
-            "docs": None
-        }
+            "docs": None,
+        },
     },
     "PYTHON_VERSION": {
         "category": "dependency",
@@ -325,10 +320,9 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "recovery": {
             "action": "manual",
             "hint": "Usar Python 3.9 o superior.",
-            "docs": None
-        }
+            "docs": None,
+        },
     },
-
     # ── Not found ─────────────────────────────────────────────────────────────
     "NOTE_NOT_FOUND": {
         "category": "not_found",
@@ -339,8 +333,8 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "tool": "vault_search",
             "args": ["--query", "<title>"],
             "hint": "Usar vault_search para localizar la nota por título, tags o contenido.",
-            "docs": None
-        }
+            "docs": None,
+        },
     },
     "PROJECT_NOT_FOUND": {
         "category": "not_found",
@@ -351,8 +345,8 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "tool": "vault_project_overview",
             "args": ["--project", "<project>"],
             "hint": "Usar vault_project_overview --project <slug> para crear la estructura inicial del proyecto.",
-            "docs": "vault-obsidian-architecture.md §Grupo 2 — Proyectos"
-        }
+            "docs": "vault-obsidian-architecture.md §Grupo 2 — Proyectos",
+        },
     },
     "VERSION_NOT_FOUND": {
         "category": "not_found",
@@ -363,10 +357,9 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "tool": "vault_standard_upgrade",
             "args": ["--check"],
             "hint": "Ejecutar vault_standard_upgrade --check para ver versiones disponibles.",
-            "docs": "vault-obsidian-architecture.md §Versionado del estándar"
-        }
+            "docs": "vault-obsidian-architecture.md §Versionado del estándar",
+        },
     },
-
     # ── Lifecycle ─────────────────────────────────────────────────────────────
     "TOOL_TIMEOUT": {
         "category": "infrastructure",
@@ -375,10 +368,9 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "recovery": {
             "action": "retry",
             "hint": "Reducir el alcance de la operación (usar --folder, --limit, --project) o aumentar VAULT_TOOL_TIMEOUT env var.",
-            "docs": None
-        }
+            "docs": None,
+        },
     },
-
     # ── Catch-all ─────────────────────────────────────────────────────────────
     "UNEXPECTED_ERROR": {
         "category": "infrastructure",
@@ -387,8 +379,8 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "recovery": {
             "action": "manual",
             "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
-            "docs": None
-        }
+            "docs": None,
+        },
     },
 }
 
@@ -396,6 +388,7 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
 # ──────────────────────────────────────────────────────────────────────────────
 # Core functions
 # ──────────────────────────────────────────────────────────────────────────────
+
 
 def emit_error(
     tool: str,
@@ -420,7 +413,7 @@ def emit_error(
         "severity": catalog_entry["severity"],
         "message": message or catalog_entry["message"],
         "recovery": catalog_entry["recovery"],
-        "timestamp": datetime.now().isoformat()[:19] + "Z",
+        "timestamp": datetime.now(timezone.utc).isoformat()[:19] + "Z",
     }
 
     if args:
@@ -441,7 +434,7 @@ def emit_ok(tool: str, data: Dict[str, Any]) -> Dict[str, Any]:
     result = {
         "ok": True,
         "tool": tool,
-        "timestamp": datetime.now().isoformat()[:19] + "Z",
+        "timestamp": datetime.now(timezone.utc).isoformat()[:19] + "Z",
         **data,
     }
     log_trace(result)
@@ -457,7 +450,7 @@ def _inject_tool_envelope(text: str, tool_name: str) -> str:
         data = json.loads(text)
         if isinstance(data, dict) and data.get("ok") is True and "tool" not in data:
             data["tool"] = tool_name
-            data["timestamp"] = datetime.now().isoformat()[:19] + "Z"
+            data["timestamp"] = datetime.now(timezone.utc).isoformat()[:19] + "Z"
             log_trace(data)
         return json.dumps(data, ensure_ascii=False)
     except Exception:
@@ -531,6 +524,7 @@ def _count_tokens(text: str) -> Tuple[int, str]:
     # 1. Anthropic tokenizer (local, no API call)
     try:
         import anthropic  # type: ignore
+
         client = anthropic.Anthropic(api_key="dummy")  # key not needed for count_tokens
         count = client.count_tokens(text)
         return count, "anthropic"
@@ -540,6 +534,7 @@ def _count_tokens(text: str) -> Tuple[int, str]:
     # 2. tiktoken (OpenAI tokenizer — close approximation for Claude)
     try:
         import tiktoken  # type: ignore
+
         enc = tiktoken.get_encoding("cl100k_base")
         return len(enc.encode(text)), "tiktoken"
     except Exception:
@@ -547,8 +542,12 @@ def _count_tokens(text: str) -> Tuple[int, str]:
 
     # 3. Heuristic fallback: regex-based word/symbol split (~4 chars per word-piece)
     import re as _re
+
     pieces = _re.findall(r"[A-Za-z0-9_]+|[^\sA-Za-z0-9_]", text)
-    total = sum(max(1, (len(p) + 3) // 4) if _re.match(r"^[A-Za-z0-9_]+$", p) else 1 for p in pieces)
+    total = sum(
+        max(1, (len(p) + 3) // 4) if _re.match(r"^[A-Za-z0-9_]+$", p) else 1
+        for p in pieces
+    )
     return max(1, total), "heuristic"
 
 
@@ -563,7 +562,7 @@ def log_token_usage(tool: str, input_text: str, output_text: str) -> None:
 
         entry = {
             "tool": tool,
-            "timestamp": datetime.now().isoformat()[:19] + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat()[:19] + "Z",
             "input_tokens": in_tokens,
             "output_tokens": out_tokens,
             "total_tokens": in_tokens + out_tokens,
@@ -573,7 +572,9 @@ def log_token_usage(tool: str, input_text: str, output_text: str) -> None:
         TOKENS_FILE.parent.mkdir(parents=True, exist_ok=True)
         if TOKENS_FILE.exists():
             try:
-                entries: List[Dict] = json.loads(TOKENS_FILE.read_text(encoding="utf-8"))
+                entries: List[Dict] = json.loads(
+                    TOKENS_FILE.read_text(encoding="utf-8")
+                )
                 if not isinstance(entries, list):
                     entries = []
             except Exception:
@@ -585,7 +586,9 @@ def log_token_usage(tool: str, input_text: str, output_text: str) -> None:
         if len(entries) > TOKENS_MAX_ENTRIES:
             entries = entries[-TOKENS_MAX_ENTRIES:]
 
-        TOKENS_FILE.write_text(json.dumps(entries, indent=2, ensure_ascii=False), encoding="utf-8")
+        TOKENS_FILE.write_text(
+            json.dumps(entries, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
     except Exception:
         pass  # Token logging must never crash a tool
 
@@ -715,6 +718,7 @@ def query_trace(
 # CLI standalone — para consultar el trace desde el terminal
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 def _main():
     import argparse
 
@@ -732,27 +736,63 @@ Ejemplos:
     )
     parser.add_argument("command", choices=["query", "catalog"], help="Comando")
     parser.add_argument("--tool", "-t", help="Filtrar por tool")
-    parser.add_argument("--severity", "-s", choices=["critical", "error", "warning"], help="Filtrar por severity")
+    parser.add_argument(
+        "--severity",
+        "-s",
+        choices=["critical", "error", "warning"],
+        help="Filtrar por severity",
+    )
     parser.add_argument("--category", "-c", help="Filtrar por categoría")
     parser.add_argument("--last", "-l", type=int, default=20, help="Últimas N entradas")
-    parser.add_argument("--code", "-k", help="Código de error específico (para catalog)")
+    parser.add_argument(
+        "--code", "-k", help="Código de error específico (para catalog)"
+    )
 
     args = parser.parse_args()
 
     if args.command == "query":
-        results = query_trace(tool=args.tool, severity=args.severity, category=args.category, last=args.last)
-        print(json.dumps({"ok": True, "count": len(results), "entries": results}, indent=2, ensure_ascii=False))
+        results = query_trace(
+            tool=args.tool,
+            severity=args.severity,
+            category=args.category,
+            last=args.last,
+        )
+        print(
+            json.dumps(
+                {"ok": True, "count": len(results), "entries": results},
+                indent=2,
+                ensure_ascii=False,
+            )
+        )
 
     elif args.command == "catalog":
         if args.code:
             entry = ERROR_CATALOG.get(args.code)
             if entry:
-                print(json.dumps({"ok": True, "code": args.code, **entry}, indent=2, ensure_ascii=False))
+                print(
+                    json.dumps(
+                        {"ok": True, "code": args.code, **entry},
+                        indent=2,
+                        ensure_ascii=False,
+                    )
+                )
             else:
-                print(json.dumps({"ok": False, "error": f"Código '{args.code}' no encontrado"}))
+                print(
+                    json.dumps(
+                        {"ok": False, "error": f"Código '{args.code}' no encontrado"}
+                    )
+                )
         else:
-            catalog = {code: {**data, "code": code} for code, data in ERROR_CATALOG.items()}
-            print(json.dumps({"ok": True, "count": len(catalog), "catalog": catalog}, indent=2, ensure_ascii=False))
+            catalog = {
+                code: {**data, "code": code} for code, data in ERROR_CATALOG.items()
+            }
+            print(
+                json.dumps(
+                    {"ok": True, "count": len(catalog), "catalog": catalog},
+                    indent=2,
+                    ensure_ascii=False,
+                )
+            )
 
 
 if __name__ == "__main__":

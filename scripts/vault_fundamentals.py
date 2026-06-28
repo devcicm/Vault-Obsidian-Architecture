@@ -30,7 +30,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
-from vault_lib import utcnow
+from vault_lib import read_frontmatter, utcnow
 from vault_io import atomic_write_json, atomic_write_text, VAULT_ROOT
 
 SCRIPTS_DIR = Path(__file__).parent
@@ -281,24 +281,6 @@ FUNDAMENTALS: List[Dict[str, Any]] = [
 ]
 
 
-def _read_frontmatter(path: Path) -> Dict[str, str]:
-    try:
-        content = path.read_text(encoding="utf-8", errors="ignore")
-        if not content.startswith("---"):
-            return {}
-        parts = content.split("---", 2)
-        if len(parts) < 3:
-            return {}
-        fm: Dict[str, str] = {}
-        for line in parts[1].splitlines():
-            if ":" in line:
-                k, _, v = line.partition(":")
-                fm[k.strip()] = v.strip().strip("\"'")
-        return fm
-    except Exception:
-        return {}
-
-
 def _has_change_log_entry(rel_path: str) -> bool:
     if not CHANGE_LOG_JSON.exists():
         return False
@@ -323,7 +305,7 @@ def check_note(rel_path: str) -> Dict[str, Any]:
     if not note_path.exists():
         return {"ok": False, "error": f"Note not found: {rel_path}"}
 
-    fm = _read_frontmatter(note_path)
+    fm = read_frontmatter(note_path)
     content = note_path.read_text(encoding="utf-8", errors="ignore")
     body = (
         content.split("---", 2)[2]
@@ -435,7 +417,7 @@ def check_note(rel_path: str) -> Dict[str, Any]:
         if updated:
             try:
                 dt = datetime.fromisoformat(updated[:19])
-                days = (datetime.now() - dt).days
+                days = (datetime.now(timezone.utc).replace(tzinfo=None) - dt).days
                 threshold = (
                     15
                     if fm.get("cia_integrity", "medium").lower() in ("critical", "high")
