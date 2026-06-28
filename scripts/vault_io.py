@@ -196,10 +196,22 @@ def atomic_write_text(
             except Exception:
                 pass  # Don't fail writing if logging fails
 
-    # Short temp name avoids Windows MAX_PATH (260 chars) on deep vault paths
+    # Short temp name avoids Windows MAX_PATH (260 chars) on deep vault paths.
+    # v36: wrap write+replace in try/except so the temp file is cleaned up
+    # if write_text fails (disk full, permissions, encoding). Without this,
+    # repeated failures leave .tmp.<pid>.<hex> orphans accumulating in
+    # path.parent, which is a slow disk-fill risk.
     temp = path.parent / f".tmp.{os.getpid()}.{uuid.uuid4().hex[:8]}"
-    temp.write_text(text, encoding=encoding)
-    os.replace(temp, path)
+    try:
+        temp.write_text(text, encoding=encoding)
+        os.replace(temp, path)
+    except Exception:
+        try:
+            temp.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise
+
     _auto_section_index(path)
 
 
