@@ -176,7 +176,37 @@ def atomic_write_text(
         text: Content to write
         encoding: Text encoding (default: utf-8)
         sanitize: If True, applies encoding sanitization (default: True)
+
+    v36: Pre-write secret scan (I1/I5 fix). If text contains critical
+    secrets (AWS keys, GitHub tokens, bearer tokens, private keys), the
+    write is aborted with a descriptive error. Set env var
+    VAULT_SKIP_SECRET_SCAN=1 to bypass (not recommended).
     """
+    import os
+
+    if text and not os.environ.get("VAULT_SKIP_SECRET_SCAN"):
+        try:
+            from vault_secret_scan import vault_write_hook, has_blocking_findings
+
+            ok, findings = vault_write_hook(text)
+            if not ok:
+                critical = [f for f in findings if f["severity"] == "critical"]
+                details = "\n".join(
+                    f"  [{f['pattern_id']}] line {f['line_hint']}: {f['match_redacted']}"
+                    for f in critical[:5]
+                )
+                raise PermissionError(
+                    f"atomic_write_text blocked: {len(critical)} critical secret(s) "
+                    f"detected in content. Bypass with VAULT_SKIP_SECRET_SCAN=1.\n"
+                    f"{details}"
+                )
+        except ImportError:
+            pass  # vault_secret_scan not available — skip
+        except PermissionError:
+            raise
+        except Exception:
+            pass  # never block writes on scanner errors
+
     path.parent.mkdir(parents=True, exist_ok=True)
 
     # Apply encoding sanitization if enabled
