@@ -307,7 +307,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     "vault_audit": {
         "name": "vault_audit",
         "script": "vault_audit.py",
-        "group": "Salud del Vault",
+        "group": "Salud",
         "purpose": "Evalúa health score del vault y genera nextActions.",
         "params": {
             "project": {
@@ -331,7 +331,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     "vault_validate": {
         "name": "vault_validate",
         "script": "vault_validate.py",
-        "group": "Salud del Vault",
+        "group": "Salud",
         "purpose": "Valida notas contra el schema y normas del vault.",
         "params": {
             "path": {
@@ -454,7 +454,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     "vault_graph": {
         "name": "vault_graph",
         "script": "vault_graph.py",
-        "group": "Salud del Vault",
+        "group": "Salud",
         "purpose": "Genera grafo de relaciones entre notas.",
         "params": {
             "project": {
@@ -999,7 +999,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     "vault_code_tag": {
         "name": "vault_code_tag",
         "script": "vault_code_tag.py",
-        "group": "Código",
+        "group": "Normas y Etiquetas",
         "purpose": "Etiqueta módulos de código por funcionalidad.",
         "params": {
             "project": {
@@ -1317,7 +1317,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     "vault_env_matrix": {
         "name": "vault_env_matrix",
         "script": "vault_env_matrix.py",
-        "group": "Infraestructura",
+        "group": "Release y Entornos",
         "purpose": "Genera matriz comparativa de entornos.",
         "params": {
             "project": {
@@ -1431,7 +1431,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     "vault_drift_detect": {
         "name": "vault_drift_detect",
         "script": "vault_drift_detect.py",
-        "group": "Drift Detection",
+        "group": "Drift",
         "purpose": "Detecta drift de configuración entre ambientes.",
         "params": {
             "project": {
@@ -1544,7 +1544,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     "vault_project_status": {
         "name": "vault_project_status",
         "script": "vault_project_status.py",
-        "group": "Vista del Proyecto",
+        "group": "Vista proyecto",
         "purpose": "Muestra estado actual de un proyecto.",
         "params": {
             "project": {
@@ -1562,7 +1562,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     "vault_project_overview": {
         "name": "vault_project_overview",
         "script": "vault_project_overview.py",
-        "group": "Vista del Proyecto",
+        "group": "Vista proyecto",
         "purpose": "Genera overview consolidado de proyecto.",
         "params": {
             "project": {
@@ -1724,7 +1724,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     "vault_norms": {
         "name": "vault_norms",
         "script": "vault_norms.py",
-        "group": "Normas",
+        "group": "Normas y Etiquetas",
         "purpose": "Gestiona normas y estándares del vault.",
         "params": {
             "action": {
@@ -1982,7 +1982,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     "vault_incident_save": {
         "name": "vault_incident_save",
         "script": "vault_incident_save.py",
-        "group": "Producción/SRE",
+        "group": "Producción y SRE",
         "purpose": "Registra incidente de producción.",
         "params": {
             "title": {
@@ -2024,7 +2024,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     "vault_slo_save": {
         "name": "vault_slo_save",
         "script": "vault_slo_save.py",
-        "group": "Producción/SRE",
+        "group": "Producción y SRE",
         "purpose": "Guarda SLO (Service Level Objective).",
         "params": {
             "project": {
@@ -2060,7 +2060,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     "vault_release_save": {
         "name": "vault_release_save",
         "script": "vault_release_save.py",
-        "group": "Release",
+        "group": "Release y Entornos",
         "purpose": "Guarda información de release.",
         "params": {
             "project": {
@@ -2096,7 +2096,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     "vault_risk_save": {
         "name": "vault_risk_save",
         "script": "vault_risk_save.py",
-        "group": "Riesgos/Calidad",
+        "group": "Riesgos y Calidad",
         "purpose": "Registra riesgo del proyecto.",
         "params": {
             "project": {
@@ -2144,7 +2144,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     "vault_privacy_save": {
         "name": "vault_privacy_save",
         "script": "vault_privacy_save.py",
-        "group": "Riesgos/Calidad",
+        "group": "Riesgos y Calidad",
         "purpose": "Gestiona privacidad de datos.",
         "params": {
             "project": {
@@ -2186,7 +2186,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     "vault_ncr_save": {
         "name": "vault_ncr_save",
         "script": "vault_ncr_save.py",
-        "group": "Riesgos/Calidad",
+        "group": "Riesgos y Calidad",
         "purpose": "Registra No Conformidad (NCR).",
         "params": {
             "project": {
