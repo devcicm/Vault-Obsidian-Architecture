@@ -551,6 +551,13 @@ def _classify_broken(
     else:
         category = "no_match"
 
+    active_first = [c for c in candidates if not c["path"].startswith("10_Migrated/")]
+    if active_first and category == "points_to_migrated":
+        best = active_first[0]
+        category = (
+            "exact_candidate" if best["score"] >= threshold_exact else "partial_match"
+        )
+
     return {
         "category": category,
         "candidates": candidates[:5],
