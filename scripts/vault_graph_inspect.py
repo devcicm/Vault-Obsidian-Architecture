@@ -155,10 +155,22 @@ def _build_graph(notes: dict[str, dict[str, Any]]) -> dict[str, set[str]]:
 
 
 def _stems_set(notes: dict[str, dict[str, Any]]) -> dict[str, str]:
-    """Build {normalized_stem: relative_path} for quick existence lookup."""
-    return {
-        normalize_stem(info["title"] or Path(p).stem): p for p, info in notes.items()
-    }
+    """Build {normalized_stem: relative_path} for quick existence lookup.
+
+    Includes BOTH title-derived and filename-derived stems so links like
+    [[00-14_requirements-primer]] resolve to the file (whose title is
+    '14_Requirements — Guía rápida' which would otherwise normalize to a
+    different stem).
+    """
+    stems: dict[str, str] = {}
+    for p, info in notes.items():
+        fname_stem = Path(p).stem
+        title = info.get("title", "") or fname_stem
+        candidates = [normalize_stem(title), normalize_stem(fname_stem)]
+        for s in candidates:
+            if s and s not in stems:
+                stems[s] = p
+    return stems
 
 
 def _compute_metrics(
@@ -311,7 +323,34 @@ def generate_report(
 ) -> dict[str, Any]:
     notes = _load_notes(root, include_migrated=include_migrated)
     graph = _build_graph(notes)
-    stems = _stems_set(notes)
+    notes_for_stems = _load_notes(root, include_migrated=True)
+    for md in sorted(root.rglob("*.md")):
+        try:
+            rel = md.relative_to(root)
+        except ValueError:
+            continue
+        rel_str = str(rel).replace("\\", "/")
+        if rel_str in notes_for_stems:
+            continue
+        if not rel_str.startswith("00_System/"):
+            continue
+        if rel.name.startswith("."):
+            continue
+        try:
+            text = md.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        from hashlib import sha256
+
+        body = _strip_frontmatter(text)
+        body_hash = sha256(_normalize_for_hash(body).encode("utf-8")).hexdigest()
+        notes_for_stems[rel_str] = {
+            "body": body,
+            "title": _extract_title(text) or rel.stem,
+            "tags": _extract_tags(text),
+            "body_hash": body_hash,
+        }
+    stems = _stems_set(notes_for_stems)
     metrics = _compute_metrics(notes, graph, stems)
     exact_dups = _detect_exact_duplicates(notes)
     near_dups = _detect_near_duplicates(notes, threshold, exclude_templates)

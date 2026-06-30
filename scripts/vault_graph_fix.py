@@ -541,6 +541,12 @@ def _classify_broken(
     candidates.sort(key=lambda c: -c["score"])
     best = candidates[0]
 
+    for c in candidates:
+        if "\u2014" in c["stem"] or "\u2013" in c["stem"]:
+            raw_stem = Path(c["path"]).stem
+            if raw_stem and not ("\u2014" in raw_stem or "\u2013" in raw_stem):
+                c["stem"] = raw_stem
+
     if best["score"] >= threshold_exact:
         if best["strategy"] == "exact_migrated":
             category = "points_to_migrated"
