@@ -14,6 +14,15 @@ from vault_graph_fix import (
     _replace_wikilink,
     _fix_brackets_in_content,
     _fix_path_anchored,
+    _strip_redundant_prefix,
+    _classify_broken,
+    _seq_ratio,
+    _jaccard_tokens,
+    classify_all_broken,
+    wizard_pick,
+    _create_stub,
+    _stub_already_exists,
+    apply_classified_fixes,
     fix_vault,
 )
 
@@ -138,3 +147,217 @@ class TestFixVaultEndToEnd:
         )
         report = fix_vault(vault, only="brackets")
         assert report["summary"]["notes_to_modify"] >= 1
+
+
+class TestPrefixStripping:
+    def test_ans_prefix_stripped(self):
+        assert _strip_redundant_prefix("ans-jwt-token") == "jwt-token"
+
+    def test_mcp_prefix_stripped(self):
+        assert _strip_redundant_prefix("mcp-server") == "server"
+
+    def test_double_ans_prefix_stripped(self):
+        assert _strip_redundant_prefix("ansanspipeline") == "pipeline"
+
+    def test_no_prefix_unchanged(self):
+        assert _strip_redundant_prefix("plain-note") is None
+
+    def test_short_after_strip_returns_none(self):
+        assert _strip_redundant_prefix("ans-a") is None
+
+
+class TestScoringHelpers:
+    def test_seq_ratio_identical(self):
+        assert _seq_ratio("abc", "abc") == 1.0
+
+    def test_seq_ratio_disjoint(self):
+        assert _seq_ratio("abc", "xyz") < 0.5
+
+    def test_jaccard_tokens(self):
+        sim = _jaccard_tokens("machine-learning", "machine guide")
+        assert 0 < sim < 1
+
+
+class TestClassifyBroken:
+    def test_exact_match_active(self):
+        active = {"jwttoken": ["07_Knowledge/jwt-token.md"]}
+        migrated: dict = {}
+        result = _classify_broken("jwttoken", active, migrated)
+        assert result["category"] == "exact_candidate"
+        assert result["recommended_stem"] == "jwttoken"
+
+    def test_prefix_strip_match(self):
+        active = {"ansexecutionpipeline": ["13_Flows/pipeline.md"]}
+        result = _classify_broken("ansansexecutionpipeline", active, {})
+        # If score is 1.0 (after prefix strip + same stem match) → exact
+        # If not, falls through to fuzzy match against the same stem → partial
+        assert result["recommended_stem"] == "ansexecutionpipeline"
+        assert result["category"] in ("exact_candidate", "partial_match")
+        assert len(result["candidates"]) >= 1
+
+    def test_points_to_migrated(self):
+        active: dict = {}
+        migrated = {"legacy-doc": ["10_Migrated/old.md"]}
+        result = _classify_broken("legacy-doc", active, migrated)
+        assert result["category"] == "points_to_migrated"
+
+    def test_partial_match_fuzzy(self):
+        active = {"machine-learning-guide": ["07_Knowledge/ml.md"]}
+        result = _classify_broken("machinelearning", active, {}, threshold_partial=0.5)
+        assert result["category"] in ("partial_match", "exact_candidate")
+
+    def test_no_match(self):
+        active = {"something-else": ["x.md"]}
+        result = _classify_broken("totally-unrelated-zzz", active, {})
+        assert result["category"] == "no_match"
+        assert result["candidates"] == []
+
+
+class TestWizardPick:
+    def test_pick_first_candidate(self):
+        from io import StringIO
+
+        stdin = StringIO("1\n")
+        stdout = StringIO()
+        candidates = [
+            {
+                "stem": "note-a",
+                "path": "07_Knowledge/a.md",
+                "score": 0.9,
+                "strategy": "fuzzy",
+            },
+            {
+                "stem": "note-b",
+                "path": "07_Knowledge/b.md",
+                "score": 0.7,
+                "strategy": "fuzzy",
+            },
+        ]
+        result = wizard_pick("missing", candidates, 5, stdin=stdin, stdout=stdout)
+        assert result["action"] == "fix"
+        assert result["stem"] == "note-a"
+
+    def test_skip(self):
+        from io import StringIO
+
+        stdin = StringIO("s\n")
+        stdout = StringIO()
+        result = wizard_pick("missing", [], 5, stdin=stdin, stdout=stdout)
+        assert result["action"] == "skip"
+
+    def test_stub_choice(self):
+        from io import StringIO
+
+        stdin = StringIO("t\n")
+        stdout = StringIO()
+        result = wizard_pick("missing", [], 5, stdin=stdin, stdout=stdout)
+        assert result["action"] == "stub"
+
+    def test_quit_returns_none(self):
+        from io import StringIO
+
+        stdin = StringIO("q\n")
+        stdout = StringIO()
+        result = wizard_pick("missing", [], 5, stdin=stdin, stdout=stdout)
+        assert result is None
+
+
+class TestStubCreation:
+    def test_stub_created(self, tmp_path):
+        from vault_graph_fix import _create_stub
+
+        vault = tmp_path / "vault"
+        vault.mkdir()
+        result = _create_stub(
+            vault,
+            "new-target",
+            ["01_Projects/foo.md", "07_Knowledge/bar.md"],
+            {"category": "no_match"},
+        )
+        assert result["created"] is True
+        assert (vault / "04_Sessions/stubs/new-target.md").exists()
+
+    def test_stub_skipped_if_real_note_exists(self, tmp_path):
+        vault = tmp_path / "vault"
+        vault.mkdir()
+        (vault / "07_Knowledge").mkdir()
+        (vault / "07_Knowledge" / "existing.md").write_text("# real", encoding="utf-8")
+        result = _create_stub(
+            vault,
+            "existing",
+            ["01_Projects/foo.md"],
+            {"category": "no_match"},
+        )
+        assert result["created"] is False
+        assert result["reason"] == "already_exists"
+
+    def test_stub_skipped_if_already_in_stubs(self, tmp_path):
+        vault = tmp_path / "vault"
+        vault.mkdir()
+        (vault / "04_Sessions/stubs").mkdir(parents=True)
+        (vault / "04_Sessions/stubs/existing.md").write_text("# stub", encoding="utf-8")
+        result = _create_stub(
+            vault,
+            "existing",
+            ["01_Projects/foo.md"],
+            {"category": "no_match"},
+        )
+        assert result["created"] is False
+
+
+class TestApplyClassifiedFixes:
+    def test_apply_fix_modifies_source(self, tmp_path):
+        vault = tmp_path / "vault"
+        vault.mkdir()
+        (vault / "07_Knowledge").mkdir()
+        (vault / "07_Knowledge" / "real.md").write_text(
+            "---\ntitle: Real\n---\n\nBody",
+            encoding="utf-8",
+        )
+        (vault / "01_Projects").mkdir()
+        (vault / "01_Projects" / "source.md").write_text(
+            "---\ntitle: Source\n---\n\nLink to [[wrong-name]]",
+            encoding="utf-8",
+        )
+        notes_active = {
+            "07_Knowledge/real.md": {
+                "body": "Body",
+                "title": "Real",
+                "tags": set(),
+                "body_hash": "x",
+            },
+            "01_Projects/source.md": {
+                "body": "Link to [[wrong-name]]",
+                "title": "Source",
+                "tags": set(),
+                "body_hash": "y",
+            },
+        }
+        decisions = {
+            "wrongname": {
+                "action": "fix",
+                "stem": "real",
+                "path": "07_Knowledge/real.md",
+                "referenced_by": ["01_Projects/source.md"],
+                "classification": {"category": "exact_candidate"},
+            }
+        }
+        result = apply_classified_fixes(decisions, notes_active, vault)
+        assert result["links_fixed"] >= 1
+        new_text = (vault / "01_Projects/source.md").read_text(encoding="utf-8")
+        assert "[[wrong-name]]" not in new_text
+
+    def test_apply_stub_creates_note(self, tmp_path):
+        vault = tmp_path / "vault"
+        vault.mkdir()
+        notes_active: dict = {}
+        decisions = {
+            "orphan": {
+                "action": "stub",
+                "referenced_by": ["some/source.md"],
+                "classification": {"category": "no_match"},
+            }
+        }
+        result = apply_classified_fixes(decisions, notes_active, vault)
+        assert result["stubs_created"] == 1
+        assert (vault / "04_Sessions/stubs/orphan.md").exists()

@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import hashlib
 import re
 import sys
 from collections import defaultdict
@@ -44,6 +45,7 @@ from vault_io import VAULT_ROOT, atomic_write_text, normalize_stem
 from vault_regex import (
     fix_nested_brackets,
     fix_whitespace_in_links,
+    extract_wiki_links_strict,
 )
 from vault_graph_inspect import (
     _SKIP_DIRS,
@@ -52,6 +54,10 @@ from vault_graph_inspect import (
     _stems_set,
     _detect_wikilink_syntax_errors,
     generate_report,
+    _extract_title,
+    _extract_tags,
+    _normalize_for_hash,
+    _strip_frontmatter as _vgi_strip_frontmatter,
 )
 
 _MIGRATION_DIR = "10_Migrated"
@@ -116,7 +122,8 @@ def _find_target(
 
 def _replace_wikilink(text: str, old_target: str, new_target: str) -> tuple[str, bool]:
     """Replace [[old_target]] (or with alias) with [[new_target]].
-    Also handles the path-anchored variant [[path/old_target]].
+    Also handles the path-anchored variant [[path/old_target]] and the
+    normalized-stem variant (old_target may be the stem, text may have dashes).
     """
     old_path_anchored = f"[[/{old_target}]]"
     new_text = text.replace(old_path_anchored, f"[[{new_target}]]")
@@ -136,6 +143,20 @@ def _replace_wikilink(text: str, old_target: str, new_target: str) -> tuple[str,
             flags=re.IGNORECASE,
         )
         changed = new_text != text
+    if not changed:
+        from vault_io import normalize_stem as _ns
+
+        for match in re.finditer(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]", text):
+            found_raw = match.group(1)
+            if _ns(found_raw) == _ns(old_target):
+                replaced = (
+                    f"[[{new_target}{match.group(2) or ''}]]"
+                    if False
+                    else f"[[{new_target}]]"
+                )
+                new_text = text[: match.start()] + replaced + text[match.end() :]
+                changed = True
+                break
     return new_text, changed
 
 
@@ -342,14 +363,522 @@ def _strip_frontmatter(content: str) -> str:
     return content[match.end() :].strip() if match else content
 
 
+def _load_notes_for_classify(root: Path) -> dict[str, dict[str, Any]]:
+    """Load all notes INCLUDING 00_System/ but EXCLUDING 10_Migrated/.
+
+    Used by classify to find resolution candidates in system notes.
+    """
+    notes: dict[str, dict[str, Any]] = {}
+    for md in sorted(root.rglob("*.md")):
+        try:
+            rel = md.relative_to(root)
+        except ValueError:
+            continue
+        rel_str = str(rel).replace("\\", "/")
+        parts = rel.parts
+        skip_set = {
+            "99_Index",
+            ".history",
+            "vault-backups",
+            "vault-sandbox",
+            ".obsidian",
+            ".trash",
+        }
+        if any(p in skip_set for p in parts):
+            continue
+        if rel.name.startswith("."):
+            continue
+        if rel_str.startswith("10_Migrated/"):
+            continue
+        try:
+            text = md.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        body = _vgi_strip_frontmatter(text)
+        body_hash = hashlib.sha256(
+            _normalize_for_hash(body).encode("utf-8")
+        ).hexdigest()
+        notes[rel_str] = {
+            "body": body,
+            "title": _extract_title(text) or rel.stem,
+            "tags": _extract_tags(text),
+            "body_hash": body_hash,
+        }
+    return notes
+
+
+# ============================================================================
+# CLASSIFICATION — categorize broken links by auto-fix viability
+# ============================================================================
+
+_REDUNDANT_PREFIXES = (
+    "ansans",
+    "ansmcp",
+    "ansvault",
+    "ans-",
+    "mcp-",
+    "vault-",
+    "ans_",
+    "mcp_",
+    "vault_",
+)
+
+
+def _strip_redundant_prefix(stem: str) -> str | None:
+    """If stem has a known redundant prefix, return the stripped version."""
+    s = stem.lower()
+    for prefix in sorted(_REDUNDANT_PREFIXES, key=len, reverse=True):
+        if s.startswith(prefix) and len(s) > len(prefix) + 2:
+            stripped = s[len(prefix) :]
+            if stripped:
+                return stripped
+    return None
+
+
+def _jaccard_tokens(a: str, b: str) -> float:
+    ta = set(a.replace("-", " ").split())
+    tb = set(b.replace("-", " ").split())
+    if not ta or not tb:
+        return 0.0
+    return len(ta & tb) / len(ta | tb)
+
+
+def _seq_ratio(a: str, b: str) -> float:
+    if not a or not b:
+        return 0.0
+    if a == b:
+        return 1.0
+    if len(a) > len(b):
+        a, b = b, a
+    hits = sum(1 for ch in a if ch in b)
+    return (2 * hits) / (len(a) + len(b))
+
+
+def _classify_broken(
+    target_stem: str,
+    active_stems: dict[str, list[str]],
+    migrated_stems: dict[str, list[str]],
+    threshold_partial: float = 0.60,
+    threshold_exact: float = 0.85,
+) -> dict[str, Any]:
+    """Classify a broken link target. Returns category, candidates, recommended_stem."""
+    candidates: list[dict[str, Any]] = []
+
+    if target_stem in active_stems:
+        for path in active_stems[target_stem]:
+            candidates.append(
+                {
+                    "stem": target_stem,
+                    "path": path,
+                    "score": 1.0,
+                    "strategy": "exact_active",
+                }
+            )
+
+    stripped = _strip_redundant_prefix(target_stem)
+    if stripped and stripped in active_stems:
+        for path in active_stems[stripped]:
+            candidates.append(
+                {
+                    "stem": stripped,
+                    "path": path,
+                    "score": 1.0,
+                    "strategy": "prefix_strip",
+                }
+            )
+    elif stripped:
+        for stem, paths in active_stems.items():
+            if stem == stripped or stripped in stem or stem in stripped:
+                seq_ratio = _seq_ratio(stripped, stem)
+                jac = _jaccard_tokens(stripped, stem)
+                score = 0.8 * seq_ratio + 0.2 * jac
+                if score >= 0.7:
+                    for path in paths:
+                        candidates.append(
+                            {
+                                "stem": stem,
+                                "path": path,
+                                "score": min(0.99, round(score + 0.05, 3)),
+                                "strategy": "prefix_strip_fuzzy",
+                            }
+                        )
+
+    if target_stem in migrated_stems:
+        for path in migrated_stems[target_stem]:
+            candidates.append(
+                {
+                    "stem": target_stem,
+                    "path": path,
+                    "score": 1.0,
+                    "strategy": "exact_migrated",
+                }
+            )
+
+    for stem, paths in active_stems.items():
+        if any(c["stem"] == stem for c in candidates):
+            continue
+        seq_ratio = _seq_ratio(target_stem, stem)
+        jac = _jaccard_tokens(target_stem, stem)
+        score = 0.8 * seq_ratio + 0.2 * jac
+        if score >= threshold_partial and score < threshold_exact:
+            for path in paths:
+                candidates.append(
+                    {
+                        "stem": stem,
+                        "path": path,
+                        "score": round(score, 3),
+                        "strategy": "fuzzy",
+                    }
+                )
+
+    if not candidates:
+        return {
+            "category": "no_match",
+            "candidates": [],
+            "recommended_stem": None,
+        }
+
+    candidates.sort(key=lambda c: -c["score"])
+    best = candidates[0]
+
+    if best["score"] >= threshold_exact:
+        if best["strategy"] == "exact_migrated":
+            category = "points_to_migrated"
+        else:
+            category = "exact_candidate"
+    elif best["score"] >= threshold_partial:
+        category = "partial_match"
+    else:
+        category = "no_match"
+
+    return {
+        "category": category,
+        "candidates": candidates[:5],
+        "recommended_stem": best["stem"],
+    }
+
+
+def classify_all_broken(
+    notes_active: dict[str, dict[str, Any]],
+    notes_full: dict[str, dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    """Classify every unique broken target in the active vault.
+
+    Resolves against ALL non-migrated notes including 00_System/ — the inspector
+    excludes 00_System/ from broken-link detection by convention, but for the
+    purpose of finding resolutions, we treat 00_System notes as valid targets
+    and label them with a `system_resolvable: True` flag.
+    """
+    active_stems: dict[str, list[str]] = defaultdict(list)
+    migrated_stems: dict[str, list[str]] = defaultdict(list)
+    system_stems: dict[str, list[str]] = defaultdict(list)
+    for path, info in notes_full.items():
+        if not path.startswith("00_System/"):
+            continue
+        stem = normalize_stem(info["title"] or Path(path).stem)
+        system_stems[stem].append(path)
+
+    for path, info in notes_full.items():
+        if path.startswith("10_Migrated/") or path.startswith("00_System/"):
+            continue
+        stem = normalize_stem(info["title"] or Path(path).stem)
+        active_stems[stem].append(path)
+
+    for path, info in notes_full.items():
+        if not path.startswith("10_Migrated/"):
+            continue
+        stem = normalize_stem(info["title"] or Path(path).stem)
+        migrated_stems[stem].append(path)
+
+    resolvable_stems: dict[str, list[str]] = {**active_stems, **system_stems}
+
+    broken_targets: dict[str, list[str]] = defaultdict(list)
+    resolvable_set = set(resolvable_stems)
+    for path, info in notes_active.items():
+        body = info["body"]
+        for link in extract_wiki_links_strict(body):
+            target_stem = normalize_stem(link)
+            if target_stem and target_stem not in resolvable_set:
+                broken_targets[target_stem].append(path)
+
+    classified: dict[str, dict[str, Any]] = {}
+    for target in sorted(broken_targets):
+        cls = _classify_broken(target, active_stems, migrated_stems)
+        for c in cls.get("candidates", []):
+            if c["path"].startswith("00_System/"):
+                c["system_resolvable"] = True
+        classified[target] = cls
+        classified[target]["referenced_by"] = broken_targets[target][:20]
+        classified[target]["referenced_by_count"] = len(broken_targets[target])
+
+    return classified
+
+
+# ============================================================================
+# INTERACTIVE WIZARD
+# ============================================================================
+
+
+def wizard_pick(
+    target_stem: str,
+    candidates: list[dict[str, Any]],
+    referenced_by_count: int,
+    stdin: Any = None,
+    stdout: Any = None,
+) -> dict[str, str] | None:
+    """Show candidates for one broken stem, ask user to choose.
+
+    Returns {"action": "fix"|"skip"|"stub", "stem": ..., "path": ...} or None on EOF.
+    """
+    if stdin is None:
+        stdin = sys.stdin
+    if stdout is None:
+        stdout = sys.stdout
+
+    stdout.write(
+        f"\n[Broken link] [[{target_stem}]]  (referenced by {referenced_by_count} note(s))\n"
+    )
+    if not candidates:
+        stdout.write("  No candidates found.\n")
+        stdout.write("  Options: [s]kip (keep broken) | [t]ub (create stub note)\n")
+    else:
+        stdout.write("  Candidates:\n")
+        for i, c in enumerate(candidates, 1):
+            stdout.write(
+                f"    [{i}] {c['stem']:<40} -> {c['path']:<60} "
+                f"score={c['score']:.2f} ({c['strategy']})\n"
+            )
+        stdout.write("  Options: [1-N] pick | [s]kip | [t]ub | [q]uit wizard\n")
+
+    try:
+        choice = stdin.readline().strip().lower()
+    except (EOFError, KeyboardInterrupt):
+        return None
+    if not choice:
+        return {"action": "skip"}
+    if choice in ("s", "skip"):
+        return {"action": "skip"}
+    if choice in ("q", "quit"):
+        return None
+    if choice in ("t", "stub"):
+        return {"action": "stub"}
+    if candidates:
+        try:
+            idx = int(choice) - 1
+            if 0 <= idx < len(candidates):
+                return {
+                    "action": "fix",
+                    "stem": candidates[idx]["stem"],
+                    "path": candidates[idx]["path"],
+                }
+        except ValueError:
+            pass
+    stdout.write("  (invalid choice — skipping)\n")
+    return {"action": "skip"}
+
+
+# ============================================================================
+# STUB CREATION
+# ============================================================================
+
+_STUBS_DIR = "04_Sessions/stubs"
+
+
+def _stub_already_exists(root: Path, target_stem: str) -> bool:
+    """Avoid creating a stub that collides with a real note."""
+    if (root / _STUBS_DIR / f"{target_stem}.md").exists():
+        return True
+    for sub in (
+        "07_Knowledge",
+        "01_Projects",
+        "08_Runbooks",
+        "05_Patterns",
+        "11_Code",
+        "13_Flows",
+        "03_Decisions",
+        "06_Diagrams",
+        "09_Infrastructure",
+        "15_Tests",
+        "16_AI_Governance",
+        "12_Bibliography",
+        "02_Observability",
+    ):
+        if (root / sub / f"{target_stem}.md").exists():
+            return True
+    return False
+
+
+def _create_stub(
+    root: Path,
+    target_stem: str,
+    referenced_by: list[str],
+    classification: dict[str, Any],
+) -> dict[str, Any]:
+    """Create an empty stub note flagging it as a graph-fix artifact."""
+    if _stub_already_exists(root, target_stem):
+        return {"stem": target_stem, "created": False, "reason": "already_exists"}
+
+    stubs_dir = root / _STUBS_DIR
+    stubs_dir.mkdir(parents=True, exist_ok=True)
+    path = stubs_dir / f"{target_stem}.md"
+    now = datetime.now(timezone.utc).isoformat()[:19] + "Z"
+
+    ref_list = "\n".join(f"- `[[{p}]]`" for p in referenced_by[:20])
+    if len(referenced_by) > 20:
+        ref_list += f"\n- ... and {len(referenced_by) - 20} more"
+
+    body = f"""---
+id: stub-{target_stem}-{now[:10]}
+title: {target_stem}
+type: stub
+createdAt: {now}
+updatedAt: {now}
+created_by: vault_graph_fix
+classification: {classification["category"]}
+referenced_by_count: {len(referenced_by)}
+cia_integrity: low
+cia_availability: low
+cia_sensitivity: internal
+tags: [stub, graph-fix, needs-review]
+---
+
+# {target_stem}
+
+> **Stub note** — auto-created by `vault_graph_fix` on {now[:10]}.
+> No canonical note exists for this target stem.
+> Referenced by:
+{ref_list}
+
+## Recommended action
+
+- **If this stem should resolve to an existing note**: edit the source notes
+  and replace `[[{target_stem}]]` with the correct target, then delete this stub.
+- **If this stem should become a real note**: rename this stub to its proper
+  folder, fill content, remove the `stub` and `graph-fix` tags.
+- **If this stem is a placeholder** (e.g., appears in docs as `[[nota]]`):
+  edit the docs to use code-fence escaping — ` [[{target_stem}]] ` inside a
+  triple-backtick block — or rephrase the example to avoid the false link.
+"""
+    atomic_write_text(path, body)
+    return {
+        "stem": target_stem,
+        "created": True,
+        "path": str(path.relative_to(root)).replace("\\", "/"),
+    }
+
+
+# ============================================================================
+# APPLY CLASSIFIED DECISIONS
+# ============================================================================
+
+
+def apply_classified_fixes(
+    decisions: dict[str, dict[str, Any]],
+    notes_active: dict[str, dict[str, Any]],
+    root: Path,
+) -> dict[str, Any]:
+    """Apply decisions: {target_stem: {action, stem, path, referenced_by, classification}}.
+
+    Optimized: group all fixes by source NOTE, then write each note once
+    applying all its fixes (replaces N writes per note with 1 write).
+    """
+    applied_notes: set[str] = set()
+    fixed_count = 0
+    skip_count = 0
+    stub_results: list[dict[str, Any]] = []
+
+    note_fixes: dict[str, list[tuple[str, str]]] = defaultdict(list)
+    for target_stem, decision in decisions.items():
+        action = decision.get("action", "skip")
+        if action == "skip":
+            skip_count += 1
+            continue
+        if action == "stub":
+            referenced_by = decision.get("referenced_by", [])
+            classification = decision.get("classification", {"category": "no_match"})
+            stub_results.append(
+                _create_stub(root, target_stem, referenced_by, classification)
+            )
+            continue
+        if action == "fix":
+            new_target_stem = decision.get("stem", target_stem)
+            for source_path in decision.get("referenced_by", []):
+                note_fixes[source_path].append((target_stem, new_target_stem))
+
+    for source_path, fixes in note_fixes.items():
+        note_info = notes_active.get(source_path)
+        if not note_info:
+            continue
+        full_path = root / source_path
+        try:
+            existing = full_path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        stripped = _vgi_strip_frontmatter(existing)
+        front = existing.replace(stripped, "", 1) if stripped != existing else ""
+        body = stripped
+        note_changes = 0
+        for old_target, new_target in fixes:
+            new_body, changed = _replace_wikilink(body, old_target, new_target)
+            if changed:
+                body = new_body
+                note_changes += 1
+        if note_changes == 0:
+            continue
+        atomic_write_text(full_path, front + body)
+        fixed_count += note_changes
+        applied_notes.add(source_path)
+
+    log_dir = root / _FIX_LOG_DIR
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = (
+        log_dir
+        / f"{datetime.now(timezone.utc).strftime('%Y-%m-%d-%H%M%S')}-classified.json"
+    )
+    log = {
+        "applied_at": datetime.now(timezone.utc).isoformat()[:19] + "Z",
+        "notes_modified": len(applied_notes),
+        "links_fixed": fixed_count,
+        "stubs_created": sum(1 for s in stub_results if s.get("created")),
+        "stubs_skipped_existing": sum(1 for s in stub_results if not s.get("created")),
+        "links_skipped": skip_count,
+        "stubs": stub_results,
+    }
+    atomic_write_text(log_path, json.dumps(log, indent=2, ensure_ascii=False))
+
+    return {
+        "applied_notes": len(applied_notes),
+        "links_fixed": fixed_count,
+        "stubs_created": log["stubs_created"],
+        "stubs_skipped_existing": log["stubs_skipped_existing"],
+        "links_skipped": skip_count,
+        "log_file": str(log_path.relative_to(root)).replace("\\", "/"),
+    }
+
+
+# ============================================================================
+# MAIN — extended CLI
+# ============================================================================
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Auto-fix broken wiki-links + bracket/path issues",
+        description="Auto-fix broken wiki-links + bracket/path issues + wizard + stubs",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--root", help="Vault root (default: VAULT_ROOT)")
     parser.add_argument(
-        "--apply", action="store_true", help="Apply fixes (default: dry-run)"
+        "--apply",
+        action="store_true",
+        help="Apply fixes (default: dry-run)",
+    )
+    parser.add_argument(
+        "--auto-apply-partial",
+        type=float,
+        metavar="THRESHOLD",
+        default=None,
+        help="Auto-apply partial_match with score >= THRESHOLD (e.g., 0.75). "
+        "Lower-confidence partials are skipped (logged for review).",
     )
     parser.add_argument(
         "--only", choices=["brackets", "path_anchored"], help="Only run one fixer"
@@ -361,23 +890,195 @@ def main() -> int:
         help="Fuzzy match threshold (default: 0.7)",
     )
     parser.add_argument("--json", action="store_true", help="Output JSON (default)")
+
+    parser.add_argument(
+        "--classify",
+        action="store_true",
+        help="Classify all broken links and emit JSON; no writes",
+    )
+    parser.add_argument(
+        "--auto-fix-safe",
+        action="store_true",
+        help="Auto-resolve exact_candidate and points_to_migrated without prompting",
+    )
+    parser.add_argument(
+        "--wizard",
+        action="store_true",
+        help="Interactive wizard for partial_match links (uses stdin/stdout)",
+    )
+    parser.add_argument(
+        "--stubs",
+        action="store_true",
+        help="Create stub notes in 04_Sessions/stubs/ for no_match targets",
+    )
+    parser.add_argument(
+        "--stubs-all",
+        action="store_true",
+        help="Create stubs for ALL unfixed broken links (overrides default skip)",
+    )
     args = parser.parse_args()
+
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
     root = Path(args.root).resolve() if args.root else VAULT_ROOT
     if not root.exists():
         print(json.dumps({"ok": False, "error": f"Vault root not found: {root}"}))
         return 1
 
+    if args.classify:
+        notes_active = _load_notes(root, include_migrated=False)
+        notes_full = _load_notes_for_classify(root)
+        notes_migrated = {
+            p: info
+            for p, info in _load_notes(root, include_migrated=True).items()
+            if p.startswith("10_Migrated/")
+        }
+        notes_full.update(notes_migrated)
+        classified = classify_all_broken(notes_active, notes_full)
+        distribution: dict[str, int] = defaultdict(int)
+        for c in classified.values():
+            distribution[c["category"]] += 1
+        result = {
+            "ok": True,
+            "tool": "vault_graph_fix.classify",
+            "vault_root": str(root),
+            "summary": {
+                "total_broken_targets": len(classified),
+                "by_category": dict(distribution),
+            },
+            "classified": classified,
+        }
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return 0
+
+    if (
+        args.auto_fix_safe
+        or args.wizard
+        or args.stubs
+        or args.stubs_all
+        or args.auto_apply_partial is not None
+    ):
+        notes_active = _load_notes(root, include_migrated=False)
+        notes_full = _load_notes_for_classify(root)
+        notes_migrated = {
+            p: info
+            for p, info in _load_notes(root, include_migrated=True).items()
+            if p.startswith("10_Migrated/")
+        }
+        notes_full.update(notes_migrated)
+        classified = classify_all_broken(notes_active, notes_full)
+        decisions: dict[str, dict[str, Any]] = {}
+
+        for target, cls in classified.items():
+            cat = cls["category"]
+            ref_by = cls.get("referenced_by", [])
+            ref_count = cls.get("referenced_by_count", len(ref_by))
+
+            if cat in ("exact_candidate", "points_to_migrated"):
+                if args.auto_fix_safe and cls.get("candidates"):
+                    best = cls["candidates"][0]
+                    decisions[target] = {
+                        "action": "fix",
+                        "stem": best["stem"],
+                        "path": best["path"],
+                        "referenced_by": ref_by,
+                        "classification": cls,
+                    }
+                else:
+                    decisions[target] = {
+                        "action": "skip",
+                        "referenced_by": ref_by,
+                        "classification": cls,
+                    }
+            elif cat == "partial_match":
+                best_score = (
+                    cls["candidates"][0]["score"] if cls.get("candidates") else 0
+                )
+                threshold = args.auto_apply_partial
+                if args.wizard:
+                    pick = wizard_pick(target, cls["candidates"], ref_count)
+                    if pick is None:
+                        decisions[target] = {
+                            "action": "skip",
+                            "referenced_by": ref_by,
+                            "classification": cls,
+                        }
+                    else:
+                        pick["referenced_by"] = ref_by
+                        pick["classification"] = cls
+                        decisions[target] = pick
+                elif (
+                    threshold is not None
+                    and best_score >= threshold
+                    and cls.get("candidates")
+                ):
+                    best = cls["candidates"][0]
+                    decisions[target] = {
+                        "action": "fix",
+                        "stem": best["stem"],
+                        "path": best["path"],
+                        "referenced_by": ref_by,
+                        "classification": cls,
+                    }
+                else:
+                    decisions[target] = {
+                        "action": "skip",
+                        "referenced_by": ref_by,
+                        "classification": cls,
+                    }
+            else:
+                if args.stubs_all or args.stubs:
+                    decisions[target] = {
+                        "action": "stub",
+                        "referenced_by": ref_by,
+                        "classification": cls,
+                    }
+                else:
+                    decisions[target] = {
+                        "action": "skip",
+                        "referenced_by": ref_by,
+                        "classification": cls,
+                    }
+
+        if args.apply:
+            apply_result = apply_classified_fixes(decisions, notes_active, root)
+            output = {
+                "ok": True,
+                "tool": "vault_graph_fix.classified",
+                "decisions_count": len(decisions),
+                "apply_result": apply_result,
+            }
+            print(json.dumps(output, indent=2, ensure_ascii=False))
+            return 0
+        else:
+            preview = {
+                "ok": True,
+                "tool": "vault_graph_fix.classify",
+                "decisions_count": len(decisions),
+                "would_apply": {
+                    "fix": sum(
+                        1 for d in decisions.values() if d.get("action") == "fix"
+                    ),
+                    "stub": sum(
+                        1 for d in decisions.values() if d.get("action") == "stub"
+                    ),
+                    "skip": sum(
+                        1 for d in decisions.values() if d.get("action") == "skip"
+                    ),
+                },
+                "decisions": decisions,
+            }
+            print(json.dumps(preview, indent=2, ensure_ascii=False))
+            return 0
+
     report = fix_vault(root=root, threshold=args.threshold, only=args.only)
 
     if args.apply:
         apply_result = apply_fix(report, root)
         report["apply_result"] = apply_result
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
         print(json.dumps(report, indent=2, ensure_ascii=False))
         return 0 if apply_result["errors"] == [] else 1
 
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     print(json.dumps(report, indent=2, ensure_ascii=False))
     return 0
 
