@@ -90,12 +90,16 @@ function normalizeStem(s) {
 }
 
 function extractWikilinks(content) {
+  const clean = content
+    .replace(/```mermaid[\s\S]*?```/g, "")
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/`[^`]+`/g, "");
   const re = /\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g;
   const links = [];
   let m;
-  while ((m = re.exec(content)) !== null) {
+  while ((m = re.exec(clean)) !== null) {
     const target = m[1].trim();
-    if (target && target.length <= 200 && !/^https?:/.test(target)) {
+    if (target && target.length <= 200 && !/^https?:/.test(target) && !target.includes('"')) {
       links.push(target);
     }
   }
@@ -303,9 +307,11 @@ async function jsNativeGraph(args) {
   for (const f of files) {
     const content = await readFile(join(vaultRoot, f), "utf-8");
     const title = extractTitle(content) || basename(f, ".md");
-    const stem = normalizeStem(title);
-    stemMap.set(stem, f);
-    nodes.push({ path: f, title, stem });
+    const fnameStem = normalizeStem(basename(f, ".md"));
+    const titleStem = normalizeStem(title);
+    stemMap.set(titleStem, f);
+    if (fnameStem !== titleStem) stemMap.set(fnameStem, f);
+    nodes.push({ path: f, title, stem: titleStem });
   }
 
   for (const node of nodes) {
