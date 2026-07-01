@@ -1,0 +1,2868 @@
+{
+  "tools": {
+    "vault_write": {
+      "name": "vault_write",
+      "description": "Crea o actualiza notas con frontmatter YAML correcto. Versiona en .history/ antes de sobreescribir.",
+      "group": "Core",
+      "script": "vault_write.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "folder": {
+            "type": "string",
+            "description": "Ruta relativa al vault (ej: 01_Projects/mi-api)"
+          },
+          "title": {
+            "type": "string",
+            "description": "Título de la nota"
+          },
+          "content": {
+            "type": "string",
+            "description": "Contenido Markdown. Usar @file:ruta para leer de archivo"
+          },
+          "tags": {
+            "type": "string",
+            "description": "Etiquetas separadas por espacio"
+          },
+          "meta": {
+            "type": "string",
+            "description": "JSON con frontmatter adicional"
+          },
+          "meta-file": {
+            "type": "string",
+            "description": "Ruta a archivo JSON con frontmatter adicional"
+          }
+        },
+        "required": [
+          "folder",
+          "title",
+          "content"
+        ]
+      },
+      "guards": [
+        "AP-20 (no bullets vacíos)",
+        "AP-21 (no [[/note]])",
+        "AP-22 (no [[]] vacíos)"
+      ],
+      "side_effects": [
+        "Versiona en .history/",
+        "Actualiza search-index.json",
+        "Regenera section index"
+      ],
+      "related": [
+        "vault_read",
+        "vault_append",
+        "vault_audit"
+      ]
+    },
+    "vault_read": {
+      "name": "vault_read",
+      "description": "Lee una nota del vault por ruta relativa o por título.",
+      "group": "Core",
+      "script": "vault_read.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Ruta relativa al vault (ej: 01_Projects/mi-api/overview.md)"
+          },
+          "title": {
+            "type": "string",
+            "description": "Título de la nota a buscar"
+          }
+        },
+        "required": []
+      },
+      "guards": [],
+      "side_effects": [],
+      "related": [
+        "vault_write",
+        "vault_search"
+      ]
+    },
+    "vault_search": {
+      "name": "vault_search",
+      "description": "Búsqueda full-text en search-index.json con score ponderado.",
+      "group": "Core",
+      "script": "vault_search.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Término de búsqueda"
+          },
+          "project": {
+            "type": "string",
+            "description": "Filtrar por proyecto"
+          },
+          "folder": {
+            "type": "string",
+            "description": "Filtrar por carpeta"
+          },
+          "limit": {
+            "type": "string",
+            "description": "Límite de resultados (default: 10)"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "guards": [],
+      "side_effects": [],
+      "related": [
+        "vault_read",
+        "vault_list"
+      ]
+    },
+    "vault_list": {
+      "name": "vault_list",
+      "description": "Lista notas de una carpeta del vault.",
+      "group": "Core",
+      "script": "vault_list.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "folder": {
+            "type": "string",
+            "description": "Carpeta a listar (sin vault root)"
+          },
+          "status": {
+            "type": "string",
+            "description": "Filtrar por status"
+          },
+          "limit": {
+            "type": "string",
+            "description": "Límite de resultados (default: 50)"
+          }
+        },
+        "required": []
+      },
+      "guards": [],
+      "side_effects": [],
+      "related": [
+        "vault_search",
+        "vault_read"
+      ]
+    },
+    "vault_append": {
+      "name": "vault_append",
+      "description": "Agrega contenido al final de una nota existente (modo append-only).",
+      "group": "Core",
+      "script": "vault_append.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Ruta relativa de la nota"
+          },
+          "content": {
+            "type": "string",
+            "description": "Contenido a agregar"
+          },
+          "section": {
+            "type": "string",
+            "description": "Encabezado de sección donde agregar"
+          }
+        },
+        "required": [
+          "path",
+          "content"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Versiona en .history/"
+      ],
+      "related": [
+        "vault_write",
+        "vault_read"
+      ]
+    },
+    "vault_diff": {
+      "name": "vault_diff",
+      "description": "Muestra diferencias entre versiones de una nota.",
+      "group": "Core",
+      "script": "vault_diff.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Ruta de la nota"
+          },
+          "version": {
+            "type": "string",
+            "description": "Número de versión a comparar (default: última)"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      },
+      "guards": [],
+      "side_effects": [],
+      "related": [
+        "vault_read",
+        "vault_backup"
+      ]
+    },
+    "vault_merge": {
+      "name": "vault_merge",
+      "description": "Detecta y resuelve duplicados entre vaults o dentro del mismo vault.",
+      "group": "Core",
+      "script": "vault_merge.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "Acción a realizar: detect, merge, dedup",
+            "enum": [
+              "detect",
+              "merge",
+              "dedup"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "description": "Vault fuente para merge"
+          },
+          "conflict": {
+            "type": "string",
+            "description": "Cómo resolver conflictos: skip, overwrite, keep_both",
+            "enum": [
+              "skip",
+              "overwrite",
+              "keep_both"
+            ]
+          }
+        },
+        "required": [
+          "action"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Crea backups antes de modificar"
+      ],
+      "related": [
+        "vault_backup",
+        "vault_diff"
+      ]
+    },
+    "vault_log_error": {
+      "name": "vault_log_error",
+      "description": "Registra errores, antipatrones, vulnerabilidades, métricas, alertas y SLOs.",
+      "group": "Observabilidad",
+      "script": "vault_log_error.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Tipo: error, antipattern, vulnerability, metric, alert, slo",
+            "enum": [
+              "error",
+              "antipattern",
+              "vulnerability",
+              "waf",
+              "metric",
+              "alert",
+              "slo"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "description": "Título descriptivo"
+          },
+          "description": {
+            "type": "string",
+            "description": "Descripción detallada"
+          },
+          "severity": {
+            "type": "string",
+            "description": "Severidad: critical, high, medium, low, info",
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low",
+              "info"
+            ]
+          },
+          "project": {
+            "type": "string",
+            "description": "Proyecto relacionado"
+          },
+          "meta": {
+            "type": "string",
+            "description": "Metadatos adicionales"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "description",
+          "severity"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Crea/actualiza nota en 02_Observability/"
+      ],
+      "related": [
+        "vault_audit",
+        "vault_drift_detect",
+        "vault_impact"
+      ]
+    },
+    "vault_audit": {
+      "name": "vault_audit",
+      "description": "Evalúa health score del vault y genera nextActions.",
+      "group": "Salud",
+      "script": "vault_audit.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Proyecto a auditar"
+          },
+          "refresh-dq": {
+            "type": "string",
+            "description": "Forzar refresh de Data Quality"
+          }
+        },
+        "required": []
+      },
+      "guards": [],
+      "side_effects": [],
+      "related": [
+        "vault_validate",
+        "vault_fix_brackets",
+        "vault_quality_check"
+      ]
+    },
+    "vault_validate": {
+      "name": "vault_validate",
+      "description": "Valida notas contra el schema y normas del vault.",
+      "group": "Salud",
+      "script": "vault_validate.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Ruta de nota a validar"
+          },
+          "folder": {
+            "type": "string",
+            "description": "Carpeta a validar"
+          }
+        },
+        "required": []
+      },
+      "guards": [],
+      "side_effects": [],
+      "related": [
+        "vault_audit",
+        "vault_write"
+      ]
+    },
+    "vault_fix_brackets": {
+      "name": "vault_fix_brackets",
+      "description": "Detecta y corrige anomalías de corchetes en wiki-links (AP-22, AP-24).",
+      "group": "Corrección Automática",
+      "script": "vault_fix_brackets.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Procesar solo esta nota"
+          },
+          "apply": {
+            "type": "string",
+            "description": "Aplicar fixes (default: dry-run)"
+          },
+          "only": {
+            "type": "string",
+            "description": "Filtrar por tipo: empty, nested",
+            "enum": [
+              "empty",
+              "nested"
+            ]
+          }
+        },
+        "required": []
+      },
+      "guards": [],
+      "side_effects": [
+        "Backups en .vault-fix-backup-YYYYMMDD/"
+      ],
+      "related": [
+        "vault_audit",
+        "vault_regex"
+      ]
+    },
+    "vault_delta": {
+      "name": "vault_delta",
+      "description": "Detecta cambios entre sesiones usando SHA-256 y BFS sobre grafo de backlinks.",
+      "group": "Session Delta y Tags",
+      "script": "vault_delta.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "snapshot": {
+            "type": "string",
+            "description": "Guardar snapshot actual"
+          }
+        },
+        "required": []
+      },
+      "guards": [],
+      "side_effects": [
+        "Crea 00_System/delta-snapshot.json"
+      ],
+      "related": [
+        "vault_tags",
+        "vault_reindex",
+        "vault_drift_detect"
+      ]
+    },
+    "vault_tags": {
+      "name": "vault_tags",
+      "description": "Registro canónico de tags, auditoría de orphans y near-dupes.",
+      "group": "Session Delta y Tags",
+      "script": "vault_tags.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "Acción: list, suggest",
+            "enum": [
+              "list",
+              "suggest"
+            ]
+          },
+          "tag": {
+            "type": "string",
+            "description": "Tag a analizar"
+          }
+        },
+        "required": []
+      },
+      "guards": [],
+      "side_effects": [],
+      "related": [
+        "vault_delta",
+        "vault_audit"
+      ]
+    },
+    "vault_reindex": {
+      "name": "vault_reindex",
+      "description": "Actualiza search-index.json y opcionalmente hash-index.json.",
+      "group": "Índices",
+      "script": "vault_reindex.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "graph": {
+            "type": "string",
+            "description": "También generar graph.json"
+          },
+          "hash": {
+            "type": "string",
+            "description": "También generar hash-index.json"
+          }
+        },
+        "required": []
+      },
+      "guards": [],
+      "side_effects": [
+        "Actualiza 99_Index/search-index.json",
+        "Opcional: 99_Index/graph.json, hash-index.json"
+      ],
+      "related": [
+        "vault_search",
+        "vault_graph"
+      ]
+    },
+    "vault_graph": {
+      "name": "vault_graph",
+      "description": "Genera grafo de relaciones entre notas.",
+      "group": "Salud",
+      "script": "vault_graph.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Proyecto específico"
+          }
+        },
+        "required": []
+      },
+      "guards": [],
+      "side_effects": [
+        "Crea 99_Index/graph.json"
+      ],
+      "related": [
+        "vault_audit",
+        "vault_impact",
+        "vault_propagate"
+      ]
+    },
+    "vault_init": {
+      "name": "vault_init",
+      "description": "Bootstrap de vault nuevo en un comando.",
+      "group": "Bootstrap",
+      "script": "vault_init.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "type": "string",
+            "description": "Versión objetivo (default: v34)"
+          },
+          "no-audit": {
+            "type": "string",
+            "description": "No ejecutar vault_audit al final"
+          },
+          "clean": {
+            "type": "string",
+            "description": "Borrar contenido existente (DANGEROUS)"
+          }
+        },
+        "required": []
+      },
+      "guards": [],
+      "side_effects": [
+        "Crea carpetas, versiona, indexa, audit"
+      ],
+      "related": [
+        "vault_standard_upgrade",
+        "vault_audit"
+      ]
+    },
+    "vault_standard_upgrade": {
+      "name": "vault_standard_upgrade",
+      "description": "Detecta y aplica migraciones entre versiones del estándar.",
+      "group": "Versionado",
+      "script": "vault_standard_upgrade.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "Versión actual (lee standard-version.json si se omite)"
+          },
+          "to": {
+            "type": "string",
+            "description": "Versión objetivo (default: v34)"
+          },
+          "check": {
+            "type": "string",
+            "description": "Solo reportar sin aplicar"
+          },
+          "init": {
+            "type": "string",
+            "description": "Inicializar archivo de versión"
+          },
+          "fixes-only": {
+            "type": "string",
+            "description": "Solo ejecutar fixes sin migrar"
+          },
+          "dry-run": {
+            "type": "string",
+            "description": "Simular sin aplicar cambios"
+          },
+          "report": {
+            "type": "string",
+            "description": "Generar reporte de fixes disponibles"
+          }
+        },
+        "required": []
+      },
+      "guards": [],
+      "side_effects": [
+        "Actualiza 00_System/standard-version.json",
+        "Ejecuta fixes automáticos"
+      ],
+      "related": [
+        "vault_init",
+        "vault_audit"
+      ]
+    },
+    "vault_move": {
+      "name": "vault_move",
+      "description": "Reubica notas entre carpetas del vault, actualiza wiki-links, índices y grafo.",
+      "group": "Core",
+      "script": "vault_move.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "Nota origen"
+          },
+          "to": {
+            "type": "string",
+            "description": "Nota destino"
+          },
+          "folder": {
+            "type": "string",
+            "description": "Carpeta origen (mover toda)"
+          },
+          "to-folder": {
+            "type": "string",
+            "description": "Carpeta destino"
+          },
+          "dry_run": {
+            "type": "string",
+            "description": "Simular sin aplicar"
+          },
+          "impact": {
+            "type": "string",
+            "description": "Analizar impacto sin ejecutar"
+          }
+        },
+        "required": []
+      },
+      "guards": [
+        "Confimar antes de sobreescribir"
+      ],
+      "side_effects": [
+        "Actualiza wiki-links, search-index, graph.json, move-log"
+      ],
+      "related": [
+        "vault_write",
+        "vault_graph",
+        "vault_reindex"
+      ]
+    },
+    "vault_folder_registry": {
+      "name": "vault_folder_registry",
+      "description": "Auto-detecta y registra carpetas personalizadas dentro de secciones del vault.",
+      "group": "Gestión de Carpetas",
+      "script": "vault_folder_registry.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "scan": {
+            "type": "string",
+            "description": "Escanear carpetas nuevas"
+          },
+          "list": {
+            "type": "string",
+            "description": "Listar carpetas"
+          },
+          "add": {
+            "type": "string",
+            "description": "Agregar carpeta manualmente"
+          },
+          "remove": {
+            "type": "string",
+            "description": "Eliminar carpeta del registro"
+          },
+          "cleanup": {
+            "type": "string",
+            "description": "Limpiar carpetas huérfanas"
+          }
+        },
+        "required": []
+      },
+      "guards": [],
+      "side_effects": [
+        "Crea/actualiza 00_System/custom-folders.json"
+      ],
+      "related": [
+        "vault_reindex",
+        "vault_audit"
+      ]
+    },
+    "vault_mermaid_check": {
+      "name": "vault_mermaid_check",
+      "description": "Valida diagramas Mermaid y detecta errores de sintaxis.",
+      "group": "Diagramas",
+      "script": "vault_mermaid_check.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Archivo específico"
+          },
+          "project": {
+            "type": "string",
+            "description": "Proyecto a verificar"
+          },
+          "fix": {
+            "type": "string",
+            "description": "Auto-corregir errores"
+          },
+          "json": {
+            "type": "string",
+            "description": "Salida JSON"
+          }
+        },
+        "required": []
+      },
+      "guards": [],
+      "side_effects": [],
+      "related": [
+        "vault_diagram_save",
+        "vault_render",
+        "vault_write"
+      ]
+    },
+    "vault_diagram_export": {
+      "name": "vault_diagram_export",
+      "description": "Exporta diagramas con opciones de zoom, pan y filtros.",
+      "group": "Diagramas",
+      "script": "vault_diagram_export.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Archivo a exportar"
+          },
+          "project": {
+            "type": "string",
+            "description": "Proyecto a exportar"
+          },
+          "output": {
+            "type": "string",
+            "description": "Carpeta de salida"
+          },
+          "zoom": {
+            "type": "string",
+            "description": "Nivel de zoom (default: 1.0)"
+          },
+          "pan_x": {
+            "type": "string",
+            "description": "Posición X del pan"
+          },
+          "pan_y": {
+            "type": "string",
+            "description": "Posición Y del pan"
+          },
+          "filter": {
+            "type": "string",
+            "description": "Filtrar por tipo"
+          },
+          "highlight": {
+            "type": "string",
+            "description": "Nodos a resaltar (coma)"
+          },
+          "hide": {
+            "type": "string",
+            "description": "Nodos a ocultar (coma)"
+          },
+          "config": {
+            "type": "string",
+            "description": "Guardar configuración global"
+          }
+        },
+        "required": []
+      },
+      "guards": [],
+      "side_effects": [
+        "Genera archivos exportados"
+      ],
+      "related": [
+        "vault_diagram_save",
+        "vault_mermaid_check"
+      ]
+    },
+    "vault_diagram_save": {
+      "name": "vault_diagram_save",
+      "description": "Guarda diagramas Mermaid/ASCII/PlantUML con frontmatter categorizado.",
+      "group": "Diagramas",
+      "script": "vault_diagram_save.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Proyecto relacionado"
+          },
+          "title": {
+            "type": "string",
+            "description": "Título del diagrama"
+          },
+          "diagram_type": {
+            "type": "string",
+            "description": "Tipo: mermaid, ascii, plantuml",
+            "enum": [
+              "mermaid",
+              "ascii",
+              "plantuml"
+            ]
+          },
+          "category": {
+            "type": "string",
+            "description": "Categoría: entity, component, sequence, dependency, flow, state, lifecycle",
+            "enum": [
+              "entity",
+              "component",
+              "sequence",
+              "dependency",
+              "flow",
+              "state",
+              "lifecycle"
+            ]
+          },
+          "content": {
+            "type": "string",
+            "description": "Contenido del diagrama (sin backticks)"
+          },
+          "description": {
+            "type": "string",
+            "description": "Descripción opcional"
+          }
+        },
+        "required": [
+          "project",
+          "title",
+          "diagram_type",
+          "category",
+          "content"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Crea nota en 06_Diagrams/{category}/"
+      ],
+      "related": [
+        "vault_relation_add",
+        "vault_render",
+        "vault_graph"
+      ]
+    },
+    "vault_relation_add": {
+      "name": "vault_relation_add",
+      "description": "Agrega relaciones entre entidades y genera ERD automático.",
+      "group": "Diagramas",
+      "script": "vault_relation_add.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Proyecto"
+          },
+          "entity": {
+            "type": "string",
+            "description": "Entidad origen"
+          },
+          "to": {
+            "type": "string",
+            "description": "Entidad destino"
+          },
+          "type": {
+            "type": "string",
+            "description": "Tipo: one-to-one, one-to-many, many-to-many",
+            "enum": [
+              "one-to-one",
+              "one-to-many",
+              "many-to-many"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "description": "Etiqueta de la relación"
+          }
+        },
+        "required": [
+          "project",
+          "entity",
+          "to",
+          "type"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Actualiza relaciones en 07_Knowledge/"
+      ],
+      "related": [
+        "vault_diagram_save",
+        "vault_code_relation"
+      ]
+    },
+    "vault_code_module": {
+      "name": "vault_code_module",
+      "description": "Genera templates de módulos de código con IEEE 1016.",
+      "group": "Código",
+      "script": "vault_code_module.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Proyecto"
+          },
+          "module": {
+            "type": "string",
+            "description": "Nombre del módulo"
+          },
+          "language": {
+            "type": "string",
+            "description": "Lenguaje: python, javascript, typescript, go, rust",
+            "enum": [
+              "python",
+              "javascript",
+              "typescript",
+              "go",
+              "rust"
+            ]
+          },
+          "viewpoints": {
+            "type": "string",
+            "description": "Viewpoints IEEE 1016: context,interface,data,operations,dependency"
+          }
+        },
+        "required": [
+          "project",
+          "module",
+          "language"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Crea nota en 11_Code/{project}/"
+      ],
+      "related": [
+        "vault_code_map",
+        "vault_code_relation",
+        "vault_diagram_save"
+      ]
+    },
+    "vault_code_map": {
+      "name": "vault_code_map",
+      "description": "Genera mapa de dependencias entre módulos de código.",
+      "group": "Código",
+      "script": "vault_code_map.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Proyecto"
+          },
+          "depth": {
+            "type": "string",
+            "description": "Profundidad máxima (default: 3)"
+          }
+        },
+        "required": [
+          "project"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Genera 11_Code/{project}/map.md con diagrama"
+      ],
+      "related": [
+        "vault_code_module",
+        "vault_code_relation",
+        "vault_graph"
+      ]
+    },
+    "vault_code_relation": {
+      "name": "vault_code_relation",
+      "description": "Registra y visualiza relaciones entre componentes de código.",
+      "group": "Código",
+      "script": "vault_code_relation.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Proyecto"
+          },
+          "from": {
+            "type": "string",
+            "description": "Componente origen"
+          },
+          "to": {
+            "type": "string",
+            "description": "Componente destino"
+          },
+          "type": {
+            "type": "string",
+            "description": "Tipo: imports,calls,extends,implements,depends",
+            "enum": [
+              "imports",
+              "calls",
+              "extends",
+              "implements",
+              "depends"
+            ]
+          }
+        },
+        "required": [
+          "project",
+          "from",
+          "to",
+          "type"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Actualiza índice de relaciones en 11_Code/"
+      ],
+      "related": [
+        "vault_code_map",
+        "vault_code_module"
+      ]
+    },
+    "vault_code_query": {
+      "name": "vault_code_query",
+      "description": "Consulta información del índice de código.",
+      "group": "Código",
+      "script": "vault_code_query.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Consulta: module, relation, imports",
+            "enum": [
+              "module",
+              "relation",
+              "imports"
+            ]
+          },
+          "project": {
+            "type": "string",
+            "description": "Filtrar por proyecto"
+          },
+          "pattern": {
+            "type": "string",
+            "description": "Patrón de búsqueda"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "guards": [],
+      "side_effects": [],
+      "related": [
+        "vault_code_map",
+        "vault_search"
+      ]
+    },
+    "vault_code_sync": {
+      "name": "vault_code_sync",
+      "description": "Sincroniza estado del código con el vault.",
+      "group": "Código",
+      "script": "vault_code_sync.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Proyecto"
+          },
+          "action": {
+            "type": "string",
+            "description": "Acción: scan, update, diff",
+            "enum": [
+              "scan",
+              "update",
+              "diff"
+            ]
+          }
+        },
+        "required": [
+          "project",
+          "action"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Actualiza 11_Code/{project}/index.json"
+      ],
+      "related": [
+        "vault_code_map",
+        "vault_reindex"
+      ]
+    },
+    "vault_code_tag": {
+      "name": "vault_code_tag",
+      "description": "Etiqueta módulos de código por funcionalidad.",
+      "group": "Normas y Etiquetas",
+      "script": "vault_code_tag.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Proyecto"
+          },
+          "module": {
+            "type": "string",
+            "description": "Módulo a etiquetar"
+          },
+          "tags": {
+            "type": "string",
+            "description": "Tags separados por coma"
+          }
+        },
+        "required": [
+          "project",
+          "module",
+          "tags"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Actualiza frontmatter del módulo"
+      ],
+      "related": [
+        "vault_tags",
+        "vault_code_module"
+      ]
+    },
+    "vault_flow_save": {
+      "name": "vault_flow_save",
+      "description": "Guarda workflows, pipelines, lifecycles y dataflows con diagrama Mermaid.",
+      "group": "Flujos",
+      "script": "vault_flow_save.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Proyecto"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nombre del flujo"
+          },
+          "type": {
+            "type": "string",
+            "description": "Tipo: workflow, pipeline, lifecycle, dataflow",
+            "enum": [
+              "workflow",
+              "pipeline",
+              "lifecycle",
+              "dataflow"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "description": "Descripción"
+          },
+          "mermaid": {
+            "type": "string",
+            "description": "Diagrama Mermaid (sin backticks)"
+          },
+          "actors": {
+            "type": "string",
+            "description": "Actores separados por coma"
+          }
+        },
+        "required": [
+          "project",
+          "name",
+          "type",
+          "description",
+          "mermaid"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Crea nota en 13_Flows/{type}/"
+      ],
+      "related": [
+        "vault_diagram_save",
+        "vault_graph"
+      ]
+    },
+    "vault_pattern_save": {
+      "name": "vault_pattern_save",
+      "description": "Guarda patrones arquitectónicos en el vault.",
+      "group": "Patrones",
+      "script": "vault_pattern_save.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Nombre del patrón"
+          },
+          "category": {
+            "type": "string",
+            "description": "Categoría: creational, structural, behavioral, architectural",
+            "enum": [
+              "creational",
+              "structural",
+              "behavioral",
+              "architectural"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "description": "Descripción del patrón"
+          },
+          "implementation": {
+            "type": "string",
+            "description": "Código de ejemplo"
+          },
+          "use_cases": {
+            "type": "string",
+            "description": "Casos de uso separados por coma"
+          }
+        },
+        "required": [
+          "name",
+          "category",
+          "description"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Crea nota en 05_Patterns/"
+      ],
+      "related": [
+        "vault_pattern_list",
+        "vault_code_module"
+      ]
+    },
+    "vault_pattern_list": {
+      "name": "vault_pattern_list",
+      "description": "Lista patrones arquitectónicos disponibles.",
+      "group": "Patrones",
+      "script": "vault_pattern_list.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "description": "Filtrar por categoría",
+            "enum": [
+              "creational",
+              "structural",
+              "behavioral",
+              "architectural"
+            ]
+          },
+          "search": {
+            "type": "string",
+            "description": "Buscar por nombre"
+          }
+        },
+        "required": []
+      },
+      "guards": [],
+      "side_effects": [],
+      "related": [
+        "vault_pattern_save",
+        "vault_search"
+      ]
+    },
+    "vault_knowledge_save": {
+      "name": "vault_knowledge_save",
+      "description": "Guarda conocimiento estructurado por tema.",
+      "group": "Conocimiento",
+      "script": "vault_knowledge_save.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string",
+            "description": "Tema principal"
+          },
+          "title": {
+            "type": "string",
+            "description": "Título del conocimiento"
+          },
+          "content": {
+            "type": "string",
+            "description": "Contenido estructurado"
+          },
+          "tags": {
+            "type": "string",
+            "description": "Tags separados por espacio"
+          }
+        },
+        "required": [
+          "topic",
+          "title",
+          "content"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Crea nota en 07_Knowledge/{topic}/"
+      ],
+      "related": [
+        "vault_knowledge_get",
+        "vault_search"
+      ]
+    },
+    "vault_knowledge_get": {
+      "name": "vault_knowledge_get",
+      "description": "Recupera conocimiento por tema o búsqueda.",
+      "group": "Conocimiento",
+      "script": "vault_knowledge_get.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string",
+            "description": "Tema a buscar"
+          },
+          "query": {
+            "type": "string",
+            "description": "Palabra clave"
+          },
+          "limit": {
+            "type": "string",
+            "description": "Límite de resultados (default: 10)"
+          }
+        },
+        "required": []
+      },
+      "guards": [],
+      "side_effects": [],
+      "related": [
+        "vault_knowledge_save",
+        "vault_search"
+      ]
+    },
+    "vault_backup": {
+      "name": "vault_backup",
+      "description": "Crea backup del vault en carpeta timestamped.",
+      "group": "Backups",
+      "script": "vault_backup.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "include_history": {
+            "type": "string",
+            "description": "Incluir .history/ (default: False)"
+          },
+          "compress": {
+            "type": "string",
+            "description": "Comprimir a zip (default: False)"
+          },
+          "label": {
+            "type": "string",
+            "description": "Etiqueta opcional"
+          }
+        },
+        "required": []
+      },
+      "guards": [],
+      "side_effects": [
+        "Crea carpeta en vault-backups/"
+      ],
+      "related": [
+        "vault_backup_list",
+        "vault_restore"
+      ]
+    },
+    "vault_backup_list": {
+      "name": "vault_backup_list",
+      "description": "Lista backups disponibles.",
+      "group": "Backups",
+      "script": "vault_backup_list.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "string",
+            "description": "Cantidad máxima (default: 20)"
+          }
+        },
+        "required": []
+      },
+      "guards": [],
+      "side_effects": [],
+      "related": [
+        "vault_backup",
+        "vault_restore"
+      ]
+    },
+    "vault_restore": {
+      "name": "vault_restore",
+      "description": "Restaura vault desde backup.",
+      "group": "Backups",
+      "script": "vault_restore.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "backup_id": {
+            "type": "string",
+            "description": "ID del backup a restaurar"
+          },
+          "target": {
+            "type": "string",
+            "description": "Carpeta destino (default: VAULT_ROOT)"
+          },
+          "dry_run": {
+            "type": "string",
+            "description": "Simular sin aplicar"
+          }
+        },
+        "required": [
+          "backup_id"
+        ]
+      },
+      "guards": [
+        "Confirmar antes de sobreescribir"
+      ],
+      "side_effects": [
+        "Sobreescribe archivos del vault"
+      ],
+      "related": [
+        "vault_backup",
+        "vault_backup_list"
+      ]
+    },
+    "vault_env_save": {
+      "name": "vault_env_save",
+      "description": "Guarda variables de entorno y secretos para un proyecto.",
+      "group": "Infraestructura",
+      "script": "vault_env_save.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Proyecto"
+          },
+          "environment": {
+            "type": "string",
+            "description": "Entorno: dev, staging, prod",
+            "enum": [
+              "dev",
+              "staging",
+              "prod"
+            ]
+          },
+          "variables": {
+            "type": "string",
+            "description": "Variables en formato KEY=VALUE separadas por espacio"
+          }
+        },
+        "required": [
+          "project",
+          "environment",
+          "variables"
+        ]
+      },
+      "guards": [
+        "No guardar secrets en texto plano"
+      ],
+      "side_effects": [
+        "Crea nota en 09_Infrastructure/{project}/"
+      ],
+      "related": [
+        "vault_env_matrix",
+        "vault_infra_save"
+      ]
+    },
+    "vault_env_matrix": {
+      "name": "vault_env_matrix",
+      "description": "Genera matriz comparativa de entornos.",
+      "group": "Release y Entornos",
+      "script": "vault_env_matrix.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Proyecto"
+          }
+        },
+        "required": [
+          "project"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Genera 09_Infrastructure/{project}/matrix.md"
+      ],
+      "related": [
+        "vault_env_save",
+        "vault_infra_map"
+      ]
+    },
+    "vault_infra_save": {
+      "name": "vault_infra_save",
+      "description": "Guarda documentación de infraestructura.",
+      "group": "Infraestructura",
+      "script": "vault_infra_save.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Proyecto"
+          },
+          "title": {
+            "type": "string",
+            "description": "Título"
+          },
+          "provider": {
+            "type": "string",
+            "description": "Proveedor: aws, gcp, azure, onprem",
+            "enum": [
+              "aws",
+              "gcp",
+              "azure",
+              "onprem"
+            ]
+          },
+          "components": {
+            "type": "string",
+            "description": "Componentes separados por coma"
+          },
+          "description": {
+            "type": "string",
+            "description": "Descripción"
+          }
+        },
+        "required": [
+          "project",
+          "title",
+          "provider",
+          "components"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Crea nota en 09_Infrastructure/{project}/"
+      ],
+      "related": [
+        "vault_infra_map",
+        "vault_env_save"
+      ]
+    },
+    "vault_infra_map": {
+      "name": "vault_infra_map",
+      "description": "Genera mapa visual de infraestructura en Mermaid.",
+      "group": "Infraestructura",
+      "script": "vault_infra_map.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Proyecto"
+          },
+          "components": {
+            "type": "string",
+            "description": "Componentes separados por coma"
+          },
+          "location": {
+            "type": "string",
+            "description": "Ubicación geográfica"
+          }
+        },
+        "required": [
+          "project",
+          "components"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Genera diagrama en 09_Infrastructure/{project}/"
+      ],
+      "related": [
+        "vault_infra_save",
+        "vault_diagram_save"
+      ]
+    },
+    "vault_security_scan": {
+      "name": "vault_security_scan",
+      "description": "Escaneo de seguridad del vault y código.",
+      "group": "Seguridad",
+      "script": "vault_security_scan.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Proyecto específico"
+          },
+          "scan_type": {
+            "type": "string",
+            "description": "Tipo: full, secrets, dependencies",
+            "enum": [
+              "full",
+              "secrets",
+              "dependencies"
+            ]
+          }
+        },
+        "required": []
+      },
+      "guards": [],
+      "side_effects": [
+        "Genera reporte en 02_Observability/security/"
+      ],
+      "related": [
+        "vault_audit",
+        "vault_log_error"
+      ]
+    },
+    "vault_drift_detect": {
+      "name": "vault_drift_detect",
+      "description": "Detecta drift de configuración entre ambientes.",
+      "group": "Drift",
+      "script": "vault_drift_detect.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Proyecto"
+          },
+          "compare": {
+            "type": "string",
+            "description": "Entornos a comparar: dev-staging, staging-prod"
+          }
+        },
+        "required": [
+          "project",
+          "compare"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Reporta drift detectado"
+      ],
+      "related": [
+        "vault_audit",
+        "vault_env_matrix"
+      ]
+    },
+    "vault_impact": {
+      "name": "vault_impact",
+      "description": "Análisis de impacto en cascada de cambios.",
+      "group": "Propagación",
+      "script": "vault_impact.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Nota a analizar"
+          },
+          "depth": {
+            "type": "string",
+            "description": "Profundidad máxima (default: 3)"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      },
+      "guards": [],
+      "side_effects": [],
+      "related": [
+        "vault_propagate",
+        "vault_graph"
+      ]
+    },
+    "vault_propagate": {
+      "name": "vault_propagate",
+      "description": "Propaga cambios entre notas relacionadas.",
+      "group": "Propagación",
+      "script": "vault_propagate.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "description": "Nota fuente"
+          },
+          "template": {
+            "type": "string",
+            "description": "Template de propagación"
+          },
+          "dry_run": {
+            "type": "string",
+            "description": "Simular sin aplicar"
+          }
+        },
+        "required": [
+          "source",
+          "template"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Actualiza notas relacionadas"
+      ],
+      "related": [
+        "vault_impact",
+        "vault_write"
+      ]
+    },
+    "vault_quality_check": {
+      "name": "vault_quality_check",
+      "description": "Verifica calidad de datos del vault.",
+      "group": "Data Quality",
+      "script": "vault_quality_check.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Proyecto específico"
+          },
+          "metrics": {
+            "type": "string",
+            "description": "Métricas: completeness,consistency,accuracy"
+          }
+        },
+        "required": []
+      },
+      "guards": [],
+      "side_effects": [
+        "Genera reporte en 00_System/"
+      ],
+      "related": [
+        "vault_audit",
+        "vault_fundamentals"
+      ]
+    },
+    "vault_fundamentals": {
+      "name": "vault_fundamentals",
+      "description": "Métricas fundamentales del vault.",
+      "group": "Data Quality",
+      "script": "vault_fundamentals.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "guards": [],
+      "side_effects": [],
+      "related": [
+        "vault_audit",
+        "vault_quality_check"
+      ]
+    },
+    "vault_project_status": {
+      "name": "vault_project_status",
+      "description": "Muestra estado actual de un proyecto.",
+      "group": "Vista proyecto",
+      "script": "vault_project_status.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Slug del proyecto"
+          }
+        },
+        "required": [
+          "project"
+        ]
+      },
+      "guards": [],
+      "side_effects": [],
+      "related": [
+        "vault_project_overview",
+        "vault_audit"
+      ]
+    },
+    "vault_project_overview": {
+      "name": "vault_project_overview",
+      "description": "Genera overview consolidado de proyecto.",
+      "group": "Vista proyecto",
+      "script": "vault_project_overview.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Slug del proyecto"
+          },
+          "description": {
+            "type": "string",
+            "description": "Descripción del proyecto"
+          },
+          "runtime": {
+            "type": "string",
+            "description": "Runtime (ej: Node.js 20)"
+          },
+          "extra_sections": {
+            "type": "string",
+            "description": "Secciones extra en JSON"
+          }
+        },
+        "required": [
+          "project"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Crea/actualiza 01_Projects/{slug}/overview.md"
+      ],
+      "related": [
+        "vault_project_status",
+        "vault_audit"
+      ]
+    },
+    "vault_section_index": {
+      "name": "vault_section_index",
+      "description": "Genera índice de una sección del vault.",
+      "group": "Índices",
+      "script": "vault_section_index.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "section": {
+            "type": "string",
+            "description": "Sección (ej: 01_Projects)"
+          }
+        },
+        "required": [
+          "section"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Genera {section}/index.md"
+      ],
+      "related": [
+        "vault_master_index",
+        "vault_reindex"
+      ]
+    },
+    "vault_master_index": {
+      "name": "vault_master_index",
+      "description": "Genera índice maestro del vault.",
+      "group": "Índices",
+      "script": "vault_master_index.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "include_subdirs": {
+            "type": "string",
+            "description": "Incluir subdirectorios"
+          }
+        },
+        "required": []
+      },
+      "guards": [],
+      "side_effects": [
+        "Genera 99_Index/master-index.md"
+      ],
+      "related": [
+        "vault_section_index",
+        "vault_reindex"
+      ]
+    },
+    "vault_timeline": {
+      "name": "vault_timeline",
+      "description": "Genera línea temporal de eventos del vault.",
+      "group": "Línea de Tiempo",
+      "script": "vault_timeline.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Filtrar por proyecto"
+          },
+          "days": {
+            "type": "string",
+            "description": "Días hacia atrás (default: 30)"
+          }
+        },
+        "required": []
+      },
+      "guards": [],
+      "side_effects": [],
+      "related": [
+        "vault_audit",
+        "vault_change_log"
+      ]
+    },
+    "vault_change_log": {
+      "name": "vault_change_log",
+      "description": "Genera registro de cambios del vault.",
+      "group": "Change Log",
+      "script": "vault_change_log.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Proyecto específico"
+          },
+          "from": {
+            "type": "string",
+            "description": "Desde fecha (YYYY-MM-DD)"
+          },
+          "to": {
+            "type": "string",
+            "description": "Hasta fecha (YYYY-MM-DD)"
+          }
+        },
+        "required": []
+      },
+      "guards": [],
+      "side_effects": [],
+      "related": [
+        "vault_timeline",
+        "vault_audit"
+      ]
+    },
+    "vault_ai_decision": {
+      "name": "vault_ai_decision",
+      "description": "Registra decisiones de IA del proyecto.",
+      "group": "IA Governance",
+      "script": "vault_ai_decision.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Proyecto"
+          },
+          "decision": {
+            "type": "string",
+            "description": "Decisión tomada"
+          },
+          "rationale": {
+            "type": "string",
+            "description": "Razón de la decisión"
+          },
+          "alternatives": {
+            "type": "string",
+            "description": "Alternativas consideradas"
+          }
+        },
+        "required": [
+          "project",
+          "decision",
+          "rationale"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Crea nota en 03_Decisions/"
+      ],
+      "related": [
+        "vault_norms",
+        "vault_audit"
+      ]
+    },
+    "vault_norms": {
+      "name": "vault_norms",
+      "description": "Gestiona normas y estándares del vault.",
+      "group": "Normas y Etiquetas",
+      "script": "vault_norms.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "Acción: list, add, check",
+            "enum": [
+              "list",
+              "add",
+              "check"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "Nombre de la norma"
+          },
+          "content": {
+            "type": "string",
+            "description": "Contenido de la norma"
+          }
+        },
+        "required": [
+          "action"
+        ]
+      },
+      "guards": [],
+      "side_effects": [],
+      "related": [
+        "vault_ai_decision",
+        "vault_audit"
+      ]
+    },
+    "vault_tokens": {
+      "name": "vault_tokens",
+      "description": "Gestión de tokens del proyecto.",
+      "group": "Tokens",
+      "script": "vault_tokens.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Proyecto"
+          },
+          "action": {
+            "type": "string",
+            "description": "Acción: list, add, remove",
+            "enum": [
+              "list",
+              "add",
+              "remove"
+            ]
+          },
+          "token_type": {
+            "type": "string",
+            "description": "Tipo: api_key, access_token, refresh_token"
+          }
+        },
+        "required": [
+          "project",
+          "action"
+        ]
+      },
+      "guards": [
+        "No guardar tokens en texto plano"
+      ],
+      "side_effects": [],
+      "related": [
+        "vault_token_counter",
+        "vault_token_service"
+      ]
+    },
+    "vault_token_counter": {
+      "name": "vault_token_counter",
+      "description": "Cuenta tokens de contenido.",
+      "group": "Tokens",
+      "script": "vault_token_counter.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "Contenido a contar"
+          },
+          "model": {
+            "type": "string",
+            "description": "Modelo: gpt-4, gpt-3.5-turbo (default: gpt-4)"
+          }
+        },
+        "required": [
+          "content"
+        ]
+      },
+      "guards": [],
+      "side_effects": [],
+      "related": [
+        "vault_tokens",
+        "vault_token_service"
+      ]
+    },
+    "vault_token_service": {
+      "name": "vault_token_service",
+      "description": "Servicio de gestión de tokens.",
+      "group": "Tokens",
+      "script": "vault_token_service.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "Acción: estimate, budget, report",
+            "enum": [
+              "estimate",
+              "budget",
+              "report"
+            ]
+          },
+          "project": {
+            "type": "string",
+            "description": "Proyecto"
+          }
+        },
+        "required": [
+          "action"
+        ]
+      },
+      "guards": [],
+      "side_effects": [],
+      "related": [
+        "vault_tokens",
+        "vault_token_counter"
+      ]
+    },
+    "vault_requirement_save": {
+      "name": "vault_requirement_save",
+      "description": "Guarda requerimiento del proyecto.",
+      "group": "Requerimientos",
+      "script": "vault_requirement_save.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Proyecto"
+          },
+          "title": {
+            "type": "string",
+            "description": "Título del requerimiento"
+          },
+          "description": {
+            "type": "string",
+            "description": "Descripción"
+          },
+          "priority": {
+            "type": "string",
+            "description": "Prioridad: critical, high, medium, low",
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "description": "Status: draft, reviewed, approved, implemented, verified, obsolete"
+          }
+        },
+        "required": [
+          "project",
+          "title",
+          "description",
+          "priority"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Crea nota en 01_Projects/{project}/requirements/"
+      ],
+      "related": [
+        "vault_test_save",
+        "vault_audit"
+      ]
+    },
+    "vault_test_save": {
+      "name": "vault_test_save",
+      "description": "Guarda casos de prueba.",
+      "group": "Tests",
+      "script": "vault_test_save.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Proyecto"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nombre del test"
+          },
+          "type": {
+            "type": "string",
+            "description": "Tipo: unit, integration, e2e",
+            "enum": [
+              "unit",
+              "integration",
+              "e2e"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "description": "Descripción del test"
+          },
+          "coverage": {
+            "type": "string",
+            "description": "Cobertura esperada"
+          }
+        },
+        "required": [
+          "project",
+          "name",
+          "type",
+          "description"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Crea nota en 01_Projects/{project}/tests/"
+      ],
+      "related": [
+        "vault_requirement_save",
+        "vault_code_module"
+      ]
+    },
+    "vault_runbook_save": {
+      "name": "vault_runbook_save",
+      "description": "Guarda runbook de operaciones.",
+      "group": "Runbooks",
+      "script": "vault_runbook_save.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Proyecto"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nombre del runbook"
+          },
+          "trigger": {
+            "type": "string",
+            "description": "Trigger: manual, alert, schedule",
+            "enum": [
+              "manual",
+              "alert",
+              "schedule"
+            ]
+          },
+          "steps": {
+            "type": "string",
+            "description": "Pasos en Markdown"
+          }
+        },
+        "required": [
+          "project",
+          "name",
+          "trigger",
+          "steps"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Crea nota en 08_Runbooks/{project}/"
+      ],
+      "related": [
+        "vault_runbook_log",
+        "vault_incident_save"
+      ]
+    },
+    "vault_runbook_log": {
+      "name": "vault_runbook_log",
+      "description": "Registra ejecución de runbook.",
+      "group": "Runbooks",
+      "script": "vault_runbook_log.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "runbook": {
+            "type": "string",
+            "description": "Nombre del runbook"
+          },
+          "status": {
+            "type": "string",
+            "description": "Status: success, failure, partial",
+            "enum": [
+              "success",
+              "failure",
+              "partial"
+            ]
+          },
+          "output": {
+            "type": "string",
+            "description": "Output de la ejecución"
+          }
+        },
+        "required": [
+          "runbook",
+          "status"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Actualiza log del runbook"
+      ],
+      "related": [
+        "vault_runbook_save",
+        "vault_audit"
+      ]
+    },
+    "vault_incident_save": {
+      "name": "vault_incident_save",
+      "description": "Registra incidente de producción.",
+      "group": "Producción y SRE",
+      "script": "vault_incident_save.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Título del incidente"
+          },
+          "severity": {
+            "type": "string",
+            "description": "Severidad: SEV1, SEV2, SEV3, SEV4",
+            "enum": [
+              "SEV1",
+              "SEV2",
+              "SEV3",
+              "SEV4"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "description": "Descripción"
+          },
+          "timeline": {
+            "type": "string",
+            "description": "Timeline del incidente"
+          },
+          "action_items": {
+            "type": "string",
+            "description": "Action items en JSON"
+          }
+        },
+        "required": [
+          "title",
+          "severity",
+          "description"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Crea nota en 02_Observability/incidents/"
+      ],
+      "related": [
+        "vault_slo_save",
+        "vault_runbook_save"
+      ]
+    },
+    "vault_slo_save": {
+      "name": "vault_slo_save",
+      "description": "Guarda SLO (Service Level Objective).",
+      "group": "Producción y SRE",
+      "script": "vault_slo_save.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Proyecto"
+          },
+          "name": {
+            "type": "string",
+            "description": "Nombre del SLO"
+          },
+          "target": {
+            "type": "string",
+            "description": "Target: 99.9%, 99.99%, etc"
+          },
+          "description": {
+            "type": "string",
+            "description": "Descripción del SLO"
+          }
+        },
+        "required": [
+          "project",
+          "name",
+          "target",
+          "description"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Crea nota en 02_Observability/slos/"
+      ],
+      "related": [
+        "vault_incident_save",
+        "vault_audit"
+      ]
+    },
+    "vault_release_save": {
+      "name": "vault_release_save",
+      "description": "Guarda información de release.",
+      "group": "Release y Entornos",
+      "script": "vault_release_save.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Proyecto"
+          },
+          "version": {
+            "type": "string",
+            "description": "Versión (semver)"
+          },
+          "description": {
+            "type": "string",
+            "description": "Descripción del release"
+          },
+          "changes": {
+            "type": "string",
+            "description": "Cambios en JSON"
+          }
+        },
+        "required": [
+          "project",
+          "version",
+          "description"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Crea nota en 01_Projects/{project}/releases/"
+      ],
+      "related": [
+        "vault_change_log",
+        "vault_incident_save"
+      ]
+    },
+    "vault_risk_save": {
+      "name": "vault_risk_save",
+      "description": "Registra riesgo del proyecto.",
+      "group": "Riesgos y Calidad",
+      "script": "vault_risk_save.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Proyecto"
+          },
+          "title": {
+            "type": "string",
+            "description": "Título del riesgo"
+          },
+          "probability": {
+            "type": "string",
+            "description": "Probabilidad: low, medium, high",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "impact": {
+            "type": "string",
+            "description": "Impacto: low, medium, high, critical",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "description": "Descripción"
+          },
+          "mitigation": {
+            "type": "string",
+            "description": "Mitigación propuesta"
+          }
+        },
+        "required": [
+          "project",
+          "title",
+          "probability",
+          "impact",
+          "description"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Crea nota en 01_Projects/{project}/risks/"
+      ],
+      "related": [
+        "vault_ncr_save",
+        "vault_privacy_save"
+      ]
+    },
+    "vault_privacy_save": {
+      "name": "vault_privacy_save",
+      "description": "Gestiona privacidad de datos.",
+      "group": "Riesgos y Calidad",
+      "script": "vault_privacy_save.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Proyecto"
+          },
+          "data_type": {
+            "type": "string",
+            "description": "Tipo de dato sensible"
+          },
+          "classification": {
+            "type": "string",
+            "description": "Clasificación: public, internal, confidential, restricted",
+            "enum": [
+              "public",
+              "internal",
+              "confidential",
+              "restricted"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "description": "Descripción del dato"
+          },
+          "third_parties": {
+            "type": "string",
+            "description": "Terceros en JSON"
+          }
+        },
+        "required": [
+          "project",
+          "data_type",
+          "classification",
+          "description"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Crea nota en 02_Observability/privacy/"
+      ],
+      "related": [
+        "vault_risk_save",
+        "vault_security_scan"
+      ]
+    },
+    "vault_ncr_save": {
+      "name": "vault_ncr_save",
+      "description": "Registra No Conformidad (NCR).",
+      "group": "Riesgos y Calidad",
+      "script": "vault_ncr_save.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Proyecto"
+          },
+          "title": {
+            "type": "string",
+            "description": "Título de la NCR"
+          },
+          "description": {
+            "type": "string",
+            "description": "Descripción"
+          },
+          "severity": {
+            "type": "string",
+            "description": "Severidad: minor, major, critical",
+            "enum": [
+              "minor",
+              "major",
+              "critical"
+            ]
+          },
+          "detected_by": {
+            "type": "string",
+            "description": "Detectado por: audit, customer, internal, automated",
+            "enum": [
+              "audit",
+              "customer",
+              "internal",
+              "automated"
+            ]
+          },
+          "root_cause": {
+            "type": "string",
+            "description": "Causa raíz"
+          }
+        },
+        "required": [
+          "project",
+          "title",
+          "description",
+          "severity",
+          "detected_by"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Crea nota en 02_Observability/ncr/"
+      ],
+      "related": [
+        "vault_risk_save",
+        "vault_audit"
+      ]
+    },
+    "vault_migrate_docs": {
+      "name": "vault_migrate_docs",
+      "description": "Migra documentación entre vaults o estructuras.",
+      "group": "Migración",
+      "script": "vault_migrate_docs.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "description": "Vault o carpeta fuente"
+          },
+          "target": {
+            "type": "string",
+            "description": "Carpeta destino"
+          },
+          "mapping": {
+            "type": "string",
+            "description": "Mapeo de rutas en JSON"
+          },
+          "dry_run": {
+            "type": "string",
+            "description": "Simular sin aplicar"
+          }
+        },
+        "required": [
+          "source",
+          "target"
+        ]
+      },
+      "guards": [
+        "Hacer backup antes de migrar"
+      ],
+      "side_effects": [
+        "Copia/move archivos"
+      ],
+      "related": [
+        "vault_migrate_rollback",
+        "vault_merge"
+      ]
+    },
+    "vault_migrate_rollback": {
+      "name": "vault_migrate_rollback",
+      "description": "Revierte migración anterior.",
+      "group": "Migración",
+      "script": "vault_migrate_rollback.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "migration_id": {
+            "type": "string",
+            "description": "ID de la migración a revertir"
+          },
+          "dry_run": {
+            "type": "string",
+            "description": "Simular sin aplicar"
+          }
+        },
+        "required": [
+          "migration_id"
+        ]
+      },
+      "guards": [
+        "Confirmar antes de revertir"
+      ],
+      "side_effects": [
+        "Revierte archivos migrados"
+      ],
+      "related": [
+        "vault_migrate_docs",
+        "vault_backup"
+      ]
+    },
+    "vault_bibliography_save": {
+      "name": "vault_bibliography_save",
+      "description": "Guarda referencia bibliográfica.",
+      "group": "Bibliografía",
+      "script": "vault_bibliography_save.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Título"
+          },
+          "type": {
+            "type": "string",
+            "description": "Tipo: book, article, website, paper",
+            "enum": [
+              "book",
+              "article",
+              "website",
+              "paper"
+            ]
+          },
+          "authors": {
+            "type": "string",
+            "description": "Autores separados por coma"
+          },
+          "year": {
+            "type": "string",
+            "description": "Año de publicación"
+          },
+          "url": {
+            "type": "string",
+            "description": "URL"
+          },
+          "tags": {
+            "type": "string",
+            "description": "Tags separados por espacio"
+          }
+        },
+        "required": [
+          "title",
+          "type",
+          "authors",
+          "year"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Crea nota en 07_Knowledge/bibliography/"
+      ],
+      "related": [
+        "vault_knowledge_save",
+        "vault_search"
+      ]
+    }
+  },
+  "groups": {
+    "Core": [
+      "vault_write",
+      "vault_read",
+      "vault_search",
+      "vault_list",
+      "vault_append",
+      "vault_diff",
+      "vault_merge",
+      "vault_move"
+    ],
+    "Observabilidad": [
+      "vault_log_error"
+    ],
+    "Salud del Vault": [
+      "vault_audit",
+      "vault_validate",
+      "vault_graph"
+    ],
+    "Patrones": [
+      "vault_pattern_save",
+      "vault_pattern_list"
+    ],
+    "Diagramas": [
+      "vault_diagram_save",
+      "vault_relation_add",
+      "vault_mermaid_check",
+      "vault_diagram_export"
+    ],
+    "Conocimiento": [
+      "vault_knowledge_save",
+      "vault_knowledge_get"
+    ],
+    "Runbooks": [
+      "vault_runbook_save",
+      "vault_runbook_log"
+    ],
+    "Infraestructura": [
+      "vault_infra_save",
+      "vault_infra_map",
+      "vault_env_save",
+      "vault_env_matrix"
+    ],
+    "Migración": [
+      "vault_migrate_docs",
+      "vault_migrate_rollback"
+    ],
+    "Línea de Tiempo": [
+      "vault_timeline"
+    ],
+    "Vista del Proyecto": [
+      "vault_project_status",
+      "vault_project_overview"
+    ],
+    "Código": [
+      "vault_code_module",
+      "vault_code_relation",
+      "vault_code_map",
+      "vault_code_query",
+      "vault_code_sync",
+      "vault_code_tag"
+    ],
+    "Backups": [
+      "vault_backup",
+      "vault_backup_list",
+      "vault_restore"
+    ],
+    "Seguridad": [
+      "vault_security_scan"
+    ],
+    "Índices": [
+      "vault_section_index",
+      "vault_master_index",
+      "vault_reindex"
+    ],
+    "Bibliografía": [
+      "vault_bibliography_save"
+    ],
+    "Drift Detection": [
+      "vault_drift_detect"
+    ],
+    "Flujos": [
+      "vault_flow_save"
+    ],
+    "Requerimientos": [
+      "vault_requirement_save"
+    ],
+    "Tests": [
+      "vault_test_save"
+    ],
+    "IA Governance": [
+      "vault_ai_decision"
+    ],
+    "Change Log": [
+      "vault_change_log"
+    ],
+    "Data Quality": [
+      "vault_quality_check",
+      "vault_fundamentals"
+    ],
+    "Propagación": [
+      "vault_impact",
+      "vault_propagate"
+    ],
+    "Tokens": [
+      "vault_tokens",
+      "vault_token_counter",
+      "vault_token_service"
+    ],
+    "Session Delta y Tags": [
+      "vault_delta",
+      "vault_tags"
+    ],
+    "Normas": [
+      "vault_norms",
+      "vault_code_tag"
+    ],
+    "Producción/SRE": [
+      "vault_incident_save",
+      "vault_slo_save"
+    ],
+    "Release": [
+      "vault_release_save"
+    ],
+    "Riesgos/Calidad": [
+      "vault_risk_save",
+      "vault_privacy_save",
+      "vault_ncr_save"
+    ],
+    "Bootstrap": [
+      "vault_init"
+    ],
+    "Corrección Automática": [
+      "vault_fix_brackets"
+    ],
+    "Versionado": [
+      "vault_standard_upgrade"
+    ],
+    "Gestión de Carpetas": [
+      "vault_folder_registry"
+    ]
+  }
+}

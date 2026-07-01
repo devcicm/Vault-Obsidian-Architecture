@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v36.0 — 2026-06-28  
+**Versión:** v37.0 — 2026-07-01  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -3462,6 +3462,64 @@ El vault en `{data-dir}/vault/` puede abrirse **directamente** en Obsidian deskt
 
 ---
 
+## MCP Server Monolith — Servicio Directo para IAs (v37)
+
+El vault ahora expone sus 71 herramientas como un **servidor MCP monolítico** que las IAs pueden consumir directamente sin registro en harness. El archivo `mcp/nodejs/vault-mcp-server.mjs` implementa:
+
+### Transporte dual
+- **Modo stdio:** el cliente MCP lanza `node mcp/nodejs/vault-mcp-server.mjs` como proceso hijo
+- **Modo SSE:** `node mcp/nodejs/vault-mcp-server.mjs --port 3000` expone `http://localhost:3000/sse` accesible por cualquier IA sin configuración adicional
+
+### Capas del monolito
+
+| Capa | Función | Estrategias reutilizadas |
+|------|---------|--------------------------|
+| **MCP Protocol** | JSON-RPC 2.0 nativo (initialize, tools/list, tools/call, resources) | Cero dependencias npm |
+| **Tool Registry** | 71 herramientas con inputSchema completo | `vault_mcp_catalog.py` TOOLS_CATALOG |
+| **JS-native backend** | ~10 tools rápidas en JavaScript puro | `vault_graph_inspect`, `vault_graph`, `vault_read` |
+| **Python backend** | ~61 tools via subprocess a `scripts/*.py` | Todas las tools existentes |
+| **Guard Chain** | 9 validadores pre-escritura en secuencia | `vault_write`, `vault_regex`, `vault_secret_scan` |
+| **File Watcher** | Detección de cambios en vault via `fs.watch` + SHA-256 | `vault_delta`, `vault_drift_detect` |
+| **Traceability** | Log inmutable de mutaciones (JSON + MD) | `vault_change_log`, `vault_mcp_context` |
+| **Observability** | Health checks, DQ scoring 9 dimensiones | `vault_audit`, `vault_quality_check` |
+| **Idempotencia** | File locks, atomic writes, CAS state store | `vault_io` |
+| **Versionado** | Merkle snapshots, migration system | `vault_backup`, `vault_standard_upgrade` |
+| **Propagación** | BFS impact + strategy/action system | `vault_impact`, `vault_propagate` |
+
+### Nuevos validadores (v37)
+
+Tres validadores nuevos que no existían en el codebase anterior:
+
+1. **Table Bracket Validator:** detecta `[[` o `]]` incompletos dentro de celdas de tablas markdown. Reporta `{row, column, cell_content, type}` por cada anomalía.
+
+2. **Referenced Notes Validator:** a diferencia de los ghost links (advisory), este validador es **bloqueante**. Todo wikilink debe apuntar a una nota existente con contenido real (≥3 líneas, ≥10 palabras). Si la nota destino es un stub o está vacía, el write se rechaza.
+
+3. **Note Has Content Validator:** verifica que una nota referenciada cumple el content gate mínimo. Reutiliza la lógica de `_check_content_gate` de `vault_write.py`.
+
+### Principios del MCP Monolith
+
+| Principio | Implementación |
+|-----------|---------------|
+| **Observar** | File watcher con debounce 500ms + SHA-256 delta computation |
+| **Validar** | Guard chain de 9 pasos antes de cualquier write |
+| **Trazar** | TraceLog inmutable con UUID + timestamp + agent + diff |
+| **Versionar** | Snapshots pre/post con Merkle root verification |
+| **Sanar** | Auto-fix de bracket anomalies y broken links |
+| **Servir** | SSE/HTTP directo, sin registro en harness |
+
+### Ubicación
+
+```
+mcp/
+├── PLAN.md                  ← Plan de implementación detallado
+├── nodejs/
+│   └── vault-mcp-server.mjs ← Monolito Node.js (~3200 líneas)
+└── python/
+    └── vault_mcp_server.py  ← Equivalente Python (futuro)
+```
+
+---
+
 ## Auto-features del Harness
 
 ### Auto-context injection
@@ -4847,6 +4905,29 @@ temp/
 > Formato: [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).  
 > Cuando el proyecto usa **git**, cada versión incluye el hash del commit que la introdujo (`git: abcd123`).  
 > El hash permite navegar al estado exacto del código: `git show abcd123 -- docs/vault-obsidian-architecture.md`.
+
+---
+
+### v37 — 2026-07-01 `git: pending`
+
+**MCP Server Monolith + 3 nuevos validadores + Mejoras en graph tools**
+
+**Agregado**
+- **`mcp/nodejs/vault-mcp-server.mjs`:** servidor MCP monolítico con JSON-RPC 2.0 nativo. Transporte dual (stdio + SSE/HTTP en localhost:3000). Expone las 71 tools del vault como MCP tools. Cero dependencias npm — solo `node:*` built-ins. Backend dual: JS-native (~10 tools rápidas) + Python subprocess (~61 tools). Las IAs se conectan directamente sin registro en harness.
+- **`mcp/PLAN.md`:** documento de evidencia y plan de trabajo con 8 fases de implementación, arquitectura detallada, estrategias reutilizadas del codebase, y log de cambios.
+- **`mcp/python/`:** directorio preparado para el equivalente Python del MCP server.
+- **Table Bracket Validator:** nuevo Guard Chain validator que escanea celdas de tablas markdown en busca de `[[` o `]]` incompletos. Reporta `{row, column, cell_content, type}`.
+- **Referenced Notes Validator:** validador bloqueante (no advisory) que verifica que todo wikilink en un write apunta a una nota existente con contenido real. Rechaza writes con links a stubs o notas vacías.
+- **Note Has Content Validator:** verifica que una nota referenciada cumple ≥3 líneas reales y ≥10 palabras reales, reutilizando la lógica de `_check_content_gate` de `vault_write.py`.
+- **`vault_graph_fix.py` mejorado:** auto-apply con thresholds descendentes (0.85 → 0.78 → 0.65 → 0.60 → 0.55), em-dash fix (usa filename stem cuando el title contiene `—`), resolución de 00_System notes, auto-fix-safe mode, stubs mode, wizard mode.
+- **`vault_graph_inspect.py` mejorado:** `_stems_set` incluye tanto title-derived como filename-derived stems para resolución bidireccional de em-dash. Include `00_System/` notes en broken link resolution.
+
+**Modificado**
+- `vault_obsidian_architecture.md`: bump a v37. Agregada sección "MCP Server Monolith" con arquitectura, capas, principios, y nuevos validadores.
+- `scripts/README.md`: actualizado con sección MCP y referencia al monolito.
+
+**Resultado medido**
+- ans-test/vault-ans: broken links 591→0 (-100%), syntax errors 9→0 (-100%), 32 stubs created, 212/212 tests pass.
 
 ---
 

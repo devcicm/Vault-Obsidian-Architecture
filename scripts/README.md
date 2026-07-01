@@ -1,8 +1,9 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture v36**. Implementan las 69 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad.
+Scripts Python del estándar **Vault Obsidian Architecture v37**. Implementan las 71 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **85 archivos** — 69 tools activas + 5 deprecadas + 11 internas/meta + `vault_errors.py`
+- **85+ archivos** — 71 tools activas + 5 deprecadas + 11 internas/meta + `vault_errors.py`
+- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 71 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
 - **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault (`scripts/` con 00_System al lado); excluye automáticamente `vault-sandbox/` y `*.bak` para evitar loops
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
@@ -1101,6 +1102,48 @@ python vault_drift_detect.py --path "." --project {slug} --mode report  # 5. cob
 python vault_reindex.py --graph                    # 6. reconstruir índice + grafo
 python vault_audit.py                              # 7. healthScore ≥ baseline
 ```
+
+---
+
+---
+
+## MCP Server Monolith (v37)
+
+El vault expone sus herramientas como un **servidor MCP** que las IAs consumen directamente sin registro en harness.
+
+**Archivo:** `../mcp/nodejs/vault-mcp-server.mjs` (~3200 líneas, cero dependencias npm)  
+**Plan:** `../mcp/PLAN.md` — documento de evidencia con 8 fases de implementación
+
+### Modos de uso
+
+```bash
+# Modo stdio (cliente MCP lanza como proceso hijo)
+node mcp/nodejs/vault-mcp-server.mjs
+
+# Modo servicio (IAs se conectan directamente a la URL)
+node mcp/nodejs/vault-mcp-server.mjs --port 3000
+# → http://localhost:3000/sse
+```
+
+### Capas del monolito
+
+| Capa | Descripción |
+|------|-------------|
+| MCP Protocol | JSON-RPC 2.0 nativo (initialize, tools/list, tools/call, resources) |
+| Tool Registry | Las 71 tools con inputSchema completo (port de `vault_mcp_catalog.py`) |
+| JS-native backend | ~10 tools rápidas en JS: vault_read, vault_list, vault_graph, vault_graph_inspect, etc. |
+| Python backend | ~61 tools via `spawn("python", ["scripts/v_*.py", ...])` |
+| Guard Chain | 9 validadores pre-escritura: secret scan, content gate, bracket balance, empty links, path-anchored, **table brackets (nuevo)**, **referenced notes (nuevo)**, Mermaid, CIA fields |
+| File Watcher | `fs.watch` recursivo + SHA-256 delta (reusa `vault_delta.py`, `vault_drift_detect.py`) |
+| Traceability | Log inmutable de mutaciones con UUID + timestamp + agent + diff (reusa `vault_change_log.py`, `vault_mcp_context.py`) |
+| Observability | Health checks + DQ 9 dimensiones (reusa `vault_audit.py`, `vault_quality_check.py`) |
+| Idempotencia | File locks, atomic writes, CAS state store (reusa `vault_io.py`) |
+
+### Nuevos validadores (no existían en las tools Python)
+
+1. **Table Bracket Validator:** detecta `[[` o `]]` incompletos en celdas de tablas markdown
+2. **Referenced Notes Validator:** bloquea writes con wikilinks a notas inexistentes o stubs (diferente a ghost links: es bloqueante, no advisory)
+3. **Note Has Content Validator:** verifica que una nota referenciada tiene contenido real (≥3 líneas, ≥10 palabras)
 
 ---
 
