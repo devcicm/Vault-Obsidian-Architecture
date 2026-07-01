@@ -356,11 +356,24 @@ async function jsNativeGraphInspect(args) {
   const orphans = nodes.filter(n => !inDegree.has(n.path) && !n.path.startsWith("00_System/") && !n.path.startsWith("04_Sessions/")).map(n => n.path);
 
   const bracketErrors = [];
+  const mermaidErrors = [];
+  let totalMermaidBlocksFound = 0;
+  let totalMermaidErrorsFound = 0;
+
   for (const n of nodes) {
     const content = await readFile(join(vaultRoot, n.path), "utf-8");
     const anomalies = detectBracketAnomalies(content);
     if (anomalies.count > 0) {
       bracketErrors.push({ note: n.path, ...anomalies });
+    }
+
+    const mermaidResult = guardMermaidSyntax(content);
+    if (mermaidResult.blocks_found > 0) {
+      totalMermaidBlocksFound += mermaidResult.blocks_found;
+      if (!mermaidResult.ok) {
+        mermaidErrors.push({ note: n.path, ...mermaidResult });
+        totalMermaidErrorsFound += mermaidResult.errors.length;
+      }
     }
   }
 
@@ -372,10 +385,13 @@ async function jsNativeGraphInspect(args) {
       total_edges: edges.length,
       broken_links: brokenLinks.length,
       syntax_errors: bracketErrors.length,
+      mermaid_blocks: totalMermaidBlocksFound,
+      mermaid_errors: totalMermaidErrorsFound,
       orphans: orphans.length,
     },
     broken_links: brokenLinks,
     syntax_errors: bracketErrors,
+    mermaid_errors: mermaidErrors,
     orphans,
   };
 }
@@ -959,6 +975,48 @@ function guardTableBrackets(content) {
   return { ok: errors.length === 0, errors, reason: errors.length > 0 ? `Table bracket imbalance in ${errors.length} cells` : null };
 }
 
+const MERMAID_HEADERS = [
+  "flowchart TD", "flowchart LR", "flowchart RL", "flowchart TB", "flowchart BT",
+  "graph TD", "graph LR", "graph RL", "graph TB", "graph BT",
+  "sequenceDiagram", "classDiagram", "classDiagram-v2",
+  "stateDiagram", "stateDiagram-v2", "erDiagram", "gantt", "pie"
+];
+
+function guardMermaidSyntax(content) {
+  const re = /```mermaid\s*\n([\s\S]*?)```/g;
+  const errors = [];
+  let match;
+  let idx = 0;
+
+  while ((match = re.exec(content)) !== null) {
+    const diagram = match[1].trim();
+    const firstLine = diagram.split("\n")[0].trim();
+    const headerMatch = MERMAID_HEADERS.some(h => firstLine.startsWith(h));
+
+    if (!headerMatch) {
+      errors.push({ index: idx, type: "unknown_type", header: firstLine.substring(0, 50) });
+      idx++;
+      continue;
+    }
+
+    const braceOpen = (diagram.match(/\{/g) || []).length;
+    const braceClose = (diagram.match(/\}/g) || []).length;
+    if (braceOpen !== braceClose) {
+      errors.push({ index: idx, type: "mismatched_braces", opens: braceOpen, closes: braceClose, diff: braceOpen - braceClose });
+    }
+
+    const bracketOpen = (diagram.match(/\[/g) || []).length;
+    const bracketClose = (diagram.match(/\]/g) || []).length;
+    if (Math.abs(bracketOpen - bracketClose) % 2 !== 0) {
+      errors.push({ index: idx, type: "mismatched_brackets", opens: bracketOpen, closes: bracketClose });
+    }
+
+    idx++;
+  }
+
+  return { ok: errors.length === 0, blocks_found: idx, errors, reason: errors.length > 0 ? `${errors.length} Mermaid syntax errors in ${idx} blocks` : null };
+}
+
 let _stemPathCache = null;
 let _stemPathCacheRoot = null;
 
@@ -1034,6 +1092,9 @@ async function runGuardChain(content, folder, vaultRoot) {
   results.tableBrackets = guardTableBrackets(content);
   if (!results.tableBrackets.ok) return { ok: false, failed_at: "tableBrackets", results };
 
+  results.mermaidSyntax = guardMermaidSyntax(content);
+  if (!results.mermaidSyntax.ok) return { ok: false, failed_at: "mermaidSyntax", results };
+
   results.referencedNotes = guardReferencedNotes(content, vaultRoot);
   if (!results.referencedNotes.ok) return { ok: false, failed_at: "referencedNotes", results };
 
@@ -1096,11 +1157,13 @@ async function runHealthCheck() {
   const vaultRoot = detectVaultRoot();
   const inspect = await jsNativeGraphInspect({});
   const s = inspect.summary;
-  const score = Math.max(0, 100 - (s.broken_links * 0.5) - (s.syntax_errors * 3) - (s.orphans * 0.25));
+  const mermaidPenalty = (s.mermaid_errors || 0) * 2;
+  const score = Math.max(0, 100 - (s.broken_links * 0.5) - (s.syntax_errors * 3) - (s.orphans * 0.25) - mermaidPenalty);
 
   const nextActions = [];
   if (s.broken_links > 0) nextActions.push({ priority: "high", category: "broken_links", count: s.broken_links, command: "vault_graph_fix --auto-apply-partial 0.78 --apply" });
   if (s.syntax_errors > 0) nextActions.push({ priority: "high", category: "syntax_errors", count: s.syntax_errors, command: "vault_fix_brackets --apply" });
+  if (s.mermaid_errors > 0) nextActions.push({ priority: "medium", category: "mermaid_errors", count: s.mermaid_errors, blocks: s.mermaid_blocks, hint: "Fix Mermaid syntax errors in diagram blocks" });
   if (s.orphans > 10) nextActions.push({ priority: "medium", category: "orphans", count: s.orphans, hint: "Review orphan notes" });
 
   return {
