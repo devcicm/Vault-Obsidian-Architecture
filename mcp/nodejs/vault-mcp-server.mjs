@@ -17,14 +17,12 @@
 
 import { createInterface } from "node:readline";
 import { createServer } from "node:http";
-import { spawn } from "node:child_process";
+import { spawn, execSync } from "node:child_process";
 import { readFile, readdir, stat, writeFile, mkdir, rename, rmdir } from "node:fs/promises";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { createHash, randomUUID } from "node:crypto";
-import { resolve, relative, basename, dirname, join, normalize } from "node:path";
+import { resolve, basename, dirname, join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { watch } from "node:fs";
-import { EventEmitter } from "node:events";
 
 // ============================================================================
 // SECCIÓN 1: Bootstrap & Config
@@ -135,12 +133,18 @@ function parseFrontmatterWithBody(content) {
 }
 
 function extractTitle(content) {
-  const m = content.match(/^title:\s*(.+)$/m);
+  const fmMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
+  if (!fmMatch) return null;
+  const fm = fmMatch[1];
+  const m = fm.match(/^title:\s*(.+)$/m);
   return m ? m[1].trim().replace(/^["']|["']$/g, "") : null;
 }
 
 function extractTags(content) {
-  const m = content.match(/^tags:\s*(.+)$/m);
+  const fmMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
+  if (!fmMatch) return [];
+  const fm = fmMatch[1];
+  const m = fm.match(/^tags:\s*(.+)$/m);
   if (!m) return [];
   const raw = m[1].trim();
   if (raw.startsWith("[")) {
@@ -163,15 +167,19 @@ function detectBracketAnomalies(text) {
   const closes = (clean.match(/\]\]/g) || []).length;
 
   let m;
+  RE_NESTED_OPEN.lastIndex = 0;
   while ((m = RE_NESTED_OPEN.exec(clean)) !== null) {
     findings.push({ type: "nested_open", match: m[0], position: m.index });
   }
+  RE_NESTED_CLOSE.lastIndex = 0;
   while ((m = RE_NESTED_CLOSE.exec(clean)) !== null) {
     findings.push({ type: "nested_close", match: m[0], position: m.index });
   }
+  RE_EMPTY_LINK.lastIndex = 0;
   while ((m = RE_EMPTY_LINK.exec(clean)) !== null) {
     findings.push({ type: "empty_link", match: m[0], position: m.index });
   }
+  RE_INVERTED.lastIndex = 0;
   while ((m = RE_INVERTED.exec(clean)) !== null) {
     findings.push({ type: "inverted_brackets", match: m[0], position: m.index });
   }
@@ -185,6 +193,7 @@ function detectBracketAnomalies(text) {
 function detectPathAnchored(content) {
   const matches = [];
   let m;
+  RE_PATH_ANCHORED.lastIndex = 0;
   while ((m = RE_PATH_ANCHORED.exec(stripCodeBlocks(content))) !== null) {
     matches.push(m[0]);
   }
@@ -207,11 +216,20 @@ const JS_NATIVE_TOOLS = new Set([
   "vault_tokens", "vault_token_counter", "vault_fundamentals",
 ]);
 
+function assertWithinVault(p, vaultRoot) {
+  const resolved = resolve(p);
+  const normalizedRoot = resolve(vaultRoot);
+  if (!resolved.startsWith(normalizedRoot + sep) && resolved !== normalizedRoot) {
+    throw new Error(`Path traversal blocked: "${p}" is outside vault root`);
+  }
+  return resolved;
+}
+
 async function jsNativeRead(args) {
   const vaultRoot = detectVaultRoot();
   let content;
   if (args.path) {
-    const p = join(vaultRoot, args.path);
+    const p = assertWithinVault(join(vaultRoot, args.path), vaultRoot);
     content = await readFile(p, "utf-8");
   } else if (args.title) {
     const files = await scanMdFiles(vaultRoot);
@@ -527,7 +545,7 @@ async function handleToolsCall(params) {
   try {
     const vaultRoot = detectVaultRoot();
 
-    if (name === "vault_write" && args.content) {
+    if ((name === "vault_write" || name === "vault_append") && args.content) {
       const guard = await runGuardChain(args.content, args.folder, vaultRoot);
       if (!guard.ok) {
         await TraceLog.record(name, args, { ok: false, guard_result: guard });
@@ -545,6 +563,10 @@ async function handleToolsCall(params) {
     let result;
     if (JS_NATIVE_TOOLS.has(name)) {
       result = await dispatchJsNative(name, args);
+    } else if (name === "vault_graph_fix" || name === "vault_graph_inspect") {
+      const scriptName = name + ".py";
+      const scriptPath = join(SCRIPTS_DIR, scriptName);
+      result = await executePythonTool(scriptPath, args);
     } else {
       const tool = TOOLS_CATALOG[name];
       if (!tool || !tool.script) {
@@ -570,13 +592,31 @@ function formatToolError(error, message, tool) {
   };
 }
 
+let PYTHON_CMD = null;
+
+function detectPython() {
+  if (PYTHON_CMD) return PYTHON_CMD;
+  for (const cmd of ["py", "python3", "python"]) {
+    try {
+      execSync(`"${cmd}" --version`, { stdio: "ignore", timeout: 5000 });
+      PYTHON_CMD = cmd;
+      log("info", `Python detected: ${cmd}`);
+      return cmd;
+    } catch (_) { /* try next */ }
+  }
+  PYTHON_CMD = "python";
+  log("warn", "No Python found on PATH. Python-backed tools will fail.");
+  return "python";
+}
+
 function executePythonTool(scriptPath, args) {
   return new Promise((resolve, reject) => {
     const cliArgs = [];
     for (const [key, value] of Object.entries(args)) {
       const flag = "--" + key.replace(/_/g, "-");
-      if (typeof value === "boolean") {
-        if (value) cliArgs.push(flag);
+      const isBool = typeof value === "boolean" || value === "true" || value === "false";
+      if (isBool) {
+        if (value === true || value === "true") cliArgs.push(flag);
       } else if (Array.isArray(value)) {
         cliArgs.push(flag, ...value.map(String));
       } else {
@@ -584,7 +624,8 @@ function executePythonTool(scriptPath, args) {
       }
     }
 
-    const proc = spawn("python", [scriptPath, ...cliArgs], {
+    const python = detectPython();
+    const proc = spawn(python, [scriptPath, ...cliArgs], {
       cwd: SCRIPTS_DIR,
       timeout: 120000,
       stdio: ["pipe", "pipe", "pipe"],
@@ -912,18 +953,43 @@ function guardTableBrackets(content) {
   return { ok: errors.length === 0, errors, reason: errors.length > 0 ? `Table bracket imbalance in ${errors.length} cells` : null };
 }
 
+let _stemPathCache = null;
+let _stemPathCacheRoot = null;
+
+function buildStemPathMap(vaultRoot) {
+  if (_stemPathCache && _stemPathCacheRoot === vaultRoot) return _stemPathCache;
+  const map = new Map();
+  try {
+    const files = readdirSync(vaultRoot, { recursive: true });
+    for (const f of files) {
+      const name = typeof f === "string" ? f : f.name || String(f);
+      if (!name.endsWith(".md")) continue;
+      const relPath = name.replace(/\\/g, "/");
+      const stem = normalizeStem(relPath.replace(/\.md$/, ""));
+      const nameOnly = normalizeStem(relPath.split("/").pop().replace(/\.md$/, ""));
+      if (stem) map.set(stem, relPath);
+      if (nameOnly && nameOnly !== stem) map.set(nameOnly, relPath);
+    }
+  } catch (_) { /* vault root not accessible */ }
+  _stemPathCache = map;
+  _stemPathCacheRoot = vaultRoot;
+  return map;
+}
+
+function invalidateStemPathCache() {
+  _stemPathCache = null;
+  _stemPathCacheRoot = null;
+}
+
 function guardReferencedNotes(content, vaultRoot) {
   const links = extractWikilinks(content);
   const errors = [];
+  if (links.length === 0) return { ok: true, errors: [], total_links: 0, broken: 0, reason: null };
+
+  const stemMap = buildStemPathMap(vaultRoot);
   for (const link of links) {
     const stem = normalizeStem(link);
-    const files = readdirSync(vaultRoot, { recursive: true });
-    const found = files.find(f => {
-      if (!f.endsWith(".md")) return false;
-      const fstem = normalizeStem(f.replace(/\\/g, "/").replace(/\.md$/, ""));
-      const nameOnly = normalizeStem(f.split(/[/\\]/).pop().replace(/\.md$/, ""));
-      return fstem === stem || nameOnly === stem || fstem.endsWith("/" + stem);
-    });
+    const found = stemMap.get(stem);
     if (!found) {
       errors.push({ link, stem, error: "note_not_found" });
     } else {
