@@ -35,8 +35,15 @@ const SCRIPTS_DIR = join(REPO_ROOT, "scripts");
 const VERSION = "v37.0 (SDD)";
 
 let VAULT_ROOT = process.env.VAULT_ROOT || null;
+let VAULT_SCAN_ROOTS = process.env.VAULT_SCAN_ROOTS ? process.env.VAULT_SCAN_ROOTS.split(";").map(p => resolve(p)) : [
+  join(REPO_ROOT, ".."),
+  join(REPO_ROOT, "..", "..", ".."),
+];
 let SSE_PORT = 0;
 let LOG_LEVEL = process.env.VAULT_MCP_LOG || "info";
+
+const VAULT_REGISTRY = new Map();
+const sessions = new Map();
 
 const CATALOG_PATH = join(__dirname, "tools-catalog.json");
 let TOOLS_CATALOG = {};
@@ -70,6 +77,95 @@ function detectVaultRoot() {
   }
   VAULT_ROOT = join(REPO_ROOT, "vault-sandbox");
   return VAULT_ROOT;
+}
+
+function discoverVaults(searchRoots) {
+  const found = new Map();
+  const MARKERS = ["00_System", "01_Projects", "99_Index", ".obsidian"];
+  const EXCLUDE = new Set(["vault-sandbox", "vault-backups", "node_modules", ".git", "__pycache__", ".history", ".locks"]);
+
+  function scan(dir, depth) {
+    if (depth > 4) return;
+    let entries;
+    try { entries = readdirSync(dir, { withFileTypes: true }); } catch (_) { return; }
+    for (const e of entries) {
+      if (!e.isDirectory() || e.name.startsWith(".") || EXCLUDE.has(e.name)) continue;
+      const full = join(dir, e.name);
+      if (e.name.startsWith("vault-") || e.name === "vault") {
+        try {
+          const subEntries = readdirSync(full);
+          const markers = subEntries.filter(s => MARKERS.includes(s));
+          if (markers.length >= 2) {
+            const name = e.name;
+            if (!found.has(name)) {
+              let version = "unknown";
+              try {
+                const vf = join(full, "00_System", "standard-version.json");
+                const vd = JSON.parse(readFileSync(vf, "utf-8"));
+                version = vd.applied_version || "unknown";
+              } catch (_) {}
+              let notes = 0;
+              try { notes = countMdFiles(full); } catch (_) {}
+              found.set(name, { name, path: full, version, notes, markers, lastSeen: new Date().toISOString() });
+            }
+          }
+        } catch (_) {}
+      }
+      scan(full, depth + 1);
+    }
+  }
+
+  for (const root of searchRoots) {
+    try { scan(resolve(root), 0); } catch (_) {}
+  }
+
+  return found;
+}
+
+function countMdFiles(dir) {
+  let count = 0;
+  try {
+    const entries = readdirSync(dir, { withFileTypes: true });
+    for (const e of entries) {
+      if (e.name.startsWith(".") || e.name === "node_modules") continue;
+      const full = join(dir, e.name);
+      if (e.isDirectory()) { count += countMdFiles(full); }
+      else if (e.name.endsWith(".md")) { count++; }
+    }
+  } catch (_) {}
+  return count;
+}
+
+function refreshVaultRegistry() {
+  const discovered = discoverVaults(VAULT_SCAN_ROOTS);
+  for (const [name, info] of discovered) {
+    if (!VAULT_REGISTRY.has(name)) {
+      VAULT_REGISTRY.set(name, info);
+      log("info", `Registered vault: ${name} (${info.version}, ${info.notes} notes) at ${info.path}`);
+    } else {
+      const existing = VAULT_REGISTRY.get(name);
+      existing.version = info.version;
+      existing.notes = info.notes;
+      existing.lastSeen = info.lastSeen;
+    }
+  }
+  if (VAULT_ROOT && ![...VAULT_REGISTRY.values()].some(v => v.path === VAULT_ROOT)) {
+    const name = VAULT_ROOT.split(/[/\\]/).pop();
+    let version = "unknown";
+    try {
+      const vf = join(VAULT_ROOT, "00_System", "standard-version.json");
+      const vd = JSON.parse(readFileSync(vf, "utf-8"));
+      version = vd.applied_version || "unknown";
+    } catch (_) {}
+    VAULT_REGISTRY.set(name, { name, path: VAULT_ROOT, version, notes: 0, markers: [], lastSeen: new Date().toISOString(), _default: true });
+  }
+}
+
+function resolveVaultRoot(sessionId) {
+  if (sessionId && sessions.has(sessionId)) {
+    return sessions.get(sessionId).vaultRoot;
+  }
+  return detectVaultRoot();
 }
 
 function log(level, msg, data) {
@@ -229,8 +325,7 @@ function assertWithinVault(p, vaultRoot) {
   return resolved;
 }
 
-async function jsNativeRead(args) {
-  const vaultRoot = detectVaultRoot();
+async function jsNativeRead(args, vaultRoot) {
   let content;
   if (args.path) {
     const p = assertWithinVault(join(vaultRoot, args.path), vaultRoot);
@@ -253,8 +348,7 @@ async function jsNativeRead(args) {
   return { ok: true, frontmatter: fm, body, path: args.path || null, size: content.length };
 }
 
-async function jsNativeList(args) {
-  const vaultRoot = detectVaultRoot();
+async function jsNativeList(args, vaultRoot) {
   const folder = args.folder || "";
   const targetDir = join(vaultRoot, folder);
   const files = await scanMdFiles(targetDir);
@@ -277,8 +371,7 @@ async function jsNativeList(args) {
   return { ok: true, folder: folder || "(root)", count: results.length, total: files.length, notes: results };
 }
 
-async function jsNativeSearch(args) {
-  const vaultRoot = detectVaultRoot();
+async function jsNativeSearch(args, vaultRoot) {
   const query = args.query || "";
   const files = await scanMdFiles(vaultRoot);
   const limit = parseInt(args.limit) || 10;
@@ -297,8 +390,7 @@ async function jsNativeSearch(args) {
   return { ok: true, query, count: results.length, results };
 }
 
-async function jsNativeGraph(args) {
-  const vaultRoot = detectVaultRoot();
+async function jsNativeGraph(args, vaultRoot) {
   const files = await scanMdFiles(vaultRoot);
   const nodes = [];
   const edges = [];
@@ -336,9 +428,8 @@ async function jsNativeGraph(args) {
   };
 }
 
-async function jsNativeGraphInspect(args) {
-  const vaultRoot = detectVaultRoot();
-  const graphResult = await jsNativeGraph(args);
+async function jsNativeGraphInspect(args, vaultRoot) {
+  const graphResult = await jsNativeGraph(args, vaultRoot);
   const { nodes, edges } = graphResult;
 
   const stemPathMap = new Map();
@@ -396,8 +487,7 @@ async function jsNativeGraphInspect(args) {
   };
 }
 
-async function jsNativeTokens(args) {
-  const vaultRoot = detectVaultRoot();
+async function jsNativeTokens(args, vaultRoot) {
   const files = await scanMdFiles(vaultRoot);
   let totalTokens = 0;
   const perFile = [];
@@ -416,8 +506,7 @@ async function jsNativeTokenCounter(args) {
   return { ok: true, content_length: content.length, estimated_tokens: tokens, model: args.model || "heuristic" };
 }
 
-async function jsNativeFundamentals() {
-  const vaultRoot = detectVaultRoot();
+async function jsNativeFundamentals(args, vaultRoot) {
   const files = await scanMdFiles(vaultRoot);
   const results = [];
   let passCount = 0;
@@ -468,16 +557,16 @@ async function scanMdFiles(dir) {
   return results;
 }
 
-async function dispatchJsNative(name, args) {
+async function dispatchJsNative(name, args, vaultRoot) {
   switch (name) {
-    case "vault_read": return jsNativeRead(args);
-    case "vault_list": return jsNativeList(args);
-    case "vault_search": return jsNativeSearch(args);
-    case "vault_graph": return jsNativeGraph(args);
-    case "vault_graph_inspect": return jsNativeGraphInspect(args);
-    case "vault_tokens": return jsNativeTokens(args);
+    case "vault_read": return jsNativeRead(args, vaultRoot);
+    case "vault_list": return jsNativeList(args, vaultRoot);
+    case "vault_search": return jsNativeSearch(args, vaultRoot);
+    case "vault_graph": return jsNativeGraph(args, vaultRoot);
+    case "vault_graph_inspect": return jsNativeGraphInspect(args, vaultRoot);
+    case "vault_tokens": return jsNativeTokens(args, vaultRoot);
     case "vault_token_counter": return jsNativeTokenCounter(args);
-    case "vault_fundamentals": return jsNativeFundamentals(args);
+    case "vault_fundamentals": return jsNativeFundamentals(args, vaultRoot);
     default: return null;
   }
 }
@@ -507,8 +596,12 @@ function jsonrpcError(id, code, message, data) {
   return { jsonrpc: "2.0", id, error: { code, message, data } };
 }
 
-function handleInitialize(params) {
-  clientCapabilities = params.capabilities || {};
+function handleInitialize(params, session) {
+  if (session) {
+    session.clientCapabilities = params.capabilities || {};
+  } else {
+    clientCapabilities = params.capabilities || {};
+  }
   return {
     protocolVersion: "2024-11-05",
     serverInfo: SERVER_INFO,
@@ -516,8 +609,12 @@ function handleInitialize(params) {
   };
 }
 
-function handleInitialized() {
-  initialized = true;
+function handleInitialized(session) {
+  if (session) {
+    session.initialized = true;
+  } else {
+    initialized = true;
+  }
   log("info", "MCP session initialized");
   return {};
 }
@@ -554,7 +651,7 @@ async function handleToolsList() {
   return { tools: [...tools, ...extraTools] };
 }
 
-async function handleToolsCall(params) {
+async function handleToolsCall(params, session) {
   const name = params?.name;
   const args = params?.arguments || {};
 
@@ -565,7 +662,7 @@ async function handleToolsCall(params) {
   log("info", `Executing tool: ${name}`, args);
 
   try {
-    const vaultRoot = detectVaultRoot();
+    const vaultRoot = session?.vaultRoot || resolveVaultRoot(session?.sessionId);
 
     if ((name === "vault_write" || name === "vault_append") && args.content) {
       const guard = await runGuardChain(args.content, args.folder, vaultRoot);
@@ -585,14 +682,20 @@ async function handleToolsCall(params) {
     }
 
     if (name === "vault_health") {
-      const result = await runHealthCheck();
+      const result = await runHealthCheck(vaultRoot);
       await TraceLog.record(name, args, result);
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
 
+    if (name === "vault_registry") {
+      return { content: [{ type: "text", text: JSON.stringify({
+        ok: true, vaults: [...VAULT_REGISTRY.values()].map(v => ({ name: v.name, version: v.version, notes: v.notes, path: v.path, lastSeen: v.lastSeen }))
+      }, null, 2) }] };
+    }
+
     let result;
     if (JS_NATIVE_TOOLS.has(name)) {
-      result = await dispatchJsNative(name, args);
+      result = await dispatchJsNative(name, args, vaultRoot);
     } else if (name === "vault_graph_fix" || name === "vault_graph_inspect") {
       const scriptName = name + ".py";
       const scriptPath = join(SCRIPTS_DIR, scriptName);
@@ -639,7 +742,7 @@ function detectPython() {
   return "python";
 }
 
-function executePythonTool(scriptPath, args) {
+function executePythonTool(scriptPath, args, vaultRoot) {
   return new Promise((resolve, reject) => {
     const cliArgs = [];
     for (const [key, value] of Object.entries(args)) {
@@ -655,10 +758,13 @@ function executePythonTool(scriptPath, args) {
     }
 
     const python = detectPython();
+    const env = { ...process.env };
+    if (vaultRoot) env.VAULT_ROOT = vaultRoot;
     const proc = spawn(python, [scriptPath, ...cliArgs], {
       cwd: SCRIPTS_DIR,
       timeout: 120000,
       stdio: ["pipe", "pipe", "pipe"],
+      env,
     });
 
     let stdout = "";
@@ -700,9 +806,9 @@ const ROUTES = {
   "resources/read":   { handler: handleResourcesRead, initRequired: true },
 };
 
-async function dispatch(method, params) {
+async function dispatch(method, params, session) {
   if (method === "notifications/initialized") {
-    return handleInitialized();
+    return handleInitialized(session);
   }
 
   const route = ROUTES[method];
@@ -710,14 +816,17 @@ async function dispatch(method, params) {
     throw { code: -32601, message: `Method not found: ${method}` };
   }
 
-  if (route.initRequired && !initialized) {
+  if (route.initRequired && session && !session.initialized) {
+    throw { code: -32002, message: "Not initialized. Send 'initialize' first." };
+  }
+  if (route.initRequired && !session && !initialized) {
     throw { code: -32002, message: "Not initialized. Send 'initialize' first." };
   }
 
-  return await route.handler(params);
+  return await route.handler(params, session);
 }
 
-async function processMessage(msg) {
+async function processMessage(msg, session) {
   try {
     const rpc = JSON.parse(msg.trim());
     if (!rpc.jsonrpc || rpc.jsonrpc !== "2.0") {
@@ -730,7 +839,7 @@ async function processMessage(msg) {
       throw { code: -32600, message: "Invalid Request: missing method" };
     }
 
-    const result = await dispatch(method, params || {});
+    const result = await dispatch(method, params || {}, session);
 
     if (id !== undefined && id !== null) {
       return jsonrpcResult(id, result);
@@ -767,7 +876,7 @@ function startStdio() {
 
     pendingOps++;
     try {
-      const response = await processMessage(line);
+      const response = await processMessage(line, null);
       if (response !== null) {
         const out = JSON.stringify(response);
         log("debug", "TX", out.substring(0, 200));
@@ -796,7 +905,7 @@ function startStdio() {
 }
 
 // ============================================================================
-// SECCIÓN 6: Transport — SSE/HTTP (modo servicio sin harness)
+// SECCIÓN 6: Transport — SSE/HTTP (modo multi-tenant)
 // ============================================================================
 
 function startSSE(port) {
@@ -805,7 +914,7 @@ function startSSE(port) {
   const server = createServer(async (req, res) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Accept");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Accept, X-MCP-Session");
 
     if (req.method === "OPTIONS") {
       res.writeHead(204);
@@ -813,42 +922,94 @@ function startSSE(port) {
       return;
     }
 
-    if (req.method === "GET" && req.url === "/health") {
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({
-        ok: true,
-        server: "vault-mcp-server",
-        version: VERSION,
-        uptime: process.uptime(),
-        vault_root: detectVaultRoot(),
-        tools_loaded: Object.keys(TOOLS_CATALOG).length,
-      }));
+    if (req.method === "GET" && req.url.startsWith("/health")) {
+      const url = new URL(req.url, `http://127.0.0.1:${port}`);
+      const vaultName = url.searchParams.get("vault") || "all";
+      if (vaultName === "all") {
+        const vaults = {};
+        for (const [name, info] of VAULT_REGISTRY) {
+          vaults[name] = { version: info.version, notes: info.notes, path: info.path, lastSeen: info.lastSeen };
+        }
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+          ok: true, server: "vault-mcp-server", version: VERSION,
+          uptime: process.uptime(), vaults, tools_loaded: Object.keys(TOOLS_CATALOG).length,
+          sessions: sessions.size, default_vault: detectVaultRoot(),
+        }));
+      } else {
+        const info = VAULT_REGISTRY.get(vaultName);
+        res.writeHead(info ? 200 : 404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(info ? { ok: true, ...info } : { ok: false, error: `Vault '${vaultName}' not registered` }));
+      }
       return;
     }
 
-    if (req.method === "GET" && req.url === "/sse") {
+    if (req.method === "GET" && req.url.startsWith("/sse")) {
+      const url = new URL(req.url, `http://127.0.0.1:${port}`);
+      const vaultParam = url.searchParams.get("vault") || "";
+      let vaultRoot;
+      let vaultName = "default";
+
+      if (vaultParam) {
+        const vr = VAULT_REGISTRY.get(vaultParam);
+        if (!vr) {
+          res.writeHead(404, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: `Vault '${vaultParam}' not registered. Use /health to see available vaults.` }));
+          return;
+        }
+        vaultRoot = vr.path;
+        vaultName = vr.name;
+      } else {
+        vaultRoot = detectVaultRoot();
+        vaultName = vaultRoot.split(/[/\\]/).pop();
+      }
+
+      const sessionId = randomUUID();
+      const version = VAULT_REGISTRY.get(vaultName)?.version || "unknown";
+      sessions.set(sessionId, {
+        vaultRoot,
+        vaultName,
+        vaultVersion: version,
+        initialized: false,
+        clientCapabilities: null,
+        connectedAt: new Date().toISOString(),
+        res,
+      });
+
       res.writeHead(200, {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
         Connection: "keep-alive",
       });
-      res.write(`data: ${JSON.stringify({ type: "connected", server: SERVER_INFO })}\n\n`);
+      res.write(`data: ${JSON.stringify({ type: "connected", sessionId, server: SERVER_INFO, vault: vaultName, vaultRoot, version })}\n\n`);
       clients.add(res);
-      req.on("close", () => clients.delete(res));
+      req.on("close", () => {
+        clients.delete(res);
+        sessions.delete(sessionId);
+        log("info", `Session ${sessionId} disconnected (vault: ${vaultName})`);
+      });
       return;
     }
 
     if (req.method === "POST" && req.url === "/message") {
+      const sessionId = req.headers["x-mcp-session"] || "";
+      const session = sessions.get(sessionId);
+      if (!session) {
+        res.writeHead(401, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(jsonrpcError(null, -32001, "No active session. Connect via GET /sse?vault=NAME first.")));
+        return;
+      }
+
       let body = "";
       req.on("data", (chunk) => { body += chunk; });
       req.on("end", async () => {
         try {
-          const response = await processMessage(body);
+          const response = await processMessage(body, session);
           if (response !== null) {
             const out = JSON.stringify(response);
             res.writeHead(200, { "Content-Type": "application/json" });
             res.end(out);
-            notifyClients(out, clients);
+            notifyVaultClients(out, session.vaultName, clients, sessions);
           } else {
             res.writeHead(202);
             res.end();
@@ -862,23 +1023,32 @@ function startSSE(port) {
     }
 
     res.writeHead(404, { "Content-Type": "text/plain" });
-    res.end("Not found. Available: /sse, /message, /health");
+    res.end("Not found. Available: /sse?vault=NAME, /message (Header: X-MCP-Session), /health, /health?vault=NAME");
   });
 
   server.listen(port, "127.0.0.1", () => {
     log("info", `========================================`);
-    log("info", `MCP SSE Server running on http://127.0.0.1:${port}`);
-    log("info", `Connect IAs to: http://127.0.0.1:${port}/sse`);
-    log("info", `Health check:   http://127.0.0.1:${port}/health`);
-    log("info", `Vault root: ${detectVaultRoot()}`);
+    log("info", `MCP Multi-Tenant SSE Server on http://127.0.0.1:${port}`);
+    log("info", `Connect: GET /sse?vault=NAME -> get sessionId`);
+    log("info", `Call:   POST /message (Header: X-MCP-Session: <id>)`);
+    log("info", `Health: GET /health or /health?vault=NAME`);
+    log("info", `Default vault: ${detectVaultRoot()}`);
+    log("info", `Registered vaults: ${VAULT_REGISTRY.size}`);
     log("info", `Tools loaded: ${Object.keys(TOOLS_CATALOG).length}`);
     log("info", `========================================`);
   });
 }
 
-function notifyClients(msg, clients) {
+function notifyVaultClients(msg, vaultName, clients, sessions) {
   for (const client of clients) {
-    try { client.write(`data: ${msg}\n\n`); } catch (_) { clients.delete(client); }
+    try {
+      for (const [sid, s] of sessions) {
+        if (s.res === client && s.vaultName === vaultName) {
+          client.write(`data: ${msg}\n\n`);
+          break;
+        }
+      }
+    } catch (_) { clients.delete(client); }
   }
 }
 
@@ -1178,9 +1348,8 @@ class TraceLog {
 // SECCIÓN 9: Observability
 // ============================================================================
 
-async function runHealthCheck() {
-  const vaultRoot = detectVaultRoot();
-  const inspect = await jsNativeGraphInspect({});
+async function runHealthCheck(vaultRoot) {
+  const inspect = await jsNativeGraphInspect({}, vaultRoot);
   const s = inspect.summary;
   const mermaidPenalty = (s.mermaid_errors || 0) * 2;
   const score = Math.max(0, 100 - (s.broken_links * 0.5) - (s.syntax_errors * 3) - (s.orphans * 0.25) - mermaidPenalty);
@@ -1209,6 +1378,7 @@ async function handleResourcesList() {
     resources: [
       { uri: "vault://graph", name: "Vault Graph", mimeType: "application/json", description: "Current wiki-link graph (nodes, edges, broken links)" },
       { uri: "vault://health", name: "Vault Health", mimeType: "application/json", description: "Health check with score and next actions" },
+      { uri: "vault://registry", name: "Vault Registry", mimeType: "application/json", description: "All registered vaults with versions and metadata" },
       { uri: "vault://traceability/mutations", name: "Mutation Trace Log", mimeType: "application/json", description: "Immutable audit trail of all tool executions" },
       { uri: "vault://catalog", name: "Tool Catalog", mimeType: "application/json", description: "All 71+ tools with input schemas" },
       { uri: "vault://state", name: "Vault State", mimeType: "application/json", description: "Current vault state (version, root, tools loaded)" },
@@ -1225,8 +1395,17 @@ async function handleResourcesRead(params) {
         return { contents: [{ uri, mimeType: "application/json", text: JSON.stringify(data, null, 2) }] };
       }
       case "vault://health": {
-        const data = await runHealthCheck();
+        const data = await runHealthCheck(detectVaultRoot());
         return { contents: [{ uri, mimeType: "application/json", text: JSON.stringify(data, null, 2) }] };
+      }
+      case "vault://registry": {
+        const vaults = {};
+        for (const [name, info] of VAULT_REGISTRY) {
+          vaults[name] = { version: info.version, notes: info.notes, path: info.path, lastSeen: info.lastSeen };
+        }
+        return { contents: [{ uri, mimeType: "application/json", text: JSON.stringify({
+          default_vault: detectVaultRoot(), registered: VAULT_REGISTRY.size, vaults
+        }, null, 2) }] };
       }
       case "vault://traceability/mutations": {
         let entries = [];
@@ -1243,7 +1422,7 @@ async function handleResourcesRead(params) {
         }, null, 2) }] };
       }
       default: {
-        return { contents: [{ uri, mimeType: "text/plain", text: `Unknown resource: ${uri}. Available: vault://graph, vault://health, vault://traceability/mutations, vault://catalog, vault://state` }] };
+        return { contents: [{ uri, mimeType: "text/plain", text: `Unknown resource: ${uri}. Available: vault://graph, vault://health, vault://registry, vault://traceability/mutations, vault://catalog, vault://state` }] };
       }
     }
   } catch (e) {
@@ -1317,6 +1496,7 @@ function main() {
   parseArgs();
   loadCatalog();
   detectVaultRoot();
+  refreshVaultRegistry();
 
   if (SSE_PORT > 0) {
     startSSE(SSE_PORT);
