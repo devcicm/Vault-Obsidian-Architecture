@@ -523,6 +523,37 @@ def vault_write(
         except ImportError:
             pass
 
+    # AP-26 guard: tags required for content notes (not index/system)
+    is_index = title.lower().strip() in ("index", "índice", "indice") or "/index" in folder
+    is_system = folder.startswith("00_System")
+    if not tags and not is_index and not is_system:
+        return {
+            "ok": False,
+            "error_code": "missing_tags",
+            "error": "missing_tags",
+            "norm_code": "AP-26",
+            "norm_name": "Missing tags — toda nota de contenido requiere al menos un tag",
+            "message": "AP-26: tags required for content notes. "
+            "Provide at least one tag via --tags. Index and system notes exempt.",
+        }
+
+    # AP-16 guard: agent field required
+    if not meta.get("agent") and not is_system:
+        agent_env = os.environ.get("VAULT_AGENT", "")
+        if agent_env:
+            meta["agent"] = agent_env
+        else:
+            return {
+                "ok": False,
+                "error_code": "missing_agent",
+                "error": "missing_agent",
+                "norm_code": "AP-16",
+                "norm_name": "Missing agent attribution",
+                "message": "AP-16: agent field required for content notes. "
+                "Set --meta '{\"agent\":\"my-agent\"}' or VAULT_AGENT env var. "
+                "System notes (00_System/) exempt.",
+            }
+
     # Determine filename and validate path stays inside vault
 
     filename = f"{slugify(title)}.md"

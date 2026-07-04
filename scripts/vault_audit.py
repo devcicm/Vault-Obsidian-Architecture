@@ -852,6 +852,42 @@ def _detect_mermaid_errors() -> List[Dict[str, Any]]:
     return errors
 
 
+def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]]]:
+    """AP-16/AP-26: detect notes missing tags or agent attribution field.
+
+    Returns dict with 'missing_tags' and 'missing_agent' lists.
+    System notes (00_System/) and index.md are excluded from tag check.
+    """
+    missing_tags = []
+    missing_agent = []
+    for p in notes:
+        try:
+            raw = p.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        rel = str(p.relative_to(VAULT_ROOT)).replace("\\", "/")
+        is_index = rel.endswith("/index.md") or rel == "index.md"
+        is_system = rel.startswith("00_System/") or rel == "00_System"
+
+        fm = {}
+        m = re.match(r"^---\s*\n(.*?)\n---", raw, re.DOTALL)
+        if m:
+            for line in m.group(1).split("\n"):
+                kv = re.match(r"^(\w[\w_-]*):\s*(.+)$", line)
+                if kv:
+                    fm[kv.group(1)] = kv.group(2).strip()
+
+        if not is_index and not is_system:
+            tags_val = fm.get("tags", "")
+            if not tags_val or tags_val in ("[]", "[ ]", ""):
+                missing_tags.append({"path": rel, "title": fm.get("title", p.stem)})
+
+        if not fm.get("agent"):
+            missing_agent.append({"path": rel, "title": fm.get("title", p.stem)})
+
+    return {"missing_tags": missing_tags, "missing_agent": missing_agent}
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # nextActions helpers — used by vault_audit to prescribe remediation
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1291,6 +1327,10 @@ def vault_audit(
 
     mermaid_errors = _detect_mermaid_errors()
 
+    meta_issues = _detect_missing_metadata(content_notes)
+    missing_tags = meta_issues["missing_tags"]
+    missing_agent = meta_issues["missing_agent"]
+
     # DQ + propagation data (loaded regardless of refresh_dq; only refresh triggers subprocess)
 
     dq_health = _refresh_dq_if_needed() if refresh_dq else None
@@ -1324,6 +1364,12 @@ def vault_audit(
 
     # AP-25: Mermaid diagram errors
     score -= min(20, len(mermaid_errors) * 2)
+
+    # AP-16: Missing agent attribution
+    score -= min(10, len(missing_agent) * 1)
+
+    # AP-26: Missing tags on content notes
+    score -= min(15, len(missing_tags) * 2)
 
     # CIA integrity + propagation_pending adjustments
 
@@ -1384,6 +1430,12 @@ def vault_audit(
     if mermaid_errors:
         summary_parts.append(f"{len(mermaid_errors)} errores Mermaid AP-25")
 
+    if missing_tags:
+        summary_parts.append(f"{len(missing_tags)} sin tags AP-26")
+
+    if missing_agent:
+        summary_parts.append(f"{len(missing_agent)} sin agent AP-16")
+
     result: Dict[str, Any] = {
         "ok": True,
         "healthScore": score,
@@ -1406,15 +1458,19 @@ def vault_audit(
             ],
             "emptyIndexes": empty_indexes,
             "mermaidErrors": mermaid_errors,
+            "missingTags": missing_tags,
+            "missingAgent": missing_agent,
         },
         "norm_refs": {
-            "AP-14": "Wiki-links rotos o vacíos",
+            "AP-14": "Wiki-links rotos o vacios",
+            "AP-16": "Missing agent attribution — toda nota debe registrar que agente la creo",
             "AP-17": "Canonical-shadow duplication",
             "AP-18": "Cross-folder content duplication",
-            "AP-22": "Bracket sanity — wiki-links vacíos [[]]",
+            "AP-22": "Bracket sanity — wiki-links vacios [[]]",
             "AP-23": "Note complexity ceiling — nota demasiado larga",
             "AP-24": "Bracket imbalance — corchetes sin pareja, anidados o invertidos",
             "AP-25": "Mermaid diagram syntax errors",
+            "AP-26": "Missing tags — toda nota de contenido requiere >=1 tag",
         },
         "summary": " · ".join(summary_parts),
     }
@@ -1583,6 +1639,32 @@ def vault_audit(
                 "description": f"{len(mermaid_errors)} errores de sintaxis en diagramas Mermaid",
                 "command": "python scripts/vault_mermaid_check.py --fix",
                 "norm": "AP-25",
+            }
+        )
+
+    # AP-16: Missing agent attribution - suggest adding agent field
+    if missing_agent:
+        agent_paths = [m["path"] for m in missing_agent[:5]]
+        next_actions.append(
+            {
+                "priority": "medium",
+                "category": "missing_agent",
+                "description": f"{len(missing_agent)} notas sin campo 'agent' en frontmatter. Primeras: {agent_paths}",
+                "command": "Agregar agent: deepseek (o el agente correspondiente) al frontmatter de cada nota faltante",
+                "norm": "AP-16",
+            }
+        )
+
+    # AP-26: Missing tags - suggest adding tags
+    if missing_tags:
+        tag_paths = [m["path"] for m in missing_tags[:5]]
+        next_actions.append(
+            {
+                "priority": "high",
+                "category": "missing_tags",
+                "description": f"{len(missing_tags)} notas de contenido sin tags. Primeras: {tag_paths}",
+                "command": "python scripts/vault_write.py --folder <folder> --title <title> --content @file:<path> --tags ans <category>",
+                "norm": "AP-26",
             }
         )
 

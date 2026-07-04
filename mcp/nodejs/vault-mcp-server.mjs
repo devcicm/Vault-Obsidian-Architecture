@@ -576,6 +576,14 @@ async function handleToolsCall(params) {
       }
     }
 
+    if (name === "vault_write") {
+      const tagGuard = guardTagCompleteness(args, args.folder);
+      if (!tagGuard.ok) {
+        return formatToolError("GUARD_CHAIN_FAILED",
+          `Guard chain blocked at tagCompleteness: ${JSON.stringify(tagGuard)}`);
+      }
+    }
+
     if (name === "vault_health") {
       const result = await runHealthCheck();
       await TraceLog.record(name, args, result);
@@ -1099,6 +1107,23 @@ async function runGuardChain(content, folder, vaultRoot) {
   if (!results.referencedNotes.ok) return { ok: false, failed_at: "referencedNotes", results };
 
   return { ok: true, failed_at: null, results };
+}
+
+function guardTagCompleteness(args, folder) {
+  const isIndex = (folder || "").endsWith("/index") || (args.title || "").toLowerCase().trim() === "index";
+  const isSystem = (folder || "").startsWith("00_System");
+  if (isIndex || isSystem) return { ok: true, reason: "exempt (index or system note)" };
+
+  const tags = args.tags;
+  if (!tags || (typeof tags === "string" && !tags.trim()) || (Array.isArray(tags) && tags.length === 0)) {
+    return {
+      ok: false,
+      reason: "AP-26: tags required for content notes. Provide --tags with at least one tag.",
+      hint: "Use --tags ans <category> (e.g., --tags ans flow --tags verified)",
+    };
+  }
+
+  return { ok: true };
 }
 
 // ============================================================================

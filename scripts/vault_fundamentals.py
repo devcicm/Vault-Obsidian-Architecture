@@ -120,8 +120,8 @@ FUNDAMENTALS: List[Dict[str, Any]] = [
         "dq_dimension": "completeness",
         "verifies": [
             "Campo updatedAt presente (ciclo de vida)",
-            "Cuerpo de la nota tiene al menos 3 líneas de contenido",
-            "Campos opcionales recomendados populados (tags, status, type)",
+            "Cuerpo de la nota tiene al menos 3 lineas de contenido",
+            "Tags requeridos en toda nota de contenido (>=1 tag, salvo index/system)",
         ],
         "frontmatter_fields": ["updatedAt", "tags", "status", "type"],
         "tools": [
@@ -361,8 +361,13 @@ def check_note(rel_path: str) -> Dict[str, Any]:
         f3_issues.append("Missing updatedAt")
     if len(body_lines) < 3:
         f3_issues.append(
-            f"Body has only {len(body_lines)} content line(s), expected ≥3"
+            f"Body has only {len(body_lines)} content line(s), expected >=3"
         )
+    fm_tags = fm.get("tags", [])
+    is_index = rel_path.endswith("/index.md") or rel_path == "index.md" or Path(rel_path).stem == "index"
+    is_system = rel_path.startswith("00_System/") or rel_path == "00_System"
+    if not is_index and not is_system and (not fm_tags or len(fm_tags) == 0):
+        f3_issues.append("Missing tags — content notes require >=1 tag (AP-26)")
     results["F3"] = {"name": "COMPLETITUD", "pass": not f3_issues, "issues": f3_issues}
 
     # F4 EXACTITUD

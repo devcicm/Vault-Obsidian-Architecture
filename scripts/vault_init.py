@@ -33,7 +33,7 @@ import sys
 from pathlib import Path
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT
+from vault_io import VAULT_ROOT, atomic_write_json
 from vault_lib import utcnow
 from vault_registry import (
     standard_folders,
@@ -286,6 +286,26 @@ def vault_init(
                     "raw_stderr": proc.stderr,
                 }
             )
+
+    # Step 4.5: write tag-registry.json with canonical tags
+    tag_registry_path = VAULT_ROOT / "00_System" / "tag-registry.json"
+    if not tag_registry_path.exists():
+        tag_registry = {
+            "version": "v1.0",
+            "generated_at": utcnow(),
+            "canonical_tags": {
+                "project": ["ans", "builderx", "homelab"],
+                "section": ["flow", "pattern", "runbook", "code", "diagram", "infrastructure", "knowledge", "decision", "test", "requirement", "alert", "metric", "slo", "incident"],
+                "domain": ["mcp", "toon", "ansible", "ssh", "proxmox", "docker", "deploy", "pipeline", "ci-cd", "mikrotik", "runner", "proxy", "vault"],
+                "type": ["dataflow", "lifecycle", "workflow", "pipeline-flow", "architecture", "concept", "api", "config", "guide", "reference"],
+                "quality": ["verified", "stub", "draft", "informacion-decrepita", "deprecated"],
+                "migration": ["migrated", "direct", "indirect", "excluded"],
+                "agent": ["deepseek", "mavis", "opencode", "system", "vault_init"],
+            },
+        }
+        tag_registry_path.parent.mkdir(parents=True, exist_ok=True)
+        atomic_write_json(tag_registry_path, tag_registry)
+        result["steps"].append({"step": "tag_registry", "output": "tag-registry.json created"})
 
     # Step 5: optional vault_audit
     if run_audit:
