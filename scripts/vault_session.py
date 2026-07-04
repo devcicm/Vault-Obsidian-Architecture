@@ -75,10 +75,17 @@ def _md_frontmatter(session: dict) -> str:
     fm.append(f"title: Session {session['id'][:8]} — {session.get('goal', 'no goal')}")
     fm.append(f"agent: {session.get('agent', 'unknown')}")
     fm.append(f"project: {session.get('project', '')}")
+    fm.append(f"createdAt: {session['started_at']}")
+    fm.append(f"updatedAt: {session.get('ended_at', session['started_at'])}")
+    fm.append(f"tags: {json.dumps(['session', session.get('project', ''), session.get('agent', '')])}")
+    fm.append("type: session")
+    fm.append("cia_integrity: high")
+    fm.append("cia_availability: medium")
+    fm.append("cia_sensitivity: internal")
+    fm.append("status: active")
     fm.append(f"startedAt: {session['started_at']}")
     if session.get("ended_at"):
         fm.append(f"endedAt: {session['ended_at']}")
-    fm.append("type: session")
     fm.append("---")
     return "\n".join(fm) + "\n"
 

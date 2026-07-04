@@ -312,8 +312,9 @@ def generate_frontmatter(
     existing_id: Optional[str] = None,
     existing_created: Optional[str] = None,
     norm_refs: Optional[List[str]] = None,
+    folder: str = "",
 ) -> str:
-    """Generate YAML frontmatter with v27-compliant metadata (CIA + agent + norm_refs fields)."""
+    """Generate YAML frontmatter with v37-compliant metadata (type + status + CIA + agent + norm_refs)."""
 
     meta = meta or {}
 
@@ -329,6 +330,16 @@ def generate_frontmatter(
 
     if tags:
         frontmatter.append(f"tags: {json.dumps(tags)}")
+
+    # v37: type auto-deduced from folder if not provided in meta
+    if "type" not in meta and folder:
+        deduced = _deduce_type_from_folder(folder)
+        if deduced:
+            frontmatter.append(f"type: {deduced}")
+
+    # v37: status defaults to draft if not provided in meta
+    if "status" not in meta:
+        frontmatter.append("status: draft")
 
     if norm_refs:
         frontmatter.append(f"norm_refs: {json.dumps(norm_refs)}")
@@ -353,6 +364,36 @@ def generate_frontmatter(
     frontmatter.append("---")
 
     return "\n".join(frontmatter)
+
+
+_SECTION_TYPE_MAP = {
+    "00_System": "system",
+    "01_Projects": "project",
+    "02_Observability": "observability",
+    "03_Decisions": "decision",
+    "04_Sessions": "session",
+    "05_Patterns": "pattern",
+    "06_Diagrams": "diagram",
+    "07_Knowledge": "knowledge",
+    "08_Runbooks": "runbook",
+    "09_Infrastructure": "infrastructure",
+    "10_Migrated": "documentation",
+    "11_Code": "code",
+    "12_Bibliography": "reference",
+    "13_Flows": "flow",
+    "14_Requirements": "requirement",
+    "15_Tests": "test",
+    "16_AI_Governance": "governance",
+    "99_Index": "index",
+}
+
+
+def _deduce_type_from_folder(folder: str) -> str:
+    """Derive type field value from the vault section folder."""
+    if not folder:
+        return ""
+    top = folder.split("/")[0].split("\\")[0]
+    return _SECTION_TYPE_MAP.get(top, "")
 
 
 def extract_wiki_links(content: str) -> List[str]:
@@ -654,7 +695,7 @@ def vault_write(
     # Generate frontmatter and write file
 
     frontmatter = generate_frontmatter(
-        title, tags, meta, existing_id, existing_created, norm_refs
+        title, tags, meta, existing_id, existing_created, norm_refs, folder
     )
 
     final_content = f"{frontmatter}\n\n{content}"

@@ -853,13 +853,18 @@ def _detect_mermaid_errors() -> List[Dict[str, Any]]:
 
 
 def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]]]:
-    """AP-16/AP-26: detect notes missing tags or agent attribution field.
+    """AP-16/26/27/29/30: detect notes missing required frontmatter fields.
 
-    Returns dict with 'missing_tags' and 'missing_agent' lists.
-    System notes (00_System/) and index.md are excluded from tag check.
+    Returns dict with lists for each missing field category.
+    System notes (00_System/) and index.md are excluded from content checks.
     """
     missing_tags = []
     missing_agent = []
+    missing_type = []
+    missing_status = []
+    missing_cia = []
+    missing_updated = []
+    missing_frontmatter = []
     for p in notes:
         try:
             raw = p.read_text(encoding="utf-8")
@@ -876,16 +881,42 @@ def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]
                 kv = re.match(r"^(\w[\w_-]*):\s*(.+)$", line)
                 if kv:
                     fm[kv.group(1)] = kv.group(2).strip()
+        else:
+            if not is_index:
+                missing_frontmatter.append({"path": rel, "title": p.stem})
+            continue
 
         if not is_index and not is_system:
             tags_val = fm.get("tags", "")
             if not tags_val or tags_val in ("[]", "[ ]", ""):
                 missing_tags.append({"path": rel, "title": fm.get("title", p.stem)})
 
+            if not fm.get("type"):
+                missing_type.append({"path": rel, "title": fm.get("title", p.stem)})
+
+            if not fm.get("status"):
+                missing_status.append({"path": rel, "title": fm.get("title", p.stem)})
+
+            cia_fields = ["cia_integrity", "cia_availability", "cia_sensitivity"]
+            missing_cia_local = [c for c in cia_fields if c not in fm]
+            if missing_cia_local:
+                missing_cia.append({"path": rel, "title": fm.get("title", p.stem), "missing": missing_cia_local})
+
         if not fm.get("agent"):
             missing_agent.append({"path": rel, "title": fm.get("title", p.stem)})
 
-    return {"missing_tags": missing_tags, "missing_agent": missing_agent}
+        if not fm.get("updatedAt"):
+            missing_updated.append({"path": rel, "title": fm.get("title", p.stem)})
+
+    return {
+        "missing_tags": missing_tags,
+        "missing_agent": missing_agent,
+        "missing_type": missing_type,
+        "missing_status": missing_status,
+        "missing_cia": missing_cia,
+        "missing_updated": missing_updated,
+        "missing_frontmatter": missing_frontmatter,
+    }
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1330,6 +1361,11 @@ def vault_audit(
     meta_issues = _detect_missing_metadata(content_notes)
     missing_tags = meta_issues["missing_tags"]
     missing_agent = meta_issues["missing_agent"]
+    missing_type = meta_issues["missing_type"]
+    missing_status = meta_issues["missing_status"]
+    missing_cia = meta_issues["missing_cia"]
+    missing_updated = meta_issues["missing_updated"]
+    missing_frontmatter = meta_issues["missing_frontmatter"]
 
     # DQ + propagation data (loaded regardless of refresh_dq; only refresh triggers subprocess)
 
@@ -1370,6 +1406,21 @@ def vault_audit(
 
     # AP-26: Missing tags on content notes
     score -= min(15, len(missing_tags) * 2)
+
+    # AP-27: Missing type field
+    score -= min(10, len(missing_type) * 2)
+
+    # AP-29: Missing status field
+    score -= min(10, len(missing_status) * 1)
+
+    # AP-30: Missing CIA fields
+    score -= min(15, len(missing_cia) * 2)
+
+    # Missing updatedAt
+    score -= min(10, len(missing_updated) * 2)
+
+    # AP-28: Missing frontmatter entirely
+    score -= min(20, len(missing_frontmatter) * 3)
 
     # CIA integrity + propagation_pending adjustments
 
@@ -1460,17 +1511,26 @@ def vault_audit(
             "mermaidErrors": mermaid_errors,
             "missingTags": missing_tags,
             "missingAgent": missing_agent,
+            "missingType": missing_type,
+            "missingStatus": missing_status,
+            "missingCIA": missing_cia,
+            "missingUpdated": missing_updated,
+            "missingFrontmatter": missing_frontmatter,
         },
         "norm_refs": {
             "AP-14": "Wiki-links rotos o vacios",
-            "AP-16": "Missing agent attribution — toda nota debe registrar que agente la creo",
+            "AP-16": "Missing agent attribution",
             "AP-17": "Canonical-shadow duplication",
             "AP-18": "Cross-folder content duplication",
-            "AP-22": "Bracket sanity — wiki-links vacios [[]]",
-            "AP-23": "Note complexity ceiling — nota demasiado larga",
-            "AP-24": "Bracket imbalance — corchetes sin pareja, anidados o invertidos",
+            "AP-22": "Bracket sanity — wiki-links vacios",
+            "AP-23": "Note complexity ceiling",
+            "AP-24": "Bracket imbalance",
             "AP-25": "Mermaid diagram syntax errors",
-            "AP-26": "Missing tags — toda nota de contenido requiere >=1 tag",
+            "AP-26": "Missing tags",
+            "AP-27": "Missing type field",
+            "AP-28": "Missing frontmatter block",
+            "AP-29": "Missing status field",
+            "AP-30": "Missing CIA classification fields",
         },
         "summary": " · ".join(summary_parts),
     }

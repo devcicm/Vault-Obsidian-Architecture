@@ -96,8 +96,21 @@ def validate_frontmatter(note_path: Path) -> Dict[str, Any]:
     if not isinstance(data, dict):
         return {"valid": False, "error": "Frontmatter is not a YAML mapping"}
 
-    missing = [f for f in ("id", "title") if f not in data]
-    if missing:
+    # v37: required fields expanded
+    required = ["id", "title", "createdAt", "updatedAt"]
+
+    # For content notes (not system/index), require traceability fields
+    rel_path = str(note_path.relative_to(VAULT_ROOT)).replace("\\", "/")
+    is_index = rel_path.endswith("/index.md") or rel_path == "index.md" or note_path.stem == "index"
+    is_system = rel_path.startswith("00_System/") or rel_path == "00_System"
+
+    if not is_index and not is_system:
+        required += ["cia_integrity", "cia_availability", "cia_sensitivity", "agent"]
+        if "tags" not in data:
+            missing.append("tags")
+
+    missing = [f for f in required if f not in data]
+    if missing:
         return {"valid": False, "error": f"Missing required fields: {missing}", "data": data}
 
     cia_errors = _validate_cia_fields(data)

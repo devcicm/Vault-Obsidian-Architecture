@@ -205,6 +205,11 @@ def vault_code_module(
     frontmatter.append(f"updatedAt: {now}")
     if tags:
         frontmatter.append(f"tags: {json.dumps(list(dict.fromkeys(tags)))}")
+    frontmatter.append("cia_integrity: medium")
+    frontmatter.append("cia_availability: medium")
+    frontmatter.append("cia_sensitivity: internal")
+    frontmatter.append("status: draft")
+    frontmatter.append("agent: system")
     frontmatter.append("---")
 
     body_sections = []

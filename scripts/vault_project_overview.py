@@ -13,6 +13,7 @@ Usage:
 
 import argparse
 import json
+import uuid
 import re
 import sys
 from vault_errors import wrap_main
@@ -193,9 +194,17 @@ def vault_project_overview(
 
     frontmatter = ["---"]
     frontmatter.append(f"title: Overview: {project}")
+    frontmatter.append(f"id: {str(uuid.uuid4())}")
     frontmatter.append(f"project: {project}")
     frontmatter.append(f"type: project-overview")
+    frontmatter.append(f"createdAt: {timestamp}")
     frontmatter.append(f"updatedAt: {timestamp}")
+    frontmatter.append(f"tags: {json.dumps([safe_project, 'project', 'overview'])}")
+    frontmatter.append("cia_integrity: medium")
+    frontmatter.append("cia_availability: medium")
+    frontmatter.append("cia_sensitivity: internal")
+    frontmatter.append("status: draft")
+    frontmatter.append("agent: system")
     frontmatter.append("---")
 
     body_sections = [f"# Overview: {project}\n"]

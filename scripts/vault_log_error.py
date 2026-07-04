@@ -30,6 +30,9 @@ import argparse
 
 import json
 
+
+import uuid
+
 import re
 
 import sys
@@ -324,7 +327,24 @@ def vault_log_error(
 
     file_path = folder_path / filename
 
-    atomic_write_text(file_path, content)
+    # v37: wrap content with YAML frontmatter for traceability
+    fm_tags = [project, error_type] if project else [error_type]
+    frontmatter = (
+        f"---\n"
+        f"title: {title}\n"
+        f"id: {str(uuid.uuid4())}\n"
+        f"type: {error_type}\n"
+        f"createdAt: {utcnow()}\n"
+        f"updatedAt: {utcnow()}\n"
+        f"tags: {json.dumps(fm_tags)}\n"
+        f"cia_integrity: medium\n"
+        f"cia_availability: medium\n"
+        f"cia_sensitivity: internal\n"
+        f"agent: system\n"
+        f"---\n\n"
+    )
+
+    atomic_write_text(file_path, frontmatter + content)
 
     return {
         "ok": True,
