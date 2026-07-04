@@ -92,16 +92,9 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "Ruta relativa al vault (ej: 01_Projects/mi-api/overview.md)",
                 "validators": ["within_vault"],
             },
-            "title": {
-                "type": "string",
-                "required": False,
-                "description": "Título de la nota a buscar",
-                "validators": ["not_empty"],
-            },
-        },
         "guards": [],
         "side_effects": [],
-        "example": 'python vault_read.py --path "01_Projects/mi-api/overview.md"\npython vault_read.py --title "Overview"',
+        "example": 'python vault_read.py --path "01_Projects/mi-api/overview.md"',
         "related": ["vault_write", "vault_search"],
     },
     "vault_search": {
@@ -196,7 +189,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             },
         },
         "guards": [],
-        "side_effects": ["Versiona en .history/"],
+        "side_effects": [],
         "example": 'python vault_append.py --path "01_Projects/mi-api/changelog.md" --content "## v1.2\\n\\nFix deploy"',
         "related": ["vault_write", "vault_read"],
     },
@@ -245,8 +238,8 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "conflict": {
                 "type": "string",
                 "required": False,
-                "description": "Cómo resolver conflictos: skip, overwrite, keep_both",
-                "validators": ["enum:skip,overwrite,keep_both"],
+                "description": "Cómo resolver conflictos: skip, overwrite, rename",
+                "validators": ["enum:skip,overwrite,rename"],
             },
         },
         "guards": [],
@@ -456,17 +449,10 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "script": "vault_graph.py",
         "group": "Salud",
         "purpose": "Genera grafo de relaciones entre notas.",
-        "params": {
-            "project": {
-                "type": "string",
-                "required": False,
-                "description": "Proyecto específico",
-                "validators": [],
-            }
-        },
+        "params": {},
         "guards": [],
         "side_effects": ["Crea 99_Index/graph.json"],
-        "example": 'python vault_graph.py\npython vault_graph.py --project "mi-api"',
+        "example": "python vault_graph.py",
         "related": ["vault_audit", "vault_impact", "vault_propagate"],
     },
     "vault_init": {
@@ -680,7 +666,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "guards": [],
         "side_effects": [],
         "example": 'python vault_mermaid_check.py\npython vault_mermaid_check.py --path "06_Diagrams/foo.md"\npython vault_mermaid_check.py --fix',
-        "related": ["vault_diagram_save", "vault_render", "vault_write"],
+        "related": ["vault_diagram_save", "vault_write"],
     },
     "vault_diagram_export": {
         "name": "vault_diagram_export",
@@ -802,7 +788,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "guards": [],
         "side_effects": ["Crea nota en 06_Diagrams/{category}/"],
         "example": 'python vault_diagram_save.py --project "mi-api" --title "User Flow" --diagram_type "mermaid" --category "flow" --content "graph TD\\n  A --> B"',
-        "related": ["vault_relation_add", "vault_render", "vault_graph"],
+        "related": ["vault_relation_add", "vault_graph"],
     },
     "vault_relation_add": {
         "name": "vault_relation_add",

@@ -1,6 +1,6 @@
 # Vault Obsidian Architecture — Runtime dependencies
-# v36: zero external dependencies — pure stdlib (Python 3.9+)
+# v37: PyYAML for frontmatter parsing (vault_lib, vault_validate)
 #
 # For full metadata see pyproject.toml.
 
-# (no runtime deps)
+PyYAML>=6.0

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vault-obsidian-architecture"
-version = "36.0"
+version = "37.0"
 description = "Spec-Driven Development vault toolkit — persistent documental memory for LLM agents"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -28,7 +28,7 @@ classifiers = [
     "Topic :: Text Processing :: Markup :: Markdown",
 ]
 
-dependencies = []
+dependencies = ["PyYAML>=6.0"]
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0", "pytest-cov>=4.0", "ruff>=0.3.0"]

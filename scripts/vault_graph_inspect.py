@@ -49,6 +49,7 @@ from vault_regex import (
     detect_bracket_anomalies,
     detect_path_anchored,
 )
+from vault_errors import wrap_main
 
 
 _SKIP_DIRS = frozenset(
@@ -531,4 +532,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(wrap_main(main, "vault_graph_inspect"))

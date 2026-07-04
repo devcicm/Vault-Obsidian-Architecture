@@ -26,6 +26,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from vault_io import VAULT_ROOT, atomic_write_json, atomic_write_text
+from vault_errors import wrap_main
 
 
 SDD_OUTPUT_DIR = "docs/sdd"
@@ -518,7 +519,7 @@ def generate_reference_matrix(vault_root: Path, drift: dict) -> str:
 | AP-21 Path-anchored links | vault_write (guard) | vault_write (reject) | content gate |
 | AP-22 Empty wikilinks | vault_write (guard) | vault_write (reject) | content gate |
 | AP-23 Note > 500 lines | vault_write (advisory) | (manual split) | guidelines |
-| AP-24 Bracket imbalance | vault_write (guard) + vault_audit | vault_render_check --fix | content gate |
+| AP-24 Bracket imbalance | vault_write (guard) + vault_audit | vault_fix_brackets --fix | content gate |
 | AP-25 Mermaid errors | vault_audit + vault_mermaid_check | (manual) | vault_mermaid_check |
 
 ---
@@ -535,7 +536,7 @@ def generate_reference_matrix(vault_root: Path, drift: dict) -> str:
 | AP-21 Path-anchored links | vault_write (guard) | vault_write (reject) | content gate |
 | AP-22 Empty wikilinks | vault_write (guard) | vault_write (reject) | content gate |
 | AP-23 Note > 500 lines | vault_write (advisory) | (manual split) | guidelines |
-| AP-24 Bracket imbalance | vault_write (guard) + vault_audit | vault_render_check --fix | content gate |
+| AP-24 Bracket imbalance | vault_write (guard) + vault_audit | vault_fix_brackets --fix | content gate |
 | AP-25 Mermaid errors | vault_audit + vault_mermaid_check | (manual) | vault_mermaid_check |
 """
 
@@ -770,7 +771,7 @@ def generate_metrics(vault_root: Path, drift: dict) -> str:
 | **orphan_count** | int | vault_graph | Notas sin relaciones |
 | **broken_link_count** | int | vault_audit --broken-links | Links a notas inexistentes |
 | **mermaid_error_count** | int | vault_mermaid_check | Errores de sintaxis Mermaid |
-| **render_error_count** | int | vault_render_check | Errores de render markdown (AP-26) |
+| **render_error_count** | int | vault_fix_brackets | Errores de render markdown (AP-26) |
 | **idempotency_score** | 0-100 | (v36 nuevo) | Cobertura de file_lock + atomic_write |
 | **trace_coverage** | % | (v36 nuevo) | % ops con trace entry |
 | **secret_findings** | int | vault_secret_scan | Secretos detectados bloqueados |
@@ -1042,4 +1043,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(wrap_main(main, "vault_sdd_init"))

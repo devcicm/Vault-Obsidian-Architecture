@@ -37,6 +37,7 @@ from typing import Any, Dict, List, Optional, Set
 SCRIPTS_DIR = Path(__file__).parent
 
 from vault_io import VAULT_ROOT  # noqa: E402
+from vault_errors import wrap_main
 SYSTEM_DIR = VAULT_ROOT / "00_System"
 MANIFEST_FILE = SYSTEM_DIR / "tools-manifest.json"
 SPEC_FILE = SCRIPTS_DIR / "tool-spec.json"
@@ -812,4 +813,4 @@ Ejemplos:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(wrap_main(main, "vault_manifest"))

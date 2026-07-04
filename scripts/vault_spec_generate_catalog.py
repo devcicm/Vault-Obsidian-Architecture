@@ -24,6 +24,7 @@ import json
 import sys
 from pathlib import Path
 
+from vault_errors import wrap_main
 
 _HERE = Path(__file__).resolve().parent
 
@@ -187,4 +188,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(wrap_main(main, "vault_spec_generate_catalog"))

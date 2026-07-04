@@ -279,7 +279,7 @@ MIGRATIONS: Dict[str, Dict[str, Any]] = {
             "vault_secret_scan.py (NUEVO): hook pre-write que aborta si detecta secrets",
             "atomic_write_text garantiza cleanup en error (no temp files huérfanos)",
             "vault_id_check.py: id estable + dedupe de duplicados",
-            "vault_render_check.py: AP-26 auto-fix (pipes sin escapar, brackets)",
+            "vault_fix_brackets.py: AP-26 auto-fix (pipes sin escapar, brackets)",
             "vault_history_compact.py: rotación .history/ (10 versiones/nota)",
             "Skill vault-sdd-init en 00_System/skills/ con logo ASCII",
             "docs/sdd/ generado con 14 archivos bilingües (ES/EN)",

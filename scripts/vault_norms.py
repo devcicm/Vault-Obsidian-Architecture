@@ -557,11 +557,11 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         ),
         "prevention": (
             "Usar siempre el formato [[stem]] o [[stem|alias]]. Validar balance con "
-            "vault_render_check --fix antes de commit. El content_gate de vault_write "
+            "vault_fix_brackets --fix antes de commit. El content_gate de vault_write "
             "rechaza contenido con bracket imbalance."
         ),
         "tools_enforcing": ["vault_write", "vault_fix_brackets"],
-        "tools_detecting": ["vault_audit", "vault_render_check"],
+        "tools_detecting": ["vault_audit", "vault_fix_brackets"],
         "introduced_version": "v34.2",
     },
     # ── Anti-patrón AP-25 ──────────────────────────────────────────────────────

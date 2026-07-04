@@ -18,6 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from vault_mcp_catalog import TOOLS_CATALOG
+from vault_errors import wrap_main
 
 
 def main() -> int:
@@ -86,4 +87,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(wrap_main(main, "vault_spec_catalog_check"))

@@ -26,6 +26,8 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from vault_errors import wrap_main
+
 SCRIPTS_DIR = Path(__file__).parent
 PYTHON = sys.executable
 
@@ -472,4 +474,4 @@ Ejemplos:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(wrap_main(main, "vault_test_runner"))

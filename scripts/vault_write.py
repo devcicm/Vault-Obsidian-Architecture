@@ -43,6 +43,7 @@ from vault_io import (
     assert_within_vault,
     VAULT_ROOT,
     normalize_stem,
+    file_lock,
 )
 from vault_encoding import (
     sanitize_content,
@@ -692,7 +693,7 @@ def vault_write(
 
     ap23_warning = line_count > 500
 
-    # Generate frontmatter and write file
+    # Generate frontmatter and write file (with file lock to prevent concurrent write data loss)
 
     frontmatter = generate_frontmatter(
         title, tags, meta, existing_id, existing_created, norm_refs, folder
@@ -700,13 +701,14 @@ def vault_write(
 
     final_content = f"{frontmatter}\n\n{content}"
 
-    atomic_write_text(vault_path, final_content)
+    with file_lock(vault_path, timeout=10.0):
+        atomic_write_text(vault_path, final_content)
 
-    # Update search index
+        # Update search index (inside lock for consistency)
 
-    update_search_index(
-        str(vault_path.relative_to(VAULT_ROOT)),
-        title,
+        update_search_index(
+            str(vault_path.relative_to(VAULT_ROOT)),
+            title,
         content,
         tags,
         is_new=(existing_id is None),

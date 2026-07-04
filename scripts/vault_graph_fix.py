@@ -59,6 +59,7 @@ from vault_graph_inspect import (
     _normalize_for_hash,
     _strip_frontmatter as _vgi_strip_frontmatter,
 )
+from vault_errors import wrap_main
 
 _MIGRATION_DIR = "10_Migrated"
 
@@ -1097,4 +1098,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(wrap_main(main, "vault_graph_fix"))
