@@ -23,6 +23,12 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { createHash, randomUUID } from "node:crypto";
 import { resolve, basename, dirname, join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { deflateSync, inflateSync } from "node:zlib";
+import { createWriteStream, createReadStream } from "node:fs";
+import { pipeline } from "node:stream";
+import { promisify } from "node:util";
+
+const pipelineAsync = promisify(pipeline);
 
 // ============================================================================
 // SECCIÓN 1: Bootstrap & Config
@@ -314,6 +320,7 @@ const JS_NATIVE_TOOLS = new Set([
   "vault_read", "vault_list", "vault_search",
   "vault_graph", "vault_graph_inspect",
   "vault_tokens", "vault_token_counter", "vault_fundamentals",
+  "vault_backup_base64", "vault_restore_base64",
 ]);
 
 function assertWithinVault(p, vaultRoot) {
@@ -539,6 +546,119 @@ function heuristicTokenCount(text) {
   return Math.ceil(text.length / 4);
 }
 
+async function jsNativeBackupBase64(args, vaultRoot) {
+  const label = args.label || `backup-${new Date().toISOString().replace(/[:.]/g, "-")}`;
+  const backupDir = join(vaultRoot, "..", "vault-backups");
+  await mkdir(backupDir, { recursive: true });
+
+  const files = await collectAllFiles(vaultRoot);
+  const entries = [];
+  for (const relPath of files) {
+    const fullPath = join(vaultRoot, relPath);
+    try {
+      const content = await readFile(fullPath);
+      entries.push({ path: relPath.replace(/\\/g, "/"), content: content.toString("base64") });
+    } catch (_) {}
+  }
+
+  let version = "unknown";
+  try {
+    const vf = join(vaultRoot, "00_System", "standard-version.json");
+    const vd = JSON.parse(await readFile(vf, "utf-8"));
+    version = vd.applied_version || "unknown";
+  } catch (_) {}
+
+  const manifest = {
+    vault_name: vaultRoot.split(/[/\\]/).pop(),
+    vault_root: vaultRoot,
+    version,
+    created_at: new Date().toISOString(),
+    label,
+    file_count: entries.length,
+    checksum: createHash("sha256").update(JSON.stringify(entries.map(e => e.path).sort())).digest("hex"),
+  };
+
+  const payload = JSON.stringify({ manifest, entries });
+  const compressed = deflateSync(payload);
+  const b64 = compressed.toString("base64");
+
+  const backupFile = join(backupDir, `${label}.b64zip.json`);
+  await writeFile(backupFile, JSON.stringify({ manifest, b64_size: b64.length, b64_data: b64 }, null, 2));
+
+  return {
+    ok: true, tool: "vault_backup_base64",
+    backup_path: backupFile,
+    manifest,
+    b64_size: b64.length,
+    message: `Backup created: ${backupFile} (${entries.length} files, ${(b64.length / 1024).toFixed(1)} KB base64)`,
+  };
+}
+
+async function jsNativeRestoreBase64(args, vaultRoot) {
+  const backupPath = args.path;
+  if (!backupPath) return { ok: false, error: "Missing --path to .b64zip.json backup file" };
+
+  let data;
+  try { data = JSON.parse(await readFile(backupPath, "utf-8")); } catch (e) {
+    return { ok: false, error: `Cannot read backup: ${e.message}` };
+  }
+
+  if (!data.b64_data) return { ok: false, error: "Invalid backup format: missing b64_data" };
+
+  const compressed = Buffer.from(data.b64_data, "base64");
+  const payload = inflateSync(compressed).toString("utf-8");
+  const backup = JSON.parse(payload);
+  const { manifest, entries } = backup;
+
+  const confirm = args.confirm;
+  if (confirm !== "true" && confirm !== true) {
+    return {
+      ok: false, need_confirm: true,
+      manifest,
+      warning: "DESTRUCTIVE operation. Add --confirm true to proceed.",
+      hint: `This will restore ${manifest.file_count} files from backup '${manifest.label}' created at ${manifest.created_at}. Current vault content will be replaced.`,
+    };
+  }
+
+  const restoreDir = join(vaultRoot, "..", `${vaultRoot.split(/[/\\]/).pop()}-restore-${manifest.created_at.replace(/[:.]/g, "-")}`);
+  await mkdir(restoreDir, { recursive: true });
+
+  let restored = 0;
+  for (const entry of entries) {
+    const target = join(restoreDir, entry.path);
+    await mkdir(dirname(target), { recursive: true });
+    await writeFile(target, Buffer.from(entry.content, "base64"));
+    restored++;
+  }
+
+  return {
+    ok: true, tool: "vault_restore_base64",
+    restored_to: restoreDir,
+    manifest,
+    files_restored: restored,
+    warning: "Content restored to a NEW directory alongside the vault. Original vault was NOT modified. Review the restored content before replacing.",
+  };
+}
+
+async function collectAllFiles(dir) {
+  const results = [];
+  const SKIP = new Set([".git", "node_modules", "__pycache__", ".history", ".locks", "vault-backups", ".vault-fix-backup"]);
+  try {
+    const entries = await readdir(dir, { withFileTypes: true });
+    for (const e of entries) {
+      if (e.name.startsWith(".") || SKIP.has(e.name)) continue;
+      const full = join(dir, e.name);
+      if (e.isDirectory()) {
+        const sub = await collectAllFiles(full);
+        results.push(...sub.map(s => join(e.name, s)));
+      } else {
+        results.push(e.name);
+      }
+    }
+  } catch (_) {}
+  return results;
+}
+
 async function scanMdFiles(dir) {
   const results = [];
   try {
@@ -567,6 +687,8 @@ async function dispatchJsNative(name, args, vaultRoot) {
     case "vault_tokens": return jsNativeTokens(args, vaultRoot);
     case "vault_token_counter": return jsNativeTokenCounter(args);
     case "vault_fundamentals": return jsNativeFundamentals(args, vaultRoot);
+    case "vault_backup_base64": return jsNativeBackupBase64(args, vaultRoot);
+    case "vault_restore_base64": return jsNativeRestoreBase64(args, vaultRoot);
     default: return null;
   }
 }
@@ -644,6 +766,29 @@ async function handleToolsList() {
           only: { type: "string", description: "Only run: brackets, path_anchored", enum: ["brackets", "path_anchored"] },
         },
         required: [],
+      },
+    },
+    {
+      name: "vault_backup_base64",
+      description: "Crea backup comprimido base64 del vault completo. Antes de cualquier migracion o modificacion masiva.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          label: { type: "string", description: "Etiqueta del backup (default: backup-timestamp)" },
+        },
+        required: [],
+      },
+    },
+    {
+      name: "vault_restore_base64",
+      description: "Restaura vault desde backup base64. Requiere --confirm true. Restaura a directorio nuevo sin tocar el original.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          path: { type: "string", description: "Ruta al archivo .b64zip.json" },
+          confirm: { type: "string", description: "Confirmar restauracion (debe ser 'true')" },
+        },
+        required: ["path"],
       },
     },
   ];
