@@ -1,9 +1,9 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture v37**. Implementan las 71 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
+Scripts Python del estándar **Vault Obsidian Architecture v37**. Implementan las 76 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **85+ archivos** — 71 tools activas + 5 deprecadas + 11 internas/meta + `vault_errors.py`
-- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 71 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP
+- **~100 archivos** — 76 tools activas (Python catalog) + 8 archivadas en `_archived/` + ~12 internas/meta + bibliotecas compartidas
+- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 76 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
 - **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault (`scripts/` con 00_System al lado); excluye automáticamente `vault-sandbox/` y `*.bak` para evitar loops
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
@@ -24,11 +24,11 @@ Scripts Python del estándar **Vault Obsidian Architecture v37**. Implementan la
 | [Grupo 1 — Core](#grupo-1--core) | vault_write, vault_read, vault_search, vault_list, vault_append, vault_diff, vault_merge |
 | [Grupo 2 — Observabilidad](#grupo-2--observabilidad) | vault_log_error |
 | [Grupo 3 — Patrones](#grupo-3--patrones) | vault_pattern_save, vault_pattern_list |
-| [Grupo 4 — Diagramas y Cardinalidad](#grupo-4--diagramas-y-cardinalidad) | vault_diagram_save, vault_relation_add |
+| [Grupo 4 — Diagramas y Cardinalidad](#grupo-4--diagramas-y-cardinalidad) | vault_diagram_save, vault_relation_add, vault_mermaid_check, vault_diagram_export |
 | [Grupo 5 — Conocimiento](#grupo-5--conocimiento) | vault_knowledge_save, vault_knowledge_get |
-| [Grupo 6 — Salud del Vault](#grupo-6--salud-del-vault) | vault_audit, vault_validate, vault_graph |
+| [Grupo 6 — Salud del Vault](#grupo-6--salud-del-vault) | vault_audit, vault_validate, vault_graph, vault_graph_merge, vault_graph_inspect |
 | [Grupo 7 — Runbooks](#grupo-7--runbooks) | vault_runbook_save, vault_runbook_log |
-| [Grupo 8 — Infraestructura](#grupo-8--infraestructura) | vault_infra_save, vault_infra_map, vault_env_save |
+| [Grupo 8 — Infraestructura](#grupo-8--infraestructura) | vault_infra_save, vault_infra_map, vault_env_save, vault_env_matrix |
 | [Grupo 9 — Migración](#grupo-9--migración) | vault_migrate_docs, vault_migrate_rollback |
 | [Grupo 10 — Línea de Tiempo](#grupo-10--línea-de-tiempo) | vault_timeline |
 | [Grupo 11 — Vista del Proyecto](#grupo-11--vista-del-proyecto) | vault_project_status, vault_project_overview |
@@ -48,7 +48,9 @@ Scripts Python del estándar **Vault Obsidian Architecture v37**. Implementan la
 | [Grupo 25 — Propagación](#grupo-25--propagación) | vault_impact, vault_propagate |
 | [Grupo 26 — Tokens](#grupo-26--tokens) | vault_tokens, vault_token_counter, vault_token_service |
 | [Grupo 27 — Session Delta y Tags](#grupo-27--session-delta-y-tags) | vault_delta, vault_tags |
-| [Grupo 33 — Corrección automática](#grupo-33--corrección-automática) | vault_fix_brackets |
+| [Grupo 33 — Corrección automática](#grupo-33--corrección-automática) | vault_fix_brackets, vault_graph_fix |
+| [Grupo 34 — Gestión de Carpetas](#grupo-34--gestión-de-carpetas) | vault_folder_registry |
+| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms |
 | [Observabilidad de Tools](#observabilidad-de-tools) | vault_errors |
 | [Utilidades internas](#utilidades-internas) | vault_index, vault_dataset, vault_io, vault_link_safety |
 | [Deprecadas](#deprecadas) | vault_create, vault_migrate, vault_reorganize, vault_tools, vault_render |
@@ -931,7 +933,7 @@ python vault_tags.py --dry-run
 ## Observabilidad de Tools
 
 ### `vault_errors.py`
-Módulo de observabilidad centralizado. Todas las 59 tools lo importan. No es un tool de usuario — es la capa de seguridad del runtime.
+Módulo de observabilidad centralizado. Todas las tools lo importan. No es un tool de usuario — es la capa de seguridad del runtime.
 
 **Funciones principales:**
 - `wrap_main(fn, tool_name)` — envuelve `main()` con timeout (60s) y catch de excepciones no manejadas. Emite JSON estructurado en lugar de traceback.
@@ -1045,41 +1047,53 @@ python vault_errors.py catalog --code AP21_PATH_WIKILINKS
 
 ## Utilidades internas
 
-Scripts de I/O y utilidades internas. No forman parte de los 26 grupos del estándar.
+Scripts de I/O, encoding y utilidades internas. No forman parte de los grupos del estándar.
 
 | Script | Descripción |
 |---|---|
 | `vault_io.py` | Primitivas atómicas: `atomic_write_text`, `atomic_write_json`, `file_lock`, `assert_within_vault` |
+| `vault_encoding.py` | Normalización Unicode (NFC/NFD), sanitización de quotes/dashes/invisibles, detección BOM |
+| `vault_regex.py` | Patrones regex para wiki-links, bracket detection, path-anchored validation |
 | `vault_index.py` | Actualiza `search-index.json` — llamado internamente por `vault_write` |
 | `vault_dataset.py` | Extrae keywords con TF-IDF para búsqueda avanzada |
 | `vault_link_safety.py` | Valida wiki-links antes de guardar (AP-21) |
+| `vault_errors.py` | Manejo de errores estructurado: wrap_main, emit_error, query_trace |
+| `vault_errors_catalog.py` | Catálogo de códigos de error |
+| `vault_errors_trace.py` | Trace logging + token counting |
 
 ---
 
-## Deprecadas
+## Archivadas (`_archived/`)
 
-Mantenidas solo para compatibilidad. Emiten `_deprecation` en la respuesta JSON. **No usar en nuevos proyectos.**
+Scripts movidos a `_archived/`. No se usan en nuevos proyectos.
 
-| Script | Reemplazado por |
-|---|---|
-| `vault_create.py` | `vault_write` (desde v21) |
-| `vault_migrate.py` | `vault_migrate_docs` |
-| `vault_reorganize.py` | `vault_migrate_docs` |
-| `vault_tools.py` | Scripts individuales por grupo |
-| `vault_render.py` | Obsidian Desktop renderiza nativo |
+| Script | Motivo | Reemplazado por |
+|---|---|---|
+| `vault_create.py` | Deprecado (v21) | `vault_write` |
+| `vault_migrate.py` | Deprecado (v25) | `vault_migrate_docs` |
+| `vault_reorganize.py` | Deprecado (v25) | `vault_migrate_docs` |
+| `vault_tools.py` | Deprecado (v22) | Scripts individuales por grupo |
+| `vault_render.py` | Deprecado (v22) | `vault_diagram_save` |
+| `vault.py` | Huérfano — CLI entry point temprano | Herramientas individuales |
+| `vault_help.py` | Huérfano — sin referencias | Catálogo MCP |
+| `vault_session.py` | Huérfano — sin referencias | `vault_session` (MCP) |
 
 ---
 
 ## Meta / Build
 
-Tooling interno para generación y validación del estándar. No forman parte de la superficie de 53 tools.
+Tooling interno para generación y validación del estándar. No forman parte de la superficie de tools.
 
 | Script | Descripción |
 |---|---|
-| `vault_manifest.py` | Genera `00_System/tools-manifest.json` con metadata de las 66 tools |
+| `vault_manifest.py` | Genera `00_System/tools-manifest.json` con metadata de las tools |
 | `vault_compact_contracts.py` | Genera `00_System/tool-contracts.md` compacto desde el spec |
 | `vault_test_runner.py` | Suite de smoke tests, contract tests y error taxonomy tests |
 | `vault_spec_memory.py` | Genera `00_System/spec-memory.json` — contratos + trazabilidad F1–F8 + estado DQ |
+| `vault_sdd_init.py` | Inicializa documentación SDD (spec-driven documentation) |
+| `vault_mcp_catalog.py` | Catálogo canónico de tools en Python — fuente de verdad. Usar `--sync` para exportar a JSON |
+| `vault_mcp.py` | Orquestador MCP en Python (alternativa al monolito Node.js) |
+| `vault_mcp_context.py` | Generación de contexto MCP para agentes |
 
 ---
 
@@ -1097,10 +1111,11 @@ python vault_drift_detect.py --path "." --project {slug} --mode snapshot  # 4. b
 # Toda escritura vía vault_write (nunca editar .md directamente)
 # Antes de eliminar notas: vault_change_log --action deleted --path X --reason Y
 
-# ── CIERRE DE SESIÓN ──────────────────────────────────────────────
+ # ── CIERRE DE SESIÓN ──────────────────────────────────────────────
 python vault_drift_detect.py --path "." --project {slug} --mode report  # 5. cobertura
 python vault_reindex.py --graph                    # 6. reconstruir índice + grafo
-python vault_audit.py                              # 7. healthScore ≥ baseline
+python vault_graph.py --typed                      # 7. enriquecer grafo con predicates semánticos (PAT-6)
+python vault_audit.py                              # 8. healthScore ≥ baseline
 ```
 
 ---
@@ -1111,8 +1126,9 @@ python vault_audit.py                              # 7. healthScore ≥ baseline
 
 El vault expone sus herramientas como un **servidor MCP** que las IAs consumen directamente sin registro en harness.
 
-**Archivo:** `../mcp/nodejs/vault-mcp-server.mjs` (~3200 líneas, cero dependencias npm)  
+**Archivo:** `../mcp/nodejs/vault-mcp-server.mjs` (~1650 líneas, cero dependencias npm)  
 **Plan:** `../mcp/PLAN.md` — documento de evidencia con 8 fases de implementación
+**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (76 tools)
 
 ### Modos de uso
 
@@ -1130,14 +1146,13 @@ node mcp/nodejs/vault-mcp-server.mjs --port 3000
 | Capa | Descripción |
 |------|-------------|
 | MCP Protocol | JSON-RPC 2.0 nativo (initialize, tools/list, tools/call, resources) |
-| Tool Registry | Las 71 tools con inputSchema completo (port de `vault_mcp_catalog.py`) |
-| JS-native backend | ~10 tools rápidas en JS: vault_read, vault_list, vault_graph, vault_graph_inspect, etc. |
-| Python backend | ~61 tools via `spawn("python", ["scripts/v_*.py", ...])` |
-| Guard Chain | 9 validadores pre-escritura: secret scan, content gate, bracket balance, empty links, path-anchored, **table brackets (nuevo)**, **referenced notes (nuevo)**, Mermaid, CIA fields |
-| File Watcher | `fs.watch` recursivo + SHA-256 delta (reusa `vault_delta.py`, `vault_drift_detect.py`) |
-| Traceability | Log inmutable de mutaciones con UUID + timestamp + agent + diff (reusa `vault_change_log.py`, `vault_mcp_context.py`) |
-| Observability | Health checks + DQ 9 dimensiones (reusa `vault_audit.py`, `vault_quality_check.py`) |
-| Idempotencia | File locks, atomic writes, CAS state store (reusa `vault_io.py`) |
+| Tool Registry | 76 tools con inputSchema completo (catálogo canónico via tools-catalog.json) |
+| JS-native backend | 10 tools rápidas en JS: vault_read, vault_list, vault_search, vault_graph, vault_graph_inspect, vault_tokens, vault_token_counter, vault_fundamentals, vault_backup_base64, vault_restore_base64 |
+| Python backend | ~66 tools via `spawn("python", ["scripts/v_*.py", ...])` |
+| Guard Chain | 10 validadores pre-escritura: secret scan, content gate, bracket balance, empty links, path-anchored, table brackets, referenced notes, Mermaid, tag completeness, agent completeness |
+| Multi-tenant | 13 vaults auto-descubiertos, sesiones por vault via SSE/HTTP |
+| Traceability | Log inmutable de mutaciones con UUID + timestamp + agent + diff |
+| Observability | Health checks + DQ 9 dimensiones |
 
 ### Nuevos validadores (no existían en las tools Python)
 

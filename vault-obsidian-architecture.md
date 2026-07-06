@@ -3464,7 +3464,7 @@ El vault en `{data-dir}/vault/` puede abrirse **directamente** en Obsidian deskt
 
 ## MCP Server Monolith — Servicio Directo para IAs (v37)
 
-El vault ahora expone sus 71 herramientas como un **servidor MCP monolítico** que las IAs pueden consumir directamente sin registro en harness. El archivo `mcp/nodejs/vault-mcp-server.mjs` implementa:
+El vault ahora expone sus 76 herramientas como un **servidor MCP monolítico** que las IAs pueden consumir directamente sin registro en harness. El archivo `mcp/nodejs/vault-mcp-server.mjs` implementa:
 
 ### Transporte dual
 - **Modo stdio:** el cliente MCP lanza `node mcp/nodejs/vault-mcp-server.mjs` como proceso hijo
@@ -3475,9 +3475,9 @@ El vault ahora expone sus 71 herramientas como un **servidor MCP monolítico** q
 | Capa | Función | Estrategias reutilizadas |
 |------|---------|--------------------------|
 | **MCP Protocol** | JSON-RPC 2.0 nativo (initialize, tools/list, tools/call, resources) | Cero dependencias npm |
-| **Tool Registry** | 71 herramientas con inputSchema completo | `vault_mcp_catalog.py` TOOLS_CATALOG |
-| **JS-native backend** | ~10 tools rápidas en JavaScript puro | `vault_graph_inspect`, `vault_graph`, `vault_read` |
-| **Python backend** | ~61 tools via subprocess a `scripts/*.py` | Todas las tools existentes |
+| **Tool Registry** | 76 herramientas con inputSchema completo | `vault_mcp_catalog.py` TOOLS_CATALOG |
+| **JS-native backend** | ~10 tools rápidas en JavaScript puro | `vault_graph_inspect`, `vault_graph`, `vault_read`, backup/restore |
+| **Python backend** | ~66 tools via subprocess a `scripts/*.py` | Todas las tools existentes |
 | **Guard Chain** | 9 validadores pre-escritura en secuencia | `vault_write`, `vault_regex`, `vault_secret_scan` |
 | **File Watcher** | Detección de cambios en vault via `fs.watch` + SHA-256 | `vault_delta`, `vault_drift_detect` |
 | **Traceability** | Log inmutable de mutaciones (JSON + MD) | `vault_change_log`, `vault_mcp_context` |
@@ -4913,7 +4913,7 @@ temp/
 **MCP Server Monolith + 3 nuevos validadores + Mejoras en graph tools**
 
 **Agregado**
-- **`mcp/nodejs/vault-mcp-server.mjs`:** servidor MCP monolítico con JSON-RPC 2.0 nativo. Transporte dual (stdio + SSE/HTTP en localhost:3000). Expone las 71 tools del vault como MCP tools. Cero dependencias npm — solo `node:*` built-ins. Backend dual: JS-native (~10 tools rápidas) + Python subprocess (~61 tools). Las IAs se conectan directamente sin registro en harness.
+- **`mcp/nodejs/vault-mcp-server.mjs`:** servidor MCP monolítico con JSON-RPC 2.0 nativo. Transporte dual (stdio + SSE/HTTP en localhost:3000). Expone las 76 tools del vault como MCP tools. Cero dependencias npm — solo `node:*` built-ins. Backend dual: JS-native (~10 tools rápidas) + Python subprocess (~66 tools). Las IAs se conectan directamente sin registro en harness. Catálogo canónico sincronizado desde `vault_mcp_catalog.py --sync`.
 - **`mcp/PLAN.md`:** documento de evidencia y plan de trabajo con 8 fases de implementación, arquitectura detallada, estrategias reutilizadas del codebase, y log de cambios.
 - **`mcp/python/`:** directorio preparado para el equivalente Python del MCP server.
 - **Table Bracket Validator:** nuevo Guard Chain validator que escanea celdas de tablas markdown en busca de `[[` o `]]` incompletos. Reporta `{row, column, cell_content, type}`.
