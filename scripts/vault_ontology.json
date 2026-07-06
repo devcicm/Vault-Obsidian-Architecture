@@ -1,0 +1,419 @@
+{
+  "ontology": "vault-obsidian-architecture",
+  "version": "v37",
+  "generated_at": "2026-07-04T00:00:00.000Z",
+  "description": "Formal ontology defining node classes, relationship predicates, and domain/range constraints for the Vault Obsidian Architecture knowledge graph.",
+  "node_classes": {
+    "system": {
+      "label": "System",
+      "folder": "00_System",
+      "description": "Metadata del vault, configuracion, indices, versionado",
+      "parent": null,
+      "abstract": false,
+      "required_properties": ["id", "title", "createdAt", "updatedAt"],
+      "optional_properties": ["agent", "tags", "norm_refs"]
+    },
+    "project": {
+      "label": "Project",
+      "folder": "01_Projects",
+      "description": "Proyectos activos con status, hitos y roadmap",
+      "parent": null,
+      "abstract": false,
+      "required_properties": ["id", "title", "createdAt", "updatedAt", "agent", "tags", "type", "status", "cia_integrity", "cia_availability", "cia_sensitivity"],
+      "optional_properties": ["norm_refs", "project", "milestone"]
+    },
+    "observability": {
+      "label": "Observability",
+      "folder": "02_Observability",
+      "description": "Logs, metricas, SLOs, alertas e incidentes",
+      "parent": null,
+      "abstract": false,
+      "required_properties": ["id", "title", "createdAt", "updatedAt", "agent", "tags", "type", "status", "cia_integrity", "cia_availability", "cia_sensitivity"],
+      "optional_properties": ["norm_refs", "project"]
+    },
+    "decision": {
+      "label": "Decision (ADR)",
+      "folder": "03_Decisions",
+      "description": "Architecture Decision Records — decisiones arquitectonicas con contexto, opciones y consecuencias",
+      "parent": null,
+      "abstract": false,
+      "required_properties": ["id", "title", "createdAt", "updatedAt", "agent", "tags", "type", "status", "cia_integrity", "cia_availability", "cia_sensitivity"],
+      "optional_properties": ["norm_refs", "project"]
+    },
+    "session": {
+      "label": "Session",
+      "folder": "04_Sessions",
+      "description": "Sesiones de agentes IA con delta de cambios",
+      "parent": null,
+      "abstract": false,
+      "required_properties": ["id", "title", "createdAt", "updatedAt", "agent"],
+      "optional_properties": ["tags", "startedAt", "endedAt"]
+    },
+    "pattern": {
+      "label": "Pattern",
+      "folder": "05_Patterns",
+      "description": "Patrones de diseño, anti-patrones y soluciones reutilizables",
+      "parent": null,
+      "abstract": false,
+      "required_properties": ["id", "title", "createdAt", "updatedAt", "agent", "tags", "type", "status", "cia_integrity", "cia_availability", "cia_sensitivity"],
+      "optional_properties": ["norm_refs", "project"]
+    },
+    "diagram": {
+      "label": "Diagram",
+      "folder": "06_Diagrams",
+      "description": "Diagramas Mermaid: ERD, sequence, flow, class, architecture",
+      "parent": null,
+      "abstract": false,
+      "required_properties": ["id", "title", "createdAt", "updatedAt", "agent", "tags", "type", "status"],
+      "optional_properties": ["cia_integrity", "cia_availability", "cia_sensitivity", "norm_refs", "project"]
+    },
+    "knowledge": {
+      "label": "Knowledge",
+      "folder": "07_Knowledge",
+      "description": "Conceptos, glosario, guias y documentacion de referencia",
+      "parent": null,
+      "abstract": false,
+      "required_properties": ["id", "title", "createdAt", "updatedAt", "agent", "tags", "type", "status", "cia_integrity", "cia_availability", "cia_sensitivity"],
+      "optional_properties": ["norm_refs", "project"]
+    },
+    "runbook": {
+      "label": "Runbook",
+      "folder": "08_Runbooks",
+      "description": "Procedimientos operativos: deploy, rollback, incident response",
+      "parent": null,
+      "abstract": false,
+      "required_properties": ["id", "title", "createdAt", "updatedAt", "agent", "tags", "type", "status", "cia_integrity", "cia_availability", "cia_sensitivity"],
+      "optional_properties": ["norm_refs", "project"]
+    },
+    "infrastructure": {
+      "label": "Infrastructure",
+      "folder": "09_Infrastructure",
+      "description": "Servidores, servicios, redes, entornos y configuracion",
+      "parent": null,
+      "abstract": false,
+      "required_properties": ["id", "title", "createdAt", "updatedAt", "agent", "tags", "type", "status", "cia_integrity", "cia_availability", "cia_sensitivity"],
+      "optional_properties": ["norm_refs", "project"]
+    },
+    "migrated": {
+      "label": "Migrated",
+      "folder": "10_Migrated",
+      "description": "Documentacion migrada de fuentes externas con trazabilidad",
+      "parent": null,
+      "abstract": false,
+      "required_properties": ["id", "title", "createdAt", "updatedAt", "agent", "tags", "migratedFrom"],
+      "optional_properties": ["cia_integrity", "cia_availability", "cia_sensitivity", "norm_refs"]
+    },
+    "code": {
+      "label": "Code Module",
+      "folder": "11_Code",
+      "description": "Modulos de codigo documentados con trazabilidad source-to-vault",
+      "parent": null,
+      "abstract": false,
+      "required_properties": ["id", "title", "createdAt", "updatedAt", "agent", "tags", "type", "status", "cia_integrity", "cia_availability", "cia_sensitivity"],
+      "optional_properties": ["norm_refs", "project", "file_path", "language"]
+    },
+    "bibliography": {
+      "label": "Bibliography",
+      "folder": "12_Bibliography",
+      "description": "Referencias bibliograficas, URLs, papers y fuentes externas",
+      "parent": null,
+      "abstract": false,
+      "required_properties": ["id", "title", "createdAt", "updatedAt", "agent", "tags", "type", "status"],
+      "optional_properties": ["cia_integrity", "cia_availability", "cia_sensitivity", "url", "source_type"]
+    },
+    "flow": {
+      "label": "Flow",
+      "folder": "13_Flows",
+      "description": "Flujos de trabajo, dataflows, pipelines y procesos",
+      "parent": null,
+      "abstract": false,
+      "required_properties": ["id", "title", "createdAt", "updatedAt", "agent", "tags", "type", "status", "cia_integrity", "cia_availability", "cia_sensitivity"],
+      "optional_properties": ["norm_refs", "project"]
+    },
+    "requirement": {
+      "label": "Requirement",
+      "folder": "14_Requirements",
+      "description": "Requerimientos formales con trazabilidad a tests y codigo (ISO 29148)",
+      "parent": null,
+      "abstract": false,
+      "required_properties": ["id", "title", "createdAt", "updatedAt", "agent", "tags", "type", "status", "cia_integrity", "cia_availability", "cia_sensitivity"],
+      "optional_properties": ["norm_refs", "project"]
+    },
+    "test": {
+      "label": "Test",
+      "folder": "15_Tests",
+      "description": "Casos de prueba formales con trazabilidad a requirements (ISO 29119)",
+      "parent": null,
+      "abstract": false,
+      "required_properties": ["id", "title", "createdAt", "updatedAt", "agent", "tags", "type", "status", "cia_integrity", "cia_availability", "cia_sensitivity"],
+      "optional_properties": ["norm_refs", "project"]
+    },
+    "ai_governance": {
+      "label": "AI Governance",
+      "folder": "16_AI_Governance",
+      "description": "Decisiones de agentes IA, auditoria y compliance (ISO 42001)",
+      "parent": null,
+      "abstract": false,
+      "required_properties": ["id", "title", "createdAt", "updatedAt", "agent", "tags", "type", "status", "cia_integrity", "cia_availability", "cia_sensitivity"],
+      "optional_properties": ["norm_refs", "project"]
+    },
+    "index": {
+      "label": "Index",
+      "folder": "99_Index",
+      "description": "Archivos de indice auto-generados y grafo del vault",
+      "parent": null,
+      "abstract": false,
+      "required_properties": ["id", "title", "createdAt", "updatedAt"],
+      "optional_properties": ["agent", "type", "status"]
+    }
+  },
+  "predicates": {
+    "wiki_link": {
+      "label": "wiki-link",
+      "description": "Referencia generica via [[wikilink]] — relacion no tipada por defecto",
+      "inverse": "referenced_by",
+      "domain": "*",
+      "range": "*",
+      "cardinality": "N:M",
+      "semantic_weight": 1,
+      "source": "wikilinks"
+    },
+    "depends_on": {
+      "label": "depends on",
+      "description": "El nodo fuente depende del nodo destino para funcionar",
+      "inverse": "required_by",
+      "domain": "*",
+      "range": "*",
+      "cardinality": "N:M",
+      "semantic_weight": 5,
+      "source": "entity+code+manual"
+    },
+    "implements": {
+      "label": "implements",
+      "description": "El nodo fuente implementa una interfaz, patron o especificacion definida en el destino",
+      "inverse": "implemented_by",
+      "domain": ["code", "infrastructure", "flow"],
+      "range": ["decision", "pattern", "requirement", "knowledge", "code"],
+      "cardinality": "N:M",
+      "semantic_weight": 8,
+      "source": "entity+code+manual"
+    },
+    "extends": {
+      "label": "extends",
+      "description": "El nodo fuente extiende o hereda del nodo destino",
+      "inverse": "extended_by",
+      "domain": ["code", "pattern", "flow"],
+      "range": ["code", "pattern", "knowledge"],
+      "cardinality": "N:M",
+      "semantic_weight": 7,
+      "source": "entity+code+manual"
+    },
+    "uses": {
+      "label": "uses",
+      "description": "El nodo fuente utiliza al nodo destino como componente o servicio",
+      "inverse": "used_by",
+      "domain": "*",
+      "range": "*",
+      "cardinality": "N:M",
+      "semantic_weight": 3,
+      "source": "entity+code+manual"
+    },
+    "calls": {
+      "label": "calls",
+      "description": "El nodo fuente invoca al nodo destino (API call, function call, RPC)",
+      "inverse": "called_by",
+      "domain": ["code", "flow", "infrastructure", "runbook"],
+      "range": ["code", "infrastructure", "runbook"],
+      "cardinality": "N:M",
+      "semantic_weight": 4,
+      "source": "entity+code+manual"
+    },
+    "owns": {
+      "label": "owns",
+      "description": "El nodo fuente es propietario del nodo destino (relacion de composicion fuerte)",
+      "inverse": "owned_by",
+      "domain": ["project", "infrastructure", "code"],
+      "range": "*",
+      "cardinality": "1:N",
+      "semantic_weight": 6,
+      "source": "entity+manual"
+    },
+    "aggregates": {
+      "label": "aggregates",
+      "description": "El nodo fuente agrega al nodo destino (relacion de agregacion debil)",
+      "inverse": "aggregated_by",
+      "domain": ["project", "pattern", "knowledge", "infrastructure"],
+      "range": "*",
+      "cardinality": "N:M",
+      "semantic_weight": 4,
+      "source": "entity+manual"
+    },
+    "has_one": {
+      "label": "has one",
+      "description": "El nodo fuente tiene exactamente un nodo destino (relacion uno a uno)",
+      "inverse": "belongs_to",
+      "domain": "*",
+      "range": "*",
+      "cardinality": "1:1",
+      "semantic_weight": 6,
+      "source": "entity+manual"
+    },
+    "has_many": {
+      "label": "has many",
+      "description": "El nodo fuente tiene multiples nodos destino (relacion uno a muchos)",
+      "inverse": "belongs_to",
+      "domain": "*",
+      "range": "*",
+      "cardinality": "1:N",
+      "semantic_weight": 5,
+      "source": "entity+manual"
+    },
+    "belongs_to": {
+      "label": "belongs to",
+      "description": "El nodo fuente pertenece al nodo destino (inversa de has_one/has_many)",
+      "inverse": "has_one/has_many",
+      "domain": "*",
+      "range": "*",
+      "cardinality": "N:1",
+      "semantic_weight": 5,
+      "source": "entity+manual"
+    },
+    "many_to_many": {
+      "label": "many to many",
+      "description": "Relacion muchos a muchos entre entidades",
+      "inverse": "many_to_many",
+      "domain": "*",
+      "range": "*",
+      "cardinality": "N:M",
+      "semantic_weight": 4,
+      "source": "entity+manual"
+    },
+    "documents": {
+      "label": "documents",
+      "description": "El nodo fuente documenta o describe al nodo destino",
+      "inverse": "documented_by",
+      "domain": ["knowledge", "decision", "runbook", "bibliography"],
+      "range": ["code", "infrastructure", "project", "flow", "pattern"],
+      "cardinality": "N:M",
+      "semantic_weight": 3,
+      "source": "manual"
+    },
+    "validates": {
+      "label": "validates",
+      "description": "El nodo fuente valida o verifica al nodo destino",
+      "inverse": "validated_by",
+      "domain": ["test", "requirement", "observability"],
+      "range": ["code", "flow", "runbook", "requirement"],
+      "cardinality": "N:M",
+      "semantic_weight": 5,
+      "source": "manual"
+    },
+    "triggers": {
+      "label": "triggers",
+      "description": "El nodo fuente dispara o inicia al nodo destino",
+      "inverse": "triggered_by",
+      "domain": ["observability", "runbook", "session", "flow"],
+      "range": ["runbook", "flow", "pattern", "infrastructure"],
+      "cardinality": "N:M",
+      "semantic_weight": 4,
+      "source": "manual"
+    },
+    "deploys_to": {
+      "label": "deploys to",
+      "description": "El nodo fuente se despliega en el nodo destino (infraestructura)",
+      "inverse": "hosts",
+      "domain": ["code", "project", "flow"],
+      "range": ["infrastructure"],
+      "cardinality": "N:M",
+      "semantic_weight": 6,
+      "source": "manual"
+    },
+    "imports": {
+      "label": "imports",
+      "description": "El nodo fuente importa al nodo destino (dependencia de codigo)",
+      "inverse": "imported_by",
+      "domain": ["code"],
+      "range": ["code"],
+      "cardinality": "N:M",
+      "semantic_weight": 4,
+      "source": "code+manual"
+    },
+    "re_exports": {
+      "label": "re-exports",
+      "description": "El nodo fuente re-exporta la interfaz del nodo destino",
+      "inverse": "re_exported_by",
+      "domain": ["code"],
+      "range": ["code"],
+      "cardinality": "N:M",
+      "semantic_weight": 3,
+      "source": "code+manual"
+    }
+  },
+  "predicate_synonyms": {
+    "relationType": "predicate",
+    "type": "predicate",
+    "relation_type": "predicate",
+    "fromEntity": "from",
+    "toEntity": "to",
+    "source": "from",
+    "target": "to"
+  },
+  "inference_rules": [
+    {
+      "name": "transitive_depends",
+      "description": "If A depends_on B and B depends_on C, then A transitively depends on C",
+      "antecedents": ["depends_on", "depends_on"],
+      "consequent": "depends_on",
+      "deduction_chain": true
+    },
+    {
+      "name": "implemented_by_chain",
+      "description": "If A implements B and C extends A, then C transitively implements B",
+      "antecedents": ["extends", "implements"],
+      "consequent": "implements",
+      "deduction_chain": true
+    },
+    {
+      "name": "documents_implies_uses",
+      "description": "If A documents B, then A likely uses B (documentation implies familiarity)",
+      "antecedents": ["documents"],
+      "consequent": "uses",
+      "deduction_chain": false,
+      "confidence": 0.7
+    },
+    {
+      "name": "calls_implies_depends",
+      "description": "If A calls B, then A depends on B at runtime",
+      "antecedents": ["calls"],
+      "consequent": "depends_on",
+      "deduction_chain": true
+    },
+    {
+      "name": "imports_implies_depends",
+      "description": "If A imports B, then A depends on B at build time",
+      "antecedents": ["imports"],
+      "consequent": "depends_on",
+      "deduction_chain": true
+    }
+  ],
+  "edge_priority": {
+    "implements": 10,
+    "extends": 9,
+    "depends_on": 8,
+    "calls": 7,
+    "imports": 6,
+    "owns": 6,
+    "deploys_to": 5,
+    "has_one": 5,
+    "has_many": 5,
+    "belongs_to": 4,
+    "validates": 4,
+    "triggers": 3,
+    "aggregates": 3,
+    "uses": 2,
+    "documents": 2,
+    "re_exports": 2,
+    "many_to_many": 1,
+    "wiki_link": 0
+  }
+}

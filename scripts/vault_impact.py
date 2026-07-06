@@ -31,6 +31,7 @@ from vault_errors import wrap_main
 from vault_io import VAULT_ROOT
 
 GRAPH_FILE = VAULT_ROOT / "99_Index" / "graph.json"
+ENRICHED_FILE = VAULT_ROOT / "99_Index" / "graph-enriched.json"
 CHANGE_LOG_JSON = VAULT_ROOT / "00_System" / ".change-log.json"
 
 CIA_WEIGHT: Dict[str, int] = {
@@ -51,21 +52,38 @@ RISK_LEVELS = [
 from vault_lib import read_frontmatter
 
 
-def _load_graph() -> Optional[Dict[str, Any]]:
-    if not GRAPH_FILE.exists():
+def _load_graph(predicate_filter: Optional[List[str]] = None) -> Optional[Dict[str, Any]]:
+    """Load graph, preferring enriched graph. Optionally filter edges by predicate."""
+    graph_file = ENRICHED_FILE if ENRICHED_FILE.exists() else GRAPH_FILE
+    if not graph_file.exists():
         return None
     try:
-        return json.loads(GRAPH_FILE.read_text(encoding="utf-8"))
+        data = json.loads(graph_file.read_text(encoding="utf-8"))
     except Exception:
         return None
+
+    if predicate_filter:
+        predicate_set = set(predicate_filter)
+        edges = data.get("edges", [])
+        filtered = [
+            e for e in edges
+            if e.get("predicate", e.get("type", "wiki_link")) in predicate_set
+        ]
+        data = dict(data)
+        data["edges"] = filtered
+        data["metadata"] = data.get("metadata", {})
+        data["metadata"]["predicate_filtered"] = True
+        data["metadata"]["predicates_included"] = list(predicate_set)
+
+    return data
 
 
 def _build_reverse_graph(graph: Dict[str, Any]) -> Dict[str, List[str]]:
     """Build reverse adjacency: target → [sources that link to it]."""
     reverse: Dict[str, List[str]] = defaultdict(list)
     for edge in graph.get("edges", []):
-        src = edge.get("from", "")
-        tgt = edge.get("to", "")
+        src = edge.get("from", edge.get("source", ""))
+        tgt = edge.get("to", edge.get("target", ""))
         if src and tgt:
             reverse[tgt].append(src)
     return dict(reverse)
@@ -104,15 +122,18 @@ def vault_impact(
     max_hops: int = 10,
     min_risk: Optional[str] = None,
     since: Optional[str] = None,
+    predicate_filter: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     """
     BFS impact analysis from changed notes on the reverse backlink graph.
 
     Args:
-        changed_notes: List of vault-relative paths that changed.
-        max_hops:      Maximum BFS depth (default 10 = full traversal).
-        min_risk:      Filter results to 'critical', 'high', 'medium', or 'low'.
-        since:         If provided, augment changed_notes from change log (date YYYY-MM-DD).
+        changed_notes:  List of vault-relative paths that changed.
+        max_hops:       Maximum BFS depth (default 10 = full traversal).
+        min_risk:       Filter results to 'critical', 'high', 'medium', or 'low'.
+        since:          If provided, augment changed_notes from change log (date YYYY-MM-DD).
+        predicate_filter: Optional list of predicates to include (e.g. ['depends_on', 'calls']).
+                          When empty/None, all edges are traversed. Uses graph-enriched.json.
 
     Returns:
         {ok, changed_notes, impact_radius, impacted: [...], summary}
@@ -132,7 +153,7 @@ def vault_impact(
             "summary": "No changed notes provided",
         }
 
-    graph = _load_graph()
+    graph = _load_graph(predicate_filter=predicate_filter)
     if graph is None:
         return {
             "ok": False,
@@ -228,10 +249,14 @@ Ejemplos:
   # Solo notas con riesgo alto o critico
   python vault_impact.py --changed "note.md" --min-risk high
 
+  # Filtrar BFS solo por edges con predicate depends_on o calls
+  python vault_impact.py --changed "note.md" --predicate depends_on,calls
+
 Notas:
-  - Requiere 99_Index/graph.json (ejecutar vault_graph.py primero)
+  - Requiere 99_Index/graph.json o graph-enriched.json
   - Lee cia_integrity del frontmatter de cada nota afectada
   - stale_risk = distance x CIA_weight (critical=4, high=3, medium=2, low=1)
+  - --predicate filtra edges semanticamente (usa graph-enriched.json si existe)
 """,
     )
     parser.add_argument(
@@ -259,17 +284,27 @@ Notas:
         metavar="LEVEL",
         help="Filter by minimum stale_risk level",
     )
+    parser.add_argument(
+        "--predicate",
+        metavar="PREDICATES",
+        help="Comma-separated predicates to filter edges (e.g. depends_on,calls,implements). Uses graph-enriched.json.",
+    )
 
     args = parser.parse_args()
 
     if not args.changed and not args.since:
         parser.error("Provide --changed PATH [PATH ...] or --since DATE")
 
+    predicate_filter = None
+    if args.predicate:
+        predicate_filter = [p.strip() for p in args.predicate.split(",")]
+
     result = vault_impact(
         changed_notes=list(args.changed),
         max_hops=args.max_hops,
         min_risk=args.min_risk,
         since=args.since,
+        predicate_filter=predicate_filter,
     )
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0 if result.get("ok") else 1

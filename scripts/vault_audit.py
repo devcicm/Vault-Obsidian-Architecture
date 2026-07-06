@@ -852,6 +852,96 @@ def _detect_mermaid_errors() -> List[Dict[str, Any]]:
     return errors
 
 
+def _detect_graph_knowledge_antipatterns() -> Dict[str, Any]:
+    """AP-31/34/35: detect knowledge graph antipatterns in graph-enriched.json.
+
+    Returns dict with:
+      - ap31_typed_ratio: percentage of edges that are typed (non-wiki_link)
+      - ap34_orphan_relations: list of typed relations with unresolved endpoints
+      - ap35_silo_flags: silo detection flags
+    """
+    ENRICHED_FILE = VAULT_ROOT / "99_Index" / "graph-enriched.json"
+    ENTITY_DIR = VAULT_ROOT / "06_Diagrams" / "entity"
+    CODE_INDEX = VAULT_ROOT / "11_Code" / ".code-index.json"
+
+    result: Dict[str, Any] = {
+        "ap31_typed_ratio": 0.0,
+        "ap31_penalty": 0,
+        "ap34_orphan_relations": [],
+        "ap35_silo_flags": {},
+    }
+
+    has_entity = ENTITY_DIR.exists() and list(ENTITY_DIR.glob("*relations.json"))
+    has_code = CODE_INDEX.exists()
+
+    if not has_entity and not has_code:
+        return result
+
+    try:
+        silo_flags = {}
+        entity_files = list(ENTITY_DIR.glob("*relations.json")) if ENTITY_DIR.exists() else []
+        silo_flags["entity_files"] = len(entity_files)
+        silo_flags["code_index_exists"] = has_code
+
+        if ENRICHED_FILE.exists():
+            from datetime import datetime, timezone as tz
+            raw = ENRICHED_FILE.read_bytes()
+            if raw.startswith(b"\xef\xbb\xbf"):
+                raw = raw[3:]
+            enriched = json.loads(raw.decode("utf-8"))
+            last_merge = enriched.get("metadata", {}).get("merged_at", "")
+            if last_merge:
+                dt = datetime.fromisoformat(last_merge.replace("Z", "+00:00"))
+                hours_old = (datetime.now(tz.utc) - dt).total_seconds() / 3600
+                silo_flags["graph_enriched_hours_old"] = round(hours_old, 1)
+                silo_flags["graph_enriched_stale"] = hours_old > 24
+            else:
+                silo_flags["graph_enriched_stale"] = True
+        else:
+            silo_flags["graph_enriched_exists"] = False
+            silo_flags["graph_enriched_stale"] = True
+
+        result["ap35_silo_flags"] = silo_flags
+
+        if ENRICHED_FILE.exists():
+            raw2 = ENRICHED_FILE.read_bytes()
+            if raw2.startswith(b"\xef\xbb\xbf"):
+                raw2 = raw2[3:]
+            enriched = json.loads(raw2.decode("utf-8"))
+            total = enriched.get("metadata", {}).get("total_edges", 0)
+            typed = enriched.get("metadata", {}).get("typed_edges", 0)
+            if total > 0:
+                result["ap31_typed_ratio"] = round(typed / total, 3)
+                if result["ap31_typed_ratio"] < 0.1 and (has_entity or has_code):
+                    result["ap31_penalty"] = 5
+
+            diagnostics = enriched.get("diagnostics", {})
+            entity_diag = diagnostics.get("entity_relations", {})
+            code_diag = diagnostics.get("code_relations", {})
+
+            unresolved_entity = entity_diag.get("unresolved", 0)
+            unresolved_code = code_diag.get("unresolved", 0)
+
+            if unresolved_entity > 0:
+                result["ap34_orphan_relations"].append({
+                    "source": "entity",
+                    "count": unresolved_entity,
+                    "norm_code": "AP-34",
+                    "description": f"{unresolved_entity} entity relations with unresolved endpoints",
+                })
+            if unresolved_code > 0:
+                result["ap34_orphan_relations"].append({
+                    "source": "code",
+                    "count": unresolved_code,
+                    "norm_code": "AP-34",
+                    "description": f"{unresolved_code} code relations with unresolved endpoints",
+                })
+    except Exception:
+        pass
+
+    return result
+
+
 def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]]]:
     """AP-16/26/27/29/30: detect notes missing required frontmatter fields.
 
@@ -1373,6 +1463,13 @@ def vault_audit(
 
     propagation_pending = _read_propagation_pending()
 
+    # AP-31/34/35: Knowledge Graph antipatterns
+    graph_knowledge = _detect_graph_knowledge_antipatterns()
+    ap31_typed_ratio = graph_knowledge["ap31_typed_ratio"]
+    ap31_penalty = graph_knowledge["ap31_penalty"]
+    ap34_orphan_relations = graph_knowledge["ap34_orphan_relations"]
+    ap35_silo_flags = graph_knowledge["ap35_silo_flags"]
+
     score = 100
 
     score -= min(30, len(orphans) * 2)
@@ -1425,6 +1522,17 @@ def vault_audit(
     # CIA integrity + propagation_pending adjustments
 
     score -= min(15, _cia_score_penalty(content_notes, stale, propagation_pending))
+
+    # AP-31: Missing typed edges (untuned graph)
+    score -= ap31_penalty
+
+    # AP-34: Orphan typed relations (unresolved endpoints)
+    ap34_count = sum(r.get("count", 0) for r in ap34_orphan_relations)
+    score -= min(10, ap34_count * 2)
+
+    # AP-35: Relationship silos (stale enriched graph)
+    if ap35_silo_flags.get("graph_enriched_stale", False):
+        score -= 5
 
     score = max(0, score)
 
@@ -1487,6 +1595,13 @@ def vault_audit(
     if missing_agent:
         summary_parts.append(f"{len(missing_agent)} sin agent AP-16")
 
+    if ap35_silo_flags.get("graph_enriched_stale", False):
+        summary_parts.append("grafo enriquecido desactualizado AP-35")
+
+    if ap34_orphan_relations:
+        ap34_count = sum(r.get("count", 0) for r in ap34_orphan_relations)
+        summary_parts.append(f"{ap34_count} relaciones huerfanas AP-34")
+
     result: Dict[str, Any] = {
         "ok": True,
         "healthScore": score,
@@ -1516,6 +1631,11 @@ def vault_audit(
             "missingCIA": missing_cia,
             "missingUpdated": missing_updated,
             "missingFrontmatter": missing_frontmatter,
+            "graphKnowledge": {
+                "ap31_typedRatio": ap31_typed_ratio,
+                "ap34_orphanTypedRelations": ap34_orphan_relations,
+                "ap35_siloFlags": ap35_silo_flags,
+            },
         },
         "norm_refs": {
             "AP-14": "Wiki-links rotos o vacios",
@@ -1531,6 +1651,9 @@ def vault_audit(
             "AP-28": "Missing frontmatter block",
             "AP-29": "Missing status field",
             "AP-30": "Missing CIA classification fields",
+            "AP-31": "Grafo sin tipos semanticos — sin predicates",
+            "AP-34": "Relaciones tipadas huerfanas — endpoint inexistente",
+            "AP-35": "Silos de relacion — sistemas de grafos aislados",
         },
         "summary": " · ".join(summary_parts),
     }
@@ -1725,6 +1848,49 @@ def vault_audit(
                 "description": f"{len(missing_tags)} notas de contenido sin tags. Primeras: {tag_paths}",
                 "command": "python scripts/vault_write.py --folder <folder> --title <title> --content @file:<path> --tags ans <category>",
                 "norm": "AP-26",
+            }
+        )
+
+    # AP-35: Relationship silos — suggest running vault_graph --typed
+    if ap35_silo_flags.get("graph_enriched_stale", False):
+        next_actions.append(
+            {
+                "priority": "high",
+                "category": "graph_silos",
+                "description": (
+                    f"El grafo enriquecido esta ausente o desactualizado ({ap35_silo_flags.get('graph_enriched_hours_old', '?')}h). "
+                    "Las relaciones semanticas de entity y code no estan integradas en el grafo de conocimiento (AP-35)."
+                ),
+                "command": "python scripts/vault_graph.py --typed",
+                "norm": "AP-35",
+            }
+        )
+
+    # AP-34: Orphan typed relations — unresolved endpoints
+    if ap34_orphan_relations:
+        for rel in ap34_orphan_relations:
+            next_actions.append(
+                {
+                    "priority": "medium",
+                    "category": "orphan_typed_relations",
+                    "description": f"{rel['count']} {rel['source']} relations tienen endpoints no resueltos (AP-34).",
+                    "command": "Verificar que las entidades/modulos referenciados existen como notas en el vault. Ejecutar vault_search para confirmar.",
+                    "norm": "AP-34",
+                }
+            )
+
+    # AP-31: Untyped graph — suggest running enrich
+    if ap31_typed_ratio < 0.1 and ap31_penalty > 0:
+        next_actions.append(
+            {
+                "priority": "medium",
+                "category": "untyped_graph",
+                "description": (
+                    f"Solo {ap31_typed_ratio * 100:.1f}% de las aristas tienen predicate. "
+                    "Ejecutar vault_graph --typed para enriquecer el grafo con relaciones semanticas (AP-31)."
+                ),
+                "command": "python scripts/vault_graph.py --typed",
+                "norm": "AP-31",
             }
         )
 

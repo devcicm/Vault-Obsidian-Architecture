@@ -92,6 +92,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "Ruta relativa al vault (ej: 01_Projects/mi-api/overview.md)",
                 "validators": ["within_vault"],
             },
+        },
         "guards": [],
         "side_effects": [],
         "example": 'python vault_read.py --path "01_Projects/mi-api/overview.md"',
@@ -2325,8 +2326,119 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "example": 'python vault_bibliography_save.py --title "Clean Code" --type "book" --authors "Robert Martin" --year "2008"',
         "related": ["vault_knowledge_save", "vault_search"],
     },
+    "vault_graph_merge": {
+        "name": "vault_graph_merge",
+        "script": "vault_graph_merge.py",
+        "group": "Salud del Vault",
+        "purpose": "Unifica wikilinks + entity relations + code relations en graph-enriched.json con predicados semánticos.",
+        "params": {
+            "vault_root": {
+                "type": "string",
+                "required": False,
+                "description": "Ruta al vault (default: VAULT_ROOT env)",
+                "validators": [],
+            },
+        },
+        "guards": [],
+        "side_effects": [
+            "Genera 99_Index/graph-enriched.json",
+            "Detecta AP-31 (untyped graph), AP-34 (orphan typed relations), AP-35 (relationship silos)",
+        ],
+        "example": "python vault_graph_merge.py",
+        "related": ["vault_graph", "vault_graph_inspect", "vault_impact"],
+    },
+    "vault_graph_inspect": {
+        "name": "vault_graph_inspect",
+        "script": "vault_graph_inspect.py",
+        "group": "Salud del Vault",
+        "purpose": "Analiza el grafo del vault: broken links, orphans, duplicates, syntax errors, hubs.",
+        "params": {},
+        "guards": [],
+        "side_effects": [],
+        "example": "python vault_graph_inspect.py",
+        "related": ["vault_graph", "vault_graph_merge", "vault_graph_fix"],
+    },
+    "vault_graph_fix": {
+        "name": "vault_graph_fix",
+        "script": "vault_graph_fix.py",
+        "group": "Corrección Automática",
+        "purpose": "Auto-fix de broken wiki-links (stem match, fuzzy, brackets, path-anchored, stubs, wizard).",
+        "params": {
+            "threshold": {
+                "type": "string",
+                "required": False,
+                "description": "Fuzzy match threshold (default: 0.7)",
+                "validators": [],
+            },
+            "auto_apply_partial": {
+                "type": "string",
+                "required": False,
+                "description": "Auto-fix partial matches above this threshold",
+                "validators": [],
+            },
+            "apply": {
+                "type": "string",
+                "required": False,
+                "description": "Apply fixes (default: dry-run)",
+                "validators": [],
+            },
+            "only": {
+                "type": "string",
+                "required": False,
+                "description": "Only run: brackets, path_anchored",
+                "validators": ["enum:brackets,path_anchored"],
+            },
+        },
+        "guards": ["Hacer backup antes de aplicar fixes"],
+        "side_effects": ["Modifica wikilinks en notas", "Crea stubs si es necesario"],
+        "example": 'python vault_graph_fix.py --apply --threshold 0.7\npython vault_graph_fix.py --only brackets',
+        "related": ["vault_graph", "vault_graph_inspect", "vault_fix_brackets"],
+    },
+    "vault_backup_base64": {
+        "name": "vault_backup_base64",
+        "script": "",
+        "group": "Backups",
+        "purpose": "Crea backup comprimido base64 del vault completo. Antes de cualquier migración o modificación masiva.",
+        "params": {
+            "label": {
+                "type": "string",
+                "required": False,
+                "description": "Etiqueta del backup (default: backup-timestamp)",
+                "validators": [],
+            },
+        },
+        "guards": [],
+        "side_effects": ["Genera archivo .b64zip.json en vault-backups/"],
+        "example": "node vault-mcp-server.mjs --tool vault_backup_base64",
+        "related": ["vault_restore_base64", "vault_backup"],
+    },
+    "vault_restore_base64": {
+        "name": "vault_restore_base64",
+        "script": "",
+        "group": "Backups",
+        "purpose": "Restaura vault desde backup base64. Requiere --confirm true. Restaura a directorio nuevo sin tocar el original.",
+        "params": {
+            "path": {
+                "type": "string",
+                "required": True,
+                "description": "Ruta al archivo .b64zip.json",
+                "validators": ["file_exists"],
+            },
+            "confirm": {
+                "type": "string",
+                "required": False,
+                "description": "Confirmar restauración (debe ser 'true')",
+                "validators": [],
+            },
+        },
+        "guards": ["Confirmación explícita requerida"],
+        "side_effects": ["Restaura vault a nuevo directorio"],
+        "example": 'node vault-mcp-server.mjs --tool vault_restore_base64 --path "backups/vault.b64zip.json" --confirm true',
+        "related": ["vault_backup_base64", "vault_restore"],
+    },
 }
 
+# ──── end TOOLS_CATALOG ────
 
 GROUPS: Dict[str, List[str]] = {
     "Core": [
@@ -2340,7 +2452,7 @@ GROUPS: Dict[str, List[str]] = {
         "vault_move",
     ],
     "Observabilidad": ["vault_log_error"],
-    "Salud del Vault": ["vault_audit", "vault_validate", "vault_graph"],
+    "Salud del Vault": ["vault_audit", "vault_validate", "vault_graph", "vault_graph_merge", "vault_graph_inspect"],
     "Patrones": ["vault_pattern_save", "vault_pattern_list"],
     "Diagramas": [
         "vault_diagram_save",
@@ -2386,7 +2498,7 @@ GROUPS: Dict[str, List[str]] = {
     "Release": ["vault_release_save"],
     "Riesgos/Calidad": ["vault_risk_save", "vault_privacy_save", "vault_ncr_save"],
     "Bootstrap": ["vault_init"],
-    "Corrección Automática": ["vault_fix_brackets"],
+    "Corrección Automática": ["vault_fix_brackets", "vault_graph_fix"],
     "Versionado": ["vault_standard_upgrade"],
     "Gestión de Carpetas": ["vault_folder_registry"],
 }
@@ -2428,3 +2540,173 @@ def get_related_tools(name: str) -> List[Dict[str, Any]]:
         return []
     related_names = tool.get("related", [])
     return [TOOLS_CATALOG.get(n) for n in related_names if n in TOOLS_CATALOG]
+
+
+def _convert_to_json_schema(py_tool: Dict[str, Any]) -> Dict[str, Any]:
+    """Convierte una entrada de TOOLS_CATALOG al formato inputSchema del JSON."""
+    schema = {"type": "object", "properties": {}, "required": []}
+    for pname, pinfo in py_tool.get("params", {}).items():
+        prop = {"type": "string", "description": pinfo.get("description", "")}
+        if pinfo.get("required"):
+            schema["required"].append(pname)
+        if "enum" in str(pinfo.get("validators", [])) or any(v.startswith("enum:") for v in pinfo.get("validators", [])):
+            for v in pinfo.get("validators", []):
+                if v.startswith("enum:"):
+                    prop["enum"] = v.replace("enum:", "").split(",")
+        schema["properties"][pname] = prop
+    if not schema["required"]:
+        del schema["required"]
+    return schema
+
+
+def sync_to_json(output_path: Optional[str] = None) -> str:
+    """Exporta TOOLS_CATALOG + GROUPS al formato JSON canónico.
+    
+    Si output_path es None, se guarda junto a este script como tools-catalog.json.
+    Retorna la ruta del archivo generado.
+    """
+    import json, os
+
+    if output_path is None:
+        output_path = os.path.join(os.path.dirname(__file__), "tools-catalog.json")
+
+    tools_json = {}
+    for name, tool in sorted(TOOLS_CATALOG.items()):
+        tools_json[name] = {
+            "name": tool["name"],
+            "description": tool["purpose"],
+            "group": tool.get("group", ""),
+            "script": tool.get("script", ""),
+            "inputSchema": _convert_to_json_schema(tool),
+            "guards": tool.get("guards", []),
+            "side_effects": tool.get("side_effects", []),
+        }
+        if tool.get("related"):
+            tools_json[name]["related"] = tool["related"]
+
+    catalog = {
+        "tools": tools_json,
+        "groups": GROUPS,
+    }
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(catalog, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+
+    return output_path
+
+
+def check_sync(json_path: Optional[str] = None) -> Dict[str, Any]:
+    """Compara el JSON existente contra TOOLS_CATALOG + GROUPS actuales.
+    
+    Retorna dict con: {ok: bool, diffs: [str], missing_in_json: [str], missing_in_py: [str]}
+    """
+    import json, os
+
+    if json_path is None:
+        json_path = os.path.join(os.path.dirname(__file__), "tools-catalog.json")
+
+    result = {"ok": True, "diffs": [], "missing_in_json": [], "missing_in_py": []}
+
+    if not os.path.exists(json_path):
+        result["ok"] = False
+        result["diffs"].append(f"JSON file not found at {json_path}")
+        return result
+
+    with open(json_path, "r", encoding="utf-8") as f:
+        try:
+            existing = json.load(f)
+        except json.JSONDecodeError as e:
+            result["ok"] = False
+            result["diffs"].append(f"Invalid JSON: {e}")
+            return result
+
+    existing_tools = set(existing.get("tools", {}).keys())
+    py_tools = set(TOOLS_CATALOG.keys())
+
+    result["missing_in_json"] = sorted(py_tools - existing_tools)
+    result["missing_in_py"] = sorted(existing_tools - py_tools)
+
+    if result["missing_in_json"]:
+        result["ok"] = False
+        result["diffs"].append(f"Tools in Python but missing from JSON: {', '.join(result['missing_in_json'])}")
+    if result["missing_in_py"]:
+        result["ok"] = False
+        result["diffs"].append(f"Tools in JSON but missing from Python: {', '.join(result['missing_in_py'])}")
+
+    existing_groups = set(existing.get("groups", {}).keys())
+    py_groups = set(GROUPS.keys())
+
+    missing_groups_json = sorted(py_groups - existing_groups)
+    missing_groups_py = sorted(existing_groups - py_groups)
+
+    if missing_groups_json:
+        result["ok"] = False
+        result["diffs"].append(f"Groups in Python missing from JSON: {', '.join(missing_groups_json)}")
+    if missing_groups_py:
+        result["ok"] = False
+        result["diffs"].append(f"Groups in JSON missing from Python: {', '.join(missing_groups_py)}")
+
+    for name in existing_tools & py_tools:
+        py_desc = TOOLS_CATALOG[name]["purpose"]
+        js_desc = existing["tools"][name].get("description", "")
+        if py_desc != js_desc:
+            result["ok"] = False
+            result["diffs"].append(f"{name}: description differs")
+
+        py_group = TOOLS_CATALOG[name].get("group", "")
+        js_group = existing["tools"][name].get("group", "")
+        if py_group != js_group:
+            result["ok"] = False
+            result["diffs"].append(f"{name}: group differs (py={py_group}, js={js_group})")
+
+        py_guard_count = len(TOOLS_CATALOG[name].get("guards", []))
+        js_guard_count = len(existing["tools"][name].get("guards", []))
+        if py_guard_count != js_guard_count:
+            result["ok"] = False
+            result["diffs"].append(f"{name}: guard count differs (py={py_guard_count}, js={js_guard_count})")
+
+    return result
+
+
+if __name__ == "__main__":
+    import argparse, sys, os
+
+    parser = argparse.ArgumentParser(description="Vault MCP Catalog — sincronizar con JSON canónico")
+    parser.add_argument("--sync", action="store_true", help="Generar tools-catalog.json desde PY")
+    parser.add_argument("--check", action="store_true", help="Verificar que JSON está en sync con PY")
+    parser.add_argument("--stats", action="store_true", help="Mostrar estadísticas del catálogo")
+    parser.add_argument("--output", type=str, default=None, help="Ruta de salida para --sync")
+    parser.add_argument("--json", type=str, default=None, help="Ruta del JSON para --check")
+    args = parser.parse_args()
+
+    if args.stats:
+        print(f"Tools en catálogo Python: {len(TOOLS_CATALOG)}")
+        print(f"Grupos: {len(GROUPS)}")
+        for grp, names in GROUPS.items():
+            print(f"  {grp}: {len(names)} tools")
+        sys.exit(0)
+
+    if args.sync:
+        path = sync_to_json(args.output)
+        print(f"Catálogo JSON generado: {path}")
+        print(f"  Tools: {len(TOOLS_CATALOG)}")
+        print(f"  Grupos: {len(GROUPS)}")
+        sys.exit(0)
+
+    if args.check:
+        result = check_sync(args.json)
+        if result["ok"]:
+            print("OK: El JSON está sincronizado con el catálogo Python.")
+            sys.exit(0)
+        else:
+            print("DESINCRONIZADO:")
+            for d in result["diffs"]:
+                print(f"  - {d}")
+            if result["missing_in_json"]:
+                print(f"  Herramientas en Python que faltan en JSON: {', '.join(result['missing_in_json'])}")
+            if result["missing_in_py"]:
+                print(f"  Herramientas en JSON que faltan en Python: {', '.join(result['missing_in_py'])}")
+            sys.exit(1)
+
+    parser.print_help()

@@ -1,0 +1,351 @@
+#!/usr/bin/env python3
+
+"""
+Vault Move — Reubica notas entre carpetas del vault.
+
+Mueve notas entre carpetas, actualiza todos los wiki-links internos,
+actualiza search-index.json y graph.json, y mantiene historial de versiones.
+
+Usage:
+    python vault_move.py --from "01_Projects/old/note.md" --to "03_Decisions/note.md"
+    python vault_move.py --folder "01_Projects/old" --to "01_Projects/new"
+    python vault_move.py --from "01_Projects/foo.md" --to "03_Decisions/foo.md" --dry-run
+"""
+
+import argparse
+import json
+import re
+import shutil
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Set
+
+from vault_errors import wrap_main
+from vault_io import VAULT_ROOT, atomic_write_text
+
+
+SYSTEM_DIR = VAULT_ROOT / "00_System"
+INDEX_DIR = VAULT_ROOT / "99_Index"
+SEARCH_INDEX = INDEX_DIR / "search-index.json"
+GRAPH_FILE = INDEX_DIR / "graph.json"
+MOVE_LOG = SYSTEM_DIR / "move-log.json"
+
+
+def load_move_log() -> List[Dict[str, Any]]:
+    """Carga el historial de movimientos."""
+    if MOVE_LOG.exists():
+        return json.loads(MOVE_LOG.read_text(encoding="utf-8"))
+    return []
+
+
+def save_move_log(log: List[Dict[str, Any]]) -> None:
+    """Guarda el historial de movimientos."""
+    SYSTEM_DIR.mkdir(parents=True, exist_ok=True)
+    MOVE_LOG.write_text(json.dumps(log, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def update_wiki_links_in_file(
+    file_path: Path, old_stem: str, new_stem: str, old_folder: str, new_folder: str
+) -> Dict[str, Any]:
+    """Actualiza los wiki-links en un archivo."""
+    content = file_path.read_text(encoding="utf-8")
+    original = content
+
+    old_link = f"[[{old_stem}]]"
+    new_link = f"[[{new_stem}]]"
+    content = content.replace(old_link, new_link)
+
+    old_link_with_path = f"[[{old_folder}/{old_stem}]]"
+    new_link_with_path = f"[[{new_folder}/{new_stem}]]"
+    content = content.replace(old_link_with_path, new_link_with_path)
+
+    old_alias = f"[[{old_folder}/{old_stem}|"
+    new_alias = f"[[{new_folder}/{new_stem}|"
+    content = content.replace(old_alias, new_alias)
+
+    if content != original:
+        atomic_write_text(file_path, content)
+        return {"updated": True, "links_changed": True}
+
+    return {"updated": False, "links_changed": False}
+
+
+def update_search_index(old_path: str, new_path: str) -> Dict[str, Any]:
+    """Actualiza search-index.json con la nueva ubicación."""
+    if not SEARCH_INDEX.exists():
+        return {"updated": False, "reason": "search-index not found"}
+
+    index_data = json.loads(SEARCH_INDEX.read_text(encoding="utf-8"))
+    updated = False
+
+    for note in index_data.get("notes", []):
+        if note.get("path") == old_path:
+            note["path"] = new_path
+            note["updated_at"] = datetime.now(timezone.utc).isoformat()
+            updated = True
+
+    if updated:
+        atomic_write_text(
+            SEARCH_INDEX, json.dumps(index_data, indent=2, ensure_ascii=False)
+        )
+
+    return {"updated": updated}
+
+
+def update_graph(old_path: str, new_path: str, dry_run: bool = False) -> Dict[str, Any]:
+    """Actualiza graph.json con la nueva ubicación."""
+    if not GRAPH_FILE.exists():
+        return {"updated": False, "reason": "graph not found"}
+
+    graph_data = json.loads(GRAPH_FILE.read_text(encoding="utf-8"))
+    old_stem = Path(old_path).stem
+    new_stem = Path(new_path).stem
+    old_folder = str(Path(old_path).parent)
+    new_folder = str(Path(new_path).parent)
+
+    updated = False
+
+    for node in graph_data.get("nodes", []):
+        if node.get("id") == old_stem or node.get("path") == old_path:
+            node["id"] = new_stem
+            node["path"] = new_path
+            node["title"] = new_stem.replace("-", " ").replace("_", " ").title()
+            node["updated_at"] = datetime.now(timezone.utc).isoformat()
+            updated = True
+
+    if not dry_run and updated:
+        atomic_write_text(
+            GRAPH_FILE, json.dumps(graph_data, indent=2, ensure_ascii=False)
+        )
+
+    return {"updated": updated}
+
+
+def move_note(
+    from_path: str, to_path: str, dry_run: bool = False, backup: bool = True
+) -> Dict[str, Any]:
+    """Mueve una nota a una nueva ubicación."""
+    source = VAULT_ROOT / from_path
+    destination = VAULT_ROOT / to_path
+
+    if not source.exists():
+        return {"ok": False, "error": f"Archivo no encontrado: {from_path}"}
+
+    if destination.exists():
+        return {"ok": False, "error": f"Destino ya existe: {to_path}"}
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+
+    if not dry_run:
+        if backup:
+            backup_path = source.with_suffix(source.suffix + ".bak")
+            shutil.copy2(source, backup_path)
+
+        shutil.move(str(source), str(destination))
+
+    old_stem = source.stem
+    new_stem = destination.stem
+    old_folder = str(source.parent.relative_to(VAULT_ROOT))
+    new_folder = str(destination.parent.relative_to(VAULT_ROOT))
+
+    links_updated = 0
+    files_checked = 0
+
+    for md in VAULT_ROOT.rglob("*.md"):
+        if ".history" in str(md):
+            continue
+        if md == destination:
+            continue
+
+        files_checked += 1
+        result = update_wiki_links_in_file(
+            md, old_stem, new_stem, old_folder, new_folder
+        )
+        if result.get("links_changed"):
+            links_updated += 1
+
+    search_result = update_search_index(from_path, to_path)
+    graph_result = update_graph(from_path, to_path, dry_run)
+
+    move_record = {
+        "from": from_path,
+        "to": to_path,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "links_updated": links_updated,
+        "files_checked": files_checked,
+        "dry_run": dry_run,
+    }
+
+    if not dry_run:
+        move_log = load_move_log()
+        move_log.append(move_record)
+        save_move_log(move_log)
+
+    return {
+        "ok": True,
+        "dry_run": dry_run,
+        "moved": f"{from_path} -> {to_path}",
+        "links_updated": links_updated,
+        "files_checked": files_checked,
+        "search_index_updated": search_result.get("updated"),
+        "graph_updated": graph_result.get("updated"),
+        "record": move_record,
+    }
+
+
+def move_folder(
+    from_folder: str, to_folder: str, dry_run: bool = False
+) -> Dict[str, Any]:
+    """Mueve una carpeta completa."""
+    source = VAULT_ROOT / from_folder
+    destination = VAULT_ROOT / to_folder
+
+    if not source.exists():
+        return {"ok": False, "error": f"Carpeta no encontrada: {from_folder}"}
+
+    if destination.exists():
+        return {"ok": False, "error": f"Destino ya existe: {to_folder}"}
+
+    notes_moved = []
+
+    for md in source.rglob("*.md"):
+        if ".history" in str(md):
+            continue
+
+        relative = md.relative_to(source)
+        new_path = f"{to_folder}/{relative}"
+
+        result = move_note(
+            str(from_folder + "/" + relative.name),
+            new_path,
+            dry_run=dry_run,
+            backup=False,
+        )
+
+        if result.get("ok"):
+            notes_moved.append({"from": str(relative), "to": new_path})
+
+    if not dry_run:
+        try:
+            shutil.rmtree(source)
+        except Exception:
+            pass
+
+    return {
+        "ok": True,
+        "dry_run": dry_run,
+        "notes_moved": len(notes_moved),
+        "details": notes_moved,
+    }
+
+
+def check_move_impact(from_path: str, to_path: str) -> Dict[str, Any]:
+    """Analiza el impacto de un movimiento sin ejecutarlo."""
+    source = VAULT_ROOT / from_path
+
+    if not source.exists():
+        return {"ok": False, "error": f"Archivo no encontrado: {from_path}"}
+
+    content = source.read_text(encoding="utf-8")
+    old_stem = source.stem
+    old_folder = str(source.parent.relative_to(VAULT_ROOT))
+
+    wiki_links = re.findall(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]", content)
+
+    backlinks = []
+    for md in VAULT_ROOT.rglob("*.md"):
+        if ".history" in str(md):
+            continue
+        if md == source:
+            continue
+
+        try:
+            md_content = md.read_text(encoding="utf-8", errors="ignore")
+        except Exception:
+            continue
+
+        if (
+            f"[[{old_stem}]]" in md_content
+            or f"[[{old_folder}/{old_stem}]]" in md_content
+        ):
+            backlinks.append(str(md.relative_to(VAULT_ROOT)))
+
+    return {
+        "ok": True,
+        "source": from_path,
+        "destination": to_path,
+        "backlinks_count": len(backlinks),
+        "backlinks": backlinks,
+        "will_update_index": True,
+        "will_update_graph": True,
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Vault Move - Reubica notas entre carpetas",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Ejemplos:
+  python vault_move.py --from "01_Projects/old/note.md" --to "03_Decisions/note.md"
+  python vault_move.py --folder "01_Projects/old" --to "01_Projects/new"
+  python vault_move.py --from "01_Projects/foo.md" --to "03_Decisions/foo.md" --dry-run
+  python vault_move.py --impact --from "01_Projects/foo.md" --to "03_Decisions/foo.md"
+        """,
+    )
+
+    parser.add_argument("--from", dest="from_path", type=str, help="Nota origen")
+    parser.add_argument("--to", dest="to_path", type=str, help="Nota destino")
+    parser.add_argument(
+        "--folder", type=str, help="Carpeta origen (mover toda la carpeta)"
+    )
+    parser.add_argument(
+        "--to-folder", dest="to_folder", type=str, help="Carpeta destino"
+    )
+    parser.add_argument("--dry-run", action="store_true", help="Simular sin aplicar")
+    parser.add_argument(
+        "--impact", action="store_true", help="Analizar impacto sin ejecutar"
+    )
+    parser.add_argument("--json", action="store_true", help="Salida JSON")
+
+    args = parser.parse_args()
+
+    if args.impact:
+        if not args.from_path or not args.to_path:
+            print("Error: --impact requiere --from y --to")
+            return 1
+        result = check_move_impact(args.from_path, args.to_path)
+    elif args.folder:
+        if not args.to_folder:
+            print("Error: --folder requiere --to-folder")
+            return 1
+        result = move_folder(args.folder, args.to_folder, dry_run=args.dry_run)
+    elif args.from_path and args.to_path:
+        result = move_note(args.from_path, args.to_path, dry_run=args.dry_run)
+    else:
+        parser.print_help()
+        return 1
+
+    if args.json:
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        if result.get("ok", True):
+            if args.dry_run:
+                print(f"[SIMULACIÓN] ", end="")
+            if "notes_moved" in result:
+                print(f"Notas movidas: {result['notes_moved']}")
+            else:
+                print(f"Movido: {result.get('moved')}")
+                print(f"Links actualizados: {result.get('links_updated')}")
+                if args.impact:
+                    print(f"Backlinks encontrados: {result.get('backlinks_count')}")
+        else:
+            print(f"Error: {result.get('error', 'Unknown error')}")
+            return 1
+
+    return 0 if result.get("ok", True) else 1
+
+
+if __name__ == "__main__":
+    sys.exit(wrap_main(main, "vault_move"))

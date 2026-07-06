@@ -748,52 +748,7 @@ async function handleToolsList() {
     inputSchema: t.inputSchema || { type: "object", properties: {}, required: [] },
   }));
 
-  const extraTools = [
-    {
-      name: "vault_graph_inspect",
-      description: "Analiza el grafo del vault: broken links, orphans, duplicates, syntax errors, hubs.",
-      inputSchema: { type: "object", properties: {}, required: [] },
-    },
-    {
-      name: "vault_graph_fix",
-      description: "Auto-fix de broken wiki-links (stem match, fuzzy, brackets, path-anchored, stubs, wizard).",
-      inputSchema: {
-        type: "object",
-        properties: {
-          threshold: { type: "string", description: "Fuzzy match threshold (default: 0.7)" },
-          "auto-apply-partial": { type: "string", description: "Auto-fix partial matches above this threshold" },
-          apply: { type: "string", description: "Apply fixes (default: dry-run)" },
-          only: { type: "string", description: "Only run: brackets, path_anchored", enum: ["brackets", "path_anchored"] },
-        },
-        required: [],
-      },
-    },
-    {
-      name: "vault_backup_base64",
-      description: "Crea backup comprimido base64 del vault completo. Antes de cualquier migracion o modificacion masiva.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          label: { type: "string", description: "Etiqueta del backup (default: backup-timestamp)" },
-        },
-        required: [],
-      },
-    },
-    {
-      name: "vault_restore_base64",
-      description: "Restaura vault desde backup base64. Requiere --confirm true. Restaura a directorio nuevo sin tocar el original.",
-      inputSchema: {
-        type: "object",
-        properties: {
-          path: { type: "string", description: "Ruta al archivo .b64zip.json" },
-          confirm: { type: "string", description: "Confirmar restauracion (debe ser 'true')" },
-        },
-        required: ["path"],
-      },
-    },
-  ];
-
-  return { tools: [...tools, ...extraTools] };
+  return { tools };
 }
 
 async function handleToolsCall(params, session) {
@@ -1522,6 +1477,7 @@ async function handleResourcesList() {
   return {
     resources: [
       { uri: "vault://graph", name: "Vault Graph", mimeType: "application/json", description: "Current wiki-link graph (nodes, edges, broken links)" },
+      { uri: "vault://graph/enriched", name: "Enriched Graph", mimeType: "application/json", description: "Graph with typed predicates (wiki-links + entity + code relations)" },
       { uri: "vault://health", name: "Vault Health", mimeType: "application/json", description: "Health check with score and next actions" },
       { uri: "vault://registry", name: "Vault Registry", mimeType: "application/json", description: "All registered vaults with versions and metadata" },
       { uri: "vault://traceability/mutations", name: "Mutation Trace Log", mimeType: "application/json", description: "Immutable audit trail of all tool executions" },
@@ -1537,6 +1493,20 @@ async function handleResourcesRead(params) {
     switch (uri) {
       case "vault://graph": {
         const data = await jsNativeGraph({});
+        return { contents: [{ uri, mimeType: "application/json", text: JSON.stringify(data, null, 2) }] };
+      }
+      case "vault://graph/enriched": {
+        const vaultRoot = detectVaultRoot();
+        const enrichedPath = join(vaultRoot, "99_Index", "graph-enriched.json");
+        let data;
+        try {
+          data = JSON.parse(await readFile(enrichedPath, "utf-8"));
+        } catch (_) {
+          return { contents: [{ uri, mimeType: "text/plain", text: JSON.stringify({
+            ok: false, error: "graph-enriched.json not found. Run vault_graph --typed or vault_graph_merge first.",
+            hint: "python scripts/vault_graph.py --typed"
+          }, null, 2) }] };
+        }
         return { contents: [{ uri, mimeType: "application/json", text: JSON.stringify(data, null, 2) }] };
       }
       case "vault://health": {
@@ -1567,7 +1537,7 @@ async function handleResourcesRead(params) {
         }, null, 2) }] };
       }
       default: {
-        return { contents: [{ uri, mimeType: "text/plain", text: `Unknown resource: ${uri}. Available: vault://graph, vault://health, vault://registry, vault://traceability/mutations, vault://catalog, vault://state` }] };
+        return { contents: [{ uri, mimeType: "text/plain", text: `Unknown resource: ${uri}. Available: vault://graph, vault://graph/enriched, vault://health, vault://registry, vault://traceability/mutations, vault://catalog, vault://state` }] };
       }
     }
   } catch (e) {

@@ -1,0 +1,510 @@
+#!/usr/bin/env python3
+"""
+Vault Regex — Módulo de validación y sanitización de patrones regex.
+
+Proporciona funciones para:
+- Detección de anomalías en corchetes [[ ]]
+- Sanitización de contenido de wiki-links
+- Detección de path-anchored links (AP-21)
+- Auto-corrección de patrones problemáticos
+- Validación de caracteres en links
+
+Usage:
+    from vault_regex import (
+        detect_bracket_anomalies,
+        sanitize_wikilink_content,
+        detect_path_anchored,
+        fix_nested_brackets,
+        is_valid_link_content,
+    )
+"""
+
+import re
+from typing import Any, Dict, List, Optional, Tuple
+
+# ============================================================
+# CONSTANTS
+# ============================================================
+
+WIKILINK_MAX_LEN = 200
+WIKILINK_MIN_LEN = 1
+
+# Unicode bracket variants (similar to [ ])
+UNICODE_OPEN_BRACKETS = ["〔", "｛", "〖", "﹛", "｟", "❰", "❮"]
+UNICODE_CLOSE_BRACKETS = ["〕", "｝", "〗", "﹜", "｠", "❱", "❯"]
+UNICODE_BRACKETS = set(UNICODE_OPEN_BRACKETS + UNICODE_CLOSE_BRACKETS)
+
+# ============================================================
+# REGEX PATTERNS
+# ============================================================
+
+# Anomalías de corchetes - 3 o más
+RE_NESTED_OPEN_3 = re.compile(r"\[\[\[+")  # [[[, [[[[, etc
+RE_NESTED_CLOSE_3 = re.compile(r"\]\]\]+")  # ]]], ]]]], etc
+
+# Anomalías mixtas (orden invertido)
+RE_MIXED_BRACKETS = re.compile(
+    r"""
+    (\]\[) |           # ][
+    (\]\[\[) |         # ][[
+    (\]\]\[) |         # ]][
+    (\[\[\]) |         # [[]
+    (\]\[\]) |         # ][]
+    (\[\]\[) |         # [] [
+    (\[\]\])            # []]
+""",
+    re.VERBOSE,
+)
+
+# Empty links
+RE_EMPTY_LINK = re.compile(r"\[\[\s*\]\]")
+RE_EMPTY_WITH_SPACES = re.compile(r"\[\[\s+\]\]")
+
+# Path-anchored (AP-21)
+RE_PATH_ANCHORED = re.compile(r"\[\[/|\[\[[^\]]*\/")
+
+# Contenido inválido en wiki-links
+RE_INVALID_LINK_CHARS = re.compile(r"[\x00-\x1f<>\"\\|]")
+RE_CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
+
+# Whitespace excesivo dentro de links
+RE_EXCESSIVE_WHITESPACE = re.compile(r"\[\[\s{2,}")
+RE_TRAILING_WHITESPACE = re.compile(r"\[\s+\]\]")
+
+# Leading/trailing brackets en contenido
+RE_LEADING_BRACKET = re.compile(r"^\[+")
+RE_TRAILING_BRACKET = re.compile(r"\]+$")
+
+# ============================================================
+# DETECTION FUNCTIONS
+# ============================================================
+
+
+def detect_bracket_anomalies(text: str) -> List[Dict[str, str]]:
+    """Detecta anomalías en secuencias de corchetes.
+
+    Encuentra:
+    - 3+ corchetes abiertos seguidos: [[[
+    - 3+ corchetes cerrados seguidos: ]]]
+    - Secuencias mezcladas: ][, ][[, ]][, [[], ][]
+    - Links vacíos: [[]]
+
+    Args:
+        text: Texto a analizar
+
+    Returns:
+        Lista de anomalías encontradas con tipo, posición y ejemplo
+    """
+    anomalies = []
+
+    # Strip code blocks para no detectar en ejemplos de código
+    clean = re.sub(r"```[\s\S]*?```", "", text)
+    clean = re.sub(r"`[^`\n]+`", "", clean)
+
+    # Detectar 3+ opens
+    for m in RE_NESTED_OPEN_3.finditer(clean):
+        count = len(m.group(0)) - 1  # -1 porque [[ cuenta como 1
+        anomalies.append(
+            {
+                "type": "nested_open",
+                "count": count,
+                "example": m.group(0),
+                "position": m.start(),
+            }
+        )
+
+    # Detectar 3+ closes
+    for m in RE_NESTED_CLOSE_3.finditer(clean):
+        count = len(m.group(0)) - 1
+        anomalies.append(
+            {
+                "type": "nested_close",
+                "count": count,
+                "example": m.group(0),
+                "position": m.start(),
+            }
+        )
+
+    # Detectar secuencias mezcladas
+    for m in RE_MIXED_BRACKETS.finditer(clean):
+        example = m.group(0)
+        anomalies.append(
+            {
+                "type": "mixed",
+                "example": example,
+                "position": m.start(),
+            }
+        )
+
+    # Detectar empty links
+    for m in RE_EMPTY_LINK.finditer(clean):
+        anomalies.append(
+            {
+                "type": "empty",
+                "example": m.group(0),
+                "position": m.start(),
+            }
+        )
+
+    return anomalies
+
+
+def detect_path_anchored(text: str) -> List[str]:
+    """Detecta path-anchored wiki-links (AP-21).
+
+    Encuentra:
+    - [[/note]] - path que empieza con /
+    - [[folder/note]] - path con /
+    - [[./note]] - path relativo
+
+    Args:
+        text: Texto a analizar
+
+    Returns:
+        Lista de path-anchored links encontrados
+    """
+    clean = re.sub(r"```[\s\S]*?```", "", text)
+    clean = re.sub(r"`[^`\n]+`", "", clean)
+
+    matches = RE_PATH_ANCHORED.findall(clean)
+    return matches
+
+
+def is_valid_link_content(text: str) -> bool:
+    """Valida que el contenido de un wiki-link sea válido.
+
+    Args:
+        text: Contenido del link (sin [[ ]])
+
+    Returns:
+        True si el contenido es válido
+    """
+    if not text or not text.strip():
+        return False
+
+    # Verificar longitud
+    if len(text) > WIKILINK_MAX_LEN:
+        return False
+
+    # Verificar caracteres de control
+    if RE_CONTROL_CHARS.search(text):
+        return False
+
+    # Verificar caracteres inválidos
+    if RE_INVALID_LINK_CHARS.search(text):
+        return False
+
+    # Verificar que no sea solo whitespace
+    if not text.strip():
+        return False
+
+    # Verificar que no contenga corchetes en el contenido
+    if "[" in text or "]" in text:
+        return False
+
+    # Verificar que no contenga corchetes unicode
+    for char in text:
+        if char in UNICODE_BRACKETS:
+            return False
+
+    return True
+
+
+def validate_wikilink(text: str) -> Tuple[bool, Optional[str]]:
+    """Valida un wiki-link completo.
+
+    Args:
+        text: Texto a validar (puede incluir [[ ]] o no)
+
+    Returns:
+        Tupla (es_válido, mensaje_error)
+    """
+    # Extraer contenido si tiene [[ ]]
+    content = text
+    if text.startswith("[[") and text.endswith("]]"):
+        content = text[2:-2]
+        # Extraer solo el target (antes de |)
+        if "|" in content:
+            content = content.split("|")[0]
+
+    content = content.strip()
+
+    # Validar longitud
+    if len(content) > WIKILINK_MAX_LEN:
+        return False, f"Wiki-link exceeds {WIKILINK_MAX_LEN} chars"
+
+    if len(content) < WIKILINK_MIN_LEN:
+        return False, "Wiki-link is empty"
+
+    # Validar contenido
+    if not is_valid_link_content(content):
+        return False, "Wiki-link contains invalid characters"
+
+    return True, None
+
+
+# ============================================================
+# SANITIZATION FUNCTIONS
+# ============================================================
+
+
+def sanitize_wikilink_content(text: str) -> str:
+    """Sanitiza el contenido interno de un wiki-link.
+
+    - Elimina espacios extras al inicio/final
+    - Colapsa múltiples espacios a uno solo
+    - Elimina caracteres de control
+    - Normaliza a NFC
+
+    Args:
+        text: Contenido del link a sanitizar
+
+    Returns:
+        Contenido sanitizado
+    """
+    if not text:
+        return "nota-sin-titulo"
+
+    result = text.strip()
+
+    # Colapsar múltiples espacios
+    result = re.sub(r"\s+", " ", result)
+
+    # Eliminar caracteres de control
+    result = RE_CONTROL_CHARS.sub("", result)
+
+    # Eliminar corchetes si se infiltraron
+    result = result.replace("[", "").replace("]", "")
+
+    # Eliminar pipe si se infiltró
+    result = result.replace("|", "")
+
+    # Eliminar caracteres inválidos
+    result = RE_INVALID_LINK_CHARS.sub("", result)
+
+    # Normalizar a NFC
+    import unicodedata
+
+    result = unicodedata.normalize("NFC", result)
+
+    return result or "nota-sin-titulo"
+
+
+def fix_nested_brackets(text: str) -> str:
+    """Auto-corrección: colapsa corchetes anidados.
+
+    - [[[[ -> [[
+    - ]]]] -> ]]
+    - [[[ -> [[
+    - ]]] -> ]]
+
+    Args:
+        text: Texto a corregir
+
+    Returns:
+        Texto corregido
+    """
+    result = text
+
+    # Colapsar 3+ opens a 2 opens [[
+    result = RE_NESTED_OPEN_3.sub("[[", result)
+
+    # Colapsar 3+ closes a 2 closes ]]
+    result = RE_NESTED_CLOSE_3.sub("]]", result)
+
+    # Corregir ][ a ][ (invertido) - eliminar el close que precede al open
+    # ][[[ -> [[[ (primero ]
+    result = re.sub(r"\]\[\[", "[[", result)
+
+    # ]][[ -> ]]] (último [ se elimina)
+    result = re.sub(r"\]\]\[", "]]", result)
+
+    # [[] -> [[ (] al final se elimina)
+    result = re.sub(r"\[\[\]", "[[", result)
+
+    # ]]] -> ]] (3 a 2)
+    result = re.sub(r"\]\]\](?!\])", "]]", result)
+
+    return result
+
+
+def fix_whitespace_in_links(text: str) -> str:
+    """Auto-corrección: limpia whitespace excesivo en links.
+
+    - [[  nota  ]] -> [[nota]]
+    - [[]] -> NO corregir (esto es un error real)
+
+    Args:
+        text: Texto a corregir
+
+    Returns:
+        Texto corregido
+    """
+    result = text
+
+    # NO eliminar empty links - eso es un error que debe rechazarse
+    # Solo limpiar whitespace en links no-vacíos
+
+    # Primero, proteger los empty links
+    empty_placeholders = []
+    for m in RE_EMPTY_LINK.finditer(result):
+        placeholder = f"__EMPTY_LINK_{len(empty_placeholders)}__"
+        empty_placeholders.append((placeholder, m.group(0)))
+        result = result.replace(m.group(0), placeholder)
+
+    # Limpiar whitespace excesivo en links no-vacíos
+    # [[  nota  ]] -> [[nota]]
+    result = re.sub(r"\[\[\s+", "[[", result)
+    result = re.sub(r"\s+\]\]", "]]", result)
+
+    # Colapsar múltiples espacios dentro del link
+    result = re.sub(
+        r"\[\[([^\]]+)\]\]",
+        lambda m: "[[" + re.sub(r"\s+", " ", m.group(1)) + "]]",
+        result,
+    )
+
+    # Restaurar empty links (para que puedan ser detectados como error)
+    for placeholder, original in empty_placeholders:
+        result = result.replace(placeholder, original)
+
+    return result
+
+
+def fix_all_brackets(text: str) -> Tuple[str, List[Dict[str, Any]]]:
+    """Aplica todas las correcciones de corchetes.
+
+    Args:
+        text: Texto a corregir
+
+    Returns:
+        Tupla (texto_corregido, lista_de_fixes_aplicados)
+    """
+    fixes = []
+    original = text
+
+    # 1. Corregir nested brackets
+    text = fix_nested_brackets(text)
+    if text != original:
+        fixes.append({"type": "nested_brackets", "fixed": True})
+
+    # 2. Corregir whitespace
+    text = fix_whitespace_in_links(text)
+    if text != original:
+        fixes.append({"type": "whitespace", "fixed": True})
+
+    return text, fixes
+
+
+# ============================================================
+# EXTRACTION FUNCTIONS
+# ============================================================
+
+
+def extract_wiki_links_strict(content: str) -> List[str]:
+    """Extrae wiki-links con validación estricta.
+
+    Filtra:
+    - Links vacíos
+    - Links con caracteres inválidos
+    - Links que exceden longitud máxima
+
+    Args:
+        content: Contenido del archivo
+
+    Returns:
+        Lista de links válidos
+    """
+    # Extraer todos los raw links
+    raw_pattern = r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]"
+    raw_links = re.findall(raw_pattern, content)
+
+    valid_links = []
+    for link in raw_links:
+        link = link.strip()
+
+        # Saltar vacíos
+        if not link:
+            continue
+
+        # Saltar si excede longitud
+        if len(link) > WIKILINK_MAX_LEN:
+            continue
+
+        # Validar contenido
+        if not is_valid_link_content(link):
+            continue
+
+        valid_links.append(link)
+
+    return valid_links
+
+
+# ============================================================
+# VALIDATION WRAPPER
+# ============================================================
+
+
+def validate_and_fix(
+    text: str,
+    allow_path_anchored: bool = False,
+    allow_empty: bool = False,
+    allow_nested: bool = False,
+) -> Tuple[str, List[Dict[str, Any]], List[str]]:
+    """Valida y auto-corrige texto con problemas de corchetes.
+
+    Args:
+        text: Texto a validar
+        allow_path_anchored: Si True, permite [[folder/note]]
+        allow_empty: Si True, permite [[]]
+        allow_nested: Si True, permite [[[, etc
+
+    Returns:
+        Tupla (texto_procesado, fixes_aplicados, errores_encontrados)
+    """
+    fixes = []
+    errors = []
+
+    # 1. Detectar path-anchored
+    path_anchored = detect_path_anchored(text)
+    if path_anchored and not allow_path_anchored:
+        errors.append(f"AP-21: path-anchored links detected: {path_anchored}")
+
+    # 2. Detectar anomalías
+    anomalies = detect_bracket_anomalies(text)
+
+    # Separar empty de otras anomalías
+    empty_links = [a for a in anomalies if a["type"] == "empty"]
+    other_anomalies = [a for a in anomalies if a["type"] != "empty"]
+
+    if empty_links and not allow_empty:
+        errors.append(f"AP-22: {len(empty_links)} empty wiki-link(s) detected")
+
+    if other_anomalies and not allow_nested:
+        examples = [a["example"] for a in other_anomalies[:3]]
+        errors.append(f"AP-24: bracket anomalies detected: {examples}")
+
+    # 3. Auto-corrección si hay anomalías
+    if other_anomalies:
+        original = text
+        text, applied_fixes = fix_all_brackets(text)
+        fixes.extend(applied_fixes)
+
+        # Verificar si se resolvió
+        remaining = detect_bracket_anomalies(text)
+        remaining_non_empty = [r for r in remaining if r["type"] != "empty"]
+
+        if remaining_non_empty:
+            examples = [r["example"] for r in remaining_non_empty[:3]]
+            errors.append(f"AP-24: could not auto-fix all anomalies: {examples}")
+
+    return text, fixes, errors
+
+
+# ============================================================
+# ALIASES FOR COMPATIBILITY
+# ============================================================
+
+fix_brackets = fix_nested_brackets
+clean_whitespace = fix_whitespace_in_links
+validate_link = is_valid_link_content

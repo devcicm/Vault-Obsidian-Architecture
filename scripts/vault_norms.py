@@ -592,6 +592,175 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "tools_detecting": ["vault_audit", "vault_mermaid_check"],
         "introduced_version": "v34.2",
     },
+    # ── Anti-patrón AP-31 ──────────────────────────────────────────────────────
+    {
+        "code": "AP-31",
+        "name": "Grafo sin tipos semanticos — edges sin predicate explícito",
+        "type": "antipattern",
+        "category": "linking",
+        "severity": "high",
+        "enforcement": "audit",
+        "description": (
+            "Todas las aristas del grafo usan el mismo tipo 'wiki-link' sin distinguir "
+            "semántica: depends_on, implements, extends, calls, documents, etc. "
+            "Sin predicates tipados, el analisis de impacto y las busquedas semanticas "
+            "no pueden filtrar por tipo de relacion. "
+            "La solucion es mergear las relaciones de entidad (vault_relation_add) y "
+            "codigo (vault_code_relation) en el grafo para enriquecerlo con predicates."
+        ),
+        "signal": (
+            "vault_audit detecta edges sin predicate o con predicate='wiki-link' como "
+            "unico tipo en graph.json. Penaliza -3 por cada 100 edges sin predicates "
+            "tipados (solo si existen relaciones de entidad o codigo sin mergear)."
+        ),
+        "prevention": (
+            "Ejecutar vault_graph --typed o vault_graph_merge periodicamente para "
+            "enriquecer el grafo con predicates. Toda relacion registrada via "
+            "vault_relation_add o vault_code_relation debe reflejarse en graph-enriched.json."
+        ),
+        "tools_enforcing": [],
+        "tools_detecting": ["vault_audit", "vault_graph_merge"],
+        "introduced_version": "v37",
+    },
+    # ── Anti-patrón AP-32 ──────────────────────────────────────────────────────
+    {
+        "code": "AP-32",
+        "name": "Relaciones tipadas sin predicate valido en la ontologia",
+        "type": "antipattern",
+        "category": "linking",
+        "severity": "medium",
+        "enforcement": "audit",
+        "description": (
+            "Una relacion registrada en entity relations o code relations usa un "
+            "relationType/type que no existe en vault-ontology.json. Esto produce "
+            "edges que no pueden interpretarse semanticamente en el grafo enriquecido. "
+            "Ej: relationType='inherits' cuando el predicate canonico es 'extends'."
+        ),
+        "signal": (
+            "vault_graph_merge reporta unknown_predicates[] con el predicate invalido "
+            "y la fuente (entity/code). Sugiere el predicate canonico mas cercano."
+        ),
+        "prevention": (
+            "Usar solo predicates del vocabulario canonico en vault-ontology.json. "
+            "Para entity relations: has_one, has_many, belongs_to, many_to_many, "
+            "implements, extends, depends_on, uses, calls, owns, aggregates. "
+            "Para code relations: imports, extends, implements, calls, uses, re-exports, depends_on."
+        ),
+        "tools_enforcing": [],
+        "tools_detecting": ["vault_graph_merge", "vault_audit"],
+        "introduced_version": "v37",
+    },
+    # ── Anti-patrón AP-33 ──────────────────────────────────────────────────────
+    {
+        "code": "AP-33",
+        "name": "Predicado no canonico — sinonimo no normalizado",
+        "type": "antipattern",
+        "category": "linking",
+        "severity": "low",
+        "enforcement": "audit",
+        "description": (
+            "Las relaciones de entidad usan `relationType` y las de codigo usan `type` "
+            "para el mismo concepto semantico. Ademas, predicates que semanticamente "
+            "son equivalentes deben unificarse: `imports` en codigo ≈ `depends_on` "
+            "a nivel build-time. La ontologia define el mapeo de sinonimos."
+        ),
+        "signal": (
+            "vault_graph_merge normaliza automaticamente y reporta normalized_predicates[] "
+            "con el mapeo aplicado. vault_audit puede reportar instancias donde el "
+            "predicate original no era canonico."
+        ),
+        "prevention": (
+            "Al registrar relaciones, usar predicates del vocabulario canonico. "
+            "La ontologia maneja el mapeo relationType→predicate y type→predicate "
+            "automaticamente. No requiere accion manual."
+        ),
+        "tools_enforcing": [],
+        "tools_detecting": ["vault_graph_merge"],
+        "introduced_version": "v37",
+    },
+    # ── Anti-patrón AP-34 ──────────────────────────────────────────────────────
+    {
+        "code": "AP-34",
+        "name": "Relacion tipada huerfana — endpoint inexistente en el vault",
+        "type": "antipattern",
+        "category": "linking",
+        "severity": "high",
+        "enforcement": "audit",
+        "description": (
+            "Una relacion tipada (entity o code) referencia un endpoint que no existe "
+            "como nota en el vault. Ej: relacion `User -- has_many --> Order` donde "
+            "no existen `User.md` ni `Order.md`. El grafo enriquecido tendra edges "
+            "hacia nodos fantasma que nunca resolveran."
+        ),
+        "signal": (
+            "vault_audit detecta orphan_typed_relations[] listando la relacion y "
+            "los endpoints faltantes. vault_graph_merge reporta unresolved_entities[]."
+        ),
+        "prevention": (
+            "SP-02: verificar que los endpoints existan antes de registrar la relacion. "
+            "Ejecutar vault_search o vault_list para confirmar que las notas "
+            "referenciadas en fromEntity/toEntity existen en el vault."
+        ),
+        "tools_enforcing": [],
+        "tools_detecting": ["vault_audit", "vault_graph_merge"],
+        "introduced_version": "v37",
+    },
+    # ── Anti-patrón AP-35 ──────────────────────────────────────────────────────
+    {
+        "code": "AP-35",
+        "name": "Silos de relacion — sistemas de grafos aislados",
+        "type": "antipattern",
+        "category": "structure",
+        "severity": "high",
+        "enforcement": "audit",
+        "description": (
+            "El vault mantiene tres sistemas de relaciones en silos aislados: "
+            "(a) wiki-links en graph.json, (b) entity relations en "
+            "06_Diagrams/entity/*-relations.json, (c) code relations en "
+            "11_Code/.code-index.json. Ninguno de estos sistemas se integra "
+            "con los otros, produciendo un grafo de conocimiento fragmentado. "
+            "vault_impact y BFS solo ven wiki-links, ignorando relaciones "
+            "semanticas ricas registradas en los otros sistemas."
+        ),
+        "signal": (
+            "vault_audit reporta silo_flags[]: entity_relations sin mergear "
+            "(AP-35-entity), code_relations sin mergear (AP-35-code), y "
+            "graph_enriched_outdated si el enriquecido tiene >24h."
+        ),
+        "prevention": (
+            "Ejecutar vault_graph_merge periodicamente (recomendado: cada sesion "
+            "o cada vez que se registren nuevas relaciones). vault_graph --typed "
+            "genera graph-enriched.json que unifica los tres sistemas."
+        ),
+        "tools_enforcing": [],
+        "tools_detecting": ["vault_audit", "vault_graph_merge"],
+        "introduced_version": "v37",
+    },
+    # ── Patrón PAT-6 ───────────────────────────────────────────────────────────
+    {
+        "code": "PAT-6",
+        "name": "Semantic graph enrichment — enriquecimiento periodico del grafo",
+        "type": "pattern",
+        "category": "linking",
+        "severity": "N/A",
+        "enforcement": "recommended",
+        "description": (
+            "Ejecutar vault_graph --typed al final de cada sesion productiva para "
+            "generar graph-enriched.json con predicates semanticos unificados. "
+            "El grafo enriquecido combina wiki-links, entity relations y code relations "
+            "en un solo grafo consultable con filtros por predicate, cardinalidad "
+            "y tipo de nodo. Esto habilita busquedas de conocimiento semanticas "
+            "y analisis de impacto con tipos."
+        ),
+        "signal": "graph-enriched.json existe y tiene updated_at < 24 horas.",
+        "prevention": (
+            "N/A — es el patron correcto. Agregar vault_graph --typed al session "
+            "protocol como paso automatico antes de vault_audit."
+        ),
+        "tools_enforcing": [],
+        "tools_detecting": ["vault_graph_merge", "vault_audit"],
+        "introduced_version": "v37",
+    },
     # ── Protocolo de sesión SP-XX ──────────────────────────────────────────────
     {
         "code": "SP-01",
@@ -1147,8 +1316,8 @@ Ejemplos:
     )
     parser.add_argument(
         "--category",
-        choices=["content-quality", "structure", "frontmatter", "linking", "process"],
-        help="Filtrar por categoría",
+        choices=["content-quality", "structure", "frontmatter", "linking", "process", "session-protocol", "convention"],
+        help="Filtrar por categoria",
     )
     parser.add_argument(
         "--severity",

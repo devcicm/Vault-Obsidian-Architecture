@@ -307,6 +307,14 @@ def vault_init(
         atomic_write_json(tag_registry_path, tag_registry)
         result["steps"].append({"step": "tag_registry", "output": "tag-registry.json created"})
 
+    # Step 4.6: write ontology.json into the vault (copy from scripts/vault_ontology.json)
+    ontology_src = Path(__file__).parent / "vault_ontology.json"
+    ontology_dst = VAULT_ROOT / "00_System" / "vault-ontology.json"
+    if ontology_src.exists() and not ontology_dst.exists():
+        ontology_dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ontology_src, ontology_dst)
+        result["steps"].append({"step": "ontology", "output": "vault-ontology.json copied to vault"})
+
     # Step 5: optional vault_audit
     if run_audit:
         audit_script = scripts_dir / "vault_audit.py"

@@ -312,6 +312,60 @@ def _detect_wikilink_syntax_errors(
     return errors
 
 
+def _detect_graph_knowledge(root: Path) -> dict[str, Any]:
+    """AP-31/34/35: analyze graph-enriched.json for knowledge graph health."""
+    ENRICHED_FILE = root / "99_Index" / "graph-enriched.json"
+    ENTITY_DIR = root / "06_Diagrams" / "entity"
+    CODE_INDEX = root / "11_Code" / ".code-index.json"
+
+    result: dict[str, Any] = {
+        "enriched_exists": False,
+        "typed_edges": 0,
+        "total_edges": 0,
+        "typed_ratio": 0.0,
+        "predicate_counts": {},
+        "unresolved_entity_relations": 0,
+        "unresolved_code_relations": 0,
+        "has_entity_relations": False,
+        "has_code_relations": False,
+        "graph_stale_hours": None,
+    }
+
+    has_entity = ENTITY_DIR.exists() and list(ENTITY_DIR.glob("*relations.json"))
+    has_code = CODE_INDEX.exists()
+    result["has_entity_relations"] = bool(has_entity)
+    result["has_code_relations"] = has_code
+
+    if not ENRICHED_FILE.exists():
+        return result
+
+    result["enriched_exists"] = True
+
+    try:
+        enriched = json.loads(ENRICHED_FILE.read_text(encoding="utf-8"))
+        meta = enriched.get("metadata", {})
+        result["typed_edges"] = meta.get("typed_edges", 0)
+        result["total_edges"] = meta.get("total_edges", 0)
+        if result["total_edges"] > 0:
+            result["typed_ratio"] = round(result["typed_edges"] / result["total_edges"], 3)
+        result["predicate_counts"] = meta.get("predicate_counts", {})
+
+        diagnostics = enriched.get("diagnostics", {})
+        result["unresolved_entity_relations"] = diagnostics.get("entity_relations", {}).get("unresolved", 0)
+        result["unresolved_code_relations"] = diagnostics.get("code_relations", {}).get("unresolved", 0)
+
+        merged_at = meta.get("merged_at", "")
+        if merged_at:
+            dt = datetime.fromisoformat(merged_at.replace("Z", "+00:00"))
+            result["graph_stale_hours"] = round(
+                (datetime.now(timezone.utc) - dt).total_seconds() / 3600, 1
+            )
+    except Exception:
+        pass
+
+    return result
+
+
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()[:19] + "Z"
 
@@ -357,6 +411,7 @@ def generate_report(
     near_dups = _detect_near_duplicates(notes, threshold, exclude_templates)
     shadows = _detect_canonical_shadows(notes)
     syntax_errors = _detect_wikilink_syntax_errors(notes)
+    graph_knowledge = _detect_graph_knowledge(root)
 
     severity = "none"
     if metrics["broken_links_count"] > 50:
@@ -388,6 +443,7 @@ def generate_report(
         "near_duplicates": near_dups[:50],
         "canonical_shadows": shadows[:50],
         "syntax_errors": syntax_errors[:50],
+        "graph_knowledge": graph_knowledge,
     }
 
 
