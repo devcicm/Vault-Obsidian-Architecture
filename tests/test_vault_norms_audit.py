@@ -156,3 +156,18 @@ def test_trace_follows_set_vault_root(tmp_path):
         assert (target / "00_System" / ".tool-trace.json").exists()
     finally:
         vault_io._ACTIVE_VAULT_ROOT = None
+
+
+def test_section_index_table_separates_link_and_title(tmp_path, monkeypatch):
+    # El wikilink va SIN alias; el título vive en su propia columna. Un alias
+    # largo en la celda confunde a agentes y genera notas en blanco.
+    import vault_section_index as vsi
+
+    content = vsi._build_index_content(
+        "13_Flows",
+        [{"path": "13_Flows/mi-flujo.md", "title": "Mi Flujo — Título/largo", "type": "flow", "updatedAt": "2026-07-12"}],
+        "2026-07-12T00:00:00.000Z",
+        subdirs=None,
+    )
+    assert "| [[mi-flujo]] | Mi Flujo — Título/largo | flow |" in content
+    assert "[[mi-flujo|" not in content

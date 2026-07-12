@@ -340,16 +340,19 @@ def _build_index_content(
         lines += [
             "## Notas" if subdirs else "",
             "",
-            "| Nota | Tipo | Actualizado |",
-            "|---|---|---|",
+            "| Nota | Título | Tipo | Actualizado |",
+            "|---|---|---|---|",
         ]
         for n in notes:
             note_path = n["path"].replace("\\", "/")
             # AP-21 compliance: stem-only wiki-link, no folder prefix.
+            # El link va SIN alias y el título en su propia columna: un alias
+            # largo dentro de la celda ([[stem|Título — largo/etc]]) confunde a
+            # los agentes (parece celda combinada), dispara falsos positivos de
+            # sintaxis y provoca creación de notas en blanco a partir del alias.
             stem = safe_wikilink(Path(note_path).stem)
-            title = safe_wikilink(n["title"])
-            link = f"[[{stem}|{title}]]"
-            lines.append(f"| {link} | {n['type']} | {n['updatedAt']} |")
+            title = str(n["title"]).replace("|", "\\|").replace("[", "").replace("]", "")
+            lines.append(f"| [[{stem}]] | {title} | {n['type']} | {n['updatedAt']} |")
     else:
         # Empty section — minimal stub, NO inline bash block. All execution
         # commands live in `00_System/vault-commands.md` (the centralized
