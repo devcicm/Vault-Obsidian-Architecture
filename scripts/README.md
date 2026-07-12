@@ -1,11 +1,13 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture v37**. Implementan las 76 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
+Scripts Python del estándar **Vault Obsidian Architecture v38.1**. Implementan las 76 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **~100 archivos** — 76 tools activas (Python catalog) + 8 archivadas en `_archived/` + ~12 internas/meta + bibliotecas compartidas
+- **98 archivos** — 76 tools del catálogo MCP (74 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + 16 meta/spec + 8 bibliotecas internas
+- **AP-36 (v38.1)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica
+- **Saneamiento de índices (v38.1)** — `vault_section_index.py --heal [--root]` regenera índices con formato legacy `[[stem|alias]]` o ausentes; el auto-index post-write se auto-cura si un agente escribe `index.md` a mano
 - **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 76 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
-- **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault (`scripts/` con 00_System al lado); excluye automáticamente `vault-sandbox/` y `*.bak` para evitar loops
+- **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault; requiere marcador de CONTENIDO (01_Projects/02_Observability/03_Decisions/.obsidian), no solo 00_System/99_Index (evita el ciclo auto-reforzado de detección); override runtime con `set_vault_root()`/env `VAULT_ROOT`
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
 - **JSON siempre** — cualquier error devuelve `{"ok": false, "error_code": "...", "recovery": {...}}`
 - **Frontmatter v29+** — todas las notas generadas incluyen `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`

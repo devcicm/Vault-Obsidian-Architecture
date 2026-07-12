@@ -2568,7 +2568,10 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
     import json, os
 
     if output_path is None:
-        output_path = os.path.join(os.path.dirname(__file__), "tools-catalog.json")
+        # Catálogo canónico: mcp/nodejs/tools-catalog.json (consumido por el MCP server)
+        output_path = os.path.join(
+            os.path.dirname(__file__), "..", "mcp", "nodejs", "tools-catalog.json"
+        )
 
     tools_json = {}
     for name, tool in sorted(TOOLS_CATALOG.items()):
@@ -2604,7 +2607,9 @@ def check_sync(json_path: Optional[str] = None) -> Dict[str, Any]:
     import json, os
 
     if json_path is None:
-        json_path = os.path.join(os.path.dirname(__file__), "tools-catalog.json")
+        json_path = os.path.join(
+            os.path.dirname(__file__), "..", "mcp", "nodejs", "tools-catalog.json"
+        )
 
     result = {"ok": True, "diffs": [], "missing_in_json": [], "missing_in_py": []}
 

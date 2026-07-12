@@ -1,9 +1,25 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v38.0 — 2026-07-11  
+**Versión:** v38.1 — 2026-07-12  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
+> **v38.1 (2026-07-12):** Contención, idempotencia y enforcement total.
+> - **AP-36 nueva** (critical, guard+audit): toda operación escribe SOLO dentro del
+>   vault root, es idempotente y deja artefactos rastreables. Backups movidos a
+>   `VAULT_ROOT/vault-backups/` (antes escribían fuera del repo); `.bak` de moves a
+>   `00_System/.trash/`; stubs de graph-fix a `02_Observability/maintenance/stubs/`.
+> - **Enforcement `manual` eliminado**: las 14 normas manuales pasaron a guard/audit.
+>   Nuevo `vault_norms.py --audit [--root]` cubre AP-06/07/09/10/15/19/36, CN-02/03, SP-01.
+> - **STATUS_VOCAB unificado** (12 valores): resuelve la contradicción CN-03 (7 valores)
+>   vs ciclo de vida del spec (`draft→…→obsolete`). Fuente única: `vault_norms.STATUS_VOCAB`.
+> - **Índices sin alias**: tablas de índice usan `| [[stem]] | Título | Tipo | Actualizado |`
+>   — nunca `[[stem|alias]]` en celdas (confundía agentes, generaba notas en blanco).
+>   Saneamiento automático: generador (durante) + self-heal al escribir index.md a mano +
+>   `vault_section_index --heal` (retroactivo) + detección en `--audit`.
+> - **Vault-root lazy**: `vault_io.set_vault_root()/get_vault_root()` — traces, tokens,
+>   locks e índices siguen al `--root` objetivo, no al detectado en import.
+>
 > **v38.0 (2026-07-11):** Robustez de frontmatter — `vault_lib.parse_frontmatter`
 > coacciona valores `datetime`/`date` (auto-parseados por PyYAML) a strings ISO en el
 > límite de lectura. Elimina los crashes `datetime not subscriptable` / `not JSON
@@ -4138,6 +4154,39 @@ proyecto/
 
 ---
 
+### AP-36 — Contención e idempotencia — side-effects fuera del vault o no rastreables
+
+**Severidad: critical · Enforcement: guard+audit · Introducida: v38.1**
+
+**Regla:** Toda operación de tooling debe cumplir tres invariantes:
+
+1. **Contención** — escribir ÚNICAMENTE dentro del vault root: backups, traces,
+   locks, stubs y logs incluidos. Rutas de salida derivadas SIEMPRE de
+   `VAULT_ROOT`/`get_vault_root()` — nunca de `__file__` ni del CWD.
+2. **Idempotencia** — ejecutar la operación dos veces no duplica artefactos,
+   carpetas ni entradas de índice.
+3. **Rastreabilidad** — los artefactos quedan indexados o en ubicaciones
+   registradas en `vault_registry` (`02_Observability/maintenance/` para fixes,
+   depuraciones y stubs de triage; `00_System/.trash/` para backups de moves).
+
+**Casos históricos que motivaron la norma:**
+- `vault_backup` escribía `vault-backups/` en el *abuelo* del repo (fuera del vault).
+- `00_System/` y `99_Index/` se generaban fuera del vault por un ciclo auto-reforzado:
+  la capa de observabilidad los creaba y la detección de root los aceptaba como marcadores.
+- `.bak` de `vault_move` quedaba junto al nodo, contaminando la sección.
+- Índices con `[[stem|alias]]` en celdas inducían a los agentes a crear notas en blanco.
+
+**Cómo lo previene el estándar:**
+- Guard: `vault_section_index` rechaza raíz y carpetas no canónicas; detección de
+  root exige marcador de contenido (no solo `00_System`/`99_Index`).
+- Audit: `vault_norms --audit` detecta `.bak`/`.tmp` en secciones, secciones sin
+  `index.md`, hermanos `00_System`/`99_Index`/`vault-backups` del vault, e índices
+  con formato legacy de alias.
+- Saneamiento: `vault_section_index --heal` regenera índices legacy o ausentes
+  (idempotente); escribir un `index.md` a mano dispara regeneración canónica inmediata.
+
+---
+
 ## Patrones recomendados
 
 Los siguientes patrones fueron identificados en auditorías reales de vaults en producción. Complementan los antipatrones: donde los APs describen qué no hacer, los PATs describen qué sí funciona.
@@ -4306,45 +4355,47 @@ Las CN (Convention Naming) codifican las convenciones de nombres y estructura qu
 
 ### CN-02 — Numbered folder structure — secciones numeradas como únicos destinos
 
-**Regla:** Solo las 13 secciones numeradas son destinos válidos para notas del vault:
+**Regla:** Solo las secciones del registro canónico `vault_registry.SECTIONS` (fuente
+de verdad única — PAT-1) son destinos válidos para notas del vault. Actualmente 18:
+`00_System, 01_Projects, 02_Observability, 03_Decisions, 04_Sessions, 05_Patterns,
+06_Diagrams, 07_Knowledge, 08_Runbooks, 09_Infrastructure, 10_Migrated, 11_Code,
+12_Bibliography, 13_Flows, 14_Requirements, 15_Tests, 16_AI_Governance, 99_Index`.
 
-| Sección | Propósito |
-|---|---|
-| `00_System` | Configuración, índices del sistema, change-log, registros |
-| `01_Projects` | Estado de proyectos, status, overview |
-| `02_Observability` | Métricas, logs, alertas, dashboards |
-| `03_Decisions` | ADRs, decisiones técnicas |
-| `04_Specs` | Especificaciones funcionales y técnicas |
-| `05_Patterns` | Patrones de diseño activos |
-| `06_Runbooks` | Procedimientos operacionales |
-| `07_Knowledge` | Base de conocimiento, conceptos, glosario |
-| `08_Integrations` | Documentación de integraciones externas |
-| `09_Architecture` | Diagramas, mapas de infraestructura, ERDs |
-| `10_Migrated` | Notas archivadas o migradas |
-| `11_Code` | Módulos, APIs, contratos de código |
-| `99_Index` | Índices generados automáticamente |
+**NO duplicar esta lista en docs ni catálogos** — consultarla con
+`vault_folder_registry` o `vault_registry.SECTIONS` (la duplicación causó una
+contradicción real: este documento listaba 13 secciones obsoletas hasta v38.1).
 
 Crear carpetas ad-hoc o escribir `.md` directamente en la raíz del vault viola CN-02 (y AP-15).
 
-**Enforcement:** manual + `vault_write` que requiere `--folder` con una de estas secciones.
+**Enforcement:** guard+audit — `vault_write` requiere `--folder` canónico;
+`vault_section_index` rechaza raíz/carpetas ad-hoc; `vault_norms --audit` detecta
+carpetas no canónicas retroactivamente.
 
 ---
 
 ### CN-03 — Standard status vocabulary — vocabulario canónico de meta.status
 
-**Regla:** El campo `meta.status` (o `status` en frontmatter) debe usar solo los 7 valores del vocabulario estándar:
+**Regla:** El campo `meta.status` (o `status` en frontmatter) debe usar solo valores
+de `vault_norms.STATUS_VOCAB` — vocabulario **unificado v38.1** (12 valores) que
+fusiona el vocabulario CN-03 original con el ciclo de vida de requerimientos
+(`draft → reviewed → approved → implemented → verified → obsolete`):
 
 | Valor | Cuándo usar |
 |---|---|
 | `planned` | Decisión o feature documentada pero no implementada |
+| `draft` | Borrador en redacción (inicio del ciclo de vida formal) |
 | `in-progress` | En desarrollo activo |
+| `reviewed` | Revisado, pendiente de aprobación |
+| `approved` | Aprobado, pendiente de implementación |
 | `implemented` | Completamente implementada y en producción |
+| `verified` | Implementada y verificada con criterios de aceptación |
 | `deprecated` | Reemplazada por algo nuevo, no eliminar aún |
+| `obsolete` | Fin del ciclo de vida formal, sin reemplazo |
 | `archived` | Sin uso activo, movida a 10_Migrated/ |
 | `stub` | Nota incompleta con `expand_by` pendiente (ver PAT-2) |
 | `template` | Plantilla sin instanciar |
 
-**Enforcement:** manual. `vault_validate` puede extenderse para validar valores.
+**Enforcement:** audit — `vault_norms --audit` valida cada `status` contra `STATUS_VOCAB`.
 
 **Señal de violación:** `vault_list` filtra por `status` y retorna 0 resultados cuando el valor no coincide con el vocabulario.
 
@@ -5172,7 +5223,7 @@ temp/
 
 **Agregado**
 
-- **`vault_norms.py` (Grupo 28 — Normas y Etiquetas de Código):** catálogo embebido de las 34 normas del estándar como `NORM_CATALOG` en el script (fuente de verdad). Proyección: `00_System/norm-registry.json`. Operaciones: `--list` (filtrable por type/category/severity, ordenable), `--show CODE` (detalle completo con descripción/señal/prevención/tools), `--scan --path RUTA` (detecta normas aplicables a una nota por análisis de frontmatter + contenido + wiki-links), `--apply CODE --path RUTA` (agrega `norm_refs` al frontmatter de una nota), `--rebuild` (regenera norm-registry.json). Función pública `compute_norm_refs(folder, content, wiki_links)` consumida por `vault_write`.
+- **`vault_norms.py` (Grupo 28 — Normas y Etiquetas de Código):** catálogo embebido de las 43 normas del estándar como `NORM_CATALOG` en el script (fuente de verdad). Proyección: `00_System/norm-registry.json`. Operaciones: `--list` (filtrable por type/category/severity, ordenable), `--show CODE` (detalle completo con descripción/señal/prevención/tools), `--scan --path RUTA` (detecta normas aplicables a una nota por análisis de frontmatter + contenido + wiki-links), `--apply CODE --path RUTA` (agrega `norm_refs` al frontmatter de una nota), `--rebuild` (regenera norm-registry.json), `--audit [--root]` (v38.1 — audita el vault contra las normas automatizables: AP-06/07/09/10/15/19/36, CN-02/03, SP-01). Función pública `compute_norm_refs(folder, content, wiki_links)` consumida por `vault_write`.
 
 - **`vault_code_tag.py` (Grupo 28 — Normas y Etiquetas de Código):** embebe etiquetas `@norm` como comentarios en la cabecera de archivos de código fuente. Acepta códigos custom (prefijo libre: `cr-0989`, `impl-001`, `bus-004`) y códigos del catálogo estándar (`AP-22`, `SP-01`, `CN-01`). Soporta 8 formatos de comentario según extensión (line `//`, hash `#`, open_close `<!-- -->`, block `/* */`, dash `--`). Registry: `00_System/code-tag-registry.json`. Operaciones: `--define`, `--apply`, `--remove`, `--scan`, `--list`, `--tag-note`.
 
@@ -5191,7 +5242,7 @@ temp/
 - **Documentación de Grupos 24–27 en spec:** los grupos Data Quality (24), Propagación (25), Tokens (26) y Session Delta/Tags (27), documentados en changelogs desde v27–v29, ahora tienen sección formal en "Las 61 Tools del Vault".
 
 **Archivos del sistema:**
-- `00_System/norm-registry.json` — 34 normas, clasificadas por severidad/categoría/enforcement
+- `00_System/norm-registry.json` — 43 normas, clasificadas por severidad/categoría/enforcement (0 con enforcement manual desde v38.1)
 - `00_System/code-tag-registry.json` — etiquetas personalizadas y del estándar aplicadas a código
 
 ---

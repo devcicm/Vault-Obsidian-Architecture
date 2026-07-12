@@ -2,9 +2,9 @@
 
 **Estándar de diseño para dotar a agentes LLM de memoria documental persistente.**
 
-[![Version](https://img.shields.io/badge/version-v38-blue)](./vault-obsidian-architecture.md)
-[![Tools](https://img.shields.io/badge/tools-68_active-green)](./scripts/)
-[![Scripts](https://img.shields.io/badge/scripts-93_total-lightblue)](./scripts/)
+[![Version](https://img.shields.io/badge/version-v38.1-blue)](./vault-obsidian-architecture.md)
+[![Tools](https://img.shields.io/badge/tools-76_active-green)](./scripts/)
+[![Scripts](https://img.shields.io/badge/scripts-98_total-lightblue)](./scripts/)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow)](./scripts/)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](./LICENSE)
 
@@ -31,7 +31,9 @@ Los agentes LLM tienen memoria efímera. Cada sesión empieza desde cero aunque 
 vault-{nombre}/          ← carpeta raíz (prefijo vault- obligatorio)
 ├── 00_System/           — identidad, reglas, contratos del agente
 ├── 01_Projects/         — overview, envs, estado por proyecto
-├── 02_Observability/    — errores, vulnerabilidades, métricas, SLOs
+├── 02_Observability/    — errores, vulnerabilidades, métricas, SLOs, maintenance/
+├── 03_Decisions/        — ADRs y decisiones técnicas
+├── 04_Sessions/         — bitácoras de sesión del agente
 ├── 05_Patterns/         — patrones con ciclo de vida evolutivo
 ├── 06_Diagrams/         — ERDs y diagramas Mermaid auto-generados
 ├── 07_Knowledge/        — glosario, APIs, conceptos, reglas de negocio
@@ -48,6 +50,22 @@ vault-{nombre}/          ← carpeta raíz (prefijo vault- obligatorio)
 ```
 
 Formato: **Markdown + YAML frontmatter + wiki-links**. Compatible con git, abre en cualquier editor, renderable en Obsidian Desktop.
+
+---
+
+## Novedades v38.1 — Contención, idempotencia y enforcement total
+
+- **AP-36** (critical): toda operación escribe solo dentro del vault, es idempotente
+  y deja artefactos rastreables. Backups en `VAULT_ROOT/vault-backups/`, `.bak` de
+  moves en `00_System/.trash/`, stubs de mantenimiento en `02_Observability/maintenance/stubs/`.
+- **0 normas con enforcement `manual`**: las 43 normas del catálogo tienen guard o audit.
+  `python scripts/vault_norms.py --audit [--root X]` audita AP-06/07/09/10/15/19/36, CN-02/03, SP-01.
+- **Saneamiento de índices**: tablas con `| [[stem]] | Título | ... |` (nunca alias en
+  celda); `python scripts/vault_section_index.py --heal` cura índices legacy; escribir
+  un `index.md` a mano dispara la regeneración canónica automática.
+- **`STATUS_VOCAB` unificado** (12 valores) como fuente única del vocabulario de `status`.
+- **Vault-root lazy**: `set_vault_root()/get_vault_root()` — traces/locks/índices siguen
+  al `--root` objetivo.
 
 ---
 
@@ -139,7 +157,7 @@ python scripts/vault_audit.py
 
 ---
 
-## Las 69 tools activas — 33 grupos
+## Las 76 tools activas — 33 grupos
 
 | Grupo | Tools |
 |---|---|
@@ -263,7 +281,7 @@ Sistema de control de asistencia con autenticación biométrica.
 
 Contiene:
 - 8 principios de diseño
-- 69 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
+- 76 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
 - 34 normas: 23 antipatrones (AP-01–AP-23), 5 patrones (PAT-1–PAT-5), 3 SP, 3 CN
 - norm_refs auto-embebido en frontmatter + vault_code_tag para etiquetas en código fuente
 - 8 Fundamentos de Datos (F1–F8) con trazabilidad a tools
@@ -287,7 +305,7 @@ Contiene:
 ## Scripts — estructura del repositorio
 
 ```
-scripts/                    ← 85 archivos Python (69 tools activas + 5 deprecadas + 11 internas/meta)
+scripts/                    ← 98 archivos Python (76 tools del catálogo + 8 archivadas en _archived/ + internas/meta)
 ├── vault_io.py             — I/O base: _detect_vault_root, assert_within_vault, atomic_write_text/json, file_lock
 ├── vault_errors.py         — wrap_main (timeout 60s), emit_ok, trace log
 ├── vault_write.py          — tool principal de escritura (guards AP-20, AP-21, norm_refs auto-embed)

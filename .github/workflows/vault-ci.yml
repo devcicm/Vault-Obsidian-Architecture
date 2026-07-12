@@ -31,10 +31,10 @@ jobs:
           pip install pytest pytest-cov
 
       - name: Run unit tests
-        working-directory: scripts
-        run: |
-          cd ..
-          python -m pytest tests/ -v --tb=short || echo "Some tests may not exist yet — that's OK for initial CI setup"
+        run: python -m pytest tests/ --tb=short
+
+      - name: Catalog sync check
+        run: python scripts/vault_mcp_catalog.py --check
 
       - name: Run vault_validate
         working-directory: scripts
