@@ -171,3 +171,50 @@ def test_section_index_table_separates_link_and_title(tmp_path, monkeypatch):
     )
     assert "| [[mi-flujo]] | Mi Flujo — Título/largo | flow |" in content
     assert "[[mi-flujo|" not in content
+
+
+def test_heal_indexes_fixes_legacy_alias(tmp_path):
+    import vault_io
+    from vault_section_index import heal_indexes
+
+    root = _make_vault(tmp_path)
+    _note(root / "01_Projects" / "demo.md", "title: Demo\nstatus: implemented", "# Demo")
+    (root / "01_Projects" / "index.md").write_text(
+        "# idx\n\n| Nota | Tipo |\n|---|---|\n| [[demo|Demo — x/y]] | note |\n",
+        encoding="utf-8",
+    )
+    try:
+        vault_io.set_vault_root(root)
+        result = heal_indexes(root)
+        assert result["healed_count"] >= 1
+        healed_text = (root / "01_Projects" / "index.md").read_text(encoding="utf-8")
+        assert "[[demo|" not in healed_text
+        # Idempotencia: segunda pasada no cura nada
+        assert heal_indexes(root)["healed_count"] == 0
+    finally:
+        vault_io._ACTIVE_VAULT_ROOT = None
+
+
+def test_audit_detects_legacy_alias_index(tmp_path):
+    root = _make_vault(tmp_path)
+    (root / "01_Projects" / "index.md").write_text(
+        "# idx\n\n| [[nota|Alias — largo]] | tipo |\n", encoding="utf-8"
+    )
+    result = vault_norms_audit(root)
+    assert any("alias" in v["detail"] for v in result["violations"] if v["norm"] == "AP-36")
+
+
+def test_manual_index_write_self_heals(tmp_path):
+    import vault_io
+    from vault_io import atomic_write_text
+
+    root = _make_vault(tmp_path)
+    _note(root / "01_Projects" / "demo.md", "title: Demo\nstatus: implemented", "# Demo")
+    try:
+        vault_io.set_vault_root(root)
+        idx = root / "01_Projects" / "index.md"
+        atomic_write_text(idx, "# x\n\n| [[demo|Demo — y]] | note |\n")
+        text = idx.read_text(encoding="utf-8")
+        assert "[[demo|" not in text and "[[demo]]" in text
+    finally:
+        vault_io._ACTIVE_VAULT_ROOT = None

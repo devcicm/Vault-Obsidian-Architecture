@@ -330,10 +330,10 @@ def _auto_section_index(path: Path) -> None:
     Skips: non-.md files, index.md itself, system/index sections, paths outside vault.
     Uses lazy import to avoid circular dependency with vault_section_index.
     """
-    if path.suffix != ".md" or path.name == "index.md":
+    if path.suffix != ".md":
         return
     try:
-        rel = path.relative_to(VAULT_ROOT)
+        rel = path.relative_to(get_vault_root())
     except ValueError:
         return  # path outside vault root
     parts = rel.parts
@@ -347,6 +347,10 @@ def _auto_section_index(path: Path) -> None:
             vault_section_index,
         )  # lazy — avoids circular import
 
+        # Self-healing: si lo escrito ES un index.md (un agente lo generó a
+        # mano, posiblemente con [[stem|alias]] en las celdas — formato
+        # prohibido), regeneramos el índice canónico encima. Sin recursión:
+        # el generador escribe via Path.write_text, no via atomic_write_text.
         vault_section_index(section)
     except Exception:
         pass  # index failure must never block the write that triggered it

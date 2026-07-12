@@ -20,12 +20,17 @@ from vault_lib import parse_frontmatter, utcnow
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from vault_io import VAULT_ROOT, assert_within_vault, file_lock, safe_wikilink
+from vault_io import assert_within_vault, file_lock, get_vault_root, safe_wikilink
 from vault_registry import section_description, section_tool_hint
 
 
-HUB_NOTE = VAULT_ROOT / "00_System" / "vault-hub.md"
-COMMANDS_NOTE = VAULT_ROOT / "00_System" / "vault-commands.md"
+# AP-36: paths lazy — respetan set_vault_root() en runtime (--root).
+def _hub_note() -> Path:
+    return get_vault_root() / "00_System" / "vault-hub.md"
+
+
+def _commands_note() -> Path:
+    return get_vault_root() / "00_System" / "vault-commands.md"
 
 
 def _ensure_hub_notes() -> None:
@@ -39,7 +44,7 @@ def _ensure_hub_notes() -> None:
     Both are user-editable: if the file already exists we leave it alone.
     This protects manual edits while still bootstrapping a fresh vault.
     """
-    if not HUB_NOTE.exists():
+    if not _hub_note().exists():
         hub_content = (
             "---\n"
             "title: Vault Hub\n"
@@ -107,9 +112,9 @@ def _ensure_hub_notes() -> None:
             "\n"
             "Para detalles de cada comando, ver [[vault-commands|vault-commands]].\n"
         )
-        HUB_NOTE.write_text(hub_content, encoding="utf-8")
+        _hub_note().write_text(hub_content, encoding="utf-8")
 
-    if not COMMANDS_NOTE.exists():
+    if not _commands_note().exists():
         commands_content = (
             "---\n"
             "title: Vault Commands\n"
@@ -243,7 +248,7 @@ def _ensure_hub_notes() -> None:
             "python scripts/vault_restore.py --name <backup-name>\n"
             "```\n"
         )
-        COMMANDS_NOTE.write_text(commands_content, encoding="utf-8")
+        _commands_note().write_text(commands_content, encoding="utf-8")
 
 
 def _collect_notes(section_path: Path, include_subdirs: bool) -> List[Dict[str, Any]]:
@@ -418,12 +423,13 @@ def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, 
         # hub note creation must never block the indexer
         pass
 
-    section_path = VAULT_ROOT / folder
+    vroot = get_vault_root()
+    section_path = vroot / folder
     if not section_path.exists():
         return {"ok": False, "error": "folder_not_found", "folder": folder}
 
     try:
-        assert_within_vault(section_path, VAULT_ROOT)
+        assert_within_vault(section_path, vroot)
     except ValueError as e:
         return {"ok": False, "error": "path_traversal", "detail": str(e)}
 
@@ -437,13 +443,13 @@ def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, 
         for sub in sorted(section_path.iterdir()):
             if not sub.is_dir() or sub.name.startswith("."):
                 continue
-            sub_folder = str(sub.relative_to(VAULT_ROOT)).replace("\\", "/")
+            sub_folder = str(sub.relative_to(vroot)).replace("\\", "/")
             subdir_folders.append(sub_folder)
 
             # Generate sub-section index (no nested subdirs to avoid deep recursion)
             sub_notes = _collect_notes(sub, include_subdirs=True)
             sub_index = sub / "index.md"
-            assert_within_vault(sub_index, VAULT_ROOT)
+            assert_within_vault(sub_index, vroot)
             # Leaf lock on the index file itself: serializes concurrent regens of
             # this same sub-index (two notes in the section written at once). Safe
             # from deadlock — index.md is in _SKIP_AUTO_INDEX so writing it never
@@ -454,12 +460,12 @@ def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, 
                     encoding="utf-8",
                 )
             subdir_indexes.append(
-                str(sub_index.relative_to(VAULT_ROOT)).replace("\\", "/")
+                str(sub_index.relative_to(vroot)).replace("\\", "/")
             )
 
     # Write main section index — includes subdir listing
     index_path = section_path / "index.md"
-    assert_within_vault(index_path, VAULT_ROOT)
+    assert_within_vault(index_path, vroot)
     # Leaf lock (see sub-index note above): serialize concurrent regens of this
     # section index; deadlock-free because index.md is skipped by _auto_section_index.
     with file_lock(index_path):
@@ -470,10 +476,64 @@ def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, 
 
     return {
         "ok": True,
-        "path": str(index_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(index_path.relative_to(vroot)).replace("\\", "/"),
         "noteCount": len(notes),
         "is_empty": len(notes) == 0,
         "subdirIndexes": subdir_indexes,
+    }
+
+
+# Alias-wikilink dentro de celda de tabla — formato prohibido en índices:
+# combina identidad y título en una celda, confunde a agentes (crean notas en
+# blanco a partir del alias) y dispara falsos positivos de sintaxis.
+RE_ALIAS_IN_INDEX_TABLE = re.compile(r"^\|\s*\[\[[^\]|]+\|[^\]]+\]\]", re.MULTILINE)
+
+
+def heal_indexes(root: Optional[Path] = None) -> Dict[str, Any]:
+    """Sanea todos los index.md del vault: regenera los que tengan formato
+    legacy ([[stem|alias]] en celdas) o estén ausentes en secciones con notas.
+
+    Idempotente (AP-36): correrlo N veces converge al mismo estado.
+    """
+    from vault_io import get_vault_root
+    from vault_registry import SECTIONS
+
+    vroot = (root or get_vault_root()).resolve()
+    healed: List[Dict[str, str]] = []
+    skipped = 0
+    for s in SECTIONS:
+        folder = s["folder"]
+        sec_path = vroot / folder
+        if not sec_path.is_dir() or folder in ("00_System", "10_Migrated", "99_Index"):
+            continue
+        for index_path in [sec_path / "index.md", *sec_path.glob("*/index.md")]:
+            reason = None
+            if not index_path.exists():
+                if any(index_path.parent.glob("*.md")):
+                    reason = "missing"
+            else:
+                try:
+                    text = index_path.read_text(encoding="utf-8")
+                except (OSError, UnicodeDecodeError):
+                    reason = "unreadable"
+                else:
+                    if RE_ALIAS_IN_INDEX_TABLE.search(text):
+                        reason = "legacy_alias_format"
+            if reason is None:
+                skipped += 1
+                continue
+            target_folder = str(index_path.parent.relative_to(vroot)).replace("\\", "/")
+            # Regenerar la sección top-level cubre también sus sub-índices
+            top = target_folder.split("/")[0]
+            r = vault_section_index(top)
+            healed.append({"index": f"{target_folder}/index.md", "reason": reason, "ok": str(r.get("ok"))})
+    return {
+        "ok": True,
+        "tool": "vault_section_index.heal",
+        "vault_root": str(vroot),
+        "healed": healed,
+        "healed_count": len(healed),
+        "clean_count": skipped,
     }
 
 
@@ -495,12 +555,29 @@ Notas:
 """,
     )
     parser.add_argument(
-        "--folder", required=True, help="Section folder relative to vault root"
+        "--folder", help="Section folder relative to vault root"
     )
     parser.add_argument(
         "--no-subdirs", action="store_true", help="Exclude notes in subdirectories"
     )
+    parser.add_argument(
+        "--heal",
+        action="store_true",
+        help="Sanear todos los index.md (formato legacy con alias o ausentes)",
+    )
+    parser.add_argument("--root", help="Vault root para --heal (default: auto-detect)")
     args = parser.parse_args()
+
+    if args.heal:
+        if args.root:
+            from vault_io import set_vault_root
+
+            set_vault_root(Path(args.root))  # AP-36: side-effects al vault objetivo
+        result = heal_indexes(Path(args.root) if args.root else None)
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return 0
+    if not args.folder:
+        parser.error("--folder es requerido (o usar --heal)")
 
     result = vault_section_index(args.folder, include_subdirs=not args.no_subdirs)
     print(json.dumps(result, indent=2, ensure_ascii=False))

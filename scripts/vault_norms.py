@@ -1449,6 +1449,22 @@ def vault_norms_audit(root: Optional[Path] = None) -> Dict[str, Any]:
         # (b) Toda sección presente debe tener index.md (rastreabilidad de nodos)
         if sec not in ("00_System", "10_Migrated", "99_Index") and not (sec_path / "index.md").exists():
             _flag("AP-36", f"{sec}/", "Sección sin index.md — nodos no indexados (correr vault_section_index).")
+        # (b2) index.md con formato legacy: [[stem|alias]] en celdas de tabla
+        # (identidad+título fusionados — genera notas en blanco; sanear con --heal)
+        for idx in [sec_path / "index.md", *sec_path.glob("*/index.md")]:
+            if not idx.exists():
+                continue
+            try:
+                idx_text = idx.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError):
+                continue
+            if re.search(r"^\|\s*\[\[[^\]|]+\|[^\]]+\]\]", idx_text, re.MULTILINE):
+                rel_i = str(idx.relative_to(root)).replace("\\", "/")
+                _flag(
+                    "AP-36",
+                    rel_i,
+                    "Índice con [[stem|alias]] en celdas — formato legacy; correr vault_section_index --heal.",
+                )
 
     # (c) Contaminación hermana: artefactos de vault generados FUERA del vault
     for sibling_name in ("00_System", "99_Index", "vault-backups"):
