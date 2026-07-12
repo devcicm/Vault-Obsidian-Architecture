@@ -566,6 +566,10 @@ def main() -> int:
     args = parser.parse_args()
 
     root = Path(args.root).resolve() if args.root else VAULT_ROOT
+    if args.root:
+        # AP-36: la observabilidad (traces/locks) debe escribir en el vault objetivo
+        from vault_io import set_vault_root
+        set_vault_root(root)
     if not root.exists():
         print(json.dumps({"ok": False, "error": f"Vault root not found: {root}"}))
         return 1
@@ -577,11 +581,12 @@ def main() -> int:
         include_migrated=args.include_migrated,
     )
 
-    if args.md:
+    # stdout may be a StringIO under wrap_main capture (no reconfigure) — guard it.
+    if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if args.md:
         print(render_markdown(report))
     else:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
         print(json.dumps(report, indent=2, ensure_ascii=False))
 
     return 0 if report["severity"] in ("none", "low") else 0

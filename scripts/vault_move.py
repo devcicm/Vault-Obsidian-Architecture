@@ -139,7 +139,12 @@ def move_note(
 
     if not dry_run:
         if backup:
-            backup_path = source.with_suffix(source.suffix + ".bak")
+            # AP-36: el .bak NO se deja junto al nodo (contamina la sección y el
+            # grafo); va a 00_System/.trash/ con timestamp para rastreabilidad.
+            trash_dir = VAULT_ROOT / "00_System" / ".trash"
+            trash_dir.mkdir(parents=True, exist_ok=True)
+            ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+            backup_path = trash_dir / f"{source.stem}-{ts}{source.suffix}.bak"
             shutil.copy2(source, backup_path)
 
         shutil.move(str(source), str(destination))

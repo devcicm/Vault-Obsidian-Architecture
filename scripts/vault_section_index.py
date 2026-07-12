@@ -20,7 +20,7 @@ from vault_lib import parse_frontmatter, utcnow
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from vault_io import VAULT_ROOT, assert_within_vault, safe_wikilink
+from vault_io import VAULT_ROOT, assert_within_vault, file_lock, safe_wikilink
 from vault_registry import section_description, section_tool_hint
 
 
@@ -388,6 +388,24 @@ def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, 
         {"ok": True, "path": "01_Projects/index.md", "noteCount": 12, "is_empty": False,
          "subdirIndexes": [...]}
     """
+    # Guard CN-02/AP-15: solo secciones canónicas son destinos válidos. Sin esto,
+    # folder="" o "." escribe index.md y .locks/ en la RAÍZ del vault.
+    folder = (folder or "").strip().replace("\\", "/").strip("/")
+    if not folder or folder == ".":
+        return {
+            "ok": False,
+            "error": "invalid_folder",
+            "detail": "folder no puede ser la raíz del vault (CN-02/AP-15); usar una sección canónica, ej. 01_Projects",
+        }
+    from vault_registry import SECTIONS as _SECTIONS
+
+    if folder.split("/")[0] not in {s["folder"] for s in _SECTIONS}:
+        return {
+            "ok": False,
+            "error": "invalid_folder",
+            "detail": f"'{folder.split('/')[0]}' no es una sección canónica del registro (CN-02)",
+        }
+
     # Ensure the hub notes exist (idempotent — only creates on first call).
     # This makes the vault self-bootstrapping: a single call to vault_section_index
     # for any section creates vault-hub.md and vault-commands.md if missing.
@@ -423,10 +441,15 @@ def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, 
             sub_notes = _collect_notes(sub, include_subdirs=True)
             sub_index = sub / "index.md"
             assert_within_vault(sub_index, VAULT_ROOT)
-            sub_index.write_text(
-                _build_index_content(sub_folder, sub_notes, now, subdirs=None),
-                encoding="utf-8",
-            )
+            # Leaf lock on the index file itself: serializes concurrent regens of
+            # this same sub-index (two notes in the section written at once). Safe
+            # from deadlock — index.md is in _SKIP_AUTO_INDEX so writing it never
+            # re-enters _auto_section_index, and no caller holds this lock.
+            with file_lock(sub_index):
+                sub_index.write_text(
+                    _build_index_content(sub_folder, sub_notes, now, subdirs=None),
+                    encoding="utf-8",
+                )
             subdir_indexes.append(
                 str(sub_index.relative_to(VAULT_ROOT)).replace("\\", "/")
             )
@@ -434,10 +457,13 @@ def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, 
     # Write main section index — includes subdir listing
     index_path = section_path / "index.md"
     assert_within_vault(index_path, VAULT_ROOT)
-    index_path.write_text(
-        _build_index_content(folder, notes, now, subdirs=subdir_folders or None),
-        encoding="utf-8",
-    )
+    # Leaf lock (see sub-index note above): serialize concurrent regens of this
+    # section index; deadlock-free because index.md is skipped by _auto_section_index.
+    with file_lock(index_path):
+        index_path.write_text(
+            _build_index_content(folder, notes, now, subdirs=subdir_folders or None),
+            encoding="utf-8",
+        )
 
     return {
         "ok": True,

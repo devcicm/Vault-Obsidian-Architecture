@@ -4,11 +4,12 @@
 import json
 import os
 import re
+import threading
 import time
 import uuid
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterator
+from typing import Any, Callable, Dict, Iterator, Optional
 
 from vault_encoding import (
     normalize_to_nfc,
@@ -83,7 +84,14 @@ def _detect_vault_root() -> Path:
     # under the same dir that contains scripts/ — common when a project ships
     # the spec file as a reference doc and the vault sits at the same level.
     marker_count = sum(1 for m in _VAULT_MARKERS if (project_root / m).exists())
-    if marker_count >= 2:
+    # 00_System/ and 99_Index/ are auto-created by the observability layer
+    # (tool-trace, graph index) as a side-effect of running any tool, so their
+    # presence alone must NOT qualify project_root as a vault — that creates a
+    # self-reinforcing loop where one stray write makes the repo root the vault
+    # forever. Require at least one CONTENT marker authored by a human/init.
+    _CONTENT_MARKERS = {"01_Projects", "02_Observability", "03_Decisions", ".obsidian"}
+    has_content = any((project_root / m).exists() for m in _CONTENT_MARKERS)
+    if marker_count >= 2 and has_content:
         return project_root
     # Spec repo fallback: parent has vault-obsidian-architecture.md AND no
     # vault structure (i.e., this IS the spec repo, not a consumer vault).
@@ -96,6 +104,43 @@ def _detect_vault_root() -> Path:
 
 VAULT_ROOT: Path = _detect_vault_root()
 
+# ── Override en runtime (AP-36) ────────────────────────────────────────────────
+# Los tools que aceptan --root deben llamar set_vault_root() ANTES de escribir,
+# para que la capa de observabilidad (traces, tokens, locks) escriba en el vault
+# objetivo y no en el VAULT_ROOT detectado en import. Los writers deben resolver
+# la ruta vía get_vault_root() en tiempo de llamada, nunca como constante de módulo.
+_ACTIVE_VAULT_ROOT: Optional[Path] = None
+
+
+def set_vault_root(path) -> Path:
+    """Fija el vault activo para esta ejecución (override de la auto-detección)."""
+    global _ACTIVE_VAULT_ROOT
+    _ACTIVE_VAULT_ROOT = Path(path).resolve()
+    return _ACTIVE_VAULT_ROOT
+
+
+def get_vault_root() -> Path:
+    """Vault root efectivo: el override de set_vault_root() o el auto-detectado."""
+    return _ACTIVE_VAULT_ROOT if _ACTIVE_VAULT_ROOT is not None else VAULT_ROOT
+
+
+# In-process locks keyed by lock-dir path. The mkdir directory-lock below is the
+# cross-PROCESS primitive, but rapid same-PROCESS mkdir/rmdir churn is racy on
+# Windows (handle caching / AV), so threads in one process could both acquire.
+# This threading.Lock layer serializes same-process callers deterministically;
+# the mkdir layer still guards across processes.
+_LOCAL_LOCKS: Dict[str, threading.Lock] = {}
+_LOCAL_LOCKS_GUARD = threading.Lock()
+
+
+def _local_lock_for(key: str) -> threading.Lock:
+    with _LOCAL_LOCKS_GUARD:
+        lk = _LOCAL_LOCKS.get(key)
+        if lk is None:
+            lk = threading.Lock()
+            _LOCAL_LOCKS[key] = lk
+        return lk
+
 
 @contextmanager
 def file_lock(
@@ -105,12 +150,18 @@ def file_lock(
 
     This avoids lost updates when multiple documentation tools update the same
     JSON index during mass generation. Stale locks are removed after
-    ``stale_after`` seconds.
+    ``stale_after`` seconds. Layered: an in-process threading.Lock serializes
+    threads in this process; the mkdir directory-lock serializes across processes.
     """
     lock_root = target.parent / ".locks"
     lock_root.mkdir(parents=True, exist_ok=True)
     lock_dir = lock_root / f"{target.name}.lock"
     deadline = time.time() + timeout
+
+    local = _local_lock_for(str(lock_dir))
+    acquired = local.acquire(blocking=False) if timeout <= 0 else local.acquire(timeout=timeout)
+    if not acquired:
+        raise TimeoutError(f"Timeout waiting for in-process lock: {lock_dir}")
 
     while True:
         try:
@@ -124,13 +175,31 @@ def file_lock(
             try:
                 age = time.time() - lock_dir.stat().st_mtime
                 if age > stale_after:
-                    for child in lock_dir.iterdir():
-                        child.unlink()
-                    lock_dir.rmdir()
+                    # Steal-by-rename: atomically move the stale lock aside before
+                    # removing it. Deleting lock_dir in place is a TOCTOU race — a
+                    # second process that also saw the lock as stale could unlink the
+                    # owner.json / rmdir the lock that a THIRD process just re-acquired,
+                    # silently breaking mutual exclusion. os.replace is atomic and fails
+                    # (OSError) if another process already stole or the owner released,
+                    # so only the winner of the rename owns the cleanup.
+                    steal = lock_root / f"{target.name}.stale.{os.getpid()}.{uuid.uuid4().hex[:8]}"
+                    try:
+                        os.replace(lock_dir, steal)
+                    except OSError:
+                        # Someone else stole it or it was released — just retry acquire.
+                        time.sleep(0.05)
+                        continue
+                    try:
+                        for child in steal.iterdir():
+                            child.unlink()
+                        steal.rmdir()
+                    except OSError:
+                        pass
                     continue
             except OSError:
                 pass
             if time.time() >= deadline:
+                local.release()
                 raise TimeoutError(f"Timeout waiting for lock: {lock_dir}")
             time.sleep(0.05)
 
@@ -143,6 +212,7 @@ def file_lock(
             lock_dir.rmdir()
         except OSError:
             pass
+        local.release()
 
 
 def assert_within_vault(path: Path, vault_root: Path) -> Path:

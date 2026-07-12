@@ -10,20 +10,30 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from vault_io import VAULT_ROOT, atomic_write_text, file_lock
+from vault_io import atomic_write_text, file_lock, get_vault_root
 
 
-TRACE_FILE = VAULT_ROOT / "00_System" / ".tool-trace.json"
-TOKENS_FILE = VAULT_ROOT / "00_System" / ".tool-tokens.json"
+# AP-36: los paths se resuelven LAZY vía get_vault_root() en cada llamada, para
+# que un tool ejecutado con --root (que llama vault_io.set_vault_root) escriba
+# sus traces en el vault objetivo y no en el VAULT_ROOT detectado en import.
+def trace_file() -> Path:
+    return get_vault_root() / "00_System" / ".tool-trace.json"
+
+
+def tokens_file() -> Path:
+    return get_vault_root() / "00_System" / ".tool-tokens.json"
+
+
 TRACE_MAX_ENTRIES = 500
 TOKENS_MAX_ENTRIES = 2000
 
 
 def _append_trace_entry(entry: Dict[str, Any], use_atomic: bool) -> None:
     """Lee, rota y escribe el trace file."""
-    if TRACE_FILE.exists():
+    tf = trace_file()
+    if tf.exists():
         try:
-            entries: List[Dict] = json.loads(TRACE_FILE.read_text(encoding="utf-8"))
+            entries: List[Dict] = json.loads(tf.read_text(encoding="utf-8"))
             if not isinstance(entries, list):
                 entries = []
         except Exception:
@@ -37,17 +47,18 @@ def _append_trace_entry(entry: Dict[str, Any], use_atomic: bool) -> None:
 
     text = json.dumps(entries, indent=2, ensure_ascii=False)
     if use_atomic:
-        atomic_write_text(TRACE_FILE, text)
+        atomic_write_text(tf, text)
     else:
-        TRACE_FILE.write_text(text, encoding="utf-8")
+        tf.write_text(text, encoding="utf-8")
 
 
 def log_trace(entry: Dict[str, Any]) -> None:
     """Añade entrada al trace log con rotación a TRACE_MAX_ENTRIES."""
     try:
-        TRACE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        tf = trace_file()
+        tf.parent.mkdir(parents=True, exist_ok=True)
         try:
-            with file_lock(TRACE_FILE, timeout=5):
+            with file_lock(tf, timeout=5):
                 _append_trace_entry(entry, use_atomic=True)
             return
         except TimeoutError:
@@ -64,10 +75,11 @@ def query_trace(
     last: int = 20,
 ) -> List[Dict[str, Any]]:
     """Consulta el trace log."""
-    if not TRACE_FILE.exists():
+    tf = trace_file()
+    if not tf.exists():
         return []
     try:
-        entries: List[Dict] = json.loads(TRACE_FILE.read_text(encoding="utf-8"))
+        entries: List[Dict] = json.loads(tf.read_text(encoding="utf-8"))
     except Exception:
         return []
     if tool:
@@ -122,12 +134,11 @@ def log_token_usage(tool: str, input_text: str, output_text: str) -> None:
             "total_tokens": in_tokens + out_tokens,
             "provider": provider,
         }
-        TOKENS_FILE.parent.mkdir(parents=True, exist_ok=True)
-        if TOKENS_FILE.exists():
+        tkf = tokens_file()
+        tkf.parent.mkdir(parents=True, exist_ok=True)
+        if tkf.exists():
             try:
-                entries: List[Dict] = json.loads(
-                    TOKENS_FILE.read_text(encoding="utf-8")
-                )
+                entries: List[Dict] = json.loads(tkf.read_text(encoding="utf-8"))
                 if not isinstance(entries, list):
                     entries = []
             except Exception:
@@ -137,7 +148,7 @@ def log_token_usage(tool: str, input_text: str, output_text: str) -> None:
         entries.append(entry)
         if len(entries) > TOKENS_MAX_ENTRIES:
             entries = entries[-TOKENS_MAX_ENTRIES:]
-        TOKENS_FILE.write_text(
+        tkf.write_text(
             json.dumps(entries, indent=2, ensure_ascii=False), encoding="utf-8"
         )
     except Exception:

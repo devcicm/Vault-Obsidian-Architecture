@@ -275,7 +275,7 @@ class TestStubCreation:
             {"category": "no_match"},
         )
         assert result["created"] is True
-        assert (vault / "04_Sessions/stubs/new-target.md").exists()
+        assert (vault / "02_Observability/maintenance/stubs/new-target.md").exists()
 
     def test_stub_skipped_if_real_note_exists(self, tmp_path):
         vault = tmp_path / "vault"
@@ -294,8 +294,8 @@ class TestStubCreation:
     def test_stub_skipped_if_already_in_stubs(self, tmp_path):
         vault = tmp_path / "vault"
         vault.mkdir()
-        (vault / "04_Sessions/stubs").mkdir(parents=True)
-        (vault / "04_Sessions/stubs/existing.md").write_text("# stub", encoding="utf-8")
+        (vault / "02_Observability/maintenance/stubs").mkdir(parents=True)
+        (vault / "02_Observability/maintenance/stubs/existing.md").write_text("# stub", encoding="utf-8")
         result = _create_stub(
             vault,
             "existing",
@@ -360,4 +360,4 @@ class TestApplyClassifiedFixes:
         }
         result = apply_classified_fixes(decisions, notes_active, vault)
         assert result["stubs_created"] == 1
-        assert (vault / "04_Sessions/stubs/orphan.md").exists()
+        assert (vault / "02_Observability/maintenance/stubs/orphan.md").exists()

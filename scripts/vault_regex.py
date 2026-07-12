@@ -60,8 +60,8 @@ RE_MIXED_BRACKETS = re.compile(
 RE_EMPTY_LINK = re.compile(r"\[\[\s*\]\]")
 RE_EMPTY_WITH_SPACES = re.compile(r"\[\[\s+\]\]")
 
-# Path-anchored (AP-21)
-RE_PATH_ANCHORED = re.compile(r"\[\[/|\[\[[^\]]*\/")
+# Path-anchored (AP-21) — solo el segmento target (antes de `|`); un "/" en el alias es válido
+RE_PATH_ANCHORED = re.compile(r"\[\[/|\[\[[^\]|]*\/")
 
 # Contenido inválido en wiki-links
 RE_INVALID_LINK_CHARS = re.compile(r"[\x00-\x1f<>\"\\|]")

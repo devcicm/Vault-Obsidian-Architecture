@@ -1,8 +1,14 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v37.0 — 2026-07-01  
+**Versión:** v38.0 — 2026-07-11  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
+
+> **v38.0 (2026-07-11):** Robustez de frontmatter — `vault_lib.parse_frontmatter`
+> coacciona valores `datetime`/`date` (auto-parseados por PyYAML) a strings ISO en el
+> límite de lectura. Elimina los crashes `datetime not subscriptable` / `not JSON
+> serializable` de `vault_audit`/`vault_reindex` sobre vaults escritos por tooling
+> anterior — sin migración de datos. Cubierto por `tests/test_vault_frontmatter_dates.py`.
 
 ---
 
@@ -2679,7 +2685,7 @@ Guarda un requerimiento en `14_Requirements/{project}/req-{n}-{slug}.md` con ID 
 | `priority` | string | — | MoSCoW: `must-have` · `should-have` · `nice-to-have` · `wont-have` |
 | `acceptance_criteria` | string[] | `[]` | Criterios verificables y testables (IEEE 29148 §5.2.5) |
 | `source` | string | — | Quién solicitó este requerimiento (stakeholder, normativa, decisión técnica) |
-| `status` | string | `draft` | Ciclo de vida: `draft` → `reviewed` → `approved` → `implemented` → `verified` → `obsolete` |
+| `status` | string | `draft` | Ciclo de vida: `draft` → `reviewed` → `approved` → `implemented` → `verified` → `obsolete`. Valores válidos = `vault_norms.STATUS_VOCAB` (CN-03, vocabulario unificado v38) |
 | `related_code` | string | — | Comma-separated: rutas de archivos que implementan este requerimiento |
 
 **Tipos de requerimiento:**

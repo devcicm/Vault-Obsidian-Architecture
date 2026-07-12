@@ -31,6 +31,7 @@ from vault_io import (
     atomic_write_json,
     atomic_write_text,
     assert_within_vault,
+    file_lock,
     VAULT_ROOT,
     safe_wikilink,
 )
@@ -227,8 +228,11 @@ def vault_tags_rebuild(dry_run: bool = False) -> Dict[str, Any]:
     if not dry_run:
         VAULT_ROOT.joinpath("00_System").mkdir(parents=True, exist_ok=True)
         VAULT_ROOT.joinpath("99_Index").mkdir(parents=True, exist_ok=True)
-        atomic_write_json(TAG_REGISTRY, registry)
-        atomic_write_text(TAG_INDEX_MD, tag_index_content)
+        # Lock the paired writes so concurrent rebuilds cannot interleave and leave
+        # the registry (JSON) and the human index (MD) describing different states.
+        with file_lock(TAG_REGISTRY):
+            atomic_write_json(TAG_REGISTRY, registry)
+            atomic_write_text(TAG_INDEX_MD, tag_index_content)
 
     return {
         "ok": True,

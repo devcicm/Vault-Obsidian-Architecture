@@ -586,23 +586,32 @@ def classify_all_broken(
     active_stems: dict[str, list[str]] = defaultdict(list)
     migrated_stems: dict[str, list[str]] = defaultdict(list)
     system_stems: dict[str, list[str]] = defaultdict(list)
+
+    def _add_stems(index: dict[str, list[str]], path: str, info: dict[str, Any]) -> None:
+        # Index BOTH title- and filename-derived stems (mirrors _stems_set in
+        # vault_graph_inspect) so [[links]] written against the filename resolve
+        # even when the note title normalizes to a different stem.
+        for stem in {
+            normalize_stem(info["title"] or Path(path).stem),
+            normalize_stem(Path(path).stem),
+        }:
+            if stem and path not in index[stem]:
+                index[stem].append(path)
+
     for path, info in notes_full.items():
         if not path.startswith("00_System/"):
             continue
-        stem = normalize_stem(info["title"] or Path(path).stem)
-        system_stems[stem].append(path)
+        _add_stems(system_stems, path, info)
 
     for path, info in notes_full.items():
         if path.startswith("10_Migrated/") or path.startswith("00_System/"):
             continue
-        stem = normalize_stem(info["title"] or Path(path).stem)
-        active_stems[stem].append(path)
+        _add_stems(active_stems, path, info)
 
     for path, info in notes_full.items():
         if not path.startswith("10_Migrated/"):
             continue
-        stem = normalize_stem(info["title"] or Path(path).stem)
-        migrated_stems[stem].append(path)
+        _add_stems(migrated_stems, path, info)
 
     resolvable_stems: dict[str, list[str]] = {**active_stems, **system_stems}
 
@@ -695,7 +704,9 @@ def wizard_pick(
 # STUB CREATION
 # ============================================================================
 
-_STUBS_DIR = "04_Sessions/stubs"
+# AP-36: los stubs de mantenimiento van a la sección dedicada de mantenimiento,
+# no a 04_Sessions — son artefactos de triage, no notas de sesión.
+_STUBS_DIR = "02_Observability/maintenance/stubs"
 
 
 def _stub_already_exists(root: Path, target_stem: str) -> bool:
@@ -932,9 +943,15 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    # stdout may be a StringIO under wrap_main capture (no reconfigure) — guard it.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
     root = Path(args.root).resolve() if args.root else VAULT_ROOT
+    if args.root:
+        # AP-36: la observabilidad (traces/locks) debe escribir en el vault objetivo
+        from vault_io import set_vault_root
+        set_vault_root(root)
     if not root.exists():
         print(json.dumps({"ok": False, "error": f"Vault root not found: {root}"}))
         return 1

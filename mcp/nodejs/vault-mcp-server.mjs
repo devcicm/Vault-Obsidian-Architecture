@@ -38,7 +38,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "..", "..");
 const SCRIPTS_DIR = join(REPO_ROOT, "scripts");
-const VERSION = "v37.0 (SDD)";
+const VERSION = "v38.0 (SDD)";
 
 let VAULT_ROOT = process.env.VAULT_ROOT || null;
 let VAULT_SCAN_ROOTS = process.env.VAULT_SCAN_ROOTS ? process.env.VAULT_SCAN_ROOTS.split(";").map(p => resolve(p)) : [
@@ -548,7 +548,8 @@ function heuristicTokenCount(text) {
 
 async function jsNativeBackupBase64(args, vaultRoot) {
   const label = args.label || `backup-${new Date().toISOString().replace(/[:.]/g, "-")}`;
-  const backupDir = join(vaultRoot, "..", "vault-backups");
+  // AP-36 (contención): backups DENTRO del vault; collectAllFiles ya excluye vault-backups.
+  const backupDir = join(vaultRoot, "vault-backups");
   await mkdir(backupDir, { recursive: true });
 
   const files = await collectAllFiles(vaultRoot);
@@ -846,12 +847,19 @@ function executePythonTool(scriptPath, args, vaultRoot) {
   return new Promise((resolve, reject) => {
     const cliArgs = [];
     for (const [key, value] of Object.entries(args)) {
-      const flag = "--" + key.replace(/_/g, "-");
+      // Pass the flag verbatim. The catalog param name IS the exact argparse flag
+      // suffix (regenerated from each script's add_argument), so it already carries
+      // the right underscores/hyphens. Rewriting _→- here broke underscore flags
+      // like --diagram_type / --new_path / --source_path / --dry_run.
+      const flag = "--" + key;
       const isBool = typeof value === "boolean" || value === "true" || value === "false";
       if (isBool) {
         if (value === true || value === "true") cliArgs.push(flag);
       } else if (Array.isArray(value)) {
-        cliArgs.push(flag, ...value.map(String));
+        cliArgs.push(flag, ...value.map((v) => (v !== null && typeof v === "object") ? JSON.stringify(v) : String(v)));
+      } else if (value !== null && typeof value === "object") {
+        // Object params (e.g. --meta) map to a JSON-string CLI arg, not "[object Object]".
+        cliArgs.push(flag, JSON.stringify(value));
       } else {
         cliArgs.push(flag, String(value));
       }

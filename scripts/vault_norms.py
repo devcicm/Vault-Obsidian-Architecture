@@ -36,7 +36,8 @@ NORM_REGISTRY = VAULT_ROOT / "00_System" / "norm-registry.json"
 #   - guard:     vault_write rechaza en tiempo de escritura
 #   - audit:     vault_audit detecta retrospectivamente
 #   - guard+audit: ambos
-#   - manual:    sin enforcement automático (convención/documentación)
+#   - manual:    DEPRECADO (v38) — toda norma debe tener guard o audit; las no
+#                automatizables usan audit heurístico (vault_drift_detect)
 #   - recommended: patrón positivo a seguir
 
 NORM_CATALOG: List[Dict[str, Any]] = [
@@ -47,7 +48,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "type": "antipattern",
         "category": "content-quality",
         "severity": "high",
-        "enforcement": "manual",
+        "enforcement": "audit",
         "description": (
             "Documentar herramientas, endpoints, funciones o comportamientos que no existen "
             "en el código real. El agente genera información convincente pero incorrecta."
@@ -55,7 +56,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "Referencias a scripts/tools que no existen en el repo; funciones con firmas que no coinciden con el código.",
         "prevention": "Verificar existencia real antes de documentar. vault_read + grep sobre el código fuente.",
         "tools_enforcing": [],
-        "tools_detecting": [],
+        "tools_detecting": ["vault_drift_detect"],
         "introduced_version": "v19",
     },
     {
@@ -99,7 +100,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "type": "antipattern",
         "category": "content-quality",
         "severity": "high",
-        "enforcement": "manual",
+        "enforcement": "audit",
         "description": (
             "Documentar comportamientos futuros o planeados como si ya existieran. "
             "Confunde al agente sobre el estado real del sistema."
@@ -107,7 +108,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "Notas sin campo status o con status:planned que describen funcionalidad en presente.",
         "prevention": "Usar status: planned/in-progress/implemented. Nunca describir en presente algo que no está deployado.",
         "tools_enforcing": [],
-        "tools_detecting": [],
+        "tools_detecting": ["vault_drift_detect"],
         "introduced_version": "v19",
     },
     {
@@ -116,7 +117,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "type": "antipattern",
         "category": "structure",
         "severity": "critical",
-        "enforcement": "manual",
+        "enforcement": "audit",
         "description": (
             "El mismo dato (IP, URL, versión, configuración) aparece en múltiples notas "
             "con valores inconsistentes. Causa decisiones del agente basadas en datos erróneos."
@@ -124,7 +125,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "IPs/URLs/versiones que difieren entre notas del mismo proyecto.",
         "prevention": "PAT-1 (canonical source anchoring): una nota canónica por dato, las demás hacen [[wiki-link]] a ella.",
         "tools_enforcing": [],
-        "tools_detecting": [],
+        "tools_detecting": ["vault_graph_inspect"],
         "introduced_version": "v19",
     },
     {
@@ -133,7 +134,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "type": "antipattern",
         "category": "content-quality",
         "severity": "low",
-        "enforcement": "manual",
+        "enforcement": "audit",
         "description": (
             "Archivos de template (SLOs, métricas, alertas, ADRs) que existen en el vault "
             "pero nunca se han instanciado con datos reales."
@@ -141,7 +142,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "Notas con status:template que no tienen notas derivadas con wiki-link hacia ellas.",
         "prevention": "Si un template no tiene instancias en 30 días, moverlo a 10_Migrated/ o eliminarlo.",
         "tools_enforcing": [],
-        "tools_detecting": [],
+        "tools_detecting": ["vault_norms --audit"],
         "introduced_version": "v19",
     },
     {
@@ -150,7 +151,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "type": "antipattern",
         "category": "process",
         "severity": "medium",
-        "enforcement": "manual",
+        "enforcement": "audit",
         "description": (
             "ADRs (Architecture Decision Records) sin secciones Contexto, Opciones evaluadas "
             "y Consecuencias. Un ADR sin estas secciones no aporta valor de auditoría."
@@ -158,7 +159,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "Notas en 03_Decisions/ sin secciones ## Contexto, ## Opciones, ## Consecuencias.",
         "prevention": "Usar vault_write con template de ADR completo. vault_audit puede extenderse para validar secciones.",
         "tools_enforcing": [],
-        "tools_detecting": [],
+        "tools_detecting": ["vault_norms --audit"],
         "introduced_version": "v19",
     },
     {
@@ -167,7 +168,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "type": "antipattern",
         "category": "content-quality",
         "severity": "medium",
-        "enforcement": "manual",
+        "enforcement": "audit",
         "description": (
             "Notas que mencionan versiones específicas de librerías, APIs o protocolos que ya "
             "fueron actualizadas, sin indicar que el contenido puede estar desactualizado."
@@ -175,7 +176,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "Notas con versiones hardcodeadas (v1.2.3) y updatedAt > 90 días.",
         "prevention": "Agregar campo version_pinned al frontmatter con la versión referenciada. vault_audit puede alertar.",
         "tools_enforcing": [],
-        "tools_detecting": [],
+        "tools_detecting": ["vault_drift_detect"],
         "introduced_version": "v19",
     },
     {
@@ -184,7 +185,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "type": "antipattern",
         "category": "process",
         "severity": "medium",
-        "enforcement": "manual",
+        "enforcement": "audit",
         "description": (
             "Procedimientos operativos guardados en carpetas genéricas (07_Knowledge/, 01_Projects/) "
             "en lugar de 06_Runbooks/. Dificulta la localización en incidentes."
@@ -192,7 +193,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "Notas con title que contiene 'runbook', 'procedure', 'how-to' fuera de 06_Runbooks/.",
         "prevention": "Todo runbook va en 06_Runbooks/{proyecto}/. vault_migrate_docs para moverlos.",
         "tools_enforcing": [],
-        "tools_detecting": [],
+        "tools_detecting": ["vault_norms --audit"],
         "introduced_version": "v19",
     },
     {
@@ -201,7 +202,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "type": "antipattern",
         "category": "process",
         "severity": "high",
-        "enforcement": "manual",
+        "enforcement": "audit",
         "description": (
             "Ejecutar vault_migrate_docs sin tener vault_migrate_rollback disponible "
             "o sin snapshot previo. Si la migración introduce errores, no hay manera de revertir."
@@ -209,7 +210,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "vault_migrate_docs ejecutado sin llamar vault_drift_detect --snapshot primero.",
         "prevention": "PAT-4 (phased audit): siempre snapshot → migrate → verify → rollback si falla.",
         "tools_enforcing": [],
-        "tools_detecting": [],
+        "tools_detecting": ["vault_norms --audit", "vault_migrate_rollback"],
         "introduced_version": "v19",
     },
     {
@@ -289,7 +290,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "type": "antipattern",
         "category": "structure",
         "severity": "high",
-        "enforcement": "manual",
+        "enforcement": "audit",
         "description": (
             "Archivos .md colocados directamente en vault-{nombre}/ en lugar de en secciones "
             "numeradas. vault_graph parsea sus [[wiki-links]] como broken links reales del proyecto."
@@ -297,7 +298,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "vault_graph reporta decenas de orphans y broken links falsos.",
         "prevention": "Layout correcto: vault/ y scripts/ son hermanos, nunca anidados. Solo 00_System…11_Code y 99_Index son destinos válidos.",
         "tools_enforcing": [],
-        "tools_detecting": ["vault_audit"],
+        "tools_detecting": ["vault_norms --audit"],
         "introduced_version": "v20",
     },
     {
@@ -358,7 +359,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "type": "antipattern",
         "category": "structure",
         "severity": "medium",
-        "enforcement": "manual",
+        "enforcement": "audit",
         "description": (
             "Índices de sección creados manualmente, duplicando lo que vault_section_index genera "
             "automáticamente. Los índices manuales rotan en AP-02 con el tiempo."
@@ -366,7 +367,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "Múltiples index.md o README.md en una sección que no fueron generados por vault_section_index.",
         "prevention": "vault_section_index es la única herramienta para índices. No editar index.md manualmente.",
         "tools_enforcing": [],
-        "tools_detecting": [],
+        "tools_detecting": ["vault_norms --audit"],
         "introduced_version": "v25",
     },
     {
@@ -736,6 +737,34 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "tools_detecting": ["vault_audit", "vault_graph_merge"],
         "introduced_version": "v37",
     },
+    {
+        "code": "AP-36",
+        "name": "Contención e idempotencia — side-effects fuera del vault o no rastreables",
+        "type": "antipattern",
+        "category": "structure",
+        "severity": "critical",
+        "enforcement": "guard+audit",
+        "description": (
+            "Toda operación de tooling debe: (1) escribir ÚNICAMENTE dentro del vault root "
+            "(backups, traces, locks, stubs, logs incluidos); (2) ser idempotente — ejecutarla "
+            "dos veces no duplica artefactos ni carpetas; (3) dejar sus artefactos indexados o "
+            "en ubicaciones registradas (vault_registry) para rastreabilidad. Casos históricos: "
+            "vault-backups escrito en el abuelo del repo, 00_System/99_Index generados fuera "
+            "del vault por detección de root defectuosa, .bak junto a nodos de contenido."
+        ),
+        "signal": (
+            "Carpetas vault-backups/00_System/99_Index como hermanos del vault; archivos .bak/.tmp "
+            "dentro de secciones de contenido; secciones sin index.md."
+        ),
+        "prevention": (
+            "Rutas de salida derivadas SIEMPRE de VAULT_ROOT (nunca de __file__ ni cwd). "
+            "Artefactos de mantenimiento van a 02_Observability/maintenance/ o 00_System/. "
+            "vault_norms --audit detecta artefactos sueltos y secciones sin índice."
+        ),
+        "tools_enforcing": ["vault_section_index (guard CN-02)", "vault_io.assert_within_vault"],
+        "tools_detecting": ["vault_norms --audit"],
+        "introduced_version": "v38",
+    },
     # ── Patrón PAT-6 ───────────────────────────────────────────────────────────
     {
         "code": "PAT-6",
@@ -768,7 +797,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "type": "antipattern",
         "category": "session-protocol",
         "severity": "critical",
-        "enforcement": "manual",
+        "enforcement": "audit",
         "description": (
             "Antes de eliminar cualquier nota del vault, el agente DEBE llamar: "
             "vault_change_log --action deleted --path <nota> --reason <motivo>. "
@@ -780,7 +809,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "Si no hay entrada → llamar vault_change_log primero, luego eliminar."
         ),
         "tools_enforcing": ["vault_change_log"],
-        "tools_detecting": ["vault_audit"],
+        "tools_detecting": ["vault_norms --audit"],
         "introduced_version": "v30",
     },
     {
@@ -808,7 +837,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "type": "antipattern",
         "category": "session-protocol",
         "severity": "medium",
-        "enforcement": "manual",
+        "enforcement": "audit",
         "description": (
             "Antes de cualquier operación masiva (migración, rename en lote, vault_tags --rename "
             "múltiple, delete en lote), capturar snapshot con vault_delta --snapshot. "
@@ -820,7 +849,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "vault_delta --snapshot antes de cada sesión con cambios masivos."
         ),
         "tools_enforcing": [],
-        "tools_detecting": ["vault_delta"],
+        "tools_detecting": ["vault_backup"],
         "introduced_version": "v30",
     },
     # ── Convenciones de nomenclatura CN-XX ────────────────────────────────────
@@ -849,18 +878,17 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "type": "antipattern",
         "category": "convention",
         "severity": "high",
-        "enforcement": "manual",
+        "enforcement": "guard+audit",
         "description": (
-            "Solo las 13 secciones numeradas son destinos válidos para notas: "
-            "00_System, 01_Projects, 02_Observability, 03_Decisions, 04_Specs, "
-            "05_Patterns, 06_Runbooks, 07_Knowledge, 08_Integrations, 09_Architecture, "
-            "10_Migrated, 11_Code, 99_Index. "
-            "Crear carpetas ad-hoc o escribir en la raíz viola este estándar (ver AP-15)."
+            "Solo las secciones numeradas del registro canónico (vault_registry.SECTIONS, "
+            "fuente de verdad única — PAT-1) son destinos válidos para notas. "
+            "Crear carpetas ad-hoc o escribir en la raíz viola este estándar (ver AP-15). "
+            "NO duplicar la lista aquí: consultarla con vault_folder_registry o vault_registry."
         ),
         "signal": "Carpeta con nombre que no sigue el patrón NN_Nombre en el vault.",
         "prevention": "Elegir la sección más apropiada del vocabulario estándar. AP-15 para raíz del vault.",
         "tools_enforcing": ["vault_write"],
-        "tools_detecting": ["vault_validate"],
+        "tools_detecting": ["vault_section_index (guard)", "vault_norms --audit"],
         "introduced_version": "v30",
     },
     {
@@ -869,16 +897,18 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "type": "antipattern",
         "category": "convention",
         "severity": "low",
-        "enforcement": "manual",
+        "enforcement": "audit",
         "description": (
-            "El campo meta.status (o status en frontmatter) debe usar solo valores del vocabulario "
-            "estándar: planned | in-progress | implemented | deprecated | archived | stub | template. "
-            "Valores fuera del vocabulario rompen filtros de vault_list y vault_audit."
+            "El campo meta.status (o status en frontmatter) debe usar solo valores de "
+            "vault_norms.STATUS_VOCAB (fuente única, v38 — unifica el vocabulario CN-03 "
+            "original con el ciclo de vida del spec §status): planned | draft | in-progress | "
+            "reviewed | approved | implemented | verified | deprecated | obsolete | archived | "
+            "stub | template. Valores fuera del vocabulario rompen filtros de vault_list y vault_audit."
         ),
         "signal": "vault_list filtra por status y retorna 0 cuando el valor es no-estándar.",
-        "prevention": "Usar solo los 7 valores del vocabulario. vault_validate puede extenderse para validarlos.",
+        "prevention": "Usar solo valores de STATUS_VOCAB. vault_norms --audit los valida (CN-03).",
         "tools_enforcing": [],
-        "tools_detecting": ["vault_validate"],
+        "tools_detecting": ["vault_norms --audit"],
         "introduced_version": "v30",
     },
 ]
@@ -1260,6 +1290,226 @@ def vault_norms_rebuild() -> Dict[str, Any]:
     }
 
 
+# ─── Audit — enforcement automático de normas ex-manuales ─────────────────────
+
+# Vocabulario canónico de meta.status (CN-03) — unificado v38.
+# Antes existían DOS vocabularios contradictorios: CN-03 (7 valores) y el
+# ciclo de vida del spec §status (draft→reviewed→approved→implemented→
+# verified→obsolete). Este set es la unión canónica; CN-03 y el spec
+# referencian este símbolo como fuente única.
+STATUS_VOCAB = {
+    "planned",
+    "draft",
+    "in-progress",
+    "reviewed",
+    "approved",
+    "implemented",
+    "verified",
+    "deprecated",
+    "obsolete",
+    "archived",
+    "stub",
+    "template",
+}
+
+# Entradas permitidas en la raíz del vault además de las secciones canónicas
+_ROOT_ALLOWED = {".obsidian", ".trash", ".history", ".git", ".locks", "vault-backups"}
+
+
+def vault_norms_audit(root: Optional[Path] = None) -> Dict[str, Any]:
+    """Audita el vault contra las normas automatizables (ex-manual).
+
+    Cubre: AP-06, AP-07, AP-09, AP-10, AP-15, AP-19, CN-02, CN-03, SP-01.
+    Las secciones canónicas se toman de vault_registry (fuente de verdad única,
+    PAT-1) — nunca de listas hardcodeadas en el catálogo.
+    """
+    from datetime import datetime, timezone
+
+    from vault_lib import extract_wikilinks, parse_frontmatter_with_body
+    from vault_registry import SECTIONS
+
+    root = (root or VAULT_ROOT).resolve()
+    canonical_sections = {s["folder"] for s in SECTIONS}
+    violations: List[Dict[str, Any]] = []
+
+    def _flag(norm: str, path: str, detail: str) -> None:
+        n = next((x for x in NORM_CATALOG if x["code"] == norm), {})
+        violations.append(
+            {
+                "norm": norm,
+                "severity": n.get("severity", "medium"),
+                "path": path,
+                "detail": detail,
+            }
+        )
+
+    # ── AP-15 + CN-02: higiene de raíz ────────────────────────────────────────
+    if root.exists():
+        for entry in sorted(root.iterdir()):
+            name = entry.name
+            if name.startswith(".") and name in _ROOT_ALLOWED:
+                continue
+            if entry.is_dir():
+                if name not in canonical_sections and name not in _ROOT_ALLOWED:
+                    _flag(
+                        "CN-02",
+                        name,
+                        f"Carpeta '{name}' en la raíz no es una sección canónica "
+                        f"({len(canonical_sections)} secciones válidas en vault_registry).",
+                    )
+            elif not name.startswith("."):
+                _flag("AP-15", name, f"Archivo suelto '{name}' en la raíz del vault.")
+
+    # ── Cargar notas una sola vez ─────────────────────────────────────────────
+    notes: Dict[str, Dict[str, Any]] = {}
+    for md in sorted(root.rglob("*.md")):
+        rel = str(md.relative_to(root)).replace("\\", "/")
+        if rel.startswith(("10_Migrated/", ".")) or "/.history/" in rel:
+            continue
+        try:
+            fm, body = parse_frontmatter_with_body(md.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError):
+            continue
+        notes[rel] = {"fm": fm or {}, "body": body}
+
+    inbound: Dict[str, int] = {}
+    for rel, info in notes.items():
+        for link in extract_wikilinks(info["body"]):
+            inbound[link.split("|")[0].strip().lower()] = (
+                inbound.get(link.split("|")[0].strip().lower(), 0) + 1
+            )
+
+    for rel, info in notes.items():
+        fm, body = info["fm"], info["body"]
+        note_type = str(fm.get("type", "")).lower()
+        status = str(fm.get("status", "")).lower()
+        stem = Path(rel).stem.lower()
+
+        # ── CN-03: vocabulario de status ──────────────────────────────────────
+        if status and status not in STATUS_VOCAB:
+            _flag("CN-03", rel, f"status '{status}' fuera del vocabulario canónico {sorted(STATUS_VOCAB)}.")
+
+        # ── AP-09: runbooks fuera de 08_Runbooks ──────────────────────────────
+        if note_type == "runbook" and not rel.startswith("08_Runbooks/"):
+            _flag("AP-09", rel, "Nota type:runbook fuera de 08_Runbooks/.")
+
+        # ── AP-07: ADRs incompletos ───────────────────────────────────────────
+        if (
+            rel.startswith("03_Decisions/")
+            and stem != "index"
+            and status not in ("stub", "template")  # stubs se rigen por AP-03
+        ):
+            required = {
+                "Contexto": "context",
+                "Decisión": "decisi",
+                "Consecuencias": "consecuen|consequence",
+            }
+            lower_body = body.lower()
+            missing = [
+                name
+                for name, pat in required.items()
+                if not re.search(rf"^#+.*({pat})", lower_body, re.MULTILINE | re.IGNORECASE)
+            ]
+            if missing or not status:
+                problems = []
+                if missing:
+                    problems.append(f"secciones faltantes: {', '.join(missing)}")
+                if not status:
+                    problems.append("sin campo status")
+                _flag("AP-07", rel, "ADR incompleto — " + "; ".join(problems) + ".")
+
+        # ── AP-06: templates sin instancias (sin inbound links) ──────────────
+        if note_type == "template" or "template" in [str(t).lower() for t in fm.get("tags", []) or []]:
+            if inbound.get(stem, 0) == 0:
+                _flag("AP-06", rel, "Template sin inbound links — sin instancias que lo usen.")
+
+        # ── AP-19: shadow indexing ────────────────────────────────────────────
+        if (
+            "index" in stem
+            and stem != "index"
+            and not rel.startswith("99_Index/")
+            and stem not in ("master-index",)
+        ):
+            _flag("AP-19", rel, f"Nota índice paralela '{rel}' fuera de 99_Index/ (shadow indexing).")
+
+    # ── AP-36: contención e idempotencia ──────────────────────────────────────
+    # (a) Artefactos .bak/.tmp dentro de secciones de contenido
+    for sec in sorted(canonical_sections):
+        sec_path = root / sec
+        if not sec_path.is_dir():
+            continue
+        for artifact in sec_path.rglob("*"):
+            if artifact.is_file() and (
+                artifact.suffix in (".bak", ".tmp") or artifact.name.startswith(".tmp.")
+            ):
+                rel_a = str(artifact.relative_to(root)).replace("\\", "/")
+                if "/.trash/" in rel_a or "/.history/" in rel_a:
+                    continue  # ubicaciones de mantenimiento permitidas
+                _flag("AP-36", rel_a, "Artefacto temporal/backup dentro de una sección de contenido.")
+        # (b) Toda sección presente debe tener index.md (rastreabilidad de nodos)
+        if sec not in ("00_System", "10_Migrated", "99_Index") and not (sec_path / "index.md").exists():
+            _flag("AP-36", f"{sec}/", "Sección sin index.md — nodos no indexados (correr vault_section_index).")
+
+    # (c) Contaminación hermana: artefactos de vault generados FUERA del vault
+    for sibling_name in ("00_System", "99_Index", "vault-backups"):
+        sibling = root.parent / sibling_name
+        if sibling.exists() and sibling != root / sibling_name:
+            _flag(
+                "AP-36",
+                f"../{sibling_name}",
+                f"'{sibling_name}' existe como hermano del vault — side-effect fuera del vault root.",
+            )
+
+    # ── AP-10: migración sin plan de rollback ─────────────────────────────────
+    migrated = root / "10_Migrated"
+    if migrated.exists():
+        migrated_notes = [p for p in migrated.rglob("*.md") if not p.name.startswith("_report-")]
+        reports = list(migrated.glob("_report-*.md"))
+        if migrated_notes and not reports:
+            _flag(
+                "AP-10",
+                "10_Migrated/",
+                f"{len(migrated_notes)} notas migradas sin _report-*.md (mapa de rollback para vault_migrate_rollback).",
+            )
+
+    # ── SP-01: eliminaciones sin change_log ───────────────────────────────────
+    graph_file = root / "99_Index" / "graph.json"
+    change_log = root / "00_System" / ".change-log.json"
+    if graph_file.exists():
+        try:
+            graph = json.loads(graph_file.read_text(encoding="utf-8"))
+            deleted = [e.get("from", "") for e in graph.get("edges", []) if e.get("to") == "__deleted__"]
+            if deleted:
+                logged: set = set()
+                if change_log.exists():
+                    try:
+                        logged = {
+                            str(e.get("path", "")) for e in json.loads(change_log.read_text(encoding="utf-8"))
+                        }
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+                for d in deleted:
+                    if d not in logged:
+                        _flag("SP-01", d, "Nota eliminada sin entrada en change_log (delete protocol).")
+        except (json.JSONDecodeError, OSError):
+            pass
+
+    by_norm: Dict[str, int] = {}
+    for v in violations:
+        by_norm[v["norm"]] = by_norm.get(v["norm"], 0) + 1
+
+    return {
+        "ok": True,
+        "tool": "vault_norms.audit",
+        "vault_root": str(root),
+        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "notes_scanned": len(notes),
+        "total_violations": len(violations),
+        "by_norm": by_norm,
+        "violations": violations,
+    }
+
+
 # ─── CLI ───────────────────────────────────────────────────────────────────────
 
 
@@ -1307,6 +1557,14 @@ Ejemplos:
         "--rebuild", action="store_true", help="Regenerar norm-registry.json"
     )
     parser.add_argument(
+        "--audit",
+        action="store_true",
+        help="Auditar el vault contra las normas automatizables (AP-06/07/09/10/15/19, CN-02/03, SP-01)",
+    )
+    parser.add_argument(
+        "--root", help="Vault root para --audit (default: VAULT_ROOT auto-detect)"
+    )
+    parser.add_argument(
         "--path", help="Ruta relativa de la nota (para --scan y --apply)"
     )
     parser.add_argument(
@@ -1333,7 +1591,12 @@ Ejemplos:
 
     args = parser.parse_args()
 
-    if args.rebuild:
+    if args.audit:
+        if args.root:
+            from vault_io import set_vault_root
+            set_vault_root(Path(args.root))  # AP-36: traces al vault objetivo
+        result = vault_norms_audit(Path(args.root) if args.root else None)
+    elif args.rebuild:
         result = vault_norms_rebuild()
     elif args.show:
         result = vault_norms_show(args.show)

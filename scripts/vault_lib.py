@@ -15,7 +15,7 @@ Usage:
 
 import json
 import re
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -118,6 +118,25 @@ def utcnow_iso() -> str:
 # ============================================================
 
 
+def _coerce_dates(obj: Any) -> Any:
+    """Recursively convert datetime/date values to ISO strings (v38).
+
+    PyYAML's safe_load auto-parses ISO date/datetime scalars into datetime
+    objects. Downstream tools then subscript them (`x[...]`) or JSON-dump them,
+    raising TypeError ('datetime is not subscriptable' / 'not JSON
+    serializable'). Coercing to ISO strings at the frontmatter boundary makes
+    every tool tolerant regardless of how a note's dates were written — no data
+    migration required. Idempotent; leaves non-date values untouched.
+    """
+    if isinstance(obj, datetime) or isinstance(obj, date):
+        return obj.isoformat()
+    if isinstance(obj, dict):
+        return {k: _coerce_dates(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_coerce_dates(v) for v in obj]
+    return obj
+
+
 def parse_frontmatter(content: str) -> Dict[str, Any]:
     """Extract frontmatter YAML fields as a dict from markdown content.
 
@@ -126,11 +145,14 @@ def parse_frontmatter(content: str) -> Dict[str, Any]:
     """
     import yaml  # optional dependency
 
+    # Notas editadas con herramientas Windows pueden llegar con BOM (﻿);
+    # sin esto el frontmatter completo se pierde silenciosamente.
+    content = content.lstrip("﻿")
     match = re.match(r"^---\s*\n(.*?)\n---\s*\n?", content, re.DOTALL)
     if not match:
         return {}
     try:
-        return yaml.safe_load(match.group(1)) or {}
+        return _coerce_dates(yaml.safe_load(match.group(1)) or {})
     except yaml.YAMLError:
         return {}
 
@@ -142,11 +164,12 @@ def parse_frontmatter_with_body(content: str) -> Tuple[Dict[str, Any], str]:
     """
     import yaml
 
+    content = content.lstrip("﻿")  # ver parse_frontmatter — BOM de Windows
     match = re.match(r"^---\s*\n(.*?)\n---\s*\n?(.*)", content, re.DOTALL)
     if not match:
         return {}, content
     try:
-        fm = yaml.safe_load(match.group(1)) or {}
+        fm = _coerce_dates(yaml.safe_load(match.group(1)) or {})
         return fm, match.group(2)
     except yaml.YAMLError:
         return {}, content
@@ -163,7 +186,7 @@ def serialize_frontmatter(frontmatter: Dict[str, Any]) -> str:
 
     lines = [
         "---",
-        yaml.dump(frontmatter, default_flow_style=False, allow_unicode=True).strip(),
+        yaml.dump(_coerce_dates(frontmatter), default_flow_style=False, allow_unicode=True).strip(),
         "---",
     ]
     return "\n".join(lines) + "\n"

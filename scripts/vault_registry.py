@@ -205,6 +205,15 @@ SUBFOLDERS: Dict[str, Dict[str, Optional[str]]] = {
         "description": "No conformidades NCR-YYYY-NNN y acciones correctivas (ISO 9001:2015 §10.2)",
         "owner": "vault_ncr_save",
     },
+    "02_Observability/maintenance": {
+        "description": (
+            "Notas de mantenimiento del vault: fixes aplicados, depuraciones, limpiezas, "
+            "reorganizaciones/reclasificaciones de nodos, y stubs pendientes de triage "
+            "(subcarpeta stubs/). Separa artefactos de mantenimiento de los nodos de "
+            "contenido para que todo sea rastreable sin contaminar el grafo (AP-36)."
+        ),
+        "owner": "vault_graph_fix",
+    },
     # ── 05_Patterns ───────────────────────────────────────────────────────────
     "05_Patterns/design": {
         "description": "Patrones de diseño GoF: Singleton, Factory, Observer, Strategy, Decorator, Proxy, Command, Adapter, Facade",
