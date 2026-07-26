@@ -30,6 +30,18 @@ from vault_errors import wrap_main
 
 
 SDD_OUTPUT_DIR = "docs/sdd"
+
+# superseded_by: docs/SKILLS.md + .claude/skills/vault-sdd-init/SKILL.md
+#
+# Contrato original (v36): la skill se publicaba como nota dentro del vault,
+# en 00_System/skills/. Nunca llegó a escribirse — la constante quedó definida
+# y sin usar, y el changelog de v36 la anunció como entregada.
+#
+# Se conserva sin derogar porque el contrato sigue siendo válido para un vault
+# consumidor. NO se escribe desde este repo por decisión deliberada: el repo
+# spec no es un vault y no debe materializar estructura de vault (ver docstring
+# del módulo). La ubicación vigente de la skill es `.claude/skills/` para el
+# descubrimiento por agentes, y `docs/SKILLS.md` para la referencia.
 SKILL_MANIFEST = "00_System/skills/vault-sdd-init.md"
 
 EXPECTED_OUTPUTS = [
@@ -55,6 +67,41 @@ def utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
+def _norm_codes() -> set:
+    """Codes present in the canonical registry. Empty set if unreadable."""
+    try:
+        from vault_norms import NORM_CATALOG
+
+        return {n["code"] for n in NORM_CATALOG}
+    except Exception:
+        return set()
+
+
+def _ap_numbers(codes) -> list:
+    """Numeric part of every AP-NN code, sorted."""
+    out = []
+    for code in codes:
+        if code.startswith("AP-"):
+            suffix = code[3:]
+            if suffix.isdigit():
+                out.append(int(suffix))
+    return sorted(out)
+
+
+def ap_range_label(codes=None) -> str:
+    """Etiqueta 'AP-01..AP-NN' derivada del registro.
+
+    Antes se escribía con `len(aps)`, que es el CONTEO, no el máximo: con
+    huecos de numeración el rango se anunciaba corto (AP-01..AP-31 cuando
+    el catálogo ya llegaba a AP-36) y las últimas normas quedaban fuera del
+    rango documentado aunque su ficha sí se generara más abajo.
+    """
+    numbers = _ap_numbers(_norm_codes() if codes is None else codes)
+    if not numbers:
+        return "AP-01..AP-01"
+    return f"AP-01..AP-{max(numbers):02d}"
+
+
 def detect_drift(vault_root: Path) -> dict:
     """Detect drift between vault state and expected invariants."""
     drift = {"version": None, "missing_norms": [], "warnings": []}
@@ -70,10 +117,26 @@ def detect_drift(vault_root: Path) -> dict:
         from vault_norms import NORM_CATALOG
 
         codes = {n["code"] for n in NORM_CATALOG}
-        expected = {f"AP-{i:02d}" for i in range(1, 26)}
-        expected |= {"PAT-1", "PAT-2", "PAT-3", "PAT-4", "PAT-5"}
-        expected |= {"CN-01", "CN-02", "CN-03"}
-        expected |= {"SP-01", "SP-02", "SP-03"}
+        # El conjunto esperado se deriva del propio registro, no de un rango
+        # fijo: estaba clavado en AP-01..AP-25, así que desde v35 el detector
+        # era estructuralmente incapaz de reportar un hueco en AP-26..AP-36.
+        # Lo que se comprueba es la CONTIGUIDAD: si existe AP-36, deben existir
+        # todos los anteriores. Un hueco es una norma retirada sin anotar,
+        # justo lo que prohíbe la política de no-derogación.
+        numbers = _ap_numbers(codes)
+        expected = set()
+        if numbers:
+            expected |= {f"AP-{i:02d}" for i in range(1, max(numbers) + 1)}
+        for family, width in (("PAT", 1), ("SP", 2), ("CN", 2)):
+            fam = sorted(
+                int(c.split("-")[1])
+                for c in codes
+                if c.startswith(f"{family}-") and c.split("-")[1].isdigit()
+            )
+            if fam:
+                expected |= {
+                    f"{family}-{i:0{width}d}" for i in range(1, max(fam) + 1)
+                }
         drift["missing_norms"] = sorted(expected - codes)
     except Exception as e:
         drift["warnings"].append(f"Could not read NORM_CATALOG: {e}")
@@ -84,6 +147,7 @@ def detect_drift(vault_root: Path) -> dict:
 def generate_readme(vault_root: Path, drift: dict) -> str:
     """Generate the README.md index for docs/sdd/."""
     version = drift.get("version", "unknown")
+    ap_range = ap_range_label()
     return f"""# SDD del Vault — Vault SDD
 
 > Documento bilingüe. Versión española arriba, inglesa abajo.
@@ -101,7 +165,7 @@ def generate_readme(vault_root: Path, drift: dict) -> str:
 | 01 | [State Machines](./01-state-machines.md) | Lifecycle states por dominio |
 | 02 | [Implementation Guide](./02-implementation.md) | Guía para autores de tools |
 | 03 | [Usage Guide](./03-usage.md) | Guía para consumers |
-| 04 | [Antipatterns](./04-antipatterns.md) | Catálogo AP-01..AP-25 |
+| 04 | [Antipatterns](./04-antipatterns.md) | Catálogo {ap_range} |
 | 05 | [Reference Matrix](./05-reference-matrix.md) | Pattern → Detect → Fix → Prevent |
 | 06 | [Documentation Methodology](./06-documentation-methodology.md) | La ciencia de qué documentar |
 | 07 | [Process Antipatterns](./07-process-antipatterns.md) | Antipatrones de proceso |
@@ -128,7 +192,7 @@ def generate_readme(vault_root: Path, drift: dict) -> str:
 | 01 | [State Machines](./01-state-machines.md) | Lifecycle states per domain |
 | 02 | [Implementation Guide](./02-implementation.md) | Guide for tool authors |
 | 03 | [Usage Guide](./03-usage.md) | Guide for consumers |
-| 04 | [Antipatterns](./04-antipatterns.md) | AP-01..AP-25 catalog |
+| 04 | [Antipatterns](./04-antipatterns.md) | {ap_range} catalog |
 | 05 | [Reference Matrix](./05-reference-matrix.md) | Pattern → Detect → Fix → Prevent |
 | 06 | [Documentation Methodology](./06-documentation-methodology.md) | The science of what to document |
 | 07 | [Process Antipatterns](./07-process-antipatterns.md) | Process antipatterns |
@@ -311,7 +375,7 @@ def generate_implementation(vault_root: Path, drift: dict) -> str:
 
 ### 1. Añadir nueva tool
 
-1. Declarar en `scripts/tool-spec.json` con `required_args`, `declared_returns`,
+1. Declarar en `00_System/tool-spec.json` con `required_args`, `declared_returns`,
    `dq_dimensions`, `fundamentals`, `status: active`.
 2. Crear script usando `wrap_main` (logging automático).
 3. Usar primitivos de `vault_io`: `atomic_write_text`, `file_lock`, `atomic_update_json`.
@@ -351,7 +415,7 @@ def generate_implementation(vault_root: Path, drift: dict) -> str:
 
 ### 1. Add new tool
 
-1. Declare in `scripts/tool-spec.json` with `required_args`, `declared_returns`,
+1. Declare in `00_System/tool-spec.json` with `required_args`, `declared_returns`,
    `dq_dimensions`, `fundamentals`, `status: active`.
 2. Create script using `wrap_main` (automatic logging).
 3. Use `vault_io` primitives: `atomic_write_text`, `file_lock`, `atomic_update_json`.
@@ -444,13 +508,14 @@ CIA: enum values `high`, `medium`, `low`
 
 
 def generate_antipatterns(vault_root: Path, drift: dict) -> str:
-    """Generate 04-antipatterns.md with all 25 APs from NORM_CATALOG."""
+    """Generate 04-antipatterns.md with every AP in NORM_CATALOG."""
     try:
         from vault_norms import NORM_CATALOG
 
         aps = [n for n in NORM_CATALOG if n.get("code", "").startswith("AP-")]
     except Exception:
         aps = []
+    ap_range = ap_range_label({n.get("code", "") for n in aps})
 
     ap_md_es = []
     ap_md_en = []
@@ -482,8 +547,8 @@ def generate_antipatterns(vault_root: Path, drift: dict) -> str:
 
     header = f"""# Antipatterns — Antipatrones
 
-> Documento bilingüe. Catálogo completo de AP-01..AP-{len(aps):02d} del vault.
-> Bilingual document. Full AP-01..AP-{len(aps):02d} catalog.
+> Documento bilingüe. Catálogo completo de {ap_range} del vault.
+> Bilingual document. Full {ap_range} catalog.
 
 ---
 
@@ -807,7 +872,7 @@ def generate_appendices(vault_root: Path, drift: dict) -> str:
 ## ES
 
 ### A. Tool reference
-Delegate a `scripts/README.md` (declarado en `scripts/tool-spec.json`).
+Delegate a `scripts/README.md` (declarado en `00_System/tool-spec.json`).
 
 ### B. Norm reference
 Delegate a `scripts/vault_norms.py` `NORM_CATALOG`.
@@ -856,7 +921,7 @@ Delegate a `scripts/vault_norms.py` `NORM_CATALOG`.
 ## EN
 
 ### A. Tool reference
-Delegate to `scripts/README.md` (declared in `scripts/tool-spec.json`).
+Delegate to `scripts/README.md` (declared in `00_System/tool-spec.json`).
 
 ### B. Norm reference
 Delegate to `scripts/vault_norms.py` `NORM_CATALOG`.

@@ -2,7 +2,7 @@
 
 **Estándar de diseño para dotar a agentes LLM de memoria documental persistente.**
 
-[![Version](https://img.shields.io/badge/version-v38.1-blue)](./vault-obsidian-architecture.md)
+[![Version](https://img.shields.io/badge/version-v39.0-blue)](./vault-obsidian-architecture.md)
 [![Tools](https://img.shields.io/badge/tools-76_active-green)](./scripts/)
 [![Scripts](https://img.shields.io/badge/scripts-98_total-lightblue)](./scripts/)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow)](./scripts/)
@@ -50,6 +50,47 @@ vault-{nombre}/          ← carpeta raíz (prefijo vault- obligatorio)
 ```
 
 Formato: **Markdown + YAML frontmatter + wiki-links**. Compatible con git, abre en cualquier editor, renderable en Obsidian Desktop.
+
+---
+
+## Garantías de datos
+
+Un vault no es una carpeta de notas: es un activo de datos con garantías medibles.
+Cada una tiene una métrica, una tool que la calcula y un artefacto donde queda escrita.
+Detalle completo en [Marco de Datos y Gobernanza](./vault-obsidian-architecture.md#marco-de-datos-y-gobernanza).
+
+| Eje | Qué garantiza | Dónde se mide |
+|---|---|---|
+| **Tríada CIA** (pilar) | Confidencialidad, Integridad, Disponibilidad como campos de frontmatter que **cambian el comportamiento de las tools**, no como etiquetas | `cia_sensitivity` / `cia_integrity` / `cia_availability` |
+| **8 Fundamentos (F1–F8)** | Integridad, consistencia, completitud, exactitud, validez, actualidad, autenticidad, no-repudio | `vault_fundamentals`, `00_System/data-fundamentals.json` |
+| **9 dimensiones DQ** | Los 8 fundamentos + unicidad, escala 0.0–1.0, umbral 0.7 | `vault_quality_check`, `00_System/quality-index.json` |
+| **Principios FAIR** | Findable, Accessible, Interoperable, Reusable — con el mecanismo concreto que ya los cumple | `vault_search`, `vault_master_index`, `.history/` |
+| **V's del Big Data** | Volumen, velocidad, variedad, veracidad, valor, variabilidad — cada V apunta a un número real | `vault_audit`, `vault_change_log`, `vault_delta` |
+| **Trazabilidad** | Cadena verificable `agent:` → `.change-log.json` → `.tool-trace.json` → `.history/` → manifiesto Merkle | `vault_audit --trace` |
+| **Gobernanza** | 43 normas AP/PAT/SP/CN, 0 con enforcement manual | `vault_norms --audit` |
+| **Alineación ISO** | 13 normas mapeadas cláusula → implementación → tool | `vault_fundamentals --framework` |
+
+```bash
+python scripts/vault_fundamentals.py --framework   # exporta el marco completo (JSON + MD)
+python scripts/vault_fundamentals.py --matrix      # matriz concepto → métrica → tool → enforcement
+python scripts/vault_norms.py --check-framework    # guard anti-drift registro ↔ manifiesto
+```
+
+---
+
+## Novedades v39.0 — Marco de Datos y Gobernanza explícito
+
+- **Sección nueva en el manifiesto**: CIA, F1–F8, 9 dimensiones DQ, FAIR, V's del Big Data,
+  estados, versionado en tres planos, trazabilidad, gobernanza, cobertura ISO y matriz de
+  trazabilidad de 20 filas — todo con métrica, umbral, tool y artefacto.
+- **Registro canónico ejecutable** en `scripts/vault_fundamentals.py` (`CIA_TRIAD`,
+  `FAIR_PRINCIPLES`, `BIGDATA_VS`, `ISO_COVERAGE`, `TRACEABILITY_MATRIX`).
+- **Guard anti-drift**: `vault_norms.py --check-framework` falla si el manifiesto omite
+  cualquier id del registro. La doc ya no puede desincronizarse del código en silencio.
+- **Política de no-derogación** declarada: nada se elimina; lo reemplazado se anota
+  `superseded_by:` conservando su contrato.
+- **Changelog consolidado**: entradas faltantes reconstruidas desde git, orden cronológico
+  restaurado y hashes `pending` fijados.
 
 ---
 
@@ -157,7 +198,30 @@ python scripts/vault_audit.py
 
 ---
 
-## Las 76 tools activas — 33 grupos
+## CLI consolidada — `cli/`
+
+Las 81 tools bajo un único punto de entrada, con búsqueda, planificación de
+concurrencia y guardas de seguridad:
+
+```bash
+python -m cli find "backup grafo"        # las tools como fragmentos buscables
+python -m cli doctor --pretty            # raíz, contrato, locks de artefactos
+python -m cli batch --file lote.json --parallel 4 --verify-integrity
+python -m cli scan --races --summary     # condiciones de carrera en los scripts
+```
+
+Ejecuta varias tools a la vez por olas sin pisarse (modelo EXCLUSIVE / GUARDED /
+GLOBAL, con la concurrencia sobre artefactos compartidos concedida **por
+verificación AST**, no por declaración), escanea el contenido por inyección de
+directivas antes de escribir, y contrasta lo que cambió en el vault contra lo
+que el plan declaraba.
+
+Guía: [`cli/README.md`](cli/README.md) · Referencia de comandos:
+[`cli/COMMANDS.md`](cli/COMMANDS.md).
+
+---
+
+## Las 81 tools activas — 34 grupos
 
 | Grupo | Tools |
 |---|---|
@@ -194,6 +258,7 @@ python scripts/vault_audit.py
 | 31 — Riesgos y Calidad | `vault_risk_save`, `vault_privacy_save`, `vault_ncr_save` |
 | 32 — Bootstrap | `vault_init` |
 | 33 — Corrección automática | `vault_fix_brackets` |
+| 34 — Memoria de Contexto | `vault_preferences`, `vault_query_parse`, `vault_subgraph`, `vault_context_pack`, `vault_ingest` |
 
 Ver **[scripts/README.md](./scripts/README.md)** para contratos completos con parámetros, ejemplos y protocolo de sesión.
 
@@ -281,7 +346,7 @@ Sistema de control de asistencia con autenticación biométrica.
 
 Contiene:
 - 8 principios de diseño
-- 76 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
+- 81 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
 - 34 normas: 23 antipatrones (AP-01–AP-23), 5 patrones (PAT-1–PAT-5), 3 SP, 3 CN
 - norm_refs auto-embebido en frontmatter + vault_code_tag para etiquetas en código fuente
 - 8 Fundamentos de Datos (F1–F8) con trazabilidad a tools
@@ -291,6 +356,10 @@ Contiene:
 - **Spec-driven design:** tool-spec.json + vault_spec_validate — contratos formales antes de implementar
 - **Trazabilidad bidireccional:** @vault: tag en código fuente + vault_code_sync para auditar gaps código↔vault
 - **Grupo 32 — Bootstrap:** `vault_init` para inicializar un vault fresco en 1 comando (17 folders + scaffolds + audit)
+- **Grupo 34 — Memoria de Contexto:** eje consulta → contexto. `vault_query_parse`
+  (lenguaje natural → consulta estructurada), `vault_subgraph` (K semillas, N saltos),
+  `vault_context_pack` (rerank + Top-K bajo presupuesto de tokens), `vault_preferences`
+  (contexto estable del usuario) y `vault_ingest` (ingesta con pre-vuelo anti-poison)
 - **nextActions prescriptivo:** `vault_audit` ahora devuelve qué hacer para mantener 100/100
 - Grupos 29-31: Producción/SRE, Release/Entornos, Riesgos/Calidad (ISO 20000, 22301, 12207, 31000, 27701, 9001)
 - Mapa canónico script→carpeta (tabla authoritative)
@@ -305,7 +374,7 @@ Contiene:
 ## Scripts — estructura del repositorio
 
 ```
-scripts/                    ← 98 archivos Python (76 tools del catálogo + 8 archivadas en _archived/ + internas/meta)
+scripts/                    ← 103 archivos Python (81 tools del catálogo + 8 archivadas en _archived/ + internas/meta)
 ├── vault_io.py             — I/O base: _detect_vault_root, assert_within_vault, atomic_write_text/json, file_lock
 ├── vault_errors.py         — wrap_main (timeout 60s), emit_ok, trace log
 ├── vault_write.py          — tool principal de escritura (guards AP-20, AP-21, norm_refs auto-embed)

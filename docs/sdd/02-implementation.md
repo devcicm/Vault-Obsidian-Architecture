@@ -8,7 +8,7 @@
 
 ### 1. Añadir nueva tool
 
-1. Declarar en `scripts/tool-spec.json` con `required_args`, `declared_returns`,
+1. Declarar en `00_System/tool-spec.json` con `required_args`, `declared_returns`,
    `dq_dimensions`, `fundamentals`, `status: active`.
 2. Crear script usando `wrap_main` (logging automático).
 3. Usar primitivos de `vault_io`: `atomic_write_text`, `file_lock`, `atomic_update_json`.
@@ -48,7 +48,7 @@
 
 ### 1. Add new tool
 
-1. Declare in `scripts/tool-spec.json` with `required_args`, `declared_returns`,
+1. Declare in `00_System/tool-spec.json` with `required_args`, `declared_returns`,
    `dq_dimensions`, `fundamentals`, `status: active`.
 2. Create script using `wrap_main` (automatic logging).
 3. Use `vault_io` primitives: `atomic_write_text`, `file_lock`, `atomic_update_json`.

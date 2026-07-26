@@ -31,7 +31,7 @@ SYSTEM_DIR = VAULT_ROOT / "00_System"
 VERSION_FILE = SYSTEM_DIR / "standard-version.json"
 IDENTITY_FILE = SYSTEM_DIR / "identity.md"
 
-CURRENT_VERSION = "v36.0"
+CURRENT_VERSION = "v39.0"
 
 MIGRATIONS: Dict[str, Dict[str, Any]] = {
     "v21": {
@@ -285,6 +285,60 @@ MIGRATIONS: Dict[str, Dict[str, Any]] = {
             "docs/sdd/ generado con 14 archivos bilingües (ES/EN)",
         ],
     },
+    "v37": {
+        "description": (
+            "MCP Server monolítico (JSON-RPC 2.0, transporte stdio + SSE, cero "
+            "dependencias npm) + 3 validadores nuevos + mejoras en graph tools."
+        ),
+        "add_folders": [],
+        "tools_count": "76",
+        "update_identity": True,
+        "notes": [
+            "mcp/nodejs/vault-mcp-server.mjs: expone el catálogo como MCP tools",
+            "Catálogo canónico sincronizado desde vault_mcp_catalog.py --sync",
+            "Sin cambios estructurales en el vault: no hay carpetas ni datos que migrar",
+        ],
+    },
+    "v38": {
+        "description": (
+            "AP-36 (contención e idempotencia) + coacción de fechas auto-parseadas "
+            "por PyYAML en el límite de lectura de frontmatter."
+        ),
+        "add_folders": [],
+        "update_identity": True,
+        "notes": [
+            "AP-36: toda operación escribe SOLO dentro del vault root",
+            "vault_lib.parse_frontmatter coacciona datetime/date a strings ISO",
+            "Sin migración de datos: la coacción ocurre en lectura, no reescribe notas",
+        ],
+    },
+    "v39": {
+        "description": (
+            "Grupo 34 — Memoria de Contexto: eje consulta → contexto. Añade la "
+            "sección 17_Preferences/ con sus 5 subcarpetas, destino canónico de "
+            "vault_preferences. Marco de Datos y Gobernanza explícito."
+        ),
+        # Única migración estructural desde v33: sin estas carpetas,
+        # vault_preferences no tiene destino en un vault preexistente.
+        "add_folders": [
+            "17_Preferences",
+            "17_Preferences/workflow",
+            "17_Preferences/style",
+            "17_Preferences/tooling",
+            "17_Preferences/constraints",
+            "17_Preferences/domain",
+        ],
+        "update_identity": {"tools_count": "81", "groups_count": "34"},
+        "notes": [
+            "vault_preferences.py (NUEVO): contexto estable del usuario, strength must|should|may",
+            "vault_query_parse.py (NUEVO): lenguaje natural → consulta estructurada, determinista",
+            "vault_subgraph.py (NUEVO): K semillas / N saltos con decaimiento y peso por predicado",
+            "vault_context_pack.py (NUEVO): empaquetado bajo presupuesto de tokens",
+            "vault_ingest.py (NUEVO): ingesta gobernada con preflight anti-poison no desactivable",
+            "17_Preferences/: sección nueva registrada en vault_registry (owner: vault_preferences)",
+            "Sin base de datos, sin embeddings y sin servicio externo",
+        ],
+    },
 }
 
 VERSION_ORDER = [
@@ -306,6 +360,9 @@ VERSION_ORDER = [
     "v34",
     "v35",
     "v36",
+    "v37",
+    "v38",
+    "v39",
 ]
 
 
@@ -333,7 +390,17 @@ def _version_index(v: str) -> int:
     try:
         return VERSION_ORDER.index(v)
     except ValueError:
-        return -1
+        pass
+    # VERSION_ORDER usa la versión mayor ("v39"), pero CURRENT_VERSION y los
+    # version files escritos por releases puntuales traen minor ("v39.0",
+    # "v34.2"). Sin esta normalización el índice era -1 y _pending_migrations
+    # devolvía [] en silencio: `--to latest` no aplicaba NINGUNA migración.
+    if isinstance(v, str) and "." in v:
+        try:
+            return VERSION_ORDER.index(v.split(".", 1)[0])
+        except ValueError:
+            return -1
+    return -1
 
 
 def _read_version_file() -> Dict[str, Any]:

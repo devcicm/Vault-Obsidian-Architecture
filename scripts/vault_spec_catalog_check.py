@@ -19,6 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 from vault_mcp_catalog import TOOLS_CATALOG
 from vault_errors import wrap_main
+from vault_io import resolve_tool_spec, tool_spec_path
 
 
 def main() -> int:
@@ -32,7 +33,15 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    spec_path = Path(__file__).parent / "tool-spec.json"
+    spec_path = resolve_tool_spec()
+    if spec_path is None:
+        print(json.dumps({
+            "ok": False,
+            "error": "tool_spec_not_found",
+            "expected": str(tool_spec_path()),
+            "hint": "python vault_manifest.py --bootstrap",
+        }, indent=2, ensure_ascii=False))
+        return 1
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
     spec_tools = set(spec["tools"].keys())
     catalog_tools = set(TOOLS_CATALOG.keys())

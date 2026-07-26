@@ -7,7 +7,7 @@
 ## ES
 
 ### A. Tool reference
-Delegate a `scripts/README.md` (declarado en `scripts/tool-spec.json`).
+Delegate a `scripts/README.md` (declarado en `00_System/tool-spec.json`).
 
 ### B. Norm reference
 Delegate a `scripts/vault_norms.py` `NORM_CATALOG`.
@@ -56,7 +56,7 @@ Delegate a `scripts/vault_norms.py` `NORM_CATALOG`.
 ## EN
 
 ### A. Tool reference
-Delegate to `scripts/README.md` (declared in `scripts/tool-spec.json`).
+Delegate to `scripts/README.md` (declared in `00_System/tool-spec.json`).
 
 ### B. Norm reference
 Delegate to `scripts/vault_norms.py` `NORM_CATALOG`.

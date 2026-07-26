@@ -33,7 +33,7 @@ from typing import Any, Dict, List, Optional, Set
 SCRIPTS_DIR = Path(__file__).parent
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT  # noqa: E402
+from vault_io import VAULT_ROOT, resolve_tool_spec  # noqa: E402
 SYSTEM_DIR = VAULT_ROOT / "00_System"
 SPEC_MEMORY_FILE = SYSTEM_DIR / "spec-memory.json"
 QUALITY_INDEX = SYSTEM_DIR / "quality-index.json"
@@ -45,16 +45,15 @@ PYTHON = sys.executable
 # ──────────────────────────────────────────────────────────────────────────────
 # Declared returns per tool — leídos desde tool-spec.json (spec-driven).
 # Fallback al dict hardcodeado si el archivo de spec no existe aún.
-# Fuente canónica: scripts/tool-spec.json (editar antes de implementar).
+# Fuente canónica: <vault>/00_System/tool-spec.json (editar antes de implementar).
 # ──────────────────────────────────────────────────────────────────────────────
-
-_SPEC_FILE = SCRIPTS_DIR / "tool-spec.json"
 
 def _load_declared_returns() -> Dict[str, List[str]]:
     """Carga declared_returns desde tool-spec.json. Fallback a hardcoded si no existe."""
-    if _SPEC_FILE.exists():
+    spec_file = resolve_tool_spec()
+    if spec_file is not None:
         try:
-            spec = json.loads(_SPEC_FILE.read_text(encoding="utf-8"))
+            spec = json.loads(spec_file.read_text(encoding="utf-8"))
             return {
                 name: entry.get("declared_returns", [])
                 for name, entry in spec.get("tools", {}).items()

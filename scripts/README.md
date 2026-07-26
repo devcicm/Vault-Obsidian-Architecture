@@ -1,9 +1,11 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture v38.1**. Implementan las 76 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
+Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 76 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
 - **98 archivos** — 76 tools del catálogo MCP (74 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + 16 meta/spec + 8 bibliotecas internas
-- **AP-36 (v38.1)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica
+- **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
+- **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
+- **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
 - **Saneamiento de índices (v38.1)** — `vault_section_index.py --heal [--root]` regenera índices con formato legacy `[[stem|alias]]` o ausentes; el auto-index post-write se auto-cura si un agente escribe `index.md` a mano
 - **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 76 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
@@ -994,9 +996,13 @@ python vault_quality_check.py --folder 01_Projects/mi-api
 ### `vault_fundamentals.py`
 Registro canónico de los 8 Fundamentos de Datos (F1–F8): INTEGRIDAD, CONSISTENCIA, COMPLETITUD, EXACTITUD, VALIDEZ, ACTUALIDAD, AUTENTICIDAD, NO_REPUDIO. Cada tool está mapeada a uno o más fundamentos.
 
+Desde v39 es además la **fuente única del Marco de Datos y Gobernanza**: `CIA_TRIAD` (3), `FUNDAMENTALS` (8), `FAIR_PRINCIPLES` (4), `BIGDATA_VS` (6), `ISO_COVERAGE` (13) y `TRACEABILITY_MATRIX` (20 filas). La sección homónima del manifiesto se deriva de aquí y `vault_norms.py --check-framework` falla si divergen.
+
 ```bash
 python vault_fundamentals.py                      # lista F1–F8 con tools mapeadas
 python vault_fundamentals.py --fundamental F1     # detalle de un fundamento
+python vault_fundamentals.py --framework          # exporta 00_System/data-framework.{json,md}
+python vault_fundamentals.py --matrix             # matriz concepto → métrica → umbral → tool → enforcement
 ```
 
 ---
@@ -1043,6 +1049,93 @@ Servicio de conteo de tokens con cache. Usado internamente por `wrap_main` cuand
 python vault_errors.py query --last 10
 python vault_errors.py query --tool vault_write --severity error
 python vault_errors.py catalog --code AP21_PATH_WIKILINKS
+```
+
+---
+
+## Grupo 34 — Memoria de Contexto
+
+Eje **consulta → contexto**. El resto del catálogo cubre el eje contrario
+(escritura → gobernanza): sabe qué se decidió, qué se aprendió y qué pasó, pero
+devolver *"lo que hay que saber para responder esto, en N tokens"* quedaba en
+manos del agente, sin criterio ni traza.
+
+Sin base de datos, sin embeddings y sin servicio externo: reglas léxicas sobre
+los vocabularios que ya existen en el repo, más el grafo de wiki-links.
+
+### `vault_preferences.py`
+Preferencias del usuario como **contexto estable**: cómo quiere trabajar, qué no
+debe tocarse. Viven en `17_Preferences/{workflow,style,tooling,constraints,domain}`,
+separadas de `07_Knowledge` porque su ciclo de vida es distinto — una preferencia
+se **revoca**, no se corrige. Fuerza normativa `must | should | may` (estilo RFC
+2119) para que el agente distinga una restricción dura de una inclinación.
+
+Revocar marca `status: revoked` con motivo y **no borra la nota**: sin ella se
+pierde la explicación de por qué el agente se comportaba distinto antes.
+
+```bash
+python vault_preferences.py --set --category constraints \
+    --title "No mover tools entre repos" \
+    --statement "No propagar scripts a otros repos salvo petición explícita" \
+    --strength must --agent mi-agente
+python vault_preferences.py --list --strength must
+python vault_preferences.py --context          # bloque listo para inyectar
+python vault_preferences.py --revoke "17_Preferences/style/tabs.md" --reason "migró a prettier"
+```
+
+### `vault_query_parse.py`
+Lenguaje natural → consulta estructurada: términos, frases, tags, semillas,
+secciones, `status`, intención, profundidad y ventana temporal. **Determinista**:
+misma frase, misma consulta, siempre. Cuando no está seguro no adivina — baja
+`confidence` y deja el término a la búsqueda léxica.
+
+```bash
+python vault_query_parse.py "qué decidimos la semana pasada sobre MCP" --explain
+python vault_query_parse.py "errores de ayer en [[mcp-protocol]]" --plan-only
+```
+
+### `vault_subgraph.py`
+Subgrafo de **K semillas y N saltos**. A diferencia de `vault_impact` (solo hacia
+atrás, pregunta fija), expande en la dirección que se le pida, pondera cada
+arista por su predicado (un `wiki_link` explícito informa más que una
+co-ocurrencia de tags) y decae la relevancia 0.6 por salto.
+
+```bash
+python vault_subgraph.py --seeds "03_Decisions/adr-001.md" --hops 2
+python vault_subgraph.py --seeds a.md b.md --hops 3 --section 07_Knowledge
+python vault_subgraph.py --seeds mcp-protocol --format mermaid
+```
+
+### `vault_context_pack.py`
+Pregunta → contexto empaquetado bajo presupuesto de tokens. Encadena
+`vault_query_parse` → `vault_search` → `vault_subgraph` → rerank → Top-K.
+
+El rerank combina léxico (0.45), grafo (0.30), frescura (0.15, vida media 90d) y
+CIA (0.10), con penalización para `deprecated`/`superseded`. Dos garantías:
+el presupuesto **recorta notas enteras** —media nota es peor que ninguna, porque
+el agente la cita como si estuviera completa— y las preferencias `must` entran
+siempre primero.
+
+```bash
+python vault_context_pack.py "qué decidimos sobre el transporte MCP"
+python vault_context_pack.py "errores del proyecto ans" --budget 2000
+python vault_context_pack.py "auth" --format markdown --no-preferences
+```
+
+### `vault_ingest.py`
+Ingesta gobernada de conversaciones, ficheros y URLs, con extracción determinista
+de entidades (wikilinks, tags, rutas, siglas, nombres propios).
+
+Es la vía por la que un vault se envenena, así que el **pre-vuelo anti-poison
+(`cli.safety`) no es opcional ni desactivable**: si encuentra algo bloqueante no
+se escribe nada. Además es **dry-run por defecto**, nunca sobrescribe una nota
+existente, y lo ingerido entra con `status: draft` y `cia_integrity: low` hasta
+que alguien lo revise. La red está apagada salvo `--allow-network` explícito.
+
+```bash
+python vault_ingest.py --file notas-reunion.md --section 07_Knowledge   # propuesta
+python vault_ingest.py --file notas-reunion.md --section 07_Knowledge --commit
+cat conversacion.txt | python vault_ingest.py --stdin --section 04_Sessions
 ```
 
 ---
@@ -1161,6 +1254,26 @@ node mcp/nodejs/vault-mcp-server.mjs --port 3000
 1. **Table Bracket Validator:** detecta `[[` o `]]` incompletos en celdas de tablas markdown
 2. **Referenced Notes Validator:** bloquea writes con wikilinks a notas inexistentes o stubs (diferente a ghost links: es bloqueante, no advisory)
 3. **Note Has Content Validator:** verifica que una nota referenciada tiene contenido real (≥3 líneas, ≥10 palabras)
+
+---
+
+## Grupo 35 — Normas
+
+### `vault_norms.py`
+
+Registro canónico de las 43 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
+
+```bash
+python vault_norms.py                             # catálogo completo
+python vault_norms.py --norm AP-36                # detalle de una norma
+python vault_norms.py --audit --root vault-sandbox  # audita el vault contra las normas con guard/audit
+python vault_norms.py --audit --strict            # igual, pero exit 1 si hay violaciones (gate de CI)
+python vault_norms.py --check-framework           # guard anti-drift: el manifiesto documenta todos
+                                                  # los ids del Marco de Datos (CIA-*, F1–F8, FAIR-*,
+                                                  # V1–V6, ISO-*). Falla si registro y doc divergen.
+```
+
+`--check-framework` se ejecuta contra `vault-obsidian-architecture.md` (raíz del repo del estándar) o contra `--spec <ruta>`. Es deliberadamente independiente de `--audit`: los vaults consumidores no contienen el manifiesto y no deben fallar por ello.
 
 ---
 

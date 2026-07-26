@@ -49,5 +49,23 @@ python scripts/vault_sdd_init.py --vault-root /path/to/vault --bilingual
 
 ## Output
 
-All files are written to `docs/sdd/`. The `integrity-report.json` contains
-validation results. Run with `--dry-run` first to preview.
+All files are written to `<vault-root>/docs/sdd/`. The `integrity-report.json`
+contains validation results. Run with `--dry-run` first to preview.
+
+## Containment (AP-36)
+
+Every write happens under `<vault-root>/docs/sdd/`. The skill is **read-only**
+over the rest of the vault: it never modifies existing notes and never creates
+notes outside `docs/sdd/`. Without `--vault-root`, the target is resolved by
+`vault_io` auto-detection, which in this repo yields `vault-sandbox/`.
+
+## Norm coverage
+
+`04-antipatterns.md` is generated from `vault_norms.NORM_CATALOG` — the range
+is derived, never hardcoded. `--dry-run` reports `missing_norms`, computed by
+contiguity: if `AP-36` exists, every lower code must exist too. A non-empty
+list means the registry has a hole, not that the skill failed.
+
+## Reference
+
+Full documentation, installation and lifecycle: `docs/SKILLS.md`.

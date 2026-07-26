@@ -12,17 +12,9 @@
             "type": "string",
             "description": "Proyecto"
           },
-          "title": {
+          "decision": {
             "type": "string",
-            "description": "Short decision title"
-          },
-          "decision_type": {
-            "type": "string",
-            "description": "decision_type"
-          },
-          "description": {
-            "type": "string",
-            "description": "What decision was made"
+            "description": "Decisión tomada"
           },
           "rationale": {
             "type": "string",
@@ -31,40 +23,11 @@
           "alternatives": {
             "type": "string",
             "description": "Alternativas consideradas"
-          },
-          "risks": {
-            "type": "string",
-            "description": "JSON array of identified risks: [\"risk description\"]"
-          },
-          "impact_level": {
-            "type": "string",
-            "description": "impact_level"
-          },
-          "reversible": {
-            "type": "string",
-            "description": "Whether the decision can be reversed (default: true)"
-          },
-          "human_approved": {
-            "type": "boolean",
-            "description": "Flag: decision was reviewed and approved by a human"
-          },
-          "related_code": {
-            "type": "string",
-            "description": "Comma-separated list of related source files"
-          },
-          "tags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Additional tags"
           }
         },
         "required": [
           "project",
-          "title",
-          "decision_type",
-          "description",
+          "decision",
           "rationale"
         ]
       },
@@ -96,10 +59,6 @@
           "section": {
             "type": "string",
             "description": "Encabezado de sección donde agregar"
-          },
-          "no-timestamp": {
-            "type": "boolean",
-            "description": "Don't add timestamp"
           }
         },
         "required": [
@@ -126,12 +85,8 @@
             "type": "string",
             "description": "Proyecto a auditar"
           },
-          "path": {
-            "type": "string",
-            "description": "External directory path to audit instead of vault"
-          },
           "refresh-dq": {
-            "type": "boolean",
+            "type": "string",
             "description": "Forzar refresh de Data Quality"
           }
         }
@@ -152,13 +107,17 @@
       "inputSchema": {
         "type": "object",
         "properties": {
+          "include_history": {
+            "type": "string",
+            "description": "Incluir .history/ (default: False)"
+          },
+          "compress": {
+            "type": "string",
+            "description": "Comprimir a zip (default: False)"
+          },
           "label": {
             "type": "string",
             "description": "Etiqueta opcional"
-          },
-          "verify": {
-            "type": "string",
-            "description": "Verificar integridad de un backup existente"
           }
         }
       },
@@ -201,7 +160,12 @@
       "script": "vault_backup_list.py",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "limit": {
+            "type": "string",
+            "description": "Cantidad máxima (default: 20)"
+          }
+        }
       },
       "guards": [],
       "side_effects": [],
@@ -222,39 +186,38 @@
             "type": "string",
             "description": "Título"
           },
+          "type": {
+            "type": "string",
+            "description": "Tipo: book, article, website, paper",
+            "enum": [
+              "book",
+              "article",
+              "website",
+              "paper"
+            ]
+          },
+          "authors": {
+            "type": "string",
+            "description": "Autores separados por coma"
+          },
+          "year": {
+            "type": "string",
+            "description": "Año de publicación"
+          },
           "url": {
             "type": "string",
             "description": "URL"
           },
-          "summary": {
-            "type": "string",
-            "description": "Summary of what this source contributed"
-          },
-          "source_type": {
-            "type": "string",
-            "description": "source_type"
-          },
-          "project": {
-            "type": "string",
-            "description": "Project slug this reference applies to"
-          },
-          "agent": {
-            "type": "string",
-            "description": "Agent identifier (claude, codex, gpt, gemini, deepseek, human)"
-          },
           "tags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
+            "type": "string",
             "description": "Tags separados por espacio"
           }
         },
         "required": [
           "title",
-          "url",
-          "summary",
-          "source_type"
+          "type",
+          "authors",
+          "year"
         ]
       },
       "guards": [],
@@ -274,45 +237,17 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "action": {
-            "type": "string",
-            "description": "action"
-          },
-          "path": {
-            "type": "string",
-            "description": "Vault-relative path of the affected note"
-          },
-          "new_path": {
-            "type": "string",
-            "description": "New path (required for action 'moved')"
-          },
-          "reason": {
-            "type": "string",
-            "description": "Why this change was made (required)"
-          },
-          "summary": {
-            "type": "string",
-            "description": "Alias for --reason (accepted for compatibility)"
-          },
-          "agent": {
-            "type": "string",
-            "description": "Agent name (default: claude)"
-          },
-          "propagate": {
-            "type": "string",
-            "description": "After recording, trigger propagation: conservative|transitive|critical-path"
-          },
-          "query": {
-            "type": "boolean",
-            "description": "Query mode: return recent log entries"
-          },
           "project": {
             "type": "string",
             "description": "Proyecto específico"
           },
-          "last": {
-            "type": "integer",
-            "description": "Number of entries to return in query (default: 20)"
+          "from": {
+            "type": "string",
+            "description": "Desde fecha (YYYY-MM-DD)"
+          },
+          "to": {
+            "type": "string",
+            "description": "Hasta fecha (YYYY-MM-DD)"
           }
         }
       },
@@ -334,6 +269,10 @@
           "project": {
             "type": "string",
             "description": "Proyecto"
+          },
+          "depth": {
+            "type": "string",
+            "description": "Profundidad máxima (default: 3)"
           }
         },
         "required": [
@@ -362,76 +301,30 @@
             "type": "string",
             "description": "Proyecto"
           },
-          "file_path": {
+          "module": {
             "type": "string",
-            "description": "Real file path on disk (canonical identifier)"
-          },
-          "description": {
-            "type": "string",
-            "description": "Purpose of the file in 1-3 lines"
+            "description": "Nombre del módulo"
           },
           "language": {
             "type": "string",
-            "description": "Lenguaje: python, javascript, typescript, go, rust"
+            "description": "Lenguaje: python, javascript, typescript, go, rust",
+            "enum": [
+              "python",
+              "javascript",
+              "typescript",
+              "go",
+              "rust"
+            ]
           },
-          "iso_type": {
+          "viewpoints": {
             "type": "string",
-            "description": "iso_type"
-          },
-          "exports": {
-            "type": "string",
-            "description": "JSON array of exported symbols"
-          },
-          "imports": {
-            "type": "string",
-            "description": "JSON array of imported modules"
-          },
-          "responsibilities": {
-            "type": "string",
-            "description": "JSON array of responsibilities"
-          },
-          "notes": {
-            "type": "string",
-            "description": "Additional notes"
-          },
-          "tags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Additional tags"
-          },
-          "methods": {
-            "type": "string",
-            "description": "JSON array of methods: [{name, signature, description, params:[{name,type,desc}], returns:{type,desc}, raises:[str]}]"
-          },
-          "classes": {
-            "type": "string",
-            "description": "JSON array of classes: [{name, description, extends?, implements?:[], properties:[{name,type,desc}], methods:[str]}]"
-          },
-          "constants": {
-            "type": "string",
-            "description": "JSON array of constants: [{name, value, type, description}]"
-          },
-          "exceptions": {
-            "type": "string",
-            "description": "JSON array of exceptions: [{name, description, raised_when}]"
-          },
-          "quality": {
-            "type": "string",
-            "description": "JSON array ISO 25010: [{attribute, rating(1-5), notes}]"
-          },
-          "scan-path": {
-            "type": "string",
-            "description": "Directory to scan recursively for code files and document each one"
-          },
-          "tag-source": {
-            "type": "boolean",
-            "description": "Embed @vault: reference in the source file after creating the vault note"
+            "description": "Viewpoints IEEE 1016: context,interface,data,operations,dependency"
           }
         },
         "required": [
-          "project"
+          "project",
+          "module",
+          "language"
         ]
       },
       "guards": [],
@@ -452,33 +345,26 @@
       "inputSchema": {
         "type": "object",
         "properties": {
+          "query": {
+            "type": "string",
+            "description": "Consulta: module, relation, imports",
+            "enum": [
+              "module",
+              "relation",
+              "imports"
+            ]
+          },
           "project": {
             "type": "string",
             "description": "Filtrar por proyecto"
           },
-          "file": {
+          "pattern": {
             "type": "string",
-            "description": "File path to query (partial match allowed)"
-          },
-          "method": {
-            "type": "string",
-            "description": "Method name to search across all modules"
-          },
-          "class": {
-            "type": "string",
-            "description": "Class name to search across all modules"
-          },
-          "list": {
-            "type": "boolean",
-            "description": "List all documented modules for the project"
-          },
-          "deps": {
-            "type": "boolean",
-            "description": "Include dependency relations (use with --file)"
+            "description": "Patrón de búsqueda"
           }
         },
         "required": [
-          "project"
+          "query"
         ]
       },
       "guards": [],
@@ -500,32 +386,31 @@
             "type": "string",
             "description": "Proyecto"
           },
-          "from_file": {
+          "from": {
             "type": "string",
-            "description": "Source file path"
+            "description": "Componente origen"
           },
-          "to_file": {
+          "to": {
             "type": "string",
-            "description": "Target file path"
+            "description": "Componente destino"
           },
-          "relation_type": {
+          "type": {
             "type": "string",
-            "description": "relation_type"
-          },
-          "cardinality": {
-            "type": "string",
-            "description": "cardinality"
-          },
-          "label": {
-            "type": "string",
-            "description": "Additional label"
+            "description": "Tipo: imports,calls,extends,implements,depends",
+            "enum": [
+              "imports",
+              "calls",
+              "extends",
+              "implements",
+              "depends"
+            ]
           }
         },
         "required": [
           "project",
-          "from_file",
-          "to_file",
-          "relation_type"
+          "from",
+          "to",
+          "type"
         ]
       },
       "guards": [],
@@ -549,23 +434,20 @@
             "type": "string",
             "description": "Proyecto"
           },
-          "scan-dir": {
+          "action": {
             "type": "string",
-            "description": "Directorio de código fuente a escanear para refs huérfanas"
-          },
-          "fix": {
-            "type": "boolean",
-            "description": "Inyectar @vault: en archivos sin tag"
-          },
-          "dry-run": {
-            "type": "boolean",
-            "description": "Mostrar qué se haría sin modificar archivos"
-          },
-          "report": {
-            "type": "boolean",
-            "description": "Salida human-readable en lugar de JSON"
+            "description": "Acción: scan, update, diff",
+            "enum": [
+              "scan",
+              "update",
+              "diff"
+            ]
           }
-        }
+        },
+        "required": [
+          "project",
+          "action"
+        ]
       },
       "guards": [],
       "side_effects": [
@@ -584,70 +466,24 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "define": {
+          "project": {
             "type": "string",
-            "description": "Definir/actualizar una etiqueta @norm personalizada"
+            "description": "Proyecto"
           },
-          "apply": {
+          "module": {
             "type": "string",
-            "description": "Aplicar @norm a un archivo de código"
+            "description": "Módulo a etiquetar"
           },
-          "remove": {
+          "tags": {
             "type": "string",
-            "description": "Eliminar @norm de un archivo"
-          },
-          "link-vault": {
-            "type": "string",
-            "description": "Embeber @vault: en archivo fuente (ruta nota sin .md)"
-          },
-          "unlink-vault": {
-            "type": "boolean",
-            "description": "Eliminar @vault: de un archivo fuente"
-          },
-          "scan": {
-            "type": "boolean",
-            "description": "Listar @vault: y @norm en un archivo"
-          },
-          "list": {
-            "type": "boolean",
-            "description": "Listar todos los tags registrados"
-          },
-          "tag-note": {
-            "type": "string",
-            "description": "Crear nota en vault para este tag"
-          },
-          "file": {
-            "type": "string",
-            "description": "Ruta al archivo de código (absoluta o relativa al CWD)"
-          },
-          "title": {
-            "type": "string",
-            "description": "Título para --link-vault (se muestra tras — en el tag)"
-          },
-          "name": {
-            "type": "string",
-            "description": "Nombre descriptivo del tag (para --define o --apply)"
-          },
-          "description": {
-            "type": "string",
-            "description": "Descripción detallada del tag"
-          },
-          "files": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Lista de archivos para --define (aplica inmediatamente)"
-          },
-          "prefix": {
-            "type": "string",
-            "description": "Filtrar --list por prefijo (ej: cr, impl, bus)"
-          },
-          "agent": {
-            "type": "string",
-            "description": "Agente que ejecuta la operación"
+            "description": "Tags separados por coma"
           }
-        }
+        },
+        "required": [
+          "project",
+          "module",
+          "tags"
+        ]
       },
       "guards": [],
       "side_effects": [
@@ -658,6 +494,59 @@
         "vault_code_module"
       ]
     },
+    "vault_context_pack": {
+      "name": "vault_context_pack",
+      "description": "Pregunta → contexto empaquetado bajo presupuesto de tokens: parse, búsqueda léxica, expansión por grafo, rerank y Top-K.",
+      "group": "Memoria de Contexto",
+      "script": "vault_context_pack.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Pregunta en lenguaje natural"
+          },
+          "budget": {
+            "type": "string",
+            "description": "Presupuesto en tokens (default: 4000)"
+          },
+          "top_k": {
+            "type": "string",
+            "description": "Máximo de notas candidatas (default: 12)"
+          },
+          "excerpt_tokens": {
+            "type": "string",
+            "description": "Tope por nota (default: 350)"
+          },
+          "min_score": {
+            "type": "string",
+            "description": "Descarta candidatas por debajo de este score"
+          },
+          "no_preferences": {
+            "type": "string",
+            "description": "No inyecta las preferencias 'must'"
+          },
+          "format": {
+            "type": "string",
+            "description": "json | markdown (default: json)"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "guards": [
+        "El presupuesto recorta notas enteras: nunca entrega media nota como entera",
+        "Requiere 99_Index/search-index.json y graph.json"
+      ],
+      "side_effects": [],
+      "related": [
+        "vault_query_parse",
+        "vault_subgraph",
+        "vault_search",
+        "vault_preferences"
+      ]
+    },
     "vault_delta": {
       "name": "vault_delta",
       "description": "Detecta cambios entre sesiones usando SHA-256 y BFS sobre grafo de backlinks.",
@@ -666,27 +555,9 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "dry-run": {
-            "type": "boolean",
-            "description": "Detectar cambios sin actualizar hash-index"
-          },
           "snapshot": {
-            "type": "boolean",
+            "type": "string",
             "description": "Guardar snapshot actual"
-          },
-          "project": {
-            "type": "string",
-            "description": "Acotar deteccion a un proyecto slug"
-          },
-          "min-risk": {
-            "type": "string",
-            "enum": [
-              "critical",
-              "high",
-              "medium",
-              "low"
-            ],
-            "description": "Filtrar stale_deps por nivel minimo de riesgo"
           }
         }
       },
@@ -720,29 +591,21 @@
             "type": "string",
             "description": "Carpeta de salida"
           },
-          "filter": {
-            "type": "string",
-            "description": "Filtrar por tipo"
-          },
           "zoom": {
-            "type": "number",
+            "type": "string",
             "description": "Nivel de zoom (default: 1.0)"
           },
           "pan_x": {
-            "type": "integer",
+            "type": "string",
             "description": "Posición X del pan"
           },
           "pan_y": {
-            "type": "integer",
+            "type": "string",
             "description": "Posición Y del pan"
           },
-          "fit": {
-            "type": "boolean",
-            "description": "Ajustar al contenedor"
-          },
-          "direction": {
+          "filter": {
             "type": "string",
-            "description": "Dirección: TD, LR, RL, BT (default: TD)"
+            "description": "Filtrar por tipo"
           },
           "highlight": {
             "type": "string",
@@ -753,12 +616,8 @@
             "description": "Nodos a ocultar (coma)"
           },
           "config": {
-            "type": "boolean",
+            "type": "string",
             "description": "Guardar configuración global"
-          },
-          "json": {
-            "type": "boolean",
-            "description": "Salida JSON"
           }
         }
       },
@@ -789,11 +648,25 @@
           },
           "diagram_type": {
             "type": "string",
-            "description": "Tipo: mermaid, ascii, plantuml"
+            "description": "Tipo: mermaid, ascii, plantuml",
+            "enum": [
+              "mermaid",
+              "ascii",
+              "plantuml"
+            ]
           },
           "category": {
             "type": "string",
-            "description": "Categoría: entity, component, sequence, dependency, flow, state, lifecycle"
+            "description": "Categoría: entity, component, sequence, dependency, flow, state, lifecycle",
+            "enum": [
+              "entity",
+              "component",
+              "sequence",
+              "dependency",
+              "flow",
+              "state",
+              "lifecycle"
+            ]
           },
           "content": {
             "type": "string",
@@ -833,31 +706,14 @@
             "type": "string",
             "description": "Ruta de la nota"
           },
-          "hash": {
-            "type": "string",
-            "description": "Solo calcular hash del archivo (sin diff)"
-          },
           "version": {
             "type": "string",
             "description": "Número de versión a comparar (default: última)"
-          },
-          "compare": {
-            "type": "string",
-            "description": "Archivo A para comparacion directa"
-          },
-          "with": {
-            "type": "string",
-            "description": "Archivo B para comparacion directa (requiere --compare)"
-          },
-          "stat": {
-            "type": "boolean",
-            "description": "Solo estadisticas (sin hunks) -- ideal para LLM"
-          },
-          "context": {
-            "type": "integer",
-            "description": "Lineas de contexto alrededor de cada cambio (default: 3)"
           }
-        }
+        },
+        "required": [
+          "path"
+        ]
       },
       "guards": [],
       "side_effects": [],
@@ -874,34 +730,18 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "path": {
-            "type": "string",
-            "description": "Project root path to scan"
-          },
           "project": {
             "type": "string",
             "description": "Proyecto"
           },
-          "mode": {
+          "compare": {
             "type": "string",
-            "enum": [
-              "snapshot",
-              "status",
-              "report"
-            ],
-            "description": "snapshot: save baseline | status: list changes | report: changes + vault coverage"
-          },
-          "extensions": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "File extensions to track (e.g. .py .js .ts). Default: all code/config extensions."
+            "description": "Entornos a comparar: dev-staging, staging-prod"
           }
         },
         "required": [
-          "path",
-          "project"
+          "project",
+          "compare"
         ]
       },
       "guards": [],
@@ -924,51 +764,10 @@
           "project": {
             "type": "string",
             "description": "Proyecto"
-          },
-          "env": {
-            "type": "string",
-            "description": "env"
-          },
-          "services": {
-            "type": "string",
-            "description": "services"
-          },
-          "features": {
-            "type": "string",
-            "description": "features"
-          },
-          "env_vars": {
-            "type": "string",
-            "description": "env_vars"
-          },
-          "runtime": {
-            "type": "string",
-            "description": "runtime"
-          },
-          "region": {
-            "type": "string",
-            "description": "region"
-          },
-          "scale": {
-            "type": "string",
-            "description": "scale"
-          },
-          "deploy_procedure": {
-            "type": "string",
-            "description": "deploy_procedure"
-          },
-          "rollback_procedure": {
-            "type": "string",
-            "description": "rollback_procedure"
-          },
-          "agent": {
-            "type": "string",
-            "description": "agent"
           }
         },
         "required": [
-          "project",
-          "env"
+          "project"
         ]
       },
       "guards": [],
@@ -994,21 +793,22 @@
           },
           "environment": {
             "type": "string",
-            "description": "Entorno: dev, staging, prod"
+            "description": "Entorno: dev, staging, prod",
+            "enum": [
+              "dev",
+              "staging",
+              "prod"
+            ]
           },
-          "vars": {
+          "variables": {
             "type": "string",
-            "description": "Variables as JSON array"
-          },
-          "description": {
-            "type": "string",
-            "description": "Environment description"
+            "description": "Variables en formato KEY=VALUE separadas por espacio"
           }
         },
         "required": [
           "project",
           "environment",
-          "vars"
+          "variables"
         ]
       },
       "guards": [
@@ -1030,28 +830,21 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "apply": {
-            "type": "boolean",
-            "description": "Aplicar fixes (default: dry-run)"
-          },
           "path": {
             "type": "string",
             "description": "Procesar solo esta nota"
           },
+          "apply": {
+            "type": "string",
+            "description": "Aplicar fixes (default: dry-run)"
+          },
           "only": {
             "type": "string",
+            "description": "Filtrar por tipo: empty, nested",
             "enum": [
               "empty",
-              "nested_open",
-              "nested_close",
-              "imbalance_open",
-              "imbalance_close"
-            ],
-            "description": "Filtrar por tipo: empty, nested"
-          },
-          "include-sandbox": {
-            "type": "boolean",
-            "description": "Include vault-sandbox/ in scan (test fixtures)"
+              "nested"
+            ]
           }
         }
       },
@@ -1082,7 +875,13 @@
           },
           "type": {
             "type": "string",
-            "description": "Tipo: workflow, pipeline, lifecycle, dataflow"
+            "description": "Tipo: workflow, pipeline, lifecycle, dataflow",
+            "enum": [
+              "workflow",
+              "pipeline",
+              "lifecycle",
+              "dataflow"
+            ]
           },
           "description": {
             "type": "string",
@@ -1092,36 +891,9 @@
             "type": "string",
             "description": "Diagrama Mermaid (sin backticks)"
           },
-          "steps": {
-            "type": "string",
-            "description": "JSON array: [{\"step\":1,\"name\":\"...\",\"actor\":\"...\",\"action\":\"...\"}]"
-          },
           "actors": {
             "type": "string",
             "description": "Actores separados por coma"
-          },
-          "triggers": {
-            "type": "string",
-            "description": "What initiates this flow"
-          },
-          "pre_conditions": {
-            "type": "string",
-            "description": "Required state before the flow starts"
-          },
-          "post_conditions": {
-            "type": "string",
-            "description": "Guaranteed state after the flow completes"
-          },
-          "related_code": {
-            "type": "string",
-            "description": "Comma-separated file paths of related source code"
-          },
-          "tags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Additional tags"
           }
         },
         "required": [
@@ -1150,11 +922,11 @@
         "type": "object",
         "properties": {
           "scan": {
-            "type": "boolean",
+            "type": "string",
             "description": "Escanear carpetas nuevas"
           },
           "list": {
-            "type": "boolean",
+            "type": "string",
             "description": "Listar carpetas"
           },
           "add": {
@@ -1166,12 +938,8 @@
             "description": "Eliminar carpeta del registro"
           },
           "cleanup": {
-            "type": "boolean",
+            "type": "string",
             "description": "Limpiar carpetas huérfanas"
-          },
-          "json": {
-            "type": "boolean",
-            "description": "Salida JSON"
           }
         }
       },
@@ -1191,24 +959,7 @@
       "script": "vault_fundamentals.py",
       "inputSchema": {
         "type": "object",
-        "properties": {
-          "list": {
-            "type": "boolean",
-            "description": "List all 8 fundamentals"
-          },
-          "check": {
-            "type": "string",
-            "description": "Verify fundamentals for a single note"
-          },
-          "coverage": {
-            "type": "boolean",
-            "description": "Per-tool coverage report"
-          },
-          "doc": {
-            "type": "boolean",
-            "description": "Generate data-fundamentals.md"
-          }
-        }
+        "properties": {}
       },
       "guards": [],
       "side_effects": [],
@@ -1224,12 +975,7 @@
       "script": "vault_graph.py",
       "inputSchema": {
         "type": "object",
-        "properties": {
-          "typed": {
-            "type": "boolean",
-            "description": "Generate graph-enriched.json with typed predicates (merges wiki-links + entity + code relations)"
-          }
-        }
+        "properties": {}
       },
       "guards": [],
       "side_effects": [
@@ -1249,53 +995,25 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "root": {
+          "threshold": {
             "type": "string",
-            "description": "Vault root (default: VAULT_ROOT)"
+            "description": "Fuzzy match threshold (default: 0.7)"
+          },
+          "auto_apply_partial": {
+            "type": "string",
+            "description": "Auto-fix partial matches above this threshold"
           },
           "apply": {
-            "type": "boolean",
+            "type": "string",
             "description": "Apply fixes (default: dry-run)"
-          },
-          "auto-apply-partial": {
-            "type": "number",
-            "description": "Auto-apply partial_match with score >= THRESHOLD (e.g., 0.75). Lower-confidence partials are skipped (logged for review)."
           },
           "only": {
             "type": "string",
+            "description": "Only run: brackets, path_anchored",
             "enum": [
               "brackets",
               "path_anchored"
-            ],
-            "description": "Only run: brackets, path_anchored"
-          },
-          "threshold": {
-            "type": "number",
-            "description": "Fuzzy match threshold (default: 0.7)"
-          },
-          "json": {
-            "type": "boolean",
-            "description": "Output JSON (default)"
-          },
-          "classify": {
-            "type": "boolean",
-            "description": "Classify all broken links and emit JSON; no writes"
-          },
-          "auto-fix-safe": {
-            "type": "boolean",
-            "description": "Auto-resolve exact_candidate and points_to_migrated without prompting"
-          },
-          "wizard": {
-            "type": "boolean",
-            "description": "Interactive wizard for partial_match links (uses stdin/stdout)"
-          },
-          "stubs": {
-            "type": "boolean",
-            "description": "Create stub notes in 04_Sessions/stubs/ for no_match targets"
-          },
-          "stubs-all": {
-            "type": "boolean",
-            "description": "Create stubs for ALL unfixed broken links (overrides default skip)"
+            ]
           }
         }
       },
@@ -1319,32 +1037,7 @@
       "script": "vault_graph_inspect.py",
       "inputSchema": {
         "type": "object",
-        "properties": {
-          "root": {
-            "type": "string",
-            "description": "Vault root (default: VAULT_ROOT auto-detect)"
-          },
-          "json": {
-            "type": "boolean",
-            "description": "Output JSON (default)"
-          },
-          "md": {
-            "type": "boolean",
-            "description": "Output Markdown instead of JSON"
-          },
-          "threshold": {
-            "type": "number",
-            "description": "Jaccard threshold for near-dups (default: 0.85)"
-          },
-          "no-templates": {
-            "type": "boolean",
-            "description": "Exclude template notes from near-dup detection"
-          },
-          "include-migrated": {
-            "type": "boolean",
-            "description": "Include 10_Migrated/ in scan (default: excluded)"
-          }
-        }
+        "properties": {}
       },
       "guards": [],
       "side_effects": [],
@@ -1362,13 +1055,9 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "project": {
+          "vault_root": {
             "type": "string",
-            "description": "Optional project slug to filter scope"
-          },
-          "predicate-filter": {
-            "type": "string",
-            "description": "Comma-separated list of predicates to include (e.g. depends_on,implements)"
+            "description": "Ruta al vault (default: VAULT_ROOT env)"
           }
         }
       },
@@ -1391,36 +1080,18 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "changed": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Vault-relative paths of changed notes"
-          },
-          "since": {
+          "path": {
             "type": "string",
-            "description": "Include notes changed since this date (YYYY-MM-DD) from change log"
+            "description": "Nota a analizar"
           },
-          "max-hops": {
-            "type": "integer",
-            "description": "Maximum BFS depth (default: 10)"
-          },
-          "min-risk": {
+          "depth": {
             "type": "string",
-            "enum": [
-              "critical",
-              "high",
-              "medium",
-              "low"
-            ],
-            "description": "Filter by minimum stale_risk level"
-          },
-          "predicate": {
-            "type": "string",
-            "description": "Comma-separated predicates to filter edges (e.g. depends_on,calls,implements). Uses graph-enriched.json."
+            "description": "Profundidad máxima (default: 3)"
           }
-        }
+        },
+        "required": [
+          "path"
+        ]
       },
       "guards": [],
       "side_effects": [],
@@ -1437,43 +1108,23 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "project": {
-            "type": "string",
-            "description": "project"
-          },
           "title": {
             "type": "string",
             "description": "Título del incidente"
           },
           "severity": {
             "type": "string",
+            "description": "Severidad: SEV1, SEV2, SEV3, SEV4",
             "enum": [
-              "P1",
-              "P2",
-              "P3",
-              "P4"
-            ],
-            "description": "Severidad: SEV1, SEV2, SEV3, SEV4"
+              "SEV1",
+              "SEV2",
+              "SEV3",
+              "SEV4"
+            ]
           },
-          "status": {
+          "description": {
             "type": "string",
-            "description": "status"
-          },
-          "detected_at": {
-            "type": "string",
-            "description": "detected_at"
-          },
-          "resolved_at": {
-            "type": "string",
-            "description": "resolved_at"
-          },
-          "impact": {
-            "type": "string",
-            "description": "impact"
-          },
-          "root_cause": {
-            "type": "string",
-            "description": "root_cause"
+            "description": "Descripción"
           },
           "timeline": {
             "type": "string",
@@ -1482,27 +1133,12 @@
           "action_items": {
             "type": "string",
             "description": "Action items en JSON"
-          },
-          "affected_services": {
-            "type": "string",
-            "description": "affected_services"
-          },
-          "rto": {
-            "type": "string",
-            "description": "rto"
-          },
-          "rpo": {
-            "type": "string",
-            "description": "rpo"
-          },
-          "agent": {
-            "type": "string",
-            "description": "agent"
           }
         },
         "required": [
-          "project",
-          "title"
+          "title",
+          "severity",
+          "description"
         ]
       },
       "guards": [],
@@ -1526,11 +1162,19 @@
             "type": "string",
             "description": "Proyecto"
           },
+          "components": {
+            "type": "string",
+            "description": "Componentes separados por coma"
+          },
           "location": {
             "type": "string",
             "description": "Ubicación geográfica"
           }
-        }
+        },
+        "required": [
+          "project",
+          "components"
+        ]
       },
       "guards": [],
       "side_effects": [
@@ -1549,51 +1193,38 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "name": {
-            "type": "string",
-            "description": "Component name"
-          },
-          "type": {
-            "type": "string",
-            "description": "type"
-          },
-          "description": {
-            "type": "string",
-            "description": "Descripción"
-          },
-          "config": {
-            "type": "string",
-            "description": "Config as JSON object"
-          },
-          "connections": {
-            "type": "string",
-            "description": "Connections as JSON array"
-          },
-          "location": {
-            "type": "string",
-            "description": "location"
-          },
           "project": {
             "type": "string",
             "description": "Proyecto"
           },
-          "status": {
+          "title": {
             "type": "string",
-            "description": "Component status"
+            "description": "Título"
           },
-          "tags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Tags"
+          "provider": {
+            "type": "string",
+            "description": "Proveedor: aws, gcp, azure, onprem",
+            "enum": [
+              "aws",
+              "gcp",
+              "azure",
+              "onprem"
+            ]
+          },
+          "components": {
+            "type": "string",
+            "description": "Componentes separados por coma"
+          },
+          "description": {
+            "type": "string",
+            "description": "Descripción"
           }
         },
         "required": [
-          "name",
-          "type",
-          "description",
-          "config"
+          "project",
+          "title",
+          "provider",
+          "components"
         ]
       },
       "guards": [],
@@ -1603,6 +1234,76 @@
       "related": [
         "vault_infra_map",
         "vault_env_save"
+      ]
+    },
+    "vault_ingest": {
+      "name": "vault_ingest",
+      "description": "Ingesta gobernada de conversaciones, ficheros y URLs con extracción de entidades. Dry-run por defecto; pre-vuelo anti-poison no desactivable.",
+      "group": "Memoria de Contexto",
+      "script": "vault_ingest.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "Fichero de origen"
+          },
+          "text": {
+            "type": "string",
+            "description": "Texto literal"
+          },
+          "stdin": {
+            "type": "string",
+            "description": "Lee de stdin"
+          },
+          "url": {
+            "type": "string",
+            "description": "URL http(s); requiere allow_network"
+          },
+          "section": {
+            "type": "string",
+            "description": "Sección destino (no admite 00_System, 99_Index ni 17_Preferences)"
+          },
+          "subfolder": {
+            "type": "string",
+            "description": "Subcarpeta dentro de la sección"
+          },
+          "commit": {
+            "type": "string",
+            "description": "Escribe de verdad (por defecto es dry-run)"
+          },
+          "max_notes": {
+            "type": "string",
+            "description": "Tope de notas derivadas (default: 20)"
+          },
+          "allow_network": {
+            "type": "string",
+            "description": "Permite descargar la URL"
+          },
+          "agent": {
+            "type": "string",
+            "description": "Agente que ejecuta (AP-16)"
+          }
+        },
+        "required": [
+          "section"
+        ]
+      },
+      "guards": [
+        "Pre-vuelo anti-poison obligatorio (cli.safety)",
+        "AP-16: requiere agent o VAULT_AGENT",
+        "Dry-run por defecto: escribir exige commit",
+        "Nunca sobrescribe una nota existente",
+        "Red apagada salvo allow_network explícito"
+      ],
+      "side_effects": [
+        "Con --commit: crea notas en la sección destino con status draft",
+        "Actualiza el índice de la sección"
+      ],
+      "related": [
+        "vault_write",
+        "vault_knowledge_save",
+        "vault_context_pack"
       ]
     },
     "vault_init": {
@@ -1618,11 +1319,11 @@
             "description": "Versión objetivo (default: v34)"
           },
           "no-audit": {
-            "type": "boolean",
+            "type": "string",
             "description": "No ejecutar vault_audit al final"
           },
           "clean": {
-            "type": "boolean",
+            "type": "string",
             "description": "Borrar contenido existente (DANGEROUS)"
           }
         }
@@ -1644,22 +1345,19 @@
       "inputSchema": {
         "type": "object",
         "properties": {
+          "topic": {
+            "type": "string",
+            "description": "Tema a buscar"
+          },
           "query": {
             "type": "string",
             "description": "Palabra clave"
           },
-          "category": {
+          "limit": {
             "type": "string",
-            "description": "category"
-          },
-          "project": {
-            "type": "string",
-            "description": "Filter by project"
+            "description": "Límite de resultados (default: 10)"
           }
-        },
-        "required": [
-          "query"
-        ]
+        }
       },
       "guards": [],
       "side_effects": [],
@@ -1676,9 +1374,9 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "category": {
+          "topic": {
             "type": "string",
-            "description": "category"
+            "description": "Tema principal"
           },
           "title": {
             "type": "string",
@@ -1688,31 +1386,15 @@
             "type": "string",
             "description": "Contenido estructurado"
           },
-          "project": {
-            "type": "string",
-            "description": "Optional project association"
-          },
           "tags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Tags separados por espacio"
-          },
-          "related": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Related note titles"
-          },
-          "scan-path": {
             "type": "string",
-            "description": "Directory to scan for .md and .txt files and save each as a knowledge note"
+            "description": "Tags separados por espacio"
           }
         },
         "required": [
-          "category"
+          "topic",
+          "title",
+          "content"
         ]
       },
       "guards": [],
@@ -1741,7 +1423,7 @@
             "description": "Filtrar por status"
           },
           "limit": {
-            "type": "integer",
+            "type": "string",
             "description": "Límite de resultados (default: 50)"
           }
         }
@@ -1763,7 +1445,16 @@
         "properties": {
           "type": {
             "type": "string",
-            "description": "Tipo: error, antipattern, vulnerability, metric, alert, slo"
+            "description": "Tipo: error, antipattern, vulnerability, metric, alert, slo",
+            "enum": [
+              "error",
+              "antipattern",
+              "vulnerability",
+              "waf",
+              "metric",
+              "alert",
+              "slo"
+            ]
           },
           "title": {
             "type": "string",
@@ -1773,21 +1464,20 @@
             "type": "string",
             "description": "Descripción detallada"
           },
-          "context": {
-            "type": "string",
-            "description": "context"
-          },
           "severity": {
             "type": "string",
-            "description": "Severidad: critical, high, medium, low, info"
+            "description": "Severidad: critical, high, medium, low, info",
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low",
+              "info"
+            ]
           },
           "project": {
             "type": "string",
             "description": "Proyecto relacionado"
-          },
-          "mitigation": {
-            "type": "string",
-            "description": "mitigation"
           },
           "meta": {
             "type": "string",
@@ -1797,7 +1487,8 @@
         "required": [
           "type",
           "title",
-          "description"
+          "description",
+          "severity"
         ]
       },
       "guards": [],
@@ -1817,7 +1508,12 @@
       "script": "vault_master_index.py",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "include_subdirs": {
+            "type": "string",
+            "description": "Incluir subdirectorios"
+          }
+        }
       },
       "guards": [],
       "side_effects": [
@@ -1836,29 +1532,32 @@
       "inputSchema": {
         "type": "object",
         "properties": {
+          "action": {
+            "type": "string",
+            "description": "Acción a realizar: detect, merge, dedup",
+            "enum": [
+              "detect",
+              "merge",
+              "dedup"
+            ]
+          },
           "source": {
             "type": "string",
             "description": "Vault fuente para merge"
           },
           "conflict": {
             "type": "string",
+            "description": "Cómo resolver conflictos: skip, overwrite, rename",
             "enum": [
               "skip",
               "overwrite",
               "rename"
-            ],
-            "description": "Cómo resolver conflictos: skip, overwrite, rename"
-          },
-          "action": {
-            "type": "string",
-            "enum": [
-              "merge",
-              "detect",
-              "dedup"
-            ],
-            "description": "Acción a realizar: detect, merge, dedup"
+            ]
           }
-        }
+        },
+        "required": [
+          "action"
+        ]
       },
       "guards": [],
       "side_effects": [
@@ -1886,11 +1585,11 @@
             "description": "Proyecto a verificar"
           },
           "fix": {
-            "type": "boolean",
+            "type": "string",
             "description": "Auto-corregir errores"
           },
           "json": {
-            "type": "boolean",
+            "type": "string",
             "description": "Salida JSON"
           }
         }
@@ -1910,27 +1609,17 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "source_path": {
+          "source": {
             "type": "string",
-            "description": "Source directory"
+            "description": "Vault o carpeta fuente"
           },
-          "project": {
+          "target": {
             "type": "string",
-            "description": "Project slug"
+            "description": "Carpeta destino"
           },
-          "keywords": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Additional keywords"
-          },
-          "formats": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Formats to process"
+          "mapping": {
+            "type": "string",
+            "description": "Mapeo de rutas en JSON"
           },
           "dry_run": {
             "type": "string",
@@ -1938,8 +1627,8 @@
           }
         },
         "required": [
-          "source_path",
-          "project"
+          "source",
+          "target"
         ]
       },
       "guards": [
@@ -1961,17 +1650,17 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "report_path": {
+          "migration_id": {
             "type": "string",
-            "description": "Relative path to migration report (e.g. '10_Migrated/_report-ans-2026-05-06.md')"
+            "description": "ID de la migración a revertir"
           },
-          "confirm": {
+          "dry_run": {
             "type": "string",
-            "description": "If false (default), shows preview only. If true, executes the rollback."
+            "description": "Simular sin aplicar"
           }
         },
         "required": [
-          "report_path"
+          "migration_id"
         ]
       },
       "guards": [
@@ -2009,17 +1698,13 @@
             "type": "string",
             "description": "Carpeta destino"
           },
-          "dry-run": {
-            "type": "boolean",
+          "dry_run": {
+            "type": "string",
             "description": "Simular sin aplicar"
           },
           "impact": {
-            "type": "boolean",
+            "type": "string",
             "description": "Analizar impacto sin ejecutar"
-          },
-          "json": {
-            "type": "boolean",
-            "description": "Salida JSON"
           }
         }
       },
@@ -2051,58 +1736,40 @@
             "type": "string",
             "description": "Título de la NCR"
           },
-          "ncr_type": {
-            "type": "string",
-            "description": "ncr_type"
-          },
-          "severity": {
-            "type": "string",
-            "description": "Severidad: minor, major, critical"
-          },
-          "detected_by": {
-            "type": "string",
-            "description": "Detectado por: audit, customer, internal, automated"
-          },
           "description": {
             "type": "string",
             "description": "Descripción"
           },
+          "severity": {
+            "type": "string",
+            "description": "Severidad: minor, major, critical",
+            "enum": [
+              "minor",
+              "major",
+              "critical"
+            ]
+          },
+          "detected_by": {
+            "type": "string",
+            "description": "Detectado por: audit, customer, internal, automated",
+            "enum": [
+              "audit",
+              "customer",
+              "internal",
+              "automated"
+            ]
+          },
           "root_cause": {
             "type": "string",
             "description": "Causa raíz"
-          },
-          "immediate_action": {
-            "type": "string",
-            "description": "immediate_action"
-          },
-          "corrective_actions": {
-            "type": "string",
-            "description": "corrective_actions"
-          },
-          "target_date": {
-            "type": "string",
-            "description": "target_date"
-          },
-          "status": {
-            "type": "string",
-            "description": "status"
-          },
-          "owner": {
-            "type": "string",
-            "description": "owner"
-          },
-          "related_requirement": {
-            "type": "string",
-            "description": "related_requirement"
-          },
-          "agent": {
-            "type": "string",
-            "description": "agent"
           }
         },
         "required": [
           "project",
-          "title"
+          "title",
+          "description",
+          "severity",
+          "detected_by"
         ]
       },
       "guards": [],
@@ -2122,74 +1789,27 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "list": {
-            "type": "boolean",
-            "description": "Listar normas"
-          },
-          "show": {
+          "action": {
             "type": "string",
-            "description": "Mostrar detalle de una norma (ej: AP-22)"
-          },
-          "scan": {
-            "type": "boolean",
-            "description": "Escanear nota para detectar normas aplicables"
-          },
-          "apply": {
-            "type": "string",
-            "description": "Agregar referencia de norma al frontmatter"
-          },
-          "rebuild": {
-            "type": "boolean",
-            "description": "Regenerar norm-registry.json"
-          },
-          "path": {
-            "type": "string",
-            "description": "Ruta relativa de la nota (para --scan y --apply)"
-          },
-          "type": {
-            "type": "string",
+            "description": "Acción: list, add, check",
             "enum": [
-              "ap",
-              "pat",
-              "antipattern",
-              "pattern"
-            ],
-            "description": "Filtrar por tipo"
+              "list",
+              "add",
+              "check"
+            ]
           },
-          "category": {
+          "name": {
             "type": "string",
-            "enum": [
-              "content-quality",
-              "structure",
-              "frontmatter",
-              "linking",
-              "process",
-              "session-protocol",
-              "convention"
-            ],
-            "description": "Filtrar por categoria"
+            "description": "Nombre de la norma"
           },
-          "severity": {
+          "content": {
             "type": "string",
-            "enum": [
-              "critical",
-              "high",
-              "medium",
-              "low"
-            ],
-            "description": "Filtrar por severidad"
-          },
-          "sort": {
-            "type": "string",
-            "enum": [
-              "code",
-              "severity",
-              "category",
-              "enforcement"
-            ],
-            "description": "Ordenar por (default: code)"
+            "description": "Contenido de la norma"
           }
-        }
+        },
+        "required": [
+          "action"
+        ]
       },
       "guards": [],
       "side_effects": [],
@@ -2206,17 +1826,19 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "project": {
+          "category": {
             "type": "string",
-            "description": "Filter by project"
+            "description": "Filtrar por categoría",
+            "enum": [
+              "creational",
+              "structural",
+              "behavioral",
+              "architectural"
+            ]
           },
-          "type": {
+          "search": {
             "type": "string",
-            "description": "Filter by pattern type (design, architecture, code, integration)"
-          },
-          "status": {
-            "type": "string",
-            "description": "Filter by status"
+            "description": "Buscar por nombre"
           }
         }
       },
@@ -2235,50 +1857,37 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "project": {
-            "type": "string",
-            "description": "Project name"
-          },
           "name": {
             "type": "string",
             "description": "Nombre del patrón"
           },
-          "type": {
+          "category": {
             "type": "string",
-            "description": "type"
-          },
-          "status": {
-            "type": "string",
-            "description": "status"
+            "description": "Categoría: creational, structural, behavioral, architectural",
+            "enum": [
+              "creational",
+              "structural",
+              "behavioral",
+              "architectural"
+            ]
           },
           "description": {
             "type": "string",
             "description": "Descripción del patrón"
           },
-          "files": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Files implementing this pattern"
-          },
-          "related": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Related pattern names"
-          },
-          "notes": {
+          "implementation": {
             "type": "string",
-            "description": "Additional notes"
+            "description": "Código de ejemplo"
+          },
+          "use_cases": {
+            "type": "string",
+            "description": "Casos de uso separados por coma"
           }
         },
         "required": [
-          "project",
           "name",
-          "type",
-          "status"
+          "category",
+          "description"
         ]
       },
       "guards": [],
@@ -2288,6 +1897,70 @@
       "related": [
         "vault_pattern_list",
         "vault_code_module"
+      ]
+    },
+    "vault_preferences": {
+      "name": "vault_preferences",
+      "description": "Preferencias del usuario como contexto estable: cómo quiere trabajar, qué no debe tocarse. Se revocan, no se borran.",
+      "group": "Memoria de Contexto",
+      "script": "vault_preferences.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "set": {
+            "type": "string",
+            "description": "Registra o actualiza una preferencia"
+          },
+          "list": {
+            "type": "string",
+            "description": "Lista las preferencias registradas"
+          },
+          "context": {
+            "type": "string",
+            "description": "Bloque markdown listo para inyectar"
+          },
+          "revoke": {
+            "type": "string",
+            "description": "Ruta de la preferencia a revocar"
+          },
+          "category": {
+            "type": "string",
+            "description": "workflow | style | tooling | constraints | domain"
+          },
+          "title": {
+            "type": "string",
+            "description": "Título de la preferencia"
+          },
+          "statement": {
+            "type": "string",
+            "description": "Enunciado: qué debe hacer el agente"
+          },
+          "strength": {
+            "type": "string",
+            "description": "must | should | may (default: should)"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Motivo de la revocación (obligatorio con --revoke)"
+          },
+          "agent": {
+            "type": "string",
+            "description": "Agente que ejecuta (AP-16)"
+          }
+        }
+      },
+      "guards": [
+        "AP-16: requiere agent o VAULT_AGENT",
+        "Categoría validada contra vault_registry",
+        "Revocar exige motivo y no borra la nota"
+      ],
+      "side_effects": [
+        "Crea/actualiza nota en 17_Preferences/{category}/",
+        "Actualiza índice de 17_Preferences"
+      ],
+      "related": [
+        "vault_context_pack",
+        "vault_write"
       ]
     },
     "vault_privacy_save": {
@@ -2302,64 +1975,34 @@
             "type": "string",
             "description": "Proyecto"
           },
-          "title": {
+          "data_type": {
             "type": "string",
-            "description": "title"
+            "description": "Tipo de dato sensible"
           },
-          "purpose": {
+          "classification": {
             "type": "string",
-            "description": "purpose"
+            "description": "Clasificación: public, internal, confidential, restricted",
+            "enum": [
+              "public",
+              "internal",
+              "confidential",
+              "restricted"
+            ]
           },
-          "legal_basis": {
+          "description": {
             "type": "string",
-            "description": "legal_basis"
-          },
-          "pii_categories": {
-            "type": "string",
-            "description": "pii_categories"
-          },
-          "retention_period": {
-            "type": "string",
-            "description": "retention_period"
-          },
-          "data_subjects": {
-            "type": "string",
-            "description": "data_subjects"
+            "description": "Descripción del dato"
           },
           "third_parties": {
             "type": "string",
             "description": "Terceros en JSON"
-          },
-          "transfers_outside_eu": {
-            "type": "string",
-            "description": "transfers_outside_eu"
-          },
-          "dpia_required": {
-            "type": "string",
-            "description": "dpia_required"
-          },
-          "controller": {
-            "type": "string",
-            "description": "controller"
-          },
-          "processor": {
-            "type": "string",
-            "description": "processor"
-          },
-          "status": {
-            "type": "string",
-            "description": "status"
-          },
-          "agent": {
-            "type": "string",
-            "description": "agent"
           }
         },
         "required": [
           "project",
-          "title",
-          "purpose",
-          "legal_basis"
+          "data_type",
+          "classification",
+          "description"
         ]
       },
       "guards": [],
@@ -2420,27 +2063,10 @@
           "project": {
             "type": "string",
             "description": "Slug del proyecto"
-          },
-          "status": {
-            "type": "string",
-            "description": "status"
-          },
-          "summary": {
-            "type": "string",
-            "description": "summary"
-          },
-          "files": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Modified files"
           }
         },
         "required": [
-          "project",
-          "status",
-          "summary"
+          "project"
         ]
       },
       "guards": [],
@@ -2458,48 +2084,23 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "changed": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Vault-relative paths of changed notes"
-          },
-          "strategy": {
+          "source": {
             "type": "string",
-            "description": "Propagation strategy (default: conservative)"
+            "description": "Nota fuente"
           },
-          "action": {
+          "template": {
             "type": "string",
-            "description": "Comma-separated actions: notify,queue,reindex (default: notify,queue)"
+            "description": "Template de propagación"
           },
-          "max-hops": {
-            "type": "integer",
-            "description": "Max BFS depth for transitive strategy (default: 5)"
-          },
-          "since": {
+          "dry_run": {
             "type": "string",
-            "description": "Augment --changed from change log since this date (YYYY-MM-DD)"
-          },
-          "queue-report": {
-            "type": "boolean",
-            "description": "List pending propagation items"
-          },
-          "min-priority": {
-            "type": "string",
-            "enum": [
-              "critical",
-              "high",
-              "medium",
-              "low"
-            ],
-            "description": "Filter queue-report by minimum priority"
-          },
-          "clear": {
-            "type": "string",
-            "description": "Mark a note as reviewed (remove propagation_pending)"
+            "description": "Simular sin aplicar"
           }
-        }
+        },
+        "required": [
+          "source",
+          "template"
+        ]
       },
       "guards": [],
       "side_effects": [
@@ -2518,27 +2119,13 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "path": {
+          "project": {
             "type": "string",
-            "description": "Vault-relative folder prefix to scope the check"
+            "description": "Proyecto específico"
           },
-          "min-score": {
-            "type": "number",
-            "description": "Report only notes with overall score below this (0.0-1.0)"
-          },
-          "integrity": {
+          "metrics": {
             "type": "string",
-            "enum": [
-              "critical",
-              "high",
-              "medium",
-              "low"
-            ],
-            "description": "Filter output by CIA integrity level"
-          },
-          "check": {
-            "type": "boolean",
-            "description": "Compute scores without writing quality-index.json"
+            "description": "Métricas: completeness,consistency,accuracy"
           }
         }
       },
@@ -2549,6 +2136,39 @@
       "related": [
         "vault_audit",
         "vault_fundamentals"
+      ]
+    },
+    "vault_query_parse": {
+      "name": "vault_query_parse",
+      "description": "Lenguaje natural → consulta estructurada (términos, secciones, tags, semillas, ventana temporal, intención) y plan de tools. Determinista, sin modelo.",
+      "group": "Memoria de Contexto",
+      "script": "vault_query_parse.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Pregunta en lenguaje natural"
+          },
+          "explain": {
+            "type": "string",
+            "description": "Incluye la evidencia de cada campo inferido"
+          },
+          "plan_only": {
+            "type": "string",
+            "description": "Emite solo el plan de tools"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "guards": [],
+      "side_effects": [],
+      "related": [
+        "vault_context_pack",
+        "vault_search",
+        "vault_subgraph"
       ]
     },
     "vault_read": {
@@ -2563,10 +2183,7 @@
             "type": "string",
             "description": "Ruta relativa al vault (ej: 01_Projects/mi-api/overview.md)"
           }
-        },
-        "required": [
-          "path"
-        ]
+        }
       },
       "guards": [],
       "side_effects": [],
@@ -2584,16 +2201,12 @@
         "type": "object",
         "properties": {
           "graph": {
-            "type": "boolean",
+            "type": "string",
             "description": "También generar graph.json"
           },
-          "dry-run": {
-            "type": "boolean",
-            "description": "Show what would be indexed without writing"
-          },
-          "check": {
-            "type": "boolean",
-            "description": "Exit 0 if index OK, 1 if empty/missing"
+          "hash": {
+            "type": "string",
+            "description": "También generar hash-index.json"
           }
         }
       },
@@ -2619,40 +2232,33 @@
             "type": "string",
             "description": "Proyecto"
           },
-          "from": {
+          "entity": {
             "type": "string",
-            "description": "Source entity"
+            "description": "Entidad origen"
           },
           "to": {
             "type": "string",
             "description": "Entidad destino"
           },
-          "relation_type": {
+          "type": {
             "type": "string",
-            "description": "relation_type"
-          },
-          "cardinality": {
-            "type": "string",
-            "description": "Cardinality (e.g., 1:N)"
+            "description": "Tipo: one-to-one, one-to-many, many-to-many",
+            "enum": [
+              "one-to-one",
+              "one-to-many",
+              "many-to-many"
+            ]
           },
           "label": {
             "type": "string",
             "description": "Etiqueta de la relación"
-          },
-          "description": {
-            "type": "string",
-            "description": "Relation description"
-          },
-          "entity_type": {
-            "type": "string",
-            "description": "entity_type"
           }
         },
         "required": [
           "project",
-          "from",
+          "entity",
           "to",
-          "relation_type"
+          "type"
         ]
       },
       "guards": [],
@@ -2680,50 +2286,19 @@
             "type": "string",
             "description": "Versión (semver)"
           },
-          "type": {
+          "description": {
             "type": "string",
-            "description": "type"
-          },
-          "status": {
-            "type": "string",
-            "description": "status"
+            "description": "Descripción del release"
           },
           "changes": {
             "type": "string",
             "description": "Cambios en JSON"
-          },
-          "deploy_steps": {
-            "type": "string",
-            "description": "deploy_steps"
-          },
-          "rollback_steps": {
-            "type": "string",
-            "description": "rollback_steps"
-          },
-          "smoke_tests": {
-            "type": "string",
-            "description": "smoke_tests"
-          },
-          "breaking_changes": {
-            "type": "string",
-            "description": "breaking_changes"
-          },
-          "migrations": {
-            "type": "string",
-            "description": "migrations"
-          },
-          "deploy_at": {
-            "type": "string",
-            "description": "deploy_at"
-          },
-          "agent": {
-            "type": "string",
-            "description": "agent"
           }
         },
         "required": [
           "project",
-          "version"
+          "version",
+          "description"
         ]
       },
       "guards": [],
@@ -2755,43 +2330,25 @@
             "type": "string",
             "description": "Descripción"
           },
-          "type": {
-            "type": "string",
-            "description": "type"
-          },
           "priority": {
             "type": "string",
-            "description": "Prioridad: critical, high, medium, low"
-          },
-          "acceptance_criteria": {
-            "type": "string",
-            "description": "JSON array of acceptance criteria strings"
-          },
-          "source": {
-            "type": "string",
-            "description": "Origin of the requirement (stakeholder, document, etc.)"
+            "description": "Prioridad: critical, high, medium, low",
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low"
+            ]
           },
           "status": {
             "type": "string",
             "description": "Status: draft, reviewed, approved, implemented, verified, obsolete"
-          },
-          "related_code": {
-            "type": "string",
-            "description": "Comma-separated list of related source files"
-          },
-          "tags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Additional tags"
           }
         },
         "required": [
           "project",
           "title",
           "description",
-          "type",
           "priority"
         ]
       },
@@ -2812,17 +2369,21 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "backup_name": {
+          "backup_id": {
             "type": "string",
-            "description": "Exact backup name"
+            "description": "ID del backup a restaurar"
           },
-          "confirm": {
+          "target": {
             "type": "string",
-            "description": "Must be true"
+            "description": "Carpeta destino (default: VAULT_ROOT)"
+          },
+          "dry_run": {
+            "type": "string",
+            "description": "Simular sin aplicar"
           }
         },
         "required": [
-          "backup_name"
+          "backup_id"
         ]
       },
       "guards": [
@@ -2884,68 +2445,40 @@
             "type": "string",
             "description": "Título del riesgo"
           },
-          "risk_type": {
+          "probability": {
             "type": "string",
-            "description": "risk_type"
-          },
-          "likelihood": {
-            "type": "integer",
+            "description": "Probabilidad: low, medium, high",
             "enum": [
-              1,
-              2,
-              3,
-              4,
-              5
-            ],
-            "description": "likelihood"
+              "low",
+              "medium",
+              "high"
+            ]
           },
           "impact": {
-            "type": "integer",
+            "type": "string",
+            "description": "Impacto: low, medium, high, critical",
             "enum": [
-              1,
-              2,
-              3,
-              4,
-              5
-            ],
-            "description": "Impacto: low, medium, high, critical"
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
           },
-          "threat": {
+          "description": {
             "type": "string",
-            "description": "threat"
+            "description": "Descripción"
           },
-          "vulnerability": {
+          "mitigation": {
             "type": "string",
-            "description": "vulnerability"
-          },
-          "affected_assets": {
-            "type": "string",
-            "description": "affected_assets"
-          },
-          "treatment": {
-            "type": "string",
-            "description": "treatment"
-          },
-          "controls": {
-            "type": "string",
-            "description": "controls"
-          },
-          "status": {
-            "type": "string",
-            "description": "status"
-          },
-          "owner": {
-            "type": "string",
-            "description": "owner"
-          },
-          "agent": {
-            "type": "string",
-            "description": "agent"
+            "description": "Mitigación propuesta"
           }
         },
         "required": [
           "project",
-          "title"
+          "title",
+          "probability",
+          "impact",
+          "description"
         ]
       },
       "guards": [],
@@ -2965,26 +2498,27 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "path": {
+          "runbook": {
             "type": "string",
-            "description": "Path to runbook (relative to vault root)"
+            "description": "Nombre del runbook"
           },
-          "outcome": {
+          "status": {
             "type": "string",
-            "description": "outcome"
+            "description": "Status: success, failure, partial",
+            "enum": [
+              "success",
+              "failure",
+              "partial"
+            ]
           },
-          "notes": {
+          "output": {
             "type": "string",
-            "description": "Execution notes"
-          },
-          "duration": {
-            "type": "string",
-            "description": "Duration (e.g., '25 min')"
+            "description": "Output de la ejecución"
           }
         },
         "required": [
-          "path",
-          "outcome"
+          "runbook",
+          "status"
         ]
       },
       "guards": [],
@@ -3008,39 +2542,28 @@
             "type": "string",
             "description": "Proyecto"
           },
-          "title": {
+          "name": {
             "type": "string",
-            "description": "Runbook title"
+            "description": "Nombre del runbook"
           },
           "trigger": {
             "type": "string",
-            "description": "Trigger: manual, alert, schedule"
-          },
-          "category": {
-            "type": "string",
-            "description": "category"
+            "description": "Trigger: manual, alert, schedule",
+            "enum": [
+              "manual",
+              "alert",
+              "schedule"
+            ]
           },
           "steps": {
             "type": "string",
             "description": "Pasos en Markdown"
-          },
-          "estimated_time": {
-            "type": "string",
-            "description": "Estimated time (e.g., '30 min')"
-          },
-          "prerequisites": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Prerequisites list"
           }
         },
         "required": [
           "project",
-          "title",
+          "name",
           "trigger",
-          "category",
           "steps"
         ]
       },
@@ -3065,13 +2588,17 @@
             "type": "string",
             "description": "Término de búsqueda"
           },
+          "project": {
+            "type": "string",
+            "description": "Filtrar por proyecto"
+          },
           "folder": {
             "type": "string",
             "description": "Filtrar por carpeta"
           },
-          "tag": {
+          "limit": {
             "type": "string",
-            "description": "Filter by tag"
+            "description": "Límite de resultados (default: 10)"
           }
         },
         "required": [
@@ -3093,17 +2620,13 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "folder": {
+          "section": {
             "type": "string",
-            "description": "Section folder relative to vault root"
-          },
-          "no-subdirs": {
-            "type": "boolean",
-            "description": "Exclude notes in subdirectories"
+            "description": "Sección (ej: 01_Projects)"
           }
         },
         "required": [
-          "folder"
+          "section"
         ]
       },
       "guards": [],
@@ -3123,33 +2646,20 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "path": {
-            "type": "string",
-            "description": "Path to scan"
-          },
           "project": {
             "type": "string",
             "description": "Proyecto específico"
           },
-          "depth": {
-            "type": "integer",
-            "description": "Directory depth (1-5)"
-          },
-          "categories": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "categories"
-          },
-          "save_findings": {
+          "scan_type": {
             "type": "string",
-            "description": "Save to vault"
+            "description": "Tipo: full, secrets, dependencies",
+            "enum": [
+              "full",
+              "secrets",
+              "dependencies"
+            ]
           }
-        },
-        "required": [
-          "path"
-        ]
+        }
       },
       "guards": [],
       "side_effects": [
@@ -3172,56 +2682,24 @@
             "type": "string",
             "description": "Proyecto"
           },
-          "service": {
+          "name": {
             "type": "string",
-            "description": "service"
-          },
-          "slo_type": {
-            "type": "string",
-            "description": "slo_type"
+            "description": "Nombre del SLO"
           },
           "target": {
-            "type": "number",
+            "type": "string",
             "description": "Target: 99.9%, 99.99%, etc"
-          },
-          "unit": {
-            "type": "string",
-            "description": "unit"
-          },
-          "window": {
-            "type": "string",
-            "description": "window"
-          },
-          "percentile": {
-            "type": "string",
-            "description": "percentile"
           },
           "description": {
             "type": "string",
             "description": "Descripción del SLO"
-          },
-          "alert_threshold": {
-            "type": "number",
-            "description": "alert_threshold"
-          },
-          "data_source": {
-            "type": "string",
-            "description": "data_source"
-          },
-          "consequence": {
-            "type": "string",
-            "description": "consequence"
-          },
-          "agent": {
-            "type": "string",
-            "description": "agent"
           }
         },
         "required": [
           "project",
-          "service",
-          "slo_type",
-          "target"
+          "name",
+          "target",
+          "description"
         ]
       },
       "guards": [],
@@ -3250,40 +2728,23 @@
             "description": "Versión objetivo (default: v34)"
           },
           "check": {
-            "type": "boolean",
+            "type": "string",
             "description": "Solo reportar sin aplicar"
           },
           "init": {
             "type": "string",
             "description": "Inicializar archivo de versión"
           },
-          "agent": {
-            "type": "string",
-            "description": "Agent name for audit trail (default: claude)"
-          },
-          "set-profile": {
-            "type": "string",
-            "enum": [
-              "minimal",
-              "standard",
-              "full"
-            ],
-            "description": "Set the tool profile in standard-version.json (minimal=10, standard=30, full=61)"
-          },
-          "validate": {
-            "type": "boolean",
-            "description": "Run compliance check: folders, frontmatter, health score (non-blocking)"
-          },
           "fixes-only": {
-            "type": "boolean",
+            "type": "string",
             "description": "Solo ejecutar fixes sin migrar"
           },
           "dry-run": {
-            "type": "boolean",
+            "type": "string",
             "description": "Simular sin aplicar cambios"
           },
           "report": {
-            "type": "boolean",
+            "type": "string",
             "description": "Generar reporte de fixes disponibles"
           }
         }
@@ -3298,6 +2759,57 @@
         "vault_audit"
       ]
     },
+    "vault_subgraph": {
+      "name": "vault_subgraph",
+      "description": "Subgrafo de K semillas y N saltos sobre el grafo del vault, con peso por predicado y decaimiento por salto.",
+      "group": "Memoria de Contexto",
+      "script": "vault_subgraph.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "seeds": {
+            "type": "string",
+            "description": "Notas de partida (ruta, ruta sin .md o título)"
+          },
+          "hops": {
+            "type": "string",
+            "description": "Saltos de expansión (default: 2)"
+          },
+          "direction": {
+            "type": "string",
+            "description": "in | out | both (default: both)"
+          },
+          "max_nodes": {
+            "type": "string",
+            "description": "Tope de nodos (default: 50)"
+          },
+          "predicate": {
+            "type": "string",
+            "description": "Filtra por tipo de relación"
+          },
+          "section": {
+            "type": "string",
+            "description": "Limita a una sección"
+          },
+          "format": {
+            "type": "string",
+            "description": "json | mermaid (default: json)"
+          }
+        },
+        "required": [
+          "seeds"
+        ]
+      },
+      "guards": [
+        "Requiere 99_Index/graph.json o graph-enriched.json"
+      ],
+      "side_effects": [],
+      "related": [
+        "vault_impact",
+        "vault_graph",
+        "vault_context_pack"
+      ]
+    },
     "vault_tags": {
       "name": "vault_tags",
       "description": "Registro canónico de tags, auditoría de orphans y near-dupes.",
@@ -3306,21 +2818,17 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "audit": {
-            "type": "boolean",
-            "description": "Reporte de salud de tags"
-          },
-          "suggest": {
+          "action": {
             "type": "string",
-            "description": "Sugerir tags canonicos para una nota"
+            "description": "Acción: list, suggest",
+            "enum": [
+              "list",
+              "suggest"
+            ]
           },
-          "rename": {
+          "tag": {
             "type": "string",
-            "description": "Renombrar tag en todas las notas"
-          },
-          "dry-run": {
-            "type": "boolean",
-            "description": "Simular sin escribir archivos"
+            "description": "Tag a analizar"
           }
         }
       },
@@ -3343,54 +2851,32 @@
             "type": "string",
             "description": "Proyecto"
           },
-          "title": {
+          "name": {
             "type": "string",
-            "description": "Short test case title"
+            "description": "Nombre del test"
           },
-          "test_type": {
+          "type": {
             "type": "string",
-            "description": "test_type"
+            "description": "Tipo: unit, integration, e2e",
+            "enum": [
+              "unit",
+              "integration",
+              "e2e"
+            ]
           },
           "description": {
             "type": "string",
             "description": "Descripción del test"
           },
-          "preconditions": {
+          "coverage": {
             "type": "string",
-            "description": "Setup conditions required before running the test"
-          },
-          "steps": {
-            "type": "string",
-            "description": "JSON array of steps: [{\"step\":1,\"action\":\"...\",\"expected\":\"...\"}]"
-          },
-          "expected_result": {
-            "type": "string",
-            "description": "Overall expected outcome"
-          },
-          "related_requirement": {
-            "type": "string",
-            "description": "Related requirement ID (e.g. REQ-001)"
-          },
-          "related_code": {
-            "type": "string",
-            "description": "Comma-separated list of related source files"
-          },
-          "status": {
-            "type": "string",
-            "description": "status"
-          },
-          "tags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Additional tags"
+            "description": "Cobertura esperada"
           }
         },
         "required": [
           "project",
-          "title",
-          "test_type",
+          "name",
+          "type",
           "description"
         ]
       },
@@ -3411,29 +2897,13 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "query": {
-            "type": "string",
-            "description": "Topic to trace"
-          },
           "project": {
             "type": "string",
             "description": "Filtrar por proyecto"
           },
-          "from": {
+          "days": {
             "type": "string",
-            "description": "Start date YYYY-MM-DD"
-          },
-          "to": {
-            "type": "string",
-            "description": "End date YYYY-MM-DD"
-          },
-          "sources": {
-            "type": "string",
-            "description": "sources"
-          },
-          "limit": {
-            "type": "integer",
-            "description": "Max events"
+            "description": "Días hacia atrás (default: 30)"
           }
         }
       },
@@ -3452,64 +2922,17 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "port": {
-            "type": "integer",
-            "description": "port"
-          },
-          "flow-id": {
+          "content": {
             "type": "string",
-            "description": "flow-id"
+            "description": "Contenido a contar"
           },
-          "operation": {
+          "model": {
             "type": "string",
-            "description": "operation"
-          },
-          "budget": {
-            "type": "string",
-            "description": "JSON budget metadata or @file:path, e.g. '{\"max_tokens\":100000}'"
-          },
-          "text": {
-            "type": "string",
-            "description": "Text to count, or @file:path"
-          },
-          "source": {
-            "type": "string",
-            "description": "source"
-          },
-          "phase": {
-            "type": "string",
-            "description": "phase"
-          },
-          "tool": {
-            "type": "string",
-            "description": "tool"
-          },
-          "direction": {
-            "type": "string",
-            "enum": [
-              "input",
-              "output",
-              "tool",
-              "unknown"
-            ],
-            "description": "direction"
-          },
-          "note": {
-            "type": "string",
-            "description": "note"
-          },
-          "tokens": {
-            "type": "integer",
-            "description": "Explicit token count if known from provider"
-          },
-          "store-text": {
-            "type": "boolean",
-            "description": "Persist raw text; default stores only token metadata"
+            "description": "Modelo: gpt-4, gpt-3.5-turbo (default: gpt-4)"
           }
         },
         "required": [
-          "flow-id",
-          "text"
+          "content"
         ]
       },
       "guards": [],
@@ -3527,15 +2950,23 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "host": {
+          "action": {
             "type": "string",
-            "description": "host"
+            "description": "Acción: estimate, budget, report",
+            "enum": [
+              "estimate",
+              "budget",
+              "report"
+            ]
           },
-          "port": {
-            "type": "integer",
-            "description": "port"
+          "project": {
+            "type": "string",
+            "description": "Proyecto"
           }
-        }
+        },
+        "required": [
+          "action"
+        ]
       },
       "guards": [],
       "side_effects": [],
@@ -3552,27 +2983,28 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "summary": {
-            "type": "boolean",
-            "description": "Resumen global de uso de tokens"
-          },
-          "top": {
-            "type": "integer",
-            "description": "Top N tools por tokens consumidos"
-          },
-          "query": {
+          "project": {
             "type": "string",
-            "description": "Detalle de una tool especifica"
+            "description": "Proyecto"
           },
-          "since": {
+          "action": {
             "type": "string",
-            "description": "Filtrar desde fecha (YYYY-MM-DD o ISO)"
+            "description": "Acción: list, add, remove",
+            "enum": [
+              "list",
+              "add",
+              "remove"
+            ]
           },
-          "reset": {
-            "type": "boolean",
-            "description": "Borrar el log de tokens"
+          "token_type": {
+            "type": "string",
+            "description": "Tipo: api_key, access_token, refresh_token"
           }
-        }
+        },
+        "required": [
+          "project",
+          "action"
+        ]
       },
       "guards": [
         "No guardar tokens en texto plano"
@@ -3598,16 +3030,6 @@
           "folder": {
             "type": "string",
             "description": "Carpeta a validar"
-          },
-          "check": {
-            "type": "string",
-            "enum": [
-              "frontmatter",
-              "structure",
-              "indexes",
-              "all"
-            ],
-            "description": "What to validate (default: all)"
           }
         }
       },
@@ -3639,10 +3061,7 @@
             "description": "Contenido Markdown. Usar @file:ruta para leer de archivo"
           },
           "tags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
+            "type": "string",
             "description": "Etiquetas separadas por espacio"
           },
           "meta": {
@@ -3652,14 +3071,12 @@
           "meta-file": {
             "type": "string",
             "description": "Ruta a archivo JSON con frontmatter adicional"
-          },
-          "scan-path": {
-            "type": "string",
-            "description": "Directory to scan for .md files and write each one to --folder"
           }
         },
         "required": [
-          "folder"
+          "folder",
+          "title",
+          "content"
         ]
       },
       "guards": [
@@ -3822,6 +3239,13 @@
     ],
     "Gestión de Carpetas": [
       "vault_folder_registry"
+    ],
+    "Memoria de Contexto": [
+      "vault_preferences",
+      "vault_query_parse",
+      "vault_subgraph",
+      "vault_context_pack",
+      "vault_ingest"
     ]
   }
 }

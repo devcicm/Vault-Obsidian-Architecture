@@ -36,6 +36,14 @@ jobs:
       - name: Catalog sync check
         run: python scripts/vault_mcp_catalog.py --check
 
+      - name: Framework drift check (registro canónico ↔ manifiesto)
+        run: python scripts/vault_norms.py --check-framework
+
+      # AP-36: falla si algún side-effect se escribió fuera del vault (hasta 2
+      # niveles por encima) o si la raíz se resolvió por suposición.
+      - name: Containment audit (AP-36, strict)
+        run: python scripts/vault_norms.py --audit --root vault-sandbox --strict
+
       - name: Run vault_validate
         working-directory: scripts
         run: |

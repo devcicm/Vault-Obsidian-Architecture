@@ -17,8 +17,34 @@ from vault_errors import wrap_main
 from pathlib import Path
 from typing import Any, Dict
 
-from vault_io import VAULT_ROOT
-BACKUP_ROOT = Path(__file__).parent.parent.parent / "vault-backups"
+from vault_io import VAULT_ROOT, get_vault_root
+
+# AP-36 (contencion): los backups viven DENTRO del vault, igual que en
+# vault_backup.py. Hasta v38.1 esto era Path(__file__).parent.parent.parent /
+# "vault-backups" -- el abuelo del directorio de scripts, fuera de todo vault:
+# vault_backup escribia dentro y vault_restore leia fuera, de modo que restore
+# nunca encontraba los backups recientes.
+LEGACY_BACKUP_ROOT = Path(__file__).resolve().parent.parent.parent / "vault-backups"
+
+#: Entradas del vault que el wipe previo al restore NUNCA debe borrar. Al mover
+#: los backups dentro del vault (v38.1) el bucle de limpieza paso a incluir
+#: vault-backups/ en su barrido: restaurar habria destruido el propio snapshot
+#: del que se esta leyendo, y todo el historial de backups con el.
+_WIPE_SKIP = {"vault-backups", "vault-sandbox"}
+
+
+def _backup_root() -> Path:
+    """Raiz de backups del vault activo (lazy: respeta set_vault_root())."""
+    return get_vault_root() / "vault-backups"
+
+
+def _resolve_backup(backup_name: str) -> Path:
+    """Snapshot a restaurar: canonico si existe, si no el legacy."""
+    canonical = _backup_root() / backup_name
+    if canonical.exists():
+        return canonical
+    return LEGACY_BACKUP_ROOT / backup_name
+
 INDEX_FILE = VAULT_ROOT / "99_Index" / "search-index.json"
 
 
@@ -30,11 +56,15 @@ def vault_restore(backup_name: str, confirm: bool = False) -> Dict[str, Any]:
             "hint": "Run vault_backup(label) first to backup current state, then confirm with confirm:true",
         }
 
-    backup_path = BACKUP_ROOT / backup_name
+    backup_path = _resolve_backup(backup_name)
     if not backup_path.exists():
         return {
             "ok": False,
             "error": f"Backup not found: {backup_name}",
+            "searched": [
+                str(_backup_root() / backup_name),
+                str(LEGACY_BACKUP_ROOT / backup_name),
+            ],
         }
 
     manifest_path = backup_path / ".manifest.json"
@@ -46,8 +76,11 @@ def vault_restore(backup_name: str, confirm: bool = False) -> Dict[str, Any]:
     except (FileNotFoundError, json.JSONDecodeError):
         pass
 
-    for item in VAULT_ROOT.iterdir():
-        if item.name.startswith("."):
+    vault_root = get_vault_root()
+    for item in vault_root.iterdir():
+        # _WIPE_SKIP: no borrar vault-backups/ -- contiene el snapshot que se
+        # esta restaurando y el resto del historial (AP-36, v39).
+        if item.name.startswith(".") or item.name in _WIPE_SKIP:
             continue
         if item.is_dir():
             shutil.rmtree(item)

@@ -1814,13 +1814,156 @@
         "F3",
         "F6"
       ]
+    },
+    "vault_preferences": {
+      "group": "Memoria de Contexto",
+      "group_id": 33,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "preferences",
+        "context",
+        "path"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "validity",
+          "authenticity",
+          "non_repudiation"
+        ],
+        "cia_scope": [
+          "integrity",
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F5",
+        "F7",
+        "F8"
+      ]
+    },
+    "vault_subgraph": {
+      "group": "Memoria de Contexto",
+      "group_id": 33,
+      "status": "active",
+      "required_args": [
+        "--seeds"
+      ],
+      "declared_returns": [
+        "nodes",
+        "edges",
+        "stats"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency",
+          "completeness"
+        ],
+        "cia_scope": [
+          "availability"
+        ],
+        "propagation_aware": true
+      },
+      "fundamentals": [
+        "F2",
+        "F3"
+      ]
+    },
+    "vault_query_parse": {
+      "group": "Memoria de Contexto",
+      "group_id": 33,
+      "status": "active",
+      "required_args": [
+        "--query"
+      ],
+      "declared_returns": [
+        "structured",
+        "confidence",
+        "plan"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "validity",
+          "accuracy"
+        ],
+        "cia_scope": [
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F4",
+        "F5"
+      ]
+    },
+    "vault_context_pack": {
+      "group": "Memoria de Contexto",
+      "group_id": 33,
+      "status": "active",
+      "required_args": [
+        "--query"
+      ],
+      "declared_returns": [
+        "context",
+        "tokens",
+        "included",
+        "excluded"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "completeness",
+          "timeliness",
+          "accuracy"
+        ],
+        "cia_scope": [
+          "availability",
+          "integrity"
+        ],
+        "propagation_aware": true
+      },
+      "fundamentals": [
+        "F3",
+        "F6"
+      ]
+    },
+    "vault_ingest": {
+      "group": "Memoria de Contexto",
+      "group_id": 33,
+      "status": "active",
+      "required_args": [
+        "--section"
+      ],
+      "declared_returns": [
+        "proposed",
+        "written",
+        "entities",
+        "preflight"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "validity",
+          "authenticity",
+          "completeness"
+        ],
+        "cia_scope": [
+          "integrity",
+          "sensitivity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F5",
+        "F7"
+      ]
     }
   },
   "_counts": {
-    "active": 68,
+    "active": 73,
     "deprecated": 5,
-    "total": 81,
-    "active_groups": 32,
+    "total": 86,
+    "active_groups": 34,
     "schema_version": "1.0"
   }
 }

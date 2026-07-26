@@ -32,11 +32,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT
+from vault_io import VAULT_ROOT, resolve_tool_spec, tool_spec_path
 from vault_registry import folder_owner, check_folder_collisions
 
 SCRIPTS_DIR = Path(__file__).parent
-SPEC_FILE = SCRIPTS_DIR / "tool-spec.json"
 SYSTEM_DIR = VAULT_ROOT / "00_System"
 
 # Scripts que no son tools de usuario y se excluyen del check "unspecced"
@@ -52,13 +51,14 @@ _NON_TOOL_SCRIPTS = {
 # ──────────────────────────────────────────────────────────────────────────────
 
 def load_spec() -> Dict[str, Any]:
-    if not SPEC_FILE.exists():
+    spec_file = resolve_tool_spec()
+    if spec_file is None:
         raise FileNotFoundError(
-            f"tool-spec.json no encontrado en {SPEC_FILE}\n"
+            f"tool-spec.json no encontrado en {tool_spec_path()}\n"
             "Genera el spec inicial: python vault_manifest.py --bootstrap"
         )
     try:
-        return json.loads(SPEC_FILE.read_text(encoding="utf-8"))
+        return json.loads(spec_file.read_text(encoding="utf-8"))
     except json.JSONDecodeError as e:
         raise ValueError(f"tool-spec.json tiene JSON inválido: {e}") from e
 

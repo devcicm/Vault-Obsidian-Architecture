@@ -593,6 +593,117 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "tools_detecting": ["vault_audit", "vault_mermaid_check"],
         "introduced_version": "v34.2",
     },
+    # ── Anti-patrones AP-26..AP-30 ────────────────────────────────────────────
+    # Frontmatter incompleto. Estaban aplicados por vault_audit desde v30 (con
+    # penalización al health score y etiqueta propia en su salida) pero nunca
+    # se registraron aquí: `vault_norms --list` no los mostraba y no tenían
+    # severidad, enforcement ni prevención declaradas. El hueco lo detectó el
+    # chequeo de contiguidad de vault_sdd_init al dejar de estar clavado en
+    # AP-01..AP-25. Registrados sin cambiar el comportamiento del audit.
+    {
+        "code": "AP-26",
+        "name": "Missing tags — nota de contenido sin tags",
+        "type": "antipattern",
+        "category": "metadata-completeness",
+        "severity": "medium",
+        "enforcement": "audit",
+        "description": (
+            "Nota de contenido sin campo `tags` o con la lista vacía. Sin tags la nota "
+            "es invisible para la búsqueda por facetas y no participa en los edges "
+            "shared_tag del grafo: queda alcanzable solo por wiki-link directo."
+        ),
+        "signal": (
+            "vault_audit la cuenta en missing_tags y penaliza -2 por nota (tope -15). "
+            "Aparece en el resumen como 'N sin tags AP-26'."
+        ),
+        "prevention": (
+            "Pasar --tags en la tool de escritura. vault_ingest y vault_preferences "
+            "los derivan automáticamente del origen y la categoría."
+        ),
+        "tools_enforcing": ["vault_ingest", "vault_preferences"],
+        "tools_detecting": ["vault_audit"],
+        "introduced_version": "v30",
+    },
+    {
+        "code": "AP-27",
+        "name": "Missing type field — nota sin tipo declarado",
+        "type": "antipattern",
+        "category": "metadata-completeness",
+        "severity": "medium",
+        "enforcement": "audit",
+        "description": (
+            "Nota sin campo `type`. El tipo es lo que ancla la nota a su sección "
+            "canónica (CN-02): sin él no se puede verificar la coincidencia "
+            "type ↔ carpeta que sostiene la dimensión de exactitud (F4)."
+        ),
+        "signal": "vault_audit la cuenta en missing_type y penaliza -2 por nota (tope -10).",
+        "prevention": "Declarar --type en la escritura; vault_validate lo comprueba contra el registro.",
+        "tools_enforcing": [],
+        "tools_detecting": ["vault_audit", "vault_validate"],
+        "introduced_version": "v30",
+    },
+    {
+        "code": "AP-28",
+        "name": "Missing frontmatter — nota sin bloque YAML",
+        "type": "antipattern",
+        "category": "metadata-completeness",
+        "severity": "high",
+        "enforcement": "audit",
+        "description": (
+            "Nota sin bloque de frontmatter. Es el caso degenerado de AP-26/27/29/30 "
+            "a la vez: sin frontmatter no hay id, ni agent, ni status, ni CIA, así que "
+            "la nota queda fuera de toda métrica de calidad y de la cadena de "
+            "trazabilidad (PAT-5)."
+        ),
+        "signal": "vault_audit la cuenta en missing_frontmatter y penaliza -3 por nota (tope -20).",
+        "prevention": (
+            "No editar .md a mano (SP-04). Escribir siempre por tool: "
+            "atomic_write_text garantiza el bloque."
+        ),
+        "tools_enforcing": [],
+        "tools_detecting": ["vault_audit", "vault_validate"],
+        "introduced_version": "v30",
+    },
+    {
+        "code": "AP-29",
+        "name": "Missing status field — nota sin estado de ciclo de vida",
+        "type": "antipattern",
+        "category": "metadata-completeness",
+        "severity": "medium",
+        "enforcement": "audit",
+        "description": (
+            "Nota sin campo `status`. Sin estado no se puede distinguir lo vigente de "
+            "lo obsoleto, y la nota escapa al vocabulario controlado de CN-03: es la "
+            "vía por la que contenido derogado sigue leyéndose como vigente."
+        ),
+        "signal": "vault_audit la cuenta en missing_status y penaliza -1 por nota (tope -10).",
+        "prevention": "Declarar --status dentro de STATUS_VOCAB (12 valores).",
+        "tools_enforcing": [],
+        "tools_detecting": ["vault_audit", "vault_norms"],
+        "introduced_version": "v30",
+    },
+    {
+        "code": "AP-30",
+        "name": "Missing CIA classification — nota sin clasificación de la tríada",
+        "type": "antipattern",
+        "category": "metadata-completeness",
+        "severity": "high",
+        "enforcement": "audit",
+        "description": (
+            "Nota sin `cia_integrity` / `cia_availability` / `cia_sensitivity`. Sin "
+            "clasificación CIA la nota no puede endurecer su umbral de actualidad "
+            "(30d → 15d en critical|high) ni ponderar su peso en el health score: el "
+            "pilar del estándar queda sin aplicar sobre ella."
+        ),
+        "signal": "vault_audit la cuenta en missing_cia y penaliza -2 por nota (tope -15).",
+        "prevention": (
+            "Declarar los tres ejes en la escritura. vault_ingest asigna "
+            "cia_integrity: low a lo ingerido por no estar verificado."
+        ),
+        "tools_enforcing": ["vault_ingest"],
+        "tools_detecting": ["vault_audit", "vault_quality_check"],
+        "introduced_version": "v30",
+    },
     # ── Anti-patrón AP-31 ──────────────────────────────────────────────────────
     {
         "code": "AP-31",
@@ -1315,6 +1426,18 @@ STATUS_VOCAB = {
 # Entradas permitidas en la raíz del vault además de las secciones canónicas
 _ROOT_ALLOWED = {".obsidian", ".trash", ".history", ".git", ".locks", "vault-backups"}
 
+#: Manifiesto público del estándar — referencia del guard anti-drift del marco.
+SPEC_FILENAME = "vault-obsidian-architecture.md"
+
+#: Nombres de artefactos que SOLO deben existir dentro de un vault. Si aparecen
+#: por encima del vault root son side-effects escritos fuera (AP-36).
+_VAULT_ARTIFACT_NAMES = ("00_System", "99_Index", "vault-backups", ".history")
+
+#: Niveles por encima del vault que inspecciona el guard de contaminación.
+#: 2 cubre el patrón legacy parent.parent.parent, que en topología spec-repo
+#: (vault = <repo>/vault-sandbox) cae en el abuelo del directorio de scripts.
+_CONTAMINATION_DEPTH = 2
+
 
 def vault_norms_audit(root: Optional[Path] = None) -> Dict[str, Any]:
     """Audita el vault contra las normas automatizables (ex-manual).
@@ -1466,15 +1589,59 @@ def vault_norms_audit(root: Optional[Path] = None) -> Dict[str, Any]:
                     "Índice con [[stem|alias]] en celdas — formato legacy; correr vault_section_index --heal.",
                 )
 
-    # (c) Contaminación hermana: artefactos de vault generados FUERA del vault
-    for sibling_name in ("00_System", "99_Index", "vault-backups"):
-        sibling = root.parent / sibling_name
-        if sibling.exists() and sibling != root / sibling_name:
+    # (c) Contaminación externa: artefactos de vault generados FUERA del vault.
+    #
+    # Hasta v38.1 esto miraba solo root.parent, un único nivel. No bastaba: el
+    # patrón legacy Path(__file__).parent.parent.parent (vault_restore) escribe
+    # en el ABUELO del directorio de scripts, que en topología spec-repo queda
+    # dos niveles por encima del vault. El guard pasaba en verde mientras la
+    # carpeta existía. Ahora se recorren _CONTAMINATION_DEPTH niveles.
+    seen_contamination: set = set()
+    for level in range(1, _CONTAMINATION_DEPTH + 1):
+        ancestor = root.parents[level - 1] if len(root.parents) >= level else None
+        if ancestor is None:
+            break
+        for artifact_name in _VAULT_ARTIFACT_NAMES:
+            stray = ancestor / artifact_name
+            if not stray.exists() or stray == root / artifact_name or stray == root:
+                continue
+            key = str(stray)
+            if key in seen_contamination:
+                continue
+            seen_contamination.add(key)
             _flag(
                 "AP-36",
-                f"../{sibling_name}",
-                f"'{sibling_name}' existe como hermano del vault — side-effect fuera del vault root.",
+                f"{'../' * level}{artifact_name}",
+                f"'{artifact_name}' existe {level} nivel(es) por encima del vault "
+                f"({stray}) — side-effect escrito fuera del vault root.",
             )
+
+    # (d) Vault mal identificado: la raíz del repo usada COMO vault.
+    #
+    # Cuando _detect_vault_root() no encuentra ningún vault devuelve la raíz del
+    # repo. A partir de ahí los artefactos se escriben "dentro del vault" según
+    # las tools, pero fuera de todo vault-* en realidad. El audit no podía verlo
+    # porque la contaminación cae DENTRO de root: se reportaba como CN-02
+    # ("carpeta scripts no es sección canónica"), culpando al repo de no ser un
+    # vault en lugar de señalar que el vault fue mal detectado.
+    try:
+        from vault_io import VAULT_ROOT as _DETECTED_ROOT
+        from vault_io import vault_root_origin, vault_root_is_confident
+
+        # Solo aplica cuando se audita el root AUTO-DETECTADO. Con --root
+        # explícito el usuario ya declaró cuál es el vault y la confianza de la
+        # detección no dice nada sobre él.
+        audits_detected_root = root.resolve() == _DETECTED_ROOT.resolve()
+        if audits_detected_root and not vault_root_is_confident():
+            _flag(
+                "AP-36",
+                ".",
+                f"vault root detectado por '{vault_root_origin()}': no se encontró ningún "
+                f"vault y se está usando {root} como si lo fuera. Los artefactos caerían "
+                "fuera de todo vault-*. Crea 'vault-<nombre>/' o exporta VAULT_ROOT.",
+            )
+    except ImportError:
+        pass
 
     # ── AP-10: migración sin plan de rollback ─────────────────────────────────
     migrated = root / "10_Migrated"
@@ -1523,6 +1690,52 @@ def vault_norms_audit(root: Optional[Path] = None) -> Dict[str, Any]:
         "total_violations": len(violations),
         "by_norm": by_norm,
         "violations": violations,
+    }
+
+
+# ─── Guard anti-drift del marco de datos (v39) ─────────────────────────────────
+
+
+def framework_drift_check(spec_path: Optional[Path] = None) -> Dict[str, Any]:
+    """Verifica que el manifiesto documente todos los ids del marco de datos.
+
+    El fallo de la Era 4 fue documentar sin ejecutar. Aquí es al revés: el
+    registro canónico vive en ``vault_fundamentals`` y este guard falla si el
+    manifiesto público se desincroniza de él — en cualquiera de las dos
+    direcciones (id registrado que el doc no explica, o id citado en el doc
+    que ya no existe en el registro).
+    """
+    from vault_fundamentals import FRAMEWORK_REGISTRIES
+
+    spec = Path(spec_path) if spec_path else Path(__file__).resolve().parent.parent / SPEC_FILENAME
+    if not spec.exists():
+        return {
+            "ok": False,
+            "tool": "vault_norms.framework_drift",
+            "error": "spec_not_found",
+            "spec": str(spec),
+        }
+
+    text = spec.read_text(encoding="utf-8", errors="replace")
+    missing: List[Dict[str, str]] = []
+    for registry_name, entries in FRAMEWORK_REGISTRIES.items():
+        for entry in entries:
+            if entry["id"] not in text:
+                missing.append(
+                    {
+                        "registry": registry_name,
+                        "id": entry["id"],
+                        "name": entry.get("name", ""),
+                    }
+                )
+
+    return {
+        "ok": not missing,
+        "tool": "vault_norms.framework_drift",
+        "spec": spec.name,
+        "total_ids": sum(len(e) for e in FRAMEWORK_REGISTRIES.values()),
+        "missing_count": len(missing),
+        "missing": missing,
     }
 
 
@@ -1581,6 +1794,20 @@ Ejemplos:
         "--root", help="Vault root para --audit (default: VAULT_ROOT auto-detect)"
     )
     parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Con --audit: salir con código 1 si hay violaciones (gate de CI). "
+             "Sin este flag el audit informa pero siempre sale 0.",
+    )
+    parser.add_argument(
+        "--check-framework",
+        action="store_true",
+        help="Verificar que el manifiesto documente todos los ids del marco de datos (CIA/F/FAIR/V/ISO)",
+    )
+    parser.add_argument(
+        "--spec", help="Ruta del manifiesto para --check-framework (default: raíz del repo)"
+    )
+    parser.add_argument(
         "--path", help="Ruta relativa de la nota (para --scan y --apply)"
     )
     parser.add_argument(
@@ -1612,6 +1839,14 @@ Ejemplos:
             from vault_io import set_vault_root
             set_vault_root(Path(args.root))  # AP-36: traces al vault objetivo
         result = vault_norms_audit(Path(args.root) if args.root else None)
+        if args.strict and result.get("total_violations"):
+            # `ok` sigue siendo True (el audit corrió bien); lo que cambia es el
+            # exit code, para poder usarlo como gate sin romper a los lectores
+            # que ya interpretan el envelope.
+            print(json.dumps(result, indent=2, ensure_ascii=False))
+            return 1
+    elif args.check_framework:
+        result = framework_drift_check(Path(args.spec) if args.spec else None)
     elif args.rebuild:
         result = vault_norms_rebuild()
     elif args.show:

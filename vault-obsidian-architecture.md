@@ -1,9 +1,54 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v38.1 — 2026-07-12  
+**Versión:** v39.0 — 2026-07-25  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
+---
+
+## Qué es este estándar
+
+**Vault Obsidian Architecture** es un estándar abierto para dotar a agentes LLM de **memoria documental persistente**: una carpeta de Markdown con frontmatter YAML, wiki-links y un conjunto de tools que la mantienen sana, indexada y auditable entre sesiones.
+
+**El problema que resuelve.** La memoria de un agente es efímera. Cada sesión empieza desde cero aunque el proyecto lleve meses: se repiten errores ya cometidos, las decisiones técnicas no tienen trazabilidad y el conocimiento operativo se pierde. Este estándar convierte ese conocimiento en un activo persistente, versionado y verificable — sin base de datos, sin embeddings y sin servicio externo.
+
+**Qué garantiza.** No es "guardar notas". Es un activo de datos con garantías declaradas y medidas por herramienta:
+
+| | |
+|---|---|
+| **Tríada CIA** | confidencialidad, integridad y disponibilidad como campos que **cambian el comportamiento** de las tools, no como etiquetas |
+| **8 Fundamentos de Datos (F1–F8)** | integridad, consistencia, completitud, exactitud, validez, oportunidad, autenticidad y no repudio — verificables nota a nota |
+| **9 dimensiones de Data Quality** | score 0.0–1.0 por nota, umbral 0.7, consumido por el health score del vault |
+| **Principios FAIR** | localizable, accesible, interoperable y reutilizable por diseño |
+| **V's del Big Data** | volumen, velocidad, variedad, veracidad, valor y variabilidad, cada una atada a una métrica real |
+| **Gobernanza y auditabilidad** | catálogo de normas con enforcement automático, cadena de procedencia completa y trazabilidad código↔documento |
+| **Alineación normativa** | ISO/IEC 25010, 42001, 27001, 27005, 27701, 29148, 29119-3, 20000-1, 12207 · ISO 22301, 31000, 9001, 8601 |
+
+Todo lo anterior está declarado, medido y forzado en **[Marco de Datos y Gobernanza](#marco-de-datos-y-gobernanza)**, con su matriz de trazabilidad concepto → métrica → tool → norma.
+
+**Qué NO es.** No es un producto ni un plugin de Obsidian — el agente no necesita Obsidian instalado. No es un sistema de gestión documental para humanos. No es un reemplazo de git, de la wiki del equipo ni de una base de datos: es la capa de memoria que un agente consulta y escribe con reglas.
+
+**Cómo se consume.** Como scripts Python invocados por el harness, o directamente vía **MCP** (`mcp/nodejs/vault-mcp-server.mjs`) para que cualquier IA compatible use las tools sin registro previo.
+
+**Política de no-derogación.** Este documento no se mutila: ninguna tool, norma o sección se elimina al evolucionar el estándar. Lo reemplazado se marca `superseded_by:` y conserva su contrato — ver [Política de no-derogación](#política-de-no-derogación).
+
+---
+
+> **v39.0 (2026-07-25):** Marco de Datos y Gobernanza explícito.
+> - **Nueva sección `## Marco de Datos y Gobernanza`**: Tríada CIA como pilar declarado,
+>   los 8 Fundamentos con sus campos y tools, las 9 dimensiones DQ con umbrales,
+>   **Principios FAIR** y **las V's del Big Data** (ambos nuevos en el estándar),
+>   estados y ciclo de vida, los tres planos de versionado, cadena de trazabilidad,
+>   gobernanza, cobertura ISO unificada y **matriz de trazabilidad** de 20 filas.
+> - **Registros canónicos ejecutables** en `vault_fundamentals.py`: `CIA_TRIAD`,
+>   `FAIR_PRINCIPLES`, `BIGDATA_VS`, `ISO_COVERAGE`, `TRACEABILITY_MATRIX`.
+>   Nuevos `--framework` (genera `00_System/data-framework.json` + `.md`) y `--matrix`.
+> - **Guard anti-drift**: `vault_norms --check-framework` falla si el manifiesto y el
+>   registro se desincronizan. Documentar sin ejecutar deja de ser posible.
+> - **Política de no-derogación** declarada: el manifiesto no se mutila por reemplazo.
+> - **Changelog consolidado**: entradas faltantes de v34/v35/v36/v38.0/v38.1 añadidas,
+>   v27 reubicada, hashes `pending` fijados, ruta de ejemplo corregida.
+>
 > **v38.1 (2026-07-12):** Contención, idempotencia y enforcement total.
 > - **AP-36 nueva** (critical, guard+audit): toda operación escribe SOLO dentro del
 >   vault root, es idempotente y deja artefactos rastreables. Backups movidos a
@@ -73,6 +118,239 @@ Al inicio de cada turno, `buildMessages()` ejecuta `getVaultAutoContext()` que b
 
 ### 8. Ciclo de vida de patrones
 Los patrones tienen estado evolutivo: `planificado → en_progreso → implementado | deprecado | refactoring`. Cada transición queda registrada con timestamp, permitiendo reconstruir la historia arquitectónica.
+
+---
+
+## Marco de Datos y Gobernanza
+
+> **Fuente única:** los registros de esta sección viven en `scripts/vault_fundamentals.py`
+> (`CIA_TRIAD`, `FUNDAMENTALS`, `FAIR_PRINCIPLES`, `BIGDATA_VS`, `ISO_COVERAGE`,
+> `TRACEABILITY_MATRIX`). Se exportan con `vault_fundamentals --framework` a
+> `00_System/data-framework.json` + `.md`, y `vault_norms --check-framework` **falla**
+> si este documento y el registro se desincronizan en cualquiera de las dos direcciones.
+> Ninguna tabla de aquí se mantiene a mano (AP-02, AP-05).
+
+Un vault no es "notas en markdown". Es un **activo de datos** con garantías declaradas y medibles. Esta sección declara cuáles son, qué las mide y qué las hace cumplir. Cada fila apunta a un número que una tool ya produce hoy — no hay afirmaciones aspiracionales (AP-04).
+
+---
+
+### La Tríada CIA — el pilar fundamental
+
+Todo lo demás se apoya aquí. Los tres ejes son campos opcionales de frontmatter que, cuando están presentes, **cambian el comportamiento de las tools** — no son etiquetas decorativas.
+
+| ID | Eje | Campo frontmatter | Valores | Efecto medible |
+|---|---|---|---|---|
+| **CIA-C** | Confidencialidad | `cia_sensitivity` | `public` · `internal` · `restricted` | `restricted` activa revisión en `vault_security_scan`. En `02_Observability/envs`, `sensitive: true` impide volcar el valor del secreto — solo se documenta proveedor y referencia. |
+| **CIA-I** | Integridad | `cia_integrity` | `critical` · `high` · `medium` · `low` | `critical\|high` endurece el umbral de actualidad de **30d a 15d** y penaliza **5 pts** (vs 1 pt) en el health score. Pondera `stale_risk` en `vault_impact` y selecciona la estrategia `critical-path` en `vault_propagate`. |
+| **CIA-A** | Disponibilidad | `cia_availability` | `high` · `medium` · `low` | Respaldado por `.history/` en cada escritura, backups con manifiesto Merkle en `VAULT_ROOT/vault-backups/` (AP-36) y rollback quirúrgico de migración (AP-10). |
+
+**Por qué es el pilar:** un agente LLM que consume el vault toma decisiones a partir de él. Si el dato no es íntegro, la decisión es incorrecta; si no está disponible, la sesión empieza ciega; si no es confidencial, se filtra un secreto al grafo. Las tres fallas son de impacto distinto pero de la misma clase — pérdida de confianza en la memoria documental.
+
+---
+
+### Los 8 Fundamentos de Datos (F1–F8)
+
+Registro canónico en `vault_fundamentals.FUNDAMENTALS`. Cada fundamento se mapea a una dimensión de Data Quality verificable por nota, con los campos de frontmatter que comprueba y las tools que lo implementan.
+
+| ID | Fundamento | Dimensión DQ | Verifica | Campos | Tools |
+|---|---|---|---|---|---|
+| **F1** | INTEGRIDAD | `integrity` | Frontmatter parseable, campos estructurales presentes, delimitadores `---` sin corromper | `id`, `title`, `createdAt` | 16 |
+| **F2** | CONSISTENCIA | `consistency` | Todo `[[wiki-link]]` resuelve, `type` coincide con la carpeta, índices JSON sincronizados | `type` | 22 |
+| **F3** | COMPLETITUD | `completeness` | `updatedAt` presente, ≥3 líneas de contenido real, ≥1 tag en notas de contenido | `updatedAt`, `tags`, `status`, `type` | 21 |
+| **F4** | EXACTITUD | `accuracy` | La nota está en la sección que su `type` exige | `type`, `path` | 7 |
+| **F5** | VALIDEZ | `validity` | Valores dentro del vocabulario permitido (`status`, `type`, ejes CIA) | `status`, `type`, `cia_*` | 5 |
+| **F6** | ACTUALIDAD / OPORTUNIDAD | `timeliness` | `updatedAt` dentro del umbral, salvo `evergreen: true`; umbral endurecido por CIA-I | `updatedAt`, `evergreen`, `cia_integrity` | 11 |
+| **F7** | AUTENTICIDAD | `authenticity` | Consta qué agente escribió la nota | `agent` | 14 |
+| **F8** | NO REPUDIO | `non_repudiation` | La operación dejó rastro en el change-log; nada se borra en silencio (SP-01) | — | 11 |
+
+**Consulta:** `vault_fundamentals --list` · `vault_fundamentals --check <ruta>` (pass/fail por fundamento) · `vault_fundamentals --coverage` (matriz tool × fundamento).
+
+---
+
+### Las 9 dimensiones de Data Quality
+
+`vault_quality_check` puntúa **cada nota** en las 8 dimensiones de F1–F8 más una suplementaria:
+
+| Dimensión | Origen | Qué penaliza |
+|---|---|---|
+| `integrity`, `consistency`, `completeness`, `accuracy`, `validity`, `timeliness`, `authenticity`, `non_repudiation` | F1–F8 | ver tabla anterior |
+| **`uniqueness`** | suplementaria (DQ-9) | duplicación canonical-shadow (AP-17) y duplicación entre carpetas (AP-18) |
+
+- **Escala:** 0.0–1.0 por dimensión. **Global** = media no ponderada de las 9.
+- **Umbral:** 0.7. Las notas por debajo se reportan en `notes_below_threshold`.
+- **Artefacto:** `00_System/quality-index.json`.
+- **Consumidor:** `vault_audit` expone el bloque `dqHealth` con estados `fresh | stale | update_in_progress | unavailable`.
+
+---
+
+### Principios FAIR
+
+Findable, Accessible, Interoperable, Reusable. El vault los cumple por diseño, no por añadido — esta tabla nombra el mecanismo concreto de cada uno.
+
+| ID | Principio | Mecanismo en el vault | Métrica |
+|---|---|---|---|
+| **FAIR-F** | **Findable** (localizable) | Campo `id` obligatorio (F1), `search-index.json` con scoring `título×4 + coincidencias`, índices de sección auto-generados e índice maestro en `99_Index/` | cobertura de `id` · notas huérfanas |
+| **FAIR-A** | **Accessible** (accesible) | Markdown plano + YAML sobre el sistema de archivos. Abre en cualquier editor, versiona en git, se lee **sin Obsidian y sin las tools**. Las tools son conveniencia de escritura, no requisito de lectura | cero dependencias de lectura |
+| **FAIR-I** | **Interoperable** | Frontmatter YAML con vocabulario canónico (`type`, `status` vía `STATUS_VOCAB`, `tags`), `[[wiki-links]]` como aristas, Mermaid para diagramas, `graph.json` como grafo explícito, MCP como protocolo de consumo | broken links = 0 · coherencia `type`↔carpeta |
+| **FAIR-R** | **Reusable** | Cadena de procedencia PAT-5 (`agent`, `createdAt`, `updatedAt`, `norm_refs`), historial completo en `.history/`, change-log append-only y LICENSE del repositorio | cobertura de `agent` (F7) · entradas de change-log (F8) |
+
+---
+
+### Las V's del Big Data
+
+El vault no maneja petabytes, pero sí las mismas tensiones a su escala. Cada V está atada a una métrica que una tool ya emite.
+
+| ID | V | Qué mide | Métrica / Artefacto | Control que la contiene |
+|---|---|---|---|---|
+| **V1** | **Volumen** | cuánto conocimiento acumula sin degradar la navegación | total de notas y tamaño del grafo · `graph.json` | AP-23 (techo de complejidad por nota) + índices por sección |
+| **V2** | **Velocidad** | a qué ritmo cambia el conocimiento entre sesiones | cambios por sesión · `.change-log.json`, session-delta | SP-03 (snapshot antes de operación masiva) + `vault_impact` |
+| **V3** | **Variedad** | cuántas naturalezas de conocimiento conviven bajo un esquema | 18 secciones canónicas × vocabulario `type` · `vault_registry.SECTIONS` | CN-02 (destinos restringidos) + F4 (exactitud) |
+| **V4** | **Veracidad** | cuánto se puede confiar en lo que el vault afirma — **la V que más importa a un agente LLM** | `overall_dq_score` 0.0–1.0, umbral 0.7 · `quality-index.json` | AP-01 (alucinación), AP-04 (aspiracional), AP-11 (skeleton) + content gate |
+| **V5** | **Valor** | cuánto del conocimiento se convierte en decisión útil | health score 0–100 · `vault_audit.nextActions` | el audit emite la lista ejecutable de comandos para recuperar 100/100 |
+| **V6** | **Variabilidad** | cuánto deriva el significado de la nota respecto al código real | drift doc↔código · tags `@vault:` | AP-08 (versiones obsoletas) + trazabilidad bidireccional |
+
+---
+
+### Estados y ciclo de vida
+
+El vocabulario de `status` es **fuente única** en `vault_norms.STATUS_VOCAB` (12 valores) — resuelve la contradicción histórica entre CN-03 y el ciclo de vida del spec. La lista canónica y su enforcement se documentan en [CN-03](#cn-03--standard-status-vocabulary--vocabulario-canónico-de-metastatus); aquí solo se declara el flujo (AP-05: no se duplica la lista).
+
+```mermaid
+stateDiagram-v2
+    [*] --> stub: vault_graph_fix --stubs
+    stub --> draft: primer contenido real (>=3 lineas)
+    [*] --> draft: vault_write (content gate)
+    draft --> planned: se decide construirlo
+    planned --> in_progress: comienza la implementacion
+    in_progress --> implemented: entregado
+    implemented --> verified: validado en campo
+    verified --> deprecated: sustituido
+    implemented --> refactoring: se rehace
+    refactoring --> implemented
+    deprecated --> obsolete: sin uso
+    obsolete --> [*]: SP-01 change_log obligatorio
+```
+
+**Regla de transición:** ninguna nota salta de `stub` a `verified`. Cada transición la provoca una tool y queda registrada con timestamp — la historia del estado es reconstruible con `vault_timeline`.
+
+---
+
+### Versionado — tres planos independientes
+
+Confundirlos es una fuente clásica de error. Son tres relojes distintos:
+
+| Plano | Qué versiona | Artefacto | Tool | Formato |
+|---|---|---|---|---|
+| **Estándar** | las reglas y el contrato de tools | `00_System/standard-version.json` | `vault_version`, `vault_standard_upgrade` | `vN.M` |
+| **Nota** | el contenido de un documento | `.history/{ruta__plana}-{timestamp}.md` | `vault_write` (automático), `vault_diff` | timestamp ISO 8601 |
+| **Backup** | el estado completo del vault | manifiesto con raíz Merkle | `vault_backup`, `vault_backup_list`, `vault_restore` | timestamp + hash |
+
+**Criterio de versión del estándar:** se incrementa cuando **cambia el comportamiento** — una norma nueva, un contrato de tool modificado, un guard añadido. Un cambio que solo reescribe texto no merece versión. El formato es siempre `vN.M`, sin excepciones.
+
+---
+
+### Trazabilidad y Auditabilidad
+
+Todo nodo del vault es rastreable hasta su origen. La cadena completa:
+
+```
+código fuente (@vault: tag)
+   └─> nota del vault
+         ├─ agent:            ← quién la escribió           (F7 Autenticidad)
+         ├─ createdAt/updatedAt ← cuándo                     (F6 Actualidad, ISO 8601)
+         ├─ norm_refs:        ← bajo qué normas             (gobernanza)
+         ├─ .history/         ← todas sus versiones previas (CIA-A)
+         ├─ .change-log.json  ← qué se creó/movió/borró     (F8 No repudio, SP-01)
+         ├─ .tool-trace.json  ← qué tool tocó qué y cuándo  (auditabilidad)
+         └─ vault-backups/    ← manifiesto Merkle verificable
+```
+
+**Garantía operativa:** nada se borra en silencio. SP-01 exige entrada en el change-log **antes** de eliminar, y AP-36 garantiza que toda operación deje su artefacto **dentro** del vault root y sea idempotente.
+
+---
+
+### Gobernanza
+
+| Eje | Mecanismo | Ubicación |
+|---|---|---|
+| **Normas del estándar** | catálogo AP-XX / PAT-X / SP-XX / CN-XX con niveles `guard`, `audit`, `guard+audit`, `recommended` — **cero `manual`** desde v38.1 | `vault_norms`, `00_System/norm-registry.json` |
+| **Decisiones de IA** | registro de decisiones asistidas por IA con responsable y alcance | `16_AI_Governance/` |
+| **Riesgos** | score `likelihood × impact`, nivel y tratamiento | `02_Observability/risks/` |
+| **Privacidad** | registro de tratamiento con detección automática de DPIA | `09_Infrastructure/privacy/` |
+| **No conformidades** | NCR con ID auto-generado, 5-Whys y verificación de eficacia | `02_Observability/quality/` |
+| **Decisiones técnicas** | ADR con contexto, opciones evaluadas y consecuencias | `03_Decisions/` |
+| **Directivas de proyecto** | `DA-{N}` (arquitectura) y `DS-{N}` (seguridad) que extienden las reglas base | `00_System/rules.md` |
+
+**Principio de gobernanza:** una norma sin enforcement automático es una intención, no una regla. Toda norma nueva nace con su guard o su check de audit el mismo día.
+
+---
+
+### Cobertura de normas ISO
+
+Referencia única y con formato canónico de cita. Las citas locales en cada grupo de tools se mantienen; esta tabla las consolida.
+
+| ID | Norma | Cláusula / alcance | Implementado por | Tools |
+|---|---|---|---|---|
+| **ISO-25010** | ISO/IEC 25010:2023 | Modelo de calidad de producto | scoring multidimensional y no conformidades | `vault_quality_check`, `vault_ncr_save` |
+| **ISO-42001** | ISO/IEC 42001:2023 | Gobernanza de decisiones asistidas por IA | `16_AI_Governance/` | `vault_ai_decision` |
+| **ISO-29148** | ISO/IEC/IEEE 29148:2018 | Especificación y trazabilidad de requerimientos | `14_Requirements/` | `vault_requirement_save` |
+| **ISO-29119** | ISO/IEC/IEEE 29119-3:2021 | Documentación de pruebas | `15_Tests/` enlazado a requerimientos | `vault_test_save`, `vault_test_runner` |
+| **ISO-20000** | ISO/IEC 20000-1:2018 | Gestión de incidentes y niveles de servicio | `02_Observability/incidents/`, SLOs | `vault_incident_save`, `vault_slo_save` |
+| **ISO-22301** | ISO 22301:2019 | Continuidad y recuperación | backups Merkle, restore verificable, runbooks de rollback | `vault_backup`, `vault_restore`, `vault_runbook_save` |
+| **ISO-12207** | ISO/IEC/IEEE 12207:2017 | Procesos de release y entornos | registro de releases y matriz de entornos | `vault_release_save`, `vault_env_matrix` |
+| **ISO-31000** | ISO 31000:2018 | Identificación, evaluación y tratamiento de riesgos | `02_Observability/risks/` | `vault_risk_save` |
+| **ISO-27001** | ISO/IEC 27001:2022 | Controles de seguridad de la información | escaneo de secretos, `cia_sensitivity`, directivas `DS-` | `vault_security_scan`, `vault_env_save` |
+| **ISO-27005** | ISO/IEC 27005:2022 | Riesgo de seguridad de la información | asignación automática de CIA por tipo e impacto | `vault_risk_save` |
+| **ISO-27701** | ISO/IEC 27701:2019 | Tratamiento de datos personales (GDPR Art. 30 y 35) | `09_Infrastructure/privacy/` con DPIA automática | `vault_privacy_save` |
+| **ISO-9001** | ISO 9001:2015 | §9.2 Auditoría interna · §10.2 No conformidad y acción correctiva | NCR con 5-Whys y verificación de eficacia | `vault_ncr_save`, `vault_audit` |
+| **ISO-8601** | ISO 8601 | Formato de marcas temporales | todo timestamp es UTC `YYYY-MM-DDTHH:mm:ss.sssZ` (AP-13) | `vault_write`, `vault_validate` |
+
+---
+
+### Matriz de trazabilidad: concepto → métrica → tool → norma
+
+La vista de una pantalla que hace verificable todo lo anterior. Generada por `vault_fundamentals --matrix`.
+
+| Concepto | Métrica | Umbral | Tool | Artefacto | Enforcement |
+|---|---|---|---|---|---|
+| Confidencialidad (CIA-C) | hallazgos de secretos expuestos | 0 | `vault_security_scan` | `02_Observability/security/` | guard+audit |
+| Integridad (CIA-I / F1) | `dq.integrity` | 0.0–1.0, ≥0.7 | `vault_quality_check` | `00_System/quality-index.json` | audit |
+| Disponibilidad (CIA-A) | backups con manifiesto Merkle verificable | ≥1 reciente | `vault_backup` | `vault-backups/` | guard (AP-36) |
+| Consistencia (F2) | wiki-links rotos | 0 | `vault_audit` | `00_System/graph.json` | guard+audit |
+| Completitud (F3) | líneas reales de contenido | ≥3 | `vault_write` | content gate | guard |
+| Exactitud (F4) | coincidencia `type` ↔ carpeta | 100% | `vault_validate` | `vault_registry.SECTIONS` | audit (CN-02) |
+| Validez (F5) | `status` dentro de `STATUS_VOCAB` | 12 valores | `vault_norms --audit` | `vault_norms.STATUS_VOCAB` | audit (CN-03) |
+| Oportunidad / Actualidad (F6) | antigüedad de `updatedAt` | 30d · 15d si CIA `critical\|high` | `vault_audit` | bloque `stale` | audit |
+| Autenticidad (F7) | cobertura del campo `agent` | 100% | `vault_quality_check` | frontmatter `agent:` | audit (AP-16) |
+| No repudio (F8) | entradas en change-log | 1 por borrado | `vault_change_log` | `00_System/.change-log.json` | audit (SP-01) |
+| Unicidad (DQ-9) | duplicados canonical-shadow | 0 | `vault_merge --detect` | `quality-index.json` | audit (AP-17/18) |
+| Localizable (FAIR-F) | notas huérfanas | 0 | `vault_audit` | `99_Index/index.md` | audit |
+| Interoperable (FAIR-I) | errores de sintaxis de wiki-link | 0 | `vault_graph_inspect` | `graph.json` | guard (AP-22/24) |
+| Reutilizable (FAIR-R) | cadena de procedencia completa | `agent` + timestamps | `vault_diff` | `.history/` | audit (PAT-5) |
+| Veracidad (V4) | `overall_dq_score` | ≥0.7 | `vault_quality_check` | `vault_audit.dqHealth` | audit |
+| Valor (V5) | health score | 0–100, objetivo 100 | `vault_audit` | `vault_audit.nextActions` | audit |
+| Variabilidad (V6) | drift doc ↔ código | 0 | `vault_drift_detect` | tags `@vault:` | audit (AP-08) |
+| Contención (AP-36) | escrituras fuera del vault root | 0 | `vault_norms --audit` | `vault_io.get_vault_root()` | guard+audit |
+| Gobernanza de IA | decisiones de IA registradas | 1 por decisión | `vault_ai_decision` | `16_AI_Governance/` | recommended |
+| Auditabilidad | operaciones con traza | 100% | `vault_errors_trace` | `00_System/.tool-trace.json` | automático |
+
+> Los ejes `FAIR-A`, `V1`, `V2`, `V3` y `V5` no tienen fila de guard propia porque son **propiedades emergentes** del diseño (formato plano, estructura numerada, change-log) — se miden, pero no hay nada que forzar: no se pueden violar sin abandonar el estándar entero.
+
+---
+
+### Política de no-derogación
+
+> **El manifiesto es la representación pública del estándar.** No se mutila.
+
+Ninguna tool, grupo, norma, sección ni entrada de changelog se elimina de este documento. Cuando algo se reemplaza:
+
+1. Se **conserva** su contrato y su descripción original.
+2. Se marca con `superseded_by:` apuntando a lo que lo sustituye, y con la versión en que ocurrió.
+3. Se explica **por qué** cambió — la razón es tan valiosa como el reemplazo.
+
+**Motivo:** los vaults de la flota corren versiones distintas del estándar. Un contrato borrado del documento deja huérfano a todo consumidor que aún lo usa, y convierte el manifiesto en una foto del presente en lugar de la historia del estándar. Borrar también destruye la trazabilidad que F8 (no repudio) exige del propio documento que la define.
+
+Lo único que se corrige sin conservar es el **error factual**: un hash equivocado, una ruta que no existe, un conteo desactualizado.
 
 ---
 
@@ -289,6 +567,14 @@ vault-{nombre}/          ← raíz del vault (SIEMPRE con prefijo vault-)
 │   ├── .decisions-log.json          — registro de decisiones: decision_id, tipo, impacto, aprobación humana
 │   └── decisions/
 │       └── {project}-{slug}.md      — decisión de IA: descripción, justificación, alternativas, riesgos
+│
+├── 17_Preferences/                  ← ★ contexto estable del usuario (vault_preferences — v39)
+│   ├── workflow/                    — cómo quiere que se trabaje: flujo, ritmo, qué confirmar antes de actuar
+│   ├── style/                       — estilo de comunicación y de código: idioma, tono, formato, convenciones
+│   ├── tooling/                     — herramientas, lenguajes y librerías preferidas o vetadas
+│   ├── constraints/                 — restricciones duras: qué no se debe tocar, mover, borrar o propagar
+│   └── domain/                      — preferencias específicas de un proyecto o dominio concreto
+│                                      (nota: strength must|should|may · revocar marca status: revoked, no borra)
 │
 └── 99_Index/
     ├── search-index.json        — índice full-text (score ponderado: título×4, palabras, preview)
@@ -970,7 +1256,7 @@ Valida frontmatter YAML, campos requeridos, estructura de carpetas e integridad 
 
 **Diferencia con `vault_audit`:** `vault_audit` mide salud del vault (orphans, stale, broken links, score). `vault_validate` verifica contratos estructurales — frontmatter correcto, carpetas presentes, índices legibles — sin necesidad de leer el contenido completo de cada nota.
 
-> **Nota de implementación:** el check `structure` verifica las 17 carpetas estándar del vault (`00_System` … `16_AI_Governance`). Las carpetas `11_Code` y `99_Index` son opcionales en el check de estructura (un vault sin código documentado no necesita `11_Code`; `99_Index` se crea automáticamente al hacer la primera búsqueda). Las carpetas `14_Requirements`, `15_Tests`, `16_AI_Governance` se crean con `vault_standard_upgrade --to latest` si el vault es previo a v24. El check `indexes` verifica específicamente que `99_Index/search-index.json` y `99_Index/graph.json` sean legibles cuando existan.
+> **Nota de implementación:** el check `structure` verifica las 18 carpetas estándar del vault (`00_System` … `17_Preferences`). Las carpetas `11_Code`, `17_Preferences` y `99_Index` son opcionales en el check de estructura (un vault sin código documentado no necesita `11_Code`; `99_Index` se crea automáticamente al hacer la primera búsqueda). Las carpetas `14_Requirements`, `15_Tests`, `16_AI_Governance` se crean con `vault_standard_upgrade --to latest` si el vault es previo a v24. El check `indexes` verifica específicamente que `99_Index/search-index.json` y `99_Index/graph.json` sean legibles cuando existan.
 
 **Cuándo usar:** antes de una migración (pre-flight), al detectar AP-12 o AP-13, al integrar notas de fuentes externas que pueden tener frontmatter no estándar.
 
@@ -2404,7 +2690,7 @@ Genera o actualiza `99_Index/index.md` con un índice maestro del vault completo
 **Parámetros:** ninguno.
 
 **Comportamiento:**
-1. Llama internamente a `vault_section_index` para cada sección numerada (`00_System` … `16_AI_Governance`)
+1. Llama internamente a `vault_section_index` para cada sección numerada (`00_System` … `17_Preferences`)
 2. Genera `99_Index/index.md` con tabla: carpeta, descripción de la sección, notas totales, link al section index
 3. Si una carpeta no tiene notas, la incluye como vacía — el índice maestro siempre muestra el vault completo
 
@@ -2429,7 +2715,7 @@ Reconstruye `99_Index/search-index.json` desde cero escaneando todas las notas e
 | `--check` | flag | — | Retorna estado del índice sin modificarlo (`index_ok` o `index_empty_or_missing`) |
 
 **Comportamiento:**
-- Escanea solo notas dentro de las 17 secciones estándar (`00_System` … `16_AI_Governance`) — ignora archivos en la raíz del vault (`vault-obsidian-architecture.md`, `scripts/`, etc.)
+- Escanea solo notas dentro de las 18 secciones estándar (`00_System` … `17_Preferences`) — ignora archivos en la raíz del vault (`vault-obsidian-architecture.md`, `scripts/`, etc.)
 - Parsea frontmatter de cada nota para extraer `title`, `tags`, `updatedAt`
 - Genera `99_Index/search-index.json` con `{ notes: [...], rebuiltAt, totalNotes }`
 - Sobreescribe cualquier índice previo (incluyendo el vacío `{}`)
@@ -3101,7 +3387,9 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **37 normas** del estándar (24 AP + 5 PAT + 3 SP + 3 CN + 1 AP-23 + 1 AP-24 + 1 AP-25). Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **48 normas** del estándar (36 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-36`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+
+> **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
 **Operaciones:**
 
@@ -3442,6 +3730,107 @@ Registra una no conformidad con ID auto-generado `NCR-YYYY-NNN`, plantilla 5-Why
 ```
 
 **Normas ISO:** 9001:2015 §10.2 (Nonconformity and corrective action) · 9001:2015 §9.2 (Internal audit) · ISO/IEC 25010:2023.
+
+---
+
+### Grupo 34 — Memoria de Contexto (v39)
+
+> **Propósito:** cerrar el eje **consulta → contexto**. Los grupos 1–33 cubren el eje contrario (escritura → gobernanza): el vault sabe qué se decidió, qué se aprendió y qué pasó. Lo que faltaba es responder *"dame lo que hay que saber para contestar esto, en N tokens"* con un criterio explícito y auditable, en vez de dejarlo al juicio del agente en cada sesión.
+
+**Sin base de datos, sin embeddings y sin servicio externo** (Principio de diseño 1): reglas léxicas sobre los vocabularios que ya son fuente única en el estándar (`vault_registry.SECTIONS`, `vault_norms.STATUS_VOCAB`) más el grafo de wiki-links que ya produce `vault_graph`. La recuperación semántica por embeddings sigue siendo un nivel superior opcional (ver `## Niveles de implementación`), no un requisito.
+
+Encadenamiento canónico:
+
+```
+vault_query_parse → vault_search → vault_subgraph → rerank → vault_context_pack
+```
+
+---
+
+#### `vault_preferences(set|list|context|revoke, category, title, statement, strength, ...)`
+
+Preferencias del usuario como **contexto estable**: cómo quiere que se trabaje, qué no debe tocarse. Sección propia `17_Preferences/{workflow,style,tooling,constraints,domain}`, separada de `07_Knowledge` porque su ciclo de vida es distinto — una preferencia se **revoca**, no se corrige — y porque se carga entera al inicio de sesión en vez de buscarse por relevancia.
+
+| Parámetro | Tipo | Descripción |
+|---|---|---|
+| `--category` | str | `workflow` / `style` / `tooling` / `constraints` / `domain` (derivadas de `vault_registry.SUBFOLDERS`) |
+| `--title` | str | Título; determina el slug, y por tanto la idempotencia |
+| `--statement` | str | Enunciado: qué debe hacer el agente |
+| `--strength` | str | `must` / `should` / `may` — fuerza normativa estilo RFC 2119 |
+| `--scope` | str | `global` o slug de proyecto |
+| `--reason` | str | Motivo de la revocación (obligatorio con `--revoke`) |
+
+`--strength` es lo que permite al agente distinguir una restricción dura de una inclinación, y es el criterio de orden cuando el presupuesto obliga a truncar.
+
+**Revocar no borra** (`### Política de no-derogación` aplicada al contenido del vault): marca `status: revoked` con motivo, fecha y agente. Borrarla destruiría la explicación de por qué el agente se comportaba de otra forma en sesiones anteriores.
+
+**Guards:** AP-16 (atribución obligatoria) · categoría validada contra el registro · revocación con motivo obligatorio.
+
+**Retorna:** `{ ok, action: created|updated|revoked, path, category, strength, previous_statement }`
+
+---
+
+#### `vault_query_parse(query, explain?)`
+
+Lenguaje natural → consulta estructurada: `terms`, `phrases`, `tags`, `seeds`, `sections`, `status`, `intent`, `hops` y `temporal`. **Determinista por diseño**: misma frase, misma consulta, siempre — que es lo que hace auditable todo lo que viene después.
+
+Cuando no está seguro **no adivina**: baja `confidence` y deja el término en `terms` para que la búsqueda léxica decida. Un filtro de sección equivocado esconde la nota que el usuario buscaba, y no se nota.
+
+Emite además un `plan`: los pasos concretos (tool + args, o filtro declarado) que resolverían la consulta. No los ejecuta — separar parseo de ejecución permite inspeccionar qué se va a consultar antes de consultarlo. Ningún paso puede nombrar una tool ausente del catálogo (AP-01 / AP-04).
+
+**Retorna:** `{ ok, query, structured, confidence, evidence, plan }`
+
+---
+
+#### `vault_subgraph(seeds, hops?, direction?, max_nodes?, predicate?, section?)`
+
+Subgrafo de **K semillas y N saltos** sobre `99_Index/graph-enriched.json` (o `graph.json`). Se diferencia de `vault_impact` en tres cosas: dirección configurable (`in` / `out` / `both`), peso por predicado, y decaimiento por distancia.
+
+| Concepto | Valor | Por qué |
+|---|---|---|
+| Peso de arista | `wiki_link`/`related` 1.0 · `depends_on`/`implements` 0.9 · `mentions` 0.6 · `shared_tag` 0.4 | Una arista declarada a mano es evidencia fuerte; una heurística es evidencia débil |
+| Decaimiento | 0.6 por salto | A 3 saltos una nota vale ~0.2 de una semilla: presente, pero desplazable por cualquier vecino directo |
+| Corte | `hops` (BFS), no coste de camino | Un subgrafo de contexto debe ser predecible en tamaño, no en coste |
+
+Salida determinista (semillas primero, luego relevancia, desempate por ruta) y `--format mermaid` para pegar el vecindario en una nota.
+
+**Retorna:** `{ ok, seeds, nodes: [{path, hops, relevance, via}], edges, stats }`
+
+---
+
+#### `vault_context_pack(query, budget?, top_k?, excerpt_tokens?)`
+
+Pregunta → contexto empaquetado bajo **presupuesto de tokens**. Rerank sobre los candidatos de búsqueda léxica y expansión por grafo:
+
+`score = 0.45·léxico + 0.30·grafo + 0.15·frescura + 0.10·CIA`, con penalización multiplicativa para `deprecated` (0.4), `superseded` (0.3), `revoked` (0.2) y `archived` (0.5). Frescura por decaimiento exponencial de vida media 90 días — no es un corte: una nota de hace un año sigue puntuando lo suficiente para entrar si nada más responde la pregunta.
+
+Dos garantías, ambas con test:
+
+1. **El presupuesto se respeta recortando notas enteras, no partiéndolas.** Media nota en el contexto es peor que ninguna: el agente la cita como si estuviera completa. Lo que no cabe se reporta en `excluded` con su motivo — el recorte es auditable.
+2. **Las preferencias `must` entran siempre primero.** Si el presupuesto obliga a elegir entre saber más del tema y saber qué le prohibió el usuario al agente, gana lo segundo.
+
+**Retorna:** `{ ok, context, tokens: {budget, used, remaining}, included, excluded, confidence }`
+
+---
+
+#### `vault_ingest(section, file|text|stdin|url, commit?, ...)`
+
+Ingesta gobernada de conversaciones, ficheros y URLs: segmenta por encabezados, extrae entidades de forma determinista (wikilinks, tags, rutas, siglas, nombres propios) y propone las notas derivadas.
+
+Es exactamente la vía por la que un vault se envenena, y el contrato lo refleja:
+
+| Guard | Comportamiento |
+|---|---|
+| Pre-vuelo anti-poison (`cli.safety`) | **No es opcional ni desactivable.** Primera etapa del pipeline; si hay hallazgo bloqueante no se escribe nada |
+| Dry-run | Por defecto. Escribir exige `--commit` explícito |
+| No sobrescritura | Nunca pisa una nota existente: material sin revisar no puede sustituir a lo que ya está en el vault |
+| Secciones vetadas | `00_System`, `99_Index`, `17_Preferences` — generadas o propiedad de otra tool (un-solo-dueño-por-carpeta) |
+| Red | Apagada salvo `--allow-network`; el estándar es "sin servicio externo" |
+| AP-16 | Atribución obligatoria: lo ingerido debe rastrearse hasta quién lo trajo |
+
+Lo ingerido entra con `status: draft` y `cia_integrity: low`, de modo que el rerank de `vault_context_pack` lo ordena por detrás del conocimiento verificado hasta que alguien lo revise. La procedencia (`source`, `ingest_origin`) se conserva siempre — PAT-5.
+
+**Retorna:** `{ ok, committed, preflight, entities, proposed, written, skipped, stats }`
 
 ---
 
@@ -4356,10 +4745,11 @@ Las CN (Convention Naming) codifican las convenciones de nombres y estructura qu
 ### CN-02 — Numbered folder structure — secciones numeradas como únicos destinos
 
 **Regla:** Solo las secciones del registro canónico `vault_registry.SECTIONS` (fuente
-de verdad única — PAT-1) son destinos válidos para notas del vault. Actualmente 18:
+de verdad única — PAT-1) son destinos válidos para notas del vault. Actualmente 19:
 `00_System, 01_Projects, 02_Observability, 03_Decisions, 04_Sessions, 05_Patterns,
 06_Diagrams, 07_Knowledge, 08_Runbooks, 09_Infrastructure, 10_Migrated, 11_Code,
-12_Bibliography, 13_Flows, 14_Requirements, 15_Tests, 16_AI_Governance, 99_Index`.
+12_Bibliography, 13_Flows, 14_Requirements, 15_Tests, 16_AI_Governance,
+17_Preferences, 99_Index`.
 
 **NO duplicar esta lista en docs ni catálogos** — consultarla con
 `vault_folder_registry` o `vault_registry.SECTIONS` (la duplicación causó una
@@ -4660,6 +5050,18 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v28 | 2026-05-23 | Validación en campo (vault-electron-fingerprint, 100/100), seguridad confirmada (assert_within_vault + CIA + atomic writes en 12 scripts), protocolo de inicialización corregido, mapa canónico script→carpeta, gitignore pattern consumidores, nota compatibilidad Windows/PowerShell |
 | v29 | 2026-05-27 | vault_delta (SHA-256 session delta + BFS stale impact), vault_tags (tag registry canónico, orphan/near-dup audit, rename), vault_backup Merkle tree + --verify, vault_reindex escribe hash-index.json, vault_write tag suggestions + AP-22 bracket guard, vault_audit tagHealth + malformedWikilinks |
 | v30 | 2026-05-28 | vault_norms (catálogo AP-XX/PAT-X/SP-XX/CN-XX, 34 normas, list/show/scan/apply/rebuild), vault_code_tag (@norm en código fuente, prefijo libre, 8 formatos de comentario), norm_refs auto-embed en frontmatter via vault_write, AP-23 + SP-01~03 + CN-01~03, norm_code en errores de vault_write + issues de vault_audit |
+| v31 | 2026-06-02 | Producción y SRE: vault_incident_save, vault_slo_save, vault_release_save, vault_env_matrix (ISO/IEC 20000-1, ISO 22301, ISO/IEC/IEEE 12207) |
+| v32 | 2026-06-04 | Riesgos, privacidad y calidad: vault_risk_save (ISO 31000), vault_privacy_save (ISO/IEC 27701 + GDPR Art. 30/35), vault_ncr_save (ISO 9001 §10.2) |
+| v33 | 2026-06-06 | Spec-driven design: tool-spec.json + vault_spec_validate — los contratos de tool pasan a ser verificables |
+| v34 | 2026-06-13 | Trazabilidad bidireccional código↔vault: vault_code_sync, vault_onboard, anotación `@vault:` en código fuente |
+| v34.1 | 2026-06-19 | Bootstrap de un comando (vault_init), nextActions prescriptivo en vault_audit, scaffolds por sección, fix de `_detect_vault_root` |
+| v34.2 | 2026-06-20 | AP-24 (bracket imbalance) + Grupo 33 de corrección automática; AP-22 acotado a wiki-links vacíos |
+| v34.3 | 2026-06-21 | Fix de scope en `vault_audit._detect_broken_links` (escaneaba solo index.md) |
+| v36 | 2026-06-28 | Sincronización de versión spec/código/sandbox; AP-24 y AP-25 registrados en el catálogo. No existe v35 publicada |
+| v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
+| v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
+| v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v39.0 | 2026-07-25 | Marco de Datos y Gobernanza explícito (CIA, F1–F8, 9 dimensiones DQ, FAIR, V's del Big Data, ISO, matriz de trazabilidad), `vault_fundamentals --framework/--matrix`, guard anti-drift `vault_norms --check-framework`, política de no-derogación, changelog consolidado |
 
 ### Cómo inicializar el estándar en un vault nuevo (v28)
 
@@ -4745,6 +5147,7 @@ Tabla authoritative de qué constante `_DIR` usa cada grupo de tools. Prevalece 
 | `14_Requirements/` | `vault_requirement_save` | `{project}/` |
 | `15_Tests/` | `vault_test_save` | `unit/`, `integration/`, `e2e/`, `performance/`, `security/`, `acceptance/` |
 | `16_AI_Governance/` | `vault_ai_decision` | `decisions/` |
+| `17_Preferences/` | `vault_preferences` | `workflow/`, `style/`, `tooling/`, `constraints/`, `domain/` |
 | `99_Index/` | `vault_master_index`, `vault_reindex`, `vault_graph`, `vault_impact` | — |
 | `.history/` | `vault_write`, `vault_read` (lectura de historial) | ruta plana con `__` como separador |
 
@@ -4961,11 +5364,90 @@ temp/
 
 > Formato: [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).  
 > Cuando el proyecto usa **git**, cada versión incluye el hash del commit que la introdujo (`git: abcd123`).  
-> El hash permite navegar al estado exacto del código: `git show abcd123 -- docs/vault-obsidian-architecture.md`.
+> El hash referencia el commit **que introdujo la versión** — normalmente el del código, no el de este documento, que suele actualizarse en un commit posterior. Cuando difieren se anota `doc: abcd123` junto al hash de código.  
+> Para navegar al estado exacto del manifiesto en una versión: `git show <hash> -- vault-obsidian-architecture.md`  
+> Para el historial completo del documento: `git log --follow -- vault-obsidian-architecture.md`
+
+> **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
+> Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
 
 ---
 
-### v37 — 2026-07-01 `git: pending`
+### v39.0 — 2026-07-25 `git: pending`
+
+**Marco de Datos y Gobernanza explícito + guard anti-drift + consolidación del changelog**
+
+**Agregado**
+- **Sección `## Marco de Datos y Gobernanza`** en el manifiesto, ubicada antes de `## Estructura del Vault` por ser la carta de presentación del estándar. Contiene: Tríada CIA declarada como pilar con su efecto medible por eje, los 8 Fundamentos de Datos con campos verificados y nº de tools, las 9 dimensiones de Data Quality con escala y umbral, **Principios FAIR** y **las V's del Big Data** (ambos ausentes por completo hasta esta versión), estados y ciclo de vida con diagrama de transiciones, los tres planos de versionado, la cadena de trazabilidad y auditabilidad, gobernanza, cobertura ISO con formato de cita unificado, y la **matriz de trazabilidad** concepto → métrica → umbral → tool → artefacto → enforcement (20 filas).
+- **Abstract ejecutivo** `## Qué es este estándar` al inicio del documento: qué es, qué problema resuelve, qué garantiza, qué NO es y cómo se consume. El manifiesto pasa a funcionar como representación pública del estándar y no solo como referencia de tools.
+- **Registros canónicos en `vault_fundamentals.py`:** `CIA_TRIAD` (3), `FAIR_PRINCIPLES` (4), `BIGDATA_VS` (6), `ISO_COVERAGE` (13) y `TRACEABILITY_MATRIX` (20 filas), más el mapa `FRAMEWORK_REGISTRIES` y el helper `framework_ids()`. Mismo shape que `FUNDAMENTALS` — id estable, descripción, mecanismo real y tools que lo implementan.
+- **`vault_fundamentals --framework`:** genera `00_System/data-framework.json` + `data-framework.md` con el marco completo. **`--matrix`:** emite la matriz de trazabilidad.
+- **`vault_norms --check-framework [--spec]`:** guard anti-drift que falla si el manifiesto y el registro canónico se desincronizan en cualquiera de las dos direcciones. Es la corrección estructural del patrón que dominó v31–v34.3: documentar sin ejecutar.
+- **Política de no-derogación** declarada explícitamente en el manifiesto y en este changelog: ninguna tool, norma, sección ni entrada se elimina. Lo reemplazado se marca `superseded_by:` conservando su contrato y la razón del cambio.
+- `tests/test_data_framework.py`: cobertura de los registros, unicidad de ids, existencia de las tools citadas, cobertura de las 9 dimensiones DQ y test anti-drift contra el manifiesto.
+- **Contrato de tools dentro del vault (AP-36):** `tool-spec.json` pasa de `scripts/` a **`<vault>/00_System/tool-spec.json`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` conserva la ubicación legacy como fallback **de solo lectura** (no-derogación: la ruta antigua sigue siendo un contrato válido para vaults no migrados). La escritura es atómica vía `atomic_write_json`.
+- **Trazabilidad de la detección de raíz:** `vault_io.vault_root_origin()` etiqueta cuál de las 5 ramas resolvió el vault (`env`, `sibling_vault_dir`, `sibling_vault_dir_fresh`, `scripts_inside_vault`, `spec_repo_sandbox`, `repo_root_fallback`) y `vault_root_is_confident()` distingue detección real de suposición. Nueva variable de entorno **`VAULT_STRICT_ROOT`**: convierte el fallback silencioso a la raíz del repo en `RuntimeError` explícito.
+- **`vault_norms --audit --strict`:** exit code 1 ante violaciones, para usarse como gate de CI.
+- `tests/test_vault_containment.py` (23 tests): detección de raíz y su confianza, ausencia de escrituras en tiempo de importación, contaminación a N niveles, ubicación del contrato y protección del wipe de `vault_restore`.
+- **Grupo 34 — Memoria de Contexto (5 tools):** el eje `consulta → contexto`, complementario al eje `escritura → gobernanza` que ya cubría el estándar. `vault_preferences` (contexto estable del usuario, `strength must|should|may`, revocar marca `status: revoked` y no borra), `vault_query_parse` (lenguaje natural → consulta estructurada, determinista, sin modelo), `vault_subgraph` (K semillas / N saltos con decaimiento por salto y peso por predicado), `vault_context_pack` (empaquetado bajo presupuesto de tokens con scoring léxico + grafo + actualidad + CIA) y `vault_ingest` (ingesta gobernada, única con superficie de escritura, con preflight anti-poison no desactivable). Ninguna introduce base de datos, embeddings ni servicio externo.
+- **Sección `17_Preferences/`** con 5 subcarpetas (`workflow`, `style`, `tooling`, `constraints`, `domain`), registrada en `vault_registry` con `owner: vault_preferences`. Es la primera sección nueva desde v33.
+- **`AP-26`..`AP-30` registrados en `NORM_CATALOG`** (completitud de frontmatter: tags, `type`, bloque YAML, `status`, clasificación CIA). Estaban aplicados por `vault_audit` desde v30 sin entrada canónica — el catálogo pasa de 43 a **48 normas** y la numeración de antipatrones queda contigua de `AP-01` a `AP-36`. Sin cambios en el comportamiento del audit.
+- **Camino de migración reparado:** `_version_index()` solo aceptaba coincidencia exacta contra `VERSION_ORDER` (versión mayor, `"v39"`) mientras `CURRENT_VERSION` trae minor (`"v39.0"`); el índice salía `-1` y `--to latest` no aplicaba **ninguna** migración, reportando `ok: true`. Añadidas las migraciones `v37`, `v38` y `v39` — esta última crea `17_Preferences/` y sus 5 subcarpetas en vaults preexistentes. `tests/test_standard_upgrade_path.py` (9 tests) incluye un guard: una sección en el registro sin migración que la cree hace fallar la suite.
+- **Skill `vault-sdd-init` alineada:** el rango de antipatrones se derivaba con `len(aps)` (el conteo, no el máximo) y el detector de drift estaba clavado en `AP-01..AP-25`, ciego a todo lo posterior. Ahora ambos se derivan de `NORM_CATALOG` y el drift se calcula por contiguidad. `docs/SKILLS.md` documenta instalación y ciclo de vida; `SKILL_MANIFEST` queda anotado `superseded_by:` (constante declarada en v36 y nunca escrita). `tests/test_skills_contract.py` (9 tests) exige que toda definición en `.claude/skills/` tenga entry point y que sus flags existan en el `argparse` real.
+- `tests/test_context_memory.py` (76 tests): presupuesto de tokens nunca excedido, idempotencia de preferencias, determinismo del parser, contención del subgrafo, bloqueo de ingesta envenenada sin escrituras parciales, y contratos catálogo ↔ `tool-spec.json` ↔ registro.
+
+**Corregido**
+- **Artefactos de vault generados fuera de todo `vault-*`.** Causa raíz: la última rama de `_detect_vault_root()` devolvía la raíz del repo sin declararlo, de modo que `00_System/`, `99_Index/` y `vault-backups/` se materializaban junto a los scripts. Era estructuralmente invisible para AP-36 porque la contaminación caía *dentro* de `root` y se reportaba como CN-02/AP-15 genérico. Ahora la rama se etiqueta como baja confianza y el audit la señala como AP-36.
+- **`vault_io` creaba directorios al importarse.** La rama spec-repo hacía `mkdir()` dentro de `_detect_vault_root()`, que corre en tiempo de importación: cualquier repo que importara el módulo recibía un `vault-sandbox/`. El `mkdir` se elimina; la creación queda a cargo de quien escribe.
+- **Guard AP-36 ciego a 2 niveles.** La comprobación de contaminación solo miraba el directorio padre inmediato, justo el punto ciego del patrón legacy `Path(__file__).parent.parent.parent`. Ahora recorre `_CONTAMINATION_DEPTH = 2` niveles con deduplicación, y nueva comprobación (d) que reporta una detección de raíz de baja confianza.
+- **Bug destructivo latente en `vault_restore`.** Al mover los backups dentro del vault (v38.1), el barrido previo al restore — que solo saltaba dotfiles — pasó a incluir `vault-backups/`, es decir, borraba el snapshot que estaba a punto de leer. Corregido con `_WIPE_SKIP = {"vault-backups", "vault-sandbox"}`. `LEGACY_BACKUP_ROOT` se conserva como fallback de lectura.
+- **Changelog incompleto:** faltaban las entradas de **v34, v35/v36, v38.0 y v38.1** — las versiones más recientes existían solo en el banner de cabecera y en los mensajes de commit. Añadidas y reconstruidas desde `git log`.
+- **Changelog desordenado:** la entrada de **v27** estaba intercalada entre v37 y v34.3. Reubicada en su posición cronológica.
+- **Hashes `git: pending`** de v37 y v34.2 fijados a `c865e6d` y `3aab8e8`.
+- **Ruta inexistente** en la instrucción del changelog: `docs/vault-obsidian-architecture.md` → `vault-obsidian-architecture.md`. El archivo nunca vivió en `docs/` (git no registra ningún rename), por lo que el comando documentado devolvía vacío.
+- **Semántica del hash** documentada: referencia al commit que introdujo la versión, típicamente del código y no de este documento.
+
+---
+
+### v38.1 — 2026-07-12 `git: b1f48a4`
+
+**Contención, idempotencia y enforcement total**
+
+**Agregado**
+- **AP-36 — Contención e idempotencia** (critical, `guard+audit`): toda operación escribe SOLO dentro del vault root, es idempotente y deja artefactos rastreables. Cierra el síntoma persistente de `00_System/` y `99_Index/` regenerándose fuera de `vault-*`.
+- **`vault_norms --audit [--root]`:** auditoría automatizada que cubre AP-06/07/09/10/15/19/36, CN-02/03 y SP-01.
+- **`vault_section_index --heal`:** saneamiento retroactivo de índices con formato legacy `[[stem|alias]]` en celdas.
+- **`vault_io.set_vault_root()` / `get_vault_root()`:** resolución tardía del vault root — traces, tokens, locks e índices siguen al `--root` objetivo y no al detectado en tiempo de import.
+
+**Corregido**
+- **Causa raíz de la contaminación fuera del vault:** bucle auto-reforzante entre la creación de directorios de observabilidad y la detección del root por marcadores. `_detect_vault_root` ahora exige un marcador de **contenido** (`01_Projects`, `02_Observability`, `03_Decisions`, `.obsidian`) además del conteo de marcadores — `00_System` y `99_Index` por sí solos ya no bastan, porque son precisamente los que el bucle generaba.
+- **Enforcement `manual` eliminado:** las 14 normas que solo existían como intención pasaron a `audit` o `guard+audit`. Catálogo final: 43 normas, **0 manual**.
+- **`STATUS_VOCAB` unificado** (12 valores): resuelve la contradicción entre CN-03 (7 valores) y el ciclo de vida del spec (`draft→…→obsolete`). Fuente única en `vault_norms.STATUS_VOCAB`.
+- **CN-02 vs `vault_registry`:** la norma listaba 13 secciones obsoletas frente a las 18 canónicas del registro — el propio AP-05 que la norma advierte. Ahora referencia el registro en lugar de duplicar la lista.
+- **Índices sin alias:** las tablas de índice usan `| [[stem]] | Título | Tipo | Actualizado |`, nunca `[[stem|alias]]` en celdas — el formato anterior confundía a los agentes y generaba notas en blanco. Saneamiento en las tres fases: generador (durante), self-heal al escribir `index.md` a mano (después) y `--heal` (retroactivo).
+- **BOM de Windows** anulaba silenciosamente bloques de frontmatter completos, produciendo falsos AP-07/CN-03. `parse_frontmatter` y `parse_frontmatter_with_body` ahora lo toleran.
+- **Backups fuera del repositorio:** `BACKUP_ROOT` pasó de `Path(__file__).parent.parent.parent` a `VAULT_ROOT / "vault-backups"`. Los `.bak` de `vault_move` van a `00_System/.trash/` y los stubs de graph-fix a `02_Observability/maintenance/stubs/`.
+- **`vault_mcp_catalog --check`** apuntaba a un `scripts/tools-catalog.json` inexistente y reportaba DESINCRONIZADO siempre. Repuntado al catálogo canónico `mcp/nodejs/tools-catalog.json`.
+- **CI silenciosamente verde:** el paso de pytest usaba `|| echo "Some tests may not exist yet"`, silenciando cualquier fallo. Ahora es estricto y se añadió verificación de sincronía del catálogo.
+
+**Agregado (sección)**
+- `02_Observability/maintenance/` — hogar rastreable de fixes, bugs, depuraciones, reorganizaciones y stubs, para no contaminar nodos de contenido.
+
+**Resultado medido:** 276 tests en verde · 43 normas, 0 manual · repo limpio de artefactos generados.
+
+---
+
+### v38.0 — 2026-07-11 `git: d0a5674`
+
+**Robustez de frontmatter — coacción de fechas auto-parseadas**
+
+**Corregido**
+- `vault_lib.parse_frontmatter` coacciona valores `datetime`/`date` (auto-parseados por PyYAML) a strings ISO en el límite de lectura. Elimina los crashes `datetime not subscriptable` y `not JSON serializable` de `vault_audit` y `vault_reindex` sobre vaults escritos por tooling anterior — **sin migración de datos**.
+- Cubierto por `tests/test_vault_frontmatter_dates.py`.
+
+---
+
+### v37 — 2026-07-01 `git: c865e6d`
 
 **MCP Server Monolith + 3 nuevos validadores + Mejoras en graph tools**
 
@@ -4988,29 +5470,15 @@ temp/
 
 ---
 
-### v27 — 2026-05-11 `git: 0928c9e`
+### v36.0 — 2026-06-28 `git: ab1fe10`
 
-**Data Quality, CIA y Propagación de Cambios en Grafo — sin eliminar ni romper nada**
+**Sincronización de versión + registro de AP-24 y AP-25**
 
-**Agregado**
-- **CIA schema en frontmatter:** campos opcionales `cia_integrity` (critical|high|medium|low), `cia_availability` (high|medium|low), `cia_sensitivity` (public|internal|restricted), `dq_validated_at` (tool-set). Las notas `critical/high` tienen umbral de actualidad más estricto (15d vs 30d) y penalizan más el health score.
-- **`vault_quality_check.py` (Grupo nuevo — Data Quality):** scoring multidimensional por nota con 9 dimensiones (integrity, consistency, completeness, accuracy, validity, timeliness, authenticity, non_repudiation, uniqueness). Genera `00_System/quality-index.json` con score global, score por nota, issues por dimensión.
-- **`vault_fundamentals.py`:** registro canónico de los **8 Fundamentos de Datos** (F1 INTEGRIDAD, F2 CONSISTENCIA, F3 COMPLETITUD, F4 EXACTITUD, F5 VALIDEZ, F6 ACTUALIDAD, F7 AUTENTICIDAD, F8 NO_REPUDIO). Mapea cada fundamento a su dimensión DQ, frontmatter fields verificados, y tools que lo implementan. Genera `00_System/data-fundamentals.json` y `.md`. Cobertura: 53/53 tools activas mapeadas a al menos un F-id.
-- **`vault_impact.py` (Grupo nuevo — Propagación):** análisis de impacto BFS sobre el grafo inverso de backlinks (`graph.json`). Desde notas cambiadas, calcula distancia, `stale_risk` ponderado por CIA integrity, y la cadena de links que conecta. Flags: `--changed`, `--since` (lee change-log), `--max-hops`, `--min-risk`.
-- **`vault_propagate.py`:** aplica estrategias sobre el resultado de impact: `conservative` (dist=1), `transitive` (BFS completo), `critical-path` (solo nodos con cia_integrity high/critical). Acciones: `notify` (marca `propagation_pending` en frontmatter), `queue` (`00_System/propagation-queue.json`), `reindex` (regenera section-index). Flag `--clear` para marcar revisada.
-- **`vault_change_log --propagate [estrategia]`:** flag opcional semi-automático. Al registrar un cambio, dispara internamente `vault_impact` + `vault_propagate` con la estrategia indicada. Sin el flag, comportamiento previo intacto.
-- **`vault_spec_memory.py` (Meta — Spec-driven memory):** documento unificado en `00_System/spec-memory.json` que combina (1) contratos declarativos de los 53 tools (required_args, returns, error_codes via introspección argparse), (2) trazabilidad F-id → [tools], (3) memoria del sistema (DQ health, propagation queue, change log), (4) loop de validación con detección de spec drift via subprocess `vault_test_runner`. Modos: `--check`, `--validate`, `--summary`, `--tool NAME`.
-- **`vault_tokens.py`, `vault_token_counter.py`, `vault_token_service.py` (Grupo nuevo — Tokens):** observabilidad de tokens consumidos por sesión/proyecto.
-- **DQ_METADATA en vault_manifest.py:** anotación `dq_dimensions`, `cia_scope`, `propagation_aware` por tool. 100% de las tools activas (53/53) anotadas. Campo `standard_version` y `generated_at` añadidos al output.
-- **`vault_audit.py` extendido:** bloques opcionales `dqHealth` (overall score, notes_below_threshold, dq_status: fresh|stale|update_in_progress|unavailable) y `propagationPending`. Notas stale con `cia_integrity: critical` penalizan 5 pts c/u (vs 1 pt). Notas con `propagation_pending` restan -2 pts hasta despejarse.
+**Corregido**
+- Versión unificada a v36.0 across spec, código y sandbox — el banner, `CURRENT_VERSION` y la tabla de versiones habían quedado desalineados.
+- `AP-24` (bracket imbalance) y `AP-25` (errores de Mermaid) registrados formalmente en el catálogo de normas (`37a1a18`); hasta entonces existían como detección sin entrada en el catálogo.
 
-**Modificado**
-- `vault_write.py`: campo `error_code` añadido a los 3 guards (`content_too_short`, `content_empty_list`, `path_anchored_wikilinks`). Los tests de error-path ahora verifican `error_code` además de `error`.
-- `vault_validate.py`: soporte CIA fields. Valida valores permitidos para `cia_integrity`, `cia_availability`, `cia_sensitivity` cuando están presentes (opcionales).
-- `vault_security_scan.py`: fix de resolución de paths — `Path(path)` era CWD-relative, ahora se resuelve VAULT_ROOT-relative para paths no absolutos.
-- `vault_knowledge_get.py`: añadido campo `total` en todos los paths de retorno (incluyendo resultados vacíos), normalizando el contrato.
-- `vault_test_runner.py`: 15 `required_ok_fields` vacíos sustituidos por campos reales (vault_diff, vault_merge, vault_knowledge_get, vault_infra_map, vault_backup, vault_backup_list, vault_security_scan, vault_section_index, vault_master_index, vault_reindex, vault_drift_detect, vault_timeline, vault_code_map). Contratos pasan 45/45.
-- `vault_manifest.py`: nuevas categorías en TOOL_GROUPS: `Data Quality`, `Propagación`, `Tokens`. `META_TOOLS` incluye `vault_spec_memory`.
+> **Nota histórica:** no existe una versión **v35** publicada. La numeración salta de v34.3 a v36.0 al sincronizar spec y código. Se documenta aquí en lugar de renumerar, por la política de no-derogación.
 
 ---
 
@@ -5037,7 +5505,7 @@ temp/
 
 ---
 
-### v34.2 — 2026-06-20 `git: pending`
+### v34.2 — 2026-06-20 `git: 3aab8e8`
 
 **AP-22 split (empty only) + AP-24 (bracket imbalance) + Grupo 33 — Corrección automática**
 
@@ -5128,6 +5596,18 @@ temp/
 - **`vault_code_tag.py`:** soporte `@vault:` tag type. `_VAULT_TAG_TEMPLATES` para todos los estilos de comentario. `_VAULT_TAG_PATTERN` regex. `vault_code_tag_scan()` retorna `vault_ref`, `vault_note_exists` y `norm_tags` separados. `vault_code_tag_link_vault()` / `vault_code_tag_unlink_vault()` como funciones públicas.
 
 - **`vault_code_module.py`:** parámetro `tag_source: bool`. Tras crear la nota, si `tag_source=True` y el archivo fuente existe en disco, llama `vault_code_tag_link_vault()`. El campo `source_tagged` indica el resultado en el JSON de retorno.
+
+---
+
+### v34 — 2026-06-13 `git: 83e73e5` · `c5adb56`
+
+**Trazabilidad bidireccional código ↔ vault**
+
+**Agregado**
+- **`vault_code_sync`:** sincronización y trazabilidad bidireccional entre el código fuente y las notas del vault que lo documentan.
+- **`vault_onboard`:** contrato explícito de onboarding de un repositorio al estándar.
+- **`vault_code_tag` con anotación `@vault:`:** etiqueta en el código fuente que apunta a la nota que lo documenta — la base de la detección de drift (AP-08) y del eje V6 (variabilidad).
+- Contratos de tool ampliados con `command` y `output` explícitos (`5c363d3`), y convención de nomenclatura con sufijos explícitos para eliminar ambigüedad (`ac5c3e8`).
 
 ---
 
@@ -5337,6 +5817,32 @@ Antes de v29 el hardening de v27–v28 cubría los 12 scripts de _creación_ (va
 **Modificado**
 - `vault_standard_upgrade.py`: `CURRENT_VERSION = "v28"`, v28 añadido a `MIGRATIONS` y `VERSION_ORDER`.
 - `vault-obsidian-architecture.md`: versión bumpeada a v28, tabla de versiones actualizada, sección de instalación corregida.
+
+---
+
+### v27 — 2026-05-11 `git: 0928c9e`
+
+**Data Quality, CIA y Propagación de Cambios en Grafo — sin eliminar ni romper nada**
+
+**Agregado**
+- **CIA schema en frontmatter:** campos opcionales `cia_integrity` (critical|high|medium|low), `cia_availability` (high|medium|low), `cia_sensitivity` (public|internal|restricted), `dq_validated_at` (tool-set). Las notas `critical/high` tienen umbral de actualidad más estricto (15d vs 30d) y penalizan más el health score.
+- **`vault_quality_check.py` (Grupo nuevo — Data Quality):** scoring multidimensional por nota con 9 dimensiones (integrity, consistency, completeness, accuracy, validity, timeliness, authenticity, non_repudiation, uniqueness). Genera `00_System/quality-index.json` con score global, score por nota, issues por dimensión.
+- **`vault_fundamentals.py`:** registro canónico de los **8 Fundamentos de Datos** (F1 INTEGRIDAD, F2 CONSISTENCIA, F3 COMPLETITUD, F4 EXACTITUD, F5 VALIDEZ, F6 ACTUALIDAD, F7 AUTENTICIDAD, F8 NO_REPUDIO). Mapea cada fundamento a su dimensión DQ, frontmatter fields verificados, y tools que lo implementan. Genera `00_System/data-fundamentals.json` y `.md`. Cobertura: 53/53 tools activas mapeadas a al menos un F-id.
+- **`vault_impact.py` (Grupo nuevo — Propagación):** análisis de impacto BFS sobre el grafo inverso de backlinks (`graph.json`). Desde notas cambiadas, calcula distancia, `stale_risk` ponderado por CIA integrity, y la cadena de links que conecta. Flags: `--changed`, `--since` (lee change-log), `--max-hops`, `--min-risk`.
+- **`vault_propagate.py`:** aplica estrategias sobre el resultado de impact: `conservative` (dist=1), `transitive` (BFS completo), `critical-path` (solo nodos con cia_integrity high/critical). Acciones: `notify` (marca `propagation_pending` en frontmatter), `queue` (`00_System/propagation-queue.json`), `reindex` (regenera section-index). Flag `--clear` para marcar revisada.
+- **`vault_change_log --propagate [estrategia]`:** flag opcional semi-automático. Al registrar un cambio, dispara internamente `vault_impact` + `vault_propagate` con la estrategia indicada. Sin el flag, comportamiento previo intacto.
+- **`vault_spec_memory.py` (Meta — Spec-driven memory):** documento unificado en `00_System/spec-memory.json` que combina (1) contratos declarativos de los 53 tools (required_args, returns, error_codes via introspección argparse), (2) trazabilidad F-id → [tools], (3) memoria del sistema (DQ health, propagation queue, change log), (4) loop de validación con detección de spec drift via subprocess `vault_test_runner`. Modos: `--check`, `--validate`, `--summary`, `--tool NAME`.
+- **`vault_tokens.py`, `vault_token_counter.py`, `vault_token_service.py` (Grupo nuevo — Tokens):** observabilidad de tokens consumidos por sesión/proyecto.
+- **DQ_METADATA en vault_manifest.py:** anotación `dq_dimensions`, `cia_scope`, `propagation_aware` por tool. 100% de las tools activas (53/53) anotadas. Campo `standard_version` y `generated_at` añadidos al output.
+- **`vault_audit.py` extendido:** bloques opcionales `dqHealth` (overall score, notes_below_threshold, dq_status: fresh|stale|update_in_progress|unavailable) y `propagationPending`. Notas stale con `cia_integrity: critical` penalizan 5 pts c/u (vs 1 pt). Notas con `propagation_pending` restan -2 pts hasta despejarse.
+
+**Modificado**
+- `vault_write.py`: campo `error_code` añadido a los 3 guards (`content_too_short`, `content_empty_list`, `path_anchored_wikilinks`). Los tests de error-path ahora verifican `error_code` además de `error`.
+- `vault_validate.py`: soporte CIA fields. Valida valores permitidos para `cia_integrity`, `cia_availability`, `cia_sensitivity` cuando están presentes (opcionales).
+- `vault_security_scan.py`: fix de resolución de paths — `Path(path)` era CWD-relative, ahora se resuelve VAULT_ROOT-relative para paths no absolutos.
+- `vault_knowledge_get.py`: añadido campo `total` en todos los paths de retorno (incluyendo resultados vacíos), normalizando el contrato.
+- `vault_test_runner.py`: 15 `required_ok_fields` vacíos sustituidos por campos reales (vault_diff, vault_merge, vault_knowledge_get, vault_infra_map, vault_backup, vault_backup_list, vault_security_scan, vault_section_index, vault_master_index, vault_reindex, vault_drift_detect, vault_timeline, vault_code_map). Contratos pasan 45/45.
+- `vault_manifest.py`: nuevas categorías en TOOL_GROUPS: `Data Quality`, `Propagación`, `Tokens`. `META_TOOLS` incluye `vault_spec_memory`.
 
 ---
 

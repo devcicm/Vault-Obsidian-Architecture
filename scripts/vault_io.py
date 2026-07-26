@@ -26,6 +26,17 @@ from vault_regex import (
 )
 
 
+#: Origen de la detección del vault root — lo fija _detect_vault_root() y lo
+#: consulta el guard AP-36. `repo_root_fallback` es el único valor de baja
+#: confianza: significa que NO se encontró ningún vault y se está usando la raíz
+#: del repo como si lo fuera (v39: causa histórica de 00_System/ y 99_Index/
+#: generados fuera de todo vault-*).
+_VAULT_ROOT_ORIGIN: str = "unknown"
+
+#: Valores de _VAULT_ROOT_ORIGIN que NO identifican un vault real.
+LOW_CONFIDENCE_ORIGINS = frozenset({"repo_root_fallback"})
+
+
 def _detect_vault_root() -> Path:
     """Auto-detect vault root.
 
@@ -43,8 +54,20 @@ def _detect_vault_root() -> Path:
        doc got misidentified as the spec repo and redirected to vault-sandbox/.
     4. Spec-repo sandbox: if the parent has vault-obsidian-architecture.md
        AND no vault structure markers, treat as spec repo and use vault-sandbox/.
+    5. Último recurso: la raíz del repo. Marcada como `repo_root_fallback` —
+       ver `vault_root_origin()`. Con VAULT_STRICT_ROOT=1 esto es un error en
+       lugar de un silencio, porque es el caso en el que las tools escriben
+       artefactos de vault fuera de cualquier vault.
+
+    AP-36: esta función NO crea directorios. Antes hacía `sandbox.mkdir()` en
+    la rama 4, y como VAULT_ROOT se evalúa a nivel de módulo, *importar*
+    vault_io materializaba `vault-sandbox/` en cualquier repo que tuviera el
+    manifiesto como doc de referencia. Los directorios se crean ahora en la
+    primera escritura real (atomic_write_* ya hace mkdir del padre).
     """
+    global _VAULT_ROOT_ORIGIN
     if env := os.environ.get("VAULT_ROOT"):
+        _VAULT_ROOT_ORIGIN = "env"
         return Path(env).resolve()
     project_root = Path(__file__).parent.parent.resolve()
     _MARKERS = {"00_System", "99_Index", ".obsidian"}
@@ -75,9 +98,11 @@ def _detect_vault_root() -> Path:
     # Prefer candidates that already have vault content (initialized vault)
     for c in candidates:
         if any((c / m).exists() for m in _MARKERS):
+            _VAULT_ROOT_ORIGIN = "sibling_vault_dir"
             return c
     # Accept any vault-* dir (fresh vault, nothing initialized yet)
     if candidates:
+        _VAULT_ROOT_ORIGIN = "sibling_vault_dir_fresh"
         return candidates[0]
     # Check if project_root itself IS a vault (scripts-inside-vault layout).
     # This is the case when the consumer has 00_System/01_Projects/etc. directly
@@ -92,17 +117,43 @@ def _detect_vault_root() -> Path:
     _CONTENT_MARKERS = {"01_Projects", "02_Observability", "03_Decisions", ".obsidian"}
     has_content = any((project_root / m).exists() for m in _CONTENT_MARKERS)
     if marker_count >= 2 and has_content:
+        _VAULT_ROOT_ORIGIN = "scripts_inside_vault"
         return project_root
     # Spec repo fallback: parent has vault-obsidian-architecture.md AND no
     # vault structure (i.e., this IS the spec repo, not a consumer vault).
+    # NO se crea el directorio aquí — ver docstring (AP-36).
     if (project_root / "vault-obsidian-architecture.md").exists():
-        sandbox = project_root / "vault-sandbox"
-        sandbox.mkdir(exist_ok=True)
-        return sandbox
+        _VAULT_ROOT_ORIGIN = "spec_repo_sandbox"
+        return project_root / "vault-sandbox"
+    # Último recurso: no hay vault. Devolvemos la raíz del repo para no romper
+    # los ~94 tools que no aceptan --root, pero queda marcado como baja
+    # confianza para que el guard AP-36 lo denuncie en vez de silenciarlo.
+    _VAULT_ROOT_ORIGIN = "repo_root_fallback"
+    if os.environ.get("VAULT_STRICT_ROOT"):
+        raise RuntimeError(
+            f"No se encontró ningún vault desde {project_root}. Con VAULT_STRICT_ROOT=1 "
+            "esto es un error: escribir aquí generaría 00_System/, 99_Index/ y demás "
+            "artefactos fuera de todo vault. Crea un directorio 'vault-<nombre>/' o "
+            "exporta VAULT_ROOT=<ruta del vault>."
+        )
     return project_root
 
 
 VAULT_ROOT: Path = _detect_vault_root()
+
+
+def vault_root_origin() -> str:
+    """Qué regla de _detect_vault_root() eligió VAULT_ROOT.
+
+    Valores: env | sibling_vault_dir | sibling_vault_dir_fresh |
+    scripts_inside_vault | spec_repo_sandbox | repo_root_fallback.
+    """
+    return _VAULT_ROOT_ORIGIN
+
+
+def vault_root_is_confident() -> bool:
+    """False cuando VAULT_ROOT es una suposición, no un vault identificado."""
+    return _VAULT_ROOT_ORIGIN not in LOW_CONFIDENCE_ORIGINS
 
 # ── Override en runtime (AP-36) ────────────────────────────────────────────────
 # Los tools que aceptan --root deben llamar set_vault_root() ANTES de escribir,
@@ -122,6 +173,37 @@ def set_vault_root(path) -> Path:
 def get_vault_root() -> Path:
     """Vault root efectivo: el override de set_vault_root() o el auto-detectado."""
     return _ACTIVE_VAULT_ROOT if _ACTIVE_VAULT_ROOT is not None else VAULT_ROOT
+
+
+# ── Contrato de tools (v39) ───────────────────────────────────────────────────
+# El contrato vive DENTRO del vault: es un artefacto de datos del vault, no un
+# archivo de las tools. Hasta v38.1 se escribía en scripts/tool-spec.json —
+# fuera de todo vault y con write_text() no atómico.
+TOOL_SPEC_NAME = "tool-spec.json"
+
+#: Ubicación legacy (v33–v38.1). Se sigue LEYENDO para no romper vaults e
+#: instalaciones que aún no han migrado — política de no-derogación. Nunca se
+#: escribe aquí.
+LEGACY_TOOL_SPEC = Path(__file__).resolve().parent / TOOL_SPEC_NAME
+
+
+def tool_spec_path() -> Path:
+    """Ruta canónica del contrato de tools: <vault>/00_System/tool-spec.json."""
+    return get_vault_root() / "00_System" / TOOL_SPEC_NAME
+
+
+def resolve_tool_spec() -> Optional[Path]:
+    """Contrato existente a leer: el canónico si está, si no el legacy.
+
+    Devuelve None si no existe en ninguna de las dos ubicaciones (los lectores
+    ya tienen fallback a sus datos hardcodeados).
+    """
+    canonical = tool_spec_path()
+    if canonical.exists():
+        return canonical
+    if LEGACY_TOOL_SPEC.exists():
+        return LEGACY_TOOL_SPEC
+    return None
 
 
 # In-process locks keyed by lock-dir path. The mkdir directory-lock below is the

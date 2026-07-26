@@ -5,8 +5,10 @@ vault_manifest.py — Genera manifiesto de tools + bootstraps/actualiza tool-spe
 Modos:
   normal        Escribe 00_System/tools-manifest.json desde tool-spec.json (spec-driven).
                 Si tool-spec.json no existe, usa datos hardcodeados como fallback.
-  --bootstrap   Genera scripts/tool-spec.json combinando datos hardcodeados + introspección.
-                Ejecutar una sola vez (o al agregar datos nuevos al spec).
+  --bootstrap   Genera <vault>/00_System/tool-spec.json combinando datos hardcodeados +
+                introspección. Ejecutar una sola vez (o al agregar datos nuevos al spec).
+                Desde v39 el contrato vive DENTRO del vault (AP-36); la ruta se resuelve
+                con vault_io.tool_spec_path(), nunca desde __file__.
   --validate    Delega a vault_spec_validate.py — muestra drift entre spec e implementación.
   --check       Muestra el manifiesto sin escribir.
 
@@ -36,11 +38,16 @@ from typing import Any, Dict, List, Optional, Set
 
 SCRIPTS_DIR = Path(__file__).parent
 
-from vault_io import VAULT_ROOT  # noqa: E402
+from vault_io import (  # noqa: E402
+    VAULT_ROOT,
+    atomic_write_json,
+    get_vault_root,
+    resolve_tool_spec,
+    tool_spec_path,
+)
 from vault_errors import wrap_main
 SYSTEM_DIR = VAULT_ROOT / "00_System"
 MANIFEST_FILE = SYSTEM_DIR / "tools-manifest.json"
-SPEC_FILE = SCRIPTS_DIR / "tool-spec.json"
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Tool status registry
@@ -421,10 +428,11 @@ DQ_METADATA: Dict[str, Dict[str, Any]] = {
 
 def _load_spec() -> Optional[Dict[str, Any]]:
     """Carga tool-spec.json si existe. Retorna None si no existe (fallback a hardcoded)."""
-    if not SPEC_FILE.exists():
+    spec_file = resolve_tool_spec()
+    if spec_file is None:
         return None
     try:
-        return json.loads(SPEC_FILE.read_text(encoding="utf-8"))
+        return json.loads(spec_file.read_text(encoding="utf-8"))
     except Exception:
         return None
 
@@ -724,7 +732,7 @@ Ejemplos:
 """,
     )
     parser.add_argument("--bootstrap", action="store_true",
-                        help="Genera/actualiza scripts/tool-spec.json desde datos hardcodeados + introspección")
+                        help="Genera/actualiza <vault>/00_System/tool-spec.json desde datos hardcodeados + introspección")
     parser.add_argument("--validate", action="store_true",
                         help="Valida conformidad implementación vs spec (delega a vault_spec_validate)")
     parser.add_argument("--check",  action="store_true", help="Mostrar manifiesto sin escribir")
@@ -736,13 +744,16 @@ Ejemplos:
     # ── Modo bootstrap ──────────────────────────────────────────────────────
     if args.bootstrap:
         spec = _bootstrap_spec()
-        SPEC_FILE.write_text(json.dumps(spec, indent=2, ensure_ascii=False), encoding="utf-8")
+        # v39/AP-36: el contrato vive en <vault>/00_System/ y se escribe de forma
+        # atómica. Antes: scripts/tool-spec.json con write_text() directo.
+        spec_file = tool_spec_path()
+        atomic_write_json(spec_file, spec)
         tool_count = len(spec["tools"])
         active = sum(1 for e in spec["tools"].values() if e["status"] == "active")
         print(json.dumps({
             "ok": True,
             "action": "bootstrap",
-            "spec_file": str(SPEC_FILE.relative_to(SCRIPTS_DIR)),
+            "spec_file": str(spec_file.relative_to(get_vault_root())).replace("\\", "/"),
             "tools_total": tool_count,
             "tools_active": active,
             "version": spec["version"],

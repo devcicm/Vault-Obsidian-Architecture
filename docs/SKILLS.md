@@ -22,9 +22,61 @@ LLM) puede invocar. Cada skill tiene:
 
 ### Skills disponibles
 
-| Skill | Versión | Ubicación | Descripción |
-|---|---|---|---|
-| `vault-sdd-init` | v1.0 | `scripts/vault_sdd_init.py` | Inicializa el SDD (Spec-Driven Development documentation) de un vault |
+| Skill | Versión | Definición | Entry point | Descripción |
+|---|---|---|---|---|
+| `vault-sdd-init` | v1.0 | `.claude/skills/vault-sdd-init/SKILL.md` | `scripts/vault_sdd_init.py` | Inicializa el SDD (Spec-Driven Development documentation) de un vault |
+
+### Instalación
+
+Una skill vive en **dos piezas** y ambas tienen que estar presentes:
+
+| Pieza | Ruta | Para qué |
+|---|---|---|
+| **Definición** | `.claude/skills/<nombre>/SKILL.md` | Lo que el agente descubre e invoca (`/<nombre>`). Frontmatter con `name`, `description`, `allowed-tools`, `argument-hint`. |
+| **Entry point** | `scripts/vault_<nombre>.py` | El código real. La definición sin script es una tool alucinada (AP-01/AP-04). |
+
+**No hay paso de instalación.** El descubrimiento es por convención de ruta:
+un agente que abre este repo encuentra `.claude/skills/` automáticamente. No se
+copia nada, no se registra nada, no hay comando de install.
+
+```bash
+# Verificar qué skills ve un agente en este repo
+ls .claude/skills/*/SKILL.md
+
+# Verificar que cada definición tiene su entry point
+python -m pytest tests/test_vault_sdd_init.py -q
+```
+
+**Para usar la skill en otro repo** hay dos caminos, y la elección importa:
+
+1. **Invocación directa del script** (recomendado) — no se copia nada:
+   ```bash
+   python /ruta/al/spec-repo/scripts/vault_sdd_init.py --vault-root . --bilingual
+   ```
+2. **Copiar `.claude/skills/vault-sdd-init/`** al otro repo — solo si ese repo
+   también tiene los `scripts/`. Copiar la definición sin el script produce una
+   skill que falla al invocarse.
+
+> **Regla del repo:** las tools **no se propagan** a otros repos salvo petición
+> explícita del usuario. Sincronizar una skill a un vault consumidor es una
+> decisión suya, no un efecto colateral de un cambio aquí.
+
+### Gestión
+
+**Ciclo de vida de una skill** — el mismo que el de cualquier norma del repo:
+`registro canónico → doc derivada → guard que falla si divergen → test`.
+
+| Operación | Cómo |
+|---|---|
+| **Añadir** | Crear `scripts/vault_<x>.py` **primero**, luego `.claude/skills/<x>/SKILL.md`, luego la fila en la tabla de arriba, luego el test. Nunca al revés. |
+| **Modificar argumentos** | Cambiar el `argparse` del script y sincronizar `argument-hint` + tabla de argumentos del `SKILL.md`. Divergir aquí es AP-01. |
+| **Retirar** | **No se borra.** Se anota `superseded_by:` conservando el contrato (política de no-derogación). Ver `SKILL_MANIFEST` en `vault_sdd_init.py` como ejemplo real de constante conservada y anotada. |
+| **Verificar alineación** | `python scripts/vault_sdd_init.py --dry-run` reporta `missing_norms` y la versión detectada. Un `missing_norms` no vacío significa que el registro tiene huecos. |
+
+**Contención (AP-36):** `--vault-root` apunta al vault destino y **toda** la
+escritura ocurre bajo `<vault-root>/docs/sdd/`. La skill es read-only sobre el
+resto del vault. Sin `--vault-root` se usa la autodetección de `vault_io`, que
+en este repo resuelve a `vault-sandbox/`.
 
 ### `vault-sdd-init` v1.0
 
@@ -74,7 +126,7 @@ python scripts/vault_sdd_init.py --bilingual --force
 | `01-state-machines.md` | Lifecycle states por dominio |
 | `02-implementation.md` | Guía para autores de tools |
 | `03-usage.md` | Guía para consumers |
-| `04-antipatterns.md` | Catálogo AP-01..AP-25 |
+| `04-antipatterns.md` | Catálogo de antipatrones — rango derivado de `NORM_CATALOG`, hoy `AP-01..AP-36` |
 | `05-reference-matrix.md` | Pattern → Detect → Fix |
 | `06-documentation-methodology.md` | La ciencia de qué documentar |
 | `07-process-antipatterns.md` | Antipatrones de proceso |
@@ -94,15 +146,23 @@ python scripts/vault_sdd_init.py --bilingual --force
 
 #### Prerrequisitos
 
-- vault-spec >= v36.0 (con AP-24, AP-25 registrados)
-- `NORM_CATALOG` completo (25 antipatrones)
+- vault-spec >= v36.0 (`CURRENT_VERSION` actual: **v39.0**)
+- `NORM_CATALOG` legible — **48 normas** hoy (36 AP + 6 PAT + 3 SP + 3 CN).
+  Ni el rango ni el conteo se codifican en la skill: se derivan del registro.
 - `atomic_write_text` con fix de temp leak (FASE 0.4)
 - CI workflow activo
 - Secret scanning operativo
 
+> **Estado del drift:** `missing_norms: []`. El chequeo de contiguidad destapó
+> `AP-26..AP-30` — cinco normas **aplicadas por `vault_audit` desde v30** pero
+> nunca registradas en `NORM_CATALOG`. Quedaron registradas en v39 sin alterar
+> el comportamiento del audit. Un `missing_norms` no vacío en el futuro
+> significa lo mismo: enforcement en código sin entrada canónica.
+
 #### Tests
 
 - `tests/test_vault_sdd_init.py` — 15 tests cubriendo generadores, drift, idempotency.
+- `tests/test_skills_contract.py` — contrato definición ↔ entry point ↔ doc.
 
 #### Logo
 

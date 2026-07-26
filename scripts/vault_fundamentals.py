@@ -37,6 +37,8 @@ SCRIPTS_DIR = Path(__file__).parent
 SYSTEM_DIR = VAULT_ROOT / "00_System"
 FUNDAMENTALS_JSON = SYSTEM_DIR / "data-fundamentals.json"
 FUNDAMENTALS_MD = SYSTEM_DIR / "data-fundamentals.md"
+FRAMEWORK_JSON = SYSTEM_DIR / "data-framework.json"
+FRAMEWORK_MD = SYSTEM_DIR / "data-framework.md"
 CHANGE_LOG_JSON = SYSTEM_DIR / ".change-log.json"
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -279,6 +281,318 @@ FUNDAMENTALS: List[Dict[str, Any]] = [
         ],
     },
 ]
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Marco de datos y gobernanza (v39) — registros canónicos complementarios
+#
+# Los 8 fundamentos responden "¿el dato es bueno?". Estos cuatro registros
+# responden las otras preguntas del marco: sobre qué pilar se apoyan (CIA),
+# qué tan reutilizable es el activo (FAIR), qué escala maneja (V's) y bajo
+# qué normas se alinea (ISO). Mismo shape que FUNDAMENTALS: id estable,
+# descripción, mecanismo real y tools que lo implementan — nunca teoría suelta.
+# ──────────────────────────────────────────────────────────────────────────────
+
+CIA_TRIAD: List[Dict[str, Any]] = [
+    {
+        "id": "CIA-C",
+        "name": "CONFIDENCIALIDAD",
+        "english": "confidentiality",
+        "description": "El dato solo es accesible para quien debe verlo; el vault marca su nivel de exposición y evita filtrar secretos al grafo.",
+        "frontmatter_field": "cia_sensitivity",
+        "values": ["public", "internal", "restricted"],
+        "default": "internal",
+        "effect": "restricted activa revisión en vault_security_scan; sensitive:true en 02_Observability/envs impide volcar el valor del secreto, solo su proveedor y referencia.",
+        "tools": [
+            "vault_security_scan",
+            "vault_env_save",
+            "vault_privacy_save",
+            "vault_validate",
+            "vault_quality_check",
+        ],
+    },
+    {
+        "id": "CIA-I",
+        "name": "INTEGRIDAD",
+        "english": "integrity",
+        "description": "El dato no se corrompe ni se altera de forma no rastreable entre escritura y lectura.",
+        "frontmatter_field": "cia_integrity",
+        "values": ["critical", "high", "medium", "low"],
+        "default": "medium",
+        "effect": "critical|high endurece el umbral de actualidad de 30d a 15d y penaliza 5 pts (vs 1 pt) en el health score; pondera stale_risk en vault_impact y selecciona la estrategia critical-path en vault_propagate.",
+        "tools": [
+            "vault_quality_check",
+            "vault_audit",
+            "vault_impact",
+            "vault_propagate",
+            "vault_backup",
+            "vault_validate",
+        ],
+    },
+    {
+        "id": "CIA-A",
+        "name": "DISPONIBILIDAD",
+        "english": "availability",
+        "description": "El dato se puede recuperar cuando se necesita, incluso tras un borrado o una migración fallida.",
+        "frontmatter_field": "cia_availability",
+        "values": ["high", "medium", "low"],
+        "default": "medium",
+        "effect": "Respaldado por .history/ en cada escritura, backups con manifiesto Merkle en VAULT_ROOT/vault-backups/ (AP-36) y rollback quirúrgico de migración (AP-10).",
+        "tools": [
+            "vault_backup",
+            "vault_restore",
+            "vault_backup_list",
+            "vault_migrate_rollback",
+            "vault_diff",
+            "vault_validate",
+        ],
+    },
+]
+
+
+FAIR_PRINCIPLES: List[Dict[str, Any]] = [
+    {
+        "id": "FAIR-F",
+        "name": "FINDABLE",
+        "spanish": "LOCALIZABLE",
+        "description": "Cada nota tiene identificador único y persistente, y es descubrible sin conocer su ruta.",
+        "mechanism": "Campo id obligatorio (F1), search-index.json con scoring título×4, índices de sección auto-generados e índice maestro en 99_Index/.",
+        "metric": "cobertura de id + notas huérfanas (orphans) en vault_audit",
+        "tools": [
+            "vault_search",
+            "vault_reindex",
+            "vault_section_index",
+            "vault_master_index",
+            "vault_list",
+        ],
+    },
+    {
+        "id": "FAIR-A",
+        "name": "ACCESSIBLE",
+        "spanish": "ACCESIBLE",
+        "description": "El dato se lee sin runtime propietario, sin base de datos y sin la herramienta que lo creó.",
+        "mechanism": "Markdown plano + YAML en el sistema de archivos. Abre en cualquier editor, versiona en git, se lee sin Obsidian instalado. Las tools son una conveniencia, no un requisito de lectura.",
+        "metric": "cero dependencias de lectura — todo artefacto es .md o .json",
+        "tools": ["vault_read", "vault_knowledge_get", "vault_project_overview"],
+    },
+    {
+        "id": "FAIR-I",
+        "name": "INTEROPERABLE",
+        "spanish": "INTEROPERABLE",
+        "description": "El dato usa vocabularios y formatos compartidos, y se conecta con otros datos del mismo dominio.",
+        "mechanism": "Frontmatter YAML con vocabulario canónico (type, status vía STATUS_VOCAB, tags), wiki-links [[nota]] como aristas del grafo, Mermaid para diagramas, graph.json como representación explícita, MCP como protocolo de consumo.",
+        "metric": "broken links = 0 · consistencia type↔carpeta (F4)",
+        "tools": [
+            "vault_graph",
+            "vault_relation_add",
+            "vault_diagram_save",
+            "vault_norms",
+            "vault_mcp_catalog",
+        ],
+    },
+    {
+        "id": "FAIR-R",
+        "name": "REUSABLE",
+        "spanish": "REUTILIZABLE",
+        "description": "El dato trae su procedencia y licencia, de modo que otro agente o persona pueda confiar en él y reutilizarlo.",
+        "mechanism": "Cadena de procedencia PAT-5 (agent:, createdAt, updatedAt, norm_refs), historial completo en .history/, change-log append-only y LICENSE del repositorio.",
+        "metric": "cobertura del campo agent (F7) + entradas de change-log (F8)",
+        "tools": [
+            "vault_change_log",
+            "vault_diff",
+            "vault_timeline",
+            "vault_delta",
+            "vault_code_tag",
+        ],
+    },
+]
+
+
+BIGDATA_VS: List[Dict[str, Any]] = [
+    {
+        "id": "V1",
+        "name": "VOLUMEN",
+        "english": "volume",
+        "description": "Cuánto conocimiento acumula el vault sin degradar la navegación.",
+        "metric": "total de notas y tamaño del grafo",
+        "artifact": "00_System/graph.json · vault_audit.stats",
+        "control": "AP-23 (techo de complejidad por nota) e índices por sección evitan que el crecimiento rompa la búsqueda.",
+        "tools": ["vault_audit", "vault_graph", "vault_list"],
+    },
+    {
+        "id": "V2",
+        "name": "VELOCIDAD",
+        "english": "velocity",
+        "description": "A qué ritmo cambia el conocimiento entre sesiones.",
+        "metric": "cambios por sesión y por ventana temporal",
+        "artifact": "00_System/.change-log.json · session-delta",
+        "control": "SP-03 exige snapshot antes de operaciones masivas; vault_impact propaga el cambio a los nodos dependientes.",
+        "tools": ["vault_change_log", "vault_delta", "vault_impact", "vault_timeline"],
+    },
+    {
+        "id": "V3",
+        "name": "VARIEDAD",
+        "english": "variety",
+        "description": "Cuántas naturalezas distintas de conocimiento conviven bajo el mismo esquema.",
+        "metric": "18 secciones canónicas × vocabulario del campo type",
+        "artifact": "vault_registry.SECTIONS",
+        "control": "CN-02 restringe los destinos a secciones numeradas; F4 (exactitud) verifica que type coincida con la carpeta.",
+        "tools": ["vault_write", "vault_validate", "vault_norms", "vault_registry"],
+    },
+    {
+        "id": "V4",
+        "name": "VERACIDAD",
+        "english": "veracity",
+        "description": "Cuánto se puede confiar en lo que el vault afirma. La V que más importa a un agente LLM.",
+        "metric": "overall_dq_score (0.0–1.0) y notas bajo umbral 0.7",
+        "artifact": "00_System/quality-index.json · vault_audit.dqHealth",
+        "control": "AP-01 (documentación alucinada), AP-04 (features aspiracionales), AP-11 (skeleton files) y el content gate de vault_write.",
+        "tools": ["vault_quality_check", "vault_audit", "vault_drift_detect", "vault_validate"],
+    },
+    {
+        "id": "V5",
+        "name": "VALOR",
+        "english": "value",
+        "description": "Cuánto del conocimiento almacenado se convierte en decisión útil para el agente.",
+        "metric": "health score (0–100) y nextActions pendientes",
+        "artifact": "vault_audit.score · vault_audit.nextActions",
+        "control": "El audit deja de ser diagnóstico y emite la lista ejecutable de comandos para recuperar 100/100.",
+        "tools": ["vault_audit", "vault_project_overview", "vault_onboard"],
+    },
+    {
+        "id": "V6",
+        "name": "VARIABILIDAD",
+        "english": "variability",
+        "description": "Cuánto deriva el significado de una nota respecto al código o la realidad que describe.",
+        "metric": "drift detectado entre documentación y fuente",
+        "artifact": "vault_drift_detect · @vault: tags en código",
+        "control": "AP-08 (documentación anclada a versiones obsoletas) y trazabilidad bidireccional código↔vault.",
+        "tools": ["vault_drift_detect", "vault_code_sync", "vault_code_tag"],
+    },
+]
+
+
+ISO_COVERAGE: List[Dict[str, Any]] = [
+    {
+        "id": "ISO-25010",
+        "norm": "ISO/IEC 25010:2023",
+        "title": "Systems and software quality models",
+        "clause": "Modelo de calidad de producto",
+        "implemented_by": "Scoring multidimensional de calidad y no conformidades",
+        "tools": ["vault_quality_check", "vault_ncr_save"],
+    },
+    {
+        "id": "ISO-42001",
+        "norm": "ISO/IEC 42001:2023",
+        "title": "Artificial intelligence management system",
+        "clause": "Gobernanza de decisiones asistidas por IA",
+        "implemented_by": "16_AI_Governance/ — registro de decisiones de IA con responsable y alcance",
+        "tools": ["vault_ai_decision"],
+    },
+    {
+        "id": "ISO-29148",
+        "norm": "ISO/IEC/IEEE 29148:2018",
+        "title": "Requirements engineering",
+        "clause": "Especificación y trazabilidad de requerimientos",
+        "implemented_by": "14_Requirements/ — requerimientos con criterios de aceptación",
+        "tools": ["vault_requirement_save"],
+    },
+    {
+        "id": "ISO-29119",
+        "norm": "ISO/IEC/IEEE 29119-3:2021",
+        "title": "Software testing — Test documentation",
+        "clause": "Documentación de pruebas",
+        "implemented_by": "15_Tests/ — casos de prueba enlazados a requerimientos",
+        "tools": ["vault_test_save", "vault_test_runner"],
+    },
+    {
+        "id": "ISO-20000",
+        "norm": "ISO/IEC 20000-1:2018",
+        "title": "Service management system",
+        "clause": "Gestión de incidentes y niveles de servicio",
+        "implemented_by": "02_Observability/incidents/ y SLOs de producción",
+        "tools": ["vault_incident_save", "vault_slo_save"],
+    },
+    {
+        "id": "ISO-22301",
+        "norm": "ISO 22301:2019",
+        "title": "Business continuity management",
+        "clause": "Continuidad y recuperación",
+        "implemented_by": "Backups con manifiesto Merkle, restore verificable y runbooks de rollback",
+        "tools": ["vault_backup", "vault_restore", "vault_runbook_save"],
+    },
+    {
+        "id": "ISO-12207",
+        "norm": "ISO/IEC/IEEE 12207:2017",
+        "title": "Software life cycle processes",
+        "clause": "Procesos de release y entornos",
+        "implemented_by": "Registro de releases y matriz de entornos",
+        "tools": ["vault_release_save", "vault_env_matrix"],
+    },
+    {
+        "id": "ISO-31000",
+        "norm": "ISO 31000:2018",
+        "title": "Risk management",
+        "clause": "Identificación, evaluación y tratamiento de riesgos",
+        "implemented_by": "02_Observability/risks/ con score likelihood × impact",
+        "tools": ["vault_risk_save"],
+    },
+    {
+        "id": "ISO-27001",
+        "norm": "ISO/IEC 27001:2022",
+        "title": "Information security management",
+        "clause": "Controles de seguridad de la información",
+        "implemented_by": "Escaneo de secretos, clasificación cia_sensitivity y directivas DS-",
+        "tools": ["vault_security_scan", "vault_env_save"],
+    },
+    {
+        "id": "ISO-27005",
+        "norm": "ISO/IEC 27005:2022",
+        "title": "Information security risk management",
+        "clause": "Riesgo de seguridad de la información",
+        "implemented_by": "Asignación automática de CIA por tipo y nivel de impacto del riesgo",
+        "tools": ["vault_risk_save"],
+    },
+    {
+        "id": "ISO-27701",
+        "norm": "ISO/IEC 27701:2019",
+        "title": "Privacy information management",
+        "clause": "Tratamiento de datos personales (con GDPR Art. 30 y 35)",
+        "implemented_by": "09_Infrastructure/privacy/ con detección automática de DPIA",
+        "tools": ["vault_privacy_save"],
+    },
+    {
+        "id": "ISO-9001",
+        "norm": "ISO 9001:2015",
+        "title": "Quality management systems",
+        "clause": "§9.2 Auditoría interna · §10.2 No conformidad y acción correctiva",
+        "implemented_by": "NCR con ID auto-generado, 5-Whys y verificación de eficacia",
+        "tools": ["vault_ncr_save", "vault_audit"],
+    },
+    {
+        "id": "ISO-8601",
+        "norm": "ISO 8601",
+        "title": "Date and time representation",
+        "clause": "Formato de marcas temporales",
+        "implemented_by": "Todo timestamp del vault es UTC en formato YYYY-MM-DDTHH:mm:ss.sssZ (AP-13)",
+        "tools": ["vault_write", "vault_validate", "vault_lib"],
+    },
+]
+
+
+#: Registros del marco, expuestos como mapa para exportadores y guards.
+FRAMEWORK_REGISTRIES: Dict[str, List[Dict[str, Any]]] = {
+    "cia_triad": CIA_TRIAD,
+    "fundamentals": FUNDAMENTALS,
+    "fair_principles": FAIR_PRINCIPLES,
+    "bigdata_vs": BIGDATA_VS,
+    "iso_coverage": ISO_COVERAGE,
+}
+
+
+def framework_ids() -> List[str]:
+    """Todos los ids estables del marco — usados por el guard anti-drift de vault_norms."""
+    return [entry["id"] for registry in FRAMEWORK_REGISTRIES.values() for entry in registry]
 
 
 def _has_change_log_entry(rel_path: str) -> bool:
@@ -587,6 +901,160 @@ def export_doc() -> Dict[str, Any]:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Marco de datos y gobernanza — matriz y exportadores (v39)
+# ──────────────────────────────────────────────────────────────────────────────
+
+#: Matriz concepto → métrica → umbral → tool → artefacto → enforcement.
+#: Es la vista de una pantalla que hace verificable todo el marco. Cada fila
+#: apunta a un número que una tool ya produce hoy — no hay filas aspiracionales.
+TRACEABILITY_MATRIX: List[Dict[str, str]] = [
+    {"concept": "Confidencialidad (CIA-C)", "metric": "hallazgos de secretos expuestos", "threshold": "0", "tool": "vault_security_scan", "artifact": "02_Observability/security/", "enforcement": "guard+audit"},
+    {"concept": "Integridad (CIA-I / F1)", "metric": "dq.integrity", "threshold": "0.0–1.0, ≥0.7", "tool": "vault_quality_check", "artifact": "00_System/quality-index.json", "enforcement": "audit"},
+    {"concept": "Disponibilidad (CIA-A)", "metric": "backups con manifiesto Merkle verificable", "threshold": "≥1 reciente", "tool": "vault_backup", "artifact": "vault-backups/", "enforcement": "guard (AP-36)"},
+    {"concept": "Consistencia (F2)", "metric": "wiki-links rotos", "threshold": "0", "tool": "vault_audit", "artifact": "00_System/graph.json", "enforcement": "guard+audit"},
+    {"concept": "Completitud (F3)", "metric": "líneas reales de contenido", "threshold": "≥3", "tool": "vault_write", "artifact": "content gate", "enforcement": "guard"},
+    {"concept": "Exactitud (F4)", "metric": "coincidencia type ↔ carpeta", "threshold": "100%", "tool": "vault_validate", "artifact": "vault_registry.SECTIONS", "enforcement": "audit (CN-02)"},
+    {"concept": "Validez (F5)", "metric": "status dentro de STATUS_VOCAB", "threshold": "12 valores", "tool": "vault_norms --audit", "artifact": "vault_norms.STATUS_VOCAB", "enforcement": "audit (CN-03)"},
+    {"concept": "Oportunidad / Actualidad (F6)", "metric": "antigüedad de updatedAt", "threshold": "30d · 15d si CIA critical|high", "tool": "vault_audit", "artifact": "bloque stale", "enforcement": "audit"},
+    {"concept": "Autenticidad (F7)", "metric": "cobertura del campo agent", "threshold": "100%", "tool": "vault_quality_check", "artifact": "frontmatter agent:", "enforcement": "audit (AP-16)"},
+    {"concept": "No repudio (F8)", "metric": "entradas en change-log", "threshold": "1 por borrado", "tool": "vault_change_log", "artifact": "00_System/.change-log.json", "enforcement": "audit (SP-01)"},
+    {"concept": "Unicidad (DQ-9)", "metric": "duplicados canonical-shadow", "threshold": "0", "tool": "vault_merge --detect", "artifact": "quality-index.json", "enforcement": "audit (AP-17/18)"},
+    {"concept": "Localizable (FAIR-F)", "metric": "notas huérfanas", "threshold": "0", "tool": "vault_audit", "artifact": "99_Index/index.md", "enforcement": "audit"},
+    {"concept": "Interoperable (FAIR-I)", "metric": "errores de sintaxis de wiki-link", "threshold": "0", "tool": "vault_graph_inspect", "artifact": "graph.json", "enforcement": "guard (AP-22/24)"},
+    {"concept": "Reutilizable (FAIR-R)", "metric": "cadena de procedencia completa", "threshold": "agent + timestamps", "tool": "vault_diff", "artifact": ".history/", "enforcement": "audit (PAT-5)"},
+    {"concept": "Veracidad (V4)", "metric": "overall_dq_score", "threshold": "≥0.7", "tool": "vault_quality_check", "artifact": "vault_audit.dqHealth", "enforcement": "audit"},
+    {"concept": "Valor (V5)", "metric": "health score", "threshold": "0–100, objetivo 100", "tool": "vault_audit", "artifact": "vault_audit.nextActions", "enforcement": "audit"},
+    {"concept": "Variabilidad (V6)", "metric": "drift doc ↔ código", "threshold": "0", "tool": "vault_drift_detect", "artifact": "@vault: tags", "enforcement": "audit (AP-08)"},
+    {"concept": "Contención (AP-36)", "metric": "escrituras fuera del vault root", "threshold": "0", "tool": "vault_norms --audit", "artifact": "vault_io.get_vault_root()", "enforcement": "guard+audit"},
+    {"concept": "Gobernanza de IA", "metric": "decisiones de IA registradas", "threshold": "1 por decisión", "tool": "vault_ai_decision", "artifact": "16_AI_Governance/", "enforcement": "recommended"},
+    {"concept": "Auditabilidad", "metric": "operaciones con traza", "threshold": "100%", "tool": "vault_errors_trace", "artifact": "00_System/.tool-trace.json", "enforcement": "automático"},
+]
+
+
+def traceability_matrix() -> Dict[str, Any]:
+    """Return the concept → metric → tool → artifact → enforcement matrix."""
+    return {
+        "ok": True,
+        "total": len(TRACEABILITY_MATRIX),
+        "generated_at": utcnow(),
+        "generated_by": "vault_fundamentals",
+        "matrix": TRACEABILITY_MATRIX,
+    }
+
+
+def export_framework() -> Dict[str, Any]:
+    """Write 00_System/data-framework.json + .md with the full data framework."""
+    data = {
+        "version": "v39",
+        "generated_at": utcnow(),
+        "generated_by": "vault_fundamentals",
+        "totals": {name: len(reg) for name, reg in FRAMEWORK_REGISTRIES.items()},
+        "registries": FRAMEWORK_REGISTRIES,
+        "traceability_matrix": TRACEABILITY_MATRIX,
+    }
+    SYSTEM_DIR.mkdir(parents=True, exist_ok=True)
+    atomic_write_json(FRAMEWORK_JSON, data)
+
+    lines: List[str] = [
+        "---",
+        "id: data-framework",
+        "title: Marco de Datos y Gobernanza",
+        "type: knowledge",
+        "agent: vault_fundamentals",
+        f"createdAt: {utcnow()}",
+        f"updatedAt: {utcnow()}",
+        "cia_integrity: high",
+        "cia_availability: high",
+        "cia_sensitivity: public",
+        "evergreen: true",
+        "---",
+        "",
+        "# Marco de Datos y Gobernanza",
+        "",
+        "Artefacto derivado — generado por `vault_fundamentals --framework`. No editar a mano.",
+        "",
+        "## Tríada CIA — el pilar fundamental",
+        "",
+        "| ID | Eje | Campo | Valores | Efecto medible |",
+        "|---|---|---|---|---|",
+    ]
+    for c in CIA_TRIAD:
+        lines.append(
+            f"| {c['id']} | {c['name']} | `{c['frontmatter_field']}` | "
+            f"{', '.join(f'`{v}`' for v in c['values'])} | {c['effect']} |"
+        )
+
+    lines += [
+        "",
+        "## Los 8 Fundamentos de Datos",
+        "",
+        "| ID | Fundamento | Dimensión DQ | Campos verificados | Tools |",
+        "|---|---|---|---|---|",
+    ]
+    for f in FUNDAMENTALS:
+        fields = ", ".join(f"`{x}`" for x in f["frontmatter_fields"]) or "—"
+        lines.append(
+            f"| {f['id']} | {f['name']} | `{f['dq_dimension']}` | {fields} | {len(f['tools'])} |"
+        )
+
+    lines += [
+        "",
+        "## Principios FAIR",
+        "",
+        "| ID | Principio | Mecanismo en el vault | Métrica |",
+        "|---|---|---|---|",
+    ]
+    for p in FAIR_PRINCIPLES:
+        lines.append(f"| {p['id']} | {p['name']} ({p['spanish']}) | {p['mechanism']} | {p['metric']} |")
+
+    lines += [
+        "",
+        "## Las V's del Big Data",
+        "",
+        "| ID | V | Métrica | Artefacto | Control |",
+        "|---|---|---|---|---|",
+    ]
+    for v in BIGDATA_VS:
+        lines.append(f"| {v['id']} | {v['name']} | {v['metric']} | `{v['artifact']}` | {v['control']} |")
+
+    lines += [
+        "",
+        "## Cobertura de normas ISO",
+        "",
+        "| ID | Norma | Cláusula | Implementado por | Tools |",
+        "|---|---|---|---|---|",
+    ]
+    for i in ISO_COVERAGE:
+        lines.append(
+            f"| {i['id']} | {i['norm']} | {i['clause']} | {i['implemented_by']} | "
+            f"{', '.join(f'`{t}`' for t in i['tools'])} |"
+        )
+
+    lines += [
+        "",
+        "## Matriz de trazabilidad",
+        "",
+        "| Concepto | Métrica | Umbral | Tool | Artefacto | Enforcement |",
+        "|---|---|---|---|---|---|",
+    ]
+    for m in TRACEABILITY_MATRIX:
+        lines.append(
+            f"| {m['concept']} | {m['metric']} | {m['threshold']} | `{m['tool']}` | "
+            f"`{m['artifact']}` | {m['enforcement']} |"
+        )
+    lines.append("")
+
+    atomic_write_text(FRAMEWORK_MD, "\n".join(lines) + "\n")
+    return {
+        "ok": True,
+        "json": str(FRAMEWORK_JSON.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "md": str(FRAMEWORK_MD.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "totals": data["totals"],
+        "matrix_rows": len(TRACEABILITY_MATRIX),
+    }
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # CLI
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -605,10 +1073,15 @@ Ejemplos:
   python vault_fundamentals.py --check "01_Projects/api/overview.md"
   python vault_fundamentals.py --coverage                 # tools x fundamentos
   python vault_fundamentals.py --doc                      # genera data-fundamentals.md
+  python vault_fundamentals.py --framework                # genera data-framework.json + .md
+  python vault_fundamentals.py --matrix                   # matriz concepto -> metrica -> tool
 
 Notas:
   - Por defecto regenera el registro canonico en 00_System/data-fundamentals.json
   - --check evalua los 8 fundamentos sobre una nota y retorna pass/fail por principio
+  - --framework exporta el marco completo: triada CIA, F1-F8, FAIR, V's del Big Data,
+    cobertura ISO y matriz de trazabilidad. Es la fuente unica que el manifiesto
+    documenta y que vault_norms --audit verifica contra el documento (anti-drift).
 """,
     )
     parser.add_argument("--list", action="store_true", help="List all 8 fundamentals")
@@ -620,6 +1093,16 @@ Notas:
     )
     parser.add_argument(
         "--doc", action="store_true", help="Generate data-fundamentals.md"
+    )
+    parser.add_argument(
+        "--framework",
+        action="store_true",
+        help="Generate data-framework.json + .md (CIA, F1-F8, FAIR, V's, ISO)",
+    )
+    parser.add_argument(
+        "--matrix",
+        action="store_true",
+        help="Print concept -> metric -> tool -> artifact -> enforcement matrix",
     )
 
     args = parser.parse_args()
@@ -644,6 +1127,10 @@ Notas:
         result = coverage_report()
     elif args.doc:
         result = export_doc()
+    elif args.framework:
+        result = export_framework()
+    elif args.matrix:
+        result = traceability_matrix()
     else:
         # Default: regenerate registry
         result = export_registry()

@@ -139,6 +139,15 @@ SECTIONS: List[Dict[str, Optional[str]]] = [
         "tool_hint": "vault_ai_decision --project <slug> --title <decision>",
     },
     {
+        "folder": "17_Preferences",
+        "name": "Preferencias",
+        "description": (
+            "Preferencias del usuario: cómo quiere trabajar, estilo, herramientas "
+            "y restricciones. Contexto estable que el agente debe respetar entre sesiones"
+        ),
+        "tool_hint": "vault_preferences --set --category workflow --title <pref> --statement <regla>",
+    },
+    {
         "folder": "99_Index",
         "name": "Índices",
         "description": "Índices de navegación del vault",
@@ -366,6 +375,31 @@ SUBFOLDERS: Dict[str, Dict[str, Optional[str]]] = {
     "16_AI_Governance/decisions": {
         "description": "Decisiones formales de agentes IA con trazabilidad ISO 42001",
         "owner": "vault_ai_decision",
+    },
+    # ── 17_Preferences ──────────────────────────────────────────────────────
+    # Preferencias = contexto estable, no conocimiento del dominio. Van
+    # separadas de 07_Knowledge porque su ciclo de vida es distinto: una
+    # preferencia se revoca, no se corrige, y el agente debe poder cargarlas
+    # todas sin arrastrar el resto de la base de conocimiento.
+    "17_Preferences/workflow": {
+        "description": "Cómo quiere el usuario que se trabaje: flujo, ritmo, qué confirmar antes de actuar",
+        "owner": "vault_preferences",
+    },
+    "17_Preferences/style": {
+        "description": "Estilo de comunicación y de código: idioma, tono, formato, convenciones",
+        "owner": "vault_preferences",
+    },
+    "17_Preferences/tooling": {
+        "description": "Herramientas, lenguajes y librerías preferidas o vetadas",
+        "owner": "vault_preferences",
+    },
+    "17_Preferences/constraints": {
+        "description": "Restricciones duras: qué no se debe tocar, mover, borrar o propagar",
+        "owner": "vault_preferences",
+    },
+    "17_Preferences/domain": {
+        "description": "Preferencias específicas de un proyecto o dominio concreto",
+        "owner": "vault_preferences",
     },
 }
 

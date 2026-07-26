@@ -28,7 +28,7 @@ from vault_errors import wrap_main
 SCRIPTS_DIR = Path(__file__).parent
 PROJECT_ROOT = SCRIPTS_DIR.parent
 
-from vault_io import VAULT_ROOT  # noqa: E402
+from vault_io import VAULT_ROOT, resolve_tool_spec  # noqa: E402
 
 
 def _resolve_output_dir() -> Path:
@@ -53,8 +53,6 @@ VERSION_FILE = SYSTEM_DIR / "standard-version.json"
 # Group metadata — leído desde tool-spec.json (spec-driven).
 # Fallback al hardcodeado si el spec no existe aún.
 # ──────────────────────────────────────────────────────────────────────────────
-
-_SPEC_FILE = SCRIPTS_DIR / "tool-spec.json"
 
 _GROUPS_HARDCODED: List[Dict[str, Any]] = [
     {
@@ -181,10 +179,11 @@ _TOOL_SPEC: Dict[str, Any] = {}
 
 def _load_tool_spec() -> Dict[str, Any]:
     """Carga tool-spec.json completo para obtener declared_returns."""
-    if not _SPEC_FILE.exists():
+    spec_file = resolve_tool_spec()
+    if spec_file is None:
         return {}
     try:
-        return json.loads(_SPEC_FILE.read_text(encoding="utf-8"))
+        return json.loads(spec_file.read_text(encoding="utf-8"))
     except Exception:
         return {}
 
