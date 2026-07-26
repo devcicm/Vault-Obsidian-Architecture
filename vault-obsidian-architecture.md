@@ -5373,7 +5373,7 @@ temp/
 
 ---
 
-### v39.0 — 2026-07-25 `git: pending`
+### v39.0 — 2026-07-25 `git: 13bf9ca`
 
 **Marco de Datos y Gobernanza explícito + guard anti-drift + consolidación del changelog**
 
