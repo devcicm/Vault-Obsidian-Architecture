@@ -172,8 +172,14 @@ def test_manifest_changelog_has_no_pending_hashes_for_released_versions():
     text = SPEC.read_text(encoding="utf-8")
     changelog = text[text.index("\n## Changelog") :]
     pending = re.findall(r"^### (v[\d.]+) — [\d-]+ `git: pending`", changelog, re.MULTILINE)
-    # v39.0 es la versión en curso: su commit aún no existe cuando se escribe.
-    assert pending in ([], ["v39.0"]), f"hashes sin fijar: {pending}"
+    # La versión en curso puede llevar `pending`: su commit no existe todavía
+    # cuando se escribe la entrada. Se deriva de `CURRENT_VERSION` en vez de
+    # fijarla aquí — un literal obliga a editar el test en cada release, y el
+    # que lo edita a la carrera acaba ampliando la excepción a la versión
+    # anterior, que es justo la que este guard tiene que cazar.
+    from vault_standard_upgrade import CURRENT_VERSION
+
+    assert pending in ([], [CURRENT_VERSION]), f"hashes sin fijar: {pending}"
 
 
 def test_no_git_command_uses_the_nonexistent_docs_path():

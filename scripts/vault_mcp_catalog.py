@@ -523,7 +523,106 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "guards": [],
         "side_effects": ["Crea carpetas, versiona, indexa, audit"],
         "example": "python vault_init.py\npython vault_init.py --target v34",
-        "related": ["vault_standard_upgrade", "vault_audit"],
+        "related": ["vault_standard_upgrade", "vault_onboard", "vault_audit"],
+    },
+    "vault_onboard": {
+        "name": "vault_onboard",
+        "script": "vault_onboard.py",
+        "group": "Bootstrap",
+        "purpose": (
+            "Puebla un vault vacío desde un proyecto de código que nunca tuvo "
+            "uno: lee el repo, reconstruye su historia con git y escribe las "
+            "notas iniciales. Lee el proyecto, escribe solo en el vault."
+        ),
+        "params": {
+            "project": {
+                "type": "string",
+                "required": True,
+                "description": "Nombre del proyecto en el vault",
+                "validators": ["non_empty"],
+            },
+            "path": {
+                "type": "string",
+                "required": True,
+                "description": "Ruta del repositorio a leer (solo lectura)",
+                "validators": ["path_exists"],
+            },
+            "depth": {
+                "type": "number",
+                "required": False,
+                "description": "Profundidad de escaneo de directorios",
+                "validators": [],
+            },
+            "max-modules": {
+                "type": "number",
+                "required": False,
+                "description": "Tope de módulos que reciben nota en 11_Code",
+                "validators": [],
+            },
+            "lang": {
+                "type": "string",
+                "required": False,
+                "description": "Lenguaje principal si la autodetección falla",
+                "validators": [],
+            },
+            "max-commits": {
+                "type": "number",
+                "required": False,
+                "description": (
+                    "Ventana de historia leída. Si se alcanza, la salida lo "
+                    "declara en warnings: el tope es un parámetro de la "
+                    "invocación, no un hecho del proyecto"
+                ),
+                "validators": [],
+            },
+            "git-phases": {
+                "type": "number",
+                "required": False,
+                "description": "Número máximo de fases a reconstruir",
+                "validators": [],
+            },
+            "no-git": {
+                "type": "boolean",
+                "required": False,
+                "description": "Omitir la arqueología de historia",
+                "validators": [],
+            },
+            "skip": {
+                "type": "array",
+                "required": False,
+                "description": "Secciones a omitir (01…17)",
+                "validators": [],
+            },
+            "agent": {
+                "type": "string",
+                "required": False,
+                "description": "Agente que firma las notas creadas",
+                "validators": [],
+            },
+            "dry-run": {
+                "type": "boolean",
+                "required": False,
+                "description": "Simular sin escribir",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "AP-45: no escribe una nota sin evidencia detrás; lo omitido se "
+            "reporta en skipped_no_evidence en vez de rellenarse",
+            "AP-44: relee del disco y valida el frontmatter con yaml.safe_load; "
+            "los diagramas pasan por vault_mermaid_check antes de escribirse",
+            "18_Bugs, 19_Audits y 20_Quarantine se dejan vacías por diseño y "
+            "así se declara en sections_left_empty_by_design",
+        ],
+        "side_effects": [
+            "Crea notas en las secciones 01…17 del vault destino",
+            "No modifica el proyecto de origen: solo lo lee",
+        ],
+        "example": (
+            "python vault_onboard.py --project mi-api --path ../mi-api\n"
+            "python vault_onboard.py --project mi-api --path ../mi-api --dry-run"
+        ),
+        "related": ["vault_init", "vault_migrate_docs", "vault_audit", "vault_norms"],
     },
     "vault_standard_upgrade": {
         "name": "vault_standard_upgrade",
@@ -2990,7 +3089,7 @@ GROUPS: Dict[str, List[str]] = {
     "Producción/SRE": ["vault_incident_save", "vault_slo_save"],
     "Release": ["vault_release_save"],
     "Riesgos/Calidad": ["vault_risk_save", "vault_privacy_save", "vault_ncr_save"],
-    "Bootstrap": ["vault_init"],
+    "Bootstrap": ["vault_init", "vault_onboard"],
     "Corrección Automática": ["vault_fix_brackets", "vault_graph_fix"],
     "Versionado": ["vault_standard_upgrade"],
     "Gestión de Carpetas": ["vault_folder_registry"],

@@ -1181,6 +1181,42 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "tools_detecting": ["vault_norms --audit", "vault_audit"],
         "introduced_version": "v39",
     },
+    {
+        "code": "AP-45",
+        "name": "Cobertura sin evidencia — la nota existe para llenar la sección",
+        "type": "antipattern",
+        "category": "quality",
+        "severity": "high",
+        "enforcement": "guard+audit",
+        "description": (
+            "Una nota se crea porque una sección estaba vacía, no porque hubiera algo "
+            "que afirmar. Su cuerpo son encabezados y marcadores de pendiente "
+            "—`_Pendiente_`, `TODO`, `— No detectados`— y no enlaza con nada. Sube la "
+            "cobertura y baja la fiabilidad: el conteo de notas dice que la sección "
+            "está cubierta, el health score la cuenta como nota real, y el siguiente "
+            "lector la abre esperando contenido. Es más caro que la ausencia, porque "
+            "la ausencia sí se ve: un hueco invita a llenarlo, un relleno declara que "
+            "ya está hecho. El generador que la escribió creía estar documentando."
+        ),
+        "signal": (
+            "Notas cuyo cuerpo bajo el frontmatter, quitados encabezados y "
+            "marcadores, queda vacío y sin wikilinks salientes; secciones que pasan "
+            "de 0 a N notas en una sola ejecución de una tool; ADRs numerados sin "
+            "nombre; conceptos cuyo cuerpo entero remite a leer otra fuente."
+        ),
+        "prevention": (
+            "No escribir la nota sin evidencia detrás. Un generador que no encuentra "
+            "contenido real para una sección lo declara en `warnings` y en "
+            "`next_steps` —que es información útil— en vez de emitir un stub, que es "
+            "desinformación. El andamiaje declarado sí es legítimo: los primers de "
+            "vault_init llevan `status: template` y quedan exentos, porque anuncian "
+            "lo que son. Secciones dirigidas por eventos (18_Bugs, 19_Audits, "
+            "20_Quarantine) se quedan vacías hasta que ocurre el evento."
+        ),
+        "tools_enforcing": ["vault_onboard", "vault_write"],
+        "tools_detecting": ["vault_norms --audit", "vault_audit"],
+        "introduced_version": "v39",
+    },
     # ── Patrón PAT-6 ───────────────────────────────────────────────────────────
     {
         "code": "PAT-6",
@@ -2070,6 +2106,82 @@ _ES_PRIMER = re.compile(r"^\d{2}-\d{2}_.*-primer$")
 _ADR_TYPES = ("decision", "adr")
 
 
+#: Marcadores de pendiente: texto que ocupa sitio sin afirmar nada. La lista
+#: sale de lo que escriben los generadores del propio estándar —`vault_onboard`
+#: emitía 8 conceptos cuyo cuerpo entero era `_Pendiente. Leer la sección del
+#: README._`— más las convenciones habituales de un esqueleto a medio llenar.
+#:
+#: El marcador tiene que ser la LÍNEA ENTERA, no su comienzo. Casar por prefijo
+#: es el error de `PLACEHOLDER_PATTERNS` en `vault_audit` —que descartaba
+#: `[[patron-mcp-streaming]]` por empezar con `patron`— repetido aquí: se
+#: tragaría «Pendiente de revisar el retry, pero el flujo ya está descrito
+#: arriba», que es contenido real. Se admite el envoltorio de énfasis y de
+#: viñeta alrededor, y una cola de puntuación o un complemento corto tras dos
+#: puntos (`TODO: revisar`) sigue siendo un marcador solo si no trae frase.
+_MARCADORES_PENDIENTE = re.compile(
+    r"^\s*(?:[-*+]\s+|>\s*)?[_*]{0,2}\s*(?:"
+    r"pendientes?|todo|fixme|tbd|t\.b\.d\.?"
+    r"|por (?:definir|documentar|completar|determinar)"
+    r"|sin (?:datos|contenido|informaci[oó]n|detectar|detectados?|detectadas?)"
+    r"|no (?:detectados?|detectadas?|disponible|aplica)"
+    r"|desconocidos?|desconocidas?|n/a"
+    r")\s*[_*]{0,2}\s*[.:;!]?\s*[_*]{0,2}\s*$",
+    re.IGNORECASE,
+)
+
+#: Aparte en cursiva que empieza por un marcador y ocupa la línea entera:
+#: `_Pendiente. Leer la sección del README._`. Aquí sí se casa por comienzo,
+#: pero el prefijo no basta: la línea completa tiene que ir envuelta en énfasis.
+#: Esa envoltura es la que distingue el aparte de un generador de la prosa de un
+#: autor —nadie escribe un párrafo real entero en cursiva— y es lo que impide
+#: que esta regla se coma contenido, que es el fallo que AP-44 castiga.
+_APARTE_PENDIENTE = re.compile(
+    r"^\s*(?:[-*+]\s+|>\s*)?([_*]{1,2})\s*(?:pendientes?|todo|tbd|por (?:definir|documentar|completar))"
+    r"\b.*\1\s*$",
+    re.IGNORECASE,
+)
+
+
+#: Línea que es puro andamiaje tipográfico: encabezado, regla horizontal,
+#: separador de tabla, viñeta vacía, comentario HTML.
+_LINEA_ANDAMIO = re.compile(
+    r"^\s*(?:#{1,6}\s|-{3,}\s*$|\*{3,}\s*$|\|[\s|:-]*\|\s*$|[-*+]\s*$|>\s*$|<!--)"
+)
+
+
+def _cuerpo_sin_marcadores(body: str) -> str:
+    """Lo que queda de un cuerpo tras quitar andamiaje y marcadores de pendiente.
+
+    Cadena vacía significa que la nota no afirma nada: todo lo que contiene es
+    estructura anunciando contenido que no está. Es la mitad del guard de AP-45
+    —la otra mitad es que tampoco enlace con nada—.
+    """
+    if not body:
+        return ""
+    # El frontmatter ya viene separado, pero un cuerpo puede traer bloques de
+    # código vacíos que tampoco afirman nada.
+    limpio = re.sub(r"```[^\n]*\n\s*```", "", body)
+    # Tabla de solo cabecera y separador: promete columnas y no trae ni una
+    # fila. Es andamiaje, igual que un encabezado sin párrafo debajo — y hay
+    # que quitarla entera, porque la cabecera sí tiene texto y sobreviviría al
+    # filtro línea a línea.
+    limpio = re.sub(
+        r"^[ \t]*\|.*\|[ \t]*\n[ \t]*\|[\s|:-]+\|[ \t]*$(?!\n[ \t]*\|)",
+        "",
+        limpio,
+        flags=re.MULTILINE,
+    )
+    utiles = [
+        ln
+        for ln in limpio.splitlines()
+        if ln.strip()
+        and not _LINEA_ANDAMIO.match(ln)
+        and not _MARCADORES_PENDIENTE.match(ln)
+        and not _APARTE_PENDIENTE.match(ln)
+    ]
+    return "\n".join(utiles).strip()
+
+
 #: Manifiesto público del estándar — referencia del guard anti-drift del marco.
 SPEC_FILENAME = "vault-obsidian-architecture.md"
 
@@ -2157,6 +2269,32 @@ def vault_norms_audit(root: Optional[Path] = None) -> Dict[str, Any]:
         # ── CN-03: vocabulario de status ──────────────────────────────────────
         if status and status not in STATUS_VOCAB:
             _flag("CN-03", rel, f"status '{status}' fuera del vocabulario canónico {sorted(STATUS_VOCAB)}.")
+
+        # ── AP-45: cobertura sin evidencia ────────────────────────────────────
+        # Detectable sin ambigüedad: el cuerpo, quitados encabezados y
+        # marcadores de pendiente, queda vacío Y no hay un solo wikilink
+        # saliente. Las dos condiciones juntas, porque cada una por separado
+        # tiene usos legítimos: una nota puede ser un índice de puros enlaces
+        # sin prosa, y un apunte corto puede no enlazar todavía con nada.
+        #
+        # Dos exenciones, ambas por declararse:
+        #   `status: template` — los primers de vault_init son andamiaje que
+        #   anuncia lo que es, y eso es lo contrario del relleno.
+        #   `index` — los índices de sección los genera vault_section_index a
+        #   partir de lo que hay; uno vacío refleja una sección vacía, que ya
+        #   es el estado honesto.
+        if status != "template" and note_type != "index" and stem != "index":
+            if not extract_wikilinks(body):
+                residuo = _cuerpo_sin_marcadores(body)
+                if not residuo:
+                    _flag(
+                        "AP-45",
+                        rel,
+                        "Cuerpo sin contenido ni enlaces: solo encabezados y "
+                        "marcadores de pendiente. Una sección vacía es un hueco "
+                        "visible; esta nota lo tapa sin llenarlo. Bórrala o "
+                        "escribe lo que afirma.",
+                    )
 
         # ── AP-09: runbooks fuera de 08_Runbooks ──────────────────────────────
         if note_type == "runbook" and not rel.startswith("08_Runbooks/"):

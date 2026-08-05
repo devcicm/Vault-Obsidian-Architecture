@@ -122,3 +122,49 @@ def test_un_fallo_resuelto_no_queda_fijado_en_el_registro():
     fuente = (vsu.SCRIPTS_DIR / "vault_standard_upgrade.py").read_text(encoding="utf-8")
     assert 'state["fixes_failed"] = all_fixes_failed' in fuente
     assert "if all_fixes_failed:" not in fuente
+
+
+def test_una_version_menor_sin_migracion_sella_la_version(tmp_path, monkeypatch):
+    """v39.0 → v39.1 no cambia la estructura, pero sí cambia lo que el vault es.
+
+    `_version_index` compara por versión MAYOR, así que una minor nunca tiene
+    migraciones pendientes. Sin sellado, `applied_version` se quedaba en la
+    última mayor para siempre: el vault declaraba v39.0 mientras corría con las
+    tools de v39.1, y `--to` devolvía `ok: true` sobre un estado obsoleto —la
+    misma familia que AP-37, éxito reportado sin trabajo ni verdad detrás.
+    """
+    import vault_io
+
+    root = tmp_path / "vault"
+    (root / "00_System").mkdir(parents=True)
+    # `set_vault_root` es estado de módulo y `monkeypatch` no lo deshace: sin
+    # restaurarlo, la raíz temporal se filtra a todo test posterior del mismo
+    # proceso y los fallos aparecen lejos de aquí (AP-36, contención).
+    anterior = vault_io.get_vault_root()
+    monkeypatch.setattr(vsu, "VERSION_FILE", root / "00_System/standard-version.json")
+    monkeypatch.setattr(vsu, "SYSTEM_DIR", root / "00_System")
+    vault_io.set_vault_root(root)
+    monkeypatch.setattr(vault_io, "VAULT_ROOT", root, raising=False)
+    try:
+        _sellado(root)
+    finally:
+        vault_io.set_vault_root(anterior)
+
+
+def _sellado(root):
+    import vault_standard_upgrade as vsu
+
+    vsu._write_version_file(
+        {"applied_version": "v39.0", "migrations_applied": [], "applied_by": "test"}
+    )
+
+    r = vsu.vault_standard_upgrade(to_version=vsu.CURRENT_VERSION)
+    assert r["ok"] and r["version_stamped"], r
+    assert r["current_version"] == vsu.CURRENT_VERSION
+
+    # Y el sello está en el disco, no solo en la respuesta (AP-44).
+    estado = vsu._read_version_file()
+    assert estado["applied_version"] == vsu.CURRENT_VERSION
+
+    # Idempotente: la segunda llamada ya no tiene nada que sellar.
+    assert vsu.vault_standard_upgrade(to_version=vsu.CURRENT_VERSION)["version_stamped"] is False

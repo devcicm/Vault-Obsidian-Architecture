@@ -831,6 +831,11 @@ def _detect_cross_folder_duplicates(notes: List[Path]) -> List[Dict[str, Any]]:
     return duplicates
 
 
+#: Secciones que solo existen cuando ocurre algo. Estar vacías es su estado
+#: correcto mientras no haya pasado nada — no es cobertura pendiente.
+_SECCIONES_POR_EVENTO = frozenset({"18_Bugs", "19_Audits", "20_Quarantine"})
+
+
 def _detect_empty_indexes() -> List[Dict[str, Any]]:
     """AP-11/AP-03: detect section folders whose index.md has no real notes.
 
@@ -857,6 +862,15 @@ def _detect_empty_indexes() -> List[Dict[str, Any]]:
             # Skip backup directories created by vault_init --clean or
             # manual copies. These shouldn't be treated as vault sections.
             if name.endswith(".bak") or ".bak-" in name or name == "vault-sandbox":
+                continue
+
+            # Secciones dirigidas por eventos: se pueblan cuando ocurre el
+            # evento, no al crear el vault. Contarlas como deuda empuja a
+            # llenarlas —y llenarlas significa inventar bugs, auditorías y
+            # cuarentenas que no han pasado, que es exactamente AP-45—. Un
+            # vault sano recién creado tiene estas tres vacías; reprobarlo por
+            # eso enfrentaba a dos normas del propio estándar entre sí.
+            if name in _SECCIONES_POR_EVENTO:
                 continue
 
             real_notes = [
@@ -1146,6 +1160,15 @@ _SECTION_TOOL_HINT: Dict[str, str] = {
     "14_Requirements": "vault_requirement_save --project <slug> --title 'REQ-001 ...'",
     "15_Tests": "vault_test_save --project <slug> --title <test> --type unit",
     "16_AI_Governance": "vault_ai_decision --project <slug> --title <decision> --decision_type architecture",
+    # Sin entrada, `_suggest_command_for_folder` caía al genérico `vault_write`
+    # para las cuatro secciones más nuevas: la acción sugerida saltaba la tool
+    # con contrato y su guard. La sugerencia de un audit es la que el usuario
+    # copia y pega, así que apuntar al camino sin gobernar es peor que no
+    # sugerir nada.
+    "17_Preferences": "vault_preferences --set --title <preferencia> --statement '...' --strength should",
+    "18_Bugs": "vault_bug_save --project <slug> --title <bug> --severity high",
+    "19_Audits": "vault_tags --audit",
+    "20_Quarantine": "vault_quarantine --list",
 }
 
 

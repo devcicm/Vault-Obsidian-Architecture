@@ -36,6 +36,7 @@ from typing import Any, Dict, List, Set
 # Configuration
 
 from vault_io import VAULT_ROOT, atomic_write_json, write_report
+from vault_registry import ORDERED_SECTIONS
 
 GRAPH_FILE = VAULT_ROOT / "99_Index" / "graph.json"
 # `SYSTEM_DIR` se usaba en la lectura de `move-log.json` sin estar definido en
@@ -44,27 +45,14 @@ SYSTEM_DIR = VAULT_ROOT / "00_System"
 
 
 # Only scan notes inside these standard sections — never root files or scripts/
-
-VAULT_SECTIONS = {
-    "00_System",
-    "01_Projects",
-    "02_Observability",
-    "03_Decisions",
-    "04_Sessions",
-    "05_Patterns",
-    "06_Diagrams",
-    "07_Knowledge",
-    "08_Runbooks",
-    "09_Infrastructure",
-    "10_Migrated",
-    "11_Code",
-    "12_Bibliography",
-    "13_Flows",
-    "14_Requirements",
-    "15_Tests",
-    "16_AI_Governance",
-    "99_Index",
-}
+#
+# Derivado de `vault_registry`, no copiado. La copia literal se quedó en 18
+# secciones mientras el estándar iba por 22: las notas de `17_Preferences`,
+# `18_Bugs`, `19_Audits` y `20_Quarantine` no pasaban `_is_vault_note()` y por
+# tanto no existían en `graph.json` — ni como nodo, ni como origen de enlace,
+# ni como huérfana. Una sección entraba al estándar y salía invisible del grafo
+# sin que nada fallara.
+VAULT_SECTIONS = frozenset(ORDERED_SECTIONS)
 
 
 def _is_vault_note(note_path: Path) -> bool:

@@ -423,6 +423,15 @@ _SECTION_TYPE_MAP = {
     "14_Requirements": "requirement",
     "15_Tests": "test",
     "16_AI_Governance": "governance",
+    # Las cuatro secciones más nuevas faltaban aquí, así que una nota escrita
+    # en ellas salía sin `type:` — y `vault_audit._detect_missing_metadata` lo
+    # exige. El estándar reprobaba lo que su propio write path acababa de
+    # escribir. Los valores no son inventados: son los que ya escriben los
+    # productores de cada sección (`vault_preferences`, `vault_bug_save`).
+    "17_Preferences": "preference",
+    "18_Bugs": "bug",
+    "19_Audits": "audit",
+    "20_Quarantine": "quarantine",
     "99_Index": "index",
 }
 

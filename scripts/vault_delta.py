@@ -28,30 +28,15 @@ from typing import Any, Dict, List, Optional, Set
 from vault_errors import wrap_main
 from vault_lib import utcnow
 from vault_io import atomic_write_json, VAULT_ROOT
+from vault_registry import ORDERED_SECTIONS
 
 HASH_INDEX = VAULT_ROOT / "99_Index" / "hash-index.json"
 GRAPH_FILE = VAULT_ROOT / "99_Index" / "graph.json"
 
-VAULT_SECTIONS = {
-    "00_System",
-    "01_Projects",
-    "02_Observability",
-    "03_Decisions",
-    "04_Sessions",
-    "05_Patterns",
-    "06_Diagrams",
-    "07_Knowledge",
-    "08_Runbooks",
-    "09_Infrastructure",
-    "10_Migrated",
-    "11_Code",
-    "12_Bibliography",
-    "13_Flows",
-    "14_Requirements",
-    "15_Tests",
-    "16_AI_Governance",
-    "99_Index",
-}
+# Derivado de `vault_registry`, no copiado: la copia literal se quedo en 18
+# secciones y dejaba fuera `17_Preferences`, `18_Bugs`, `19_Audits` y
+# `20_Quarantine` sin que nada fallara.
+VAULT_SECTIONS = frozenset(ORDERED_SECTIONS)
 
 CIA_WEIGHT = {"critical": 4, "high": 3, "medium": 2, "low": 1}
 RISK_THRESHOLDS = {"critical": 8, "high": 4, "medium": 2, "low": 0}

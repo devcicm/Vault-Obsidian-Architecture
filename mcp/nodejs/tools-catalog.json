@@ -825,13 +825,7 @@
           },
           "min-risk": {
             "type": "string",
-            "description": "Filtrar stale_deps por nivel minimo de riesgo",
-            "enum": [
-              "critical",
-              "high",
-              "medium",
-              "low"
-            ]
+            "description": "Filtrar stale_deps por nivel minimo de riesgo"
           }
         }
       },
@@ -1953,6 +1947,7 @@
       ],
       "related": [
         "vault_standard_upgrade",
+        "vault_onboard",
         "vault_audit"
       ]
     },
@@ -2591,6 +2586,80 @@
       "related": [
         "vault_ai_decision",
         "vault_audit"
+      ]
+    },
+    "vault_onboard": {
+      "name": "vault_onboard",
+      "description": "Puebla un vault vacío desde un proyecto de código que nunca tuvo uno: lee el repo, reconstruye su historia con git y escribe las notas iniciales. Lee el proyecto, escribe solo en el vault.",
+      "group": "Bootstrap",
+      "script": "vault_onboard.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Nombre del proyecto en el vault"
+          },
+          "path": {
+            "type": "string",
+            "description": "Ruta del repositorio a leer (solo lectura)"
+          },
+          "depth": {
+            "type": "string",
+            "description": "Profundidad de escaneo de directorios"
+          },
+          "max-modules": {
+            "type": "string",
+            "description": "Tope de módulos que reciben nota en 11_Code"
+          },
+          "lang": {
+            "type": "string",
+            "description": "Lenguaje principal si la autodetección falla"
+          },
+          "dry-run": {
+            "type": "string",
+            "description": "Simular sin escribir"
+          },
+          "agent": {
+            "type": "string",
+            "description": "Agente que firma las notas creadas"
+          },
+          "skip": {
+            "type": "string",
+            "description": "Secciones a omitir (01…17)"
+          },
+          "git-phases": {
+            "type": "string",
+            "description": "Número máximo de fases a reconstruir"
+          },
+          "max-commits": {
+            "type": "string",
+            "description": "Ventana de historia leída. Si se alcanza, la salida lo declara en warnings: el tope es un parámetro de la invocación, no un hecho del proyecto"
+          },
+          "no-git": {
+            "type": "string",
+            "description": "Omitir la arqueología de historia"
+          }
+        },
+        "required": [
+          "project",
+          "path"
+        ]
+      },
+      "guards": [
+        "AP-45: no escribe una nota sin evidencia detrás; lo omitido se reporta en skipped_no_evidence en vez de rellenarse",
+        "AP-44: relee del disco y valida el frontmatter con yaml.safe_load; los diagramas pasan por vault_mermaid_check antes de escribirse",
+        "18_Bugs, 19_Audits y 20_Quarantine se dejan vacías por diseño y así se declara en sections_left_empty_by_design"
+      ],
+      "side_effects": [
+        "Crea notas en las secciones 01…17 del vault destino",
+        "No modifica el proyecto de origen: solo lo lee"
+      ],
+      "related": [
+        "vault_init",
+        "vault_migrate_docs",
+        "vault_audit",
+        "vault_norms"
       ]
     },
     "vault_pattern_list": {
@@ -4504,7 +4573,8 @@
       "vault_ncr_save"
     ],
     "Bootstrap": [
-      "vault_init"
+      "vault_init",
+      "vault_onboard"
     ],
     "Corrección Automática": [
       "vault_fix_brackets",

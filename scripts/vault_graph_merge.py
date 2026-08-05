@@ -30,6 +30,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from vault_errors import wrap_main
 from vault_io import VAULT_ROOT, atomic_write_json, write_report
+from vault_registry import ORDERED_SECTIONS
 
 ONTOLOGY_FILE = Path(__file__).parent / "vault_ontology.json"
 GRAPH_FILE = VAULT_ROOT / "99_Index" / "graph.json"
@@ -38,13 +39,10 @@ ENTITY_DIR = VAULT_ROOT / "06_Diagrams" / "entity"
 CODE_INDEX = VAULT_ROOT / "11_Code" / ".code-index.json"
 MOVE_LOG = VAULT_ROOT / "00_System" / "move-log.json"
 
-VAULT_SECTIONS = {
-    "00_System", "01_Projects", "02_Observability", "03_Decisions",
-    "04_Sessions", "05_Patterns", "06_Diagrams", "07_Knowledge",
-    "08_Runbooks", "09_Infrastructure", "10_Migrated", "11_Code",
-    "12_Bibliography", "13_Flows", "14_Requirements", "15_Tests",
-    "16_AI_Governance", "99_Index",
-}
+# Derivado de `vault_registry`, no copiado: la copia literal se quedo en 18
+# secciones y dejaba fuera `17_Preferences`, `18_Bugs`, `19_Audits` y
+# `20_Quarantine` sin que nada fallara.
+VAULT_SECTIONS = frozenset(ORDERED_SECTIONS)
 
 
 def _load_ontology() -> Dict[str, Any]:

@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v39.0 — 2026-07-25  
+**Versión:** v39.1 — 2026-08-05  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -34,6 +34,19 @@ Todo lo anterior está declarado, medido y forzado en **[Marco de Datos y Gobern
 
 ---
 
+> **v39.1 (2026-08-05):** Poblar un vault desde un proyecto que no tiene ninguno.
+> - **`vault_onboard` publicada** (Grupo 31 — Bootstrap): estaba documentada en este
+>   manifiesto y **no se había ejecutado nunca** — AP-42 literal dentro del repo que
+>   define la norma. La primera ejecución real contra un repositorio ajeno devolvió
+>   nueve defectos; el peor, que sus 54 notas nacían **todas** en `missingType`.
+> - **AP-45 — cobertura sin evidencia**: una nota que existe para llenar la sección,
+>   no para afirmar algo. Es más cara que el hueco, porque el hueco se ve.
+> - **`docs/MODO-AGENTICO-ONBOARDING.md`**: contraparte del modo de sanación. Donde
+>   allí la regla es *nada se borra*, aquí es **nada se inventa**.
+> - **Registro único de secciones**: `vault_graph`, `vault_delta` y `vault_graph_merge`
+>   tenían 18 de 22 congeladas, así que `17_Preferences`, `18_Bugs`, `19_Audits` y
+>   `20_Quarantine` no existían en `graph.json`.
+>
 > **v39.0 (2026-07-25):** Marco de Datos y Gobernanza explícito.
 > - **Nueva sección `## Marco de Datos y Gobernanza`**: Tríada CIA como pilar declarado,
 >   los 8 Fundamentos con sus campos y tools, las 9 dimensiones DQ con umbrales,
@@ -3406,7 +3419,7 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **56 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **57 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -4653,7 +4666,7 @@ Dos causas, y la segunda es la incómoda:
 
 1. **El audit no lo ejecuta nadie.** En las **1.356 ejecuciones de tools
    registradas** en los `.tool-trace.json` de ese parque, `vault_norms` no
-   aparece **ni una vez**. 41 de las 88 tools del catálogo no se han ejecutado
+   aparece **ni una vez**. 41 de las 89 tools del catálogo no se han ejecutado
    jamás. Los agentes escriben; no gobiernan. Un enforcement que depende de que
    alguien se acuerde de invocarlo es enforcement en el papel.
 2. **Los valores no canónicos los escribía el propio estándar.** El más
@@ -5058,6 +5071,69 @@ que la corrección no se convierta en la excusa para esconder el problema.
 
 ---
 
+### AP-45 — Cobertura sin evidencia: la nota existe para llenar la sección
+
+**Severidad:** high · **Enforcement:** `guard+audit` · **Detecta:**
+`vault_norms --audit`, `vault_audit`
+
+Una nota se crea porque una sección estaba vacía, no porque hubiera algo que
+afirmar. Su cuerpo son encabezados y marcadores de pendiente —`_Pendiente_`,
+`TODO`, `— No detectados`— y no enlaza con nada.
+
+Sube la cobertura y baja la fiabilidad. El conteo de notas dice que la sección
+está cubierta, el `healthScore` la cuenta como nota real, y el siguiente lector la
+abre esperando contenido. **Es más caro que la ausencia**, porque la ausencia sí se
+ve: un hueco invita a llenarlo, un relleno declara que ya está hecho y nadie
+vuelve.
+
+El caso que la motivó es del propio estándar. `vault_onboard`, ejecutada por
+primera vez contra un repositorio real, emitía ocho notas de concepto cuyo cuerpo
+entero era `_Pendiente. Leer la sección del README._`, más cinco ADRs numerados sin
+nombre. Ninguna tool lo reprobaba: para el conteo eran trece notas, para el health
+score eran cobertura, y para quien las abría eran nada. El generador que las
+escribió creía estar documentando.
+
+#### El guard exige las dos condiciones
+
+Se reporta la nota cuyo cuerpo, quitados andamiaje y marcadores, queda vacío **y**
+que además no tiene wikilinks salientes. Cada condición por separado tiene usos
+legítimos, y confundirlas rompe el guard por donde más duele:
+
+- Una nota de **puros enlaces** es prosa cero y valor alto —un índice temático—:
+  ahí el enlace *es* la afirmación.
+- Un **primer** de `vault_init` con `status: template` es andamiaje declarado. El
+  relleno miente sobre su naturaleza; el primer no.
+- Un **índice de sección vacío** refleja una sección vacía. Reportarlo es culpar al
+  espejo.
+- Nada dentro de `vault-backups/` se reporta: un backup es una foto del pasado, y
+  auditarlo multiplica cada hallazgo por el número de copias.
+
+El marcador se reconoce como **línea entera**, o como aparte envuelto en énfasis de
+principio a fin. No por prefijo — el primer intento sí lo hacía, y «Pendiente de
+revisar el retry, pero el flujo ya está descrito arriba» desaparecía entera siendo
+una frase que afirma dos cosas. Es el mismo defecto de `PLACEHOLDER_PATTERNS` en
+`vault_audit`, o sea AP-44 otra vez: decidir con criterio propio en vez de mirar lo
+que hay.
+
+#### El conflicto con AP-03, y por qué se resolvió a favor de esta
+
+`AP-03` penaliza los índices de sección vacíos. Pero `18_Bugs`, `19_Audits` y
+`20_Quarantine` son secciones **dirigidas por eventos**: estar vacías es su estado
+correcto mientras no haya pasado nada, y poblarlas al arrancar sería inventar bugs
+y auditorías que no ocurrieron. Una norma pedía llenar lo que la otra prohíbe
+inventar. `vault_audit._SECCIONES_POR_EVENTO` lo resuelve a favor de AP-45, y las
+tools que pueblan un vault declaran ese vacío en su salida
+(`sections_left_empty_by_design`) para que se lea como estado correcto y no como
+trabajo pendiente.
+
+**El vacío declarado es información. El vacío sin declarar es ambiguo, y por eso se
+rellena.**
+
+`tests/test_ap45_cobertura_sin_evidencia.py` (20 tests), la mitad dedicados a la
+frontera: lo que el guard **no** debe arrastrar por delante.
+
+---
+
 ## Patrones recomendados
 
 Los siguientes patrones fueron identificados en auditorías reales de vaults en producción. Complementan los antipatrones: donde los APs describen qué no hacer, los PATs describen qué sí funciona.
@@ -5351,6 +5427,86 @@ menos una vez contra un vault ajeno.
 
 ---
 
+## Poblar un vault desde un proyecto existente — el modo agéntico
+
+El tercer recorrido. No es crear un vault vacío (`vault_init`) ni sanar uno que ya
+existe (la sección anterior): es tomar un **proyecto de código que nunca tuvo
+vault** y poblarle uno que respete las normas desde la primera nota.
+
+La tool es `vault_onboard`; el procedimiento completo —siete fases, con las
+decisiones que ninguna tool toma— vive en
+[`docs/MODO-AGENTICO-ONBOARDING.md`](docs/MODO-AGENTICO-ONBOARDING.md). Aquí quedan
+las reglas, porque son normativas.
+
+### La regla que sustituye a «nada se borra»
+
+En sanación hay contenido previo y la regla es **nada se borra**. En onboarding no
+hay nada que perder, así que el lugar de esa regla lo ocupa otra: **nada se
+inventa.**
+
+Y es más difícil de cumplir, porque el incentivo empuja al revés. Borrar duele y se
+nota; poblar de más no rompe nada, sube el conteo y sube el `healthScore`. Por eso
+la norma que gobierna este modo es
+[AP-45](#ap-45--cobertura-sin-evidencia-la-nota-existe-para-llenar-la-sección):
+una nota se escribe porque hay algo que afirmar, no porque una sección esté vacía.
+
+Las otras dos: **el proyecto se lee, nunca se escribe** —la única superficie de
+escritura es el vault destino—, y **lo reconstruido nace `stub` o `draft`, nunca
+`implemented`**, porque una nota deducida del código no la ha revisado nadie y
+marcarla como revisada deja el vault incorrecto y con aspecto de correcto.
+
+### El orden importa: migrar antes de poblar
+
+Si el proyecto ya tenía documentación suelta, `vault_migrate_docs` corre **antes**
+que `vault_onboard`. Al revés, el onboard vuelve a escribir desde el código lo que
+ya estaba escrito a mano — y lo escribe peor, porque lo deduce en vez de saberlo.
+
+### Las decisiones que ninguna tool toma
+
+Un **commit no es un ADR**: un ADR documenta una decisión con alternativas
+descartadas, y la mayoría de los commits importantes implementan una decisión ya
+tomada. Si del mensaje no sale un título que nombre la decisión, no hay decisión que
+documentar — cinco ADRs llamados `adr-00N-retroactivo` no se distinguen entre sí,
+que es AP-07 por la vía del nombre.
+
+Un **`TODO` no es una nota de observabilidad**: es un `TODO`, y en el código se lee
+mejor. Lo que sí es nota es el inventario —cuántos hay y dónde se concentran—,
+porque eso es una observación sobre el proyecto y no está en ningún fichero.
+
+Un **módulo no merece nota por existir**: el umbral es que otra cosa lo referencie.
+Una nota sin aristas no es memoria, es un fichero. Y dos ficheros pueden ser un solo
+módulo para Obsidian (`browserManager.ts` y `browser-manager.ts` resuelven al mismo
+wikilink): se deduplican por `vault_io.normalize_stem`, el criterio del consumidor,
+no por comparación de cadenas, que es el del generador.
+
+El **tope de historia es un parámetro, no un hecho**. `--max-commits 500` sobre un
+repo de 626 devolvía `total_commits: 500` con `warnings: []`, y con la ventana
+truncada la reconstrucción veía historia continua y devolvía **una** fase sobre
+cinco meses: una conclusión falsa con aspecto de dato. El tope alcanzado se declara,
+y las fases se separan por **tags** —donde el proyecto dijo «aquí cambió algo»— y no
+por huecos en el calendario, que en desarrollo continuo no existen.
+
+### Lo que el onboarding demostró sobre el propio estándar
+
+`vault_onboard` llevaba versiones publicada en este manifiesto, con su contrato
+documentado, y **no se había ejecutado nunca**:
+[AP-42](#ap-42--tool-publicada-sin-haberse-ejecutado-nunca) literal, dentro del
+repo que define la norma. La primera ejecución real, contra un repositorio ajeno,
+devolvió nueve defectos — y el peor no era ninguno por separado: las 54 notas que
+producía nacían **todas** en `missingType`. El estándar suspendía lo que su propia
+tool acababa de escribir, igual que los primers de `vault_init` bajo AP-44, pero a
+escala.
+
+Tras el saneamiento: 57 notas, `healthScore` 96, cero violaciones de norma, cero
+deuda de metadatos, 626 commits reales y tres fases con nombre. El criterio de
+aceptación es uno solo y está fijado en `tests/test_vault_onboard.py`, que corre la
+tool contra un repositorio con git real y afirma sobre **el vault resultante** —el
+audit, las normas, Mermaid— y no sobre el `ok: true` de la propia tool:
+
+> **Un vault recién onboardeado no necesita sanación.**
+
+---
+
 ## Protocolo de sesión para LLMs remotos
 
 > Esta sección aplica a agentes que operan via API remota (DeepSeek, GPT-4, Gemini, Claude API) o cualquier LLM cuyo harness no garantice que `vault_write` es la única interfaz de escritura — por ejemplo, harnesses que pasan herramientas de sistema de archivos directas, o agentes que escriben archivos sin pasar por el script de vault.
@@ -5581,6 +5737,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v39.1 | 2026-08-05 | Onboarding de proyectos sin vault: `vault_onboard` publicada y saneada (cierra AP-42 sobre sí misma), AP-45 (cobertura sin evidencia), registro único de secciones, `docs/MODO-AGENTICO-ONBOARDING.md` |
 | v39.0 | 2026-07-25 | Marco de Datos y Gobernanza explícito (CIA, F1–F8, 9 dimensiones DQ, FAIR, V's del Big Data, ISO, matriz de trazabilidad), `vault_fundamentals --framework/--matrix`, guard anti-drift `vault_norms --check-framework`, política de no-derogación, changelog consolidado |
 
 ### Cómo inicializar el estándar en un vault nuevo (v28)
@@ -5893,6 +6050,24 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v39.1 — 2026-08-05 `git: pending`
+
+**Poblar un vault desde un proyecto existente — `vault_onboard` publicada y saneada, AP-45**
+
+**Agregado**
+- **`vault_onboard` en el catálogo MCP** (Grupo 31 — Bootstrap), con contrato en `00_System/tool-spec.json` (`internal` → `active`), sección en `scripts/README.md`, ejecución en `vault_smoke` y `tests/test_vault_onboard.py`. Cierra **AP-42 sobre sí misma**: la tool llevaba versiones documentada en este manifiesto y no se había ejecutado nunca. La primera ejecución real, contra un repositorio ajeno al estándar, devolvió nueve defectos, y el peor no era ninguno por separado — **las 54 notas que producía nacían todas en `missingType`**: el estándar suspendía lo que su propia tool acababa de escribir. Ninguno se habría visto contra `vault-sandbox/` (corolario de AP-44).
+- **`AP-45` — cobertura sin evidencia: la nota existe para llenar la sección** (high, `guard+audit`): una nota se crea porque una sección estaba vacía, no porque hubiera algo que afirmar; su cuerpo son encabezados y marcadores de pendiente y no enlaza con nada. Sube la cobertura y baja la fiabilidad. **Es más cara que la ausencia, porque la ausencia sí se ve**: un hueco invita a llenarlo, un relleno declara que ya está hecho. El guard exige las **dos** condiciones —cuerpo vacío tras quitar andamiaje **y** sin wikilinks salientes—, porque cada una por separado tiene usos legítimos: una nota de puros enlaces es un índice temático, un primer con `status: template` es andamiaje declarado, un índice de sección vacío refleja la sección y reportarlo es culpar al espejo. El marcador se reconoce como **línea entera**, no por prefijo: el primer intento sí lo hacía y se tragaba «Pendiente de revisar el retry, pero el flujo ya está descrito arriba» —una frase que afirma dos cosas—, que es el mismo defecto de `PLACEHOLDER_PATTERNS` en `vault_audit`, o sea AP-44 otra vez. `tests/test_ap45_cobertura_sin_evidencia.py` (20 tests), la mitad dedicados a la frontera. Contrastada contra seis vaults ajenos: cero falsos positivos.
+- **Modo agéntico de onboarding (`docs/MODO-AGENTICO-ONBOARDING.md`).** Contraparte del modo de sanación, y con la regla invertida: allí **nada se borra**, aquí **nada se inventa** — y es más difícil, porque el incentivo empuja al revés (borrar duele y se nota; poblar de más sube el conteo y el health score). Documenta el orden —`vault_migrate_docs` **antes** que `vault_onboard`, para que el onboard no reescriba peor lo que ya estaba escrito a mano— y las decisiones que ninguna tool toma: un commit no es un ADR, un `TODO` no es una nota de observabilidad —lo es el inventario—, un módulo no merece nota por existir sino porque otra cosa lo referencie, y lo reconstruido nace `stub` o `draft`, nunca `implemented`.
+
+**Corregido**
+- **Cuatro secciones invisibles en el grafo.** `vault_graph`, `vault_delta` y `vault_graph_merge` llevaban `VAULT_SECTIONS` congelada en 18 de 22: las notas de `17_Preferences`, `18_Bugs`, `19_Audits` y `20_Quarantine` **no existían en `graph.json`** — ni como nodo, ni como enlace, ni como hallazgo. Derivadas ahora de `vault_registry.ORDERED_SECTIONS`, junto con `vault_folder_registry.STANDARD_SECTIONS` (13 de 22) y las listas embebidas de `vault_write._SECTION_TYPE_MAP` y `vault_audit._SECTION_TOOL_HINT`. `tests/test_registry_derivation.py` añade el guard que caza la enumeración **incompleta** —casi todas las secciones y justo las últimas ausentes—, que es la forma en que esta deriva pasa desapercibida: no rompe nada, solo deja la sección nueva sin tratar.
+- **Los nueve defectos de `vault_onboard`**, en el orden en que se encadenaban: frontmatter sin `type:` (las 54 notas en `missingType`); escritura sin releer, ahora verificada con `yaml.safe_load` desde el disco (AP-44); ocho conceptos de relleno y cinco ADRs `adr-00N-retroactivo` sin nombre, ahora omitidos y **declarados** en `skipped_no_evidence` (AP-45, AP-07); `--max-commits` presentado como hecho del proyecto —`total_commits: 500` con `warnings: []` sobre un repo de 626—, con el efecto de que la reconstrucción devolvía **una** fase sobre cinco meses; fases separadas ahora por **tags**, donde el proyecto dijo que algo cambió, y no por huecos de calendario que en desarrollo continuo no existen; un contribuidor inventado por un `|` en el asunto de un commit; README con BOM leído con `utf-8-sig` y validado contra la ruta del proyecto; módulos duplicados (`browsermanager` y `browser-manager`) deduplicados por `vault_io.normalize_stem`, el criterio del consumidor; diagramas validados con `vault_mermaid_check` antes de escribirse; y 12 de 22 secciones tocadas, ahora 17 más tres vacías por diseño. Resultado medido sobre el mismo repositorio: **57 notas, `healthScore` 96, cero violaciones de norma, cero deuda de metadatos, 626 commits reales, tres fases con nombre.**
+- **Conflicto entre AP-03 y AP-45 resuelto.** `AP-03` penalizaba los índices de sección vacíos, pero `18_Bugs`, `19_Audits` y `20_Quarantine` están dirigidas por eventos y estar vacías es su estado correcto mientras no haya pasado nada: una norma pedía llenar lo que la otra prohíbe inventar. `vault_audit._SECCIONES_POR_EVENTO` lo resuelve a favor de AP-45, y las tools que pueblan un vault declaran ese vacío en `sections_left_empty_by_design`. **El vacío declarado es información; el vacío sin declarar es ambiguo, y por eso se rellena.**
+
+**Sin cambios de contrato.** Ninguna tool, norma ni sección eliminada. `vault_folder_registry.STANDARD_SECTIONS` conserva su nombre como alias derivado.
 
 ---
 

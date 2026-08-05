@@ -10,13 +10,13 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | Ruta | Qué es |
 |---|---|
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~6.000 líneas). Fuente normativa. |
-| `scripts/*.py` | ~110 scripts, 88 tools activas en 36 grupos. Sin dependencias fuera de stdlib + PyYAML. |
+| `scripts/*.py` | ~110 scripts, 89 tools activas en 36 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (1263 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (1296 tests). Toda norma con guard debe tener test. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
 | `vault-sandbox/` | **Único** vault de pruebas del repo. Todo runtime va aquí. |
-| `docs/` | SDD, skills y `MODO-AGENTICO-SANACION.md` (procedimiento de 12 fases para sanar un vault preexistente). |
+| `docs/` | SDD, skills, `MODO-AGENTICO-SANACION.md` (12 fases para sanar un vault preexistente) y `MODO-AGENTICO-ONBOARDING.md` (7 fases para poblar uno desde un proyecto sin vault). Allí la regla es *nada se borra*; aquí, **nada se inventa**. |
 
 ---
 

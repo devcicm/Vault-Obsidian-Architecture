@@ -199,3 +199,59 @@ def test_la_version_actual_es_la_ultima_del_orden():
         f"CURRENT_VERSION={vsu.CURRENT_VERSION} pero VERSION_ORDER termina en "
         f"{vsu.VERSION_ORDER[-1]}"
     )
+
+
+# ─── Secciones: una sola fuente ──────────────────────────────────────────────
+
+
+def test_ningun_modulo_declara_su_propia_lista_de_secciones():
+    """`vault_registry.SECTIONS` es la única verdad sobre qué secciones hay.
+
+    `vault_folder_registry` tenía la suya, congelada en 13 mientras el estándar
+    ya iba por 22: las carpetas personalizadas dentro de las 9 secciones que
+    faltaban eran invisibles para la detección y para la indexación. Un
+    duplicado no falla al crearse — falla en silencio meses después, cuando la
+    fuente real crece y la copia no.
+
+    El chequeo es sobre el código: ningún módulo puede volver a escribir un
+    literal con nombres de sección numerados.
+    """
+    canonicas = set(vault_registry.ORDERED_SECTIONS)
+
+    import vault_folder_registry as vfr
+
+    assert set(vfr.STANDARD_SECTIONS) == canonicas, (
+        "vault_folder_registry.STANDARD_SECTIONS divergió del registro canónico"
+    )
+
+    # Un mapa `{"03_Decisions": "adr", ...}` con unas cuantas secciones es
+    # legítimo: asocia un dato a la sección, no redefine cuáles hay. Lo que no
+    # puede existir es una COPIA de la lista — un módulo que enumera casi todas
+    # las secciones sin derivarlas. Ese es el que se queda atrás cuando el
+    # registro crece, y es exactamente lo que le pasó a
+    # `vault_folder_registry`: 13 de 22, en silencio, durante nueve secciones.
+    patron = re.compile(r'["\'](?:0\d|1\d|2\d|99)_[A-Z][A-Za-z_]*["\']')
+    exentos = {"vault_registry.py", "vault_standard_upgrade.py"}
+    # Enumerar todas las secciones es legítimo cuando cada una lleva un valor
+    # propio —el mapa sección→tipo de `vault_write`, el mapa sección→comando de
+    # `vault_audit`—: eso no se puede derivar, porque el dato no está en el
+    # registro. Lo que delata la deriva es la enumeración **incompleta**: casi
+    # todas las secciones, y justo las últimas ausentes. Ese hueco es el que
+    # nadie ve, porque no rompe nada — solo deja la sección nueva sin tratar.
+    umbral = 0.8 * len(canonicas)
+    culpables = {}
+
+    for py in sorted((REPO_ROOT / "scripts").glob("vault_*.py")):
+        if py.name in exentos:
+            continue
+        texto = py.read_text(encoding="utf-8", errors="ignore")
+        if "from vault_registry import" in texto or "import vault_registry" in texto:
+            continue
+        nombres = {m.strip("\"'") for m in patron.findall(texto)} & canonicas
+        if umbral <= len(nombres) < len(canonicas):
+            culpables[py.name] = sorted(canonicas - nombres)
+
+    assert not culpables, (
+        "módulos que enumeran casi todas las secciones y se dejan algunas "
+        f"fuera (derivar de vault_registry o completar el mapa): {culpables}"
+    )

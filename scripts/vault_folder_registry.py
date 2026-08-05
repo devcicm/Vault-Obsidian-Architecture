@@ -23,27 +23,24 @@ from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
 from vault_io import VAULT_ROOT
+from vault_registry import ORDERED_SECTIONS
 
 
 SYSTEM_DIR = VAULT_ROOT / "00_System"
 REGISTRY_FILE = SYSTEM_DIR / "custom-folders.json"
 
 
-STANDARD_SECTIONS = {
-    "00_System",
-    "01_Projects",
-    "02_Observability",
-    "03_Decisions",
-    "04_Sessions",
-    "05_Patterns",
-    "06_Diagrams",
-    "07_Knowledge",
-    "08_Runbooks",
-    "09_Infrastructure",
-    "10_Migrated",
-    "11_Code",
-    "99_Index",
-}
+# Derivado, no declarado. Esta lista era una copia literal congelada en 13
+# secciones mientras el estándar ya tenía 22: las carpetas personalizadas
+# dentro de `12_Bibliography`, `13_Flows`, `14_Requirements`, `15_Tests`,
+# `16_AI_Governance`, `17_Preferences`, `18_Bugs`, `19_Audits` y
+# `20_Quarantine` eran invisibles para la detección y para la indexación.
+#
+# La fuente única de "qué secciones tiene un vault" es `vault_registry.SECTIONS`
+# —la que ya consumen `vault_init` y `vault_master_index`—. El nombre se
+# conserva (no-derogación): quien importe `STANDARD_SECTIONS` sigue teniendo
+# el mismo contrato, ahora sin poder desincronizarse.
+STANDARD_SECTIONS = frozenset(ORDERED_SECTIONS)
 
 
 def get_registry() -> Dict[str, Any]:

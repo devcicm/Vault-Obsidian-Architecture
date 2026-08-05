@@ -1840,20 +1840,47 @@
       "fundamentals": []
     },
     "vault_onboard": {
-      "group": "Versionado",
-      "group_id": 22,
-      "status": "internal",
+      "group": "Bootstrap",
+      "group_id": 31,
+      "status": "active",
       "required_args": [
         "--project",
         "--path"
       ],
-      "declared_returns": [],
+      "declared_returns": [
+        "created",
+        "discovered",
+        "dry_run",
+        "git_history",
+        "merge_stats",
+        "next_steps",
+        "ok",
+        "path_scanned",
+        "project",
+        "sections_left_empty_by_design",
+        "skipped_no_evidence",
+        "timestamp",
+        "tool",
+        "vault_says",
+        "warnings"
+      ],
       "dq": {
-        "dq_dimensions": [],
-        "cia_scope": [],
+        "dq_dimensions": [
+          "completeness",
+          "accuracy",
+          "traceability"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
         "propagation_aware": false
       },
-      "fundamentals": []
+      "fundamentals": [
+        "F1",
+        "F2",
+        "F3",
+        "F6"
+      ]
     },
     "vault_pattern_list": {
       "group": "Patrones",

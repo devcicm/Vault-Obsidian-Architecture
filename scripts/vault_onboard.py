@@ -43,8 +43,26 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from vault_errors import wrap_main
 from vault_lib import utcnow
-from vault_io import VAULT_ROOT, assert_within_vault, atomic_write_text
+from vault_io import VAULT_ROOT, assert_within_vault, atomic_write_text, normalize_stem
 from vault_norms import compute_norm_refs
+from vault_registry import ORDERED_SECTIONS
+from vault_write import _deduce_type_from_folder
+
+#: Secciones que un onboard NO puebla, con el motivo de cada una. Se derivan
+#: restándolas de `ORDERED_SECTIONS`, para que una sección nueva del registro
+#: entre sola en el recorrido en vez de quedarse fuera en silencio — que es
+#: como `vault_folder_registry` se quedó en 13 de 22 durante nueve secciones.
+#: Las tres primeras están dirigidas por eventos: llenarlas al arrancar sería
+#: inventar bugs, auditorías y cuarentenas que no han ocurrido (AP-45).
+_SECCIONES_NO_POBLADAS: Dict[str, str] = {
+    "00_System": "la crea y la mantiene vault_init, no el onboard",
+    "10_Migrated": "la puebla vault_migrate_docs, que corre antes que esto",
+    "99_Index": "la generan los índices, no se escribe a mano",
+    "12_Bibliography": "se puebla con referencias externas reales",
+    "18_Bugs": "se puebla cuando aparece un bug (vault_bug_save)",
+    "19_Audits": "se puebla al ejecutar una auditoría (vault_tags --audit)",
+    "20_Quarantine": "se puebla cuando algo entra en cuarentena",
+}
 
 # ── Language / extension maps ─────────────────────────────────────────────────
 
@@ -201,18 +219,33 @@ SNAP_BRANCH_PATTERN = re.compile(
 
 
 def _parse_commits(raw: str) -> List[Dict[str, Any]]:
+    """Parsea `%H|%ai|%s|%an`.
+
+    El asunto del commit es el ÚNICO campo que puede contener el separador, así
+    que se acota por los dos extremos: hash y fecha por la izquierda, autor por
+    la derecha, y lo de en medio es el mensaje entero venga como venga. Con un
+    `split(maxsplit=3)` un commit como «fix: contain | validated responsive»
+    partía por el pipe y el autor salía como `validated responsive|Carlos Ivan
+    CM` — un contribuidor inventado en la lista de contribuidores del proyecto.
+    """
     commits = []
     for line in raw.splitlines():
-        parts = line.split("|", 3)
-        if len(parts) == 4:
-            commits.append(
-                {
-                    "hash": parts[0][:8],
-                    "date": parts[1][:10],
-                    "message": parts[2].strip(),
-                    "author": parts[3].strip(),
-                }
-            )
+        cabeza = line.split("|", 2)
+        if len(cabeza) != 3:
+            continue
+        hash_, fecha, resto = cabeza
+        if "|" in resto:
+            mensaje, autor = resto.rsplit("|", 1)
+        else:
+            mensaje, autor = resto, ""
+        commits.append(
+            {
+                "hash": hash_[:8],
+                "date": fecha[:10],
+                "message": mensaje.strip(),
+                "author": autor.strip(),
+            }
+        )
     return commits
 
 
@@ -399,9 +432,28 @@ def _extract_git_history(project_path: Path, max_commits: int = 500) -> Dict[str
     all_commits_unified = commits_all + reflog_commits
     all_commits_unified.sort(key=lambda c: c.get("date", ""), reverse=True)
 
+    # Tope declarado, no silencioso. `git log -n500` sobre un repo de 2.000
+    # commits devuelve 500 y ningún aviso: la tool informaba `total_commits:
+    # 500` con `warnings: []` y detectaba UNA fase sobre cinco meses de
+    # historia, porque los commits antiguos —los que separan las fases— eran
+    # justo los cortados. La cifra parecía un hecho del proyecto y era un
+    # parámetro de la invocación.
+    ventana_truncada = len(commits_all) >= max_commits
+    avisos: List[str] = []
+    if ventana_truncada:
+        avisos.append(
+            f"La historia se leyó con --max-commits={max_commits} y se alcanzó el "
+            f"tope: hay commits anteriores sin mirar, así que `total_commits` es "
+            "el tope y no el total, y las fases detectadas cubren solo esa "
+            "ventana. Repite con --max-commits mayor para la historia completa."
+        )
+
     return {
         "is_git": True,
         "current_branch": current_branch,
+        "window_truncated": ventana_truncada,
+        "max_commits": max_commits,
+        "warnings": avisos,
         "first_commit": {"date": true_first_date, "message": "", "author": ""},
         "last_commit": commits_all[0] if commits_all else None,
         "apparent_first_date": apparent_first_date,
@@ -494,6 +546,14 @@ def _detect_phases(
 
     months = sorted(by_month.keys())
 
+    # Un tag es el proyecto declarando «aquí pasó algo». Es la mejor evidencia
+    # de frontera que existe, y mejor que el calendario: el hueco de meses solo
+    # detecta el abandono, así que un proyecto en desarrollo continuo salía
+    # SIEMPRE como una sola fase —626 commits y seis meses comprimidos en una
+    # nota de sesión, con cinco tags que marcaban los hitos siendo ignorados
+    # para partir y usados solo para etiquetar—.
+    meses_con_tag = {t["date"][:7] for t in history.get("tags", []) if t.get("date")}
+
     # Merge close months — if gap ≤ 1 month, keep as same phase
     phases = []
     current: List[str] = []
@@ -504,7 +564,7 @@ def _detect_phases(
             prev_year, prev_mon = int(months[i - 1][:4]), int(months[i - 1][5:7])
             cur_year, cur_mon = int(month[:4]), int(month[5:7])
             gap = (cur_year - prev_year) * 12 + (cur_mon - prev_mon)
-            if gap <= 1:
+            if gap <= 1 and month not in meses_con_tag:
                 current.append(month)
             else:
                 phases.append(current)
@@ -656,14 +716,40 @@ def _read_csproj(project_path: Path) -> Dict[str, Any]:
     return {}
 
 
+#: Título H1 del README leído. Se guarda para poder contrastarlo con el nombre
+#: del proyecto: el README es la fuente de la descripción y de las notas de
+#: conocimiento, así que si describe otra cosa, TODO lo derivado describe otra
+#: cosa. Es el caso real de BuilderX, cuyo repositorio contiene en la raíz una
+#: copia del README del estándar: 8 conceptos correctos sobre el proyecto
+#: equivocado, que es la clase de error que nadie revisa porque parece contenido.
+_README_H1: List[str] = []
+
+
 def _read_readme(project_path: Path) -> Tuple[str, List[str]]:
-    """Returns (excerpt, list_of_H2_headers)."""
+    """Returns (excerpt, list_of_H2_headers).
+
+    El README se lee del proyecto escaneado y de ningún otro sitio: se resuelve
+    la ruta y se comprueba que cuelga de `project_path` antes de leerla, porque
+    un enlace simbólico o un `--path` relativo mal resuelto metía la descripción
+    de otro proyecto en la nota de overview —y una descripción equivocada es
+    peor que ninguna: nadie la revisa, porque parece contenido—.
+
+    `utf-8-sig` en vez de `utf-8`: el BOM que Windows antepone se colaba como
+    primer carácter de `description:` y viajaba al frontmatter.
+    """
+    project_path = project_path.resolve()
     for fname in ("README.md", "Readme.md", "readme.md"):
         fp = project_path / fname
         if not fp.exists():
             continue
         try:
-            text = fp.read_text(encoding="utf-8", errors="replace")
+            if fp.resolve().parent != project_path:
+                continue  # symlink fuera del proyecto: no es su README
+            text = fp.read_text(encoding="utf-8-sig", errors="replace")
+            _README_H1.clear()
+            h1 = re.search(r"^#\s+(.+)$", text, re.MULTILINE)
+            if h1:
+                _README_H1.append(h1.group(1).strip())
             headers = re.findall(r"^## (.+)$", text, re.MULTILINE)
             lines = [
                 l for l in text.splitlines() if l.strip() and not l.startswith("#")
@@ -747,7 +833,26 @@ def _scan_modules(
             return (len(MODULE_PRIORITY), -m["size_lines"])
 
     found.sort(key=_priority)
-    return found[:max_modules]
+
+    # Deduplicar con el criterio del vault, no con el del sistema de ficheros.
+    # `BrowserManager.ts` y `browser-manager.ts` son dos ficheros distintos para
+    # el disco y la MISMA nota para Obsidian —`normalize_stem` es lo que ya usa
+    # el resto del estándar para decidirlo—. Sin esto el onboard escribía
+    # `11_Code/x/browsermanager.md` y `browser-manager.md`: dos notas para un
+    # módulo, cada una con la mitad de los enlaces entrantes.
+    #
+    # Se queda la de mayor prioridad, que es la primera tras el sort: el orden
+    # ya expresa cuál de las dos describe mejor el módulo.
+    unicos: List[Dict] = []
+    vistos: set = set()
+    for m in found:
+        clave = normalize_stem(m["slug"])
+        if clave in vistos:
+            continue
+        vistos.add(clave)
+        unicos.append(m)
+
+    return unicos[:max_modules]
 
 
 # ── Infrastructure scanner ────────────────────────────────────────────────────
@@ -815,6 +920,36 @@ def _existing_h2_sections(text: str) -> set:
     return set(re.findall(r"^## (.+)$", text, re.MULTILINE))
 
 
+def _verificar_releyendo(vault_path: Path) -> None:
+    """Relee del disco y valida el frontmatter con el criterio del consumidor.
+
+    Corolario de AP-44 aplicado al generador: esta tool construye el
+    frontmatter a mano, concatenando líneas. Verificar que la concatenación
+    salió bien mirando las líneas que acaba de concatenar no verifica nada —el
+    error estaría en los dos lados—. Lo que decide es si `yaml.safe_load` lo
+    lee, que es lo que hacen Obsidian y el resto del estándar, y si trae los
+    campos que `vault_audit` exige.
+
+    Falla ruidosamente: una nota con frontmatter ilegible es peor que ninguna
+    nota, porque el siguiente write path le antepone un segundo bloque.
+    """
+    import yaml
+
+    texto = vault_path.read_text(encoding="utf-8")
+    m = re.match(r"^---\n(.*?)\n---", texto, re.DOTALL)
+    if not m:
+        raise ValueError(f"{vault_path.name}: se escribió sin frontmatter delimitado")
+    try:
+        fm = yaml.safe_load(m.group(1))
+    except yaml.YAMLError as exc:
+        raise ValueError(f"{vault_path.name}: frontmatter ilegible para YAML: {exc}")
+    if not isinstance(fm, dict):
+        raise ValueError(f"{vault_path.name}: el frontmatter no es un mapa YAML")
+    faltan = [c for c in ("title", "type", "status", "tags", "updatedAt") if not fm.get(c)]
+    if faltan:
+        raise ValueError(f"{vault_path.name}: frontmatter sin {faltan}")
+
+
 def _merge_stub(vault_path: Path, new_content: str, dry_run: bool) -> str:
     """
     Create the file if missing. If it exists, append only missing ## sections.
@@ -828,6 +963,7 @@ def _merge_stub(vault_path: Path, new_content: str, dry_run: bool) -> str:
 
     if not vault_path.exists():
         atomic_write_text(vault_path, new_content)
+        _verificar_releyendo(vault_path)
         return "created"
 
     existing = vault_path.read_text(encoding="utf-8", errors="replace")
@@ -848,6 +984,7 @@ def _merge_stub(vault_path: Path, new_content: str, dry_run: bool) -> str:
 
     merged = existing.rstrip() + "\n\n" + "\n\n".join(to_add) + "\n"
     atomic_write_text(vault_path, merged)
+    _verificar_releyendo(vault_path)
     return "merged"
 
 
@@ -863,10 +1000,17 @@ def _make_frontmatter(
 ) -> str:
     now = utcnow()
     norm_refs = compute_norm_refs(folder, content, [])
+    # `type:` lo exige `vault_audit._detect_missing_metadata`, y sin él las 54
+    # notas de un onboard nacían en `missingType`: el estándar reprobaba lo que
+    # su propia tool acababa de escribir. No se declara aquí una tabla nueva
+    # —eso sería una segunda verdad— sino que se deriva del mismo mapa
+    # sección→tipo que usa el write path canónico.
+    tipo = extra.get("type") or _deduce_type_from_folder(folder)
     lines = [
         "---",
         f"title: {title}",
         f"id: {uuid.uuid4()}",
+        f"type: {tipo}",
         f"createdAt: {now}",
         f"updatedAt: {now}",
         f"tags: {json.dumps(tags)}",
@@ -877,12 +1021,78 @@ def _make_frontmatter(
         f"cia_sensitivity: {extra.get('cia_sensitivity', 'internal')}",
         f"agent: {extra.get('agent', 'claude')}",
     ]
-    skip = {"cia_integrity", "cia_availability", "cia_sensitivity", "agent"}
+    skip = {"cia_integrity", "cia_availability", "cia_sensitivity", "agent", "type"}
     for k, v in extra.items():
         if k not in skip:
             lines.append(f"{k}: {json.dumps(v) if not isinstance(v, str) else v}")
     lines.append("---")
     return "\n".join(lines)
+
+
+#: Notas que el onboard no escribió por falta de evidencia (AP-45). Se vacía al
+#: principio de cada `vault_onboard()` y sale en `warnings` y `next_steps`: el
+#: hueco declarado es información; el stub que lo tapa es desinformación.
+_SIN_EVIDENCIA: List[Dict[str, str]] = []
+
+
+def _tiene_evidencia(body: str) -> bool:
+    """¿El cuerpo afirma algo, o es andamiaje anunciando lo que no hay?
+
+    Mismo criterio exacto que aplica AP-45 en `vault_norms --audit`, importado
+    en vez de reimplementado: si el generador midiera con un criterio propio y
+    el audit con otro, la tool volvería a certificarse a sí misma (AP-44) y el
+    vault recién creado saldría reprobado por el estándar que lo creó.
+    """
+    from vault_lib import extract_wikilinks
+    from vault_norms import _cuerpo_sin_marcadores
+
+    return bool(extract_wikilinks(body) or _cuerpo_sin_marcadores(body))
+
+
+#: Prefijo de commit convencional: `feat(scope):`, `fix:`, `chore:`… Es
+#: metadato de proceso, no nombre de decisión.
+_PREFIJO_CONVENCIONAL = re.compile(
+    r"^\s*(?:feat|fix|chore|docs|refactor|test|perf|build|ci|style|revert)"
+    r"(?:\([^)]*\))?!?\s*:\s*",
+    re.IGNORECASE,
+)
+
+
+def _asunto_util(mensaje: str) -> str:
+    """El asunto del commit si nombra algo; cadena vacía si no.
+
+    Quita el prefijo convencional y descarta los asuntos que no distinguen un
+    commit de otro (`wip`, `fix`, `update`, `cambios`). Sin esto, cinco ADRs
+    salían como `adr-002-retroactivo` … `adr-006-retroactivo`: numerados,
+    indistinguibles y sin decir qué se decidió — AP-07.
+    """
+    asunto = _PREFIJO_CONVENCIONAL.sub("", (mensaje or "").splitlines()[0] if mensaje else "")
+    asunto = asunto.strip().strip(".").strip()
+    vacios = {
+        "wip", "fix", "fixes", "update", "updates", "cambios", "cambio", "misc",
+        "minor", "cleanup", "tweaks", "stuff", "varios", "ajustes", "test",
+    }
+    if len(asunto) < 12 or asunto.lower() in vacios:
+        return ""
+    return asunto
+
+
+def _errores_mermaid(diagrama: str) -> List[str]:
+    """Errores de sintaxis según `vault_mermaid_check`, la gramática real.
+
+    Se consulta al validador del estándar en vez de confiar en que el generador
+    escribió bien —es AP-44: el generador y su comprobación serían el mismo
+    criterio, ciego al mismo fallo—.
+    """
+    try:
+        from vault_mermaid_check import validate_mermaid
+    except ImportError:
+        return []
+    return [
+        str(e.get("message") or e)
+        for e in validate_mermaid(diagrama)
+        if str(e.get("severity", "error")).lower() == "error"
+    ]
 
 
 def _write(
@@ -894,12 +1104,22 @@ def _write(
     body: str,
     dry_run: bool,
 ) -> Tuple[str, str]:
+    path = VAULT_ROOT / folder / filename
+    rel = str(path.relative_to(VAULT_ROOT)).replace("\\", "/")
+
+    # AP-45: no hay nota sin algo que afirmar. Un onboard sobre un proyecto real
+    # emitía 8 conceptos cuyo cuerpo entero era `_Pendiente. Leer la sección del
+    # README._`; para el conteo eran cobertura y para quien las abría eran nada.
+    # No escribirlas no pierde información: la pierde escribirlas, porque una
+    # sección vacía invita a llenarla y una llena de stubs declara que ya está.
+    if not _tiene_evidencia(body):
+        _SIN_EVIDENCIA.append({"path": rel, "title": title})
+        return rel, "skipped_no_evidence"
+
     content = body
     fm = _make_frontmatter(title, folder, tags, extra, content)
     full = fm + "\n\n" + body
-    path = VAULT_ROOT / folder / filename
     action = _merge_stub(path, full, dry_run)
-    rel = str(path.relative_to(VAULT_ROOT)).replace("\\", "/")
     return rel, action
 
 
@@ -1026,8 +1246,8 @@ Ver ADR de arqueologia: [[adr-001-historia-oculta-branch-archaeology]]
 
 - Verificar descripción y stack con el equipo
 - {"Revisar historia oculta en [[adr-001-historia-oculta-branch-archaeology]]" if hidden_history else "Completar base de datos, caches, queues"}
-- Revisar ADRs en [[03_Decisions]]
-- Ver módulos en [[11_Code]]
+- Revisar ADRs en [[03_Decisions/index]]
+- Ver módulos en [[11_Code/index]]
 """
     return [
         _write(
@@ -1035,7 +1255,18 @@ Ver ADR de arqueologia: [[adr-001-historia-oculta-branch-archaeology]]
             "overview.md",
             f"{project} — Overview",
             ["project", "overview", project],
-            {"agent": agent, "project": project},
+            {
+                "agent": agent,
+                "project": project,
+                # El fichero se llama `overview.md` —igual que el overview de
+                # cualquier otro proyecto—, así que el resto de notas lo enlazan
+                # como `[[<proyecto>-overview]]`, que es el nombre que lo
+                # identifica. Obsidian resuelve por nombre de fichero y por
+                # `aliases:`, nunca por `title:`: sin este alias los 8 enlaces
+                # entrantes quedaban rotos para quien lee el vault y resueltos
+                # para las tools, que es justo el fallo que castiga AP-44.
+                "aliases": [f"{_slug(project)}-overview"],
+            },
             body,
             dry_run,
         )
@@ -1219,12 +1450,28 @@ git log {current_branch}...<nombre-rama-snap> --oneline
 
     # From key commits (decision keywords)
     for commit in history.get("key_commits", [])[:5]:
-        title = f"ADR-{adr_counter[0]:03d} — {commit['message'][:60]} (retroactivo)"
+        # Un ADR se llama por lo que decidió. `adr-002-retroactivo` no nombra
+        # nada: es AP-07, y en cuanto hay dos el nombre deja de distinguirlos.
+        # El nombre sale del asunto del commit, que es lo único que se sabe.
+        asunto = _asunto_util(commit.get("message", ""))
+        if not asunto:
+            _SIN_EVIDENCIA.append(
+                {
+                    "path": f"03_Decisions/adr-{adr_counter[0]:03d}",
+                    "title": commit.get("message", "")[:60],
+                    "reason": (
+                        "el asunto del commit no describe una decisión "
+                        "nombrable; queda en el historial, no como ADR"
+                    ),
+                }
+            )
+            continue
+
+        title = f"ADR-{adr_counter[0]:03d} — {asunto[:60]} (retroactivo)"
         body = f"""# {title}
 
 **Fecha detectada:** {commit["date"]} (commit `{commit.get("hash", "?")}`)
 **Autor:** {commit.get("author", "—")}
-**Status:** implemented
 
 ## Contexto detectado
 
@@ -1233,11 +1480,15 @@ Fuente: historial git del proyecto
 
 ## Decisión
 
-_Pendiente de documentar. Leer el commit y enriquecer._
+Reconstruida del asunto del commit: {asunto}
+
+El commit registra el cambio; la decisión que lo motivó no está escrita en
+ningún sitio del proyecto. Esta nota nace `stub` a propósito: afirmar
+`implemented` declararía una revisión que nadie hizo.
 
 ## Consecuencias
 
-_Pendiente de verificar con el equipo._
+Sin verificar. Lo que consta es el cambio, no su efecto.
 
 ## Para enriquecer
 
@@ -1248,7 +1499,7 @@ python scripts/vault_write.py --folder 03_Decisions --title "{title}"
         results.append(
             _write(
                 "03_Decisions",
-                f"{_slug(f'adr-{adr_counter[0]:03d}-retroactivo')}.md",
+                f"{_slug(f'adr-{adr_counter[0]:03d}-{asunto[:48]}')}.md",
                 title,
                 ["adr", "retroactivo", project],
                 {"agent": agent, "project": project},
@@ -1463,11 +1714,36 @@ def _onboard_06_diagrams(
     for mod in modules[:20]:
         groups[mod["type"]].append(mod["name"])
 
+    # Identificador seguro + etiqueta legible. El nombre de un módulo real trae
+    # puntos, guiones y mayúsculas (`BrowserManager.impl`), y ponerlo crudo como
+    # id de nodo produce un diagrama que Mermaid no dibuja. El id se sanea; el
+    # nombre de verdad va en la etiqueta, donde no rompe nada y sí se lee.
+    def _nodo(texto: str) -> str:
+        ident = re.sub(r"[^A-Za-z0-9_]", "_", texto).strip("_") or "n"
+        if ident[0].isdigit():
+            ident = f"n_{ident}"
+        return f'{ident}["{texto}"]'
+
     mermaid_lines = ["graph TD"]
     for gtype, names in sorted(groups.items()):
         for name in names[:4]:
-            mermaid_lines.append(f"  {gtype} --> {name}")
+            mermaid_lines.append(f"  {_nodo(gtype)} --> {_nodo(name)}")
     mermaid = "\n".join(mermaid_lines)
+
+    # AP-44: validar con la gramática real de Mermaid, no con la confianza de
+    # quien generó el texto. El diagrama que no valida NO se escribe: una nota
+    # de `06_Diagrams` cuyo bloque no dibuja es peor que su ausencia, porque el
+    # índice la cuenta como diagrama y quien la abre ve un error de sintaxis.
+    errores = _errores_mermaid(mermaid)
+    if errores:
+        _SIN_EVIDENCIA.append(
+            {
+                "path": f"06_Diagrams/component/{_slug(project)}-architecture.md",
+                "title": f"{project} — Arquitectura de componentes",
+                "reason": f"el diagrama generado no valida contra Mermaid: {errores[0]}",
+            }
+        )
+        return []
 
     body = f"""# {project} — Arquitectura de componentes
 
@@ -2019,7 +2295,12 @@ python scripts/vault_test_save.py --project {project} \\
         results.append(
             _write(
                 f"15_Tests/{ttype}",
-                f"{_slug(project)}-inventory.md",
+                # El tipo va en el NOMBRE, no solo en la carpeta. Obsidian
+                # resuelve `[[builderx-inventory]]` por nombre de fichero, así
+                # que tres inventarios homónimos en `unit/`, `security/` y
+                # `performance/` son tres notas que se hacen sombra: el enlace
+                # cae en una cualquiera de las tres (AP-17).
+                f"{_slug(project)}-{_slug(ttype)}-inventory.md",
                 f"{project} — Tests {ttype}",
                 ["test", ttype, project],
                 {"agent": agent, "project": project, "test_type": ttype},
@@ -2029,6 +2310,133 @@ python scripts/vault_test_save.py --project {project} \\
         )
 
     return results
+
+
+def _onboard_16_governance(
+    project: str, meta: Dict, infra: Dict, agent: str, dry_run: bool
+) -> List[Tuple[str, str]]:
+    """Baseline de gobernanza: lo que el repo revela, no lo que debería tener.
+
+    La nota afirma hechos comprobables —si hay CI, si hay secretos declarados en
+    infra, qué dependencias entran— y nombra explícitamente lo que NO se sabe.
+    Decir "no consta quién revisa esto" es información; rellenarlo con un
+    `_Pendiente_` no lo es, y por eso lo segundo no se escribe (AP-45).
+    """
+    hechos = []
+    if infra.get("files"):
+        hechos.append(
+            f"- Infraestructura declarada en el repo: {', '.join(sorted(infra['files'])[:6])}"
+        )
+    if infra.get("env_vars"):
+        hechos.append(
+            f"- {len(infra['env_vars'])} variables de entorno referenciadas por el código"
+        )
+    if meta.get("all_deps"):
+        hechos.append(
+            f"- {len(meta['all_deps'])} dependencias de terceros entran en el producto"
+        )
+    if meta.get("license"):
+        hechos.append(f"- Licencia declarada: {meta['license']}")
+    if not hechos:
+        return []
+
+    body = f"""# {project} — Baseline de gobernanza
+
+> Levantado por vault_onboard leyendo el repositorio. Son hechos observados,
+> no una evaluación: nadie ha revisado este proyecto todavía.
+
+## Lo que consta en el repositorio
+
+{chr(10).join(hechos)}
+
+## Lo que no consta
+
+Ninguna de estas cosas está escrita en el proyecto, y por eso no hay nota que
+las afirme: quién es responsable del sistema, qué datos personales trata, con
+qué criterio se aceptan dependencias nuevas, y qué decisiones toma un modelo
+sin revisión humana.
+
+Son las cuatro preguntas que un baseline ISO/IEC 42001 abre. Responderlas es
+trabajo de una persona, no de un escáner.
+
+## Para enriquecer
+
+```bash
+python scripts/vault_ai_decision.py --project {project} \\
+  --title "<decisión>" --decision_type architecture
+python scripts/vault_privacy_save.py --project {project} --title "<tratamiento>"
+```
+"""
+    return [
+        _write(
+            "16_AI_Governance",
+            f"{_slug(project)}-baseline.md",
+            f"{project} — Baseline de gobernanza",
+            ["governance", "baseline", project],
+            {"agent": agent, "project": project, "cia_integrity": "high"},
+            body,
+            dry_run,
+        )
+    ]
+
+
+def _onboard_17_preferences(
+    project: str, meta: Dict, agent: str, dry_run: bool
+) -> List[Tuple[str, str]]:
+    """Contexto estable del proyecto: lo que un agente debe saber sin preguntar.
+
+    Solo se escriben las preferencias que el repositorio DEMUESTRA —el lenguaje
+    que domina, el gestor de paquetes que hay— porque una preferencia inventada
+    dirige el trabajo futuro hacia donde nadie decidió que fuera.
+    """
+    lineas = []
+    if meta.get("language"):
+        lineas.append(
+            f"- El código de este proyecto se escribe en **{meta['language']}**. "
+            "Se deduce de la extensión mayoritaria de los ficheros fuente."
+        )
+    if meta.get("framework"):
+        lineas.append(f"- El framework en uso es **{meta['framework']}**.")
+    if meta.get("package_manager"):
+        lineas.append(
+            f"- El gestor de paquetes es **{meta['package_manager']}**, "
+            "declarado por el lockfile presente en el repositorio."
+        )
+    if meta.get("runtime"):
+        lineas.append(f"- El runtime declarado es **{meta['runtime']}**.")
+    if not lineas:
+        return []
+
+    body = f"""# {project} — Contexto estable
+
+> Preferencias deducidas del repositorio por vault_onboard. Cada una tiene una
+> evidencia detrás; lo que el repo no demuestra, no está aquí.
+
+## Qué asumir al trabajar en este proyecto
+
+{chr(10).join(lineas)}
+
+## Cómo cambiarlas
+
+Estas notas las lee `vault_context_pack` al armar el contexto de una sesión, así
+que una preferencia equivocada se propaga a todo lo que venga después.
+
+```bash
+python scripts/vault_preferences.py --set --title "<preferencia>" \\
+  --statement "..." --strength should
+```
+"""
+    return [
+        _write(
+            "17_Preferences",
+            f"{_slug(project)}-contexto.md",
+            f"{project} — Contexto estable",
+            ["preference", "context", project],
+            {"agent": agent, "project": project, "strength": "should"},
+            body,
+            dry_run,
+        )
+    ]
 
 
 # ── Index update ──────────────────────────────────────────────────────────────
@@ -2077,6 +2485,7 @@ def vault_onboard(
 
     skip = set(skip or [])
     warnings: List[str] = []
+    _SIN_EVIDENCIA.clear()
     created: Dict[str, Any] = {}
     merge_stats = {"created": 0, "merged": 0, "skipped": 0, "dry_run": 0}
 
@@ -2099,6 +2508,23 @@ def vault_onboard(
     if not language:
         warnings.append("Lenguaje no detectado — usa --lang para indicarlo")
 
+    # ¿El README habla de este proyecto? No siempre: un repo puede llevar en la
+    # raíz el README de otra cosa (una copia propagada, una plantilla sin
+    # renombrar). No se puede decidir automáticamente cuál es el bueno, pero sí
+    # se puede decir que no cuadran — y eso basta, porque de ese fichero salen
+    # la descripción del overview y las notas de 07_Knowledge.
+    if _README_H1:
+        h1 = _README_H1[0]
+        if normalize_stem(project) not in normalize_stem(h1) and normalize_stem(
+            h1
+        ) not in normalize_stem(project):
+            warnings.append(
+                f"El README de la raíz se titula «{h1}», que no se parece a "
+                f"«{project}». La descripción y las notas de 07_Knowledge salen "
+                "de ese fichero: si describe otro proyecto, revísalas antes de "
+                "darlas por buenas."
+            )
+
     # 2. History
     if no_git:
         history = _extract_file_history(project_path)
@@ -2109,6 +2535,11 @@ def vault_onboard(
             warnings.append(
                 "No es un repo git — usando mtime de archivos para el historial"
             )
+
+    # El tope de lectura de historia deja de ser silencioso: si la ventana se
+    # truncó, `phases_detected` describe la ventana y no el proyecto, y eso hay
+    # que decirlo donde el usuario lo lee.
+    warnings.extend(history.get("warnings", []))
 
     phases = _detect_phases(history, max_phases=git_phases)
 
@@ -2160,28 +2591,39 @@ def vault_onboard(
         _record(_onboard_14_requirements(project, meta, agent, dry_run), "requirements")
     if "15" not in skip:
         _record(_onboard_15_tests(project, project_path, meta, agent, dry_run), "tests")
+    if "16" not in skip:
+        _record(
+            _onboard_16_governance(project, meta, infra, agent, dry_run), "governance"
+        )
+    if "17" not in skip:
+        _record(_onboard_17_preferences(project, meta, agent, dry_run), "preferences")
 
     # 5. Update indexes
     sections_to_index = [
         s
-        for s in [
-            "01_Projects",
-            "02_Observability",
-            "03_Decisions",
-            "04_Sessions",
-            "05_Patterns",
-            "06_Diagrams",
-            "07_Knowledge",
-            "08_Runbooks",
-            "09_Infrastructure",
-            "11_Code",
-            "13_Flows",
-            "14_Requirements",
-            "15_Tests",
-        ]
-        if not skip.intersection({s[:2]})
+        for s in ORDERED_SECTIONS
+        if s not in _SECCIONES_NO_POBLADAS and not skip.intersection({s[:2]})
     ]
     created["indexes_updated"] = _update_indexes(sections_to_index, dry_run)
+
+    # 6. Anotar el vocabulario introducido (AP-39). Un onboard mete de golpe
+    # decenas de términos nuevos —el lenguaje, el framework, los tipos de
+    # módulo, el nombre del proyecto— y sin bitácora quedan como vocabulario
+    # aparecido de la nada: nadie sabe quién los metió ni cuándo, y el siguiente
+    # que dude no tiene a qué agarrarse. Es la tool que los introduce la que
+    # tiene el contexto para anotarlos, y este es el único momento en que lo
+    # tiene.
+    if not dry_run:
+        try:
+            from vault_tags import vault_tags_backfill_ledger
+
+            r = vault_tags_backfill_ledger()
+            created["vocabulary_recorded"] = r.get("recorded", 0)
+        except (ImportError, TypeError, OSError) as exc:
+            warnings.append(
+                f"No se pudo anotar el vocabulario nuevo en la bitácora ({exc}): "
+                "correr `vault_tags --backfill-ledger` a mano (AP-39)."
+            )
 
     return {
         "ok": True,
@@ -2220,12 +2662,28 @@ def vault_onboard(
         },
         "created": created,
         "merge_stats": merge_stats,
+        # AP-45: lo que NO se escribió, y por qué. Es la mitad útil del informe.
+        # Un hueco nombrado dirige el siguiente trabajo; un stub que lo tapa
+        # hace creer que ya está hecho.
+        "skipped_no_evidence": list(_SIN_EVIDENCIA),
+        # Vacías a propósito, y por eso se declaran: son secciones dirigidas por
+        # eventos. Poblarlas en el arranque sería inventar bugs, auditorías y
+        # cuarentenas que no han ocurrido — exactamente AP-45.
+        "sections_left_empty_by_design": dict(_SECCIONES_NO_POBLADAS),
         "warnings": warnings,
         "next_steps": [
             f"vault_project_overview --project {project}  # enriquecer overview",
             "vault_code_module --project ... --file_path ...  # enriquecer módulos",
             "vault_audit  # verificar health score",
-        ],
+        ]
+        + (
+            [
+                f"Escribir a mano las {len(_SIN_EVIDENCIA)} notas que se omitieron "
+                "por falta de evidencia (ver skipped_no_evidence)"
+            ]
+            if _SIN_EVIDENCIA
+            else []
+        ),
     }
 
 
@@ -2252,7 +2710,11 @@ Ejemplos:
         "--skip",
         nargs="+",
         default=[],
-        help="Secciones a omitir: 01 02 03 04 05 06 07 08 09 11 13 14 15",
+        help=(
+            "Secciones a omitir: 01 02 03 04 05 06 07 08 09 11 13 14 15 16 17. "
+            "18/19/20 no aparecen porque no se pueblan nunca: son secciones "
+            "dirigidas por eventos y llenarlas al arrancar sería AP-45."
+        ),
     )
     parser.add_argument("--git-phases", dest="git_phases", type=int, default=8)
     parser.add_argument("--max-commits", dest="max_commits", type=int, default=500)

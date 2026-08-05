@@ -39,7 +39,7 @@ SYSTEM_DIR = VAULT_ROOT / "00_System"
 VERSION_FILE = SYSTEM_DIR / "standard-version.json"
 IDENTITY_FILE = SYSTEM_DIR / "identity.md"
 
-CURRENT_VERSION = "v39.0"
+CURRENT_VERSION = "v39.1"
 
 
 def _live_identity() -> Dict[str, str]:
@@ -802,12 +802,31 @@ def vault_standard_upgrade(
         return result
 
     if not pending:
+        # Una versión menor sin migración estructural (v39.0 → v39.1) no tiene
+        # nada que aplicar, pero el vault sí tiene algo que declarar: en qué
+        # versión está. Sin este sello, `applied_version` se queda en la última
+        # versión MAYOR para siempre —`_version_index` compara por mayor— y el
+        # vault dice v39.0 mientras corre con las tools de v39.1. Es la misma
+        # familia que AP-37: `ok: true` mientras el estado sigue obsoleto.
+        sellado = False
+        if not dry_run and current_applied != to_version and to_version == CURRENT_VERSION:
+            state["applied_version"] = to_version
+            state["applied_at"] = utcnow()
+            state["applied_by"] = agent
+            _write_version_file(state)
+            sellado = True
         result = {
             "ok": True,
-            "action": "none",
-            "message": f"Vault is up to date at {current_applied}. No migrations needed.",
-            "current_version": current_applied,
+            "action": "version_stamped" if sellado else "none",
+            "message": (
+                f"Sin migraciones que aplicar: {current_applied} → {to_version} "
+                "no cambia la estructura. Se sella la versión."
+                if sellado
+                else f"Vault is up to date at {current_applied}. No migrations needed."
+            ),
+            "current_version": to_version if sellado else current_applied,
             "target_version": to_version,
+            "version_stamped": sellado,
         }
         if validate:
             result["compliance"] = _run_compliance_check(current_applied)

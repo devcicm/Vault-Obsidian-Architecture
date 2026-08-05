@@ -1,13 +1,13 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 88 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
+Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 89 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **110 archivos Python** — 88 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
+- **110 archivos Python** — 89 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
 - **Saneamiento de índices (v38.1)** — `vault_section_index.py --heal [--root]` regenera índices con formato legacy `[[stem|alias]]` o ausentes; el auto-index post-write se auto-cura si un agente escribe `index.md` a mano
-- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 88 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
+- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 89 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
 - **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault; requiere marcador de CONTENIDO (01_Projects/02_Observability/03_Decisions/.obsidian), no solo 00_System/99_Index (evita el ciclo auto-reforzado de detección); override runtime con `set_vault_root()`/env `VAULT_ROOT`
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
@@ -55,7 +55,7 @@ Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan 
 | [Grupo 28 — Producción/SRE](#grupo-28--producciónsre) | vault_incident_save, vault_slo_save |
 | [Grupo 29 — Release](#grupo-29--release) | vault_release_save |
 | [Grupo 30 — Riesgos/Calidad](#grupo-30--riesgoscalidad) | vault_risk_save, vault_privacy_save, vault_ncr_save |
-| [Grupo 31 — Bootstrap](#grupo-31--bootstrap) | vault_init |
+| [Grupo 31 — Bootstrap](#grupo-31--bootstrap) | vault_init, vault_onboard |
 | [Grupo 32 — Gestión de Carpetas](#grupo-32--gestión-de-carpetas) | vault_folder_registry |
 | [Grupo 33 — Corrección Automática](#grupo-33--corrección-automática) | vault_fix_brackets, vault_graph_fix |
 | [Grupo 34 — Memoria de Contexto](#grupo-34--memoria-de-contexto) | vault_preferences, vault_query_parse, vault_subgraph, vault_context_pack, vault_ingest |
@@ -1344,6 +1344,30 @@ python vault_init.py --no-audit         # omite el vault_audit final
 
 `--clean` **borra todo el contenido del vault actual** antes de inicializar (salvo `.locks`). No se ejecuta sin haber mirado antes qué hay en el destino.
 
+### `vault_onboard.py`
+Puebla un vault recién inicializado desde un **proyecto de código que nunca tuvo uno**. Lee el repo —estructura, manifiestos de dependencias, README, tests, scripts— y reconstruye su historia con git: detecta ramas snap/archive, contrasta la fecha del primer commit alcanzable contra la real y separa fases por tags en vez de por huecos en el calendario.
+
+```bash
+python vault_onboard.py --project mi-api --path ../mi-api
+python vault_onboard.py --project mi-api --path ../mi-api --dry-run
+python vault_onboard.py --project mi-api --path ../mi-api --skip 05 13
+python vault_onboard.py --project mi-api --path ../mi-api --max-commits 5000
+```
+
+**Lee el proyecto, escribe solo en el vault.** El repo de origen no se toca.
+
+Si el proyecto ya tenía documentación suelta, el orden es `vault_migrate_docs` **antes** que `vault_onboard`, para que el onboard no vuelva a escribir lo que ya estaba escrito.
+
+Tres cosas que no hace, y son la parte que importa:
+
+- **No escribe una nota sin evidencia detrás** (AP-45). Un módulo no merece nota por existir ni un commit por haber ocurrido. Lo que se queda fuera se reporta en `skipped_no_evidence`: un hueco nombrado se puede llenar, uno tapado con `_Pendiente_` ya no.
+- **No se cree su propia salida** (AP-44). Relee cada nota del disco y valida el frontmatter con `yaml.safe_load`; los diagramas pasan por `vault_mermaid_check` y el que no valide no se escribe.
+- **No puebla `18_Bugs`, `19_Audits` ni `20_Quarantine`.** Son secciones dirigidas por eventos: llenarlas al arrancar sería inventar bugs que no han pasado. La salida lo declara en `sections_left_empty_by_design` para que su vacío se lea como estado correcto y no como trabajo pendiente.
+
+`--max-commits` acota la ventana de historia. Cuando se alcanza, la salida lo dice en `warnings`: el tope es un parámetro de la invocación, no un hecho del proyecto, y confundirlos convierte «500 commits» en un dato falso.
+
+Criterio de aceptación, verificado en `tests/test_vault_onboard.py` contra un repo con git real: **un vault recién onboardeado no necesita sanación**. Cero deuda de metadatos, cero violaciones de norma, Mermaid limpio.
+
 ---
 
 ## Grupo 32 — Gestión de Carpetas
@@ -1531,7 +1555,7 @@ El vault expone sus herramientas como un **servidor MCP** que las IAs consumen d
 
 **Archivo:** `../mcp/nodejs/vault-mcp-server.mjs` (~1650 líneas, cero dependencias npm)  
 **Plan:** `../mcp/PLAN.md` — documento de evidencia con 8 fases de implementación
-**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (88 tools)
+**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (89 tools)
 
 Los parámetros que el catálogo publica **se derivan del `argparse` de cada script**,
 no se escriben a mano: el servidor compone `--<param>` literal, así que un param
@@ -1579,7 +1603,7 @@ node mcp/nodejs/vault-mcp-server.mjs --port 3000
 
 ### `vault_norms.py`
 
-Registro canónico de las 56 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
+Registro canónico de las 57 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
 
 ```bash
 python vault_norms.py                             # catálogo completo
