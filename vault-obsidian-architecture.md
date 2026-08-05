@@ -6053,7 +6053,7 @@ temp/
 
 ---
 
-### v39.1 — 2026-08-05 `git: pending`
+### v39.1 — 2026-08-05 `git: abb7026`
 
 **Poblar un vault desde un proyecto existente — `vault_onboard` publicada y saneada, AP-45**
 
