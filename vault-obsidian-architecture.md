@@ -5896,7 +5896,7 @@ temp/
 
 ---
 
-### v39.0 — 2026-07-25 `git: 13bf9ca`
+### v39.0 — 2026-07-25 `git: 00731c6`
 
 **Marco de Datos y Gobernanza explícito + guard anti-drift + consolidación del changelog**
 
