@@ -14,6 +14,8 @@ Usage:
     python vault_tags.py --audit                # reporte de salud de tags
     python vault_tags.py --suggest PATH         # sugerir tags existentes para una nota
     python vault_tags.py --rename OLD NEW       # renombrar tag en todas las notas
+    python vault_tags.py --ledger               # bitacora de vocabulario (AP-39)
+    python vault_tags.py --backfill-ledger      # anotar el vocabulario ya en uso (heal AP-39)
     python vault_tags.py --dry-run              # rebuildar sin escribir archivos
 """
 
@@ -21,12 +23,13 @@ import argparse
 import json
 import re
 import sys
+import unicodedata
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from vault_errors import wrap_main
-from vault_lib import utcnow
+from vault_lib import utcnow, parse_frontmatter_with_body
 from vault_io import (
     atomic_write_json,
     atomic_write_text,
@@ -36,30 +39,19 @@ from vault_io import (
     safe_wikilink,
 )
 
+from vault_registry import SECTIONS as _REGISTRY_SECTIONS
+
 TAG_REGISTRY = VAULT_ROOT / "00_System" / "tag-registry.json"
 TAG_INDEX_MD = VAULT_ROOT / "99_Index" / "tag-index.md"
+#: Bitácora de vocabulario (AP-39). Append-only y dentro del vault (AP-36).
+VOCAB_DIR = VAULT_ROOT / "19_Audits" / "vocabulary"
+TAG_LEDGER = VOCAB_DIR / "tag-ledger.json"
 SEARCH_INDEX = VAULT_ROOT / "99_Index" / "search-index.json"
 
-VAULT_SECTIONS = {
-    "00_System",
-    "01_Projects",
-    "02_Observability",
-    "03_Decisions",
-    "04_Sessions",
-    "05_Patterns",
-    "06_Diagrams",
-    "07_Knowledge",
-    "08_Runbooks",
-    "09_Infrastructure",
-    "10_Migrated",
-    "11_Code",
-    "12_Bibliography",
-    "13_Flows",
-    "14_Requirements",
-    "15_Tests",
-    "16_AI_Governance",
-    "99_Index",
-}
+#: Derivado de `vault_registry.SECTIONS`, no copiado: la lista literal que vivía
+#: aquí se quedó en 18 carpetas y dejaba de escanear cada sección nueva del
+#: estándar sin que nada fallara — AP-05 dentro del propio toolkit.
+VAULT_SECTIONS = {s["folder"] for s in _REGISTRY_SECTIONS}
 
 SKIP_NAMES = frozenset({"index.md", "readme.md"})
 
@@ -81,23 +73,21 @@ def _is_vault_note(path: Path) -> bool:
 
 
 def _parse_frontmatter_tags(content: str) -> List[str]:
-    if not content.startswith("---"):
+    """Tags del frontmatter, con el mismo parser que usa el resto del toolkit.
+
+    La versión anterior leía la línea `tags:` a mano y solo entendía la forma
+    inline (`tags: [a, b]`): las listas YAML en bloque (`tags:\\n  - a`) le
+    salían vacías. Como `vault_norms --audit` sí las ve, el audit reportaba
+    términos que el registro y el heal no podían tocar — dos lectores del mismo
+    campo discrepando, AP-05 otra vez.
+    """
+    fm, _ = parse_frontmatter_with_body(content)
+    crudos = (fm or {}).get("tags") or []
+    if isinstance(crudos, str):
+        crudos = [t.strip() for t in crudos.split(",")]
+    if not isinstance(crudos, list):
         return []
-    parts = content.split("---", 2)
-    if len(parts) < 3:
-        return []
-    for line in parts[1].splitlines():
-        if line.startswith("tags:"):
-            raw = line.split(":", 1)[1].strip()
-            if raw.startswith("["):
-                try:
-                    val = json.loads(raw)
-                    if isinstance(val, list):
-                        return [str(t).strip() for t in val if str(t).strip()]
-                except json.JSONDecodeError:
-                    pass
-            return [t.strip() for t in raw.split(",") if t.strip()]
-    return []
+    return [str(t).strip() for t in crudos if str(t).strip()]
 
 
 def _parse_frontmatter_title(content: str) -> str:
@@ -110,6 +100,245 @@ def _parse_frontmatter_title(content: str) -> str:
         if line.startswith("title:"):
             return line.split(":", 1)[1].strip().strip("\"'")
     return ""
+
+
+# ───────────────────────────── AP-39 — vocabulario con memoria ──────────────
+#
+# Medido sobre 17 vaults reales: 1.180 tags distintos, 6.358 usos, **45% usados
+# una sola vez** y 55 familias de casi-duplicados (`ci-cd`/`cicd`/`ci_cd`,
+# `pattern`/`patterns`, `migracion`/`migración`). El ritmo de invención es plano
+# a lo largo de tres meses (37% → 36% → 34% → 27% → 36%): nadie está aprendiendo
+# el vocabulario de la sesión anterior porque nada lo recuerda por él.
+#
+# La causa no es el agente, es el camino de escritura: `vault_write` leía la
+# clave `tags` de un registro que guarda `canonical_tags`, así que la sugerencia
+# nunca se disparaba. Un tag inventado costaba exactamente lo mismo que uno
+# reutilizado — cero.
+#
+# La regla de AP-39: **un tag nuevo se admite, pero se registra.** No se rechaza
+# (rechazar empuja al agente a omitir tags y AP-26 acaba siendo lo que se
+# incumple), y no se traduce a la fuerza (adivinar destruye el término que quizá
+# era el correcto). Solo colapsa lo que es demostrablemente la misma palabra:
+# acentos, mayúsculas, separadores y plural.
+
+_TAG_SEPARADORES = re.compile(r"[\s_.:/\\]+")
+_TAG_INVALIDOS = re.compile(r"[^a-z0-9-]+")
+
+
+def normalize_tag(raw: str) -> str:
+    """Forma normalizada de un tag: minúsculas, sin acentos, separado por `-`.
+
+    Es la misma clase de normalización que `vault_norms.normalize_status`:
+    colapsa variantes tipográficas del **mismo** término y nada más.
+    """
+    texto = unicodedata.normalize("NFD", str(raw or "").strip().lower())
+    texto = "".join(c for c in texto if unicodedata.category(c) != "Mn")
+    texto = _TAG_SEPARADORES.sub("-", texto)
+    texto = _TAG_INVALIDOS.sub("-", texto)
+    texto = re.sub(r"-{2,}", "-", texto).strip("-")
+    return texto
+
+
+def singular_tag(tag: str) -> str:
+    """Plural inglés/castellano → singular, solo en los casos inequívocos."""
+    if len(tag) > 4 and tag.endswith("es") and not tag.endswith(("ses", "ees")):
+        return tag[:-2]
+    if len(tag) > 3 and tag.endswith("s") and not tag.endswith(("ss", "us", "is")):
+        return tag[:-1]
+    return tag
+
+
+def canonical_tags() -> List[str]:
+    """Tags canónicos del vault, aplanados desde las facetas del registro."""
+    try:
+        registro = json.loads(TAG_REGISTRY.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    canonicos = registro.get("canonical_tags")
+    if isinstance(canonicos, dict):
+        planos: List[str] = []
+        for valores in canonicos.values():
+            if isinstance(valores, list):
+                planos.extend(str(v) for v in valores)
+        return planos
+    # Formato legacy `{"tags": {"<tag>": {...}}}` — se sigue leyendo.
+    legacy = registro.get("tags")
+    return sorted(legacy) if isinstance(legacy, dict) else []
+
+
+def _canonical_index() -> Dict[str, str]:
+    """{forma normalizada → tag canónico}, incluyendo la forma en singular."""
+    indice: Dict[str, str] = {}
+    for tag in canonical_tags():
+        norma = normalize_tag(tag)
+        if not norma:
+            continue
+        indice.setdefault(norma, tag)
+        indice.setdefault(singular_tag(norma), tag)
+    return indice
+
+
+def resolve_tag(raw: str, indice: Optional[Dict[str, str]] = None) -> Tuple[str, str]:
+    """(tag resuelto, regla). regla ∈ canonical | normalized | singular | new."""
+    indice = _canonical_index() if indice is None else indice
+    norma = normalize_tag(raw)
+    if not norma:
+        return "", "empty"
+    canonico = indice.get(norma)
+    if canonico is not None:
+        return canonico, ("canonical" if canonico == str(raw) else "normalized")
+    canonico = indice.get(singular_tag(norma))
+    if canonico is not None:
+        return canonico, "singular"
+    # Término nuevo: se admite tal cual (normalizado), y quien llama lo anota.
+    return norma, "new"
+
+
+def _load_ledger() -> Dict[str, Any]:
+    try:
+        return json.loads(TAG_LEDGER.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {"version": "v1.0", "entries": []}
+
+
+def record_new_tags(
+    terminos: List[Dict[str, Any]], agent: str = "", note: str = ""
+) -> int:
+    """Anota términos introducidos en la bitácora append-only. Devuelve cuántos.
+
+    Append-only a propósito: la bitácora responde *quién introdujo esta palabra,
+    cuándo y en qué nota*. Reescribirla la convierte en un índice más, y de
+    índices que se regeneran ya hay uno (`tag-index.md`).
+    """
+    if not terminos:
+        return 0
+    VOCAB_DIR.mkdir(parents=True, exist_ok=True)
+    ahora = utcnow()
+    with file_lock(TAG_LEDGER):
+        ledger = _load_ledger()
+        ya = {e["tag"] for e in ledger["entries"]}
+        nuevos = 0
+        for t in terminos:
+            if t["tag"] in ya:
+                continue
+            ledger["entries"].append({
+                "tag": t["tag"],
+                "raw": t.get("raw", t["tag"]),
+                "first_note": t.get("note", note),
+                "introduced_by": t.get("agent", agent) or "unknown",
+                "introduced_at": ahora,
+                "rule": t.get("rule", "new"),
+            })
+            ya.add(t["tag"])
+            nuevos += 1
+        if nuevos:
+            atomic_write_json(TAG_LEDGER, ledger)
+    return nuevos
+
+
+def apply_vocabulary(
+    tags: List[str], note: str = "", agent: str = ""
+) -> Tuple[List[str], List[Dict[str, Any]]]:
+    """Punto de entrada de `vault_write`: (tags resueltos, términos nuevos).
+
+    No escribe nada — anotar es responsabilidad de quien confirma la escritura,
+    porque un tag registrado sobre una nota que al final no se escribió es
+    memoria falsa.
+    """
+    indice = _canonical_index()
+    resueltos: List[str] = []
+    introducidos: List[Dict[str, Any]] = []
+    for crudo in tags or []:
+        resuelto, regla = resolve_tag(crudo, indice)
+        if not resuelto:
+            continue
+        if resuelto not in resueltos:
+            resueltos.append(resuelto)
+        if regla == "new":
+            introducidos.append({
+                "tag": resuelto,
+                "raw": str(crudo),
+                "note": note,
+                "agent": agent,
+                "rule": "new",
+            })
+    return resueltos, introducidos
+
+
+def vault_tags_backfill_ledger(dry_run: bool = False) -> Dict[str, Any]:
+    """Heal de AP-39: anota en la bitácora el vocabulario ya en uso.
+
+    Un vault que existía antes de AP-39 tiene términos introducidos por sesiones
+    que nadie registró. Retro-anotarlos no inventa historia: usa el `agent` y el
+    `created` de la nota donde el término aparece por primera vez, y marca la
+    regla como `backfill` para que no se confunda con lo registrado en vivo.
+    """
+    indice = _canonical_index()
+    vistos: Dict[str, Dict[str, Any]] = {}
+    for md in sorted(VAULT_ROOT.rglob("*.md")):
+        if not _is_vault_note(md):
+            continue
+        try:
+            contenido = md.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        rel = str(md.relative_to(VAULT_ROOT)).replace("\\", "/")
+        agente = ""
+        for linea in contenido.split("---", 2)[1].splitlines() if contenido.startswith("---") else []:
+            if linea.startswith("agent:"):
+                agente = linea.split(":", 1)[1].strip().strip("\"'")
+                break
+        for crudo in _parse_frontmatter_tags(contenido):
+            resuelto, regla = resolve_tag(crudo, indice)
+            if regla != "new" or not resuelto or resuelto in vistos:
+                continue
+            vistos[resuelto] = {
+                "tag": resuelto,
+                "raw": crudo,
+                "note": rel,
+                "agent": agente,
+                "rule": "backfill",
+            }
+
+    if dry_run:
+        ya = {e["tag"] for e in _load_ledger()["entries"]}
+        pendientes = [t for t in sorted(vistos) if t not in ya]
+        return {
+            "ok": True,
+            "dry_run": True,
+            "would_record": len(pendientes),
+            "tags": pendientes,
+        }
+
+    anotados = record_new_tags(list(vistos.values()))
+    return {
+        "ok": True,
+        "created": anotados,
+        "updated": 0,
+        "written": anotados,
+        "recorded": anotados,
+        "scanned_terms": len(vistos),
+        "path": str(TAG_LEDGER.relative_to(VAULT_ROOT)).replace("\\", "/"),
+    }
+
+
+def vault_tags_ledger() -> Dict[str, Any]:
+    """Lee la bitácora de vocabulario (AP-39)."""
+    ledger = _load_ledger()
+    entradas = ledger.get("entries", [])
+    por_agente: Dict[str, int] = {}
+    for e in entradas:
+        por_agente[e.get("introduced_by", "unknown")] = (
+            por_agente.get(e.get("introduced_by", "unknown"), 0) + 1
+        )
+    return {
+        "ok": True,
+        "path": str(TAG_LEDGER.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "introduced_total": len(entradas),
+        "canonical_total": len(set(canonical_tags())),
+        "by_agent": dict(sorted(por_agente.items(), key=lambda kv: -kv[1])),
+        "entries": entradas,
+    }
 
 
 def _similarity_score(a: str, b: str) -> float:
@@ -452,12 +681,14 @@ Ejemplos:
   python vault_tags.py --audit             # reporte de salud de tags
   python vault_tags.py --suggest "01_Projects/mi-api/overview.md"
   python vault_tags.py --rename "api-rest" "rest-api"
+  python vault_tags.py --ledger            # quien introdujo cada termino (AP-39)
   python vault_tags.py --dry-run           # simular sin escribir
 
 Notas:
   - Tag registry: 00_System/tag-registry.json
   - Tag index: 99_Index/tag-index.md (con [[wiki-links]] por tag)
-  - vault_write consulta el registry para sugerir tags existentes
+  - vault_write resuelve los tags contra el registry antes de escribir (AP-39)
+  - Bitacora append-only: 19_Audits/vocabulary/tag-ledger.json
   - vault_audit incluye tag_health en su output cuando el registry existe
 """,
     )
@@ -472,12 +703,26 @@ Notas:
         help="Renombrar tag en todas las notas",
     )
     parser.add_argument(
+        "--backfill-ledger",
+        action="store_true",
+        help="Heal AP-39: anotar en la bitacora el vocabulario ya en uso",
+    )
+    parser.add_argument(
+        "--ledger",
+        action="store_true",
+        help="Bitacora de vocabulario: que termino se introdujo, quien y cuando (AP-39)",
+    )
+    parser.add_argument(
         "--dry-run", action="store_true", help="Simular sin escribir archivos"
     )
 
     args = parser.parse_args()
 
-    if args.audit:
+    if args.backfill_ledger:
+        result = vault_tags_backfill_ledger(dry_run=args.dry_run)
+    elif args.ledger:
+        result = vault_tags_ledger()
+    elif args.audit:
         result = vault_tags_audit()
     elif args.suggest:
         result = vault_tags_suggest(args.suggest)

@@ -93,6 +93,31 @@ def utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
+def canonical_utc(value) -> str:
+    """Devuelve un instante en el formato con el que el estándar lo escribe.
+
+    `utcnow()` emite `2026-07-30T07:42:40.000Z`, pero PyYAML lee ese escalar como
+    `datetime` y `_coerce_dates` lo devuelve como `2026-07-30T07:42:40+00:00`.
+    Los dos son el mismo momento y ISO 8601 válido, así que ningún guard de
+    contenido se queja — y aun así el campo cambia de forma cada vez que una nota
+    se relee y se reescribe. Un formato que depende de cuántas veces pasó por el
+    parser no es un formato: leer y volver a escribir tiene que ser idempotente.
+    """
+    texto = str(value or "").strip()
+    if not texto:
+        return ""
+    if texto.endswith("Z") and "." in texto[10:]:
+        return texto  # ya es la forma canónica
+    candidato = texto[:-1] + "+00:00" if texto.endswith("Z") else texto
+    try:
+        dt = datetime.fromisoformat(candidato)
+    except ValueError:
+        return texto  # no se reconoce: se conserva tal cual, no se inventa
+    if dt.tzinfo is not None:
+        dt = dt.astimezone(timezone.utc)
+    return dt.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
+
 def utcnow_compact() -> str:
     """Return UTC as compact string: YYYYMMDD-HHMMSS."""
     return datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")

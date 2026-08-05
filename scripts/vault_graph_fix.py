@@ -31,6 +31,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import difflib
 import json
 import hashlib
 import re
@@ -436,30 +437,117 @@ def _strip_redundant_prefix(stem: str) -> str | None:
     return None
 
 
+def _tokens(s: str) -> list[str]:
+    """Tokens comparables de un stem o de una ruta-stem.
+
+    Normaliza los dos lados igual. Antes no lo hacía: el target llegaba
+    colapsado sin separadores (`apbarenumbercssunits`, tal como aparece en la
+    clave del wikilink roto) y el candidato los conservaba
+    (`numbers-without-css-units`), asi que la interseccion de tokens era vacia
+    en TODAS las comparaciones y el termino Jaccard del score valia 0.000
+    siempre. El 20% del score que llevaba la semantica no pesaba nada.
+    """
+    return [t for t in re.split(r"[^0-9a-z]+", s.lower()) if t]
+
+
 def _jaccard_tokens(a: str, b: str) -> float:
-    ta = set(a.replace("-", " ").split())
-    tb = set(b.replace("-", " ").split())
+    ta, tb = set(_tokens(a)), set(_tokens(b))
     if not ta or not tb:
         return 0.0
-    return len(ta & tb) / len(ta | tb)
+    # Un stem colapsado ("apbarenumbercssunits") es un token gigante que no
+    # interseca con nada. Se expande buscando dentro de el los tokens del otro
+    # lado: es la unica forma de comparar los dos formatos de slug que conviven
+    # en un vault preexistente. Se expande cada lado contra el otro, porque el
+    # token colapsado puede venir acompanado de los de la carpeta.
+    ta_exp, tb_exp = _expandir(ta, tb), _expandir(tb, ta)
+    return len(ta_exp & tb_exp) / len(ta_exp | tb_exp)
+
+
+def _expandir(tokens: set[str], vocabulario: set[str]) -> set[str]:
+    """Sustituye cada token largo por los del vocabulario que contiene."""
+    fuera: set[str] = set()
+    for t in tokens:
+        dentro = {v for v in vocabulario if len(v) >= 3 and v != t and v in t}
+        fuera |= dentro or {t}
+    return fuera
 
 
 def _seq_ratio(a: str, b: str) -> float:
+    """Similitud de secuencia real, sensible al orden.
+
+    La version anterior era `sum(1 for ch in a if ch in b)`: contaba cuantos
+    caracteres de `a` aparecian en CUALQUIER posicion de `b`, sin orden ni
+    multiplicidad. Eso no mide parecido, mide solapamiento de alfabeto — y dos
+    slugs en minusculas comparten casi todo el alfabeto. Peor: cuanto mas largo
+    el candidato, mas caracteres distintos contiene y mas alto puntuaba, asi que
+    el ranking tendia a recomendar la nota de titulo mas largo del vault. Un par
+    sin ninguna relacion llegaba a 0.913, por encima del umbral de auto-fix.
+    """
     if not a or not b:
         return 0.0
     if a == b:
         return 1.0
-    if len(a) > len(b):
-        a, b = b, a
-    hits = sum(1 for ch in a if ch in b)
-    return (2 * hits) / (len(a) + len(b))
+    # El target puede venir con prefijo de carpeta ("02observability/anti.../x")
+    # y el candidato ser solo el stem. Se compara tambien el ultimo segmento
+    # para no castigar esa asimetria, y se toma el mejor de los dos.
+    variantes = {a, a.rsplit("/", 1)[-1]}
+    return max(
+        difflib.SequenceMatcher(None, v, b.rsplit("/", 1)[-1]).ratio() for v in variantes
+    )
+
+
+# Deliberadamente pequeno: la seccion desempata, no decide. Un bono grande
+# convertiria "esta en la carpeta correcta" en "es la nota correcta".
+_BONO_SECCION = 0.08
+
+
+def _seccion_del_target(target_stem: str) -> str | None:
+    """Seccion numerada que el propio enlace roto declara, si la trae.
+
+    Un wikilink roto de la forma `02observability/antipatterns/algo` dice a que
+    seccion apuntaba. Es la senal mas fiable que queda cuando el stem ya no
+    existe, y el scorer la ignoraba: solo comparaba stems.
+    """
+    if "/" not in target_stem:
+        return None
+    # El segmento llega colapsado ("02observability"), asi que el numero no es
+    # un token propio: hay que leer los digitos iniciales.
+    m = re.match(r"(\d{2})", target_stem.split("/", 1)[0].strip().lower())
+    return m.group(1) if m else None
+
+
+def _bonificar_por_seccion(target_stem: str, candidates: list[dict[str, Any]]) -> None:
+    """Sube el score de los candidatos que viven en la seccion que pedia el enlace.
+
+    Encontrado sanando BuilderX: dos enlaces rotos apuntaban cada uno a la nota
+    del otro — `02observability/antipatterns/apvalidatoradvisory...` se resolvia
+    al ADR y `03decisions/adr...validatoradvisory...` al antipatron. Los dos
+    stems se parecen entre si mas que a su propio destino, asi que sin mirar la
+    seccion el cruce es inevitable. La bonificacion es pequena a proposito:
+    rompe empates y cruces, no fabrica coincidencias donde no hay parecido.
+    """
+    seccion = _seccion_del_target(target_stem)
+    if not seccion:
+        return
+    for c in candidates:
+        prefijo = c["path"].split("/", 1)[0]
+        if prefijo.split("_", 1)[0] == seccion:
+            c["score"] = round(min(0.99, c["score"] + _BONO_SECCION), 3)
+            c["strategy"] = f"{c['strategy']}+seccion"
 
 
 def _classify_broken(
     target_stem: str,
     active_stems: dict[str, list[str]],
     migrated_stems: dict[str, list[str]],
-    threshold_partial: float = 0.60,
+    # `partial_match` es un cajon de REVISION, no de escritura: quien decide
+    # aplicar es `--auto-apply-partial`, con su propio umbral (0.75+). Por eso
+    # aqui conviene ser generoso: un candidato de mas se descarta leyendolo, uno
+    # de menos es un enlace recuperable que se pierde. El 0.60 heredado estaba
+    # calibrado contra el scorer viejo, que inflaba todo por solapamiento de
+    # alfabeto; con similitud de secuencia real la escala bajo y ese mismo 0.60
+    # empezo a tirar coincidencias buenas a `no_match`.
+    threshold_partial: float = 0.45,
     threshold_exact: float = 0.85,
 ) -> dict[str, Any]:
     """Classify a broken link target. Returns category, candidates, recommended_stem."""
@@ -521,7 +609,14 @@ def _classify_broken(
         seq_ratio = _seq_ratio(target_stem, stem)
         jac = _jaccard_tokens(target_stem, stem)
         score = 0.8 * seq_ratio + 0.2 * jac
-        if score >= threshold_partial and score < threshold_exact:
+        # Sin tope superior. Estaba `score < threshold_exact`, que descartaba un
+        # candidato por ser DEMASIADO parecido: en BuilderX,
+        # `apvalidatoradvisorynotblocking` puntuaba 0.864 contra su propia nota
+        # `ap-validator-advisory-not-blocking` y caia en esa zona muerta, asi
+        # que ganaba un ADR distinto con 0.615 y los enlaces se cruzaban. La
+        # categoria `exact_candidate` existe precisamente para los >= 0.85: con
+        # el tope puesto era inalcanzable por esta via y nunca se emitia.
+        if score >= threshold_partial:
             for path in paths:
                 candidates.append(
                     {
@@ -539,6 +634,7 @@ def _classify_broken(
             "recommended_stem": None,
         }
 
+    _bonificar_por_seccion(target_stem, candidates)
     candidates.sort(key=lambda c: -c["score"])
     best = candidates[0]
 
@@ -797,6 +893,20 @@ tags: [stub, graph-fix, needs-review]
 # ============================================================================
 
 
+def _destino_escribible(decision: dict[str, Any], target_stem: str) -> str:
+    """Nombre de nota tal como hay que escribirlo dentro de `[[...]]`.
+
+    Prioriza el nombre real del fichero (`path`), que es lo unico que Obsidian
+    sabe resolver. Solo cae al `stem` normalizado si no hay ruta, y en ese caso
+    conserva el target original antes que escribir una forma colapsada.
+    """
+    ruta = decision.get("path") or (decision.get("classification", {}) or {}).get("path")
+    if ruta:
+        return Path(ruta).stem
+    stem = decision.get("stem")
+    return stem if stem and "-" in stem else target_stem
+
+
 def apply_classified_fixes(
     decisions: dict[str, dict[str, Any]],
     notes_active: dict[str, dict[str, Any]],
@@ -826,7 +936,15 @@ def apply_classified_fixes(
             )
             continue
         if action == "fix":
-            new_target_stem = decision.get("stem", target_stem)
+            # El destino que se ESCRIBE sale del nombre real del fichero, no de
+            # la clave normalizada. `stem` viene de `active_stems`, cuyas claves
+            # estan colapsadas sin separadores: escribirlo producia
+            # `[[adrmodeloaccioncanonicoydeudacomponentes]]` para el fichero
+            # `adr-modelo-accion-canonico-y-deuda-componentes.md`. Obsidian no
+            # resuelve eso, pero la propia tool lo daba por reparado porque al
+            # comprobar normaliza los dos lados — se autoenganaba, y cada
+            # "arreglo" dejaba un enlace roto nuevo.
+            new_target_stem = _destino_escribible(decision, target_stem)
             for source_path in decision.get("referenced_by", []):
                 note_fixes[source_path].append((target_stem, new_target_stem))
 

@@ -9,14 +9,25 @@
       "group_id": 21,
       "status": "active",
       "required_args": [
-        "--project",
-        "--title",
         "--decision_type",
         "--description",
-        "--rationale"
+        "--project",
+        "--rationale",
+        "--title"
       ],
       "declared_returns": [
-        "path"
+        "action",
+        "created",
+        "decision_id",
+        "error",
+        "error_code",
+        "impact_level",
+        "message",
+        "ok",
+        "path",
+        "unchanged",
+        "updated",
+        "written"
       ],
       "dq": {
         "dq_dimensions": [
@@ -39,11 +50,18 @@
       "group_id": 1,
       "status": "active",
       "required_args": [
-        "--path",
-        "--content"
+        "--content",
+        "--path"
       ],
       "declared_returns": [
-        "path"
+        "appendedLength",
+        "error",
+        "error_code",
+        "message",
+        "ok",
+        "path",
+        "section",
+        "timestamped"
       ],
       "dq": {
         "dq_dimensions": [
@@ -61,12 +79,17 @@
       ]
     },
     "vault_audit": {
-      "group": "Salud",
+      "group": "Salud del Vault",
       "group_id": 6,
       "status": "active",
       "required_args": [],
       "declared_returns": [
-        "healthScore"
+        "dqHealth",
+        "healthScore",
+        "nextActions",
+        "nextActionsCount",
+        "propagationPending",
+        "tagHealth"
       ],
       "dq": {
         "dq_dimensions": [
@@ -93,8 +116,16 @@
       "status": "active",
       "required_args": [],
       "declared_returns": [
+        "created",
+        "manifest",
+        "merkle_file_count",
+        "merkle_root",
         "name",
-        "path"
+        "ok",
+        "path",
+        "unchanged",
+        "updated",
+        "written"
       ],
       "dq": {
         "dq_dimensions": [
@@ -111,12 +142,40 @@
         "F8"
       ]
     },
+    "vault_backup_base64": {
+      "group": "Backups",
+      "group_id": 13,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "files_included",
+        "ok",
+        "path",
+        "size_bytes"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "integrity"
+        ],
+        "cia_scope": [
+          "integrity",
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1"
+      ]
+    },
     "vault_backup_list": {
       "group": "Backups",
       "group_id": 13,
       "status": "active",
       "required_args": [],
       "declared_returns": [
+        "backups",
+        "message",
+        "ok",
         "total"
       ],
       "dq": {
@@ -135,13 +194,24 @@
       "group_id": 16,
       "status": "active",
       "required_args": [
-        "--title",
-        "--url",
+        "--source_type",
         "--summary",
-        "--source_type"
+        "--title",
+        "--url"
       ],
       "declared_returns": [
-        "path"
+        "agent",
+        "created",
+        "error",
+        "error_code",
+        "message",
+        "ok",
+        "path",
+        "source_type",
+        "title",
+        "unchanged",
+        "updated",
+        "written"
       ],
       "dq": {
         "dq_dimensions": [
@@ -154,6 +224,45 @@
         "propagation_aware": false
       },
       "fundamentals": [
+        "F7"
+      ]
+    },
+    "vault_bug_save": {
+      "group": "Defectos y Cuarentena",
+      "group_id": 36,
+      "status": "active",
+      "required_args": [
+        "--project",
+        "--symptom",
+        "--title"
+      ],
+      "declared_returns": [
+        "action",
+        "bug_id",
+        "created",
+        "error",
+        "error_code",
+        "message",
+        "ok",
+        "path",
+        "phase",
+        "unchanged",
+        "updated",
+        "written"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "integrity",
+          "accuracy"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F3",
         "F7"
       ]
     },
@@ -186,7 +295,14 @@
         "--project"
       ],
       "declared_returns": [
-        "path"
+        "created",
+        "modules",
+        "ok",
+        "path",
+        "relations",
+        "unchanged",
+        "updated",
+        "written"
       ],
       "dq": {
         "dq_dimensions": [
@@ -210,7 +326,16 @@
         "--project"
       ],
       "declared_returns": [
-        "path"
+        "created",
+        "error",
+        "ok",
+        "path",
+        "source_tagged",
+        "tag_action",
+        "tag_warning",
+        "unchanged",
+        "updated",
+        "written"
       ],
       "dq": {
         "dq_dimensions": [
@@ -233,7 +358,13 @@
       "required_args": [
         "--project"
       ],
-      "declared_returns": [],
+      "declared_returns": [
+        "count",
+        "error",
+        "modules",
+        "ok",
+        "project"
+      ],
       "dq": {
         "dq_dimensions": [],
         "cia_scope": [
@@ -250,12 +381,28 @@
       "group_id": 12,
       "status": "active",
       "required_args": [
-        "--project",
         "--from_file",
-        "--to_file",
-        "--relation_type"
+        "--project",
+        "--relation_type",
+        "--to_file"
       ],
-      "declared_returns": [],
+      "declared_returns": [
+        "already_existed",
+        "cardinality",
+        "created",
+        "edges",
+        "error",
+        "from",
+        "mapPath",
+        "message",
+        "nodes",
+        "ok",
+        "relation_type",
+        "to",
+        "unchanged",
+        "updated",
+        "written"
+      ],
       "dq": {
         "dq_dimensions": [
           "consistency"
@@ -269,16 +416,57 @@
         "F2"
       ]
     },
-    "vault_code_tag": {
-      "group": "Normas y Etiquetas",
-      "group_id": 28,
+    "vault_code_sync": {
+      "group": "Código",
+      "group_id": 12,
       "status": "active",
       "required_args": [],
       "declared_returns": [
+        "complete",
+        "created",
+        "dry_run",
+        "missing_file",
+        "missing_tag",
+        "no_source_ref",
         "ok",
+        "orphan_vault_refs",
+        "project",
+        "status",
+        "summary",
+        "unchanged",
+        "updated",
+        "written"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency",
+          "integrity",
+          "completeness"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F2",
+        "F4"
+      ]
+    },
+    "vault_code_tag": {
+      "group": "Normas",
+      "group_id": 35,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
         "action",
+        "code",
+        "created",
         "file",
-        "code"
+        "ok",
+        "unchanged",
+        "updated",
+        "written"
       ],
       "dq": {
         "dq_dimensions": [
@@ -295,7 +483,7 @@
     "vault_compact_contracts": {
       "group": "meta",
       "group_id": 0,
-      "status": "meta",
+      "status": "internal",
       "required_args": [],
       "declared_returns": [],
       "dq": {
@@ -310,10 +498,49 @@
       },
       "fundamentals": []
     },
+    "vault_context_pack": {
+      "group": "Memoria de Contexto",
+      "group_id": 34,
+      "status": "active",
+      "required_args": [
+        "--query"
+      ],
+      "declared_returns": [
+        "candidates_considered",
+        "confidence",
+        "context",
+        "error",
+        "error_code",
+        "excluded",
+        "included",
+        "ok",
+        "preferences_included",
+        "query",
+        "structured",
+        "tokens",
+        "warnings"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "completeness",
+          "timeliness",
+          "accuracy"
+        ],
+        "cia_scope": [
+          "availability",
+          "integrity"
+        ],
+        "propagation_aware": true
+      },
+      "fundamentals": [
+        "F3",
+        "F6"
+      ]
+    },
     "vault_create": {
       "group": "Core (legacy)",
       "group_id": 0,
-      "status": "deprecated",
+      "status": "archived",
       "required_args": [],
       "declared_returns": [],
       "dq": {
@@ -324,7 +551,9 @@
       "fundamentals": [],
       "replaced_by": "vault_write",
       "deprecated_since": "v21",
-      "deprecation_reason": "vault_write handles all note creation with AP guards"
+      "deprecation_reason": "vault_write handles all note creation with AP guards",
+      "archived_in": "v21",
+      "superseded_by": "vault_write"
     },
     "vault_dataset": {
       "group": "internal",
@@ -344,7 +573,20 @@
       "group_id": 27,
       "status": "active",
       "required_args": [],
-      "declared_returns": [],
+      "declared_returns": [
+        "action",
+        "added",
+        "changed",
+        "deleted",
+        "dry_run",
+        "hash_index",
+        "hash_index_updated",
+        "notes_hashed",
+        "ok",
+        "stale_deps",
+        "summary",
+        "total_changed"
+      ],
       "dq": {
         "dq_dimensions": [],
         "cia_scope": [],
@@ -352,19 +594,60 @@
       },
       "fundamentals": []
     },
+    "vault_diagram_export": {
+      "group": "Diagramas",
+      "group_id": 4,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "config_file",
+        "created",
+        "error",
+        "exported",
+        "file",
+        "files",
+        "ok",
+        "project",
+        "unchanged",
+        "updated",
+        "written"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "completeness"
+        ],
+        "cia_scope": [
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F3"
+      ]
+    },
     "vault_diagram_save": {
       "group": "Diagramas",
       "group_id": 4,
       "status": "active",
       "required_args": [
-        "--project",
-        "--title",
-        "--diagram_type",
         "--category",
-        "--content"
+        "--content",
+        "--diagram_type",
+        "--project",
+        "--title"
       ],
       "declared_returns": [
-        "path"
+        "category",
+        "created",
+        "error",
+        "error_code",
+        "message",
+        "ok",
+        "path",
+        "type",
+        "unchanged",
+        "updated",
+        "written"
       ],
       "dq": {
         "dq_dimensions": [
@@ -387,8 +670,15 @@
       "status": "active",
       "required_args": [],
       "declared_returns": [
-        "path",
-        "changed"
+        "a",
+        "b",
+        "changed",
+        "compared_against",
+        "error",
+        "history",
+        "message",
+        "ok",
+        "path"
       ],
       "dq": {
         "dq_dimensions": [
@@ -404,8 +694,67 @@
         "F6"
       ]
     },
+    "vault_doc_counts": {
+      "group": "Normas",
+      "group_id": 35,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "claims_checked",
+        "errors",
+        "fixes",
+        "fixes_applied",
+        "mismatches",
+        "ok",
+        "tool",
+        "values"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency",
+          "accuracy"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F2",
+        "F4"
+      ]
+    },
+    "vault_doc_sync": {
+      "group": "Normas",
+      "group_id": 35,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "action",
+        "fixes_applied",
+        "groups_checked",
+        "ok",
+        "problems",
+        "tool",
+        "tools_checked"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency",
+          "completeness"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F2",
+        "F3"
+      ]
+    },
     "vault_drift_detect": {
-      "group": "Drift",
+      "group": "Drift Detection",
       "group_id": 17,
       "status": "active",
       "required_args": [
@@ -413,7 +762,22 @@
         "--project"
       ],
       "declared_returns": [
-        "mode"
+        "action_required",
+        "added",
+        "backend",
+        "deleted",
+        "error",
+        "files_tracked",
+        "git_commit",
+        "hint",
+        "message",
+        "mode",
+        "modified",
+        "ok",
+        "path",
+        "project",
+        "since",
+        "total_changed"
       ],
       "dq": {
         "dq_dimensions": [
@@ -431,14 +795,31 @@
       ]
     },
     "vault_env_matrix": {
-      "group": "Release y Entornos",
-      "group_id": 30,
+      "group": "Infraestructura",
+      "group_id": 8,
       "status": "active",
       "required_args": [
-        "--project",
-        "--env"
+        "--env",
+        "--project"
       ],
-      "declared_returns": [],
+      "declared_returns": [
+        "created",
+        "env",
+        "env_label",
+        "error_code",
+        "features_count",
+        "iso_standard",
+        "message",
+        "ok",
+        "path",
+        "project",
+        "services_count",
+        "unchanged",
+        "updated",
+        "vars_classified",
+        "vars_count",
+        "written"
+      ],
       "dq": {
         "dq_dimensions": [
           "integrity",
@@ -458,12 +839,22 @@
       "group_id": 8,
       "status": "active",
       "required_args": [
-        "--project",
         "--environment",
+        "--project",
         "--vars"
       ],
       "declared_returns": [
-        "path"
+        "created",
+        "environment",
+        "error",
+        "error_code",
+        "message",
+        "ok",
+        "path",
+        "unchanged",
+        "updated",
+        "varCount",
+        "written"
       ],
       "dq": {
         "dq_dimensions": [
@@ -482,19 +873,65 @@
         "F7"
       ]
     },
+    "vault_fix_brackets": {
+      "group": "Corrección Automática",
+      "group_id": 33,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "backup_dir",
+        "files_modified",
+        "findings",
+        "findings_auto_fixable",
+        "findings_manual_review",
+        "findings_total",
+        "fixes_applied",
+        "fixes_applied_count",
+        "hint",
+        "mode",
+        "ok",
+        "scanned",
+        "skipped",
+        "vault_root"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "validity",
+          "integrity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F5"
+      ]
+    },
     "vault_flow_save": {
       "group": "Flujos",
       "group_id": 18,
       "status": "active",
       "required_args": [
-        "--project",
-        "--name",
-        "--type",
         "--description",
-        "--mermaid"
+        "--mermaid",
+        "--name",
+        "--project",
+        "--type"
       ],
       "declared_returns": [
-        "path"
+        "action",
+        "created",
+        "error",
+        "error_code",
+        "message",
+        "ok",
+        "path",
+        "type",
+        "unchanged",
+        "updated",
+        "written"
       ],
       "dq": {
         "dq_dimensions": [
@@ -511,12 +948,43 @@
         "F7"
       ]
     },
+    "vault_folder_registry": {
+      "group": "Gestión de Carpetas",
+      "group_id": 32,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "folders",
+        "ok",
+        "orphan_folders",
+        "total"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "completeness",
+          "consistency"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F3"
+      ]
+    },
     "vault_fundamentals": {
       "group": "Data Quality",
       "group_id": 24,
       "status": "active",
       "required_args": [],
-      "declared_returns": [],
+      "declared_returns": [
+        "fundamentals",
+        "ok",
+        "timestamp",
+        "tool",
+        "total"
+      ],
       "dq": {
         "dq_dimensions": [],
         "cia_scope": [
@@ -537,11 +1005,21 @@
       ]
     },
     "vault_graph": {
-      "group": "Salud",
+      "group": "Salud del Vault",
       "group_id": 6,
       "status": "active",
       "required_args": [],
-      "declared_returns": [],
+      "declared_returns": [
+        "brokenLinks",
+        "created",
+        "ok",
+        "orphans",
+        "savedTo",
+        "stats",
+        "unchanged",
+        "updated",
+        "written"
+      ],
       "dq": {
         "dq_dimensions": [
           "consistency"
@@ -555,12 +1033,115 @@
         "F2"
       ]
     },
+    "vault_graph_fix": {
+      "group": "Corrección Automática",
+      "group_id": 33,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "classified",
+        "fixes_applied",
+        "ok",
+        "stubs_created",
+        "summary",
+        "vault_root"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency",
+          "integrity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": true
+      },
+      "fundamentals": [
+        "F1",
+        "F2"
+      ]
+    },
+    "vault_graph_inspect": {
+      "group": "Salud del Vault",
+      "group_id": 6,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "canonical_shadows",
+        "exact_duplicates",
+        "generated_at",
+        "graph_knowledge",
+        "metrics",
+        "near_duplicates",
+        "ok",
+        "scope",
+        "severity",
+        "summary",
+        "syntax_errors",
+        "vault_root"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "uniqueness",
+          "consistency",
+          "validity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F2",
+        "F5"
+      ]
+    },
+    "vault_graph_merge": {
+      "group": "Salud del Vault",
+      "group_id": 6,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "created",
+        "diagnostics",
+        "metadata",
+        "nextActions",
+        "ok",
+        "savedTo",
+        "stats",
+        "unchanged",
+        "updated",
+        "written"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency",
+          "completeness"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": true
+      },
+      "fundamentals": [
+        "F2",
+        "F3"
+      ]
+    },
     "vault_impact": {
       "group": "Propagación",
       "group_id": 25,
       "status": "active",
       "required_args": [],
-      "declared_returns": [],
+      "declared_returns": [
+        "changed_notes",
+        "error",
+        "hint",
+        "impact_radius",
+        "impacted",
+        "ok",
+        "summary"
+      ],
       "dq": {
         "dq_dimensions": [
           "consistency"
@@ -575,14 +1156,31 @@
       ]
     },
     "vault_incident_save": {
-      "group": "Producción y SRE",
-      "group_id": 29,
+      "group": "Producción/SRE",
+      "group_id": 28,
       "status": "active",
       "required_args": [
         "--project",
         "--title"
       ],
-      "declared_returns": [],
+      "declared_returns": [
+        "action_items_count",
+        "created",
+        "error_code",
+        "iso_standard",
+        "message",
+        "mttr",
+        "ok",
+        "path",
+        "project",
+        "recovery",
+        "severity",
+        "severity_label",
+        "status",
+        "unchanged",
+        "updated",
+        "written"
+      ],
       "dq": {
         "dq_dimensions": [
           "integrity",
@@ -616,8 +1214,15 @@
       "status": "active",
       "required_args": [],
       "declared_returns": [
+        "created",
+        "edgesTotal",
+        "error",
+        "nodesTotal",
+        "ok",
         "path",
-        "nodesTotal"
+        "unchanged",
+        "updated",
+        "written"
       ],
       "dq": {
         "dq_dimensions": [
@@ -637,13 +1242,23 @@
       "group_id": 8,
       "status": "active",
       "required_args": [
-        "--name",
-        "--type",
+        "--config",
         "--description",
-        "--config"
+        "--name",
+        "--type"
       ],
       "declared_returns": [
-        "path"
+        "created",
+        "error",
+        "error_code",
+        "infraMapUpdated",
+        "message",
+        "ok",
+        "path",
+        "type",
+        "unchanged",
+        "updated",
+        "written"
       ],
       "dq": {
         "dq_dimensions": [
@@ -661,6 +1276,89 @@
         "F7"
       ]
     },
+    "vault_ingest": {
+      "group": "Memoria de Contexto",
+      "group_id": 34,
+      "status": "active",
+      "required_args": [
+        "--section"
+      ],
+      "declared_returns": [
+        "committed",
+        "entities",
+        "error",
+        "error_code",
+        "forbidden",
+        "hint",
+        "message",
+        "norm_code",
+        "note",
+        "ok",
+        "origin",
+        "preflight",
+        "proposed",
+        "section",
+        "skipped",
+        "source",
+        "stats",
+        "valid",
+        "written"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "validity",
+          "authenticity",
+          "completeness"
+        ],
+        "cia_scope": [
+          "integrity",
+          "sensitivity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F5",
+        "F7"
+      ]
+    },
+    "vault_init": {
+      "group": "Bootstrap",
+      "group_id": 31,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "created",
+        "error",
+        "healthScore",
+        "hub_notes",
+        "noteCount",
+        "ok",
+        "steps",
+        "target_version",
+        "unchanged",
+        "updated",
+        "vault_root",
+        "written"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "completeness",
+          "consistency"
+        ],
+        "cia_scope": [
+          "integrity",
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F2",
+        "F3",
+        "F6"
+      ]
+    },
     "vault_knowledge_get": {
       "group": "Conocimiento",
       "group_id": 5,
@@ -669,8 +1367,14 @@
         "--query"
       ],
       "declared_returns": [
-        "results",
+        "autoRead",
+        "error",
+        "message",
+        "ok",
         "query",
+        "results",
+        "topContent",
+        "topMatch",
         "total"
       ],
       "dq": {
@@ -693,7 +1397,17 @@
         "--category"
       ],
       "declared_returns": [
-        "path"
+        "category",
+        "created",
+        "error",
+        "error_code",
+        "message",
+        "ok",
+        "path",
+        "title",
+        "unchanged",
+        "updated",
+        "written"
       ],
       "dq": {
         "dq_dimensions": [
@@ -729,7 +1443,15 @@
       "status": "active",
       "required_args": [],
       "declared_returns": [
-        "notes"
+        "error",
+        "folder",
+        "folders",
+        "limit",
+        "notes",
+        "ok",
+        "path",
+        "total",
+        "type"
       ],
       "dq": {
         "dq_dimensions": [],
@@ -747,11 +1469,23 @@
       "group_id": 2,
       "status": "active",
       "required_args": [
-        "--type",
+        "--description",
         "--title",
-        "--description"
+        "--type"
       ],
-      "declared_returns": [],
+      "declared_returns": [
+        "created",
+        "error",
+        "message",
+        "ok",
+        "path",
+        "severity",
+        "title",
+        "type",
+        "unchanged",
+        "updated",
+        "written"
+      ],
       "dq": {
         "dq_dimensions": [
           "non_repudiation",
@@ -770,7 +1504,7 @@
     "vault_manifest": {
       "group": "meta",
       "group_id": 0,
-      "status": "meta",
+      "status": "internal",
       "required_args": [],
       "declared_returns": [],
       "dq": {
@@ -793,7 +1527,14 @@
       "status": "active",
       "required_args": [],
       "declared_returns": [
-        "path"
+        "created",
+        "notesTotal",
+        "ok",
+        "path",
+        "sectionsTotal",
+        "unchanged",
+        "updated",
+        "written"
       ],
       "dq": {
         "dq_dimensions": [
@@ -815,7 +1556,13 @@
       "status": "active",
       "required_args": [],
       "declared_returns": [
-        "action"
+        "action",
+        "created",
+        "error",
+        "ok",
+        "unchanged",
+        "updated",
+        "written"
       ],
       "dq": {
         "dq_dimensions": [
@@ -832,10 +1579,35 @@
         "F2"
       ]
     },
+    "vault_mermaid_check": {
+      "group": "Diagramas",
+      "group_id": 4,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "files_checked",
+        "files_with_diagrams",
+        "ok",
+        "results",
+        "total_errors"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "validity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F5"
+      ]
+    },
     "vault_migrate": {
       "group": "Migración (legacy)",
       "group_id": 0,
-      "status": "deprecated",
+      "status": "archived",
       "required_args": [
         "--source",
         "--project"
@@ -849,17 +1621,38 @@
       "fundamentals": [],
       "replaced_by": "vault_migrate_docs",
       "deprecated_since": "v25",
-      "deprecation_reason": "vault_migrate_docs is the canonical migration tool with full project support"
+      "deprecation_reason": "vault_migrate_docs is the canonical migration tool with full project support",
+      "archived_in": "v25",
+      "superseded_by": "vault_migrate_docs"
     },
     "vault_migrate_docs": {
       "group": "Migración",
       "group_id": 9,
       "status": "active",
       "required_args": [
-        "--source_path",
-        "--project"
+        "--project",
+        "--source_path"
       ],
-      "declared_returns": [],
+      "declared_returns": [
+        "classified",
+        "created",
+        "distributed",
+        "dryRun",
+        "error",
+        "errors",
+        "message",
+        "ok",
+        "phase1",
+        "project",
+        "reportFile",
+        "stubsCreated",
+        "subfoldersCreated",
+        "totalScanned",
+        "totalStaged",
+        "unchanged",
+        "updated",
+        "written"
+      ],
       "dq": {
         "dq_dimensions": [
           "integrity",
@@ -883,7 +1676,23 @@
       "required_args": [
         "--report_path"
       ],
-      "declared_returns": [],
+      "declared_returns": [
+        "deleted",
+        "deletedCount",
+        "error",
+        "errors",
+        "existingFiles",
+        "hint",
+        "indexEntriesRemoved",
+        "message",
+        "notFound",
+        "ok",
+        "preview",
+        "reportDeleted",
+        "reportPath",
+        "toDelete",
+        "totalInReport"
+      ],
       "dq": {
         "dq_dimensions": [
           "integrity"
@@ -898,15 +1707,64 @@
         "F8"
       ]
     },
+    "vault_move": {
+      "group": "Core",
+      "group_id": 1,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "backlinks",
+        "backlinks_count",
+        "created",
+        "destination",
+        "ok",
+        "source",
+        "unchanged",
+        "updated",
+        "will_update_graph",
+        "will_update_index",
+        "written"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency",
+          "integrity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": true
+      },
+      "fundamentals": [
+        "F1",
+        "F2"
+      ]
+    },
     "vault_ncr_save": {
-      "group": "Riesgos y Calidad",
-      "group_id": 31,
+      "group": "Riesgos/Calidad",
+      "group_id": 30,
       "status": "active",
       "required_args": [
         "--project",
         "--title"
       ],
-      "declared_returns": [],
+      "declared_returns": [
+        "corrective_actions_count",
+        "created",
+        "error_code",
+        "iso_standard",
+        "message",
+        "ncr_id",
+        "ncr_type",
+        "ok",
+        "path",
+        "project",
+        "severity",
+        "status",
+        "unchanged",
+        "updated",
+        "written"
+      ],
       "dq": {
         "dq_dimensions": [
           "integrity",
@@ -921,12 +1779,53 @@
       },
       "fundamentals": []
     },
-    "vault_norms": {
-      "group": "Normas y Etiquetas",
-      "group_id": 28,
+    "vault_noop_audit": {
+      "group": "Normas",
+      "group_id": 35,
       "status": "active",
       "required_args": [],
-      "declared_returns": [],
+      "declared_returns": [
+        "baseline_size",
+        "frozen",
+        "new_offenders",
+        "norm",
+        "offenders",
+        "offenders_total",
+        "ok",
+        "path",
+        "resolved_since_baseline",
+        "tool"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "integrity",
+          "accuracy"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F8"
+      ]
+    },
+    "vault_norms": {
+      "group": "Normas",
+      "group_id": 35,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "by_norm",
+        "generated_at",
+        "notes_scanned",
+        "ok",
+        "tool",
+        "total_violations",
+        "vault_root",
+        "violations"
+      ],
       "dq": {
         "dq_dimensions": [
           "validity",
@@ -943,7 +1842,7 @@
     "vault_onboard": {
       "group": "Versionado",
       "group_id": 22,
-      "status": "active",
+      "status": "internal",
       "required_args": [
         "--project",
         "--path"
@@ -962,7 +1861,12 @@
       "status": "active",
       "required_args": [],
       "declared_returns": [
-        "patterns"
+        "error",
+        "filters",
+        "grouped",
+        "ok",
+        "patterns",
+        "total"
       ],
       "dq": {
         "dq_dimensions": [],
@@ -980,13 +1884,23 @@
       "group_id": 3,
       "status": "active",
       "required_args": [
-        "--project",
         "--name",
-        "--type",
-        "--status"
+        "--project",
+        "--status",
+        "--type"
       ],
       "declared_returns": [
-        "path"
+        "created",
+        "error",
+        "error_code",
+        "message",
+        "ok",
+        "path",
+        "status",
+        "transition",
+        "unchanged",
+        "updated",
+        "written"
       ],
       "dq": {
         "dq_dimensions": [
@@ -1002,17 +1916,64 @@
         "F7"
       ]
     },
+    "vault_preferences": {
+      "group": "Memoria de Contexto",
+      "group_id": 34,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "context",
+        "created",
+        "path",
+        "preferences",
+        "unchanged",
+        "updated",
+        "written"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "validity",
+          "authenticity",
+          "non_repudiation"
+        ],
+        "cia_scope": [
+          "integrity",
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F5",
+        "F7",
+        "F8"
+      ]
+    },
     "vault_privacy_save": {
-      "group": "Riesgos y Calidad",
-      "group_id": 31,
+      "group": "Riesgos/Calidad",
+      "group_id": 30,
       "status": "active",
       "required_args": [
+        "--legal_basis",
         "--project",
-        "--title",
         "--purpose",
-        "--legal_basis"
+        "--title"
       ],
-      "declared_returns": [],
+      "declared_returns": [
+        "created",
+        "dpia_required",
+        "error_code",
+        "iso_standard",
+        "legal_basis",
+        "message",
+        "ok",
+        "path",
+        "pii_count",
+        "project",
+        "transfers_outside_eu",
+        "unchanged",
+        "updated",
+        "written"
+      ],
       "dq": {
         "dq_dimensions": [
           "integrity",
@@ -1028,14 +1989,20 @@
       "fundamentals": []
     },
     "vault_project_overview": {
-      "group": "Vista proyecto",
+      "group": "Vista del Proyecto",
       "group_id": 11,
       "status": "active",
       "required_args": [
         "--project"
       ],
       "declared_returns": [
-        "path"
+        "created",
+        "ok",
+        "path",
+        "sections",
+        "unchanged",
+        "updated",
+        "written"
       ],
       "dq": {
         "dq_dimensions": [],
@@ -1050,7 +2017,7 @@
       ]
     },
     "vault_project_status": {
-      "group": "Vista proyecto",
+      "group": "Vista del Proyecto",
       "group_id": 11,
       "status": "active",
       "required_args": [
@@ -1059,7 +2026,12 @@
         "--summary"
       ],
       "declared_returns": [
-        "path"
+        "changelogPath",
+        "error",
+        "ok",
+        "path",
+        "project",
+        "status"
       ],
       "dq": {
         "dq_dimensions": [
@@ -1080,7 +2052,21 @@
       "group_id": 25,
       "status": "active",
       "required_args": [],
-      "declared_returns": [],
+      "declared_returns": [
+        "actions",
+        "created",
+        "error",
+        "impacted_count",
+        "message",
+        "notified",
+        "ok",
+        "queued",
+        "reindexed",
+        "strategy",
+        "unchanged",
+        "updated",
+        "written"
+      ],
       "dq": {
         "dq_dimensions": [
           "consistency",
@@ -1101,7 +2087,13 @@
       "group_id": 24,
       "status": "active",
       "required_args": [],
-      "declared_returns": [],
+      "declared_returns": [
+        "created",
+        "path",
+        "unchanged",
+        "updated",
+        "written"
+      ],
       "dq": {
         "dq_dimensions": [
           "integrity",
@@ -1131,6 +2123,78 @@
         "F8"
       ]
     },
+    "vault_quarantine": {
+      "group": "Defectos y Cuarentena",
+      "group_id": 36,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "action",
+        "category",
+        "count",
+        "created",
+        "entries",
+        "error",
+        "error_code",
+        "from",
+        "message",
+        "ok",
+        "origin",
+        "path",
+        "restored_total",
+        "unchanged",
+        "updated",
+        "written"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "integrity",
+          "validity"
+        ],
+        "cia_scope": [
+          "integrity",
+          "confidentiality"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F5",
+        "F7"
+      ]
+    },
+    "vault_query_parse": {
+      "group": "Memoria de Contexto",
+      "group_id": 34,
+      "status": "active",
+      "required_args": [
+        "--query"
+      ],
+      "declared_returns": [
+        "confidence",
+        "error",
+        "error_code",
+        "evidence",
+        "ok",
+        "plan",
+        "query",
+        "structured"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "validity",
+          "accuracy"
+        ],
+        "cia_scope": [
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F4",
+        "F5"
+      ]
+    },
     "vault_read": {
       "group": "Core",
       "group_id": 1,
@@ -1139,8 +2203,15 @@
         "--path"
       ],
       "declared_returns": [
+        "body",
+        "error",
+        "error_code",
+        "historyVersions",
+        "meta",
+        "ok",
         "path",
-        "body"
+        "stats",
+        "wikiLinks"
       ],
       "dq": {
         "dq_dimensions": [],
@@ -1154,13 +2225,36 @@
         "F3"
       ]
     },
+    "vault_registry": {
+      "group": "meta",
+      "group_id": 0,
+      "status": "internal",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "consistency",
+          "validity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F2"
+      ]
+    },
     "vault_reindex": {
       "group": "Índices",
       "group_id": 15,
       "status": "active",
       "required_args": [],
       "declared_returns": [
-        "indexed"
+        "graph",
+        "index_warning",
+        "indexed",
+        "indexes_rebuilt"
       ],
       "dq": {
         "dq_dimensions": [
@@ -1180,13 +2274,21 @@
       "group_id": 4,
       "status": "active",
       "required_args": [
-        "--project",
         "--from",
-        "--to",
-        "--relation_type"
+        "--project",
+        "--relation_type",
+        "--to"
       ],
       "declared_returns": [
-        "path"
+        "created",
+        "deduplicated",
+        "error",
+        "ok",
+        "path",
+        "relationsTotal",
+        "unchanged",
+        "updated",
+        "written"
       ],
       "dq": {
         "dq_dimensions": [
@@ -1202,14 +2304,32 @@
       ]
     },
     "vault_release_save": {
-      "group": "Release y Entornos",
-      "group_id": 30,
+      "group": "Release",
+      "group_id": 29,
       "status": "active",
       "required_args": [
         "--project",
         "--version"
       ],
-      "declared_returns": [],
+      "declared_returns": [
+        "breaking_changes",
+        "changelog",
+        "changes_count",
+        "created",
+        "error_code",
+        "iso_standard",
+        "message",
+        "migrations_required",
+        "ok",
+        "path",
+        "project",
+        "release_type",
+        "status",
+        "unchanged",
+        "updated",
+        "version",
+        "written"
+      ],
       "dq": {
         "dq_dimensions": [
           "integrity",
@@ -1226,7 +2346,7 @@
     "vault_render": {
       "group": "Diagramas (legacy)",
       "group_id": 0,
-      "status": "deprecated",
+      "status": "archived",
       "required_args": [],
       "declared_returns": [],
       "dq": {
@@ -1237,12 +2357,14 @@
       "fundamentals": [],
       "replaced_by": "vault_diagram_save",
       "deprecated_since": "v22",
-      "deprecation_reason": "vault_diagram_save generates Mermaid diagrams with ERD support"
+      "deprecation_reason": "vault_diagram_save generates Mermaid diagrams with ERD support",
+      "archived_in": "v22",
+      "superseded_by": "vault_diagram_save"
     },
     "vault_reorganize": {
       "group": "Migración (legacy)",
       "group_id": 0,
-      "status": "deprecated",
+      "status": "archived",
       "required_args": [],
       "declared_returns": [],
       "dq": {
@@ -1253,21 +2375,33 @@
       "fundamentals": [],
       "replaced_by": "vault_migrate_docs",
       "deprecated_since": "v25",
-      "deprecation_reason": "Dynamic dest detection is handled by vault_migrate_docs"
+      "deprecation_reason": "Dynamic dest detection is handled by vault_migrate_docs",
+      "archived_in": "v25",
+      "superseded_by": "vault_migrate_docs"
     },
     "vault_requirement_save": {
       "group": "Requerimientos",
       "group_id": 19,
       "status": "active",
       "required_args": [
+        "--description",
+        "--priority",
         "--project",
         "--title",
-        "--description",
-        "--type",
-        "--priority"
+        "--type"
       ],
       "declared_returns": [
-        "path"
+        "action",
+        "created",
+        "error",
+        "error_code",
+        "message",
+        "ok",
+        "path",
+        "req_id",
+        "unchanged",
+        "updated",
+        "written"
       ],
       "dq": {
         "dq_dimensions": [
@@ -1292,7 +2426,19 @@
       "required_args": [
         "--backup_name"
       ],
-      "declared_returns": [],
+      "declared_returns": [
+        "created",
+        "error",
+        "hint",
+        "message",
+        "noteCount",
+        "ok",
+        "restored_from",
+        "searched",
+        "unchanged",
+        "updated",
+        "written"
+      ],
       "dq": {
         "dq_dimensions": [
           "integrity"
@@ -1308,15 +2454,55 @@
         "F8"
       ]
     },
+    "vault_restore_base64": {
+      "group": "Backups",
+      "group_id": 13,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "files_restored",
+        "ok",
+        "path"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "integrity"
+        ],
+        "cia_scope": [
+          "integrity",
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1"
+      ]
+    },
     "vault_risk_save": {
-      "group": "Riesgos y Calidad",
-      "group_id": 31,
+      "group": "Riesgos/Calidad",
+      "group_id": 30,
       "status": "active",
       "required_args": [
         "--project",
         "--title"
       ],
-      "declared_returns": [],
+      "declared_returns": [
+        "created",
+        "error_code",
+        "iso_standard",
+        "level",
+        "message",
+        "ok",
+        "path",
+        "project",
+        "risk_type",
+        "score",
+        "status",
+        "treatment",
+        "unchanged",
+        "updated",
+        "written"
+      ],
       "dq": {
         "dq_dimensions": [
           "validity",
@@ -1337,10 +2523,21 @@
       "group_id": 7,
       "status": "active",
       "required_args": [
-        "--path",
-        "--outcome"
+        "--outcome",
+        "--path"
       ],
-      "declared_returns": [],
+      "declared_returns": [
+        "created",
+        "error",
+        "executionNumber",
+        "message",
+        "ok",
+        "outcome",
+        "path",
+        "unchanged",
+        "updated",
+        "written"
+      ],
       "dq": {
         "dq_dimensions": [
           "non_repudiation"
@@ -1360,14 +2557,24 @@
       "group_id": 7,
       "status": "active",
       "required_args": [
-        "--project",
-        "--title",
-        "--trigger",
         "--category",
-        "--steps"
+        "--project",
+        "--steps",
+        "--title",
+        "--trigger"
       ],
       "declared_returns": [
-        "path"
+        "category",
+        "created",
+        "error",
+        "error_code",
+        "message",
+        "ok",
+        "path",
+        "steps",
+        "unchanged",
+        "updated",
+        "written"
       ],
       "dq": {
         "dq_dimensions": [
@@ -1392,7 +2599,14 @@
         "--query"
       ],
       "declared_returns": [
-        "results"
+        "error",
+        "folder",
+        "hint",
+        "ok",
+        "query",
+        "results",
+        "tag",
+        "total"
       ],
       "dq": {
         "dq_dimensions": [],
@@ -1413,7 +2627,18 @@
         "--folder"
       ],
       "declared_returns": [
-        "path"
+        "created",
+        "detail",
+        "error",
+        "folder",
+        "is_empty",
+        "noteCount",
+        "ok",
+        "path",
+        "subdirIndexes",
+        "unchanged",
+        "updated",
+        "written"
       ],
       "dq": {
         "dq_dimensions": [
@@ -1436,7 +2661,20 @@
         "--path"
       ],
       "declared_returns": [
-        "riskLevel"
+        "byCategory",
+        "bySeverity",
+        "created",
+        "error",
+        "filesScanned",
+        "findings",
+        "ok",
+        "riskLevel",
+        "savedToVault",
+        "summary",
+        "totalFindings",
+        "unchanged",
+        "updated",
+        "written"
       ],
       "dq": {
         "dq_dimensions": [
@@ -1455,8 +2693,8 @@
       ]
     },
     "vault_slo_save": {
-      "group": "Producción y SRE",
-      "group_id": 29,
+      "group": "Producción/SRE",
+      "group_id": 28,
       "status": "active",
       "required_args": [
         "--project",
@@ -1464,7 +2702,24 @@
         "--slo_type",
         "--target"
       ],
-      "declared_returns": [],
+      "declared_returns": [
+        "created",
+        "error_budget",
+        "error_code",
+        "iso_standard",
+        "message",
+        "ok",
+        "path",
+        "project",
+        "recovery",
+        "service",
+        "slo",
+        "slo_type",
+        "unchanged",
+        "updated",
+        "window",
+        "written"
+      ],
       "dq": {
         "dq_dimensions": [
           "validity",
@@ -1479,10 +2734,44 @@
       },
       "fundamentals": []
     },
+    "vault_smoke": {
+      "group": "Normas",
+      "group_id": 35,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "action",
+        "baseline",
+        "checked",
+        "failing",
+        "failures",
+        "frozen",
+        "new_offenders",
+        "ok",
+        "passing",
+        "path",
+        "resolved",
+        "tool"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "integrity",
+          "validity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F5"
+      ]
+    },
     "vault_spec_memory": {
       "group": "meta",
       "group_id": 0,
-      "status": "meta",
+      "status": "internal",
       "required_args": [],
       "declared_returns": [],
       "dq": {
@@ -1506,7 +2795,7 @@
     "vault_spec_validate": {
       "group": "meta",
       "group_id": 0,
-      "status": "active",
+      "status": "internal",
       "required_args": [],
       "declared_returns": [],
       "dq": {
@@ -1521,7 +2810,32 @@
       "group_id": 22,
       "status": "active",
       "required_args": [],
-      "declared_returns": [],
+      "declared_returns": [
+        "action",
+        "applied_version",
+        "available_fixes",
+        "base_folders_created",
+        "compliance",
+        "current_version",
+        "fix_types",
+        "fixes_applied",
+        "fixes_failed",
+        "folders_created",
+        "from",
+        "message",
+        "migrations_applied",
+        "ok",
+        "path",
+        "pending_count",
+        "pending_migrations",
+        "sections_indexed",
+        "target_version",
+        "to",
+        "version_file",
+        "would_apply",
+        "would_apply_fixes",
+        "would_create_folders"
+      ],
       "dq": {
         "dq_dimensions": [
           "integrity"
@@ -1537,12 +2851,55 @@
         "F8"
       ]
     },
+    "vault_subgraph": {
+      "group": "Memoria de Contexto",
+      "group_id": 34,
+      "status": "active",
+      "required_args": [
+        "--seeds"
+      ],
+      "declared_returns": [
+        "direction",
+        "edges",
+        "error",
+        "error_code",
+        "hint",
+        "hops",
+        "nodes",
+        "ok",
+        "seeds",
+        "stats",
+        "unresolved",
+        "unresolved_seeds"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency",
+          "completeness"
+        ],
+        "cia_scope": [
+          "availability"
+        ],
+        "propagation_aware": true
+      },
+      "fundamentals": [
+        "F2",
+        "F3"
+      ]
+    },
     "vault_tags": {
       "group": "Session Delta y Tags",
       "group_id": 27,
       "status": "active",
       "required_args": [],
-      "declared_returns": [],
+      "declared_returns": [
+        "error",
+        "ok",
+        "renamed",
+        "suggestions",
+        "tags",
+        "total"
+      ],
       "dq": {
         "dq_dimensions": [],
         "cia_scope": [],
@@ -1553,7 +2910,7 @@
     "vault_test_runner": {
       "group": "meta",
       "group_id": 0,
-      "status": "meta",
+      "status": "internal",
       "required_args": [],
       "declared_returns": [],
       "dq": {
@@ -1572,13 +2929,23 @@
       "group_id": 20,
       "status": "active",
       "required_args": [
+        "--description",
         "--project",
-        "--title",
         "--test_type",
-        "--description"
+        "--title"
       ],
       "declared_returns": [
-        "path"
+        "action",
+        "created",
+        "error",
+        "error_code",
+        "message",
+        "ok",
+        "path",
+        "test_id",
+        "unchanged",
+        "updated",
+        "written"
       ],
       "dq": {
         "dq_dimensions": [
@@ -1596,12 +2963,22 @@
       ]
     },
     "vault_timeline": {
-      "group": "Línea de tiempo",
+      "group": "Línea de Tiempo",
       "group_id": 10,
       "status": "active",
       "required_args": [],
       "declared_returns": [
-        "query"
+        "bySource",
+        "events",
+        "from",
+        "hint",
+        "ok",
+        "project",
+        "query",
+        "shown",
+        "sources",
+        "to",
+        "total"
       ],
       "dq": {
         "dq_dimensions": [],
@@ -1621,13 +2998,15 @@
       "status": "active",
       "required_args": [
         "--flow-id",
-        "--flow-id",
-        "--text",
-        "--text",
-        "--flow-id",
-        "--flow-id"
+        "--text"
       ],
-      "declared_returns": [],
+      "declared_returns": [
+        "error",
+        "ok",
+        "running",
+        "status",
+        "url"
+      ],
       "dq": {
         "dq_dimensions": [],
         "cia_scope": [
@@ -1645,7 +3024,12 @@
       "group_id": 26,
       "status": "active",
       "required_args": [],
-      "declared_returns": [],
+      "declared_returns": [
+        "host",
+        "ok",
+        "port",
+        "running"
+      ],
       "dq": {
         "dq_dimensions": [],
         "cia_scope": [
@@ -1663,7 +3047,23 @@
       "group_id": 26,
       "status": "active",
       "required_args": [],
-      "declared_returns": [],
+      "declared_returns": [
+        "action",
+        "calls",
+        "entries",
+        "grand",
+        "hint",
+        "input_tokens",
+        "message",
+        "ok",
+        "output_tokens",
+        "period",
+        "providers",
+        "ranking",
+        "tools",
+        "top",
+        "total_tokens"
+      ],
       "dq": {
         "dq_dimensions": [],
         "cia_scope": [
@@ -1679,7 +3079,7 @@
     "vault_tools": {
       "group": "misc (legacy)",
       "group_id": 0,
-      "status": "deprecated",
+      "status": "archived",
       "required_args": [],
       "declared_returns": [],
       "dq": {
@@ -1690,14 +3090,21 @@
       "fundamentals": [],
       "replaced_by": "See individual tools",
       "deprecated_since": "v22",
-      "deprecation_reason": "Monolithic script superseded by dedicated tools per group"
+      "deprecation_reason": "Monolithic script superseded by dedicated tools per group",
+      "archived_in": "v22"
     },
     "vault_validate": {
-      "group": "Salud",
+      "group": "Salud del Vault",
       "group_id": 6,
       "status": "active",
       "required_args": [],
-      "declared_returns": [],
+      "declared_returns": [
+        "indexes",
+        "invalid",
+        "ok",
+        "structure",
+        "valid"
+      ],
       "dq": {
         "dq_dimensions": [
           "validity",
@@ -1715,6 +3122,38 @@
         "F1",
         "F5",
         "F7"
+      ]
+    },
+    "vault_voice": {
+      "group": "Normas",
+      "group_id": 35,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "action",
+        "count",
+        "norms",
+        "norms_spoken",
+        "norms_total",
+        "ok",
+        "says",
+        "silent",
+        "target",
+        "tool"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency",
+          "completeness"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F2",
+        "F3"
       ]
     },
     "vault_write": {
@@ -1725,8 +3164,24 @@
         "--folder"
       ],
       "declared_returns": [
+        "ap23_warning",
+        "created",
+        "current_path",
+        "details",
+        "error",
+        "error_code",
+        "ghost_links",
+        "id",
+        "message",
+        "norm_code",
+        "norm_name",
+        "ok",
         "path",
-        "id"
+        "suggestion",
+        "tag_suggestions",
+        "unchanged",
+        "updated",
+        "written"
       ],
       "dq": {
         "dq_dimensions": [
@@ -1741,220 +3196,6 @@
       "fundamentals": [
         "F1",
         "F3",
-        "F7"
-      ]
-    },
-    "vault_registry": {
-      "group": "meta",
-      "group_id": 0,
-      "status": "meta",
-      "required_args": [],
-      "declared_returns": [],
-      "dq": {
-        "dq_dimensions": [
-          "consistency",
-          "validity"
-        ],
-        "cia_scope": [
-          "integrity"
-        ],
-        "propagation_aware": false
-      },
-      "fundamentals": [
-        "F2"
-      ]
-    },
-    "vault_code_sync": {
-      "group": "Código",
-      "group_id": 12,
-      "status": "active",
-      "required_args": [],
-      "declared_returns": [
-        "status",
-        "summary"
-      ],
-      "dq": {
-        "dq_dimensions": [
-          "consistency",
-          "integrity",
-          "completeness"
-        ],
-        "cia_scope": [
-          "integrity"
-        ],
-        "propagation_aware": false
-      },
-      "fundamentals": [
-        "F2",
-        "F4"
-      ]
-    },
-    "vault_init": {
-      "group": "Bootstrap",
-      "group_id": 32,
-      "status": "active",
-      "required_args": [],
-      "declared_returns": [
-        "ok"
-      ],
-      "dq": {
-        "dq_dimensions": [
-          "completeness",
-          "consistency"
-        ],
-        "cia_scope": [
-          "integrity",
-          "availability"
-        ],
-        "propagation_aware": false
-      },
-      "fundamentals": [
-        "F1",
-        "F2",
-        "F3",
-        "F6"
-      ]
-    },
-    "vault_preferences": {
-      "group": "Memoria de Contexto",
-      "group_id": 33,
-      "status": "active",
-      "required_args": [],
-      "declared_returns": [
-        "preferences",
-        "context",
-        "path"
-      ],
-      "dq": {
-        "dq_dimensions": [
-          "validity",
-          "authenticity",
-          "non_repudiation"
-        ],
-        "cia_scope": [
-          "integrity",
-          "availability"
-        ],
-        "propagation_aware": false
-      },
-      "fundamentals": [
-        "F5",
-        "F7",
-        "F8"
-      ]
-    },
-    "vault_subgraph": {
-      "group": "Memoria de Contexto",
-      "group_id": 33,
-      "status": "active",
-      "required_args": [
-        "--seeds"
-      ],
-      "declared_returns": [
-        "nodes",
-        "edges",
-        "stats"
-      ],
-      "dq": {
-        "dq_dimensions": [
-          "consistency",
-          "completeness"
-        ],
-        "cia_scope": [
-          "availability"
-        ],
-        "propagation_aware": true
-      },
-      "fundamentals": [
-        "F2",
-        "F3"
-      ]
-    },
-    "vault_query_parse": {
-      "group": "Memoria de Contexto",
-      "group_id": 33,
-      "status": "active",
-      "required_args": [
-        "--query"
-      ],
-      "declared_returns": [
-        "structured",
-        "confidence",
-        "plan"
-      ],
-      "dq": {
-        "dq_dimensions": [
-          "validity",
-          "accuracy"
-        ],
-        "cia_scope": [
-          "availability"
-        ],
-        "propagation_aware": false
-      },
-      "fundamentals": [
-        "F4",
-        "F5"
-      ]
-    },
-    "vault_context_pack": {
-      "group": "Memoria de Contexto",
-      "group_id": 33,
-      "status": "active",
-      "required_args": [
-        "--query"
-      ],
-      "declared_returns": [
-        "context",
-        "tokens",
-        "included",
-        "excluded"
-      ],
-      "dq": {
-        "dq_dimensions": [
-          "completeness",
-          "timeliness",
-          "accuracy"
-        ],
-        "cia_scope": [
-          "availability",
-          "integrity"
-        ],
-        "propagation_aware": true
-      },
-      "fundamentals": [
-        "F3",
-        "F6"
-      ]
-    },
-    "vault_ingest": {
-      "group": "Memoria de Contexto",
-      "group_id": 33,
-      "status": "active",
-      "required_args": [
-        "--section"
-      ],
-      "declared_returns": [
-        "proposed",
-        "written",
-        "entities",
-        "preflight"
-      ],
-      "dq": {
-        "dq_dimensions": [
-          "validity",
-          "authenticity",
-          "completeness"
-        ],
-        "cia_scope": [
-          "integrity",
-          "sensitivity"
-        ],
-        "propagation_aware": false
-      },
-      "fundamentals": [
-        "F1",
-        "F5",
         "F7"
       ]
     }

@@ -11,6 +11,10 @@ Usage:
     python vault_help.py --search "backup"       # search tools by keyword
     python vault_help.py --groups                # list groups only
     python vault_help.py --count                 # count tools
+
+ARCHIVADA (politica de no-derogacion; ver scripts/_archived/README.md).
+superseded_by: vault_mcp_catalog.py
+reason: La ayuda se deriva del catalogo canonico.
 """
 
 import argparse

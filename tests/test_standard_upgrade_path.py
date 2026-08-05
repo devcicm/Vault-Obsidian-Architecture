@@ -80,3 +80,45 @@ def test_toda_seccion_del_registro_es_alcanzable_por_migracion():
             f"{seccion} está en el registro pero ninguna migración ni el "
             f"scaffold base la crea"
         )
+
+
+def test_scripts_dir_esta_definido():
+    """Se usaba en dos ramas sin estar definido nunca.
+
+    Ambas estaban dentro de un `except Exception`, así que el NameError no
+    rompía: salía como `fixes_failed: "name 'SCRIPTS_DIR' is not defined"` en
+    `standard-version.json` y la migración seguía devolviendo `ok: true`.
+    """
+    assert vsu.SCRIPTS_DIR.is_dir()
+    assert (vsu.SCRIPTS_DIR / "vault_standard_upgrade.py").exists()
+
+
+def test_toda_tool_de_fix_declarada_existe_como_script():
+    """El nombre del script es el de la tool, sin derivaciones.
+
+    La versión anterior lo reconstruía como `vault_<segunda palabra>.py`: para
+    `vault_fix_brackets` daba `vault_fix.py`, que no existe. El fix nunca se
+    aplicaba y el fallo solo quedaba anotado en el registro del vault.
+    """
+    faltan = []
+    for fix_type, config in vsu.FIX_TYPES.items():
+        tool = config["tool"]
+        if not (vsu.SCRIPTS_DIR / f"{tool}.py").exists():
+            faltan.append((fix_type, tool))
+    assert not faltan, f"fixes que invocan scripts inexistentes: {faltan}"
+
+    # Y que toda migración referencie un fix_type registrado.
+    for version, migracion in vsu.MIGRATIONS.items():
+        for fix_type in migracion.get("fixes", []):
+            assert fix_type in vsu.FIX_TYPES, f"{version} cita el fix desconocido {fix_type}"
+
+
+def test_un_fallo_resuelto_no_queda_fijado_en_el_registro():
+    """`fixes_applied` / `fixes_failed` se escriben siempre, incluso vacías.
+
+    Con el `if` anterior, una migración sin fallos no sobrescribía la clave, y
+    el vault seguía declarando un error ya corregido, versión tras versión.
+    """
+    fuente = (vsu.SCRIPTS_DIR / "vault_standard_upgrade.py").read_text(encoding="utf-8")
+    assert 'state["fixes_failed"] = all_fixes_failed' in fuente
+    assert "if all_fixes_failed:" not in fuente

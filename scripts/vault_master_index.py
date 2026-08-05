@@ -29,7 +29,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 
-from vault_io import VAULT_ROOT
+from vault_io import VAULT_ROOT, write_report
 from vault_registry import ORDERED_SECTIONS, section_name, section_description
 
 INDEX_DIR = VAULT_ROOT / "99_Index"
@@ -140,6 +140,7 @@ def vault_master_index() -> Dict[str, Any]:
 
     return {
         "ok": True,
+        **write_report(),
         "path": str(master_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
         "sectionsTotal": len(ORDERED_SECTIONS),
         "notesTotal": total_notes,

@@ -29,7 +29,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT
+from vault_io import VAULT_ROOT, write_report
 
 CODE_DIR = VAULT_ROOT / "11_Code"
 CODE_INDEX = CODE_DIR / ".code-index.json"
@@ -260,6 +260,7 @@ def vault_code_sync(
 
     return {
         "ok": True,
+        **write_report(),
         "status": status,
         "project": project or "all",
         "dry_run": dry_run,

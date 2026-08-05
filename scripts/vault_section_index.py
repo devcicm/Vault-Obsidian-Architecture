@@ -20,7 +20,14 @@ from vault_lib import parse_frontmatter, utcnow
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from vault_io import assert_within_vault, file_lock, get_vault_root, safe_wikilink
+from vault_io import (
+    assert_within_vault,
+    file_lock,
+    get_vault_root,
+    record_raw_write,
+    safe_wikilink,
+    write_report,
+)
 from vault_registry import section_description, section_tool_hint
 
 
@@ -455,10 +462,11 @@ def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, 
             # from deadlock — index.md is in _SKIP_AUTO_INDEX so writing it never
             # re-enters _auto_section_index, and no caller holds this lock.
             with file_lock(sub_index):
-                sub_index.write_text(
-                    _build_index_content(sub_folder, sub_notes, now, subdirs=None),
-                    encoding="utf-8",
+                sub_contenido = _build_index_content(
+                    sub_folder, sub_notes, now, subdirs=None
                 )
+                record_raw_write(sub_index, sub_contenido)
+                sub_index.write_text(sub_contenido, encoding="utf-8")
             subdir_indexes.append(
                 str(sub_index.relative_to(vroot)).replace("\\", "/")
             )
@@ -469,13 +477,15 @@ def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, 
     # Leaf lock (see sub-index note above): serialize concurrent regens of this
     # section index; deadlock-free because index.md is skipped by _auto_section_index.
     with file_lock(index_path):
-        index_path.write_text(
-            _build_index_content(folder, notes, now, subdirs=subdir_folders or None),
-            encoding="utf-8",
+        contenido = _build_index_content(
+            folder, notes, now, subdirs=subdir_folders or None
         )
+        record_raw_write(index_path, contenido)
+        index_path.write_text(contenido, encoding="utf-8")
 
     return {
         "ok": True,
+        **write_report(),
         "path": str(index_path.relative_to(vroot)).replace("\\", "/"),
         "noteCount": len(notes),
         "is_empty": len(notes) == 0,

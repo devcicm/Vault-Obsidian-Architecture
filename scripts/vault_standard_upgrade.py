@@ -27,11 +27,34 @@ from typing import Any, Dict, List, Optional
 from vault_io import VAULT_ROOT
 from vault_registry import standard_folders
 
+# Directorio de las propias tools. No es un side-effect ni una ruta del vault:
+# es el sitio desde donde esta tool invoca a sus vecinas, así que sí se deriva
+# de `__file__` (AP-36 rige para las escrituras, que van al vault). Faltaba, y
+# las dos ramas que lo usan estaban envueltas en `except Exception`, de modo que
+# el NameError salía como `fixes_failed: SCRIPTS_DIR is not defined` en
+# `standard-version.json` en vez de romper.
+SCRIPTS_DIR = Path(__file__).resolve().parent
+
 SYSTEM_DIR = VAULT_ROOT / "00_System"
 VERSION_FILE = SYSTEM_DIR / "standard-version.json"
 IDENTITY_FILE = SYSTEM_DIR / "identity.md"
 
 CURRENT_VERSION = "v39.0"
+
+
+def _live_identity() -> Dict[str, str]:
+    """Conteos de la versión corriente, derivados del catálogo canónico.
+
+    Se importa aquí y no arriba para no crear un ciclo: vault_mcp_catalog puede
+    acabar importando módulos que importan este. Si el catálogo no fuese
+    legible, la migración no debe caerse por un dato informativo.
+    """
+    try:
+        from vault_mcp_catalog import GROUPS, TOOLS_CATALOG
+
+        return {"tools_count": str(len(TOOLS_CATALOG)), "groups_count": str(len(GROUPS))}
+    except Exception:
+        return {}
 
 MIGRATIONS: Dict[str, Dict[str, Any]] = {
     "v21": {
@@ -327,8 +350,27 @@ MIGRATIONS: Dict[str, Dict[str, Any]] = {
             "17_Preferences/tooling",
             "17_Preferences/constraints",
             "17_Preferences/domain",
+            # Secciones 18–20: sin migración, un vault preexistente se queda sin
+            # destino y las notas vuelven a repartirse por donde caigan — que es
+            # exactamente el estado que motivó crearlas.
+            "18_Bugs",
+            "18_Bugs/open",
+            "18_Bugs/root-causes",
+            "18_Bugs/fixed",
+            "19_Audits",
+            "19_Audits/vocabulary",
+            "19_Audits/runs",
+            "19_Audits/findings",
+            "20_Quarantine",
+            "20_Quarantine/unclassified",
+            "20_Quarantine/suspicious",
+            "20_Quarantine/duplicates",
         ],
-        "update_identity": {"tools_count": "81", "groups_count": "34"},
+        # Los conteos de las migraciones ANTERIORES son historia: describen el
+        # estándar tal como era en esa versión y se dejan como literales. El de
+        # la versión CORRIENTE no es historia — describe el presente, así que se
+        # deriva del registro. Escrito a mano decía 81/34 cuando ya eran otros.
+        "update_identity": _live_identity(),
         "notes": [
             "vault_preferences.py (NUEVO): contexto estable del usuario, strength must|should|may",
             "vault_query_parse.py (NUEVO): lenguaje natural → consulta estructurada, determinista",
@@ -336,6 +378,9 @@ MIGRATIONS: Dict[str, Dict[str, Any]] = {
             "vault_context_pack.py (NUEVO): empaquetado bajo presupuesto de tokens",
             "vault_ingest.py (NUEVO): ingesta gobernada con preflight anti-poison no desactivable",
             "17_Preferences/: sección nueva registrada en vault_registry (owner: vault_preferences)",
+            "18_Bugs/, 19_Audits/, 20_Quarantine/ (NUEVAS): secciones derivadas de medir 17 vaults reales",
+            "vault_bug_save.py (NUEVO): ciclo del defecto síntoma → causa raíz → corrección verificada",
+            "vault_quarantine.py (NUEVO): retención de notas sin destino seguro, sin borrar (no-derogación)",
             "Sin base de datos, sin embeddings y sin servicio externo",
         ],
     },
@@ -579,14 +624,24 @@ def _apply_migration(
             )
             continue
 
+        # El nombre del script es el de la tool, sin derivaciones. La versión
+        # anterior lo reconstruía como `vault_<segunda palabra>.py`, que para
+        # `vault_fix_brackets` daba `vault_fix.py` — un archivo inexistente. El
+        # fallo quedaba anotado en `standard-version.json` y la migración seguía
+        # devolviendo ok, así que el fix nunca se aplicó y nadie lo vio.
+        script = SCRIPTS_DIR / f"{tool_name}.py"
+        if not script.exists():
+            fixes_failed.append(
+                {"type": fix_type, "tool": tool_name,
+                 "error": f"script no encontrado: {script.name}"}
+            )
+            continue
+
         try:
             import subprocess
 
             result = subprocess.run(
-                [
-                    "python",
-                    f"vault_{tool_name.split('_')[1] if '_' in tool_name else tool_name}.py",
-                ],
+                [sys.executable, script.name],
                 cwd=str(SCRIPTS_DIR),
                 capture_output=True,
                 text=True,
@@ -817,10 +872,12 @@ def vault_standard_upgrade(
     already = state.get("migrations_applied", [])
     already.extend(pending)
     state["migrations_applied"] = already
-    if all_fixes_applied:
-        state["fixes_applied"] = all_fixes_applied
-    if all_fixes_failed:
-        state["fixes_failed"] = all_fixes_failed
+    # Se escriben siempre, incluso vacías. Con el `if` anterior, un fallo
+    # resuelto quedaba fijado en el registro para siempre: la migración
+    # siguiente no lo sobrescribía porque no tenía nada que escribir, y el
+    # vault seguía declarando un error que ya no existía.
+    state["fixes_applied"] = all_fixes_applied
+    state["fixes_failed"] = all_fixes_failed
     _write_version_file(state)
 
     result = {

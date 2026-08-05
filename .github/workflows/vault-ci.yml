@@ -39,6 +39,37 @@ jobs:
       - name: Framework drift check (registro canónico ↔ manifiesto)
         run: python scripts/vault_norms.py --check-framework
 
+      # Ninguna cifra de la documentación se escribe a mano sin verificarse.
+      # Sin --no-slow: aquí sí se cuenta la suite, que es la cifra que más
+      # envejece. El changelog queda excluido por diseño (es historia).
+      - name: Doc counts drift check (cifras ↔ registro)
+        run: python scripts/vault_doc_counts.py --check --strict
+
+      # La otra mitad del mismo problema: los nombres. Una tool nueva que no
+      # llega a scripts/README.md existe pero es invisible en la referencia.
+      - name: Doc sync check (catálogo ↔ scripts/README.md)
+        run: python scripts/vault_doc_sync.py --check --strict
+
+      # Y la tercera: los contratos. Una tool sin entrada en tool-spec.json se
+      # expone por MCP sin que nadie pueda validar lo que devuelve.
+      - name: Contract sync check (catálogo ↔ tool-spec.json)
+        run: python scripts/vault_mcp_catalog.py --check-contracts
+
+      # AP-37: la deuda de tools sin indicador de trabajo no bloquea, pero no
+      # puede crecer. Falla solo si aparece una infractora NUEVA.
+      - name: No-op audit (AP-37, la deuda no crece)
+        run: python scripts/vault_noop_audit.py --check --strict
+
+      # AP-40: ningún param publicado por MCP puede ser rechazado por la CLI.
+      # Se audita el JSON generado, que es lo que el servidor consume de verdad.
+      - name: Catalog params check (AP-40, contrato ↔ argparse)
+        run: python scripts/vault_mcp_catalog.py --check-params
+
+      # AP-42: el ejemplo documentado de cada tool se ejecuta de verdad contra
+      # una copia desechable del sandbox. La baseline está en 0: guard duro.
+      - name: Smoke de ejecución (AP-42, toda tool se ejecuta)
+        run: python scripts/vault_smoke.py --check --strict
+
       # AP-36: falla si algún side-effect se escribió fuera del vault (hasta 2
       # niveles por encima) o si la raíz se resolvió por suposición.
       - name: Containment audit (AP-36, strict)

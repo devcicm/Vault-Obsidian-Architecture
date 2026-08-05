@@ -1,0 +1,5 @@
+{
+  "norm": "AP-37",
+  "description": "Deuda conocida de tools con side effects que no exponen indicador de trabajo. Esta lista solo puede ENCOGER.",
+  "tools": []
+}

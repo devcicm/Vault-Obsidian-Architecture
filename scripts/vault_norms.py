@@ -21,9 +21,16 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
-from vault_io import atomic_write_json, VAULT_ROOT
+from vault_io import (
+    atomic_write_json,
+    is_snapshot_path,
+    normalize_stem,
+    SNAPSHOT_DIRS,
+    VAULT_ROOT,
+)
+from vault_lib import read_frontmatter as _leer_frontmatter
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 NORM_REGISTRY = VAULT_ROOT / "00_System" / "norm-registry.json"
 
@@ -876,6 +883,304 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "tools_detecting": ["vault_norms --audit"],
         "introduced_version": "v38",
     },
+    # ── Anti-patrón AP-37 ──────────────────────────────────────────────────────
+    # Síntoma que la originó: `vault_standard_upgrade --to latest` devolvía
+    # `{"ok": true}` habiendo aplicado CERO migraciones, porque _version_index()
+    # no normalizaba la minor version y _pending_migrations() devolvía []. El bug
+    # sobrevivió versiones enteras porque su respuesta era indistinguible de un
+    # éxito real: no había nada en la salida que un test o un agente pudiera
+    # contradecir.
+    {
+        "code": "AP-37",
+        "name": "No-op silencioso — ok: true sin indicador de trabajo",
+        "type": "antipattern",
+        "category": "observability",
+        "severity": "high",
+        "enforcement": "audit",
+        "description": (
+            "Una tool con side effects declarados devuelve ok: true sin exponer ningún "
+            "campo que distinga 'hice N cosas' de 'no hice nada'. `ok: true` a secas es "
+            "una afirmación no falsable: ni un test ni un agente pueden detectar que la "
+            "operación fue vacía. Toda tool que modifica estado debe declarar un "
+            "indicador de trabajo en declared_returns (changed, applied, count, "
+            "migrations_applied, fixes_applied, skipped, no_op…) y devolverlo siempre, "
+            "también cuando vale 0."
+        ),
+        "signal": (
+            "declared_returns sin ningún campo de conteo o cambio en una tool con "
+            "side_effects; tests que solo afirman result['ok'] sobre operaciones "
+            "mutantes."
+        ),
+        "prevention": (
+            "Declarar el indicador en tool-spec.json y devolverlo desde la tool. "
+            "vault_noop_audit --check compara el catálogo contra una baseline "
+            "congelada: la deuda histórica no bloquea, pero NO puede crecer."
+        ),
+        "tools_enforcing": ["vault_noop_audit --strict"],
+        "tools_detecting": ["vault_noop_audit"],
+        "introduced_version": "v39",
+    },
+    # ── Anti-patrón AP-38 ──────────────────────────────────────────────────────
+    # Síntoma que lo originó: un censo sobre 17 vaults reales (2.929 notas)
+    # encontró 54 valores distintos de `status`, de los cuales solo el 6% caía
+    # dentro de STATUS_VOCAB — pese a que CN-03 lo audita desde v38. La causa no
+    # eran los agentes: el valor no canónico más frecuente, `implementado`
+    # (205 notas), lo escribía `vault_pattern_save`. El estándar publicaba NUEVE
+    # vocabularios de `status` en competencia y auditaba contra uno solo.
+    {
+        "code": "AP-38",
+        "name": "Vocabulario validado después de escribir, no antes",
+        "type": "antipattern",
+        "category": "consistency",
+        "severity": "high",
+        "enforcement": "guard+audit",
+        "description": (
+            "Un campo con vocabulario cerrado se acepta tal cual en la escritura y se "
+            "comprueba en un audit posterior. El audit no lo ejecuta nadie — en 1.356 "
+            "ejecuciones registradas del parque real, `vault_norms` no aparece ni una "
+            "vez — así que el vocabulario no gobierna: solo documenta una intención. "
+            "Agravante: que varias tools publiquen vocabularios distintos para el mismo "
+            "campo (AP-05 aplicado al dato). Un campo canónico se normaliza en el punto "
+            "de escritura y rechaza lo que no pueda derivar; los ejes de dominio "
+            "legítimos (resultado de un test, fase de un incidente) van a su propio "
+            "campo, no compiten por `status`."
+        ),
+        "signal": (
+            "frontmatter.append(f\"status: {status}\") con un vocabulario local; "
+            "valores fuera de STATUS_VOCAB en notas escritas por tools del catálogo; "
+            "dos tools con listas de estados distintas para el mismo campo."
+        ),
+        "prevention": (
+            "STATUS_SYNONYMS + normalize_status() normalizan en vault_write antes de "
+            "emitir. Las tools con eje propio llaman a status_frontmatter_lines(), que "
+            "emite `status` canónico y el campo de dominio desde DOMAIN_STATUS_VOCABS. "
+            "Lo que arrastraba información y no era estado se conserva en status_note: "
+            "no-derogación aplicada al dato."
+        ),
+        "tools_enforcing": ["vault_write", "vault_norms --audit"],
+        "tools_detecting": ["vault_norms --audit"],
+        "introduced_version": "v39",
+    },
+    # ── Anti-patrón AP-39 ──────────────────────────────────────────────────────
+    # Síntoma que lo originó: el mismo censo de 17 vaults midió 1.180 tags
+    # distintos para 6.358 usos — el 45% aparece en una sola nota — y 55 familias
+    # de casi-duplicados (`ci-cd`/`cicd`/`ci_cd`). El ritmo de invención es plano
+    # a lo largo de tres meses (37% → 36% → 34% → 27% → 36%): ninguna sesión
+    # hereda el vocabulario de la anterior. La causa, otra vez, era el camino de
+    # escritura: `vault_write` consultaba una clave que el tag-registry no tiene,
+    # así que la sugerencia no se disparó nunca y un tag inventado costaba cero.
+    {
+        "code": "AP-39",
+        "name": "Vocabulario abierto sin memoria",
+        "type": "antipattern",
+        "category": "consistency",
+        "severity": "medium",
+        "enforcement": "guard+audit",
+        "description": (
+            "Un campo con vocabulario abierto (tags) admite términos nuevos sin dejar "
+            "constancia de quién los introdujo ni cuándo. Sin registro no hay "
+            "continuidad: cada sesión reinventa las palabras de la anterior, y el "
+            "vocabulario crece sin converger — 1.180 términos para 6.358 usos, el 45% "
+            "usado una sola vez. A diferencia de AP-38, la respuesta correcta NO es "
+            "rechazar: un vocabulario abierto que rechaza empuja a omitir el campo, y "
+            "entonces lo que se incumple es AP-26. Lo que hay que cerrar es el olvido, "
+            "no la entrada."
+        ),
+        "signal": (
+            "Tags que solo difieren en acento, mayúscula, separador o plural conviviendo "
+            "en el mismo vault; proporción de términos usados una sola vez que no baja "
+            "con el tiempo; el camino de escritura no lee el registro de vocabulario."
+        ),
+        "prevention": (
+            "vault_write llama a vault_tags.apply_vocabulary() antes de emitir: colapsa "
+            "contra el registro canónico lo que es demostrablemente la misma palabra "
+            "(normalize_tag + singular_tag) y admite el término nuevo tal cual. Una vez "
+            "la nota está en disco, record_new_tags() lo anota en la bitácora "
+            "append-only 19_Audits/vocabulary/tag-ledger.json con agente, fecha y nota "
+            "de origen. Inventar sigue siendo posible; deja de ser silencioso."
+        ),
+        "tools_enforcing": ["vault_write", "vault_tags --ledger"],
+        "tools_detecting": ["vault_tags --audit", "vault_norms --audit"],
+        "introduced_version": "v39",
+    },
+    {
+        "code": "AP-40",
+        "name": "Contrato publicado que la CLI rechaza",
+        "type": "antipattern",
+        "category": "consistency",
+        "severity": "high",
+        "enforcement": "guard+audit",
+        "description": (
+            "Una tool publica en su catálogo parámetros que su propio argparse no "
+            "acepta. La tool aparece en tools/list, se puede invocar, y falla "
+            "siempre con 'unrecognized arguments'. Medido en v39: 45 de 82 tools "
+            "conciliables publicaban al menos un param inexistente — más de la "
+            "mitad de la superficie MCP era inalcanzable sin que nada lo señalara, "
+            "porque el guard de sincronía comparaba el JSON contra el Python: dos "
+            "copias de la misma equivocación coinciden perfectamente."
+        ),
+        "signal": (
+            "Invocar la tool por MCP devuelve 'unrecognized arguments'; el nombre "
+            "de un param del catálogo no aparece como flag largo en el script."
+        ),
+        "prevention": (
+            "El contrato de argumentos lo declara argparse, no el catálogo: "
+            "vault_mcp_catalog.argparse_params() lee los add_argument del script y "
+            "reconciled_params() publica solo lo que la CLI acepta, conservando la "
+            "descripción escrita a mano cuando el nombre coincide. "
+            "vault_mcp_catalog --check-params audita el JSON ya generado (que es lo "
+            "que el servidor consume) contra el argparse real."
+        ),
+        "tools_enforcing": ["vault_mcp_catalog --sync", "vault_mcp_catalog --check-params"],
+        "tools_detecting": ["vault_mcp_catalog --check-params", "vault_norms --audit"],
+        "introduced_version": "v39",
+    },
+    {
+        "code": "AP-41",
+        "name": "Máquina de estados declarada sin verificar",
+        "type": "antipattern",
+        "category": "lifecycle",
+        "severity": "high",
+        "enforcement": "guard+audit",
+        "description": (
+            "El estándar declara STATUS_TRANSITIONS —las transiciones válidas del "
+            "ciclo de vida de una nota— y no las recorre nadie: su único consumidor "
+            "era su propio test de coherencia. Un estado que no controla su "
+            "transición es una etiqueta, no un ciclo de vida: una nota 'archived' "
+            "podía volver a 'draft', o saltar de 'planned' a 'verified' sin pasar "
+            "por revisión, y ningún guard lo veía. Es la misma forma del fallo "
+            "histórico del estándar —declarar sin ejecutar— con la agravante de que "
+            "existía un test en verde que verificaba que el grafo estaba bien "
+            "dibujado, no que alguien lo recorriera."
+        ),
+        "signal": (
+            "Secuencias de `status` en .history/ que no siguen ninguna arista de "
+            "STATUS_TRANSITIONS; notas cuyo estado retrocede sin explicación; "
+            "ningún script fuera de los tests importa STATUS_TRANSITIONS."
+        ),
+        "prevention": (
+            "vault_write lee el `status` de la nota en disco antes de sobrescribirla "
+            "y rechaza la transición que no está en STATUS_TRANSITIONS, citando los "
+            "destinos válidos. Una actualización que no menciona `status` conserva el "
+            "estado previo en vez de caer al default 'draft'. Las transiciones ya "
+            "ocurridas se reportan desde .history/ con vault_norms --audit: se anotan, "
+            "no se reescriben, porque el estado actual es un hecho."
+        ),
+        "tools_enforcing": ["vault_write"],
+        "tools_detecting": ["vault_norms --audit"],
+        "introduced_version": "v39",
+    },
+    {
+        "code": "AP-42",
+        "name": "Tool publicada sin haberse ejecutado nunca",
+        "type": "antipattern",
+        "category": "process",
+        "severity": "high",
+        "enforcement": "guard+audit",
+        "description": (
+            "Una tool se publica en el catálogo MCP porque responde a `--help` y "
+            "porque su entrada existe. `--help` demuestra que el argparse se "
+            "construye: no que el módulo importe sus dependencias, ni que el ejemplo "
+            "documentado sea aceptado por la CLI, ni que la salida sea el JSON que el "
+            "contrato promete. La primera medición dio 41 de 87 tools cuyo ejemplo "
+            "documentado no llegaba a emitir un JSON con `ok` —36 de ellas porque el "
+            "ejemplo del catálogo usaba flags que la CLI rechazaba, exactamente el "
+            "defecto de AP-40 trasladado a la superficie de documentación."
+        ),
+        "signal": (
+            "Ejemplos del catálogo o del README que salen con exit 2 y "
+            "'unrecognized arguments'; tools cuya salida es texto para humanos sin "
+            "modo JSON; tools que no aparecen en ningún test ni en ninguna ejecución."
+        ),
+        "prevention": (
+            "vault_smoke ejecuta el ejemplo documentado de cada tool contra una copia "
+            "desechable del vault de pruebas y exige tres cosas: que termine, que su "
+            "salida sea JSON y que ese JSON tenga `ok`. Un `ok: false` bien formado "
+            "aprueba: lo que se persigue es el fallo mudo. La baseline solo puede "
+            "encoger y quedó en 0, así que es un guard duro desde el primer día. Las "
+            "tools sin invocación posible (un servicio HTTP que no retorna) se "
+            "declaran en SIN_SMOKE con su motivo, nunca se omiten en silencio."
+        ),
+        "tools_enforcing": ["vault_smoke --strict"],
+        "tools_detecting": ["vault_smoke --check", "vault_norms --audit"],
+        "introduced_version": "v39",
+    },
+    {
+        "code": "AP-43",
+        "name": "Norma sin refuerzo en el punto de uso",
+        "type": "antipattern",
+        "category": "governance",
+        "severity": "high",
+        "enforcement": "guard+audit",
+        "description": (
+            "El catálogo de normas está completo, versionado y con guards, pero el "
+            "agente que documenta el vault no lo tiene delante mientras trabaja: se "
+            "entera de que una norma existe cuando la incumple —y solo si esa norma "
+            "es una de las 14 que previenen, no una de las 33 que se limitan a "
+            "detectar en un audit que puede no correrse nunca. El refuerzo llega "
+            "tarde, fuera de contexto o no llega. Una norma que el agente no ve en el "
+            "momento de escribir no gobierna la escritura: gobierna el post-mortem."
+        ),
+        "signal": (
+            "Normas que ninguna tool declara en tools_enforcing ni tools_detecting "
+            "(no se pronuncian nunca); resultados de tool que no llevan bloque "
+            "`vault_says`; agentes que repiten el mismo antipatrón entre sesiones."
+        ),
+        "prevention": (
+            "vault_errors.wrap_main —el único punto por el que ya pasa la salida de "
+            "todas las tools— añade a cada resultado un bloque `vault_says` derivado "
+            "de NORM_CATALOG y del estado real de esa llamada: qué norma acaba de "
+            "actuar, cuántas notas cambiaron, qué mirar a continuación. El refuerzo "
+            "rota entre las normas que gobiernan esa tool para no degradarse en ruido "
+            "fijo. vault_voice --coverage nombra las normas que ninguna tool pronuncia."
+        ),
+        "tools_enforcing": ["vault_voice", "vault_errors"],
+        "tools_detecting": ["vault_voice --coverage", "vault_norms --audit"],
+        "introduced_version": "v39",
+    },
+    {
+        "code": "AP-44",
+        "name": "Verificación autoconsistente — la tool se certifica a sí misma",
+        "type": "antipattern",
+        "category": "quality",
+        "severity": "critical",
+        "enforcement": "guard+audit",
+        "description": (
+            "Una tool escribe o mide con un criterio propio y verifica el resultado "
+            "con ESE MISMO criterio, en vez de con el que usa el consumidor real "
+            "—Obsidian al resolver un enlace, el parser de Mermaid al dibujar, YAML "
+            "al leer un frontmatter, el audit del propio estándar al juzgar la nota "
+            "que otra tool acaba de escribir. La tool queda internamente coherente y "
+            "por eso mismo ciega a su propio fallo: no puede detectar el error porque "
+            "lo comete en los dos lados de la comparación. Es más caro que un bug "
+            "normal, porque el guard sale en verde y dirige el trabajo hacia donde no "
+            "hay problema: reescribir enlaces que funcionan, 'corregir' diagramas "
+            "válidos, retaguear notas ya etiquetadas."
+        ),
+        "signal": (
+            "Dos tools del estándar dan cifras distintas para lo mismo (146 vs 86 "
+            "enlaces rotos); un hallazgo desaparece al normalizar y reaparece al "
+            "abrir el vault; el generador de una nota produce metadatos que el audit "
+            "del mismo estándar reprueba; un 'arreglo' se declara aplicado y el "
+            "usuario sigue viendo el problema; el 100% de una categoría de hallazgos "
+            "resulta falsa al inspeccionarla a mano."
+        ),
+        "prevention": (
+            "Verificar con el criterio del consumidor, no con el propio: resolver "
+            "wikilinks por nombre de fichero y `aliases:` —nunca por `title:`, que "
+            "Obsidian no mira—, leer frontmatter con `yaml.safe_load` y no con un "
+            "regex por líneas, y validar Mermaid contra su gramática real. Toda tool "
+            "que escribe reevalúa el resultado releyendo del disco. Un frontmatter "
+            "ilegible devuelve error explícito, nunca `{}` silencioso, que es lo que "
+            "hace que un write path anteponga un segundo bloque y corrompa la nota. "
+            "Y toda medida se contrasta contra un vault preexistente ajeno al "
+            "estándar: `vault-sandbox/` lo genera el propio estándar y comparte sus "
+            "supuestos, así que no puede exhibir este fallo."
+        ),
+        "tools_enforcing": ["vault_audit", "vault_graph_fix", "vault_mermaid_check"],
+        "tools_detecting": ["vault_norms --audit", "vault_audit"],
+        "introduced_version": "v39",
+    },
     # ── Patrón PAT-6 ───────────────────────────────────────────────────────────
     {
         "code": "PAT-6",
@@ -1220,7 +1525,11 @@ def vault_norms_scan(path: str) -> Dict[str, Any]:
         all_stems = {
             p.stem.lower().replace("-", "").replace("_", "").replace(" ", "")
             for p in VAULT_ROOT.rglob("*.md")
-            if ".history" not in str(p)
+            # El hueco simétrico al del barrido principal, y en la direccion
+            # contraria: si los stems de las instantaneas cuentan, un enlace
+            # fantasma "resuelve" porque existe una COPIA en un backup. La nota
+            # viva ya no esta y AP-14 no lo ve.
+            if not _es_instantanea(str(p.relative_to(VAULT_ROOT)))
         }
         ghost = [
             l
@@ -1423,8 +1732,343 @@ STATUS_VOCAB = {
     "template",
 }
 
+# ─── Sinónimos de estado (AP-38) ─────────────────────────────────────────────
+#
+# CN-03 lleva desde v38 declarando el vocabulario y auditándolo. Un censo sobre
+# 17 vaults reales (2.929 notas) mostró el resultado de auditar sin normalizar:
+# **54 valores distintos de `status`, de los cuales solo el 6% caía dentro del
+# vocabulario** — y de los 12 canónicos únicamente 4 llegaron a usarse. Los más
+# frecuentes eran inventados: `implementado` (205 notas), `active` (60),
+# `activo` (53), `accepted` (45), `fixed` (31).
+#
+# La lección del censo no es que los agentes escriban mal: es que un vocabulario
+# que solo se audita *después* de escribir no gobierna nada, porque nadie
+# ejecuta el audit — `vault_norms` no aparece ni una vez en las 1.356
+# ejecuciones registradas del parque. Por eso este mapa se aplica en la
+# escritura, no en la revisión.
+#
+# Cubre español e inglés porque el parque los mezcla en la misma nota.
+STATUS_SYNONYMS = {
+    # activo / en curso
+    "active": "in-progress",
+    "activo": "in-progress",
+    "en_desarrollo": "in-progress",
+    "en-desarrollo": "in-progress",
+    "in_progress": "in-progress",
+    "en_progreso": "in-progress",
+    "refactoring": "in-progress",
+    "wip": "in-progress",
+    "investigating": "in-progress",
+    "investigado": "in-progress",
+    "open": "in-progress",
+    "abierto": "in-progress",
+    "identificado": "in-progress",
+    "pendiente_accion": "in-progress",
+    # planificado
+    "planificado": "planned",
+    "pendiente": "planned",
+    "deferred": "planned",
+    "proposed": "planned",
+    "propuesto": "planned",
+    # aprobado
+    "accepted": "approved",
+    "aceptado": "approved",
+    "aceptada": "approved",
+    "amended": "approved",
+    # implementado
+    "implementado": "implemented",
+    "implementada": "implemented",
+    "completado": "implemented",
+    "completada": "implemented",
+    "completed": "implemented",
+    "complete": "implemented",
+    "documentacion_completada": "implemented",
+    "documented": "implemented",
+    "documentado": "implemented",
+    "en_produccion": "implemented",
+    "operativo": "implemented",
+    "estable": "implemented",
+    "vigente": "implemented",
+    # verificado
+    "fixed": "verified",
+    "corregido": "verified",
+    "resuelto": "verified",
+    "resolved": "verified",
+    "validated": "verified",
+    "validado": "verified",
+    "mitigado": "verified",
+    "mitigated": "verified",
+    "prevenido": "verified",
+    "pass": "verified",
+    "implemented-and-validated": "verified",
+    # retirado
+    "deprecado": "deprecated",
+    "deprecada": "deprecated",
+    "obsoleto": "obsolete",
+    "obsoleta": "obsolete",
+    # histórico
+    "historical": "archived",
+    "archivo-historico": "archived",
+    "archivo-histórico": "archived",
+    "offline": "archived",
+    "no-bug": "archived",
+}
+
+#: Sufijos que un estado arrastra y que NO son parte del estado: progreso
+#: parcial, versión en que se resolvió, fecha de corrección. El censo los
+#: encontró incrustados en el propio campo (`1-fixed-6-pending`, `all-fixed`,
+#: `resuelto (v0.58)`, `aceptada (corregida 2026-05-11)`, `mayormente_corregido`).
+#: Se extraen a `status_note` en vez de perderse: no-derogación aplicada al dato.
+STATUS_QUALIFIERS = {
+    "mayormente_corregido": ("verified", "corrección parcial"),
+    "partial": ("in-progress", "parcial"),
+    "all-fixed": ("verified", "all-fixed"),
+    "not_run": ("planned", "not_run"),
+}
+
+#: Transiciones permitidas del ciclo de vida. Un estado que no puede alcanzarse
+#: desde ninguno otro es inalcanzable, y uno del que no se sale es terminal.
+#: `stub` y `template` no participan del ciclo: son marcas de naturaleza de la
+#: nota, no fases de su vida.
+STATUS_TRANSITIONS = {
+    "planned": {"draft", "in-progress", "archived"},
+    "draft": {"in-progress", "reviewed", "archived"},
+    "in-progress": {"draft", "reviewed", "implemented", "archived"},
+    "reviewed": {"approved", "draft", "archived"},
+    "approved": {"implemented", "deprecated", "archived"},
+    "implemented": {"verified", "deprecated", "archived"},
+    "verified": {"deprecated", "obsolete", "archived"},
+    "deprecated": {"obsolete", "archived"},
+    "obsolete": {"archived"},
+    "archived": set(),
+    "stub": {"draft", "in-progress", "archived"},
+    "template": {"archived"},
+}
+
+
+#: Vocabularios de dominio (AP-38).
+#:
+#: El censo del parque atribuía los 54 estados a agentes descuidados. Falso: el
+#: valor no canónico más frecuente, `implementado` (205 notas), lo escribe
+#: `vault_pattern_save`, que trae su propio vocabulario y su propia máquina de
+#: transiciones. El estándar publicaba **nueve** vocabularios de `status` en
+#: competencia — AP-05 dentro del propio toolkit. Un agente que escribía
+#: `implementado` estaba obedeciendo a la tool, no ignorándola.
+#:
+#: La corrección no es borrar esos vocabularios: `pass` de un test o `P2` de un
+#: incidente son información real que `verified` no expresa. Son **otro eje**.
+#: Así que `status` queda reservado al ciclo de vida de la nota, canónico, y
+#: cada dominio conserva su vocabulario íntegro en su propio campo. Las flags de
+#: CLI no cambian: lo que cambia es en qué campo aterriza el valor.
+#:
+#: Formato: `tool -> (campo_de_dominio, {valor_de_dominio: status_canonico})`.
+DOMAIN_STATUS_VOCABS = {
+    "vault_pattern_save": ("pattern_state", {
+        "planificado": "planned",
+        "en_progreso": "in-progress",
+        "implementado": "implemented",
+        "deprecado": "deprecated",
+        "refactoring": "in-progress",
+    }),
+    "vault_bug_save": ("bug_state", {
+        "open": "in-progress",
+        "confirmed": "in-progress",
+        "in_fix": "in-progress",
+        "fixed": "verified",
+        "wont_fix": "approved",
+        "duplicate": "obsolete",
+    }),
+    "vault_test_save": ("test_result", {
+        "not_run": "planned",
+        "pass": "verified",
+        "fail": "implemented",
+        "blocked": "in-progress",
+        "skip": "draft",
+    }),
+    "vault_incident_save": ("incident_state", {
+        "detected": "in-progress",
+        "investigating": "in-progress",
+        "identified": "in-progress",
+        "mitigating": "in-progress",
+        "resolved": "verified",
+        "closed": "archived",
+        "post-mortem": "reviewed",
+    }),
+    "vault_ncr_save": ("ncr_state", {
+        "open": "in-progress",
+        "in_progress": "in-progress",
+        "pending_verification": "reviewed",
+        "closed": "archived",
+        "cancelled": "obsolete",
+    }),
+    "vault_risk_save": ("risk_state", {
+        "open": "in-progress",
+        "in_treatment": "in-progress",
+        "accepted": "approved",
+        "closed": "archived",
+    }),
+    "vault_release_save": ("release_state", {
+        "planned": "planned",
+        "in_progress": "in-progress",
+        "deployed": "implemented",
+        "rolled_back": "deprecated",
+        "cancelled": "obsolete",
+    }),
+    "vault_privacy_save": ("privacy_state", {
+        "active": "implemented",
+        "under_review": "reviewed",
+        "deprecated": "deprecated",
+        "closed": "archived",
+    }),
+    # El comentario de vault_preferences decía "alineado con STATUS_VOCAB" y sus
+    # dos únicos valores estaban fuera. Una afirmación falsa desde que se
+    # escribió, y nadie podía verla porque no había guard que la comprobara.
+    "vault_preferences": ("preference_state", {
+        "active": "implemented",
+        "revoked": "deprecated",
+    }),
+    # `--status` de infra es texto libre y nunca tuvo validación: es la única
+    # de las nueve que no publicaba vocabulario, así que aceptaba cualquier
+    # cosa. Se le da uno; lo que no encaje sigue cayendo en `normalize_status`.
+    "vault_infra_save": ("infra_state", {
+        "active": "implemented",
+        "activo": "implemented",
+        "provisioning": "in-progress",
+        "degraded": "in-progress",
+        "decommissioned": "archived",
+        "offline": "archived",
+    }),
+    "vault_project_status": ("project_state", {
+        "en_desarrollo": "in-progress",
+        "en_revision": "reviewed",
+        "bloqueado": "in-progress",
+        "completado": "implemented",
+        "archivado": "archived",
+        "en_produccion": "implemented",
+    }),
+}
+
+
+def split_domain_status(tool, raw):
+    """Separa el eje de dominio del ciclo de vida de la nota.
+
+    Devuelve `(status_canonico, campo_dominio, valor_dominio)`. El valor de
+    dominio se devuelve intacto — se conserva, no se traduce. Si la tool no
+    tiene vocabulario propio, o el valor no está en él, cae en
+    `normalize_status` y no se emite campo de dominio.
+    """
+    entrada = DOMAIN_STATUS_VOCABS.get(tool)
+    if entrada and raw in entrada[1]:
+        campo, mapa = entrada
+        return mapa[raw], campo, raw
+    canonico, _nota, _regla = normalize_status(raw)
+    return canonico, None, None
+
+
+def status_frontmatter_lines(tool, raw):
+    """Las líneas de frontmatter que corresponden a un estado de dominio.
+
+    Devuelve siempre `status:` canónico primero y, si aplica, el campo de
+    dominio detrás. Que las 8 tools con vocabulario propio llamen aquí es lo que
+    impide que vuelvan a divergir: el orden y los nombres de campo salen de un
+    único sitio.
+    """
+    if raw is None:
+        return []
+    canonico, campo, valor = split_domain_status(tool, raw)
+    if canonico is None:
+        raise ValueError(
+            f"{tool}: status {raw!r} no pertenece a su vocabulario de dominio "
+            f"ni al canónico (CN-03)"
+        )
+    lineas = [f"status: {canonico}"]
+    if campo:
+        lineas.append(f"{campo}: {valor}")
+    return lineas
+
+
+def normalize_status(raw):
+    """Lleva un `status` cualquiera al vocabulario canónico.
+
+    Devuelve `(canonico, nota, regla)`:
+
+      - `canonico` es un valor de `STATUS_VOCAB`, o `None` si no se pudo decidir
+        — y entonces quien llama **rechaza**, no adivina. Inventar un estado es
+        peor que no tenerlo: uno se detecta, el otro se hereda.
+      - `nota` recoge lo que el valor original arrastraba y no era estado
+        (progreso, versión, fecha). Nunca se descarta.
+      - `regla` dice por qué se decidió: `canonical`, `synonym`, `qualifier`,
+        `parenthetical` o `unknown`. Sirve para auditar la propia normalización.
+    """
+    if raw is None:
+        return None, None, "unknown"
+
+    original = str(raw).strip()
+    if not original:
+        return None, None, "unknown"
+
+    # Un paréntesis o guion largo suele traer la circunstancia, no el estado:
+    # "resuelto (v0.58)" es `verified` con una nota, no un estado nuevo.
+    nota = None
+    m = re.match(r"^(.*?)\s*[\(\[—-]\s*(.+?)[\)\]]?$", original)
+    base = original
+    if m and m.group(1).strip():
+        candidato_base, candidato_nota = m.group(1).strip(), m.group(2).strip()
+        if _canonical_status(candidato_base) is not None:
+            base, nota = candidato_base, candidato_nota
+
+    clave = base.lower().replace(" ", "_").replace("__", "_")
+
+    if clave in STATUS_QUALIFIERS:
+        canonico, cualificador = STATUS_QUALIFIERS[clave]
+        return canonico, nota or cualificador, "qualifier"
+
+    directo = _canonical_status(base)
+    if directo is not None:
+        regla = "parenthetical" if nota else (
+            "canonical" if directo == base.lower() else "synonym"
+        )
+        return directo, nota, regla
+
+    # "1-fixed-6-pending" y similares: un informe de progreso en el campo de
+    # estado. No hay estado que deducir sin mentir, pero el dato se conserva.
+    return None, original, "unknown"
+
+
+def _canonical_status(valor):
+    clave = str(valor).strip().lower().replace(" ", "_")
+    if clave in STATUS_VOCAB:
+        return clave
+    guion = clave.replace("_", "-")
+    if guion in STATUS_VOCAB:
+        return guion
+    if clave in STATUS_SYNONYMS:
+        return STATUS_SYNONYMS[clave]
+    if guion in STATUS_SYNONYMS:
+        return STATUS_SYNONYMS[guion]
+    return None
+
+
 # Entradas permitidas en la raíz del vault además de las secciones canónicas
 _ROOT_ALLOWED = {".obsidian", ".trash", ".history", ".git", ".locks", "vault-backups"}
+
+#: Alias de compatibilidad. El criterio de "qué es una nota viva" se movió a
+#: `vault_io` en cuanto una segunda tool lo necesitó (`vault_mermaid_check`):
+#: es del vault, no de este barrido. Se conserva el nombre local porque los
+#: tests y las llamadas de este módulo lo usan — no se deroga, se delega.
+_SNAPSHOT_DIRS = SNAPSHOT_DIRS
+_es_instantanea = is_snapshot_path
+
+
+#: Primer de sección: `00-10_migrated-primer`, `00-03_decisions-primer`, …
+#: Los crea `vault_init` como guía de uso de la carpeta.
+_ES_PRIMER = re.compile(r"^\d{2}-\d{2}_.*-primer$")
+
+
+#: Valores de `type` que identifican una decisión arquitectónica, y por tanto
+#: obligan a la estructura Contexto / Decisión / Consecuencias de AP-07.
+_ADR_TYPES = ("decision", "adr")
+
 
 #: Manifiesto público del estándar — referencia del guard anti-drift del marco.
 SPEC_FILENAME = "vault-obsidian-architecture.md"
@@ -1489,6 +2133,8 @@ def vault_norms_audit(root: Optional[Path] = None) -> Dict[str, Any]:
         rel = str(md.relative_to(root)).replace("\\", "/")
         if rel.startswith(("10_Migrated/", ".")) or "/.history/" in rel:
             continue
+        if _es_instantanea(rel):
+            continue
         try:
             fm, body = parse_frontmatter_with_body(md.read_text(encoding="utf-8"))
         except (OSError, UnicodeDecodeError):
@@ -1517,9 +2163,16 @@ def vault_norms_audit(root: Optional[Path] = None) -> Dict[str, Any]:
             _flag("AP-09", rel, "Nota type:runbook fuera de 08_Runbooks/.")
 
         # ── AP-07: ADRs incompletos ───────────────────────────────────────────
+        # No toda nota de 03_Decisions/ es un ADR: la sección aloja también
+        # primers y guías de uso, a las que exigir "Contexto/Decisión/
+        # Consecuencias" no las mejora — las deforma. Una nota queda fuera solo
+        # si DECLARA un `type` ajeno a la decisión; sin `type` sigue tratándose
+        # como ADR, para que omitir el campo no sea la vía de escape del guard.
+        es_adr = note_type in _ADR_TYPES or not note_type or stem.startswith("adr-")
         if (
             rel.startswith("03_Decisions/")
             and stem != "index"
+            and es_adr
             and status not in ("stub", "template")  # stubs se rigen por AP-03
         ):
             required = {
@@ -1554,6 +2207,228 @@ def vault_norms_audit(root: Optional[Path] = None) -> Dict[str, Any]:
             and stem not in ("master-index",)
         ):
             _flag("AP-19", rel, f"Nota índice paralela '{rel}' fuera de 99_Index/ (shadow indexing).")
+
+    # ── AP-39: vocabulario abierto sin memoria ────────────────────────────────
+    # Dos señales distintas, y conviene no confundirlas: familias de variantes
+    # tipográficas del mismo término (lo que el guard de escritura ya colapsa a
+    # partir de ahora, y que aquí solo aparece como deuda anterior), y términos
+    # fuera del registro canónico que nadie anotó en la bitácora — el olvido
+    # propiamente dicho.
+    try:
+        import vault_tags as _tags
+
+        # La bitácora vive en el vault detectado; con --root a otro vault los
+        # caminos no coinciden y el chequeo diría cualquier cosa menos la verdad.
+        if _tags.VAULT_ROOT.resolve() != root:
+            raise ImportError("AP-39 solo audita el vault detectado")
+
+        familias: Dict[str, Dict[str, List[str]]] = {}
+        for rel, info in notes.items():
+            crudos = info["fm"].get("tags") or []
+            if isinstance(crudos, str):
+                crudos = [t.strip() for t in crudos.split(",") if t.strip()]
+            for crudo in crudos:
+                norma = _tags.normalize_tag(str(crudo))
+                if not norma:
+                    continue
+                familias.setdefault(_tags.singular_tag(norma), {}).setdefault(
+                    str(crudo), []
+                ).append(rel)
+
+        for raiz, variantes in sorted(familias.items()):
+            if len(variantes) > 1:
+                muestra = ", ".join(f"'{v}'" for v in sorted(variantes)[:4])
+                notas = sorted({r for v in variantes.values() for r in v})
+                _flag(
+                    "AP-39",
+                    notas[0],
+                    f"{len(variantes)} variantes del mismo término '{raiz}' ({muestra}) "
+                    f"en {len(notas)} nota(s) — correr vault_tags --rename para unificar.",
+                )
+
+        canonicos_norm = {
+            _tags.normalize_tag(t) for t in _tags.canonical_tags()
+        }
+        anotados = {e["tag"] for e in _tags._load_ledger().get("entries", [])}
+        sin_memoria = sorted(
+            raiz
+            for raiz, variantes in familias.items()
+            if raiz not in canonicos_norm
+            and not any(_tags.normalize_tag(v) in canonicos_norm for v in variantes)
+            # La bitácora guarda la forma normalizada, no la raíz en singular:
+            # comparar solo contra `raiz` daría por no anotado todo plural.
+            and raiz not in anotados
+            and not any(_tags.normalize_tag(v) in anotados for v in variantes)
+        )
+        if sin_memoria:
+            muestra = ", ".join(f"'{t}'" for t in sin_memoria[:6])
+            _flag(
+                "AP-39",
+                "19_Audits/vocabulary/tag-ledger.json",
+                f"{len(sin_memoria)} término(s) en uso que no son canónicos ni constan "
+                f"en la bitácora ({muestra}) — vocabulario introducido sin dejar rastro "
+                f"de quién ni cuándo. Correr vault_tags --backfill-ledger para anotarlos.",
+            )
+    except ImportError:
+        pass
+
+    # ── AP-40: el contrato publicado tiene que ser el que la CLI acepta ───────
+    # No mira el vault: mira el repo del estándar. Se audita aquí porque es el
+    # único recorrido que un agente corre siempre, y un catálogo roto no se
+    # manifiesta como error de datos sino como una tool que nunca funciona.
+    try:
+        import vault_mcp_catalog as _cat
+
+        _params = _cat.check_params()
+        for _p in _params.get("problems", []):
+            _flag(
+                "AP-40",
+                f"mcp/nodejs/tools-catalog.json#{_p['tool']}",
+                f"{_p['problem']} — correr vault_mcp_catalog --sync.",
+            )
+    except (ImportError, OSError, ValueError):
+        pass
+
+    # ── AP-42: deuda de ejecución declarada ───────────────────────────────────
+    # El barrido completo tarda minutos y vive en `vault_smoke --strict` (CI).
+    # Aquí se reporta lo barato y lo que de verdad se olvida: la deuda que
+    # alguien congeló en la baseline y las tools cuyo ejemplo ni siquiera puede
+    # convertirse en una invocación.
+    try:
+        import vault_smoke as _smoke
+
+        for _t in _smoke.load_baseline():
+            _flag(
+                "AP-42",
+                f"scripts/smoke-baseline.json#{_t}",
+                f"{_t} está congelada como deuda: su ejemplo documentado no emite "
+                "un JSON con `ok`. La baseline solo puede encoger.",
+            )
+        for _t in sorted(_smoke.TOOLS_CATALOG):
+            if _t in _smoke.SIN_SMOKE:
+                continue
+            if _smoke.invocation(_t) is None and (_smoke.TOOLS_CATALOG[_t] or {}).get("script"):
+                _flag(
+                    "AP-42",
+                    f"vault_mcp_catalog.TOOLS_CATALOG#{_t}",
+                    f"{_t} no tiene un `example` del que derivar una invocación: "
+                    "no se puede ejecutar nunca ni en el smoke ni por un usuario.",
+                )
+    except (ImportError, OSError, ValueError):
+        pass
+
+    # ── AP-43: normas que ninguna tool pronuncia ──────────────────────────────
+    # Tampoco mira el vault: mira el catálogo. Una norma sin tools_enforcing ni
+    # tools_detecting no llega jamás al agente por el bloque `vault_says`, así
+    # que existe para el auditor y no para quien escribe.
+    try:
+        import vault_voice as _voz
+
+        for _codigo in _voz.coverage().get("silent", []):
+            _flag(
+                "AP-43",
+                f"vault_norms.NORM_CATALOG#{_codigo}",
+                f"{_codigo} no la pronuncia ninguna tool: declara tools_enforcing "
+                "o tools_detecting para que el agente la vea al trabajar.",
+            )
+    except (ImportError, OSError, ValueError):
+        pass
+
+    # ── AP-44: enlaces que resuelven para la tool pero no para el lector ──────
+    # El sintoma automatizable de la verificacion autoconsistente. Obsidian
+    # resuelve `[[X]]` por nombre de fichero o por `aliases:`, NUNCA por `title:`.
+    # Una tool que indexe por titulo da el enlace por bueno y no lo reporta; el
+    # usuario abre el vault y ve un enlace muerto. La diferencia entre ambos
+    # criterios es exactamente esta lista: enlaces invisibles para el estandar y
+    # rotos para quien lee. En BuilderX eran 46.
+    #
+    # La reparacion correcta es anadir el titulo a `aliases:` en el destino, no
+    # reescribir cada punto de llamada: el texto legible del enlace es contenido,
+    # y sustituirlo por un slug degrada la nota para arreglar una metrica.
+    try:
+        _por_nombre: Set[str] = set()
+        _por_titulo: Dict[str, str] = {}
+        _vivas = [
+            p for p in root.rglob("*.md") if not _es_instantanea(p.relative_to(root))
+        ]
+        for _n in _vivas:
+            _por_nombre.add(normalize_stem(_n.stem))
+            _fm = _leer_frontmatter(_n) or {}
+            _al = _fm.get("aliases") or _fm.get("alias") or []
+            if isinstance(_al, str):
+                _al = [_al]
+            for _a in _al:
+                if isinstance(_a, str) and _a.strip():
+                    _por_nombre.add(normalize_stem(_a))
+            _t = _fm.get("title")
+            if isinstance(_t, str) and _t.strip():
+                _por_titulo.setdefault(normalize_stem(_t), _n)
+
+        for _n in _vivas:
+            try:
+                _txt = _n.read_text(encoding="utf-8", errors="ignore")
+            except OSError:
+                continue
+            _rel = str(_n.relative_to(root)).replace("\\", "/")
+            for _m in re.finditer(r"\[\[([^\]|#]+)", _txt):
+                _dest = _m.group(1).strip()
+                _clave = normalize_stem(_dest)
+                if _clave in _por_nombre or _clave not in _por_titulo:
+                    continue
+                _destino = str(_por_titulo[_clave].relative_to(root)).replace("\\", "/")
+                _flag(
+                    "AP-44",
+                    _rel,
+                    f"[[{_dest}]] solo resuelve por el `title:` de `{_destino}`: "
+                    "Obsidian no mira ese campo, asi que el enlace esta roto para "
+                    f"quien lee. Anade `{_dest}` a los `aliases:` del destino.",
+                )
+    except (OSError, ValueError):
+        pass
+
+    # ── AP-41: transiciones de estado ya ocurridas ────────────────────────────
+    # El guard de vault_write solo puede detener las futuras. Lo ya escrito está
+    # en `.history/`: cada versión guardada es el estado anterior de la nota, así
+    # que la secuencia de `status` a lo largo del historial es la traza real de
+    # la máquina. Se reporta, no se corrige: el estado actual es un hecho y el
+    # camino irregular es justamente la información que interesa.
+    historia = root / ".history"
+    if historia.is_dir():
+        # `<carpeta>__<slug>-<YYYY-MM-DDTHH-MM-SS>.md`
+        _re_hist = re.compile(r"^(?P<base>.+)-(?P<ts>\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2})\.md$")
+        secuencias: Dict[str, List[Tuple[str, str]]] = {}
+        for version in historia.glob("*.md"):
+            m = _re_hist.match(version.name)
+            if not m:
+                continue
+            try:
+                fm, _ = parse_frontmatter_with_body(version.read_text(encoding="utf-8"))
+            except OSError:
+                continue
+            estado = str((fm or {}).get("status") or "").strip()
+            if estado:
+                secuencias.setdefault(m.group("base"), []).append((m.group("ts"), estado))
+
+        for base, puntos in sorted(secuencias.items()):
+            rel_nota = base.replace("__", "/") + ".md"
+            puntos.sort()
+            previo = None
+            for _ts, estado in puntos:
+                canonico, _n, _r = normalize_status(estado)
+                if canonico is None:
+                    continue  # deuda de vocabulario: la reporta CN-03/AP-38
+                if previo and canonico != previo:
+                    permitidos = STATUS_TRANSITIONS.get(previo, set())
+                    if canonico not in permitidos:
+                        _flag(
+                            "AP-41",
+                            rel_nota,
+                            f"Transición ya ocurrida {previo!r} -> {canonico!r} fuera de "
+                            f"STATUS_TRANSITIONS (permitidas desde {previo!r}: "
+                            f"{sorted(permitidos) or ['ninguna']}). Anterior al guard; "
+                            f"se anota, no se reescribe.",
+                        )
+                previo = canonico
 
     # ── AP-36: contención e idempotencia ──────────────────────────────────────
     # (a) Artefactos .bak/.tmp dentro de secciones de contenido
@@ -1646,7 +2521,19 @@ def vault_norms_audit(root: Optional[Path] = None) -> Dict[str, Any]:
     # ── AP-10: migración sin plan de rollback ─────────────────────────────────
     migrated = root / "10_Migrated"
     if migrated.exists():
-        migrated_notes = [p for p in migrated.rglob("*.md") if not p.name.startswith("_report-")]
+        # El andamiaje de la sección no es contenido migrado: los `index.md` los
+        # genera `vault_reindex` en cada subcarpeta y los primers los crea
+        # `vault_init`. Contándolos, una sección vacía recién inicializada ya
+        # exigía un mapa de rollback de una migración que nunca ocurrió — en
+        # BuilderX eran 6 de las 7 "notas migradas". Un rollback de un `index.md`
+        # generado no significa nada.
+        migrated_notes = [
+            p
+            for p in migrated.rglob("*.md")
+            if not p.name.startswith("_report-")
+            and p.stem != "index"
+            and not _ES_PRIMER.match(p.stem)
+        ]
         reports = list(migrated.glob("_report-*.md"))
         if migrated_notes and not reports:
             _flag(

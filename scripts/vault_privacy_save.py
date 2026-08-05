@@ -39,12 +39,13 @@ from typing import Any, Dict, List, Optional
 from vault_errors import wrap_main
 from vault_lib import utcnow
 from vault_io import (
+    write_report,
     VAULT_ROOT,
     assert_within_vault,
     atomic_write_text,
     update_section_index,
 )
-from vault_norms import compute_norm_refs
+from vault_norms import compute_norm_refs, status_frontmatter_lines
 
 FOLDER = "09_Infrastructure/privacy"
 
@@ -144,6 +145,23 @@ def vault_privacy_save(
     pii_categories = pii_categories or []
     data_subjects = data_subjects or []
     third_parties = third_parties or []
+
+    # DATA_SUBJECTS estaba declarado y nunca se comprobaba. No es cosmético:
+    # `minors` es uno de los DPIA_TRIGGERS del GDPR Art. 35, así que escribir
+    # "minor" en singular desactivaba el disparador sin que nada lo dijera. El
+    # registro que decide una obligación legal tiene que validarse.
+    desconocidos = [s for s in data_subjects if s not in DATA_SUBJECTS]
+    if desconocidos:
+        return {
+            "ok": False,
+            "error_code": "INVALID_DATA_SUBJECT",
+            "message": (
+                f"data_subjects fuera del vocabulario: {', '.join(desconocidos)}. "
+                f"Válidos: {', '.join(DATA_SUBJECTS)}"
+            ),
+            "valid_data_subjects": DATA_SUBJECTS,
+            "dpia_triggers": DPIA_TRIGGERS,
+        }
 
     # Auto-detect DPIA requirement if not explicitly set
     if dpia_required is None:
@@ -248,7 +266,7 @@ def vault_privacy_save(
         f"retention_period: {json.dumps(retention_period)}",
         f"transfers_outside_eu: {json.dumps(transfers_outside_eu)}",
         f"dpia_required: {json.dumps(dpia_required)}",
-        f"status: {status}",
+        *status_frontmatter_lines("vault_privacy_save", status),
         f"iso_standard: ISO/IEC 27701:2019",
         f"gdpr_article: Art. 30",
         f"cia_integrity: high",
@@ -268,6 +286,7 @@ def vault_privacy_save(
 
     return {
         "ok": True,
+        **write_report(),
         "path": str(path.relative_to(VAULT_ROOT)).replace("\\", "/"),
         "project": project,
         "legal_basis": legal_basis,

@@ -10,13 +10,13 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | Ruta | Qué es |
 |---|---|
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~6.000 líneas). Fuente normativa. |
-| `scripts/*.py` | ~103 scripts, 81 tools activas en 34 grupos. Sin dependencias fuera de stdlib + PyYAML. |
+| `scripts/*.py` | ~110 scripts, 88 tools activas en 36 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (437 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (1263 tests). Toda norma con guard debe tener test. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
 | `vault-sandbox/` | **Único** vault de pruebas del repo. Todo runtime va aquí. |
-| `docs/` | SDD y skills. |
+| `docs/` | SDD, skills y `MODO-AGENTICO-SANACION.md` (procedimiento de 12 fases para sanar un vault preexistente). |
 
 ---
 
@@ -62,7 +62,16 @@ El estándar cubre dos recorridos, y una tool nueva pertenece a uno de los dos:
    stubs) vive DENTRO del vault. Rutas siempre derivadas de `vault_io.get_vault_root()`,
    nunca de `__file__` ni del CWD.
 
-7. **No propagar tools a otros repos** salvo petición explícita. Los vaults consumidores se
+7. **Verificar con el criterio del consumidor, no con el propio (AP-44).** Una tool que
+   mide con su misma normalización se certifica a sí misma y queda ciega a su error: los
+   wikilinks se resuelven por nombre de fichero y `aliases:` —nunca por `title:`, que
+   Obsidian no mira—, el frontmatter con `yaml.safe_load` y no con un regex por líneas.
+   Corolario: **toda medida nueva se contrasta al menos una vez contra un vault
+   preexistente ajeno al estándar.** `vault-sandbox/` lo genera este repo y comparte sus
+   supuestos, así que no puede exhibir este fallo — cinco defectos reales salieron solo al
+   ejecutar contra un vault de fuera. Ver `docs/MODO-AGENTICO-SANACION.md`.
+
+8. **No propagar tools a otros repos** salvo petición explícita. Los vaults consumidores se
    sincronizan por decisión del usuario, no como efecto colateral de un cambio aquí.
 
 ---
@@ -112,6 +121,19 @@ python scripts/vault_quality_check.py --root vault-sandbox --min-score 0.7
 - [ ] `python -m pytest tests/ --tb=short` en verde.
 - [ ] `python scripts/vault_norms.py --check-framework` → `ok: true`.
 - [ ] `python scripts/vault_mcp_catalog.py --check` → sincronizado.
+- [ ] `python scripts/vault_doc_counts.py --check --strict` → `ok: true`. Ninguna
+      cifra de la documentación se escribe a mano: si cambió un conteo, `--fix`.
+- [ ] `python scripts/vault_doc_sync.py --check --strict` → `ok: true`. Toda tool del
+      catálogo tiene sección en `scripts/README.md` y el índice tiene una fila por grupo.
+      Si solo cambió el índice, `--fix`; las secciones se escriben a mano.
+- [ ] `python scripts/vault_mcp_catalog.py --check-contracts` → `ok: true`. Toda tool del
+      catálogo tiene entrada en `<vault>/00_System/tool-spec.json`; toda entrada que ya no
+      está en el catálogo declara `status: archived | internal | orphan` (no se borra: se
+      anota). `group` y `group_id` se derivan de `GROUPS` y de la numeración de
+      `scripts/README.md` — no hay una numeración propia del tool-spec.
+- [ ] `python scripts/vault_noop_audit.py --check --strict` → `ok: true` (AP-37).
+      Toda tool nueva con side effects declara un indicador de trabajo: la baseline
+      solo puede encoger. Tras saldar deuda, `--freeze`.
 - [ ] `git diff --stat vault-obsidian-architecture.md` sin borrados netos de contenido.
 - [ ] Si tocaste una versión: banner del manifiesto, tabla de versiones, entrada de changelog
       con hash real, badge del `README.md` y `version` de `pyproject.toml` coherentes.

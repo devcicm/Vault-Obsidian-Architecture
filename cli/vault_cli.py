@@ -422,8 +422,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     parser = argparse.ArgumentParser(
         prog="python -m cli",
+        # La cifra se cuenta, no se afirma: escrita a mano envejecía en
+        # silencio (decía 76 con 86 tools en el catálogo) y ningún guard la veía,
+        # porque vault_doc_counts solo audita documentos .md.
         description="CLI consolidada de Vault Obsidian Architecture "
-                    f"v{__version__} — 76 tools bajo un único punto de entrada",
+                    f"v{__version__} — {len(list(registry.iter_fragments()))} tools "
+                    "bajo un único punto de entrada",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Ejemplos:

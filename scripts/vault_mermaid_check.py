@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT
+from vault_io import is_snapshot_path, VAULT_ROOT
 
 
 SCRIPTS_DIR = Path(__file__).parent
@@ -60,59 +60,75 @@ def detect_mermaid_type(diagram: str) -> Optional[str]:
     return None
 
 
+#: Formas de nodo de flowchart, en CUALQUIER posición de la línea.
+#:
+#: Antes cada patrón iba anclado con `^` y el bucle hacía `continue` tras el
+#: primer acierto. Consecuencias, ambas vistas en BuilderX:
+#:
+#:   * `F --> G[Output HTML]` define G a la derecha de la flecha. Con el ancla,
+#:     esa definición no se veía nunca.
+#:   * `A[Agente] --> B[MCP Server]` sí casaba por la izquierda, pero el
+#:     `continue` saltaba el escaneo de aristas de esa misma línea, así que ni
+#:     se definía B ni se registraba la arista.
+#:
+#: Resultado: 23 de 23 hallazgos `undefined_node` del vault eran falsos, y cada
+#: uno restaba 2 puntos de health score por AP-25. Un diagrama correcto no puede
+#: hundir la métrica del vault.
+_NODE_SHAPES = re.compile(
+    r"(\w+)\s*(?:\[\[.+?\]\]|\[\(.+?\)\]|\(\(.+?\)\)|\{\{.+?\}\}"
+    r"|\[/.+?[/\\]\]|\[.+?\]|\(.+?\)|\{.+?\}|>.+?\])"
+)
+
+#: Un identificador suelto a cada lado de una flecha. Las etiquetas `-->|texto|`
+#: se retiran antes de aplicarlo para que el texto no se lea como nodo.
+_EDGE = re.compile(
+    r"(\w[\w-]*)\s*(?:--+>?|==+>?|-\.-+>?|\.\.+>?|~~~)\s*(\w[\w-]*)"
+)
+
+_EDGE_LABEL = re.compile(r"\|[^|]*\|")
+
+#: Texto entrecomillado dentro de una forma de nodo — nunca es estructura.
+_QUOTED = re.compile(r"\"[^\"]*\"|'[^']*'")
+
+
 def validate_flowchart(diagram: str) -> List[Dict[str, Any]]:
-    """Valida diagrama flowchart."""
-    errors = []
+    """Valida diagrama flowchart.
+
+    Nota sobre `unlabeled_node`: en Mermaid un identificador suelto (`cli -->
+    core`) es un nodo perfectamente válido — se dibuja con su propio id como
+    etiqueta. No es un error de sintaxis y por tanto no invalida el bloque; se
+    reporta como aviso porque un id sin etiqueta documenta peor.
+    """
+    errors: List[Dict[str, Any]] = []
     lines = diagram.strip().split("\n")
 
-    defined_nodes = set()
-    referenced_nodes = set()
+    defined_nodes: set = set()
+    referenced_nodes: set = set()
 
-    node_pattern = re.compile(r"^\s*(\w+)\s*\[([^\]]+)\]")
-    node_pattern2 = re.compile(r"^\s*(\w+)\s*\(([^\)]+)\)")
-    node_pattern3 = re.compile(r"^\s*(\w+)\s*\{([^\}]+)\}")
-    node_pattern4 = re.compile(r"^\s*(\w+)\s*\[$")
-
-    edge_pattern = re.compile(r"(\w+)\s*(--|-->|---|==>|===|-\.->|\.\.>|\.\.\.)>?\s*(\w+)")
-
-    for line_num, line in enumerate(lines, 1):
+    for line in lines:
         line = line.strip()
-        if not line or line.startswith("flowchart") or line.startswith("graph"):
+        if not line or line.startswith(("flowchart", "graph", "%%", "subgraph", "end")):
             continue
 
-        m = node_pattern.match(line)
-        if m:
+        for m in _NODE_SHAPES.finditer(line):
             defined_nodes.add(m.group(1))
-            continue
 
-        m = node_pattern2.match(line)
-        if m:
-            defined_nodes.add(m.group(1))
-            continue
+        # El texto de las etiquetas no son nodos. Se retira DESPUÉS de extraer
+        # las definiciones y antes de buscar aristas: sin esto, el rombo
+        # `NAV{"kind == navbar?"}` producía dos nodos fantasma, porque `==` es
+        # una flecha válida y el contenido de la etiqueta se leía como grafo.
+        sin_etiquetas = _EDGE_LABEL.sub(" ", _QUOTED.sub(" ", line))
+        for m in _EDGE.finditer(sin_etiquetas):
+            referenced_nodes.add(m.group(1))
+            referenced_nodes.add(m.group(2))
 
-        m = node_pattern3.match(line)
-        if m:
-            defined_nodes.add(m.group(1))
-            continue
-
-        m = node_pattern4.match(line)
-        if m:
-            defined_nodes.add(m.group(1))
-            continue
-
-        for m in edge_pattern.finditer(line):
-            from_node = m.group(1)
-            to_node = m.group(3)
-            referenced_nodes.add(from_node)
-            referenced_nodes.add(to_node)
-
-    undefined = referenced_nodes - defined_nodes
-    for node in undefined:
+    for node in sorted(referenced_nodes - defined_nodes):
         errors.append(
             {
-                "type": "undefined_node",
-                "message": f"Nodo '{node}' referenciado pero no definido",
-                "suggestion": f"Definir nodo: {node}[Label]",
+                "type": "unlabeled_node",
+                "severity": "info",
+                "message": f"Nodo '{node}' se dibuja con su id porque no tiene etiqueta",
+                "suggestion": f"Opcional, para legibilidad: {node}[Label]",
                 "line": None,
             }
         )
@@ -404,7 +420,14 @@ def check_file(path: Path) -> Dict[str, Any]:
             "errors": [],
         }
 
-        errors = validate_mermaid(diagram)
+        todos = validate_mermaid(diagram)
+        # Un aviso no invalida el diagrama. AP-25 penaliza -2 por cada entrada
+        # de `errors`, así que mezclar avisos con errores de sintaxis convierte
+        # una preferencia de estilo en una caída del health score.
+        errors = [e for e in todos if e.get("severity") != "info"]
+        avisos = [e for e in todos if e.get("severity") == "info"]
+        if avisos:
+            block_result["warnings"] = avisos
         if errors:
             block_result["valid"] = False
             block_result["errors"] = errors
@@ -429,7 +452,18 @@ def scan_vault(
     results = []
 
     for md in search_root.rglob("*.md"):
-        if ".history" in str(md) or md.name.startswith("_"):
+        # `is_snapshot_path` sustituye al `".history" in str(md)` anterior, que
+        # dejaba pasar `vault-backups/` y `.trash/`: 46 de los 69 errores AP-25
+        # de BuilderX vivían en instantáneas congeladas. Peor con `--fix`, que
+        # reescribía diagramas dentro de una copia de seguridad.
+        # Relativo a la raíz del barrido: con la ruta absoluta, un directorio
+        # ancestro FUERA del vault que se llamara `.trash` excluiría el vault
+        # entero en silencio.
+        try:
+            rel_md = md.relative_to(search_root)
+        except ValueError:  # pragma: no cover — rglob siempre cuelga de la raíz
+            rel_md = md
+        if is_snapshot_path(rel_md) or md.name.startswith("_"):
             continue
         files_checked += 1
         result = check_file(md)

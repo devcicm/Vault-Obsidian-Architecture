@@ -31,12 +31,13 @@ from typing import Any, Dict, List, Optional
 from vault_errors import wrap_main
 from vault_lib import utcnow
 from vault_io import (
+    write_report,
     VAULT_ROOT,
     assert_within_vault,
     atomic_write_text,
     update_section_index,
 )
-from vault_norms import compute_norm_refs
+from vault_norms import compute_norm_refs, status_frontmatter_lines
 
 FOLDER = "02_Observability/incidents"
 
@@ -239,7 +240,7 @@ _Qué salió bien, qué salió mal, qué hacer diferente._
         f"norm_refs: {json.dumps(norm_refs)}",
         f"project: {project}",
         f"severity: {severity}",
-        f"status: {status}",
+        *status_frontmatter_lines("vault_incident_save", status),
         f"detected_at: {detected_at}",
         f"resolved_at: {resolved_at or ''}",
         f"mttr: {mttr}",
@@ -263,6 +264,7 @@ _Qué salió bien, qué salió mal, qué hacer diferente._
 
     return {
         "ok": True,
+        **write_report(),
         "path": str(path.relative_to(VAULT_ROOT)).replace("\\", "/"),
         "project": project,
         "severity": severity,

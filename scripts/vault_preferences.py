@@ -36,7 +36,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
+from vault_norms import status_frontmatter_lines
 from vault_io import (
+    write_report,
     VAULT_ROOT,
     assert_within_vault,
     atomic_write_text,
@@ -57,7 +59,10 @@ STRENGTHS: List[str] = ["must", "should", "may"]
 
 STRENGTH_WEIGHT: Dict[str, int] = {"must": 3, "should": 2, "may": 1}
 
-# Vocabulario de estado, alineado con vault_norms.STATUS_VOCAB.
+# Vocabulario de dominio de las preferencias. NO son valores de STATUS_VOCAB, y
+# el comentario anterior afirmaba que sí: una preferencia se revoca, no se
+# deprecia, y esa diferencia importa aquí. Viven en `preference_state`; el
+# `status` canónico se deriva vía vault_norms.DOMAIN_STATUS_VOCABS (AP-38).
 STATUS_ACTIVE = "active"
 STATUS_REVOKED = "revoked"
 
@@ -99,7 +104,12 @@ def _load_preference(path: Path) -> Optional[Dict[str, Any]]:
         "title": fm.get("title", path.stem),
         "category": fm.get("category", path.parent.name),
         "strength": str(fm.get("strength", "should")).lower(),
-        "status": str(fm.get("status", STATUS_ACTIVE)).lower(),
+        # El estado de dominio manda; `status` es su proyección canónica. El
+        # fallback a `status` sostiene las notas escritas antes de AP-38, que
+        # llevan el valor de dominio en el campo canónico.
+        "status": str(
+            fm.get("preference_state") or fm.get("status") or STATUS_ACTIVE
+        ).lower(),
         "statement": fm.get("statement", "").strip(),
         "scope": fm.get("scope", "global"),
         "createdAt": fm.get("createdAt", ""),
@@ -192,7 +202,7 @@ def vault_preferences_set(
         "type: preference",
         f"category: {category}",
         f"strength: {strength}",
-        f"status: {STATUS_ACTIVE}",
+        *status_frontmatter_lines("vault_preferences", STATUS_ACTIVE),
         f"scope: {scope}",
         f"statement: {json.dumps(statement, ensure_ascii=False)}",
         f"tags: {json.dumps(all_tags, ensure_ascii=False)}",
@@ -227,6 +237,7 @@ def vault_preferences_set(
 
     return {
         "ok": True,
+        **write_report(),
         "action": "updated" if previous else "created",
         "path": note_path.relative_to(VAULT_ROOT).as_posix(),
         "category": category,
@@ -268,6 +279,7 @@ def vault_preferences_list(
 
     return {
         "ok": True,
+        **write_report(),
         "total": len(items),
         "by_strength": by_strength,
         "preferences": items,
@@ -300,6 +312,7 @@ def vault_preferences_context(max_items: int = 40) -> Dict[str, Any]:
 
     return {
         "ok": True,
+        **write_report(),
         "total": len(items),
         "truncated": listing["total"] > len(items),
         "context": text,
@@ -355,7 +368,7 @@ def vault_preferences_revoke(path: str, reason: str,
 
     raw = note_path.read_text(encoding="utf-8")
     fm, body = parse_frontmatter_with_body(raw)
-    fm["status"] = STATUS_REVOKED
+    fm["status"], fm["preference_state"] = "deprecated", STATUS_REVOKED
     fm["revoked_reason"] = reason
     fm["revoked_at"] = utcnow()
     fm["revoked_by"] = agent
@@ -375,6 +388,7 @@ def vault_preferences_revoke(path: str, reason: str,
 
     return {
         "ok": True,
+        **write_report(),
         "action": "revoked",
         "path": pref["path"],
         "reason": reason,

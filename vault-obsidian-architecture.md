@@ -576,6 +576,25 @@ vault-{nombre}/          ← raíz del vault (SIEMPRE con prefijo vault-)
 │   └── domain/                      — preferencias específicas de un proyecto o dominio concreto
 │                                      (nota: strength must|should|may · revocar marca status: revoked, no borra)
 │
+├── 18_Bugs/                         ← ★ ciclo del defecto (vault_bug_save — v39)
+│   ├── .bugs-index.json             — índice: bug_id, fase, estado, severidad
+│   ├── open/                        — defectos reproducidos y sin corregir, con síntoma y pasos
+│   ├── root-causes/                 — causa raíz, enlazada al bug que la manifestó
+│   └── fixed/                       — corregidos y verificados, con la evidencia
+│                                      (nota: la fase ES la subcarpeta · causes/caused_by son aristas tipadas)
+│
+├── 19_Audits/                       ← ★ bitácora del vault (vault_tags, vault_audit — v39)
+│   ├── vocabulary/                  — registro append-only de términos: qué entró, cuándo, quién, a qué sucede
+│   ├── runs/                        — resultados de auditorías ejecutadas (ISO 9001 §9.2)
+│   └── findings/                    — hallazgos con norma incumplida y estado de resolución
+│
+├── 20_Quarantine/                   ← ★ retención sin borrado (vault_quarantine — v39)
+│   ├── .quarantine-ledger.json      — ledger append-only: origen, razón, agente, restaurada sí/no
+│   ├── unclassified/                — sin sección determinable: se retienen hasta que haya criterio
+│   ├── suspicious/                  — disparó el pre-vuelo anti-poisoning (POISON-01..05), sin revisar
+│   └── duplicates/                  — candidatas a duplicado pendientes de decidir la canónica (PAT-1)
+│                                      (nota: la nota se MUEVE, no se copia · el origen viaja dentro de la nota)
+│
 └── 99_Index/
     ├── search-index.json        — índice full-text (score ponderado: título×4, palabras, preview)
     └── graph.json               — grafo de nodos y aristas de wiki-links
@@ -1256,7 +1275,7 @@ Valida frontmatter YAML, campos requeridos, estructura de carpetas e integridad 
 
 **Diferencia con `vault_audit`:** `vault_audit` mide salud del vault (orphans, stale, broken links, score). `vault_validate` verifica contratos estructurales — frontmatter correcto, carpetas presentes, índices legibles — sin necesidad de leer el contenido completo de cada nota.
 
-> **Nota de implementación:** el check `structure` verifica las 18 carpetas estándar del vault (`00_System` … `17_Preferences`). Las carpetas `11_Code`, `17_Preferences` y `99_Index` son opcionales en el check de estructura (un vault sin código documentado no necesita `11_Code`; `99_Index` se crea automáticamente al hacer la primera búsqueda). Las carpetas `14_Requirements`, `15_Tests`, `16_AI_Governance` se crean con `vault_standard_upgrade --to latest` si el vault es previo a v24. El check `indexes` verifica específicamente que `99_Index/search-index.json` y `99_Index/graph.json` sean legibles cuando existan.
+> **Nota de implementación:** el check `structure` verifica las 22 carpetas estándar del vault (`00_System` … `17_Preferences` más `99_Index`). Las carpetas `11_Code`, `17_Preferences` y `99_Index` son opcionales en el check de estructura (un vault sin código documentado no necesita `11_Code`; `99_Index` se crea automáticamente al hacer la primera búsqueda). Las carpetas `14_Requirements`, `15_Tests`, `16_AI_Governance` se crean con `vault_standard_upgrade --to latest` si el vault es previo a v24. El check `indexes` verifica específicamente que `99_Index/search-index.json` y `99_Index/graph.json` sean legibles cuando existan.
 
 **Cuándo usar:** antes de una migración (pre-flight), al detectar AP-12 o AP-13, al integrar notas de fuentes externas que pueden tener frontmatter no estándar.
 
@@ -2715,7 +2734,7 @@ Reconstruye `99_Index/search-index.json` desde cero escaneando todas las notas e
 | `--check` | flag | — | Retorna estado del índice sin modificarlo (`index_ok` o `index_empty_or_missing`) |
 
 **Comportamiento:**
-- Escanea solo notas dentro de las 18 secciones estándar (`00_System` … `17_Preferences`) — ignora archivos en la raíz del vault (`vault-obsidian-architecture.md`, `scripts/`, etc.)
+- Escanea solo notas dentro de las 22 secciones estándar (`00_System` … `17_Preferences` más `99_Index`) — ignora archivos en la raíz del vault (`vault-obsidian-architecture.md`, `scripts/`, etc.)
 - Parsea frontmatter de cada nota para extraer `title`, `tags`, `updatedAt`
 - Genera `99_Index/search-index.json` con `{ notes: [...], rebuiltAt, totalNotes }`
 - Sobreescribe cualquier índice previo (incluyendo el vacío `{}`)
@@ -3387,7 +3406,7 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **48 normas** del estándar (36 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-36`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **56 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -4370,7 +4389,7 @@ proyecto/
 ```
 
 **Prevención en el estándar:**
-- `vault_graph` y `vault_reindex` filtran activamente archivos fuera de las 13 secciones estándar — los root-level `.md` no se indexan ni se parsean
+- `vault_graph` y `vault_reindex` filtran activamente archivos fuera de las 22 secciones estándar — los root-level `.md` no se indexan ni se parsean
 - Al inicializar un vault: crear la carpeta `vault-{nombre}/` y mover todos los `.md` de especificación y scripts fuera de ella antes de la primera operación
 - `vault_validate(check:"structure")` puede extenderse para detectar `.md` en la raíz del vault y reportarlos como AP-15
 
@@ -4573,6 +4592,469 @@ proyecto/
   con formato legacy de alias.
 - Saneamiento: `vault_section_index --heal` regenera índices legacy o ausentes
   (idempotente); escribir un `index.md` a mano dispara regeneración canónica inmediata.
+
+---
+
+### AP-37 — No-op silencioso — `ok: true` sin indicador de trabajo
+
+**Severidad: high · Enforcement: audit · Introducida: v39.0**
+
+**Regla:** Una tool con side effects declarados debe exponer un **indicador de
+trabajo** — un campo cuyo valor distinga "hice N cosas" de "no hice nada" — y
+devolverlo **siempre**, también cuando vale 0. `ok: true` a secas es una
+afirmación no falsable: no hay nada en la respuesta que un test, un agente o un
+humano puedan contradecir.
+
+**Caso histórico que motivó la norma:**
+`vault_standard_upgrade --to latest` devolvía `{"ok": true}` habiendo aplicado
+**cero** migraciones. `_version_index()` comparaba `"v39.0"` contra un
+`VERSION_ORDER` que solo contiene versiones mayores (`"v39"`), devolvía `-1`, y
+`_pending_migrations()` devolvía `[]` en silencio. Toda la ruta de migración
+estaba muerta desde v36 y nadie lo notó, porque la respuesta de un upgrade vacío
+era idéntica a la de un upgrade correcto.
+
+**Cómo lo previene el estándar:**
+- Contrato: `declared_returns` en `tool-spec.json` debe incluir al menos un campo
+  de `WORK_INDICATORS` (`changed`, `applied`, `count`, `migrations_applied`,
+  `fixes_applied`, `skipped`, `no_op`, `indexed`, `created`…).
+- Audit: `vault_noop_audit --check` compara el catálogo contra una **baseline
+  congelada** en `scripts/noop-baseline.json`.
+- Gate: `vault_noop_audit --strict` falla solo si aparecen infractoras **nuevas**.
+
+> **Por qué baseline y no guard duro.** Al introducir la norma, la inmensa
+> mayoría de las tools con side effects no exponía indicador (el conteo vivo lo
+> da `vault_noop_audit --check`, no este documento). Un guard que falla en
+> decenas de sitios se desactiva el primer día — que es exactamente cómo mueren
+> los guards. La baseline congela la deuda
+> conocida: no bloquea el trabajo existente, pero **no puede crecer**. Toda tool
+> nueva nace conforme, y cada tool que se corrige sale de la baseline y ya no
+> puede volver a entrar. La deuda es visible y monótona decreciente, que es una
+> propiedad más fuerte que un cero inalcanzable.
+
+---
+
+### AP-38 — Vocabulario validado después de escribir, no antes
+
+**Severidad: high · Enforcement: guard+audit · Introducida: v39.0**
+
+**Regla:** Un campo con vocabulario cerrado se normaliza **en el punto de
+escritura** y rechaza lo que no pueda derivar. Validarlo en un audit posterior
+no es enforcement: es documentar una intención y confiar en que alguien la
+compruebe. Y si varias tools publican vocabularios distintos para el mismo
+campo, el vocabulario no existe — hay varios, compitiendo.
+
+**Caso histórico que motivó la norma:**
+CN-03 declara `STATUS_VOCAB` (12 valores) y `vault_norms --audit` lo comprueba
+desde v38. Un censo sobre **17 vaults reales en producción, 2.929 notas**,
+encontró **54 valores distintos de `status`, de los cuales el 6% era canónico**;
+de los 12 valores del vocabulario, solo 4 llegaron a usarse alguna vez.
+
+Dos causas, y la segunda es la incómoda:
+
+1. **El audit no lo ejecuta nadie.** En las **1.356 ejecuciones de tools
+   registradas** en los `.tool-trace.json` de ese parque, `vault_norms` no
+   aparece **ni una vez**. 41 de las 88 tools del catálogo no se han ejecutado
+   jamás. Los agentes escriben; no gobiernan. Un enforcement que depende de que
+   alguien se acuerde de invocarlo es enforcement en el papel.
+2. **Los valores no canónicos los escribía el propio estándar.** El más
+   frecuente, `implementado` (205 notas), lo emitía `vault_pattern_save`, que
+   traía su vocabulario **y su propia máquina de transiciones**. En total el
+   toolkit publicaba **nueve** vocabularios de `status` en competencia y
+   auditaba contra uno solo. `vault_preferences` llegaba a documentar
+   *"alineado con `vault_norms.STATUS_VOCAB`"* con sus dos únicos valores
+   (`active`, `revoked`) fuera de él. El agente que escribía `implementado`
+   estaba **obedeciendo a la tool**, no ignorándola.
+
+**Cómo lo previene el estándar:**
+- **Normaliza antes de emitir.** `STATUS_SYNONYMS` + `normalize_status()`
+  llevan cualquier valor al canónico en `vault_write`, antes de escribir. Cubre
+  español e inglés porque el parque los mezcla dentro de la misma nota.
+- **Rechaza lo indecidible.** `1-fixed-6-pending` es un informe de progreso, no
+  un estado: `normalize_status` devuelve `None` y la escritura falla. Inventarle
+  un canónico sería peor que rechazarlo — el error dejaría de verse y se
+  heredaría en cada nota que lo copiase.
+- **Conserva lo que no era estado.** `resuelto (v0.58)` → `status: verified` +
+  `status_note: v0.58`. No-derogación aplicada al dato: normalizar no puede ser
+  destruir.
+- **Separa los dos ejes.** `pass` de un test o `mitigating` de un incidente son
+  información real que `verified` no expresa. Cada dominio conserva su
+  vocabulario **íntegro** en su propio campo (`test_result`, `incident_state`,
+  `pattern_state`…) vía `DOMAIN_STATUS_VOCABS`, y `status` queda reservado al
+  ciclo de vida de la nota. Las flags de CLI no cambiaron: cambió en qué campo
+  aterriza el valor.
+- **Posición fija.** Un `status` que llegaba dentro de `meta` salía por el bucle
+  genérico del final, detrás del bloque CIA y de `agent`. Mismo campo, distinto
+  sitio según por dónde hubiese entrado el dato — que es justamente lo que hace
+  que un formato deje de serlo. Ahora se emite siempre en la misma posición.
+- **Guard de código fuente.** `tests/test_status_vocabulary.py` falla si un
+  script emite `status:` sin pasar por `status_frontmatter_lines()`, o si
+  declara una lista de estados que el registro no conoce. Ese guard encontró dos
+  bypasses más durante la propia corrección.
+
+**Cobertura medida:** de las 609 notas del parque con `status`, **608 se
+normalizan** (99,8%). El único irreducible es el informe de progreso, y se
+conserva íntegro en vez de traducirse.
+
+> **Por qué guard duro y no baseline, al revés que AP-37.** AP-37 congeló su
+> deuda porque el trabajo pendiente estaba en 52 tools y un guard que falla en
+> decenas de sitios se desactiva el primer día. Aquí el punto de escritura es
+> **uno** —`generate_frontmatter`— más ocho tools con eje propio, todas
+> corregidas en el mismo cambio. Con la deuda ya saldada, la baseline no
+> protegería nada: solo dejaría la puerta abierta.
+
+---
+
+### AP-39 — Vocabulario abierto sin memoria
+
+**Severidad: medium · Enforcement: guard+audit · Introducida: v39.0**
+
+**Regla:** Un campo con vocabulario **abierto** —los tags— admite términos
+nuevos, pero deja constancia de cuál se introdujo, quién lo hizo, cuándo y en
+qué nota. Sin ese registro no hay continuidad: cada sesión empieza sin saber
+qué palabras usó la anterior, y el vocabulario crece sin converger nunca.
+
+**Caso histórico que motivó la norma:**
+El mismo censo de **17 vaults reales (2.929 notas)** midió **1.180 tags
+distintos para 6.358 usos**. El **45% aparece en una sola nota**. Hay **55
+familias de casi-duplicados** conviviendo (`ci-cd` / `cicd` / `ci_cd`,
+`pattern` / `patterns`, `migracion` / `migración`). Y el dato que cierra el
+diagnóstico: la **tasa de invención es plana a lo largo de tres meses**
+(37% → 36% → 34% → 27% → 36%). Si los agentes estuviesen aprendiendo el
+vocabulario del vault, esa curva bajaría. No baja porque no hay nada que
+recuerde por ellos.
+
+La causa vuelve a estar en el código, no en el agente: `vault_write` tenía una
+función de sugerencia que leía `registry["tags"]`, una clave que el
+`tag-registry.json` **no tiene** desde que las facetas viven bajo
+`canonical_tags`. La sugerencia llevaba versiones sin dispararse una sola vez.
+Inventar un tag costaba exactamente lo mismo que reutilizar uno: cero.
+
+**Por qué la respuesta no puede ser la de AP-38.** Un vocabulario cerrado
+rechaza lo que no reconoce, y hace bien. Uno abierto que rechaza empuja al
+agente a **omitir el campo** — y entonces lo que se incumple es AP-26, con el
+agravante de que una nota sin tags no aparece en ninguna búsqueda. Tampoco vale
+traducir a la fuerza al término más parecido: adivinar destruye la palabra que
+quizá era la correcta, y el error se hereda en cada nota que la copie.
+
+**Cómo lo previene el estándar:**
+- **Colapsa solo lo que es demostrablemente la misma palabra.** `normalize_tag`
+  (acentos, mayúsculas, separadores) y `singular_tag` (plurales inequívocos)
+  llevan `CI_CD`, `ci cd` y `CI/CD` al mismo `ci-cd`. Es la misma clase de
+  normalización que `normalize_status`, y se detiene donde empieza la conjetura:
+  no hay colapso por similitud.
+- **Admite el término nuevo y lo anota.** `vault_write` llama a
+  `vault_tags.apply_vocabulary()` **antes** de emitir el frontmatter; una vez la
+  nota está en disco —y no antes, porque anotar una escritura que falló es
+  memoria falsa— `record_new_tags()` la registra en la bitácora append-only
+  `19_Audits/vocabulary/tag-ledger.json` con `introduced_by`, `introduced_at` y
+  `first_note`. Inventar sigue siendo posible; deja de ser silencioso.
+- **Bitácora, no índice.** `tag-index.md` se regenera y refleja el presente. La
+  bitácora responde otra pregunta —*quién introdujo esta palabra y cuándo*— y
+  por eso es append-only: reescribirla la convertiría en un índice más.
+- **Audit y heal.** `vault_norms --audit` reporta las familias de variantes que
+  conviven (deuda anterior al guard) y los términos en uso que no son canónicos
+  ni constan en la bitácora. `vault_tags --backfill-ledger` retro-anota el
+  vocabulario ya existente usando el `agent` de la nota donde cada término
+  aparece por primera vez, marcado como `backfill` para no confundirlo con lo
+  registrado en vivo.
+
+**Dos defectos de lectura que salieron al implementarla**, ambos AP-05 dentro
+del propio toolkit: `vault_tags` mantenía su **propia lista literal de
+secciones**, congelada en 18 carpetas, así que dejaba de escanear cada sección
+nueva del estándar sin que nada fallara; y tenía su **propio parser** del campo
+`tags` que solo entendía la forma inline, mientras el audit usaba el parser
+compartido. El audit reportaba términos que el heal no podía tocar. Ambas
+lecturas ahora salen de la fuente única.
+
+---
+
+### AP-40 — Contrato publicado que la CLI rechaza
+
+**Regla:** el contrato de argumentos de una tool lo declara su `argparse`, no el
+catálogo. Un parámetro publicado que la CLI no acepta no es documentación
+desactualizada: es una tool que **no funciona nunca**.
+
+**Severidad:** high · **Enforcement:** `guard+audit` · **Introducida en:** v39
+
+El servidor MCP compone la invocación como `--<param>` **literal** a partir del
+nombre declarado en el catálogo. Un param que no existe como flag largo en el
+script produce `unrecognized arguments` en cada llamada. La tool aparece en
+`tools/list`, se puede seleccionar, se puede invocar — y falla siempre.
+
+Medido al implementar esta norma: **45 de las 82 tools conciliables** publicaban
+al menos un parámetro inexistente. `vault_impact` ofrecía `path`/`depth` cuando
+la CLI pide `--changed`/`--max-hops`; `vault_test_save` ofrecía
+`name`/`type`/`coverage` cuando pide `--title`/`--test_type`; `vault_search`
+ofrecía `project`/`limit` cuando pide `--query`/`--folder`/`--tag`. Más de la
+mitad de la superficie MCP era inalcanzable.
+
+**Por qué duró tanto sin que nada lo señalara.** Existía un guard de sincronía
+—`vault_mcp_catalog --check`— y estaba en verde: comparaba el JSON generado
+contra el catálogo Python del que se genera. **Dos copias de la misma
+equivocación coinciden perfectamente.** Un guard solo protege si compara contra
+algo que pueda contradecirle; aquí lo único capaz de contradecir al catálogo es
+el `argparse` del script.
+
+**Cómo se cierra:**
+
+- **`argparse_params(script)`** lee los `add_argument` del script por AST y deriva
+  nombre, tipo (`store_true` → boolean, `nargs` → array, resto → string),
+  `required` y `choices`. Los **posicionales no se publican**: no hay forma de
+  pasarlos como `--flag`.
+- **`reconciled_params(tool)`** publica la intersección con la realidad, y
+  conserva la descripción escrita a mano cuando el nombre coincide — el catálogo
+  aporta la prosa (*para qué* sirve el argumento), `argparse` aporta la verdad
+  (*cómo* se llama). Una tool sin script legible mantiene su contrato declarado:
+  la reconciliación no deroga.
+- **`vault_mcp_catalog --check-params`** audita el **JSON ya generado**, que es lo
+  que el servidor consume de verdad, contra el `argparse` real. `vault_norms
+  --audit` lo incorpora, de modo que el recorrido que un agente siempre corre
+  ve un catálogo roto sin tener que sospecharlo.
+- **Heal:** `vault_mcp_catalog --sync`.
+
+`tests/test_catalog_params.py` (13 tests), incluida la prueba activa del guard:
+inyectar un flag inventado en una copia del JSON tiene que hacerlo fallar.
+
+---
+
+### AP-41 — Máquina de estados declarada sin verificar
+
+**Regla:** un estado que no controla su transición es una etiqueta, no un ciclo
+de vida. Si `STATUS_TRANSITIONS` declara las aristas válidas, alguien tiene que
+recorrerlas en el momento de escribir.
+
+**Severidad:** high · **Enforcement:** `guard+audit` · **Introducida en:** v39
+
+`STATUS_TRANSITIONS` existe desde v38: las 12 transiciones del ciclo de vida,
+`planned → draft → in-progress → reviewed → approved → implemented → verified →
+deprecated → obsolete → archived`. Está bien formada, y
+`tests/test_status_vocabulary.py` lo comprueba —dominio idéntico a
+`STATUS_VOCAB`, todo destino alcanzable—. Su **único consumidor en todo el repo
+era ese test**. Ningún script la importaba.
+
+Consecuencia: `vault_write` validaba que `status` perteneciera al vocabulario,
+nunca que la transición fuera legal. Una nota `archived` podía volver a `draft`,
+o saltar de `planned` a `verified` sin pasar por revisión. Es la forma exacta del
+fallo que este estándar ya se reprocha una vez —**declarar sin ejecutar**— con la
+agravante de que había un test en verde: verificaba que el grafo estuviera bien
+dibujado, no que alguien lo recorriera.
+
+**Tres defectos más en el mismo sitio.** Para comprobar una transición hay que
+leer el frontmatter previo, y al abrir ese camino apareció por qué nadie lo había
+usado: la extracción de `id` y `createdAt` estaba escrita **dentro de la rama del
+`else`**, es decir en el caso en el que la nota *no* existe y el contenido previo
+es la cadena vacía. La regex no encontraba nada nunca. Medido en el sandbox:
+
+- **la identidad de la nota se destruía en cada actualización** — `id` nuevo y
+  `createdAt` reseteado en cada escritura, así que ninguna referencia por id
+  sobrevivía a una edición;
+- **el `id` devuelto no era el de la nota** — `generate_frontmatter` acuñaba un
+  `uuid4` y el resultado acuñaba otro, de modo que un agente que guardara el id
+  devuelto guardaba una referencia que no existe en ningún sitio;
+- **una actualización que no mencionaba `status` degradaba la nota a `draft`**,
+  porque caía al valor por defecto. Corregir una frase en una nota `verified` la
+  devolvía a borrador.
+
+**Cómo se cierra:**
+
+- **guard** — `vault_write` lee el frontmatter de la nota en disco con el parser
+  compartido (no con una regex propia) y rechaza la transición que no está en la
+  máquina, citando los destinos válidos: *«desde `draft` solo se puede pasar a
+  archived, in-progress, reviewed»*. Y dice de quién es la culpa cuando el salto
+  es correcto: **la que está mal es la máquina, no la nota**.
+- **conservación** — una escritura que no menciona `status` mantiene el estado
+  previo; `id` y `createdAt` sobreviven; el `id` del resultado es el del archivo.
+- **idempotencia de formato** — `createdAt` vuelve de PyYAML como
+  `...+00:00` cuando en disco estaba como `...000Z`. Los dos son ISO 8601 válido
+  y ningún guard de contenido se queja, pero el campo cambiaba de forma en cada
+  relectura. `vault_lib.canonical_utc()` lo devuelve a la forma con la que el
+  estándar escribe: **leer y reescribir tiene que ser idempotente**.
+- **audit** — el guard solo detiene el futuro. Lo ya ocurrido está en
+  `.history/`: cada versión guardada es el estado anterior de la nota, así que la
+  secuencia de `status` a lo largo del historial es la traza real de la máquina.
+  `vault_norms --audit` la recorre ordenada por marca de tiempo y reporta las
+  transiciones ilegales ya escritas.
+- **no hay heal, y es deliberado.** El estado actual es un hecho; el camino
+  irregular es justamente la información que interesa. Se anota, no se reescribe.
+
+`tests/test_status_machine.py` (21 tests), incluidas la transición ilegal
+rechazada, el estado terminal sin salida, la identidad estable a lo largo de
+varias actualizaciones y el audit sobre un historial fabricado.
+
+---
+
+### AP-42 — Tool publicada sin haberse ejecutado nunca
+
+**Categoría:** process · **Severidad:** high · **Enforcement:** `guard+audit` ·
+**Introducida en:** v39
+
+Una tool entra en el catálogo MCP porque responde a `--help` y porque su entrada
+existe. `--help` demuestra una sola cosa: que el `argparse` se construye. No
+demuestra que el módulo importe sus dependencias, ni que el ejemplo documentado
+sea aceptado por la CLI, ni que la salida sea el JSON que el contrato promete.
+
+Esa distancia se llena de defectos silenciosos, y hay medición: **41 de 87
+tools** fallaban el primer barrido. La causa dominante —36 de las 41— era que el
+`example` del catálogo usaba flags que la propia CLI rechazaba con exit 2. Es
+**AP-40 trasladado a la superficie de documentación**: el usuario copia el
+ejemplo del README y no funciona. El resto eran contratos de salida (texto para
+humanos donde se prometía JSON) y `example` con las comillas sin cerrar, que ni
+siquiera se dejan convertir en una línea de comandos.
+
+#### Qué exige el smoke, y qué no
+
+`vault_smoke` ejecuta el ejemplo documentado de cada tool contra una **copia
+desechable** del vault de pruebas —así un ejemplo con escritura no contamina el
+sandbox ni a la tool siguiente— y pide tres cosas, deliberadamente pocas:
+
+1. que la tool termine dentro del timeout,
+2. que su salida sea JSON,
+3. que ese JSON tenga un campo `ok`.
+
+**Un `ok: false` bien formado es un aprobado.** El ejemplo apunta a rutas que el
+sandbox no tiene, y rechazarlas educadamente *es* el contrato. Lo que se
+persigue es el fallo mudo: el traceback, el stdout vacío, el cuelgue.
+
+La invocación no se escribe a mano: se toma del `example` del catálogo, que es
+lo que la documentación le promete al usuario. Si el ejemplo documentado no
+corre, el defecto es real aunque la tool funcione con otros argumentos.
+
+#### Baseline en cero
+
+Se aplicó el precedente de AP-37 —congelar la deuda conocida, que solo puede
+encoger— pero **no hizo falta usarlo**: las 41 quedaron corregidas en la misma
+versión, así que la baseline nació en 0 y la norma es un guard duro desde el
+primer día. No hay nada que readmitir.
+
+Las tools sin invocación posible —un servicio HTTP que por diseño no retorna— se
+declaran en `SIN_SMOKE` **con su motivo**. Omitirlas del barrido en silencio
+sería exactamente el fallo que la norma persigue.
+
+`tests/test_smoke.py` (17 tests): la invocación derivada del ejemplo, las
+comillas que no llegan al argumento, el modo `--json` pedido a quien lo declara,
+la exención con motivo, el sandbox que no se toca, y la baseline que no puede
+crecer.
+
+---
+
+### AP-43 — Norma sin refuerzo en el punto de uso
+
+**Categoría:** governance · **Severidad:** high · **Enforcement:** `guard+audit` ·
+**Introducida en:** v39
+
+El catálogo de normas está completo, versionado y con guards. Y aun así el
+agente que documenta el vault **no lo tiene delante mientras trabaja**: se entera
+de que una norma existe cuando la incumple, y solo si esa norma es una de las 14
+que previenen, no una de las 33 que se limitan a detectar en un audit que puede
+no correrse nunca. El refuerzo llega tarde, fuera de contexto, o no llega.
+
+Una norma que el agente no ve en el momento de escribir no gobierna la
+escritura: gobierna el post-mortem.
+
+#### El vault habla, y habla de lo que acaba de pasar
+
+`vault_errors.wrap_main` —el único punto por el que ya pasa la salida de las 97
+tools— añade a cada resultado un bloque `vault_says` derivado de `NORM_CATALOG`
+(registro canónico: se lee, nunca se duplica) y del estado real de esa llamada:
+
+| `moment` | Cuándo | Qué refuerza |
+|---|---|---|
+| `blocked` | una norma frenó la llamada | esa norma exacta, y que el rechazo *es* la norma funcionando, no un fallo de la tool |
+| `wrote` | hubo escrituras, medidas en el ledger AP-37 | cuántas notas cambiaron y qué auditar después |
+| `read` | no cambió nada | una norma de esa tool, con su señal de incumplimiento |
+
+El foco **rota** entre las normas que gobiernan la tool. Repetir siempre la misma
+la vuelve invisible a la segunda semana, y un refuerzo que se deja de leer es
+peor que ninguno porque da la sensación de estar cubierto.
+
+`VAULT_VOICE=0` silencia el bloque; `VAULT_VOICE=verbose` entrega descripción,
+señal y prevención de cada norma aplicable. Un fallo de la voz **nunca** puede
+romper una tool.
+
+#### Por qué vive en `wrap_main`
+
+Una capa de refuerzo que hubiera que invocar tool por tool sería exactamente el
+registro-que-nadie-consume: el fallo característico de este estándar, el mismo
+que produjo `STATUS_TRANSITIONS` sin consumidor (AP-41) y un guard de catálogo
+que se comparaba consigo mismo (AP-40). Se engancha donde la salida ya pasa, o
+no se engancha.
+
+`vault_voice --coverage` cierra el círculo por el otro lado: una norma sin
+`tools_enforcing` ni `tools_detecting` no se pronuncia jamás —existe para el
+auditor y no para quien escribe— y `vault_norms --audit` la nombra.
+
+`tests/test_voice.py` (19 tests), incluido el que impide que esto se convierta en
+prosa: una tool real, ejecutada de verdad, tiene que devolver `vault_says`.
+
+---
+
+### AP-44 — Verificación autoconsistente: la tool se certifica a sí misma
+
+**Categoría:** quality · **Severidad:** critical · **Enforcement:** `guard+audit` ·
+**Introducida en:** v39
+
+Una tool escribe o mide con un criterio propio y verifica el resultado **con ese
+mismo criterio**, en vez de con el que usa el consumidor real: Obsidian al
+resolver un enlace, el parser de Mermaid al dibujar, YAML al leer un frontmatter,
+el audit del propio estándar al juzgar la nota que otra tool acaba de escribir.
+
+La tool queda internamente coherente, y por eso mismo **ciega a su propio
+fallo**: no puede detectar el error porque lo comete en los dos lados de la
+comparación.
+
+Es más caro que un bug corriente. Un guard que falla se arregla; un guard en
+verde que apunta al sitio equivocado **dirige el trabajo hacia donde no hay
+problema** — reescribir enlaces que funcionan, "corregir" diagramas válidos,
+retaguear notas ya etiquetadas. Y cada una de esas reescrituras es una
+oportunidad nueva de romper algo que estaba bien.
+
+#### Los cinco casos que dieron la norma
+
+Todos encontrados en una misma sanación, sobre un vault real preexistente:
+
+| Tool | Criterio propio | Criterio del consumidor | Coste medido |
+|---|---|---|---|
+| `vault_graph_fix` | indexa destinos por `title:` | Obsidian: nombre de fichero o `aliases:` | enlaces declarados reparados que el lector ve muertos |
+| `vault_audit` | ídem, al contar enlaces rotos | ídem | 86 rotos reportados donde había 37 |
+| `vault_audit` | regex por líneas para el frontmatter | `yaml.safe_load` | 45 notas etiquetadas, reportadas sin tags |
+| `vault_mermaid_check` | patrones anclados con `^` | gramática real de Mermaid | 23 de 23 `undefined_node` falsos, a −2 pts cada uno |
+| `vault_init` | escribe primers sin `status` | `vault_audit`, del mismo estándar | 18 de 18 primers reprobados por su propio generador |
+
+Los dos últimos son la variante más incómoda: **el estándar reprobando lo que el
+estándar produce**.
+
+#### El síntoma que el guard detecta
+
+De los cinco, uno es automatizable sin ambigüedad: **un wikilink que solo
+resuelve por `title:`**. Obsidian resuelve `[[X]]` por nombre de fichero o por
+`aliases:`, nunca por `title:`. Ese enlace está verde para el tooling y muerto
+para quien lee, y la brecha entre ambos criterios es exactamente la lista que
+emite el guard.
+
+`vault_norms --audit` lo reporta con la reparación concreta: **añadir el título a
+los `aliases:` del destino**, no reescribir los puntos de llamada. El texto
+legible de un enlace es contenido; sustituirlo por un slug degrada la nota para
+arreglar una métrica, que es el error que esta norma previene.
+
+AP-44 no se confunde con AP-14: un destino que no existe en ninguna forma es un
+enlace roto, y va a otra lista de trabajo — crear la nota, no añadir un alias.
+
+#### Por qué `vault-sandbox/` no basta
+
+Ninguno de los cinco se habría visto contra el vault de pruebas del repo. Lo
+genera el propio estándar y **comparte sus supuestos**: escribe los alias que sus
+tools esperan, los diagramas que su parser reconoce, el frontmatter que su lector
+entiende. Un vault que nunca discrepa no puede revelar una discrepancia.
+
+Corolario operativo: toda medida nueva se contrasta al menos una vez contra un
+vault preexistente ajeno al estándar. La copia se sana; el original se conserva
+intacto, y las dos se auditan **con el mismo código** — auditar el "antes" con la
+herramienta vieja y el "después" con la nueva mide la herramienta, no el vault.
+
+`tests/test_ap44_verificacion_autoconsistente.py` (7 tests) y
+`tests/test_audit_resuelve_como_obsidian.py` (8 tests), incluido el que exige lo
+contrario del guard: que resolver por `title:` **siga** contando como roto, para
+que la corrección no se convierta en la excusa para esconder el problema.
 
 ---
 
@@ -4828,6 +5310,44 @@ Secuencia mínima para crear un vault operativo en un proyecto nuevo (sin docume
 ```
 
 > **El vault está operativo cuando `vault_audit()` retorna score 100 y `vault_validate()` retorna sin errores.** A partir de ahí, cada sesión de trabajo agrega conocimiento incremental.
+
+---
+
+## Sanar un vault preexistente — el modo agéntico
+
+Inicializar un vault desde cero es el caso fácil. El caso real es el otro: un
+vault que ya existe, escrito sin el estándar o con una versión vieja, con cientos
+de notas que **dicen algo** y no se pueden tirar.
+
+El procedimiento completo —12 fases, con las tools de cada una y las decisiones
+que ninguna tool puede tomar sola— vive en
+[`docs/MODO-AGENTICO-SANACION.md`](docs/MODO-AGENTICO-SANACION.md). Aquí quedan
+las tres reglas que lo gobiernan, porque son normativas:
+
+**1. Se sana la copia, nunca el original.** La copia intacta es la única forma de
+medir, y ambas se auditan **con el mismo código**: auditar el "antes" con la
+herramienta vieja y el "después" con la nueva mide la herramienta, no el vault.
+
+**2. El subagente propone, no escribe.** Un subagente puede leer el repo de código
+asociado, clasificar notas o proponer tags. La escritura pasa siempre por una tool
+del estándar, con su guard. Un subagente con permiso de escritura es un segundo
+autor sin norma que lo gobierne, y su error no queda atribuido a nadie en
+`.change-log.json`.
+
+**3. Nada se borra** (política de no-derogación aplicada a notas). Lo que estorba
+se anota: `superseded_by:`, `status: archived`, o una nota de sanación que
+explique por qué. Un vault sanado que perdió información no está sanado.
+
+### Lo que la sanación demuestra sobre el propio estándar
+
+La ejecución de referencia sobre un vault real de 232 notas subió el
+`healthScore` de 0 a 54 y bajó las violaciones de norma de 216 a 1. Pero el
+hallazgo que importa es otro: **cinco defectos del estándar salieron ahí y
+ninguno se habría visto contra `vault-sandbox/`** — el sandbox lo genera este
+mismo estándar y comparte sus supuestos. Ese es el origen de
+[AP-44](#ap-44--verificación-autoconsistente-la-tool-se-certifica-a-sí-misma), y
+la razón de que su corolario sea normativo: toda medida nueva se contrasta al
+menos una vez contra un vault ajeno.
 
 ---
 
@@ -5148,6 +5668,9 @@ Tabla authoritative de qué constante `_DIR` usa cada grupo de tools. Prevalece 
 | `15_Tests/` | `vault_test_save` | `unit/`, `integration/`, `e2e/`, `performance/`, `security/`, `acceptance/` |
 | `16_AI_Governance/` | `vault_ai_decision` | `decisions/` |
 | `17_Preferences/` | `vault_preferences` | `workflow/`, `style/`, `tooling/`, `constraints/`, `domain/` |
+| `18_Bugs/` | `vault_bug_save` | `open/`, `root-causes/`, `fixed/` |
+| `19_Audits/` | `vault_tags` (vocabulary), `vault_audit` (runs, findings) | `vocabulary/`, `runs/`, `findings/` |
+| `20_Quarantine/` | `vault_quarantine` | `unclassified/`, `suspicious/`, `duplicates/` |
 | `99_Index/` | `vault_master_index`, `vault_reindex`, `vault_graph`, `vault_impact` | — |
 | `.history/` | `vault_write`, `vault_read` (lectura de historial) | ruta plana con `__` como separador |
 
@@ -5391,12 +5914,38 @@ temp/
 - `tests/test_vault_containment.py` (23 tests): detección de raíz y su confianza, ausencia de escrituras en tiempo de importación, contaminación a N niveles, ubicación del contrato y protección del wipe de `vault_restore`.
 - **Grupo 34 — Memoria de Contexto (5 tools):** el eje `consulta → contexto`, complementario al eje `escritura → gobernanza` que ya cubría el estándar. `vault_preferences` (contexto estable del usuario, `strength must|should|may`, revocar marca `status: revoked` y no borra), `vault_query_parse` (lenguaje natural → consulta estructurada, determinista, sin modelo), `vault_subgraph` (K semillas / N saltos con decaimiento por salto y peso por predicado), `vault_context_pack` (empaquetado bajo presupuesto de tokens con scoring léxico + grafo + actualidad + CIA) y `vault_ingest` (ingesta gobernada, única con superficie de escritura, con preflight anti-poison no desactivable). Ninguna introduce base de datos, embeddings ni servicio externo.
 - **Sección `17_Preferences/`** con 5 subcarpetas (`workflow`, `style`, `tooling`, `constraints`, `domain`), registrada en `vault_registry` con `owner: vault_preferences`. Es la primera sección nueva desde v33.
+- **Grupo 36 y secciones `18_Bugs/`, `19_Audits/`, `20_Quarantine/` — derivadas de medir, no de diseñar.** Salen de censar **17 vaults reales en producción (2.929 notas)**: los agentes ya estaban escribiendo estas tres cosas y, al no existir sección, las repartían entre `02_Observability`, `07_Knowledge` y carpetas que se inventaban sobre la marcha — `docs/` (30 notas en 2 vaults), `scripts/` (10 en 4), `certificates/`, y tres `scripts.bak-*` de fixes fallidos. Una nota sin sitio no desaparece: aparece en cualquier sitio.
+  - **`18_Bugs/`** (`vault_bug_save`): un error es un *evento observado* —para eso está `02_Observability/errors`— y un bug es un *defecto que se persigue hasta cerrarlo*. Sin sección propia el ciclo vivía en tres notas inconexas: síntoma en observabilidad, causa en conocimiento, corrección en decisiones. La fase **es** la subcarpeta (`open/`, `root-causes/`, `fixed/`), así que estado y ubicación no pueden divergir; y `causes`/`caused_by` son aristas **tipadas**, no un `related` genérico — es la diferencia entre "estas dos notas se mencionan" y "esta explica aquella".
+  - **`19_Audits/`** (`vault_tags`, `vault_audit`): la bitácora. `vocabulary/` es un registro **append-only** de cada término introducido, con quién y cuándo. Es la respuesta al hallazgo de que la tasa de invención de tags **no decae**: 1.180 tags distintos, 45% usados una sola vez, y un ritmo de invención plano (37% → 36%) a lo largo de tres meses. Un vocabulario que converge tiene esa curva bajando; plana significa que cada sesión arranca sin memoria de la anterior.
+  - **`20_Quarantine/`** (`vault_quarantine`): existe porque **la alternativa a retener no es limpiar, es borrar**, y aquí nada se borra. La nota se **mueve** (dos copias de una nota dudosa es peor que una: la que queda fuera se sigue leyendo como contexto válido), el origen viaja tanto en el frontmatter como en el ledger append-only, y restaurar sobre un origen ocupado falla en vez de sobrescribir.
 - **`AP-26`..`AP-30` registrados en `NORM_CATALOG`** (completitud de frontmatter: tags, `type`, bloque YAML, `status`, clasificación CIA). Estaban aplicados por `vault_audit` desde v30 sin entrada canónica — el catálogo pasa de 43 a **48 normas** y la numeración de antipatrones queda contigua de `AP-01` a `AP-36`. Sin cambios en el comportamiento del audit.
 - **Camino de migración reparado:** `_version_index()` solo aceptaba coincidencia exacta contra `VERSION_ORDER` (versión mayor, `"v39"`) mientras `CURRENT_VERSION` trae minor (`"v39.0"`); el índice salía `-1` y `--to latest` no aplicaba **ninguna** migración, reportando `ok: true`. Añadidas las migraciones `v37`, `v38` y `v39` — esta última crea `17_Preferences/` y sus 5 subcarpetas en vaults preexistentes. `tests/test_standard_upgrade_path.py` (9 tests) incluye un guard: una sección en el registro sin migración que la cree hace fallar la suite.
 - **Skill `vault-sdd-init` alineada:** el rango de antipatrones se derivaba con `len(aps)` (el conteo, no el máximo) y el detector de drift estaba clavado en `AP-01..AP-25`, ciego a todo lo posterior. Ahora ambos se derivan de `NORM_CATALOG` y el drift se calcula por contiguidad. `docs/SKILLS.md` documenta instalación y ciclo de vida; `SKILL_MANIFEST` queda anotado `superseded_by:` (constante declarada en v36 y nunca escrita). `tests/test_skills_contract.py` (9 tests) exige que toda definición en `.claude/skills/` tenga entry point y que sus flags existan en el `argparse` real.
+- **`vault_doc_counts` — ninguna cifra de la documentación se escribe a mano.** Guard anti-drift que deriva del registro canónico cada número que describe el estándar (tools activas, grupos, normas, antipatrones, secciones, scripts, tests) y falla si un documento miente. El changelog y la tabla de versiones quedan fuera del escaneo: sus cifras son historia correcta para su versión, no drift. Destapó, entre otras, "34 grupos" cuando el registro tenía 35 y "43 normas" cuando ya eran 48. `tests/test_doc_counts.py` (10 tests) y paso propio en CI. La lista de documentos vigilados se amplió después a `cli/README.md`, `cli/COMMANDS.md` y `mcp/PLAN.md` — escritos a mano y repitiendo las mismas cifras, eran la última posición desde la que un número podía mentir indefinidamente; el guard destapó "76 tools activas" en `cli/README.md` la primera vez que se ejecutó sobre ella. `docs/sdd/` queda fuera a propósito: se regenera desde el registro, así que su cifra no puede divergir por edición manual.
+- **`vault_doc_sync` — la referencia de tools no puede quedarse atrás del catálogo.** La otra mitad del problema que ataca `vault_doc_counts`: aquella vigila las cifras, esta los nombres. Comprueba que toda tool del catálogo tenga sección propia en `scripts/README.md`, que toda clave de `GROUPS` tenga su grupo, y que el índice tenga exactamente una fila por sección con el ancla resuelta. Al introducirlo había diecinueve tools sin sección, un índice con 30 filas para 35 grupos, y una fila que apuntaba a un ancla inexistente dentro del propio documento. `--fix` regenera el índice desde `GROUPS` pero **no escribe prosa**: una tool sin sección se reporta, nunca se documenta por defecto. `tests/test_doc_sync.py` (11 tests) y paso propio en CI.
+- **Un solo vocabulario de grupos.** Convivían tres: la etiqueta `group` de cada tool en `TOOLS_CATALOG`, la clave de `GROUPS` y el título de sección de `scripts/README.md` ("Normas y Etiquetas" / "Normas", "Salud" / "Salud del Vault", "Vista proyecto" / "Vista del Proyecto"). Ninguno fallaba al divergir: agrupar por un campo o por el otro daba grupos distintos y ambos parecían correctos. La clave de `GROUPS` pasa a ser la única, con guard en `tests/test_registry_derivation.py`. Destapó además que `vault_env_matrix` declaraba el `group_id` de Release siendo de Infraestructura.
+- **`vault_mcp_catalog --check-contracts` — el catálogo y los contratos dejan de poder divergir.** Tercer guard de la misma familia: `vault_doc_counts` vigila las cifras, `vault_doc_sync` los nombres, este los contratos. Comprueba que toda tool del catálogo tenga entrada en `<vault>/00_System/tool-spec.json` y que toda entrada que ya no está en el catálogo declare por qué sigue ahí (`status: archived | internal | orphan`) — no-derogación no es abandono. Al introducirlo faltaban **10 contratos** de tools que llevaban versiones expuestas por MCP sin nada que validara su salida (`vault_move`, `vault_graph_fix`, `vault_fix_brackets`, `vault_folder_registry`, `vault_graph_inspect`, `vault_graph_merge`, `vault_mermaid_check`, `vault_diagram_export` y las dos base64), y **15 entradas huérfanas** sin anotar: 5 archivadas desde v21–v25 que ahora conservan `archived_in` y `superseded_by`, y 10 librerías internas nunca expuestas. `declared_returns` de las diez nuevas no se inventó: se tomó de la salida real de cada tool contra `vault-sandbox/`. `tests/test_contract_sync.py` (8 tests) y paso propio en CI.
+- **`group_id` deja de ser una cuarta numeración.** Era el último vocabulario suelto: llegaba hasta 33, dejaba grupos enteros sin id (Corrección Automática, Gestión de Carpetas) y colisionaba con la del `scripts/README.md` — el 28 era "Normas" en el contrato y "Producción/SRE" en la referencia, así que `vault_compact_contracts` y `vault_manifest`, que lo usan para titular `## Grupo N — etiqueta`, rendían grupos con nombre y número de grupos distintos. Ahora se deriva de la numeración del README, que es la única que cubre los 35 grupos y la única que otro guard ya mantiene viva; 17 entradas renumeradas y comprobación en `--check-contracts`.
+- **`AP-37` — no-op silencioso** (high, `audit`): una tool con side effects que devuelve `ok: true` sin exponer un indicador de trabajo hace una afirmación no falsable. Nace del bug de `--to latest` descrito abajo. `vault_noop_audit` audita el catálogo contra una baseline congelada en `scripts/noop-baseline.json`: la deuda histórica no bloquea, pero **no puede crecer**, y toda tool nueva nace conforme. La baseline nació con 52 tools y **cerró la versión en 0**, así que la norma dejó de ser tolerante: con la lista vacía cualquier tool con side effects y sin indicador aparece como `new_offenders` y `--strict` sale con 1. `tests/test_noop_audit.py` (10 tests) y paso propio en CI.
+- **`AP-38` — vocabulario validado después de escribir** (high, `guard+audit`): un campo con vocabulario cerrado se normaliza al escribir, no en un audit posterior. La norma nace de medir el parque real —17 vaults, 2.929 notas— y encontrar **54 valores de `status` con solo el 6% canónico**, pese a que CN-03 lo audita desde v38. La causa no eran los agentes: en 1.356 ejecuciones registradas `vault_norms` **no aparece ni una vez**, y el valor no canónico más frecuente (`implementado`, 205 notas) lo escribía `vault_pattern_save`. El estándar publicaba **nueve** vocabularios de `status` en competencia y auditaba contra uno. `normalize_status()` corrige en `vault_write` y rechaza lo indecidible conservándolo en `status_note`; `DOMAIN_STATUS_VOCABS` separa el eje de dominio (`test_result`, `incident_state`…) del ciclo de vida de la nota, sin perder ningún vocabulario. Cobertura: **608 de 609** notas del parque. `tests/test_status_vocabulary.py` (133 tests), con guard de código fuente que impide que reaparezca una emisión directa.
+- **`AP-39` — vocabulario abierto sin memoria** (medium, `guard+audit`): los tags admiten términos nuevos, pero el que se introduce queda registrado. El mismo censo midió **1.180 tags para 6.358 usos**, el **45% usado una sola vez**, 55 familias de casi-duplicados (`ci-cd`/`cicd`/`ci_cd`) y una **tasa de invención plana durante tres meses** (37% → 36% → 34% → 27% → 36%): ninguna sesión hereda el vocabulario de la anterior. La causa estaba otra vez en el código — la sugerencia de `vault_write` leía `registry["tags"]`, una clave que el tag-registry no tiene, y llevaba versiones sin dispararse. A diferencia de AP-38 la respuesta no es rechazar (rechazar un vocabulario abierto empuja a omitir el campo, y se rompe AP-26): `apply_vocabulary()` colapsa lo que es la misma palabra (acentos, mayúsculas, separadores, plural) y `record_new_tags()` anota el término nuevo en la bitácora append-only `19_Audits/vocabulary/tag-ledger.json` con quién, cuándo y en qué nota. Heal: `vault_tags --backfill-ledger`. `tests/test_tag_vocabulary.py` (39 tests).
+- **`AP-40` — contrato publicado que la CLI rechaza** (high, `guard+audit`): **45 de las 82 tools conciliables** publicaban en el catálogo MCP al menos un parámetro que su propio `argparse` no acepta, y como el servidor compone `--<param>` literal, más de la mitad de la superficie MCP fallaba con `unrecognized arguments` en cada invocación. Había un guard de sincronía y estaba en verde: comparaba el JSON contra el catálogo Python del que se genera, y **dos copias de la misma equivocación coinciden perfectamente**. Ahora el contrato se deriva del script: `argparse_params()` lee los `add_argument` por AST (tipo desde `action`/`nargs`, `required`, `choices`, sin posicionales) y `reconciled_params()` publica solo lo que la CLI acepta conservando la descripción escrita a mano. Audit: `vault_mcp_catalog --check-params`, incorporado a `vault_norms --audit`. Heal: `vault_mcp_catalog --sync`. `tests/test_catalog_params.py` (13 tests).
+- **`AP-41` — máquina de estados declarada sin verificar** (high, `guard+audit`): `STATUS_TRANSITIONS` existía desde v38, bien formada y con test de coherencia, y **su único consumidor era ese test** — ningún script la importaba, así que una nota `archived` podía volver a `draft`. Al abrir el camino de lectura que hacía falta para comprobar la transición apareció por qué nadie lo usaba: la extracción de `id`/`createdAt` estaba **dentro de la rama del `else`**, la del caso en que la nota no existe, donde el contenido previo es la cadena vacía. Tres consecuencias medidas: cada actualización acuñaba un `id` nuevo y reseteaba `createdAt` (la nota perdía identidad en cada escritura), el `id` devuelto por la tool era un `uuid4` distinto al del archivo, y una escritura que no mencionaba `status` degradaba la nota a `draft`. Ahora el guard rechaza la transición ilegal citando los destinos válidos, la escritura sin `status` conserva el estado previo, `canonical_utc()` hace idempotente el formato de `createdAt` entre relecturas, y `vault_norms --audit` reporta desde `.history/` las transiciones ya ocurridas. Sin heal, deliberadamente: el estado actual es un hecho y el camino irregular es la información. `tests/test_status_machine.py` (21 tests).
+- **`AP-42` — tool publicada sin haberse ejecutado nunca** (high, `guard+audit`): 84 de 86 tools respondían a `--help` y 31 aparecían nombradas en algún test; el resto **nunca se ejecutaba**, ni en CI ni en la suite, y aun así se publicaba por MCP. `--help` demuestra que el `argparse` se construye, nada más. El primer barrido de `vault_smoke` —el ejemplo documentado de cada tool, contra una copia desechable del vault de pruebas, exigiendo solo que termine, que emita JSON y que ese JSON tenga `ok`— dio **41 de 87 fallando**. La causa dominante, 36 de las 41, era que el `example` del catálogo usaba flags que la propia CLI rechaza con exit 2: **AP-40 trasladado a la superficie de documentación**, con el usuario copiando del README algo que no corre. El resto: contratos de salida en texto donde se prometía JSON, y dos `example` con las comillas sin cerrar que ni siquiera se dejaban convertir en una línea de comandos. Un `ok: false` bien formado aprueba —el ejemplo apunta a rutas que el sandbox no tiene y rechazarlas *es* el contrato—; lo que se persigue es el fallo mudo. Corregidas las 41, la baseline nació en **0**, así que la norma es guard duro desde el primer día en vez de deuda congelada al estilo AP-37. Las tools sin invocación posible se declaran en `SIN_SMOKE` con su motivo: una exención silenciosa sería el mismo fallo. `tests/test_smoke.py` (17 tests).
+- **`AP-43` — norma sin refuerzo en el punto de uso** (high, `guard+audit`): el catálogo de normas estaba completo, versionado y con guards, y era **invisible para quien escribe**. El agente se enteraba de que una norma existe al incumplirla, y solo si era una de las 14 que previenen y no una de las 33 que se limitan a detectar en un audit que puede no correrse nunca. Una norma que no se ve en el momento de escribir no gobierna la escritura: gobierna el post-mortem. Ahora `vault_errors.wrap_main` —el único punto por el que ya pasa la salida de las 97 tools— añade a cada resultado un bloque `vault_says` derivado de `NORM_CATALOG` y del estado real de la llamada: `blocked` nombra la norma que acaba de frenarla y aclara que el rechazo *es* la norma funcionando, `wrote` dice cuántas notas cambiaron según el ledger AP-37 y qué auditar, `read` recuerda una norma de esa tool con su señal de incumplimiento. El foco **rota**, porque repetir siempre la misma la vuelve invisible a la segunda semana. Se enganchó ahí y no en cada tool a propósito: una capa que hubiera que invocar tool por tool sería el registro-que-nadie-consume, el mismo fallo que produjo `STATUS_TRANSITIONS` sin consumidor (AP-41) y un guard de catálogo que se comparaba consigo mismo (AP-40). `vault_voice --coverage` cierra el círculo: una norma sin `tools_enforcing` ni `tools_detecting` no se pronuncia jamás, y el audit la nombra. `tests/test_voice.py` (19 tests), incluido el que ejecuta una tool real y exige que devuelva `vault_says`.
+- **`AP-44` — verificación autoconsistente: la tool se certifica a sí misma** (critical, `guard+audit`): salió de ejecutar el estándar, por primera vez, contra un **vault real preexistente** en vez de contra `vault-sandbox/`. Cinco tools fallaban de la misma forma —medir con un criterio propio y verificar con ese mismo criterio— y ninguna podía verse: `vault_norms` y `vault_mermaid_check` auditaban `vault-backups/` (194 de 216 violaciones y 46 de 69 errores Mermaid vivían en instantáneas congeladas, y el audit mandaba a "corregir" copias de seguridad, que es exactamente lo que destruye su valor); `vault_mermaid_check` validaba flowcharts con patrones anclados con `^` más un `continue`, así que `F --> G[Output HTML]` no definía G nunca — 23 de 23 hallazgos `undefined_node` falsos, a −2 puntos de health score cada uno, de modo que un vault con diagramas correctos no podía subir de 0; `vault_audit` leía el frontmatter con un mini-parser por líneas ciego a las listas YAML que **el propio estándar escribe**, y reportaba sin tags 45 notas correctamente etiquetadas; `vault_audit` y `vault_graph_fix` resolvían wikilinks por `title:`, campo que **Obsidian no mira jamás**, y marcaban rotos 49 enlaces que el lector abre sin problema; y `vault_init` escribía los primers sin `status`, de forma que el generador del estándar producía 18 de 18 notas que su propia auditoría reprueba. El guard detecta el síntoma inequívoco —un wikilink que solo casa por `title:`— y propone la reparación correcta: **añadir el título a los `aliases:` del destino**, no reescribir los puntos de llamada, porque el texto legible de un enlace es contenido y cambiarlo por un slug degrada la nota para bajar un contador. Es `critical` y no `high` porque un guard en verde que apunta al sitio equivocado es peor que no tener guard: dirige el trabajo hacia donde no hay problema. Corolario normativo: **toda medida nueva se contrasta al menos una vez contra un vault ajeno al estándar** — `vault-sandbox/` lo genera este repo y comparte sus supuestos, y un vault que nunca discrepa no puede revelar una discrepancia. `tests/test_ap44_verificacion_autoconsistente.py` (7 tests) y `tests/test_audit_resuelve_como_obsidian.py` (8 tests), incluido el que exige lo contrario del guard: que resolver por `title:` **siga** contando como roto.
+- **Modo agéntico de sanación (`docs/MODO-AGENTICO-SANACION.md`).** El procedimiento de 12 fases para tomar un vault preexistente y dejarlo gobernado sin perder nada, derivado de la ejecución que produjo AP-44: `healthScore` 0 → 54, violaciones de norma 216 → 1, enlaces rotos 146 → 37, errores Mermaid 69 → 0, notas 232 → 235 (**ninguna borrada**). Documenta sobre todo las decisiones que ninguna tool toma: que un `[[editHandler]]` roto es una referencia a un **símbolo de código** y no una nota que falte —aplicar las 14 sugerencias de `partial_match` habría degradado el vault—, que los 36 enlaces rotos de una instantánea archivada **se quedan rotos** porque repararlos reescribe evidencia, que un enlace a una nota marcada "pendiente de crear" es el idioma de Obsidian para declarar trabajo futuro y no un error, que el `status` de una nota vieja se completa con `draft` y nunca con `implemented` —afirmar una revisión que nadie hizo deja el vault incorrecto y con aspecto de correcto—, y que `stale` subiendo de 167 a 185 **no es una regresión**: 26 notas sin frontmatter no eran evaluables para actualidad y al ganarlo entraron por primera vez en el chequeo. Regla de diseño del modo: **el subagente propone, no escribe**.
+- **El indicador de trabajo se mide, no se afirma — ledger de escrituras en `vault_io`.** Es lo que hizo posible saldar AP-37 sin retocar 52 returns a mano y sin fiarse de lo que cada tool dice de sí misma: `atomic_write_text()` clasifica toda escritura como `created`, `updated` o `unchanged` en un contador **thread-local** —lo es a propósito: la CLI consolidada ejecuta varias operaciones a la vez y un contador de módulo mezclaría el trabajo de unas con el de otras—, y la tool solo expande `**write_report()` en su return. La clasificación ocurre con el texto **ya saneado**, porque compararlo contra el original daría `updated` en escrituras que el saneado deja idénticas. `written = created + updated`: reescribir un archivo con el mismo contenido **no es trabajo**, y `unchanged: 1` es la respuesta honesta que antes era indistinguible de un `ok: true`. Para el único caso que escribe en crudo a propósito —`vault_section_index`, cuyo índice no puede pasar por `atomic_write_text` sin disparar la recursión de `_auto_section_index`— existe `record_raw_write()`, que clasifica sin escribir. `tests/test_write_ledger.py` (6 tests) incluye el aislamiento entre hilos.
+- **`declared_returns` completo: 0 contratos vacíos.** 658 claves añadidas sobre las 99 entradas del `tool-spec.json`. No se generaron recorriendo el AST entero —el primer intento produjo 1.045 claves incluyendo las de funciones auxiliares, un contrato que pasaría la validación mintiendo— sino desde el punto de entrada real de cada tool (`vault_<nombre>` o `main`), unido a los valores que ya había y verificado contra la salida real de las tools que construyen su payload fuera del entry point.
+- **`tests/test_registry_derivation.py` (12 tests) — generalización del patrón de contiguidad.** Lo esperado se calcula desde el registro, nunca desde un literal congelado: toda tool pertenece a exactamente un grupo, ningún grupo cita tools inexistentes, la numeración de cada familia de normas es contigua, ninguna norma tiene enforcement `manual`, `STATUS_VOCAB` no está replicado como literal, y toda sección del registro es alcanzable por migración. Destapó `vault_backup_base64` / `vault_restore_base64` (declaraban grupo pero `GROUPS` no las contenía, así que todo recorrido por grupos las omitía) y `vault_code_tag` duplicada en dos grupos.
 - `tests/test_context_memory.py` (76 tests): presupuesto de tokens nunca excedido, idempotencia de preferencias, determinismo del parser, contención del subgrafo, bloqueo de ingesta envenenada sin escrituras parciales, y contratos catálogo ↔ `tool-spec.json` ↔ registro.
 
 **Corregido**
+- **Tres fallos encadenados en `vault_standard_upgrade`, todos ocultos por el mismo mecanismo.** (1) `SCRIPTS_DIR` se usaba en dos ramas sin estar definido nunca; ambas vivían dentro de un `except Exception`, así que el `NameError` salía como una anotación en `standard-version.json` y la migración seguía devolviendo `ok: true`. (2) El script a invocar se reconstruía como `vault_<segunda palabra>.py`, que para `vault_fix_brackets` daba `vault_fix.py` — inexistente: el fix nunca llegó a aplicarse en ninguna migración. (3) `fixes_failed` solo se escribía cuando había fallos, de modo que un error ya corregido quedaba fijado en el registro del vault versión tras versión. Los tres son la misma patología que motivó AP-37: un resultado que no distingue el trabajo hecho del trabajo no hecho. Regresiones en `tests/test_standard_upgrade_path.py`.
+- **`vault_env_matrix` declaraba el `group_id` de Release** siendo una tool de Infraestructura. Lo destapó la unificación del vocabulario de grupos.
+- **Once scripts leían nombres que no existían.** `vault_graph` resolvía `move-log.json` contra un `SYSTEM_DIR` que no estaba definido ni importado en ninguna parte, y siete tools (`vault_write`, `vault_env_save`, `vault_flow_save`, `vault_infra_map`, `vault_infra_save`, `vault_requirement_save`, `vault_test_save`) usaban `datetime`/`timezone` sin importarlos; faltaban además `Any`/`Dict` en tres módulos y `safe_wikilink` en `vault_migrate_docs`. Compilan sin una queja: el `NameError` solo salta cuando la ejecución entra en esa rama concreta —en `vault_graph`, la de nodos movidos—, que es exactamente por qué llevaban versiones rotas sin que nadie lo notara. `ast.parse` no lo ve, así que el guard nuevo de `tests/test_source_hygiene.py` compara los nombres leídos contra todos los definidos e importados del módulo.
+- **Cuatro tools escribían notas sin atomicidad.** `vault_infra_map` era el único sitio que creaba una nota con `open(..., "w")` directo —sin saneado de encoding, sin escaneo de secretos y sin temp+replace—, y `vault_graph`, `vault_merge` y `vault_relation_add` escribían con `json.dump`/`write_text` en crudo. Además de la atomicidad, era lo que hacía que `vault_graph` devolviese `written: 0` habiendo reescrito el grafo completo.
+- **Veinte scripts con retornos de carro desnudos** (`\r` sin `\n`, estilo Mac clásico). Python los ejecuta sin protestar, pero `grep`, `sed` y `git diff` ven el archivo entero como **una** línea: el diff de un cambio de tres caracteres aparecía como "todo el archivo cambió", que es cómo una revisión deja de revisar. Normalizados a LF, con guard por script en `tests/test_source_hygiene.py`. El mismo módulo destapó que `scripts/_archived/vault_create.py` no compila desde que se archivó en v21 (`superseded_by: vault_write`); queda como deuda congelada y anotada — no-derogación dice que no se borra, no que no se sepa.
 - **Artefactos de vault generados fuera de todo `vault-*`.** Causa raíz: la última rama de `_detect_vault_root()` devolvía la raíz del repo sin declararlo, de modo que `00_System/`, `99_Index/` y `vault-backups/` se materializaban junto a los scripts. Era estructuralmente invisible para AP-36 porque la contaminación caía *dentro* de `root` y se reportaba como CN-02/AP-15 genérico. Ahora la rama se etiqueta como baja confianza y el audit la señala como AP-36.
 - **`vault_io` creaba directorios al importarse.** La rama spec-repo hacía `mkdir()` dentro de `_detect_vault_root()`, que corre en tiempo de importación: cualquier repo que importara el módulo recibía un `vault-sandbox/`. El `mkdir` se elimina; la creación queda a cargo de quien escribe.
 - **Guard AP-36 ciego a 2 niveles.** La comprobación de contaminación solo miraba el directorio padre inmediato, justo el punto ciego del patrón legacy `Path(__file__).parent.parent.parent`. Ahora recorre `_CONTAMINATION_DEPTH = 2` niveles con deduplicación, y nueva comprobación (d) que reporta una detección de raíz de baja confianza.
@@ -5617,7 +6166,7 @@ temp/
 
 **Agregado**
 
-- **`tool-spec.json` (scripts/tool-spec.json):** fuente de verdad formal de los contratos de las 78 tools. Contiene por tool: `group`, `group_id`, `status`, `required_args`, `declared_returns`, `dq_metadata`, `fundamentals`. Debe editarse **antes** de implementar una nueva tool — spec primero, código después.
+- **`tool-spec.json` (`<vault>/00_System/tool-spec.json`; en v22 vivía en `scripts/tool-spec.json`, reubicado en v39 por AP-36):** fuente de verdad formal de los contratos de las tools —78 en el momento de esta entrada, 84 en v39. Contiene por tool: `group`, `group_id`, `status`, `required_args`, `declared_returns`, `dq_metadata`, `fundamentals`. Debe editarse **antes** de implementar una nueva tool — spec primero, código después.
 
 - **`vault_spec_validate.py` (Meta — Validación spec-driven):** valida que las implementaciones cumplan `tool-spec.json`. Exit 1 en drift → gate de CI. Tres checks por tool: `script_exists` (scripts/{name}.py debe existir), `args_match` (required_args del spec deben estar en argparse del script), `returns_match` (declared_returns deben aparecer en return{} del script via análisis AST + regex). Modos: `--tool NAME` (una sola), `--report` (human-readable), `--strict` (falla si hay scripts sin spec). Baseline: **78/78 PASS**.
 

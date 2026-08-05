@@ -31,10 +31,12 @@ import json
 import shutil
 import sys
 from pathlib import Path
+from typing import Any, Dict
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT, atomic_write_json
+from vault_io import VAULT_ROOT, atomic_write_json, write_report
 from vault_lib import utcnow
+from vault_standard_upgrade import CURRENT_VERSION
 from vault_registry import (
     standard_folders,
     ORDERED_SECTIONS,
@@ -129,6 +131,14 @@ python scripts/{tool_hint}
         f'tags: ["primer", "scaffold", "onboarding"]\n'
         f"scaffold: true\n"
         f"type: primer\n"
+        # Sin `status`, el propio `vault_audit` marcaba como incompleta cada nota
+        # que este generador acaba de escribir: 18 primers de 18 en el vault de
+        # BuilderX. El generador del estándar producía notas que su auditoría
+        # reprueba, y el usuario no tenía forma de saber que la deuda no era suya.
+        # `template` — y no `draft` — porque un primer es andamiaje estable, no un
+        # borrador en camino a otra cosa; es además el valor que AP-03 y AP-07
+        # eximen de exigencias de contenido y estructura de ADR.
+        f"status: template\n"
         f'norm_refs: ["CN-01"]\n'
         "---\n"
         "\n"
@@ -143,7 +153,7 @@ python scripts/{tool_hint}
 
 
 def vault_init(
-    target_version: str = "v32", run_audit: bool = True, clean: bool = False
+    target_version: str = CURRENT_VERSION, run_audit: bool = True, clean: bool = False
 ) -> dict:
     """Inicializa un vault fresco en VAULT_ROOT.
 
@@ -151,6 +161,7 @@ def vault_init(
     """
     result = {
         "ok": True,
+        **write_report(),
         "vault_root": str(VAULT_ROOT).replace("\\", "/"),
         "target_version": target_version,
         "steps": [],
@@ -370,11 +381,11 @@ def main() -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
     Ejemplos:
-  # Bootstrap con versión por defecto (v34)
+  # Bootstrap con la versión actual del estándar
   python vault_init.py
 
   # Migrar a una versión específica
-  python vault_init.py --target v34
+  python vault_init.py --target v38.1
 
   # Bootstrap sin ejecutar vault_audit al final
   python vault_init.py --no-audit
@@ -384,13 +395,20 @@ def main() -> int:
 
 Notas:
   - VAULT_ROOT se detecta automáticamente
-  - Crea las 17 carpetas estándar, aplica migraciones, indexa todo,
+  - Crea las carpetas estándar del registro, aplica migraciones, indexa todo,
     genera hub/commands notes y reporta el health score.
   - --clean borra TODO el contenido del vault actual excepto .locks
         """,
     )
     parser.add_argument(
-        "--target", default="v34", help="Target vault version (default: v34)"
+        "--target",
+        default=CURRENT_VERSION,
+        help=(
+            "Versión objetivo del estándar. Por defecto, la versión actual "
+            f"({CURRENT_VERSION}): fijarla a mano dejaba el vault sellado con "
+            "una versión antigua y las carpetas de las migraciones posteriores "
+            "sin crear."
+        ),
     )
     parser.add_argument(
         "--no-audit", action="store_true", help="Skip final vault_audit run"

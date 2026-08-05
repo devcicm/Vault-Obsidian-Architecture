@@ -3,8 +3,8 @@
 **Estándar de diseño para dotar a agentes LLM de memoria documental persistente.**
 
 [![Version](https://img.shields.io/badge/version-v39.0-blue)](./vault-obsidian-architecture.md)
-[![Tools](https://img.shields.io/badge/tools-76_active-green)](./scripts/)
-[![Scripts](https://img.shields.io/badge/scripts-98_total-lightblue)](./scripts/)
+[![Tools](https://img.shields.io/badge/tools-88_active-green)](./scripts/)
+[![Scripts](https://img.shields.io/badge/scripts-110_total-lightblue)](./scripts/)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow)](./scripts/)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](./LICENSE)
 
@@ -46,6 +46,10 @@ vault-{nombre}/          ← carpeta raíz (prefijo vault- obligatorio)
 ├── 14_Requirements/     — requerimientos ISO 29148
 ├── 15_Tests/            — casos de test ISO 29119
 ├── 16_AI_Governance/    — decisiones de agentes IA (ISO 42001)
+├── 17_Preferences/      — contexto estable del usuario (workflow, style, tooling…)
+├── 18_Bugs/             — defectos con ciclo propio: open → root-causes → fixed
+├── 19_Audits/           — bitácora del vault: auditorías y vocabulario introducido
+├── 20_Quarantine/       — notas retenidas sin destino seguro (nunca borradas)
 └── 99_Index/            — search-index.json, graph.json
 ```
 
@@ -67,7 +71,7 @@ Detalle completo en [Marco de Datos y Gobernanza](./vault-obsidian-architecture.
 | **Principios FAIR** | Findable, Accessible, Interoperable, Reusable — con el mecanismo concreto que ya los cumple | `vault_search`, `vault_master_index`, `.history/` |
 | **V's del Big Data** | Volumen, velocidad, variedad, veracidad, valor, variabilidad — cada V apunta a un número real | `vault_audit`, `vault_change_log`, `vault_delta` |
 | **Trazabilidad** | Cadena verificable `agent:` → `.change-log.json` → `.tool-trace.json` → `.history/` → manifiesto Merkle | `vault_audit --trace` |
-| **Gobernanza** | 43 normas AP/PAT/SP/CN, 0 con enforcement manual | `vault_norms --audit` |
+| **Gobernanza** | 56 normas AP/PAT/SP/CN, 0 con enforcement manual | `vault_norms --audit` |
 | **Alineación ISO** | 13 normas mapeadas cláusula → implementación → tool | `vault_fundamentals --framework` |
 
 ```bash
@@ -91,6 +95,50 @@ python scripts/vault_norms.py --check-framework    # guard anti-drift registro �
   `superseded_by:` conservando su contrato.
 - **Changelog consolidado**: entradas faltantes reconstruidas desde git, orden cronológico
   restaurado y hashes `pending` fijados.
+- **AP-38 — vocabulario cerrado normalizado al escribir** (`guard+audit`): un censo de
+  **17 vaults reales, 2.929 notas**, encontró **54 valores de `status` con solo el 6%
+  canónico**, pese a que CN-03 lo audita desde v38. La causa no eran los agentes: el
+  toolkit publicaba **nueve** vocabularios de `status` en competencia y auditaba contra
+  uno. `normalize_status()` corrige en `vault_write`, `DOMAIN_STATUS_VOCABS` separa el eje
+  de dominio (`test_result`, `bug_state`…) del ciclo de vida. Cobertura: 608 de 609 notas.
+- **AP-39 — vocabulario abierto con memoria** (`guard+audit`): 1.180 tags para 6.358 usos,
+  **45% usados una sola vez** y una tasa de invención **plana durante tres meses**. Los
+  tags se resuelven contra el registro antes de escribir y el término nuevo se admite pero
+  **queda anotado** en la bitácora append-only `19_Audits/vocabulary/tag-ledger.json` con
+  quién, cuándo y en qué nota. Heal: `vault_tags --backfill-ledger`.
+- **AP-40 — contrato publicado que la CLI rechaza** (`guard+audit`): **45 de 82 tools**
+  publicaban en el catálogo MCP parámetros que su propio `argparse` no acepta, y como el
+  servidor compone `--<param>` literal, más de la mitad de la superficie MCP fallaba en cada
+  invocación. Había un guard de sincronía en verde: comparaba el JSON contra el Python del
+  que se genera, y **dos copias de la misma equivocación coinciden**. Ahora el contrato se
+  deriva del script por AST. Audit: `vault_mcp_catalog --check-params`.
+- **AP-41 — máquina de estados declarada sin verificar** (`guard+audit`):
+  `STATUS_TRANSITIONS` existía desde v38 y su único consumidor era su propio test, así que
+  una nota `archived` podía volver a `draft`. El camino de lectura que hacía falta para
+  comprobarlo estaba **en la rama del `else`**, la del caso en que la nota no existe: cada
+  actualización acuñaba un `id` nuevo, reseteaba `createdAt` y degradaba el estado a
+  `draft`. Guard en `vault_write`, audit sobre `.history/`, sin heal — el estado actual es
+  un hecho y el camino irregular es la información.
+- **AP-42 — tool publicada sin haberse ejecutado nunca** (`guard+audit`): `--help` demuestra
+  que el `argparse` se construye, nada más. El primer barrido real —el ejemplo documentado
+  de cada tool, contra una copia desechable del sandbox— dio **41 de 87 fallando**, y 36 lo
+  hacían porque el `example` del catálogo usaba flags que la propia CLI rechaza: AP-40
+  trasladado a la documentación, con el usuario copiando del README algo que no corre.
+  Corregidas las 41, la baseline nació en **0**: guard duro desde el primer día.
+  Gate: `vault_smoke --check --strict`.
+- **AP-43 — norma sin refuerzo en el punto de uso** (`guard+audit`): el catálogo de normas
+  estaba completo y era invisible — el agente se enteraba de que una norma existe al
+  incumplirla, y solo si era una de las 14 que previenen en vez de una de las 33 que solo
+  detectan. Ahora **el vault le habla al agente en cada interacción**: `wrap_main` añade a
+  cada resultado un bloque `vault_says` con la norma que acaba de actuar, cuántas notas
+  cambiaron y qué mirar después, rotando el foco para que el refuerzo no se vuelva ruido.
+  Vive en el único punto por el que ya pasa la salida de todas las tools, porque una capa
+  que hubiera que invocar tool por tool sería el registro-que-nadie-consume de siempre.
+  Consulta: `vault_voice --tool <tool>` / `--coverage`.
+- **Grupo 36 y tres secciones nuevas**, derivadas de medir y no de diseñar: `18_Bugs/`
+  (`vault_bug_save` — el defecto tiene ciclo propio: síntoma → causa raíz → corrección
+  verificada), `19_Audits/` (la bitácora del vault) y `20_Quarantine/` (`vault_quarantine`
+  — retener sin borrar, porque la alternativa a retener no es limpiar, es `rm`).
 
 ---
 
@@ -99,7 +147,7 @@ python scripts/vault_norms.py --check-framework    # guard anti-drift registro �
 - **AP-36** (critical): toda operación escribe solo dentro del vault, es idempotente
   y deja artefactos rastreables. Backups en `VAULT_ROOT/vault-backups/`, `.bak` de
   moves en `00_System/.trash/`, stubs de mantenimiento en `02_Observability/maintenance/stubs/`.
-- **0 normas con enforcement `manual`**: las 43 normas del catálogo tienen guard o audit.
+- **0 normas con enforcement `manual`**: las 56 normas del catálogo tienen guard o audit.
   `python scripts/vault_norms.py --audit [--root X]` audita AP-06/07/09/10/15/19/36, CN-02/03, SP-01.
 - **Saneamiento de índices**: tablas con `| [[stem]] | Título | ... |` (nunca alias en
   celda); `python scripts/vault_section_index.py --heal` cura índices legacy; escribir
@@ -141,7 +189,7 @@ mkdir vault-mi-proyecto
 cp -r Vault-Obsidian-Architecture/scripts ./scripts
 
 # v34: un solo comando hace todo el bootstrap (carpetas + version + indexes + audit)
-# Crea las 18 carpetas estándar, aplica migraciones hasta v34, auto-indexa, agrega
+# Crea las 22 carpetas estándar, aplica migraciones hasta v39, auto-indexa, agrega
 # scaffold primers en secciones vacías, y reporta el health score inicial.
 python scripts/vault_init.py
 
@@ -200,7 +248,7 @@ python scripts/vault_audit.py
 
 ## CLI consolidada — `cli/`
 
-Las 81 tools bajo un único punto de entrada, con búsqueda, planificación de
+Las 88 tools bajo un único punto de entrada, con búsqueda, planificación de
 concurrencia y guardas de seguridad:
 
 ```bash
@@ -221,7 +269,7 @@ Guía: [`cli/README.md`](cli/README.md) · Referencia de comandos:
 
 ---
 
-## Las 81 tools activas — 34 grupos
+## Las 88 tools activas — 36 grupos
 
 | Grupo | Tools |
 |---|---|
@@ -346,8 +394,8 @@ Sistema de control de asistencia con autenticación biométrica.
 
 Contiene:
 - 8 principios de diseño
-- 81 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
-- 34 normas: 23 antipatrones (AP-01–AP-23), 5 patrones (PAT-1–PAT-5), 3 SP, 3 CN
+- 88 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
+- 49 normas: 44 antipatrones (AP-01–AP-37), 6 patrones (PAT-1–PAT-6), 3 SP, 3 CN
 - norm_refs auto-embebido en frontmatter + vault_code_tag para etiquetas en código fuente
 - 8 Fundamentos de Datos (F1–F8) con trazabilidad a tools
 - CIA schema completo con semántica por tipo de nota
@@ -374,7 +422,7 @@ Contiene:
 ## Scripts — estructura del repositorio
 
 ```
-scripts/                    ← 103 archivos Python (81 tools del catálogo + 8 archivadas en _archived/ + internas/meta)
+scripts/                    ← 110 archivos Python (88 tools del catálogo + 8 archivadas en _archived/ + internas/meta)
 ├── vault_io.py             — I/O base: _detect_vault_root, assert_within_vault, atomic_write_text/json, file_lock
 ├── vault_errors.py         — wrap_main (timeout 60s), emit_ok, trace log
 ├── vault_write.py          — tool principal de escritura (guards AP-20, AP-21, norm_refs auto-embed)

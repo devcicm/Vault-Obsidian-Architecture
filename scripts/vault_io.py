@@ -318,6 +318,75 @@ def assert_within_vault(path: Path, vault_root: Path) -> Path:
     return resolved
 
 
+# ────────────────────────────────────────────────────────────────────────────
+# AP-37 — registro de escrituras
+# ────────────────────────────────────────────────────────────────────────────
+# El indicador de trabajo se MIDE donde el trabajo ocurre, no lo afirma cada
+# tool en su return. Una tool que se limita a declarar `ok: true` está haciendo
+# una afirmación no falsable; una que reporta `unchanged: 1` está diciendo algo
+# comprobable — y es justo el caso que AP-37 nació para destapar (una migración
+# que devolvía éxito habiendo aplicado cero cambios).
+#
+# El ledger es thread-local a propósito: la CLI consolidada ejecuta varias
+# operaciones a la vez y un contador de módulo mezclaría el trabajo de unas con
+# el de otras.
+_write_ledger = threading.local()
+
+
+def _ledger() -> Dict[str, int]:
+    contadores = getattr(_write_ledger, "counts", None)
+    if contadores is None:
+        contadores = {"created": 0, "updated": 0, "unchanged": 0}
+        _write_ledger.counts = contadores
+    return contadores
+
+
+def write_ledger_reset() -> None:
+    """Pone el contador a cero. Lo llama `wrap_main` al arrancar cada tool."""
+    _write_ledger.counts = {"created": 0, "updated": 0, "unchanged": 0}
+
+
+def write_report() -> Dict[str, int]:
+    """Qué escribió esta ejecución. Pensado para expandirse en el return de la tool.
+
+    `written` es el total de archivos que cambiaron en disco: `unchanged` NO
+    cuenta, porque reescribir un archivo con el mismo contenido no es trabajo.
+    """
+    c = dict(_ledger())
+    c["written"] = c["created"] + c["updated"]
+    return c
+
+
+def record_raw_write(path: Path, text: str, encoding: str = "utf-8") -> str:
+    """Registra una escritura que NO pasa por `atomic_write_text`, a propósito.
+
+    Hay exactamente un motivo válido para escribir en crudo: `vault_section_index`
+    genera índices con `Path.write_text` porque `atomic_write_text` dispara
+    `_auto_section_index`, y el generador escribiéndose a sí mismo sería una
+    recursión infinita. Esas escrituras son trabajo real y tienen que contar.
+
+    Llamar a esto NO escribe: solo clasifica. Se invoca junto al `write_text`.
+    """
+    return _record_write(path, text, encoding)
+
+
+def _record_write(path: Path, text: str, encoding: str) -> str:
+    """Clasifica la escritura antes de hacerla. Nunca propaga errores."""
+    try:
+        if not path.exists():
+            resultado = "created"
+        else:
+            resultado = (
+                "unchanged"
+                if path.read_text(encoding=encoding, errors="replace") == text
+                else "updated"
+            )
+    except OSError:
+        resultado = "updated"
+    _ledger()[resultado] += 1
+    return resultado
+
+
 def atomic_write_text(
     path: Path, text: str, encoding: str = "utf-8", sanitize: bool = True
 ) -> None:
@@ -383,6 +452,10 @@ def atomic_write_text(
     # if write_text fails (disk full, permissions, encoding). Without this,
     # repeated failures leave .tmp.<pid>.<hex> orphans accumulating in
     # path.parent, which is a slow disk-fill risk.
+    # Se clasifica con el texto YA saneado: comparar contra el original daría
+    # `updated` en escrituras que el saneado deja idénticas.
+    _record_write(path, text, encoding)
+
     temp = path.parent / f".tmp.{os.getpid()}.{uuid.uuid4().hex[:8]}"
     try:
         temp.write_text(text, encoding=encoding)
@@ -556,3 +629,28 @@ def atomic_update_json(
         updated = update(data)
         atomic_write_json(path, updated)
         return updated
+
+
+#: Directorios cuyo contenido es una INSTANTÁNEA congelada, no una nota viva.
+#: AP-36 obliga a que los side-effects (backups, papelera, historial) vivan
+#: DENTRO del vault. Sin excluirlos, toda tool que barre `rglob("*.md")` se
+#: audita a sí misma: en el vault de BuilderX eran 194 de 216 violaciones de
+#: `vault_norms` (90%) y 46 de 69 errores Mermaid (67%), todas en copias de
+#: seguridad. No es solo ruido en la métrica — manda al agente a "corregir" una
+#: instantánea, que es exactamente lo que destruye su valor como backup. Una
+#: violación dentro de un backup ya se reportó cuando la nota estaba viva.
+#:
+#: Vive aquí, y no en la tool que lo descubrió, porque el criterio de "qué es
+#: una nota viva" es del vault, no de un barrido concreto.
+SNAPSHOT_DIRS = ("vault-backups", ".trash", ".history")
+
+
+def is_snapshot_path(rel: "str | Path") -> bool:
+    """True si la ruta cae dentro de una instantánea congelada.
+
+    Compara segmento a segmento — un `in` sobre la cadena daría falso positivo
+    en una nota legítima como `07_Knowledge/concepts/como-usar-vault-backups.md`.
+    Acepta separador de Windows porque las rutas relativas llegan de `os.path`.
+    """
+    partes = str(rel).replace("\\", "/").split("/")
+    return any(p in SNAPSHOT_DIRS for p in partes)

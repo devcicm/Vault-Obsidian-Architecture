@@ -14,6 +14,12 @@ Contiene la definición de todas las 69 tools con sus:
 Este catálogo es la fuente de verdad para el orquestador MCP.
 """
 
+import argparse
+import json
+import os
+import sys
+from functools import lru_cache
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
@@ -301,7 +307,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     "vault_audit": {
         "name": "vault_audit",
         "script": "vault_audit.py",
-        "group": "Salud",
+        "group": "Salud del Vault",
         "purpose": "Evalúa health score del vault y genera nextActions.",
         "params": {
             "project": {
@@ -325,7 +331,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     "vault_validate": {
         "name": "vault_validate",
         "script": "vault_validate.py",
-        "group": "Salud",
+        "group": "Salud del Vault",
         "purpose": "Valida notas contra el schema y normas del vault.",
         "params": {
             "path": {
@@ -398,24 +404,57 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "name": "vault_tags",
         "script": "vault_tags.py",
         "group": "Session Delta y Tags",
-        "purpose": "Registro canónico de tags, auditoría de orphans y near-dupes.",
+        "purpose": (
+            "Registro canónico de tags, auditoría de orphans y near-dupes, y "
+            "bitácora append-only del vocabulario introducido (AP-39)."
+        ),
+        # Los params son los flags de argparse verbatim: el servidor MCP compone
+        # `--<key>`. Los que había (`action`, `tag`) no existían en la CLI, así
+        # que toda invocación desde MCP fallaba con "unrecognized arguments".
         "params": {
-            "action": {
-                "type": "string",
+            "audit": {
+                "type": "boolean",
                 "required": False,
-                "description": "Acción: list, suggest",
-                "validators": ["enum:list,suggest"],
+                "description": "Reporte de salud de tags (orphans, near-dupes, singletons)",
+                "validators": [],
             },
-            "tag": {
+            "suggest": {
                 "type": "string",
                 "required": False,
-                "description": "Tag a analizar",
+                "description": "Ruta de una nota — sugiere tags canónicos para ella",
+                "validators": [],
+            },
+            "rename": {
+                "type": "array",
+                "required": False,
+                "description": "OLD NEW — renombra un tag en todas las notas",
+                "validators": [],
+            },
+            "ledger": {
+                "type": "boolean",
+                "required": False,
+                "description": "Bitácora de vocabulario: qué término se introdujo, quién y cuándo (AP-39)",
+                "validators": [],
+            },
+            "backfill-ledger": {
+                "type": "boolean",
+                "required": False,
+                "description": "Heal AP-39: anota en la bitácora el vocabulario ya en uso",
+                "validators": [],
+            },
+            "dry-run": {
+                "type": "boolean",
+                "required": False,
+                "description": "Simular sin escribir archivos",
                 "validators": [],
             },
         },
-        "guards": [],
-        "side_effects": [],
-        "example": "python vault_tags.py --action list",
+        "guards": ["AP-39: el vocabulario introducido queda registrado, no se pierde"],
+        "side_effects": [
+            "Reconstruye 00_System/tag-registry.json y 99_Index/tag-index.md",
+            "Anota términos nuevos en 19_Audits/vocabulary/tag-ledger.json (append-only)",
+        ],
+        "example": "python vault_tags.py --ledger",
         "related": ["vault_delta", "vault_audit"],
     },
     "vault_reindex": {
@@ -448,7 +487,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     "vault_graph": {
         "name": "vault_graph",
         "script": "vault_graph.py",
-        "group": "Salud",
+        "group": "Salud del Vault",
         "purpose": "Genera grafo de relaciones entre notas.",
         "params": {},
         "guards": [],
@@ -830,7 +869,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Actualiza relaciones en 07_Knowledge/"],
-        "example": 'python vault_relation_add.py --project "mi-api" --entity "User" --to "Order" --type "one-to-many"',
+        "example": 'python vault_relation_add.py --project "mi-api" --from "User" --to "Order" --relation_type "one-to-many"',
         "related": ["vault_diagram_save", "vault_code_relation"],
     },
     "vault_code_module": {
@@ -866,7 +905,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Crea nota en 11_Code/{project}/"],
-        "example": 'python vault_code_module.py --project "mi-api" --module "auth" --language "python" --viewpoints "context,interface"',
+        "example": 'python vault_code_module.py --project "mi-api" --file_path "src/auth.py" --description "Modulo de autenticacion" --language "python"',
         "related": ["vault_code_map", "vault_code_relation", "vault_diagram_save"],
     },
     "vault_code_map": {
@@ -926,7 +965,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Actualiza índice de relaciones en 11_Code/"],
-        "example": 'python vault_code_relation.py --project "mi-api" --from "auth.py" --to "user.py" --type "imports"',
+        "example": 'python vault_code_relation.py --project "mi-api" --from_file "auth.py" --to_file "user.py" --relation_type "imports"',
         "related": ["vault_code_map", "vault_code_module"],
     },
     "vault_code_query": {
@@ -956,7 +995,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": [],
-        "example": 'python vault_code_query.py --query "module" --project "mi-api"\npython vault_code_query.py --query "imports" --pattern "auth"',
+        "example": 'python vault_code_query.py --project "mi-api" --list\npython vault_code_query.py --query "imports" --pattern "auth"',
         "related": ["vault_code_map", "vault_search"],
     },
     "vault_code_sync": {
@@ -980,13 +1019,13 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Actualiza 11_Code/{project}/index.json"],
-        "example": 'python vault_code_sync.py --project "mi-api" --action "scan"\npython vault_code_sync.py --project "mi-api" --action "update"',
+        "example": 'python vault_code_sync.py --project "mi-api"\npython vault_code_sync.py --project "mi-api" --action "update"',
         "related": ["vault_code_map", "vault_reindex"],
     },
     "vault_code_tag": {
         "name": "vault_code_tag",
         "script": "vault_code_tag.py",
-        "group": "Normas y Etiquetas",
+        "group": "Normas",
         "purpose": "Etiqueta módulos de código por funcionalidad.",
         "params": {
             "project": {
@@ -1010,7 +1049,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Actualiza frontmatter del módulo"],
-        "example": 'python vault_code_tag.py --project "mi-api" --module "auth" --tags "security,auth,api"',
+        "example": 'python vault_code_tag.py --list',
         "related": ["vault_tags", "vault_code_module"],
     },
     "vault_flow_save": {
@@ -1100,7 +1139,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Crea nota en 05_Patterns/"],
-        "example": 'python vault_pattern_save.py --name "Repository" --category "architectural" --description "Data access abstraction" --use_cases "database,cache',
+        "example": 'python vault_pattern_save.py --project "mi-api" --name "Repository" --type "architectural" --status "implemented" --description "Abstraccion de acceso a datos"',
         "related": ["vault_pattern_list", "vault_code_module"],
     },
     "vault_pattern_list": {
@@ -1160,7 +1199,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Crea nota en 07_Knowledge/{topic}/"],
-        "example": 'python vault_knowledge_save.py --topic "architecture" --title "Clean Architecture" --content "# Clean Architecture\\n\\nLayers..." --tags "architecture clean',
+        "example": 'python vault_knowledge_save.py --category "architecture" --title "Clean Architecture" --content "# Clean Architecture" --tags "architecture clean"',
         "related": ["vault_knowledge_get", "vault_search"],
     },
     "vault_knowledge_get": {
@@ -1190,7 +1229,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": [],
-        "example": 'python vault_knowledge_get.py --topic "architecture"\npython vault_knowledge_get.py --query "clean"',
+        "example": 'python vault_knowledge_get.py --query "architecture"\npython vault_knowledge_get.py --query "clean"',
         "related": ["vault_knowledge_save", "vault_search"],
     },
     "vault_backup": {
@@ -1268,7 +1307,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": ["Confirmar antes de sobreescribir"],
         "side_effects": ["Sobreescribe archivos del vault"],
-        "example": 'python vault_restore.py --backup_id "2026-06-24_120000"\npython vault_restore.py --backup_id "2026-06-24_120000" --dry_run',
+        "example": 'python vault_restore.py --backup_name "2026-06-24_120000"\npython vault_restore.py --backup_name "2026-06-24_120000" --confirm "yes"',
         "related": ["vault_backup", "vault_backup_list"],
     },
     "vault_env_save": {
@@ -1298,13 +1337,13 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": ["No guardar secrets en texto plano"],
         "side_effects": ["Crea nota en 09_Infrastructure/{project}/"],
-        "example": 'python vault_env_save.py --project "mi-api" --environment "prod" --variables "DB_HOST=localhost API_KEY=xxx"',
+        "example": 'python vault_env_save.py --project "mi-api" --environment "prod" --vars "DB_HOST=localhost"',
         "related": ["vault_env_matrix", "vault_infra_save"],
     },
     "vault_env_matrix": {
         "name": "vault_env_matrix",
         "script": "vault_env_matrix.py",
-        "group": "Release y Entornos",
+        "group": "Infraestructura",
         "purpose": "Genera matriz comparativa de entornos.",
         "params": {
             "project": {
@@ -1316,7 +1355,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Genera 09_Infrastructure/{project}/matrix.md"],
-        "example": 'python vault_env_matrix.py --project "mi-api"',
+        "example": 'python vault_env_matrix.py --project "mi-api" --env "prod"',
         "related": ["vault_env_save", "vault_infra_map"],
     },
     "vault_infra_save": {
@@ -1358,7 +1397,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Crea nota en 09_Infrastructure/{project}/"],
-        "example": 'python vault_infra_save.py --project "mi-api" --title "Production" --provider "aws" --components "EC2,RDS,S3"',
+        "example": 'python vault_infra_save.py --name "prod-cluster" --type "compute" --description "Cluster productivo" --config "region=us-east-1"',
         "related": ["vault_infra_map", "vault_env_save"],
     },
     "vault_infra_map": {
@@ -1388,7 +1427,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Genera diagrama en 09_Infrastructure/{project}/"],
-        "example": 'python vault_infra_map.py --project "mi-api" --components "EC2,RDS,S3" --location "us-east-1"',
+        "example": 'python vault_infra_map.py --project "mi-api" --location "us-east-1"',
         "related": ["vault_infra_save", "vault_diagram_save"],
     },
     "vault_security_scan": {
@@ -1412,13 +1451,13 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Genera reporte en 02_Observability/security/"],
-        "example": 'python vault_security_scan.py\npython vault_security_scan.py --project "mi-api" --scan_type "secrets"',
+        "example": 'python vault_security_scan.py --path "01_Projects"\npython vault_security_scan.py --path "01_Projects" --project "mi-api" --categories secrets pii',
         "related": ["vault_audit", "vault_log_error"],
     },
     "vault_drift_detect": {
         "name": "vault_drift_detect",
         "script": "vault_drift_detect.py",
-        "group": "Drift",
+        "group": "Drift Detection",
         "purpose": "Detecta drift de configuración entre ambientes.",
         "params": {
             "project": {
@@ -1436,7 +1475,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Reporta drift detectado"],
-        "example": 'python vault_drift_detect.py --project "mi-api" --compare "dev-staging"',
+        "example": 'python vault_drift_detect.py --path "01_Projects" --project "mi-api" --mode "status"',
         "related": ["vault_audit", "vault_env_matrix"],
     },
     "vault_impact": {
@@ -1460,7 +1499,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": [],
-        "example": 'python vault_impact.py --path "01_Projects/mi-api/overview.md"\npython vault_impact.py --path "01_Projects/mi-api/overview.md" --depth 5',
+        "example": 'python vault_impact.py --changed "01_Projects/mi-api/overview.md" --max-hops "2"\npython vault_impact.py --since "2026-01-01" --min-risk "high"',
         "related": ["vault_propagate", "vault_graph"],
     },
     "vault_propagate": {
@@ -1490,7 +1529,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Actualiza notas relacionadas"],
-        "example": 'python vault_propagate.py --source "01_Projects/mi-api/overview.md" --template "Updated: {title}"',
+        "example": 'python vault_propagate.py --changed "01_Projects/mi-api/overview.md" --queue-report',
         "related": ["vault_impact", "vault_write"],
     },
     "vault_quality_check": {
@@ -1531,7 +1570,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     "vault_project_status": {
         "name": "vault_project_status",
         "script": "vault_project_status.py",
-        "group": "Vista proyecto",
+        "group": "Vista del Proyecto",
         "purpose": "Muestra estado actual de un proyecto.",
         "params": {
             "project": {
@@ -1543,13 +1582,13 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": [],
-        "example": 'python vault_project_status.py --project "mi-api"',
+        "example": 'python vault_project_status.py --project "mi-api" --status "en_desarrollo" --summary "Sprint 3 en curso"',
         "related": ["vault_project_overview", "vault_audit"],
     },
     "vault_project_overview": {
         "name": "vault_project_overview",
         "script": "vault_project_overview.py",
-        "group": "Vista proyecto",
+        "group": "Vista del Proyecto",
         "purpose": "Genera overview consolidado de proyecto.",
         "params": {
             "project": {
@@ -1597,7 +1636,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Genera {section}/index.md"],
-        "example": 'python vault_section_index.py --section "01_Projects"',
+        "example": 'python vault_section_index.py --folder "01_Projects"',
         "related": ["vault_master_index", "vault_reindex"],
     },
     "vault_master_index": {
@@ -1669,7 +1708,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": [],
-        "example": 'python vault_change_log.py\npython vault_change_log.py --project "mi-api" --from "2026-01-01"',
+        "example": 'python vault_change_log.py --query --last 10\npython vault_change_log.py --action "updated" --path "01_Projects/mi-api/overview.md" --summary "Revision"',
         "related": ["vault_timeline", "vault_audit"],
     },
     "vault_ai_decision": {
@@ -1705,13 +1744,13 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Crea nota en 03_Decisions/"],
-        "example": 'python vault_ai_decision.py --project "mi-api" --decision "Use PostgreSQL" --rationale "ACID compliance"',
+        "example": 'python vault_ai_decision.py --project "mi-api" --title "Elegir PostgreSQL" --decision_type "architecture" --description "Motor de datos del servicio" --rationale "Garantias ACID"',
         "related": ["vault_norms", "vault_audit"],
     },
     "vault_norms": {
         "name": "vault_norms",
         "script": "vault_norms.py",
-        "group": "Normas y Etiquetas",
+        "group": "Normas",
         "purpose": "Gestiona normas y estándares del vault.",
         "params": {
             "action": {
@@ -1735,8 +1774,217 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": [],
-        "example": 'python vault_norms.py --action "list"\npython vault_norms.py --action "add" --name "AP-25" --content "Code style rules"',
+        "example": 'python vault_norms.py --list\npython vault_norms.py --action "add" --name "AP-25" --content "Code style rules"',
         "related": ["vault_ai_decision", "vault_audit"],
+    },
+    "vault_smoke": {
+        "name": "vault_smoke",
+        "script": "vault_smoke.py",
+        "group": "Normas",
+        "purpose": (
+            "AP-42 — ejecuta el ejemplo documentado de cada tool contra una copia "
+            "desechable del vault de pruebas y exige que termine, que emita JSON y "
+            "que ese JSON tenga `ok`. Baseline que solo puede encoger."
+        ),
+        "params": {
+            "check": {
+                "type": "boolean",
+                "required": False,
+                "description": "Corre el smoke sobre el catálogo",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit 1 si la deuda creció",
+                "validators": [],
+            },
+            "freeze": {
+                "type": "boolean",
+                "required": False,
+                "description": "Recongela la baseline",
+                "validators": [],
+            },
+            "tool": {
+                "type": "string",
+                "required": False,
+                "description": "Ejecuta el smoke de una sola tool",
+                "validators": [],
+            },
+        },
+        "guards": ["AP-42"],
+        "side_effects": ["scripts/smoke-baseline.json"],
+        "example": "python vault_smoke.py --tool vault_write\npython vault_smoke.py --check --strict",
+        "related": ["vault_mcp_catalog", "vault_noop_audit"],
+    },
+    "vault_voice": {
+        "name": "vault_voice",
+        "script": "vault_voice.py",
+        "group": "Normas",
+        "purpose": (
+            "AP-43 — refuerzo de normas en el punto de uso. Deriva de NORM_CATALOG "
+            "el bloque `vault_says` que wrap_main añade a cada resultado de tool, y "
+            "permite consultarlo: qué normas gobiernan una tool concreta y qué "
+            "normas no pronuncia ninguna."
+        ),
+        "params": {
+            "tool": {
+                "type": "string",
+                "required": False,
+                "description": "Normas que gobiernan una tool",
+                "validators": [],
+            },
+            "coverage": {
+                "type": "boolean",
+                "required": False,
+                "description": "Normas que ninguna tool pronuncia",
+                "validators": [],
+            },
+        },
+        "guards": ["AP-43"],
+        "side_effects": ["00_System/.voice-counter"],
+        "example": "python vault_voice.py --tool vault_write\npython vault_voice.py --coverage",
+        "related": ["vault_norms", "vault_errors"],
+    },
+    "vault_doc_counts": {
+        "name": "vault_doc_counts",
+        "script": "vault_doc_counts.py",
+        "group": "Normas",
+        "purpose": (
+            "Guard anti-drift de cifras en documentación: verifica que cada número "
+            "escrito a mano en los docs (tools activas, normas, secciones, scripts, "
+            "tests) coincida con el registro canónico. El changelog queda excluido: "
+            "sus cifras son historia, no drift."
+        ),
+        "params": {
+            "check": {
+                "type": "boolean",
+                "required": False,
+                "description": "Reporta las cifras que divergen del registro",
+                "validators": [],
+            },
+            "fix": {
+                "type": "boolean",
+                "required": False,
+                "description": "Reescribe solo el número, nunca la frase que lo rodea",
+                "validators": [],
+            },
+            "list": {
+                "type": "boolean",
+                "required": False,
+                "description": "Emite los valores vivos derivados del registro",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit code 1 ante cualquier divergencia (uso en CI)",
+                "validators": [],
+            },
+            "no_slow": {
+                "type": "boolean",
+                "required": False,
+                "description": "Omite el conteo de tests (requiere pytest --collect-only)",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "No reescribe el changelog ni la tabla de versiones (cifras históricas)",
+            "Los patrones son deliberadamente específicos: un patrón laxo produce "
+            "falsos positivos y el guard acaba desactivado",
+        ],
+        "side_effects": ["Con --fix reescribe cifras en los documentos vigilados"],
+        "example": (
+            "python vault_doc_counts.py --list\n"
+            "python vault_doc_counts.py --check --strict\n"
+            "python vault_doc_counts.py --fix"
+        ),
+        "related": ["vault_norms", "vault_mcp_catalog", "vault_fundamentals"],
+    },
+    "vault_doc_sync": {
+        "name": "vault_doc_sync",
+        "script": "vault_doc_sync.py",
+        "group": "Normas",
+        "purpose": (
+            "Guard anti-drift de nombres entre el registro y scripts/README.md: "
+            "toda tool del catálogo tiene sección, toda clave de GROUPS tiene "
+            "grupo, y el índice tiene una fila por sección con el ancla resuelta. "
+            "Complemento de vault_doc_counts, que vigila las cifras."
+        ),
+        "params": {
+            "check": {
+                "type": "boolean",
+                "required": False,
+                "description": "Reporta tools sin sección, grupos sin sección y filas de índice erróneas",
+                "validators": [],
+            },
+            "fix": {
+                "type": "boolean",
+                "required": False,
+                "description": "Regenera la tabla de índice desde GROUPS (no inventa secciones)",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit code 1 ante cualquier divergencia (uso en CI)",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "El encabezado de sección usa la clave literal de GROUPS: un título "
+            "propio en el README crearía un cuarto vocabulario de grupos",
+            "--fix solo toca la tabla de índice; nunca escribe prosa de secciones",
+            "Los encabezados fuera de una sección `## Grupo N` no cuentan como drift",
+        ],
+        "side_effects": ["Con --fix reescribe la tabla de índice de scripts/README.md"],
+        "example": (
+            "python vault_doc_sync.py --check --strict\n"
+            "python vault_doc_sync.py --fix"
+        ),
+        "related": ["vault_doc_counts", "vault_norms", "vault_mcp_catalog"],
+    },
+    "vault_noop_audit": {
+        "name": "vault_noop_audit",
+        "script": "vault_noop_audit.py",
+        "group": "Normas",
+        "purpose": (
+            "AP-37 — detecta tools con side effects que devuelven ok: true sin "
+            "exponer ningún indicador de trabajo. Compara contra una baseline "
+            "congelada: la deuda histórica no bloquea, pero no puede crecer."
+        ),
+        "params": {
+            "check": {
+                "type": "boolean",
+                "required": False,
+                "description": "Reporta el estado de la deuda AP-37",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit 1 si aparecieron infractoras nuevas (gate de CI)",
+                "validators": [],
+            },
+            "freeze": {
+                "type": "boolean",
+                "required": False,
+                "description": "Recongela scripts/noop-baseline.json tras saldar deuda",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "La baseline solo puede encoger: toda tool nueva nace conforme",
+            "WORK_INDICATORS se amplía deliberadamente — añadir un campo siempre "
+            "presente (path, ok) vaciaría la norma de contenido",
+        ],
+        "side_effects": ["Con --freeze reescribe scripts/noop-baseline.json"],
+        "example": (
+            "python vault_noop_audit.py --check\n"
+            "python vault_noop_audit.py --check --strict\n"
+            "python vault_noop_audit.py --freeze"
+        ),
+        "related": ["vault_norms", "vault_doc_counts", "vault_standard_upgrade"],
     },
     "vault_tokens": {
         "name": "vault_tokens",
@@ -1765,7 +2013,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": ["No guardar tokens en texto plano"],
         "side_effects": [],
-        "example": 'python vault_tokens.py --project "mi-api" --action "list"\npython vault_tokens.py --project "mi-api" --action "add" --token_type "api_key"',
+        "example": 'python vault_tokens.py --summary\npython vault_tokens.py --project "mi-api" --action "add" --token_type "api_key"',
         "related": ["vault_token_counter", "vault_token_service"],
     },
     "vault_token_counter": {
@@ -1789,7 +2037,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": [],
-        "example": 'python vault_token_counter.py --content "Hello world"',
+        "example": 'python vault_token_counter.py self-test',
         "related": ["vault_tokens", "vault_token_service"],
     },
     "vault_token_service": {
@@ -1813,7 +2061,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": [],
-        "example": 'python vault_token_service.py --action "estimate" --project "mi-api"',
+        "example": 'python vault_token_service.py --host "127.0.0.1" --port "8899"',
         "related": ["vault_tokens", "vault_token_counter"],
     },
     "vault_requirement_save": {
@@ -1855,7 +2103,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Crea nota en 01_Projects/{project}/requirements/"],
-        "example": 'python vault_requirement_save.py --project "mi-api" --title "Auth" --description "User auth" --priority "high"',
+        "example": 'python vault_requirement_save.py --project "mi-api" --title "Auth" --description "Login de usuario" --type "functional" --priority "high"',
         "related": ["vault_test_save", "vault_audit"],
     },
     "vault_test_save": {
@@ -1897,7 +2145,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Crea nota en 01_Projects/{project}/tests/"],
-        "example": 'python vault_test_save.py --project "mi-api" --name "User Auth" --type "unit" --description "Test login"',
+        "example": 'python vault_test_save.py --project "mi-api" --title "Login" --test_type "unit" --description "Verifica el login"',
         "related": ["vault_requirement_save", "vault_code_module"],
     },
     "vault_runbook_save": {
@@ -1933,7 +2181,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Crea nota en 08_Runbooks/{project}/"],
-        "example": 'python vault_runbook_save.py --project "mi-api" --name "Deploy" --trigger "manual" --steps "1. Build\\n2. Deploy"',
+        "example": 'python vault_runbook_save.py --project "mi-api" --title "Deploy" --trigger "manual" --category "deploy" --steps "1. Build"',
         "related": ["vault_runbook_log", "vault_incident_save"],
     },
     "vault_runbook_log": {
@@ -1963,13 +2211,13 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Actualiza log del runbook"],
-        "example": 'python vault_runbook_log.py --runbook "Deploy" --status "success"',
+        "example": 'python vault_runbook_log.py --path "13_Runbooks/deploy.md" --outcome "success"',
         "related": ["vault_runbook_save", "vault_audit"],
     },
     "vault_incident_save": {
         "name": "vault_incident_save",
         "script": "vault_incident_save.py",
-        "group": "Producción y SRE",
+        "group": "Producción/SRE",
         "purpose": "Registra incidente de producción.",
         "params": {
             "title": {
@@ -2005,13 +2253,13 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Crea nota en 02_Observability/incidents/"],
-        "example": 'python vault_incident_save.py --title "API Down" --severity "SEV1" --description "Database connection failed"',
+        "example": 'python vault_incident_save.py --project "mi-api" --title "API caida" --severity "P1"',
         "related": ["vault_slo_save", "vault_runbook_save"],
     },
     "vault_slo_save": {
         "name": "vault_slo_save",
         "script": "vault_slo_save.py",
-        "group": "Producción y SRE",
+        "group": "Producción/SRE",
         "purpose": "Guarda SLO (Service Level Objective).",
         "params": {
             "project": {
@@ -2041,13 +2289,13 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Crea nota en 02_Observability/slos/"],
-        "example": 'python vault_slo_save.py --project "mi-api" --name "API Availability" --target "99.9%" --description "API uptime"',
+        "example": 'python vault_slo_save.py --project "mi-api" --service "api" --slo_type "availability" --target "99.9"',
         "related": ["vault_incident_save", "vault_audit"],
     },
     "vault_release_save": {
         "name": "vault_release_save",
         "script": "vault_release_save.py",
-        "group": "Release y Entornos",
+        "group": "Release",
         "purpose": "Guarda información de release.",
         "params": {
             "project": {
@@ -2077,13 +2325,13 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Crea nota en 01_Projects/{project}/releases/"],
-        "example": 'python vault_release_save.py --project "mi-api" --version "1.2.0" --description "New features"',
+        "example": 'python vault_release_save.py --project "mi-api" --version "1.2.0" --type "minor"',
         "related": ["vault_change_log", "vault_incident_save"],
     },
     "vault_risk_save": {
         "name": "vault_risk_save",
         "script": "vault_risk_save.py",
-        "group": "Riesgos y Calidad",
+        "group": "Riesgos/Calidad",
         "purpose": "Registra riesgo del proyecto.",
         "params": {
             "project": {
@@ -2125,13 +2373,13 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Crea nota en 01_Projects/{project}/risks/"],
-        "example": 'python vault_risk_save.py --project "mi-api" --title "DB Failure" --probability "low" --impact "critical"',
+        "example": 'python vault_risk_save.py --project "mi-api" --title "Caida de la base" --likelihood "3" --impact "4"',
         "related": ["vault_ncr_save", "vault_privacy_save"],
     },
     "vault_privacy_save": {
         "name": "vault_privacy_save",
         "script": "vault_privacy_save.py",
-        "group": "Riesgos y Calidad",
+        "group": "Riesgos/Calidad",
         "purpose": "Gestiona privacidad de datos.",
         "params": {
             "project": {
@@ -2167,13 +2415,13 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Crea nota en 02_Observability/privacy/"],
-        "example": 'python vault_privacy_save.py --project "mi-api" --data_type "email" --classification "confidential" --description "User email"',
+        "example": 'python vault_privacy_save.py --project "mi-api" --title "Emails de usuario" --purpose "Notificaciones" --legal_basis "consent"',
         "related": ["vault_risk_save", "vault_security_scan"],
     },
     "vault_ncr_save": {
         "name": "vault_ncr_save",
         "script": "vault_ncr_save.py",
-        "group": "Riesgos y Calidad",
+        "group": "Riesgos/Calidad",
         "purpose": "Registra No Conformidad (NCR).",
         "params": {
             "project": {
@@ -2251,7 +2499,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": ["Hacer backup antes de migrar"],
         "side_effects": ["Copia/move archivos"],
-        "example": 'python vault_migrate_docs.py --source "/old-vault" --target "01_Projects" --dry_run',
+        "example": 'python vault_migrate_docs.py --source_path "./docs" --project "mi-api" --dry_run "true"',
         "related": ["vault_migrate_rollback", "vault_merge"],
     },
     "vault_migrate_rollback": {
@@ -2275,7 +2523,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": ["Confirmar antes de revertir"],
         "side_effects": ["Revierte archivos migrados"],
-        "example": 'python vault_migrate_rollback.py --migration_id "2026-06-24-001"\npython vault_migrate_rollback.py --migration_id "2026-06-24-001" --dry_run',
+        "example": 'python vault_migrate_rollback.py --report_path "19_Audits/migrations/2026-06-24-001.json"\npython vault_migrate_rollback.py --report_path "19_Audits/migrations/2026-06-24-001.json" --confirm "yes"',
         "related": ["vault_migrate_docs", "vault_backup"],
     },
     "vault_bibliography_save": {
@@ -2323,7 +2571,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Crea nota en 07_Knowledge/bibliography/"],
-        "example": 'python vault_bibliography_save.py --title "Clean Code" --type "book" --authors "Robert Martin" --year "2008"',
+        "example": 'python vault_bibliography_save.py --title "Clean Code" --url "https://example.com/clean-code" --summary "Guia de estilo de codigo" --source_type "book"',
         "related": ["vault_knowledge_save", "vault_search"],
     },
     "vault_graph_merge": {
@@ -2394,9 +2642,14 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "example": 'python vault_graph_fix.py --apply --threshold 0.7\npython vault_graph_fix.py --only brackets',
         "related": ["vault_graph", "vault_graph_inspect", "vault_fix_brackets"],
     },
+    # Las dos únicas tools sin script Python: están implementadas nativas en
+    # mcp/nodejs/vault-mcp-server.mjs. `script: ""` sola no dice eso — los guards
+    # que iteran el catálogo las saltaban en silencio creyéndolas inexistentes.
+    # `runtime` lo declara, y test_source_hygiene comprueba que el .mjs las tiene.
     "vault_backup_base64": {
         "name": "vault_backup_base64",
         "script": "",
+        "runtime": "node",
         "group": "Backups",
         "purpose": "Crea backup comprimido base64 del vault completo. Antes de cualquier migración o modificación masiva.",
         "params": {
@@ -2415,6 +2668,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     "vault_restore_base64": {
         "name": "vault_restore_base64",
         "script": "",
+        "runtime": "node",
         "group": "Backups",
         "purpose": "Restaura vault desde backup base64. Requiere --confirm true. Restaura a directorio nuevo sin tocar el original.",
         "params": {
@@ -2474,6 +2728,76 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                          "Actualiza índice de 17_Preferences"],
         "example": 'python vault_preferences.py --set --category constraints --title "No mover tools" --statement "No propagar scripts a otros repos" --strength must\npython vault_preferences.py --context',
         "related": ["vault_context_pack", "vault_write"],
+    },
+    "vault_bug_save": {
+        "name": "vault_bug_save",
+        "script": "vault_bug_save.py",
+        "group": "Defectos y Cuarentena",
+        "purpose": "Ciclo del defecto en 18_Bugs/: síntoma → causa raíz → corrección verificada, con aristas de causalidad tipadas.",
+        "params": {
+            "project": {"type": "string", "required": True,
+                        "description": "Slug del proyecto", "validators": []},
+            "title": {"type": "string", "required": True,
+                      "description": "Título breve del defecto", "validators": []},
+            "symptom": {"type": "string", "required": True,
+                        "description": "Qué se observa que falla (obligatorio: sin síntoma no es reproducible)", "validators": []},
+            "phase": {"type": "string", "required": False,
+                      "description": "open | root-cause | fixed — determina la subcarpeta", "validators": []},
+            "status": {"type": "string", "required": False,
+                       "description": "open | confirmed | in_fix | fixed | wont_fix | duplicate", "validators": []},
+            "severity": {"type": "string", "required": False,
+                         "description": "critical | high | medium | low", "validators": []},
+            "repro": {"type": "string", "required": False,
+                      "description": "Pasos de reproducción", "validators": []},
+            "root_cause": {"type": "string", "required": False,
+                           "description": "Causa raíz identificada", "validators": []},
+            "fix": {"type": "string", "required": False,
+                    "description": "Corrección aplicada", "validators": []},
+            "causes": {"type": "array", "required": False,
+                       "description": "Notas que este defecto causa (arista tipada)", "validators": []},
+            "caused_by": {"type": "array", "required": False,
+                          "description": "Notas que lo causan (arista tipada)", "validators": []},
+            "verified_by": {"type": "string", "required": False,
+                            "description": "Test que verifica la corrección", "validators": []},
+            "agent": {"type": "string", "required": False,
+                      "description": "Agente que registra (AP-16)", "validators": []},
+        },
+        "guards": ["AP-16: requiere agent o VAULT_AGENT",
+                   "AP-38: status canónico + bug_state de dominio",
+                   "Síntoma obligatorio y no vacío",
+                   "La fase determina la subcarpeta: estado y ubicación no pueden divergir"],
+        "side_effects": ["Crea nota en 18_Bugs/{open|root-causes|fixed}/",
+                         "Actualiza 18_Bugs/.bugs-index.json"],
+        "example": 'python vault_bug_save.py --project mi-api --title "Token numérico coercionado" --symptom "El literal 0.5 llega al CSS como 0.5px" --severity high --agent claude',
+        "related": ["vault_log_error", "vault_test_save", "vault_ncr_save"],
+    },
+    "vault_quarantine": {
+        "name": "vault_quarantine",
+        "script": "vault_quarantine.py",
+        "group": "Defectos y Cuarentena",
+        "purpose": "Retiene notas sin destino seguro en 20_Quarantine/ conservando su origen. La alternativa a retener no es limpiar: es borrar.",
+        "params": {
+            "add": {"type": "string", "required": False,
+                    "description": "Ruta de la nota a retener", "validators": ["within_vault"]},
+            "restore": {"type": "string", "required": False,
+                        "description": "Ruta en cuarentena a devolver a su origen", "validators": ["within_vault"]},
+            "list": {"type": "bool", "required": False,
+                     "description": "Lista lo retenido y sin restaurar", "validators": []},
+            "reason": {"type": "string", "required": False,
+                       "description": "Por qué se retiene (obligatorio con --add)", "validators": []},
+            "category": {"type": "string", "required": False,
+                         "description": "unclassified | suspicious | duplicates", "validators": []},
+            "agent": {"type": "string", "required": False,
+                      "description": "Agente que actúa (AP-16)", "validators": []},
+        },
+        "guards": ["AP-16: requiere agent o VAULT_AGENT",
+                   "Razón obligatoria y no vacía",
+                   "La nota se mueve, no se copia",
+                   "Restaurar sobre un origen ocupado falla en vez de sobrescribir"],
+        "side_effects": ["Mueve la nota a 20_Quarantine/{category}/",
+                         "Actualiza 20_Quarantine/.quarantine-ledger.json (append-only)"],
+        "example": 'python vault_quarantine.py --add "07_Knowledge/rara.md" --reason "Sin frontmatter y origen desconocido" --agent claude\npython vault_quarantine.py --list',
+        "related": ["vault_merge", "vault_security_scan", "vault_move"],
     },
     "vault_subgraph": {
         "name": "vault_subgraph",
@@ -2624,9 +2948,23 @@ GROUPS: Dict[str, List[str]] = {
         "vault_code_map",
         "vault_code_query",
         "vault_code_sync",
-        "vault_code_tag",
+        # vault_code_tag NO se lista aquí: su `group` en TOOLS_CATALOG es
+        # "Normas y Etiquetas" y ya está en el grupo "Normas". Estaba en ambos,
+        # y una tool en dos grupos se cuenta dos veces en cualquier recorrido.
+        # La tool no se retira de nada — solo deja de estar duplicada en el índice.
     ],
-    "Backups": ["vault_backup", "vault_backup_list", "vault_restore"],
+    # vault_backup_base64 / vault_restore_base64 son JS-native (script: ""), y por
+    # eso quedaron fuera de esta lista durante varias versiones: declaraban
+    # "group": "Backups" en TOOLS_CATALOG pero GROUPS no las contenía, así que
+    # cualquier recorrido por grupos las omitía en silencio. No tener entry point
+    # Python no las saca del catálogo.
+    "Backups": [
+        "vault_backup",
+        "vault_backup_list",
+        "vault_restore",
+        "vault_backup_base64",
+        "vault_restore_base64",
+    ],
     "Seguridad": ["vault_security_scan"],
     "Índices": ["vault_section_index", "vault_master_index", "vault_reindex"],
     "Bibliografía": ["vault_bibliography_save"],
@@ -2640,7 +2978,15 @@ GROUPS: Dict[str, List[str]] = {
     "Propagación": ["vault_impact", "vault_propagate"],
     "Tokens": ["vault_tokens", "vault_token_counter", "vault_token_service"],
     "Session Delta y Tags": ["vault_delta", "vault_tags"],
-    "Normas": ["vault_norms", "vault_code_tag"],
+    "Normas": [
+        "vault_norms",
+        "vault_code_tag",
+        "vault_doc_counts",
+        "vault_doc_sync",
+        "vault_noop_audit",
+        "vault_smoke",
+        "vault_voice",
+    ],
     "Producción/SRE": ["vault_incident_save", "vault_slo_save"],
     "Release": ["vault_release_save"],
     "Riesgos/Calidad": ["vault_risk_save", "vault_privacy_save", "vault_ncr_save"],
@@ -2654,6 +3000,12 @@ GROUPS: Dict[str, List[str]] = {
         "vault_subgraph",
         "vault_context_pack",
         "vault_ingest",
+    ],
+    # Grupo 36 (v39) — el ciclo del defecto y la retención sin borrado. Ambas
+    # secciones salen de medir el parque real, no de un diseño a priori.
+    "Defectos y Cuarentena": [
+        "vault_bug_save",
+        "vault_quarantine",
     ],
 }
 
@@ -2696,10 +3048,113 @@ def get_related_tools(name: str) -> List[Dict[str, Any]]:
     return [TOOLS_CATALOG.get(n) for n in related_names if n in TOOLS_CATALOG]
 
 
+# ── Conciliación con argparse (AP-40) ────────────────────────────────────────
+#
+# El contrato de argumentos de una tool no lo decide el catálogo: lo decide su
+# `argparse`. El servidor MCP compone `--<param>` literalmente, así que un param
+# que la CLI no declara produce `unrecognized arguments` — la tool aparece en
+# `tools/list`, se puede invocar, y falla siempre.
+#
+# Medido antes de este cambio: **43 de las 86 tools** publicaban al menos un
+# param inexistente (`vault_impact` ofrecía `path`/`depth` cuando la CLI tiene
+# `--changed`/`--max-hops`; `vault_test_save` ofrecía `name`/`type`/`coverage`
+# cuando pide `--title`/`--test_type`). La mitad de la superficie MCP era
+# inaccesible y ningún guard lo veía, porque el `--check` solo comparaba el JSON
+# contra el Python: dos copias de la misma equivocación coinciden perfectamente.
+#
+# Por eso los params se derivan del script y la descripción escrita a mano se
+# conserva cuando el nombre coincide: el catálogo aporta la prosa, argparse
+# aporta la verdad.
+
+
+@lru_cache(maxsize=None)
+def argparse_params(script: str) -> Dict[str, Dict[str, Any]]:
+    """Params reales de un script, leídos de sus `add_argument` largos."""
+    import ast
+
+    ruta = Path(__file__).resolve().parent / script
+    if not script or not ruta.is_file():
+        return {}
+    try:
+        arbol = ast.parse(ruta.read_text(encoding="utf-8"))
+    except (OSError, SyntaxError):
+        return {}
+
+    params: Dict[str, Dict[str, Any]] = {}
+    for nodo in ast.walk(arbol):
+        if not (isinstance(nodo, ast.Call) and getattr(nodo.func, "attr", "") == "add_argument"):
+            continue
+        largos = [
+            a.value for a in nodo.args
+            if isinstance(a, ast.Constant) and isinstance(a.value, str) and a.value.startswith("--")
+        ]
+        if not largos:
+            continue  # posicional o flag corto: no se publica por MCP
+        kw = {k.arg: k.value for k in nodo.keywords}
+
+        def _const(nombre):
+            v = kw.get(nombre)
+            return v.value if isinstance(v, ast.Constant) else None
+
+        accion, nargs = _const("action"), _const("nargs")
+        if accion in ("store_true", "store_false"):
+            tipo = "boolean"
+        elif nargs in ("*", "+") or isinstance(nargs, int):
+            tipo = "array"
+        else:
+            tipo = "string"
+
+        opciones = []
+        elecciones = kw.get("choices")
+        if isinstance(elecciones, (ast.List, ast.Tuple)):
+            opciones = [
+                e.value for e in elecciones.elts
+                if isinstance(e, ast.Constant) and isinstance(e.value, str)
+            ]
+
+        params[largos[0][2:]] = {
+            "type": tipo,
+            "required": _const("required") is True,
+            "description": _const("help") or "",
+            "validators": [f"enum:{','.join(opciones)}"] if opciones else [],
+        }
+    return params
+
+
+def reconciled_params(py_tool: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    """Params publicables: los que la CLI acepta de verdad.
+
+    La descripción escrita a mano gana sobre el `help=` cuando el nombre existe
+    en ambos — es la que explica *para qué* sirve el argumento, no solo qué es.
+    """
+    reales = argparse_params(py_tool.get("script", ""))
+    if not reales:
+        # Sin argparse legible (tool archivada, script ausente) no hay nada
+        # contra qué conciliar: se publica lo declarado, que es lo único que hay.
+        return py_tool.get("params", {})
+
+    declarados = py_tool.get("params", {})
+    salida: Dict[str, Dict[str, Any]] = {}
+    for nombre, real in reales.items():
+        declarado = (
+            declarados.get(nombre)
+            or declarados.get(nombre.replace("-", "_"))
+            or declarados.get(nombre.replace("_", "-"))
+        )
+        entrada = dict(real)
+        if declarado:
+            if declarado.get("description"):
+                entrada["description"] = declarado["description"]
+            if declarado.get("validators"):
+                entrada["validators"] = declarado["validators"]
+        salida[nombre] = entrada
+    return salida
+
+
 def _convert_to_json_schema(py_tool: Dict[str, Any]) -> Dict[str, Any]:
     """Convierte una entrada de TOOLS_CATALOG al formato inputSchema del JSON."""
     schema = {"type": "object", "properties": {}, "required": []}
-    for pname, pinfo in py_tool.get("params", {}).items():
+    for pname, pinfo in reconciled_params(py_tool).items():
         prop = {"type": "string", "description": pinfo.get("description", "")}
         if pinfo.get("required"):
             schema["required"].append(pname)
@@ -2828,16 +3283,153 @@ def check_sync(json_path: Optional[str] = None) -> Dict[str, Any]:
     return result
 
 
-if __name__ == "__main__":
-    import argparse, sys, os
+def check_contracts(spec_path: Optional[str] = None) -> Dict[str, Any]:
+    """Guard catálogo ↔ `tool-spec.json`.
 
+    El contrato es el registro que dice qué devuelve cada tool; el catálogo es
+    el que dice qué tools existen. Cuando divergen, la tool existe pero nadie
+    puede validarla: fue el caso de las 10 que se expusieron por MCP durante
+    versiones sin entrada de contrato, y el de las 5 archivadas que seguían
+    declarando contrato sin código detrás.
+
+    Tres invariantes:
+
+      1. Toda tool del catálogo tiene entrada en `tool-spec.json`.
+      2. Toda entrada que NO está en el catálogo declara por qué sigue ahí —
+         `status` en `archived | internal | orphan`. No se borran (no-derogación):
+         se anotan.
+      3. `group` y `group_id` de cada tool del catálogo se derivan de `GROUPS`
+         y de la numeración de `scripts/README.md`, que es la que `vault_doc_sync`
+         ya vigila. Sin esto reaparece el cuarto sistema de nombres.
+    """
+    import json
+    import re
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import vault_io
+
+    ruta = Path(spec_path) if spec_path else Path(vault_io.resolve_tool_spec())
+    data = json.loads(ruta.read_text(encoding="utf-8"))
+    entradas = data.get("tools", {})
+
+    readme = (Path(__file__).resolve().parent / "README.md").read_text(encoding="utf-8")
+    gid_por_grupo = {
+        etiqueta: int(numero)
+        for numero, etiqueta in re.findall(r"^## Grupo (\d+) — (.+?)\s*$", readme, re.M)
+    }
+    pertenencia = {t: g for g, tools in GROUPS.items() for t in tools}
+
+    ESTADOS_SIN_CATALOGO = {"archived", "internal", "orphan"}
+    result: Dict[str, Any] = {
+        "ok": True,
+        "tool": "vault_mcp_catalog",
+        "action": "check-contracts",
+        "spec_path": str(ruta),
+        "tools_checked": len(TOOLS_CATALOG),
+        "entries_checked": len(entradas),
+        "problems": [],
+    }
+
+    def problema(kind: str, detail: str) -> None:
+        result["ok"] = False
+        result["problems"].append({"kind": kind, "detail": detail})
+
+    for nombre in sorted(TOOLS_CATALOG):
+        entrada = entradas.get(nombre)
+        if entrada is None:
+            problema("tool_sin_contrato", nombre)
+            continue
+        grupo = pertenencia.get(nombre)
+        if grupo and entrada.get("group") != grupo:
+            problema("group_divergente", f"{nombre}: {entrada.get('group')!r} ≠ {grupo!r}")
+        esperado = gid_por_grupo.get(grupo) if grupo else None
+        if esperado is not None and entrada.get("group_id") != esperado:
+            problema(
+                "group_id_divergente",
+                f"{nombre}: {entrada.get('group_id')} ≠ {esperado} (Grupo de scripts/README.md)",
+            )
+
+    for nombre in sorted(entradas):
+        if nombre in TOOLS_CATALOG:
+            continue
+        estado = entradas[nombre].get("status")
+        if estado not in ESTADOS_SIN_CATALOGO:
+            problema(
+                "entrada_sin_catalogo_ni_estado",
+                f"{nombre}: status={estado!r}, se esperaba uno de {sorted(ESTADOS_SIN_CATALOGO)}",
+            )
+
+    return result
+
+
+def check_params(json_path: Optional[str] = None) -> Dict[str, Any]:
+    """AP-40 — ningún param publicado puede ser rechazado por la CLI.
+
+    Lee el JSON ya generado (que es lo que el servidor MCP consume de verdad,
+    no el catálogo Python) y comprueba cada propiedad contra el `argparse` del
+    script. Comparar Python contra Python no detectaría nada: el defecto vivía
+    en las dos copias a la vez.
+    """
+    ruta = Path(json_path) if json_path else (
+        Path(__file__).resolve().parent.parent / "mcp" / "nodejs" / "tools-catalog.json"
+    )
+    result: Dict[str, Any] = {
+        "ok": True, "tool": "vault_mcp_catalog", "action": "check-params",
+        "json_path": str(ruta), "tools_checked": 0, "problems": [],
+    }
+    if not ruta.is_file():
+        result["ok"] = False
+        result["problems"].append({"tool": "-", "problem": f"no existe {ruta}"})
+        return result
+
+    catalogo = json.loads(ruta.read_text(encoding="utf-8"))
+    tools = catalogo.get("tools", catalogo)
+    for nombre, entrada in sorted(tools.items()):
+        py = TOOLS_CATALOG.get(nombre, {})
+        reales = argparse_params(py.get("script", ""))
+        if not reales:
+            continue  # sin argparse legible no hay contra qué comparar
+        result["tools_checked"] += 1
+        publicados = (entrada.get("inputSchema") or {}).get("properties", {})
+        sobran = [p for p in publicados if p not in reales]
+        if sobran:
+            result["ok"] = False
+            result["problems"].append({
+                "tool": nombre,
+                "problem": f"params que la CLI rechaza: {', '.join(sorted(sobran))}",
+                "fix": "python scripts/vault_mcp_catalog.py --sync",
+            })
+    return result
+
+
+def main():
     parser = argparse.ArgumentParser(description="Vault MCP Catalog — sincronizar con JSON canónico")
     parser.add_argument("--sync", action="store_true", help="Generar tools-catalog.json desde PY")
     parser.add_argument("--check", action="store_true", help="Verificar que JSON está en sync con PY")
     parser.add_argument("--stats", action="store_true", help="Mostrar estadísticas del catálogo")
     parser.add_argument("--output", type=str, default=None, help="Ruta de salida para --sync")
     parser.add_argument("--json", type=str, default=None, help="Ruta del JSON para --check")
+    parser.add_argument("--check-contracts", action="store_true",
+                        # Sin flechas Unicode: el help se imprime en la consola
+                        # de Windows (cp1252) y un '↔' aquí rompe `--help`.
+                        help="Verificar catalogo vs tool-spec.json (contratos, grupo y group_id)")
+    parser.add_argument("--spec", type=str, default=None,
+                        help="Ruta del tool-spec.json para --check-contracts")
+    parser.add_argument("--check-params", action="store_true",
+                        help="AP-40: verificar que todo param publicado existe en el argparse del script")
     args = parser.parse_args()
+
+    if args.check_params:
+        result = check_params()
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        sys.exit(0 if result["ok"] else 1)
+
+    if args.check_contracts:
+        result = check_contracts(args.spec)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        sys.exit(0 if result["ok"] else 1)
 
     if args.stats:
         print(f"Tools en catálogo Python: {len(TOOLS_CATALOG)}")
@@ -2869,3 +3461,7 @@ if __name__ == "__main__":
             sys.exit(1)
 
     parser.print_help()
+
+
+if __name__ == "__main__":
+    main()

@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT, atomic_write_text
+from vault_io import VAULT_ROOT, atomic_write_text, write_report
 
 
 SYSTEM_DIR = VAULT_ROOT / "00_System"
@@ -77,9 +77,13 @@ def update_search_index(old_path: str, new_path: str) -> Dict[str, Any]:
         return {"updated": False, "reason": "search-index not found"}
 
     index_data = json.loads(SEARCH_INDEX.read_text(encoding="utf-8"))
+    if not isinstance(index_data, dict):
+        return {"updated": False, "reason": "search-index con esquema no reconocido"}
     updated = False
 
     for note in index_data.get("notes", []):
+        if not isinstance(note, dict):
+            continue
         if note.get("path") == old_path:
             note["path"] = new_path
             note["updated_at"] = datetime.now(timezone.utc).isoformat()
@@ -99,6 +103,8 @@ def update_graph(old_path: str, new_path: str, dry_run: bool = False) -> Dict[st
         return {"updated": False, "reason": "graph not found"}
 
     graph_data = json.loads(GRAPH_FILE.read_text(encoding="utf-8"))
+    if not isinstance(graph_data, dict):
+        return {"updated": False, "reason": "graph con esquema no reconocido"}
     old_stem = Path(old_path).stem
     new_stem = Path(new_path).stem
     old_folder = str(Path(old_path).parent)
@@ -106,7 +112,18 @@ def update_graph(old_path: str, new_path: str, dry_run: bool = False) -> Dict[st
 
     updated = False
 
-    for node in graph_data.get("nodes", []):
+    # Los grafos legacy guardan `nodes` como lista de strings (el stem), no de
+    # objetos. Un vault preexistente puede traer cualquiera de las dos formas y
+    # mover una nota no puede depender de cuál le tocó.
+    nodes = graph_data.get("nodes", [])
+    for i, node in enumerate(nodes):
+        if isinstance(node, str):
+            if node == old_stem or node == old_path:
+                nodes[i] = new_stem if node == old_stem else new_path
+                updated = True
+            continue
+        if not isinstance(node, dict):
+            continue
         if node.get("id") == old_stem or node.get("path") == old_path:
             node["id"] = new_stem
             node["path"] = new_path
@@ -170,8 +187,21 @@ def move_note(
         if result.get("links_changed"):
             links_updated += 1
 
-    search_result = update_search_index(from_path, to_path)
-    graph_result = update_graph(from_path, to_path, dry_run)
+    # A partir del shutil.move el movimiento ya es un hecho en disco. Si la
+    # actualización de los índices falla (esquema legacy, JSON corrupto), la tool
+    # no puede devolver ok:false: eso deja al agente creyendo que no movió nada
+    # cuando sí lo hizo. Se degrada a aviso y se pide el reindex.
+    degraded: List[str] = []
+
+    def _safe(nombre: str, fn) -> Dict[str, Any]:
+        try:
+            return fn()
+        except Exception as exc:  # noqa: BLE001 - el movimiento ya ocurrió
+            degraded.append(f"{nombre}: {type(exc).__name__}: {exc}")
+            return {"updated": False, "error": str(exc)}
+
+    search_result = _safe("search-index", lambda: update_search_index(from_path, to_path))
+    graph_result = _safe("graph", lambda: update_graph(from_path, to_path, dry_run))
 
     move_record = {
         "from": from_path,
@@ -189,12 +219,15 @@ def move_note(
 
     return {
         "ok": True,
+        **write_report(),
         "dry_run": dry_run,
         "moved": f"{from_path} -> {to_path}",
         "links_updated": links_updated,
         "files_checked": files_checked,
         "search_index_updated": search_result.get("updated"),
         "graph_updated": graph_result.get("updated"),
+        "degraded": degraded,
+        "next": "vault_reindex --graph" if degraded else None,
         "record": move_record,
     }
 
@@ -239,6 +272,7 @@ def move_folder(
 
     return {
         "ok": True,
+        **write_report(),
         "dry_run": dry_run,
         "notes_moved": len(notes_moved),
         "details": notes_moved,
@@ -278,6 +312,7 @@ def check_move_impact(from_path: str, to_path: str) -> Dict[str, Any]:
 
     return {
         "ok": True,
+        **write_report(),
         "source": from_path,
         "destination": to_path,
         "backlinks_count": len(backlinks),

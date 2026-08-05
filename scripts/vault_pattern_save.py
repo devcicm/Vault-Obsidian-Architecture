@@ -31,8 +31,10 @@ import re
 import sys
 
 from vault_errors import wrap_main
+from vault_norms import status_frontmatter_lines
 from vault_lib import utcnow, slugify
 from vault_io import (
+    write_report,
     atomic_write_text,
     atomic_write_json,
     assert_within_vault,
@@ -224,7 +226,7 @@ def vault_pattern_save(
 
     frontmatter.append(f"type: {pattern_type}")
 
-    frontmatter.append(f"status: {status}")
+    frontmatter.extend(status_frontmatter_lines("vault_pattern_save", status))
 
     frontmatter.append(f"createdAt: {timestamp}")
 
@@ -309,6 +311,7 @@ def vault_pattern_save(
 
     return {
         "ok": True,
+        **write_report(),
         "path": str(pattern_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
         "status": status,
         "transition": transition,

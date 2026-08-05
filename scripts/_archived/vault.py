@@ -20,6 +20,10 @@ Examples:
     vault audit --project my-api
     vault search --query "jwt"
     vault help write         # show catalog info for vault_write
+
+ARCHIVADA (politica de no-derogacion; ver scripts/_archived/README.md).
+superseded_by: cli/vault_cli.py
+reason: CLI consolidada; este despachador por subprocess ya no es el camino.
 """
 
 import argparse

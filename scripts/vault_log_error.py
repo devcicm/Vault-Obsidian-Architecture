@@ -39,7 +39,7 @@ import sys
 
 from vault_errors import wrap_main
 from vault_lib import utcnow, slugify
-from vault_io import atomic_write_text, VAULT_ROOT, safe_wikilink
+from vault_io import atomic_write_text, VAULT_ROOT, safe_wikilink, write_report
 from datetime import datetime, timezone
 
 
@@ -348,6 +348,7 @@ def vault_log_error(
 
     return {
         "ok": True,
+        **write_report(),
         "path": str(file_path.relative_to(VAULT_ROOT)),
         "type": error_type,
         "severity": severity,

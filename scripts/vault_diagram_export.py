@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT
+from vault_io import VAULT_ROOT, write_report
 
 
 DIAGRAMS_DIR = VAULT_ROOT / "06_Diagrams"
@@ -224,6 +224,7 @@ def export_project(
 
     return {
         "ok": True,
+        **write_report(),
         "project": project,
         "exported": len(exported),
         "files": exported,

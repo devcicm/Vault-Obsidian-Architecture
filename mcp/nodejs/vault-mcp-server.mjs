@@ -5,7 +5,7 @@
  * Servidor MCP monolítico que expone las 71 herramientas del vault
  * como MCP tools accesibles directamente por IAs sin registro en harness.
  *
- * Versión: v37.0 (SDD)
+ * Versión: v39.0 (SDD)
  * Transporte: dual (stdio + SSE/HTTP)
  * Dependencias: CERO npm — solo node:* built-ins
  *
@@ -38,7 +38,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "..", "..");
 const SCRIPTS_DIR = join(REPO_ROOT, "scripts");
-const VERSION = "v38.0 (SDD)";
+const VERSION = "v39.0 (SDD)";
 
 let VAULT_ROOT = process.env.VAULT_ROOT || null;
 let VAULT_SCAN_ROOTS = process.env.VAULT_SCAN_ROOTS ? process.env.VAULT_SCAN_ROOTS.split(";").map(p => resolve(p)) : [
@@ -1489,7 +1489,7 @@ async function handleResourcesList() {
       { uri: "vault://health", name: "Vault Health", mimeType: "application/json", description: "Health check with score and next actions" },
       { uri: "vault://registry", name: "Vault Registry", mimeType: "application/json", description: "All registered vaults with versions and metadata" },
       { uri: "vault://traceability/mutations", name: "Mutation Trace Log", mimeType: "application/json", description: "Immutable audit trail of all tool executions" },
-      { uri: "vault://catalog", name: "Tool Catalog", mimeType: "application/json", description: "All 71+ tools with input schemas" },
+      { uri: "vault://catalog", name: "Tool Catalog", mimeType: "application/json", description: `All ${Object.keys(TOOLS_CATALOG).length} tools with input schemas` },
       { uri: "vault://state", name: "Vault State", mimeType: "application/json", description: "Current vault state (version, root, tools loaded)" },
     ],
   };

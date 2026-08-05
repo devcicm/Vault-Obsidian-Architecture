@@ -46,7 +46,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from vault_errors import wrap_main
 from vault_lib import utcnow
-from vault_io import atomic_write_json, file_lock, VAULT_ROOT
+from vault_io import atomic_write_json, file_lock, VAULT_ROOT, write_report
 
 SYSTEM_DIR = VAULT_ROOT / "00_System"
 QUALITY_INDEX = SYSTEM_DIR / "quality-index.json"
@@ -584,6 +584,7 @@ def vault_quality_check(
 
     result: Dict[str, Any] = {
         "ok": True,
+        **write_report(),
         "overall_dq_score": overall_dq,
         "total_notes": total,
         "notes_below_07": below_07,

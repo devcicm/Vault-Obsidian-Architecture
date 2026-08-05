@@ -29,6 +29,10 @@ Usage:
 
     # List past sessions
     python vault_session.py --list --last 10
+
+ARCHIVADA (politica de no-derogacion; ver scripts/_archived/README.md).
+superseded_by: vault_delta.py
+reason: La sesion se deriva del cambio real registrado, no de un log a mano.
 """
 
 import argparse

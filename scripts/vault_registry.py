@@ -147,6 +147,46 @@ SECTIONS: List[Dict[str, Optional[str]]] = [
         ),
         "tool_hint": "vault_preferences --set --category workflow --title <pref> --statement <regla>",
     },
+    # ── Secciones 18–20 (v39) ───────────────────────────────────────────────
+    #
+    # No salen de un diseño a priori: salen de medir 17 vaults reales. Los
+    # agentes ya estaban escribiendo estas tres cosas, y al no existir sección
+    # las repartían entre `02_Observability`, `07_Knowledge` y carpetas que se
+    # inventaban sobre la marcha (`docs/`, `scripts/`, `certificates/`). Una
+    # nota sin sitio no desaparece: aparece en cualquier sitio.
+    {
+        "folder": "18_Bugs",
+        "name": "Bugs",
+        "description": (
+            "Defectos con ciclo de vida propio: síntoma, causa raíz, corrección y "
+            "verificación. Se distingue de 02_Observability/errors en que un error "
+            "es un evento observado y un bug es un defecto que se persigue hasta "
+            "cerrarlo (ISO/IEC 25010 §fiabilidad)"
+        ),
+        "tool_hint": "vault_bug_save --project <slug> --title <bug> --status open",
+    },
+    {
+        "folder": "19_Audits",
+        "name": "Auditorías",
+        "description": (
+            "Bitácora del vault: resultados de auditoría, censos de vocabulario y "
+            "registro append-only de términos introducidos. Es la memoria que "
+            "impide que cada sesión reinvente el vocabulario de la anterior "
+            "(ISO 9001 §9.2, ISO/IEC 42001 §9)"
+        ),
+        "tool_hint": "vault_tags --registry",
+    },
+    {
+        "folder": "20_Quarantine",
+        "name": "Cuarentena",
+        "description": (
+            "Notas retenidas sin destino seguro: origen desconocido, contenido "
+            "sospechoso de inyección, o reclasificación pendiente de juicio. "
+            "Existe porque la alternativa a cuarentena no es limpieza, es borrado "
+            "— y aquí nada se borra (política de no-derogación)"
+        ),
+        "tool_hint": "vault_quarantine --add <path> --reason <motivo>",
+    },
     {
         "folder": "99_Index",
         "name": "Índices",
@@ -400,6 +440,53 @@ SUBFOLDERS: Dict[str, Dict[str, Optional[str]]] = {
     "17_Preferences/domain": {
         "description": "Preferencias específicas de un proyecto o dominio concreto",
         "owner": "vault_preferences",
+    },
+    # ── 18_Bugs ─────────────────────────────────────────────────────────────
+    # El ciclo del defecto es el que estaba disperso: el síntoma acababa en
+    # 02_Observability/errors, la causa en 07_Knowledge y la corrección en
+    # 03_Decisions, sin nada que las uniera. Separadas por fase, la relación
+    # entre ellas es explícita en vez de quedar en la cabeza de quien la vio.
+    "18_Bugs/open": {
+        "description": "Defectos reproducidos y sin corregir, con síntoma y pasos de reproducción",
+        "owner": "vault_bug_save",
+    },
+    "18_Bugs/root-causes": {
+        "description": "Causa raíz de un defecto, enlazada al bug que la manifestó (ISO/IEC 25010)",
+        "owner": "vault_bug_save",
+    },
+    "18_Bugs/fixed": {
+        "description": "Defectos corregidos y verificados, con la corrección y su evidencia",
+        "owner": "vault_bug_save",
+    },
+    # ── 19_Audits ───────────────────────────────────────────────────────────
+    # La bitácora. `vocabulary` es la pieza que faltaba: un registro append-only
+    # de cada término introducido, con quién lo introdujo y cuándo. Sin él, el
+    # vocabulario del vault vive solo en la sesión que lo escribió — y medido
+    # sobre 17 vaults, la tasa de invención de tags no bajó en tres meses.
+    "19_Audits/vocabulary": {
+        "description": "Registro append-only de términos: qué entró, cuándo, quién y a qué sucede",
+        "owner": "vault_tags",
+    },
+    "19_Audits/runs": {
+        "description": "Resultados de auditorías ejecutadas: normas, calidad, grafo, seguridad (ISO 9001 §9.2)",
+        "owner": "vault_audit",
+    },
+    "19_Audits/findings": {
+        "description": "Hallazgos que exigen acción, con norma incumplida y estado de resolución",
+        "owner": "vault_audit",
+    },
+    # ── 20_Quarantine ───────────────────────────────────────────────────────
+    "20_Quarantine/unclassified": {
+        "description": "Notas sin sección determinable: se retienen hasta que haya criterio, no se borran",
+        "owner": "vault_quarantine",
+    },
+    "20_Quarantine/suspicious": {
+        "description": "Contenido que disparó el pre-vuelo anti-poisoning (POISON-01..05) y no se ha revisado",
+        "owner": "vault_quarantine",
+    },
+    "20_Quarantine/duplicates": {
+        "description": "Candidatas a duplicado pendientes de decidir cuál es la canónica (PAT-1)",
+        "owner": "vault_quarantine",
     },
 }
 

@@ -29,7 +29,7 @@ from difflib import SequenceMatcher
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT, atomic_write_json
+from vault_io import VAULT_ROOT, atomic_write_json, write_report
 
 ONTOLOGY_FILE = Path(__file__).parent / "vault_ontology.json"
 GRAPH_FILE = VAULT_ROOT / "99_Index" / "graph.json"
@@ -576,6 +576,7 @@ def vault_graph_merge(
 
     return {
         "ok": True,
+        **write_report(),
         "savedTo": str(ENRICHED_FILE.relative_to(VAULT_ROOT)).replace("\\", "/"),
         "metadata": enriched["metadata"],
         "stats": enriched["stats"],

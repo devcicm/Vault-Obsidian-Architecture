@@ -33,6 +33,7 @@ import sys
 from vault_errors import wrap_main
 from vault_lib import utcnow, slugify
 from vault_io import (
+    write_report,
     atomic_write_text,
     assert_within_vault,
     VAULT_ROOT,
@@ -181,6 +182,7 @@ def vault_knowledge_save(
 
     return {
         "ok": True,
+        **write_report(),
         "path": str(note_path.relative_to(VAULT_ROOT)),
         "category": category,
         "title": title,

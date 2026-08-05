@@ -29,6 +29,7 @@ from typing import Any, Dict, List, Optional
 from vault_errors import wrap_main
 from vault_lib import utcnow
 from vault_io import (
+    write_report,
     VAULT_ROOT,
     assert_within_vault,
     atomic_write_text,
@@ -281,6 +282,7 @@ _Documentar qué es diferente en este entorno vs producción: datos, escala, ser
 
     return {
         "ok": True,
+        **write_report(),
         "path": str(path.relative_to(VAULT_ROOT)).replace("\\", "/"),
         "project": project,
         "env": env,

@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-from vault_io import VAULT_ROOT, atomic_write_text, atomic_write_json
+from vault_io import VAULT_ROOT, atomic_write_text, atomic_write_json, write_report
 
 CODE_DIR = VAULT_ROOT / "11_Code"
 INDEX_FILE = CODE_DIR / ".code-index.json"
@@ -142,6 +142,25 @@ def vault_code_module(
         return {
             "ok": False,
             "error": f"iso_type '{iso_type}' not recognized. Use: {ISO_TYPES}",
+        }
+
+    # QUALITY_ATTRIBUTES son las 8 características de ISO/IEC 25010, y la nota
+    # titula su tabla "Calidad (ISO 25010)". El registro estaba declarado y no
+    # se comprobaba: cualquier cadena entraba en la tabla, así que la nota podía
+    # afirmar conformidad con una norma usando atributos que no son los suyos.
+    invalidos = [
+        q.get("attribute")
+        for q in (quality or [])
+        if str(q.get("attribute", "")).lower() not in QUALITY_ATTRIBUTES
+    ]
+    if invalidos:
+        return {
+            "ok": False,
+            "error": (
+                f"quality.attribute fuera de ISO/IEC 25010: {invalidos}. "
+                f"Use: {QUALITY_ATTRIBUTES}"
+            ),
+            "valid_attributes": QUALITY_ATTRIBUTES,
         }
 
     # AP-17 guard: check .code-index.json for existing note with same file_path.
@@ -417,6 +436,7 @@ def vault_code_module(
 
     result: Dict[str, Any] = {
         "ok": True,
+        **write_report(),
         "path": note_rel,
         "project": project,
         "file_path": file_path,

@@ -1,13 +1,13 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 76 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
+Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 88 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **98 archivos** — 76 tools del catálogo MCP (74 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + 16 meta/spec + 8 bibliotecas internas
+- **110 archivos Python** — 88 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
 - **Saneamiento de índices (v38.1)** — `vault_section_index.py --heal [--root]` regenera índices con formato legacy `[[stem|alias]]` o ausentes; el auto-index post-write se auto-cura si un agente escribe `index.md` a mano
-- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 76 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
+- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 88 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
 - **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault; requiere marcador de CONTENIDO (01_Projects/02_Observability/03_Decisions/.obsidian), no solo 00_System/99_Index (evita el ciclo auto-reforzado de detección); override runtime con `set_vault_root()`/env `VAULT_ROOT`
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
@@ -25,10 +25,10 @@ Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan 
 
 | Grupo | Scripts |
 |---|---|
-| [Grupo 1 — Core](#grupo-1--core) | vault_write, vault_read, vault_search, vault_list, vault_append, vault_diff, vault_merge |
+| [Grupo 1 — Core](#grupo-1--core) | vault_write, vault_read, vault_search, vault_list, vault_append, vault_diff, vault_merge, vault_move |
 | [Grupo 2 — Observabilidad](#grupo-2--observabilidad) | vault_log_error |
 | [Grupo 3 — Patrones](#grupo-3--patrones) | vault_pattern_save, vault_pattern_list |
-| [Grupo 4 — Diagramas y Cardinalidad](#grupo-4--diagramas-y-cardinalidad) | vault_diagram_save, vault_relation_add, vault_mermaid_check, vault_diagram_export |
+| [Grupo 4 — Diagramas](#grupo-4--diagramas) | vault_diagram_save, vault_relation_add, vault_mermaid_check, vault_diagram_export |
 | [Grupo 5 — Conocimiento](#grupo-5--conocimiento) | vault_knowledge_save, vault_knowledge_get |
 | [Grupo 6 — Salud del Vault](#grupo-6--salud-del-vault) | vault_audit, vault_validate, vault_graph, vault_graph_merge, vault_graph_inspect |
 | [Grupo 7 — Runbooks](#grupo-7--runbooks) | vault_runbook_save, vault_runbook_log |
@@ -36,8 +36,8 @@ Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan 
 | [Grupo 9 — Migración](#grupo-9--migración) | vault_migrate_docs, vault_migrate_rollback |
 | [Grupo 10 — Línea de Tiempo](#grupo-10--línea-de-tiempo) | vault_timeline |
 | [Grupo 11 — Vista del Proyecto](#grupo-11--vista-del-proyecto) | vault_project_status, vault_project_overview |
-| [Grupo 12 — Código](#grupo-12--código) | vault_code_module, vault_code_relation, vault_code_map, vault_code_query |
-| [Grupo 13 — Backups](#grupo-13--backups) | vault_backup, vault_backup_list, vault_restore |
+| [Grupo 12 — Código](#grupo-12--código) | vault_code_module, vault_code_relation, vault_code_map, vault_code_query, vault_code_sync |
+| [Grupo 13 — Backups](#grupo-13--backups) | vault_backup, vault_backup_list, vault_restore, vault_backup_base64, vault_restore_base64 |
 | [Grupo 14 — Seguridad](#grupo-14--seguridad) | vault_security_scan |
 | [Grupo 15 — Índices](#grupo-15--índices) | vault_section_index, vault_master_index, vault_reindex |
 | [Grupo 16 — Bibliografía](#grupo-16--bibliografía) | vault_bibliography_save |
@@ -46,15 +46,21 @@ Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan 
 | [Grupo 19 — Requerimientos](#grupo-19--requerimientos) | vault_requirement_save |
 | [Grupo 20 — Tests](#grupo-20--tests) | vault_test_save |
 | [Grupo 21 — IA Governance](#grupo-21--ia-governance) | vault_ai_decision |
-| [Grupo 22 — Versionado del Estándar](#grupo-22--versionado-del-estándar) | vault_standard_upgrade |
+| [Grupo 22 — Versionado](#grupo-22--versionado) | vault_standard_upgrade |
 | [Grupo 23 — Change Log](#grupo-23--change-log) | vault_change_log |
 | [Grupo 24 — Data Quality](#grupo-24--data-quality) | vault_quality_check, vault_fundamentals |
 | [Grupo 25 — Propagación](#grupo-25--propagación) | vault_impact, vault_propagate |
 | [Grupo 26 — Tokens](#grupo-26--tokens) | vault_tokens, vault_token_counter, vault_token_service |
 | [Grupo 27 — Session Delta y Tags](#grupo-27--session-delta-y-tags) | vault_delta, vault_tags |
-| [Grupo 33 — Corrección automática](#grupo-33--corrección-automática) | vault_fix_brackets, vault_graph_fix |
-| [Grupo 34 — Gestión de Carpetas](#grupo-34--gestión-de-carpetas) | vault_folder_registry |
-| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms |
+| [Grupo 28 — Producción/SRE](#grupo-28--producciónsre) | vault_incident_save, vault_slo_save |
+| [Grupo 29 — Release](#grupo-29--release) | vault_release_save |
+| [Grupo 30 — Riesgos/Calidad](#grupo-30--riesgoscalidad) | vault_risk_save, vault_privacy_save, vault_ncr_save |
+| [Grupo 31 — Bootstrap](#grupo-31--bootstrap) | vault_init |
+| [Grupo 32 — Gestión de Carpetas](#grupo-32--gestión-de-carpetas) | vault_folder_registry |
+| [Grupo 33 — Corrección Automática](#grupo-33--corrección-automática) | vault_fix_brackets, vault_graph_fix |
+| [Grupo 34 — Memoria de Contexto](#grupo-34--memoria-de-contexto) | vault_preferences, vault_query_parse, vault_subgraph, vault_context_pack, vault_ingest |
+| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_noop_audit, vault_smoke, vault_voice |
+| [Grupo 36 — Defectos y Cuarentena](#grupo-36--defectos-y-cuarentena) | vault_bug_save, vault_quarantine |
 | [Observabilidad de Tools](#observabilidad-de-tools) | vault_errors |
 | [Utilidades internas](#utilidades-internas) | vault_index, vault_dataset, vault_io, vault_link_safety |
 | [Deprecadas](#deprecadas) | vault_create, vault_migrate, vault_reorganize, vault_tools, vault_render |
@@ -81,6 +87,26 @@ python vault_write.py --folder "03_Decisions" --title "ADR-001" --content "..." 
 | `--tags` | no | Lista de etiquetas |
 | `--meta` | no | JSON adicional para frontmatter |
 | `--meta-file` | no | Ruta a JSON con frontmatter adicional (evita problemas de quoting en PowerShell) |
+
+**AP-41 — el ciclo de vida se verifica al escribir.** Al actualizar una nota
+existente, `vault_write` lee su frontmatter y comprueba la transición de `status`
+contra `vault_norms.STATUS_TRANSITIONS`. Una transición que no está en la máquina
+se rechaza con `illegal_status_transition` y el mensaje enumera los destinos
+válidos; si el salto era el correcto, lo que hay que corregir es la máquina, no la
+nota. Consecuencias de la misma lectura: una escritura que **no** menciona
+`status` conserva el estado previo (antes caía a `draft`), y el `id` y el
+`createdAt` de la nota sobreviven a la actualización — el `id` que devuelve la
+tool es el que está en el archivo.
+
+```bash
+# rechazado: desde 'draft' no se puede ir directo a 'verified'
+python vault_write.py --folder "07_Knowledge" --title "N" --content "..." --meta '{"status":"verified"}'
+# {"ok": false, "error_code": "illegal_status_transition", "from_status": "draft",
+#  "to_status": "verified", "allowed": ["archived", "in-progress", "reviewed"]}
+```
+
+Las transiciones **ya ocurridas** no las ve el guard: las reporta
+`python vault_norms.py --audit` recorriendo `.history/`.
 
 ---
 
@@ -147,6 +173,20 @@ python vault_merge.py --action dedup   # hacer vault_backup primero
 
 ---
 
+### `vault_move.py`
+Reubica una nota o una carpeta entera y **arrastra las referencias**: reescribe los wiki-links que apuntaban al origen, y regenera `search-index.json`, `graph.json` y el move-log. Mover un `.md` a mano rompe el grafo en silencio; esta tool es la forma soportada de hacerlo.
+
+```bash
+python vault_move.py --from "01_Projects/old/note.md" --to "03_Decisions/note.md"
+python vault_move.py --folder "01_Projects/old" --to-folder "01_Projects/new"
+python vault_move.py --from "01_Projects/foo.md" --to "03_Decisions/foo.md" --dry-run
+python vault_move.py --impact --from "01_Projects/foo.md" --to "03_Decisions/foo.md"
+```
+
+`--impact` responde "¿a cuántas notas afecta esto?" sin tocar nada; `--dry-run` simula el movimiento completo.
+
+---
+
 ## Grupo 2 — Observabilidad
 
 ### `vault_log_error.py`
@@ -202,7 +242,7 @@ python vault_pattern_list.py --category architecture
 
 ---
 
-## Grupo 4 — Diagramas y Cardinalidad
+## Grupo 4 — Diagramas
 
 ### `vault_diagram_save.py`
 Guarda diagramas Mermaid, ASCII o PlantUML en `06_Diagrams/`.
@@ -236,6 +276,31 @@ python vault_relation_add.py --project mi-api --from "ServiceA" --to "ServiceB" 
 |---|---|
 | `has_one`, `has_many`, `belongs_to`, `many_to_many` | ERD |
 | `implements`, `extends`, `depends_on`, `uses`, `calls`, `owns`, `aggregates` | Graph TD |
+
+---
+
+### `vault_mermaid_check.py`
+Valida la sintaxis de los bloques Mermaid del vault antes de que Obsidian los renderice rotos. `--fix` intenta la corrección automática de los errores reversibles.
+
+```bash
+python vault_mermaid_check.py
+python vault_mermaid_check.py --path "06_Diagrams/foo.md"
+python vault_mermaid_check.py --project "mi-api"
+python vault_mermaid_check.py --fix --json
+```
+
+---
+
+### `vault_diagram_export.py`
+Exporta diagramas con opciones de visualización persistidas (zoom, pan, dirección, nodos resaltados u ocultos). Sirve para sacar una vista concreta de un diagrama grande sin editar el original.
+
+```bash
+python vault_diagram_export.py --path "06_Diagrams/foo.md"
+python vault_diagram_export.py --path "06_Diagrams/foo.md" --zoom 2.0 --pan_x 100
+python vault_diagram_export.py --path "06_Diagrams/foo.md" --highlight "A,B" --hide "C"
+python vault_diagram_export.py --project "mi-api" --filter flowchart --output "export/"
+python vault_diagram_export.py --config --zoom 1.5 --fit   # guarda configuración global
+```
 
 ---
 
@@ -316,7 +381,33 @@ python vault_graph.py --project mi-api
 
 ---
 
-## Grupo 33 — Corrección automática
+### `vault_graph_merge.py`
+Unifica en un solo grafo los tres tipos de relación que el vault mantiene por separado: wiki-links, relaciones de entidad y relaciones de código. Genera `99_Index/graph-enriched.json` con predicados semánticos resueltos contra `vault_ontology.json`.
+
+Detecta tres anti-patrones de grafo: **AP-31** (grafo sin tipar), **AP-34** (relaciones tipadas huérfanas) y **AP-35** (silos de relación).
+
+```bash
+python vault_graph_merge.py
+python vault_graph_merge.py --project "ans"
+python vault_graph_merge.py --predicate-filter depends_on,implements,calls
+```
+
+---
+
+### `vault_graph_inspect.py`
+Inspector de grafo + detector de casi-duplicados + comprobador de sintaxis de wiki-links. Es la vista de diagnóstico previa a `vault_graph_fix`: dice qué está roto y por qué, sin escribir nada.
+
+```bash
+python vault_graph_inspect.py --root vault-sandbox
+python vault_graph_inspect.py --md                  # informe legible en vez de JSON
+python vault_graph_inspect.py --threshold 0.9       # umbral Jaccard de casi-duplicados
+python vault_graph_inspect.py --no-templates        # excluye plantillas del near-dup
+python vault_graph_inspect.py --include-migrated    # incluye 10_Migrated/ (excluida por defecto)
+```
+
+---
+
+## Grupo 33 — Corrección Automática
 
 Tool companion de `vault_audit`. Detecta y arregla automáticamente las pathologies de corchetes en wiki-links (`AP-22` empty `[[]]`, `AP-24` nested/inverted/imbalance) que el audit reporta en `issues.malformedWikilinks[]`. El auto-fix es seguro: solo toca las patologías reversibles y deja backup atómico en `VAULT_ROOT/.vault-fix-backup-YYYYMMDD-HHMMSS/` antes de modificar nada.
 
@@ -368,6 +459,22 @@ python vault_fix_brackets.py --include-sandbox
 - El kind `imbalance_*` NUNCA se auto-arregla — siempre requiere revisión manual
 
 **Relación con `vault_audit`:** el bloque `nextActions` del audit ahora incluye `command: "python scripts/vault_fix_brackets.py --apply <path>"` para cada nota auto-fixeable, y `command: "Revisar <path>..."` para las que requieren revisión manual. El fix-tool y el audit comparten los mismos patrones de detección (`RE_EMPTY`, `RE_NESTED_*`, stack-based walk).
+
+---
+
+### `vault_graph_fix.py`
+Repara wiki-links rotos. Clasifica cada enlace por confianza (`exact_candidate`, `points_to_migrated`, `partial_match`, `no_match`) y aplica solo lo que corresponde al modo elegido. Por defecto es **dry-run**.
+
+```bash
+python vault_graph_fix.py --root vault-sandbox --classify        # clasifica, no escribe
+python vault_graph_fix.py --root vault-sandbox                   # dry-run del fix
+python vault_graph_fix.py --root vault-sandbox --auto-fix-safe --apply
+python vault_graph_fix.py --auto-apply-partial 0.75 --apply      # parciales de alta confianza
+python vault_graph_fix.py --wizard                               # resuelve parciales a mano
+python vault_graph_fix.py --stubs --apply                        # crea stubs para los no_match
+```
+
+`--auto-fix-safe` resuelve sin preguntar únicamente lo inequívoco. Los `partial_match` por debajo del umbral se **saltan y se registran**, nunca se adivinan: un enlace mal reparado es peor que uno roto, porque deja de reportarse.
 
 ---
 
@@ -443,6 +550,23 @@ Documenta variables de entorno por ambiente en `01_Projects/{project}/envs.md`. 
 python vault_env_save.py --project mi-api --environment production \
   --variables '[{"name":"DATABASE_URL","description":"Conexión a PostgreSQL","sensitive":true}]'
 ```
+
+---
+
+### `vault_env_matrix.py`
+Documenta la matriz de entornos de un proyecto (ISO 20000-1 / ISO 12207): qué servicios, feature flags, variables y procedimientos de deploy/rollback aplican en cada entorno. Genera `09_Infrastructure/{project}/matrix.md`.
+
+Entornos: `dev`, `staging`, `prod`, `dr`, `perf`.
+
+```bash
+python vault_env_matrix.py --project my-api --env prod \
+  --services '["api","postgres","redis"]' \
+  --features '{"payments":true,"beta_ui":false}' \
+  --env_vars '["DATABASE_URL","STRIPE_SECRET_KEY","JWT_SECRET"]' \
+  --runtime "Node.js 20 LTS" --region "us-east-1"
+```
+
+`--env_vars` documenta **nombres**, nunca valores: un valor real ahí lo trata el escáner de secretos como incidente.
 
 ---
 
@@ -588,6 +712,21 @@ python vault_code_query.py --project mi-api --relations "src/server.py"
 
 ---
 
+### `vault_code_sync.py`
+Audita la trazabilidad bidireccional código ↔ vault: que cada nota con `source_file` apunte a un archivo que existe, y que ese archivo lleve su tag `@vault:`. Actualiza `11_Code/{project}/index.json`.
+
+Estados por nota: `complete`, `missing_tag`, `missing_file`, `no_source_ref`, `orphan_vault`.
+
+```bash
+python vault_code_sync.py --project my-api
+python vault_code_sync.py --project my-api --report      # salida legible
+python vault_code_sync.py --scan-dir src/                # refs huérfanas en el código
+python vault_code_sync.py --project my-api --fix --dry-run
+python vault_code_sync.py --project my-api --fix         # inyecta @vault: donde falta
+```
+
+---
+
 ## Grupo 13 — Backups
 
 ### `vault_backup.py`
@@ -616,6 +755,18 @@ Restaura el vault desde un backup específico.
 ```bash
 python vault_restore.py --backup_name "vault-2026-05-09-143022-pre-migration" --confirm true
 ```
+
+---
+
+Las dos tools siguientes son las únicas **JS-native** del catálogo (sin entry point Python): viven en el servidor MCP y se invocan solo desde ahí. Están pensadas para mover un vault entre máquinas cuando no hay disco compartido ni remoto git. No sustituyen a `vault_backup`: no llevan manifiesto Merkle ni versionado incremental.
+
+### `vault_backup_base64`
+Serializa el vault entero a un `.b64zip.json` transportable por un canal de solo texto.
+
+---
+
+### `vault_restore_base64`
+Restaura un `.b64zip.json` en un directorio nuevo. Nunca escribe sobre un vault existente.
 
 ---
 
@@ -816,7 +967,7 @@ python vault_ai_decision.py --project mi-api \
 
 ---
 
-## Grupo 22 — Versionado del Estándar
+## Grupo 22 — Versionado
 
 ### `vault_standard_upgrade.py`
 Detecta la versión del estándar aplicada al vault y aplica migraciones pendientes (nuevas carpetas, actualizaciones de identity). Lee/escribe `00_System/standard-version.json`.
@@ -916,7 +1067,32 @@ python vault_tags.py                          # rebuildar registry + tag-index.m
 python vault_tags.py --audit                  # reporte de salud de tags
 python vault_tags.py --suggest "01_Projects/mi-api/overview.md"
 python vault_tags.py --rename "api-rest" "rest-api"
+python vault_tags.py --ledger                 # bitácora de vocabulario (AP-39)
+python vault_tags.py --backfill-ledger        # heal AP-39: anotar lo ya en uso
 python vault_tags.py --dry-run
+```
+
+**AP-39 — bitácora de vocabulario.** `vault_write` resuelve los tags contra el
+registro **antes** de escribir (`apply_vocabulary`): colapsa lo que es la misma
+palabra —acentos, mayúsculas, separadores, plural— y admite el término nuevo tal
+cual. Una vez la nota está en disco, `record_new_tags` lo anota en
+`19_Audits/vocabulary/tag-ledger.json`, append-only, con quién lo introdujo,
+cuándo y en qué nota. `--backfill-ledger` retro-anota el vocabulario de un vault
+anterior a la norma, usando el `agent` de la nota donde cada término aparece por
+primera vez.
+
+**Output `--ledger`:**
+```json
+{
+  "ok": true,
+  "introduced_total": 23,
+  "canonical_total": 54,
+  "by_agent": {"claude": 19, "unknown": 4},
+  "entries": [
+    {"tag": "kubernetes", "raw": "Kubernetes", "first_note": "07_Knowledge/k8s.md",
+     "introduced_by": "claude", "introduced_at": "2026-07-29T09:10:38.000Z", "rule": "new"}
+  ]
+}
 ```
 
 **Output `--audit`:**
@@ -1049,6 +1225,138 @@ Servicio de conteo de tokens con cache. Usado internamente por `wrap_main` cuand
 python vault_errors.py query --last 10
 python vault_errors.py query --tool vault_write --severity error
 python vault_errors.py catalog --code AP21_PATH_WIKILINKS
+```
+
+---
+
+## Grupo 28 — Producción/SRE
+
+### `vault_incident_save.py`
+Registra incidentes y post-mortems (ISO 20000-1 / ISO 22301) en `02_Observability/incidents/`. Severidades `P1`–`P4`; el ciclo de estado va de `detected` a `closed` pasando por `post-mortem`.
+
+```bash
+python vault_incident_save.py --project my-api --title "API down" --severity P1
+
+python vault_incident_save.py --project my-api \
+  --title "DB latency spike" --severity P2 --status resolved \
+  --detected_at "2026-06-01T14:30:00Z" --resolved_at "2026-06-01T16:45:00Z" \
+  --impact "Checkout degradado 40% usuarios" \
+  --root_cause "Index faltante tras migración" \
+  --timeline '[{"time":"14:30","event":"Alert fired","who":"PagerDuty"}]' \
+  --rto 30 --rpo 5
+```
+
+---
+
+### `vault_slo_save.py`
+Define SLOs de producción (ISO 20000-1 / ISO 25010) en `02_Observability/slos/`. Tipos: `availability`, `latency`, `error_rate`, `throughput`, `durability`, `freshness`, `saturation`.
+
+```bash
+python vault_slo_save.py --project my-api --service checkout \
+  --slo_type availability --target 99.9 --window 30d
+
+python vault_slo_save.py --project my-api --service api-gateway \
+  --slo_type latency --target 200 --unit ms --percentile p95 \
+  --window 7d --alert_threshold 300
+```
+
+---
+
+## Grupo 29 — Release
+
+### `vault_release_save.py`
+Documenta releases de producción (ISO 20000-1 / ISO 12207) en `01_Projects/{project}/releases/`. Tipos `major|minor|patch|hotfix|rollback`; estados `planned|in_progress|deployed|rolled_back|cancelled`.
+
+```bash
+python vault_release_save.py --project my-api --version v1.2.0 --type minor \
+  --changes '["feat: endpoint /health","fix: timeout checkout"]' \
+  --deploy_steps '["npm run build","docker push","kubectl rollout"]' \
+  --rollback_steps '["kubectl rollout undo"]' \
+  --smoke_tests '["GET /health 200","GET /api/v1/products 200"]'
+```
+
+`rollback_steps` no es opcional en la práctica: una release sin vuelta atrás documentada es una release sin plan de contingencia.
+
+---
+
+## Grupo 30 — Riesgos/Calidad
+
+### `vault_risk_save.py`
+Registra riesgos (ISO 31000:2018 / ISO/IEC 27005:2022) en `01_Projects/{project}/risks/`. El nivel se calcula como `likelihood × impact`, ambos en escala 1–5.
+
+| Producto | Nivel |
+|---|---|
+| 1–5 | Low |
+| 6–12 | Medium |
+| 13–19 | High |
+| 20–25 | Critical |
+
+```bash
+python vault_risk_save.py --project my-api \
+  --title "SQL injection en búsqueda" \
+  --risk_type security --likelihood 3 --impact 5 \
+  --treatment mitigate \
+  --controls '["Parametrized queries","Input validation","WAF"]'
+```
+
+---
+
+### `vault_privacy_save.py`
+Inventario de tratamiento de datos PII (ISO 27701 / GDPR) en `02_Observability/privacy/`. `--purpose` y `--legal_basis` son obligatorios: un tratamiento sin finalidad ni base legal declaradas no es documentable, es un hallazgo.
+
+```bash
+python vault_privacy_save.py --project my-api \
+  --title "Registro de usuarios" \
+  --purpose "Autenticación y gestión de cuenta" \
+  --legal_basis contract \
+  --pii_categories '["name","email","phone"]' \
+  --retention_period "24 meses tras baja" \
+  --dpia_required false
+```
+
+---
+
+### `vault_ncr_save.py`
+Registra no conformidades y acciones correctivas (ISO 9001:2015 §10.2) en `02_Observability/ncr/`.
+
+```bash
+python vault_ncr_save.py --project my-api \
+  --title "API no valida input en /search" \
+  --ncr_type process --severity major \
+  --detected_by code_review \
+  --root_cause "Falta validación en la capa de entrada" \
+  --corrective_actions '["Schema validation","Test de regresión"]' \
+  --target_date 2026-08-15 --owner "equipo-api"
+```
+
+---
+
+## Grupo 31 — Bootstrap
+
+### `vault_init.py`
+Levanta un vault vacío en un comando: crea las carpetas estándar, aplica las migraciones hasta la versión objetivo, indexa todo, genera las notas hub/commands y reporta el health score.
+
+```bash
+python vault_init.py                    # versión por defecto
+python vault_init.py --target v39.0     # versión concreta del estándar
+python vault_init.py --no-audit         # omite el vault_audit final
+```
+
+`--clean` **borra todo el contenido del vault actual** antes de inicializar (salvo `.locks`). No se ejecuta sin haber mirado antes qué hay en el destino.
+
+---
+
+## Grupo 32 — Gestión de Carpetas
+
+### `vault_folder_registry.py`
+Registro de carpetas fuera de las estándar. Mantiene `00_System/custom-folders.json` para que una carpeta creada a mano no quede invisible para los índices, el audit y el grafo.
+
+```bash
+python vault_folder_registry.py --scan          # detecta carpetas nuevas
+python vault_folder_registry.py --list
+python vault_folder_registry.py --add "11_Code/tests"
+python vault_folder_registry.py --remove "11_Code/tests"
+python vault_folder_registry.py --cleanup       # quita del registro las que ya no existen
 ```
 
 ---
@@ -1186,7 +1494,7 @@ Tooling interno para generación y validación del estándar. No forman parte de
 | `vault_test_runner.py` | Suite de smoke tests, contract tests y error taxonomy tests |
 | `vault_spec_memory.py` | Genera `00_System/spec-memory.json` — contratos + trazabilidad F1–F8 + estado DQ |
 | `vault_sdd_init.py` | Inicializa documentación SDD (spec-driven documentation) |
-| `vault_mcp_catalog.py` | Catálogo canónico de tools en Python — fuente de verdad. Usar `--sync` para exportar a JSON |
+| `vault_mcp_catalog.py` | Catálogo canónico de tools en Python — fuente de verdad. `--sync` exporta a JSON; `--check-contracts` verifica catálogo ↔ `tool-spec.json`; `--check-params` verifica catálogo ↔ `argparse` real (AP-40) |
 | `vault_mcp.py` | Orquestador MCP en Python (alternativa al monolito Node.js) |
 | `vault_mcp_context.py` | Generación de contexto MCP para agentes |
 
@@ -1217,13 +1525,23 @@ python vault_audit.py                              # 8. healthScore ≥ baseline
 
 ---
 
-## MCP Server Monolith (v37)
+## MCP Server Monolith (v39)
 
 El vault expone sus herramientas como un **servidor MCP** que las IAs consumen directamente sin registro en harness.
 
 **Archivo:** `../mcp/nodejs/vault-mcp-server.mjs` (~1650 líneas, cero dependencias npm)  
 **Plan:** `../mcp/PLAN.md` — documento de evidencia con 8 fases de implementación
-**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (76 tools)
+**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (88 tools)
+
+Los parámetros que el catálogo publica **se derivan del `argparse` de cada script**,
+no se escriben a mano: el servidor compone `--<param>` literal, así que un param
+que la CLI no acepta es una tool que falla siempre (AP-40). `--check-params`
+audita el JSON generado contra el `argparse` real y `--sync` lo repara.
+
+```bash
+python vault_mcp_catalog.py --check-params    # AP-40: params publicados vs argparse
+python vault_mcp_catalog.py --sync            # heal
+```
 
 ### Modos de uso
 
@@ -1261,7 +1579,7 @@ node mcp/nodejs/vault-mcp-server.mjs --port 3000
 
 ### `vault_norms.py`
 
-Registro canónico de las 43 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
+Registro canónico de las 56 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
 
 ```bash
 python vault_norms.py                             # catálogo completo
@@ -1274,6 +1592,170 @@ python vault_norms.py --check-framework           # guard anti-drift: el manifie
 ```
 
 `--check-framework` se ejecuta contra `vault-obsidian-architecture.md` (raíz del repo del estándar) o contra `--spec <ruta>`. Es deliberadamente independiente de `--audit`: los vaults consumidores no contienen el manifiesto y no deben fallar por ello.
+
+### `vault_code_tag.py`
+Aplica etiquetas al **código fuente**, no a las notas: `@norm` para vincular un archivo con una norma del estándar (o con una etiqueta propia), y `@vault:` para apuntar desde el código a la nota que lo documenta. Es el extremo del lado del código de la trazabilidad que `vault_code_sync` audita.
+
+```bash
+python vault_code_tag.py --define cr-0989 --name "Cola de prioridad" --description "FIFO con pesos"
+python vault_code_tag.py --apply cr-0989 --file "src/services/colas.cs"
+python vault_code_tag.py --apply AP-22 --file "scripts/vault_write.py"
+python vault_code_tag.py --link-vault "11_Code/my-api/colas" --file "src/services/colas.cs"
+python vault_code_tag.py --scan --file "src/services/colas.cs"
+python vault_code_tag.py --list --prefix cr
+```
+
+---
+
+### `vault_doc_counts.py`
+
+Guard anti-drift de **cifras escritas a mano** en la documentación. Cada número que describe el estándar (cuántas tools activas hay, cuántas normas, cuántas secciones) es una mentira futura: se escribe una vez, deja de ser cierto en el commit siguiente y nadie lo nota. Esta tool invierte la relación — la cifra vive en el registro canónico y el documento se comprueba contra él.
+
+Hechos vigilados: `tools_active`, `groups`, `norms_total`, `norms_ap`, `sections`, `scripts`, `tests`. Documentos vigilados: `README.md`, `CLAUDE.md`, `docs/SKILLS.md`, `scripts/README.md`, `vault-obsidian-architecture.md`.
+
+```bash
+python vault_doc_counts.py --list             # valores vivos derivados del registro
+python vault_doc_counts.py --check            # reporta cada cifra que diverge
+python vault_doc_counts.py --check --strict   # exit 1 si algo miente (gate de CI)
+python vault_doc_counts.py --fix              # reescribe solo el número, no la frase
+python vault_doc_counts.py --check --no-slow  # omite el conteo de tests (lanza pytest)
+```
+
+**El changelog y la tabla de versiones quedan fuera del escaneo.** "76 tools" dentro de la entrada de v37 es historia correcta, no drift; reescribirla sería derogar el registro histórico. Los patrones son deliberadamente específicos por el mismo motivo: `"N normas"` a secas también casa con "las 14 normas manuales eliminadas", que es otro hecho. Un patrón laxo produce falsos positivos y el guard acaba desactivado — que es como mueren los guards.
+
+### `vault_doc_sync.py`
+
+Guard anti-drift de **nombres**. `vault_doc_counts` vigila las cifras; esta vigila que la referencia de tools no se quede atrás del catálogo. Comprueba que toda tool tenga su sección `###`, que toda clave de `GROUPS` tenga su `## Grupo N`, y que el índice tenga exactamente una fila por sección con el ancla resuelta.
+
+El síntoma que la originó, medido en v39: diecinueve tools sin sección propia en este mismo archivo, un índice con 30 filas para 36 grupos, y la fila "Grupo 34 — Gestión de Carpetas" apuntando a un ancla inexistente (la sección 34 real es Memoria de Contexto). Un enlace roto dentro del propio documento, estable durante versiones enteras, porque nada lo comprobaba.
+
+```bash
+python vault_doc_sync.py --check
+python vault_doc_sync.py --check --strict   # exit 1 si el README se quedó atrás (gate de CI)
+python vault_doc_sync.py --fix              # regenera la tabla de índice desde GROUPS
+```
+
+El encabezado de cada grupo usa la **clave literal de `GROUPS`**, no un título propio. Es deliberado: llegaron a convivir tres vocabularios de grupo (la etiqueta `group` de cada tool, la clave de `GROUPS` y el título del README) y ninguno fallaba al divergir. `--fix` regenera el índice pero **no escribe prosa**: una tool nueva sin sección se reporta, no se inventa.
+
+---
+
+### `vault_noop_audit.py`
+
+**AP-37 — no-op silencioso.** Detecta tools con side effects declarados que no exponen ningún **indicador de trabajo**: un campo cuyo valor distinga "hice N cosas" de "no hice nada". `ok: true` a secas es una afirmación no falsable.
+
+El síntoma que originó la norma: `vault_standard_upgrade --to latest` devolvía `{"ok": true}` habiendo aplicado cero migraciones, y el bug sobrevivió versiones enteras porque su respuesta era indistinguible de un éxito real.
+
+```bash
+python vault_noop_audit.py --check            # estado de la deuda AP-37
+python vault_noop_audit.py --check --strict   # exit 1 si la deuda CRECIÓ (gate de CI)
+python vault_noop_audit.py --freeze           # recongela scripts/noop-baseline.json
+```
+
+**Baseline, no guard duro.** Casi todas las tools con side effects nacieron sin indicador; un guard que falla en decenas de sitios se desactiva el primer día. El conteo vivo lo da `--check`, no este README. La baseline congela la deuda conocida y solo puede **encoger**: toda tool nueva nace conforme, y la que se corrige sale de la lista y ya no puede volver a entrar. Tras saldar deuda hay que ejecutar `--freeze` para que el gate no la readmita.
+
+---
+
+### `vault_smoke.py`
+
+**AP-42 — tool publicada sin haberse ejecutado nunca.** `--help` demuestra que el `argparse` se construye. No demuestra que el módulo importe sus dependencias, ni que el ejemplo documentado sea aceptado por la CLI, ni que la salida sea el JSON que el contrato promete.
+
+Ejecuta el `example` del catálogo de cada tool contra una **copia desechable** del vault de pruebas y exige tres cosas, deliberadamente pocas: que termine, que su salida sea JSON y que ese JSON tenga `ok`.
+
+```bash
+python vault_smoke.py --check              # barrido completo sobre el catálogo
+python vault_smoke.py --check --strict     # exit 1 si la deuda CRECIÓ (gate de CI)
+python vault_smoke.py --tool vault_write   # una sola tool
+python vault_smoke.py --freeze             # recongela scripts/smoke-baseline.json
+```
+
+**Un `ok: false` bien formado aprueba.** El ejemplo apunta a rutas que el sandbox no tiene, y rechazarlas educadamente *es* el contrato. Lo que se persigue es el fallo mudo: el traceback, el stdout vacío, el cuelgue.
+
+**La primera medición encontró 41 de 87 tools fallando** — 36 porque el ejemplo documentado usaba flags que la propia CLI rechazaba, que es AP-40 trasladado a la superficie de documentación, y el resto por contrato de salida o por comillas sin cerrar en el `example`. Todas quedaron corregidas, así que la baseline nació en **0** y la norma es un guard duro desde el primer día, sin deuda que readmitir.
+
+Las tools sin invocación posible (un servicio HTTP que por diseño no retorna) se declaran en `SIN_SMOKE` **con su motivo**. Una exención silenciosa sería el mismo fallo que la norma persigue.
+
+---
+
+### `vault_voice.py`
+
+**AP-43 — norma sin refuerzo en el punto de uso.** El catálogo de normas está completo, versionado y con guards, y aun así el agente que documenta el vault no lo tiene delante mientras trabaja: se entera de que una norma existe cuando la incumple, y solo si es una de las que previenen en vez de una de las que se limitan a detectar en un audit que puede no correrse nunca.
+
+`vault_errors.wrap_main` —el único punto por el que ya pasa la salida de todas las tools— añade a cada resultado un bloque **`vault_says`** derivado de `NORM_CATALOG` y del estado real de esa llamada:
+
+```json
+"vault_says": {
+  "moment": "wrote",
+  "message": "Acabas de cambiar lo que soy. 4 notas en disco, y eso queda en mi historial. Recuerda AP-14 — Wiki-links rotos o vacíos: ...",
+  "focus": "AP-14",
+  "norms": ["AP-11 — ...", "AP-41 — ...", "..."],
+  "next": "python scripts/vault_norms.py --audit"
+}
+```
+
+Tres momentos, y el vault habla de lo que acaba de pasar, no de una regla abstracta:
+
+| `moment` | Cuándo | Qué refuerza |
+|---|---|---|
+| `blocked` | una norma frenó la llamada | esa norma exacta, y que el rechazo *es* la norma funcionando |
+| `wrote` | hubo escrituras (ledger AP-37) | cuántas notas cambiaron y qué mirar después |
+| `read` | no cambió nada | una norma de la tool, rotando, con su señal de incumplimiento |
+
+El foco **rota** entre las normas que gobiernan esa tool: repetir siempre la misma la vuelve invisible a la segunda semana.
+
+```bash
+python vault_voice.py --tool vault_write   # las 17 normas que gobiernan la escritura
+python vault_voice.py --coverage           # normas que NINGUNA tool pronuncia
+```
+
+`VAULT_VOICE=0` silencia el bloque; `VAULT_VOICE=verbose` añade descripción, señal y prevención de cada norma. Un fallo de la voz nunca puede romper una tool: se traga y la tool responde igual.
+
+**Por qué vive en `wrap_main` y no en cada tool.** Una capa de refuerzo que hubiera que invocar tool por tool sería exactamente el registro-que-nadie-consume que esta norma existe para evitar — el fallo característico de este repo. `--coverage` cierra el círculo por el otro lado: una norma sin `tools_enforcing` ni `tools_detecting` no se pronuncia jamás, y el audit la nombra.
+
+---
+
+## Grupo 36 — Defectos y Cuarentena
+
+Las dos secciones que este grupo alimenta no salen de un diseño a priori: salen de medir 17 vaults reales en producción. Los agentes ya estaban escribiendo estas cosas; al no existir sección, las repartían entre `02_Observability`, `07_Knowledge` y carpetas inventadas sobre la marcha (`docs/`, `scripts/`, `certificates/`). **Una nota sin sitio no desaparece: aparece en cualquier sitio.**
+
+### `vault_bug_save.py`
+
+**El ciclo del defecto, entero y enlazado (`18_Bugs/`).** Un error es un *evento observado* —esto falló, aquí está el stack trace, y para eso está `02_Observability/errors`. Un bug es un *defecto que se persigue hasta cerrarlo*.
+
+Sin sección propia, el ciclo se repartía en tres notas sin nada que las uniera: el síntoma en `02_Observability/errors`, la causa raíz en `07_Knowledge`, la corrección en `03_Decisions`. El juicio de que "este defecto lo causó aquella decisión" vivía en la cabeza de quien lo vio y se perdía al cerrar la sesión.
+
+```bash
+python vault_bug_save.py --project mi-api --title "Token numérico coercionado" \
+    --symptom "El literal 0.5 llega al CSS como '0.5px' y el layout salta" \
+    --status open --severity high --agent claude
+
+python vault_bug_save.py --project mi-api --title "Coerción de unidades CSS" \
+    --phase root-cause --symptom "..." --causes token-numeric-coercion --agent claude
+```
+
+- **`--phase` determina la subcarpeta** (`open/`, `root-causes/`, `fixed/`), así que el estado no puede mentir sobre dónde vive la nota: una nota `fixed` en `open/` es imposible por construcción.
+- **`--causes` / `--caused-by` son aristas tipadas**, no un `related` genérico. Es la diferencia entre "estas dos notas se mencionan" y "esta explica aquella" — y solo la segunda permite navegar hacia atrás desde el síntoma hasta el origen.
+- **Síntoma obligatorio**: un bug sin síntoma observable no es reproducible y no se puede cerrar.
+- `cia_integrity: high` mientras el defecto siga abierto: un bug vivo compromete la integridad de lo que el vault documenta.
+
+### `vault_quarantine.py`
+
+**Retener sin borrar (`20_Quarantine/`).** Existe porque **la alternativa a retener no es limpiar: es borrar**. Una nota sin sección determinable, o que disparó el pre-vuelo anti-poisoning, o que puede ser duplicado de otra, tiene que salir del camino sin desaparecer. Sin un sitio donde ponerla, la única salida operativa es `rm` — y eso contradice la política de no-derogación del estándar.
+
+```bash
+python vault_quarantine.py --add "07_Knowledge/rara.md" \
+    --reason "Sin frontmatter y origen desconocido" --category unclassified --agent claude
+
+python vault_quarantine.py --list --category suspicious
+python vault_quarantine.py --restore "20_Quarantine/unclassified/rara.md" --agent claude
+```
+
+Tres propiedades que la hacen segura:
+
+- **La nota se mueve, no se copia.** Dos copias de una nota dudosa es peor que una: la que queda fuera se sigue leyendo como contexto válido.
+- **El origen se guarda dos veces** — en el frontmatter de la nota y en el ledger append-only. Si el ledger se corrompe, la nota sigue sabiendo de dónde salió; una cuarentena de la que no se sale es una papelera con otro nombre.
+- **La razón es obligatoria**, y restaurar sobre un origen ocupado falla en vez de sobrescribir.
+
+`status` no se toca al retener: el estado de la nota no cambió por estar en cuarentena, y sobrescribirlo destruiría el dato que quizá haga falta para clasificarla.
 
 ---
 

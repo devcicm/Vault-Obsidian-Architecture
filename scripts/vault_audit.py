@@ -45,7 +45,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-from vault_io import VAULT_ROOT, normalize_stem as _normalize
+from vault_io import VAULT_ROOT, is_snapshot_path, normalize_stem as _normalize
 from vault_regex import (
     detect_bracket_anomalies,
     RE_NESTED_OPEN_3,
@@ -163,7 +163,24 @@ def _note_updated_at(path: Path) -> datetime:
     return datetime.fromtimestamp(path.stat().st_mtime)
 
 
-def _extract_wiki_links(content: str) -> List[str]:
+def _extract_wiki_links(
+    content: str, known: Optional[Set[str]] = None
+) -> List[str]:
+    """Wikilinks del contenido, descartando placeholders de plantilla.
+
+    `known` son los stems normalizados de las notas que existen de verdad. Un
+    enlace cuyo destino existe NO es un placeholder, por mucho que empiece por
+    uno de los prefijos: `PLACEHOLDER_PATTERNS` casa por `startswith`, asi que
+    `patron`, `nombre`, `imagen`, `express`... se tragaban todo enlace a una
+    nota real cuyo nombre empezara asi. En el vault de BuilderX eso dejaba
+    `patron-dsl-compilacion`, `patron-mcp-streaming` y
+    `patron-blastmode-weavingmode` reportados como huerfanos con 6, 8 y 2
+    enlaces entrantes respectivamente.
+
+    Es AP-44: la tool decidia con criterio propio que algo no era un enlace, en
+    vez de preguntarle al vault si el destino existe. Sin `known` el
+    comportamiento es el de antes, que es el correcto para una plantilla vacia.
+    """
     content_clean = re.sub(r"```[\s\S]*?```", "", content)
 
     content_clean = re.sub(r"`[^`]+`", "", content_clean)
@@ -179,7 +196,9 @@ def _extract_wiki_links(content: str) -> List[str]:
         if link.startswith("http") or link.startswith("#"):
             continue
 
-        if any(link.lower().startswith(ph) for ph in PLACEHOLDER_PATTERNS):
+        if not (known and _normalize(link) in known) and any(
+            link.lower().startswith(ph) for ph in PLACEHOLDER_PATTERNS
+        ):
             continue
 
         links.append(link)
@@ -204,6 +223,36 @@ def _normalize(s: str) -> str:
     )
 
 
+def _is_snapshot(p: Path) -> bool:
+    """True si la nota vive en una instantanea congelada del vault.
+
+    Relativo a `VAULT_ROOT`, no absoluto: con la ruta absoluta, un directorio
+    ancestro FUERA del vault llamado `.trash` excluiria el vault entero en
+    silencio. Fuera de la raiz no hay nada que excluir.
+    """
+    try:
+        return is_snapshot_path(p.relative_to(VAULT_ROOT))
+    except ValueError:  # pragma: no cover -- rglob siempre cuelga de la raiz
+        return False
+
+
+def _aliases_de(p: Path) -> List[str]:
+    """Alias declarados en el frontmatter, tolerando forma escalar.
+
+    Obsidian acepta `aliases: nombre` ademas de la lista; leer solo la lista
+    dejaria fuera enlaces que el lector resuelve. Un frontmatter ilegible no es
+    motivo para fallar un audit: se devuelve vacio.
+    """
+    try:
+        fm = read_frontmatter(p) or {}
+    except Exception:
+        return []
+    raw = fm.get("aliases") or fm.get("alias") or []
+    if isinstance(raw, str):
+        raw = [raw]
+    return [a for a in raw if isinstance(a, str) and a.strip()]
+
+
 def _build_indexes(notes: List[Path]) -> Tuple[Dict[str, Set[str]], Set[str]]:
     """Build backlink index and full-vault stem set for broken-link detection."""
 
@@ -215,7 +264,11 @@ def _build_indexes(notes: List[Path]) -> Tuple[Dict[str, Set[str]], Set[str]]:
     all_stems: Set[str] = set()
 
     for n in VAULT_ROOT.rglob("*.md"):
-        if ".history" not in str(n):
+        # `.history` era la unica exclusion; `vault-backups/` y `.trash/` entraban,
+        # y con ellas los enlaces de instantaneas congeladas. `is_snapshot_path`
+        # centraliza el criterio en `vault_io` (AP-36): los side-effects viven
+        # dentro del vault, asi que todo barrido debe saber distinguirlos.
+        if not _is_snapshot(n):
             all_stems.add(_normalize(n.stem))
             # Register folder/stem paths: [[section/note]] resolves even if stem alone not unique
             try:
@@ -225,6 +278,14 @@ def _build_indexes(notes: List[Path]) -> Tuple[Dict[str, Set[str]], Set[str]]:
                     all_stems.add(_normalize(folder_stem))
             except ValueError:
                 pass
+            # Obsidian resuelve `[[X]]` por nombre de fichero O por `aliases:`,
+            # nunca por `title:`. Sin leer los alias, el audit declaraba roto todo
+            # enlace que usara el nombre legible de una nota — 46 instancias en el
+            # vault de BuilderX que Obsidian abre sin problema. Un contador que
+            # no modela la resolucion real del lector manda a reescribir enlaces
+            # que funcionan.
+            for alias in _aliases_de(n):
+                all_stems.add(_normalize(alias))
 
     backlinks: Dict[str, Set[str]] = defaultdict(set)
 
@@ -235,7 +296,7 @@ def _build_indexes(notes: List[Path]) -> Tuple[Dict[str, Set[str]], Set[str]]:
         except Exception:
             continue
 
-        for link in _extract_wiki_links(content):
+        for link in _extract_wiki_links(content, known=all_stems):
             target_key = _normalize(link)
 
             if target_key in stem_map:
@@ -391,7 +452,7 @@ def _detect_broken_links(
     # because stem-only normalization doesn't match the full path.
     all_paths: Set[str] = set()
     for n in VAULT_ROOT.rglob("*.md"):
-        if ".history" not in str(n):
+        if not _is_snapshot(n):
             rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
             # Add both with and without .md extension
             all_paths.add(rel.lower())
@@ -416,7 +477,7 @@ def _detect_broken_links(
         except Exception:
             continue
 
-        for link in _extract_wiki_links(content):
+        for link in _extract_wiki_links(content, known=all_stems):
             if _normalize(link) in all_stems:
                 continue
 
@@ -942,6 +1003,55 @@ def _detect_graph_knowledge_antipatterns() -> Dict[str, Any]:
     return result
 
 
+def _frontmatter_de(bloque: str) -> Dict[str, Any]:
+    """Frontmatter de un bloque YAML, con degradación a lectura por líneas.
+
+    El audit tenía su propio mini-parser: `^(\\w[\\w_-]*):\\s*(.+)$` línea a
+    línea. Un campo en forma de lista —
+
+        tags:
+          - bug
+          - error
+
+    — no casa, porque la línea `tags:` no tiene valor. El campo quedaba como
+    ausente y AP-26 reportaba "sin tags" sobre notas correctamente etiquetadas:
+    45 de ellas en BuilderX, a -2 puntos de health score cada una. El vocabulario
+    en bloque es la forma que escriben `vault_write` y `vault_tags`, así que el
+    audit no veía lo que el propio estándar produce.
+
+    Se usa YAML primero. El regex se conserva como red: `yaml.safe_load` devuelve
+    `{}` ante un frontmatter mal formado (un `title:` con dos puntos sin comillas
+    basta), y en ese caso leer algo por líneas es mejor que declarar la nota
+    entera sin metadatos.
+    """
+    datos: Dict[str, Any] = {}
+    try:
+        import yaml
+
+        cargado = yaml.safe_load(bloque)
+        if isinstance(cargado, dict):
+            # A texto los tipos que YAML materializa y `json.dumps` no sabe
+            # escribir: `date: 2026-07-12` sin comillas llega como
+            # `datetime.date` y reventaba la serialización del informe entero.
+            # El audit solo mira presencia y título, así que el texto basta.
+            datos = {
+                k: (v if isinstance(v, (str, int, float, bool, list, dict)) else str(v))
+                for k, v in cargado.items()
+                if v is not None
+            }
+    except Exception:
+        datos = {}
+
+    if datos:
+        return datos
+
+    for line in bloque.split("\n"):
+        kv = re.match(r"^(\w[\w_-]*):\s*(.+)$", line)
+        if kv:
+            datos[kv.group(1)] = kv.group(2).strip()
+    return datos
+
+
 def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]]]:
     """AP-16/26/27/29/30: detect notes missing required frontmatter fields.
 
@@ -961,16 +1071,20 @@ def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]
         except Exception:
             continue
         rel = str(p.relative_to(VAULT_ROOT)).replace("\\", "/")
-        is_index = rel.endswith("/index.md") or rel == "index.md"
+        # Todo `99_Index/` es artefacto derivado — lo escriben `vault_reindex` y
+        # `vault_tags` a partir de las notas, y se regenera entero en cada
+        # ejecución. Exigirle tags o `type` a `tag-index.md` pide metadatos a un
+        # informe: se perderían en la siguiente regeneración. Antes solo se
+        # libraban los `index.md`, así que el índice de tags quedaba señalado.
+        is_index = (
+            rel.endswith("/index.md") or rel == "index.md" or rel.startswith("99_Index/")
+        )
         is_system = rel.startswith("00_System/") or rel == "00_System"
 
         fm = {}
         m = re.match(r"^---\s*\n(.*?)\n---", raw, re.DOTALL)
         if m:
-            for line in m.group(1).split("\n"):
-                kv = re.match(r"^(\w[\w_-]*):\s*(.+)$", line)
-                if kv:
-                    fm[kv.group(1)] = kv.group(2).strip()
+            fm = _frontmatter_de(m.group(1))
         else:
             if not is_index:
                 missing_frontmatter.append({"path": rel, "title": p.stem})

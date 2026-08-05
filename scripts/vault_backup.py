@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from vault_errors import wrap_main
-from vault_io import atomic_write_json, VAULT_ROOT
+from vault_io import atomic_write_json, VAULT_ROOT, write_report
 from vault_lib import utcnow
 
 # AP-36 (contención): los backups viven DENTRO del vault. Antes era
@@ -189,6 +189,7 @@ def vault_backup(label: Optional[str] = None) -> Dict[str, Any]:
     save_registry(registry)
     return {
         "ok": True,
+        **write_report(),
         "name": backup_name,
         "path": str(backup_path.relative_to(VAULT_ROOT)).replace("\\", "/") + "/",
         "manifest": manifest_data,

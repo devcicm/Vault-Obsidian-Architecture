@@ -40,12 +40,13 @@ from typing import Any, Dict, List, Optional
 from vault_errors import wrap_main
 from vault_lib import utcnow
 from vault_io import (
+    write_report,
     VAULT_ROOT,
     assert_within_vault,
     atomic_write_text,
     update_section_index,
 )
-from vault_norms import compute_norm_refs
+from vault_norms import compute_norm_refs, status_frontmatter_lines
 
 FOLDER = "02_Observability/quality"
 
@@ -235,7 +236,7 @@ _¿Qué cambio sistémico previene esta categoría de no conformidad en el futur
         f"ncr_type: {ncr_type}",
         f"severity: {severity}",
         f"detected_by: {detected_by}",
-        f"status: {status}",
+        *status_frontmatter_lines("vault_ncr_save", status),
         f"owner: {json.dumps(owner)}",
         f"target_date: {json.dumps(target_date)}",
         f"corrective_actions_count: {len(corrective_actions)}",
@@ -257,6 +258,7 @@ _¿Qué cambio sistémico previene esta categoría de no conformidad en el futur
 
     return {
         "ok": True,
+        **write_report(),
         "path": str(path.relative_to(VAULT_ROOT)).replace("\\", "/"),
         "ncr_id": ncr_id,
         "project": project,

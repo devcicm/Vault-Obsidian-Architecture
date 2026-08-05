@@ -34,9 +34,11 @@ import shutil
 
 import sys
 
+import vault_tags
 from vault_errors import wrap_main
 
 from vault_io import (
+    write_report,
     atomic_write_text,
     atomic_write_json,
     atomic_update_json,
@@ -58,8 +60,20 @@ from vault_regex import (
     fix_whitespace_in_links,
     WIKILINK_MAX_LEN,
 )
-from vault_lib import utcnow, strip_code_blocks, Config
-from vault_norms import compute_norm_refs
+from vault_lib import (
+    utcnow,
+    strip_code_blocks,
+    Config,
+    parse_frontmatter_with_body,
+    canonical_utc,
+)
+from vault_norms import (
+    compute_norm_refs,
+    normalize_status,
+    STATUS_VOCAB,
+    STATUS_TRANSITIONS,
+)
+from datetime import datetime, timezone
 
 import uuid
 
@@ -212,13 +226,10 @@ def _tag_suggestions(new_tags: List[str]) -> List[Dict[str, Any]]:
     if not TAG_REGISTRY.exists():
         return []
 
-    try:
-        registry = json.loads(TAG_REGISTRY.read_text(encoding="utf-8"))
-
-    except Exception:
-        return []
-
-    canonical: set = set(registry.get("tags", {}).keys())
+    # AP-39 — leía `registry["tags"]`, una clave que el registro no tiene desde
+    # que las facetas viven en `canonical_tags`. La sugerencia llevaba versiones
+    # sin dispararse nunca, y por eso inventar un tag no costaba nada.
+    canonical: set = set(vault_tags.canonical_tags())
 
     suggestions = []
 
@@ -252,7 +263,6 @@ def _tag_suggestions(new_tags: List[str]) -> List[Dict[str, Any]]:
                         "new_tag": tag,
                         "similar_canonical": candidate,
                         "score": round(score, 2),
-                        "count": registry["tags"].get(candidate, {}).get("count", 0),
                     }
                 )
 
@@ -317,7 +327,27 @@ def generate_frontmatter(
 ) -> str:
     """Generate YAML frontmatter with v37-compliant metadata (type + status + CIA + agent + norm_refs)."""
 
-    meta = meta or {}
+    meta = dict(meta or {})
+
+    # AP-38 — normalizar antes de escribir, no auditar después.
+    #
+    # CN-03 audita `status` contra `STATUS_VOCAB` desde v38, y aun así en el
+    # parque real hay 54 valores distintos de los que solo el 6% es canónico.
+    # El motivo es estructural: `status` llegaba aquí dentro de `meta` y salía
+    # tal cual por el bucle genérico del final, sin pasar por ningún control, y
+    # el audit que lo habría detectado no lo ejecuta nadie. Se corrige en el
+    # único punto por el que pasa toda escritura.
+    status_note = None
+    if "status" in meta:
+        canonico, status_note, _regla = normalize_status(meta["status"])
+        if canonico is None:
+            raise ValueError(
+                f"status {meta['status']!r} no pertenece al vocabulario canónico "
+                f"(CN-03) ni se puede derivar de él. Usa uno de "
+                f"{sorted(STATUS_VOCAB)} — inventar un estado lo propaga a cada "
+                f"nota que lo copie."
+            )
+        meta["status"] = canonico
 
     frontmatter = ["---"]
 
@@ -338,9 +368,17 @@ def generate_frontmatter(
         if deduced:
             frontmatter.append(f"type: {deduced}")
 
-    # v37: status defaults to draft if not provided in meta
-    if "status" not in meta:
-        frontmatter.append("status: draft")
+    # v37: status defaults to draft if not provided in meta.
+    # v39: se emite siempre en esta posición — antes, un `status` que venía en
+    # `meta` salía por el bucle genérico del final y quedaba detrás del CIA y de
+    # `agent`. El campo era el mismo pero el orden no, y un formato que depende
+    # de por dónde entró el dato no es un formato.
+    frontmatter.append(f"status: {meta.pop('status', 'draft')}")
+
+    # Lo que el valor original arrastraba y no era estado (progreso, versión en
+    # que se resolvió, fecha) se conserva aquí en vez de perderse al normalizar.
+    if status_note:
+        frontmatter.append(f"status_note: {status_note}")
 
     if norm_refs:
         frontmatter.append(f"norm_refs: {json.dumps(norm_refs)}")
@@ -579,6 +617,12 @@ def vault_write(
             "Provide at least one tag via --tags. Index and system notes exempt.",
         }
 
+    # AP-39: resolver el vocabulario ANTES de escribir. Colapsa lo que es la
+    # misma palabra (acentos, mayúsculas, separadores, plural) contra el
+    # registro canónico; un término que no está no se rechaza — se admite y se
+    # anota más abajo, una vez la escritura está confirmada.
+    tags, new_terms = vault_tags.apply_vocabulary(tags)
+
     # AP-16 guard: agent field required
     if not meta.get("agent") and not is_system:
         agent_env = os.environ.get("VAULT_AGENT", "")
@@ -617,6 +661,8 @@ def vault_write(
 
     existing_created = None
 
+    existing_status = None
+
     existing_content = ""
 
     # If note exists, backup to history
@@ -635,6 +681,25 @@ def vault_write(
         existing_content = vault_path.read_text(encoding="utf-8")
 
         atomic_write_text(history_path, existing_content)
+
+        # AP-41 — la identidad de la nota se lee AQUÍ, en la rama en la que la
+        # nota existe.
+        #
+        # Esta extracción vivía en el `else` de abajo, es decir en la rama en la
+        # que la nota **no** existe y `existing_content` es la cadena vacía: la
+        # regex no encontraba nada nunca. Consecuencia medida en el sandbox: cada
+        # actualización acuñaba un `id` nuevo y reseteaba `createdAt`, así que la
+        # nota perdía su identidad en cada escritura y ninguna referencia por id
+        # sobrevivía. El campo estaba en el frontmatter, el código para leerlo
+        # estaba escrito, y no se ejecutaba jamás.
+        fm_previo, _ = parse_frontmatter_with_body(existing_content)
+        fm_previo = fm_previo or {}
+        existing_id = str(fm_previo.get("id") or "") or None
+        # `createdAt` vuelve del parser como `...+00:00` cuando en disco estaba
+        # como `...000Z`: se re-canoniza para que releer y reescribir no cambie
+        # la forma del campo.
+        existing_created = canonical_utc(fm_previo.get("createdAt")) or None
+        existing_status = str(fm_previo.get("status") or "") or None
 
     # Check if note exists in a different folder (auto-move suggestion)
     else:
@@ -660,22 +725,48 @@ def vault_write(
             except Exception:
                 pass
 
-        # Extract existing frontmatter data
+        # La extracción del frontmatter previo estaba aquí, dentro de la rama en
+        # la que la nota no existe: no había nada que extraer. Vive ahora en la
+        # rama de arriba (AP-41), con el parser compartido en vez de una regex
+        # propia — dos lectores del mismo campo es lo que ya costó una vez.
 
-        frontmatter_match = re.match(r"^---\n(.*?)\n---", existing_content, re.DOTALL)
-
-        if frontmatter_match:
-            for line in frontmatter_match.group(1).split("\n"):
-                if ":" in line:
-                    key, value = line.split(":", 1)
-
-                    value = value.strip().strip("\"'")
-
-                    if key == "id":
-                        existing_id = value
-
-                    elif key == "createdAt":
-                        existing_created = value
+    # ── AP-41: la máquina de estados se verifica, no solo se declara ──────────
+    #
+    # `STATUS_TRANSITIONS` estaba escrita y bien formada desde v38, y su único
+    # consumidor en todo el repo era su propio test de coherencia: nadie la
+    # recorría. Un estado que no controla su transición es una etiqueta, no un
+    # ciclo de vida — `archived` podía volver a `draft` sin que nada lo viera.
+    if existing_status:
+        # Una actualización que no menciona `status` no lo está cambiando. Antes
+        # caía al default `draft` de generate_frontmatter, así que tocar una nota
+        # `verified` para corregir una frase la degradaba a borrador en silencio.
+        if "status" not in meta:
+            meta["status"] = existing_status
+        else:
+            previo, _n, _r = normalize_status(existing_status)
+            destino, _n2, _r2 = normalize_status(meta["status"])
+            # Si el estado previo no es canónico (deuda anterior a AP-38) no hay
+            # máquina que recorrer: se deja pasar y lo reporta el audit.
+            if previo and destino and previo != destino:
+                permitidos = STATUS_TRANSITIONS.get(previo, set())
+                if destino not in permitidos:
+                    return {
+                        "ok": False,
+                        "error_code": "illegal_status_transition",
+                        "error": "illegal_status_transition",
+                        "norm_code": "AP-41",
+                        "norm_name": "Máquina de estados declarada sin verificar",
+                        "message": (
+                            f"AP-41: transición {previo!r} -> {destino!r} no está en "
+                            f"STATUS_TRANSITIONS. Desde {previo!r} solo se puede pasar a "
+                            f"{sorted(permitidos) or ['(ninguno: estado terminal)']}. "
+                            f"Si el salto es correcto, la que está mal es la máquina: "
+                            f"corrígela en vault_norms.STATUS_TRANSITIONS, no la nota."
+                        ),
+                        "from_status": previo,
+                        "to_status": destino,
+                        "allowed": sorted(permitidos),
+                    }
 
     # Create folder if not exists
 
@@ -695,8 +786,14 @@ def vault_write(
 
     # Generate frontmatter and write file (with file lock to prevent concurrent write data loss)
 
+    # El id se decide aquí, una sola vez, y es el que va al frontmatter Y al
+    # resultado. Antes `generate_frontmatter` acuñaba un uuid4 y el resultado
+    # acuñaba otro: el id que la tool devolvía no era el de la nota, así que
+    # cualquier agente que lo guardara guardaba una referencia inexistente.
+    nota_id = existing_id or str(uuid.uuid4())
+
     frontmatter = generate_frontmatter(
-        title, tags, meta, existing_id, existing_created, norm_refs, folder
+        title, tags, meta, nota_id, existing_created, norm_refs, folder
     )
 
     final_content = f"{frontmatter}\n\n{content}"
@@ -736,14 +833,31 @@ def vault_write(
     except Exception:
         pass
 
+    # AP-39: la nota ya está en disco, así que el término existe de verdad.
+    # Anotarlo antes habría dejado en la bitácora palabras de escrituras que
+    # fallaron — memoria de algo que nunca se escribió.
+    rel_path = str(vault_path.relative_to(VAULT_ROOT)).replace("\\", "/")
+    introduced = 0
+    if new_terms:
+        for t in new_terms:
+            t["note"] = rel_path
+            t["agent"] = meta.get("agent", "") or os.environ.get("VAULT_AGENT", "")
+        try:
+            introduced = vault_tags.record_new_tags(new_terms)
+        except OSError:
+            # La bitácora no puede tumbar una escritura válida: se registra el
+            # fallo en el resultado y el audit de AP-39 lo recoge después.
+            introduced = -1
+
     tag_suggestions = _tag_suggestions(tags)
 
     ghost_links = _collect_ghost_links(wiki_links)
 
     result: Dict[str, Any] = {
         "ok": True,
-        "path": str(vault_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
-        "id": existing_id or str(uuid.uuid4()),
+        **write_report(),
+        "path": rel_path,
+        "id": nota_id,
         "filename": filename,
         "tags": tags,
         "wikiLinks": wiki_links,
@@ -751,6 +865,9 @@ def vault_write(
         "created": existing_id is None,
         "message": f"Note {'created' if existing_id is None else 'updated'} successfully",
     }
+
+    if existing_status and meta.get("status") and existing_status != meta["status"]:
+        result["status_transition"] = f"{existing_status} -> {meta['status']}"
 
     if ap23_warning:
         result["ap23_warning"] = (
@@ -762,6 +879,10 @@ def vault_write(
 
     if tag_suggestions:
         result["tag_suggestions"] = tag_suggestions
+
+    if new_terms:
+        result["vocabulary_introduced"] = [t["tag"] for t in new_terms]
+        result["vocabulary_recorded"] = introduced
 
     return result
 

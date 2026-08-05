@@ -30,7 +30,7 @@ import sys
 
 from vault_errors import wrap_main
 from vault_lib import utcnow, slugify
-from vault_io import atomic_write_text, assert_within_vault, VAULT_ROOT, safe_wikilink
+from vault_io import atomic_write_text, assert_within_vault, VAULT_ROOT, safe_wikilink, write_report
 import uuid
 
 from pathlib import Path
@@ -167,6 +167,7 @@ def vault_runbook_save(
 
     return {
         "ok": True,
+        **write_report(),
         "path": str(note_path.relative_to(VAULT_ROOT)),
         "category": category,
         "steps": len(steps),

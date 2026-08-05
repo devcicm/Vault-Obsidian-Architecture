@@ -16,7 +16,7 @@ Usage:
 import re
 import unicodedata
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 # Caracteres de control válidos (solo LF, CR, TAB)
 VALID_CONTROL_CHARS = {"\n", "\r", "\t"}
@@ -35,44 +35,42 @@ QUOTE_REPLACEMENTS = [
     ("\u203a", "'"),  # ›
 ]
 
-# Mapeo de guiones Unicode a ASCII
+# Guiones y espacios Unicode con ancho -> su equivalente ASCII.
+# Registro canonico: `normalize_dashes` lo consume. Los de ancho cero no viven
+# aqui sino en INVISIBLE_CHARS, que es quien los elimina.
 DASH_REPLACEMENTS = [
-    ("\u2013", "-"),  # en-dash →
-    ("\u2014", "--"),  # em-dash →
-    ("\u2010", "-"),  # hyphen
-    ("\u2011", "-"),  # non-breaking hyphen
-    ("\u2012", "-"),  # figure dash
-    ("\u2009", " "),  # thin space
-    ("\u200a", " "),  # hair space
-    ("\u200b", ""),  # zero-width space
-    ("\u200c", ""),  # zero-width non-joiner
-    ("\u200d", ""),  # zero-width joiner
-    ("\u200e", ""),  # left-to-right mark
-    ("\u200f", ""),  # right-to-left mark
-    ("\u00a0", " "),  # non-breaking space
-    ("\u00ad", ""),  # soft hyphen
-    ("\ufeff", ""),  # BOM
+    ("\u2013", "-", "en-dash"),
+    ("\u2014", "--", "em-dash"),
+    ("\u2010", "-", "hyphen"),
+    ("\u2011", "-", "non-breaking hyphen"),
+    ("\u2012", "-", "figure dash"),
+    ("\u2009", " ", "thin space"),
+    ("\u200a", " ", "hair space"),
+    ("\u00a0", " ", "non-breaking space"),
 ]
 
-# Caracteres invisibles a eliminar
+# Caracteres invisibles a eliminar. Registro canonico: lo consumen tanto
+# `remove_invisible_chars` (los quita) como `detect_issues` (los reporta).
+# Tenerlo en un solo sitio es lo que impide que el detector senale un caracter
+# que el sanitizador no sabe quitar - que es como estaba: detectaba 18, quitaba 13.
 INVISIBLE_CHARS = [
-    "\u200b",  # zero-width space
-    "\u200c",  # zero-width non-joiner
-    "\u200d",  # zero-width joiner
-    "\u200e",  # left-to-right mark
-    "\u200f",  # right-to-left mark
-    "\ufeff",  # BOM
-    "\u00ad",  # soft hyphen
-    "\u202a",  # left-to-right embedding
-    "\u202b",  # right-to-left embedding
-    "\u202c",  # pop directional formatting
-    "\u202d",  # left-to-right override
-    "\u202e",  # right-to-left override
-    "\u2060",  # word joiner
-    "\u2061",  # function application
-    "\u2062",  # invisible times
-    "\u2063",  # invisible separator
-    "\u2064",  # invisible plus
+    ("\u200b", "zero-width space"),
+    ("\u200c", "zero-width non-joiner"),
+    ("\u200d", "zero-width joiner"),
+    ("\u200e", "left-to-right mark"),
+    ("\u200f", "right-to-left mark"),
+    ("\ufeff", "BOM"),
+    ("\u00ad", "soft hyphen"),
+    ("\u202a", "left-to-right embedding"),
+    ("\u202b", "right-to-left embedding"),
+    ("\u202c", "pop directional formatting"),
+    ("\u202d", "left-to-right override"),
+    ("\u202e", "right-to-left override"),
+    ("\u2060", "word joiner"),
+    ("\u2061", "function application"),
+    ("\u2062", "invisible times"),
+    ("\u2063", "invisible separator"),
+    ("\u2064", "invisible plus"),
 ]
 
 # Caracteres inválidos para nombres de archivo por SO
@@ -164,17 +162,7 @@ def normalize_dashes(text: str) -> Tuple[str, List[Dict[str, str]]]:
     fixes = []
     result = text
 
-    dash_mappings = [
-        ("\u2013", "-", "en-dash"),
-        ("\u2014", "--", "em-dash"),
-        ("\u2010", "-", "hyphen"),
-        ("\u2011", "-", "non-breaking hyphen"),
-        ("\u2012", "-", "figure dash"),
-        ("\u2009", " ", "thin space"),
-        ("\u200a", " ", "hair space"),
-    ]
-
-    for old, new, name in dash_mappings:
+    for old, new, name in DASH_REPLACEMENTS:
         if old in result:
             count = result.count(old)
             fixes.append(
@@ -212,23 +200,7 @@ def remove_invisible_chars(text: str) -> Tuple[str, List[Dict[str, str]]]:
     fixes = []
     result = text
 
-    invisible_mappings = [
-        ("\u200b", "zero-width space"),
-        ("\u200c", "zero-width non-joiner"),
-        ("\u200d", "zero-width joiner"),
-        ("\u200e", "left-to-right mark"),
-        ("\u200f", "right-to-left mark"),
-        ("\ufeff", "BOM"),
-        ("\u00ad", "soft hyphen"),
-        ("\u202a", "left-to-right embedding"),
-        ("\u202b", "right-to-left embedding"),
-        ("\u202c", "pop directional formatting"),
-        ("\u202d", "left-to-right override"),
-        ("\u202e", "right-to-left override"),
-        ("\u2060", "word joiner"),
-    ]
-
-    for char, name in invisible_mappings:
+    for char, name in INVISIBLE_CHARS:
         if char in result:
             count = result.count(char)
             fixes.append(
@@ -498,7 +470,7 @@ def detect_issues(text: str) -> List[Dict[str, Any]]:
             )
 
     # Detectar caracteres invisibles
-    for char in INVISIBLE_CHARS:
+    for char, _nombre in INVISIBLE_CHARS:
         if char in text:
             issues.append(
                 {

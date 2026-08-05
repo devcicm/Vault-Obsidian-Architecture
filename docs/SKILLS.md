@@ -147,7 +147,7 @@ python scripts/vault_sdd_init.py --bilingual --force
 #### Prerrequisitos
 
 - vault-spec >= v36.0 (`CURRENT_VERSION` actual: **v39.0**)
-- `NORM_CATALOG` legible — **48 normas** hoy (36 AP + 6 PAT + 3 SP + 3 CN).
+- `NORM_CATALOG` legible — **56 normas** hoy (37 AP + 6 PAT + 3 SP + 3 CN).
   Ni el rango ni el conteo se codifican en la skill: se derivan del registro.
 - `atomic_write_text` con fix de temp leak (FASE 0.4)
 - CI workflow activo

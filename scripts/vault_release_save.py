@@ -31,13 +31,14 @@ from typing import Any, Dict, List, Optional
 from vault_errors import wrap_main
 from vault_lib import utcnow
 from vault_io import (
+    write_report,
     VAULT_ROOT,
     assert_within_vault,
     atomic_write_text,
     file_lock,
     update_section_index,
 )
-from vault_norms import compute_norm_refs
+from vault_norms import compute_norm_refs, status_frontmatter_lines
 
 RELEASE_FOLDER = "08_Runbooks/deploy"
 CHANGELOG_PATH = "01_Projects/{project}/changelog.md"
@@ -197,7 +198,7 @@ def vault_release_save(
         f"project: {project}",
         f"version: {version}",
         f"release_type: {release_type}",
-        f"status: {status}",
+        *status_frontmatter_lines("vault_release_save", status),
         f"deploy_at: {deploy_at}",
         f"breaking_changes: {json.dumps(bool(breaking_changes))}",
         f"migrations_required: {json.dumps(bool(migrations))}",
@@ -253,6 +254,7 @@ def vault_release_save(
 
     return {
         "ok": True,
+        **write_report(),
         "path": str(path.relative_to(VAULT_ROOT)).replace("\\", "/"),
         "changelog": changelog_rel,
         "project": project,

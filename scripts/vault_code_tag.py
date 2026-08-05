@@ -41,7 +41,7 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
-from vault_io import atomic_write_json, VAULT_ROOT
+from vault_io import atomic_write_json, VAULT_ROOT, write_report
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -205,6 +205,7 @@ def vault_code_tag_define(
 
     return {
         "ok": True,
+        **write_report(),
         "action": action,
         "code": code_lower,
         "name": name,
@@ -309,6 +310,7 @@ def vault_code_tag_apply(
 
     return {
         "ok": True,
+        **write_report(),
         "action": "applied",
         "file": str(file_path),
         "code": code_lower,
@@ -388,6 +390,7 @@ def vault_code_tag_scan(file_path_str: str) -> Dict[str, Any]:
 
     return {
         "ok": True,
+        **write_report(),
         "file": str(file_path),
         "vault_ref": vault_ref,
         "vault_note_exists": vault_note_exists,
@@ -577,6 +580,7 @@ def vault_code_tag_link_vault(
 
     return {
         "ok": True,
+        **write_report(),
         "action": action,
         "file": str(file_path),
         "note": note_ref,

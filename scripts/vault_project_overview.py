@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-from vault_io import VAULT_ROOT, atomic_write_text, safe_wikilink
+from vault_io import VAULT_ROOT, atomic_write_text, safe_wikilink, write_report
 
 INDEX_FILE = VAULT_ROOT / "99_Index" / "search-index.json"
 
@@ -292,6 +292,7 @@ def vault_project_overview(
 
     return {
         "ok": True,
+        **write_report(),
         "path": str(overview_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
         "sections": sections_written,
     }

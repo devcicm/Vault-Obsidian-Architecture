@@ -34,12 +34,13 @@ from typing import Any, Dict, List, Optional
 from vault_errors import wrap_main
 from vault_lib import utcnow
 from vault_io import (
+    write_report,
     VAULT_ROOT,
     assert_within_vault,
     atomic_write_text,
     update_section_index,
 )
-from vault_norms import compute_norm_refs
+from vault_norms import compute_norm_refs, status_frontmatter_lines
 
 FOLDER = "02_Observability/risks"
 
@@ -244,7 +245,7 @@ def vault_risk_save(
         f"score: {score}",
         f"level: {level}",
         f"treatment: {treatment}",
-        f"status: {status}",
+        *status_frontmatter_lines("vault_risk_save", status),
         f"owner: {json.dumps(owner)}",
         f"iso_standard: ISO 31000:2018",
         f"iso_security_risk: ISO/IEC 27005:2022",
@@ -265,6 +266,7 @@ def vault_risk_save(
 
     return {
         "ok": True,
+        **write_report(),
         "path": str(path.relative_to(VAULT_ROOT)).replace("\\", "/"),
         "project": project,
         "risk_type": risk_type,

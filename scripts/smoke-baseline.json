@@ -1,0 +1,5 @@
+{
+  "norm": "AP-42",
+  "note": "Tools cuyo ejemplo documentado no emite un JSON con `ok`. Esta lista solo puede encoger.",
+  "failing": []
+}

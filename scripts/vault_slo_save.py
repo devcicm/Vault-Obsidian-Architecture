@@ -37,6 +37,7 @@ from vault_io import (
     VAULT_ROOT,
     assert_within_vault,
     atomic_write_text,
+    write_report,
     update_section_index,
 )
 from vault_norms import compute_norm_refs
@@ -310,6 +311,7 @@ def vault_slo_save(
 
     return {
         "ok": True,
+        **write_report(),
         "path": str(path.relative_to(VAULT_ROOT)).replace("\\", "/"),
         "project": project,
         "service": service,

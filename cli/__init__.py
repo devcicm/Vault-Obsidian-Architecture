@@ -1,6 +1,6 @@
 """CLI consolidada del estándar Vault Obsidian Architecture.
 
-Un único punto de entrada (`python -m cli`) sobre las 76 tools del catálogo.
+Un único punto de entrada (`python -m cli`) sobre las tools del catálogo.
 No reimplementa ninguna tool: las descubre, las valida, las planifica y las
 ejecuta. La fuente de verdad sigue siendo `scripts/vault_mcp_catalog.py` +
 `<vault>/00_System/tool-spec.json`.

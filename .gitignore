@@ -53,3 +53,14 @@ ANALISIS-HISTORICO-manifiesto.md
 
 # Backups locales de otros proyectos — no forman parte del estándar
 _backups-builderx/
+
+# Datasets de análisis — copias de vaults reales de otros proyectos.
+# NUNCA se versionan: son datos del usuario, ajenos al estándar, y contienen
+# material sensible (notas de proyectos privados, credenciales en runbooks,
+# datos de clientes). Se copian aquí solo para estudiar cómo se degradan los
+# vaults en uso real y volcar esas conclusiones en normas.
+_datasets/
+_datasets-reports/
+
+# Artefacto de coverage.py: salida de una ejecucion local, no del estandar.
+.coverage

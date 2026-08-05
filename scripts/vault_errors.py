@@ -77,7 +77,29 @@ def emit_ok(tool: str, data: Dict[str, Any]) -> Dict[str, Any]:
     return result
 
 
-def _inject_tool_envelope(text: str, tool_name: str) -> str:
+def _inject_voice(data: Any, tool_name: str, writes: Optional[Dict[str, int]]) -> None:
+    """AP-43 — añade `vault_says` al resultado. Nunca puede romper la tool.
+
+    Se hace aquí y no en cada tool porque este es el único punto por el que ya
+    pasa la salida de las 97 tools: una capa de refuerzo que hubiera que
+    invocar tool por tool sería exactamente el registro-que-nadie-consume que
+    esta norma existe para evitar.
+    """
+    if not isinstance(data, dict) or "vault_says" in data:
+        return
+    try:
+        from vault_voice import speak
+
+        bloque = speak(tool_name, data, writes)
+        if bloque:
+            data["vault_says"] = bloque
+    except Exception:
+        pass
+
+
+def _inject_tool_envelope(
+    text: str, tool_name: str, writes: Optional[Dict[str, int]] = None
+) -> str:
     """Inyecta tool+timestamp en el JSON de salida si aún no los tiene."""
     text = text.strip()
     if not text:
@@ -88,6 +110,7 @@ def _inject_tool_envelope(text: str, tool_name: str) -> str:
             data["tool"] = tool_name
             data["timestamp"] = datetime.now(timezone.utc).isoformat()[:19] + "Z"
             log_trace(data)
+        _inject_voice(data, tool_name, writes)
         return json.dumps(data, ensure_ascii=False)
     except Exception:
         return text
@@ -135,14 +158,32 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
     _real_stdout = sys.stdout
     result_q: queue.Queue = queue.Queue()
 
+    def _writes() -> Dict[str, int]:
+        """El ledger AP-37 es thread-local: hay que leerlo en ESTE hilo."""
+        try:
+            from vault_io import write_report
+
+            return write_report()
+        except Exception:
+            return {}
+
     def _target():
         captured = io.StringIO()
         sys.stdout = captured
+        # AP-37: el contador de escrituras es thread-local y la tool corre en
+        # ESTE hilo, así que se pone a cero aquí — no en wrap_main, que se
+        # ejecuta en el hilo principal y no vería el mismo ledger.
+        try:
+            from vault_io import write_ledger_reset
+
+            write_ledger_reset()
+        except Exception:
+            pass
         try:
             exit_code = _run()
-            result_q.put(("ok", exit_code, captured.getvalue()))
+            result_q.put(("ok", exit_code, captured.getvalue(), _writes()))
         except Exception as exc:
-            result_q.put(("exc", exc, captured.getvalue()))
+            result_q.put(("exc", exc, captured.getvalue(), _writes()))
         finally:
             sys.stdout = _real_stdout
 
@@ -160,7 +201,7 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
         return 1
 
     try:
-        kind, value, captured_text = result_q.get_nowait()
+        kind, value, captured_text, writes = result_q.get_nowait()
     except queue.Empty:
         return 1
 
@@ -171,10 +212,11 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
             message=f"{type(value).__name__}: {value}",
             exception=value,
         )
+        _inject_voice(err, tool_name, writes)
         _write_output(json.dumps(err, ensure_ascii=False), _real_stdout)
         return 1
 
-    output = _inject_tool_envelope(captured_text, tool_name)
+    output = _inject_tool_envelope(captured_text, tool_name, writes)
     if output:
         _write_output(output, _real_stdout)
 

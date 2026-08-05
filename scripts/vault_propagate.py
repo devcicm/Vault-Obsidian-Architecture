@@ -33,7 +33,7 @@ from typing import Any, Dict, List, Optional, Set
 from vault_errors import wrap_main
 from vault_lib import utcnow
 from vault_impact import vault_impact
-from vault_io import atomic_write_json, file_lock, VAULT_ROOT
+from vault_io import atomic_write_json, file_lock, VAULT_ROOT, write_report
 
 SYSTEM_DIR = VAULT_ROOT / "00_System"
 SCRIPTS_DIR = Path(__file__).parent
@@ -233,6 +233,7 @@ def vault_propagate(
 
     return {
         "ok": True,
+        **write_report(),
         "strategy": strategy,
         "actions": actions,
         "impacted_count": len(impacted),
