@@ -579,9 +579,19 @@ def normalize_stem(s: str) -> str:
         normalize_stem("Mi Proyecto Demo")   -> "miproyectodemo"
         normalize_stem("mi-proyecto-demo.md") -> "miproyectodemo"
         normalize_stem("mi_proyecto_demo")    -> "miproyectodemo"
+        normalize_stem("Índice")              -> "indice"
+
+    Los acentos se pliegan porque `slugify` translitera al derivar el nombre de
+    fichero: sin plegarlos aquí, `Índice.md` (escrita antes) e `indice.md` (la
+    que se derivaría hoy) parecerían dos notas distintas y el vault acabaría con
+    las dos. El criterio de comparación tiene que ser el del consumidor, no el
+    de quien escribe (AP-44).
     """
+    from vault_lib import fold_accents
+
     return (
-        s.lower()
+        fold_accents(s)
+        .lower()
         .replace("-", "")
         .replace("_", "")
         .replace(" ", "")

@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
-from vault_lib import utcnow
+from vault_lib import slugify_strict, utcnow
 from vault_io import (
     write_report,
     VAULT_ROOT,
@@ -99,10 +99,9 @@ SECRET_PREFIXES = (
 )
 
 
-def _slug(text: str) -> str:
-    import re
-
-    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
+#: Alias del slug canónico (ver `vault_lib.slugify`). La versión propia que
+#: había aquí borraba los acentos en vez de transliterarlos.
+_slug = slugify_strict
 
 
 def _classify_var(var_name: str) -> str:

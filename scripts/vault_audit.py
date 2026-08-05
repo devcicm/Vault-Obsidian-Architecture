@@ -493,6 +493,73 @@ def _detect_broken_links(
     return broken
 
 
+#: Marcadores de convención de nomenclatura que distinguen DOS artefactos
+#: distintos, no dos nombres del mismo. Cada uno es una convención de lenguaje,
+#: no una preferencia de estilo: en C#/Java, `IRateLimitService` es el contrato y
+#: `RateLimitService` la implementación; son dos cosas, y cada una merece su nota.
+#:
+#: (prefijo, sufijo) — uno de los dos, no ambos.
+_MARCADORES_DE_CONVENCION: List[Tuple[str, str]] = [
+    ("i", ""),  # C#/TypeScript: IFooService  vs FooService
+    ("abstract", ""),  # Java: AbstractFooService vs FooService
+    ("base", ""),  # BaseFooService vs FooService
+    ("default", ""),  # DefaultFooService vs FooService
+    ("", "impl"),  # Java: FooServiceImpl vs FooService
+    ("", "implementation"),
+    ("", "interface"),  # FooServiceInterface vs FooService
+    ("mock", ""),  # dobles de prueba: MockFooService vs FooService
+    ("fake", ""),
+    ("stub", ""),
+    ("null", ""),  # Null Object (GoF): NullFooService vs FooService
+    ("noop", ""),
+]
+#: Lo que NO entra en la lista importa tanto como lo que entra. `Async`,
+#: `Secure`, `Cached` y compañía describen una VARIANTE, no un rol dentro del
+#: mismo contrato: `SecureApiKeyService` junto a `IApiKeyService` puede ser un
+#: decorador legítimo o puede ser la nota duplicada que AP-17 existe para
+#: encontrar, y eso lo decide una persona. Ampliar la lista hasta que no quede
+#: ningún par sería silenciar la norma, no afinarla.
+
+
+def _distintos_por_convencion(titulo_a: str, titulo_b: str) -> Optional[str]:
+    """¿Los dos títulos son artefactos distintos por convención de nombres?
+
+    Devuelve el marcador que los distingue, o None.
+
+    Síntoma que lo motivó: `vault_onboard` contra un proyecto .NET real dio
+    `canonicalShadow: 8`, todos del mismo par —interfaz e implementación—. AP-17
+    compara títulos en minúsculas, y bajar la `I` de `IRateLimitService` borra
+    justo el carácter que los distingue: la similitud sale ~0.98 SIEMPRE. No es
+    un problema de umbral —bajarlo esconde el síntoma y ciega la norma— sino de
+    criterio: se estaba midiendo con la normalización propia en vez de con la
+    del dominio (AP-44). Cualquier proyecto .NET, Java o TypeScript dispara esto
+    en proporción a su número de servicios.
+    """
+    a = re.sub(r"[^a-z0-9]", "", titulo_a.lower())
+    b = re.sub(r"[^a-z0-9]", "", titulo_b.lower())
+    if a == b:
+        return None  # mismo nombre: eso sí es una sombra
+
+    def _quitar(nombre: str) -> List[Tuple[str, str]]:
+        """El nombre desnudo, con y sin marcador. Uno como mucho."""
+        salidas = [(nombre, "")]
+        for prefijo, sufijo in _MARCADORES_DE_CONVENCION:
+            if prefijo and nombre.startswith(prefijo) and len(nombre) > len(prefijo):
+                salidas.append((nombre[len(prefijo) :], f"{prefijo}*"))
+            if sufijo and nombre.endswith(sufijo) and len(nombre) > len(sufijo):
+                salidas.append((nombre[: -len(sufijo)], f"*{sufijo}"))
+        return salidas
+
+    # Se quita a los dos lados, no solo a uno: `ILoggerService` y
+    # `MockLoggerService` son dos artefactos del mismo contrato y ninguno es
+    # prefijo del otro.
+    for desnudo_a, marca_a in _quitar(a):
+        for desnudo_b, marca_b in _quitar(b):
+            if desnudo_a == desnudo_b and (marca_a or marca_b):
+                return " / ".join(m for m in (marca_a, marca_b) if m)
+    return None
+
+
 def _detect_canonical_shadow(notes: List[Path]) -> List[Dict[str, Any]]:
     """AP-17: detect pairs of notes with fuzzy title similarity >85% (SequenceMatcher ratio)."""
 
@@ -546,6 +613,9 @@ def _detect_canonical_shadow(notes: List[Path]) -> List[Dict[str, Any]]:
             rel_a, title_a = items[i]
 
             rel_b, title_b = items[j]
+
+            if _distintos_por_convencion(title_a, title_b):
+                continue
 
             ratio = SequenceMatcher(None, title_a, title_b).ratio()
 

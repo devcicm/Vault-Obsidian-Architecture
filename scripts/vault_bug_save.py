@@ -51,7 +51,7 @@ from vault_io import (
     safe_wikilink,
     VAULT_ROOT,
 )
-from vault_lib import utcnow
+from vault_lib import slugify_strict, utcnow
 
 BUGS_DIR = VAULT_ROOT / "18_Bugs"
 INDEX_FILE = BUGS_DIR / ".bugs-index.json"
@@ -71,9 +71,10 @@ SEVERITIES = ["critical", "high", "medium", "low"]
 
 
 def slugify(text: str) -> str:
-    slug = re.sub(r"[^\w\s-]", "", text.lower())
-    slug = re.sub(r"[\s_]+", "-", slug)
-    return re.sub(r"^-+|-+$", "", slug)[:60]
+    # Delega en el slug canónico (`vault_lib.slugify`). La copia que había
+    # aquí divergía del resto: unas borraban los acentos, otras los dejaban
+    # en el nombre de fichero. Una sola fuente, un solo nombre de nota.
+    return slugify_strict(text)[:60]
 
 
 def load_index() -> Dict[str, Any]:

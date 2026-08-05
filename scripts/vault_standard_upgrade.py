@@ -39,7 +39,7 @@ SYSTEM_DIR = VAULT_ROOT / "00_System"
 VERSION_FILE = SYSTEM_DIR / "standard-version.json"
 IDENTITY_FILE = SYSTEM_DIR / "identity.md"
 
-CURRENT_VERSION = "v39.1"
+CURRENT_VERSION = "v39.2"
 
 
 def _live_identity() -> Dict[str, str]:

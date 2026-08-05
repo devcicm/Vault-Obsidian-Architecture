@@ -31,7 +31,7 @@ import re
 import sys
 
 from vault_errors import wrap_main
-from vault_lib import utcnow
+from vault_lib import slugify_strict, utcnow
 import uuid
 
 from datetime import datetime, timezone
@@ -694,15 +694,10 @@ def save_findings_to_vault(findings: List[Dict], project: str) -> List[str]:
 
 
 def slugify(text: str) -> str:
-    slug = text.lower()
-
-    slug = re.sub(r"[^\w\s-]", "", slug)
-
-    slug = re.sub(r"[\s_]+", "-", slug)
-
-    slug = re.sub(r"^-+|-+$", "", slug)
-
-    return slug
+    # Delega en el slug canónico (`vault_lib.slugify`). La copia que había
+    # aquí divergía del resto: unas borraban los acentos, otras los dejaban
+    # en el nombre de fichero. Una sola fuente, un solo nombre de nota.
+    return slugify_strict(text)
 
 
 def vault_security_scan(

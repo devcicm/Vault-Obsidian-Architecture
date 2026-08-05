@@ -42,7 +42,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from vault_errors import wrap_main
-from vault_lib import utcnow
+from vault_lib import slugify_strict, utcnow
 from vault_io import VAULT_ROOT, assert_within_vault, atomic_write_text, normalize_stem
 from vault_norms import compute_norm_refs
 from vault_registry import ORDERED_SECTIONS
@@ -166,8 +166,10 @@ TEST_PATTERNS = [
 # ── Utilities ─────────────────────────────────────────────────────────────────
 
 
-def _slug(name: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+#: Alias del slug canónico. No lleva implementación propia: la que tenía
+#: (`[^a-z0-9]+`) borraba los acentos en vez de transliterarlos y producía
+#: `caracter-sticas-principales` a partir de «Características principales».
+_slug = slugify_strict
 
 
 def _date_str(ts: float) -> str:

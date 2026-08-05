@@ -32,7 +32,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
-from vault_lib import utcnow
+from vault_lib import slugify_strict, utcnow
 from vault_io import (
     VAULT_ROOT,
     assert_within_vault,
@@ -129,9 +129,10 @@ VALID_WINDOWS = {"7d": 7, "14d": 14, "30d": 30, "60d": 60, "90d": 90, "1y": 365}
 
 
 def _slug(text: str) -> str:
-    import re
-
-    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
+    # Delega en el slug canónico (`vault_lib.slugify`). La copia que había
+    # aquí divergía del resto: unas borraban los acentos, otras los dejaban
+    # en el nombre de fichero. Una sola fuente, un solo nombre de nota.
+    return slugify_strict(text)
 
 
 def _calc_error_budget(

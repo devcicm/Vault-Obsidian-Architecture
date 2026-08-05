@@ -32,14 +32,19 @@ import json
 
 import re
 
-import shutil
-
 import sys
 
 from vault_errors import wrap_main
 from vault_lib import slugify
 
-from vault_io import atomic_write_text, safe_wikilink, VAULT_ROOT, write_report
+from vault_io import (
+    assert_within_vault,
+    atomic_write_text,
+    safe_wikilink,
+    VAULT_ROOT,
+    write_report,
+)
+import yaml
 import uuid
 
 from datetime import datetime, timezone
@@ -184,6 +189,24 @@ def detect_folder(content_lower: str, filename_lower: str) -> Tuple[str, str]:
                 return folder, "priority"
 
     return "10_Migrated/direct", "default"
+
+
+def _frontmatter_valido(texto: str) -> bool:
+    """El bloque abre, cierra y parsea como YAML de claves.
+
+    Se valida con `yaml.safe_load`, no con un regex por líneas: es el criterio
+    del consumidor (Obsidian, `vault_audit`), no el de quien escribe (AP-44).
+    """
+    if not texto.startswith("---\n"):
+        return False
+    fin = texto.find("\n---", 3)
+    if fin == -1:
+        return False
+    try:
+        datos = yaml.safe_load(texto[4:fin])
+    except yaml.YAMLError:
+        return False
+    return isinstance(datos, dict) and bool(datos.get("type"))
 
 
 def classify_relevance(
@@ -416,11 +439,19 @@ def vault_migrate_docs(
 
         dest_name = f"{slugify(Path(staged['originalName']).stem)}.md"
 
-        dest_path = MIGRATED_DIR / dest_folder / dest_name
+        # `dest_folder` ya viene relativo a la RAÍZ del vault ("03_Decisions",
+        # "10_Migrated/indirect"): componerlo bajo MIGRATED_DIR duplicaba el
+        # segmento y el fichero acababa en `10_Migrated/10_Migrated/indirect/`.
+        # Peor, los destinos que no son de 10_Migrated (03_Decisions,
+        # 07_Knowledge/apis) quedaban enterrados dentro de la carpeta de
+        # migración, que es justo de donde la distribución tiene que sacarlos.
+        dest_path = VAULT_ROOT / dest_folder / dest_name
+
+        assert_within_vault(dest_path, VAULT_ROOT)
 
         dest_path.parent.mkdir(parents=True, exist_ok=True)
 
-        relative_parent = str(dest_path.parent.relative_to(MIGRATED_DIR))
+        relative_parent = str(dest_path.parent.relative_to(VAULT_ROOT))
 
         if relative_parent not in subfolders_created:
             subfolders_created.append(relative_parent)
@@ -437,22 +468,28 @@ def vault_migrate_docs(
             }
         )
 
-        staged_content = staged["content"]
+        # Solo se reescribe la línea `distributedTo:`; el resto del documento
+        # viaja intacto. La versión anterior cortaba por `split("\n", 8)` y se
+        # quedaba con `[:7]`: escribía siete líneas de frontmatter SIN el `---`
+        # de cierre y tiraba el cuerpo entero. De ahí que la nota migrada fuese
+        # la única `missingFrontmatter` del vault — el bloque nunca cerraba.
+        staged_content = "\n".join(
+            f"distributedTo: '{dest_folder}/{dest_name}'"
+            if line.startswith("distributedTo:")
+            else line
+            for line in staged["content"].split("\n")
+        )
 
-        staged_lines = staged_content.split("\n", 8)
+        atomic_write_text(dest_path, staged_content)
 
-        if len(staged_lines) > 6:
-            frontmatter_lines = staged_lines[:7]
-
-            for i, line in enumerate(frontmatter_lines):
-                if line.startswith("distributedTo:"):
-                    frontmatter_lines[i] = f"distributedTo: '{dest_folder}/{dest_name}'"
-
-            staged_content = "\n".join(frontmatter_lines)
-
-        shutil.copy2(STAGING_DIR / staged["stagedName"], dest_path)
-
-        dest_path.write_text(staged_content, encoding="utf-8")
+        # Releer del disco y comprobar que el frontmatter parsea: el generador
+        # no puede certificarse con su propio criterio (AP-44). Este defecto
+        # sobrevivió porque nadie volvió a abrir lo que la tool escribió.
+        escrito = dest_path.read_text(encoding="utf-8")
+        if not _frontmatter_valido(escrito):
+            raise ValueError(
+                f"frontmatter ilegible tras escribir {dest_path.relative_to(VAULT_ROOT)}"
+            )
 
         stub_content = f"""# {Path(staged["originalName"]).stem}
 
@@ -478,7 +515,8 @@ _{staged["preview"][:200]}..._
 
 """
 
-        stub_path = MIGRATED_DIR / dest_folder / f"_stub-{dest_name}"
+        # El stub queda junto al destino real, no bajo `10_Migrated/` otra vez.
+        stub_path = VAULT_ROOT / dest_folder / f"_stub-{dest_name}"
 
         atomic_write_text(stub_path, stub_content)
 
@@ -586,6 +624,18 @@ _{staged["preview"][:200]}..._
             "indirect": indirect_count,
             "excluded": excluded_count,
         },
+        # `distributed` son conteos y se conserva tal cual (no-derogación). Pero
+        # con solo conteos no se puede comprobar DÓNDE aterrizó cada fichero, y
+        # por eso el destino duplicado (`10_Migrated/10_Migrated/…`) sobrevivió:
+        # la salida decía "1 indirect" y eso era cierto. La ruta, aparte.
+        "distributedFiles": [
+            {
+                "originalName": d["originalName"],
+                "destPath": str(Path(d["destPath"]).as_posix()),
+                "relevance": d["relevance"],
+            }
+            for d in distributed
+        ],
         "subfoldersCreated": subfolders_created,
         "stubsCreated": len(stubs_created),
         "reportFile": str(report_path.relative_to(VAULT_ROOT)),

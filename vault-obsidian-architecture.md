@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v39.1 — 2026-08-05  
+**Versión:** v39.2 — 2026-08-05  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -31,6 +31,23 @@ Todo lo anterior está declarado, medido y forzado en **[Marco de Datos y Gobern
 **Cómo se consume.** Como scripts Python invocados por el harness, o directamente vía **MCP** (`mcp/nodejs/vault-mcp-server.mjs`) para que cualquier IA compatible use las tools sin registro previo.
 
 **Política de no-derogación.** Este documento no se mutila: ninguna tool, norma o sección se elimina al evolucionar el estándar. Lo reemplazado se marca `superseded_by:` y conserva su contrato — ver [Política de no-derogación](#política-de-no-derogación).
+
+---
+
+> **v39.2 (2026-08-05):** Tres defectos que solo un proyecto ajeno podía enseñar.
+> - **Un solo slug.** Había 22 implementaciones repartidas por `scripts/`, en dos
+>   familias divergentes: unas dejaban los acentos en el nombre de fichero, otras
+>   los borraban. «Características principales» acababa en
+>   `caracter-sticas-principales.md`, y el wikilink heredaba el destrozo. Ahora se
+>   translitera, y una sola función lo hace.
+> - **`vault_migrate_docs` escribía siete líneas.** Cortaba el documento por
+>   `split("
+", 8)`: frontmatter sin cerrar y cuerpo perdido. Además componía el
+>   destino bajo `10_Migrated/` cuando ya venía relativo a la raíz, y escribía con
+>   `write_text` — **saltándose el escaneo de secretos**.
+> - **AP-17 confundía un contrato con su implementación.** `IRateLimitService` y
+>   `RateLimitService` daban ~0.98 de similitud siempre, porque comparar en
+>   minúsculas borra la `I`. Ocho pares falsos en el primer proyecto .NET.
 
 ---
 
@@ -4447,6 +4464,27 @@ proyecto/
 
 **Prevención:** `vault_audit()` detecta pares via `difflib.SequenceMatcher(ratio > 0.85)`. Resolución: identificar la canónica (más contenido, más backlinks), mover la shadow a `10_Migrated/` con `vault_change_log --action moved`, actualizar los links que apuntaban a la shadow.
 
+> **v39.2 — Excepción por convención de nomenclatura.** Un contrato y su
+> implementación **no** son una sombra. En C#, Java o TypeScript,
+> `IRateLimitService` es la interfaz y `RateLimitService` la clase que la cumple:
+> son dos artefactos, y cada uno merece su nota. AP-17 comparaba títulos en
+> minúsculas, y bajar la `I` borra justo el carácter que los distingue — la
+> similitud salía ~0.98 **siempre**. El primer onboarding de un proyecto .NET real
+> devolvió 8 pares, los 8 de esta forma: la norma se volvía ruido justo en los
+> vaults más grandes. Bajar el umbral habría escondido el síntoma y cegado la
+> norma frente a los duplicados de verdad; lo que estaba mal era el criterio de
+> comparación, no el número (AP-44).
+>
+> El registro de marcadores vive en `vault_audit._MARCADORES_DE_CONVENCION`:
+> prefijos `I`, `Abstract`, `Base`, `Default`, dobles de prueba (`Mock`, `Fake`,
+> `Stub`), Null Object (`Null`, `Noop`) y sufijos `Impl`, `Implementation`,
+> `Interface`. Se admite el marcador **a los dos lados** (`ILoggerService` /
+> `MockLoggerService`).
+>
+> Lo que queda fuera importa tanto como lo que entra: `Async`, `Secure`, `Cached`
+> describen una **variante**, no un rol dentro del mismo contrato. Ampliar la lista
+> hasta que no quede ningún par sería apagar la norma, no afinarla.
+
 ---
 
 ### AP-18 — Cross-folder content duplication
@@ -5737,6 +5775,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v39.2 | 2026-08-05 | Slug canónico único con transliteración (22 implementaciones divergentes), `vault_migrate_docs` (destino duplicado, cuerpo truncado, escaneo de secretos saltado), AP-17 con excepción por convención de nomenclatura |
 | v39.1 | 2026-08-05 | Onboarding de proyectos sin vault: `vault_onboard` publicada y saneada (cierra AP-42 sobre sí misma), AP-45 (cobertura sin evidencia), registro único de secciones, `docs/MODO-AGENTICO-ONBOARDING.md` |
 | v39.0 | 2026-07-25 | Marco de Datos y Gobernanza explícito (CIA, F1–F8, 9 dimensiones DQ, FAIR, V's del Big Data, ISO, matriz de trazabilidad), `vault_fundamentals --framework/--matrix`, guard anti-drift `vault_norms --check-framework`, política de no-derogación, changelog consolidado |
 
@@ -6050,6 +6089,22 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v39.2 — 2026-08-05 `git: pending`
+
+**Tres defectos que solo un proyecto ajeno podía enseñar**
+
+Ninguno de los tres es nuevo: llevaban versiones en el código. Salieron a la vez, y solo al ejecutar el onboarding contra un repositorio real —en español, en C#, escrito por otra gente y con otros supuestos—. Es la regla 7 aplicada por tercera vez, y la tercera vez que devuelve lo mismo: `vault-sandbox/` lo genera este repo, comparte sus supuestos y por eso **no puede** exhibir una discrepancia. Un vault de pruebas en inglés no tiene un solo carácter que transliterar.
+
+**Corregido**
+- **El slug es uno solo, y translitera.** `vault_onboard._slug` casaba `[^a-z0-9]+`, que no transliteran los acentos: los borra. «Características principales» daba `caracter-sticas-principales.md`; «Índice», `ndice.md`. Al buscar el fallo aparecieron **22 implementaciones de slug** repartidas por `scripts/`, en dos familias divergentes —una conservaba los acentos en el nombre de fichero, la otra los borraba—, y ese era el defecto de verdad: no había fuente única. Es la misma forma que `vault_folder_registry` con sus 13 secciones de 22, y se cierra igual. `vault_lib.slugify` translitera vía NFKD y las 21 copias delegan en ella conservando su nombre y su truncado; `vault_write.slugify` se anota como excepción justificada —usa `vault_encoding.sanitize_filename`, que es otro contrato, el del write path canónico— y el guard verifica que la excepción siga teniendo módulo detrás. Un alfabeto sin equivalente ASCII (CJK, cirílico) **se conserva**: plegar acentos no es exigir ASCII, y borrarlo dejaría la nota en un fichero sin nombre. `vault_io.normalize_stem` pliega acentos también, para que `Índice.md` —escrita antes— e `indice.md` —la que se derivaría hoy— sean la misma nota y no dos.
+- **`vault_migrate_docs` escribía siete líneas y perdía el resto.** La distribución cortaba por `split("
+", 8)` y se quedaba con `[:7]`: frontmatter **sin el `---` de cierre** y cuerpo entero descartado. De ahí que la nota migrada fuese la única `missingFrontmatter` del vault — el generador suspendía la auditoría de su propio estándar porque nadie releía lo que escribía (AP-44, otra vez). Además componía el destino bajo `10_Migrated/` cuando el clasificador ya lo devuelve relativo a la raíz: el fichero acababa en `10_Migrated/10_Migrated/indirect/`, y para los destinos que **no** son de migración (`03_Decisions`, `07_Knowledge/apis`) el efecto era peor que un segmento repetido — la nota se quedaba enterrada justo en la carpeta de la que la distribución existe para sacarla. Y escribía con `write_text` directo: al pasar a `atomic_write_text` la migración del mismo proyecto **se detuvo con cuatro bearer tokens detectados en el README**, que en la corrida anterior habían entrado al vault sin que nada dijera nada. El envelope gana `distributedFiles[]` con la ruta real de cada fichero: con solo conteos no se podía comprobar **dónde** aterrizó nada, y por eso el destino duplicado sobrevivió — la salida decía «1 indirect» y eso era cierto.
+- **AP-17 confundía un contrato con su implementación.** En C#, Java o TypeScript, `IRateLimitService` es la interfaz y `RateLimitService` la clase que la cumple: dos artefactos, dos notas. El detector comparaba títulos en minúsculas, y bajar la `I` borra el único carácter que los distingue — la similitud salía ~0.98 **siempre**. El primer proyecto .NET onboardeado devolvió 8 pares, los 8 de esta forma; cualquier vault de .NET, Java o TypeScript los dispara en proporción a su número de servicios, o sea que la norma se volvía ruido justo en los vaults más grandes. **Bajar el umbral no era la solución**: habría escondido el síntoma y cegado la norma frente a los duplicados de verdad. Lo que estaba mal era el criterio de comparación. `vault_audit._MARCADORES_DE_CONVENCION` registra los marcadores de rol —prefijos `I`, `Abstract`, `Base`, `Default`, dobles de prueba `Mock`/`Fake`/`Stub`, Null Object `Null`/`Noop`; sufijos `Impl`, `Implementation`, `Interface`—, admitidos a los dos lados del par. `Async`, `Secure` y `Cached` se dejan **fuera a propósito**: describen una variante, no un rol dentro del mismo contrato, y ampliar la lista hasta que no quede ningún par sería apagar la norma en vez de afinarla. Sobre el mismo proyecto: 8 pares → 3, y los 3 restantes son exactamente los que merecen ojo humano.
+
+**Verificación** — mismo repositorio ajeno, vault nuevo: **`healthScore` 83 → 90**, 0 `missingFrontmatter`, 0 `missingType`, 0 `missingStatus`, 0 violaciones de norma, 0 errores Mermaid, `canonicalShadow` 8 → 3, nombres de fichero legibles. El proyecto de origen quedó intacto (`git status` vacío, `HEAD` sin mover): el onboarding **lee**, y escribe solo en el vault. 1337 tests.
 
 ---
 

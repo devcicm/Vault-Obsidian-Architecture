@@ -15,6 +15,7 @@ Usage:
 
 import json
 import re
+import unicodedata
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
@@ -25,9 +26,39 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 # ============================================================
 
 
+def fold_accents(text: str) -> str:
+    """Transliterate accented latin letters to ASCII: 'Índice' -> 'Indice'.
+
+    Descompone en NFKD y descarta las marcas combinantes (categoría Mn). La 'ñ'
+    se conserva como 'n' por esta vía; 'ß' y 'ø' no descomponen, así que van en
+    la tabla explícita.
+
+    No es cosmético: el que borra los acentos en vez de transliterarlos produce
+    nombres ilegibles ('Características' -> 'caracter-sticas') y wikilinks que
+    heredan el destrozo. Salió al correr el onboarding contra un proyecto real
+    en español — `vault-sandbox/` no podía exhibirlo porque lo genera este
+    mismo repo, en inglés (regla 7 de CLAUDE.md, corolario de AP-44).
+    """
+    explicit = {"ß": "ss", "ø": "o", "Ø": "O", "đ": "d", "Đ": "D", "ł": "l", "Ł": "L"}
+    text = "".join(explicit.get(ch, ch) for ch in text)
+    return "".join(
+        ch for ch in unicodedata.normalize("NFKD", text) if not unicodedata.combining(ch)
+    )
+
+
 def slugify(text: str) -> str:
-    """Convert text to URL-safe slug (lowercase, hyphens, no special chars)."""
-    slug = text.lower()
+    """Convert text to URL-safe slug (lowercase, hyphens, no special chars).
+
+    Fuente única del estándar para derivar un nombre de fichero de un título.
+    Ningún módulo declara su propia versión: `tests/test_slug_canonico.py` lo
+    verifica. Existían 26 implementaciones en dos familias divergentes —una
+    conservaba los acentos en el nombre de fichero, la otra los borraba— y
+    ambas eran incorrectas por motivos distintos.
+    """
+    slug = fold_accents(text).lower()
+    # `\w` en modo unicode a propósito: tras plegar los acentos, lo que quede
+    # fuera de ASCII es un alfabeto sin equivalente (CJK, cirílico) y borrarlo
+    # dejaría el slug vacío. Se conserva; lo que se quita es puntuación.
     slug = re.sub(r"[^\w\s-]", "", slug)
     slug = re.sub(r"[\s_]+", "-", slug)
     slug = re.sub(r"^-+|-+$", "", slug)
