@@ -6229,7 +6229,7 @@ temp/
 
 ---
 
-### v39.3 — 2026-08-05 `git: pending`
+### v39.3 — 2026-08-05 `git: 0b63840`
 
 **El camino de ejecución, comprobado por donde se ejecuta**
 
