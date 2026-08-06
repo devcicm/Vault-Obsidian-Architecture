@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
-> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-48 más
-> las familias PAT, SP y CN. Por familia: AP 48, CN 3, PAT 6, SP 3.
-> Bilingual document. Full norm catalog: antipatterns AP-01..AP-48 plus the PAT,
-> SP and CN families. By family: AP 48, CN 3, PAT 6, SP 3.
+> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-49 más
+> las familias PAT, SP y CN. Por familia: AP 49, CN 3, PAT 6, SP 3.
+> Bilingual document. Full norm catalog: antipatterns AP-01..AP-49 plus the PAT,
+> SP and CN families. By family: AP 49, CN 3, PAT 6, SP 3.
 
 ---
 
 ## ES
 
-Total de normas registradas: 60 (AP 48, CN 3, PAT 6, SP 3)
+Total de normas registradas: 61 (AP 49, CN 3, PAT 6, SP 3)
 
 ### AP-01: Documentación alucinada
 
@@ -497,6 +497,20 @@ Medido en v39.5 sobre el servidor MCP: nueve tools con backend nativo en Node, s
 
 **Prevención:** Backend nativo solo para lo que **no tiene** implementación en Python; todo lo demás cae al runner, que es donde vive el contrato publicado. La implementación desplazada no se borra (no-derogación): se anota `superseded_by:` y se deja fuera del despacho. La regla se comprueba por comportamiento y no por lectura del código -- se llama la tool por MCP y se contrasta el envelope contra el contrato, que es el criterio del consumidor y no el propio (AP-44).
 
+### AP-49: Vínculo resuelto en tiempo de import
+
+- **Severidad:** high
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_norms --audit, vault_arch --check
+
+Un módulo deriva su ruta, su configuración o su dependencia en el momento de **importarse**, no en el de usarse. `SYSTEM_DIR = VAULT_ROOT / '00_System'` a nivel de módulo se evalúa una sola vez, cuando el intérprete carga el fichero, y a partir de ahí es una constante.
+
+Lo grave no es la constante: es que deja **inerte una costura que existe**. `vault_io.set_vault_root()` está publicado y 12 tests lo usan, pero no puede reapuntar a un módulo que ya calculó su ruta al cargar. La inyección parece disponible y no lo está, que es peor que no tenerla -- quien la usa cree haber redirigido la escritura.
+
+Medido en v40.0 por el propio guard: **82 vínculos congelados en 62 módulos**, y **69** módulos importan el valor `VAULT_ROOT` frente a **8** que llaman a `get_vault_root()`. La cifra es la que cuenta `vault_arch --check`, no una estimación a ojo: la norma y su puerta miden lo mismo o la norma no es comprobable. La consecuencia visible es que `cli/runner.py` aísla cada tool en un subproceso, y su propio comentario cita "estado a nivel de módulo" como la razón: el aislamiento por proceso no es una decisión de diseño libre, es la compensación de este acoplamiento.
+
+**Prevención:** La raíz y sus derivadas se reciben, no se importan: el dominio toma un contexto (`VaultContext`) y el adaptador lo construye por llamada. Si un módulo necesita la ruta, la resuelve **tarde** con `get_vault_root()` dentro de la función. El guard es AST sobre asignaciones de nivel de módulo que derivan de `VAULT_ROOT`, con baseline que solo puede encoger -- la deuda medida no se arregla en un commit, pero no puede crecer.
+
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
 - **Severidad:** high
@@ -621,7 +635,7 @@ Antes de cualquier operación masiva (migración, rename en lote, vault_tags --r
 
 ## EN
 
-Total registered norms: 60 (AP 48, CN 3, PAT 6, SP 3)
+Total registered norms: 61 (AP 49, CN 3, PAT 6, SP 3)
 
 ### AP-01: Documentación alucinada
 
@@ -1108,6 +1122,20 @@ Es AP-05 (múltiples fuentes de verdad) desplazado del dato al camino de ejecuci
 Medido en v39.5 sobre el servidor MCP: nueve tools con backend nativo en Node, siete de ellas con script Python del mismo nombre. Ninguna de las siete compartía un solo campo de envelope con el contrato de `00_System/tool-spec.json` -- `vault_fundamentals` devolvía `compliance_pct`/`passed` donde el contrato dice `path`/`total`. Y la divergencia peor no era de forma sino de efecto: la implementación nativa de `vault_graph` no escribía el grafo, así que un agente la llamaba, recibía `ok: true` y el índice se quedaba desfasado -- AP-37 y AP-47 servidos por el único camino que un agente real usa. `vault_smoke` recorría las 91 tools del catálogo ejecutando el `.py`: probaba exactamente la implementación que el agente no toca.
 
 **Prevention:** Backend nativo solo para lo que **no tiene** implementación en Python; todo lo demás cae al runner, que es donde vive el contrato publicado. La implementación desplazada no se borra (no-derogación): se anota `superseded_by:` y se deja fuera del despacho. La regla se comprueba por comportamiento y no por lectura del código -- se llama la tool por MCP y se contrasta el envelope contra el contrato, que es el criterio del consumidor y no el propio (AP-44).
+
+### AP-49: Vínculo resuelto en tiempo de import
+
+- **Severity:** high
+- **Enforcement:** guard+audit
+- **Detected by:** vault_norms --audit, vault_arch --check
+
+Un módulo deriva su ruta, su configuración o su dependencia en el momento de **importarse**, no en el de usarse. `SYSTEM_DIR = VAULT_ROOT / '00_System'` a nivel de módulo se evalúa una sola vez, cuando el intérprete carga el fichero, y a partir de ahí es una constante.
+
+Lo grave no es la constante: es que deja **inerte una costura que existe**. `vault_io.set_vault_root()` está publicado y 12 tests lo usan, pero no puede reapuntar a un módulo que ya calculó su ruta al cargar. La inyección parece disponible y no lo está, que es peor que no tenerla -- quien la usa cree haber redirigido la escritura.
+
+Medido en v40.0 por el propio guard: **82 vínculos congelados en 62 módulos**, y **69** módulos importan el valor `VAULT_ROOT` frente a **8** que llaman a `get_vault_root()`. La cifra es la que cuenta `vault_arch --check`, no una estimación a ojo: la norma y su puerta miden lo mismo o la norma no es comprobable. La consecuencia visible es que `cli/runner.py` aísla cada tool en un subproceso, y su propio comentario cita "estado a nivel de módulo" como la razón: el aislamiento por proceso no es una decisión de diseño libre, es la compensación de este acoplamiento.
+
+**Prevention:** La raíz y sus derivadas se reciben, no se importan: el dominio toma un contexto (`VaultContext`) y el adaptador lo construye por llamada. Si un módulo necesita la ruta, la resuelve **tarde** con `get_vault_root()` dentro de la función. El guard es AST sobre asignaciones de nivel de módulo que derivan de `VAULT_ROOT`, con baseline que solo puede encoger -- la deuda medida no se arregla en un commit, pero no puede crecer.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 

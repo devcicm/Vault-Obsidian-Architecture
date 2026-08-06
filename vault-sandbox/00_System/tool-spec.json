@@ -78,6 +78,49 @@
         "F7"
       ]
     },
+    "vault_arch": {
+      "group": "Normas",
+      "group_id": 35,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "baseline_total",
+        "context",
+        "contexts",
+        "crossings",
+        "crossings_total",
+        "declared_but_missing",
+        "frozen",
+        "frozen_bindings",
+        "frozen_bindings_baseline",
+        "frozen_bindings_total",
+        "modules",
+        "module",
+        "new_crossings",
+        "new_frozen_bindings",
+        "ok",
+        "path",
+        "settled_crossings",
+        "settled_frozen_bindings",
+        "title",
+        "tool",
+        "unclassified_modules"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "integrity",
+          "consistency"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F8"
+      ]
+    },
     "vault_audit": {
       "group": "Salud del Vault",
       "group_id": 6,
@@ -887,6 +930,16 @@
         "F7"
       ]
     },
+    "vault_errors": {
+      "group": "Internos",
+      "group_id": 0,
+      "required_args": [],
+      "declared_returns": [
+        "ok"
+      ],
+      "status": "internal",
+      "reason": "Catálogo de códigos de error y su CLI de consulta. Es infraestructura que consumen todas las tools, no una capacidad del vault: publicarla daría a un agente una tool cuyo efecto sobre el vault es ninguno."
+    },
     "vault_fix_brackets": {
       "group": "Corrección Automática",
       "group_id": 33,
@@ -1566,6 +1619,26 @@
         "F2",
         "F3"
       ]
+    },
+    "vault_mcp": {
+      "group": "Internos",
+      "group_id": 0,
+      "required_args": [],
+      "declared_returns": [
+        "ok"
+      ],
+      "status": "internal",
+      "reason": "Arranque y diagnóstico del propio servidor MCP. Su superficie es el transporte, no el vault."
+    },
+    "vault_mcp_catalog": {
+      "group": "Internos",
+      "group_id": 0,
+      "required_args": [],
+      "declared_returns": [
+        "ok"
+      ],
+      "status": "internal",
+      "reason": "Mantiene el toolkit, no el vault: sincroniza el catálogo y corre las puertas de cierre de CLAUDE.md. Se ejecuta en el repo del estándar, donde no hay vault que gobernar, así que no pertenece a la superficie que se expone a un agente."
     },
     "vault_merge": {
       "group": "Core",
@@ -2643,6 +2716,80 @@
         "F3"
       ]
     },
+    "vault_sanacion": {
+      "group": "Skills",
+      "group_id": 37,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "error",
+        "error_code",
+        "message",
+        "next",
+        "ok",
+        "phases",
+        "phases_apply",
+        "phases_unknown",
+        "tool",
+        "vault_root",
+        "vault_root_origin",
+        "writes"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "completeness",
+          "consistency",
+          "validity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F4",
+        "F7"
+      ]
+    },
+    "vault_sdd_init": {
+      "group": "Skills",
+      "group_id": 37,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "constant_generators",
+        "error",
+        "error_code",
+        "expected_range",
+        "found_ranges",
+        "message",
+        "missing_files",
+        "ok",
+        "path",
+        "preserved",
+        "stale_files",
+        "status",
+        "tool",
+        "written",
+        "written_count"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency",
+          "currency"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F4",
+        "F7"
+      ]
+    },
     "vault_search": {
       "group": "Core",
       "group_id": 1,
@@ -2819,6 +2966,26 @@
         "F1",
         "F5"
       ]
+    },
+    "vault_spec_catalog_check": {
+      "group": "Internos",
+      "group_id": 0,
+      "required_args": [],
+      "declared_returns": [
+        "ok"
+      ],
+      "status": "internal",
+      "reason": "Guard de coherencia del catálogo de la spec. Mismo caso que vault_mcp_catalog: opera sobre el estándar."
+    },
+    "vault_spec_generate_catalog": {
+      "group": "Internos",
+      "group_id": 0,
+      "required_args": [],
+      "declared_returns": [
+        "ok"
+      ],
+      "status": "internal",
+      "reason": "Generador del catálogo de la spec. Opera sobre el estándar, no sobre un vault."
     },
     "vault_spec_memory": {
       "group": "meta",
@@ -3254,130 +3421,6 @@
         "F3",
         "F7"
       ]
-    },
-    "vault_sdd_init": {
-      "group": "Skills",
-      "group_id": 37,
-      "status": "active",
-      "required_args": [],
-      "declared_returns": [
-        "constant_generators",
-        "error",
-        "error_code",
-        "expected_range",
-        "found_ranges",
-        "message",
-        "missing_files",
-        "ok",
-        "path",
-        "preserved",
-        "stale_files",
-        "status",
-        "tool",
-        "written",
-        "written_count"
-      ],
-      "dq": {
-        "dq_dimensions": [
-          "consistency",
-          "currency"
-        ],
-        "cia_scope": [
-          "integrity"
-        ],
-        "propagation_aware": false
-      },
-      "fundamentals": [
-        "F1",
-        "F4",
-        "F7"
-      ]
-    },
-    "vault_sanacion": {
-      "group": "Skills",
-      "group_id": 37,
-      "status": "active",
-      "required_args": [],
-      "declared_returns": [
-        "error",
-        "error_code",
-        "message",
-        "next",
-        "ok",
-        "phases",
-        "phases_apply",
-        "phases_unknown",
-        "tool",
-        "vault_root",
-        "vault_root_origin",
-        "writes"
-      ],
-      "dq": {
-        "dq_dimensions": [
-          "completeness",
-          "consistency",
-          "validity"
-        ],
-        "cia_scope": [
-          "integrity"
-        ],
-        "propagation_aware": false
-      },
-      "fundamentals": [
-        "F1",
-        "F4",
-        "F7"
-      ]
-    },
-    "vault_errors": {
-      "group": "Internos",
-      "group_id": 0,
-      "required_args": [],
-      "declared_returns": [
-        "ok"
-      ],
-      "status": "internal",
-      "reason": "Catálogo de códigos de error y su CLI de consulta. Es infraestructura que consumen todas las tools, no una capacidad del vault: publicarla daría a un agente una tool cuyo efecto sobre el vault es ninguno."
-    },
-    "vault_mcp": {
-      "group": "Internos",
-      "group_id": 0,
-      "required_args": [],
-      "declared_returns": [
-        "ok"
-      ],
-      "status": "internal",
-      "reason": "Arranque y diagnóstico del propio servidor MCP. Su superficie es el transporte, no el vault."
-    },
-    "vault_mcp_catalog": {
-      "group": "Internos",
-      "group_id": 0,
-      "required_args": [],
-      "declared_returns": [
-        "ok"
-      ],
-      "status": "internal",
-      "reason": "Mantiene el toolkit, no el vault: sincroniza el catálogo y corre las puertas de cierre de CLAUDE.md. Se ejecuta en el repo del estándar, donde no hay vault que gobernar, así que no pertenece a la superficie que se expone a un agente."
-    },
-    "vault_spec_catalog_check": {
-      "group": "Internos",
-      "group_id": 0,
-      "required_args": [],
-      "declared_returns": [
-        "ok"
-      ],
-      "status": "internal",
-      "reason": "Guard de coherencia del catálogo de la spec. Mismo caso que vault_mcp_catalog: opera sobre el estándar."
-    },
-    "vault_spec_generate_catalog": {
-      "group": "Internos",
-      "group_id": 0,
-      "required_args": [],
-      "declared_returns": [
-        "ok"
-      ],
-      "status": "internal",
-      "reason": "Generador del catálogo de la spec. Opera sobre el estándar, no sobre un vault."
     }
   },
   "_counts": {

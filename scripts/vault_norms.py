@@ -1352,6 +1352,54 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "tools_detecting": ["vault_norms --audit", "vault_mcp_catalog --check-contracts"],
         "introduced_version": "v39.5",
     },
+    {
+        "code": "AP-49",
+        "name": "Vínculo resuelto en tiempo de import",
+        "type": "antipattern",
+        "category": "architecture",
+        "severity": "high",
+        "enforcement": "guard+audit",
+        "description": (
+            "Un módulo deriva su ruta, su configuración o su dependencia en el "
+            "momento de **importarse**, no en el de usarse. `SYSTEM_DIR = "
+            "VAULT_ROOT / '00_System'` a nivel de módulo se evalúa una sola vez, "
+            "cuando el intérprete carga el fichero, y a partir de ahí es una "
+            "constante.\n\n"
+            "Lo grave no es la constante: es que deja **inerte una costura que "
+            "existe**. `vault_io.set_vault_root()` está publicado y 12 tests lo "
+            "usan, pero no puede reapuntar a un módulo que ya calculó su ruta al "
+            "cargar. La inyección parece disponible y no lo está, que es peor que "
+            "no tenerla — quien la usa cree haber redirigido la escritura.\n\n"
+            "Medido en v40.0 por el propio guard: **82 vínculos congelados en "
+            "62 módulos**, y **69** módulos importan el valor `VAULT_ROOT` "
+            "frente a **8** que llaman a `get_vault_root()`. La cifra es la que "
+            "cuenta `vault_arch --check`, no una estimación a ojo: la norma y su "
+            "puerta miden lo mismo o la norma no es comprobable. La consecuencia visible es "
+            "que `cli/runner.py` aísla cada tool en un subproceso, y su propio "
+            "comentario cita «estado a nivel de módulo» como la razón: el "
+            "aislamiento por proceso no es una decisión de diseño libre, es la "
+            "compensación de este acoplamiento."
+        ),
+        "signal": (
+            "Las pruebas necesitan subprocesos para aislarse unas de otras; "
+            "`set_vault_root()` no cambia dónde escribe una tool; dos raíces de "
+            "vault no pueden coexistir en el mismo intérprete; una asignación de "
+            "nivel de módulo deriva de `VAULT_ROOT` sin pasar por "
+            "`get_vault_root()`."
+        ),
+        "prevention": (
+            "La raíz y sus derivadas se reciben, no se importan: el dominio toma "
+            "un contexto (`VaultContext`) y el adaptador lo construye por "
+            "llamada. Si un módulo necesita la ruta, la resuelve **tarde** con "
+            "`get_vault_root()` dentro de la función. El guard es AST sobre "
+            "asignaciones de nivel de módulo que derivan de `VAULT_ROOT`, con "
+            "baseline que solo puede encoger — la deuda medida no se arregla en "
+            "un commit, pero no puede crecer."
+        ),
+        "tools_enforcing": ["vault_arch --check"],
+        "tools_detecting": ["vault_norms --audit", "vault_arch --check"],
+        "introduced_version": "v40.0",
+    },
     # ── Patrón PAT-6 ───────────────────────────────────────────────────────────
     {
         "code": "PAT-6",

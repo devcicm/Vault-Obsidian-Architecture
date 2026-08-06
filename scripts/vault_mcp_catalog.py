@@ -2115,6 +2115,60 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         ),
         "related": ["vault_doc_counts", "vault_norms", "vault_mcp_catalog"],
     },
+    "vault_arch": {
+        "name": "vault_arch",
+        "script": "vault_arch.py",
+        "group": "Normas",
+        "purpose": (
+            "Plano técnico del estándar: declara los nueve contextos acotados, "
+            "su lenguaje ubicuo y sus fronteras, y falla cuando una importación "
+            "cruza un límite no declarado. Vigila también AP-49 —vínculos "
+            "resueltos en tiempo de import—. Ambas deudas arrancan congeladas y "
+            "solo pueden encoger."
+        ),
+        "params": {
+            "check": {
+                "type": "boolean", "required": False,
+                "description": "Reporta fronteras cruzadas y vínculos congelados",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean", "required": False,
+                "description": "Exit 1 también si se saldó deuda sin recongelar (gate de CI)",
+                "validators": [],
+            },
+            "freeze": {
+                "type": "boolean", "required": False,
+                "description": "Recongela scripts/arch-baseline.json tras saldar deuda",
+                "validators": [],
+            },
+            "blueprint": {
+                "type": "boolean", "required": False,
+                "description": "Deriva docs/ARQUITECTURA.md desde el registro CONTEXTS",
+                "validators": [],
+            },
+            "map": {
+                "type": "string", "required": False,
+                "description": "Dice a qué contexto acotado pertenece un módulo",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "Todo módulo en disco pertenece a un contexto: sin clasificar es puerta dura, no baseline",
+            "El grafo de importaciones se reconstruye por AST, no por una lista escrita a mano que envejecería sola",
+            "Depender del kernel no es cruce (límite 1); importar el módulo de otro contexto sí",
+        ],
+        "side_effects": [
+            "Con --freeze reescribe scripts/arch-baseline.json",
+            "Con --blueprint reescribe docs/ARQUITECTURA.md",
+        ],
+        "example": (
+            "python vault_arch.py --check --strict\n"
+            "python vault_arch.py --map vault_backup\n"
+            "python vault_arch.py --blueprint"
+        ),
+        "related": ["vault_norms", "vault_noop_audit", "vault_mcp_catalog"],
+    },
     "vault_noop_audit": {
         "name": "vault_noop_audit",
         "script": "vault_noop_audit.py",
@@ -3151,6 +3205,7 @@ GROUPS: Dict[str, List[str]] = {
     "Session Delta y Tags": ["vault_delta", "vault_tags"],
     "Normas": [
         "vault_norms",
+        "vault_arch",
         "vault_code_tag",
         "vault_doc_counts",
         "vault_doc_sync",

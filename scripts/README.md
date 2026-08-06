@@ -1,13 +1,13 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 91 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
+Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 92 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **111 archivos Python** — 91 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
+- **112 archivos Python** — 92 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
 - **Saneamiento de índices (v38.1)** — `vault_section_index.py --heal [--root]` regenera índices con formato legacy `[[stem|alias]]` o ausentes; el auto-index post-write se auto-cura si un agente escribe `index.md` a mano
-- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 91 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
+- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 92 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
 - **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault; requiere marcador de CONTENIDO (01_Projects/02_Observability/03_Decisions/.obsidian), no solo 00_System/99_Index (evita el ciclo auto-reforzado de detección); override runtime con `set_vault_root()`/env `VAULT_ROOT`
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
@@ -59,7 +59,7 @@ Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan 
 | [Grupo 32 — Gestión de Carpetas](#grupo-32--gestión-de-carpetas) | vault_folder_registry |
 | [Grupo 33 — Corrección Automática](#grupo-33--corrección-automática) | vault_fix_brackets, vault_graph_fix |
 | [Grupo 34 — Memoria de Contexto](#grupo-34--memoria-de-contexto) | vault_preferences, vault_query_parse, vault_subgraph, vault_context_pack, vault_ingest |
-| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_noop_audit, vault_smoke, vault_voice |
+| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_noop_audit, vault_smoke, vault_voice |
 | [Grupo 36 — Defectos y Cuarentena](#grupo-36--defectos-y-cuarentena) | vault_bug_save, vault_quarantine |
 | [Grupo 37 — Skills](#grupo-37--skills) | vault_sdd_init, vault_sanacion |
 | [Observabilidad de Tools](#observabilidad-de-tools) | vault_errors |
@@ -1556,7 +1556,7 @@ El vault expone sus herramientas como un **servidor MCP** que las IAs consumen d
 
 **Archivo:** `../mcp/nodejs/vault-mcp-server.mjs` (~1650 líneas, cero dependencias npm)  
 **Plan:** `../mcp/PLAN.md` — documento de evidencia con 8 fases de implementación
-**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (91 tools)
+**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (92 tools)
 
 Los parámetros que el catálogo publica **se derivan del `argparse` de cada script**,
 no se escriben a mano: el servidor compone `--<param>` literal, así que un param
@@ -1604,7 +1604,7 @@ node mcp/nodejs/vault-mcp-server.mjs --port 3000
 
 ### `vault_norms.py`
 
-Registro canónico de las 60 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
+Registro canónico de las 61 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
 
 ```bash
 python vault_norms.py                             # catálogo completo
@@ -1661,6 +1661,25 @@ python vault_doc_sync.py --fix              # regenera la tabla de índice desde
 ```
 
 El encabezado de cada grupo usa la **clave literal de `GROUPS`**, no un título propio. Es deliberado: llegaron a convivir tres vocabularios de grupo (la etiqueta `group` de cada tool, la clave de `GROUPS` y el título del README) y ninguno fallaba al divergir. `--fix` regenera el índice pero **no escribe prosa**: una tool nueva sin sección se reporta, no se inventa.
+
+---
+
+### `vault_arch.py`
+
+**El plano técnico del estándar.** Los 37 grupos de este README son una taxonomía para *encontrar* una tool; no son fronteras. `vault_arch` declara las que sí lo son: **nueve contextos acotados** y un shared kernel, cada uno con su lenguaje ubicuo, sus puertos publicados y lo que no cruza.
+
+Siguiendo la regla 3 de `CLAUDE.md`, el plano no es un documento: es el registro `CONTEXTS` con guard. `docs/ARQUITECTURA.md` se **deriva** de él y un test falla si el fichero publicado se queda atrás (AP-47 aplicado al propio plano).
+
+```bash
+python vault_arch.py --check --strict     # exit 1 si se cruzó una frontera nueva
+python vault_arch.py --map vault_backup   # -> durabilidad
+python vault_arch.py --blueprint          # regenera docs/ARQUITECTURA.md
+python vault_arch.py --freeze             # recongela scripts/arch-baseline.json
+```
+
+Vigila dos deudas distintas. **Fronteras cruzadas:** un módulo que importa el módulo de otro contexto en vez de su puerto. **AP-49 — vínculo resuelto en tiempo de import:** una asignación de nivel de módulo que deriva de `VAULT_ROOT`, que deja inerte la costura `set_vault_root()` y obliga a `cli/runner.py` a aislar cada tool en un subproceso.
+
+El grafo se reconstruye **por AST en cada ejecución**, incluidos los imports diferidos dentro de funciones: un `import vault_norms` escondido en un `try:` cruza la frontera igual que uno de cabecera. Ambas deudas arrancan congeladas y **solo pueden encoger** — un guard que exigiera cero el primer día fallaría el primer día y se desactivaría. Lo que sí es puerta dura desde el principio es que **todo módulo en disco pertenezca a un contexto**: clasificar cuesta una línea, y un módulo que ningún registro reclama no lo echa en falta nadie.
 
 ---
 

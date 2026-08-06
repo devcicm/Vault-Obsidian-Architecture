@@ -95,6 +95,15 @@ def _detect_vault_root() -> Path:
         and not s.name.startswith("vault-backups")
         and s.name != "vault-sandbox"
         and not s.name.endswith(".bak")
+        # Un paquete Python no es un vault, aunque se llame `vault/`. La rama
+        # "fresh" de abajo acepta un candidato por el NOMBRE, sin exigir un solo
+        # marcador, así que crear el paquete `vault/` del refactor bastó para
+        # que la autodetección dejara de devolver `vault-sandbox/` y empezara a
+        # apuntar al código fuente — con origen `sibling_vault_dir_fresh`, es
+        # decir, anunciando confianza. Es AP-44 en el detector: se validaba a sí
+        # mismo por convención de nombre en vez de por el criterio del
+        # consumidor, que es «¿tiene esto contenido de vault?».
+        and not (s / "__init__.py").exists()
     ]
     # Prefer candidates that already have vault content (initialized vault)
     for c in candidates:

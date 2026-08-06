@@ -111,6 +111,51 @@
         "vault_read"
       ]
     },
+    "vault_arch": {
+      "name": "vault_arch",
+      "description": "Plano técnico del estándar: declara los nueve contextos acotados, su lenguaje ubicuo y sus fronteras, y falla cuando una importación cruza un límite no declarado. Vigila también AP-49 —vínculos resueltos en tiempo de import—. Ambas deudas arrancan congeladas y solo pueden encoger.",
+      "group": "Normas",
+      "script": "vault_arch.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "check": {
+            "type": "string",
+            "description": "Reporta fronteras cruzadas y vínculos congelados"
+          },
+          "strict": {
+            "type": "string",
+            "description": "Exit 1 también si se saldó deuda sin recongelar (gate de CI)"
+          },
+          "freeze": {
+            "type": "string",
+            "description": "Recongela scripts/arch-baseline.json tras saldar deuda"
+          },
+          "blueprint": {
+            "type": "string",
+            "description": "Deriva docs/ARQUITECTURA.md desde el registro CONTEXTS"
+          },
+          "map": {
+            "type": "string",
+            "description": "Dice a qué contexto acotado pertenece un módulo"
+          }
+        }
+      },
+      "guards": [
+        "Todo módulo en disco pertenece a un contexto: sin clasificar es puerta dura, no baseline",
+        "El grafo de importaciones se reconstruye por AST, no por una lista escrita a mano que envejecería sola",
+        "Depender del kernel no es cruce (límite 1); importar el módulo de otro contexto sí"
+      ],
+      "side_effects": [
+        "Con --freeze reescribe scripts/arch-baseline.json",
+        "Con --blueprint reescribe docs/ARQUITECTURA.md"
+      ],
+      "related": [
+        "vault_norms",
+        "vault_noop_audit",
+        "vault_mcp_catalog"
+      ]
+    },
     "vault_audit": {
       "name": "vault_audit",
       "description": "Evalúa health score del vault y genera nextActions.",
@@ -4626,6 +4671,7 @@
     ],
     "Normas": [
       "vault_norms",
+      "vault_arch",
       "vault_code_tag",
       "vault_doc_counts",
       "vault_doc_sync",
