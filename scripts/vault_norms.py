@@ -26,13 +26,11 @@ from vault_io import (
     is_snapshot_path,
     normalize_stem,
     SNAPSHOT_DIRS,
-    VAULT_ROOT,
 )
 from vault_lib import read_frontmatter as _leer_frontmatter
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-NORM_REGISTRY = VAULT_ROOT / "00_System" / "norm-registry.json"
 
 # ─── Catálogo canónico (fuente de verdad) ──────────────────────────────────────
 #
@@ -1370,10 +1368,11 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "usan, pero no puede reapuntar a un módulo que ya calculó su ruta al "
             "cargar. La inyección parece disponible y no lo está, que es peor que "
             "no tenerla — quien la usa cree haber redirigido la escritura.\n\n"
-            "Medido en v40.0 por el propio guard: **45 vínculos congelados en "
-            "38 módulos** —eran 82 en 62 antes de empezar a migrar contextos al "
-            "dominio; Durabilidad los dejó en 77, Índices en 69, Grafo en 51 y "
-            "Consulta en 45, y bajan cada vez que un contexto se migra—. La "
+            "Medido en v40.0 por el propio guard: **38 vínculos congelados en "
+            "32 módulos** —eran 82 en 62 antes de empezar a migrar contextos al "
+            "dominio; Durabilidad los dejó en 77, Índices en 69, Grafo en 51, "
+            "Consulta en 45 y Gobernanza en 38, y bajan cada vez que un contexto "
+            "se migra—. La "
             "cifra es la que "
             "cuenta `vault_arch --check`, no una estimación a ojo: la norma y su "
             "puerta miden lo mismo o la norma no es comprobable. La consecuencia visible es "
@@ -1568,6 +1567,26 @@ _CATEGORY_ORDER = {
 # ─── Funciones públicas ────────────────────────────────────────────────────────
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioGobernanza:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioGobernanza(construir(root))
+
+
+def _norm_registry() -> Path:
+    return _repo().registro_normas
+
+
 def compute_norm_refs(folder: str, content: str, wiki_links: List[str]) -> List[str]:
     """
     Compute the list of norm codes that apply to a note based on its folder and content.
@@ -1665,7 +1684,7 @@ def vault_norms_show(code: str) -> Dict[str, Any]:
 
 def vault_norms_scan(path: str) -> Dict[str, Any]:
     """Detect which norms are applicable to a vault note based on content analysis."""
-    note_path = VAULT_ROOT / path
+    note_path = _raiz() / path
     if not note_path.exists():
         return {"ok": False, "error": f"Note not found: {path}"}
 
@@ -1745,12 +1764,12 @@ def vault_norms_scan(path: str) -> Dict[str, Any]:
         # AP-14: check for ghost links (note doesn't exist)
         all_stems = {
             p.stem.lower().replace("-", "").replace("_", "").replace(" ", "")
-            for p in VAULT_ROOT.rglob("*.md")
+            for p in _raiz().rglob("*.md")
             # El hueco simétrico al del barrido principal, y en la direccion
             # contraria: si los stems de las instantaneas cuentan, un enlace
             # fantasma "resuelve" porque existe una COPIA en un backup. La nota
             # viva ya no esta y AP-14 no lo ve.
-            if not _es_instantanea(str(p.relative_to(VAULT_ROOT)))
+            if not _es_instantanea(str(p.relative_to(_raiz())))
         }
         ghost = [
             l
@@ -1816,7 +1835,7 @@ def vault_norms_apply(code: str, path: str) -> Dict[str, Any]:
     if code not in _NORM_BY_CODE:
         return {"ok": False, "error": f"Norm '{code}' not found."}
 
-    note_path = VAULT_ROOT / path
+    note_path = _raiz() / path
     if not note_path.exists():
         return {"ok": False, "error": f"Note not found: {path}"}
 
@@ -1918,12 +1937,12 @@ def vault_norms_rebuild() -> Dict[str, Any]:
         "norms": NORM_CATALOG,
     }
 
-    NORM_REGISTRY.parent.mkdir(parents=True, exist_ok=True)
-    atomic_write_json(NORM_REGISTRY, registry)
+    _norm_registry().parent.mkdir(parents=True, exist_ok=True)
+    atomic_write_json(_norm_registry(), registry)
 
     return {
         "ok": True,
-        "registry": str(NORM_REGISTRY.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "registry": str(_norm_registry().relative_to(_raiz())).replace("\\", "/"),
         "total": registry["total"],
         "antipatterns": registry["antipatterns"],
         "patterns": registry["patterns"],
@@ -2444,7 +2463,7 @@ def vault_norms_audit(root: Optional[Path] = None) -> Dict[str, Any]:
     from vault_lib import extract_wikilinks, parse_frontmatter_with_body
     from vault_registry import SECTIONS
 
-    root = (root or VAULT_ROOT).resolve()
+    root = (root or _raiz()).resolve()
     canonical_sections = {s["folder"] for s in SECTIONS}
     violations: List[Dict[str, Any]] = []
 

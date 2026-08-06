@@ -25,7 +25,6 @@ Usage:
 """
 
 
-
 import argparse
 
 import json
@@ -43,16 +42,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-
-from vault_io import VAULT_ROOT
-
-
 CIA_INTEGRITY_VALUES = {"critical", "high", "medium", "low"}
 
 CIA_AVAILABILITY_VALUES = {"high", "medium", "low"}
 
 CIA_SENSITIVITY_VALUES = {"public", "internal", "restricted"}
-
 
 
 REQUIRED_FOLDERS = [
@@ -82,7 +76,6 @@ REQUIRED_FOLDERS = [
 ]
 
 
-
 REQUIRED_INDEXES = [
 
     "99_Index/search-index.json",
@@ -92,7 +85,20 @@ REQUIRED_INDEXES = [
 ]
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioGobernanza:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioGobernanza(construir(root))
 
 
 def _validate_cia_fields(data: Dict[str, Any]) -> List[str]:
@@ -146,9 +152,6 @@ def _validate_cia_fields(data: Dict[str, Any]) -> List[str]:
     return errors
 
 
-
-
-
 def validate_frontmatter(note_path: Path) -> Dict[str, Any]:
 
     """Validate YAML frontmatter of a single note. Returns {valid, error?, data?}."""
@@ -162,11 +165,9 @@ def validate_frontmatter(note_path: Path) -> Dict[str, Any]:
         return {"valid": False, "error": str(e)}
 
 
-
     if not content.startswith("---"):
 
         return {"valid": False, "error": "No frontmatter block"}
-
 
 
     parts = content.split("---", 2)
@@ -174,7 +175,6 @@ def validate_frontmatter(note_path: Path) -> Dict[str, Any]:
     if len(parts) < 3:
 
         return {"valid": False, "error": "Frontmatter not closed"}
-
 
 
     try:
@@ -186,18 +186,16 @@ def validate_frontmatter(note_path: Path) -> Dict[str, Any]:
         return {"valid": False, "error": f"YAML parse error: {e}"}
 
 
-
     if not isinstance(data, dict):
 
         return {"valid": False, "error": "Frontmatter is not a YAML mapping"}
-
 
 
     # v37: required fields expanded
     required = ["id", "title", "createdAt", "updatedAt"]
 
     # For content notes (not system/index), require traceability fields
-    rel_path = str(note_path.relative_to(VAULT_ROOT)).replace("\\", "/")
+    rel_path = str(note_path.relative_to(_raiz())).replace("\\", "/")
     is_index = rel_path.endswith("/index.md") or rel_path == "index.md" or note_path.stem == "index"
     is_system = rel_path.startswith("00_System/") or rel_path == "00_System"
 
@@ -211,7 +209,6 @@ def validate_frontmatter(note_path: Path) -> Dict[str, Any]:
         return {"valid": False, "error": f"Missing required fields: {missing}", "data": data}
 
 
-
     cia_errors = _validate_cia_fields(data)
 
     if cia_errors:
@@ -219,11 +216,7 @@ def validate_frontmatter(note_path: Path) -> Dict[str, Any]:
         return {"valid": False, "error": f"CIA field errors: {'; '.join(cia_errors)}", "data": data}
 
 
-
     return {"valid": True, "data": data}
-
-
-
 
 
 def check_frontmatter(path: Optional[str], folder: Optional[str]) -> Dict[str, Any]:
@@ -232,7 +225,7 @@ def check_frontmatter(path: Optional[str], folder: Optional[str]) -> Dict[str, A
 
     if path:
 
-        note = VAULT_ROOT / path
+        note = _raiz() / path
 
         result = validate_frontmatter(note)
 
@@ -243,21 +236,19 @@ def check_frontmatter(path: Optional[str], folder: Optional[str]) -> Dict[str, A
         return {"valid": [], "invalid": [{"path": path, "error": result["error"]}]}
 
 
-
     if folder:
 
-        notes = list((VAULT_ROOT / folder).rglob("*.md"))
+        notes = list((_raiz() / folder).rglob("*.md"))
 
     else:
 
         notes = [
 
-            n for n in VAULT_ROOT.rglob("*.md")
+            n for n in _raiz().rglob("*.md")
 
             if ".history" not in str(n) and not n.name.startswith("_")
 
         ]
-
 
 
     valid: List[str] = []
@@ -265,12 +256,11 @@ def check_frontmatter(path: Optional[str], folder: Optional[str]) -> Dict[str, A
     invalid: List[Dict[str, str]] = []
 
 
-
     for note in notes:
 
         result = validate_frontmatter(note)
 
-        rel = str(note.relative_to(VAULT_ROOT))
+        rel = str(note.relative_to(_raiz()))
 
         if result["valid"]:
 
@@ -281,23 +271,16 @@ def check_frontmatter(path: Optional[str], folder: Optional[str]) -> Dict[str, A
             invalid.append({"path": rel, "error": result["error"]})
 
 
-
     return {"valid": valid, "invalid": invalid}
-
-
-
 
 
 def check_structure() -> Dict[str, Any]:
 
     """Verify that the standard numbered folders exist."""
 
-    missing = [f for f in REQUIRED_FOLDERS if not (VAULT_ROOT / f).exists()]
+    missing = [f for f in REQUIRED_FOLDERS if not (_raiz() / f).exists()]
 
     return {"expected": len(REQUIRED_FOLDERS), "missing": missing}
-
-
-
 
 
 def check_indexes() -> Dict[str, Any]:
@@ -308,7 +291,7 @@ def check_indexes() -> Dict[str, Any]:
 
     for idx in REQUIRED_INDEXES:
 
-        path = VAULT_ROOT / idx
+        path = _raiz() / idx
 
         if not path.exists():
 
@@ -325,9 +308,6 @@ def check_indexes() -> Dict[str, Any]:
                 invalid.append(f"{idx} (unreadable)")
 
     return {"required": len(REQUIRED_INDEXES), "invalid": invalid}
-
-
-
 
 
 def vault_validate(
@@ -375,7 +355,6 @@ def vault_validate(
     result: Dict[str, Any] = {"ok": True}
 
 
-
     if check in ("frontmatter", "all"):
 
         fm = check_frontmatter(path, folder)
@@ -389,7 +368,6 @@ def vault_validate(
             result["ok"] = False
 
 
-
     if check in ("structure", "all"):
 
         st = check_structure()
@@ -399,7 +377,6 @@ def vault_validate(
         if st["missing"]:
 
             result["ok"] = False
-
 
 
     if check in ("indexes", "all"):
@@ -413,11 +390,7 @@ def vault_validate(
             result["ok"] = False
 
 
-
     return result
-
-
-
 
 
 def main():
@@ -477,7 +450,6 @@ Notas:
     )
 
 
-
     args = parser.parse_args()
 
     result = vault_validate(args.path, args.folder, args.check)
@@ -485,9 +457,6 @@ Notas:
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
     return 0 if result["ok"] else 1
-
-
-
 
 
 if __name__ == "__main__":

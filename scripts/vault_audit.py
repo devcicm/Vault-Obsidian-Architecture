@@ -45,7 +45,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-from vault_io import VAULT_ROOT, is_snapshot_path, normalize_stem as _normalize
+from vault_io import is_snapshot_path, normalize_stem as _normalize
 from vault_regex import (
     detect_bracket_anomalies,
     RE_NESTED_OPEN_3,
@@ -55,12 +55,6 @@ from vault_regex import (
 from vault_mermaid_check import scan_vault as _scan_mermaid
 
 SCRIPTS_DIR = Path(__file__).parent
-
-SYSTEM_DIR = VAULT_ROOT / "00_System"
-
-QUALITY_INDEX = SYSTEM_DIR / "quality-index.json"
-
-PROPAGATION_QUEUE = SYSTEM_DIR / "propagation-queue.json"
 
 
 SKIP_FOLDERS = {"vault-backups", ".history"}
@@ -101,8 +95,40 @@ PLACEHOLDER_PATTERNS = [
 ]
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioGobernanza:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioGobernanza(construir(root))
+
+
+def _system_dir() -> Path:
+    return _repo().dir_sistema
+
+
+def _tag_registry() -> Path:
+    return _repo().registro_etiquetas
+
+
+def _quality_index() -> Path:
+    return _repo().indice_calidad
+
+
+def _propagation_queue() -> Path:
+    return _repo().cola_propagacion
+
+
 def _is_skipped(path: Path) -> bool:
-    path_str = str(path.relative_to(VAULT_ROOT))
+    path_str = str(path.relative_to(_raiz()))
 
     if ".vault-fix-backup-" in path_str:
         return True
@@ -119,7 +145,7 @@ def _get_active_notes(
 ) -> List[Path]:
     notes = []
 
-    for n in VAULT_ROOT.rglob("*.md"):
+    for n in _raiz().rglob("*.md"):
         if _is_skipped(n) or n.name.startswith("_"):
             continue
 
@@ -127,7 +153,7 @@ def _get_active_notes(
             continue
 
         if project:
-            rel = str(n.relative_to(VAULT_ROOT))
+            rel = str(n.relative_to(_raiz()))
 
             if project not in rel:
                 continue
@@ -231,7 +257,7 @@ def _is_snapshot(p: Path) -> bool:
     silencio. Fuera de la raiz no hay nada que excluir.
     """
     try:
-        return is_snapshot_path(p.relative_to(VAULT_ROOT))
+        return is_snapshot_path(p.relative_to(_raiz()))
     except ValueError:  # pragma: no cover -- rglob siempre cuelga de la raiz
         return False
 
@@ -271,7 +297,7 @@ def _leer_nota(p: Path, *, errors: str = "ignore", binario: bool = False):
         )
     except Exception as exc:  # noqa: BLE001 — el audit nunca se cae por una nota
         try:
-            rel = str(p.relative_to(VAULT_ROOT)).replace("\\", "/")
+            rel = str(p.relative_to(_raiz())).replace("\\", "/")
         except ValueError:
             rel = str(p)
         _LECTURAS_FALLIDAS.append({"path": rel, "error": f"{type(exc).__name__}: {exc}"})
@@ -305,7 +331,7 @@ def _build_indexes(notes: List[Path]) -> Tuple[Dict[str, Set[str]], Set[str]]:
 
     all_stems: Set[str] = set()
 
-    for n in VAULT_ROOT.rglob("*.md"):
+    for n in _raiz().rglob("*.md"):
         # `.history` era la unica exclusion; `vault-backups/` y `.trash/` entraban,
         # y con ellas los enlaces de instantaneas congeladas. `is_snapshot_path`
         # centraliza el criterio en `vault_io` (AP-36): los side-effects viven
@@ -314,7 +340,7 @@ def _build_indexes(notes: List[Path]) -> Tuple[Dict[str, Set[str]], Set[str]]:
             all_stems.add(_normalize(n.stem))
             # Register folder/stem paths: [[section/note]] resolves even if stem alone not unique
             try:
-                rel = n.relative_to(VAULT_ROOT)
+                rel = n.relative_to(_raiz())
                 if len(rel.parts) >= 2:
                     folder_stem = "".join(list(rel.parts[:-1])) + rel.stem
                     all_stems.add(_normalize(folder_stem))
@@ -353,7 +379,7 @@ def _detect_orphans(
     orphans = []
 
     for n in notes:
-        rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(n.relative_to(_raiz())).replace("\\", "/")
 
         if rel.startswith("00_System"):
             continue
@@ -399,7 +425,7 @@ def _detect_stale(notes: List[Path]) -> List[Dict[str, Any]]:
     stale = []
 
     for n in notes:
-        rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(n.relative_to(_raiz())).replace("\\", "/")
 
         if rel.startswith("00_System"):
             continue
@@ -426,7 +452,7 @@ def _detect_stuck_patterns(notes: List[Path]) -> List[Dict[str, Any]]:
     stuck = []
 
     for n in notes:
-        rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(n.relative_to(_raiz())).replace("\\", "/")
 
         if "05_Patterns" not in rel:
             continue
@@ -459,7 +485,7 @@ def _detect_stale_projects(notes: List[Path]) -> List[Dict[str, Any]]:
     stale_projects = []
 
     for n in notes:
-        rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(n.relative_to(_raiz())).replace("\\", "/")
 
         if "01_Projects" not in rel or n.name != "status.md":
             continue
@@ -490,16 +516,16 @@ def _detect_broken_links(
     # to a file at that relative path. The audit was treating them as broken
     # because stem-only normalization doesn't match the full path.
     all_paths: Set[str] = set()
-    for n in VAULT_ROOT.rglob("*.md"):
+    for n in _raiz().rglob("*.md"):
         if not _is_snapshot(n):
-            rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+            rel = str(n.relative_to(_raiz())).replace("\\", "/")
             # Add both with and without .md extension
             all_paths.add(rel.lower())
             if rel.lower().endswith(".md"):
                 all_paths.add(rel[:-3].lower())
 
     for n in notes:
-        rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(n.relative_to(_raiz())).replace("\\", "/")
 
         # Spec/reference files contain wiki-link SYNTAX examples that are
         # documentation, not real links. Exclude them from broken-link detection.
@@ -612,7 +638,7 @@ def _detect_canonical_shadow(notes: List[Path]) -> List[Dict[str, Any]]:
         if n.stem.lower() in _EXCLUDED_STEMS:
             continue
 
-        rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(n.relative_to(_raiz())).replace("\\", "/")
 
         # Spec/reference files have the same title by design (it's the spec).
         # Exclude them from canonical-shadow detection.
@@ -706,7 +732,7 @@ def _detect_malformed_wikilinks(notes: List[Path]) -> List[Dict[str, Any]]:
     # where `]]` from one link precedes `[[` of another link on a later line.
 
     for n in notes:
-        rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(n.relative_to(_raiz())).replace("\\", "/")
 
         # Spec/reference files contain unbalanced bracket examples as part
         # of documenting the syntax. Exclude them.
@@ -916,7 +942,7 @@ def _detect_cross_folder_duplicates(notes: List[Path]) -> List[Dict[str, Any]]:
 
         digest = hashlib.md5(content).hexdigest()
 
-        rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(n.relative_to(_raiz())).replace("\\", "/")
 
         hash_map[digest].append(rel)
 
@@ -953,7 +979,7 @@ def _detect_empty_indexes() -> List[Dict[str, Any]]:
     empty = []
 
     try:
-        for section_dir in sorted(VAULT_ROOT.iterdir()):
+        for section_dir in sorted(_raiz().iterdir()):
             if not section_dir.is_dir():
                 continue
 
@@ -1038,9 +1064,9 @@ def _detect_graph_knowledge_antipatterns() -> Dict[str, Any]:
       - ap34_orphan_relations: list of typed relations with unresolved endpoints
       - ap35_silo_flags: silo detection flags
     """
-    ENRICHED_FILE = VAULT_ROOT / "99_Index" / "graph-enriched.json"
-    ENTITY_DIR = VAULT_ROOT / "06_Diagrams" / "entity"
-    CODE_INDEX = VAULT_ROOT / "11_Code" / ".code-index.json"
+    ENRICHED_FILE = _raiz() / "99_Index" / "graph-enriched.json"
+    ENTITY_DIR = _raiz() / "06_Diagrams" / "entity"
+    CODE_INDEX = _raiz() / "11_Code" / ".code-index.json"
 
     result: Dict[str, Any] = {
         "ap31_typed_ratio": 0.0,
@@ -1186,7 +1212,7 @@ def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]
         raw = _leer_nota(p, errors="strict")
         if raw is None:
             continue
-        rel = str(p.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(p.relative_to(_raiz())).replace("\\", "/")
         # Todo `99_Index/` es artefacto derivado — lo escriben `vault_reindex` y
         # `vault_tags` a partir de las notas, y se regenera entero en cada
         # ejecución. Exigirle tags o `type` a `tag-index.md` pide metadatos a un
@@ -1291,7 +1317,7 @@ def _detect_scaffold_only_sections(content_notes: List[Path]) -> List[str]:
     sections_with_scaffold: Dict[str, bool] = {}
     sections_with_real: Dict[str, bool] = {}
     for n in content_notes:
-        rel = n.relative_to(VAULT_ROOT)
+        rel = n.relative_to(_raiz())
         if not rel.parts:
             continue
         section = rel.parts[0]
@@ -1319,7 +1345,7 @@ def _get_roadmap_for_populated_vault(content_notes: List[Path]) -> List[Dict[str
     """
     by_folder: Dict[str, int] = {}
     for n in content_notes:
-        rel = n.relative_to(VAULT_ROOT)
+        rel = n.relative_to(_raiz())
         if rel.parts:
             by_folder[rel.parts[0]] = by_folder.get(rel.parts[0], 0) + 1
 
@@ -1409,11 +1435,11 @@ def _get_roadmap_for_populated_vault(content_notes: List[Path]) -> List[Dict[str
 
 
 def _read_quality_index() -> Optional[Dict[str, Any]]:
-    if not QUALITY_INDEX.exists():
+    if not _quality_index().exists():
         return None
 
     try:
-        return json.loads(QUALITY_INDEX.read_text(encoding="utf-8"))
+        return json.loads(_quality_index().read_text(encoding="utf-8"))
 
     except Exception:
         return None
@@ -1437,7 +1463,7 @@ def _dq_is_stale(qi: Dict[str, Any]) -> bool:
 
 
 def _dq_is_locked() -> bool:
-    lock_dir = QUALITY_INDEX.parent / f".{QUALITY_INDEX.name}.lock"
+    lock_dir = _quality_index().parent / f".{_quality_index().name}.lock"
 
     return lock_dir.exists()
 
@@ -1501,11 +1527,11 @@ def _refresh_dq_if_needed() -> Dict[str, Any]:
 def _read_propagation_pending() -> List[Dict[str, Any]]:
     """Read propagation-queue.json and return pending items sorted by priority."""
 
-    if not PROPAGATION_QUEUE.exists():
+    if not _propagation_queue().exists():
         return []
 
     try:
-        data = json.loads(PROPAGATION_QUEUE.read_text(encoding="utf-8"))
+        data = json.loads(_propagation_queue().read_text(encoding="utf-8"))
 
         pending = data.get("pending", [])
 
@@ -1545,7 +1571,7 @@ def _cia_score_penalty(
     pending_paths = {p["path"] for p in propagation_pending}
 
     for n in notes:
-        rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(n.relative_to(_raiz())).replace("\\", "/")
 
         fm = read_frontmatter(n)
 
@@ -1560,17 +1586,14 @@ def _cia_score_penalty(
     return penalty
 
 
-TAG_REGISTRY = VAULT_ROOT / "00_System" / "tag-registry.json"
-
-
 def _read_tag_health() -> Optional[Dict[str, Any]]:
     """Load tag-registry.json and return tag health summary. Returns None if registry absent."""
 
-    if not TAG_REGISTRY.exists():
+    if not _tag_registry().exists():
         return None
 
     try:
-        registry = json.loads(TAG_REGISTRY.read_text(encoding="utf-8"))
+        registry = json.loads(_tag_registry().read_text(encoding="utf-8"))
 
     except Exception:
         return None
@@ -1782,7 +1805,7 @@ def vault_audit(
     by_folder: Dict[str, int] = defaultdict(int)
 
     for n in content_notes:
-        parts = n.relative_to(VAULT_ROOT).parts
+        parts = n.relative_to(_raiz()).parts
 
         by_folder[parts[0] if parts else "root"] += 1
 
@@ -2015,7 +2038,7 @@ def vault_audit(
         )
 
     # Deleted nodes: detectar nodos eliminados que tenían inbound links
-    graph_file = VAULT_ROOT / "99_Index" / "graph.json"
+    graph_file = _raiz() / "99_Index" / "graph.json"
     if graph_file.exists():
         try:
             import json as json_module
@@ -2043,7 +2066,7 @@ def vault_audit(
             pass
 
     # Moved nodes: detectar notas reubicadas
-    move_log = SYSTEM_DIR / "move-log.json"
+    move_log = _system_dir() / "move-log.json"
     if move_log.exists():
         try:
             move_data = json_module.loads(move_log.read_text(encoding="utf-8"))

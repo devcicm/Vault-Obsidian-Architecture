@@ -4,7 +4,7 @@ Síntoma medido: `set_vault_root()` cambiaba `get_vault_root()` y no cambiaba
 nada de lo que las tools usan de verdad.
 
     get_vault_root()   : C:\\tmp\\otro-vault
-    vault_audit.VAULT_ROOT : ...\\vault-sandbox   <-- el que lee y escribe
+    vault_change_log.VAULT_ROOT : ...\\vault-sandbox   <-- el que lee y escribe
 
 Causa: 89 de 98 módulos hacen `from vault_io import VAULT_ROOT` y derivan sus
 rutas EN EL IMPORT (`SYSTEM_DIR = VAULT_ROOT / "00_System"`), congelando un `Path`
@@ -36,23 +36,26 @@ def raiz_restaurada():
 
 
 def test_cambiar_el_vault_alcanza_a_los_modulos(tmp_path, raiz_restaurada):
-    import vault_audit
+    # `vault_audit` ya no sirve de ejemplo: migró al contexto Gobernanza y
+    # resuelve la raíz al usarla, que es el arreglo definitivo. Aquí se prueba
+    # el paliativo —el reanclaje— y hace falta un módulo que aún lo necesite.
+    import vault_change_log
 
     nuevo = tmp_path / "otro-vault"
     vault_io.set_vault_root(nuevo)
 
     assert vault_io.get_vault_root() == nuevo.resolve()
-    assert vault_audit.VAULT_ROOT == nuevo.resolve(), (
-        "el auditor sigue mirando el vault anterior"
+    assert vault_change_log.VAULT_ROOT == nuevo.resolve(), (
+        "el módulo sigue mirando el vault anterior"
     )
-    assert vault_audit.SYSTEM_DIR == nuevo.resolve() / "00_System", (
+    assert vault_change_log.SYSTEM_DIR == nuevo.resolve() / "00_System", (
         "las constantes derivadas quedaron ancladas al vault anterior"
     )
 
 
 def test_el_reanclaje_es_auditable(tmp_path, raiz_restaurada):
     """Una operación que reescribe estado de módulos no puede ser invisible."""
-    import vault_audit  # noqa: F401
+    import vault_change_log  # noqa: F401
 
     vault_io.set_vault_root(tmp_path / "otro")
     tocadas = vault_io.rebound_constants()
@@ -61,13 +64,13 @@ def test_el_reanclaje_es_auditable(tmp_path, raiz_restaurada):
 
 
 def test_volver_a_la_raiz_original_deja_todo_como_estaba(tmp_path):
-    import vault_audit
+    import vault_change_log
 
     original = vault_io.get_vault_root()
-    antes = vault_audit.VAULT_ROOT
+    antes = vault_change_log.VAULT_ROOT
     vault_io.set_vault_root(tmp_path / "temporal")
     vault_io.set_vault_root(original)
-    assert vault_audit.VAULT_ROOT == antes
+    assert vault_change_log.VAULT_ROOT == antes
 
 
 def test_no_toca_rutas_que_no_cuelgan_del_vault(tmp_path, raiz_restaurada):

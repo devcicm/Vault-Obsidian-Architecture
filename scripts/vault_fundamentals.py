@@ -31,15 +31,8 @@ from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
 from vault_lib import read_frontmatter, utcnow
-from vault_io import atomic_write_json, atomic_write_text, VAULT_ROOT
-
+from vault_io import atomic_write_json, atomic_write_text
 SCRIPTS_DIR = Path(__file__).parent
-SYSTEM_DIR = VAULT_ROOT / "00_System"
-FUNDAMENTALS_JSON = SYSTEM_DIR / "data-fundamentals.json"
-FUNDAMENTALS_MD = SYSTEM_DIR / "data-fundamentals.md"
-FRAMEWORK_JSON = SYSTEM_DIR / "data-framework.json"
-FRAMEWORK_MD = SYSTEM_DIR / "data-framework.md"
-CHANGE_LOG_JSON = SYSTEM_DIR / ".change-log.json"
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Canonical registry — single source of truth for the 8 fundamentals
@@ -590,16 +583,56 @@ FRAMEWORK_REGISTRIES: Dict[str, List[Dict[str, Any]]] = {
 }
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioGobernanza:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioGobernanza(construir(root))
+
+
+def _system_dir() -> Path:
+    return _repo().dir_sistema
+
+
+def _fundamentals_json() -> Path:
+    return _repo().fundamentos_json
+
+
+def _fundamentals_md() -> Path:
+    return _repo().fundamentos_md
+
+
+def _framework_json() -> Path:
+    return _repo().marco_json
+
+
+def _framework_md() -> Path:
+    return _repo().marco_md
+
+
+def _change_log_json() -> Path:
+    return _repo().bitacora_cambios
+
+
 def framework_ids() -> List[str]:
     """Todos los ids estables del marco — usados por el guard anti-drift de vault_norms."""
     return [entry["id"] for registry in FRAMEWORK_REGISTRIES.values() for entry in registry]
 
 
 def _has_change_log_entry(rel_path: str) -> bool:
-    if not CHANGE_LOG_JSON.exists():
+    if not _change_log_json().exists():
         return False
     try:
-        entries = json.loads(CHANGE_LOG_JSON.read_text(encoding="utf-8"))
+        entries = json.loads(_change_log_json().read_text(encoding="utf-8"))
         for e in entries:
             if e.get("path") == rel_path or e.get("new_path") == rel_path:
                 return True
@@ -615,7 +648,7 @@ def _has_change_log_entry(rel_path: str) -> bool:
 
 def check_note(rel_path: str) -> Dict[str, Any]:
     """Verify all 8 fundamentals for a single note. Returns pass/fail per principle."""
-    note_path = VAULT_ROOT / rel_path
+    note_path = _raiz() / rel_path
     if not note_path.exists():
         return {"ok": False, "error": f"Note not found: {rel_path}"}
 
@@ -815,11 +848,11 @@ def export_registry() -> Dict[str, Any]:
         "total": len(FUNDAMENTALS),
         "fundamentals": FUNDAMENTALS,
     }
-    SYSTEM_DIR.mkdir(parents=True, exist_ok=True)
-    atomic_write_json(FUNDAMENTALS_JSON, data)
+    _system_dir().mkdir(parents=True, exist_ok=True)
+    atomic_write_json(_fundamentals_json(), data)
     return {
         "ok": True,
-        "path": str(FUNDAMENTALS_JSON.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(_fundamentals_json().relative_to(_raiz())).replace("\\", "/"),
         "total": len(FUNDAMENTALS),
         "generated_at": data["generated_at"],
     }
@@ -892,11 +925,11 @@ def export_doc() -> Dict[str, Any]:
     lines.append("python scripts/vault_fundamentals.py")
     lines.append("```")
 
-    SYSTEM_DIR.mkdir(parents=True, exist_ok=True)
-    atomic_write_text(FUNDAMENTALS_MD, "\n".join(lines) + "\n")
+    _system_dir().mkdir(parents=True, exist_ok=True)
+    atomic_write_text(_fundamentals_md(), "\n".join(lines) + "\n")
     return {
         "ok": True,
-        "path": str(FUNDAMENTALS_MD.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(_fundamentals_md().relative_to(_raiz())).replace("\\", "/"),
     }
 
 
@@ -952,8 +985,8 @@ def export_framework() -> Dict[str, Any]:
         "registries": FRAMEWORK_REGISTRIES,
         "traceability_matrix": TRACEABILITY_MATRIX,
     }
-    SYSTEM_DIR.mkdir(parents=True, exist_ok=True)
-    atomic_write_json(FRAMEWORK_JSON, data)
+    _system_dir().mkdir(parents=True, exist_ok=True)
+    atomic_write_json(_framework_json(), data)
 
     lines: List[str] = [
         "---",
@@ -1044,11 +1077,11 @@ def export_framework() -> Dict[str, Any]:
         )
     lines.append("")
 
-    atomic_write_text(FRAMEWORK_MD, "\n".join(lines) + "\n")
+    atomic_write_text(_framework_md(), "\n".join(lines) + "\n")
     return {
         "ok": True,
-        "json": str(FRAMEWORK_JSON.relative_to(VAULT_ROOT)).replace("\\", "/"),
-        "md": str(FRAMEWORK_MD.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "json": str(_framework_json().relative_to(_raiz())).replace("\\", "/"),
+        "md": str(_framework_md().relative_to(_raiz())).replace("\\", "/"),
         "totals": data["totals"],
         "matrix_rows": len(TRACEABILITY_MATRIX),
     }

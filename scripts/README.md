@@ -1670,6 +1670,12 @@ python vault_norms.py --check-framework           # guard anti-drift: el manifie
 
 `--check-framework` se ejecuta contra `vault-obsidian-architecture.md` (raíz del repo del estándar) o contra `--spec <ruta>`. Es deliberadamente independiente de `--audit`: los vaults consumidores no contienen el manifiesto y no deben fallar por ello.
 
+Desde v40.0 el contexto **Gobernanza** —`vault_norms`, `vault_audit`, `vault_fundamentals`, `vault_quality_check`, `vault_drift_detect`, `vault_security_scan`, `vault_validate`, `vault_mermaid_check`— resuelve sus rutas al usarlas, declaradas una sola vez en `vault/gobernanza/repositorio.py`. Es el contexto con más acoplamiento entrante del estándar (veintisiete módulos de siete contextos importan `vault_norms`), así que era también el que más lejos propagaba una raíz mal congelada.
+
+Siete vínculos los contaba el guard de AP-49; **ocho más no**, porque derivaban de los primeros sin nombrar `VAULT_ROOT` —`QUALITY_INDEX = SYSTEM_DIR / "quality-index.json"`— y se evaluaban en el mismo import, igual de inertes. Dos de esas ubicaciones se calculaban por duplicado: `quality-index.json` en `vault_audit` y en `vault_quality_check`, `.change-log.json` en `vault_fundamentals` y en `vault_quality_check`. Eso es AP-05 escondido dentro de AP-49, y ahora hay un test que lo fija.
+
+La sustitución tuvo que hacerse **por AST y no por texto**: `vault_norms` cita `VAULT_ROOT` dentro de la descripción de AP-36 y de AP-49, y un reemplazo ciego habría reescrito el enunciado de las normas dejándolas ininteligibles sin que ningún guard se enterara. `test_gobernanza_dominio.py` comprueba que el texto del catálogo sigue nombrando `VAULT_ROOT` y no `_raiz()`.
+
 ### `vault_code_tag.py`
 Aplica etiquetas al **código fuente**, no a las notas: `@norm` para vincular un archivo con una norma del estándar (o con una etiqueta propia), y `@vault:` para apuntar desde el código a la nota que lo documenta. Es el extremo del lado del código de la trazabilidad que `vault_code_sync` audita.
 

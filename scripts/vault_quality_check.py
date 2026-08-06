@@ -48,9 +48,6 @@ from vault_errors import wrap_main
 from vault_lib import utcnow
 from vault_io import atomic_write_json, file_lock, VAULT_ROOT, write_report
 
-SYSTEM_DIR = VAULT_ROOT / "00_System"
-QUALITY_INDEX = SYSTEM_DIR / "quality-index.json"
-CHANGE_LOG_JSON = SYSTEM_DIR / ".change-log.json"
 
 # F4 accuracy: section → expected type mapping
 SECTION_TYPE_MAP: Dict[str, str] = {
@@ -133,8 +130,36 @@ PLACEHOLDER_PATTERNS = [
 ]
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioGobernanza:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioGobernanza(construir(root))
+
+
+def _system_dir() -> Path:
+    return _repo().dir_sistema
+
+
+def _quality_index() -> Path:
+    return _repo().indice_calidad
+
+
+def _change_log_json() -> Path:
+    return _repo().bitacora_cambios
+
+
 def _is_skipped(path: Path) -> bool:
-    path_str = str(path.relative_to(VAULT_ROOT))
+    path_str = str(path.relative_to(_raiz()))
     return any(skip in path_str for skip in SKIP_FOLDERS)
 
 
@@ -144,11 +169,11 @@ def _is_structural(path: Path) -> bool:
 
 def _get_content_notes(scope: Optional[str] = None) -> List[Path]:
     notes = []
-    for n in VAULT_ROOT.rglob("*.md"):
+    for n in _raiz().rglob("*.md"):
         if _is_skipped(n) or n.name.startswith("_") or _is_structural(n):
             continue
         if scope:
-            rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+            rel = str(n.relative_to(_raiz())).replace("\\", "/")
             if not rel.startswith(scope.rstrip("/")):
                 continue
         notes.append(n)
@@ -158,7 +183,7 @@ def _get_content_notes(scope: Optional[str] = None) -> List[Path]:
 def _get_all_notes() -> List[Path]:
     return [
         n
-        for n in VAULT_ROOT.rglob("*.md")
+        for n in _raiz().rglob("*.md")
         if not _is_skipped(n) and ".history" not in str(n)
     ]
 
@@ -216,7 +241,7 @@ def _normalize(s: str) -> str:
 
 def _build_all_stems() -> Set[str]:
     stems: Set[str] = set()
-    for n in VAULT_ROOT.rglob("*.md"):
+    for n in _raiz().rglob("*.md"):
         if ".history" not in str(n):
             stems.add(_normalize(n.stem))
     return stems
@@ -318,7 +343,7 @@ def _score_uniqueness(
     ap17_paths: Set[str],
     ap18_paths: Set[str],
 ) -> Tuple[float, List[str]]:
-    rel = str(path.relative_to(VAULT_ROOT)).replace("\\", "/")
+    rel = str(path.relative_to(_raiz())).replace("\\", "/")
     issues: List[str] = []
     score = 1.0
     if rel in ap18_paths:
@@ -392,10 +417,10 @@ def _score_non_repudiation(
 
 def _load_change_log_paths() -> Set[str]:
     """Load all unique paths referenced in .change-log.json."""
-    if not CHANGE_LOG_JSON.exists():
+    if not _change_log_json().exists():
         return set()
     try:
-        entries = json.loads(CHANGE_LOG_JSON.read_text(encoding="utf-8"))
+        entries = json.loads(_change_log_json().read_text(encoding="utf-8"))
         paths: Set[str] = set()
         for e in entries:
             if e.get("path"):
@@ -419,7 +444,7 @@ def _compute_ap17(notes: List[Path]) -> Set[str]:
             continue
         fm, _ = _read_frontmatter_raw(n)
         title = fm.get("title", n.stem).lower()
-        rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(n.relative_to(_raiz())).replace("\\", "/")
         items.append((rel, title))
 
     flagged: Set[str] = set()
@@ -441,7 +466,7 @@ def _compute_ap18(notes: List[Path]) -> Set[str]:
             digest = hashlib.md5(n.read_bytes()).hexdigest()
         except Exception:
             continue
-        rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(n.relative_to(_raiz())).replace("\\", "/")
         hash_map[digest].append(rel)
 
     flagged: Set[str] = set()
@@ -484,7 +509,7 @@ def vault_quality_check(
     total_score = 0.0
 
     for note in notes:
-        rel = str(note.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(note.relative_to(_raiz())).replace("\\", "/")
         fm, body = _read_frontmatter_raw(note)
         frontmatter_parsed = bool(fm)
         integrity_cia = fm.get("cia_integrity", "medium").lower()
@@ -567,10 +592,10 @@ def vault_quality_check(
     }
 
     if not check_only:
-        SYSTEM_DIR.mkdir(parents=True, exist_ok=True)
+        _system_dir().mkdir(parents=True, exist_ok=True)
         try:
-            with file_lock(QUALITY_INDEX, timeout=30.0):
-                atomic_write_json(QUALITY_INDEX, index_data)
+            with file_lock(_quality_index(), timeout=30.0):
+                atomic_write_json(_quality_index(), index_data)
         except TimeoutError:
             pass
 
@@ -593,7 +618,7 @@ def vault_quality_check(
         "notes": filtered,
     }
     if not check_only:
-        result["path"] = str(QUALITY_INDEX.relative_to(VAULT_ROOT)).replace("\\", "/")
+        result["path"] = str(_quality_index().relative_to(_raiz())).replace("\\", "/")
     return result
 
 
