@@ -406,9 +406,59 @@ Every vault operation must be re-executable without side effects.
 """
 
 
+def _lifecycle_states(fila: dict, vault_root: Path) -> str:
+    """Los estados de una fila, resolviendo las que tienen fuente viva.
+
+    Dos de las trece no se pueden declarar: cambian cada vez que alguien archiva
+    una tool o sube la versión. Estaban copiadas a mano en la cadena constante y
+    las dos estaban mal (`meta/removed`, que el tool-spec no usa; `… → v36`,
+    tres versiones por detrás). Se resuelven aquí contra el registro que manda.
+    """
+    if fila.get("states") is not None:
+        return " / ".join(fila["states"])
+    if fila.get("source") == "tool_spec_status":
+        try:
+            import vault_io
+            entradas = json.loads(
+                Path(vault_io.resolve_tool_spec()).read_text(encoding="utf-8")
+            ).get("tools", {})
+            estados = sorted({e.get("status", "active") for e in entradas.values()})
+            return " / ".join(estados) or "(sin entradas)"
+        except Exception:
+            return "(no resoluble)"
+    if fila.get("source") == "standard_version":
+        try:
+            from vault_standard_upgrade import CURRENT_VERSION
+            return f"v19 → … → {CURRENT_VERSION}"
+        except Exception:
+            return "(no resoluble)"
+    return "(sin declarar)"
+
+
+def _lifecycle_table(vault_root: Path, en: bool = False) -> str:
+    try:
+        from vault_norms import LIFECYCLE_REGISTRY
+    except Exception:
+        return "| — | — | — |\n"
+    clave = "entity_en" if en else "entity"
+    filas = [
+        f"| **{f[clave]}** | {_lifecycle_states(f, vault_root)} | {f['tool']} |"
+        for f in LIFECYCLE_REGISTRY
+    ]
+    return "\n".join(filas)
+
+
 def generate_state_machines(vault_root: Path, drift: dict) -> str:
-    """Generate 01-state-machines.md (bilingual)."""
-    return """# State Machines — Máquinas de Estado
+    """01-state-machines.md, derivado de `vault_norms.LIFECYCLE_REGISTRY`.
+
+    Era una cadena constante con trece filas escritas a mano, de las que dos
+    estaban desfasadas respecto a los registros que describían. Ahora la tabla
+    sale del registro y las filas con fuente viva se resuelven al generar, de
+    modo que no puede volver a quedarse atrás sin que el registro cambie.
+    """
+    es = _lifecycle_table(vault_root, en=False)
+    en = _lifecycle_table(vault_root, en=True)
+    return f"""# State Machines — Máquinas de Estado
 
 > Documento bilingüe. ES arriba, EN abajo.
 > Bilingual document. ES above, EN below.
@@ -421,19 +471,7 @@ def generate_state_machines(vault_root: Path, drift: dict) -> str:
 
 | Lifecycle | Estados | Tool |
 |---|---|---|
-| **Nota (Note)** | active / archived / deleted | vault_change_log |
-| **Patrón (Pattern)** | planificado / en_progreso / implementado / deprecado / refactoring | vault_pattern_save |
-| **Requisito (Requirement)** | draft / reviewed / approved / implemented / verified / obsolete | vault_requirement_save |
-| **Test** | not_run / pass / fail / blocked / skip | vault_test_save |
-| **Runbook execution** | success / failed / partial | vault_runbook_log |
-| **Incidente (Incident)** | detected / investigating / identified / mitigating / resolved / closed / post-mortem | vault_incident_save |
-| **SLO burn** | healthy / 1h-burn / 6h-burn / 30d-burn / breached | vault_slo_save |
-| **Risk treatment** | accept / mitigate / transfer / avoid | vault_risk_save |
-| **NCR** | open / closed | vault_ncr_save |
-| **Backup** | active / superseded | (manual) |
-| **Propagation pending** | pending / reviewed | vault_propagate |
-| **Tool lifecycle** | active / deprecated / internal / meta / removed | tool-spec.json |
-| **Standard version** | v19 → v20 → … → v36 | vault_standard_upgrade |
+{es}
 
 ### Vocabulario unificado
 
@@ -448,19 +486,7 @@ def generate_state_machines(vault_root: Path, drift: dict) -> str:
 
 | Lifecycle | States | Tool |
 |---|---|---|
-| **Note** | active / archived / deleted | vault_change_log |
-| **Pattern** | planificado / en_progreso / implementado / deprecado / refactoring | vault_pattern_save |
-| **Requirement** | draft / reviewed / approved / implemented / verified / obsolete | vault_requirement_save |
-| **Test** | not_run / pass / fail / blocked / skip | vault_test_save |
-| **Runbook execution** | success / failed / partial | vault_runbook_log |
-| **Incident** | detected / investigating / identified / mitigating / resolved / closed / post-mortem | vault_incident_save |
-| **SLO burn** | healthy / 1h-burn / 6h-burn / 30d-burn / breached | vault_slo_save |
-| **Risk treatment** | accept / mitigate / transfer / avoid | vault_risk_save |
-| **NCR** | open / closed | vault_ncr_save |
-| **Backup** | active / superseded | (manual) |
-| **Propagation pending** | pending / reviewed | vault_propagate |
-| **Tool lifecycle** | active / deprecated / internal / meta / removed | tool-spec.json |
-| **Standard version** | v19 → v20 → … → v36 | vault_standard_upgrade |
+{en}
 
 ### Unified vocabulary
 
@@ -1181,27 +1207,48 @@ def main() -> int:
         print(json.dumps(envelope, ensure_ascii=False, indent=2))
         return 0 if envelope["ok"] else 1
 
-    print(f"vault-sdd-init v1.0")
-    print(f"Vault: {vault_root}")
-    print(f"Output: {sdd_dir}")
-    print(f"Bilingual: {args.bilingual}")
-    print(f"Dry-run: {args.dry_run}")
-    print()
+    # El informe de progreso va a stderr y el envelope a stdout, que son dos
+    # lectores distintos. Estaban mezclados en el mismo canal, así que la salida
+    # de la tool no era JSON parseable: `vault_smoke` la reportó como «la salida
+    # no es JSON» la primera vez que la ejerció —esta tool entró al catálogo en
+    # v39.4, y hasta entonces nadie la había ejecutado por el camino de una tool—.
+    # Las líneas siguen imprimiéndose igual para quien la corre a mano.
+    def traza(*a):
+        print(*a, file=sys.stderr)
+
+    traza(f"vault-sdd-init v1.0")
+    traza(f"Vault: {vault_root}")
+    traza(f"Output: {sdd_dir}")
+    traza(f"Bilingual: {args.bilingual}")
+    traza(f"Dry-run: {args.dry_run}")
+    traza()
 
     drift = detect_drift(vault_root)
-    print(f"Drift detected:")
-    print(f"  Version: {drift['version']}")
-    print(f"  Missing norms: {len(drift['missing_norms'])}")
-    print(f"  Warnings: {len(drift['warnings'])}")
-    print()
+    traza(f"Drift detected:")
+    traza(f"  Version: {drift['version']}")
+    traza(f"  Missing norms: {len(drift['missing_norms'])}")
+    traza(f"  Warnings: {len(drift['warnings'])}")
+    traza()
 
     if args.dry_run:
-        print("DRY RUN: would generate the following files:")
+        traza("DRY RUN: would generate the following files:")
         for fname in EXPECTED_OUTPUTS:
             target = sdd_dir / fname
-            print(f"  {target}")
-        print()
-        print("No files written.")
+            traza(f"  {target}")
+        traza()
+        traza("No files written.")
+        # También en seco hay que devolver envelope: un modo de la tool que no
+        # emite JSON es un modo que ninguna otra tool puede consumir.
+        print(json.dumps({
+            "ok": True,
+            "tool": "vault_sdd_init",
+            "dry_run": True,
+            "would_write": list(EXPECTED_OUTPUTS),
+            "written": [],
+            "written_count": 0,
+            "preserved": [],
+            "path": str(sdd_dir),
+        }, ensure_ascii=False, indent=2))
         return 0
 
     sdd_dir.mkdir(parents=True, exist_ok=True)
@@ -1211,14 +1258,14 @@ def main() -> int:
         content = generator(vault_root, drift)
         atomic_write_text(target, content)
         generated.append(fname)
-        print(f"  [OK] {fname}")
+        traza(f"  [OK] {fname}")
 
     # After all MD files are written, generate integrity + gaps
     integrity = generate_integrity_report(
         vault_root, drift, generated + ["integrity-report.json", "gaps.md"]
     )
     atomic_write_json(sdd_dir / "integrity-report.json", integrity)
-    print(f"  [OK] integrity-report.json")
+    traza(f"  [OK] integrity-report.json")
 
     # `gaps.md` es el único de los 14 declarado *manual fill*, y su preservación
     # NO depende de `--force`: `--force` levanta la idempotencia de lo generado,
@@ -1236,20 +1283,20 @@ def main() -> int:
         if "# Gaps" not in existing or len(existing) < 200:
             atomic_write_text(gaps_path, gaps_content)
             escritos_gaps.append("gaps.md")
-            print(f"  [OK] gaps.md (updated)")
+            traza(f"  [OK] gaps.md (updated)")
         else:
             preservados.append("gaps.md")
-            print(f"  [SKIP] gaps.md (preserved - manual content detected)")
+            traza(f"  [SKIP] gaps.md (preserved - manual content detected)")
     else:
         atomic_write_text(gaps_path, gaps_content)
         escritos_gaps.append("gaps.md")
-        print(f"  [OK] gaps.md")
+        traza(f"  [OK] gaps.md")
 
-    print()
-    print(f"Generated {len(generated) + 2} files in {sdd_dir}")
-    print(f"Drift status: {'PASS' if integrity['checks_passed'] else 'WARN'}")
+    traza()
+    traza(f"Generated {len(generated) + 2} files in {sdd_dir}")
+    traza(f"Drift status: {'PASS' if integrity['checks_passed'] else 'WARN'}")
     if integrity["warnings"]:
-        print(f"Warnings: {integrity['warnings']}")
+        traza(f"Warnings: {integrity['warnings']}")
 
     # Envelope con indicador de trabajo (AP-37). Las líneas de arriba las lee
     # una persona; esto lo lee una tool. Sin un conteo de lo escrito, un `ok`

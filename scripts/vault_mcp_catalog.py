@@ -3540,6 +3540,56 @@ def check_contracts(spec_path: Optional[str] = None) -> Dict[str, Any]:
                 f"{nombre}: status={estado!r}, se esperaba uno de {sorted(ESTADOS_SIN_CATALOGO)}",
             )
 
+    # Invariante 4 — ningún módulo ejecutable queda sin clasificar.
+    #
+    # Los tres invariantes de arriba miran del catálogo hacia el contrato y del
+    # contrato hacia el catálogo, pero ninguno mira el disco: un script con CLI
+    # propia que no aparece en ninguno de los dos registros no incumple nada y no
+    # existe para el estándar. Medido: cinco módulos con `ArgumentParser` y
+    # `__main__` —`vault_errors`, `vault_mcp`, `vault_mcp_catalog`,
+    # `vault_spec_catalog_check`, `vault_spec_generate_catalog`— estaban en ese
+    # estado, y uno de ellos es el que ejecuta esta misma comprobación y aparece
+    # en el checklist de cierre de `CLAUDE.md`.
+    #
+    # La clasificación se saca del AST y no de una lista escrita a mano, porque
+    # una lista a mano es justo la fuente de verdad paralela que AP-05 prohíbe:
+    # un módulo que gana CLI mañana entra solo. Las librerías —sin `__main__`—
+    # no necesitan entrada: no son un camino de acceso.
+    import ast
+
+    scripts_dir = Path(__file__).resolve().parent
+    sin_clasificar = []
+    for src in sorted(scripts_dir.glob("vault_*.py")):
+        texto = src.read_text(encoding="utf-8", errors="replace")
+        if "__main__" not in texto or "ArgumentParser" not in texto:
+            continue
+        try:
+            ast.parse(texto)
+        except SyntaxError:
+            continue
+        if src.stem in TOOLS_CATALOG or src.stem in entradas:
+            continue
+        sin_clasificar.append(src.stem)
+    result["executable_modules_unclassified"] = sin_clasificar
+    for nombre in sin_clasificar:
+        problema(
+            "modulo_ejecutable_sin_clasificar",
+            f"{nombre}: tiene CLI propia y no está ni en el catálogo ni en el "
+            f"tool-spec — publícalo o anótalo con status internal/archived/orphan",
+        )
+
+    # Toda entrada que no se publica dice por qué. `status: internal` sin motivo
+    # escrito es una decisión que nadie puede revisar: al inventariarlas, las
+    # nueve `internal` iban desde «es una librería con CLI de diagnóstico» hasta
+    # «mantiene el toolkit, no el vault», y el registro no distinguía.
+    for nombre in sorted(entradas):
+        entrada = entradas[nombre]
+        if entrada.get("status", "active") == "active":
+            continue
+        if not (entrada.get("reason") or "").strip():
+            problema("estado_sin_motivo",
+                     f"{nombre}: status={entrada.get('status')!r} sin campo `reason`")
+
     # AP-48 — implementación paralela por camino de acceso.
     #
     # El servidor MCP puede resolver una tool con backend nativo en Node en vez

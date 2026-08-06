@@ -148,8 +148,12 @@
       "status": "active",
       "required_args": [],
       "declared_returns": [
+        "backup_path",
+        "b64_size",
+        "degraded",
         "files_included",
-        "ok",
+        "manifest",
+        "message",
         "path",
         "size_bytes"
       ],
@@ -272,7 +276,14 @@
       "status": "active",
       "required_args": [],
       "declared_returns": [
-        "id"
+        "action",
+        "entries",
+        "id",
+        "log_json",
+        "log_md",
+        "path",
+        "returned",
+        "total"
       ],
       "dq": {
         "dq_dimensions": [
@@ -496,7 +507,8 @@
         ],
         "propagation_aware": false
       },
-      "fundamentals": []
+      "fundamentals": [],
+      "reason": "Compacta contratos para inspección; su salida es material de análisis del estándar, no una nota del vault."
     },
     "vault_context_pack": {
       "group": "Memoria de Contexto",
@@ -553,7 +565,8 @@
       "deprecated_since": "v21",
       "deprecation_reason": "vault_write handles all note creation with AP guards",
       "archived_in": "v21",
-      "superseded_by": "vault_write"
+      "superseded_by": "vault_write",
+      "reason": "Superseded por vault_write, que conserva su contrato."
     },
     "vault_dataset": {
       "group": "internal",
@@ -566,7 +579,8 @@
         "cia_scope": [],
         "propagation_aware": false
       },
-      "fundamentals": []
+      "fundamentals": [],
+      "reason": "Manipula datasets de prueba fuera del modelo de notas."
     },
     "vault_delta": {
       "group": "Session Delta y Tags",
@@ -1206,7 +1220,8 @@
         "cia_scope": [],
         "propagation_aware": false
       },
-      "fundamentals": []
+      "fundamentals": [],
+      "reason": "Superseded por vault_reindex y vault_master_index, que son las publicadas."
     },
     "vault_infra_map": {
       "group": "Infraestructura",
@@ -1435,7 +1450,8 @@
         "cia_scope": [],
         "propagation_aware": false
       },
-      "fundamentals": []
+      "fundamentals": [],
+      "reason": "Librería de validación de enlaces que consumen las tools de grafo; sin CLI."
     },
     "vault_list": {
       "group": "Core",
@@ -1519,7 +1535,8 @@
         ],
         "propagation_aware": false
       },
-      "fundamentals": []
+      "fundamentals": [],
+      "reason": "Lee y valida el manifiesto del estándar, no el vault."
     },
     "vault_master_index": {
       "group": "Índices",
@@ -1623,7 +1640,8 @@
       "deprecated_since": "v25",
       "deprecation_reason": "vault_migrate_docs is the canonical migration tool with full project support",
       "archived_in": "v25",
-      "superseded_by": "vault_migrate_docs"
+      "superseded_by": "vault_migrate_docs",
+      "reason": "Superseded por vault_migrate_docs y vault_migrate_rollback."
     },
     "vault_migrate_docs": {
       "group": "Migración",
@@ -2270,7 +2288,8 @@
       },
       "fundamentals": [
         "F2"
-      ]
+      ],
+      "reason": "Registro canónico de secciones. Es la fuente de verdad que importan las tools; sin CLI."
     },
     "vault_reindex": {
       "group": "Índices",
@@ -2386,7 +2405,8 @@
       "deprecated_since": "v22",
       "deprecation_reason": "vault_diagram_save generates Mermaid diagrams with ERD support",
       "archived_in": "v22",
-      "superseded_by": "vault_diagram_save"
+      "superseded_by": "vault_diagram_save",
+      "reason": "Superseded por vault_diagram_export."
     },
     "vault_reorganize": {
       "group": "Migración (legacy)",
@@ -2404,7 +2424,8 @@
       "deprecated_since": "v25",
       "deprecation_reason": "Dynamic dest detection is handled by vault_migrate_docs",
       "archived_in": "v25",
-      "superseded_by": "vault_migrate_docs"
+      "superseded_by": "vault_migrate_docs",
+      "reason": "Superseded por vault_move y vault_folder_registry."
     },
     "vault_requirement_save": {
       "group": "Requerimientos",
@@ -2488,8 +2509,12 @@
       "required_args": [],
       "declared_returns": [
         "files_restored",
-        "ok",
-        "path"
+        "manifest",
+        "need_confirm",
+        "path",
+        "rejected",
+        "restored_to",
+        "warning"
       ],
       "dq": {
         "dq_dimensions": [
@@ -2817,7 +2842,8 @@
         ],
         "propagation_aware": true
       },
-      "fundamentals": []
+      "fundamentals": [],
+      "reason": "Memoria de trabajo sobre la spec, interna al desarrollo del estándar."
     },
     "vault_spec_validate": {
       "group": "meta",
@@ -2830,7 +2856,8 @@
         "cia_scope": [],
         "propagation_aware": false
       },
-      "fundamentals": []
+      "fundamentals": [],
+      "reason": "Valida la spec contra su propio esquema; opera sobre el estándar."
     },
     "vault_standard_upgrade": {
       "group": "Versionado",
@@ -2949,7 +2976,8 @@
         ],
         "propagation_aware": false
       },
-      "fundamentals": []
+      "fundamentals": [],
+      "reason": "Lanza la suite del repo; es tooling de desarrollo."
     },
     "vault_test_save": {
       "group": "Tests",
@@ -3118,7 +3146,8 @@
       "replaced_by": "See individual tools",
       "deprecated_since": "v22",
       "deprecation_reason": "Monolithic script superseded by dedicated tools per group",
-      "archived_in": "v22"
+      "archived_in": "v22",
+      "reason": "Superseded por el catálogo MCP (vault_mcp_catalog)."
     },
     "vault_validate": {
       "group": "Salud del Vault",
@@ -3299,6 +3328,56 @@
         "F4",
         "F7"
       ]
+    },
+    "vault_errors": {
+      "group": "Internos",
+      "group_id": 0,
+      "required_args": [],
+      "declared_returns": [
+        "ok"
+      ],
+      "status": "internal",
+      "reason": "Catálogo de códigos de error y su CLI de consulta. Es infraestructura que consumen todas las tools, no una capacidad del vault: publicarla daría a un agente una tool cuyo efecto sobre el vault es ninguno."
+    },
+    "vault_mcp": {
+      "group": "Internos",
+      "group_id": 0,
+      "required_args": [],
+      "declared_returns": [
+        "ok"
+      ],
+      "status": "internal",
+      "reason": "Arranque y diagnóstico del propio servidor MCP. Su superficie es el transporte, no el vault."
+    },
+    "vault_mcp_catalog": {
+      "group": "Internos",
+      "group_id": 0,
+      "required_args": [],
+      "declared_returns": [
+        "ok"
+      ],
+      "status": "internal",
+      "reason": "Mantiene el toolkit, no el vault: sincroniza el catálogo y corre las puertas de cierre de CLAUDE.md. Se ejecuta en el repo del estándar, donde no hay vault que gobernar, así que no pertenece a la superficie que se expone a un agente."
+    },
+    "vault_spec_catalog_check": {
+      "group": "Internos",
+      "group_id": 0,
+      "required_args": [],
+      "declared_returns": [
+        "ok"
+      ],
+      "status": "internal",
+      "reason": "Guard de coherencia del catálogo de la spec. Mismo caso que vault_mcp_catalog: opera sobre el estándar."
+    },
+    "vault_spec_generate_catalog": {
+      "group": "Internos",
+      "group_id": 0,
+      "required_args": [],
+      "declared_returns": [
+        "ok"
+      ],
+      "status": "internal",
+      "reason": "Generador del catálogo de la spec. Opera sobre el estándar, no sobre un vault."
     }
   },
   "_counts": {

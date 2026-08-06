@@ -567,12 +567,21 @@ async function jsNativeBackupBase64(args, vaultRoot) {
 
   const files = await collectAllFiles(vaultRoot);
   const entries = [];
+  // Un fichero que no se puede leer se salta —un backup no puede caerse porque
+  // algo esté bloqueado— pero **no en silencio**: `catch (_) {}` convertía un
+  // backup incompleto en un backup con `ok: true`, que es la peor forma de
+  // fallo posible en la tool cuyo trabajo entero es que no se pierda nada.
+  // Es el mismo arreglo que v39.3 hizo en `vault_audit` y `vault_onboard`:
+  // saltar sigue siendo correcto, lo que no vale es que el envelope no lo diga.
+  const degraded = [];
   for (const relPath of files) {
     const fullPath = join(vaultRoot, relPath);
     try {
       const content = await readFile(fullPath);
       entries.push({ path: relPath.replace(/\\/g, "/"), content: content.toString("base64") });
-    } catch (_) {}
+    } catch (e) {
+      degraded.push({ path: relPath.replace(/\\/g, "/"), reason: String(e && e.message || e) });
+    }
   }
 
   let version = "unknown";
@@ -601,10 +610,19 @@ async function jsNativeBackupBase64(args, vaultRoot) {
 
   return {
     ok: true, tool: "vault_backup_base64",
+    // `path`, `files_included` y `size_bytes` son los tres campos que declara
+    // `00_System/tool-spec.json` y que esta implementación nunca devolvió: de
+    // los cuatro del contrato solo coincidía `ok`. Los nombres antiguos se
+    // conservan (no-derogación) porque un consumidor puede estar leyéndolos.
+    path: backupFile,
+    files_included: entries.length,
+    size_bytes: b64.length,
     backup_path: backupFile,
     manifest,
     b64_size: b64.length,
-    message: `Backup created: ${backupFile} (${entries.length} files, ${(b64.length / 1024).toFixed(1)} KB base64)`,
+    degraded,
+    message: `Backup created: ${backupFile} (${entries.length} files, ${(b64.length / 1024).toFixed(1)} KB base64)`
+      + (degraded.length ? ` — ${degraded.length} file(s) unreadable and omitted` : ""),
   };
 }
 
@@ -634,12 +652,28 @@ async function jsNativeRestoreBase64(args, vaultRoot) {
     };
   }
 
-  const restoreDir = join(vaultRoot, "..", `${vaultRoot.split(/[/\\]/).pop()}-restore-${manifest.created_at.replace(/[:.]/g, "-")}`);
+  // AP-36 (contención): el destino iba a `join(vaultRoot, "..")`, o sea una
+  // copia entera del vault escrita como hermana del vault, fuera de él. La
+  // intención —no pisar el original— es correcta y se conserva; lo que cambia
+  // es dónde cae, que ahora es `vault-backups/` dentro del vault, junto al
+  // propio backup del que se restaura.
+  const restoreDir = join(vaultRoot, "vault-backups",
+    `restore-${manifest.created_at.replace(/[:.]/g, "-")}`);
   await mkdir(restoreDir, { recursive: true });
 
   let restored = 0;
+  const rejected = [];
   for (const entry of entries) {
     const target = join(restoreDir, entry.path);
+    // `entry.path` viene del fichero de backup, que es entrada no confiable:
+    // un `../` en la ruta escribía donde quisiera el que fabricó el backup.
+    // `assertWithinVault` ya existía en este mismo módulo y no se usaba aquí.
+    try {
+      assertWithinVault(target, restoreDir);
+    } catch (e) {
+      rejected.push({ path: entry.path, reason: String(e && e.message || e) });
+      continue;
+    }
     await mkdir(dirname(target), { recursive: true });
     await writeFile(target, Buffer.from(entry.content, "base64"));
     restored++;
@@ -647,10 +681,13 @@ async function jsNativeRestoreBase64(args, vaultRoot) {
 
   return {
     ok: true, tool: "vault_restore_base64",
+    path: restoreDir,
     restored_to: restoreDir,
     manifest,
     files_restored: restored,
-    warning: "Content restored to a NEW directory alongside the vault. Original vault was NOT modified. Review the restored content before replacing.",
+    rejected,
+    warning: "Content restored to a NEW directory under vault-backups/. Original vault content was NOT modified. Review the restored content before replacing."
+      + (rejected.length ? ` ${rejected.length} entry/entries rejected for escaping the restore directory.` : ""),
   };
 }
 

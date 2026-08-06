@@ -163,7 +163,60 @@ def run_one(tool: str) -> Dict[str, Any]:
     if not isinstance(datos, dict) or "ok" not in datos:
         return {"tool": tool, "ok": False, "problem": "JSON sin campo `ok`",
                 "detail": str(sorted(datos)[:8]) if isinstance(datos, dict) else type(datos).__name__}
-    return {"tool": tool, "ok": True, "tool_ok": datos["ok"], "exit_code": proc.returncode}
+    # Los campos devueltos viajan con el resultado para que `--contract` pueda
+    # contrastarlos sin volver a ejecutar las 91 tools.
+    return {"tool": tool, "ok": True, "tool_ok": datos["ok"],
+            "returned": sorted(datos), "exit_code": proc.returncode}
+
+
+def _contrato_de(tool: str) -> set:
+    """`declared_returns` del tool-spec, o conjunto vacío si no hay contrato."""
+    try:
+        import vault_io
+
+        ruta = Path(vault_io.resolve_tool_spec())
+        entradas = json.loads(ruta.read_text(encoding="utf-8")).get("tools", {})
+    except Exception:
+        return set()
+    return set((entradas.get(tool) or {}).get("declared_returns", []))
+
+
+#: Campos que aparecen solo cuando la tool falla. Su ausencia en una ejecución
+#: correcta no es un incumplimiento del contrato.
+_SOLO_EN_ERROR = {"error", "error_code", "message", "traceback", "recovery",
+                  "severity", "category", "hint"}
+
+
+def contract_gap(resultado: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """¿El envelope real cubre algo de lo que su contrato promete? (AP-37)
+
+    El smoke comprobaba que la salida fuese un JSON con `ok`, que es
+    literalmente la señal que AP-37 declara insuficiente: `ok: true` sin
+    indicador de trabajo. 41 de las 91 tools del catálogo no aparecen en ningún
+    test, así que para ellas ese `ok` era **toda** la verificación que existía.
+
+    No se exige el contrato entero: `declared_returns` es la unión sobre todos
+    los modos de la tool, y el smoke ejecuta un solo ejemplo, así que faltar
+    campos de otro modo es normal. Lo que no es normal es no devolver
+    **ninguno** — eso significa que el contrato publicado no describe a esta
+    tool por el camino que se acaba de ejecutar, que es AP-42 con el envelope
+    en la mano.
+    """
+    tool = resultado["tool"]
+    if resultado.get("skipped") or "returned" not in resultado:
+        return None
+    declarados = _contrato_de(tool) - _SOLO_EN_ERROR
+    if not declarados:
+        return None
+    devueltos = set(resultado["returned"])
+    if declarados & devueltos:
+        return None
+    return {
+        "tool": tool,
+        "problem": "el envelope no cubre ningún campo de su contrato",
+        "declared": sorted(declarados)[:10],
+        "returned": sorted(devueltos)[:10],
+    }
 
 
 def load_baseline() -> List[str]:
@@ -179,11 +232,17 @@ def smoke(tools: Optional[List[str]] = None) -> Dict[str, Any]:
     objetivo = tools or sorted(TOOLS_CATALOG)
     resultados = [run_one(t) for t in objetivo]
     fallos = [r for r in resultados if not r["ok"]]
+    huecos = [g for g in (contract_gap(r) for r in resultados) if g]
     baseline = load_baseline()
     nuevos = sorted(r["tool"] for r in fallos if r["tool"] not in baseline)
     saldados = sorted(t for t in baseline if t not in {r["tool"] for r in fallos})
     return {
-        "ok": not nuevos,
+        # Los huecos de contrato son puerta dura, no baseline: medidos sobre las
+        # 91 tools salieron dos, y los dos eran arreglables el mismo día
+        # (`vault_sdd_init` mezclaba informe humano y envelope en stdout;
+        # `vault_change_log` declaraba solo el campo del modo de escritura). Una
+        # baseline aquí solo serviría para congelar deuda que no existe.
+        "ok": not nuevos and not huecos,
         "tool": "vault_smoke",
         "action": "check",
         "checked": len(resultados),
@@ -193,6 +252,8 @@ def smoke(tools: Optional[List[str]] = None) -> Dict[str, Any]:
         "new_offenders": nuevos,
         "resolved": saldados,
         "failures": sorted(fallos, key=lambda r: r["tool"]),
+        "contract_gaps": sorted(huecos, key=lambda g: g["tool"]),
+        "contract_gaps_total": len(huecos),
         "hint": "La baseline solo puede encoger: tras saldar deuda, vault_smoke --freeze.",
     }
 

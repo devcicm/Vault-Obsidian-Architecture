@@ -1903,6 +1903,56 @@ STATUS_VOCAB = {
     "template",
 }
 
+# ─── Registro de lifecycles ──────────────────────────────────────────────────
+#
+# El catálogo de máquinas de estado vivía escrito a mano dentro de
+# `vault_sdd_init.generate_state_machines`, en una cadena constante, y llevaba
+# tiempo mintiendo: daba el ciclo de la versión del estándar como «v19 → … →
+# v36» estando el repo en v39.5, y el de las tools como
+# `active/deprecated/internal/meta/removed` cuando los estados que el tool-spec
+# usa de verdad son `active/archived/internal`. Dos de trece filas incorrectas en
+# el documento cuyo trabajo entero es describir las máquinas de estado.
+#
+# El orden que fija CLAUDE.md es registro primero y doc después, así que la tabla
+# se declara aquí —junto a STATUS_VOCAB, que es la otra verdad sobre estados— y
+# el generador del SDD la deriva. Las dos filas que sí tienen fuente viva
+# (versión del estándar, estados de tool) se resuelven en tiempo de generación
+# contra esa fuente, no se copian.
+LIFECYCLE_REGISTRY = [
+    {"entity": "Nota", "entity_en": "Note",
+     "states": ["active", "archived", "deleted"], "tool": "vault_change_log"},
+    {"entity": "Patrón", "entity_en": "Pattern",
+     "states": ["planificado", "en_progreso", "implementado", "deprecado", "refactoring"],
+     "tool": "vault_pattern_save"},
+    {"entity": "Requisito", "entity_en": "Requirement",
+     "states": ["draft", "reviewed", "approved", "implemented", "verified", "obsolete"],
+     "tool": "vault_requirement_save"},
+    {"entity": "Test", "entity_en": "Test",
+     "states": ["not_run", "pass", "fail", "blocked", "skip"], "tool": "vault_test_save"},
+    {"entity": "Ejecución de runbook", "entity_en": "Runbook execution",
+     "states": ["success", "failed", "partial"], "tool": "vault_runbook_log"},
+    {"entity": "Incidente", "entity_en": "Incident",
+     "states": ["detected", "investigating", "identified", "mitigating", "resolved",
+                "closed", "post-mortem"], "tool": "vault_incident_save"},
+    {"entity": "Consumo de SLO", "entity_en": "SLO burn",
+     "states": ["healthy", "1h-burn", "6h-burn", "30d-burn", "breached"],
+     "tool": "vault_slo_save"},
+    {"entity": "Tratamiento de riesgo", "entity_en": "Risk treatment",
+     "states": ["accept", "mitigate", "transfer", "avoid"], "tool": "vault_risk_save"},
+    {"entity": "NCR", "entity_en": "NCR",
+     "states": ["open", "closed"], "tool": "vault_ncr_save"},
+    {"entity": "Backup", "entity_en": "Backup",
+     "states": ["active", "superseded"], "tool": "vault_backup_list"},
+    {"entity": "Propagación pendiente", "entity_en": "Propagation pending",
+     "states": ["pending", "reviewed"], "tool": "vault_propagate"},
+    # `states: None` = se resuelve contra la fuente viva al generar la doc.
+    {"entity": "Ciclo de vida de una tool", "entity_en": "Tool lifecycle",
+     "states": None, "source": "tool_spec_status", "tool": "vault_mcp_catalog"},
+    {"entity": "Versión del estándar", "entity_en": "Standard version",
+     "states": None, "source": "standard_version", "tool": "vault_standard_upgrade"},
+]
+
+
 # ─── Sinónimos de estado (AP-38) ─────────────────────────────────────────────
 #
 # CN-03 lleva desde v38 declarando el vocabulario y auditándolo. Un censo sobre

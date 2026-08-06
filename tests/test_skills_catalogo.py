@@ -168,7 +168,7 @@ SDD_CONSTANTES_BASELINE = {
     "generate_metrics",
     "generate_process_antipatterns",
     "generate_reference_matrix",
-    "generate_state_machines",
+    # generate_state_machines salió en v39.6: deriva de vault_norms.LIFECYCLE_REGISTRY.
     "generate_usage",
 }
 

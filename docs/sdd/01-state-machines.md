@@ -11,19 +11,19 @@
 
 | Lifecycle | Estados | Tool |
 |---|---|---|
-| **Nota (Note)** | active / archived / deleted | vault_change_log |
-| **Patrón (Pattern)** | planificado / en_progreso / implementado / deprecado / refactoring | vault_pattern_save |
-| **Requisito (Requirement)** | draft / reviewed / approved / implemented / verified / obsolete | vault_requirement_save |
+| **Nota** | active / archived / deleted | vault_change_log |
+| **Patrón** | planificado / en_progreso / implementado / deprecado / refactoring | vault_pattern_save |
+| **Requisito** | draft / reviewed / approved / implemented / verified / obsolete | vault_requirement_save |
 | **Test** | not_run / pass / fail / blocked / skip | vault_test_save |
-| **Runbook execution** | success / failed / partial | vault_runbook_log |
-| **Incidente (Incident)** | detected / investigating / identified / mitigating / resolved / closed / post-mortem | vault_incident_save |
-| **SLO burn** | healthy / 1h-burn / 6h-burn / 30d-burn / breached | vault_slo_save |
-| **Risk treatment** | accept / mitigate / transfer / avoid | vault_risk_save |
+| **Ejecución de runbook** | success / failed / partial | vault_runbook_log |
+| **Incidente** | detected / investigating / identified / mitigating / resolved / closed / post-mortem | vault_incident_save |
+| **Consumo de SLO** | healthy / 1h-burn / 6h-burn / 30d-burn / breached | vault_slo_save |
+| **Tratamiento de riesgo** | accept / mitigate / transfer / avoid | vault_risk_save |
 | **NCR** | open / closed | vault_ncr_save |
-| **Backup** | active / superseded | (manual) |
-| **Propagation pending** | pending / reviewed | vault_propagate |
-| **Tool lifecycle** | active / deprecated / internal / meta / removed | tool-spec.json |
-| **Standard version** | v19 → v20 → … → v36 | vault_standard_upgrade |
+| **Backup** | active / superseded | vault_backup_list |
+| **Propagación pendiente** | pending / reviewed | vault_propagate |
+| **Ciclo de vida de una tool** | active / archived / internal | vault_mcp_catalog |
+| **Versión del estándar** | v19 → … → v39.6 | vault_standard_upgrade |
 
 ### Vocabulario unificado
 
@@ -47,10 +47,10 @@
 | **SLO burn** | healthy / 1h-burn / 6h-burn / 30d-burn / breached | vault_slo_save |
 | **Risk treatment** | accept / mitigate / transfer / avoid | vault_risk_save |
 | **NCR** | open / closed | vault_ncr_save |
-| **Backup** | active / superseded | (manual) |
+| **Backup** | active / superseded | vault_backup_list |
 | **Propagation pending** | pending / reviewed | vault_propagate |
-| **Tool lifecycle** | active / deprecated / internal / meta / removed | tool-spec.json |
-| **Standard version** | v19 → v20 → … → v36 | vault_standard_upgrade |
+| **Tool lifecycle** | active / archived / internal | vault_mcp_catalog |
+| **Standard version** | v19 → … → v39.6 | vault_standard_upgrade |
 
 ### Unified vocabulary
 

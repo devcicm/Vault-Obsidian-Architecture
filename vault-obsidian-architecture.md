@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v39.5 — 2026-08-06  
+**Versión:** v39.6 — 2026-08-06  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -6007,6 +6007,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v39.6 | 2026-08-06 | Las dos tools base64 (únicas sin script Python) ejercidas por primera vez: contrato incumplido, backup incompleto silencioso y restore fuera del vault con traversal sin validar; `vault_smoke` contrasta el envelope contra `declared_returns` como puerta dura; invariante nuevo del tool-spec contra módulos ejecutables sin clasificar (5 encontrados) y motivo obligatorio en toda entrada no publicada; `01-state-machines.md` derivado de `vault_norms.LIFECYCLE_REGISTRY` (dos de trece filas estaban desfasadas) |
 | v39.5 | 2026-08-06 | AP-48 (implementación paralela por camino de acceso): el servidor MCP servía backend nativo en Node para 7 tools que también tenían script Python, con envelopes que no coincidían con el contrato y `vault_graph` devolviendo `ok` sin escribir el grafo; catálogo de normas generado con las cuatro familias (PAT y SP faltaban); prosa constante de `docs/sdd/` declarada como deuda que solo puede encoger |
 | v39.4 | 2026-08-05 | Grupo 37 (Skills): la capa por la que un agente descubre el estándar entra en el catálogo y en el tool-spec (cierra AP-42 sobre sí misma), puerta de vigencia del SDD generado (`--check`, AP-47), `--force` deja de pisar `gaps.md`, `vault_sanacion` (plan de 12 fases medido, sin escrituras) |
 | v39.3 | 2026-08-05 | El camino de ejecución comprobado por donde se ejecuta: runner MCP con tests (encoding, envelope de exit≠0, timeout, CWD del cliente), `set_vault_root` alcanza a los 89 módulos que congelaban `VAULT_ROOT`, 12 escrituras crudas migradas al write path, AP-46 (frontmatter a mano), AP-47 (índice desfasado) y el lost update del registro de tags |
@@ -6324,6 +6325,22 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v39.6 — 2026-08-06 `git: pending`
+
+**Lo que el `ok` tapaba**
+
+v39.5 arregló el camino de ejecución. Esta versión mira lo que ese camino devuelve, que es lo único que un agente llega a ver, y encuentra que el `ok: true` estaba haciendo de tapadera en cuatro sitios distintos.
+
+Las **dos tools base64** son las únicas del catálogo sin fichero en `scripts/`: viven enteras en el servidor MCP, así que ni `vault_smoke` ni la suite las ejercían nunca. Al escribirles la primera prueba salieron tres defectos, y el orden importa: de los cuatro campos de su contrato devolvían uno; las lecturas fallidas se tragaban con `catch (_) {}`, de modo que un backup **incompleto** salía con `ok: true` —el peor fallo posible en la tool cuyo trabajo entero es que no se pierda nada—; y el restore escribía en `join(vaultRoot, "..")`, fuera del vault (AP-36), montando la ruta de cada entrada sin validar traversal, teniendo `assertWithinVault` en el mismo módulo. Ahora las lecturas saltadas viajan en `degraded[]`, las entradas que escapan en `rejected[]`, y el destino cae bajo `vault-backups/`.
+
+`vault_smoke` comprobaba que la salida fuese un JSON con `ok`, que es literalmente la señal que AP-37 declara insuficiente; para las 41 tools del catálogo sin test, ese `ok` era **toda** la verificación existente. Ahora contrasta el envelope contra `declared_returns`. Medido sobre las 91: dos huecos, los dos reales. `vault_sdd_init` mezclaba el informe humano y el envelope en el mismo stdout —su salida no era JSON parseable, y entró al catálogo en v39.4 sin que nadie la ejecutara por el camino de una tool—; `vault_change_log` declaraba solo `id`, el campo del modo de escritura, dejando el modo de consulta sin contrato. Puerta dura, no baseline: no hay deuda que congelar.
+
+El guard del tool-spec miraba del catálogo al contrato y del contrato al catálogo, pero **nunca al disco**: cinco módulos con CLI propia no estaban en ninguno de los dos registros, y uno era `vault_mcp_catalog`, el que corre las puertas de cierre. Invariante nuevo, con la clasificación sacada del AST y no de una lista a mano. Además, toda entrada no publicada declara ahora su motivo.
+
+Y `01-state-machines.md`, el documento del SDD que describe qué estados tiene cada cosa, se generaba desde una cadena constante de trece filas de las que **dos estaban mal**: la versión del estándar decía «v19 → … → v36» estando en v39.5, y el ciclo de las tools daba `meta` y `removed`, que el tool-spec no usa, omitiendo `archived`, que sí. Ahora deriva de `vault_norms.LIFECYCLE_REGISTRY` y las dos filas con fuente viva se resuelven al generar.
 
 ---
 
