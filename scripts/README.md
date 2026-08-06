@@ -737,7 +737,13 @@ Crea un snapshot completo del vault en `vault-backups/`.
 python vault_backup.py
 python vault_backup.py --label "pre-migration"
 python vault_backup.py --label "antes-de-refactor-auth"
+python vault_backup.py --verify vault-2026-08-06-101500-pre-migration
 ```
+
+Dos campos nuevos en v40.0, **aditivos**: ninguno de los anteriores cambia de nombre ni de significado.
+
+- **`files_copied`** — el indicador de trabajo real (AP-37). `created`/`updated`/`written` salen de `vault_io.write_report()`, que solo ve lo que pasa por `atomic_write_text`; el snapshot se copia con `shutil`, así que un backup de 196 ficheros reportaba `written: 1`. Los viejos siguen significando lo mismo —cuántos ficheros escribió el kernel—; éste dice cuántos se copiaron.
+- **`merkle_algo`** — la versión de la regla del hash, sellada en el manifiesto. `algo 2` excluye `00_System/.tool-trace.json` y `.voice-counter`, que cualquier ejecución reescribe y que hacían que dos copias de un vault intacto dieran raíz distinta: la medida arrastraba la huella de quien mide (AP-44). `--verify` usa **el algoritmo que diga el manifiesto**, no el vigente; un manifiesto sin sello es `algo 1` por definición, así que los backups anteriores se siguen comprobando con su regla y siguen dando íntegros.
 
 ---
 

@@ -58,6 +58,10 @@ def _campos(envelope: dict) -> set[str]:
 CAMPOS_BACKUP = {
     "created", "manifest", "merkle_file_count", "merkle_root", "name", "ok",
     "path", "timestamp", "tool", "unchanged", "updated", "written",
+    # Añadidos en v40.0. Aditivos a propósito: ningún campo anterior cambia de
+    # nombre ni de significado, así que quien ya leía el envelope sigue leyendo
+    # lo mismo. Es la única forma de corregir un contrato con datos vivos.
+    "files_copied", "merkle_algo",
 }
 
 
@@ -89,50 +93,89 @@ def test_el_backup_no_se_copia_a_si_mismo(vault):
     assert len(set(conteos)) == 1, f"el backup se está copiando a sí mismo: {conteos}"
 
 
-def test_el_merkle_root_del_vault_incluye_la_huella_de_la_propia_tool(vault):
-    """Congelado como está: dos copias de un vault intacto NO comparten raíz.
+def test_dos_copias_de_un_vault_intacto_comparten_merkle_root(vault):
+    """Corregido en v40.0 por versión de algoritmo, no por cambio en sitio.
 
-    Correr cualquier tool reescribe `00_System/.tool-trace.json` y
-    `00_System/.voice-counter` —observabilidad—, y el Merkle del vault los
-    incluye. La medida arrastra la huella de quien mide, así que `merkle_root`
-    no puede responder «¿cambió el vault entre estas dos copias?»: siempre dice
-    que sí. Es AP-44 aplicado a una métrica de integridad.
+    El defecto: correr cualquier tool reescribe `00_System/.tool-trace.json` y
+    `00_System/.voice-counter` —observabilidad—, y el Merkle los incluía. La
+    medida arrastraba la huella de quien mide, así que `merkle_root` no podía
+    responder «¿cambió el vault entre estas dos copias?»: siempre decía que sí.
+    Es AP-44 aplicado a una métrica de integridad.
 
-    Para lo que la tool usa el Merkle —`--verify`, que recomputa sobre el
-    directorio del backup y lo compara con el manifiesto— sigue siendo válido.
-
-    No se corrige en el piloto **a propósito**. Excluir la telemetría cambiaría
-    la raíz calculada, y todo backup ya existente pasaría a reportarse CORRUPTO
-    al verificarlo contra su manifiesto guardado. Eso es romper un contrato con
-    datos en producción, no refactorizar. Necesita migración de manifiestos, que
-    es una decisión aparte.
+    Corregirlo en sitio habría hecho que todo backup ya existente se reportara
+    CORRUPTO al verificarlo contra su manifiesto: la comprobación diría que el
+    dato se estropeó cuando lo que cambió fue la regla. Por eso el manifiesto
+    sella `merkle_algo` y `--verify` usa el que diga el manifiesto.
     """
     primera = _run(vault, "vault_backup.py", "--label", "a")
     segunda = _run(vault, "vault_backup.py", "--label", "b")
+    assert primera["merkle_algo"] == segunda["merkle_algo"] == 2
     assert segunda["merkle_file_count"] == primera["merkle_file_count"]
-    assert segunda["merkle_root"] != primera["merkle_root"]
+    assert segunda["merkle_root"] == primera["merkle_root"], (
+        "el vault no cambió entre las dos copias: la huella tampoco debe"
+    )
 
 
-def test_los_contadores_del_ledger_no_cuentan_los_ficheros_copiados(vault):
-    """Congelado como está, y lo que hay está torcido.
+def test_un_backup_sellado_con_el_algoritmo_viejo_sigue_intacto(vault):
+    """El contrato con los datos en producción, comprobado y no prometido.
 
-    `created`/`updated`/`unchanged`/`written` vienen de `vault_io.write_report()`,
-    que solo ve lo que pasó por `atomic_write_text`. El backup copia con
-    `shutil`, así que un backup de 196 ficheros reporta `written: 1` —el
-    manifiesto— y `unchanged: 0` siempre. Como indicador de trabajo (AP-37) es
-    engañoso: no distingue copiar el vault entero de no copiar nada.
+    Se fabrica un manifiesto como los de antes de v40.0 —sin `merkle_algo`— y
+    se exige que `--verify` lo dé por íntegro. Si esto falla, la corrección
+    convirtió cada copia anterior del usuario en un falso positivo de
+    corrupción, que es peor que el defecto que arregla.
+    """
+    import hashlib, json as _json, sys as _sys
+    _sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
-    El indicador honesto de esta tool es `merkle_file_count`, y por eso el test
-    de arriba lo comprueba. Esto se deja anotado y NO se corrige aquí: cambiar
-    la semántica de un campo del envelope es romper el contrato publicado, que
-    es justo lo que este piloto tiene prohibido hacer.
+    env = _run(vault, "vault_backup.py", "--label", "viejo")
+    dir_backup = vault / "vault-backups" / env["name"]
+    manifiesto = dir_backup / ".manifest.json"
+    datos = _json.loads(manifiesto.read_text(encoding="utf-8"))
+
+    # Raíz recalculada con la regla vieja (algo 1: solo excluye el manifiesto).
+    hojas = []
+    for f in sorted(dir_backup.rglob("*")):
+        if not f.is_file() or f.name == ".manifest.json":
+            continue
+        rel = str(f.relative_to(dir_backup)).replace("\\", "/")
+        hojas.append(hashlib.sha256((rel + ":").encode() + f.read_bytes()).hexdigest())
+    capa = sorted(hojas)
+    while len(capa) > 1:
+        capa = [hashlib.sha256((capa[i] + (capa[i + 1] if i + 1 < len(capa) else capa[i])).encode()).hexdigest()
+                for i in range(0, len(capa), 2)]
+
+    datos.pop("merkle_algo")
+    datos["merkle_root"] = capa[0]
+    manifiesto.write_text(_json.dumps(datos), encoding="utf-8")
+
+    verificado = _run(vault, "vault_backup.py", "--verify", env["name"])
+    assert verificado["merkle_algo"] == 1, "sin sello es algo 1 por definición"
+    assert verificado["intact"] is True
+
+
+def test_el_indicador_de_trabajo_cuenta_los_ficheros_copiados(vault):
+    """AP-37, corregido añadiendo un campo en vez de retorcer los que había.
+
+    `created`/`updated`/`unchanged`/`written` vienen de
+    `vault_io.write_report()`, que solo ve lo que pasó por `atomic_write_text`.
+    El backup copia con `shutil`, así que un backup de 196 ficheros reportaba
+    `written: 1` —el manifiesto— y `unchanged: 0` siempre: no distinguía copiar
+    el vault entero de no copiar nada.
+
+    Esos campos **no se tocan**: significan «cuántos ficheros escribió el
+    kernel» y hay consumidores que los leen así. `files_copied` se añade al
+    lado y dice lo que faltaba.
     """
     env = _run(vault, "vault_backup.py", "--label", "contadores")
+
+    # Los viejos, con su semántica intacta.
     assert env["unchanged"] == 0
     assert env["written"] == env["created"] + env["updated"]
-    assert env["written"] < env["merkle_file_count"], (
-        "si esto deja de cumplirse, alguien arregló los contadores: revisa el "
-        "contrato antes de dar por buena la nueva semántica"
+    assert env["written"] < env["merkle_file_count"]
+
+    # El nuevo, que sí responde «¿cuánto trabajo hubo?».
+    assert env["files_copied"] >= env["merkle_file_count"] > 0, (
+        "se copian todos los que entran al Merkle, más los volátiles excluidos"
     )
 
 

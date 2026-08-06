@@ -37,6 +37,24 @@ REGISTRY_FILE = BACKUP_ROOT / ".backup-registry.json"
 _SNAPSHOT_SKIP = ("vault-backups", "vault-sandbox")
 
 
+# Versión del algoritmo Merkle, escrita en el manifiesto y leída de vuelta por
+# `--verify`. Existe porque la corrección de abajo cambia QUÉ se hashea, y sin
+# el sello todos los backups anteriores pasarían a reportarse CORRUPTO: la
+# comprobación diría que el dato se estropeó cuando lo que cambió fue la regla.
+# El manifiesto sin sello es algo 1 por definición — así es como se escribió.
+MERKLE_ALGO = 2
+
+# Ficheros que cualquier ejecución de cualquier tool reescribe. Estaban dentro
+# del hash, así que dos backups seguidos del mismo vault intacto daban
+# `merkle_root` distinto y la huella no servía para lo único que se le pide:
+# distinguir «esto cambió» de «esto no». Se excluyen a partir de algo 2; algo 1
+# los sigue incluyendo, que es como se selló lo ya escrito.
+_MERKLE_VOLATILES = frozenset({
+    "00_System/.tool-trace.json",
+    "00_System/.voice-counter",
+})
+
+
 def _merkle_leaf(rel_path: str, content: bytes) -> str:
     return hashlib.sha256((rel_path + ":").encode() + content).hexdigest()
 
@@ -56,17 +74,26 @@ def _merkle_root(leaves: List[str]) -> str:
     return layer[0]
 
 
-def _compute_vault_merkle(folder: Path) -> Tuple[str, int]:
-    """Return (merkle_root, file_count) for all files under folder."""
+def _compute_vault_merkle(folder: Path, algo: int = MERKLE_ALGO) -> Tuple[str, int]:
+    """Return (merkle_root, file_count) for all files under folder.
+
+    `algo` selecciona la regla, y el que manda al verificar es el que diga el
+    manifiesto, no el vigente: un backup sellado con algo 1 se sigue
+    comprobando con algo 1 y sigue dando íntegro. Cambiar la regla sin
+    versionarla habría convertido cada copia anterior en un falso positivo de
+    corrupción, que es peor que el defecto que corrige.
+    """
     leaves: List[str] = []
     for file_path in sorted(folder.rglob("*")):
         if not file_path.is_file():
             continue
         if file_path.name in (".manifest.json",):
             continue
+        rel = str(file_path.relative_to(folder)).replace("\\", "/")
+        if algo >= 2 and rel in _MERKLE_VOLATILES:
+            continue
         try:
             content = file_path.read_bytes()
-            rel = str(file_path.relative_to(folder)).replace("\\", "/")
             leaves.append(_merkle_leaf(rel, content))
         except (PermissionError, OSError):
             continue
@@ -152,14 +179,24 @@ def vault_backup(label: Optional[str] = None) -> Dict[str, Any]:
     backup_path = BACKUP_ROOT / backup_name
     BACKUP_ROOT.mkdir(parents=True, exist_ok=True)
     vault_src = VAULT_ROOT
+    # AP-37 — el indicador de trabajo de ESTA tool. `created`/`updated`/
+    # `written` vienen de `write_report()`, que solo ve lo que pasa por
+    # `atomic_write_text`; el snapshot se copia con `shutil` y por tanto no
+    # aparecía en ninguno. El resultado era un backup de 196 ficheros
+    # reportando `written: 2`. Los campos viejos no se tocan —son contrato
+    # publicado y significan otra cosa: cuántos ficheros escribió el kernel—;
+    # éste se añade al lado y dice cuántos se copiaron.
+    files_copied = 0
     for item in vault_src.iterdir():
         if item.name.startswith(".") or item.name in _SNAPSHOT_SKIP:
             continue
         dest = backup_path / item.name
         if item.is_dir():
             shutil.copytree(item, dest, dirs_exist_ok=True)
+            files_copied += sum(1 for p in dest.rglob("*") if p.is_file())
         else:
             shutil.copy2(item, dest)
+            files_copied += 1
     manifest_data = scan_backup(backup_path)
     merkle_root, merkle_count = _compute_vault_merkle(backup_path)
     now = utcnow()
@@ -170,6 +207,7 @@ def vault_backup(label: Optional[str] = None) -> Dict[str, Any]:
         "vault": manifest_data,
         "merkle_root": merkle_root,
         "merkle_file_count": merkle_count,
+        "merkle_algo": MERKLE_ALGO,
     }
     manifest_path = backup_path / ".manifest.json"
     atomic_write_json(manifest_path, manifest)
@@ -195,6 +233,8 @@ def vault_backup(label: Optional[str] = None) -> Dict[str, Any]:
         "manifest": manifest_data,
         "merkle_root": merkle_root,
         "merkle_file_count": merkle_count,
+        "merkle_algo": MERKLE_ALGO,
+        "files_copied": files_copied,
     }
 
 
@@ -219,11 +259,15 @@ def vault_backup_verify(backup_name: str) -> Dict[str, Any]:
             "ok": False,
             "error": "manifest no contiene merkle_root (backup pre-v29)",
         }
-    current_root, current_count = _compute_vault_merkle(backup_path)
+    # El algoritmo lo decide el manifiesto, no la versión instalada. Sin sello
+    # es algo 1: así se escribieron todos los backups anteriores a v40.0.
+    algo = manifest.get("merkle_algo", 1)
+    current_root, current_count = _compute_vault_merkle(backup_path, algo)
     intact = current_root == stored_root
     return {
         "ok": True,
         "backup": backup_name,
+        "merkle_algo": algo,
         "intact": intact,
         "stored_merkle_root": stored_root,
         "current_merkle_root": current_root,

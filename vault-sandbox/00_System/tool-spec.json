@@ -160,7 +160,9 @@
       "required_args": [],
       "declared_returns": [
         "created",
+        "files_copied",
         "manifest",
+        "merkle_algo",
         "merkle_file_count",
         "merkle_root",
         "name",
