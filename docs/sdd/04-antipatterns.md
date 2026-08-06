@@ -1,19 +1,19 @@
 # Antipatterns -- Antipatrones
 
-> Documento bilingüe. Catálogo completo de AP-01..AP-35, SP-01..03, CN-01..03 + PAT-1..6 del vault.
-> Bilingual document. Full AP-01..AP-35, SP-01..03, CN-01..03 + PAT-1..6 catalog.
+> Documento bilingüe. Catálogo completo de AP-01..AP-47 del vault.
+> Bilingual document. Full AP-01..AP-47 catalog.
 
 ---
 
 ## ES
 
-Total de antipatrones registrados: 36 antipatrones + 6 patrones (PAT) + 3 protocolos de sesión (SP) + 3 convenciones (CN)
+Total de antipatrones registrados: 47
 
 ### AP-01: Documentación alucinada
 
 - **Severidad:** high
-- **Enforcement:** manual
-- **Detectado por:** manual
+- **Enforcement:** audit
+- **Detectado por:** vault_drift_detect
 
 Documentar herramientas, endpoints, funciones o comportamientos que no existen en el código real. El agente genera información convincente pero incorrecta.
 
@@ -42,8 +42,8 @@ Nota con contenido real pero incompleto (≥3 líneas reales) sin fecha de expan
 ### AP-04: Features aspiracionales documentadas como implementadas
 
 - **Severidad:** high
-- **Enforcement:** manual
-- **Detectado por:** manual
+- **Enforcement:** audit
+- **Detectado por:** vault_drift_detect
 
 Documentar comportamientos futuros o planeados como si ya existieran. Confunde al agente sobre el estado real del sistema.
 
@@ -52,8 +52,8 @@ Documentar comportamientos futuros o planeados como si ya existieran. Confunde a
 ### AP-05: Múltiples fuentes de verdad para el mismo dato
 
 - **Severidad:** critical
-- **Enforcement:** manual
-- **Detectado por:** manual
+- **Enforcement:** audit
+- **Detectado por:** vault_graph_inspect
 
 El mismo dato (IP, URL, versión, configuración) aparece en múltiples notas con valores inconsistentes. Causa decisiones del agente basadas en datos erróneos.
 
@@ -62,8 +62,8 @@ El mismo dato (IP, URL, versión, configuración) aparece en múltiples notas co
 ### AP-06: Templates sin instancias reales
 
 - **Severidad:** low
-- **Enforcement:** manual
-- **Detectado por:** manual
+- **Enforcement:** audit
+- **Detectado por:** vault_norms --audit
 
 Archivos de template (SLOs, métricas, alertas, ADRs) que existen en el vault pero nunca se han instanciado con datos reales.
 
@@ -72,8 +72,8 @@ Archivos de template (SLOs, métricas, alertas, ADRs) que existen en el vault pe
 ### AP-07: ADRs incompletos
 
 - **Severidad:** medium
-- **Enforcement:** manual
-- **Detectado por:** manual
+- **Enforcement:** audit
+- **Detectado por:** vault_norms --audit
 
 ADRs (Architecture Decision Records) sin secciones Contexto, Opciones evaluadas y Consecuencias. Un ADR sin estas secciones no aporta valor de auditoría.
 
@@ -82,8 +82,8 @@ ADRs (Architecture Decision Records) sin secciones Contexto, Opciones evaluadas 
 ### AP-08: Documentación anclada a versiones obsoletas
 
 - **Severidad:** medium
-- **Enforcement:** manual
-- **Detectado por:** manual
+- **Enforcement:** audit
+- **Detectado por:** vault_drift_detect
 
 Notas que mencionan versiones específicas de librerías, APIs o protocolos que ya fueron actualizadas, sin indicar que el contenido puede estar desactualizado.
 
@@ -92,8 +92,8 @@ Notas que mencionan versiones específicas de librerías, APIs o protocolos que 
 ### AP-09: Runbooks fuera de estructura
 
 - **Severidad:** medium
-- **Enforcement:** manual
-- **Detectado por:** manual
+- **Enforcement:** audit
+- **Detectado por:** vault_norms --audit
 
 Procedimientos operativos guardados en carpetas genéricas (07_Knowledge/, 01_Projects/) en lugar de 06_Runbooks/. Dificulta la localización en incidentes.
 
@@ -102,8 +102,8 @@ Procedimientos operativos guardados en carpetas genéricas (07_Knowledge/, 01_Pr
 ### AP-10: Migración sin plan de rollback
 
 - **Severidad:** high
-- **Enforcement:** manual
-- **Detectado por:** manual
+- **Enforcement:** audit
+- **Detectado por:** vault_norms --audit, vault_migrate_rollback
 
 Ejecutar vault_migrate_docs sin tener vault_migrate_rollback disponible o sin snapshot previo. Si la migración introduce errores, no hay manera de revertir.
 
@@ -152,8 +152,8 @@ Timestamps solo con fecha (2026-05-07), con '...' literal, sin zona horaria o en
 ### AP-15: Archivos externos depositados en la raíz del vault
 
 - **Severidad:** high
-- **Enforcement:** manual
-- **Detectado por:** vault_audit
+- **Enforcement:** audit
+- **Detectado por:** vault_norms --audit
 
 Archivos .md colocados directamente en vault-{nombre}/ en lugar de en secciones numeradas. vault_graph parsea sus [[wiki-links]] como broken links reales del proyecto.
 
@@ -192,8 +192,8 @@ Mismo contenido byte-idéntico (MD5) en carpetas distintas. Penalización vault_
 ### AP-19: Shadow indexing
 
 - **Severidad:** medium
-- **Enforcement:** manual
-- **Detectado por:** manual
+- **Enforcement:** audit
+- **Detectado por:** vault_norms --audit
 
 Índices de sección creados manualmente, duplicando lo que vault_section_index genera automáticamente. Los índices manuales rotan en AP-02 con el tiempo.
 
@@ -243,11 +243,11 @@ Una nota con más de 500 líneas de contenido real se vuelve difícil de mantene
 
 - **Severidad:** high
 - **Enforcement:** guard+audit
-- **Detectado por:** vault_audit, vault_render_check
+- **Detectado por:** vault_audit, vault_fix_brackets
 
 Wiki-links malformados por desbalance de corchetes. Tres variantes: (1) apertura sin cierre ([[nota sin ]]), (2) cierre sin apertura (]] sin [[), (3) anidamiento incorrecto ([[[[nota]]]] o [[nota]]]]). En Obsidian el link se renderiza como texto literal, no como enlace navegable. Rompe la trazabilidad y produce falsos negativos en vault_audit --broken-links.
 
-**Prevención:** Usar siempre el formato [[stem]] o [[stem|alias]]. Validar balance con vault_render_check --fix antes de commit. El content_gate de vault_write rechaza contenido con bracket imbalance.
+**Prevención:** Usar siempre el formato [[stem]] o [[stem|alias]]. Validar balance con vault_fix_brackets --fix antes de commit. El content_gate de vault_write rechaza contenido con bracket imbalance.
 
 ### AP-25: Mermaid diagram syntax errors -- nodos/tipos no definidos
 
@@ -259,187 +259,239 @@ Diagramas Mermaid con sintaxis inválida: tipos de diagrama no reconocidos (unkn
 
 **Prevención:** Validar con vault_mermaid_check antes de commit. Usar tipos conocidos (graph TD, flowchart LR, sequenceDiagram, classDiagram, etc.). Asegurar que cada nodo referenciado en una flecha exista como definición previa.
 
-### AP-31: Grafo sin tipos semánticos — edges sin predicate explícito
+### AP-26: Missing tags -- nota de contenido sin tags
+
+- **Severidad:** medium
+- **Enforcement:** audit
+- **Detectado por:** vault_audit
+
+Nota de contenido sin campo `tags` o con la lista vacía. Sin tags la nota es invisible para la búsqueda por facetas y no participa en los edges shared_tag del grafo: queda alcanzable solo por wiki-link directo.
+
+**Prevención:** Pasar --tags en la tool de escritura. vault_ingest y vault_preferences los derivan automáticamente del origen y la categoría.
+
+### AP-27: Missing type field -- nota sin tipo declarado
+
+- **Severidad:** medium
+- **Enforcement:** audit
+- **Detectado por:** vault_audit, vault_validate
+
+Nota sin campo `type`. El tipo es lo que ancla la nota a su sección canónica (CN-02): sin él no se puede verificar la coincidencia type ↔ carpeta que sostiene la dimensión de exactitud (F4).
+
+**Prevención:** Declarar --type en la escritura; vault_validate lo comprueba contra el registro.
+
+### AP-28: Missing frontmatter -- nota sin bloque YAML
+
+- **Severidad:** high
+- **Enforcement:** audit
+- **Detectado por:** vault_audit, vault_validate
+
+Nota sin bloque de frontmatter. Es el caso degenerado de AP-26/27/29/30 a la vez: sin frontmatter no hay id, ni agent, ni status, ni CIA, así que la nota queda fuera de toda métrica de calidad y de la cadena de trazabilidad (PAT-5).
+
+**Prevención:** No editar .md a mano (SP-04). Escribir siempre por tool: atomic_write_text garantiza el bloque.
+
+### AP-29: Missing status field -- nota sin estado de ciclo de vida
+
+- **Severidad:** medium
+- **Enforcement:** audit
+- **Detectado por:** vault_audit, vault_norms
+
+Nota sin campo `status`. Sin estado no se puede distinguir lo vigente de lo obsoleto, y la nota escapa al vocabulario controlado de CN-03: es la vía por la que contenido derogado sigue leyéndose como vigente.
+
+**Prevención:** Declarar --status dentro de STATUS_VOCAB (12 valores).
+
+### AP-30: Missing CIA classification -- nota sin clasificación de la tríada
+
+- **Severidad:** high
+- **Enforcement:** audit
+- **Detectado por:** vault_audit, vault_quality_check
+
+Nota sin `cia_integrity` / `cia_availability` / `cia_sensitivity`. Sin clasificación CIA la nota no puede endurecer su umbral de actualidad (30d → 15d en critical|high) ni ponderar su peso en el health score: el pilar del estándar queda sin aplicar sobre ella.
+
+**Prevención:** Declarar los tres ejes en la escritura. vault_ingest asigna cia_integrity: low a lo ingerido por no estar verificado.
+
+### AP-31: Grafo sin tipos semanticos -- edges sin predicate explícito
 
 - **Severidad:** high
 - **Enforcement:** audit
 - **Detectado por:** vault_audit, vault_graph_merge
 
-Todas las aristas del grafo usan el mismo tipo 'wiki-link' sin distinguir semántica: depends_on, implements, extends, calls, documents, etc. Sin predicates tipados, el análisis de impacto y las búsquedas semánticas no pueden filtrar por tipo de relación. La solución es mergear las relaciones de entidad (vault_relation_add) y código (vault_code_relation) en el grafo para enriquecerlo con predicates.
+Todas las aristas del grafo usan el mismo tipo 'wiki-link' sin distinguir semántica: depends_on, implements, extends, calls, documents, etc. Sin predicates tipados, el analisis de impacto y las busquedas semanticas no pueden filtrar por tipo de relacion. La solucion es mergear las relaciones de entidad (vault_relation_add) y codigo (vault_code_relation) en el grafo para enriquecerlo con predicates.
 
-**Prevención:** Ejecutar vault_graph --typed periódicamente para generar graph-enriched.json con predicates semánticos unificados.
+**Prevención:** Ejecutar vault_graph --typed o vault_graph_merge periodicamente para enriquecer el grafo con predicates. Toda relacion registrada via vault_relation_add o vault_code_relation debe reflejarse en graph-enriched.json.
 
-### AP-32: Relaciones tipadas sin predicate válido en la ontología
+### AP-32: Relaciones tipadas sin predicate valido en la ontologia
 
 - **Severidad:** medium
 - **Enforcement:** audit
 - **Detectado por:** vault_graph_merge, vault_audit
 
-Una relación registrada en entity relations o code relations usa un relationType/type que no existe en vault-ontology.json. Esto produce edges que no pueden interpretarse semánticamente en el grafo enriquecido. Ej: relationType='inherits' cuando el predicate canónico es 'extends'.
+Una relacion registrada en entity relations o code relations usa un relationType/type que no existe en vault-ontology.json. Esto produce edges que no pueden interpretarse semanticamente en el grafo enriquecido. Ej: relationType='inherits' cuando el predicate canonico es 'extends'.
 
-**Prevención:** Validar nuevos predicates contra vault-ontology.json. Usar los 18 predicates canónicos definidos: depends_on, implements, extends, calls, imports, uses, has_many, belongs_to, produces, consumes, configures, routes_to, monitors, secures, documents, deploys, tests, orquestrates.
+**Prevención:** Usar solo predicates del vocabulario canonico en vault-ontology.json. Para entity relations: has_one, has_many, belongs_to, many_to_many, implements, extends, depends_on, uses, calls, owns, aggregates. Para code relations: imports, extends, implements, calls, uses, re-exports, depends_on.
 
-### AP-33: Predicado no canónico — sinónimo no normalizado
+### AP-33: Predicado no canonico -- sinonimo no normalizado
 
 - **Severidad:** low
 - **Enforcement:** audit
 - **Detectado por:** vault_graph_merge
 
-Las relaciones de entidad usan `relationType` y las de código usan `type` para el mismo concepto semántico. Además, predicates que semánticamente son equivalentes deben unificarse: `imports` en código ≈ `depends_on` a nivel build-time. La ontología define el mapeo de sinónimos.
+Las relaciones de entidad usan `relationType` y las de codigo usan `type` para el mismo concepto semantico. Ademas, predicates que semanticamente son equivalentes deben unificarse: `imports` en codigo ≈ `depends_on` a nivel build-time. La ontologia define el mapeo de sinonimos.
 
-**Prevención:** Usar los predicates canónicos de vault-ontology.json. vault_graph_merge auto-mapea sinónimos al predicate canónico.
+**Prevención:** Al registrar relaciones, usar predicates del vocabulario canonico. La ontologia maneja el mapeo relationType→predicate y type→predicate automaticamente. No requiere accion manual.
 
-### AP-34: Relación tipada huérfana — endpoint inexistente en el vault
-
-- **Severidad:** high
-- **Enforcement:** audit
-- **Detectado por:** vault_audit, vault_graph_merge
-
-Una relación tipada (entity o code) referencia un endpoint que no existe como nota en el vault. Ej: relación `User -- has_many --> Order` donde no existen `User.md` ni `Order.md`. El grafo enriquecido tendrá edges hacia nodos fantasma que nunca resolverán.
-
-**Prevención:** Crear las notas correspondientes en el vault antes de registrar relaciones. vault_graph_merge detecta y reporta huérfanos con fuzzy matching para sugerir el note path más probable.
-
-### AP-35: Silos de relación — sistemas de grafos aislados
+### AP-34: Relacion tipada huerfana -- endpoint inexistente en el vault
 
 - **Severidad:** high
 - **Enforcement:** audit
 - **Detectado por:** vault_audit, vault_graph_merge
 
-El vault mantiene tres sistemas de relaciones en silos aislados: (a) wiki-links en graph.json, (b) entity relations en 06_Diagrams/entity/*-relations.json, (c) code relations en 11_Code/.code-index.json. Ninguno de estos sistemas se integra con los otros, produciendo un grafo de conocimiento fragmentado. vault_impact y BFS solo ven wiki-links, ignorando relaciones semánticas ricas registradas en los otros sistemas.
+Una relacion tipada (entity o code) referencia un endpoint que no existe como nota en el vault. Ej: relacion `User -- has_many --> Order` donde no existen `User.md` ni `Order.md`. El grafo enriquecido tendra edges hacia nodos fantasma que nunca resolveran.
 
-**Prevención:** Ejecutar vault_graph --typed al final de cada sesión productiva para generar graph-enriched.json unificado con todos los sistemas de relaciones. vault_impact acepta --predicate para filtrar BFS por tipo semántico.
+**Prevención:** SP-02: verificar que los endpoints existan antes de registrar la relacion. Ejecutar vault_search o vault_list para confirmar que las notas referenciadas en fromEntity/toEntity existen en el vault.
 
-### SP-01: Delete protocol — change_log obligatorio antes de eliminar
+### AP-35: Silos de relacion -- sistemas de grafos aislados
+
+- **Severidad:** high
+- **Enforcement:** audit
+- **Detectado por:** vault_audit, vault_graph_merge
+
+El vault mantiene tres sistemas de relaciones en silos aislados: (a) wiki-links en graph.json, (b) entity relations en 06_Diagrams/entity/*-relations.json, (c) code relations en 11_Code/.code-index.json. Ninguno de estos sistemas se integra con los otros, produciendo un grafo de conocimiento fragmentado. vault_impact y BFS solo ven wiki-links, ignorando relaciones semanticas ricas registradas en los otros sistemas.
+
+**Prevención:** Ejecutar vault_graph_merge periodicamente (recomendado: cada sesion o cada vez que se registren nuevas relaciones). vault_graph --typed genera graph-enriched.json que unifica los tres sistemas.
+
+### AP-36: Contención e idempotencia -- side-effects fuera del vault o no rastreables
 
 - **Severidad:** critical
-- **Enforcement:** manual
-- **Detectado por:** vault_audit
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_norms --audit
 
-Antes de eliminar cualquier nota del vault, el agente DEBE llamar: vault_change_log --action deleted --path <nota> --reason <motivo>. Sin este registro, la nota desaparece sin rastro auditado.
+Toda operación de tooling debe: (1) escribir ÚNICAMENTE dentro del vault root (backups, traces, locks, stubs, logs incluidos); (2) ser idempotente -- ejecutarla dos veces no duplica artefactos ni carpetas; (3) dejar sus artefactos indexados o en ubicaciones registradas (vault_registry) para rastreabilidad. Casos históricos: vault-backups escrito en el abuelo del repo, 00_System/99_Index generados fuera del vault por detección de root defectuosa, .bak junto a nodos de contenido.
 
-**Prevención:** No eliminar notas directamente. Usar el protocolo: change_log → respaldar → eliminar.
+**Prevención:** Rutas de salida derivadas SIEMPRE de VAULT_ROOT (nunca de __file__ ni cwd). Artefactos de mantenimiento van a 02_Observability/maintenance/ o 00_System/. vault_norms --audit detecta artefactos sueltos y secciones sin índice.
 
-### SP-02: Forward-link verification — buscar antes de linkar
+### AP-37: No-op silencioso -- ok: true sin indicador de trabajo
 
 - **Severidad:** high
-- **Enforcement:** guard
-- **Detectado por:** vault_graph, vault_audit
+- **Enforcement:** audit
+- **Detectado por:** vault_noop_audit
 
-Antes de escribir [[nombre-nota]] en contenido, verificar que la nota destino ya existe: vault_search(query:'nombre-nota'). Si no hay resultado, escribir en texto plano hasta que la nota exista. vault_write advierte con ghost_links[] (no bloquea) si el target no existe.
+Una tool con side effects declarados devuelve ok: true sin exponer ningún campo que distinga 'hice N cosas' de 'no hice nada'. `ok: true` a secas es una afirmación no falsable: ni un test ni un agente pueden detectar que la operación fue vacía. Toda tool que modifica estado debe declarar un indicador de trabajo en declared_returns (changed, applied, count, migrations_applied, fixes_applied, skipped, no_op…) y devolverlo siempre, también cuando vale 0.
 
-**Prevención:** Usar vault_search antes de crear wikilinks. Preferir [[nombre-nota|alias descriptivo]].
+**Prevención:** Declarar el indicador en tool-spec.json y devolverlo desde la tool. vault_noop_audit --check compara el catálogo contra una baseline congelada: la deuda histórica no bloquea, pero NO puede crecer.
 
-### SP-03: Session snapshot pattern — delta antes de operaciones masivas
+### AP-38: Vocabulario validado después de escribir, no antes
+
+- **Severidad:** high
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_norms --audit
+
+Un campo con vocabulario cerrado se acepta tal cual en la escritura y se comprueba en un audit posterior. El audit no lo ejecuta nadie -- en 1.356 ejecuciones registradas del parque real, `vault_norms` no aparece ni una vez -- así que el vocabulario no gobierna: solo documenta una intención. Agravante: que varias tools publiquen vocabularios distintos para el mismo campo (AP-05 aplicado al dato). Un campo canónico se normaliza en el punto de escritura y rechaza lo que no pueda derivar; los ejes de dominio legítimos (resultado de un test, fase de un incidente) van a su propio campo, no compiten por `status`.
+
+**Prevención:** STATUS_SYNONYMS + normalize_status() normalizan en vault_write antes de emitir. Las tools con eje propio llaman a status_frontmatter_lines(), que emite `status` canónico y el campo de dominio desde DOMAIN_STATUS_VOCABS. Lo que arrastraba información y no era estado se conserva en status_note: no-derogación aplicada al dato.
+
+### AP-39: Vocabulario abierto sin memoria
 
 - **Severidad:** medium
-- **Enforcement:** manual
-- **Detectado por:** vault_delta
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_tags --audit, vault_norms --audit
 
-Antes de cualquier operación masiva (migración, rename en lote, vault_tags --rename múltiple, delete en lote), capturar snapshot con vault_delta --snapshot. Permite detectar regresiones y calcular impacto real de la operación.
+Un campo con vocabulario abierto (tags) admite términos nuevos sin dejar constancia de quién los introdujo ni cuándo. Sin registro no hay continuidad: cada sesión reinventa las palabras de la anterior, y el vocabulario crece sin converger -- 1.180 términos para 6.358 usos, el 45% usado una sola vez. A diferencia de AP-38, la respuesta correcta NO es rechazar: un vocabulario abierto que rechaza empuja a omitir el campo, y entonces lo que se incumple es AP-26. Lo que hay que cerrar es el olvido, no la entrada.
 
-**Prevención:** vault_delta --snapshot antes de toda operación masiva; vault_delta --report después para verificar.
+**Prevención:** vault_write llama a vault_tags.apply_vocabulary() antes de emitir: colapsa contra el registro canónico lo que es demostrablemente la misma palabra (normalize_tag + singular_tag) y admite el término nuevo tal cual. Una vez la nota está en disco, record_new_tags() lo anota en la bitácora append-only 19_Audits/vocabulary/tag-ledger.json con agente, fecha y nota de origen. Inventar sigue siendo posible; deja de ser silencioso.
 
-### CN-01: Kebab-case filenames — nombres de archivo en minúsculas con guiones
-
-- **Severidad:** high
-- **Enforcement:** guard
-- **Detectado por:** vault_validate
-
-Los archivos .md del vault deben usar kebab-case: minúsculas, palabras separadas por guiones, sin espacios ni caracteres especiales. vault_write aplica slugify() automáticamente al título para generar el filename. Ej: 'ADR-001 Auth Decision' → adr-001-auth-decision.md.
-
-**Prevención:** Usar vault_write para crear notas (aplica slugify automáticamente). No crear archivos manualmente.
-
-### CN-02: Numbered folder structure — secciones numeradas como únicos destinos
+### AP-40: Contrato publicado que la CLI rechaza
 
 - **Severidad:** high
-- **Enforcement:** manual
-- **Detectado por:** vault_validate
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_mcp_catalog --check-params, vault_norms --audit
 
-Solo las 16 secciones numeradas son destinos válidos para notas: 00_System, 01_Projects, 02_Observability, 03_Decisions, 04_Specs, 05_Patterns, 06_Runbooks, 07_Knowledge, 08_Integrations, 09_Architecture, 10_Migrated, 11_Code, 12_Bibliography, 13_Flows, 14_Requirements, 15_Tests, 16_AI_Governance, 99_Index. Crear carpetas ad-hoc o escribir en la raíz viola este estándar (ver AP-15).
+Una tool publica en su catálogo parámetros que su propio argparse no acepta. La tool aparece en tools/list, se puede invocar, y falla siempre con 'unrecognized arguments'. Medido en v39: 45 de 82 tools conciliables publicaban al menos un param inexistente -- más de la mitad de la superficie MCP era inalcanzable sin que nada lo señalara, porque el guard de sincronía comparaba el JSON contra el Python: dos copias de la misma equivocación coinciden perfectamente.
 
-**Prevención:** vault_folder_registry mantiene el registro canónico de carpetas. vault_write rechaza paths fuera de las secciones numeradas.
+**Prevención:** El contrato de argumentos lo declara argparse, no el catálogo: vault_mcp_catalog.argparse_params() lee los add_argument del script y reconciled_params() publica solo lo que la CLI acepta, conservando la descripción escrita a mano cuando el nombre coincide. vault_mcp_catalog --check-params audita el JSON ya generado (que es lo que el servidor consume) contra el argparse real.
 
-### CN-03: Standard status vocabulary — vocabulario canónico de meta.status
+### AP-41: Máquina de estados declarada sin verificar
 
-- **Severidad:** low
-- **Enforcement:** manual
-- **Detectado por:** vault_validate
+- **Severidad:** high
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_norms --audit
 
-El campo meta.status (o status en frontmatter) debe usar solo valores del vocabulario estándar: planned | in-progress | implemented | deprecated | archived | stub | template. Valores fuera del vocabulario rompen filtros de vault_list y vault_audit.
+El estándar declara STATUS_TRANSITIONS --las transiciones válidas del ciclo de vida de una nota-- y no las recorre nadie: su único consumidor era su propio test de coherencia. Un estado que no controla su transición es una etiqueta, no un ciclo de vida: una nota 'archived' podía volver a 'draft', o saltar de 'planned' a 'verified' sin pasar por revisión, y ningún guard lo veía. Es la misma forma del fallo histórico del estándar --declarar sin ejecutar-- con la agravante de que existía un test en verde que verificaba que el grafo estaba bien dibujado, no que alguien lo recorriera.
 
-**Prevención:** Usar vault_write con parámetros estándar. vault_validate reporta status fuera del vocabulario.
+**Prevención:** vault_write lee el `status` de la nota en disco antes de sobrescribirla y rechaza la transición que no está en STATUS_TRANSITIONS, citando los destinos válidos. Una actualización que no menciona `status` conserva el estado previo en vez de caer al default 'draft'. Las transiciones ya ocurridas se reportan desde .history/ con vault_norms --audit: se anotan, no se reescriben, porque el estado actual es un hecho.
 
-### PAT-1: Canonical source anchoring — una nota canónica por dominio
+### AP-42: Tool publicada sin haberse ejecutado nunca
 
-- **Severidad:** N/A (patrón recomendado)
-- **Enforcement:** recommended
-- **Detectado por:** vault_audit
+- **Severidad:** high
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_smoke --check, vault_norms --audit
 
-Un dominio = una nota canónica rica. Todas las referencias desde otros contextos son [[wiki-links]] a esa nota canónica, nunca copias del contenido.
+Una tool se publica en el catálogo MCP porque responde a `--help` y porque su entrada existe. `--help` demuestra que el argparse se construye: no que el módulo importe sus dependencias, ni que el ejemplo documentado sea aceptado por la CLI, ni que la salida sea el JSON que el contrato promete. La primera medición dio 41 de 87 tools cuyo ejemplo documentado no llegaba a emitir un JSON con `ok` --36 de ellas porque el ejemplo del catálogo usaba flags que la CLI rechazaba, exactamente el defecto de AP-40 trasladado a la superficie de documentación.
 
-**Aplicación:** Identificar la nota con más backlinks y contenido para cada dominio. Redirigir todas las referencias hacia la canónica.
+**Prevención:** vault_smoke ejecuta el ejemplo documentado de cada tool contra una copia desechable del vault de pruebas y exige tres cosas: que termine, que su salida sea JSON y que ese JSON tenga `ok`. Un `ok: false` bien formado aprueba: lo que se persigue es el fallo mudo. La baseline solo puede encoger y quedó en 0, así que es un guard duro desde el primer día. Las tools sin invocación posible (un servicio HTTP que no retorna) se declaran en SIN_SMOKE con su motivo, nunca se omiten en silencio.
 
-### PAT-2: Stub enrichment gradient — enriquecimiento progresivo de stubs
+### AP-43: Norma sin refuerzo en el punto de uso
 
-- **Severidad:** N/A (patrón recomendado)
-- **Enforcement:** recommended
-- **Detectado por:** vault_audit
+- **Severidad:** high
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_voice --coverage, vault_norms --audit
 
-Un stub con ≥3 líneas reales se enriquece progresivamente en cada sesión que lo toca. La eliminación solo aplica a skeletons (AP-11) y deceptive skeletons (AP-20).
+El catálogo de normas está completo, versionado y con guards, pero el agente que documenta el vault no lo tiene delante mientras trabaja: se entera de que una norma existe cuando la incumple --y solo si esa norma es una de las 14 que previenen, no una de las 33 que se limitan a detectar en un audit que puede no correrse nunca. El refuerzo llega tarde, fuera de contexto o no llega. Una norma que el agente no ve en el momento de escribir no gobierna la escritura: gobierna el post-mortem.
 
-**Aplicación:** En cada sesión, buscar stubs del proyecto activo y añadir al menos 3 líneas de contenido real.
+**Prevención:** vault_errors.wrap_main --el único punto por el que ya pasa la salida de todas las tools-- añade a cada resultado un bloque `vault_says` derivado de NORM_CATALOG y del estado real de esa llamada: qué norma acaba de actuar, cuántas notas cambiaron, qué mirar a continuación. El refuerzo rota entre las normas que gobiernan esa tool para no degradarse en ruido fijo. vault_voice --coverage nombra las normas que ninguna tool pronuncia.
 
-### PAT-3: Duplicate chain resolution — resolución estándar de duplicados
+### AP-44: Verificación autoconsistente -- la tool se certifica a sí misma
 
-- **Severidad:** N/A (patrón recomendado)
-- **Enforcement:** recommended
-- **Detectado por:** vault_audit
+- **Severidad:** critical
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_norms --audit, vault_audit
 
-Algoritmo estándar para resolver duplicados: identificar canónica (más backlinks, más contenido, ubicación más apropiada) → change_log --action deleted → mover a 10_Migrated/ → actualizar wiki-links rotos → verificar con vault_audit.
+Una tool escribe o mide con un criterio propio y verifica el resultado con ESE MISMO criterio, en vez de con el que usa el consumidor real --Obsidian al resolver un enlace, el parser de Mermaid al dibujar, YAML al leer un frontmatter, el audit del propio estándar al juzgar la nota que otra tool acaba de escribir. La tool queda internamente coherente y por eso mismo ciega a su propio fallo: no puede detectar el error porque lo comete en los dos lados de la comparación. Es más caro que un bug normal, porque el guard sale en verde y dirige el trabajo hacia donde no hay problema: reescribir enlaces que funcionan, 'corregir' diagramas válidos, retaguear notas ya etiquetadas.
 
-**Aplicación:** Usar vault_graph_fix para resolver duplicados automáticamente con el wizard interactivo.
+**Prevención:** Verificar con el criterio del consumidor, no con el propio: resolver wikilinks por nombre de fichero y `aliases:` --nunca por `title:`, que Obsidian no mira--, leer frontmatter con `yaml.safe_load` y no con un regex por líneas, y validar Mermaid contra su gramática real. Toda tool que escribe reevalúa el resultado releyendo del disco. Un frontmatter ilegible devuelve error explícito, nunca `{}` silencioso, que es lo que hace que un write path anteponga un segundo bloque y corrompa la nota. Y toda medida se contrasta contra un vault preexistente ajeno al estándar: `vault-sandbox/` lo genera el propio estándar y comparte sus supuestos, así que no puede exhibir este fallo.
 
-### PAT-4: Phased audit execution — ejecución de auditorías en 4 fases
+### AP-45: Cobertura sin evidencia -- la nota existe para llenar la sección
 
-- **Severidad:** N/A (patrón recomendado)
-- **Enforcement:** recommended
-- **Detectado por:** vault_drift_detect
+- **Severidad:** high
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_norms --audit, vault_audit
 
-Las auditorías masivas se ejecutan en 4 fases atómicas: 1-Snapshot (vault_drift_detect --snapshot), 2-Detección (vault_audit), 3-Resolución (vault_write, vault_change_log), 4-Verificación (vault_drift_detect --report).
+Una nota se crea porque una sección estaba vacía, no porque hubiera algo que afirmar. Su cuerpo son encabezados y marcadores de pendiente --`_Pendiente_`, `TODO`, `-- No detectados`-- y no enlaza con nada. Sube la cobertura y baja la fiabilidad: el conteo de notas dice que la sección está cubierta, el health score la cuenta como nota real, y el siguiente lector la abre esperando contenido. Es más caro que la ausencia, porque la ausencia sí se ve: un hueco invita a llenarlo, un relleno declara que ya está hecho. El generador que la escribió creía estar documentando.
 
-**Aplicación:** Establecer este flujo como práctica estándar antes de cualquier sesión de limpieza del vault.
+**Prevención:** No escribir la nota sin evidencia detrás. Un generador que no encuentra contenido real para una sección lo declara en `warnings` y en `next_steps` --que es información útil-- en vez de emitir un stub, que es desinformación. El andamiaje declarado sí es legítimo: los primers de vault_init llevan `status: template` y quedan exentos, porque anuncian lo que son. Secciones dirigidas por eventos (18_Bugs, 19_Audits, 20_Quarantine) se quedan vacías hasta que ocurre el evento.
 
-### PAT-5: Frontmatter as provenance chain — cadena de custodia via frontmatter
+### AP-46: Frontmatter a mano -- cada tool es su propio escritor
 
-- **Severidad:** N/A (patrón recomendado)
-- **Enforcement:** recommended
-- **Detectado por:** vault_audit
+- **Severidad:** high
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_norms --audit, vault_audit
 
-Los campos id + createdAt + updatedAt + agent + migratedFrom (si aplica) forman una cadena de custodia completa. Sin esta cadena es imposible auditar de dónde vino un dato o qué agente lo introdujo.
+Veintiséis tools montan el frontmatter concatenando líneas y tres importan el write path canónico. Cada concatenación es un segundo autor del formato sin guard detrás: el bloque se cierra o no, `type:` está o no, la fecha lleva el formato de quien la escribió. El fallo no se ve al escribir --la tool devuelve `ok: true` porque el fichero se creó-- sino al auditar, y para entonces la nota ya es el dato. Es el mismo patrón que produjo 22 implementaciones de `slugify` y tres verdades para la lista de secciones: una fuente única declarada en la documentación y N implementaciones en el código. `vault_migrate_docs` cortaba el documento por la línea 7 y llevaba versiones publicándose así, con el bloque de frontmatter sin cerrar.
 
-**Aplicación:** vault_write genera automáticamente id, createdAt, updatedAt y agent. vault_migrate_docs añade migratedFrom.
+**Prevención:** El write path valida lo que escribe releyendo el resultado, no confiando en cómo se construyó: `atomic_write_text` rechaza un bloque de frontmatter que abre y no cierra o que no parsea, y registra el que parsea pero sale sin `type:`. Así el guard alcanza a las 26 tools sin reescribir ninguna, y la adopción de `vault_write` puede ser gradual. Verificar con el criterio del consumidor --`yaml.safe_load`, no un regex por líneas-- es AP-44 aplicado al generador.
 
-### PAT-6: Semantic graph enrichment — enriquecimiento periódico del grafo
+### AP-47: Artefacto derivado desfasado -- el índice dejó de reflejar el disco
 
-- **Severidad:** N/A (patrón recomendado)
-- **Enforcement:** recommended
-- **Detectado por:** vault_graph_merge, vault_audit
+- **Severidad:** high
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_norms --audit, vault_reindex --check
 
-Ejecutar vault_graph --typed al final de cada sesión productiva para generar graph-enriched.json con predicates semánticos unificados. El grafo enriquecido combina wiki-links, entity relations y code relations en un solo grafo consultable con filtros por predicate, cardinalidad y tipo de nodo.
+El vault es la fuente de verdad y `search-index.json` y `graph.json` son proyecciones suyas. Una escritura que no pasa por `vault_write` --un agente remoto, una tool que escribe la nota y no toca el índice, una copia a mano-- deja la proyección atrás, y a partir de ahí el agente busca sobre un mapa viejo: la nota existe y `vault_search` no la encuentra, así que la vuelve a escribir. La duplicación no es un descuido del agente, es la consecuencia lógica de un índice que miente.
 
-**Aplicación:** vault_graph --typed al final de cada sesión. vault_impact --predicate depends_on para análisis de impacto semántico.
+El estándar no lleva base de datos por decisión normativa, y con consistencia eventual el desfase es esperable. Lo que no es aceptable es que **nadie lo mida**: `vault_reindex --check` comprobaba `len(notes) > 0`, de modo que un índice con una entrada sobre un vault de 300 notas pasaba la puerta.
+
+**Prevención:** `vault_reindex --check` contrasta disco contra índice con el mismo criterio con el que reconstruye --una sola función, `_notas_en_disco()`, para que la comprobación y el arreglo no puedan medir cosas distintas (AP-44)-- y reporta las dos direcciones: notas invisibles para la búsqueda y entradas que apuntan a ficheros que ya no están. El remedio es `vault_reindex`, y por eso la norma se audita en vez de bloquear: el desfase es un estado a reconciliar, no una escritura a rechazar.
 
 ---
 
 ## EN
 
-Total registered antipatterns: 36 antipatterns + 6 patterns (PAT) + 3 session protocols (SP) + 3 conventions (CN)
+Total registered antipatterns: 47
 
 ### AP-01: Documentación alucinada
 
 - **Severity:** high
-- **Enforcement:** manual
-- **Detected by:** manual
+- **Enforcement:** audit
+- **Detected by:** vault_drift_detect
 
 Documentar herramientas, endpoints, funciones o comportamientos que no existen en el código real. El agente genera información convincente pero incorrecta.
 
@@ -468,8 +520,8 @@ Nota con contenido real pero incompleto (≥3 líneas reales) sin fecha de expan
 ### AP-04: Features aspiracionales documentadas como implementadas
 
 - **Severity:** high
-- **Enforcement:** manual
-- **Detected by:** manual
+- **Enforcement:** audit
+- **Detected by:** vault_drift_detect
 
 Documentar comportamientos futuros o planeados como si ya existieran. Confunde al agente sobre el estado real del sistema.
 
@@ -478,8 +530,8 @@ Documentar comportamientos futuros o planeados como si ya existieran. Confunde a
 ### AP-05: Múltiples fuentes de verdad para el mismo dato
 
 - **Severity:** critical
-- **Enforcement:** manual
-- **Detected by:** manual
+- **Enforcement:** audit
+- **Detected by:** vault_graph_inspect
 
 El mismo dato (IP, URL, versión, configuración) aparece en múltiples notas con valores inconsistentes. Causa decisiones del agente basadas en datos erróneos.
 
@@ -488,8 +540,8 @@ El mismo dato (IP, URL, versión, configuración) aparece en múltiples notas co
 ### AP-06: Templates sin instancias reales
 
 - **Severity:** low
-- **Enforcement:** manual
-- **Detected by:** manual
+- **Enforcement:** audit
+- **Detected by:** vault_norms --audit
 
 Archivos de template (SLOs, métricas, alertas, ADRs) que existen en el vault pero nunca se han instanciado con datos reales.
 
@@ -498,8 +550,8 @@ Archivos de template (SLOs, métricas, alertas, ADRs) que existen en el vault pe
 ### AP-07: ADRs incompletos
 
 - **Severity:** medium
-- **Enforcement:** manual
-- **Detected by:** manual
+- **Enforcement:** audit
+- **Detected by:** vault_norms --audit
 
 ADRs (Architecture Decision Records) sin secciones Contexto, Opciones evaluadas y Consecuencias. Un ADR sin estas secciones no aporta valor de auditoría.
 
@@ -508,8 +560,8 @@ ADRs (Architecture Decision Records) sin secciones Contexto, Opciones evaluadas 
 ### AP-08: Documentación anclada a versiones obsoletas
 
 - **Severity:** medium
-- **Enforcement:** manual
-- **Detected by:** manual
+- **Enforcement:** audit
+- **Detected by:** vault_drift_detect
 
 Notas que mencionan versiones específicas de librerías, APIs o protocolos que ya fueron actualizadas, sin indicar que el contenido puede estar desactualizado.
 
@@ -518,8 +570,8 @@ Notas que mencionan versiones específicas de librerías, APIs o protocolos que 
 ### AP-09: Runbooks fuera de estructura
 
 - **Severity:** medium
-- **Enforcement:** manual
-- **Detected by:** manual
+- **Enforcement:** audit
+- **Detected by:** vault_norms --audit
 
 Procedimientos operativos guardados en carpetas genéricas (07_Knowledge/, 01_Projects/) en lugar de 06_Runbooks/. Dificulta la localización en incidentes.
 
@@ -528,8 +580,8 @@ Procedimientos operativos guardados en carpetas genéricas (07_Knowledge/, 01_Pr
 ### AP-10: Migración sin plan de rollback
 
 - **Severity:** high
-- **Enforcement:** manual
-- **Detected by:** manual
+- **Enforcement:** audit
+- **Detected by:** vault_norms --audit, vault_migrate_rollback
 
 Ejecutar vault_migrate_docs sin tener vault_migrate_rollback disponible o sin snapshot previo. Si la migración introduce errores, no hay manera de revertir.
 
@@ -578,8 +630,8 @@ Timestamps solo con fecha (2026-05-07), con '...' literal, sin zona horaria o en
 ### AP-15: Archivos externos depositados en la raíz del vault
 
 - **Severity:** high
-- **Enforcement:** manual
-- **Detected by:** vault_audit
+- **Enforcement:** audit
+- **Detected by:** vault_norms --audit
 
 Archivos .md colocados directamente en vault-{nombre}/ en lugar de en secciones numeradas. vault_graph parsea sus [[wiki-links]] como broken links reales del proyecto.
 
@@ -618,8 +670,8 @@ Mismo contenido byte-idéntico (MD5) en carpetas distintas. Penalización vault_
 ### AP-19: Shadow indexing
 
 - **Severity:** medium
-- **Enforcement:** manual
-- **Detected by:** manual
+- **Enforcement:** audit
+- **Detected by:** vault_norms --audit
 
 Índices de sección creados manualmente, duplicando lo que vault_section_index genera automáticamente. Los índices manuales rotan en AP-02 con el tiempo.
 
@@ -669,11 +721,11 @@ Una nota con más de 500 líneas de contenido real se vuelve difícil de mantene
 
 - **Severity:** high
 - **Enforcement:** guard+audit
-- **Detected by:** vault_audit, vault_render_check
+- **Detected by:** vault_audit, vault_fix_brackets
 
 Wiki-links malformados por desbalance de corchetes. Tres variantes: (1) apertura sin cierre ([[nota sin ]]), (2) cierre sin apertura (]] sin [[), (3) anidamiento incorrecto ([[[[nota]]]] o [[nota]]]]). En Obsidian el link se renderiza como texto literal, no como enlace navegable. Rompe la trazabilidad y produce falsos negativos en vault_audit --broken-links.
 
-**Prevention:** Usar siempre el formato [[stem]] o [[stem|alias]]. Validar balance con vault_render_check --fix antes de commit. El content_gate de vault_write rechaza contenido con bracket imbalance.
+**Prevention:** Usar siempre el formato [[stem]] o [[stem|alias]]. Validar balance con vault_fix_brackets --fix antes de commit. El content_gate de vault_write rechaza contenido con bracket imbalance.
 
 ### AP-25: Mermaid diagram syntax errors -- nodos/tipos no definidos
 
@@ -685,172 +737,224 @@ Diagramas Mermaid con sintaxis inválida: tipos de diagrama no reconocidos (unkn
 
 **Prevention:** Validar con vault_mermaid_check antes de commit. Usar tipos conocidos (graph TD, flowchart LR, sequenceDiagram, classDiagram, etc.). Asegurar que cada nodo referenciado en una flecha exista como definición previa.
 
-### AP-31: Untyped graph — edges without explicit predicate
+### AP-26: Missing tags -- nota de contenido sin tags
+
+- **Severity:** medium
+- **Enforcement:** audit
+- **Detected by:** vault_audit
+
+Nota de contenido sin campo `tags` o con la lista vacía. Sin tags la nota es invisible para la búsqueda por facetas y no participa en los edges shared_tag del grafo: queda alcanzable solo por wiki-link directo.
+
+**Prevention:** Pasar --tags en la tool de escritura. vault_ingest y vault_preferences los derivan automáticamente del origen y la categoría.
+
+### AP-27: Missing type field -- nota sin tipo declarado
+
+- **Severity:** medium
+- **Enforcement:** audit
+- **Detected by:** vault_audit, vault_validate
+
+Nota sin campo `type`. El tipo es lo que ancla la nota a su sección canónica (CN-02): sin él no se puede verificar la coincidencia type ↔ carpeta que sostiene la dimensión de exactitud (F4).
+
+**Prevention:** Declarar --type en la escritura; vault_validate lo comprueba contra el registro.
+
+### AP-28: Missing frontmatter -- nota sin bloque YAML
+
+- **Severity:** high
+- **Enforcement:** audit
+- **Detected by:** vault_audit, vault_validate
+
+Nota sin bloque de frontmatter. Es el caso degenerado de AP-26/27/29/30 a la vez: sin frontmatter no hay id, ni agent, ni status, ni CIA, así que la nota queda fuera de toda métrica de calidad y de la cadena de trazabilidad (PAT-5).
+
+**Prevention:** No editar .md a mano (SP-04). Escribir siempre por tool: atomic_write_text garantiza el bloque.
+
+### AP-29: Missing status field -- nota sin estado de ciclo de vida
+
+- **Severity:** medium
+- **Enforcement:** audit
+- **Detected by:** vault_audit, vault_norms
+
+Nota sin campo `status`. Sin estado no se puede distinguir lo vigente de lo obsoleto, y la nota escapa al vocabulario controlado de CN-03: es la vía por la que contenido derogado sigue leyéndose como vigente.
+
+**Prevention:** Declarar --status dentro de STATUS_VOCAB (12 valores).
+
+### AP-30: Missing CIA classification -- nota sin clasificación de la tríada
+
+- **Severity:** high
+- **Enforcement:** audit
+- **Detected by:** vault_audit, vault_quality_check
+
+Nota sin `cia_integrity` / `cia_availability` / `cia_sensitivity`. Sin clasificación CIA la nota no puede endurecer su umbral de actualidad (30d → 15d en critical|high) ni ponderar su peso en el health score: el pilar del estándar queda sin aplicar sobre ella.
+
+**Prevention:** Declarar los tres ejes en la escritura. vault_ingest asigna cia_integrity: low a lo ingerido por no estar verificado.
+
+### AP-31: Grafo sin tipos semanticos -- edges sin predicate explícito
 
 - **Severity:** high
 - **Enforcement:** audit
 - **Detected by:** vault_audit, vault_graph_merge
 
-All graph edges use the same 'wiki-link' type without distinguishing semantics: depends_on, implements, extends, calls, documents, etc. Without typed predicates, impact analysis and semantic searches cannot filter by relationship type. The solution is to merge entity relations (vault_relation_add) and code relations (vault_code_relation) into the graph to enrich it with predicates.
+Todas las aristas del grafo usan el mismo tipo 'wiki-link' sin distinguir semántica: depends_on, implements, extends, calls, documents, etc. Sin predicates tipados, el analisis de impacto y las busquedas semanticas no pueden filtrar por tipo de relacion. La solucion es mergear las relaciones de entidad (vault_relation_add) y codigo (vault_code_relation) en el grafo para enriquecerlo con predicates.
 
-**Prevention:** Run vault_graph --typed periodically to generate graph-enriched.json with unified semantic predicates.
+**Prevention:** Ejecutar vault_graph --typed o vault_graph_merge periodicamente para enriquecer el grafo con predicates. Toda relacion registrada via vault_relation_add o vault_code_relation debe reflejarse en graph-enriched.json.
 
-### AP-32: Typed relations without valid ontology predicate
+### AP-32: Relaciones tipadas sin predicate valido en la ontologia
 
 - **Severity:** medium
 - **Enforcement:** audit
 - **Detected by:** vault_graph_merge, vault_audit
 
-A relation registered in entity or code relations uses a relationType/type that doesn't exist in vault-ontology.json. This produces edges that cannot be semantically interpreted. Example: relationType='inherits' when the canonical predicate is 'extends'.
+Una relacion registrada en entity relations o code relations usa un relationType/type que no existe en vault-ontology.json. Esto produce edges que no pueden interpretarse semanticamente en el grafo enriquecido. Ej: relationType='inherits' cuando el predicate canonico es 'extends'.
 
-**Prevention:** Validate new predicates against vault-ontology.json. Use the 18 canonical predicates.
+**Prevention:** Usar solo predicates del vocabulario canonico en vault-ontology.json. Para entity relations: has_one, has_many, belongs_to, many_to_many, implements, extends, depends_on, uses, calls, owns, aggregates. Para code relations: imports, extends, implements, calls, uses, re-exports, depends_on.
 
-### AP-33: Non-canonical predicate — unnormalized synonym
+### AP-33: Predicado no canonico -- sinonimo no normalizado
 
 - **Severity:** low
 - **Enforcement:** audit
 - **Detected by:** vault_graph_merge
 
-Entity relations use `relationType` and code relations use `type` for the same semantic concept. Semantically equivalent predicates must be unified: `imports` in code ≈ `depends_on` at build time.
+Las relaciones de entidad usan `relationType` y las de codigo usan `type` para el mismo concepto semantico. Ademas, predicates que semanticamente son equivalentes deben unificarse: `imports` en codigo ≈ `depends_on` a nivel build-time. La ontologia define el mapeo de sinonimos.
 
-**Prevention:** Use canonical predicates from vault-ontology.json. vault_graph_merge auto-maps synonyms.
+**Prevention:** Al registrar relaciones, usar predicates del vocabulario canonico. La ontologia maneja el mapeo relationType→predicate y type→predicate automaticamente. No requiere accion manual.
 
-### AP-34: Orphan typed relation — nonexistent endpoint in vault
-
-- **Severity:** high
-- **Enforcement:** audit
-- **Detected by:** vault_audit, vault_graph_merge
-
-A typed relation references an endpoint that doesn't exist as a note in the vault. The enriched graph will have edges to ghost nodes that never resolve.
-
-**Prevention:** Create corresponding notes in the vault before registering relations. vault_graph_merge detects orphans with fuzzy matching.
-
-### AP-35: Relationship silos — isolated graph systems
+### AP-34: Relacion tipada huerfana -- endpoint inexistente en el vault
 
 - **Severity:** high
 - **Enforcement:** audit
 - **Detected by:** vault_audit, vault_graph_merge
 
-The vault maintains three relationship systems in isolated silos: (a) wiki-links in graph.json, (b) entity relations, (c) code relations. None of these systems integrates with the others, producing a fragmented knowledge graph.
+Una relacion tipada (entity o code) referencia un endpoint que no existe como nota en el vault. Ej: relacion `User -- has_many --> Order` donde no existen `User.md` ni `Order.md`. El grafo enriquecido tendra edges hacia nodos fantasma que nunca resolveran.
 
-**Prevention:** Run vault_graph --typed at the end of each productive session.
+**Prevention:** SP-02: verificar que los endpoints existan antes de registrar la relacion. Ejecutar vault_search o vault_list para confirmar que las notas referenciadas en fromEntity/toEntity existen en el vault.
 
-### SP-01: Delete protocol — mandatory change_log before deletion
+### AP-35: Silos de relacion -- sistemas de grafos aislados
+
+- **Severity:** high
+- **Enforcement:** audit
+- **Detected by:** vault_audit, vault_graph_merge
+
+El vault mantiene tres sistemas de relaciones en silos aislados: (a) wiki-links en graph.json, (b) entity relations en 06_Diagrams/entity/*-relations.json, (c) code relations en 11_Code/.code-index.json. Ninguno de estos sistemas se integra con los otros, produciendo un grafo de conocimiento fragmentado. vault_impact y BFS solo ven wiki-links, ignorando relaciones semanticas ricas registradas en los otros sistemas.
+
+**Prevention:** Ejecutar vault_graph_merge periodicamente (recomendado: cada sesion o cada vez que se registren nuevas relaciones). vault_graph --typed genera graph-enriched.json que unifica los tres sistemas.
+
+### AP-36: Contención e idempotencia -- side-effects fuera del vault o no rastreables
 
 - **Severity:** critical
-- **Enforcement:** manual
-- **Detected by:** vault_audit
+- **Enforcement:** guard+audit
+- **Detected by:** vault_norms --audit
 
-Before deleting any vault note, the agent MUST call: vault_change_log --action deleted --path <note> --reason <reason>. Without this record, the note disappears without an audit trail.
+Toda operación de tooling debe: (1) escribir ÚNICAMENTE dentro del vault root (backups, traces, locks, stubs, logs incluidos); (2) ser idempotente -- ejecutarla dos veces no duplica artefactos ni carpetas; (3) dejar sus artefactos indexados o en ubicaciones registradas (vault_registry) para rastreabilidad. Casos históricos: vault-backups escrito en el abuelo del repo, 00_System/99_Index generados fuera del vault por detección de root defectuosa, .bak junto a nodos de contenido.
 
-**Prevention:** Never delete notes directly. Use: change_log → backup → delete.
+**Prevention:** Rutas de salida derivadas SIEMPRE de VAULT_ROOT (nunca de __file__ ni cwd). Artefactos de mantenimiento van a 02_Observability/maintenance/ o 00_System/. vault_norms --audit detecta artefactos sueltos y secciones sin índice.
 
-### SP-02: Forward-link verification — search before linking
+### AP-37: No-op silencioso -- ok: true sin indicador de trabajo
 
 - **Severity:** high
-- **Enforcement:** guard
-- **Detected by:** vault_graph, vault_audit
+- **Enforcement:** audit
+- **Detected by:** vault_noop_audit
 
-Before writing [[note-name]] in content, verify the target note exists: vault_search(query:'note-name'). If no result found, write as plain text until the note exists.
+Una tool con side effects declarados devuelve ok: true sin exponer ningún campo que distinga 'hice N cosas' de 'no hice nada'. `ok: true` a secas es una afirmación no falsable: ni un test ni un agente pueden detectar que la operación fue vacía. Toda tool que modifica estado debe declarar un indicador de trabajo en declared_returns (changed, applied, count, migrations_applied, fixes_applied, skipped, no_op…) y devolverlo siempre, también cuando vale 0.
 
-**Prevention:** Use vault_search before creating wikilinks. Prefer [[note-name|descriptive alias]].
+**Prevention:** Declarar el indicador en tool-spec.json y devolverlo desde la tool. vault_noop_audit --check compara el catálogo contra una baseline congelada: la deuda histórica no bloquea, pero NO puede crecer.
 
-### SP-03: Session snapshot pattern — delta before massive operations
+### AP-38: Vocabulario validado después de escribir, no antes
+
+- **Severity:** high
+- **Enforcement:** guard+audit
+- **Detected by:** vault_norms --audit
+
+Un campo con vocabulario cerrado se acepta tal cual en la escritura y se comprueba en un audit posterior. El audit no lo ejecuta nadie -- en 1.356 ejecuciones registradas del parque real, `vault_norms` no aparece ni una vez -- así que el vocabulario no gobierna: solo documenta una intención. Agravante: que varias tools publiquen vocabularios distintos para el mismo campo (AP-05 aplicado al dato). Un campo canónico se normaliza en el punto de escritura y rechaza lo que no pueda derivar; los ejes de dominio legítimos (resultado de un test, fase de un incidente) van a su propio campo, no compiten por `status`.
+
+**Prevention:** STATUS_SYNONYMS + normalize_status() normalizan en vault_write antes de emitir. Las tools con eje propio llaman a status_frontmatter_lines(), que emite `status` canónico y el campo de dominio desde DOMAIN_STATUS_VOCABS. Lo que arrastraba información y no era estado se conserva en status_note: no-derogación aplicada al dato.
+
+### AP-39: Vocabulario abierto sin memoria
 
 - **Severity:** medium
-- **Enforcement:** manual
-- **Detected by:** vault_delta
+- **Enforcement:** guard+audit
+- **Detected by:** vault_tags --audit, vault_norms --audit
 
-Before any massive operation (migration, batch rename, batch delete), capture snapshot with vault_delta --snapshot. Enables regression detection and impact calculation.
+Un campo con vocabulario abierto (tags) admite términos nuevos sin dejar constancia de quién los introdujo ni cuándo. Sin registro no hay continuidad: cada sesión reinventa las palabras de la anterior, y el vocabulario crece sin converger -- 1.180 términos para 6.358 usos, el 45% usado una sola vez. A diferencia de AP-38, la respuesta correcta NO es rechazar: un vocabulario abierto que rechaza empuja a omitir el campo, y entonces lo que se incumple es AP-26. Lo que hay que cerrar es el olvido, no la entrada.
 
-**Prevention:** vault_delta --snapshot before all massive operations; vault_delta --report afterwards.
+**Prevention:** vault_write llama a vault_tags.apply_vocabulary() antes de emitir: colapsa contra el registro canónico lo que es demostrablemente la misma palabra (normalize_tag + singular_tag) y admite el término nuevo tal cual. Una vez la nota está en disco, record_new_tags() lo anota en la bitácora append-only 19_Audits/vocabulary/tag-ledger.json con agente, fecha y nota de origen. Inventar sigue siendo posible; deja de ser silencioso.
 
-### CN-01: Kebab-case filenames — lowercase filenames with hyphens
-
-- **Severity:** high
-- **Enforcement:** guard
-- **Detected by:** vault_validate
-
-Vault .md files must use kebab-case: lowercase, words separated by hyphens, no spaces or special characters. vault_write applies slugify() automatically. Example: 'ADR-001 Auth Decision' → adr-001-auth-decision.md.
-
-**Prevention:** Use vault_write to create notes (auto-applies slugify). Never create files manually.
-
-### CN-02: Numbered folder structure — numbered sections as only destinations
+### AP-40: Contrato publicado que la CLI rechaza
 
 - **Severity:** high
-- **Enforcement:** manual
-- **Detected by:** vault_validate
+- **Enforcement:** guard+audit
+- **Detected by:** vault_mcp_catalog --check-params, vault_norms --audit
 
-Only the 16 numbered sections are valid destinations for notes: 00_System through 16_AI_Governance and 99_Index. Creating ad-hoc folders or writing at root violates the standard (see AP-15).
+Una tool publica en su catálogo parámetros que su propio argparse no acepta. La tool aparece en tools/list, se puede invocar, y falla siempre con 'unrecognized arguments'. Medido en v39: 45 de 82 tools conciliables publicaban al menos un param inexistente -- más de la mitad de la superficie MCP era inalcanzable sin que nada lo señalara, porque el guard de sincronía comparaba el JSON contra el Python: dos copias de la misma equivocación coinciden perfectamente.
 
-**Prevention:** vault_folder_registry maintains the canonical folder registry. vault_write rejects paths outside numbered sections.
+**Prevention:** El contrato de argumentos lo declara argparse, no el catálogo: vault_mcp_catalog.argparse_params() lee los add_argument del script y reconciled_params() publica solo lo que la CLI acepta, conservando la descripción escrita a mano cuando el nombre coincide. vault_mcp_catalog --check-params audita el JSON ya generado (que es lo que el servidor consume) contra el argparse real.
 
-### CN-03: Standard status vocabulary — canonical meta.status vocabulary
+### AP-41: Máquina de estados declarada sin verificar
 
-- **Severity:** low
-- **Enforcement:** manual
-- **Detected by:** vault_validate
+- **Severity:** high
+- **Enforcement:** guard+audit
+- **Detected by:** vault_norms --audit
 
-The meta.status field must use only standard vocabulary: planned | in-progress | implemented | deprecated | archived | stub | template. Values outside this set break vault_list and vault_audit filters.
+El estándar declara STATUS_TRANSITIONS --las transiciones válidas del ciclo de vida de una nota-- y no las recorre nadie: su único consumidor era su propio test de coherencia. Un estado que no controla su transición es una etiqueta, no un ciclo de vida: una nota 'archived' podía volver a 'draft', o saltar de 'planned' a 'verified' sin pasar por revisión, y ningún guard lo veía. Es la misma forma del fallo histórico del estándar --declarar sin ejecutar-- con la agravante de que existía un test en verde que verificaba que el grafo estaba bien dibujado, no que alguien lo recorriera.
 
-**Prevention:** Use vault_write with standard parameters. vault_validate reports non-standard status values.
+**Prevention:** vault_write lee el `status` de la nota en disco antes de sobrescribirla y rechaza la transición que no está en STATUS_TRANSITIONS, citando los destinos válidos. Una actualización que no menciona `status` conserva el estado previo en vez de caer al default 'draft'. Las transiciones ya ocurridas se reportan desde .history/ con vault_norms --audit: se anotan, no se reescriben, porque el estado actual es un hecho.
 
-### PAT-1: Canonical source anchoring — one rich canonical note per domain
+### AP-42: Tool publicada sin haberse ejecutado nunca
 
-- **Severity:** N/A (recommended pattern)
-- **Enforcement:** recommended
-- **Detected by:** vault_audit
+- **Severity:** high
+- **Enforcement:** guard+audit
+- **Detected by:** vault_smoke --check, vault_norms --audit
 
-One domain = one rich canonical note. All references from other contexts are [[wiki-links]] to that canonical note, never content copies.
+Una tool se publica en el catálogo MCP porque responde a `--help` y porque su entrada existe. `--help` demuestra que el argparse se construye: no que el módulo importe sus dependencias, ni que el ejemplo documentado sea aceptado por la CLI, ni que la salida sea el JSON que el contrato promete. La primera medición dio 41 de 87 tools cuyo ejemplo documentado no llegaba a emitir un JSON con `ok` --36 de ellas porque el ejemplo del catálogo usaba flags que la CLI rechazaba, exactamente el defecto de AP-40 trasladado a la superficie de documentación.
 
-**Application:** Identify the note with most backlinks and content for each domain. Redirect all references to the canonical.
+**Prevention:** vault_smoke ejecuta el ejemplo documentado de cada tool contra una copia desechable del vault de pruebas y exige tres cosas: que termine, que su salida sea JSON y que ese JSON tenga `ok`. Un `ok: false` bien formado aprueba: lo que se persigue es el fallo mudo. La baseline solo puede encoger y quedó en 0, así que es un guard duro desde el primer día. Las tools sin invocación posible (un servicio HTTP que no retorna) se declaran en SIN_SMOKE con su motivo, nunca se omiten en silencio.
 
-### PAT-2: Stub enrichment gradient — progressive stub enrichment
+### AP-43: Norma sin refuerzo en el punto de uso
 
-- **Severity:** N/A (recommended pattern)
-- **Enforcement:** recommended
-- **Detected by:** vault_audit
+- **Severity:** high
+- **Enforcement:** guard+audit
+- **Detected by:** vault_voice --coverage, vault_norms --audit
 
-A stub with ≥3 real lines is progressively enriched each session that touches it. Deletion only applies to skeletons (AP-11) and deceptive skeletons (AP-20).
+El catálogo de normas está completo, versionado y con guards, pero el agente que documenta el vault no lo tiene delante mientras trabaja: se entera de que una norma existe cuando la incumple --y solo si esa norma es una de las 14 que previenen, no una de las 33 que se limitan a detectar en un audit que puede no correrse nunca. El refuerzo llega tarde, fuera de contexto o no llega. Una norma que el agente no ve en el momento de escribir no gobierna la escritura: gobierna el post-mortem.
 
-**Application:** Each session, find stubs for the active project and add at least 3 lines of real content.
+**Prevention:** vault_errors.wrap_main --el único punto por el que ya pasa la salida de todas las tools-- añade a cada resultado un bloque `vault_says` derivado de NORM_CATALOG y del estado real de esa llamada: qué norma acaba de actuar, cuántas notas cambiaron, qué mirar a continuación. El refuerzo rota entre las normas que gobiernan esa tool para no degradarse en ruido fijo. vault_voice --coverage nombra las normas que ninguna tool pronuncia.
 
-### PAT-3: Duplicate chain resolution — standard duplicate resolution
+### AP-44: Verificación autoconsistente -- la tool se certifica a sí misma
 
-- **Severity:** N/A (recommended pattern)
-- **Enforcement:** recommended
-- **Detected by:** vault_audit
+- **Severity:** critical
+- **Enforcement:** guard+audit
+- **Detected by:** vault_norms --audit, vault_audit
 
-Standard algorithm: identify canonical (most backlinks, most content, most appropriate location) → change_log --action deleted → move to 10_Migrated/ → update broken wiki-links → verify with vault_audit.
+Una tool escribe o mide con un criterio propio y verifica el resultado con ESE MISMO criterio, en vez de con el que usa el consumidor real --Obsidian al resolver un enlace, el parser de Mermaid al dibujar, YAML al leer un frontmatter, el audit del propio estándar al juzgar la nota que otra tool acaba de escribir. La tool queda internamente coherente y por eso mismo ciega a su propio fallo: no puede detectar el error porque lo comete en los dos lados de la comparación. Es más caro que un bug normal, porque el guard sale en verde y dirige el trabajo hacia donde no hay problema: reescribir enlaces que funcionan, 'corregir' diagramas válidos, retaguear notas ya etiquetadas.
 
-**Application:** Use vault_graph_fix to resolve duplicates automatically with the interactive wizard.
+**Prevention:** Verificar con el criterio del consumidor, no con el propio: resolver wikilinks por nombre de fichero y `aliases:` --nunca por `title:`, que Obsidian no mira--, leer frontmatter con `yaml.safe_load` y no con un regex por líneas, y validar Mermaid contra su gramática real. Toda tool que escribe reevalúa el resultado releyendo del disco. Un frontmatter ilegible devuelve error explícito, nunca `{}` silencioso, que es lo que hace que un write path anteponga un segundo bloque y corrompa la nota. Y toda medida se contrasta contra un vault preexistente ajeno al estándar: `vault-sandbox/` lo genera el propio estándar y comparte sus supuestos, así que no puede exhibir este fallo.
 
-### PAT-4: Phased audit execution — 4-phase audit execution
+### AP-45: Cobertura sin evidencia -- la nota existe para llenar la sección
 
-- **Severity:** N/A (recommended pattern)
-- **Enforcement:** recommended
-- **Detected by:** vault_drift_detect
+- **Severity:** high
+- **Enforcement:** guard+audit
+- **Detected by:** vault_norms --audit, vault_audit
 
-Massive audits run in 4 atomic phases: 1-Snapshot, 2-Detection, 3-Resolution, 4-Verification.
+Una nota se crea porque una sección estaba vacía, no porque hubiera algo que afirmar. Su cuerpo son encabezados y marcadores de pendiente --`_Pendiente_`, `TODO`, `-- No detectados`-- y no enlaza con nada. Sube la cobertura y baja la fiabilidad: el conteo de notas dice que la sección está cubierta, el health score la cuenta como nota real, y el siguiente lector la abre esperando contenido. Es más caro que la ausencia, porque la ausencia sí se ve: un hueco invita a llenarlo, un relleno declara que ya está hecho. El generador que la escribió creía estar documentando.
 
-**Application:** Establish this flow as standard practice before any vault cleanup session.
+**Prevention:** No escribir la nota sin evidencia detrás. Un generador que no encuentra contenido real para una sección lo declara en `warnings` y en `next_steps` --que es información útil-- en vez de emitir un stub, que es desinformación. El andamiaje declarado sí es legítimo: los primers de vault_init llevan `status: template` y quedan exentos, porque anuncian lo que son. Secciones dirigidas por eventos (18_Bugs, 19_Audits, 20_Quarantine) se quedan vacías hasta que ocurre el evento.
 
-### PAT-5: Frontmatter as provenance chain — audit chain via frontmatter
+### AP-46: Frontmatter a mano -- cada tool es su propio escritor
 
-- **Severity:** N/A (recommended pattern)
-- **Enforcement:** recommended
-- **Detected by:** vault_audit
+- **Severity:** high
+- **Enforcement:** guard+audit
+- **Detected by:** vault_norms --audit, vault_audit
 
-The fields id + createdAt + updatedAt + agent + migratedFrom form a complete chain of custody. Without this chain, it's impossible to audit data origins.
+Veintiséis tools montan el frontmatter concatenando líneas y tres importan el write path canónico. Cada concatenación es un segundo autor del formato sin guard detrás: el bloque se cierra o no, `type:` está o no, la fecha lleva el formato de quien la escribió. El fallo no se ve al escribir --la tool devuelve `ok: true` porque el fichero se creó-- sino al auditar, y para entonces la nota ya es el dato. Es el mismo patrón que produjo 22 implementaciones de `slugify` y tres verdades para la lista de secciones: una fuente única declarada en la documentación y N implementaciones en el código. `vault_migrate_docs` cortaba el documento por la línea 7 y llevaba versiones publicándose así, con el bloque de frontmatter sin cerrar.
 
-**Application:** vault_write auto-generates id, createdAt, updatedAt, and agent. vault_migrate_docs adds migratedFrom.
+**Prevention:** El write path valida lo que escribe releyendo el resultado, no confiando en cómo se construyó: `atomic_write_text` rechaza un bloque de frontmatter que abre y no cierra o que no parsea, y registra el que parsea pero sale sin `type:`. Así el guard alcanza a las 26 tools sin reescribir ninguna, y la adopción de `vault_write` puede ser gradual. Verificar con el criterio del consumidor --`yaml.safe_load`, no un regex por líneas-- es AP-44 aplicado al generador.
 
-### PAT-6: Semantic graph enrichment — periodic graph enrichment
+### AP-47: Artefacto derivado desfasado -- el índice dejó de reflejar el disco
 
-- **Severity:** N/A (recommended pattern)
-- **Enforcement:** recommended
-- **Detected by:** vault_graph_merge, vault_audit
+- **Severity:** high
+- **Enforcement:** guard+audit
+- **Detected by:** vault_norms --audit, vault_reindex --check
 
-Run vault_graph --typed at the end of each productive session to generate graph-enriched.json with unified semantic predicates.
+El vault es la fuente de verdad y `search-index.json` y `graph.json` son proyecciones suyas. Una escritura que no pasa por `vault_write` --un agente remoto, una tool que escribe la nota y no toca el índice, una copia a mano-- deja la proyección atrás, y a partir de ahí el agente busca sobre un mapa viejo: la nota existe y `vault_search` no la encuentra, así que la vuelve a escribir. La duplicación no es un descuido del agente, es la consecuencia lógica de un índice que miente.
 
-**Application:** vault_graph --typed at end of each session. vault_impact --predicate depends_on for semantic impact analysis.
+El estándar no lleva base de datos por decisión normativa, y con consistencia eventual el desfase es esperable. Lo que no es aceptable es que **nadie lo mida**: `vault_reindex --check` comprobaba `len(notes) > 0`, de modo que un índice con una entrada sobre un vault de 300 notas pasaba la puerta.
+
+**Prevention:** `vault_reindex --check` contrasta disco contra índice con el mismo criterio con el que reconstruye --una sola función, `_notas_en_disco()`, para que la comprobación y el arreglo no puedan medir cosas distintas (AP-44)-- y reporta las dos direcciones: notas invisibles para la búsqueda y entradas que apuntan a ficheros que ya no están. El remedio es `vault_reindex`, y por eso la norma se audita en vez de bloquear: el desfase es un estado a reconciliar, no una escritura a rechazar.

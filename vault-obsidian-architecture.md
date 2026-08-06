@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v39.3 — 2026-08-05  
+**Versión:** v39.4 — 2026-08-05  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -51,6 +51,21 @@ Todo lo anterior está declarado, medido y forzado en **[Marco de Datos y Gobern
 
 ---
 
+> **v39.4 (2026-08-05):** La capa por la que un agente descubre el estándar, con contrato ejecutable.
+> - **Grupo 37 — Skills.** Una skill se descubre por convención de ruta, y descubrirse
+>   por ruta no es estar publicada: `vault-sdd-init` llevaba cuatro versiones con
+>   definición, documentación y tests propios, y sin entrada en el catálogo ni en el
+>   tool-spec. AP-42 sobre la puerta de entrada de los agentes.
+> - **Puerta de vigencia del SDD (`--check`).** El documento generado deriva el rango
+>   de antipatrones del registro, así que el recién escrito nunca miente; el de la
+>   ejecución anterior sí. Medido: `AP-01..AP-35` en el cuerpo y `AP-01..AP-25` en el
+>   índice con el registro en `AP-01..AP-47`.
+> - **`--force` no pisa `gaps.md`.** Levanta la idempotencia de lo generado, no el
+>   permiso para pisar lo escrito a mano — 85 hallazgos manuales perdidos antes de
+>   que la excepción estuviera escrita en el código y no solo en la doc.
+> - **`vault_sanacion`**: el plan de las 12 fases medido contra el vault que tienes
+>   delante, con `unknown` distinto de `clean` y sin escribir nada.
+>
 > **v39.3 (2026-08-05):** El camino de ejecución, comprobado por donde se ejecuta.
 > - **El runner MCP** —único punto por el que un agente real toca el estándar— no
 >   tenía un solo test. Cuatro defectos: el hijo heredaba la consola de Windows y
@@ -3908,6 +3923,38 @@ Lo ingerido entra con `status: draft` y `cia_integrity: low`, de modo que el rer
 
 ---
 
+### Grupo 37 — Skills (v39.4)
+
+> **Propósito:** dar contrato ejecutable a la capa por la que un agente **descubre** el estándar. Las 89 tools de los grupos 1–34 se invocan cuando alguien ya sabe que existen; una skill es lo que hace que las encuentre sin que se lo digan.
+
+Una skill vive en `.claude/skills/<nombre>/SKILL.md` y se descubre por convención de ruta, sin paso de instalación. Su punto de entrada es `scripts/<nombre con guiones bajos>.py`. Esa convención es justamente el problema que este grupo cierra: **descubrirse por ruta no es estar publicada**. Durante cuatro versiones `vault-sdd-init` tuvo definición, documentación en `docs/SKILLS.md` y tests de contrato propios, y no tenía entrada ni en `tools-catalog.json` ni en `00_System/tool-spec.json`. `--check-contracts` verifica catálogo → contrato, así que lo que falta en los dos no lo echa en falta nadie: **AP-42 sobre la puerta de entrada de los agentes**.
+
+El criterio de qué merece skill: hay skill donde hay un **procedimiento que un agente tiene que decidir**, no donde hay una tool que ejecutar. Una tool que se llama con tres parámetros y devuelve un envelope no necesita una; un recorrido de doce fases en el que la mitad de las decisiones no las toma ninguna tool, sí.
+
+#### `vault_sdd_init(bilingual, check, dry-run, force, vault-root)`
+
+Genera los 14 documentos de `docs/sdd/` derivándolos del registro (`NORM_CATALOG`, `FUNDAMENTALS`, el catálogo de tools). Todo bajo `<vault-root>/docs/sdd/` — AP-36.
+
+`--check` es la puerta de vigencia (AP-47). El rango de antipatrones se deriva del registro **en cada ejecución**, así que el fichero recién generado nunca miente; lo que envejece es el de la ejecución anterior, que se commiteó y se quedó quieto mientras el registro seguía creciendo por debajo. Medido antes de existir la puerta: `04-antipatterns.md` anunciaba `AP-01..AP-35` y el índice del `README.md` `AP-01..AP-25`, con el registro en `AP-01..AP-47` — un mes de desfase, tres releases, y ninguna de las seis puertas del checklist lo miraba. La etiqueta se lee del disco con la misma expresión que la escribe (`ap_range_label()`), que es AP-44 aplicado a la propia medida.
+
+`--force` levanta la **idempotencia de lo generado, no el permiso para pisar lo escrito a mano**: `gaps.md` es el único de los 14 declarado *manual fill* y su preservación no depende de ninguna bandera. La distinción no es teórica — un `--force` para refrescar el rango se llevó por delante 85 hallazgos redactados a mano, incluida la tabla de prioridades de FASE 0. La restricción publicada («no pisa documentación manual») no tenía excepción escrita; el código sí la tenía.
+
+**Retorna:** `{ ok, tool, written, written_count, preserved, path }` · con `--check`: `{ ok, status, expected_range, found_ranges, stale_files, missing_files, path }`, donde `status ∈ {sdd_ok, sdd_stale, sdd_partial, sdd_missing}`.
+
+#### `vault_sanacion(phase, strict)`
+
+Diagnóstico de solo lectura que devuelve el plan de las 12 fases de `docs/MODO-AGENTICO-SANACION.md` **medido contra el vault que tienes delante**, en vez de la lista completa que había que leer del documento y decidir a ojo. Cada fase sale con veredicto (`applies` / `clean` / `unknown`), su evidencia, la tool que la ejecuta y —cuando la hay— la decisión que ninguna tool toma.
+
+`writes: false` es el contrato, no un descuido de relleno: la regla 2 del modo agéntico es que el diagnóstico no modifica lo que diagnostica. Un test lo comprueba por comportamiento, comparando `st_mtime_ns` de todos los ficheros antes y después.
+
+Dos cosas que solo salieron al ejecutarla. `unknown` **no es** `clean`: el primer intento leía `issues.*` del audit como enteros cuando son listas de hallazgos, y dejó siete de las doce fases a ciegas sin que nada fallara — por eso `phases_unknown` va en el envelope, disjunto de `phases_apply`. Y la fase 5 es **encoding roto, no normalización tipográfica**: contar comillas tipográficas y em-dash como daño daba 106 notas «afectadas» de 111, y una fase que siempre aplica es una fase que nadie lee.
+
+Contrastada contra un vault ajeno al estándar (regla 7): 232 notas, 199 violaciones de norma, 146 enlaces rotos, 4 secciones sin carpeta, `index_stale` con 311 en disco y 290 indexadas — y la fase 9 limpia. Que **discrimine** es la única evidencia de que mide algo.
+
+**Retorna:** `{ ok, tool, vault_root, vault_root_origin, phases, phases_apply, phases_unknown, writes, next }`
+
+---
+
 ## Compatibilidad con Obsidian Desktop
 
 El vault en `{data-dir}/vault/` puede abrirse **directamente** en Obsidian desktop:
@@ -4729,7 +4776,7 @@ Dos causas, y la segunda es la incómoda:
 
 1. **El audit no lo ejecuta nadie.** En las **1.356 ejecuciones de tools
    registradas** en los `.tool-trace.json` de ese parque, `vault_norms` no
-   aparece **ni una vez**. 41 de las 89 tools del catálogo no se han ejecutado
+   aparece **ni una vez**. 41 de las 91 tools del catálogo no se han ejecutado
    jamás. Los agentes escriben; no gobiernan. Un enforcement que depende de que
    alguien se acuerde de invocarlo es enforcement en el papel.
 2. **Los valores no canónicos los escribía el propio estándar.** El más
@@ -5911,6 +5958,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v39.4 | 2026-08-05 | Grupo 37 (Skills): la capa por la que un agente descubre el estándar entra en el catálogo y en el tool-spec (cierra AP-42 sobre sí misma), puerta de vigencia del SDD generado (`--check`, AP-47), `--force` deja de pisar `gaps.md`, `vault_sanacion` (plan de 12 fases medido, sin escrituras) |
 | v39.3 | 2026-08-05 | El camino de ejecución comprobado por donde se ejecuta: runner MCP con tests (encoding, envelope de exit≠0, timeout, CWD del cliente), `set_vault_root` alcanza a los 89 módulos que congelaban `VAULT_ROOT`, 12 escrituras crudas migradas al write path, AP-46 (frontmatter a mano), AP-47 (índice desfasado) y el lost update del registro de tags |
 | v39.2 | 2026-08-05 | Slug canónico único con transliteración (22 implementaciones divergentes), `vault_migrate_docs` (destino duplicado, cuerpo truncado, escaneo de secretos saltado), AP-17 con excepción por convención de nomenclatura |
 | v39.1 | 2026-08-05 | Onboarding de proyectos sin vault: `vault_onboard` publicada y saneada (cierra AP-42 sobre sí misma), AP-45 (cobertura sin evidencia), registro único de secciones, `docs/MODO-AGENTICO-ONBOARDING.md` |
@@ -6226,6 +6274,26 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v39.4 — 2026-08-05 `git: pending`
+
+**La capa por la que un agente descubre el estándar, con contrato ejecutable**
+
+La investigación que abre esta versión preguntaba si la CLI, las tools y el MCP estaban al día. Lo están **por construcción**: los dos despachan desde el catálogo derivado en vez de una lista mantenida a mano, así que una tool nueva les llega sola. Todo el desfase vivía en la única capa que se mantiene a mano y que no miraba ninguna de las seis puertas — la de skills.
+
+**Corregido**
+
+- **Grupo 37 — Skills, y AP-42 sobre la puerta de entrada.** Una skill vive en `.claude/skills/<nombre>/SKILL.md` y se descubre por convención de ruta, sin instalación. Eso es exactamente lo que la dejó fuera: durante cuatro versiones `vault-sdd-init` tuvo definición, entrada en `docs/SKILLS.md` y tests de contrato propios, y ninguna entrada en `tools-catalog.json` ni en `00_System/tool-spec.json`. `--check-contracts` verifica catálogo → contrato, de modo que lo que falta en ambos no lo echa en falta nadie. El grupo publica las skills como cualquier otra tool, y `tests/test_skills_catalogo.py` fija la regla en las dos direcciones: toda skill del directorio tiene entrada en el catálogo, y toda entrada tiene contrato.
+- **AP-47 sobre la documentación del propio estándar.** `docs/sdd/` se genera derivando el rango de antipatrones de `NORM_CATALOG` en cada ejecución, así que el fichero recién escrito nunca miente — y por eso nadie miraba el de la ejecución anterior, que es el que se commitea. Medido al añadir la puerta: `04-antipatterns.md` anunciaba `AP-01..AP-35` y el índice del `README.md` `AP-01..AP-25`, con el registro en `AP-01..AP-47`. Un mes de desfase y tres releases. `vault_sdd_init --check` compara disco contra registro leyendo la etiqueta **con la misma expresión que la escribe** (AP-44) y devuelve 1 si difieren; un test lo corre sobre el artefacto real que se commitea, no sobre uno sintético.
+- **`--force` pisaba el único documento escrito a mano.** Lo descubrió la regeneración que la puerta anterior forzó: `git diff --stat` acusó 104 líneas borradas en `docs/sdd/gaps.md` —85 hallazgos redactados a mano, la tabla de estado de FASE 0 y las de prioridades—. `gaps.md` es el único de los 14 declarado *manual fill*, y su preservación estaba condicionada a `and not args.force`. La restricción publicada («no pisa documentación manual») no tenía excepción escrita; el código sí la tenía, y las dos cosas se leen igual de bien hasta que alguien usa la bandera. `--force` levanta la **idempotencia de lo generado**, no el permiso para pisar lo escrito a mano. El test se hace sobre el fuente y no sobre el comportamiento, porque el defecto es de condición: afirma que la línea que decide no menciona `force`.
+- **`vault_sanacion` — el plan de 12 fases, medido.** `docs/MODO-AGENTICO-SANACION.md` describe el recorrido, pero la decisión de qué fase aplica se tomaba leyendo el documento y mirando el vault a ojo, sin quedar escrita en ningún sitio. Ahora sale con veredicto, evidencia, tool que la ejecuta y la decisión que ninguna tool toma. Dos defectos salieron solo al ejecutarla: (1) `issues.*` del audit son **listas de hallazgos, no cifras** — el primer intento exigía `int` y dejó siete de las doce fases en `unknown` sin que nada fallara, de ahí que `phases_unknown` vaya en el envelope y disjunto de `phases_apply`: una fase que no se pudo medir es una fase que sigues debiendo; (2) la fase 5 es encoding roto, no normalización tipográfica — contar comillas tipográficas y em-dash, que este estándar escribe a propósito, daba 106 notas «afectadas» de 111, y una fase que siempre aplica es una fase que nadie lee.
+- **AP-37 sobre el propio generador.** `vault_sdd_init` devolvía `ok` sin decir cuánto había escrito, así que una ejecución que no generó nada era indistinguible de una que generó los 14 documentos. El envelope publica `written`/`written_count` y, aparte, `preserved` — `gaps.md` preservado no es `gaps.md` escrito, y sumarlos en un total amable habría vuelto a esconder justo lo que la corrección anterior destapó.
+
+**Contrastado contra un vault ajeno** (regla 7): `vault_sanacion` sobre un vault de fuera devolvió 232 notas, 199 violaciones de norma, 146 enlaces rotos, 4 secciones sin carpeta e `index_stale` con 311 en disco frente a 290 indexadas — y la fase 9 limpia. Que discrimine, y no que aplique todo, es la única evidencia de que mide algo.
+
+**Anotado, no corregido:** el `04-antipatterns.md` regenerado cubre las familias AP y CN, y no contiene ninguna aparición de `PAT-6` ni de `SP-03` — las familias PAT y SP quedan fuera del catálogo generado aunque la cabecera escrita a mano las anunciaba. Queda registrado aquí en vez de arreglado en esta versión.
 
 ---
 

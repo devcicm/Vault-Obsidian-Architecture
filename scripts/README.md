@@ -1,13 +1,13 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 89 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
+Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 91 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **110 archivos Python** — 89 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
+- **111 archivos Python** — 91 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
 - **Saneamiento de índices (v38.1)** — `vault_section_index.py --heal [--root]` regenera índices con formato legacy `[[stem|alias]]` o ausentes; el auto-index post-write se auto-cura si un agente escribe `index.md` a mano
-- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 89 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
+- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 91 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
 - **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault; requiere marcador de CONTENIDO (01_Projects/02_Observability/03_Decisions/.obsidian), no solo 00_System/99_Index (evita el ciclo auto-reforzado de detección); override runtime con `set_vault_root()`/env `VAULT_ROOT`
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
@@ -61,6 +61,7 @@ Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan 
 | [Grupo 34 — Memoria de Contexto](#grupo-34--memoria-de-contexto) | vault_preferences, vault_query_parse, vault_subgraph, vault_context_pack, vault_ingest |
 | [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_noop_audit, vault_smoke, vault_voice |
 | [Grupo 36 — Defectos y Cuarentena](#grupo-36--defectos-y-cuarentena) | vault_bug_save, vault_quarantine |
+| [Grupo 37 — Skills](#grupo-37--skills) | vault_sdd_init, vault_sanacion |
 | [Observabilidad de Tools](#observabilidad-de-tools) | vault_errors |
 | [Utilidades internas](#utilidades-internas) | vault_index, vault_dataset, vault_io, vault_link_safety |
 | [Deprecadas](#deprecadas) | vault_create, vault_migrate, vault_reorganize, vault_tools, vault_render |
@@ -1555,7 +1556,7 @@ El vault expone sus herramientas como un **servidor MCP** que las IAs consumen d
 
 **Archivo:** `../mcp/nodejs/vault-mcp-server.mjs` (~1650 líneas, cero dependencias npm)  
 **Plan:** `../mcp/PLAN.md` — documento de evidencia con 8 fases de implementación
-**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (89 tools)
+**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (91 tools)
 
 Los parámetros que el catálogo publica **se derivan del `argparse` de cada script**,
 no se escriben a mano: el servidor compone `--<param>` literal, así que un param
@@ -1651,7 +1652,7 @@ python vault_doc_counts.py --check --no-slow  # omite el conteo de tests (lanza 
 
 Guard anti-drift de **nombres**. `vault_doc_counts` vigila las cifras; esta vigila que la referencia de tools no se quede atrás del catálogo. Comprueba que toda tool tenga su sección `###`, que toda clave de `GROUPS` tenga su `## Grupo N`, y que el índice tenga exactamente una fila por sección con el ancla resuelta.
 
-El síntoma que la originó, medido en v39: diecinueve tools sin sección propia en este mismo archivo, un índice con 30 filas para 36 grupos, y la fila "Grupo 34 — Gestión de Carpetas" apuntando a un ancla inexistente (la sección 34 real es Memoria de Contexto). Un enlace roto dentro del propio documento, estable durante versiones enteras, porque nada lo comprobaba.
+El síntoma que la originó, medido en v39: diecinueve tools sin sección propia en este mismo archivo, un índice con 30 filas para 37 grupos, y la fila "Grupo 34 — Gestión de Carpetas" apuntando a un ancla inexistente (la sección 34 real es Memoria de Contexto). Un enlace roto dentro del propio documento, estable durante versiones enteras, porque nada lo comprobaba.
 
 ```bash
 python vault_doc_sync.py --check
@@ -1780,6 +1781,50 @@ Tres propiedades que la hacen segura:
 - **La razón es obligatoria**, y restaurar sobre un origen ocupado falla en vez de sobrescribir.
 
 `status` no se toca al retener: el estado de la nota no cambió por estar en cuarentena, y sobrescribirlo destruiría el dato que quizá haga falta para clasificarla.
+
+---
+
+## Grupo 37 — Skills
+
+Una **skill** es una capacidad que un agente descubre e invoca por nombre, sin que nadie se la explique: vive en `.claude/skills/<nombre>/SKILL.md` y su entry point es un script de este directorio. Es la puerta por la que un agente entra al estándar.
+
+Estaba fuera del catálogo. Cuatro versiones con la skill documentada en `docs/SKILLS.md`, con tests de contrato propios, y sin una sola entrada ni en `tools-catalog.json` ni en `00_System/tool-spec.json` — así que la capa MCP no la veía y `--check-contracts` no podía echarla en falta: la puerta verifica catálogo → contrato, y lo que no está en ninguno de los dos no lo echa en falta nadie. Es AP-42 —capacidad publicada sin contrato ejecutable— sobre el punto de entrada de los agentes.
+
+### `vault_sdd_init.py`
+
+**Genera la documentación SDD del vault: 14 documentos bilingües en `docs/sdd/`.** Principios, máquinas de estado, guía para autores de tools, guía para consumidores, catálogo de antipatrones, matriz de referencia, metodología, métricas y roadmap.
+
+```bash
+python vault_sdd_init.py --bilingual
+python vault_sdd_init.py --check                  # puerta AP-47
+python vault_sdd_init.py --bilingual --force
+python vault_sdd_init.py --vault-root /ruta/al/vault --bilingual
+```
+
+- **`--check` es la puerta que faltaba.** El documento se genera derivando el rango de antipatrones de `NORM_CATALOG`, así que el fichero recién escrito nunca miente; lo que envejece es el de la ejecución anterior, que se commiteó y se quedó quieto mientras el registro crecía por debajo. Medido: `04-antipatterns.md` anunciaba `AP-01..AP-35` y el índice `AP-01..AP-25` con el registro en `AP-01..AP-47`. Un mes, tres releases, seis puertas en verde. Es AP-47 —artefacto derivado desfasado— aplicado a la documentación del propio estándar.
+- **`--force` no pisa `gaps.md`.** De los 14, ese es el único declarado *manual fill*, y su preservación no depende del flag: `--force` levanta la idempotencia de lo generado, no el permiso para pisar lo escrito a mano. La restricción estaba publicada sin excepción; el código sí tenía la excepción, y un `--force` para refrescar el rango se llevó por delante 85 hallazgos redactados a mano.
+- **Contención (AP-36):** toda escritura ocurre bajo `<vault-root>/docs/sdd/`. La skill es read-only sobre el resto del vault.
+
+### `vault_sanacion.py`
+
+**El plan de sanación de un vault preexistente, medido.** Devuelve las 12 fases de [`docs/MODO-AGENTICO-SANACION.md`](../docs/MODO-AGENTICO-SANACION.md) con un veredicto por fase —`applies`, `clean` o `unknown`— y la evidencia que lo sostiene.
+
+```bash
+python vault_sanacion.py
+VAULT_ROOT=/ruta/al/vault-ajeno python vault_sanacion.py    # donde de verdad sirve
+python vault_sanacion.py --phase 8
+python vault_sanacion.py --strict                            # exit 1 si algo aplica
+```
+
+- **No escribe. Nunca.** Es la regla 2 del modo agéntico —el subagente propone, no escribe— aplicada a la tool que propone. Cada fase nombra la tool del estándar que sí escribe, con su guard y su entrada en `.change-log.json`. Una tool de diagnóstico con permiso de escritura es un segundo autor sin norma que lo gobierne.
+- **`unknown` no es `clean`.** Una fase que no se pudo medir es una fase que sigues debiendo, y sale como tal en `phases_unknown`. El primer intento leía `issues.*` esperando cifras cuando son listas de hallazgos: siete fases quedaron en `unknown` sin que nada fallara, que es precisamente por qué `unknown` tiene que ser visible y no colapsarse a "no hay deuda".
+- **El orden es el contrato**, no una preferencia de presentación: reubicar (7) después de arreglar enlaces (8) vuelve a romper cada enlace que acabas de reparar. Saber qué fases puedes saltarte es lo que hace que el orden sea seguro de seguir.
+- **La fase 1 siempre aplica.** Ninguna medida puede confirmar que copiaste el vault antes de tocarlo, y dar la copia por hecha es el único fallo de este modo que no tiene vuelta atrás.
+- **El criterio de encoding descarta la tipografía deliberada.** `vault_encoding.detect_issues` marca em-dash y comillas tipográficas, que en un vault bien escrito son texto correcto: contarlos daba 106 notas «afectadas» de 111, y una fase que siempre aplica es una fase que nadie lee. La fase 5 es mojibake y caracteres rotos, no normalización tipográfica.
+
+Contrastada contra un vault ajeno al estándar (regla 7), en solo lectura: 232 notas, 199 violaciones de norma, 146 enlaces rotos, 4 secciones sin carpeta, `index_stale` con 311 en disco y 290 indexadas — y la fase 9 limpia. Que discrimine entre fases es la única prueba de que mide algo.
+
+Referencia completa de la capa de skills —instalación, ciclo de vida, cómo añadir una— en [`docs/SKILLS.md`](../docs/SKILLS.md).
 
 ---
 

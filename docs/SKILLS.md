@@ -25,6 +25,21 @@ LLM) puede invocar. Cada skill tiene:
 | Skill | Versión | Definición | Entry point | Descripción |
 |---|---|---|---|---|
 | `vault-sdd-init` | v1.0 | `.claude/skills/vault-sdd-init/SKILL.md` | `scripts/vault_sdd_init.py` | Inicializa el SDD (Spec-Driven Development documentation) de un vault |
+| `vault-sanacion` | v1.0 | `.claude/skills/vault-sanacion/SKILL.md` | `scripts/vault_sanacion.py` | Diagnostica un vault preexistente y devuelve el plan de 12 fases con veredicto y evidencia. **No escribe** |
+| `vault-onboard` | v1.0 | `.claude/skills/vault-onboard/SKILL.md` | `scripts/vault_onboard.py` | Puebla un vault desde un proyecto de código que no tiene ninguno |
+
+Las tres cubren los tres recorridos que el estándar reconoce, y ese es el
+criterio para que exista una skill y no solo una tool: **hay skill donde hay un
+procedimiento que un agente tiene que decidir**, no donde hay un comando que
+ejecutar. `vault-onboard` pobla desde cero, `vault-sanacion` toma un vault que
+ya existe, `vault-sdd-init` documenta el estándar sobre el que se apoyan.
+
+Durante cuatro versiones hubo una sola —`vault-sdd-init`, la periférica— mientras
+los dos recorridos centrales vivían en `docs/MODO-AGENTICO-SANACION.md` y
+`docs/MODO-AGENTICO-ONBOARDING.md` como prosa que el agente tenía que leer y
+decidir por su cuenta. Un procedimiento que solo existe en un documento se
+ejecuta distinto cada vez, y la decisión de qué fase aplicaba no quedaba escrita
+en ningún sitio.
 
 ### Instalación
 
@@ -126,7 +141,7 @@ python scripts/vault_sdd_init.py --bilingual --force
 | `01-state-machines.md` | Lifecycle states por dominio |
 | `02-implementation.md` | Guía para autores de tools |
 | `03-usage.md` | Guía para consumers |
-| `04-antipatterns.md` | Catálogo de antipatrones — rango derivado de `NORM_CATALOG`, hoy `AP-01..AP-36` |
+| `04-antipatterns.md` | Catálogo de antipatrones — rango derivado de `NORM_CATALOG` en cada ejecución. **La cifra no se escribe aquí:** codificarla a mano en la frase que afirma que se deriva es AP-05 sobre la frase que lo niega, y así estuvo un mes (`AP-01..AP-36` con el registro en `AP-01..AP-47`). Para leerla: `vault_sdd_init --check` |
 | `05-reference-matrix.md` | Pattern → Detect → Fix |
 | `06-documentation-methodology.md` | La ciencia de qué documentar |
 | `07-process-antipatterns.md` | Antipatrones de proceso |
@@ -147,8 +162,11 @@ python scripts/vault_sdd_init.py --bilingual --force
 #### Prerrequisitos
 
 - vault-spec >= v36.0 (`CURRENT_VERSION` actual: **v39.3**)
-- `NORM_CATALOG` legible — **59 normas** hoy (37 AP + 6 PAT + 3 SP + 3 CN).
-  Ni el rango ni el conteo se codifican en la skill: se derivan del registro.
+- `NORM_CATALOG` legible — **59 normas** hoy. El desglose por familia tampoco se
+  escribe aquí: se leía «37 AP + 6 PAT + 3 SP + 3 CN», que suma 49 y no 59, y
+  las puertas lo dejaron pasar porque `vault_doc_counts` vigila el total y no
+  el desglose. Ni el rango ni el conteo se codifican en la skill: se derivan
+  del registro, y `vault_sdd_init --check` falla si el disco se queda atrás.
 - `atomic_write_text` con fix de temp leak (FASE 0.4)
 - CI workflow activo
 - Secret scanning operativo

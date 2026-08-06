@@ -681,6 +681,78 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "example": "python vault_standard_upgrade.py --check\npython vault_standard_upgrade.py --to v34\npython vault_standard_upgrade.py --report",
         "related": ["vault_init", "vault_audit"],
     },
+    "vault_sdd_init": {
+        "name": "vault_sdd_init",
+        "script": "vault_sdd_init.py",
+        "group": "Skills",
+        "purpose": "Genera la documentación SDD del vault (14 documentos en docs/sdd/).",
+        "params": {
+            "bilingual": {
+                "type": "boolean",
+                "required": False,
+                "description": "Genera contenido ES + EN en paralelo",
+                "validators": [],
+            },
+            "check": {
+                "type": "boolean",
+                "required": False,
+                "description": "Compara el rango del disco contra NORM_CATALOG; falla si desfasado (AP-47)",
+                "validators": [],
+            },
+            "dry-run": {
+                "type": "boolean",
+                "required": False,
+                "description": "Muestra el plan sin escribir",
+                "validators": [],
+            },
+            "force": {
+                "type": "boolean",
+                "required": False,
+                "description": "Regenera los 13 documentos derivados; NO pisa gaps.md",
+                "validators": [],
+            },
+            "vault-root": {
+                "type": "string",
+                "required": False,
+                "description": "Vault destino (default: autodetección de vault_io)",
+                "validators": [],
+            },
+        },
+        "guards": ["AP-36: toda escritura ocurre bajo <vault-root>/docs/sdd/"],
+        "side_effects": [
+            "Escribe 13 documentos derivados en docs/sdd/",
+            "Escribe docs/sdd/gaps.md solo si no existe o no tiene contenido manual",
+        ],
+        "example": "python vault_sdd_init.py --bilingual\npython vault_sdd_init.py --check\npython vault_sdd_init.py --bilingual --force",
+        "related": ["vault_norms", "vault_reindex", "vault_doc_counts"],
+    },
+    "vault_sanacion": {
+        "name": "vault_sanacion",
+        "script": "vault_sanacion.py",
+        "group": "Skills",
+        "purpose": "Diagnostica un vault preexistente y devuelve el plan de 12 fases con evidencia.",
+        "params": {
+            "phase": {
+                "type": "number",
+                "required": False,
+                "description": "Detalle de una sola fase (1..12)",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit 1 si alguna fase aplica o no se pudo medir",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "No escribe nada: la escritura la hace la tool que cada fase nombra",
+            "Vault destino por autodetección o VAULT_ROOT; sin flag de raíz propia",
+        ],
+        "side_effects": [],
+        "example": "python vault_sanacion.py\nVAULT_ROOT=/ruta/al/vault python vault_sanacion.py\npython vault_sanacion.py --phase 8",
+        "related": ["vault_audit", "vault_norms", "vault_reindex", "vault_onboard"],
+    },
     "vault_move": {
         "name": "vault_move",
         "script": "vault_move.py",
@@ -3105,6 +3177,14 @@ GROUPS: Dict[str, List[str]] = {
     "Defectos y Cuarentena": [
         "vault_bug_save",
         "vault_quarantine",
+    ],
+    # Grupo 37 (v39.4) — las capacidades que un agente descubre e invoca por
+    # nombre. Existían desde v36 en `.claude/skills/` y en `docs/SKILLS.md`,
+    # pero fuera del catálogo y fuera del tool-spec: AP-42 —tool publicada sin
+    # contrato ejecutable— sobre la puerta de entrada de los agentes.
+    "Skills": [
+        "vault_sdd_init",
+        "vault_sanacion",
     ],
 }
 

@@ -17,7 +17,7 @@
 | AP-21 Path-anchored links | vault_write (guard) | vault_write (reject) | content gate |
 | AP-22 Empty wikilinks | vault_write (guard) | vault_write (reject) | content gate |
 | AP-23 Note > 500 lines | vault_write (advisory) | (manual split) | guidelines |
-| AP-24 Bracket imbalance | vault_write (guard) + vault_audit | vault_render_check --fix | content gate |
+| AP-24 Bracket imbalance | vault_write (guard) + vault_audit | vault_fix_brackets --fix | content gate |
 | AP-25 Mermaid errors | vault_audit + vault_mermaid_check | (manual) | vault_mermaid_check |
 
 ---
@@ -34,5 +34,5 @@
 | AP-21 Path-anchored links | vault_write (guard) | vault_write (reject) | content gate |
 | AP-22 Empty wikilinks | vault_write (guard) | vault_write (reject) | content gate |
 | AP-23 Note > 500 lines | vault_write (advisory) | (manual split) | guidelines |
-| AP-24 Bracket imbalance | vault_write (guard) + vault_audit | vault_render_check --fix | content gate |
+| AP-24 Bracket imbalance | vault_write (guard) + vault_audit | vault_fix_brackets --fix | content gate |
 | AP-25 Mermaid errors | vault_audit + vault_mermaid_check | (manual) | vault_mermaid_check |

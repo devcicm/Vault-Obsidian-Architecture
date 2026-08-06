@@ -2,7 +2,7 @@
 name: vault-sdd-init
 description: Spec-Driven Development (SDD) documentation initializer. Generates the 14-document SDD specification suite for a project. Use when starting a new project, adding SDD documentation to an existing project, or when the user asks to "initialize SDD" or "create SDD docs".
 allowed-tools: Bash(python *) Read Write Glob Grep
-argument-hint: [--bilingual] [--dry-run] [--force]
+argument-hint: [--bilingual] [--check] [--dry-run] [--force]
 ---
 
 # vault-sdd-init
@@ -36,16 +36,30 @@ python scripts/vault_sdd_init.py --vault-root /path/to/vault --bilingual
 | Argument | Description |
 |---|---|
 | `--bilingual` | Generate docs in Spanish and English |
+| `--check` | Compare the range on disk against `NORM_CATALOG`; exit 1 if stale (AP-47) |
 | `--dry-run` | Preview changes without writing |
-| `--force` | Overwrite existing SDD files |
+| `--force` | Regenerate the 13 derived documents — never overwrites `gaps.md` |
 | `--vault-root` | Custom vault root path |
 
 ## Exit codes
 
 | Code | Meaning |
 |---|---|
-| 0 | All files generated successfully |
-| 1 | Validation error or missing dependencies |
+| 0 | All files generated successfully — or, with `--check`, the disk matches the registry |
+| 1 | Validation error, missing dependencies — or, with `--check`, a stale derived artifact |
+
+## Staleness gate (AP-47)
+
+The range in `04-antipatterns.md` is derived from `NORM_CATALOG` on every run,
+so a freshly written file never lies. What ages is the file from the *previous*
+run: it gets committed and then sits still while the registry grows underneath
+it. `--check` is the only thing that looks. Measured before it existed:
+`AP-01..AP-35` in the body, `AP-01..AP-25` in the index, `AP-01..AP-47` in the
+registry — one month and three releases of drift, with every other gate green.
+
+`gaps.md` is the one file declared *manual fill*, and `--force` does not touch
+it. `--force` lifts idempotency over what is generated, not the ban on
+overwriting what a person wrote.
 
 ## Output
 

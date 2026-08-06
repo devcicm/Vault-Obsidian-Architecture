@@ -3205,7 +3205,7 @@
           },
           "check": {
             "type": "string",
-            "description": "Exit 0 if index OK, 1 if empty/missing"
+            "description": "Exit 0 si el índice refleja el disco, 1 si hay desfase"
           }
         }
       },
@@ -3660,6 +3660,79 @@
       "related": [
         "vault_runbook_log",
         "vault_incident_save"
+      ]
+    },
+    "vault_sanacion": {
+      "name": "vault_sanacion",
+      "description": "Diagnostica un vault preexistente y devuelve el plan de 12 fases con evidencia.",
+      "group": "Skills",
+      "script": "vault_sanacion.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "phase": {
+            "type": "string",
+            "description": "Detalle de una sola fase (1..12)"
+          },
+          "strict": {
+            "type": "string",
+            "description": "Exit 1 si alguna fase aplica o no se pudo medir"
+          }
+        }
+      },
+      "guards": [
+        "No escribe nada: la escritura la hace la tool que cada fase nombra",
+        "Vault destino por autodetección o VAULT_ROOT; sin flag de raíz propia"
+      ],
+      "side_effects": [],
+      "related": [
+        "vault_audit",
+        "vault_norms",
+        "vault_reindex",
+        "vault_onboard"
+      ]
+    },
+    "vault_sdd_init": {
+      "name": "vault_sdd_init",
+      "description": "Genera la documentación SDD del vault (14 documentos en docs/sdd/).",
+      "group": "Skills",
+      "script": "vault_sdd_init.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "bilingual": {
+            "type": "string",
+            "description": "Genera contenido ES + EN en paralelo"
+          },
+          "dry-run": {
+            "type": "string",
+            "description": "Muestra el plan sin escribir"
+          },
+          "force": {
+            "type": "string",
+            "description": "Regenera los 13 documentos derivados; NO pisa gaps.md"
+          },
+          "check": {
+            "type": "string",
+            "description": "Compara el rango del disco contra NORM_CATALOG; falla si desfasado (AP-47)"
+          },
+          "vault-root": {
+            "type": "string",
+            "description": "Vault destino (default: autodetección de vault_io)"
+          }
+        }
+      },
+      "guards": [
+        "AP-36: toda escritura ocurre bajo <vault-root>/docs/sdd/"
+      ],
+      "side_effects": [
+        "Escribe 13 documentos derivados en docs/sdd/",
+        "Escribe docs/sdd/gaps.md solo si no existe o no tiene contenido manual"
+      ],
+      "related": [
+        "vault_norms",
+        "vault_reindex",
+        "vault_doc_counts"
       ]
     },
     "vault_search": {
@@ -4596,6 +4669,10 @@
     "Defectos y Cuarentena": [
       "vault_bug_save",
       "vault_quarantine"
+    ],
+    "Skills": [
+      "vault_sdd_init",
+      "vault_sanacion"
     ]
   }
 }

@@ -19,6 +19,7 @@ See docs/SKILLS.md for full documentation.
 
 import argparse
 import json
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -100,6 +101,68 @@ def ap_range_label(codes=None) -> str:
     if not numbers:
         return "AP-01..AP-01"
     return f"AP-01..AP-{max(numbers):02d}"
+
+
+def sdd_coherence(vault_root: Path) -> dict:
+    """¿Lo que hay en `docs/sdd/` sigue diciendo lo que dice el registro? (AP-47)
+
+    La skill deriva el rango de antipatrones de `NORM_CATALOG` en cada
+    ejecución, así que el fichero **recién generado** nunca miente. Lo que
+    envejece es el fichero de la ejecución anterior: se genera una vez, se
+    commitea, y el registro sigue creciendo por debajo. Medido antes de añadir
+    esto: `04-antipatterns.md` anunciaba `AP-01..AP-35` y el índice del
+    `README.md` `AP-01..AP-25`, con el registro en `AP-01..AP-47` — un mes de
+    desfase, tres releases, y ni una sola de las seis puertas del checklist lo
+    miraba. Es exactamente la norma que este repo escribió para el
+    `search-index` de un vault, aplicada a su propia documentación derivada.
+
+    Se comprueba **el rango anunciado**, no el cuerpo entero: es el dato que
+    un lector usa para decidir si el documento le sirve, y el único que se
+    puede contrastar contra el registro sin volver a generarlo todo. Se mide
+    con el criterio del consumidor (AP-44): la etiqueta se lee del disco con
+    la misma expresión que la escribe, `ap_range_label()`.
+    """
+    sdd_dir = vault_root / SDD_OUTPUT_DIR
+    esperado = ap_range_label()
+    envelope = {
+        "ok": False,
+        "status": "sdd_missing",
+        "expected_range": esperado,
+        "found_ranges": [],
+        "stale_files": [],
+        "missing_files": [],
+        "path": str(sdd_dir),
+    }
+    if not sdd_dir.is_dir():
+        return envelope
+
+    envelope["missing_files"] = [
+        f for f in EXPECTED_OUTPUTS if not (sdd_dir / f).exists()
+    ]
+    encontrados = set()
+    for fname in EXPECTED_OUTPUTS:
+        target = sdd_dir / fname
+        if not target.exists():
+            continue
+        try:
+            texto = target.read_text(encoding="utf-8", errors="replace")
+        except Exception as exc:  # noqa: BLE001 — un fichero ilegible no es "al día"
+            envelope["stale_files"].append({"file": fname, "error": str(exc)})
+            continue
+        for rango in set(re.findall(r"AP-01\.\.AP-\d{2}", texto)):
+            encontrados.add(rango)
+            if rango != esperado:
+                envelope["stale_files"].append({"file": fname, "found": rango})
+
+    envelope["found_ranges"] = sorted(encontrados)
+    if envelope["missing_files"]:
+        envelope["status"] = "sdd_partial"
+    elif envelope["stale_files"]:
+        envelope["status"] = "sdd_stale"
+    else:
+        envelope["status"] = "sdd_ok"
+        envelope["ok"] = True
+    return envelope
 
 
 def detect_drift(vault_root: Path) -> dict:
@@ -1038,6 +1101,11 @@ def main() -> int:
         "--force", action="store_true", help="Force regeneration (bypass idempotency)"
     )
     parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Compara el rango del disco contra NORM_CATALOG; 1 si desfasado (AP-47)",
+    )
+    parser.add_argument(
         "--vault-root",
         default=str(VAULT_ROOT),
         help="Vault root path (default: auto-detect)",
@@ -1046,6 +1114,13 @@ def main() -> int:
 
     vault_root = Path(args.vault_root).resolve()
     sdd_dir = vault_root / SDD_OUTPUT_DIR
+
+    if args.check:
+        # Envelope en JSON y nada más: `--check` es una puerta de CI, y lo que
+        # imprime tiene que poder leerlo una tool, no solo una persona.
+        envelope = sdd_coherence(vault_root)
+        print(json.dumps(envelope, ensure_ascii=False, indent=2))
+        return 0 if envelope["ok"] else 1
 
     print(f"vault-sdd-init v1.0")
     print(f"Vault: {vault_root}")
@@ -1086,17 +1161,29 @@ def main() -> int:
     atomic_write_json(sdd_dir / "integrity-report.json", integrity)
     print(f"  [OK] integrity-report.json")
 
+    # `gaps.md` es el único de los 14 declarado *manual fill*, y su preservación
+    # NO depende de `--force`: `--force` levanta la idempotencia de lo generado,
+    # no el permiso para pisar lo escrito a mano. Medido: un `--force` para
+    # refrescar el rango de antipatrones se llevó por delante 85 hallazgos
+    # redactados a mano, incluida la tabla de prioridades de FASE 0. La
+    # restricción publicada («no pisa documentación manual») no tenía excepción
+    # escrita; el código sí la tenía.
     gaps_content = generate_gaps_md(vault_root, drift)
     gaps_path = sdd_dir / "gaps.md"
-    if gaps_path.exists() and not args.force:
+    escritos_gaps: list = []
+    preservados: list = []
+    if gaps_path.exists():
         existing = gaps_path.read_text(encoding="utf-8")
         if "# Gaps" not in existing or len(existing) < 200:
             atomic_write_text(gaps_path, gaps_content)
+            escritos_gaps.append("gaps.md")
             print(f"  [OK] gaps.md (updated)")
         else:
+            preservados.append("gaps.md")
             print(f"  [SKIP] gaps.md (preserved - manual content detected)")
     else:
         atomic_write_text(gaps_path, gaps_content)
+        escritos_gaps.append("gaps.md")
         print(f"  [OK] gaps.md")
 
     print()
@@ -1104,6 +1191,20 @@ def main() -> int:
     print(f"Drift status: {'PASS' if integrity['checks_passed'] else 'WARN'}")
     if integrity["warnings"]:
         print(f"Warnings: {integrity['warnings']}")
+
+    # Envelope con indicador de trabajo (AP-37). Las líneas de arriba las lee
+    # una persona; esto lo lee una tool. Sin un conteo de lo escrito, un `ok`
+    # de una ejecución que no generó nada es indistinguible de una que generó
+    # los 14 documentos — y `gaps.md` preservado no es `gaps.md` escrito, así
+    # que se cuentan por separado en vez de sumarlos en un total amable.
+    print(json.dumps({
+        "ok": True,
+        "tool": "vault_sdd_init",
+        "written": generated + ["integrity-report.json"] + escritos_gaps,
+        "written_count": len(generated) + 1 + len(escritos_gaps),
+        "preserved": preservados,
+        "path": str(sdd_dir),
+    }, ensure_ascii=False, indent=2))
     return 0
 
 
