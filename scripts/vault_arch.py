@@ -278,6 +278,20 @@ def _destino_de_import(nodo: ast.AST, origen_rel: Path) -> set[str]:
         if nodo.level >= 2 and nodo.module:
             return {nodo.module.split(".")[0]}
         return {origen_rel.parts[0]}
+    # Absoluto: `from vault.grafo.repositorio import X`. Es la forma que usan
+    # los adaptadores de `scripts/`, y el guard nacía sin verla: un adaptador
+    # podía cablear el dominio de otro contexto sin que saltara nada, que es
+    # exactamente el punto ciego que el refactor existe para cerrar.
+    if isinstance(nodo, ast.ImportFrom) and nodo.module:
+        partes = nodo.module.split(".")
+        if partes[0] == "vault" and len(partes) > 1:
+            return {partes[1]}
+    if isinstance(nodo, ast.Import):
+        return {
+            a.name.split(".")[1]
+            for a in nodo.names
+            if a.name.split(".")[0] == "vault" and "." in a.name
+        }
     return set()
 
 
@@ -302,6 +316,23 @@ def cruces() -> list[dict]:
                 "from": nombre, "from_context": origen,
                 "to": destino_mod, "to_context": destino,
             })
+        # Un adaptador que cablea el dominio de otro contexto cruza igual. El
+        # caso legítimo existe —`vault_subgraph` lee el grafo, que es de
+        # Grafo— pero tiene que verse: cablear en silencio es como se coló
+        # AP-48.
+        try:
+            arbol_s = ast.parse(
+                (SCRIPTS_DIR / f"{nombre}.py").read_text(encoding="utf-8", errors="replace")
+            )
+        except SyntaxError:
+            continue
+        for nodo in ast.walk(arbol_s):
+            for destino in _destino_de_import(nodo, Path(nombre)):
+                if destino in CONTEXTS and destino not in (origen, KERNEL):
+                    fuera.append({
+                        "from": nombre, "from_context": origen,
+                        "to": f"vault/{destino}", "to_context": destino,
+                    })
 
     # El dominio, con la misma vara. Un módulo de `vault/x/` que importe
     # `vault_norms` cruza igual que si viviera en `scripts/`.

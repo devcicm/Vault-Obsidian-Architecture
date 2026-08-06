@@ -2,7 +2,7 @@
 
 > Documento derivado. Se genera con `python scripts/vault_arch.py --blueprint`; la fuente es `CONTEXTS` en `scripts/vault_arch.py`. No se edita a mano.
 
-**9 contextos**, **112 módulos** clasificados, **48 fronteras cruzadas** pendientes de publicar puerto.
+**9 contextos**, **112 módulos** clasificados, **49 fronteras cruzadas** pendientes de publicar puerto.
 
 ## Los límites
 
@@ -51,6 +51,7 @@ graph TD
     consulta -.->|cruce| gobernanza
     ciclo_de_vida -.->|cruce| grafo
     ciclo_de_vida -.->|cruce| meta_toolkit
+    consulta -.->|cruce| grafo
     autoria -.->|cruce| meta_toolkit
     autoria -.->|cruce| indices
 ```
@@ -141,12 +142,13 @@ Fronteras que hoy cruza (5), deuda declarada:
 - **No cruza:** base de datos; embeddings; servicio externo
 - **Módulos (10):** `vault_compact_contracts`, `vault_context_pack`, `vault_ingest`, `vault_mcp_context`, `vault_preferences`, `vault_query_parse`, `vault_subgraph`, `vault_token_counter`, `vault_token_service`, `vault_tokens`
 
-Fronteras que hoy cruza (2), deuda declarada:
+Fronteras que hoy cruza (3), deuda declarada:
 
 | Módulo | Importa | Contexto destino |
 |---|---|---|
 | `vault_context_pack` | `vault_search` | Autoría |
 | `vault_preferences` | `vault_norms` | Gobernanza |
+| `vault_subgraph` | `vault/grafo` | Grafo |
 
 ## Ciclo de vida
 

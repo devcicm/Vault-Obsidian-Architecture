@@ -28,26 +28,50 @@ from vault_errors import wrap_main
 SCRIPTS_DIR = Path(__file__).parent
 PROJECT_ROOT = SCRIPTS_DIR.parent
 
-from vault_io import VAULT_ROOT, resolve_tool_spec  # noqa: E402
+from vault_io import resolve_tool_spec  # noqa: E402
+
+sys.path.insert(0, str(PROJECT_ROOT))
+
+from vault.consulta.repositorio import RepositorioConsulta  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _repo(root=None) -> RepositorioConsulta:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioConsulta(construir(root))
 
 
 def _resolve_output_dir() -> Path:
     """Resolve output directory for contracts.
 
     If running from spec repo (has vault-obsidian-architecture.md), write to vault-sandbox.
-    Otherwise write to VAULT_ROOT/00_System (consumer vault).
+    Otherwise write to the consumer vault's `00_System`.
+
+    Esta función era la forma cara de AP-49: el guard no la veía —no deriva de
+    la raíz en una asignación— pero `SYSTEM_DIR = _resolve_output_dir()`
+    se evaluaba igual al importar. Parecía resolución tardía y no lo era.
     """
     if (PROJECT_ROOT / "vault-obsidian-architecture.md").exists():
         sandbox = PROJECT_ROOT / "vault-sandbox" / "00_System"
         if sandbox.exists():
             return sandbox
-    return VAULT_ROOT / "00_System"
+    return _repo().dir_sistema
 
 
-SYSTEM_DIR = _resolve_output_dir()
-CONTRACTS_JSON = SYSTEM_DIR / "tool-contracts.json"
-CONTRACTS_MD = SYSTEM_DIR / "tool-contracts.md"
-VERSION_FILE = SYSTEM_DIR / "standard-version.json"
+def _system_dir() -> Path:
+    return _resolve_output_dir()
+
+
+def _contracts_json() -> Path:
+    return _system_dir() / "tool-contracts.json"
+
+
+def _contracts_md() -> Path:
+    return _system_dir() / "tool-contracts.md"
+
+
+def _version_file() -> Path:
+    return _system_dir() / "standard-version.json"
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Group metadata — leído desde tool-spec.json (spec-driven).
@@ -409,7 +433,7 @@ def introspect_tool(name: str) -> Optional[Dict[str, Any]]:
 
 def _read_current_profile() -> str:
     try:
-        data = json.loads(VERSION_FILE.read_text(encoding="utf-8"))
+        data = json.loads(_version_file().read_text(encoding="utf-8"))
         return data.get("profile", "full")
     except Exception:
         return "full"
@@ -525,14 +549,14 @@ Ejemplos:
         return 0
 
     # Write JSON
-    SYSTEM_DIR.mkdir(parents=True, exist_ok=True)
-    CONTRACTS_JSON.write_text(
+    _system_dir().mkdir(parents=True, exist_ok=True)
+    _contracts_json().write_text(
         json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8"
     )
 
     # Write MD
     md_content = _contracts_to_md(contracts, profile)
-    CONTRACTS_MD.write_text(md_content, encoding="utf-8")
+    _contracts_md().write_text(md_content, encoding="utf-8")
 
     print(
         json.dumps(
@@ -540,10 +564,10 @@ Ejemplos:
                 "ok": True,
                 "profile": profile,
                 "tool_count": len(contracts),
-                "contracts_json": str(CONTRACTS_JSON.relative_to(VAULT_ROOT)).replace(
+                "contracts_json": str(_contracts_json().relative_to(_repo().raiz)).replace(
                     "\\", "/"
                 ),
-                "contracts_md": str(CONTRACTS_MD.relative_to(VAULT_ROOT)).replace(
+                "contracts_md": str(_contracts_md().relative_to(_repo().raiz)).replace(
                     "\\", "/"
                 ),
             },

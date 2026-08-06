@@ -45,7 +45,6 @@ from cli import safety  # noqa: E402
 
 from vault_errors import wrap_main  # noqa: E402
 from vault_io import (  # noqa: E402
-    VAULT_ROOT,
     assert_within_vault,
     atomic_write_text,
     update_section_index,
@@ -67,6 +66,23 @@ _ENTITY_STOPWORDS = {
     "With", "From", "Para", "Este", "Esta", "Estos", "Cuando", "Donde", "Como",
     "Nota", "Note", "Ver", "See", "TODO", "FIXME", "OK",
 }
+
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.consulta.repositorio import RepositorioConsulta  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioConsulta:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioConsulta(construir(root))
 
 
 def _read_source(args: argparse.Namespace) -> Dict[str, Any]:
@@ -351,9 +367,9 @@ def vault_ingest(
     skipped: List[Dict[str, str]] = []
     if commit:
         for note in proposals:
-            full = VAULT_ROOT / note["path"]
+            full = _raiz() / note["path"]
             try:
-                assert_within_vault(full, VAULT_ROOT)
+                assert_within_vault(full, _raiz())
             except ValueError as exc:
                 skipped.append({"path": note["path"], "reason": str(exc)})
                 continue

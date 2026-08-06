@@ -1485,6 +1485,12 @@ python vault_subgraph.py --seeds a.md b.md --hops 3 --section 07_Knowledge
 python vault_subgraph.py --seeds mcp-protocol --format mermaid
 ```
 
+Desde v40.0 el contexto **Consulta** resuelve sus rutas al usarlas: `17_Preferences/`, `00_System/token-usage/` y `.tool-tokens.json` se declaran una sola vez en `vault/consulta/repositorio.py`. Lo que **no** está ahí es el grafo — `99_Index/graph.json` lo escribe el contexto Grafo y `vault_subgraph` lo recibe de `RepositorioGrafo`, porque dos sitios decidiendo dónde vive el grafo es AP-05.
+
+Ese cableado entre contextos ahora lo **ve** el guard: `vault_arch --check` reporta `vault_subgraph -> vault/grafo` como cruce declarado. Antes solo miraba los imports dentro de `vault/`, así que un adaptador podía cablear el dominio de otro contexto sin que saltara nada — el mismo punto ciego por el que se coló AP-48.
+
+El caso más caro de AP-49 apareció aquí y no era una constante: `vault_compact_contracts` hacía `SYSTEM_DIR = _resolve_output_dir()`. Una llamada a función parece resolución tardía, el guard no la contaba, y se evaluaba igual al importar.
+
 ### `vault_context_pack.py`
 Pregunta → contexto empaquetado bajo presupuesto de tokens. Encadena
 `vault_query_parse` → `vault_search` → `vault_subgraph` → rerank → Top-K.

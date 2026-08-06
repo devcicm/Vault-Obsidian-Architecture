@@ -8,8 +8,13 @@ Cubre las garantías que hacen usable el eje consulta → contexto:
   4. el empaquetado NUNCA se pasa del presupuesto de tokens;
   5. la ingesta bloquea texto envenenado y no escribe sin `--commit`.
 
-Los tests que escriben usan `VAULT_ROOT` redirigido a tmp_path; los de solo
+Los tests que escriben inyectan la raíz con `set_vault_root()`; los de solo
 lectura trabajan contra vault-sandbox, que es el vault de pruebas del repo.
+
+Antes se reasignaban `VAULT_ROOT` y `PREFERENCES_DIR` del módulo. Desde v40.0
+esas constantes no existen —el contexto Consulta resuelve sus rutas al usarlas
+(AP-49)— y reasignarlas habría quedado inerte: el test habría escrito en el
+vault detectado sin fallar.
 """
 
 from __future__ import annotations
@@ -41,8 +46,9 @@ SEED = "03_Decisions/adr-001-mcp-transport.md"
 @pytest.fixture
 def prefs_vault(tmp_path, monkeypatch):
     """Redirige la tool a un vault temporal: ningún test escribe en el sandbox."""
-    monkeypatch.setattr(vault_preferences, "VAULT_ROOT", tmp_path)
-    monkeypatch.setattr(vault_preferences, "PREFERENCES_DIR", tmp_path / "17_Preferences")
+    import vault_io
+
+    vault_io.set_vault_root(tmp_path)
     monkeypatch.setattr(vault_preferences, "update_section_index", lambda folder: None)
     monkeypatch.setattr(vault_preferences, "assert_within_vault", lambda p, r: p)
     return tmp_path
@@ -331,7 +337,9 @@ que documentarlo antes del proximo despliegue de produccion.
 
 @pytest.fixture
 def ingest_vault(tmp_path, monkeypatch):
-    monkeypatch.setattr(vault_ingest, "VAULT_ROOT", tmp_path)
+    import vault_io
+
+    vault_io.set_vault_root(tmp_path)
     monkeypatch.setattr(vault_ingest, "update_section_index", lambda folder: None)
     monkeypatch.setattr(vault_ingest, "assert_within_vault", lambda p, r: p)
     return tmp_path

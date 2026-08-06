@@ -24,15 +24,32 @@ from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main, emit_error
 
-from vault_io import VAULT_ROOT
-TOKENS_FILE = VAULT_ROOT / "00_System" / ".tool-tokens.json"
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.consulta.repositorio import RepositorioConsulta  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioConsulta:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioConsulta(construir(root))
+
+
+def _tokens_file() -> Path:
+    return _repo().fichero_tokens
 
 
 def _load_entries(since: Optional[str] = None) -> List[Dict[str, Any]]:
-    if not TOKENS_FILE.exists():
+    if not _tokens_file().exists():
         return []
     try:
-        entries = json.loads(TOKENS_FILE.read_text(encoding="utf-8"))
+        entries = json.loads(_tokens_file().read_text(encoding="utf-8"))
         if not isinstance(entries, list):
             return []
     except Exception:
@@ -82,8 +99,8 @@ def vault_tokens(
     reset: bool = False,
 ) -> Dict[str, Any]:
     if reset:
-        if TOKENS_FILE.exists():
-            TOKENS_FILE.unlink()
+        if _tokens_file().exists():
+            _tokens_file().unlink()
         return {"ok": True, "action": "reset", "message": "Token log cleared."}
 
     entries = _load_entries(since)

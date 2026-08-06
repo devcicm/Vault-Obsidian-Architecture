@@ -37,7 +37,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT
 from vault_lib import parse_frontmatter_with_body
 from vault_query_parse import vault_query_parse
 from vault_search import vault_search
@@ -64,6 +63,23 @@ STATUS_PENALTY: Dict[str, float] = {
 }
 
 RECENCY_HALFLIFE_DAYS = 90.0
+
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.consulta.repositorio import RepositorioConsulta  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioConsulta:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioConsulta(construir(root))
 
 
 def _days_since(timestamp: str, now: datetime) -> Optional[float]:
@@ -96,9 +112,9 @@ def _recency_score(timestamp: str, now: datetime) -> float:
 
 def _read_note(path: str) -> Dict[str, Any]:
     """Lee una nota del vault. Nunca sale del vault (AP-36)."""
-    full = (VAULT_ROOT / path).resolve()
+    full = (_raiz() / path).resolve()
     try:
-        full.relative_to(VAULT_ROOT.resolve())
+        full.relative_to(_raiz().resolve())
     except ValueError:
         return {"ok": False, "error": "fuera del vault"}
     if not full.is_file():
