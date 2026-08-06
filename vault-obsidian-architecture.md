@@ -6277,7 +6277,7 @@ temp/
 
 ---
 
-### v39.4 — 2026-08-05 `git: pending`
+### v39.4 — 2026-08-05 `git: 2cb22b1`
 
 **La capa por la que un agente descubre el estándar, con contrato ejecutable**
 
