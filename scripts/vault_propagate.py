@@ -33,11 +33,9 @@ from typing import Any, Dict, List, Optional, Set
 from vault_errors import wrap_main
 from vault_lib import utcnow
 from vault_impact import vault_impact
-from vault_io import atomic_write_json, file_lock, VAULT_ROOT, write_report
+from vault_io import atomic_write_json, file_lock, write_report
 
-SYSTEM_DIR = VAULT_ROOT / "00_System"
 SCRIPTS_DIR = Path(__file__).parent
-PROPAGATION_QUEUE = SYSTEM_DIR / "propagation-queue.json"
 
 RISK_ORDER = {"critical": 4, "high": 3, "medium": 2, "low": 1}
 
@@ -45,11 +43,43 @@ VALID_STRATEGIES = ("conservative", "transitive", "critical-path")
 VALID_ACTIONS = ("notify", "queue", "reindex")
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.ciclo_de_vida.repositorio import RepositorioCicloDeVida  # noqa: E402
+from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioCicloDeVida:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioCicloDeVida(construir(root))
+
+
+def _system_dir() -> Path:
+    return _repo().dir_sistema
+
+
+def _propagation_queue() -> Path:
+    """La cola no es de Ciclo de vida: se recibe del contexto que la declara.
+
+    `vault_audit` (Gobernanza) escribe en el mismo fichero. Que la ubicacion
+    venga de `RepositorioGobernanza` y no de una constante propia es
+    deliberado — dos sitios decidiendo donde vive la cola es AP-05, y el dia
+    que se mueva solo se enteraria uno.
+    """
+    return RepositorioGobernanza(construir()).cola_propagacion
+
+
 def _read_propagation_queue() -> Dict[str, Any]:
-    if not PROPAGATION_QUEUE.exists():
+    if not _propagation_queue().exists():
         return {"updated_at": utcnow(), "pending": []}
     try:
-        data = json.loads(PROPAGATION_QUEUE.read_text(encoding="utf-8"))
+        data = json.loads(_propagation_queue().read_text(encoding="utf-8"))
         return (
             data if isinstance(data, dict) else {"updated_at": utcnow(), "pending": []}
         )
@@ -58,15 +88,15 @@ def _read_propagation_queue() -> Dict[str, Any]:
 
 
 def _write_propagation_queue(data: Dict[str, Any]) -> None:
-    SYSTEM_DIR.mkdir(parents=True, exist_ok=True)
+    _system_dir().mkdir(parents=True, exist_ok=True)
     data["updated_at"] = utcnow()
-    with file_lock(PROPAGATION_QUEUE, timeout=30.0):
-        atomic_write_json(PROPAGATION_QUEUE, data)
+    with file_lock(_propagation_queue(), timeout=30.0):
+        atomic_write_json(_propagation_queue(), data)
 
 
 def _action_notify(note_path: str, timestamp: str) -> bool:
     """Write propagation_pending field to frontmatter of a note."""
-    full_path = VAULT_ROOT / note_path
+    full_path = _raiz() / note_path
     if not full_path.exists():
         return False
     try:
@@ -275,7 +305,7 @@ def vault_propagate_queue_report(min_priority: Optional[str] = None) -> Dict[str
 def vault_propagate_clear(note_path: str) -> Dict[str, Any]:
     """Mark a note as reviewed: remove propagation_pending from frontmatter and queue."""
     cleared_fm = False
-    full_path = VAULT_ROOT / note_path
+    full_path = _raiz() / note_path
     if full_path.exists():
         try:
             content = full_path.read_text(encoding="utf-8", errors="ignore")

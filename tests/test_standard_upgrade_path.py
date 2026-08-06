@@ -141,10 +141,10 @@ def test_una_version_menor_sin_migracion_sella_la_version(tmp_path, monkeypatch)
     # restaurarlo, la raíz temporal se filtra a todo test posterior del mismo
     # proceso y los fallos aparecen lejos de aquí (AP-36, contención).
     anterior = vault_io.get_vault_root()
-    monkeypatch.setattr(vsu, "VERSION_FILE", root / "00_System/standard-version.json")
-    monkeypatch.setattr(vsu, "SYSTEM_DIR", root / "00_System")
+    # Se apunta solo la raíz: `vsu.VERSION_FILE` y `vsu.SYSTEM_DIR` ya no
+    # existen —el módulo migró al contexto Ciclo de vida y las resuelve al
+    # usarlas—, y el monkeypatch habría creado dos atributos que nadie lee.
     vault_io.set_vault_root(root)
-    monkeypatch.setattr(vault_io, "VAULT_ROOT", root, raising=False)
     try:
         _sellado(root)
     finally:

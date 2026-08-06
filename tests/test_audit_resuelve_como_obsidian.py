@@ -177,14 +177,16 @@ def test_el_primer_de_vault_init_declara_status(tmp_path):
     from vault_lib import read_frontmatter
     from vault_norms import STATUS_VOCAB
 
-    previo = vi.VAULT_ROOT
-    vi.VAULT_ROOT = tmp_path / "v"
-    try:
-        (vi.VAULT_ROOT / "01_Projects").mkdir(parents=True)
-        creado = vi._create_scaffold_note("01_Projects")
-        fm = read_frontmatter(vi.VAULT_ROOT / creado["path"])
-    finally:
-        vi.VAULT_ROOT = previo
+    # Se apunta la raíz, no la constante: `vault_init` migró al contexto Ciclo
+    # de vida y la resuelve al usarla. El override lo deshace el fixture
+    # autouse de `conftest.py`.
+    import vault_io
+
+    raiz = tmp_path / "v"
+    vault_io.set_vault_root(raiz)
+    (raiz / "01_Projects").mkdir(parents=True)
+    creado = vi._create_scaffold_note("01_Projects")
+    fm = read_frontmatter(raiz / creado["path"])
 
     assert fm.get("status") == "template"
     assert fm["status"] in STATUS_VOCAB

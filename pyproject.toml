@@ -43,7 +43,7 @@ Homepage = "https://github.com/devcicm/Vault-Obsidian-Architecture"
 # contrario: es un paquete de verdad, con imports relativos, y funcionaba solo
 # porque los adaptadores le añaden la raíz al `sys.path`. Declararlo hace que
 # una instalación lo lleve, en vez de dejarlo a merced del directorio de trabajo.
-packages = ["vault", "vault.kernel", "vault.durabilidad", "vault.indices", "vault.grafo", "vault.consulta", "vault.gobernanza"]
+packages = ["vault", "vault.kernel", "vault.durabilidad", "vault.indices", "vault.grafo", "vault.consulta", "vault.gobernanza", "vault.ciclo_de_vida"]
 
 [tool.setuptools.package-data]
 scripts = ["tool-spec.json", "vault-obsidian-architecture.md", "README.md"]

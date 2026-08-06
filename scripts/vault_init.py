@@ -34,7 +34,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT, atomic_write_json, write_report
+from vault_io import atomic_write_json, write_report
 from vault_lib import utcnow
 from vault_standard_upgrade import CURRENT_VERSION
 from vault_registry import (
@@ -69,6 +69,22 @@ _SCAFFOLD_SECTIONS = [
 ]
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.ciclo_de_vida.repositorio import RepositorioCicloDeVida  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioCicloDeVida:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioCicloDeVida(construir(root))
+
+
 def _create_scaffold_note(section: str) -> Dict[str, Any]:
     """Create a primer note in a section that explains its purpose and how to use it.
 
@@ -79,11 +95,11 @@ def _create_scaffold_note(section: str) -> Dict[str, Any]:
 
     Returns: {"section": str, "path": str, "created": bool}
     """
-    primer_path = VAULT_ROOT / section / f"00-{section.lower()}-primer.md"
+    primer_path = _raiz() / section / f"00-{section.lower()}-primer.md"
     if primer_path.exists():
         return {
             "section": section,
-            "path": str(primer_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+            "path": str(primer_path.relative_to(_raiz())).replace("\\", "/"),
             "created": False,
         }
 
@@ -147,7 +163,7 @@ python scripts/{tool_hint}
     primer_path.write_text(frontmatter + content, encoding="utf-8")
     return {
         "section": section,
-        "path": str(primer_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(primer_path.relative_to(_raiz())).replace("\\", "/"),
         "created": True,
     }
 
@@ -162,23 +178,23 @@ def vault_init(
     result = {
         "ok": True,
         **write_report(),
-        "vault_root": str(VAULT_ROOT).replace("\\", "/"),
+        "vault_root": str(_raiz()).replace("\\", "/"),
         "target_version": target_version,
         "steps": [],
     }
 
     # Safety: refuse to run if VAULT_ROOT looks wrong (sandbox not detected)
-    if not VAULT_ROOT.exists() or not VAULT_ROOT.is_dir():
+    if not _raiz().exists() or not _raiz().is_dir():
         result["ok"] = False
         result["error"] = (
-            f"VAULT_ROOT does not exist or is not a directory: {VAULT_ROOT}"
+            f"VAULT_ROOT does not exist or is not a directory: {_raiz()}"
         )
         return result
 
     # Step 0: --clean wipes existing content (only if explicitly asked)
-    if clean and VAULT_ROOT.exists():
+    if clean and _raiz().exists():
         wiped = []
-        for entry in VAULT_ROOT.iterdir():
+        for entry in _raiz().iterdir():
             if entry.name == ".locks":
                 continue
             if entry.is_dir():
@@ -191,7 +207,7 @@ def vault_init(
     # Step 1: create all 17 standard folders
     folders_created = []
     for folder in standard_folders():
-        folder_path = VAULT_ROOT / folder
+        folder_path = _raiz() / folder
         if not folder_path.exists():
             folder_path.mkdir(parents=True, exist_ok=True)
             folders_created.append(folder)
@@ -299,7 +315,7 @@ def vault_init(
             )
 
     # Step 4.5: write tag-registry.json with canonical tags
-    tag_registry_path = VAULT_ROOT / "00_System" / "tag-registry.json"
+    tag_registry_path = _raiz() / "00_System" / "tag-registry.json"
     if not tag_registry_path.exists():
         tag_registry = {
             "version": "v1.0",
@@ -320,7 +336,7 @@ def vault_init(
 
     # Step 4.6: write ontology.json into the vault (copy from scripts/vault_ontology.json)
     ontology_src = Path(__file__).parent / "vault_ontology.json"
-    ontology_dst = VAULT_ROOT / "00_System" / "vault-ontology.json"
+    ontology_dst = _raiz() / "00_System" / "vault-ontology.json"
     if ontology_src.exists() and not ontology_dst.exists():
         ontology_dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ontology_src, ontology_dst)
@@ -350,13 +366,13 @@ def vault_init(
                 )
 
     # Step 6: report on hub notes
-    hub_note = VAULT_ROOT / "00_System" / "vault-hub.md"
-    commands_note = VAULT_ROOT / "00_System" / "vault-commands.md"
+    hub_note = _raiz() / "00_System" / "vault-hub.md"
+    commands_note = _raiz() / "00_System" / "vault-commands.md"
     result["hub_notes"] = {
-        "hub": str(hub_note.relative_to(VAULT_ROOT)).replace("\\", "/")
+        "hub": str(hub_note.relative_to(_raiz())).replace("\\", "/")
         if hub_note.exists()
         else None,
-        "commands": str(commands_note.relative_to(VAULT_ROOT)).replace("\\", "/")
+        "commands": str(commands_note.relative_to(_raiz())).replace("\\", "/")
         if commands_note.exists()
         else None,
     }

@@ -43,7 +43,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from vault_errors import wrap_main
 from vault_lib import slugify_strict, utcnow
-from vault_io import VAULT_ROOT, assert_within_vault, atomic_write_text, normalize_stem
+from vault_io import assert_within_vault, atomic_write_text, normalize_stem
 from vault_norms import compute_norm_refs
 from vault_registry import ORDERED_SECTIONS
 from vault_write import _deduce_type_from_folder
@@ -170,6 +170,22 @@ TEST_PATTERNS = [
 #: (`[^a-z0-9]+`) borraba los acentos en vez de transliterarlos y producía
 #: `caracter-sticas-principales` a partir de «Características principales».
 _slug = slugify_strict
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.ciclo_de_vida.repositorio import RepositorioCicloDeVida  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioCicloDeVida:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioCicloDeVida(construir(root))
 
 
 def _date_str(ts: float) -> str:
@@ -995,7 +1011,7 @@ def _merge_stub(vault_path: Path, new_content: str, dry_run: bool) -> str:
         return "dry_run"
 
     vault_path.parent.mkdir(parents=True, exist_ok=True)
-    assert_within_vault(vault_path, VAULT_ROOT)
+    assert_within_vault(vault_path, _raiz())
 
     if not vault_path.exists():
         atomic_write_text(vault_path, new_content)
@@ -1140,8 +1156,8 @@ def _write(
     body: str,
     dry_run: bool,
 ) -> Tuple[str, str]:
-    path = VAULT_ROOT / folder / filename
-    rel = str(path.relative_to(VAULT_ROOT)).replace("\\", "/")
+    path = _raiz() / folder / filename
+    rel = str(path.relative_to(_raiz())).replace("\\", "/")
 
     # AP-45: no hay nota sin algo que afirmar. Un onboard sobre un proyecto real
     # emitía 8 conceptos cuyo cuerpo entero era `_Pendiente. Leer la sección del
@@ -2197,9 +2213,9 @@ def _onboard_14_requirements(
 ) -> List[Tuple[str, str]]:
     results = []
     readme_text, _ = _read_readme(
-        VAULT_ROOT.parent
-        if not VAULT_ROOT.name.startswith("vault-")
-        else VAULT_ROOT.parent
+        _raiz().parent
+        if not _raiz().name.startswith("vault-")
+        else _raiz().parent
     )
     # Find bullet points under ## Features or ## Requirements
     headers = meta.get("readme_headers", [])
@@ -2213,8 +2229,8 @@ def _onboard_14_requirements(
 
     # Re-read README to extract bullets
     for project_path_candidate in [
-        VAULT_ROOT.parent,
-        VAULT_ROOT.parent.parent,
+        _raiz().parent,
+        _raiz().parent.parent,
     ]:
         readme = project_path_candidate / "README.md"
         if readme.exists():
@@ -2486,7 +2502,7 @@ def _update_indexes(sections: List[str], dry_run: bool) -> List[str]:
 
         updated = []
         for folder in sections:
-            if (VAULT_ROOT / folder).exists():
+            if (_raiz() / folder).exists():
                 r = vault_section_index(folder)
                 if r.get("ok"):
                     updated.append(r["path"])

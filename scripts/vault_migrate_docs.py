@@ -41,7 +41,6 @@ from vault_io import (
     assert_within_vault,
     atomic_write_text,
     safe_wikilink,
-    VAULT_ROOT,
     write_report,
 )
 import yaml
@@ -53,10 +52,6 @@ from pathlib import Path
 
 from typing import Any, Dict, List, Optional, Tuple
 
-
-MIGRATED_DIR = VAULT_ROOT / "10_Migrated"
-
-STAGING_DIR = MIGRATED_DIR / "_staging"
 
 FORMATS = [".md", ".txt", ".html", ".rst", ".adoc"]
 
@@ -94,6 +89,30 @@ CODE_EXTS = {
     ".bash",
     ".ps1",
 }
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.ciclo_de_vida.repositorio import RepositorioCicloDeVida  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioCicloDeVida:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioCicloDeVida(construir(root))
+
+
+def _migrated_dir() -> Path:
+    return _repo().dir_migrados
+
+
+def _staging_dir() -> Path:
+    return _repo().dir_staging
 
 
 def convert_links(content: str) -> str:
@@ -413,12 +432,12 @@ def vault_migrate_docs(
             "message": f"Dry run: {len(staged_results)} files ready for staging. Run with dry_run=false to execute migration.",
         }
 
-    STAGING_DIR.mkdir(parents=True, exist_ok=True)
+    _staging_dir().mkdir(parents=True, exist_ok=True)
 
-    MIGRATED_DIR.mkdir(parents=True, exist_ok=True)
+    _migrated_dir().mkdir(parents=True, exist_ok=True)
 
     for staged in staged_results:
-        staged_path = STAGING_DIR / staged["stagedName"]
+        staged_path = _staging_dir() / staged["stagedName"]
 
         atomic_write_text(staged_path, staged["content"])
 
@@ -445,18 +464,18 @@ def vault_migrate_docs(
         # Peor, los destinos que no son de 10_Migrated (03_Decisions,
         # 07_Knowledge/apis) quedaban enterrados dentro de la carpeta de
         # migración, que es justo de donde la distribución tiene que sacarlos.
-        dest_path = VAULT_ROOT / dest_folder / dest_name
+        dest_path = _raiz() / dest_folder / dest_name
 
-        assert_within_vault(dest_path, VAULT_ROOT)
+        assert_within_vault(dest_path, _raiz())
 
         dest_path.parent.mkdir(parents=True, exist_ok=True)
 
-        relative_parent = str(dest_path.parent.relative_to(VAULT_ROOT))
+        relative_parent = str(dest_path.parent.relative_to(_raiz()))
 
         if relative_parent not in subfolders_created:
             subfolders_created.append(relative_parent)
 
-        dest_path_rels = dest_path.relative_to(VAULT_ROOT)
+        dest_path_rels = dest_path.relative_to(_raiz())
 
         distributed.append(
             {
@@ -488,15 +507,13 @@ def vault_migrate_docs(
         escrito = dest_path.read_text(encoding="utf-8")
         if not _frontmatter_valido(escrito):
             raise ValueError(
-                f"frontmatter ilegible tras escribir {dest_path.relative_to(VAULT_ROOT)}"
+                f"frontmatter ilegible tras escribir {dest_path.relative_to(_raiz())}"
             )
 
         stub_content = f"""# {Path(staged["originalName"]).stem}
 
 
-
 > Este archivo fue migrado a: [[{safe_wikilink(str(dest_path_rels))}|{safe_wikilink(dest_folder)}/{safe_wikilink(dest_name)}]]
-
 
 
 **Origen:** `{staged["originalPath"]}`
@@ -506,9 +523,7 @@ def vault_migrate_docs(
 **Migrado:** {datetime.now(timezone.utc).strftime("%Y-%m-%d")}
 
 
-
 ---
-
 
 
 _{staged["preview"][:200]}..._
@@ -516,23 +531,23 @@ _{staged["preview"][:200]}..._
 """
 
         # El stub queda junto al destino real, no bajo `10_Migrated/` otra vez.
-        stub_path = VAULT_ROOT / dest_folder / f"_stub-{dest_name}"
+        stub_path = _raiz() / dest_folder / f"_stub-{dest_name}"
 
         atomic_write_text(stub_path, stub_content)
 
         stubs_created.append(
             {
                 "originalName": staged["originalName"],
-                "stub": str(stub_path.relative_to(VAULT_ROOT)),
+                "stub": str(stub_path.relative_to(_raiz())),
             }
         )
 
-    for staged_file in STAGING_DIR.glob("*.md"):
+    for staged_file in _staging_dir().glob("*.md"):
         staged_file.unlink()
 
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
-    report_path = MIGRATED_DIR / f"_report-{slugify(project)}-{timestamp}.md"
+    report_path = _migrated_dir() / f"_report-{slugify(project)}-{timestamp}.md"
 
     direct_count = sum(1 for d in distributed if d["relevance"] == "direct")
 
@@ -638,7 +653,7 @@ _{staged["preview"][:200]}..._
         ],
         "subfoldersCreated": subfolders_created,
         "stubsCreated": len(stubs_created),
-        "reportFile": str(report_path.relative_to(VAULT_ROOT)),
+        "reportFile": str(report_path.relative_to(_raiz())),
         "message": f"Migration complete: {direct_count} direct, {indirect_count} indirect, {excluded_count} excluded. {len(subfolders_created)} subfolders created.",
     }
 

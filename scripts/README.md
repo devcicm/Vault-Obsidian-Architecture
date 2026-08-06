@@ -1911,6 +1911,12 @@ python vault_sanacion.py --strict                            # exit 1 si algo ap
 
 Contrastada contra un vault ajeno al estándar (regla 7), en solo lectura: 232 notas, 199 violaciones de norma, 146 enlaces rotos, 4 secciones sin carpeta, `index_stale` con 311 en disco y 290 indexadas — y la fase 9 limpia. Que discrimine entre fases es la única prueba de que mide algo.
 
+Desde v40.0 el contexto **Ciclo de vida** —`vault_init`, `vault_onboard`, `vault_standard_upgrade`, `vault_sanacion`, `vault_migrate_docs`, `vault_migrate_rollback`, `vault_propagate`, `vault_sdd_init`— resuelve sus rutas al usarlas, declaradas en `vault/ciclo_de_vida/repositorio.py`. Es el único contexto que corre **contra vaults ajenos por diseño**, y ahí congelar la raíz no produce un fallo ruidoso sino un informe verosímil del vault equivocado.
+
+Que es exactamente lo que pasó: `vault_sanacion._medir_audit` reasignaba `vault_audit.VAULT_ROOT` para apuntar el audit al vault pedido. Al migrar Gobernanza esa constante dejó de existir, la asignación siguió siendo Python legal y dejó de hacer nada — las fases 2, 4 y 12 habrían medido el vault detectado, sin excepción que lo delatara. Ahora se apunta la raíz del proceso y **se devuelve en un `finally`**: read-only significa también no dejar rastro en el proceso de quien llama.
+
+`propagation-queue.json` **no** se declara aquí: la escribe también `vault_audit`, es de Gobernanza, y `vault_propagate` la recibe de `RepositorioGobernanza`. Dos sitios decidiendo dónde vive un fichero es AP-05, y el cruce está declarado en la baseline de `vault_arch` para que se vea.
+
 Referencia completa de la capa de skills —instalación, ciclo de vida, cómo añadir una— en [`docs/SKILLS.md`](../docs/SKILLS.md).
 
 ---
