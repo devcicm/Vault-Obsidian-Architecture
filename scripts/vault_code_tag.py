@@ -37,11 +37,13 @@ Usage:
 """
 
 import argparse
+import functools
 import json
 import re
 import sys
+import threading
 from vault_errors import wrap_main
-from vault_io import atomic_write_json, VAULT_ROOT, write_report
+from vault_io import atomic_write_json, VAULT_ROOT, write_report, resolve_input_path, file_lock
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -154,8 +156,54 @@ def _save_registry(reg: Dict[str, Any]) -> None:
     atomic_write_json(CODE_TAG_REGISTRY, reg)
 
 
+#: Profundidad de reentrada del lock del registro, por hilo.
+_ANIDAMIENTO = threading.local()
+
+
+def _bajo_lock_del_registro(fn):
+    """Serializa leer-mutar-guardar el registro de tags de código.
+
+    `_read_registry()` y `_save_registry()` son atómicos cada uno por su lado,
+    pero entre los dos hay una ventana: dos procesos que definen tags distintos
+    a la vez leen el mismo estado y el segundo escribe encima del primero — la
+    definición del primero desaparece sin que nada lo diga. `atomic_write_json`
+    garantiza que nadie vea el fichero a medias; no garantiza que nadie pierda
+    una actualización.
+
+    El lock envuelve la función entera, no las dos llamadas por separado, porque
+    la lectura ocurre al principio y la escritura al final con lógica en medio;
+    tomar el lock dentro de `_read_registry` y soltarlo en `_save_registry` lo
+    filtraría en cada camino que sale sin guardar.
+
+    Es el mismo criterio que `vault_tags.record_new_tags` ya aplicaba a la
+    bitácora de vocabulario: dos acumuladores equivalentes tenían dos criterios
+    distintos de concurrencia (AP-05).
+
+    Reentrante a propósito: `--define` con `--files` llama a `_apply` por cada
+    fichero, y `file_lock` no es reentrante —el `threading.Lock` interno se
+    bloquearía contra sí mismo y la operación moriría por timeout a los 30 s—.
+    El contador es por hilo, así que la exclusión entre hilos y entre procesos
+    se mantiene intacta: lo único que se permite es que el hilo que YA tiene el
+    lock vuelva a entrar.
+    """
+    @functools.wraps(fn)
+    def envuelta(*args, **kwargs):
+        if getattr(_ANIDAMIENTO, "profundidad", 0):
+            return fn(*args, **kwargs)
+        CODE_TAG_REGISTRY.parent.mkdir(parents=True, exist_ok=True)
+        with file_lock(CODE_TAG_REGISTRY, timeout=30.0):
+            _ANIDAMIENTO.profundidad = 1
+            try:
+                return fn(*args, **kwargs)
+            finally:
+                _ANIDAMIENTO.profundidad = 0
+
+    return envuelta
+
+
 # ─── Core operations ──────────────────────────────────────────────────────────
 
+@_bajo_lock_del_registro
 def vault_code_tag_define(
     code: str,
     name: str,
@@ -214,6 +262,7 @@ def vault_code_tag_define(
     }
 
 
+@_bajo_lock_del_registro
 def vault_code_tag_apply(
     code: str,
     file_path_str: str,
@@ -223,8 +272,7 @@ def vault_code_tag_apply(
     code_lower = code.lower()
     file_path = Path(file_path_str)
 
-    if not file_path.is_absolute():
-        file_path = Path.cwd() / file_path
+    file_path = resolve_input_path(file_path)
 
     if not file_path.exists():
         return {"ok": False, "error": f"File not found: {file_path}"}
@@ -318,12 +366,12 @@ def vault_code_tag_apply(
     }
 
 
+@_bajo_lock_del_registro
 def vault_code_tag_remove(code: str, file_path_str: str) -> Dict[str, Any]:
     """Remove a @norm comment from a code file."""
     code_lower = code.lower()
     file_path = Path(file_path_str)
-    if not file_path.is_absolute():
-        file_path = Path.cwd() / file_path
+    file_path = resolve_input_path(file_path)
 
     if not file_path.exists():
         return {"ok": False, "error": f"File not found: {file_path}"}
@@ -359,8 +407,7 @@ def vault_code_tag_remove(code: str, file_path_str: str) -> Dict[str, Any]:
 def vault_code_tag_scan(file_path_str: str) -> Dict[str, Any]:
     """List all @vault: and @norm tags present in a code file."""
     file_path = Path(file_path_str)
-    if not file_path.is_absolute():
-        file_path = Path.cwd() / file_path
+    file_path = resolve_input_path(file_path)
 
     if not file_path.exists():
         return {"ok": False, "error": f"File not found: {file_path}"}
@@ -429,6 +476,7 @@ def vault_code_tag_list(
     return {"ok": True, "total": len(result), "tags": result}
 
 
+@_bajo_lock_del_registro
 def vault_code_tag_note(code: str, agent: str = "claude") -> Dict[str, Any]:
     """Create a vault note in 11_Code/ documenting this code tag."""
     code_lower = code.lower()
@@ -494,6 +542,7 @@ Nombre: {name}
 
 # ─── @vault: link / unlink ────────────────────────────────────────────────────
 
+@_bajo_lock_del_registro
 def vault_code_tag_link_vault(
     note_path_rel: str,
     file_path_str: str,
@@ -511,8 +560,7 @@ def vault_code_tag_link_vault(
         title:         Short description shown after — in the tag (40 chars max)
     """
     file_path = Path(file_path_str)
-    if not file_path.is_absolute():
-        file_path = Path.cwd() / file_path
+    file_path = resolve_input_path(file_path)
 
     if not file_path.exists():
         return {"ok": False, "error_code": "FILE_NOT_FOUND",
@@ -588,11 +636,11 @@ def vault_code_tag_link_vault(
     }
 
 
+@_bajo_lock_del_registro
 def vault_code_tag_unlink_vault(file_path_str: str) -> Dict[str, Any]:
     """Remove the @vault: tag from a source file."""
     file_path = Path(file_path_str)
-    if not file_path.is_absolute():
-        file_path = Path.cwd() / file_path
+    file_path = resolve_input_path(file_path)
 
     if not file_path.exists():
         return {"ok": False, "error_code": "FILE_NOT_FOUND",

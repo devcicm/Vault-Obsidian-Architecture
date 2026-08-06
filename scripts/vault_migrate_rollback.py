@@ -40,7 +40,7 @@ from typing import Any, Dict, List, Tuple
 
 
 
-from vault_io import VAULT_ROOT
+from vault_io import VAULT_ROOT, atomic_write_json
 INDEX_FILE = VAULT_ROOT / "99_Index" / "search-index.json"
 
 
@@ -111,9 +111,10 @@ def remove_from_index(paths_to_remove: List[str]) -> int:
 
 
 
-    with open(INDEX_FILE, "w", encoding="utf-8") as f:
-
-        json.dump(index, f, indent=2, ensure_ascii=False)
+    # atomic_write_* y no `open(..., "w")`: el escaneo de secretos, el
+    # saneado de encoding y el temp+replace viven ahí. Escribir en crudo los
+    # esquivaba los tres (AP-36) y dejaba la nota a medias si el proceso moría.
+    atomic_write_json(INDEX_FILE, index)
 
 
 

@@ -226,8 +226,9 @@ def vault_relation_add(
         f"\n## Entity Relationship Diagram\n\n```mermaid\n{erd_content}\n```\n"
     )
 
-    with open(erd_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(erd_frontmatter))
+    # atomic_write_* y no `open(..., "w")`: el escaneo de secretos, el saneado de
+    # encoding y el temp+replace viven ahí (AP-36).
+    atomic_write_text(erd_path, "\n".join(erd_frontmatter))
 
     return {
         "ok": True,

@@ -8,7 +8,11 @@ Vault Reindex — Rebuild search-index.json (and optionally graph.json) from exi
 
 Use this when search-index.json is empty ({}), corrupted, or missing.
 
-Scans all notes inside the 13 standard vault sections, parses frontmatter,
+Scans all notes inside the standard vault sections -- las que declara
+
+vault_registry.standard_folders(), no una cifra propia: decir "13" era una
+
+tercera verdad sobre cuantas secciones tiene un vault --, parses frontmatter,
 
 and rebuilds 99_Index/search-index.json from scratch.
 
@@ -34,7 +38,7 @@ Usage:
 
 Session-start check:
 
-    python vault_reindex.py --check      # exit 0 if index OK, exit 1 if empty/missing
+    python vault_reindex.py --check      # exit 0 si refleja el disco, 1 si hay desfase
 
 """
 
@@ -68,9 +72,9 @@ HASH_INDEX = VAULT_ROOT / "99_Index" / "hash-index.json"
 VAULT_SECTIONS = set(standard_folders())
 
 
-def _is_vault_note(path: Path) -> bool:
+def _is_vault_note(path: Path, root: Path = None) -> bool:
     try:
-        parts = path.relative_to(VAULT_ROOT).parts
+        parts = path.relative_to(root or VAULT_ROOT).parts
 
     except ValueError:
         return False
@@ -87,19 +91,114 @@ def _preview(content: str) -> str:
     return body.strip()[:200].replace("\n", " ")
 
 
-def _check_index() -> bool:
-    """Return True if index exists and has at least 1 note."""
+def _notas_en_disco(root: Path = None) -> List[Path]:
+    """Las notas que la reconstrucción indexaría, con SU mismo criterio.
 
-    if not INDEX_FILE.exists():
-        return False
+    Se extrae aquí para que la comprobación y la reconstrucción no puedan
+    discrepar: si el `--check` contara con un criterio propio, mediría otra cosa
+    que el `--fix` y el desfase que reportara no sería el que se arregla
+    (AP-44).
+    """
+    raiz = root or VAULT_ROOT
+    return [
+        p
+        for p in raiz.rglob("*.md")
+        if _is_vault_note(p, raiz) and not any(part.startswith(".") for part in p.parts)
+    ]
+
+
+def index_coherence(root: Path = None) -> Dict[str, Any]:
+    """Contrasta search-index.json y graph.json contra lo que hay en disco.
+
+    Lo que había antes era `len(notes) > 0`: un índice con UNA entrada sobre un
+    vault de 300 notas devolvía `index_ok`. Es una puerta que no mide lo que
+    dice medir (familia AP-37), y en la tool cuya única razón de existir es
+    reconciliar. Medido al escribir esto: `vault-sandbox` tenía 111 notas en
+    disco, 110 en el índice y 100 nodos en el grafo; un vault real, 317 / 290 /
+    232. Los dos pasaban.
+
+    Se reportan las dos direcciones, porque significan cosas distintas:
+    `missing_in_index` son notas invisibles para `vault_search` —el agente no
+    sabe que existen—, y `stale_in_index` son entradas que apuntan a ficheros
+    que ya no están: el agente las encuentra y luego no puede abrirlas.
+
+    El grafo se compara aparte y **no** decide el veredicto: se regenera solo
+    con `--graph`, y contarlo como fallo convertiría el check en ruido en cada
+    vault que no lo pide. Se informa para que el desfase sea visible.
+    """
+    raiz = Path(root) if root else VAULT_ROOT
+    index_file = raiz / "99_Index" / "search-index.json"
+    en_disco = {
+        str(p.relative_to(raiz)).replace("\\", "/") for p in _notas_en_disco(raiz)
+    }
+
+    if not index_file.exists():
+        return {
+            "ok": False,
+            "status": "index_missing",
+            "on_disk": len(en_disco),
+            "indexed": 0,
+            "missing_in_index": sorted(en_disco)[:20],
+            "stale_in_index": [],
+            "graph_nodes": None,
+        }
 
     try:
-        data = json.loads(INDEX_FILE.read_text(encoding="utf-8"))
+        data = json.loads(index_file.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            raise json.JSONDecodeError("no es un objeto", "", 0)
+    except (json.JSONDecodeError, OSError) as exc:
+        return {
+            "ok": False,
+            "status": "index_corrupt",
+            "error": f"{type(exc).__name__}: {exc}",
+            "on_disk": len(en_disco),
+            "indexed": 0,
+            "missing_in_index": sorted(en_disco)[:20],
+            "stale_in_index": [],
+            "graph_nodes": None,
+        }
 
-        return isinstance(data, dict) and len(data.get("notes", [])) > 0
+    indexadas = {
+        str(n.get("path", "")).replace("\\", "/")
+        for n in data.get("notes", [])
+        if n.get("path")
+    }
+    faltan = sorted(en_disco - indexadas)
+    sobran = sorted(indexadas - en_disco)
 
-    except (json.JSONDecodeError, OSError):
-        return False
+    nodos = None
+    graph_file = raiz / "99_Index" / "graph.json"
+    if graph_file.exists():
+        try:
+            nodos = len(json.loads(graph_file.read_text(encoding="utf-8")).get("nodes", []))
+        except (json.JSONDecodeError, OSError):
+            nodos = None
+
+    if not en_disco and not indexadas:
+        estado = "index_ok"  # vault vacío: un índice vacío lo refleja
+    elif faltan or sobran:
+        estado = "index_stale"
+    else:
+        estado = "index_ok"
+
+    return {
+        "ok": estado == "index_ok",
+        "status": estado,
+        "on_disk": len(en_disco),
+        "indexed": len(indexadas),
+        "missing_in_index": faltan[:20],
+        "missing_count": len(faltan),
+        "stale_in_index": sobran[:20],
+        "stale_count": len(sobran),
+        "graph_nodes": nodos,
+        "graph_drift": (None if nodos is None else len(en_disco) - nodos),
+    }
+
+
+def _check_index() -> bool:
+    """True si el índice refleja el disco. Ver `index_coherence()`."""
+    return bool(index_coherence()["ok"])
 
 
 def vault_reindex(dry_run: bool = False, rebuild_graph: bool = False) -> Dict[str, Any]:
@@ -109,11 +208,10 @@ def vault_reindex(dry_run: bool = False, rebuild_graph: bool = False) -> Dict[st
 
     skipped = 0
 
-    vault_files = [
-        p
-        for p in VAULT_ROOT.rglob("*.md")
-        if _is_vault_note(p) and not any(part.startswith(".") for part in p.parts)
-    ]
+    # El mismo criterio que usa `index_coherence()`, y por eso una sola función:
+    # dos copias de esta comprensión eran dos definiciones de "qué es una nota
+    # indexable" que podían separarse sin que nada fallara.
+    vault_files = _notas_en_disco()
 
     for note_path in sorted(vault_files):
         try:
@@ -250,7 +348,7 @@ Notas:
 
   - Usar al inicio de sesion si vault_search retorna 0 resultados
 
-  - --check retorna exit 0 si el indice tiene al menos 1 nota, exit 1 si esta vacio/faltante
+  - --check retorna exit 0 si el indice REFLEJA el disco, exit 1 si hay desfase
 
 """,
     )
@@ -264,39 +362,20 @@ Notas:
     )
 
     parser.add_argument(
-        "--check", action="store_true", help="Exit 0 if index OK, 1 if empty/missing"
+        "--check",
+        action="store_true",
+        help="Exit 0 si el índice refleja el disco, 1 si hay desfase",
     )
 
     args = parser.parse_args()
 
     if args.check:
-        ok = _check_index()
-
-        if ok:
-            try:
-                data = json.loads(INDEX_FILE.read_text(encoding="utf-8"))
-
-                count = len(data.get("notes", []))
-
-            except Exception:
-                count = 0
-
-            print(json.dumps({"ok": True, "status": "index_ok", "notes": count}))
-
-            return 0
-
-        else:
-            print(
-                json.dumps(
-                    {
-                        "ok": False,
-                        "status": "index_empty_or_missing",
-                        "action": "run vault_reindex.py",
-                    }
-                )
-            )
-
-            return 1
+        informe = index_coherence()
+        informe["tool"] = "vault_reindex"
+        if not informe["ok"]:
+            informe["action"] = "python vault_reindex.py"
+        print(json.dumps(informe, indent=2, ensure_ascii=False))
+        return 0 if informe["ok"] else 1
 
     result = vault_reindex(dry_run=args.dry_run, rebuild_graph=args.graph)
 

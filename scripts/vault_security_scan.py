@@ -44,7 +44,8 @@ def _utcdate() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
 
-from vault_io import VAULT_ROOT, write_report
+from vault_io import VAULT_ROOT, atomic_write_text, write_report
+from vault_secret_scan import redact_secrets as _redactar_por_registro
 
 OBSERVABILITY_DIR = VAULT_ROOT / "02_Observability"
 
@@ -529,6 +530,21 @@ MITIGATIONS = {
 
 
 def redact_secrets(line: str) -> str:
+    """Redacta un fragmento antes de que entre en el vault.
+
+    Dos capas, y las dos hacen falta:
+
+    - la del registro canónico (`vault_secret_scan`), que reconoce el FORMATO
+      de cada credencial —AWS, GitHub, JWT, clave privada— y es la misma que
+      bloquea el write path. Sin ella, la copia local de esta tool declaraba
+      limpio lo que `atomic_write_text` rechazaba: dos criterios distintos para
+      el mismo secreto (AP-05), y el informe se caía al escribirse.
+    - la heurística por longitud que ya había aquí, que no reconoce formatos
+      pero se lleva por delante cualquier cadena larga que huela a clave. No se
+      elimina: cubre lo que el registro todavía no tiene patrón para ver.
+    """
+    line, _ = _redactar_por_registro(line)
+
     line = re.sub(r"['\"][a-zA-Z0-9]{20,}['\"]", "'[REDACTED]'", line)
 
     line = re.sub(r"[a-zA-Z0-9]{32,}", "[REDACTED]", line)
@@ -600,6 +616,16 @@ def save_findings_to_vault(findings: List[Dict], project: str) -> List[str]:
 
     saved_files = []
 
+    # Redacción en un único punto, antes de construir nada: el fragmento
+    # vulnerable es código ajeno y puede llevar la credencial dentro. La tool
+    # que existe para encontrar secretos era la que los persistía en claro —y
+    # en DOS sitios, el informe agregado y la nota por hallazgo—, así que se
+    # redacta aquí y los dos escritores heredan la corrección. Lo que el
+    # informe necesita es la forma del fallo, no la clave (AP-44).
+    findings = [dict(f) for f in findings]
+    for f in findings:
+        f["snippet"] = redact_secrets(f.get("snippet", ""))
+
     by_severity = {"critical": [], "high": [], "medium": [], "low": []}
 
     for f in findings:
@@ -644,8 +670,9 @@ def save_findings_to_vault(findings: List[Dict], project: str) -> List[str]:
         VULNERABILITIES_DIR / f"security-scan-{slugify(project)}-{timestamp}.md"
     )
 
-    with open(report_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(report_lines))
+    # atomic_write_* y no `open(..., "w")`: el escaneo de secretos, el saneado de
+    # encoding y el temp+replace viven ahí (AP-36).
+    atomic_write_text(report_path, "\n".join(report_lines))
 
     saved_files.append(str(report_path.relative_to(VAULT_ROOT)))
 
@@ -681,12 +708,12 @@ def save_findings_to_vault(findings: List[Dict], project: str) -> List[str]:
 
             note_lines.append(f"**Archivo:** `{f['file']}:{f['line']}`\n")
 
+            # Ya viene redactado desde la cabecera de esta función.
             note_lines.append(f"## Código Vulnerable\n\n```\n{f['snippet']}\n```\n")
 
             note_lines.append(f"## Mitigación\n\n{f['mitigation']}\n")
 
-            with open(note_path, "w", encoding="utf-8") as nf:
-                nf.write("\n".join(note_lines))
+            atomic_write_text(note_path, "\n".join(note_lines))
 
             saved_files.append(str(note_path.relative_to(VAULT_ROOT)))
 

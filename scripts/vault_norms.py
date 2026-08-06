@@ -1217,6 +1217,90 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "tools_detecting": ["vault_norms --audit", "vault_audit"],
         "introduced_version": "v39",
     },
+    # ── Antipatrón AP-46 ───────────────────────────────────────────────────────
+    {
+        "code": "AP-46",
+        "name": "Frontmatter a mano — cada tool es su propio escritor",
+        "type": "antipattern",
+        "category": "consistency",
+        "severity": "high",
+        "enforcement": "guard+audit",
+        "description": (
+            "Veintiséis tools montan el frontmatter concatenando líneas y tres "
+            "importan el write path canónico. Cada concatenación es un segundo autor "
+            "del formato sin guard detrás: el bloque se cierra o no, `type:` está o "
+            "no, la fecha lleva el formato de quien la escribió. El fallo no se ve "
+            "al escribir —la tool devuelve `ok: true` porque el fichero se creó— "
+            "sino al auditar, y para entonces la nota ya es el dato. Es el mismo "
+            "patrón que produjo 22 implementaciones de `slugify` y tres verdades "
+            "para la lista de secciones: una fuente única declarada en la "
+            "documentación y N implementaciones en el código. `vault_migrate_docs` "
+            "cortaba el documento por la línea 7 y llevaba versiones publicándose "
+            "así, con el bloque de frontmatter sin cerrar."
+        ),
+        "signal": (
+            "Notas con `---` de apertura que nunca cierra o cuyo bloque no parsea "
+            "con `yaml.safe_load`; notas sin `type:` recién escritas por una tool; "
+            "tools que construyen listas de líneas de frontmatter en vez de llamar "
+            "al write path; el generador aprueba y `vault_audit` reporta "
+            "`missingFrontmatter` sobre lo que él mismo acaba de escribir."
+        ),
+        "prevention": (
+            "El write path valida lo que escribe releyendo el resultado, no "
+            "confiando en cómo se construyó: `atomic_write_text` rechaza un bloque "
+            "de frontmatter que abre y no cierra o que no parsea, y registra el que "
+            "parsea pero sale sin `type:`. Así el guard alcanza a las 26 tools sin "
+            "reescribir ninguna, y la adopción de `vault_write` puede ser gradual. "
+            "Verificar con el criterio del consumidor —`yaml.safe_load`, no un "
+            "regex por líneas— es AP-44 aplicado al generador."
+        ),
+        "tools_enforcing": ["vault_io.atomic_write_text", "vault_write"],
+        "tools_detecting": ["vault_norms --audit", "vault_audit"],
+        "introduced_version": "v39.3",
+    },
+    # ── Antipatrón AP-47 ───────────────────────────────────────────────────────
+    {
+        "code": "AP-47",
+        "name": "Artefacto derivado desfasado — el índice dejó de reflejar el disco",
+        "type": "antipattern",
+        "category": "consistency",
+        "severity": "high",
+        "enforcement": "guard+audit",
+        "description": (
+            "El vault es la fuente de verdad y `search-index.json` y `graph.json` "
+            "son proyecciones suyas. Una escritura que no pasa por `vault_write` "
+            "—un agente remoto, una tool que escribe la nota y no toca el índice, "
+            "una copia a mano— deja la proyección atrás, y a partir de ahí el "
+            "agente busca sobre un mapa viejo: la nota existe y `vault_search` no "
+            "la encuentra, así que la vuelve a escribir. La duplicación no es un "
+            "descuido del agente, es la consecuencia lógica de un índice que "
+            "miente.\n\n"
+            "El estándar no lleva base de datos por decisión normativa, y con "
+            "consistencia eventual el desfase es esperable. Lo que no es "
+            "aceptable es que **nadie lo mida**: `vault_reindex --check` "
+            "comprobaba `len(notes) > 0`, de modo que un índice con una entrada "
+            "sobre un vault de 300 notas pasaba la puerta."
+        ),
+        "signal": (
+            "`vault_reindex --check` devuelve `index_stale`; el conteo de `.md` en "
+            "las secciones canónicas no coincide con las entradas de "
+            "`search-index.json`; `vault_search` devuelve 0 resultados sobre una "
+            "nota que está en disco; `graph.json` tiene menos nodos que notas."
+        ),
+        "prevention": (
+            "`vault_reindex --check` contrasta disco contra índice con el mismo "
+            "criterio con el que reconstruye —una sola función, `_notas_en_disco()`, "
+            "para que la comprobación y el arreglo no puedan medir cosas distintas "
+            "(AP-44)— y reporta las dos direcciones: notas invisibles para la "
+            "búsqueda y entradas que apuntan a ficheros que ya no están. El "
+            "remedio es `vault_reindex`, y por eso la norma se audita en vez de "
+            "bloquear: el desfase es un estado a reconciliar, no una escritura a "
+            "rechazar."
+        ),
+        "tools_enforcing": ["vault_reindex --check", "vault_write"],
+        "tools_detecting": ["vault_norms --audit", "vault_reindex --check"],
+        "introduced_version": "v39.3",
+    },
     # ── Patrón PAT-6 ───────────────────────────────────────────────────────────
     {
         "code": "PAT-6",
@@ -2204,6 +2288,8 @@ def vault_norms_audit(root: Optional[Path] = None) -> Dict[str, Any]:
     """
     from datetime import datetime, timezone
 
+    import yaml
+
     from vault_lib import extract_wikilinks, parse_frontmatter_with_body
     from vault_registry import SECTIONS
 
@@ -2239,6 +2325,39 @@ def vault_norms_audit(root: Optional[Path] = None) -> Dict[str, Any]:
             elif not name.startswith("."):
                 _flag("AP-15", name, f"Archivo suelto '{name}' en la raíz del vault.")
 
+    # ── AP-47: el índice refleja el disco ─────────────────────────────────────
+    # Se delega en `vault_reindex.index_coherence`, que es quien define qué
+    # cuenta como nota indexable, en vez de recontar aquí con el criterio del
+    # audit —que excluye `10_Migrated/` y las instantáneas—. Dos criterios para
+    # "cuántas notas hay" darían un desfase que `vault_reindex` no arreglaría
+    # nunca, porque no es el que él mide (AP-44). Un solo hallazgo por vault: el
+    # desfase es del índice, no de cada nota que falta en él.
+    if root.exists():
+        try:
+            from vault_reindex import index_coherence
+
+            coherencia = index_coherence(root)
+            if not coherencia["ok"]:
+                detalle = {
+                    "index_missing": "No existe 99_Index/search-index.json.",
+                    "index_corrupt": "99_Index/search-index.json no parsea.",
+                }.get(
+                    coherencia["status"],
+                    f"{coherencia.get('missing_count', 0)} nota(s) en disco fuera "
+                    f"del índice y {coherencia.get('stale_count', 0)} entrada(s) "
+                    f"que ya no existen "
+                    f"({coherencia['on_disk']} en disco / {coherencia['indexed']} "
+                    f"indexadas).",
+                )
+                _flag(
+                    "AP-47",
+                    "99_Index/search-index.json",
+                    f"{detalle} La búsqueda no ve lo que hay escrito, así que el "
+                    f"agente lo vuelve a escribir. Remedio: `vault_reindex`.",
+                )
+        except ImportError:
+            pass  # sin la tool no hay nada que contrastar
+
     # ── Cargar notas una sola vez ─────────────────────────────────────────────
     notes: Dict[str, Dict[str, Any]] = {}
     for md in sorted(root.rglob("*.md")):
@@ -2248,7 +2367,41 @@ def vault_norms_audit(root: Optional[Path] = None) -> Dict[str, Any]:
         if _es_instantanea(rel):
             continue
         try:
-            fm, body = parse_frontmatter_with_body(md.read_text(encoding="utf-8"))
+            raw = md.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+
+        # ── AP-46: frontmatter construido a mano y nunca releído ──────────────
+        # Se mira el texto CRUDO a propósito: `parse_frontmatter_with_body`
+        # devuelve `{}` tanto para "no tiene frontmatter" como para "lo tiene y
+        # está roto", y esa indistinción es justamente lo que dejó a
+        # `vault_migrate_docs` publicando bloques sin cerrar. El criterio es el
+        # del consumidor —`yaml.safe_load`—, no un regex por líneas (AP-44).
+        if raw.startswith("---"):
+            resto = raw.split("\n", 1)[1] if "\n" in raw else ""
+            corte = resto.find("\n---")
+            if corte == -1 and not resto.startswith("---"):
+                _flag(
+                    "AP-46",
+                    rel,
+                    "Frontmatter abierto con '---' que nunca cierra: la nota "
+                    "entera se lee como metadatos y su cuerpo desaparece para "
+                    "quien la consuma.",
+                )
+            else:
+                try:
+                    yaml.safe_load(resto[: corte + 1] if corte != -1 else "")
+                except Exception as exc:
+                    _flag(
+                        "AP-46",
+                        rel,
+                        f"Frontmatter que no parsea como YAML "
+                        f"({type(exc).__name__}): lo escribió una tool "
+                        f"concatenando líneas y nadie releyó el resultado.",
+                    )
+
+        try:
+            fm, body = parse_frontmatter_with_body(raw)
         except (OSError, UnicodeDecodeError):
             continue
         notes[rel] = {"fm": fm or {}, "body": body}

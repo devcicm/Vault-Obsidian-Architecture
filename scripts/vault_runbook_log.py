@@ -37,7 +37,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 
-from vault_io import VAULT_ROOT, write_report
+from vault_io import VAULT_ROOT, atomic_write_text, write_report
 
 
 OUTCOMES = ["success", "failed", "partial"]
@@ -159,8 +159,10 @@ def vault_runbook_log(
 
     content = update_frontmatter_value(content, "executions", executions)
 
-    with open(note_path, "w", encoding="utf-8") as f:
-        f.write(content)
+    # atomic_write_* y no `open(..., "w")`: el escaneo de secretos, el
+    # saneado de encoding y el temp+replace viven ahí. Escribir en crudo los
+    # esquivaba los tres (AP-36) y dejaba la nota a medias si el proceso moría.
+    atomic_write_text(note_path, content)
 
     return {
         "ok": True,

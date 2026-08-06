@@ -236,6 +236,48 @@ def _is_snapshot(p: Path) -> bool:
         return False
 
 
+#: Notas que el audit no consiguió leer en esta ejecución. Ver `_leer_nota`.
+_LECTURAS_FALLIDAS: List[Dict[str, str]] = []
+
+
+def _reset_degradacion() -> None:
+    """Vacía el registro al empezar un audit: es por ejecución, no por proceso."""
+    _LECTURAS_FALLIDAS.clear()
+
+
+def degradaciones() -> List[Dict[str, str]]:
+    """Lecturas que fallaron en el último audit, para tests y para el envelope."""
+    return list(_LECTURAS_FALLIDAS)
+
+
+def _leer_nota(p: Path, *, errors: str = "ignore", binario: bool = False):
+    """Lee una nota; si no puede, lo **registra** y devuelve `None`.
+
+    Nueve sitios del audit hacían `except Exception: continue` sobre la lectura
+    de una nota. Saltarse la nota es lo correcto —un audit no puede caerse porque
+    un fichero esté bloqueado—, pero hacerlo **en silencio** invierte el
+    resultado: cada nota ilegible es una nota que no aporta hallazgos, así que el
+    `healthScore` **sube** cuanto menos se puede leer del vault. Un vault con
+    permisos rotos se audita como un vault sano, que es AP-37 en su forma más
+    cara: el fallo no se cuenta como fallo, se cuenta como éxito.
+
+    No se cambia el comportamiento —se sigue saltando la nota—, se cambia lo que
+    el envelope sabe: `degraded[]` dice sobre cuántas notas NO se pronunció el
+    audit, y `healthScore` deja de ser una cifra sobre un universo desconocido.
+    """
+    try:
+        return p.read_bytes() if binario else p.read_text(
+            encoding="utf-8", errors=errors
+        )
+    except Exception as exc:  # noqa: BLE001 — el audit nunca se cae por una nota
+        try:
+            rel = str(p.relative_to(VAULT_ROOT)).replace("\\", "/")
+        except ValueError:
+            rel = str(p)
+        _LECTURAS_FALLIDAS.append({"path": rel, "error": f"{type(exc).__name__}: {exc}"})
+        return None
+
+
 def _aliases_de(p: Path) -> List[str]:
     """Alias declarados en el frontmatter, tolerando forma escalar.
 
@@ -290,10 +332,8 @@ def _build_indexes(notes: List[Path]) -> Tuple[Dict[str, Set[str]], Set[str]]:
     backlinks: Dict[str, Set[str]] = defaultdict(set)
 
     for n in notes:
-        try:
-            content = n.read_text(encoding="utf-8", errors="ignore")
-
-        except Exception:
+        content = _leer_nota(n)
+        if content is None:
             continue
 
         for link in _extract_wiki_links(content, known=all_stems):
@@ -332,12 +372,11 @@ def _detect_orphans(
         # them with real content; the nextActions block in the audit output
         # reminds them to do so. Excluding scaffolds avoids false-positive
         # orphan warnings on a freshly initialized vault.
-        try:
-            text = n.read_text(encoding="utf-8", errors="replace")
-            if "scaffold: true" in text or "type: primer" in text:
-                continue
-        except Exception:
-            pass
+        text = _leer_nota(n, errors="replace")
+        if text is not None and (
+            "scaffold: true" in text or "type: primer" in text
+        ):
+            continue
 
         fm = read_frontmatter(n)
 
@@ -471,10 +510,8 @@ def _detect_broken_links(
         ):
             continue
 
-        try:
-            content = n.read_text(encoding="utf-8", errors="ignore")
-
-        except Exception:
+        content = _leer_nota(n)
+        if content is None:
             continue
 
         for link in _extract_wiki_links(content, known=all_stems):
@@ -593,12 +630,11 @@ def _detect_canonical_shadow(notes: List[Path]) -> List[Dict[str, Any]]:
 
         # Scaffolds (vault_init primers) are templates by design — all have
         # similar titles and structure. Excluding them avoids false positives.
-        try:
-            text = n.read_text(encoding="utf-8", errors="replace")
-            if "scaffold: true" in text or "type: primer" in text:
-                continue
-        except Exception:
-            pass
+        text = _leer_nota(n, errors="replace")
+        if text is not None and (
+            "scaffold: true" in text or "type: primer" in text
+        ):
+            continue
 
         fm = read_frontmatter(n)
 
@@ -684,9 +720,8 @@ def _detect_malformed_wikilinks(notes: List[Path]) -> List[Dict[str, Any]]:
         ):
             continue
 
-        try:
-            content = n.read_text(encoding="utf-8", errors="ignore")
-        except Exception:
+        content = _leer_nota(n)
+        if content is None:
             continue
 
         # Strip code blocks and inline code so we don't count regex examples
@@ -875,10 +910,8 @@ def _detect_cross_folder_duplicates(notes: List[Path]) -> List[Dict[str, Any]]:
     hash_map: Dict[str, List[str]] = defaultdict(list)
 
     for n in notes:
-        try:
-            content = n.read_bytes()
-
-        except Exception:
+        content = _leer_nota(n, binario=True)
+        if content is None:
             continue
 
         digest = hashlib.md5(content).hexdigest()
@@ -1150,9 +1183,8 @@ def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]
     missing_updated = []
     missing_frontmatter = []
     for p in notes:
-        try:
-            raw = p.read_text(encoding="utf-8")
-        except Exception:
+        raw = _leer_nota(p, errors="strict")
+        if raw is None:
             continue
         rel = str(p.relative_to(VAULT_ROOT)).replace("\\", "/")
         # Todo `99_Index/` es artefacto derivado — lo escriben `vault_reindex` y
@@ -1263,11 +1295,10 @@ def _detect_scaffold_only_sections(content_notes: List[Path]) -> List[str]:
         if not rel.parts:
             continue
         section = rel.parts[0]
-        try:
-            text = n.read_text(encoding="utf-8", errors="replace")
-            is_scaffold = "scaffold: true" in text or "type: primer" in text
-        except Exception:
-            is_scaffold = False
+        text = _leer_nota(n, errors="replace")
+        is_scaffold = text is not None and (
+            "scaffold: true" in text or "type: primer" in text
+        )
         if is_scaffold:
             sections_with_scaffold[section] = True
         else:
@@ -1621,6 +1652,11 @@ def vault_audit(
 
     """
 
+    # El registro de lecturas fallidas es por auditoría, no por proceso: sin esto
+    # una segunda llamada en el mismo intérprete arrastraría las degradaciones de
+    # la primera y las contaría dos veces.
+    _reset_degradacion()
+
     # content_notes: notas reales (excluye index.md/README.md)
 
     # all_notes: incluye estructurales — para que sus links cuenten como backlinks
@@ -1816,6 +1852,12 @@ def vault_audit(
             "total": len(content_notes),
             "byFolder": dict(sorted(by_folder.items())),
         },
+        # Notas sobre las que el audit NO se pronunció, por no poder leerlas.
+        # Va junto al score y no enterrado en `issues` porque no es un hallazgo
+        # del vault: es el alcance de la medida. Un `healthScore` de 95 con
+        # `degraded` no vacío es un 95 sobre menos vault del que dice, y quien lo
+        # lea tiene derecho a saberlo antes de decidir nada (AP-37).
+        "degraded": degradaciones(),
         "issues": {
             "orphans": orphans,
             "stale": stale,
@@ -2153,10 +2195,8 @@ def _audit_external_path(path: Path) -> Dict[str, Any]:
     no_title = []
 
     for md_file in md_files:
-        try:
-            content = md_file.read_text(encoding="utf-8", errors="ignore")
-
-        except Exception:
+        content = _leer_nota(md_file)
+        if content is None:
             continue
 
         if len(content) < 100:

@@ -37,7 +37,7 @@ from pathlib import Path
 
 
 # Configuration
-from vault_io import VAULT_ROOT
+from vault_io import VAULT_ROOT, atomic_write_text
 
 
 # Valid states
@@ -183,8 +183,10 @@ tags: ["status", "{project}"]
 
 """
 
-    with open(status_file, "w", encoding="utf-8") as f:
-        f.write(status_content)
+    # atomic_write_* y no `open(..., "w")`: el escaneo de secretos, el
+    # saneado de encoding y el temp+replace viven ahí. Escribir en crudo los
+    # esquivaba los tres (AP-36) y dejaba la nota a medias si el proceso moría.
+    atomic_write_text(status_file, status_content)
 
     # Append to changelog.md
 
@@ -211,8 +213,10 @@ tags: ["status", "{project}"]
     else:
         existing = f"# Changelog\n\n"
 
-    with open(changelog_file, "w", encoding="utf-8") as f:
-        f.write(existing + changelog_entry)
+    # atomic_write_* y no `open(..., "w")`: el escaneo de secretos, el
+    # saneado de encoding y el temp+replace viven ahí. Escribir en crudo los
+    # esquivaba los tres (AP-36) y dejaba la nota a medias si el proceso moría.
+    atomic_write_text(changelog_file, existing + changelog_entry)
 
     return {
         "ok": True,

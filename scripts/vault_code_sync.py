@@ -29,7 +29,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT, write_report
+from vault_io import VAULT_ROOT, write_report, resolve_input_path
 
 CODE_DIR = VAULT_ROOT / "11_Code"
 CODE_INDEX = CODE_DIR / ".code-index.json"
@@ -147,11 +147,7 @@ def vault_code_sync(
             no_source_ref.append({"note": note_rel})
             continue
 
-        source_path = (
-            Path(source_file_str)
-            if Path(source_file_str).is_absolute()
-            else Path.cwd() / source_file_str
-        )
+        source_path = resolve_input_path(source_file_str)
 
         if not source_path.exists():
             missing_file.append(

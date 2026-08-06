@@ -38,7 +38,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "..", "..");
 const SCRIPTS_DIR = join(REPO_ROOT, "scripts");
-const VERSION = "v39.0 (SDD)";
+const VERSION = "v39.3 (SDD)";
 
 let VAULT_ROOT = process.env.VAULT_ROOT || null;
 let VAULT_SCAN_ROOTS = process.env.VAULT_SCAN_ROOTS ? process.env.VAULT_SCAN_ROOTS.split(";").map(p => resolve(p)) : [
@@ -843,6 +843,19 @@ function detectPython() {
   return "python";
 }
 
+/**
+ * Timeout de una tool, en ms. Misma variable y mismo default (60 s) que
+ * `vault_errors.TOOL_TIMEOUT_SECONDS` en Python: había 120 s fijos aquí, así
+ * que las tools largas que el propio repo reconoce —`vault_smoke`,
+ * `vault_onboard`— eran inalcanzables por MCP y no había forma de subirlo.
+ * Se toma el mayor de los dos para no acortar lo que hoy funciona.
+ */
+function toolTimeoutMs() {
+  const s = parseInt(process.env.VAULT_TOOL_TIMEOUT || "", 10);
+  if (Number.isFinite(s) && s > 0) return Math.max(s * 1000, 120000);
+  return 120000;
+}
+
 function executePythonTool(scriptPath, args, vaultRoot) {
   return new Promise((resolve, reject) => {
     const cliArgs = [];
@@ -868,9 +881,23 @@ function executePythonTool(scriptPath, args, vaultRoot) {
     const python = detectPython();
     const env = { ...process.env };
     if (vaultRoot) env.VAULT_ROOT = vaultRoot;
+    // Sin esto el hijo hereda la codificación de consola de Windows (cp1252) y
+    // cualquier carácter que no exista ahí —`→` de la matriz de trazabilidad,
+    // `≥` de la señal de AP-17— mata la tool con UnicodeEncodeError; los acentos,
+    // que sí existen en cp1252, salen como bytes cp1252 dentro de un JSON que
+    // este runner decodifica como UTF-8: mojibake silencioso con exit 0.
+    env.PYTHONIOENCODING = "utf-8";
+    env.PYTHONUTF8 = "1";
+    // El CWD del hijo es `scripts/` (para que los imports entre tools resuelvan),
+    // así que una ruta relativa del usuario —`--file src/foo.ts`— resolvería a
+    // `scripts/src/foo.ts`. Se le pasa el CWD real desde el que arrancó el
+    // servidor para que Python tenga contra qué anclarla (AP-36: nunca el CWD
+    // implícito del proceso).
+    env.VAULT_CLIENT_CWD = process.cwd();
+
     const proc = spawn(python, [scriptPath, ...cliArgs], {
       cwd: SCRIPTS_DIR,
-      timeout: 120000,
+      timeout: toolTimeoutMs(),
       stdio: ["pipe", "pipe", "pipe"],
       env,
     });
@@ -878,19 +905,51 @@ function executePythonTool(scriptPath, args, vaultRoot) {
     let stdout = "";
     let stderr = "";
 
-    proc.stdout.on("data", (d) => { stdout += d.toString(); });
-    proc.stderr.on("data", (d) => { stderr += d.toString(); });
+    // El hijo emite UTF-8; sin fijar la codificación, un chunk puede partir un
+    // carácter multibyte por la mitad y `toString()` lo sustituye por U+FFFD.
+    proc.stdout.setEncoding("utf8");
+    proc.stderr.setEncoding("utf8");
+    proc.stdout.on("data", (d) => { stdout += d; });
+    proc.stderr.on("data", (d) => { stderr += d; });
 
     proc.on("close", (code) => {
-      if (code !== 0) {
-        reject(new Error(`Python tool exited with code ${code}: ${stderr || stdout}`));
+      const raw = stdout.trim();
+      let envelope = null;
+      if (raw) {
+        try { envelope = JSON.parse(raw); } catch { /* no habla el protocolo */ }
+      }
+
+      // Un exit != 0 NO implica que no haya diagnóstico: las puertas `--strict`
+      // devuelven 1 con un envelope completo y `ok: true` por diseño. Descartarlo
+      // dejaba al agente con "exited with code 1" justo cuando más falta le hacía
+      // el informe. Solo se rechaza cuando no hay nada estructurado que devolver.
+      if (envelope !== null && typeof envelope === "object") {
+        if (code !== 0) {
+          envelope.exit_code = code;
+          if (stderr.trim()) envelope.stderr = stderr.trim();
+        }
+        resolve(envelope);
         return;
       }
-      try {
-        resolve(JSON.parse(stdout.trim() || "{}"));
-      } catch {
-        resolve({ ok: true, tool: scriptPath, raw_output: stdout.trim(), stderr: stderr.trim() });
+      if (code !== 0) {
+        reject(new Error(`Python tool exited with code ${code}: ${stderr || raw}`));
+        return;
       }
+      if (!raw) {
+        resolve({ ok: true, tool: scriptPath, structured: false, warning: "empty_output" });
+        return;
+      }
+      // Salida no-JSON con exit 0: la tool terminó bien, pero no hay envelope que
+      // acredite el trabajo. Se declara en vez de fabricar un `ok: true` liso
+      // (familia AP-37: éxito afirmado sin indicador de trabajo).
+      resolve({
+        ok: true,
+        tool: scriptPath,
+        structured: false,
+        warning: "non_json_output",
+        raw_output: raw,
+        stderr: stderr.trim(),
+      });
     });
 
     proc.on("error", (err) => {

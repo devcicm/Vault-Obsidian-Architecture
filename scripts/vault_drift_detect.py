@@ -58,7 +58,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-from vault_io import VAULT_ROOT
+from vault_io import VAULT_ROOT, atomic_write_json
 
 SNAPSHOT_FILE = VAULT_ROOT / "00_System" / ".session-snapshot.json"
 
@@ -473,8 +473,10 @@ def _save_snapshot(project: str, snapshot: Dict[str, Any]) -> None:
 
     all_snaps[project] = snapshot
 
-    with open(SNAPSHOT_FILE, "w", encoding="utf-8") as f:
-        json.dump(all_snaps, f, indent=2, ensure_ascii=False)
+    # atomic_write_* y no `open(..., "w")`: el escaneo de secretos, el
+    # saneado de encoding y el temp+replace viven ahí. Escribir en crudo los
+    # esquivaba los tres (AP-36) y dejaba la nota a medias si el proceso moría.
+    atomic_write_json(SNAPSHOT_FILE, all_snaps)
 
 
 # ─── Vault cross-reference ────────────────────────────────────────────────────

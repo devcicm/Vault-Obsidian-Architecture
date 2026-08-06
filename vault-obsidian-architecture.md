@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v39.2 — 2026-08-05  
+**Versión:** v39.3 — 2026-08-05  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -51,6 +51,31 @@ Todo lo anterior está declarado, medido y forzado en **[Marco de Datos y Gobern
 
 ---
 
+> **v39.3 (2026-08-05):** El camino de ejecución, comprobado por donde se ejecuta.
+> - **El runner MCP** —único punto por el que un agente real toca el estándar— no
+>   tenía un solo test. Cuatro defectos: el hijo heredaba la consola de Windows y
+>   cualquier `→` mataba la tool; un `exit != 0` descartaba el envelope justo cuando
+>   las puertas `--strict` lo devuelven completo; el timeout estaba fijo y las tools
+>   largas del propio repo eran inalcanzables; y `--file src/foo.ts` resolvía contra
+>   `scripts/`, no contra el directorio del usuario.
+> - **Una sola verdad para «cuál es el vault»**: 89 módulos congelaban `VAULT_ROOT`
+>   en el import, así que `set_vault_root()` cambiaba la respuesta pública y no
+>   cambiaba nada de lo que las tools usan para leer y escribir.
+> - **Contención en el write path**: 12 escrituras en crudo migradas —el escaneo de
+>   secretos, el saneado de encoding y el temp+replace viven ahí—, el escáner deja
+>   de fallar abierto en silencio, y la tool que busca secretos deja de persistirlos
+>   en claro.
+> - **AP-46 — frontmatter a mano**: 26 tools montan el bloque concatenando líneas y
+>   ninguna releía el resultado. Se valida la salida, no se reescriben las 26.
+> - **AP-47 — el índice dejó de reflejar el disco**: `vault_reindex --check` medía
+>   `len(notes) > 0`, así que un índice con una entrada sobre trescientas notas
+>   pasaba. El desfase es esperable —consistencia eventual, sin base de datos, y eso
+>   es normativo—; que no se midiera, no.
+> - **ACID, nombrado**: el estándar ya daba **A** (temp+`os.replace`) e **I**
+>   (`file_lock`) sin llamarlas así. La **C** se cierra con AP-47, la **D** pasa a ser
+>   una decisión declarada con palanca (`VAULT_FSYNC=1`), y `degraded[]` deja de
+>   contar como sano lo que no se pudo leer.
+>
 > **v39.1 (2026-08-05):** Poblar un vault desde un proyecto que no tiene ninguno.
 > - **`vault_onboard` publicada** (Grupo 31 — Bootstrap): estaba documentada en este
 >   manifiesto y **no se había ejecutado nunca** — AP-42 literal dentro del repo que
@@ -3436,7 +3461,7 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **57 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **59 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -5172,6 +5197,117 @@ frontera: lo que el guard **no** debe arrastrar por delante.
 
 ---
 
+### AP-46 — Frontmatter a mano: cada tool es su propio escritor
+
+**Severidad:** high · **Enforcement:** `guard+audit` · **Detecta:**
+`vault_norms --audit`, `vault_audit`
+
+Veintiséis tools montan el frontmatter concatenando líneas; tres importan el write
+path canónico. Cada concatenación es un **segundo autor del formato sin guard
+detrás**: el bloque se cierra o no, `type:` está o no, la fecha lleva el formato de
+quien la escribió.
+
+Lo que lo hace caro es *cuándo* se ve. No al escribir —la tool devuelve `ok: true`
+porque el fichero se creó, que es lo único que comprobó—, sino al auditar, y para
+entonces la nota ya es el dato que alguien va a leer. `vault_migrate_docs` cortaba
+el documento por la línea 7 y llevó versiones publicándose con el bloque de
+frontmatter sin cerrar: Obsidian leía la nota entera como metadatos y su cuerpo
+desaparecía. Es la misma forma que produjo 22 implementaciones de `slugify` y tres
+verdades para la lista de secciones — una fuente única declarada en la
+documentación y N implementaciones en el código (AP-05).
+
+#### Se valida la salida, no se reescriben las 26 tools
+
+La corrección obvia —migrar los 26 constructores a `vault_write`— es la cara y la
+que rompe cosas. La barata es comprobar el resultado en el único punto por el que
+todas pasan de todos modos: `vault_io.atomic_write_text` **relee** el bloque que va
+a escribir con `yaml.safe_load`, que es lo que usa quien consume la nota, y no con
+un regex por líneas. Eso es AP-44 aplicado al generador, y deja la adopción de
+`vault_write` como una mejora gradual en vez de un requisito previo.
+
+Qué bloquea y qué solo registra:
+
+- **Bloquea** el `---` que abre y nunca cierra, y el bloque que no parsea como
+  YAML. Ninguna de las dos cosas es intencional nunca: no hay caso legítimo que
+  perder.
+- **Registra sin bloquear** el frontmatter que parsea pero sale sin `type:`, en
+  `vault_io.frontmatter_degradations()`. Hay escrituras legítimas sin tipo, y tirar
+  el estándar entero por eso sería peor; callarlo sería AP-37.
+- **No exige** que todo `.md` lleve frontmatter: quien no abre bloque no está
+  incumpliendo nada, y exigirlo aquí sería inventar una norma por la puerta de
+  atrás.
+- **No mira** `vault-backups/`, `.history/` ni `20_Quarantine/`: ahí el bloque roto
+  es justamente el dato que se guardó para poder repararlo después.
+
+El audit mira el texto **crudo**, no el frontmatter ya parseado, porque
+`parse_frontmatter_with_body` devuelve `{}` tanto para «no tiene» como para «lo
+tiene y está roto» — y esa indistinción es exactamente lo que dejó pasar el
+defecto de v39.2.
+
+`tests/test_ap46_write_path_unico.py` (9 tests): el guard, el audit sobre notas ya
+escritas en disco, y las cuatro fronteras que no debe cruzar.
+
+Contrastado contra vaults ajenos al estándar (regla 7), 377 notas: **un hallazgo,
+cero falsos positivos**. Un ADR con `title: ADR: Remediación…` sin comillar — los
+dos puntos del propio título rompen el YAML, `ScannerError`, y el bloque entero
+deja de existir para quien lo lee. Lo escribió una tool concatenando líneas y
+`status: implementado` llevaba dos meses en una nota cuyos metadatos no parseaba
+nadie.
+
+---
+
+### AP-47 — Artefacto derivado desfasado: el índice dejó de reflejar el disco
+
+**Severidad:** high · **Enforcement:** `guard+audit` · **Introducida:** v39.3
+
+**Síntoma:** el agente busca una nota que existe, `vault_search` no la devuelve, y
+el agente la vuelve a escribir. La duplicación no es un descuido suyo: es la
+consecuencia lógica de un índice que miente. Al revés duele igual — una entrada
+que apunta a un fichero borrado se encuentra y luego no se puede abrir.
+
+**Causa:** el vault es la fuente de verdad; `99_Index/search-index.json` y
+`99_Index/graph.json` son **proyecciones** suyas. Cualquier escritura que no pase
+por `vault_write` —un editor, otra tool, un agente remoto, un `git pull`— deja la
+proyección atrás. Eso es consistencia eventual, y es la elección de diseño del
+estándar: sin base de datos, sin embeddings, sin servicio externo. Lo que no es
+aceptable es que el desfase **no se mida**.
+
+**Lo que se estaba midiendo hasta v39.2:** `vault_reindex --check` comprobaba
+`len(notes) > 0`. Un índice con una sola entrada sobre un vault de trescientas
+notas devolvía `index_ok` — una puerta que no mide lo que dice medir (familia
+AP-37), y precisamente en la tool cuya única razón de existir es reconciliar.
+Medido al escribir esto:
+
+| vault | notas en disco | en `search-index` | nodos en `graph` | veredicto anterior |
+|---|---|---|---|---|
+| `vault-sandbox` | 111 | 110 | 100 | `index_ok` |
+| vault real ajeno | 317 | 290 | 232 | `index_ok` |
+
+**Cómo se enforce:** `vault_reindex.index_coherence()` contrasta las dos
+direcciones —`missing_in_index` (invisible para la búsqueda) y `stale_in_index`
+(entrada huérfana)— y `vault_reindex --check` sale 1 cuando hay desfase.
+`vault_norms --audit` delega en esa misma función y emite **un** hallazgo por
+vault, no uno por nota: el defecto es del índice, no de cada nota que falta en él.
+Remedio: `vault_reindex`.
+
+Dos decisiones que van con la norma:
+
+- **El grafo se informa pero no veta.** `graph.json` solo se regenera con
+  `--graph`; contarlo como fallo convertiría el check en ruido permanente en todo
+  vault que no lo pide. Su desfase se reporta en `graph_drift` para que sea
+  visible sin ser bloqueante.
+- **La comprobación y la reconstrucción comparten el enumerador**
+  (`_notas_en_disco`). Si el `--check` contase con criterio propio mediría algo
+  distinto del `--fix`, y reportaría un desfase que `vault_reindex` no cierra
+  nunca (AP-44).
+
+Contraste contra material ajeno al estándar (regla 7): el vault real citado arriba
+reporta `21 nota(s) en disco fuera del índice … (311 en disco / 290 indexadas)`;
+`vault-sandbox`, recién reconstruido, queda limpio. Tests en
+`tests/test_ap47_indice_refleja_disco.py`.
+
+---
+
 ## Patrones recomendados
 
 Los siguientes patrones fueron identificados en auditorías reales de vaults en producción. Complementan los antipatrones: donde los APs describen qué no hacer, los PATs describen qué sí funciona.
@@ -5775,6 +5911,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v39.3 | 2026-08-05 | El camino de ejecución comprobado por donde se ejecuta: runner MCP con tests (encoding, envelope de exit≠0, timeout, CWD del cliente), `set_vault_root` alcanza a los 89 módulos que congelaban `VAULT_ROOT`, 12 escrituras crudas migradas al write path, AP-46 (frontmatter a mano), AP-47 (índice desfasado) y el lost update del registro de tags |
 | v39.2 | 2026-08-05 | Slug canónico único con transliteración (22 implementaciones divergentes), `vault_migrate_docs` (destino duplicado, cuerpo truncado, escaneo de secretos saltado), AP-17 con excepción por convención de nomenclatura |
 | v39.1 | 2026-08-05 | Onboarding de proyectos sin vault: `vault_onboard` publicada y saneada (cierra AP-42 sobre sí misma), AP-45 (cobertura sin evidencia), registro único de secciones, `docs/MODO-AGENTICO-ONBOARDING.md` |
 | v39.0 | 2026-07-25 | Marco de Datos y Gobernanza explícito (CIA, F1–F8, 9 dimensiones DQ, FAIR, V's del Big Data, ISO, matriz de trazabilidad), `vault_fundamentals --framework/--matrix`, guard anti-drift `vault_norms --check-framework`, política de no-derogación, changelog consolidado |
@@ -6089,6 +6226,28 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v39.3 — 2026-08-05 `git: pending`
+
+**El camino de ejecución, comprobado por donde se ejecuta**
+
+Las versiones anteriores auditaron lo que el estándar **escribe**. Esta audita **cómo llega a escribirlo**: el runner, el contexto de ejecución y el write path. Ninguno de los cuatro defectos estaba en una tool concreta — los cuatro estaban en el camino que comparten todas, que es exactamente por qué ninguna suite los veía.
+
+**Corregido**
+
+- **El runner MCP no tenía un solo test.** Es el único punto por el que un agente real toca el estándar —89 tools detrás— y llevaba desde v37 sin nada que lo ejerciera. Cuatro defectos, todos reproducidos antes de tocar nada: (1) el proceso hijo heredaba la codificación de consola de Windows, así que cualquier carácter fuera de cp1252 —el `→` de la matriz de trazabilidad, el `≥` de la señal de AP-17— mataba la tool con `UnicodeEncodeError`, y los acentos, que sí existen en cp1252, salían como mojibake dentro de un JSON con exit 0; (2) un `exit != 0` descartaba el envelope y devolvía «exited with code 1», justo cuando las puertas `--strict` devuelven 1 **con el informe completo** por diseño — el agente perdía el diagnóstico precisamente cuando lo necesitaba; (3) el timeout estaba fijo en 120 s sin variable, así que las tools largas que el propio repo reconoce (`vault_smoke`, `vault_onboard`) eran inalcanzables por MCP; (4) el hijo arranca con `cwd=scripts/`, de modo que un `--file src/foo.ts` del usuario resolvía a `scripts/src/foo.ts` — leía un fichero que no existe o, peor, otro que sí. `tests/test_mcp_runner.py` levanta una sesión JSON-RPC real por stdio y afirma sobre la respuesta, no sobre el código del runner.
+- **Una sola verdad para «cuál es el vault».** `CLAUDE.md` declaraba `vault_io.get_vault_root()` como fuente única y el código no cumplía su propia tabla: 89 de 98 módulos hacen `from vault_io import VAULT_ROOT` y derivan sus rutas **en el import** (`CODE_DIR = VAULT_ROOT / "11_Code"`), congelando un `Path` literal. Medido: tras `set_vault_root()`, `get_vault_root()` devolvía el vault nuevo y `vault_audit.VAULT_ROOT` seguía en el viejo — o sea, la API pública de cambiar de vault mentía sobre lo único que importa, dónde se lee y se escribe. Un proxy perezoso sobre `VAULT_ROOT` **no** habría arreglado el caso: no alcanza a las constantes ya derivadas de él. `set_vault_root()` reancla las constantes de los módulos ya importados y publica cuáles tocó en `rebound_constants()`, para que una operación que reescribe estado de módulos sea auditable en vez de mágica.
+- **Contención en el write path (AP-36).** Trece sitios escribían con `open(..., "w")` directo, saltándose a la vez el escaneo de secretos, el saneado de encoding y el temp+replace. Doce migrados; el decimotercero —`vault_mcp_catalog`, que escribe `tools-catalog.json`, artefacto del repo y no del vault— queda declarado como la única excepción, en el test, para que cualquier otra aparezca en vez de colarse. El peor de los doce era `vault_security_scan`: **la tool que existe para encontrar secretos los persistía en claro**, con el fragmento vulnerable entero, por la vía que no escanea. Al enrutarla por el write path se descubrió además que tenía su propia `redact_secrets` por longitud, distinta de la del registro por formato: dos criterios para el mismo secreto (AP-05), y el informe se caía al escribirse. Y el escáner fallaba abierto **en silencio** (`except Exception: pass`): un guard roto dejaba de proteger sin que ningún envelope lo dijera. Ahora la escritura sigue pasando —un bug del guard no puede tirar el estándar— pero queda registrada en `vault_io.scanner_degradations()` y en `00_System/scanner-degraded.jsonl`.
+- **AP-46 — frontmatter a mano.** Ver la sección de la norma. Se valida la salida en el único punto por el que todas las escrituras pasan, en vez de reescribir los 26 constructores.
+- **AP-47 — el índice dejó de reflejar el disco.** Ver la sección de la norma. El estándar aplica ACID sin nombrarlo: **A** con temp+`os.replace` en `atomic_write_text`, **I** con el lock de directorio de `vault_io.file_lock`, **C** con el catálogo de normas y las auditorías. La `C` era la floja, y no por la elección de consistencia eventual —que es de diseño, y normativa: sin base de datos, sin embeddings, sin servicio externo— sino porque **nadie medía el desfase**: `vault_reindex --check` comprobaba `len(notes) > 0` y aprobaba un índice con una entrada sobre trescientas notas. Se sustituye por `index_coherence()`, que contrasta las dos direcciones contra el disco y comparte enumerador con la reconstrucción para que el check no pueda medir algo distinto de lo que el fix arregla (AP-44).
+- **La D, declarada como decisión y no dejada como omisión.** Cero `fsync` en todo el repo: `atomic_write_text` daba atomicidad pero no durabilidad, y entre el `os.replace` y el volcado real del sistema de ficheros hay una ventana en la que un corte deja la nota truncada. La elección es **no pagarla por defecto** —el contenido de un vault es reconstruible (git, el proyecto de origen, `vault-backups/`) y hay tools que escriben cientos de ficheros por pasada—, y ofrecerla con **`VAULT_FSYNC=1`** para quien escriba sobre almacenamiento volátil. Lo que cambia no es el comportamiento por defecto: es que ahora hay una palanca, la decisión está escrita donde se toma, y un test la fija — una omisión y una decisión se ven idénticas en el código si nadie escribe cuál de las dos es.
+- **Nombres de dispositivo reservados de Windows.** Salió al ejecutar, que es la única forma en que salen estas cosas: un test de durabilidad llamó `con.md` a su fichero de control y **se colgó para siempre en vez de fallar**. `CON`, `PRN`, `AUX`, `NUL`, `COM1`–`COM9`, `LPT1`–`LPT9` son dispositivos, no ficheros, y la reserva ignora la extensión. Medido: `Path("con.md").exists()` devuelve `True` en un directorio vacío, `os.lstat` da `st_mode=S_IFCHR`, la escritura se va a la consola y cualquier lectura bloquea esperando entrada. Una nota titulada «CON» o «Aux» producía por slug exactamente eso. Es la peor forma de fallo que puede tener un vault —el proceso que lo abra no muere ni avisa— y el estándar se desarrolla en Windows sin que nadie lo hubiera escrito nunca. `_rechazar_nombre_reservado` lo bloquea en el write path, junto a `_rechazar_traversal`, y prohíbe el **nombre**, no el prefijo: `console.md` y `contrato.md` siguen siendo notas normales.
+- **`degraded[]` en `vault_audit` y `vault_onboard` (AP-37).** Veinte `except Exception` se tragaban lecturas fallidas: nueve en el audit sobre notas, once en el onboard sobre ficheros del proyecto. Saltarse el fichero es correcto —ninguna de las dos puede caerse porque algo esté bloqueado—, pero hacerlo en silencio **invierte el resultado**: cada nota ilegible es una nota que no aporta hallazgos, así que el `healthScore` *sube* cuanto menos se consigue leer, y un vault con permisos rotos se audita como un vault sano. En el onboard el efecto es peor todavía, porque queda escrito: un `docker-compose.yml` ilegible acaba en el vault como «el proyecto no tiene infraestructura», que es una ausencia afirmada sin haberla comprobado. No cambia el comportamiento —se sigue saltando— sino lo que el envelope sabe: `degraded[]` va junto al score y no dentro de `issues`, porque no es un hallazgo del vault sino **el alcance de la medida**.
+- **Actualización perdida en el registro de tags de código.** `vault_code_tag` leía el registro entero, lo mutaba y lo guardaba: `atomic_write_json` garantiza que nadie vea el fichero a medias, pero no que nadie pierda una actualización — dos procesos definiendo tags distintos a la vez leen el mismo estado y el segundo escribe encima del primero, sin que nada lo diga. Se serializa el ciclo completo con `file_lock`, que es lo que `vault_tags.record_new_tags` ya hacía con la bitácora de vocabulario: dos acumuladores equivalentes tenían dos criterios de concurrencia distintos (AP-05). El lock es reentrante por hilo a propósito, porque `--define --files` llama a `_apply` desde dentro y un lock no reentrante habría matado la operación por timeout.
+
+**Contrastado contra vaults ajenos** (regla 7): AP-46 sobre 377 notas de tres vaults de fuera devolvió un hallazgo real y cero falsos positivos — un ADR cuyo `title:` sin comillar rompía el YAML entero, con `status: implementado` y dos meses de antigüedad. AP-47 sobre el mismo vault: `311 en disco / 290 indexadas`, mientras `vault-sandbox` —recién reconstruido— queda limpio, que es exactamente el reparto que la regla 7 predice.
 
 ---
 

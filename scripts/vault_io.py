@@ -8,8 +8,9 @@ import threading
 import time
 import uuid
 from contextlib import contextmanager
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterator, Optional
+from typing import Any, Callable, Dict, Iterator, List, Optional
 
 from vault_encoding import (
     normalize_to_nfc,
@@ -163,16 +164,102 @@ def vault_root_is_confident() -> bool:
 _ACTIVE_VAULT_ROOT: Optional[Path] = None
 
 
+def _reanclar_constantes(anterior: Path, nueva: Path) -> List[str]:
+    """Reapunta al vault nuevo las constantes de módulo derivadas del viejo.
+
+    El problema que resuelve: 89 de 98 módulos hacen `from vault_io import
+    VAULT_ROOT` y derivan sus rutas EN EL IMPORT (`CODE_DIR = VAULT_ROOT /
+    "11_Code"`). Eso congela un `Path` literal, así que `set_vault_root()`
+    cambiaba `get_vault_root()` y no cambiaba nada de lo que las tools usan de
+    verdad para leer y escribir. Había dos verdades para "cuál es el vault", y
+    la API pública de cambiarlo mentía: medido, `get_vault_root()` devolvía el
+    vault nuevo mientras `vault_audit.VAULT_ROOT` seguía en el viejo.
+
+    Reanclar es lo único que arregla el caso sin reescribir los 89 módulos:
+    ningún proxy perezoso sobre `VAULT_ROOT` alcanzaría a las constantes ya
+    derivadas de él. Se toca solo lo inequívoco —nombres en MAYÚSCULAS de
+    módulos `vault_*` cuyo valor es un `Path` DENTRO de la raíz anterior—;
+    cualquier otra cosa se deja como está.
+
+    Devuelve los nombres reanclados, en `modulo.CONSTANTE`, para que la
+    operación sea auditable en vez de mágica.
+    """
+    import sys as _sys
+
+    tocados: List[str] = []
+    for nombre_mod, modulo in list(_sys.modules.items()):
+        if not nombre_mod.startswith("vault_") or modulo is None:
+            continue
+        for nombre, valor in list(vars(modulo).items()):
+            if not nombre.isupper() or not isinstance(valor, Path):
+                continue
+            if nombre == "VAULT_ROOT":
+                setattr(modulo, nombre, nueva)
+                tocados.append(f"{nombre_mod}.{nombre}")
+                continue
+            try:
+                relativa = valor.relative_to(anterior)
+            except ValueError:
+                continue  # no colgaba del vault: no es una ruta de vault
+            setattr(modulo, nombre, nueva / relativa)
+            tocados.append(f"{nombre_mod}.{nombre}")
+    return tocados
+
+
+#: Constantes reancladas por el último set_vault_root(). Auditable desde fuera.
+_REANCLADAS: List[str] = []
+
+
 def set_vault_root(path) -> Path:
-    """Fija el vault activo para esta ejecución (override de la auto-detección)."""
-    global _ACTIVE_VAULT_ROOT
-    _ACTIVE_VAULT_ROOT = Path(path).resolve()
+    """Fija el vault activo para esta ejecución (override de la auto-detección).
+
+    Además de fijar el override, reancla las constantes que los módulos ya
+    importados derivaron del vault anterior — ver `_reanclar_constantes()`.
+    """
+    global _ACTIVE_VAULT_ROOT, _REANCLADAS
+    anterior = get_vault_root().resolve()
+    nueva = Path(path).resolve()
+    _ACTIVE_VAULT_ROOT = nueva
+    _REANCLADAS = _reanclar_constantes(anterior, nueva) if nueva != anterior else []
     return _ACTIVE_VAULT_ROOT
+
+
+def rebound_constants() -> List[str]:
+    """Constantes de módulo que el último set_vault_root() reapuntó."""
+    return list(_REANCLADAS)
 
 
 def get_vault_root() -> Path:
     """Vault root efectivo: el override de set_vault_root() o el auto-detectado."""
     return _ACTIVE_VAULT_ROOT if _ACTIVE_VAULT_ROOT is not None else VAULT_ROOT
+
+
+# ── Rutas de ENTRADA del usuario (AP-36) ──────────────────────────────────────
+# Distinto problema que el vault root: aquí la ruta apunta al proyecto que se
+# documenta, no al vault. `Path.cwd()` no vale como ancla porque el CWD del
+# proceso no es el del usuario: el runner MCP lanza las tools con cwd=scripts/,
+# así que `--file src/foo.ts` resolvía a `scripts/src/foo.ts` y la tool leía un
+# fichero que no existe o, peor, otro que sí.
+
+
+def client_cwd() -> Path:
+    """Directorio desde el que el usuario invocó, no desde el que corre Python.
+
+    El runner MCP lo publica en `VAULT_CLIENT_CWD`. Sin esa variable —CLI
+    directa— el CWD del proceso sí es el del usuario y vale.
+    """
+    declarado = os.environ.get("VAULT_CLIENT_CWD")
+    if declarado:
+        candidato = Path(declarado)
+        if candidato.is_dir():
+            return candidato.resolve()
+    return Path.cwd()
+
+
+def resolve_input_path(file_path) -> Path:
+    """Ancla una ruta de entrada relativa contra client_cwd(). Absoluta: intacta."""
+    p = Path(file_path)
+    return p if p.is_absolute() else client_cwd() / p
 
 
 # ── Contrato de tools (v39) ───────────────────────────────────────────────────
@@ -387,6 +474,233 @@ def _record_write(path: Path, text: str, encoding: str) -> str:
     return resultado
 
 
+#: Fallos del escáner de secretos ocurridos en este proceso. En memoria además
+#: de en disco: un test —y la propia tool— pueden preguntarlo sin leer ficheros.
+_ESCANER_DEGRADADO: List[Dict[str, str]] = []
+
+SCANNER_DEGRADED_LOG = "scanner-degraded.jsonl"
+
+
+def _registrar_escaner_degradado(path: Path, exc: BaseException) -> None:
+    """Deja constancia de que una escritura pasó sin escanear.
+
+    Nunca levanta: si esto fallara, el remedio sería peor que la enfermedad.
+    """
+    entrada = {
+        "at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "path": str(path),
+        "error": f"{type(exc).__name__}: {exc}",
+    }
+    _ESCANER_DEGRADADO.append(entrada)
+    try:
+        destino = get_vault_root() / "00_System" / SCANNER_DEGRADED_LOG
+        destino.parent.mkdir(parents=True, exist_ok=True)
+        # Append directo a propósito: pasar por atomic_write_text aquí sería
+        # recursión, y el registro tiene que sobrevivir justo al caso en que
+        # el write path está roto.
+        with open(destino, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps(entrada, ensure_ascii=False) + "\n")
+    except Exception:
+        pass  # el registro es best-effort; la lista en memoria ya lo tiene
+
+
+def scanner_degradations() -> List[Dict[str, str]]:
+    """Escrituras de este proceso que se hicieron sin escaneo de secretos."""
+    return list(_ESCANER_DEGRADADO)
+
+
+#: Nombres de dispositivo reservados de Windows. Un fichero llamado así no es un
+#: fichero: `CON` es la consola, `NUL` el vacío, `COM1`/`LPT1` puertos. La
+#: reserva ignora la extensión —`con.md` es `CON` igual— y no distingue
+#: mayúsculas.
+_NOMBRES_RESERVADOS = frozenset(
+    {"CON", "PRN", "AUX", "NUL"}
+    | {f"COM{i}" for i in range(1, 10)}
+    | {f"LPT{i}" for i in range(1, 10)}
+)
+
+
+def _rechazar_nombre_reservado(path: Path) -> None:
+    """Bloquea nombres que en Windows son dispositivos, no ficheros.
+
+    Una nota titulada «CON», «Aux» o «Com1» produce por slug `con.md`, `aux.md`,
+    `com1.md` — y ahí deja de haber fichero. Medido: `Path('con.md').exists()`
+    devuelve `True` en un directorio vacío, `os.lstat` da `st_mode=S_IFCHR`, la
+    escritura se va a la consola y **cualquier lectura se cuelga indefinidamente**
+    esperando entrada. No falla: se queda. Es la peor forma de fallo que puede
+    tener un vault, porque el proceso que lo abra no muere ni avisa.
+
+    Se bloquea en el write path y no en el generador de slugs porque los slugs
+    los generan 22 sitios y las escrituras pasan todas por aquí — el mismo
+    reparto que AP-46. Se prohíbe el nombre, no el prefijo: `console.md` y
+    `contrato.md` son ficheros perfectamente normales, y confundir «empieza por
+    con» con «es CON» apagaría media sección de conceptos.
+
+    Salió al ejecutar, no al leer: un test de durabilidad que llamó `con.md` a su
+    fichero de control se colgó para siempre en vez de fallar (regla 7 en su
+    forma más barata — el estándar se desarrolla en Windows y aun así nadie lo
+    había escrito).
+    """
+    if path.stem.upper() in _NOMBRES_RESERVADOS:
+        raise ValueError(
+            f"atomic_write bloqueado: '{path.name}' usa el nombre de dispositivo "
+            f"reservado '{path.stem.upper()}'. En Windows no sería un fichero sino "
+            f"un dispositivo, y leerlo cuelga al proceso en vez de fallar. Renombra "
+            f"la nota (p. ej. '{path.stem}-nota{path.suffix}')."
+        )
+
+
+def _rechazar_traversal(path: Path) -> None:
+    """Bloquea la escritura si la ruta SALE del vault por `..`.
+
+    `assert_within_vault()` existe desde v28, pero es el llamante quien tiene
+    que acordarse de invocarla, y trece módulos que escriben no lo hacían. Aquí
+    la comprobación es del propio write path, así que no depende de la memoria
+    de nadie.
+
+    Lo que se prohíbe es el traversal —el `..` que trepa por encima de la raíz,
+    que es el vector real de AP-36—. NO se exige que toda escritura caiga bajo
+    `get_vault_root()`: hay escrituras legítimas contra otro vault (tests con
+    raíz temporal, tools con `--root`, migraciones entre vaults), y confundir
+    "otro vault" con "fuera del vault" convertiría el guard en ruido.
+    """
+    if ".." not in path.parts:
+        return
+    raiz = get_vault_root().resolve()
+    resuelta = path.resolve()
+    try:
+        resuelta.relative_to(raiz)
+    except ValueError:
+        raise ValueError(
+            f"atomic_write bloqueado: '{path}' resuelve a '{resuelta}', fuera del "
+            f"vault '{raiz}'. Las rutas se derivan de get_vault_root(), nunca por "
+            f"concatenación de un argumento del usuario (AP-36)."
+        )
+
+
+#: Notas escritas en este proceso cuyo frontmatter parsea pero sale sin `type:`.
+#: No se bloquea —hay notas legítimas sin tipo y romper el estándar entero por
+#: eso sería peor—, pero deja de ser invisible (AP-46).
+_FRONTMATTER_SIN_TIPO: List[Dict[str, str]] = []
+
+#: Rutas donde un frontmatter roto es el dato, no el defecto: copias, historia y
+#: cuarentena guardan justamente lo que vino mal para poder repararlo después.
+_SIN_GUARD_FRONTMATTER = frozenset({"vault-backups", ".history", "20_Quarantine"})
+
+
+def frontmatter_degradations() -> List[Dict[str, str]]:
+    """Notas escritas en este proceso con frontmatter válido pero sin `type:`."""
+    return list(_FRONTMATTER_SIN_TIPO)
+
+
+def _verificar_frontmatter(path: Path, text: str) -> None:
+    """Relee el frontmatter que se va a escribir, con el criterio del consumidor.
+
+    AP-46: veintiséis tools montan el bloque concatenando líneas y ninguna
+    comprueba el resultado. El fallo no se ve al escribir —la tool devuelve
+    `ok: true` porque el fichero se creó— sino al auditar, cuando la nota ya es
+    el dato. `vault_migrate_docs` cortaba el documento por la línea 7 y llevaba
+    versiones publicándose con el bloque sin cerrar.
+
+    Verificar aquí alcanza a las 26 tools sin tocar ninguna, y la adopción de
+    `vault_write` puede seguir siendo gradual. Se valida con `yaml.safe_load`
+    —lo que usa quien lo lee— y no con un regex por líneas (AP-44).
+
+    Bloquea solo lo que nunca es intencional: abrir `---` y no cerrarlo, o un
+    bloque que no parsea. La ausencia de `type:` se registra sin bloquear.
+    """
+    if path.suffix.lower() != ".md" or not text.startswith("---"):
+        return
+    if _SIN_GUARD_FRONTMATTER & set(path.parts):
+        return
+
+    cuerpo = text.split("\n", 1)[1] if "\n" in text else ""
+    cierre = cuerpo.find("\n---")
+    if cierre == -1 and not cuerpo.startswith("---"):
+        raise ValueError(
+            f"atomic_write bloqueado: '{path.name}' abre frontmatter con '---' y "
+            f"nunca lo cierra. El bloque se construyó a mano y nadie releyó el "
+            f"resultado (AP-46)."
+        )
+    bruto = cuerpo[: cierre + 1] if cierre != -1 else ""
+
+    try:
+        import yaml
+    except ImportError:
+        return
+    try:
+        datos = yaml.safe_load(bruto)
+    except Exception as exc:
+        raise ValueError(
+            f"atomic_write bloqueado: el frontmatter de '{path.name}' no parsea "
+            f"como YAML ({type(exc).__name__}: {exc}). Es lo que verá quien lea la "
+            f"nota, no lo que creyó escribir la tool (AP-46)."
+        )
+    if isinstance(datos, dict) and not datos.get("type"):
+        _FRONTMATTER_SIN_TIPO.append({"path": str(path), "reason": "missing_type"})
+
+
+def _escribir_temporal(temp: Path, text: str, encoding: str) -> None:
+    """Escribe el temporal y, si `VAULT_FSYNC=1`, lo vuelca a disco.
+
+    El volcado va **dentro** del `with`, sobre el descriptor con el que se
+    escribió: en Windows `os.fsync` sobre un `os.open(..., O_RDONLY)` falla con
+    `Bad file descriptor` —`_commit` exige acceso de escritura—, así que
+    sincronizar «después, reabriendo» funciona en POSIX y rompe en la plataforma
+    donde se desarrolla este repo. Se descubrió al ejecutarlo, no al leerlo.
+
+    `newline` queda por defecto a propósito: es lo que hacía `Path.write_text`, y
+    cambiarlo alteraría los saltos de línea de cada nota del estándar. La palanca
+    es de durabilidad, no de contenido.
+    """
+    import os
+
+    with open(temp, "w", encoding=encoding) as fh:
+        fh.write(text)
+        if os.environ.get("VAULT_FSYNC") == "1":
+            fh.flush()
+            os.fsync(fh.fileno())
+
+
+def _fsync_si_procede(temp: Path) -> None:
+    """Vuelca el directorio padre si `VAULT_FSYNC=1`, para que el rename dure.
+
+    Aquí está la **decisión** de durabilidad del estándar; el volcado del
+    contenido lo hace `_escribir_temporal` sobre su propio descriptor.
+
+    **La durabilidad del estándar es la del sistema de ficheros, y eso es una
+    decisión, no un olvido.** `atomic_write_text` da atomicidad —temp + `os.replace`,
+    nadie ve la nota a medias— pero no durabilidad: entre el `replace` y el
+    volcado real hay una ventana en la que un corte de corriente deja la nota
+    truncada o vacía. Cerrarla por defecto cuesta un `fsync` por escritura, y hay
+    tools que escriben cientos de ficheros en una pasada (`vault_reindex`,
+    `vault_onboard`, `vault_migrate_docs`): el coste es del orden de milisegundos
+    por nota sobre discos que no lo agregan.
+
+    El reparto elegido: **por defecto no**, porque el contenido de un vault es
+    reconstruible —está en git, en el proyecto de origen o en los `vault-backups/`—
+    y perder la última escritura ante un corte es un daño acotado. **Opt-in con
+    `VAULT_FSYNC=1`** para quien escriba sobre almacenamiento volátil o en un
+    entorno donde el corte sea plausible.
+
+    Se sincroniza además el directorio padre en POSIX: sin eso, el `rename` puede
+    no haber llegado a disco aunque el contenido sí, y el fichero reaparecería con
+    el nombre viejo. En Windows no existe descriptor de directorio y `os.replace`
+    ya es atómico a nivel de metadatos, así que ese paso se omite —callando, que
+    es lo correcto aquí: no es una degradación, es que no aplica—.
+    """
+    import os
+
+    if os.environ.get("VAULT_FSYNC") != "1":
+        return
+    if hasattr(os, "O_DIRECTORY"):
+        dir_fd = os.open(str(temp.parent), os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(dir_fd)
+        finally:
+            os.close(dir_fd)
+
+
 def atomic_write_text(
     path: Path, text: str, encoding: str = "utf-8", sanitize: bool = True
 ) -> None:
@@ -425,8 +739,17 @@ def atomic_write_text(
             pass  # vault_secret_scan not available — skip
         except PermissionError:
             raise
-        except Exception:
-            pass  # never block writes on scanner errors
+        except Exception as exc:
+            # No se bloquea la escritura por un fallo del escáner —eso
+            # convertiría un bug del guard en una caída del estándar entero—,
+            # pero un escáner roto dejaba de proteger sin que nadie se enterara.
+            # Queda registrado para que `vault_audit` lo vea (AP-37: el fallo
+            # silencioso se cuenta como éxito).
+            _registrar_escaner_degradado(path, exc)
+
+    _rechazar_traversal(path)
+    _rechazar_nombre_reservado(path)
+    _verificar_frontmatter(path, text or "")
 
     path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -458,7 +781,8 @@ def atomic_write_text(
 
     temp = path.parent / f".tmp.{os.getpid()}.{uuid.uuid4().hex[:8]}"
     try:
-        temp.write_text(text, encoding=encoding)
+        _escribir_temporal(temp, text, encoding)
+        _fsync_si_procede(temp)
         os.replace(temp, path)
     except Exception:
         try:

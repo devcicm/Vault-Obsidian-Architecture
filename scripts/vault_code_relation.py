@@ -36,7 +36,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-from vault_io import VAULT_ROOT, write_report
+from vault_io import VAULT_ROOT, atomic_write_text, atomic_write_json, write_report
 
 CODE_DIR = VAULT_ROOT / "11_Code"
 
@@ -76,8 +76,10 @@ def load_index() -> Dict[str, Any]:
 def save_index(data: Dict[str, Any]) -> None:
     CODE_DIR.mkdir(parents=True, exist_ok=True)
 
-    with open(INDEX_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+    # atomic_write_* y no `open(..., "w")`: el escaneo de secretos, el
+    # saneado de encoding y el temp+replace viven ahí. Escribir en crudo los
+    # esquivaba los tres (AP-36) y dejaba la nota a medias si el proceso moría.
+    atomic_write_json(INDEX_FILE, data)
 
 
 def get_module_nodes(index: Dict[str, Any], project: str) -> List[Dict]:
@@ -179,8 +181,8 @@ def save_code_map(project: str, mermaid_content: str) -> Path:
 
     frontmatter.append(f"```mermaid\n{mermaid_content}\n```\n")
 
-    with open(map_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(frontmatter))
+    # Ver nota en save_index(): el write path canónico, no `open(..., "w")`.
+    atomic_write_text(map_path, "\n".join(frontmatter))
 
     return map_path
 

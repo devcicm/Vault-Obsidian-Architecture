@@ -34,9 +34,37 @@ def test_status_vocab_unified():
     assert {"draft", "verified", "planned", "stub"} <= STATUS_VOCAB
 
 
+def _sync_index(root: Path) -> None:
+    """Deja `search-index.json` reflejando lo que hay en disco (AP-47).
+
+    `_make_vault` monta el vault a mano y nunca escribió índice, así que un vault
+    "limpio" para el resto de normas estaba, para AP-47, sin buscador. No es un
+    falso positivo: un vault con notas y sin índice es exactamente lo que la norma
+    describe. Se sincroniza con el enumerador de `vault_reindex` —no con uno
+    propio— para no medir con un criterio distinto del que arregla (AP-44).
+    """
+    import json
+
+    from vault_reindex import _notas_en_disco
+
+    (root / "99_Index").mkdir(parents=True, exist_ok=True)
+    (root / "99_Index" / "search-index.json").write_text(
+        json.dumps(
+            {
+                "notes": [
+                    {"path": str(p.relative_to(root)).replace("\\", "/")}
+                    for p in _notas_en_disco(root)
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
 def test_audit_clean_vault(tmp_path):
     root = _make_vault(tmp_path)
     _note(root / "01_Projects" / "demo.md", "title: Demo\nstatus: implemented", "# Demo\nok")
+    _sync_index(root)
     result = vault_norms_audit(root)
     assert result["ok"] and result["total_violations"] == 0
 

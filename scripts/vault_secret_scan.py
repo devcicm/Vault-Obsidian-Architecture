@@ -118,6 +118,41 @@ def scan_content(text: str) -> List[Dict[str, Any]]:
     return findings
 
 
+def redact_secrets(text: str) -> tuple[str, int]:
+    """Sustituye en el propio texto cada secreto detectado por su redacción.
+
+    Para el caso en que el contenido a persistir ES código ajeno: el informe de
+    `vault_security_scan` cita el fragmento vulnerable, y ese fragmento puede
+    llevar la credencial dentro. Bloquear la escritura dejaría a la tool sin
+    poder informar; escribirla cruda mete el secreto en el vault. Se redacta y
+    se escribe, que es lo que el informe necesita —la forma del fallo, no la
+    credencial—.
+
+    Devuelve (texto redactado, nº de sustituciones).
+    """
+    if not text:
+        return text, 0
+    reemplazos: List[tuple[int, int, str]] = []
+    for pat_def in SECRET_PATTERNS:
+        for m in re.finditer(pat_def["pattern"], text):
+            reemplazos.append((m.start(), m.end(), _redact(m.group(0))))
+    if not reemplazos:
+        return text, 0
+    # De atrás hacia delante: sustituir por el final no invalida los offsets
+    # de lo que queda por delante.
+    reemplazos.sort(key=lambda r: r[0], reverse=True)
+    fuera = text
+    hechos = 0
+    ultimo_inicio = len(text) + 1
+    for inicio, fin, redactado in reemplazos:
+        if fin > ultimo_inicio:  # solapado con uno ya sustituido
+            continue
+        fuera = fuera[:inicio] + redactado + fuera[fin:]
+        ultimo_inicio = inicio
+        hechos += 1
+    return fuera, hechos
+
+
 def scan_note(path: Path) -> List[Dict[str, Any]]:
     """Scan a single note file for secrets."""
     try:

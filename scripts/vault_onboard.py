@@ -182,6 +182,29 @@ def _month_key(date_str: str) -> str:
     return date_str[:7]  # YYYY-MM
 
 
+#: Pasos de detección que fallaron en este onboarding. Ver `_registrar_degradacion`.
+_DETECCION_DEGRADADA: List[Dict[str, str]] = []
+
+
+def _registrar_degradacion(paso: str, exc: BaseException) -> None:
+    """Anota que un paso de detección no pudo completarse, en vez de olvidarlo.
+
+    Once sitios hacían `except Exception: pass` sobre una lectura del proyecto —el
+    `docker-compose.yml`, el `.csproj`, el README, el log de git—. Seguir sin ese
+    dato es correcto: un onboarding no puede abortar porque un fichero esté
+    bloqueado o venga en una codificación rara. **Lo que no es correcto es que el
+    vault resultante no distinga «el proyecto no tiene infraestructura» de «no
+    pude leer la que tiene»**, y hasta ahora escribía lo primero en los dos casos.
+    Una nota que afirma una ausencia que nunca se comprobó es peor que un hueco:
+    el hueco se ve.
+
+    Sale en `degraded[]` del envelope, junto a `skipped_no_evidence` y
+    `sections_left_empty_by_design` — las tres responden a la misma pregunta, qué
+    NO está en el vault y por qué (AP-37, AP-45).
+    """
+    _DETECCION_DEGRADADA.append({"step": paso, "error": f"{type(exc).__name__}: {exc}"})
+
+
 def _run_git(project_path: Path, args: List[str], timeout: int = 10) -> Optional[str]:
     try:
         r = subprocess.run(
@@ -192,7 +215,8 @@ def _run_git(project_path: Path, args: List[str], timeout: int = 10) -> Optional
         if r.returncode != 0:
             return None
         return r.stdout.decode("utf-8", errors="replace").strip()
-    except Exception:
+    except Exception as exc:
+        _registrar_degradacion("leer_git", exc)
         return None
 
 
@@ -207,7 +231,8 @@ def _infer_module_type(filename: str) -> str:
 def _count_lines(path: Path) -> int:
     try:
         return sum(1 for _ in path.open(encoding="utf-8", errors="replace"))
-    except Exception:
+    except Exception as exc:
+        _registrar_degradacion("contar_commits", exc)
         return 0
 
 
@@ -420,7 +445,8 @@ def _extract_git_history(project_path: Path, max_commits: int = 500) -> Dict[str
             a = datetime.fromisoformat(apparent_first_date)
             hidden_months = max(0, (a.year - t.year) * 12 + (a.month - t.month))
             hidden_history = hidden_months > 1
-        except Exception:
+        except Exception as exc:
+            _registrar_degradacion("fechar_historia_oculta", exc)
             pass
 
     contributors = list(
@@ -496,7 +522,8 @@ def _extract_file_history(project_path: Path) -> Dict[str, Any]:
                     "date": _date_str(stat.st_mtime)[:10],
                 }
             )
-        except Exception:
+        except Exception as exc:
+            _registrar_degradacion("datar_ficheros", exc)
             pass
 
     files.sort(key=lambda x: x["ctime"])
@@ -667,7 +694,8 @@ def _read_package_json(project_path: Path) -> Dict[str, Any]:
             "all_deps": all_deps,
             "source": "package.json",
         }
-    except Exception:
+    except Exception as exc:
+        _registrar_degradacion("leer_manifiesto_de_dependencias", exc)
         return {}
 
 
@@ -692,7 +720,8 @@ def _read_pyproject(project_path: Path) -> Dict[str, Any]:
                 "key_deps": [],
                 "all_deps": [],
             }
-        except Exception:
+        except Exception as exc:
+            _registrar_degradacion("leer_manifiesto_python", exc)
             continue
     return {}
 
@@ -713,7 +742,8 @@ def _read_csproj(project_path: Path) -> Dict[str, Any]:
                 "key_deps": [],
                 "all_deps": [],
             }
-        except Exception:
+        except Exception as exc:
+            _registrar_degradacion("leer_csproj", exc)
             continue
     return {}
 
@@ -757,7 +787,8 @@ def _read_readme(project_path: Path) -> Tuple[str, List[str]]:
                 l for l in text.splitlines() if l.strip() and not l.startswith("#")
             ]
             return " ".join(lines)[:500], headers
-        except Exception:
+        except Exception as exc:
+            _registrar_degradacion("leer_readme", exc)
             pass
     return "", []
 
@@ -879,7 +910,8 @@ def _detect_infra(project_path: Path) -> Dict[str, Any]:
                 re.findall(r"^\s{2}(\w[\w-]+):\s*$", text, re.MULTILINE)
             )
             infra["ports"].extend(re.findall(r'"?(\d+:\d+)"?', text)[:10])
-        except Exception:
+        except Exception as exc:
+            _registrar_degradacion("leer_docker_compose", exc)
             pass
     for df in ("Dockerfile", "Dockerfile.dev", "Dockerfile.prod"):
         if (project_path / df).exists():
@@ -892,7 +924,8 @@ def _detect_infra(project_path: Path) -> Dict[str, Any]:
                 infra["ports"].extend(
                     re.findall(r"^EXPOSE\s+(\d+)", text, re.MULTILINE)
                 )
-            except Exception:
+            except Exception as exc:
+                _registrar_degradacion("leer_dockerfile", exc)
                 pass
     for ef in (".env.example", ".env.local", ".env.sample", ".env.template"):
         fp = project_path / ef
@@ -907,7 +940,8 @@ def _detect_infra(project_path: Path) -> Dict[str, Any]:
                     if l.strip() and not l.startswith("#") and "=" in l
                 ]
                 infra["envs"].extend(keys[:20])
-            except Exception:
+            except Exception as exc:
+                _registrar_degradacion("leer_env_example", exc)
                 pass
     for ci_dir in (".github/workflows", ".circleci", "Jenkinsfile", ".gitlab-ci.yml"):
         if (project_path / ci_dir).exists():
@@ -2488,6 +2522,7 @@ def vault_onboard(
     skip = set(skip or [])
     warnings: List[str] = []
     _SIN_EVIDENCIA.clear()
+    _DETECCION_DEGRADADA.clear()  # por onboarding, no por proceso
     created: Dict[str, Any] = {}
     merge_stats = {"created": 0, "merged": 0, "skipped": 0, "dry_run": 0}
 
@@ -2608,6 +2643,25 @@ def vault_onboard(
     ]
     created["indexes_updated"] = _update_indexes(sections_to_index, dry_run)
 
+    # 5b. Reconstruir el buscador (AP-47). Los `index.md` de sección son
+    # navegación; `99_Index/search-index.json` es lo que responde a
+    # `vault_search`, y ninguna de las ~40 tools `*_save` que este onboard invoca
+    # lo actualiza. Medido antes de añadir esto: 67 notas en disco y 41 indexadas
+    # al terminar — un tercio del vault recién creado era invisible desde el
+    # primer minuto, y el agente que no encontrara una nota la habría vuelto a
+    # escribir. Es el mismo criterio que `sections_left_empty_by_design`: el
+    # onboard no puede dejar deuda que él mismo sabe cerrar.
+    if not dry_run:
+        try:
+            from vault_reindex import vault_reindex
+
+            created["search_index"] = vault_reindex()
+        except Exception as exc:  # noqa: BLE001 — no tumbar el onboard por esto
+            warnings.append(
+                f"search-index no reconstruido ({type(exc).__name__}: {exc}); "
+                f"ejecuta `vault_reindex` antes de buscar en el vault (AP-47)"
+            )
+
     # 6. Anotar el vocabulario introducido (AP-39). Un onboard mete de golpe
     # decenas de términos nuevos —el lenguaje, el framework, los tipos de
     # módulo, el nombre del proyecto— y sin bitácora quedan como vocabulario
@@ -2672,6 +2726,9 @@ def vault_onboard(
         # eventos. Poblarlas en el arranque sería inventar bugs, auditorías y
         # cuarentenas que no han ocurrido — exactamente AP-45.
         "sections_left_empty_by_design": dict(_SECCIONES_NO_POBLADAS),
+        # Pasos de detección que fallaron: la diferencia entre «el proyecto no
+        # tiene esto» y «no pude leerlo». Ver `_registrar_degradacion`.
+        "degraded": list(_DETECCION_DEGRADADA),
         "warnings": warnings,
         "next_steps": [
             f"vault_project_overview --project {project}  # enriquecer overview",

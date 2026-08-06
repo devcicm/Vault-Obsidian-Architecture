@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-from vault_io import VAULT_ROOT, atomic_write_text, atomic_write_json, write_report
+from vault_io import VAULT_ROOT, atomic_write_text, atomic_write_json, write_report, resolve_input_path
 
 CODE_DIR = VAULT_ROOT / "11_Code"
 INDEX_FILE = CODE_DIR / ".code-index.json"
@@ -448,9 +448,7 @@ def vault_code_module(
 
     # Bidirectional link: embed @vault: in the source file
     if tag_source:
-        abs_file = (
-            Path(file_path) if Path(file_path).is_absolute() else Path.cwd() / file_path
-        )
+        abs_file = resolve_input_path(file_path)
         if abs_file.exists():
             try:
                 from vault_code_tag import vault_code_tag_link_vault

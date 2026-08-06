@@ -32,7 +32,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 
-from vault_io import VAULT_ROOT, write_report
+from vault_io import VAULT_ROOT, atomic_write_text, write_report
 
 CODE_DIR = VAULT_ROOT / "11_Code"
 
@@ -153,8 +153,10 @@ def vault_code_map(project: str) -> Dict[str, Any]:
 
     frontmatter.append(f"```mermaid\n{mermaid_content}\n```\n")
 
-    with open(map_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(frontmatter))
+    # atomic_write_* y no `open(..., "w")`: el escaneo de secretos, el saneado de
+    # encoding y el temp+replace viven ahí. Escribir en crudo los esquivaba los
+    # tres (AP-36) y dejaba la nota a medias si el proceso moría a mitad.
+    atomic_write_text(map_path, "\n".join(frontmatter))
 
     modules = [
         m
