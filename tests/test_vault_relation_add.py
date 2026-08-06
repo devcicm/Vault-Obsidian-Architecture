@@ -10,6 +10,19 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 
+def _apuntar_al_vault(raiz):
+    """Se apunta la raíz, no cada constante del módulo.
+
+    Antes se reasignaba `mod.VAULT_ROOT`, que desde v40.0 ya no existe: el
+    módulo resuelve la raíz al usarla (AP-49). Reasignarla dejó de tener efecto
+    y el test habría corrido contra el vault detectado sin avisar. El override
+    lo deshace el fixture autouse de `conftest.py`.
+    """
+    import vault_io
+
+    vault_io.set_vault_root(raiz)
+
+
 class TestRelationTypes:
     def test_all_types_valid(self):
         from vault_relation_add import RELATION_TYPES
@@ -28,7 +41,7 @@ class TestRelationTypes:
 
     def test_invalid_type_rejected(self, tmp_test_dir):
         import vault_relation_add as mod
-        mod.VAULT_ROOT = tmp_test_dir
+        _apuntar_al_vault(tmp_test_dir)
         try:
             result = mod.vault_relation_add(
                 project="test",
@@ -88,7 +101,6 @@ class TestSlugify:
 class TestLoadSaveRelations:
     def test_load_nonexistent_returns_empty(self, tmp_test_dir):
         import vault_relation_add as mod
-        mod.ENTITY_DIR = tmp_test_dir
         try:
             data = mod.load_relations("test-project")
             assert data["project"] == "test-project"
@@ -98,7 +110,6 @@ class TestLoadSaveRelations:
 
     def test_save_and_load_roundtrip(self, tmp_test_dir):
         import vault_relation_add as mod
-        mod.ENTITY_DIR = tmp_test_dir
         try:
             data = {"project": "test", "relations": [{"id": "1", "fromEntity": "A", "toEntity": "B", "relationType": "uses"}]}
             mod.save_relations("test", data)
@@ -111,10 +122,9 @@ class TestLoadSaveRelations:
 
     def test_deduplication(self, tmp_test_dir):
         import vault_relation_add as mod
-        mod.VAULT_ROOT = tmp_test_dir
-        mod.ENTITY_DIR = tmp_test_dir / "06_Diagrams" / "entity"
+        _apuntar_al_vault(tmp_test_dir)
         try:
-            mod.ENTITY_DIR.mkdir(parents=True, exist_ok=True)
+            mod._entity_dir().mkdir(parents=True, exist_ok=True)
             result1 = mod.vault_relation_add(
                 project="testproj",
                 from_entity="User",

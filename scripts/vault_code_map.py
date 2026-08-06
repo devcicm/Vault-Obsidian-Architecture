@@ -32,11 +32,29 @@ from pathlib import Path
 from typing import Any, Dict
 
 
-from vault_io import VAULT_ROOT, atomic_write_text, write_report
+from vault_io import atomic_write_text, write_report
 
-CODE_DIR = VAULT_ROOT / "11_Code"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-INDEX_FILE = CODE_DIR / ".code-index.json"
+from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioGrafo:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioGrafo(construir(root))
+
+
+def _code_dir() -> Path:
+    return _repo().dir_codigo
+
+
+INDEX_FILE = _code_dir() / ".code-index.json"
 
 
 def slugify(text: str) -> str:
@@ -127,7 +145,7 @@ def vault_code_map(project: str) -> Dict[str, Any]:
 
     safe_project = slugify(project)
 
-    map_dir = CODE_DIR / safe_project
+    map_dir = _code_dir() / safe_project
 
     map_dir.mkdir(parents=True, exist_ok=True)
 
@@ -173,7 +191,7 @@ def vault_code_map(project: str) -> Dict[str, Any]:
     return {
         "ok": True,
         **write_report(),
-        "path": str(map_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(map_path.relative_to(_raiz())).replace("\\", "/"),
         "modules": len(modules),
         "relations": len(relations),
     }

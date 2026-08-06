@@ -43,11 +43,29 @@ import re
 import sys
 import threading
 from vault_errors import wrap_main
-from vault_io import atomic_write_json, VAULT_ROOT, write_report, resolve_input_path, file_lock
+from vault_io import atomic_write_json, write_report, resolve_input_path, file_lock
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-CODE_TAG_REGISTRY = VAULT_ROOT / "00_System" / "code-tag-registry.json"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioGrafo:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioGrafo(construir(root))
+
+
+def _code_tag_registry() -> Path:
+    return _repo().registro_etiquetas_codigo
+
 
 # ─── Formatos de comentario por extensión ─────────────────────────────────────
 
@@ -141,10 +159,10 @@ def _norm_block_pattern(style: str) -> re.Pattern:
 # ─── Registry helpers ─────────────────────────────────────────────────────────
 
 def _read_registry() -> Dict[str, Any]:
-    if not CODE_TAG_REGISTRY.exists():
+    if not _code_tag_registry().exists():
         return {"version": "v30", "tags": {}}
     try:
-        return json.loads(CODE_TAG_REGISTRY.read_text(encoding="utf-8"))
+        return json.loads(_code_tag_registry().read_text(encoding="utf-8"))
     except Exception:
         return {"version": "v30", "tags": {}}
 
@@ -152,8 +170,8 @@ def _read_registry() -> Dict[str, Any]:
 def _save_registry(reg: Dict[str, Any]) -> None:
     from datetime import datetime, timezone
     reg["updated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-    CODE_TAG_REGISTRY.parent.mkdir(parents=True, exist_ok=True)
-    atomic_write_json(CODE_TAG_REGISTRY, reg)
+    _code_tag_registry().parent.mkdir(parents=True, exist_ok=True)
+    atomic_write_json(_code_tag_registry(), reg)
 
 
 #: Profundidad de reentrada del lock del registro, por hilo.
@@ -190,8 +208,8 @@ def _bajo_lock_del_registro(fn):
     def envuelta(*args, **kwargs):
         if getattr(_ANIDAMIENTO, "profundidad", 0):
             return fn(*args, **kwargs)
-        CODE_TAG_REGISTRY.parent.mkdir(parents=True, exist_ok=True)
-        with file_lock(CODE_TAG_REGISTRY, timeout=30.0):
+        _code_tag_registry().parent.mkdir(parents=True, exist_ok=True)
+        with file_lock(_code_tag_registry(), timeout=30.0):
             _ANIDAMIENTO.profundidad = 1
             try:
                 return fn(*args, **kwargs)
@@ -423,7 +441,7 @@ def vault_code_tag_scan(file_path_str: str) -> Dict[str, Any]:
     # Verify vault note exists if referenced
     vault_note_exists = False
     if vault_ref:
-        note_path = VAULT_ROOT / (vault_ref["note_path"] + ".md")
+        note_path = _raiz() / (vault_ref["note_path"] + ".md")
         vault_note_exists = note_path.exists()
 
     # Extract @norm tags

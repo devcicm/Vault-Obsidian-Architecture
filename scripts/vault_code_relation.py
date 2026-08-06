@@ -36,11 +36,29 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-from vault_io import VAULT_ROOT, atomic_write_text, atomic_write_json, write_report
+from vault_io import atomic_write_text, atomic_write_json, write_report
 
-CODE_DIR = VAULT_ROOT / "11_Code"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-INDEX_FILE = CODE_DIR / ".code-index.json"
+from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioGrafo:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioGrafo(construir(root))
+
+
+def _code_dir() -> Path:
+    return _repo().dir_codigo
+
+
+INDEX_FILE = _code_dir() / ".code-index.json"
 
 
 RELATION_TYPES = [
@@ -74,7 +92,7 @@ def load_index() -> Dict[str, Any]:
 
 
 def save_index(data: Dict[str, Any]) -> None:
-    CODE_DIR.mkdir(parents=True, exist_ok=True)
+    _code_dir().mkdir(parents=True, exist_ok=True)
 
     # atomic_write_* y no `open(..., "w")`: el escaneo de secretos, el
     # saneado de encoding y el temp+replace viven ahí. Escribir en crudo los
@@ -157,7 +175,7 @@ def generate_code_map(project: str, index: Dict[str, Any]) -> str:
 def save_code_map(project: str, mermaid_content: str) -> Path:
     safe_project = slugify(project)
 
-    map_dir = CODE_DIR / safe_project
+    map_dir = _code_dir() / safe_project
 
     map_dir.mkdir(parents=True, exist_ok=True)
 
@@ -256,7 +274,7 @@ def vault_code_relation(
         "relation_type": relation_type,
         "cardinality": cardinality,
         "already_existed": already_existed,
-        "mapPath": str(map_path.relative_to(VAULT_ROOT)),
+        "mapPath": _repo().relativa(map_path),
         "nodes": len(modules),
         "edges": len(relations),
         "message": f"Relation added: {from_file} --[{relation_type}]--> {to_file}. Code map updated.",

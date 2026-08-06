@@ -380,6 +380,10 @@ python vault_graph.py
 python vault_graph.py --project mi-api
 ```
 
+Desde v40.0 las once tools del contexto **Grafo** resuelven sus rutas al usarlas, no al importarse: `99_Index/graph.json`, `graph-enriched.json`, `11_Code/.code-index.json`, el registro de etiquetas de código y los diagramas de entidad se declaran una sola vez en `vault/grafo/repositorio.py`. Antes eran dieciocho constantes congeladas repartidas entre once módulos, y solo once ubicaciones distintas: `GRAPH_FILE` se calculaba en tres ficheros y `CODE_DIR` en cinco (AP-05 + AP-49). El efecto visible es que `set_vault_root()` ya alcanza a estas tools.
+
+En el mismo paso se corrigió que `vault_graph` devolviera `savedTo: "99_Index\graph.json"` en Windows mientras `vault_graph_merge` ya devolvía la forma POSIX — la misma ruta con dos formas dentro del mismo contexto, y la de Windows no la resuelve quien lee el envelope desde otra plataforma.
+
 ---
 
 ### `vault_graph_merge.py`

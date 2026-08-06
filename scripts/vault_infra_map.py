@@ -43,11 +43,29 @@ def utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
 
-from vault_io import VAULT_ROOT, atomic_write_text, write_report
+from vault_io import atomic_write_text, write_report
 
-INFRA_DIR = VAULT_ROOT / "09_Infrastructure"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-INDEX_FILE = INFRA_DIR / ".infra-index.json"
+from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioGrafo:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioGrafo(construir(root))
+
+
+def _infra_dir() -> Path:
+    return _repo().dir_infra
+
+
+INDEX_FILE = _infra_dir() / ".infra-index.json"
 
 
 LOCATIONS = [
@@ -206,7 +224,7 @@ def vault_infra_map(
     if not components:
         return {
             "ok": True,
-            "path": str((INFRA_DIR / "infra-map.md").relative_to(VAULT_ROOT)).replace(
+            "path": str((_infra_dir() / "infra-map.md").relative_to(_raiz())).replace(
                 "\\", "/"
             ),
             "nodesTotal": 0,
@@ -229,7 +247,7 @@ def vault_infra_map(
 
     mermaid_content = generate_infra_map(components, project, location)
 
-    map_path = INFRA_DIR / "infra-map.md"
+    map_path = _infra_dir() / "infra-map.md"
 
     frontmatter = ["---"]
 
@@ -255,7 +273,7 @@ def vault_infra_map(
     return {
         "ok": True,
         **write_report(),
-        "path": str(map_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(map_path.relative_to(_raiz())).replace("\\", "/"),
         "nodesTotal": len(filtered),
         "edgesTotal": edges_total,
     }

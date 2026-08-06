@@ -7,7 +7,7 @@ nada de lo que las tools usan de verdad.
     vault_audit.VAULT_ROOT : ...\\vault-sandbox   <-- el que lee y escribe
 
 Causa: 89 de 98 módulos hacen `from vault_io import VAULT_ROOT` y derivan sus
-rutas EN EL IMPORT (`CODE_DIR = VAULT_ROOT / "11_Code"`), congelando un `Path`
+rutas EN EL IMPORT (`SYSTEM_DIR = VAULT_ROOT / "00_System"`), congelando un `Path`
 literal. La API pública de cambiar el vault mentía, y `CLAUDE.md` ya declaraba
 `get_vault_root()` como fuente única: el código no cumplía su propia tabla.
 
@@ -37,7 +37,6 @@ def raiz_restaurada():
 
 def test_cambiar_el_vault_alcanza_a_los_modulos(tmp_path, raiz_restaurada):
     import vault_audit
-    import vault_code_map
 
     nuevo = tmp_path / "otro-vault"
     vault_io.set_vault_root(nuevo)
@@ -46,7 +45,7 @@ def test_cambiar_el_vault_alcanza_a_los_modulos(tmp_path, raiz_restaurada):
     assert vault_audit.VAULT_ROOT == nuevo.resolve(), (
         "el auditor sigue mirando el vault anterior"
     )
-    assert vault_code_map.CODE_DIR == nuevo.resolve() / "11_Code", (
+    assert vault_audit.SYSTEM_DIR == nuevo.resolve() / "00_System", (
         "las constantes derivadas quedaron ancladas al vault anterior"
     )
 
@@ -94,8 +93,11 @@ def test_la_mayoria_de_modulos_derivan_del_import():
         py.name for py in SCRIPTS.glob("vault_*.py")
         if patron.search(py.read_text(encoding="utf-8"))
     ]
-    assert len(congelan) > 50, (
-        "si esto baja, revisa si set_vault_root() sigue necesitando reanclar"
+    # La cifra baja cada vez que un contexto se migra al dominio: quien impide
+    # que suba es `vault_arch --check`, con su baseline que solo encoge. Aquí
+    # solo se comprueba que la razón de reanclar sigue viva.
+    assert len(congelan) > 10, (
+        "si esto baja a 0, revisa si set_vault_root() sigue necesitando reanclar"
     )
 
 

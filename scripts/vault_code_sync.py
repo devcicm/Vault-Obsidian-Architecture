@@ -29,10 +29,31 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT, write_report, resolve_input_path
+from vault_io import write_report, resolve_input_path
 
-CODE_DIR = VAULT_ROOT / "11_Code"
-CODE_INDEX = CODE_DIR / ".code-index.json"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioGrafo:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioGrafo(construir(root))
+
+
+def _code_dir() -> Path:
+    return _repo().dir_codigo
+
+
+def _code_index() -> Path:
+    return _repo().indice_codigo
+
 
 # Extensions considered source code (auditable for @vault: tags)
 _CODE_EXTS = frozenset(
@@ -87,7 +108,7 @@ def _vault_ref_in_file(file_path: Path) -> Optional[str]:
 
 def _collect_code_notes(project: Optional[str]) -> List[Tuple[Path, Dict[str, str]]]:
     """Collect all vault notes in 11_Code/ (optionally filtered by project)."""
-    root = CODE_DIR / project if project else CODE_DIR
+    root = _code_dir() / project if project else _code_dir()
     if not root.exists():
         return []
     notes = []
@@ -139,7 +160,7 @@ def vault_code_sync(
     # ── Pass 1: vault notes → source files ───────────────────────────────────
     notes = _collect_code_notes(project)
     for note_path, meta in notes:
-        note_rel = str(note_path.relative_to(VAULT_ROOT)).replace("\\", "/")
+        note_rel = str(note_path.relative_to(_raiz())).replace("\\", "/")
         note_ref = note_rel.removesuffix(".md")
 
         source_file_str = meta.get("file_path") or meta.get("source_file") or ""
@@ -200,8 +221,8 @@ def vault_code_sync(
     else:
         # Derive likely project source root from code index
         try:
-            if CODE_INDEX.exists():
-                index = json.loads(CODE_INDEX.read_text(encoding="utf-8"))
+            if _code_index().exists():
+                index = json.loads(_code_index().read_text(encoding="utf-8"))
                 for mod in index.get("modules", []):
                     if project and mod.get("project") != project:
                         continue
@@ -220,7 +241,7 @@ def vault_code_sync(
             pass
 
     all_note_refs = {
-        str(p.relative_to(VAULT_ROOT)).replace("\\", "/").removesuffix(".md")
+        str(p.relative_to(_raiz())).replace("\\", "/").removesuffix(".md")
         for p, _ in notes
     }
 
@@ -234,7 +255,7 @@ def vault_code_sync(
                     {
                         "source_file": str(src_file),
                         "vault_ref_declared": ref,
-                        "note": f"Vault note {ref}.md not found in {CODE_DIR.name}/",
+                        "note": f"Vault note {ref}.md not found in {_code_dir().name}/",
                     }
                 )
 

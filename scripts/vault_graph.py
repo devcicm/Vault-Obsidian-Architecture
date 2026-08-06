@@ -35,13 +35,34 @@ from typing import Any, Dict, List, Set
 
 # Configuration
 
-from vault_io import VAULT_ROOT, atomic_write_json, write_report
+from vault_io import atomic_write_json, write_report
 from vault_registry import ORDERED_SECTIONS
 
-GRAPH_FILE = VAULT_ROOT / "99_Index" / "graph.json"
-# `SYSTEM_DIR` se usaba en la lectura de `move-log.json` sin estar definido en
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioGrafo:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioGrafo(construir(root))
+
+
+def _graph_file() -> Path:
+    return _repo().grafo
+
+
+def _system_dir() -> Path:
+    return _repo().dir_sistema
+
+# `_system_dir()` se usaba en la lectura de `move-log.json` sin estar definido en
 # ningún sitio: la rama de nodos movidos lanzaba NameError desde que se escribió.
-SYSTEM_DIR = VAULT_ROOT / "00_System"
 
 
 # Only scan notes inside these standard sections — never root files or scripts/
@@ -59,7 +80,7 @@ def _is_vault_note(note_path: Path) -> bool:
     """Return True only for .md files inside a standard vault section."""
 
     try:
-        parts = note_path.relative_to(VAULT_ROOT).parts
+        parts = note_path.relative_to(_raiz()).parts
 
     except ValueError:
         return False
@@ -90,7 +111,7 @@ def _build_slug_map(all_files: List[Path]) -> Dict[str, str]:
     slug_map: Dict[str, str] = {}
 
     for p in all_files:
-        rel = str(p.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(p.relative_to(_raiz())).replace("\\", "/")
 
         rel_no_ext = rel.lower().removesuffix(".md")
 
@@ -165,7 +186,7 @@ def vault_graph() -> Dict[str, Any]:
 
     all_files = [
         p
-        for p in VAULT_ROOT.rglob("*.md")
+        for p in _raiz().rglob("*.md")
         if _is_vault_note(p) and not any(part.startswith(".") for part in p.parts)
     ]
 
@@ -181,7 +202,7 @@ def vault_graph() -> Dict[str, Any]:
         except (UnicodeDecodeError, PermissionError):
             continue
 
-        rel_path = str(note_path.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel_path = str(note_path.relative_to(_raiz())).replace("\\", "/")
 
         # Parse frontmatter
 
@@ -258,9 +279,9 @@ def vault_graph() -> Dict[str, Any]:
         node["status"] = "active"
 
     # Check for deleted nodes from previous graph
-    if GRAPH_FILE.exists():
+    if _graph_file().exists():
         try:
-            old_graph = json.loads(GRAPH_FILE.read_text(encoding="utf-8"))
+            old_graph = json.loads(_graph_file().read_text(encoding="utf-8"))
             old_nodes = old_graph.get("nodes", {})
 
             for old_path in old_nodes:
@@ -278,7 +299,7 @@ def vault_graph() -> Dict[str, Any]:
             pass
 
     # Check for moved nodes from move-log
-    move_log = SYSTEM_DIR / "move-log.json"
+    move_log = _system_dir() / "move-log.json"
     if move_log.exists():
         try:
             move_data = json.loads(move_log.read_text(encoding="utf-8"))
@@ -313,17 +334,17 @@ def vault_graph() -> Dict[str, Any]:
         "brokenLinks": broken_links,
     }
 
-    GRAPH_FILE.parent.mkdir(parents=True, exist_ok=True)
+    _graph_file().parent.mkdir(parents=True, exist_ok=True)
 
     # Escritura atómica: además de temp+replace, es lo que hace que la
     # regeneración quede contada en el ledger de AP-37. Con `json.dump` directo
     # la tool devolvía `written: 0` habiendo reescrito el grafo entero.
-    atomic_write_json(GRAPH_FILE, graph_data)
+    atomic_write_json(_graph_file(), graph_data)
 
     return {
         "ok": True,
         **write_report(),
-        "savedTo": str(GRAPH_FILE.relative_to(VAULT_ROOT)),
+        "savedTo": _repo().relativa(_graph_file()),
         "stats": graph_data["stats"],
         "orphans": orphans[:10],  # Top 10
         "brokenLinks": broken_links[:10],  # Top 10

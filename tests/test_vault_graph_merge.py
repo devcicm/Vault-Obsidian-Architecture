@@ -10,6 +10,19 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 
+def _apuntar_al_vault(raiz):
+    """Se apunta la raíz, no cada constante del módulo.
+
+    Antes se reasignaba `mod.VAULT_ROOT`, que desde v40.0 ya no existe: el
+    módulo resuelve la raíz al usarla (AP-49). Reasignarla dejó de tener efecto
+    y el test habría corrido contra el vault detectado sin avisar. El override
+    lo deshace el fixture autouse de `conftest.py`.
+    """
+    import vault_io
+
+    vault_io.set_vault_root(raiz)
+
+
 class TestOntologyLoading:
     def test_ontology_file_exists(self, scripts_dir):
         ontology_file = scripts_dir / "vault_ontology.json"
@@ -86,20 +99,19 @@ class TestClosestPredicate:
 
 class TestBuildWikiLinkGraph:
     def test_empty_vault(self, tmp_test_dir):
-        from vault_graph_merge import _build_wiki_link_graph, VAULT_ROOT as _vr
+        from vault_graph_merge import _build_wiki_link_graph
         import vault_graph_merge as mod
-        original = mod.VAULT_ROOT
-        mod.VAULT_ROOT = tmp_test_dir
+        _apuntar_al_vault(tmp_test_dir)
         try:
             nodes, edges, broken, stem_map = _build_wiki_link_graph()
             assert len(nodes) == 0
             assert len(edges) == 0
         finally:
-            mod.VAULT_ROOT = original
+            pass
 
     def test_single_note_no_links(self, tmp_test_dir):
         import vault_graph_merge as mod
-        mod.VAULT_ROOT = tmp_test_dir
+        _apuntar_al_vault(tmp_test_dir)
         try:
             (tmp_test_dir / "07_Knowledge").mkdir()
             note = tmp_test_dir / "07_Knowledge" / "test-note.md"
@@ -113,11 +125,11 @@ class TestBuildWikiLinkGraph:
             assert nodes["07_Knowledge/test-note.md"]["class"] == "knowledge"
             assert len(edges) == 0
         finally:
-            mod.VAULT_ROOT = mod.VAULT_ROOT  # keep as is for other tests
+            pass
 
     def test_two_notes_with_wikilink(self, tmp_test_dir):
         import vault_graph_merge as mod
-        mod.VAULT_ROOT = tmp_test_dir
+        _apuntar_al_vault(tmp_test_dir)
         try:
             (tmp_test_dir / "07_Knowledge").mkdir()
             note_a = tmp_test_dir / "07_Knowledge" / "note-a.md"
@@ -164,9 +176,7 @@ class TestDetectOrphans:
 class TestSiloDetection:
     def test_no_files(self, tmp_test_dir):
         import vault_graph_merge as mod
-        mod.ENTITY_DIR = tmp_test_dir / "06_Diagrams" / "entity"
-        mod.CODE_INDEX = tmp_test_dir / "11_Code" / ".code-index.json"
-        mod.ENRICHED_FILE = tmp_test_dir / "99_Index" / "graph-enriched.json"
+        _apuntar_al_vault(tmp_test_dir)
         try:
             result = mod._detect_silos()
             assert not result.get("entity_relations_exist", False)
