@@ -841,6 +841,23 @@ python vault_reindex.py --check               # solo verifica estado del índice
 
 > Usar `--check` al inicio de cada sesión para verificar que el índice está operativo.
 
+Desde v40.0 las cuatro tools de este grupo son **adaptadores de transporte** del
+contexto Índices (`vault/indices/`): argv y envelope intactos, pero la resolución
+de rutas y el criterio de «qué es una nota indexable» viven en el dominio y
+reciben la raíz en vez de derivarla al importar (AP-49). Ocho constantes
+congeladas desaparecieron con la migración.
+
+Dos consecuencias que se notan:
+
+- **`--check` y la reconstrucción comparten enumerador** (`vault/indices/enumeracion.py`).
+  No es una limpieza estética: si el check midiera con criterio propio, reportaría
+  un desfase que el reindexado no cierra nunca y la puerta quedaría roja para
+  siempre (AP-44).
+- **Un vault colgado de un directorio con punto ya se indexa.** El filtro de
+  tramos ocultos miraba la ruta *absoluta*, así que un vault en `~/.claude/`
+  se reconstruía entero como vacío, sin error. Ahora el criterio es relativo al
+  vault: se mide el vault, no la máquina que lo aloja.
+
 ---
 
 ## Grupo 16 — Bibliografía
@@ -1398,6 +1415,16 @@ python vault_folder_registry.py --add "11_Code/tests"
 python vault_folder_registry.py --remove "11_Code/tests"
 python vault_folder_registry.py --cleanup       # quita del registro las que ya no existen
 ```
+
+Las secciones canónicas salen de `vault_registry`, nunca de una lista propia: la
+copia literal que vivía aquí se quedó en 13 mientras el estándar ya tenía 22, y
+las carpetas personalizadas de las nueve restantes eran invisibles sin que nada
+fallara (AP-05 dentro del propio toolkit).
+
+Desde v40.0 las rutas del registro salen del contexto Índices, y con la migración
+se corrigió que `--scan` grabase `11_Code\tests` en Windows mientras `--add` y
+`--remove` reciben `11_Code/tests`: una carpeta detectada automáticamente no se
+podía quitar por su nombre, y el fichero no era portable entre plataformas.
 
 ---
 

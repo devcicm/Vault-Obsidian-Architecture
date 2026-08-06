@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 
 """
-Vault Folder Registry — Auto-detección y registro de carpetas personalizadas.
+Vault Folder Registry — adaptador de transporte del contexto Índices.
 
 Detecta carpetas no estándar dentro de las secciones del vault, las registra
-automáticamente y las incluye en índices y búsquedas.
+automáticamente y las incluye en índices y búsquedas. Desde v40.0 este fichero
+no decide nada: las reglas viven en `vault/indices/carpetas.py`, con la raíz
+inyectada en vez de derivada al importar (AP-49).
+
+La ruta y el nombre no cambian: `scripts/vault_folder_registry.py` es lo que
+resuelven el tool-spec, `cli/registry.py`, el runner del MCP y `vault_smoke`.
 
 Usage:
     python vault_folder_registry.py
@@ -17,209 +22,77 @@ Usage:
 import argparse
 import json
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT
 from vault_registry import ORDERED_SECTIONS
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-SYSTEM_DIR = VAULT_ROOT / "00_System"
-REGISTRY_FILE = SYSTEM_DIR / "custom-folders.json"
+from vault.indices.carpetas import ServicioCarpetas  # noqa: E402
+from vault.indices.repositorio import RepositorioIndices  # noqa: E402
+from vault.kernel import construir  # noqa: E402
 
-
-# Derivado, no declarado. Esta lista era una copia literal congelada en 13
-# secciones mientras el estándar ya tenía 22: las carpetas personalizadas
-# dentro de `12_Bibliography`, `13_Flows`, `14_Requirements`, `15_Tests`,
-# `16_AI_Governance`, `17_Preferences`, `18_Bugs`, `19_Audits` y
-# `20_Quarantine` eran invisibles para la detección y para la indexación.
-#
-# La fuente única de "qué secciones tiene un vault" es `vault_registry.SECTIONS`
-# —la que ya consumen `vault_init` y `vault_master_index`—. El nombre se
-# conserva (no-derogación): quien importe `STANDARD_SECTIONS` sigue teniendo
-# el mismo contrato, ahora sin poder desincronizarse.
+#: Se conserva el nombre publicado (no-derogación): quien importe
+#: `STANDARD_SECTIONS` sigue teniendo el mismo contrato. Deriva del registro,
+#: nunca de una lista copiada — la copia se quedó en 13 secciones mientras el
+#: estándar ya tenía 22.
 STANDARD_SECTIONS = frozenset(ORDERED_SECTIONS)
 
 
-def get_registry() -> Dict[str, Any]:
+def _servicio(root=None) -> ServicioCarpetas:
+    return ServicioCarpetas(RepositorioIndices(construir(root)))
+
+
+def get_registry(root=None) -> Dict[str, Any]:
     """Carga el registro de carpetas."""
-    if REGISTRY_FILE.exists():
-        return json.loads(REGISTRY_FILE.read_text(encoding="utf-8"))
-    return {
-        "detected_at": None,
-        "updated_at": None,
-        "folders": [],
-    }
+    return _servicio(root).registro()
 
 
-def save_registry(registry: Dict[str, Any]) -> None:
+def save_registry(registry: Dict[str, Any], root=None) -> None:
     """Guarda el registro de carpetas."""
-    SYSTEM_DIR.mkdir(parents=True, exist_ok=True)
-    registry["updated_at"] = datetime.now(timezone.utc).isoformat()
-    REGISTRY_FILE.write_text(
-        json.dumps(registry, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
+    _servicio(root).guardar(registry)
 
 
-def detect_custom_folders() -> List[Dict[str, Any]]:
+def detect_custom_folders(root=None) -> List[Dict[str, Any]]:
     """Detecta carpetas personalizadas dentro de las secciones estándar."""
-    detected = []
-
-    for section in STANDARD_SECTIONS:
-        section_path = VAULT_ROOT / section
-        if not section_path.exists():
-            continue
-
-        for item in section_path.iterdir():
-            if not item.is_dir():
-                continue
-            if item.name.startswith("."):
-                continue
-            if item.name.startswith("_"):
-                continue
-
-            relative_path = str(item.relative_to(VAULT_ROOT))
-
-            detected.append(
-                {
-                    "path": relative_path,
-                    "name": item.name,
-                    "section": section,
-                    "detected_at": datetime.now(timezone.utc).isoformat(),
-                    "type": "subfolder",
-                    "created_by": "unknown",
-                }
-            )
-
-            for subitem in item.iterdir():
-                if subitem.is_dir():
-                    sub_relative = str(subitem.relative_to(VAULT_ROOT))
-                    detected.append(
-                        {
-                            "path": sub_relative,
-                            "name": subitem.name,
-                            "section": section,
-                            "parent": relative_path,
-                            "detected_at": datetime.now(timezone.utc).isoformat(),
-                            "type": "subfolder",
-                            "created_by": "unknown",
-                        }
-                    )
-
-    return detected
+    return _servicio(root).detectar()
 
 
-def scan_and_update() -> Dict[str, Any]:
+def scan_and_update(root=None) -> Dict[str, Any]:
     """Escanea y actualiza el registro de carpetas."""
-    registry = get_registry()
-    detected = detect_custom_folders()
-
-    existing_paths = {f["path"] for f in registry.get("folders", [])}
-    new_folders = [f for f in detected if f["path"] not in existing_paths]
-
-    if new_folders:
-        registry["folders"].extend(new_folders)
-
-    registry["detected_at"] = datetime.now(timezone.utc).isoformat()
-    save_registry(registry)
-
-    return {
-        "ok": True,
-        "total_folders": len(registry["folders"]),
-        "new_folders": len(new_folders),
-        "new_paths": [f["path"] for f in new_folders],
-    }
+    return _servicio(root).escanear()
 
 
-def list_folders() -> List[Dict[str, Any]]:
+def list_folders(root=None) -> List[Dict[str, Any]]:
     """Lista carpetas registradas."""
-    registry = get_registry()
-    return registry.get("folders", [])
+    return _servicio(root).listar()
 
 
-def add_folder(path: str, created_by: str = "manual") -> Dict[str, Any]:
+def add_folder(path: str, created_by: str = "manual", root=None) -> Dict[str, Any]:
     """Agrega una carpeta manualmente."""
-    registry = get_registry()
-
-    for folder in registry.get("folders", []):
-        if folder["path"] == path:
-            return {"ok": False, "error": "Carpeta ya registrada"}
-
-    section = path.split("/")[0] if "/" in path else ""
-
-    folder_entry = {
-        "path": path,
-        "name": Path(path).name,
-        "section": section,
-        "detected_at": datetime.now(timezone.utc).isoformat(),
-        "type": "subfolder",
-        "created_by": created_by,
-    }
-
-    registry["folders"].append(folder_entry)
-    save_registry(registry)
-
-    return {"ok": True, "folder": folder_entry}
+    return _servicio(root).anadir(path, created_by)
 
 
-def remove_folder(path: str) -> Dict[str, Any]:
+def remove_folder(path: str, root=None) -> Dict[str, Any]:
     """Elimina una carpeta del registro."""
-    registry = get_registry()
-
-    original_count = len(registry.get("folders", []))
-    registry["folders"] = [f for f in registry.get("folders", []) if f["path"] != path]
-
-    if len(registry["folders"]) == original_count:
-        return {"ok": False, "error": "Carpeta no encontrada en el registro"}
-
-    save_registry(registry)
-    return {"ok": True, "removed": path}
+    return _servicio(root).eliminar(path)
 
 
-def check_orphan_folders() -> List[str]:
+def check_orphan_folders(root=None) -> List[str]:
     """Detecta carpetas registradas que ya no existen."""
-    registry = get_registry()
-    orphans = []
-
-    for folder in registry.get("folders", []):
-        folder_path = VAULT_ROOT / folder["path"]
-        if not folder_path.exists():
-            orphans.append(folder["path"])
-
-    return orphans
+    return _servicio(root).huerfanas()
 
 
-def cleanup_orphans() -> Dict[str, Any]:
+def cleanup_orphans(root=None) -> Dict[str, Any]:
     """Limpia carpetas huérfanas del registro."""
-    registry = get_registry()
-    orphans = check_orphan_folders()
-
-    if not orphans:
-        return {"ok": True, "removed": 0}
-
-    registry["folders"] = [
-        f for f in registry.get("folders", []) if f["path"] not in orphans
-    ]
-    save_registry(registry)
-
-    return {
-        "ok": True,
-        "removed": len(orphans),
-        "orphans": orphans,
-    }
+    return _servicio(root).limpiar_huerfanas()
 
 
-def get_folders_for_indexing() -> List[str]:
+def get_folders_for_indexing(root=None) -> List[str]:
     """Retorna lista de carpetas para indexación."""
-    registry = get_registry()
-    folders = [f["path"] for f in registry.get("folders", [])]
-
-    all_folders = list(STANDARD_SECTIONS)
-    all_folders.extend(folders)
-
-    return all_folders
+    return _servicio(root).carpetas_indexables()
 
 
 def main():
@@ -251,22 +124,23 @@ Ejemplos:
     parser.add_argument("--json", action="store_true", help="Salida JSON")
 
     args = parser.parse_args()
+    servicio = _servicio()
 
     if args.scan:
-        result = scan_and_update()
+        result = servicio.escanear()
     elif args.add:
-        result = add_folder(args.add, created_by="manual")
+        result = servicio.anadir(args.add, created_by="manual")
     elif args.remove:
-        result = remove_folder(args.remove)
+        result = servicio.eliminar(args.remove)
     elif args.cleanup:
-        result = cleanup_orphans()
+        result = servicio.limpiar_huerfanas()
     else:
-        folders = list_folders()
+        folders = servicio.listar()
         result = {
             "ok": True,
             "total": len(folders),
             "folders": folders,
-            "orphan_folders": check_orphan_folders(),
+            "orphan_folders": servicio.huerfanas(),
         }
 
     if args.json:
@@ -280,7 +154,7 @@ Ejemplos:
                         f"  - {folder['path']} ({folder.get('created_by', 'unknown')})"
                     )
                 if result.get("orphan_folders"):
-                    print(f"\nCarpetas huérfanas (no existen):")
+                    print("\nCarpetas huérfanas (no existen):")
                     for o in result["orphan_folders"]:
                         print(f"  - {o}")
             elif "new_folders" in result:

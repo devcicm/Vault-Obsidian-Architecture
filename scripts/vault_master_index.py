@@ -1,150 +1,50 @@
 #!/usr/bin/env python3
 
 """
+Vault Master Index — adaptador de transporte del contexto Índices.
 
-Vault Master Index — Generate 99_Index/index.md (vault-wide master index).
+Genera `99_Index/index.md`, el índice maestro del vault: una fila por sección
+con su conteo de notas y el enlace a su índice. Desde v40.0 la composición vive
+en `vault/indices/maestro.py`; aquí solo se parsea argv y se imprime el envelope.
 
-
-
-Calls vault_section_index for each of the 12 standard sections (00_System…11_Code),
-
-then writes 99_Index/index.md with a summary table linking to each section index.
-
-
+La indexación de cada sección se **inyecta** (`vault_section_index`) en vez de
+importarse dentro del dominio: el maestro no sabe indexar una sección, y eso es
+intencionado — si supiera, habría dos implementaciones de lo mismo (AP-48).
 
 Usage:
-
     python vault_master_index.py
-
 """
 
 import json
-
 import sys
-
-from vault_errors import wrap_main
-from vault_lib import utcnow
 from pathlib import Path
-
 from typing import Any, Dict
 
+from vault_errors import wrap_main
+from vault_io import write_report
+from vault_registry import section_description
 
-from vault_io import VAULT_ROOT, write_report
-from vault_registry import ORDERED_SECTIONS, section_name, section_description
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-INDEX_DIR = VAULT_ROOT / "99_Index"
-
-
-def vault_master_index() -> Dict[str, Any]:
-    """
-
-    Generate 99_Index/index.md as the vault-wide master index.
+from vault.indices.maestro import ServicioIndiceMaestro  # noqa: E402
+from vault.indices.repositorio import RepositorioIndices  # noqa: E402
+from vault.kernel import construir  # noqa: E402
 
 
-
-    Internally calls vault_section_index for each section, then produces
-
-    a summary table in 99_Index/index.md.
-
-
+def vault_master_index(root=None) -> Dict[str, Any]:
+    """Genera `99_Index/index.md` como índice maestro del vault.
 
     Returns:
-
-        {"ok": True, "path": "99_Index/index.md", "sectionsTotal": 12, "notesTotal": 108}
-
+        {"ok": True, "path": "99_Index/index.md", "sectionsTotal": 22, "notesTotal": 108}
     """
-
-    # Import here to avoid circular dependency issues when scripts are used standalone
-
-    sys.path.insert(0, str(Path(__file__).parent))
-
     from vault_section_index import vault_section_index
 
-    section_results = []
-
-    total_notes = 0
-
-    for section in ORDERED_SECTIONS:
-        section_path = VAULT_ROOT / section
-
-        if not section_path.exists():
-            section_results.append({"section": section, "noteCount": 0, "ok": False})
-
-            continue
-
-        result = vault_section_index(section, include_subdirs=True)
-
-        note_count = result.get("noteCount", 0)
-
-        total_notes += note_count
-
-        section_results.append(
-            {
-                "section": section,
-                "noteCount": note_count,
-                "ok": result.get("ok", False),
-            }
-        )
-
-    # Generate 99_Index/index.md
-
-    now = utcnow()
-
-    INDEX_DIR.mkdir(parents=True, exist_ok=True)
-
-    master_path = INDEX_DIR / "index.md"
-
-    lines = [
-        "# Vault — Índice Maestro",
-        "",
-        f"> Generado automáticamente · {now} · {total_notes} nota(s) en {len(ORDERED_SECTIONS)} secciones",
-        "",
-        "| Sección | Descripción | Notas | Índice |",
-        "|---|---|---|---|",
-    ]
-
-    for r in section_results:
-        section = r["section"]
-
-        desc = section_description(section)
-
-        count = r["noteCount"]
-
-        # AP-21 compliance: NO path-anchored wiki-links. Use the section folder
-        # name in backticks + plain text. The reader navigates by opening the
-        # section's index.md from the editor.
-        if r["ok"]:
-            index_link = f"`{section}/index.md`"
-        else:
-            index_link = "_(vacía)_"
-
-        lines.append(f"| `{section}` | {desc} | {count} | {index_link} |")
-
-    lines += [
-        "",
-        "---",
-        "",
-        "> **Navegación:** [[vault-hub|Hub]]  ·  [[vault-commands|Comandos]]",
-        "",
-        "## Índices técnicos",
-        "",
-        "| Archivo | Descripción |",
-        "|---|---|",
-        "| `99_Index/search-index.json` | Índice de búsqueda full-text (auto-generado por vault_write) |",
-        "| `99_Index/graph.json` | Grafo de wiki-links, orphans y broken links (vault_graph) |",
-        "| `99_Index/hash-index.json` | Hash + size + CIA por nota (auto-generado por vault_reindex) |",
-        "",
-    ]
-
-    master_path.write_text("\n".join(lines), encoding="utf-8")
-
-    return {
-        "ok": True,
-        **write_report(),
-        "path": str(master_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
-        "sectionsTotal": len(ORDERED_SECTIONS),
-        "notesTotal": total_notes,
-    }
+    servicio = ServicioIndiceMaestro(
+        RepositorioIndices(construir(root)),
+        indexar_seccion=lambda s: vault_section_index(s, include_subdirs=True),
+        describir_seccion=section_description,
+    )
+    return {"ok": True, **write_report(), **servicio.generar()}
 
 
 def main() -> int:
@@ -154,18 +54,15 @@ def main() -> int:
         description="Vault Master Index -- Generate 99_Index/index.md",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-
 Ejemplos:
 
   python vault_master_index.py
-
-
 
 Notas:
 
   - VAULT_ROOT se detecta automaticamente desde la ubicacion del script
 
-  - Llama a vault_section_index para cada una de las 12 secciones estandar
+  - Llama a vault_section_index para cada seccion declarada en vault_registry
 
   - Genera 99_Index/index.md con tabla resumen de todo el vault
 

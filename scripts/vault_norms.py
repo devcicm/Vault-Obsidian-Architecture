@@ -1370,10 +1370,10 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "usan, pero no puede reapuntar a un módulo que ya calculó su ruta al "
             "cargar. La inyección parece disponible y no lo está, que es peor que "
             "no tenerla — quien la usa cree haber redirigido la escritura.\n\n"
-            "Medido en v40.0 por el propio guard: **77 vínculos congelados en "
-            "58 módulos** —eran 82 en 62 antes de migrar el contexto de "
-            "Durabilidad al dominio, y bajan cada vez que un contexto se "
-            "migra—. La cifra es la que "
+            "Medido en v40.0 por el propio guard: **69 vínculos congelados en "
+            "54 módulos** —eran 82 en 62 antes de empezar a migrar contextos al "
+            "dominio; Durabilidad los dejó en 77 y Índices en 69, y bajan cada "
+            "vez que un contexto se migra—. La cifra es la que "
             "cuenta `vault_arch --check`, no una estimación a ojo: la norma y su "
             "puerta miden lo mismo o la norma no es comprobable. La consecuencia visible es "
             "que `cli/runner.py` aísla cada tool en un subproceso, y su propio "
@@ -2660,7 +2660,9 @@ def vault_norms_audit(root: Optional[Path] = None) -> Dict[str, Any]:
 
         # La bitácora vive en el vault detectado; con --root a otro vault los
         # caminos no coinciden y el chequeo diría cualquier cosa menos la verdad.
-        if _tags.VAULT_ROOT.resolve() != root:
+        # `_raiz()` resuelve al usarse: la constante congelada que había aquí
+        # desapareció al migrar el contexto Índices al dominio (AP-49).
+        if _tags._raiz().resolve() != root:
             raise ImportError("AP-39 solo audita el vault detectado")
 
         familias: Dict[str, Dict[str, List[str]]] = {}
