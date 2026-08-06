@@ -6327,7 +6327,7 @@ temp/
 
 ---
 
-### v39.5 — 2026-08-06 `git: pending`
+### v39.5 — 2026-08-06 `git: 0f5b505`
 
 **Cableado que nadie había seguido hasta el final**
 
