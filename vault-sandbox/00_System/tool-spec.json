@@ -3232,6 +3232,7 @@
       "status": "active",
       "required_args": [],
       "declared_returns": [
+        "constant_generators",
         "error",
         "error_code",
         "expected_range",

@@ -3540,6 +3540,38 @@ def check_contracts(spec_path: Optional[str] = None) -> Dict[str, Any]:
                 f"{nombre}: status={estado!r}, se esperaba uno de {sorted(ESTADOS_SIN_CATALOGO)}",
             )
 
+    # AP-48 — implementación paralela por camino de acceso.
+    #
+    # El servidor MCP puede resolver una tool con backend nativo en Node en vez
+    # de lanzar el script. Eso es legítimo solo cuando **no hay** script: si los
+    # dos existen, hay dos implementaciones bajo un nombre y un contrato, y cuál
+    # se ejecuta depende de por dónde entre el llamante. Medido en v39.4: siete
+    # de las nueve nativas tenían `.py`, ninguna coincidía con su contrato, y la
+    # de `vault_graph` devolvía `ok: true` sin escribir el grafo.
+    #
+    # Se lee el `.mjs` porque es lo que se ejecuta; una lista paralela en Python
+    # sería el mismo defecto que la norma persigue.
+    servidor = Path(__file__).resolve().parent.parent / "mcp" / "nodejs" / "vault-mcp-server.mjs"
+    result["js_native"] = []
+    if servidor.is_file():
+        m = re.search(
+            r"const JS_NATIVE_TOOLS = new Set\(\[(.*?)\]\)",
+            servidor.read_text(encoding="utf-8"), re.S,
+        )
+        if m is None:
+            problema("js_native_ilegible", f"no se pudo leer JS_NATIVE_TOOLS de {servidor.name}")
+        else:
+            nativas = sorted(set(re.findall(r'"(vault_[a-z0-9_]+)"', m.group(1))))
+            result["js_native"] = nativas
+            scripts_dir = Path(__file__).resolve().parent
+            for nombre in nativas:
+                if (scripts_dir / f"{nombre}.py").is_file():
+                    problema(
+                        "implementacion_paralela",
+                        f"{nombre}: backend nativo en el servidor MCP y scripts/{nombre}.py "
+                        f"a la vez — dos implementaciones, un contrato (AP-48)",
+                    )
+
     return result
 
 

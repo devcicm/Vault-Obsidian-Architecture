@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v39.4 — 2026-08-05  
+**Versión:** v39.5 — 2026-08-06  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -3476,7 +3476,7 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **59 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **60 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -5355,6 +5355,55 @@ reporta `21 nota(s) en disco fuera del índice … (311 en disco / 290 indexadas
 
 ---
 
+### AP-48 — Implementación paralela por camino de acceso
+
+**Severidad:** critical · **Enforcement:** `guard+audit` · **Introducida:** v39.5
+
+**Síntoma:** la misma tool publicada tiene dos implementaciones, y cuál se ejecuta
+depende de por dónde entres. No es una fachada sobre un núcleo común: son dos
+cuerpos de código que nadie contrasta, con un solo nombre y un solo contrato
+publicado — así que el contrato describe como mucho a uno de los dos.
+
+Es AP-05 (múltiples fuentes de verdad) desplazado del dato al camino de ejecución,
+y se le parece poco en lo que importa. Dos definiciones de un vocabulario acaban
+divergiendo y alguien lo nota al leerlas; dos implementaciones divergen **en
+silencio**, porque cada una tiene su propio público. La suite prueba una, el
+agente ejecuta la otra, y las dos están verdes.
+
+**Medido en v39.5.** El servidor MCP declaraba un `JS_NATIVE_TOOLS` sin una sola
+mención en este manifiesto: nueve tools con backend nativo en Node, siete de ellas
+con script Python del mismo nombre. Ninguna de las siete compartía un solo campo
+de envelope con su contrato de `00_System/tool-spec.json`:
+
+| tool | devolvía por MCP | declara el contrato |
+|---|---|---|
+| `vault_graph` | `nodes`, `edges`, `totalNodes` | `savedTo`, `written`, `created`, `stats` |
+| `vault_fundamentals` | `compliance_pct`, `passed` | `path`, `total`, `fundamentals` |
+| `vault_tokens` | `per_file`, `total_tokens` | `action`, `entries`, `grand` |
+| `vault_graph_inspect` | `broken_links`, `orphans` | `near_duplicates`, `metrics`, `severity` |
+
+Y la divergencia peor no era de forma sino de efecto: `jsNativeGraph` no tiene un
+solo `writeFile`. Un agente llamaba `vault_graph` por MCP, recibía `ok: true`, y
+el grafo se quedaba sin regenerar — **AP-37 y AP-47 servidos a la vez por el único
+camino que un agente real usa**. `vault_smoke` recorre las 91 tools del catálogo,
+pero ejecuta el `.py`: probaba exactamente la implementación que el agente no toca.
+
+**Prevención:** backend nativo solo para lo que **no tiene** implementación en
+Python — quedan las dos de base64, que nunca la tuvieron. Todo lo demás cae al
+runner, que es donde vive el contrato publicado. Las siete implementaciones
+desplazadas no se borran (no-derogación): se anotan `superseded_by:` y salen del
+despacho. El guard vive en `vault_mcp_catalog --check-contracts` y lee el `.mjs`,
+porque es lo que se ejecuta — una lista paralela en Python sería el mismo defecto
+que la norma persigue.
+
+**Se comprueba por comportamiento, no por lectura del código:** se llama la tool
+por MCP y se contrasta el envelope contra el contrato, y en el caso de
+`vault_graph` el `st_mtime_ns` de `99_Index/graph.json` antes y después. Es el
+criterio del consumidor y no el propio (AP-44). Tests en
+`tests/test_ap48_implementacion_paralela.py`.
+
+---
+
 ## Patrones recomendados
 
 Los siguientes patrones fueron identificados en auditorías reales de vaults en producción. Complementan los antipatrones: donde los APs describen qué no hacer, los PATs describen qué sí funciona.
@@ -5958,6 +6007,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v39.5 | 2026-08-06 | AP-48 (implementación paralela por camino de acceso): el servidor MCP servía backend nativo en Node para 7 tools que también tenían script Python, con envelopes que no coincidían con el contrato y `vault_graph` devolviendo `ok` sin escribir el grafo; catálogo de normas generado con las cuatro familias (PAT y SP faltaban); prosa constante de `docs/sdd/` declarada como deuda que solo puede encoger |
 | v39.4 | 2026-08-05 | Grupo 37 (Skills): la capa por la que un agente descubre el estándar entra en el catálogo y en el tool-spec (cierra AP-42 sobre sí misma), puerta de vigencia del SDD generado (`--check`, AP-47), `--force` deja de pisar `gaps.md`, `vault_sanacion` (plan de 12 fases medido, sin escrituras) |
 | v39.3 | 2026-08-05 | El camino de ejecución comprobado por donde se ejecuta: runner MCP con tests (encoding, envelope de exit≠0, timeout, CWD del cliente), `set_vault_root` alcanza a los 89 módulos que congelaban `VAULT_ROOT`, 12 escrituras crudas migradas al write path, AP-46 (frontmatter a mano), AP-47 (índice desfasado) y el lost update del registro de tags |
 | v39.2 | 2026-08-05 | Slug canónico único con transliteración (22 implementaciones divergentes), `vault_migrate_docs` (destino duplicado, cuerpo truncado, escaneo de secretos saltado), AP-17 con excepción por convención de nomenclatura |
@@ -6274,6 +6324,22 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v39.5 — 2026-08-06 `git: pending`
+
+**Cableado que nadie había seguido hasta el final**
+
+v39.4 cerró AP-42 sobre la capa de skills. Esta versión aplica la misma pregunta al resto del repo —qué hay publicado que nadie ejecuta, y qué se ejecuta que nadie publicó— y la respuesta peor estaba en el servidor MCP, que es el único punto por el que un agente real toca el estándar.
+
+**Corregido**
+
+- **AP-48 — implementación paralela por camino de acceso.** Ver la sección de la norma. `mcp/nodejs/vault-mcp-server.mjs` declaraba un `JS_NATIVE_TOOLS` sin una sola mención en este manifiesto: nueve tools resueltas con backend nativo en Node, **siete de ellas con script Python del mismo nombre**. Ninguna de las siete compartía un solo campo de envelope con su contrato de `00_System/tool-spec.json`, y la divergencia peor no era de forma sino de efecto — `jsNativeGraph` no tiene un solo `writeFile`, así que un agente llamaba `vault_graph` por MCP, recibía `ok: true` y el grafo se quedaba sin regenerar. La suite y `vault_smoke` recorrían las 91 tools del catálogo ejecutando el `.py`: probaban exactamente la implementación que el agente no toca, y por eso todo estaba verde. El backend nativo queda para las dos de base64, que nunca tuvieron Python; las siete desplazadas se conservan anotadas y fuera del despacho. El guard lee el `.mjs` —una lista paralela en Python sería el mismo defecto— y los tests miden por comportamiento: envelope contra contrato, y `st_mtime_ns` de `99_Index/graph.json` antes y después.
+- **El catálogo de normas generado entregaba una familia de cuatro.** `generate_antipatterns` filtraba `startswith("AP-")`, así que PAT, SP y CN nunca llegaban a `docs/sdd/04-antipatterns.md` mientras la cabecera anunciaba «catálogo completo». Quedó anotado en el changelog de v39.4 sin causa identificada; la causa era esa línea. Ahora se derivan las cuatro familias y el documento publica el desglose. El test se contrasta contra `NORM_CATALOG` y no contra una lista escrita a mano: si aparece una familia nueva, la exige en vez de conformarse con las que ya conocía.
+- **`docs/sdd/` se publica como documentación derivada y ocho de sus catorce generadores devolvían una constante literal** — `return "..."` con la prosa incrustada y cero lecturas del registro. Es peor que documentación escrita a mano, porque *parece* generada: nadie la revisa como texto, ninguna puerta puede cazar su desfase, y `--force` la reescribe idéntica dando sensación de refresco. No se arregla fingiendo: se declara. La lista se calcula por AST sobre el propio fuente —una tabla a mano sería el mismo defecto—, `--check` la publica en `constant_generators`, y el test la congela en una baseline **que solo puede encoger**, igual que hace `vault_noop_audit` con AP-37. Convertir prosa constante en derivación real es trabajo por documento; lo que importa mientras tanto es que nadie pueda añadir el noveno sin que salte una puerta.
+
+**Anotado, no corregido:** `vault_backup_base64` y `vault_restore_base64` siguen siendo las únicas dos tools del catálogo sin fichero en `scripts/` — implementación exclusivamente en Node, así que la CLI de Python las rechaza con un `TOOL-RUNTIME` explícito en vez de fingir que puede ejecutarlas. Eso es correcto y está guardado, pero significa que `vault_smoke` no las ejerce nunca.
 
 ---
 

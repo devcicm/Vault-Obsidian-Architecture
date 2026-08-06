@@ -141,6 +141,64 @@ def test_el_sdd_del_repo_esta_al_dia():
     )
 
 
+def test_el_catalogo_generado_trae_las_cuatro_familias():
+    """El filtro era `startswith("AP-")`: PAT y SP nunca llegaron al documento.
+
+    La cabecera anunciaba «catálogo completo» y entregaba una familia de cuatro.
+    Se comprueba contra `NORM_CATALOG`, no contra una lista escrita aquí — si
+    aparece una familia nueva, este test la exige en el documento en vez de
+    quedarse conforme con las que ya conocía.
+    """
+    from vault_norms import NORM_CATALOG
+
+    doc = (REPO_ROOT / "docs" / "sdd" / "04-antipatterns.md").read_text(encoding="utf-8")
+    ausentes = sorted(n["code"] for n in NORM_CATALOG if n["code"] not in doc)
+    assert not ausentes, f"normas fuera del catálogo generado: {ausentes}"
+
+
+#: Generadores que devuelven prosa constante en vez de derivarla del registro.
+#: Es deuda declarada y **solo puede encoger**: cada uno que se convierta en
+#: derivación real sale de aquí, y ninguno nuevo puede entrar. La baseline se
+#: escribe con nombres y no con un número, porque un conteo deja pasar el
+#: cambalache de convertir uno y añadir otro.
+SDD_CONSTANTES_BASELINE = {
+    "generate_appendices",
+    "generate_implementation",
+    "generate_methodology",
+    "generate_metrics",
+    "generate_process_antipatterns",
+    "generate_reference_matrix",
+    "generate_state_machines",
+    "generate_usage",
+}
+
+
+def test_la_prosa_constante_del_sdd_no_crece():
+    """`docs/sdd/` se publica como doc derivada; la mitad no derivaba nada.
+
+    Ocho de catorce generadores devolvían un `return "..."` con el texto
+    incrustado. Parece generado y no lo es, así que ninguna puerta puede cazar
+    su desfase y `--force` lo reescribe idéntico dando sensación de refresco.
+    """
+    actuales = set(sdd.constant_generators())
+    nuevos = sorted(actuales - SDD_CONSTANTES_BASELINE)
+    assert not nuevos, (
+        f"generadores nuevos con prosa constante: {nuevos}. Un documento de "
+        f"docs/sdd/ que no lee el registro no es documentación derivada."
+    )
+    saldados = sorted(SDD_CONSTANTES_BASELINE - actuales)
+    assert not saldados, (
+        f"estos ya derivan del registro: {saldados} — sácalos de "
+        f"SDD_CONSTANTES_BASELINE para que la deuda no vuelva a subir"
+    )
+
+
+def test_el_check_publica_la_deuda_de_prosa_constante():
+    """Si no sale en el envelope, no la ve nadie."""
+    envelope = sdd.sdd_coherence(REPO_ROOT)
+    assert envelope["constant_generators"] == sorted(SDD_CONSTANTES_BASELINE)
+
+
 def test_gaps_md_no_se_pisa_ni_con_force():
     """`--force` levanta la idempotencia, no el permiso para pisar lo escrito a mano.
 

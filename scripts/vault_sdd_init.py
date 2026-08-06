@@ -103,6 +103,46 @@ def ap_range_label(codes=None) -> str:
     return f"AP-01..AP-{max(numbers):02d}"
 
 
+def constant_generators() -> list:
+    """Generadores que devuelven una constante literal, sin leer el registro.
+
+    `docs/sdd/` se publica como **documentación derivada** —el orden que impone
+    `CLAUDE.md` es registro canónico → doc derivada → guard → test—, y ocho de
+    sus catorce generadores no leían nada: devolvían un `return "..."` con la
+    prosa incrustada. Eso es peor que documentación escrita a mano, porque
+    *parece* generada: nadie la revisa como texto, ninguna puerta puede cazar su
+    desfase, y `--force` la reescribe idéntica dando la impresión de que se ha
+    refrescado.
+
+    No se arregla borrando ni fingiendo: se **declara**. La lista se calcula por
+    AST sobre el propio fuente —no por una tabla escrita a mano, que sería el
+    mismo defecto— y `sdd_coherence` la publica como deuda. El test la congela
+    en una baseline que solo puede encoger, igual que hace `vault_noop_audit`
+    con AP-37: convertir prosa constante en derivación real es trabajo por
+    documento, y lo que importa mientras tanto es que nadie pueda añadir el
+    noveno sin que salte una puerta.
+    """
+    import ast
+
+    fuente = Path(__file__).read_text(encoding="utf-8")
+    constantes = []
+    for nodo in ast.parse(fuente).body:
+        if not isinstance(nodo, ast.FunctionDef) or not nodo.name.startswith("generate_"):
+            continue
+        # Se ignora el docstring: es un `Expr` de constante, no cuerpo ejecutable.
+        cuerpo = [
+            n for n in nodo.body
+            if not (isinstance(n, ast.Expr) and isinstance(n.value, ast.Constant))
+        ]
+        if (
+            len(cuerpo) == 1
+            and isinstance(cuerpo[0], ast.Return)
+            and isinstance(cuerpo[0].value, ast.Constant)
+        ):
+            constantes.append(nodo.name)
+    return sorted(constantes)
+
+
 def sdd_coherence(vault_root: Path) -> dict:
     """¿Lo que hay en `docs/sdd/` sigue diciendo lo que dice el registro? (AP-47)
 
@@ -131,6 +171,9 @@ def sdd_coherence(vault_root: Path) -> dict:
         "found_ranges": [],
         "stale_files": [],
         "missing_files": [],
+        # Deuda declarada, no un fallo de esta ejecución: el documento está al
+        # día con el registro precisamente porque no depende de él.
+        "constant_generators": constant_generators(),
         "path": str(sdd_dir),
     }
     if not sdd_dir.is_dir():
@@ -571,14 +614,28 @@ CIA: enum values `high`, `medium`, `low`
 
 
 def generate_antipatterns(vault_root: Path, drift: dict) -> str:
-    """Generate 04-antipatterns.md with every AP in NORM_CATALOG."""
+    """El catálogo de normas entero, no solo la familia AP.
+
+    El filtro era `startswith("AP-")`, así que PAT y SP quedaban fuera del
+    documento mientras la cabecera escrita a mano las anunciaba: la doc derivada
+    prometía cuatro familias y entregaba una. Se derivan todas de `NORM_CATALOG`
+    —que es el registro— y el rango del título sigue calculándose solo sobre la
+    familia AP, porque es la única contigua y numerada y es la que `--check`
+    contrasta.
+    """
     try:
         from vault_norms import NORM_CATALOG
 
-        aps = [n for n in NORM_CATALOG if n.get("code", "").startswith("AP-")]
+        aps = list(NORM_CATALOG)
     except Exception:
         aps = []
     ap_range = ap_range_label({n.get("code", "") for n in aps})
+    familias: dict = {}
+    for n in aps:
+        familias.setdefault(n.get("code", "?").split("-")[0], []).append(n)
+    resumen = ", ".join(
+        f"{fam} {len(v)}" for fam, v in sorted(familias.items())
+    )
 
     ap_md_es = []
     ap_md_en = []
@@ -610,18 +667,20 @@ def generate_antipatterns(vault_root: Path, drift: dict) -> str:
 
     header = f"""# Antipatterns — Antipatrones
 
-> Documento bilingüe. Catálogo completo de {ap_range} del vault.
-> Bilingual document. Full {ap_range} catalog.
+> Documento bilingüe. Catálogo de normas completo: antipatrones {ap_range} más
+> las familias PAT, SP y CN. Por familia: {resumen}.
+> Bilingual document. Full norm catalog: antipatterns {ap_range} plus the PAT,
+> SP and CN families. By family: {resumen}.
 
 ---
 
 ## ES
 
-Total de antipatrones registrados: {len(aps)}
+Total de normas registradas: {len(aps)} ({resumen})
 
 """
     footer_es = (
-        "\n---\n\n## EN\n\nTotal registered antipatterns: " + str(len(aps)) + "\n\n"
+        f"\n---\n\n## EN\n\nTotal registered norms: {len(aps)} ({resumen})\n\n"
     )
     return header + "\n".join(ap_md_es) + footer_es + "\n".join(ap_md_en)
 

@@ -316,10 +316,23 @@ function fixNestedBrackets(text) {
 // SECCIÓN 2.5: JS-Native Tool Backend
 // ============================================================================
 
+// Solo las tools que **no tienen implementación en Python**. Backend nativo y
+// script no son dos formas de servir lo mismo: son dos implementaciones, y el
+// agente real solo ejecuta esta. Medido antes de reducir la lista: las siete
+// que tenían `.py` devolvían por MCP un envelope que no compartía un solo campo
+// con el que declara `00_System/tool-spec.json` —`vault_fundamentals` daba
+// `compliance_pct`/`passed` donde el contrato dice `path`/`total`, y
+// `vault_graph` daba `nodes`/`edges` donde dice `savedTo`/`written`—. El peor
+// caso no era el envelope sino el side effect: `jsNativeGraph` no tiene un solo
+// `writeFile`, así que un agente que llamaba `vault_graph` por MCP recibía
+// `ok: true` y el grafo se quedaba sin regenerar. `vault_smoke` recorre las 91
+// tools del catálogo pero ejecuta el `.py`, de modo que probaba justo la
+// implementación que el agente no toca. Es AP-05 en el camino de ejecución.
+//
+// Las `jsNative*` de las siete se conservan (no-derogación) pero dejan de
+// despacharse: `dispatchJsNative` solo mira este conjunto, y todo lo demás cae
+// al runner de Python, que es donde vive el contrato publicado.
 const JS_NATIVE_TOOLS = new Set([
-  "vault_read", "vault_list", "vault_search",
-  "vault_graph", "vault_graph_inspect",
-  "vault_tokens", "vault_token_counter", "vault_fundamentals",
   "vault_backup_base64", "vault_restore_base64",
 ]);
 
@@ -679,7 +692,14 @@ async function scanMdFiles(dir) {
 }
 
 async function dispatchJsNative(name, args, vaultRoot) {
+  // La guarda es `JS_NATIVE_TOOLS`, no este `switch`: los `case` de las siete
+  // superseded siguen aquí para no perder su contrato, pero no se alcanzan
+  // porque el llamante consulta el conjunto antes de entrar. Si alguien vuelve
+  // a meter un nombre con `.py` en el conjunto, `tests/test_mcp_runner.py` lo
+  // caza contrastando el envelope contra el del script.
+  if (!JS_NATIVE_TOOLS.has(name)) return null;
   switch (name) {
+    // superseded_by: scripts/<name>.py — ver la nota de JS_NATIVE_TOOLS
     case "vault_read": return jsNativeRead(args, vaultRoot);
     case "vault_list": return jsNativeList(args, vaultRoot);
     case "vault_search": return jsNativeSearch(args, vaultRoot);

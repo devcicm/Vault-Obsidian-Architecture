@@ -1,13 +1,15 @@
 # Antipatterns -- Antipatrones
 
-> Documento bilingüe. Catálogo completo de AP-01..AP-47 del vault.
-> Bilingual document. Full AP-01..AP-47 catalog.
+> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-48 más
+> las familias PAT, SP y CN. Por familia: AP 48, CN 3, PAT 6, SP 3.
+> Bilingual document. Full norm catalog: antipatterns AP-01..AP-48 plus the PAT,
+> SP and CN families. By family: AP 48, CN 3, PAT 6, SP 3.
 
 ---
 
 ## ES
 
-Total de antipatrones registrados: 47
+Total de normas registradas: 60 (AP 48, CN 3, PAT 6, SP 3)
 
 ### AP-01: Documentación alucinada
 
@@ -481,11 +483,145 @@ El estándar no lleva base de datos por decisión normativa, y con consistencia 
 
 **Prevención:** `vault_reindex --check` contrasta disco contra índice con el mismo criterio con el que reconstruye --una sola función, `_notas_en_disco()`, para que la comprobación y el arreglo no puedan medir cosas distintas (AP-44)-- y reporta las dos direcciones: notas invisibles para la búsqueda y entradas que apuntan a ficheros que ya no están. El remedio es `vault_reindex`, y por eso la norma se audita en vez de bloquear: el desfase es un estado a reconciliar, no una escritura a rechazar.
 
+### AP-48: Implementación paralela por camino de acceso
+
+- **Severidad:** critical
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_norms --audit, vault_mcp_catalog --check-contracts
+
+La misma tool publicada tiene dos implementaciones y cuál se ejecuta depende de por dónde entres. No es una fachada sobre un núcleo común: son dos cuerpos de código que nadie contrasta, con un solo nombre y un solo contrato publicado -- así que el contrato describe como mucho a uno de los dos.
+
+Es AP-05 (múltiples fuentes de verdad) desplazado del dato al camino de ejecución, y se le parece poco en lo importante: dos definiciones de un vocabulario acaban divergiendo y alguien lo nota al leerlas, mientras que dos implementaciones divergen **en silencio** porque cada una tiene su propio público. La suite prueba una; el agente ejecuta la otra; las dos están verdes.
+
+Medido en v39.4 sobre el servidor MCP: nueve tools con backend nativo en Node, siete de ellas con script Python del mismo nombre. Ninguna de las siete compartía un solo campo de envelope con el contrato de `00_System/tool-spec.json` -- `vault_fundamentals` devolvía `compliance_pct`/`passed` donde el contrato dice `path`/`total`. Y la divergencia peor no era de forma sino de efecto: la implementación nativa de `vault_graph` no escribía el grafo, así que un agente la llamaba, recibía `ok: true` y el índice se quedaba desfasado -- AP-37 y AP-47 servidos por el único camino que un agente real usa. `vault_smoke` recorría las 91 tools del catálogo ejecutando el `.py`: probaba exactamente la implementación que el agente no toca.
+
+**Prevención:** Backend nativo solo para lo que **no tiene** implementación en Python; todo lo demás cae al runner, que es donde vive el contrato publicado. La implementación desplazada no se borra (no-derogación): se anota `superseded_by:` y se deja fuera del despacho. La regla se comprueba por comportamiento y no por lectura del código -- se llama la tool por MCP y se contrasta el envelope contra el contrato, que es el criterio del consumidor y no el propio (AP-44).
+
+### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
+
+- **Severidad:** high
+- **Enforcement:** guard
+- **Detectado por:** vault_validate
+
+Los archivos .md del vault deben usar kebab-case: minúsculas, palabras separadas por guiones, sin espacios ni caracteres especiales. vault_write aplica slugify() automáticamente al título para generar el filename. Ej: 'ADR-001 Auth Decision' → adr-001-auth-decision.md.
+
+**Prevención:** Siempre usar vault_write para crear notas. Nunca crear archivos .md directamente.
+
+### CN-02: Numbered folder structure -- secciones numeradas como únicos destinos
+
+- **Severidad:** high
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_section_index (guard), vault_norms --audit
+
+Solo las secciones numeradas del registro canónico (vault_registry.SECTIONS, fuente de verdad única -- PAT-1) son destinos válidos para notas. Crear carpetas ad-hoc o escribir en la raíz viola este estándar (ver AP-15). NO duplicar la lista aquí: consultarla con vault_folder_registry o vault_registry.
+
+**Prevención:** Elegir la sección más apropiada del vocabulario estándar. AP-15 para raíz del vault.
+
+### CN-03: Standard status vocabulary -- vocabulario canónico de meta.status
+
+- **Severidad:** low
+- **Enforcement:** audit
+- **Detectado por:** vault_norms --audit
+
+El campo meta.status (o status en frontmatter) debe usar solo valores de vault_norms.STATUS_VOCAB (fuente única, v38 -- unifica el vocabulario CN-03 original con el ciclo de vida del spec §status): planned | draft | in-progress | reviewed | approved | implemented | verified | deprecated | obsolete | archived | stub | template. Valores fuera del vocabulario rompen filtros de vault_list y vault_audit.
+
+**Prevención:** Usar solo valores de STATUS_VOCAB. vault_norms --audit los valida (CN-03).
+
+### PAT-1: Canonical source anchoring
+
+- **Severidad:** N/A
+- **Enforcement:** recommended
+- **Detectado por:** vault_audit
+
+Un dominio = una nota canónica rica. Todas las referencias desde otros contextos son [[wiki-links]] a esa nota canónica, nunca copias del contenido.
+
+**Prevención:** N/A -- es el patrón correcto. Aplicar siempre al crear documentación.
+
+### PAT-2: Stub enrichment gradient
+
+- **Severidad:** N/A
+- **Enforcement:** recommended
+- **Detectado por:** vault_audit
+
+Un stub con ≥3 líneas reales se enriquece progresivamente en cada sesión que lo toca. La eliminación solo aplica a skeletons (AP-11) y deceptive skeletons (AP-20).
+
+**Prevención:** N/A -- es el patrón correcto.
+
+### PAT-3: Duplicate chain resolution
+
+- **Severidad:** N/A
+- **Enforcement:** recommended
+- **Detectado por:** vault_audit
+
+Algoritmo estándar para resolver duplicados: identificar canónica (más backlinks, más contenido, ubicación más apropiada) → change_log --action deleted → mover a 10_Migrated/ → actualizar wiki-links rotos → verificar con vault_audit.
+
+**Prevención:** N/A -- es el algoritmo de resolución.
+
+### PAT-4: Phased audit execution
+
+- **Severidad:** N/A
+- **Enforcement:** recommended
+- **Detectado por:** vault_drift_detect
+
+Las auditorías masivas se ejecutan en 4 fases atómicas: 1-Snapshot (vault_drift_detect --snapshot), 2-Detección (vault_audit), 3-Resolución (vault_write, vault_change_log), 4-Verificación (vault_drift_detect --report).
+
+**Prevención:** N/A -- es el protocolo de auditoría.
+
+### PAT-5: Frontmatter as provenance chain
+
+- **Severidad:** N/A
+- **Enforcement:** recommended
+- **Detectado por:** vault_audit
+
+Los campos id + createdAt + updatedAt + agent + migratedFrom (si aplica) forman una cadena de custodia completa. Sin esta cadena es imposible auditar de dónde vino un dato o qué agente lo introdujo.
+
+**Prevención:** N/A -- vault_write genera estos campos automáticamente.
+
+### PAT-6: Semantic graph enrichment -- enriquecimiento periodico del grafo
+
+- **Severidad:** N/A
+- **Enforcement:** recommended
+- **Detectado por:** vault_graph_merge, vault_audit
+
+Ejecutar vault_graph --typed al final de cada sesion productiva para generar graph-enriched.json con predicates semanticos unificados. El grafo enriquecido combina wiki-links, entity relations y code relations en un solo grafo consultable con filtros por predicate, cardinalidad y tipo de nodo. Esto habilita busquedas de conocimiento semanticas y analisis de impacto con tipos.
+
+**Prevención:** N/A -- es el patron correcto. Agregar vault_graph --typed al session protocol como paso automatico antes de vault_audit.
+
+### SP-01: Delete protocol -- change_log obligatorio antes de eliminar
+
+- **Severidad:** critical
+- **Enforcement:** audit
+- **Detectado por:** vault_norms --audit
+
+Antes de eliminar cualquier nota del vault, el agente DEBE llamar: vault_change_log --action deleted --path <nota> --reason <motivo>. Sin este registro, la nota desaparece sin rastro auditado.
+
+**Prevención:** Regla de gobernanza: verificar en .change-log.json antes de delete. Si no hay entrada → llamar vault_change_log primero, luego eliminar.
+
+### SP-02: Forward-link verification -- buscar antes de linkar
+
+- **Severidad:** high
+- **Enforcement:** guard
+- **Detectado por:** vault_graph, vault_audit
+
+Antes de escribir [[nombre-nota]] en contenido, verificar que la nota destino ya existe: vault_search(query:'nombre-nota'). Si no hay resultado, escribir en texto plano hasta que la nota exista. vault_write advierte con ghost_links[] (no bloquea) si el target no existe.
+
+**Prevención:** vault_search() antes de cada [[wiki-link]] nuevo. No crear links especulativos.
+
+### SP-03: Session snapshot pattern -- delta antes de operaciones masivas
+
+- **Severidad:** medium
+- **Enforcement:** audit
+- **Detectado por:** vault_backup
+
+Antes de cualquier operación masiva (migración, rename en lote, vault_tags --rename múltiple, delete en lote), capturar snapshot con vault_delta --snapshot. Permite detectar regresiones y calcular impacto real de la operación.
+
+**Prevención:** PAT-4 (phased audit): snapshot → operación → vault_audit() → comparar score. vault_delta --snapshot antes de cada sesión con cambios masivos.
+
 ---
 
 ## EN
 
-Total registered antipatterns: 47
+Total registered norms: 60 (AP 48, CN 3, PAT 6, SP 3)
 
 ### AP-01: Documentación alucinada
 
@@ -958,3 +1094,137 @@ El vault es la fuente de verdad y `search-index.json` y `graph.json` son proyecc
 El estándar no lleva base de datos por decisión normativa, y con consistencia eventual el desfase es esperable. Lo que no es aceptable es que **nadie lo mida**: `vault_reindex --check` comprobaba `len(notes) > 0`, de modo que un índice con una entrada sobre un vault de 300 notas pasaba la puerta.
 
 **Prevention:** `vault_reindex --check` contrasta disco contra índice con el mismo criterio con el que reconstruye --una sola función, `_notas_en_disco()`, para que la comprobación y el arreglo no puedan medir cosas distintas (AP-44)-- y reporta las dos direcciones: notas invisibles para la búsqueda y entradas que apuntan a ficheros que ya no están. El remedio es `vault_reindex`, y por eso la norma se audita en vez de bloquear: el desfase es un estado a reconciliar, no una escritura a rechazar.
+
+### AP-48: Implementación paralela por camino de acceso
+
+- **Severity:** critical
+- **Enforcement:** guard+audit
+- **Detected by:** vault_norms --audit, vault_mcp_catalog --check-contracts
+
+La misma tool publicada tiene dos implementaciones y cuál se ejecuta depende de por dónde entres. No es una fachada sobre un núcleo común: son dos cuerpos de código que nadie contrasta, con un solo nombre y un solo contrato publicado -- así que el contrato describe como mucho a uno de los dos.
+
+Es AP-05 (múltiples fuentes de verdad) desplazado del dato al camino de ejecución, y se le parece poco en lo importante: dos definiciones de un vocabulario acaban divergiendo y alguien lo nota al leerlas, mientras que dos implementaciones divergen **en silencio** porque cada una tiene su propio público. La suite prueba una; el agente ejecuta la otra; las dos están verdes.
+
+Medido en v39.4 sobre el servidor MCP: nueve tools con backend nativo en Node, siete de ellas con script Python del mismo nombre. Ninguna de las siete compartía un solo campo de envelope con el contrato de `00_System/tool-spec.json` -- `vault_fundamentals` devolvía `compliance_pct`/`passed` donde el contrato dice `path`/`total`. Y la divergencia peor no era de forma sino de efecto: la implementación nativa de `vault_graph` no escribía el grafo, así que un agente la llamaba, recibía `ok: true` y el índice se quedaba desfasado -- AP-37 y AP-47 servidos por el único camino que un agente real usa. `vault_smoke` recorría las 91 tools del catálogo ejecutando el `.py`: probaba exactamente la implementación que el agente no toca.
+
+**Prevention:** Backend nativo solo para lo que **no tiene** implementación en Python; todo lo demás cae al runner, que es donde vive el contrato publicado. La implementación desplazada no se borra (no-derogación): se anota `superseded_by:` y se deja fuera del despacho. La regla se comprueba por comportamiento y no por lectura del código -- se llama la tool por MCP y se contrasta el envelope contra el contrato, que es el criterio del consumidor y no el propio (AP-44).
+
+### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
+
+- **Severity:** high
+- **Enforcement:** guard
+- **Detected by:** vault_validate
+
+Los archivos .md del vault deben usar kebab-case: minúsculas, palabras separadas por guiones, sin espacios ni caracteres especiales. vault_write aplica slugify() automáticamente al título para generar el filename. Ej: 'ADR-001 Auth Decision' → adr-001-auth-decision.md.
+
+**Prevention:** Siempre usar vault_write para crear notas. Nunca crear archivos .md directamente.
+
+### CN-02: Numbered folder structure -- secciones numeradas como únicos destinos
+
+- **Severity:** high
+- **Enforcement:** guard+audit
+- **Detected by:** vault_section_index (guard), vault_norms --audit
+
+Solo las secciones numeradas del registro canónico (vault_registry.SECTIONS, fuente de verdad única -- PAT-1) son destinos válidos para notas. Crear carpetas ad-hoc o escribir en la raíz viola este estándar (ver AP-15). NO duplicar la lista aquí: consultarla con vault_folder_registry o vault_registry.
+
+**Prevention:** Elegir la sección más apropiada del vocabulario estándar. AP-15 para raíz del vault.
+
+### CN-03: Standard status vocabulary -- vocabulario canónico de meta.status
+
+- **Severity:** low
+- **Enforcement:** audit
+- **Detected by:** vault_norms --audit
+
+El campo meta.status (o status en frontmatter) debe usar solo valores de vault_norms.STATUS_VOCAB (fuente única, v38 -- unifica el vocabulario CN-03 original con el ciclo de vida del spec §status): planned | draft | in-progress | reviewed | approved | implemented | verified | deprecated | obsolete | archived | stub | template. Valores fuera del vocabulario rompen filtros de vault_list y vault_audit.
+
+**Prevention:** Usar solo valores de STATUS_VOCAB. vault_norms --audit los valida (CN-03).
+
+### PAT-1: Canonical source anchoring
+
+- **Severity:** N/A
+- **Enforcement:** recommended
+- **Detected by:** vault_audit
+
+Un dominio = una nota canónica rica. Todas las referencias desde otros contextos son [[wiki-links]] a esa nota canónica, nunca copias del contenido.
+
+**Prevention:** N/A -- es el patrón correcto. Aplicar siempre al crear documentación.
+
+### PAT-2: Stub enrichment gradient
+
+- **Severity:** N/A
+- **Enforcement:** recommended
+- **Detected by:** vault_audit
+
+Un stub con ≥3 líneas reales se enriquece progresivamente en cada sesión que lo toca. La eliminación solo aplica a skeletons (AP-11) y deceptive skeletons (AP-20).
+
+**Prevention:** N/A -- es el patrón correcto.
+
+### PAT-3: Duplicate chain resolution
+
+- **Severity:** N/A
+- **Enforcement:** recommended
+- **Detected by:** vault_audit
+
+Algoritmo estándar para resolver duplicados: identificar canónica (más backlinks, más contenido, ubicación más apropiada) → change_log --action deleted → mover a 10_Migrated/ → actualizar wiki-links rotos → verificar con vault_audit.
+
+**Prevention:** N/A -- es el algoritmo de resolución.
+
+### PAT-4: Phased audit execution
+
+- **Severity:** N/A
+- **Enforcement:** recommended
+- **Detected by:** vault_drift_detect
+
+Las auditorías masivas se ejecutan en 4 fases atómicas: 1-Snapshot (vault_drift_detect --snapshot), 2-Detección (vault_audit), 3-Resolución (vault_write, vault_change_log), 4-Verificación (vault_drift_detect --report).
+
+**Prevention:** N/A -- es el protocolo de auditoría.
+
+### PAT-5: Frontmatter as provenance chain
+
+- **Severity:** N/A
+- **Enforcement:** recommended
+- **Detected by:** vault_audit
+
+Los campos id + createdAt + updatedAt + agent + migratedFrom (si aplica) forman una cadena de custodia completa. Sin esta cadena es imposible auditar de dónde vino un dato o qué agente lo introdujo.
+
+**Prevention:** N/A -- vault_write genera estos campos automáticamente.
+
+### PAT-6: Semantic graph enrichment -- enriquecimiento periodico del grafo
+
+- **Severity:** N/A
+- **Enforcement:** recommended
+- **Detected by:** vault_graph_merge, vault_audit
+
+Ejecutar vault_graph --typed al final de cada sesion productiva para generar graph-enriched.json con predicates semanticos unificados. El grafo enriquecido combina wiki-links, entity relations y code relations en un solo grafo consultable con filtros por predicate, cardinalidad y tipo de nodo. Esto habilita busquedas de conocimiento semanticas y analisis de impacto con tipos.
+
+**Prevention:** N/A -- es el patron correcto. Agregar vault_graph --typed al session protocol como paso automatico antes de vault_audit.
+
+### SP-01: Delete protocol -- change_log obligatorio antes de eliminar
+
+- **Severity:** critical
+- **Enforcement:** audit
+- **Detected by:** vault_norms --audit
+
+Antes de eliminar cualquier nota del vault, el agente DEBE llamar: vault_change_log --action deleted --path <nota> --reason <motivo>. Sin este registro, la nota desaparece sin rastro auditado.
+
+**Prevention:** Regla de gobernanza: verificar en .change-log.json antes de delete. Si no hay entrada → llamar vault_change_log primero, luego eliminar.
+
+### SP-02: Forward-link verification -- buscar antes de linkar
+
+- **Severity:** high
+- **Enforcement:** guard
+- **Detected by:** vault_graph, vault_audit
+
+Antes de escribir [[nombre-nota]] en contenido, verificar que la nota destino ya existe: vault_search(query:'nombre-nota'). Si no hay resultado, escribir en texto plano hasta que la nota exista. vault_write advierte con ghost_links[] (no bloquea) si el target no existe.
+
+**Prevention:** vault_search() antes de cada [[wiki-link]] nuevo. No crear links especulativos.
+
+### SP-03: Session snapshot pattern -- delta antes de operaciones masivas
+
+- **Severity:** medium
+- **Enforcement:** audit
+- **Detected by:** vault_backup
+
+Antes de cualquier operación masiva (migración, rename en lote, vault_tags --rename múltiple, delete en lote), capturar snapshot con vault_delta --snapshot. Permite detectar regresiones y calcular impacto real de la operación.
+
+**Prevention:** PAT-4 (phased audit): snapshot → operación → vault_audit() → comparar score. vault_delta --snapshot antes de cada sesión con cambios masivos.
