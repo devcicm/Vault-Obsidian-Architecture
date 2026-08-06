@@ -56,7 +56,6 @@
     "vault_audit.TAG_REGISTRY",
     "vault_backup.BACKUP_ROOT",
     "vault_backup.INDEX_FILE",
-    "vault_backup_list.BACKUP_ROOT",
     "vault_bibliography_save.BIBLIOGRAPHY_DIR",
     "vault_bug_save.BUGS_DIR",
     "vault_change_log.SYSTEM_DIR",
