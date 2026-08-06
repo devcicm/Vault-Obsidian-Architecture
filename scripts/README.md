@@ -763,6 +763,15 @@ Restaura el vault desde un backup específico.
 python vault_restore.py --backup_name "vault-2026-05-09-143022-pre-migration" --confirm true
 ```
 
+Desde v40.0 el fichero es un **adaptador de transporte**: qué se borra, qué nunca se borra
+(`vault-backups/`, `vault-sandbox/`) y de dónde se lee el snapshot viven en
+`vault/durabilidad/restauracion.py`, con la raíz inyectada en vez de derivada al importar
+(AP-49). El argv y el envelope no cambian; `files_restored` es el indicador de trabajo
+(AP-37), junto al `noteCount` que ya declaraba. La ubicación legacy de backups —hermana del
+repo, anterior a v38.1— se sigue consultando **solo para leer**, y se resuelve en el
+adaptador porque es un detalle de despliegue, no una regla del dominio: por eso el error de
+«no encontrado» enumera las dos rutas buscadas.
+
 ---
 
 Las dos tools siguientes son las únicas **JS-native** del catálogo (sin entry point Python): viven en el servidor MCP y se invocan solo desde ahí. Están pensadas para mover un vault entre máquinas cuando no hay disco compartido ni remoto git. No sustituyen a `vault_backup`: no llevan manifiesto Merkle ni versionado incremental.
@@ -1810,6 +1819,12 @@ Tres propiedades que la hacen segura:
 - **La razón es obligatoria**, y restaurar sobre un origen ocupado falla en vez de sobrescribir.
 
 `status` no se toca al retener: el estado de la nota no cambió por estar en cuarentena, y sobrescribirlo destruiría el dato que quizá haga falta para clasificarla.
+
+Desde v40.0 las tres propiedades son invariantes del contexto Durabilidad
+(`vault/durabilidad/cuarentena.py`) y no código repetido en la tool. El parser de frontmatter
+se **inyecta**: el dominio no sabe si detrás hay un regex o PyYAML, y eso es lo que permite
+probar las reglas sin disco. El adaptador conserva argv, envelope y los caminos de error tal
+cual estaban.
 
 ---
 

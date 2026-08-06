@@ -151,13 +151,36 @@ def _detect_vault_root() -> Path:
 
 VAULT_ROOT: Path = _detect_vault_root()
 
+#: El vault detectado al importar, guardado APARTE y nunca reescrito.
+#:
+#: `set_vault_root()` reancla las constantes de módulo derivadas del vault, y
+#: `VAULT_ROOT` es una de ellas: se reapunta a sí misma. Sin esta copia, poner
+#: el override a None no volvía al vault detectado —se quedaba en el último
+#: destino para siempre— mientras `vault_root_origin()` seguía respondiendo
+#: `spec_repo_sandbox`, es decir, anunciando confianza sobre una raíz que ya no
+#: era ésa. Es AP-44 en el propio detector: certificaba con su criterio en vez
+#: de con el del consumidor.
+#: Se guarda como `str` y no como `Path` a propósito: `_reanclar_constantes()`
+#: reapunta toda constante en mayúsculas cuyo valor sea un `Path` derivado del
+#: vault, y esta copia lo es. Guardada como ruta, el reanclaje se la llevaba por
+#: delante y el respaldo apuntaba al mismo sitio del que había que volver.
+_VAULT_ROOT_DETECTADO: str = str(VAULT_ROOT)
+_ORIGEN_DETECTADO: str = _VAULT_ROOT_ORIGIN
+
 
 def vault_root_origin() -> str:
     """Qué regla de _detect_vault_root() eligió VAULT_ROOT.
 
     Valores: env | sibling_vault_dir | sibling_vault_dir_fresh |
-    scripts_inside_vault | spec_repo_sandbox | repo_root_fallback.
+    scripts_inside_vault | spec_repo_sandbox | repo_root_fallback |
+    explicit_override.
+
+    Con un override activo devuelve `explicit_override`: la raíz ya no la
+    eligió ninguna regla de detección, y seguir citando la regla anterior sería
+    atribuir a la autodetección una decisión que tomó quien llamó.
     """
+    if _ACTIVE_VAULT_ROOT is not None:
+        return "explicit_override"
     return _VAULT_ROOT_ORIGIN
 
 
@@ -236,6 +259,21 @@ def set_vault_root(path) -> Path:
 def rebound_constants() -> List[str]:
     """Constantes de módulo que el último set_vault_root() reapuntó."""
     return list(_REANCLADAS)
+
+
+def reset_vault_root() -> Path:
+    """Deshace el override y devuelve las constantes al vault detectado.
+
+    Poner `_ACTIVE_VAULT_ROOT = None` a mano NO basta y ésa era la trampa: el
+    reanclaje ya había reescrito `VAULT_ROOT` y las constantes de los módulos
+    cargados, así que el proceso seguía apuntando al destino temporal. En una
+    suite eso se ve como fallos que dependen del orden de los ficheros; en una
+    tool, como escribir en el vault de la llamada anterior.
+    """
+    global _ACTIVE_VAULT_ROOT
+    set_vault_root(Path(_VAULT_ROOT_DETECTADO))
+    _ACTIVE_VAULT_ROOT = None
+    return VAULT_ROOT
 
 
 def get_vault_root() -> Path:

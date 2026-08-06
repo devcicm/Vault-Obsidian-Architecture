@@ -1,280 +1,49 @@
 #!/usr/bin/env python3
-"""Vault Backup Tool — Full vault snapshot with manifest
+"""Vault Backup — adaptador de transporte del contexto Durabilidad.
 
-Creates a complete snapshot of the vault with detailed manifest per section.
-Stores backup in VAULT_ROOT/vault-backups/ (DENTRO del vault — AP-36: ningún
-side-effect fuera del vault root) with .manifest.json and updates registry.
+Crea un snapshot completo del vault en `<vault>/vault-backups/` con manifiesto,
+huella Merkle sellada y entrada en el registro. Este fichero ya no decide nada:
+la decisión —qué entra al snapshot, qué se hashea, con qué regla y cómo se
+comprueba— vive en `vault/durabilidad/snapshot.py` y se prueba sin CLI.
+
+La ruta y el nombre no cambian: `scripts/vault_backup.py` es lo que resuelven el
+tool-spec, `cli/registry.py`, el runner del MCP y `vault_smoke`.
 
 Usage:
     python vault_backup.py
     python vault_backup.py --label "antes-de-migracion"
+    python vault_backup.py --verify vault-2026-08-06-101500-antes-de-migracion
 """
 
 import argparse
-import hashlib
 import json
-import re
-import shutil
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional
 
 from vault_errors import wrap_main
-from vault_io import atomic_write_json, VAULT_ROOT, write_report
-from vault_lib import utcnow
+from vault_io import write_report
 
-# AP-36 (contención): los backups viven DENTRO del vault. Antes era
-# Path(__file__).parent.parent.parent / "vault-backups", que escribía en el
-# abuelo del directorio de scripts (p.ej. Documents/GitHub/vault-backups) —
-# fuera del vault y sin rastreabilidad.
-BACKUP_ROOT = VAULT_ROOT / "vault-backups"
-INDEX_FILE = VAULT_ROOT / "99_Index" / "search-index.json"
-REGISTRY_FILE = BACKUP_ROOT / ".backup-registry.json"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-# Entradas del vault que NO se copian al snapshot: backups previos (evita
-# recursión ahora que BACKUP_ROOT está dentro del vault) y sandboxes.
-_SNAPSHOT_SKIP = ("vault-backups", "vault-sandbox")
+from vault.durabilidad.snapshot import ServicioSnapshot  # noqa: E402
+from vault.kernel import construir  # noqa: E402
 
 
-# Versión del algoritmo Merkle, escrita en el manifiesto y leída de vuelta por
-# `--verify`. Existe porque la corrección de abajo cambia QUÉ se hashea, y sin
-# el sello todos los backups anteriores pasarían a reportarse CORRUPTO: la
-# comprobación diría que el dato se estropeó cuando lo que cambió fue la regla.
-# El manifiesto sin sello es algo 1 por definición — así es como se escribió.
-MERKLE_ALGO = 2
+def vault_backup(label: Optional[str] = None, root=None) -> Dict[str, Any]:
+    """El envelope publicado, armado desde el dominio.
 
-# Ficheros que cualquier ejecución de cualquier tool reescribe. Estaban dentro
-# del hash, así que dos backups seguidos del mismo vault intacto daban
-# `merkle_root` distinto y la huella no servía para lo único que se le pide:
-# distinguir «esto cambió» de «esto no». Se excluyen a partir de algo 2; algo 1
-# los sigue incluyendo, que es como se selló lo ya escrito.
-_MERKLE_VOLATILES = frozenset({
-    "00_System/.tool-trace.json",
-    "00_System/.voice-counter",
-})
-
-
-def _merkle_leaf(rel_path: str, content: bytes) -> str:
-    return hashlib.sha256((rel_path + ":").encode() + content).hexdigest()
-
-
-def _merkle_root(leaves: List[str]) -> str:
-    """Build Merkle root from leaf hashes (sorted deterministically)."""
-    if not leaves:
-        return hashlib.sha256(b"empty-vault").hexdigest()
-    layer = sorted(leaves)
-    while len(layer) > 1:
-        next_layer = []
-        for i in range(0, len(layer), 2):
-            left = layer[i]
-            right = layer[i + 1] if i + 1 < len(layer) else left
-            next_layer.append(hashlib.sha256((left + right).encode()).hexdigest())
-        layer = next_layer
-    return layer[0]
-
-
-def _compute_vault_merkle(folder: Path, algo: int = MERKLE_ALGO) -> Tuple[str, int]:
-    """Return (merkle_root, file_count) for all files under folder.
-
-    `algo` selecciona la regla, y el que manda al verificar es el que diga el
-    manifiesto, no el vigente: un backup sellado con algo 1 se sigue
-    comprobando con algo 1 y sigue dando íntegro. Cambiar la regla sin
-    versionarla habría convertido cada copia anterior en un falso positivo de
-    corrupción, que es peor que el defecto que corrige.
+    `write_report()` se añade **aquí** y no en el dominio: cuenta lo que el
+    kernel escribió atómicamente, que es una medida del transporte. El trabajo
+    de la operación —cuántos ficheros se copiaron— lo declara el dominio en
+    `files_copied`, porque `shutil` no pasa por el ledger (AP-37).
     """
-    leaves: List[str] = []
-    for file_path in sorted(folder.rglob("*")):
-        if not file_path.is_file():
-            continue
-        if file_path.name in (".manifest.json",):
-            continue
-        rel = str(file_path.relative_to(folder)).replace("\\", "/")
-        if algo >= 2 and rel in _MERKLE_VOLATILES:
-            continue
-        try:
-            content = file_path.read_bytes()
-            leaves.append(_merkle_leaf(rel, content))
-        except (PermissionError, OSError):
-            continue
-    return _merkle_root(leaves), len(leaves)
+    cuerpo = ServicioSnapshot(construir(root)).crear(label)
+    return {"ok": True, **write_report(), **cuerpo}
 
 
-def count_items(folder: Path) -> Tuple[int, int, int]:
-    notes = 0
-    files = 0
-    size = 0
-    for item in folder.rglob("*"):
-        if item.is_file():
-            files += 1
-            if item.suffix == ".md":
-                notes += 1
-            try:
-                size += item.stat().st_size
-            except OSError:
-                pass
-    return notes, files, size
-
-
-def scan_backup(backup_path: Path) -> Dict[str, Any]:
-    sections = []
-    total_notes = 0
-    total_files = 0
-    total_size = 0
-    vault_folder = backup_path
-    for item in sorted(vault_folder.iterdir()):
-        if item.is_dir() and not item.name.startswith("."):
-            notes, files, size = count_items(item)
-            if notes > 0 or files > 0:
-                sections.append(
-                    {
-                        "folder": item.name,
-                        "notes": notes,
-                        "files": files,
-                        "sizeKB": round(size / 1024, 1),
-                    }
-                )
-            total_notes += notes
-            total_files += files
-            total_size += size
-    for item in vault_folder.iterdir():
-        if item.is_file() and item.suffix not in [".json"]:
-            try:
-                total_files += 1
-                total_size += item.stat().st_size
-            except OSError:
-                pass
-    return {
-        "sections": sections,
-        "totals": {
-            "notes": total_notes,
-            "files": total_files,
-            "sizeKB": round(total_size / 1024, 1),
-        },
-    }
-
-
-def load_registry() -> Dict[str, Any]:
-    try:
-        with open(REGISTRY_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {"backups": []}
-
-
-def save_registry(registry: Dict[str, Any]) -> None:
-    BACKUP_ROOT.mkdir(parents=True, exist_ok=True)
-    atomic_write_json(REGISTRY_FILE, registry)
-
-
-def vault_backup(label: Optional[str] = None) -> Dict[str, Any]:
-    if label:
-        label_slug = re.sub(r"[^\w\s-]", "", label.lower())
-        label_slug = re.sub(r"[\s_]+", "-", label_slug)
-        label_slug = re.sub(r"^-+|-+$", "", label_slug)
-    else:
-        label_slug = ""
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d-%H%M%S")
-    backup_name = f"vault-{timestamp}" + (f"-{label_slug}" if label_slug else "")
-    backup_path = BACKUP_ROOT / backup_name
-    BACKUP_ROOT.mkdir(parents=True, exist_ok=True)
-    vault_src = VAULT_ROOT
-    # AP-37 — el indicador de trabajo de ESTA tool. `created`/`updated`/
-    # `written` vienen de `write_report()`, que solo ve lo que pasa por
-    # `atomic_write_text`; el snapshot se copia con `shutil` y por tanto no
-    # aparecía en ninguno. El resultado era un backup de 196 ficheros
-    # reportando `written: 2`. Los campos viejos no se tocan —son contrato
-    # publicado y significan otra cosa: cuántos ficheros escribió el kernel—;
-    # éste se añade al lado y dice cuántos se copiaron.
-    files_copied = 0
-    for item in vault_src.iterdir():
-        if item.name.startswith(".") or item.name in _SNAPSHOT_SKIP:
-            continue
-        dest = backup_path / item.name
-        if item.is_dir():
-            shutil.copytree(item, dest, dirs_exist_ok=True)
-            files_copied += sum(1 for p in dest.rglob("*") if p.is_file())
-        else:
-            shutil.copy2(item, dest)
-            files_copied += 1
-    manifest_data = scan_backup(backup_path)
-    merkle_root, merkle_count = _compute_vault_merkle(backup_path)
-    now = utcnow()
-    manifest = {
-        "name": backup_name,
-        "label": label_slug or "",
-        "createdAt": now,
-        "vault": manifest_data,
-        "merkle_root": merkle_root,
-        "merkle_file_count": merkle_count,
-        "merkle_algo": MERKLE_ALGO,
-    }
-    manifest_path = backup_path / ".manifest.json"
-    atomic_write_json(manifest_path, manifest)
-    registry = load_registry()
-    registry["backups"].insert(
-        0,
-        {
-            "name": backup_name,
-            "label": label_slug or "",
-            "createdAt": now,
-            "noteCount": manifest_data["totals"]["notes"],
-            "fileCount": manifest_data["totals"]["files"],
-            "sizeKB": manifest_data["totals"]["sizeKB"],
-            "sections": [s["folder"] for s in manifest_data["sections"]],
-        },
-    )
-    save_registry(registry)
-    return {
-        "ok": True,
-        **write_report(),
-        "name": backup_name,
-        "path": str(backup_path.relative_to(VAULT_ROOT)).replace("\\", "/") + "/",
-        "manifest": manifest_data,
-        "merkle_root": merkle_root,
-        "merkle_file_count": merkle_count,
-        "merkle_algo": MERKLE_ALGO,
-        "files_copied": files_copied,
-    }
-
-
-def vault_backup_verify(backup_name: str) -> Dict[str, Any]:
-    backup_path = BACKUP_ROOT / backup_name
-    if not backup_path.exists():
-        return {"ok": False, "error": f"Backup no encontrado: {backup_name}"}
-    manifest_path = backup_path / ".manifest.json"
-    if not manifest_path.exists():
-        return {
-            "ok": False,
-            "error": "manifest .manifest.json no encontrado en el backup",
-        }
-    try:
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError) as e:
-        return {"ok": False, "error": f"manifest no legible: {e}"}
-    stored_root = manifest.get("merkle_root")
-    stored_count = manifest.get("merkle_file_count")
-    if not stored_root:
-        return {
-            "ok": False,
-            "error": "manifest no contiene merkle_root (backup pre-v29)",
-        }
-    # El algoritmo lo decide el manifiesto, no la versión instalada. Sin sello
-    # es algo 1: así se escribieron todos los backups anteriores a v40.0.
-    algo = manifest.get("merkle_algo", 1)
-    current_root, current_count = _compute_vault_merkle(backup_path, algo)
-    intact = current_root == stored_root
-    return {
-        "ok": True,
-        "backup": backup_name,
-        "merkle_algo": algo,
-        "intact": intact,
-        "stored_merkle_root": stored_root,
-        "current_merkle_root": current_root,
-        "stored_file_count": stored_count,
-        "current_file_count": current_count,
-        "status": "OK — backup integro" if intact else "CORRUPTO — merkle_root no coincide",
-    }
+def vault_backup_verify(backup_name: str, root=None) -> Dict[str, Any]:
+    return ServicioSnapshot(construir(root)).verificar(backup_name)
 
 
 def main():
@@ -286,13 +55,15 @@ Ejemplos:
   python vault_backup.py
   python vault_backup.py --label "antes-de-migracion"
   python vault_backup.py --label "sprint-3-checkpoint"
-  python vault_backup.py --label "antes-de-refactor"
+  python vault_backup.py --verify vault-2026-08-06-101500-antes-de-migracion
 
 Notas:
   - VAULT_ROOT se detecta automaticamente desde la ubicacion del script
   - Crea snapshot completo en VAULT_ROOT/vault-backups/ con .manifest.json + merkle_root
   - Registra el backup en .backup-registry.json para vault_backup_list.py
-  - --verify recomputa el arbol Merkle y compara con el stored en el manifest
+  - --verify recomputa el arbol Merkle con el algoritmo que sella el manifiesto
+  - files_copied dice cuantos ficheros se copiaron; created/updated/written
+    cuentan solo lo que escribio el kernel de forma atomica
 """,
     )
     parser.add_argument("--label", help="Optional label (e.g., 'antes-de-migracion')")

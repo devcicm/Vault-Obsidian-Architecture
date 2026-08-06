@@ -33,6 +33,14 @@ class Escritor(Protocol):
     def escribir(self, ruta: Path, texto: str) -> None:
         """Escribe de forma atómica, saneando la codificación."""
 
+    def escribir_json(self, ruta: Path, datos: dict) -> None:
+        """Escribe un JSON con el formato del estándar (indent 2, sin escapes).
+
+        Está en el puerto y no en el dominio porque el formato es contrato: un
+        manifiesto o un ledger reescrito con otro `indent` cambia byte a byte un
+        fichero que ya existe en disco de los usuarios.
+        """
+
     def bloquear(self, objetivo: Path, timeout: float = 30.0) -> Iterator[Path]:
         """Bloqueo de directorio junto al objetivo, para índices compartidos."""
 
@@ -92,3 +100,11 @@ class Reloj(Protocol):
     """
 
     def ahora(self) -> datetime: ...
+
+    def marca(self) -> str:
+        """El instante en el formato con el que el estándar lo escribe.
+
+        Es `vault_lib.utcnow()` —`2026-08-06T10:15:00.000Z`— tras el puerto. Se
+        publica formateado y no solo como `datetime` porque el formato viaja a
+        ficheros ya escritos: reformatearlo «de paso» rompería a quien los lee.
+        """

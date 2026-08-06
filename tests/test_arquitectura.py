@@ -280,3 +280,49 @@ def test_el_paquete_de_dominio_esta_declarado_en_pyproject():
     texto = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
     for paquete in ("vault", "vault.kernel", "vault.durabilidad"):
         assert f'"{paquete}"' in texto, f"{paquete} no se instalaría"
+
+
+# ── La fuga que encontró la migración de Durabilidad ─────────────────────────
+
+def test_deshacer_el_override_vuelve_al_vault_detectado(tmp_path):
+    """`set_vault_root()` no tenía vuelta, y eso no se veía.
+
+    El override reancla las constantes de módulo derivadas del vault, y
+    `vault_io.VAULT_ROOT` es una de ellas: se reapunta a sí misma. Poner
+    `_ACTIVE_VAULT_ROOT = None` a mano dejaba el proceso apuntando al último
+    destino **para siempre**, mientras `vault_root_origin()` seguía citando la
+    regla de detección original — anunciando confianza sobre una raíz que ya no
+    era ésa.
+
+    Se ve como tests que fallan según el orden de los ficheros. En una tool se
+    ve como escribir en el vault de la llamada anterior, y es la razón por la
+    que `cli/runner.py` aísla cada tool en un subproceso.
+    """
+    import vault_io
+
+    detectado = vault_io.get_vault_root()
+    assert detectado.name == "vault-sandbox"
+
+    vault_io.set_vault_root(tmp_path)
+    assert vault_io.get_vault_root() == tmp_path.resolve()
+    assert vault_io.vault_root_origin() == "explicit_override", (
+        "con override, la raíz no la eligió ninguna regla de detección"
+    )
+
+    vault_io.reset_vault_root()
+    assert vault_io.get_vault_root() == detectado
+    assert vault_io.VAULT_ROOT == detectado, "la constante también tiene que volver"
+    assert vault_io.vault_root_origin() == "spec_repo_sandbox"
+
+
+def test_el_respaldo_de_la_raiz_no_lo_arrastra_el_reanclaje():
+    """El respaldo se guarda como texto porque el reanclaje caza `Path`.
+
+    `_reanclar_constantes()` reapunta toda constante en mayúsculas cuyo valor
+    sea un `Path` colgado del vault. Guardar ahí la copia de seguridad como
+    ruta la hacía inútil: se reanclaba con las demás y apuntaba al mismo sitio
+    del que había que volver.
+    """
+    import vault_io
+
+    assert isinstance(vault_io._VAULT_ROOT_DETECTADO, str)

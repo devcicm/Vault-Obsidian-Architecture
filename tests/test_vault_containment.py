@@ -213,14 +213,17 @@ def test_no_script_writes_the_contract_outside_the_vault():
 
 
 def test_restore_backup_root_follows_the_active_vault(tmp_path):
-    import vault_restore
+    """La raíz de backups sale del vault activo, no de una constante congelada.
 
-    previous = vault_io.get_vault_root()
-    try:
-        vault_io.set_vault_root(tmp_path)
-        assert vault_restore._backup_root() == tmp_path / "vault-backups"
-    finally:
-        vault_io.set_vault_root(previous)
+    La propiedad no cambió con la migración a `vault/durabilidad/`; cambió
+    dónde se comprueba. Ahora ni siquiera hace falta `set_vault_root()`: la
+    raíz se inyecta, que es de lo que va AP-49.
+    """
+    from vault.durabilidad.repositorio import RepositorioDurabilidad
+    from vault.kernel import construir
+
+    assert RepositorioDurabilidad(construir(tmp_path)).raiz_backups == \
+        (tmp_path / "vault-backups").resolve()
 
 
 def test_restore_never_wipes_the_backup_directory():
@@ -229,9 +232,9 @@ def test_restore_never_wipes_the_backup_directory():
     Al mover los backups dentro del vault (v38.1) el bucle de limpieza pasó a
     incluir vault-backups/ en su barrido.
     """
-    import vault_restore
+    from vault.durabilidad.restauracion import NO_BORRAR
 
-    assert "vault-backups" in vault_restore._WIPE_SKIP
+    assert "vault-backups" in NO_BORRAR
 
 
 def test_restore_no_longer_uses_the_grandparent_pattern():

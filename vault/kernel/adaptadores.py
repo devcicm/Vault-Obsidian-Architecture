@@ -40,6 +40,11 @@ class EscritorAtomico:
         ruta.parent.mkdir(parents=True, exist_ok=True)
         io.atomic_write_text(ruta, texto)
 
+    def escribir_json(self, ruta: Path, datos: dict) -> None:
+        io = _kernel()
+        ruta.parent.mkdir(parents=True, exist_ok=True)
+        io.atomic_write_json(ruta, datos)
+
     @contextmanager
     def bloquear(self, objetivo: Path, timeout: float = 30.0) -> Iterator[Path]:
         io = _kernel()
@@ -111,6 +116,19 @@ class NormasDelCatalogo:
 class RelojUTC:
     def ahora(self) -> datetime:
         return datetime.now(timezone.utc)
+
+    def marca(self) -> str:
+        """Delegado en `vault_lib.utcnow()`, no reimplementado.
+
+        El formato lleva versiones escrito en manifiestos y ledgers en disco.
+        Copiar aquí el `strftime` sería tener dos fuentes de un mismo formato
+        (AP-05) y descubrir la divergencia el día que una de las dos cambie.
+        """
+        if str(_SCRIPTS) not in sys.path:
+            sys.path.insert(0, str(_SCRIPTS))
+        import vault_lib
+
+        return vault_lib.utcnow()
 
 
 def contexto_real(raiz: str | Path | None = None) -> VaultContext:

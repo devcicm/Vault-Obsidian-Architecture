@@ -182,6 +182,20 @@ LIMITES = [
 #: exención anónima habría hecho lo mismo sin dejar constancia.
 RAIZ_COMPOSICION = "vault/kernel/adaptadores.py"
 
+#: Vínculos de nivel de módulo que TIENEN que quedar congelados, declarados uno
+#: a uno. AP-49 penaliza derivar del vault al importar porque la constante deja
+#: de seguir al vault activo; aquí eso es justamente el requisito.
+#:
+#: `vault_io._VAULT_ROOT_DETECTADO` guarda el vault que la autodetección eligió
+#: al cargar, para que `reset_vault_root()` tenga a dónde volver. Si siguiera al
+#: vault activo no serviría de nada: sería una copia del sitio del que hay que
+#: salir. La exención va por nombre y no por heurística —«los que empiecen por
+#: guion bajo», por ejemplo— porque una heurística abre la puerta a que el
+#: próximo vínculo congelado se cuele por parecerse.
+VINCULOS_INTENCIONALES = frozenset({
+    "vault_io._VAULT_ROOT_DETECTADO",
+})
+
 
 # ── El mapa módulo → contexto ────────────────────────────────────────────────
 
@@ -364,10 +378,13 @@ def vinculos_congelados() -> list[dict]:
                 [nodo.target] if isinstance(nodo, ast.AnnAssign) else nodo.targets
             )
             for d in destinos:
-                if isinstance(d, ast.Name):
-                    hallazgos.append({
-                        "module": nombre, "binding": d.id, "line": nodo.lineno,
-                    })
+                if not isinstance(d, ast.Name):
+                    continue
+                if f"{nombre}.{d.id}" in VINCULOS_INTENCIONALES:
+                    continue
+                hallazgos.append({
+                    "module": nombre, "binding": d.id, "line": nodo.lineno,
+                })
     return hallazgos
 
 

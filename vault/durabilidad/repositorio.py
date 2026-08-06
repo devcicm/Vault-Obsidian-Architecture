@@ -65,6 +65,24 @@ class RepositorioDurabilidad:
         except (FileNotFoundError, NotADirectoryError, json.JSONDecodeError, OSError):
             return {}
 
+    def registro_crudo(self) -> dict:
+        """El registro tal cual está en disco, para poder reescribirlo.
+
+        `registro()` devuelve entidades y es lo que consume quien lee. Esto es
+        para quien tiene que **añadir** una copia sin perder los campos que
+        futuras versiones puedan haber puesto en las entradas existentes:
+        reconstruir el fichero desde las entidades borraría lo que el dominio
+        de hoy no sabe leer.
+        """
+        datos = self._leer_json(self.fichero_registro)
+        if not isinstance(datos.get("backups"), list):
+            datos = {"backups": []}
+        return datos
+
+    def guardar_registro(self, datos: dict) -> None:
+        self.raiz_backups.mkdir(parents=True, exist_ok=True)
+        self._ctx.escritor.escribir_json(self.fichero_registro, datos)
+
     def registro(self) -> RegistroBackups:
         """Las copias conocidas: primero el registro, si no el disco.
 
