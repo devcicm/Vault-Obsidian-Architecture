@@ -151,7 +151,15 @@ CONTEXTS: dict[str, dict] = {
         # Éste es el contexto que v39.6 dejó a medias: sus módulos ya están
         # anotados `internal` con motivo, pero nada impedía que uno tocase un
         # vault. Es el único contexto cuya frontera es una prohibición.
-        "prohibe": ["escribir en un vault: opera sobre el estándar, no sobre datos"],
+        # Enunciado corregido en v40.0. El anterior —«escribir en un vault»— era
+        # literalmente falso desde el primer día: `vault_manifest` escribe
+        # `00_System/tools-manifest.json` y `vault_spec_memory` escribe
+        # `00_System/spec-memory.json`. Un enunciado que el código incumple y
+        # que ningún guard lee es enforcement `manual`, que la regla 5 prohíbe.
+        # Lo que sí es frontera, y ahora falla si se cruza: escribir notas o
+        # datos del usuario en una sección de contenido.
+        "prohibe": ["escribir en una sección de contenido: sus artefactos "
+                    "derivados viven en 00_System/"],
         "modulos": [
             "vault_mcp", "vault_mcp_catalog", "vault_manifest", "vault_smoke",
             "vault_spec_catalog_check", "vault_spec_generate_catalog",
@@ -434,6 +442,161 @@ def sin_clasificar() -> list[str]:
     return [m for m in _modulos_en_disco() if m not in mapa]
 
 
+#: Lo que cuenta como escribir. `mkdir` entra: crear una sección de contenido
+#: es tocar el vault del usuario aunque no se deje un byte dentro.
+_LLAMADAS_DE_ESCRITURA = frozenset({
+    "write_text", "write_bytes", "mkdir", "touch", "rename", "replace",
+    "unlink", "rmtree", "atomic_write_text", "atomic_write_json", "write_report",
+})
+
+
+def _secciones_de_contenido() -> set[str]:
+    """Las secciones que no son `00_System/`, leídas del registro canónico.
+
+    No se listan aquí: `vault_registry.ORDERED_SECTIONS` ya es la fuente única
+    (AP-05), y una copia se quedaría atrás en cuanto el estándar añadiera una.
+    """
+    import vault_registry
+
+    return {s for s in vault_registry.ORDERED_SECTIONS if s != "00_System"}
+
+
+def rutas_duplicadas() -> list[dict]:
+    """El mismo fichero declarado en dos repositorios de dominio (AP-05).
+
+    Salió dos veces seguidas en la migración y siempre igual: un contexto lee un
+    fichero que otro escribe, y en vez de pedírselo lo vuelve a derivar. Antes
+    de esta puerta, `quality-index.json` se calculaba en cuatro módulos de tres
+    contextos y `search-index.json` iba camino de su cuarta copia en `vault/`.
+    Lo caro no es la duplicación: es que el día que un fichero se mueva solo se
+    entera el que lo escribe, y el que lo lee devuelve `{}` sin fallar.
+
+    Se mira **solo** el paquete de dominio, y solo constantes de nivel de módulo
+    con pinta de nombre de fichero. Un contexto que necesite una ruta ajena la
+    pide a su dueño; ese cruce se declara en el baseline y se ve.
+    """
+    por_fichero: dict[str, list[str]] = {}
+    for repo in sorted(DOMINIO_DIR.glob("*/repositorio.py")):
+        arbol = ast.parse(repo.read_text(encoding="utf-8"))
+        for nodo in arbol.body:
+            if not (isinstance(nodo, ast.Assign) and len(nodo.targets) == 1):
+                continue
+            destino = nodo.targets[0]
+            if not (isinstance(destino, ast.Name)
+                    and destino.id.startswith("FICHERO_")):
+                continue
+            valor = nodo.value
+            if isinstance(valor, ast.Constant) and isinstance(valor.value, str):
+                por_fichero.setdefault(valor.value, []).append(repo.parent.name)
+    return [
+        {"file": f, "contexts": sorted(ctxs)}
+        for f, ctxs in sorted(por_fichero.items())
+        if len(set(ctxs)) > 1
+    ]
+
+
+def _nombre_base(nodo: ast.AST) -> str | None:
+    """El `Name` del que cuelga una expresión de ruta: `a / "x" / "y"` → `a`."""
+    while True:
+        if isinstance(nodo, ast.BinOp) and isinstance(nodo.op, ast.Div):
+            nodo = nodo.left
+        elif isinstance(nodo, ast.Call):
+            nodo = nodo.func
+        elif isinstance(nodo, ast.Attribute):
+            nodo = nodo.value
+        elif isinstance(nodo, ast.Name):
+            return nodo.id
+        else:
+            return None
+
+
+def _nombres_desechables(arbol: ast.AST) -> set[str]:
+    """Los nombres que apuntan a un vault de usar y tirar, no al del usuario.
+
+    `vault_smoke` y `vault_test_runner` levantan un vault entero en un temporal
+    y lo borran: crean `10_Migrated/` y escriben notas dentro porque es la única
+    forma de probar un contrato de verdad. Prohibírselo no protegería a nadie y
+    volvería la puerta inútil el primer día.
+
+    Se sigue el dato un salto: lo que sale de `mkdtemp`/`TemporaryDirectory`, y
+    el parámetro que lo recibe cuando ese nombre se pasa a otra función del
+    módulo. Un salto basta hoy y falla del lado seguro — si algún día no
+    alcanza, el guard marca de más y obliga a mirar, que es el error correcto.
+    """
+    desechables: set[str] = set()
+    funciones = {n.name: n for n in ast.walk(arbol)
+                 if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))}
+
+    for nodo in ast.walk(arbol):
+        origen = None
+        if isinstance(nodo, ast.Assign) and len(nodo.targets) == 1:
+            origen, destino = nodo.value, nodo.targets[0]
+        elif isinstance(nodo, ast.withitem) and nodo.optional_vars is not None:
+            origen, destino = nodo.context_expr, nodo.optional_vars
+        if origen is None or not isinstance(destino, ast.Name):
+            continue
+        texto = ast.dump(origen)
+        if "mkdtemp" in texto or "TemporaryDirectory" in texto:
+            desechables.add(destino.id)
+
+    for nodo in ast.walk(arbol):
+        if not (isinstance(nodo, ast.Call) and isinstance(nodo.func, ast.Name)):
+            continue
+        fn = funciones.get(nodo.func.id)
+        if fn is None:
+            continue
+        for i, arg in enumerate(nodo.args):
+            if isinstance(arg, ast.Name) and arg.id in desechables:
+                if i < len(fn.args.args):
+                    desechables.add(fn.args.args[i].arg)
+    return desechables
+
+
+def escrituras_prohibidas() -> list[dict]:
+    """La frontera del Meta-toolkit, convertida en medida.
+
+    Hasta v40.0 `prohibe` era prosa que ningún guard leía — el único contexto
+    cuya frontera es una prohibición era también el único sin enforcement. Se
+    busca por AST una llamada de escritura en cuyo árbol de argumentos aparezca
+    el literal de una sección de contenido. Que sea por AST y no por texto
+    importa: `vault_doc_counts` y este mismo módulo *nombran* secciones en
+    docstrings y en mensajes sin escribir en ellas, y un grep las delataría
+    todas en falso.
+    """
+    secciones = _secciones_de_contenido()
+    hallazgos: list[dict] = []
+    for mod in CONTEXTS["meta_toolkit"]["modulos"]:
+        ruta = SCRIPTS_DIR / f"{mod}.py"
+        if not ruta.exists():
+            continue
+        arbol = ast.parse(ruta.read_text(encoding="utf-8"))
+        desechables = _nombres_desechables(arbol)
+        for nodo in ast.walk(arbol):
+            if not isinstance(nodo, ast.Call):
+                continue
+            fn = nodo.func
+            nombre = fn.attr if isinstance(fn, ast.Attribute) else (
+                fn.id if isinstance(fn, ast.Name) else None)
+            if nombre not in _LLAMADAS_DE_ESCRITURA:
+                continue
+            objetivo = fn.value if isinstance(fn, ast.Attribute) else (
+                nodo.args[0] if nodo.args else None)
+            if _nombre_base(objetivo) in desechables:
+                continue
+            for hijo in ast.walk(nodo):
+                if (isinstance(hijo, ast.Constant)
+                        and isinstance(hijo.value, str)
+                        and hijo.value in secciones):
+                    hallazgos.append({
+                        "module": mod,
+                        "line": nodo.lineno,
+                        "call": nombre,
+                        "section": hijo.value,
+                    })
+                    break
+    return hallazgos
+
+
 def fantasmas() -> list[str]:
     """Módulos declarados en un contexto que ya no están en disco."""
     en_disco = set(_modulos_en_disco())
@@ -463,9 +626,24 @@ def check(strict: bool = False) -> dict:
     vinc_nuevos = sorted(claves_v - base_vinc)
     vinc_saldados = sorted(base_vinc - claves_v)
 
+    # Puerta dura desde el primer día, sin baseline: se midió cero al
+    # declararla. Congelar deuda tiene sentido cuando existe; aquí no la hay,
+    # y una lista de excepciones vacía solo invita a estrenarla.
+    prohibidas = escrituras_prohibidas()
+
+    # Ésta sí arranca con baseline: al declararla había cinco duplicados
+    # heredados de las fases anteriores. Exigir cero el primer día habría hecho
+    # que la puerta naciera en rojo, y una puerta en rojo se desactiva.
+    base_rutas = set(_leer_baseline().get("duplicate_paths", []))
+    duplicadas = rutas_duplicadas()
+    claves_r = {d["file"] for d in duplicadas}
+    rutas_nuevas = sorted(claves_r - base_rutas)
+    rutas_saldadas = sorted(base_rutas - claves_r)
+
     return {
         "ok": not nuevos and not huerfanos and not ausentes and not vinc_nuevos
-              and not (strict and (saldados or vinc_saldados)),
+              and not prohibidas and not rutas_nuevas
+              and not (strict and (saldados or vinc_saldados or rutas_saldadas)),
         "tool": "vault_arch",
         "contexts": len(CONTEXTS),
         "modules": len(_mapa_modulos()),
@@ -476,6 +654,13 @@ def check(strict: bool = False) -> dict:
         "settled_crossings": saldados,
         "unclassified_modules": huerfanos,
         "declared_but_missing": ausentes,
+        # La prohibición del Meta-toolkit, ya ejecutable.
+        "forbidden_writes": prohibidas,
+        # AP-05 — el mismo fichero declarado en dos repositorios de dominio.
+        "duplicate_paths_total": len(duplicadas),
+        "duplicate_paths_baseline": len(base_rutas),
+        "new_duplicate_paths": rutas_nuevas,
+        "settled_duplicate_paths": rutas_saldadas,
         # AP-49 — vínculo resuelto en tiempo de import.
         "frozen_bindings_total": len(vinculos),
         "frozen_bindings_baseline": len(base_vinc),
@@ -498,6 +683,7 @@ def freeze() -> dict:
                     "AP-49 y se arregla resolviendo tarde con get_vault_root().",
             "crossings": claves,
             "frozen_bindings": vinculos,
+            "duplicate_paths": sorted(d["file"] for d in rutas_duplicadas()),
         }, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )

@@ -2,7 +2,7 @@
 
 > Documento derivado. Se genera con `python scripts/vault_arch.py --blueprint`; la fuente es `CONTEXTS` en `scripts/vault_arch.py`. No se edita a mano.
 
-**9 contextos**, **112 módulos** clasificados, **50 fronteras cruzadas** pendientes de publicar puerto.
+**9 contextos**, **112 módulos** clasificados, **56 fronteras cruzadas** pendientes de publicar puerto.
 
 ## Los límites
 
@@ -50,10 +50,12 @@ graph TD
     ciclo_de_vida -.->|cruce| autoria
     consulta -.->|cruce| gobernanza
     ciclo_de_vida -.->|cruce| grafo
+    meta_toolkit -.->|cruce| ciclo_de_vida
     ciclo_de_vida -.->|cruce| meta_toolkit
     consulta -.->|cruce| grafo
     autoria -.->|cruce| meta_toolkit
     autoria -.->|cruce| indices
+    autoria -.->|cruce| grafo
 ```
 
 ## Kernel
@@ -77,7 +79,7 @@ Fronteras que hoy cruza (3), deuda declarada:
 - **Puertos publicados:** escribir_nota, anexar, mover, fusionar
 - **Módulos (38):** `vault_ai_decision`, `vault_append`, `vault_bibliography_save`, `vault_bug_save`, `vault_change_log`, `vault_dataset`, `vault_delta`, `vault_diagram_export`, `vault_diagram_save`, `vault_diff`, `vault_env_save`, `vault_fix_brackets`, `vault_flow_save`, `vault_incident_save`, `vault_infra_save`, `vault_knowledge_get`, `vault_knowledge_save`, `vault_list`, `vault_merge`, `vault_move`, `vault_ncr_save`, `vault_pattern_list`, `vault_pattern_save`, `vault_privacy_save`, `vault_project_overview`, `vault_project_status`, `vault_read`, `vault_release_save`, `vault_requirement_save`, `vault_risk_save`, `vault_runbook_log`, `vault_runbook_save`, `vault_search`, `vault_slo_save`, `vault_test_save`, `vault_timeline`, `vault_voice`, `vault_write`
 
-Fronteras que hoy cruza (17), deuda declarada:
+Fronteras que hoy cruza (21), deuda declarada:
 
 | Módulo | Importa | Contexto destino |
 |---|---|---|
@@ -98,6 +100,10 @@ Fronteras que hoy cruza (17), deuda declarada:
 | `vault_write` | `vault_mermaid_check` | Gobernanza |
 | `vault_write` | `vault_norms` | Gobernanza |
 | `vault_write` | `vault_tags` | Índices |
+| `vault/autoria/repositorio.py` | `vault/indices` | Índices |
+| `vault/autoria/repositorio.py` | `vault/indices` | Índices |
+| `vault/autoria/repositorio.py` | `vault/grafo` | Grafo |
+| `vault/autoria/repositorio.py` | `vault/indices` | Índices |
 
 ## Grafo
 
@@ -186,10 +192,10 @@ Fronteras que hoy cruza (14), deuda declarada:
 
 - **Lenguaje ubicuo:** catálogo, contrato, spec, smoke, conteo derivado
 - **Puertos publicados:** TOOLS_CATALOG, GROUPS, check_contracts
-- **No cruza:** escribir en un vault: opera sobre el estándar, no sobre datos
+- **No cruza:** escribir en una sección de contenido: sus artefactos derivados viven en 00_System/
 - **Módulos (13):** `vault_arch`, `vault_doc_counts`, `vault_doc_sync`, `vault_manifest`, `vault_mcp`, `vault_mcp_catalog`, `vault_noop_audit`, `vault_smoke`, `vault_spec_catalog_check`, `vault_spec_generate_catalog`, `vault_spec_memory`, `vault_spec_validate`, `vault_test_runner`
 
-Fronteras que hoy cruza (5), deuda declarada:
+Fronteras que hoy cruza (7), deuda declarada:
 
 | Módulo | Importa | Contexto destino |
 |---|---|---|
@@ -198,4 +204,6 @@ Fronteras que hoy cruza (5), deuda declarada:
 | `vault_manifest` | `vault_fundamentals` | Gobernanza |
 | `vault_mcp` | `vault_mcp_context` | Consulta |
 | `vault_spec_memory` | `vault_fundamentals` | Gobernanza |
+| `vault_spec_memory` | `vault/ciclo_de_vida` | Ciclo de vida |
+| `vault_spec_memory` | `vault/gobernanza` | Gobernanza |
 

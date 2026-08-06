@@ -61,10 +61,25 @@ def test_cada_contexto_declara_lenguaje_y_puertos():
 
 
 def test_el_meta_toolkit_declara_su_prohibicion():
-    """Es el único contexto cuya frontera es una prohibición, no una interfaz."""
-    assert any(
-        "vault" in p for p in arch.CONTEXTS["meta_toolkit"]["prohibe"]
-    ), "el meta-toolkit dejó de declarar que no escribe en un vault"
+    """Es el único contexto cuya frontera es una prohibición, no una interfaz.
+
+    Este test buscaba la subcadena `"vault"` en el texto de `prohibe`, que es
+    tanto como comprobar que la línea sigue estando escrita. Pasaba en verde
+    mientras el enunciado era falso —decía «no escribir en un vault» y dos
+    módulos escribían en `00_System/` desde el primer día— y mientras nada lo
+    hacía cumplir. Ahora se exige lo que importa: que la prohibición esté
+    declarada Y que exista un guard que la mida. El detalle de qué cruza la
+    frontera vive en `test_meta_toolkit_dominio.py`.
+    """
+    assert arch.CONTEXTS["meta_toolkit"]["prohibe"], (
+        "el meta-toolkit dejó de declarar su frontera"
+    )
+    assert arch.escrituras_prohibidas() == [], (
+        "la prohibición del meta-toolkit se está cruzando"
+    )
+    assert "forbidden_writes" in arch.check(), (
+        "la prohibición volvió a ser prosa: el guard ya no la mide"
+    )
 
 
 def test_la_baseline_de_fronteras_solo_encoge():
@@ -326,3 +341,43 @@ def test_el_respaldo_de_la_raiz_no_lo_arrastra_el_reanclaje():
     import vault_io
 
     assert isinstance(vault_io._VAULT_ROOT_DETECTADO, str)
+
+
+# ── AP-05 en el paquete de dominio ────────────────────────────────────────────
+
+
+def test_ninguna_ruta_nueva_se_declara_en_dos_contextos():
+    """La misma forma salió dos veces seguidas migrando, y siempre igual.
+
+    Un contexto lee un fichero que otro escribe y, en vez de pedírselo, lo
+    vuelve a derivar. Antes de esta puerta `quality-index.json` se calculaba en
+    cuatro módulos de tres contextos y `search-index.json` iba camino de su
+    cuarta copia dentro de `vault/`. Lo caro no es la duplicación: es que el día
+    que un fichero se mueva solo se entera el que lo escribe, y el que lo lee
+    devuelve `{}` sin fallar — no hay excepción que lo delate.
+    """
+    r = arch.check()
+    assert not r["new_duplicate_paths"], (
+        f"rutas declaradas en dos contextos: {r['new_duplicate_paths']}. "
+        f"Pídesela a su dueño y declara el cruce."
+    )
+
+
+def test_la_baseline_de_rutas_duplicadas_solo_encoge():
+    r = arch.check(strict=True)
+    assert r["duplicate_paths_total"] <= r["duplicate_paths_baseline"]
+
+
+def test_la_deteccion_de_rutas_duplicadas_puede_fallar(tmp_path, monkeypatch):
+    """Un guard que no puede fallar no es un guard (AP-37)."""
+    for ctx in ("uno", "dos"):
+        d = tmp_path / ctx
+        d.mkdir()
+        (d / "repositorio.py").write_text(
+            'FICHERO_X = "el-mismo.json"\n', encoding="utf-8"
+        )
+    monkeypatch.setattr(arch, "DOMINIO_DIR", tmp_path)
+
+    assert arch.rutas_duplicadas() == [
+        {"file": "el-mismo.json", "contexts": ["dos", "uno"]}
+    ]

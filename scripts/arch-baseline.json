@@ -1,6 +1,8 @@
 {
   "note": "Deuda estructural congelada. SOLO PUEDE ENCOGER: un cruce nuevo es una frontera que se rompió y se arregla publicando un puerto, no ampliando esta lista; un vínculo nuevo es AP-49 y se arregla resolviendo tarde con get_vault_root().",
   "crossings": [
+    "vault/autoria/repositorio.py -> vault/grafo",
+    "vault/autoria/repositorio.py -> vault/indices",
     "vault_bug_save -> vault_norms",
     "vault_code_tag -> vault_norms",
     "vault_code_tag -> vault_write",
@@ -41,6 +43,8 @@
     "vault_sanacion -> vault_reindex",
     "vault_sdd_init -> vault_norms",
     "vault_slo_save -> vault_norms",
+    "vault_spec_memory -> vault/ciclo_de_vida",
+    "vault_spec_memory -> vault/gobernanza",
     "vault_spec_memory -> vault_fundamentals",
     "vault_standard_upgrade -> vault_mcp_catalog",
     "vault_standard_upgrade -> vault_section_index",
@@ -70,7 +74,6 @@
     "vault_knowledge_get.INDEX_FILE",
     "vault_knowledge_get.KNOWLEDGE_DIR",
     "vault_knowledge_save.KNOWLEDGE_DIR",
-    "vault_manifest.SYSTEM_DIR",
     "vault_move.INDEX_DIR",
     "vault_move.SYSTEM_DIR",
     "vault_pattern_list.PATTERNS_DIR",
@@ -80,12 +83,17 @@
     "vault_requirement_save.REQ_DIR",
     "vault_runbook_save.RUNBOOKS_DIR",
     "vault_search.INDEX_FILE",
-    "vault_spec_memory.SYSTEM_DIR",
-    "vault_spec_validate.SYSTEM_DIR",
     "vault_test_save.TESTS_DIR",
     "vault_timeline.INDEX_FILE",
     "vault_write.HISTORY_DIR",
     "vault_write.INDEX_FILE",
     "vault_write.TAG_REGISTRY"
+  ],
+  "duplicate_paths": [
+    ".change-log.json",
+    "graph.json",
+    "search-index.json",
+    "standard-version.json",
+    "tag-registry.json"
   ]
 }

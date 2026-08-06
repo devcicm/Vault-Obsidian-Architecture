@@ -32,11 +32,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT, resolve_tool_spec, tool_spec_path
+from vault_io import resolve_tool_spec, tool_spec_path
 from vault_registry import folder_owner, check_folder_collisions
 
 SCRIPTS_DIR = Path(__file__).parent
-SYSTEM_DIR = VAULT_ROOT / "00_System"
 
 # Scripts que no son tools de usuario y se excluyen del check "unspecced"
 _NON_TOOL_SCRIPTS = {
@@ -49,6 +48,27 @@ _NON_TOOL_SCRIPTS = {
 # ──────────────────────────────────────────────────────────────────────────────
 # Spec loader
 # ──────────────────────────────────────────────────────────────────────────────
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.meta_toolkit.repositorio import RepositorioMetaToolkit  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioMetaToolkit:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioMetaToolkit(construir(root))
+
+
+def _system_dir() -> Path:
+    return _repo().dir_sistema
+
 
 def load_spec() -> Dict[str, Any]:
     spec_file = resolve_tool_spec()

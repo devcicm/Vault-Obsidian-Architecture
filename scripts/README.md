@@ -1575,6 +1575,44 @@ Tooling interno para generación y validación del estándar. No forman parte de
 | `vault_mcp.py` | Orquestador MCP en Python (alternativa al monolito Node.js) |
 | `vault_mcp_context.py` | Generación de contexto MCP para agentes |
 
+### Contexto acotado: Meta-toolkit (v40.0)
+
+Los 13 módulos de este grupo —más `vault_smoke`, `vault_spec_*`, `vault_doc_counts`,
+`vault_doc_sync`, `vault_noop_audit` y `vault_arch`— forman el contexto **Meta-toolkit**,
+el único cuya frontera es una **prohibición** en vez de una interfaz. Al migrarlo se
+saldaron 3 vínculos congelados (AP-49): 34 → 31.
+
+**El enunciado que nadie comprobaba era falso.** `prohibe` decía «no escribir en un
+vault» y ningún guard lo leía: solo se renderizaba en el plano. Medido, `vault_manifest`
+escribe `00_System/tools-manifest.json` y `vault_spec_memory` escribe
+`00_System/spec-memory.json` — y llevaban años haciéndolo. No es un abuso: son artefactos
+derivados del propio estándar, y viven en el vault porque ahí es donde los consume un
+agente. Lo que estaba mal era el enunciado, y un enunciado que el código incumple desde
+el primer día es una norma con enforcement `manual` — lo que la regla 5 prohíbe.
+
+La frontera precisa, y ya ejecutable en `vault_arch --check` (`forbidden_writes`):
+
+- **Sí** artefactos derivados del estándar en `00_System/`.
+- **Sí** vaults desechables para medirse: `vault_smoke` y `vault_test_runner` levantan
+  un vault entero en un temporal y lo borran. Sin esa excepción la puerta se habría
+  desactivado el primer día, que es como mueren los guards que solo saben decir que no.
+- **No** notas ni datos del usuario en ninguna sección de contenido. Eso es lo que falla.
+
+El guard busca por AST una llamada de escritura (`write_text`, `mkdir`, `atomic_write_*`…)
+con el literal de una sección de contenido en su árbol de argumentos, y exime el destino
+cuyo nombre traza —un salto— hasta `mkdtemp`/`TemporaryDirectory`. Por AST y no por texto
+porque `vault_doc_counts` y el propio `vault_arch` **nombran** secciones en docstrings sin
+escribir en ellas: un grep las delataría todas en falso (AP-44). Es puerta dura sin
+baseline: se midió cero al declararla, y una lista de excepciones vacía solo invita a
+estrenarla.
+
+**Rutas ajenas.** `vault_spec_memory` derivaba por su cuenta `quality-index.json`,
+`propagation-queue.json`, `.change-log.json` y `standard-version.json`, que **lee** pero
+no escribe. Con eso `quality-index.json` llegaba a calcularse en cuatro módulos de tres
+contextos: AP-05 multiplicado, y el día que se moviera solo se habrían enterado los que
+lo escriben. Ahora se piden a `RepositorioGobernanza` y `RepositorioCicloDeVida`, y los
+dos cruces están declarados en el baseline.
+
 ---
 
 ## Protocolo de sesión recomendado

@@ -33,13 +33,7 @@ from typing import Any, Dict, List, Optional, Set
 SCRIPTS_DIR = Path(__file__).parent
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT, resolve_tool_spec  # noqa: E402
-SYSTEM_DIR = VAULT_ROOT / "00_System"
-SPEC_MEMORY_FILE = SYSTEM_DIR / "spec-memory.json"
-QUALITY_INDEX = SYSTEM_DIR / "quality-index.json"
-PROPAGATION_QUEUE = SYSTEM_DIR / "propagation-queue.json"
-CHANGE_LOG = SYSTEM_DIR / ".change-log.json"
-STANDARD_VERSION_FILE = SYSTEM_DIR / "standard-version.json"
+from vault_io import resolve_tool_spec  # noqa: E402
 PYTHON = sys.executable
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -47,6 +41,56 @@ PYTHON = sys.executable
 # Fallback al dict hardcodeado si el archivo de spec no existe aún.
 # Fuente canónica: <vault>/00_System/tool-spec.json (editar antes de implementar).
 # ──────────────────────────────────────────────────────────────────────────────
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.ciclo_de_vida.repositorio import RepositorioCicloDeVida  # noqa: E402
+from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
+from vault.meta_toolkit.repositorio import RepositorioMetaToolkit  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioMetaToolkit:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioMetaToolkit(construir(root))
+
+
+def _system_dir() -> Path:
+    return _repo().dir_sistema
+
+
+def _spec_memory_file() -> Path:
+    return _repo().memoria_spec
+
+
+# ── Rutas ajenas: se piden a su contexto, no se vuelven a derivar ────────────
+# Los cuatro ficheros siguientes se LEEN aqui y los escriben otros. Derivarlos
+# por cuenta propia era AP-05 multiplicado: `quality-index.json` llego a
+# calcularse en cuatro modulos de tres contextos, y el dia que se moviera solo
+# se habrian enterado los que lo escriben.
+
+
+def _quality_index() -> Path:
+    return RepositorioGobernanza(construir()).indice_calidad
+
+
+def _propagation_queue() -> Path:
+    return RepositorioGobernanza(construir()).cola_propagacion
+
+
+def _change_log() -> Path:
+    return RepositorioGobernanza(construir()).bitacora_cambios
+
+
+def _standard_version_file() -> Path:
+    return RepositorioCicloDeVida(construir()).fichero_version
+
 
 def _load_declared_returns() -> Dict[str, List[str]]:
     """Carga declared_returns desde tool-spec.json. Fallback a hardcoded si no existe."""
@@ -199,7 +243,7 @@ def _get_description(source: str) -> str:
 
 def _read_dq_memory() -> Dict[str, Any]:
     try:
-        data = json.loads(QUALITY_INDEX.read_text(encoding="utf-8"))
+        data = json.loads(_quality_index().read_text(encoding="utf-8"))
         return {
             "overall_score": data.get("overall_dq_score"),
             "notes_below_threshold": len([
@@ -219,7 +263,7 @@ def _read_dq_memory() -> Dict[str, Any]:
 
 def _read_propagation_memory() -> Dict[str, Any]:
     try:
-        data = json.loads(PROPAGATION_QUEUE.read_text(encoding="utf-8"))
+        data = json.loads(_propagation_queue().read_text(encoding="utf-8"))
         pending = data.get("pending", [])
         high = [p for p in pending if p.get("priority") == "high"]
         return {
@@ -240,7 +284,7 @@ def _read_propagation_memory() -> Dict[str, Any]:
 
 def _read_change_memory() -> Dict[str, Any]:
     try:
-        data = json.loads(CHANGE_LOG.read_text(encoding="utf-8"))
+        data = json.loads(_change_log().read_text(encoding="utf-8"))
         entries = data.get("entries", [])
         recent = entries[-10:] if len(entries) > 10 else entries
         return {
@@ -260,7 +304,7 @@ def _read_change_memory() -> Dict[str, Any]:
 
 def _read_standard_version() -> str:
     try:
-        data = json.loads(STANDARD_VERSION_FILE.read_text(encoding="utf-8"))
+        data = json.loads(_standard_version_file().read_text(encoding="utf-8"))
         v = data.get("version", "unknown")
         return f"v{v}" if isinstance(v, int) else str(v)
     except Exception:
@@ -584,8 +628,8 @@ Ejemplos:
     if args.summary:
         _print_summary(doc)
         if not args.check and not args.tool:
-            SYSTEM_DIR.mkdir(parents=True, exist_ok=True)
-            SPEC_MEMORY_FILE.write_text(
+            _system_dir().mkdir(parents=True, exist_ok=True)
+            _spec_memory_file().write_text(
                 json.dumps(doc, indent=2, ensure_ascii=False), encoding="utf-8"
             )
             print(json.dumps({"ok": True, "path": "00_System/spec-memory.json",
@@ -597,8 +641,8 @@ Ejemplos:
         print(json.dumps(doc, indent=2, ensure_ascii=False))
         return 0
 
-    SYSTEM_DIR.mkdir(parents=True, exist_ok=True)
-    SPEC_MEMORY_FILE.write_text(
+    _system_dir().mkdir(parents=True, exist_ok=True)
+    _spec_memory_file().write_text(
         json.dumps(doc, indent=2, ensure_ascii=False), encoding="utf-8"
     )
     print(json.dumps({
