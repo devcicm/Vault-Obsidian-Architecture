@@ -6328,7 +6328,7 @@ temp/
 
 ---
 
-### v39.6 — 2026-08-06 `git: pending`
+### v39.6 — 2026-08-06 `git: 3aea25d`
 
 **Lo que el `ok` tapaba**
 
