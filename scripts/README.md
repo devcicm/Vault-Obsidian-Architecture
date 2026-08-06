@@ -1681,6 +1681,10 @@ Vigila dos deudas distintas. **Fronteras cruzadas:** un módulo que importa el m
 
 El grafo se reconstruye **por AST en cada ejecución**, incluidos los imports diferidos dentro de funciones: un `import vault_norms` escondido en un `try:` cruza la frontera igual que uno de cabecera. Ambas deudas arrancan congeladas y **solo pueden encoger** — un guard que exigiera cero el primer día fallaría el primer día y se desactivaría. Lo que sí es puerta dura desde el principio es que **todo módulo en disco pertenezca a un contexto**: clasificar cuesta una línea, y un módulo que ningún registro reclama no lo echa en falta nadie.
 
+Se mide `scripts/` **y `vault/`**. Nació mirando solo el primero, con lo que el paquete que existe para imponer fronteras era el único que podía cruzarlas sin que saltara nada — pasaba por el guard de AP-49 y por ninguno más. En `vault/` la pertenencia la declara el directorio (`vault/<contexto>/`, sin registro paralelo: AP-05) y los imports relativos se resuelven a mano, porque `from ..gobernanza.x import y` cruza exactamente igual que `import vault_norms`.
+
+Hay **una** excepción al límite 2, declarada por nombre en `RAIZ_COMPOSICION` y no escondida en el guard: `vault/kernel/adaptadores.py`, que cablea el `VaultContext` y por tanto tiene que conocer a todos. Lo que compra es que ese conocimiento viva en un fichero en vez de repartirse por el dominio; lo que cuesta es que ese fichero hay que leerlo entero al revisarlo.
+
 ---
 
 ### `vault_noop_audit.py`

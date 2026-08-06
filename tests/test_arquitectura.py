@@ -199,3 +199,84 @@ def test_un_paquete_python_no_se_confunde_con_un_vault():
     assert (REPO_ROOT / "vault" / "__init__.py").exists(), "el paquete existe"
     assert vault_io.get_vault_root().name == "vault-sandbox"
     assert vault_io.vault_root_origin() == "spec_repo_sandbox"
+
+
+# ── El guard vigilándose a sí mismo: `vault/` también tiene fronteras ────────
+
+def test_el_guard_ve_los_modulos_del_dominio():
+    """El paquete que existe para imponer límites era el que podía cruzarlos.
+
+    `vault_arch --check` nació mirando solo `scripts/`. Mientras fue así, el
+    código nuevo pasaba únicamente por el guard de AP-49 y su clasificación por
+    contexto no la comprobaba nadie.
+    """
+    modulos = arch._modulos_dominio()
+    assert modulos, "sin módulos de dominio el guard no está midiendo nada"
+    assert "vault/kernel/contexto.py" in modulos
+    assert modulos["vault/durabilidad/repositorio.py"] == "durabilidad"
+    assert "vault/__init__.py" not in modulos, "la raíz del paquete no es contexto"
+
+
+def test_un_paquete_de_dominio_sin_contexto_declarado_no_pasa(tmp_path, monkeypatch):
+    """La convención es el registro: `vault/<contexto>/` declara pertenencia.
+
+    Un paquete cuyo nombre no esté en `CONTEXTS` se reporta sin clasificar en
+    vez de colarse — el mismo trato que un módulo huérfano de `scripts/`.
+    """
+    (tmp_path / "inventado").mkdir()
+    (tmp_path / "inventado" / "cosa.py").write_text("x = 1", encoding="utf-8")
+    monkeypatch.setattr(arch, "DOMINIO_DIR", tmp_path)
+    assert arch.dominio_sin_clasificar() == ["vault/inventado/cosa.py"]
+
+
+def test_un_import_relativo_a_otro_contexto_es_un_cruce(tmp_path, monkeypatch):
+    """`from ..gobernanza.x import y` cruza igual que `import vault_norms`.
+
+    Los imports relativos hay que resolverlos a mano; ignorarlos dejaría ciego
+    al guard justo donde más barato sale corregir.
+    """
+    (tmp_path / "durabilidad").mkdir()
+    (tmp_path / "durabilidad" / "fuga.py").write_text(
+        "from ..gobernanza.reglas import algo\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(arch, "DOMINIO_DIR", tmp_path)
+    cruces = [c for c in arch.cruces() if c["from"].startswith("vault/")]
+    assert {"from": "vault/durabilidad/fuga.py", "from_context": "durabilidad",
+            "to": "vault/gobernanza", "to_context": "gobernanza"} in cruces
+
+
+def test_depender_del_propio_contexto_o_del_kernel_no_es_cruce(tmp_path, monkeypatch):
+    """Límite 1: el kernel es de todos. Y dentro de casa no hay frontera."""
+    (tmp_path / "durabilidad").mkdir()
+    (tmp_path / "durabilidad" / "limpio.py").write_text(
+        "from ..kernel.contexto import VaultContext\nfrom .modelo import Backup\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(arch, "DOMINIO_DIR", tmp_path)
+    assert [c for c in arch.cruces() if c["from"].startswith("vault/")] == []
+
+
+def test_la_raiz_de_composicion_es_una_excepcion_con_nombre():
+    """Cablear implica conocer a todos; esconderlo en el guard, no.
+
+    La excepción compra que ese conocimiento viva en un fichero en vez de
+    repartirse por el dominio, y se paga leyéndolo entero al revisarlo. Por eso
+    está declarada por nombre y es exactamente uno.
+    """
+    assert arch.RAIZ_COMPOSICION in arch._modulos_dominio()
+    assert any("composición" in lim for lim in arch.LIMITES)
+    fuera = [c["from"] for c in arch.cruces() if c["from"].startswith("vault/")]
+    assert arch.RAIZ_COMPOSICION not in fuera
+    # Y es la única que se salta el límite 2: si mañana otro fichero del dominio
+    # importa `scripts/`, el guard tiene que verlo.
+    assert isinstance(arch.RAIZ_COMPOSICION, str)
+
+
+def test_el_paquete_de_dominio_esta_declarado_en_pyproject():
+    """Funcionaba por `sys.path`, no por instalación (AP-42 en el empaquetado).
+
+    `scripts/` sigue fuera a propósito: se resuelve por ruta de fichero.
+    """
+    texto = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    for paquete in ("vault", "vault.kernel", "vault.durabilidad"):
+        assert f'"{paquete}"' in texto, f"{paquete} no se instalaría"

@@ -30,6 +30,11 @@ SCRIPTS_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPTS_DIR.parent
 BASELINE_PATH = SCRIPTS_DIR / "arch-baseline.json"
 
+#: El paquete de dominio. El guard nació mirando solo `scripts/`, con lo que el
+#: único código que existe para imponer fronteras era el único que podía
+#: cruzarlas sin que saltara nada. Se vigila con la misma vara.
+DOMINIO_DIR = REPO_ROOT / "vault"
+
 #: El shared kernel. No es un contexto de dominio: es el vocabulario que todos
 #: hablan (ruta, envelope, error, bloqueo, escritura atómica). Es el único al
 #: que cualquiera puede depender, y por eso mismo no puede depender de nadie.
@@ -164,7 +169,18 @@ LIMITES = [
     "Meta-toolkit ↛ vault. No importa nada que escriba en un vault.",
     "Adaptadores ↛ dominio ajeno. `scripts/`, `cli/` y el `.mjs` traducen "
     "transporte; no deciden.",
+    "Raíz de composición: `vault/kernel/adaptadores.py` es el único fichero que "
+    "puede cruzar a cualquier contexto, porque su trabajo es cablearlos.",
 ]
+
+#: La única excepción al límite 2, declarada por nombre y no escondida en el
+#: guard. Cablear implica conocer a todos: el objeto que construye el
+#: `VaultContext` tiene que resolver el catálogo de normas, el registro de
+#: secciones y el escritor real. Lo que la excepción compra es que ese
+#: conocimiento viva en **un** fichero en lugar de repartirse por el dominio; lo
+#: que cuesta es que ese fichero hay que leerlo entero al revisarlo. Una
+#: exención anónima habría hecho lo mismo sin dejar constancia.
+RAIZ_COMPOSICION = "vault/kernel/adaptadores.py"
 
 
 # ── El mapa módulo → contexto ────────────────────────────────────────────────
@@ -213,6 +229,44 @@ def _importaciones(ruta: Path) -> set[str]:
     return {n for n in nombres if n.startswith("vault_")}
 
 
+def _modulos_dominio() -> dict[str, str]:
+    """Los módulos de `vault/`, mapeados por el nombre de su paquete.
+
+    El paquete que existe para imponer fronteras era el único que podía
+    cruzarlas sin que saltara nada: el guard nacía mirando solo `scripts/`. La
+    convención es deliberada y sin registro paralelo (AP-05) — el directorio
+    `vault/<contexto>/` **es** la declaración de a qué contexto pertenece, así
+    que un paquete cuyo nombre no esté en `CONTEXTS` se reporta sin clasificar
+    en vez de colarse.
+    """
+    if not DOMINIO_DIR.exists():
+        return {}
+    encontrados: dict[str, str] = {}
+    for src in sorted(DOMINIO_DIR.rglob("*.py")):
+        paquete = src.relative_to(DOMINIO_DIR).parts[0]
+        if src.parent == DOMINIO_DIR:
+            continue  # `vault/__init__.py`: la raíz del paquete no es contexto
+        clave = f"vault/{src.relative_to(DOMINIO_DIR).as_posix()}"
+        encontrados[clave] = paquete if paquete in CONTEXTS else ""
+    return encontrados
+
+
+def _destino_de_import(nodo: ast.AST, origen_rel: Path) -> set[str]:
+    """A qué contextos apunta un import escrito dentro de `vault/`.
+
+    Los imports relativos hay que resolverlos a mano: `from ..kernel.contexto
+    import X` desde `vault/durabilidad/repositorio.py` apunta al kernel, y un
+    `.` a su propio paquete. Ignorarlos dejaría ciego al guard justo en el
+    código nuevo, que es donde más barato sale corregir.
+    """
+    if isinstance(nodo, ast.ImportFrom) and nodo.level:
+        # level=1 es el propio paquete; level=2 sube a `vault/`.
+        if nodo.level >= 2 and nodo.module:
+            return {nodo.module.split(".")[0]}
+        return {origen_rel.parts[0]}
+    return set()
+
+
 def cruces() -> list[dict]:
     """Toda importación que cruza una frontera no declarada.
 
@@ -234,7 +288,39 @@ def cruces() -> list[dict]:
                 "from": nombre, "from_context": origen,
                 "to": destino_mod, "to_context": destino,
             })
+
+    # El dominio, con la misma vara. Un módulo de `vault/x/` que importe
+    # `vault_norms` cruza igual que si viviera en `scripts/`.
+    for clave, origen in sorted(_modulos_dominio().items()):
+        if not origen or clave == RAIZ_COMPOSICION:
+            continue
+        ruta = DOMINIO_DIR / clave[len("vault/"):]
+        rel = ruta.relative_to(DOMINIO_DIR)
+        for destino_mod in sorted(_importaciones(ruta)):
+            destino = mapa.get(destino_mod)
+            if destino is None or destino == origen or destino == KERNEL:
+                continue
+            fuera.append({
+                "from": clave, "from_context": origen,
+                "to": destino_mod, "to_context": destino,
+            })
+        try:
+            arbol = ast.parse(ruta.read_text(encoding="utf-8", errors="replace"))
+        except SyntaxError:
+            continue
+        for nodo in ast.walk(arbol):
+            for destino in _destino_de_import(nodo, rel):
+                if destino in CONTEXTS and destino not in (origen, KERNEL):
+                    fuera.append({
+                        "from": clave, "from_context": origen,
+                        "to": f"vault/{destino}", "to_context": destino,
+                    })
     return fuera
+
+
+def dominio_sin_clasificar() -> list[str]:
+    """Paquetes de `vault/` cuyo nombre no corresponde a ningún contexto."""
+    return sorted(k for k, v in _modulos_dominio().items() if not v)
 
 
 def vinculos_congelados() -> list[dict]:
@@ -320,7 +406,8 @@ def check(strict: bool = False) -> dict:
     claves = {_clave(c) for c in actuales}
     nuevos = sorted(claves - base)
     saldados = sorted(base - claves)
-    huerfanos, ausentes = sin_clasificar(), fantasmas()
+    huerfanos = sin_clasificar() + dominio_sin_clasificar()
+    ausentes = fantasmas()
 
     base_vinc = set(_leer_baseline().get("frozen_bindings", []))
     vinculos = vinculos_congelados()
@@ -334,6 +421,7 @@ def check(strict: bool = False) -> dict:
         "tool": "vault_arch",
         "contexts": len(CONTEXTS),
         "modules": len(_mapa_modulos()),
+        "domain_modules": len(_modulos_dominio()),
         "crossings_total": len(actuales),
         "baseline_total": len(base),
         "new_crossings": nuevos,

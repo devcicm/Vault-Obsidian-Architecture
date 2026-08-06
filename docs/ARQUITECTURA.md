@@ -10,6 +10,7 @@
 2. Contexto ↛ contexto. Se consume el puerto publicado, no el módulo ajeno.
 3. Meta-toolkit ↛ vault. No importa nada que escriba en un vault.
 4. Adaptadores ↛ dominio ajeno. `scripts/`, `cli/` y el `.mjs` traducen transporte; no deciden.
+5. Raíz de composición: `vault/kernel/adaptadores.py` es el único fichero que puede cruzar a cualquier contexto, porque su trabajo es cablearlos.
 
 ## Mapa de contextos
 
