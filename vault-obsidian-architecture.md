@@ -6801,7 +6801,7 @@ temp/
 
 ---
 
-### v40.3 — 2026-08-07 `git: pending`
+### v40.3 — 2026-08-07 `git: 4f11b5d`
 
 **Un número que dejó de medir, y una consulta que escribía**
 
