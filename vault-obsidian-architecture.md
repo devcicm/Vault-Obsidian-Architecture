@@ -6393,7 +6393,7 @@ temp/
 
 ---
 
-### v40.1 — 2026-08-07 `git: pending`
+### v40.1 — 2026-08-07 `git: 9a6c77b`
 
 **Las decisiones, con dueño**
 
