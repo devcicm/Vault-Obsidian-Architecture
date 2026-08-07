@@ -247,7 +247,7 @@ def vault_env_save(
     return {
         "ok": True,
         **write_report(),
-        "path": str(envs_path.relative_to(_raiz())),
+        "path": str(envs_path.relative_to(_raiz())).replace("\\", "/"),
         "environment": environment,
         "varCount": len(vars),
         "message": f"envs.md updated with {len(vars)} variables for {environment}",

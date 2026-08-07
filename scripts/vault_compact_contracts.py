@@ -74,8 +74,20 @@ def _version_file() -> Path:
     return _system_dir() / "standard-version.json"
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Group metadata — leído desde tool-spec.json (spec-driven).
-# Fallback al hardcodeado si el spec no existe aún.
+# Group metadata — leído desde tool-spec.json, que es la proyección del catálogo
+# que `vault_mcp_catalog --check-contracts` ya vigila (`group` y `group_id` se
+# derivan de `GROUPS` y de la numeración de `scripts/README.md`).
+#
+# superseded_by: _grupos()
+#
+# `_GROUPS_HARDCODED` era la segunda copia del catálogo y no se deroga —se
+# conserva su contenido como estaba—, pero deja de ser fuente de nada. Lo era
+# de tres maneras a la vez y todas silenciosas: se había quedado en 31 grupos
+# frente a los 37 canónicos, se elegía dentro de un `except Exception` que se
+# tragaba cualquier fallo de lectura, y `GROUPS` se calculaba en tiempo de
+# import (AP-49) contra el vault que estuviera detectado en ese momento, así
+# que `set_vault_root()` no podía cambiarlo. Un vault sin `tool-spec.json`
+# obtenía un catálogo de hace seis grupos sin que nada lo dijera.
 # ──────────────────────────────────────────────────────────────────────────────
 
 _GROUPS_HARDCODED: List[Dict[str, Any]] = [
@@ -198,46 +210,68 @@ _GROUPS_HARDCODED: List[Dict[str, Any]] = [
 ]
 
 
-_TOOL_SPEC: Dict[str, Any] = {}
+#: Memoria por ruta de spec, no por proceso: `set_vault_root()` cambia la ruta
+#: y con ella la entrada, que es justo lo que el binding en import impedía.
+_SPEC_CACHE: Dict[str, Dict[str, Any]] = {}
 
 
-def _load_tool_spec() -> Dict[str, Any]:
-    """Carga tool-spec.json completo para obtener declared_returns."""
+def _tool_spec() -> Dict[str, Any]:
+    """El `tool-spec.json` del vault activo, resuelto al usarse (AP-49).
+
+    Un fallo de lectura ya no devuelve `{}` en silencio: un spec ilegible es un
+    defecto del vault, y taparlo hacía que las tools salieran sin
+    `declared_returns` y sin grupo como si eso fuera normal.
+    """
     spec_file = resolve_tool_spec()
     if spec_file is None:
-        return {}
-    try:
-        return json.loads(spec_file.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
+        raise FileNotFoundError(
+            "No hay tool-spec.json en el vault activo. Es la fuente de "
+            "`group`, `group_id` y `declared_returns`; sin él no hay contrato "
+            "que compactar. Genéralo con `vault_mcp_catalog --sync`."
+        )
+    clave = str(spec_file)
+    if clave not in _SPEC_CACHE:
+        _SPEC_CACHE[clave] = json.loads(Path(spec_file).read_text(encoding="utf-8"))
+    return _SPEC_CACHE[clave]
 
 
-def _load_groups() -> List[Dict[str, Any]]:
-    """Reconstruye la lista GROUPS desde tool-spec.json. Fallback a hardcoded."""
-    global _TOOL_SPEC
-    _TOOL_SPEC = _load_tool_spec()
-    if not _TOOL_SPEC:
-        return _GROUPS_HARDCODED
-    try:
-        by_group: Dict[int, Dict[str, Any]] = {}
-        for name, entry in _TOOL_SPEC.get("tools", {}).items():
-            gid = entry.get("group_id", 0)
-            gname = entry.get("group", "misc")
-            if gid not in by_group:
-                by_group[gid] = {"id": gid, "name": gname, "tools": []}
-            by_group[gid]["tools"].append(name)
-        return sorted(by_group.values(), key=lambda g: g["id"]) or _GROUPS_HARDCODED
-    except Exception:
-        return _GROUPS_HARDCODED
+def _grupos() -> List[Dict[str, Any]]:
+    """Los grupos, derivados del spec y no de una copia local.
+
+    `group` y `group_id` de cada entrada los deriva `vault_mcp_catalog` de
+    `GROUPS` y de la numeración de `scripts/README.md`, y su
+    `--check-contracts` falla si divergen. Reconstruir aquí la agrupación a
+    partir del spec es leer esa misma decisión, no tomarla otra vez.
+    """
+    por_grupo: Dict[int, Dict[str, Any]] = {}
+    for name, entry in _tool_spec().get("tools", {}).items():
+        gid = entry.get("group_id", 0)
+        por_grupo.setdefault(
+            gid, {"id": gid, "name": entry.get("group", "misc"), "tools": []}
+        )["tools"].append(name)
+    return sorted(por_grupo.values(), key=lambda g: g["id"])
 
 
-GROUPS: List[Dict[str, Any]] = _load_groups()
+def __getattr__(nombre: str):
+    """`GROUPS` sigue existiendo como símbolo, pero se resuelve al leerse.
 
-# Build tool → group lookup
-_TOOL_GROUP: Dict[str, Dict] = {}
-for g in GROUPS:
-    for t in g["tools"]:
-        _TOOL_GROUP[t] = g
+    No-derogación: `vault_manifest` hace `from vault_compact_contracts import
+    GROUPS` y ese contrato se conserva intacto. Lo que cambia es *cuándo* se
+    calcula. Como constante de módulo quedaba fijada contra el vault detectado
+    en el import (AP-49); vía `__getattr__` la lee quien la pide, cuando la
+    pide, contra el vault que esté activo entonces.
+    """
+    if nombre == "GROUPS":
+        return _grupos()
+    raise AttributeError(f"module {__name__!r} has no attribute {nombre!r}")
+
+
+def _grupo_de(nombre: str) -> Dict[str, Any]:
+    """A qué grupo pertenece una tool. Resuelto al usarse."""
+    for g in _grupos():
+        if nombre in g["tools"]:
+            return g
+    return {}
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Profile definitions
@@ -396,7 +430,7 @@ def introspect_tool(name: str) -> Optional[Dict[str, Any]]:
 
     required_args, optional_args = _extract_argparse_args(source)
 
-    group = _TOOL_GROUP.get(name, {})
+    group = _grupo_de(name)
 
     deprecated = "_deprecation" in source
 
@@ -408,9 +442,9 @@ def introspect_tool(name: str) -> Optional[Dict[str, Any]]:
     command = " ".join(cmd_parts)
 
     # Get declared_returns from tool-spec.json
-    declared_returns = []
-    if _TOOL_SPEC and name in _TOOL_SPEC.get("tools", {}):
-        declared_returns = _TOOL_SPEC["tools"][name].get("declared_returns", [])
+    declared_returns = _tool_spec().get("tools", {}).get(name, {}).get(
+        "declared_returns", []
+    )
 
     return {
         "name": name,

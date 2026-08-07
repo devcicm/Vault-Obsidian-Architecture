@@ -53,7 +53,9 @@ from vault_io import atomic_write_json, file_lock, write_report
 # El mapa que había aquí tenía un solo tipo esperado por sección y era una de
 # las tres copias que se contradecían entre sí. Ver `vault_registry.SECTION_TYPES`
 # para por qué el modelo singular no era ampliable, solo sustituible.
-from vault_registry import type_misfiled_in
+from vault_registry import SCAFFOLD_TYPE, SECTION_TYPES, type_misfiled_in
+from vault_fundamentals import cia_valores
+from vault_norms import STATUS_VOCAB
 
 SKIP_FOLDERS = {"10_Migrated", "vault-backups", ".history"}
 STRUCTURAL_NAMES = frozenset({"index.md", "readme.md"})
@@ -61,45 +63,47 @@ STRUCTURAL_NAMES = frozenset({"index.md", "readme.md"})
 TIMELINESS_DEFAULT_DAYS = 30
 TIMELINESS_HIGH_DAYS = 15
 
-CIA_INTEGRITY_VALUES = {"critical", "high", "medium", "low"}
-CIA_AVAILABILITY_VALUES = {"high", "medium", "low"}
-CIA_SENSITIVITY_VALUES = {"public", "internal", "restricted"}
+# ── Vocabularios: se derivan, no se copian (AP-44) ────────────────────────────
+# Estos cinco conjuntos estaban escritos a mano aquí, y la puntuación de calidad
+# —que es salida publicada— se calculaba contra ellos. El resultado es que la
+# tool penalizaba por «valor desconocido» valores que el propio estándar
+# declara canónicos: `implemented`, `stub`, `verified`, `template` en `status`;
+# `infrastructure`, `antipattern`, `error`, `project-overview` en `type`.
+# Diecinueve notas del sandbox perdían puntos por escribir exactamente lo que
+# el registro manda escribir. Es AP-44 en su forma literal: la tool medía con
+# su criterio en vez del criterio de quien produce el dato.
+CIA_INTEGRITY_VALUES = cia_valores("cia_integrity")
+CIA_AVAILABILITY_VALUES = cia_valores("cia_availability")
+CIA_SENSITIVITY_VALUES = cia_valores("cia_sensitivity")
 
-STATUS_VALUES = {
-    "active",
-    "draft",
-    "review",
-    "archived",
-    "deprecated",
-    "en_progreso",
-    "en_desarrollo",
-    "in_progress",
-    "done",
-    "blocked",
-    "pending",
-    "completado",
-    "completed",
-    "cancelado",
-    "cancelled",
-}
-TYPE_VALUES = {
-    "project",
-    "decision",
-    "session",
-    "pattern",
-    "diagram",
-    "knowledge",
-    "runbook",
-    "infra",
-    "migration",
-    "flow",
-    "requirement",
-    "test",
-    "ai_decision",
-    "bibliography",
-    "code",
-    "note",
-}
+#: Valores que ningún registro declara pero que existen en vaults reales
+#: anteriores al vocabulario canónico. No-derogación: seguir aceptándolos es la
+#: diferencia entre medir la calidad de un vault heredado y castigarlo por ser
+#: heredado. `vault_norms --audit` sí los señala; esta tool solo puntúa.
+STATUS_HEREDADOS = frozenset(
+    {
+        "active", "review", "done", "blocked", "pending",
+        "en_progreso", "en_desarrollo", "in_progress",
+        "completado", "completed", "cancelado", "cancelled",
+    }
+)
+TYPES_HEREDADOS = frozenset({"infra", "migration", "note"})
+
+#: `_score_validity` normaliza `-` a `_` antes de mirar, así que el vocabulario
+#: canónico entra por las dos grafías (`in-progress` / `in_progress`).
+STATUS_VALUES = (
+    {s.replace("-", "_") for s in STATUS_VOCAB} | STATUS_HEREDADOS
+)
+#: `SCAFFOLD_TYPE` no pertenece a ninguna sección —lo escribe `vault_init` en
+#: las 18— así que no sale de `SECTION_TYPES`. Sin él, las 17 notas andamio que
+#: el propio init crea para que el vault arranque en 100/100 perdían un cuarto
+#: de punto de validez cada una: la tool reprobaba el estado inicial que otra
+#: tool del mismo estándar acababa de producir.
+TYPE_VALUES = (
+    {t for tipos in SECTION_TYPES.values() for t in tipos}
+    | {SCAFFOLD_TYPE}
+    | TYPES_HEREDADOS
+)
 
 PLACEHOLDER_PATTERNS = [
     "yyyy",

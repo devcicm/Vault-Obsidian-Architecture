@@ -26,6 +26,17 @@ from vault_regex import (
     WIKILINK_MAX_LEN,
 )
 
+# La configuración se declara una vez y se lee por el registro, no con un
+# `os.environ.get()` y un default por punto de uso. Ver `vault_entorno.py`
+# para las trece variables y por qué estaban dispersas.
+#
+# El registro vive en `scripts/` y no en el paquete `vault/` porque un
+# módulo de `scripts/` tiene que seguir funcionando **copiado suelto**: así
+# se sincronizan los repos consumidores, y así lo comprueba
+# `test_vault_containment`, que copia solo este fichero a un repo vacío.
+# Colgarlo de `vault.kernel` lo rompía con un ModuleNotFoundError.
+from vault_entorno import leer as _env
+
 
 #: Origen de la detección del vault root — lo fija _detect_vault_root() y lo
 #: consulta el guard AP-36. `repo_root_fallback` es el único valor de baja
@@ -67,7 +78,7 @@ def _detect_vault_root() -> Path:
     primera escritura real (atomic_write_* ya hace mkdir del padre).
     """
     global _VAULT_ROOT_ORIGIN
-    if env := os.environ.get("VAULT_ROOT"):
+    if env := _env("VAULT_ROOT"):
         _VAULT_ROOT_ORIGIN = "env"
         return Path(env).resolve()
     project_root = Path(__file__).parent.parent.resolve()
@@ -139,7 +150,7 @@ def _detect_vault_root() -> Path:
     # los ~94 tools que no aceptan --root, pero queda marcado como baja
     # confianza para que el guard AP-36 lo denuncie en vez de silenciarlo.
     _VAULT_ROOT_ORIGIN = "repo_root_fallback"
-    if os.environ.get("VAULT_STRICT_ROOT"):
+    if _env("VAULT_STRICT_ROOT"):
         raise RuntimeError(
             f"No se encontró ningún vault desde {project_root}. Con VAULT_STRICT_ROOT=1 "
             "esto es un error: escribir aquí generaría 00_System/, 99_Index/ y demás "
@@ -295,7 +306,7 @@ def client_cwd() -> Path:
     El runner MCP lo publica en `VAULT_CLIENT_CWD`. Sin esa variable —CLI
     directa— el CWD del proceso sí es el del usuario y vale.
     """
-    declarado = os.environ.get("VAULT_CLIENT_CWD")
+    declarado = _env("VAULT_CLIENT_CWD")
     if declarado:
         candidato = Path(declarado)
         if candidato.is_dir():
@@ -704,7 +715,7 @@ def _escribir_temporal(temp: Path, text: str, encoding: str) -> None:
 
     with open(temp, "w", encoding=encoding) as fh:
         fh.write(text)
-        if os.environ.get("VAULT_FSYNC") == "1":
+        if _env("VAULT_FSYNC"):
             fh.flush()
             os.fsync(fh.fileno())
 
@@ -738,7 +749,7 @@ def _fsync_si_procede(temp: Path) -> None:
     """
     import os
 
-    if os.environ.get("VAULT_FSYNC") != "1":
+    if not _env("VAULT_FSYNC"):
         return
     if hasattr(os, "O_DIRECTORY"):
         dir_fd = os.open(str(temp.parent), os.O_RDONLY | os.O_DIRECTORY)
@@ -766,7 +777,7 @@ def atomic_write_text(
     """
     import os
 
-    if text and not os.environ.get("VAULT_SKIP_SECRET_SCAN"):
+    if text and not _env("VAULT_SKIP_SECRET_SCAN"):
         try:
             from vault_secret_scan import vault_write_hook, has_blocking_findings
 

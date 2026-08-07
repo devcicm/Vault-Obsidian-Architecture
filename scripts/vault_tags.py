@@ -43,6 +43,10 @@ from vault_registry import SECTIONS as _REGISTRY_SECTIONS
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+# La configuración se lee del registro único, no con un default por punto
+# de uso. Ver `vault_entorno.py`.
+from vault_entorno import leer as _env
+
 from vault.indices.enumeracion import NOMBRES_DE_INDICE  # noqa: E402
 from vault.indices.enumeracion import es_nota_indexable  # noqa: E402
 from vault.indices.repositorio import RepositorioIndices  # noqa: E402
@@ -322,7 +326,7 @@ def registrar_tags_de_nota(
     if not nuevos:
         return {"tags": canonicos, "vocabulary_introduced": [], "recorded": 0}
 
-    agente = agente or os.environ.get("VAULT_AGENT", "")
+    agente = agente or _env("VAULT_AGENT")
     for t in nuevos:
         t["note"] = nota
         t["agent"] = agente

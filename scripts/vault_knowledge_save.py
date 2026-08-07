@@ -37,7 +37,6 @@ from vault_io import (
     atomic_write_text,
     assert_within_vault,
     safe_wikilink,
-    update_section_index,
 )
 import uuid
 
@@ -194,12 +193,16 @@ def vault_knowledge_save(
     folder.mkdir(parents=True, exist_ok=True)
 
     atomic_write_text(note_path, final_content)
-    update_section_index("07_Knowledge")
+    # El indice de seccion lo dispara el write path del kernel
+    # (`vault_io._auto_section_index`) en cuanto se escribe la nota. La
+    # llamada explicita que habia aqui lo regeneraba una segunda vez con
+    # el mismo contenido: trabajo duplicado que ademas se contaba como
+    # escritura en el envelope.
 
     return {
         "ok": True,
         **write_report(),
-        "path": str(note_path.relative_to(_raiz())),
+        "path": str(note_path.relative_to(_raiz())).replace("\\", "/"),
         "category": category,
         "title": title,
         "message": f"Knowledge note saved to {CATEGORY_FOLDERS[category]}/",

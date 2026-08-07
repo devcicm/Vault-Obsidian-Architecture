@@ -4,7 +4,7 @@
 
 [![Version](https://img.shields.io/badge/version-v40.0-blue)](./vault-obsidian-architecture.md)
 [![Tools](https://img.shields.io/badge/tools-92_active-green)](./scripts/)
-[![Scripts](https://img.shields.io/badge/scripts-112_total-lightblue)](./scripts/)
+[![Scripts](https://img.shields.io/badge/scripts-113_total-lightblue)](./scripts/)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow)](./scripts/)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](./LICENSE)
 
@@ -422,7 +422,7 @@ Contiene:
 ## Scripts — estructura del repositorio
 
 ```
-scripts/                    ← 112 archivos Python (92 tools del catálogo + 8 archivadas en _archived/ + internas/meta)
+scripts/                    ← 113 archivos Python (92 tools del catálogo + 8 archivadas en _archived/ + internas/meta)
 ├── vault_io.py             — I/O base: _detect_vault_root, assert_within_vault, atomic_write_text/json, file_lock
 ├── vault_errors.py         — wrap_main (timeout 60s), emit_ok, trace log
 ├── vault_write.py          — tool principal de escritura (guards AP-20, AP-21, norm_refs auto-embed)

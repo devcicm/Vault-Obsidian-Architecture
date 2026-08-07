@@ -84,6 +84,10 @@ from typing import Any, Dict, List, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+# La configuración se lee del registro único, no con un default por punto
+# de uso. Ver `vault_entorno.py`.
+from vault_entorno import leer as _env
+
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 
@@ -634,7 +638,7 @@ def vault_write(
 
     # AP-16 guard: agent field required
     if not meta.get("agent") and not is_system:
-        agent_env = os.environ.get("VAULT_AGENT", "")
+        agent_env = _env("VAULT_AGENT")
         if agent_env:
             meta["agent"] = agent_env
         else:
@@ -850,7 +854,7 @@ def vault_write(
     if new_terms:
         for t in new_terms:
             t["note"] = rel_path
-            t["agent"] = meta.get("agent", "") or os.environ.get("VAULT_AGENT", "")
+            t["agent"] = meta.get("agent", "") or _env("VAULT_AGENT")
         try:
             introduced = vault_tags.record_new_tags(new_terms)
         except OSError:

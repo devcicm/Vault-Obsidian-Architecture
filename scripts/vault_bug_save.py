@@ -69,6 +69,10 @@ SEVERITIES = ["critical", "high", "medium", "low"]
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+# La configuración se lee del registro único, no con un default por punto
+# de uso. Ver `vault_entorno.py`.
+from vault_entorno import leer as _env
+
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 
@@ -154,7 +158,7 @@ def vault_bug_save(
     # AP-16 — atribución. Quién vio el defecto es parte del defecto.
     import os
 
-    agent = agent or os.environ.get("VAULT_AGENT", "")
+    agent = agent or _env("VAULT_AGENT")
     if not agent:
         return {
             "ok": False,

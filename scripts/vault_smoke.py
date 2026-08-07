@@ -46,6 +46,10 @@ from typing import Any, Dict, List, Optional
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+# La configuración se lee del registro único, no con un default por punto
+# de uso. Ver `vault_entorno.py`.
+from vault_entorno import leer as _env
+
 from vault_errors import wrap_main
 from vault_mcp_catalog import TOOLS_CATALOG
 
@@ -53,7 +57,7 @@ SCRIPTS_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPTS_DIR.parent
 BASELINE_PATH = SCRIPTS_DIR / "smoke-baseline.json"
 SANDBOX = REPO_ROOT / "vault-sandbox"
-SMOKE_TIMEOUT = int(os.environ.get("VAULT_SMOKE_TIMEOUT", "90"))
+SMOKE_TIMEOUT = _env("VAULT_SMOKE_TIMEOUT")
 
 
 # Excepciones declaradas, no ocultas: una tool que por diseño no termina no

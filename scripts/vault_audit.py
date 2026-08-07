@@ -31,6 +31,9 @@ import re
 import subprocess
 
 import sys
+# La configuración se lee del registro único, no con un default por punto
+# de uso. Ver `vault_entorno.py`.
+from vault_entorno import leer as _env
 
 from vault_registry import es_andamio
 from vault_errors import wrap_main
@@ -67,7 +70,7 @@ STUCK_PATTERN_DAYS = 7
 STALE_PROJECT_DAYS = 14
 
 
-VAULT_DQ_CACHE_MINUTES = int(os.environ.get("VAULT_DQ_CACHE_MINUTES", "30"))
+VAULT_DQ_CACHE_MINUTES = _env("VAULT_DQ_CACHE_MINUTES")
 
 
 # Archivos estructurales: auto-generados o de convención, no son "notas de contenido"
@@ -97,6 +100,7 @@ PLACEHOLDER_PATTERNS = [
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 
 from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
 from vault.kernel import construir  # noqa: E402

@@ -185,7 +185,7 @@ def vault_runbook_save(
     return {
         "ok": True,
         **write_report(),
-        "path": str(note_path.relative_to(_raiz())),
+        "path": str(note_path.relative_to(_raiz())).replace("\\", "/"),
         "category": category,
         "steps": len(steps),
         "message": f"Runbook '{title}' saved to {category}/",

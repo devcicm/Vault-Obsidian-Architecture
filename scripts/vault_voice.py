@@ -27,6 +27,9 @@ CLI:
 import json
 import os
 import sys
+# La configuración se lee del registro único, no con un default por punto
+# de uso. Ver `vault_entorno.py`.
+from vault_entorno import leer as _env
 from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
@@ -87,7 +90,7 @@ def speak(
     ledger AP-37 capturado en el hilo donde corrió la tool (es thread-local: si
     se lee desde el hilo principal siempre da cero).
     """
-    if os.environ.get("VAULT_VOICE", "1") == "0":
+    if _env("VAULT_VOICE") == "0":
         return None
     normas = norms_for_tool(tool)
     payload = payload if isinstance(payload, dict) else {}
@@ -132,7 +135,7 @@ def speak(
         "norms": [_etiqueta(n) for n in normas],
         "next": _siguiente(momento, tool, foco),
     }
-    if os.environ.get("VAULT_VOICE") == "verbose":
+    if _env("VAULT_VOICE") == "verbose":
         bloque["detail"] = [
             {
                 "code": n["code"],
@@ -244,6 +247,7 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent))
+
     from vault_errors import wrap_main
 
     sys.exit(wrap_main(main, "vault_voice"))

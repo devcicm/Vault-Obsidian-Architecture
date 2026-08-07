@@ -31,6 +31,10 @@ from vault_lib import parse_frontmatter_with_body
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+# La configuración se lee del registro único, no con un default por punto
+# de uso. Ver `vault_entorno.py`.
+from vault_entorno import leer as _env
+
 from vault.durabilidad.cuarentena import CATEGORIAS, ServicioCuarentena  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 
@@ -50,7 +54,7 @@ def vault_quarantine_add(
     agent: Optional[str] = None,
     root=None,
 ) -> Dict[str, Any]:
-    agent = agent or os.environ.get("VAULT_AGENT", "")
+    agent = agent or _env("VAULT_AGENT")
     resultado = _servicio(root).retener(path, reason, category, agent)
     if "ok" in resultado:
         return resultado
@@ -60,7 +64,7 @@ def vault_quarantine_add(
 def vault_quarantine_restore(
     path: str, agent: Optional[str] = None, root=None
 ) -> Dict[str, Any]:
-    agent = agent or os.environ.get("VAULT_AGENT", "")
+    agent = agent or _env("VAULT_AGENT")
     resultado = _servicio(root).devolver(path, agent)
     if "ok" in resultado:
         return resultado

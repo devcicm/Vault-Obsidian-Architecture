@@ -302,7 +302,7 @@ def vault_pattern_save(
     index = load_pattern_index()
 
     pattern_entry = {
-        "path": str(pattern_path.relative_to(_raiz())),
+        "path": str(pattern_path.relative_to(_raiz())).replace("\\", "/"),
         "pattern": name,
         "project": project,
         "type": pattern_type,

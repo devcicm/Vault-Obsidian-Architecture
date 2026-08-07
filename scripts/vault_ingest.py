@@ -71,6 +71,10 @@ _ENTITY_STOPWORDS = {
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+# La configuración se lee del registro único, no con un default por punto
+# de uso. Ver `vault_entorno.py`.
+from vault_entorno import leer as _env
+
 from vault.consulta.repositorio import RepositorioConsulta  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 
@@ -331,7 +335,7 @@ def vault_ingest(
         }
 
     # AP-16: atribución. Lo ingerido debe poder rastrearse hasta quién lo trajo.
-    agent = agent or os.environ.get("VAULT_AGENT", "")
+    agent = agent or _env("VAULT_AGENT")
     if not agent:
         return {
             "ok": False, "error_code": "missing_agent", "norm_code": "AP-16",

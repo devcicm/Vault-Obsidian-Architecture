@@ -30,7 +30,7 @@ from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
 from vault_lib import yaml_scalar, slugify_strict, utcnow
-from vault_io import assert_within_vault, atomic_write_text, file_lock, get_vault_root, update_section_index, write_report
+from vault_io import assert_within_vault, atomic_write_text, file_lock, get_vault_root, write_report
 from vault_norms import compute_norm_refs, status_frontmatter_lines
 
 RELEASE_FOLDER = "08_Runbooks/deploy"
@@ -245,8 +245,11 @@ def vault_release_save(
 """
             atomic_write_text(changelog_path, changelog_header + changelog_entry)
 
-    update_section_index("08_Runbooks")
-    update_section_index("01_Projects")
+    # El indice de seccion lo dispara el write path del kernel
+    # (`vault_io._auto_section_index`) en cuanto se escribe la nota. La
+    # llamada explicita que habia aqui lo regeneraba una segunda vez con
+    # el mismo contenido: trabajo duplicado que ademas se contaba como
+    # escritura en el envelope.
 
     return {
         "ok": True,

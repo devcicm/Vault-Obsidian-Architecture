@@ -223,7 +223,7 @@ def vault_diagram_save(
     return {
         "ok": True,
         **write_report(),
-        "path": str(diagram_path.relative_to(_raiz())),
+        "path": str(diagram_path.relative_to(_raiz())).replace("\\", "/"),
         "type": diagram_type,
         "category": category,
         "message": f"Diagram '{title}' saved to {category}/",

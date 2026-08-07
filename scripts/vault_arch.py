@@ -45,22 +45,43 @@ KERNEL = "kernel"
 #: `lenguaje` es el lenguaje ubicuo: los términos que dentro de este contexto
 #: significan una sola cosa. `puertos` son los nombres que otros contextos
 #: pueden consumir; `prohibe` es la frontera que este contexto no cruza jamás.
+#:
+#: **`puertos` era una lista de nombres y ahora es un mapa `nombre → módulo:símbolo`.**
+#: Como lista no la comprobaba nadie: de los 30 puertos declarados, 22 no
+#: existían en ningún módulo. Eran los nombres del lenguaje ubicuo —`escribir_nota`,
+#: `crear_backup`, `subgrafo`— escritos como si fueran API, mientras la API real
+#: se llamaba `vault_write`, `vault_backup`, `vault_subgraph`. La frontera estaba
+#: dibujada y no vigilada: un contexto podía «publicar» un puerto inexistente y
+#: el blueprint lo imprimía igual. El nombre ubicuo se conserva —es la mitad del
+#: valor del registro— pero ahora apunta al símbolo que lo implementa, y
+#: `--check` falla si ese símbolo desaparece.
 CONTEXTS: dict[str, dict] = {
     KERNEL: {
         "titulo": "Kernel",
         "lenguaje": ["ruta", "envelope", "error", "bloqueo", "escritura atómica"],
-        "puertos": ["get_vault_root", "atomic_write_text", "wrap_main", "file_lock"],
+        "puertos": {
+            "get_vault_root": "vault_io:get_vault_root",
+            "atomic_write_text": "vault_io:atomic_write_text",
+            "wrap_main": "vault_errors:wrap_main",
+            "file_lock": "vault_io:file_lock",
+        },
         "prohibe": ["depender de cualquier contexto de dominio"],
         "modulos": [
             "vault_io", "vault_errors", "vault_lib", "vault_regex",
             "vault_encoding", "vault_registry", "vault_log_error",
             "vault_errors_catalog", "vault_errors_trace",
+            "vault_entorno",
         ],
     },
     "autoria": {
         "titulo": "Autoría",
         "lenguaje": ["nota", "frontmatter", "slug", "sección", "alias"],
-        "puertos": ["escribir_nota", "anexar", "mover", "fusionar"],
+        "puertos": {
+            "escribir_nota": "vault_write:vault_write",
+            "anexar": "vault_append:vault_append",
+            "mover": "vault_move:move_note",
+            "fusionar": "vault_merge:vault_merge",
+        },
         "prohibe": [],
         "modulos": [
             "vault_write", "vault_append", "vault_move", "vault_merge",
@@ -80,7 +101,11 @@ CONTEXTS: dict[str, dict] = {
     "grafo": {
         "titulo": "Grafo",
         "lenguaje": ["nodo", "arista", "wikilink", "huérfano", "componente"],
-        "puertos": ["construir_grafo", "resolver_wikilink", "impacto"],
+        "puertos": {
+            "construir_grafo": "vault_graph:vault_graph",
+            "resolver_wikilink": "vault_link_safety:validate_wikilinks",
+            "impacto": "vault_impact:vault_impact",
+        },
         "prohibe": [],
         "modulos": [
             "vault_graph", "vault_graph_fix", "vault_graph_inspect",
@@ -93,7 +118,11 @@ CONTEXTS: dict[str, dict] = {
     "gobernanza": {
         "titulo": "Gobernanza",
         "lenguaje": ["norma", "guard", "enforcement", "severidad", "violación"],
-        "puertos": ["NORM_CATALOG", "auditar", "puntuar_calidad"],
+        "puertos": {
+            "NORM_CATALOG": "vault_norms:NORM_CATALOG",
+            "auditar": "vault_audit:vault_audit",
+            "puntuar_calidad": "vault_quality_check:vault_quality_check",
+        },
         "prohibe": [],
         "modulos": [
             "vault_norms", "vault_audit", "vault_fundamentals",
@@ -104,7 +133,11 @@ CONTEXTS: dict[str, dict] = {
     "indices": {
         "titulo": "Índices",
         "lenguaje": ["índice", "etiqueta", "término", "sección indexada"],
-        "puertos": ["reindexar", "indice_maestro", "vocabulario_de_tags"],
+        "puertos": {
+            "reindexar": "vault_reindex:vault_reindex",
+            "indice_maestro": "vault_master_index:vault_master_index",
+            "vocabulario_de_tags": "vault_tags:canonical_tags",
+        },
         "prohibe": [],
         "modulos": [
             "vault_master_index", "vault_reindex", "vault_section_index",
@@ -114,7 +147,11 @@ CONTEXTS: dict[str, dict] = {
     "consulta": {
         "titulo": "Consulta",
         "lenguaje": ["intención", "subgrafo", "paquete de contexto", "preferencia"],
-        "puertos": ["parsear_consulta", "subgrafo", "empaquetar_contexto"],
+        "puertos": {
+            "parsear_consulta": "vault_query_parse:vault_query_parse",
+            "subgrafo": "vault_subgraph:vault_subgraph",
+            "empaquetar_contexto": "vault_context_pack:vault_context_pack",
+        },
         "prohibe": ["base de datos", "embeddings", "servicio externo"],
         "modulos": [
             "vault_query_parse", "vault_subgraph", "vault_context_pack",
@@ -126,7 +163,11 @@ CONTEXTS: dict[str, dict] = {
     "ciclo_de_vida": {
         "titulo": "Ciclo de vida",
         "lenguaje": ["versión", "migración", "sanación", "arranque"],
-        "puertos": ["CURRENT_VERSION", "inicializar", "migrar"],
+        "puertos": {
+            "CURRENT_VERSION": "vault_standard_upgrade:CURRENT_VERSION",
+            "inicializar": "vault_init:vault_init",
+            "migrar": "vault_standard_upgrade:vault_standard_upgrade",
+        },
         "prohibe": [],
         "modulos": [
             "vault_init", "vault_onboard", "vault_standard_upgrade",
@@ -137,7 +178,12 @@ CONTEXTS: dict[str, dict] = {
     "durabilidad": {
         "titulo": "Durabilidad",
         "lenguaje": ["backup", "restauración", "cuarentena", "manifiesto"],
-        "puertos": ["crear_backup", "listar_backups", "restaurar", "poner_en_cuarentena"],
+        "puertos": {
+            "crear_backup": "vault_backup:vault_backup",
+            "listar_backups": "vault_backup_list:vault_backup_list",
+            "restaurar": "vault_restore:vault_restore",
+            "poner_en_cuarentena": "vault_quarantine:vault_quarantine_add",
+        },
         "prohibe": ["escribir fuera de la raíz del vault (AP-36)"],
         "modulos": [
             "vault_backup", "vault_backup_list", "vault_restore",
@@ -147,7 +193,11 @@ CONTEXTS: dict[str, dict] = {
     "meta_toolkit": {
         "titulo": "Meta-toolkit",
         "lenguaje": ["catálogo", "contrato", "spec", "smoke", "conteo derivado"],
-        "puertos": ["TOOLS_CATALOG", "GROUPS", "check_contracts"],
+        "puertos": {
+            "TOOLS_CATALOG": "vault_mcp_catalog:TOOLS_CATALOG",
+            "GROUPS": "vault_mcp_catalog:GROUPS",
+            "check_contracts": "vault_mcp_catalog:check_contracts",
+        },
         # Éste es el contexto que v39.6 dejó a medias: sus módulos ya están
         # anotados `internal` con motivo, pero nada impedía que uno tocase un
         # vault. Es el único contexto cuya frontera es una prohibición.
@@ -706,6 +756,205 @@ def fantasmas() -> list[str]:
     return sorted(m for m in _mapa_modulos() if m not in en_disco)
 
 
+def _simbolos_de_nivel_superior(modulo: str) -> set[str] | None:
+    """Los nombres que `modulo` define en su nivel superior, por AST.
+
+    Por AST y no por import: importar los 112 módulos para comprobar una
+    frontera los ejecutaría a todos, y varios resuelven el vault al importarse.
+    Un guard que necesita un vault montado para decir si una frontera existe no
+    es un guard, es otra dependencia.
+    """
+    ruta = SCRIPTS_DIR / f"{modulo}.py"
+    if not ruta.exists():
+        return None
+    try:
+        arbol = ast.parse(ruta.read_text(encoding="utf-8", errors="replace"))
+    except SyntaxError:
+        return None
+    nombres: set[str] = set()
+    for nodo in arbol.body:
+        if isinstance(nodo, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            nombres.add(nodo.name)
+        elif isinstance(nodo, ast.Assign):
+            nombres.update(
+                t.id for t in nodo.targets if isinstance(t, ast.Name)
+            )
+        elif isinstance(nodo, ast.AnnAssign) and isinstance(nodo.target, ast.Name):
+            nombres.add(nodo.target.id)
+        elif isinstance(nodo, (ast.Import, ast.ImportFrom)):
+            nombres.update(a.asname or a.name.split(".")[0] for a in nodo.names)
+    # PEP 562: un módulo puede publicar un símbolo perezosamente. Lo hace
+    # `vault_compact_contracts` con `GROUPS` desde que dejó de fijarlo al
+    # importarse, y ese puerto seguiría existiendo aunque el AST no lo vea.
+    if "__getattr__" in nombres:
+        nombres.add("*")
+    return nombres
+
+
+def puertos_rotos() -> list[dict]:
+    """Puertos declarados cuyo `modulo:simbolo` no existe.
+
+    Es la puerta que faltaba: `puertos` se imprimía en el blueprint y nadie
+    comprobaba nada, así que 22 de los 30 nombrados no existían en ningún
+    módulo. Sin baseline y en duro — la deuda se saldó al declararla, atando
+    cada nombre ubicuo a su implementación, y una lista de excepciones vacía
+    solo invita a estrenarla.
+    """
+    rotos: list[dict] = []
+    for ctx, datos in CONTEXTS.items():
+        for puerto, destino in datos["puertos"].items():
+            modulo, _, simbolo = destino.partition(":")
+            if not simbolo:
+                rotos.append(
+                    {"context": ctx, "port": puerto, "target": destino,
+                     "reason": "el destino no tiene la forma modulo:simbolo"}
+                )
+                continue
+            if modulo not in datos["modulos"]:
+                rotos.append(
+                    {"context": ctx, "port": puerto, "target": destino,
+                     "reason": f"`{modulo}` no es un módulo de `{ctx}`"}
+                )
+                continue
+            simbolos = _simbolos_de_nivel_superior(modulo)
+            if simbolos is None:
+                rotos.append(
+                    {"context": ctx, "port": puerto, "target": destino,
+                     "reason": f"`{modulo}.py` no se pudo leer"}
+                )
+            elif simbolo not in simbolos and "*" not in simbolos:
+                rotos.append(
+                    {"context": ctx, "port": puerto, "target": destino,
+                     "reason": f"`{modulo}` no define `{simbolo}`"}
+                )
+    return rotos
+
+
+def _superficie_publica(contexto: str) -> set[str]:
+    """Los símbolos por los que se puede entrar a `contexto`.
+
+    El nombre ubicuo del puerto y el símbolo al que apunta valen los dos: quien
+    importa escribe el segundo, y el primero existe para hablar del borde.
+    """
+    puertos = CONTEXTS[contexto]["puertos"]
+    return set(puertos) | {d.partition(":")[2] for d in puertos.values()}
+
+
+def cruces_fuera_de_puerto() -> list[dict]:
+    """Imports entre contextos que no entran por la superficie publicada.
+
+    El grafo de `cruces()` dice *qué módulo* depende de qué contexto; esto dice
+    *por dónde*. Un contexto con tres puertos declarados y veintidós símbolos
+    importados desde fuera no tiene tres puertos: tiene veintidós, y tres de
+    ellos escritos en el registro.
+
+    **El kernel queda fuera a propósito.** Es shared kernel, no un contexto
+    acotado: existe precisamente para que cualquiera dependa de él, y sus
+    cuatro `puertos` nombran el write path, no un permiso de acceso. Meterlo
+    aquí convertiría 343 de los 392 hallazgos en ruido y enterraría los 49 que
+    sí son fronteras cruzadas por detrás.
+    """
+    mapa = _mapa_modulos()
+    fuera: list[dict] = []
+    for ruta in sorted(SCRIPTS_DIR.glob("vault_*.py")):
+        origen = mapa.get(ruta.stem)
+        if origen is None:
+            continue
+        try:
+            arbol = ast.parse(ruta.read_text(encoding="utf-8", errors="replace"))
+        except SyntaxError:
+            continue
+        for nodo in ast.walk(arbol):
+            if not isinstance(nodo, ast.ImportFrom):
+                continue
+            if not nodo.module or not nodo.module.startswith("vault_"):
+                continue
+            destino = mapa.get(nodo.module.split(".")[0])
+            if destino is None or destino == origen or destino == KERNEL:
+                continue
+            publica = _superficie_publica(destino)
+            for alias in nodo.names:
+                if alias.name not in publica:
+                    fuera.append(
+                        {
+                            "module": ruta.stem,
+                            "from_context": origen,
+                            "to_context": destino,
+                            "symbol": f"{nodo.module}.{alias.name}",
+                        }
+                    )
+    return fuera
+
+
+#: Módulos a los que la regla de configuración no aplica. `vault_test_runner`
+#: hace `os.environ.copy()` para *pasar* el entorno a un subproceso, que no es
+#: leer configuración; `vault_smoke` hace lo mismo. Se enumera en vez de
+#: detectarse por heurística porque una lista corta y explícita es auditable y
+#: una heurística no.
+_COPIAS_DE_ENTORNO_LEGITIMAS = frozenset({"vault_test_runner", "vault_smoke"})
+
+
+def _cuantas_variables_declaradas() -> int:
+    from vault_entorno import VARIABLES
+
+    return len(VARIABLES)
+
+
+def lecturas_de_entorno_sin_registro() -> list[dict]:
+    """`os.environ[...]` con un nombre que `vault_entorno.py` no declara.
+
+    Catorce variables se leían en once módulos, cada una con su default escrito
+    en el punto de lectura y solo seis documentadas. AP-05 sobre configuración:
+    el mismo dato —qué existe, de qué tipo, qué vale si falta— decidido en cada
+    sitio. `VAULT_VOICE` ya divergía, comparándose contra `"verbose"` en un
+    módulo y contra `"0"` con default `"1"` en otro.
+    """
+    from vault_entorno import VARIABLES
+
+    hallazgos: list[dict] = []
+    for ruta in sorted(SCRIPTS_DIR.glob("vault_*.py")):
+        if ruta.stem in _COPIAS_DE_ENTORNO_LEGITIMAS:
+            continue
+        try:
+            arbol = ast.parse(ruta.read_text(encoding="utf-8", errors="replace"))
+        except SyntaxError:
+            continue
+        for nodo in ast.walk(arbol):
+            nombre = _nombre_de_variable_leida(nodo)
+            if nombre is not None and nombre not in VARIABLES:
+                hallazgos.append({"module": ruta.stem, "variable": nombre})
+    return hallazgos
+
+
+def _nombre_de_variable_leida(nodo: ast.AST) -> str | None:
+    """El literal de `os.environ.get("X")` / `os.environ["X"]`, si lo hay."""
+    if isinstance(nodo, ast.Call):
+        f = nodo.func
+        if (
+            isinstance(f, ast.Attribute)
+            and f.attr == "get"
+            and isinstance(f.value, ast.Attribute)
+            and f.value.attr == "environ"
+            and nodo.args
+            and isinstance(nodo.args[0], ast.Constant)
+            and isinstance(nodo.args[0].value, str)
+        ):
+            return nodo.args[0].value
+    if (
+        isinstance(nodo, ast.Subscript)
+        and isinstance(nodo.value, ast.Attribute)
+        and nodo.value.attr == "environ"
+        and isinstance(nodo.slice, ast.Constant)
+        and isinstance(nodo.slice.value, str)
+    ):
+        return nodo.slice.value
+    return None
+
+
+def _clave_fuera_de_puerto(x: dict) -> str:
+    return f"{x['module']} -> {x['symbol']}"
+
+
 # ── Baseline ─────────────────────────────────────────────────────────────────
 
 def _leer_baseline() -> dict:
@@ -742,6 +991,25 @@ def check(strict: bool = False) -> dict:
     # El punto ciego que quedó al saldar AP-49: usar el nombre importado.
     nombre_crudo = usos_del_nombre_congelado()
 
+    # La frontera, comprobada en vez de declarada: todo puerto apunta a un
+    # símbolo que existe en un módulo del propio contexto.
+    rotos = puertos_rotos()
+
+    # Y por dónde se entra, no solo a qué contexto: 49 símbolos importados por
+    # fuera de la superficie publicada. Con baseline —como `vault_noop_audit`—
+    # porque exigir cero el primer día haría nacer la puerta en rojo, y una
+    # puerta en rojo se desactiva.
+    base_puerto = set(_leer_baseline().get("off_port_crossings", []))
+    fuera_puerto = cruces_fuera_de_puerto()
+    claves_p = {_clave_fuera_de_puerto(x) for x in fuera_puerto}
+    puerto_nuevos = sorted(claves_p - base_puerto)
+    puerto_saldados = sorted(base_puerto - claves_p)
+
+    # La configuración, con la misma vara que las fronteras: toda variable que
+    # el estándar lee está declarada. En duro y sin baseline — se saldó al
+    # declararla, moviendo las catorce al registro.
+    entorno_sin_registro = lecturas_de_entorno_sin_registro()
+
     # Ésta sí arranca con baseline: al declararla había cinco duplicados
     # heredados de las fases anteriores. Exigir cero el primer día habría hecho
     # que la puerta naciera en rojo, y una puerta en rojo se desactiva.
@@ -754,8 +1022,10 @@ def check(strict: bool = False) -> dict:
     return {
         "ok": not nuevos and not huerfanos and not ausentes and not vinc_nuevos
               and not prohibidas and not rutas_nuevas
-              and not kernel_sin_declarar and not nombre_crudo
-              and not (strict and (saldados or vinc_saldados or rutas_saldadas)),
+              and not kernel_sin_declarar and not nombre_crudo and not rotos
+              and not puerto_nuevos and not entorno_sin_registro
+              and not (strict and (saldados or vinc_saldados or rutas_saldadas
+                                   or puerto_saldados)),
         "tool": "vault_arch",
         "contexts": len(CONTEXTS),
         "modules": len(_mapa_modulos()),
@@ -773,6 +1043,17 @@ def check(strict: bool = False) -> dict:
         "undeclared_kernel_deps": kernel_sin_declarar,
         # AP-49, su otra mitad: el nombre `VAULT_ROOT` importado sin alias.
         "raw_vault_root_imports": nombre_crudo,
+        # La frontera vigilada: puertos declarados vs. puertos que existen.
+        "ports_total": sum(len(c["puertos"]) for c in CONTEXTS.values()),
+        "broken_ports": rotos,
+        # Y por dónde se cruza: símbolos importados fuera de la superficie.
+        "off_port_total": len(fuera_puerto),
+        "off_port_baseline": len(base_puerto),
+        "new_off_port_crossings": puerto_nuevos,
+        "settled_off_port_crossings": puerto_saldados,
+        # AP-05 sobre configuración: variables leídas sin declarar.
+        "env_vars_declared": _cuantas_variables_declaradas(),
+        "undeclared_env_reads": entorno_sin_registro,
         # AP-05 — el mismo fichero declarado en dos repositorios de dominio.
         "duplicate_paths_total": len(duplicadas),
         "duplicate_paths_baseline": len(base_rutas),
@@ -789,6 +1070,9 @@ def check(strict: bool = False) -> dict:
 
 def freeze() -> dict:
     claves = sorted({_clave(c) for c in cruces()})
+    fuera_puerto = sorted(
+        {_clave_fuera_de_puerto(x) for x in cruces_fuera_de_puerto()}
+    )
     vinculos = sorted({
         f"{v['module']}.{v['binding']}" for v in vinculos_congelados()
     })
@@ -801,11 +1085,13 @@ def freeze() -> dict:
             "crossings": claves,
             "frozen_bindings": vinculos,
             "duplicate_paths": sorted(d["file"] for d in rutas_duplicadas()),
+            "off_port_crossings": fuera_puerto,
         }, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
     return {"ok": True, "tool": "vault_arch", "frozen": len(claves),
-            "frozen_bindings": len(vinculos), "path": str(BASELINE_PATH)}
+            "frozen_bindings": len(vinculos),
+            "frozen_off_port": len(fuera_puerto), "path": str(BASELINE_PATH)}
 
 
 # ── El plano derivado ────────────────────────────────────────────────────────
@@ -849,7 +1135,10 @@ def blueprint() -> str:
             f"## {datos['titulo']}",
             "",
             f"- **Lenguaje ubicuo:** {', '.join(datos['lenguaje'])}",
-            f"- **Puertos publicados:** {', '.join(datos['puertos'])}",
+            "- **Puertos publicados:** "
+            + ", ".join(
+                f"`{p}` → `{d}`" for p, d in sorted(datos["puertos"].items())
+            ),
         ]
         if datos["prohibe"]:
             lineas.append(f"- **No cruza:** {'; '.join(datos['prohibe'])}")
@@ -883,6 +1172,8 @@ def main() -> int:
     ap.add_argument("--blueprint", action="store_true",
                     help="emite docs/ARQUITECTURA.md")
     ap.add_argument("--map", metavar="MODULO", help="a qué contexto pertenece")
+    ap.add_argument("--env", action="store_true",
+                    help="la tabla de configuración derivada del registro")
     args = ap.parse_args()
 
     if args.map:
@@ -892,6 +1183,14 @@ def main() -> int:
             "context": ctx, "title": CONTEXTS[ctx]["titulo"] if ctx else None,
         }, ensure_ascii=False))
         return 0 if ctx else 1
+
+    if args.env:
+        from vault_entorno import tabla
+
+        print(json.dumps({"ok": True, "tool": "vault_arch",
+                          "variables": tabla()},
+                         indent=2, ensure_ascii=False))
+        return 0
 
     if args.freeze:
         print(json.dumps(freeze(), ensure_ascii=False))

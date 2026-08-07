@@ -41,6 +41,7 @@ from vault_registry import (
     standard_folders,
     EVENT_DRIVEN_SECTIONS,
     ORDERED_SECTIONS,
+    SCAFFOLD_TYPE,
     section_description,
     section_tool_hint,
 )
@@ -139,7 +140,11 @@ python scripts/{tool_hint}
         f"agent: vault_init\n"
         f'tags: ["primer", "scaffold", "onboarding"]\n'
         f"scaffold: true\n"
-        f"type: primer\n"
+        # `SCAFFOLD_TYPE`, no el literal: `vault_registry.is_scaffold_note()`
+        # decide con esa misma constante qué nota es andamio y cuál contenido.
+        # Escrito a mano aquí, el escritor y el lector del mismo campo podían
+        # dejar de coincidir sin que nada lo notara.
+        f"type: {SCAFFOLD_TYPE}\n"
         # Sin `status`, el propio `vault_audit` marcaba como incompleta cada nota
         # que este generador acaba de escribir: 18 primers de 18 en el vault de
         # BuilderX. El generador del estándar producía notas que su auditoría

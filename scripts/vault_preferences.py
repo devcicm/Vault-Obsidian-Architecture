@@ -49,6 +49,10 @@ from vault_lib import yaml_scalar, parse_frontmatter_with_body, slugify, utcnow
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+# La configuración se lee del registro único, no con un default por punto
+# de uso. Ver `vault_entorno.py`.
+from vault_entorno import leer as _env
+
 from vault.consulta.repositorio import RepositorioConsulta  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 
@@ -180,7 +184,7 @@ def vault_preferences_set(
 
     # AP-16: atribución obligatoria. La preferencia dirige el comportamiento
     # del agente; saber quién la registró no es opcional.
-    agent = agent or os.environ.get("VAULT_AGENT", "")
+    agent = agent or _env("VAULT_AGENT")
     if not agent:
         return {
             "ok": False,
@@ -346,7 +350,7 @@ def vault_preferences_revoke(path: str, reason: str,
     `status: revoked` y el motivo. Borrarla destruiría la explicación de por
     qué el agente se comportaba de otra forma en sesiones anteriores.
     """
-    agent = agent or os.environ.get("VAULT_AGENT", "")
+    agent = agent or _env("VAULT_AGENT")
     if not agent:
         return {
             "ok": False,
