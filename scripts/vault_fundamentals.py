@@ -583,6 +583,22 @@ FRAMEWORK_REGISTRIES: Dict[str, List[Dict[str, Any]]] = {
 }
 
 
+def cia_valores(campo: str) -> set:
+    """Valores admitidos por un campo CIA, según `CIA_TRIAD`.
+
+    El vocabulario estaba escrito a mano dos veces más —en `_check_fundamentals`
+    aquí mismo y como constantes de módulo en `vault_validate`— pese a que el
+    registro ya lo declara en `values`. Las tres copias coinciden hoy; la que se
+    quede atrás cuando el registro cambie reprobará notas válidas o aprobará las
+    que no lo son, y en ninguno de los dos casos habrá un test que lo note. La
+    asimetría es real y del registro: DISPONIBILIDAD no admite `critical`.
+    """
+    for c in CIA_TRIAD:
+        if c["frontmatter_field"] == campo:
+            return set(c["values"])
+    return set()
+
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
@@ -742,9 +758,9 @@ def check_note(rel_path: str) -> Dict[str, Any]:
         "cancelado",
         "cancelled",
     }
-    valid_cia_i = {"critical", "high", "medium", "low"}
-    valid_cia_a = {"high", "medium", "low"}
-    valid_cia_s = {"public", "internal", "restricted"}
+    valid_cia_i = cia_valores("cia_integrity")
+    valid_cia_a = cia_valores("cia_availability")
+    valid_cia_s = cia_valores("cia_sensitivity")
     f5_issues = []
     if "status" in fm and fm["status"].lower().replace("-", "_") not in valid_status:
         f5_issues.append(f"status '{fm['status']}' not in allowed values")

@@ -242,6 +242,19 @@ EVENT_DRIVEN_SECTIONS: Dict[str, str] = {
 }
 
 
+#: Artefactos derivados: no los escribe nadie a mano, los regenera entera una
+#: tool a partir de otra fuente. No llevan frontmatter —ni les hace falta: no
+#: son notas, son salida— y exigírselo es reprobar la salida del propio
+#: estándar (AP-44). El `index.md` de cada sección entra por nombre, no por
+#: lista; estos dos no tienen un patrón que los distinga y hay que declararlos.
+#: Quien los añada aquí asume la otra mitad: si su fuente cambia y el fichero
+#: no, eso es AP-47 y lo vigila su tool, no `vault_validate`.
+DERIVED_ARTIFACTS: Dict[str, str] = {
+    "00_System/change-log.md": "vault_change_log",
+    "00_System/tool-contracts.md": "vault_compact_contracts",
+}
+
+
 SECTION_TYPES: Dict[str, tuple] = {
     "00_System": ("system", "knowledge"),
     "01_Projects": (
@@ -646,6 +659,18 @@ def es_andamio(texto: str) -> bool:
     pero queda anotado en un solo sitio en vez de invisible en tres.
     """
     return "scaffold: true" in texto or f"type: {SCAFFOLD_TYPE}" in texto
+
+
+def es_artefacto_derivado(ruta_relativa: str) -> bool:
+    """¿Lo escribe una tool como salida, en vez de ser una nota del vault?
+
+    Dos criterios, no uno: el `index.md` de cualquier sección entra por nombre
+    —hay veintidós y no se enumeran— y los demás por declaración explícita en
+    `DERIVED_ARTIFACTS`. Acepta separador Windows porque quien llama suele venir
+    de `relative_to()`.
+    """
+    rel = ruta_relativa.replace("\\", "/")
+    return rel.rsplit("/", 1)[-1].lower() == "index.md" or rel in DERIVED_ARTIFACTS
 
 
 def section_default_type(folder: str) -> str:

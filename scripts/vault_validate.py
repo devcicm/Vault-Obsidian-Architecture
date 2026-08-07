@@ -33,8 +33,10 @@ import re
 
 import sys
 
-from vault_registry import ORDERED_SECTIONS
+from vault_registry import ORDERED_SECTIONS, es_artefacto_derivado
+from vault_encoding import strip_bom
 from vault_errors import wrap_main
+from vault_fundamentals import cia_valores
 
 import yaml
 
@@ -43,11 +45,14 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-CIA_INTEGRITY_VALUES = {"critical", "high", "medium", "low"}
+# El vocabulario CIA lo declara `vault_fundamentals.CIA_TRIAD`, que es la fuente
+# única del marco según CLAUDE.md. Aquí estaba copiado a mano: coincidía, pero
+# nada lo obligaba, y una tercera copia vivía dentro de `_check_fundamentals`.
+CIA_INTEGRITY_VALUES = cia_valores("cia_integrity")
 
-CIA_AVAILABILITY_VALUES = {"high", "medium", "low"}
+CIA_AVAILABILITY_VALUES = cia_valores("cia_availability")
 
-CIA_SENSITIVITY_VALUES = {"public", "internal", "restricted"}
+CIA_SENSITIVITY_VALUES = cia_valores("cia_sensitivity")
 
 
 # Se congeló en v33 con diez secciones y nunca creció: un vault sin `11_Code`
@@ -146,21 +151,28 @@ def validate_frontmatter(note_path: Path) -> Dict[str, Any]:
         return {"valid": False, "error": str(e)}
 
 
+    # Un BOM delante del `---` no impide leer el frontmatter: ni Obsidian ni
+    # `yaml.safe_load` sobre el bloque ya recortado lo notan, y el kernel tiene
+    # `strip_bom` precisamente para esto. Sin quitarlo, `startswith("---")` era
+    # falso y once notas del vault de pruebas —con frontmatter completo y
+    # legible— salían como «No frontmatter block». AP-44: la comprobación medía
+    # con su criterio, no con el del consumidor.
+
+    content, _ = strip_bom(content)
+
+
     rel_path = str(note_path.relative_to(_raiz())).replace("\\", "/")
-    is_index = (
-        rel_path.endswith("/index.md")
-        or rel_path.lower() in ("index.md",)
-        or note_path.stem.lower() == "index"
-    )
+    is_index = es_artefacto_derivado(rel_path)
 
     if not content.startswith("---"):
 
-        # Un índice es artefacto derivado y se escribe sin frontmatter: lo
-        # genera `vault_section_index`, que no le pone ninguno. Exigírselo hacía
-        # que el estándar reprobara 63 ficheros que acababa de escribir él
-        # mismo (AP-44: medir con criterio propio). Tres líneas más abajo esta
-        # misma función ya los exceptúa de los campos de trazabilidad — la
-        # excepción existía, solo llegaba tarde.
+        # Un artefacto derivado se escribe sin frontmatter: lo genera una tool
+        # —`vault_section_index`, `vault_change_log`, `vault_compact_contracts`—
+        # que no le pone ninguno. Exigírselo hacía que el estándar reprobara 65
+        # ficheros que acababa de escribir él mismo (AP-44: medir con criterio
+        # propio). Tres líneas más abajo esta misma función ya los exceptúa de
+        # los campos de trazabilidad — la excepción existía, solo llegaba tarde.
+        # Cuáles son lo dice `vault_registry`, no esta función.
         if is_index:
             return {"valid": True, "data": {}, "derived": True}
         return {"valid": False, "error": "No frontmatter block"}
@@ -241,9 +253,21 @@ def check_frontmatter(path: Optional[str], folder: Optional[str]) -> Dict[str, A
 
     else:
 
+        # Solo las secciones canónicas. Barrer el vault entero con `rglob` desde
+        # la raíz mete en el informe cualquier markdown que conviva con él
+        # —`docs/`, notas de trabajo, un README— y los reprueba por no llevar
+        # frontmatter, que es justo lo que no se les pide: no son notas del
+        # vault. En el vault de pruebas eran 13 de las 26 «No frontmatter
+        # block», todas de `docs/sdd/`. Qué cuenta como nota lo decide
+        # `ORDERED_SECTIONS` (AP-05), no el disco.
+
         notes = [
 
-            n for n in _raiz().rglob("*.md")
+            n
+
+            for seccion in REQUIRED_FOLDERS
+
+            for n in (_raiz() / seccion).rglob("*.md")
 
             if ".history" not in str(n) and not n.name.startswith("_")
 
