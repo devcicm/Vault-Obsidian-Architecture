@@ -36,7 +36,12 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-from vault_io import atomic_write_text, atomic_write_json, write_report
+from vault_io import (
+    atomic_write_text,
+    atomic_write_json,
+    write_report,
+    indice_compartido,
+)
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -82,6 +87,13 @@ def slugify(text: str) -> str:
     return slugify_strict(text)
 
 
+# superseded_by: vault_io.indice_compartido
+#
+# Leia/escribia el indice fuera de todo tramo exclusivo, que es justo el
+# lost update que `indice_compartido` cierra. Se conserva con su contrato
+# intacto por la politica de no-derogacion: ya no lo llama el camino de
+# guardado, y no debe volver a llamarlo. Si necesitas el indice, entra por
+# `indice_compartido`, que cubre desde la lectura hasta la escritura.
 def load_index() -> Dict[str, Any]:
     try:
         with open(INDEX_FILE, "r", encoding="utf-8") as f:
@@ -91,6 +103,13 @@ def load_index() -> Dict[str, Any]:
         return {"modules": [], "relations": []}
 
 
+# superseded_by: vault_io.indice_compartido
+#
+# Leia/escribia el indice fuera de todo tramo exclusivo, que es justo el
+# lost update que `indice_compartido` cierra. Se conserva con su contrato
+# intacto por la politica de no-derogacion: ya no lo llama el camino de
+# guardado, y no debe volver a llamarlo. Si necesitas el indice, entra por
+# `indice_compartido`, que cubre desde la lectura hasta la escritura.
 def save_index(data: Dict[str, Any]) -> None:
     _code_dir().mkdir(parents=True, exist_ok=True)
 
@@ -227,34 +246,37 @@ def vault_code_relation(
             "error": f"Cardinality inválida: {cardinality}. Válidos: {CARDINALITIES}",
         }
 
-    index = load_index()
+    # El tramo exclusivo abarca desde la lectura hasta la escritura: sin el,
+    # dos ejecuciones concurrentes leen el mismo indice, cada una anade su
+    # entrada, gana la segunda y la primera desaparece con las dos tools
+    # devolviendo `ok: true` (AP-37 por la puerta de atras).
+    with indice_compartido(INDEX_FILE, {"modules": [], "relations": []}) as index:
 
-    already_existed = False
+        already_existed = False
 
-    for rel in index["relations"]:
-        if (
-            rel["from"] == from_file
-            and rel["to"] == to_file
-            and rel["type"] == relation_type
-        ):
-            already_existed = True
+        for rel in index["relations"]:
+            if (
+                rel["from"] == from_file
+                and rel["to"] == to_file
+                and rel["type"] == relation_type
+            ):
+                already_existed = True
 
-            break
+                break
 
-    index["relations"].append(
-        {
-            "id": str(uuid.uuid4()),
-            "from": from_file,
-            "to": to_file,
-            "type": relation_type,
-            "cardinality": cardinality,
-            "label": label,
-            "project": project,
-            "addedAt": utcnow(),
-        }
-    )
+        index["relations"].append(
+            {
+                "id": str(uuid.uuid4()),
+                "from": from_file,
+                "to": to_file,
+                "type": relation_type,
+                "cardinality": cardinality,
+                "label": label,
+                "project": project,
+                "addedAt": utcnow(),
+            }
+        )
 
-    save_index(index)
 
     modules = get_module_nodes(index, project)
 

@@ -37,6 +37,7 @@ from vault_norms import status_frontmatter_lines
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from datetime import datetime, timezone
 from vault_io import (
+    indice_compartido,
     write_report,
     atomic_write_text,
     atomic_write_json,
@@ -95,6 +96,13 @@ def slugify(text: str) -> str:
     return slugify_strict(text)
 
 
+# superseded_by: vault_io.indice_compartido
+#
+# Leia/escribia el indice fuera de todo tramo exclusivo, que es justo el
+# lost update que `indice_compartido` cierra. Se conserva con su contrato
+# intacto por la politica de no-derogacion: ya no lo llama el camino de
+# guardado, y no debe volver a llamarlo. Si necesitas el indice, entra por
+# `indice_compartido`, que cubre desde la lectura hasta la escritura.
 def load_index() -> Dict[str, Any]:
     try:
         with open(_index_file(), "r", encoding="utf-8") as f:
@@ -104,6 +112,13 @@ def load_index() -> Dict[str, Any]:
         return {"tests": []}
 
 
+# superseded_by: vault_io.indice_compartido
+#
+# Leia/escribia el indice fuera de todo tramo exclusivo, que es justo el
+# lost update que `indice_compartido` cierra. Se conserva con su contrato
+# intacto por la politica de no-derogacion: ya no lo llama el camino de
+# guardado, y no debe volver a llamarlo. Si necesitas el indice, entra por
+# `indice_compartido`, que cubre desde la lectura hasta la escritura.
 def save_index(data: Dict[str, Any]) -> None:
     _tests_dir().mkdir(parents=True, exist_ok=True)
 
@@ -138,132 +153,135 @@ def vault_test_save(
 
     now = utcnow()
 
-    index = load_index()
+    # El lock abarca desde la lectura hasta la escritura, no solo la
+    # escritura: este indice es tambien el contador del correlativo, y
+    # reservar el numero fuera del tramo exclusivo hace que dos guardados
+    # concurrentes obtengan el mismo id y el mismo nombre de fichero.
+    with indice_compartido(_index_file(), {"tests": []}) as index:
 
-    # Count existing tests for this project to get sequential ID
+        # Count existing tests for this project to get sequential ID
 
-    project_tests = [t for t in index["tests"] if t.get("project") == project]
+        project_tests = [t for t in index["tests"] if t.get("project") == project]
 
-    test_number = len(project_tests) + 1
+        test_number = len(project_tests) + 1
 
-    test_id = f"TEST-{test_number:03d}"
+        test_id = f"TEST-{test_number:03d}"
 
-    note_id = str(uuid.uuid4())
+        note_id = str(uuid.uuid4())
 
-    filename = f"{safe_project}-{title_slug}.md"
+        filename = f"{safe_project}-{title_slug}.md"
 
-    note_path = _tests_dir() / test_type / filename
+        note_path = _tests_dir() / test_type / filename
 
-    try:
-        assert_within_vault(note_path, _raiz())
+        try:
+            assert_within_vault(note_path, _raiz())
 
-    except ValueError as exc:
-        return {
-            "ok": False,
-            "error_code": "INVALID_PATH",
-            "error": "INVALID_PATH",
-            "message": str(exc),
-        }
+        except ValueError as exc:
+            return {
+                "ok": False,
+                "error_code": "INVALID_PATH",
+                "error": "INVALID_PATH",
+                "message": str(exc),
+            }
 
-    tags_list = list(tags or [])
+        tags_list = list(tags or [])
 
-    tags_list.extend([safe_project, "test", test_type, status])
+        tags_list.extend([safe_project, "test", test_type, status])
 
-    frontmatter = Frontmatter()
+        frontmatter = Frontmatter()
 
-    frontmatter.set("id", note_id)
+        frontmatter.set("id", note_id)
 
-    frontmatter.set("test_id", test_id)
+        frontmatter.set("test_id", test_id)
 
-    frontmatter.set("title", title)
+        frontmatter.set("title", title)
 
-    frontmatter.set("project", project)
+        frontmatter.set("project", project)
 
-    frontmatter.set("test_type", test_type)
+        frontmatter.set("test_type", test_type)
 
-    frontmatter.lineas(status_frontmatter_lines("vault_test_save", status))
-
-    if related_requirement:
-        frontmatter.set("related_requirement", related_requirement)
-
-    frontmatter.set("createdAt", now)
-
-    frontmatter.set("updatedAt", now)
-
-    if tags_list:
-        frontmatter.set("tags", list(dict.fromkeys(tags_list)))
-
-    frontmatter.set("cia_integrity", "medium")
-
-    frontmatter.set("cia_availability", "medium")
-
-    frontmatter.set("cia_sensitivity", "internal")
-
-    frontmatter.set("agent", "system")
-
-
-    body_sections = []
-
-    body_sections.append(f"## Descripcion\n\n{description}")
-
-    if preconditions:
-        body_sections.append(f"## Pre-condiciones\n\n{preconditions}")
-
-    if steps:
-        rows = ["## Pasos\n", "| # | Accion | Resultado Esperado |", "|---|---|---|"]
-
-        for s in steps:
-            step_num = s.get("step", "")
-
-            action = s.get("action", "")
-
-            expected = s.get("expected", "")
-
-            rows.append(f"| {step_num} | {action} | {expected} |")
-
-        body_sections.append("\n".join(rows))
-
-    if expected_result:
-        body_sections.append(f"## Resultado Esperado\n\n{expected_result}")
-
-    if related_requirement or related_code:
-        rows = ["## Trazabilidad\n", "| Tipo | Referencia |", "|---|---|"]
+        frontmatter.lineas(status_frontmatter_lines("vault_test_save", status))
 
         if related_requirement:
-            rows.append(f"| Requerimiento | `{related_requirement}` |")
+            frontmatter.set("related_requirement", related_requirement)
 
-        for code_file in related_code or []:
-            rows.append(f"| Codigo | `{code_file}` |")
+        frontmatter.set("createdAt", now)
 
-        body_sections.append("\n".join(rows))
+        frontmatter.set("updatedAt", now)
 
-    # Status badge
+        if tags_list:
+            frontmatter.set("tags", list(dict.fromkeys(tags_list)))
 
-    status_line = " | ".join(f"**{s}**" if s == status else s for s in STATUSES)
+        frontmatter.set("cia_integrity", "medium")
 
-    body_sections.append(f"## Estado\n\n**Estado:** {status_line}")
+        frontmatter.set("cia_availability", "medium")
 
-    final_content = frontmatter.render() + "\n\n" + "\n\n".join(body_sections)
+        frontmatter.set("cia_sensitivity", "internal")
 
-    note_path.parent.mkdir(parents=True, exist_ok=True)
+        frontmatter.set("agent", "system")
 
-    atomic_write_text(note_path, final_content)
 
-    entry = {
-        "docId": note_id,
-        "test_id": test_id,
-        "project": project,
-        "title": title,
-        "test_type": test_type,
-        "status": status,
-        "related_requirement": related_requirement or "",
-        "relPath": str(note_path.relative_to(_raiz())).replace("\\", "/"),
-        "updatedAt": now,
-    }
+        body_sections = []
 
-    index["tests"].append(entry)
+        body_sections.append(f"## Descripcion\n\n{description}")
 
-    save_index(index)
+        if preconditions:
+            body_sections.append(f"## Pre-condiciones\n\n{preconditions}")
+
+        if steps:
+            rows = ["## Pasos\n", "| # | Accion | Resultado Esperado |", "|---|---|---|"]
+
+            for s in steps:
+                step_num = s.get("step", "")
+
+                action = s.get("action", "")
+
+                expected = s.get("expected", "")
+
+                rows.append(f"| {step_num} | {action} | {expected} |")
+
+            body_sections.append("\n".join(rows))
+
+        if expected_result:
+            body_sections.append(f"## Resultado Esperado\n\n{expected_result}")
+
+        if related_requirement or related_code:
+            rows = ["## Trazabilidad\n", "| Tipo | Referencia |", "|---|---|"]
+
+            if related_requirement:
+                rows.append(f"| Requerimiento | `{related_requirement}` |")
+
+            for code_file in related_code or []:
+                rows.append(f"| Codigo | `{code_file}` |")
+
+            body_sections.append("\n".join(rows))
+
+        # Status badge
+
+        status_line = " | ".join(f"**{s}**" if s == status else s for s in STATUSES)
+
+        body_sections.append(f"## Estado\n\n**Estado:** {status_line}")
+
+        final_content = frontmatter.render() + "\n\n" + "\n\n".join(body_sections)
+
+        note_path.parent.mkdir(parents=True, exist_ok=True)
+
+        atomic_write_text(note_path, final_content)
+
+        entry = {
+            "docId": note_id,
+            "test_id": test_id,
+            "project": project,
+            "title": title,
+            "test_type": test_type,
+            "status": status,
+            "related_requirement": related_requirement or "",
+            "relPath": str(note_path.relative_to(_raiz())).replace("\\", "/"),
+            "updatedAt": now,
+        }
+
+        index["tests"].append(entry)
+
 
     return {
         "ok": True,

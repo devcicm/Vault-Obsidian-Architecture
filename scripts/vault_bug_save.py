@@ -44,6 +44,7 @@ from typing import Any, Dict, List, Optional
 from vault_errors import wrap_main
 from vault_norms import status_frontmatter_lines
 from vault_io import (
+    indice_compartido,
     write_report,
     atomic_write_text,
     atomic_write_json,
@@ -107,6 +108,13 @@ def slugify(text: str) -> str:
     return slugify_strict(text)[:60]
 
 
+# superseded_by: vault_io.indice_compartido
+#
+# Leia/escribia el indice fuera de todo tramo exclusivo, que es justo el
+# lost update que `indice_compartido` cierra. Se conserva con su contrato
+# intacto por la politica de no-derogacion: ya no lo llama el camino de
+# guardado, y no debe volver a llamarlo. Si necesitas el indice, entra por
+# `indice_compartido`, que cubre desde la lectura hasta la escritura.
 def load_index() -> Dict[str, Any]:
     try:
         with open(_index_file(), "r", encoding="utf-8") as f:
@@ -178,92 +186,95 @@ def vault_bug_save(
 
     safe_project = slugify(project)
     now = utcnow()
-    index = load_index()
+    # El lock abarca desde la lectura hasta la escritura, no solo la
+    # escritura: este indice es tambien el contador del correlativo, y
+    # reservar el numero fuera del tramo exclusivo hace que dos guardados
+    # concurrentes obtengan el mismo id y el mismo nombre de fichero.
+    with indice_compartido(_index_file(), {"bugs": []}) as index:
 
-    bug_number = len(index["bugs"]) + 1
-    bug_id = f"BUG-{bug_number:03d}"
-    note_id = str(uuid.uuid4())
+        bug_number = len(index["bugs"]) + 1
+        bug_id = f"BUG-{bug_number:03d}"
+        note_id = str(uuid.uuid4())
 
-    note_path = _bugs_dir() / _PHASE_FOLDER[phase] / f"{safe_project}-{slugify(title)}.md"
-    try:
-        assert_within_vault(note_path, _raiz())
-    except ValueError as exc:
-        return {"ok": False, "error_code": "INVALID_PATH", "error": str(exc)}
+        note_path = _bugs_dir() / _PHASE_FOLDER[phase] / f"{safe_project}-{slugify(title)}.md"
+        try:
+            assert_within_vault(note_path, _raiz())
+        except ValueError as exc:
+            return {"ok": False, "error_code": "INVALID_PATH", "error": str(exc)}
 
-    tags_list = list(dict.fromkeys([*(tags or []), safe_project, "bug", severity]))
+        tags_list = list(dict.fromkeys([*(tags or []), safe_project, "bug", severity]))
 
-    frontmatter = Frontmatter()
-    frontmatter.set("title", title)
-    frontmatter.set("id", note_id)
-    frontmatter.set("bug_id", bug_id)
-    frontmatter.set("type", "bug")
-    frontmatter.set("project", project)
-    frontmatter.set("phase", phase)
-    frontmatter.lineas(status_frontmatter_lines("vault_bug_save", status))
-    frontmatter.set("severity", severity)
-    # Aristas tipadas: la causalidad es un predicado, no un `related` genérico.
-    # Es la diferencia entre "estas dos notas se mencionan" y "esta explica
-    # aquella", y solo la segunda sirve para navegar hacia atrás desde el
-    # síntoma hasta el origen.
-    if causes:
-        frontmatter.set("causes", causes)
-    if caused_by:
-        frontmatter.set("caused_by", caused_by)
-    if verified_by:
-        frontmatter.set("verified_by", verified_by)
-    frontmatter.set("createdAt", now)
-    frontmatter.set("updatedAt", now)
-    frontmatter.set("tags", tags_list)
-    # Un defecto abierto compromete la integridad de lo que documenta el vault:
-    # por eso no hereda el `medium` por defecto mientras siga abierto.
-    frontmatter.set(
-        "cia_integrity",
-        "high" if status in ("open", "confirmed", "in_fix") else "medium",
-    )
-    frontmatter.set("cia_availability", "medium")
-    frontmatter.set("cia_sensitivity", "internal")
-    frontmatter.set("agent", agent)
-
-    cuerpo = [f"## Síntoma\n\n{symptom.strip()}"]
-    if repro:
-        cuerpo.append(f"## Reproducción\n\n{repro.strip()}")
-    if root_cause:
-        cuerpo.append(f"## Causa raíz\n\n{root_cause.strip()}")
-    if fix:
-        cuerpo.append(f"## Corrección\n\n{fix.strip()}")
-
-    if causes or caused_by or verified_by or related_code:
-        filas = ["## Trazabilidad\n", "| Predicado | Referencia |", "|---|---|"]
-        for destino in causes or []:
-            filas.append(f"| causa | {safe_wikilink(destino)} |")
-        for destino in caused_by or []:
-            filas.append(f"| causado por | {safe_wikilink(destino)} |")
+        frontmatter = Frontmatter()
+        frontmatter.set("title", title)
+        frontmatter.set("id", note_id)
+        frontmatter.set("bug_id", bug_id)
+        frontmatter.set("type", "bug")
+        frontmatter.set("project", project)
+        frontmatter.set("phase", phase)
+        frontmatter.lineas(status_frontmatter_lines("vault_bug_save", status))
+        frontmatter.set("severity", severity)
+        # Aristas tipadas: la causalidad es un predicado, no un `related` genérico.
+        # Es la diferencia entre "estas dos notas se mencionan" y "esta explica
+        # aquella", y solo la segunda sirve para navegar hacia atrás desde el
+        # síntoma hasta el origen.
+        if causes:
+            frontmatter.set("causes", causes)
+        if caused_by:
+            frontmatter.set("caused_by", caused_by)
         if verified_by:
-            filas.append(f"| verificado por | {safe_wikilink(verified_by)} |")
-        for archivo in related_code or []:
-            filas.append(f"| código | `{archivo}` |")
-        cuerpo.append("\n".join(filas))
+            frontmatter.set("verified_by", verified_by)
+        frontmatter.set("createdAt", now)
+        frontmatter.set("updatedAt", now)
+        frontmatter.set("tags", tags_list)
+        # Un defecto abierto compromete la integridad de lo que documenta el vault:
+        # por eso no hereda el `medium` por defecto mientras siga abierto.
+        frontmatter.set(
+            "cia_integrity",
+            "high" if status in ("open", "confirmed", "in_fix") else "medium",
+        )
+        frontmatter.set("cia_availability", "medium")
+        frontmatter.set("cia_sensitivity", "internal")
+        frontmatter.set("agent", agent)
 
-    fases = " | ".join(f"**{p}**" if p == phase else p for p in PHASES)
-    cuerpo.append(f"## Ciclo\n\n{fases}")
+        cuerpo = [f"## Síntoma\n\n{symptom.strip()}"]
+        if repro:
+            cuerpo.append(f"## Reproducción\n\n{repro.strip()}")
+        if root_cause:
+            cuerpo.append(f"## Causa raíz\n\n{root_cause.strip()}")
+        if fix:
+            cuerpo.append(f"## Corrección\n\n{fix.strip()}")
 
-    note_path.parent.mkdir(parents=True, exist_ok=True)
-    atomic_write_text(note_path, frontmatter.render() + "\n\n" + "\n\n".join(cuerpo))
+        if causes or caused_by or verified_by or related_code:
+            filas = ["## Trazabilidad\n", "| Predicado | Referencia |", "|---|---|"]
+            for destino in causes or []:
+                filas.append(f"| causa | {safe_wikilink(destino)} |")
+            for destino in caused_by or []:
+                filas.append(f"| causado por | {safe_wikilink(destino)} |")
+            if verified_by:
+                filas.append(f"| verificado por | {safe_wikilink(verified_by)} |")
+            for archivo in related_code or []:
+                filas.append(f"| código | `{archivo}` |")
+            cuerpo.append("\n".join(filas))
 
-    rel = str(note_path.relative_to(_raiz())).replace("\\", "/")
-    index["bugs"].append({
-        "docId": note_id,
-        "bug_id": bug_id,
-        "project": project,
-        "title": title,
-        "phase": phase,
-        "status": status,
-        "severity": severity,
-        "relPath": rel,
-        "updatedAt": now,
-    })
-    _bugs_dir().mkdir(parents=True, exist_ok=True)
-    atomic_write_json(_index_file(), index)
+        fases = " | ".join(f"**{p}**" if p == phase else p for p in PHASES)
+        cuerpo.append(f"## Ciclo\n\n{fases}")
+
+        note_path.parent.mkdir(parents=True, exist_ok=True)
+        atomic_write_text(note_path, frontmatter.render() + "\n\n" + "\n\n".join(cuerpo))
+
+        rel = str(note_path.relative_to(_raiz())).replace("\\", "/")
+        index["bugs"].append({
+            "docId": note_id,
+            "bug_id": bug_id,
+            "project": project,
+            "title": title,
+            "phase": phase,
+            "status": status,
+            "severity": severity,
+            "relPath": rel,
+            "updatedAt": now,
+        })
+        _bugs_dir().mkdir(parents=True, exist_ok=True)
 
     return {
         "ok": True,

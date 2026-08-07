@@ -24,7 +24,13 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-from vault_io import atomic_write_text, atomic_write_json, write_report, resolve_input_path
+from vault_io import (
+    atomic_write_text,
+    atomic_write_json,
+    write_report,
+    resolve_input_path,
+    indice_compartido,
+)
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -97,6 +103,13 @@ def load_index() -> Dict[str, Any]:
         return {"modules": [], "relations": []}
 
 
+# superseded_by: vault_io.indice_compartido
+#
+# Leia/escribia el indice fuera de todo tramo exclusivo, que es justo el
+# lost update que `indice_compartido` cierra. Se conserva con su contrato
+# intacto por la politica de no-derogacion: ya no lo llama el camino de
+# guardado, y no debe volver a llamarlo. Si necesitas el indice, entra por
+# `indice_compartido`, que cubre desde la lectura hasta la escritura.
 def save_index(data: Dict[str, Any]) -> None:
     _code_dir().mkdir(parents=True, exist_ok=True)
     atomic_write_json(INDEX_FILE, data)
@@ -416,34 +429,37 @@ def vault_code_module(
     note_path.parent.mkdir(parents=True, exist_ok=True)
     atomic_write_text(note_path, final_content)
 
-    index = load_index()
+    # El tramo exclusivo abarca desde la lectura hasta la escritura: sin el,
+    # dos ejecuciones concurrentes leen el mismo indice, cada una anade su
+    # entrada, gana la segunda y la primera desaparece con las dos tools
+    # devolviendo `ok: true` (AP-37 por la puerta de atras).
+    with indice_compartido(INDEX_FILE, {"modules": [], "relations": []}) as index:
 
-    method_names = [m.get("name", "") for m in (methods or [])] if methods else []
-    class_names = [c.get("name", "") for c in (classes or [])] if classes else []
+        method_names = [m.get("name", "") for m in (methods or [])] if methods else []
+        class_names = [c.get("name", "") for c in (classes or [])] if classes else []
 
-    module_entry = {
-        "docId": note_id,
-        "project": project,
-        "filePath": file_path,
-        "title": Path(file_path).name,
-        "relPath": str(note_path.relative_to(_raiz())).replace("\\", "/"),
-        "exports": exports or [],
-        "language": language or "",
-        "iso_type": iso_type or "",
-        "methods": method_names,
-        "classes": class_names,
-        "quality": {q.get("attribute"): q.get("rating") for q in (quality or [])},
-        "updatedAt": now,
-    }
+        module_entry = {
+            "docId": note_id,
+            "project": project,
+            "filePath": file_path,
+            "title": Path(file_path).name,
+            "relPath": str(note_path.relative_to(_raiz())).replace("\\", "/"),
+            "exports": exports or [],
+            "language": language or "",
+            "iso_type": iso_type or "",
+            "methods": method_names,
+            "classes": class_names,
+            "quality": {q.get("attribute"): q.get("rating") for q in (quality or [])},
+            "updatedAt": now,
+        }
 
-    for i, m in enumerate(index["modules"]):
-        if m["filePath"] == file_path:
-            index["modules"][i] = module_entry
-            break
-    else:
-        index["modules"].append(module_entry)
+        for i, m in enumerate(index["modules"]):
+            if m["filePath"] == file_path:
+                index["modules"][i] = module_entry
+                break
+        else:
+            index["modules"].append(module_entry)
 
-    save_index(index)
 
     has_relations = any(
         r.get("from") == file_path or r.get("to") == file_path

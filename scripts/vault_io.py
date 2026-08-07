@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Shared file IO helpers for vault tools."""
 
+import copy
 import json
 import os
 import re
@@ -948,6 +949,51 @@ def atomic_write_json(path: Path, data: Dict[str, Any]) -> None:
     atomic_write_text(
         path, json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8"
     )
+
+
+@contextmanager
+def indice_compartido(path: Path, vacio: Dict[str, Any]) -> Iterator[Dict[str, Any]]:
+    """Lee un índice compartido, deja mutarlo y lo devuelve al disco, bajo lock.
+
+    `atomic_write_json` garantiza que el fichero nunca queda a medias, y **no
+    hace nada** contra el problema real de estos índices, que es otro: cinco
+    `*_save` hacían `load_index()` → mutar → `atomic_write_json()` sin lock.
+    Dos guardados concurrentes leen el mismo índice, cada uno añade su entrada,
+    gana el segundo, y la primera desaparece — con las dos tools devolviendo
+    `ok: true`. Es AP-37 por la puerta de atrás: trabajo perdido reportado como
+    éxito.
+
+    La otra mitad es peor y por eso el lock abarca **desde la lectura hasta la
+    escritura**, no solo la escritura: tres de esos índices son además el
+    contador del correlativo (`len(index["bugs"]) + 1`). Reservar el número
+    fuera del lock hace que dos guardados obtengan `REQ-001` los dos, escriban
+    el mismo nombre de fichero y uno pise al otro. El número tiene que salir
+    del mismo tramo exclusivo que lo consume.
+
+    `vacio` es lo que se devuelve cuando el índice no existe todavía. Se copia
+    en profundidad: si se cediera el mismo objeto, dos llamadas sobre un vault
+    recién creado compartirían la lista y la segunda vería las entradas de la
+    primera.
+
+    **Solo escribe si algo cambió.** Tres de los cinco tienen un `return`
+    temprano dentro de la región —rutas de error como `INVALID_PATH`— que hoy
+    no tocan el índice. Un `with` sale por ahí de forma normal, así que la
+    escritura se ejecutaría igualmente y el camino de fallo pasaría a tener un
+    side-effect que no tenía, contado además por `write_report()`. Comparar
+    antes de escribir es más barato que pedirle a cinco puntos de uso que se
+    acuerden de confirmar, y deja la regla donde se puede comprobar: si no
+    cambió nada, no se escribe nada (AP-36, AP-37).
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with file_lock(path, timeout=30.0):
+        try:
+            datos = json.loads(path.read_text(encoding="utf-8"))
+        except (FileNotFoundError, json.JSONDecodeError):
+            datos = copy.deepcopy(vacio)
+        antes = json.dumps(datos, sort_keys=True, ensure_ascii=False)
+        yield datos
+        if json.dumps(datos, sort_keys=True, ensure_ascii=False) != antes:
+            atomic_write_json(path, datos)
 
 
 def safe_wikilink(text: str) -> str:

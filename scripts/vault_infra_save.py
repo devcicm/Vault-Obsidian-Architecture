@@ -33,6 +33,7 @@ from vault_norms import status_frontmatter_lines
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from datetime import datetime, timezone
 from vault_io import (
+    indice_compartido,
     write_report,
     atomic_write_text,
     atomic_write_json,
@@ -129,6 +130,13 @@ def slugify(text: str) -> str:
     return slugify_strict(text)
 
 
+# superseded_by: vault_io.indice_compartido
+#
+# Leia/escribia el indice fuera de todo tramo exclusivo, que es justo el
+# lost update que `indice_compartido` cierra. Se conserva con su contrato
+# intacto por la politica de no-derogacion: ya no lo llama el camino de
+# guardado, y no debe volver a llamarlo. Si necesitas el indice, entra por
+# `indice_compartido`, que cubre desde la lectura hasta la escritura.
 def load_index() -> Dict[str, Any]:
     try:
         with open(_index_file(), "r", encoding="utf-8") as f:
@@ -141,6 +149,13 @@ def load_index() -> Dict[str, Any]:
         return {"components": [], "locations": {}}
 
 
+# superseded_by: vault_io.indice_compartido
+#
+# Leia/escribia el indice fuera de todo tramo exclusivo, que es justo el
+# lost update que `indice_compartido` cierra. Se conserva con su contrato
+# intacto por la politica de no-derogacion: ya no lo llama el camino de
+# guardado, y no debe volver a llamarlo. Si necesitas el indice, entra por
+# `indice_compartido`, que cubre desde la lectura hasta la escritura.
 def save_index(data: Dict[str, Any]) -> None:
     _infra_dir().mkdir(parents=True, exist_ok=True)
 
@@ -436,36 +451,39 @@ def vault_infra_save(
 
     atomic_write_text(note_path, final_content)
 
-    index = load_index()
+    # El lock abarca desde la lectura hasta la escritura, no solo la
+    # escritura: este indice es tambien el contador del correlativo, y
+    # reservar el numero fuera del tramo exclusivo hace que dos guardados
+    # concurrentes obtengan el mismo id y el mismo nombre de fichero.
+    with indice_compartido(_index_file(), {"components": [], "locations": {}}) as index:
 
-    new_component = {
-        "id": str(uuid.uuid4()),
-        "name": name,
-        "type": component_type,
-        "location": location,
-        "config": config,
-        "connections": connections or [],
-        "project": project,
-        "status": status,
-        "updatedAt": timestamp,
-    }
+        new_component = {
+            "id": str(uuid.uuid4()),
+            "name": name,
+            "type": component_type,
+            "location": location,
+            "config": config,
+            "connections": connections or [],
+            "project": project,
+            "status": status,
+            "updatedAt": timestamp,
+        }
 
-    for i, comp in enumerate(index["components"]):
-        if slugify(comp["name"]) == safe_name:
-            index["components"][i] = new_component
+        for i, comp in enumerate(index["components"]):
+            if slugify(comp["name"]) == safe_name:
+                index["components"][i] = new_component
 
-            break
+                break
 
-    else:
-        index["components"].append(new_component)
+        else:
+            index["components"].append(new_component)
 
-    if location not in index["locations"]:
-        index["locations"][location] = []
+        if location not in index["locations"]:
+            index["locations"][location] = []
 
-    if name not in index["locations"][location]:
-        index["locations"][location].append(name)
+        if name not in index["locations"][location]:
+            index["locations"][location].append(name)
 
-    save_index(index)
 
     map_path = save_infra_map(index["components"], project, location)
 

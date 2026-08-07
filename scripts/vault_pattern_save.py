@@ -34,6 +34,7 @@ from vault_errors import wrap_main
 from vault_norms import status_frontmatter_lines
 from vault_lib import yaml_scalar, utcnow, slugify
 from vault_io import (
+    indice_compartido,
     write_report,
     atomic_write_text,
     atomic_write_json,
@@ -130,6 +131,13 @@ def parse_frontmatter(content: str) -> Dict[str, Any]:
     return meta
 
 
+# superseded_by: vault_io.indice_compartido
+#
+# Leia/escribia el indice fuera de todo tramo exclusivo, que es justo el
+# lost update que `indice_compartido` cierra. Se conserva con su contrato
+# intacto por la politica de no-derogacion: ya no lo llama el camino de
+# guardado, y no debe volver a llamarlo. Si necesitas el indice, entra por
+# `indice_compartido`, que cubre desde la lectura hasta la escritura.
 def load_pattern_index() -> Dict[str, Any]:
     try:
         with open(_index_file(), "r", encoding="utf-8") as f:
@@ -139,6 +147,13 @@ def load_pattern_index() -> Dict[str, Any]:
         return {"patterns": []}
 
 
+# superseded_by: vault_io.indice_compartido
+#
+# Leia/escribia el indice fuera de todo tramo exclusivo, que es justo el
+# lost update que `indice_compartido` cierra. Se conserva con su contrato
+# intacto por la politica de no-derogacion: ya no lo llama el camino de
+# guardado, y no debe volver a llamarlo. Si necesitas el indice, entra por
+# `indice_compartido`, que cubre desde la lectura hasta la escritura.
 def save_pattern_index(data: Dict[str, Any]) -> None:
     _index_file().parent.mkdir(parents=True, exist_ok=True)
 
@@ -297,27 +312,28 @@ def vault_pattern_save(
 
     atomic_write_text(pattern_path, final_content)
 
-    index = load_pattern_index()
+    # Aqui el upsert es leer-modificar-escribir sobre un indice compartido: sin
+    # tramo exclusivo, dos guardados concurrentes leen la misma lista, cada uno
+    # anade la suya, gana el segundo y la primera entrada desaparece con las dos
+    # tools devolviendo `ok: true`.
+    with indice_compartido(_index_file(), {"patterns": []}) as index:
+        pattern_entry = {
+            "path": str(pattern_path.relative_to(_raiz())).replace("\\", "/"),
+            "pattern": name,
+            "project": project,
+            "type": pattern_type,
+            "status": status,
+            "updatedAt": timestamp,
+        }
 
-    pattern_entry = {
-        "path": str(pattern_path.relative_to(_raiz())).replace("\\", "/"),
-        "pattern": name,
-        "project": project,
-        "type": pattern_type,
-        "status": status,
-        "updatedAt": timestamp,
-    }
+        for i, entry in enumerate(index["patterns"]):
+            if entry["path"] == pattern_entry["path"]:
+                index["patterns"][i] = pattern_entry
 
-    for i, entry in enumerate(index["patterns"]):
-        if entry["path"] == pattern_entry["path"]:
-            index["patterns"][i] = pattern_entry
+                break
 
-            break
-
-    else:
-        index["patterns"].append(pattern_entry)
-
-    save_pattern_index(index)
+        else:
+            index["patterns"].append(pattern_entry)
 
     transition = (
         f"{existing_status} → {status}"

@@ -42,6 +42,7 @@ from vault_io import (
     write_report,
     atomic_write_text,
     atomic_write_json,
+    indice_compartido,
     assert_within_vault,
 )
 import uuid
@@ -103,6 +104,13 @@ def slugify(text: str) -> str:
     return slugify_strict(text)
 
 
+# superseded_by: vault_io.indice_compartido
+#
+# Leia/escribia el indice fuera de todo tramo exclusivo, que es justo el
+# lost update que `indice_compartido` cierra. Se conserva con su contrato
+# intacto por la politica de no-derogacion: ya no lo llama el camino de
+# guardado, y no debe volver a llamarlo. Si necesitas el indice, entra por
+# `indice_compartido`, que cubre desde la lectura hasta la escritura.
 def load_index() -> Dict[str, Any]:
     try:
         with open(_index_file(), "r", encoding="utf-8") as f:
@@ -112,6 +120,13 @@ def load_index() -> Dict[str, Any]:
         return {"decisions": []}
 
 
+# superseded_by: vault_io.indice_compartido
+#
+# Leia/escribia el indice fuera de todo tramo exclusivo, que es justo el
+# lost update que `indice_compartido` cierra. Se conserva con su contrato
+# intacto por la politica de no-derogacion: ya no lo llama el camino de
+# guardado, y no debe volver a llamarlo. Si necesitas el indice, entra por
+# `indice_compartido`, que cubre desde la lectura hasta la escritura.
 def save_index(data: Dict[str, Any]) -> None:
     _governance_dir().mkdir(parents=True, exist_ok=True)
 
@@ -150,144 +165,147 @@ def vault_ai_decision(
 
     now = utcnow()
 
-    index = load_index()
+    # El tramo exclusivo abarca desde la lectura hasta la escritura: sin el,
+    # dos ejecuciones concurrentes leen el mismo indice, cada una anade su
+    # entrada, gana la segunda y la primera desaparece con las dos tools
+    # devolviendo `ok: true` (AP-37 por la puerta de atras).
+    with indice_compartido(_index_file(), {"decisions": []}) as index:
 
-    # Count existing decisions for this project to get sequential ID
+        # Count existing decisions for this project to get sequential ID
 
-    project_decisions = [d for d in index["decisions"] if d.get("project") == project]
+        project_decisions = [d for d in index["decisions"] if d.get("project") == project]
 
-    decision_number = len(project_decisions) + 1
+        decision_number = len(project_decisions) + 1
 
-    decision_id = f"AID-{decision_number:03d}"
+        decision_id = f"AID-{decision_number:03d}"
 
-    note_id = str(uuid.uuid4())
+        note_id = str(uuid.uuid4())
 
-    filename = f"{safe_project}-{title_slug}.md"
+        filename = f"{safe_project}-{title_slug}.md"
 
-    note_path = _decisions_dir() / filename
+        note_path = _decisions_dir() / filename
 
-    try:
-        assert_within_vault(note_path, _raiz())
+        try:
+            assert_within_vault(note_path, _raiz())
 
-    except ValueError as exc:
-        return {
-            "ok": False,
-            "error_code": "INVALID_PATH",
-            "error": "INVALID_PATH",
-            "message": str(exc),
+        except ValueError as exc:
+            return {
+                "ok": False,
+                "error_code": "INVALID_PATH",
+                "error": "INVALID_PATH",
+                "message": str(exc),
+            }
+
+        tags_list = list(tags or [])
+
+        tags_list.extend([safe_project, "ai-decision", decision_type, impact_level])
+
+        cia_integrity = "high" if impact_level in ("high", "critical") else "medium"
+
+        frontmatter = ["---"]
+
+        frontmatter.append(f"id: {note_id}")
+
+        frontmatter.append(f"decision_id: {decision_id}")
+
+        frontmatter.append(f"title: {yaml_scalar(title)}")
+
+        frontmatter.append(f"project: {yaml_scalar(project)}")
+
+        frontmatter.append(f"decision_type: {decision_type}")
+
+        frontmatter.append(f"impact_level: {impact_level}")
+
+        frontmatter.append(f"human_approved: {str(human_approved).lower()}")
+
+        frontmatter.append(f"reversible: {str(reversible).lower()}")
+
+        frontmatter.append(f"createdAt: {now}")
+
+        frontmatter.append(f"updatedAt: {now}")
+
+        if tags_list:
+            frontmatter.append(f"tags: {json.dumps(list(dict.fromkeys(tags_list)))}")
+
+        frontmatter.append(f"cia_integrity: {cia_integrity}")
+
+        frontmatter.append(f"cia_availability: medium")
+
+        frontmatter.append(f"cia_sensitivity: internal")
+
+        frontmatter.append(f"agent: system")
+
+        frontmatter.append("---")
+
+        body_sections = []
+
+        # Informative header
+
+        approved_str = "Si" if human_approved else "No"
+
+        reversible_str = "Si" if reversible else "No"
+
+        header_info = (
+            f"**Proyecto:** {project}  |  **Tipo:** {decision_type}  |  "
+            f"**Impacto:** {impact_level}  |  **Reversible:** {reversible_str}  |  "
+            f"**Aprobado por humano:** {approved_str}"
+        )
+
+        body_sections.append(header_info + "\n")
+
+        body_sections.append(f"## Descripcion\n\n{description}")
+
+        body_sections.append(f"## Justificacion\n\n{rationale}")
+
+        if alternatives:
+            lines = ["## Alternativas Consideradas\n"]
+
+            for alt in alternatives:
+                lines.append(f"- {alt}")
+
+            body_sections.append("\n".join(lines))
+
+        if risks:
+            lines = ["## Riesgos Identificados\n"]
+
+            for risk in risks:
+                lines.append(f"- {risk}")
+
+            body_sections.append("\n".join(lines))
+
+        if related_code:
+            lines = ["## Codigo Relacionado\n"]
+
+            for code_file in related_code:
+                lines.append(f"- `{code_file}`")
+
+            body_sections.append("\n".join(lines))
+
+        body_sections.append(
+            "> *Registrado bajo ISO/IEC 42001:2023 — AI Management System*"
+        )
+
+        final_content = "\n".join(frontmatter) + "\n\n" + "\n\n".join(body_sections)
+
+        note_path.parent.mkdir(parents=True, exist_ok=True)
+
+        atomic_write_text(note_path, final_content)
+
+        entry = {
+            "docId": note_id,
+            "decision_id": decision_id,
+            "project": project,
+            "title": title,
+            "decision_type": decision_type,
+            "impact_level": impact_level,
+            "human_approved": human_approved,
+            "reversible": reversible,
+            "relPath": str(note_path.relative_to(_raiz())).replace("\\", "/"),
+            "updatedAt": now,
         }
 
-    tags_list = list(tags or [])
+        index["decisions"].append(entry)
 
-    tags_list.extend([safe_project, "ai-decision", decision_type, impact_level])
-
-    cia_integrity = "high" if impact_level in ("high", "critical") else "medium"
-
-    frontmatter = ["---"]
-
-    frontmatter.append(f"id: {note_id}")
-
-    frontmatter.append(f"decision_id: {decision_id}")
-
-    frontmatter.append(f"title: {yaml_scalar(title)}")
-
-    frontmatter.append(f"project: {yaml_scalar(project)}")
-
-    frontmatter.append(f"decision_type: {decision_type}")
-
-    frontmatter.append(f"impact_level: {impact_level}")
-
-    frontmatter.append(f"human_approved: {str(human_approved).lower()}")
-
-    frontmatter.append(f"reversible: {str(reversible).lower()}")
-
-    frontmatter.append(f"createdAt: {now}")
-
-    frontmatter.append(f"updatedAt: {now}")
-
-    if tags_list:
-        frontmatter.append(f"tags: {json.dumps(list(dict.fromkeys(tags_list)))}")
-
-    frontmatter.append(f"cia_integrity: {cia_integrity}")
-
-    frontmatter.append(f"cia_availability: medium")
-
-    frontmatter.append(f"cia_sensitivity: internal")
-
-    frontmatter.append(f"agent: system")
-
-    frontmatter.append("---")
-
-    body_sections = []
-
-    # Informative header
-
-    approved_str = "Si" if human_approved else "No"
-
-    reversible_str = "Si" if reversible else "No"
-
-    header_info = (
-        f"**Proyecto:** {project}  |  **Tipo:** {decision_type}  |  "
-        f"**Impacto:** {impact_level}  |  **Reversible:** {reversible_str}  |  "
-        f"**Aprobado por humano:** {approved_str}"
-    )
-
-    body_sections.append(header_info + "\n")
-
-    body_sections.append(f"## Descripcion\n\n{description}")
-
-    body_sections.append(f"## Justificacion\n\n{rationale}")
-
-    if alternatives:
-        lines = ["## Alternativas Consideradas\n"]
-
-        for alt in alternatives:
-            lines.append(f"- {alt}")
-
-        body_sections.append("\n".join(lines))
-
-    if risks:
-        lines = ["## Riesgos Identificados\n"]
-
-        for risk in risks:
-            lines.append(f"- {risk}")
-
-        body_sections.append("\n".join(lines))
-
-    if related_code:
-        lines = ["## Codigo Relacionado\n"]
-
-        for code_file in related_code:
-            lines.append(f"- `{code_file}`")
-
-        body_sections.append("\n".join(lines))
-
-    body_sections.append(
-        "> *Registrado bajo ISO/IEC 42001:2023 — AI Management System*"
-    )
-
-    final_content = "\n".join(frontmatter) + "\n\n" + "\n\n".join(body_sections)
-
-    note_path.parent.mkdir(parents=True, exist_ok=True)
-
-    atomic_write_text(note_path, final_content)
-
-    entry = {
-        "docId": note_id,
-        "decision_id": decision_id,
-        "project": project,
-        "title": title,
-        "decision_type": decision_type,
-        "impact_level": impact_level,
-        "human_approved": human_approved,
-        "reversible": reversible,
-        "relPath": str(note_path.relative_to(_raiz())).replace("\\", "/"),
-        "updatedAt": now,
-    }
-
-    index["decisions"].append(entry)
-
-    save_index(index)
 
     return {
         "ok": True,
