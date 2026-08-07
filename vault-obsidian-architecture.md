@@ -6329,7 +6329,7 @@ temp/
 
 ---
 
-### v40.0 — 2026-08-06 `git: pending`
+### v40.0 — 2026-08-06 `git: a012ed2`
 
 **Fronteras declaradas, y una costura que por fin sirve**
 
