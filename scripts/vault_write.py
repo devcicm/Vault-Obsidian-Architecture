@@ -43,7 +43,6 @@ from vault_io import (
     atomic_write_json,
     atomic_update_json,
     assert_within_vault,
-    VAULT_ROOT,
     normalize_stem,
     file_lock,
 )
@@ -80,6 +79,34 @@ import uuid
 from pathlib import Path
 
 from typing import Any, Dict, List, Optional
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _history_dir() -> Path:
+    return _repo().dir_historial
+
+
+def _index_file() -> Path:
+    return _repo().indice_busqueda
+
+
+def _tag_registry() -> Path:
+    return _repo().registro_etiquetas
 
 
 def _check_content_gate(content: str, folder: str) -> bool:
@@ -213,17 +240,11 @@ def _content_gate_reason(content: str, folder: str) -> Optional[str]:
 
 # Configuration
 
-HISTORY_DIR = VAULT_ROOT / ".history"
-
-INDEX_FILE = VAULT_ROOT / "99_Index" / "search-index.json"
-
-TAG_REGISTRY = VAULT_ROOT / "00_System" / "tag-registry.json"
-
 
 def _tag_suggestions(new_tags: List[str]) -> List[Dict[str, Any]]:
     """Return canonical similar tags for any new_tags not yet in registry. Non-blocking."""
 
-    if not TAG_REGISTRY.exists():
+    if not _tag_registry().exists():
         return []
 
     # AP-39 — leía `registry["tags"]`, una clave que el registro no tiene desde
@@ -302,7 +323,7 @@ def _collect_ghost_links(wiki_links: List[str]) -> List[str]:
 
     all_stems = {
         normalize_stem(p.stem)
-        for p in VAULT_ROOT.rglob("*.md")
+        for p in _raiz().rglob("*.md")
         if ".history" not in str(p)
     }
 
@@ -455,7 +476,7 @@ def update_search_index(
 ) -> None:
     """Update search index with new or updated note (lock-protected read-modify-write)."""
 
-    INDEX_FILE.parent.mkdir(parents=True, exist_ok=True)
+    _index_file().parent.mkdir(parents=True, exist_ok=True)
 
     body = content.split("---", 2)[-1] if content.startswith("---") else content
 
@@ -484,7 +505,7 @@ def update_search_index(
 
         return index
 
-    atomic_update_json(INDEX_FILE, {"notes": []}, _update)
+    atomic_update_json(_index_file(), {"notes": []}, _update)
 
 
 def vault_write(
@@ -653,10 +674,10 @@ def vault_write(
 
     filename = f"{slugify(title)}.md"
 
-    vault_path = VAULT_ROOT / folder / filename
+    vault_path = _raiz() / folder / filename
 
     try:
-        assert_within_vault(vault_path, VAULT_ROOT)
+        assert_within_vault(vault_path, _raiz())
 
     except ValueError as exc:
         return {
@@ -683,9 +704,9 @@ def vault_write(
             f"{folder.replace('/', '__')}__{slugify(title)}-{timestamp}.md"
         )
 
-        history_path = HISTORY_DIR / history_filename
+        history_path = _history_dir() / history_filename
 
-        HISTORY_DIR.mkdir(parents=True, exist_ok=True)
+        _history_dir().mkdir(parents=True, exist_ok=True)
 
         existing_content = vault_path.read_text(encoding="utf-8")
 
@@ -712,7 +733,7 @@ def vault_write(
 
     # Check if note exists in a different folder (auto-move suggestion)
     else:
-        search_index = VAULT_ROOT / "99_Index" / "search-index.json"
+        search_index = _raiz() / "99_Index" / "search-index.json"
         if search_index.exists():
             try:
                 import json as json_module
@@ -813,7 +834,7 @@ def vault_write(
         # Update search index (inside lock for consistency)
 
         update_search_index(
-            str(vault_path.relative_to(VAULT_ROOT)),
+            str(vault_path.relative_to(_raiz())),
             title,
         content,
         tags,
@@ -845,7 +866,7 @@ def vault_write(
     # AP-39: la nota ya está en disco, así que el término existe de verdad.
     # Anotarlo antes habría dejado en la bitácora palabras de escrituras que
     # fallaron — memoria de algo que nunca se escribió.
-    rel_path = str(vault_path.relative_to(VAULT_ROOT)).replace("\\", "/")
+    rel_path = str(vault_path.relative_to(_raiz())).replace("\\", "/")
     introduced = 0
     if new_terms:
         for t in new_terms:
@@ -1005,7 +1026,7 @@ Notas:
 
             filename = f"{slugify(title)}.md"
 
-            vault_path = VAULT_ROOT / args.folder / filename
+            vault_path = _raiz() / args.folder / filename
 
             if vault_path.exists():
                 skipped.append(

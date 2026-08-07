@@ -45,7 +45,7 @@ import sys
 from vault_errors import wrap_main
 from vault_lib import slugify_strict, utcnow
 from datetime import datetime, timezone
-from vault_io import atomic_write_text, assert_within_vault, VAULT_ROOT, write_report
+from vault_io import atomic_write_text, assert_within_vault, write_report
 import uuid
 
 from pathlib import Path
@@ -54,11 +54,28 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _flows_dir() -> Path:
+    return _repo().seccion("13_Flows")
+
+
 def utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-
-
-FLOWS_DIR = VAULT_ROOT / "13_Flows"
 
 
 FLOW_TYPES = ["workflow", "pipeline", "lifecycle", "dataflow"]
@@ -109,7 +126,7 @@ def vault_flow_save(
 
     note_id = str(uuid.uuid4())
 
-    flow_dir = FLOWS_DIR / flow_type
+    flow_dir = _flows_dir() / flow_type
 
     note_path = flow_dir / f"{safe_project}-{safe_name}.md"
 
@@ -145,7 +162,7 @@ def vault_flow_save(
     related_list = [r.strip() for r in related_code.split(",")] if related_code else []
 
     try:
-        assert_within_vault(note_path, VAULT_ROOT)
+        assert_within_vault(note_path, _raiz())
 
     except ValueError as exc:
         return {
@@ -233,7 +250,7 @@ def vault_flow_save(
     return {
         "ok": True,
         **write_report(),
-        "path": str(note_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(note_path.relative_to(_raiz())).replace("\\", "/"),
         "type": flow_type,
         "action": action,
     }
@@ -256,7 +273,6 @@ Tipos de flow y diagrama Mermaid recomendado:
   dataflow  -> {MERMAID_HINTS["dataflow"]}  (transformacion de datos)
 
 
-
 Ejemplos:
 
   # Workflow de negocio
@@ -274,7 +290,6 @@ Ejemplos:
     --steps '[{{"step":1,"name":"Submit form","actor":"User","action":"POST /register"}},{{"step":2,"name":"Validate email","actor":"API","action":"Check DB uniqueness"}}]'
 
 
-
   # Pipeline CI/CD
 
   python vault_flow_save.py --project "ans" --name "Deploy Pipeline" --type pipeline \\
@@ -286,7 +301,6 @@ Ejemplos:
     --actors "GitHub Actions,Docker,Kubernetes"
 
 
-
   # Ciclo de vida de entidad
 
   python vault_flow_save.py --project "mi-api" --name "Order Lifecycle" --type lifecycle \\
@@ -296,7 +310,6 @@ Ejemplos:
     --mermaid "stateDiagram-v2\\n  [*] --> Pending\\n  Pending --> Confirmed : payment_ok\\n  Confirmed --> Shipped : warehouse_ok\\n  Shipped --> [*] : delivered"
 
 
-
   # Dataflow
 
   python vault_flow_save.py --project "ans" --name "Log Processing" --type dataflow \\
@@ -304,7 +317,6 @@ Ejemplos:
     --description "Raw logs to structured metrics" \\
 
     --mermaid "flowchart TD\\n  A[Raw Logs] --> B[Parser]\\n  B --> C[Aggregator]\\n  C --> D[(TimeSeries DB)]"
-
 
 
 Notas:

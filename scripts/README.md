@@ -109,6 +109,33 @@ python vault_write.py --folder "07_Knowledge" --title "N" --content "..." --meta
 Las transiciones **ya ocurridas** no las ve el guard: las reporta
 `python vault_norms.py --audit` recorriendo `.history/`.
 
+#### Contexto acotado: Autoría (v40.0)
+
+Los 38 módulos que escriben notas —`vault_write`, `vault_move`, `vault_read`, los 17
+`*_save` y sus vecinos— forman el contexto **Autoría**, el último de los nueve en
+migrarse al dominio. Al llegar aquí los otros ocho estaban a cero y Autoría concentraba
+**los 31 vínculos congelados que quedaban: el 100% de la deuda de AP-49**.
+
+La causa se ve en el diff, y no es un descuido puntual: veinticinco módulos derivaban
+`SECCION_DIR = VAULT_ROOT / "0X_Loquesea"` en tiempo de import, cada uno copiado del
+fichero de al lado al crearlo. `set_vault_root()` existía desde hacía versiones y no
+podía reapuntar a ninguno — la costura de inyección estaba ahí y no servía.
+
+Por eso `RepositorioAutoria` **no enumera secciones**: se piden por nombre a `seccion()`,
+que valida contra `vault_registry.ORDERED_SECTIONS` y falla ruidosamente ante un nombre
+desconocido. Veintidós constantes copiadas veinticinco veces eran veintidós ocasiones de
+que un typo creara una carpeta huérfana en el vault del usuario sin que nada lo notara.
+
+Cuatro rutas que Autoría lee y actualiza pero **no define** se piden a su dueño: el
+índice de búsqueda, el de hashes y el registro de etiquetas a `RepositorioIndices`; el
+grafo a `RepositorioGrafo`. `vault_change_log` pide la bitácora a `RepositorioGobernanza`,
+que es quien la declara y de donde la leen `vault_fundamentals` y `vault_quality_check`.
+
+Con esta fase `vault_arch --check` mide **0 vínculos congelados**, frente a los 82 en 62
+módulos del arranque. Es la primera vez que la inyección de dependencias del estándar es
+real en todo el dominio, y el test `test_no_queda_un_solo_vinculo_congelado_en_el_repo`
+lo vuelve irreversible: cualquier módulo nuevo que derive su ruta al importarse lo rompe.
+
 ---
 
 ### `vault_read.py`

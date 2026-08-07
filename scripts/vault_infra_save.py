@@ -37,7 +37,6 @@ from vault_io import (
     atomic_write_text,
     atomic_write_json,
     assert_within_vault,
-    VAULT_ROOT,
 )
 import uuid
 
@@ -47,13 +46,32 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _infra_dir() -> Path:
+    return _repo().seccion("09_Infrastructure")
+
+
+def _index_file() -> Path:
+    return _repo().seccion("09_Infrastructure") / ".infra-index.json"
+
+
 def utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-
-
-INFRA_DIR = VAULT_ROOT / "09_Infrastructure"
-
-INDEX_FILE = INFRA_DIR / ".infra-index.json"
 
 
 COMPONENT_TYPES = {
@@ -112,7 +130,7 @@ def slugify(text: str) -> str:
 
 def load_index() -> Dict[str, Any]:
     try:
-        with open(INDEX_FILE, "r", encoding="utf-8") as f:
+        with open(_index_file(), "r", encoding="utf-8") as f:
             data = json.load(f)
             if "locations" not in data:
                 data["locations"] = {}
@@ -123,9 +141,9 @@ def load_index() -> Dict[str, Any]:
 
 
 def save_index(data: Dict[str, Any]) -> None:
-    INFRA_DIR.mkdir(parents=True, exist_ok=True)
+    _infra_dir().mkdir(parents=True, exist_ok=True)
 
-    atomic_write_json(INDEX_FILE, data)
+    atomic_write_json(_index_file(), data)
 
 
 def generate_infra_map(
@@ -216,7 +234,7 @@ def save_infra_map(
 ) -> Path:
     mermaid_content = generate_infra_map(components, project, location)
 
-    map_path = INFRA_DIR / "infra-map.md"
+    map_path = _infra_dir() / "infra-map.md"
 
     frontmatter = ["---"]
 
@@ -264,7 +282,7 @@ def vault_infra_save(
             "error": f"Ubicación inválida: {location}. Válidas: {LOCATIONS}",
         }
 
-    folder = INFRA_DIR / COMPONENT_TYPES[component_type]
+    folder = _infra_dir() / COMPONENT_TYPES[component_type]
 
     safe_name = slugify(name)
 
@@ -275,7 +293,7 @@ def vault_infra_save(
     timestamp = utcnow()
 
     try:
-        assert_within_vault(note_path, VAULT_ROOT)
+        assert_within_vault(note_path, _raiz())
 
     except ValueError as exc:
         return {
@@ -338,7 +356,6 @@ def vault_infra_save(
         body_sections.append(f"""## Secreto — Metadatos
 
 
-
 | Campo | Valor |
 
 |---|---|
@@ -350,7 +367,6 @@ def vault_infra_save(
 | Política de rotación | {rotation} |
 
 | Owner | {owner} |
-
 
 
 > **Nota:** El valor real del secreto nunca se documenta aquí.
@@ -369,7 +385,6 @@ def vault_infra_save(
         body_sections.append(f"""## Pipeline CI/CD
 
 
-
 | Campo | Valor |
 
 |---|---|
@@ -379,7 +394,6 @@ def vault_infra_save(
 | Triggers | {triggers} |
 
 | Artefacto | {artifact} |
-
 
 
 **Etapas:**
@@ -459,7 +473,7 @@ def vault_infra_save(
     return {
         "ok": True,
         **write_report(),
-        "path": str(note_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(note_path.relative_to(_raiz())).replace("\\", "/"),
         "type": component_type,
         "infraMapUpdated": True,
     }

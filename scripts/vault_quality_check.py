@@ -46,7 +46,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from vault_errors import wrap_main
 from vault_lib import utcnow
-from vault_io import atomic_write_json, file_lock, VAULT_ROOT, write_report
+from vault_io import atomic_write_json, file_lock, write_report
 
 
 # F4 accuracy: section → expected type mapping

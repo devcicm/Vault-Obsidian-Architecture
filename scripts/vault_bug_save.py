@@ -49,12 +49,9 @@ from vault_io import (
     atomic_write_json,
     assert_within_vault,
     safe_wikilink,
-    VAULT_ROOT,
 )
 from vault_lib import slugify_strict, utcnow
 
-BUGS_DIR = VAULT_ROOT / "18_Bugs"
-INDEX_FILE = BUGS_DIR / ".bugs-index.json"
 
 #: Fases del defecto. El nombre es la subcarpeta: la fase y la ubicación no
 #: pueden divergir porque son el mismo dato leído dos veces.
@@ -70,6 +67,30 @@ BUG_STATES = ["open", "confirmed", "in_fix", "fixed", "wont_fix", "duplicate"]
 SEVERITIES = ["critical", "high", "medium", "low"]
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _bugs_dir() -> Path:
+    return _repo().seccion("18_Bugs")
+
+
+def _index_file() -> Path:
+    return _repo().seccion("18_Bugs") / ".bugs-index.json"
+
+
 def slugify(text: str) -> str:
     # Delega en el slug canónico (`vault_lib.slugify`). La copia que había
     # aquí divergía del resto: unas borraban los acentos, otras los dejaban
@@ -79,7 +100,7 @@ def slugify(text: str) -> str:
 
 def load_index() -> Dict[str, Any]:
     try:
-        with open(INDEX_FILE, "r", encoding="utf-8") as f:
+        with open(_index_file(), "r", encoding="utf-8") as f:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return {"bugs": []}
@@ -154,9 +175,9 @@ def vault_bug_save(
     bug_id = f"BUG-{bug_number:03d}"
     note_id = str(uuid.uuid4())
 
-    note_path = BUGS_DIR / _PHASE_FOLDER[phase] / f"{safe_project}-{slugify(title)}.md"
+    note_path = _bugs_dir() / _PHASE_FOLDER[phase] / f"{safe_project}-{slugify(title)}.md"
     try:
-        assert_within_vault(note_path, VAULT_ROOT)
+        assert_within_vault(note_path, _raiz())
     except ValueError as exc:
         return {"ok": False, "error_code": "INVALID_PATH", "error": str(exc)}
 
@@ -220,7 +241,7 @@ def vault_bug_save(
     note_path.parent.mkdir(parents=True, exist_ok=True)
     atomic_write_text(note_path, "\n".join(frontmatter) + "\n\n" + "\n\n".join(cuerpo))
 
-    rel = str(note_path.relative_to(VAULT_ROOT)).replace("\\", "/")
+    rel = str(note_path.relative_to(_raiz())).replace("\\", "/")
     index["bugs"].append({
         "docId": note_id,
         "bug_id": bug_id,
@@ -232,8 +253,8 @@ def vault_bug_save(
         "relPath": rel,
         "updatedAt": now,
     })
-    BUGS_DIR.mkdir(parents=True, exist_ok=True)
-    atomic_write_json(INDEX_FILE, index)
+    _bugs_dir().mkdir(parents=True, exist_ok=True)
+    atomic_write_json(_index_file(), index)
 
     return {
         "ok": True,

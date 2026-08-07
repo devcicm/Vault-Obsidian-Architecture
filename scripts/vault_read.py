@@ -32,7 +32,7 @@ import sys
 
 from vault_errors import wrap_main
 
-from vault_io import assert_within_vault, VAULT_ROOT
+from vault_io import assert_within_vault
 from vault_encoding import decode_safely, normalize_to_nfc
 from vault_regex import extract_wiki_links_strict
 from datetime import datetime
@@ -43,7 +43,25 @@ from typing import Any, Dict, List, Optional
 
 # Configuration
 
-HISTORY_DIR = VAULT_ROOT / ".history"
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _history_dir() -> Path:
+    return _repo().dir_historial
 
 
 def parse_frontmatter(content: str) -> tuple[Dict[str, Any], str]:
@@ -97,16 +115,16 @@ def extract_wiki_links(content: str) -> List[str]:
 def get_history_versions(note_path: Path) -> List[str]:
     """Get list of historical versions in .history/"""
 
-    if not HISTORY_DIR.exists():
+    if not _history_dir().exists():
         return []
 
     note_name = note_path.stem  # filename without extension
 
-    folder_prefix = str(note_path.parent.relative_to(VAULT_ROOT)).replace("/", "__")
+    folder_prefix = str(note_path.parent.relative_to(_raiz())).replace("/", "__")
 
     versions = []
 
-    for history_file in HISTORY_DIR.iterdir():
+    for history_file in _history_dir().iterdir():
         if history_file.is_file() and note_name in history_file.stem:
             # Check if this version matches our note
 
@@ -143,10 +161,10 @@ def vault_read(path: str) -> Dict[str, Any]:
 
     """
 
-    note_path = VAULT_ROOT / path
+    note_path = _raiz() / path
 
     try:
-        assert_within_vault(note_path, VAULT_ROOT)
+        assert_within_vault(note_path, _raiz())
     except ValueError as exc:
         return {"ok": False, "error_code": "INVALID_PATH", "error": str(exc)}
 

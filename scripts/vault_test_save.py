@@ -41,7 +41,6 @@ from vault_io import (
     atomic_write_text,
     atomic_write_json,
     assert_within_vault,
-    VAULT_ROOT,
 )
 import uuid
 
@@ -51,13 +50,32 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _tests_dir() -> Path:
+    return _repo().seccion("15_Tests")
+
+
+def _index_file() -> Path:
+    return _repo().seccion("15_Tests") / ".tests-index.json"
+
+
 def utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-
-
-TESTS_DIR = VAULT_ROOT / "15_Tests"
-
-INDEX_FILE = TESTS_DIR / ".tests-index.json"
 
 
 TEST_TYPES = ["unit", "integration", "e2e", "performance", "security", "acceptance"]
@@ -74,7 +92,7 @@ def slugify(text: str) -> str:
 
 def load_index() -> Dict[str, Any]:
     try:
-        with open(INDEX_FILE, "r", encoding="utf-8") as f:
+        with open(_index_file(), "r", encoding="utf-8") as f:
             return json.load(f)
 
     except (FileNotFoundError, json.JSONDecodeError):
@@ -82,9 +100,9 @@ def load_index() -> Dict[str, Any]:
 
 
 def save_index(data: Dict[str, Any]) -> None:
-    TESTS_DIR.mkdir(parents=True, exist_ok=True)
+    _tests_dir().mkdir(parents=True, exist_ok=True)
 
-    atomic_write_json(INDEX_FILE, data)
+    atomic_write_json(_index_file(), data)
 
 
 def vault_test_save(
@@ -129,10 +147,10 @@ def vault_test_save(
 
     filename = f"{safe_project}-{title_slug}.md"
 
-    note_path = TESTS_DIR / test_type / filename
+    note_path = _tests_dir() / test_type / filename
 
     try:
-        assert_within_vault(note_path, VAULT_ROOT)
+        assert_within_vault(note_path, _raiz())
 
     except ValueError as exc:
         return {
@@ -235,7 +253,7 @@ def vault_test_save(
         "test_type": test_type,
         "status": status,
         "related_requirement": related_requirement or "",
-        "relPath": str(note_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "relPath": str(note_path.relative_to(_raiz())).replace("\\", "/"),
         "updatedAt": now,
     }
 
@@ -246,7 +264,7 @@ def vault_test_save(
     return {
         "ok": True,
         **write_report(),
-        "path": str(note_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(note_path.relative_to(_raiz())).replace("\\", "/"),
         "test_id": test_id,
         "action": "created",
     }

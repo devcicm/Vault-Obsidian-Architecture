@@ -30,14 +30,11 @@ import sys
 
 from vault_errors import wrap_main
 from vault_lib import slugify_strict, utcnow
-from vault_io import atomic_write_text, assert_within_vault, VAULT_ROOT, write_report
+from vault_io import atomic_write_text, assert_within_vault, write_report
 import uuid
 
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-
-
-BIBLIOGRAPHY_DIR = VAULT_ROOT / "12_Bibliography"
 
 
 SOURCE_TYPES = ["web", "paper", "docs", "api", "book"]
@@ -50,6 +47,26 @@ TYPE_FOLDERS = {
     "api": "12_Bibliography/apis",
     "book": "12_Bibliography/books",
 }
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _bibliography_dir() -> Path:
+    return _repo().seccion("12_Bibliography")
 
 
 def slugify(text: str) -> str:
@@ -85,12 +102,12 @@ def vault_bibliography_save(
     folder_rel = TYPE_FOLDERS[source_type]
 
     folder_path = (
-        VAULT_ROOT / folder_rel.replace("/", "\\")
+        _raiz() / folder_rel.replace("/", "\\")
         if sys.platform == "win32"
-        else VAULT_ROOT / folder_rel
+        else _raiz() / folder_rel
     )
 
-    folder_path = VAULT_ROOT / Path(folder_rel)
+    folder_path = _raiz() / Path(folder_rel)
 
     folder_path.mkdir(parents=True, exist_ok=True)
 
@@ -107,7 +124,7 @@ def vault_bibliography_save(
     tags = tags or []
 
     try:
-        assert_within_vault(note_path, VAULT_ROOT)
+        assert_within_vault(note_path, _raiz())
 
     except ValueError as exc:
         return {
@@ -169,7 +186,7 @@ def vault_bibliography_save(
     return {
         "ok": True,
         **write_report(),
-        "path": str(note_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(note_path.relative_to(_raiz())).replace("\\", "/"),
         "source_type": source_type,
         "title": title,
         "agent": agent,

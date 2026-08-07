@@ -36,7 +36,6 @@ from vault_io import (
     write_report,
     atomic_write_text,
     assert_within_vault,
-    VAULT_ROOT,
     safe_wikilink,
     update_section_index,
 )
@@ -46,9 +45,6 @@ from pathlib import Path
 
 
 from typing import Any, Dict, List, Optional
-
-
-KNOWLEDGE_DIR = VAULT_ROOT / "07_Knowledge"
 
 
 CATEGORIES = [
@@ -72,6 +68,26 @@ CATEGORY_FOLDERS = {
 }
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _knowledge_dir() -> Path:
+    return _repo().seccion("07_Knowledge")
+
+
 def vault_knowledge_save(
     category: str,
     title: str,
@@ -88,7 +104,7 @@ def vault_knowledge_save(
             "error": f"Categoría inválida: {category}. Válidas: {CATEGORIES}",
         }
 
-    folder = KNOWLEDGE_DIR / CATEGORY_FOLDERS[category]
+    folder = _knowledge_dir() / CATEGORY_FOLDERS[category]
 
     safe_title = slugify(title)
 
@@ -99,7 +115,7 @@ def vault_knowledge_save(
     timestamp = utcnow()
 
     try:
-        assert_within_vault(note_path, VAULT_ROOT)
+        assert_within_vault(note_path, _raiz())
 
     except ValueError as exc:
         return {
@@ -183,7 +199,7 @@ def vault_knowledge_save(
     return {
         "ok": True,
         **write_report(),
-        "path": str(note_path.relative_to(VAULT_ROOT)),
+        "path": str(note_path.relative_to(_raiz())),
         "category": category,
         "title": title,
         "message": f"Knowledge note saved to {CATEGORY_FOLDERS[category]}/",

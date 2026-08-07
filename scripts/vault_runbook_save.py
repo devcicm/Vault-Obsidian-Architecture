@@ -30,15 +30,12 @@ import sys
 
 from vault_errors import wrap_main
 from vault_lib import utcnow, slugify
-from vault_io import atomic_write_text, assert_within_vault, VAULT_ROOT, safe_wikilink, write_report
+from vault_io import atomic_write_text, assert_within_vault, safe_wikilink, write_report
 import uuid
 
 from pathlib import Path
 
 from typing import Any, Dict, List, Optional
-
-
-RUNBOOKS_DIR = VAULT_ROOT / "08_Runbooks"
 
 
 CATEGORIES = [
@@ -50,6 +47,26 @@ CATEGORIES = [
     "pipeline",
     "incident",
 ]
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _runbooks_dir() -> Path:
+    return _repo().seccion("08_Runbooks")
 
 
 def vault_runbook_save(
@@ -73,7 +90,7 @@ def vault_runbook_save(
 
     safe_title = slugify(title)
 
-    folder = RUNBOOKS_DIR / category
+    folder = _runbooks_dir() / category
 
     filename = f"{safe_project}-{safe_title}.md"
 
@@ -84,7 +101,7 @@ def vault_runbook_save(
     note_path_candidate = folder / filename
 
     try:
-        assert_within_vault(note_path_candidate, VAULT_ROOT)
+        assert_within_vault(note_path_candidate, _raiz())
 
     except ValueError as exc:
         return {
@@ -168,7 +185,7 @@ def vault_runbook_save(
     return {
         "ok": True,
         **write_report(),
-        "path": str(note_path.relative_to(VAULT_ROOT)),
+        "path": str(note_path.relative_to(_raiz())),
         "category": category,
         "steps": len(steps),
         "message": f"Runbook '{title}' saved to {category}/",

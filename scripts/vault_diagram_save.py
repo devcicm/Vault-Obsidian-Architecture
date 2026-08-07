@@ -30,14 +30,11 @@ import sys
 
 from vault_errors import wrap_main
 from vault_lib import slugify_strict, utcnow
-from vault_io import atomic_write_text, assert_within_vault, VAULT_ROOT, write_report
+from vault_io import atomic_write_text, assert_within_vault, write_report
 import uuid
 
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-
-
-DIAGRAMS_DIR = VAULT_ROOT / "06_Diagrams"
 
 
 CATEGORIES = [
@@ -64,6 +61,26 @@ CATEGORY_NOTES = {
 }
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _diagrams_dir() -> Path:
+    return _repo().seccion("06_Diagrams")
+
+
 def slugify(text: str) -> str:
     # Delega en el slug canónico (`vault_lib.slugify`). La copia que había
     # aquí divergía del resto: unas borraban los acentos, otras los dejaban
@@ -72,7 +89,7 @@ def slugify(text: str) -> str:
 
 
 def get_category_folder(category: str) -> Path:
-    return DIAGRAMS_DIR / category
+    return _diagrams_dir() / category
 
 
 def get_diagram_path(
@@ -132,7 +149,7 @@ def vault_diagram_save(
     diagram_path = get_diagram_path(project, title, category, diagram_type)
 
     try:
-        assert_within_vault(diagram_path, VAULT_ROOT)
+        assert_within_vault(diagram_path, _raiz())
 
     except ValueError as exc:
         return {
@@ -193,7 +210,7 @@ def vault_diagram_save(
     return {
         "ok": True,
         **write_report(),
-        "path": str(diagram_path.relative_to(VAULT_ROOT)),
+        "path": str(diagram_path.relative_to(_raiz())),
         "type": diagram_type,
         "category": category,
         "message": f"Diagram '{title}' saved to {category}/",

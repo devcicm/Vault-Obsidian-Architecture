@@ -22,11 +22,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT, write_report
-
-
-DIAGRAMS_DIR = VAULT_ROOT / "06_Diagrams"
-CONFIG_FILE = DIAGRAMS_DIR / ".mermaid-config.json"
+from vault_io import write_report
 
 
 DEFAULT_CONFIG = {
@@ -40,6 +36,30 @@ DEFAULT_CONFIG = {
     "hideNodes": [],
     "direction": "TD",
 }
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _diagrams_dir() -> Path:
+    return _repo().seccion("06_Diagrams")
+
+
+def _config_file() -> Path:
+    return _repo().seccion("06_Diagrams") / ".mermaid-config.json"
 
 
 def generate_mermaid_config(
@@ -185,7 +205,7 @@ def export_project(
     **kwargs,
 ) -> Dict[str, Any]:
     """Exporta todos los diagramas de un proyecto."""
-    project_dir = VAULT_ROOT / "01_Projects" / project
+    project_dir = _raiz() / "01_Projects" / project
 
     if not project_dir.exists():
         return {"ok": False, "error": f"Proyecto no encontrado: {project}"}
@@ -233,15 +253,15 @@ def export_project(
 
 def save_config(config: Dict[str, Any]) -> Dict[str, Any]:
     """Guarda configuración global de Mermaid."""
-    CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
-    CONFIG_FILE.write_text(json.dumps(config, indent=2), encoding="utf-8")
-    return {"ok": True, "config_file": str(CONFIG_FILE)}
+    _config_file().parent.mkdir(parents=True, exist_ok=True)
+    _config_file().write_text(json.dumps(config, indent=2), encoding="utf-8")
+    return {"ok": True, "config_file": str(_config_file())}
 
 
 def load_config() -> Dict[str, Any]:
     """Carga configuración global de Mermaid."""
-    if CONFIG_FILE.exists():
-        return json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
+    if _config_file().exists():
+        return json.loads(_config_file().read_text(encoding="utf-8"))
     return DEFAULT_CONFIG.copy()
 
 
@@ -309,7 +329,7 @@ Ejemplos:
         )
         result = save_config(config)
     elif args.path:
-        file_path = VAULT_ROOT / args.path
+        file_path = _raiz() / args.path
         output_path = Path(args.output) if args.output else None
         result = export_diagram(
             file_path,
@@ -323,7 +343,7 @@ Ejemplos:
             direction=args.direction,
         )
     elif args.project:
-        output_dir = Path(args.output) if args.output else DIAGRAMS_DIR / "export"
+        output_dir = Path(args.output) if args.output else _diagrams_dir() / "export"
         result = export_project(
             args.project,
             output_dir,
@@ -334,7 +354,7 @@ Ejemplos:
         )
     else:
         result = load_config()
-        result["config_file"] = str(CONFIG_FILE)
+        result["config_file"] = str(_config_file())
 
     if args.json:
         print(json.dumps(result, indent=2, ensure_ascii=False))
@@ -347,7 +367,7 @@ Ejemplos:
                 for f in result.get("files", []):
                     print(f"  - {f}")
             else:
-                print(f"Configuración guardada: {CONFIG_FILE}")
+                print(f"Configuración guardada: {_config_file()}")
         else:
             print(f"Error: {result.get('error', 'Unknown error')}")
             return 1

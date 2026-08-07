@@ -27,11 +27,9 @@ from typing import Any, Dict, List, Optional, Set
 
 from vault_errors import wrap_main
 from vault_lib import utcnow
-from vault_io import atomic_write_json, VAULT_ROOT
+from vault_io import atomic_write_json
 from vault_registry import ORDERED_SECTIONS
 
-HASH_INDEX = VAULT_ROOT / "99_Index" / "hash-index.json"
-GRAPH_FILE = VAULT_ROOT / "99_Index" / "graph.json"
 
 # Derivado de `vault_registry`, no copiado: la copia literal se quedo en 18
 # secciones y dejaba fuera `17_Preferences`, `18_Bugs`, `19_Audits` y
@@ -46,9 +44,33 @@ RISK_THRESHOLDS = {"critical": 8, "high": 4, "medium": 2, "low": 0}
 MIN_RISK_ORDER = ["critical", "high", "medium", "low"]
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _hash_index() -> Path:
+    return _repo().indice_hashes
+
+
+def _graph_file() -> Path:
+    return _repo().grafo
+
+
 def _is_vault_note(path: Path) -> bool:
     try:
-        parts = path.relative_to(VAULT_ROOT).parts
+        parts = path.relative_to(_raiz()).parts
     except ValueError:
         return False
     return len(parts) >= 2 and parts[0] in VAULT_SECTIONS
@@ -76,12 +98,12 @@ def _read_cia_integrity(path: Path) -> str:
 
 def _collect_current_hashes(project: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
     hashes: Dict[str, Dict[str, Any]] = {}
-    for note_path in VAULT_ROOT.rglob("*.md"):
+    for note_path in _raiz().rglob("*.md"):
         if not _is_vault_note(note_path):
             continue
         if any(part.startswith(".") for part in note_path.parts):
             continue
-        rel = str(note_path.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(note_path.relative_to(_raiz())).replace("\\", "/")
         if project and project not in rel:
             continue
         try:
@@ -97,10 +119,10 @@ def _collect_current_hashes(project: Optional[str] = None) -> Dict[str, Dict[str
 
 
 def _load_hash_index() -> Dict[str, Any]:
-    if not HASH_INDEX.exists():
+    if not _hash_index().exists():
         return {"snapshot_at": None, "notes": {}}
     try:
-        return json.loads(HASH_INDEX.read_text(encoding="utf-8"))
+        return json.loads(_hash_index().read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
         return {"snapshot_at": None, "notes": {}}
 
@@ -197,13 +219,13 @@ def vault_delta(
 
     if snapshot_only:
         if not dry_run:
-            atomic_write_json(HASH_INDEX, {"snapshot_at": utcnow(), "notes": current})
+            atomic_write_json(_hash_index(), {"snapshot_at": utcnow(), "notes": current})
         return {
             "ok": True,
             "action": "snapshot",
             "notes_hashed": len(current),
             "dry_run": dry_run,
-            "hash_index": str(HASH_INDEX.relative_to(VAULT_ROOT)).replace("\\", "/"),
+            "hash_index": str(_hash_index().relative_to(_raiz())).replace("\\", "/"),
         }
 
     previous = _load_hash_index()
@@ -212,9 +234,9 @@ def vault_delta(
     changed_set = delta["changed"] + delta["added"]
     stale_deps: List[Dict[str, Any]] = []
 
-    if changed_set and GRAPH_FILE.exists():
+    if changed_set and _graph_file().exists():
         try:
-            graph = json.loads(GRAPH_FILE.read_text(encoding="utf-8"))
+            graph = json.loads(_graph_file().read_text(encoding="utf-8"))
             reverse = _build_reverse_graph(graph)
             raw_impact = _bfs_impact(changed_set, reverse, current)
             if min_risk:
@@ -229,7 +251,7 @@ def vault_delta(
             stale_deps = [{"error": str(exc)}]
 
     if not dry_run:
-        atomic_write_json(HASH_INDEX, {"snapshot_at": utcnow(), "notes": current})
+        atomic_write_json(_hash_index(), {"snapshot_at": utcnow(), "notes": current})
 
     total_changed = len(delta["changed"]) + len(delta["added"]) + len(delta["deleted"])
     parts = []

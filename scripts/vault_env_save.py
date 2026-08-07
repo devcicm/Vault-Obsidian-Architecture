@@ -31,7 +31,7 @@ import sys
 from vault_errors import wrap_main
 from vault_lib import slugify_strict, utcnow
 from datetime import datetime, timezone
-from vault_io import atomic_write_text, assert_within_vault, VAULT_ROOT, write_report
+from vault_io import atomic_write_text, assert_within_vault, write_report
 
 from pathlib import Path
 
@@ -39,11 +39,28 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _projects_dir() -> Path:
+    return _repo().seccion("01_Projects")
+
+
 def utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-
-
-PROJECTS_DIR = VAULT_ROOT / "01_Projects"
 
 
 PROVIDERS = ["env-file", "k8s-secret", "vault", "ci-secrets", "manual"]
@@ -140,7 +157,7 @@ def vault_env_save(
 
     safe_project = slugify(project)
 
-    project_dir = PROJECTS_DIR / safe_project
+    project_dir = _projects_dir() / safe_project
 
     project_dir.mkdir(parents=True, exist_ok=True)
 
@@ -170,7 +187,7 @@ def vault_env_save(
     final_description = description or existing_description
 
     try:
-        assert_within_vault(envs_path, VAULT_ROOT)
+        assert_within_vault(envs_path, _raiz())
 
     except ValueError as exc:
         return {
@@ -230,7 +247,7 @@ def vault_env_save(
     return {
         "ok": True,
         **write_report(),
-        "path": str(envs_path.relative_to(VAULT_ROOT)),
+        "path": str(envs_path.relative_to(_raiz())),
         "environment": environment,
         "varCount": len(vars),
         "message": f"envs.md updated with {len(vars)} variables for {environment}",

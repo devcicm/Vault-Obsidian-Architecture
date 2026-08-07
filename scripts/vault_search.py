@@ -23,7 +23,6 @@ Usage:
 """
 
 
-
 import argparse
 
 import json
@@ -39,14 +38,27 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-
 # Configuration
 
-from vault_io import VAULT_ROOT
-INDEX_FILE = VAULT_ROOT / "99_Index" / "search-index.json"
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
 
 
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
 
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _index_file() -> Path:
+    return _repo().indice_busqueda
 
 
 def score_note(note: Dict[str, Any], query: str, folder: Optional[str], tag: Optional[str]) -> float:
@@ -58,11 +70,9 @@ def score_note(note: Dict[str, Any], query: str, folder: Optional[str], tag: Opt
         return 0
 
 
-
     if tag and tag not in note.get("tags", []):
 
         return 0
-
 
 
     query_lower = query.lower()
@@ -70,11 +80,9 @@ def score_note(note: Dict[str, Any], query: str, folder: Optional[str], tag: Opt
     query_words = query_lower.split()
 
 
-
     score = 0
 
     title_lower = note.get("title", "").lower()
-
 
 
     # Title matches (weight ×4)
@@ -88,7 +96,6 @@ def score_note(note: Dict[str, Any], query: str, folder: Optional[str], tag: Opt
         if word in title_lower:
 
             score += 4
-
 
 
     # Tag matches
@@ -108,7 +115,6 @@ def score_note(note: Dict[str, Any], query: str, folder: Optional[str], tag: Opt
                 score += 1
 
 
-
     # Preview/body matches (weight ×1)
 
     preview_lower = note.get("preview", "").lower()
@@ -124,11 +130,7 @@ def score_note(note: Dict[str, Any], query: str, folder: Optional[str], tag: Opt
             score += 1
 
 
-
     return score
-
-
-
 
 
 def vault_search(query: str, folder: Optional[str] = None, tag: Optional[str] = None) -> Dict[str, Any]:
@@ -157,7 +159,7 @@ def vault_search(query: str, folder: Optional[str] = None, tag: Optional[str] = 
 
     try:
 
-        with open(INDEX_FILE, "r", encoding="utf-8") as f:
+        with open(_index_file(), "r", encoding="utf-8") as f:
 
             index = json.load(f)
 
@@ -176,9 +178,7 @@ def vault_search(query: str, folder: Optional[str] = None, tag: Optional[str] = 
         }
 
 
-
     notes = index.get("notes", [])
-
 
 
     # Score all notes
@@ -214,17 +214,14 @@ def vault_search(query: str, folder: Optional[str] = None, tag: Optional[str] = 
             )
 
 
-
     # Sort by score descending
 
     scored_notes.sort(key=lambda x: x["score"], reverse=True)
 
 
-
     # Return top 20
 
     results = scored_notes[:20]
-
 
 
     return {
@@ -244,9 +241,6 @@ def vault_search(query: str, folder: Optional[str] = None, tag: Optional[str] = 
         "hint": "Use vault_read(path) to get full note content",
 
     }
-
-
-
 
 
 def main():
@@ -290,19 +284,14 @@ Notas:
     parser.add_argument("--tag", help="Filter by tag")
 
 
-
     args = parser.parse_args()
 
     result = vault_search(args.query, args.folder, args.tag)
 
 
-
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
     return 0 if result["ok"] else 1
-
-
-
 
 
 if __name__ == "__main__":

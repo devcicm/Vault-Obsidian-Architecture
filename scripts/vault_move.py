@@ -22,27 +22,56 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT, atomic_write_text, write_report
+from vault_io import atomic_write_text, write_report
 
 
-SYSTEM_DIR = VAULT_ROOT / "00_System"
-INDEX_DIR = VAULT_ROOT / "99_Index"
-SEARCH_INDEX = INDEX_DIR / "search-index.json"
-GRAPH_FILE = INDEX_DIR / "graph.json"
-MOVE_LOG = SYSTEM_DIR / "move-log.json"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _system_dir() -> Path:
+    return _repo().dir_sistema
+
+
+def _index_dir() -> Path:
+    return _repo().dir_indices
+
+
+def _search_index() -> Path:
+    return _repo().indice_busqueda
+
+
+def _graph_file() -> Path:
+    return _repo().grafo
+
+
+def _move_log() -> Path:
+    return _repo().dir_sistema / "move-log.json"
 
 
 def load_move_log() -> List[Dict[str, Any]]:
     """Carga el historial de movimientos."""
-    if MOVE_LOG.exists():
-        return json.loads(MOVE_LOG.read_text(encoding="utf-8"))
+    if _move_log().exists():
+        return json.loads(_move_log().read_text(encoding="utf-8"))
     return []
 
 
 def save_move_log(log: List[Dict[str, Any]]) -> None:
     """Guarda el historial de movimientos."""
-    SYSTEM_DIR.mkdir(parents=True, exist_ok=True)
-    MOVE_LOG.write_text(json.dumps(log, indent=2, ensure_ascii=False), encoding="utf-8")
+    _system_dir().mkdir(parents=True, exist_ok=True)
+    _move_log().write_text(json.dumps(log, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
 def update_wiki_links_in_file(
@@ -73,10 +102,10 @@ def update_wiki_links_in_file(
 
 def update_search_index(old_path: str, new_path: str) -> Dict[str, Any]:
     """Actualiza search-index.json con la nueva ubicación."""
-    if not SEARCH_INDEX.exists():
+    if not _search_index().exists():
         return {"updated": False, "reason": "search-index not found"}
 
-    index_data = json.loads(SEARCH_INDEX.read_text(encoding="utf-8"))
+    index_data = json.loads(_search_index().read_text(encoding="utf-8"))
     if not isinstance(index_data, dict):
         return {"updated": False, "reason": "search-index con esquema no reconocido"}
     updated = False
@@ -91,7 +120,7 @@ def update_search_index(old_path: str, new_path: str) -> Dict[str, Any]:
 
     if updated:
         atomic_write_text(
-            SEARCH_INDEX, json.dumps(index_data, indent=2, ensure_ascii=False)
+            _search_index(), json.dumps(index_data, indent=2, ensure_ascii=False)
         )
 
     return {"updated": updated}
@@ -99,10 +128,10 @@ def update_search_index(old_path: str, new_path: str) -> Dict[str, Any]:
 
 def update_graph(old_path: str, new_path: str, dry_run: bool = False) -> Dict[str, Any]:
     """Actualiza graph.json con la nueva ubicación."""
-    if not GRAPH_FILE.exists():
+    if not _graph_file().exists():
         return {"updated": False, "reason": "graph not found"}
 
-    graph_data = json.loads(GRAPH_FILE.read_text(encoding="utf-8"))
+    graph_data = json.loads(_graph_file().read_text(encoding="utf-8"))
     if not isinstance(graph_data, dict):
         return {"updated": False, "reason": "graph con esquema no reconocido"}
     old_stem = Path(old_path).stem
@@ -133,7 +162,7 @@ def update_graph(old_path: str, new_path: str, dry_run: bool = False) -> Dict[st
 
     if not dry_run and updated:
         atomic_write_text(
-            GRAPH_FILE, json.dumps(graph_data, indent=2, ensure_ascii=False)
+            _graph_file(), json.dumps(graph_data, indent=2, ensure_ascii=False)
         )
 
     return {"updated": updated}
@@ -143,8 +172,8 @@ def move_note(
     from_path: str, to_path: str, dry_run: bool = False, backup: bool = True
 ) -> Dict[str, Any]:
     """Mueve una nota a una nueva ubicación."""
-    source = VAULT_ROOT / from_path
-    destination = VAULT_ROOT / to_path
+    source = _raiz() / from_path
+    destination = _raiz() / to_path
 
     if not source.exists():
         return {"ok": False, "error": f"Archivo no encontrado: {from_path}"}
@@ -158,7 +187,7 @@ def move_note(
         if backup:
             # AP-36: el .bak NO se deja junto al nodo (contamina la sección y el
             # grafo); va a 00_System/.trash/ con timestamp para rastreabilidad.
-            trash_dir = VAULT_ROOT / "00_System" / ".trash"
+            trash_dir = _raiz() / "00_System" / ".trash"
             trash_dir.mkdir(parents=True, exist_ok=True)
             ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
             backup_path = trash_dir / f"{source.stem}-{ts}{source.suffix}.bak"
@@ -168,13 +197,13 @@ def move_note(
 
     old_stem = source.stem
     new_stem = destination.stem
-    old_folder = str(source.parent.relative_to(VAULT_ROOT))
-    new_folder = str(destination.parent.relative_to(VAULT_ROOT))
+    old_folder = str(source.parent.relative_to(_raiz()))
+    new_folder = str(destination.parent.relative_to(_raiz()))
 
     links_updated = 0
     files_checked = 0
 
-    for md in VAULT_ROOT.rglob("*.md"):
+    for md in _raiz().rglob("*.md"):
         if ".history" in str(md):
             continue
         if md == destination:
@@ -236,8 +265,8 @@ def move_folder(
     from_folder: str, to_folder: str, dry_run: bool = False
 ) -> Dict[str, Any]:
     """Mueve una carpeta completa."""
-    source = VAULT_ROOT / from_folder
-    destination = VAULT_ROOT / to_folder
+    source = _raiz() / from_folder
+    destination = _raiz() / to_folder
 
     if not source.exists():
         return {"ok": False, "error": f"Carpeta no encontrada: {from_folder}"}
@@ -281,19 +310,19 @@ def move_folder(
 
 def check_move_impact(from_path: str, to_path: str) -> Dict[str, Any]:
     """Analiza el impacto de un movimiento sin ejecutarlo."""
-    source = VAULT_ROOT / from_path
+    source = _raiz() / from_path
 
     if not source.exists():
         return {"ok": False, "error": f"Archivo no encontrado: {from_path}"}
 
     content = source.read_text(encoding="utf-8")
     old_stem = source.stem
-    old_folder = str(source.parent.relative_to(VAULT_ROOT))
+    old_folder = str(source.parent.relative_to(_raiz()))
 
     wiki_links = re.findall(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]", content)
 
     backlinks = []
-    for md in VAULT_ROOT.rglob("*.md"):
+    for md in _raiz().rglob("*.md"):
         if ".history" in str(md):
             continue
         if md == source:
@@ -308,7 +337,7 @@ def check_move_impact(from_path: str, to_path: str) -> Dict[str, Any]:
             f"[[{old_stem}]]" in md_content
             or f"[[{old_folder}/{old_stem}]]" in md_content
         ):
-            backlinks.append(str(md.relative_to(VAULT_ROOT)))
+            backlinks.append(str(md.relative_to(_raiz())))
 
     return {
         "ok": True,

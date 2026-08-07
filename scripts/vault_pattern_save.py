@@ -38,7 +38,6 @@ from vault_io import (
     atomic_write_text,
     atomic_write_json,
     assert_within_vault,
-    VAULT_ROOT,
     safe_wikilink,
 )
 import uuid
@@ -46,11 +45,6 @@ import uuid
 from pathlib import Path
 
 from typing import Any, Dict, List, Optional
-
-
-PATTERNS_DIR = VAULT_ROOT / "05_Patterns"
-
-INDEX_FILE = PATTERNS_DIR / "index.json"
 
 
 PATTERN_TYPES = ["design", "architecture", "code", "integration"]
@@ -73,16 +67,40 @@ VALID_TRANSITIONS = {
 }
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _patterns_dir() -> Path:
+    return _repo().seccion("05_Patterns")
+
+
+def _index_file() -> Path:
+    return _repo().indice_de_seccion("05_Patterns")
+
+
 def get_pattern_path(project: str, name: str, pattern_type: str) -> Path:
     safe_name = slugify(name)
 
     safe_project = slugify(project)
 
-    return PATTERNS_DIR / pattern_type / f"{safe_project}-{safe_name}.md"
+    return _patterns_dir() / pattern_type / f"{safe_project}-{safe_name}.md"
 
 
 def get_pattern_index_path(project: str) -> Path:
-    return PATTERNS_DIR / f"{slugify(project)}-patterns-index.md"
+    return _patterns_dir() / f"{slugify(project)}-patterns-index.md"
 
 
 def parse_frontmatter(content: str) -> Dict[str, Any]:
@@ -115,7 +133,7 @@ def parse_frontmatter(content: str) -> Dict[str, Any]:
 
 def load_pattern_index() -> Dict[str, Any]:
     try:
-        with open(INDEX_FILE, "r", encoding="utf-8") as f:
+        with open(_index_file(), "r", encoding="utf-8") as f:
             return json.load(f)
 
     except (FileNotFoundError, json.JSONDecodeError):
@@ -123,9 +141,9 @@ def load_pattern_index() -> Dict[str, Any]:
 
 
 def save_pattern_index(data: Dict[str, Any]) -> None:
-    INDEX_FILE.parent.mkdir(parents=True, exist_ok=True)
+    _index_file().parent.mkdir(parents=True, exist_ok=True)
 
-    atomic_write_json(INDEX_FILE, data)
+    atomic_write_json(_index_file(), data)
 
 
 def vault_pattern_save(
@@ -206,7 +224,7 @@ def vault_pattern_save(
             wiki_links.append(f"[[{slug}|{safe_wikilink(rp)}]]")
 
     try:
-        assert_within_vault(pattern_path, VAULT_ROOT)
+        assert_within_vault(pattern_path, _raiz())
 
     except ValueError as exc:
         return {
@@ -284,7 +302,7 @@ def vault_pattern_save(
     index = load_pattern_index()
 
     pattern_entry = {
-        "path": str(pattern_path.relative_to(VAULT_ROOT)),
+        "path": str(pattern_path.relative_to(_raiz())),
         "pattern": name,
         "project": project,
         "type": pattern_type,
@@ -312,7 +330,7 @@ def vault_pattern_save(
     return {
         "ok": True,
         **write_report(),
-        "path": str(pattern_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(pattern_path.relative_to(_raiz())).replace("\\", "/"),
         "status": status,
         "transition": transition,
     }

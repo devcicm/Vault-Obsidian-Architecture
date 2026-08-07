@@ -50,18 +50,11 @@ import sys
 
 from vault_errors import wrap_main
 from vault_lib import utcnow
-from vault_io import atomic_write_text, file_lock, VAULT_ROOT
+from vault_io import atomic_write_text, file_lock
 import uuid
 
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-
-
-SYSTEM_DIR = VAULT_ROOT / "00_System"
-
-LOG_MD = SYSTEM_DIR / "change-log.md"
-
-LOG_JSON = SYSTEM_DIR / ".change-log.json"
 
 
 VALID_ACTIONS = ["created", "updated", "deleted", "moved"]
@@ -72,25 +65,62 @@ VALID_PROPAGATE_STRATEGIES = ["conservative", "transitive", "critical-path"]
 SCRIPTS_DIR = Path(__file__).parent
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _system_dir() -> Path:
+    return _repo().dir_sistema
+
+
+def _log_md() -> Path:
+    return _repo().dir_sistema / "change-log.md"
+
+
+def _log_json() -> Path:
+    """La bitacora no es de Autoria: se recibe del contexto que la declara.
+
+    `vault_fundamentals` y `vault_quality_check` (Gobernanza) leen el mismo
+    fichero. Que la ubicacion venga de `RepositorioGobernanza` y no de una
+    constante propia es deliberado — tres sitios decidiendo donde vive la
+    bitacora es AP-05, y el dia que se moviera solo se enteraria el que
+    escribe: el que lee devuelve {} sin fallar.
+    """
+    return RepositorioGobernanza(construir()).bitacora_cambios
+
+
 def _read_json_log() -> List[Dict[str, Any]]:
-    if not LOG_JSON.exists():
+    if not _log_json().exists():
         return []
 
     try:
-        return json.loads(LOG_JSON.read_text(encoding="utf-8"))
+        return json.loads(_log_json().read_text(encoding="utf-8"))
 
     except (json.JSONDecodeError, IOError):
         return []
 
 
 def _write_json_log(entries: List[Dict[str, Any]]) -> None:
-    SYSTEM_DIR.mkdir(parents=True, exist_ok=True)
+    _system_dir().mkdir(parents=True, exist_ok=True)
 
-    atomic_write_text(LOG_JSON, json.dumps(entries, indent=2, ensure_ascii=False))
+    atomic_write_text(_log_json(), json.dumps(entries, indent=2, ensure_ascii=False))
 
 
 def _append_md_log(entry: Dict[str, Any]) -> None:
-    SYSTEM_DIR.mkdir(parents=True, exist_ok=True)
+    _system_dir().mkdir(parents=True, exist_ok=True)
 
     HEADER = (
         "# Change Log\n\n"
@@ -101,9 +131,9 @@ def _append_md_log(entry: Dict[str, Any]) -> None:
 
     existing = ""
 
-    if LOG_MD.exists():
+    if _log_md().exists():
         try:
-            existing = LOG_MD.read_text(encoding="utf-8")
+            existing = _log_md().read_text(encoding="utf-8")
 
         except OSError:
             pass
@@ -125,7 +155,7 @@ def _append_md_log(entry: Dict[str, Any]) -> None:
 
     row = f"| {ts} | `{action}` | `{path}` | `{new_path}` | {reason} | {agent} |\n"
 
-    atomic_write_text(LOG_MD, existing + row)
+    atomic_write_text(_log_md(), existing + row)
 
 
 def _run_propagation(path: str, strategy: str) -> Dict[str, Any]:
@@ -193,7 +223,7 @@ def vault_change_log_add(
     # two processes could both read the same log, each append their entry, and the
     # second write clobbers the first → lost entry. file_lock(LOG_JSON) makes the
     # whole critical section (JSON + MD append) atomic across processes.
-    with file_lock(LOG_JSON):
+    with file_lock(_log_json()):
         entries = _read_json_log()
 
         entries.append(entry)
@@ -207,8 +237,8 @@ def vault_change_log_add(
         "id": entry["id"],
         "action": action,
         "path": path,
-        "log_md": str(LOG_MD.relative_to(VAULT_ROOT)).replace("\\", "/"),
-        "log_json": str(LOG_JSON.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "log_md": str(_log_md().relative_to(_raiz())).replace("\\", "/"),
+        "log_json": str(_log_json().relative_to(_raiz())).replace("\\", "/"),
     }
 
     if propagate:

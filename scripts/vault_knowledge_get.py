@@ -23,7 +23,6 @@ Usage:
 """
 
 
-
 import argparse
 
 import json
@@ -39,18 +38,31 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-
-from vault_io import VAULT_ROOT
-KNOWLEDGE_DIR = VAULT_ROOT / "07_Knowledge"
-
-INDEX_FILE = VAULT_ROOT / "99_Index" / "search-index.json"
-
-
-
 CATEGORIES = ["glossary", "api", "concept", "business-rule", "config", "dependency", "framework"]
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _knowledge_dir() -> Path:
+    return _repo().seccion("07_Knowledge")
+
+
+def _index_file() -> Path:
+    return _repo().indice_busqueda
 
 
 def score_note(note: Dict[str, Any], query: str, category: Optional[str], project: Optional[str]) -> float:
@@ -60,7 +72,6 @@ def score_note(note: Dict[str, Any], query: str, category: Optional[str], projec
     query_lower = query.lower()
 
 
-
     if category and note.get("category", "").lower() != category.lower():
 
         return 0
@@ -68,7 +79,6 @@ def score_note(note: Dict[str, Any], query: str, category: Optional[str], projec
     if project and note.get("project", "").lower() != project.lower():
 
         return 0
-
 
 
     title_lower = note.get("title", "").lower()
@@ -84,7 +94,6 @@ def score_note(note: Dict[str, Any], query: str, category: Optional[str], projec
             score += 4
 
 
-
     preview_lower = note.get("preview", "").lower()
 
     if query_lower in preview_lower:
@@ -98,11 +107,7 @@ def score_note(note: Dict[str, Any], query: str, category: Optional[str], projec
             score += 1
 
 
-
     return score
-
-
-
 
 
 def vault_knowledge_get(
@@ -117,7 +122,7 @@ def vault_knowledge_get(
 
     try:
 
-        with open(INDEX_FILE, "r", encoding="utf-8") as f:
+        with open(_index_file(), "r", encoding="utf-8") as f:
 
             index = json.load(f)
 
@@ -126,9 +131,7 @@ def vault_knowledge_get(
         return {"ok": False, "error": "Search index not found. Run vault_index.py first."}
 
 
-
     knowledge_notes = [n for n in index.get("notes", []) if n.get("path", "").startswith("07_Knowledge/")]
-
 
 
     scored = []
@@ -142,16 +145,14 @@ def vault_knowledge_get(
             scored.append({"note": note, "score": score})
 
 
-
     scored.sort(key=lambda x: x["score"], reverse=True)
-
 
 
     # Fallback: if category filter produced no results, scan files directly (handles stale/partial index)
 
     if not scored and category:
 
-        for md_file in KNOWLEDGE_DIR.rglob("*.md"):
+        for md_file in _knowledge_dir().rglob("*.md"):
 
             try:
 
@@ -187,7 +188,7 @@ def vault_knowledge_get(
 
                 continue
 
-            rel_path = str(md_file.relative_to(VAULT_ROOT)).replace("\\", "/")
+            rel_path = str(md_file.relative_to(_raiz())).replace("\\", "/")
 
             title_match = re.search(r"^title:\s*(.+)$", fm, re.MULTILINE)
 
@@ -208,7 +209,6 @@ def vault_knowledge_get(
         scored.sort(key=lambda x: x["score"], reverse=True)
 
 
-
     if not scored:
 
         return {
@@ -226,13 +226,11 @@ def vault_knowledge_get(
         }
 
 
-
     top = scored[0]
 
     top_note = top["note"]
 
     top_score = top["score"]
-
 
 
     results = [
@@ -254,9 +252,7 @@ def vault_knowledge_get(
     ]
 
 
-
     auto_read = top_score >= 60 and len(scored) == 1
-
 
 
     result: Dict[str, Any] = {
@@ -276,10 +272,9 @@ def vault_knowledge_get(
     }
 
 
-
     if auto_read:
 
-        note_path = VAULT_ROOT / top_note["path"]
+        note_path = _raiz() / top_note["path"]
 
         try:
 
@@ -308,11 +303,7 @@ def vault_knowledge_get(
             pass
 
 
-
     return result
-
-
-
 
 
 def main():
@@ -356,7 +347,6 @@ Notas:
     parser.add_argument("--project", help="Filter by project")
 
 
-
     args = parser.parse_args()
 
     result = vault_knowledge_get(args.query, args.category, args.project)
@@ -364,9 +354,6 @@ Notas:
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
     return 0 if result["ok"] else 1
-
-
-
 
 
 if __name__ == "__main__":

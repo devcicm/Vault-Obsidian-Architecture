@@ -36,20 +36,33 @@ def raiz_restaurada():
 
 
 def test_cambiar_el_vault_alcanza_a_los_modulos(tmp_path, raiz_restaurada):
-    # `vault_audit` ya no sirve de ejemplo: migró al contexto Gobernanza y
-    # resuelve la raíz al usarla, que es el arreglo definitivo. Aquí se prueba
-    # el paliativo —el reanclaje— y hace falta un módulo que aún lo necesite.
+    """Ya no hace falta ejemplo: no queda un solo módulo que congele la raíz.
+
+    Este test se escribió con `vault_audit`, luego con `vault_change_log`, y en
+    ambos casos comprobaba el **paliativo** —que `set_vault_root()` reescribiera
+    a posteriori una constante ya derivada—. Al migrar Autoría, el último de los
+    82 vínculos congelados desapareció y con él el último módulo que podía
+    servir de ejemplo: cualquier `X.SYSTEM_DIR` que se escribiera aquí sería un
+    `AttributeError`.
+
+    Así que lo que se comprueba ahora es lo contrario y es más fuerte: la raíz
+    llega a los módulos porque **la resuelven al usarla**, no porque alguien se
+    la reescriba. `vinculos_congelados() == []` es la condición que lo garantiza
+    para todo el repo, no para el módulo que este test eligiera.
+    """
+    import vault_arch
     import vault_change_log
 
     nuevo = tmp_path / "otro-vault"
     vault_io.set_vault_root(nuevo)
 
     assert vault_io.get_vault_root() == nuevo.resolve()
-    assert vault_change_log.VAULT_ROOT == nuevo.resolve(), (
-        "el módulo sigue mirando el vault anterior"
+    assert vault_arch.vinculos_congelados() == [], (
+        "un módulo volvió a derivar su ruta en el import: el paliativo vuelve a "
+        "ser necesario y esta garantía deja de valer"
     )
-    assert vault_change_log.SYSTEM_DIR == nuevo.resolve() / "00_System", (
-        "las constantes derivadas quedaron ancladas al vault anterior"
+    assert vault_change_log._log_json().is_relative_to(nuevo.resolve()), (
+        "el módulo sigue mirando el vault anterior"
     )
 
 
@@ -64,13 +77,23 @@ def test_el_reanclaje_es_auditable(tmp_path, raiz_restaurada):
 
 
 def test_volver_a_la_raiz_original_deja_todo_como_estaba(tmp_path):
+    """Ir y volver no deja residuo — ni en el proceso ni en lo que ve un módulo.
+
+    El paliativo se conserva (no-derogación) aunque hoy no le quede un solo
+    consumidor: `set_vault_root()` sigue reanclando el nombre `VAULT_ROOT` que
+    los módulos importaron. Lo que este test fija es que la ida y la vuelta sean
+    simétricas, medido por lo que de verdad usa una tool: la ruta que resuelve.
+    """
     import vault_change_log
 
     original = vault_io.get_vault_root()
-    antes = vault_change_log.VAULT_ROOT
+    antes = vault_change_log._log_json()
     vault_io.set_vault_root(tmp_path / "temporal")
+    assert vault_change_log._log_json() != antes, (
+        "el módulo no se enteró del cambio: la inyección sería decorativa"
+    )
     vault_io.set_vault_root(original)
-    assert vault_change_log.VAULT_ROOT == antes
+    assert vault_change_log._log_json() == antes
 
 
 def test_no_toca_rutas_que_no_cuelgan_del_vault(tmp_path, raiz_restaurada):

@@ -22,9 +22,27 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-from vault_io import VAULT_ROOT, atomic_write_text, safe_wikilink, write_report
+from vault_io import atomic_write_text, safe_wikilink, write_report
 
-INDEX_FILE = VAULT_ROOT / "99_Index" / "search-index.json"
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _index_file() -> Path:
+    return _repo().indice_busqueda
 
 
 def parse_frontmatter(content: str) -> Dict[str, Any]:
@@ -48,7 +66,7 @@ def parse_frontmatter(content: str) -> Dict[str, Any]:
 
 def get_notes_by_project(project: str) -> List[Dict[str, Any]]:
     try:
-        with open(INDEX_FILE, "r", encoding="utf-8") as f:
+        with open(_index_file(), "r", encoding="utf-8") as f:
             index = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return []
@@ -111,7 +129,7 @@ def collect_decisions(project: str) -> List[Dict[str, str]]:
 
 
 def collect_patterns(project: str) -> List[Dict[str, str]]:
-    patterns_dir = VAULT_ROOT / "05_Patterns"
+    patterns_dir = _raiz() / "05_Patterns"
     if not patterns_dir.exists():
         return []
 
@@ -133,7 +151,7 @@ def collect_patterns(project: str) -> List[Dict[str, str]]:
                 if status != "deprecado":
                     patterns.append(
                         {
-                            "path": str(note_path.relative_to(VAULT_ROOT)),
+                            "path": str(note_path.relative_to(_raiz())),
                             "title": note_path.stem.replace(f"{slugify(project)}-", ""),
                             "status": status,
                             "type": pattern_type,
@@ -163,7 +181,7 @@ def vault_project_overview(
     extra_sections: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
     safe_project = slugify(project)
-    project_dir = VAULT_ROOT / "01_Projects" / safe_project
+    project_dir = _raiz() / "01_Projects" / safe_project
     project_dir.mkdir(parents=True, exist_ok=True)
 
     overview_path = project_dir / "overview.md"
@@ -293,7 +311,7 @@ def vault_project_overview(
     return {
         "ok": True,
         **write_report(),
-        "path": str(overview_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(overview_path.relative_to(_raiz())).replace("\\", "/"),
         "sections": sections_written,
     }
 

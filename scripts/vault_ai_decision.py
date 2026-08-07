@@ -43,19 +43,11 @@ from vault_io import (
     atomic_write_text,
     atomic_write_json,
     assert_within_vault,
-    VAULT_ROOT,
 )
 import uuid
 
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-
-
-GOVERNANCE_DIR = VAULT_ROOT / "16_AI_Governance"
-
-DECISIONS_DIR = GOVERNANCE_DIR / "decisions"
-
-INDEX_FILE = GOVERNANCE_DIR / ".decisions-log.json"
 
 
 DECISION_TYPES = [
@@ -70,6 +62,34 @@ DECISION_TYPES = [
 IMPACT_LEVELS = ["low", "medium", "high", "critical"]
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _governance_dir() -> Path:
+    return _repo().seccion("16_AI_Governance")
+
+
+def _decisions_dir() -> Path:
+    return _repo().seccion("16_AI_Governance") / "decisions"
+
+
+def _index_file() -> Path:
+    return _repo().seccion("16_AI_Governance") / ".decisions-log.json"
+
+
 def slugify(text: str) -> str:
     # Delega en el slug canónico (`vault_lib.slugify`). La copia que había
     # aquí divergía del resto: unas borraban los acentos, otras los dejaban
@@ -79,7 +99,7 @@ def slugify(text: str) -> str:
 
 def load_index() -> Dict[str, Any]:
     try:
-        with open(INDEX_FILE, "r", encoding="utf-8") as f:
+        with open(_index_file(), "r", encoding="utf-8") as f:
             return json.load(f)
 
     except (FileNotFoundError, json.JSONDecodeError):
@@ -87,9 +107,9 @@ def load_index() -> Dict[str, Any]:
 
 
 def save_index(data: Dict[str, Any]) -> None:
-    GOVERNANCE_DIR.mkdir(parents=True, exist_ok=True)
+    _governance_dir().mkdir(parents=True, exist_ok=True)
 
-    atomic_write_json(INDEX_FILE, data)
+    atomic_write_json(_index_file(), data)
 
 
 def vault_ai_decision(
@@ -138,10 +158,10 @@ def vault_ai_decision(
 
     filename = f"{safe_project}-{title_slug}.md"
 
-    note_path = DECISIONS_DIR / filename
+    note_path = _decisions_dir() / filename
 
     try:
-        assert_within_vault(note_path, VAULT_ROOT)
+        assert_within_vault(note_path, _raiz())
 
     except ValueError as exc:
         return {
@@ -255,7 +275,7 @@ def vault_ai_decision(
         "impact_level": impact_level,
         "human_approved": human_approved,
         "reversible": reversible,
-        "relPath": str(note_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "relPath": str(note_path.relative_to(_raiz())).replace("\\", "/"),
         "updatedAt": now,
     }
 
@@ -266,7 +286,7 @@ def vault_ai_decision(
     return {
         "ok": True,
         **write_report(),
-        "path": str(note_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(note_path.relative_to(_raiz())).replace("\\", "/"),
         "decision_id": decision_id,
         "impact_level": impact_level,
         "action": "created",

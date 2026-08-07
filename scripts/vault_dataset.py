@@ -38,13 +38,6 @@ except ImportError:
     NLTK_AVAILABLE = False
 
 
-from vault_io import VAULT_ROOT
-
-KEYWORDS_FILE = VAULT_ROOT / "99_Index" / "keywords-index.json"
-
-NOTES_FILE = VAULT_ROOT / "99_Index" / "notes-keywords.json"
-
-
 # Default dictionary keywords (generic — extend via --keywords for project-specific terms)
 
 DEFAULT_KEYWORDS = [
@@ -68,6 +61,30 @@ DEFAULT_KEYWORDS = [
     "retry",
     "circuit",
 ]
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _keywords_file() -> Path:
+    return _repo().indice_palabras
+
+
+def _notes_file() -> Path:
+    return _repo().notas_palabras
 
 
 def get_nltk_stopwords():
@@ -238,7 +255,7 @@ def extract_all(mode: str = "nltk", custom_keywords: list = None):
 
     notes = [
         n
-        for n in VAULT_ROOT.rglob("*.md")
+        for n in _raiz().rglob("*.md")
         if ".history" not in str(n) and not n.name.startswith("_")
     ]
 
@@ -261,16 +278,16 @@ def extract_all(mode: str = "nltk", custom_keywords: list = None):
 
             keywords_global.update(keywords)
 
-            keywords_by_file[str(md.relative_to(VAULT_ROOT))] = keywords
+            keywords_by_file[str(md.relative_to(_raiz()))] = keywords
 
             # Datos de la nota
 
             title = md.stem.replace("-", " ").title()
 
-            notes_data[str(md.relative_to(VAULT_ROOT))] = {
+            notes_data[str(md.relative_to(_raiz()))] = {
                 "title": title,
                 "keywords": keywords,
-                "path": str(md.relative_to(VAULT_ROOT)),
+                "path": str(md.relative_to(_raiz())),
             }
 
         except:
@@ -303,12 +320,12 @@ def search_keywords(
 ):
     """Buscar por keywords con filtros tipo LINQ"""
 
-    if not KEYWORDS_FILE.exists():
+    if not _keywords_file().exists():
         print("Keywords not indexed. Run: python vault_dataset.py extract")
 
         return
 
-    data = json.loads(NOTES_FILE.read_text(encoding="utf-8"))
+    data = json.loads(_notes_file().read_text(encoding="utf-8"))
 
     notes = data.get("notes", {})
 
@@ -367,12 +384,12 @@ def search_keywords(
 def list_keywords(limit: int = 30):
     """Listar keywords globales"""
 
-    if not NOTES_FILE.exists():
+    if not _notes_file().exists():
         print("Keywords not indexed. Run: python vault_dataset.py extract")
 
         return
 
-    data = json.loads(NOTES_FILE.read_text(encoding="utf-8"))
+    data = json.loads(_notes_file().read_text(encoding="utf-8"))
 
     keywords = data.get("keywords", {})
 
@@ -405,9 +422,9 @@ def save_index(data: dict):
         "keywords": keywords_info,
     }
 
-    KEYWORDS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    _keywords_file().parent.mkdir(parents=True, exist_ok=True)
 
-    KEYWORDS_FILE.write_text(json.dumps(index_data, indent=2), encoding="utf-8")
+    _keywords_file().write_text(json.dumps(index_data, indent=2), encoding="utf-8")
 
     # notes-keywords.json (para búsqueda rápida)
 
@@ -421,9 +438,9 @@ def save_index(data: dict):
             "tfidf": note_data.get("tfidf", {}),
         }
 
-    NOTES_FILE.parent.mkdir(parents=True, exist_ok=True)
+    _notes_file().parent.mkdir(parents=True, exist_ok=True)
 
-    NOTES_FILE.write_text(json.dumps(notes_data, indent=2), encoding="utf-8")
+    _notes_file().write_text(json.dumps(notes_data, indent=2), encoding="utf-8")
 
     return {"keywords": len(keywords_info), "notes": len(notes_data)}
 
@@ -525,7 +542,7 @@ Notas:
 
         print(f"Notes: {result['notes']}")
 
-        print(f"Index: {KEYWORDS_FILE.name}, {NOTES_FILE.name}")
+        print(f"Index: {_keywords_file().name}, {_notes_file().name}")
 
     elif args.command == "search":
         if not args.query:
@@ -559,12 +576,12 @@ Notas:
         list_keywords(args.top)
 
     elif args.command == "index":
-        if not KEYWORDS_FILE.exists():
+        if not _keywords_file().exists():
             print("Run extract first")
 
             return
 
-        print(f"Index: {KEYWORDS_FILE.name}")
+        print(f"Index: {_keywords_file().name}")
 
 
 if __name__ == "__main__":
