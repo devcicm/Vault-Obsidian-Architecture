@@ -1,0 +1,15 @@
+{
+  "envelope": {
+    "created": 3,
+    "ok": true,
+    "path": "05_Patterns/architecture/demo-repositorio-por-contexto.md",
+    "status": "implementado",
+    "timestamp": "<FECHA>",
+    "tool": "vault_pattern_save",
+    "transition": null,
+    "unchanged": 0,
+    "updated": 1,
+    "written": 4
+  },
+  "nota": "---\ntitle: \"Repositorio por contexto\"\nid: <UUID>\nproject: demo\ntype: architecture\nstatus: implemented\npattern_state: implementado\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ncia_integrity: medium\ncia_availability: medium\ncia_sensitivity: internal\nagent: system\n---\n\n\n---\n*Última actualización: <FECHA>*"
+}

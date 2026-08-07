@@ -1,0 +1,16 @@
+{
+  "envelope": {
+    "agent": null,
+    "created": 2,
+    "ok": true,
+    "path": "12_Bibliography/docs/guia-de-diseno.md",
+    "source_type": "docs",
+    "timestamp": "<FECHA>",
+    "title": "Guía de diseño",
+    "tool": "vault_bibliography_save",
+    "unchanged": 0,
+    "updated": 1,
+    "written": 3
+  },
+  "nota": "---\ntitle: Guía de diseño\nid: <UUID>\nurl: https://example.org/guia\nsource_type: docs\nagent: system\naccessed_at: <FECHA>\ncia_integrity: medium\ncia_availability: low\ncia_sensitivity: public\n---\n# Guía de diseño\n\n**URL:** https://example.org/guia  \n**Tipo:** docs  \n**Consultado:** <FECHA>  \n\n---\n\n## Resumen\n\nUn resumen corto.\n"
+}

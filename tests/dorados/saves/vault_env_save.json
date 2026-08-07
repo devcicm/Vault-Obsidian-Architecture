@@ -1,0 +1,16 @@
+{
+  "envelope": {
+    "created": 2,
+    "environment": "staging",
+    "message": "envs.md updated with 1 variables for staging",
+    "ok": true,
+    "path": "01_Projects/demo/envs.md",
+    "timestamp": "<FECHA>",
+    "tool": "vault_env_save",
+    "unchanged": 0,
+    "updated": 2,
+    "varCount": 1,
+    "written": 4
+  },
+  "nota": "---\ntitle: Environment Variables - demo\nproject: demo\ntype: envs\nupdatedAt: <FECHA>\ncia_integrity: high\ncia_availability: medium\ncia_sensitivity: restricted\nagent: system\n---\n\n# Environment Variables: demo\n\n## staging\n\n| Nombre | Descripción | Requerida | Default | Sensible | Proveedor |\n|---|---|---|---|---|---|\n| `API_URL` | Dirección del servicio | ✓ | 🔒 (secreto) | -- | env-file |\n\n"
+}

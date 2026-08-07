@@ -1,0 +1,19 @@
+{
+  "envelope": {
+    "created": 2,
+    "dpia_required": false,
+    "iso_standard": "ISO/IEC 27701:2019 / GDPR Art. 30",
+    "legal_basis": "consent",
+    "ok": true,
+    "path": "09_Infrastructure/privacy/demo-un-tratamiento.md",
+    "pii_count": 0,
+    "project": "demo",
+    "timestamp": "<FECHA>",
+    "tool": "vault_privacy_save",
+    "transfers_outside_eu": false,
+    "unchanged": 0,
+    "updated": 4,
+    "written": 6
+  },
+  "nota": "---\ntitle: \"Tratamiento: Un tratamiento\"\nid: <UUID>\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ntags: [\"privacy\", \"gdpr\", \"pii\", \"demo\", \"consent\"]\nnorm_refs: [\"AP-11\", \"AP-12\", \"AP-13\", \"AP-16\", \"AP-20\", \"CN-01\", \"CN-02\", \"SP-01\"]\nproject: demo\nlegal_basis: consent\npii_categories: []\ndata_subjects: []\nretention_period: \"\"\ntransfers_outside_eu: false\ndpia_required: false\nstatus: implemented\nprivacy_state: active\niso_standard: ISO/IEC 27701:2019\ngdpr_article: Art. 30\ncia_integrity: high\ncia_availability: medium\ncia_sensitivity: restricted\nagent: claude\n---\n\n# Tratamiento de datos: Un tratamiento\n\n> ISO/IEC 27701:2019 -- Privacy Information Management System\n> GDPR Art. 30 -- Registro de actividades de tratamiento\n> GDPR Art. 35 -- DPIA no aplicable\n\n## Información del tratamiento\n\n| Campo | Valor |\n|---|---|\n| **Proyecto** | demo |\n| **Propósito** | Analítica interna |\n| **Base legal** | Art. 6(1)(a) -- Consentimiento explícito del interesado |\n| **Interesados** | -- No especificados |\n| **Retención** | -- Pendiente de definir |\n| **Responsable** | -- Pendiente |\n| **Encargado** | -- Mismo responsable |\n| **Status** | active |\n| **Transferencias fuera UE/EEE** | No |\n| **DPIA** | No requerida (verificar si aplica) |\n\n## Categorías de datos personales (ISO 27701 §6.9)\n\n| Categoría | Descripción |\n|---|---|\n| -- | Sin categorías definidas |\n\n## Terceros receptores (GDPR Art. 30.1.d)\n\n| Tercero | Rol | Data Processing Agreement | País |\n|---|---|---|---|\n| -- | -- | -- | -- |\n\n## Derechos de los interesados (GDPR Cap. III)\n\n| Derecho | Mecanismo | SLA |\n|---|---|---|\n| Acceso (Art. 15) | -- Pendiente de implementar -- | 30 días |\n| Rectificación (Art. 16) | -- Pendiente -- | 30 días |\n| Supresión / Olvido (Art. 17) | -- Pendiente -- | 30 días |\n| Portabilidad (Art. 20) | -- Pendiente -- | 30 días |\n| Oposición (Art. 21) | -- Pendiente -- | Inmediato |\n\n## Medidas de seguridad técnicas\n\n- [ ] Cifrado en tránsito (TLS 1.2+)\n- [ ] Cifrado en reposo (AES-256)\n- [ ] Pseudoanonimización donde aplique\n- [ ] Control de acceso por roles (RBAC)\n- [ ] Registro de accesos a datos personales\n- [ ] Política de retención y eliminación automatizada\n\n\n\n## Referencias\n\n- ISO/IEC 27701:2019 §6.2.2 -- Identify and document purposes\n- ISO/IEC 27701:2019 §6.9 -- PII principal categories\n- GDPR Art. 30 -- Records of processing activities\n- GDPR Art. 35 -- Data protection impact assessment\n"
+}

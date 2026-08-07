@@ -534,7 +534,12 @@ Notas:
         config = json.loads(args.config)
 
     except json.JSONDecodeError:
-        return {"ok": False, "error": "Invalid JSON in --config"}
+        # `main()` devuelve código de salida, no envelope. Devolver el dict
+        # aquí lo llevaba a `sys.exit()`, que intenta convertirlo a entero y
+        # revienta: el usuario veía un UNEXPECTED_ERROR de severidad crítica
+        # en lugar de este mensaje, escrito para exactamente este caso.
+        print(json.dumps({"ok": False, "error": "Invalid JSON in --config"}))
+        return 1
 
     connections = None
 
@@ -543,7 +548,10 @@ Notas:
             connections = json.loads(args.connections)
 
         except json.JSONDecodeError:
-            return {"ok": False, "error": "Invalid JSON in --connections"}
+            print(
+                json.dumps({"ok": False, "error": "Invalid JSON in --connections"})
+            )
+            return 1
 
     result = vault_infra_save(
         args.name,

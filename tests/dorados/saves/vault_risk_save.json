@@ -1,0 +1,20 @@
+{
+  "envelope": {
+    "created": 2,
+    "iso_standard": "ISO 31000:2018 / ISO/IEC 27005:2022",
+    "level": "Medium",
+    "ok": true,
+    "path": "02_Observability/risks/demo-un-riesgo-de-migracion.md",
+    "project": "demo",
+    "risk_type": "operational",
+    "score": 9,
+    "status": "open",
+    "timestamp": "<FECHA>",
+    "tool": "vault_risk_save",
+    "treatment": "mitigate",
+    "unchanged": 0,
+    "updated": 5,
+    "written": 7
+  },
+  "nota": "---\ntitle: \"Riesgo: Un riesgo de migraci\\u00f3n\"\nid: <UUID>\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ntags: [\"risk\", \"demo\", \"operational\", \"medium\", \"open\"]\nnorm_refs: [\"AP-11\", \"AP-12\", \"AP-13\", \"AP-16\", \"AP-20\", \"CN-01\", \"CN-02\", \"SP-01\"]\nproject: demo\nrisk_type: operational\nlikelihood: 3\nimpact: 3\nscore: 9\nlevel: Medium\ntreatment: mitigate\nstatus: in-progress\nrisk_state: open\nowner: \"\"\niso_standard: ISO 31000:2018\niso_security_risk: ISO/IEC 27005:2022\ncia_integrity: medium\ncia_availability: medium\ncia_sensitivity: internal\nagent: claude\n---\n\n# Riesgo: Un riesgo de migración\n\n> **Medium** -- Score 9/25 (Likelihood 3 × Impact 3)\n> ISO 31000:2018 -- Risk management | ISO/IEC 27005:2022 -- IS Risk management\n\n## Clasificación\n\n| Campo | Valor |\n|---|---|\n| **Tipo** | operational -- Fallo en procesos, personas, sistemas o eventos externos |\n| **Status** | open |\n| **Tratamiento** | mitigate -- Controles implementados para reducir probabilidad o impacto |\n| **Propietario** | -- Sin asignar |\n\n## Análisis de riesgo (ISO 31000 §6.4)\n\n| Dimensión | Valor | Descripción |\n|---|---|---|\n| **Probabilidad** | 3/5 | Posible |\n| **Impacto** | 3/5 | Moderado |\n| **Score** | **9/25** | **Medium** |\n\n## Amenaza\n\n_Pendiente: describir el evento o agente que puede explotar esta vulnerabilidad._\n\n## Vulnerabilidad\n\n_Pendiente: describir la debilidad que permite que la amenaza se materialice._\n\n## Activos afectados\n\n-- No especificados\n\n## Controles de tratamiento (ISO/IEC 27005 §9)\n\n-- Sin controles definidos\n\n## Plan de acción\n\n| Acción | Responsable | Fecha límite | Estado |\n|---|---|---|---|\n| -- | -- | -- | -- |\n\n## Métricas de riesgo residual\n\n| Métrica | Pre-tratamiento | Post-tratamiento |\n|---|---|---|\n| Probabilidad | 3/5 | -- |\n| Impacto | 3/5 | -- |\n| Score | 9/25 | -- |\n| Nivel | Medium | -- |\n\n## Historial de revisiones\n\n| Fecha | Revisor | Cambio |\n|---|---|---|\n| <DIA> | claude | Riesgo identificado |\n\n## Referencias\n\n- ISO 31000:2018 §6 -- Risk management process\n- ISO 31000:2018 §6.4 -- Risk analysis\n- ISO/IEC 27005:2022 §9 -- Information security risk treatment\n- ISO/IEC 27005:2022 §8.2 -- Threat identification\n"
+}

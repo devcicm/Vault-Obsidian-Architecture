@@ -1,0 +1,16 @@
+{
+  "envelope": {
+    "category": "concept",
+    "created": 2,
+    "message": "Knowledge note saved to concepts/",
+    "ok": true,
+    "path": "07_Knowledge/concepts/un-concepto-con-acentuacion.md",
+    "timestamp": "<FECHA>",
+    "title": "Un concepto con acentuación",
+    "tool": "vault_knowledge_save",
+    "unchanged": 0,
+    "updated": 1,
+    "written": 3
+  },
+  "nota": "---\ntitle: \"Un concepto con acentuaci\\u00f3n\"\nid: <UUID>\ncategory: concept\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ncia_integrity: medium\ncia_availability: medium\ncia_sensitivity: internal\nagent: system\n---\n\nUna línea.\nOtra línea.\nY una tercera con palabras."
+}

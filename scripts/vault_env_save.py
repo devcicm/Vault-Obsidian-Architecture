@@ -305,6 +305,27 @@ Notas:
 
         return 1
 
+    # `--vars` documenta un array de objetos, pero solo se comprobaba que
+    # fuera JSON. Un objeto suelto pasaba la puerta y moría abajo con
+    # `AttributeError: 'str' object has no attribute 'get'`, envuelto como
+    # UNEXPECTED_ERROR de severidad crítica: un error de invocación
+    # presentado como un fallo interno de la tool.
+    if not isinstance(vars_list, list) or not all(
+        isinstance(v, dict) for v in vars_list
+    ):
+        print(
+            json.dumps(
+                {
+                    "ok": False,
+                    "error": (
+                        "--vars espera un array JSON de objetos, p. ej. "
+                        '[{"name": "PORT", "description": "Puerto"}]'
+                    ),
+                }
+            )
+        )
+        return 1
+
     result = vault_env_save(args.project, args.environment, vars_list, args.description)
 
     print(json.dumps(result, indent=2, ensure_ascii=False))

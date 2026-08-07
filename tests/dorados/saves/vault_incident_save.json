@@ -1,0 +1,20 @@
+{
+  "envelope": {
+    "action_items_count": 0,
+    "created": 2,
+    "iso_standard": "ISO 20000-1:2018 §8.6 / ISO 22301:2019 §8.4",
+    "mttr": "—",
+    "ok": true,
+    "path": "02_Observability/incidents/demo-<DIA>-caida-del-indice.md",
+    "project": "demo",
+    "severity": "P3",
+    "severity_label": "Medium",
+    "status": "detected",
+    "timestamp": "<FECHA>",
+    "tool": "vault_incident_save",
+    "unchanged": 0,
+    "updated": 3,
+    "written": 5
+  },
+  "nota": "---\ntitle: \"Incidente: Caída del índice\"\nid: <UUID>\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ntags: [\"incident\", \"demo\", \"p3\", \"detected\"]\nnorm_refs: [\"AP-11\", \"AP-12\", \"AP-13\", \"AP-16\", \"AP-20\", \"CN-01\", \"CN-02\", \"SP-01\"]\nproject: demo\nseverity: P3\nstatus: in-progress\nincident_state: detected\ndetected_at: <FECHA>\nresolved_at: \nmttr: --\niso_standard: ISO 20000-1:2018 §8.6\niso_bcm: ISO 22301:2019 §8.4\ncia_integrity: high\ncia_availability: high\ncia_sensitivity: internal\nagent: claude\n---\n\n# Incidente: Caída del índice\n\n> **P3 -- Medium**: Funcionalidad parcial degradada -- subconjunto de usuarios\n> ISO 20000-1:2018 §8.6 | ISO 22301:2019 §8.4\n\n## Datos del incidente\n\n| Campo | Valor |\n|---|---|\n| **Severidad** | P3 -- Medium |\n| **Status** | detected |\n| **Detectado** | <FECHA> |\n| **Resuelto** | -- En curso |\n| **MTTR** | -- |\n| **Servicios afectados** | -- No especificados |\n| **RTO objetivo** | 24 h |\n| **RPO objetivo** | -- |\n| **Target respuesta (ISO 20000)** | 2 h |\n| **Target resolución (ISO 20000)** | 24 h |\n\n## Impacto\n\n_Pendiente de documentar el impacto en usuarios y negocio._\n\n## Timeline del incidente\n\n| Hora | Evento | Responsable |\n|---|---|---|\n| -- | Sin eventos registrados | |\n\n## Causa raíz (RCA)\n\n_Pendiente de análisis de causa raíz._\n\n## Action items (post-mortem)\n\n-- Pendiente de definir\n\n## Análisis de causa raíz -- 5 Whys\n\n1. ¿Por qué ocurrió el incidente? _Pendiente_\n2. ¿Por qué ocurrió la causa anterior? _Pendiente_\n3. ¿Por qué ocurrió la causa anterior? _Pendiente_\n4. ¿Por qué ocurrió la causa anterior? _Pendiente_\n5. ¿Por qué ocurrió la causa anterior? _Pendiente_\n\n## Métricas del incidente\n\n| Métrica | Valor |\n|---|---|\n| Time to Detect (TTD) | -- |\n| Time to Mitigate (TTM) | -- |\n| Time to Resolve (TTR / MTTR) | -- |\n| Usuarios afectados | -- |\n| Pérdida estimada | -- |\n\n## Lecciones aprendidas\n\n_Qué salió bien, qué salió mal, qué hacer diferente._\n\n## Referencias\n\n- ISO 20000-1:2018 §8.6 -- Incident and service request management\n- ISO 22301:2019 §8.4 -- Business continuity procedures\n- ISO/IEC 27001:2022 A.16 -- Information security incident management\n"
+}

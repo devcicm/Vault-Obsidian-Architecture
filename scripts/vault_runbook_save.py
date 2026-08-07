@@ -243,7 +243,29 @@ Notas:
         steps = json.loads(args.steps)
 
     except json.JSONDecodeError:
-        return {"ok": False, "error": "Invalid JSON in --steps parameter"}
+        # `main()` devuelve código de salida, no envelope. Ver la misma
+        # corrección en `vault_infra_save`: el dict acababa en `sys.exit()`,
+        # que lo convierte a entero y falla, y el mensaje escrito para este
+        # caso no llegaba nunca a verse.
+        print(json.dumps({"ok": False, "error": "Invalid JSON in --steps parameter"}))
+        return 1
+
+    # Misma corrección que en `vault_env_save`: se comprobaba que fuera JSON
+    # pero no que fuera lo que la ayuda documenta. Un array de cadenas moría
+    # abajo con `AttributeError` envuelto como fallo crítico interno.
+    if not isinstance(steps, list) or not all(isinstance(s, dict) for s in steps):
+        print(
+            json.dumps(
+                {
+                    "ok": False,
+                    "error": (
+                        "--steps espera un array JSON de objetos, p. ej. "
+                        '[{"step": "Hacer backup", "command": "pg_dump ..."}]'
+                    ),
+                }
+            )
+        )
+        return 1
 
     result = vault_runbook_save(
         args.project,
