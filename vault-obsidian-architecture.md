@@ -6775,7 +6775,7 @@ temp/
 
 ---
 
-### v40.2 — 2026-08-07 `git: pending`
+### v40.2 — 2026-08-07 `git: 2e75b6e`
 
 **Cómo se falla, y contra qué se comprueba**
 
