@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.3 — 2026-08-07  
+**Versión:** v40.4 — 2026-08-07  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -6476,6 +6476,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.4 | 2026-08-07 | `CLAUDE.md` publicaba los dos comandos de salud del vault con `--root`, que ninguna de las dos tools acepta —contradiciendo la regla 1 del propio fichero— así que el comando que un agente copia para medir moría en `unrecognized arguments`, y duró versiones porque los comandos de la documentación eran lo único sin guard; `vault_doc_sync` gana una sexta comprobación estática sobre `CLAUDE.md`/`README.md`/`scripts/README.md`, con un test que ejecuta los comandos de salud leídos del documento y no copiados; la suite deja de escribir la versión corriente a mano (AP-47 dentro de los tests) |
 | v40.3 | 2026-08-07 | `healthScore` satura (22 penalizaciones con topes que suman 285 sobre base 100: el propio `vault-sandbox/` puntúa 0) y se conserva igual porque lo leen los consumidores — se anota `superseded_by: healthIndex` y se le añaden al lado `healthIndex` y `healthProfile`, seis familias normalizadas cada una contra su tope y con `saturated` por familia; los 22 pesos pasan al registro `PENALIZACIONES` sin mover ni un punto, verificado contra una reimplementación literal del bloque viejo; `--check` de `vault_standard_upgrade` dejaba sellada la versión de quien solo preguntaba, y ahora declara `stamp_pending` sin escribir |
 | v40.2 | 2026-08-07 | AP-52 (el error se emite fuera del contrato del catálogo): baseline de 158 sitios en 58 módulos que solo puede encoger, salida de la caracterización maliciosa de las 96 tools —92/92 rechazan un flag inexistente, 45/45 la invocación vacía, ninguna con traceback: el defecto no era cómo fallan sino la forma del envelope cuando fallan bien—; `vault_gate`, la puerta única que corre las nueve puertas de cierre con `PUERTAS` como registro canónico y `--check-doc` verificando el checklist contra él; `vault_foreign_check`, la regla 7 ejecutable — única tool sin destino por defecto, que rechaza toda raíz del repo y midió 317 notas ajenas para destapar siete sitios que componían `title:` fuera de las comillas |
 | v40.1 | 2026-08-07 | AP-50 (decisión duplicada sin dueño declarado): las decisiones cerradas del estándar pasan a registros con contexto dueño — `vault_vocabulario.py` (12 vocabularios, 14 copias saldadas en 13 módulos), `vault_entorno.py` (13 variables, dos de ellas ya divergidas) y `vault/autoria/frontmatter.py`, el escritor único que cumple AP-46 en el punto de uso y sustituye los cuatro criterios de escapado que convivían en los 17 `*_save`; puertos de contexto verificados por AST en `vault_arch --check`; caracterización congelada de los 17 `*_save`, que destapó cuatro defectos presentados como fallo crítico interno |
@@ -6800,6 +6801,57 @@ temp/
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
 
 ---
+
+### v40.4 — 2026-08-07 `git: pending`
+
+**El comando de medir la salud no arrancaba**
+
+`CLAUDE.md` publica, en su sección de comandos habituales, cómo se mide la
+salud del vault. Publicaba esto:
+
+```
+python scripts/vault_audit.py --root vault-sandbox
+python scripts/vault_quality_check.py --root vault-sandbox --min-score 0.7
+```
+
+Ninguna de las dos tools acepta `--root`. Un agente que copiaba el comando
+—que es literalmente para lo que está esa sección— recibía
+`error: unrecognized arguments` y perdía el turno. Y lo contradecía la **regla
+1 del propio fichero**, tres pantallas más arriba: solo cuatro tools aceptan
+`--root`, y el destino se fuerza con `VAULT_ROOT`. El documento se desmentía a
+sí mismo dentro de sí mismo.
+
+Duró versiones porque **nada lo comprobaba**. El manifiesto tiene guard, el
+catálogo tiene guard, los conteos tienen guard, los nombres de sección tienen
+guard. Los comandos que la documentación le dicta a un agente, no. Es AP-42
+—publicado y nunca ejecutado— en el único sitio donde no lo estábamos
+buscando; y que el invisible fuese justo el de la salud es lo que lo hace
+caro, porque nadie mide el vault a mano para descubrir que la herramienta de
+medirlo no arranca.
+
+- **El detector va a `vault_doc_sync`**, que ya vigilaba nombres, como sexta
+  comprobación: todo comando `python scripts/X.py --flag` que aparezca en
+  `CLAUDE.md`, `README.md` o `scripts/README.md` existe y acepta esos flags.
+  Estático —los `add_argument` declarados— y no ejecutando: varios de los
+  comandos documentados escriben en el vault. Un parser construido donde el
+  regex no llega daría un falso positivo, no un falso negativo: el guard se
+  equivoca hacia el lado que se nota. Corre en `vault_gate`, sin puerta nueva.
+- **El contraste ejecuta de verdad.** `tests/test_comandos_publicados.py`
+  corre los dos comandos de salud tal y como están escritos en `CLAUDE.md`,
+  **leídos del documento y no copiados** — copiarlos habría dejado el test
+  verde mientras la documentación se rompe, que es el mismo defecto cometido
+  una segunda vez.
+- **La suite dejó de escribir versiones a mano.** `test_versionado_consumidores`
+  afirmaba `"--to v40.2" in message`: cierto, verde, y roto solo al subir a
+  v40.3 — no porque el código empeorase, sino porque llevaba dentro una cifra
+  que caduca (AP-47 dentro de la propia suite). Se deriva de
+  `CURRENT_VERSION`, y un guard falla si algún test vuelve a nombrar la
+  versión corriente. Un literal de versión **histórica** sigue siendo legítimo:
+  el `introduced_version` de una norma es un hecho del pasado.
+- Verificado que `penalties` de `vault_audit` no sale vacío mientras el score
+  esté penalizado: un campo publicado que nunca se llena sería AP-37 en la
+  lectura que v40.3 acababa de añadir. Desglosa las doce penalizaciones
+  activas del sandbox, 139 puntos, familia a familia.
 
 ### v40.3 — 2026-08-07 `git: 4f11b5d`
 

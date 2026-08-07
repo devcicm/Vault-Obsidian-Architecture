@@ -71,3 +71,31 @@ def test_la_version_tiene_entrada_de_migracion_registrada():
         f"VERSION_ORDER termina en {vsu.VERSION_ORDER[-1]!r} y CURRENT_VERSION "
         f"es {VERSION!r}: una migración posterior quedaría sin aplicar"
     )
+
+
+def test_ningun_test_compara_contra_la_version_corriente_escrita_a_mano():
+    """AP-47 dentro de la suite: una cifra a mano que caduca en el bump.
+
+    `test_versionado_consumidores` afirmaba `"--to v40.2" in env["message"]`.
+    Era cierto, pasaba, y se rompió sola al subir a v40.3 — no porque el código
+    empeorase, sino porque el test llevaba escrita una versión que ya no era la
+    corriente. Ese fallo es barato cuando lo caza el bump y caro cuando alguien
+    lo "arregla" actualizando el literal: al siguiente vuelve.
+
+    Un literal de versión **histórica** sí es legítimo: el `introduced_version`
+    de una norma es un hecho del pasado, y fijarlo es justamente lo correcto.
+    Lo que no puede aparecer es la versión de hoy, porque hoy dura una versión.
+    """
+    culpables = []
+    for fichero in sorted(Path(__file__).parent.glob("test_*.py")):
+        if fichero.name == Path(__file__).name:
+            continue  # este fichero nombra la versión para comprobarla
+        fuente = fichero.read_bytes().decode("utf-8", "replace")
+        for numero, linea in enumerate(fuente.splitlines(), 1):
+            sin_comentario = linea.split("#", 1)[0]
+            if f'"{VERSION}"' in sin_comentario or f"'{VERSION}'" in sin_comentario:
+                culpables.append(f"{fichero.name}:{numero}: {linea.strip()}")
+    assert not culpables, (
+        "la versión corriente está escrita a mano en la suite; derívala de "
+        "`vault_standard_upgrade.CURRENT_VERSION`:\n" + "\n".join(culpables)
+    )

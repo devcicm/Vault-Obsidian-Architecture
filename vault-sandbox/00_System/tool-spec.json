@@ -832,6 +832,7 @@
       "required_args": [],
       "declared_returns": [
         "action",
+        "commands_checked",
         "fixes_applied",
         "groups_checked",
         "ok",

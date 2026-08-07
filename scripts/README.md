@@ -1800,6 +1800,10 @@ python vault_doc_sync.py --check --strict   # exit 1 si el README se quedó atr�
 python vault_doc_sync.py --fix              # regenera la tabla de índice desde GROUPS
 ```
 
+Desde v40.4 comprueba además una sexta cosa: que **todo comando `python scripts/X.py --flag` que la documentación publica exista y acepte esos flags**. Llegó tarde y con factura. `CLAUDE.md` publicaba, en su sección de comandos habituales, `vault_audit.py --root vault-sandbox` y `vault_quality_check.py --root vault-sandbox --min-score 0.7`: ninguna de las dos acepta `--root`, así que el comando que un agente copia para medir la salud del vault moría en `unrecognized arguments`. Lo contradecía la regla 1 del propio fichero —solo cuatro tools aceptan `--root`, el destino se fuerza con `VAULT_ROOT`— y duró versiones porque el manifiesto, el catálogo y los conteos tienen guard, y los comandos de la documentación no. Que el invisible fuese justo el de la salud es lo caro: nadie mide el vault a mano para descubrir que la herramienta de medirlo no arranca.
+
+La comprobación es **estática** —los flags declarados en `add_argument`— y no ejecuta nada: varios de los comandos documentados escriben en el vault. Un parser construido donde el regex no llega daría un falso positivo, no un falso negativo; el guard se equivoca hacia el lado que se nota. El contraste lo pone `tests/test_comandos_publicados.py`, que sí ejecuta los dos comandos de salud tal y como están escritos en `CLAUDE.md`, leídos del documento y no copiados.
+
 El encabezado de cada grupo usa la **clave literal de `GROUPS`**, no un título propio. Es deliberado: llegaron a convivir tres vocabularios de grupo (la etiqueta `group` de cada tool, la clave de `GROUPS` y el título del README) y ninguno fallaba al divergir. `--fix` regenera el índice pero **no escribe prosa**: una tool nueva sin sección se reporta, no se inventa.
 
 ---

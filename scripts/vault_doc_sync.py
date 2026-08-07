@@ -20,6 +20,20 @@ Qué comprueba:
   4. La numeración `Grupo N` no se repite.
   5. El índice tiene exactamente una fila por sección, con el mismo número y
      etiqueta, ancla resuelta, y las tools de `GROUPS` en la fila.
+  6. Todo comando `python scripts/X.py --flag` que la documentación publica
+     existe y acepta esos flags.
+
+La sexta llegó tarde y con factura. `CLAUDE.md` publicaba
+`vault_audit.py --root vault-sandbox` y `vault_quality_check.py --root ...` en
+su sección de comandos habituales: ninguno de los dos acepta `--root`, así que
+el comando que un agente copia para medir la salud del vault moría en
+`unrecognized arguments`. Y lo contradecía su propia regla 1, tres pantallas más
+arriba, que dice que solo cuatro tools aceptan `--root` y que el destino se
+fuerza con `VAULT_ROOT`. Un comando publicado que nadie ejecuta es AP-42; que
+además fuese el de la salud lo dejó invisible hasta que se corrió a mano.
+
+Se comprueba de forma estática —los flags declarados en `add_argument`— y no
+ejecutando: varios de estos comandos escriben.
 
 El encabezado de sección usa la **clave literal de `GROUPS`**. Es deliberado:
 un título más bonito en el README crea un cuarto vocabulario de grupos, y ya
@@ -67,9 +81,63 @@ def index_row(number: int, label: str, tools: List[str]) -> str:
     )
 
 
+REPO_ROOT = Path(__file__).resolve().parent.parent
+
+# Documentos que le dicen a un agente qué comando teclear. Si mienten, el
+# agente pierde el turno en un `unrecognized arguments`.
+DOCS_CON_COMANDOS = ("CLAUDE.md", "README.md", "scripts/README.md")
+
+RE_COMANDO = re.compile(
+    r"python\s+(scripts/[a-z0-9_]+\.py)((?:\s+--?[a-zA-Z0-9_-]+(?:[ =][^\s`|#]+)?)*)"
+)
+RE_FLAG_USADO = re.compile(r"(?<![\w-])--[a-zA-Z][a-zA-Z0-9_-]*")
+RE_FLAG_DECLARADO = re.compile(r"""add_argument\(\s*["'](--[a-zA-Z][a-zA-Z0-9_-]*)["']""")
+
+
+def _flags_declarados(script: Path) -> set:
+    """Los flags que el script acepta, leídos de sus `add_argument`.
+
+    Estático a propósito: importar o ejecutar 96 scripts para preguntarles su
+    parser tendría side effects, y varios de los comandos documentados escriben
+    en el vault. Un parser construido en una función auxiliar que este regex no
+    vea daría un falso positivo, no un falso negativo — el guard se equivocaría
+    hacia el lado que se nota.
+    """
+    src = script.read_bytes().decode("utf-8", "replace")
+    return set(RE_FLAG_DECLARADO.findall(src))
+
+
+def comandos_publicados() -> List[Dict]:
+    """AP-42 en la documentación: comandos que se publican y no corren."""
+    problems: List[Dict] = []
+    for doc in DOCS_CON_COMANDOS:
+        ruta = REPO_ROOT / doc
+        if not ruta.exists():
+            continue
+        for numero, linea in enumerate(
+            ruta.read_bytes().decode("utf-8", "replace").splitlines(), 1
+        ):
+            for m in RE_COMANDO.finditer(linea):
+                script = REPO_ROOT / m.group(1)
+                donde = f"{doc}:{numero}"
+                if not script.exists():
+                    problems.append({"kind": "comando_sin_script",
+                                     "detail": f"{donde} — {m.group(1)} no existe"})
+                    continue
+                declarados = _flags_declarados(script)
+                for flag in RE_FLAG_USADO.findall(m.group(2)):
+                    if flag not in declarados:
+                        problems.append({
+                            "kind": "flag_no_aceptado",
+                            "detail": f"{donde} — {m.group(1)} no acepta {flag}",
+                        })
+    return problems
+
+
 def scan() -> Dict:
     text = README.read_text(encoding="utf-8")
     problems: List[Dict] = []
+    problems.extend(comandos_publicados())
 
     sections = {label: int(num) for num, label in RE_SECTION.findall(text)}
     numbers = [int(num) for num, _ in RE_SECTION.findall(text)]
@@ -119,6 +187,7 @@ def scan() -> Dict:
         "tool": "vault_doc_sync",
         "action": "check",
         "tools_checked": len(TOOLS_CATALOG),
+        "commands_checked": True,
         "groups_checked": len(GROUPS),
         "problems": problems,
     }
