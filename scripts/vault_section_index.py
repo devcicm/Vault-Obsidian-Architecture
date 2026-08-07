@@ -13,7 +13,6 @@ Usage:
 
 import argparse
 import json
-import re
 import sys
 from vault_errors import wrap_main
 from vault_lib import parse_frontmatter, utcnow
@@ -28,7 +27,7 @@ from vault_io import (
     safe_wikilink,
     write_report,
 )
-from vault_registry import section_description, section_tool_hint
+from vault_registry import ORDERED_SECTIONS, section_description, section_tool_hint
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.indices.seccion import (  # noqa: E402
@@ -89,26 +88,10 @@ def _ensure_hub_notes() -> None:
             "| Sección | Descripción | Índice |\n"
             "|---|---|---|\n"
         )
-        for section in [
-            "00_System",
-            "01_Projects",
-            "02_Observability",
-            "03_Decisions",
-            "04_Sessions",
-            "05_Patterns",
-            "06_Diagrams",
-            "07_Knowledge",
-            "08_Runbooks",
-            "09_Infrastructure",
-            "10_Migrated",
-            "11_Code",
-            "12_Bibliography",
-            "13_Flows",
-            "14_Requirements",
-            "15_Tests",
-            "16_AI_Governance",
-            "99_Index",
-        ]:
+        # La tabla del hub listaba 18 secciones escritas a mano: las cuatro
+        # más nuevas existían en disco y no aparecían en el índice principal,
+        # que es la única página por la que se navega el vault. Se deriva.
+        for section in ORDERED_SECTIONS:
             desc = section_description(section)
             hub_content += f"| `{section}` | {desc} | `{section}/index.md` |\n"
         hub_content += (

@@ -32,6 +32,7 @@ import subprocess
 
 import sys
 
+from vault_registry import es_andamio
 from vault_errors import wrap_main
 
 from collections import defaultdict
@@ -399,9 +400,7 @@ def _detect_orphans(
         # reminds them to do so. Excluding scaffolds avoids false-positive
         # orphan warnings on a freshly initialized vault.
         text = _leer_nota(n, errors="replace")
-        if text is not None and (
-            "scaffold: true" in text or "type: primer" in text
-        ):
+        if text is not None and es_andamio(text):
             continue
 
         fm = read_frontmatter(n)
@@ -657,9 +656,7 @@ def _detect_canonical_shadow(notes: List[Path]) -> List[Dict[str, Any]]:
         # Scaffolds (vault_init primers) are templates by design — all have
         # similar titles and structure. Excluding them avoids false positives.
         text = _leer_nota(n, errors="replace")
-        if text is not None and (
-            "scaffold: true" in text or "type: primer" in text
-        ):
+        if text is not None and es_andamio(text):
             continue
 
         fm = read_frontmatter(n)
@@ -1269,8 +1266,12 @@ def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]
 # nextActions helpers — used by vault_audit to prescribe remediation
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Per-section tool hint — mirrors the registry so the suggested command is
-# correct even if the registry changes.
+# Pistas de tool con argumentos de ejemplo. El comentario anterior decía que
+# esto «refleja el registro para que el comando siga siendo correcto aunque el
+# registro cambie» — que es justo lo contrario de lo que hace un espejo: cuando
+# el registro cambia, la copia se queda vieja y nadie se entera. Lo que aporta
+# de verdad es el ejemplo de argumentos, así que se queda como capa de
+# enriquecimiento y lo que no cubre lo pone el registro, no un genérico.
 _SECTION_TOOL_HINT: Dict[str, str] = {
     "01_Projects": "vault_project_overview --project <slug> --description '...' --runtime 'Node.js 20'",
     "02_Observability": "vault_log_error --project <slug> --error '<msg>'",
@@ -1302,7 +1303,9 @@ _SECTION_TOOL_HINT: Dict[str, str] = {
 
 def _suggest_command_for_folder(folder: str) -> str:
     """Return a copy-paste ready command for populating an empty section."""
-    hint = _SECTION_TOOL_HINT.get(folder)
+    from vault_registry import section_tool_hint
+
+    hint = _SECTION_TOOL_HINT.get(folder) or section_tool_hint(folder)
     if hint:
         return f"python scripts/{hint}"
     return f"python scripts/vault_write --folder {folder} --title '<titulo>' --content '...'"
@@ -1323,7 +1326,7 @@ def _detect_scaffold_only_sections(content_notes: List[Path]) -> List[str]:
         section = rel.parts[0]
         text = _leer_nota(n, errors="replace")
         is_scaffold = text is not None and (
-            "scaffold: true" in text or "type: primer" in text
+            es_andamio(text)
         )
         if is_scaffold:
             sections_with_scaffold[section] = True

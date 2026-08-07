@@ -43,6 +43,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).parent))
 from vault_io import atomic_write_text, get_vault_root, normalize_stem
+from vault_registry import ORDERED_SECTIONS
 from vault_regex import (
     fix_nested_brackets,
     fix_whitespace_in_links,
@@ -809,21 +810,12 @@ def _stub_already_exists(root: Path, target_stem: str) -> bool:
     """Avoid creating a stub that collides with a real note."""
     if (root / _STUBS_DIR / f"{target_stem}.md").exists():
         return True
-    for sub in (
-        "07_Knowledge",
-        "01_Projects",
-        "08_Runbooks",
-        "05_Patterns",
-        "11_Code",
-        "13_Flows",
-        "03_Decisions",
-        "06_Diagrams",
-        "09_Infrastructure",
-        "15_Tests",
-        "16_AI_Governance",
-        "12_Bibliography",
-        "02_Observability",
-    ):
+    # Trece secciones escritas a mano en un orden que ya no dice nada: si la
+    # nota real vivía en `14_Requirements` o en cualquiera de las cuatro de
+    # v39, la colisión no se veía y el stub se creaba encima de contenido real.
+    # Es el peor sitio posible para una lista incompleta — la comprobación
+    # existe precisamente para no pisar nada.
+    for sub in ORDERED_SECTIONS:
         if (root / sub / f"{target_stem}.md").exists():
             return True
     return False

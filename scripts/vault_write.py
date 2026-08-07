@@ -426,43 +426,21 @@ def generate_frontmatter(
     return "\n".join(frontmatter)
 
 
-_SECTION_TYPE_MAP = {
-    "00_System": "system",
-    "01_Projects": "project",
-    "02_Observability": "observability",
-    "03_Decisions": "decision",
-    "04_Sessions": "session",
-    "05_Patterns": "pattern",
-    "06_Diagrams": "diagram",
-    "07_Knowledge": "knowledge",
-    "08_Runbooks": "runbook",
-    "09_Infrastructure": "infrastructure",
-    "10_Migrated": "documentation",
-    "11_Code": "code",
-    "12_Bibliography": "reference",
-    "13_Flows": "flow",
-    "14_Requirements": "requirement",
-    "15_Tests": "test",
-    "16_AI_Governance": "governance",
-    # Las cuatro secciones más nuevas faltaban aquí, así que una nota escrita
-    # en ellas salía sin `type:` — y `vault_audit._detect_missing_metadata` lo
-    # exige. El estándar reprobaba lo que su propio write path acababa de
-    # escribir. Los valores no son inventados: son los que ya escriben los
-    # productores de cada sección (`vault_preferences`, `vault_bug_save`).
-    "17_Preferences": "preference",
-    "18_Bugs": "bug",
-    "19_Audits": "audit",
-    "20_Quarantine": "quarantine",
-    "99_Index": "index",
-}
+# El mapa sección→tipo vivía aquí completo y era la cuarta copia del mismo
+# dato; las otras tres (dos auditores y el grafo) se habían quedado en 18, 14 y
+# 14 secciones, y dos de ellas se contradecían. Ahora lo declara el registro y
+# esto solo lo consume: `SECTION_TYPES[seccion][0]` es exactamente lo que este
+# write path escribía, valor por valor.
 
 
 def _deduce_type_from_folder(folder: str) -> str:
     """Derive type field value from the vault section folder."""
     if not folder:
         return ""
+    from vault_registry import section_default_type
+
     top = folder.split("/")[0].split("\\")[0]
-    return _SECTION_TYPE_MAP.get(top, "")
+    return section_default_type(top)
 
 
 def extract_wiki_links(content: str) -> List[str]:

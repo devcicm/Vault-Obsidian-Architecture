@@ -33,6 +33,7 @@ import re
 
 import sys
 
+from vault_registry import ORDERED_SECTIONS
 from vault_errors import wrap_main
 
 import yaml
@@ -49,31 +50,11 @@ CIA_AVAILABILITY_VALUES = {"high", "medium", "low"}
 CIA_SENSITIVITY_VALUES = {"public", "internal", "restricted"}
 
 
-REQUIRED_FOLDERS = [
-
-    "00_System",
-
-    "01_Projects",
-
-    "02_Observability",
-
-    "03_Decisions",
-
-    "04_Sessions",
-
-    "05_Patterns",
-
-    "06_Diagrams",
-
-    "07_Knowledge",
-
-    "08_Runbooks",
-
-    "09_Infrastructure",
-
-    "10_Migrated",
-
-]
+# Se congeló en v33 con diez secciones y nunca creció: un vault sin `11_Code`
+# ni `18_Bugs` pasaba la validación como completo, porque «requerido» aquí
+# significaba lo que era requerido hace siete versiones. Ahora lo dice el
+# registro, así que una sección nueva es exigible el mismo día que existe.
+REQUIRED_FOLDERS = list(ORDERED_SECTIONS)
 
 
 REQUIRED_INDEXES = [
@@ -165,8 +146,23 @@ def validate_frontmatter(note_path: Path) -> Dict[str, Any]:
         return {"valid": False, "error": str(e)}
 
 
+    rel_path = str(note_path.relative_to(_raiz())).replace("\\", "/")
+    is_index = (
+        rel_path.endswith("/index.md")
+        or rel_path.lower() in ("index.md",)
+        or note_path.stem.lower() == "index"
+    )
+
     if not content.startswith("---"):
 
+        # Un índice es artefacto derivado y se escribe sin frontmatter: lo
+        # genera `vault_section_index`, que no le pone ninguno. Exigírselo hacía
+        # que el estándar reprobara 63 ficheros que acababa de escribir él
+        # mismo (AP-44: medir con criterio propio). Tres líneas más abajo esta
+        # misma función ya los exceptúa de los campos de trazabilidad — la
+        # excepción existía, solo llegaba tarde.
+        if is_index:
+            return {"valid": True, "data": {}, "derived": True}
         return {"valid": False, "error": "No frontmatter block"}
 
 
@@ -195,16 +191,19 @@ def validate_frontmatter(note_path: Path) -> Dict[str, Any]:
     required = ["id", "title", "createdAt", "updatedAt"]
 
     # For content notes (not system/index), require traceability fields
-    rel_path = str(note_path.relative_to(_raiz())).replace("\\", "/")
-    is_index = rel_path.endswith("/index.md") or rel_path == "index.md" or note_path.stem == "index"
     is_system = rel_path.startswith("00_System/") or rel_path == "00_System"
 
     if not is_index and not is_system:
         required += ["cia_integrity", "cia_availability", "cia_sensitivity", "agent"]
-        if "tags" not in data:
-            missing.append("tags")
 
     missing = [f for f in required if f not in data]
+    # `tags` se comprobaba tres líneas antes de que `missing` existiera:
+    # `UnboundLocalError` en la primera nota de contenido sin tags, y la tool
+    # entera devolvía UNEXPECTED_ERROR sin validar ni una. Nunca falló en los
+    # tests porque sus notas de fixture siempre llevan tags — el vault de
+    # pruebas, no.
+    if not is_index and not is_system and "tags" not in data:
+        missing.append("tags")
     if missing:
         return {"valid": False, "error": f"Missing required fields: {missing}", "data": data}
 

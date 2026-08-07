@@ -39,6 +39,7 @@ from vault_lib import utcnow
 from vault_standard_upgrade import CURRENT_VERSION
 from vault_registry import (
     standard_folders,
+    EVENT_DRIVEN_SECTIONS,
     ORDERED_SECTIONS,
     section_description,
     section_tool_hint,
@@ -48,24 +49,16 @@ from vault_registry import (
 # Sections that get a scaffold primer on init. 00_System is excluded because
 # vault-hub.md + vault-commands.md already provide structure. All other
 # standard sections get a primer so the vault starts at 100/100.
+# Todas menos `00_System`, que vault_init puebla con ficheros de identidad
+# reales y no necesita andamio. Estaba escrita a mano y se quedó en 17: las
+# cuatro secciones de v39 nacían vacías, y el andamio existe justamente para
+# que una sección recién creada no arrastre la puntuación del vault.
+# Fuera: `00_System`, que vault_init puebla con ficheros de identidad reales,
+# y las dirigidas por eventos, cuyo vacío es estado correcto.
 _SCAFFOLD_SECTIONS = [
-    "01_Projects",
-    "02_Observability",
-    "03_Decisions",
-    "04_Sessions",
-    "05_Patterns",
-    "06_Diagrams",
-    "07_Knowledge",
-    "08_Runbooks",
-    "09_Infrastructure",
-    "10_Migrated",
-    "11_Code",
-    "12_Bibliography",
-    "13_Flows",
-    "14_Requirements",
-    "15_Tests",
-    "16_AI_Governance",
-    "99_Index",
+    f
+    for f in ORDERED_SECTIONS
+    if f != "00_System" and f not in EVENT_DRIVEN_SECTIONS
 ]
 
 

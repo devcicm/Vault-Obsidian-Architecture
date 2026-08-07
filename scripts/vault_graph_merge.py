@@ -122,13 +122,23 @@ def _extract_tags(content: str) -> List[str]:
 
 
 def _folder_to_class(folder: str) -> str:
+    """Clase de nodo del grafo para una sección.
+
+    No es el `type:` de la nota y por eso no deriva de `SECTION_TYPES`: son dos
+    vocabularios (`10_Migrated` escribe `type: documentation` y sus nodos son de
+    clase `migrated`). Lo que sí tenía que ser completo es la cobertura — las
+    cuatro secciones de v39 caían en `"unknown"`, así que sus notas entraban al
+    grafo sin clase y quedaban fuera de todo recorrido por clase, en silencio.
+    """
     mapping = {
         "00_System": "system", "01_Projects": "project", "02_Observability": "observability",
         "03_Decisions": "decision", "04_Sessions": "session", "05_Patterns": "pattern",
         "06_Diagrams": "diagram", "07_Knowledge": "knowledge", "08_Runbooks": "runbook",
         "09_Infrastructure": "infrastructure", "10_Migrated": "migrated", "11_Code": "code",
         "12_Bibliography": "bibliography", "13_Flows": "flow", "14_Requirements": "requirement",
-        "15_Tests": "test", "16_AI_Governance": "ai_governance", "99_Index": "index",
+        "15_Tests": "test", "16_AI_Governance": "ai_governance",
+        "17_Preferences": "preference", "18_Bugs": "bug", "19_Audits": "audit",
+        "20_Quarantine": "quarantine", "99_Index": "index",
     }
     return mapping.get(folder, "unknown")
 

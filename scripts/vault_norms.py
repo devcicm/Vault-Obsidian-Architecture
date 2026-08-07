@@ -1824,10 +1824,14 @@ def vault_norms_scan(path: str) -> Dict[str, Any]:
                 "AP-07", f"ADR posiblemente incompleto (secciones faltantes detectadas)"
             )
 
-    if "06_Runbooks" not in rel and any(
+    # La sección es `08_Runbooks`; aquí se comparaba contra `06_Runbooks`, que
+    # no existe. La condición era por tanto siempre cierta: un runbook guardado
+    # correctamente en `08_Runbooks/` se reportaba como fuera de sitio, y uno
+    # realmente extraviado se reportaba igual. El guard no distinguía nada.
+    if "08_Runbooks" not in rel and any(
         kw in note_path.stem.lower() for kw in ("runbook", "procedure", "playbook")
     ):
-        _add("AP-09", "runbook fuera de 06_Runbooks/")
+        _add("AP-09", "runbook fuera de 08_Runbooks/")
 
     # Always recommend PAT-5 (provenance chain)
     if not all(fm.get(f) for f in ("id", "createdAt", "updatedAt", "agent")):

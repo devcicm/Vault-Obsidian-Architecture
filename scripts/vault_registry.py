@@ -196,6 +196,104 @@ SECTIONS: List[Dict[str, Optional[str]]] = [
 ]
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Tipos de nota por sección — vocabulario ABIERTO con memoria
+# ──────────────────────────────────────────────────────────────────────────────
+#
+# Antes esto vivía copiado en tres sitios, cada uno con una cobertura distinta:
+# `vault_fundamentals` (F2) y `vault_quality_check` (F4) declaraban 14 secciones
+# con UN tipo esperado cada una, y `vault_graph_merge` otras 18 con nombres que
+# no coincidían (`infra` vs `infrastructure`, `ai_decision` vs `ai_governance`).
+# Las tres se quedaron en la v33: ninguna conocía `17_Preferences`, `18_Bugs`,
+# `19_Audits` ni `20_Quarantine`.
+#
+# **Lo que rompía no era la cobertura, era el modelo.** Medido contra un vault
+# real de 200 notas ajeno a este repo, una sección no tiene un tipo: tiene una
+# familia. `01_Projects` acumulaba seis (`project`, `project-overview`,
+# `project-architecture`, `project-directives`, `audit`, `primer`) y el checker
+# esperaba exactamente uno, así que penalizaba cinco de cada seis notas — todas
+# escritas por las tools de este mismo estándar. Eso es AP-44 en su forma pura:
+# la herramienta se certificaba contra su propia normalización.
+#
+# El vocabulario que se registra aquí es por tanto ABIERTO, en el sentido de
+# AP-39: un tipo que no esté en esta tabla **no es una violación**, porque
+# rechazar empujaría a omitir el campo. Lo que sí es una señal es un tipo que
+# es canónico de OTRA sección — una nota de decisión archivada en 07_Knowledge—,
+# y eso solo se puede detectar teniendo la tabla completa.
+#
+# Consecuencia deliberada del diseño: una entrada incompleta solo puede causar
+# un hallazgo que no se ve, nunca uno falso. Es la dirección correcta en la que
+# puede fallar una tool que puntúa.
+#
+# Los tipos salen de ejecutar los escritores y de leer dos vaults, no de la
+# intención de nadie. Ojo con un matiz que costó ver: `vault_requirement_save`,
+# `vault_test_save`, `vault_ai_decision` y `vault_bibliography_save` NO escriben
+# `type:` sino `req_type:`, `test_type:`, `decision_type:` y `source_type:`. El
+# mapa viejo esperaba en `type:` valores que esas tools nunca escriben ahí.
+
+#: Secciones dirigidas por eventos: su vacío es estado correcto, no trabajo
+#: pendiente. Poblarlas al arrancar sería inventar bugs, auditorías y
+#: cuarentenas que no han ocurrido (AP-45: cobertura sin evidencia). El dato
+#: estaba solo dentro de `vault_onboard`, así que `vault_init` no lo sabía y
+#: sembraba andamios justo donde el estándar promete no escribir nada.
+EVENT_DRIVEN_SECTIONS: Dict[str, str] = {
+    "18_Bugs": "se puebla cuando aparece un bug (vault_bug_save)",
+    "19_Audits": "se puebla al ejecutar una auditoría (vault_tags --audit)",
+    "20_Quarantine": "se puebla cuando algo entra en cuarentena",
+}
+
+
+SECTION_TYPES: Dict[str, tuple] = {
+    "00_System": ("system", "knowledge"),
+    "01_Projects": (
+        "project",
+        "project-overview",
+        "project-architecture",
+        "project-directives",
+    ),
+    "02_Observability": (
+        "observability",
+        "error",
+        "antipattern",
+        "antipattern-log",
+        "observation",
+        "security-audit",
+    ),
+    "03_Decisions": ("decision", "adr"),
+    "04_Sessions": ("session", "session-log", "documentation"),
+    "05_Patterns": ("pattern", "architecture"),
+    "06_Diagrams": ("diagram",),
+    "07_Knowledge": ("knowledge", "concept", "api", "api-reference", "workflow"),
+    "08_Runbooks": ("runbook",),
+    "09_Infrastructure": ("infrastructure", "infra-map", "environment"),
+    "10_Migrated": ("documentation", "migrated", "migration-report"),
+    "11_Code": ("code", "code-map", "code-module"),
+    "12_Bibliography": ("reference", "bibliography"),
+    "13_Flows": ("flow",),
+    "14_Requirements": ("requirement",),
+    "15_Tests": ("test",),
+    "16_AI_Governance": ("governance", "ai_decision", "ai_governance"),
+    "17_Preferences": ("preference",),
+    "18_Bugs": ("bug",),
+    "19_Audits": ("audit",),
+    "20_Quarantine": ("quarantine",),
+    "99_Index": ("index",),
+}
+
+#: **El primer elemento no es decorativo: es el que escribe el write path.**
+#: `vault_write._deduce_type_from_folder` deriva de aquí, así que reordenar una
+#: familia cambia lo que se escribe en disco. Los demás elementos son los tipos
+#: que ese mismo estándar produce por otras vías (`vault_migrate_docs` escribe
+#: `migration-report`, `vault_code_map` escribe `code-map`) más los que se
+#: midieron en vaults reales.
+
+#: `type:` de las notas andamio que crea `vault_init`. No pertenecen a ninguna
+#: sección: son la misma nota repetida en todas, y por eso se eximen en vez de
+#: añadirse a cada familia. `vault_audit` ya las eximía; los otros dos auditores
+#: no, y penalizaban el andamiaje que el propio estándar escribe para que un
+#: vault nuevo arranque en 100/100.
+SCAFFOLD_TYPE = "primer"
+
+# ──────────────────────────────────────────────────────────────────────────────
 # Subcarpetas — descripción y tool owner
 # ──────────────────────────────────────────────────────────────────────────────
 #
@@ -532,6 +630,66 @@ def section_tool_hint(folder: str) -> Optional[str]:
     top = folder.replace("\\", "/").split("/")[0]
     sec = _SECTION_BY_FOLDER.get(top)
     return sec["tool_hint"] if sec else None
+
+
+def es_andamio(texto: str) -> bool:
+    """¿Es una nota andamio de `vault_init` (primer), y no contenido real?
+
+    La condición estaba copiada literal en tres sitios de `vault_audit`, con el
+    valor `"primer"` escrito a mano en cada uno. Aquí es `SCAFFOLD_TYPE`, que es
+    también lo que `type_misfiled_in` exceptúa: si los dos criterios se separan,
+    el andamio queda exento en un sitio y penalizado en el otro.
+
+    Sigue siendo una comprobación por subcadena, no por frontmatter, y por eso
+    una nota que *hable* de andamios cuenta como andamio. Se conserva tal cual
+    —cambiarlo alteraría qué notas se excluyen de tres auditorías distintas—
+    pero queda anotado en un solo sitio en vez de invisible en tres.
+    """
+    return "scaffold: true" in texto or f"type: {SCAFFOLD_TYPE}" in texto
+
+
+def section_default_type(folder: str) -> str:
+    """El `type:` que el write path escribe para una sección ("" si no aplica).
+
+    Existía como cuarta copia dentro de `vault_write`, y esa copia ya se había
+    quedado corta una vez: las cuatro secciones nuevas faltaban, así que una
+    nota escrita ahí salía sin `type:` y `vault_audit` la reprobaba — el
+    estándar suspendiendo lo que su propio write path acababa de escribir.
+    """
+    tipos = section_types(folder)
+    return tipos[0] if tipos else ""
+
+
+def section_types(folder: str) -> tuple:
+    """Tipos canónicos de una sección. Vacío si la sección no está registrada."""
+    return SECTION_TYPES.get(folder.replace("\\", "/").split("/")[0], ())
+
+
+def sections_for_type(note_type: str) -> List[str]:
+    """Secciones donde ese tipo es canónico. Vacío si no lo es en ninguna.
+
+    Vacío significa "tipo nuevo", no "tipo inválido": el vocabulario es abierto
+    (AP-39) y quien consulta esto debe tratarlo como ausencia de señal.
+    """
+    t = (note_type or "").strip().lower()
+    return [f for f, tipos in SECTION_TYPES.items() if t in tipos] if t else []
+
+
+def type_misfiled_in(folder: str, note_type: str) -> List[str]:
+    """Secciones a las que ese tipo pertenece, si NO pertenece a `folder`.
+
+    Es la única señal que se puede dar sin cerrar el vocabulario: un tipo
+    desconocido devuelve [] (no es un hallazgo), y uno canónico de otra sección
+    devuelve dónde debería estar. Quien mide con equivalencia exacta contra un
+    tipo único por sección penaliza a las tools del propio estándar (AP-44).
+    """
+    t = (note_type or "").strip().lower()
+    if not t or t == SCAFFOLD_TYPE:
+        return []
+    top = folder.replace("\\", "/").split("/")[0]
+    if t in section_types(top):
+        return []
+    return [s for s in sections_for_type(t) if s != top]
 
 
 def folder_owner(folder: str) -> Optional[str]:

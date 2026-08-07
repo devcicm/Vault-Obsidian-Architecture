@@ -255,3 +255,145 @@ def test_ningun_modulo_declara_su_propia_lista_de_secciones():
         "módulos que enumeran casi todas las secciones y se dejan algunas "
         f"fuera (derivar de vault_registry o completar el mapa): {culpables}"
     )
+
+
+# ─── Copias del registro de secciones ────────────────────────────────────────
+#
+# Ronda v40.0: el registro de secciones estaba copiado en once sitios con
+# cobertura divergente, y ninguna copia fallaba al quedarse vieja. Se veía solo
+# leyendo: `vault_validate` exigía 10 de 22 secciones, el hub listaba 18, el
+# guard anti-colisión de stubs miraba 13 —así que creaba stubs encima de notas
+# reales de las otras nueve—, y `05_Tasks` era una sección que no existe.
+#
+# Todas nacieron igual: una lista correcta el día que se escribió. El defecto
+# no es la lista, es que envejece sin avisar. Esto lo convierte en puerta.
+
+#: Colecciones cuya cobertura parcial es intencionada, con el motivo.
+#: Añadir una entrada aquí es una decisión, no un descuido — que es toda la
+#: diferencia con el estado anterior.
+PARCIALES_DELIBERADAS = {
+    ("vault_registry.py", "SUBFOLDERS"): "solo las secciones que tienen subcarpetas",
+    ("vault_standard_upgrade.py", "MIGRATIONS"): "histórico de migraciones; no crece con las secciones",
+    ("vault_migrate_docs.py", "CONTENT_SIGNALS"): "señales léxicas por prioridad; no toda sección tiene una",
+    ("vault_query_parse.py", "SECTION_HINTS"): "pistas léxicas de consulta; no toda sección tiene vocabulario propio",
+    ("vault_audit.py", "_SECTION_TOOL_HINT"): "capa de ejemplos de argumentos; lo no cubierto lo pone section_tool_hint()",
+}
+
+
+def _colecciones_de_seccion():
+    """Asignaciones de nivel de módulo que mencionan >=8 secciones canónicas."""
+    import ast
+
+    todas = set(vault_registry.ORDERED_SECTIONS)
+    for fichero in sorted((REPO_ROOT / "scripts").glob("*.py")):
+        arbol = ast.parse(fichero.read_text(encoding="utf-8"))
+        for nodo in arbol.body:
+            if not isinstance(nodo, (ast.Assign, ast.AnnAssign)) or nodo.value is None:
+                continue
+            objetivos = (
+                [nodo.target] if isinstance(nodo, ast.AnnAssign) else nodo.targets
+            )
+            nombres = [t.id for t in objetivos if isinstance(t, ast.Name)]
+            if not nombres:
+                continue
+            vistas = {
+                n.value.split("/")[0]
+                for n in ast.walk(nodo.value)
+                if isinstance(n, ast.Constant)
+                and isinstance(n.value, str)
+                and n.value.split("/")[0] in todas
+            }
+            if len(vistas) >= 8:
+                yield fichero.name, nombres[0], vistas
+
+
+def test_ninguna_copia_del_registro_de_secciones_se_queda_corta():
+    """Una lista de secciones escrita a mano cubre todas, o declara por qué no.
+
+    El caso que lo justifica: `vault_graph_fix._stub_already_exists` recorría 13
+    secciones buscando colisiones antes de crear un stub. Para las otras nueve
+    la colisión era invisible y el stub se escribía sobre una nota real.
+    """
+    incompletas = []
+    todas = set(vault_registry.ORDERED_SECTIONS)
+    for fichero, nombre, vistas in _colecciones_de_seccion():
+        if (fichero, nombre) in PARCIALES_DELIBERADAS:
+            continue
+        faltan = sorted(todas - vistas)
+        if faltan:
+            incompletas.append(f"{fichero}::{nombre} no cubre {faltan}")
+    assert not incompletas, (
+        "copias del registro de secciones que se quedaron viejas — deriva de "
+        "`vault_registry.ORDERED_SECTIONS` o declara la parcialidad en "
+        "PARCIALES_DELIBERADAS con su motivo:\n  " + "\n  ".join(incompletas)
+    )
+
+
+def test_ninguna_coleccion_menciona_una_seccion_inexistente():
+    """`05_Tasks` vivió años en `vault_query_parse.SECTION_HINTS`.
+
+    Ocho términos de consulta ("tarea", "backlog", "todo") enrutaban a una
+    carpeta que el estándar nunca tuvo. No fallaba nada: simplemente no
+    encontraba nada, que es la forma más cara de no fallar.
+    """
+    import ast
+
+    # Solo tokens con forma exacta de sección: `03_decisions` en minúscula es
+    # una comparación case-insensitive legítima, y una frase que empieza por
+    # "13_Flows, vault_code_query…" es prosa, no una ruta.
+    patron = re.compile(r"^\d\d_[A-Z][A-Za-z_]*$")
+    todas = set(vault_registry.ORDERED_SECTIONS)
+    fantasmas = []
+    for fichero in sorted((REPO_ROOT / "scripts").glob("*.py")):
+        arbol = ast.parse(fichero.read_text(encoding="utf-8"))
+        for nodo in ast.walk(arbol):
+            if isinstance(nodo, ast.Constant) and isinstance(nodo.value, str):
+                cabeza = nodo.value.split("/")[0]
+                if patron.match(cabeza) and cabeza not in todas:
+                    fantasmas.append(f"{fichero.name}:{nodo.lineno} → '{cabeza}'")
+    assert not fantasmas, (
+        "referencias a secciones que no están en el registro: " + ", ".join(fantasmas)
+    )
+
+
+def test_el_tipo_que_escribe_el_write_path_sale_del_registro():
+    """`SECTION_TYPES[seccion][0]` es lo que `vault_write` escribe.
+
+    Era una cuarta copia dentro de `vault_write`, y ya se había quedado corta
+    una vez: las cuatro secciones nuevas no estaban, así que las notas se
+    escribían sin `type:` y `vault_audit` las reprobaba después — el estándar
+    suspendiendo lo que su propio write path acababa de escribir.
+    """
+    import vault_write
+
+    for folder in vault_registry.ORDERED_SECTIONS:
+        assert vault_write._deduce_type_from_folder(folder) == (
+            vault_registry.section_default_type(folder)
+        ), f"{folder}: el write path no deriva del registro"
+        assert vault_registry.section_default_type(folder), (
+            f"{folder}: sin tipo por defecto — se escribiría sin `type:`"
+        )
+
+
+def test_las_secciones_dirigidas_por_eventos_son_las_mismas_en_todo_el_estandar():
+    """Un solo sitio decide qué vacío es correcto.
+
+    `vault_onboard` lo sabía y `vault_init` no, así que el onboard prometía en
+    su salida (`sections_left_empty_by_design`) que `18_Bugs` quedaba vacía
+    mientras el init sembraba allí un andamio. Las dos cosas eran ciertas y se
+    contradecían.
+    """
+    import vault_onboard
+
+    del_onboard = set(vault_onboard._SECCIONES_NO_POBLADAS)
+    del_registro = set(vault_registry.EVENT_DRIVEN_SECTIONS)
+    assert del_registro <= del_onboard, (
+        "el registro declara dirigidas por eventos secciones que el onboard sí "
+        f"puebla: {sorted(del_registro - del_onboard)}"
+    )
+    import vault_init
+
+    sembradas = set(vault_init._SCAFFOLD_SECTIONS) & del_registro
+    assert not sembradas, (
+        f"vault_init siembra andamios en secciones que deben quedar vacías: {sorted(sembradas)}"
+    )

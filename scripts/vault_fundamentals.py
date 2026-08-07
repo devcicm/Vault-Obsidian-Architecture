@@ -675,30 +675,23 @@ def check_note(rel_path: str) -> Dict[str, Any]:
         else ["Missing structural fields or frontmatter unparseable"],
     }
 
-    # F2 CONSISTENCIA — type matches folder
-    section_type_map = {
-        "01_Projects": "project",
-        "03_Decisions": "decision",
-        "04_Sessions": "session",
-        "05_Patterns": "pattern",
-        "06_Diagrams": "diagram",
-        "07_Knowledge": "knowledge",
-        "08_Runbooks": "runbook",
-        "09_Infrastructure": "infra",
-        "11_Code": "code",
-        "12_Bibliography": "bibliography",
-        "13_Flows": "flow",
-        "14_Requirements": "requirement",
-        "15_Tests": "test",
-        "16_AI_Governance": "ai_decision",
-    }
+    # F2 CONSISTENCIA — el tipo pertenece a la sección donde está archivada
+    #
+    # Aquí vivía una copia del mapa sección→tipo con UN tipo por sección. Medida
+    # contra un vault real, penalizaba cinco de cada seis notas de 01_Projects,
+    # todas escritas por las tools de este estándar (AP-44). El criterio ahora
+    # es el del registro y solo señala lo verificable: un tipo que es canónico
+    # de OTRA sección. Un tipo nuevo no es una violación (AP-39).
+    from vault_registry import type_misfiled_in
+
     folder = rel_path.split("/")[0] if "/" in rel_path else ""
-    expected_type = section_type_map.get(folder)
-    actual_type = fm.get("type", "").lower()
+    actual_type = str(fm.get("type", "")).lower()
     f2_issues = []
-    if expected_type and actual_type and actual_type != expected_type:
+    deberia = type_misfiled_in(folder, actual_type)
+    if deberia:
         f2_issues.append(
-            f"type '{actual_type}' does not match folder section (expected '{expected_type}')"
+            f"type '{actual_type}' es canónico de {' o '.join(deberia)}, no de "
+            f"'{folder}' — nota archivada en la sección equivocada"
         )
     results["F2"] = {"name": "CONSISTENCIA", "pass": not f2_issues, "issues": f2_issues}
 
@@ -719,8 +712,10 @@ def check_note(rel_path: str) -> Dict[str, Any]:
 
     # F4 EXACTITUD
     f4_issues = []
-    if expected_type and actual_type and actual_type != expected_type:
-        f4_issues.append(f"type='{actual_type}' inconsistent with folder '{folder}'")
+    # La comprobación tipo↔sección estaba aquí *además* de en F2, con la misma
+    # regla y distinta redacción: una nota mal archivada bajaba dos dimensiones
+    # por un solo defecto. F2 (consistencia) es su sitio; lo propio de F4 es
+    # contrastar lo declarado contra lo real, que es la línea de abajo.
     if fm.get("path"):
         declared = fm.get("path", "").replace("\\", "/")
         if declared and declared != rel_path:

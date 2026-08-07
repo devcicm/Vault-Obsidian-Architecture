@@ -49,23 +49,11 @@ from vault_lib import utcnow
 from vault_io import atomic_write_json, file_lock, write_report
 
 
-# F4 accuracy: section → expected type mapping
-SECTION_TYPE_MAP: Dict[str, str] = {
-    "01_Projects": "project",
-    "03_Decisions": "decision",
-    "04_Sessions": "session",
-    "05_Patterns": "pattern",
-    "06_Diagrams": "diagram",
-    "07_Knowledge": "knowledge",
-    "08_Runbooks": "runbook",
-    "09_Infrastructure": "infra",
-    "11_Code": "code",
-    "12_Bibliography": "bibliography",
-    "13_Flows": "flow",
-    "14_Requirements": "requirement",
-    "15_Tests": "test",
-    "16_AI_Governance": "ai_decision",
-}
+# F4 exactitud: qué tipos pertenecen a cada sección lo declara el registro.
+# El mapa que había aquí tenía un solo tipo esperado por sección y era una de
+# las tres copias que se contradecían entre sí. Ver `vault_registry.SECTION_TYPES`
+# para por qué el modelo singular no era ampliable, solo sustituible.
+from vault_registry import type_misfiled_in
 
 SKIP_FOLDERS = {"10_Migrated", "vault-backups", ".history"}
 STRUCTURAL_NAMES = frozenset({"index.md", "readme.md"})
@@ -378,13 +366,14 @@ def _score_accuracy(rel_path: str, fm: Dict[str, str]) -> Tuple[float, List[str]
     """F4 EXACTITUD — type↔folder alignment; declared path matches actual."""
     issues = []
     folder = rel_path.split("/")[0] if "/" in rel_path else ""
-    expected_type = SECTION_TYPE_MAP.get(folder)
-    actual_type = fm.get("type", "").lower()
+    actual_type = str(fm.get("type", "")).lower()
 
     score = 1.0
-    if expected_type and actual_type and actual_type != expected_type:
+    deberia = type_misfiled_in(folder, actual_type)
+    if deberia:
         issues.append(
-            f"accuracy: type='{actual_type}' does not match folder section (expected '{expected_type}')"
+            f"accuracy: type='{actual_type}' es canónico de {' o '.join(deberia)}, "
+            f"no de '{folder}' — nota archivada en la sección equivocada"
         )
         score -= 0.5
 

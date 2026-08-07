@@ -35,8 +35,16 @@ from vault_errors import wrap_main
 # propio de esta tool son las pistas léxicas que apuntan a cada sección.
 
 SECTION_HINTS: Dict[str, List[str]] = {
+    # El vocabulario de tareas ("tarea", "backlog", "todo") vivía bajo una clave
+    # `05_Tasks` que no existe en el registro — la sección se llamó así en un
+    # borrador y nunca llegó al estándar. Ninguna de esas ocho palabras podía
+    # enrutar a ningún sitio: la consulta las reconocía y las mandaba a una
+    # carpeta inexistente. No se tiran (no-derogación): el estado y el avance
+    # del trabajo son `01_Projects`, y ahí quedan.
     "01_Projects": ["proyecto", "proyectos", "project", "avance", "estado del proyecto",
-                    "roadmap", "milestone", "sprint"],
+                    "roadmap", "milestone", "sprint",
+                    "tarea", "tareas", "pendiente", "pendientes", "todo", "backlog",
+                    "task", "tasks"],
     "02_Observability": ["error", "errores", "fallo", "fallos", "bug", "excepcion",
                          "incidente", "alerta", "metrica", "metricas", "log", "logs",
                          "crash", "failure", "incident", "alert"],
@@ -45,8 +53,6 @@ SECTION_HINTS: Dict[str, List[str]] = {
                      "decide", "decided", "decision record", "trade-off"],
     "04_Sessions": ["sesion", "sesiones", "ayer", "la semana pasada", "trabajamos",
                     "hicimos", "session", "diario", "bitacora"],
-    "05_Tasks": ["tarea", "tareas", "pendiente", "pendientes", "todo", "backlog",
-                 "task", "tasks"],
     "07_Knowledge": ["que es", "como funciona", "concepto", "aprendimos", "documenta",
                      "conocimiento", "explicacion", "what is", "how does", "knowledge"],
     "08_Runbooks": ["runbook", "procedimiento", "como despliego", "como se hace",
