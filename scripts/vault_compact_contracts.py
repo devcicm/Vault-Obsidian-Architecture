@@ -34,6 +34,9 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from vault.consulta.repositorio import RepositorioConsulta  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+# El vocabulario se declara una vez y se consume, no se copia. Ver
+# `vault_vocabulario.py` para el registro y su contexto dueño.
+from vault_vocabulario import opciones as _opciones
 
 
 def _repo(root=None) -> RepositorioConsulta:
@@ -556,7 +559,7 @@ Ejemplos:
     )
     parser.add_argument(
         "--profile",
-        choices=["minimal", "standard", "full"],
+        choices=_opciones("detalle"),
         help="Perfil de tools a incluir (default: lee de 00_System/standard-version.json)",
     )
     parser.add_argument(

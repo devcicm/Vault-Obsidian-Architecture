@@ -2,7 +2,7 @@
 
 > Documento derivado. Se genera con `python scripts/vault_arch.py --blueprint`; la fuente es `CONTEXTS` en `scripts/vault_arch.py`. No se edita a mano.
 
-**9 contextos**, **113 módulos** clasificados, **59 fronteras cruzadas** pendientes de publicar puerto.
+**9 contextos**, **114 módulos** clasificados, **59 fronteras cruzadas** pendientes de publicar puerto.
 
 ## Los límites
 
@@ -62,7 +62,7 @@ graph TD
 - **Lenguaje ubicuo:** ruta, envelope, error, bloqueo, escritura atómica
 - **Puertos publicados:** `atomic_write_text` → `vault_io:atomic_write_text`, `file_lock` → `vault_io:file_lock`, `get_vault_root` → `vault_io:get_vault_root`, `wrap_main` → `vault_errors:wrap_main`
 - **No cruza:** depender de cualquier contexto de dominio
-- **Módulos (10):** `vault_encoding`, `vault_entorno`, `vault_errors`, `vault_errors_catalog`, `vault_errors_trace`, `vault_io`, `vault_lib`, `vault_log_error`, `vault_regex`, `vault_registry`
+- **Módulos (11):** `vault_encoding`, `vault_entorno`, `vault_errors`, `vault_errors_catalog`, `vault_errors_trace`, `vault_io`, `vault_lib`, `vault_log_error`, `vault_regex`, `vault_registry`, `vault_vocabulario`
 
 ## Autoría
 
@@ -115,7 +115,7 @@ Fronteras que hoy cruza (4), deuda declarada:
 ## Gobernanza
 
 - **Lenguaje ubicuo:** norma, guard, enforcement, severidad, violación
-- **Puertos publicados:** `NORM_CATALOG` → `vault_norms:NORM_CATALOG`, `auditar` → `vault_audit:vault_audit`, `puntuar_calidad` → `vault_quality_check:vault_quality_check`
+- **Puertos publicados:** `NORM_CATALOG` → `vault_norms:NORM_CATALOG`, `auditar` → `vault_audit:vault_audit`, `puntuar_calidad` → `vault_quality_check:vault_quality_check`, `valores_cia` → `vault_fundamentals:cia_valores`, `vocabulario_de_dominio` → `vault_norms:DOMAIN_STATUS_VOCABS`, `vocabulario_de_estado` → `vault_norms:STATUS_VOCAB`
 - **Módulos (9):** `vault_audit`, `vault_drift_detect`, `vault_fundamentals`, `vault_mermaid_check`, `vault_norms`, `vault_quality_check`, `vault_secret_scan`, `vault_security_scan`, `vault_validate`
 
 Fronteras que hoy cruza (6), deuda declarada:

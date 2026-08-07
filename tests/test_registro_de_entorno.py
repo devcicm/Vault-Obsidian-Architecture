@@ -167,3 +167,55 @@ def test_el_arch_publica_el_recuento():
     resultado = arch.check()
     assert resultado["env_vars_declared"] == len(VARIABLES)
     assert resultado["undeclared_env_reads"] == []
+
+
+# ── El artefacto derivado que consume el servidor MCP ────────────────────────
+
+def test_la_tabla_del_mjs_esta_al_dia():
+    """AP-47 aplicado a la configuración: el JSON refleja el registro."""
+    assert arch.tabla_de_entorno_desfasada() is False
+    assert arch.check()["mjs_env_table_stale"] is False
+
+
+def test_la_puerta_del_desfase_muerde(tmp_path, monkeypatch):
+    monkeypatch.setattr(arch, "TABLA_ENTORNO_MJS", tmp_path / "no-existe.json")
+    assert arch.tabla_de_entorno_desfasada() is True
+    assert arch.check()["ok"] is False
+
+
+def test_el_mjs_ya_no_declara_sus_propios_defaults():
+    """Cuatro variables declaradas por su cuenta; una ya divergía.
+
+    `VAULT_MCP_LOG` estaba en el registro como fichero de log con default
+    `None` y el servidor la usa como **nivel** con default `"info"`. El defecto
+    era del registro, no del `.mjs`, y salió al contrastarlo contra el único
+    código que la lee — AP-44 dentro del módulo que existe para que las dos
+    mitades no divergieran.
+    """
+    fuente = (REPO_ROOT / "mcp" / "nodejs" / "vault-mcp-server.mjs").read_text(
+        encoding="utf-8"
+    )
+    assert 'process.env.VAULT_MCP_LOG || "info"' not in fuente
+    assert 'envDefault("VAULT_MCP_LOG")' in fuente
+    assert 'envDefault("VAULT_TOOL_TIMEOUT")' in fuente
+
+
+def test_el_mjs_falla_ruidosamente_si_falta_la_tabla():
+    """Un fallback silencioso devolvería justo los defaults que esto quita."""
+    fuente = (REPO_ROOT / "mcp" / "nodejs" / "vault-mcp-server.mjs").read_text(
+        encoding="utf-8"
+    )
+    bloque = fuente.split("const ENV_DEFAULTS")[1].split("let VAULT_ROOT")[0]
+    assert "catch" not in bloque
+    assert "throw new Error" in bloque
+
+
+def test_el_nivel_de_log_del_mjs_coincide_con_el_registro():
+    """La divergencia concreta, medida contra el consumidor y no contra el nombre."""
+    import json as _json
+
+    filas = _json.loads(
+        (REPO_ROOT / "mcp" / "nodejs" / "env-table.json").read_text(encoding="utf-8")
+    )["variables"]
+    log = next(f for f in filas if f["name"] == "VAULT_MCP_LOG")
+    assert log["default"] == "info" and log["type"] == "texto"

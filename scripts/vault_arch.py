@@ -70,7 +70,7 @@ CONTEXTS: dict[str, dict] = {
             "vault_io", "vault_errors", "vault_lib", "vault_regex",
             "vault_encoding", "vault_registry", "vault_log_error",
             "vault_errors_catalog", "vault_errors_trace",
-            "vault_entorno",
+            "vault_entorno", "vault_vocabulario",
         ],
     },
     "autoria": {
@@ -122,6 +122,13 @@ CONTEXTS: dict[str, dict] = {
             "NORM_CATALOG": "vault_norms:NORM_CATALOG",
             "auditar": "vault_audit:vault_audit",
             "puntuar_calidad": "vault_quality_check:vault_quality_check",
+            # Los tres registros que `CLAUDE.md` declara fuente única de
+            # verdad y que, sin embargo, se entraban a leer por fuera de la
+            # superficie publicada. Un dato canónico que no es puerto es un
+            # dato que se acaba copiando: es lo que pasó con la severidad.
+            "vocabulario_de_estado": "vault_norms:STATUS_VOCAB",
+            "vocabulario_de_dominio": "vault_norms:DOMAIN_STATUS_VOCABS",
+            "valores_cia": "vault_fundamentals:cia_valores",
         },
         "prohibe": [],
         "modulos": [
@@ -657,8 +664,8 @@ def _nombres_desechables(arbol: ast.AST) -> set[str]:
 #: dejaría de correr **en silencio**. Cambiar un cruce declarado por un fallo
 #: silencioso de seguridad es un mal negocio (AP-37).
 #:
-#: Lo que sí se exige: que sean exactamente estos tres y que cada uno diga por
-#: qué. Un cuarto rompe la puerta.
+#: Lo que sí se exige: que estén enumerados aquí y que cada uno diga por qué.
+#: Uno sin declarar rompe la puerta.
 GANCHOS_DEL_KERNEL: dict[tuple[str, str], str] = {
     ("vault_io", "vault_secret_scan"): (
         "Preflight anti-secretos de `atomic_write_text`. Tiene que correr en el "
@@ -677,6 +684,18 @@ GANCHOS_DEL_KERNEL: dict[tuple[str, str], str] = {
     ("vault_errors", "vault_voice"): (
         "La voz del vault acompaña al error. Es presentación, no dominio, y el "
         "kernel la degrada a silencio si falla."
+    ),
+    ("vault_vocabulario", "vault_norms"): (
+        "`status` y los estados de dominio ya tienen registro canónico en "
+        "Gobernanza. El registro de vocabularios los declara con `derivado_de` "
+        "y los pide al llamarse: copiarlos aquí sería exactamente el AP-05 que "
+        "este módulo existe para cerrar. La alternativa —mudarlo a Gobernanza— "
+        "no elimina el cruce, lo mueve: `vault_log_error` es kernel y consume "
+        "la escala de severidad. Se declara el cruce en vez de disimularlo."
+    ),
+    ("vault_vocabulario", "vault_fundamentals"): (
+        "Los tres campos CIA salen de `CIA_TRIAD` por `cia_valores()`. Import "
+        "perezoso y de solo lectura: ninguna decisión viaja de vuelta."
     ),
 }
 
@@ -951,6 +970,127 @@ def _nombre_de_variable_leida(nodo: ast.AST) -> str | None:
     return None
 
 
+#: El `.mjs` no puede importar el registro Python, así que se le deriva un
+#: artefacto —igual que `tools-catalog.json`— y una puerta que falla si se
+#: desfasa (AP-47). Antes declaraba sus cuatro variables por su cuenta, y
+#: una de ellas ya divergía del registro en tipo y en default.
+TABLA_ENTORNO_MJS = REPO_ROOT / "mcp" / "nodejs" / "env-table.json"
+
+
+def tabla_de_entorno_derivada() -> dict:
+    from vault_entorno import tabla
+
+    return {
+        "_comment": (
+            "Derivado de scripts/vault_entorno.py. No se edita a mano: "
+            "regenera con `python scripts/vault_arch.py --sync-env`."
+        ),
+        "variables": tabla(),
+    }
+
+
+def tabla_de_entorno_desfasada() -> bool:
+    """`True` si el JSON del servidor ya no dice lo que dice el registro."""
+    if not TABLA_ENTORNO_MJS.exists():
+        return True
+    try:
+        actual = json.loads(TABLA_ENTORNO_MJS.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return True
+    return actual != tabla_de_entorno_derivada()
+
+
+_VOCABULARIO_PROPIETARIO = "vault_vocabulario"
+
+
+def _vocabularios_declarados() -> dict:
+    """Import perezoso, igual que el del entorno: el registro no se ata aquí."""
+    from vault_vocabulario import VOCABULARIOS
+
+    return VOCABULARIOS
+
+
+def vocabularios_sin_dueno() -> list[dict]:
+    """Un vocabulario cuyo contexto dueño no existe en `CONTEXTS`.
+
+    Es la mitad del valor del registro: sin dueño, "quién manda sobre estos
+    valores" vuelve a ser una pregunta sin respuesta y cada punto de uso la
+    contesta por su cuenta.
+    """
+    from vault_vocabulario import VOCABULARIOS
+
+    return [
+        {"vocabulary": nombre, "context": voc.contexto}
+        for nombre, voc in sorted(VOCABULARIOS.items())
+        if voc.contexto not in CONTEXTS
+    ]
+
+
+def _literales_de_cadena(nodo: ast.AST) -> tuple[str, ...] | None:
+    """Los elementos de una lista/tupla/set de cadenas literales, si lo es."""
+    if not isinstance(nodo, (ast.List, ast.Tuple, ast.Set)):
+        return None
+    valores = []
+    for e in nodo.elts:
+        if not (isinstance(e, ast.Constant) and isinstance(e.value, str)):
+            return None
+        valores.append(e.value)
+    return tuple(valores) if valores else None
+
+
+def copias_de_vocabulario() -> list[dict]:
+    """Una lista literal que reproduce un vocabulario que el registro declara.
+
+    `critical | high | medium | low` estaba escrito a mano en catorce ficheros:
+    cuatro `choices=` de argparse y diez constantes de módulo. Coincidían todas
+    el día que se midió; la que se quede atrás cuando el registro cambie
+    rechazará un valor válido o aceptará uno inventado, y ningún test lo notará.
+
+    Se compara **como conjunto**: `("low", "high", ...)` en otro orden es la
+    misma decisión copiada. Los módulos que son fuente —el registro y aquellos
+    de los que deriva— quedan fuera: ahí el literal es la declaración.
+    """
+    from vault_vocabulario import VOCABULARIOS, valores as _valores
+
+    por_conjunto: dict[frozenset, str] = {}
+    fuentes = {_VOCABULARIO_PROPIETARIO}
+    for nombre in VOCABULARIOS:
+        origen = VOCABULARIOS[nombre].derivado_de
+        if origen:
+            fuentes.add(origen.partition(":")[0])
+        conjunto = frozenset(_valores(nombre))
+        # El primero gana: `severidad` antes que sus dos ampliaciones, que no
+        # comparten conjunto con ella de todos modos.
+        por_conjunto.setdefault(conjunto, nombre)
+
+    hallazgos: list[dict] = []
+    for ruta in sorted(SCRIPTS_DIR.glob("vault_*.py")):
+        if ruta.stem in fuentes:
+            continue
+        try:
+            arbol = ast.parse(ruta.read_text(encoding="utf-8", errors="replace"))
+        except SyntaxError:
+            continue
+        for nodo in ast.walk(arbol):
+            literales = _literales_de_cadena(nodo)
+            if literales is None:
+                continue
+            nombre = por_conjunto.get(frozenset(literales))
+            if nombre is not None:
+                hallazgos.append(
+                    {
+                        "module": ruta.stem,
+                        "line": nodo.lineno,
+                        "vocabulary": nombre,
+                    }
+                )
+    return hallazgos
+
+
+def _clave_copia_de_vocabulario(x: dict) -> str:
+    return f"{x['module']}:{x['vocabulary']}"
+
+
 def _clave_fuera_de_puerto(x: dict) -> str:
     return f"{x['module']} -> {x['symbol']}"
 
@@ -1019,11 +1159,20 @@ def check(strict: bool = False) -> dict:
     rutas_nuevas = sorted(claves_r - base_rutas)
     rutas_saldadas = sorted(base_rutas - claves_r)
 
+    # Sin baseline a propósito: las catorce copias se saldaron al declarar
+    # el registro, así que la puerta puede nacer en cero. Una baseline aquí
+    # solo serviría para admitir la número quince.
+    entorno_desfasado = tabla_de_entorno_desfasada()
+    copias_vocab = copias_de_vocabulario()
+    vocab_sin_dueno = vocabularios_sin_dueno()
+
     return {
         "ok": not nuevos and not huerfanos and not ausentes and not vinc_nuevos
               and not prohibidas and not rutas_nuevas
               and not kernel_sin_declarar and not nombre_crudo and not rotos
               and not puerto_nuevos and not entorno_sin_registro
+              and not copias_vocab and not vocab_sin_dueno
+              and not entorno_desfasado
               and not (strict and (saldados or vinc_saldados or rutas_saldadas
                                    or puerto_saldados)),
         "tool": "vault_arch",
@@ -1054,6 +1203,12 @@ def check(strict: bool = False) -> dict:
         # AP-05 sobre configuración: variables leídas sin declarar.
         "env_vars_declared": _cuantas_variables_declaradas(),
         "undeclared_env_reads": entorno_sin_registro,
+        # AP-47 — el artefacto que consume el servidor MCP, al día.
+        "mjs_env_table_stale": entorno_desfasado,
+        # AP-05 sobre vocabulario: valores copiados en vez de consumidos.
+        "vocabularies_declared": len(_vocabularios_declarados()),
+        "vocabulary_copies": copias_vocab,
+        "vocabularies_without_owner": vocab_sin_dueno,
         # AP-05 — el mismo fichero declarado en dos repositorios de dominio.
         "duplicate_paths_total": len(duplicadas),
         "duplicate_paths_baseline": len(base_rutas),
@@ -1174,6 +1329,10 @@ def main() -> int:
     ap.add_argument("--map", metavar="MODULO", help="a qué contexto pertenece")
     ap.add_argument("--env", action="store_true",
                     help="la tabla de configuración derivada del registro")
+    ap.add_argument("--sync-env", action="store_true",
+                    help="regenera mcp/nodejs/env-table.json desde el registro")
+    ap.add_argument("--vocab", action="store_true",
+                    help="los vocabularios cerrados y su contexto dueño")
     args = ap.parse_args()
 
     if args.map:
@@ -1189,6 +1348,24 @@ def main() -> int:
 
         print(json.dumps({"ok": True, "tool": "vault_arch",
                           "variables": tabla()},
+                         indent=2, ensure_ascii=False))
+        return 0
+
+    if args.sync_env:
+        TABLA_ENTORNO_MJS.write_text(
+            json.dumps(tabla_de_entorno_derivada(), indent=2,
+                       ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+        print(json.dumps({"ok": True, "tool": "vault_arch",
+                          "path": str(TABLA_ENTORNO_MJS)}, ensure_ascii=False))
+        return 0
+
+    if args.vocab:
+        from vault_vocabulario import tabla
+
+        print(json.dumps({"ok": True, "tool": "vault_arch",
+                          "vocabularies": tabla()},
                          indent=2, ensure_ascii=False))
         return 0
 

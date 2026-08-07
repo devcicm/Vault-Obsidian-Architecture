@@ -49,13 +49,11 @@ from typing import Any, Dict, List, Optional
 
 PATTERN_TYPES = ["design", "architecture", "code", "integration"]
 
-PATTERN_STATUSES = [
-    "planificado",
-    "en_progreso",
-    "implementado",
-    "deprecado",
-    "refactoring",
-]
+# El vocabulario se declara una vez y se consume, no se copia. Ver
+# `vault_vocabulario.py` para el registro y su contexto dueño.
+from vault_vocabulario import opciones as _opciones
+
+PATTERN_STATUSES = _opciones("pattern_state")
 
 
 VALID_TRANSITIONS = {

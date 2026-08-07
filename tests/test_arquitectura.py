@@ -397,13 +397,27 @@ def test_el_kernel_declara_sus_ganchos_con_motivo():
     su función. El cuarto —la bitácora de vocabulario— entró así, con su motivo
     escrito, después de comprobar que cablearlo en los catorce `*_save` cruzaba
     Autoría → Índices catorce veces y aun así dejaba fuera al decimoquinto.
+
+    Los dos de `vault_vocabulario` son de otra clase y conviene no confundirlos
+    con los anteriores: no son ganchos del write path sino **lecturas perezosas
+    y de solo ida** de los registros canónicos de Gobernanza. Copiar aquí esos
+    valores sería el AP-50 que el registro existe para cerrar, y mudarlo a
+    Gobernanza no elimina el cruce: lo mueve, porque `vault_log_error` es
+    kernel y consume la escala de severidad.
     """
-    assert set(arch.GANCHOS_DEL_KERNEL) == {
+    ganchos_del_write_path = {
         ("vault_io", "vault_secret_scan"),
         ("vault_io", "vault_section_index"),
         ("vault_io", "vault_tags"),
         ("vault_errors", "vault_voice"),
     }
+    lecturas_de_registro = {
+        ("vault_vocabulario", "vault_norms"),
+        ("vault_vocabulario", "vault_fundamentals"),
+    }
+    assert set(arch.GANCHOS_DEL_KERNEL) == (
+        ganchos_del_write_path | lecturas_de_registro
+    )
     for par, motivo in arch.GANCHOS_DEL_KERNEL.items():
         assert len(motivo) > 40, f"{par} sin motivo escrito"
 

@@ -40,13 +40,41 @@ const REPO_ROOT = resolve(__dirname, "..", "..");
 const SCRIPTS_DIR = join(REPO_ROOT, "scripts");
 const VERSION = "v39.3 (SDD)";
 
-let VAULT_ROOT = process.env.VAULT_ROOT || null;
+// Las variables de entorno se declaran una sola vez, en
+// `scripts/vault_entorno.py`, y este JSON es su artefacto derivado —igual que
+// `tools-catalog.json` lo es del catálogo—. El servidor declaraba antes sus
+// cuatro por su cuenta: `VAULT_MCP_LOG` ya divergía del registro en tipo y en
+// default, y nada las comparaba. Se regenera con
+// `python scripts/vault_arch.py --sync-env`, y `--check` falla si se desfasa.
+const ENV_TABLE_PATH = join(__dirname, "env-table.json");
+// Sin `try/catch`: si la tabla no carga, eso es un defecto de la instalación,
+// no un modo degradado. Un fallback silencioso aquí devolvería exactamente los
+// defaults escritos a mano que este cambio quita, y nadie se enteraría.
+const ENV_DEFAULTS = new Map(
+  JSON.parse(readFileSync(ENV_TABLE_PATH, "utf-8")).variables.map(
+    v => [v.name, v.default],
+  ),
+);
+
+function envDefault(nombre) {
+  if (!ENV_DEFAULTS.has(nombre)) {
+    throw new Error(
+      `${nombre} no está en env-table.json. Declárala en ` +
+      `scripts/vault_entorno.py y regenera con --sync-env.`,
+    );
+  }
+  return ENV_DEFAULTS.get(nombre);
+}
+
+let VAULT_ROOT = process.env.VAULT_ROOT || envDefault("VAULT_ROOT");
+// La tabla declara `""` para SCAN_ROOTS, y «vacía» aquí significa las dos rutas
+// relativas al repo, no «ninguna». La asimetría está declarada en el registro.
 let VAULT_SCAN_ROOTS = process.env.VAULT_SCAN_ROOTS ? process.env.VAULT_SCAN_ROOTS.split(";").map(p => resolve(p)) : [
   join(REPO_ROOT, ".."),
   join(REPO_ROOT, "..", "..", ".."),
 ];
 let SSE_PORT = 0;
-let LOG_LEVEL = process.env.VAULT_MCP_LOG || "info";
+let LOG_LEVEL = process.env.VAULT_MCP_LOG || envDefault("VAULT_MCP_LOG");
 
 const VAULT_REGISTRY = new Map();
 const sessions = new Map();
@@ -910,7 +938,10 @@ function detectPython() {
 function toolTimeoutMs() {
   const s = parseInt(process.env.VAULT_TOOL_TIMEOUT || "", 10);
   if (Number.isFinite(s) && s > 0) return Math.max(s * 1000, 120000);
-  return 120000;
+  // El default sale del registro, no de un número escrito aquí. El suelo de
+  // 120 s se mantiene y es decisión de este consumidor: por MCP arranca un
+  // intérprete nuevo por llamada.
+  return Math.max(envDefault("VAULT_TOOL_TIMEOUT") * 1000, 120000);
 }
 
 function executePythonTool(scriptPath, args, vaultRoot) {

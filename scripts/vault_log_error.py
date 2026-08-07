@@ -59,7 +59,13 @@ TYPE_FOLDERS = {
 }
 
 
-SEVERITIES = ["critical", "high", "medium", "low", "info"]
+# El vocabulario se declara una vez y se consume, no se copia. Ver
+# `vault_vocabulario.py` para el registro y su contexto dueño.
+from vault_vocabulario import opciones as _opciones
+
+#: `info` no es una gravedad: es lo que se registra sin que sea un
+#: problema. Por eso es una ampliación declarada y no otra escala.
+SEVERITIES = _opciones("severidad_con_info")
 
 
 def generate_metric_content(

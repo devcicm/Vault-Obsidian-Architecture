@@ -70,6 +70,9 @@ def _utcdate() -> str:
 
 from vault_io import atomic_write_text, write_report
 from vault_secret_scan import redact_secrets as _redactar_por_registro
+# El vocabulario se declara una vez y se consume, no se copia. Ver
+# `vault_vocabulario.py` para el registro y su contexto dueño.
+from vault_vocabulario import opciones as _opciones
 
 
 IGNORED_DIRS = {
@@ -669,7 +672,7 @@ def save_findings_to_vault(findings: List[Dict], project: str) -> List[str]:
 
     report_lines.append(f"**Total hallazgos:** {len(findings)}\n")
 
-    for sev in ["critical", "high", "medium", "low"]:
+    for sev in _opciones("severidad"):
         if by_severity[sev]:
             report_lines.append(f"## {sev.upper()} ({len(by_severity[sev])})\n")
 

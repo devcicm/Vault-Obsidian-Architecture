@@ -59,7 +59,13 @@ DECISION_TYPES = [
     "process",
 ]
 
-IMPACT_LEVELS = ["low", "medium", "high", "critical"]
+# El vocabulario se declara una vez y se consume, no se copia. Ver
+# `vault_vocabulario.py` para el registro y su contexto dueño.
+from vault_vocabulario import opciones as _opciones
+
+#: El registro declara la severidad de mayor a menor; aquí se lee al revés
+#: porque el índice en esta lista **es** el nivel de impacto.
+IMPACT_LEVELS = list(reversed(_opciones("severidad")))
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))

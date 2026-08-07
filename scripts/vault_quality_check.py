@@ -56,6 +56,9 @@ from vault_io import atomic_write_json, file_lock, write_report
 from vault_registry import SCAFFOLD_TYPE, SECTION_TYPES, type_misfiled_in
 from vault_fundamentals import cia_valores
 from vault_norms import STATUS_VOCAB
+# El vocabulario se declara una vez y se consume, no se copia. Ver
+# `vault_vocabulario.py` para el registro y su contexto dueño.
+from vault_vocabulario import opciones as _opciones
 
 SKIP_FOLDERS = {"10_Migrated", "vault-backups", ".history"}
 STRUCTURAL_NAMES = frozenset({"index.md", "readme.md"})
@@ -654,7 +657,7 @@ Notas:
     parser.add_argument(
         "--integrity",
         metavar="LEVEL",
-        choices=["critical", "high", "medium", "low"],
+        choices=_opciones("severidad"),
         help="Filter output by CIA integrity level",
     )
     parser.add_argument(

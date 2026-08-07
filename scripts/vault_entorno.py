@@ -140,13 +140,20 @@ VARIABLES: Dict[str, Variable] = {
         ),
         Variable(
             "VAULT_SCAN_ROOTS", "texto", "", "meta_toolkit",
-            "Rutas separadas por `os.pathsep` donde el servidor MCP busca "
-            "vaults. Solo la lee el `.mjs`; se declara aquí para que `--env` "
-            "la publique y el servidor deje de inventarse su propia tabla.",
+            "Rutas separadas por `;` donde el servidor MCP busca vaults. Vacía "
+            "significa dos rutas relativas al repo, no «ninguna». Solo la lee "
+            "el `.mjs`; se declara aquí para que `--env` la publique y el "
+            "servidor deje de inventarse su propia tabla.",
         ),
+        # Se declaró como fichero de log con default `None` mirando el nombre y
+        # no al consumidor: el `.mjs` la usa como **nivel** con default
+        # `"info"`. Es AP-44 en pequeño, dentro del registro que existe para
+        # que las dos mitades no divergieran — y salió al contrastarlo contra
+        # el único código que la lee.
         Variable(
-            "VAULT_MCP_LOG", "ruta", None, "meta_toolkit",
-            "Fichero de log del servidor MCP. Solo la lee el `.mjs`.",
+            "VAULT_MCP_LOG", "texto", "info", "meta_toolkit",
+            "Nivel de log del servidor MCP (`info` por defecto). Solo la lee "
+            "el `.mjs`.",
         ),
     ]
 }

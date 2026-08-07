@@ -62,9 +62,13 @@ _PHASE_FOLDER = {"open": "open", "root-cause": "root-causes", "fixed": "fixed"}
 #: Vocabulario de dominio del defecto. Declarado en
 #: vault_norms.DOMAIN_STATUS_VOCABS (AP-38): `status` sale canónico y estos
 #: valores viven en `bug_state`, sin perderse ni competir por el campo.
-BUG_STATES = ["open", "confirmed", "in_fix", "fixed", "wont_fix", "duplicate"]
+# El vocabulario se declara una vez y se consume, no se copia. Ver
+# `vault_vocabulario.py` para el registro y su contexto dueño.
+from vault_vocabulario import opciones as _opciones
 
-SEVERITIES = ["critical", "high", "medium", "low"]
+BUG_STATES = _opciones("bug_state")
+
+SEVERITIES = _opciones("severidad")
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))

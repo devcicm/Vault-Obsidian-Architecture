@@ -31,7 +31,14 @@ PUERTOS = [
 
 
 def test_hay_puertos_en_los_nueve_contextos():
-    assert len(PUERTOS) == 30
+    """33: los 30 originales más los tres registros canónicos de Gobernanza.
+
+    `STATUS_VOCAB`, `DOMAIN_STATUS_VOCABS` y `cia_valores` son fuente única de
+    verdad según `CLAUDE.md` y se entraban a leer por fuera de la superficie
+    publicada — que es exactamente cómo nacieron las catorce copias de la
+    severidad. Un dato canónico que no es puerto se acaba copiando.
+    """
+    assert len(PUERTOS) == 33
     assert {c for c, _, _ in PUERTOS} == set(arch.CONTEXTS)
 
 

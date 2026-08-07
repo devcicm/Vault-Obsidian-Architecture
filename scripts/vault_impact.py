@@ -73,6 +73,9 @@ RISK_LEVELS = [
 
 
 from vault_lib import read_frontmatter
+# El vocabulario se declara una vez y se consume, no se copia. Ver
+# `vault_vocabulario.py` para el registro y su contexto dueño.
+from vault_vocabulario import opciones as _opciones
 
 
 def _load_graph(predicate_filter: Optional[List[str]] = None) -> Optional[Dict[str, Any]]:
@@ -303,7 +306,7 @@ Notas:
     )
     parser.add_argument(
         "--min-risk",
-        choices=["critical", "high", "medium", "low"],
+        choices=_opciones("severidad"),
         metavar="LEVEL",
         help="Filter by minimum stale_risk level",
     )

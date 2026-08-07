@@ -41,7 +41,11 @@ RISK_THRESHOLDS = {"critical": 8, "high": 4, "medium": 2, "low": 0}
 # Orden canónico de severidad, de mayor a menor. Lo consume el `choices` de
 # `--min-risk`, que antes era una copia literal escrita a mano: la CLI aceptaba
 # un conjunto de valores y el registro declaraba otro sin que nada lo comparase.
-MIN_RISK_ORDER = ["critical", "high", "medium", "low"]
+# El vocabulario se declara una vez y se consume, no se copia. Ver
+# `vault_vocabulario.py` para el registro y su contexto dueño.
+from vault_vocabulario import opciones as _opciones
+
+MIN_RISK_ORDER = _opciones("severidad")
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))

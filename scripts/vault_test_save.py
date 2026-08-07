@@ -80,7 +80,11 @@ def utcnow() -> str:
 
 TEST_TYPES = ["unit", "integration", "e2e", "performance", "security", "acceptance"]
 
-STATUSES = ["not_run", "pass", "fail", "blocked", "skip"]
+# El vocabulario se declara una vez y se consume, no se copia. Ver
+# `vault_vocabulario.py` para el registro y su contexto dueño.
+from vault_vocabulario import opciones as _opciones
+
+STATUSES = _opciones("test_result")
 
 
 def slugify(text: str) -> str:

@@ -107,7 +107,6 @@
     "vault_test_save -> vault_norms.status_frontmatter_lines",
     "vault_write -> vault_mermaid_check.validate_mermaid",
     "vault_write -> vault_norms.STATUS_TRANSITIONS",
-    "vault_write -> vault_norms.STATUS_VOCAB",
     "vault_write -> vault_norms.compute_norm_refs",
     "vault_write -> vault_norms.normalize_status"
   ]

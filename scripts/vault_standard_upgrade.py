@@ -42,6 +42,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.ciclo_de_vida.repositorio import RepositorioCicloDeVida  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+# El vocabulario se declara una vez y se consume, no se copia. Ver
+# `vault_vocabulario.py` para el registro y su contexto dueño.
+from vault_vocabulario import opciones as _opciones
 
 
 def _raiz() -> Path:
@@ -1021,7 +1024,7 @@ Ejemplos:
     parser.add_argument(
         "--set-profile",
         dest="set_profile",
-        choices=["minimal", "standard", "full"],
+        choices=_opciones("detalle"),
         help="Set the tool profile in standard-version.json (minimal=10, standard=30, full=61)",
     )
     parser.add_argument(

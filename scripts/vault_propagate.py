@@ -48,6 +48,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.ciclo_de_vida.repositorio import RepositorioCicloDeVida  # noqa: E402
 from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+# El vocabulario se declara una vez y se consume, no se copia. Ver
+# `vault_vocabulario.py` para el registro y su contexto dueño.
+from vault_vocabulario import opciones as _opciones
 
 
 def _raiz() -> Path:
@@ -397,7 +400,7 @@ Ejemplos:
     )
     parser.add_argument(
         "--min-priority",
-        choices=["critical", "high", "medium", "low"],
+        choices=_opciones("severidad"),
         help="Filter queue-report by minimum priority",
     )
     parser.add_argument(
