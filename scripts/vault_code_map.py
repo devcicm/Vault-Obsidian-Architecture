@@ -27,7 +27,7 @@ import re
 import sys
 
 from vault_errors import wrap_main
-from vault_lib import slugify_strict, utcnow
+from vault_lib import yaml_scalar, slugify_strict, utcnow
 from pathlib import Path
 from typing import Any, Dict
 
@@ -159,7 +159,7 @@ def vault_code_map(project: str) -> Dict[str, Any]:
 
     frontmatter.append(f"title: Code Map - {project}")
 
-    frontmatter.append(f"project: {project}")
+    frontmatter.append(f"project: {yaml_scalar(project)}")
 
     frontmatter.append(f"type: code-map")
 

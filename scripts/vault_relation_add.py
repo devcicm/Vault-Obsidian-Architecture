@@ -31,7 +31,7 @@ import re
 import sys
 
 from vault_errors import wrap_main
-from vault_lib import slugify_strict, utcnow
+from vault_lib import yaml_scalar, slugify_strict, utcnow
 import uuid
 
 from pathlib import Path
@@ -235,9 +235,9 @@ def vault_relation_add(
 
     erd_frontmatter = ["---"]
 
-    erd_frontmatter.append(f"title: {project} ERD")
+    erd_frontmatter.append(f"title: {yaml_scalar(project)} ERD")
 
-    erd_frontmatter.append(f"project: {project}")
+    erd_frontmatter.append(f"project: {yaml_scalar(project)}")
 
     erd_frontmatter.append(f"updatedAt: {utcnow()}")
 

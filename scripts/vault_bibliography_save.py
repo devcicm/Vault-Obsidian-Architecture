@@ -29,7 +29,7 @@ import re
 import sys
 
 from vault_errors import wrap_main
-from vault_lib import slugify_strict, utcnow
+from vault_lib import yaml_scalar, slugify_strict, utcnow
 from vault_io import atomic_write_text, assert_within_vault, write_report
 import uuid
 
@@ -136,16 +136,16 @@ def vault_bibliography_save(
 
     frontmatter_lines = ["---"]
 
-    frontmatter_lines.append(f"title: {title}")
+    frontmatter_lines.append(f"title: {yaml_scalar(title)}")
 
     frontmatter_lines.append(f"id: {note_id}")
 
-    frontmatter_lines.append(f"url: {url}")
+    frontmatter_lines.append(f"url: {yaml_scalar(url)}")
 
     frontmatter_lines.append(f"source_type: {source_type}")
 
     if project:
-        frontmatter_lines.append(f"project: {project}")
+        frontmatter_lines.append(f"project: {yaml_scalar(project)}")
 
     frontmatter_lines.append(f"agent: {agent or 'system'}")
 

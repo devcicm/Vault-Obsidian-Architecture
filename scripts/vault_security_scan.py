@@ -31,7 +31,7 @@ import re
 import sys
 
 from vault_errors import wrap_main
-from vault_lib import slugify_strict, utcnow
+from vault_lib import yaml_scalar, slugify_strict, utcnow
 import uuid
 
 from datetime import datetime, timezone
@@ -655,7 +655,7 @@ def save_findings_to_vault(findings: List[Dict], project: str) -> List[str]:
 
     report_lines.append(f"title: Security Scan Report - {project}")
 
-    report_lines.append(f"project: {project}")
+    report_lines.append(f"project: {yaml_scalar(project)}")
 
     report_lines.append(f"date: {timestamp}")
 
@@ -704,15 +704,15 @@ def save_findings_to_vault(findings: List[Dict], project: str) -> List[str]:
 
             note_lines = ["---"]
 
-            note_lines.append(f"title: {f['ruleId']} - {f['category']}")
+            note_lines.append(f"title: {yaml_scalar(f['ruleId'])} - {f['category']}")
 
             note_lines.append(f"ruleId: {f['ruleId']}")
 
             note_lines.append(f"severity: {f['severity']}")
 
-            note_lines.append(f"category: {f['category']}")
+            note_lines.append(f"category: {yaml_scalar(f['category'])}")
 
-            note_lines.append(f"project: {project}")
+            note_lines.append(f"project: {yaml_scalar(project)}")
 
             note_lines.append(f"date: {timestamp}")
 

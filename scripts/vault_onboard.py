@@ -42,7 +42,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from vault_errors import wrap_main
-from vault_lib import slugify_strict, utcnow
+from vault_lib import yaml_scalar, slugify_strict, utcnow
 from vault_io import assert_within_vault, atomic_write_text, normalize_stem
 from vault_norms import compute_norm_refs
 from vault_registry import ORDERED_SECTIONS
@@ -1060,7 +1060,7 @@ def _make_frontmatter(
     tipo = extra.get("type") or _deduce_type_from_folder(folder)
     lines = [
         "---",
-        f"title: {title}",
+        f"title: {yaml_scalar(title)}",
         f"id: {uuid.uuid4()}",
         f"type: {tipo}",
         f"createdAt: {now}",

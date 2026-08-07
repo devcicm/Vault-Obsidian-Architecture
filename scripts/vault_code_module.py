@@ -18,7 +18,7 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
-from vault_lib import utcnow, slugify
+from vault_lib import yaml_scalar, utcnow, slugify
 import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -230,9 +230,9 @@ def vault_code_module(
 
     frontmatter = ["---"]
     frontmatter.append(f"id: {note_id}")
-    frontmatter.append(f"title: {Path(file_path).name}")
-    frontmatter.append(f"project: {project}")
-    frontmatter.append(f"file_path: {file_path}")
+    frontmatter.append(f"title: {yaml_scalar(Path(file_path).name)}")
+    frontmatter.append(f"project: {yaml_scalar(project)}")
+    frontmatter.append(f"file_path: {yaml_scalar(file_path)}")
     frontmatter.append(f"type: code-module")
     if language:
         frontmatter.append(f"language: {language}")

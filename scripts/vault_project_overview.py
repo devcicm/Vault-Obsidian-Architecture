@@ -17,7 +17,7 @@ import uuid
 import re
 import sys
 from vault_errors import wrap_main
-from vault_lib import utcnow, slugify
+from vault_lib import yaml_scalar, utcnow, slugify
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -213,7 +213,7 @@ def vault_project_overview(
     frontmatter = ["---"]
     frontmatter.append(f"title: Overview: {project}")
     frontmatter.append(f"id: {str(uuid.uuid4())}")
-    frontmatter.append(f"project: {project}")
+    frontmatter.append(f"project: {yaml_scalar(project)}")
     frontmatter.append(f"type: project-overview")
     frontmatter.append(f"createdAt: {timestamp}")
     frontmatter.append(f"updatedAt: {timestamp}")

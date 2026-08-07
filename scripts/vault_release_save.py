@@ -29,7 +29,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
-from vault_lib import slugify_strict, utcnow
+from vault_lib import yaml_scalar, slugify_strict, utcnow
 from vault_io import assert_within_vault, atomic_write_text, file_lock, get_vault_root, update_section_index, write_report
 from vault_norms import compute_norm_refs, status_frontmatter_lines
 
@@ -191,7 +191,7 @@ def vault_release_save(
         f"updatedAt: {now}",
         f"tags: {json.dumps(['release', 'deploy', project, release_type, version])}",
         f"norm_refs: {json.dumps(norm_refs)}",
-        f"project: {project}",
+        f"project: {yaml_scalar(project)}",
         f"version: {version}",
         f"release_type: {release_type}",
         *status_frontmatter_lines("vault_release_save", status),

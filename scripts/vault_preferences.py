@@ -43,7 +43,7 @@ from vault_io import (
     atomic_write_text,
     update_section_index,
 )
-from vault_lib import parse_frontmatter_with_body, slugify, utcnow
+from vault_lib import yaml_scalar, parse_frontmatter_with_body, slugify, utcnow
 
 
 
@@ -218,10 +218,10 @@ def vault_preferences_set(
         f"title: {json.dumps(title, ensure_ascii=False)}",
         f"id: {uuid.uuid4()}",
         "type: preference",
-        f"category: {category}",
+        f"category: {yaml_scalar(category)}",
         f"strength: {strength}",
         *status_frontmatter_lines("vault_preferences", STATUS_ACTIVE),
-        f"scope: {scope}",
+        f"scope: {yaml_scalar(scope)}",
         f"statement: {json.dumps(statement, ensure_ascii=False)}",
         f"tags: {json.dumps(all_tags, ensure_ascii=False)}",
         # Entrecomillados a propósito: sin comillas, YAML los convierte en

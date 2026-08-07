@@ -60,6 +60,7 @@ from vault_regex import (
     WIKILINK_MAX_LEN,
 )
 from vault_lib import (
+    yaml_scalar,
     utcnow,
     strip_code_blocks,
     Config,
@@ -372,7 +373,7 @@ def generate_frontmatter(
 
     frontmatter = ["---"]
 
-    frontmatter.append(f"title: {title}")
+    frontmatter.append(f"title: {yaml_scalar(title)}")
 
     frontmatter.append(f"id: {existing_id or str(uuid.uuid4())}")
 

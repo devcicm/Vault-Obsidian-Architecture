@@ -29,7 +29,7 @@ import re
 import sys
 
 from vault_errors import wrap_main
-from vault_lib import slugify_strict, utcnow
+from vault_lib import yaml_scalar, slugify_strict, utcnow
 from datetime import datetime, timezone
 from vault_io import atomic_write_text, assert_within_vault, write_report
 
@@ -201,14 +201,14 @@ def vault_env_save(
 
     frontmatter.append(f"title: Environment Variables - {project}")
 
-    frontmatter.append(f"project: {project}")
+    frontmatter.append(f"project: {yaml_scalar(project)}")
 
     frontmatter.append(f"type: envs")
 
     frontmatter.append(f"updatedAt: {timestamp}")
 
     if final_description:
-        frontmatter.append(f"description: {final_description}")
+        frontmatter.append(f"description: {yaml_scalar(final_description)}")
 
     frontmatter.append(f"cia_integrity: high")
 

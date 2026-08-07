@@ -30,7 +30,7 @@ import sys
 
 from vault_errors import wrap_main
 from vault_norms import status_frontmatter_lines
-from vault_lib import slugify_strict, utcnow
+from vault_lib import yaml_scalar, slugify_strict, utcnow
 from datetime import datetime, timezone
 from vault_io import (
     write_report,
@@ -243,10 +243,10 @@ def save_infra_map(
     frontmatter.append(f"updatedAt: {utcnow()}")
 
     if project:
-        frontmatter.append(f"project: {project}")
+        frontmatter.append(f"project: {yaml_scalar(project)}")
 
     if location:
-        frontmatter.append(f"location: {location}")
+        frontmatter.append(f"location: {yaml_scalar(location)}")
 
     frontmatter.append("---")
 
@@ -311,20 +311,20 @@ def vault_infra_save(
 
     frontmatter = ["---"]
 
-    frontmatter.append(f"title: {name}")
+    frontmatter.append(f"title: {yaml_scalar(name)}")
 
     frontmatter.append(f"id: {str(uuid.uuid4())}")
 
     frontmatter.append(f"type: {component_type}")
 
-    frontmatter.append(f"location: {location}")
+    frontmatter.append(f"location: {yaml_scalar(location)}")
 
     frontmatter.append(f"createdAt: {timestamp}")
 
     frontmatter.append(f"updatedAt: {timestamp}")
 
     if project:
-        frontmatter.append(f"project: {project}")
+        frontmatter.append(f"project: {yaml_scalar(project)}")
 
     if status:
         frontmatter.extend(status_frontmatter_lines("vault_infra_save", status))

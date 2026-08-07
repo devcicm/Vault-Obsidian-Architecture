@@ -31,7 +31,7 @@ import re
 import sys
 
 from vault_errors import wrap_main
-from vault_lib import utcnow, slugify
+from vault_lib import yaml_scalar, utcnow, slugify
 from vault_io import (
     write_report,
     atomic_write_text,
@@ -131,14 +131,14 @@ def vault_knowledge_save(
 
     frontmatter.append(f"id: {str(uuid.uuid4())}")
 
-    frontmatter.append(f"category: {category}")
+    frontmatter.append(f"category: {yaml_scalar(category)}")
 
     frontmatter.append(f"createdAt: {timestamp}")
 
     frontmatter.append(f"updatedAt: {timestamp}")
 
     if project:
-        frontmatter.append(f"project: {project}")
+        frontmatter.append(f"project: {yaml_scalar(project)}")
 
     if tags:
         frontmatter.append(f"tags: {json.dumps(tags)}")

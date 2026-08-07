@@ -29,7 +29,8 @@ import re
 import sys
 
 from vault_errors import wrap_main
-from vault_lib import slugify_strict, utcnow
+from vault_registry import section_default_type
+from vault_lib import yaml_scalar, slugify_strict, utcnow
 from vault_io import atomic_write_text, assert_within_vault, write_report
 import uuid
 
@@ -161,15 +162,27 @@ def vault_diagram_save(
 
     frontmatter = ["---"]
 
-    frontmatter.append(f"title: {title}")
+    frontmatter.append(f"title: {yaml_scalar(title)}")
 
     frontmatter.append(f"id: {str(uuid.uuid4())}")
 
-    frontmatter.append(f"project: {project}")
+    frontmatter.append(f"project: {yaml_scalar(project)}")
 
     frontmatter.append(f"diagramType: {diagram_type}")
 
-    frontmatter.append(f"category: {category}")
+    frontmatter.append(f"category: {yaml_scalar(category)}")
+
+    # Ni `tags` ni `type` se escribían, y las dos son exigibles por normas que
+    # este mismo estándar hace cumplir: AP-26 pide al menos un tag a toda nota
+    # de contenido y AP-27 pide el tipo declarado. Los seis diagramas del vault
+    # de pruebas los reprobaba `vault_validate` — notas escritas por esta tool,
+    # suspendidas por el auditor de al lado (AP-44). El tipo sale del registro,
+    # no de un literal.
+    frontmatter.append(f"type: {section_default_type('06_Diagrams')}")
+
+    frontmatter.append(
+        f"tags: {yaml_scalar(sorted({t for t in (project, category, 'diagram') if t}))}"
+    )
 
     frontmatter.append(f"createdAt: {timestamp}")
 

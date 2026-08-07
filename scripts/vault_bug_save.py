@@ -50,7 +50,7 @@ from vault_io import (
     assert_within_vault,
     safe_wikilink,
 )
-from vault_lib import slugify_strict, utcnow
+from vault_lib import yaml_scalar, slugify_strict, utcnow
 
 
 #: Fases del defecto. El nombre es la subcarpeta: la fase y la ubicación no
@@ -188,7 +188,7 @@ def vault_bug_save(
     frontmatter.append(f"id: {note_id}")
     frontmatter.append(f"bug_id: {bug_id}")
     frontmatter.append("type: bug")
-    frontmatter.append(f"project: {project}")
+    frontmatter.append(f"project: {yaml_scalar(project)}")
     frontmatter.append(f"phase: {phase}")
     frontmatter.extend(status_frontmatter_lines("vault_bug_save", status))
     frontmatter.append(f"severity: {severity}")
@@ -201,7 +201,7 @@ def vault_bug_save(
     if caused_by:
         frontmatter.append(f"caused_by: {json.dumps(caused_by, ensure_ascii=False)}")
     if verified_by:
-        frontmatter.append(f"verified_by: {verified_by}")
+        frontmatter.append(f"verified_by: {yaml_scalar(verified_by)}")
     frontmatter.append(f"createdAt: {now}")
     frontmatter.append(f"updatedAt: {now}")
     frontmatter.append(f"tags: {json.dumps(tags_list, ensure_ascii=False)}")

@@ -29,7 +29,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
-from vault_lib import slugify_strict, utcnow
+from vault_lib import yaml_scalar, slugify_strict, utcnow
 from vault_io import assert_within_vault, atomic_write_text, get_vault_root, update_section_index, write_report
 from vault_norms import compute_norm_refs, status_frontmatter_lines
 
@@ -233,7 +233,7 @@ _Qué salió bien, qué salió mal, qué hacer diferente._
         f"updatedAt: {now}",
         f"tags: {json.dumps(['incident', project, severity.lower(), status])}",
         f"norm_refs: {json.dumps(norm_refs)}",
-        f"project: {project}",
+        f"project: {yaml_scalar(project)}",
         f"severity: {severity}",
         *status_frontmatter_lines("vault_incident_save", status),
         f"detected_at: {detected_at}",

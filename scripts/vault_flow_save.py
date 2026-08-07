@@ -43,7 +43,7 @@ import re
 import sys
 
 from vault_errors import wrap_main
-from vault_lib import slugify_strict, utcnow
+from vault_lib import yaml_scalar, slugify_strict, utcnow
 from datetime import datetime, timezone
 from vault_io import atomic_write_text, assert_within_vault, write_report
 import uuid
@@ -175,8 +175,8 @@ def vault_flow_save(
     frontmatter = [
         "---",
         f"id: {note_id}",
-        f"title: {name}",
-        f"project: {project}",
+        f"title: {yaml_scalar(name)}",
+        f"project: {yaml_scalar(project)}",
         f"flow_type: {flow_type}",
         f"type: flow",
         f"createdAt: {created_at}",

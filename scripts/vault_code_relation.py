@@ -29,7 +29,7 @@ import re
 import sys
 
 from vault_errors import wrap_main
-from vault_lib import slugify_strict, utcnow
+from vault_lib import yaml_scalar, slugify_strict, utcnow
 import uuid
 
 from pathlib import Path
@@ -187,7 +187,7 @@ def save_code_map(project: str, mermaid_content: str) -> Path:
 
     frontmatter.append(f"title: Code Map - {project}")
 
-    frontmatter.append(f"project: {project}")
+    frontmatter.append(f"project: {yaml_scalar(project)}")
 
     frontmatter.append(f"type: code-map")
 

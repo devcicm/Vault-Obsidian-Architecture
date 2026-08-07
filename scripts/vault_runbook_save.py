@@ -29,7 +29,7 @@ import re
 import sys
 
 from vault_errors import wrap_main
-from vault_lib import utcnow, slugify
+from vault_lib import yaml_scalar, utcnow, slugify
 from vault_io import atomic_write_text, assert_within_vault, safe_wikilink, write_report
 import uuid
 
@@ -117,9 +117,9 @@ def vault_runbook_save(
 
     frontmatter.append(f"id: {str(uuid.uuid4())}")
 
-    frontmatter.append(f"project: {project}")
+    frontmatter.append(f"project: {yaml_scalar(project)}")
 
-    frontmatter.append(f"category: {category}")
+    frontmatter.append(f"category: {yaml_scalar(category)}")
 
     frontmatter.append(f"trigger: {trigger}")
 

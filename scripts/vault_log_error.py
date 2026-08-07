@@ -38,7 +38,7 @@ import re
 import sys
 
 from vault_errors import wrap_main
-from vault_lib import utcnow, slugify
+from vault_lib import yaml_scalar, utcnow, slugify
 from vault_io import atomic_write_text, get_vault_root, safe_wikilink, write_report
 from datetime import datetime, timezone
 
@@ -331,7 +331,7 @@ def vault_log_error(
     fm_tags = [project, error_type] if project else [error_type]
     frontmatter = (
         f"---\n"
-        f"title: {title}\n"
+        f"title: {yaml_scalar(title)}\n"
         f"id: {str(uuid.uuid4())}\n"
         f"type: {error_type}\n"
         f"createdAt: {utcnow()}\n"

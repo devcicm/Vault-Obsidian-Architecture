@@ -31,7 +31,7 @@ import re
 import sys
 
 from vault_errors import wrap_main
-from vault_lib import slugify_strict, utcnow
+from vault_lib import yaml_scalar, slugify_strict, utcnow
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -256,10 +256,10 @@ def vault_infra_map(
     frontmatter.append(f"updatedAt: {utcnow()}")
 
     if project:
-        frontmatter.append(f"project: {project}")
+        frontmatter.append(f"project: {yaml_scalar(project)}")
 
     if location:
-        frontmatter.append(f"location: {location}")
+        frontmatter.append(f"location: {yaml_scalar(location)}")
 
     frontmatter.append("---")
 

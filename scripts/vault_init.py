@@ -35,7 +35,7 @@ from typing import Any, Dict
 
 from vault_errors import wrap_main
 from vault_io import atomic_write_json, write_report
-from vault_lib import utcnow
+from vault_lib import yaml_scalar, utcnow
 from vault_standard_upgrade import CURRENT_VERSION
 from vault_registry import (
     standard_folders,
@@ -129,7 +129,7 @@ python scripts/{tool_hint}
 """
     frontmatter = (
         "---\n"
-        f"title: {section} — Guía rápida\n"
+        f"title: {yaml_scalar(section)} — Guía rápida\n"
         f"id: {section.lower()}-primer\n"
         f"createdAt: {utcnow()}\n"
         f"updatedAt: {utcnow()}\n"

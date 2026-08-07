@@ -36,7 +36,7 @@ import sys
 
 from vault_errors import wrap_main
 from vault_norms import status_frontmatter_lines
-from vault_lib import slugify_strict, utcnow
+from vault_lib import yaml_scalar, slugify_strict, utcnow
 from datetime import datetime, timezone
 from vault_io import (
     write_report,
@@ -181,9 +181,9 @@ def vault_requirement_save(
 
     frontmatter.append(f"req_id: {req_id}")
 
-    frontmatter.append(f"title: {title}")
+    frontmatter.append(f"title: {yaml_scalar(title)}")
 
-    frontmatter.append(f"project: {project}")
+    frontmatter.append(f"project: {yaml_scalar(project)}")
 
     frontmatter.append(f"req_type: {req_type}")
 

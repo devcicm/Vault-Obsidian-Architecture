@@ -35,7 +35,7 @@ import re
 import sys
 
 from vault_errors import wrap_main
-from vault_lib import slugify
+from vault_lib import yaml_scalar, slugify
 
 from vault_io import (
     assert_within_vault,
@@ -314,7 +314,7 @@ def process_file_staging(file_path: Path, project: str) -> Optional[Dict[str, An
 
     frontmatter = ["---"]
 
-    frontmatter.append(f"title: {file_path.stem}")
+    frontmatter.append(f"title: {yaml_scalar(file_path.stem)}")
 
     frontmatter.append(f"id: {str(uuid.uuid4())}")
 
@@ -334,7 +334,7 @@ def process_file_staging(file_path: Path, project: str) -> Optional[Dict[str, An
 
     frontmatter.append(f"distributedTo: ''")
 
-    frontmatter.append(f"project: {project}")
+    frontmatter.append(f"project: {yaml_scalar(project)}")
 
     frontmatter.append("cia_integrity: low")
 
@@ -559,7 +559,7 @@ _{staged["preview"][:200]}..._
 
     report_lines.append(f"title: Migration Report - {project}")
 
-    report_lines.append(f"project: {project}")
+    report_lines.append(f"project: {yaml_scalar(project)}")
 
     report_lines.append(f"date: {timestamp}")
 

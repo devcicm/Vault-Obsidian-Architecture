@@ -37,7 +37,7 @@ import re
 import sys
 
 from vault_errors import wrap_main
-from vault_lib import slugify_strict, utcnow
+from vault_lib import yaml_scalar, slugify_strict, utcnow
 from vault_io import (
     write_report,
     atomic_write_text,
@@ -183,9 +183,9 @@ def vault_ai_decision(
 
     frontmatter.append(f"decision_id: {decision_id}")
 
-    frontmatter.append(f"title: {title}")
+    frontmatter.append(f"title: {yaml_scalar(title)}")
 
-    frontmatter.append(f"project: {project}")
+    frontmatter.append(f"project: {yaml_scalar(project)}")
 
     frontmatter.append(f"decision_type: {decision_type}")
 

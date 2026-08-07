@@ -32,7 +32,7 @@ import sys
 
 from vault_errors import wrap_main
 from vault_norms import status_frontmatter_lines
-from vault_lib import utcnow, slugify
+from vault_lib import yaml_scalar, utcnow, slugify
 from vault_io import (
     write_report,
     atomic_write_text,
@@ -240,7 +240,7 @@ def vault_pattern_save(
 
     frontmatter.append(f"id: {existing_id or str(uuid.uuid4())}")
 
-    frontmatter.append(f"project: {project}")
+    frontmatter.append(f"project: {yaml_scalar(project)}")
 
     frontmatter.append(f"type: {pattern_type}")
 
