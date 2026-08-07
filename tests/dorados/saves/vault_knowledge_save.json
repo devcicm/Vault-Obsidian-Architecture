@@ -12,5 +12,5 @@
     "updated": 1,
     "written": 3
   },
-  "nota": "---\ntitle: \"Un concepto con acentuaci\\u00f3n\"\nid: <UUID>\ncategory: concept\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ncia_integrity: medium\ncia_availability: medium\ncia_sensitivity: internal\nagent: system\n---\n\nUna línea.\nOtra línea.\nY una tercera con palabras."
+  "nota": "---\ntitle: Un concepto con acentuación\nid: <UUID>\ncategory: concept\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ncia_integrity: medium\ncia_availability: medium\ncia_sensitivity: internal\nagent: system\n---\n\nUna línea.\nOtra línea.\nY una tercera con palabras."
 }

@@ -69,6 +69,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -232,37 +233,36 @@ def vault_pattern_save(
             "message": str(exc),
         }
 
-    frontmatter = ["---"]
+    frontmatter = Frontmatter()
 
-    frontmatter.append(f"title: {json.dumps(name)}")
+    frontmatter.set("title", name)
 
-    frontmatter.append(f"id: {existing_id or str(uuid.uuid4())}")
+    frontmatter.set("id", existing_id or str(uuid.uuid4()))
 
-    frontmatter.append(f"project: {yaml_scalar(project)}")
+    frontmatter.set("project", project)
 
-    frontmatter.append(f"type: {pattern_type}")
+    frontmatter.set("type", pattern_type)
 
-    frontmatter.extend(status_frontmatter_lines("vault_pattern_save", status))
+    frontmatter.lineas(status_frontmatter_lines("vault_pattern_save", status))
 
-    frontmatter.append(f"createdAt: {timestamp}")
+    frontmatter.set("createdAt", timestamp)
 
-    frontmatter.append(f"updatedAt: {timestamp}")
+    frontmatter.set("updatedAt", timestamp)
 
     if files:
-        frontmatter.append(f"files: {json.dumps(files)}")
+        frontmatter.set("files", files)
 
     if related_patterns:
-        frontmatter.append(f"relatedPatterns: {json.dumps(related_patterns)}")
+        frontmatter.set("relatedPatterns", related_patterns)
 
-    frontmatter.append(f"cia_integrity: medium")
+    frontmatter.set("cia_integrity", "medium")
 
-    frontmatter.append(f"cia_availability: medium")
+    frontmatter.set("cia_availability", "medium")
 
-    frontmatter.append(f"cia_sensitivity: internal")
+    frontmatter.set("cia_sensitivity", "internal")
 
-    frontmatter.append(f"agent: system")
+    frontmatter.set("agent", "system")
 
-    frontmatter.append("---")
 
     body_sections = []
 
@@ -291,7 +291,7 @@ def vault_pattern_save(
 
     body_sections.append(f"\n---\n*Última actualización: {timestamp}*")
 
-    final_content = "\n\n".join(["\n".join(frontmatter)] + body_sections)
+    final_content = "\n\n".join([frontmatter.render()] + body_sections)
 
     pattern_path.parent.mkdir(parents=True, exist_ok=True)
 

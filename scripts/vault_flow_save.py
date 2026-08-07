@@ -58,6 +58,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -172,22 +173,19 @@ def vault_flow_save(
             "message": str(exc),
         }
 
-    frontmatter = [
-        "---",
-        f"id: {note_id}",
-        f"title: {yaml_scalar(name)}",
-        f"project: {yaml_scalar(project)}",
-        f"flow_type: {flow_type}",
-        f"type: flow",
-        f"createdAt: {created_at}",
-        f"updatedAt: {now}",
-        f"tags: {json.dumps(list(dict.fromkeys(tag_list)))}",
-        f"cia_integrity: medium",
-        f"cia_availability: medium",
-        f"cia_sensitivity: internal",
-        f"agent: system",
-        "---",
-    ]
+    frontmatter = Frontmatter()
+    frontmatter.set("id", note_id)
+    frontmatter.set("title", name)
+    frontmatter.set("project", project)
+    frontmatter.set("flow_type", flow_type)
+    frontmatter.set("type", "flow")
+    frontmatter.set("createdAt", created_at)
+    frontmatter.set("updatedAt", now)
+    frontmatter.set("tags", list(dict.fromkeys(tag_list)))
+    frontmatter.set("cia_integrity", "medium")
+    frontmatter.set("cia_availability", "medium")
+    frontmatter.set("cia_sensitivity", "internal")
+    frontmatter.set("agent", "system")
 
     body = []
 
@@ -241,7 +239,7 @@ def vault_flow_save(
 
         body.append("\n".join(step_rows))
 
-    final_content = "\n".join(frontmatter) + "\n\n" + "\n\n".join(body)
+    final_content = frontmatter.render() + "\n\n" + "\n\n".join(body)
 
     flow_dir.mkdir(parents=True, exist_ok=True)
 

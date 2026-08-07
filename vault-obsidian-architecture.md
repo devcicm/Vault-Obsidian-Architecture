@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.0 — 2026-08-06  
+**Versión:** v40.1 — 2026-08-07  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -3476,7 +3476,7 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **61 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **62 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -5402,6 +5402,69 @@ por MCP y se contrasta el envelope contra el contrato, y en el caso de
 criterio del consumidor y no el propio (AP-44). Tests en
 `tests/test_ap48_implementacion_paralela.py`.
 
+### AP-50 — Decisión duplicada sin dueño declarado
+
+**Severidad:** high · **Enforcement:** `guard+audit` · **Introducida:** v40.1
+
+**Síntoma:** la misma **decisión** —qué valores son válidos, cuál es el default,
+cómo se escapa un campo— se toma en más de un punto de uso, y ningún registro
+declara quién manda. No es AP-05: aquel habla de un **dato** con dos fuentes, y
+se ve porque las dos copias divergen. Esto se ve cuando ya divergieron, que es
+tarde.
+
+Lo que lo hace caro es que cada copia parece correcta en su sitio.
+`SEVERITIES = ['critical', 'high', 'medium', 'low']` no está mal escrito en
+ninguno de los catorce ficheros donde se midió; está mal que sean catorce y que
+nada los compare. El día que el registro cambie, la copia que se quede atrás
+rechazará un valor válido o aceptará uno inventado, y ningún test lo notará
+porque cada fichero sigue siendo coherente consigo mismo.
+
+**Medido en v40.1** por sus tres guards: **0 copias de vocabulario, 0 lecturas de
+entorno sin declarar, 0 vocabularios sin contexto dueño**. Eran 14 copias del
+vocabulario en 13 módulos —cuatro como `choices=` de argparse y diez como
+constante— y 13 variables de entorno con su default escrito en cada punto de
+lectura, de las que solo seis estaban documentadas. Dos ya habían divergido
+antes de que existiera el guard: `VAULT_VOICE` se comparaba contra `'verbose'`
+en un módulo y contra `'0'` con default `'1'` en otro, y `VAULT_MCP_LOG` estaba
+declarada como fichero de log mientras el único código que la lee la usa como
+nivel con default `'info'`.
+
+El caso que cerró la norma fue el frontmatter. Diecisiete `*_save` lo escribían
+a mano —AP-46, que llevaba versiones declarada y no tenía dónde cumplirse— con
+**cuatro criterios de escapado conviviendo en el mismo vault**: `json.dumps`,
+`yaml_scalar`, f-string crudo y comillas escritas a mano dentro de un f-string.
+Cada uno parecía correcto en su fichero. Juntos guardaban `Rotación` como
+`Rotación` en tres tools, y producían YAML inválido en cuanto un valor
+llevaba `: ` — en cuyo caso la nota pierde **todo** el frontmatter al leerse:
+sin id, sin tags, sin tipo, y sin error en ninguna parte.
+
+**El dueño es la mitad que faltaba.** `vault_norms.DOMAIN_STATUS_VOCABS` ya había
+resuelto esto para `status` en v39 y se quedó solo: compartir la constante evita
+la copia, pero no contesta quién decide cuándo cambia. Por eso cada entrada del
+registro declara el contexto acotado que manda sobre ella, y ese contexto tiene
+que existir en `vault_arch.CONTEXTS`.
+
+**Prevención:** registro canónico con dueño, consumidores derivados, guard sin
+baseline. Los vocabularios cerrados en `scripts/vault_vocabulario.py`, la
+configuración en `scripts/vault_entorno.py`, el escapado del frontmatter en
+`vault/autoria/frontmatter.py`, y `vault_arch --check` fallando si aparece una
+copia, una lectura sin declarar o un vocabulario huérfano. **Sin baseline a
+propósito**: las catorce copias se saldaron al declarar el registro, así que la
+puerta nace en cero y una baseline solo serviría para admitir la número quince.
+Lo que ya tiene registro canónico no se copia: se declara `derivado_de` y se
+resuelve al llamarse, nunca al importarse (AP-49).
+
+**Se comprueba contra la salida, no contra el código:** los diecisiete `*_save`
+quedaron congelados en un test de caracterización capturado **antes** de tocar
+nada —envelope y nota, con los volátiles normalizados— y la unificación se
+aceptó porque **ningún envelope cambió**. Los siete cambios de nota son los
+buscados, y están en el dorado del mismo commit. Esa caracterización, tomada
+antes del refactor, destapó por sí sola cuatro defectos que ningún test veía,
+todos de la misma familia: un error de invocación del usuario presentado como
+fallo crítico interno de la tool. Tests en
+`tests/test_ap50_decision_duplicada.py` y
+`tests/test_caracterizacion_de_los_save.py`.
+
 ---
 
 ## Patrones recomendados
@@ -6007,6 +6070,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.1 | 2026-08-07 | AP-50 (decisión duplicada sin dueño declarado): las decisiones cerradas del estándar pasan a registros con contexto dueño — `vault_vocabulario.py` (12 vocabularios, 14 copias saldadas en 13 módulos), `vault_entorno.py` (13 variables, dos de ellas ya divergidas) y `vault/autoria/frontmatter.py`, el escritor único que cumple AP-46 en el punto de uso y sustituye los cuatro criterios de escapado que convivían en los 17 `*_save`; puertos de contexto verificados por AST en `vault_arch --check`; caracterización congelada de los 17 `*_save`, que destapó cuatro defectos presentados como fallo crítico interno |
 | v40.0 | 2026-08-06 | Contextos acotados: los 112 módulos de `scripts/` se reparten en ocho contextos de dominio más un kernel compartido, con `scripts/vault_arch.py` como registro ejecutable de fronteras (`--check`, `--blueprint`, `--map`) y baseline que solo encoge; AP-49 (vínculo resuelto en tiempo de import) pasa de 82 vínculos congelados en 62 módulos a 0, con lo que `set_vault_root()` deja de ser una costura decorativa; `VaultContext` inmutable y puertos `Protocol` en `vault/kernel/`; la prohibición del Meta-toolkit deja de ser prosa y se mide por AST (`forbidden_writes`); puerta nueva de AP-05 sobre rutas declaradas en dos repositorios de dominio |
 | v39.6 | 2026-08-06 | Las dos tools base64 (únicas sin script Python) ejercidas por primera vez: contrato incumplido, backup incompleto silencioso y restore fuera del vault con traversal sin validar; `vault_smoke` contrasta el envelope contra `declared_returns` como puerta dura; invariante nuevo del tool-spec contra módulos ejecutables sin clasificar (5 encontrados) y motivo obligatorio en toda entrada no publicada; `01-state-machines.md` derivado de `vault_norms.LIFECYCLE_REGISTRY` (dos de trece filas estaban desfasadas) |
 | v39.5 | 2026-08-06 | AP-48 (implementación paralela por camino de acceso): el servidor MCP servía backend nativo en Node para 7 tools que también tenían script Python, con envelopes que no coincidían con el contrato y `vault_graph` devolviendo `ok` sin escribir el grafo; catálogo de normas generado con las cuatro familias (PAT y SP faltaban); prosa constante de `docs/sdd/` declarada como deuda que solo puede encoger |
@@ -6326,6 +6390,24 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v40.1 — 2026-08-07 `git: pending`
+
+**Las decisiones, con dueño**
+
+v40.0 dibujó las fronteras: nueve contextos acotados y un guard que los vigila. Lo que quedó a la vista al limpiarlas es que la frontera contestaba *dónde vive* cada módulo y no *quién decide* — y los cuatro defectos de las últimas rondas eran todos lo mismo: **la misma decisión tomada en más de un sitio sin que ningún registro dijera quién manda**. No datos con dos fuentes (eso es AP-05, y se nota porque divergen), sino criterios: qué valores valen, cuál es el default, cómo se escapa un campo. Se notan cuando ya divergieron.
+
+- **AP-50 — decisión duplicada sin dueño declarado**, `high`, `guard+audit`, sin baseline a propósito. Tres detectores en `vault_arch --check`: copias de vocabulario, lecturas de entorno sin registro y vocabularios sin contexto dueño. Los tres en cero.
+- **`scripts/vault_vocabulario.py`** — 12 vocabularios cerrados, cada uno con su contexto dueño, que tiene que existir en `vault_arch.CONTEXTS`. Saldó 14 copias en 13 módulos, cuatro de ellas `choices=` de argparse.
+- **`scripts/vault_entorno.py`** — 13 variables con nombre, tipo, default, contexto que la lee y para qué sirve. **Dos ya habían divergido**: `VAULT_VOICE` se comparaba contra `'verbose'` en un módulo y contra `'0'` con default `'1'` en otro; `VAULT_MCP_LOG` estaba documentada como fichero de log mientras el único código que la lee la usa como nivel.
+- **`vault/autoria/frontmatter.py`** — AP-46 cumplida por fin en el punto de uso. Los 17 `*_save` escribían su frontmatter a mano con **cuatro criterios de escapado** conviviendo (`json.dumps`, `yaml_scalar`, f-string crudo, comillas a mano dentro de un f-string). Tres tools guardaban `Rotación` como `Rotación`, y el f-string crudo producía YAML inválido en cuanto el valor llevaba `: ` — con lo que la nota pierde **todo** el frontmatter al leerse, sin error en ninguna parte.
+- **Puertos verificados.** `puertos` y `lenguaje` de cada contexto eran prosa; ahora el guard resuelve cada puerto declarado contra el módulo real y comprueba que los cruces entren por él, con baseline que solo encoge.
+
+**Lo que destapó la caracterización, que es el motivo de haberla capturado antes.** Los 17 `*_save` se congelaron —envelope y nota, volátiles normalizados— **antes** de tocar una línea. Encontró cuatro defectos que ningún test veía, todos de la misma familia: **un error de invocación del usuario presentado como fallo crítico interno de la tool**. Tres `main()` devolvían un `dict` en la rama de JSON inválido, que llegaba a `sys.exit()` y explotaba: quien escribía mal un `--config` veía un `UNEXPECTED_ERROR` de severidad *critical* con traceback en vez del mensaje «Invalid JSON in --config» que la tool ya tenía escrito para ese caso exacto. Y `--vars` y `--steps` validaban que el argumento fuera JSON pero no que fuera lo que su propia ayuda documenta, así que un array de cadenas moría con `AttributeError` envuelto igual. Ninguno era visible desde `vault-sandbox/`, que no tiene un solo título acentuado en estas tools: el «vault ajeno» de la regla 7 fue aquí simplemente datos con acentos y argumentos mal escritos.
+
+**Criterio de aceptación, cumplido:** **ningún envelope cambió**. Los siete cambios de nota son los buscados —cinco títulos que dejan de citarse sin necesidad, uno que sigue citado porque contiene `: `, y catorce líneas en blanco de más en `vault_diagram_save`— y están en el dorado del mismo commit. Las asimetrías de contrato entre los 17 (`--agent` en 8, `file_lock` en 1, `--dry-run` en 0) quedan declaradas como deuda: unificarlas es otra tanda.
 
 ---
 

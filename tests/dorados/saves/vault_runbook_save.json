@@ -12,5 +12,5 @@
     "updated": 2,
     "written": 4
   },
-  "nota": "---\ntitle: \"Rotaci\\u00f3n de credenciales\"\nid: <UUID>\nproject: demo\ncategory: maintenance\ntrigger: Cada noventa días\nstatus: active\nexecutions: 0\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ncia_integrity: medium\ncia_availability: high\ncia_sensitivity: internal\nagent: system\n---\n\n## Trigger\n\n>Cada noventa días\n\n## Pasos\n\n\n### 1. Generar la credencial nueva\n\n```bash\nvault kv put\n```\n\n### 2. Desplegarla y verificar el índice\n\n## Historial de Ejecuciones\n\n*Sin ejecuciones registradas.*"
+  "nota": "---\ntitle: Rotación de credenciales\nid: <UUID>\nproject: demo\ncategory: maintenance\ntrigger: Cada noventa días\nstatus: active\nexecutions: 0\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ncia_integrity: medium\ncia_availability: high\ncia_sensitivity: internal\nagent: system\n---\n\n## Trigger\n\n>Cada noventa días\n\n## Pasos\n\n\n### 1. Generar la credencial nueva\n\n```bash\nvault kv put\n```\n\n### 2. Desplegarla y verificar el índice\n\n## Historial de Ejecuciones\n\n*Sin ejecuciones registradas.*"
 }

@@ -53,6 +53,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -111,38 +112,37 @@ def vault_runbook_save(
             "message": str(exc),
         }
 
-    frontmatter = ["---"]
+    frontmatter = Frontmatter()
 
-    frontmatter.append(f"title: {json.dumps(title)}")
+    frontmatter.set("title", title)
 
-    frontmatter.append(f"id: {str(uuid.uuid4())}")
+    frontmatter.set("id", str(uuid.uuid4()))
 
-    frontmatter.append(f"project: {yaml_scalar(project)}")
+    frontmatter.set("project", project)
 
-    frontmatter.append(f"category: {yaml_scalar(category)}")
+    frontmatter.set("category", category)
 
-    frontmatter.append(f"trigger: {trigger}")
+    frontmatter.set("trigger", trigger)
 
-    frontmatter.append(f"status: active")
+    frontmatter.set("status", "active")
 
-    frontmatter.append(f"executions: 0")
+    frontmatter.set("executions", 0)
 
-    frontmatter.append(f"createdAt: {timestamp}")
+    frontmatter.set("createdAt", timestamp)
 
-    frontmatter.append(f"updatedAt: {timestamp}")
+    frontmatter.set("updatedAt", timestamp)
 
     if estimated_time:
-        frontmatter.append(f"estimatedTime: {estimated_time}")
+        frontmatter.set("estimatedTime", estimated_time)
 
-    frontmatter.append(f"cia_integrity: medium")
+    frontmatter.set("cia_integrity", "medium")
 
-    frontmatter.append(f"cia_availability: high")
+    frontmatter.set("cia_availability", "high")
 
-    frontmatter.append(f"cia_sensitivity: internal")
+    frontmatter.set("cia_sensitivity", "internal")
 
-    frontmatter.append(f"agent: system")
+    frontmatter.set("agent", "system")
 
-    frontmatter.append("---")
 
     body_sections = []
 
@@ -176,7 +176,7 @@ def vault_runbook_save(
         "## Historial de Ejecuciones\n\n*Sin ejecuciones registradas.*"
     )
 
-    final_content = "\n".join(frontmatter) + "\n\n" + "\n\n".join(body_sections)
+    final_content = frontmatter.render() + "\n\n" + "\n\n".join(body_sections)
 
     folder.mkdir(parents=True, exist_ok=True)
 

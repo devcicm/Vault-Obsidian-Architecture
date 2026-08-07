@@ -32,6 +32,10 @@ from vault_errors import wrap_main
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from vault_io import assert_within_vault, atomic_write_text, file_lock, get_vault_root, write_report
 from vault_norms import compute_norm_refs, status_frontmatter_lines
+# Los `*_save` viven en `scripts/`; el paquete se importa desde la raiz.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 RELEASE_FOLDER = "08_Runbooks/deploy"
 CHANGELOG_PATH = "01_Projects/{project}/changelog.md"
@@ -183,29 +187,26 @@ def vault_release_save(
 
     norm_refs = compute_norm_refs(RELEASE_FOLDER, body, [])
     version_slug = _slug(version)
-    fm_lines = [
-        "---",
-        f'title: "Release {version} — {project}"',
-        f"id: {uuid.uuid4()}",
-        f"createdAt: {now}",
-        f"updatedAt: {now}",
-        f"tags: {json.dumps(['release', 'deploy', project, release_type, version])}",
-        f"norm_refs: {json.dumps(norm_refs)}",
-        f"project: {yaml_scalar(project)}",
-        f"version: {version}",
-        f"release_type: {release_type}",
-        *status_frontmatter_lines("vault_release_save", status),
-        f"deploy_at: {deploy_at}",
-        f"breaking_changes: {json.dumps(bool(breaking_changes))}",
-        f"migrations_required: {json.dumps(bool(migrations))}",
-        f"iso_standard: ISO 20000-1:2018 §8.5.2",
-        f"cia_integrity: high",
-        f"cia_availability: high",
-        f"cia_sensitivity: internal",
-        f"agent: {agent}",
-        "---",
-    ]
-    full = "\n".join(fm_lines) + "\n\n" + body
+    fm_lines = Frontmatter()
+    fm_lines.set("title", f"Release {version} — {project}")
+    fm_lines.set("id", uuid.uuid4())
+    fm_lines.set("createdAt", now)
+    fm_lines.set("updatedAt", now)
+    fm_lines.set("tags", ['release', 'deploy', project, release_type, version])
+    fm_lines.set("norm_refs", norm_refs)
+    fm_lines.set("project", project)
+    fm_lines.set("version", version)
+    fm_lines.set("release_type", release_type)
+    fm_lines.lineas(status_frontmatter_lines("vault_release_save", status))
+    fm_lines.set("deploy_at", deploy_at)
+    fm_lines.set("breaking_changes", bool(breaking_changes))
+    fm_lines.set("migrations_required", bool(migrations))
+    fm_lines.set("iso_standard", "ISO 20000-1:2018 §8.5.2")
+    fm_lines.set("cia_integrity", "high")
+    fm_lines.set("cia_availability", "high")
+    fm_lines.set("cia_sensitivity", "internal")
+    fm_lines.set("agent", agent)
+    full = fm_lines.render() + "\n\n" + body
 
     # Write runbook
     filename = f"{_slug(project)}-release-{version_slug}.md"

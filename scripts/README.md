@@ -1721,7 +1721,7 @@ node mcp/nodejs/vault-mcp-server.mjs --port 3000
 
 ### `vault_norms.py`
 
-Registro canónico de las 61 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
+Registro canónico de las 62 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
 
 ```bash
 python vault_norms.py                             # catálogo completo

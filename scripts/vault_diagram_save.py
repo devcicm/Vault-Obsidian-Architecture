@@ -66,6 +66,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -160,17 +161,17 @@ def vault_diagram_save(
             "message": str(exc),
         }
 
-    frontmatter = ["---"]
+    frontmatter = Frontmatter()
 
-    frontmatter.append(f"title: {yaml_scalar(title)}")
+    frontmatter.set("title", title)
 
-    frontmatter.append(f"id: {str(uuid.uuid4())}")
+    frontmatter.set("id", str(uuid.uuid4()))
 
-    frontmatter.append(f"project: {yaml_scalar(project)}")
+    frontmatter.set("project", project)
 
-    frontmatter.append(f"diagramType: {diagram_type}")
+    frontmatter.set("diagramType", diagram_type)
 
-    frontmatter.append(f"category: {yaml_scalar(category)}")
+    frontmatter.set("category", category)
 
     # Ni `tags` ni `type` se escribían, y las dos son exigibles por normas que
     # este mismo estándar hace cumplir: AP-26 pide al menos un tag a toda nota
@@ -178,25 +179,24 @@ def vault_diagram_save(
     # de pruebas los reprobaba `vault_validate` — notas escritas por esta tool,
     # suspendidas por el auditor de al lado (AP-44). El tipo sale del registro,
     # no de un literal.
-    frontmatter.append(f"type: {section_default_type('06_Diagrams')}")
+    frontmatter.set("type", section_default_type('06_Diagrams'))
 
-    frontmatter.append(
-        f"tags: {yaml_scalar(sorted({t for t in (project, category, 'diagram') if t}))}"
+    frontmatter.set(
+        "tags", sorted({t for t in (project, category, "diagram") if t})
     )
 
-    frontmatter.append(f"createdAt: {timestamp}")
+    frontmatter.set("createdAt", timestamp)
 
-    frontmatter.append(f"updatedAt: {timestamp}")
+    frontmatter.set("updatedAt", timestamp)
 
-    frontmatter.append(f"cia_integrity: medium")
+    frontmatter.set("cia_integrity", "medium")
 
-    frontmatter.append(f"cia_availability: medium")
+    frontmatter.set("cia_availability", "medium")
 
-    frontmatter.append(f"cia_sensitivity: internal")
+    frontmatter.set("cia_sensitivity", "internal")
 
-    frontmatter.append(f"agent: system")
+    frontmatter.set("agent", "system")
 
-    frontmatter.append("---")
 
     body_sections = []
 
@@ -214,7 +214,7 @@ def vault_diagram_save(
     else:
         body_sections.append(f"```\n{content}\n```")
 
-    final_content = "\n\n".join(frontmatter) + "\n\n" + "\n\n".join(body_sections)
+    final_content = frontmatter.render() + "\n\n" + "\n\n".join(body_sections)
 
     diagram_path.parent.mkdir(parents=True, exist_ok=True)
 

@@ -79,6 +79,7 @@ from vault_entorno import leer as _env
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -191,37 +192,37 @@ def vault_bug_save(
 
     tags_list = list(dict.fromkeys([*(tags or []), safe_project, "bug", severity]))
 
-    frontmatter = ["---"]
-    frontmatter.append(f"title: {json.dumps(title, ensure_ascii=False)}")
-    frontmatter.append(f"id: {note_id}")
-    frontmatter.append(f"bug_id: {bug_id}")
-    frontmatter.append("type: bug")
-    frontmatter.append(f"project: {yaml_scalar(project)}")
-    frontmatter.append(f"phase: {phase}")
-    frontmatter.extend(status_frontmatter_lines("vault_bug_save", status))
-    frontmatter.append(f"severity: {severity}")
+    frontmatter = Frontmatter()
+    frontmatter.set("title", title)
+    frontmatter.set("id", note_id)
+    frontmatter.set("bug_id", bug_id)
+    frontmatter.set("type", "bug")
+    frontmatter.set("project", project)
+    frontmatter.set("phase", phase)
+    frontmatter.lineas(status_frontmatter_lines("vault_bug_save", status))
+    frontmatter.set("severity", severity)
     # Aristas tipadas: la causalidad es un predicado, no un `related` genérico.
     # Es la diferencia entre "estas dos notas se mencionan" y "esta explica
     # aquella", y solo la segunda sirve para navegar hacia atrás desde el
     # síntoma hasta el origen.
     if causes:
-        frontmatter.append(f"causes: {json.dumps(causes, ensure_ascii=False)}")
+        frontmatter.set("causes", causes)
     if caused_by:
-        frontmatter.append(f"caused_by: {json.dumps(caused_by, ensure_ascii=False)}")
+        frontmatter.set("caused_by", caused_by)
     if verified_by:
-        frontmatter.append(f"verified_by: {yaml_scalar(verified_by)}")
-    frontmatter.append(f"createdAt: {now}")
-    frontmatter.append(f"updatedAt: {now}")
-    frontmatter.append(f"tags: {json.dumps(tags_list, ensure_ascii=False)}")
+        frontmatter.set("verified_by", verified_by)
+    frontmatter.set("createdAt", now)
+    frontmatter.set("updatedAt", now)
+    frontmatter.set("tags", tags_list)
     # Un defecto abierto compromete la integridad de lo que documenta el vault:
     # por eso no hereda el `medium` por defecto mientras siga abierto.
-    frontmatter.append(
-        f"cia_integrity: {'high' if status in ('open', 'confirmed', 'in_fix') else 'medium'}"
+    frontmatter.set(
+        "cia_integrity",
+        "high" if status in ("open", "confirmed", "in_fix") else "medium",
     )
-    frontmatter.append("cia_availability: medium")
-    frontmatter.append("cia_sensitivity: internal")
-    frontmatter.append(f"agent: {agent}")
-    frontmatter.append("---")
+    frontmatter.set("cia_availability", "medium")
+    frontmatter.set("cia_sensitivity", "internal")
+    frontmatter.set("agent", agent)
 
     cuerpo = [f"## Síntoma\n\n{symptom.strip()}"]
     if repro:
@@ -247,7 +248,7 @@ def vault_bug_save(
     cuerpo.append(f"## Ciclo\n\n{fases}")
 
     note_path.parent.mkdir(parents=True, exist_ok=True)
-    atomic_write_text(note_path, "\n".join(frontmatter) + "\n\n" + "\n\n".join(cuerpo))
+    atomic_write_text(note_path, frontmatter.render() + "\n\n" + "\n\n".join(cuerpo))
 
     rel = str(note_path.relative_to(_raiz())).replace("\\", "/")
     index["bugs"].append({

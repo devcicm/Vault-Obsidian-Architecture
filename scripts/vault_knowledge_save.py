@@ -71,6 +71,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -124,36 +125,35 @@ def vault_knowledge_save(
             "message": str(exc),
         }
 
-    frontmatter = ["---"]
+    frontmatter = Frontmatter()
 
-    frontmatter.append(f"title: {json.dumps(title)}")
+    frontmatter.set("title", title)
 
-    frontmatter.append(f"id: {str(uuid.uuid4())}")
+    frontmatter.set("id", str(uuid.uuid4()))
 
-    frontmatter.append(f"category: {yaml_scalar(category)}")
+    frontmatter.set("category", category)
 
-    frontmatter.append(f"createdAt: {timestamp}")
+    frontmatter.set("createdAt", timestamp)
 
-    frontmatter.append(f"updatedAt: {timestamp}")
+    frontmatter.set("updatedAt", timestamp)
 
     if project:
-        frontmatter.append(f"project: {yaml_scalar(project)}")
+        frontmatter.set("project", project)
 
     if tags:
-        frontmatter.append(f"tags: {json.dumps(tags)}")
+        frontmatter.set("tags", tags)
 
     if related:
-        frontmatter.append(f"related: {json.dumps(related)}")
+        frontmatter.set("related", related)
 
-    frontmatter.append(f"cia_integrity: medium")
+    frontmatter.set("cia_integrity", "medium")
 
-    frontmatter.append(f"cia_availability: medium")
+    frontmatter.set("cia_availability", "medium")
 
-    frontmatter.append(f"cia_sensitivity: internal")
+    frontmatter.set("cia_sensitivity", "internal")
 
-    frontmatter.append(f"agent: system")
+    frontmatter.set("agent", "system")
 
-    frontmatter.append("---")
 
     if category in ["dependency", "framework"]:
         body_sections = [f"## {title}\n"]
@@ -188,7 +188,7 @@ def vault_knowledge_save(
             + " ".join(f"[[{safe_wikilink(r)}]]" for r in related)
         )
 
-    final_content = "\n".join(frontmatter) + "\n\n" + "\n\n".join(body_sections)
+    final_content = frontmatter.render() + "\n\n" + "\n\n".join(body_sections)
 
     folder.mkdir(parents=True, exist_ok=True)
 

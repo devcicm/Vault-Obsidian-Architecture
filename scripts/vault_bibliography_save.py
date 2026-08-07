@@ -53,6 +53,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -134,35 +135,34 @@ def vault_bibliography_save(
             "message": str(exc),
         }
 
-    frontmatter_lines = ["---"]
+    frontmatter_lines = Frontmatter()
 
-    frontmatter_lines.append(f"title: {yaml_scalar(title)}")
+    frontmatter_lines.set("title", title)
 
-    frontmatter_lines.append(f"id: {note_id}")
+    frontmatter_lines.set("id", note_id)
 
-    frontmatter_lines.append(f"url: {yaml_scalar(url)}")
+    frontmatter_lines.set("url", url)
 
-    frontmatter_lines.append(f"source_type: {source_type}")
+    frontmatter_lines.set("source_type", source_type)
 
     if project:
-        frontmatter_lines.append(f"project: {yaml_scalar(project)}")
+        frontmatter_lines.set("project", project)
 
-    frontmatter_lines.append(f"agent: {agent or 'system'}")
+    frontmatter_lines.set("agent", agent or 'system')
 
-    frontmatter_lines.append(f"accessed_at: {now}")
+    frontmatter_lines.set("accessed_at", now)
 
     if tags:
         tags_str = json.dumps(tags, ensure_ascii=False)
 
-        frontmatter_lines.append(f"tags: {tags_str}")
+        frontmatter_lines.set("tags", tags_str)
 
-    frontmatter_lines.append(f"cia_integrity: medium")
+    frontmatter_lines.set("cia_integrity", "medium")
 
-    frontmatter_lines.append(f"cia_availability: low")
+    frontmatter_lines.set("cia_availability", "low")
 
-    frontmatter_lines.append(f"cia_sensitivity: public")
+    frontmatter_lines.set("cia_sensitivity", "public")
 
-    frontmatter_lines.append("---")
 
     body = f"\n# {title}\n\n"
 
@@ -179,7 +179,7 @@ def vault_bibliography_save(
 
     body += summary + "\n"
 
-    content = "\n".join(frontmatter_lines) + body
+    content = frontmatter_lines.render() + body
 
     atomic_write_text(note_path, content)
 

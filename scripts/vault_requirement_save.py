@@ -56,6 +56,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -175,38 +176,37 @@ def vault_requirement_save(
 
     cia_integrity = "high" if priority == "must-have" else "medium"
 
-    frontmatter = ["---"]
+    frontmatter = Frontmatter()
 
-    frontmatter.append(f"id: {note_id}")
+    frontmatter.set("id", note_id)
 
-    frontmatter.append(f"req_id: {req_id}")
+    frontmatter.set("req_id", req_id)
 
-    frontmatter.append(f"title: {yaml_scalar(title)}")
+    frontmatter.set("title", title)
 
-    frontmatter.append(f"project: {yaml_scalar(project)}")
+    frontmatter.set("project", project)
 
-    frontmatter.append(f"req_type: {req_type}")
+    frontmatter.set("req_type", req_type)
 
-    frontmatter.append(f"priority: {priority}")
+    frontmatter.set("priority", priority)
 
-    frontmatter.extend(status_frontmatter_lines("vault_requirement_save", status))
+    frontmatter.lineas(status_frontmatter_lines("vault_requirement_save", status))
 
-    frontmatter.append(f"createdAt: {now}")
+    frontmatter.set("createdAt", now)
 
-    frontmatter.append(f"updatedAt: {now}")
+    frontmatter.set("updatedAt", now)
 
     if tags_list:
-        frontmatter.append(f"tags: {json.dumps(list(dict.fromkeys(tags_list)))}")
+        frontmatter.set("tags", list(dict.fromkeys(tags_list)))
 
-    frontmatter.append(f"cia_integrity: {cia_integrity}")
+    frontmatter.set("cia_integrity", cia_integrity)
 
-    frontmatter.append(f"cia_availability: medium")
+    frontmatter.set("cia_availability", "medium")
 
-    frontmatter.append(f"cia_sensitivity: internal")
+    frontmatter.set("cia_sensitivity", "internal")
 
-    frontmatter.append(f"agent: system")
+    frontmatter.set("agent", "system")
 
-    frontmatter.append("---")
 
     body_sections = []
 
@@ -237,7 +237,7 @@ def vault_requirement_save(
 
     body_sections.append(f"## Estado\n\n**Estado:** {status_line}")
 
-    final_content = "\n".join(frontmatter) + "\n\n" + "\n\n".join(body_sections)
+    final_content = frontmatter.render() + "\n\n" + "\n\n".join(body_sections)
 
     note_path.parent.mkdir(parents=True, exist_ok=True)
 

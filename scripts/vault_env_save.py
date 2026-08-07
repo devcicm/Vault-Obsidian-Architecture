@@ -43,6 +43,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -197,28 +198,27 @@ def vault_env_save(
             "message": str(exc),
         }
 
-    frontmatter = ["---"]
+    frontmatter = Frontmatter()
 
-    frontmatter.append(f"title: Environment Variables - {project}")
+    frontmatter.set("title", f"Environment Variables - {project}")
 
-    frontmatter.append(f"project: {yaml_scalar(project)}")
+    frontmatter.set("project", project)
 
-    frontmatter.append(f"type: envs")
+    frontmatter.set("type", "envs")
 
-    frontmatter.append(f"updatedAt: {timestamp}")
+    frontmatter.set("updatedAt", timestamp)
 
     if final_description:
-        frontmatter.append(f"description: {yaml_scalar(final_description)}")
+        frontmatter.set("description", final_description)
 
-    frontmatter.append(f"cia_integrity: high")
+    frontmatter.set("cia_integrity", "high")
 
-    frontmatter.append(f"cia_availability: medium")
+    frontmatter.set("cia_availability", "medium")
 
-    frontmatter.append(f"cia_sensitivity: restricted")
+    frontmatter.set("cia_sensitivity", "restricted")
 
-    frontmatter.append(f"agent: system")
+    frontmatter.set("agent", "system")
 
-    frontmatter.append("---")
 
     body = [f"# Environment Variables: {project}\n"]
 
@@ -242,7 +242,7 @@ def vault_env_save(
 
         body.append("")
 
-    atomic_write_text(envs_path, "\n".join(frontmatter) + "\n\n" + "\n".join(body))
+    atomic_write_text(envs_path, frontmatter.render() + "\n\n" + "\n".join(body))
 
     return {
         "ok": True,

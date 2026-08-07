@@ -50,6 +50,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -236,23 +237,22 @@ def save_infra_map(
 
     map_path = _infra_dir() / "infra-map.md"
 
-    frontmatter = ["---"]
+    frontmatter = Frontmatter()
 
-    frontmatter.append("title: Infrastructure Map")
+    frontmatter.set("title", "Infrastructure Map")
 
-    frontmatter.append(f"updatedAt: {utcnow()}")
+    frontmatter.set("updatedAt", utcnow())
 
     if project:
-        frontmatter.append(f"project: {yaml_scalar(project)}")
+        frontmatter.set("project", project)
 
     if location:
-        frontmatter.append(f"location: {yaml_scalar(location)}")
+        frontmatter.set("location", location)
 
-    frontmatter.append("---")
 
-    frontmatter.append("\n## Network Map\n\n```mermaid\n" + mermaid_content + "\n```\n")
+    cuerpo = "\n## Network Map\n\n```mermaid\n" + mermaid_content + "\n```\n"
 
-    atomic_write_text(map_path, "\n".join(frontmatter))
+    atomic_write_text(map_path, frontmatter.render() + "\n" + cuerpo)
 
     return map_path
 
@@ -309,38 +309,37 @@ def vault_infra_save(
         "high" if component_type in ("server", "database", "secret") else "medium"
     )
 
-    frontmatter = ["---"]
+    frontmatter = Frontmatter()
 
-    frontmatter.append(f"title: {yaml_scalar(name)}")
+    frontmatter.set("title", name)
 
-    frontmatter.append(f"id: {str(uuid.uuid4())}")
+    frontmatter.set("id", str(uuid.uuid4()))
 
-    frontmatter.append(f"type: {component_type}")
+    frontmatter.set("type", component_type)
 
-    frontmatter.append(f"location: {yaml_scalar(location)}")
+    frontmatter.set("location", location)
 
-    frontmatter.append(f"createdAt: {timestamp}")
+    frontmatter.set("createdAt", timestamp)
 
-    frontmatter.append(f"updatedAt: {timestamp}")
+    frontmatter.set("updatedAt", timestamp)
 
     if project:
-        frontmatter.append(f"project: {yaml_scalar(project)}")
+        frontmatter.set("project", project)
 
     if status:
-        frontmatter.extend(status_frontmatter_lines("vault_infra_save", status))
+        frontmatter.lineas(status_frontmatter_lines("vault_infra_save", status))
 
     if tags:
-        frontmatter.append(f"tags: {json.dumps(tags)}")
+        frontmatter.set("tags", tags)
 
-    frontmatter.append(f"cia_integrity: {cia_integrity}")
+    frontmatter.set("cia_integrity", cia_integrity)
 
-    frontmatter.append(f"cia_availability: high")
+    frontmatter.set("cia_availability", "high")
 
-    frontmatter.append(f"cia_sensitivity: {cia_sensitivity}")
+    frontmatter.set("cia_sensitivity", cia_sensitivity)
 
-    frontmatter.append(f"agent: system")
+    frontmatter.set("agent", "system")
 
-    frontmatter.append("---")
 
     body_sections = [f"## Descripción\n\n{description}\n"]
 
@@ -431,7 +430,7 @@ def vault_infra_save(
 
         body_sections.append("\n".join(conn_content))
 
-    final_content = "\n".join(frontmatter) + "\n\n" + "\n\n".join(body_sections)
+    final_content = frontmatter.render() + "\n\n" + "\n\n".join(body_sections)
 
     folder.mkdir(parents=True, exist_ok=True)
 

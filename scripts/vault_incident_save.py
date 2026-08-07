@@ -35,6 +35,10 @@ from vault_norms import compute_norm_refs, status_frontmatter_lines
 # El vocabulario se declara una vez y se consume, no se copia. Ver
 # `vault_vocabulario.py` para el registro y su contexto dueño.
 from vault_vocabulario import opciones as _opciones
+# Los `*_save` viven en `scripts/`; el paquete se importa desde la raiz.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 FOLDER = "02_Observability/incidents"
 
@@ -228,29 +232,26 @@ _Qué salió bien, qué salió mal, qué hacer diferente._
 """
 
     norm_refs = compute_norm_refs(FOLDER, body, [])
-    fm_lines = [
-        "---",
-        f'title: "Incidente: {title}"',
-        f"id: {uuid.uuid4()}",
-        f"createdAt: {now}",
-        f"updatedAt: {now}",
-        f"tags: {json.dumps(['incident', project, severity.lower(), status])}",
-        f"norm_refs: {json.dumps(norm_refs)}",
-        f"project: {yaml_scalar(project)}",
-        f"severity: {severity}",
-        *status_frontmatter_lines("vault_incident_save", status),
-        f"detected_at: {detected_at}",
-        f"resolved_at: {resolved_at or ''}",
-        f"mttr: {mttr}",
-        f"iso_standard: ISO 20000-1:2018 §8.6",
-        f"iso_bcm: ISO 22301:2019 §8.4",
-        f"cia_integrity: high",
-        f"cia_availability: high",
-        f"cia_sensitivity: internal",
-        f"agent: {agent}",
-        "---",
-    ]
-    full = "\n".join(fm_lines) + "\n\n" + body
+    fm_lines = Frontmatter()
+    fm_lines.set("title", f"Incidente: {title}")
+    fm_lines.set("id", uuid.uuid4())
+    fm_lines.set("createdAt", now)
+    fm_lines.set("updatedAt", now)
+    fm_lines.set("tags", ['incident', project, severity.lower(), status])
+    fm_lines.set("norm_refs", norm_refs)
+    fm_lines.set("project", project)
+    fm_lines.set("severity", severity)
+    fm_lines.lineas(status_frontmatter_lines("vault_incident_save", status))
+    fm_lines.set("detected_at", detected_at)
+    fm_lines.set("resolved_at", resolved_at or '')
+    fm_lines.set("mttr", mttr)
+    fm_lines.set("iso_standard", "ISO 20000-1:2018 §8.6")
+    fm_lines.set("iso_bcm", "ISO 22301:2019 §8.4")
+    fm_lines.set("cia_integrity", "high")
+    fm_lines.set("cia_availability", "high")
+    fm_lines.set("cia_sensitivity", "internal")
+    fm_lines.set("agent", agent)
+    full = fm_lines.render() + "\n\n" + body
 
     filename = f"{project}-{date_prefix}-{_slug(title)}.md"
     path = get_vault_root() / FOLDER / filename

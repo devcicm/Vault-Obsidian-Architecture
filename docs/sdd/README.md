@@ -15,7 +15,7 @@
 | 01 | [State Machines](./01-state-machines.md) | Lifecycle states por dominio |
 | 02 | [Implementation Guide](./02-implementation.md) | Guía para autores de tools |
 | 03 | [Usage Guide](./03-usage.md) | Guía para consumers |
-| 04 | [Antipatterns](./04-antipatterns.md) | Catálogo AP-01..AP-49 |
+| 04 | [Antipatterns](./04-antipatterns.md) | Catálogo AP-01..AP-50 |
 | 05 | [Reference Matrix](./05-reference-matrix.md) | Pattern → Detect → Fix → Prevent |
 | 06 | [Documentation Methodology](./06-documentation-methodology.md) | La ciencia de qué documentar |
 | 07 | [Process Antipatterns](./07-process-antipatterns.md) | Antipatrones de proceso |
@@ -25,8 +25,8 @@
 
 ### Metadata
 
-- **Vault version:** v39.6
-- **Generated at:** 2026-08-06T10:14:37.000Z
+- **Vault version:** v40.0
+- **Generated at:** 2026-08-07T09:27:36.000Z
 - **Skill:** vault-sdd-init v1.0
 - **Total documents:** 14
 
@@ -42,7 +42,7 @@
 | 01 | [State Machines](./01-state-machines.md) | Lifecycle states per domain |
 | 02 | [Implementation Guide](./02-implementation.md) | Guide for tool authors |
 | 03 | [Usage Guide](./03-usage.md) | Guide for consumers |
-| 04 | [Antipatterns](./04-antipatterns.md) | AP-01..AP-49 catalog |
+| 04 | [Antipatterns](./04-antipatterns.md) | AP-01..AP-50 catalog |
 | 05 | [Reference Matrix](./05-reference-matrix.md) | Pattern → Detect → Fix → Prevent |
 | 06 | [Documentation Methodology](./06-documentation-methodology.md) | The science of what to document |
 | 07 | [Process Antipatterns](./07-process-antipatterns.md) | Process antipatterns |
@@ -52,7 +52,7 @@
 
 ### Metadata
 
-- **Vault version:** v39.6
-- **Generated at:** 2026-08-06T10:14:37.000Z
+- **Vault version:** v40.0
+- **Generated at:** 2026-08-07T09:27:36.000Z
 - **Skill:** vault-sdd-init v1.0
 - **Total documents:** 14

@@ -207,28 +207,12 @@ def test_el_frontmatter_es_yaml_valido(vault, script):
     assert isinstance(fm, dict) and fm, script
 
 
-#: Los tres que hoy escriben `ó` dentro del YAML. Se marcan en vez de
-#: silenciarse, y con `strict`: el día que el escritor único los arregle, el
-#: propio marcador falla y obliga a quitarlo. Un `xfail` no estricto se queda
-#: para siempre y acaba tapando una regresión.
-ESCAPAN_ACENTOS = {"vault_knowledge_save", "vault_risk_save", "vault_runbook_save"}
-
-
-@pytest.mark.parametrize(
-    "script",
-    [
-        pytest.param(
-            s,
-            marks=pytest.mark.xfail(
-                strict=True,
-                reason="AP-46 pendiente: json.dumps sin ensure_ascii=False",
-            ),
-        )
-        if s in ESCAPAN_ACENTOS
-        else s
-        for s in sorted(INVOCACIONES)
-    ],
-)
+#: `vault_knowledge_save`, `vault_risk_save` y `vault_runbook_save` estuvieron
+#: marcados aquí como `xfail(strict=True)`: los tres escribían `ó` dentro
+#: del YAML. El escritor único (`vault/autoria/frontmatter.py`) los arregló y
+#: el propio marcador estricto falló por XPASS, que es para lo que se puso.
+#: Ya no hay excepciones: los diecisiete pasan.
+@pytest.mark.parametrize("script", sorted(INVOCACIONES))
 def test_ningun_acento_se_guarda_escapado(vault, script):
     """AP-46 por la puerta de atrás: `json.dumps` sin `ensure_ascii=False`.
 

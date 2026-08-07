@@ -35,6 +35,10 @@ from vault_errors import wrap_main
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from vault_io import assert_within_vault, atomic_write_text, get_vault_root, write_report
 from vault_norms import compute_norm_refs, status_frontmatter_lines
+# Los `*_save` viven en `scripts/`; el paquete se importa desde la raiz.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 FOLDER = "02_Observability/risks"
 
@@ -225,32 +229,29 @@ def vault_risk_save(
 """
 
     norm_refs = compute_norm_refs(FOLDER, body, [])
-    fm_lines = [
-        "---",
-        f"title: {json.dumps(f'Riesgo: {title}')}",
-        f"id: {uuid.uuid4()}",
-        f"createdAt: {now}",
-        f"updatedAt: {now}",
-        f"tags: {json.dumps(['risk', project, risk_type, level.lower(), status])}",
-        f"norm_refs: {json.dumps(norm_refs)}",
-        f"project: {yaml_scalar(project)}",
-        f"risk_type: {risk_type}",
-        f"likelihood: {likelihood}",
-        f"impact: {impact}",
-        f"score: {score}",
-        f"level: {level}",
-        f"treatment: {treatment}",
-        *status_frontmatter_lines("vault_risk_save", status),
-        f"owner: {json.dumps(owner)}",
-        f"iso_standard: ISO 31000:2018",
-        f"iso_security_risk: ISO/IEC 27005:2022",
-        f"cia_integrity: {cia['integrity']}",
-        f"cia_availability: {cia['availability']}",
-        f"cia_sensitivity: {cia['sensitivity']}",
-        f"agent: {agent}",
-        "---",
-    ]
-    full = "\n".join(fm_lines) + "\n\n" + body
+    fm_lines = Frontmatter()
+    fm_lines.set("title", f'Riesgo: {title}')
+    fm_lines.set("id", uuid.uuid4())
+    fm_lines.set("createdAt", now)
+    fm_lines.set("updatedAt", now)
+    fm_lines.set("tags", ['risk', project, risk_type, level.lower(), status])
+    fm_lines.set("norm_refs", norm_refs)
+    fm_lines.set("project", project)
+    fm_lines.set("risk_type", risk_type)
+    fm_lines.set("likelihood", likelihood)
+    fm_lines.set("impact", impact)
+    fm_lines.set("score", score)
+    fm_lines.set("level", level)
+    fm_lines.set("treatment", treatment)
+    fm_lines.lineas(status_frontmatter_lines("vault_risk_save", status))
+    fm_lines.set("owner", owner, vacio_citado=True)
+    fm_lines.set("iso_standard", "ISO 31000:2018")
+    fm_lines.set("iso_security_risk", "ISO/IEC 27005:2022")
+    fm_lines.set("cia_integrity", cia['integrity'])
+    fm_lines.set("cia_availability", cia['availability'])
+    fm_lines.set("cia_sensitivity", cia['sensitivity'])
+    fm_lines.set("agent", agent)
+    full = fm_lines.render() + "\n\n" + body
 
     filename = f"{_slug(project)}-{_slug(title)}.md"
     path = get_vault_root() / FOLDER / filename
