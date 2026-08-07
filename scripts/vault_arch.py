@@ -552,6 +552,64 @@ def _nombres_desechables(arbol: ast.AST) -> set[str]:
     return desechables
 
 
+#: Los tres puntos en los que el kernel llama HACIA el dominio, con su motivo.
+#:
+#: El kernel declara «no depender de ningún contexto de dominio» y sin embargo
+#: cruza en tres sitios, todos por importación perezosa dentro de una función.
+#: Estaban en la baseline genérica de cruces, anónimos y sin justificación: eso
+#: es la misma forma que tenía la prohibición del Meta-toolkit antes de v40.0 —
+#: una frontera declarada que ninguna medida distinguía de la deuda corriente.
+#:
+#: No se resuelven invirtiendo la dependencia, y el motivo es el mismo en los
+#: tres: son **ganchos del write path**, y quien los invoca es el kernel porque
+#: el kernel es el único sitio por el que pasan TODAS las escrituras. Registrar
+#: el gancho desde el dominio exigiría que alguien importara ese contexto antes
+#: de la primera escritura; el día que nadie lo hiciera, el escaneo de secretos
+#: dejaría de correr **en silencio**. Cambiar un cruce declarado por un fallo
+#: silencioso de seguridad es un mal negocio (AP-37).
+#:
+#: Lo que sí se exige: que sean exactamente estos tres y que cada uno diga por
+#: qué. Un cuarto rompe la puerta.
+GANCHOS_DEL_KERNEL: dict[tuple[str, str], str] = {
+    ("vault_io", "vault_secret_scan"): (
+        "Preflight anti-secretos de `atomic_write_text`. Tiene que correr en el "
+        "único punto por el que pasan todas las escrituras, o no protege."
+    ),
+    ("vault_io", "vault_section_index"): (
+        "`_auto_section_index`: el índice de sección se regenera tras escribir "
+        "una nota, sin que cada tool tenga que acordarse (AP-47)."
+    ),
+    ("vault_errors", "vault_voice"): (
+        "La voz del vault acompaña al error. Es presentación, no dominio, y el "
+        "kernel la degrada a silencio si falla."
+    ),
+}
+
+
+def dependencias_del_kernel() -> list[dict]:
+    """El kernel llamando al dominio: solo las que no están declaradas.
+
+    La frontera del kernel («nadie más puede ser dependencia de todos») era
+    prosa en `CONTEXTS[KERNEL]["prohibe"]`. Aquí se mide.
+    """
+    mapa = _mapa_modulos()
+    sin_declarar = []
+    for nombre in sorted(CONTEXTS[KERNEL]["modulos"]):
+        fichero = SCRIPTS_DIR / f"{nombre}.py"
+        if not fichero.exists():
+            continue
+        for destino in sorted(_importaciones(fichero)):
+            ctx = mapa.get(destino)
+            if ctx is None or ctx == KERNEL:
+                continue
+            if (nombre, destino) in GANCHOS_DEL_KERNEL:
+                continue
+            sin_declarar.append({
+                "from": nombre, "to": destino, "to_context": ctx,
+            })
+    return sin_declarar
+
+
 def escrituras_prohibidas() -> list[dict]:
     """La frontera del Meta-toolkit, convertida en medida.
 
@@ -631,6 +689,11 @@ def check(strict: bool = False) -> dict:
     # y una lista de excepciones vacía solo invita a estrenarla.
     prohibidas = escrituras_prohibidas()
 
+    # La frontera del kernel, con la misma vara: los tres ganchos del write path
+    # están declarados con su motivo; cualquier otro cruce kernel → dominio es
+    # un fallo de la puerta, no deuda que congelar.
+    kernel_sin_declarar = dependencias_del_kernel()
+
     # Ésta sí arranca con baseline: al declararla había cinco duplicados
     # heredados de las fases anteriores. Exigir cero el primer día habría hecho
     # que la puerta naciera en rojo, y una puerta en rojo se desactiva.
@@ -643,6 +706,7 @@ def check(strict: bool = False) -> dict:
     return {
         "ok": not nuevos and not huerfanos and not ausentes and not vinc_nuevos
               and not prohibidas and not rutas_nuevas
+              and not kernel_sin_declarar
               and not (strict and (saldados or vinc_saldados or rutas_saldadas)),
         "tool": "vault_arch",
         "contexts": len(CONTEXTS),
@@ -656,6 +720,9 @@ def check(strict: bool = False) -> dict:
         "declared_but_missing": ausentes,
         # La prohibición del Meta-toolkit, ya ejecutable.
         "forbidden_writes": prohibidas,
+        # La frontera del kernel: ganchos declarados vs. cruces sin justificar.
+        "kernel_hooks": len(GANCHOS_DEL_KERNEL),
+        "undeclared_kernel_deps": kernel_sin_declarar,
         # AP-05 — el mismo fichero declarado en dos repositorios de dominio.
         "duplicate_paths_total": len(duplicadas),
         "duplicate_paths_baseline": len(base_rutas),

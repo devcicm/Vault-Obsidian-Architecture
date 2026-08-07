@@ -146,16 +146,24 @@ def test_una_version_menor_sin_migracion_sella_la_version(tmp_path, monkeypatch)
     # usarlas—, y el monkeypatch habría creado dos atributos que nadie lee.
     vault_io.set_vault_root(root)
     try:
-        _sellado(root)
+        _sellado(root, monkeypatch)
     finally:
         vault_io.set_vault_root(anterior)
 
 
-def _sellado(root):
+def _sellado(root, monkeypatch):
     import vault_standard_upgrade as vsu
 
+    # La minor se deriva de la mayor corriente, no se escribe a mano. Estaba
+    # fijada en "v39.0" y el bump a v40.0 la convirtió en un salto MAYOR: el
+    # test dejó de probar el sellado y pasó por la ruta de migración, que no
+    # devuelve `version_stamped`. Un test cuyo sujeto es la lógica de sellado no
+    # puede caducar cada vez que sube la versión.
+    mayor = vsu.CURRENT_VERSION.split(".")[0]
+    monkeypatch.setattr(vsu, "CURRENT_VERSION", f"{mayor}.9")
+
     vsu._write_version_file(
-        {"applied_version": "v39.0", "migrations_applied": [], "applied_by": "test"}
+        {"applied_version": f"{mayor}.0", "migrations_applied": [], "applied_by": "test"}
     )
 
     r = vsu.vault_standard_upgrade(to_version=vsu.CURRENT_VERSION)

@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v39.6 — 2026-08-06  
+**Versión:** v40.0 — 2026-08-06  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -6007,6 +6007,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.0 | 2026-08-06 | Contextos acotados: los 112 módulos de `scripts/` se reparten en ocho contextos de dominio más un kernel compartido, con `scripts/vault_arch.py` como registro ejecutable de fronteras (`--check`, `--blueprint`, `--map`) y baseline que solo encoge; AP-49 (vínculo resuelto en tiempo de import) pasa de 82 vínculos congelados en 62 módulos a 0, con lo que `set_vault_root()` deja de ser una costura decorativa; `VaultContext` inmutable y puertos `Protocol` en `vault/kernel/`; la prohibición del Meta-toolkit deja de ser prosa y se mide por AST (`forbidden_writes`); puerta nueva de AP-05 sobre rutas declaradas en dos repositorios de dominio |
 | v39.6 | 2026-08-06 | Las dos tools base64 (únicas sin script Python) ejercidas por primera vez: contrato incumplido, backup incompleto silencioso y restore fuera del vault con traversal sin validar; `vault_smoke` contrasta el envelope contra `declared_returns` como puerta dura; invariante nuevo del tool-spec contra módulos ejecutables sin clasificar (5 encontrados) y motivo obligatorio en toda entrada no publicada; `01-state-machines.md` derivado de `vault_norms.LIFECYCLE_REGISTRY` (dos de trece filas estaban desfasadas) |
 | v39.5 | 2026-08-06 | AP-48 (implementación paralela por camino de acceso): el servidor MCP servía backend nativo en Node para 7 tools que también tenían script Python, con envelopes que no coincidían con el contrato y `vault_graph` devolviendo `ok` sin escribir el grafo; catálogo de normas generado con las cuatro familias (PAT y SP faltaban); prosa constante de `docs/sdd/` declarada como deuda que solo puede encoger |
 | v39.4 | 2026-08-05 | Grupo 37 (Skills): la capa por la que un agente descubre el estándar entra en el catálogo y en el tool-spec (cierra AP-42 sobre sí misma), puerta de vigencia del SDD generado (`--check`, AP-47), `--force` deja de pisar `gaps.md`, `vault_sanacion` (plan de 12 fases medido, sin escrituras) |
@@ -6325,6 +6326,30 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v40.0 — 2026-08-06 `git: pending`
+
+**Fronteras declaradas, y una costura que por fin sirve**
+
+Las dos versiones anteriores encontraron el mismo tipo de defecto una y otra vez —una capacidad implementada dos veces (AP-48), un side-effect fuera del vault, cinco módulos ejecutables que ningún registro conocía— y no por casualidad: **no había frontera declarada en ninguna parte**. Con 112 módulos en un `scripts/` plano y sin paquete, nada impedía que dos contextos se implementaran encima, que un módulo del meta-toolkit escribiera en un vault de usuario, o que la misma ruta se derivara en cuatro sitios. Se detectaban de uno en uno, a mano, después del hecho.
+
+Esta versión declara las fronteras y las convierte en puerta. Ocho contextos de dominio —Autoría, Grafo, Gobernanza, Índices, Consulta, Ciclo de vida, Durabilidad, Meta-toolkit— más un kernel compartido, en `scripts/vault_arch.py`: un registro ejecutable, no un documento. `--check` reconstruye el grafo de importaciones **por AST** y no por una lista escrita a mano, `--map` responde a qué contexto pertenece un módulo —pregunta que antes nadie podía contestar sin leer el código— y `--blueprint` deriva `docs/ARQUITECTURA.md`. Arranca con la deuda congelada como baseline que solo puede encoger, como `vault_noop_audit`: exigir cero el primer día habría significado desactivar la puerta el segundo.
+
+**AP-49 — vínculo resuelto en tiempo de import.** La medida que motivó el refactor: 82 vínculos congelados en 62 módulos, todos de la misma forma, `SYSTEM_DIR = VAULT_ROOT / "00_System"` evaluado **al importar**. `set_vault_root()` existía desde hacía versiones, `CLAUDE.md` la declaraba fuente única de la raíz en runtime, y no podía reapuntar a ninguno de ellos: la API pública de cambiar de vault mentía y el código no cumplía su propia tabla. Ocho fases después la cifra es **0**. Lo que la hizo caer no fue disciplina sino un objeto: `VaultContext`, inmutable, con la raíz y su origen de confianza dentro, y un repositorio por contexto que resuelve las rutas al usarlas. Los puertos son `typing.Protocol` — sin herencia, sin framework y sin una sola dependencia nueva fuera de stdlib + PyYAML.
+
+El criterio que decide si una inyección es real o decorativa no es que compile: es que **dos vaults convivan en el mismo proceso sin contaminarse**. Antes era imposible; hoy lo comprueba un test por contexto.
+
+**Lo que aparecía al migrar cada contexto** es lo que justifica haberlo hecho por fases y no de una vez. Al desaparecer una constante de módulo, los tests que se aislaban reasignándola seguían siendo Python legal y perdían todo efecto: `test_vault_changelog_concurrency` habría lanzado veinticinco escrituras concurrentes contra el change-log **real de `vault-sandbox/`** y habría pasado en verde midiendo el vault equivocado. Aparecieron así, uno por fase, hasta el final.
+
+**La prohibición del Meta-toolkit era falsa.** Declaraba «no escribe en un vault: opera sobre el estándar, no sobre datos», y `vault_manifest` escribía `00_System/tools-manifest.json` desde el primer día. Peor que falsa: no la comprobaba nada —solo se renderizaba en el plano—, que es enforcement `manual`, prohibido por la regla 5 del propio repo. Reformulada con precisión (sí a los artefactos derivados en `00_System/`, sí a los vaults desechables para medirse, **no** a notas o datos de usuario en ninguna sección de contenido) y medida por AST en `forbidden_writes`. Puerta dura, sin baseline: se declaró midiendo cero.
+
+**La frontera del kernel, con la misma vara.** El kernel declaraba «no depender de ningún contexto de dominio» y lo incumplía en tres sitios, todos por importación perezosa dentro de una función: el escaneo de secretos y la regeneración del índice de sección desde el write path, y la voz del vault desde el error. Vivían en la baseline genérica de cruces, indistinguibles de la deuda corriente y sin una línea que dijera por qué. No se invierten, y el motivo es el mismo en los tres: son **ganchos del write path**, y quien los invoca es el kernel porque es el único punto por el que pasan todas las escrituras. Registrar el gancho desde el dominio exigiría que alguien importase ese contexto antes de la primera escritura, y el día que nadie lo hiciera el escaneo de secretos dejaría de correr **en silencio** — cambiar un cruce declarado por un fallo silencioso de seguridad es un mal negocio. Lo que sí se exige es que sean exactamente esos tres y que cada uno lleve su motivo escrito: `GANCHOS_DEL_KERNEL`, y un cuarto rompe la puerta.
+
+**Puerta nueva de AP-05.** Dos contextos seguidos repitieron la misma forma —leer un fichero que otro escribe y volver a derivar su ruta por cuenta propia—, así que dejó de ser anécdota. `rutas_duplicadas()` compara los ficheros declarados en cada repositorio de dominio y encontró seis, una recién introducida por el propio refactor. Las cinco restantes quedan congeladas como deuda que solo puede encoger, con nombre y apellidos en la baseline en vez de esparcidas por el código.
+
+**Sin derogar nada.** Ni un fichero se mueve de `scripts/` — el tool-spec, `cli/registry.py`, el runner del MCP y los repos consumidores siguen resolviendo por la misma ruta—, ni un envelope cambia, y el aislamiento por subproceso de `cli/runner.py` se conserva. El paliativo de reanclaje de `vault_io.set_vault_root()` también se conserva aunque hoy no le quede un solo consumidor.
 
 ---
 

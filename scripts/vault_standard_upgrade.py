@@ -35,7 +35,7 @@ from vault_registry import standard_folders
 SCRIPTS_DIR = Path(__file__).resolve().parent
 
 
-CURRENT_VERSION = "v39.6"
+CURRENT_VERSION = "v40.0"
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -408,6 +408,28 @@ MIGRATIONS: Dict[str, Dict[str, Any]] = {
             "Sin base de datos, sin embeddings y sin servicio externo",
         ],
     },
+    "v40": {
+        "description": (
+            "Contextos acotados: ocho contextos de dominio mas un kernel "
+            "compartido, con `vault_arch` como registro ejecutable de fronteras. "
+            "Sin migracion estructural: no anade ni renombra una sola carpeta."
+        ),
+        # Un vault existente NO cambia de forma al subir a v40. El refactor es
+        # del toolkit, no del vault, y decirlo aqui importa: una entrada sin
+        # `add_folders` es la unica manera de que `--to latest` deje constancia
+        # de la version aplicada sin tocar el disco del usuario.
+        "add_folders": [],
+        "update_identity": _live_identity(),
+        "notes": [
+            "vault_arch.py (NUEVO): registro CONTEXTS + guard de fronteras por AST + blueprint",
+            "vault/ (NUEVO paquete): VaultContext inmutable, puertos Protocol y un repositorio por contexto",
+            "AP-49 (NUEVA): vinculo resuelto en tiempo de import — 82 vinculos congelados en 62 modulos, saldados a 0",
+            "docs/ARQUITECTURA.md (NUEVO): derivado de `vault_arch --blueprint`, no escrito a mano",
+            "La prohibicion del Meta-toolkit deja de ser prosa: se mide por AST (forbidden_writes)",
+            "Puerta nueva de AP-05 sobre rutas declaradas en dos repositorios de dominio",
+            "Ni un fichero se mueve de scripts/, ni un envelope cambia: los consumidores no se enteran",
+        ],
+    },
 }
 
 VERSION_ORDER = [
@@ -432,6 +454,7 @@ VERSION_ORDER = [
     "v37",
     "v38",
     "v39",
+    "v40",
 ]
 
 

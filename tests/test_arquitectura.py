@@ -381,3 +381,42 @@ def test_la_deteccion_de_rutas_duplicadas_puede_fallar(tmp_path, monkeypatch):
     assert arch.rutas_duplicadas() == [
         {"file": "el-mismo.json", "contexts": ["dos", "uno"]}
     ]
+
+
+# ── La frontera del kernel, medida (v40.0) ────────────────────────────────────
+
+
+def test_el_kernel_declara_sus_tres_ganchos_con_motivo():
+    """«No depender de ningún contexto de dominio» era prosa, y se incumplía.
+
+    Tres cruces kernel → dominio vivían en la baseline genérica, indistinguibles
+    de la deuda corriente y sin una línea que dijera por qué. Es la misma forma
+    que tenía la prohibición del Meta-toolkit antes de v40.0.
+    """
+    assert set(arch.GANCHOS_DEL_KERNEL) == {
+        ("vault_io", "vault_secret_scan"),
+        ("vault_io", "vault_section_index"),
+        ("vault_errors", "vault_voice"),
+    }
+    for par, motivo in arch.GANCHOS_DEL_KERNEL.items():
+        assert len(motivo) > 40, f"{par} sin motivo escrito"
+
+
+def test_ningun_cruce_kernel_dominio_sin_declarar():
+    assert arch.dependencias_del_kernel() == [], (
+        "el kernel importó un módulo de dominio sin declararlo en "
+        "GANCHOS_DEL_KERNEL con su motivo"
+    )
+    assert arch.check()["undeclared_kernel_deps"] == []
+
+
+def test_un_gancho_no_declarado_rompe_la_puerta(monkeypatch):
+    """La puerta tiene que morder, o es decorativa (AP-44)."""
+    sin_uno = dict(arch.GANCHOS_DEL_KERNEL)
+    sin_uno.pop(("vault_io", "vault_secret_scan"))
+    monkeypatch.setattr(arch, "GANCHOS_DEL_KERNEL", sin_uno)
+    hallazgos = arch.dependencias_del_kernel()
+    assert ("vault_io", "vault_secret_scan") in {
+        (h["from"], h["to"]) for h in hallazgos
+    }
+    assert arch.check()["ok"] is False
