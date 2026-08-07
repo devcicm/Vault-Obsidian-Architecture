@@ -15,16 +15,45 @@ from urllib.parse import urlparse
 
 from vault_errors import wrap_main
 from vault_lib import utcnow
-from vault_io import VAULT_ROOT, atomic_write_json, file_lock
+from vault_io import atomic_write_json, file_lock
 
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
-USAGE_DIR = VAULT_ROOT / "00_System" / "token-usage"
-FLOW_DIR = USAGE_DIR / "flows"
-PID_FILE = USAGE_DIR / "token-service.pid"
-PORT_FILE = USAGE_DIR / "token-service.port"
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8765
+
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.consulta.repositorio import RepositorioConsulta  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioConsulta:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioConsulta(construir(root))
+
+
+def _usage_dir() -> Path:
+    return _repo().dir_uso_tokens
+
+
+def _flow_dir() -> Path:
+    return _repo().dir_flujos_tokens
+
+
+def _pid_file() -> Path:
+    return _repo().pid_servicio_tokens
+
+
+def _port_file() -> Path:
+    return _repo().puerto_servicio_tokens
 
 
 def estimate_tokens(text: str) -> int:
@@ -47,7 +76,7 @@ def estimate_tokens(text: str) -> int:
 
 def _flow_path(flow_id: str) -> Path:
     safe = re.sub(r"[^A-Za-z0-9_.-]+", "-", flow_id).strip("-") or "default"
-    return FLOW_DIR / f"{safe}.json"
+    return _flow_dir() / f"{safe}.json"
 
 
 def _read_json(path: Path, default: Dict[str, Any]) -> Dict[str, Any]:
@@ -107,7 +136,7 @@ def start_flow(payload: Dict[str, Any]) -> Dict[str, Any]:
     )
     operation = payload.get("operation", "")
     path = _flow_path(flow_id)
-    FLOW_DIR.mkdir(parents=True, exist_ok=True)
+    _flow_dir().mkdir(parents=True, exist_ok=True)
     with file_lock(path):
         flow = _read_json(path, _default_flow(flow_id, operation))
         if not flow.get("createdAt"):
@@ -122,7 +151,7 @@ def start_flow(payload: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "ok": True,
         "flow_id": flow_id,
-        "path": str(path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(path.relative_to(_raiz())).replace("\\", "/"),
     }
 
 
@@ -131,7 +160,7 @@ def add_event(payload: Dict[str, Any]) -> Dict[str, Any]:
     if not flow_id:
         return {"ok": False, "error": "missing_flow_id"}
     path = _flow_path(flow_id)
-    FLOW_DIR.mkdir(parents=True, exist_ok=True)
+    _flow_dir().mkdir(parents=True, exist_ok=True)
     text = payload.get("text", "")
     tokens = payload.get("tokens")
     token_count = int(tokens) if tokens is not None else estimate_tokens(str(text))
@@ -186,7 +215,7 @@ def service_status() -> Dict[str, Any]:
         "service": "vault_token_service",
         "pid": os.getpid(),
         "time": utcnow(),
-        "usageDir": str(USAGE_DIR.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "usageDir": str(_usage_dir().relative_to(_raiz())).replace("\\", "/"),
     }
 
 
@@ -250,9 +279,9 @@ class TokenHandler(BaseHTTPRequestHandler):
 
 
 def serve(host: str, port: int) -> int:
-    USAGE_DIR.mkdir(parents=True, exist_ok=True)
-    PID_FILE.write_text(str(os.getpid()), encoding="utf-8")
-    PORT_FILE.write_text(str(port), encoding="utf-8")
+    _usage_dir().mkdir(parents=True, exist_ok=True)
+    _pid_file().write_text(str(os.getpid()), encoding="utf-8")
+    _port_file().write_text(str(port), encoding="utf-8")
     server = ThreadingHTTPServer((host, port), TokenHandler)
     try:
         server.serve_forever()
@@ -260,7 +289,7 @@ def serve(host: str, port: int) -> int:
         pass
     finally:
         server.server_close()
-        for file in (PID_FILE, PORT_FILE):
+        for file in (_pid_file(), _port_file()):
             try:
                 file.unlink()
             except OSError:

@@ -25,7 +25,6 @@ Usage:
 """
 
 
-
 import argparse
 
 import json
@@ -39,14 +38,28 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from vault_io import VAULT_ROOT
-PATTERNS_DIR = VAULT_ROOT / "05_Patterns"
-
-INDEX_FILE = PATTERNS_DIR / "index.json"
-
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
 
 
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _patterns_dir() -> Path:
+    return _repo().seccion("05_Patterns")
+
+
+def _index_file() -> Path:
+    return _repo().indice_de_seccion("05_Patterns")
 
 
 def vault_pattern_list(
@@ -61,7 +74,7 @@ def vault_pattern_list(
 
     try:
 
-        with open(INDEX_FILE, "r", encoding="utf-8") as f:
+        with open(_index_file(), "r", encoding="utf-8") as f:
 
             index = json.load(f)
 
@@ -70,9 +83,7 @@ def vault_pattern_list(
         return {"ok": False, "error": "Pattern index not found. Save patterns first with vault_pattern_save."}
 
 
-
     patterns = index.get("patterns", [])
-
 
 
     if project:
@@ -90,7 +101,6 @@ def vault_pattern_list(
         patterns = [p for p in patterns if p.get("status", "").lower() == status_normalized]
 
 
-
     grouped: Dict[str, List[str]] = {
 
         "implementado": [],
@@ -106,7 +116,6 @@ def vault_pattern_list(
     }
 
 
-
     for p in patterns:
 
         s = p.get("status", "")
@@ -118,7 +127,6 @@ def vault_pattern_list(
         else:
 
             grouped["implementado"].append(p.get("pattern", ""))
-
 
 
     return {
@@ -142,9 +150,6 @@ def vault_pattern_list(
         },
 
     }
-
-
-
 
 
 def main():
@@ -190,7 +195,6 @@ Notas:
     parser.add_argument("--status", help="Filter by status")
 
 
-
     args = parser.parse_args()
 
     result = vault_pattern_list(args.project, args.type, args.status)
@@ -198,9 +202,6 @@ Notas:
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
     return 0 if result["ok"] else 1
-
-
-
 
 
 if __name__ == "__main__":

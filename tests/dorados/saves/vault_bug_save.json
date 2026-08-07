@@ -1,0 +1,16 @@
+{
+  "envelope": {
+    "action": "created",
+    "bug_id": "BUG-001",
+    "created": 4,
+    "ok": true,
+    "path": "18_Bugs/open/demo-excepcion-al-guardar.md",
+    "phase": "open",
+    "timestamp": "<FECHA>",
+    "tool": "vault_bug_save",
+    "unchanged": 0,
+    "updated": 1,
+    "written": 5
+  },
+  "nota": "---\ntitle: Excepción al guardar\nid: <UUID>\nbug_id: BUG-001\ntype: bug\nproject: demo\nphase: open\nstatus: in-progress\nbug_state: open\nseverity: medium\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ntags: [\"demo\", \"bug\", \"medium\"]\ncia_integrity: high\ncia_availability: medium\ncia_sensitivity: internal\nagent: system\n---\n\n## Síntoma\n\nRevienta con acentuación en el título.\n\n## Ciclo\n\n**open** | root-cause | fixed"
+}

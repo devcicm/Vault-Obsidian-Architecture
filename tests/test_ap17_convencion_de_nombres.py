@@ -113,7 +113,11 @@ def test_el_detector_completo_no_reporta_el_par_de_interfaz(tmp_path, monkeypatc
             encoding="utf-8",
         )
 
-    monkeypatch.setattr(vault_audit, "VAULT_ROOT", vault)
+    # Se apunta la raíz, no la constante: `vault_audit.VAULT_ROOT` ya no existe
+    # y el monkeypatch habría sido un atributo inerte que nadie lee.
+    import vault_io
+
+    vault_io.set_vault_root(vault)
     notas = sorted((vault / "11_Code").glob("*.md"))
     pares = vault_audit._detect_canonical_shadow(notas)
 

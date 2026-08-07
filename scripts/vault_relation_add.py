@@ -31,7 +31,7 @@ import re
 import sys
 
 from vault_errors import wrap_main
-from vault_lib import slugify_strict, utcnow
+from vault_lib import yaml_scalar, slugify_strict, utcnow
 import uuid
 
 from pathlib import Path
@@ -40,13 +40,34 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-from vault_io import VAULT_ROOT, atomic_write_text, atomic_write_json, write_report
+from vault_io import atomic_write_text, atomic_write_json, write_report
 
-DIAGRAMS_DIR = VAULT_ROOT / "06_Diagrams"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-ENTITY_DIR = DIAGRAMS_DIR / "entity"
+from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
+from vault.kernel import construir  # noqa: E402
 
-RELATIONS_FILE = ENTITY_DIR / "relations.json"
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioGrafo:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioGrafo(construir(root))
+
+
+def _diagrams_dir() -> Path:
+    return _repo().dir_diagramas
+
+
+def _entity_dir() -> Path:
+    return _repo().dir_entidades
+
+
+
+RELATIONS_FILE = _entity_dir() / "relations.json"
 
 
 RELATION_TYPES = [
@@ -90,7 +111,7 @@ def slugify(text: str) -> str:
 
 
 def load_relations(project: str) -> Dict[str, Any]:
-    project_file = ENTITY_DIR / f"{slugify(project)}-relations.json"
+    project_file = _entity_dir() / f"{slugify(project)}-relations.json"
 
     try:
         with open(project_file, "r", encoding="utf-8") as f:
@@ -101,9 +122,9 @@ def load_relations(project: str) -> Dict[str, Any]:
 
 
 def save_relations(project: str, data: Dict[str, Any]) -> None:
-    ENTITY_DIR.mkdir(parents=True, exist_ok=True)
+    _entity_dir().mkdir(parents=True, exist_ok=True)
 
-    project_file = ENTITY_DIR / f"{slugify(project)}-relations.json"
+    project_file = _entity_dir() / f"{slugify(project)}-relations.json"
 
     atomic_write_json(project_file, data)
 
@@ -181,11 +202,11 @@ def vault_relation_add(
             and rel["toEntity"] == to_entity
             and rel["relationType"] == relation_type
         ):
-            erd_path = ENTITY_DIR / f"{slugify(project)}-erd.md"
+            erd_path = _entity_dir() / f"{slugify(project)}-erd.md"
 
             return {
                 "ok": True,
-                "path": str(erd_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+                "path": str(erd_path.relative_to(_raiz())).replace("\\", "/"),
                 "relationsTotal": len(relations),
                 "deduplicated": True,
             }
@@ -210,13 +231,13 @@ def vault_relation_add(
 
     erd_content = generate_erd_mermaid(project, relations)
 
-    erd_path = ENTITY_DIR / f"{slugify(project)}-erd.md"
+    erd_path = _entity_dir() / f"{slugify(project)}-erd.md"
 
     erd_frontmatter = ["---"]
 
-    erd_frontmatter.append(f"title: {project} ERD")
+    erd_frontmatter.append(f"title: {yaml_scalar(f'{project} ERD')}")
 
-    erd_frontmatter.append(f"project: {project}")
+    erd_frontmatter.append(f"project: {yaml_scalar(project)}")
 
     erd_frontmatter.append(f"updatedAt: {utcnow()}")
 
@@ -233,7 +254,7 @@ def vault_relation_add(
     return {
         "ok": True,
         **write_report(),
-        "path": str(erd_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(erd_path.relative_to(_raiz())).replace("\\", "/"),
         "relationsTotal": len(relations),
         "deduplicated": False,
     }

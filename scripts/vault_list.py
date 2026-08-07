@@ -36,6 +36,7 @@ import re
 
 import sys
 
+from vault_registry import ORDERED_SECTIONS, section_description
 from vault_errors import wrap_main
 
 from datetime import datetime
@@ -48,67 +49,44 @@ from typing import Any, Dict, List, Optional
 
 # Configuration
 
-from vault_io import VAULT_ROOT
+from vault_io import get_vault_root
 
 
 # Folder descriptions
 
-FOLDER_DESCRIPTIONS = {
-
-    "00_System": "Identidad y reglas del agente",
-
-    "01_Projects": "Un subfolder por proyecto",
-
-    "02_Observability": "Historial de errores y trazas",
-
-    "03_Decisions": "ADRs navegables",
-
-    "04_Sessions": "Logs de sesión por día",
-
-    "05_Patterns": "Patrones con estado evolutivo",
-
-    "06_Diagrams": "Diagramas Mermaid",
-
-    "07_Knowledge": "Glosario, APIs, reglas de negocio",
-
-    "08_Runbooks": "Procedimientos operacionales",
-
-    "09_Infrastructure": "Mapa de red y servidores",
-
-    "10_Migrated": "Docs externas migradas",
-
-    "99_Index": "Índices y grafos",
-
-}
+# Doce descripciones escritas a mano que ya no coincidían con ninguna del
+# registro, y diez secciones sin entrada. Duplicar el texto no daba nada: aquí
+# solo se muestra.
+FOLDER_DESCRIPTIONS = {f: section_description(f) for f in ORDERED_SECTIONS}
 
 
 
+# El icono sí es dato propio de esta tool —el registro no lo tiene— y por eso
+# se escribe entero: una sección sin entrada se listaba sin icono, y las diez
+# que faltaban eran justo las diez más nuevas.
 FOLDER_ICONS = {
-
     "00_System": "⚙️",
-
     "01_Projects": "📁",
-
     "02_Observability": "🔍",
-
     "03_Decisions": "📋",
-
     "04_Sessions": "📅",
-
     "05_Patterns": "🔄",
-
     "06_Diagrams": "📊",
-
     "07_Knowledge": "📚",
-
     "08_Runbooks": "📖",
-
-    "09_Infrastructure": "🖥️",
-
+    "09_Infrastructure": "🏗️",
     "10_Migrated": "📦",
-
-    "99_Index": "🔎",
-
+    "11_Code": "💻",
+    "12_Bibliography": "🔖",
+    "13_Flows": "🔀",
+    "14_Requirements": "📐",
+    "15_Tests": "🧪",
+    "16_AI_Governance": "⚖️",
+    "17_Preferences": "🎛️",
+    "18_Bugs": "🐞",
+    "19_Audits": "🗒️",
+    "20_Quarantine": "🚧",
+    "99_Index": "🗂️",
 }
 
 
@@ -251,7 +229,7 @@ def vault_list(folder: Optional[str] = None, status: Optional[str] = None, limit
 
         folders = []
 
-        for item in sorted(VAULT_ROOT.iterdir()):
+        for item in sorted(get_vault_root().iterdir()):
 
             if item.is_dir() and not item.name.startswith("."):
 
@@ -275,7 +253,7 @@ def vault_list(folder: Optional[str] = None, status: Optional[str] = None, limit
 
                         "noteCount": note_count,
 
-                        "path": str(item.relative_to(VAULT_ROOT)),
+                        "path": str(item.relative_to(get_vault_root())),
 
                     }
 
@@ -289,7 +267,7 @@ def vault_list(folder: Optional[str] = None, status: Optional[str] = None, limit
 
     # List notes in folder
 
-    folder_path = VAULT_ROOT / folder
+    folder_path = get_vault_root() / folder
 
     if not folder_path.exists():
 
@@ -315,7 +293,7 @@ def vault_list(folder: Optional[str] = None, status: Optional[str] = None, limit
 
             {
 
-                "path": str(note_path.relative_to(VAULT_ROOT)),
+                "path": str(note_path.relative_to(get_vault_root())),
 
                 "title": meta.get("title", note_path.stem),
 

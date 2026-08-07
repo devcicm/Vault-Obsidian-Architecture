@@ -31,7 +31,7 @@ import re
 import sys
 
 from vault_errors import wrap_main
-from vault_lib import slugify_strict, utcnow
+from vault_lib import yaml_scalar, slugify_strict, utcnow
 import uuid
 
 from datetime import datetime, timezone
@@ -40,16 +40,39 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioGobernanza:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioGobernanza(construir(root))
+
+
+def _observability_dir() -> Path:
+    return _repo().dir_observabilidad
+
+
+def _vulnerabilities_dir() -> Path:
+    return _repo().dir_vulnerabilidades
+
+
 def _utcdate() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
 
-from vault_io import VAULT_ROOT, atomic_write_text, write_report
+from vault_io import atomic_write_text, write_report
 from vault_secret_scan import redact_secrets as _redactar_por_registro
-
-OBSERVABILITY_DIR = VAULT_ROOT / "02_Observability"
-
-VULNERABILITIES_DIR = OBSERVABILITY_DIR / "vulnerabilities"
+# El vocabulario se declara una vez y se consume, no se copia. Ver
+# `vault_vocabulario.py` para el registro y su contexto dueño.
+from vault_vocabulario import opciones as _opciones
 
 
 IGNORED_DIRS = {
@@ -610,7 +633,7 @@ def scan_directory(
 
 
 def save_findings_to_vault(findings: List[Dict], project: str) -> List[str]:
-    VULNERABILITIES_DIR.mkdir(parents=True, exist_ok=True)
+    _vulnerabilities_dir().mkdir(parents=True, exist_ok=True)
 
     timestamp = _utcdate()
 
@@ -633,9 +656,9 @@ def save_findings_to_vault(findings: List[Dict], project: str) -> List[str]:
 
     report_lines = ["---"]
 
-    report_lines.append(f"title: Security Scan Report - {project}")
+    report_lines.append(f"title: {yaml_scalar(f'Security Scan Report - {project}')}")
 
-    report_lines.append(f"project: {project}")
+    report_lines.append(f"project: {yaml_scalar(project)}")
 
     report_lines.append(f"date: {timestamp}")
 
@@ -649,7 +672,7 @@ def save_findings_to_vault(findings: List[Dict], project: str) -> List[str]:
 
     report_lines.append(f"**Total hallazgos:** {len(findings)}\n")
 
-    for sev in ["critical", "high", "medium", "low"]:
+    for sev in _opciones("severidad"):
         if by_severity[sev]:
             report_lines.append(f"## {sev.upper()} ({len(by_severity[sev])})\n")
 
@@ -667,32 +690,32 @@ def save_findings_to_vault(findings: List[Dict], project: str) -> List[str]:
                 report_lines.append(f"- **Mitigación:** {f['mitigation']}\n")
 
     report_path = (
-        VULNERABILITIES_DIR / f"security-scan-{slugify(project)}-{timestamp}.md"
+        _vulnerabilities_dir() / f"security-scan-{slugify(project)}-{timestamp}.md"
     )
 
     # atomic_write_* y no `open(..., "w")`: el escaneo de secretos, el saneado de
     # encoding y el temp+replace viven ahí (AP-36).
     atomic_write_text(report_path, "\n".join(report_lines))
 
-    saved_files.append(str(report_path.relative_to(VAULT_ROOT)))
+    saved_files.append(str(report_path.relative_to(_raiz())))
 
     for f in findings:
         if f["severity"] in ["critical", "high"]:
             slug = slugify(f["ruleId"] + "-" + f["category"])
 
-            note_path = VULNERABILITIES_DIR / f"{f['ruleId']}-{slug}-{timestamp}.md"
+            note_path = _vulnerabilities_dir() / f"{f['ruleId']}-{slug}-{timestamp}.md"
 
             note_lines = ["---"]
 
-            note_lines.append(f"title: {f['ruleId']} - {f['category']}")
+            note_lines.append(f"title: {yaml_scalar(str(f['ruleId']) + ' - ' + str(f['category']))}")
 
-            note_lines.append(f"ruleId: {f['ruleId']}")
+            note_lines.append(f"ruleId: {yaml_scalar(str(f['ruleId']))}")
 
             note_lines.append(f"severity: {f['severity']}")
 
-            note_lines.append(f"category: {f['category']}")
+            note_lines.append(f"category: {yaml_scalar(f['category'])}")
 
-            note_lines.append(f"project: {project}")
+            note_lines.append(f"project: {yaml_scalar(project)}")
 
             note_lines.append(f"date: {timestamp}")
 
@@ -715,7 +738,7 @@ def save_findings_to_vault(findings: List[Dict], project: str) -> List[str]:
 
             atomic_write_text(note_path, "\n".join(note_lines))
 
-            saved_files.append(str(note_path.relative_to(VAULT_ROOT)))
+            saved_files.append(str(note_path.relative_to(_raiz())))
 
     return saved_files
 
@@ -736,7 +759,7 @@ def vault_security_scan(
 ) -> Dict[str, Any]:
     p = Path(path)
 
-    scan_path = p if p.is_absolute() else VAULT_ROOT / p
+    scan_path = p if p.is_absolute() else _raiz() / p
 
     if not scan_path.exists():
         return {"ok": False, "error": f"Path not found: {path}"}

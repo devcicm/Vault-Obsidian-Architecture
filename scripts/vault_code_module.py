@@ -18,16 +18,40 @@ import json
 import re
 import sys
 from vault_errors import wrap_main
-from vault_lib import utcnow, slugify
+from vault_lib import yaml_scalar, utcnow, slugify
 import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-from vault_io import VAULT_ROOT, atomic_write_text, atomic_write_json, write_report, resolve_input_path
+from vault_io import (
+    atomic_write_text,
+    atomic_write_json,
+    write_report,
+    resolve_input_path,
+    indice_compartido,
+)
 
-CODE_DIR = VAULT_ROOT / "11_Code"
-INDEX_FILE = CODE_DIR / ".code-index.json"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioGrafo:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioGrafo(construir(root))
+
+
+def _code_dir() -> Path:
+    return _repo().dir_codigo
+
+INDEX_FILE = _code_dir() / ".code-index.json"
 
 LANGUAGES = [
     "javascript",
@@ -79,8 +103,15 @@ def load_index() -> Dict[str, Any]:
         return {"modules": [], "relations": []}
 
 
+# superseded_by: vault_io.indice_compartido
+#
+# Leia/escribia el indice fuera de todo tramo exclusivo, que es justo el
+# lost update que `indice_compartido` cierra. Se conserva con su contrato
+# intacto por la politica de no-derogacion: ya no lo llama el camino de
+# guardado, y no debe volver a llamarlo. Si necesitas el indice, entra por
+# `indice_compartido`, que cubre desde la lectura hasta la escritura.
 def save_index(data: Dict[str, Any]) -> None:
-    CODE_DIR.mkdir(parents=True, exist_ok=True)
+    _code_dir().mkdir(parents=True, exist_ok=True)
     atomic_write_json(INDEX_FILE, data)
 
 
@@ -166,7 +197,7 @@ def vault_code_module(
     # AP-17 guard: check .code-index.json for existing note with same file_path.
     # vault_write and vault_code_module may derive different slugs for the same source file.
     # The index is the canonical source of truth for which slug was used first.
-    note_path = CODE_DIR / safe_project / f"{fslug}.md"
+    note_path = _code_dir() / safe_project / f"{fslug}.md"
     index = load_index()
     for existing_mod in index.get("modules", []):
         if (
@@ -174,7 +205,7 @@ def vault_code_module(
             and existing_mod.get("project") == project
         ):
             canonical_rel = existing_mod.get("relPath", "")
-            canonical_path = VAULT_ROOT / canonical_rel if canonical_rel else None
+            canonical_path = _raiz() / canonical_rel if canonical_rel else None
             if (
                 canonical_path
                 and canonical_path.exists()
@@ -212,9 +243,9 @@ def vault_code_module(
 
     frontmatter = ["---"]
     frontmatter.append(f"id: {note_id}")
-    frontmatter.append(f"title: {Path(file_path).name}")
-    frontmatter.append(f"project: {project}")
-    frontmatter.append(f"file_path: {file_path}")
+    frontmatter.append(f"title: {yaml_scalar(Path(file_path).name)}")
+    frontmatter.append(f"project: {yaml_scalar(project)}")
+    frontmatter.append(f"file_path: {yaml_scalar(file_path)}")
     frontmatter.append(f"type: code-module")
     if language:
         frontmatter.append(f"language: {language}")
@@ -398,41 +429,44 @@ def vault_code_module(
     note_path.parent.mkdir(parents=True, exist_ok=True)
     atomic_write_text(note_path, final_content)
 
-    index = load_index()
+    # El tramo exclusivo abarca desde la lectura hasta la escritura: sin el,
+    # dos ejecuciones concurrentes leen el mismo indice, cada una anade su
+    # entrada, gana la segunda y la primera desaparece con las dos tools
+    # devolviendo `ok: true` (AP-37 por la puerta de atras).
+    with indice_compartido(INDEX_FILE, {"modules": [], "relations": []}) as index:
 
-    method_names = [m.get("name", "") for m in (methods or [])] if methods else []
-    class_names = [c.get("name", "") for c in (classes or [])] if classes else []
+        method_names = [m.get("name", "") for m in (methods or [])] if methods else []
+        class_names = [c.get("name", "") for c in (classes or [])] if classes else []
 
-    module_entry = {
-        "docId": note_id,
-        "project": project,
-        "filePath": file_path,
-        "title": Path(file_path).name,
-        "relPath": str(note_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
-        "exports": exports or [],
-        "language": language or "",
-        "iso_type": iso_type or "",
-        "methods": method_names,
-        "classes": class_names,
-        "quality": {q.get("attribute"): q.get("rating") for q in (quality or [])},
-        "updatedAt": now,
-    }
+        module_entry = {
+            "docId": note_id,
+            "project": project,
+            "filePath": file_path,
+            "title": Path(file_path).name,
+            "relPath": str(note_path.relative_to(_raiz())).replace("\\", "/"),
+            "exports": exports or [],
+            "language": language or "",
+            "iso_type": iso_type or "",
+            "methods": method_names,
+            "classes": class_names,
+            "quality": {q.get("attribute"): q.get("rating") for q in (quality or [])},
+            "updatedAt": now,
+        }
 
-    for i, m in enumerate(index["modules"]):
-        if m["filePath"] == file_path:
-            index["modules"][i] = module_entry
-            break
-    else:
-        index["modules"].append(module_entry)
+        for i, m in enumerate(index["modules"]):
+            if m["filePath"] == file_path:
+                index["modules"][i] = module_entry
+                break
+        else:
+            index["modules"].append(module_entry)
 
-    save_index(index)
 
     has_relations = any(
         r.get("from") == file_path or r.get("to") == file_path
         for r in index.get("relations", [])
     )
 
-    note_rel = str(note_path.relative_to(VAULT_ROOT)).replace("\\", "/")
+    note_rel = str(note_path.relative_to(_raiz())).replace("\\", "/")
 
     result: Dict[str, Any] = {
         "ok": True,
@@ -596,7 +630,7 @@ Notas:
 
             fslug_val = file_slug(str(code_file))
             safe_project = slugify(args.project)
-            note_path_check = CODE_DIR / safe_project / f"{fslug_val}.md"
+            note_path_check = _code_dir() / safe_project / f"{fslug_val}.md"
             if note_path_check.exists():
                 skipped.append({"file": rel_path, "reason": "already documented"})
                 continue

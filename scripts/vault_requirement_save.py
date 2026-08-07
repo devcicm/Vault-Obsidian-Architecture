@@ -36,14 +36,14 @@ import sys
 
 from vault_errors import wrap_main
 from vault_norms import status_frontmatter_lines
-from vault_lib import slugify_strict, utcnow
+from vault_lib import yaml_scalar, slugify_strict, utcnow
 from datetime import datetime, timezone
 from vault_io import (
+    indice_compartido,
     write_report,
     atomic_write_text,
     atomic_write_json,
     assert_within_vault,
-    VAULT_ROOT,
 )
 import uuid
 
@@ -53,13 +53,33 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _req_dir() -> Path:
+    return _repo().seccion("14_Requirements")
+
+
+def _index_file() -> Path:
+    return _repo().seccion("14_Requirements") / ".requirements-index.json"
+
+
 def utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-
-
-REQ_DIR = VAULT_ROOT / "14_Requirements"
-
-INDEX_FILE = REQ_DIR / ".requirements-index.json"
 
 
 REQ_TYPES = ["functional", "non-functional", "constraint", "assumption"]
@@ -76,19 +96,33 @@ def slugify(text: str) -> str:
     return slugify_strict(text)
 
 
+# superseded_by: vault_io.indice_compartido
+#
+# Leia/escribia el indice fuera de todo tramo exclusivo, que es justo el
+# lost update que `indice_compartido` cierra. Se conserva con su contrato
+# intacto por la politica de no-derogacion: ya no lo llama el camino de
+# guardado, y no debe volver a llamarlo. Si necesitas el indice, entra por
+# `indice_compartido`, que cubre desde la lectura hasta la escritura.
 def load_index() -> Dict[str, Any]:
     try:
-        with open(INDEX_FILE, "r", encoding="utf-8") as f:
+        with open(_index_file(), "r", encoding="utf-8") as f:
             return json.load(f)
 
     except (FileNotFoundError, json.JSONDecodeError):
         return {"requirements": []}
 
 
+# superseded_by: vault_io.indice_compartido
+#
+# Leia/escribia el indice fuera de todo tramo exclusivo, que es justo el
+# lost update que `indice_compartido` cierra. Se conserva con su contrato
+# intacto por la politica de no-derogacion: ya no lo llama el camino de
+# guardado, y no debe volver a llamarlo. Si necesitas el indice, entra por
+# `indice_compartido`, que cubre desde la lectura hasta la escritura.
 def save_index(data: Dict[str, Any]) -> None:
-    REQ_DIR.mkdir(parents=True, exist_ok=True)
+    _req_dir().mkdir(parents=True, exist_ok=True)
 
-    atomic_write_json(INDEX_FILE, data)
+    atomic_write_json(_index_file(), data)
 
 
 def vault_requirement_save(
@@ -124,128 +158,130 @@ def vault_requirement_save(
 
     now = utcnow()
 
-    index = load_index()
+    # El lock abarca desde la lectura hasta la escritura, no solo la
+    # escritura: este indice es tambien el contador del correlativo, y
+    # reservar el numero fuera del tramo exclusivo hace que dos guardados
+    # concurrentes obtengan el mismo id y el mismo nombre de fichero.
+    with indice_compartido(_index_file(), {"requirements": []}) as index:
 
-    # Count existing requirements for this project to get sequential ID
+        # Count existing requirements for this project to get sequential ID
 
-    project_reqs = [r for r in index["requirements"] if r.get("project") == project]
+        project_reqs = [r for r in index["requirements"] if r.get("project") == project]
 
-    req_number = len(project_reqs) + 1
+        req_number = len(project_reqs) + 1
 
-    req_id = f"REQ-{req_number:03d}"
+        req_id = f"REQ-{req_number:03d}"
 
-    note_id = str(uuid.uuid4())
+        note_id = str(uuid.uuid4())
 
-    filename = f"req-{req_number:03d}-{title_slug}.md"
+        filename = f"req-{req_number:03d}-{title_slug}.md"
 
-    note_path = REQ_DIR / safe_project / filename
+        note_path = _req_dir() / safe_project / filename
 
-    try:
-        assert_within_vault(note_path, VAULT_ROOT)
+        try:
+            assert_within_vault(note_path, _raiz())
 
-    except ValueError as exc:
-        return {
-            "ok": False,
-            "error_code": "INVALID_PATH",
-            "error": "INVALID_PATH",
-            "message": str(exc),
+        except ValueError as exc:
+            return {
+                "ok": False,
+                "error_code": "INVALID_PATH",
+                "error": "INVALID_PATH",
+                "message": str(exc),
+            }
+
+        tags_list = list(tags or [])
+
+        tags_list.extend([safe_project, "requirement", req_type, priority])
+
+        cia_integrity = "high" if priority == "must-have" else "medium"
+
+        frontmatter = Frontmatter()
+
+        frontmatter.set("id", note_id)
+
+        frontmatter.set("req_id", req_id)
+
+        frontmatter.set("title", title)
+
+        frontmatter.set("project", project)
+
+        frontmatter.set("req_type", req_type)
+
+        frontmatter.set("priority", priority)
+
+        frontmatter.lineas(status_frontmatter_lines("vault_requirement_save", status))
+
+        frontmatter.set("createdAt", now)
+
+        frontmatter.set("updatedAt", now)
+
+        if tags_list:
+            frontmatter.set("tags", list(dict.fromkeys(tags_list)))
+
+        frontmatter.set("cia_integrity", cia_integrity)
+
+        frontmatter.set("cia_availability", "medium")
+
+        frontmatter.set("cia_sensitivity", "internal")
+
+        frontmatter.set("agent", "system")
+
+
+        body_sections = []
+
+        body_sections.append(f"## Descripcion\n\n{description}")
+
+        if acceptance_criteria:
+            lines = ["## Criterios de Aceptacion\n"]
+
+            for i, criterion in enumerate(acceptance_criteria, 1):
+                lines.append(f"{i}. {criterion}")
+
+            body_sections.append("\n".join(lines))
+
+        if related_code:
+            rows = ["## Trazabilidad\n", "| Archivo | Rol |", "|---|---|"]
+
+            for code_file in related_code:
+                rows.append(f"| `{code_file}` | implementacion |")
+
+            body_sections.append("\n".join(rows))
+
+        if source:
+            body_sections.append(f"## Fuente\n\n{source}")
+
+        # Status badge
+
+        status_line = " | ".join(f"**{s}**" if s == status else s for s in STATUSES)
+
+        body_sections.append(f"## Estado\n\n**Estado:** {status_line}")
+
+        final_content = frontmatter.render() + "\n\n" + "\n\n".join(body_sections)
+
+        note_path.parent.mkdir(parents=True, exist_ok=True)
+
+        atomic_write_text(note_path, final_content)
+
+        entry = {
+            "docId": note_id,
+            "req_id": req_id,
+            "project": project,
+            "title": title,
+            "req_type": req_type,
+            "priority": priority,
+            "status": status,
+            "relPath": str(note_path.relative_to(_raiz())).replace("\\", "/"),
+            "related_code": related_code or [],
+            "updatedAt": now,
         }
 
-    tags_list = list(tags or [])
+        index["requirements"].append(entry)
 
-    tags_list.extend([safe_project, "requirement", req_type, priority])
-
-    cia_integrity = "high" if priority == "must-have" else "medium"
-
-    frontmatter = ["---"]
-
-    frontmatter.append(f"id: {note_id}")
-
-    frontmatter.append(f"req_id: {req_id}")
-
-    frontmatter.append(f"title: {title}")
-
-    frontmatter.append(f"project: {project}")
-
-    frontmatter.append(f"req_type: {req_type}")
-
-    frontmatter.append(f"priority: {priority}")
-
-    frontmatter.extend(status_frontmatter_lines("vault_requirement_save", status))
-
-    frontmatter.append(f"createdAt: {now}")
-
-    frontmatter.append(f"updatedAt: {now}")
-
-    if tags_list:
-        frontmatter.append(f"tags: {json.dumps(list(dict.fromkeys(tags_list)))}")
-
-    frontmatter.append(f"cia_integrity: {cia_integrity}")
-
-    frontmatter.append(f"cia_availability: medium")
-
-    frontmatter.append(f"cia_sensitivity: internal")
-
-    frontmatter.append(f"agent: system")
-
-    frontmatter.append("---")
-
-    body_sections = []
-
-    body_sections.append(f"## Descripcion\n\n{description}")
-
-    if acceptance_criteria:
-        lines = ["## Criterios de Aceptacion\n"]
-
-        for i, criterion in enumerate(acceptance_criteria, 1):
-            lines.append(f"{i}. {criterion}")
-
-        body_sections.append("\n".join(lines))
-
-    if related_code:
-        rows = ["## Trazabilidad\n", "| Archivo | Rol |", "|---|---|"]
-
-        for code_file in related_code:
-            rows.append(f"| `{code_file}` | implementacion |")
-
-        body_sections.append("\n".join(rows))
-
-    if source:
-        body_sections.append(f"## Fuente\n\n{source}")
-
-    # Status badge
-
-    status_line = " | ".join(f"**{s}**" if s == status else s for s in STATUSES)
-
-    body_sections.append(f"## Estado\n\n**Estado:** {status_line}")
-
-    final_content = "\n".join(frontmatter) + "\n\n" + "\n\n".join(body_sections)
-
-    note_path.parent.mkdir(parents=True, exist_ok=True)
-
-    atomic_write_text(note_path, final_content)
-
-    entry = {
-        "docId": note_id,
-        "req_id": req_id,
-        "project": project,
-        "title": title,
-        "req_type": req_type,
-        "priority": priority,
-        "status": status,
-        "relPath": str(note_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
-        "related_code": related_code or [],
-        "updatedAt": now,
-    }
-
-    index["requirements"].append(entry)
-
-    save_index(index)
 
     return {
         "ok": True,
         **write_report(),
-        "path": str(note_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(note_path.relative_to(_raiz())).replace("\\", "/"),
         "req_id": req_id,
         "action": "created",
     }

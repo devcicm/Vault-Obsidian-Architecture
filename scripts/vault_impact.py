@@ -28,11 +28,34 @@ from typing import Any, Dict, List, Optional, Set
 
 from vault_errors import wrap_main
 
-from vault_io import VAULT_ROOT
 
-GRAPH_FILE = VAULT_ROOT / "99_Index" / "graph.json"
-ENRICHED_FILE = VAULT_ROOT / "99_Index" / "graph-enriched.json"
-CHANGE_LOG_JSON = VAULT_ROOT / "00_System" / ".change-log.json"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioGrafo:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioGrafo(construir(root))
+
+
+def _graph_file() -> Path:
+    return _repo().grafo
+
+
+def _enriched_file() -> Path:
+    return _repo().grafo_enriquecido
+
+
+def _change_log_json() -> Path:
+    return _repo().bitacora_cambios
+
 
 CIA_WEIGHT: Dict[str, int] = {
     "critical": 4,
@@ -50,11 +73,14 @@ RISK_LEVELS = [
 
 
 from vault_lib import read_frontmatter
+# El vocabulario se declara una vez y se consume, no se copia. Ver
+# `vault_vocabulario.py` para el registro y su contexto dueño.
+from vault_vocabulario import opciones as _opciones
 
 
 def _load_graph(predicate_filter: Optional[List[str]] = None) -> Optional[Dict[str, Any]]:
     """Load graph, preferring enriched graph. Optionally filter edges by predicate."""
-    graph_file = ENRICHED_FILE if ENRICHED_FILE.exists() else GRAPH_FILE
+    graph_file = _enriched_file() if _enriched_file().exists() else _graph_file()
     if not graph_file.exists():
         return None
     try:
@@ -100,10 +126,10 @@ def _compute_stale_risk(distance: int, integrity: str) -> str:
 
 def _notes_changed_since(since_date: str) -> List[str]:
     """Read .change-log.json and return paths changed on or after since_date."""
-    if not CHANGE_LOG_JSON.exists():
+    if not _change_log_json().exists():
         return []
     try:
-        entries = json.loads(CHANGE_LOG_JSON.read_text(encoding="utf-8"))
+        entries = json.loads(_change_log_json().read_text(encoding="utf-8"))
     except Exception:
         return []
     cutoff = since_date.strip()
@@ -183,7 +209,7 @@ def vault_impact(
         if dist > max_hops:
             continue
 
-        note_path = VAULT_ROOT / node
+        note_path = _raiz() / node
         fm = read_frontmatter(note_path)
         integrity = fm.get("cia_integrity", "medium").lower()
         stale_risk = _compute_stale_risk(dist, integrity)
@@ -280,7 +306,7 @@ Notas:
     )
     parser.add_argument(
         "--min-risk",
-        choices=["critical", "high", "medium", "low"],
+        choices=_opciones("severidad"),
         metavar="LEVEL",
         help="Filter by minimum stale_risk level",
     )

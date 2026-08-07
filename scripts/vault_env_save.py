@@ -29,9 +29,9 @@ import re
 import sys
 
 from vault_errors import wrap_main
-from vault_lib import slugify_strict, utcnow
+from vault_lib import yaml_scalar, slugify_strict, utcnow
 from datetime import datetime, timezone
-from vault_io import atomic_write_text, assert_within_vault, VAULT_ROOT, write_report
+from vault_io import atomic_write_text, assert_within_vault, write_report
 
 from pathlib import Path
 
@@ -39,11 +39,29 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _projects_dir() -> Path:
+    return _repo().seccion("01_Projects")
+
+
 def utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-
-
-PROJECTS_DIR = VAULT_ROOT / "01_Projects"
 
 
 PROVIDERS = ["env-file", "k8s-secret", "vault", "ci-secrets", "manual"]
@@ -140,7 +158,7 @@ def vault_env_save(
 
     safe_project = slugify(project)
 
-    project_dir = PROJECTS_DIR / safe_project
+    project_dir = _projects_dir() / safe_project
 
     project_dir.mkdir(parents=True, exist_ok=True)
 
@@ -170,7 +188,7 @@ def vault_env_save(
     final_description = description or existing_description
 
     try:
-        assert_within_vault(envs_path, VAULT_ROOT)
+        assert_within_vault(envs_path, _raiz())
 
     except ValueError as exc:
         return {
@@ -180,28 +198,27 @@ def vault_env_save(
             "message": str(exc),
         }
 
-    frontmatter = ["---"]
+    frontmatter = Frontmatter()
 
-    frontmatter.append(f"title: Environment Variables - {project}")
+    frontmatter.set("title", f"Environment Variables - {project}")
 
-    frontmatter.append(f"project: {project}")
+    frontmatter.set("project", project)
 
-    frontmatter.append(f"type: envs")
+    frontmatter.set("type", "envs")
 
-    frontmatter.append(f"updatedAt: {timestamp}")
+    frontmatter.set("updatedAt", timestamp)
 
     if final_description:
-        frontmatter.append(f"description: {final_description}")
+        frontmatter.set("description", final_description)
 
-    frontmatter.append(f"cia_integrity: high")
+    frontmatter.set("cia_integrity", "high")
 
-    frontmatter.append(f"cia_availability: medium")
+    frontmatter.set("cia_availability", "medium")
 
-    frontmatter.append(f"cia_sensitivity: restricted")
+    frontmatter.set("cia_sensitivity", "restricted")
 
-    frontmatter.append(f"agent: system")
+    frontmatter.set("agent", "system")
 
-    frontmatter.append("---")
 
     body = [f"# Environment Variables: {project}\n"]
 
@@ -225,12 +242,12 @@ def vault_env_save(
 
         body.append("")
 
-    atomic_write_text(envs_path, "\n".join(frontmatter) + "\n\n" + "\n".join(body))
+    atomic_write_text(envs_path, frontmatter.render() + "\n\n" + "\n".join(body))
 
     return {
         "ok": True,
         **write_report(),
-        "path": str(envs_path.relative_to(VAULT_ROOT)),
+        "path": str(envs_path.relative_to(_raiz())).replace("\\", "/"),
         "environment": environment,
         "varCount": len(vars),
         "message": f"envs.md updated with {len(vars)} variables for {environment}",
@@ -286,6 +303,27 @@ Notas:
     except json.JSONDecodeError:
         print(json.dumps({"ok": False, "error": "Invalid JSON in --vars"}))
 
+        return 1
+
+    # `--vars` documenta un array de objetos, pero solo se comprobaba que
+    # fuera JSON. Un objeto suelto pasaba la puerta y moría abajo con
+    # `AttributeError: 'str' object has no attribute 'get'`, envuelto como
+    # UNEXPECTED_ERROR de severidad crítica: un error de invocación
+    # presentado como un fallo interno de la tool.
+    if not isinstance(vars_list, list) or not all(
+        isinstance(v, dict) for v in vars_list
+    ):
+        print(
+            json.dumps(
+                {
+                    "ok": False,
+                    "error": (
+                        "--vars espera un array JSON de objetos, p. ej. "
+                        '[{"name": "PORT", "description": "Puerto"}]'
+                    ),
+                }
+            )
+        )
         return 1
 
     result = vault_env_save(args.project, args.environment, vars_list, args.description)

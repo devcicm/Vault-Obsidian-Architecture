@@ -38,15 +38,13 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
-from vault_lib import slugify_strict, utcnow
-from vault_io import (
-    write_report,
-    VAULT_ROOT,
-    assert_within_vault,
-    atomic_write_text,
-    update_section_index,
-)
+from vault_lib import yaml_scalar, slugify_strict, utcnow
+from vault_io import assert_within_vault, atomic_write_text, get_vault_root, write_report
 from vault_norms import compute_norm_refs, status_frontmatter_lines
+# Los `*_save` viven en `scripts/`; el paquete se importa desde la raiz.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 FOLDER = "02_Observability/quality"
 
@@ -224,43 +222,44 @@ _¿Qué cambio sistémico previene esta categoría de no conformidad en el futur
 
     norm_refs = compute_norm_refs(FOLDER, body, [])
     date_prefix = now[:7]  # YYYY-MM
-    fm_lines = [
-        "---",
-        f"title: {json.dumps(f'NCR: {title}')}",
-        f"id: {uuid.uuid4()}",
-        f"ncr_id: {ncr_id}",
-        f"createdAt: {now}",
-        f"updatedAt: {now}",
-        f"tags: {json.dumps(['ncr', 'quality', project, ncr_type, severity])}",
-        f"norm_refs: {json.dumps(norm_refs)}",
-        f"project: {project}",
-        f"ncr_type: {ncr_type}",
-        f"severity: {severity}",
-        f"detected_by: {detected_by}",
-        *status_frontmatter_lines("vault_ncr_save", status),
-        f"owner: {json.dumps(owner)}",
-        f"target_date: {json.dumps(target_date)}",
-        f"corrective_actions_count: {len(corrective_actions)}",
-        f"iso_standard: ISO 9001:2015 §10.2",
-        f"cia_integrity: {cia['integrity']}",
-        f"cia_availability: {cia['availability']}",
-        f"cia_sensitivity: {cia['sensitivity']}",
-        f"agent: {agent}",
-        "---",
-    ]
-    full = "\n".join(fm_lines) + "\n\n" + body
+    fm_lines = Frontmatter()
+    fm_lines.set("title", f'NCR: {title}')
+    fm_lines.set("id", uuid.uuid4())
+    fm_lines.set("ncr_id", ncr_id)
+    fm_lines.set("createdAt", now)
+    fm_lines.set("updatedAt", now)
+    fm_lines.set("tags", ['ncr', 'quality', project, ncr_type, severity])
+    fm_lines.set("norm_refs", norm_refs)
+    fm_lines.set("project", project)
+    fm_lines.set("ncr_type", ncr_type)
+    fm_lines.set("severity", severity)
+    fm_lines.set("detected_by", detected_by)
+    fm_lines.lineas(status_frontmatter_lines("vault_ncr_save", status))
+    fm_lines.set("owner", owner, vacio_citado=True)
+    fm_lines.set("target_date", target_date, vacio_citado=True)
+    fm_lines.set("corrective_actions_count", len(corrective_actions))
+    fm_lines.set("iso_standard", "ISO 9001:2015 §10.2")
+    fm_lines.set("cia_integrity", cia['integrity'])
+    fm_lines.set("cia_availability", cia['availability'])
+    fm_lines.set("cia_sensitivity", cia['sensitivity'])
+    fm_lines.set("agent", agent)
+    full = fm_lines.render() + "\n\n" + body
 
     filename = f"{_slug(project)}-{date_prefix}-{_slug(title)}.md"
-    path = VAULT_ROOT / FOLDER / filename
+    path = get_vault_root() / FOLDER / filename
     path.parent.mkdir(parents=True, exist_ok=True)
-    assert_within_vault(path, VAULT_ROOT)
+    assert_within_vault(path, get_vault_root())
     atomic_write_text(path, full)
-    update_section_index("02_Observability")
+    # El indice de seccion lo dispara el write path del kernel
+    # (`vault_io._auto_section_index`) en cuanto se escribe la nota. La
+    # llamada explicita que habia aqui lo regeneraba una segunda vez con
+    # el mismo contenido: trabajo duplicado que ademas se contaba como
+    # escritura en el envelope.
 
     return {
         "ok": True,
         **write_report(),
-        "path": str(path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(path.relative_to(get_vault_root())).replace("\\", "/"),
         "ncr_id": ncr_id,
         "project": project,
         "ncr_type": ncr_type,

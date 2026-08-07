@@ -29,16 +29,13 @@ import re
 import sys
 
 from vault_errors import wrap_main
-from vault_lib import utcnow, slugify
-from vault_io import atomic_write_text, assert_within_vault, VAULT_ROOT, safe_wikilink, write_report
+from vault_lib import yaml_scalar, utcnow, slugify
+from vault_io import atomic_write_text, assert_within_vault, safe_wikilink, write_report
 import uuid
 
 from pathlib import Path
 
 from typing import Any, Dict, List, Optional
-
-
-RUNBOOKS_DIR = VAULT_ROOT / "08_Runbooks"
 
 
 CATEGORIES = [
@@ -50,6 +47,27 @@ CATEGORIES = [
     "pipeline",
     "incident",
 ]
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _runbooks_dir() -> Path:
+    return _repo().seccion("08_Runbooks")
 
 
 def vault_runbook_save(
@@ -73,7 +91,7 @@ def vault_runbook_save(
 
     safe_title = slugify(title)
 
-    folder = RUNBOOKS_DIR / category
+    folder = _runbooks_dir() / category
 
     filename = f"{safe_project}-{safe_title}.md"
 
@@ -84,7 +102,7 @@ def vault_runbook_save(
     note_path_candidate = folder / filename
 
     try:
-        assert_within_vault(note_path_candidate, VAULT_ROOT)
+        assert_within_vault(note_path_candidate, _raiz())
 
     except ValueError as exc:
         return {
@@ -94,38 +112,37 @@ def vault_runbook_save(
             "message": str(exc),
         }
 
-    frontmatter = ["---"]
+    frontmatter = Frontmatter()
 
-    frontmatter.append(f"title: {json.dumps(title)}")
+    frontmatter.set("title", title)
 
-    frontmatter.append(f"id: {str(uuid.uuid4())}")
+    frontmatter.set("id", str(uuid.uuid4()))
 
-    frontmatter.append(f"project: {project}")
+    frontmatter.set("project", project)
 
-    frontmatter.append(f"category: {category}")
+    frontmatter.set("category", category)
 
-    frontmatter.append(f"trigger: {trigger}")
+    frontmatter.set("trigger", trigger)
 
-    frontmatter.append(f"status: active")
+    frontmatter.set("status", "active")
 
-    frontmatter.append(f"executions: 0")
+    frontmatter.set("executions", 0)
 
-    frontmatter.append(f"createdAt: {timestamp}")
+    frontmatter.set("createdAt", timestamp)
 
-    frontmatter.append(f"updatedAt: {timestamp}")
+    frontmatter.set("updatedAt", timestamp)
 
     if estimated_time:
-        frontmatter.append(f"estimatedTime: {estimated_time}")
+        frontmatter.set("estimatedTime", estimated_time)
 
-    frontmatter.append(f"cia_integrity: medium")
+    frontmatter.set("cia_integrity", "medium")
 
-    frontmatter.append(f"cia_availability: high")
+    frontmatter.set("cia_availability", "high")
 
-    frontmatter.append(f"cia_sensitivity: internal")
+    frontmatter.set("cia_sensitivity", "internal")
 
-    frontmatter.append(f"agent: system")
+    frontmatter.set("agent", "system")
 
-    frontmatter.append("---")
 
     body_sections = []
 
@@ -159,7 +176,7 @@ def vault_runbook_save(
         "## Historial de Ejecuciones\n\n*Sin ejecuciones registradas.*"
     )
 
-    final_content = "\n".join(frontmatter) + "\n\n" + "\n\n".join(body_sections)
+    final_content = frontmatter.render() + "\n\n" + "\n\n".join(body_sections)
 
     folder.mkdir(parents=True, exist_ok=True)
 
@@ -168,7 +185,7 @@ def vault_runbook_save(
     return {
         "ok": True,
         **write_report(),
-        "path": str(note_path.relative_to(VAULT_ROOT)),
+        "path": str(note_path.relative_to(_raiz())).replace("\\", "/"),
         "category": category,
         "steps": len(steps),
         "message": f"Runbook '{title}' saved to {category}/",
@@ -226,7 +243,29 @@ Notas:
         steps = json.loads(args.steps)
 
     except json.JSONDecodeError:
-        return {"ok": False, "error": "Invalid JSON in --steps parameter"}
+        # `main()` devuelve código de salida, no envelope. Ver la misma
+        # corrección en `vault_infra_save`: el dict acababa en `sys.exit()`,
+        # que lo convierte a entero y falla, y el mensaje escrito para este
+        # caso no llegaba nunca a verse.
+        print(json.dumps({"ok": False, "error": "Invalid JSON in --steps parameter"}))
+        return 1
+
+    # Misma corrección que en `vault_env_save`: se comprobaba que fuera JSON
+    # pero no que fuera lo que la ayuda documenta. Un array de cadenas moría
+    # abajo con `AttributeError` envuelto como fallo crítico interno.
+    if not isinstance(steps, list) or not all(isinstance(s, dict) for s in steps):
+        print(
+            json.dumps(
+                {
+                    "ok": False,
+                    "error": (
+                        "--steps espera un array JSON de objetos, p. ej. "
+                        '[{"step": "Hacer backup", "command": "pg_dump ..."}]'
+                    ),
+                }
+            )
+        )
+        return 1
 
     result = vault_runbook_save(
         args.project,

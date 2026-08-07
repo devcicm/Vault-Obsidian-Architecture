@@ -32,13 +32,13 @@ import sys
 
 from vault_errors import wrap_main
 from vault_norms import status_frontmatter_lines
-from vault_lib import utcnow, slugify
+from vault_lib import yaml_scalar, utcnow, slugify
 from vault_io import (
+    indice_compartido,
     write_report,
     atomic_write_text,
     atomic_write_json,
     assert_within_vault,
-    VAULT_ROOT,
     safe_wikilink,
 )
 import uuid
@@ -48,20 +48,13 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-PATTERNS_DIR = VAULT_ROOT / "05_Patterns"
-
-INDEX_FILE = PATTERNS_DIR / "index.json"
-
-
 PATTERN_TYPES = ["design", "architecture", "code", "integration"]
 
-PATTERN_STATUSES = [
-    "planificado",
-    "en_progreso",
-    "implementado",
-    "deprecado",
-    "refactoring",
-]
+# El vocabulario se declara una vez y se consume, no se copia. Ver
+# `vault_vocabulario.py` para el registro y su contexto dueño.
+from vault_vocabulario import opciones as _opciones
+
+PATTERN_STATUSES = _opciones("pattern_state")
 
 
 VALID_TRANSITIONS = {
@@ -73,16 +66,41 @@ VALID_TRANSITIONS = {
 }
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _patterns_dir() -> Path:
+    return _repo().seccion("05_Patterns")
+
+
+def _index_file() -> Path:
+    return _repo().indice_de_seccion("05_Patterns")
+
+
 def get_pattern_path(project: str, name: str, pattern_type: str) -> Path:
     safe_name = slugify(name)
 
     safe_project = slugify(project)
 
-    return PATTERNS_DIR / pattern_type / f"{safe_project}-{safe_name}.md"
+    return _patterns_dir() / pattern_type / f"{safe_project}-{safe_name}.md"
 
 
 def get_pattern_index_path(project: str) -> Path:
-    return PATTERNS_DIR / f"{slugify(project)}-patterns-index.md"
+    return _patterns_dir() / f"{slugify(project)}-patterns-index.md"
 
 
 def parse_frontmatter(content: str) -> Dict[str, Any]:
@@ -113,19 +131,33 @@ def parse_frontmatter(content: str) -> Dict[str, Any]:
     return meta
 
 
+# superseded_by: vault_io.indice_compartido
+#
+# Leia/escribia el indice fuera de todo tramo exclusivo, que es justo el
+# lost update que `indice_compartido` cierra. Se conserva con su contrato
+# intacto por la politica de no-derogacion: ya no lo llama el camino de
+# guardado, y no debe volver a llamarlo. Si necesitas el indice, entra por
+# `indice_compartido`, que cubre desde la lectura hasta la escritura.
 def load_pattern_index() -> Dict[str, Any]:
     try:
-        with open(INDEX_FILE, "r", encoding="utf-8") as f:
+        with open(_index_file(), "r", encoding="utf-8") as f:
             return json.load(f)
 
     except (FileNotFoundError, json.JSONDecodeError):
         return {"patterns": []}
 
 
+# superseded_by: vault_io.indice_compartido
+#
+# Leia/escribia el indice fuera de todo tramo exclusivo, que es justo el
+# lost update que `indice_compartido` cierra. Se conserva con su contrato
+# intacto por la politica de no-derogacion: ya no lo llama el camino de
+# guardado, y no debe volver a llamarlo. Si necesitas el indice, entra por
+# `indice_compartido`, que cubre desde la lectura hasta la escritura.
 def save_pattern_index(data: Dict[str, Any]) -> None:
-    INDEX_FILE.parent.mkdir(parents=True, exist_ok=True)
+    _index_file().parent.mkdir(parents=True, exist_ok=True)
 
-    atomic_write_json(INDEX_FILE, data)
+    atomic_write_json(_index_file(), data)
 
 
 def vault_pattern_save(
@@ -206,7 +238,7 @@ def vault_pattern_save(
             wiki_links.append(f"[[{slug}|{safe_wikilink(rp)}]]")
 
     try:
-        assert_within_vault(pattern_path, VAULT_ROOT)
+        assert_within_vault(pattern_path, _raiz())
 
     except ValueError as exc:
         return {
@@ -216,37 +248,36 @@ def vault_pattern_save(
             "message": str(exc),
         }
 
-    frontmatter = ["---"]
+    frontmatter = Frontmatter()
 
-    frontmatter.append(f"title: {json.dumps(name)}")
+    frontmatter.set("title", name)
 
-    frontmatter.append(f"id: {existing_id or str(uuid.uuid4())}")
+    frontmatter.set("id", existing_id or str(uuid.uuid4()))
 
-    frontmatter.append(f"project: {project}")
+    frontmatter.set("project", project)
 
-    frontmatter.append(f"type: {pattern_type}")
+    frontmatter.set("type", pattern_type)
 
-    frontmatter.extend(status_frontmatter_lines("vault_pattern_save", status))
+    frontmatter.lineas(status_frontmatter_lines("vault_pattern_save", status))
 
-    frontmatter.append(f"createdAt: {timestamp}")
+    frontmatter.set("createdAt", timestamp)
 
-    frontmatter.append(f"updatedAt: {timestamp}")
+    frontmatter.set("updatedAt", timestamp)
 
     if files:
-        frontmatter.append(f"files: {json.dumps(files)}")
+        frontmatter.set("files", files)
 
     if related_patterns:
-        frontmatter.append(f"relatedPatterns: {json.dumps(related_patterns)}")
+        frontmatter.set("relatedPatterns", related_patterns)
 
-    frontmatter.append(f"cia_integrity: medium")
+    frontmatter.set("cia_integrity", "medium")
 
-    frontmatter.append(f"cia_availability: medium")
+    frontmatter.set("cia_availability", "medium")
 
-    frontmatter.append(f"cia_sensitivity: internal")
+    frontmatter.set("cia_sensitivity", "internal")
 
-    frontmatter.append(f"agent: system")
+    frontmatter.set("agent", "system")
 
-    frontmatter.append("---")
 
     body_sections = []
 
@@ -275,33 +306,34 @@ def vault_pattern_save(
 
     body_sections.append(f"\n---\n*Última actualización: {timestamp}*")
 
-    final_content = "\n\n".join(["\n".join(frontmatter)] + body_sections)
+    final_content = "\n\n".join([frontmatter.render()] + body_sections)
 
     pattern_path.parent.mkdir(parents=True, exist_ok=True)
 
     atomic_write_text(pattern_path, final_content)
 
-    index = load_pattern_index()
+    # Aqui el upsert es leer-modificar-escribir sobre un indice compartido: sin
+    # tramo exclusivo, dos guardados concurrentes leen la misma lista, cada uno
+    # anade la suya, gana el segundo y la primera entrada desaparece con las dos
+    # tools devolviendo `ok: true`.
+    with indice_compartido(_index_file(), {"patterns": []}) as index:
+        pattern_entry = {
+            "path": str(pattern_path.relative_to(_raiz())).replace("\\", "/"),
+            "pattern": name,
+            "project": project,
+            "type": pattern_type,
+            "status": status,
+            "updatedAt": timestamp,
+        }
 
-    pattern_entry = {
-        "path": str(pattern_path.relative_to(VAULT_ROOT)),
-        "pattern": name,
-        "project": project,
-        "type": pattern_type,
-        "status": status,
-        "updatedAt": timestamp,
-    }
+        for i, entry in enumerate(index["patterns"]):
+            if entry["path"] == pattern_entry["path"]:
+                index["patterns"][i] = pattern_entry
 
-    for i, entry in enumerate(index["patterns"]):
-        if entry["path"] == pattern_entry["path"]:
-            index["patterns"][i] = pattern_entry
+                break
 
-            break
-
-    else:
-        index["patterns"].append(pattern_entry)
-
-    save_pattern_index(index)
+        else:
+            index["patterns"].append(pattern_entry)
 
     transition = (
         f"{existing_status} → {status}"
@@ -312,7 +344,7 @@ def vault_pattern_save(
     return {
         "ok": True,
         **write_report(),
-        "path": str(pattern_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(pattern_path.relative_to(_raiz())).replace("\\", "/"),
         "status": status,
         "transition": transition,
     }

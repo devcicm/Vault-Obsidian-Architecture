@@ -29,15 +29,13 @@ import re
 import sys
 
 from vault_errors import wrap_main
-from vault_lib import slugify_strict, utcnow
-from vault_io import atomic_write_text, assert_within_vault, VAULT_ROOT, write_report
+from vault_registry import section_default_type
+from vault_lib import yaml_scalar, slugify_strict, utcnow
+from vault_io import atomic_write_text, assert_within_vault, write_report
 import uuid
 
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-
-
-DIAGRAMS_DIR = VAULT_ROOT / "06_Diagrams"
 
 
 CATEGORIES = [
@@ -64,6 +62,27 @@ CATEGORY_NOTES = {
 }
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _diagrams_dir() -> Path:
+    return _repo().seccion("06_Diagrams")
+
+
 def slugify(text: str) -> str:
     # Delega en el slug canónico (`vault_lib.slugify`). La copia que había
     # aquí divergía del resto: unas borraban los acentos, otras los dejaban
@@ -72,7 +91,7 @@ def slugify(text: str) -> str:
 
 
 def get_category_folder(category: str) -> Path:
-    return DIAGRAMS_DIR / category
+    return _diagrams_dir() / category
 
 
 def get_diagram_path(
@@ -132,7 +151,7 @@ def vault_diagram_save(
     diagram_path = get_diagram_path(project, title, category, diagram_type)
 
     try:
-        assert_within_vault(diagram_path, VAULT_ROOT)
+        assert_within_vault(diagram_path, _raiz())
 
     except ValueError as exc:
         return {
@@ -142,31 +161,42 @@ def vault_diagram_save(
             "message": str(exc),
         }
 
-    frontmatter = ["---"]
+    frontmatter = Frontmatter()
 
-    frontmatter.append(f"title: {title}")
+    frontmatter.set("title", title)
 
-    frontmatter.append(f"id: {str(uuid.uuid4())}")
+    frontmatter.set("id", str(uuid.uuid4()))
 
-    frontmatter.append(f"project: {project}")
+    frontmatter.set("project", project)
 
-    frontmatter.append(f"diagramType: {diagram_type}")
+    frontmatter.set("diagramType", diagram_type)
 
-    frontmatter.append(f"category: {category}")
+    frontmatter.set("category", category)
 
-    frontmatter.append(f"createdAt: {timestamp}")
+    # Ni `tags` ni `type` se escribían, y las dos son exigibles por normas que
+    # este mismo estándar hace cumplir: AP-26 pide al menos un tag a toda nota
+    # de contenido y AP-27 pide el tipo declarado. Los seis diagramas del vault
+    # de pruebas los reprobaba `vault_validate` — notas escritas por esta tool,
+    # suspendidas por el auditor de al lado (AP-44). El tipo sale del registro,
+    # no de un literal.
+    frontmatter.set("type", section_default_type('06_Diagrams'))
 
-    frontmatter.append(f"updatedAt: {timestamp}")
+    frontmatter.set(
+        "tags", sorted({t for t in (project, category, "diagram") if t})
+    )
 
-    frontmatter.append(f"cia_integrity: medium")
+    frontmatter.set("createdAt", timestamp)
 
-    frontmatter.append(f"cia_availability: medium")
+    frontmatter.set("updatedAt", timestamp)
 
-    frontmatter.append(f"cia_sensitivity: internal")
+    frontmatter.set("cia_integrity", "medium")
 
-    frontmatter.append(f"agent: system")
+    frontmatter.set("cia_availability", "medium")
 
-    frontmatter.append("---")
+    frontmatter.set("cia_sensitivity", "internal")
+
+    frontmatter.set("agent", "system")
+
 
     body_sections = []
 
@@ -184,7 +214,7 @@ def vault_diagram_save(
     else:
         body_sections.append(f"```\n{content}\n```")
 
-    final_content = "\n\n".join(frontmatter) + "\n\n" + "\n\n".join(body_sections)
+    final_content = frontmatter.render() + "\n\n" + "\n\n".join(body_sections)
 
     diagram_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -193,7 +223,7 @@ def vault_diagram_save(
     return {
         "ok": True,
         **write_report(),
-        "path": str(diagram_path.relative_to(VAULT_ROOT)),
+        "path": str(diagram_path.relative_to(_raiz())).replace("\\", "/"),
         "type": diagram_type,
         "category": category,
         "message": f"Diagram '{title}' saved to {category}/",

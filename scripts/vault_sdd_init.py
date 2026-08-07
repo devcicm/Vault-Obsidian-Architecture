@@ -26,7 +26,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from vault_io import VAULT_ROOT, atomic_write_json, atomic_write_text
+from vault_io import atomic_write_json, atomic_write_text
 from vault_errors import wrap_main
 
 
@@ -61,6 +61,22 @@ EXPECTED_OUTPUTS = [
     "integrity-report.json",
     "gaps.md",
 ]
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.ciclo_de_vida.repositorio import RepositorioCicloDeVida  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioCicloDeVida:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioCicloDeVida(construir(root))
 
 
 def utcnow() -> str:
@@ -1192,7 +1208,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--vault-root",
-        default=str(VAULT_ROOT),
+        default=str(_raiz()),
         help="Vault root path (default: auto-detect)",
     )
     args = parser.parse_args()

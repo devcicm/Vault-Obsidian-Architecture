@@ -3,9 +3,14 @@
 Cada tool corre en su propio subproceso. Es deliberado y cuesta ~50 ms de
 arranque, a cambio de tres propiedades que in-process no da:
 
-  - Aislamiento de estado. Las tools tienen estado a nivel de módulo
-    (VAULT_ROOT cacheado, locks locales). Importarlas todas en un proceso y
-    lanzarlas en hilos las haría compartir ese estado.
+  - Aislamiento de estado. Ésta **dejó de valer en v40.0** y se deja anotada en
+    vez de borrada, porque era la razón principal y ya no lo es: las tools
+    tenían estado a nivel de módulo —`VAULT_ROOT` cacheado, rutas derivadas en
+    el import— y hoy `vault_arch --check` mide 0 vínculos congelados y 0
+    importaciones crudas del nombre. Un vault por `VaultContext`, resuelto al
+    usarlo: dos raíces conviven ya en el mismo proceso sin contaminarse, y hay
+    un test por contexto que lo comprueba. Lo que queda de estado compartido son
+    los locks locales, que es un problema de concurrencia y no de aislamiento.
   - Timeout real. `vault_errors.wrap_main` corre main() en un hilo daemon: si
     la tool se cuelga, el hilo sobrevive. Matar un subproceso sí funciona.
   - Envelope garantizado. Se conserva el contrato JSON de cada tool tal cual,
@@ -13,6 +18,13 @@ arranque, a cambio de tres propiedades que in-process no da:
 
 El paralelismo se aplica DENTRO de una ola del scheduler, donde por
 construcción ninguna operación comparte recurso exclusivo.
+
+**Por qué se conserva el subproceso aunque su motivo principal caducara:** las
+otras dos propiedades siguen siendo ciertas y ninguna se obtiene de otra forma.
+Un timeout que no puede matar lo que vigila no es un timeout, y `wrap_main`
+corre `main()` en un hilo daemon. Retirar el aislamiento sería cambiar el
+comportamiento observable de la CLI —timeouts y captura de stdout— para ahorrar
+~50 ms; el refactor lo hizo *posible*, que no es lo mismo que conveniente.
 """
 
 from __future__ import annotations

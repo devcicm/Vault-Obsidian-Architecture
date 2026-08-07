@@ -1,0 +1,96 @@
+{
+  "_comment": "Derivado de scripts/vault_entorno.py. No se edita a mano: regenera con `python scripts/vault_arch.py --sync-env`.",
+  "variables": [
+    {
+      "name": "VAULT_ROOT",
+      "type": "ruta",
+      "default": null,
+      "context": "kernel",
+      "purpose": "Fuerza la raíz del vault en vez de autodetectarla. Es la costura declarada para apuntar las tools a un destino concreto."
+    },
+    {
+      "name": "VAULT_STRICT_ROOT",
+      "type": "bandera",
+      "default": false,
+      "context": "kernel",
+      "purpose": "Hace fallar una detección insegura en vez de caer a la raíz del repo. Basta con estar definida (comportamiento heredado)."
+    },
+    {
+      "name": "VAULT_CLIENT_CWD",
+      "type": "ruta",
+      "default": null,
+      "context": "kernel",
+      "purpose": "El directorio del cliente MCP, que el servidor no comparte con el proceso Python. Sin ella la autodetección mira el CWD del servidor, que no es el del usuario."
+    },
+    {
+      "name": "VAULT_FSYNC",
+      "type": "bandera",
+      "default": false,
+      "context": "kernel",
+      "purpose": "Fuerza `fsync()` tras cada escritura atómica. Cuesta latencia; se activa cuando la durabilidad importa más que la velocidad."
+    },
+    {
+      "name": "VAULT_SKIP_SECRET_SCAN",
+      "type": "bandera",
+      "default": false,
+      "context": "kernel",
+      "purpose": "Desactiva el escaneo de secretos del write path. Existe para los tests del propio escáner; en uso normal no se toca."
+    },
+    {
+      "name": "VAULT_AGENT",
+      "type": "texto",
+      "default": "",
+      "context": "autoria",
+      "purpose": "Quién firma la nota cuando no se pasa `--agent` (AP-16). Es el campo `agent:` del frontmatter, no un identificador de sesión."
+    },
+    {
+      "name": "VAULT_VOICE",
+      "type": "texto",
+      "default": "1",
+      "context": "autoria",
+      "purpose": "Verbosidad de la voz del vault: `0` la calla, `verbose` la amplía, cualquier otro valor deja el mensaje normal."
+    },
+    {
+      "name": "VAULT_TOOL_TIMEOUT",
+      "type": "entero",
+      "default": 60,
+      "context": "kernel",
+      "purpose": "Segundos antes de que una tool se declare colgada. Lo leen `vault_errors` y el servidor MCP, que hasta ahora lo declaraban por separado con el mismo número."
+    },
+    {
+      "name": "VAULT_COUNT_TOKENS",
+      "type": "bandera",
+      "default": false,
+      "context": "kernel",
+      "purpose": "Añade el conteo de tokens al envelope de error. Apagado por defecto: contar cuesta más que el propio error."
+    },
+    {
+      "name": "VAULT_SMOKE_TIMEOUT",
+      "type": "entero",
+      "default": 90,
+      "context": "meta_toolkit",
+      "purpose": "Segundos por tool en la pasada de humo. Más alto que `VAULT_TOOL_TIMEOUT` porque el smoke arranca un intérprete nuevo."
+    },
+    {
+      "name": "VAULT_DQ_CACHE_MINUTES",
+      "type": "entero",
+      "default": 30,
+      "context": "gobernanza",
+      "purpose": "Cuánto vale el índice de calidad cacheado antes de recalcularlo."
+    },
+    {
+      "name": "VAULT_SCAN_ROOTS",
+      "type": "texto",
+      "default": "",
+      "context": "meta_toolkit",
+      "purpose": "Rutas separadas por `;` donde el servidor MCP busca vaults. Vacía significa dos rutas relativas al repo, no «ninguna». Solo la lee el `.mjs`; se declara aquí para que `--env` la publique y el servidor deje de inventarse su propia tabla."
+    },
+    {
+      "name": "VAULT_MCP_LOG",
+      "type": "texto",
+      "default": "info",
+      "context": "meta_toolkit",
+      "purpose": "Nivel de log del servidor MCP (`info` por defecto). Solo la lee el `.mjs`."
+    }
+  ]
+}

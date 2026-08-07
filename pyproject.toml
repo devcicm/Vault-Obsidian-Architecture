@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vault-obsidian-architecture"
-version = "39.6"
+version = "40.3"
 description = "Spec-Driven Development vault toolkit — persistent documental memory for LLM agents"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -37,7 +37,13 @@ dev = ["pytest>=7.0", "pytest-cov>=4.0", "ruff>=0.3.0"]
 Homepage = "https://github.com/devcicm/Vault-Obsidian-Architecture"
 
 [tool.setuptools]
-packages = []
+# `scripts/` sigue sin declararse a propósito: se resuelve por ruta de fichero
+# —el tool-spec, `cli/registry.py`, el runner del MCP y los repos consumidores
+# dependen de eso— y empaquetarlo cambiaría cómo se importa. `vault/` es lo
+# contrario: es un paquete de verdad, con imports relativos, y funcionaba solo
+# porque los adaptadores le añaden la raíz al `sys.path`. Declararlo hace que
+# una instalación lo lleve, en vez de dejarlo a merced del directorio de trabajo.
+packages = ["vault", "vault.kernel", "vault.durabilidad", "vault.indices", "vault.grafo", "vault.consulta", "vault.gobernanza", "vault.ciclo_de_vida", "vault.meta_toolkit", "vault.autoria"]
 
 [tool.setuptools.package-data]
 scripts = ["tool-spec.json", "vault-obsidian-architecture.md", "README.md"]

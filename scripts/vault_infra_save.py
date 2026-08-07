@@ -30,14 +30,14 @@ import sys
 
 from vault_errors import wrap_main
 from vault_norms import status_frontmatter_lines
-from vault_lib import slugify_strict, utcnow
+from vault_lib import yaml_scalar, slugify_strict, utcnow
 from datetime import datetime, timezone
 from vault_io import (
+    indice_compartido,
     write_report,
     atomic_write_text,
     atomic_write_json,
     assert_within_vault,
-    VAULT_ROOT,
 )
 import uuid
 
@@ -47,13 +47,33 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _infra_dir() -> Path:
+    return _repo().seccion("09_Infrastructure")
+
+
+def _index_file() -> Path:
+    return _repo().seccion("09_Infrastructure") / ".infra-index.json"
+
+
 def utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-
-
-INFRA_DIR = VAULT_ROOT / "09_Infrastructure"
-
-INDEX_FILE = INFRA_DIR / ".infra-index.json"
 
 
 COMPONENT_TYPES = {
@@ -110,9 +130,16 @@ def slugify(text: str) -> str:
     return slugify_strict(text)
 
 
+# superseded_by: vault_io.indice_compartido
+#
+# Leia/escribia el indice fuera de todo tramo exclusivo, que es justo el
+# lost update que `indice_compartido` cierra. Se conserva con su contrato
+# intacto por la politica de no-derogacion: ya no lo llama el camino de
+# guardado, y no debe volver a llamarlo. Si necesitas el indice, entra por
+# `indice_compartido`, que cubre desde la lectura hasta la escritura.
 def load_index() -> Dict[str, Any]:
     try:
-        with open(INDEX_FILE, "r", encoding="utf-8") as f:
+        with open(_index_file(), "r", encoding="utf-8") as f:
             data = json.load(f)
             if "locations" not in data:
                 data["locations"] = {}
@@ -122,10 +149,17 @@ def load_index() -> Dict[str, Any]:
         return {"components": [], "locations": {}}
 
 
+# superseded_by: vault_io.indice_compartido
+#
+# Leia/escribia el indice fuera de todo tramo exclusivo, que es justo el
+# lost update que `indice_compartido` cierra. Se conserva con su contrato
+# intacto por la politica de no-derogacion: ya no lo llama el camino de
+# guardado, y no debe volver a llamarlo. Si necesitas el indice, entra por
+# `indice_compartido`, que cubre desde la lectura hasta la escritura.
 def save_index(data: Dict[str, Any]) -> None:
-    INFRA_DIR.mkdir(parents=True, exist_ok=True)
+    _infra_dir().mkdir(parents=True, exist_ok=True)
 
-    atomic_write_json(INDEX_FILE, data)
+    atomic_write_json(_index_file(), data)
 
 
 def generate_infra_map(
@@ -216,25 +250,24 @@ def save_infra_map(
 ) -> Path:
     mermaid_content = generate_infra_map(components, project, location)
 
-    map_path = INFRA_DIR / "infra-map.md"
+    map_path = _infra_dir() / "infra-map.md"
 
-    frontmatter = ["---"]
+    frontmatter = Frontmatter()
 
-    frontmatter.append("title: Infrastructure Map")
+    frontmatter.set("title", "Infrastructure Map")
 
-    frontmatter.append(f"updatedAt: {utcnow()}")
+    frontmatter.set("updatedAt", utcnow())
 
     if project:
-        frontmatter.append(f"project: {project}")
+        frontmatter.set("project", project)
 
     if location:
-        frontmatter.append(f"location: {location}")
+        frontmatter.set("location", location)
 
-    frontmatter.append("---")
 
-    frontmatter.append("\n## Network Map\n\n```mermaid\n" + mermaid_content + "\n```\n")
+    cuerpo = "\n## Network Map\n\n```mermaid\n" + mermaid_content + "\n```\n"
 
-    atomic_write_text(map_path, "\n".join(frontmatter))
+    atomic_write_text(map_path, frontmatter.render() + "\n" + cuerpo)
 
     return map_path
 
@@ -264,7 +297,7 @@ def vault_infra_save(
             "error": f"Ubicación inválida: {location}. Válidas: {LOCATIONS}",
         }
 
-    folder = INFRA_DIR / COMPONENT_TYPES[component_type]
+    folder = _infra_dir() / COMPONENT_TYPES[component_type]
 
     safe_name = slugify(name)
 
@@ -275,7 +308,7 @@ def vault_infra_save(
     timestamp = utcnow()
 
     try:
-        assert_within_vault(note_path, VAULT_ROOT)
+        assert_within_vault(note_path, _raiz())
 
     except ValueError as exc:
         return {
@@ -291,38 +324,37 @@ def vault_infra_save(
         "high" if component_type in ("server", "database", "secret") else "medium"
     )
 
-    frontmatter = ["---"]
+    frontmatter = Frontmatter()
 
-    frontmatter.append(f"title: {name}")
+    frontmatter.set("title", name)
 
-    frontmatter.append(f"id: {str(uuid.uuid4())}")
+    frontmatter.set("id", str(uuid.uuid4()))
 
-    frontmatter.append(f"type: {component_type}")
+    frontmatter.set("type", component_type)
 
-    frontmatter.append(f"location: {location}")
+    frontmatter.set("location", location)
 
-    frontmatter.append(f"createdAt: {timestamp}")
+    frontmatter.set("createdAt", timestamp)
 
-    frontmatter.append(f"updatedAt: {timestamp}")
+    frontmatter.set("updatedAt", timestamp)
 
     if project:
-        frontmatter.append(f"project: {project}")
+        frontmatter.set("project", project)
 
     if status:
-        frontmatter.extend(status_frontmatter_lines("vault_infra_save", status))
+        frontmatter.lineas(status_frontmatter_lines("vault_infra_save", status))
 
     if tags:
-        frontmatter.append(f"tags: {json.dumps(tags)}")
+        frontmatter.set("tags", tags)
 
-    frontmatter.append(f"cia_integrity: {cia_integrity}")
+    frontmatter.set("cia_integrity", cia_integrity)
 
-    frontmatter.append(f"cia_availability: high")
+    frontmatter.set("cia_availability", "high")
 
-    frontmatter.append(f"cia_sensitivity: {cia_sensitivity}")
+    frontmatter.set("cia_sensitivity", cia_sensitivity)
 
-    frontmatter.append(f"agent: system")
+    frontmatter.set("agent", "system")
 
-    frontmatter.append("---")
 
     body_sections = [f"## Descripción\n\n{description}\n"]
 
@@ -338,7 +370,6 @@ def vault_infra_save(
         body_sections.append(f"""## Secreto — Metadatos
 
 
-
 | Campo | Valor |
 
 |---|---|
@@ -350,7 +381,6 @@ def vault_infra_save(
 | Política de rotación | {rotation} |
 
 | Owner | {owner} |
-
 
 
 > **Nota:** El valor real del secreto nunca se documenta aquí.
@@ -369,7 +399,6 @@ def vault_infra_save(
         body_sections.append(f"""## Pipeline CI/CD
 
 
-
 | Campo | Valor |
 
 |---|---|
@@ -379,7 +408,6 @@ def vault_infra_save(
 | Triggers | {triggers} |
 
 | Artefacto | {artifact} |
-
 
 
 **Etapas:**
@@ -417,49 +445,52 @@ def vault_infra_save(
 
         body_sections.append("\n".join(conn_content))
 
-    final_content = "\n".join(frontmatter) + "\n\n" + "\n\n".join(body_sections)
+    final_content = frontmatter.render() + "\n\n" + "\n\n".join(body_sections)
 
     folder.mkdir(parents=True, exist_ok=True)
 
     atomic_write_text(note_path, final_content)
 
-    index = load_index()
+    # El lock abarca desde la lectura hasta la escritura, no solo la
+    # escritura: este indice es tambien el contador del correlativo, y
+    # reservar el numero fuera del tramo exclusivo hace que dos guardados
+    # concurrentes obtengan el mismo id y el mismo nombre de fichero.
+    with indice_compartido(_index_file(), {"components": [], "locations": {}}) as index:
 
-    new_component = {
-        "id": str(uuid.uuid4()),
-        "name": name,
-        "type": component_type,
-        "location": location,
-        "config": config,
-        "connections": connections or [],
-        "project": project,
-        "status": status,
-        "updatedAt": timestamp,
-    }
+        new_component = {
+            "id": str(uuid.uuid4()),
+            "name": name,
+            "type": component_type,
+            "location": location,
+            "config": config,
+            "connections": connections or [],
+            "project": project,
+            "status": status,
+            "updatedAt": timestamp,
+        }
 
-    for i, comp in enumerate(index["components"]):
-        if slugify(comp["name"]) == safe_name:
-            index["components"][i] = new_component
+        for i, comp in enumerate(index["components"]):
+            if slugify(comp["name"]) == safe_name:
+                index["components"][i] = new_component
 
-            break
+                break
 
-    else:
-        index["components"].append(new_component)
+        else:
+            index["components"].append(new_component)
 
-    if location not in index["locations"]:
-        index["locations"][location] = []
+        if location not in index["locations"]:
+            index["locations"][location] = []
 
-    if name not in index["locations"][location]:
-        index["locations"][location].append(name)
+        if name not in index["locations"][location]:
+            index["locations"][location].append(name)
 
-    save_index(index)
 
     map_path = save_infra_map(index["components"], project, location)
 
     return {
         "ok": True,
         **write_report(),
-        "path": str(note_path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(note_path.relative_to(_raiz())).replace("\\", "/"),
         "type": component_type,
         "infraMapUpdated": True,
     }
@@ -520,7 +551,12 @@ Notas:
         config = json.loads(args.config)
 
     except json.JSONDecodeError:
-        return {"ok": False, "error": "Invalid JSON in --config"}
+        # `main()` devuelve código de salida, no envelope. Devolver el dict
+        # aquí lo llevaba a `sys.exit()`, que intenta convertirlo a entero y
+        # revienta: el usuario veía un UNEXPECTED_ERROR de severidad crítica
+        # en lugar de este mensaje, escrito para exactamente este caso.
+        print(json.dumps({"ok": False, "error": "Invalid JSON in --config"}))
+        return 1
 
     connections = None
 
@@ -529,7 +565,10 @@ Notas:
             connections = json.loads(args.connections)
 
         except json.JSONDecodeError:
-            return {"ok": False, "error": "Invalid JSON in --connections"}
+            print(
+                json.dumps({"ok": False, "error": "Invalid JSON in --connections"})
+            )
+            return 1
 
     result = vault_infra_save(
         args.name,

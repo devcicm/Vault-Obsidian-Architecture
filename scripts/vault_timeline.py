@@ -44,11 +44,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-from vault_io import VAULT_ROOT
-
-INDEX_FILE = VAULT_ROOT / "99_Index" / "search-index.json"
-
-
 ALL_SOURCES = [
     "sessions",
     "changelog",
@@ -79,6 +74,26 @@ KNOWLEDGE_PATHS = ["07_Knowledge"]
 DEPENDENCY_PATHS = ["07_Knowledge/dependencies", "07_Knowledge/frameworks"]
 
 RUNBOOK_PATHS = ["08_Runbooks"]
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _index_file() -> Path:
+    return _repo().indice_busqueda
 
 
 def parse_frontmatter(content: str) -> Dict[str, Any]:
@@ -124,7 +139,7 @@ def search_sessions(
     events = []
 
     for session_folder in SESSION_FOLDERS:
-        folder_path = VAULT_ROOT / session_folder
+        folder_path = _raiz() / session_folder
 
         if not folder_path.exists():
             continue
@@ -165,7 +180,7 @@ def search_sessions(
                                 "type": "log",
                                 "title": line[:80],
                                 "excerpt": line[:200],
-                                "path": str(note_path.relative_to(VAULT_ROOT)),
+                                "path": str(note_path.relative_to(_raiz())),
                             }
                         )
 
@@ -181,7 +196,7 @@ def search_changelog(
     events = []
 
     for base_path in CHANGELOG_PATHS:
-        project_path = VAULT_ROOT / base_path
+        project_path = _raiz() / base_path
 
         if not project_path.exists():
             continue
@@ -232,7 +247,7 @@ def search_changelog(
                         "type": "version",
                         "title": f"{version} — {changes[:60]}...",
                         "excerpt": changes,
-                        "path": str(changelog_path.relative_to(VAULT_ROOT)),
+                        "path": str(changelog_path.relative_to(_raiz())),
                     }
                 )
 
@@ -251,7 +266,7 @@ def search_notes(
     limit: int,
 ) -> List[Dict[str, Any]]:
     try:
-        with open(INDEX_FILE, "r", encoding="utf-8") as f:
+        with open(_index_file(), "r", encoding="utf-8") as f:
             index = json.load(f)
 
     except (FileNotFoundError, json.JSONDecodeError):
@@ -313,7 +328,7 @@ def search_notes(
         if not matches_query(full_text, query):
             continue
 
-        note_path = VAULT_ROOT / path
+        note_path = _raiz() / path
 
         if not note_path.exists():
             continue

@@ -26,13 +26,12 @@ from vault_io import (
     is_snapshot_path,
     normalize_stem,
     SNAPSHOT_DIRS,
-    VAULT_ROOT,
 )
 from vault_lib import read_frontmatter as _leer_frontmatter
+from vault_registry import NON_SECTION_ROOT_FOLDERS
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-NORM_REGISTRY = VAULT_ROOT / "00_System" / "norm-registry.json"
 
 # ─── Catálogo canónico (fuente de verdad) ──────────────────────────────────────
 #
@@ -1352,6 +1351,261 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "tools_detecting": ["vault_norms --audit", "vault_mcp_catalog --check-contracts"],
         "introduced_version": "v39.5",
     },
+    {
+        "code": "AP-49",
+        "name": "Vínculo resuelto en tiempo de import",
+        "type": "antipattern",
+        "category": "architecture",
+        "severity": "high",
+        "enforcement": "guard+audit",
+        "description": (
+            "Un módulo deriva su ruta, su configuración o su dependencia en el "
+            "momento de **importarse**, no en el de usarse. `SYSTEM_DIR = "
+            "VAULT_ROOT / '00_System'` a nivel de módulo se evalúa una sola vez, "
+            "cuando el intérprete carga el fichero, y a partir de ahí es una "
+            "constante.\n\n"
+            "Lo grave no es la constante: es que deja **inerte una costura que "
+            "existe**. `vault_io.set_vault_root()` está publicado y 12 tests lo "
+            "usan, pero no puede reapuntar a un módulo que ya calculó su ruta al "
+            "cargar. La inyección parece disponible y no lo está, que es peor que "
+            "no tenerla — quien la usa cree haber redirigido la escritura.\n\n"
+            "Medido en v40.0 por el propio guard: **0 vínculos congelados en "
+            "0 módulos**. "
+            "Eran 82 en 62 módulos antes de empezar a migrar contextos al "
+            "dominio, y cayeron uno a uno: Durabilidad los dejó en 77, "
+            "Índices en 69, Grafo en 51, Consulta en 45, Gobernanza en 38, "
+            "Ciclo de vida en 34, Meta-toolkit en 31 y Autoría —donde estaban "
+            "los 31 últimos, el 100% de la deuda que quedaba— en 0. Llegar a "
+            "cero destapó la otra mitad de la norma: veinte módulos seguían "
+            "haciendo `from vault_io import VAULT_ROOT` y usándolo **dentro de "
+            "funciones**. No son asignaciones de nivel de módulo, así que el "
+            "guard los daba por limpios, y seguían dependiendo del paliativo de "
+            "reanclaje que el refactor existe para no necesitar. Se mide aparte "
+            "(`raw_vault_root_imports`), también en cero, y el caso legítimo se "
+            "pide con alias. La "
+            "cifra es la que "
+            "cuenta `vault_arch --check`, no una estimación a ojo: la norma y su "
+            "puerta miden lo mismo o la norma no es comprobable. La consecuencia visible era "
+            "que `cli/runner.py` aislaba cada tool en un subproceso citando "
+            "«estado a nivel de módulo» como razón: el aislamiento por proceso "
+            "no era una decisión de diseño libre sino la compensación de este "
+            "acoplamiento. Saldada la deuda, esa razón caducó y quedó anotada "
+            "allí mismo; el subproceso se conserva por las otras dos que siguen "
+            "siendo ciertas —timeout que puede matar lo que vigila, y envelope "
+            "sin reinterpretar—. El refactor lo hizo posible, no conveniente."
+        ),
+        "signal": (
+            "Las pruebas necesitan subprocesos para aislarse unas de otras; "
+            "`set_vault_root()` no cambia dónde escribe una tool; dos raíces de "
+            "vault no pueden coexistir en el mismo intérprete; una asignación de "
+            "nivel de módulo deriva de `VAULT_ROOT` sin pasar por "
+            "`get_vault_root()`."
+        ),
+        "prevention": (
+            "La raíz y sus derivadas se reciben, no se importan: el dominio toma "
+            "un contexto (`VaultContext`) y el adaptador lo construye por "
+            "llamada. Si un módulo necesita la ruta, la resuelve **tarde** con "
+            "`get_vault_root()` dentro de la función. El guard es AST sobre "
+            "asignaciones de nivel de módulo que derivan de `VAULT_ROOT`, con "
+            "baseline que solo puede encoger — la deuda medida no se arregla en "
+            "un commit, pero no puede crecer."
+        ),
+        "tools_enforcing": ["vault_arch --check"],
+        "tools_detecting": ["vault_norms --audit", "vault_arch --check"],
+        "introduced_version": "v40.0",
+    },
+    {
+        "code": "AP-50",
+        "name": "Decisión duplicada sin dueño declarado",
+        "type": "antipattern",
+        "category": "architecture",
+        "severity": "high",
+        "enforcement": "guard+audit",
+        "description": (
+            "La misma **decisión** —qué valores son válidos, cuál es el default, "
+            "cómo se escapa un campo— se toma en más de un punto de uso sin que "
+            "ningún registro declare quién manda. No es AP-05: aquel habla de un "
+            "**dato** con dos fuentes, y se ve porque las dos copias divergen. "
+            "Esto se ve cuando ya divergieron, que es tarde.\n\n"
+            "Lo que lo hace caro es que cada copia parece correcta en su sitio. "
+            "`SEVERITIES = ['critical', 'high', 'medium', 'low']` no está mal "
+            "escrito en ninguno de los catorce ficheros donde se midió; está mal "
+            "que sean catorce y que nada los compare. El día que el registro "
+            "cambie, la copia que se quede atrás rechazará un valor válido o "
+            "aceptará uno inventado, y ningún test lo notará porque cada fichero "
+            "sigue siendo coherente consigo mismo.\n\n"
+            "Medido en v40.1 por sus tres guards: **0 copias de vocabulario, 0 "
+            "lecturas de entorno sin declarar, 0 vocabularios sin contexto "
+            "dueño**. Eran 14 copias del vocabulario en 13 módulos —cuatro como "
+            "`choices=` de argparse y diez como constante— y 13 variables de "
+            "entorno con su default escrito en cada punto de lectura, de las que "
+            "solo seis estaban documentadas. Dos ya habían divergido antes de "
+            "que existiera el guard: `VAULT_VOICE` se comparaba contra "
+            "`'verbose'` en un módulo y contra `'0'` con default `'1'` en otro, y "
+            "`VAULT_MCP_LOG` estaba declarada como fichero de log mientras el "
+            "único código que la lee la usa como nivel con default `'info'`.\n\n"
+            "El dueño es la mitad que faltaba. `vault_norms.DOMAIN_STATUS_VOCABS` "
+            "ya había resuelto esto para `status` en v39 y se quedó solo: "
+            "compartir la constante evita la copia, pero no contesta quién decide "
+            "cuándo cambia. Por eso cada entrada del registro declara el contexto "
+            "acotado que manda sobre ella, y ese contexto tiene que existir en "
+            "`vault_arch.CONTEXTS`."
+        ),
+        "signal": (
+            "Un literal de lista o de tupla reproduce —en cualquier orden— un "
+            "vocabulario que el registro ya declara; un `os.environ.get()` con "
+            "un default escrito en el punto de lectura; un `choices=` de argparse "
+            "con valores en duro; dos módulos que escriben el mismo campo con "
+            "criterios de escapado distintos; un vocabulario declarado sin "
+            "contexto dueño."
+        ),
+        "prevention": (
+            "Registro canónico con dueño, consumidores derivados, guard sin "
+            "baseline. Los vocabularios cerrados en `vault_vocabulario.py`, la "
+            "configuración en `vault_entorno.py`, y `vault_arch --check` "
+            "fallando si aparece una copia, una lectura sin declarar o un "
+            "vocabulario huérfano. **Sin baseline a propósito**: las catorce "
+            "copias se saldaron al declarar el registro, así que la puerta nace "
+            "en cero y una baseline solo serviría para admitir la número quince. "
+            "Lo que ya tiene registro canónico no se copia: se declara "
+            "`derivado_de` y se resuelve al llamarse, nunca al importarse "
+            "(AP-49). Un dato canónico que no es puerto de su contexto se acaba "
+            "copiando — los tres registros que `CLAUDE.md` declara fuente única "
+            "de verdad se leían por fuera de la superficie publicada, y así "
+            "nacieron las catorce copias."
+        ),
+        "tools_enforcing": ["vault_arch --check"],
+        "tools_detecting": ["vault_norms --audit", "vault_arch --check"],
+        "introduced_version": "v40.1",
+    },
+    {
+        "code": "AP-51",
+        "name": "La tool culpa al dato de su propio fallo",
+        "type": "antipattern",
+        "category": "quality",
+        "severity": "high",
+        "enforcement": "guard+audit",
+        "description": (
+            "Una tool falla al leer o al interpretar algo, se traga el fallo y "
+            "devuelve un vacio que el llamante no puede distinguir de un "
+            "resultado legitimo. El error deja de ser un error y pasa a ser un "
+            "**hecho sobre el vault**: el informe que lo agregue dira que N "
+            "notas no tienen aliases, y no sera cierto \u2014 es que no se "
+            "pudieron leer.\n\n"
+            "No es lo mismo *no hay* que *no pude mirar*, y esa es toda la "
+            "norma. AP-44 cubre la mitad de arriba \u2014verificar con el "
+            "criterio del consumidor y no con el propio\u2014; esta cubre la de "
+            "abajo, que es el mecanismo por el que un fallo propio acaba "
+            "pareciendo un dato malo. Salio al ejecutar contra un vault ajeno "
+            "al estandar (**regla 7**): tres tools declaraban invalidas notas "
+            "que Obsidian leia sin problema. Las notas estaban bien; el "
+            "criterio que las media, no.\n\n"
+            "Lo que la norma **no** prohibe es capturar amplio. Prohibe "
+            "capturar amplio y callarse: devolver `ok: false` con el error es "
+            "correcto porque el llamante recibe la mala noticia y decide. "
+            "Capturar `FileNotFoundError` tampoco infringe: es un criterio, el "
+            "autor sabe que tolera y por que. Lo que infringe es `except "
+            "Exception: return []`.\n\n"
+            "Medida en v40.1: **86 sitios en 37 modulos**. Nace con baseline "
+            "por la misma razon que AP-37 \u2014que empezo en 55 y llego a "
+            "0\u2014: un guard que falla en 86 sitios se desactiva el primer "
+            "dia, y un guard desactivado no protege nada. La baseline solo "
+            "puede encoger.\n\n"
+            "El propio detector estreno el fallo que persigue. La primera "
+            "version midio 101 sitios porque clasificaba `except "
+            "yaml.YAMLError` como captura amplia: son `ast.Attribute` y no "
+            "`ast.Name`, asi que caian en la rama del `except` desnudo. "
+            "Contaba como infraccion justo las capturas mas precisas del "
+            "repo. Quince falsos positivos, y el error era el de AP-44 "
+            "cometido dentro del guard."
+        ),
+        "signal": (
+            "Un `except Exception` o un `except` desnudo cuya unica salida es "
+            "`return []`, `return {}`, `return None`, `pass` o `continue`; un "
+            "recuento agregado que no distingue el cero medido del cero por "
+            "fallo de lectura; un veredicto sobre una nota emitido por un "
+            "camino que ya habia fallado."
+        ),
+        "prevention": (
+            "Capturar la excepcion concreta que se sabe tolerar, y si se "
+            "captura amplio, **exponer**: devolver el fallo en el envelope en "
+            "vez de un vacio. Cuando el vacio es la respuesta correcta, "
+            "distinguirlo del vacio por fallo con un campo aparte "
+            "(`unreadable`, `errors`) para que el agregado no los confunda. "
+            "`vault_blame_audit --check --strict` mide por AST y no por "
+            "texto: un detector que buscara la cadena `except Exception` no "
+            "veria la diferencia entre devolver un vacio y devolver un "
+            "envelope con `ok: false`, que es toda la distincion que la norma "
+            "sostiene."
+        ),
+        "tools_enforcing": ["vault_blame_audit --check --strict"],
+        # No se lista `vault_norms --audit`: ese audita el **contenido del
+        # vault**, y esta norma es sobre el codigo de las tools. Declararlo
+        # aqui seria una tool_detecting que no detecta nada, que es la misma
+        # afirmacion no falsable que AP-37 persigue.
+        "tools_detecting": ["vault_blame_audit --check"],
+        "introduced_version": "v40.1",
+    },
+    {
+        "code": "AP-52",
+        "name": "El error se emite fuera del contrato del catalogo",
+        "type": "antipattern",
+        "category": "quality",
+        "severity": "medium",
+        "enforcement": "guard+audit",
+        "description": (
+            "Una tool falla, lo dice, y lo dice mal: devuelve `{\"ok\": false, "
+            "\"error\": \"...\"}` escrito a mano en vez de pasar por "
+            "`vault_errors.emit_error`. La frase es correcta; el contrato, no. "
+            "El envelope del catalogo trae `error_code`, `category`, "
+            "`severity`, `recovery` y `timestamp`; el escrito a mano no trae "
+            "ninguno.\n\n"
+            "Importa porque el consumidor no lee la frase: **decide por el "
+            "codigo**. El servidor MCP y `cli/` deciden si reintentar, abortar "
+            "o pedir permiso mirando `error_code` y `recovery.action`. Sin "
+            "ellos, un fallo con recuperacion conocida llega como un fallo "
+            "opaco, y la unica salida del agente que lo recibe es adivinar.\n\n"
+            "Es AP-05 aplicada al **contrato de error** \u2014hay un registro "
+            "que declara como se nombra y se recupera cada fallo, y 158 sitios "
+            "que lo deciden por su cuenta\u2014 y es AP-51 vista desde el otro "
+            "lado: alli el fallo se disfrazaba de dato, aqui llega como fallo "
+            "pero desnudo de todo lo que lo hace accionable.\n\n"
+            "Salio de la caracterizacion maliciosa: invocar las 94 tools de "
+            "forma malformada y mirar **como** fallan, no si fallan. El grueso "
+            "estaba limpio \u2014las 45 tools con `required_args` rechazan la "
+            "invocacion vacia por argparse, y las 92 tools Python rechazan un "
+            "flag desconocido\u2014 y el hallazgo estaba en la forma del "
+            "envelope, no en su ausencia.\n\n"
+            "Medida en v40.2: **158 sitios en 58 modulos**. Nace con baseline "
+            "por la misma razon que AP-37 y AP-51: un guard que falla en 158 "
+            "sitios se desactiva el primer dia. La baseline solo puede "
+            "encoger.\n\n"
+            "El guard mide **forma y no flujo**: un dict con `ok: False` y "
+            "pinta de envelope que no lleva `error_code`. No sigue el valor "
+            "hasta stdout, asi que cuenta tambien envelopes internos que nunca "
+            "se imprimen. Eso se declara en vez de esconderse: un guard que "
+            "promete una precision que no tiene es la clase de afirmacion no "
+            "falsable que AP-37 persigue."
+        ),
+        "signal": (
+            "Un literal `{\"ok\": False, \"error\": ...}` en el camino de "
+            "salida de una tool; un envelope de fallo sin `error_code`; un "
+            "consumidor que tiene que leer `message` con un regex para saber "
+            "que paso."
+        ),
+        "prevention": (
+            "Emitir por `emit_error(tool, CODIGO, mensaje)` y, si el codigo no "
+            "existe, anadirlo a `ERROR_CATALOG` \u2014 que es donde vive la "
+            "decision de como se recupera ese fallo. Anadir el codigo cuesta "
+            "una linea; no anadirlo traslada el coste a cada consumidor, para "
+            "siempre. `vault_error_contract --check --strict` mide por AST."
+        ),
+        "tools_enforcing": ["vault_error_contract --check --strict"],
+        # Como en AP-51, no se lista `vault_norms --audit`: audita el
+        # contenido del vault, y esta norma es sobre el codigo de las tools.
+        "tools_detecting": ["vault_error_contract --check"],
+        "introduced_version": "v40.2",
+    },
     # ── Patrón PAT-6 ───────────────────────────────────────────────────────────
     {
         "code": "PAT-6",
@@ -1518,6 +1772,26 @@ _CATEGORY_ORDER = {
 # ─── Funciones públicas ────────────────────────────────────────────────────────
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioGobernanza:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioGobernanza(construir(root))
+
+
+def _norm_registry() -> Path:
+    return _repo().registro_normas
+
+
 def compute_norm_refs(folder: str, content: str, wiki_links: List[str]) -> List[str]:
     """
     Compute the list of norm codes that apply to a note based on its folder and content.
@@ -1615,7 +1889,7 @@ def vault_norms_show(code: str) -> Dict[str, Any]:
 
 def vault_norms_scan(path: str) -> Dict[str, Any]:
     """Detect which norms are applicable to a vault note based on content analysis."""
-    note_path = VAULT_ROOT / path
+    note_path = _raiz() / path
     if not note_path.exists():
         return {"ok": False, "error": f"Note not found: {path}"}
 
@@ -1695,12 +1969,12 @@ def vault_norms_scan(path: str) -> Dict[str, Any]:
         # AP-14: check for ghost links (note doesn't exist)
         all_stems = {
             p.stem.lower().replace("-", "").replace("_", "").replace(" ", "")
-            for p in VAULT_ROOT.rglob("*.md")
+            for p in _raiz().rglob("*.md")
             # El hueco simétrico al del barrido principal, y en la direccion
             # contraria: si los stems de las instantaneas cuentan, un enlace
             # fantasma "resuelve" porque existe una COPIA en un backup. La nota
             # viva ya no esta y AP-14 no lo ve.
-            if not _es_instantanea(str(p.relative_to(VAULT_ROOT)))
+            if not _es_instantanea(str(p.relative_to(_raiz())))
         }
         ghost = [
             l
@@ -1743,10 +2017,14 @@ def vault_norms_scan(path: str) -> Dict[str, Any]:
                 "AP-07", f"ADR posiblemente incompleto (secciones faltantes detectadas)"
             )
 
-    if "06_Runbooks" not in rel and any(
+    # La sección es `08_Runbooks`; aquí se comparaba contra `06_Runbooks`, que
+    # no existe. La condición era por tanto siempre cierta: un runbook guardado
+    # correctamente en `08_Runbooks/` se reportaba como fuera de sitio, y uno
+    # realmente extraviado se reportaba igual. El guard no distinguía nada.
+    if "08_Runbooks" not in rel and any(
         kw in note_path.stem.lower() for kw in ("runbook", "procedure", "playbook")
     ):
-        _add("AP-09", "runbook fuera de 06_Runbooks/")
+        _add("AP-09", "runbook fuera de 08_Runbooks/")
 
     # Always recommend PAT-5 (provenance chain)
     if not all(fm.get(f) for f in ("id", "createdAt", "updatedAt", "agent")):
@@ -1766,7 +2044,7 @@ def vault_norms_apply(code: str, path: str) -> Dict[str, Any]:
     if code not in _NORM_BY_CODE:
         return {"ok": False, "error": f"Norm '{code}' not found."}
 
-    note_path = VAULT_ROOT / path
+    note_path = _raiz() / path
     if not note_path.exists():
         return {"ok": False, "error": f"Note not found: {path}"}
 
@@ -1868,12 +2146,12 @@ def vault_norms_rebuild() -> Dict[str, Any]:
         "norms": NORM_CATALOG,
     }
 
-    NORM_REGISTRY.parent.mkdir(parents=True, exist_ok=True)
-    atomic_write_json(NORM_REGISTRY, registry)
+    _norm_registry().parent.mkdir(parents=True, exist_ok=True)
+    atomic_write_json(_norm_registry(), registry)
 
     return {
         "ok": True,
-        "registry": str(NORM_REGISTRY.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "registry": str(_norm_registry().relative_to(_raiz())).replace("\\", "/"),
         "total": registry["total"],
         "antipatterns": registry["antipatterns"],
         "patterns": registry["patterns"],
@@ -2270,8 +2548,11 @@ def _canonical_status(valor):
     return None
 
 
-# Entradas permitidas en la raíz del vault además de las secciones canónicas
-_ROOT_ALLOWED = {".obsidian", ".trash", ".history", ".git", ".locks", "vault-backups"}
+# Entradas permitidas en la raíz del vault además de las secciones canónicas.
+# La lista la declara `vault_registry`: el kernel ya la usaba para no indexar
+# esas carpetas, y tenerla aquí a mano hacía que `docs/` —que escribe el propio
+# `vault_sdd_init`— violara CN-02 contra el sandbox (AP-05).
+_ROOT_ALLOWED = set(NON_SECTION_ROOT_FOLDERS)
 
 #: Alias de compatibilidad. El criterio de "qué es una nota viva" se movió a
 #: `vault_io` en cuanto una segunda tool lo necesitó (`vault_mermaid_check`):
@@ -2394,7 +2675,7 @@ def vault_norms_audit(root: Optional[Path] = None) -> Dict[str, Any]:
     from vault_lib import extract_wikilinks, parse_frontmatter_with_body
     from vault_registry import SECTIONS
 
-    root = (root or VAULT_ROOT).resolve()
+    root = (root or _raiz()).resolve()
     canonical_sections = {s["folder"] for s in SECTIONS}
     violations: List[Dict[str, Any]] = []
 
@@ -2611,7 +2892,9 @@ def vault_norms_audit(root: Optional[Path] = None) -> Dict[str, Any]:
 
         # La bitácora vive en el vault detectado; con --root a otro vault los
         # caminos no coinciden y el chequeo diría cualquier cosa menos la verdad.
-        if _tags.VAULT_ROOT.resolve() != root:
+        # `_raiz()` resuelve al usarse: la constante congelada que había aquí
+        # desapareció al migrar el contexto Índices al dominio (AP-49).
+        if _tags._raiz().resolve() != root:
             raise ImportError("AP-39 solo audita el vault detectado")
 
         familias: Dict[str, Dict[str, List[str]]] = {}
@@ -3008,13 +3291,25 @@ def framework_drift_check(spec_path: Optional[Path] = None) -> Dict[str, Any]:
                     }
                 )
 
+    # Cobertura de secciones: toda norma catalogada tiene que tener su sección
+    # en el manifiesto. La medida es el **encabezado**, no la mención: once
+    # normas (AP-25..AP-35) estaban citadas de pasada en entradas de changelog
+    # y eso las hacía pasar por documentadas durante diez versiones mientras
+    # `vault_norms --list` las mostraba y el manifiesto no las explicaba. Un
+    # `in text` habría dado verde — es AP-44 otra vez: medir con el criterio
+    # cómodo en vez de con el del lector, que busca la sección.
+    encabezados = set(re.findall(r"^#{2,4}\s+((?:AP|PAT|SP|CN)-\d+)", text, re.M))
+    sin_seccion = [n["code"] for n in NORM_CATALOG if n["code"] not in encabezados]
+
     return {
-        "ok": not missing,
+        "ok": not missing and not sin_seccion,
         "tool": "vault_norms.framework_drift",
         "spec": spec.name,
         "total_ids": sum(len(e) for e in FRAMEWORK_REGISTRIES.values()),
         "missing_count": len(missing),
         "missing": missing,
+        "norms_total": len(NORM_CATALOG),
+        "norms_without_section": sin_seccion,
     }
 
 

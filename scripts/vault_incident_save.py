@@ -29,15 +29,16 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
-from vault_lib import slugify_strict, utcnow
-from vault_io import (
-    write_report,
-    VAULT_ROOT,
-    assert_within_vault,
-    atomic_write_text,
-    update_section_index,
-)
+from vault_lib import yaml_scalar, slugify_strict, utcnow
+from vault_io import assert_within_vault, atomic_write_text, get_vault_root, write_report
 from vault_norms import compute_norm_refs, status_frontmatter_lines
+# El vocabulario se declara una vez y se consume, no se copia. Ver
+# `vault_vocabulario.py` para el registro y su contexto dueño.
+from vault_vocabulario import opciones as _opciones
+# Los `*_save` viven en `scripts/`; el paquete se importa desde la raiz.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 FOLDER = "02_Observability/incidents"
 
@@ -231,42 +232,43 @@ _Qué salió bien, qué salió mal, qué hacer diferente._
 """
 
     norm_refs = compute_norm_refs(FOLDER, body, [])
-    fm_lines = [
-        "---",
-        f'title: "Incidente: {title}"',
-        f"id: {uuid.uuid4()}",
-        f"createdAt: {now}",
-        f"updatedAt: {now}",
-        f"tags: {json.dumps(['incident', project, severity.lower(), status])}",
-        f"norm_refs: {json.dumps(norm_refs)}",
-        f"project: {project}",
-        f"severity: {severity}",
-        *status_frontmatter_lines("vault_incident_save", status),
-        f"detected_at: {detected_at}",
-        f"resolved_at: {resolved_at or ''}",
-        f"mttr: {mttr}",
-        f"iso_standard: ISO 20000-1:2018 §8.6",
-        f"iso_bcm: ISO 22301:2019 §8.4",
-        f"cia_integrity: high",
-        f"cia_availability: high",
-        f"cia_sensitivity: internal",
-        f"agent: {agent}",
-        "---",
-    ]
-    full = "\n".join(fm_lines) + "\n\n" + body
+    fm_lines = Frontmatter()
+    fm_lines.set("title", f"Incidente: {title}")
+    fm_lines.set("id", uuid.uuid4())
+    fm_lines.set("createdAt", now)
+    fm_lines.set("updatedAt", now)
+    fm_lines.set("tags", ['incident', project, severity.lower(), status])
+    fm_lines.set("norm_refs", norm_refs)
+    fm_lines.set("project", project)
+    fm_lines.set("severity", severity)
+    fm_lines.lineas(status_frontmatter_lines("vault_incident_save", status))
+    fm_lines.set("detected_at", detected_at)
+    fm_lines.set("resolved_at", resolved_at or '')
+    fm_lines.set("mttr", mttr)
+    fm_lines.set("iso_standard", "ISO 20000-1:2018 §8.6")
+    fm_lines.set("iso_bcm", "ISO 22301:2019 §8.4")
+    fm_lines.set("cia_integrity", "high")
+    fm_lines.set("cia_availability", "high")
+    fm_lines.set("cia_sensitivity", "internal")
+    fm_lines.set("agent", agent)
+    full = fm_lines.render() + "\n\n" + body
 
     filename = f"{project}-{date_prefix}-{_slug(title)}.md"
-    path = VAULT_ROOT / FOLDER / filename
+    path = get_vault_root() / FOLDER / filename
     path.parent.mkdir(parents=True, exist_ok=True)
-    assert_within_vault(path, VAULT_ROOT)
+    assert_within_vault(path, get_vault_root())
     atomic_write_text(path, full)
 
-    update_section_index("02_Observability")
+    # El indice de seccion lo dispara el write path del kernel
+    # (`vault_io._auto_section_index`) en cuanto se escribe la nota. La
+    # llamada explicita que habia aqui lo regeneraba una segunda vez con
+    # el mismo contenido: trabajo duplicado que ademas se contaba como
+    # escritura en el envelope.
 
     return {
         "ok": True,
         **write_report(),
-        "path": str(path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(path.relative_to(get_vault_root())).replace("\\", "/"),
         "project": project,
         "severity": severity,
         "severity_label": sev_info["label"],
@@ -298,7 +300,7 @@ Ejemplos:
     )
     parser.add_argument("--project", required=True)
     parser.add_argument("--title", required=True)
-    parser.add_argument("--severity", default="P3", choices=["P1", "P2", "P3", "P4"])
+    parser.add_argument("--severity", default="P3", choices=_opciones("prioridad"))
     parser.add_argument("--status", default="detected", choices=VALID_STATUS)
     parser.add_argument("--detected_at")
     parser.add_argument("--resolved_at")

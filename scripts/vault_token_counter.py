@@ -15,7 +15,15 @@ from urllib.error import URLError
 from urllib.request import Request, urlopen
 
 from vault_errors import wrap_main
-from vault_token_service import DEFAULT_HOST, DEFAULT_PORT, PORT_FILE, USAGE_DIR, TokenHandler, estimate_tokens, serve
+from vault_token_service import (
+    DEFAULT_HOST,
+    DEFAULT_PORT,
+    TokenHandler,
+    _port_file,
+    _usage_dir,
+    estimate_tokens,
+    serve,
+)
 
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
@@ -24,9 +32,9 @@ SERVICE_SCRIPT = SCRIPTS_DIR / "vault_token_service.py"
 
 def _base_url(port: Optional[int] = None) -> str:
     selected = port
-    if selected is None and PORT_FILE.exists():
+    if selected is None and _port_file().exists():
         try:
-            selected = int(PORT_FILE.read_text(encoding="utf-8").strip())
+            selected = int(_port_file().read_text(encoding="utf-8").strip())
         except ValueError:
             selected = DEFAULT_PORT
     return f"http://{DEFAULT_HOST}:{selected or DEFAULT_PORT}"
@@ -55,9 +63,9 @@ def start_service(port: int = DEFAULT_PORT) -> Dict[str, Any]:
     if _is_running(port):
         return {"ok": True, "alreadyRunning": True, "url": _base_url(port)}
 
-    USAGE_DIR.mkdir(parents=True, exist_ok=True)
-    log_path = USAGE_DIR / "token-service.log"
-    err_path = USAGE_DIR / "token-service.err.log"
+    _usage_dir().mkdir(parents=True, exist_ok=True)
+    log_path = _usage_dir() / "token-service.log"
+    err_path = _usage_dir() / "token-service.err.log"
     if os.name == "nt":
         def ps_quote(value: str) -> str:
             return "'" + value.replace("'", "''") + "'"

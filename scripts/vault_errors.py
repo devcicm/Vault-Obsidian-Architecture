@@ -29,13 +29,16 @@ import threading
 import traceback
 from datetime import datetime, timezone
 from pathlib import Path
+
+# La configuración se lee del registro único, no con un default por punto
+# de uso. Ver `vault_entorno.py`.
+from vault_entorno import leer as _env
 from typing import Any, Callable, Dict, List, Optional
 
 from vault_errors_catalog import ERROR_CATALOG, get_error
 from vault_errors_trace import log_trace, log_token_usage
-from vault_io import VAULT_ROOT
 
-TOOL_TIMEOUT_SECONDS: int = int(os.environ.get("VAULT_TOOL_TIMEOUT", "60"))
+TOOL_TIMEOUT_SECONDS: int = _env("VAULT_TOOL_TIMEOUT")
 
 
 def emit_error(
@@ -220,7 +223,7 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
     if output:
         _write_output(output, _real_stdout)
 
-    if os.environ.get("VAULT_COUNT_TOKENS") == "1":
+    if _env("VAULT_COUNT_TOKENS"):
         input_text = " ".join(sys.argv)
         log_token_usage(tool_name, input_text, captured_text)
 

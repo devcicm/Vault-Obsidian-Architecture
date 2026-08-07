@@ -22,19 +22,36 @@ from vault_errors import wrap_main
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from vault_io import VAULT_ROOT
-HISTORY_DIR = VAULT_ROOT / ".history"
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _history_dir() -> Path:
+    return _repo().dir_historial
 
 
 def get_history(note_path: Path) -> List[str]:
     """Get all historical versions sorted newest first."""
-    if not HISTORY_DIR.exists():
+    if not _history_dir().exists():
         return []
     note_name = note_path.stem
-    rel_parent = str(note_path.parent.relative_to(VAULT_ROOT))
+    rel_parent = str(note_path.parent.relative_to(_raiz()))
     folder_prefix = rel_parent.replace("\\", "__").replace("/", "__")
     prefix = f"{folder_prefix}__{note_name}-"
-    versions = [f.name for f in HISTORY_DIR.iterdir() if f.is_file() and f.name.startswith(prefix)]
+    versions = [f.name for f in _history_dir().iterdir() if f.is_file() and f.name.startswith(prefix)]
     versions.sort(reverse=True)
     return versions
 
@@ -45,7 +62,7 @@ def _compute_hash(path: Path) -> Dict[str, Any]:
         data = path.read_bytes()
         return {
             "ok": True,
-            "path": str(path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+            "path": str(path.relative_to(_raiz())).replace("\\", "/"),
             "hash_md5":   hashlib.md5(data).hexdigest(),
             "hash_sha1":  hashlib.sha1(data).hexdigest(),
             "size_bytes": len(data),
@@ -113,7 +130,7 @@ def _resolve_path(p: str) -> Path:
     raw = Path(p)
     if raw.is_absolute():
         return raw
-    candidate = VAULT_ROOT / p
+    candidate = _raiz() / p
     if candidate.exists():
         return candidate
     candidate2 = Path(__file__).parent / p
@@ -163,7 +180,7 @@ def vault_diff(
     if path is None:
         return {"ok": False, "error": "Provide --path or --compare/--with"}
 
-    note_path = VAULT_ROOT / path
+    note_path = _raiz() / path
     if not note_path.exists():
         return {"ok": False, "error": f"Note not found: {path}"}
 
@@ -190,7 +207,7 @@ def vault_diff(
     else:
         return {"ok": False, "error": f"Version '{version}' not found. Available: {history}"}
 
-    old_lines = (HISTORY_DIR / target_name).read_text(encoding="utf-8", errors="replace").splitlines()
+    old_lines = (_history_dir() / target_name).read_text(encoding="utf-8", errors="replace").splitlines()
     result = _run_diff(old_lines, current_lines, target_name, path, context, stat_only)
     result["history"] = history
     return result

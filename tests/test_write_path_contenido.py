@@ -84,12 +84,16 @@ def test_el_informe_de_seguridad_no_persiste_la_credencial(tmp_path, monkeypatch
     """El fragmento vulnerable llega redactado, no en claro."""
     import vault_security_scan
 
+    import vault_io
+
     vault = tmp_path / "vault"
-    monkeypatch.setattr(vault_security_scan, "VAULT_ROOT", vault)
-    monkeypatch.setattr(
-        vault_security_scan, "VULNERABILITIES_DIR", vault / "02_Observability" / "vuln"
-    )
-    (vault / "02_Observability" / "vuln").mkdir(parents=True)
+    # Se apunta la raíz, no las constantes: `vault_security_scan` migró al
+    # contexto Gobernanza y las resuelve al usarlas. El monkeypatch habría
+    # creado dos atributos que nadie lee, y el test habría escrito el informe
+    # en el vault detectado sin fallar. La subcarpeta ya no se puede desviar:
+    # `vulnerabilities/` cuelga de `02_Observability/` por invariante.
+    vault_io.set_vault_root(vault)
+    (vault / "02_Observability" / "vulnerabilities").mkdir(parents=True)
 
     hallazgo = {
         "ruleId": "S006",

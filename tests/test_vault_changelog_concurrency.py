@@ -22,12 +22,19 @@ import vault_change_log as cl
 
 
 def _point_module_at(tmp: Path):
-    system = tmp / "00_System"
-    system.mkdir(parents=True, exist_ok=True)
-    cl.VAULT_ROOT = tmp  # so relative_to(VAULT_ROOT) in the response resolves
-    cl.SYSTEM_DIR = system
-    cl.LOG_MD = system / "change-log.md"
-    cl.LOG_JSON = system / ".change-log.json"
+    """Se apunta la raíz del proceso, no las constantes del módulo.
+
+    Las cuatro asignaciones que había aquí dejaron de existir al migrar
+    `vault_change_log` al contexto Autoría. Seguirían siendo Python legal y no
+    tendrían ningún efecto: este test habría lanzado 25 escrituras concurrentes
+    contra el change-log **real de `vault-sandbox/`** y habría pasado en verde
+    midiendo el vault equivocado. El override lo deshace el fixture autouse de
+    `conftest.py`.
+    """
+    import vault_io
+
+    (tmp / "00_System").mkdir(parents=True, exist_ok=True)
+    vault_io.set_vault_root(tmp)
 
 
 def test_concurrent_change_log_no_lost_entries(tmp_test_dir):
@@ -48,7 +55,7 @@ def test_concurrent_change_log_no_lost_entries(tmp_test_dir):
     for t in threads:
         t.join()
 
-    entries = json.loads(cl.LOG_JSON.read_text(encoding="utf-8"))
+    entries = json.loads(cl._log_json().read_text(encoding="utf-8"))
     assert len(entries) == n, f"Lost updates: {len(entries)} of {n} entries recorded"
     # Every writer's unique path is present exactly once.
     paths = {e["path"] for e in entries}

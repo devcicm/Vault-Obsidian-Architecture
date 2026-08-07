@@ -43,7 +43,7 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).parent))
-from vault_io import VAULT_ROOT, normalize_stem
+from vault_io import get_vault_root, normalize_stem
 from vault_regex import (
     extract_wiki_links_strict,
     detect_bracket_anomalies,
@@ -565,7 +565,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    root = Path(args.root).resolve() if args.root else VAULT_ROOT
+    root = Path(args.root).resolve() if args.root else get_vault_root()
     if args.root:
         # AP-36: la observabilidad (traces/locks) debe escribir en el vault objetivo
         from vault_io import set_vault_root

@@ -29,18 +29,41 @@ import re
 import sys
 
 from vault_errors import wrap_main
-from vault_lib import slugify_strict, utcnow
+from vault_lib import yaml_scalar, slugify_strict, utcnow
 import uuid
 
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-from vault_io import VAULT_ROOT, atomic_write_text, atomic_write_json, write_report
+from vault_io import (
+    atomic_write_text,
+    atomic_write_json,
+    write_report,
+    indice_compartido,
+)
 
-CODE_DIR = VAULT_ROOT / "11_Code"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-INDEX_FILE = CODE_DIR / ".code-index.json"
+from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioGrafo:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioGrafo(construir(root))
+
+
+def _code_dir() -> Path:
+    return _repo().dir_codigo
+
+
+INDEX_FILE = _code_dir() / ".code-index.json"
 
 
 RELATION_TYPES = [
@@ -64,6 +87,13 @@ def slugify(text: str) -> str:
     return slugify_strict(text)
 
 
+# superseded_by: vault_io.indice_compartido
+#
+# Leia/escribia el indice fuera de todo tramo exclusivo, que es justo el
+# lost update que `indice_compartido` cierra. Se conserva con su contrato
+# intacto por la politica de no-derogacion: ya no lo llama el camino de
+# guardado, y no debe volver a llamarlo. Si necesitas el indice, entra por
+# `indice_compartido`, que cubre desde la lectura hasta la escritura.
 def load_index() -> Dict[str, Any]:
     try:
         with open(INDEX_FILE, "r", encoding="utf-8") as f:
@@ -73,8 +103,15 @@ def load_index() -> Dict[str, Any]:
         return {"modules": [], "relations": []}
 
 
+# superseded_by: vault_io.indice_compartido
+#
+# Leia/escribia el indice fuera de todo tramo exclusivo, que es justo el
+# lost update que `indice_compartido` cierra. Se conserva con su contrato
+# intacto por la politica de no-derogacion: ya no lo llama el camino de
+# guardado, y no debe volver a llamarlo. Si necesitas el indice, entra por
+# `indice_compartido`, que cubre desde la lectura hasta la escritura.
 def save_index(data: Dict[str, Any]) -> None:
-    CODE_DIR.mkdir(parents=True, exist_ok=True)
+    _code_dir().mkdir(parents=True, exist_ok=True)
 
     # atomic_write_* y no `open(..., "w")`: el escaneo de secretos, el
     # saneado de encoding y el temp+replace viven ahí. Escribir en crudo los
@@ -157,7 +194,7 @@ def generate_code_map(project: str, index: Dict[str, Any]) -> str:
 def save_code_map(project: str, mermaid_content: str) -> Path:
     safe_project = slugify(project)
 
-    map_dir = CODE_DIR / safe_project
+    map_dir = _code_dir() / safe_project
 
     map_dir.mkdir(parents=True, exist_ok=True)
 
@@ -167,9 +204,9 @@ def save_code_map(project: str, mermaid_content: str) -> Path:
 
     frontmatter = ["---"]
 
-    frontmatter.append(f"title: Code Map - {project}")
+    frontmatter.append(f"title: {yaml_scalar(f'Code Map - {project}')}")
 
-    frontmatter.append(f"project: {project}")
+    frontmatter.append(f"project: {yaml_scalar(project)}")
 
     frontmatter.append(f"type: code-map")
 
@@ -209,34 +246,37 @@ def vault_code_relation(
             "error": f"Cardinality inválida: {cardinality}. Válidos: {CARDINALITIES}",
         }
 
-    index = load_index()
+    # El tramo exclusivo abarca desde la lectura hasta la escritura: sin el,
+    # dos ejecuciones concurrentes leen el mismo indice, cada una anade su
+    # entrada, gana la segunda y la primera desaparece con las dos tools
+    # devolviendo `ok: true` (AP-37 por la puerta de atras).
+    with indice_compartido(INDEX_FILE, {"modules": [], "relations": []}) as index:
 
-    already_existed = False
+        already_existed = False
 
-    for rel in index["relations"]:
-        if (
-            rel["from"] == from_file
-            and rel["to"] == to_file
-            and rel["type"] == relation_type
-        ):
-            already_existed = True
+        for rel in index["relations"]:
+            if (
+                rel["from"] == from_file
+                and rel["to"] == to_file
+                and rel["type"] == relation_type
+            ):
+                already_existed = True
 
-            break
+                break
 
-    index["relations"].append(
-        {
-            "id": str(uuid.uuid4()),
-            "from": from_file,
-            "to": to_file,
-            "type": relation_type,
-            "cardinality": cardinality,
-            "label": label,
-            "project": project,
-            "addedAt": utcnow(),
-        }
-    )
+        index["relations"].append(
+            {
+                "id": str(uuid.uuid4()),
+                "from": from_file,
+                "to": to_file,
+                "type": relation_type,
+                "cardinality": cardinality,
+                "label": label,
+                "project": project,
+                "addedAt": utcnow(),
+            }
+        )
 
-    save_index(index)
 
     modules = get_module_nodes(index, project)
 
@@ -256,7 +296,7 @@ def vault_code_relation(
         "relation_type": relation_type,
         "cardinality": cardinality,
         "already_existed": already_existed,
-        "mapPath": str(map_path.relative_to(VAULT_ROOT)),
+        "mapPath": _repo().relativa(map_path),
         "nodes": len(modules),
         "edges": len(relations),
         "message": f"Relation added: {from_file} --[{relation_type}]--> {to_file}. Code map updated.",

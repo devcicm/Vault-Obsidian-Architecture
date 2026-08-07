@@ -21,6 +21,7 @@ Usage:
 
 import argparse
 import json
+import os
 import re
 import sys
 import unicodedata
@@ -35,41 +36,77 @@ from vault_io import (
     atomic_write_text,
     assert_within_vault,
     file_lock,
-    VAULT_ROOT,
     safe_wikilink,
 )
 
 from vault_registry import SECTIONS as _REGISTRY_SECTIONS
 
-TAG_REGISTRY = VAULT_ROOT / "00_System" / "tag-registry.json"
-TAG_INDEX_MD = VAULT_ROOT / "99_Index" / "tag-index.md"
-#: Bitácora de vocabulario (AP-39). Append-only y dentro del vault (AP-36).
-VOCAB_DIR = VAULT_ROOT / "19_Audits" / "vocabulary"
-TAG_LEDGER = VOCAB_DIR / "tag-ledger.json"
-SEARCH_INDEX = VAULT_ROOT / "99_Index" / "search-index.json"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+# La configuración se lee del registro único, no con un default por punto
+# de uso. Ver `vault_entorno.py`.
+from vault_entorno import leer as _env
+
+from vault.indices.enumeracion import NOMBRES_DE_INDICE  # noqa: E402
+from vault.indices.enumeracion import es_nota_indexable  # noqa: E402
+from vault.indices.repositorio import RepositorioIndices  # noqa: E402
+from vault.kernel import construir  # noqa: E402
 
 #: Derivado de `vault_registry.SECTIONS`, no copiado: la lista literal que vivía
 #: aquí se quedó en 18 carpetas y dejaba de escanear cada sección nueva del
 #: estándar sin que nada fallara — AP-05 dentro del propio toolkit.
 VAULT_SECTIONS = {s["folder"] for s in _REGISTRY_SECTIONS}
 
-SKIP_NAMES = frozenset({"index.md", "readme.md"})
+#: Se conserva el nombre publicado (no-derogación); el valor sale del dominio.
+SKIP_NAMES = NOMBRES_DE_INDICE
+
+
+# ── Rutas: funciones, no constantes ──────────────────────────────────────────
+#
+# Eran cinco constantes derivadas de `VAULT_ROOT` al importar el módulo, que es
+# AP-49 en su forma literal: `set_vault_root()` no podía reapuntarlas porque ya
+# estaban calculadas. Resueltas al usarse, dos vaults conviven en el mismo
+# intérprete. Las rutas las da el repositorio del contexto Índices, que es
+# también quien garantiza la contención (AP-36).
+
+
+def _repo(root=None) -> RepositorioIndices:
+    return RepositorioIndices(construir(root))
+
+
+def _raiz() -> Path:
+    return _repo().raiz
+
+
+def _tag_registry() -> Path:
+    return _repo().registro_etiquetas
+
+
+def _tag_index_md() -> Path:
+    return _repo().indice_etiquetas
+
+
+def _vocab_dir() -> Path:
+    """Bitácora de vocabulario (AP-39). Append-only y dentro del vault (AP-36)."""
+    return _repo().dir_vocabulario
+
+
+def _tag_ledger() -> Path:
+    return _repo().bitacora_etiquetas
+
+
+def _search_index() -> Path:
+    return _repo().indice_busqueda
 
 
 def _is_vault_note(path: Path) -> bool:
-    try:
-        parts = path.relative_to(VAULT_ROOT).parts
-    except ValueError:
-        return False
-    if len(parts) < 2:
-        return False
-    if parts[0] not in VAULT_SECTIONS:
-        return False
-    if any(p.startswith(".") for p in parts):
-        return False
-    if path.name.lower() in SKIP_NAMES:
-        return False
-    return True
+    """Criterio del contexto, sin los índices: `index.md` es navegación generada.
+
+    Se conserva el nombre porque el módulo lo usa en tres sitios; el criterio ya
+    no vive aquí sino en `vault/indices/enumeracion.py`, compartido con la
+    reconstrucción del índice de búsqueda (AP-44).
+    """
+    return es_nota_indexable(path, _raiz(), VAULT_SECTIONS, incluir_indices=False)
 
 
 def _parse_frontmatter_tags(content: str) -> List[str]:
@@ -151,7 +188,7 @@ def singular_tag(tag: str) -> str:
 def canonical_tags() -> List[str]:
     """Tags canónicos del vault, aplanados desde las facetas del registro."""
     try:
-        registro = json.loads(TAG_REGISTRY.read_text(encoding="utf-8"))
+        registro = json.loads(_tag_registry().read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return []
     canonicos = registro.get("canonical_tags")
@@ -196,7 +233,7 @@ def resolve_tag(raw: str, indice: Optional[Dict[str, str]] = None) -> Tuple[str,
 
 def _load_ledger() -> Dict[str, Any]:
     try:
-        return json.loads(TAG_LEDGER.read_text(encoding="utf-8"))
+        return json.loads(_tag_ledger().read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return {"version": "v1.0", "entries": []}
 
@@ -212,9 +249,9 @@ def record_new_tags(
     """
     if not terminos:
         return 0
-    VOCAB_DIR.mkdir(parents=True, exist_ok=True)
+    _vocab_dir().mkdir(parents=True, exist_ok=True)
     ahora = utcnow()
-    with file_lock(TAG_LEDGER):
+    with file_lock(_tag_ledger()):
         ledger = _load_ledger()
         ya = {e["tag"] for e in ledger["entries"]}
         nuevos = 0
@@ -232,7 +269,7 @@ def record_new_tags(
             ya.add(t["tag"])
             nuevos += 1
         if nuevos:
-            atomic_write_json(TAG_LEDGER, ledger)
+            atomic_write_json(_tag_ledger(), ledger)
     return nuevos
 
 
@@ -265,6 +302,45 @@ def apply_vocabulary(
     return resueltos, introducidos
 
 
+def registrar_tags_de_nota(
+    tags: List[str], nota: str, agente: str = ""
+) -> Dict[str, Any]:
+    """Canoniza los tags de una nota recién escrita y anota los nuevos.
+
+    Esto lo hacía **solo** `vault_write`, y hay quince escritores: los catorce
+    `*_save` que llevan tags construyen su frontmatter y llaman directamente a
+    `atomic_write_text`, saltándose el write path entero. El resultado es que
+    AP-39 se cumplía en una de cada quince escrituras: el término entraba en el
+    vault y la bitácora no se enteraba, así que la auditoría lo denunciaba
+    después como vocabulario introducido sin dejar rastro — culpando a la nota
+    de algo que era del escritor. Es AP-43 en su forma literal: norma sin
+    refuerzo en el punto de uso.
+
+    Se llama **después** de escribir, nunca antes: anotar primero dejaría en la
+    bitácora palabras de escrituras que fallaron.
+
+    Un fallo de la bitácora no tumba una escritura válida — devuelve
+    `recorded: -1` y el audit de AP-39 lo recoge luego.
+    """
+    canonicos, nuevos = apply_vocabulary(list(tags or []))
+    if not nuevos:
+        return {"tags": canonicos, "vocabulary_introduced": [], "recorded": 0}
+
+    agente = agente or _env("VAULT_AGENT")
+    for t in nuevos:
+        t["note"] = nota
+        t["agent"] = agente
+    try:
+        anotados = record_new_tags(nuevos)
+    except OSError:
+        anotados = -1
+    return {
+        "tags": canonicos,
+        "vocabulary_introduced": [t["tag"] for t in nuevos],
+        "recorded": anotados,
+    }
+
+
 def vault_tags_backfill_ledger(dry_run: bool = False) -> Dict[str, Any]:
     """Heal de AP-39: anota en la bitácora el vocabulario ya en uso.
 
@@ -275,14 +351,14 @@ def vault_tags_backfill_ledger(dry_run: bool = False) -> Dict[str, Any]:
     """
     indice = _canonical_index()
     vistos: Dict[str, Dict[str, Any]] = {}
-    for md in sorted(VAULT_ROOT.rglob("*.md")):
+    for md in sorted(_raiz().rglob("*.md")):
         if not _is_vault_note(md):
             continue
         try:
             contenido = md.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
             continue
-        rel = str(md.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(md.relative_to(_raiz())).replace("\\", "/")
         agente = ""
         for linea in contenido.split("---", 2)[1].splitlines() if contenido.startswith("---") else []:
             if linea.startswith("agent:"):
@@ -318,7 +394,7 @@ def vault_tags_backfill_ledger(dry_run: bool = False) -> Dict[str, Any]:
         "written": anotados,
         "recorded": anotados,
         "scanned_terms": len(vistos),
-        "path": str(TAG_LEDGER.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(_tag_ledger().relative_to(_raiz())).replace("\\", "/"),
     }
 
 
@@ -333,7 +409,7 @@ def vault_tags_ledger() -> Dict[str, Any]:
         )
     return {
         "ok": True,
-        "path": str(TAG_LEDGER.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(_tag_ledger().relative_to(_raiz())).replace("\\", "/"),
         "introduced_total": len(entradas),
         "canonical_total": len(set(canonical_tags())),
         "by_agent": dict(sorted(por_agente.items(), key=lambda kv: -kv[1])),
@@ -380,14 +456,14 @@ def _scan_all_notes() -> Tuple[Dict[str, List[str]], List[str]]:
     tag_map: Dict[str, List[str]] = defaultdict(list)
     untagged: List[str] = []
 
-    for note_path in sorted(VAULT_ROOT.rglob("*.md")):
+    for note_path in sorted(_raiz().rglob("*.md")):
         if not _is_vault_note(note_path):
             continue
         try:
             content = note_path.read_text(encoding="utf-8", errors="ignore")
         except (PermissionError, OSError):
             continue
-        rel = str(note_path.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(note_path.relative_to(_raiz())).replace("\\", "/")
         tags = _parse_frontmatter_tags(content)
         if tags:
             for tag in tags:
@@ -455,34 +531,34 @@ def vault_tags_rebuild(dry_run: bool = False) -> Dict[str, Any]:
     tag_index_content = _generate_tag_index_md(tag_map, untagged)
 
     if not dry_run:
-        VAULT_ROOT.joinpath("00_System").mkdir(parents=True, exist_ok=True)
-        VAULT_ROOT.joinpath("99_Index").mkdir(parents=True, exist_ok=True)
+        _raiz().joinpath("00_System").mkdir(parents=True, exist_ok=True)
+        _raiz().joinpath("99_Index").mkdir(parents=True, exist_ok=True)
         # Lock the paired writes so concurrent rebuilds cannot interleave and leave
         # the registry (JSON) and the human index (MD) describing different states.
-        with file_lock(TAG_REGISTRY):
-            atomic_write_json(TAG_REGISTRY, registry)
-            atomic_write_text(TAG_INDEX_MD, tag_index_content)
+        with file_lock(_tag_registry()):
+            atomic_write_json(_tag_registry(), registry)
+            atomic_write_text(_tag_index_md(), tag_index_content)
 
     return {
         "ok": True,
         "total_tags": len(tag_map),
         "total_tagged_notes": sum(len(v) for v in tag_map.values()),
         "total_untagged_notes": len(untagged),
-        "tag_registry": str(TAG_REGISTRY.relative_to(VAULT_ROOT)).replace("\\", "/"),
-        "tag_index": str(TAG_INDEX_MD.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "tag_registry": str(_tag_registry().relative_to(_raiz())).replace("\\", "/"),
+        "tag_index": str(_tag_index_md().relative_to(_raiz())).replace("\\", "/"),
         "dry_run": dry_run,
     }
 
 
 def vault_tags_audit() -> Dict[str, Any]:
-    if not TAG_REGISTRY.exists():
+    if not _tag_registry().exists():
         return {
             "ok": False,
             "error": "tag-registry.json no encontrado. Ejecutar vault_tags.py primero.",
         }
 
     try:
-        registry = json.loads(TAG_REGISTRY.read_text(encoding="utf-8"))
+        registry = json.loads(_tag_registry().read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError) as e:
         return {"ok": False, "error": str(e)}
 
@@ -546,7 +622,7 @@ def vault_tags_audit() -> Dict[str, Any]:
 
 
 def vault_tags_suggest(note_path_str: str) -> Dict[str, Any]:
-    note_path = VAULT_ROOT / Path(note_path_str)
+    note_path = _raiz() / Path(note_path_str)
     try:
         content = note_path.read_text(encoding="utf-8", errors="ignore")
     except (FileNotFoundError, PermissionError) as e:
@@ -555,14 +631,14 @@ def vault_tags_suggest(note_path_str: str) -> Dict[str, Any]:
     existing_tags = set(_parse_frontmatter_tags(content))
     title = _parse_frontmatter_title(content)
 
-    if not TAG_REGISTRY.exists():
+    if not _tag_registry().exists():
         return {
             "ok": False,
             "error": "tag-registry.json no encontrado. Ejecutar vault_tags.py primero.",
         }
 
     try:
-        registry = json.loads(TAG_REGISTRY.read_text(encoding="utf-8"))
+        registry = json.loads(_tag_registry().read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError) as e:
         return {"ok": False, "error": str(e)}
 
@@ -602,10 +678,10 @@ def _update_search_index_tags(
     old_tag: str, new_tag: str, updated_paths: List[str]
 ) -> None:
     """Patch search-index.json so renamed tags are reflected without a full reindex."""
-    if not SEARCH_INDEX.exists():
+    if not _search_index().exists():
         return
     try:
-        index = json.loads(SEARCH_INDEX.read_text(encoding="utf-8"))
+        index = json.loads(_search_index().read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
         return
     path_set = set(updated_paths)
@@ -615,7 +691,7 @@ def _update_search_index_tags(
             note["tags"] = [new_tag if t == old_tag else t for t in note["tags"]]
             changed = True
     if changed:
-        atomic_write_json(SEARCH_INDEX, index)
+        atomic_write_json(_search_index(), index)
 
 
 def vault_tags_rename(
@@ -627,7 +703,7 @@ def vault_tags_rename(
     updated_notes: List[str] = []
     skipped: List[str] = []
 
-    for note_path in VAULT_ROOT.rglob("*.md"):
+    for note_path in _raiz().rglob("*.md"):
         if not _is_vault_note(note_path):
             continue
         try:
@@ -651,7 +727,7 @@ def vault_tags_rename(
             flags=re.MULTILINE,
         )
         if new_content != content:
-            rel = str(note_path.relative_to(VAULT_ROOT)).replace("\\", "/")
+            rel = str(note_path.relative_to(_raiz())).replace("\\", "/")
             if not dry_run:
                 atomic_write_text(note_path, new_content)
             updated_notes.append(rel)

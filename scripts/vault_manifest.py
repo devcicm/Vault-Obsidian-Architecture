@@ -39,15 +39,12 @@ from typing import Any, Dict, List, Optional, Set
 SCRIPTS_DIR = Path(__file__).parent
 
 from vault_io import (  # noqa: E402
-    VAULT_ROOT,
     atomic_write_json,
     get_vault_root,
     resolve_tool_spec,
     tool_spec_path,
 )
 from vault_errors import wrap_main
-SYSTEM_DIR = VAULT_ROOT / "00_System"
-MANIFEST_FILE = SYSTEM_DIR / "tools-manifest.json"
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Tool status registry
@@ -426,6 +423,31 @@ DQ_METADATA: Dict[str, Dict[str, Any]] = {
 # Spec-driven helpers
 # ──────────────────────────────────────────────────────────────────────────────
 
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.meta_toolkit.repositorio import RepositorioMetaToolkit  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioMetaToolkit:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioMetaToolkit(construir(root))
+
+
+def _system_dir() -> Path:
+    return _repo().dir_sistema
+
+
+def _manifest_file() -> Path:
+    return _repo().manifiesto_tools
+
+
 def _load_spec() -> Optional[Dict[str, Any]]:
     """Carga tool-spec.json si existe. Retorna None si no existe (fallback a hardcoded)."""
     spec_file = resolve_tool_spec()
@@ -708,7 +730,7 @@ def _build_manifest() -> List[Dict[str, Any]]:
 
 def _read_version() -> str:
     try:
-        sv = SYSTEM_DIR / "standard-version.json"
+        sv = _system_dir() / "standard-version.json"
         if sv.exists():
             v = json.loads(sv.read_text(encoding="utf-8")).get("version", "unknown")
             return f"v{v}" if isinstance(v, int) else str(v)
@@ -809,8 +831,8 @@ Ejemplos:
         print(json.dumps(result, indent=2, ensure_ascii=False))
         return 0
 
-    SYSTEM_DIR.mkdir(parents=True, exist_ok=True)
-    MANIFEST_FILE.write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
+    _system_dir().mkdir(parents=True, exist_ok=True)
+    _manifest_file().write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
 
     print(json.dumps({
         "ok": True,
@@ -818,7 +840,7 @@ Ejemplos:
         "total":      result["total"],
         "active":     result["active"],
         "deprecated": result["deprecated"],
-        "path": str(MANIFEST_FILE.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(_manifest_file().relative_to(_raiz())).replace("\\", "/"),
     }, indent=2, ensure_ascii=False))
     return 0
 

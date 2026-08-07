@@ -308,7 +308,12 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "name": "vault_audit",
         "script": "vault_audit.py",
         "group": "Salud del Vault",
-        "purpose": "Evalúa health score del vault y genera nextActions.",
+        "purpose": (
+            "Evalua la salud del vault y genera nextActions. `healthScore` "
+            "se conserva tal cual (lo leen los consumidores) pero satura en 0; "
+            "la lectura que discrimina es `healthIndex` + `healthProfile`, "
+            "seis familias normalizadas cada una contra su propio tope."
+        ),
         "params": {
             "project": {
                 "type": "string",
@@ -2115,6 +2120,246 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         ),
         "related": ["vault_doc_counts", "vault_norms", "vault_mcp_catalog"],
     },
+    "vault_arch": {
+        "name": "vault_arch",
+        "script": "vault_arch.py",
+        "group": "Normas",
+        "purpose": (
+            "Plano técnico del estándar: declara los nueve contextos acotados, "
+            "su lenguaje ubicuo y sus fronteras, y falla cuando una importación "
+            "cruza un límite no declarado. Vigila también AP-49 —vínculos "
+            "resueltos en tiempo de import—. Ambas deudas arrancan congeladas y "
+            "solo pueden encoger."
+        ),
+        "params": {
+            "check": {
+                "type": "boolean", "required": False,
+                "description": "Reporta fronteras cruzadas y vínculos congelados",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean", "required": False,
+                "description": "Exit 1 también si se saldó deuda sin recongelar (gate de CI)",
+                "validators": [],
+            },
+            "freeze": {
+                "type": "boolean", "required": False,
+                "description": "Recongela scripts/arch-baseline.json tras saldar deuda",
+                "validators": [],
+            },
+            "blueprint": {
+                "type": "boolean", "required": False,
+                "description": "Deriva docs/ARQUITECTURA.md desde el registro CONTEXTS",
+                "validators": [],
+            },
+            "map": {
+                "type": "string", "required": False,
+                "description": "Dice a qué contexto acotado pertenece un módulo",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "Todo módulo en disco pertenece a un contexto: sin clasificar es puerta dura, no baseline",
+            "El grafo de importaciones se reconstruye por AST, no por una lista escrita a mano que envejecería sola",
+            "Depender del kernel no es cruce (límite 1); importar el módulo de otro contexto sí",
+        ],
+        "side_effects": [
+            "Con --freeze reescribe scripts/arch-baseline.json",
+            "Con --blueprint reescribe docs/ARQUITECTURA.md",
+        ],
+        "example": (
+            "python vault_arch.py --check --strict\n"
+            "python vault_arch.py --map vault_backup\n"
+            "python vault_arch.py --blueprint"
+        ),
+        "related": ["vault_norms", "vault_noop_audit", "vault_mcp_catalog"],
+    },
+    "vault_error_contract": {
+        "name": "vault_error_contract",
+        "script": "vault_error_contract.py",
+        "group": "Normas",
+        "purpose": (
+            "AP-52: detecta por AST los envelopes de error construidos a mano "
+            "\u2014 `{ok: False, error: ...}` sin `error_code`, `category`, "
+            "`severity` ni `recovery` \u2014 que dejan al consumidor sin nada "
+            "sobre lo que decidir. Baseline que solo puede encoger."
+        ),
+        "params": {
+            "check": {
+                "type": "boolean",
+                "required": False,
+                "description": "Reporta el estado de la deuda",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit 1 si la deuda crecio respecto a la baseline",
+                "validators": [],
+            },
+            "freeze": {
+                "type": "boolean",
+                "required": False,
+                "description": "Recongela la baseline tras saldar deuda",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "La baseline solo puede encoger: --strict falla por sitios nuevos, "
+            "no por la deuda historica",
+            "Mide forma y no flujo: cuenta tambien envelopes internos que nunca "
+            "se imprimen, y lo declara en vez de prometer una precision que no tiene",
+            "Se excluye a si misma y a vault_errors*, cuyos literales SON el contrato",
+        ],
+        "side_effects": ["scripts/error-contract-baseline.json (solo con --freeze)"],
+        "example": (
+            "python vault_error_contract.py --check\n"
+            "python vault_error_contract.py --check --strict\n"
+            "python vault_error_contract.py --freeze"
+        ),
+        "related": ["vault_errors", "vault_blame_audit", "vault_noop_audit", "vault_gate"],
+    },
+    "vault_foreign_check": {
+        "name": "vault_foreign_check",
+        "script": "vault_foreign_check.py",
+        "group": "Normas",
+        "purpose": (
+            "Regla 7: contrasta las medidas del estandar contra un vault AJENO, "
+            "en solo lectura. Unica tool sin destino por defecto \u2014 la "
+            "autodeteccion caeria en `vault-sandbox/`, que este repo genera y "
+            "que por eso no puede exhibir el fallo que la regla persigue."
+        ),
+        "params": {
+            "root": {
+                "type": "string",
+                "required": True,
+                "description": "Raiz del vault ajeno (obligatoria, sin default)",
+                "validators": [],
+            },
+            "report": {
+                "type": "string",
+                "required": False,
+                "description": "Fichero del informe, siempre fuera del vault medido",
+                "validators": [],
+            },
+            "self-test": {
+                "type": "boolean",
+                "required": False,
+                "description": "Verifica las negativas de la tool, sin vault ajeno",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "Rechaza cualquier raiz dentro del repo del estandar, sandbox incluido",
+            "Solo lectura: no escribe una linea en el vault medido, ni traces ni backups",
+            "--report no puede caer dentro del vault medido",
+            "Separa lo ilegible de lo ausente: un recuento sobre lo medido no es "
+            "un recuento sobre el vault (AP-51)",
+            "No emite veredicto de salud: mide si nuestras medidas sobreviven al "
+            "material ajeno, no la calidad de ese material",
+        ],
+        "side_effects": [],
+        "example": (
+            "python vault_foreign_check.py --root D:/vaults/notas\n"
+            "python vault_foreign_check.py --root D:/vaults/notas --report informe.json\n"
+            "python vault_foreign_check.py --self-test"
+        ),
+        "related": ["vault_validate", "vault_graph_inspect", "vault_norms"],
+    },
+    "vault_gate": {
+        "name": "vault_gate",
+        "script": "vault_gate.py",
+        "group": "Normas",
+        "purpose": (
+            "La puerta unica: corre todas las puertas de cierre como "
+            "subprocesos y agrega el veredicto. La lista canonica de puertas "
+            "vive en el registro PUERTAS, y --check-doc verifica que el "
+            "checklist de CLAUDE.md las cite todas. No reimplementa ninguna "
+            "comprobacion ni baja el enforcement de ninguna norma."
+        ),
+        "params": {
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit 1 si alguna puerta falla (gate de CI)",
+                "validators": [],
+            },
+            "list": {
+                "type": "boolean",
+                "required": False,
+                "description": "Lista las puertas y que mide cada una, sin ejecutarlas",
+                "validators": [],
+            },
+            "check-doc": {
+                "type": "boolean",
+                "required": False,
+                "description": "Comprueba que el checklist de CLAUDE.md cite todas las puertas",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "El registro manda sobre el doc: una puerta ausente del checklist "
+            "se anade al checklist, no se quita del registro",
+            "Cada puerta corre como subproceso con su propio exit code: mirar "
+            "los datos por su cuenta seria una segunda fuente de verdad (AP-05) "
+            "y medirlos con criterio propio (AP-44)",
+            "No sustituye a pytest: verde aqui no es verde en la suite",
+        ],
+        "side_effects": [],
+        "example": (
+            "python vault_gate.py --list\n"
+            "python vault_gate.py --strict\n"
+            "python vault_gate.py --check-doc"
+        ),
+        "related": ["vault_norms", "vault_arch", "vault_noop_audit", "vault_blame_audit"],
+    },
+    "vault_blame_audit": {
+        "name": "vault_blame_audit",
+        "script": "vault_blame_audit.py",
+        "group": "Normas",
+        "purpose": (
+            "AP-51 \u2014 detecta handlers amplios que se tragan el fallo propio "
+            "y devuelven un vacio indistinguible de un resultado legitimo, con "
+            "lo que un error acaba contado como un hecho sobre el vault. "
+            "Compara contra una baseline congelada: la deuda historica no "
+            "bloquea, pero no puede crecer."
+        ),
+        "params": {
+            "check": {
+                "type": "boolean",
+                "required": False,
+                "description": "Reporta el estado de la deuda AP-51",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit 1 si aparecieron sitios nuevos (gate de CI)",
+                "validators": [],
+            },
+            "freeze": {
+                "type": "boolean",
+                "required": False,
+                "description": "Recongela scripts/blame-baseline.json tras saldar deuda",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "La baseline solo puede encoger: todo codigo nuevo nace conforme",
+            "Se mide por AST y no por texto: buscar la cadena 'except Exception' "
+            "no distingue devolver un vacio de devolver ok: false, que es toda "
+            "la distincion que la norma sostiene",
+            "La clave es modulo:linea y no un conteo por modulo: una baseline "
+            "por conteo se salda arreglando un sitio y estrenando otro",
+        ],
+        "side_effects": ["Con --freeze reescribe scripts/blame-baseline.json"],
+        "example": (
+            "python vault_blame_audit.py --check\n"
+            "python vault_blame_audit.py --check --strict\n"
+            "python vault_blame_audit.py --freeze"
+        ),
+        "related": ["vault_norms", "vault_noop_audit", "vault_arch"],
+    },
     "vault_noop_audit": {
         "name": "vault_noop_audit",
         "script": "vault_noop_audit.py",
@@ -3151,6 +3396,11 @@ GROUPS: Dict[str, List[str]] = {
     "Session Delta y Tags": ["vault_delta", "vault_tags"],
     "Normas": [
         "vault_norms",
+        "vault_arch",
+        "vault_blame_audit",
+        "vault_error_contract",
+        "vault_foreign_check",
+        "vault_gate",
         "vault_code_tag",
         "vault_doc_counts",
         "vault_doc_sync",

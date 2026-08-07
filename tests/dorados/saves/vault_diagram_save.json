@@ -1,0 +1,16 @@
+{
+  "envelope": {
+    "category": "component",
+    "created": 2,
+    "message": "Diagram 'Diagrama de migración' saved to component/",
+    "ok": true,
+    "path": "06_Diagrams/component/demo-diagrama-de-migracion.md",
+    "timestamp": "<FECHA>",
+    "tool": "vault_diagram_save",
+    "type": "mermaid",
+    "unchanged": 0,
+    "updated": 2,
+    "written": 4
+  },
+  "nota": "---\ntitle: Diagrama de migración\nid: <UUID>\nproject: demo\ndiagramType: mermaid\ncategory: component\ntype: diagram\ntags: [\"component\", \"demo\", \"diagram\"]\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ncia_integrity: medium\ncia_availability: medium\ncia_sensitivity: internal\nagent: system\n---\n\n## Diagrama\n\n\n\n```mermaid\nflowchart TD\n  A --> B\n```"
+}

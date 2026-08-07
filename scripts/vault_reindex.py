@@ -1,327 +1,120 @@
 #!/usr/bin/env python3
 
 """
+Vault Reindex — adaptador de transporte del contexto Índices.
 
-Vault Reindex — Rebuild search-index.json (and optionally graph.json) from existing vault notes.
+Reconstruye `99_Index/search-index.json` (y opcionalmente `graph.json`) desde las
+notas que hay en disco. Se usa cuando el índice está vacío, corrupto o ausente.
 
+Es la tool de recuperación obligatoria para vaults gestionados por LLMs remotos
+(DeepSeek, GPT, Gemini, Claude API) o cualquier harness que no llame a
+`vault_write` en cada escritura. Ejecutarla al inicio de sesión siempre que
+`vault_search` devuelva 0 resultados.
 
-
-Use this when search-index.json is empty ({}), corrupted, or missing.
-
-Scans all notes inside the standard vault sections -- las que declara
-
-vault_registry.standard_folders(), no una cifra propia: decir "13" era una
-
-tercera verdad sobre cuantas secciones tiene un vault --, parses frontmatter,
-
-and rebuilds 99_Index/search-index.json from scratch.
-
-
-
-This is the mandatory recovery tool for vaults managed by remote LLMs (DeepSeek,
-
-GPT, Gemini, Claude API) or any harness that does not call vault_write for every
-
-write operation. Run it at session start whenever search returns 0 results.
-
-
+Desde v40.0 la reconstrucción y la comprobación de coherencia viven en
+`vault/indices/`: comparten enumerador, así que `--check` no puede medir una
+cosa y la reconstrucción arreglar otra (AP-44).
 
 Usage:
 
     python vault_reindex.py              # rebuild search-index only
-
     python vault_reindex.py --graph      # also rebuild graph.json
-
     python vault_reindex.py --dry-run    # show what would be indexed without writing
-
-
-
-Session-start check:
-
     python vault_reindex.py --check      # exit 0 si refleja el disco, 1 si hay desfase
-
 """
 
 import argparse
-
-import hashlib
-
 import json
-
-import re
-
 import sys
-
-from vault_errors import wrap_main
-
-from vault_lib import parse_frontmatter
-from vault_io import atomic_write_json, VAULT_ROOT
-from vault_registry import standard_folders
-from datetime import datetime, timezone
-
 from pathlib import Path
-
 from typing import Any, Dict, List
 
+from vault_errors import wrap_main
+from vault_lib import parse_frontmatter
 
-INDEX_FILE = VAULT_ROOT / "99_Index" / "search-index.json"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-HASH_INDEX = VAULT_ROOT / "99_Index" / "hash-index.json"
-
-
-VAULT_SECTIONS = set(standard_folders())
-
-
-def _is_vault_note(path: Path, root: Path = None) -> bool:
-    try:
-        parts = path.relative_to(root or VAULT_ROOT).parts
-
-    except ValueError:
-        return False
-
-    if len(parts) < 2:
-        return False
-
-    return parts[0] in VAULT_SECTIONS
+from vault.indices.coherencia import coherencia_indice  # noqa: E402
+from vault.indices.enumeracion import notas_en_disco  # noqa: E402
+from vault.indices.reconstruccion import ServicioReindex  # noqa: E402
+from vault.indices.repositorio import RepositorioIndices  # noqa: E402
+from vault.kernel import construir  # noqa: E402
 
 
-def _preview(content: str) -> str:
-    body = content.split("---", 2)[-1] if content.count("---") >= 2 else content
-
-    return body.strip()[:200].replace("\n", " ")
+def _repo(root=None) -> RepositorioIndices:
+    return RepositorioIndices(construir(root))
 
 
-def _notas_en_disco(root: Path = None) -> List[Path]:
+def _notas_en_disco(root=None) -> List[Path]:
     """Las notas que la reconstrucción indexaría, con SU mismo criterio.
 
-    Se extrae aquí para que la comprobación y la reconstrucción no puedan
-    discrepar: si el `--check` contara con un criterio propio, mediría otra cosa
-    que el `--fix` y el desfase que reportara no sería el que se arregla
-    (AP-44).
+    Se conserva el nombre porque hay tests y tools que lo importan
+    (no-derogación); el criterio ya no vive aquí sino en el dominio.
     """
-    raiz = root or VAULT_ROOT
-    return [
-        p
-        for p in raiz.rglob("*.md")
-        if _is_vault_note(p, raiz) and not any(part.startswith(".") for part in p.parts)
-    ]
+    repo = _repo(root)
+    return notas_en_disco(repo.raiz, repo.ctx.secciones.ordenadas())
 
 
-def index_coherence(root: Path = None) -> Dict[str, Any]:
-    """Contrasta search-index.json y graph.json contra lo que hay en disco.
-
-    Lo que había antes era `len(notes) > 0`: un índice con UNA entrada sobre un
-    vault de 300 notas devolvía `index_ok`. Es una puerta que no mide lo que
-    dice medir (familia AP-37), y en la tool cuya única razón de existir es
-    reconciliar. Medido al escribir esto: `vault-sandbox` tenía 111 notas en
-    disco, 110 en el índice y 100 nodos en el grafo; un vault real, 317 / 290 /
-    232. Los dos pasaban.
-
-    Se reportan las dos direcciones, porque significan cosas distintas:
-    `missing_in_index` son notas invisibles para `vault_search` —el agente no
-    sabe que existen—, y `stale_in_index` son entradas que apuntan a ficheros
-    que ya no están: el agente las encuentra y luego no puede abrirlas.
-
-    El grafo se compara aparte y **no** decide el veredicto: se regenera solo
-    con `--graph`, y contarlo como fallo convertiría el check en ruido en cada
-    vault que no lo pide. Se informa para que el desfase sea visible.
-    """
-    raiz = Path(root) if root else VAULT_ROOT
-    index_file = raiz / "99_Index" / "search-index.json"
-    en_disco = {
-        str(p.relative_to(raiz)).replace("\\", "/") for p in _notas_en_disco(raiz)
-    }
-
-    if not index_file.exists():
-        return {
-            "ok": False,
-            "status": "index_missing",
-            "on_disk": len(en_disco),
-            "indexed": 0,
-            "missing_in_index": sorted(en_disco)[:20],
-            "stale_in_index": [],
-            "graph_nodes": None,
-        }
-
-    try:
-        data = json.loads(index_file.read_text(encoding="utf-8"))
-        if not isinstance(data, dict):
-            raise json.JSONDecodeError("no es un objeto", "", 0)
-    except (json.JSONDecodeError, OSError) as exc:
-        return {
-            "ok": False,
-            "status": "index_corrupt",
-            "error": f"{type(exc).__name__}: {exc}",
-            "on_disk": len(en_disco),
-            "indexed": 0,
-            "missing_in_index": sorted(en_disco)[:20],
-            "stale_in_index": [],
-            "graph_nodes": None,
-        }
-
-    indexadas = {
-        str(n.get("path", "")).replace("\\", "/")
-        for n in data.get("notes", [])
-        if n.get("path")
-    }
-    faltan = sorted(en_disco - indexadas)
-    sobran = sorted(indexadas - en_disco)
-
-    nodos = None
-    graph_file = raiz / "99_Index" / "graph.json"
-    if graph_file.exists():
-        try:
-            nodos = len(json.loads(graph_file.read_text(encoding="utf-8")).get("nodes", []))
-        except (json.JSONDecodeError, OSError):
-            nodos = None
-
-    if not en_disco and not indexadas:
-        estado = "index_ok"  # vault vacío: un índice vacío lo refleja
-    elif faltan or sobran:
-        estado = "index_stale"
-    else:
-        estado = "index_ok"
-
-    return {
-        "ok": estado == "index_ok",
-        "status": estado,
-        "on_disk": len(en_disco),
-        "indexed": len(indexadas),
-        "missing_in_index": faltan[:20],
-        "missing_count": len(faltan),
-        "stale_in_index": sobran[:20],
-        "stale_count": len(sobran),
-        "graph_nodes": nodos,
-        "graph_drift": (None if nodos is None else len(en_disco) - nodos),
-    }
+def index_coherence(root=None) -> Dict[str, Any]:
+    """Contrasta search-index.json y graph.json contra lo que hay en disco."""
+    return coherencia_indice(_repo(root))
 
 
-def _check_index() -> bool:
+def _check_index(root=None) -> bool:
     """True si el índice refleja el disco. Ver `index_coherence()`."""
-    return bool(index_coherence()["ok"])
+    return bool(index_coherence(root)["ok"])
 
 
-def vault_reindex(dry_run: bool = False, rebuild_graph: bool = False) -> Dict[str, Any]:
-    notes: List[Dict[str, Any]] = []
-
-    hash_notes: Dict[str, Any] = {}
-
-    skipped = 0
-
-    # El mismo criterio que usa `index_coherence()`, y por eso una sola función:
-    # dos copias de esta comprensión eran dos definiciones de "qué es una nota
-    # indexable" que podían separarse sin que nada fallara.
-    vault_files = _notas_en_disco()
-
-    for note_path in sorted(vault_files):
-        try:
-            content = note_path.read_text(encoding="utf-8")
-
-        except (UnicodeDecodeError, PermissionError):
-            skipped += 1
-
-            continue
-
-        rel_path = str(note_path.relative_to(VAULT_ROOT)).replace("\\", "/")
-
-        meta = parse_frontmatter(content)
-
-        title = meta.get("title") or note_path.stem
-
-        tags = meta.get("tags") or []
-
-        if isinstance(tags, str):
-            tags = [t.strip() for t in tags.split(",") if t.strip()]
-
-        updated = meta.get("updatedAt") or meta.get("createdAt") or ""
-
-        note_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()
-
-        notes.append(
-            {
-                "path": rel_path,
-                "title": title,
-                "preview": _preview(content),
-                "tags": tags,
-                "updatedAt": updated,
-            }
-        )
-
-        hash_notes[rel_path] = {
-            "hash": note_hash,
-            "size": len(content.encode("utf-8")),
-            "cia_integrity": meta.get("cia_integrity", "medium"),
-        }
-
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-
-    index_data = {
-        "notes": notes,
-        "rebuiltAt": now,
-        "totalNotes": len(notes),
-    }
-
-    hash_index_data = {
-        "snapshot_at": now,
-        "notes": hash_notes,
-    }
-
-    if not dry_run:
-        INDEX_FILE.parent.mkdir(parents=True, exist_ok=True)
-
-        atomic_write_json(INDEX_FILE, index_data)
-
-        atomic_write_json(HASH_INDEX, hash_index_data)
-
-    result: Dict[str, Any] = {
-        "ok": True,
-        "indexed": len(notes),
-        "skipped": skipped,
-        "dry_run": dry_run,
-        "path": str(INDEX_FILE.relative_to(VAULT_ROOT)).replace("\\", "/"),
-        "hash_index": str(HASH_INDEX.relative_to(VAULT_ROOT)).replace("\\", "/"),
-    }
+def vault_reindex(
+    dry_run: bool = False, rebuild_graph: bool = False, root=None
+) -> Dict[str, Any]:
+    repo = _repo(root)
+    result = ServicioReindex(repo, parse_frontmatter).reconstruir(dry_run=dry_run)
 
     if rebuild_graph and not dry_run:
-        try:
-            graph_script = Path(__file__).parent / "vault_graph.py"
+        result["graph"] = _rehacer_grafo()
 
-            if graph_script.exists():
-                import subprocess
-
-                proc = subprocess.run(
-                    [sys.executable, str(graph_script)],
-                    capture_output=True,
-                    text=True,
-                    timeout=60,
-                )
-
-                graph_result = json.loads(proc.stdout) if proc.stdout else {}
-
-                result["graph"] = graph_result.get(
-                    "stats", {"error": proc.stderr[:200]}
-                )
-
-        except Exception as e:
-            result["graph"] = {"error": str(e)}
-
-    # Rebuild section indexes + master index so navigation stays linked
+    # Los índices de sección y el maestro se rehacen para que la navegación no
+    # quede apuntando a lo anterior. Va en el adaptador y no en el dominio
+    # porque es orquestación entre tools, no una regla del contexto.
     if not dry_run:
         try:
+            from vault_master_index import vault_master_index
             from vault_section_index import vault_section_index
-            from vault_registry import standard_folders
 
-            for section in standard_folders():
+            for section in repo.ctx.secciones.ordenadas():
                 if section not in ("00_System", "99_Index"):
                     vault_section_index(section)
-            from vault_master_index import vault_master_index
-
             vault_master_index()
             result["indexes_rebuilt"] = True
         except Exception as e:
             result["index_warning"] = str(e)
 
     return result
+
+
+def _rehacer_grafo() -> Dict[str, Any]:
+    """Delega en `vault_graph` por subproceso, tal como estaba.
+
+    El grafo es del contexto Grafo, no de éste. Llamarlo por proceso mantiene la
+    frontera mientras ese contexto no esté migrado, y el error se reporta en vez
+    de tragarse.
+    """
+    try:
+        graph_script = Path(__file__).parent / "vault_graph.py"
+        if not graph_script.exists():
+            return {"error": "vault_graph.py no encontrado"}
+
+        import subprocess
+
+        proc = subprocess.run(
+            [sys.executable, str(graph_script)],
+            capture_output=True, text=True, timeout=60,
+        )
+        datos = json.loads(proc.stdout) if proc.stdout else {}
+        return datos.get("stats", {"error": proc.stderr[:200]})
+    except Exception as e:
+        return {"error": str(e)}
 
 
 def main() -> int:
@@ -339,8 +132,6 @@ Ejemplos:
   python vault_reindex.py --dry-run
 
   python vault_reindex.py --check
-
-
 
 Notas:
 

@@ -1,13 +1,13 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 91 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
+Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 96 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **111 archivos Python** — 91 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
+- **118 archivos Python** — 96 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
 - **Saneamiento de índices (v38.1)** — `vault_section_index.py --heal [--root]` regenera índices con formato legacy `[[stem|alias]]` o ausentes; el auto-index post-write se auto-cura si un agente escribe `index.md` a mano
-- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 91 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
+- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 96 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
 - **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault; requiere marcador de CONTENIDO (01_Projects/02_Observability/03_Decisions/.obsidian), no solo 00_System/99_Index (evita el ciclo auto-reforzado de detección); override runtime con `set_vault_root()`/env `VAULT_ROOT`
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
@@ -59,7 +59,7 @@ Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan 
 | [Grupo 32 — Gestión de Carpetas](#grupo-32--gestión-de-carpetas) | vault_folder_registry |
 | [Grupo 33 — Corrección Automática](#grupo-33--corrección-automática) | vault_fix_brackets, vault_graph_fix |
 | [Grupo 34 — Memoria de Contexto](#grupo-34--memoria-de-contexto) | vault_preferences, vault_query_parse, vault_subgraph, vault_context_pack, vault_ingest |
-| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_noop_audit, vault_smoke, vault_voice |
+| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_error_contract, vault_foreign_check, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_noop_audit, vault_smoke, vault_voice |
 | [Grupo 36 — Defectos y Cuarentena](#grupo-36--defectos-y-cuarentena) | vault_bug_save, vault_quarantine |
 | [Grupo 37 — Skills](#grupo-37--skills) | vault_sdd_init, vault_sanacion |
 | [Observabilidad de Tools](#observabilidad-de-tools) | vault_errors |
@@ -108,6 +108,33 @@ python vault_write.py --folder "07_Knowledge" --title "N" --content "..." --meta
 
 Las transiciones **ya ocurridas** no las ve el guard: las reporta
 `python vault_norms.py --audit` recorriendo `.history/`.
+
+#### Contexto acotado: Autoría (v40.0)
+
+Los 38 módulos que escriben notas —`vault_write`, `vault_move`, `vault_read`, los 17
+`*_save` y sus vecinos— forman el contexto **Autoría**, el último de los nueve en
+migrarse al dominio. Al llegar aquí los otros ocho estaban a cero y Autoría concentraba
+**los 31 vínculos congelados que quedaban: el 100% de la deuda de AP-49**.
+
+La causa se ve en el diff, y no es un descuido puntual: veinticinco módulos derivaban
+`SECCION_DIR = VAULT_ROOT / "0X_Loquesea"` en tiempo de import, cada uno copiado del
+fichero de al lado al crearlo. `set_vault_root()` existía desde hacía versiones y no
+podía reapuntar a ninguno — la costura de inyección estaba ahí y no servía.
+
+Por eso `RepositorioAutoria` **no enumera secciones**: se piden por nombre a `seccion()`,
+que valida contra `vault_registry.ORDERED_SECTIONS` y falla ruidosamente ante un nombre
+desconocido. Veintidós constantes copiadas veinticinco veces eran veintidós ocasiones de
+que un typo creara una carpeta huérfana en el vault del usuario sin que nada lo notara.
+
+Cuatro rutas que Autoría lee y actualiza pero **no define** se piden a su dueño: el
+índice de búsqueda, el de hashes y el registro de etiquetas a `RepositorioIndices`; el
+grafo a `RepositorioGrafo`. `vault_change_log` pide la bitácora a `RepositorioGobernanza`,
+que es quien la declara y de donde la leen `vault_fundamentals` y `vault_quality_check`.
+
+Con esta fase `vault_arch --check` mide **0 vínculos congelados**, frente a los 82 en 62
+módulos del arranque. Es la primera vez que la inyección de dependencias del estándar es
+real en todo el dominio, y el test `test_no_queda_un_solo_vinculo_congelado_en_el_repo`
+lo vuelve irreversible: cualquier módulo nuevo que derive su ruta al importarse lo rompe.
 
 ---
 
@@ -349,9 +376,26 @@ python vault_audit.py
 python vault_audit.py --project mi-api
 ```
 
-**Score:** `100 - (vacías×2) - (sin_fm×3) - (broken_links×2) - (stale×1)`
+**El score sale del registro `PENALIZACIONES`, no de una fórmula escrita aquí.** Esta sección decía `100 - (vacías×2) - (sin_fm×3) - (broken_links×2) - (stale×1)` — cuatro términos de los veintidós que hay. Los pesos y los topes viven en el registro, agrupados por familia; copiarlos a la documentación es AP-05, y resumirlos mal es lo que ya pasó.
 
-| Score | Estado |
+**`healthScore` satura, y se conserva igual.** Parte de 100 y resta 22 penalizaciones independientes cuyos topes suman **285**: con dos o tres familias mal se queda en 0 y deja de distinguir un vault regular de uno perdido. No es teórico — `vault-sandbox/`, el vault de referencia de este repo, puntúa 0. No se recalibra porque lo leen los repos consumidores y cambiar por debajo lo que significa un número publicado es peor que el número malo. Se anota `superseded_by: healthIndex` y se deja donde está.
+
+**`healthIndex` y `healthProfile` son la lectura que sí discrimina.** Seis familias —estructura, conectividad, metadatos, grafo, contenido, ciclo de vida— cada una normalizada contra su propio tope. `healthIndex` es su media **simple**: ponderarla por tope dejaría que `metadatos` (105 puntos) decidiera el número, que es el defecto otra vez. Solo llega a 0 si todas las familias tocan fondo.
+
+```jsonc
+"healthScore": 0,          // satura: no dice nada más
+"healthIndex": 60,
+"healthProfile": {
+  "conectividad": { "health": 27, "penalty": 51, "cap": 70, "saturated": false },
+  "estructura":   { "health": 100, "penalty": 0, "cap": 30, "saturated": false }
+  // …
+},
+"penalties": [ { "id": "orphans", "penalty": 26, "cap": 30, "norm_code": null } ]
+```
+
+`saturated` es la información que el número agregado destruía: dice qué familia ya tocó fondo, y por tanto dónde seguir empeorando ya no se nota.
+
+| healthIndex | Estado |
 |---|---|
 | 90–100 | Excelente |
 | 70–89 | Bien |
@@ -379,6 +423,10 @@ Genera `99_Index/graph.json` con nodos (notas), aristas (wiki-links), orphans y 
 python vault_graph.py
 python vault_graph.py --project mi-api
 ```
+
+Desde v40.0 las once tools del contexto **Grafo** resuelven sus rutas al usarlas, no al importarse: `99_Index/graph.json`, `graph-enriched.json`, `11_Code/.code-index.json`, el registro de etiquetas de código y los diagramas de entidad se declaran una sola vez en `vault/grafo/repositorio.py`. Antes eran dieciocho constantes congeladas repartidas entre once módulos, y solo once ubicaciones distintas: `GRAPH_FILE` se calculaba en tres ficheros y `CODE_DIR` en cinco (AP-05 + AP-49). El efecto visible es que `set_vault_root()` ya alcanza a estas tools.
+
+En el mismo paso se corrigió que `vault_graph` devolviera `savedTo: "99_Index\graph.json"` en Windows mientras `vault_graph_merge` ya devolvía la forma POSIX — la misma ruta con dos formas dentro del mismo contexto, y la de Windows no la resuelve quien lee el envelope desde otra plataforma.
 
 ---
 
@@ -737,7 +785,13 @@ Crea un snapshot completo del vault en `vault-backups/`.
 python vault_backup.py
 python vault_backup.py --label "pre-migration"
 python vault_backup.py --label "antes-de-refactor-auth"
+python vault_backup.py --verify vault-2026-08-06-101500-pre-migration
 ```
+
+Dos campos nuevos en v40.0, **aditivos**: ninguno de los anteriores cambia de nombre ni de significado.
+
+- **`files_copied`** — el indicador de trabajo real (AP-37). `created`/`updated`/`written` salen de `vault_io.write_report()`, que solo ve lo que pasa por `atomic_write_text`; el snapshot se copia con `shutil`, así que un backup de 196 ficheros reportaba `written: 1`. Los viejos siguen significando lo mismo —cuántos ficheros escribió el kernel—; éste dice cuántos se copiaron.
+- **`merkle_algo`** — la versión de la regla del hash, sellada en el manifiesto. `algo 2` excluye `00_System/.tool-trace.json` y `.voice-counter`, que cualquier ejecución reescribe y que hacían que dos copias de un vault intacto dieran raíz distinta: la medida arrastraba la huella de quien mide (AP-44). `--verify` usa **el algoritmo que diga el manifiesto**, no el vigente; un manifiesto sin sello es `algo 1` por definición, así que los backups anteriores se siguen comprobando con su regla y siguen dando íntegros.
 
 ---
 
@@ -756,6 +810,15 @@ Restaura el vault desde un backup específico.
 ```bash
 python vault_restore.py --backup_name "vault-2026-05-09-143022-pre-migration" --confirm true
 ```
+
+Desde v40.0 el fichero es un **adaptador de transporte**: qué se borra, qué nunca se borra
+(`vault-backups/`, `vault-sandbox/`) y de dónde se lee el snapshot viven en
+`vault/durabilidad/restauracion.py`, con la raíz inyectada en vez de derivada al importar
+(AP-49). El argv y el envelope no cambian; `files_restored` es el indicador de trabajo
+(AP-37), junto al `noteCount` que ya declaraba. La ubicación legacy de backups —hermana del
+repo, anterior a v38.1— se sigue consultando **solo para leer**, y se resuelve en el
+adaptador porque es un detalle de despliegue, no una regla del dominio: por eso el error de
+«no encontrado» enumera las dos rutas buscadas.
 
 ---
 
@@ -825,6 +888,23 @@ python vault_reindex.py --check               # solo verifica estado del índice
 ```
 
 > Usar `--check` al inicio de cada sesión para verificar que el índice está operativo.
+
+Desde v40.0 las cuatro tools de este grupo son **adaptadores de transporte** del
+contexto Índices (`vault/indices/`): argv y envelope intactos, pero la resolución
+de rutas y el criterio de «qué es una nota indexable» viven en el dominio y
+reciben la raíz en vez de derivarla al importar (AP-49). Ocho constantes
+congeladas desaparecieron con la migración.
+
+Dos consecuencias que se notan:
+
+- **`--check` y la reconstrucción comparten enumerador** (`vault/indices/enumeracion.py`).
+  No es una limpieza estética: si el check midiera con criterio propio, reportaría
+  un desfase que el reindexado no cierra nunca y la puerta quedaría roja para
+  siempre (AP-44).
+- **Un vault colgado de un directorio con punto ya se indexa.** El filtro de
+  tramos ocultos miraba la ruta *absoluta*, así que un vault en `~/.claude/`
+  se reconstruía entero como vacío, sin error. Ahora el criterio es relativo al
+  vault: se mide el vault, no la máquina que lo aloja.
 
 ---
 
@@ -1384,6 +1464,16 @@ python vault_folder_registry.py --remove "11_Code/tests"
 python vault_folder_registry.py --cleanup       # quita del registro las que ya no existen
 ```
 
+Las secciones canónicas salen de `vault_registry`, nunca de una lista propia: la
+copia literal que vivía aquí se quedó en 13 mientras el estándar ya tenía 22, y
+las carpetas personalizadas de las nueve restantes eran invisibles sin que nada
+fallara (AP-05 dentro del propio toolkit).
+
+Desde v40.0 las rutas del registro salen del contexto Índices, y con la migración
+se corrigió que `--scan` grabase `11_Code\tests` en Windows mientras `--add` y
+`--remove` reciben `11_Code/tests`: una carpeta detectada automáticamente no se
+podía quitar por su nombre, y el fichero no era portable entre plataformas.
+
 ---
 
 ## Grupo 34 — Memoria de Contexto
@@ -1438,6 +1528,12 @@ python vault_subgraph.py --seeds "03_Decisions/adr-001.md" --hops 2
 python vault_subgraph.py --seeds a.md b.md --hops 3 --section 07_Knowledge
 python vault_subgraph.py --seeds mcp-protocol --format mermaid
 ```
+
+Desde v40.0 el contexto **Consulta** resuelve sus rutas al usarlas: `17_Preferences/`, `00_System/token-usage/` y `.tool-tokens.json` se declaran una sola vez en `vault/consulta/repositorio.py`. Lo que **no** está ahí es el grafo — `99_Index/graph.json` lo escribe el contexto Grafo y `vault_subgraph` lo recibe de `RepositorioGrafo`, porque dos sitios decidiendo dónde vive el grafo es AP-05.
+
+Ese cableado entre contextos ahora lo **ve** el guard: `vault_arch --check` reporta `vault_subgraph -> vault/grafo` como cruce declarado. Antes solo miraba los imports dentro de `vault/`, así que un adaptador podía cablear el dominio de otro contexto sin que saltara nada — el mismo punto ciego por el que se coló AP-48.
+
+El caso más caro de AP-49 apareció aquí y no era una constante: `vault_compact_contracts` hacía `SYSTEM_DIR = _resolve_output_dir()`. Una llamada a función parece resolución tardía, el guard no la contaba, y se evaluaba igual al importar.
 
 ### `vault_context_pack.py`
 Pregunta → contexto empaquetado bajo presupuesto de tokens. Encadena
@@ -1523,6 +1619,44 @@ Tooling interno para generación y validación del estándar. No forman parte de
 | `vault_mcp.py` | Orquestador MCP en Python (alternativa al monolito Node.js) |
 | `vault_mcp_context.py` | Generación de contexto MCP para agentes |
 
+### Contexto acotado: Meta-toolkit (v40.0)
+
+Los 13 módulos de este grupo —más `vault_smoke`, `vault_spec_*`, `vault_doc_counts`,
+`vault_doc_sync`, `vault_noop_audit` y `vault_arch`— forman el contexto **Meta-toolkit**,
+el único cuya frontera es una **prohibición** en vez de una interfaz. Al migrarlo se
+saldaron 3 vínculos congelados (AP-49): 34 → 31.
+
+**El enunciado que nadie comprobaba era falso.** `prohibe` decía «no escribir en un
+vault» y ningún guard lo leía: solo se renderizaba en el plano. Medido, `vault_manifest`
+escribe `00_System/tools-manifest.json` y `vault_spec_memory` escribe
+`00_System/spec-memory.json` — y llevaban años haciéndolo. No es un abuso: son artefactos
+derivados del propio estándar, y viven en el vault porque ahí es donde los consume un
+agente. Lo que estaba mal era el enunciado, y un enunciado que el código incumple desde
+el primer día es una norma con enforcement `manual` — lo que la regla 5 prohíbe.
+
+La frontera precisa, y ya ejecutable en `vault_arch --check` (`forbidden_writes`):
+
+- **Sí** artefactos derivados del estándar en `00_System/`.
+- **Sí** vaults desechables para medirse: `vault_smoke` y `vault_test_runner` levantan
+  un vault entero en un temporal y lo borran. Sin esa excepción la puerta se habría
+  desactivado el primer día, que es como mueren los guards que solo saben decir que no.
+- **No** notas ni datos del usuario en ninguna sección de contenido. Eso es lo que falla.
+
+El guard busca por AST una llamada de escritura (`write_text`, `mkdir`, `atomic_write_*`…)
+con el literal de una sección de contenido en su árbol de argumentos, y exime el destino
+cuyo nombre traza —un salto— hasta `mkdtemp`/`TemporaryDirectory`. Por AST y no por texto
+porque `vault_doc_counts` y el propio `vault_arch` **nombran** secciones en docstrings sin
+escribir en ellas: un grep las delataría todas en falso (AP-44). Es puerta dura sin
+baseline: se midió cero al declararla, y una lista de excepciones vacía solo invita a
+estrenarla.
+
+**Rutas ajenas.** `vault_spec_memory` derivaba por su cuenta `quality-index.json`,
+`propagation-queue.json`, `.change-log.json` y `standard-version.json`, que **lee** pero
+no escribe. Con eso `quality-index.json` llegaba a calcularse en cuatro módulos de tres
+contextos: AP-05 multiplicado, y el día que se moviera solo se habrían enterado los que
+lo escriben. Ahora se piden a `RepositorioGobernanza` y `RepositorioCicloDeVida`, y los
+dos cruces están declarados en el baseline.
+
 ---
 
 ## Protocolo de sesión recomendado
@@ -1556,7 +1690,7 @@ El vault expone sus herramientas como un **servidor MCP** que las IAs consumen d
 
 **Archivo:** `../mcp/nodejs/vault-mcp-server.mjs` (~1650 líneas, cero dependencias npm)  
 **Plan:** `../mcp/PLAN.md` — documento de evidencia con 8 fases de implementación
-**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (91 tools)
+**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (96 tools)
 
 Los parámetros que el catálogo publica **se derivan del `argparse` de cada script**,
 no se escriben a mano: el servidor compone `--<param>` literal, así que un param
@@ -1604,7 +1738,7 @@ node mcp/nodejs/vault-mcp-server.mjs --port 3000
 
 ### `vault_norms.py`
 
-Registro canónico de las 60 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
+Registro canónico de las 64 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
 
 ```bash
 python vault_norms.py                             # catálogo completo
@@ -1617,6 +1751,12 @@ python vault_norms.py --check-framework           # guard anti-drift: el manifie
 ```
 
 `--check-framework` se ejecuta contra `vault-obsidian-architecture.md` (raíz del repo del estándar) o contra `--spec <ruta>`. Es deliberadamente independiente de `--audit`: los vaults consumidores no contienen el manifiesto y no deben fallar por ello.
+
+Desde v40.0 el contexto **Gobernanza** —`vault_norms`, `vault_audit`, `vault_fundamentals`, `vault_quality_check`, `vault_drift_detect`, `vault_security_scan`, `vault_validate`, `vault_mermaid_check`— resuelve sus rutas al usarlas, declaradas una sola vez en `vault/gobernanza/repositorio.py`. Es el contexto con más acoplamiento entrante del estándar (veintisiete módulos de siete contextos importan `vault_norms`), así que era también el que más lejos propagaba una raíz mal congelada.
+
+Siete vínculos los contaba el guard de AP-49; **ocho más no**, porque derivaban de los primeros sin nombrar `VAULT_ROOT` —`QUALITY_INDEX = SYSTEM_DIR / "quality-index.json"`— y se evaluaban en el mismo import, igual de inertes. Dos de esas ubicaciones se calculaban por duplicado: `quality-index.json` en `vault_audit` y en `vault_quality_check`, `.change-log.json` en `vault_fundamentals` y en `vault_quality_check`. Eso es AP-05 escondido dentro de AP-49, y ahora hay un test que lo fija.
+
+La sustitución tuvo que hacerse **por AST y no por texto**: `vault_norms` cita `VAULT_ROOT` dentro de la descripción de AP-36 y de AP-49, y un reemplazo ciego habría reescrito el enunciado de las normas dejándolas ininteligibles sin que ningún guard se enterara. `test_gobernanza_dominio.py` comprueba que el texto del catálogo sigue nombrando `VAULT_ROOT` y no `_raiz()`.
 
 ### `vault_code_tag.py`
 Aplica etiquetas al **código fuente**, no a las notas: `@norm` para vincular un archivo con una norma del estándar (o con una etiqueta propia), y `@vault:` para apuntar desde el código a la nota que lo documenta. Es el extremo del lado del código de la trazabilidad que `vault_code_sync` audita.
@@ -1664,6 +1804,29 @@ El encabezado de cada grupo usa la **clave literal de `GROUPS`**, no un título 
 
 ---
 
+### `vault_arch.py`
+
+**El plano técnico del estándar.** Los 37 grupos de este README son una taxonomía para *encontrar* una tool; no son fronteras. `vault_arch` declara las que sí lo son: **nueve contextos acotados** y un shared kernel, cada uno con su lenguaje ubicuo, sus puertos publicados y lo que no cruza.
+
+Siguiendo la regla 3 de `CLAUDE.md`, el plano no es un documento: es el registro `CONTEXTS` con guard. `docs/ARQUITECTURA.md` se **deriva** de él y un test falla si el fichero publicado se queda atrás (AP-47 aplicado al propio plano).
+
+```bash
+python vault_arch.py --check --strict     # exit 1 si se cruzó una frontera nueva
+python vault_arch.py --map vault_backup   # -> durabilidad
+python vault_arch.py --blueprint          # regenera docs/ARQUITECTURA.md
+python vault_arch.py --freeze             # recongela scripts/arch-baseline.json
+```
+
+Vigila dos deudas distintas. **Fronteras cruzadas:** un módulo que importa el módulo de otro contexto en vez de su puerto. **AP-49 — vínculo resuelto en tiempo de import:** una asignación de nivel de módulo que deriva de `VAULT_ROOT`, que deja inerte la costura `set_vault_root()` y obliga a `cli/runner.py` a aislar cada tool en un subproceso.
+
+El grafo se reconstruye **por AST en cada ejecución**, incluidos los imports diferidos dentro de funciones: un `import vault_norms` escondido en un `try:` cruza la frontera igual que uno de cabecera. Ambas deudas arrancan congeladas y **solo pueden encoger** — un guard que exigiera cero el primer día fallaría el primer día y se desactivaría. Lo que sí es puerta dura desde el principio es que **todo módulo en disco pertenezca a un contexto**: clasificar cuesta una línea, y un módulo que ningún registro reclama no lo echa en falta nadie.
+
+Se mide `scripts/` **y `vault/`**. Nació mirando solo el primero, con lo que el paquete que existe para imponer fronteras era el único que podía cruzarlas sin que saltara nada — pasaba por el guard de AP-49 y por ninguno más. En `vault/` la pertenencia la declara el directorio (`vault/<contexto>/`, sin registro paralelo: AP-05) y los imports relativos se resuelven a mano, porque `from ..gobernanza.x import y` cruza exactamente igual que `import vault_norms`.
+
+Hay **una** excepción al límite 2, declarada por nombre en `RAIZ_COMPOSICION` y no escondida en el guard: `vault/kernel/adaptadores.py`, que cablea el `VaultContext` y por tanto tiene que conocer a todos. Lo que compra es que ese conocimiento viva en un fichero en vez de repartirse por el dominio; lo que cuesta es que ese fichero hay que leerlo entero al revisarlo.
+
+---
+
 ### `vault_noop_audit.py`
 
 **AP-37 — no-op silencioso.** Detecta tools con side effects declarados que no exponen ningún **indicador de trabajo**: un campo cuyo valor distinga "hice N cosas" de "no hice nada". `ok: true` a secas es una afirmación no falsable.
@@ -1677,6 +1840,109 @@ python vault_noop_audit.py --freeze           # recongela scripts/noop-baseline.
 ```
 
 **Baseline, no guard duro.** Casi todas las tools con side effects nacieron sin indicador; un guard que falla en decenas de sitios se desactiva el primer día. El conteo vivo lo da `--check`, no este README. La baseline congela la deuda conocida y solo puede **encoger**: toda tool nueva nace conforme, y la que se corrige sale de la lista y ya no puede volver a entrar. Tras saldar deuda hay que ejecutar `--freeze` para que el gate no la readmita.
+
+---
+
+### `vault_blame_audit.py`
+
+**AP-51 — la tool culpa al dato de su propio fallo.** Detecta handlers amplios (`except Exception`, `except` desnudo) cuya única salida es un vacío indistinguible de un resultado legítimo: `return []`, `return {}`, `return None`, `pass`, `continue`.
+
+El síntoma vino de ejecutar contra un vault **ajeno al estándar** (regla 7): tres tools declaraban inválidas notas que Obsidian leía sin problema. Las notas estaban bien; el criterio que las medía, no. AP-44 cubre la mitad de arriba —verificar con el criterio del consumidor—; esta cubre la de abajo, que es cómo un fallo propio acaba pareciendo un dato malo:
+
+```python
+try:
+    fm = read_frontmatter(p) or {}
+except Exception:
+    return []          # <- el llamante lee "esta nota no tiene aliases"
+```
+
+El informe que agregue ese `[]` dirá que N notas carecen de aliases, y no será cierto: es que no se pudieron leer. **No es lo mismo "no hay" que "no pude mirar".**
+
+```bash
+python vault_blame_audit.py --check            # estado de la deuda AP-51
+python vault_blame_audit.py --check --strict   # exit 1 si la deuda CRECIÓ (gate de CI)
+python vault_blame_audit.py --freeze           # recongela scripts/blame-baseline.json
+```
+
+**Capturar amplio no infringe; capturar amplio y callarse, sí.** Devolver `ok: false` con el error es correcto: el llamante recibe la mala noticia y decide. Capturar `FileNotFoundError` tampoco infringe — es un criterio, el autor sabe qué tolera y por qué.
+
+**Baseline, no guard duro,** por la misma razón que AP-37: la primera medición encontró deuda en decenas de módulos, y un guard que falla ahí se desactiva el primer día. El conteo vivo lo da `--check`, no este README. La clave de la baseline es `módulo:línea` y no un contador por módulo, porque una baseline por conteo se "salda" arreglando un sitio y estrenando otro — que es justo la regresión que este audit existe para ver.
+
+**Se mide por AST, no por texto,** y no es un detalle de implementación: un detector que buscara la cadena `except Exception` contaría los que están en comentarios y no distinguiría un handler que devuelve `[]` de uno que devuelve `ok: false`, que es toda la distinción que la norma sostiene. La primera versión del detector lo aprendió a su costa: midió 101 sitios porque clasificaba `except yaml.YAMLError` como captura amplia —son `ast.Attribute`, no `ast.Name`, y caían en la rama del `except` desnudo—, contando como infracción justo las capturas más precisas del repo. Quince falsos positivos, y el error era el de AP-44 cometido dentro del guard.
+
+---
+
+### `vault_error_contract.py`
+
+**AP-52 — el error se emite fuera del contrato del catálogo.**
+
+```bash
+python vault_error_contract.py --check           # sitios fuera de contrato
+python vault_error_contract.py --check --strict  # exit 1 si la deuda CRECIÓ
+python vault_error_contract.py --freeze          # recongela tras saldar deuda
+```
+
+Salió de la caracterización maliciosa: invocar las 94 tools de forma malformada y mirar **cómo** fallan, no si fallan. El grueso estaba limpio —92/92 rechazan un flag desconocido, 45/45 de las que declaran `required_args` rechazan la invocación vacía— y el hallazgo estaba en la forma del envelope cuando fallaba bien:
+
+```bash
+$ python vault_merge.py
+{"ok": false, "error": "action='merge' requires --source"}
+```
+
+La frase es correcta; el contrato, no. `emit_error` construye el envelope desde `ERROR_CATALOG` con `error_code`, `category`, `severity`, `recovery` y `timestamp`; el escrito a mano no trae ninguno de los cinco. Y el consumidor no lee la frase: **decide por el código**. El servidor MCP y `cli/` miran `error_code` y `recovery.action` para decidir si reintentan, abortan o piden permiso. Sin ellos, un fallo con recuperación conocida llega opaco, y lo único que le queda al agente es adivinar — o parsear el mensaje con un regex, atando su lógica a una cadena que nadie considera contrato.
+
+Es AP-05 sobre el contrato de error, y AP-51 vista desde el otro lado: allí el fallo se disfrazaba de dato; aquí llega honestamente como fallo, pero desnudo de todo lo que lo hace accionable.
+
+**Baseline: 158 sitios en 58 módulos**, y solo puede encoger. Misma razón que AP-37 —que empezó en 55 y llegó a 0— y que AP-51: un guard que falla en 158 sitios se desactiva el primer día.
+
+**Mide forma, no flujo.** Un `dict` con `ok: False` y pinta de envelope que no lleva `error_code`. No sigue el valor hasta stdout: eso exige análisis de flujo, y uno a medias produce falsos negativos silenciosos, que es peor que un falso positivo visible. La consecuencia se declara en vez de esconderse — algunos sitios contados son envelopes internos que nunca se imprimen. Están en la baseline, no bloquean, y quien salde su módulo los verá y decidirá.
+
+---
+
+### `vault_foreign_check.py`
+
+**La regla 7, ejecutable.** Contrasta las medidas del estándar contra un vault **ajeno**, en solo lectura.
+
+```bash
+python vault_foreign_check.py --root "D:/vaults/notas"                    # el contraste
+python vault_foreign_check.py --root "D:/vaults/notas" --report inf.json  # informe fuera del vault
+python vault_foreign_check.py --self-test                                 # verifica sus negativas
+```
+
+**Es la única tool del estándar sin destino por defecto, y es deliberado.** Todas las demás autodetectan el vault y acaban en `vault-sandbox/`. Ésta no puede: `vault-sandbox/` lo genera este repo y comparte los supuestos de las medidas, así que un contraste contra él devuelve verde precisamente en el caso que existe para detectar. Sin `--root` falla diciendo qué le falta, y rechaza **cualquier** raíz dentro del repositorio.
+
+**Solo lectura, sin excepciones.** Ni backups, ni índices, ni traces: el destino puede ser el vault de trabajo de alguien, y una tool de diagnóstico que modifica lo que diagnostica no es una tool de diagnóstico. El informe sale por stdout o al fichero de `--report`, que se rechaza si cae dentro del vault medido.
+
+**Mide con el criterio del consumidor (AP-44):** el frontmatter con `yaml.safe_load`; los wikilinks por nombre de fichero y `aliases:`, nunca por `title:`, que Obsidian no mira; el texto probado contra cuatro encodings antes de declarar nada ilegible. Y todo recuento separa el cero medido del cero por fallo de lectura (AP-51) — un vault ajeno es justo donde esa distinción se cobra, porque la mayoría de los "defectos" que un estándar cree ver en material de fuera son su propio criterio fallando.
+
+**No emite veredicto de salud, a propósito.** Un `score` invitaría a comparar vaults; lo que mide es si *nuestras* medidas sobreviven a material que no generamos. Una anomalía alta es antes sospechosa del criterio que del dato.
+
+**El primer contraste real ya pagó la tool.** 317 notas de un vault consumidor: una con frontmatter que YAML no parsea. La causa no estaba en el vault sino en cómo el estándar escribe el título — siete sitios componían `title:` concatenando texto fuera de las comillas, y bastaba un `:` en un nombre de proyecto para romper el bloque entero (`vault_project_overview` lo rompía siempre: su título es literalmente `Overview: <proyecto>`). `vault-sandbox/` no podía exhibirlo, porque ninguno de sus nombres lleva `:`.
+
+`--self-test` verifica las cuatro negativas sin necesitar un vault ajeno, y **no sustituye al contraste**: lo dice en su propio `hint`. La regla 7 solo se cumple ejecutando contra material de fuera.
+
+---
+
+### `vault_gate.py`
+
+**La puerta única.** Corre todas las puertas de cierre y agrega el veredicto en un solo envelope.
+
+```bash
+python vault_gate.py            # corre todas
+python vault_gate.py --strict   # exit 1 si alguna falla (gate de CI)
+python vault_gate.py --list     # qué mide cada puerta y cómo se arregla
+python vault_gate.py --check-doc  # el checklist de CLAUDE.md vs. el registro
+```
+
+El problema que resuelve no es de comodidad. Las puertas estaban repartidas en un checklist de prosa, y una lista en prosa falla de tres maneras que ya se cobraron su precio aquí: **nadie sabe cuántas son** —se decía "las siete" mientras el checklist tenía ocho ítems y la práctica corría seis—; **añadir una puerta no la pone en circulación**, porque un guard que nadie añade al checklist no corre, que es AP-42 aplicado a las propias puertas; y **correrlas a mano las corre a medias**, porque el comando que se saltea siempre es el más lento.
+
+**La lista canónica vive en el registro `PUERTAS`, no en el doc,** y `--check-doc` verifica que el checklist de `CLAUDE.md` las cite todas. El orden es el del estándar —registro canónico primero, doc después, guard que falla si divergen—; al revés sería AP-50 estrenada en la misma versión que la declara. Si una puerta falta en el checklist, se añade al checklist: el registro manda.
+
+**No reimplementa nada y no baja el enforcement de ninguna norma** (regla 5). Cada puerta corre como subproceso con su propio exit code y su propio envelope, y esta tool solo agrega. Mirar los datos por su cuenta la convertiría en una segunda fuente de verdad sobre el estado del repo (AP-05) y la haría medir con su criterio en vez del de la puerta (AP-44).
+
+**No sustituye a `pytest`.** La suite es lenta y estas son rápidas: correrlas antes ahorra el ciclo largo cuando algo evidente está roto, pero verde aquí no es verde allí, y el envelope lo dice en su propio `hint` para que no haya que acordarse.
+
+El campo `fix` de cada puerta distingue lo que se arregla solo —un artefacto derivado que solo hay que regenerar— de lo que exige decisión. Es lo que se lee cuando algo se pone en rojo a las once de la noche.
 
 ---
 
@@ -1782,6 +2048,12 @@ Tres propiedades que la hacen segura:
 
 `status` no se toca al retener: el estado de la nota no cambió por estar en cuarentena, y sobrescribirlo destruiría el dato que quizá haga falta para clasificarla.
 
+Desde v40.0 las tres propiedades son invariantes del contexto Durabilidad
+(`vault/durabilidad/cuarentena.py`) y no código repetido en la tool. El parser de frontmatter
+se **inyecta**: el dominio no sabe si detrás hay un regex o PyYAML, y eso es lo que permite
+probar las reglas sin disco. El adaptador conserva argv, envelope y los caminos de error tal
+cual estaban.
+
 ---
 
 ## Grupo 37 — Skills
@@ -1823,6 +2095,12 @@ python vault_sanacion.py --strict                            # exit 1 si algo ap
 - **El criterio de encoding descarta la tipografía deliberada.** `vault_encoding.detect_issues` marca em-dash y comillas tipográficas, que en un vault bien escrito son texto correcto: contarlos daba 106 notas «afectadas» de 111, y una fase que siempre aplica es una fase que nadie lee. La fase 5 es mojibake y caracteres rotos, no normalización tipográfica.
 
 Contrastada contra un vault ajeno al estándar (regla 7), en solo lectura: 232 notas, 199 violaciones de norma, 146 enlaces rotos, 4 secciones sin carpeta, `index_stale` con 311 en disco y 290 indexadas — y la fase 9 limpia. Que discrimine entre fases es la única prueba de que mide algo.
+
+Desde v40.0 el contexto **Ciclo de vida** —`vault_init`, `vault_onboard`, `vault_standard_upgrade`, `vault_sanacion`, `vault_migrate_docs`, `vault_migrate_rollback`, `vault_propagate`, `vault_sdd_init`— resuelve sus rutas al usarlas, declaradas en `vault/ciclo_de_vida/repositorio.py`. Es el único contexto que corre **contra vaults ajenos por diseño**, y ahí congelar la raíz no produce un fallo ruidoso sino un informe verosímil del vault equivocado.
+
+Que es exactamente lo que pasó: `vault_sanacion._medir_audit` reasignaba `vault_audit.VAULT_ROOT` para apuntar el audit al vault pedido. Al migrar Gobernanza esa constante dejó de existir, la asignación siguió siendo Python legal y dejó de hacer nada — las fases 2, 4 y 12 habrían medido el vault detectado, sin excepción que lo delatara. Ahora se apunta la raíz del proceso y **se devuelve en un `finally`**: read-only significa también no dejar rastro en el proceso de quien llama.
+
+`propagation-queue.json` **no** se declara aquí: la escribe también `vault_audit`, es de Gobernanza, y `vault_propagate` la recibe de `RepositorioGobernanza`. Dos sitios decidiendo dónde vive un fichero es AP-05, y el cruce está declarado en la baseline de `vault_arch` para que se vea.
 
 Referencia completa de la capa de skills —instalación, ciclo de vida, cómo añadir una— en [`docs/SKILLS.md`](../docs/SKILLS.md).
 

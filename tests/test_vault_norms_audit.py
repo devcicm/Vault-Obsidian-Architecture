@@ -156,12 +156,20 @@ def test_ap36_detects_sibling_pollution(tmp_path):
     assert any(v["norm"] == "AP-36" and "vault-backups" in v["path"] for v in result["violations"])
 
 
-def test_backup_root_inside_vault():
-    import vault_backup
-    from vault_io import VAULT_ROOT
+def test_backup_root_inside_vault(tmp_path):
+    """AP-36: los backups cuelgan del vault, y no se copian a sí mismos.
 
-    assert vault_backup.BACKUP_ROOT == VAULT_ROOT / "vault-backups"
-    assert "vault-backups" in vault_backup._SNAPSHOT_SKIP
+    Lo mismo que antes, comprobado donde ahora vive: la constante congelada de
+    `vault_backup` desapareció al migrar el contexto (era AP-49) y la raíz sale
+    del vault inyectado.
+    """
+    from vault.durabilidad.repositorio import RepositorioDurabilidad
+    from vault.durabilidad.snapshot import NO_COPIAR
+    from vault.kernel import construir
+
+    assert RepositorioDurabilidad(construir(tmp_path)).raiz_backups == \
+        (tmp_path / "vault-backups").resolve()
+    assert "vault-backups" in NO_COPIAR
 
 
 def test_stub_dir_in_maintenance_section():
@@ -183,7 +191,7 @@ def test_trace_follows_set_vault_root(tmp_path):
         log_trace({"tool": "test", "ok": True})
         assert (target / "00_System" / ".tool-trace.json").exists()
     finally:
-        vault_io._ACTIVE_VAULT_ROOT = None
+        vault_io.reset_vault_root()
 
 
 def test_section_index_table_separates_link_and_title(tmp_path, monkeypatch):
@@ -220,7 +228,7 @@ def test_heal_indexes_fixes_legacy_alias(tmp_path):
         # Idempotencia: segunda pasada no cura nada
         assert heal_indexes(root)["healed_count"] == 0
     finally:
-        vault_io._ACTIVE_VAULT_ROOT = None
+        vault_io.reset_vault_root()
 
 
 def test_audit_detects_legacy_alias_index(tmp_path):
@@ -245,4 +253,4 @@ def test_manual_index_write_self_heals(tmp_path):
         text = idx.read_text(encoding="utf-8")
         assert "[[demo|" not in text and "[[demo]]" in text
     finally:
-        vault_io._ACTIVE_VAULT_ROOT = None
+        vault_io.reset_vault_root()

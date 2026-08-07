@@ -25,7 +25,6 @@ Usage:
 """
 
 
-
 import argparse
 
 import json
@@ -34,7 +33,10 @@ import re
 
 import sys
 
+from vault_registry import ORDERED_SECTIONS, es_artefacto_derivado
+from vault_encoding import strip_bom
 from vault_errors import wrap_main
+from vault_fundamentals import cia_valores
 
 import yaml
 
@@ -43,44 +45,21 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
+# El vocabulario CIA lo declara `vault_fundamentals.CIA_TRIAD`, que es la fuente
+# única del marco según CLAUDE.md. Aquí estaba copiado a mano: coincidía, pero
+# nada lo obligaba, y una tercera copia vivía dentro de `_check_fundamentals`.
+CIA_INTEGRITY_VALUES = cia_valores("cia_integrity")
 
-from vault_io import VAULT_ROOT
+CIA_AVAILABILITY_VALUES = cia_valores("cia_availability")
 
-
-CIA_INTEGRITY_VALUES = {"critical", "high", "medium", "low"}
-
-CIA_AVAILABILITY_VALUES = {"high", "medium", "low"}
-
-CIA_SENSITIVITY_VALUES = {"public", "internal", "restricted"}
-
+CIA_SENSITIVITY_VALUES = cia_valores("cia_sensitivity")
 
 
-REQUIRED_FOLDERS = [
-
-    "00_System",
-
-    "01_Projects",
-
-    "02_Observability",
-
-    "03_Decisions",
-
-    "04_Sessions",
-
-    "05_Patterns",
-
-    "06_Diagrams",
-
-    "07_Knowledge",
-
-    "08_Runbooks",
-
-    "09_Infrastructure",
-
-    "10_Migrated",
-
-]
-
+# Se congeló en v33 con diez secciones y nunca creció: un vault sin `11_Code`
+# ni `18_Bugs` pasaba la validación como completo, porque «requerido» aquí
+# significaba lo que era requerido hace siete versiones. Ahora lo dice el
+# registro, así que una sección nueva es exigible el mismo día que existe.
+REQUIRED_FOLDERS = list(ORDERED_SECTIONS)
 
 
 REQUIRED_INDEXES = [
@@ -92,7 +71,20 @@ REQUIRED_INDEXES = [
 ]
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioGobernanza:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioGobernanza(construir(root))
 
 
 def _validate_cia_fields(data: Dict[str, Any]) -> List[str]:
@@ -146,9 +138,6 @@ def _validate_cia_fields(data: Dict[str, Any]) -> List[str]:
     return errors
 
 
-
-
-
 def validate_frontmatter(note_path: Path) -> Dict[str, Any]:
 
     """Validate YAML frontmatter of a single note. Returns {valid, error?, data?}."""
@@ -162,11 +151,31 @@ def validate_frontmatter(note_path: Path) -> Dict[str, Any]:
         return {"valid": False, "error": str(e)}
 
 
+    # Un BOM delante del `---` no impide leer el frontmatter: ni Obsidian ni
+    # `yaml.safe_load` sobre el bloque ya recortado lo notan, y el kernel tiene
+    # `strip_bom` precisamente para esto. Sin quitarlo, `startswith("---")` era
+    # falso y once notas del vault de pruebas —con frontmatter completo y
+    # legible— salían como «No frontmatter block». AP-44: la comprobación medía
+    # con su criterio, no con el del consumidor.
+
+    content, _ = strip_bom(content)
+
+
+    rel_path = str(note_path.relative_to(_raiz())).replace("\\", "/")
+    is_index = es_artefacto_derivado(rel_path)
 
     if not content.startswith("---"):
 
+        # Un artefacto derivado se escribe sin frontmatter: lo genera una tool
+        # —`vault_section_index`, `vault_change_log`, `vault_compact_contracts`—
+        # que no le pone ninguno. Exigírselo hacía que el estándar reprobara 65
+        # ficheros que acababa de escribir él mismo (AP-44: medir con criterio
+        # propio). Tres líneas más abajo esta misma función ya los exceptúa de
+        # los campos de trazabilidad — la excepción existía, solo llegaba tarde.
+        # Cuáles son lo dice `vault_registry`, no esta función.
+        if is_index:
+            return {"valid": True, "data": {}, "derived": True}
         return {"valid": False, "error": "No frontmatter block"}
-
 
 
     parts = content.split("---", 2)
@@ -174,7 +183,6 @@ def validate_frontmatter(note_path: Path) -> Dict[str, Any]:
     if len(parts) < 3:
 
         return {"valid": False, "error": "Frontmatter not closed"}
-
 
 
     try:
@@ -186,30 +194,30 @@ def validate_frontmatter(note_path: Path) -> Dict[str, Any]:
         return {"valid": False, "error": f"YAML parse error: {e}"}
 
 
-
     if not isinstance(data, dict):
 
         return {"valid": False, "error": "Frontmatter is not a YAML mapping"}
-
 
 
     # v37: required fields expanded
     required = ["id", "title", "createdAt", "updatedAt"]
 
     # For content notes (not system/index), require traceability fields
-    rel_path = str(note_path.relative_to(VAULT_ROOT)).replace("\\", "/")
-    is_index = rel_path.endswith("/index.md") or rel_path == "index.md" or note_path.stem == "index"
     is_system = rel_path.startswith("00_System/") or rel_path == "00_System"
 
     if not is_index and not is_system:
         required += ["cia_integrity", "cia_availability", "cia_sensitivity", "agent"]
-        if "tags" not in data:
-            missing.append("tags")
 
     missing = [f for f in required if f not in data]
+    # `tags` se comprobaba tres líneas antes de que `missing` existiera:
+    # `UnboundLocalError` en la primera nota de contenido sin tags, y la tool
+    # entera devolvía UNEXPECTED_ERROR sin validar ni una. Nunca falló en los
+    # tests porque sus notas de fixture siempre llevan tags — el vault de
+    # pruebas, no.
+    if not is_index and not is_system and "tags" not in data:
+        missing.append("tags")
     if missing:
         return {"valid": False, "error": f"Missing required fields: {missing}", "data": data}
-
 
 
     cia_errors = _validate_cia_fields(data)
@@ -219,11 +227,7 @@ def validate_frontmatter(note_path: Path) -> Dict[str, Any]:
         return {"valid": False, "error": f"CIA field errors: {'; '.join(cia_errors)}", "data": data}
 
 
-
     return {"valid": True, "data": data}
-
-
-
 
 
 def check_frontmatter(path: Optional[str], folder: Optional[str]) -> Dict[str, Any]:
@@ -232,7 +236,7 @@ def check_frontmatter(path: Optional[str], folder: Optional[str]) -> Dict[str, A
 
     if path:
 
-        note = VAULT_ROOT / path
+        note = _raiz() / path
 
         result = validate_frontmatter(note)
 
@@ -243,21 +247,31 @@ def check_frontmatter(path: Optional[str], folder: Optional[str]) -> Dict[str, A
         return {"valid": [], "invalid": [{"path": path, "error": result["error"]}]}
 
 
-
     if folder:
 
-        notes = list((VAULT_ROOT / folder).rglob("*.md"))
+        notes = list((_raiz() / folder).rglob("*.md"))
 
     else:
 
+        # Solo las secciones canónicas. Barrer el vault entero con `rglob` desde
+        # la raíz mete en el informe cualquier markdown que conviva con él
+        # —`docs/`, notas de trabajo, un README— y los reprueba por no llevar
+        # frontmatter, que es justo lo que no se les pide: no son notas del
+        # vault. En el vault de pruebas eran 13 de las 26 «No frontmatter
+        # block», todas de `docs/sdd/`. Qué cuenta como nota lo decide
+        # `ORDERED_SECTIONS` (AP-05), no el disco.
+
         notes = [
 
-            n for n in VAULT_ROOT.rglob("*.md")
+            n
+
+            for seccion in REQUIRED_FOLDERS
+
+            for n in (_raiz() / seccion).rglob("*.md")
 
             if ".history" not in str(n) and not n.name.startswith("_")
 
         ]
-
 
 
     valid: List[str] = []
@@ -265,12 +279,11 @@ def check_frontmatter(path: Optional[str], folder: Optional[str]) -> Dict[str, A
     invalid: List[Dict[str, str]] = []
 
 
-
     for note in notes:
 
         result = validate_frontmatter(note)
 
-        rel = str(note.relative_to(VAULT_ROOT))
+        rel = str(note.relative_to(_raiz()))
 
         if result["valid"]:
 
@@ -281,23 +294,16 @@ def check_frontmatter(path: Optional[str], folder: Optional[str]) -> Dict[str, A
             invalid.append({"path": rel, "error": result["error"]})
 
 
-
     return {"valid": valid, "invalid": invalid}
-
-
-
 
 
 def check_structure() -> Dict[str, Any]:
 
     """Verify that the standard numbered folders exist."""
 
-    missing = [f for f in REQUIRED_FOLDERS if not (VAULT_ROOT / f).exists()]
+    missing = [f for f in REQUIRED_FOLDERS if not (_raiz() / f).exists()]
 
     return {"expected": len(REQUIRED_FOLDERS), "missing": missing}
-
-
-
 
 
 def check_indexes() -> Dict[str, Any]:
@@ -308,7 +314,7 @@ def check_indexes() -> Dict[str, Any]:
 
     for idx in REQUIRED_INDEXES:
 
-        path = VAULT_ROOT / idx
+        path = _raiz() / idx
 
         if not path.exists():
 
@@ -325,9 +331,6 @@ def check_indexes() -> Dict[str, Any]:
                 invalid.append(f"{idx} (unreadable)")
 
     return {"required": len(REQUIRED_INDEXES), "invalid": invalid}
-
-
-
 
 
 def vault_validate(
@@ -375,7 +378,6 @@ def vault_validate(
     result: Dict[str, Any] = {"ok": True}
 
 
-
     if check in ("frontmatter", "all"):
 
         fm = check_frontmatter(path, folder)
@@ -389,7 +391,6 @@ def vault_validate(
             result["ok"] = False
 
 
-
     if check in ("structure", "all"):
 
         st = check_structure()
@@ -399,7 +400,6 @@ def vault_validate(
         if st["missing"]:
 
             result["ok"] = False
-
 
 
     if check in ("indexes", "all"):
@@ -413,11 +413,7 @@ def vault_validate(
             result["ok"] = False
 
 
-
     return result
-
-
-
 
 
 def main():
@@ -477,7 +473,6 @@ Notas:
     )
 
 
-
     args = parser.parse_args()
 
     result = vault_validate(args.path, args.folder, args.check)
@@ -485,9 +480,6 @@ Notas:
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
     return 0 if result["ok"] else 1
-
-
-
 
 
 if __name__ == "__main__":

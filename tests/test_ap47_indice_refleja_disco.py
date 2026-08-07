@@ -136,17 +136,28 @@ def test_el_audit_calla_cuando_el_indice_esta_al_dia(tmp_path):
 def test_comprobar_y_reconstruir_usan_el_mismo_criterio():
     """Si `--check` contara con criterio propio, reportaría un desfase que
     `vault_reindex` no cierra nunca — la puerta quedaría roja para siempre."""
-    fuente = (SCRIPTS / "vault_reindex.py").read_text(encoding="utf-8")
-    assert fuente.count("def _notas_en_disco") == 1
-    # Ni la reconstrucción ni la comprobación pueden tener su propia copia: la
-    # única llamada a `_is_vault_note` que no es su propia `def` vive dentro de
-    # `_notas_en_disco`. Un segundo `rglob` filtrando por su cuenta sería otra
-    # definición de "nota indexable", y el desfase que reportara no sería el que
-    # `vault_reindex` cierra.
-    llamadas = [
-        ln
-        for ln in fuente.splitlines()
-        if "_is_vault_note(" in ln and not ln.lstrip().startswith("def ")
+    # Desde v40.0 el criterio vive en el dominio, así que la comprobación se
+    # hace donde ahora está: `vault/indices/enumeracion.py` es el único sitio
+    # que hace `rglob("*.md")` para el contexto, y tanto la coherencia como la
+    # reconstrucción lo consumen. Un segundo `rglob` filtrando por su cuenta
+    # sería otra definición de "nota indexable", y el desfase que reportara no
+    # sería el que `vault_reindex` cierra.
+    from pathlib import Path
+
+    dominio = Path(SCRIPTS).parent / "vault" / "indices"
+    enumeracion = (dominio / "enumeracion.py").read_text(encoding="utf-8")
+    assert enumeracion.count("def notas_en_disco") == 1
+    assert enumeracion.count('rglob("*.md")') == 1
+
+    otros = [
+        f.name
+        for f in dominio.glob("*.py")
+        if f.name != "enumeracion.py"
+        and 'rglob("*.md")' in f.read_text(encoding="utf-8")
     ]
-    assert len(llamadas) == 1, f"más de un sitio enumera notas indexables: {llamadas}"
-    assert fuente.count("rglob(\"*.md\")") == 1
+    assert not otros, f"más de un sitio enumera notas indexables: {otros}"
+
+    # Y el adaptador no puede recuperar su copia por la puerta de atrás.
+    fuente = (SCRIPTS / "vault_reindex.py").read_text(encoding="utf-8")
+    assert 'rglob("*.md")' not in fuente
+    assert "def _is_vault_note" not in fuente

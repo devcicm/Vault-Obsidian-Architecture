@@ -29,16 +29,13 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
-from vault_lib import slugify_strict, utcnow
-from vault_io import (
-    write_report,
-    VAULT_ROOT,
-    assert_within_vault,
-    atomic_write_text,
-    file_lock,
-    update_section_index,
-)
+from vault_lib import yaml_scalar, slugify_strict, utcnow
+from vault_io import assert_within_vault, atomic_write_text, file_lock, get_vault_root, write_report
 from vault_norms import compute_norm_refs, status_frontmatter_lines
+# Los `*_save` viven en `scripts/`; el paquete se importa desde la raiz.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 RELEASE_FOLDER = "08_Runbooks/deploy"
 CHANGELOG_PATH = "01_Projects/{project}/changelog.md"
@@ -190,40 +187,37 @@ def vault_release_save(
 
     norm_refs = compute_norm_refs(RELEASE_FOLDER, body, [])
     version_slug = _slug(version)
-    fm_lines = [
-        "---",
-        f'title: "Release {version} — {project}"',
-        f"id: {uuid.uuid4()}",
-        f"createdAt: {now}",
-        f"updatedAt: {now}",
-        f"tags: {json.dumps(['release', 'deploy', project, release_type, version])}",
-        f"norm_refs: {json.dumps(norm_refs)}",
-        f"project: {project}",
-        f"version: {version}",
-        f"release_type: {release_type}",
-        *status_frontmatter_lines("vault_release_save", status),
-        f"deploy_at: {deploy_at}",
-        f"breaking_changes: {json.dumps(bool(breaking_changes))}",
-        f"migrations_required: {json.dumps(bool(migrations))}",
-        f"iso_standard: ISO 20000-1:2018 §8.5.2",
-        f"cia_integrity: high",
-        f"cia_availability: high",
-        f"cia_sensitivity: internal",
-        f"agent: {agent}",
-        "---",
-    ]
-    full = "\n".join(fm_lines) + "\n\n" + body
+    fm_lines = Frontmatter()
+    fm_lines.set("title", f"Release {version} — {project}")
+    fm_lines.set("id", uuid.uuid4())
+    fm_lines.set("createdAt", now)
+    fm_lines.set("updatedAt", now)
+    fm_lines.set("tags", ['release', 'deploy', project, release_type, version])
+    fm_lines.set("norm_refs", norm_refs)
+    fm_lines.set("project", project)
+    fm_lines.set("version", version)
+    fm_lines.set("release_type", release_type)
+    fm_lines.lineas(status_frontmatter_lines("vault_release_save", status))
+    fm_lines.set("deploy_at", deploy_at)
+    fm_lines.set("breaking_changes", bool(breaking_changes))
+    fm_lines.set("migrations_required", bool(migrations))
+    fm_lines.set("iso_standard", "ISO 20000-1:2018 §8.5.2")
+    fm_lines.set("cia_integrity", "high")
+    fm_lines.set("cia_availability", "high")
+    fm_lines.set("cia_sensitivity", "internal")
+    fm_lines.set("agent", agent)
+    full = fm_lines.render() + "\n\n" + body
 
     # Write runbook
     filename = f"{_slug(project)}-release-{version_slug}.md"
-    path = VAULT_ROOT / RELEASE_FOLDER / filename
+    path = get_vault_root() / RELEASE_FOLDER / filename
     path.parent.mkdir(parents=True, exist_ok=True)
-    assert_within_vault(path, VAULT_ROOT)
+    assert_within_vault(path, get_vault_root())
     atomic_write_text(path, full)
 
     # Update project changelog
     changelog_rel = CHANGELOG_PATH.format(project=project)
-    changelog_path = VAULT_ROOT / changelog_rel
+    changelog_path = get_vault_root() / changelog_rel
     changelog_path.parent.mkdir(parents=True, exist_ok=True)
 
     changelog_entry = f"\n### {version} — {deploy_at[:10]} ({release_type})\n\n"
@@ -252,13 +246,16 @@ def vault_release_save(
 """
             atomic_write_text(changelog_path, changelog_header + changelog_entry)
 
-    update_section_index("08_Runbooks")
-    update_section_index("01_Projects")
+    # El indice de seccion lo dispara el write path del kernel
+    # (`vault_io._auto_section_index`) en cuanto se escribe la nota. La
+    # llamada explicita que habia aqui lo regeneraba una segunda vez con
+    # el mismo contenido: trabajo duplicado que ademas se contaba como
+    # escritura en el envelope.
 
     return {
         "ok": True,
         **write_report(),
-        "path": str(path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(path.relative_to(get_vault_root())).replace("\\", "/"),
         "changelog": changelog_rel,
         "project": project,
         "version": version,

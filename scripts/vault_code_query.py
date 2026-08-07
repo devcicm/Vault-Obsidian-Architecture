@@ -50,10 +50,27 @@ from typing import Any, Dict, List, Optional
 
 
 
-from vault_io import VAULT_ROOT
-CODE_DIR = VAULT_ROOT / "11_Code"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-INDEX_FILE = CODE_DIR / ".code-index.json"
+from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioGrafo:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioGrafo(construir(root))
+
+
+def _code_dir() -> Path:
+    return _repo().dir_codigo
+
+
+INDEX_FILE = _code_dir() / ".code-index.json"
 
 
 
@@ -157,11 +174,11 @@ def read_module_doc(rel_path: str) -> Dict[str, Any]:
 
     """Read a code module .md and return structured data."""
 
-    doc_path = VAULT_ROOT / rel_path.replace("/", "\\") if "\\" not in rel_path else VAULT_ROOT / rel_path
+    doc_path = _raiz() / rel_path.replace("/", "\\") if "\\" not in rel_path else _raiz() / rel_path
 
     # Normalize
 
-    doc_path = VAULT_ROOT / Path(rel_path)
+    doc_path = _raiz() / Path(rel_path)
 
     if not doc_path.exists():
 

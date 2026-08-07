@@ -31,7 +31,11 @@ import re
 import subprocess
 
 import sys
+# La configuración se lee del registro único, no con un default por punto
+# de uso. Ver `vault_entorno.py`.
+from vault_entorno import leer as _env
 
+from vault_registry import es_andamio
 from vault_errors import wrap_main
 
 from collections import defaultdict
@@ -45,7 +49,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-from vault_io import VAULT_ROOT, is_snapshot_path, normalize_stem as _normalize
+from vault_io import is_snapshot_path, normalize_stem as _normalize
 from vault_regex import (
     detect_bracket_anomalies,
     RE_NESTED_OPEN_3,
@@ -55,12 +59,6 @@ from vault_regex import (
 from vault_mermaid_check import scan_vault as _scan_mermaid
 
 SCRIPTS_DIR = Path(__file__).parent
-
-SYSTEM_DIR = VAULT_ROOT / "00_System"
-
-QUALITY_INDEX = SYSTEM_DIR / "quality-index.json"
-
-PROPAGATION_QUEUE = SYSTEM_DIR / "propagation-queue.json"
 
 
 SKIP_FOLDERS = {"vault-backups", ".history"}
@@ -72,7 +70,7 @@ STUCK_PATTERN_DAYS = 7
 STALE_PROJECT_DAYS = 14
 
 
-VAULT_DQ_CACHE_MINUTES = int(os.environ.get("VAULT_DQ_CACHE_MINUTES", "30"))
+VAULT_DQ_CACHE_MINUTES = _env("VAULT_DQ_CACHE_MINUTES")
 
 
 # Archivos estructurales: auto-generados o de convención, no son "notas de contenido"
@@ -101,8 +99,41 @@ PLACEHOLDER_PATTERNS = [
 ]
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+
+from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioGobernanza:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioGobernanza(construir(root))
+
+
+def _system_dir() -> Path:
+    return _repo().dir_sistema
+
+
+def _tag_registry() -> Path:
+    return _repo().registro_etiquetas
+
+
+def _quality_index() -> Path:
+    return _repo().indice_calidad
+
+
+def _propagation_queue() -> Path:
+    return _repo().cola_propagacion
+
+
 def _is_skipped(path: Path) -> bool:
-    path_str = str(path.relative_to(VAULT_ROOT))
+    path_str = str(path.relative_to(_raiz()))
 
     if ".vault-fix-backup-" in path_str:
         return True
@@ -119,7 +150,7 @@ def _get_active_notes(
 ) -> List[Path]:
     notes = []
 
-    for n in VAULT_ROOT.rglob("*.md"):
+    for n in _raiz().rglob("*.md"):
         if _is_skipped(n) or n.name.startswith("_"):
             continue
 
@@ -127,7 +158,7 @@ def _get_active_notes(
             continue
 
         if project:
-            rel = str(n.relative_to(VAULT_ROOT))
+            rel = str(n.relative_to(_raiz()))
 
             if project not in rel:
                 continue
@@ -231,7 +262,7 @@ def _is_snapshot(p: Path) -> bool:
     silencio. Fuera de la raiz no hay nada que excluir.
     """
     try:
-        return is_snapshot_path(p.relative_to(VAULT_ROOT))
+        return is_snapshot_path(p.relative_to(_raiz()))
     except ValueError:  # pragma: no cover -- rglob siempre cuelga de la raiz
         return False
 
@@ -271,7 +302,7 @@ def _leer_nota(p: Path, *, errors: str = "ignore", binario: bool = False):
         )
     except Exception as exc:  # noqa: BLE001 — el audit nunca se cae por una nota
         try:
-            rel = str(p.relative_to(VAULT_ROOT)).replace("\\", "/")
+            rel = str(p.relative_to(_raiz())).replace("\\", "/")
         except ValueError:
             rel = str(p)
         _LECTURAS_FALLIDAS.append({"path": rel, "error": f"{type(exc).__name__}: {exc}"})
@@ -305,7 +336,7 @@ def _build_indexes(notes: List[Path]) -> Tuple[Dict[str, Set[str]], Set[str]]:
 
     all_stems: Set[str] = set()
 
-    for n in VAULT_ROOT.rglob("*.md"):
+    for n in _raiz().rglob("*.md"):
         # `.history` era la unica exclusion; `vault-backups/` y `.trash/` entraban,
         # y con ellas los enlaces de instantaneas congeladas. `is_snapshot_path`
         # centraliza el criterio en `vault_io` (AP-36): los side-effects viven
@@ -314,7 +345,7 @@ def _build_indexes(notes: List[Path]) -> Tuple[Dict[str, Set[str]], Set[str]]:
             all_stems.add(_normalize(n.stem))
             # Register folder/stem paths: [[section/note]] resolves even if stem alone not unique
             try:
-                rel = n.relative_to(VAULT_ROOT)
+                rel = n.relative_to(_raiz())
                 if len(rel.parts) >= 2:
                     folder_stem = "".join(list(rel.parts[:-1])) + rel.stem
                     all_stems.add(_normalize(folder_stem))
@@ -353,7 +384,7 @@ def _detect_orphans(
     orphans = []
 
     for n in notes:
-        rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(n.relative_to(_raiz())).replace("\\", "/")
 
         if rel.startswith("00_System"):
             continue
@@ -373,9 +404,7 @@ def _detect_orphans(
         # reminds them to do so. Excluding scaffolds avoids false-positive
         # orphan warnings on a freshly initialized vault.
         text = _leer_nota(n, errors="replace")
-        if text is not None and (
-            "scaffold: true" in text or "type: primer" in text
-        ):
+        if text is not None and es_andamio(text):
             continue
 
         fm = read_frontmatter(n)
@@ -399,7 +428,7 @@ def _detect_stale(notes: List[Path]) -> List[Dict[str, Any]]:
     stale = []
 
     for n in notes:
-        rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(n.relative_to(_raiz())).replace("\\", "/")
 
         if rel.startswith("00_System"):
             continue
@@ -426,7 +455,7 @@ def _detect_stuck_patterns(notes: List[Path]) -> List[Dict[str, Any]]:
     stuck = []
 
     for n in notes:
-        rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(n.relative_to(_raiz())).replace("\\", "/")
 
         if "05_Patterns" not in rel:
             continue
@@ -459,7 +488,7 @@ def _detect_stale_projects(notes: List[Path]) -> List[Dict[str, Any]]:
     stale_projects = []
 
     for n in notes:
-        rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(n.relative_to(_raiz())).replace("\\", "/")
 
         if "01_Projects" not in rel or n.name != "status.md":
             continue
@@ -490,16 +519,16 @@ def _detect_broken_links(
     # to a file at that relative path. The audit was treating them as broken
     # because stem-only normalization doesn't match the full path.
     all_paths: Set[str] = set()
-    for n in VAULT_ROOT.rglob("*.md"):
+    for n in _raiz().rglob("*.md"):
         if not _is_snapshot(n):
-            rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+            rel = str(n.relative_to(_raiz())).replace("\\", "/")
             # Add both with and without .md extension
             all_paths.add(rel.lower())
             if rel.lower().endswith(".md"):
                 all_paths.add(rel[:-3].lower())
 
     for n in notes:
-        rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(n.relative_to(_raiz())).replace("\\", "/")
 
         # Spec/reference files contain wiki-link SYNTAX examples that are
         # documentation, not real links. Exclude them from broken-link detection.
@@ -612,7 +641,7 @@ def _detect_canonical_shadow(notes: List[Path]) -> List[Dict[str, Any]]:
         if n.stem.lower() in _EXCLUDED_STEMS:
             continue
 
-        rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(n.relative_to(_raiz())).replace("\\", "/")
 
         # Spec/reference files have the same title by design (it's the spec).
         # Exclude them from canonical-shadow detection.
@@ -631,9 +660,7 @@ def _detect_canonical_shadow(notes: List[Path]) -> List[Dict[str, Any]]:
         # Scaffolds (vault_init primers) are templates by design — all have
         # similar titles and structure. Excluding them avoids false positives.
         text = _leer_nota(n, errors="replace")
-        if text is not None and (
-            "scaffold: true" in text or "type: primer" in text
-        ):
+        if text is not None and es_andamio(text):
             continue
 
         fm = read_frontmatter(n)
@@ -706,7 +733,7 @@ def _detect_malformed_wikilinks(notes: List[Path]) -> List[Dict[str, Any]]:
     # where `]]` from one link precedes `[[` of another link on a later line.
 
     for n in notes:
-        rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(n.relative_to(_raiz())).replace("\\", "/")
 
         # Spec/reference files contain unbalanced bracket examples as part
         # of documenting the syntax. Exclude them.
@@ -916,7 +943,7 @@ def _detect_cross_folder_duplicates(notes: List[Path]) -> List[Dict[str, Any]]:
 
         digest = hashlib.md5(content).hexdigest()
 
-        rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(n.relative_to(_raiz())).replace("\\", "/")
 
         hash_map[digest].append(rel)
 
@@ -953,7 +980,7 @@ def _detect_empty_indexes() -> List[Dict[str, Any]]:
     empty = []
 
     try:
-        for section_dir in sorted(VAULT_ROOT.iterdir()):
+        for section_dir in sorted(_raiz().iterdir()):
             if not section_dir.is_dir():
                 continue
 
@@ -1038,9 +1065,9 @@ def _detect_graph_knowledge_antipatterns() -> Dict[str, Any]:
       - ap34_orphan_relations: list of typed relations with unresolved endpoints
       - ap35_silo_flags: silo detection flags
     """
-    ENRICHED_FILE = VAULT_ROOT / "99_Index" / "graph-enriched.json"
-    ENTITY_DIR = VAULT_ROOT / "06_Diagrams" / "entity"
-    CODE_INDEX = VAULT_ROOT / "11_Code" / ".code-index.json"
+    ENRICHED_FILE = _raiz() / "99_Index" / "graph-enriched.json"
+    ENTITY_DIR = _raiz() / "06_Diagrams" / "entity"
+    CODE_INDEX = _raiz() / "11_Code" / ".code-index.json"
 
     result: Dict[str, Any] = {
         "ap31_typed_ratio": 0.0,
@@ -1186,7 +1213,7 @@ def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]
         raw = _leer_nota(p, errors="strict")
         if raw is None:
             continue
-        rel = str(p.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(p.relative_to(_raiz())).replace("\\", "/")
         # Todo `99_Index/` es artefacto derivado — lo escriben `vault_reindex` y
         # `vault_tags` a partir de las notas, y se regenera entero en cada
         # ejecución. Exigirle tags o `type` a `tag-index.md` pide metadatos a un
@@ -1243,8 +1270,12 @@ def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]
 # nextActions helpers — used by vault_audit to prescribe remediation
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Per-section tool hint — mirrors the registry so the suggested command is
-# correct even if the registry changes.
+# Pistas de tool con argumentos de ejemplo. El comentario anterior decía que
+# esto «refleja el registro para que el comando siga siendo correcto aunque el
+# registro cambie» — que es justo lo contrario de lo que hace un espejo: cuando
+# el registro cambia, la copia se queda vieja y nadie se entera. Lo que aporta
+# de verdad es el ejemplo de argumentos, así que se queda como capa de
+# enriquecimiento y lo que no cubre lo pone el registro, no un genérico.
 _SECTION_TOOL_HINT: Dict[str, str] = {
     "01_Projects": "vault_project_overview --project <slug> --description '...' --runtime 'Node.js 20'",
     "02_Observability": "vault_log_error --project <slug> --error '<msg>'",
@@ -1276,7 +1307,9 @@ _SECTION_TOOL_HINT: Dict[str, str] = {
 
 def _suggest_command_for_folder(folder: str) -> str:
     """Return a copy-paste ready command for populating an empty section."""
-    hint = _SECTION_TOOL_HINT.get(folder)
+    from vault_registry import section_tool_hint
+
+    hint = _SECTION_TOOL_HINT.get(folder) or section_tool_hint(folder)
     if hint:
         return f"python scripts/{hint}"
     return f"python scripts/vault_write --folder {folder} --title '<titulo>' --content '...'"
@@ -1291,13 +1324,13 @@ def _detect_scaffold_only_sections(content_notes: List[Path]) -> List[str]:
     sections_with_scaffold: Dict[str, bool] = {}
     sections_with_real: Dict[str, bool] = {}
     for n in content_notes:
-        rel = n.relative_to(VAULT_ROOT)
+        rel = n.relative_to(_raiz())
         if not rel.parts:
             continue
         section = rel.parts[0]
         text = _leer_nota(n, errors="replace")
         is_scaffold = text is not None and (
-            "scaffold: true" in text or "type: primer" in text
+            es_andamio(text)
         )
         if is_scaffold:
             sections_with_scaffold[section] = True
@@ -1319,7 +1352,7 @@ def _get_roadmap_for_populated_vault(content_notes: List[Path]) -> List[Dict[str
     """
     by_folder: Dict[str, int] = {}
     for n in content_notes:
-        rel = n.relative_to(VAULT_ROOT)
+        rel = n.relative_to(_raiz())
         if rel.parts:
             by_folder[rel.parts[0]] = by_folder.get(rel.parts[0], 0) + 1
 
@@ -1409,11 +1442,11 @@ def _get_roadmap_for_populated_vault(content_notes: List[Path]) -> List[Dict[str
 
 
 def _read_quality_index() -> Optional[Dict[str, Any]]:
-    if not QUALITY_INDEX.exists():
+    if not _quality_index().exists():
         return None
 
     try:
-        return json.loads(QUALITY_INDEX.read_text(encoding="utf-8"))
+        return json.loads(_quality_index().read_text(encoding="utf-8"))
 
     except Exception:
         return None
@@ -1437,7 +1470,7 @@ def _dq_is_stale(qi: Dict[str, Any]) -> bool:
 
 
 def _dq_is_locked() -> bool:
-    lock_dir = QUALITY_INDEX.parent / f".{QUALITY_INDEX.name}.lock"
+    lock_dir = _quality_index().parent / f".{_quality_index().name}.lock"
 
     return lock_dir.exists()
 
@@ -1501,11 +1534,11 @@ def _refresh_dq_if_needed() -> Dict[str, Any]:
 def _read_propagation_pending() -> List[Dict[str, Any]]:
     """Read propagation-queue.json and return pending items sorted by priority."""
 
-    if not PROPAGATION_QUEUE.exists():
+    if not _propagation_queue().exists():
         return []
 
     try:
-        data = json.loads(PROPAGATION_QUEUE.read_text(encoding="utf-8"))
+        data = json.loads(_propagation_queue().read_text(encoding="utf-8"))
 
         pending = data.get("pending", [])
 
@@ -1531,6 +1564,131 @@ def _read_propagation_pending() -> List[Dict[str, Any]]:
         return []
 
 
+#: Las familias de salud, con dueño y en un solo sitio.
+#:
+#: `healthScore` parte de 100 y resta 22 penalizaciones independientes cuyos
+#: topes suman 285. Eso significa que **satura**: basta con estar mal en dos o
+#: tres familias distintas para llegar a 0, y a partir de ahí un vault regular y
+#: uno catastrófico puntúan igual. No es una hipótesis — `vault-sandbox/`, el
+#: vault de referencia de este repo y recién reconstruido, puntúa 0.
+#:
+#: `healthScore` **no se toca**: lo leen los repos consumidores y cambiar lo que
+#: significa un número publicado por debajo es peor que el defecto. Se le añade
+#: al lado `healthProfile` —una lectura por familia, cada una normalizada contra
+#: su propio tope— y `healthIndex`, la media de las familias, que solo llega a 0
+#: si **todas** están al tope. Es la política de no-derogación aplicada a una
+#: métrica: lo reemplazado se anota, no se borra.
+FAMILIAS_DE_SALUD: Dict[str, str] = {
+    "estructura": "carpetas, secciones e identidad de la nota",
+    "conectividad": "enlaces entre notas: rotos, huérfanos, mal formados",
+    "metadatos": "frontmatter — los campos por los que el vault se consulta",
+    "grafo": "aristas tipadas y su vigencia",
+    "contenido": "lo que la nota lleva dentro y no se puede renderizar",
+    "ciclo_de_vida": "lo que caducó: notas, patrones y proyectos parados",
+}
+
+#: El registro que manda sobre el cálculo. Antes eran 22 `score -= min(...)`
+#: escritos a mano en el cuerpo de `vault_audit()`: los topes vivían solo ahí,
+#: nadie podía sumarlos sin leerse la función, y agrupar por familia exigía
+#: copiarlos a un segundo sitio (AP-05). Ahora el cuerpo itera este registro.
+#:
+#: `por_unidad` es lo que resta cada ocurrencia; `tope`, el máximo que la
+#: entrada puede restar por sí sola. Las entradas con `por_unidad: 1` reciben
+#: una penalización ya calculada por su detector.
+PENALIZACIONES: List[Dict[str, Any]] = [
+    {"id": "orphans", "familia": "conectividad", "norma": None, "por_unidad": 2, "tope": 30},
+    {"id": "stale", "familia": "ciclo_de_vida", "norma": None, "por_unidad": 1, "tope": 10},
+    {"id": "stuck_patterns", "familia": "ciclo_de_vida", "norma": None, "por_unidad": 3, "tope": 15},
+    {"id": "stale_projects", "familia": "ciclo_de_vida", "norma": None, "por_unidad": 5, "tope": 25},
+    {"id": "broken_links", "familia": "conectividad", "norma": "AP-14", "por_unidad": 2, "tope": 20},
+    {"id": "canonical_shadow", "familia": "estructura", "norma": "AP-17", "por_unidad": 2, "tope": 10},
+    {"id": "cross_folder_dupes", "familia": "estructura", "norma": "AP-18", "por_unidad": 3, "tope": 10},
+    # AP-22 (wikilink vacío) es auto-fixable; AP-24 (brackets rotos) rompe el
+    # enlace de verdad. Por eso pesan distinto: la diferencia es deliberada.
+    {"id": "ap22", "familia": "conectividad", "norma": "AP-22", "por_unidad": 2, "tope": 5},
+    {"id": "ap24", "familia": "conectividad", "norma": "AP-24", "por_unidad": 5, "tope": 15},
+    {"id": "empty_indexes", "familia": "estructura", "norma": "AP-03", "por_unidad": 2, "tope": 10},
+    {"id": "mermaid_errors", "familia": "contenido", "norma": "AP-25", "por_unidad": 2, "tope": 20},
+    {"id": "missing_agent", "familia": "metadatos", "norma": "AP-16", "por_unidad": 1, "tope": 10},
+    {"id": "missing_tags", "familia": "metadatos", "norma": "AP-26", "por_unidad": 2, "tope": 15},
+    {"id": "missing_type", "familia": "metadatos", "norma": "AP-27", "por_unidad": 2, "tope": 10},
+    {"id": "missing_status", "familia": "metadatos", "norma": "AP-29", "por_unidad": 1, "tope": 10},
+    {"id": "missing_cia", "familia": "metadatos", "norma": "AP-30", "por_unidad": 2, "tope": 15},
+    {"id": "missing_updated", "familia": "metadatos", "norma": None, "por_unidad": 2, "tope": 10},
+    {"id": "missing_frontmatter", "familia": "metadatos", "norma": "AP-28", "por_unidad": 3, "tope": 20},
+    {"id": "cia_penalty", "familia": "metadatos", "norma": None, "por_unidad": 1, "tope": 15},
+    {"id": "ap31", "familia": "grafo", "norma": "AP-31", "por_unidad": 1, "tope": 20},
+    {"id": "ap34", "familia": "grafo", "norma": "AP-34", "por_unidad": 2, "tope": 10},
+    {"id": "ap35", "familia": "grafo", "norma": "AP-35", "por_unidad": 5, "tope": 5},
+]
+
+
+def _tope_por_familia() -> Dict[str, int]:
+    """Cuánto puede restar cada familia en total. Derivado, nunca escrito."""
+    topes: Dict[str, int] = {f: 0 for f in FAMILIAS_DE_SALUD}
+    for p in PENALIZACIONES:
+        topes[p["familia"]] += p["tope"]
+    return topes
+
+
+def calcular_salud(unidades: Dict[str, int]) -> Dict[str, Any]:
+    """El score de siempre y la lectura que no satura, del mismo registro.
+
+    `unidades` mapea id de penalización → cuántas ocurrencias (o, para las
+    precalculadas, la penalización que su detector ya resolvió).
+
+    `healthScore` se calcula **exactamente** como antes; que salga de aquí y no
+    de 22 líneas sueltas no cambia ni un punto, y hay un test que lo fija. Lo
+    nuevo va al lado:
+
+    * `healthProfile`: por familia, cuánto restó y contra qué tope. `saturated`
+      dice si esa familia tocó fondo, que es la información que `healthScore`
+      destruía al agregarlo todo en un número.
+    * `healthIndex`: la media simple de la salud de las seis familias. Media
+      simple y no ponderada a propósito — `metadatos` acumula 105 puntos de
+      tope frente a los 5 de `ap35`, así que ponderar por tope sería volver a
+      dejar que una sola familia decida el número.
+    """
+    topes = _tope_por_familia()
+    restado: Dict[str, int] = {f: 0 for f in FAMILIAS_DE_SALUD}
+    detalle: List[Dict[str, Any]] = []
+
+    for p in PENALIZACIONES:
+        cantidad = int(unidades.get(p["id"], 0))
+        aplicada = min(p["tope"], cantidad * p["por_unidad"])
+        restado[p["familia"]] += aplicada
+        if aplicada:
+            detalle.append({
+                "id": p["id"], "familia": p["familia"], "norm_code": p["norma"],
+                "count": cantidad, "penalty": aplicada, "cap": p["tope"],
+            })
+
+    score = max(0, 100 - sum(restado.values()))
+
+    perfil = {}
+    for familia, tope in topes.items():
+        # Un tope de 0 sería una familia sin penalizaciones: sana por vacía, no
+        # por buena. No puede pasar hoy, y si pasara mañana el 100 sería mentira,
+        # así que se marca en vez de dividirse entre cero.
+        salud = 100 if not tope else round(100 * (1 - restado[familia] / tope))
+        perfil[familia] = {
+            "health": salud,
+            "penalty": restado[familia],
+            "cap": tope,
+            "saturated": bool(tope) and restado[familia] >= tope,
+            "means": FAMILIAS_DE_SALUD[familia],
+        }
+
+    indice = round(sum(f["health"] for f in perfil.values()) / len(perfil))
+
+    return {
+        "healthScore": score,
+        "healthIndex": indice,
+        "healthProfile": perfil,
+        "penalties": detalle,
+    }
+
+
 def _cia_score_penalty(
     notes: List[Path],
     stale: List[Dict[str, Any]],
@@ -1545,7 +1703,7 @@ def _cia_score_penalty(
     pending_paths = {p["path"] for p in propagation_pending}
 
     for n in notes:
-        rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(n.relative_to(_raiz())).replace("\\", "/")
 
         fm = read_frontmatter(n)
 
@@ -1560,17 +1718,14 @@ def _cia_score_penalty(
     return penalty
 
 
-TAG_REGISTRY = VAULT_ROOT / "00_System" / "tag-registry.json"
-
-
 def _read_tag_health() -> Optional[Dict[str, Any]]:
     """Load tag-registry.json and return tag health summary. Returns None if registry absent."""
 
-    if not TAG_REGISTRY.exists():
+    if not _tag_registry().exists():
         return None
 
     try:
-        registry = json.loads(TAG_REGISTRY.read_text(encoding="utf-8"))
+        registry = json.loads(_tag_registry().read_text(encoding="utf-8"))
 
     except Exception:
         return None
@@ -1713,76 +1868,48 @@ def vault_audit(
     ap34_orphan_relations = graph_knowledge["ap34_orphan_relations"]
     ap35_silo_flags = graph_knowledge["ap35_silo_flags"]
 
-    score = 100
-
-    score -= min(30, len(orphans) * 2)
-
-    score -= min(10, len(stale) * 1)
-
-    score -= min(15, len(stuck_patterns) * 3)
-
-    score -= min(25, len(stale_projects) * 5)
-
-    score -= min(20, len(broken_links) * 2)
-
-    score -= min(10, len(canonical_shadow) * 2)
-
-    score -= min(10, len(cross_folder_dupes) * 3)
-
-    # AP-22 (empty [[]]) penaliza menos que AP-24 (imbalance real).
-    # Auto-fixables tienen penalización baja; imbalance real penaliza más.
+    # AP-22 (wikilink vacío) penaliza menos que AP-24 (brackets rotos): el
+    # primero es auto-fixable, el segundo rompe el enlace de verdad.
     ap22_count = sum(1 for m in malformed_wikilinks if m.get("norm_code") == "AP-22")
     ap24_count = sum(1 for m in malformed_wikilinks if m.get("norm_code") == "AP-24")
-    score -= min(5, ap22_count * 2)  # AP-22 leve (vacíos sin info)
-    score -= min(15, ap24_count * 5)  # AP-24 grave (brackets rotos)
-
-    score -= min(10, len(empty_indexes) * 2)
-
-    # AP-25: Mermaid diagram errors
-    score -= min(20, len(mermaid_errors) * 2)
-
-    # AP-16: Missing agent attribution
-    score -= min(10, len(missing_agent) * 1)
-
-    # AP-26: Missing tags on content notes
-    score -= min(15, len(missing_tags) * 2)
-
-    # AP-27: Missing type field
-    score -= min(10, len(missing_type) * 2)
-
-    # AP-29: Missing status field
-    score -= min(10, len(missing_status) * 1)
-
-    # AP-30: Missing CIA fields
-    score -= min(15, len(missing_cia) * 2)
-
-    # Missing updatedAt
-    score -= min(10, len(missing_updated) * 2)
-
-    # AP-28: Missing frontmatter entirely
-    score -= min(20, len(missing_frontmatter) * 3)
-
-    # CIA integrity + propagation_pending adjustments
-
-    score -= min(15, _cia_score_penalty(content_notes, stale, propagation_pending))
-
-    # AP-31: Missing typed edges (untuned graph)
-    score -= ap31_penalty
-
-    # AP-34: Orphan typed relations (unresolved endpoints)
     ap34_count = sum(r.get("count", 0) for r in ap34_orphan_relations)
-    score -= min(10, ap34_count * 2)
 
-    # AP-35: Relationship silos (stale enriched graph)
-    if ap35_silo_flags.get("graph_enriched_stale", False):
-        score -= 5
+    # Los pesos y los topes ya no viven aquí: los declara `PENALIZACIONES`, que
+    # es lo que permite agrupar por familia sin copiarlos a un segundo sitio.
+    # Este bloque solo cuenta ocurrencias.
+    salud = calcular_salud({
+        "orphans": len(orphans),
+        "stale": len(stale),
+        "stuck_patterns": len(stuck_patterns),
+        "stale_projects": len(stale_projects),
+        "broken_links": len(broken_links),
+        "canonical_shadow": len(canonical_shadow),
+        "cross_folder_dupes": len(cross_folder_dupes),
+        "ap22": ap22_count,
+        "ap24": ap24_count,
+        "empty_indexes": len(empty_indexes),
+        "mermaid_errors": len(mermaid_errors),
+        "missing_agent": len(missing_agent),
+        "missing_tags": len(missing_tags),
+        "missing_type": len(missing_type),
+        "missing_status": len(missing_status),
+        "missing_cia": len(missing_cia),
+        "missing_updated": len(missing_updated),
+        "missing_frontmatter": len(missing_frontmatter),
+        # Ya vienen resueltas por su detector: la unidad es el punto, no la
+        # ocurrencia. El tope del registro las sigue acotando igual.
+        "cia_penalty": _cia_score_penalty(content_notes, stale, propagation_pending),
+        "ap31": ap31_penalty,
+        "ap34": ap34_count,
+        "ap35": 1 if ap35_silo_flags.get("graph_enriched_stale", False) else 0,
+    })
 
-    score = max(0, score)
+    score = salud["healthScore"]
 
     by_folder: Dict[str, int] = defaultdict(int)
 
     for n in content_notes:
-        parts = n.relative_to(VAULT_ROOT).parts
+        parts = n.relative_to(_raiz()).parts
 
         by_folder[parts[0] if parts else "root"] += 1
 
@@ -1847,7 +1974,21 @@ def vault_audit(
 
     result: Dict[str, Any] = {
         "ok": True,
+        # `healthScore` se queda exactamente como estaba, con su defecto y todo:
+        # lo leen los repos consumidores, y cambiar por debajo lo que significa
+        # un número publicado es peor que el número malo. Lo que satura no se
+        # corrige aquí — se acompaña.
         "healthScore": score,
+        # superseded_by: healthIndex. La media de las seis familias, cada una
+        # normalizada contra su propio tope. Solo llega a 0 si TODAS tocan
+        # fondo, así que sigue distinguiendo un vault regular de uno perdido
+        # justo donde `healthScore` se queda plano en 0.
+        "healthIndex": salud["healthIndex"],
+        # El desglose que el número agregado destruía: qué familia está mal, y
+        # cuál de ellas ya tocó fondo (`saturated`).
+        "healthProfile": salud["healthProfile"],
+        # Qué restó cada cosa. Antes había que leerse la función para saberlo.
+        "penalties": salud["penalties"],
         "stats": {
             "total": len(content_notes),
             "byFolder": dict(sorted(by_folder.items())),
@@ -2015,7 +2156,7 @@ def vault_audit(
         )
 
     # Deleted nodes: detectar nodos eliminados que tenían inbound links
-    graph_file = VAULT_ROOT / "99_Index" / "graph.json"
+    graph_file = _raiz() / "99_Index" / "graph.json"
     if graph_file.exists():
         try:
             import json as json_module
@@ -2043,7 +2184,7 @@ def vault_audit(
             pass
 
     # Moved nodes: detectar notas reubicadas
-    move_log = SYSTEM_DIR / "move-log.json"
+    move_log = _system_dir() / "move-log.json"
     if move_log.exists():
         try:
             move_data = json_module.loads(move_log.read_text(encoding="utf-8"))

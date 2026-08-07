@@ -43,7 +43,6 @@ from vault_io import (
     atomic_write_json,
     atomic_update_json,
     assert_within_vault,
-    VAULT_ROOT,
     normalize_stem,
     file_lock,
 )
@@ -61,6 +60,7 @@ from vault_regex import (
     WIKILINK_MAX_LEN,
 )
 from vault_lib import (
+    yaml_scalar,
     utcnow,
     strip_code_blocks,
     Config,
@@ -80,6 +80,38 @@ import uuid
 from pathlib import Path
 
 from typing import Any, Dict, List, Optional
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+# La configuración se lee del registro único, no con un default por punto
+# de uso. Ver `vault_entorno.py`.
+from vault_entorno import leer as _env
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _history_dir() -> Path:
+    return _repo().dir_historial
+
+
+def _index_file() -> Path:
+    return _repo().indice_busqueda
+
+
+def _tag_registry() -> Path:
+    return _repo().registro_etiquetas
 
 
 def _check_content_gate(content: str, folder: str) -> bool:
@@ -213,17 +245,11 @@ def _content_gate_reason(content: str, folder: str) -> Optional[str]:
 
 # Configuration
 
-HISTORY_DIR = VAULT_ROOT / ".history"
-
-INDEX_FILE = VAULT_ROOT / "99_Index" / "search-index.json"
-
-TAG_REGISTRY = VAULT_ROOT / "00_System" / "tag-registry.json"
-
 
 def _tag_suggestions(new_tags: List[str]) -> List[Dict[str, Any]]:
     """Return canonical similar tags for any new_tags not yet in registry. Non-blocking."""
 
-    if not TAG_REGISTRY.exists():
+    if not _tag_registry().exists():
         return []
 
     # AP-39 — leía `registry["tags"]`, una clave que el registro no tiene desde
@@ -302,7 +328,7 @@ def _collect_ghost_links(wiki_links: List[str]) -> List[str]:
 
     all_stems = {
         normalize_stem(p.stem)
-        for p in VAULT_ROOT.rglob("*.md")
+        for p in _raiz().rglob("*.md")
         if ".history" not in str(p)
     }
 
@@ -351,7 +377,7 @@ def generate_frontmatter(
 
     frontmatter = ["---"]
 
-    frontmatter.append(f"title: {title}")
+    frontmatter.append(f"title: {yaml_scalar(title)}")
 
     frontmatter.append(f"id: {existing_id or str(uuid.uuid4())}")
 
@@ -405,43 +431,21 @@ def generate_frontmatter(
     return "\n".join(frontmatter)
 
 
-_SECTION_TYPE_MAP = {
-    "00_System": "system",
-    "01_Projects": "project",
-    "02_Observability": "observability",
-    "03_Decisions": "decision",
-    "04_Sessions": "session",
-    "05_Patterns": "pattern",
-    "06_Diagrams": "diagram",
-    "07_Knowledge": "knowledge",
-    "08_Runbooks": "runbook",
-    "09_Infrastructure": "infrastructure",
-    "10_Migrated": "documentation",
-    "11_Code": "code",
-    "12_Bibliography": "reference",
-    "13_Flows": "flow",
-    "14_Requirements": "requirement",
-    "15_Tests": "test",
-    "16_AI_Governance": "governance",
-    # Las cuatro secciones más nuevas faltaban aquí, así que una nota escrita
-    # en ellas salía sin `type:` — y `vault_audit._detect_missing_metadata` lo
-    # exige. El estándar reprobaba lo que su propio write path acababa de
-    # escribir. Los valores no son inventados: son los que ya escriben los
-    # productores de cada sección (`vault_preferences`, `vault_bug_save`).
-    "17_Preferences": "preference",
-    "18_Bugs": "bug",
-    "19_Audits": "audit",
-    "20_Quarantine": "quarantine",
-    "99_Index": "index",
-}
+# El mapa sección→tipo vivía aquí completo y era la cuarta copia del mismo
+# dato; las otras tres (dos auditores y el grafo) se habían quedado en 18, 14 y
+# 14 secciones, y dos de ellas se contradecían. Ahora lo declara el registro y
+# esto solo lo consume: `SECTION_TYPES[seccion][0]` es exactamente lo que este
+# write path escribía, valor por valor.
 
 
 def _deduce_type_from_folder(folder: str) -> str:
     """Derive type field value from the vault section folder."""
     if not folder:
         return ""
+    from vault_registry import section_default_type
+
     top = folder.split("/")[0].split("\\")[0]
-    return _SECTION_TYPE_MAP.get(top, "")
+    return section_default_type(top)
 
 
 def extract_wiki_links(content: str) -> List[str]:
@@ -455,7 +459,7 @@ def update_search_index(
 ) -> None:
     """Update search index with new or updated note (lock-protected read-modify-write)."""
 
-    INDEX_FILE.parent.mkdir(parents=True, exist_ok=True)
+    _index_file().parent.mkdir(parents=True, exist_ok=True)
 
     body = content.split("---", 2)[-1] if content.startswith("---") else content
 
@@ -484,7 +488,7 @@ def update_search_index(
 
         return index
 
-    atomic_update_json(INDEX_FILE, {"notes": []}, _update)
+    atomic_update_json(_index_file(), {"notes": []}, _update)
 
 
 def vault_write(
@@ -634,7 +638,7 @@ def vault_write(
 
     # AP-16 guard: agent field required
     if not meta.get("agent") and not is_system:
-        agent_env = os.environ.get("VAULT_AGENT", "")
+        agent_env = _env("VAULT_AGENT")
         if agent_env:
             meta["agent"] = agent_env
         else:
@@ -653,10 +657,10 @@ def vault_write(
 
     filename = f"{slugify(title)}.md"
 
-    vault_path = VAULT_ROOT / folder / filename
+    vault_path = _raiz() / folder / filename
 
     try:
-        assert_within_vault(vault_path, VAULT_ROOT)
+        assert_within_vault(vault_path, _raiz())
 
     except ValueError as exc:
         return {
@@ -683,9 +687,9 @@ def vault_write(
             f"{folder.replace('/', '__')}__{slugify(title)}-{timestamp}.md"
         )
 
-        history_path = HISTORY_DIR / history_filename
+        history_path = _history_dir() / history_filename
 
-        HISTORY_DIR.mkdir(parents=True, exist_ok=True)
+        _history_dir().mkdir(parents=True, exist_ok=True)
 
         existing_content = vault_path.read_text(encoding="utf-8")
 
@@ -712,7 +716,7 @@ def vault_write(
 
     # Check if note exists in a different folder (auto-move suggestion)
     else:
-        search_index = VAULT_ROOT / "99_Index" / "search-index.json"
+        search_index = _raiz() / "99_Index" / "search-index.json"
         if search_index.exists():
             try:
                 import json as json_module
@@ -813,7 +817,7 @@ def vault_write(
         # Update search index (inside lock for consistency)
 
         update_search_index(
-            str(vault_path.relative_to(VAULT_ROOT)),
+            str(vault_path.relative_to(_raiz())),
             title,
         content,
         tags,
@@ -845,12 +849,12 @@ def vault_write(
     # AP-39: la nota ya está en disco, así que el término existe de verdad.
     # Anotarlo antes habría dejado en la bitácora palabras de escrituras que
     # fallaron — memoria de algo que nunca se escribió.
-    rel_path = str(vault_path.relative_to(VAULT_ROOT)).replace("\\", "/")
+    rel_path = str(vault_path.relative_to(_raiz())).replace("\\", "/")
     introduced = 0
     if new_terms:
         for t in new_terms:
             t["note"] = rel_path
-            t["agent"] = meta.get("agent", "") or os.environ.get("VAULT_AGENT", "")
+            t["agent"] = meta.get("agent", "") or _env("VAULT_AGENT")
         try:
             introduced = vault_tags.record_new_tags(new_terms)
         except OSError:
@@ -1005,7 +1009,7 @@ Notas:
 
             filename = f"{slugify(title)}.md"
 
-            vault_path = VAULT_ROOT / args.folder / filename
+            vault_path = _raiz() / args.folder / filename
 
             if vault_path.exists():
                 skipped.append(

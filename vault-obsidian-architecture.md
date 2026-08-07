@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v39.6 — 2026-08-06  
+**Versión:** v40.3 — 2026-08-07  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -1291,10 +1291,35 @@ Audita la salud completa del vault y retorna un reporte con score.
 
 **Score:** 100 − penalizaciones (mínimo 0)
 
+> **`healthScore` satura, y se conserva así a propósito.** Las 22 penalizaciones
+> tienen topes que suman **285** sobre una base de 100: con dos o tres familias
+> mal, el score llega a 0 y deja de distinguir un vault regular de uno perdido.
+> Medido, no supuesto — `vault-sandbox/`, el vault de referencia de este repo y
+> recién reconstruido, puntúa 0. No se recalibra porque lo leen los repos
+> consumidores, y cambiar por debajo lo que significa un número publicado es peor
+> que el número malo: es la política de no-derogación aplicada a una métrica.
+> Se anota `superseded_by: healthIndex` y lo nuevo va al lado.
+>
+> **`healthIndex` + `healthProfile`** son la lectura que sí discrimina. Seis
+> familias —estructura, conectividad, metadatos, grafo, contenido, ciclo de
+> vida— cada una normalizada contra su propio tope, y el índice es su media
+> **simple**: ponderarla por tope dejaría que `metadatos` (105 puntos de tope)
+> decidiera el número, que es el mismo defecto con otro nombre. Solo llega a 0
+> si todas las familias tocan fondo. `saturated` por familia es justo lo que el
+> número agregado destruía: dónde seguir empeorando ya no se nota.
+>
+> Los pesos y los topes viven en el registro `PENALIZACIONES` de `vault_audit`,
+> no en esta tabla ni en el cuerpo de la función. Antes eran 22 líneas
+> `score -= min(...)` escritas a mano: nadie podía sumar los topes sin leerse la
+> función, y agrupar por familia exigía copiarlos a un segundo sitio (AP-05).
+
 **Retorna:**
 ```json
 {
   "healthScore": 87,
+  "healthIndex": 91,
+  "healthProfile": { "conectividad": { "health": 27, "penalty": 51, "cap": 70, "saturated": false }, "...": {} },
+  "penalties": [{ "id": "orphans", "familia": "conectividad", "norm_code": null, "count": 13, "penalty": 26, "cap": 30 }],
   "stats": { "total": 42, "byFolder": { "01_Projects": 8, "05_Patterns": 12, ... } },
   "issues": {
     "orphans":              [{ "path": "...", "title": "...", "daysOld": 15 }],
@@ -3476,7 +3501,7 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **60 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **64 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -4685,6 +4710,198 @@ proyecto/
 
 ---
 
+> **Las once secciones que siguen (AP-25..AP-35) llegan tarde, y conviene decir por qué.**
+> Las once estaban **aplicadas y midiendo** desde v30, v34.2 y v37 —penalizan el health
+> score, tienen etiqueta propia en la salida de `vault_audit`— y registradas en
+> `NORM_CATALOG`, pero nunca tuvieron sección en este manifiesto. El orden que el estándar
+> declara es *registro canónico primero, doc después*; aquí se cumplió la primera mitad y
+> se olvidó la segunda durante diez versiones. El hueco lo destapó el guard de cobertura
+> que ahora exige una sección por norma catalogada: sin él, una norma podía estar viva en
+> el código y ausente de su representación pública indefinidamente, que es la forma
+> silenciosa de AP-47.
+
+### AP-25 — Mermaid con sintaxis inválida — nodos y tipos no definidos
+
+**Severidad: medium · Enforcement: audit · Introducida: v34.2**
+
+Diagramas Mermaid que no renderizan: tipo de diagrama no reconocido, nodos referenciados
+en una flecha que nunca se definen, flechas huérfanas, etiquetas mal formadas. El coste no
+es estético — **un diagrama que no renderiza es documentación que existe en el repositorio
+y no existe para el lector.** Ocupa su sitio, cuenta como cobertura y no informa, que es
+AP-45 por otra puerta.
+
+**Prevención:** validar con `vault_mermaid_check` antes de commitear. Usar tipos conocidos
+(`graph TD`, `flowchart LR`, `sequenceDiagram`, `classDiagram`) y asegurar que todo nodo
+citado en una flecha esté definido.
+
+**Detección:** `vault_audit` lo consume vía `vault_mermaid_check.scan_vault()`, penaliza
+−2 por error y marca la nota como `mermaidError`.
+
+---
+
+> **AP-26..AP-30 — completitud de frontmatter.** Las cinco describen el mismo hueco visto
+> por cinco campos distintos, y por eso van juntas: una nota a la que le falta un campo del
+> frontmatter no está "casi bien", está fuera de la métrica que ese campo sostiene. Todas
+> son `audit`, todas penalizan con tope, y la prevención de las cinco es la misma —
+> **escribir por tool y no a mano** (SP-04)—, porque el frontmatter escrito a mano es
+> justamente AP-46.
+
+### AP-26 — Nota de contenido sin tags
+
+**Severidad: medium · Enforcement: audit · Introducida: v30**
+
+Sin `tags` la nota es invisible para la búsqueda por facetas y no participa en los edges
+`shared_tag` del grafo: queda alcanzable **solo por wiki-link directo**. No está perdida,
+pero solo la encuentra quien ya sabía que estaba ahí, que para una memoria documental es
+casi lo mismo.
+
+**Prevención:** pasar `--tags` en la tool de escritura. `vault_ingest` y `vault_preferences`
+los derivan del origen y la categoría. **Detección:** `vault_audit` la cuenta en
+`missing_tags`, −2 por nota con tope −15.
+
+---
+
+### AP-27 — Nota sin tipo declarado
+
+**Severidad: medium · Enforcement: audit · Introducida: v30**
+
+El campo `type` es lo que ancla la nota a su sección canónica (CN-02). Sin él no se puede
+verificar la coincidencia `type` ↔ carpeta, y esa comprobación es la que sostiene la
+dimensión de **exactitud** (F4). Una nota sin tipo no se puede declarar mal colocada
+porque no hay contra qué compararla.
+
+**Prevención:** declarar `--type` al escribir; `vault_validate` lo comprueba contra el
+registro. **Detección:** `vault_audit`, `missing_type`, −2 por nota con tope −10.
+
+---
+
+### AP-28 — Nota sin bloque de frontmatter
+
+**Severidad: high · Enforcement: audit · Introducida: v30**
+
+El caso degenerado de AP-26, AP-27, AP-29 y AP-30 **a la vez**: sin frontmatter no hay
+`id`, ni `agent`, ni `status`, ni clasificación CIA. La nota queda fuera de toda métrica de
+calidad y, lo que importa más, fuera de la cadena de trazabilidad (PAT-5): no se puede
+decir quién la escribió, cuándo, ni si sigue vigente.
+
+**Prevención:** no editar `.md` a mano (SP-04). Escribir siempre por tool —
+`atomic_write_text` garantiza el bloque. **Detección:** `vault_audit`,
+`missing_frontmatter`, −3 por nota con tope −20.
+
+---
+
+### AP-29 — Nota sin estado de ciclo de vida
+
+**Severidad: medium · Enforcement: audit · Introducida: v30**
+
+Sin `status` no se distingue lo vigente de lo obsoleto, y la nota escapa al vocabulario
+controlado de CN-03. **Es la vía por la que contenido derogado sigue leyéndose como
+vigente** — y en un vault que alimenta a un agente, eso no es una nota vieja: es una
+respuesta equivocada con toda la autoridad de la fuente.
+
+**Prevención:** declarar `--status` dentro de `STATUS_VOCAB` (12 valores).
+**Detección:** `vault_audit`, `missing_status`, −1 por nota con tope −10.
+
+---
+
+### AP-30 — Nota sin clasificación de la tríada CIA
+
+**Severidad: high · Enforcement: audit · Introducida: v30**
+
+Sin `cia_integrity` / `cia_availability` / `cia_sensitivity` la nota no puede endurecer su
+umbral de actualidad (30 d → 15 d en `critical|high`) ni ponderar su peso en el health
+score. El pilar del estándar queda declarado y **sin aplicar sobre ella**.
+
+**Prevención:** declarar los tres ejes al escribir. `vault_ingest` asigna
+`cia_integrity: low` a todo lo ingerido, por no estar verificado — que es la respuesta
+honesta, no un defecto. **Detección:** `vault_audit`, `missing_cia`, −2 por nota con
+tope −15; `vault_quality_check` lo pondera.
+
+---
+
+> **AP-31..AP-35 — el grafo semántico.** Las cinco salieron de la misma medición de v37: el
+> vault mantenía **tres sistemas de relaciones que no se hablaban entre sí**. Se leen
+> mejor en orden, porque describen una cadena — sin tipos no hay semántica (AP-31), con
+> tipos inventados no hay ontología (AP-32), con sinónimos no hay unificación (AP-33), con
+> extremos inexistentes no hay grafo (AP-34), y con todo eso resuelto pero sin mergear
+> siguen siendo silos (AP-35).
+
+### AP-31 — Grafo sin tipos semánticos: aristas sin predicado explícito
+
+**Severidad: high · Enforcement: audit · Introducida: v37**
+
+Todas las aristas usan el mismo tipo `wiki-link` sin distinguir semántica: `depends_on`,
+`implements`, `extends`, `calls`, `documents`. Sin predicados tipados, el análisis de
+impacto no puede filtrar por tipo de relación — y "¿qué se rompe si cambio esto?" deja de
+tener respuesta útil cuando toda relación pesa igual.
+
+**Prevención:** `vault_graph --typed` o `vault_graph_merge` periódicamente.
+**Detección:** `vault_audit`, −3 por cada 100 edges sin tipar, solo si existen relaciones
+de entidad o de código que mergear.
+
+---
+
+### AP-32 — Relación tipada con predicado fuera de la ontología
+
+**Severidad: medium · Enforcement: audit · Introducida: v37**
+
+Una relación usa un `relationType`/`type` que no existe en `vault-ontology.json` —
+`inherits` cuando el predicado canónico es `extends`. Produce aristas que **no se pueden
+interpretar**: el grafo las tiene y nadie sabe qué significan.
+
+**Prevención:** usar solo predicados del vocabulario canónico.
+**Detección:** `vault_graph_merge` reporta `unknown_predicates[]` con su fuente y sugiere
+el canónico más cercano.
+
+---
+
+### AP-33 — Predicado no canónico: sinónimo sin normalizar
+
+**Severidad: low · Enforcement: audit · Introducida: v37**
+
+Las relaciones de entidad usan `relationType` y las de código usan `type` para el mismo
+concepto, y hay predicados semánticamente equivalentes sin unificar (`imports` en código ≈
+`depends_on` a nivel de build). La ontología define el mapeo.
+
+**Severidad baja a propósito:** la normalización es automática y no requiere acción manual.
+Se registra porque un sinónimo sin declarar en la ontología deja de normalizarse en
+silencio, y entonces sí se convierte en AP-32. **Detección:** `vault_graph_merge` reporta
+`normalized_predicates[]` con el mapeo aplicado.
+
+---
+
+### AP-34 — Relación tipada huérfana: extremo inexistente en el vault
+
+**Severidad: high · Enforcement: audit · Introducida: v37**
+
+Una relación referencia un extremo que no existe como nota: `User -- has_many --> Order`
+sin `User.md` ni `Order.md`. El grafo enriquecido tendrá aristas hacia **nodos fantasma que
+nunca resuelven**, y un recorrido que los atraviese devolverá contexto vacío sin decir que
+lo hace — que es AP-51 aplicado al grafo.
+
+**Prevención:** SP-02, verificar que los extremos existan antes de registrar la relación.
+**Detección:** `vault_audit` lista `orphan_typed_relations[]`; `vault_graph_merge`,
+`unresolved_entities[]`.
+
+---
+
+### AP-35 — Silos de relación: sistemas de grafo aislados
+
+**Severidad: high · Enforcement: audit · Introducida: v37**
+
+El vault mantiene tres sistemas que no se integran: wiki-links en `graph.json`, relaciones
+de entidad en `06_Diagrams/entity/*-relations.json` y relaciones de código en
+`11_Code/.code-index.json`. Cada uno es correcto por separado, y **por eso el fallo cuesta
+tanto en encontrarse**: ninguna de las tres fuentes está mal. Lo que falta es la unión, y
+sin ella el conocimiento queda fragmentado en tres vistas parciales que nadie compara.
+
+**Prevención:** `vault_graph_merge` cada sesión o cada vez que se registren relaciones
+nuevas; `vault_graph --typed` genera el `graph-enriched.json` que unifica los tres.
+**Detección:** `vault_audit` reporta `silo_flags[]` (`AP-35-entity`, `AP-35-code`) y
+`graph_enriched_outdated` si el enriquecido pasa de 24 h.
+
+---
+
 ### AP-36 — Contención e idempotencia — side-effects fuera del vault o no rastreables
 
 **Severidad: critical · Enforcement: guard+audit · Introducida: v38.1**
@@ -4776,7 +4993,7 @@ Dos causas, y la segunda es la incómoda:
 
 1. **El audit no lo ejecuta nadie.** En las **1.356 ejecuciones de tools
    registradas** en los `.tool-trace.json` de ese parque, `vault_norms` no
-   aparece **ni una vez**. 41 de las 91 tools del catálogo no se han ejecutado
+   aparece **ni una vez**. 41 de las 96 tools del catálogo no se han ejecutado
    jamás. Los agentes escriben; no gobiernan. Un enforcement que depende de que
    alguien se acuerde de invocarlo es enforcement en el papel.
 2. **Los valores no canónicos los escribía el propio estándar.** El más
@@ -5385,7 +5602,7 @@ de envelope con su contrato de `00_System/tool-spec.json`:
 Y la divergencia peor no era de forma sino de efecto: `jsNativeGraph` no tiene un
 solo `writeFile`. Un agente llamaba `vault_graph` por MCP, recibía `ok: true`, y
 el grafo se quedaba sin regenerar — **AP-37 y AP-47 servidos a la vez por el único
-camino que un agente real usa**. `vault_smoke` recorre las 91 tools del catálogo,
+camino que un agente real usa**. `vault_smoke` recorre las 96 tools del catálogo,
 pero ejecuta el `.py`: probaba exactamente la implementación que el agente no toca.
 
 **Prevención:** backend nativo solo para lo que **no tiene** implementación en
@@ -5401,6 +5618,158 @@ por MCP y se contrasta el envelope contra el contrato, y en el caso de
 `vault_graph` el `st_mtime_ns` de `99_Index/graph.json` antes y después. Es el
 criterio del consumidor y no el propio (AP-44). Tests en
 `tests/test_ap48_implementacion_paralela.py`.
+
+---
+
+### AP-49 — Vínculo resuelto en tiempo de import
+
+**Severidad:** high · **Enforcement:** `guard+audit` · **Introducida:** v40.0
+
+Un módulo deriva su ruta, su configuración o su dependencia en el momento de
+**importarse**, no en el de usarse. `SYSTEM_DIR = VAULT_ROOT / "00_System"` a nivel de
+módulo se evalúa una sola vez, cuando el intérprete carga el fichero, y desde ahí es una
+constante.
+
+Lo grave no es la constante: es que **la API pública que promete cambiarla deja de
+funcionar sin decirlo**. `set_vault_root()` existía desde hacía versiones, `CLAUDE.md` la
+declaraba fuente única de la raíz en runtime, y no podía reapuntar ninguno de los 82
+vínculos congelados que había en 62 módulos. La tabla de fuentes de verdad decía una cosa
+y el código hacía otra, y nada lo comprobaba porque cada módulo era coherente consigo
+mismo — el mismo mecanismo que AP-50 describe para las decisiones.
+
+**Cómo se nota antes de medirlo:** las pruebas necesitan subprocesos para aislarse unas de
+otras; `set_vault_root()` no cambia dónde escribe una tool; dos vaults no pueden coexistir
+en el mismo intérprete. Son tres síntomas de un solo defecto, y el primero es el que más
+tiempo se tolera porque parece una peculiaridad de los tests.
+
+**Prevención:** la raíz y sus derivadas **se reciben, no se importan**. El dominio toma un
+contexto (`VaultContext`, inmutable, con la raíz y su origen de confianza dentro) y el
+adaptador lo construye por llamada; si un módulo necesita una ruta, la resuelve tarde. Los
+puertos son `typing.Protocol` — sin herencia, sin framework y sin una dependencia nueva
+fuera de stdlib + PyYAML.
+
+**Medido:** 82 vínculos congelados en 62 módulos al declarar la norma, **0** ocho fases
+después. Guard: `vault_arch --check`, que vigila además la otra mitad —el nombre
+`VAULT_ROOT` importado sin alias—, porque un vínculo se puede reintroducir por la vía del
+import tanto como por la de la asignación.
+
+---
+
+### AP-50 — Decisión duplicada sin dueño declarado
+
+**Severidad:** high · **Enforcement:** `guard+audit` · **Introducida:** v40.1
+
+**Síntoma:** la misma **decisión** —qué valores son válidos, cuál es el default,
+cómo se escapa un campo— se toma en más de un punto de uso, y ningún registro
+declara quién manda. No es AP-05: aquel habla de un **dato** con dos fuentes, y
+se ve porque las dos copias divergen. Esto se ve cuando ya divergieron, que es
+tarde.
+
+Lo que lo hace caro es que cada copia parece correcta en su sitio.
+`SEVERITIES = ['critical', 'high', 'medium', 'low']` no está mal escrito en
+ninguno de los catorce ficheros donde se midió; está mal que sean catorce y que
+nada los compare. El día que el registro cambie, la copia que se quede atrás
+rechazará un valor válido o aceptará uno inventado, y ningún test lo notará
+porque cada fichero sigue siendo coherente consigo mismo.
+
+**Medido en v40.1** por sus tres guards: **0 copias de vocabulario, 0 lecturas de
+entorno sin declarar, 0 vocabularios sin contexto dueño**. Eran 14 copias del
+vocabulario en 13 módulos —cuatro como `choices=` de argparse y diez como
+constante— y 13 variables de entorno con su default escrito en cada punto de
+lectura, de las que solo seis estaban documentadas. Dos ya habían divergido
+antes de que existiera el guard: `VAULT_VOICE` se comparaba contra `'verbose'`
+en un módulo y contra `'0'` con default `'1'` en otro, y `VAULT_MCP_LOG` estaba
+declarada como fichero de log mientras el único código que la lee la usa como
+nivel con default `'info'`.
+
+El caso que cerró la norma fue el frontmatter. Diecisiete `*_save` lo escribían
+a mano —AP-46, que llevaba versiones declarada y no tenía dónde cumplirse— con
+**cuatro criterios de escapado conviviendo en el mismo vault**: `json.dumps`,
+`yaml_scalar`, f-string crudo y comillas escritas a mano dentro de un f-string.
+Cada uno parecía correcto en su fichero. Juntos guardaban `Rotación` como
+`Rotación` en tres tools, y producían YAML inválido en cuanto un valor
+llevaba `: ` — en cuyo caso la nota pierde **todo** el frontmatter al leerse:
+sin id, sin tags, sin tipo, y sin error en ninguna parte.
+
+**El dueño es la mitad que faltaba.** `vault_norms.DOMAIN_STATUS_VOCABS` ya había
+resuelto esto para `status` en v39 y se quedó solo: compartir la constante evita
+la copia, pero no contesta quién decide cuándo cambia. Por eso cada entrada del
+registro declara el contexto acotado que manda sobre ella, y ese contexto tiene
+que existir en `vault_arch.CONTEXTS`.
+
+**Prevención:** registro canónico con dueño, consumidores derivados, guard sin
+baseline. Los vocabularios cerrados en `scripts/vault_vocabulario.py`, la
+configuración en `scripts/vault_entorno.py`, el escapado del frontmatter en
+`vault/autoria/frontmatter.py`, y `vault_arch --check` fallando si aparece una
+copia, una lectura sin declarar o un vocabulario huérfano. **Sin baseline a
+propósito**: las catorce copias se saldaron al declarar el registro, así que la
+puerta nace en cero y una baseline solo serviría para admitir la número quince.
+Lo que ya tiene registro canónico no se copia: se declara `derivado_de` y se
+resuelve al llamarse, nunca al importarse (AP-49).
+
+**Se comprueba contra la salida, no contra el código:** los diecisiete `*_save`
+quedaron congelados en un test de caracterización capturado **antes** de tocar
+nada —envelope y nota, con los volátiles normalizados— y la unificación se
+aceptó porque **ningún envelope cambió**. Los siete cambios de nota son los
+buscados, y están en el dorado del mismo commit. Esa caracterización, tomada
+antes del refactor, destapó por sí sola cuatro defectos que ningún test veía,
+todos de la misma familia: un error de invocación del usuario presentado como
+fallo crítico interno de la tool. Tests en
+`tests/test_ap50_decision_duplicada.py` y
+`tests/test_caracterizacion_de_los_save.py`.
+
+---
+
+### AP-51 — La tool culpa al dato de su propio fallo
+
+**Severidad:** high · **Enforcement:** `guard+audit` · **Introducida:** v40.1
+
+Una tool falla al leer o al interpretar algo, se traga el fallo y devuelve un
+vacío que el llamante no puede distinguir de un resultado legítimo. El error
+deja de ser un error y pasa a ser un **hecho sobre el vault**: el informe que lo
+agregue dirá que N notas no tienen aliases, y no será cierto — es que no se
+pudieron leer.
+
+```python
+try:
+    fm = read_frontmatter(p) or {}
+except Exception:
+    return []          # el llamante lee "esta nota no tiene aliases"
+```
+
+**No es lo mismo "no hay" que "no pude mirar",** y esa es toda la norma. AP-44
+cubre la mitad de arriba —verificar con el criterio del consumidor y no con el
+propio—; esta cubre la de abajo, que es el mecanismo por el que un fallo propio
+acaba pareciendo un dato malo. Salió al ejecutar contra un vault **ajeno al
+estándar** (regla 7): tres tools declaraban inválidas notas que Obsidian leía
+sin problema. Las notas estaban bien; el criterio que las medía, no.
+
+**Lo que la norma no prohíbe es capturar amplio.** Prohíbe capturar amplio y
+callarse: devolver `ok: false` con el error es correcto, porque el llamante
+recibe la mala noticia y decide. Capturar `FileNotFoundError` tampoco infringe —
+es un criterio, el autor sabe qué tolera y por qué. Lo que infringe es
+`except Exception: return []`.
+
+**Nace con baseline, por la misma razón que AP-37,** que empezó en 55 y llegó a
+0: la primera medición encontró deuda en decenas de módulos, y un guard que
+falla ahí se desactiva el primer día — que es como mueren los guards. La
+baseline solo puede encoger, y su clave es `módulo:línea`, no un contador por
+módulo: una baseline por conteo se "salda" arreglando un sitio y estrenando
+otro, que es justo la regresión que el audit existe para ver. La cifra viva la
+da `vault_blame_audit --check`; no se escribe aquí, porque una cifra escrita a
+mano en el manifiesto es exactamente lo que AP-47 persigue.
+
+**El propio detector estrenó el fallo que persigue.** La primera versión midió
+101 sitios porque clasificaba `except yaml.YAMLError` como captura amplia: son
+`ast.Attribute` y no `ast.Name`, así que caían en la rama del `except` desnudo.
+Contaba como infracción justo las capturas más precisas del repo — quince falsos
+positivos, y el error era el de AP-44 cometido dentro del guard. Por eso la
+medida es por AST y no por texto: un detector que buscara la cadena
+`except Exception` no distinguiría devolver un vacío de devolver un envelope con
+`ok: false`, que es toda la distinción que la norma sostiene.
+
+Guard: `vault_blame_audit --check --strict`. Tests en
+`tests/test_ap51_culpar_al_dato.py`.
 
 ---
 
@@ -5493,6 +5862,106 @@ Los siguientes patrones fueron identificados en auditorías reales de vaults en 
 | `migratedFrom` | `vault_migrate_docs` | Solo en migraciones |
 
 **Señal de implementación correcta:** `vault_audit()` reporta 0 notas sin campo `agent`. Cualquier nota puede rastrearse hasta el agente que la creó y cuándo.
+
+---
+
+### AP-52 — El error se emite fuera del contrato del catálogo
+
+**Síntoma.** Una tool falla, lo dice, y lo dice mal:
+
+```bash
+$ python scripts/vault_merge.py
+{"ok": false, "error": "action='merge' requires --source"}
+```
+
+La frase es correcta. El contrato, no. `vault_errors.emit_error` construye el
+envelope desde `ERROR_CATALOG` y añade `error_code`, `category`, `severity`,
+`recovery` y `timestamp`. Un `{"ok": False, "error": "..."}` escrito a mano no
+añade ninguno de los cinco.
+
+**Por qué importa.** Porque el consumidor no lee la frase: **decide por el
+código**. El servidor MCP y `cli/` deciden si reintentar, abortar o pedir
+permiso mirando `error_code` y `recovery.action`. Sin ellos, un fallo con
+recuperación conocida llega como un fallo opaco, y al agente que lo recibe
+solo le queda adivinar — o peor, parsear el mensaje con un regex, que ata su
+lógica a la redacción de una cadena que nadie considera contrato.
+
+Es **AP-05 aplicada al contrato de error**: existe un registro que declara cómo
+se nombra y cómo se recupera cada fallo, y 158 sitios que lo deciden por su
+cuenta. Y es **AP-51 vista desde el otro lado**: allí el fallo se disfrazaba de
+dato; aquí llega honestamente como fallo, pero desnudo de todo lo que lo hace
+accionable.
+
+**De dónde salió.** De la caracterización maliciosa: invocar las 94 tools de
+forma malformada y mirar **cómo** fallan, no si fallan. Dos sondas —invocación
+vacía y flag desconocido— sobre toda la superficie:
+
+| Sonda | Resultado |
+|---|---|
+| `--parametro-que-no-existe` | 92/92 tools Python rechazan por argparse (exit 2 + `usage:`) |
+| sin argumentos, con `required_args` declarados | 45/45 rechazan por argparse |
+| sin argumentos, sin `required_args` | invocación legítima: `ok: true` es su contrato |
+
+El grueso estaba limpio. El hallazgo no era una tool que se cayera: era la
+**forma** del envelope cuando fallaba bien.
+
+> Nota de método. La primera versión de la sonda clasificó 26 tools como
+> "éxito ante basura" por devolver `ok: true` sin argumentos. Era falso: para
+> esas tools invocar sin argumentos **es** su contrato. La sonda medía con su
+> propio criterio —"sin argumentos = malformado"— en vez de con el declarado
+> en `required_args` del `tool-spec.json`. AP-44 cometida dentro de la
+> caracterización, y por segunda vez en dos normas seguidas: el detector de
+> AP-51 también estrenó el fallo que perseguía.
+
+**Señal.** Un literal `{"ok": False, "error": ...}` en el camino de salida de una
+tool; un envelope de fallo sin `error_code`; un consumidor que lee `message` con
+un regex para saber qué pasó.
+
+**Prevención.** Emitir por `emit_error(tool, CODIGO, mensaje)`. Si el código no
+existe, añadirlo a `ERROR_CATALOG` — que es donde vive la decisión de cómo se
+recupera ese fallo. Añadir el código cuesta una línea; no añadirlo traslada el
+coste a cada consumidor, para siempre.
+
+**Enforcement.** `vault_error_contract --check --strict`, por AST. Medido en
+v40.2: **158 sitios en 58 módulos**. Nace con baseline por la misma razón que
+AP-37 —que empezó en 55 y llegó a 0— y que AP-51: un guard que falla en 158
+sitios se desactiva el primer día, y un guard desactivado no protege nada. La
+baseline **solo puede encoger**.
+
+**Límite declarado.** El guard mide **forma, no flujo**: un `dict` con
+`ok: False` y pinta de envelope que no lleva `error_code`. No sigue el valor
+hasta stdout, porque eso exige análisis de flujo y uno a medias produce falsos
+negativos silenciosos — peor que un falso positivo visible. La consecuencia es
+que algunos sitios contados son envelopes internos que nunca se imprimen. Están
+en la baseline, no bloquean, y quien salde su módulo los verá y decidirá.
+Declararlo es parte de la norma: un guard que promete una precisión que no tiene
+es la clase de afirmación no falsable que AP-37 persigue.
+
+---
+
+### PAT-6 — Semantic graph enrichment: enriquecimiento periódico del grafo
+
+**Enforcement:** `recommended` · **Introducido:** v37
+
+**Regla:** ejecutar `vault_graph --typed` al final de cada sesión productiva para generar
+`graph-enriched.json`, que combina los tres sistemas de relación —wiki-links, relaciones de
+entidad y relaciones de código— en un solo grafo consultable con filtros por predicado,
+cardinalidad y tipo de nodo.
+
+Es el patrón que cierra AP-31..AP-35: aquellos describen las cinco formas de tener un grafo
+roto, y este es la operación que las evita todas de una vez. Va como `recommended` y no
+como guard **a propósito**: el enriquecimiento es caro y su momento correcto es el final de
+una sesión, no cada escritura. Una puerta que lo exigiera en cada commit obligaría a
+desactivarla, y un patrón desactivado no recomienda nada.
+
+**Señal de implementación correcta:** `graph-enriched.json` existe y su `updated_at` tiene
+menos de 24 horas. Pasado ese plazo `vault_audit` lo marca como `graph_enriched_outdated`,
+que no es un fallo — es la diferencia entre "el grafo dice esto" y "el grafo decía esto
+ayer", y conviene saber cuál de las dos se está leyendo.
+
+**Dónde encaja:** en el protocolo de sesión, como paso automático **antes** de
+`vault_audit`. Auditar sobre un grafo sin enriquecer mide el vault con una vista parcial y
+reporta silos que se acababan de resolver.
 
 ---
 
@@ -6007,6 +6476,10 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.3 | 2026-08-07 | `healthScore` satura (22 penalizaciones con topes que suman 285 sobre base 100: el propio `vault-sandbox/` puntúa 0) y se conserva igual porque lo leen los consumidores — se anota `superseded_by: healthIndex` y se le añaden al lado `healthIndex` y `healthProfile`, seis familias normalizadas cada una contra su tope y con `saturated` por familia; los 22 pesos pasan al registro `PENALIZACIONES` sin mover ni un punto, verificado contra una reimplementación literal del bloque viejo; `--check` de `vault_standard_upgrade` dejaba sellada la versión de quien solo preguntaba, y ahora declara `stamp_pending` sin escribir |
+| v40.2 | 2026-08-07 | AP-52 (el error se emite fuera del contrato del catálogo): baseline de 158 sitios en 58 módulos que solo puede encoger, salida de la caracterización maliciosa de las 96 tools —92/92 rechazan un flag inexistente, 45/45 la invocación vacía, ninguna con traceback: el defecto no era cómo fallan sino la forma del envelope cuando fallan bien—; `vault_gate`, la puerta única que corre las nueve puertas de cierre con `PUERTAS` como registro canónico y `--check-doc` verificando el checklist contra él; `vault_foreign_check`, la regla 7 ejecutable — única tool sin destino por defecto, que rechaza toda raíz del repo y midió 317 notas ajenas para destapar siete sitios que componían `title:` fuera de las comillas |
+| v40.1 | 2026-08-07 | AP-50 (decisión duplicada sin dueño declarado): las decisiones cerradas del estándar pasan a registros con contexto dueño — `vault_vocabulario.py` (12 vocabularios, 14 copias saldadas en 13 módulos), `vault_entorno.py` (13 variables, dos de ellas ya divergidas) y `vault/autoria/frontmatter.py`, el escritor único que cumple AP-46 en el punto de uso y sustituye los cuatro criterios de escapado que convivían en los 17 `*_save`; puertos de contexto verificados por AST en `vault_arch --check`; caracterización congelada de los 17 `*_save`, que destapó cuatro defectos presentados como fallo crítico interno |
+| v40.0 | 2026-08-06 | Contextos acotados: los 112 módulos de `scripts/` se reparten en ocho contextos de dominio más un kernel compartido, con `scripts/vault_arch.py` como registro ejecutable de fronteras (`--check`, `--blueprint`, `--map`) y baseline que solo encoge; AP-49 (vínculo resuelto en tiempo de import) pasa de 82 vínculos congelados en 62 módulos a 0, con lo que `set_vault_root()` deja de ser una costura decorativa; `VaultContext` inmutable y puertos `Protocol` en `vault/kernel/`; la prohibición del Meta-toolkit deja de ser prosa y se mide por AST (`forbidden_writes`); puerta nueva de AP-05 sobre rutas declaradas en dos repositorios de dominio |
 | v39.6 | 2026-08-06 | Las dos tools base64 (únicas sin script Python) ejercidas por primera vez: contrato incumplido, backup incompleto silencioso y restore fuera del vault con traversal sin validar; `vault_smoke` contrasta el envelope contra `declared_returns` como puerta dura; invariante nuevo del tool-spec contra módulos ejecutables sin clasificar (5 encontrados) y motivo obligatorio en toda entrada no publicada; `01-state-machines.md` derivado de `vault_norms.LIFECYCLE_REGISTRY` (dos de trece filas estaban desfasadas) |
 | v39.5 | 2026-08-06 | AP-48 (implementación paralela por camino de acceso): el servidor MCP servía backend nativo en Node para 7 tools que también tenían script Python, con envelopes que no coincidían con el contrato y `vault_graph` devolviendo `ok` sin escribir el grafo; catálogo de normas generado con las cuatro familias (PAT y SP faltaban); prosa constante de `docs/sdd/` declarada como deuda que solo puede encoger |
 | v39.4 | 2026-08-05 | Grupo 37 (Skills): la capa por la que un agente descubre el estándar entra en el catálogo y en el tool-spec (cierra AP-42 sobre sí misma), puerta de vigencia del SDD generado (`--check`, AP-47), `--force` deja de pisar `gaps.md`, `vault_sanacion` (plan de 12 fases medido, sin escrituras) |
@@ -6325,6 +6798,150 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v40.3 — 2026-08-07 `git: 4f11b5d`
+
+**Un número que dejó de medir, y una consulta que escribía**
+
+Las dos cosas que un repo consumidor le pregunta al estándar: *¿cómo está mi
+vault?* y *¿estoy al día?*. Las dos respondían mal, cada una a su manera.
+
+- **`healthScore` satura.** Parte de 100 y resta 22 penalizaciones
+  independientes cuyos topes suman **285**. Con dos o tres familias mal llega a
+  0, y a partir de ahí un vault regular y uno perdido puntúan igual. No es una
+  hipótesis: `vault-sandbox/`, el vault de referencia de este repo y recién
+  reconstruido, **puntúa 0**. Lo obvio sería recalibrarlo, y no se hace — lo
+  leen los repos consumidores, y cambiar por debajo lo que significa un número
+  publicado es peor que el número malo. Es la política de no-derogación
+  aplicada a una métrica: `healthScore` se queda igual, se anota
+  `superseded_by: healthIndex`, y lo nuevo va al lado. `healthProfile` da seis
+  familias normalizadas cada una contra su propio tope, con `saturated` por
+  familia —que es exactamente lo que el número agregado destruía: dónde seguir
+  empeorando ya no se nota—, y `healthIndex` es su media **simple**. Simple y
+  no ponderada por tope a propósito: `metadatos` acumula 105 puntos frente a
+  los 5 de `ap35`, y ponderar sería reintroducir el defecto con otro nombre.
+  En el sandbox: `healthScore` 0, `healthIndex` 60, conectividad 27 como lo
+  peor. El primer número no decía nada; el segundo dice por dónde empezar.
+
+- **Los 22 pesos pasan a un registro.** Vivían en 22 líneas `score -= min(...)`
+  dentro de la función: nadie podía sumar los topes sin leérsela entera, y
+  agrupar por familia obligaba a copiarlos a un segundo sitio (AP-05). El
+  riesgo del refactor era mover el número sin querer, así que el test
+  reimplementa **literalmente** el bloque viejo y compara 500 combinaciones al
+  azar. Ni un punto de diferencia.
+
+- **`--check` escribía.** La rama de «salto de versión menor sin migración
+  estructural» comprobaba `dry_run` pero no `check_only`: un consumidor que solo
+  preguntaba si estaba al día salía **sellado** en la versión nueva sin haberlo
+  pedido, y el envelope se lo devolvía como `action: version_stamped`. Escribir
+  de más en un vault ajeno al preguntar es la peor forma de este fallo, porque
+  nadie revisa si una consulta le tocó el estado. Ahora `--check` no escribe,
+  declara `stamp_pending` y dice el comando exacto para sellar. Sellar sigue
+  disponible; lo que cambia es quién decide.
+
+- **La documentación del score mentía.** `scripts/README.md` publicaba
+  `100 − (vacías×2) − (sin_fm×3) − (broken_links×2) − (stale×1)`: cuatro
+  términos de veintidós. Ya no hay fórmula escrita a mano — se remite al
+  registro, que es la única copia.
+
+### v40.2 — 2026-08-07 `git: 2e75b6e`
+
+**Cómo se falla, y contra qué se comprueba**
+
+Dos preguntas que el estándar tenía sin responder de forma ejecutable: **qué forma
+tiene un error cuando una tool falla bien**, y **contra qué material se verifica
+que una medida mide algo**.
+
+- **AP-52 — el error se emite fuera del contrato del catálogo.** Salió de la
+  caracterización maliciosa: invocar las 96 tools de forma malformada y mirar
+  *cómo* fallan. La superficie estaba limpia —92/92 rechazan un flag inexistente,
+  45/45 de las que declaran `required_args` rechazan la invocación vacía, ninguna
+  con traceback—. El hallazgo no era ése: era la **forma** del envelope cuando la
+  tool falla correctamente. `{"ok": false, "error": "action='merge' requires
+  --source"}` es una frase correcta y un contrato roto, porque el consumidor no
+  lee la frase — decide por `error_code` y `recovery.action`. **158 sitios en 58
+  módulos** los omiten. Baseline que solo puede encoger, como AP-37 y AP-51.
+
+- **La puerta única.** `vault_gate` corre las nueve puertas de cierre en un solo
+  envelope. El riesgo de diseño era evidente —una segunda lista de puertas junto
+  a la del checklist es AP-50 en la versión que estrena AP-50—, así que el
+  registro `PUERTAS` es la fuente y `--check-doc` verifica el checklist contra
+  él, no al revés. Por lo mismo desapareció el «8/8» escrito a mano de
+  `CLAUDE.md`: un conteo que ningún guard cubre es AP-47.
+
+- **La regla 7, ejecutable.** `vault_foreign_check` contrasta las medidas contra
+  un vault **ajeno**, en solo lectura. Es la única tool del estándar **sin
+  destino por defecto**, y es deliberado: la autodetección caería en
+  `vault-sandbox/`, que este repo genera y que por eso no puede exhibir el fallo
+  que la regla persigue. Rechaza cualquier raíz dentro del repositorio, no
+  escribe una línea en el vault medido, y separa lo ilegible de lo ausente.
+  `--self-test` verifica esas negativas sin necesitar un vault de fuera, y dice
+  en su propio `hint` que **no sustituye al contraste**.
+
+**El primer contraste automatizado ya pagó la tool, y cerró una deuda de v39.4.**
+317 notas de un vault consumidor: una con frontmatter que YAML no parsea. Ese
+mismo ADR ya estaba anotado arriba —«un `title:` sin comillar rompía el YAML
+entero»— pero se había arreglado el síntoma y no el escritor. **Siete sitios**
+componían el título concatenando texto *fuera* de las comillas, o sin comillas:
+`f"title: {yaml_scalar(project)} ERD"` produce `title: "Mi: Proy" ERD`, que es
+peor que no escapar nada porque parece correcto. `vault_project_overview` lo
+rompía **siempre** —su título es literalmente `Overview: <proyecto>`— y
+`vault_security_scan` interpolaba identificadores de regla estilo `python:S1234`.
+Ahora la cadena se compone y se escapa entera. `vault-sandbox/` no podía
+enseñarlo: ninguno de sus nombres lleva `:`.
+
+**Dos deudas declaradas, no resueltas.** Las baselines por `módulo:línea`
+(AP-51, AP-52) piden recongelar cada vez que se inserta una línea por encima de
+un sitio, y un guard que avisa en falso cada commit acaba desactivado — que es
+justo la muerte contra la que se diseñaron. La alternativa por huella de
+contenido es ciega a cambiar un sitio por otro de la misma forma en el mismo
+módulo; no hay opción gratis. Y `--freeze` escribe la baseline mientras la capa
+de voz anuncia «Nada cambió en mí con esta llamada»: una tool afirmando que no
+tiene side effect mientras lo tiene, heredado por los tres `--freeze`.
+
+---
+
+### v40.1 — 2026-08-07 `git: 9a6c77b`
+
+**Las decisiones, con dueño**
+
+v40.0 dibujó las fronteras: nueve contextos acotados y un guard que los vigila. Lo que quedó a la vista al limpiarlas es que la frontera contestaba *dónde vive* cada módulo y no *quién decide* — y los cuatro defectos de las últimas rondas eran todos lo mismo: **la misma decisión tomada en más de un sitio sin que ningún registro dijera quién manda**. No datos con dos fuentes (eso es AP-05, y se nota porque divergen), sino criterios: qué valores valen, cuál es el default, cómo se escapa un campo. Se notan cuando ya divergieron.
+
+- **AP-50 — decisión duplicada sin dueño declarado**, `high`, `guard+audit`, sin baseline a propósito. Tres detectores en `vault_arch --check`: copias de vocabulario, lecturas de entorno sin registro y vocabularios sin contexto dueño. Los tres en cero.
+- **`scripts/vault_vocabulario.py`** — 12 vocabularios cerrados, cada uno con su contexto dueño, que tiene que existir en `vault_arch.CONTEXTS`. Saldó 14 copias en 13 módulos, cuatro de ellas `choices=` de argparse.
+- **`scripts/vault_entorno.py`** — 13 variables con nombre, tipo, default, contexto que la lee y para qué sirve. **Dos ya habían divergido**: `VAULT_VOICE` se comparaba contra `'verbose'` en un módulo y contra `'0'` con default `'1'` en otro; `VAULT_MCP_LOG` estaba documentada como fichero de log mientras el único código que la lee la usa como nivel.
+- **`vault/autoria/frontmatter.py`** — AP-46 cumplida por fin en el punto de uso. Los 17 `*_save` escribían su frontmatter a mano con **cuatro criterios de escapado** conviviendo (`json.dumps`, `yaml_scalar`, f-string crudo, comillas a mano dentro de un f-string). Tres tools guardaban `Rotación` como `Rotación`, y el f-string crudo producía YAML inválido en cuanto el valor llevaba `: ` — con lo que la nota pierde **todo** el frontmatter al leerse, sin error en ninguna parte.
+- **Puertos verificados.** `puertos` y `lenguaje` de cada contexto eran prosa; ahora el guard resuelve cada puerto declarado contra el módulo real y comprueba que los cruces entren por él, con baseline que solo encoge.
+
+**Lo que destapó la caracterización, que es el motivo de haberla capturado antes.** Los 17 `*_save` se congelaron —envelope y nota, volátiles normalizados— **antes** de tocar una línea. Encontró cuatro defectos que ningún test veía, todos de la misma familia: **un error de invocación del usuario presentado como fallo crítico interno de la tool**. Tres `main()` devolvían un `dict` en la rama de JSON inválido, que llegaba a `sys.exit()` y explotaba: quien escribía mal un `--config` veía un `UNEXPECTED_ERROR` de severidad *critical* con traceback en vez del mensaje «Invalid JSON in --config» que la tool ya tenía escrito para ese caso exacto. Y `--vars` y `--steps` validaban que el argumento fuera JSON pero no que fuera lo que su propia ayuda documenta, así que un array de cadenas moría con `AttributeError` envuelto igual. Ninguno era visible desde `vault-sandbox/`, que no tiene un solo título acentuado en estas tools: el «vault ajeno» de la regla 7 fue aquí simplemente datos con acentos y argumentos mal escritos.
+
+**Criterio de aceptación, cumplido:** **ningún envelope cambió**. Los siete cambios de nota son los buscados —cinco títulos que dejan de citarse sin necesidad, uno que sigue citado porque contiene `: `, y catorce líneas en blanco de más en `vault_diagram_save`— y están en el dorado del mismo commit. Las asimetrías de contrato entre los 17 (`--agent` en 8, `file_lock` en 1, `--dry-run` en 0) quedan declaradas como deuda: unificarlas es otra tanda.
+
+---
+
+### v40.0 — 2026-08-06 `git: a012ed2`
+
+**Fronteras declaradas, y una costura que por fin sirve**
+
+Las dos versiones anteriores encontraron el mismo tipo de defecto una y otra vez —una capacidad implementada dos veces (AP-48), un side-effect fuera del vault, cinco módulos ejecutables que ningún registro conocía— y no por casualidad: **no había frontera declarada en ninguna parte**. Con 112 módulos en un `scripts/` plano y sin paquete, nada impedía que dos contextos se implementaran encima, que un módulo del meta-toolkit escribiera en un vault de usuario, o que la misma ruta se derivara en cuatro sitios. Se detectaban de uno en uno, a mano, después del hecho.
+
+Esta versión declara las fronteras y las convierte en puerta. Ocho contextos de dominio —Autoría, Grafo, Gobernanza, Índices, Consulta, Ciclo de vida, Durabilidad, Meta-toolkit— más un kernel compartido, en `scripts/vault_arch.py`: un registro ejecutable, no un documento. `--check` reconstruye el grafo de importaciones **por AST** y no por una lista escrita a mano, `--map` responde a qué contexto pertenece un módulo —pregunta que antes nadie podía contestar sin leer el código— y `--blueprint` deriva `docs/ARQUITECTURA.md`. Arranca con la deuda congelada como baseline que solo puede encoger, como `vault_noop_audit`: exigir cero el primer día habría significado desactivar la puerta el segundo.
+
+**AP-49 — vínculo resuelto en tiempo de import.** La medida que motivó el refactor: 82 vínculos congelados en 62 módulos, todos de la misma forma, `SYSTEM_DIR = VAULT_ROOT / "00_System"` evaluado **al importar**. `set_vault_root()` existía desde hacía versiones, `CLAUDE.md` la declaraba fuente única de la raíz en runtime, y no podía reapuntar a ninguno de ellos: la API pública de cambiar de vault mentía y el código no cumplía su propia tabla. Ocho fases después la cifra es **0**. Lo que la hizo caer no fue disciplina sino un objeto: `VaultContext`, inmutable, con la raíz y su origen de confianza dentro, y un repositorio por contexto que resuelve las rutas al usarlas. Los puertos son `typing.Protocol` — sin herencia, sin framework y sin una sola dependencia nueva fuera de stdlib + PyYAML.
+
+El criterio que decide si una inyección es real o decorativa no es que compile: es que **dos vaults convivan en el mismo proceso sin contaminarse**. Antes era imposible; hoy lo comprueba un test por contexto.
+
+**Lo que aparecía al migrar cada contexto** es lo que justifica haberlo hecho por fases y no de una vez. Al desaparecer una constante de módulo, los tests que se aislaban reasignándola seguían siendo Python legal y perdían todo efecto: `test_vault_changelog_concurrency` habría lanzado veinticinco escrituras concurrentes contra el change-log **real de `vault-sandbox/`** y habría pasado en verde midiendo el vault equivocado. Aparecieron así, uno por fase, hasta el final.
+
+**La prohibición del Meta-toolkit era falsa.** Declaraba «no escribe en un vault: opera sobre el estándar, no sobre datos», y `vault_manifest` escribía `00_System/tools-manifest.json` desde el primer día. Peor que falsa: no la comprobaba nada —solo se renderizaba en el plano—, que es enforcement `manual`, prohibido por la regla 5 del propio repo. Reformulada con precisión (sí a los artefactos derivados en `00_System/`, sí a los vaults desechables para medirse, **no** a notas o datos de usuario en ninguna sección de contenido) y medida por AST en `forbidden_writes`. Puerta dura, sin baseline: se declaró midiendo cero.
+
+**La frontera del kernel, con la misma vara.** El kernel declaraba «no depender de ningún contexto de dominio» y lo incumplía en tres sitios, todos por importación perezosa dentro de una función: el escaneo de secretos y la regeneración del índice de sección desde el write path, y la voz del vault desde el error. Vivían en la baseline genérica de cruces, indistinguibles de la deuda corriente y sin una línea que dijera por qué. No se invierten, y el motivo es el mismo en los tres: son **ganchos del write path**, y quien los invoca es el kernel porque es el único punto por el que pasan todas las escrituras. Registrar el gancho desde el dominio exigiría que alguien importase ese contexto antes de la primera escritura, y el día que nadie lo hiciera el escaneo de secretos dejaría de correr **en silencio** — cambiar un cruce declarado por un fallo silencioso de seguridad es un mal negocio. Lo que sí se exige es que sean exactamente esos tres y que cada uno lleve su motivo escrito: `GANCHOS_DEL_KERNEL`, y un cuarto rompe la puerta.
+
+**Puerta nueva de AP-05.** Dos contextos seguidos repitieron la misma forma —leer un fichero que otro escribe y volver a derivar su ruta por cuenta propia—, así que dejó de ser anécdota. `rutas_duplicadas()` compara los ficheros declarados en cada repositorio de dominio y encontró seis, una recién introducida por el propio refactor. Las cinco restantes quedan congeladas como deuda que solo puede encoger, con nombre y apellidos en la baseline en vez de esparcidas por el código.
+
+**Sin derogar nada.** Ni un fichero se mueve de `scripts/` — el tool-spec, `cli/registry.py`, el runner del MCP y los repos consumidores siguen resolviendo por la misma ruta—, ni un envelope cambia, y el aislamiento por subproceso de `cli/runner.py` se conserva. El paliativo de reanclaje de `vault_io.set_vault_root()` también se conserva aunque hoy no le quede un solo consumidor.
 
 ---
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Shared file IO helpers for vault tools."""
 
+import copy
 import json
 import os
 import re
@@ -25,6 +26,17 @@ from vault_regex import (
     fix_whitespace_in_links,
     WIKILINK_MAX_LEN,
 )
+
+# La configuración se declara una vez y se lee por el registro, no con un
+# `os.environ.get()` y un default por punto de uso. Ver `vault_entorno.py`
+# para las trece variables y por qué estaban dispersas.
+#
+# El registro vive en `scripts/` y no en el paquete `vault/` porque un
+# módulo de `scripts/` tiene que seguir funcionando **copiado suelto**: así
+# se sincronizan los repos consumidores, y así lo comprueba
+# `test_vault_containment`, que copia solo este fichero a un repo vacío.
+# Colgarlo de `vault.kernel` lo rompía con un ModuleNotFoundError.
+from vault_entorno import leer as _env
 
 
 #: Origen de la detección del vault root — lo fija _detect_vault_root() y lo
@@ -67,7 +79,7 @@ def _detect_vault_root() -> Path:
     primera escritura real (atomic_write_* ya hace mkdir del padre).
     """
     global _VAULT_ROOT_ORIGIN
-    if env := os.environ.get("VAULT_ROOT"):
+    if env := _env("VAULT_ROOT"):
         _VAULT_ROOT_ORIGIN = "env"
         return Path(env).resolve()
     project_root = Path(__file__).parent.parent.resolve()
@@ -95,6 +107,15 @@ def _detect_vault_root() -> Path:
         and not s.name.startswith("vault-backups")
         and s.name != "vault-sandbox"
         and not s.name.endswith(".bak")
+        # Un paquete Python no es un vault, aunque se llame `vault/`. La rama
+        # "fresh" de abajo acepta un candidato por el NOMBRE, sin exigir un solo
+        # marcador, así que crear el paquete `vault/` del refactor bastó para
+        # que la autodetección dejara de devolver `vault-sandbox/` y empezara a
+        # apuntar al código fuente — con origen `sibling_vault_dir_fresh`, es
+        # decir, anunciando confianza. Es AP-44 en el detector: se validaba a sí
+        # mismo por convención de nombre en vez de por el criterio del
+        # consumidor, que es «¿tiene esto contenido de vault?».
+        and not (s / "__init__.py").exists()
     ]
     # Prefer candidates that already have vault content (initialized vault)
     for c in candidates:
@@ -130,7 +151,7 @@ def _detect_vault_root() -> Path:
     # los ~94 tools que no aceptan --root, pero queda marcado como baja
     # confianza para que el guard AP-36 lo denuncie en vez de silenciarlo.
     _VAULT_ROOT_ORIGIN = "repo_root_fallback"
-    if os.environ.get("VAULT_STRICT_ROOT"):
+    if _env("VAULT_STRICT_ROOT"):
         raise RuntimeError(
             f"No se encontró ningún vault desde {project_root}. Con VAULT_STRICT_ROOT=1 "
             "esto es un error: escribir aquí generaría 00_System/, 99_Index/ y demás "
@@ -142,13 +163,36 @@ def _detect_vault_root() -> Path:
 
 VAULT_ROOT: Path = _detect_vault_root()
 
+#: El vault detectado al importar, guardado APARTE y nunca reescrito.
+#:
+#: `set_vault_root()` reancla las constantes de módulo derivadas del vault, y
+#: `VAULT_ROOT` es una de ellas: se reapunta a sí misma. Sin esta copia, poner
+#: el override a None no volvía al vault detectado —se quedaba en el último
+#: destino para siempre— mientras `vault_root_origin()` seguía respondiendo
+#: `spec_repo_sandbox`, es decir, anunciando confianza sobre una raíz que ya no
+#: era ésa. Es AP-44 en el propio detector: certificaba con su criterio en vez
+#: de con el del consumidor.
+#: Se guarda como `str` y no como `Path` a propósito: `_reanclar_constantes()`
+#: reapunta toda constante en mayúsculas cuyo valor sea un `Path` derivado del
+#: vault, y esta copia lo es. Guardada como ruta, el reanclaje se la llevaba por
+#: delante y el respaldo apuntaba al mismo sitio del que había que volver.
+_VAULT_ROOT_DETECTADO: str = str(VAULT_ROOT)
+_ORIGEN_DETECTADO: str = _VAULT_ROOT_ORIGIN
+
 
 def vault_root_origin() -> str:
     """Qué regla de _detect_vault_root() eligió VAULT_ROOT.
 
     Valores: env | sibling_vault_dir | sibling_vault_dir_fresh |
-    scripts_inside_vault | spec_repo_sandbox | repo_root_fallback.
+    scripts_inside_vault | spec_repo_sandbox | repo_root_fallback |
+    explicit_override.
+
+    Con un override activo devuelve `explicit_override`: la raíz ya no la
+    eligió ninguna regla de detección, y seguir citando la regla anterior sería
+    atribuir a la autodetección una decisión que tomó quien llamó.
     """
+    if _ACTIVE_VAULT_ROOT is not None:
+        return "explicit_override"
     return _VAULT_ROOT_ORIGIN
 
 
@@ -229,6 +273,21 @@ def rebound_constants() -> List[str]:
     return list(_REANCLADAS)
 
 
+def reset_vault_root() -> Path:
+    """Deshace el override y devuelve las constantes al vault detectado.
+
+    Poner `_ACTIVE_VAULT_ROOT = None` a mano NO basta y ésa era la trampa: el
+    reanclaje ya había reescrito `VAULT_ROOT` y las constantes de los módulos
+    cargados, así que el proceso seguía apuntando al destino temporal. En una
+    suite eso se ve como fallos que dependen del orden de los ficheros; en una
+    tool, como escribir en el vault de la llamada anterior.
+    """
+    global _ACTIVE_VAULT_ROOT
+    set_vault_root(Path(_VAULT_ROOT_DETECTADO))
+    _ACTIVE_VAULT_ROOT = None
+    return VAULT_ROOT
+
+
 def get_vault_root() -> Path:
     """Vault root efectivo: el override de set_vault_root() o el auto-detectado."""
     return _ACTIVE_VAULT_ROOT if _ACTIVE_VAULT_ROOT is not None else VAULT_ROOT
@@ -248,7 +307,7 @@ def client_cwd() -> Path:
     El runner MCP lo publica en `VAULT_CLIENT_CWD`. Sin esa variable —CLI
     directa— el CWD del proceso sí es el del usuario y vale.
     """
-    declarado = os.environ.get("VAULT_CLIENT_CWD")
+    declarado = _env("VAULT_CLIENT_CWD")
     if declarado:
         candidato = Path(declarado)
         if candidato.is_dir():
@@ -657,7 +716,7 @@ def _escribir_temporal(temp: Path, text: str, encoding: str) -> None:
 
     with open(temp, "w", encoding=encoding) as fh:
         fh.write(text)
-        if os.environ.get("VAULT_FSYNC") == "1":
+        if _env("VAULT_FSYNC"):
             fh.flush()
             os.fsync(fh.fileno())
 
@@ -691,7 +750,7 @@ def _fsync_si_procede(temp: Path) -> None:
     """
     import os
 
-    if os.environ.get("VAULT_FSYNC") != "1":
+    if not _env("VAULT_FSYNC"):
         return
     if hasattr(os, "O_DIRECTORY"):
         dir_fd = os.open(str(temp.parent), os.O_RDONLY | os.O_DIRECTORY)
@@ -719,7 +778,7 @@ def atomic_write_text(
     """
     import os
 
-    if text and not os.environ.get("VAULT_SKIP_SECRET_SCAN"):
+    if text and not _env("VAULT_SKIP_SECRET_SCAN"):
         try:
             from vault_secret_scan import vault_write_hook, has_blocking_findings
 
@@ -793,11 +852,25 @@ def atomic_write_text(
 
     _auto_section_index(path)
 
+    _auto_tag_ledger(path, text)
 
-# Sections that manage their own indexes — skip auto-trigger for these
-_SKIP_AUTO_INDEX = frozenset(
-    {"00_System", "99_Index", ".history", "vault-backups", "docs"}
-)
+
+# Carpetas que no disparan la cascada de índices. Son dos cosas distintas y
+# conviene no mezclarlas: las dos secciones canónicas que gestionan su propio
+# índice, y todo lo que ni siquiera es una sección — eso último lo declara
+# `vault_registry.NON_SECTION_ROOT_FOLDERS`, que es también lo que el audit
+# consulta para CN-02. Tenerlo copiado aquí fue como `docs/` acabó siendo
+# invisible para el kernel y una violación para el audit (AP-05).
+_SECCIONES_CON_INDICE_PROPIO = frozenset({"00_System", "99_Index"})
+
+
+def _skip_auto_index() -> frozenset:
+    from vault_registry import NON_SECTION_ROOT_FOLDERS  # lazy: registro sin deps
+
+    return _SECCIONES_CON_INDICE_PROPIO | frozenset(NON_SECTION_ROOT_FOLDERS)
+
+
+_SKIP_AUTO_INDEX = _skip_auto_index()
 
 
 def _auto_section_index(path: Path) -> None:
@@ -835,10 +908,92 @@ def _auto_section_index(path: Path) -> None:
         pass  # index failure must never block the write that triggered it
 
 
+def _auto_tag_ledger(path: Path, text: str) -> None:
+    """Anota en la bitácora de vocabulario los tags de la nota recién escrita.
+
+    AP-39 dice que un tag nuevo se admite **pero se registra**, y hasta ahora lo
+    registraba un solo escritor: `vault_write`. Los catorce `*_save` que llevan
+    tags construyen su frontmatter y llaman directamente a `atomic_write_text`,
+    así que la norma se cumplía en una de cada quince escrituras. El término
+    entraba en el vault, la bitácora no se enteraba, y el audit lo denunciaba
+    después contra la nota — culpando al contenido de un fallo del escritor. Es
+    AP-43 en su forma literal: norma sin refuerzo en el punto de uso.
+
+    Va aquí y no en cada tool por lo mismo que `_auto_section_index`: este es el
+    único punto por el que pasan todas las escrituras. Ponerlo en los catorce
+    sitios funciona hasta que alguien escribe el decimoquinto.
+
+    Nunca levanta ni bloquea: la bitácora es memoria, no un guard. Si falla, la
+    escritura ya es válida y el audit de AP-39 recoge el término más tarde.
+    """
+    if path.suffix != ".md" or not text.startswith("---"):
+        return
+    try:
+        rel = str(path.relative_to(get_vault_root())).replace("\\", "/")
+    except ValueError:
+        return  # fuera del vault: no es una nota
+    if rel.split("/")[0] in _SKIP_AUTO_INDEX:
+        return
+    try:
+        from vault_tags import (  # lazy — evita el ciclo con el kernel
+            _parse_frontmatter_tags,
+            registrar_tags_de_nota,
+        )
+
+        registrar_tags_de_nota(_parse_frontmatter_tags(text), rel)
+    except Exception:
+        pass
+
+
 def atomic_write_json(path: Path, data: Dict[str, Any]) -> None:
     atomic_write_text(
         path, json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8"
     )
+
+
+@contextmanager
+def indice_compartido(path: Path, vacio: Dict[str, Any]) -> Iterator[Dict[str, Any]]:
+    """Lee un índice compartido, deja mutarlo y lo devuelve al disco, bajo lock.
+
+    `atomic_write_json` garantiza que el fichero nunca queda a medias, y **no
+    hace nada** contra el problema real de estos índices, que es otro: cinco
+    `*_save` hacían `load_index()` → mutar → `atomic_write_json()` sin lock.
+    Dos guardados concurrentes leen el mismo índice, cada uno añade su entrada,
+    gana el segundo, y la primera desaparece — con las dos tools devolviendo
+    `ok: true`. Es AP-37 por la puerta de atrás: trabajo perdido reportado como
+    éxito.
+
+    La otra mitad es peor y por eso el lock abarca **desde la lectura hasta la
+    escritura**, no solo la escritura: tres de esos índices son además el
+    contador del correlativo (`len(index["bugs"]) + 1`). Reservar el número
+    fuera del lock hace que dos guardados obtengan `REQ-001` los dos, escriban
+    el mismo nombre de fichero y uno pise al otro. El número tiene que salir
+    del mismo tramo exclusivo que lo consume.
+
+    `vacio` es lo que se devuelve cuando el índice no existe todavía. Se copia
+    en profundidad: si se cediera el mismo objeto, dos llamadas sobre un vault
+    recién creado compartirían la lista y la segunda vería las entradas de la
+    primera.
+
+    **Solo escribe si algo cambió.** Tres de los cinco tienen un `return`
+    temprano dentro de la región —rutas de error como `INVALID_PATH`— que hoy
+    no tocan el índice. Un `with` sale por ahí de forma normal, así que la
+    escritura se ejecutaría igualmente y el camino de fallo pasaría a tener un
+    side-effect que no tenía, contado además por `write_report()`. Comparar
+    antes de escribir es más barato que pedirle a cinco puntos de uso que se
+    acuerden de confirmar, y deja la regla donde se puede comprobar: si no
+    cambió nada, no se escribe nada (AP-36, AP-37).
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with file_lock(path, timeout=30.0):
+        try:
+            datos = json.loads(path.read_text(encoding="utf-8"))
+        except (FileNotFoundError, json.JSONDecodeError):
+            datos = copy.deepcopy(vacio)
+        antes = json.dumps(datos, sort_keys=True, ensure_ascii=False)
+        yield datos
+        if json.dumps(datos, sort_keys=True, ensure_ascii=False) != antes:
+            atomic_write_json(path, datos)
 
 
 def safe_wikilink(text: str) -> str:

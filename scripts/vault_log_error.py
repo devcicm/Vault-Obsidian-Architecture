@@ -38,8 +38,8 @@ import re
 import sys
 
 from vault_errors import wrap_main
-from vault_lib import utcnow, slugify
-from vault_io import atomic_write_text, VAULT_ROOT, safe_wikilink, write_report
+from vault_lib import yaml_scalar, utcnow, slugify
+from vault_io import atomic_write_text, get_vault_root, safe_wikilink, write_report
 from datetime import datetime, timezone
 
 
@@ -59,7 +59,13 @@ TYPE_FOLDERS = {
 }
 
 
-SEVERITIES = ["critical", "high", "medium", "low", "info"]
+# El vocabulario se declara una vez y se consume, no se copia. Ver
+# `vault_vocabulario.py` para el registro y su contexto dueño.
+from vault_vocabulario import opciones as _opciones
+
+#: `info` no es una gravedad: es lo que se registra sin que sea un
+#: problema. Por eso es una ampliación declarada y no otra escala.
+SEVERITIES = _opciones("severidad_con_info")
 
 
 def generate_metric_content(
@@ -321,7 +327,7 @@ def vault_log_error(
 
         content = "\n".join(content_lines)
 
-    folder_path = VAULT_ROOT / folder
+    folder_path = get_vault_root() / folder
 
     folder_path.mkdir(parents=True, exist_ok=True)
 
@@ -331,7 +337,7 @@ def vault_log_error(
     fm_tags = [project, error_type] if project else [error_type]
     frontmatter = (
         f"---\n"
-        f"title: {title}\n"
+        f"title: {yaml_scalar(title)}\n"
         f"id: {str(uuid.uuid4())}\n"
         f"type: {error_type}\n"
         f"createdAt: {utcnow()}\n"
@@ -349,7 +355,7 @@ def vault_log_error(
     return {
         "ok": True,
         **write_report(),
-        "path": str(file_path.relative_to(VAULT_ROOT)),
+        "path": str(file_path.relative_to(get_vault_root())),
         "type": error_type,
         "severity": severity,
         "title": title,

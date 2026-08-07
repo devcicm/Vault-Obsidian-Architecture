@@ -30,7 +30,7 @@ import sys
 
 from vault_errors import wrap_main
 
-from vault_io import atomic_write_text, assert_within_vault, VAULT_ROOT
+from vault_io import assert_within_vault, atomic_write_text, get_vault_root
 from datetime import datetime, timezone
 
 from pathlib import Path
@@ -68,10 +68,10 @@ def vault_append(
 
     """
 
-    note_path = VAULT_ROOT / path
+    note_path = get_vault_root() / path
 
     try:
-        assert_within_vault(note_path, VAULT_ROOT)
+        assert_within_vault(note_path, get_vault_root())
 
     except ValueError as exc:
         return {"ok": False, "error_code": "INVALID_PATH", "error": str(exc)}

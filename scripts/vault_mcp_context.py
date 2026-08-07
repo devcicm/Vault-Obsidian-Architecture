@@ -13,15 +13,34 @@ El contexto se persiste en: VAULT_ROOT/00_System/vault_context.json
 """
 
 import json
+import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from vault_io import VAULT_ROOT
+
 from vault_lib import utcnow
 
 
-SYSTEM_DIR = VAULT_ROOT / "00_System"
-CONTEXT_FILE = SYSTEM_DIR / "vault_context.json"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.consulta.repositorio import RepositorioConsulta  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioConsulta:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioConsulta(construir(root))
+
+
+def _system_dir() -> Path:
+    return _repo().dir_sistema
+
+CONTEXT_FILE = _system_dir() / "vault_context.json"
 
 
 def _read_context() -> Dict[str, Any]:
@@ -34,7 +53,7 @@ def _read_context() -> Dict[str, Any]:
 
 
 def _write_context(data: Dict[str, Any]) -> None:
-    SYSTEM_DIR.mkdir(parents=True, exist_ok=True)
+    _system_dir().mkdir(parents=True, exist_ok=True)
     CONTEXT_FILE.write_text(
         json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8"
     )
@@ -111,7 +130,7 @@ class VaultContext:
 
     def get_status(self) -> Dict[str, Any]:
         return {
-            "vault_root": str(VAULT_ROOT),
+            "vault_root": str(_raiz()),
             "version": self.get_version(),
             "health_score": self.get_health_score(),
             "last_operation": self.get_last_operation(),

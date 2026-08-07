@@ -33,16 +33,25 @@ def _vault(tmp_path: Path) -> Path:
     return root
 
 
+def _apuntar_al_vault(root: Path) -> None:
+    """Se apunta la raiz, no la constante del modulo.
+
+    `vault_audit.VAULT_ROOT` ya no existe: el modulo resuelve la raiz al usarla.
+    Reasignar el atributo seguiria siendo legal y no tendria ningun efecto — el
+    test habria corrido contra el vault detectado sin avisar. El override lo
+    deshace el fixture autouse de `conftest.py`.
+    """
+    import vault_io
+
+    vault_io.set_vault_root(root)
+
+
 def _huerfanas(root: Path):
-    previo = va.VAULT_ROOT
-    va.VAULT_ROOT = root
-    try:
-        notas = va._get_active_notes(None, include_structural=True)
-        backlinks, _ = va._build_indexes(notas)
-        contenido = va._get_active_notes(None, include_structural=False)
-        return {o["path"].replace("\\", "/") for o in va._detect_orphans(contenido, backlinks)}
-    finally:
-        va.VAULT_ROOT = previo
+    _apuntar_al_vault(root)
+    notas = va._get_active_notes(None, include_structural=True)
+    backlinks, _ = va._build_indexes(notas)
+    contenido = va._get_active_notes(None, include_structural=False)
+    return {o["path"].replace("\\", "/") for o in va._detect_orphans(contenido, backlinks)}
 
 
 def _nota(root: Path, rel: str, cuerpo: str = "") -> None:
@@ -68,14 +77,10 @@ def test_el_placeholder_sin_nota_detras_se_sigue_descartando(tmp_path):
     root = _vault(tmp_path)
     _nota(root, "01_Projects/plantilla.md", "Ver [[nombre-del-proyecto]].\n")
 
-    previo = va.VAULT_ROOT
-    va.VAULT_ROOT = root
-    try:
-        notas = va._get_active_notes(None, include_structural=True)
-        _, all_stems = va._build_indexes(notas)
-        rotos = va._detect_broken_links(notas, all_stems)
-    finally:
-        va.VAULT_ROOT = previo
+    _apuntar_al_vault(root)
+    notas = va._get_active_notes(None, include_structural=True)
+    _, all_stems = va._build_indexes(notas)
+    rotos = va._detect_broken_links(notas, all_stems)
 
     assert rotos == []
 
@@ -92,14 +97,10 @@ def test_un_enlace_a_nota_real_con_prefijo_placeholder_no_se_reporta_roto(tmp_pa
     _nota(root, "05_Patterns/patron-existe.md")
     _nota(root, "01_Projects/o.md", "[[patron-existe]] y [[patron-que-no-existe]]\n")
 
-    previo = va.VAULT_ROOT
-    va.VAULT_ROOT = root
-    try:
-        notas = va._get_active_notes(None, include_structural=True)
-        _, all_stems = va._build_indexes(notas)
-        rotos = va._detect_broken_links(notas, all_stems)
-    finally:
-        va.VAULT_ROOT = previo
+    _apuntar_al_vault(root)
+    notas = va._get_active_notes(None, include_structural=True)
+    _, all_stems = va._build_indexes(notas)
+    rotos = va._detect_broken_links(notas, all_stems)
 
     # `patron-que-no-existe` no lo detecta el filtro de placeholders (sigue
     # descartado por prefijo, y eso es aceptable: no hay nota detras). Lo que

@@ -129,7 +129,11 @@ class TestSkillExecution:
         """Dry-run mode should not write any files."""
         from vault_io import VAULT_ROOT
 
-        monkeypatch.setattr("vault_sdd_init.VAULT_ROOT", tmp_test_dir)
+        # Se apunta la raíz, no la constante: `vault_sdd_init` migró al
+        # contexto Ciclo de vida y ya no tiene `VAULT_ROOT` propia.
+        import vault_io
+
+        vault_io.set_vault_root(tmp_test_dir)
         sdd = tmp_test_dir / "docs" / "sdd"
 
         # Invoke main with --dry-run

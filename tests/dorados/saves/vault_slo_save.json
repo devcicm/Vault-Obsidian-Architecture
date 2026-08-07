@@ -1,0 +1,25 @@
+{
+  "envelope": {
+    "created": 2,
+    "error_budget": {
+      "allowed_downtime_human": "0h 43m",
+      "allowed_downtime_minutes": 43.2,
+      "allowed_failure_pct": 0.1,
+      "burn_rate_1h": 0.06
+    },
+    "iso_standard": "ISO 20000-1:2018 §8.3 / ISO/IEC 25010:2023 §4.2.1",
+    "ok": true,
+    "path": "02_Observability/slos/demo-api-availability.md",
+    "project": "demo",
+    "service": "api",
+    "slo": "availability ≥ 99.9%",
+    "slo_type": "availability",
+    "timestamp": "<FECHA>",
+    "tool": "vault_slo_save",
+    "unchanged": 0,
+    "updated": 6,
+    "window": "30d",
+    "written": 8
+  },
+  "nota": "---\ntitle: \"SLO: api -- Disponibilidad\"\nid: <UUID>\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ntags: [\"slo\", \"observability\", \"demo\", \"api\", \"availability\"]\nnorm_refs: [\"AP-11\", \"AP-12\", \"AP-13\", \"AP-16\", \"AP-20\", \"CN-01\", \"CN-02\", \"SP-01\"]\nproject: demo\nservice: api\nslo_type: availability\ntarget: 99.9\nunit: \"%\"\nwindow: 30d\nalert_threshold: 99.401\niso_standard: ISO 20000-1:2018 §8.3\niso_quality: ISO/IEC 25010:2023 §4.2.1\ncia_integrity: high\ncia_availability: high\ncia_sensitivity: internal\nagent: claude\n---\n\n# SLO: api -- Disponibilidad\n\n> Porcentaje del tiempo que el servicio está operativo y accesible.\n> ISO/IEC 25010:2023 §4.2.1 -- Reliability / Availability\n> ISO 20000-1:2018 §8.3 -- Service level management\n\n## Definición del SLO\n\n| Campo | Valor |\n|---|---|\n| **Proyecto** | demo |\n| **Servicio** | api |\n| **Tipo** | availability -- Disponibilidad |\n| **SLO** | availability ≥ 99.9% |\n| **Ventana** | 30d (rolling) |\n| **Umbral de alerta** | ≥ 99.401% |\n| **ISO característica** | Reliability / Availability |\n\n## SLI (Service Level Indicator)\n\n**Qué medir:** Porcentaje del tiempo que el servicio está operativo y accesible.\n\n**Ejemplo de query:**\n```\nsuccessful_requests / total_requests × 100\n```\n\n**Evento bueno:** HTTP 2xx/3xx en < 1s\n**Evento malo:** HTTP 5xx, timeout > 1s, o servicio no alcanzable\n\n**Fuente de datos:** _Pendiente: URL de dashboard o query de métrica_\n\n## Error Budget\n\n| Métrica | Valor |\n|---|---|\n| allowed_failure_pct | 0.1 |\n| allowed_downtime_minutes | 43.2 |\n| allowed_downtime_human | 0h 43m |\n| burn_rate_1h | 0.06 |\n\n## Alertas recomendadas (Multi-window, multi-burn-rate)\n\n| Ventana | Burn rate | Severidad | Acción |\n|---|---|---|---|\n| 1h / 5m | 14.4× | P1 -- página inmediato | Investigar ahora |\n| 6h / 30m | 6× | P2 -- página urgente | Investigar en < 1h |\n| 3d / 6h | 1× | P3 -- ticket | Investigar en próximos días |\n\n## Consecuencias (SLA)\n\n_Sin consecuencias contractuales definidas aún. Agregar penalidades o créditos si aplica._\n\n## Descripción adicional\n\n_Pendiente de enriquecer con contexto del negocio y dependencias._\n\n## Historial de compliance\n\n| Período | Valor medido | Cumplido | Error budget consumido |\n|---|---|---|---|\n| -- | -- | -- | -- |\n\n## Referencias\n\n- ISO 20000-1:2018 §8.3 -- Service level management\n- ISO/IEC 25010:2023 §4.2.1 -- Reliability / Availability\n- Google SRE Book -- Chapter 4: Service Level Objectives\n"
+}

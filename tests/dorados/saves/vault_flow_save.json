@@ -1,0 +1,15 @@
+{
+  "envelope": {
+    "action": "created",
+    "created": 2,
+    "ok": true,
+    "path": "13_Flows/workflow/demo-alta-de-usuario.md",
+    "timestamp": "<FECHA>",
+    "tool": "vault_flow_save",
+    "type": "workflow",
+    "unchanged": 0,
+    "updated": 1,
+    "written": 3
+  },
+  "nota": "---\nid: <UUID>\ntitle: Alta de usuario\nproject: demo\nflow_type: workflow\ntype: flow\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ntags: [\"demo\", \"flow\", \"workflow\"]\ncia_integrity: medium\ncia_availability: medium\ncia_sensitivity: internal\nagent: system\n---\n\n**Proyecto:** `demo`  |  **Tipo:** `workflow`\n\n\n## Descripcion\n\nCómo se da de alta.\n\n## Diagrama\n\n```mermaid\nflowchart TD\n  A --> B\n```"
+}

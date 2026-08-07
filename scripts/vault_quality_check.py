@@ -46,29 +46,19 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from vault_errors import wrap_main
 from vault_lib import utcnow
-from vault_io import atomic_write_json, file_lock, VAULT_ROOT, write_report
+from vault_io import atomic_write_json, file_lock, write_report
 
-SYSTEM_DIR = VAULT_ROOT / "00_System"
-QUALITY_INDEX = SYSTEM_DIR / "quality-index.json"
-CHANGE_LOG_JSON = SYSTEM_DIR / ".change-log.json"
 
-# F4 accuracy: section → expected type mapping
-SECTION_TYPE_MAP: Dict[str, str] = {
-    "01_Projects": "project",
-    "03_Decisions": "decision",
-    "04_Sessions": "session",
-    "05_Patterns": "pattern",
-    "06_Diagrams": "diagram",
-    "07_Knowledge": "knowledge",
-    "08_Runbooks": "runbook",
-    "09_Infrastructure": "infra",
-    "11_Code": "code",
-    "12_Bibliography": "bibliography",
-    "13_Flows": "flow",
-    "14_Requirements": "requirement",
-    "15_Tests": "test",
-    "16_AI_Governance": "ai_decision",
-}
+# F4 exactitud: qué tipos pertenecen a cada sección lo declara el registro.
+# El mapa que había aquí tenía un solo tipo esperado por sección y era una de
+# las tres copias que se contradecían entre sí. Ver `vault_registry.SECTION_TYPES`
+# para por qué el modelo singular no era ampliable, solo sustituible.
+from vault_registry import SCAFFOLD_TYPE, SECTION_TYPES, type_misfiled_in
+from vault_fundamentals import cia_valores
+from vault_norms import STATUS_VOCAB
+# El vocabulario se declara una vez y se consume, no se copia. Ver
+# `vault_vocabulario.py` para el registro y su contexto dueño.
+from vault_vocabulario import opciones as _opciones
 
 SKIP_FOLDERS = {"10_Migrated", "vault-backups", ".history"}
 STRUCTURAL_NAMES = frozenset({"index.md", "readme.md"})
@@ -76,45 +66,47 @@ STRUCTURAL_NAMES = frozenset({"index.md", "readme.md"})
 TIMELINESS_DEFAULT_DAYS = 30
 TIMELINESS_HIGH_DAYS = 15
 
-CIA_INTEGRITY_VALUES = {"critical", "high", "medium", "low"}
-CIA_AVAILABILITY_VALUES = {"high", "medium", "low"}
-CIA_SENSITIVITY_VALUES = {"public", "internal", "restricted"}
+# ── Vocabularios: se derivan, no se copian (AP-44) ────────────────────────────
+# Estos cinco conjuntos estaban escritos a mano aquí, y la puntuación de calidad
+# —que es salida publicada— se calculaba contra ellos. El resultado es que la
+# tool penalizaba por «valor desconocido» valores que el propio estándar
+# declara canónicos: `implemented`, `stub`, `verified`, `template` en `status`;
+# `infrastructure`, `antipattern`, `error`, `project-overview` en `type`.
+# Diecinueve notas del sandbox perdían puntos por escribir exactamente lo que
+# el registro manda escribir. Es AP-44 en su forma literal: la tool medía con
+# su criterio en vez del criterio de quien produce el dato.
+CIA_INTEGRITY_VALUES = cia_valores("cia_integrity")
+CIA_AVAILABILITY_VALUES = cia_valores("cia_availability")
+CIA_SENSITIVITY_VALUES = cia_valores("cia_sensitivity")
 
-STATUS_VALUES = {
-    "active",
-    "draft",
-    "review",
-    "archived",
-    "deprecated",
-    "en_progreso",
-    "en_desarrollo",
-    "in_progress",
-    "done",
-    "blocked",
-    "pending",
-    "completado",
-    "completed",
-    "cancelado",
-    "cancelled",
-}
-TYPE_VALUES = {
-    "project",
-    "decision",
-    "session",
-    "pattern",
-    "diagram",
-    "knowledge",
-    "runbook",
-    "infra",
-    "migration",
-    "flow",
-    "requirement",
-    "test",
-    "ai_decision",
-    "bibliography",
-    "code",
-    "note",
-}
+#: Valores que ningún registro declara pero que existen en vaults reales
+#: anteriores al vocabulario canónico. No-derogación: seguir aceptándolos es la
+#: diferencia entre medir la calidad de un vault heredado y castigarlo por ser
+#: heredado. `vault_norms --audit` sí los señala; esta tool solo puntúa.
+STATUS_HEREDADOS = frozenset(
+    {
+        "active", "review", "done", "blocked", "pending",
+        "en_progreso", "en_desarrollo", "in_progress",
+        "completado", "completed", "cancelado", "cancelled",
+    }
+)
+TYPES_HEREDADOS = frozenset({"infra", "migration", "note"})
+
+#: `_score_validity` normaliza `-` a `_` antes de mirar, así que el vocabulario
+#: canónico entra por las dos grafías (`in-progress` / `in_progress`).
+STATUS_VALUES = (
+    {s.replace("-", "_") for s in STATUS_VOCAB} | STATUS_HEREDADOS
+)
+#: `SCAFFOLD_TYPE` no pertenece a ninguna sección —lo escribe `vault_init` en
+#: las 18— así que no sale de `SECTION_TYPES`. Sin él, las 17 notas andamio que
+#: el propio init crea para que el vault arranque en 100/100 perdían un cuarto
+#: de punto de validez cada una: la tool reprobaba el estado inicial que otra
+#: tool del mismo estándar acababa de producir.
+TYPE_VALUES = (
+    {t for tipos in SECTION_TYPES.values() for t in tipos}
+    | {SCAFFOLD_TYPE}
+    | TYPES_HEREDADOS
+)
 
 PLACEHOLDER_PATTERNS = [
     "yyyy",
@@ -133,8 +125,36 @@ PLACEHOLDER_PATTERNS = [
 ]
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioGobernanza:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioGobernanza(construir(root))
+
+
+def _system_dir() -> Path:
+    return _repo().dir_sistema
+
+
+def _quality_index() -> Path:
+    return _repo().indice_calidad
+
+
+def _change_log_json() -> Path:
+    return _repo().bitacora_cambios
+
+
 def _is_skipped(path: Path) -> bool:
-    path_str = str(path.relative_to(VAULT_ROOT))
+    path_str = str(path.relative_to(_raiz()))
     return any(skip in path_str for skip in SKIP_FOLDERS)
 
 
@@ -144,11 +164,11 @@ def _is_structural(path: Path) -> bool:
 
 def _get_content_notes(scope: Optional[str] = None) -> List[Path]:
     notes = []
-    for n in VAULT_ROOT.rglob("*.md"):
+    for n in _raiz().rglob("*.md"):
         if _is_skipped(n) or n.name.startswith("_") or _is_structural(n):
             continue
         if scope:
-            rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+            rel = str(n.relative_to(_raiz())).replace("\\", "/")
             if not rel.startswith(scope.rstrip("/")):
                 continue
         notes.append(n)
@@ -158,7 +178,7 @@ def _get_content_notes(scope: Optional[str] = None) -> List[Path]:
 def _get_all_notes() -> List[Path]:
     return [
         n
-        for n in VAULT_ROOT.rglob("*.md")
+        for n in _raiz().rglob("*.md")
         if not _is_skipped(n) and ".history" not in str(n)
     ]
 
@@ -216,7 +236,7 @@ def _normalize(s: str) -> str:
 
 def _build_all_stems() -> Set[str]:
     stems: Set[str] = set()
-    for n in VAULT_ROOT.rglob("*.md"):
+    for n in _raiz().rglob("*.md"):
         if ".history" not in str(n):
             stems.add(_normalize(n.stem))
     return stems
@@ -318,7 +338,7 @@ def _score_uniqueness(
     ap17_paths: Set[str],
     ap18_paths: Set[str],
 ) -> Tuple[float, List[str]]:
-    rel = str(path.relative_to(VAULT_ROOT)).replace("\\", "/")
+    rel = str(path.relative_to(_raiz())).replace("\\", "/")
     issues: List[str] = []
     score = 1.0
     if rel in ap18_paths:
@@ -353,13 +373,14 @@ def _score_accuracy(rel_path: str, fm: Dict[str, str]) -> Tuple[float, List[str]
     """F4 EXACTITUD — type↔folder alignment; declared path matches actual."""
     issues = []
     folder = rel_path.split("/")[0] if "/" in rel_path else ""
-    expected_type = SECTION_TYPE_MAP.get(folder)
-    actual_type = fm.get("type", "").lower()
+    actual_type = str(fm.get("type", "")).lower()
 
     score = 1.0
-    if expected_type and actual_type and actual_type != expected_type:
+    deberia = type_misfiled_in(folder, actual_type)
+    if deberia:
         issues.append(
-            f"accuracy: type='{actual_type}' does not match folder section (expected '{expected_type}')"
+            f"accuracy: type='{actual_type}' es canónico de {' o '.join(deberia)}, "
+            f"no de '{folder}' — nota archivada en la sección equivocada"
         )
         score -= 0.5
 
@@ -392,10 +413,10 @@ def _score_non_repudiation(
 
 def _load_change_log_paths() -> Set[str]:
     """Load all unique paths referenced in .change-log.json."""
-    if not CHANGE_LOG_JSON.exists():
+    if not _change_log_json().exists():
         return set()
     try:
-        entries = json.loads(CHANGE_LOG_JSON.read_text(encoding="utf-8"))
+        entries = json.loads(_change_log_json().read_text(encoding="utf-8"))
         paths: Set[str] = set()
         for e in entries:
             if e.get("path"):
@@ -419,7 +440,7 @@ def _compute_ap17(notes: List[Path]) -> Set[str]:
             continue
         fm, _ = _read_frontmatter_raw(n)
         title = fm.get("title", n.stem).lower()
-        rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(n.relative_to(_raiz())).replace("\\", "/")
         items.append((rel, title))
 
     flagged: Set[str] = set()
@@ -441,7 +462,7 @@ def _compute_ap18(notes: List[Path]) -> Set[str]:
             digest = hashlib.md5(n.read_bytes()).hexdigest()
         except Exception:
             continue
-        rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(n.relative_to(_raiz())).replace("\\", "/")
         hash_map[digest].append(rel)
 
     flagged: Set[str] = set()
@@ -484,7 +505,7 @@ def vault_quality_check(
     total_score = 0.0
 
     for note in notes:
-        rel = str(note.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(note.relative_to(_raiz())).replace("\\", "/")
         fm, body = _read_frontmatter_raw(note)
         frontmatter_parsed = bool(fm)
         integrity_cia = fm.get("cia_integrity", "medium").lower()
@@ -567,10 +588,10 @@ def vault_quality_check(
     }
 
     if not check_only:
-        SYSTEM_DIR.mkdir(parents=True, exist_ok=True)
+        _system_dir().mkdir(parents=True, exist_ok=True)
         try:
-            with file_lock(QUALITY_INDEX, timeout=30.0):
-                atomic_write_json(QUALITY_INDEX, index_data)
+            with file_lock(_quality_index(), timeout=30.0):
+                atomic_write_json(_quality_index(), index_data)
         except TimeoutError:
             pass
 
@@ -593,7 +614,7 @@ def vault_quality_check(
         "notes": filtered,
     }
     if not check_only:
-        result["path"] = str(QUALITY_INDEX.relative_to(VAULT_ROOT)).replace("\\", "/")
+        result["path"] = str(_quality_index().relative_to(_raiz())).replace("\\", "/")
     return result
 
 
@@ -636,7 +657,7 @@ Notas:
     parser.add_argument(
         "--integrity",
         metavar="LEVEL",
-        choices=["critical", "high", "medium", "low"],
+        choices=_opciones("severidad"),
         help="Filter output by CIA integrity level",
     )
     parser.add_argument(

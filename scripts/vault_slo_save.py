@@ -32,14 +32,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
-from vault_lib import slugify_strict, utcnow
-from vault_io import (
-    VAULT_ROOT,
-    assert_within_vault,
-    atomic_write_text,
-    write_report,
-    update_section_index,
-)
+from vault_lib import yaml_scalar, slugify_strict, utcnow
+from vault_io import assert_within_vault, atomic_write_text, get_vault_root, write_report
 from vault_norms import compute_norm_refs
 
 FOLDER = "02_Observability/slos"
@@ -285,11 +279,11 @@ def vault_slo_save(
         f"updatedAt: {now}",
         f"tags: {json.dumps(['slo', 'observability', project, service, slo_type])}",
         f"norm_refs: {json.dumps(norm_refs)}",
-        f"project: {project}",
-        f"service: {service}",
+        f"project: {yaml_scalar(project)}",
+        f"service: {yaml_scalar(service)}",
         f"slo_type: {slo_type}",
         f"target: {target}",
-        f"unit: {unit}",
+        f"unit: {yaml_scalar(unit)}",
         f"window: {window}",
         f"alert_threshold: {alert_threshold}",
         f"iso_standard: ISO 20000-1:2018 §8.3",
@@ -303,17 +297,21 @@ def vault_slo_save(
     full = "\n".join(fm_lines) + "\n\n" + body
 
     filename = f"{_slug(project)}-{_slug(service)}-{slo_type}.md"
-    path = VAULT_ROOT / FOLDER / filename
+    path = get_vault_root() / FOLDER / filename
     path.parent.mkdir(parents=True, exist_ok=True)
-    assert_within_vault(path, VAULT_ROOT)
+    assert_within_vault(path, get_vault_root())
     atomic_write_text(path, full)
 
-    update_section_index("02_Observability")
+    # El indice de seccion lo dispara el write path del kernel
+    # (`vault_io._auto_section_index`) en cuanto se escribe la nota. La
+    # llamada explicita que habia aqui lo regeneraba una segunda vez con
+    # el mismo contenido: trabajo duplicado que ademas se contaba como
+    # escritura en el envelope.
 
     return {
         "ok": True,
         **write_report(),
-        "path": str(path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(path.relative_to(get_vault_root())).replace("\\", "/"),
         "project": project,
         "service": service,
         "slo_type": slo_type,

@@ -37,15 +37,13 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
-from vault_lib import slugify_strict, utcnow
-from vault_io import (
-    write_report,
-    VAULT_ROOT,
-    assert_within_vault,
-    atomic_write_text,
-    update_section_index,
-)
+from vault_lib import yaml_scalar, slugify_strict, utcnow
+from vault_io import assert_within_vault, atomic_write_text, get_vault_root, write_report
 from vault_norms import compute_norm_refs, status_frontmatter_lines
+# Los `*_save` viven en `scripts/`; el paquete se importa desde la raiz.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 FOLDER = "09_Infrastructure/privacy"
 
@@ -252,43 +250,44 @@ def vault_privacy_save(
 """
 
     norm_refs = compute_norm_refs(FOLDER, body, [])
-    fm_lines = [
-        "---",
-        f"title: {json.dumps(f'Tratamiento: {title}')}",
-        f"id: {uuid.uuid4()}",
-        f"createdAt: {now}",
-        f"updatedAt: {now}",
-        f"tags: {json.dumps(['privacy', 'gdpr', 'pii', project, legal_basis])}",
-        f"norm_refs: {json.dumps(norm_refs)}",
-        f"project: {project}",
-        f"legal_basis: {legal_basis}",
-        f"pii_categories: {json.dumps(pii_categories)}",
-        f"data_subjects: {json.dumps(data_subjects)}",
-        f"retention_period: {json.dumps(retention_period)}",
-        f"transfers_outside_eu: {json.dumps(transfers_outside_eu)}",
-        f"dpia_required: {json.dumps(dpia_required)}",
-        *status_frontmatter_lines("vault_privacy_save", status),
-        f"iso_standard: ISO/IEC 27701:2019",
-        f"gdpr_article: Art. 30",
-        f"cia_integrity: high",
-        f"cia_availability: medium",
-        f"cia_sensitivity: restricted",
-        f"agent: {agent}",
-        "---",
-    ]
-    full = "\n".join(fm_lines) + "\n\n" + body
+    fm_lines = Frontmatter()
+    fm_lines.set("title", f'Tratamiento: {title}')
+    fm_lines.set("id", uuid.uuid4())
+    fm_lines.set("createdAt", now)
+    fm_lines.set("updatedAt", now)
+    fm_lines.set("tags", ['privacy', 'gdpr', 'pii', project, legal_basis])
+    fm_lines.set("norm_refs", norm_refs)
+    fm_lines.set("project", project)
+    fm_lines.set("legal_basis", legal_basis)
+    fm_lines.set("pii_categories", pii_categories)
+    fm_lines.set("data_subjects", data_subjects)
+    fm_lines.set("retention_period", retention_period, vacio_citado=True)
+    fm_lines.set("transfers_outside_eu", transfers_outside_eu)
+    fm_lines.set("dpia_required", dpia_required)
+    fm_lines.lineas(status_frontmatter_lines("vault_privacy_save", status))
+    fm_lines.set("iso_standard", "ISO/IEC 27701:2019")
+    fm_lines.set("gdpr_article", "Art. 30")
+    fm_lines.set("cia_integrity", "high")
+    fm_lines.set("cia_availability", "medium")
+    fm_lines.set("cia_sensitivity", "restricted")
+    fm_lines.set("agent", agent)
+    full = fm_lines.render() + "\n\n" + body
 
     filename = f"{_slug(project)}-{_slug(title)}.md"
-    path = VAULT_ROOT / FOLDER / filename
+    path = get_vault_root() / FOLDER / filename
     path.parent.mkdir(parents=True, exist_ok=True)
-    assert_within_vault(path, VAULT_ROOT)
+    assert_within_vault(path, get_vault_root())
     atomic_write_text(path, full)
-    update_section_index("09_Infrastructure")
+    # El indice de seccion lo dispara el write path del kernel
+    # (`vault_io._auto_section_index`) en cuanto se escribe la nota. La
+    # llamada explicita que habia aqui lo regeneraba una segunda vez con
+    # el mismo contenido: trabajo duplicado que ademas se contaba como
+    # escritura en el envelope.
 
     return {
         "ok": True,
         **write_report(),
-        "path": str(path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(path.relative_to(get_vault_root())).replace("\\", "/"),
         "project": project,
         "legal_basis": legal_basis,
         "pii_count": len(pii_categories),

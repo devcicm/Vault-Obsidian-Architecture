@@ -29,15 +29,45 @@ from difflib import SequenceMatcher
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT, atomic_write_json, write_report
+from vault_io import atomic_write_json, write_report
 from vault_registry import ORDERED_SECTIONS
 
 ONTOLOGY_FILE = Path(__file__).parent / "vault_ontology.json"
-GRAPH_FILE = VAULT_ROOT / "99_Index" / "graph.json"
-ENRICHED_FILE = VAULT_ROOT / "99_Index" / "graph-enriched.json"
-ENTITY_DIR = VAULT_ROOT / "06_Diagrams" / "entity"
-CODE_INDEX = VAULT_ROOT / "11_Code" / ".code-index.json"
-MOVE_LOG = VAULT_ROOT / "00_System" / "move-log.json"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioGrafo:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioGrafo(construir(root))
+
+
+def _graph_file() -> Path:
+    return _repo().grafo
+
+
+def _enriched_file() -> Path:
+    return _repo().grafo_enriquecido
+
+
+def _entity_dir() -> Path:
+    return _repo().dir_entidades
+
+
+def _code_index() -> Path:
+    return _repo().indice_codigo
+
+
+def _move_log() -> Path:
+    return _repo().bitacora_movimientos
+
 
 # Derivado de `vault_registry`, no copiado: la copia literal se quedo en 18
 # secciones y dejaba fuera `17_Preferences`, `18_Bugs`, `19_Audits` y
@@ -53,7 +83,7 @@ def _load_ontology() -> Dict[str, Any]:
 
 def _is_vault_note(note_path: Path) -> bool:
     try:
-        parts = note_path.relative_to(VAULT_ROOT).parts
+        parts = note_path.relative_to(_raiz()).parts
     except ValueError:
         return False
     if len(parts) < 2:
@@ -92,13 +122,23 @@ def _extract_tags(content: str) -> List[str]:
 
 
 def _folder_to_class(folder: str) -> str:
+    """Clase de nodo del grafo para una sección.
+
+    No es el `type:` de la nota y por eso no deriva de `SECTION_TYPES`: son dos
+    vocabularios (`10_Migrated` escribe `type: documentation` y sus nodos son de
+    clase `migrated`). Lo que sí tenía que ser completo es la cobertura — las
+    cuatro secciones de v39 caían en `"unknown"`, así que sus notas entraban al
+    grafo sin clase y quedaban fuera de todo recorrido por clase, en silencio.
+    """
     mapping = {
         "00_System": "system", "01_Projects": "project", "02_Observability": "observability",
         "03_Decisions": "decision", "04_Sessions": "session", "05_Patterns": "pattern",
         "06_Diagrams": "diagram", "07_Knowledge": "knowledge", "08_Runbooks": "runbook",
         "09_Infrastructure": "infrastructure", "10_Migrated": "migrated", "11_Code": "code",
         "12_Bibliography": "bibliography", "13_Flows": "flow", "14_Requirements": "requirement",
-        "15_Tests": "test", "16_AI_Governance": "ai_governance", "99_Index": "index",
+        "15_Tests": "test", "16_AI_Governance": "ai_governance",
+        "17_Preferences": "preference", "18_Bugs": "bug", "19_Audits": "audit",
+        "20_Quarantine": "quarantine", "99_Index": "index",
     }
     return mapping.get(folder, "unknown")
 
@@ -121,12 +161,12 @@ def _build_wiki_link_graph() -> Tuple[Dict[str, Dict], List[Dict], List[Dict], D
     stem_map: Dict[str, str] = {}
 
     all_files = [
-        p for p in VAULT_ROOT.rglob("*.md")
+        p for p in _raiz().rglob("*.md")
         if _is_vault_note(p) and not any(part.startswith(".") for part in p.parts)
     ]
 
     for p in all_files:
-        rel = str(p.relative_to(VAULT_ROOT)).replace("\\", "/")
+        rel = str(p.relative_to(_raiz())).replace("\\", "/")
         stem_map[_normalize_stem(p.stem)] = rel
         fname_stem = _normalize_stem(p.stem)
 
@@ -157,7 +197,7 @@ def _build_wiki_link_graph() -> Tuple[Dict[str, Dict], List[Dict], List[Dict], D
         }
 
     for rel, node in nodes.items():
-        p = VAULT_ROOT / rel
+        p = _raiz() / rel
         try:
             content = p.read_text(encoding="utf-8")
         except Exception:
@@ -195,10 +235,10 @@ def _merge_entity_relations(ontology: Dict[str, Any], stem_map: Dict[str, str]) 
     valid_predicates = set(ontology.get("predicates", {}).keys())
     synonym_map = ontology.get("predicate_synonyms", {})
 
-    if not ENTITY_DIR.exists():
+    if not _entity_dir().exists():
         return edges
 
-    for rel_file in ENTITY_DIR.glob("*relations.json"):
+    for rel_file in _entity_dir().glob("*relations.json"):
         try:
             raw = rel_file.read_bytes()
             if raw.startswith(b"\xef\xbb\xbf"):
@@ -254,7 +294,7 @@ def _merge_entity_relations(ontology: Dict[str, Any], stem_map: Dict[str, str]) 
                     "toEntity": to_entity,
                     "predicate": predicate,
                     "missing_endpoints": unresolved_parts,
-                    "source_file": str(rel_file.relative_to(VAULT_ROOT)).replace("\\", "/"),
+                    "source_file": str(rel_file.relative_to(_raiz())).replace("\\", "/"),
                 })
 
             if predicate not in valid_predicates:
@@ -293,11 +333,11 @@ def _merge_code_relations(ontology: Dict[str, Any], stem_map: Dict[str, str]) ->
     valid_predicates = set(ontology.get("predicates", {}).keys())
     synonym_map = ontology.get("predicate_synonyms", {})
 
-    if not CODE_INDEX.exists():
+    if not _code_index().exists():
         return edges
 
     try:
-        raw = CODE_INDEX.read_bytes()
+        raw = _code_index().read_bytes()
         if raw.startswith(b"\xef\xbb\xbf"):
             raw = raw[3:]
         text = raw.decode("utf-8")
@@ -409,13 +449,13 @@ def _detect_orphans(nodes: Dict[str, Dict], edges: List[Dict]) -> List[Dict]:
 def _detect_silos() -> Dict[str, bool]:
     """AP-35: detect if entity/code relations exist but haven't been merged."""
     flags = {}
-    entity_files = list(ENTITY_DIR.glob("*relations.json")) if ENTITY_DIR.exists() else []
+    entity_files = list(_entity_dir().glob("*relations.json")) if _entity_dir().exists() else []
     flags["entity_relations_exist"] = len(entity_files) > 0
-    flags["code_relations_exist"] = CODE_INDEX.exists()
+    flags["code_relations_exist"] = _code_index().exists()
 
-    if ENRICHED_FILE.exists():
+    if _enriched_file().exists():
         try:
-            enriched = json.loads(ENRICHED_FILE.read_text(encoding="utf-8"))
+            enriched = json.loads(_enriched_file().read_text(encoding="utf-8"))
             last_merge = enriched.get("metadata", {}).get("merged_at", "")
             if last_merge:
                 dt = datetime.fromisoformat(last_merge.replace("Z", "+00:00"))
@@ -476,9 +516,9 @@ def vault_graph_merge(
     silo_flags = _detect_silos()
 
     deleted_nodes = 0
-    if GRAPH_FILE.exists():
+    if _graph_file().exists():
         try:
-            old = json.loads(GRAPH_FILE.read_text(encoding="utf-8"))
+            old = json.loads(_graph_file().read_text(encoding="utf-8"))
             for old_path in old.get("nodes", {}):
                 if old_path not in nodes:
                     all_edges.append({
@@ -547,8 +587,8 @@ def vault_graph_merge(
         },
     }
 
-    ENRICHED_FILE.parent.mkdir(parents=True, exist_ok=True)
-    atomic_write_json(ENRICHED_FILE, enriched)
+    _enriched_file().parent.mkdir(parents=True, exist_ok=True)
+    atomic_write_json(_enriched_file(), enriched)
 
     next_actions = []
     if unresolved_entity > 0:
@@ -575,7 +615,7 @@ def vault_graph_merge(
     return {
         "ok": True,
         **write_report(),
-        "savedTo": str(ENRICHED_FILE.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "savedTo": str(_enriched_file().relative_to(_raiz())).replace("\\", "/"),
         "metadata": enriched["metadata"],
         "stats": enriched["stats"],
         "diagnostics": enriched["diagnostics"],

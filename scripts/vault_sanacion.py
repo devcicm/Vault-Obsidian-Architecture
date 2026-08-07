@@ -85,14 +85,30 @@ def _fase(numero, veredicto, evidencia, medida=None):
 
 
 def _medir_audit(root):
-    """Fases 2, 4 y 12: lo que el audit ya sabe contar."""
+    """Fases 2, 4 y 12: lo que el audit ya sabe contar.
+
+    Se apunta la raíz del proceso, no la constante del módulo. `vault_audit`
+    migró al contexto Gobernanza y resuelve la raíz al usarla: `vault_audit.
+    VAULT_ROOT = root` seguía siendo una asignación legal de Python y no tenía
+    ningún efecto, así que las fases 2, 4 y 12 habrían medido el vault
+    **detectado** en vez del pedido —y devuelto un plan verosímil para el vault
+    equivocado, sin excepción que lo delatara—. Es justo el modo de fallo que el
+    modo agéntico de sanación no puede permitirse: se ejecuta contra vaults
+    ajenos, donde detectado y pedido casi nunca coinciden.
+    """
+    previa = vault_io.get_vault_root()
     try:
         import vault_audit
 
-        vault_audit.VAULT_ROOT = root
+        vault_io.set_vault_root(root)
         return vault_audit.vault_audit()
     except Exception as exc:  # noqa: BLE001 — una medida que falla no es "limpio"
         return {"_error": f"{type(exc).__name__}: {exc}"}
+    finally:
+        # La raíz es estado de proceso: apuntarla y no devolverla haría que una
+        # sola llamada a `plan_de_sanacion()` reapuntase el vault de quien la
+        # invocó. Read-only significa también no dejar rastro en el proceso.
+        vault_io.set_vault_root(previa)
 
 
 def _medir_normas(root):

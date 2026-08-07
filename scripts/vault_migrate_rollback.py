@@ -23,7 +23,6 @@ Usage:
 """
 
 
-
 import argparse
 
 import json
@@ -39,12 +38,27 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 
-
-from vault_io import VAULT_ROOT, atomic_write_json
-INDEX_FILE = VAULT_ROOT / "99_Index" / "search-index.json"
+from vault_io import atomic_write_json
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from vault.ciclo_de_vida.repositorio import RepositorioCicloDeVida  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioCicloDeVida:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioCicloDeVida(construir(root))
+
+
+def _index_file() -> Path:
+    return _repo().indice_busqueda
 
 
 def parse_report(report_path: Path) -> Tuple[List[str], List[str]]:
@@ -52,7 +66,6 @@ def parse_report(report_path: Path) -> Tuple[List[str], List[str]]:
     """Parse migration report and return (distributed_paths, stub_paths)."""
 
     content = report_path.read_text(encoding="utf-8", errors="ignore")
-
 
 
     # Parse "## Archivos Distribuidos" table: | `name` | [[destPath]] | relevance |
@@ -66,7 +79,6 @@ def parse_report(report_path: Path) -> Tuple[List[str], List[str]]:
     ]
 
 
-
     # Parse "## Stubs Creados": - `name` → [[stubPath]]
 
     stubs = [
@@ -78,11 +90,7 @@ def parse_report(report_path: Path) -> Tuple[List[str], List[str]]:
     ]
 
 
-
     return distributed, stubs
-
-
-
 
 
 def remove_from_index(paths_to_remove: List[str]) -> int:
@@ -91,14 +99,13 @@ def remove_from_index(paths_to_remove: List[str]) -> int:
 
     try:
 
-        with open(INDEX_FILE, "r", encoding="utf-8") as f:
+        with open(_index_file(), "r", encoding="utf-8") as f:
 
             index = json.load(f)
 
     except (FileNotFoundError, json.JSONDecodeError):
 
         return 0
-
 
 
     paths_set = set(paths_to_remove)
@@ -110,18 +117,13 @@ def remove_from_index(paths_to_remove: List[str]) -> int:
     removed = original_count - len(index["notes"])
 
 
-
     # atomic_write_* y no `open(..., "w")`: el escaneo de secretos, el
     # saneado de encoding y el temp+replace viven ahí. Escribir en crudo los
     # esquivaba los tres (AP-36) y dejaba la nota a medias si el proceso moría.
-    atomic_write_json(INDEX_FILE, index)
-
+    atomic_write_json(_index_file(), index)
 
 
     return removed
-
-
-
 
 
 def vault_migrate_rollback(report_path_str: str, confirm: bool = False) -> Dict[str, Any]:
@@ -146,8 +148,7 @@ def vault_migrate_rollback(report_path_str: str, confirm: bool = False) -> Dict[
 
     """
 
-    report_path = VAULT_ROOT / report_path_str
-
+    report_path = _raiz() / report_path_str
 
 
     if not report_path.exists():
@@ -155,11 +156,9 @@ def vault_migrate_rollback(report_path_str: str, confirm: bool = False) -> Dict[
         return {"ok": False, "error": f"Report not found: {report_path_str}"}
 
 
-
     distributed_paths, stub_paths = parse_report(report_path)
 
     all_paths = distributed_paths + stub_paths
-
 
 
     if not all_paths:
@@ -175,11 +174,9 @@ def vault_migrate_rollback(report_path_str: str, confirm: bool = False) -> Dict[
         }
 
 
+    existing_files = [_raiz() / p for p in all_paths if (_raiz() / p).exists()]
 
-    existing_files = [VAULT_ROOT / p for p in all_paths if (VAULT_ROOT / p).exists()]
-
-    not_found = [p for p in all_paths if not (VAULT_ROOT / p).exists()]
-
+    not_found = [p for p in all_paths if not (_raiz() / p).exists()]
 
 
     if not confirm:
@@ -192,7 +189,7 @@ def vault_migrate_rollback(report_path_str: str, confirm: bool = False) -> Dict[
 
             "reportPath": report_path_str,
 
-            "toDelete": [str(f.relative_to(VAULT_ROOT)) for f in existing_files],
+            "toDelete": [str(f.relative_to(_raiz())) for f in existing_files],
 
             "notFound": not_found,
 
@@ -213,13 +210,11 @@ def vault_migrate_rollback(report_path_str: str, confirm: bool = False) -> Dict[
         }
 
 
-
     # Execute rollback
 
     deleted = []
 
     errors = []
-
 
 
     for f in existing_files:
@@ -228,18 +223,16 @@ def vault_migrate_rollback(report_path_str: str, confirm: bool = False) -> Dict[
 
             f.unlink()
 
-            deleted.append(str(f.relative_to(VAULT_ROOT)))
+            deleted.append(str(f.relative_to(_raiz())))
 
         except Exception as e:
 
-            errors.append({"path": str(f.relative_to(VAULT_ROOT)), "error": str(e)})
-
+            errors.append({"path": str(f.relative_to(_raiz())), "error": str(e)})
 
 
     # Remove entries from search index
 
     index_removed = remove_from_index(all_paths)
-
 
 
     # Delete the report itself
@@ -255,7 +248,6 @@ def vault_migrate_rollback(report_path_str: str, confirm: bool = False) -> Dict[
     except Exception:
 
         pass
-
 
 
     return {
@@ -285,9 +277,6 @@ def vault_migrate_rollback(report_path_str: str, confirm: bool = False) -> Dict[
         ),
 
     }
-
-
-
 
 
 def main():
@@ -347,7 +336,6 @@ Notas:
     )
 
 
-
     args = parser.parse_args()
 
     result = vault_migrate_rollback(args.report_path, args.confirm)
@@ -355,9 +343,6 @@ Notas:
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
     return 0 if result["ok"] else 1
-
-
-
 
 
 if __name__ == "__main__":

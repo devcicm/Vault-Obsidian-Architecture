@@ -1,0 +1,15 @@
+{
+  "envelope": {
+    "created": 4,
+    "infraMapUpdated": true,
+    "ok": true,
+    "path": "09_Infrastructure/servers/servidor-de-indices.md",
+    "timestamp": "<FECHA>",
+    "tool": "vault_infra_save",
+    "type": "server",
+    "unchanged": 1,
+    "updated": 2,
+    "written": 6
+  },
+  "nota": "---\ntitle: servidor-de-índices\nid: <UUID>\ntype: server\nlocation: local\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ncia_integrity: high\ncia_availability: high\ncia_sensitivity: internal\nagent: system\n---\n\n## Descripción\n\nMáquina que sirve los índices.\n\n\n## Configuración\n\n- **cpu**: `4`"
+}

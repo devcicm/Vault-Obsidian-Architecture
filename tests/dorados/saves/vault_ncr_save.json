@@ -1,0 +1,20 @@
+{
+  "envelope": {
+    "corrective_actions_count": 0,
+    "created": 2,
+    "iso_standard": "ISO 9001:2015 §10.2",
+    "ncr_id": "<CORRELATIVO>",
+    "ncr_type": "process",
+    "ok": true,
+    "path": "02_Observability/quality/demo-2026-08-una-no-conformidad.md",
+    "project": "demo",
+    "severity": "major",
+    "status": "open",
+    "timestamp": "<FECHA>",
+    "tool": "vault_ncr_save",
+    "unchanged": 0,
+    "updated": 4,
+    "written": 6
+  },
+  "nota": "---\ntitle: \"NCR: Una no conformidad\"\nid: <UUID>\nncr_id: <CORRELATIVO>\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ntags: [\"ncr\", \"quality\", \"demo\", \"process\", \"major\"]\nnorm_refs: [\"AP-11\", \"AP-12\", \"AP-13\", \"AP-16\", \"AP-20\", \"CN-01\", \"CN-02\", \"SP-01\"]\nproject: demo\nncr_type: process\nseverity: major\ndetected_by: internal\nstatus: in-progress\nncr_state: open\nowner: \"\"\ntarget_date: \"\"\ncorrective_actions_count: 0\niso_standard: ISO 9001:2015 §10.2\ncia_integrity: high\ncia_availability: medium\ncia_sensitivity: internal\nagent: claude\n---\n\n# NCR: Una no conformidad\n\n> **<CORRELATIVO>** | MAJOR -- Desvío significativo que requiere acción correctiva antes de\n> ISO 9001:2015 §10.2 -- Nonconformity and corrective action\n\n## Datos de la no conformidad\n\n| Campo | Valor |\n|---|---|\n| **ID** | <CORRELATIVO> |\n| **Tipo** | process -- Un proceso no se ejecutó según el procedimiento definido |\n| **Severidad** | MAJOR |\n| **Detectada por** | internal |\n| **Status** | open |\n| **Propietario** | -- Sin asignar |\n| **Fecha límite** | -- Sin definir |\n| **Requisito relacionado** | -- No especificado |\n\n## Descripción (ISO 9001 §10.2.1.a)\n\n_Pendiente: describir qué se encontró fuera de conformidad y dónde._\n\n## Acción inmediata / Contención (ISO 9001 §10.2.1.b)\n\n_Pendiente: acción tomada para contener el problema inmediatamente._\n\n## Análisis de causa raíz (ISO 9001 §10.2.1.c)\n\n_Pendiente: identificar la causa raíz usando 5-Whys, Ishikawa o similar._\n\n### 5-Whys (completar si aplica)\n\n1. ¿Por qué ocurrió la no conformidad? _Pendiente_\n2. ¿Por qué ocurrió la causa anterior? _Pendiente_\n3. ¿Por qué ocurrió la causa anterior? _Pendiente_\n4. ¿Por qué? _Pendiente_\n5. ¿Por qué? _Pendiente -- esta es la causa raíz_\n\n## Acciones correctivas (ISO 9001 §10.2.1.d)\n\n-- Sin acciones correctivas definidas aún\n\n## Verificación de eficacia (ISO 9001 §10.2.1.f)\n\n| Acción | Evidencia de cierre | Verificado por | Fecha |\n|---|---|---|---|\n| -- | -- | -- | -- |\n\n## Lecciones aprendidas\n\n_¿Qué cambio sistémico previene esta categoría de no conformidad en el futuro?_\n\n## Historial\n\n| Fecha | Actor | Cambio |\n|---|---|---|\n| <DIA> | claude | NCR abierta |\n\n## Referencias\n\n- ISO 9001:2015 §10.2 -- Nonconformity and corrective action\n- ISO 9001:2015 §9.2 -- Internal audit\n- ISO/IEC 25010:2023 -- Quality characteristics (criterios de conformidad)\n"
+}

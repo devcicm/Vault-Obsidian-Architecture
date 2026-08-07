@@ -141,21 +141,29 @@ def test_una_version_menor_sin_migracion_sella_la_version(tmp_path, monkeypatch)
     # restaurarlo, la raíz temporal se filtra a todo test posterior del mismo
     # proceso y los fallos aparecen lejos de aquí (AP-36, contención).
     anterior = vault_io.get_vault_root()
-    monkeypatch.setattr(vsu, "VERSION_FILE", root / "00_System/standard-version.json")
-    monkeypatch.setattr(vsu, "SYSTEM_DIR", root / "00_System")
+    # Se apunta solo la raíz: `vsu.VERSION_FILE` y `vsu.SYSTEM_DIR` ya no
+    # existen —el módulo migró al contexto Ciclo de vida y las resuelve al
+    # usarlas—, y el monkeypatch habría creado dos atributos que nadie lee.
     vault_io.set_vault_root(root)
-    monkeypatch.setattr(vault_io, "VAULT_ROOT", root, raising=False)
     try:
-        _sellado(root)
+        _sellado(root, monkeypatch)
     finally:
         vault_io.set_vault_root(anterior)
 
 
-def _sellado(root):
+def _sellado(root, monkeypatch):
     import vault_standard_upgrade as vsu
 
+    # La minor se deriva de la mayor corriente, no se escribe a mano. Estaba
+    # fijada en "v39.0" y el bump a v40.0 la convirtió en un salto MAYOR: el
+    # test dejó de probar el sellado y pasó por la ruta de migración, que no
+    # devuelve `version_stamped`. Un test cuyo sujeto es la lógica de sellado no
+    # puede caducar cada vez que sube la versión.
+    mayor = vsu.CURRENT_VERSION.split(".")[0]
+    monkeypatch.setattr(vsu, "CURRENT_VERSION", f"{mayor}.9")
+
     vsu._write_version_file(
-        {"applied_version": "v39.0", "migrations_applied": [], "applied_by": "test"}
+        {"applied_version": f"{mayor}.0", "migrations_applied": [], "applied_by": "test"}
     )
 
     r = vsu.vault_standard_upgrade(to_version=vsu.CURRENT_VERSION)

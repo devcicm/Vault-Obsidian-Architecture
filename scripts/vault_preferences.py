@@ -39,14 +39,36 @@ from vault_errors import wrap_main
 from vault_norms import status_frontmatter_lines
 from vault_io import (
     write_report,
-    VAULT_ROOT,
     assert_within_vault,
     atomic_write_text,
     update_section_index,
 )
-from vault_lib import parse_frontmatter_with_body, slugify, utcnow
+from vault_lib import yaml_scalar, parse_frontmatter_with_body, slugify, utcnow
 
-PREFERENCES_DIR = VAULT_ROOT / "17_Preferences"
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+# La configuración se lee del registro único, no con un default por punto
+# de uso. Ver `vault_entorno.py`.
+from vault_entorno import leer as _env
+
+from vault.consulta.repositorio import RepositorioConsulta  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioConsulta:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioConsulta(construir(root))
+
+
+def _preferences_dir() -> Path:
+    return _repo().dir_preferencias
 
 # Categorías = subcarpetas registradas en vault_registry.SUBFOLDERS.
 # No se declaran aquí dos veces: se derivan del registro para que añadir una
@@ -83,10 +105,10 @@ def _registry_categories() -> List[str]:
 
 
 def _preference_files() -> List[Path]:
-    if not PREFERENCES_DIR.is_dir():
+    if not _preferences_dir().is_dir():
         return []
     return sorted(
-        p for p in PREFERENCES_DIR.rglob("*.md") if p.name.lower() != "index.md"
+        p for p in _preferences_dir().rglob("*.md") if p.name.lower() != "index.md"
     )
 
 
@@ -98,7 +120,7 @@ def _load_preference(path: Path) -> Optional[Dict[str, Any]]:
     fm, body = parse_frontmatter_with_body(raw)
     if fm.get("type") != "preference":
         return None
-    rel = path.relative_to(VAULT_ROOT).as_posix()
+    rel = path.relative_to(_raiz()).as_posix()
     return {
         "path": rel,
         "title": fm.get("title", path.stem),
@@ -162,7 +184,7 @@ def vault_preferences_set(
 
     # AP-16: atribución obligatoria. La preferencia dirige el comportamiento
     # del agente; saber quién la registró no es opcional.
-    agent = agent or os.environ.get("VAULT_AGENT", "")
+    agent = agent or _env("VAULT_AGENT")
     if not agent:
         return {
             "ok": False,
@@ -175,11 +197,11 @@ def vault_preferences_set(
             ),
         }
 
-    folder = PREFERENCES_DIR / category
+    folder = _preferences_dir() / category
     note_path = folder / f"{slugify(title)}.md"
 
     try:
-        assert_within_vault(note_path, VAULT_ROOT)
+        assert_within_vault(note_path, _raiz())
     except ValueError as exc:
         return {"ok": False, "error_code": "INVALID_PATH", "error": str(exc)}
 
@@ -200,10 +222,10 @@ def vault_preferences_set(
         f"title: {json.dumps(title, ensure_ascii=False)}",
         f"id: {uuid.uuid4()}",
         "type: preference",
-        f"category: {category}",
+        f"category: {yaml_scalar(category)}",
         f"strength: {strength}",
         *status_frontmatter_lines("vault_preferences", STATUS_ACTIVE),
-        f"scope: {scope}",
+        f"scope: {yaml_scalar(scope)}",
         f"statement: {json.dumps(statement, ensure_ascii=False)}",
         f"tags: {json.dumps(all_tags, ensure_ascii=False)}",
         # Entrecomillados a propósito: sin comillas, YAML los convierte en
@@ -239,7 +261,7 @@ def vault_preferences_set(
         "ok": True,
         **write_report(),
         "action": "updated" if previous else "created",
-        "path": note_path.relative_to(VAULT_ROOT).as_posix(),
+        "path": note_path.relative_to(_raiz()).as_posix(),
         "category": category,
         "strength": strength,
         "statement": statement,
@@ -328,7 +350,7 @@ def vault_preferences_revoke(path: str, reason: str,
     `status: revoked` y el motivo. Borrarla destruiría la explicación de por
     qué el agente se comportaba de otra forma en sesiones anteriores.
     """
-    agent = agent or os.environ.get("VAULT_AGENT", "")
+    agent = agent or _env("VAULT_AGENT")
     if not agent:
         return {
             "ok": False,
@@ -346,9 +368,9 @@ def vault_preferences_revoke(path: str, reason: str,
             "error": "Revocar exige un motivo: es lo único que explica el cambio de conducta",
         }
 
-    note_path = (VAULT_ROOT / path).resolve()
+    note_path = (_raiz() / path).resolve()
     try:
-        assert_within_vault(note_path, VAULT_ROOT)
+        assert_within_vault(note_path, _raiz())
     except ValueError as exc:
         return {"ok": False, "error_code": "INVALID_PATH", "error": str(exc)}
 

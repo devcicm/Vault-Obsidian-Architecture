@@ -58,9 +58,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-from vault_io import VAULT_ROOT, atomic_write_json
-
-SNAPSHOT_FILE = VAULT_ROOT / "00_System" / ".session-snapshot.json"
+from vault_io import atomic_write_json
 
 
 TRACK_EXTENSIONS = {
@@ -216,6 +214,26 @@ DOC_SUGGESTIONS = {
     },
     "doc": {"exts": {".md", ".mdx"}, "tool": "vault_write"},
 }
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioGobernanza:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioGobernanza(construir(root))
+
+
+def _snapshot_file() -> Path:
+    return _repo().instantanea_sesion
 
 
 def slugify(text: str) -> str:
@@ -437,7 +455,7 @@ def _hash_changed_since(
 
 def _load_snapshot(project: str) -> Optional[Dict[str, Any]]:
     try:
-        with open(SNAPSHOT_FILE, "r", encoding="utf-8") as f:
+        with open(_snapshot_file(), "r", encoding="utf-8") as f:
             data = json.load(f)
 
         # Support per-project snapshots stored in a dict keyed by project
@@ -457,12 +475,12 @@ def _load_snapshot(project: str) -> Optional[Dict[str, Any]]:
 
 
 def _save_snapshot(project: str, snapshot: Dict[str, Any]) -> None:
-    SNAPSHOT_FILE.parent.mkdir(parents=True, exist_ok=True)
+    _snapshot_file().parent.mkdir(parents=True, exist_ok=True)
 
     # Load existing multi-project file if present
 
     try:
-        with open(SNAPSHOT_FILE, "r", encoding="utf-8") as f:
+        with open(_snapshot_file(), "r", encoding="utf-8") as f:
             all_snaps = json.load(f)
 
         if not isinstance(all_snaps, dict) or "project" in all_snaps:
@@ -476,14 +494,14 @@ def _save_snapshot(project: str, snapshot: Dict[str, Any]) -> None:
     # atomic_write_* y no `open(..., "w")`: el escaneo de secretos, el
     # saneado de encoding y el temp+replace viven ahí. Escribir en crudo los
     # esquivaba los tres (AP-36) y dejaba la nota a medias si el proceso moría.
-    atomic_write_json(SNAPSHOT_FILE, all_snaps)
+    atomic_write_json(_snapshot_file(), all_snaps)
 
 
 # ─── Vault cross-reference ────────────────────────────────────────────────────
 
 
 def _load_code_index() -> List[Dict]:
-    code_index_path = VAULT_ROOT / "11_Code" / ".code-index.json"
+    code_index_path = _raiz() / "11_Code" / ".code-index.json"
 
     try:
         with open(code_index_path, "r", encoding="utf-8") as f:
@@ -496,7 +514,7 @@ def _load_code_index() -> List[Dict]:
 
 
 def _load_search_index() -> List[Dict]:
-    search_index_path = VAULT_ROOT / "99_Index" / "search-index.json"
+    search_index_path = _raiz() / "99_Index" / "search-index.json"
 
     try:
         with open(search_index_path, "r", encoding="utf-8") as f:

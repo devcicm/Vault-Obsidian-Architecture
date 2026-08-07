@@ -1,72 +1,52 @@
 #!/usr/bin/env python3
-"""
-Vault Backup List Tool — List all vault backups from registry
+"""Vault Backup List — adaptador de transporte del contexto Durabilidad.
 
-Lists all backups from .backup-registry.json or reads .manifest.json files as fallback.
+Este fichero ya no decide nada. Parsea argv, construye el contexto, llama al
+dominio (`vault/durabilidad/`) y escribe el envelope. La decisión —qué es una
+copia, de dónde se leen, qué pasa si el registro no está, cuántas caben en el
+límite— vive en el dominio y se prueba sin CLI ni disco de por medio.
 
-Usage:
-    python vault_backup_list.py
+La ruta y el nombre no cambian: `scripts/vault_backup_list.py` es lo que
+resuelven el tool-spec, `cli/registry.py`, el runner del MCP y `vault_smoke`, y
+mover un fichero de `scripts/` está fuera del alcance del refactor. Lo que
+cambia es dónde está el código que piensa.
+
+`--limit` estaba publicado en el catálogo con validadores y default, y sin
+implementar (AP-42): la segunda línea del ejemplo documentado moría en
+`unrecognized arguments`. Ahora existe, y el rango lo impone el dominio.
 """
 
 import argparse
 import json
 import sys
-from vault_errors import wrap_main
 from pathlib import Path
 from typing import Any, Dict
 
-from vault_io import VAULT_ROOT
+from vault_errors import wrap_main
 
-# AP-36 (contención): debe coincidir con vault_backup.BACKUP_ROOT — dentro del vault.
-BACKUP_ROOT = VAULT_ROOT / "vault-backups"
-REGISTRY_FILE = BACKUP_ROOT / ".backup-registry.json"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-
-def load_registry() -> Dict[str, Any]:
-    try:
-        with open(REGISTRY_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {"backups": []}
+from vault.durabilidad.modelo import (  # noqa: E402
+    LIMITE_DEFECTO, LIMITE_MAX, LIMITE_MIN, LimiteInvalido,
+)
+from vault.durabilidad.repositorio import RepositorioDurabilidad  # noqa: E402
+from vault.kernel import construir  # noqa: E402
 
 
-def load_manifest_fallback(backup_path: Path) -> Dict[str, Any]:
-    manifest_path = backup_path / ".manifest.json"
-    try:
-        with open(manifest_path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
+def vault_backup_list(limit: int = LIMITE_DEFECTO, root=None) -> Dict[str, Any]:
+    """El envelope publicado, armado desde el dominio.
 
-
-def vault_backup_list() -> Dict[str, Any]:
-    registry = load_registry()
-    backups = registry.get("backups", [])
-
-    if not backups:
-        backups = []
-        if BACKUP_ROOT.exists():
-            for item in sorted(BACKUP_ROOT.iterdir(), reverse=True):
-                if item.is_dir() and not item.name.startswith("."):
-                    manifest = load_manifest_fallback(item)
-                    vault_data = manifest.get("vault", {})
-                    backups.append(
-                        {
-                            "name": item.name,
-                            "label": manifest.get("label", ""),
-                            "createdAt": manifest.get("createdAt", ""),
-                            "noteCount": vault_data.get("totals", {}).get("notes", 0),
-                            "fileCount": vault_data.get("totals", {}).get("files", 0),
-                            "sizeKB": vault_data.get("totals", {}).get("sizeKB", 0),
-                            "sections": [s["folder"] for s in vault_data.get("sections", [])],
-                        }
-                    )
-
+    `root` existe para poder ejercer esto en proceso con dos vaults distintos,
+    que es el criterio con el que se acepta el piloto. Por defecto no se pasa y
+    el contexto resuelve la raíz **en la llamada**, no al importar (AP-49).
+    """
+    repositorio = RepositorioDurabilidad(construir(root))
+    total, backups = repositorio.registro().acotado(limit)
     return {
         "ok": True,
-        "total": len(backups),
-        "backups": backups,
-        "message": f"{len(backups)} backups found",
+        "total": total,
+        "backups": [b.a_envelope() for b in backups],
+        "message": f"{total} backups found",
     }
 
 
@@ -77,16 +57,27 @@ def main():
         epilog="""
 Ejemplos:
   python vault_backup_list.py
+  python vault_backup_list.py --limit 5
 
 Notas:
-  - Lee .backup-registry.json del directorio vault-backups/
+  - Lee .backup-registry.json del directorio vault-backups/ (dentro del vault)
   - Si no hay registry, escanea los directorios de backup directamente
   - Los backups se crean con vault_backup.py
+  - --limit acota los devueltos; `total` sigue diciendo cuántos hay
 """,
     )
-    _ = parser.parse_args()
+    parser.add_argument(
+        "--limit", type=int, default=LIMITE_DEFECTO,
+        help=f"Cantidad máxima devuelta (default: {LIMITE_DEFECTO}, "
+             f"rango {LIMITE_MIN}-{LIMITE_MAX})",
+    )
+    args = parser.parse_args()
 
-    result = vault_backup_list()
+    try:
+        result = vault_backup_list(args.limit)
+    except LimiteInvalido as e:
+        parser.error(str(e))
+
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0
 

@@ -31,14 +31,12 @@ import re
 import sys
 
 from vault_errors import wrap_main
-from vault_lib import utcnow, slugify
+from vault_lib import yaml_scalar, utcnow, slugify
 from vault_io import (
     write_report,
     atomic_write_text,
     assert_within_vault,
-    VAULT_ROOT,
     safe_wikilink,
-    update_section_index,
 )
 import uuid
 
@@ -46,9 +44,6 @@ from pathlib import Path
 
 
 from typing import Any, Dict, List, Optional
-
-
-KNOWLEDGE_DIR = VAULT_ROOT / "07_Knowledge"
 
 
 CATEGORIES = [
@@ -72,6 +67,27 @@ CATEGORY_FOLDERS = {
 }
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioAutoria:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioAutoria(construir(root))
+
+
+def _knowledge_dir() -> Path:
+    return _repo().seccion("07_Knowledge")
+
+
 def vault_knowledge_save(
     category: str,
     title: str,
@@ -88,7 +104,7 @@ def vault_knowledge_save(
             "error": f"Categoría inválida: {category}. Válidas: {CATEGORIES}",
         }
 
-    folder = KNOWLEDGE_DIR / CATEGORY_FOLDERS[category]
+    folder = _knowledge_dir() / CATEGORY_FOLDERS[category]
 
     safe_title = slugify(title)
 
@@ -99,7 +115,7 @@ def vault_knowledge_save(
     timestamp = utcnow()
 
     try:
-        assert_within_vault(note_path, VAULT_ROOT)
+        assert_within_vault(note_path, _raiz())
 
     except ValueError as exc:
         return {
@@ -109,36 +125,35 @@ def vault_knowledge_save(
             "message": str(exc),
         }
 
-    frontmatter = ["---"]
+    frontmatter = Frontmatter()
 
-    frontmatter.append(f"title: {json.dumps(title)}")
+    frontmatter.set("title", title)
 
-    frontmatter.append(f"id: {str(uuid.uuid4())}")
+    frontmatter.set("id", str(uuid.uuid4()))
 
-    frontmatter.append(f"category: {category}")
+    frontmatter.set("category", category)
 
-    frontmatter.append(f"createdAt: {timestamp}")
+    frontmatter.set("createdAt", timestamp)
 
-    frontmatter.append(f"updatedAt: {timestamp}")
+    frontmatter.set("updatedAt", timestamp)
 
     if project:
-        frontmatter.append(f"project: {project}")
+        frontmatter.set("project", project)
 
     if tags:
-        frontmatter.append(f"tags: {json.dumps(tags)}")
+        frontmatter.set("tags", tags)
 
     if related:
-        frontmatter.append(f"related: {json.dumps(related)}")
+        frontmatter.set("related", related)
 
-    frontmatter.append(f"cia_integrity: medium")
+    frontmatter.set("cia_integrity", "medium")
 
-    frontmatter.append(f"cia_availability: medium")
+    frontmatter.set("cia_availability", "medium")
 
-    frontmatter.append(f"cia_sensitivity: internal")
+    frontmatter.set("cia_sensitivity", "internal")
 
-    frontmatter.append(f"agent: system")
+    frontmatter.set("agent", "system")
 
-    frontmatter.append("---")
 
     if category in ["dependency", "framework"]:
         body_sections = [f"## {title}\n"]
@@ -173,17 +188,21 @@ def vault_knowledge_save(
             + " ".join(f"[[{safe_wikilink(r)}]]" for r in related)
         )
 
-    final_content = "\n".join(frontmatter) + "\n\n" + "\n\n".join(body_sections)
+    final_content = frontmatter.render() + "\n\n" + "\n\n".join(body_sections)
 
     folder.mkdir(parents=True, exist_ok=True)
 
     atomic_write_text(note_path, final_content)
-    update_section_index("07_Knowledge")
+    # El indice de seccion lo dispara el write path del kernel
+    # (`vault_io._auto_section_index`) en cuanto se escribe la nota. La
+    # llamada explicita que habia aqui lo regeneraba una segunda vez con
+    # el mismo contenido: trabajo duplicado que ademas se contaba como
+    # escritura en el envelope.
 
     return {
         "ok": True,
         **write_report(),
-        "path": str(note_path.relative_to(VAULT_ROOT)),
+        "path": str(note_path.relative_to(_raiz())).replace("\\", "/"),
         "category": category,
         "title": title,
         "message": f"Knowledge note saved to {CATEGORY_FOLDERS[category]}/",

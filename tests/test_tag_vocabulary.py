@@ -108,21 +108,34 @@ def test_apply_vocabulary_reporta_los_terminos_introducidos(monkeypatch):
 
 def test_apply_vocabulary_no_escribe_nada(monkeypatch, tmp_path):
     """Anotar antes de confirmar la escritura sería memoria de algo inexistente."""
-    monkeypatch.setattr(vault_tags, "TAG_LEDGER", tmp_path / "no-debe-existir.json")
-    monkeypatch.setattr(vault_tags, "VOCAB_DIR", tmp_path / "vocabulary")
+    _apuntar_al_vault(monkeypatch, tmp_path)
     monkeypatch.setattr(vault_tags, "_canonical_index", lambda: dict(INDICE))
     vault_tags.apply_vocabulary(["termino-nuevo"])
-    assert not (tmp_path / "no-debe-existir.json").exists()
+    assert not (tmp_path / "19_Audits" / "vocabulary" / "tag-ledger.json").exists()
 
 
 # ── Bitácora ─────────────────────────────────────────────────────────────────
 
+def _apuntar_al_vault(monkeypatch, raiz):
+    """Se apunta la raíz, no cada ruta.
+
+    Antes había que parchear `TAG_LEDGER`, `VOCAB_DIR` y `VAULT_ROOT` por
+    separado — tres constantes congeladas al importar (AP-49) que el test tenía
+    que mantener coherentes a mano. Ahora se inyecta la raíz una vez y las rutas
+    salen del repositorio: si se separaran, el propio dominio fallaría.
+
+    El override lo deshace el fixture autouse de `conftest.py` al terminar cada
+    test, así que no hace falta restaurarlo aquí.
+    """
+    import vault_io
+
+    vault_io.set_vault_root(raiz)
+
+
 @pytest.fixture
 def ledger(tmp_path, monkeypatch):
-    monkeypatch.setattr(vault_tags, "VOCAB_DIR", tmp_path / "vocabulary")
-    monkeypatch.setattr(vault_tags, "TAG_LEDGER", tmp_path / "vocabulary" / "tag-ledger.json")
-    monkeypatch.setattr(vault_tags, "VAULT_ROOT", tmp_path)
-    return tmp_path / "vocabulary" / "tag-ledger.json"
+    _apuntar_al_vault(monkeypatch, tmp_path)
+    return tmp_path / "19_Audits" / "vocabulary" / "tag-ledger.json"
 
 
 def test_record_new_tags_guarda_quien_cuando_y_donde(ledger):

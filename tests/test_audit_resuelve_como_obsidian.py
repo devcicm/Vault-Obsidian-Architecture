@@ -43,25 +43,28 @@ def _vault(tmp_path: Path) -> Path:
     return root
 
 
-def _con_raiz(root: Path):
-    """`VAULT_ROOT` es global del módulo; se restaura siempre."""
-    previo = va.VAULT_ROOT
-    va.VAULT_ROOT = root
-    return previo
+def _con_raiz(root: Path) -> None:
+    """Se apunta la raíz, no la constante del módulo.
+
+    `vault_audit.VAULT_ROOT` ya no existe: el módulo resuelve la raíz al usarla.
+    Reasignar el atributo seguiría siendo legal en Python y no tendría ningún
+    efecto — el test habría corrido contra el vault detectado sin avisar. El
+    override lo deshace el fixture autouse de `conftest.py`.
+    """
+    import vault_io
+
+    vault_io.set_vault_root(root)
 
 
 def _rotos(root: Path):
-    previo = _con_raiz(root)
-    try:
-        notas = [
-            p
-            for p in root.rglob("*.md")
-            if not va.is_snapshot_path(p.relative_to(root))
-        ]
-        _, stems = va._build_indexes(notas)
-        return va._detect_broken_links(notas, stems)
-    finally:
-        va.VAULT_ROOT = previo
+    _con_raiz(root)
+    notas = [
+        p
+        for p in root.rglob("*.md")
+        if not va.is_snapshot_path(p.relative_to(root))
+    ]
+    _, stems = va._build_indexes(notas)
+    return va._detect_broken_links(notas, stems)
 
 
 # --- 1) alias -----------------------------------------------------------------
@@ -174,14 +177,16 @@ def test_el_primer_de_vault_init_declara_status(tmp_path):
     from vault_lib import read_frontmatter
     from vault_norms import STATUS_VOCAB
 
-    previo = vi.VAULT_ROOT
-    vi.VAULT_ROOT = tmp_path / "v"
-    try:
-        (vi.VAULT_ROOT / "01_Projects").mkdir(parents=True)
-        creado = vi._create_scaffold_note("01_Projects")
-        fm = read_frontmatter(vi.VAULT_ROOT / creado["path"])
-    finally:
-        vi.VAULT_ROOT = previo
+    # Se apunta la raíz, no la constante: `vault_init` migró al contexto Ciclo
+    # de vida y la resuelve al usarla. El override lo deshace el fixture
+    # autouse de `conftest.py`.
+    import vault_io
+
+    raiz = tmp_path / "v"
+    vault_io.set_vault_root(raiz)
+    (raiz / "01_Projects").mkdir(parents=True)
+    creado = vi._create_scaffold_note("01_Projects")
+    fm = read_frontmatter(raiz / creado["path"])
 
     assert fm.get("status") == "template"
     assert fm["status"] in STATUS_VOCAB

@@ -29,10 +29,28 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-GRAPH_FILE = VAULT_ROOT / "99_Index" / "graph.json"
-ENRICHED_FILE = VAULT_ROOT / "99_Index" / "graph-enriched.json"
+from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _grafo() -> RepositorioGrafo:
+    """El grafo no es de Consulta: se lee del contexto que lo escribe.
+
+    Que la ubicación venga de `RepositorioGrafo` y no de una constante propia es
+    deliberado — dos sitios decidiendo dónde vive `graph.json` es AP-05, y el
+    día que se mueva solo se enteraría uno.
+    """
+    return RepositorioGrafo(construir())
+
+
+def _graph_file():
+    return _grafo().grafo
+
+
+def _enriched_file():
+    return _grafo().grafo_enriquecido
 
 # Peso por tipo de relación. Una arista declarada a mano (wiki_link, related)
 # es evidencia fuerte de que el autor considera las notas conectadas; una
@@ -64,7 +82,7 @@ DEFAULT_MAX_NODES = 50
 
 def _load_graph() -> Optional[Dict[str, Any]]:
     """Carga el grafo, prefiriendo el enriquecido (trae predicados y clase)."""
-    graph_file = ENRICHED_FILE if ENRICHED_FILE.exists() else GRAPH_FILE
+    graph_file = _enriched_file() if _enriched_file().exists() else _graph_file()
     if not graph_file.exists():
         return None
     try:
@@ -273,8 +291,8 @@ def vault_subgraph(
             "edge_count": len(edges_kept),
             "by_hop": dict(sorted(by_hop.items())),
             "truncated": truncated,
-            "graph_source": ENRICHED_FILE.name if ENRICHED_FILE.exists()
-                            else GRAPH_FILE.name,
+            "graph_source": _enriched_file().name if _enriched_file().exists()
+                            else _graph_file().name,
         },
     }
 

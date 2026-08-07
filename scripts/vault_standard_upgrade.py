@@ -24,7 +24,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from vault_io import VAULT_ROOT
 from vault_registry import standard_folders
 
 # Directorio de las propias tools. No es un side-effect ni una ruta del vault:
@@ -35,11 +34,39 @@ from vault_registry import standard_folders
 # `standard-version.json` en vez de romper.
 SCRIPTS_DIR = Path(__file__).resolve().parent
 
-SYSTEM_DIR = VAULT_ROOT / "00_System"
-VERSION_FILE = SYSTEM_DIR / "standard-version.json"
-IDENTITY_FILE = SYSTEM_DIR / "identity.md"
 
-CURRENT_VERSION = "v39.6"
+CURRENT_VERSION = "v40.3"
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.ciclo_de_vida.repositorio import RepositorioCicloDeVida  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+# El vocabulario se declara una vez y se consume, no se copia. Ver
+# `vault_vocabulario.py` para el registro y su contexto dueño.
+from vault_vocabulario import opciones as _opciones
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioCicloDeVida:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioCicloDeVida(construir(root))
+
+
+def _system_dir() -> Path:
+    return _repo().dir_sistema
+
+
+def _version_file() -> Path:
+    return _repo().fichero_version
+
+
+def _identity_file() -> Path:
+    return _repo().fichero_identidad
 
 
 def _live_identity() -> Dict[str, str]:
@@ -384,6 +411,28 @@ MIGRATIONS: Dict[str, Dict[str, Any]] = {
             "Sin base de datos, sin embeddings y sin servicio externo",
         ],
     },
+    "v40": {
+        "description": (
+            "Contextos acotados: ocho contextos de dominio mas un kernel "
+            "compartido, con `vault_arch` como registro ejecutable de fronteras. "
+            "Sin migracion estructural: no anade ni renombra una sola carpeta."
+        ),
+        # Un vault existente NO cambia de forma al subir a v40. El refactor es
+        # del toolkit, no del vault, y decirlo aqui importa: una entrada sin
+        # `add_folders` es la unica manera de que `--to latest` deje constancia
+        # de la version aplicada sin tocar el disco del usuario.
+        "add_folders": [],
+        "update_identity": _live_identity(),
+        "notes": [
+            "vault_arch.py (NUEVO): registro CONTEXTS + guard de fronteras por AST + blueprint",
+            "vault/ (NUEVO paquete): VaultContext inmutable, puertos Protocol y un repositorio por contexto",
+            "AP-49 (NUEVA): vinculo resuelto en tiempo de import — 82 vinculos congelados en 62 modulos, saldados a 0",
+            "docs/ARQUITECTURA.md (NUEVO): derivado de `vault_arch --blueprint`, no escrito a mano",
+            "La prohibicion del Meta-toolkit deja de ser prosa: se mide por AST (forbidden_writes)",
+            "Puerta nueva de AP-05 sobre rutas declaradas en dos repositorios de dominio",
+            "Ni un fichero se mueve de scripts/, ni un envelope cambia: los consumidores no se enteran",
+        ],
+    },
 }
 
 VERSION_ORDER = [
@@ -408,6 +457,7 @@ VERSION_ORDER = [
     "v37",
     "v38",
     "v39",
+    "v40",
 ]
 
 
@@ -449,7 +499,7 @@ def _version_index(v: str) -> int:
 
 
 def _read_version_file() -> Dict[str, Any]:
-    if not VERSION_FILE.exists():
+    if not _version_file().exists():
         return {
             "applied_version": None,
             "applied_at": None,
@@ -457,7 +507,7 @@ def _read_version_file() -> Dict[str, Any]:
             "migrations_applied": [],
         }
     try:
-        return json.loads(VERSION_FILE.read_text(encoding="utf-8"))
+        return json.loads(_version_file().read_text(encoding="utf-8"))
     except (json.JSONDecodeError, IOError):
         return {
             "applied_version": None,
@@ -468,8 +518,8 @@ def _read_version_file() -> Dict[str, Any]:
 
 
 def _write_version_file(data: Dict[str, Any]) -> None:
-    SYSTEM_DIR.mkdir(parents=True, exist_ok=True)
-    VERSION_FILE.write_text(
+    _system_dir().mkdir(parents=True, exist_ok=True)
+    _version_file().write_text(
         json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8"
     )
 
@@ -484,7 +534,7 @@ def _run_compliance_check(target_version: str) -> Dict[str, Any]:
     gaps: List[Dict[str, Any]] = []
 
     # 1. Folder check
-    missing_folders = [f for f in STANDARD_FOLDERS if not (VAULT_ROOT / f).exists()]
+    missing_folders = [f for f in STANDARD_FOLDERS if not (_raiz() / f).exists()]
     folders_ok = len(missing_folders) == 0
     if missing_folders:
         gaps.append(
@@ -497,7 +547,7 @@ def _run_compliance_check(target_version: str) -> Dict[str, Any]:
         )
 
     # 2. Frontmatter compliance
-    md_files = list(VAULT_ROOT.rglob("*.md"))
+    md_files = list(_raiz().rglob("*.md"))
     md_files = [f for f in md_files if not any(p.startswith(".") for p in f.parts)]
     total_md = len(md_files)
     compliant_md = 0
@@ -596,7 +646,7 @@ def _apply_migration(
 
     if not fixes_only:
         for folder in migration.get("add_folders", []):
-            folder_path = VAULT_ROOT / folder
+            folder_path = _raiz() / folder
             if folder_path.exists():
                 folders_skipped.append(folder)
             else:
@@ -704,7 +754,7 @@ def vault_standard_upgrade(
             "ok": True,
             "action": "set_profile",
             "profile": set_profile,
-            "path": str(VERSION_FILE.relative_to(VAULT_ROOT)).replace("\\", "/"),
+            "path": str(_version_file().relative_to(_raiz())).replace("\\", "/"),
         }
         if validate:
             result["compliance"] = _run_compliance_check(
@@ -727,7 +777,7 @@ def vault_standard_upgrade(
         # vault_write / vault_section_index call can succeed.
         base_folders_created: List[str] = []
         for folder in STANDARD_FOLDERS:
-            folder_path = VAULT_ROOT / folder
+            folder_path = _raiz() / folder
             if not folder_path.exists():
                 folder_path.mkdir(parents=True, exist_ok=True)
                 base_folders_created.append(folder)
@@ -756,7 +806,7 @@ def vault_standard_upgrade(
             "ok": True,
             "action": "init",
             "applied_version": init_version,
-            "path": str(VERSION_FILE.relative_to(VAULT_ROOT)).replace("\\", "/"),
+            "path": str(_version_file().relative_to(_raiz())).replace("\\", "/"),
             "base_folders_created": base_folders_created,
             "sections_indexed": sections_indexed,
         }
@@ -808,8 +858,16 @@ def vault_standard_upgrade(
         # versión MAYOR para siempre —`_version_index` compara por mayor— y el
         # vault dice v39.0 mientras corre con las tools de v39.1. Es la misma
         # familia que AP-37: `ok: true` mientras el estado sigue obsoleto.
+        # `--check` pregunta; no responde escribiendo. Esta rama comprobaba
+        # `dry_run` pero no `check_only`, así que un consumidor que solo quería
+        # saber si estaba al día salía sellado en la versión nueva sin haberlo
+        # pedido — y el envelope se lo contaba como `action: version_stamped`,
+        # que es exactamente lo que no había autorizado.
         sellado = False
-        if not dry_run and current_applied != to_version and to_version == CURRENT_VERSION:
+        pendiente_de_sellar = (
+            current_applied != to_version and to_version == CURRENT_VERSION
+        )
+        if (not dry_run and not check_only) and pendiente_de_sellar:
             state["applied_version"] = to_version
             state["applied_at"] = utcnow()
             state["applied_by"] = agent
@@ -822,11 +880,24 @@ def vault_standard_upgrade(
                 f"Sin migraciones que aplicar: {current_applied} → {to_version} "
                 "no cambia la estructura. Se sella la versión."
                 if sellado
-                else f"Vault is up to date at {current_applied}. No migrations needed."
+                else (
+                    # El caso que antes se resolvía escribiendo: hay salto de
+                    # versión menor y nadie ha pedido aplicarlo. Se dice, con el
+                    # comando exacto, y se deja la decisión donde estaba.
+                    f"Salto de versión menor pendiente de sellar: "
+                    f"{current_applied} → {to_version}. No cambia la estructura "
+                    f"y no se ha escrito nada. Para sellarlo: "
+                    f"--to {to_version}"
+                    if pendiente_de_sellar
+                    else f"Vault is up to date at {current_applied}. No migrations needed."
+                )
             ),
             "current_version": to_version if sellado else current_applied,
             "target_version": to_version,
             "version_stamped": sellado,
+            # Lo que el consumidor necesita para decidir, y que antes solo podía
+            # deducir de que la tool ya se lo hubiera hecho.
+            "stamp_pending": pendiente_de_sellar and not sellado,
         }
         if validate:
             result["compliance"] = _run_compliance_check(current_applied)
@@ -843,7 +914,7 @@ def vault_standard_upgrade(
                     "folders_to_create": [
                         f
                         for f in m.get("add_folders", [])
-                        if not (VAULT_ROOT / f).exists()
+                        if not (_raiz() / f).exists()
                     ],
                     "notes": m.get("notes", []),
                 }
@@ -908,7 +979,7 @@ def vault_standard_upgrade(
         "folders_created": all_folders_created,
         "fixes_applied": all_fixes_applied,
         "fixes_failed": all_fixes_failed,
-        "version_file": str(VERSION_FILE.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "version_file": str(_version_file().relative_to(_raiz())).replace("\\", "/"),
     }
     if validate:
         result["compliance"] = _run_compliance_check(to_version)
@@ -974,7 +1045,7 @@ Ejemplos:
     parser.add_argument(
         "--set-profile",
         dest="set_profile",
-        choices=["minimal", "standard", "full"],
+        choices=_opciones("detalle"),
         help="Set the tool profile in standard-version.json (minimal=10, standard=30, full=61)",
     )
     parser.add_argument(

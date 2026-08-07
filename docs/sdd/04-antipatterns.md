@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
-> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-48 más
-> las familias PAT, SP y CN. Por familia: AP 48, CN 3, PAT 6, SP 3.
-> Bilingual document. Full norm catalog: antipatterns AP-01..AP-48 plus the PAT,
-> SP and CN families. By family: AP 48, CN 3, PAT 6, SP 3.
+> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-52 más
+> las familias PAT, SP y CN. Por familia: AP 52, CN 3, PAT 6, SP 3.
+> Bilingual document. Full norm catalog: antipatterns AP-01..AP-52 plus the PAT,
+> SP and CN families. By family: AP 52, CN 3, PAT 6, SP 3.
 
 ---
 
 ## ES
 
-Total de normas registradas: 60 (AP 48, CN 3, PAT 6, SP 3)
+Total de normas registradas: 64 (AP 52, CN 3, PAT 6, SP 3)
 
 ### AP-01: Documentación alucinada
 
@@ -497,6 +497,74 @@ Medido en v39.5 sobre el servidor MCP: nueve tools con backend nativo en Node, s
 
 **Prevención:** Backend nativo solo para lo que **no tiene** implementación en Python; todo lo demás cae al runner, que es donde vive el contrato publicado. La implementación desplazada no se borra (no-derogación): se anota `superseded_by:` y se deja fuera del despacho. La regla se comprueba por comportamiento y no por lectura del código -- se llama la tool por MCP y se contrasta el envelope contra el contrato, que es el criterio del consumidor y no el propio (AP-44).
 
+### AP-49: Vínculo resuelto en tiempo de import
+
+- **Severidad:** high
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_norms --audit, vault_arch --check
+
+Un módulo deriva su ruta, su configuración o su dependencia en el momento de **importarse**, no en el de usarse. `SYSTEM_DIR = VAULT_ROOT / '00_System'` a nivel de módulo se evalúa una sola vez, cuando el intérprete carga el fichero, y a partir de ahí es una constante.
+
+Lo grave no es la constante: es que deja **inerte una costura que existe**. `vault_io.set_vault_root()` está publicado y 12 tests lo usan, pero no puede reapuntar a un módulo que ya calculó su ruta al cargar. La inyección parece disponible y no lo está, que es peor que no tenerla -- quien la usa cree haber redirigido la escritura.
+
+Medido en v40.0 por el propio guard: **0 vínculos congelados en 0 módulos**. Eran 82 en 62 módulos antes de empezar a migrar contextos al dominio, y cayeron uno a uno: Durabilidad los dejó en 77, Índices en 69, Grafo en 51, Consulta en 45, Gobernanza en 38, Ciclo de vida en 34, Meta-toolkit en 31 y Autoría --donde estaban los 31 últimos, el 100% de la deuda que quedaba-- en 0. Llegar a cero destapó la otra mitad de la norma: veinte módulos seguían haciendo `from vault_io import VAULT_ROOT` y usándolo **dentro de funciones**. No son asignaciones de nivel de módulo, así que el guard los daba por limpios, y seguían dependiendo del paliativo de reanclaje que el refactor existe para no necesitar. Se mide aparte (`raw_vault_root_imports`), también en cero, y el caso legítimo se pide con alias. La cifra es la que cuenta `vault_arch --check`, no una estimación a ojo: la norma y su puerta miden lo mismo o la norma no es comprobable. La consecuencia visible era que `cli/runner.py` aislaba cada tool en un subproceso citando "estado a nivel de módulo" como razón: el aislamiento por proceso no era una decisión de diseño libre sino la compensación de este acoplamiento. Saldada la deuda, esa razón caducó y quedó anotada allí mismo; el subproceso se conserva por las otras dos que siguen siendo ciertas --timeout que puede matar lo que vigila, y envelope sin reinterpretar--. El refactor lo hizo posible, no conveniente.
+
+**Prevención:** La raíz y sus derivadas se reciben, no se importan: el dominio toma un contexto (`VaultContext`) y el adaptador lo construye por llamada. Si un módulo necesita la ruta, la resuelve **tarde** con `get_vault_root()` dentro de la función. El guard es AST sobre asignaciones de nivel de módulo que derivan de `VAULT_ROOT`, con baseline que solo puede encoger -- la deuda medida no se arregla en un commit, pero no puede crecer.
+
+### AP-50: Decisión duplicada sin dueño declarado
+
+- **Severidad:** high
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_norms --audit, vault_arch --check
+
+La misma **decisión** --qué valores son válidos, cuál es el default, cómo se escapa un campo-- se toma en más de un punto de uso sin que ningún registro declare quién manda. No es AP-05: aquel habla de un **dato** con dos fuentes, y se ve porque las dos copias divergen. Esto se ve cuando ya divergieron, que es tarde.
+
+Lo que lo hace caro es que cada copia parece correcta en su sitio. `SEVERITIES = ['critical', 'high', 'medium', 'low']` no está mal escrito en ninguno de los catorce ficheros donde se midió; está mal que sean catorce y que nada los compare. El día que el registro cambie, la copia que se quede atrás rechazará un valor válido o aceptará uno inventado, y ningún test lo notará porque cada fichero sigue siendo coherente consigo mismo.
+
+Medido en v40.1 por sus tres guards: **0 copias de vocabulario, 0 lecturas de entorno sin declarar, 0 vocabularios sin contexto dueño**. Eran 14 copias del vocabulario en 13 módulos --cuatro como `choices=` de argparse y diez como constante-- y 13 variables de entorno con su default escrito en cada punto de lectura, de las que solo seis estaban documentadas. Dos ya habían divergido antes de que existiera el guard: `VAULT_VOICE` se comparaba contra `'verbose'` en un módulo y contra `'0'` con default `'1'` en otro, y `VAULT_MCP_LOG` estaba declarada como fichero de log mientras el único código que la lee la usa como nivel con default `'info'`.
+
+El dueño es la mitad que faltaba. `vault_norms.DOMAIN_STATUS_VOCABS` ya había resuelto esto para `status` en v39 y se quedó solo: compartir la constante evita la copia, pero no contesta quién decide cuándo cambia. Por eso cada entrada del registro declara el contexto acotado que manda sobre ella, y ese contexto tiene que existir en `vault_arch.CONTEXTS`.
+
+**Prevención:** Registro canónico con dueño, consumidores derivados, guard sin baseline. Los vocabularios cerrados en `vault_vocabulario.py`, la configuración en `vault_entorno.py`, y `vault_arch --check` fallando si aparece una copia, una lectura sin declarar o un vocabulario huérfano. **Sin baseline a propósito**: las catorce copias se saldaron al declarar el registro, así que la puerta nace en cero y una baseline solo serviría para admitir la número quince. Lo que ya tiene registro canónico no se copia: se declara `derivado_de` y se resuelve al llamarse, nunca al importarse (AP-49). Un dato canónico que no es puerto de su contexto se acaba copiando -- los tres registros que `CLAUDE.md` declara fuente única de verdad se leían por fuera de la superficie publicada, y así nacieron las catorce copias.
+
+### AP-51: La tool culpa al dato de su propio fallo
+
+- **Severidad:** high
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_blame_audit --check
+
+Una tool falla al leer o al interpretar algo, se traga el fallo y devuelve un vacio que el llamante no puede distinguir de un resultado legitimo. El error deja de ser un error y pasa a ser un **hecho sobre el vault**: el informe que lo agregue dira que N notas no tienen aliases, y no sera cierto -- es que no se pudieron leer.
+
+No es lo mismo *no hay* que *no pude mirar*, y esa es toda la norma. AP-44 cubre la mitad de arriba --verificar con el criterio del consumidor y no con el propio--; esta cubre la de abajo, que es el mecanismo por el que un fallo propio acaba pareciendo un dato malo. Salio al ejecutar contra un vault ajeno al estandar (**regla 7**): tres tools declaraban invalidas notas que Obsidian leia sin problema. Las notas estaban bien; el criterio que las media, no.
+
+Lo que la norma **no** prohibe es capturar amplio. Prohibe capturar amplio y callarse: devolver `ok: false` con el error es correcto porque el llamante recibe la mala noticia y decide. Capturar `FileNotFoundError` tampoco infringe: es un criterio, el autor sabe que tolera y por que. Lo que infringe es `except Exception: return []`.
+
+Medida en v40.1: **86 sitios en 37 modulos**. Nace con baseline por la misma razon que AP-37 --que empezo en 55 y llego a 0--: un guard que falla en 86 sitios se desactiva el primer dia, y un guard desactivado no protege nada. La baseline solo puede encoger.
+
+El propio detector estreno el fallo que persigue. La primera version midio 101 sitios porque clasificaba `except yaml.YAMLError` como captura amplia: son `ast.Attribute` y no `ast.Name`, asi que caian en la rama del `except` desnudo. Contaba como infraccion justo las capturas mas precisas del repo. Quince falsos positivos, y el error era el de AP-44 cometido dentro del guard.
+
+**Prevención:** Capturar la excepcion concreta que se sabe tolerar, y si se captura amplio, **exponer**: devolver el fallo en el envelope en vez de un vacio. Cuando el vacio es la respuesta correcta, distinguirlo del vacio por fallo con un campo aparte (`unreadable`, `errors`) para que el agregado no los confunda. `vault_blame_audit --check --strict` mide por AST y no por texto: un detector que buscara la cadena `except Exception` no veria la diferencia entre devolver un vacio y devolver un envelope con `ok: false`, que es toda la distincion que la norma sostiene.
+
+### AP-52: El error se emite fuera del contrato del catalogo
+
+- **Severidad:** medium
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_error_contract --check
+
+Una tool falla, lo dice, y lo dice mal: devuelve `{"ok": false, "error": "..."}` escrito a mano en vez de pasar por `vault_errors.emit_error`. La frase es correcta; el contrato, no. El envelope del catalogo trae `error_code`, `category`, `severity`, `recovery` y `timestamp`; el escrito a mano no trae ninguno.
+
+Importa porque el consumidor no lee la frase: **decide por el codigo**. El servidor MCP y `cli/` deciden si reintentar, abortar o pedir permiso mirando `error_code` y `recovery.action`. Sin ellos, un fallo con recuperacion conocida llega como un fallo opaco, y la unica salida del agente que lo recibe es adivinar.
+
+Es AP-05 aplicada al **contrato de error** --hay un registro que declara como se nombra y se recupera cada fallo, y 158 sitios que lo deciden por su cuenta-- y es AP-51 vista desde el otro lado: alli el fallo se disfrazaba de dato, aqui llega como fallo pero desnudo de todo lo que lo hace accionable.
+
+Salio de la caracterizacion maliciosa: invocar las 94 tools de forma malformada y mirar **como** fallan, no si fallan. El grueso estaba limpio --las 45 tools con `required_args` rechazan la invocacion vacia por argparse, y las 92 tools Python rechazan un flag desconocido-- y el hallazgo estaba en la forma del envelope, no en su ausencia.
+
+Medida en v40.2: **158 sitios en 58 modulos**. Nace con baseline por la misma razon que AP-37 y AP-51: un guard que falla en 158 sitios se desactiva el primer dia. La baseline solo puede encoger.
+
+El guard mide **forma y no flujo**: un dict con `ok: False` y pinta de envelope que no lleva `error_code`. No sigue el valor hasta stdout, asi que cuenta tambien envelopes internos que nunca se imprimen. Eso se declara en vez de esconderse: un guard que promete una precision que no tiene es la clase de afirmacion no falsable que AP-37 persigue.
+
+**Prevención:** Emitir por `emit_error(tool, CODIGO, mensaje)` y, si el codigo no existe, anadirlo a `ERROR_CATALOG` -- que es donde vive la decision de como se recupera ese fallo. Anadir el codigo cuesta una linea; no anadirlo traslada el coste a cada consumidor, para siempre. `vault_error_contract --check --strict` mide por AST.
+
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
 - **Severidad:** high
@@ -621,7 +689,7 @@ Antes de cualquier operación masiva (migración, rename en lote, vault_tags --r
 
 ## EN
 
-Total registered norms: 60 (AP 48, CN 3, PAT 6, SP 3)
+Total registered norms: 64 (AP 52, CN 3, PAT 6, SP 3)
 
 ### AP-01: Documentación alucinada
 
@@ -1108,6 +1176,74 @@ Es AP-05 (múltiples fuentes de verdad) desplazado del dato al camino de ejecuci
 Medido en v39.5 sobre el servidor MCP: nueve tools con backend nativo en Node, siete de ellas con script Python del mismo nombre. Ninguna de las siete compartía un solo campo de envelope con el contrato de `00_System/tool-spec.json` -- `vault_fundamentals` devolvía `compliance_pct`/`passed` donde el contrato dice `path`/`total`. Y la divergencia peor no era de forma sino de efecto: la implementación nativa de `vault_graph` no escribía el grafo, así que un agente la llamaba, recibía `ok: true` y el índice se quedaba desfasado -- AP-37 y AP-47 servidos por el único camino que un agente real usa. `vault_smoke` recorría las 91 tools del catálogo ejecutando el `.py`: probaba exactamente la implementación que el agente no toca.
 
 **Prevention:** Backend nativo solo para lo que **no tiene** implementación en Python; todo lo demás cae al runner, que es donde vive el contrato publicado. La implementación desplazada no se borra (no-derogación): se anota `superseded_by:` y se deja fuera del despacho. La regla se comprueba por comportamiento y no por lectura del código -- se llama la tool por MCP y se contrasta el envelope contra el contrato, que es el criterio del consumidor y no el propio (AP-44).
+
+### AP-49: Vínculo resuelto en tiempo de import
+
+- **Severity:** high
+- **Enforcement:** guard+audit
+- **Detected by:** vault_norms --audit, vault_arch --check
+
+Un módulo deriva su ruta, su configuración o su dependencia en el momento de **importarse**, no en el de usarse. `SYSTEM_DIR = VAULT_ROOT / '00_System'` a nivel de módulo se evalúa una sola vez, cuando el intérprete carga el fichero, y a partir de ahí es una constante.
+
+Lo grave no es la constante: es que deja **inerte una costura que existe**. `vault_io.set_vault_root()` está publicado y 12 tests lo usan, pero no puede reapuntar a un módulo que ya calculó su ruta al cargar. La inyección parece disponible y no lo está, que es peor que no tenerla -- quien la usa cree haber redirigido la escritura.
+
+Medido en v40.0 por el propio guard: **0 vínculos congelados en 0 módulos**. Eran 82 en 62 módulos antes de empezar a migrar contextos al dominio, y cayeron uno a uno: Durabilidad los dejó en 77, Índices en 69, Grafo en 51, Consulta en 45, Gobernanza en 38, Ciclo de vida en 34, Meta-toolkit en 31 y Autoría --donde estaban los 31 últimos, el 100% de la deuda que quedaba-- en 0. Llegar a cero destapó la otra mitad de la norma: veinte módulos seguían haciendo `from vault_io import VAULT_ROOT` y usándolo **dentro de funciones**. No son asignaciones de nivel de módulo, así que el guard los daba por limpios, y seguían dependiendo del paliativo de reanclaje que el refactor existe para no necesitar. Se mide aparte (`raw_vault_root_imports`), también en cero, y el caso legítimo se pide con alias. La cifra es la que cuenta `vault_arch --check`, no una estimación a ojo: la norma y su puerta miden lo mismo o la norma no es comprobable. La consecuencia visible era que `cli/runner.py` aislaba cada tool en un subproceso citando "estado a nivel de módulo" como razón: el aislamiento por proceso no era una decisión de diseño libre sino la compensación de este acoplamiento. Saldada la deuda, esa razón caducó y quedó anotada allí mismo; el subproceso se conserva por las otras dos que siguen siendo ciertas --timeout que puede matar lo que vigila, y envelope sin reinterpretar--. El refactor lo hizo posible, no conveniente.
+
+**Prevention:** La raíz y sus derivadas se reciben, no se importan: el dominio toma un contexto (`VaultContext`) y el adaptador lo construye por llamada. Si un módulo necesita la ruta, la resuelve **tarde** con `get_vault_root()` dentro de la función. El guard es AST sobre asignaciones de nivel de módulo que derivan de `VAULT_ROOT`, con baseline que solo puede encoger -- la deuda medida no se arregla en un commit, pero no puede crecer.
+
+### AP-50: Decisión duplicada sin dueño declarado
+
+- **Severity:** high
+- **Enforcement:** guard+audit
+- **Detected by:** vault_norms --audit, vault_arch --check
+
+La misma **decisión** --qué valores son válidos, cuál es el default, cómo se escapa un campo-- se toma en más de un punto de uso sin que ningún registro declare quién manda. No es AP-05: aquel habla de un **dato** con dos fuentes, y se ve porque las dos copias divergen. Esto se ve cuando ya divergieron, que es tarde.
+
+Lo que lo hace caro es que cada copia parece correcta en su sitio. `SEVERITIES = ['critical', 'high', 'medium', 'low']` no está mal escrito en ninguno de los catorce ficheros donde se midió; está mal que sean catorce y que nada los compare. El día que el registro cambie, la copia que se quede atrás rechazará un valor válido o aceptará uno inventado, y ningún test lo notará porque cada fichero sigue siendo coherente consigo mismo.
+
+Medido en v40.1 por sus tres guards: **0 copias de vocabulario, 0 lecturas de entorno sin declarar, 0 vocabularios sin contexto dueño**. Eran 14 copias del vocabulario en 13 módulos --cuatro como `choices=` de argparse y diez como constante-- y 13 variables de entorno con su default escrito en cada punto de lectura, de las que solo seis estaban documentadas. Dos ya habían divergido antes de que existiera el guard: `VAULT_VOICE` se comparaba contra `'verbose'` en un módulo y contra `'0'` con default `'1'` en otro, y `VAULT_MCP_LOG` estaba declarada como fichero de log mientras el único código que la lee la usa como nivel con default `'info'`.
+
+El dueño es la mitad que faltaba. `vault_norms.DOMAIN_STATUS_VOCABS` ya había resuelto esto para `status` en v39 y se quedó solo: compartir la constante evita la copia, pero no contesta quién decide cuándo cambia. Por eso cada entrada del registro declara el contexto acotado que manda sobre ella, y ese contexto tiene que existir en `vault_arch.CONTEXTS`.
+
+**Prevention:** Registro canónico con dueño, consumidores derivados, guard sin baseline. Los vocabularios cerrados en `vault_vocabulario.py`, la configuración en `vault_entorno.py`, y `vault_arch --check` fallando si aparece una copia, una lectura sin declarar o un vocabulario huérfano. **Sin baseline a propósito**: las catorce copias se saldaron al declarar el registro, así que la puerta nace en cero y una baseline solo serviría para admitir la número quince. Lo que ya tiene registro canónico no se copia: se declara `derivado_de` y se resuelve al llamarse, nunca al importarse (AP-49). Un dato canónico que no es puerto de su contexto se acaba copiando -- los tres registros que `CLAUDE.md` declara fuente única de verdad se leían por fuera de la superficie publicada, y así nacieron las catorce copias.
+
+### AP-51: La tool culpa al dato de su propio fallo
+
+- **Severity:** high
+- **Enforcement:** guard+audit
+- **Detected by:** vault_blame_audit --check
+
+Una tool falla al leer o al interpretar algo, se traga el fallo y devuelve un vacio que el llamante no puede distinguir de un resultado legitimo. El error deja de ser un error y pasa a ser un **hecho sobre el vault**: el informe que lo agregue dira que N notas no tienen aliases, y no sera cierto -- es que no se pudieron leer.
+
+No es lo mismo *no hay* que *no pude mirar*, y esa es toda la norma. AP-44 cubre la mitad de arriba --verificar con el criterio del consumidor y no con el propio--; esta cubre la de abajo, que es el mecanismo por el que un fallo propio acaba pareciendo un dato malo. Salio al ejecutar contra un vault ajeno al estandar (**regla 7**): tres tools declaraban invalidas notas que Obsidian leia sin problema. Las notas estaban bien; el criterio que las media, no.
+
+Lo que la norma **no** prohibe es capturar amplio. Prohibe capturar amplio y callarse: devolver `ok: false` con el error es correcto porque el llamante recibe la mala noticia y decide. Capturar `FileNotFoundError` tampoco infringe: es un criterio, el autor sabe que tolera y por que. Lo que infringe es `except Exception: return []`.
+
+Medida en v40.1: **86 sitios en 37 modulos**. Nace con baseline por la misma razon que AP-37 --que empezo en 55 y llego a 0--: un guard que falla en 86 sitios se desactiva el primer dia, y un guard desactivado no protege nada. La baseline solo puede encoger.
+
+El propio detector estreno el fallo que persigue. La primera version midio 101 sitios porque clasificaba `except yaml.YAMLError` como captura amplia: son `ast.Attribute` y no `ast.Name`, asi que caian en la rama del `except` desnudo. Contaba como infraccion justo las capturas mas precisas del repo. Quince falsos positivos, y el error era el de AP-44 cometido dentro del guard.
+
+**Prevention:** Capturar la excepcion concreta que se sabe tolerar, y si se captura amplio, **exponer**: devolver el fallo en el envelope en vez de un vacio. Cuando el vacio es la respuesta correcta, distinguirlo del vacio por fallo con un campo aparte (`unreadable`, `errors`) para que el agregado no los confunda. `vault_blame_audit --check --strict` mide por AST y no por texto: un detector que buscara la cadena `except Exception` no veria la diferencia entre devolver un vacio y devolver un envelope con `ok: false`, que es toda la distincion que la norma sostiene.
+
+### AP-52: El error se emite fuera del contrato del catalogo
+
+- **Severity:** medium
+- **Enforcement:** guard+audit
+- **Detected by:** vault_error_contract --check
+
+Una tool falla, lo dice, y lo dice mal: devuelve `{"ok": false, "error": "..."}` escrito a mano en vez de pasar por `vault_errors.emit_error`. La frase es correcta; el contrato, no. El envelope del catalogo trae `error_code`, `category`, `severity`, `recovery` y `timestamp`; el escrito a mano no trae ninguno.
+
+Importa porque el consumidor no lee la frase: **decide por el codigo**. El servidor MCP y `cli/` deciden si reintentar, abortar o pedir permiso mirando `error_code` y `recovery.action`. Sin ellos, un fallo con recuperacion conocida llega como un fallo opaco, y la unica salida del agente que lo recibe es adivinar.
+
+Es AP-05 aplicada al **contrato de error** --hay un registro que declara como se nombra y se recupera cada fallo, y 158 sitios que lo deciden por su cuenta-- y es AP-51 vista desde el otro lado: alli el fallo se disfrazaba de dato, aqui llega como fallo pero desnudo de todo lo que lo hace accionable.
+
+Salio de la caracterizacion maliciosa: invocar las 94 tools de forma malformada y mirar **como** fallan, no si fallan. El grueso estaba limpio --las 45 tools con `required_args` rechazan la invocacion vacia por argparse, y las 92 tools Python rechazan un flag desconocido-- y el hallazgo estaba en la forma del envelope, no en su ausencia.
+
+Medida en v40.2: **158 sitios en 58 modulos**. Nace con baseline por la misma razon que AP-37 y AP-51: un guard que falla en 158 sitios se desactiva el primer dia. La baseline solo puede encoger.
+
+El guard mide **forma y no flujo**: un dict con `ok: False` y pinta de envelope que no lleva `error_code`. No sigue el valor hasta stdout, asi que cuenta tambien envelopes internos que nunca se imprimen. Eso se declara en vez de esconderse: un guard que promete una precision que no tiene es la clase de afirmacion no falsable que AP-37 persigue.
+
+**Prevention:** Emitir por `emit_error(tool, CODIGO, mensaje)` y, si el codigo no existe, anadirlo a `ERROR_CATALOG` -- que es donde vive la decision de como se recupera ese fallo. Anadir el codigo cuesta una linea; no anadirlo traslada el coste a cada consumidor, para siempre. `vault_error_contract --check --strict` mide por AST.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 

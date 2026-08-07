@@ -22,9 +22,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from vault_errors import wrap_main
-from vault_io import is_snapshot_path, VAULT_ROOT
-
-
+from vault_io import is_snapshot_path
 SCRIPTS_DIR = Path(__file__).parent
 
 
@@ -48,6 +46,22 @@ MERMAID_TYPES = {
     "gantt": ["gantt"],
     "pie": ["pie"],
 }
+
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
+from vault.kernel import construir  # noqa: E402
+
+
+def _raiz() -> Path:
+    """La raiz del vault, resuelta al usarse."""
+    return _repo().raiz
+
+
+def _repo(root=None) -> RepositorioGobernanza:
+    """Resuelve el vault al usarse, no al importarse (AP-49)."""
+    return RepositorioGobernanza(construir(root))
 
 
 def detect_mermaid_type(diagram: str) -> Optional[str]:
@@ -443,10 +457,10 @@ def scan_vault(
     path: Optional[Path] = None, project: Optional[str] = None
 ) -> Dict[str, Any]:
     """Escanea el vault por diagramas Mermaid."""
-    search_root = path or VAULT_ROOT
+    search_root = path or _raiz()
 
     if project:
-        search_root = VAULT_ROOT / "01_Projects" / project
+        search_root = _raiz() / "01_Projects" / project
 
     files_checked = 0
     results = []
@@ -522,7 +536,7 @@ Ejemplos:
     args = parser.parse_args()
 
     if args.path:
-        path = VAULT_ROOT / args.path
+        path = _raiz() / args.path
         if not path.exists():
             print(
                 json.dumps(

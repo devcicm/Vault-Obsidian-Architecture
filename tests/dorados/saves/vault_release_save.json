@@ -1,0 +1,22 @@
+{
+  "envelope": {
+    "breaking_changes": false,
+    "changelog": "01_Projects/demo/changelog.md",
+    "changes_count": 0,
+    "created": 3,
+    "iso_standard": "ISO 20000-1:2018 §8.5.2 / ISO/IEC 12207:2017 §6.3.7",
+    "migrations_required": false,
+    "ok": true,
+    "path": "08_Runbooks/deploy/demo-release-100.md",
+    "project": "demo",
+    "release_type": "minor",
+    "status": "planned",
+    "timestamp": "<FECHA>",
+    "tool": "vault_release_save",
+    "unchanged": 0,
+    "updated": 6,
+    "version": "1.0.0",
+    "written": 9
+  },
+  "nota": "---\ntitle: Release 1.0.0 -- demo\nid: <UUID>\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ntags: [\"release\", \"deploy\", \"demo\", \"minor\", \"1.0.0\"]\nnorm_refs: [\"AP-11\", \"AP-12\", \"AP-13\", \"AP-16\", \"AP-20\", \"CN-01\", \"CN-02\", \"SP-01\"]\nproject: demo\nversion: 1.0.0\nrelease_type: minor\nstatus: planned\nrelease_state: planned\ndeploy_at: <FECHA>\nbreaking_changes: false\nmigrations_required: false\niso_standard: ISO 20000-1:2018 §8.5.2\ncia_integrity: high\ncia_availability: high\ncia_sensitivity: internal\nagent: claude\n---\n\n# Release 1.0.0 -- demo\n\n> **Tipo:** minor -- Nueva funcionalidad compatible con versiones anteriores\n> ISO/IEC 12207:2017 §6.3.7 -- Release management\n> ISO 20000-1:2018 §8.5.2 -- Change and release management\n\n## Estado del release\n\n| Campo | Valor |\n|---|---|\n| **Versión** | 1.0.0 |\n| **Tipo** | minor |\n| **Status** | planned |\n| **Deploy planificado** | <FECHA> |\n| **ISO process** | ISO/IEC 12207:2017 §6.3.7 |\n\n## Cambios incluidos\n\n-- Sin cambios documentados\n\n## Breaking changes\n\n-- Sin breaking changes\n\n## Migraciones requeridas\n\n-- Sin migraciones requeridas\n\n## Procedimiento de deploy\n\n-- Sin pasos documentados\n\n## Smoke tests post-deploy\n\n-- Sin smoke tests definidos\n\n## Procedimiento de rollback\n\n_Pendiente: documentar cómo revertir este release._\n\n## Checklist pre-deploy\n\n- [ ] Tests pasando en staging\n- [ ] Migraciones de BD revisadas y testadas\n- [ ] Feature flags configurados correctamente\n- [ ] Backups de BD tomados\n- [ ] On-call informado del deploy\n- [ ] Ventana de mantenimiento comunicada (si aplica)\n- [ ] Rollback procedure validada en staging\n\n## Checklist post-deploy\n\n- [ ] Smoke tests pasando\n- [ ] Error rate dentro de SLO (primeros 15 min)\n- [ ] Latencia dentro de SLO (primeros 15 min)\n- [ ] Logs sin errores críticos\n- [ ] Alertas silenciadas durante deploy re-activadas\n- [ ] Comunicación enviada al equipo\n\n## Referencias\n\n- ISO/IEC 12207:2017 §6.3.7 -- Software release management process\n- ISO 20000-1:2018 §8.5.2 -- Change and release management\n- ISO/IEC 25010:2023 §4.5 -- Maintainability / Deployability\n"
+}
