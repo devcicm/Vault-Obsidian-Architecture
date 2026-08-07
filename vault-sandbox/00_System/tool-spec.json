@@ -1108,6 +1108,46 @@
         "F3"
       ]
     },
+    "vault_foreign_check": {
+      "group": "Normas",
+      "group_id": 35,
+      "status": "active",
+      "required_args": [
+        "root"
+      ],
+      "declared_returns": [
+        "frontmatter_unparseable",
+        "notes_found",
+        "notes_measured",
+        "observations",
+        "ok",
+        "read_only",
+        "root",
+        "tool",
+        "unreadable",
+        "unreadable_count",
+        "with_frontmatter",
+        "without_frontmatter",
+        "wikilinks_total",
+        "wikilinks_unresolved",
+        "wikilinks_unresolved_sample"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "accuracy",
+          "validity",
+          "completeness"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F8"
+      ]
+    },
     "vault_fundamentals": {
       "group": "Data Quality",
       "group_id": 24,

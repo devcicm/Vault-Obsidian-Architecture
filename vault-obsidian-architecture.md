@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.1 — 2026-08-07  
+**Versión:** v40.2 — 2026-08-07  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -4968,7 +4968,7 @@ Dos causas, y la segunda es la incómoda:
 
 1. **El audit no lo ejecuta nadie.** En las **1.356 ejecuciones de tools
    registradas** en los `.tool-trace.json` de ese parque, `vault_norms` no
-   aparece **ni una vez**. 41 de las 95 tools del catálogo no se han ejecutado
+   aparece **ni una vez**. 41 de las 96 tools del catálogo no se han ejecutado
    jamás. Los agentes escriben; no gobiernan. Un enforcement que depende de que
    alguien se acuerde de invocarlo es enforcement en el papel.
 2. **Los valores no canónicos los escribía el propio estándar.** El más
@@ -5577,7 +5577,7 @@ de envelope con su contrato de `00_System/tool-spec.json`:
 Y la divergencia peor no era de forma sino de efecto: `jsNativeGraph` no tiene un
 solo `writeFile`. Un agente llamaba `vault_graph` por MCP, recibía `ok: true`, y
 el grafo se quedaba sin regenerar — **AP-37 y AP-47 servidos a la vez por el único
-camino que un agente real usa**. `vault_smoke` recorre las 95 tools del catálogo,
+camino que un agente real usa**. `vault_smoke` recorre las 96 tools del catálogo,
 pero ejecuta el `.py`: probaba exactamente la implementación que el agente no toca.
 
 **Prevención:** backend nativo solo para lo que **no tiene** implementación en
@@ -6451,6 +6451,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.2 | 2026-08-07 | AP-52 (el error se emite fuera del contrato del catálogo): baseline de 158 sitios en 58 módulos que solo puede encoger, salida de la caracterización maliciosa de las 96 tools —92/92 rechazan un flag inexistente, 45/45 la invocación vacía, ninguna con traceback: el defecto no era cómo fallan sino la forma del envelope cuando fallan bien—; `vault_gate`, la puerta única que corre las nueve puertas de cierre con `PUERTAS` como registro canónico y `--check-doc` verificando el checklist contra él; `vault_foreign_check`, la regla 7 ejecutable — única tool sin destino por defecto, que rechaza toda raíz del repo y midió 317 notas ajenas para destapar siete sitios que componían `title:` fuera de las comillas |
 | v40.1 | 2026-08-07 | AP-50 (decisión duplicada sin dueño declarado): las decisiones cerradas del estándar pasan a registros con contexto dueño — `vault_vocabulario.py` (12 vocabularios, 14 copias saldadas en 13 módulos), `vault_entorno.py` (13 variables, dos de ellas ya divergidas) y `vault/autoria/frontmatter.py`, el escritor único que cumple AP-46 en el punto de uso y sustituye los cuatro criterios de escapado que convivían en los 17 `*_save`; puertos de contexto verificados por AST en `vault_arch --check`; caracterización congelada de los 17 `*_save`, que destapó cuatro defectos presentados como fallo crítico interno |
 | v40.0 | 2026-08-06 | Contextos acotados: los 112 módulos de `scripts/` se reparten en ocho contextos de dominio más un kernel compartido, con `scripts/vault_arch.py` como registro ejecutable de fronteras (`--check`, `--blueprint`, `--map`) y baseline que solo encoge; AP-49 (vínculo resuelto en tiempo de import) pasa de 82 vínculos congelados en 62 módulos a 0, con lo que `set_vault_root()` deja de ser una costura decorativa; `VaultContext` inmutable y puertos `Protocol` en `vault/kernel/`; la prohibición del Meta-toolkit deja de ser prosa y se mide por AST (`forbidden_writes`); puerta nueva de AP-05 sobre rutas declaradas en dos repositorios de dominio |
 | v39.6 | 2026-08-06 | Las dos tools base64 (únicas sin script Python) ejercidas por primera vez: contrato incumplido, backup incompleto silencioso y restore fuera del vault con traversal sin validar; `vault_smoke` contrasta el envelope contra `declared_returns` como puerta dura; invariante nuevo del tool-spec contra módulos ejecutables sin clasificar (5 encontrados) y motivo obligatorio en toda entrada no publicada; `01-state-machines.md` derivado de `vault_norms.LIFECYCLE_REGISTRY` (dos de trece filas estaban desfasadas) |
@@ -6771,6 +6772,63 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v40.2 — 2026-08-07 `git: pending`
+
+**Cómo se falla, y contra qué se comprueba**
+
+Dos preguntas que el estándar tenía sin responder de forma ejecutable: **qué forma
+tiene un error cuando una tool falla bien**, y **contra qué material se verifica
+que una medida mide algo**.
+
+- **AP-52 — el error se emite fuera del contrato del catálogo.** Salió de la
+  caracterización maliciosa: invocar las 96 tools de forma malformada y mirar
+  *cómo* fallan. La superficie estaba limpia —92/92 rechazan un flag inexistente,
+  45/45 de las que declaran `required_args` rechazan la invocación vacía, ninguna
+  con traceback—. El hallazgo no era ése: era la **forma** del envelope cuando la
+  tool falla correctamente. `{"ok": false, "error": "action='merge' requires
+  --source"}` es una frase correcta y un contrato roto, porque el consumidor no
+  lee la frase — decide por `error_code` y `recovery.action`. **158 sitios en 58
+  módulos** los omiten. Baseline que solo puede encoger, como AP-37 y AP-51.
+
+- **La puerta única.** `vault_gate` corre las nueve puertas de cierre en un solo
+  envelope. El riesgo de diseño era evidente —una segunda lista de puertas junto
+  a la del checklist es AP-50 en la versión que estrena AP-50—, así que el
+  registro `PUERTAS` es la fuente y `--check-doc` verifica el checklist contra
+  él, no al revés. Por lo mismo desapareció el «8/8» escrito a mano de
+  `CLAUDE.md`: un conteo que ningún guard cubre es AP-47.
+
+- **La regla 7, ejecutable.** `vault_foreign_check` contrasta las medidas contra
+  un vault **ajeno**, en solo lectura. Es la única tool del estándar **sin
+  destino por defecto**, y es deliberado: la autodetección caería en
+  `vault-sandbox/`, que este repo genera y que por eso no puede exhibir el fallo
+  que la regla persigue. Rechaza cualquier raíz dentro del repositorio, no
+  escribe una línea en el vault medido, y separa lo ilegible de lo ausente.
+  `--self-test` verifica esas negativas sin necesitar un vault de fuera, y dice
+  en su propio `hint` que **no sustituye al contraste**.
+
+**El primer contraste automatizado ya pagó la tool, y cerró una deuda de v39.4.**
+317 notas de un vault consumidor: una con frontmatter que YAML no parsea. Ese
+mismo ADR ya estaba anotado arriba —«un `title:` sin comillar rompía el YAML
+entero»— pero se había arreglado el síntoma y no el escritor. **Siete sitios**
+componían el título concatenando texto *fuera* de las comillas, o sin comillas:
+`f"title: {yaml_scalar(project)} ERD"` produce `title: "Mi: Proy" ERD`, que es
+peor que no escapar nada porque parece correcto. `vault_project_overview` lo
+rompía **siempre** —su título es literalmente `Overview: <proyecto>`— y
+`vault_security_scan` interpolaba identificadores de regla estilo `python:S1234`.
+Ahora la cadena se compone y se escapa entera. `vault-sandbox/` no podía
+enseñarlo: ninguno de sus nombres lleva `:`.
+
+**Dos deudas declaradas, no resueltas.** Las baselines por `módulo:línea`
+(AP-51, AP-52) piden recongelar cada vez que se inserta una línea por encima de
+un sitio, y un guard que avisa en falso cada commit acaba desactivado — que es
+justo la muerte contra la que se diseñaron. La alternativa por huella de
+contenido es ciega a cambiar un sitio por otro de la misma forma en el mismo
+módulo; no hay opción gratis. Y `--freeze` escribe la baseline mientras la capa
+de voz anuncia «Nada cambió en mí con esta llamada»: una tool afirmando que no
+tiene side effect mientras lo tiene, heredado por los tres `--freeze`.
 
 ---
 

@@ -2214,6 +2214,53 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         ),
         "related": ["vault_errors", "vault_blame_audit", "vault_noop_audit", "vault_gate"],
     },
+    "vault_foreign_check": {
+        "name": "vault_foreign_check",
+        "script": "vault_foreign_check.py",
+        "group": "Normas",
+        "purpose": (
+            "Regla 7: contrasta las medidas del estandar contra un vault AJENO, "
+            "en solo lectura. Unica tool sin destino por defecto \u2014 la "
+            "autodeteccion caeria en `vault-sandbox/`, que este repo genera y "
+            "que por eso no puede exhibir el fallo que la regla persigue."
+        ),
+        "params": {
+            "root": {
+                "type": "string",
+                "required": True,
+                "description": "Raiz del vault ajeno (obligatoria, sin default)",
+                "validators": [],
+            },
+            "report": {
+                "type": "string",
+                "required": False,
+                "description": "Fichero del informe, siempre fuera del vault medido",
+                "validators": [],
+            },
+            "self-test": {
+                "type": "boolean",
+                "required": False,
+                "description": "Verifica las negativas de la tool, sin vault ajeno",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "Rechaza cualquier raiz dentro del repo del estandar, sandbox incluido",
+            "Solo lectura: no escribe una linea en el vault medido, ni traces ni backups",
+            "--report no puede caer dentro del vault medido",
+            "Separa lo ilegible de lo ausente: un recuento sobre lo medido no es "
+            "un recuento sobre el vault (AP-51)",
+            "No emite veredicto de salud: mide si nuestras medidas sobreviven al "
+            "material ajeno, no la calidad de ese material",
+        ],
+        "side_effects": [],
+        "example": (
+            "python vault_foreign_check.py --root D:/vaults/notas\n"
+            "python vault_foreign_check.py --root D:/vaults/notas --report informe.json\n"
+            "python vault_foreign_check.py --self-test"
+        ),
+        "related": ["vault_validate", "vault_graph_inspect", "vault_norms"],
+    },
     "vault_gate": {
         "name": "vault_gate",
         "script": "vault_gate.py",
@@ -3347,6 +3394,7 @@ GROUPS: Dict[str, List[str]] = {
         "vault_arch",
         "vault_blame_audit",
         "vault_error_contract",
+        "vault_foreign_check",
         "vault_gate",
         "vault_code_tag",
         "vault_doc_counts",

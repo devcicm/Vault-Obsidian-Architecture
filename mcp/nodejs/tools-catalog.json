@@ -1548,6 +1548,42 @@
         "vault_audit"
       ]
     },
+    "vault_foreign_check": {
+      "name": "vault_foreign_check",
+      "description": "Regla 7: contrasta las medidas del estandar contra un vault AJENO, en solo lectura. Unica tool sin destino por defecto — la autodeteccion caeria en `vault-sandbox/`, que este repo genera y que por eso no puede exhibir el fallo que la regla persigue.",
+      "group": "Normas",
+      "script": "vault_foreign_check.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "root": {
+            "type": "string",
+            "description": "Raiz del vault ajeno (obligatoria, sin default)"
+          },
+          "report": {
+            "type": "string",
+            "description": "Fichero del informe, siempre fuera del vault medido"
+          },
+          "self-test": {
+            "type": "string",
+            "description": "Verifica las negativas de la tool, sin vault ajeno"
+          }
+        }
+      },
+      "guards": [
+        "Rechaza cualquier raiz dentro del repo del estandar, sandbox incluido",
+        "Solo lectura: no escribe una linea en el vault medido, ni traces ni backups",
+        "--report no puede caer dentro del vault medido",
+        "Separa lo ilegible de lo ausente: un recuento sobre lo medido no es un recuento sobre el vault (AP-51)",
+        "No emite veredicto de salud: mide si nuestras medidas sobreviven al material ajeno, no la calidad de ese material"
+      ],
+      "side_effects": [],
+      "related": [
+        "vault_validate",
+        "vault_graph_inspect",
+        "vault_norms"
+      ]
+    },
     "vault_fundamentals": {
       "name": "vault_fundamentals",
       "description": "Métricas fundamentales del vault.",
@@ -4771,6 +4807,7 @@
       "vault_arch",
       "vault_blame_audit",
       "vault_error_contract",
+      "vault_foreign_check",
       "vault_gate",
       "vault_code_tag",
       "vault_doc_counts",

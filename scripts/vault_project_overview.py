@@ -211,7 +211,7 @@ def vault_project_overview(
     infrastructure = collect_infrastructure(project)
 
     frontmatter = ["---"]
-    frontmatter.append(f"title: Overview: {project}")
+    frontmatter.append(f"title: {yaml_scalar(f'Overview: {project}')}")
     frontmatter.append(f"id: {str(uuid.uuid4())}")
     frontmatter.append(f"project: {yaml_scalar(project)}")
     frontmatter.append(f"type: project-overview")

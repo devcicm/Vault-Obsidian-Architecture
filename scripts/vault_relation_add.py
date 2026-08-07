@@ -235,7 +235,7 @@ def vault_relation_add(
 
     erd_frontmatter = ["---"]
 
-    erd_frontmatter.append(f"title: {yaml_scalar(project)} ERD")
+    erd_frontmatter.append(f"title: {yaml_scalar(f'{project} ERD')}")
 
     erd_frontmatter.append(f"project: {yaml_scalar(project)}")
 

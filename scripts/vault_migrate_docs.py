@@ -557,7 +557,7 @@ _{staged["preview"][:200]}..._
 
     report_lines = ["---"]
 
-    report_lines.append(f"title: Migration Report - {project}")
+    report_lines.append(f"title: {yaml_scalar(f'Migration Report - {project}')}")
 
     report_lines.append(f"project: {yaml_scalar(project)}")
 

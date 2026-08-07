@@ -157,7 +157,7 @@ def vault_code_map(project: str) -> Dict[str, Any]:
 
     frontmatter = ["---"]
 
-    frontmatter.append(f"title: Code Map - {project}")
+    frontmatter.append(f"title: {yaml_scalar(f'Code Map - {project}')}")
 
     frontmatter.append(f"project: {yaml_scalar(project)}")
 

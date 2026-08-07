@@ -656,7 +656,7 @@ def save_findings_to_vault(findings: List[Dict], project: str) -> List[str]:
 
     report_lines = ["---"]
 
-    report_lines.append(f"title: Security Scan Report - {project}")
+    report_lines.append(f"title: {yaml_scalar(f'Security Scan Report - {project}')}")
 
     report_lines.append(f"project: {yaml_scalar(project)}")
 
@@ -707,9 +707,9 @@ def save_findings_to_vault(findings: List[Dict], project: str) -> List[str]:
 
             note_lines = ["---"]
 
-            note_lines.append(f"title: {yaml_scalar(f['ruleId'])} - {f['category']}")
+            note_lines.append(f"title: {yaml_scalar(str(f['ruleId']) + ' - ' + str(f['category']))}")
 
-            note_lines.append(f"ruleId: {f['ruleId']}")
+            note_lines.append(f"ruleId: {yaml_scalar(str(f['ruleId']))}")
 
             note_lines.append(f"severity: {f['severity']}")
 

@@ -1,13 +1,13 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 95 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
+Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 96 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **117 archivos Python** — 95 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
+- **118 archivos Python** — 96 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
 - **Saneamiento de índices (v38.1)** — `vault_section_index.py --heal [--root]` regenera índices con formato legacy `[[stem|alias]]` o ausentes; el auto-index post-write se auto-cura si un agente escribe `index.md` a mano
-- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 95 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
+- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 96 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
 - **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault; requiere marcador de CONTENIDO (01_Projects/02_Observability/03_Decisions/.obsidian), no solo 00_System/99_Index (evita el ciclo auto-reforzado de detección); override runtime con `set_vault_root()`/env `VAULT_ROOT`
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
@@ -59,7 +59,7 @@ Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan 
 | [Grupo 32 — Gestión de Carpetas](#grupo-32--gestión-de-carpetas) | vault_folder_registry |
 | [Grupo 33 — Corrección Automática](#grupo-33--corrección-automática) | vault_fix_brackets, vault_graph_fix |
 | [Grupo 34 — Memoria de Contexto](#grupo-34--memoria-de-contexto) | vault_preferences, vault_query_parse, vault_subgraph, vault_context_pack, vault_ingest |
-| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_error_contract, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_noop_audit, vault_smoke, vault_voice |
+| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_error_contract, vault_foreign_check, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_noop_audit, vault_smoke, vault_voice |
 | [Grupo 36 — Defectos y Cuarentena](#grupo-36--defectos-y-cuarentena) | vault_bug_save, vault_quarantine |
 | [Grupo 37 — Skills](#grupo-37--skills) | vault_sdd_init, vault_sanacion |
 | [Observabilidad de Tools](#observabilidad-de-tools) | vault_errors |
@@ -1673,7 +1673,7 @@ El vault expone sus herramientas como un **servidor MCP** que las IAs consumen d
 
 **Archivo:** `../mcp/nodejs/vault-mcp-server.mjs` (~1650 líneas, cero dependencias npm)  
 **Plan:** `../mcp/PLAN.md` — documento de evidencia con 8 fases de implementación
-**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (95 tools)
+**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (96 tools)
 
 Los parámetros que el catálogo publica **se derivan del `argparse` de cada script**,
 no se escriben a mano: el servidor compone `--<param>` literal, así que un param
@@ -1879,6 +1879,30 @@ Es AP-05 sobre el contrato de error, y AP-51 vista desde el otro lado: allí el 
 **Baseline: 158 sitios en 58 módulos**, y solo puede encoger. Misma razón que AP-37 —que empezó en 55 y llegó a 0— y que AP-51: un guard que falla en 158 sitios se desactiva el primer día.
 
 **Mide forma, no flujo.** Un `dict` con `ok: False` y pinta de envelope que no lleva `error_code`. No sigue el valor hasta stdout: eso exige análisis de flujo, y uno a medias produce falsos negativos silenciosos, que es peor que un falso positivo visible. La consecuencia se declara en vez de esconderse — algunos sitios contados son envelopes internos que nunca se imprimen. Están en la baseline, no bloquean, y quien salde su módulo los verá y decidirá.
+
+---
+
+### `vault_foreign_check.py`
+
+**La regla 7, ejecutable.** Contrasta las medidas del estándar contra un vault **ajeno**, en solo lectura.
+
+```bash
+python vault_foreign_check.py --root "D:/vaults/notas"                    # el contraste
+python vault_foreign_check.py --root "D:/vaults/notas" --report inf.json  # informe fuera del vault
+python vault_foreign_check.py --self-test                                 # verifica sus negativas
+```
+
+**Es la única tool del estándar sin destino por defecto, y es deliberado.** Todas las demás autodetectan el vault y acaban en `vault-sandbox/`. Ésta no puede: `vault-sandbox/` lo genera este repo y comparte los supuestos de las medidas, así que un contraste contra él devuelve verde precisamente en el caso que existe para detectar. Sin `--root` falla diciendo qué le falta, y rechaza **cualquier** raíz dentro del repositorio.
+
+**Solo lectura, sin excepciones.** Ni backups, ni índices, ni traces: el destino puede ser el vault de trabajo de alguien, y una tool de diagnóstico que modifica lo que diagnostica no es una tool de diagnóstico. El informe sale por stdout o al fichero de `--report`, que se rechaza si cae dentro del vault medido.
+
+**Mide con el criterio del consumidor (AP-44):** el frontmatter con `yaml.safe_load`; los wikilinks por nombre de fichero y `aliases:`, nunca por `title:`, que Obsidian no mira; el texto probado contra cuatro encodings antes de declarar nada ilegible. Y todo recuento separa el cero medido del cero por fallo de lectura (AP-51) — un vault ajeno es justo donde esa distinción se cobra, porque la mayoría de los "defectos" que un estándar cree ver en material de fuera son su propio criterio fallando.
+
+**No emite veredicto de salud, a propósito.** Un `score` invitaría a comparar vaults; lo que mide es si *nuestras* medidas sobreviven a material que no generamos. Una anomalía alta es antes sospechosa del criterio que del dato.
+
+**El primer contraste real ya pagó la tool.** 317 notas de un vault consumidor: una con frontmatter que YAML no parsea. La causa no estaba en el vault sino en cómo el estándar escribe el título — siete sitios componían `title:` concatenando texto fuera de las comillas, y bastaba un `:` en un nombre de proyecto para romper el bloque entero (`vault_project_overview` lo rompía siempre: su título es literalmente `Overview: <proyecto>`). `vault-sandbox/` no podía exhibirlo, porque ninguno de sus nombres lleva `:`.
+
+`--self-test` verifica las cuatro negativas sin necesitar un vault ajeno, y **no sustituye al contraste**: lo dice en su propio `hint`. La regla 7 solo se cumple ejecutando contra material de fuera.
 
 ---
 
