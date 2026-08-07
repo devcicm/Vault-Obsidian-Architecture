@@ -6802,7 +6802,7 @@ temp/
 
 ---
 
-### v40.4 — 2026-08-07 `git: pending`
+### v40.4 — 2026-08-07 `git: fc3551f`
 
 **El comando de medir la salud no arrancaba**
 
