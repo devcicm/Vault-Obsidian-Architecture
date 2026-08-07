@@ -33,13 +33,7 @@ from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
 from vault_lib import slugify_strict, utcnow
-from vault_io import (
-    write_report,
-    VAULT_ROOT,
-    assert_within_vault,
-    atomic_write_text,
-    update_section_index,
-)
+from vault_io import assert_within_vault, atomic_write_text, get_vault_root, update_section_index, write_report
 from vault_norms import compute_norm_refs, status_frontmatter_lines
 
 FOLDER = "02_Observability/risks"
@@ -259,16 +253,16 @@ def vault_risk_save(
     full = "\n".join(fm_lines) + "\n\n" + body
 
     filename = f"{_slug(project)}-{_slug(title)}.md"
-    path = VAULT_ROOT / FOLDER / filename
+    path = get_vault_root() / FOLDER / filename
     path.parent.mkdir(parents=True, exist_ok=True)
-    assert_within_vault(path, VAULT_ROOT)
+    assert_within_vault(path, get_vault_root())
     atomic_write_text(path, full)
     update_section_index("02_Observability")
 
     return {
         "ok": True,
         **write_report(),
-        "path": str(path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(path.relative_to(get_vault_root())).replace("\\", "/"),
         "project": project,
         "risk_type": risk_type,
         "score": score,

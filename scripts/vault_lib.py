@@ -446,14 +446,14 @@ def get_vault_path(name: str) -> Path:
     Args:
         name: One of: search_index, quality_index, tag_registry, history, standard_version
     """
-    from vault_io import VAULT_ROOT
+    from vault_io import get_vault_root
 
     paths = {
-        "search_index": VAULT_ROOT / Config.SEARCH_INDEX,
-        "quality_index": VAULT_ROOT / Config.QUALITY_INDEX,
-        "tag_registry": VAULT_ROOT / Config.TAG_REGISTRY,
-        "history": VAULT_ROOT / Config.HISTORY_DIR,
-        "standard_version": VAULT_ROOT / Config.STANDARD_VERSION,
+        "search_index": get_vault_root() / Config.SEARCH_INDEX,
+        "quality_index": get_vault_root() / Config.QUALITY_INDEX,
+        "tag_registry": get_vault_root() / Config.TAG_REGISTRY,
+        "history": get_vault_root() / Config.HISTORY_DIR,
+        "standard_version": get_vault_root() / Config.STANDARD_VERSION,
     }
     if name not in paths:
         raise ValueError(f"Unknown vault path: {name}")

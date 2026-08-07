@@ -27,7 +27,6 @@ CARPETA_AUDITORIAS = "19_Audits"
 
 FICHERO_BUSQUEDA = "search-index.json"
 FICHERO_HASHES = "hash-index.json"
-FICHERO_GRAFO = "graph.json"
 FICHERO_INDICE_MAESTRO = "index.md"
 FICHERO_INDICE_ETIQUETAS = "tag-index.md"
 FICHERO_REGISTRO_CARPETAS = "custom-folders.json"
@@ -73,7 +72,10 @@ class RepositorioIndices:
 
     @property
     def grafo(self) -> Path:
-        return self._ctx.ruta(CARPETA_INDICES, FICHERO_GRAFO)
+        """El grafo lo construye Grafo. Índices lo lee para cruzarlo."""
+        from ..grafo.repositorio import RepositorioGrafo
+
+        return RepositorioGrafo(self._ctx).grafo
 
     @property
     def indice_maestro(self) -> Path:

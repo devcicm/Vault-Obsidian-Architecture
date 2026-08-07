@@ -33,7 +33,6 @@ from typing import Any, Callable, Dict, List, Optional
 
 from vault_errors_catalog import ERROR_CATALOG, get_error
 from vault_errors_trace import log_trace, log_token_usage
-from vault_io import VAULT_ROOT
 
 TOOL_TIMEOUT_SECONDS: int = int(os.environ.get("VAULT_TOOL_TIMEOUT", "60"))
 

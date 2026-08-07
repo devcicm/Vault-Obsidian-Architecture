@@ -23,7 +23,6 @@ SUBCARPETA_USO_TOKENS = "token-usage"
 FICHERO_TOKENS = ".tool-tokens.json"
 FICHERO_CONTRATOS_JSON = "tool-contracts.json"
 FICHERO_CONTRATOS_MD = "tool-contracts.md"
-FICHERO_VERSION_ESTANDAR = "standard-version.json"
 
 
 class RepositorioConsulta:
@@ -80,7 +79,10 @@ class RepositorioConsulta:
 
     @property
     def version_estandar(self) -> Path:
-        return self._ctx.ruta(CARPETA_SISTEMA, FICHERO_VERSION_ESTANDAR)
+        """La versión aplicada la sella Ciclo de vida. Consulta la lee y la cita."""
+        from ..ciclo_de_vida.repositorio import RepositorioCicloDeVida
+
+        return RepositorioCicloDeVida(self._ctx).fichero_version
 
     # ── Lectura tolerante ────────────────────────────────────────────────────
 

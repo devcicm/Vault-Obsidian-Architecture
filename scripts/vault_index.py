@@ -22,7 +22,7 @@ from pathlib import Path
 
 
 
-from vault_io import VAULT_ROOT, safe_wikilink
+from vault_io import get_vault_root, safe_wikilink
 
 
 
@@ -31,7 +31,7 @@ def generate_index(output="INDEX.md"):
 
     """Generar indice markdown"""
 
-    index_file = VAULT_ROOT / "99_Index" / "search-index.json"
+    index_file = get_vault_root() / "99_Index" / "search-index.json"
 
 
 
@@ -83,7 +83,7 @@ def generate_index(output="INDEX.md"):
 
 
 
-    dest = VAULT_ROOT / output
+    dest = get_vault_root() / output
 
     dest.write_text(md, encoding="utf-8")
 

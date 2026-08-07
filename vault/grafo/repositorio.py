@@ -28,7 +28,6 @@ FICHERO_GRAFO_ENRIQUECIDO = "graph-enriched.json"
 FICHERO_INDICE_CODIGO = ".code-index.json"
 FICHERO_REGISTRO_ETIQUETAS_CODIGO = "code-tag-registry.json"
 FICHERO_BITACORA_MOVIMIENTOS = "move-log.json"
-FICHERO_BITACORA_CAMBIOS = ".change-log.json"
 
 
 class RepositorioGrafo:
@@ -93,7 +92,10 @@ class RepositorioGrafo:
 
     @property
     def bitacora_cambios(self) -> Path:
-        return self._ctx.ruta(CARPETA_SISTEMA, FICHERO_BITACORA_CAMBIOS)
+        """La bitácora es de Gobernanza. `vault_impact` la lee, no la define."""
+        from ..gobernanza.repositorio import RepositorioGobernanza
+
+        return RepositorioGobernanza(self._ctx).bitacora_cambios
 
     # ── Lectura tolerante ────────────────────────────────────────────────────
 

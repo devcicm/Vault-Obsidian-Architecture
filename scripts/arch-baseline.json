@@ -3,6 +3,11 @@
   "crossings": [
     "vault/autoria/repositorio.py -> vault/grafo",
     "vault/autoria/repositorio.py -> vault/indices",
+    "vault/ciclo_de_vida/repositorio.py -> vault/indices",
+    "vault/consulta/repositorio.py -> vault/ciclo_de_vida",
+    "vault/gobernanza/repositorio.py -> vault/indices",
+    "vault/grafo/repositorio.py -> vault/gobernanza",
+    "vault/indices/repositorio.py -> vault/grafo",
     "vault_bug_save -> vault_norms",
     "vault_change_log -> vault/gobernanza",
     "vault_code_tag -> vault_norms",
@@ -58,11 +63,5 @@
     "vault_write -> vault_tags"
   ],
   "frozen_bindings": [],
-  "duplicate_paths": [
-    ".change-log.json",
-    "graph.json",
-    "search-index.json",
-    "standard-version.json",
-    "tag-registry.json"
-  ]
+  "duplicate_paths": []
 }

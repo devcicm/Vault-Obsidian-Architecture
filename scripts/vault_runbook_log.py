@@ -37,7 +37,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 
-from vault_io import VAULT_ROOT, atomic_write_text, write_report
+from vault_io import atomic_write_text, get_vault_root, write_report
 
 
 OUTCOMES = ["success", "failed", "partial"]
@@ -110,7 +110,7 @@ def vault_runbook_log(
             "error": f"Outcome inválido: {outcome}. Válidos: {OUTCOMES}",
         }
 
-    note_path = VAULT_ROOT / path
+    note_path = get_vault_root() / path
 
     if not note_path.exists():
         return {"ok": False, "error": f"Runbook not found: {path}"}

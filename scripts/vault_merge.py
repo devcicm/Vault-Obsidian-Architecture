@@ -45,7 +45,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-from vault_io import VAULT_ROOT, atomic_write_text, write_report
+from vault_io import atomic_write_text, get_vault_root, write_report
 
 
 def _read_note(path: Path) -> str:
@@ -113,7 +113,7 @@ def _action_merge(source_dir: Path, conflict: str) -> Dict[str, Any]:
         except ValueError:
             rel = Path(src.name)
 
-        dest = VAULT_ROOT / rel
+        dest = get_vault_root() / rel
 
         if dest.exists():
             conflicts += 1
@@ -158,13 +158,13 @@ def _normalize(stem: str) -> str:
 def _action_detect() -> Dict[str, Any]:
     buckets: Dict[str, List[str]] = {}
 
-    for note in VAULT_ROOT.rglob("*.md"):
+    for note in get_vault_root().rglob("*.md"):
         if ".history" in str(note) or note.name.startswith("_"):
             continue
 
         key = _normalize(note.stem)
 
-        buckets.setdefault(key, []).append(str(note.relative_to(VAULT_ROOT)))
+        buckets.setdefault(key, []).append(str(note.relative_to(get_vault_root())))
 
     duplicates = {k: v for k, v in buckets.items() if len(v) > 1}
 
@@ -183,7 +183,7 @@ def _action_detect() -> Dict[str, Any]:
 def _action_dedup() -> Dict[str, Any]:
     buckets: Dict[str, List[Path]] = {}
 
-    for note in VAULT_ROOT.rglob("*.md"):
+    for note in get_vault_root().rglob("*.md"):
         if ".history" in str(note) or note.name.startswith("_"):
             continue
 

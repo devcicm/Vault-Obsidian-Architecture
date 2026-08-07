@@ -37,7 +37,7 @@ from pathlib import Path
 
 
 # Configuration
-from vault_io import VAULT_ROOT, atomic_write_text
+from vault_io import atomic_write_text, get_vault_root
 
 
 # Valid states
@@ -79,7 +79,7 @@ def vault_project_status(
             "error": f"Invalid status: {status}. Valid: {VALID_STATES}",
         }
 
-    project_path = VAULT_ROOT / "01_Projects" / project
+    project_path = get_vault_root() / "01_Projects" / project
 
     status_file = project_path / "status.md"
 
@@ -222,8 +222,8 @@ tags: ["status", "{project}"]
         "ok": True,
         "project": project,
         "status": status,
-        "path": str(status_file.relative_to(VAULT_ROOT)).replace("\\", "/"),
-        "changelogPath": str(changelog_file.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(status_file.relative_to(get_vault_root())).replace("\\", "/"),
+        "changelogPath": str(changelog_file.relative_to(get_vault_root())).replace("\\", "/"),
     }
 
 

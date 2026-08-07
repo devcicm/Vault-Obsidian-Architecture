@@ -48,7 +48,7 @@ from typing import Any, Dict, List, Optional
 
 # Configuration
 
-from vault_io import VAULT_ROOT
+from vault_io import get_vault_root
 
 
 # Folder descriptions
@@ -251,7 +251,7 @@ def vault_list(folder: Optional[str] = None, status: Optional[str] = None, limit
 
         folders = []
 
-        for item in sorted(VAULT_ROOT.iterdir()):
+        for item in sorted(get_vault_root().iterdir()):
 
             if item.is_dir() and not item.name.startswith("."):
 
@@ -275,7 +275,7 @@ def vault_list(folder: Optional[str] = None, status: Optional[str] = None, limit
 
                         "noteCount": note_count,
 
-                        "path": str(item.relative_to(VAULT_ROOT)),
+                        "path": str(item.relative_to(get_vault_root())),
 
                     }
 
@@ -289,7 +289,7 @@ def vault_list(folder: Optional[str] = None, status: Optional[str] = None, limit
 
     # List notes in folder
 
-    folder_path = VAULT_ROOT / folder
+    folder_path = get_vault_root() / folder
 
     if not folder_path.exists():
 
@@ -315,7 +315,7 @@ def vault_list(folder: Optional[str] = None, status: Optional[str] = None, limit
 
             {
 
-                "path": str(note_path.relative_to(VAULT_ROOT)),
+                "path": str(note_path.relative_to(get_vault_root())),
 
                 "title": meta.get("title", note_path.stem),
 

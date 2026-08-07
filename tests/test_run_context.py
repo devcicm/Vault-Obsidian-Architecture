@@ -105,26 +105,52 @@ def test_no_toca_rutas_que_no_cuelgan_del_vault(tmp_path, raiz_restaurada):
     assert vault_fundamentals.SCRIPTS_DIR == antes
 
 
-def test_la_mayoria_de_modulos_derivan_del_import():
-    """El dato que motivó el arreglo, fijado para que no se degrade en silencio.
+def test_ningun_modulo_importa_ya_el_nombre_vault_root():
+    """Era `test_la_mayoria_de_modulos_derivan_del_import`, y la cifra llegó a 0.
 
-    No es un objetivo mantenerlo alto: es un recordatorio de por qué
-    `set_vault_root()` tiene que reanclar. Si algún día la cifra baja a 0
-    porque todos usan `get_vault_root()`, este test sobra y se borra.
+    Ese test fijaba «89 de 98 módulos importan `VAULT_ROOT`» como recordatorio
+    de por qué `set_vault_root()` tiene que reanclar, y su propio enunciado
+    decía qué hacer si algún día bajaba a cero. Bajó. No se borra: se le da la
+    vuelta, que es más fuerte —de recordatorio de una deuda pasa a puerta que
+    impide reabrirla— y no deroga nada.
+
+    El punto que costó ver: al terminar de migrar los ocho contextos,
+    `vault_arch.vinculos_congelados()` medía 0 y veinte módulos seguían
+    importando el nombre y usándolo dentro de funciones. El guard solo miraba
+    asignaciones de nivel de módulo, así que los daba por limpios mientras
+    seguían dependiendo del paliativo.
+
+    El caso legítimo se pide con alias: `VAULT_ROOT as _DETECTED_ROOT` en
+    `vault_norms` quiere la raíz detectada, no la efectiva.
     """
     import re
 
-    patron = re.compile(r"^from vault_io import [^\n]*\bVAULT_ROOT\b", re.MULTILINE)
+    patron = re.compile(
+        r"^from vault_io import (?!.*VAULT_ROOT as ).*VAULT_ROOT",
+        re.MULTILINE,
+    )
     congelan = [
         py.name for py in SCRIPTS.glob("vault_*.py")
         if patron.search(py.read_text(encoding="utf-8"))
     ]
-    # La cifra baja cada vez que un contexto se migra al dominio: quien impide
-    # que suba es `vault_arch --check`, con su baseline que solo encoge. Aquí
-    # solo se comprueba que la razón de reanclar sigue viva.
-    assert len(congelan) > 10, (
-        "si esto baja a 0, revisa si set_vault_root() sigue necesitando reanclar"
+    assert congelan == [], (
+        f"vuelven a arrastrar el nombre en vez de resolver tarde: {congelan}"
     )
+
+
+def test_el_paliativo_se_conserva_aunque_no_le_quede_consumidor():
+    """No-derogación: el reanclaje se queda, y se documenta que ya no hace falta.
+
+    Lo único que `set_vault_root()` reancla hoy es `vault_io.VAULT_ROOT`, es
+    decir a sí mismo. Retirarlo sería derogar una API pública para ahorrar una
+    línea; dejarlo sin decir que sobra sería peor, porque el siguiente que lo
+    lea creerá que hay módulos dependiendo de él.
+    """
+    import vault_arch
+
+    assert hasattr(vault_io, "rebound_constants")
+    assert vault_arch.usos_del_nombre_congelado() == []
+    assert vault_arch.vinculos_congelados() == []
 
 
 def test_el_write_path_rechaza_el_traversal(tmp_path, raiz_restaurada):

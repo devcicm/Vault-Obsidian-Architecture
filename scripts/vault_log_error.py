@@ -39,7 +39,7 @@ import sys
 
 from vault_errors import wrap_main
 from vault_lib import utcnow, slugify
-from vault_io import atomic_write_text, VAULT_ROOT, safe_wikilink, write_report
+from vault_io import atomic_write_text, get_vault_root, safe_wikilink, write_report
 from datetime import datetime, timezone
 
 
@@ -321,7 +321,7 @@ def vault_log_error(
 
         content = "\n".join(content_lines)
 
-    folder_path = VAULT_ROOT / folder
+    folder_path = get_vault_root() / folder
 
     folder_path.mkdir(parents=True, exist_ok=True)
 
@@ -349,7 +349,7 @@ def vault_log_error(
     return {
         "ok": True,
         **write_report(),
-        "path": str(file_path.relative_to(VAULT_ROOT)),
+        "path": str(file_path.relative_to(get_vault_root())),
         "type": error_type,
         "severity": severity,
         "title": title,

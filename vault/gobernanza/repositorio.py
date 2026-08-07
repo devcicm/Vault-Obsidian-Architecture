@@ -23,7 +23,6 @@ CARPETA_OBSERVABILIDAD = "02_Observability"
 SUBCARPETA_VULNERABILIDADES = "vulnerabilities"
 
 FICHERO_REGISTRO_NORMAS = "norm-registry.json"
-FICHERO_REGISTRO_ETIQUETAS = "tag-registry.json"
 FICHERO_INDICE_CALIDAD = "quality-index.json"
 FICHERO_COLA_PROPAGACION = "propagation-queue.json"
 FICHERO_INSTANTANEA_SESION = ".session-snapshot.json"
@@ -68,7 +67,10 @@ class RepositorioGobernanza:
 
     @property
     def registro_etiquetas(self) -> Path:
-        return self._ctx.ruta(CARPETA_SISTEMA, FICHERO_REGISTRO_ETIQUETAS)
+        """El vocabulario de etiquetas lo mantiene Índices; aquí se audita."""
+        from ..indices.repositorio import RepositorioIndices
+
+        return RepositorioIndices(self._ctx).registro_etiquetas
 
     @property
     def indice_calidad(self) -> Path:

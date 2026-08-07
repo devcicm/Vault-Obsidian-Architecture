@@ -420,3 +420,47 @@ def test_un_gancho_no_declarado_rompe_la_puerta(monkeypatch):
         (h["from"], h["to"]) for h in hallazgos
     }
     assert arch.check()["ok"] is False
+
+
+# ── La deuda del refactor, saldada (v40.0) ────────────────────────────────────
+
+
+def test_ningun_fichero_se_declara_en_dos_contextos():
+    """La baseline de AP-05 llegó a 0: deja de ser deuda y pasa a ser puerta.
+
+    Eran cinco heredados de las fases de migración. Cada uno se saldó igual:
+    un solo contexto declara el nombre en disco y el resto lo recibe de él.
+    `.change-log.json` es de Gobernanza, `graph.json` de Grafo,
+    `search-index.json` y `tag-registry.json` de Índices, y
+    `standard-version.json` de Ciclo de vida.
+
+    El intercambio es deliberado y se ve en la cifra de cruces, que sube: una
+    duplicación silenciosa —el día que el fichero se moviera solo se enteraría
+    quien lo escribe— se convierte en una dependencia declarada.
+    """
+    assert arch.rutas_duplicadas() == []
+    r = arch.check(strict=True)
+    assert r["duplicate_paths_baseline"] == 0, (
+        "la baseline de rutas duplicadas volvió a crecer: se salda declarando "
+        "un dueño, no ampliando arch-baseline.json"
+    )
+
+
+def test_las_rutas_prestadas_apuntan_al_mismo_sitio_que_su_dueno(tmp_path):
+    """Delegar no puede cambiar la ruta: sería peor que duplicarla (AP-44)."""
+    from vault.ciclo_de_vida.repositorio import RepositorioCicloDeVida
+    from vault.consulta.repositorio import RepositorioConsulta
+    from vault.gobernanza.repositorio import RepositorioGobernanza
+    from vault.grafo.repositorio import RepositorioGrafo
+    from vault.indices.repositorio import RepositorioIndices
+    from vault.kernel import construir
+
+    ctx = construir(tmp_path / "v")
+    ind, gra = RepositorioIndices(ctx), RepositorioGrafo(ctx)
+    gob, ciclo = RepositorioGobernanza(ctx), RepositorioCicloDeVida(ctx)
+
+    assert gra.bitacora_cambios == gob.bitacora_cambios
+    assert ind.grafo == gra.grafo
+    assert ciclo.indice_busqueda == ind.indice_busqueda
+    assert RepositorioConsulta(ctx).version_estandar == ciclo.fichero_version
+    assert gob.registro_etiquetas == ind.registro_etiquetas

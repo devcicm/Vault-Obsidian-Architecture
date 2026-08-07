@@ -53,7 +53,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT, atomic_write_text, assert_within_vault
+from vault_io import assert_within_vault, atomic_write_text, get_vault_root
 from vault_lib import utcnow, strip_code_blocks
 from vault_regex import (
     RE_EMPTY_LINK,
@@ -90,7 +90,7 @@ def _in_sandbox(rel: str) -> bool:
 
 def _is_in_test_sandbox() -> bool:
     """If VAULT_ROOT is itself the sandbox, allow scanning it."""
-    return VAULT_ROOT.name == "vault-sandbox"
+    return get_vault_root().name == "vault-sandbox"
 
 
 def _analyze_note(content: str) -> Dict[str, Any]:
@@ -314,9 +314,9 @@ def _collect_notes(path_arg: Optional[str]) -> List[Path]:
     if path_arg:
         target = Path(path_arg)
         if not target.is_absolute():
-            target = VAULT_ROOT / path_arg
+            target = get_vault_root() / path_arg
         try:
-            target = assert_within_vault(target, VAULT_ROOT)
+            target = assert_within_vault(target, get_vault_root())
         except ValueError:
             return []
         target = target.resolve()
@@ -325,7 +325,7 @@ def _collect_notes(path_arg: Optional[str]) -> List[Path]:
         if target.is_file():
             return [target] if target.suffix == ".md" else []
         return sorted(target.rglob("*.md"))
-    return sorted(VAULT_ROOT.rglob("*.md"))
+    return sorted(get_vault_root().rglob("*.md"))
 
 
 def _make_backup(files: List[Path]) -> Optional[Path]:
@@ -333,11 +333,11 @@ def _make_backup(files: List[Path]) -> Optional[Path]:
     if not files:
         return None
     ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    backup_dir = VAULT_ROOT / f".vault-fix-backup-{ts}"
+    backup_dir = get_vault_root() / f".vault-fix-backup-{ts}"
     backup_dir.mkdir(exist_ok=True)
     for f in files:
         try:
-            rel = f.relative_to(VAULT_ROOT)
+            rel = f.relative_to(get_vault_root())
         except ValueError:
             continue
         dest = backup_dir / rel
@@ -364,7 +364,7 @@ def vault_fix_brackets(
     for n in notes:
         scanned += 1
         try:
-            rel = str(n.relative_to(VAULT_ROOT)).replace("\\", "/")
+            rel = str(n.relative_to(get_vault_root())).replace("\\", "/")
         except ValueError:
             skipped += 1
             continue
@@ -429,9 +429,9 @@ def vault_fix_brackets(
     backup_dir: Optional[str] = None
     if apply and files_to_backup:
         bd = _make_backup(files_to_backup)
-        backup_dir = str(bd.relative_to(VAULT_ROOT)).replace("\\", "/") if bd else None
+        backup_dir = str(bd.relative_to(get_vault_root())).replace("\\", "/") if bd else None
         for fix in fixes_applied:
-            target = VAULT_ROOT / fix["path"]
+            target = get_vault_root() / fix["path"]
             try:
                 # Recompute content from disk (in case multiple fixes share a file? no — unique paths)
                 content = target.read_text(encoding="utf-8", errors="ignore")
@@ -449,7 +449,7 @@ def vault_fix_brackets(
     return {
         "ok": True,
         "tool": "vault_fix_brackets",
-        "vault_root": str(VAULT_ROOT),
+        "vault_root": str(get_vault_root()),
         "timestamp": utcnow(),
         "mode": "apply" if apply else "dry-run",
         "scanned": scanned,

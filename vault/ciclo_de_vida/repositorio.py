@@ -25,7 +25,6 @@ SUBCARPETA_STAGING = "_staging"
 
 FICHERO_VERSION = "standard-version.json"
 FICHERO_IDENTIDAD = "identity.md"
-FICHERO_INDICE_BUSQUEDA = "search-index.json"
 
 
 class RepositorioCicloDeVida:
@@ -70,7 +69,10 @@ class RepositorioCicloDeVida:
 
     @property
     def indice_busqueda(self) -> Path:
-        return self._ctx.ruta(CARPETA_INDICES, FICHERO_INDICE_BUSQUEDA)
+        """El índice de búsqueda es de Índices. Aquí solo se invalida al migrar."""
+        from ..indices.repositorio import RepositorioIndices
+
+        return RepositorioIndices(self._ctx).indice_busqueda
 
     # ── Lectura tolerante ────────────────────────────────────────────────────
 

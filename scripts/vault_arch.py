@@ -376,6 +376,38 @@ def dominio_sin_clasificar() -> list[str]:
     return sorted(k for k, v in _modulos_dominio().items() if not v)
 
 
+def usos_del_nombre_congelado() -> list[dict]:
+    """El punto ciego de `vinculos_congelados()`: usar el NOMBRE `VAULT_ROOT`.
+
+    `vinculos_congelados()` mide asignaciones de nivel de módulo, y esa medida
+    dio 0 al terminar la migración de los ocho contextos. Pero veinte módulos
+    seguían haciendo `from vault_io import VAULT_ROOT` y usándolo **dentro de
+    funciones**: el guard los daba por limpios y seguían dependiendo del
+    paliativo —que `set_vault_root()` les reescribiera el nombre por detrás—,
+    que es justo lo que el refactor existe para no necesitar.
+
+    El caso legítimo se declara con alias: `VAULT_ROOT as _DETECTED_ROOT` en
+    `vault_norms` quiere la raíz **detectada**, no la efectiva, y decirlo con un
+    alias es la diferencia entre pedirlo y arrastrarlo.
+
+    Puerta dura, sin baseline: se midió cero al declararla.
+    """
+    hallazgos = []
+    for nombre in sorted(_modulos_en_disco()):
+        ruta = SCRIPTS_DIR / f"{nombre}.py"
+        try:
+            arbol = ast.parse(ruta.read_text(encoding="utf-8", errors="replace"))
+        except SyntaxError:
+            continue
+        for nodo in ast.walk(arbol):
+            if not isinstance(nodo, ast.ImportFrom) or nodo.module != "vault_io":
+                continue
+            for alias in nodo.names:
+                if alias.name == "VAULT_ROOT" and alias.asname is None:
+                    hallazgos.append({"module": nombre, "line": nodo.lineno})
+    return hallazgos
+
+
 def vinculos_congelados() -> list[dict]:
     """Asignaciones de nivel de módulo que derivan de `VAULT_ROOT` (AP-49).
 
@@ -694,6 +726,9 @@ def check(strict: bool = False) -> dict:
     # un fallo de la puerta, no deuda que congelar.
     kernel_sin_declarar = dependencias_del_kernel()
 
+    # El punto ciego que quedó al saldar AP-49: usar el nombre importado.
+    nombre_crudo = usos_del_nombre_congelado()
+
     # Ésta sí arranca con baseline: al declararla había cinco duplicados
     # heredados de las fases anteriores. Exigir cero el primer día habría hecho
     # que la puerta naciera en rojo, y una puerta en rojo se desactiva.
@@ -706,7 +741,7 @@ def check(strict: bool = False) -> dict:
     return {
         "ok": not nuevos and not huerfanos and not ausentes and not vinc_nuevos
               and not prohibidas and not rutas_nuevas
-              and not kernel_sin_declarar
+              and not kernel_sin_declarar and not nombre_crudo
               and not (strict and (saldados or vinc_saldados or rutas_saldadas)),
         "tool": "vault_arch",
         "contexts": len(CONTEXTS),
@@ -723,6 +758,8 @@ def check(strict: bool = False) -> dict:
         # La frontera del kernel: ganchos declarados vs. cruces sin justificar.
         "kernel_hooks": len(GANCHOS_DEL_KERNEL),
         "undeclared_kernel_deps": kernel_sin_declarar,
+        # AP-49, su otra mitad: el nombre `VAULT_ROOT` importado sin alias.
+        "raw_vault_root_imports": nombre_crudo,
         # AP-05 — el mismo fichero declarado en dos repositorios de dominio.
         "duplicate_paths_total": len(duplicadas),
         "duplicate_paths_baseline": len(base_rutas),

@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
-from vault_io import VAULT_ROOT
+from vault_io import get_vault_root
 
 from vault_mcp_catalog import (
     TOOLS_CATALOG,
@@ -113,7 +113,7 @@ class VaultMCP:
         status = self.context.get_status()
         return {
             "ok": True,
-            "vault": str(VAULT_ROOT.name),
+            "vault": str(get_vault_root().name),
             "version": status["version"],
             "health_score": status["health_score"],
             "last_operation": status["last_operation"],

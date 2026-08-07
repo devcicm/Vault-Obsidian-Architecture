@@ -2,7 +2,7 @@
 
 > Documento derivado. Se genera con `python scripts/vault_arch.py --blueprint`; la fuente es `CONTEXTS` en `scripts/vault_arch.py`. No se edita a mano.
 
-**9 contextos**, **112 módulos** clasificados, **57 fronteras cruzadas** pendientes de publicar puerto.
+**9 contextos**, **112 módulos** clasificados, **62 fronteras cruzadas** pendientes de publicar puerto.
 
 ## Los límites
 
@@ -56,6 +56,8 @@ graph TD
     autoria -.->|cruce| meta_toolkit
     autoria -.->|cruce| indices
     autoria -.->|cruce| grafo
+    consulta -.->|cruce| ciclo_de_vida
+    indices -.->|cruce| grafo
 ```
 
 ## Kernel
@@ -112,13 +114,14 @@ Fronteras que hoy cruza (22), deuda declarada:
 - **Puertos publicados:** construir_grafo, resolver_wikilink, impacto
 - **Módulos (15):** `vault_code_map`, `vault_code_module`, `vault_code_query`, `vault_code_relation`, `vault_code_sync`, `vault_code_tag`, `vault_env_matrix`, `vault_graph`, `vault_graph_fix`, `vault_graph_inspect`, `vault_graph_merge`, `vault_impact`, `vault_infra_map`, `vault_link_safety`, `vault_relation_add`
 
-Fronteras que hoy cruza (3), deuda declarada:
+Fronteras que hoy cruza (4), deuda declarada:
 
 | Módulo | Importa | Contexto destino |
 |---|---|---|
 | `vault_code_tag` | `vault_norms` | Gobernanza |
 | `vault_code_tag` | `vault_write` | Autoría |
 | `vault_env_matrix` | `vault_norms` | Gobernanza |
+| `vault/grafo/repositorio.py` | `vault/gobernanza` | Gobernanza |
 
 ## Gobernanza
 
@@ -126,7 +129,7 @@ Fronteras que hoy cruza (3), deuda declarada:
 - **Puertos publicados:** NORM_CATALOG, auditar, puntuar_calidad
 - **Módulos (9):** `vault_audit`, `vault_drift_detect`, `vault_fundamentals`, `vault_mermaid_check`, `vault_norms`, `vault_quality_check`, `vault_secret_scan`, `vault_security_scan`, `vault_validate`
 
-Fronteras que hoy cruza (5), deuda declarada:
+Fronteras que hoy cruza (6), deuda declarada:
 
 | Módulo | Importa | Contexto destino |
 |---|---|---|
@@ -135,12 +138,19 @@ Fronteras que hoy cruza (5), deuda declarada:
 | `vault_norms` | `vault_smoke` | Meta-toolkit |
 | `vault_norms` | `vault_tags` | Índices |
 | `vault_norms` | `vault_voice` | Autoría |
+| `vault/gobernanza/repositorio.py` | `vault/indices` | Índices |
 
 ## Índices
 
 - **Lenguaje ubicuo:** índice, etiqueta, término, sección indexada
 - **Puertos publicados:** reindexar, indice_maestro, vocabulario_de_tags
 - **Módulos (6):** `vault_folder_registry`, `vault_index`, `vault_master_index`, `vault_reindex`, `vault_section_index`, `vault_tags`
+
+Fronteras que hoy cruza (1), deuda declarada:
+
+| Módulo | Importa | Contexto destino |
+|---|---|---|
+| `vault/indices/repositorio.py` | `vault/grafo` | Grafo |
 
 ## Consulta
 
@@ -149,13 +159,14 @@ Fronteras que hoy cruza (5), deuda declarada:
 - **No cruza:** base de datos; embeddings; servicio externo
 - **Módulos (10):** `vault_compact_contracts`, `vault_context_pack`, `vault_ingest`, `vault_mcp_context`, `vault_preferences`, `vault_query_parse`, `vault_subgraph`, `vault_token_counter`, `vault_token_service`, `vault_tokens`
 
-Fronteras que hoy cruza (3), deuda declarada:
+Fronteras que hoy cruza (4), deuda declarada:
 
 | Módulo | Importa | Contexto destino |
 |---|---|---|
 | `vault_context_pack` | `vault_search` | Autoría |
 | `vault_preferences` | `vault_norms` | Gobernanza |
 | `vault_subgraph` | `vault/grafo` | Grafo |
+| `vault/consulta/repositorio.py` | `vault/ciclo_de_vida` | Ciclo de vida |
 
 ## Ciclo de vida
 
@@ -163,7 +174,7 @@ Fronteras que hoy cruza (3), deuda declarada:
 - **Puertos publicados:** CURRENT_VERSION, inicializar, migrar
 - **Módulos (8):** `vault_init`, `vault_migrate_docs`, `vault_migrate_rollback`, `vault_onboard`, `vault_propagate`, `vault_sanacion`, `vault_sdd_init`, `vault_standard_upgrade`
 
-Fronteras que hoy cruza (14), deuda declarada:
+Fronteras que hoy cruza (15), deuda declarada:
 
 | Módulo | Importa | Contexto destino |
 |---|---|---|
@@ -181,6 +192,7 @@ Fronteras que hoy cruza (14), deuda declarada:
 | `vault_sdd_init` | `vault_norms` | Gobernanza |
 | `vault_standard_upgrade` | `vault_mcp_catalog` | Meta-toolkit |
 | `vault_standard_upgrade` | `vault_section_index` | Índices |
+| `vault/ciclo_de_vida/repositorio.py` | `vault/indices` | Índices |
 
 ## Durabilidad
 

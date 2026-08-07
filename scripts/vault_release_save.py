@@ -30,14 +30,7 @@ from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
 from vault_lib import slugify_strict, utcnow
-from vault_io import (
-    write_report,
-    VAULT_ROOT,
-    assert_within_vault,
-    atomic_write_text,
-    file_lock,
-    update_section_index,
-)
+from vault_io import assert_within_vault, atomic_write_text, file_lock, get_vault_root, update_section_index, write_report
 from vault_norms import compute_norm_refs, status_frontmatter_lines
 
 RELEASE_FOLDER = "08_Runbooks/deploy"
@@ -216,14 +209,14 @@ def vault_release_save(
 
     # Write runbook
     filename = f"{_slug(project)}-release-{version_slug}.md"
-    path = VAULT_ROOT / RELEASE_FOLDER / filename
+    path = get_vault_root() / RELEASE_FOLDER / filename
     path.parent.mkdir(parents=True, exist_ok=True)
-    assert_within_vault(path, VAULT_ROOT)
+    assert_within_vault(path, get_vault_root())
     atomic_write_text(path, full)
 
     # Update project changelog
     changelog_rel = CHANGELOG_PATH.format(project=project)
-    changelog_path = VAULT_ROOT / changelog_rel
+    changelog_path = get_vault_root() / changelog_rel
     changelog_path.parent.mkdir(parents=True, exist_ok=True)
 
     changelog_entry = f"\n### {version} — {deploy_at[:10]} ({release_type})\n\n"
@@ -258,7 +251,7 @@ def vault_release_save(
     return {
         "ok": True,
         **write_report(),
-        "path": str(path.relative_to(VAULT_ROOT)).replace("\\", "/"),
+        "path": str(path.relative_to(get_vault_root())).replace("\\", "/"),
         "changelog": changelog_rel,
         "project": project,
         "version": version,
