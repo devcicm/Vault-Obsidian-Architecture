@@ -85,6 +85,14 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 # Documentos que le dicen a un agente qué comando teclear. Si mienten, el
 # agente pierde el turno en un `unrecognized arguments`.
+#
+# `vault-obsidian-architecture.md` está fuera **a propósito**, y no por
+# descuido: su changelog cita comandos rotos como prueba del defecto que
+# describe. La entrada de v40.4 reproduce literalmente las dos líneas con
+# `--root` que originaron este guard. Incluirlo obligaría al changelog a dejar
+# de mostrar el fallo que documenta — el guard no distingue un comando que se
+# dicta de uno que se exhibe. Se comprobó: los únicos tres positivos fuera de
+# esta lista son esas dos citas y una copia de backup que no se toca.
 DOCS_CON_COMANDOS = ("CLAUDE.md", "README.md", "scripts/README.md")
 
 RE_COMANDO = re.compile(
