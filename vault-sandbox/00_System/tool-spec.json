@@ -276,6 +276,39 @@
         "F7"
       ]
     },
+    "vault_blame_audit": {
+      "group": "Normas",
+      "group_id": 35,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "baseline_size",
+        "frozen",
+        "modules_affected",
+        "new_offenders",
+        "norm",
+        "offenders",
+        "offenders_total",
+        "ok",
+        "path",
+        "resolved_since_baseline",
+        "tool"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "integrity",
+          "accuracy"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F8"
+      ]
+    },
     "vault_bug_save": {
       "group": "Defectos y Cuarentena",
       "group_id": 36,
@@ -1070,6 +1103,39 @@
         "F4",
         "F5",
         "F6",
+        "F8"
+      ]
+    },
+    "vault_gate": {
+      "group": "Normas",
+      "group_id": 35,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "action",
+        "failed_gates",
+        "failing",
+        "gates",
+        "gates_missing_from_checklist",
+        "gates_total",
+        "hint",
+        "ok",
+        "passing",
+        "seconds",
+        "tool"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "integrity",
+          "consistency"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
         "F8"
       ]
     },

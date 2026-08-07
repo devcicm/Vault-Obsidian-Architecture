@@ -1,13 +1,13 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 92 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
+Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 94 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **114 archivos Python** — 92 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
+- **116 archivos Python** — 94 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
 - **Saneamiento de índices (v38.1)** — `vault_section_index.py --heal [--root]` regenera índices con formato legacy `[[stem|alias]]` o ausentes; el auto-index post-write se auto-cura si un agente escribe `index.md` a mano
-- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 92 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
+- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 94 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
 - **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault; requiere marcador de CONTENIDO (01_Projects/02_Observability/03_Decisions/.obsidian), no solo 00_System/99_Index (evita el ciclo auto-reforzado de detección); override runtime con `set_vault_root()`/env `VAULT_ROOT`
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
@@ -59,7 +59,7 @@ Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan 
 | [Grupo 32 — Gestión de Carpetas](#grupo-32--gestión-de-carpetas) | vault_folder_registry |
 | [Grupo 33 — Corrección Automática](#grupo-33--corrección-automática) | vault_fix_brackets, vault_graph_fix |
 | [Grupo 34 — Memoria de Contexto](#grupo-34--memoria-de-contexto) | vault_preferences, vault_query_parse, vault_subgraph, vault_context_pack, vault_ingest |
-| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_noop_audit, vault_smoke, vault_voice |
+| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_noop_audit, vault_smoke, vault_voice |
 | [Grupo 36 — Defectos y Cuarentena](#grupo-36--defectos-y-cuarentena) | vault_bug_save, vault_quarantine |
 | [Grupo 37 — Skills](#grupo-37--skills) | vault_sdd_init, vault_sanacion |
 | [Observabilidad de Tools](#observabilidad-de-tools) | vault_errors |
@@ -1673,7 +1673,7 @@ El vault expone sus herramientas como un **servidor MCP** que las IAs consumen d
 
 **Archivo:** `../mcp/nodejs/vault-mcp-server.mjs` (~1650 líneas, cero dependencias npm)  
 **Plan:** `../mcp/PLAN.md` — documento de evidencia con 8 fases de implementación
-**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (92 tools)
+**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (94 tools)
 
 Los parámetros que el catálogo publica **se derivan del `argparse` de cada script**,
 no se escriben a mano: el servidor compone `--<param>` literal, así que un param
@@ -1721,7 +1721,7 @@ node mcp/nodejs/vault-mcp-server.mjs --port 3000
 
 ### `vault_norms.py`
 
-Registro canónico de las 62 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
+Registro canónico de las 63 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
 
 ```bash
 python vault_norms.py                             # catálogo completo
@@ -1823,6 +1823,58 @@ python vault_noop_audit.py --freeze           # recongela scripts/noop-baseline.
 ```
 
 **Baseline, no guard duro.** Casi todas las tools con side effects nacieron sin indicador; un guard que falla en decenas de sitios se desactiva el primer día. El conteo vivo lo da `--check`, no este README. La baseline congela la deuda conocida y solo puede **encoger**: toda tool nueva nace conforme, y la que se corrige sale de la lista y ya no puede volver a entrar. Tras saldar deuda hay que ejecutar `--freeze` para que el gate no la readmita.
+
+---
+
+### `vault_blame_audit.py`
+
+**AP-51 — la tool culpa al dato de su propio fallo.** Detecta handlers amplios (`except Exception`, `except` desnudo) cuya única salida es un vacío indistinguible de un resultado legítimo: `return []`, `return {}`, `return None`, `pass`, `continue`.
+
+El síntoma vino de ejecutar contra un vault **ajeno al estándar** (regla 7): tres tools declaraban inválidas notas que Obsidian leía sin problema. Las notas estaban bien; el criterio que las medía, no. AP-44 cubre la mitad de arriba —verificar con el criterio del consumidor—; esta cubre la de abajo, que es cómo un fallo propio acaba pareciendo un dato malo:
+
+```python
+try:
+    fm = read_frontmatter(p) or {}
+except Exception:
+    return []          # <- el llamante lee "esta nota no tiene aliases"
+```
+
+El informe que agregue ese `[]` dirá que N notas carecen de aliases, y no será cierto: es que no se pudieron leer. **No es lo mismo "no hay" que "no pude mirar".**
+
+```bash
+python vault_blame_audit.py --check            # estado de la deuda AP-51
+python vault_blame_audit.py --check --strict   # exit 1 si la deuda CRECIÓ (gate de CI)
+python vault_blame_audit.py --freeze           # recongela scripts/blame-baseline.json
+```
+
+**Capturar amplio no infringe; capturar amplio y callarse, sí.** Devolver `ok: false` con el error es correcto: el llamante recibe la mala noticia y decide. Capturar `FileNotFoundError` tampoco infringe — es un criterio, el autor sabe qué tolera y por qué.
+
+**Baseline, no guard duro,** por la misma razón que AP-37: la primera medición encontró deuda en decenas de módulos, y un guard que falla ahí se desactiva el primer día. El conteo vivo lo da `--check`, no este README. La clave de la baseline es `módulo:línea` y no un contador por módulo, porque una baseline por conteo se "salda" arreglando un sitio y estrenando otro — que es justo la regresión que este audit existe para ver.
+
+**Se mide por AST, no por texto,** y no es un detalle de implementación: un detector que buscara la cadena `except Exception` contaría los que están en comentarios y no distinguiría un handler que devuelve `[]` de uno que devuelve `ok: false`, que es toda la distinción que la norma sostiene. La primera versión del detector lo aprendió a su costa: midió 101 sitios porque clasificaba `except yaml.YAMLError` como captura amplia —son `ast.Attribute`, no `ast.Name`, y caían en la rama del `except` desnudo—, contando como infracción justo las capturas más precisas del repo. Quince falsos positivos, y el error era el de AP-44 cometido dentro del guard.
+
+---
+
+### `vault_gate.py`
+
+**La puerta única.** Corre todas las puertas de cierre y agrega el veredicto en un solo envelope.
+
+```bash
+python vault_gate.py            # corre todas
+python vault_gate.py --strict   # exit 1 si alguna falla (gate de CI)
+python vault_gate.py --list     # qué mide cada puerta y cómo se arregla
+python vault_gate.py --check-doc  # el checklist de CLAUDE.md vs. el registro
+```
+
+El problema que resuelve no es de comodidad. Las puertas estaban repartidas en un checklist de prosa, y una lista en prosa falla de tres maneras que ya se cobraron su precio aquí: **nadie sabe cuántas son** —se decía "las siete" mientras el checklist tenía ocho ítems y la práctica corría seis—; **añadir una puerta no la pone en circulación**, porque un guard que nadie añade al checklist no corre, que es AP-42 aplicado a las propias puertas; y **correrlas a mano las corre a medias**, porque el comando que se saltea siempre es el más lento.
+
+**La lista canónica vive en el registro `PUERTAS`, no en el doc,** y `--check-doc` verifica que el checklist de `CLAUDE.md` las cite todas. El orden es el del estándar —registro canónico primero, doc después, guard que falla si divergen—; al revés sería AP-50 estrenada en la misma versión que la declara. Si una puerta falta en el checklist, se añade al checklist: el registro manda.
+
+**No reimplementa nada y no baja el enforcement de ninguna norma** (regla 5). Cada puerta corre como subproceso con su propio exit code y su propio envelope, y esta tool solo agrega. Mirar los datos por su cuenta la convertiría en una segunda fuente de verdad sobre el estado del repo (AP-05) y la haría medir con su criterio en vez del de la puerta (AP-44).
+
+**No sustituye a `pytest`.** La suite es lenta y estas son rápidas: correrlas antes ahorra el ciclo largo cuando algo evidente está roto, pero verde aquí no es verde allí, y el envelope lo dice en su propio `hint` para que no haya que acordarse.
+
+El campo `fix` de cada puerta distingue lo que se arregla solo —un artefacto derivado que solo hay que regenerar— de lo que exige decisión. Es lo que se lee cuando algo se pone en rojo a las once de la noche.
 
 ---
 

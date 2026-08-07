@@ -2169,6 +2169,100 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         ),
         "related": ["vault_norms", "vault_noop_audit", "vault_mcp_catalog"],
     },
+    "vault_gate": {
+        "name": "vault_gate",
+        "script": "vault_gate.py",
+        "group": "Normas",
+        "purpose": (
+            "La puerta unica: corre todas las puertas de cierre como "
+            "subprocesos y agrega el veredicto. La lista canonica de puertas "
+            "vive en el registro PUERTAS, y --check-doc verifica que el "
+            "checklist de CLAUDE.md las cite todas. No reimplementa ninguna "
+            "comprobacion ni baja el enforcement de ninguna norma."
+        ),
+        "params": {
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit 1 si alguna puerta falla (gate de CI)",
+                "validators": [],
+            },
+            "list": {
+                "type": "boolean",
+                "required": False,
+                "description": "Lista las puertas y que mide cada una, sin ejecutarlas",
+                "validators": [],
+            },
+            "check-doc": {
+                "type": "boolean",
+                "required": False,
+                "description": "Comprueba que el checklist de CLAUDE.md cite todas las puertas",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "El registro manda sobre el doc: una puerta ausente del checklist "
+            "se anade al checklist, no se quita del registro",
+            "Cada puerta corre como subproceso con su propio exit code: mirar "
+            "los datos por su cuenta seria una segunda fuente de verdad (AP-05) "
+            "y medirlos con criterio propio (AP-44)",
+            "No sustituye a pytest: verde aqui no es verde en la suite",
+        ],
+        "side_effects": [],
+        "example": (
+            "python vault_gate.py --list\n"
+            "python vault_gate.py --strict\n"
+            "python vault_gate.py --check-doc"
+        ),
+        "related": ["vault_norms", "vault_arch", "vault_noop_audit", "vault_blame_audit"],
+    },
+    "vault_blame_audit": {
+        "name": "vault_blame_audit",
+        "script": "vault_blame_audit.py",
+        "group": "Normas",
+        "purpose": (
+            "AP-51 \u2014 detecta handlers amplios que se tragan el fallo propio "
+            "y devuelven un vacio indistinguible de un resultado legitimo, con "
+            "lo que un error acaba contado como un hecho sobre el vault. "
+            "Compara contra una baseline congelada: la deuda historica no "
+            "bloquea, pero no puede crecer."
+        ),
+        "params": {
+            "check": {
+                "type": "boolean",
+                "required": False,
+                "description": "Reporta el estado de la deuda AP-51",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit 1 si aparecieron sitios nuevos (gate de CI)",
+                "validators": [],
+            },
+            "freeze": {
+                "type": "boolean",
+                "required": False,
+                "description": "Recongela scripts/blame-baseline.json tras saldar deuda",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "La baseline solo puede encoger: todo codigo nuevo nace conforme",
+            "Se mide por AST y no por texto: buscar la cadena 'except Exception' "
+            "no distingue devolver un vacio de devolver ok: false, que es toda "
+            "la distincion que la norma sostiene",
+            "La clave es modulo:linea y no un conteo por modulo: una baseline "
+            "por conteo se salda arreglando un sitio y estrenando otro",
+        ],
+        "side_effects": ["Con --freeze reescribe scripts/blame-baseline.json"],
+        "example": (
+            "python vault_blame_audit.py --check\n"
+            "python vault_blame_audit.py --check --strict\n"
+            "python vault_blame_audit.py --freeze"
+        ),
+        "related": ["vault_norms", "vault_noop_audit", "vault_arch"],
+    },
     "vault_noop_audit": {
         "name": "vault_noop_audit",
         "script": "vault_noop_audit.py",
@@ -3206,6 +3300,8 @@ GROUPS: Dict[str, List[str]] = {
     "Normas": [
         "vault_norms",
         "vault_arch",
+        "vault_blame_audit",
+        "vault_gate",
         "vault_code_tag",
         "vault_doc_counts",
         "vault_doc_sync",

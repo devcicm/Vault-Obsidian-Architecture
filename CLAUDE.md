@@ -10,9 +10,9 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | Ruta | Qué es |
 |---|---|
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~6.000 líneas). Fuente normativa. |
-| `scripts/*.py` | ~114 scripts, 92 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
+| `scripts/*.py` | ~116 scripts, 94 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (2030 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (2140 tests). Toda norma con guard debe tener test. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
 | `vault-sandbox/` | **Único** vault de pruebas del repo. Todo runtime va aquí. |
@@ -118,8 +118,15 @@ python scripts/vault_quality_check.py --root vault-sandbox --min-score 0.7
 
 ## Antes de cerrar un cambio
 
+- [ ] **`python scripts/vault_gate.py --strict` → 8/8.** Corre las ocho puertas de golpe;
+      la lista canónica vive en el registro `PUERTAS`, no en este checklist, y
+      `--check-doc` falla si alguna puerta no aparece aquí. Los ítems siguientes las
+      detallan una a una — están para saber qué mide cada una y cómo se arregla, no
+      para correrlas por separado. **No sustituye a la suite.**
 - [ ] `python -m pytest tests/ --tb=short` en verde.
-- [ ] `python scripts/vault_norms.py --check-framework` → `ok: true`.
+- [ ] `python scripts/vault_norms.py --check-framework` → `ok: true`. Además de los ids
+      del marco, exige que toda norma de `NORM_CATALOG` tenga **sección propia** en el
+      manifiesto: una mención de pasada en un changelog no cuenta.
 - [ ] `python scripts/vault_mcp_catalog.py --check` → sincronizado.
 - [ ] `python scripts/vault_doc_counts.py --check --strict` → `ok: true`. Ninguna
       cifra de la documentación se escribe a mano: si cambió un conteo, `--fix`.
@@ -134,6 +141,12 @@ python scripts/vault_quality_check.py --root vault-sandbox --min-score 0.7
 - [ ] `python scripts/vault_noop_audit.py --check --strict` → `ok: true` (AP-37).
       Toda tool nueva con side effects declara un indicador de trabajo: la baseline
       solo puede encoger. Tras saldar deuda, `--freeze`.
+- [ ] `python scripts/vault_blame_audit.py --check --strict` → `ok: true` (AP-51).
+      Ningún handler amplio (`except Exception`, `except:`) devuelve un vacío
+      indistinguible de un resultado legítimo: el fallo de la tool no se presenta como
+      ausencia en el dato. Baseline que solo puede encoger; tras saldar deuda, `--freeze`.
+- [ ] `python scripts/vault_arch.py --check --strict` → `ok: true`. Contextos acotados:
+      fronteras, puertos, vocabularios con dueño, entorno declarado, AP-49 en cero.
 - [ ] `git diff --stat vault-obsidian-architecture.md` sin borrados netos de contenido.
 - [ ] Si tocaste una versión: banner del manifiesto, tabla de versiones, entrada de changelog
       con hash real, badge del `README.md` y `version` de `pyproject.toml` coherentes.

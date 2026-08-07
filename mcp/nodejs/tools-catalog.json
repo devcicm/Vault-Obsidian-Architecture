@@ -138,6 +138,18 @@
           "map": {
             "type": "string",
             "description": "Dice a qué contexto acotado pertenece un módulo"
+          },
+          "env": {
+            "type": "string",
+            "description": "la tabla de configuración derivada del registro"
+          },
+          "sync-env": {
+            "type": "string",
+            "description": "regenera mcp/nodejs/env-table.json desde el registro"
+          },
+          "vocab": {
+            "type": "string",
+            "description": "los vocabularios cerrados y su contexto dueño"
           }
         }
       },
@@ -308,6 +320,42 @@
       "related": [
         "vault_knowledge_save",
         "vault_search"
+      ]
+    },
+    "vault_blame_audit": {
+      "name": "vault_blame_audit",
+      "description": "AP-51 — detecta handlers amplios que se tragan el fallo propio y devuelven un vacio indistinguible de un resultado legitimo, con lo que un error acaba contado como un hecho sobre el vault. Compara contra una baseline congelada: la deuda historica no bloquea, pero no puede crecer.",
+      "group": "Normas",
+      "script": "vault_blame_audit.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "check": {
+            "type": "string",
+            "description": "Reporta el estado de la deuda AP-51"
+          },
+          "strict": {
+            "type": "string",
+            "description": "Exit 1 si aparecieron sitios nuevos (gate de CI)"
+          },
+          "freeze": {
+            "type": "string",
+            "description": "Recongela scripts/blame-baseline.json tras saldar deuda"
+          }
+        }
+      },
+      "guards": [
+        "La baseline solo puede encoger: todo codigo nuevo nace conforme",
+        "Se mide por AST y no por texto: buscar la cadena 'except Exception' no distingue devolver un vacio de devolver ok: false, que es toda la distincion que la norma sostiene",
+        "La clave es modulo:linea y no un conteo por modulo: una baseline por conteo se salda arreglando un sitio y estrenando otro"
+      ],
+      "side_effects": [
+        "Con --freeze reescribe scripts/blame-baseline.json"
+      ],
+      "related": [
+        "vault_norms",
+        "vault_noop_audit",
+        "vault_arch"
       ]
     },
     "vault_bug_save": {
@@ -1504,6 +1552,41 @@
         "vault_quality_check"
       ]
     },
+    "vault_gate": {
+      "name": "vault_gate",
+      "description": "La puerta unica: corre todas las puertas de cierre como subprocesos y agrega el veredicto. La lista canonica de puertas vive en el registro PUERTAS, y --check-doc verifica que el checklist de CLAUDE.md las cite todas. No reimplementa ninguna comprobacion ni baja el enforcement de ninguna norma.",
+      "group": "Normas",
+      "script": "vault_gate.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "strict": {
+            "type": "string",
+            "description": "Exit 1 si alguna puerta falla (gate de CI)"
+          },
+          "list": {
+            "type": "string",
+            "description": "Lista las puertas y que mide cada una, sin ejecutarlas"
+          },
+          "check-doc": {
+            "type": "string",
+            "description": "Comprueba que el checklist de CLAUDE.md cite todas las puertas"
+          }
+        }
+      },
+      "guards": [
+        "El registro manda sobre el doc: una puerta ausente del checklist se anade al checklist, no se quita del registro",
+        "Cada puerta corre como subproceso con su propio exit code: mirar los datos por su cuenta seria una segunda fuente de verdad (AP-05) y medirlos con criterio propio (AP-44)",
+        "No sustituye a pytest: verde aqui no es verde en la suite"
+      ],
+      "side_effects": [],
+      "related": [
+        "vault_norms",
+        "vault_arch",
+        "vault_noop_audit",
+        "vault_blame_audit"
+      ]
+    },
     "vault_graph": {
       "name": "vault_graph",
       "description": "Genera grafo de relaciones entre notas.",
@@ -1692,13 +1775,7 @@
           },
           "min-risk": {
             "type": "string",
-            "description": "Filter by minimum stale_risk level",
-            "enum": [
-              "critical",
-              "high",
-              "medium",
-              "low"
-            ]
+            "description": "Filter by minimum stale_risk level"
           },
           "predicate": {
             "type": "string",
@@ -3068,13 +3145,7 @@
           },
           "min-priority": {
             "type": "string",
-            "description": "Filter queue-report by minimum priority",
-            "enum": [
-              "critical",
-              "high",
-              "medium",
-              "low"
-            ]
+            "description": "Filter queue-report by minimum priority"
           },
           "clear": {
             "type": "string",
@@ -3109,13 +3180,7 @@
           },
           "integrity": {
             "type": "string",
-            "description": "Filter output by CIA integrity level",
-            "enum": [
-              "critical",
-              "high",
-              "medium",
-              "low"
-            ]
+            "description": "Filter output by CIA integrity level"
           },
           "check": {
             "type": "string",
@@ -4029,12 +4094,7 @@
           },
           "set-profile": {
             "type": "string",
-            "description": "Set the tool profile in standard-version.json (minimal=10, standard=30, full=61)",
-            "enum": [
-              "minimal",
-              "standard",
-              "full"
-            ]
+            "description": "Set the tool profile in standard-version.json (minimal=10, standard=30, full=61)"
           },
           "validate": {
             "type": "string",
@@ -4672,6 +4732,8 @@
     "Normas": [
       "vault_norms",
       "vault_arch",
+      "vault_blame_audit",
+      "vault_gate",
       "vault_code_tag",
       "vault_doc_counts",
       "vault_doc_sync",

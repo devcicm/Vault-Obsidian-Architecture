@@ -1478,6 +1478,74 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "tools_detecting": ["vault_norms --audit", "vault_arch --check"],
         "introduced_version": "v40.1",
     },
+    {
+        "code": "AP-51",
+        "name": "La tool culpa al dato de su propio fallo",
+        "type": "antipattern",
+        "category": "quality",
+        "severity": "high",
+        "enforcement": "guard+audit",
+        "description": (
+            "Una tool falla al leer o al interpretar algo, se traga el fallo y "
+            "devuelve un vacio que el llamante no puede distinguir de un "
+            "resultado legitimo. El error deja de ser un error y pasa a ser un "
+            "**hecho sobre el vault**: el informe que lo agregue dira que N "
+            "notas no tienen aliases, y no sera cierto \u2014 es que no se "
+            "pudieron leer.\n\n"
+            "No es lo mismo *no hay* que *no pude mirar*, y esa es toda la "
+            "norma. AP-44 cubre la mitad de arriba \u2014verificar con el "
+            "criterio del consumidor y no con el propio\u2014; esta cubre la de "
+            "abajo, que es el mecanismo por el que un fallo propio acaba "
+            "pareciendo un dato malo. Salio al ejecutar contra un vault ajeno "
+            "al estandar (**regla 7**): tres tools declaraban invalidas notas "
+            "que Obsidian leia sin problema. Las notas estaban bien; el "
+            "criterio que las media, no.\n\n"
+            "Lo que la norma **no** prohibe es capturar amplio. Prohibe "
+            "capturar amplio y callarse: devolver `ok: false` con el error es "
+            "correcto porque el llamante recibe la mala noticia y decide. "
+            "Capturar `FileNotFoundError` tampoco infringe: es un criterio, el "
+            "autor sabe que tolera y por que. Lo que infringe es `except "
+            "Exception: return []`.\n\n"
+            "Medida en v40.1: **86 sitios en 37 modulos**. Nace con baseline "
+            "por la misma razon que AP-37 \u2014que empezo en 55 y llego a "
+            "0\u2014: un guard que falla en 86 sitios se desactiva el primer "
+            "dia, y un guard desactivado no protege nada. La baseline solo "
+            "puede encoger.\n\n"
+            "El propio detector estreno el fallo que persigue. La primera "
+            "version midio 101 sitios porque clasificaba `except "
+            "yaml.YAMLError` como captura amplia: son `ast.Attribute` y no "
+            "`ast.Name`, asi que caian en la rama del `except` desnudo. "
+            "Contaba como infraccion justo las capturas mas precisas del "
+            "repo. Quince falsos positivos, y el error era el de AP-44 "
+            "cometido dentro del guard."
+        ),
+        "signal": (
+            "Un `except Exception` o un `except` desnudo cuya unica salida es "
+            "`return []`, `return {}`, `return None`, `pass` o `continue`; un "
+            "recuento agregado que no distingue el cero medido del cero por "
+            "fallo de lectura; un veredicto sobre una nota emitido por un "
+            "camino que ya habia fallado."
+        ),
+        "prevention": (
+            "Capturar la excepcion concreta que se sabe tolerar, y si se "
+            "captura amplio, **exponer**: devolver el fallo en el envelope en "
+            "vez de un vacio. Cuando el vacio es la respuesta correcta, "
+            "distinguirlo del vacio por fallo con un campo aparte "
+            "(`unreadable`, `errors`) para que el agregado no los confunda. "
+            "`vault_blame_audit --check --strict` mide por AST y no por "
+            "texto: un detector que buscara la cadena `except Exception` no "
+            "veria la diferencia entre devolver un vacio y devolver un "
+            "envelope con `ok: false`, que es toda la distincion que la norma "
+            "sostiene."
+        ),
+        "tools_enforcing": ["vault_blame_audit --check --strict"],
+        # No se lista `vault_norms --audit`: ese audita el **contenido del
+        # vault**, y esta norma es sobre el codigo de las tools. Declararlo
+        # aqui seria una tool_detecting que no detecta nada, que es la misma
+        # afirmacion no falsable que AP-37 persigue.
+        "tools_detecting": ["vault_blame_audit --check"],
+        "introduced_version": "v40.1",
+    },
     # ── Patrón PAT-6 ───────────────────────────────────────────────────────────
     {
         "code": "PAT-6",
@@ -3163,13 +3231,25 @@ def framework_drift_check(spec_path: Optional[Path] = None) -> Dict[str, Any]:
                     }
                 )
 
+    # Cobertura de secciones: toda norma catalogada tiene que tener su sección
+    # en el manifiesto. La medida es el **encabezado**, no la mención: once
+    # normas (AP-25..AP-35) estaban citadas de pasada en entradas de changelog
+    # y eso las hacía pasar por documentadas durante diez versiones mientras
+    # `vault_norms --list` las mostraba y el manifiesto no las explicaba. Un
+    # `in text` habría dado verde — es AP-44 otra vez: medir con el criterio
+    # cómodo en vez de con el del lector, que busca la sección.
+    encabezados = set(re.findall(r"^#{2,4}\s+((?:AP|PAT|SP|CN)-\d+)", text, re.M))
+    sin_seccion = [n["code"] for n in NORM_CATALOG if n["code"] not in encabezados]
+
     return {
-        "ok": not missing,
+        "ok": not missing and not sin_seccion,
         "tool": "vault_norms.framework_drift",
         "spec": spec.name,
         "total_ids": sum(len(e) for e in FRAMEWORK_REGISTRIES.values()),
         "missing_count": len(missing),
         "missing": missing,
+        "norms_total": len(NORM_CATALOG),
+        "norms_without_section": sin_seccion,
     }
 
 

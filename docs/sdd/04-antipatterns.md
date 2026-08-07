@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
-> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-50 más
-> las familias PAT, SP y CN. Por familia: AP 50, CN 3, PAT 6, SP 3.
-> Bilingual document. Full norm catalog: antipatterns AP-01..AP-50 plus the PAT,
-> SP and CN families. By family: AP 50, CN 3, PAT 6, SP 3.
+> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-51 más
+> las familias PAT, SP y CN. Por familia: AP 51, CN 3, PAT 6, SP 3.
+> Bilingual document. Full norm catalog: antipatterns AP-01..AP-51 plus the PAT,
+> SP and CN families. By family: AP 51, CN 3, PAT 6, SP 3.
 
 ---
 
 ## ES
 
-Total de normas registradas: 62 (AP 50, CN 3, PAT 6, SP 3)
+Total de normas registradas: 63 (AP 51, CN 3, PAT 6, SP 3)
 
 ### AP-01: Documentación alucinada
 
@@ -527,6 +527,24 @@ El dueño es la mitad que faltaba. `vault_norms.DOMAIN_STATUS_VOCABS` ya había 
 
 **Prevención:** Registro canónico con dueño, consumidores derivados, guard sin baseline. Los vocabularios cerrados en `vault_vocabulario.py`, la configuración en `vault_entorno.py`, y `vault_arch --check` fallando si aparece una copia, una lectura sin declarar o un vocabulario huérfano. **Sin baseline a propósito**: las catorce copias se saldaron al declarar el registro, así que la puerta nace en cero y una baseline solo serviría para admitir la número quince. Lo que ya tiene registro canónico no se copia: se declara `derivado_de` y se resuelve al llamarse, nunca al importarse (AP-49). Un dato canónico que no es puerto de su contexto se acaba copiando -- los tres registros que `CLAUDE.md` declara fuente única de verdad se leían por fuera de la superficie publicada, y así nacieron las catorce copias.
 
+### AP-51: La tool culpa al dato de su propio fallo
+
+- **Severidad:** high
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_blame_audit --check
+
+Una tool falla al leer o al interpretar algo, se traga el fallo y devuelve un vacio que el llamante no puede distinguir de un resultado legitimo. El error deja de ser un error y pasa a ser un **hecho sobre el vault**: el informe que lo agregue dira que N notas no tienen aliases, y no sera cierto -- es que no se pudieron leer.
+
+No es lo mismo *no hay* que *no pude mirar*, y esa es toda la norma. AP-44 cubre la mitad de arriba --verificar con el criterio del consumidor y no con el propio--; esta cubre la de abajo, que es el mecanismo por el que un fallo propio acaba pareciendo un dato malo. Salio al ejecutar contra un vault ajeno al estandar (**regla 7**): tres tools declaraban invalidas notas que Obsidian leia sin problema. Las notas estaban bien; el criterio que las media, no.
+
+Lo que la norma **no** prohibe es capturar amplio. Prohibe capturar amplio y callarse: devolver `ok: false` con el error es correcto porque el llamante recibe la mala noticia y decide. Capturar `FileNotFoundError` tampoco infringe: es un criterio, el autor sabe que tolera y por que. Lo que infringe es `except Exception: return []`.
+
+Medida en v40.1: **86 sitios en 37 modulos**. Nace con baseline por la misma razon que AP-37 --que empezo en 55 y llego a 0--: un guard que falla en 86 sitios se desactiva el primer dia, y un guard desactivado no protege nada. La baseline solo puede encoger.
+
+El propio detector estreno el fallo que persigue. La primera version midio 101 sitios porque clasificaba `except yaml.YAMLError` como captura amplia: son `ast.Attribute` y no `ast.Name`, asi que caian en la rama del `except` desnudo. Contaba como infraccion justo las capturas mas precisas del repo. Quince falsos positivos, y el error era el de AP-44 cometido dentro del guard.
+
+**Prevención:** Capturar la excepcion concreta que se sabe tolerar, y si se captura amplio, **exponer**: devolver el fallo en el envelope en vez de un vacio. Cuando el vacio es la respuesta correcta, distinguirlo del vacio por fallo con un campo aparte (`unreadable`, `errors`) para que el agregado no los confunda. `vault_blame_audit --check --strict` mide por AST y no por texto: un detector que buscara la cadena `except Exception` no veria la diferencia entre devolver un vacio y devolver un envelope con `ok: false`, que es toda la distincion que la norma sostiene.
+
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
 - **Severidad:** high
@@ -651,7 +669,7 @@ Antes de cualquier operación masiva (migración, rename en lote, vault_tags --r
 
 ## EN
 
-Total registered norms: 62 (AP 50, CN 3, PAT 6, SP 3)
+Total registered norms: 63 (AP 51, CN 3, PAT 6, SP 3)
 
 ### AP-01: Documentación alucinada
 
@@ -1168,6 +1186,24 @@ Medido en v40.1 por sus tres guards: **0 copias de vocabulario, 0 lecturas de en
 El dueño es la mitad que faltaba. `vault_norms.DOMAIN_STATUS_VOCABS` ya había resuelto esto para `status` en v39 y se quedó solo: compartir la constante evita la copia, pero no contesta quién decide cuándo cambia. Por eso cada entrada del registro declara el contexto acotado que manda sobre ella, y ese contexto tiene que existir en `vault_arch.CONTEXTS`.
 
 **Prevention:** Registro canónico con dueño, consumidores derivados, guard sin baseline. Los vocabularios cerrados en `vault_vocabulario.py`, la configuración en `vault_entorno.py`, y `vault_arch --check` fallando si aparece una copia, una lectura sin declarar o un vocabulario huérfano. **Sin baseline a propósito**: las catorce copias se saldaron al declarar el registro, así que la puerta nace en cero y una baseline solo serviría para admitir la número quince. Lo que ya tiene registro canónico no se copia: se declara `derivado_de` y se resuelve al llamarse, nunca al importarse (AP-49). Un dato canónico que no es puerto de su contexto se acaba copiando -- los tres registros que `CLAUDE.md` declara fuente única de verdad se leían por fuera de la superficie publicada, y así nacieron las catorce copias.
+
+### AP-51: La tool culpa al dato de su propio fallo
+
+- **Severity:** high
+- **Enforcement:** guard+audit
+- **Detected by:** vault_blame_audit --check
+
+Una tool falla al leer o al interpretar algo, se traga el fallo y devuelve un vacio que el llamante no puede distinguir de un resultado legitimo. El error deja de ser un error y pasa a ser un **hecho sobre el vault**: el informe que lo agregue dira que N notas no tienen aliases, y no sera cierto -- es que no se pudieron leer.
+
+No es lo mismo *no hay* que *no pude mirar*, y esa es toda la norma. AP-44 cubre la mitad de arriba --verificar con el criterio del consumidor y no con el propio--; esta cubre la de abajo, que es el mecanismo por el que un fallo propio acaba pareciendo un dato malo. Salio al ejecutar contra un vault ajeno al estandar (**regla 7**): tres tools declaraban invalidas notas que Obsidian leia sin problema. Las notas estaban bien; el criterio que las media, no.
+
+Lo que la norma **no** prohibe es capturar amplio. Prohibe capturar amplio y callarse: devolver `ok: false` con el error es correcto porque el llamante recibe la mala noticia y decide. Capturar `FileNotFoundError` tampoco infringe: es un criterio, el autor sabe que tolera y por que. Lo que infringe es `except Exception: return []`.
+
+Medida en v40.1: **86 sitios en 37 modulos**. Nace con baseline por la misma razon que AP-37 --que empezo en 55 y llego a 0--: un guard que falla en 86 sitios se desactiva el primer dia, y un guard desactivado no protege nada. La baseline solo puede encoger.
+
+El propio detector estreno el fallo que persigue. La primera version midio 101 sitios porque clasificaba `except yaml.YAMLError` como captura amplia: son `ast.Attribute` y no `ast.Name`, asi que caian en la rama del `except` desnudo. Contaba como infraccion justo las capturas mas precisas del repo. Quince falsos positivos, y el error era el de AP-44 cometido dentro del guard.
+
+**Prevention:** Capturar la excepcion concreta que se sabe tolerar, y si se captura amplio, **exponer**: devolver el fallo en el envelope en vez de un vacio. Cuando el vacio es la respuesta correcta, distinguirlo del vacio por fallo con un campo aparte (`unreadable`, `errors`) para que el agregado no los confunda. `vault_blame_audit --check --strict` mide por AST y no por texto: un detector que buscara la cadena `except Exception` no veria la diferencia entre devolver un vacio y devolver un envelope con `ok: false`, que es toda la distincion que la norma sostiene.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 

@@ -2,7 +2,7 @@
 
 > Documento derivado. Se genera con `python scripts/vault_arch.py --blueprint`; la fuente es `CONTEXTS` en `scripts/vault_arch.py`. No se edita a mano.
 
-**9 contextos**, **114 módulos** clasificados, **59 fronteras cruzadas** pendientes de publicar puerto.
+**9 contextos**, **116 módulos** clasificados, **59 fronteras cruzadas** pendientes de publicar puerto.
 
 ## Los límites
 
@@ -195,7 +195,7 @@ Fronteras que hoy cruza (15), deuda declarada:
 - **Lenguaje ubicuo:** catálogo, contrato, spec, smoke, conteo derivado
 - **Puertos publicados:** `GROUPS` → `vault_mcp_catalog:GROUPS`, `TOOLS_CATALOG` → `vault_mcp_catalog:TOOLS_CATALOG`, `check_contracts` → `vault_mcp_catalog:check_contracts`
 - **No cruza:** escribir en una sección de contenido: sus artefactos derivados viven en 00_System/
-- **Módulos (13):** `vault_arch`, `vault_doc_counts`, `vault_doc_sync`, `vault_manifest`, `vault_mcp`, `vault_mcp_catalog`, `vault_noop_audit`, `vault_smoke`, `vault_spec_catalog_check`, `vault_spec_generate_catalog`, `vault_spec_memory`, `vault_spec_validate`, `vault_test_runner`
+- **Módulos (15):** `vault_arch`, `vault_blame_audit`, `vault_doc_counts`, `vault_doc_sync`, `vault_gate`, `vault_manifest`, `vault_mcp`, `vault_mcp_catalog`, `vault_noop_audit`, `vault_smoke`, `vault_spec_catalog_check`, `vault_spec_generate_catalog`, `vault_spec_memory`, `vault_spec_validate`, `vault_test_runner`
 
 Fronteras que hoy cruza (7), deuda declarada:
 
