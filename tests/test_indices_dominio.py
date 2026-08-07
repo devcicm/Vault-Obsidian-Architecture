@@ -236,3 +236,102 @@ def test_las_secciones_salen_del_registro_no_de_una_copia(tmp_path):
     indexables = ServicioCarpetas(repo).carpetas_indexables()
     assert set(repo.ctx.secciones.ordenadas()) <= set(indexables)
     assert len(repo.ctx.secciones.ordenadas()) == 22
+
+
+# --- El formato del índice, probado sin tocar disco ---------------------------
+#
+# Antes vivía en `scripts/vault_section_index.py` mezclado con la escritura, el
+# `file_lock` y el guard CN-02: comprobar una regla de formato obligaba a montar
+# un vault y escribir un fichero. Ahora el renderizador recibe sus dependencias
+# y devuelve texto, así que AP-21 se comprueba mirando el texto.
+
+from vault.indices.seccion import (  # noqa: E402
+    RE_ALIAS_EN_TABLA,
+    RenderizadorDeIndice,
+    migaja,
+    recolectar_notas,
+)
+
+
+def _render(**kwargs):
+    r = RenderizadorDeIndice(
+        describir_seccion=lambda k: f"desc:{k}",
+        pista_de_tool=lambda k: "",
+        enlace_seguro=lambda s: s,
+    )
+    return r.render(**kwargs)
+
+
+def test_el_enlace_de_la_tabla_va_por_stem_y_sin_alias():
+    """AP-21 y el defecto de los alias en celda, en una sola aserción.
+
+    Un `[[07_Knowledge/nota]]` deja de resolver en cuanto la nota se mueve, y un
+    `[[nota|Título — largo]]` dentro de la celda parece celda combinada: los
+    agentes creaban notas en blanco a partir del alias.
+    """
+    texto = _render(
+        carpeta="07_Knowledge",
+        notas=[{"title": "Un título", "path": "sub/nota-a.md",
+                "type": "knowledge", "updatedAt": "2026-01-01"}],
+        ahora="AHORA",
+    )
+    assert "| [[nota-a]] |" in texto
+    assert "[[sub/nota-a]]" not in texto
+    assert RE_ALIAS_EN_TABLA.search(texto) is None
+
+
+def test_una_seccion_vacia_no_embebe_comandos():
+    """AP-05: los comandos viven en `vault-commands.md` y en ningún otro sitio.
+
+    Repetidos en 16 índices eran 16 copias que envejecen por separado.
+    """
+    texto = _render(carpeta="07_Knowledge", notas=[], ahora="AHORA")
+    assert "_Sección sin notas._" in texto
+    assert "```" not in texto
+    assert "[[vault-commands|vault-commands]]" in texto
+
+
+def test_la_migaja_nunca_enlaza_un_stem_generico():
+    """`index` es el stem de las 22 secciones: enlazarlo apunta a cualquiera."""
+    for clave in ("07_Knowledge", "02_Observability/errors"):
+        assert "[[vault-hub|Hub]]" in migaja(clave)
+        assert "[[index" not in migaja(clave)
+        assert "/index]]" not in migaja(clave)
+
+
+def test_el_indice_no_se_cuenta_a_si_mismo(tmp_path):
+    """Incluirlo añadiría una fila en cada regeneración (AP-47 realimentado).
+
+    `readme.md` sí sale: es contenido, no navegación generada. Por eso el
+    recorte se hace por nombre exacto aquí y no con `incluir_indices=False`,
+    que se llevaría los dos por delante.
+    """
+    raiz = tmp_path / "vault"
+    seccion = raiz / "07_Knowledge"
+    (seccion / ".oculta").mkdir(parents=True)
+    (seccion / "index.md").write_text("# viejo\n", encoding="utf-8")
+    (seccion / ".oculta" / "x.md").write_text("---\ntitle: X\n---\n", encoding="utf-8")
+    (seccion / "readme.md").write_text("---\ntitle: Léeme\n---\n", encoding="utf-8")
+    (seccion / "real.md").write_text("---\ntitle: Real\n---\n", encoding="utf-8")
+
+    notas = recolectar_notas(
+        raiz, seccion, ["07_Knowledge"], True, lambda c: {"title": "T"}
+    )
+    assert [n["path"] for n in notas] == ["readme.md", "real.md"]
+
+
+def test_una_raiz_con_punto_no_vacia_la_seccion(tmp_path):
+    """El defecto heredado: se filtraba por los tramos de la ruta ABSOLUTA.
+
+    Un vault en `~/.claude/vault-x/` salía entero como sección vacía, sin
+    error. Al consumir el enumerador único el criterio pasa a ser el relativo:
+    se mide el vault, no la disposición de la máquina que lo aloja (AP-44).
+    """
+    raiz = tmp_path / ".claude" / "vault-x"
+    (raiz / "07_Knowledge").mkdir(parents=True)
+    (raiz / "07_Knowledge" / "real.md").write_text("---\n---\n", encoding="utf-8")
+
+    notas = recolectar_notas(
+        raiz, raiz / "07_Knowledge", ["07_Knowledge"], True, lambda c: {}
+    )
+    assert [n["path"] for n in notas] == ["real.md"]

@@ -30,6 +30,14 @@ from vault_io import (
 )
 from vault_registry import section_description, section_tool_hint
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from vault.indices.seccion import (  # noqa: E402
+    RE_ALIAS_EN_TABLA,
+    RenderizadorDeIndice,
+    migaja,
+    recolectar_notas,
+)
+
 
 # AP-36: paths lazy — respetan set_vault_root() en runtime (--root).
 def _hub_note() -> Path:
@@ -259,53 +267,31 @@ def _ensure_hub_notes() -> None:
 
 
 def _collect_notes(section_path: Path, include_subdirs: bool) -> List[Dict[str, Any]]:
-    """Scan folder and return metadata list for all real notes (excludes index.md)."""
-    candidates = (
-        list(section_path.rglob("*.md"))
-        if include_subdirs
-        else list(section_path.glob("*.md"))
+    """Adaptador: el recorrido vive en el dominio de Índices."""
+    from vault_registry import SECTIONS as _SECTIONS
+
+    return recolectar_notas(
+        get_vault_root(),
+        section_path,
+        [s["folder"] for s in _SECTIONS],
+        include_subdirs,
+        parse_frontmatter,
     )
-    notes: List[Dict[str, Any]] = []
-    for note_path in sorted(candidates):
-        if note_path.name == "index.md":
-            continue
-        if any(part.startswith(".") for part in note_path.parts):
-            continue
-        try:
-            content = note_path.read_text(encoding="utf-8")
-        except (UnicodeDecodeError, PermissionError):
-            continue
-        meta = parse_frontmatter(content)
-        rel = str(note_path.relative_to(section_path)).replace("\\", "/")
-        notes.append(
-            {
-                "title": meta.get("title") or note_path.stem,
-                "path": rel,
-                "type": meta.get("type") or "",
-                "updatedAt": meta.get("updatedAt") or meta.get("createdAt") or "",
-            }
-        )
-    return notes
 
 
 def _breadcrumb(folder_key: str) -> str:
-    """Build navigation breadcrumb for a section or subsection index.
+    """Adaptador: la migaja de navegación vive en el dominio de Índices."""
+    return migaja(folder_key)
 
-    AP-21 compliance: NEVER use path-anchored wiki-links like [[folder/index]]
-    in the breadcrumb — Obsidian resolves by stem only, and `index` is a
-    generic stem shared by every section. Use plain-text navigation with a
-    single link to the hub note `00_System/vault-hub.md`, which is the only
-    authoritative entry point.
-    """
-    parts = folder_key.split("/")
-    if len(parts) == 1:
-        return "> **←** [[vault-hub|Hub]]  ·  [[vault-commands|Comandos]]  ·  _99_Index/index.md_"
-    else:
-        parent = parts[0]
-        return (
-            f"> **←** [[vault-hub|Hub]]  ·  [[vault-commands|Comandos]]  "
-            f"·  _99_Index/index.md_  ·  _{parent}/"
-        )
+
+def _renderizador() -> RenderizadorDeIndice:
+    """Se construye por llamada: `section_description` lee el registro y
+    `safe_wikilink` el kernel, y ninguno de los dos se congela en el import."""
+    return RenderizadorDeIndice(
+        describir_seccion=section_description,
+        pista_de_tool=section_tool_hint,
+        enlace_seguro=safe_wikilink,
+    )
 
 
 def _build_index_content(
@@ -314,79 +300,9 @@ def _build_index_content(
     now: str,
     subdirs: Optional[List[str]] = None,
 ) -> str:
-    """Render index.md with navigation, notes table and subcarpeta listing."""
-    folder_key = folder.replace("\\", "/")
+    """Adaptador: el formato del índice vive en el dominio de Índices."""
+    return _renderizador().render(folder, notes, now, subcarpetas=subdirs)
 
-    description = section_description(folder_key)
-    hint = section_tool_hint(folder_key)
-    tool_hint = hint if hint else f"vault_write --folder {folder_key} --title <titulo>"
-
-    lines = [
-        f"# {folder_key} — Índice",
-        "",
-        _breadcrumb(folder_key),
-        f"> **Propósito:** {description}",
-        f"> Generado automáticamente · {now} · {len(notes)} nota(s)",
-        "",
-    ]
-
-    # Subcarpetas — listed before notes for discoverability
-    # AP-21 compliance: NO path-anchored wiki-links like [[02_Observability/errors/index]].
-    # Obsidian resolves by stem only, and `index` is a generic stem.
-    # Use plain-text path + a separate row pointing to vault-hub for navigation.
-    if subdirs:
-        lines += ["## Subcarpetas", ""]
-        lines += ["| Carpeta | Propósito |", "|---|---|"]
-        for sub in sorted(subdirs):
-            sub_key = sub.replace("\\", "/")
-            sub_desc = section_description(sub_key)
-            sub_name = sub_key.split("/")[-1]
-            lines.append(f"| `{sub_key}/` | {sub_desc} |")
-        lines.append("")
-        lines.append(
-            "> Para navegar a una subcarpeta, abre `{folder}/{subcarpeta}/index.md` desde tu editor, o usa el [[vault-hub|Hub]]."
-        )
-        lines.append("")
-
-    if notes:
-        lines += [
-            "## Notas" if subdirs else "",
-            "",
-            "| Nota | Título | Tipo | Actualizado |",
-            "|---|---|---|---|",
-        ]
-        for n in notes:
-            note_path = n["path"].replace("\\", "/")
-            # AP-21 compliance: stem-only wiki-link, no folder prefix.
-            # El link va SIN alias y el título en su propia columna: un alias
-            # largo dentro de la celda ([[stem|Título — largo/etc]]) confunde a
-            # los agentes (parece celda combinada), dispara falsos positivos de
-            # sintaxis y provoca creación de notas en blanco a partir del alias.
-            stem = safe_wikilink(Path(note_path).stem)
-            title = str(n["title"]).replace("|", "\\|").replace("[", "").replace("]", "")
-            lines.append(f"| [[{stem}]] | {title} | {n['type']} | {n['updatedAt']} |")
-    else:
-        # Empty section — minimal stub, NO inline bash block. All execution
-        # commands live in `00_System/vault-commands.md` (the centralized
-        # reference). This keeps the section index clean and avoids
-        # duplicating the same command block in 16 places.
-        lines += [
-            "## Notas",
-            "",
-            "_Sección sin notas._",
-            "",
-            f"> **Propósito:** {description}",
-            "",
-            f"Para poblar esta sección consulta la **referencia unificada de comandos** en [[vault-commands|vault-commands]] "
-            f"(entrada _{folder_key}_).",
-            "",
-            f"> **Comando sugerido:** `{tool_hint}`",
-            "",
-            "Una vez creada la primera nota, este índice se regenera automáticamente.",
-        ]
-
-    lines.append("")
-    return "\n".join(lines)
 
 
 def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, Any]:
@@ -493,10 +409,10 @@ def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, 
     }
 
 
-# Alias-wikilink dentro de celda de tabla — formato prohibido en índices:
-# combina identidad y título en una celda, confunde a agentes (crean notas en
-# blanco a partir del alias) y dispara falsos positivos de sintaxis.
-RE_ALIAS_IN_INDEX_TABLE = re.compile(r"^\|\s*\[\[[^\]|]+\|[^\]]+\]\]", re.MULTILINE)
+# Nombre público conservado (lo importan tests y `vault_norms`); la definición
+# es una sola y vive en el dominio, para que el guard y el generador no puedan
+# discrepar sobre qué formato está prohibido (AP-05).
+RE_ALIAS_IN_INDEX_TABLE = RE_ALIAS_EN_TABLA
 
 
 def heal_indexes(root: Optional[Path] = None) -> Dict[str, Any]:
