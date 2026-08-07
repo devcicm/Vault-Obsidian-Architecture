@@ -27,7 +27,12 @@ from vault_io import (
     safe_wikilink,
     write_report,
 )
-from vault_registry import ORDERED_SECTIONS, section_description, section_tool_hint
+from vault_registry import (
+    MACHINERY_FOLDERS,
+    ORDERED_SECTIONS,
+    section_description,
+    section_tool_hint,
+)
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.indices.seccion import (  # noqa: E402
@@ -350,6 +355,14 @@ def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, 
             if not sub.is_dir() or sub.name.startswith("."):
                 continue
             sub_folder = str(sub.relative_to(vroot)).replace("\\", "/")
+            # Maquinaria declarada: la carpeta existe porque una norma guarda
+            # ahí su estado, no porque haya notas. Indexarla creaba un
+            # `index.md` sobre una carpeta vacía que después contaba como nota
+            # en disco y desajustaba el índice de búsqueda (AP-47) — un vault
+            # recién onboardeado nacía violando una norma del estándar que lo
+            # creó, y solo se veía al escribir la bitácora antes del reindex.
+            if sub_folder in MACHINERY_FOLDERS:
+                continue
             subdir_folders.append(sub_folder)
 
             # Generate sub-section index (no nested subdirs to avoid deep recursion)

@@ -21,6 +21,7 @@ Usage:
 
 import argparse
 import json
+import os
 import re
 import sys
 import unicodedata
@@ -295,6 +296,45 @@ def apply_vocabulary(
                 "rule": "new",
             })
     return resueltos, introducidos
+
+
+def registrar_tags_de_nota(
+    tags: List[str], nota: str, agente: str = ""
+) -> Dict[str, Any]:
+    """Canoniza los tags de una nota recién escrita y anota los nuevos.
+
+    Esto lo hacía **solo** `vault_write`, y hay quince escritores: los catorce
+    `*_save` que llevan tags construyen su frontmatter y llaman directamente a
+    `atomic_write_text`, saltándose el write path entero. El resultado es que
+    AP-39 se cumplía en una de cada quince escrituras: el término entraba en el
+    vault y la bitácora no se enteraba, así que la auditoría lo denunciaba
+    después como vocabulario introducido sin dejar rastro — culpando a la nota
+    de algo que era del escritor. Es AP-43 en su forma literal: norma sin
+    refuerzo en el punto de uso.
+
+    Se llama **después** de escribir, nunca antes: anotar primero dejaría en la
+    bitácora palabras de escrituras que fallaron.
+
+    Un fallo de la bitácora no tumba una escritura válida — devuelve
+    `recorded: -1` y el audit de AP-39 lo recoge luego.
+    """
+    canonicos, nuevos = apply_vocabulary(list(tags or []))
+    if not nuevos:
+        return {"tags": canonicos, "vocabulary_introduced": [], "recorded": 0}
+
+    agente = agente or os.environ.get("VAULT_AGENT", "")
+    for t in nuevos:
+        t["note"] = nota
+        t["agent"] = agente
+    try:
+        anotados = record_new_tags(nuevos)
+    except OSError:
+        anotados = -1
+    return {
+        "tags": canonicos,
+        "vocabulary_introduced": [t["tag"] for t in nuevos],
+        "recorded": anotados,
+    }
 
 
 def vault_tags_backfill_ledger(dry_run: bool = False) -> Dict[str, Any]:

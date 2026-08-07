@@ -320,6 +320,13 @@ def cruces() -> list[dict]:
             destino = mapa.get(destino_mod)
             if destino is None or destino == origen or destino == KERNEL:
                 continue
+            # Un gancho del kernel es una frontera **declarada**, con su motivo
+            # escrito, y `dependencias_del_kernel()` ya lo mide. Contarlo aquí
+            # además lo dejaba escondido dentro de la baseline genérica: los
+            # tres que existían entraron así, y el registro de ganchos quedaba
+            # inservible —usarlo rompía una puerta que solo puede encoger—.
+            if (nombre, destino_mod) in GANCHOS_DEL_KERNEL:
+                continue
             fuera.append({
                 "from": nombre, "from_context": origen,
                 "to": destino_mod, "to_context": destino,
@@ -610,6 +617,12 @@ GANCHOS_DEL_KERNEL: dict[tuple[str, str], str] = {
     ("vault_io", "vault_section_index"): (
         "`_auto_section_index`: el índice de sección se regenera tras escribir "
         "una nota, sin que cada tool tenga que acordarse (AP-47)."
+    ),
+    ("vault_io", "vault_tags"): (
+        "`_auto_tag_ledger`: AP-39 exige registrar el término nuevo, y hasta "
+        "v40.0 lo hacía un solo escritor de quince. Cablearlo en los catorce "
+        "`*_save` cruzaría Autoría → Índices catorce veces y seguiría sin "
+        "cubrir al decimoquinto (AP-43)."
     ),
     ("vault_errors", "vault_voice"): (
         "La voz del vault acompaña al error. Es presentación, no dominio, y el "

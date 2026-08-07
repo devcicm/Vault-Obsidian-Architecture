@@ -2,7 +2,7 @@
 
 > Documento derivado. Se genera con `python scripts/vault_arch.py --blueprint`; la fuente es `CONTEXTS` en `scripts/vault_arch.py`. No se edita a mano.
 
-**9 contextos**, **112 módulos** clasificados, **62 fronteras cruzadas** pendientes de publicar puerto.
+**9 contextos**, **112 módulos** clasificados, **59 fronteras cruzadas** pendientes de publicar puerto.
 
 ## Los límites
 
@@ -38,9 +38,6 @@ graph TD
     grafo -.->|cruce| autoria
     consulta -.->|cruce| autoria
     meta_toolkit -.->|cruce| gobernanza
-    kernel -.->|cruce| autoria
-    kernel -.->|cruce| gobernanza
-    kernel -.->|cruce| indices
     meta_toolkit -.->|cruce| consulta
     gobernanza -.->|cruce| meta_toolkit
     gobernanza -.->|cruce| indices
@@ -66,14 +63,6 @@ graph TD
 - **Puertos publicados:** get_vault_root, atomic_write_text, wrap_main, file_lock
 - **No cruza:** depender de cualquier contexto de dominio
 - **Módulos (9):** `vault_encoding`, `vault_errors`, `vault_errors_catalog`, `vault_errors_trace`, `vault_io`, `vault_lib`, `vault_log_error`, `vault_regex`, `vault_registry`
-
-Fronteras que hoy cruza (3), deuda declarada:
-
-| Módulo | Importa | Contexto destino |
-|---|---|---|
-| `vault_errors` | `vault_voice` | Autoría |
-| `vault_io` | `vault_secret_scan` | Gobernanza |
-| `vault_io` | `vault_section_index` | Índices |
 
 ## Autoría
 

@@ -386,16 +386,22 @@ def test_la_deteccion_de_rutas_duplicadas_puede_fallar(tmp_path, monkeypatch):
 # ── La frontera del kernel, medida (v40.0) ────────────────────────────────────
 
 
-def test_el_kernel_declara_sus_tres_ganchos_con_motivo():
+def test_el_kernel_declara_sus_ganchos_con_motivo():
     """«No depender de ningún contexto de dominio» era prosa, y se incumplía.
 
     Tres cruces kernel → dominio vivían en la baseline genérica, indistinguibles
     de la deuda corriente y sin una línea que dijera por qué. Es la misma forma
     que tenía la prohibición del Meta-toolkit antes de v40.0.
+
+    La lista es cerrada a propósito: añadir un gancho rompe este test, y esa es
+    su función. El cuarto —la bitácora de vocabulario— entró así, con su motivo
+    escrito, después de comprobar que cablearlo en los catorce `*_save` cruzaba
+    Autoría → Índices catorce veces y aun así dejaba fuera al decimoquinto.
     """
     assert set(arch.GANCHOS_DEL_KERNEL) == {
         ("vault_io", "vault_secret_scan"),
         ("vault_io", "vault_section_index"),
+        ("vault_io", "vault_tags"),
         ("vault_errors", "vault_voice"),
     }
     for par, motivo in arch.GANCHOS_DEL_KERNEL.items():

@@ -27,7 +27,15 @@ from vault_io import get_vault_root, safe_wikilink
 
 
 
-def generate_index(output="INDEX.md"):
+#: Destino por defecto. Era `INDEX.md` en la raíz del vault: un fichero suelto
+#: fuera de toda sección canónica, que es exactamente lo que AP-15 prohíbe y lo
+#: que la auditoría del vault de pruebas marcaba. `--output` sigue aceptando
+#: cualquier ruta, así que ninguna invocación existente cambia de comportamiento
+#: salvo la que no pasaba destino — y esa escribía donde no debía.
+DEFAULT_OUTPUT = "99_Index/INDEX.md"
+
+
+def generate_index(output=DEFAULT_OUTPUT):
 
     """Generar indice markdown"""
 
@@ -77,7 +85,20 @@ def generate_index(output="INDEX.md"):
 
         for note in sorted(notes, key=lambda x: x.get("title", "")):
 
-            md += f"- [[{safe_wikilink(note['title'])}]] - {note.get('path', '')}\n"
+            # El enlace va por el nombre de fichero, nunca por `title:`.
+            # Obsidian resuelve un wikilink por stem y por `aliases:`, y no mira
+            # `title:` en absoluto: enlazar por título deja el enlace roto para
+            # el único consumidor que importa, y al abrirlo crea una nota en
+            # blanco. Son las quince violaciones AP-44 que la auditoría del
+            # vault de pruebas atribuía a este fichero — todas escritas aquí.
+            # El título sigue visible, pero como texto, no como destino.
+
+            stem = Path(note.get("path", "")).stem or note.get("title", "")
+
+            md += (
+                f"- [[{safe_wikilink(stem)}]] — {note.get('title', '')}"
+                f" · `{note.get('path', '')}`\n"
+            )
 
         md += "\n"
 
@@ -131,7 +152,7 @@ Notas:
 
     parser.add_argument("--readme", "-r", action="store_true", help="Generar README")
 
-    parser.add_argument("--output", "-o", default="INDEX.md")
+    parser.add_argument("--output", "-o", default=DEFAULT_OUTPUT)
 
 
 

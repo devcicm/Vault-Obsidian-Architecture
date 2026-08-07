@@ -840,6 +840,8 @@ def atomic_write_text(
 
     _auto_section_index(path)
 
+    _auto_tag_ledger(path, text)
+
 
 # Sections that manage their own indexes — skip auto-trigger for these
 _SKIP_AUTO_INDEX = frozenset(
@@ -880,6 +882,43 @@ def _auto_section_index(path: Path) -> None:
         vault_section_index(section)
     except Exception:
         pass  # index failure must never block the write that triggered it
+
+
+def _auto_tag_ledger(path: Path, text: str) -> None:
+    """Anota en la bitácora de vocabulario los tags de la nota recién escrita.
+
+    AP-39 dice que un tag nuevo se admite **pero se registra**, y hasta ahora lo
+    registraba un solo escritor: `vault_write`. Los catorce `*_save` que llevan
+    tags construyen su frontmatter y llaman directamente a `atomic_write_text`,
+    así que la norma se cumplía en una de cada quince escrituras. El término
+    entraba en el vault, la bitácora no se enteraba, y el audit lo denunciaba
+    después contra la nota — culpando al contenido de un fallo del escritor. Es
+    AP-43 en su forma literal: norma sin refuerzo en el punto de uso.
+
+    Va aquí y no en cada tool por lo mismo que `_auto_section_index`: este es el
+    único punto por el que pasan todas las escrituras. Ponerlo en los catorce
+    sitios funciona hasta que alguien escribe el decimoquinto.
+
+    Nunca levanta ni bloquea: la bitácora es memoria, no un guard. Si falla, la
+    escritura ya es válida y el audit de AP-39 recoge el término más tarde.
+    """
+    if path.suffix != ".md" or not text.startswith("---"):
+        return
+    try:
+        rel = str(path.relative_to(get_vault_root())).replace("\\", "/")
+    except ValueError:
+        return  # fuera del vault: no es una nota
+    if rel.split("/")[0] in _SKIP_AUTO_INDEX:
+        return
+    try:
+        from vault_tags import (  # lazy — evita el ciclo con el kernel
+            _parse_frontmatter_tags,
+            registrar_tags_de_nota,
+        )
+
+        registrar_tags_de_nota(_parse_frontmatter_tags(text), rel)
+    except Exception:
+        pass
 
 
 def atomic_write_json(path: Path, data: Dict[str, Any]) -> None:

@@ -249,6 +249,16 @@ EVENT_DRIVEN_SECTIONS: Dict[str, str] = {
 #: lista; estos dos no tienen un patrón que los distinga y hay que declararlos.
 #: Quien los añada aquí asume la otra mitad: si su fuente cambia y el fichero
 #: no, eso es AP-47 y lo vigila su tool, no `vault_validate`.
+#: Carpetas de maquinaria: viven dentro de una sección canónica pero no
+#: contienen notas, sino el estado que una norma necesita para funcionar.
+#: Indexarlas produce un `index.md` de una carpeta sin notas —una nota derivada
+#: que después cuenta como nota en disco y desajusta el índice de búsqueda
+#: (AP-47)— y que además ofrece al agente una sección que no puede poblar.
+MACHINERY_FOLDERS: Dict[str, str] = {
+    "19_Audits/vocabulary": "bitácora append-only del vocabulario (AP-39)",
+}
+
+
 DERIVED_ARTIFACTS: Dict[str, str] = {
     "00_System/change-log.md": "vault_change_log",
     "00_System/tool-contracts.md": "vault_compact_contracts",
