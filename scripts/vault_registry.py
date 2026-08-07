@@ -259,6 +259,25 @@ MACHINERY_FOLDERS: Dict[str, str] = {
 }
 
 
+#: Carpetas legítimas en la raíz del vault que **no** son secciones canónicas.
+#: Existían en tres sitios con tres criterios distintos —`vault_norms._ROOT_ALLOWED`
+#: decidía qué no viola CN-02, `vault_io._SKIP_AUTO_INDEX` qué no dispara la
+#: cascada de índices, y `vault_sdd_init.SDD_OUTPUT_DIR` escribía `docs/` sin
+#: aparecer en ninguna de las dos—. El resultado era que el propio estándar
+#: generaba una violación de CN-02 al ejecutar su generador de SDD contra el
+#: sandbox: el kernel ya sabía que `docs/` no es una sección y el audit no.
+#: Eso es AP-05 en su forma más barata de arreglar: una lista, no tres.
+NON_SECTION_ROOT_FOLDERS: Dict[str, str] = {
+    ".obsidian": "configuración de Obsidian",
+    ".trash": "papelera de Obsidian",
+    ".history": "instantáneas de nota (SP-01)",
+    ".git": "control de versiones",
+    ".locks": "bloqueos de escritura del kernel",
+    "vault-backups": "destino de `vault_backup` cuando vive dentro del vault",
+    "docs": "documentación derivada del estándar (`vault_sdd_init.SDD_OUTPUT_DIR`)",
+}
+
+
 DERIVED_ARTIFACTS: Dict[str, str] = {
     "00_System/change-log.md": "vault_change_log",
     "00_System/tool-contracts.md": "vault_compact_contracts",

@@ -843,10 +843,22 @@ def atomic_write_text(
     _auto_tag_ledger(path, text)
 
 
-# Sections that manage their own indexes — skip auto-trigger for these
-_SKIP_AUTO_INDEX = frozenset(
-    {"00_System", "99_Index", ".history", "vault-backups", "docs"}
-)
+# Carpetas que no disparan la cascada de índices. Son dos cosas distintas y
+# conviene no mezclarlas: las dos secciones canónicas que gestionan su propio
+# índice, y todo lo que ni siquiera es una sección — eso último lo declara
+# `vault_registry.NON_SECTION_ROOT_FOLDERS`, que es también lo que el audit
+# consulta para CN-02. Tenerlo copiado aquí fue como `docs/` acabó siendo
+# invisible para el kernel y una violación para el audit (AP-05).
+_SECCIONES_CON_INDICE_PROPIO = frozenset({"00_System", "99_Index"})
+
+
+def _skip_auto_index() -> frozenset:
+    from vault_registry import NON_SECTION_ROOT_FOLDERS  # lazy: registro sin deps
+
+    return _SECCIONES_CON_INDICE_PROPIO | frozenset(NON_SECTION_ROOT_FOLDERS)
+
+
+_SKIP_AUTO_INDEX = _skip_auto_index()
 
 
 def _auto_section_index(path: Path) -> None:

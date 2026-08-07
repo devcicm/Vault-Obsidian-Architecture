@@ -28,6 +28,7 @@ from vault_io import (
     SNAPSHOT_DIRS,
 )
 from vault_lib import read_frontmatter as _leer_frontmatter
+from vault_registry import NON_SECTION_ROOT_FOLDERS
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -2355,8 +2356,11 @@ def _canonical_status(valor):
     return None
 
 
-# Entradas permitidas en la raíz del vault además de las secciones canónicas
-_ROOT_ALLOWED = {".obsidian", ".trash", ".history", ".git", ".locks", "vault-backups"}
+# Entradas permitidas en la raíz del vault además de las secciones canónicas.
+# La lista la declara `vault_registry`: el kernel ya la usaba para no indexar
+# esas carpetas, y tenerla aquí a mano hacía que `docs/` —que escribe el propio
+# `vault_sdd_init`— violara CN-02 contra el sandbox (AP-05).
+_ROOT_ALLOWED = set(NON_SECTION_ROOT_FOLDERS)
 
 #: Alias de compatibilidad. El criterio de "qué es una nota viva" se movió a
 #: `vault_io` en cuanto una segunda tool lo necesitó (`vault_mermaid_check`):
