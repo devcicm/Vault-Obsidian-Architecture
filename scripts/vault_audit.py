@@ -1564,6 +1564,131 @@ def _read_propagation_pending() -> List[Dict[str, Any]]:
         return []
 
 
+#: Las familias de salud, con dueño y en un solo sitio.
+#:
+#: `healthScore` parte de 100 y resta 22 penalizaciones independientes cuyos
+#: topes suman 285. Eso significa que **satura**: basta con estar mal en dos o
+#: tres familias distintas para llegar a 0, y a partir de ahí un vault regular y
+#: uno catastrófico puntúan igual. No es una hipótesis — `vault-sandbox/`, el
+#: vault de referencia de este repo y recién reconstruido, puntúa 0.
+#:
+#: `healthScore` **no se toca**: lo leen los repos consumidores y cambiar lo que
+#: significa un número publicado por debajo es peor que el defecto. Se le añade
+#: al lado `healthProfile` —una lectura por familia, cada una normalizada contra
+#: su propio tope— y `healthIndex`, la media de las familias, que solo llega a 0
+#: si **todas** están al tope. Es la política de no-derogación aplicada a una
+#: métrica: lo reemplazado se anota, no se borra.
+FAMILIAS_DE_SALUD: Dict[str, str] = {
+    "estructura": "carpetas, secciones e identidad de la nota",
+    "conectividad": "enlaces entre notas: rotos, huérfanos, mal formados",
+    "metadatos": "frontmatter — los campos por los que el vault se consulta",
+    "grafo": "aristas tipadas y su vigencia",
+    "contenido": "lo que la nota lleva dentro y no se puede renderizar",
+    "ciclo_de_vida": "lo que caducó: notas, patrones y proyectos parados",
+}
+
+#: El registro que manda sobre el cálculo. Antes eran 22 `score -= min(...)`
+#: escritos a mano en el cuerpo de `vault_audit()`: los topes vivían solo ahí,
+#: nadie podía sumarlos sin leerse la función, y agrupar por familia exigía
+#: copiarlos a un segundo sitio (AP-05). Ahora el cuerpo itera este registro.
+#:
+#: `por_unidad` es lo que resta cada ocurrencia; `tope`, el máximo que la
+#: entrada puede restar por sí sola. Las entradas con `por_unidad: 1` reciben
+#: una penalización ya calculada por su detector.
+PENALIZACIONES: List[Dict[str, Any]] = [
+    {"id": "orphans", "familia": "conectividad", "norma": None, "por_unidad": 2, "tope": 30},
+    {"id": "stale", "familia": "ciclo_de_vida", "norma": None, "por_unidad": 1, "tope": 10},
+    {"id": "stuck_patterns", "familia": "ciclo_de_vida", "norma": None, "por_unidad": 3, "tope": 15},
+    {"id": "stale_projects", "familia": "ciclo_de_vida", "norma": None, "por_unidad": 5, "tope": 25},
+    {"id": "broken_links", "familia": "conectividad", "norma": "AP-14", "por_unidad": 2, "tope": 20},
+    {"id": "canonical_shadow", "familia": "estructura", "norma": "AP-17", "por_unidad": 2, "tope": 10},
+    {"id": "cross_folder_dupes", "familia": "estructura", "norma": "AP-18", "por_unidad": 3, "tope": 10},
+    # AP-22 (wikilink vacío) es auto-fixable; AP-24 (brackets rotos) rompe el
+    # enlace de verdad. Por eso pesan distinto: la diferencia es deliberada.
+    {"id": "ap22", "familia": "conectividad", "norma": "AP-22", "por_unidad": 2, "tope": 5},
+    {"id": "ap24", "familia": "conectividad", "norma": "AP-24", "por_unidad": 5, "tope": 15},
+    {"id": "empty_indexes", "familia": "estructura", "norma": "AP-03", "por_unidad": 2, "tope": 10},
+    {"id": "mermaid_errors", "familia": "contenido", "norma": "AP-25", "por_unidad": 2, "tope": 20},
+    {"id": "missing_agent", "familia": "metadatos", "norma": "AP-16", "por_unidad": 1, "tope": 10},
+    {"id": "missing_tags", "familia": "metadatos", "norma": "AP-26", "por_unidad": 2, "tope": 15},
+    {"id": "missing_type", "familia": "metadatos", "norma": "AP-27", "por_unidad": 2, "tope": 10},
+    {"id": "missing_status", "familia": "metadatos", "norma": "AP-29", "por_unidad": 1, "tope": 10},
+    {"id": "missing_cia", "familia": "metadatos", "norma": "AP-30", "por_unidad": 2, "tope": 15},
+    {"id": "missing_updated", "familia": "metadatos", "norma": None, "por_unidad": 2, "tope": 10},
+    {"id": "missing_frontmatter", "familia": "metadatos", "norma": "AP-28", "por_unidad": 3, "tope": 20},
+    {"id": "cia_penalty", "familia": "metadatos", "norma": None, "por_unidad": 1, "tope": 15},
+    {"id": "ap31", "familia": "grafo", "norma": "AP-31", "por_unidad": 1, "tope": 20},
+    {"id": "ap34", "familia": "grafo", "norma": "AP-34", "por_unidad": 2, "tope": 10},
+    {"id": "ap35", "familia": "grafo", "norma": "AP-35", "por_unidad": 5, "tope": 5},
+]
+
+
+def _tope_por_familia() -> Dict[str, int]:
+    """Cuánto puede restar cada familia en total. Derivado, nunca escrito."""
+    topes: Dict[str, int] = {f: 0 for f in FAMILIAS_DE_SALUD}
+    for p in PENALIZACIONES:
+        topes[p["familia"]] += p["tope"]
+    return topes
+
+
+def calcular_salud(unidades: Dict[str, int]) -> Dict[str, Any]:
+    """El score de siempre y la lectura que no satura, del mismo registro.
+
+    `unidades` mapea id de penalización → cuántas ocurrencias (o, para las
+    precalculadas, la penalización que su detector ya resolvió).
+
+    `healthScore` se calcula **exactamente** como antes; que salga de aquí y no
+    de 22 líneas sueltas no cambia ni un punto, y hay un test que lo fija. Lo
+    nuevo va al lado:
+
+    * `healthProfile`: por familia, cuánto restó y contra qué tope. `saturated`
+      dice si esa familia tocó fondo, que es la información que `healthScore`
+      destruía al agregarlo todo en un número.
+    * `healthIndex`: la media simple de la salud de las seis familias. Media
+      simple y no ponderada a propósito — `metadatos` acumula 105 puntos de
+      tope frente a los 5 de `ap35`, así que ponderar por tope sería volver a
+      dejar que una sola familia decida el número.
+    """
+    topes = _tope_por_familia()
+    restado: Dict[str, int] = {f: 0 for f in FAMILIAS_DE_SALUD}
+    detalle: List[Dict[str, Any]] = []
+
+    for p in PENALIZACIONES:
+        cantidad = int(unidades.get(p["id"], 0))
+        aplicada = min(p["tope"], cantidad * p["por_unidad"])
+        restado[p["familia"]] += aplicada
+        if aplicada:
+            detalle.append({
+                "id": p["id"], "familia": p["familia"], "norm_code": p["norma"],
+                "count": cantidad, "penalty": aplicada, "cap": p["tope"],
+            })
+
+    score = max(0, 100 - sum(restado.values()))
+
+    perfil = {}
+    for familia, tope in topes.items():
+        # Un tope de 0 sería una familia sin penalizaciones: sana por vacía, no
+        # por buena. No puede pasar hoy, y si pasara mañana el 100 sería mentira,
+        # así que se marca en vez de dividirse entre cero.
+        salud = 100 if not tope else round(100 * (1 - restado[familia] / tope))
+        perfil[familia] = {
+            "health": salud,
+            "penalty": restado[familia],
+            "cap": tope,
+            "saturated": bool(tope) and restado[familia] >= tope,
+            "means": FAMILIAS_DE_SALUD[familia],
+        }
+
+    indice = round(sum(f["health"] for f in perfil.values()) / len(perfil))
+
+    return {
+        "healthScore": score,
+        "healthIndex": indice,
+        "healthProfile": perfil,
+        "penalties": detalle,
+    }
+
+
 def _cia_score_penalty(
     notes: List[Path],
     stale: List[Dict[str, Any]],
@@ -1743,71 +1868,43 @@ def vault_audit(
     ap34_orphan_relations = graph_knowledge["ap34_orphan_relations"]
     ap35_silo_flags = graph_knowledge["ap35_silo_flags"]
 
-    score = 100
-
-    score -= min(30, len(orphans) * 2)
-
-    score -= min(10, len(stale) * 1)
-
-    score -= min(15, len(stuck_patterns) * 3)
-
-    score -= min(25, len(stale_projects) * 5)
-
-    score -= min(20, len(broken_links) * 2)
-
-    score -= min(10, len(canonical_shadow) * 2)
-
-    score -= min(10, len(cross_folder_dupes) * 3)
-
-    # AP-22 (empty [[]]) penaliza menos que AP-24 (imbalance real).
-    # Auto-fixables tienen penalización baja; imbalance real penaliza más.
+    # AP-22 (wikilink vacío) penaliza menos que AP-24 (brackets rotos): el
+    # primero es auto-fixable, el segundo rompe el enlace de verdad.
     ap22_count = sum(1 for m in malformed_wikilinks if m.get("norm_code") == "AP-22")
     ap24_count = sum(1 for m in malformed_wikilinks if m.get("norm_code") == "AP-24")
-    score -= min(5, ap22_count * 2)  # AP-22 leve (vacíos sin info)
-    score -= min(15, ap24_count * 5)  # AP-24 grave (brackets rotos)
-
-    score -= min(10, len(empty_indexes) * 2)
-
-    # AP-25: Mermaid diagram errors
-    score -= min(20, len(mermaid_errors) * 2)
-
-    # AP-16: Missing agent attribution
-    score -= min(10, len(missing_agent) * 1)
-
-    # AP-26: Missing tags on content notes
-    score -= min(15, len(missing_tags) * 2)
-
-    # AP-27: Missing type field
-    score -= min(10, len(missing_type) * 2)
-
-    # AP-29: Missing status field
-    score -= min(10, len(missing_status) * 1)
-
-    # AP-30: Missing CIA fields
-    score -= min(15, len(missing_cia) * 2)
-
-    # Missing updatedAt
-    score -= min(10, len(missing_updated) * 2)
-
-    # AP-28: Missing frontmatter entirely
-    score -= min(20, len(missing_frontmatter) * 3)
-
-    # CIA integrity + propagation_pending adjustments
-
-    score -= min(15, _cia_score_penalty(content_notes, stale, propagation_pending))
-
-    # AP-31: Missing typed edges (untuned graph)
-    score -= ap31_penalty
-
-    # AP-34: Orphan typed relations (unresolved endpoints)
     ap34_count = sum(r.get("count", 0) for r in ap34_orphan_relations)
-    score -= min(10, ap34_count * 2)
 
-    # AP-35: Relationship silos (stale enriched graph)
-    if ap35_silo_flags.get("graph_enriched_stale", False):
-        score -= 5
+    # Los pesos y los topes ya no viven aquí: los declara `PENALIZACIONES`, que
+    # es lo que permite agrupar por familia sin copiarlos a un segundo sitio.
+    # Este bloque solo cuenta ocurrencias.
+    salud = calcular_salud({
+        "orphans": len(orphans),
+        "stale": len(stale),
+        "stuck_patterns": len(stuck_patterns),
+        "stale_projects": len(stale_projects),
+        "broken_links": len(broken_links),
+        "canonical_shadow": len(canonical_shadow),
+        "cross_folder_dupes": len(cross_folder_dupes),
+        "ap22": ap22_count,
+        "ap24": ap24_count,
+        "empty_indexes": len(empty_indexes),
+        "mermaid_errors": len(mermaid_errors),
+        "missing_agent": len(missing_agent),
+        "missing_tags": len(missing_tags),
+        "missing_type": len(missing_type),
+        "missing_status": len(missing_status),
+        "missing_cia": len(missing_cia),
+        "missing_updated": len(missing_updated),
+        "missing_frontmatter": len(missing_frontmatter),
+        # Ya vienen resueltas por su detector: la unidad es el punto, no la
+        # ocurrencia. El tope del registro las sigue acotando igual.
+        "cia_penalty": _cia_score_penalty(content_notes, stale, propagation_pending),
+        "ap31": ap31_penalty,
+        "ap34": ap34_count,
+        "ap35": 1 if ap35_silo_flags.get("graph_enriched_stale", False) else 0,
+    })
 
-    score = max(0, score)
+    score = salud["healthScore"]
 
     by_folder: Dict[str, int] = defaultdict(int)
 
@@ -1877,7 +1974,21 @@ def vault_audit(
 
     result: Dict[str, Any] = {
         "ok": True,
+        # `healthScore` se queda exactamente como estaba, con su defecto y todo:
+        # lo leen los repos consumidores, y cambiar por debajo lo que significa
+        # un número publicado es peor que el número malo. Lo que satura no se
+        # corrige aquí — se acompaña.
         "healthScore": score,
+        # superseded_by: healthIndex. La media de las seis familias, cada una
+        # normalizada contra su propio tope. Solo llega a 0 si TODAS tocan
+        # fondo, así que sigue distinguiendo un vault regular de uno perdido
+        # justo donde `healthScore` se queda plano en 0.
+        "healthIndex": salud["healthIndex"],
+        # El desglose que el número agregado destruía: qué familia está mal, y
+        # cuál de ellas ya tocó fondo (`saturated`).
+        "healthProfile": salud["healthProfile"],
+        # Qué restó cada cosa. Antes había que leerse la función para saberlo.
+        "penalties": salud["penalties"],
         "stats": {
             "total": len(content_notes),
             "byFolder": dict(sorted(by_folder.items())),

@@ -376,9 +376,26 @@ python vault_audit.py
 python vault_audit.py --project mi-api
 ```
 
-**Score:** `100 - (vacías×2) - (sin_fm×3) - (broken_links×2) - (stale×1)`
+**El score sale del registro `PENALIZACIONES`, no de una fórmula escrita aquí.** Esta sección decía `100 - (vacías×2) - (sin_fm×3) - (broken_links×2) - (stale×1)` — cuatro términos de los veintidós que hay. Los pesos y los topes viven en el registro, agrupados por familia; copiarlos a la documentación es AP-05, y resumirlos mal es lo que ya pasó.
 
-| Score | Estado |
+**`healthScore` satura, y se conserva igual.** Parte de 100 y resta 22 penalizaciones independientes cuyos topes suman **285**: con dos o tres familias mal se queda en 0 y deja de distinguir un vault regular de uno perdido. No es teórico — `vault-sandbox/`, el vault de referencia de este repo, puntúa 0. No se recalibra porque lo leen los repos consumidores y cambiar por debajo lo que significa un número publicado es peor que el número malo. Se anota `superseded_by: healthIndex` y se deja donde está.
+
+**`healthIndex` y `healthProfile` son la lectura que sí discrimina.** Seis familias —estructura, conectividad, metadatos, grafo, contenido, ciclo de vida— cada una normalizada contra su propio tope. `healthIndex` es su media **simple**: ponderarla por tope dejaría que `metadatos` (105 puntos) decidiera el número, que es el defecto otra vez. Solo llega a 0 si todas las familias tocan fondo.
+
+```jsonc
+"healthScore": 0,          // satura: no dice nada más
+"healthIndex": 60,
+"healthProfile": {
+  "conectividad": { "health": 27, "penalty": 51, "cap": 70, "saturated": false },
+  "estructura":   { "health": 100, "penalty": 0, "cap": 30, "saturated": false }
+  // …
+},
+"penalties": [ { "id": "orphans", "penalty": 26, "cap": 30, "norm_code": null } ]
+```
+
+`saturated` es la información que el número agregado destruía: dice qué familia ya tocó fondo, y por tanto dónde seguir empeorando ya no se nota.
+
+| healthIndex | Estado |
 |---|---|
 | 90–100 | Excelente |
 | 70–89 | Bien |

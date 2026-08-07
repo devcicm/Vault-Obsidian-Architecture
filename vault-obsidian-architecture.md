@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.2 — 2026-08-07  
+**Versión:** v40.3 — 2026-08-07  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -1291,10 +1291,35 @@ Audita la salud completa del vault y retorna un reporte con score.
 
 **Score:** 100 − penalizaciones (mínimo 0)
 
+> **`healthScore` satura, y se conserva así a propósito.** Las 22 penalizaciones
+> tienen topes que suman **285** sobre una base de 100: con dos o tres familias
+> mal, el score llega a 0 y deja de distinguir un vault regular de uno perdido.
+> Medido, no supuesto — `vault-sandbox/`, el vault de referencia de este repo y
+> recién reconstruido, puntúa 0. No se recalibra porque lo leen los repos
+> consumidores, y cambiar por debajo lo que significa un número publicado es peor
+> que el número malo: es la política de no-derogación aplicada a una métrica.
+> Se anota `superseded_by: healthIndex` y lo nuevo va al lado.
+>
+> **`healthIndex` + `healthProfile`** son la lectura que sí discrimina. Seis
+> familias —estructura, conectividad, metadatos, grafo, contenido, ciclo de
+> vida— cada una normalizada contra su propio tope, y el índice es su media
+> **simple**: ponderarla por tope dejaría que `metadatos` (105 puntos de tope)
+> decidiera el número, que es el mismo defecto con otro nombre. Solo llega a 0
+> si todas las familias tocan fondo. `saturated` por familia es justo lo que el
+> número agregado destruía: dónde seguir empeorando ya no se nota.
+>
+> Los pesos y los topes viven en el registro `PENALIZACIONES` de `vault_audit`,
+> no en esta tabla ni en el cuerpo de la función. Antes eran 22 líneas
+> `score -= min(...)` escritas a mano: nadie podía sumar los topes sin leerse la
+> función, y agrupar por familia exigía copiarlos a un segundo sitio (AP-05).
+
 **Retorna:**
 ```json
 {
   "healthScore": 87,
+  "healthIndex": 91,
+  "healthProfile": { "conectividad": { "health": 27, "penalty": 51, "cap": 70, "saturated": false }, "...": {} },
+  "penalties": [{ "id": "orphans", "familia": "conectividad", "norm_code": null, "count": 13, "penalty": 26, "cap": 30 }],
   "stats": { "total": 42, "byFolder": { "01_Projects": 8, "05_Patterns": 12, ... } },
   "issues": {
     "orphans":              [{ "path": "...", "title": "...", "daysOld": 15 }],
@@ -6451,6 +6476,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.3 | 2026-08-07 | `healthScore` satura (22 penalizaciones con topes que suman 285 sobre base 100: el propio `vault-sandbox/` puntúa 0) y se conserva igual porque lo leen los consumidores — se anota `superseded_by: healthIndex` y se le añaden al lado `healthIndex` y `healthProfile`, seis familias normalizadas cada una contra su tope y con `saturated` por familia; los 22 pesos pasan al registro `PENALIZACIONES` sin mover ni un punto, verificado contra una reimplementación literal del bloque viejo; `--check` de `vault_standard_upgrade` dejaba sellada la versión de quien solo preguntaba, y ahora declara `stamp_pending` sin escribir |
 | v40.2 | 2026-08-07 | AP-52 (el error se emite fuera del contrato del catálogo): baseline de 158 sitios en 58 módulos que solo puede encoger, salida de la caracterización maliciosa de las 96 tools —92/92 rechazan un flag inexistente, 45/45 la invocación vacía, ninguna con traceback: el defecto no era cómo fallan sino la forma del envelope cuando fallan bien—; `vault_gate`, la puerta única que corre las nueve puertas de cierre con `PUERTAS` como registro canónico y `--check-doc` verificando el checklist contra él; `vault_foreign_check`, la regla 7 ejecutable — única tool sin destino por defecto, que rechaza toda raíz del repo y midió 317 notas ajenas para destapar siete sitios que componían `title:` fuera de las comillas |
 | v40.1 | 2026-08-07 | AP-50 (decisión duplicada sin dueño declarado): las decisiones cerradas del estándar pasan a registros con contexto dueño — `vault_vocabulario.py` (12 vocabularios, 14 copias saldadas en 13 módulos), `vault_entorno.py` (13 variables, dos de ellas ya divergidas) y `vault/autoria/frontmatter.py`, el escritor único que cumple AP-46 en el punto de uso y sustituye los cuatro criterios de escapado que convivían en los 17 `*_save`; puertos de contexto verificados por AST en `vault_arch --check`; caracterización congelada de los 17 `*_save`, que destapó cuatro defectos presentados como fallo crítico interno |
 | v40.0 | 2026-08-06 | Contextos acotados: los 112 módulos de `scripts/` se reparten en ocho contextos de dominio más un kernel compartido, con `scripts/vault_arch.py` como registro ejecutable de fronteras (`--check`, `--blueprint`, `--map`) y baseline que solo encoge; AP-49 (vínculo resuelto en tiempo de import) pasa de 82 vínculos congelados en 62 módulos a 0, con lo que `set_vault_root()` deja de ser una costura decorativa; `VaultContext` inmutable y puertos `Protocol` en `vault/kernel/`; la prohibición del Meta-toolkit deja de ser prosa y se mide por AST (`forbidden_writes`); puerta nueva de AP-05 sobre rutas declaradas en dos repositorios de dominio |
@@ -6774,6 +6800,51 @@ temp/
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
 
 ---
+
+### v40.3 — 2026-08-07 `git: pending`
+
+**Un número que dejó de medir, y una consulta que escribía**
+
+Las dos cosas que un repo consumidor le pregunta al estándar: *¿cómo está mi
+vault?* y *¿estoy al día?*. Las dos respondían mal, cada una a su manera.
+
+- **`healthScore` satura.** Parte de 100 y resta 22 penalizaciones
+  independientes cuyos topes suman **285**. Con dos o tres familias mal llega a
+  0, y a partir de ahí un vault regular y uno perdido puntúan igual. No es una
+  hipótesis: `vault-sandbox/`, el vault de referencia de este repo y recién
+  reconstruido, **puntúa 0**. Lo obvio sería recalibrarlo, y no se hace — lo
+  leen los repos consumidores, y cambiar por debajo lo que significa un número
+  publicado es peor que el número malo. Es la política de no-derogación
+  aplicada a una métrica: `healthScore` se queda igual, se anota
+  `superseded_by: healthIndex`, y lo nuevo va al lado. `healthProfile` da seis
+  familias normalizadas cada una contra su propio tope, con `saturated` por
+  familia —que es exactamente lo que el número agregado destruía: dónde seguir
+  empeorando ya no se nota—, y `healthIndex` es su media **simple**. Simple y
+  no ponderada por tope a propósito: `metadatos` acumula 105 puntos frente a
+  los 5 de `ap35`, y ponderar sería reintroducir el defecto con otro nombre.
+  En el sandbox: `healthScore` 0, `healthIndex` 60, conectividad 27 como lo
+  peor. El primer número no decía nada; el segundo dice por dónde empezar.
+
+- **Los 22 pesos pasan a un registro.** Vivían en 22 líneas `score -= min(...)`
+  dentro de la función: nadie podía sumar los topes sin leérsela entera, y
+  agrupar por familia obligaba a copiarlos a un segundo sitio (AP-05). El
+  riesgo del refactor era mover el número sin querer, así que el test
+  reimplementa **literalmente** el bloque viejo y compara 500 combinaciones al
+  azar. Ni un punto de diferencia.
+
+- **`--check` escribía.** La rama de «salto de versión menor sin migración
+  estructural» comprobaba `dry_run` pero no `check_only`: un consumidor que solo
+  preguntaba si estaba al día salía **sellado** en la versión nueva sin haberlo
+  pedido, y el envelope se lo devolvía como `action: version_stamped`. Escribir
+  de más en un vault ajeno al preguntar es la peor forma de este fallo, porque
+  nadie revisa si una consulta le tocó el estado. Ahora `--check` no escribe,
+  declara `stamp_pending` y dice el comando exacto para sellar. Sellar sigue
+  disponible; lo que cambia es quién decide.
+
+- **La documentación del score mentía.** `scripts/README.md` publicaba
+  `100 − (vacías×2) − (sin_fm×3) − (broken_links×2) − (stale×1)`: cuatro
+  términos de veintidós. Ya no hay fórmula escrita a mano — se remite al
+  registro, que es la única copia.
 
 ### v40.2 — 2026-08-07 `git: 2e75b6e`
 

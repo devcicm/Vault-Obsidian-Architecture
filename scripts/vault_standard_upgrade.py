@@ -35,7 +35,7 @@ from vault_registry import standard_folders
 SCRIPTS_DIR = Path(__file__).resolve().parent
 
 
-CURRENT_VERSION = "v40.2"
+CURRENT_VERSION = "v40.3"
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -858,8 +858,16 @@ def vault_standard_upgrade(
         # versión MAYOR para siempre —`_version_index` compara por mayor— y el
         # vault dice v39.0 mientras corre con las tools de v39.1. Es la misma
         # familia que AP-37: `ok: true` mientras el estado sigue obsoleto.
+        # `--check` pregunta; no responde escribiendo. Esta rama comprobaba
+        # `dry_run` pero no `check_only`, así que un consumidor que solo quería
+        # saber si estaba al día salía sellado en la versión nueva sin haberlo
+        # pedido — y el envelope se lo contaba como `action: version_stamped`,
+        # que es exactamente lo que no había autorizado.
         sellado = False
-        if not dry_run and current_applied != to_version and to_version == CURRENT_VERSION:
+        pendiente_de_sellar = (
+            current_applied != to_version and to_version == CURRENT_VERSION
+        )
+        if (not dry_run and not check_only) and pendiente_de_sellar:
             state["applied_version"] = to_version
             state["applied_at"] = utcnow()
             state["applied_by"] = agent
@@ -872,11 +880,24 @@ def vault_standard_upgrade(
                 f"Sin migraciones que aplicar: {current_applied} → {to_version} "
                 "no cambia la estructura. Se sella la versión."
                 if sellado
-                else f"Vault is up to date at {current_applied}. No migrations needed."
+                else (
+                    # El caso que antes se resolvía escribiendo: hay salto de
+                    # versión menor y nadie ha pedido aplicarlo. Se dice, con el
+                    # comando exacto, y se deja la decisión donde estaba.
+                    f"Salto de versión menor pendiente de sellar: "
+                    f"{current_applied} → {to_version}. No cambia la estructura "
+                    f"y no se ha escrito nada. Para sellarlo: "
+                    f"--to {to_version}"
+                    if pendiente_de_sellar
+                    else f"Vault is up to date at {current_applied}. No migrations needed."
+                )
             ),
             "current_version": to_version if sellado else current_applied,
             "target_version": to_version,
             "version_stamped": sellado,
+            # Lo que el consumidor necesita para decidir, y que antes solo podía
+            # deducir de que la tool ya se lo hubiera hecho.
+            "stamp_pending": pendiente_de_sellar and not sellado,
         }
         if validate:
             result["compliance"] = _run_compliance_check(current_applied)

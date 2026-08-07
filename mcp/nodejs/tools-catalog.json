@@ -170,7 +170,7 @@
     },
     "vault_audit": {
       "name": "vault_audit",
-      "description": "Evalúa health score del vault y genera nextActions.",
+      "description": "Evalua la salud del vault y genera nextActions. `healthScore` se conserva tal cual (lo leen los consumidores) pero satura en 0; la lectura que discrimina es `healthIndex` + `healthProfile`, seis familias normalizadas cada una contra su propio tope.",
       "group": "Salud del Vault",
       "script": "vault_audit.py",
       "inputSchema": {

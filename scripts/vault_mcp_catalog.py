@@ -308,7 +308,12 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "name": "vault_audit",
         "script": "vault_audit.py",
         "group": "Salud del Vault",
-        "purpose": "Evalúa health score del vault y genera nextActions.",
+        "purpose": (
+            "Evalua la salud del vault y genera nextActions. `healthScore` "
+            "se conserva tal cual (lo leen los consumidores) pero satura en 0; "
+            "la lectura que discrimina es `healthIndex` + `healthProfile`, "
+            "seis familias normalizadas cada una contra su propio tope."
+        ),
         "params": {
             "project": {
                 "type": "string",

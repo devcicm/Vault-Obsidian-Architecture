@@ -128,9 +128,12 @@
       "required_args": [],
       "declared_returns": [
         "dqHealth",
+        "healthIndex",
+        "healthProfile",
         "healthScore",
         "nextActions",
         "nextActionsCount",
+        "penalties",
         "propagationPending",
         "tagHealth"
       ],
@@ -151,7 +154,13 @@
         "F2",
         "F3",
         "F6"
-      ]
+      ],
+      "superseded_fields": {
+        "healthScore": {
+          "superseded_by": "healthIndex",
+          "why": "22 penalizaciones con topes que suman 285 sobre una base de 100: satura en 0 con dos o tres familias mal y deja de distinguir. Se conserva porque lo leen los repos consumidores."
+        }
+      }
     },
     "vault_backup": {
       "group": "Backups",
@@ -3192,9 +3201,11 @@
         "pending_count",
         "pending_migrations",
         "sections_indexed",
+        "stamp_pending",
         "target_version",
         "to",
         "version_file",
+        "version_stamped",
         "would_apply",
         "would_apply_fixes",
         "would_create_folders"
