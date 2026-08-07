@@ -10,9 +10,9 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | Ruta | Qué es |
 |---|---|
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~6.000 líneas). Fuente normativa. |
-| `scripts/*.py` | ~116 scripts, 94 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
+| `scripts/*.py` | ~117 scripts, 95 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (2140 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (2209 tests). Toda norma con guard debe tener test. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
 | `vault-sandbox/` | **Único** vault de pruebas del repo. Todo runtime va aquí. |
@@ -118,8 +118,9 @@ python scripts/vault_quality_check.py --root vault-sandbox --min-score 0.7
 
 ## Antes de cerrar un cambio
 
-- [ ] **`python scripts/vault_gate.py --strict` → 8/8.** Corre las ocho puertas de golpe;
-      la lista canónica vive en el registro `PUERTAS`, no en este checklist, y
+- [ ] **`python scripts/vault_gate.py --strict` → todas verdes.** Corre las puertas de golpe;
+      cuántas son lo dice el registro `PUERTAS`, no este checklist —escribir aquí
+      el número lo convierte en una cifra a mano, que es AP-47— y
       `--check-doc` falla si alguna puerta no aparece aquí. Los ítems siguientes las
       detallan una a una — están para saber qué mide cada una y cómo se arregla, no
       para correrlas por separado. **No sustituye a la suite.**
@@ -145,6 +146,10 @@ python scripts/vault_quality_check.py --root vault-sandbox --min-score 0.7
       Ningún handler amplio (`except Exception`, `except:`) devuelve un vacío
       indistinguible de un resultado legítimo: el fallo de la tool no se presenta como
       ausencia en el dato. Baseline que solo puede encoger; tras saldar deuda, `--freeze`.
+- [ ] `python scripts/vault_error_contract.py --check --strict` → `ok: true` (AP-52).
+      Ningún envelope de error nuevo se construye a mano: el fallo sale por
+      `emit_error` con `error_code` y `recovery`, que es lo que el consumidor mira
+      para decidir. Baseline que solo puede encoger; tras saldar deuda, `--freeze`.
 - [ ] `python scripts/vault_arch.py --check --strict` → `ok: true`. Contextos acotados:
       fronteras, puertos, vocabularios con dueño, entorno declarado, AP-49 en cero.
 - [ ] `git diff --stat vault-obsidian-architecture.md` sin borrados netos de contenido.

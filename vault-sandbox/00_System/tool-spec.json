@@ -965,6 +965,39 @@
         "F7"
       ]
     },
+    "vault_error_contract": {
+      "group": "Normas",
+      "group_id": 35,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "baseline_size",
+        "frozen",
+        "modules_affected",
+        "new_offenders",
+        "norm",
+        "offenders",
+        "offenders_total",
+        "ok",
+        "path",
+        "resolved_since_baseline",
+        "tool"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency",
+          "integrity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F8"
+      ]
+    },
     "vault_errors": {
       "group": "Internos",
       "group_id": 0,

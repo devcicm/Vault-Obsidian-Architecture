@@ -1349,6 +1349,43 @@
         "vault_infra_save"
       ]
     },
+    "vault_error_contract": {
+      "name": "vault_error_contract",
+      "description": "AP-52: detecta por AST los envelopes de error construidos a mano — `{ok: False, error: ...}` sin `error_code`, `category`, `severity` ni `recovery` — que dejan al consumidor sin nada sobre lo que decidir. Baseline que solo puede encoger.",
+      "group": "Normas",
+      "script": "vault_error_contract.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "check": {
+            "type": "string",
+            "description": "Reporta el estado de la deuda"
+          },
+          "strict": {
+            "type": "string",
+            "description": "Exit 1 si la deuda crecio respecto a la baseline"
+          },
+          "freeze": {
+            "type": "string",
+            "description": "Recongela la baseline tras saldar deuda"
+          }
+        }
+      },
+      "guards": [
+        "La baseline solo puede encoger: --strict falla por sitios nuevos, no por la deuda historica",
+        "Mide forma y no flujo: cuenta tambien envelopes internos que nunca se imprimen, y lo declara en vez de prometer una precision que no tiene",
+        "Se excluye a si misma y a vault_errors*, cuyos literales SON el contrato"
+      ],
+      "side_effects": [
+        "scripts/error-contract-baseline.json (solo con --freeze)"
+      ],
+      "related": [
+        "vault_errors",
+        "vault_blame_audit",
+        "vault_noop_audit",
+        "vault_gate"
+      ]
+    },
     "vault_fix_brackets": {
       "name": "vault_fix_brackets",
       "description": "Detecta y corrige anomalías de corchetes en wiki-links (AP-22, AP-24).",
@@ -4733,6 +4770,7 @@
       "vault_norms",
       "vault_arch",
       "vault_blame_audit",
+      "vault_error_contract",
       "vault_gate",
       "vault_code_tag",
       "vault_doc_counts",

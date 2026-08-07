@@ -1,13 +1,13 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 94 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
+Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 95 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **116 archivos Python** — 94 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
+- **117 archivos Python** — 95 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
 - **Saneamiento de índices (v38.1)** — `vault_section_index.py --heal [--root]` regenera índices con formato legacy `[[stem|alias]]` o ausentes; el auto-index post-write se auto-cura si un agente escribe `index.md` a mano
-- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 94 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
+- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 95 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
 - **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault; requiere marcador de CONTENIDO (01_Projects/02_Observability/03_Decisions/.obsidian), no solo 00_System/99_Index (evita el ciclo auto-reforzado de detección); override runtime con `set_vault_root()`/env `VAULT_ROOT`
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
@@ -59,7 +59,7 @@ Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan 
 | [Grupo 32 — Gestión de Carpetas](#grupo-32--gestión-de-carpetas) | vault_folder_registry |
 | [Grupo 33 — Corrección Automática](#grupo-33--corrección-automática) | vault_fix_brackets, vault_graph_fix |
 | [Grupo 34 — Memoria de Contexto](#grupo-34--memoria-de-contexto) | vault_preferences, vault_query_parse, vault_subgraph, vault_context_pack, vault_ingest |
-| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_noop_audit, vault_smoke, vault_voice |
+| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_error_contract, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_noop_audit, vault_smoke, vault_voice |
 | [Grupo 36 — Defectos y Cuarentena](#grupo-36--defectos-y-cuarentena) | vault_bug_save, vault_quarantine |
 | [Grupo 37 — Skills](#grupo-37--skills) | vault_sdd_init, vault_sanacion |
 | [Observabilidad de Tools](#observabilidad-de-tools) | vault_errors |
@@ -1673,7 +1673,7 @@ El vault expone sus herramientas como un **servidor MCP** que las IAs consumen d
 
 **Archivo:** `../mcp/nodejs/vault-mcp-server.mjs` (~1650 líneas, cero dependencias npm)  
 **Plan:** `../mcp/PLAN.md` — documento de evidencia con 8 fases de implementación
-**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (94 tools)
+**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (95 tools)
 
 Los parámetros que el catálogo publica **se derivan del `argparse` de cada script**,
 no se escriben a mano: el servidor compone `--<param>` literal, así que un param
@@ -1721,7 +1721,7 @@ node mcp/nodejs/vault-mcp-server.mjs --port 3000
 
 ### `vault_norms.py`
 
-Registro canónico de las 63 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
+Registro canónico de las 64 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
 
 ```bash
 python vault_norms.py                             # catálogo completo
@@ -1852,6 +1852,33 @@ python vault_blame_audit.py --freeze           # recongela scripts/blame-baselin
 **Baseline, no guard duro,** por la misma razón que AP-37: la primera medición encontró deuda en decenas de módulos, y un guard que falla ahí se desactiva el primer día. El conteo vivo lo da `--check`, no este README. La clave de la baseline es `módulo:línea` y no un contador por módulo, porque una baseline por conteo se "salda" arreglando un sitio y estrenando otro — que es justo la regresión que este audit existe para ver.
 
 **Se mide por AST, no por texto,** y no es un detalle de implementación: un detector que buscara la cadena `except Exception` contaría los que están en comentarios y no distinguiría un handler que devuelve `[]` de uno que devuelve `ok: false`, que es toda la distinción que la norma sostiene. La primera versión del detector lo aprendió a su costa: midió 101 sitios porque clasificaba `except yaml.YAMLError` como captura amplia —son `ast.Attribute`, no `ast.Name`, y caían en la rama del `except` desnudo—, contando como infracción justo las capturas más precisas del repo. Quince falsos positivos, y el error era el de AP-44 cometido dentro del guard.
+
+---
+
+### `vault_error_contract.py`
+
+**AP-52 — el error se emite fuera del contrato del catálogo.**
+
+```bash
+python vault_error_contract.py --check           # sitios fuera de contrato
+python vault_error_contract.py --check --strict  # exit 1 si la deuda CRECIÓ
+python vault_error_contract.py --freeze          # recongela tras saldar deuda
+```
+
+Salió de la caracterización maliciosa: invocar las 94 tools de forma malformada y mirar **cómo** fallan, no si fallan. El grueso estaba limpio —92/92 rechazan un flag desconocido, 45/45 de las que declaran `required_args` rechazan la invocación vacía— y el hallazgo estaba en la forma del envelope cuando fallaba bien:
+
+```bash
+$ python vault_merge.py
+{"ok": false, "error": "action='merge' requires --source"}
+```
+
+La frase es correcta; el contrato, no. `emit_error` construye el envelope desde `ERROR_CATALOG` con `error_code`, `category`, `severity`, `recovery` y `timestamp`; el escrito a mano no trae ninguno de los cinco. Y el consumidor no lee la frase: **decide por el código**. El servidor MCP y `cli/` miran `error_code` y `recovery.action` para decidir si reintentan, abortan o piden permiso. Sin ellos, un fallo con recuperación conocida llega opaco, y lo único que le queda al agente es adivinar — o parsear el mensaje con un regex, atando su lógica a una cadena que nadie considera contrato.
+
+Es AP-05 sobre el contrato de error, y AP-51 vista desde el otro lado: allí el fallo se disfrazaba de dato; aquí llega honestamente como fallo, pero desnudo de todo lo que lo hace accionable.
+
+**Baseline: 158 sitios en 58 módulos**, y solo puede encoger. Misma razón que AP-37 —que empezó en 55 y llegó a 0— y que AP-51: un guard que falla en 158 sitios se desactiva el primer día.
+
+**Mide forma, no flujo.** Un `dict` con `ok: False` y pinta de envelope que no lleva `error_code`. No sigue el valor hasta stdout: eso exige análisis de flujo, y uno a medias produce falsos negativos silenciosos, que es peor que un falso positivo visible. La consecuencia se declara en vez de esconderse — algunos sitios contados son envelopes internos que nunca se imprimen. Están en la baseline, no bloquean, y quien salde su módulo los verá y decidirá.
 
 ---
 

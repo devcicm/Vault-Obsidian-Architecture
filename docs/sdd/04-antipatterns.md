@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
-> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-51 más
-> las familias PAT, SP y CN. Por familia: AP 51, CN 3, PAT 6, SP 3.
-> Bilingual document. Full norm catalog: antipatterns AP-01..AP-51 plus the PAT,
-> SP and CN families. By family: AP 51, CN 3, PAT 6, SP 3.
+> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-52 más
+> las familias PAT, SP y CN. Por familia: AP 52, CN 3, PAT 6, SP 3.
+> Bilingual document. Full norm catalog: antipatterns AP-01..AP-52 plus the PAT,
+> SP and CN families. By family: AP 52, CN 3, PAT 6, SP 3.
 
 ---
 
 ## ES
 
-Total de normas registradas: 63 (AP 51, CN 3, PAT 6, SP 3)
+Total de normas registradas: 64 (AP 52, CN 3, PAT 6, SP 3)
 
 ### AP-01: Documentación alucinada
 
@@ -545,6 +545,26 @@ El propio detector estreno el fallo que persigue. La primera version midio 101 s
 
 **Prevención:** Capturar la excepcion concreta que se sabe tolerar, y si se captura amplio, **exponer**: devolver el fallo en el envelope en vez de un vacio. Cuando el vacio es la respuesta correcta, distinguirlo del vacio por fallo con un campo aparte (`unreadable`, `errors`) para que el agregado no los confunda. `vault_blame_audit --check --strict` mide por AST y no por texto: un detector que buscara la cadena `except Exception` no veria la diferencia entre devolver un vacio y devolver un envelope con `ok: false`, que es toda la distincion que la norma sostiene.
 
+### AP-52: El error se emite fuera del contrato del catalogo
+
+- **Severidad:** medium
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_error_contract --check
+
+Una tool falla, lo dice, y lo dice mal: devuelve `{"ok": false, "error": "..."}` escrito a mano en vez de pasar por `vault_errors.emit_error`. La frase es correcta; el contrato, no. El envelope del catalogo trae `error_code`, `category`, `severity`, `recovery` y `timestamp`; el escrito a mano no trae ninguno.
+
+Importa porque el consumidor no lee la frase: **decide por el codigo**. El servidor MCP y `cli/` deciden si reintentar, abortar o pedir permiso mirando `error_code` y `recovery.action`. Sin ellos, un fallo con recuperacion conocida llega como un fallo opaco, y la unica salida del agente que lo recibe es adivinar.
+
+Es AP-05 aplicada al **contrato de error** --hay un registro que declara como se nombra y se recupera cada fallo, y 158 sitios que lo deciden por su cuenta-- y es AP-51 vista desde el otro lado: alli el fallo se disfrazaba de dato, aqui llega como fallo pero desnudo de todo lo que lo hace accionable.
+
+Salio de la caracterizacion maliciosa: invocar las 94 tools de forma malformada y mirar **como** fallan, no si fallan. El grueso estaba limpio --las 45 tools con `required_args` rechazan la invocacion vacia por argparse, y las 92 tools Python rechazan un flag desconocido-- y el hallazgo estaba en la forma del envelope, no en su ausencia.
+
+Medida en v40.2: **158 sitios en 58 modulos**. Nace con baseline por la misma razon que AP-37 y AP-51: un guard que falla en 158 sitios se desactiva el primer dia. La baseline solo puede encoger.
+
+El guard mide **forma y no flujo**: un dict con `ok: False` y pinta de envelope que no lleva `error_code`. No sigue el valor hasta stdout, asi que cuenta tambien envelopes internos que nunca se imprimen. Eso se declara en vez de esconderse: un guard que promete una precision que no tiene es la clase de afirmacion no falsable que AP-37 persigue.
+
+**Prevención:** Emitir por `emit_error(tool, CODIGO, mensaje)` y, si el codigo no existe, anadirlo a `ERROR_CATALOG` -- que es donde vive la decision de como se recupera ese fallo. Anadir el codigo cuesta una linea; no anadirlo traslada el coste a cada consumidor, para siempre. `vault_error_contract --check --strict` mide por AST.
+
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
 - **Severidad:** high
@@ -669,7 +689,7 @@ Antes de cualquier operación masiva (migración, rename en lote, vault_tags --r
 
 ## EN
 
-Total registered norms: 63 (AP 51, CN 3, PAT 6, SP 3)
+Total registered norms: 64 (AP 52, CN 3, PAT 6, SP 3)
 
 ### AP-01: Documentación alucinada
 
@@ -1204,6 +1224,26 @@ Medida en v40.1: **86 sitios en 37 modulos**. Nace con baseline por la misma raz
 El propio detector estreno el fallo que persigue. La primera version midio 101 sitios porque clasificaba `except yaml.YAMLError` como captura amplia: son `ast.Attribute` y no `ast.Name`, asi que caian en la rama del `except` desnudo. Contaba como infraccion justo las capturas mas precisas del repo. Quince falsos positivos, y el error era el de AP-44 cometido dentro del guard.
 
 **Prevention:** Capturar la excepcion concreta que se sabe tolerar, y si se captura amplio, **exponer**: devolver el fallo en el envelope en vez de un vacio. Cuando el vacio es la respuesta correcta, distinguirlo del vacio por fallo con un campo aparte (`unreadable`, `errors`) para que el agregado no los confunda. `vault_blame_audit --check --strict` mide por AST y no por texto: un detector que buscara la cadena `except Exception` no veria la diferencia entre devolver un vacio y devolver un envelope con `ok: false`, que es toda la distincion que la norma sostiene.
+
+### AP-52: El error se emite fuera del contrato del catalogo
+
+- **Severity:** medium
+- **Enforcement:** guard+audit
+- **Detected by:** vault_error_contract --check
+
+Una tool falla, lo dice, y lo dice mal: devuelve `{"ok": false, "error": "..."}` escrito a mano en vez de pasar por `vault_errors.emit_error`. La frase es correcta; el contrato, no. El envelope del catalogo trae `error_code`, `category`, `severity`, `recovery` y `timestamp`; el escrito a mano no trae ninguno.
+
+Importa porque el consumidor no lee la frase: **decide por el codigo**. El servidor MCP y `cli/` deciden si reintentar, abortar o pedir permiso mirando `error_code` y `recovery.action`. Sin ellos, un fallo con recuperacion conocida llega como un fallo opaco, y la unica salida del agente que lo recibe es adivinar.
+
+Es AP-05 aplicada al **contrato de error** --hay un registro que declara como se nombra y se recupera cada fallo, y 158 sitios que lo deciden por su cuenta-- y es AP-51 vista desde el otro lado: alli el fallo se disfrazaba de dato, aqui llega como fallo pero desnudo de todo lo que lo hace accionable.
+
+Salio de la caracterizacion maliciosa: invocar las 94 tools de forma malformada y mirar **como** fallan, no si fallan. El grueso estaba limpio --las 45 tools con `required_args` rechazan la invocacion vacia por argparse, y las 92 tools Python rechazan un flag desconocido-- y el hallazgo estaba en la forma del envelope, no en su ausencia.
+
+Medida en v40.2: **158 sitios en 58 modulos**. Nace con baseline por la misma razon que AP-37 y AP-51: un guard que falla en 158 sitios se desactiva el primer dia. La baseline solo puede encoger.
+
+El guard mide **forma y no flujo**: un dict con `ok: False` y pinta de envelope que no lleva `error_code`. No sigue el valor hasta stdout, asi que cuenta tambien envelopes internos que nunca se imprimen. Eso se declara en vez de esconderse: un guard que promete una precision que no tiene es la clase de afirmacion no falsable que AP-37 persigue.
+
+**Prevention:** Emitir por `emit_error(tool, CODIGO, mensaje)` y, si el codigo no existe, anadirlo a `ERROR_CATALOG` -- que es donde vive la decision de como se recupera ese fallo. Anadir el codigo cuesta una linea; no anadirlo traslada el coste a cada consumidor, para siempre. `vault_error_contract --check --strict` mide por AST.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 

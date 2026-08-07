@@ -3476,7 +3476,7 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **63 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **64 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -4968,7 +4968,7 @@ Dos causas, y la segunda es la incómoda:
 
 1. **El audit no lo ejecuta nadie.** En las **1.356 ejecuciones de tools
    registradas** en los `.tool-trace.json` de ese parque, `vault_norms` no
-   aparece **ni una vez**. 41 de las 94 tools del catálogo no se han ejecutado
+   aparece **ni una vez**. 41 de las 95 tools del catálogo no se han ejecutado
    jamás. Los agentes escriben; no gobiernan. Un enforcement que depende de que
    alguien se acuerde de invocarlo es enforcement en el papel.
 2. **Los valores no canónicos los escribía el propio estándar.** El más
@@ -5577,7 +5577,7 @@ de envelope con su contrato de `00_System/tool-spec.json`:
 Y la divergencia peor no era de forma sino de efecto: `jsNativeGraph` no tiene un
 solo `writeFile`. Un agente llamaba `vault_graph` por MCP, recibía `ok: true`, y
 el grafo se quedaba sin regenerar — **AP-37 y AP-47 servidos a la vez por el único
-camino que un agente real usa**. `vault_smoke` recorre las 94 tools del catálogo,
+camino que un agente real usa**. `vault_smoke` recorre las 95 tools del catálogo,
 pero ejecuta el `.py`: probaba exactamente la implementación que el agente no toca.
 
 **Prevención:** backend nativo solo para lo que **no tiene** implementación en
@@ -5837,6 +5837,80 @@ Los siguientes patrones fueron identificados en auditorías reales de vaults en 
 | `migratedFrom` | `vault_migrate_docs` | Solo en migraciones |
 
 **Señal de implementación correcta:** `vault_audit()` reporta 0 notas sin campo `agent`. Cualquier nota puede rastrearse hasta el agente que la creó y cuándo.
+
+---
+
+### AP-52 — El error se emite fuera del contrato del catálogo
+
+**Síntoma.** Una tool falla, lo dice, y lo dice mal:
+
+```bash
+$ python scripts/vault_merge.py
+{"ok": false, "error": "action='merge' requires --source"}
+```
+
+La frase es correcta. El contrato, no. `vault_errors.emit_error` construye el
+envelope desde `ERROR_CATALOG` y añade `error_code`, `category`, `severity`,
+`recovery` y `timestamp`. Un `{"ok": False, "error": "..."}` escrito a mano no
+añade ninguno de los cinco.
+
+**Por qué importa.** Porque el consumidor no lee la frase: **decide por el
+código**. El servidor MCP y `cli/` deciden si reintentar, abortar o pedir
+permiso mirando `error_code` y `recovery.action`. Sin ellos, un fallo con
+recuperación conocida llega como un fallo opaco, y al agente que lo recibe
+solo le queda adivinar — o peor, parsear el mensaje con un regex, que ata su
+lógica a la redacción de una cadena que nadie considera contrato.
+
+Es **AP-05 aplicada al contrato de error**: existe un registro que declara cómo
+se nombra y cómo se recupera cada fallo, y 158 sitios que lo deciden por su
+cuenta. Y es **AP-51 vista desde el otro lado**: allí el fallo se disfrazaba de
+dato; aquí llega honestamente como fallo, pero desnudo de todo lo que lo hace
+accionable.
+
+**De dónde salió.** De la caracterización maliciosa: invocar las 94 tools de
+forma malformada y mirar **cómo** fallan, no si fallan. Dos sondas —invocación
+vacía y flag desconocido— sobre toda la superficie:
+
+| Sonda | Resultado |
+|---|---|
+| `--parametro-que-no-existe` | 92/92 tools Python rechazan por argparse (exit 2 + `usage:`) |
+| sin argumentos, con `required_args` declarados | 45/45 rechazan por argparse |
+| sin argumentos, sin `required_args` | invocación legítima: `ok: true` es su contrato |
+
+El grueso estaba limpio. El hallazgo no era una tool que se cayera: era la
+**forma** del envelope cuando fallaba bien.
+
+> Nota de método. La primera versión de la sonda clasificó 26 tools como
+> "éxito ante basura" por devolver `ok: true` sin argumentos. Era falso: para
+> esas tools invocar sin argumentos **es** su contrato. La sonda medía con su
+> propio criterio —"sin argumentos = malformado"— en vez de con el declarado
+> en `required_args` del `tool-spec.json`. AP-44 cometida dentro de la
+> caracterización, y por segunda vez en dos normas seguidas: el detector de
+> AP-51 también estrenó el fallo que perseguía.
+
+**Señal.** Un literal `{"ok": False, "error": ...}` en el camino de salida de una
+tool; un envelope de fallo sin `error_code`; un consumidor que lee `message` con
+un regex para saber qué pasó.
+
+**Prevención.** Emitir por `emit_error(tool, CODIGO, mensaje)`. Si el código no
+existe, añadirlo a `ERROR_CATALOG` — que es donde vive la decisión de cómo se
+recupera ese fallo. Añadir el código cuesta una línea; no añadirlo traslada el
+coste a cada consumidor, para siempre.
+
+**Enforcement.** `vault_error_contract --check --strict`, por AST. Medido en
+v40.2: **158 sitios en 58 módulos**. Nace con baseline por la misma razón que
+AP-37 —que empezó en 55 y llegó a 0— y que AP-51: un guard que falla en 158
+sitios se desactiva el primer día, y un guard desactivado no protege nada. La
+baseline **solo puede encoger**.
+
+**Límite declarado.** El guard mide **forma, no flujo**: un `dict` con
+`ok: False` y pinta de envelope que no lleva `error_code`. No sigue el valor
+hasta stdout, porque eso exige análisis de flujo y uno a medias produce falsos
+negativos silenciosos — peor que un falso positivo visible. La consecuencia es
+que algunos sitios contados son envelopes internos que nunca se imprimen. Están
+en la baseline, no bloquean, y quien salde su módulo los verá y decidirá.
+Declararlo es parte de la norma: un guard que promete una precisión que no tiene
+es la clase de afirmación no falsable que AP-37 persigue.
 
 ---
 

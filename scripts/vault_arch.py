@@ -222,7 +222,7 @@ CONTEXTS: dict[str, dict] = {
             "vault_spec_catalog_check", "vault_spec_generate_catalog",
             "vault_spec_memory", "vault_spec_validate", "vault_test_runner",
             "vault_doc_counts", "vault_doc_sync", "vault_noop_audit",
-            "vault_blame_audit", "vault_gate", "vault_arch",
+            "vault_blame_audit", "vault_error_contract", "vault_gate", "vault_arch",
         ],
     },
 }

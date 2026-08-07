@@ -2169,6 +2169,51 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         ),
         "related": ["vault_norms", "vault_noop_audit", "vault_mcp_catalog"],
     },
+    "vault_error_contract": {
+        "name": "vault_error_contract",
+        "script": "vault_error_contract.py",
+        "group": "Normas",
+        "purpose": (
+            "AP-52: detecta por AST los envelopes de error construidos a mano "
+            "\u2014 `{ok: False, error: ...}` sin `error_code`, `category`, "
+            "`severity` ni `recovery` \u2014 que dejan al consumidor sin nada "
+            "sobre lo que decidir. Baseline que solo puede encoger."
+        ),
+        "params": {
+            "check": {
+                "type": "boolean",
+                "required": False,
+                "description": "Reporta el estado de la deuda",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit 1 si la deuda crecio respecto a la baseline",
+                "validators": [],
+            },
+            "freeze": {
+                "type": "boolean",
+                "required": False,
+                "description": "Recongela la baseline tras saldar deuda",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "La baseline solo puede encoger: --strict falla por sitios nuevos, "
+            "no por la deuda historica",
+            "Mide forma y no flujo: cuenta tambien envelopes internos que nunca "
+            "se imprimen, y lo declara en vez de prometer una precision que no tiene",
+            "Se excluye a si misma y a vault_errors*, cuyos literales SON el contrato",
+        ],
+        "side_effects": ["scripts/error-contract-baseline.json (solo con --freeze)"],
+        "example": (
+            "python vault_error_contract.py --check\n"
+            "python vault_error_contract.py --check --strict\n"
+            "python vault_error_contract.py --freeze"
+        ),
+        "related": ["vault_errors", "vault_blame_audit", "vault_noop_audit", "vault_gate"],
+    },
     "vault_gate": {
         "name": "vault_gate",
         "script": "vault_gate.py",
@@ -3301,6 +3346,7 @@ GROUPS: Dict[str, List[str]] = {
         "vault_norms",
         "vault_arch",
         "vault_blame_audit",
+        "vault_error_contract",
         "vault_gate",
         "vault_code_tag",
         "vault_doc_counts",

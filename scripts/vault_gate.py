@@ -108,6 +108,13 @@ PUERTAS: List[Dict[str, Any]] = [
         "fix": "saldar la deuda y luego --freeze",
     },
     {
+        "id": "contrato_error",
+        "cmd": ["vault_error_contract.py", "--check", "--strict"],
+        "mide": "AP-52 \u2014 ningun envelope de error nuevo se emite fuera del "
+                "contrato de ERROR_CATALOG",
+        "fix": "emitir por emit_error y luego --freeze",
+    },
+    {
         "id": "arquitectura",
         "cmd": ["vault_arch.py", "--check", "--strict"],
         "mide": "Contextos acotados: fronteras, puertos, vocabularios con dueño, "
