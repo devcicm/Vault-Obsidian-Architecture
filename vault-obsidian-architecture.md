@@ -6803,7 +6803,7 @@ temp/
 
 ---
 
-### v40.5 — 2026-08-07 `git: pending`
+### v40.5 — 2026-08-07 `git: 6036da0`
 
 **Dos vaults ajenos, dos defectos que el sandbox no podía enseñar**
 
