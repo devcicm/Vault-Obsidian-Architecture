@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_io import is_snapshot_path
 SCRIPTS_DIR = Path(__file__).parent
 
@@ -540,7 +540,7 @@ Ejemplos:
         if not path.exists():
             print(
                 json.dumps(
-                    {"ok": False, "error": f"Archivo no encontrado: {args.path}"}
+                    emit_error("vault_mermaid_check", "FILE_NOT_FOUND", f"Archivo no encontrado: {args.path}")
                 )
             )
             return 1

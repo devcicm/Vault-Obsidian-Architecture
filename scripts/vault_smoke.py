@@ -50,7 +50,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 # de uso. Ver `vault_entorno.py`.
 from vault_entorno import leer as _env
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_mcp_catalog import TOOLS_CATALOG
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
@@ -267,9 +267,10 @@ def freeze() -> Dict[str, Any]:
     fallando = sorted(f["tool"] for f in r["failures"])
     previa = load_baseline()
     if len(fallando) > len(previa) and BASELINE_PATH.is_file():
-        return {"ok": False, "tool": "vault_smoke", "action": "freeze", "frozen": 0,
-                "error": "la baseline no puede crecer",
-                "detail": f"{len(previa)} -> {len(fallando)}; arregla {r['new_offenders']}"}
+        return {**emit_error("vault_smoke", "DEBT_WOULD_GROW",
+                              f"la baseline no puede crecer: {len(previa)} -> {len(fallando)}; "
+                              f"arregla {r['new_offenders']}"),
+                "action": "freeze", "frozen": 0}
     BASELINE_PATH.write_text(
         json.dumps({
             "norm": "AP-42",

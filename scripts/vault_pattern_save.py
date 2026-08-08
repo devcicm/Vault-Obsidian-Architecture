@@ -30,7 +30,7 @@ import re
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_norms import status_frontmatter_lines
 from vault_lib import yaml_scalar, utcnow, slugify
 from vault_io import (
@@ -175,16 +175,10 @@ def vault_pattern_save(
     status = status.lower().replace(" ", "_")
 
     if pattern_type not in PATTERN_TYPES:
-        return {
-            "ok": False,
-            "error": f"Tipo inválido: {pattern_type}. Válidos: {PATTERN_TYPES}",
-        }
+        return emit_error("vault_pattern_save", "INVALID_VALUE", f"Tipo inválido: {pattern_type}. Válidos: {PATTERN_TYPES}")
 
     if status not in PATTERN_STATUSES:
-        return {
-            "ok": False,
-            "error": f"Estado inválido: {status}. Válidos: {PATTERN_STATUSES}",
-        }
+        return emit_error("vault_pattern_save", "INVALID_VALUE", f"Estado inválido: {status}. Válidos: {PATTERN_STATUSES}")
 
     safe_project = slugify(project)
 
@@ -219,10 +213,7 @@ def vault_pattern_save(
 
     if existing_status and existing_status != status:
         if status not in VALID_TRANSITIONS.get(existing_status, []):
-            return {
-                "ok": False,
-                "error": f"Transición inválida: {existing_status} → {status}. Válidas desde {existing_status}: {VALID_TRANSITIONS.get(existing_status, [])}",
-            }
+            return emit_error("vault_pattern_save", "INVALID_VALUE", f"Transición inválida: {existing_status} → {status}. Válidas desde {existing_status}: {VALID_TRANSITIONS.get(existing_status, [])}")
 
         transition_entry = f"- **{existing_status}** → **{status}** ({timestamp})"
 

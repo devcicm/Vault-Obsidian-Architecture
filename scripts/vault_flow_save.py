@@ -42,7 +42,7 @@ import re
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from datetime import datetime, timezone
 from vault_io import atomic_write_text, assert_within_vault, write_report
@@ -114,10 +114,7 @@ def vault_flow_save(
     flow_type = flow_type.lower()
 
     if flow_type not in FLOW_TYPES:
-        return {
-            "ok": False,
-            "error": f"Flow type '{flow_type}' not valid. Use: {FLOW_TYPES}",
-        }
+        return emit_error("vault_flow_save", "INVALID_VALUE", f"Flow type '{flow_type}' not valid. Use: {FLOW_TYPES}")
 
     safe_project = slugify(project)
 
@@ -380,7 +377,7 @@ Notas:
             steps = json.loads(args.steps)
 
         except json.JSONDecodeError as e:
-            print(json.dumps({"ok": False, "error": f"Invalid JSON in --steps: {e}"}))
+            print(json.dumps(emit_error("vault_flow_save", "ARG_JSON_INVALID", f"Invalid JSON in --steps: {e}")))
 
             return 1
 

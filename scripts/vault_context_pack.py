@@ -36,7 +36,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_lib import parse_frontmatter_with_body
 from vault_query_parse import vault_query_parse
 from vault_search import vault_search
@@ -116,13 +116,13 @@ def _read_note(path: str) -> Dict[str, Any]:
     try:
         full.relative_to(_raiz().resolve())
     except ValueError:
-        return {"ok": False, "error": "fuera del vault"}
+        return emit_error("vault_context_pack", "INVALID_PATH", "fuera del vault")
     if not full.is_file():
-        return {"ok": False, "error": "no existe"}
+        return emit_error("vault_context_pack", "NOTE_NOT_FOUND", "no existe")
     try:
         raw = full.read_text(encoding="utf-8")
     except OSError as exc:
-        return {"ok": False, "error": str(exc)}
+        return emit_error("vault_context_pack", "FILE_READ_ERROR", str(exc), exception=exc)
     frontmatter, body = parse_frontmatter_with_body(raw)
     return {"ok": True, "frontmatter": frontmatter, "body": body.strip()}
 

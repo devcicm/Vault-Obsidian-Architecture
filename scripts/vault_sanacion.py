@@ -38,7 +38,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 import vault_io
 
 #: Las 12 fases de `docs/MODO-AGENTICO-SANACION.md`. El orden **es** el
@@ -350,8 +350,8 @@ def main() -> int:
         elegida = [f for f in plan["phases"] if f["phase"] == args.phase]
         if not elegida:
             print(json.dumps(
-                {"ok": False, "tool": "vault_sanacion",
-                 "error": f"fase {args.phase} fuera de rango (1..12)"},
+                emit_error("vault_sanacion", "INVALID_VALUE",
+                           f"fase {args.phase} fuera de rango (1..12)"),
                 indent=2, ensure_ascii=False,
             ))
             return 1

@@ -47,7 +47,7 @@ from typing import Any, Dict, List
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS_DIR = Path(__file__).resolve().parent
@@ -204,7 +204,7 @@ def check_doc() -> Dict[str, Any]:
     """
     doc = REPO_ROOT / "CLAUDE.md"
     if not doc.exists():
-        return {"ok": False, "tool": "vault_gate", "error": "CLAUDE.md no encontrado"}
+        return emit_error("vault_gate", "FILE_NOT_FOUND", "CLAUDE.md no encontrado")
 
     texto = doc.read_text(encoding="utf-8", errors="replace")
     ausentes = [p["id"] for p in PUERTAS if p["cmd"][0] not in texto]

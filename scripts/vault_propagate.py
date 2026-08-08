@@ -30,7 +30,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_lib import utcnow
 from vault_impact import vault_impact
 from vault_io import atomic_write_json, file_lock, write_report
@@ -198,24 +198,18 @@ def vault_propagate(
 
     strategy = strategy.lower()
     if strategy not in VALID_STRATEGIES:
-        return {
-            "ok": False,
-            "error": f"Invalid strategy '{strategy}'. Must be one of: {VALID_STRATEGIES}",
-        }
+        return emit_error("vault_propagate", "INVALID_VALUE", f"Invalid strategy '{strategy}'. Must be one of: {VALID_STRATEGIES}")
 
     invalid_actions = [a for a in actions if a not in VALID_ACTIONS]
     if invalid_actions:
-        return {
-            "ok": False,
-            "error": f"Invalid actions: {invalid_actions}. Must be in: {VALID_ACTIONS}",
-        }
+        return emit_error("vault_propagate", "INVALID_VALUE", f"Invalid actions: {invalid_actions}. Must be in: {VALID_ACTIONS}")
 
     # Get impact
     hops = 1 if strategy == "conservative" else max_hops
     impact = vault_impact(list(changed_notes), max_hops=hops, since=since)
 
     if not impact.get("ok"):
-        return {"ok": False, "error": f"vault_impact failed: {impact.get('error')}"}
+        return emit_error("vault_propagate", "UNEXPECTED_ERROR", f"vault_impact failed: {impact.get('error')}")
 
     impacted = impact.get("impacted", [])
 

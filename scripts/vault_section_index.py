@@ -14,7 +14,7 @@ Usage:
 import argparse
 import json
 import sys
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_lib import parse_frontmatter, utcnow
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -311,17 +311,26 @@ def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, 
     # folder="" o "." escribe index.md y .locks/ en la RAÍZ del vault.
     folder = (folder or "").strip().replace("\\", "/").strip("/")
     if not folder or folder == ".":
+        # `detail` se conserva: los consumidores que ya lo leían siguen
+        # encontrándolo. Lo que cambia es que el motivo ahora también viaja
+        # como `error_code` del catálogo, que es por donde se decide.
         return {
-            "ok": False,
-            "error": "invalid_folder",
+            **emit_error(
+                "vault_section_index",
+                "INVALID_FOLDER",
+                "folder no puede ser la raíz del vault (CN-02/AP-15); usar una sección canónica, ej. 01_Projects",
+            ),
             "detail": "folder no puede ser la raíz del vault (CN-02/AP-15); usar una sección canónica, ej. 01_Projects",
         }
     from vault_registry import SECTIONS as _SECTIONS
 
     if folder.split("/")[0] not in {s["folder"] for s in _SECTIONS}:
         return {
-            "ok": False,
-            "error": "invalid_folder",
+            **emit_error(
+                "vault_section_index",
+                "INVALID_FOLDER",
+                f"'{folder.split('/')[0]}' no es una sección canónica del registro (CN-02)",
+            ),
             "detail": f"'{folder.split('/')[0]}' no es una sección canónica del registro (CN-02)",
         }
 
@@ -337,12 +346,12 @@ def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, 
     vroot = get_vault_root()
     section_path = vroot / folder
     if not section_path.exists():
-        return {"ok": False, "error": "folder_not_found", "folder": folder}
+        return {**emit_error("vault_section_index", "FOLDER_NOT_FOUND", f"La seccion no existe: {folder}"), "folder": folder}
 
     try:
         assert_within_vault(section_path, vroot)
     except ValueError as e:
-        return {"ok": False, "error": "path_traversal", "detail": str(e)}
+        return {**emit_error("vault_section_index", "INVALID_PATH", str(e)), "detail": str(e)}
 
     now = utcnow()
     notes = _collect_notes(section_path, include_subdirs)

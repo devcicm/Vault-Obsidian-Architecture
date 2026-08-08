@@ -36,7 +36,7 @@ import re
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from vault_io import (
     write_report,
@@ -148,16 +148,10 @@ def vault_ai_decision(
     tags: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     if decision_type not in DECISION_TYPES:
-        return {
-            "ok": False,
-            "error": f"decision_type '{decision_type}' not valid. Use: {DECISION_TYPES}",
-        }
+        return emit_error("vault_ai_decision", "INVALID_VALUE", f"decision_type '{decision_type}' not valid. Use: {DECISION_TYPES}")
 
     if impact_level not in IMPACT_LEVELS:
-        return {
-            "ok": False,
-            "error": f"impact_level '{impact_level}' not valid. Use: {IMPACT_LEVELS}",
-        }
+        return emit_error("vault_ai_decision", "INVALID_VALUE", f"impact_level '{impact_level}' not valid. Use: {IMPACT_LEVELS}")
 
     safe_project = slugify(project)
 
@@ -410,7 +404,7 @@ Notes:
             return json.loads(val)
 
         except json.JSONDecodeError as e:
-            print(json.dumps({"ok": False, "error": f"Invalid JSON in --{name}: {e}"}))
+            print(json.dumps(emit_error("vault_ai_decision", "ARG_JSON_INVALID", f"Invalid JSON in --{name}: {e}")))
 
             sys.exit(1)
 

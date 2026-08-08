@@ -37,7 +37,7 @@ import re
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_lib import yaml_scalar, utcnow, slugify
 from vault_io import atomic_write_text, get_vault_root, safe_wikilink, write_report
 from datetime import datetime, timezone
@@ -276,16 +276,10 @@ def vault_log_error(
     meta: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     if error_type not in TYPE_FOLDERS:
-        return {
-            "ok": False,
-            "error": f"Tipo inválido: {error_type}. Válidos: {list(TYPE_FOLDERS.keys())}",
-        }
+        return emit_error("vault_log_error", "INVALID_VALUE", f"Tipo inválido: {error_type}. Válidos: {list(TYPE_FOLDERS.keys())}")
 
     if severity not in SEVERITIES:
-        return {
-            "ok": False,
-            "error": f"Severity inválida: {severity}. Válidos: {SEVERITIES}",
-        }
+        return emit_error("vault_log_error", "INVALID_VALUE", f"Severity inválida: {severity}. Válidos: {SEVERITIES}")
 
     folder = TYPE_FOLDERS[error_type]
 

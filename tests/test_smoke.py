@@ -101,7 +101,10 @@ def test_freeze_rechaza_una_baseline_que_crece(monkeypatch):
         "failures": [{"tool": "vault_x"}, {"tool": "vault_y"}], "new_offenders": ["vault_x"]})
     monkeypatch.setattr(smoke, "load_baseline", lambda: [])
     r = smoke.freeze()
-    assert not r["ok"] and "no puede crecer" in r["error"]
+    # Se decide por `error_code`, no por la frase: desde v40.6 este envelope
+    # sale del catálogo (AP-52) y `message` puede reescribirse sin avisar.
+    assert not r["ok"] and r["error_code"] == "DEBT_WOULD_GROW"
+    assert "no puede crecer" in r["message"]
 
 
 def test_un_fallo_nuevo_hace_que_strict_falle(monkeypatch):

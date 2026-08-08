@@ -41,7 +41,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from vault_io import assert_within_vault, atomic_write_text, normalize_stem
 from vault_norms import compute_norm_refs
@@ -2530,8 +2530,8 @@ def vault_onboard(
     project_path = Path(path).resolve()
     if not project_path.exists():
         return {
-            "ok": False,
-            "error": "project_path_not_found",
+            **emit_error("vault_onboard", "FOLDER_NOT_FOUND",
+                         f"project path no encontrado: {project_path}"),
             "path": str(project_path),
         }
 

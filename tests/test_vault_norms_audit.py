@@ -127,9 +127,14 @@ def test_audit_bom_frontmatter_parsed(tmp_path):
 def test_section_index_rejects_root_and_adhoc():
     from vault_section_index import vault_section_index
 
-    assert vault_section_index("")["error"] == "invalid_folder"
-    assert vault_section_index(".")["error"] == "invalid_folder"
-    assert vault_section_index("carpeta-adhoc")["error"] == "invalid_folder"
+    # `invalid_folder` era un código inventado en el sitio; desde v40.6 el
+    # rechazo sale por el catálogo con `INVALID_FOLDER` (AP-52). `detail` se
+    # conservó para los consumidores que ya lo leían.
+    for folder in ("", ".", "carpeta-adhoc"):
+        r = vault_section_index(folder)
+        assert r["ok"] is False
+        assert r["error_code"] == "INVALID_FOLDER", folder
+        assert r["detail"], folder
 
 
 def test_ap36_detects_bak_in_section(tmp_path):

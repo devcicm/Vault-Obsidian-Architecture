@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 from urllib.parse import urlparse
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_lib import utcnow
 from vault_io import atomic_write_json, file_lock
 
@@ -158,7 +158,7 @@ def start_flow(payload: Dict[str, Any]) -> Dict[str, Any]:
 def add_event(payload: Dict[str, Any]) -> Dict[str, Any]:
     flow_id = payload.get("flow_id")
     if not flow_id:
-        return {"ok": False, "error": "missing_flow_id"}
+        return emit_error("vault_token_service", "MISSING_REQUIRED_ARG", "falta flow_id")
     path = _flow_path(flow_id)
     _flow_dir().mkdir(parents=True, exist_ok=True)
     text = payload.get("text", "")
@@ -190,7 +190,7 @@ def add_event(payload: Dict[str, Any]) -> Dict[str, Any]:
 def end_flow(payload: Dict[str, Any]) -> Dict[str, Any]:
     flow_id = payload.get("flow_id")
     if not flow_id:
-        return {"ok": False, "error": "missing_flow_id"}
+        return emit_error("vault_token_service", "MISSING_REQUIRED_ARG", "falta flow_id")
     path = _flow_path(flow_id)
     with file_lock(path):
         flow = _read_json(path, _default_flow(flow_id))
@@ -204,7 +204,7 @@ def end_flow(payload: Dict[str, Any]) -> Dict[str, Any]:
 def get_flow(flow_id: str) -> Dict[str, Any]:
     path = _flow_path(flow_id)
     if not path.exists():
-        return {"ok": False, "error": "flow_not_found", "flow_id": flow_id}
+        return {**emit_error("vault_token_service", "FILE_NOT_FOUND", f"flow no encontrado: {flow_id}"), "flow_id": flow_id}
     flow = _read_json(path, {})
     return {"ok": True, "flow": flow}
 

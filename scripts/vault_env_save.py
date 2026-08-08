@@ -28,7 +28,7 @@ import re
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from datetime import datetime, timezone
 from vault_io import atomic_write_text, assert_within_vault, write_report
@@ -151,10 +151,7 @@ def vault_env_save(
 ) -> Dict[str, Any]:
     for v in vars:
         if v.get("provider") and v["provider"] not in PROVIDERS:
-            return {
-                "ok": False,
-                "error": f"Provider inválido: {v['provider']}. Válidos: {PROVIDERS}",
-            }
+            return emit_error("vault_env_save", "INVALID_VALUE", f"Provider inválido: {v['provider']}. Válidos: {PROVIDERS}")
 
     safe_project = slugify(project)
 
@@ -301,7 +298,7 @@ Notas:
         vars_list = json.loads(args.vars)
 
     except json.JSONDecodeError:
-        print(json.dumps({"ok": False, "error": "Invalid JSON in --vars"}))
+        print(json.dumps(emit_error("vault_env_save", "ARG_JSON_INVALID", "Invalid JSON in --vars")))
 
         return 1
 
@@ -315,13 +312,12 @@ Notas:
     ):
         print(
             json.dumps(
-                {
-                    "ok": False,
-                    "error": (
-                        "--vars espera un array JSON de objetos, p. ej. "
-                        '[{"name": "PORT", "description": "Puerto"}]'
-                    ),
-                }
+                emit_error(
+                    "vault_env_save",
+                    "ARG_JSON_INVALID",
+                    "--vars espera un array JSON de objetos, p. ej. "
+                    '[{"name": "PORT", "description": "Puerto"}]',
+                )
             )
         )
         return 1

@@ -31,7 +31,7 @@ import re
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 
 from pathlib import Path
 
@@ -128,7 +128,7 @@ def vault_knowledge_get(
 
     except (FileNotFoundError, json.JSONDecodeError):
 
-        return {"ok": False, "error": "Search index not found. Run vault_index.py first."}
+        return emit_error("vault_knowledge_get", "INDEX_NOT_FOUND", "Search index not found. Run vault_index.py first.")
 
 
     knowledge_notes = [n for n in index.get("notes", []) if n.get("path", "").startswith("07_Knowledge/")]

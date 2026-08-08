@@ -128,7 +128,9 @@ def test_atributo_de_calidad_fuera_de_iso_25010_se_rechaza():
         quality=[{"attribute": "elegancia", "rating": 5}],
     )
     assert r["ok"] is False
-    assert "25010" in r["error"]
+    assert r["error_code"] == "INVALID_VALUE"
+    assert "25010" in r["message"]
+    assert r["valid_attributes"], "la lista de válidos es lo accionable; no se pierde"
 
 
 def test_el_sanitizador_quita_todo_lo_que_el_detector_reporta():

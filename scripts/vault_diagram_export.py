@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_io import write_report
 
 
@@ -208,7 +208,7 @@ def export_project(
     project_dir = _raiz() / "01_Projects" / project
 
     if not project_dir.exists():
-        return {"ok": False, "error": f"Proyecto no encontrado: {project}"}
+        return emit_error("vault_diagram_export", "PROJECT_NOT_FOUND", f"Proyecto no encontrado: {project}")
 
     output_dir.mkdir(parents=True, exist_ok=True)
     exported = []

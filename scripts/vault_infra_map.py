@@ -30,7 +30,7 @@ import re
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from datetime import datetime, timezone
 from pathlib import Path
@@ -212,10 +212,7 @@ def vault_infra_map(
     project: Optional[str] = None, location: Optional[str] = None
 ) -> Dict[str, Any]:
     if location and location not in LOCATIONS:
-        return {
-            "ok": False,
-            "error": f"Ubicación inválida: {location}. Válidas: {LOCATIONS}",
-        }
+        return emit_error("vault_infra_map", "INVALID_VALUE", f"Ubicación inválida: {location}. Válidas: {LOCATIONS}")
 
     index = load_index()
 

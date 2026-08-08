@@ -40,7 +40,7 @@ import re
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 
 from pathlib import Path
 
@@ -256,7 +256,7 @@ def cmd_file(index: Dict[str, Any], project: str, file_query: str, deps: bool) -
 
     if not module:
 
-        return {"ok": False, "error": f"No module found matching '{file_query}' in project '{project}'"}
+        return emit_error("vault_code_query", "NOTE_NOT_FOUND", f"No module found matching '{file_query}' in project '{project}'")
 
 
 
@@ -412,7 +412,7 @@ def cmd_method(index: Dict[str, Any], project: str, method_query: str) -> Dict[s
 
     if not matches:
 
-        return {"ok": False, "error": f"No method matching '{method_query}' found in project '{project}'"}
+        return emit_error("vault_code_query", "NOTE_NOT_FOUND", f"No method matching '{method_query}' found in project '{project}'")
 
 
 
@@ -460,7 +460,7 @@ def cmd_class_search(index: Dict[str, Any], project: str, class_query: str) -> D
 
     if not matches:
 
-        return {"ok": False, "error": f"No class matching '{class_query}' found in project '{project}'"}
+        return emit_error("vault_code_query", "NOTE_NOT_FOUND", f"No class matching '{class_query}' found in project '{project}'")
 
 
 

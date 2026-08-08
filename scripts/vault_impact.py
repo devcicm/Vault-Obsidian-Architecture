@@ -26,7 +26,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -182,8 +182,8 @@ def vault_impact(
     graph = _load_graph(predicate_filter=predicate_filter)
     if graph is None:
         return {
-            "ok": False,
-            "error": "graph.json not found. Run vault_graph.py first.",
+            **emit_error("vault_impact", "INDEX_NOT_FOUND",
+                         "graph.json not found. Run vault_graph.py first."),
             "hint": "python scripts/vault_graph.py",
         }
 

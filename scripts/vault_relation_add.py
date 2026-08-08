@@ -30,7 +30,7 @@ import re
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 import uuid
 
@@ -187,10 +187,7 @@ def vault_relation_add(
     relation_type = relation_type.lower()
 
     if relation_type not in RELATION_TYPES:
-        return {
-            "ok": False,
-            "error": f"Tipo inválido: {relation_type}. Válidos: {RELATION_TYPES}",
-        }
+        return emit_error("vault_relation_add", "INVALID_VALUE", f"Tipo inválido: {relation_type}. Válidos: {RELATION_TYPES}")
 
     data = load_relations(project)
 

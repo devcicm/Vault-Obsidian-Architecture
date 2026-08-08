@@ -17,7 +17,7 @@ import argparse
 import json
 import re
 import sys
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_lib import yaml_scalar, utcnow, slugify
 import uuid
 from pathlib import Path
@@ -164,16 +164,10 @@ def vault_code_module(
     fslug = file_slug(file_path)
 
     if language and language.lower() not in LANGUAGES:
-        return {
-            "ok": False,
-            "error": f"Language '{language}' not recognized. Use: {LANGUAGES}",
-        }
+        return emit_error("vault_code_module", "INVALID_VALUE", f"Language '{language}' not recognized. Use: {LANGUAGES}")
 
     if iso_type and iso_type.lower() not in ISO_TYPES:
-        return {
-            "ok": False,
-            "error": f"iso_type '{iso_type}' not recognized. Use: {ISO_TYPES}",
-        }
+        return emit_error("vault_code_module", "INVALID_VALUE", f"iso_type '{iso_type}' not recognized. Use: {ISO_TYPES}")
 
     # QUALITY_ATTRIBUTES son las 8 características de ISO/IEC 25010, y la nota
     # titula su tabla "Calidad (ISO 25010)". El registro estaba declarado y no
@@ -186,10 +180,11 @@ def vault_code_module(
     ]
     if invalidos:
         return {
-            "ok": False,
-            "error": (
+            **emit_error(
+                "vault_code_module",
+                "INVALID_VALUE",
                 f"quality.attribute fuera de ISO/IEC 25010: {invalidos}. "
-                f"Use: {QUALITY_ATTRIBUTES}"
+                f"Use: {QUALITY_ATTRIBUTES}",
             ),
             "valid_attributes": QUALITY_ATTRIBUTES,
         }
@@ -605,7 +600,7 @@ Notas:
         if not scan_dir.exists():
             print(
                 json.dumps(
-                    {"ok": False, "error": f"scan-path not found: {args.scan_path}"}
+                    emit_error("vault_code_module", "FOLDER_NOT_FOUND", f"scan-path not found: {args.scan_path}")
                 )
             )
             return 1
@@ -686,10 +681,8 @@ Notas:
                     return parts
             print(
                 json.dumps(
-                    {
-                        "ok": False,
-                        "error": f"Invalid JSON in --{name}. Expected JSON array or comma-separated list.",
-                    }
+                    emit_error("vault_code_module", "ARG_JSON_INVALID",
+                                  f"Invalid JSON in --{name}. Expected JSON array or comma-separated list.")
                 )
             )
             sys.exit(1)

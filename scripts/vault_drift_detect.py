@@ -48,7 +48,7 @@ import subprocess
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_lib import slugify_strict, utcnow
 from datetime import datetime, timezone
 
@@ -703,7 +703,7 @@ def vault_drift_detect(
     scan_path = Path(path).resolve()
 
     if not scan_path.exists():
-        return {"ok": False, "error": f"Path not found: {path}"}
+        return emit_error("vault_drift_detect", "FILE_NOT_FOUND", f"Path not found: {path}")
 
     exts = set(extensions) if extensions else TRACK_EXTENSIONS
 
@@ -757,8 +757,8 @@ def vault_drift_detect(
 
     if snap is None and not use_git:
         return {
-            "ok": False,
-            "error": "No snapshot found and repo has no git. Run --mode snapshot first.",
+            **emit_error("vault_drift_detect", "INDEX_NOT_FOUND",
+                         "No snapshot found and repo has no git. Run --mode snapshot first."),
             "hint": f'python vault_drift_detect.py --path "{path}" --project "{project}" --mode snapshot',
         }
 

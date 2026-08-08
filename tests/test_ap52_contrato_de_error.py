@@ -113,6 +113,45 @@ def test_se_excluye_a_si_misma_y_al_contrato(tmp_path, monkeypatch):
     assert vec.offenders() == []
 
 
+# ── Exenciones ─────────────────────────────────────────────────────────────
+
+def test_toda_exencion_apunta_a_una_funcion_que_existe():
+    """Una exención muerta es una puerta abierta que nadie vigila.
+
+    Si la función se renombra o desaparece, la exención deja de aplicarse a lo
+    que la justificaba y queda ahí, lista para tapar un sitio distinto que
+    algún día se llame igual.
+    """
+    import ast as _ast
+    from vault_firma_sitio import mapa_de_qualnames
+
+    for clave in vec.EXENCIONES:
+        modulo, qualname = clave.split("::", 1)
+        ruta = REPO_ROOT / "scripts" / modulo
+        assert ruta.exists(), f"{clave}: el módulo ya no existe"
+        arbol = _ast.parse(ruta.read_text(encoding="utf-8"))
+        vivos = set(mapa_de_qualnames(arbol).values())
+        assert qualname in vivos, f"{clave}: la función ya no existe"
+
+
+def test_ninguna_exencion_se_lleva_por_delante_un_error_real():
+    """`vault_smoke::freeze` es el contraejemplo, y no está exento.
+
+    Eximir el módulo entero habría sido más cómodo y habría tapado el único
+    envelope de `vault_smoke` que sí es el fallo de la tool. La exención se
+    declara por función justo para que esto se pueda comprobar.
+    """
+    assert "vault_smoke.py::freeze" not in vec.EXENCIONES
+    assert all(len(clave.split("::")) == 2 for clave in vec.EXENCIONES), (
+        "una exención debe nombrar módulo y función, no un módulo entero"
+    )
+
+
+def test_cada_exencion_declara_su_motivo():
+    for clave, motivo in vec.EXENCIONES.items():
+        assert len(motivo) > 40, f"{clave}: el motivo tiene que ser revisable"
+
+
 # ── Baseline ───────────────────────────────────────────────────────────────
 
 def test_la_baseline_esta_congelada_y_al_dia():
@@ -139,11 +178,21 @@ def test_la_baseline_solo_puede_encoger(monkeypatch):
     assert not vec.scan()["ok"], "un sitio nuevo debe romper el guard"
 
 
-def test_la_clave_de_la_baseline_es_el_sitio_y_no_un_conteo():
-    """Una baseline por conteo se salda arreglando uno y estrenando otro."""
-    sitios = vec.load_baseline()
-    assert sitios, "la baseline no puede estar vacía"
-    assert all(":" in s for s in sitios), "las claves deben ser modulo:linea"
+def test_la_deuda_de_ap52_esta_saldada():
+    """Cero, y el guard lo exige a partir de aquí.
+
+    Los 110 sitios se saldaron en v40.6. Mientras hubo deuda, este test
+    comprobaba que la baseline **no** estuviera vacía —una baseline vacía
+    habría hecho pasar el guard sin medir nada— y que su clave fuera el sitio
+    y no un conteo, porque una baseline por conteo se salda arreglando uno y
+    estrenando otro. Con la deuda en cero esa comprobación ya no dice nada, y
+    lo que hay que fijar es lo contrario: que no vuelva a crecer.
+    """
+    assert vec.load_baseline() == []
+    assert vec.offenders() == [], (
+        "AP-52 vuelve a tener deuda: el envelope de error se construye a mano "
+        "en vez de salir por emit_error"
+    )
 
 
 def test_check_no_escribe_la_baseline():

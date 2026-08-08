@@ -14,7 +14,7 @@ from typing import Any, Dict, Optional
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_token_service import (
     DEFAULT_HOST,
     DEFAULT_PORT,
@@ -105,21 +105,21 @@ def start_service(port: int = DEFAULT_PORT) -> Dict[str, Any]:
         if _is_running(port):
             return {"ok": True, "started": True, "url": _base_url(port), "log": str(log_path), "errLog": str(err_path)}
         time.sleep(0.1)
-    return {"ok": False, "error": "service_start_timeout", "log": str(log_path), "errLog": str(err_path)}
+    return {**emit_error("vault_token_counter", "SERVICE_UNAVAILABLE", "El servicio no respondio dentro del plazo de arranque."), "log": str(log_path), "errLog": str(err_path)}
 
 
 def stop_service(port: Optional[int] = None) -> Dict[str, Any]:
     try:
         return _request("POST", "/stop", {}, port=port)
     except URLError as exc:
-        return {"ok": False, "error": "service_not_reachable", "detail": str(exc)}
+        return {**emit_error("vault_token_counter", "SERVICE_UNAVAILABLE", f"El servicio no responde: {exc}", exception=exc), "detail": str(exc)}
 
 
 def status(port: Optional[int] = None) -> Dict[str, Any]:
     try:
         return _request("GET", "/status", port=port)
     except Exception as exc:
-        return {"ok": False, "running": False, "error": str(exc), "url": _base_url(port)}
+        return {**emit_error("vault_token_counter", "SERVICE_UNAVAILABLE", str(exc), exception=exc), "running": False, "url": _base_url(port)}
 
 
 def begin(flow_id: str, operation: str, budget: Optional[Dict[str, Any]], port: Optional[int] = None) -> Dict[str, Any]:
@@ -143,7 +143,7 @@ def event(
     port: Optional[int] = None,
 ) -> Dict[str, Any]:
     if not _is_running(port):
-        return {"ok": False, "error": "service_not_running", "hint": "Run start-service or begin first."}
+        return emit_error("vault_token_counter", "SERVICE_UNAVAILABLE", "El servicio no esta corriendo; usa start-service o begin.")
     return _request(
         "POST",
         "/events",
@@ -311,9 +311,9 @@ Operational rule:
         elif args.command == "end":
             result = end(args.flow_id)
         else:
-            result = {"ok": False, "error": "unknown_command"}
+            result = emit_error("vault_token_counter", "INVALID_ACTION", "Comando desconocido.")
     except Exception as exc:
-        result = {"ok": False, "error": type(exc).__name__, "message": str(exc)}
+        result = emit_error("vault_token_counter", "UNEXPECTED_ERROR", f"{type(exc).__name__}: {exc}", exception=exc)
 
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0 if result.get("ok") else 1

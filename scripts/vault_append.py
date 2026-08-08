@@ -28,7 +28,7 @@ import re
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 
 from vault_io import assert_within_vault, atomic_write_text, get_vault_root
 from datetime import datetime, timezone
@@ -77,7 +77,7 @@ def vault_append(
         return {"ok": False, "error_code": "INVALID_PATH", "error": str(exc)}
 
     if not note_path.exists():
-        return {"ok": False, "error": f"Note not found: {path}", "path": path}
+        return {**emit_error("vault_append", "NOTE_NOT_FOUND", f"Note not found: {path}"), "path": path}
 
     with open(note_path, "r", encoding="utf-8") as f:
         existing_content = f.read()

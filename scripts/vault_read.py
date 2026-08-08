@@ -30,7 +30,7 @@ import re
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 
 from vault_io import assert_within_vault
 from vault_encoding import decode_safely, normalize_to_nfc
@@ -169,7 +169,7 @@ def vault_read(path: str) -> Dict[str, Any]:
         return {"ok": False, "error_code": "INVALID_PATH", "error": str(exc)}
 
     if not note_path.exists():
-        return {"ok": False, "error": f"Note not found: {path}", "path": path}
+        return {**emit_error("vault_read", "NOTE_NOT_FOUND", f"Note not found: {path}"), "path": path}
 
     # Use decode_safely for proper encoding detection with fallback
     bytes_content = note_path.read_bytes()

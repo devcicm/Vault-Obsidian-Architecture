@@ -28,7 +28,7 @@ import re
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_norms import status_frontmatter_lines
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from datetime import datetime, timezone
@@ -286,16 +286,10 @@ def vault_infra_save(
     component_type = type.lower()
 
     if component_type not in COMPONENT_TYPES:
-        return {
-            "ok": False,
-            "error": f"Tipo inválido: {type}. Válidos: {list(COMPONENT_TYPES.keys())}",
-        }
+        return emit_error("vault_infra_save", "INVALID_VALUE", f"Tipo inválido: {type}. Válidos: {list(COMPONENT_TYPES.keys())}")
 
     if location not in LOCATIONS:
-        return {
-            "ok": False,
-            "error": f"Ubicación inválida: {location}. Válidas: {LOCATIONS}",
-        }
+        return emit_error("vault_infra_save", "INVALID_VALUE", f"Ubicación inválida: {location}. Válidas: {LOCATIONS}")
 
     folder = _infra_dir() / COMPONENT_TYPES[component_type]
 
@@ -555,7 +549,7 @@ Notas:
         # aquí lo llevaba a `sys.exit()`, que intenta convertirlo a entero y
         # revienta: el usuario veía un UNEXPECTED_ERROR de severidad crítica
         # en lugar de este mensaje, escrito para exactamente este caso.
-        print(json.dumps({"ok": False, "error": "Invalid JSON in --config"}))
+        print(json.dumps(emit_error("vault_infra_save", "ARG_JSON_INVALID", "Invalid JSON in --config")))
         return 1
 
     connections = None
@@ -566,7 +560,7 @@ Notas:
 
         except json.JSONDecodeError:
             print(
-                json.dumps({"ok": False, "error": "Invalid JSON in --connections"})
+                json.dumps(emit_error("vault_infra_save", "ARG_JSON_INVALID", "Invalid JSON in --connections"))
             )
             return 1
 

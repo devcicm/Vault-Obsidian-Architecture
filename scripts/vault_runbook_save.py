@@ -28,7 +28,7 @@ import re
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_lib import yaml_scalar, utcnow, slugify
 from vault_io import atomic_write_text, assert_within_vault, safe_wikilink, write_report
 import uuid
@@ -82,10 +82,7 @@ def vault_runbook_save(
     category = category.lower()
 
     if category not in CATEGORIES:
-        return {
-            "ok": False,
-            "error": f"Categoría inválida: {category}. Válidas: {CATEGORIES}",
-        }
+        return emit_error("vault_runbook_save", "INVALID_VALUE", f"Categoría inválida: {category}. Válidas: {CATEGORIES}")
 
     safe_project = slugify(project)
 
@@ -247,7 +244,7 @@ Notas:
         # corrección en `vault_infra_save`: el dict acababa en `sys.exit()`,
         # que lo convierte a entero y falla, y el mensaje escrito para este
         # caso no llegaba nunca a verse.
-        print(json.dumps({"ok": False, "error": "Invalid JSON in --steps parameter"}))
+        print(json.dumps(emit_error("vault_runbook_save", "ARG_JSON_INVALID", "Invalid JSON in --steps parameter")))
         return 1
 
     # Misma corrección que en `vault_env_save`: se comprobaba que fuera JSON
@@ -256,13 +253,12 @@ Notas:
     if not isinstance(steps, list) or not all(isinstance(s, dict) for s in steps):
         print(
             json.dumps(
-                {
-                    "ok": False,
-                    "error": (
-                        "--steps espera un array JSON de objetos, p. ej. "
-                        '[{"step": "Hacer backup", "command": "pg_dump ..."}]'
-                    ),
-                }
+                emit_error(
+                    "vault_runbook_save",
+                    "ARG_JSON_INVALID",
+                    "--steps espera un array JSON de objetos, p. ej. "
+                    '[{"step": "Hacer backup", "command": "pg_dump ..."}]',
+                )
             )
         )
         return 1

@@ -35,7 +35,7 @@ import shutil
 import sys
 
 import vault_tags
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 
 from vault_io import (
     write_report,
@@ -968,7 +968,7 @@ Notas:
         if not scan_dir.exists():
             print(
                 json.dumps(
-                    {"ok": False, "error": f"scan-path not found: {args.scan_path}"}
+                    emit_error("vault_write", "FOLDER_NOT_FOUND", f"scan-path not found: {args.scan_path}")
                 )
             )
 
@@ -1063,10 +1063,16 @@ Notas:
     if title:
         title, title_fixes = sanitize_content(title, dry_run=False)
         if title_fixes:
+            # `error: "encoding_issue_in_title"` era un código de error
+            # inventado en el sitio: la forma exacta que AP-52 persigue. El
+            # catálogo ya tenía `ENCODING_ERROR`, y `fixes` y `suggestion` —que
+            # son lo accionable— se conservan intactos junto al envelope.
             result = {
-                "ok": False,
-                "error": "encoding_issue_in_title",
-                "message": "El título contiene caracteres problemáticos que fueron corregidos.",
+                **emit_error(
+                    "vault_write",
+                    "ENCODING_ERROR",
+                    "El título contiene caracteres problemáticos que fueron corregidos.",
+                ),
                 "fixes": title_fixes,
                 "suggestion": f"Usa el título corregido: {title}",
             }

@@ -138,6 +138,35 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": None,
         },
     },
+    # El caso más repetido de AP-52 en el repo: una tool comprueba que un valor
+    # pertenece a un vocabulario cerrado y, al fallar, devolvía la frase con los
+    # válidos y nada que un consumidor pudiera mirar. La frase se conserva —es
+    # buena— pero ahora viaja como `message` de un envelope con `error_code`.
+    "INVALID_VALUE": {
+        "category": "validation",
+        "severity": "error",
+        "message": "El valor no pertenece al vocabulario cerrado de ese campo.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "El mensaje enumera los valores admitidos; usar uno de ellos. "
+                    "Si el vocabulario es de dominio, la fuente es vault_norms.",
+            "docs": "vault-obsidian-architecture.md §Vocabularios",
+        },
+    },
+    # Distinto de JSON_PARSE_ERROR a propósito: aquel habla de un índice del
+    # vault y su recovery es `vault_reindex`, que aquí no arregla nada — el JSON
+    # malformado lo escribió quien invocó la tool, en la propia línea de comandos.
+    "ARG_JSON_INVALID": {
+        "category": "validation",
+        "severity": "error",
+        "message": "Un argumento que espera JSON no se pudo parsear.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Revisar las comillas del argumento: en PowerShell y en cmd "
+                    "el escapado de un JSON en línea no es el de bash.",
+            "docs": None,
+        },
+    },
     "FRONTMATTER_MISSING": {
         "category": "validation",
         "severity": "warning",
@@ -271,6 +300,22 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         },
     },
     # ── Dependency ────────────────────────────────────────────────────────────
+    # El contador de tokens habla con un servicio local que puede no estar
+    # levantado. Sin código, el consumidor tenía que distinguir "no arrancó",
+    # "no responde" y "no está corriendo" leyendo tres frases distintas.
+    "SERVICE_UNAVAILABLE": {
+        "category": "dependency",
+        "severity": "error",
+        "message": "El servicio local no está disponible.",
+        "recovery": {
+            "action": "run_tool",
+            "tool": "vault_token_counter",
+            "args": ["start-service"],
+            "hint": "Levantar el servicio con `start-service`, o comprobar el "
+                    "puerto si ya hay otro proceso escuchando.",
+            "docs": None,
+        },
+    },
     "DEPENDENCY_MISSING": {
         "category": "dependency",
         "severity": "warning",

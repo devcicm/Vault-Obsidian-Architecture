@@ -57,6 +57,7 @@ from typing import Dict, List
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from vault_errors import emit_error  # noqa: E402
 from vault_mcp_catalog import GROUPS, TOOLS_CATALOG  # noqa: E402
 
 README = Path(__file__).resolve().parent / "README.md"
@@ -208,8 +209,9 @@ def fix() -> Dict:
 
     filas = [m.group(0) for m in RE_INDEX_ROW.finditer(text)]
     if not filas:
-        return {"ok": False, "tool": "vault_doc_sync", "action": "fix",
-                "fixes_applied": 0, "error": "no se encontró la tabla de índice"}
+        return {**emit_error("vault_doc_sync", "INDEX_NOT_FOUND",
+                             "no se encontró la tabla de índice"),
+                "action": "fix", "fixes_applied": 0}
 
     nuevas = [
         index_row(sections[g], g, GROUPS[g])
@@ -223,9 +225,9 @@ def fix() -> Dict:
     if bloque_viejo not in text:
         # Las filas no son contiguas: se reescribe en sitio, una a una, y las
         # sobrantes se eliminan. No se toca nada fuera de la tabla.
-        return {"ok": False, "tool": "vault_doc_sync", "action": "fix",
-                "fixes_applied": 0,
-                "error": "las filas del índice no son contiguas; corregir a mano"}
+        return {**emit_error("vault_doc_sync", "INDEX_NOT_FOUND",
+                             "las filas del índice no son contiguas; corregir a mano"),
+                "action": "fix", "fixes_applied": 0}
 
     README.write_text(text.replace(bloque_viejo, "\n".join(nuevas)), encoding="utf-8")
     return {

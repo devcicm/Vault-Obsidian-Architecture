@@ -29,7 +29,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_lib import read_frontmatter, utcnow
 from vault_io import atomic_write_json, atomic_write_text
 SCRIPTS_DIR = Path(__file__).parent
@@ -666,7 +666,7 @@ def check_note(rel_path: str) -> Dict[str, Any]:
     """Verify all 8 fundamentals for a single note. Returns pass/fail per principle."""
     note_path = _raiz() / rel_path
     if not note_path.exists():
-        return {"ok": False, "error": f"Note not found: {rel_path}"}
+        return emit_error("vault_fundamentals", "NOTE_NOT_FOUND", f"Note not found: {rel_path}")
 
     fm = read_frontmatter(note_path)
     content = note_path.read_text(encoding="utf-8", errors="ignore")

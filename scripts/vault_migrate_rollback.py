@@ -31,7 +31,7 @@ import re
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 
 from pathlib import Path
 
@@ -153,7 +153,7 @@ def vault_migrate_rollback(report_path_str: str, confirm: bool = False) -> Dict[
 
     if not report_path.exists():
 
-        return {"ok": False, "error": f"Report not found: {report_path_str}"}
+        return emit_error("vault_migrate_rollback", "FILE_NOT_FOUND", f"Report not found: {report_path_str}")
 
 
     distributed_paths, stub_paths = parse_report(report_path)
@@ -165,9 +165,8 @@ def vault_migrate_rollback(report_path_str: str, confirm: bool = False) -> Dict[
 
         return {
 
-            "ok": False,
-
-            "error": "No files found in report — report may be empty or malformed.",
+            **emit_error("vault_migrate_rollback", "INDEX_NOT_FOUND",
+                         "No files found in report — report may be empty or malformed."),
 
             "hint": "Check that the report has '## Archivos Distribuidos' and '## Stubs Creados' sections.",
 

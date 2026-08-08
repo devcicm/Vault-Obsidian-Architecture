@@ -37,7 +37,7 @@ import re
 import sys
 
 from vault_registry import ORDERED_SECTIONS, section_description
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 
 from datetime import datetime
 
@@ -271,7 +271,7 @@ def vault_list(folder: Optional[str] = None, status: Optional[str] = None, limit
 
     if not folder_path.exists():
 
-        return {"ok": False, "error": f"Folder not found: {folder}", "path": folder}
+        return {**emit_error("vault_list", "FOLDER_NOT_FOUND", f"Folder not found: {folder}"), "path": folder}
 
 
 

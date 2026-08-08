@@ -44,7 +44,7 @@ from vault_io import (  # noqa: E402
     resolve_tool_spec,
     tool_spec_path,
 )
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Tool status registry
@@ -792,7 +792,7 @@ Ejemplos:
             _print_report(validation)
             return 0 if validation["ok"] else 1
         except ImportError:
-            print(json.dumps({"ok": False, "error": "vault_spec_validate.py no encontrado"}))
+            print(json.dumps(emit_error("vault_manifest", "FILE_NOT_FOUND", "vault_spec_validate.py no encontrado")))
             return 1
 
     # ── Modo normal (genera manifiesto) ────────────────────────────────────

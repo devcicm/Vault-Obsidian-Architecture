@@ -153,7 +153,9 @@ def test_las_dos_baselines_estan_migradas():
                  SCRIPTS / "error-contract-baseline.json"):
         datos = json.loads(path.read_text(encoding="utf-8"))
         assert datos.get("schema") == SCHEMA, path.name
-        assert datos["sites"], path.name
+        # `sites` puede estar **vacío**: AP-52 saldó su deuda entera en v40.6.
+        # Lo que no puede es tener el formato viejo — una lista de cadenas
+        # `modulo:linea` haría que el audit emitiera MIGRATION_REQUIRED.
         assert all(isinstance(s, dict) and "firma" in s for s in datos["sites"])
 
 
@@ -169,8 +171,9 @@ def test_la_lista_v1_se_conserva_anotada():
         v1 = datos["sites_v1_superseded"]
         assert v1["superseded_by"] == "sites[].firma"
         assert v1["reason"].strip()
-        assert len(v1["sites"]) == len(datos["sites"]), (
-            f"{path.name}: la migración cambió el número de sitios"
+        assert len(v1["sites"]) >= len(datos["sites"]), (
+            f"{path.name}: hay más sitios que en la lista v1 — la baseline "
+            "creció, que es justo lo que no puede pasar"
         )
 
 

@@ -28,7 +28,7 @@ import re
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 
 from datetime import datetime, timezone
 
@@ -105,15 +105,12 @@ def vault_runbook_log(
     outcome = outcome.lower()
 
     if outcome not in OUTCOMES:
-        return {
-            "ok": False,
-            "error": f"Outcome inválido: {outcome}. Válidos: {OUTCOMES}",
-        }
+        return emit_error("vault_runbook_log", "INVALID_VALUE", f"Outcome inválido: {outcome}. Válidos: {OUTCOMES}")
 
     note_path = get_vault_root() / path
 
     if not note_path.exists():
-        return {"ok": False, "error": f"Runbook not found: {path}"}
+        return emit_error("vault_runbook_log", "NOTE_NOT_FOUND", f"Runbook not found: {path}")
 
     with open(note_path, "r", encoding="utf-8") as f:
         content = f.read()

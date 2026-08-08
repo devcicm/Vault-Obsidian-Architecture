@@ -31,7 +31,7 @@ import re
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 
 from pathlib import Path
 
@@ -165,11 +165,12 @@ def vault_search(query: str, folder: Optional[str] = None, tag: Optional[str] = 
 
     except (FileNotFoundError, json.JSONDecodeError):
 
+        # `query` y `results: []` se conservan: los consumidores que iteran el
+        # resultado sin mirar `ok` no empiezan a romperse por esto.
         return {
 
-            "ok": False,
-
-            "error": "Search index not found. Run vault_index.py first.",
+            **emit_error("vault_search", "INDEX_NOT_FOUND",
+                         "Search index not found. Run vault_index.py first."),
 
             "query": query,
 

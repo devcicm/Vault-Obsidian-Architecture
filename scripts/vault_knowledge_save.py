@@ -30,7 +30,7 @@ import re
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_lib import yaml_scalar, utcnow, slugify
 from vault_io import (
     write_report,
@@ -99,10 +99,7 @@ def vault_knowledge_save(
     category = category.lower().replace(" ", "-")
 
     if category not in CATEGORIES:
-        return {
-            "ok": False,
-            "error": f"Categoría inválida: {category}. Válidas: {CATEGORIES}",
-        }
+        return emit_error("vault_knowledge_save", "INVALID_VALUE", f"Categoría inválida: {category}. Válidas: {CATEGORIES}")
 
     folder = _knowledge_dir() / CATEGORY_FOLDERS[category]
 
@@ -269,7 +266,7 @@ Notas:
         if not scan_dir.exists():
             print(
                 json.dumps(
-                    {"ok": False, "error": f"scan-path not found: {args.scan_path}"}
+                    emit_error("vault_knowledge_save", "FOLDER_NOT_FOUND", f"scan-path not found: {args.scan_path}")
                 )
             )
 

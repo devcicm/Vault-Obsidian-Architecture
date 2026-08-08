@@ -28,7 +28,7 @@ import re
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 import uuid
 
@@ -235,16 +235,10 @@ def vault_code_relation(
     relation_type = relation_type.lower()
 
     if relation_type not in RELATION_TYPES:
-        return {
-            "ok": False,
-            "error": f"Relation type inválido: {relation_type}. Válidos: {RELATION_TYPES}",
-        }
+        return emit_error("vault_code_relation", "INVALID_VALUE", f"Relation type inválido: {relation_type}. Válidos: {RELATION_TYPES}")
 
     if cardinality and cardinality not in CARDINALITIES:
-        return {
-            "ok": False,
-            "error": f"Cardinality inválida: {cardinality}. Válidos: {CARDINALITIES}",
-        }
+        return emit_error("vault_code_relation", "INVALID_VALUE", f"Cardinality inválida: {cardinality}. Válidos: {CARDINALITIES}")
 
     # El tramo exclusivo abarca desde la lectura hasta la escritura: sin el,
     # dos ejecuciones concurrentes leen el mismo indice, cada una anade su

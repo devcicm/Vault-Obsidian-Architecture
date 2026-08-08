@@ -30,7 +30,7 @@ import re
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 import uuid
 
@@ -762,7 +762,7 @@ def vault_security_scan(
     scan_path = p if p.is_absolute() else _raiz() / p
 
     if not scan_path.exists():
-        return {"ok": False, "error": f"Path not found: {path}"}
+        return emit_error("vault_security_scan", "FILE_NOT_FOUND", f"Path not found: {path}")
 
     if categories and "all" not in categories:
         active_rules = {k: v for k, v in RULES.items() if k in categories}

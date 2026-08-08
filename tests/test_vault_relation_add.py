@@ -50,7 +50,8 @@ class TestRelationTypes:
                 relation_type="invalid_type",
             )
             assert result["ok"] is False
-            assert "Tipo inválido" in result["error"]
+            assert result["error_code"] == "INVALID_VALUE"
+            assert "Tipo inválido" in result["message"]
         finally:
             pass
 

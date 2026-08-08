@@ -28,7 +28,7 @@ import re
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_registry import section_default_type
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from vault_io import atomic_write_text, assert_within_vault, write_report
@@ -125,18 +125,21 @@ def vault_diagram_save(
     content = content.replace("\\n", "\n")
 
     if diagram_type not in DIAGRAM_TYPES:
-        return {
-            "ok": False,
-            "error": f"Tipo inválido: {diagram_type}. Válidos: {DIAGRAM_TYPES}",
-        }
+        return emit_error("vault_diagram_save", "INVALID_VALUE", f"Tipo inválido: {diagram_type}. Válidos: {DIAGRAM_TYPES}")
 
     if category not in CATEGORIES:
         # CATEGORY_NOTES existía sin que nadie lo leyera: el error listaba los
         # slugs a secas y el agente tenía que adivinar cuál le tocaba. Aquí es
         # donde esa descripción vale, así que aquí es donde se consume.
+        # `categories` se conserva **fuera** de `emit_error`: es dato de ayuda
+        # de esta tool, no parte del contrato de error del catálogo. Meterlo en
+        # `args` lo habría escondido donde ningún consumidor lo busca.
         return {
-            "ok": False,
-            "error": f"Categoría inválida: {category}. Válidas: {CATEGORIES}",
+            **emit_error(
+                "vault_diagram_save",
+                "INVALID_VALUE",
+                f"Categoría inválida: {category}. Válidas: {CATEGORIES}",
+            ),
             "categories": {c: CATEGORY_NOTES.get(c, "") for c in CATEGORIES},
         }
 

@@ -36,7 +36,7 @@ import sys
 from vault_entorno import leer as _env
 
 from vault_registry import es_andamio
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 
 from collections import defaultdict
 
@@ -2467,7 +2467,7 @@ Notas:
         ext_path = Path(args.path)
 
         if not ext_path.exists():
-            print(json.dumps({"ok": False, "error": f"Path not found: {args.path}"}))
+            print(json.dumps(emit_error("vault_audit", "FILE_NOT_FOUND", f"Path not found: {args.path}")))
 
             return 1
 

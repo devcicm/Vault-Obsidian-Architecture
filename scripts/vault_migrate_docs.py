@@ -34,7 +34,7 @@ import re
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_lib import yaml_scalar, slugify
 
 from vault_io import (
@@ -370,7 +370,7 @@ def vault_migrate_docs(
     source = Path(source_path)
 
     if not source.exists():
-        return {"ok": False, "error": f"Source path not found: {source_path}"}
+        return emit_error("vault_migrate_docs", "FILE_NOT_FOUND", f"Source path not found: {source_path}")
 
     keywords = keywords or []
 

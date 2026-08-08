@@ -31,7 +31,7 @@ import json
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 
 from pathlib import Path
 
@@ -80,7 +80,7 @@ def vault_pattern_list(
 
     except (FileNotFoundError, json.JSONDecodeError):
 
-        return {"ok": False, "error": "Pattern index not found. Save patterns first with vault_pattern_save."}
+        return emit_error("vault_pattern_list", "INDEX_NOT_FOUND", "Pattern index not found. Save patterns first with vault_pattern_save.")
 
 
     patterns = index.get("patterns", [])

@@ -28,7 +28,7 @@ import re
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from vault_io import atomic_write_text, assert_within_vault, write_report
 import uuid
@@ -89,16 +89,13 @@ def vault_bibliography_save(
     source_type = source_type.lower()
 
     if source_type not in SOURCE_TYPES:
-        return {
-            "ok": False,
-            "error": f"source_type inválido: {source_type}. Válidos: {SOURCE_TYPES}",
-        }
+        return emit_error("vault_bibliography_save", "INVALID_VALUE", f"source_type inválido: {source_type}. Válidos: {SOURCE_TYPES}")
 
     if not url.strip():
-        return {"ok": False, "error": "url es requerida"}
+        return emit_error("vault_bibliography_save", "MISSING_REQUIRED_ARG", "url es requerida")
 
     if not summary.strip():
-        return {"ok": False, "error": "summary es requerida"}
+        return emit_error("vault_bibliography_save", "MISSING_REQUIRED_ARG", "summary es requerida")
 
     folder_rel = TYPE_FOLDERS[source_type]
 

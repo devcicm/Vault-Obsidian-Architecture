@@ -28,7 +28,7 @@ import re
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_norms import status_frontmatter_lines
 from vault_lib import utcnow
 import uuid
@@ -74,10 +74,7 @@ def vault_project_status(
     """
 
     if status not in VALID_STATES:
-        return {
-            "ok": False,
-            "error": f"Invalid status: {status}. Valid: {VALID_STATES}",
-        }
+        return emit_error("vault_project_status", "INVALID_VALUE", f"Invalid status: {status}. Valid: {VALID_STATES}")
 
     project_path = get_vault_root() / "01_Projects" / project
 

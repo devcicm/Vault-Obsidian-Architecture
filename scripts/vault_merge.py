@@ -36,7 +36,7 @@ import json
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 
 from datetime import datetime, timezone
 
@@ -269,12 +269,12 @@ def vault_merge(
 
     if action == "merge":
         if not source:
-            return {"ok": False, "error": "action='merge' requires --source"}
+            return emit_error("vault_merge", "MISSING_REQUIRED_ARG", "action='merge' requires --source")
 
         source_dir = Path(source)
 
         if not source_dir.exists():
-            return {"ok": False, "error": f"Source not found: {source}"}
+            return emit_error("vault_merge", "FOLDER_NOT_FOUND", f"Source not found: {source}")
 
         return _action_merge(source_dir, conflict)
 
@@ -284,10 +284,7 @@ def vault_merge(
     if action == "dedup":
         return _action_dedup()
 
-    return {
-        "ok": False,
-        "error": f"Unknown action: {action}. Use merge | detect | dedup",
-    }
+    return emit_error("vault_merge", "INVALID_VALUE", f"Unknown action: {action}. Use merge | detect | dedup")
 
 
 def main():

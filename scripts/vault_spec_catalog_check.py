@@ -18,7 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from vault_mcp_catalog import TOOLS_CATALOG
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_io import resolve_tool_spec, tool_spec_path
 
 
@@ -36,8 +36,8 @@ def main() -> int:
     spec_path = resolve_tool_spec()
     if spec_path is None:
         print(json.dumps({
-            "ok": False,
-            "error": "tool_spec_not_found",
+            **emit_error("vault_spec_catalog_check", "FILE_NOT_FOUND",
+                         f"tool-spec.json no encontrado en {tool_spec_path()}"),
             "expected": str(tool_spec_path()),
             "hint": "python vault_manifest.py --bootstrap",
         }, indent=2, ensure_ascii=False))

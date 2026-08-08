@@ -32,7 +32,7 @@ import re
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_norms import status_frontmatter_lines
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from datetime import datetime, timezone
@@ -139,13 +139,10 @@ def vault_test_save(
     tags: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     if test_type not in TEST_TYPES:
-        return {
-            "ok": False,
-            "error": f"test_type '{test_type}' not valid. Use: {TEST_TYPES}",
-        }
+        return emit_error("vault_test_save", "INVALID_VALUE", f"test_type '{test_type}' not valid. Use: {TEST_TYPES}")
 
     if status not in STATUSES:
-        return {"ok": False, "error": f"status '{status}' not valid. Use: {STATUSES}"}
+        return emit_error("vault_test_save", "INVALID_VALUE", f"status '{status}' not valid. Use: {STATUSES}")
 
     safe_project = slugify(project)
 
@@ -372,7 +369,7 @@ Notes:
             return json.loads(val)
 
         except json.JSONDecodeError as e:
-            print(json.dumps({"ok": False, "error": f"Invalid JSON in --{name}: {e}"}))
+            print(json.dumps(emit_error("vault_test_save", "ARG_JSON_INVALID", f"Invalid JSON in --{name}: {e}")))
 
             sys.exit(1)
 

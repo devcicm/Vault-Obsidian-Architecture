@@ -32,7 +32,7 @@ from typing import Any, Dict, List, Optional, Set
 
 SCRIPTS_DIR = Path(__file__).parent
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_io import resolve_tool_spec  # noqa: E402
 PYTHON = sys.executable
 
@@ -329,7 +329,7 @@ def _run_validation() -> Dict[str, Any]:
         )
         data = json.loads(result.stdout)
     except Exception as e:
-        return {"ok": False, "error": str(e), "by_tool": {}}
+        return {**emit_error("vault_spec_memory", "UNEXPECTED_ERROR", str(e), exception=e), "by_tool": {}}
 
     by_tool: Dict[str, str] = {}
     for mode in ("contracts", "errors"):
@@ -620,7 +620,7 @@ Ejemplos:
     if args.tool:
         entry = doc["tools"].get(args.tool)
         if not entry:
-            print(json.dumps({"ok": False, "error": f"Tool not found: {args.tool}"}, indent=2))
+            print(json.dumps(emit_error("vault_spec_memory", "NOTE_NOT_FOUND", f"Tool not found: {args.tool}"), indent=2))
             return 1
         print(json.dumps({"ok": True, "tool": args.tool, "spec": entry}, indent=2, ensure_ascii=False))
         return 0

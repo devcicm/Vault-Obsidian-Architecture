@@ -49,7 +49,7 @@ from vault_regex import (
     detect_bracket_anomalies,
     detect_path_anchored,
 )
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 
 
 _SKIP_DIRS = frozenset(
@@ -571,7 +571,7 @@ def main() -> int:
         from vault_io import set_vault_root
         set_vault_root(root)
     if not root.exists():
-        print(json.dumps({"ok": False, "error": f"Vault root not found: {root}"}))
+        print(json.dumps(emit_error("vault_graph_inspect", "VAULT_NOT_FOUND", f"Vault root not found: {root}")))
         return 1
 
     report = generate_report(

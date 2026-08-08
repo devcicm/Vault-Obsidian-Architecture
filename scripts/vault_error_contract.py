@@ -75,6 +75,29 @@ MARCAS_DE_ENVELOPE = {"error", "message", "tool"}
 #: `vault_blame_audit`, y por el mismo motivo.
 EXCLUIDOS = ("vault_errors",)
 
+#: Sitios que **tienen la forma** de un envelope de error de tool y no lo son.
+#: Se declaran por `módulo::qualname` con su motivo, no se eliminan del
+#: detector: la exención es revisable, la heurística silenciosa no.
+#:
+#: La alternativa —convertirlos a `emit_error` para bajar el contador— rompería
+#: al consumidor en nombre de cumplir la norma, que es peor que la deuda. Se
+#: exime la función entera y no una línea suelta porque la firma de sitio cambia
+#: al editar el cuerpo, y una exención que caduca al reindentar no protege nada.
+#:
+#: Acotado a propósito: `vault_smoke::freeze` **no** está aquí. Su
+#: `{"ok": False, "error": …}` sí es el fallo de la tool y debe ir por el
+#: catálogo. Eximir el módulo entero se habría llevado ese sitio por delante.
+EXENCIONES: Dict[str, str] = {
+    "vault_smoke.py::run_one":
+        "fila de un informe, no el fallo de vault_smoke: describe qué tool no "
+        "pasó el smoke. Es el dato que la tool produce cuando funciona.",
+    "vault_token_service.py::TokenHandler.do_GET":
+        "cuerpo de una respuesta HTTP: el contrato ahí es el código de estado, "
+        "no el catálogo de errores del vault.",
+    "vault_token_service.py::TokenHandler.do_POST":
+        "cuerpo de una respuesta HTTP, mismo caso.",
+}
+
 
 def _valor_de(nodo: ast.Dict, clave: str):
     for k, v in zip(nodo.keys, nodo.values):
@@ -127,6 +150,8 @@ def offenders() -> List[Dict]:
                 continue
             ok = _valor_de(nodo, "ok")
             if not (isinstance(ok, ast.Constant) and ok.value is False):
+                continue
+            if f"{path.name}::{qualnames.get(id(nodo), '')}" in EXENCIONES:
                 continue
             encontrados.append((nodo, sorted(claves)))
         encontrados.sort(key=lambda par: (par[0].lineno, par[0].col_offset))
