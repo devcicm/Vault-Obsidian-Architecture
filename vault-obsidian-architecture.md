@@ -6804,7 +6804,7 @@ temp/
 
 ---
 
-### v40.6 — 2026-08-08 `git: pending`
+### v40.6 — 2026-08-08 `git: bf8ba6d`
 
 **Cuatro guards que dependían de que alguien ejecutase bien una receta**
 
