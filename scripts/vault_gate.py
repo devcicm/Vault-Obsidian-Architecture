@@ -115,6 +115,14 @@ PUERTAS: List[Dict[str, Any]] = [
         "fix": "emitir por emit_error y luego --freeze",
     },
     {
+        "id": "campos",
+        "cmd": ["vault_spec_catalog_check.py", "--check-fields", "--strict"],
+        "mide": "Contrato de campos con los repos consumidores: ningún campo "
+                "estable desaparece sin quedar anotado en superseded_fields",
+        "fix": "anotar el campo en superseded_fields (superseded_by + why) o "
+               "volver a emitirlo; --freeze-fields solo tras revisar",
+    },
+    {
         "id": "arquitectura",
         "cmd": ["vault_arch.py", "--check", "--strict"],
         "mide": "Contextos acotados: fronteras, puertos, vocabularios con dueño, "

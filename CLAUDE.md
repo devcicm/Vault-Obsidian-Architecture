@@ -12,7 +12,7 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~6.000 líneas). Fuente normativa. |
 | `scripts/*.py` | ~119 scripts, 96 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (2316 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (2338 tests). Toda norma con guard debe tener test. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
 | `vault-sandbox/` | **Único** vault de pruebas del repo. Todo runtime va aquí. |
@@ -141,6 +141,12 @@ python scripts/vault_quality_check.py --min-score 0.7
       está en el catálogo declara `status: archived | internal | orphan` (no se borra: se
       anota). `group` y `group_id` se derivan de `GROUPS` y de la numeración de
       `scripts/README.md` — no hay una numeración propia del tool-spec.
+- [ ] `python scripts/vault_spec_catalog_check.py --check-fields --strict` → `ok: true`.
+      El contrato de campos con los repos consumidores: un campo `stable` no
+      desaparece. Puede pasar a `superseded_fields` —con `superseded_by` y un motivo,
+      y siguiendo o no emitiéndose según el caso— pero no evaporarse, que rompe en
+      silencio a quien lo leía. `--fields-table` publica la clasificación derivada del
+      tool-spec; `--freeze-fields` solo después de revisar qué se está prometiendo.
 - [ ] `python scripts/vault_noop_audit.py --check --strict` → `ok: true` (AP-37).
       Toda tool nueva con side effects declara un indicador de trabajo: la baseline
       solo puede encoger. Tras saldar deuda, `--freeze`.

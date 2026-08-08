@@ -421,6 +421,24 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": "CLAUDE.md §Trabajar con las baselines",
         },
     },
+    "CONTRACT_FIELD_REMOVED": {
+        "category": "governance",
+        "severity": "error",
+        "message": (
+            "Un campo publicado desapareció del contrato: el consumidor que lo "
+            "leía se rompe sin aviso."
+        ),
+        "recovery": {
+            "action": "manual",
+            "hint": (
+                "Un campo estable no se borra: se anota en `superseded_fields` "
+                "con `superseded_by` y `why`, y se sigue emitiendo. Si el campo "
+                "nunca fue público, decláralo en `internal_fields` antes de "
+                "quitarlo."
+            ),
+            "docs": "CLAUDE.md §No-derogación",
+        },
+    },
     # ── Lifecycle ─────────────────────────────────────────────────────────────
     "TOOL_TIMEOUT": {
         "category": "infrastructure",

@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.5 — 2026-08-07  
+**Versión:** v40.6 — 2026-08-08  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -6476,6 +6476,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.6 | 2026-08-08 | Las tres baselines de deuda pasan a indexarse por **firma de sitio** (`módulo::función::hash` sobre `ast.unparse`) porque `módulo:línea` reportaba como deuda nueva el mismo código diez líneas más abajo, y `--freeze` se niega a congelar sitios sin precedente en vez de fiarse de una receta manual de tres pasos; el heal de AP-46 dejaba de reparar tres de cada cuatro notas por deducir la clase de rotura de la presencia de un `---` que era una regla horizontal del cuerpo, y ahora prueba las candidatas contra `yaml.safe_load`; AP-52 de 110 sitios a **0** con tres códigos nuevos y exenciones por `módulo::función` para los tres sitios que parecen un envelope de error sin serlo; el `superseded_by` de `healthScore` deja de ser un registro sin consumidor y pasa a contrato de campos vigilado sobre 1.038 campos de 96 tools — décima puerta |
 | v40.5 | 2026-08-07 | Contraste de la regla 7 contra dos vaults ajenos (609 y 128 notas): la documentación del estándar embarcada en un vault se contaba como enlaces rotos porque se excluía por nombre exacto, y una copia archivada con sufijo de versión —lo que la no-derogación pide— aportaba 75 falsos de 624 con `broken_links` saturando a los diez; pasa a ser el registro `DOCUMENTACION_DEL_ESTANDAR` y el `healthIndex` del sandbox sube de 60 a 64 sin tocar una nota; se confirma que el defecto de títulos de v40.2 llegó a vaults reales y que AP-46 tiene guard y audit pero **no heal**; deuda de AP-52 de 158 a 110, con dos clases de falso positivo del detector anotadas |
 | v40.4 | 2026-08-07 | `CLAUDE.md` publicaba los dos comandos de salud del vault con `--root`, que ninguna de las dos tools acepta —contradiciendo la regla 1 del propio fichero— así que el comando que un agente copia para medir moría en `unrecognized arguments`, y duró versiones porque los comandos de la documentación eran lo único sin guard; `vault_doc_sync` gana una sexta comprobación estática sobre `CLAUDE.md`/`README.md`/`scripts/README.md`, con un test que ejecuta los comandos de salud leídos del documento y no copiados; la suite deja de escribir la versión corriente a mano (AP-47 dentro de los tests) |
 | v40.3 | 2026-08-07 | `healthScore` satura (22 penalizaciones con topes que suman 285 sobre base 100: el propio `vault-sandbox/` puntúa 0) y se conserva igual porque lo leen los consumidores — se anota `superseded_by: healthIndex` y se le añaden al lado `healthIndex` y `healthProfile`, seis familias normalizadas cada una contra su tope y con `saturated` por familia; los 22 pesos pasan al registro `PENALIZACIONES` sin mover ni un punto, verificado contra una reimplementación literal del bloque viejo; `--check` de `vault_standard_upgrade` dejaba sellada la versión de quien solo preguntaba, y ahora declara `stamp_pending` sin escribir |
@@ -6800,6 +6801,84 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v40.6 — 2026-08-08 `git: pending`
+
+**Cuatro guards que dependían de que alguien ejecutase bien una receta**
+
+Ninguno de los cuatro defectos de esta versión estaba en el dato. Los cuatro
+eran una herramienta de gobernanza que se creía a sí misma: una baseline que
+confundía mover código con contraer deuda, un heal que adivinaba en vez de
+comprobar, un catálogo de errores que 110 sitios rodeaban, y una anotación de
+compatibilidad que no leía nadie.
+
+- **La baseline dejaba de decir la verdad al mover una línea.** Las tres
+  baselines de deuda —AP-37, AP-51, AP-52— se indexaban por `módulo:línea`.
+  Insertar diez líneas de comentario encima de un sitio conocido lo reportaba
+  como **nuevo** y al viejo como **resuelto**, sin que la deuda hubiera cambiado.
+  Y como `--freeze` legítimo y `--freeze` que estrena deuda se teclean igual, lo
+  único que los separaba era una receta de tres comprobaciones manuales. Se hizo
+  mal tres veces en una semana. Ahora la clave es una **firma de sitio**
+  (`módulo::función::hash` sobre `ast.unparse`): el formato, la sangría, los
+  comentarios y la posición desaparecen antes de hashearse, y el cuerpo del
+  handler no. `--freeze` se **niega** a congelar sitios sin precedente con
+  `DEBT_WOULD_GROW`; hacerlo exige `--freeze --admitir-nuevos`, que además los
+  lista. Las baselines en formato viejo emiten `MIGRATION_REQUIRED` en vez de
+  leerse como vacías —que habría estrenado la deuda entera como nueva— y se
+  migran con `--migrate`, conservando la lista v1 anotada. Un guard cuya
+  corrección depende de que una persona ejecute bien tres pasos no es un guard.
+
+- **AP-46 tenía guard y audit, y su heal adivinaba la avería.** El planificador
+  deducía la clase de rotura mirando si más abajo había un `\n---`: si lo había,
+  concluía «bloque cerrado que no parsea» y se abstenía. Tres de las cuatro
+  notas rotas de un vault ajeno tienen una **regla horizontal** en el cuerpo, así
+  que su frontmatter sin cerrar se leía como cerrado y el heal las dejaba
+  intactas. Es AP-44 cometida dentro de la tool que hace cumplir AP-46: medir con
+  el criterio propio en vez del criterio del consumidor, que aquí es
+  `yaml.safe_load`. Ahora la clase **no se deduce, se prueba**: se construyen las
+  dos candidatas —escalar sin escapar y bloque sin cerrar— y gana la primera que
+  el parser acepta con el cuerpo byte a byte idéntico. Si ninguna parsea, no hay
+  reparación: inventarse una es peor que no tenerla.
+
+- **AP-52 pasa de 110 sitios a cero, y con eso deja de ser un contador.** Los 110
+  construían su envelope a mano: `{"ok": false, "error": "..."}` sin
+  `error_code`, sin `category` y sin `recovery` —la cadena que le dice al
+  consumidor qué hacer a continuación—. `vault_write` llegaba a inventarse el
+  código en el sitio (`error: "encoding_issue_in_title"`), que es la forma exacta
+  que la norma persigue. Tres familias mecánicas, tres códigos nuevos:
+  `INVALID_VALUE` (valor fuera de un vocabulario cerrado, la más repetida),
+  `ARG_JSON_INVALID` —deliberadamente distinto de `JSON_PARSE_ERROR`, cuyo
+  `recovery` es `vault_reindex` y aquí no arreglaría nada— y
+  `SERVICE_UNAVAILABLE`. Las claves útiles que acompañaban al envelope
+  (`categories`, `fixes`, `suggestion`, `hint`, `path`, `results`, `flow_id`,
+  `url`) se conservan fuera de él: ningún consumidor pierde un dato. Tres sitios
+  **tienen la forma** de un envelope de error y no lo son —una fila del informe
+  de `vault_smoke` y dos cuerpos de respuesta HTTP de `vault_token_service`— y se
+  eximen por `módulo::función` con el motivo escrito. Por función y no por
+  módulo a propósito: eximir `vault_smoke` entero se habría llevado por delante
+  `vault_smoke::freeze`, que sí es un fallo de la tool, y hay un test que lo
+  comprueba. Con la baseline en cero, cualquier envelope nuevo escrito a mano
+  falla la puerta.
+
+- **La anotación de compatibilidad no la leía ninguna tool.** En v40.3 se anotó
+  `healthScore` como `superseded_by: healthIndex` en el tool-spec y ahí se quedó:
+  un registro sin consumidor, el mismo modo de fallo que
+  `tests/test_orphan_registries.py` persigue en el código. Un repo consumidor no
+  lee el catálogo ni este manifiesto — lee el envelope, y lo único que necesita
+  saber es qué claves puede seguir esperando el mes que viene. Ahora
+  `vault_spec_catalog_check --check-fields` deriva del tool-spec una **tabla de
+  compatibilidad** que clasifica los 1.038 campos publicados de las 96 tools en
+  `stable`, `superseded` e `internal`, y hace cumplir la no-derogación aplicada
+  al cable: **un campo estable no desaparece**. Puede pasar a `superseded_fields`
+  —con destino y motivo— pero no evaporarse y romper en silencio a quien lo leía.
+  El guard nació exigiendo que todo campo anotado siguiera emitiéndose, y el
+  registro le enseñó dos formas que ya existían y no eran errores: `superseded_by`
+  puede apuntar a **varios** campos, porque AP-52 partió `error` en
+  `error_code`/`message`/`recovery`, y un campo sustituido puede haber dejado de
+  emitirse, siendo la anotación su único rastro. Se corrigió el guard, no el
+  registro. Décima puerta de `vault_gate`.
 
 ---
 
