@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
-> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-52 más
-> las familias PAT, SP y CN. Por familia: AP 52, CN 3, PAT 6, SP 3.
-> Bilingual document. Full norm catalog: antipatterns AP-01..AP-52 plus the PAT,
-> SP and CN families. By family: AP 52, CN 3, PAT 6, SP 3.
+> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-54 más
+> las familias PAT, SP y CN. Por familia: AP 54, CN 3, PAT 6, SP 3.
+> Bilingual document. Full norm catalog: antipatterns AP-01..AP-54 plus the PAT,
+> SP and CN families. By family: AP 54, CN 3, PAT 6, SP 3.
 
 ---
 
 ## ES
 
-Total de normas registradas: 64 (AP 52, CN 3, PAT 6, SP 3)
+Total de normas registradas: 66 (AP 54, CN 3, PAT 6, SP 3)
 
 ### AP-01: Documentación alucinada
 
@@ -565,6 +565,38 @@ El guard mide **forma y no flujo**: un dict con `ok: False` y pinta de envelope 
 
 **Prevención:** Emitir por `emit_error(tool, CODIGO, mensaje)` y, si el codigo no existe, anadirlo a `ERROR_CATALOG` -- que es donde vive la decision de como se recupera ese fallo. Anadir el codigo cuesta una linea; no anadirlo traslada el coste a cada consumidor, para siempre. `vault_error_contract --check --strict` mide por AST.
 
+### AP-53: El historial se afirma a mano y nadie lo contrasta con git
+
+- **Severidad:** medium
+- **Enforcement:** guard
+- **Detectado por:** vault_changelog_check --list
+
+La documentacion afirma un hecho del historial --que la version v39.0 la introdujo el commit `00731c6` el 2026-07-25-- y ese hecho vive tambien en git, que es donde de verdad existe. Una de las dos copias se escribe a mano y ninguna se contrasta con la otra, asi que la de mano se queda atras sin que nada lo note.
+
+Es AP-05 aplicada al **historial**, y AP-47 en su forma menos visible: AP-47 persigue cifras escritas a mano --cuantas tools, cuantas normas-- y una fecha o un hash de commit son la misma clase de dato derivable, solo que nadie los lee como una cifra.
+
+Medido en v40.7 sobre el changelog del manifiesto: **55 entradas, 31 con hash real, los 31 existen** --ninguno inventado-- y **5 fechas contradecian al commit que citaban**. Cuatro por un dia; la de v39.0 por once. Esa entrada arrastra ademas un commit de fijado que corrigio el hash (`13bf9ca -> 00731c6`) y no toco la fecha: la correccion parcial es el modo de fallo tipico, porque quien corrige mira el dato que le fallo y no el que viaja con el.
+
+Detras hay un huevo y una gallina que conviene nombrar, porque es lo que empuja a escribir el dato a mano: la entrada tiene que citar el hash del commit que la contiene, y ese hash no existe hasta que el commit esta hecho. La salida fue un ritual de dos commits --`feat: vX` con `git: pending`, luego `docs: fijar hash`-- que aparece ocho veces en las ultimas veinte entradas del historial y cuyo segundo paso depende de que alguien se acuerde. Una norma que solo prohibe no sirve aqui: hay que dar el comando que hace el paso, o se seguira haciendo a mano.
+
+**Prevención:** Derivar el dato del repositorio y comprobarlo en una puerta. `vault_changelog_check --check --strict` contrasta hash, fecha --de autoria, `%as`, que un rebase no reescribe--, `pending` y orden. Y `--fijar-hash` convierte en comando el paso manual que originaba la divergencia.
+
+### AP-54: El lock falla y se escribe igual
+
+- **Severidad:** high
+- **Enforcement:** guard
+- **Detectado por:** vault_arch --check
+
+Un bloque toma un `file_lock`, no lo consigue, y en el handler escribe de todos modos sin sincronizar. El razonamiento que lleva ahi es que perder el dato es peor que escribirlo sin lock. Es al reves, y por una razon que se ve al leer el `TimeoutError`: ese error significa que **otro lo tiene tomado ahora mismo**. La escritura del handler no es una carrera improbable, es la unica situacion en la que ese codigo llega a ejecutarse, y entra justo encima de la de quien si consiguio el lock.
+
+Medido en v40.7 en `vault_sdd_init`, que se pasaba del timeout de 60s de la tool y moria dejando `docs/sdd/` a medio escribir despues de haber anunciado `Drift status: PASS`. La medida: **26 tomas del lock del fichero de trazas, 13 fallidas, 65,14s de espera pura** --13 x 5s exactos--. Esas 13 acababan reescribiendo el trace sin lock mientras el llamante externo lo estaba reemplazando.
+
+La causa de las esperas era distinta de la norma y se corrigio aparte: `file_lock` no era reentrante, asi que un hilo que volvia a pedir un lock que el mismo sostenia esperaba el timeout entero contra si mismo. Conviene separar las dos cosas --la causa se arregla una vez en el kernel; la reaccion es la que se repite en cada llamante y la que esta norma vigila.
+
+Omitir la escritura al fallar el lock **no** es esta norma: es la respuesta correcta, y `vault_quality_check` ya la tenia.
+
+**Prevención:** Al fallar el lock, descartar la escritura o propagar el error -- nunca escribir sin sincronizar. `vault_arch --check --strict` reporta el patron en `unsynced_writes`.
+
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
 - **Severidad:** high
@@ -689,7 +721,7 @@ Antes de cualquier operación masiva (migración, rename en lote, vault_tags --r
 
 ## EN
 
-Total registered norms: 64 (AP 52, CN 3, PAT 6, SP 3)
+Total registered norms: 66 (AP 54, CN 3, PAT 6, SP 3)
 
 ### AP-01: Documentación alucinada
 
@@ -1244,6 +1276,38 @@ Medida en v40.2: **158 sitios en 58 modulos**. Nace con baseline por la misma ra
 El guard mide **forma y no flujo**: un dict con `ok: False` y pinta de envelope que no lleva `error_code`. No sigue el valor hasta stdout, asi que cuenta tambien envelopes internos que nunca se imprimen. Eso se declara en vez de esconderse: un guard que promete una precision que no tiene es la clase de afirmacion no falsable que AP-37 persigue.
 
 **Prevention:** Emitir por `emit_error(tool, CODIGO, mensaje)` y, si el codigo no existe, anadirlo a `ERROR_CATALOG` -- que es donde vive la decision de como se recupera ese fallo. Anadir el codigo cuesta una linea; no anadirlo traslada el coste a cada consumidor, para siempre. `vault_error_contract --check --strict` mide por AST.
+
+### AP-53: El historial se afirma a mano y nadie lo contrasta con git
+
+- **Severity:** medium
+- **Enforcement:** guard
+- **Detected by:** vault_changelog_check --list
+
+La documentacion afirma un hecho del historial --que la version v39.0 la introdujo el commit `00731c6` el 2026-07-25-- y ese hecho vive tambien en git, que es donde de verdad existe. Una de las dos copias se escribe a mano y ninguna se contrasta con la otra, asi que la de mano se queda atras sin que nada lo note.
+
+Es AP-05 aplicada al **historial**, y AP-47 en su forma menos visible: AP-47 persigue cifras escritas a mano --cuantas tools, cuantas normas-- y una fecha o un hash de commit son la misma clase de dato derivable, solo que nadie los lee como una cifra.
+
+Medido en v40.7 sobre el changelog del manifiesto: **55 entradas, 31 con hash real, los 31 existen** --ninguno inventado-- y **5 fechas contradecian al commit que citaban**. Cuatro por un dia; la de v39.0 por once. Esa entrada arrastra ademas un commit de fijado que corrigio el hash (`13bf9ca -> 00731c6`) y no toco la fecha: la correccion parcial es el modo de fallo tipico, porque quien corrige mira el dato que le fallo y no el que viaja con el.
+
+Detras hay un huevo y una gallina que conviene nombrar, porque es lo que empuja a escribir el dato a mano: la entrada tiene que citar el hash del commit que la contiene, y ese hash no existe hasta que el commit esta hecho. La salida fue un ritual de dos commits --`feat: vX` con `git: pending`, luego `docs: fijar hash`-- que aparece ocho veces en las ultimas veinte entradas del historial y cuyo segundo paso depende de que alguien se acuerde. Una norma que solo prohibe no sirve aqui: hay que dar el comando que hace el paso, o se seguira haciendo a mano.
+
+**Prevention:** Derivar el dato del repositorio y comprobarlo en una puerta. `vault_changelog_check --check --strict` contrasta hash, fecha --de autoria, `%as`, que un rebase no reescribe--, `pending` y orden. Y `--fijar-hash` convierte en comando el paso manual que originaba la divergencia.
+
+### AP-54: El lock falla y se escribe igual
+
+- **Severity:** high
+- **Enforcement:** guard
+- **Detected by:** vault_arch --check
+
+Un bloque toma un `file_lock`, no lo consigue, y en el handler escribe de todos modos sin sincronizar. El razonamiento que lleva ahi es que perder el dato es peor que escribirlo sin lock. Es al reves, y por una razon que se ve al leer el `TimeoutError`: ese error significa que **otro lo tiene tomado ahora mismo**. La escritura del handler no es una carrera improbable, es la unica situacion en la que ese codigo llega a ejecutarse, y entra justo encima de la de quien si consiguio el lock.
+
+Medido en v40.7 en `vault_sdd_init`, que se pasaba del timeout de 60s de la tool y moria dejando `docs/sdd/` a medio escribir despues de haber anunciado `Drift status: PASS`. La medida: **26 tomas del lock del fichero de trazas, 13 fallidas, 65,14s de espera pura** --13 x 5s exactos--. Esas 13 acababan reescribiendo el trace sin lock mientras el llamante externo lo estaba reemplazando.
+
+La causa de las esperas era distinta de la norma y se corrigio aparte: `file_lock` no era reentrante, asi que un hilo que volvia a pedir un lock que el mismo sostenia esperaba el timeout entero contra si mismo. Conviene separar las dos cosas --la causa se arregla una vez en el kernel; la reaccion es la que se repite en cada llamante y la que esta norma vigila.
+
+Omitir la escritura al fallar el lock **no** es esta norma: es la respuesta correcta, y `vault_quality_check` ya la tenia.
+
+**Prevention:** Al fallar el lock, descartar la escritura o propagar el error -- nunca escribir sin sincronizar. `vault_arch --check --strict` reporta el patron en `unsynced_writes`.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 

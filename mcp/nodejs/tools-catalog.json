@@ -341,6 +341,14 @@
           "freeze": {
             "type": "string",
             "description": "Recongela scripts/blame-baseline.json tras saldar deuda"
+          },
+          "admitir-nuevos": {
+            "type": "string",
+            "description": "Con --freeze: congela también sitios sin precedente"
+          },
+          "migrate": {
+            "type": "string",
+            "description": "Traduce una baseline v1 (por línea) a v2 (por firma)"
           }
         }
       },
@@ -504,6 +512,60 @@
       "related": [
         "vault_timeline",
         "vault_audit"
+      ]
+    },
+    "vault_changelog_check": {
+      "name": "vault_changelog_check",
+      "description": "Contrasta el changelog del manifiesto contra git: que el hash citado exista, que la fecha coincida con la del commit, que ninguna versión cerrada siga publicando `git: pending` y que el orden sea decreciente. Con --fijar-hash cierra la versión en curso sustituyendo el `pending` por el hash real, que hasta ahora era un commit manual de ritual.",
+      "group": "Normas",
+      "script": "vault_changelog_check.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "check": {
+            "type": "string",
+            "description": "Contrasta cada entrada con el commit que cita"
+          },
+          "strict": {
+            "type": "string",
+            "description": "Exit code 1 ante cualquier problema (uso en CI)"
+          },
+          "list": {
+            "type": "string",
+            "description": "Tabla de entradas con la fecha real de su commit"
+          },
+          "fijar-hash": {
+            "type": "string",
+            "description": "Sustituye el `pending` de la versión en curso"
+          },
+          "hash": {
+            "type": "string",
+            "description": "Commit a citar con --fijar-hash (por defecto HEAD)"
+          },
+          "dry-run": {
+            "type": "string",
+            "description": "Con --fijar-hash, no escribe el manifiesto"
+          },
+          "freeze": {
+            "type": "string",
+            "description": "Anota divergencias de fecha que no se pueden corregir"
+          }
+        }
+      },
+      "guards": [
+        "Usa la fecha de autoría (%as), no la de commit: un rebase reescribe la segunda y estrenaría divergencias falsas",
+        "--fijar-hash no commitea: escribe el manifiesto y devuelve el mensaje de commit sugerido. Una tool de gobernanza no toca el historial",
+        "--freeze se niega a congelar divergencias nuevas (DEBT_WOULD_GROW): la baseline solo puede encoger",
+        "Sin repositorio git no inventa un veredicto: publica git_available: false"
+      ],
+      "side_effects": [
+        "Con --fijar-hash reescribe la entrada de la versión en curso",
+        "Con --freeze escribe scripts/changelog-baseline.json"
+      ],
+      "related": [
+        "vault_doc_counts",
+        "vault_standard_upgrade",
+        "vault_norms"
       ]
     },
     "vault_code_map": {
@@ -1368,6 +1430,14 @@
           "freeze": {
             "type": "string",
             "description": "Recongela la baseline tras saldar deuda"
+          },
+          "admitir-nuevos": {
+            "type": "string",
+            "description": "Con --freeze: congela también sitios sin precedente"
+          },
+          "migrate": {
+            "type": "string",
+            "description": "Traduce una baseline v1 (por línea) a v2 (por firma)"
           }
         }
       },
@@ -2080,6 +2150,10 @@
             "type": "string",
             "description": "Tope de notas derivadas (default: 20)"
           },
+          "max-chars": {
+            "type": "string",
+            "description": ""
+          },
           "tags": {
             "type": "string",
             "description": "Tags adicionales"
@@ -2773,6 +2847,14 @@
               "category",
               "enforcement"
             ]
+          },
+          "heal-ap46": {
+            "type": "string",
+            "description": "Repara frontmatter roto (AP-46). Informe en seco salvo --apply-heal"
+          },
+          "apply-heal": {
+            "type": "string",
+            "description": "Con --heal-ap46: escribe de verdad, con backup en .history/"
           }
         }
       },
@@ -4806,6 +4888,7 @@
       "vault_norms",
       "vault_arch",
       "vault_blame_audit",
+      "vault_changelog_check",
       "vault_error_contract",
       "vault_foreign_check",
       "vault_gate",

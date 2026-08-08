@@ -370,6 +370,29 @@ def _local_lock_for(key: str) -> threading.Lock:
         return lk
 
 
+#: Locks que ESTE hilo ya tiene tomados, por clave de lock-dir.
+#
+# Sin esto, un hilo que vuelve a pedir un lock que él mismo sostiene espera el
+# timeout entero contra sí mismo y luego se le dice al llamante «no se pudo
+# bloquear». Casi todos los llamantes reaccionan igual: escribir de todos modos,
+# sin sincronizar. Medido en `vault_sdd_init`, que escribe con `atomic_write_text`
+# y cuyo saneador de codificación traza cada corrección: 26 tomas del lock del
+# fichero de trazas, 13 fallidas, 65 s de espera pura — y esas 13 acababan
+# escribiendo el trace SIN lock justo mientras el llamante externo lo estaba
+# reemplazando. El coste visible era que la tool se pasaba del timeout de 60 s;
+# el defecto era la escritura sin sincronizar.
+#
+# La reentrancia se concede sin volver a tomar nada: si el hilo ya lo tiene, la
+# exclusión que el lock promete YA está garantizada. Lo que no se hace es soltar
+# el lock al salir del bloque interno — solo el bloque más externo libera, o el
+# `finally` interno abriría la ventana que el externo cree cerrada.
+_HELD_LOCKS = threading.local()
+
+
+def _held(key: str) -> bool:
+    return key in getattr(_HELD_LOCKS, "keys", ())
+
+
 @contextmanager
 def file_lock(
     target: Path, timeout: float = 30.0, stale_after: float = 120.0
@@ -380,13 +403,23 @@ def file_lock(
     JSON index during mass generation. Stale locks are removed after
     ``stale_after`` seconds. Layered: an in-process threading.Lock serializes
     threads in this process; the mkdir directory-lock serializes across processes.
+
+    Reentrante por hilo: si el hilo que llama ya sostiene este mismo lock, el
+    bloque se ejecuta sin volver a adquirirlo y sin liberar al salir. Ver
+    `_HELD_LOCKS` para qué pasaba antes — no era una espera de más, era una
+    escritura sin sincronizar.
     """
     lock_root = target.parent / ".locks"
     lock_root.mkdir(parents=True, exist_ok=True)
     lock_dir = lock_root / f"{target.name}.lock"
+    clave = str(lock_dir)
     deadline = time.time() + timeout
 
-    local = _local_lock_for(str(lock_dir))
+    if _held(clave):
+        yield lock_dir
+        return
+
+    local = _local_lock_for(clave)
     acquired = local.acquire(blocking=False) if timeout <= 0 else local.acquire(timeout=timeout)
     if not acquired:
         raise TimeoutError(f"Timeout waiting for in-process lock: {lock_dir}")
@@ -431,9 +464,13 @@ def file_lock(
                 raise TimeoutError(f"Timeout waiting for lock: {lock_dir}")
             time.sleep(0.05)
 
+    if not hasattr(_HELD_LOCKS, "keys"):
+        _HELD_LOCKS.keys = set()
+    _HELD_LOCKS.keys.add(clave)
     try:
         yield lock_dir
     finally:
+        _HELD_LOCKS.keys.discard(clave)
         try:
             for child in lock_dir.iterdir():
                 child.unlink()
@@ -516,8 +553,18 @@ def record_raw_write(path: Path, text: str, encoding: str = "utf-8") -> str:
     return _record_write(path, text, encoding)
 
 
+#: Ficheros de telemetría interna que NO son trabajo de la tool. Escribir una
+#: traza no es haber hecho nada por el vault, y contarla haría que el indicador
+#: de AP-37 subiera con el número de errores registrados — justo al revés de lo
+#: que mide. Se declaran por nombre porque viven en `00_System/`, que ya está
+#: fuera de la cascada de índices por el mismo motivo.
+_NO_ES_TRABAJO = frozenset({".tool-trace.json"})
+
+
 def _record_write(path: Path, text: str, encoding: str) -> str:
     """Clasifica la escritura antes de hacerla. Nunca propaga errores."""
+    if path.name in _NO_ES_TRABAJO:
+        return "unchanged"
     try:
         if not path.exists():
             resultado = "created"

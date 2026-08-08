@@ -4,6 +4,8 @@
 import re
 from typing import Any, Dict, List
 
+from vault_regex import RE_WIKILINK  # dueño único del patrón (AP-50)
+
 
 def _line_col(text: str, pos: int) -> Dict[str, int]:
     line = text.count("\n", 0, pos) + 1
@@ -136,7 +138,7 @@ def extract_wikilinks(content: str) -> List[str]:
     """Extract valid wiki-link targets after excluding malformed links."""
     valid: List[str] = []
     invalid_positions = {(i["line"], i["column"]) for i in validate_wikilinks(content)}
-    for match in re.finditer(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]", content):
+    for match in RE_WIKILINK.finditer(content):
         pos = _line_col(content, match.start())
         if (pos["line"], pos["column"]) in invalid_positions:
             continue

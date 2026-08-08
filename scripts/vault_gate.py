@@ -123,6 +123,14 @@ PUERTAS: List[Dict[str, Any]] = [
                "volver a emitirlo; --freeze-fields solo tras revisar",
     },
     {
+        "id": "changelog",
+        "cmd": ["vault_changelog_check.py", "--check", "--strict"],
+        "mide": "El changelog no contradice a git: hash existente, fecha igual a "
+                "la del commit, ningún `pending` de una versión ya cerrada",
+        "fix": "python scripts/vault_changelog_check.py --fijar-hash  (cierra la "
+               "versión en curso); corregir la fecha contra su commit",
+    },
+    {
         "id": "arquitectura",
         "cmd": ["vault_arch.py", "--check", "--strict"],
         "mide": "Contextos acotados: fronteras, puertos, vocabularios con dueño, "

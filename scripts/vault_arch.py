@@ -224,6 +224,10 @@ CONTEXTS: dict[str, dict] = {
             "vault_doc_counts", "vault_doc_sync", "vault_noop_audit",
             "vault_blame_audit", "vault_error_contract", "vault_foreign_check",
             "vault_gate", "vault_arch",
+            # Mide el changelog del manifiesto contra git (AP-53). Es
+            # meta-toolkit por el mismo motivo que `vault_doc_counts`: su
+            # sujeto es este repo, no un vault.
+            "vault_changelog_check",
             # Firma estable de un sitio de código: la comparten los tres audits
             # con baseline. Vive aquí y no en el kernel porque no sabe nada de
             # vaults — solo de AST — y su único consumidor es el meta-toolkit.
@@ -729,6 +733,83 @@ def dependencias_del_kernel() -> list[dict]:
     return sin_declarar
 
 
+def escrituras_sin_lock(rutas: list[Path] | None = None) -> list[dict]:
+    """AP-54 — el lock falla y se escribe igual.
+
+    El patrón es siempre el mismo y se lee de un vistazo::
+
+        try:
+            with file_lock(f, timeout=5):
+                escribir(f, atomico=True)
+        except TimeoutError:
+            escribir(f, atomico=False)   # <- aquí
+
+    Quien escribe en el handler ha razonado que perder el dato es peor que
+    escribirlo sin sincronizar. Es al revés: el `TimeoutError` significa que
+    **otro lo tiene tomado ahora mismo**, así que esa escritura entra
+    justo encima de la suya. No es una carrera improbable, es la única
+    situación en la que ese código se ejecuta.
+
+    Lo destapó `vault_sdd_init`, que se pasaba del timeout de 60 s de la tool.
+    La lentitud era el síntoma visible —26 tomas del lock del fichero de trazas,
+    13 fallidas, 65 s de espera— pero el fallo era que esas 13 acababan
+    reescribiendo el trace sin lock. La causa de las esperas, la reentrancia
+    del mismo hilo, se corrigió en `vault_io.file_lock`; esta norma vigila la
+    reacción, que es la parte que se repite.
+
+    El detector NO marca omitir la escritura (`pass`, `return`, un log): eso es
+    la respuesta correcta y `vault_quality_check` ya la tenía.
+    """
+    hallazgos: list[dict] = []
+    for ruta in (rutas if rutas is not None
+                 else [SCRIPTS_DIR / f"{m}.py" for m in _modulos_en_disco()]):
+        mod = ruta.stem
+        try:
+            arbol = ast.parse(ruta.read_text(encoding="utf-8", errors="replace"))
+        except SyntaxError:
+            continue
+        for nodo in ast.walk(arbol):
+            if not isinstance(nodo, ast.Try):
+                continue
+            # ¿El bloque protegido toma un file_lock?
+            if not any(
+                isinstance(c, ast.Call)
+                and (c.func.attr if isinstance(c.func, ast.Attribute)
+                     else getattr(c.func, "id", None)) == "file_lock"
+                for stmt in nodo.body for c in ast.walk(stmt)
+            ):
+                continue
+            for handler in nodo.handlers:
+                if not _captura_timeout(handler):
+                    continue
+                for stmt in handler.body:
+                    for c in ast.walk(stmt):
+                        if not isinstance(c, ast.Call):
+                            continue
+                        nombre = (c.func.attr if isinstance(c.func, ast.Attribute)
+                                  else getattr(c.func, "id", None))
+                        if nombre in _LLAMADAS_DE_ESCRITURA:
+                            hallazgos.append({
+                                "module": mod,
+                                "line": c.lineno,
+                                "call": nombre,
+                            })
+    return hallazgos
+
+
+def _captura_timeout(handler: ast.ExceptHandler) -> bool:
+    """`except TimeoutError`, sola o dentro de una tupla. `except:` pelado cuenta."""
+    t = handler.type
+    if t is None:
+        return True
+    candidatos = t.elts if isinstance(t, ast.Tuple) else [t]
+    for c in candidatos:
+        nombre = c.attr if isinstance(c, ast.Attribute) else getattr(c, "id", None)
+        if nombre in ("TimeoutError", "OSError", "Exception", "BaseException"):
+            return True
+    return False
+
+
 def escrituras_prohibidas() -> list[dict]:
     """La frontera del Meta-toolkit, convertida en medida.
 
@@ -1175,6 +1256,12 @@ def check(strict: bool = False) -> dict:
     # y una lista de excepciones vacía solo invita a estrenarla.
     prohibidas = escrituras_prohibidas()
 
+    # AP-54, con el mismo criterio: se midió cero al declararla porque el único
+    # sitio que lo hacía —`vault_errors_trace`— se corrigió al encontrarlo. No
+    # hay deuda que congelar, y una lista vacía de excepciones solo invita a
+    # estrenarla.
+    sin_lock = escrituras_sin_lock()
+
     # La frontera del kernel, con la misma vara: los tres ganchos del write path
     # están declarados con su motivo; cualquier otro cruce kernel → dominio es
     # un fallo de la puerta, no deuda que congelar.
@@ -1220,7 +1307,7 @@ def check(strict: bool = False) -> dict:
 
     return {
         "ok": not nuevos and not huerfanos and not ausentes and not vinc_nuevos
-              and not prohibidas and not rutas_nuevas
+              and not prohibidas and not rutas_nuevas and not sin_lock
               and not kernel_sin_declarar and not nombre_crudo and not rotos
               and not puerto_nuevos and not entorno_sin_registro
               and not copias_vocab and not vocab_sin_dueno
@@ -1239,6 +1326,8 @@ def check(strict: bool = False) -> dict:
         "declared_but_missing": ausentes,
         # La prohibición del Meta-toolkit, ya ejecutable.
         "forbidden_writes": prohibidas,
+        # AP-54: el lock falló y se escribió igual, encima de quien lo tenía.
+        "unsynced_writes": sin_lock,
         # La frontera del kernel: ganchos declarados vs. cruces sin justificar.
         "kernel_hooks": len(GANCHOS_DEL_KERNEL),
         "undeclared_kernel_deps": kernel_sin_declarar,

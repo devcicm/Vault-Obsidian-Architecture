@@ -10,6 +10,7 @@ file_lock behavior. They MUST pass before any release.
 
 import sys
 import os
+import threading
 from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
@@ -96,9 +97,27 @@ class TestFileLock:
         assert len(data) == 10, f"Lost updates: only {len(data)} of 10 writers recorded"
 
     def test_lock_timeout_raises(self, tmp_test_dir):
-        """Acquiring an already-held lock with timeout=0 raises TimeoutError."""
+        """Pedir un lock que sostiene OTRO hilo con timeout=0 levanta TimeoutError.
+
+        Desde v40.7 el lock es reentrante por hilo, así que la versión anterior
+        de este test —que lo pedía dos veces desde el mismo hilo— ya no mide un
+        timeout: mide la reentrancia, que tiene sus propios tests en
+        `test_lock_reentrante.py`. El caso que este test debe seguir cubriendo
+        es la contención real, y esa es entre hilos distintos.
+        """
         target = tmp_test_dir / "timeout.txt"
-        with file_lock(target, timeout=0):
-            with pytest.raises(TimeoutError):
+        fallo = []
+
+        def intruso():
+            try:
                 with file_lock(target, timeout=0):
-                    pass
+                    fallo.append("entró")
+            except TimeoutError:
+                fallo.append("timeout")
+
+        with file_lock(target, timeout=0):
+            t = threading.Thread(target=intruso)
+            t.start()
+            t.join(timeout=10)
+
+        assert fallo == ["timeout"], fallo

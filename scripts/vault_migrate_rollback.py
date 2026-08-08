@@ -28,6 +28,9 @@ import argparse
 import json
 
 import re
+# El patrón del wikilink vive en `vault_regex` (AP-50): aquí sólo se le
+# antepone el ancla de la fila de tabla o de la flecha.
+from vault_regex import PATRON_WIKILINK
 
 import sys
 
@@ -74,7 +77,7 @@ def parse_report(report_path: Path) -> Tuple[List[str], List[str]]:
 
         m.strip()
 
-        for m in re.findall(r"\|\s*`[^`]+`\s*\|\s*\[\[([^\]|]+)(?:\|[^\]]+)?\]\]\s*\|", content)
+        for m in re.findall(r"\|\s*`[^`]+`\s*\|\s*" + PATRON_WIKILINK + r"\s*\|", content)
 
     ]
 
@@ -85,7 +88,7 @@ def parse_report(report_path: Path) -> Tuple[List[str], List[str]]:
 
         m.strip()
 
-        for m in re.findall(r"→\s*\[\[([^\]|]+)(?:\|[^\]]+)?\]\]", content)
+        for m in re.findall(r"→\s*" + PATRON_WIKILINK, content)
 
     ]
 

@@ -88,15 +88,23 @@ def detect_mermaid_type(diagram: str) -> Optional[str]:
 #: Resultado: 23 de 23 hallazgos `undefined_node` del vault eran falsos, y cada
 #: uno restaba 2 puntos de health score por AP-25. Un diagrama correcto no puede
 #: hundir la métrica del vault.
+#:
+#: El `\b` inicial no cambia un solo hallazgo y es lo que separa lineal de
+#: cuadrático. Sin él, `(\w+)` arranca en cada posición de una tirada de
+#: caracteres de palabra, consume hasta el final y retrocede entera: 2.000
+#: caracteres tardan 55 ms, 8.000 tardan 914 ms. Con el borde de palabra solo
+#: hay un arranque viable y son 0,3 ms. Verificado idéntico sobre los 18.065
+#: hallazgos de `vault-sandbox`, `/ans` y `/vcloud` (regla 7). El contenido lo
+#: puede traer `vault_ingest` desde material que el estándar no escribió.
 _NODE_SHAPES = re.compile(
-    r"(\w+)\s*(?:\[\[.+?\]\]|\[\(.+?\)\]|\(\(.+?\)\)|\{\{.+?\}\}"
+    r"\b(\w+)\s*(?:\[\[.+?\]\]|\[\(.+?\)\]|\(\(.+?\)\)|\{\{.+?\}\}"
     r"|\[/.+?[/\\]\]|\[.+?\]|\(.+?\)|\{.+?\}|>.+?\])"
 )
 
 #: Un identificador suelto a cada lado de una flecha. Las etiquetas `-->|texto|`
 #: se retiran antes de aplicarlo para que el texto no se lea como nodo.
 _EDGE = re.compile(
-    r"(\w[\w-]*)\s*(?:--+>?|==+>?|-\.-+>?|\.\.+>?|~~~)\s*(\w[\w-]*)"
+    r"\b(\w[\w-]*)\s*(?:--+>?|==+>?|-\.-+>?|\.\.+>?|~~~)\s*(\w[\w-]*)"  # \b: ver _NODE_SHAPES
 )
 
 _EDGE_LABEL = re.compile(r"\|[^|]*\|")
@@ -185,7 +193,9 @@ def validate_class(diagram: str) -> List[Dict[str, Any]]:
     lines = diagram.strip().split("\n")
 
     defined_classes = set()
-    relationship_pattern = re.compile(r"(\w+)\s*(--|-->|<--|<\|--|--\|>|<\|--\|>|\*--|--\*|<\|\.\.|\.\.\|>|\.\.)\s*(\w+)")
+    # El `\b` inicial: ver el comentario de `_NODE_SHAPES`. Sin él, 8.000
+    # caracteres de palabra tardan 1.164 ms; con él, 0,30. Mismos hallazgos.
+    relationship_pattern = re.compile(r"\b(\w+)\s*(--|-->|<--|<\|--|--\|>|<\|--\|>|\*--|--\*|<\|\.\.|\.\.\|>|\.\.)\s*(\w+)")
 
     class_pattern = re.compile(r"^\s*class\s+(\w+)")
 

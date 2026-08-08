@@ -1606,6 +1606,104 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "tools_detecting": ["vault_error_contract --check"],
         "introduced_version": "v40.2",
     },
+    {
+        "code": "AP-53",
+        "name": "El historial se afirma a mano y nadie lo contrasta con git",
+        "type": "antipattern",
+        "category": "quality",
+        "severity": "medium",
+        "enforcement": "guard",
+        "description": (
+            "La documentacion afirma un hecho del historial —que la version "
+            "v39.0 la introdujo el commit `00731c6` el 2026-07-25— y ese "
+            "hecho vive tambien en git, que es donde de verdad existe. Una de "
+            "las dos copias se escribe a mano y ninguna se contrasta con la "
+            "otra, asi que la de mano se queda atras sin que nada lo note.\n\n"
+            "Es AP-05 aplicada al **historial**, y AP-47 en su forma menos "
+            "visible: AP-47 persigue cifras escritas a mano —cuantas tools, "
+            "cuantas normas— y una fecha o un hash de commit son la misma "
+            "clase de dato derivable, solo que nadie los lee como una cifra.\n\n"
+            "Medido en v40.7 sobre el changelog del manifiesto: **55 entradas, "
+            "31 con hash real, los 31 existen** —ninguno inventado— y "
+            "**5 fechas contradecian al commit que citaban**. Cuatro por un dia; "
+            "la de v39.0 por once. Esa entrada arrastra ademas un commit de "
+            "fijado que corrigio el hash (`13bf9ca -> 00731c6`) y no toco la "
+            "fecha: la correccion parcial es el modo de fallo tipico, porque "
+            "quien corrige mira el dato que le fallo y no el que viaja con el.\n\n"
+            "Detras hay un huevo y una gallina que conviene nombrar, porque es "
+            "lo que empuja a escribir el dato a mano: la entrada tiene que citar "
+            "el hash del commit que la contiene, y ese hash no existe hasta que "
+            "el commit esta hecho. La salida fue un ritual de dos commits "
+            "—`feat: vX` con `git: pending`, luego `docs: fijar hash`— "
+            "que aparece ocho veces en las ultimas veinte entradas del "
+            "historial y cuyo segundo paso depende de que alguien se acuerde. "
+            "Una norma que solo prohibe no sirve aqui: hay que dar el comando "
+            "que hace el paso, o se seguira haciendo a mano."
+        ),
+        "signal": (
+            "Un hash de commit, una fecha de release o un nombre de rama "
+            "escritos en documentacion sin que ninguna tool los verifique "
+            "contra el repositorio; un `pending` publicado en una version ya "
+            "cerrada; una fecha que no coincide con la del commit que cita."
+        ),
+        "prevention": (
+            "Derivar el dato del repositorio y comprobarlo en una puerta. "
+            "`vault_changelog_check --check --strict` contrasta hash, fecha "
+            "—de autoria, `%as`, que un rebase no reescribe—, "
+            "`pending` y orden. Y `--fijar-hash` convierte en comando el paso "
+            "manual que originaba la divergencia."
+        ),
+        "tools_enforcing": ["vault_changelog_check --check --strict"],
+        "tools_detecting": ["vault_changelog_check --list"],
+        "introduced_version": "v40.7",
+    },
+    {
+        "code": "AP-54",
+        "name": "El lock falla y se escribe igual",
+        "type": "antipattern",
+        "category": "integrity",
+        "severity": "high",
+        "enforcement": "guard",
+        "description": (
+            "Un bloque toma un `file_lock`, no lo consigue, y en el handler "
+            "escribe de todos modos sin sincronizar. El razonamiento que lleva "
+            "ahi es que perder el dato es peor que escribirlo sin lock. Es al "
+            "reves, y por una razon que se ve al leer el `TimeoutError`: ese "
+            "error significa que **otro lo tiene tomado ahora mismo**. La "
+            "escritura del handler no es una carrera improbable, es la unica "
+            "situacion en la que ese codigo llega a ejecutarse, y entra justo "
+            "encima de la de quien si consiguio el lock.\n\n"
+            "Medido en v40.7 en `vault_sdd_init`, que se pasaba del timeout de "
+            "60s de la tool y moria dejando `docs/sdd/` a medio escribir "
+            "despues de haber anunciado `Drift status: PASS`. La medida: **26 "
+            "tomas del lock del fichero de trazas, 13 fallidas, 65,14s de "
+            "espera pura** —13 x 5s exactos—. Esas 13 acababan reescribiendo el "
+            "trace sin lock mientras el llamante externo lo estaba "
+            "reemplazando.\n\n"
+            "La causa de las esperas era distinta de la norma y se corrigio "
+            "aparte: `file_lock` no era reentrante, asi que un hilo que volvia "
+            "a pedir un lock que el mismo sostenia esperaba el timeout entero "
+            "contra si mismo. Conviene separar las dos cosas —la causa se "
+            "arregla una vez en el kernel; la reaccion es la que se repite en "
+            "cada llamante y la que esta norma vigila.\n\n"
+            "Omitir la escritura al fallar el lock **no** es esta norma: es la "
+            "respuesta correcta, y `vault_quality_check` ya la tenia."
+        ),
+        "signal": (
+            "Un `except TimeoutError` (o un handler mas amplio) alrededor de un "
+            "`with file_lock(...)` cuyo cuerpo contiene una llamada de "
+            "escritura; una tool que se pasa de su timeout sin trabajo que lo "
+            "justifique; un fichero de indice o de trazas con entradas perdidas."
+        ),
+        "prevention": (
+            "Al fallar el lock, descartar la escritura o propagar el error — "
+            "nunca escribir sin sincronizar. `vault_arch --check --strict` "
+            "reporta el patron en `unsynced_writes`."
+        ),
+        "tools_enforcing": ["vault_arch --check --strict"],
+        "tools_detecting": ["vault_arch --check"],
+        "introduced_version": "v40.7",
+    },
     # ── Patrón PAT-6 ───────────────────────────────────────────────────────────
     {
         "code": "PAT-6",
@@ -1954,8 +2052,14 @@ def vault_norms_scan(path: str) -> Dict[str, Any]:
     wiki_links = re.findall(r"\[\[([^\]]+)\]\]", clean)
 
     if wiki_links:
-        # AP-21: path-anchored
-        path_links = [l for l in wiki_links if "/" in l]
+        # AP-21: path-anchored — el `/` cuenta solo en el destino, no en el
+        # alias. `vault_regex.RE_PATH_ANCHORED` ya lo tenía escrito y anotado
+        # ("un '/' en el alias es válido"); esta copia no se enteró y medía el
+        # enlace entero. Destapado por la regla 7: 0 casos en `vault-sandbox`
+        # —que este repo genera— y 2 en cada uno de los dos vaults ajenos, uno
+        # de ellos `[[nota|Pipeline CI/CD]]`, donde la barra está dentro de
+        # "CI/CD". Un alias con una barra no es un enlace anclado a ruta.
+        path_links = [l for l in wiki_links if "/" in l.split("|")[0]]
         if path_links:
             _add("AP-21", f"path-anchored wiki-links: {path_links[:3]}")
 
@@ -2511,7 +2615,15 @@ def normalize_status(raw):
     # Un paréntesis o guion largo suele traer la circunstancia, no el estado:
     # "resuelto (v0.58)" es `verified` con una nota, no un estado nuevo.
     nota = None
-    m = re.match(r"^(.*?)\s*[\(\[—-]\s*(.+?)[\)\]]?$", original)
+    # El prefiltro barato va antes a propósito. `(.*?)\s*` delante de un
+    # delimitador que **no está** hace al motor probar cada punto de corte:
+    # 10.000 espacios sin paréntesis tardan 417 ms en decir que no. Preguntar
+    # primero si hay delimitador cuesta una pasada lineal y evita el caso malo
+    # entero, que es además el único que un valor hostil puede provocar.
+    if any(c in original for c in "([—-"):
+        m = re.match(r"^(.*?)\s*[\(\[—-]\s*(.+?)[\)\]]?$", original)
+    else:
+        m = None
     base = original
     if m and m.group(1).strip():
         candidato_base, candidato_nota = m.group(1).strip(), m.group(2).strip()
@@ -2586,8 +2698,21 @@ _ADR_TYPES = ("decision", "adr")
 #: arriba», que es contenido real. Se admite el envoltorio de énfasis y de
 #: viñeta alrededor, y una cola de puntuación o un complemento corto tras dos
 #: puntos (`TODO: revisar`) sigue siendo un marcador solo si no trae frase.
+#: La sangría va **acotada**, y no es cosmética. `^\s*` seguido de otro `\s*`
+#: —con un grupo opcional en medio que puede casar vacío— deja al motor probar
+#: cada reparto posible de los espacios entre los dos, que es cuadrático en la
+#: longitud de la línea. Medido: 1.000 espacios, 31 ms; 4.000, 500 ms; 16.000,
+#: 8,3 s; 64.000, **137 segundos**. Una sola línea de una nota deja colgada la
+#: auditoría entera, y esa línea puede entrar por `vault_ingest` desde material
+#: que el vault no escribió.
+#:
+#: Acotarla a dieciséis lo vuelve lineal (64.000 → 83 ms, 1.600 veces más
+#: rápido) sin cambiar un solo veredicto: ninguna nota real sangra un marcador
+#: más de dieciséis espacios, y los casos con dos, ocho y veintitrés siguen
+#: dando lo mismo. Lo que se pierde es la sangría absurda, que es justamente el
+#: input que nadie escribe y sí construye quien busca colgar la tool.
 _MARCADORES_PENDIENTE = re.compile(
-    r"^\s*(?:[-*+]\s+|>\s*)?[_*]{0,2}\s*(?:"
+    r"^[ \t]{0,16}(?:[-*+]\s+|>\s*)?[_*]{0,2}\s*(?:"
     r"pendientes?|todo|fixme|tbd|t\.b\.d\.?"
     r"|por (?:definir|documentar|completar|determinar)"
     r"|sin (?:datos|contenido|informaci[oó]n|detectar|detectados?|detectadas?)"

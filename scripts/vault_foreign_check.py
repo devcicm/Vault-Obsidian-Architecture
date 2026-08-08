@@ -56,6 +56,8 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from vault_regex import RE_WIKILINK_DESTINO  # dueño único del patrón (AP-50)
+
 sys.path.insert(0, str(Path(__file__).parent))
 
 from vault_errors import emit_error, wrap_main
@@ -67,7 +69,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 #: por no abrirlos en UTF-8 sería culpar al dato del criterio propio (AP-51).
 ENCODINGS = ("utf-8", "utf-8-sig", "cp1252", "latin-1")
 
-WIKILINK = re.compile(r"\[\[([^\]|#]+)(?:[#|][^\]]*)?\]\]")
+WIKILINK = RE_WIKILINK_DESTINO
 
 
 class DestinoInvalido(Exception):

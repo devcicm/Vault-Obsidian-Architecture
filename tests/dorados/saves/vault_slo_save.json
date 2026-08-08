@@ -16,7 +16,7 @@
     "slo_type": "availability",
     "timestamp": "<FECHA>",
     "tool": "vault_slo_save",
-    "touched": 8,
+    "touched": 7,
     "unchanged": "<BEST-EFFORT>",
     "updated": "<BEST-EFFORT>",
     "window": "30d",

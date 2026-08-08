@@ -21,6 +21,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
+from vault_regex import RE_WIKILINK  # dueño único del patrón (AP-50)
+
 from vault_errors import emit_error, wrap_main
 from vault_io import atomic_write_text, write_report
 
@@ -319,7 +321,7 @@ def check_move_impact(from_path: str, to_path: str) -> Dict[str, Any]:
     old_stem = source.stem
     old_folder = str(source.parent.relative_to(_raiz()))
 
-    wiki_links = re.findall(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]", content)
+    wiki_links = RE_WIKILINK.findall(content)
 
     backlinks = []
     for md in _raiz().rglob("*.md"):

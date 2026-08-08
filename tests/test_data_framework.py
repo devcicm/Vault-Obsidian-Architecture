@@ -180,17 +180,27 @@ def test_manifest_changelog_is_chronological():
 
 
 def test_manifest_changelog_has_no_pending_hashes_for_released_versions():
-    text = SPEC.read_text(encoding="utf-8")
-    changelog = text[text.index("\n## Changelog") :]
-    pending = re.findall(r"^### (v[\d.]+) — [\d-]+ `git: pending`", changelog, re.MULTILINE)
-    # La versión en curso puede llevar `pending`: su commit no existe todavía
-    # cuando se escribe la entrada. Se deriva de `CURRENT_VERSION` en vez de
-    # fijarla aquí — un literal obliga a editar el test en cada release, y el
-    # que lo edita a la carrera acaba ampliando la excepción a la versión
-    # anterior, que es justo la que este guard tiene que cazar.
-    from vault_standard_upgrade import CURRENT_VERSION
+    """Delegado en `vault_changelog_check` desde v40.7.
 
-    assert pending in ([], [CURRENT_VERSION]), f"hashes sin fijar: {pending}"
+    La comprobación vivía aquí, escrita a mano, y solo miraba el `pending`. Al
+    convertirse en puerta (`vault_changelog_check`) se llevó consigo tres
+    comprobaciones más —que el hash exista, que la fecha coincida con la del
+    commit, que el orden sea decreciente—, y mantener aquí una segunda copia del
+    criterio sería la decisión duplicada que AP-50 persigue. El test se conserva
+    con su nombre, que es lo que la no-derogación pide, y pasa a preguntar por
+    el único veredicto que hay.
+    """
+    import vault_changelog_check
+
+    r = vault_changelog_check.comprobar()
+    # `comprobar` tiene dos formas: el informe, y el envelope de error cuando no
+    # reconoce ni una entrada. Pedir `problems` a secas rompía con KeyError —
+    # un fallo del test disfrazado de fallo del test. Lo destapó la regla 7:
+    # dos copias archivadas del manifiesto en un vault ajeno no tienen
+    # changelog, y ahí `comprobar` devuelve `PARSE_FAILED`.
+    assert "problems" in r, f"el barrido no reconoció ninguna entrada: {r}"
+    sin_fijar = [p for p in r["problems"] if p["problema"] == "hash_sin_fijar"]
+    assert not sin_fijar, f"hashes sin fijar: {sin_fijar}"
 
 
 def test_no_git_command_uses_the_nonexistent_docs_path():

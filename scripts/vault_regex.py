@@ -43,18 +43,58 @@ RE_NESTED_OPEN_3 = re.compile(r"\[\[\[+")  # [[[, [[[[, etc
 RE_NESTED_CLOSE_3 = re.compile(r"\]\]\]+")  # ]]], ]]]], etc
 
 # Anomalías mixtas (orden invertido)
+# Los ejemplos van descritos, no literales. Escritos como `# ][[` el compilador
+# emite `FutureWarning: Possible nested set` —lee los corchetes del comentario—
+# y en la version de Python que lo convierta en error, este modulo deja de
+# importarse. Es el modulo que valida cada wikilink de cada vault: no se rompe
+# por un comentario.
 RE_MIXED_BRACKETS = re.compile(
     r"""
-    (\]\[) |           # ][
-    (\]\[\[) |         # ][[
-    (\]\]\[) |         # ]][
-    (\[\[\]) |         # [[]
-    (\]\[\]) |         # ][]
-    (\[\]\[) |         # [] [
-    (\[\]\])            # []]
+    (\]\[) |           # cierra-abre
+    (\]\[\[) |         # cierra-abre-abre
+    (\]\]\[) |         # cierra-cierra-abre
+    (\[\[\]) |         # abre-abre-cierra
+    (\]\[\]) |         # cierra-abre-cierra
+    (\[\]\[) |         # abre-cierra-abre
+    (\[\]\])            # abre-cierra-cierra
 """,
     re.VERBOSE,
 )
+
+# ── El extractor de wikilinks: un dueño, no nueve (AP-50, v40.7) ────────────
+#
+# Este patrón estaba escrito a mano en nueve módulos —`vault_graph`,
+# `vault_graph_fix` (×2), `vault_graph_merge`, `vault_lib` (×2),
+# `vault_link_safety`, `vault_move`, `vault_write` y `vault_foreign_check`— y
+# la copia traía dos defectos que solo se ven al juntarlas:
+#
+# 1. **Cuadrático.** La clase `[^\]|]` acepta `[`, así que en una tirada de
+#    corchetes el motor arranca en cada posición, consume hasta el final y
+#    retrocede. Medido: 2.000 corchetes 94 ms, 8.000 → 1,3 s, 32.000 → 20 s.
+#    Excluir `[` de la clase lo deja en 0,4 ms para 32.000, y **además acierta
+#    más**: sobre el manifiesto y `04-antipatterns.md`, que hablan de corchetes
+#    rotos, la versión vieja inventaba "enlaces" que abarcaban párrafos
+#    enteros. Un wikilink no contiene `[`; el que lo parecía estaba roto.
+#    Entrada alcanzable: `vault_ingest` acepta material que no escribió el
+#    estándar, y todos los extractores lo recorren después.
+#
+# 2. **`#` divergente.** Ocho copias extraían `Nota#Sección` como destino —un
+#    fichero que no existe—; solo `vault_foreign_check`, la tool de la regla 7,
+#    resolvía a `Nota`. No es casualidad: es la única que se ejecutó contra
+#    vaults ajenos, donde los enlaces a encabezado son sintaxis normal. Hoy no
+#    muerde (0 casos en `vault-sandbox`, `/ans` y `/vcloud`), y por eso se
+#    conserva **cada variante con su semántica**: la que resuelve el ancla es
+#    `RE_WIKILINK_DESTINO`, no se impone al resto en esta tanda.
+#: El patrón como cadena, para quien necesita componerlo con un prefijo
+#: —`vault_migrate_rollback` lo ancla a una fila de tabla y a una flecha— y de
+#: otro modo lo volvería a escribir a mano, que es de donde venían las nueve
+#: copias.
+PATRON_WIKILINK = r"\[\[([^\]|\[]+)(?:\|[^\]\[]+)?\]\]"
+RE_WIKILINK = re.compile(PATRON_WIKILINK)
+#: Igual, pero capturando también el alias en el grupo 2.
+RE_WIKILINK_CON_ALIAS = re.compile(r"\[\[([^\]|\[]+)(?:\|([^\]\[]+))?\]\]")
+#: Resuelve el ancla de encabezado: `[[Nota#Sección]]` → `Nota`.
+RE_WIKILINK_DESTINO = re.compile(r"\[\[([^\]|#\[]+)(?:[#|][^\]\[]*)?\]\]")
 
 # Empty links
 RE_EMPTY_LINK = re.compile(r"\[\[\s*\]\]")

@@ -385,6 +385,41 @@
         "F8"
       ]
     },
+    "vault_changelog_check": {
+      "group": "Normas",
+      "group_id": 35,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "baseline_size",
+        "changes",
+        "current_version",
+        "entries_total",
+        "entries_with_hash",
+        "frozen",
+        "git_available",
+        "hint",
+        "ok",
+        "pending",
+        "problems",
+        "settled",
+        "tool"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "accuracy",
+          "consistency"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F2",
+        "F4"
+      ]
+    },
     "vault_code_map": {
       "group": "Código",
       "group_id": 12,

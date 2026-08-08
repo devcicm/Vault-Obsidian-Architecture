@@ -2022,6 +2022,81 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "example": "python vault_voice.py --tool vault_write\npython vault_voice.py --coverage",
         "related": ["vault_norms", "vault_errors"],
     },
+    "vault_changelog_check": {
+        "name": "vault_changelog_check",
+        "script": "vault_changelog_check.py",
+        "group": "Normas",
+        "purpose": (
+            "Contrasta el changelog del manifiesto contra git: que el hash citado "
+            "exista, que la fecha coincida con la del commit, que ninguna versión "
+            "cerrada siga publicando `git: pending` y que el orden sea decreciente. "
+            "Con --fijar-hash cierra la versión en curso sustituyendo el `pending` "
+            "por el hash real, que hasta ahora era un commit manual de ritual."
+        ),
+        "params": {
+            "check": {
+                "type": "boolean",
+                "required": False,
+                "description": "Contrasta cada entrada con el commit que cita",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit code 1 ante cualquier problema (uso en CI)",
+                "validators": [],
+            },
+            "list": {
+                "type": "boolean",
+                "required": False,
+                "description": "Tabla de entradas con la fecha real de su commit",
+                "validators": [],
+            },
+            "fijar_hash": {
+                "type": "boolean",
+                "required": False,
+                "description": "Sustituye el `pending` de la versión en curso",
+                "validators": [],
+            },
+            "hash": {
+                "type": "string",
+                "required": False,
+                "description": "Commit a citar con --fijar-hash (por defecto HEAD)",
+                "validators": [],
+            },
+            "dry_run": {
+                "type": "boolean",
+                "required": False,
+                "description": "Con --fijar-hash, no escribe el manifiesto",
+                "validators": [],
+            },
+            "freeze": {
+                "type": "boolean",
+                "required": False,
+                "description": "Anota divergencias de fecha que no se pueden corregir",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "Usa la fecha de autoría (%as), no la de commit: un rebase reescribe la "
+            "segunda y estrenaría divergencias falsas",
+            "--fijar-hash no commitea: escribe el manifiesto y devuelve el mensaje "
+            "de commit sugerido. Una tool de gobernanza no toca el historial",
+            "--freeze se niega a congelar divergencias nuevas (DEBT_WOULD_GROW): la "
+            "baseline solo puede encoger",
+            "Sin repositorio git no inventa un veredicto: publica git_available: false",
+        ],
+        "side_effects": [
+            "Con --fijar-hash reescribe la entrada de la versión en curso",
+            "Con --freeze escribe scripts/changelog-baseline.json",
+        ],
+        "example": (
+            "python vault_changelog_check.py --check --strict\n"
+            "python vault_changelog_check.py --list\n"
+            "python vault_changelog_check.py --fijar-hash --dry-run"
+        ),
+        "related": ["vault_doc_counts", "vault_standard_upgrade", "vault_norms"],
+    },
     "vault_doc_counts": {
         "name": "vault_doc_counts",
         "script": "vault_doc_counts.py",
@@ -3398,6 +3473,7 @@ GROUPS: Dict[str, List[str]] = {
         "vault_norms",
         "vault_arch",
         "vault_blame_audit",
+        "vault_changelog_check",
         "vault_error_contract",
         "vault_foreign_check",
         "vault_gate",

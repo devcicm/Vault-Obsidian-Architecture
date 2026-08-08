@@ -47,7 +47,19 @@ def _append_trace_entry(entry: Dict[str, Any], use_atomic: bool) -> None:
 
     text = json.dumps(entries, indent=2, ensure_ascii=False)
     if use_atomic:
-        atomic_write_text(tf, text)
+        # `sanitize=False` NO es una optimización: es lo que corta un bucle que
+        # se alimenta solo. El saneado de `atomic_write_text` llama a
+        # `log_encoding_fixes` cuando aplica algún arreglo, y eso llama a
+        # `log_trace`, que vuelve a escribir ESTE fichero, que vuelve a
+        # sanearse. Medido en un solo `vault_risk_save`: 196 escrituras del
+        # trace donde debía haber una.
+        #
+        # Estuvo latente porque el camino que lo dispara —el lock reentrante—
+        # antes fallaba y caía a la rama sin saneado, que rompía el ciclo por
+        # accidente. Al arreglar la reentrancia (v40.7) el bucle quedó al
+        # descubierto. Además el trace es JSON generado aquí mismo: no hay
+        # nada que sanear que no hayamos escrito nosotros.
+        atomic_write_text(tf, text, sanitize=False)
     else:
         tf.write_text(text, encoding="utf-8")
 
@@ -60,10 +72,18 @@ def log_trace(entry: Dict[str, Any]) -> None:
         try:
             with file_lock(tf, timeout=5):
                 _append_trace_entry(entry, use_atomic=True)
-            return
         except TimeoutError:
+            # Se DESCARTA la entrada. Antes caía a
+            # `_append_trace_entry(use_atomic=False)`, que escribe el fichero de
+            # trazas sin lock — precisamente mientras quien sí lo tiene lo está
+            # reemplazando. Perder una línea de observabilidad best-effort es
+            # barato; corromper el fichero donde se investigan los fallos, no.
+            #
+            # El caso que lo disparaba en masa era la reentrancia del mismo
+            # hilo, ya resuelta en `vault_io.file_lock`. Lo que queda aquí es
+            # contención real entre hilos, donde descartar es la respuesta
+            # correcta y no un parche.
             pass
-        _append_trace_entry(entry, use_atomic=False)
     except Exception:
         pass
 

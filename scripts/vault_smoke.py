@@ -127,7 +127,14 @@ def run_one(tool: str) -> Dict[str, Any]:
     vault = destino / "vault"
     try:
         if SANDBOX.is_dir():
-            shutil.copytree(SANDBOX, vault)
+            # `.locks/` no se copia. Son directorios que `file_lock` crea y
+            # borra en milisegundos: si otra cosa está escribiendo en el
+            # sandbox mientras copiamos, `copytree` ve el lock al listar y ya
+            # no está al abrirlo, y aborta con WinError 3. Copiar un candado
+            # ajeno tampoco tendría sentido — el vault de destino es nuevo y
+            # nadie lo tiene tomado.
+            shutil.copytree(SANDBOX, vault,
+                            ignore=shutil.ignore_patterns(".locks"))
         else:
             vault.mkdir(parents=True)
         env = dict(os.environ)

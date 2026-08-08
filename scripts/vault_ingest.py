@@ -59,6 +59,21 @@ FORBIDDEN_SECTIONS = frozenset({"00_System", "99_Index", "17_Preferences"})
 MIN_CHUNK_CHARS = 120
 DEFAULT_MAX_NOTES = 20
 
+#: Tope de lo que se ingiere de una vez, en caracteres.
+#:
+#: `--url` ya traía un tope duro de 5.000.000 de bytes y `--text` uno de
+#: 200.000 caracteres, este último impuesto por `safety.MAX_ARG_LENGTH` sobre
+#: argv. `--file` y `--stdin` no tenían ninguno: el mismo contenido entraba
+#: controlado por una puerta y sin control por otra, que es la asimetría que
+#: convierte un tope en decorativo. Se declara aquí para las cuatro, alineado
+#: con el de red, y se puede subir con `--max-chars` cuando la ingesta grande
+#: es deliberada —lo que hace falta es que sea una decisión, no un descuido—.
+#:
+#: No es una defensa contra retroceso catastrófico: `safety.scan_content` es
+#: lineal (6,4 M de caracteres en 1,3 s, medido). Es el tope de recurso que
+#: falta para que la superficie de escritura no acepte lo ilimitado.
+DEFAULT_MAX_CHARS = 5_000_000
+
 # Ruido léxico frecuente en texto técnico que pasa el filtro de mayúsculas sin
 # ser una entidad del dominio.
 _ENTITY_STOPWORDS = {
@@ -95,8 +110,15 @@ def _read_source(args: argparse.Namespace) -> Dict[str, Any]:
     if args.text:
         return {"ok": True, "text": args.text, "origin": "inline", "source": "--text"}
 
+    # El tope se pasa a la lectura, no sólo se comprueba después: leer entero
+    # un fichero de diez gigas para luego rechazarlo por grande es agotar la
+    # memoria antes de llegar al guard. Se lee `tope + 1` —el carácter de más
+    # es lo que permite a `_check_size` distinguir "justo en el tope" de
+    # "truncado"— y el veredicto lo sigue dando un único sitio.
+    tope = getattr(args, "max_chars", DEFAULT_MAX_CHARS)
+
     if args.stdin:
-        return {"ok": True, "text": sys.stdin.read(), "origin": "stdin",
+        return {"ok": True, "text": sys.stdin.read(tope + 1), "origin": "stdin",
                 "source": "stdin"}
 
     if args.file:
@@ -105,8 +127,9 @@ def _read_source(args: argparse.Namespace) -> Dict[str, Any]:
             return {"ok": False, "error_code": "SOURCE_NOT_FOUND",
                     "error": f"No existe el fichero: {args.file}"}
         try:
-            return {"ok": True, "text": path.read_text(encoding="utf-8", errors="replace"),
-                    "origin": "file", "source": str(path)}
+            with path.open(encoding="utf-8", errors="replace") as fh:
+                return {"ok": True, "text": fh.read(tope + 1),
+                        "origin": "file", "source": str(path)}
         except OSError as exc:
             return {"ok": False, "error_code": "SOURCE_UNREADABLE", "error": str(exc)}
 
@@ -128,7 +151,9 @@ def _read_source(args: argparse.Namespace) -> Dict[str, Any]:
                     "error": "Solo se admiten URLs http(s)"}
         try:
             with urllib.request.urlopen(args.url, timeout=20) as response:
-                raw = response.read(5_000_000)  # tope duro: no se ingiere lo ilimitado
+                # El mismo tope que las otras tres puertas. Estaba escrito aquí
+                # a mano como 5_000_000 y era el único que existía.
+                raw = response.read(tope + 1)
         except Exception as exc:
             return {"ok": False, "error_code": "FETCH_FAILED", "error": str(exc)}
         return {"ok": True, "text": raw.decode("utf-8", errors="replace"),
@@ -136,6 +161,28 @@ def _read_source(args: argparse.Namespace) -> Dict[str, Any]:
 
     return {"ok": False, "error_code": "NO_SOURCE",
             "error": "Indica una fuente: --file, --text, --stdin o --url"}
+
+
+def _check_size(leido: Dict[str, Any], max_chars: int) -> Dict[str, Any]:
+    """El tope se aplica igual venga por donde venga (ver DEFAULT_MAX_CHARS).
+
+    Va después de leer y antes del preflight: se rechaza por tamaño sin haber
+    interpretado el contenido, que es el orden que quiere una superficie de
+    escritura.
+    """
+    if not leido.get("ok"):
+        return leido
+    n = len(leido["text"])
+    if n > max_chars:
+        return {
+            "ok": False,
+            "error_code": "SOURCE_TOO_LARGE",
+            "error": (f"La fuente trae {n} caracteres y el tope es "
+                      f"{max_chars} (origen: {leido.get('origin')})"),
+            "recovery": ("Parte la fuente, o sube el tope con "
+                         "--max-chars si la ingesta grande es deliberada"),
+        }
+    return leido
 
 
 def _preflight(text: str, source: str) -> Dict[str, Any]:
@@ -450,6 +497,10 @@ Notas:
                         help="Explícito; es el comportamiento por defecto")
     parser.add_argument("--max-notes", type=int, default=DEFAULT_MAX_NOTES,
                         help=f"Tope de notas derivadas (default: {DEFAULT_MAX_NOTES})")
+    parser.add_argument("--max-chars", type=int, default=DEFAULT_MAX_CHARS,
+                        help=("Tope de caracteres de la fuente, igual para "
+                              f"--file/--stdin/--text/--url (default: "
+                              f"{DEFAULT_MAX_CHARS})"))
     parser.add_argument("--tags", nargs="*", help="Tags adicionales")
     parser.add_argument("--allow-network", action="store_true",
                         help="Permite descargar --url")
@@ -457,7 +508,7 @@ Notas:
 
     args = parser.parse_args()
 
-    source = _read_source(args)
+    source = _check_size(_read_source(args), args.max_chars)
     if not source.get("ok"):
         print(json.dumps(source, indent=2, ensure_ascii=False))
         return 1

@@ -232,7 +232,15 @@ def vault_query_parse(query: str, now: Optional[datetime] = None) -> Dict[str, A
 
     # Rutas y wikilinks explícitos son semillas de grafo, no términos de búsqueda.
     seeds = re.findall(r"\[\[([^\]]+)\]\]", query)
-    seeds += [p for p in re.findall(r"\b[\w./-]+\.md\b", query)]
+    # `\\` además de `/`: la consulta la escribe una persona, y en Windows —donde
+    # se desarrolla este estándar— copiar una ruta del explorador da
+    # `07_Knowledge\nota.md`. El patrón viejo solo veía `/`, así que esa semilla
+    # se perdía como término de búsqueda suelto y el subgrafo salía sin ancla.
+    # Se normaliza al separador del vault, que es siempre `/`.
+    seeds += [
+        p.replace("\\", "/")
+        for p in re.findall(r"\b[\w./\\-]+\.md\b", query)
+    ]
     seeds = list(dict.fromkeys(seeds))
     for seed in seeds:
         evidence.append({"field": "seeds", "value": seed, "why": "ruta o wikilink"})

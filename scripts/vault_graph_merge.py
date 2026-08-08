@@ -28,6 +28,8 @@ from pathlib import Path
 from difflib import SequenceMatcher
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+from vault_regex import RE_WIKILINK  # dueño único del patrón (AP-50)
+
 from vault_errors import wrap_main
 from vault_io import atomic_write_json, write_report
 from vault_registry import ORDERED_SECTIONS
@@ -96,7 +98,7 @@ def _normalize_stem(s: str) -> str:
 
 
 def _extract_wiki_links(content: str) -> List[str]:
-    return re.findall(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]", content)
+    return RE_WIKILINK.findall(content)
 
 
 def _extract_title(content: str) -> Optional[str]:

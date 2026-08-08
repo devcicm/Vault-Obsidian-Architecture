@@ -20,6 +20,8 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from vault_regex import RE_WIKILINK  # dueño único del patrón (AP-50)
+
 
 # ============================================================
 # SLUGIFY
@@ -209,7 +211,15 @@ def parse_frontmatter(content: str) -> Dict[str, Any]:
         return {}
     try:
         return _coerce_dates(yaml.safe_load(match.group(1)) or {})
-    except yaml.YAMLError:
+    except (yaml.YAMLError, RecursionError):
+        # RecursionError: el parser de PyYAML es recursivo, y el frontmatter
+        # es dato externo. Un valor con ~500 niveles de anidamiento —`x: [[[[…`,
+        # 500 corchetes, doce caracteres de escribir— desborda la pila DENTRO de
+        # `safe_load`, antes de llegar a `_coerce_dates`. `RecursionError` no
+        # hereda de `YAMLError`, así que subía sin que nadie la parara: UNA nota
+        # así mataba la auditoría completa del vault, no la lectura de esa nota.
+        # Se trata como lo que es —frontmatter malformado— igual que el YAML
+        # roto de la línea de arriba: el mismo defecto de dato, el mismo veredicto.
         return {}
 
 
@@ -227,8 +237,8 @@ def parse_frontmatter_with_body(content: str) -> Tuple[Dict[str, Any], str]:
     try:
         fm = _coerce_dates(yaml.safe_load(match.group(1)) or {})
         return fm, match.group(2)
-    except yaml.YAMLError:
-        return {}, content
+    except (yaml.YAMLError, RecursionError):
+        return {}, content  # ver parse_frontmatter — pila desbordada por anidamiento
 
 
 def yaml_scalar(value: Any) -> str:
@@ -308,7 +318,7 @@ def strip_code_blocks(content: str) -> str:
 
 def extract_wikilinks(content: str) -> List[str]:
     """Extract [[wiki-links]] from content. Returns list of link targets."""
-    return re.findall(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]", content)
+    return RE_WIKILINK.findall(content)
 
 
 def extract_wikilinks_with_context(content: str) -> List[Tuple[str, int, str]]:
@@ -319,7 +329,7 @@ def extract_wikilinks_with_context(content: str) -> List[Tuple[str, int, str]]:
     """
     results = []
     for i, line in enumerate(content.split("\n"), 1):
-        links = re.findall(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]", line)
+        links = RE_WIKILINK.findall(line)
         for link in links:
             results.append((link, i, line.strip()))
     return results

@@ -45,6 +45,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 from vault_io import atomic_write_text, get_vault_root, normalize_stem
 from vault_registry import ORDERED_SECTIONS
 from vault_regex import (
+    RE_WIKILINK,
+    RE_WIKILINK_CON_ALIAS,
     fix_nested_brackets,
     fix_whitespace_in_links,
     extract_wiki_links_strict,
@@ -67,7 +69,7 @@ _MIGRATION_DIR = "10_Migrated"
 
 _FIX_LOG_DIR = "00_System/.graph-fixes"
 
-_WIKILINK_RE = re.compile(r"\[\[([^\]|]+)(?:\|([^\]]+))?\]\]")
+_WIKILINK_RE = RE_WIKILINK_CON_ALIAS
 
 
 def _split_clean_note(text: str) -> tuple[str, str | None]:
@@ -149,7 +151,7 @@ def _replace_wikilink(text: str, old_target: str, new_target: str) -> tuple[str,
     if not changed:
         from vault_io import normalize_stem as _ns
 
-        for match in re.finditer(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]", text):
+        for match in RE_WIKILINK.finditer(text):
             found_raw = match.group(1)
             if _ns(found_raw) == _ns(old_target):
                 replaced = (

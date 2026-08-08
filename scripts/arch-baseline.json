@@ -10,6 +10,7 @@
     "vault/indices/repositorio.py -> vault/grafo",
     "vault_bug_save -> vault_norms",
     "vault_change_log -> vault/gobernanza",
+    "vault_changelog_check -> vault_standard_upgrade",
     "vault_code_tag -> vault_norms",
     "vault_code_tag -> vault_write",
     "vault_context_pack -> vault_search",

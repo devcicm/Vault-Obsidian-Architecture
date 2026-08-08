@@ -117,4 +117,8 @@ def test_el_envelope_ya_no_declara_la_escritura_fantasma(vault):
     envelope = json.loads(salida.stdout.strip().splitlines()[-1])
 
     assert envelope["unchanged"] == 0, envelope
-    assert envelope["written"] == 5, envelope
+    # 5 → 4 en v40.7. El quinto no era trabajo: era el fichero de trazas
+    # entrando en el ledger de AP-37. Contar la telemetría como trabajo hacía
+    # que el indicador subiera con el número de errores registrados, que es
+    # justo lo contrario de lo que mide. Ver `_NO_ES_TRABAJO` en `vault_io`.
+    assert envelope["written"] == 4, envelope

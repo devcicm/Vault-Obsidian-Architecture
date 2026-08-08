@@ -1,13 +1,13 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 96 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
+Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 97 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **119 archivos Python** — 96 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
+- **120 archivos Python** — 97 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
 - **Saneamiento de índices (v38.1)** — `vault_section_index.py --heal [--root]` regenera índices con formato legacy `[[stem|alias]]` o ausentes; el auto-index post-write se auto-cura si un agente escribe `index.md` a mano
-- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 96 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
+- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 97 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
 - **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault; requiere marcador de CONTENIDO (01_Projects/02_Observability/03_Decisions/.obsidian), no solo 00_System/99_Index (evita el ciclo auto-reforzado de detección); override runtime con `set_vault_root()`/env `VAULT_ROOT`
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
@@ -59,7 +59,7 @@ Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan 
 | [Grupo 32 — Gestión de Carpetas](#grupo-32--gestión-de-carpetas) | vault_folder_registry |
 | [Grupo 33 — Corrección Automática](#grupo-33--corrección-automática) | vault_fix_brackets, vault_graph_fix |
 | [Grupo 34 — Memoria de Contexto](#grupo-34--memoria-de-contexto) | vault_preferences, vault_query_parse, vault_subgraph, vault_context_pack, vault_ingest |
-| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_error_contract, vault_foreign_check, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_noop_audit, vault_smoke, vault_voice |
+| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_changelog_check, vault_error_contract, vault_foreign_check, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_noop_audit, vault_smoke, vault_voice |
 | [Grupo 36 — Defectos y Cuarentena](#grupo-36--defectos-y-cuarentena) | vault_bug_save, vault_quarantine |
 | [Grupo 37 — Skills](#grupo-37--skills) | vault_sdd_init, vault_sanacion |
 | [Observabilidad de Tools](#observabilidad-de-tools) | vault_errors |
@@ -1529,6 +1529,39 @@ python vault_subgraph.py --seeds a.md b.md --hops 3 --section 07_Knowledge
 python vault_subgraph.py --seeds mcp-protocol --format mermaid
 ```
 
+**Qué cuesta una consulta (v40.7).** El recorrido es un BFS **sin conjunto de
+visitados**: reencola un nodo cada vez que lo alcanza por un camino mejor, que es
+lo que permite quedarse con la ruta más fuerte y no con la primera en un grafo con
+ciclos —o sea, en cualquier vault real. Termina porque la relevancia decae: si
+`peso * HOP_DECAY <= 1`, dar la vuelta a un ciclo nunca mejora lo ya visto. Ese
+invariante estaba solo en la cabeza de quien escribió el bucle; ahora
+`_check_hop_decay_invariant()` lo comprueba al importar y falla si un peso lo
+rompe. Medido en un grafo de 60 nodos, contando encolados a 4/8/12 saltos: con
+peso 1.6 (×0.6 = 0.96) el recorrido se queda plano en 59; con 1.7 (= 1.02) pasa a
+125/365/605 y sigue creciendo. Subir un peso a 1.2 parece calibración y es un
+cuelgue.
+
+Con el invariante en pie, una consulta cuesta **O(V+E), independientemente de
+`--hops`**. Y conviene leer bien qué acota `--max-nodes`: acota **la salida, no el
+trabajo**. Medido sobre 500 nodos con grado 4 y con grado 8, a 2–6 saltos el BFS
+encola 499 (= V−1) y devuelve 10. Bajar `--max-nodes` no abarata la consulta.
+
+Se intentó arreglarlo con un mejor-primero (Dijkstra multiplicativo), que sí
+permitiría parar en cuanto hubiera `max_nodes` nodos finalizados. **No es
+equivalente, y se revirtió.** El motivo: aquí un nodo se expande cada vez que se
+alcanza por un camino de más relevancia, y esas expansiones ocurren a
+profundidades distintas —la más superficial conserva presupuesto de saltos y llega
+donde la profunda ya no—. Un Dijkstra expande cada nodo una sola vez y pierde el
+resto. Comparado envelope a envelope sobre 3.600 casos aleatorios (25 grafos × 3
+densidades × 4 saltos × 4 topes × 3 filtros), cambiaban nodos y aristas; el
+testigo fue una arista presente en un recorrido y ausente en el otro. Cambiar el
+coste aquí es cambiar el envelope publicado, y eso no entra de refilón en un
+arreglo de rendimiento.
+
+`tests/test_bigo_grafo_y_recursion.py` fija las tres cosas —el invariante, el
+coste real, y la expansión múltiple que hace inviable el atajo— para que un cambio
+futuro no las desmienta en silencio.
+
 Desde v40.0 el contexto **Consulta** resuelve sus rutas al usarlas: `17_Preferences/`, `00_System/token-usage/` y `.tool-tokens.json` se declaran una sola vez en `vault/consulta/repositorio.py`. Lo que **no** está ahí es el grafo — `99_Index/graph.json` lo escribe el contexto Grafo y `vault_subgraph` lo recibe de `RepositorioGrafo`, porque dos sitios decidiendo dónde vive el grafo es AP-05.
 
 Ese cableado entre contextos ahora lo **ve** el guard: `vault_arch --check` reporta `vault_subgraph -> vault/grafo` como cruce declarado. Antes solo miraba los imports dentro de `vault/`, así que un adaptador podía cablear el dominio de otro contexto sin que saltara nada — el mismo punto ciego por el que se coló AP-48.
@@ -1561,10 +1594,19 @@ se escribe nada. Además es **dry-run por defecto**, nunca sobrescribe una nota
 existente, y lo ingerido entra con `status: draft` y `cia_integrity: low` hasta
 que alguien lo revise. La red está apagada salvo `--allow-network` explícito.
 
+**El tope de tamaño es el mismo por las cuatro puertas** (`--max-chars`, por
+defecto 5.000.000). Hasta v40.7 había tres topes distintos y uno inexistente:
+`--text` estaba limitado a 200.000 caracteres por `safety.MAX_ARG_LENGTH` sobre
+argv, `--url` a 5.000.000 escritos a mano en la llamada de red, y `--file` y
+`--stdin` no tenían ninguno — es decir, las dos puertas cómodas eran las
+descontroladas. El rechazo (`SOURCE_TOO_LARGE`) ocurre además **sin leer entero**
+lo que se rechaza: se lee `tope + 1` y se decide.
+
 ```bash
 python vault_ingest.py --file notas-reunion.md --section 07_Knowledge   # propuesta
 python vault_ingest.py --file notas-reunion.md --section 07_Knowledge --commit
 cat conversacion.txt | python vault_ingest.py --stdin --section 04_Sessions
+python vault_ingest.py --file volcado.md --section 07_Knowledge --max-chars 200000
 ```
 
 ---
@@ -1690,7 +1732,7 @@ El vault expone sus herramientas como un **servidor MCP** que las IAs consumen d
 
 **Archivo:** `../mcp/nodejs/vault-mcp-server.mjs` (~1650 líneas, cero dependencias npm)  
 **Plan:** `../mcp/PLAN.md` — documento de evidencia con 8 fases de implementación
-**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (96 tools)
+**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (97 tools)
 
 Los parámetros que el catálogo publica **se derivan del `argparse` de cada script**,
 no se escriben a mano: el servidor compone `--<param>` literal, así que un param
@@ -1738,7 +1780,7 @@ node mcp/nodejs/vault-mcp-server.mjs --port 3000
 
 ### `vault_norms.py`
 
-Registro canónico de las 64 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
+Registro canónico de las 66 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
 
 ```bash
 python vault_norms.py                             # catálogo completo
@@ -1788,6 +1830,48 @@ python vault_code_tag.py --list --prefix cr
 ```
 
 ---
+
+### `vault_changelog_check.py`
+El changelog del manifiesto, contrastado contra git. Cada entrada publica el commit
+que introdujo su versión —`### v40.6 — 2026-08-07 \`git: bf8ba6d\``— y ese par
+hash/fecha se escribía a mano sin que nada lo verificase.
+
+Al medirlo por primera vez: **55 entradas, 31 con hash real, los 31 existen** —ninguno
+inventado— **y 5 fechas contradecían al commit que citaban**. Cuatro por un día; la de
+v39.0 por once, y esa entrada arrastra además un commit de fijado que corrigió el hash
+(`13bf9ca -> 00731c6`) sin tocar la fecha. Las cinco se corrigieron, que es lo que el
+propio preámbulo del changelog autoriza: la no-derogación prohíbe reescribir la
+historia, no prohíbe que diga la verdad.
+
+Comprueba cuatro cosas: que el hash exista y sea un commit, que la fecha coincida con
+la de **autoría** del commit (`%as`, no `%cs` — un rebase reescribe la segunda y
+estrenaría divergencias falsas), que ninguna versión ya cerrada siga publicando
+`git: pending`, y que el orden sea decreciente. El guard del `pending` existía suelto
+en la suite y solo cubría lo primero; además avisaba tarde, porque la excepción se
+deriva de `CURRENT_VERSION` y no salta hasta la versión siguiente.
+
+`--fijar-hash` resuelve el huevo y la gallina que originó todo esto: la entrada debe
+citar el hash del commit que la contiene, y ese hash no existe hasta que el commit
+está hecho. La salida era un ritual de dos commits —ocho veces en las últimas veinte
+entradas del historial— cuyo segundo paso dependía de acordarse. Ahora es un comando,
+que además toma la fecha del commit en vez de conservar la escrita a mano.
+
+No commitea. Escribe el manifiesto y devuelve el mensaje de commit sugerido: una tool
+de gobernanza que tocase el historial por su cuenta sería otra cosa distinta de un
+guard.
+
+```bash
+python vault_changelog_check.py --check --strict     # la puerta `changelog`
+python vault_changelog_check.py --list               # entradas + fecha real del commit
+python vault_changelog_check.py --fijar-hash --dry-run
+python vault_changelog_check.py --freeze             # solo para lo que no se pueda corregir
+```
+
+Un manifiesto en el que no reconoce ni una entrada devuelve `PARSE_FAILED`, no un
+informe sin problemas. La distinción no es teórica: contrastado contra cinco copias
+archivadas del manifiesto en un vault ajeno (regla 7), tres se leen enteras y dos
+—migradas, sin la sección— caen por ese camino. Un guard que contara problemas y
+nada más habría dicho «ok» sobre un fichero que no supo leer.
 
 ### `vault_doc_counts.py`
 

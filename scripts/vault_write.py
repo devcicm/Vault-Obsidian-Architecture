@@ -53,6 +53,7 @@ from vault_encoding import (
     detect_issues,
 )
 from vault_regex import (
+    RE_WIKILINK,
     detect_bracket_anomalies,
     detect_path_anchored,
     fix_nested_brackets,
@@ -451,7 +452,7 @@ def _deduce_type_from_folder(folder: str) -> str:
 def extract_wiki_links(content: str) -> List[str]:
     """Extract wiki-links [[note]] from content."""
 
-    return re.findall(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]", content)
+    return RE_WIKILINK.findall(content)
 
 
 def update_search_index(

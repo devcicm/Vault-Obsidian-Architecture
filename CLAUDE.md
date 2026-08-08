@@ -10,9 +10,9 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | Ruta | Qué es |
 |---|---|
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~6.000 líneas). Fuente normativa. |
-| `scripts/*.py` | ~119 scripts, 96 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
+| `scripts/*.py` | ~120 scripts, 97 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (2358 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (2427 tests). Toda norma con guard debe tener test. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
 | `vault-sandbox/` | **Único** vault de pruebas del repo. Todo runtime va aquí. |
@@ -158,8 +158,20 @@ python scripts/vault_quality_check.py --min-score 0.7
       Ningún envelope de error nuevo se construye a mano: el fallo sale por
       `emit_error` con `error_code` y `recovery`, que es lo que el consumidor mira
       para decidir. Baseline que solo puede encoger; tras saldar deuda, `--freeze`.
+- [ ] `python scripts/vault_changelog_check.py --check --strict` → `ok: true`. El
+      changelog del manifiesto no contradice a git: el hash citado existe, la fecha
+      es la del commit —de **autoría**, que un rebase no reescribe— y ninguna
+      versión ya cerrada sigue publicando `git: pending`. Cerrar una versión ya no
+      es un commit manual de ritual: `--fijar-hash` sustituye el `pending` por el
+      hash real y corrige la fecha de paso, que es justo el dato que se
+      desincronizó once días en v39.0.
 - [ ] `python scripts/vault_arch.py --check --strict` → `ok: true`. Contextos acotados:
       fronteras, puertos, vocabularios con dueño, entorno declarado, AP-49 en cero.
+      Desde v40.7 mide también **AP-54** en `unsynced_writes`: ningún handler
+      responde a un `file_lock` fallido escribiendo igual. El `TimeoutError`
+      significa que otro lo tiene tomado **ahora mismo**, así que esa escritura
+      no es una carrera improbable — es la única situación en la que ese código
+      corre. Omitir la escritura sí es correcto y no se marca.
 - [ ] `python scripts/vault_doc_sync.py --check --strict` cubre además, desde v40.4, que
       **todo comando que la documentación publica exista y acepte sus flags**. `CLAUDE.md`
       publicaba los dos comandos de salud con `--root`, que ninguna de las dos tools

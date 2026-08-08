@@ -57,6 +57,11 @@ WORK_INDICATORS = {
     "added",
     "applied",
     "changed",
+    # Plural del anterior. Lo introdujo `vault_changelog_check --fijar-hash`,
+    # que no devuelve un contador sino el detalle de lo que tocó (hash antes y
+    # después, si corrigió la fecha). Sigue siendo un indicador de trabajo: sin
+    # él no se distingue «fijé el hash» de «no había nada que fijar».
+    "changes",
     "claims_checked",
     "count",
     "created",

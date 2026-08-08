@@ -79,6 +79,56 @@ HOP_DECAY = 0.6
 DEFAULT_HOPS = 2
 DEFAULT_MAX_NODES = 50
 
+# ── El invariante que hace que el BFS termine ────────────────────────────────
+#
+# El recorrido de `vault_subgraph` no lleva un conjunto de visitados: reencola
+# un nodo cada vez que lo alcanza por un camino MEJOR (`new_relevance >
+# best[neighbor]`). Eso es deliberado —un nodo alcanzable por dos rutas se queda
+# con la más fuerte, no con la primera— y es lo que permite que la relevancia
+# sea correcta en un grafo con ciclos, que es todo vault real.
+#
+# Termina solo porque la relevancia DECRECE en cada salto: si
+# `peso * HOP_DECAY <= 1`, recorrer un ciclo nunca mejora lo ya visto y la
+# reencolada se corta sola. Si algún peso sube por encima de `1 / HOP_DECAY`,
+# dar la vuelta a un ciclo MEJORA la relevancia y el bucle deja de terminar por
+# relevancia: pasa a depender solo de `hops`, y el coste crece exponencialmente
+# con él.
+#
+# Medido sobre un grafo sintético de 60 nodos y grado 3, contando encolados a
+# hops 4/8/12:
+#
+#     peso 1.0  (×decay 0.60)  ->   59 /  59 /  59   — plano, satura en V-1
+#     peso 1.6  (×decay 0.96)  ->   59 /  59 /  59   — sigue plano
+#     peso 1.7  (×decay 1.02)  ->  125 / 365 / 605   — crece con hops
+#     peso 2.0  (×decay 1.20)  ->  257 / 3.6M+       — explota
+#
+# El punto de giro cae exactamente donde predice la desigualdad. Hasta aquí el
+# invariante estaba solo en la cabeza de quien escribió el bucle: nada lo
+# comprobaba, y subir un peso a 1.2 —un cambio que parece de calibración— habría
+# convertido una consulta en un cuelgue sin que ninguna puerta se enterara.
+MAX_PREDICATE_WEIGHT = 1.0 / HOP_DECAY
+
+
+def _check_hop_decay_invariant() -> None:
+    """Falla al importar si un peso rompe la terminación del BFS."""
+    culpables = {
+        p: w for p, w in PREDICATE_WEIGHT.items()
+        if w * HOP_DECAY > 1.0
+    }
+    if DEFAULT_WEIGHT * HOP_DECAY > 1.0:
+        culpables["<DEFAULT_WEIGHT>"] = DEFAULT_WEIGHT
+    if culpables:
+        raise ValueError(
+            "PREDICATE_WEIGHT rompe el invariante de terminación del BFS "
+            f"(peso * HOP_DECAY <= 1, con HOP_DECAY={HOP_DECAY} el tope es "
+            f"{MAX_PREDICATE_WEIGHT:.4f}): {culpables}. Con un peso por encima "
+            "del tope, recorrer un ciclo mejora la relevancia y el recorrido "
+            "crece exponencialmente con --hops."
+        )
+
+
+_check_hop_decay_invariant()
+
 
 def _load_graph() -> Optional[Dict[str, Any]]:
     """Carga el grafo, prefiriendo el enriquecido (trae predicados y clase)."""
@@ -216,7 +266,22 @@ def vault_subgraph(
         }
 
     # BFS. `best` guarda la mejor relevancia vista para cada nodo: un nodo
-    # alcanzable por dos caminos se queda con el más fuerte, no con el primero.
+    # alcanzable por dos caminos se queda con el mas fuerte, no con el primero.
+    #
+    # Se intento sustituir por un mejor-primero (Dijkstra multiplicativo) para
+    # que `max_nodes` acotara el trabajo y no solo la salida. NO ES EQUIVALENTE,
+    # y la comparacion envelope a envelope contra este recorrido lo demostro:
+    # aqui un nodo se expande VARIAS VECES, a profundidades distintas, cada vez
+    # que mejora su relevancia. Un Dijkstra lo expande una sola vez, a la
+    # profundidad de su mejor camino, y pierde las expansiones mas superficiales
+    # -las que todavia tenian presupuesto de saltos-. Sobre grafos aleatorios eso
+    # cambiaba nodos y aristas del resultado; el caso testigo fue la arista
+    # `n39 -> n0`, presente aqui y ausente alli.
+    #
+    # El coste queda documentado como lo que es -O(V+E) por consulta, con
+    # `max_nodes` acotando la salida-, medido y fijado en
+    # `tests/test_bigo_grafo_y_recursion.py`. Cambiarlo es cambiar el envelope
+    # publicado, y eso no se hace de refilon dentro de un arreglo de rendimiento.
     best: Dict[str, float] = {p: 1.0 for p in resolved}
     depth: Dict[str, int] = {p: 0 for p in resolved}
     via: Dict[str, Optional[Dict[str, str]]] = {p: None for p in resolved}
@@ -245,6 +310,9 @@ def vault_subgraph(
             queue.append((neighbor, d + 1, new_relevance))
 
     results: List[Dict[str, Any]] = []
+    # Solo los EXPANDIDOS. `best` contiene además nodos meramente descubiertos,
+    # cuya relevancia todavía podía mejorar cuando el recorrido paró: publicarlos
+    # sería publicar un número provisional como si fuera el definitivo.
     for path, relevance in best.items():
         node = nodes.get(path, {})
         if path not in resolved and not _matches_filters(
@@ -268,6 +336,7 @@ def vault_subgraph(
     # Semillas primero, luego relevancia; el desempate por ruta hace la salida
     # determinista, que es lo que permite testearla.
     results.sort(key=lambda r: (not r["is_seed"], -r["relevance"], r["path"]))
+    # Acota la SALIDA, no el trabajo: ver el comentario del recorrido.
     truncated = len(results) > max_nodes
     results = results[:max_nodes]
 

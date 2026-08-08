@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.6 — 2026-08-08  
+**Versión:** v40.7 — 2026-08-08  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -3501,7 +3501,7 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **64 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **66 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -4993,7 +4993,7 @@ Dos causas, y la segunda es la incómoda:
 
 1. **El audit no lo ejecuta nadie.** En las **1.356 ejecuciones de tools
    registradas** en los `.tool-trace.json` de ese parque, `vault_norms` no
-   aparece **ni una vez**. 41 de las 96 tools del catálogo no se han ejecutado
+   aparece **ni una vez**. 41 de las 97 tools del catálogo no se han ejecutado
    jamás. Los agentes escriben; no gobiernan. Un enforcement que depende de que
    alguien se acuerde de invocarlo es enforcement en el papel.
 2. **Los valores no canónicos los escribía el propio estándar.** El más
@@ -5602,7 +5602,7 @@ de envelope con su contrato de `00_System/tool-spec.json`:
 Y la divergencia peor no era de forma sino de efecto: `jsNativeGraph` no tiene un
 solo `writeFile`. Un agente llamaba `vault_graph` por MCP, recibía `ok: true`, y
 el grafo se quedaba sin regenerar — **AP-37 y AP-47 servidos a la vez por el único
-camino que un agente real usa**. `vault_smoke` recorre las 96 tools del catálogo,
+camino que un agente real usa**. `vault_smoke` recorre las 97 tools del catálogo,
 pero ejecuta el `.py`: probaba exactamente la implementación que el agente no toca.
 
 **Prevención:** backend nativo solo para lo que **no tiene** implementación en
@@ -5936,6 +5936,174 @@ que algunos sitios contados son envelopes internos que nunca se imprimen. Están
 en la baseline, no bloquean, y quien salde su módulo los verá y decidirá.
 Declararlo es parte de la norma: un guard que promete una precisión que no tiene
 es la clase de afirmación no falsable que AP-37 persigue.
+
+---
+
+### AP-53 — El historial se afirma a mano y nadie lo contrasta con git
+
+**Síntoma.** Una línea de documentación afirma un hecho del historial:
+
+```
+### v39.0 — 2026-07-25 `git: 00731c6`
+```
+
+El commit `00731c6` existe. Es de **2026-08-05**. La entrada llevaba once días de
+adelanto sobre la realidad y nadie podía notarlo, porque nada leía esa línea
+contra `git`.
+
+**Por qué importa.** El hash y la fecha existen en dos sitios: en git, donde son
+el dato, y en la documentación, donde son una copia escrita a mano. Es AP-05
+aplicada al historial. Y es AP-47 en su forma menos visible: AP-47 persigue
+cifras escritas a mano —cuántas tools, cuántas normas— y una fecha de release o
+un hash de commit son exactamente la misma clase de dato derivable, solo que
+nadie los lee como una cifra y por eso escaparon al guard que ya existía.
+
+**Lo medido.** Primera pasada sobre el changelog de este manifiesto, en v40.7:
+
+| Medida | Valor |
+|---|---|
+| Entradas de changelog | 55 |
+| Con hash real (no `—`, no `pending`) | 31 |
+| Hashes que no existen en git | **0** |
+| Fechas que contradicen a su commit | **5** |
+
+Que los 31 hashes existan es la buena noticia: ninguno inventado. Las cinco
+fechas eran cuatro de un día y una de once. La de once, v39.0, arrastra además un
+commit de fijado que corrigió el hash (`13bf9ca -> 00731c6`) **sin tocar la
+fecha**. Esa corrección parcial es el modo de fallo típico: quien corrige mira el
+dato que le falló, no el que viajaba pegado a él.
+
+**El huevo y la gallina, que es lo que empuja a escribirlo a mano.** La entrada
+debe citar el hash del commit que la introduce, y ese hash no existe hasta que el
+commit está hecho — y la entrada forma parte de ese commit. La salida adoptada fue
+un ritual de dos commits:
+
+```
+feat: v40.6 — …                                    (changelog con `git: pending`)
+docs: fijar hash del changelog v40.6 (git: pending -> bf8ba6d)
+```
+
+Aparece ocho veces en las últimas veinte entradas del historial. Tiene dos costes
+que nadie había escrito. El segundo commit depende de acordarse: si se olvida, el
+`pending` queda publicado, y el guard que existía —derivado de `CURRENT_VERSION`—
+no lo caza hasta la versión **siguiente**. Y el hash publicado apunta a un commit
+que no contiene la entrada que lo cita, de modo que el comando que el propio
+changelog recomienda para navegar (`git show <hash> -- vault-obsidian-architecture.md`)
+enseña el manifiesto sin ella.
+
+**Prevención.** Derivar el dato del repositorio y comprobarlo en una puerta:
+
+```bash
+python scripts/vault_changelog_check.py --check --strict
+```
+
+Verifica cuatro cosas — que el hash exista y sea un commit, que la fecha coincida
+con la de **autoría** (`%as`, no `%cs`: un rebase reescribe la segunda y
+estrenaría divergencias falsas), que ninguna versión ya cerrada publique
+`pending`, y que el orden sea decreciente.
+
+Y una norma que solo prohibiera no bastaría aquí, porque el paso manual seguiría
+siendo manual. `--fijar-hash` lo convierte en comando: sustituye el `pending` de
+la versión en curso por el hash real y toma la fecha del commit en vez de
+conservar la escrita a mano. No commitea — escribe el manifiesto y devuelve el
+mensaje sugerido; una tool de gobernanza que tocase el historial por su cuenta
+dejaría de ser un guard.
+
+**Sobre la no-derogación.** Las cinco fechas se **corrigieron**, no se anotaron.
+El preámbulo del changelog ya lo autoriza: «solo se corrigen errores factuales
+(hashes, rutas, conteos)». La no-derogación prohíbe reescribir la historia; no
+prohíbe que la historia diga la verdad. Queda aun así una baseline que solo puede
+encoger, para el caso que no se pueda corregir —una entrada cuyo commit deje de
+existir tras un filtrado del historial—, porque una puerta que nace en rojo se
+desactiva. Hoy está vacía.
+
+**Contraste contra material ajeno (regla 7).** Un vault de fuera conserva cinco
+copias archivadas de este manifiesto, la más antigua de v27. Tres conservan el
+changelog y el patrón las lee enteras —35/35, 37/37 y 27/27 entradas—, así que
+el guard no es ciego a un formato que no acabe de escribir él mismo. Dos son
+copias migradas que perdieron la sección: ahí devuelve `PARSE_FAILED`, no un
+informe limpio, que es la diferencia entre «no hay problemas» y «no supe leer el
+fichero» —y es exactamente el modo de fallo de AP-44 aplicado a este guard—. Las
+dos copias con changelog completo ya traían `fuera_de_orden` y
+`fecha_divergente` desde mayo: las cinco fechas corregidas no eran un desliz
+reciente, llevaban meses publicadas.
+
+El contraste destapó además un defecto en el consumidor, no en la medida:
+`comprobar()` tiene dos formas de envelope —el informe y el error—, y el test
+que delegaba en ella pedía `problems` sin comprobarlo, de modo que sobre una de
+esas copias reventaba con `KeyError` en vez de fallar diciendo qué pasó. Las dos
+formas son disjuntas a propósito; el consumidor decide por `ok` y `error_code`,
+no adivinando qué claves vinieron.
+
+---
+
+### AP-54 — El lock falla y se escribe igual
+
+**Enforcement:** `guard` · **Severidad:** high · **Introducido:** v40.7
+
+**Síntoma.** `vault_sdd_init` se pasaba del timeout de 60 s de la tool. Moría
+dejando `docs/sdd/` a medio escribir, y lo hacía **después** de imprimir
+`Generated 14 files` y `Drift status: PASS`. Durante dos comprobaciones eso me
+llevó a la conclusión equivocada —creer que el generador no derivaba las normas
+del registro— cuando lo que pasaba era que no llegaba a escribirlas.
+
+**Medida.** Instrumentando la adquisición de locks durante una generación real:
+
+| Lock | Tomas | Fallidas | Espera total |
+|---|---|---|---|
+| `.tool-trace.json.lock` | 26 | 13 | 65,14 s |
+
+Trece por cinco segundos exactos: el `timeout=5` de `log_trace`, consumido
+entero, trece veces.
+
+**Las dos causas, que conviene no confundir.** La espera venía de que
+`file_lock` no era reentrante: un hilo que volvía a pedir un lock que él mismo
+sostenía se bloqueaba contra sí mismo hasta el deadline. Eso se corrige **una
+vez**, en el kernel, y ya está hecho — `file_lock` concede la reentrancia por
+hilo sin volver a adquirir nada, y solo el bloque más externo libera.
+
+Lo que esta norma vigila es la otra mitad, la que se repite en cada llamante: qué
+se hace cuando el lock falla. `vault_errors_trace` caía a
+`_append_trace_entry(use_atomic=False)` — escribir el fichero de trazas **sin
+lock**, justo mientras quien sí lo tenía lo estaba reemplazando.
+
+**Por qué el razonamiento habitual es al revés.** Quien escribe ese handler
+piensa que perder el dato es peor que escribirlo sin sincronizar. Pero un
+`TimeoutError` significa que *otro lo tiene tomado ahora mismo*: la escritura del
+handler no es una carrera improbable, es la única situación en la que ese código
+llega a ejecutarse. La lentitud era el síntoma visible; la escritura sin
+sincronizar era el defecto.
+
+**Prevención.** Descartar la escritura o propagar el error. Nunca escribir sin
+el lock que se acaba de no conseguir.
+
+```bash
+python scripts/vault_arch.py --check --strict   # el patrón sale en `unsynced_writes`
+```
+
+El detector busca por AST un `with file_lock(...)` dentro de un `try` cuyo
+handler contenga una llamada de escritura. **Omitir** la escritura no se marca:
+esa es la respuesta correcta, y `vault_quality_check` ya la tenía —lo que
+confirma que la norma distingue las dos reacciones y no persigue a todo el que
+toca un lock—.
+
+**Lo que la corrección destapó debajo.** Arreglar la reentrancia hizo visible un
+bucle que llevaba latente desde siempre: `atomic_write_text` sanea el texto, y
+cuando aplica algún arreglo llama a `log_encoding_fixes`, que llama a
+`log_trace`, que vuelve a escribir el fichero de trazas — que se vuelve a
+sanear. Medido en un solo `vault_risk_save`: **196 escrituras del trace donde
+debía haber una**. Estaba escondido porque el camino que lo dispara era
+exactamente el lock reentrante que fallaba, y la rama sin saneado a la que caía
+rompía el ciclo **por accidente**. Un defecto tapado por otro defecto: al
+corregir el de abajo, el de arriba salió entero.
+
+La corrección es que el trace se escribe con `sanitize=False` — es JSON que
+genera el propio módulo, no hay nada que sanear que no hayamos escrito
+nosotros—. Y de paso quedó claro un segundo error de medida: el fichero de
+trazas entraba en el ledger de AP-37, así que el indicador de trabajo **subía
+con el número de errores registrados**, que es justo lo contrario de lo que
+mide. La telemetría se declara en `vault_io._NO_ES_TRABAJO` y no cuenta;
+escribirla sigue ocurriendo, solo deja de contarse como trabajo sobre el vault.
 
 ---
 
@@ -6476,7 +6644,8 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
-| v40.6 | 2026-08-08 | Las tres baselines de deuda pasan a indexarse por **firma de sitio** (`módulo::función::hash` sobre `ast.unparse`) porque `módulo:línea` reportaba como deuda nueva el mismo código diez líneas más abajo, y `--freeze` se niega a congelar sitios sin precedente en vez de fiarse de una receta manual de tres pasos; el heal de AP-46 dejaba de reparar tres de cada cuatro notas por deducir la clase de rotura de la presencia de un `---` que era una regla horizontal del cuerpo, y ahora prueba las candidatas contra `yaml.safe_load`; AP-52 de 110 sitios a **0** con tres códigos nuevos y exenciones por `módulo::función` para los tres sitios que parecen un envelope de error sin serlo; el `superseded_by` de `healthScore` deja de ser un registro sin consumidor y pasa a contrato de campos vigilado sobre 1.038 campos de 96 tools — décima puerta |
+| v40.7 | 2026-08-08 | Terminación del recorrido de grafos convertida en invariante comprobado al importar (`peso × HOP_DECAY ≤ 1`), medido en el punto exacto de vuelco: peso 1,6 visita 59 nodos, 1,7 pasa a 605 y 2,0 a más de 3,6 millones; el `RecursionError` de PyYAML ante un frontmatter con ~500 niveles de anidamiento deja de matar la auditoría entera y se contiene en la nota que lo trae; **AP-53** — el changelog publicaba 5 fechas que el commit citado desmentía, y `vault_changelog_check` lo convierte en la undécima puerta con `--fijar-hash` para el paso que se hacía a mano; **AP-54** — `file_lock` no era reentrante y un hilo se bloqueaba contra sí mismo (26 tomas, 13 fallidas, 65,14 s), pero el defecto era que al fallar el lock se escribía igual, sin sincronizar, encima de quien sí lo tenía |
+| v40.6 | 2026-08-07 | Las tres baselines de deuda pasan a indexarse por **firma de sitio** (`módulo::función::hash` sobre `ast.unparse`) porque `módulo:línea` reportaba como deuda nueva el mismo código diez líneas más abajo, y `--freeze` se niega a congelar sitios sin precedente en vez de fiarse de una receta manual de tres pasos; el heal de AP-46 dejaba de reparar tres de cada cuatro notas por deducir la clase de rotura de la presencia de un `---` que era una regla horizontal del cuerpo, y ahora prueba las candidatas contra `yaml.safe_load`; AP-52 de 110 sitios a **0** con tres códigos nuevos y exenciones por `módulo::función` para los tres sitios que parecen un envelope de error sin serlo; el `superseded_by` de `healthScore` deja de ser un registro sin consumidor y pasa a contrato de campos vigilado sobre 1.038 campos de 96 tools — décima puerta |
 | v40.5 | 2026-08-07 | Contraste de la regla 7 contra dos vaults ajenos (609 y 128 notas): la documentación del estándar embarcada en un vault se contaba como enlaces rotos porque se excluía por nombre exacto, y una copia archivada con sufijo de versión —lo que la no-derogación pide— aportaba 75 falsos de 624 con `broken_links` saturando a los diez; pasa a ser el registro `DOCUMENTACION_DEL_ESTANDAR` y el `healthIndex` del sandbox sube de 60 a 64 sin tocar una nota; se confirma que el defecto de títulos de v40.2 llegó a vaults reales y que AP-46 tiene guard y audit pero **no heal**; deuda de AP-52 de 158 a 110, con dos clases de falso positivo del detector anotadas |
 | v40.4 | 2026-08-07 | `CLAUDE.md` publicaba los dos comandos de salud del vault con `--root`, que ninguna de las dos tools acepta —contradiciendo la regla 1 del propio fichero— así que el comando que un agente copia para medir moría en `unrecognized arguments`, y duró versiones porque los comandos de la documentación eran lo único sin guard; `vault_doc_sync` gana una sexta comprobación estática sobre `CLAUDE.md`/`README.md`/`scripts/README.md`, con un test que ejecuta los comandos de salud leídos del documento y no copiados; la suite deja de escribir la versión corriente a mano (AP-47 dentro de los tests) |
 | v40.3 | 2026-08-07 | `healthScore` satura (22 penalizaciones con topes que suman 285 sobre base 100: el propio `vault-sandbox/` puntúa 0) y se conserva igual porque lo leen los consumidores — se anota `superseded_by: healthIndex` y se le añaden al lado `healthIndex` y `healthProfile`, seis familias normalizadas cada una contra su tope y con `saturated` por familia; los 22 pesos pasan al registro `PENALIZACIONES` sin mover ni un punto, verificado contra una reimplementación literal del bloque viejo; `--check` de `vault_standard_upgrade` dejaba sellada la versión de quien solo preguntaba, y ahora declara `stamp_pending` sin escribir |
@@ -6804,7 +6973,70 @@ temp/
 
 ---
 
-### v40.6 — 2026-08-08 `git: bf8ba6d`
+### v40.7 — 2026-08-08 `git: pending`
+
+**Tres defectos que ninguna prueba podía ver desde dentro**
+
+Los tres se comportaban igual: la tool decía que todo iba bien. Uno terminaba
+anunciando `PASS` mientras dejaba ficheros a medio escribir; otro publicaba
+fechas que git desmentía; el tercero no fallaba nunca porque nadie le había
+dado el dato que lo rompe.
+
+- **Terminación del recorrido de grafos, antes indemostrada.** `vault_subgraph`
+  multiplica la relevancia por `HOP_DECAY = 0.6` en cada salto y su BFS reencola
+  un nodo cuando mejora. Que eso termine depende de `peso × HOP_DECAY ≤ 1`, un
+  invariante que nadie había escrito y que un peso nuevo podía romper sin que
+  ningún test lo notara. Medido en el punto exacto de vuelco: con peso 1,6
+  (×0,96) el recorrido visita 59 nodos a 2, 4 y 6 saltos; con 1,7 (×1,02) pasa a
+  125, 365 y 605, y con 2,0 a más de 3,6 millones. Ahora se comprueba al
+  importar. `max_nodes` acota la **salida**, no el trabajo — dice el código, y un
+  test lo fija.
+
+- **Una nota hostil tumbaba la auditoría entera del vault.** `x: [[[[…` con unos
+  500 corchetes —doce caracteres de escribir— desborda la pila dentro de
+  `yaml.safe_load`, que es recursivo, y el `RecursionError` escapaba de
+  `parse_frontmatter` hasta matar la tool. La sospecha inicial apuntaba al
+  coercionador de fechas propio; la medida dijo que PyYAML desborda antes (400
+  niveles pasan, 500 no). El fallo se contiene ahora en la nota que lo trae. Es
+  el tipo de dato que `vault-sandbox/` no contiene y un vault ajeno sí: dos notas
+  con más de 400 corchetes en el vault medido, cero en el sandbox.
+
+- **AP-53 — el changelog afirmaba lo que git desmentía.** 55 entradas, 31 con
+  hash, los 31 existentes, y **5 fechas que no coincidían con el commit citado**
+  —cuatro por un día, la de v39.0 por once—. `vault_changelog_check` lo convierte
+  en puerta, y `--fijar-hash` convierte en comando el ritual de dos commits que
+  originaba la divergencia. Contrastado contra cinco copias archivadas del
+  manifiesto en un vault ajeno: tres se leen enteras, dos —migradas, sin la
+  sección— devuelven `PARSE_FAILED` en vez de un informe limpio.
+
+- **AP-54 — el lock falla y se escribe igual.** `vault_sdd_init` se pasaba del
+  timeout de 60 s y moría dejando `docs/sdd/` a medio escribir tras anunciar
+  `PASS`. La causa: `file_lock` no era reentrante, así que un hilo se bloqueaba
+  contra sí mismo —26 tomas del lock del trace, 13 fallidas, 65,14 s de espera—.
+  Pero el defecto no era la espera: al fallar el lock, `vault_errors_trace`
+  reescribía el fichero **sin sincronizar**, justo mientras quien sí lo tenía lo
+  reemplazaba. La causa se arregla una vez en el kernel; la reacción se repite en
+  cada llamante, y esa es la norma. 66 s → 11 s.
+
+- **Un defecto tapado por otro defecto.** Corregida la reentrancia, salió a la
+  luz un bucle que llevaba latente desde siempre: `atomic_write_text` sanea, el
+  saneado llama a `log_encoding_fixes`, eso llama a `log_trace`, y el trace se
+  vuelve a sanear. **196 escrituras del trace en un solo `vault_risk_save`**
+  donde debía haber una. Estaba escondido porque la rama sin lock a la que caía
+  antes —la que AP-54 prohíbe— no saneaba, y rompía el ciclo por accidente. El
+  trace se escribe ya con `sanitize=False`. Con él cayó un segundo error de
+  medida: el fichero de trazas entraba en el ledger de AP-37, así que el
+  indicador de trabajo subía con el número de errores registrados. Los siete
+  dorados de los `*_save` bajan su `touched` en exactamente esas escrituras —el
+  contenido de las notas no cambia un byte—.
+
+Cierra además dos cosas que la limpieza dejó a la vista: el `copytree` del smoke
+reventaba si un lock transitorio desaparecía a media copia, y un test delegado
+pedía `problems` a un envelope que en su forma de error no lo trae.
+
+---
+
+### v40.6 — 2026-08-07 `git: bf8ba6d`
 
 **Cuatro guards que dependían de que alguien ejecutase bien una receta**
 
@@ -7238,7 +7470,7 @@ Ninguno de los tres es nuevo: llevaban versiones en el código. Salieron a la ve
 
 ---
 
-### v39.0 — 2026-07-25 `git: 00731c6`
+### v39.0 — 2026-08-05 `git: 00731c6`
 
 **Marco de Datos y Gobernanza explícito + guard anti-drift + consolidación del changelog**
 
@@ -7300,7 +7532,7 @@ Ninguno de los tres es nuevo: llevaban versiones en el código. Salieron a la ve
 
 ---
 
-### v38.1 — 2026-07-12 `git: b1f48a4`
+### v38.1 — 2026-07-11 `git: b1f48a4`
 
 **Contención, idempotencia y enforcement total**
 
@@ -7361,7 +7593,7 @@ Ninguno de los tres es nuevo: llevaban versiones en el código. Salieron a la ve
 
 ---
 
-### v36.0 — 2026-06-28 `git: ab1fe10`
+### v36.0 — 2026-06-27 `git: ab1fe10`
 
 **Sincronización de versión + registro de AP-24 y AP-25**
 
@@ -7588,7 +7820,7 @@ Ninguno de los tres es nuevo: llevaban versiones en el código. Salieron a la ve
 
 ---
 
-### v30 — 2026-05-28 `git: 23c8d3b`
+### v30 — 2026-05-29 `git: 23c8d3b`
 
 **Catálogo canónico de normas, etiquetas en código fuente, norm_refs en frontmatter**
 

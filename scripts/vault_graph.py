@@ -32,6 +32,8 @@ from pathlib import Path
 
 from typing import Any, Dict, List, Set
 
+from vault_regex import RE_WIKILINK  # dueño único del patrón (AP-50)
+
 
 # Configuration
 
@@ -94,7 +96,7 @@ def _is_vault_note(note_path: Path) -> bool:
 def extract_wiki_links(content: str) -> List[str]:
     """Extract wiki-links [[note]] from content."""
 
-    return re.findall(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]", content)
+    return RE_WIKILINK.findall(content)
 
 
 def _build_slug_map(all_files: List[Path]) -> Dict[str, str]:
