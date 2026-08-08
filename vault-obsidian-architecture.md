@@ -6973,7 +6973,7 @@ temp/
 
 ---
 
-### v40.7 — 2026-08-08 `git: pending`
+### v40.7 — 2026-08-08 `git: 1eed203`
 
 **Tres defectos que ninguna prueba podía ver desde dentro**
 
