@@ -11,7 +11,7 @@
     "timestamp": "<FECHA>",
     "tool": "vault_privacy_save",
     "transfers_outside_eu": false,
-    "unchanged": 0,
+    "unchanged": "<BEST-EFFORT>",
     "updated": 4,
     "written": 6
   },

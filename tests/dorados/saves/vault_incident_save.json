@@ -12,7 +12,7 @@
     "status": "detected",
     "timestamp": "<FECHA>",
     "tool": "vault_incident_save",
-    "unchanged": 0,
+    "unchanged": "<BEST-EFFORT>",
     "updated": 3,
     "written": 5
   },

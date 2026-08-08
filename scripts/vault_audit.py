@@ -509,6 +509,44 @@ def _detect_stale_projects(notes: List[Path]) -> List[Dict[str, Any]]:
     return stale_projects
 
 
+# Documentación del estándar embarcada dentro de un vault. Sus wikilinks son
+# **sintaxis de ejemplo** —`[[wiki-link]]`, `[[]]`, `[[nota]]`— no enlaces a
+# notas que existan, así que contarlos como rotos es medir el manual y llamarlo
+# vault.
+#
+# Esto ya se excluía, pero por **nombre exacto** (`vault-obsidian-architecture.md`),
+# y esa igualdad se rompe sola: medido contra `vault-ans`, un vault ajeno al
+# estándar, la copia `vault-obsidian-architecture.v27.backup.md` aportaba **45
+# enlaces rotos falsos** y `docs/sdd/04-antipatterns.md` otros **30**. Setenta y
+# cinco de 624 en un solo vault, y `broken_links` satura a los diez: el vault
+# entero quedaba juzgado por su propia documentación. Los consumidores archivan
+# el manifiesto con sufijo de versión, que es lo correcto por no-derogación —
+# quien tenía que ceder era el criterio de medida (AP-44), no ellos.
+#
+# Se declara como registro y no como tres condiciones sueltas dentro del bucle:
+# es una decisión con dueño, y el guard que la vigila necesita poder leerla.
+DOCUMENTACION_DEL_ESTANDAR: Dict[str, str] = {
+    "vault-obsidian-architecture": "el manifiesto, con cualquier sufijo de versión o backup",
+    "docs/sdd/": "los documentos SDD del estándar, que citan sintaxis de wikilink",
+    "scripts/": "la referencia de tools, con ejemplos de CLI y de enlace",
+}
+
+
+def es_documentacion_del_estandar(rel: str) -> bool:
+    """¿Esta ruta es documentación del estándar y no una nota del vault?
+
+    `rel` es la ruta relativa a la raíz del vault, con `/` como separador.
+    """
+    ruta = rel.replace("\\", "/").lower()
+    nombre = ruta.rsplit("/", 1)[-1]
+    if nombre.startswith("vault-obsidian-architecture"):
+        return True
+    return any(
+        ruta.startswith(pref) or f"/{pref}" in ruta
+        for pref in ("docs/sdd/", "scripts/")
+    )
+
+
 def _detect_broken_links(
     notes: List[Path], all_stems: Set[str]
 ) -> List[Dict[str, Any]]:
@@ -530,13 +568,7 @@ def _detect_broken_links(
     for n in notes:
         rel = str(n.relative_to(_raiz())).replace("\\", "/")
 
-        # Spec/reference files contain wiki-link SYNTAX examples that are
-        # documentation, not real links. Exclude them from broken-link detection.
-        if (
-            n.name == "vault-obsidian-architecture.md"
-            or "/scripts/" in rel
-            or rel.startswith("scripts/")
-        ):
+        if es_documentacion_del_estandar(rel):
             continue
 
         content = _leer_nota(n)

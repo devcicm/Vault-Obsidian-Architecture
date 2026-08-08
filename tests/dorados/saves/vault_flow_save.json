@@ -7,7 +7,7 @@
     "timestamp": "<FECHA>",
     "tool": "vault_flow_save",
     "type": "workflow",
-    "unchanged": 0,
+    "unchanged": "<BEST-EFFORT>",
     "updated": 1,
     "written": 3
   },

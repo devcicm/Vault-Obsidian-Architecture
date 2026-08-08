@@ -173,12 +173,31 @@ def _salida(raiz: Path, script: str):
     return envelope, nota
 
 
+def _sin_lo_best_effort(envelope: dict) -> dict:
+    """`unchanged` no se puede congelar: cuenta trabajo que puede no ocurrir.
+
+    Medido en `vault_infra_save`: escribir `infra-map.md` regenera la sección
+    entera, y eso reescribe `09_Infrastructure/servers/index.md` con contenido
+    idéntico al que la nota acababa de generar. Ese segundo pase es redundante
+    **y** best-effort: `_auto_section_index` traga cualquier excepción a
+    propósito, para que un índice roto nunca bloquee la escritura que lo
+    disparó. Si el pase no ocurre, `unchanged` baja de 1 a 0 sin que haya
+    cambiado nada de lo que un consumidor observa.
+
+    Se sustituye por un marcador en vez de borrarse: que el campo exista es
+    parte del contrato de AP-37, y `created`, `updated`, `written` y `path` —lo
+    que sí es trabajo comprobable— se siguen congelando byte a byte. La
+    regeneración duplicada es deuda declarada, no algo que este dorado tape.
+    """
+    return {**envelope, "unchanged": "<BEST-EFFORT>"} if "unchanged" in envelope else envelope
+
+
 @pytest.mark.parametrize("script", sorted(INVOCACIONES))
 def test_el_envelope_y_la_nota_no_cambian(vault, script):
     """El dorado. Si esto falla, algo cambió para quien ya consume la tool."""
     envelope, nota = _salida(vault, script)
     actual = _estable(
-        json.dumps({"envelope": envelope, "nota": nota},
+        json.dumps({"envelope": _sin_lo_best_effort(envelope), "nota": nota},
                    indent=2, ensure_ascii=False, sort_keys=True),
         vault,
     )

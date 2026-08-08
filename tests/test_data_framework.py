@@ -143,8 +143,19 @@ def test_drift_check_detects_a_missing_id(tmp_path):
 
 
 def test_drift_check_reports_missing_spec(tmp_path):
+    """El código va en `error_code`, no escondido en el texto del error.
+
+    Esto afirmaba `result["error"] == "spec_not_found"`: un código de máquina
+    metido en el campo de texto libre, que es literalmente AP-52. El
+    consumidor no puede decidir con eso — no sabe si reintentar, si es su
+    culpa, ni qué hacer. Ahora el envelope sale por `emit_error` y trae
+    `error_code` del catálogo y el `recovery` que le corresponde.
+    """
     result = framework_drift_check(tmp_path / "no-existe.md")
-    assert not result["ok"] and result["error"] == "spec_not_found"
+    assert not result["ok"]
+    assert result["error_code"] == "FILE_NOT_FOUND"
+    assert result["recovery"], "un error sin recuperación no le sirve a nadie"
+    assert "no-existe.md" in result["message"]
 
 
 # ── El manifiesto como representación pública ─────────────────────────────────

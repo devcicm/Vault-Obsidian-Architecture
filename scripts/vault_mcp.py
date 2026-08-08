@@ -24,7 +24,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_io import get_vault_root
 
 from vault_mcp_catalog import (
@@ -93,7 +93,8 @@ class VaultMCP:
         """Muestra detalle completo de una tool."""
         tool = get_tool(tool_name)
         if not tool:
-            return {"ok": False, "error": f"Tool {tool_name} not found"}
+            return emit_error("vault_mcp", "INVALID_ACTION",
+                          f"La tool {tool_name} no está en el catálogo")
 
         return {
             "ok": True,
@@ -152,13 +153,13 @@ class VaultMCP:
                     "next_actions": next_actions,
                 }
             else:
-                return {
-                    "ok": False,
-                    "error": "vault_audit failed",
-                    "details": result.stderr,
-                }
+                return emit_error(
+                    "vault_mcp", "UNEXPECTED_ERROR", "vault_audit falló",
+                    args={"details": result.stderr},
+                )
         except Exception as e:
-            return {"ok": False, "error": str(e)}
+            return emit_error("vault_mcp", "UNEXPECTED_ERROR",
+                          f"Fallo al invocar la tool: {e}", exception=e)
 
     def next_actions(self) -> Dict[str, Any]:
         """Retorna próximas acciones recomendadas."""
@@ -183,7 +184,8 @@ class VaultMCP:
         """Valida parámetros sin ejecutar la tool."""
         tool = get_tool(tool_name)
         if not tool:
-            return {"ok": False, "error": f"Tool {tool_name} not found"}
+            return emit_error("vault_mcp", "INVALID_ACTION",
+                          f"La tool {tool_name} no está en el catálogo")
 
         errors = []
         for param_name, spec in tool["params"].items():
@@ -291,13 +293,13 @@ class VaultMCP:
                     ok=False,
                     details={"error": result.stderr},
                 )
-                return {
-                    "ok": False,
-                    "error": "Tool execution failed",
-                    "details": result.stderr,
-                }
+                return emit_error(
+                    "vault_mcp", "UNEXPECTED_ERROR", "La tool falló al ejecutarse",
+                    args={"details": result.stderr},
+                )
         except Exception as e:
-            return {"ok": False, "error": str(e)}
+            return emit_error("vault_mcp", "UNEXPECTED_ERROR",
+                          f"Fallo al invocar la tool: {e}", exception=e)
 
     def context_save(self) -> Dict[str, Any]:
         """Fuerza guardado del contexto."""
@@ -544,7 +546,7 @@ Ejemplos:
             "message": "Ejecutar vault_graph para limpiar nodos huérfanos",
         }
     else:
-        result = {"ok": False, "error": "Unknown command"}
+        result = emit_error("vault_mcp", "INVALID_ACTION", "Comando desconocido")
 
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0 if result.get("ok", True) else 1

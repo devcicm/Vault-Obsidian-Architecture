@@ -12,7 +12,7 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~6.000 líneas). Fuente normativa. |
 | `scripts/*.py` | ~118 scripts, 96 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (2276 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (2291 tests). Toda norma con guard debe tener test. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
 | `vault-sandbox/` | **Único** vault de pruebas del repo. Todo runtime va aquí. |
@@ -154,7 +154,59 @@ python scripts/vault_quality_check.py --min-score 0.7
       para decidir. Baseline que solo puede encoger; tras saldar deuda, `--freeze`.
 - [ ] `python scripts/vault_arch.py --check --strict` → `ok: true`. Contextos acotados:
       fronteras, puertos, vocabularios con dueño, entorno declarado, AP-49 en cero.
+- [ ] `python scripts/vault_doc_sync.py --check --strict` cubre además, desde v40.4, que
+      **todo comando que la documentación publica exista y acepte sus flags**. `CLAUDE.md`
+      publicaba los dos comandos de salud con `--root`, que ninguna de las dos tools
+      acepta: el comando que un agente copia para medir el vault moría en
+      `unrecognized arguments`. El manifiesto queda **fuera** de esa comprobación a
+      propósito — su changelog cita comandos rotos como prueba del defecto que describe.
 - [ ] `git diff --stat vault-obsidian-architecture.md` sin borrados netos de contenido.
 - [ ] Si tocaste una versión: banner del manifiesto, tabla de versiones, entrada de changelog
       con hash real, badge del `README.md` y `version` de `pyproject.toml` coherentes.
 - [ ] Si añadiste una norma o un id de registro: guard + test que fallen cuando falte.
+
+---
+
+## Trabajar con las baselines (leer antes de tocarlas)
+
+Tres guards —`vault_noop_audit` (AP-37), `vault_blame_audit` (AP-51) y
+`vault_error_contract` (AP-52)— llevan una **baseline que solo puede encoger**. Tienen dos
+trampas conocidas, y las dos han costado tiempo ya:
+
+1. **Se indexan por `módulo:línea`.** Insertar diez líneas de comentario encima de un sitio
+   conocido lo reporta como *nuevo* y al viejo como *resuelto*, sin que la deuda haya
+   cambiado. Antes de `--freeze`, comprueba que sea eso: `offenders_total` igual a
+   `baseline_size`, tantos nuevos como resueltos, y **todos en el mismo módulo que
+   tocaste**. Si esas tres cosas no se cumplen, no es desplazamiento: es deuda nueva y
+   `--freeze` la estaría escondiendo. Es la operación más peligrosa del repo, porque su
+   forma legítima y su forma catastrófica se teclean igual.
+
+2. **Los detectores tienen falsos positivos por clase.** No conviertas a ciegas lo que
+   listan. Medido en la tanda de v40.5, AP-52 marca al menos dos cosas que **no** son
+   envelopes de error de una tool:
+   - **Filas de un informe** — `vault_smoke` devuelve `{"tool": …, "ok": False, "problem": …}`
+     por cada tool que falla el smoke. Es el dato del informe, no el fallo de `vault_smoke`.
+   - **Cuerpos HTTP** — `vault_token_service` responde `self._send(404, {"ok": False, …})`.
+     El contrato ahí es el de HTTP, no el del catálogo de errores.
+
+   Convertir cualquiera de las dos rompería al consumidor en nombre de cumplir la norma.
+
+---
+
+## La regla 7 en la práctica
+
+`vault_foreign_check --root <vault ajeno>` es la forma ejecutable de la regla 7. Exige
+`--root` explícito y **rechaza cualquier ruta dentro de este repo**: con autodetección
+caería en `vault-sandbox/` y saldría verde justo en el caso que la regla existe para
+detectar. Sin un vault ajeno a mano, `--self-test` verifica que las cuatro negativas siguen
+en pie.
+
+Lo que ha destapado hasta ahora, ninguno reproducible en `vault-sandbox/`:
+
+- Siete títulos de frontmatter compuestos sin escapar (v40.2), uno de ellos roto siempre.
+- El criterio de "esto es documentación, no una nota" comparaba el **nombre exacto** del
+  manifiesto, así que una copia archivada con sufijo de versión —que es lo que la
+  no-derogación pide a los consumidores— aportaba decenas de enlaces rotos falsos (v40.5).
+
+Cuando midas un vault ajeno, **solo lectura**. Ninguna tool de escritura se ejecuta contra
+material que no generó este repo sin que el dueño lo pida.

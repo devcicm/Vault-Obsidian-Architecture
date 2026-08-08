@@ -29,7 +29,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_lib import utcnow, parse_frontmatter_with_body
 from vault_io import (
     atomic_write_json,
@@ -552,15 +552,16 @@ def vault_tags_rebuild(dry_run: bool = False) -> Dict[str, Any]:
 
 def vault_tags_audit() -> Dict[str, Any]:
     if not _tag_registry().exists():
-        return {
-            "ok": False,
-            "error": "tag-registry.json no encontrado. Ejecutar vault_tags.py primero.",
-        }
+        return emit_error(
+            "vault_tags", "INDEX_NOT_FOUND",
+            "No existe `tag-registry.json`; genéralo ejecutando `vault_tags.py` primero.",
+        )
 
     try:
         registry = json.loads(_tag_registry().read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError) as e:
-        return {"ok": False, "error": str(e)}
+        return emit_error("vault_tags", "FILE_READ_ERROR",
+                          f"No se pudo leer el registro de tags: {e}", exception=e)
 
     tags = registry.get("tags", {})
     untagged = registry.get("untagged_notes", [])
@@ -626,21 +627,23 @@ def vault_tags_suggest(note_path_str: str) -> Dict[str, Any]:
     try:
         content = note_path.read_text(encoding="utf-8", errors="ignore")
     except (FileNotFoundError, PermissionError) as e:
-        return {"ok": False, "error": str(e)}
+        return emit_error("vault_tags", "FILE_READ_ERROR",
+                          f"No se pudo leer el registro de tags: {e}", exception=e)
 
     existing_tags = set(_parse_frontmatter_tags(content))
     title = _parse_frontmatter_title(content)
 
     if not _tag_registry().exists():
-        return {
-            "ok": False,
-            "error": "tag-registry.json no encontrado. Ejecutar vault_tags.py primero.",
-        }
+        return emit_error(
+            "vault_tags", "INDEX_NOT_FOUND",
+            "No existe `tag-registry.json`; genéralo ejecutando `vault_tags.py` primero.",
+        )
 
     try:
         registry = json.loads(_tag_registry().read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError) as e:
-        return {"ok": False, "error": str(e)}
+        return emit_error("vault_tags", "FILE_READ_ERROR",
+                          f"No se pudo leer el registro de tags: {e}", exception=e)
 
     canonical_tags: Set[str] = set(registry.get("tags", {}).keys())
 
@@ -698,7 +701,8 @@ def vault_tags_rename(
     old_tag: str, new_tag: str, dry_run: bool = False
 ) -> Dict[str, Any]:
     if not old_tag or not new_tag:
-        return {"ok": False, "error": "old_tag y new_tag son requeridos"}
+        return emit_error("vault_tags", "MISSING_REQUIRED_ARG",
+                          "`old_tag` y `new_tag` son obligatorios para renombrar")
 
     updated_notes: List[str] = []
     skipped: List[str] = []

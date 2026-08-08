@@ -7,7 +7,7 @@
     "test_id": "TEST-001",
     "timestamp": "<FECHA>",
     "tool": "vault_test_save",
-    "unchanged": 0,
+    "unchanged": "<BEST-EFFORT>",
     "updated": 2,
     "written": 5
   },

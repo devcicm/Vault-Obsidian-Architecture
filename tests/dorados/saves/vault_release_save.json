@@ -13,7 +13,7 @@
     "status": "planned",
     "timestamp": "<FECHA>",
     "tool": "vault_release_save",
-    "unchanged": 0,
+    "unchanged": "<BEST-EFFORT>",
     "updated": 6,
     "version": "1.0.0",
     "written": 9

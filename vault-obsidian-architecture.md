@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.4 — 2026-08-07  
+**Versión:** v40.5 — 2026-08-07  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -6476,6 +6476,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.5 | 2026-08-07 | Contraste de la regla 7 contra dos vaults ajenos (609 y 128 notas): la documentación del estándar embarcada en un vault se contaba como enlaces rotos porque se excluía por nombre exacto, y una copia archivada con sufijo de versión —lo que la no-derogación pide— aportaba 75 falsos de 624 con `broken_links` saturando a los diez; pasa a ser el registro `DOCUMENTACION_DEL_ESTANDAR` y el `healthIndex` del sandbox sube de 60 a 64 sin tocar una nota; se confirma que el defecto de títulos de v40.2 llegó a vaults reales y que AP-46 tiene guard y audit pero **no heal**; deuda de AP-52 de 158 a 110, con dos clases de falso positivo del detector anotadas |
 | v40.4 | 2026-08-07 | `CLAUDE.md` publicaba los dos comandos de salud del vault con `--root`, que ninguna de las dos tools acepta —contradiciendo la regla 1 del propio fichero— así que el comando que un agente copia para medir moría en `unrecognized arguments`, y duró versiones porque los comandos de la documentación eran lo único sin guard; `vault_doc_sync` gana una sexta comprobación estática sobre `CLAUDE.md`/`README.md`/`scripts/README.md`, con un test que ejecuta los comandos de salud leídos del documento y no copiados; la suite deja de escribir la versión corriente a mano (AP-47 dentro de los tests) |
 | v40.3 | 2026-08-07 | `healthScore` satura (22 penalizaciones con topes que suman 285 sobre base 100: el propio `vault-sandbox/` puntúa 0) y se conserva igual porque lo leen los consumidores — se anota `superseded_by: healthIndex` y se le añaden al lado `healthIndex` y `healthProfile`, seis familias normalizadas cada una contra su tope y con `saturated` por familia; los 22 pesos pasan al registro `PENALIZACIONES` sin mover ni un punto, verificado contra una reimplementación literal del bloque viejo; `--check` de `vault_standard_upgrade` dejaba sellada la versión de quien solo preguntaba, y ahora declara `stamp_pending` sin escribir |
 | v40.2 | 2026-08-07 | AP-52 (el error se emite fuera del contrato del catálogo): baseline de 158 sitios en 58 módulos que solo puede encoger, salida de la caracterización maliciosa de las 96 tools —92/92 rechazan un flag inexistente, 45/45 la invocación vacía, ninguna con traceback: el defecto no era cómo fallan sino la forma del envelope cuando fallan bien—; `vault_gate`, la puerta única que corre las nueve puertas de cierre con `PUERTAS` como registro canónico y `--check-doc` verificando el checklist contra él; `vault_foreign_check`, la regla 7 ejecutable — única tool sin destino por defecto, que rechaza toda raíz del repo y midió 317 notas ajenas para destapar siete sitios que componían `title:` fuera de las comillas |
@@ -6801,6 +6802,59 @@ temp/
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
 
 ---
+
+### v40.5 — 2026-08-07 `git: pending`
+
+**Dos vaults ajenos, dos defectos que el sandbox no podía enseñar**
+
+Contraste de la regla 7 contra `vault-ans` (609 notas, 2.260 wikilinks) y el
+vault de un SaaS en producción (128 notas, 550 wikilinks). Ninguno lo generó
+este repo. Salió lo de siempre: **el criterio de medida estaba peor que el
+material medido**.
+
+- **La documentación del estándar se contaba como vault.** Un consumidor lleva
+  dentro el manifiesto, la referencia de tools y los documentos SDD; todos citan
+  sintaxis de wikilink —`[[wiki-link]]`, `[[]]`, `[[nota]]`— que no apunta a
+  nada porque no pretende apuntar a nada. Se excluían, pero por **igualdad de
+  nombre exacto** con `vault-obsidian-architecture.md`. Esa igualdad se rompió
+  sola: `vault-obsidian-architecture.v27.backup.md` aportaba **45** enlaces
+  rotos falsos y `docs/sdd/04-antipatterns.md` otros **30**. Setenta y cinco de
+  624 en un solo vault, con `broken_links` saturando a los diez — el vault
+  entero quedaba juzgado por su propia documentación. Y lo llamativo es de
+  quién era la culpa: archivar el manifiesto con sufijo de versión es
+  exactamente lo que la no-derogación le pide al consumidor. Quien tenía que
+  ceder era el criterio, no él. AP-44 en su forma más limpia. Ahora es el
+  registro `DOCUMENTACION_DEL_ESTANDAR` y no tres condiciones sueltas dentro de
+  un bucle, porque un guard no puede leer un `if`. El sandbox lo exhibía
+  también: su `healthIndex` subió de 60 a 64 sin que cambiase una sola nota.
+
+- **El defecto de v40.2 había llegado a vaults reales.** Cuatro notas de
+  `vault-ans` tienen frontmatter que no parsea, y una es
+  `title: ADR-001: Adopción de MCP…` — dos puntos sin escapar, el mismo fallo
+  que v40.2 arregló en siete writers. Se verificó que **no queda ningún writer
+  produciéndolo**: las seis emisiones de `title:` sin `yaml_scalar` que quedan
+  son constantes literales. El arreglo era correcto y llegó tarde para las
+  notas ya escritas. Queda declarado: **AP-46 tiene guard y audit, pero no
+  heal.** Un vault sanado con la versión vieja no se repara solo, y hoy el
+  estándar no ofrece con qué. No se improvisa aquí porque un heal escribe, y
+  escribir en un vault ajeno se pide, no se decide.
+
+**Deuda de AP-52: 158 → 110.** Cuarenta y ocho envelopes de error convertidos a
+`emit_error` en nueve tools (`vault_code_tag`, `vault_norms`, `vault_mcp`,
+`vault_tags`, `vault_move`, `vault_diff`, `vault_change_log`), que es lo que un
+consumidor mira para decidir: `error_code` y `recovery` en vez de una cadena
+libre. Y una lección que va al checklist: **el detector tiene falsos positivos
+por clase.** `vault_smoke` devuelve una fila por tool fallada —el dato del
+informe, no su propio fallo— y `vault_token_service` responde cuerpos HTTP.
+Convertir cualquiera de las dos habría roto al consumidor en nombre de cumplir
+la norma. Se dejan y se anotan.
+
+La conversión destapó de paso dos contratos publicados que llevaban el código
+dentro del texto: `vault_tags` y `vault_diff` declaraban devolver `error`, y un
+test afirmaba `result["error"] == "spec_not_found"` — un identificador de
+máquina viajando en el campo de prosa, que es AP-52 en su forma más pura. El
+campo no se borra: se anota `superseded_by: [error_code, message, recovery]` en
+el `tool-spec`, con el motivo escrito.
 
 ### v40.4 — 2026-08-07 `git: fc3551f`
 

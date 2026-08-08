@@ -8,7 +8,7 @@
     "timestamp": "<FECHA>",
     "tool": "vault_diagram_save",
     "type": "mermaid",
-    "unchanged": 0,
+    "unchanged": "<BEST-EFFORT>",
     "updated": 2,
     "written": 4
   },

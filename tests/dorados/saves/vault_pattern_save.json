@@ -7,7 +7,7 @@
     "timestamp": "<FECHA>",
     "tool": "vault_pattern_save",
     "transition": null,
-    "unchanged": 0,
+    "unchanged": "<BEST-EFFORT>",
     "updated": 1,
     "written": 4
   },

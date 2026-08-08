@@ -18,7 +18,7 @@ import difflib
 import hashlib
 import json
 import sys
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -68,7 +68,7 @@ def _compute_hash(path: Path) -> Dict[str, Any]:
             "size_bytes": len(data),
         }
     except Exception as e:
-        return {"ok": False, "error": str(e)}
+        return emit_error("vault_diff", "FILE_READ_ERROR", f"No se pudo leer para comparar: {e}", exception=e)
 
 
 def _run_diff(
@@ -170,7 +170,7 @@ def vault_diff(
 
         for p in (path_a, path_b):
             if not p.exists():
-                return {"ok": False, "error": f"File not found: {p}"}
+                return emit_error("vault_diff", "FILE_NOT_FOUND", f"No existe: {p}")
 
         lines_a = path_a.read_text(encoding="utf-8", errors="replace").splitlines()
         lines_b = path_b.read_text(encoding="utf-8", errors="replace").splitlines()
@@ -178,11 +178,11 @@ def vault_diff(
 
     # ── Mode: note vs .history/ ───────────────────────────────────────────────
     if path is None:
-        return {"ok": False, "error": "Provide --path or --compare/--with"}
+        return emit_error("vault_diff", "MISSING_REQUIRED_ARG", f"Indica --path, o bien --compare y --with")
 
     note_path = _raiz() / path
     if not note_path.exists():
-        return {"ok": False, "error": f"Note not found: {path}"}
+        return emit_error("vault_diff", "NOTE_NOT_FOUND", f"No existe la nota: {path}")
 
     if hash_only:
         return _compute_hash(note_path)
@@ -205,7 +205,7 @@ def vault_diff(
     elif version in history:
         target_name = version
     else:
-        return {"ok": False, "error": f"Version '{version}' not found. Available: {history}"}
+        return emit_error("vault_diff", "VERSION_NOT_FOUND", f"Versión '{version}' inexistente. Disponibles: {history}")
 
     old_lines = (_history_dir() / target_name).read_text(encoding="utf-8", errors="replace").splitlines()
     result = _run_diff(old_lines, current_lines, target_name, path, context, stat_only)

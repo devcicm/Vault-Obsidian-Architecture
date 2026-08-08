@@ -20,7 +20,7 @@ import argparse
 import json
 import re
 import sys
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_io import (
     atomic_write_json,
     is_snapshot_path,
@@ -1880,10 +1880,10 @@ def vault_norms_show(code: str) -> Dict[str, Any]:
     code = code.upper()
     norm = _NORM_BY_CODE.get(code)
     if not norm:
-        return {
-            "ok": False,
-            "error": f"Norm '{code}' not found. Valid codes: {sorted(_NORM_BY_CODE.keys())}",
-        }
+        return emit_error(
+            "vault_norms", "INVALID_ACTION",
+            f"Norma '{code}' inexistente. Códigos válidos: {sorted(_NORM_BY_CODE.keys())}",
+        )
     return {"ok": True, "norm": dict(norm)}
 
 
@@ -1891,12 +1891,12 @@ def vault_norms_scan(path: str) -> Dict[str, Any]:
     """Detect which norms are applicable to a vault note based on content analysis."""
     note_path = _raiz() / path
     if not note_path.exists():
-        return {"ok": False, "error": f"Note not found: {path}"}
+        return emit_error("vault_norms", "NOTE_NOT_FOUND", f"No existe la nota: {path}")
 
     try:
         content = note_path.read_text(encoding="utf-8", errors="ignore")
     except Exception as e:
-        return {"ok": False, "error": str(e)}
+        return emit_error("vault_norms", "FILE_READ_ERROR", f"No se pudo leer {path}: {e}", exception=e)
 
     rel = path.replace("\\", "/")
     folder = rel.split("/")[0] if "/" in rel else ""
@@ -2042,26 +2042,28 @@ def vault_norms_apply(code: str, path: str) -> Dict[str, Any]:
     """Add a norm_refs entry to a note's frontmatter."""
     code = code.upper()
     if code not in _NORM_BY_CODE:
-        return {"ok": False, "error": f"Norm '{code}' not found."}
+        return emit_error("vault_norms", "INVALID_ACTION",
+                          f"Norma '{code}' inexistente; consulta `--list` para los códigos válidos")
 
     note_path = _raiz() / path
     if not note_path.exists():
-        return {"ok": False, "error": f"Note not found: {path}"}
+        return emit_error("vault_norms", "NOTE_NOT_FOUND", f"No existe la nota: {path}")
 
     try:
         content = note_path.read_text(encoding="utf-8", errors="ignore")
     except Exception as e:
-        return {"ok": False, "error": str(e)}
+        return emit_error("vault_norms", "FILE_READ_ERROR", f"No se pudo leer {path}: {e}", exception=e)
 
     if not content.startswith("---"):
-        return {
-            "ok": False,
-            "error": "Note has no YAML frontmatter. Use vault_write to create proper notes.",
-        }
+        return emit_error(
+            "vault_norms", "FRONTMATTER_MISSING",
+            "La nota no tiene frontmatter YAML; créala con `vault_write`.",
+        )
 
     parts = content.split("---", 2)
     if len(parts) < 3:
-        return {"ok": False, "error": "Malformed frontmatter (no closing ---)"}
+        return emit_error("vault_norms", "FRONTMATTER_PARSE_ERROR",
+                          f"Frontmatter sin cierre `---` en {path}")
 
     fm_block = parts[1]
     body = parts[2]
@@ -3271,12 +3273,11 @@ def framework_drift_check(spec_path: Optional[Path] = None) -> Dict[str, Any]:
 
     spec = Path(spec_path) if spec_path else Path(__file__).resolve().parent.parent / SPEC_FILENAME
     if not spec.exists():
-        return {
-            "ok": False,
-            "tool": "vault_norms.framework_drift",
-            "error": "spec_not_found",
-            "spec": str(spec),
-        }
+        return emit_error(
+            "vault_norms.framework_drift", "FILE_NOT_FOUND",
+            f"No se encontró el manifiesto en {spec}",
+            args={"spec": str(spec)},
+        )
 
     text = spec.read_text(encoding="utf-8", errors="replace")
     missing: List[Dict[str, str]] = []

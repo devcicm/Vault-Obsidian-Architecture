@@ -775,11 +775,12 @@
         "b",
         "changed",
         "compared_against",
-        "error",
+        "error_code",
         "history",
         "message",
         "ok",
-        "path"
+        "path",
+        "recovery"
       ],
       "dq": {
         "dq_dimensions": [
@@ -793,7 +794,18 @@
       "fundamentals": [
         "F4",
         "F6"
-      ]
+      ],
+      "superseded_fields": {
+        "error": {
+          "superseded_by": [
+            "error_code",
+            "message",
+            "recovery"
+          ],
+          "since": "v40.5",
+          "reason": "El fallo salía como cadena libre: el consumidor no podía decidir si reintentar ni de quién era la culpa. Ahora sale por `emit_error` con código del catálogo y recuperación (AP-52). El campo se anota, no se borra."
+        }
+      }
     },
     "vault_doc_counts": {
       "group": "Normas",
@@ -3268,8 +3280,10 @@
       "status": "active",
       "required_args": [],
       "declared_returns": [
-        "error",
+        "error_code",
+        "message",
         "ok",
+        "recovery",
         "renamed",
         "suggestions",
         "tags",
@@ -3280,7 +3294,18 @@
         "cia_scope": [],
         "propagation_aware": false
       },
-      "fundamentals": []
+      "fundamentals": [],
+      "superseded_fields": {
+        "error": {
+          "superseded_by": [
+            "error_code",
+            "message",
+            "recovery"
+          ],
+          "since": "v40.5",
+          "reason": "El fallo salía como cadena libre: el consumidor no podía decidir si reintentar ni de quién era la culpa. Ahora sale por `emit_error` con código del catálogo y recuperación (AP-52). El campo se anota, no se borra."
+        }
+      }
     },
     "vault_test_runner": {
       "group": "meta",

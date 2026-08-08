@@ -8,7 +8,7 @@
     "phase": "open",
     "timestamp": "<FECHA>",
     "tool": "vault_bug_save",
-    "unchanged": 0,
+    "unchanged": "<BEST-EFFORT>",
     "updated": 1,
     "written": 5
   },

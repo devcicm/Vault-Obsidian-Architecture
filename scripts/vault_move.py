@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_io import atomic_write_text, write_report
 
 
@@ -176,10 +176,10 @@ def move_note(
     destination = _raiz() / to_path
 
     if not source.exists():
-        return {"ok": False, "error": f"Archivo no encontrado: {from_path}"}
+        return emit_error("vault_move", "FILE_NOT_FOUND", f"Archivo no encontrado: {from_path}")
 
     if destination.exists():
-        return {"ok": False, "error": f"Destino ya existe: {to_path}"}
+        return emit_error("vault_move", "INVALID_PATH", f"El destino ya existe: {to_path}")
 
     destination.parent.mkdir(parents=True, exist_ok=True)
 
@@ -269,10 +269,10 @@ def move_folder(
     destination = _raiz() / to_folder
 
     if not source.exists():
-        return {"ok": False, "error": f"Carpeta no encontrada: {from_folder}"}
+        return emit_error("vault_move", "FOLDER_NOT_FOUND", f"Carpeta no encontrada: {from_folder}")
 
     if destination.exists():
-        return {"ok": False, "error": f"Destino ya existe: {to_folder}"}
+        return emit_error("vault_move", "INVALID_PATH", f"El destino ya existe: {to_folder}")
 
     notes_moved = []
 
@@ -313,7 +313,7 @@ def check_move_impact(from_path: str, to_path: str) -> Dict[str, Any]:
     source = _raiz() / from_path
 
     if not source.exists():
-        return {"ok": False, "error": f"Archivo no encontrado: {from_path}"}
+        return emit_error("vault_move", "FILE_NOT_FOUND", f"Archivo no encontrado: {from_path}")
 
     content = source.read_text(encoding="utf-8")
     old_stem = source.stem

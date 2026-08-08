@@ -7,7 +7,7 @@
     "path": "01_Projects/demo/envs.md",
     "timestamp": "<FECHA>",
     "tool": "vault_env_save",
-    "unchanged": 0,
+    "unchanged": "<BEST-EFFORT>",
     "updated": 2,
     "varCount": 1,
     "written": 4

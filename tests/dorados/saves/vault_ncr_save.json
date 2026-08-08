@@ -12,7 +12,7 @@
     "status": "open",
     "timestamp": "<FECHA>",
     "tool": "vault_ncr_save",
-    "unchanged": 0,
+    "unchanged": "<BEST-EFFORT>",
     "updated": 4,
     "written": 6
   },

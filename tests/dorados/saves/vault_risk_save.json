@@ -12,7 +12,7 @@
     "timestamp": "<FECHA>",
     "tool": "vault_risk_save",
     "treatment": "mitigate",
-    "unchanged": 0,
+    "unchanged": "<BEST-EFFORT>",
     "updated": 5,
     "written": 7
   },

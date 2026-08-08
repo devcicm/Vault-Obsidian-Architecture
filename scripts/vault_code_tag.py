@@ -42,7 +42,7 @@ import json
 import re
 import sys
 import threading
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_io import atomic_write_json, write_report, resolve_input_path, file_lock
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -233,7 +233,8 @@ def vault_code_tag_define(
     from datetime import datetime, timezone
 
     if not code or not name:
-        return {"ok": False, "error": "code and name are required"}
+        return emit_error("vault_code_tag", "MISSING_REQUIRED_ARG",
+                          "--define exige --code y --name")
 
     reg = _read_registry()
     tags = reg.setdefault("tags", {})
@@ -293,14 +294,14 @@ def vault_code_tag_apply(
     file_path = resolve_input_path(file_path)
 
     if not file_path.exists():
-        return {"ok": False, "error": f"File not found: {file_path}"}
+        return emit_error("vault_code_tag", "FILE_NOT_FOUND", f"No existe: {file_path}")
 
     style = _comment_style(file_path)
     if style == "none":
-        return {
-            "ok": False,
-            "error": f"Use vault_norms --apply for .md files (frontmatter norm_refs). vault_code_tag is for source code files.",
-        }
+        return emit_error(
+            "vault_code_tag", "INVALID_ACTION",
+            "Para ficheros .md usa `vault_norms --apply` (norm_refs en frontmatter); vault_code_tag es para código fuente.",
+        )
 
     # Resolve tag name
     reg = _read_registry()
@@ -323,7 +324,7 @@ def vault_code_tag_apply(
     try:
         original = file_path.read_text(encoding="utf-8", errors="ignore")
     except Exception as e:
-        return {"ok": False, "error": f"Cannot read file: {e}"}
+        return emit_error("vault_code_tag", "FILE_READ_ERROR", f"No se pudo leer {file_path}: {e}", exception=e)
 
     # Check if this norm is already annotated
     existing_tags = _extract_tags_from_content(original)
@@ -354,7 +355,7 @@ def vault_code_tag_apply(
         from vault_io import atomic_write_text
         atomic_write_text(file_path, new_content)
     except Exception as e:
-        return {"ok": False, "error": f"Cannot write file: {e}"}
+        return emit_error("vault_code_tag", "FILE_WRITE_ERROR", f"No se pudo escribir {file_path}: {e}", exception=e)
 
     # Update registry
     if tag_entry is not None:
@@ -392,12 +393,12 @@ def vault_code_tag_remove(code: str, file_path_str: str) -> Dict[str, Any]:
     file_path = resolve_input_path(file_path)
 
     if not file_path.exists():
-        return {"ok": False, "error": f"File not found: {file_path}"}
+        return emit_error("vault_code_tag", "FILE_NOT_FOUND", f"No existe: {file_path}")
 
     try:
         content = file_path.read_text(encoding="utf-8", errors="ignore")
     except Exception as e:
-        return {"ok": False, "error": str(e)}
+        return emit_error("vault_code_tag", "FILE_READ_ERROR", f"No se pudo leer {file_path}: {e}", exception=e)
 
     # Remove the specific @norm line for this code
     pattern = re.compile(
@@ -428,12 +429,12 @@ def vault_code_tag_scan(file_path_str: str) -> Dict[str, Any]:
     file_path = resolve_input_path(file_path)
 
     if not file_path.exists():
-        return {"ok": False, "error": f"File not found: {file_path}"}
+        return emit_error("vault_code_tag", "FILE_NOT_FOUND", f"No existe: {file_path}")
 
     try:
         content = file_path.read_text(encoding="utf-8", errors="ignore")
     except Exception as e:
-        return {"ok": False, "error": str(e)}
+        return emit_error("vault_code_tag", "FILE_READ_ERROR", f"No se pudo leer {file_path}: {e}", exception=e)
 
     # Extract @vault: reference (at most one per file)
     vault_ref = _extract_vault_ref_from_content(content)
@@ -502,7 +503,8 @@ def vault_code_tag_note(code: str, agent: str = "claude") -> Dict[str, Any]:
     entry = reg.get("tags", {}).get(code_lower)
 
     if not entry:
-        return {"ok": False, "error": f"Tag '{code_lower}' not found. Define it first with --define."}
+        return emit_error("vault_code_tag", "INVALID_ACTION",
+                          f"El tag '{code_lower}' no está definido; defínelo antes con --define")
 
     name = entry.get("name", code_lower)
     description = entry.get("description", "")
@@ -547,7 +549,7 @@ Nombre: {name}
             meta={"agent": agent, "status": "active"},
         )
     except Exception as e:
-        return {"ok": False, "error": f"vault_write failed: {e}"}
+        return emit_error("vault_code_tag", "FILE_WRITE_ERROR", f"vault_write falló: {e}", exception=e)
 
     if result.get("ok"):
         note_path = result["path"]

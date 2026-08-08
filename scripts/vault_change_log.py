@@ -48,7 +48,7 @@ import subprocess
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_lib import utcnow
 from vault_io import atomic_write_text, file_lock
 import uuid
@@ -178,7 +178,7 @@ def _run_propagation(path: str, strategy: str) -> Dict[str, Any]:
         return {"ok": True, "strategy": strategy, "queued_async": True}
 
     except Exception as e:
-        return {"ok": False, "error": str(e)}
+        return emit_error("vault_change_log", "FILE_WRITE_ERROR", f"No se pudo registrar el cambio: {e}", exception=e)
 
 
 def vault_change_log_add(
@@ -192,22 +192,23 @@ def vault_change_log_add(
     action = action.lower()
 
     if action not in VALID_ACTIONS:
-        return {
-            "ok": False,
-            "error": f"Invalid action '{action}'. Valid: {VALID_ACTIONS}",
-        }
+        return emit_error(
+            "vault_change_log", "INVALID_ACTION",
+            f"Acción '{action}' inválida. Válidas: {VALID_ACTIONS}",
+        )
 
     if not reason or not reason.strip():
-        return {"ok": False, "error": "reason is required and cannot be empty"}
+        return emit_error("vault_change_log", "MISSING_REQUIRED_ARG", f"`reason` es obligatorio y no puede ir vacío")
 
     if action == "moved" and not new_path:
-        return {"ok": False, "error": "new_path is required for action 'moved'"}
+        return emit_error("vault_change_log", "MISSING_REQUIRED_ARG", f"`new_path` es obligatorio para la acción 'moved'")
 
     if propagate and propagate not in VALID_PROPAGATE_STRATEGIES:
-        return {
-            "ok": False,
-            "error": f"Invalid propagate strategy '{propagate}'. Valid: {VALID_PROPAGATE_STRATEGIES}",
-        }
+        return emit_error(
+            "vault_change_log", "INVALID_ACTION",
+            f"Estrategia de propagación '{propagate}' inválida. "
+            f"Válidas: {VALID_PROPAGATE_STRATEGIES}",
+        )
 
     entry: Dict[str, Any] = {
         "id": str(uuid.uuid4()),
