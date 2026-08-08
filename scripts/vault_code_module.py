@@ -600,7 +600,8 @@ Notas:
         if not scan_dir.exists():
             print(
                 json.dumps(
-                    emit_error("vault_code_module", "FOLDER_NOT_FOUND", f"scan-path not found: {args.scan_path}")
+                    emit_error("vault_code_module", "FOLDER_NOT_FOUND", f"scan-path not found: {args.scan_path}"),
+                    ensure_ascii=False,
                 )
             )
             return 1
@@ -657,8 +658,8 @@ Notas:
                     "skipped": skipped,
                 },
                 indent=2,
-                ensure_ascii=False,
-            )
+                    ensure_ascii=False,
+                )
         )
         return 0
 
@@ -682,7 +683,8 @@ Notas:
             print(
                 json.dumps(
                     emit_error("vault_code_module", "ARG_JSON_INVALID",
-                                  f"Invalid JSON in --{name}. Expected JSON array or comma-separated list.")
+                                  f"Invalid JSON in --{name}. Expected JSON array or comma-separated list."),
+                    ensure_ascii=False,
                 )
             )
             sys.exit(1)

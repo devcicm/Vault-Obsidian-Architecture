@@ -298,7 +298,7 @@ Notas:
         vars_list = json.loads(args.vars)
 
     except json.JSONDecodeError:
-        print(json.dumps(emit_error("vault_env_save", "ARG_JSON_INVALID", "Invalid JSON in --vars")))
+        print(json.dumps(emit_error("vault_env_save", "ARG_JSON_INVALID", "Invalid JSON in --vars"), ensure_ascii=False))
 
         return 1
 
@@ -317,7 +317,8 @@ Notas:
                     "ARG_JSON_INVALID",
                     "--vars espera un array JSON de objetos, p. ej. "
                     '[{"name": "PORT", "description": "Puerto"}]',
-                )
+                ),
+                ensure_ascii=False,
             )
         )
         return 1

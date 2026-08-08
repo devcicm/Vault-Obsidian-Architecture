@@ -549,7 +549,7 @@ Notas:
         # aquí lo llevaba a `sys.exit()`, que intenta convertirlo a entero y
         # revienta: el usuario veía un UNEXPECTED_ERROR de severidad crítica
         # en lugar de este mensaje, escrito para exactamente este caso.
-        print(json.dumps(emit_error("vault_infra_save", "ARG_JSON_INVALID", "Invalid JSON in --config")))
+        print(json.dumps(emit_error("vault_infra_save", "ARG_JSON_INVALID", "Invalid JSON in --config"), ensure_ascii=False))
         return 1
 
     connections = None
@@ -560,7 +560,7 @@ Notas:
 
         except json.JSONDecodeError:
             print(
-                json.dumps(emit_error("vault_infra_save", "ARG_JSON_INVALID", "Invalid JSON in --connections"))
+                json.dumps(emit_error("vault_infra_save", "ARG_JSON_INVALID", "Invalid JSON in --connections"), ensure_ascii=False)
             )
             return 1
 

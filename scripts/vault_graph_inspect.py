@@ -571,7 +571,7 @@ def main() -> int:
         from vault_io import set_vault_root
         set_vault_root(root)
     if not root.exists():
-        print(json.dumps(emit_error("vault_graph_inspect", "VAULT_NOT_FOUND", f"Vault root not found: {root}")))
+        print(json.dumps(emit_error("vault_graph_inspect", "VAULT_NOT_FOUND", f"Vault root not found: {root}"), ensure_ascii=False))
         return 1
 
     report = generate_report(

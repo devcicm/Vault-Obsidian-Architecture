@@ -362,7 +362,7 @@ Notes:
             return json.loads(val)
 
         except json.JSONDecodeError as e:
-            print(json.dumps(emit_error("vault_requirement_save", "ARG_JSON_INVALID", f"Invalid JSON in --{name}: {e}")))
+            print(json.dumps(emit_error("vault_requirement_save", "ARG_JSON_INVALID", f"Invalid JSON in --{name}: {e}"), ensure_ascii=False))
 
             sys.exit(1)
 

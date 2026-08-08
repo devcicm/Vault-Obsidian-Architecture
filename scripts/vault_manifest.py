@@ -792,7 +792,7 @@ Ejemplos:
             _print_report(validation)
             return 0 if validation["ok"] else 1
         except ImportError:
-            print(json.dumps(emit_error("vault_manifest", "FILE_NOT_FOUND", "vault_spec_validate.py no encontrado")))
+            print(json.dumps(emit_error("vault_manifest", "FILE_NOT_FOUND", "vault_spec_validate.py no encontrado"), ensure_ascii=False))
             return 1
 
     # ── Modo normal (genera manifiesto) ────────────────────────────────────

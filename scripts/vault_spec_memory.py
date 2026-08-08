@@ -620,7 +620,7 @@ Ejemplos:
     if args.tool:
         entry = doc["tools"].get(args.tool)
         if not entry:
-            print(json.dumps(emit_error("vault_spec_memory", "NOTE_NOT_FOUND", f"Tool not found: {args.tool}"), indent=2))
+            print(json.dumps(emit_error("vault_spec_memory", "NOTE_NOT_FOUND", f"Tool not found: {args.tool}"), indent=2, ensure_ascii=False))
             return 1
         print(json.dumps({"ok": True, "tool": args.tool, "spec": entry}, indent=2, ensure_ascii=False))
         return 0
@@ -634,7 +634,7 @@ Ejemplos:
             )
             print(json.dumps({"ok": True, "path": "00_System/spec-memory.json",
                                "tools": doc["surface"]["total"],
-                               "active": doc["surface"]["active"]}, indent=2))
+                               "active": doc["surface"]["active"]}, indent=2, ensure_ascii=False))
         return 0
 
     if args.check:

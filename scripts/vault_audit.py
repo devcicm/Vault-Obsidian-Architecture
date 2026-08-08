@@ -170,6 +170,10 @@ def _get_active_notes(
 
 from vault_lib import read_frontmatter
 
+# El vocabulario se declara una vez y se consume, no se copia. Ver
+# `vault_vocabulario.py` para el registro y su contexto dueno.
+from vault_vocabulario import rango as _rango
+
 
 def _note_updated_at(path: Path) -> datetime:
     fm = read_frontmatter(path)
@@ -1600,7 +1604,7 @@ def _read_propagation_pending() -> List[Dict[str, Any]]:
 
         pending = data.get("pending", [])
 
-        risk_order = {"critical": 4, "high": 3, "medium": 2, "low": 1}
+        risk_order = _rango("severidad")
 
         pending.sort(
             key=lambda e: (
@@ -2493,7 +2497,7 @@ Notas:
         ext_path = Path(args.path)
 
         if not ext_path.exists():
-            print(json.dumps(emit_error("vault_audit", "FILE_NOT_FOUND", f"Path not found: {args.path}")))
+            print(json.dumps(emit_error("vault_audit", "FILE_NOT_FOUND", f"Path not found: {args.path}"), ensure_ascii=False))
 
             return 1
 

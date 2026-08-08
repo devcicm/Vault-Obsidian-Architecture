@@ -274,8 +274,8 @@ Ejemplos:
             json.dumps(
                 {"ok": True, "count": len(results), "entries": results},
                 indent=2,
-                ensure_ascii=False,
-            )
+                    ensure_ascii=False,
+                )
         )
     elif args.command == "catalog":
         if args.code:
@@ -285,13 +285,14 @@ Ejemplos:
                     json.dumps(
                         {"ok": True, "code": args.code, **entry},
                         indent=2,
-                        ensure_ascii=False,
-                    )
+                            ensure_ascii=False,
+                        )
                 )
             else:
                 print(
                     json.dumps(
-                        {"ok": False, "error": f"Código '{args.code}' no encontrado"}
+                        {"ok": False, "error": f"Código '{args.code}' no encontrado"},
+                        ensure_ascii=False,
                     )
                 )
         else:
@@ -302,8 +303,8 @@ Ejemplos:
                 json.dumps(
                     {"ok": True, "count": len(catalog), "catalog": catalog},
                     indent=2,
-                    ensure_ascii=False,
-                )
+                        ensure_ascii=False,
+                    )
             )
 
 

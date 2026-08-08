@@ -36,16 +36,22 @@ from vault_registry import ORDERED_SECTIONS
 # `20_Quarantine` sin que nada fallara.
 VAULT_SECTIONS = frozenset(ORDERED_SECTIONS)
 
-CIA_WEIGHT = {"critical": 4, "high": 3, "medium": 2, "low": 1}
-RISK_THRESHOLDS = {"critical": 8, "high": 4, "medium": 2, "low": 0}
 # Orden canónico de severidad, de mayor a menor. Lo consume el `choices` de
 # `--min-risk`, que antes era una copia literal escrita a mano: la CLI aceptaba
 # un conjunto de valores y el registro declaraba otro sin que nada lo comparase.
 # El vocabulario se declara una vez y se consume, no se copia. Ver
 # `vault_vocabulario.py` para el registro y su contexto dueño.
-from vault_vocabulario import opciones as _opciones
+from vault_vocabulario import mapa as _mapa, opciones as _opciones, rango as _rango
 
 MIN_RISK_ORDER = _opciones("severidad")
+
+# Los pesos son la posición en el vocabulario; los umbrales no se pueden
+# derivar —son de esta tool— pero sus claves sí tienen dueño, y `_mapa` falla
+# al importarse si alguna vez dejan de cubrirlo.
+CIA_WEIGHT = _rango("severidad")
+RISK_THRESHOLDS = _mapa(
+    "severidad", {"critical": 8, "high": 4, "medium": 2, "low": 0}
+)
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))

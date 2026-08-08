@@ -224,3 +224,77 @@ def test_la_tabla_derivada_se_puede_publicar():
     assert filas["severidad"]["context"] == "gobernanza"
     assert filas["status"]["derived_from"] == "vault_norms:STATUS_VOCAB"
     assert filas["severidad_con_na"]["extends"] == "severidad"
+
+
+# ── El guard que daba cero por no saber mirar (v40.7) ────────────────────────
+#
+# `copias_de_vocabulario` solo reconocia listas, tuplas y conjuntos. Devolvia
+# cero y se leia como que no quedaba deuda, mientras catorce sitios mas seguian
+# escribiendo los mismos cuatro terminos **como claves de un diccionario**:
+# pesos, ordenes, cubos vacios y fichas de datos.
+#
+# Es el defecto que el propio guard existe para impedir, cometido por el guard:
+# midio con la forma que esperaba en vez de con la que hay (AP-44). Y es la
+# peor variante, porque un guard que no encuentra nada no se distingue de un
+# guard que ya no tiene nada que encontrar.
+
+
+def test_un_mapa_con_las_claves_del_vocabulario_es_una_copia(tmp_path, monkeypatch):
+    (tmp_path / "vault_mapon.py").write_text(
+        'PESOS = {"critical": 4, "high": 3, "medium": 2, "low": 1}\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(arch, "SCRIPTS_DIR", tmp_path)
+    assert arch.copias_de_vocabulario() == [
+        {"module": "vault_mapon", "line": 1, "vocabulary": "severidad"}
+    ]
+
+
+def test_un_mapa_de_claves_calculadas_no_es_una_copia(tmp_path, monkeypatch):
+    """Excluir de mas es peor: un guard que acusa a todo se acaba desactivando."""
+    (tmp_path / "vault_dinamico.py").write_text(
+        "M = {a: 1, b: 2, c: 3, d: 4}\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(arch, "SCRIPTS_DIR", tmp_path)
+    assert arch.copias_de_vocabulario() == []
+
+
+def test_el_mapa_declarado_es_el_camino_correcto_y_no_se_acusa(tmp_path, monkeypatch):
+    """`mapa()` comprueba las claves contra el registro al importarse.
+
+    Marcarlo como copia convertiria el unico camino correcto en un
+    incumplimiento, y no dejaria forma de escribir un umbral por severidad.
+    """
+    (tmp_path / "vault_declarado.py").write_text(
+        'U = _mapa("severidad", {"critical": 8, "high": 4, "medium": 2, "low": 0})\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(arch, "SCRIPTS_DIR", tmp_path)
+    assert arch.copias_de_vocabulario() == []
+
+
+def test_mapa_falla_si_el_vocabulario_crece_por_debajo():
+    """Lo que hace util a `mapa`: el termino nuevo sin entrada rompe al importar.
+
+    Sin esto, un quinto valor en el registro dejaria el umbral incompleto y la
+    tool devolveria el default de `.get()` sin que nadie lo notase.
+    """
+    with pytest.raises(KeyError, match="no cubre el vocabulario"):
+        voc.mapa("severidad", {"critical": 8, "high": 4, "medium": 2})
+
+
+def test_las_formas_derivadas_reproducen_lo_que_habia_escrito_a_mano():
+    """Si alguna difiere, la conversion cambio el comportamiento de una tool."""
+    assert voc.rango("severidad") == {
+        "critical": 4, "high": 3, "medium": 2, "low": 1}
+    assert voc.rango("severidad", base=0, mayor_primero=False) == {
+        "critical": 0, "high": 1, "medium": 2, "low": 3}
+    assert voc.peso("severidad") == {
+        "critical": 1.0, "high": 0.75, "medium": 0.5, "low": 0.25}
+
+
+def test_los_cubos_no_comparten_la_misma_lista():
+    """`{t: [] for t in ...}` esta bien; `dict.fromkeys(t, [])` reparte una sola."""
+    c = voc.cubos("severidad", [])
+    c["critical"].append("x")
+    assert c["low"] == []

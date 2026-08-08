@@ -43,6 +43,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 
+# El vocabulario se declara una vez y se consume, no se copia. Ver
+# `vault_vocabulario.py` para el registro y su contexto dueno.
+from vault_vocabulario import mapa as _mapa
+
 
 def _raiz() -> Path:
     """La raiz del vault, resuelta al usarse."""
@@ -101,7 +105,7 @@ def vault_pattern_list(
         patterns = [p for p in patterns if p.get("status", "").lower() == status_normalized]
 
 
-    grouped: Dict[str, List[str]] = {
+    grouped: Dict[str, List[str]] = _mapa("pattern_state", {
 
         "implementado": [],
 
@@ -113,7 +117,7 @@ def vault_pattern_list(
 
         "refactoring": [],
 
-    }
+    })
 
 
     for p in patterns:

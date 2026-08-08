@@ -72,7 +72,7 @@ from vault_io import atomic_write_text, write_report
 from vault_secret_scan import redact_secrets as _redactar_por_registro
 # El vocabulario se declara una vez y se consume, no se copia. Ver
 # `vault_vocabulario.py` para el registro y su contexto dueño.
-from vault_vocabulario import opciones as _opciones
+from vault_vocabulario import cubos as _cubos, opciones as _opciones
 
 
 IGNORED_DIRS = {
@@ -649,7 +649,7 @@ def save_findings_to_vault(findings: List[Dict], project: str) -> List[str]:
     for f in findings:
         f["snippet"] = redact_secrets(f.get("snippet", ""))
 
-    by_severity = {"critical": [], "high": [], "medium": [], "low": []}
+    by_severity = _cubos("severidad", [])
 
     for f in findings:
         by_severity[f["severity"]].append(f)
@@ -779,7 +779,7 @@ def vault_security_scan(
 
     files_scanned = len(results)
 
-    by_severity = {"critical": 0, "high": 0, "medium": 0, "low": 0}
+    by_severity = _cubos("severidad", 0)
 
     by_category: Dict[str, int] = {}
 

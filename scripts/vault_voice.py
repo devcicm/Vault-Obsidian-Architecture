@@ -33,6 +33,10 @@ from vault_entorno import leer as _env
 from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
+# El vocabulario se declara una vez y se consume, no se copia. Ver
+# `vault_vocabulario.py` para el registro y su contexto dueno.
+from vault_vocabulario import rango as _rango
+
 # Frase de apertura por tipo de momento. El vault habla en primera persona:
 # lo que se refuerza no es una regla abstracta, es lo que acaba de pasar aquí.
 _APERTURA = {
@@ -66,7 +70,7 @@ def norms_for_tool(tool: str) -> List[Dict[str, Any]]:
             aplica.append(norma)
         elif _menciona(norma.get("tools_detecting"), tool):
             detecta.append(norma)
-    orden = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+    orden = _rango("severidad", base=0, mayor_primero=False)
     clave = lambda n: (orden.get(n.get("severity"), 9), n["code"])  # noqa: E731
     return sorted(aplica, key=clave) + sorted(detecta, key=clave)
 

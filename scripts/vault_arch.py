@@ -1032,7 +1032,31 @@ def vocabularios_sin_dueno() -> list[dict]:
 
 
 def _literales_de_cadena(nodo: ast.AST) -> tuple[str, ...] | None:
-    """Los elementos de una lista/tupla/set de cadenas literales, si lo es."""
+    """Los elementos de una lista/tupla/set de cadenas literales, si lo es.
+
+    **Las claves de un diccionario cuentan igual.** El detector solo miraba
+    secuencias y por eso daba cero mientras quedaban tres copias vivas, las
+    tres escritas como mapa: `CIA_WEIGHT = {"critical": 1.0, ...}` en
+    `vault_context_pack`, `orden = {"critical": 0, ...}` en `vault_voice` y
+    las descripciones por severidad de `vault_ncr_save`. Son la misma decisión
+    copiada —qué valores existen y cuáles no— con un valor colgando de cada
+    una; que el literal esté a la izquierda de los dos puntos no la cambia.
+
+    Es el mismo defecto que el detector viene a impedir, cometido por el
+    detector: se midió con la forma que se esperaba en vez de con la que hay
+    (AP-44). Un guard que da cero porque no sabe mirar es peor que no tenerlo,
+    porque el cero se lee como que no queda deuda.
+    """
+    if isinstance(nodo, ast.Dict):
+        claves = [
+            k.value for k in nodo.keys
+            if isinstance(k, ast.Constant) and isinstance(k.value, str)
+        ]
+        # Solo si **todas** las claves son cadenas literales: un mapa con
+        # claves calculadas no es una lista de valores escrita a mano.
+        if claves and len(claves) == len(nodo.keys):
+            return tuple(claves)
+        return None
     if not isinstance(nodo, (ast.List, ast.Tuple, ast.Set)):
         return None
     valores = []
@@ -1041,6 +1065,15 @@ def _literales_de_cadena(nodo: ast.AST) -> tuple[str, ...] | None:
             return None
         valores.append(e.value)
     return tuple(valores) if valores else None
+
+
+def _nombre_llamado(func: ast.AST) -> str:
+    """El nombre de lo que se llama, sea `mapa(...)` o `voc.mapa(...)`."""
+    if isinstance(func, ast.Name):
+        return func.id
+    if isinstance(func, ast.Attribute):
+        return func.attr
+    return ""
 
 
 def copias_de_vocabulario() -> list[dict]:
@@ -1076,7 +1109,21 @@ def copias_de_vocabulario() -> list[dict]:
             arbol = ast.parse(ruta.read_text(encoding="utf-8", errors="replace"))
         except SyntaxError:
             continue
+        # `mapa("severidad", {...})` es la forma sancionada para los mapas cuyo
+        # valor no se puede derivar —umbrales, transiciones, fichas de datos—.
+        # El literal sigue ahí porque el dato es del punto de uso, pero las
+        # claves quedan comprobadas contra el registro al importarse el módulo,
+        # que es lo que el guard persigue. Marcarlo igual convertiría el único
+        # camino correcto en un incumplimiento.
+        declarados = {
+            id(a) for n in ast.walk(arbol)
+            if isinstance(n, ast.Call)
+            and _nombre_llamado(n.func).lstrip("_") == "mapa"
+            for a in n.args
+        }
         for nodo in ast.walk(arbol):
+            if id(nodo) in declarados:
+                continue
             literales = _literales_de_cadena(nodo)
             if literales is None:
                 continue

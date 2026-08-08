@@ -57,12 +57,6 @@ def _change_log_json() -> Path:
     return _repo().bitacora_cambios
 
 
-CIA_WEIGHT: Dict[str, int] = {
-    "critical": 4,
-    "high": 3,
-    "medium": 2,
-    "low": 1,
-}
 
 RISK_LEVELS = [
     (8, "critical"),
@@ -75,7 +69,9 @@ RISK_LEVELS = [
 from vault_lib import read_frontmatter
 # El vocabulario se declara una vez y se consume, no se copia. Ver
 # `vault_vocabulario.py` para el registro y su contexto dueño.
-from vault_vocabulario import opciones as _opciones
+from vault_vocabulario import opciones as _opciones, rango as _rango
+
+CIA_WEIGHT: Dict[str, int] = _rango("severidad")
 
 
 def _load_graph(predicate_filter: Optional[List[str]] = None) -> Optional[Dict[str, Any]]:
@@ -228,7 +224,7 @@ def vault_impact(
                 queue.append((neighbor, dist + 1, node))
 
     # Filter by min_risk
-    risk_order = {"critical": 4, "high": 3, "medium": 2, "low": 1}
+    risk_order = _rango("severidad")
     impacted = list(visited.values())
     if min_risk:
         min_level = risk_order.get(min_risk.lower(), 1)

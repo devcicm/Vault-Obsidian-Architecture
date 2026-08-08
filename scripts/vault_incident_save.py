@@ -34,7 +34,7 @@ from vault_io import assert_within_vault, atomic_write_text, get_vault_root, wri
 from vault_norms import compute_norm_refs, status_frontmatter_lines
 # El vocabulario se declara una vez y se consume, no se copia. Ver
 # `vault_vocabulario.py` para el registro y su contexto dueño.
-from vault_vocabulario import opciones as _opciones
+from vault_vocabulario import mapa as _mapa, opciones as _opciones
 # Los `*_save` viven en `scripts/`; el paquete se importa desde la raiz.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -43,7 +43,7 @@ from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 FOLDER = "02_Observability/incidents"
 
 # ISO 20000-1 severity classification
-SEVERITY_LEVELS = {
+SEVERITY_LEVELS = _mapa("prioridad", {
     "P1": {
         "label": "Critical",
         "description": "Producción caída — todos los usuarios afectados",
@@ -72,7 +72,7 @@ SEVERITY_LEVELS = {
         "resolution_target": "72 h",
         "iso_ref": "ISO 20000-1:2018 §8.6.2",
     },
-}
+})
 
 VALID_STATUS = [
     "detected",
@@ -320,7 +320,7 @@ Ejemplos:
         affected_services = json.loads(args.affected_services)
     except json.JSONDecodeError as e:
         print(
-            json.dumps({"ok": False, "error_code": "INVALID_JSON", "message": str(e)})
+            json.dumps({"ok": False, "error_code": "INVALID_JSON", "message": str(e)}, ensure_ascii=False)
         )
         return 1
 

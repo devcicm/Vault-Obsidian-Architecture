@@ -310,7 +310,7 @@ Ejemplos:
         migrations = json.loads(args.migrations)
     except json.JSONDecodeError as e:
         print(
-            json.dumps({"ok": False, "error_code": "INVALID_JSON", "message": str(e)})
+            json.dumps({"ok": False, "error_code": "INVALID_JSON", "message": str(e)}, ensure_ascii=False)
         )
         return 1
 

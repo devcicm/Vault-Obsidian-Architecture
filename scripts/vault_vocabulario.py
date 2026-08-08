@@ -216,3 +216,85 @@ def tabla() -> list:
         }
         for k, v in sorted(VOCABULARIOS.items())
     ]
+
+
+# ── Formas derivadas (v40.7) ─────────────────────────────────────────────────
+#
+# `valores()` y `opciones()` cubrían el caso de listar los términos, y con eso
+# se convirtieron los catorce `choices=` y constantes que eran secuencias. Lo
+# que quedó fuera —y fuera también del detector, que solo miraba secuencias—
+# son los mapas: catorce sitios más que escriben los mismos cuatro términos
+# como claves de un diccionario para colgar de cada uno un peso, un orden, un
+# cubo vacío o una ficha de datos.
+#
+# Un mapa cuyas claves son el vocabulario es la misma decisión duplicada que
+# una lista: declara qué términos existen. Estas tres funciones son las formas
+# en las que aparecía, para que el punto de uso conserve **su** dato —el peso,
+# el umbral, la prosa— y deje de reescribir el conjunto de términos.
+
+
+def rango(nombre: str, *, base: int = 1, mayor_primero: bool = True) -> Dict[str, int]:
+    """Cada término con su posición, según el orden declarado del vocabulario.
+
+    `rango("severidad")` da `{"critical": 4, "high": 3, "medium": 2, "low": 1}`,
+    que es literalmente lo que había escrito a mano en cinco módulos para
+    ordenar y para comparar contra un mínimo.
+
+    El orden sale del registro y no del sitio de uso: eso es lo que se estaba
+    decidiendo cinco veces. Que `critical` pese más que `low` no es una
+    convención de `vault_impact`, es del vocabulario.
+    """
+    terminos = valores(nombre)
+    if mayor_primero:
+        return {t: base + len(terminos) - 1 - i for i, t in enumerate(terminos)}
+    return {t: base + i for i, t in enumerate(terminos)}
+
+
+def peso(nombre: str) -> Dict[str, float]:
+    """El rango normalizado a `(0, 1]`, que es la otra forma en que aparecía.
+
+    `vault_context_pack` lo escribía como `{"critical": 1.0, "high": 0.75, ...}`
+    — el mismo reparto lineal, calculado a mano para cuatro términos. Añadir un
+    quinto término al vocabulario habría dejado ese mapa incompleto en silencio,
+    y una nota con el término nuevo habría puntuado cero.
+    """
+    ordinales = rango(nombre)
+    total = len(ordinales)
+    return {t: n / total for t, n in ordinales.items()}
+
+
+def cubos(nombre: str, inicial):
+    """Un diccionario con un término por clave y una copia de `inicial` en cada.
+
+    `by_severity = {"critical": [], "high": [], ...}` aparecía dos veces solo en
+    `vault_security_scan`, una con listas y otra con contadores. `inicial` se
+    copia por término: pasar `[]` no reparte la misma lista entre todos.
+    """
+    import copy
+
+    return {t: copy.deepcopy(inicial) for t in valores(nombre)}
+
+
+def mapa(nombre: str, entradas: Dict[str, object]) -> Dict[str, object]:
+    """Devuelve `entradas` tras comprobar que sus claves **son** el vocabulario.
+
+    Para los mapas cuyo valor no se puede derivar: los umbrales de riesgo, las
+    transiciones válidas entre estados, la ficha de cada prioridad ISO 20000-1.
+    Ahí la prosa y los números son del punto de uso y ahí deben quedarse; lo
+    que no es suyo es decidir qué claves existen.
+
+    Falla al importarse, no al usarse: un mapa incompleto se descubre la vez
+    que llega el término que falta, y para entonces ya devolvió un default
+    silencioso en vez de un error.
+    """
+    esperadas = set(valores(nombre))
+    reales = set(entradas)
+    if reales != esperadas:
+        faltan = sorted(esperadas - reales)
+        sobran = sorted(reales - esperadas)
+        raise KeyError(
+            f"el mapa no cubre el vocabulario {nombre!r}: "
+            f"faltan {faltan}, sobran {sobran}. Un término del registro sin "
+            "entrada aquí acaba en un default que nadie ve."
+        )
+    return entradas

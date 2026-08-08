@@ -540,7 +540,8 @@ Ejemplos:
         if not path.exists():
             print(
                 json.dumps(
-                    emit_error("vault_mermaid_check", "FILE_NOT_FOUND", f"Archivo no encontrado: {args.path}")
+                    emit_error("vault_mermaid_check", "FILE_NOT_FOUND", f"Archivo no encontrado: {args.path}"),
+                    ensure_ascii=False,
                 )
             )
             return 1

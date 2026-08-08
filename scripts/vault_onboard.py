@@ -177,6 +177,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.ciclo_de_vida.repositorio import RepositorioCicloDeVida  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 
+# El vocabulario se declara una vez y se consume, no se copia. Ver
+# `vault_vocabulario.py` para el registro y su contexto dueno.
+from vault_vocabulario import cubos as _cubos
+
 
 def _raiz() -> Path:
     """La raiz del vault, resuelta al usarse."""
@@ -1328,7 +1332,7 @@ Ver ADR de arqueologia: [[adr-001-historia-oculta-branch-archaeology]]
 def _onboard_02_observability(
     project: str, project_path: Path, modules: List[Dict], agent: str, dry_run: bool
 ) -> List[Tuple[str, str]]:
-    issues: Dict[str, List[Dict]] = {"high": [], "medium": [], "low": []}
+    issues: Dict[str, List[Dict]] = _cubos("severidad", [])
     severity_map = {
         "FIXME": "high",
         "BUG": "high",

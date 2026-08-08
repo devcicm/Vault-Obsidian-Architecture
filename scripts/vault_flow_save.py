@@ -377,7 +377,7 @@ Notas:
             steps = json.loads(args.steps)
 
         except json.JSONDecodeError as e:
-            print(json.dumps(emit_error("vault_flow_save", "ARG_JSON_INVALID", f"Invalid JSON in --steps: {e}")))
+            print(json.dumps(emit_error("vault_flow_save", "ARG_JSON_INVALID", f"Invalid JSON in --steps: {e}"), ensure_ascii=False))
 
             return 1
 

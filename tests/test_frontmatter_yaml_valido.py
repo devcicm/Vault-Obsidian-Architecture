@@ -12,6 +12,7 @@ f-strings, y solo ocho se acordaban de escapar. No es que ocho lo hicieran bien:
 es que la decisión se tomaba veinticuatro veces.
 """
 
+import json
 import re
 import sys
 from pathlib import Path
@@ -103,3 +104,111 @@ def test_el_write_path_escribe_un_frontmatter_parseable():
     datos = yaml.safe_load("\n".join(l for l in lineas if l.strip() != "---"))
     assert datos["title"] == "Overview: 100% del *plan* [v2]"
     assert datos["tags"] == ["prueba"]
+
+
+# ── El ultimo de los diecisiete (v40.7) ──────────────────────────────────────
+#
+# `vault_slo_save` siguio construyendo su frontmatter a mano despues de que los
+# otros dieciseis pasaran al escritor unico. No era un rezagado inocuo: `unit`
+# es campo suyo y el valor por defecto de un SLO de disponibilidad es `%`, que
+# es justo uno de los dos valores que dejaron notas ilegibles en el vault de
+# pruebas y que este fichero abre citando.
+#
+# Lo pasaba porque `yaml_scalar` ya citaba `unit`. Eso es exactamente lo que
+# hace cara la duplicacion: el sitio duplicado acierta hasta el dia que no, y
+# el bloque mezclaba tres criterios (`yaml_scalar`, `json.dumps` y f-string
+# crudo) donde el titulo iba con comillas puestas a mano.
+
+SAVES = sorted(p.stem for p in (REPO_ROOT / "scripts").glob("*_save.py"))
+
+
+def test_ningun_save_construye_el_frontmatter_a_mano():
+    """El guard de AP-50 para este bloque: la decision se toma en un sitio.
+
+    Un `*_save` que vuelva a abrir su frontmatter con un `"---"` literal esta
+    tomando por su cuenta una decision que ya tiene dueno declarado.
+    """
+    culpables = [
+        s for s in SAVES
+        if 'Frontmatter(' not in (REPO_ROOT / "scripts" / f"{s}.py").read_text(
+            encoding="utf-8")
+    ]
+    assert not culpables, (
+        "escriben su frontmatter a mano en vez de usar vault.autoria."
+        "frontmatter: " + ", ".join(culpables)
+    )
+
+
+@pytest.mark.parametrize("unidad", ["%", "ms", "req/s", "Overview: demo"])
+def test_el_slo_escribe_una_unidad_hostil_y_se_relee(unidad):
+    """Extremo a extremo sobre la tool real, con el valor que rompio fuera.
+
+    Se lee con `yaml.safe_load` y se compara el objeto, no el texto: medir con
+    la misma normalizacion que escribio es AP-44.
+    """
+    import os
+    import subprocess
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as tmp:
+        entorno = dict(os.environ, VAULT_ROOT=tmp, PYTHONIOENCODING="utf-8")
+        def corre(script, *argv):
+            return subprocess.run(
+                [sys.executable, str(REPO_ROOT / "scripts" / f"{script}.py"),
+                 *argv],
+                env=entorno, capture_output=True, text=True,
+                encoding="utf-8", cwd=str(REPO_ROOT))
+
+        corre("vault_init")
+        r = corre(
+            "vault_slo_save",
+            "--project", "demo", "--service", "api de migración",
+            "--slo_type", "availability", "--target", "99.9",
+            "--unit", unidad,
+        )
+        assert r.returncode == 0, r.stderr
+        ruta = Path(tmp) / json.loads(r.stdout)["path"]
+        texto = ruta.read_text(encoding="utf-8")
+
+    datos = yaml.safe_load(texto.split("---", 2)[1])
+    assert datos["unit"] == unidad
+    assert datos["service"] == "api de migración"
+    # El guion largo sale como `--`: el write path normaliza los guiones
+    # tipograficos (`vault_encoding.DASH_REPLACEMENTS`) antes de escribir, y lo
+    # hacia ya antes de este cambio —el dorado anterior tambien lo trae asi—.
+    # Es decision declarada del estandar, no un efecto de pasar al escritor
+    # unico: los acentos, que no se normalizan, siguen intactos al lado.
+    assert datos["title"] == "SLO: api de migración -- Disponibilidad"
+    assert "\\u00" not in texto, "acento escapado por json.dumps"
+
+
+def test_ningun_envelope_sale_con_los_acentos_escapados():
+    """`json.dumps` por defecto escapa: `Migración` sale `Migraci\u00f3n`.
+
+    No rompe nada y por eso llevaba tiempo ahi: 28 de 160 salidas a stdout lo
+    hacian y 132 no. El consumidor que lee el envelope recibe basura una de
+    cada seis veces, sin que ninguna puerta se ponga roja.
+
+    Se comprueba por AST y no por grep: dos de los sitios que un grep encuentra
+    estan dentro de docstrings, y uno de ellos es el ejemplo de lo que NO hay
+    que hacer en `vault_error_contract`.
+    """
+    import ast
+
+    culpables = []
+    for f in sorted(list((REPO_ROOT / "scripts").glob("*.py"))
+                    + list((REPO_ROOT / "cli").glob("*.py"))):
+        for nodo in ast.walk(ast.parse(f.read_text(encoding="utf-8"))):
+            if not (isinstance(nodo, ast.Call) and isinstance(nodo.func, ast.Name)
+                    and nodo.func.id == "print"):
+                continue
+            for arg in nodo.args:
+                if (isinstance(arg, ast.Call)
+                        and isinstance(arg.func, ast.Attribute)
+                        and arg.func.attr == "dumps"
+                        and getattr(arg.func.value, "id", "") == "json"
+                        and not any(k.arg == "ensure_ascii" for k in arg.keywords)):
+                    culpables.append(f"{f.name}:{arg.lineno}")
+
+    assert not culpables, (
+        "json.dumps a stdout sin ensure_ascii=False: " + ", ".join(culpables))

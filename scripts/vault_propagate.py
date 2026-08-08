@@ -37,7 +37,6 @@ from vault_io import atomic_write_json, file_lock, write_report
 
 SCRIPTS_DIR = Path(__file__).parent
 
-RISK_ORDER = {"critical": 4, "high": 3, "medium": 2, "low": 1}
 
 VALID_STRATEGIES = ("conservative", "transitive", "critical-path")
 VALID_ACTIONS = ("notify", "queue", "reindex")
@@ -50,7 +49,9 @@ from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 # El vocabulario se declara una vez y se consume, no se copia. Ver
 # `vault_vocabulario.py` para el registro y su contexto dueño.
-from vault_vocabulario import opciones as _opciones
+from vault_vocabulario import opciones as _opciones, rango as _rango
+
+RISK_ORDER = _rango("severidad")
 
 
 def _raiz() -> Path:

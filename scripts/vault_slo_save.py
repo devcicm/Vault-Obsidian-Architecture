@@ -35,6 +35,10 @@ from vault_errors import wrap_main
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from vault_io import assert_within_vault, atomic_write_text, get_vault_root, write_report
 from vault_norms import compute_norm_refs
+# Los `*_save` viven en `scripts/`; el paquete se importa desde la raiz.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 FOLDER = "02_Observability/slos"
 
@@ -271,30 +275,33 @@ def vault_slo_save(
 """
 
     norm_refs = compute_norm_refs(FOLDER, body, [])
-    fm_lines = [
-        "---",
-        f'title: "SLO: {service} — {slo_info["label"]}"',
-        f"id: {uuid.uuid4()}",
-        f"createdAt: {now}",
-        f"updatedAt: {now}",
-        f"tags: {json.dumps(['slo', 'observability', project, service, slo_type])}",
-        f"norm_refs: {json.dumps(norm_refs)}",
-        f"project: {yaml_scalar(project)}",
-        f"service: {yaml_scalar(service)}",
-        f"slo_type: {slo_type}",
-        f"target: {target}",
-        f"unit: {yaml_scalar(unit)}",
-        f"window: {window}",
-        f"alert_threshold: {alert_threshold}",
-        f"iso_standard: ISO 20000-1:2018 §8.3",
-        f"iso_quality: {slo_info['iso_ref']}",
-        f"cia_integrity: high",
-        f"cia_availability: high",
-        f"cia_sensitivity: internal",
-        f"agent: {agent}",
-        "---",
-    ]
-    full = "\n".join(fm_lines) + "\n\n" + body
+    # El ultimo de los diecisiete en dejar de escribir su frontmatter a mano
+    # (AP-46). No era un rezagado cualquiera: `unit` es campo suyo, y el valor
+    # por defecto de un SLO de disponibilidad es `%`, que en YAML abre una
+    # directiva. El contraste contra un vault ajeno al estandar (regla 7) lo
+    # encontro roto ahi fuera, no aqui: `yaml_scalar` ya lo citaba, pero el
+    # criterio convivia con `json.dumps` en el mismo bloque.
+    fm_lines = Frontmatter()
+    fm_lines.set("title", f'SLO: {service} — {slo_info["label"]}')
+    fm_lines.set("id", uuid.uuid4())
+    fm_lines.set("createdAt", now)
+    fm_lines.set("updatedAt", now)
+    fm_lines.set("tags", ['slo', 'observability', project, service, slo_type])
+    fm_lines.set("norm_refs", norm_refs)
+    fm_lines.set("project", project)
+    fm_lines.set("service", service)
+    fm_lines.set("slo_type", slo_type)
+    fm_lines.set("target", target)
+    fm_lines.set("unit", unit)
+    fm_lines.set("window", window)
+    fm_lines.set("alert_threshold", alert_threshold)
+    fm_lines.set("iso_standard", "ISO 20000-1:2018 §8.3")
+    fm_lines.set("iso_quality", slo_info['iso_ref'])
+    fm_lines.set("cia_integrity", "high")
+    fm_lines.set("cia_availability", "high")
+    fm_lines.set("cia_sensitivity", "internal")
+    fm_lines.set("agent", agent)
+    full = fm_lines.render() + "\n\n" + body
 
     filename = f"{_slug(project)}-{_slug(service)}-{slo_type}.md"
     path = get_vault_root() / FOLDER / filename

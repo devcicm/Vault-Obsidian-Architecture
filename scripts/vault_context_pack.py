@@ -54,7 +54,6 @@ W_GRAPH = 0.30
 W_RECENCY = 0.15
 W_CIA = 0.10
 
-CIA_WEIGHT: Dict[str, float] = {"critical": 1.0, "high": 0.75, "medium": 0.5, "low": 0.25}
 
 # Una nota deprecada o revocada sigue siendo recuperable —no se borra nada—
 # pero no debe desplazar a la vigente que la reemplazó.
@@ -70,6 +69,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.consulta.repositorio import RepositorioConsulta  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+
+# El vocabulario se declara una vez y se consume, no se copia. Ver
+# `vault_vocabulario.py` para el registro y su contexto dueno.
+from vault_vocabulario import peso as _peso
+
+CIA_WEIGHT: Dict[str, float] = _peso("severidad")
 
 
 def _raiz() -> Path:

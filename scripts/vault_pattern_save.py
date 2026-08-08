@@ -52,18 +52,18 @@ PATTERN_TYPES = ["design", "architecture", "code", "integration"]
 
 # El vocabulario se declara una vez y se consume, no se copia. Ver
 # `vault_vocabulario.py` para el registro y su contexto dueño.
-from vault_vocabulario import opciones as _opciones
+from vault_vocabulario import mapa as _mapa, opciones as _opciones
 
 PATTERN_STATUSES = _opciones("pattern_state")
 
 
-VALID_TRANSITIONS = {
+VALID_TRANSITIONS = _mapa("pattern_state", {
     "planificado": ["en_progreso"],
     "en_progreso": ["implementado", "deprecado", "refactoring"],
     "implementado": ["deprecado", "refactoring", "en_progreso"],
     "deprecado": ["implementado", "en_progreso"],
     "refactoring": ["implementado", "en_progreso", "deprecado"],
-}
+})
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))

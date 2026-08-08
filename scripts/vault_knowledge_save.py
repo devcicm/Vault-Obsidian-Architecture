@@ -266,7 +266,8 @@ Notas:
         if not scan_dir.exists():
             print(
                 json.dumps(
-                    emit_error("vault_knowledge_save", "FOLDER_NOT_FOUND", f"scan-path not found: {args.scan_path}")
+                    emit_error("vault_knowledge_save", "FOLDER_NOT_FOUND", f"scan-path not found: {args.scan_path}"),
+                    ensure_ascii=False,
                 )
             )
 
