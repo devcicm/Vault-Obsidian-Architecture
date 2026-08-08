@@ -7,9 +7,10 @@
     "req_id": "REQ-001",
     "timestamp": "<FECHA>",
     "tool": "vault_requirement_save",
+    "touched": 5,
     "unchanged": "<BEST-EFFORT>",
-    "updated": 2,
-    "written": 5
+    "updated": "<BEST-EFFORT>",
+    "written": "<BEST-EFFORT>"
   },
   "nota": "---\nid: <UUID>\nreq_id: REQ-001\ntitle: Búsqueda por categoría\nproject: demo\nreq_type: functional\npriority: must-have\nstatus: draft\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ntags: [\"demo\", \"requirement\", \"functional\", \"must-have\"]\ncia_integrity: high\ncia_availability: medium\ncia_sensitivity: internal\nagent: system\n---\n\n## Descripcion\n\nEl usuario busca por categoría.\n\n## Estado\n\n**Estado:** **draft** | reviewed | approved | implemented | verified | obsolete"
 }

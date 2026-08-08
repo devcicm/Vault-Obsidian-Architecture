@@ -7,10 +7,11 @@
     "path": "06_Diagrams/component/demo-diagrama-de-migracion.md",
     "timestamp": "<FECHA>",
     "tool": "vault_diagram_save",
+    "touched": 4,
     "type": "mermaid",
     "unchanged": "<BEST-EFFORT>",
-    "updated": 2,
-    "written": 4
+    "updated": "<BEST-EFFORT>",
+    "written": "<BEST-EFFORT>"
   },
   "nota": "---\ntitle: Diagrama de migración\nid: <UUID>\nproject: demo\ndiagramType: mermaid\ncategory: component\ntype: diagram\ntags: [\"component\", \"demo\", \"diagram\"]\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ncia_integrity: medium\ncia_availability: medium\ncia_sensitivity: internal\nagent: system\n---\n\n## Diagrama\n\n\n\n```mermaid\nflowchart TD\n  A --> B\n```"
 }

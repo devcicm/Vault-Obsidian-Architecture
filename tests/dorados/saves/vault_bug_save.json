@@ -8,9 +8,10 @@
     "phase": "open",
     "timestamp": "<FECHA>",
     "tool": "vault_bug_save",
+    "touched": 5,
     "unchanged": "<BEST-EFFORT>",
-    "updated": 1,
-    "written": 5
+    "updated": "<BEST-EFFORT>",
+    "written": "<BEST-EFFORT>"
   },
   "nota": "---\ntitle: Excepción al guardar\nid: <UUID>\nbug_id: BUG-001\ntype: bug\nproject: demo\nphase: open\nstatus: in-progress\nbug_state: open\nseverity: medium\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ntags: [\"demo\", \"bug\", \"medium\"]\ncia_integrity: high\ncia_availability: medium\ncia_sensitivity: internal\nagent: system\n---\n\n## Síntoma\n\nRevienta con acentuación en el título.\n\n## Ciclo\n\n**open** | root-cause | fixed"
 }

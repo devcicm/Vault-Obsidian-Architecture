@@ -7,9 +7,10 @@
     "test_id": "TEST-001",
     "timestamp": "<FECHA>",
     "tool": "vault_test_save",
+    "touched": 5,
     "unchanged": "<BEST-EFFORT>",
-    "updated": 2,
-    "written": 5
+    "updated": "<BEST-EFFORT>",
+    "written": "<BEST-EFFORT>"
   },
   "nota": "---\nid: <UUID>\ntest_id: TEST-001\ntitle: Validación de acentos\nproject: demo\ntest_type: unit\nstatus: planned\ntest_result: not_run\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ntags: [\"demo\", \"test\", \"unit\", \"not_run\"]\ncia_integrity: medium\ncia_availability: medium\ncia_sensitivity: internal\nagent: system\n---\n\n## Descripcion\n\nComprueba la codificación.\n\n## Estado\n\n**Estado:** **not_run** | pass | fail | blocked | skip"
 }

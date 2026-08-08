@@ -8,9 +8,10 @@
     "timestamp": "<FECHA>",
     "title": "Un concepto con acentuación",
     "tool": "vault_knowledge_save",
+    "touched": 3,
     "unchanged": "<BEST-EFFORT>",
-    "updated": 1,
-    "written": 3
+    "updated": "<BEST-EFFORT>",
+    "written": "<BEST-EFFORT>"
   },
   "nota": "---\ntitle: Un concepto con acentuación\nid: <UUID>\ncategory: concept\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ncia_integrity: medium\ncia_availability: medium\ncia_sensitivity: internal\nagent: system\n---\n\nUna línea.\nOtra línea.\nY una tercera con palabras."
 }

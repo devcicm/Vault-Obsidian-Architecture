@@ -525,26 +525,50 @@ def _detect_stale_projects(notes: List[Path]) -> List[Dict[str, Any]]:
 #
 # Se declara como registro y no como tres condiciones sueltas dentro del bucle:
 # es una decisión con dueño, y el guard que la vigila necesita poder leerla.
+# La entrada por nombre aplanado sale de un vault de fuera medido en v40.6
+# (`vault-electron-fingerprint`, 139 notas, sellado en v34): el consumidor no
+# guardó la referencia de tools en `scripts/`, la **aplanó** a
+# `00_System/scripts-README.md`. El criterio la reconocía por ruta, así que sus
+# ocho ejemplos de sintaxis —`[[nota]]`, `[[carpeta/nota]]`— contaban como
+# enlaces rotos del vault; con el tope de `broken_links` saturando a diez, casi
+# toda la penalización era falsa. Es el mismo defecto de v40.5 en otra forma:
+# identidad por **ubicación** en vez de por identidad.
 DOCUMENTACION_DEL_ESTANDAR: Dict[str, str] = {
     "vault-obsidian-architecture": "el manifiesto, con cualquier sufijo de versión o backup",
     "docs/sdd/": "los documentos SDD del estándar, que citan sintaxis de wikilink",
     "scripts/": "la referencia de tools, con ejemplos de CLI y de enlace",
+    "scripts-readme": "la referencia de tools aplanada fuera de `scripts/`; "
+                      "el nombre no basta como identidad y se exige la marca "
+                      "del estándar en el contenido",
 }
 
+#: Lo que un documento del estándar dice de sí mismo. Se usa solo para la
+#: entrada por nombre aplanado: `readme` es un nombre demasiado genérico para
+#: valer como identidad, y excluir de más esconde enlaces rotos de verdad.
+MARCA_DEL_ESTANDAR = "vault obsidian architecture"
 
-def es_documentacion_del_estandar(rel: str) -> bool:
+
+def es_documentacion_del_estandar(rel: str, contenido: Optional[str] = None) -> bool:
     """¿Esta ruta es documentación del estándar y no una nota del vault?
 
     `rel` es la ruta relativa a la raíz del vault, con `/` como separador.
+
+    `contenido` es opcional y solo decide el caso aplanado. Sin él, la respuesta
+    es la conservadora —**no** excluir—: el nombre del manifiesto es largo y
+    único y se sostiene solo, pero un fichero llamado `scripts-README.md` puede
+    ser perfectamente una nota que alguien escribió, y excluirla a ciegas
+    escondería sus enlaces rotos de verdad.
     """
     ruta = rel.replace("\\", "/").lower()
     nombre = ruta.rsplit("/", 1)[-1]
     if nombre.startswith("vault-obsidian-architecture"):
         return True
-    return any(
-        ruta.startswith(pref) or f"/{pref}" in ruta
-        for pref in ("docs/sdd/", "scripts/")
-    )
+    if any(ruta.startswith(pref) or f"/{pref}" in ruta
+           for pref in ("docs/sdd/", "scripts/")):
+        return True
+    if nombre.startswith("scripts-readme") and contenido:
+        return MARCA_DEL_ESTANDAR in contenido.lower()
+    return False
 
 
 def _detect_broken_links(
@@ -568,11 +592,13 @@ def _detect_broken_links(
     for n in notes:
         rel = str(n.relative_to(_raiz())).replace("\\", "/")
 
-        if es_documentacion_del_estandar(rel):
-            continue
-
+        # Se lee antes de decidir: el caso aplanado necesita el contenido para
+        # distinguir la referencia de tools de una nota que se llame parecido.
         content = _leer_nota(n)
         if content is None:
+            continue
+
+        if es_documentacion_del_estandar(rel, content):
             continue
 
         for link in _extract_wiki_links(content, known=all_stems):

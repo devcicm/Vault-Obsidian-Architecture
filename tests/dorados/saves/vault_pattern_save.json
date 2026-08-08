@@ -6,10 +6,11 @@
     "status": "implementado",
     "timestamp": "<FECHA>",
     "tool": "vault_pattern_save",
+    "touched": 4,
     "transition": null,
     "unchanged": "<BEST-EFFORT>",
-    "updated": 1,
-    "written": 4
+    "updated": "<BEST-EFFORT>",
+    "written": "<BEST-EFFORT>"
   },
   "nota": "---\ntitle: Repositorio por contexto\nid: <UUID>\nproject: demo\ntype: architecture\nstatus: implemented\npattern_state: implementado\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ncia_integrity: medium\ncia_availability: medium\ncia_sensitivity: internal\nagent: system\n---\n\n\n---\n*Última actualización: <FECHA>*"
 }

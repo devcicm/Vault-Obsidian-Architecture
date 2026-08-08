@@ -8,9 +8,10 @@
     "timestamp": "<FECHA>",
     "title": "Guía de diseño",
     "tool": "vault_bibliography_save",
+    "touched": 3,
     "unchanged": "<BEST-EFFORT>",
-    "updated": 1,
-    "written": 3
+    "updated": "<BEST-EFFORT>",
+    "written": "<BEST-EFFORT>"
   },
   "nota": "---\ntitle: Guía de diseño\nid: <UUID>\nurl: https://example.org/guia\nsource_type: docs\nagent: system\naccessed_at: <FECHA>\ncia_integrity: medium\ncia_availability: low\ncia_sensitivity: public\n---\n# Guía de diseño\n\n**URL:** https://example.org/guia  \n**Tipo:** docs  \n**Consultado:** <FECHA>  \n\n---\n\n## Resumen\n\nUn resumen corto.\n"
 }

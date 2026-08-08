@@ -7,10 +7,11 @@
     "path": "01_Projects/demo/envs.md",
     "timestamp": "<FECHA>",
     "tool": "vault_env_save",
+    "touched": 4,
     "unchanged": "<BEST-EFFORT>",
-    "updated": 2,
+    "updated": "<BEST-EFFORT>",
     "varCount": 1,
-    "written": 4
+    "written": "<BEST-EFFORT>"
   },
   "nota": "---\ntitle: Environment Variables - demo\nproject: demo\ntype: envs\nupdatedAt: <FECHA>\ncia_integrity: high\ncia_availability: medium\ncia_sensitivity: restricted\nagent: system\n---\n\n# Environment Variables: demo\n\n## staging\n\n| Nombre | Descripción | Requerida | Default | Sensible | Proveedor |\n|---|---|---|---|---|---|\n| `API_URL` | Dirección del servicio | ✓ | 🔒 (secreto) | -- | env-file |\n\n"
 }

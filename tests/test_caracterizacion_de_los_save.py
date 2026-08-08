@@ -185,11 +185,37 @@ def _sin_lo_best_effort(envelope: dict) -> dict:
     cambiado nada de lo que un consumidor observa.
 
     Se sustituye por un marcador en vez de borrarse: que el campo exista es
-    parte del contrato de AP-37, y `created`, `updated`, `written` y `path` —lo
-    que sí es trabajo comprobable— se siguen congelando byte a byte. La
-    regeneración duplicada es deuda declarada, no algo que este dorado tape.
+    parte del contrato de AP-37, y `created` y `path` —lo que sí es trabajo
+    comprobable— se siguen congelando byte a byte. La regeneración duplicada es
+    deuda declarada, no algo que este dorado tape.
+
+    **Corrección de v40.6.** La versión anterior excusaba `unchanged` y dejaba
+    congelados `updated` y `written`, que los alimenta **el mismo pase**. Si el
+    segundo pase reescribe en vez de encontrar contenido idéntico —cuestión de
+    en qué segundo caiga la marca de tiempo del índice, y bajo una suite de
+    dieciocho minutos cae de las dos formas— el `unchanged: 1` se convierte en
+    `updated: +1` y arrastra `written`. Resultado: el dorado de
+    `vault_infra_save` fallaba una corrida de cada varias sin que hubiera
+    cambiado nada de lo que un consumidor observa, y pasaba al reejecutarlo
+    solo. Un dorado que falla por el reloj enseña a reejecutar hasta que pase,
+    que es la peor cosa que se le puede enseñar a nadie sobre una suite.
+
+    Lo que se congela en su lugar es la única cifra que el pase redundante no
+    puede mover: `touched`, el total de ficheros que la tool tocó. Sigue siendo
+    falsable —si la tool escribe un fichero de más o de menos, el dorado
+    falla— y deja de depender de cómo se repartan entre las tres columnas.
     """
-    return {**envelope, "unchanged": "<BEST-EFFORT>"} if "unchanged" in envelope else envelope
+    if "unchanged" not in envelope:
+        return envelope
+    total = sum(int(envelope.get(k, 0) or 0)
+                for k in ("created", "updated", "unchanged"))
+    return {
+        **envelope,
+        "unchanged": "<BEST-EFFORT>",
+        "updated": "<BEST-EFFORT>",
+        "written": "<BEST-EFFORT>",
+        "touched": total,
+    }
 
 
 @pytest.mark.parametrize("script", sorted(INVOCACIONES))
@@ -210,6 +236,43 @@ def test_el_envelope_y_la_nota_no_cambian(vault, script):
         f"{script} cambió su salida. Si es deliberado, actualiza "
         f"tests/dorados/saves/{script}.json en este mismo commit."
     )
+
+
+def test_el_reparto_best_effort_no_se_congela_pero_el_total_si():
+    """Lo que el dorado promete después de la corrección de v40.6.
+
+    Si alguien vuelve a congelar `updated` o `written`, el dorado de
+    `vault_infra_save` volverá a fallar una corrida de cada varias por dónde
+    caiga el reloj — y la lección que deja un test así es «reejecuta hasta que
+    pase», que envenena la suite entera.
+    """
+    salida = _sin_lo_best_effort(
+        {"ok": True, "created": 4, "updated": 2, "unchanged": 1, "written": 6})
+    assert salida["touched"] == 7, "el total es lo único que el pase no mueve"
+    assert salida["created"] == 4, "lo comprobable se sigue congelando"
+    for campo in ("updated", "written", "unchanged"):
+        assert salida[campo] == "<BEST-EFFORT>", campo
+
+    # El mismo reparto por otro lado da el mismo total: es la propiedad que
+    # hace falsable el dorado sin hacerlo dependiente del reloj.
+    otro = _sin_lo_best_effort(
+        {"ok": True, "created": 4, "updated": 3, "unchanged": 0, "written": 7})
+    assert otro["touched"] == salida["touched"]
+
+
+def test_una_tool_sin_unchanged_no_se_toca():
+    """El marcador se aplica donde hay pase best-effort, no en todas partes."""
+    envelope = {"ok": True, "created": 1, "written": 1}
+    assert _sin_lo_best_effort(envelope) == envelope
+
+
+def test_un_fichero_de_mas_si_rompe_el_dorado():
+    """`touched` no es un comodín: sigue contando trabajo."""
+    base = _sin_lo_best_effort(
+        {"ok": True, "created": 4, "updated": 2, "unchanged": 1, "written": 6})
+    demas = _sin_lo_best_effort(
+        {"ok": True, "created": 4, "updated": 3, "unchanged": 1, "written": 7})
+    assert base["touched"] != demas["touched"]
 
 
 @pytest.mark.parametrize("script", sorted(INVOCACIONES))

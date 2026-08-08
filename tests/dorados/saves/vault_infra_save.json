@@ -6,10 +6,11 @@
     "path": "09_Infrastructure/servers/servidor-de-indices.md",
     "timestamp": "<FECHA>",
     "tool": "vault_infra_save",
+    "touched": 7,
     "type": "server",
     "unchanged": "<BEST-EFFORT>",
-    "updated": 2,
-    "written": 6
+    "updated": "<BEST-EFFORT>",
+    "written": "<BEST-EFFORT>"
   },
   "nota": "---\ntitle: servidor-de-índices\nid: <UUID>\ntype: server\nlocation: local\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ncia_integrity: high\ncia_availability: high\ncia_sensitivity: internal\nagent: system\n---\n\n## Descripción\n\nMáquina que sirve los índices.\n\n\n## Configuración\n\n- **cpu**: `4`"
 }
