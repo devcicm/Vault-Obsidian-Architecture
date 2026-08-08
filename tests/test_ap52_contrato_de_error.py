@@ -132,7 +132,8 @@ def test_la_baseline_solo_puede_encoger(monkeypatch):
     """
     monkeypatch.setattr(
         vec, "offenders",
-        lambda: [{"site": "vault_inventado.py:1", "module": "vault_inventado.py",
+        lambda: [{"firma": "vault_inventado.py::main::deadbeef",
+                  "site": "vault_inventado.py:1", "module": "vault_inventado.py",
                   "line": 1, "keys": ["error", "ok"]}],
     )
     assert not vec.scan()["ok"], "un sitio nuevo debe romper el guard"

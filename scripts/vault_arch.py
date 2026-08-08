@@ -224,6 +224,10 @@ CONTEXTS: dict[str, dict] = {
             "vault_doc_counts", "vault_doc_sync", "vault_noop_audit",
             "vault_blame_audit", "vault_error_contract", "vault_foreign_check",
             "vault_gate", "vault_arch",
+            # Firma estable de un sitio de código: la comparten los tres audits
+            # con baseline. Vive aquí y no en el kernel porque no sabe nada de
+            # vaults — solo de AST — y su único consumidor es el meta-toolkit.
+            "vault_firma_sitio",
         ],
     },
 }

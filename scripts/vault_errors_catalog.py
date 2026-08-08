@@ -328,6 +328,54 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": "vault-obsidian-architecture.md §Versionado del estándar",
         },
     },
+    # ── Baselines de deuda ────────────────────────────────────────────────────
+    # Los tres audits con baseline (AP-37, AP-51, AP-52) fallan de tres maneras
+    # que el consumidor tiene que poder distinguir: el formato es viejo, la
+    # traducción no cuadra, o la operación aumentaría la deuda en silencio. Las
+    # tres se resolvían antes con un `{"ok": False, "error": "..."}` a mano,
+    # que es AP-52 dentro del guard de AP-52.
+    "MIGRATION_REQUIRED": {
+        "category": "validation",
+        "severity": "error",
+        "message": "La baseline usa un formato anterior y debe migrarse antes de auditar.",
+        "recovery": {
+            "action": "run_tool",
+            "tool": "<la misma tool>",
+            "args": ["--migrate"],
+            "hint": (
+                "Correr la tool con --migrate. Tratar una baseline vieja como "
+                "vacía estrenaría la deuda entera como nueva."
+            ),
+            "docs": "CLAUDE.md §Trabajar con las baselines",
+        },
+    },
+    "MIGRATION_MISMATCH": {
+        "category": "validation",
+        "severity": "error",
+        "message": "La baseline congelada no coincide con lo medido: migrar ahora sería una amnistía.",
+        "recovery": {
+            "action": "manual",
+            "hint": (
+                "Dejar el árbol en verde con el formato viejo (--check --strict) "
+                "y volver a migrar. Migrar sobre un árbol divergente mete la "
+                "deuda nueva en el formato nuevo como si siempre hubiera estado."
+            ),
+            "docs": "CLAUDE.md §Trabajar con las baselines",
+        },
+    },
+    "DEBT_WOULD_GROW": {
+        "category": "validation",
+        "severity": "error",
+        "message": "Congelar ahora aumentaría la deuda: hay sitios sin precedente en la baseline.",
+        "recovery": {
+            "action": "manual",
+            "hint": (
+                "Saldar los sitios nuevos, o congelarlos explícitamente con "
+                "--freeze --admitir-nuevos, que los deja listados en el envelope."
+            ),
+            "docs": "CLAUDE.md §Trabajar con las baselines",
+        },
+    },
     # ── Lifecycle ─────────────────────────────────────────────────────────────
     "TOOL_TIMEOUT": {
         "category": "infrastructure",

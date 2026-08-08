@@ -1,92 +1,444 @@
 {
   "norm": "AP-51",
-  "description": "Deuda conocida de handlers amplios que se tragan el fallo propio y devuelven un vacío indistinguible de un resultado legítimo. Esta lista solo puede ENCOGER.",
+  "schema": 2,
+  "description": "Deuda conocida de handlers amplios que se tragan el fallo propio y devuelven un vacío indistinguible de un resultado legítimo. Indexada por firma de sitio (módulo::función::hash del código normalizado), no por línea: desplazar el sitio no lo convierte en deuda nueva. Esta lista solo puede ENCOGER.",
   "sites": [
-    "vault_audit.py:1057",
-    "vault_audit.py:1087",
-    "vault_audit.py:1176",
-    "vault_audit.py:1483",
-    "vault_audit.py:1500",
-    "vault_audit.py:1595",
-    "vault_audit.py:1762",
-    "vault_audit.py:2215",
-    "vault_audit.py:2235",
-    "vault_audit.py:321",
-    "vault_code_sync.py:105",
-    "vault_code_sync.py:121",
-    "vault_code_sync.py:203",
-    "vault_code_sync.py:240",
-    "vault_compact_contracts.py:351",
-    "vault_compact_contracts.py:423",
-    "vault_context_pack.py:160",
-    "vault_dataset.py:293",
-    "vault_delta.py:98",
-    "vault_diagram_export.py:139",
-    "vault_diagram_export.py:222",
-    "vault_doc_counts.py:300",
-    "vault_encoding.py:544",
-    "vault_errors.py:135",
-    "vault_errors.py:170",
-    "vault_errors.py:183",
-    "vault_errors.py:99",
-    "vault_errors_trace.py:105",
-    "vault_errors_trace.py:113",
-    "vault_errors_trace.py:154",
-    "vault_errors_trace.py:67",
-    "vault_errors_trace.py:83",
-    "vault_fundamentals.py:655",
-    "vault_graph_inspect.py:363",
-    "vault_graph_merge.py:175",
-    "vault_graph_merge.py:203",
-    "vault_graph_merge.py:248",
-    "vault_graph_merge.py:465",
-    "vault_graph_merge.py:531",
-    "vault_impact.py:133",
-    "vault_impact.py:88",
-    "vault_io.py:1101",
-    "vault_io.py:562",
-    "vault_io.py:829",
-    "vault_io.py:907",
-    "vault_io.py:944",
-    "vault_manifest.py:458",
-    "vault_manifest.py:568",
-    "vault_manifest.py:737",
-    "vault_merge.py:89",
-    "vault_migrate_rollback.py:248",
-    "vault_move.py:299",
-    "vault_move.py:333",
-    "vault_onboard.py:1360",
-    "vault_onboard.py:1600",
-    "vault_onboard.py:2047",
-    "vault_onboard.py:2206",
-    "vault_onboard.py:2293",
-    "vault_onboard.py:2510",
-    "vault_project_status.py:114",
-    "vault_propagate.py:117",
-    "vault_propagate.py:171",
-    "vault_propagate.py:319",
-    "vault_quality_check.py:213",
-    "vault_quality_check.py:463",
-    "vault_restore.py:64",
-    "vault_sanacion.py:160",
-    "vault_sanacion.py:166",
-    "vault_section_index.py:333",
-    "vault_spec_generate_catalog.py:67",
-    "vault_spec_memory.py:105",
-    "vault_spec_memory.py:221",
-    "vault_spec_memory.py:235",
-    "vault_spec_validate.py:94",
-    "vault_standard_upgrade.py:566",
-    "vault_standard_upgrade.py:595",
-    "vault_standard_upgrade.py:801",
-    "vault_standard_upgrade.py:83",
-    "vault_subgraph.py:90",
-    "vault_test_runner.py:167",
-    "vault_token_counter.py:58",
-    "vault_tokens.py:55",
-    "vault_tokens.py:65",
-    "vault_voice.py:51",
-    "vault_write.py:738",
-    "vault_write.py:846"
-  ]
+    {
+      "firma": "vault_audit.py::_aliases_de::08d90f38",
+      "visto_en": "vault_audit.py:321"
+    },
+    {
+      "firma": "vault_audit.py::_detect_empty_indexes::a36080b0",
+      "visto_en": "vault_audit.py:1057"
+    },
+    {
+      "firma": "vault_audit.py::_detect_graph_knowledge_antipatterns::a36080b0",
+      "visto_en": "vault_audit.py:1176"
+    },
+    {
+      "firma": "vault_audit.py::_detect_mermaid_errors::a36080b0",
+      "visto_en": "vault_audit.py:1087"
+    },
+    {
+      "firma": "vault_audit.py::_dq_is_stale::16cdacee",
+      "visto_en": "vault_audit.py:1500"
+    },
+    {
+      "firma": "vault_audit.py::_read_propagation_pending::08d90f38",
+      "visto_en": "vault_audit.py:1595"
+    },
+    {
+      "firma": "vault_audit.py::_read_quality_index::ada2d5bf",
+      "visto_en": "vault_audit.py:1483"
+    },
+    {
+      "firma": "vault_audit.py::_read_tag_health::ada2d5bf",
+      "visto_en": "vault_audit.py:1762"
+    },
+    {
+      "firma": "vault_audit.py::vault_audit::a36080b0",
+      "visto_en": "vault_audit.py:2215"
+    },
+    {
+      "firma": "vault_audit.py::vault_audit::a36080b0#2",
+      "visto_en": "vault_audit.py:2235"
+    },
+    {
+      "firma": "vault_code_sync.py::_collect_code_notes::6f345a10",
+      "visto_en": "vault_code_sync.py:121"
+    },
+    {
+      "firma": "vault_code_sync.py::_vault_ref_in_file::ada2d5bf",
+      "visto_en": "vault_code_sync.py:105"
+    },
+    {
+      "firma": "vault_code_sync.py::vault_code_sync::a36080b0",
+      "visto_en": "vault_code_sync.py:203"
+    },
+    {
+      "firma": "vault_code_sync.py::vault_code_sync::a36080b0#2",
+      "visto_en": "vault_code_sync.py:240"
+    },
+    {
+      "firma": "vault_compact_contracts.py::_get_docstring::0d25ea32",
+      "visto_en": "vault_compact_contracts.py:351"
+    },
+    {
+      "firma": "vault_compact_contracts.py::introspect_tool::ada2d5bf",
+      "visto_en": "vault_compact_contracts.py:423"
+    },
+    {
+      "firma": "vault_context_pack.py::_must_preferences::08d90f38",
+      "visto_en": "vault_context_pack.py:160"
+    },
+    {
+      "firma": "vault_dataset.py::extract_all::7dba1585",
+      "visto_en": "vault_dataset.py:293"
+    },
+    {
+      "firma": "vault_delta.py::_read_cia_integrity::a36080b0",
+      "visto_en": "vault_delta.py:98"
+    },
+    {
+      "firma": "vault_diagram_export.py::export_project::6f345a10",
+      "visto_en": "vault_diagram_export.py:222"
+    },
+    {
+      "firma": "vault_diagram_export.py::extract_diagram::ada2d5bf",
+      "visto_en": "vault_diagram_export.py:139"
+    },
+    {
+      "firma": "vault_doc_counts.py::fix::6f345a10",
+      "visto_en": "vault_doc_counts.py:300"
+    },
+    {
+      "firma": "vault_encoding.py::log_encoding_fixes::a36080b0",
+      "visto_en": "vault_encoding.py:544"
+    },
+    {
+      "firma": "vault_errors.py::_inject_voice::a36080b0",
+      "visto_en": "vault_errors.py:99"
+    },
+    {
+      "firma": "vault_errors.py::_write_output::a36080b0",
+      "visto_en": "vault_errors.py:135"
+    },
+    {
+      "firma": "vault_errors.py::wrap_main._target::a36080b0",
+      "visto_en": "vault_errors.py:183"
+    },
+    {
+      "firma": "vault_errors.py::wrap_main._writes::f1f60e49",
+      "visto_en": "vault_errors.py:170"
+    },
+    {
+      "firma": "vault_errors_trace.py::_count_tokens::a36080b0",
+      "visto_en": "vault_errors_trace.py:105"
+    },
+    {
+      "firma": "vault_errors_trace.py::_count_tokens::a36080b0#2",
+      "visto_en": "vault_errors_trace.py:113"
+    },
+    {
+      "firma": "vault_errors_trace.py::log_token_usage::a36080b0",
+      "visto_en": "vault_errors_trace.py:154"
+    },
+    {
+      "firma": "vault_errors_trace.py::log_trace::a36080b0",
+      "visto_en": "vault_errors_trace.py:67"
+    },
+    {
+      "firma": "vault_errors_trace.py::query_trace::08d90f38",
+      "visto_en": "vault_errors_trace.py:83"
+    },
+    {
+      "firma": "vault_fundamentals.py::_has_change_log_entry::7d17282f",
+      "visto_en": "vault_fundamentals.py:655"
+    },
+    {
+      "firma": "vault_graph_inspect.py::_detect_graph_knowledge::a36080b0",
+      "visto_en": "vault_graph_inspect.py:363"
+    },
+    {
+      "firma": "vault_graph_merge.py::_build_wiki_link_graph::6f345a10",
+      "visto_en": "vault_graph_merge.py:175"
+    },
+    {
+      "firma": "vault_graph_merge.py::_build_wiki_link_graph::6f345a10#2",
+      "visto_en": "vault_graph_merge.py:203"
+    },
+    {
+      "firma": "vault_graph_merge.py::_detect_silos::a36080b0",
+      "visto_en": "vault_graph_merge.py:465"
+    },
+    {
+      "firma": "vault_graph_merge.py::_merge_entity_relations::6f345a10",
+      "visto_en": "vault_graph_merge.py:248"
+    },
+    {
+      "firma": "vault_graph_merge.py::vault_graph_merge::a36080b0",
+      "visto_en": "vault_graph_merge.py:531"
+    },
+    {
+      "firma": "vault_impact.py::_load_graph::ada2d5bf",
+      "visto_en": "vault_impact.py:88"
+    },
+    {
+      "firma": "vault_impact.py::_notes_changed_since::08d90f38",
+      "visto_en": "vault_impact.py:133"
+    },
+    {
+      "firma": "vault_io.py::_auto_section_index::a36080b0",
+      "visto_en": "vault_io.py:907"
+    },
+    {
+      "firma": "vault_io.py::_auto_tag_ledger::a36080b0",
+      "visto_en": "vault_io.py:944"
+    },
+    {
+      "firma": "vault_io.py::_registrar_escaner_degradado::a36080b0",
+      "visto_en": "vault_io.py:562"
+    },
+    {
+      "firma": "vault_io.py::atomic_write_text::a36080b0",
+      "visto_en": "vault_io.py:829"
+    },
+    {
+      "firma": "vault_io.py::update_section_index::a36080b0",
+      "visto_en": "vault_io.py:1101"
+    },
+    {
+      "firma": "vault_manifest.py::_bootstrap_spec::a36080b0",
+      "visto_en": "vault_manifest.py:568"
+    },
+    {
+      "firma": "vault_manifest.py::_load_spec::ada2d5bf",
+      "visto_en": "vault_manifest.py:458"
+    },
+    {
+      "firma": "vault_manifest.py::_read_version::a36080b0",
+      "visto_en": "vault_manifest.py:737"
+    },
+    {
+      "firma": "vault_merge.py::_note_updated_at::a36080b0",
+      "visto_en": "vault_merge.py:89"
+    },
+    {
+      "firma": "vault_migrate_rollback.py::vault_migrate_rollback::a36080b0",
+      "visto_en": "vault_migrate_rollback.py:248"
+    },
+    {
+      "firma": "vault_move.py::check_move_impact::6f345a10",
+      "visto_en": "vault_move.py:333"
+    },
+    {
+      "firma": "vault_move.py::move_folder::a36080b0",
+      "visto_en": "vault_move.py:299"
+    },
+    {
+      "firma": "vault_onboard.py::_onboard_02_observability::a36080b0",
+      "visto_en": "vault_onboard.py:1360"
+    },
+    {
+      "firma": "vault_onboard.py::_onboard_03_decisions::a36080b0",
+      "visto_en": "vault_onboard.py:1600"
+    },
+    {
+      "firma": "vault_onboard.py::_onboard_08_runbooks::a36080b0",
+      "visto_en": "vault_onboard.py:2047"
+    },
+    {
+      "firma": "vault_onboard.py::_onboard_13_flows::a36080b0",
+      "visto_en": "vault_onboard.py:2206"
+    },
+    {
+      "firma": "vault_onboard.py::_onboard_14_requirements::a36080b0",
+      "visto_en": "vault_onboard.py:2293"
+    },
+    {
+      "firma": "vault_onboard.py::_update_indexes::08d90f38",
+      "visto_en": "vault_onboard.py:2510"
+    },
+    {
+      "firma": "vault_project_status.py::vault_project_status::a36080b0",
+      "visto_en": "vault_project_status.py:114"
+    },
+    {
+      "firma": "vault_propagate.py::_action_notify::a36080b0",
+      "visto_en": "vault_propagate.py:117"
+    },
+    {
+      "firma": "vault_propagate.py::_action_reindex::a36080b0",
+      "visto_en": "vault_propagate.py:171"
+    },
+    {
+      "firma": "vault_propagate.py::vault_propagate_clear::a36080b0",
+      "visto_en": "vault_propagate.py:319"
+    },
+    {
+      "firma": "vault_quality_check.py::_compute_ap18::6f345a10",
+      "visto_en": "vault_quality_check.py:463"
+    },
+    {
+      "firma": "vault_quality_check.py::_parse_date::ada2d5bf",
+      "visto_en": "vault_quality_check.py:213"
+    },
+    {
+      "firma": "vault_restore.py::_reindexar_si_procede::a36080b0",
+      "visto_en": "vault_restore.py:64"
+    },
+    {
+      "firma": "vault_sanacion.py::_medir_encoding::6f345a10",
+      "visto_en": "vault_sanacion.py:160"
+    },
+    {
+      "firma": "vault_sanacion.py::_medir_encoding::ada2d5bf",
+      "visto_en": "vault_sanacion.py:166"
+    },
+    {
+      "firma": "vault_section_index.py::vault_section_index::a36080b0",
+      "visto_en": "vault_section_index.py:333"
+    },
+    {
+      "firma": "vault_spec_generate_catalog.py::_extract_dict_from_source::f1f60e49",
+      "visto_en": "vault_spec_generate_catalog.py:67"
+    },
+    {
+      "firma": "vault_spec_memory.py::_get_description::a36080b0",
+      "visto_en": "vault_spec_memory.py:235"
+    },
+    {
+      "firma": "vault_spec_memory.py::_load_declared_returns::a36080b0",
+      "visto_en": "vault_spec_memory.py:105"
+    },
+    {
+      "firma": "vault_spec_memory.py::_read_source::ada2d5bf",
+      "visto_en": "vault_spec_memory.py:221"
+    },
+    {
+      "firma": "vault_spec_validate.py::_read_source::ada2d5bf",
+      "visto_en": "vault_spec_validate.py:94"
+    },
+    {
+      "firma": "vault_standard_upgrade.py::_live_identity::f1f60e49",
+      "visto_en": "vault_standard_upgrade.py:83"
+    },
+    {
+      "firma": "vault_standard_upgrade.py::_run_compliance_check::a36080b0",
+      "visto_en": "vault_standard_upgrade.py:566"
+    },
+    {
+      "firma": "vault_standard_upgrade.py::_run_compliance_check::a36080b0#2",
+      "visto_en": "vault_standard_upgrade.py:595"
+    },
+    {
+      "firma": "vault_standard_upgrade.py::vault_standard_upgrade::a36080b0",
+      "visto_en": "vault_standard_upgrade.py:801"
+    },
+    {
+      "firma": "vault_subgraph.py::_load_graph::ada2d5bf",
+      "visto_en": "vault_subgraph.py:90"
+    },
+    {
+      "firma": "vault_test_runner.py::_parse_json_output::a36080b0",
+      "visto_en": "vault_test_runner.py:167"
+    },
+    {
+      "firma": "vault_token_counter.py::_is_running::7d17282f",
+      "visto_en": "vault_token_counter.py:58"
+    },
+    {
+      "firma": "vault_tokens.py::_load_entries::08d90f38",
+      "visto_en": "vault_tokens.py:55"
+    },
+    {
+      "firma": "vault_tokens.py::_load_entries::a36080b0",
+      "visto_en": "vault_tokens.py:65"
+    },
+    {
+      "firma": "vault_voice.py::_catalog::08d90f38",
+      "visto_en": "vault_voice.py:51"
+    },
+    {
+      "firma": "vault_write.py::vault_write::a36080b0",
+      "visto_en": "vault_write.py:738"
+    },
+    {
+      "firma": "vault_write.py::vault_write::a36080b0#2",
+      "visto_en": "vault_write.py:846"
+    }
+  ],
+  "sites_v1_superseded": {
+    "superseded_by": "sites[].firma",
+    "since": "v40.6",
+    "reason": "Indexar por `módulo:línea` reportaba como deuda nueva cualquier sitio desplazado por una inserción de líneas. Se conserva para poder auditar la migración.",
+    "sites": [
+      "vault_audit.py:1057",
+      "vault_audit.py:1087",
+      "vault_audit.py:1176",
+      "vault_audit.py:1483",
+      "vault_audit.py:1500",
+      "vault_audit.py:1595",
+      "vault_audit.py:1762",
+      "vault_audit.py:2215",
+      "vault_audit.py:2235",
+      "vault_audit.py:321",
+      "vault_code_sync.py:105",
+      "vault_code_sync.py:121",
+      "vault_code_sync.py:203",
+      "vault_code_sync.py:240",
+      "vault_compact_contracts.py:351",
+      "vault_compact_contracts.py:423",
+      "vault_context_pack.py:160",
+      "vault_dataset.py:293",
+      "vault_delta.py:98",
+      "vault_diagram_export.py:139",
+      "vault_diagram_export.py:222",
+      "vault_doc_counts.py:300",
+      "vault_encoding.py:544",
+      "vault_errors.py:135",
+      "vault_errors.py:170",
+      "vault_errors.py:183",
+      "vault_errors.py:99",
+      "vault_errors_trace.py:105",
+      "vault_errors_trace.py:113",
+      "vault_errors_trace.py:154",
+      "vault_errors_trace.py:67",
+      "vault_errors_trace.py:83",
+      "vault_fundamentals.py:655",
+      "vault_graph_inspect.py:363",
+      "vault_graph_merge.py:175",
+      "vault_graph_merge.py:203",
+      "vault_graph_merge.py:248",
+      "vault_graph_merge.py:465",
+      "vault_graph_merge.py:531",
+      "vault_impact.py:133",
+      "vault_impact.py:88",
+      "vault_io.py:1101",
+      "vault_io.py:562",
+      "vault_io.py:829",
+      "vault_io.py:907",
+      "vault_io.py:944",
+      "vault_manifest.py:458",
+      "vault_manifest.py:568",
+      "vault_manifest.py:737",
+      "vault_merge.py:89",
+      "vault_migrate_rollback.py:248",
+      "vault_move.py:299",
+      "vault_move.py:333",
+      "vault_onboard.py:1360",
+      "vault_onboard.py:1600",
+      "vault_onboard.py:2047",
+      "vault_onboard.py:2206",
+      "vault_onboard.py:2293",
+      "vault_onboard.py:2510",
+      "vault_project_status.py:114",
+      "vault_propagate.py:117",
+      "vault_propagate.py:171",
+      "vault_propagate.py:319",
+      "vault_quality_check.py:213",
+      "vault_quality_check.py:463",
+      "vault_restore.py:64",
+      "vault_sanacion.py:160",
+      "vault_sanacion.py:166",
+      "vault_section_index.py:333",
+      "vault_spec_generate_catalog.py:67",
+      "vault_spec_memory.py:105",
+      "vault_spec_memory.py:221",
+      "vault_spec_memory.py:235",
+      "vault_spec_validate.py:94",
+      "vault_standard_upgrade.py:566",
+      "vault_standard_upgrade.py:595",
+      "vault_standard_upgrade.py:801",
+      "vault_standard_upgrade.py:83",
+      "vault_subgraph.py:90",
+      "vault_test_runner.py:167",
+      "vault_token_counter.py:58",
+      "vault_tokens.py:55",
+      "vault_tokens.py:65",
+      "vault_voice.py:51",
+      "vault_write.py:738",
+      "vault_write.py:846"
+    ]
+  }
 }

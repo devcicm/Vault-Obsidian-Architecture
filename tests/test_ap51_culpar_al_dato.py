@@ -120,12 +120,12 @@ def test_la_baseline_esta_congelada_y_el_repo_no_ha_crecido():
 def test_la_baseline_apunta_a_sitios_que_existen():
     """Una baseline que envejece admite deuda nueva por la puerta de atrás.
 
-    Si un `módulo:línea` congelado ya no corresponde a ningún handler —porque
-    el fichero se editó y las líneas se movieron— el sitio real cuenta como
-    nuevo y el gate lo caza. Lo que este test cubre es lo contrario: entradas
-    que ya no señalan a nada y que solo sirven para inflar `baseline_size`.
+    Si una firma congelada ya no corresponde a ningún handler —porque el
+    handler se reescribió o desapareció— el sitio real cuenta como nuevo y el
+    gate lo caza. Lo que este test cubre es lo contrario: entradas que ya no
+    señalan a nada y que solo sirven para inflar `baseline_size`.
     """
-    vivos = {o["site"] for o in blame.offenders()}
+    vivos = {o["firma"] for o in blame.offenders()}
     muertos = sorted(set(blame.load_baseline()) - vivos)
     assert not muertos, (
         f"{len(muertos)} entradas de la baseline ya no señalan a ningún handler; "

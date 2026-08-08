@@ -3314,6 +3314,241 @@ def framework_drift_check(spec_path: Optional[Path] = None) -> Dict[str, Any]:
     }
 
 
+# ─── AP-46: heal del frontmatter que una tool escribió y nadie releyó ─────────
+#
+# AP-46 tenía guard y audit, y ni una línea de reparación. El guard evita que se
+# escriba mal a partir de ahora; no levanta lo que ya está escrito. El escapado
+# se corrigió en los writers en v40.2, y el contraste contra un vault ajeno
+# (regla 7) encontró cuatro notas rotas de antes — una de ellas
+# `title: ADR-001: Adopción de MCP…`, que YAML lee como un mapeo dentro de un
+# mapeo y que deja la nota **entera** sin frontmatter al parsearse: sin id, sin
+# tags, sin tipo. La nota existe, el vault la cuenta, y para cualquier consumidor
+# es un documento anónimo.
+#
+# Por qué repara dos clases y no todas: son las dos que un programa puede
+# arreglar sin adivinar la intención de nadie. Cualquier otra rotura se reporta
+# y se deja, porque el heal que "arregla" un frontmatter ambiguo eligiendo por su
+# cuenta es exactamente AP-46 cometida por la herramienta que vino a curarla.
+
+import yaml  # noqa: E402  — el criterio del consumidor, no un regex (AP-44)
+from datetime import datetime, timezone  # noqa: E402
+
+from vault_lib import yaml_scalar  # noqa: E402
+
+#: Una línea que abre clave de frontmatter. No admite `:` sin espacio detrás a
+#: propósito: `title: ADR-001: Adopción…` tiene que seguir siendo **una** clave
+#: (`title`) con un valor sucio, no dos claves.
+_RE_CLAVE_FM = re.compile(r"^([A-Za-z_][A-Za-z0-9_-]*):(?:\s(.*))?$")
+
+#: Continuaciones válidas dentro del bloque: ítems de lista y líneas indentadas.
+_RE_CONTINUACION_FM = re.compile(r"^(?:\s+\S|- )")
+
+
+def _cierra_el_bloque(lineas: List[str]) -> Optional[int]:
+    """Dónde termina el frontmatter de una nota cuyo `---` de cierre falta.
+
+    El límite es la última línea consecutiva que sigue teniendo forma de
+    frontmatter, contando desde la de después del `---` de apertura. Si la nota
+    no tiene ni una sola clave, no hay nada que cerrar y se devuelve `None`: un
+    heal que insertara `---` en la primera línea en blanco convertiría el primer
+    párrafo del cuerpo en metadatos.
+    """
+    ultima = None
+    for indice, linea in enumerate(lineas[1:], start=1):
+        if not linea.strip():
+            break
+        if _RE_CLAVE_FM.match(linea) or _RE_CONTINUACION_FM.match(linea):
+            ultima = indice
+            continue
+        break
+    return ultima
+
+
+def _reescapa_escalares(lineas: List[str]) -> List[str]:
+    """Cita los valores que rompen el YAML, con el criterio del consumidor.
+
+    `yaml_scalar` no cita por si acaso: comprueba que el parser real devuelva el
+    mismo texto y solo cita si no. Así lo que ya estaba bien se queda byte a
+    byte igual y solo se toca lo que de verdad rompía.
+    """
+    salida = []
+    for linea in lineas:
+        match = _RE_CLAVE_FM.match(linea)
+        if not match or match.group(2) is None:
+            salida.append(linea)
+            continue
+        clave, valor = match.group(1), match.group(2)
+        if not valor.strip():
+            salida.append(linea)
+            continue
+        try:
+            yaml.safe_load(f"{clave}: {valor}")
+            salida.append(linea)          # parsea: no se toca
+        except yaml.YAMLError:
+            salida.append(f"{clave}: {yaml_scalar(valor)}")
+    return salida
+
+
+def _planificar_ap46(raw: str) -> Optional[Dict[str, Any]]:
+    """Qué haría el heal con esta nota, sin tocar nada.
+
+    Devuelve `None` si la nota está sana o si su rotura no es de las dos que se
+    saben reparar. El texto propuesto se **verifica antes de proponerse**: tiene
+    que parsear con `yaml.safe_load` y dejar el cuerpo idéntico. Un heal que no
+    comprueba su propio resultado es la misma clase de afirmación no falsable
+    que AP-37 persigue.
+    """
+    if not raw.startswith("---"):
+        return None
+    lineas = raw.split("\n")
+
+    # Una nota que ya parsea no se toca. La comprobación se repite aquí aunque
+    # `heal_ap46` filtre antes: el planificador se llama también suelto —desde
+    # los tests y desde cualquier consumidor futuro— y una función que propone
+    # reparar lo sano es una trampa esperando a que alguien la llame.
+    resto = raw.split("\n", 1)[1] if "\n" in raw else ""
+    corte = resto.find("\n---")
+    if corte != -1:
+        try:
+            ya = yaml.safe_load(resto[: corte + 1])
+            if isinstance(ya, dict) and ya:
+                return None
+        except yaml.YAMLError:
+            pass
+
+    # Las dos hipótesis se prueban, no se deducen. Deducir la clase por la
+    # presencia de un `\n---` más abajo parecía obvio y estaba mal: tres de las
+    # cuatro notas rotas de un vault real llevan una regla horizontal `---` en
+    # el cuerpo, así que un bloque **sin cerrar** se clasificaba como "bloque
+    # cerrado que no parsea" y se le aplicaba la reparación equivocada. Se
+    # prueban las dos y gana la que verifique — el criterio es el resultado,
+    # no la corazonada.
+    candidatas: List[Tuple[str, List[str]]] = []
+
+    fin = lineas.index("---", 1) if "---" in lineas[1:] else None
+    if fin is not None:
+        candidatas.append((
+            "escalar_sin_escapar",
+            lineas[:1] + _reescapa_escalares(lineas[1:fin]) + lineas[fin:],
+        ))
+
+    limite = _cierra_el_bloque(lineas)
+    if limite is not None:
+        candidatas.append((
+            "bloque_sin_cerrar",
+            lineas[: limite + 1] + ["---"] + lineas[limite + 1 :],
+        ))
+
+    for clase, nuevas in candidatas:
+        propuesto = "\n".join(nuevas)
+        # Verificación con el criterio del consumidor (AP-44), no con el propio.
+        try:
+            bloque = propuesto.split("\n", 1)[1]
+            fin_bloque = bloque.find("\n---")
+            if fin_bloque == -1:
+                continue
+            datos = yaml.safe_load(bloque[: fin_bloque + 1])
+        except yaml.YAMLError:
+            continue
+        if not isinstance(datos, dict) or not datos:
+            continue
+        if _cuerpo_de(propuesto) != _cuerpo_de(raw):
+            continue                       # el heal movió texto: no se aplica
+        return {"clase": clase, "texto": propuesto, "claves": sorted(datos)}
+
+    return None
+
+
+def _cuerpo_de(texto: str) -> str:
+    """El cuerpo, para comprobar que el heal no se llevó nada por delante.
+
+    Sobre el texto roto no se puede usar el frontmatter como referencia —no
+    parsea, que es el problema— así que se compara lo que hay tras el primer
+    encabezado markdown, que ninguna de las dos reparaciones toca.
+    """
+    posicion = texto.find("\n#")
+    return texto[posicion:] if posicion != -1 else ""
+
+
+def heal_ap46(root: Optional[Path] = None, apply: bool = False) -> Dict[str, Any]:
+    """Repara el frontmatter roto que dejaron los writers de antes de v40.2.
+
+    **No escribe salvo `apply=True`.** El default es el informe, y al revés no:
+    esta tool se ejecuta sobre vaults reales cuyo contenido no generó este repo,
+    y una reparación automática no pedida sobre material ajeno es exactamente lo
+    que la regla 7 dice que no se hace.
+    """
+    from vault_io import get_vault_root, is_snapshot_path
+
+    raiz = Path(root) if root else get_vault_root()
+    if not raiz.exists():
+        return emit_error("vault_norms", "VAULT_NOT_FOUND",
+                          f"No existe la raíz indicada: {raiz}")
+
+    sello = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    destino_backup = raiz / ".history" / "ap46-heal" / sello
+    reparadas, omitidas = [], []
+
+    for path in sorted(raiz.rglob("*.md")):
+        rel = path.relative_to(raiz).as_posix()
+        if is_snapshot_path(rel):
+            continue
+        try:
+            raw = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as exc:
+            omitidas.append({"note": rel, "reason": f"ilegible: {type(exc).__name__}"})
+            continue
+        if not raw.startswith("---"):
+            continue
+        resto = raw.split("\n", 1)[1] if "\n" in raw else ""
+        corte = resto.find("\n---")
+        rota = False
+        if corte == -1 and not resto.startswith("---"):
+            rota = True
+        else:
+            try:
+                yaml.safe_load(resto[: corte + 1] if corte != -1 else "")
+            except yaml.YAMLError:
+                rota = True
+        if not rota:
+            continue
+
+        plan = _planificar_ap46(raw)
+        if plan is None:
+            omitidas.append({
+                "note": rel,
+                "reason": "rotura que el heal no sabe reparar sin adivinar; "
+                          "arréglala a mano",
+            })
+            continue
+
+        entrada = {"note": rel, "class": plan["clase"], "keys": plan["claves"]}
+        if apply:
+            copia = destino_backup / rel
+            copia.parent.mkdir(parents=True, exist_ok=True)
+            copia.write_bytes(raw.encode("utf-8"))
+            path.write_bytes(plan["texto"].encode("utf-8"))
+            entrada["backup"] = copia.relative_to(raiz).as_posix()
+        reparadas.append(entrada)
+
+    return {
+        "ok": True,
+        "tool": "vault_norms.heal_ap46",
+        "norm": "AP-46",
+        "root": str(raiz),
+        "applied": apply,
+        "healed": len(reparadas) if apply else 0,
+        "would_heal": 0 if apply else len(reparadas),
+        "notes": reparadas,
+        "skipped": omitidas,
+        "backup_dir": str(destino_backup.relative_to(raiz)) if apply and reparadas else None,
+        "hint": None if apply else (
+            "Informe en seco: no se escribió nada. Añade --apply para reparar, "
+            "y sobre un vault que no generó este repo, solo si su dueño lo pide."
+        ),
+    }
+
+
 # ─── CLI ───────────────────────────────────────────────────────────────────────
 
 
@@ -3407,7 +3642,25 @@ Ejemplos:
         help="Ordenar por (default: code)",
     )
 
+    parser.add_argument(
+        "--heal-ap46", action="store_true",
+        help="Repara frontmatter roto (AP-46). Informe en seco salvo --apply-heal",
+    )
+    parser.add_argument(
+        "--apply-heal", action="store_true",
+        help="Con --heal-ap46: escribe de verdad, con backup en .history/",
+    )
+
     args = parser.parse_args()
+
+    if args.heal_ap46:
+        # `--root` ya lo acepta esta tool (es una de las cuatro de la regla 1).
+        # El heal escribe, así que el default es el informe: `--apply-heal` es
+        # una segunda afirmación explícita, no un matiz de la primera.
+        result = heal_ap46(Path(args.root) if args.root else None,
+                           apply=args.apply_heal)
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return 0 if result.get("ok") else 1
 
     if args.audit:
         if args.root:

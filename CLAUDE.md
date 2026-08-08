@@ -10,9 +10,9 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | Ruta | Qué es |
 |---|---|
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~6.000 líneas). Fuente normativa. |
-| `scripts/*.py` | ~118 scripts, 96 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
+| `scripts/*.py` | ~119 scripts, 96 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (2291 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (2316 tests). Toda norma con guard debe tener test. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
 | `vault-sandbox/` | **Único** vault de pruebas del repo. Todo runtime va aquí. |
@@ -170,16 +170,24 @@ python scripts/vault_quality_check.py --min-score 0.7
 ## Trabajar con las baselines (leer antes de tocarlas)
 
 Tres guards —`vault_noop_audit` (AP-37), `vault_blame_audit` (AP-51) y
-`vault_error_contract` (AP-52)— llevan una **baseline que solo puede encoger**. Tienen dos
-trampas conocidas, y las dos han costado tiempo ya:
+`vault_error_contract` (AP-52)— llevan una **baseline que solo puede encoger**.
 
-1. **Se indexan por `módulo:línea`.** Insertar diez líneas de comentario encima de un sitio
-   conocido lo reporta como *nuevo* y al viejo como *resuelto*, sin que la deuda haya
-   cambiado. Antes de `--freeze`, comprueba que sea eso: `offenders_total` igual a
-   `baseline_size`, tantos nuevos como resueltos, y **todos en el mismo módulo que
-   tocaste**. Si esas tres cosas no se cumplen, no es desplazamiento: es deuda nueva y
-   `--freeze` la estaría escondiendo. Es la operación más peligrosa del repo, porque su
-   forma legítima y su forma catastrófica se teclean igual.
+1. **Se indexan por firma de sitio, no por línea** (desde v40.6). La firma es
+   `módulo::función::hash del código normalizado`, y el hash sale de `ast.unparse`, así que
+   comentarios, sangrado y posición desaparecen antes de hashearse. Desplazar un sitio ya
+   **no** lo reporta como deuda nueva; cambiar el cuerpo del handler sí, y debe.
+
+   Hasta v40.5 el índice era `módulo:línea` y esto era la trampa más cara del repo: insertar
+   diez líneas de comentario encima de un sitio conocido lo reportaba como *nuevo* y al viejo
+   como *resuelto*, y había que verificar tres condiciones a mano antes de cada `--freeze`.
+   Pasó tres veces en una semana. **Esa receta manual ya no hace falta y no debe reintroducirse:**
+   un guard cuya corrección depende de que una persona ejecute bien tres pasos no es un guard.
+
+   Consecuencia directa: `--freeze` ahora **se niega** a congelar sitios sin precedente y
+   devuelve `DEBT_WOULD_GROW`. Congelar deuda nueva exige `--freeze --admitir-nuevos`, que
+   además la lista en el envelope. Si te encuentras una baseline en formato viejo, el audit
+   emite `MIGRATION_REQUIRED` en vez de leerla como vacía — que habría estrenado la deuda
+   entera como nueva — y se migra con `--migrate`.
 
 2. **Los detectores tienen falsos positivos por clase.** No conviertas a ciegas lo que
    listan. Medido en la tanda de v40.5, AP-52 marca al menos dos cosas que **no** son

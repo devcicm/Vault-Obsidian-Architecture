@@ -54,7 +54,13 @@ from typing import Dict, List
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
+from vault_firma_sitio import (
+    cargar_baseline,
+    escribir_baseline,
+    firmar_todos,
+    mapa_de_qualnames,
+)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS_DIR = Path(__file__).resolve().parent
@@ -84,12 +90,22 @@ def _claves(nodo: ast.Dict) -> set:
     }
 
 
+DESCRIPCION = (
+    "Deuda conocida de envelopes de error construidos a mano, sin error_code / "
+    "category / severity / recovery del ERROR_CATALOG. Incluye algunos "
+    "envelopes internos que nunca se imprimen: la medida es de forma, no de "
+    "flujo. Indexada por firma de sitio (módulo::función::hash del código "
+    "normalizado), no por línea. Esta lista solo puede ENCOGER."
+)
+
+
 def offenders() -> List[Dict]:
     """Envelopes de error que no pasan por `ERROR_CATALOG`.
 
-    La clave es `modulo:linea`, no un contador por módulo: una baseline por
-    conteo se salda arreglando un sitio y estrenando otro, que es justo la
-    regresión que esto existe para ver.
+    La clave es la **firma** del sitio, no un contador por módulo: una baseline
+    por conteo se salda arreglando un sitio y estrenando otro, que es justo la
+    regresión que esto existe para ver. `line` sigue en el envelope como dato
+    para ir al sitio, pero ya no es la identidad.
     """
     fuera = []
     for path in sorted(SCRIPTS_DIR.glob("vault_*.py")):
@@ -99,6 +115,8 @@ def offenders() -> List[Dict]:
             arbol = ast.parse(path.read_text(encoding="utf-8", errors="replace"))
         except SyntaxError:
             continue
+        qualnames = mapa_de_qualnames(arbol)
+        encontrados = []
         for nodo in ast.walk(arbol):
             if not isinstance(nodo, ast.Dict):
                 continue
@@ -110,35 +128,56 @@ def offenders() -> List[Dict]:
             ok = _valor_de(nodo, "ok")
             if not (isinstance(ok, ast.Constant) and ok.value is False):
                 continue
+            encontrados.append((nodo, sorted(claves)))
+        encontrados.sort(key=lambda par: (par[0].lineno, par[0].col_offset))
+        firmas = firmar_todos(
+            (path.name, qualnames.get(id(n), ""), n) for n, _ in encontrados
+        )
+        for (nodo, claves), firma in zip(encontrados, firmas):
             fuera.append({
-                "site": f"{path.name}:{nodo.lineno}",
+                "firma": firma,
                 "module": path.name,
                 "line": nodo.lineno,
-                "keys": sorted(claves),
+                "site": f"{path.name}:{nodo.lineno}",  # informativo
+                "keys": claves,
             })
     return fuera
 
 
 def load_baseline() -> List[str]:
-    if not BASELINE_PATH.exists():
-        return []
-    data = json.loads(BASELINE_PATH.read_text(encoding="utf-8"))
-    return sorted(data.get("sites", []))
+    """Las claves congeladas, ordenadas.
+
+    superseded_by: `vault_firma_sitio.cargar_baseline`, que además devuelve el
+    esquema y los datos crudos. Se conserva —no-derogación— porque su contrato
+    sigue siendo válido: una lista de claves comparable con los sitios vivos.
+    Lo que cambió es qué **es** una clave: antes `módulo:línea`, ahora la firma.
+    """
+    firmas, _, _ = cargar_baseline(BASELINE_PATH)
+    return sorted(firmas)
 
 
 def scan() -> Dict:
     actuales = offenders()
-    sitios = {o["site"] for o in actuales}
-    baseline = set(load_baseline())
+    firmas = {o["firma"] for o in actuales}
+    baseline, esquema, _ = cargar_baseline(BASELINE_PATH)
 
-    nuevos = sorted(sitios - baseline)      # la deuda CRECIÓ: es un fallo
-    resueltos = sorted(baseline - sitios)   # deuda saldada: hay que recongelar
+    if esquema < 2:
+        return emit_error(
+            "vault_error_contract", "MIGRATION_REQUIRED",
+            "La baseline está indexada por línea (esquema 1). Migra con "
+            "`python scripts/vault_error_contract.py --migrate` antes de "
+            "auditar: leerla como vacía estrenaría la deuda entera como nueva.",
+        )
+
+    nuevos = sorted(firmas - baseline)      # la deuda CRECIÓ: es un fallo
+    resueltos = sorted(baseline - firmas)   # deuda saldada: hay que recongelar
 
     return {
         # `ok` solo mira los nuevos: la deuda histórica no bloquea, pero no crece.
         "ok": not nuevos,
         "tool": "vault_error_contract",
         "norm": "AP-52",
+        "schema": esquema,
         "offenders_total": len(actuales),
         "baseline_size": len(baseline),
         "modules_affected": len({o["module"] for o in actuales}),
@@ -148,32 +187,66 @@ def scan() -> Dict:
     }
 
 
-def freeze() -> Dict:
-    sitios = sorted(o["site"] for o in offenders())
-    BASELINE_PATH.write_text(
-        json.dumps(
-            {
-                "norm": "AP-52",
-                "description": (
-                    "Deuda conocida de envelopes de error construidos a mano, "
-                    "sin error_code / category / severity / recovery del "
-                    "ERROR_CATALOG. Incluye algunos envelopes internos que "
-                    "nunca se imprimen: la medida es de forma, no de flujo. "
-                    "Esta lista solo puede ENCOGER."
-                ),
-                "sites": sitios,
-            },
-            ensure_ascii=False,
-            indent=2,
+def freeze(admitir_nuevos: bool = False) -> Dict:
+    """Recongela. Se niega a congelar deuda nueva salvo que se le exija.
+
+    Con el índice por línea, `--freeze` legítimo y `--freeze` que esconde deuda
+    recién estrenada se tecleaban igual, y lo único que los separaba era que
+    alguien verificase tres condiciones a mano. Ahora el desplazamiento no
+    genera falsos nuevos, así que un sitio nuevo es un sitio nuevo.
+    """
+    actuales = offenders()
+    baseline, esquema, previos = cargar_baseline(BASELINE_PATH)
+    firmas = {o["firma"] for o in actuales}
+    nuevos = sorted(firmas - baseline)
+
+    if nuevos and not admitir_nuevos and esquema >= 2:
+        return emit_error(
+            "vault_error_contract", "DEBT_WOULD_GROW",
+            f"{len(nuevos)} sitio(s) sin precedente en la baseline: congelarlos "
+            f"aumentaría la deuda en silencio. Si es deliberado, "
+            f"`--freeze --admitir-nuevos`. Sitios: {nuevos}",
         )
-        + "\n",
-        encoding="utf-8",
-    )
+
+    sitios = [{"firma": o["firma"], "visto_en": o["site"]} for o in actuales]
+    escribir_baseline(BASELINE_PATH, "AP-52", DESCRIPCION, sitios, previos)
     return {
         "ok": True,
         "tool": "vault_error_contract",
         "frozen": len(sitios),
+        "admitted_new": nuevos if admitir_nuevos else [],
         "path": str(BASELINE_PATH),
+    }
+
+
+def migrate() -> Dict:
+    """Traduce la baseline v1 (por línea) a v2 (por firma), sin cambiar la deuda.
+
+    Se niega si el conjunto de `módulo:línea` que ve ahora no coincide exacto
+    con el congelado: migrar sobre un árbol divergente metería la deuda nueva
+    en el formato nuevo como si siempre hubiera estado ahí.
+    """
+    _, esquema, previos = cargar_baseline(BASELINE_PATH)
+    if esquema >= 2:
+        return {"ok": True, "tool": "vault_error_contract",
+                "already": True, "schema": esquema}
+
+    actuales = offenders()
+    v1_previa = sorted(s for s in previos.get("sites", []) if isinstance(s, str))
+    v1_actual = sorted(set(o["site"] for o in actuales))
+    if v1_previa != v1_actual:
+        return emit_error(
+            "vault_error_contract", "MIGRATION_MISMATCH",
+            "La baseline v1 no coincide con lo que se mide ahora: "
+            f"{len(v1_previa)} congelados vs {len(v1_actual)} actuales. "
+            "Deja el árbol en verde con la v1 antes de migrar.",
+        )
+
+    sitios = [{"firma": o["firma"], "visto_en": o["site"]} for o in actuales]
+    escribir_baseline(BASELINE_PATH, "AP-52", DESCRIPCION, sitios, previos)
+    return {
+        "ok": True, "tool": "vault_error_contract", "migrated": len(sitios),
+        "from_schema": esquema, "to_schema": 2, "path": str(BASELINE_PATH),
     }
 
 
@@ -206,11 +279,21 @@ Qué cuenta como infracción:
                         help="Exit 1 si la deuda creció")
     parser.add_argument("--freeze", action="store_true",
                         help="Recongela la baseline tras saldar deuda")
+    parser.add_argument("--admitir-nuevos", action="store_true",
+                        help="Con --freeze: congela también sitios sin precedente")
+    parser.add_argument("--migrate", action="store_true",
+                        help="Traduce una baseline v1 (por línea) a v2 (por firma)")
     args = parser.parse_args()
 
+    if args.migrate:
+        resultado = migrate()
+        print(json.dumps(resultado, ensure_ascii=False))
+        return 0 if resultado.get("ok") else 1
+
     if args.freeze:
-        print(json.dumps(freeze(), ensure_ascii=False))
-        return 0
+        resultado = freeze(admitir_nuevos=args.admitir_nuevos)
+        print(json.dumps(resultado, ensure_ascii=False))
+        return 0 if resultado.get("ok") else 1
 
     result = scan()
     print(json.dumps(result, ensure_ascii=False))

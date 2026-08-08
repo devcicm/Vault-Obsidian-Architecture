@@ -2,7 +2,7 @@
 
 Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 96 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **118 archivos Python** — 96 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
+- **119 archivos Python** — 96 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
@@ -1748,9 +1748,26 @@ python vault_norms.py --audit --strict            # igual, pero exit 1 si hay vi
 python vault_norms.py --check-framework           # guard anti-drift: el manifiesto documenta todos
                                                   # los ids del Marco de Datos (CIA-*, F1–F8, FAIR-*,
                                                   # V1–V6, ISO-*). Falla si registro y doc divergen.
+python vault_norms.py --heal-ap46                 # informe en seco del frontmatter roto reparable
+python vault_norms.py --heal-ap46 --apply-heal    # lo repara, con copia en <vault>/.history/ap46-heal/
 ```
 
 `--check-framework` se ejecuta contra `vault-obsidian-architecture.md` (raíz del repo del estándar) o contra `--spec <ruta>`. Es deliberadamente independiente de `--audit`: los vaults consumidores no contienen el manifiesto y no deben fallar por ello.
+
+#### `--heal-ap46` — reparar el frontmatter que dejaron los writers viejos
+
+AP-46 prohíbe escribir frontmatter a mano, pero el guard llegó después que el material. `--heal-ap46` repara lo ya escrito, **en seco por defecto**: sin `--apply-heal` no toca un solo byte. La asimetría es deliberada — esta tool se ejecuta sobre vaults reales cuyo contenido no generó este repo, y reparar material ajeno sin que su dueño lo pida es justo lo que la regla 7 dice que no se hace. Con `--apply-heal`, cada nota se copia a `<vault>/.history/ap46-heal/<sello>/<ruta>` antes de reescribirse (AP-36: el side-effect vive dentro del vault).
+
+Repara **dos clases y ninguna más**, las dos medidas sobre un vault ajeno al estándar:
+
+| Clase | Rotura | Reparación |
+|---|---|---|
+| `escalar_sin_escapar` | `title: ADR-001: Adopción de MCP` — el segundo `:` abre un mapa donde había un escalar | reescapa con `yaml_scalar()`, solo las claves que el parser real no devuelve intactas |
+| `bloque_sin_cerrar` | el `---` de apertura nunca cierra, así que el bloque entero se lee como cuerpo | cierra en el último renglón con forma de frontmatter |
+
+Todo lo demás va a `skipped` con su motivo: el heal no adivina. Y **el cuerpo nunca se toca** — una propuesta que mueva un solo carácter por debajo del primer encabezado se descarta antes de escribirse.
+
+La clase **no se deduce, se prueba**. Deducirla mirando si hay un `\n---` más abajo parecía obvio y clasificaba mal tres de las cuatro notas rotas del vault real, porque llevan una regla horizontal en el cuerpo: un bloque sin cerrar se leía como bloque cerrado que no parsea, y recibía la reparación equivocada. Ahora se construyen las dos propuestas y gana la que `yaml.safe_load` acepte. Es AP-44 aplicada dentro del propio heal: el criterio es el resultado que ve el consumidor, no la corazonada del detector.
 
 Desde v40.0 el contexto **Gobernanza** —`vault_norms`, `vault_audit`, `vault_fundamentals`, `vault_quality_check`, `vault_drift_detect`, `vault_security_scan`, `vault_validate`, `vault_mermaid_check`— resuelve sus rutas al usarlas, declaradas una sola vez en `vault/gobernanza/repositorio.py`. Es el contexto con más acoplamiento entrante del estándar (veintisiete módulos de siete contextos importan `vault_norms`), así que era también el que más lejos propagaba una raíz mal congelada.
 
