@@ -46,7 +46,11 @@ def test_ap50_nombra_la_tool_que_la_hace_cumplir():
 
 def _copias(fuente: str, tmp_path: Path, monkeypatch) -> list[str]:
     (tmp_path / "vault_falso.py").write_text(fuente, encoding="utf-8")
-    monkeypatch.setattr(arch, "SCRIPTS_DIR", tmp_path)
+    # v40.9: el alcance de los guards ya no es un glob por sitio sino
+    # `vault_arch.arboles_medidos()`. Se redirige el alcance, no el
+    # directorio, para que el guard vea exactamente el módulo de prueba.
+    monkeypatch.setattr(arch, "arboles_medidos",
+                        lambda: sorted(tmp_path.glob("vault_*.py")))
     monkeypatch.setattr(arch, "_modulos_en_disco", lambda: ["vault_falso"])
     return [c["vocabulary"] for c in arch.copias_de_vocabulario()]
 
@@ -79,7 +83,11 @@ def test_una_lectura_de_entorno_sin_registro_se_denuncia(
 ):
     fuente = "import os\nX = os.environ.get('VAULT_INVENTADA', '1')\n"
     (tmp_path / "vault_falso.py").write_text(fuente, encoding="utf-8")
-    monkeypatch.setattr(arch, "SCRIPTS_DIR", tmp_path)
+    # v40.9: el alcance de los guards ya no es un glob por sitio sino
+    # `vault_arch.arboles_medidos()`. Se redirige el alcance, no el
+    # directorio, para que el guard vea exactamente el módulo de prueba.
+    monkeypatch.setattr(arch, "arboles_medidos",
+                        lambda: sorted(tmp_path.glob("vault_*.py")))
     monkeypatch.setattr(arch, "_modulos_en_disco", lambda: ["vault_falso"])
     nombres = [x["variable"] for x in arch.lecturas_de_entorno_sin_registro()]
     assert "VAULT_INVENTADA" in nombres

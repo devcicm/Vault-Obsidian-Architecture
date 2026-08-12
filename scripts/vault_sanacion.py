@@ -154,7 +154,7 @@ def _medir_encoding(root):
         import vault_reindex
 
         afectadas = 0
-        for nota in vault_reindex._notas_en_disco(root=root):
+        for nota in vault_reindex.notas_indexables(root=root):
             try:
                 texto = nota.read_text(encoding="utf-8", errors="replace")
             except Exception:  # noqa: BLE001 — ilegible se trata aparte, en el audit

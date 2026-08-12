@@ -3040,7 +3040,7 @@ def vault_norms_audit(root: Optional[Path] = None) -> Dict[str, Any]:
         # caminos no coinciden y el chequeo diría cualquier cosa menos la verdad.
         # `_raiz()` resuelve al usarse: la constante congelada que había aquí
         # desapareció al migrar el contexto Índices al dominio (AP-49).
-        if _tags._raiz().resolve() != root:
+        if _tags.raiz().resolve() != root:
             raise ImportError("AP-39 solo audita el vault detectado")
 
         familias: Dict[str, Dict[str, List[str]]] = {}
@@ -3070,7 +3070,7 @@ def vault_norms_audit(root: Optional[Path] = None) -> Dict[str, Any]:
         canonicos_norm = {
             _tags.normalize_tag(t) for t in _tags.canonical_tags()
         }
-        anotados = {e["tag"] for e in _tags._load_ledger().get("entries", [])}
+        anotados = {e["tag"] for e in _tags.load_ledger().get("entries", [])}
         sin_memoria = sorted(
             raiz
             for raiz, variantes in familias.items()

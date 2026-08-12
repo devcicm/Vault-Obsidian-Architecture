@@ -484,3 +484,76 @@ def test_las_rutas_prestadas_apuntan_al_mismo_sitio_que_su_dueno(tmp_path):
     assert ciclo.indice_busqueda == ind.indice_busqueda
     assert RepositorioConsulta(ctx).version_estandar == ciclo.fichero_version
     assert gob.registro_etiquetas == ind.registro_etiquetas
+
+
+# ── El alcance declarado (v40.9) ─────────────────────────────────────────────
+
+def test_los_guards_de_codigo_comparten_un_solo_alcance():
+    """Siete globs iguales eran siete decisiones de alcance que nadie tomó.
+
+    Hasta v40.9 cada guard hacía su propio `SCRIPTS_DIR.glob("vault_*.py")` y
+    publicaba un cero que solo valía dentro de ese glob. Doce envelopes sin
+    `error_code` llevaban en `cli/` desde siempre con la puerta de AP-52 en
+    verde: no estaba midiendo mal, estaba mirando a otro sitio. Un recorte de
+    alcance no declarado no se ve como un fallo — se ve como un cero.
+
+    La única excepción es `_modulos_en_disco()`, y está declarada: alimenta a
+    `sin_clasificar()`, que es una puerta dura contra `CONTEXTS`. Ensancharla
+    pondría en rojo cada módulo de `cli/` y `vault/` el mismo día, que es cómo
+    se desactiva una puerta.
+    """
+    import ast
+
+    permitido = {("vault_arch.py", "_modulos_en_disco")}
+    fuentes = [
+        REPO_ROOT / "scripts" / "vault_arch.py",
+        REPO_ROOT / "scripts" / "vault_blame_audit.py",
+        REPO_ROOT / "scripts" / "vault_error_contract.py",
+    ]
+    for ruta in fuentes:
+        arbol = ast.parse(ruta.read_text(encoding="utf-8"))
+        for funcion in ast.walk(arbol):
+            if not isinstance(funcion, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            if (ruta.name, funcion.name) in permitido:
+                continue
+            globs = [
+                n for n in ast.walk(funcion)
+                if isinstance(n, ast.Call)
+                and isinstance(n.func, ast.Attribute) and n.func.attr == "glob"
+                and any(isinstance(a, ast.Constant) and a.value == "vault_*.py"
+                        for a in n.args)
+            ]
+            assert globs == [], (
+                f"{ruta.name}::{funcion.name} vuelve a recortar el alcance por "
+                "su cuenta"
+            )
+
+
+def test_el_alcance_cubre_los_cuatro_arboles_de_codigo_del_repo():
+    medidos = arch.arboles_medidos()
+    raices = {
+        str(p.relative_to(REPO_ROOT)).replace("\\", "/").split("/")[0]
+        for p in medidos
+    }
+    assert {"scripts", "vault", "cli"} <= raices, raices
+    assert any(p.name == "vault_cli.py" for p in medidos), "cli/ fuera del alcance"
+    assert not any(p.name == "conftest.py" for p in medidos)
+
+
+def test_la_clave_de_modulo_no_reescribe_las_baselines_de_scripts():
+    """Cambiarla estrenaría como deuda nueva todo lo ya saldado.
+
+    Las tres baselines por firma de sitio llevan el nombre de fichero dentro de
+    cada clave. Fuera de `scripts/` hace falta la ruta: `vault/*/repositorio.py`
+    son ocho ficheros distintos con el mismo nombre, y colapsarlos haría que una
+    deuda saldada en uno tapase la de otro.
+    """
+    assert arch.clave_de_modulo(REPO_ROOT / "scripts" / "vault_io.py") == "vault_io.py"
+    assert arch.clave_de_modulo(
+        REPO_ROOT / "cli" / "vault_cli.py") == "cli/vault_cli.py"
+    homonimos = {
+        arch.clave_de_modulo(p)
+        for p in arch.arboles_medidos() if p.name == "repositorio.py"
+    }
+    assert len(homonimos) > 1, homonimos

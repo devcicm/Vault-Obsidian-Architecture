@@ -1,6 +1,6 @@
 {
   "schema": "field-compat/1",
-  "generated": "2026-08-08T09:26:06Z",
+  "generated": "2026-08-12T09:24:53Z",
   "why": "Campos que los repos consumidores pueden leer con garantía. Un campo que sale de aquí sin quedar anotado en superseded_fields rompe a quien lo leía, y por eso lo para una puerta.",
   "stable": {
     "vault_ai_decision": [
@@ -116,6 +116,25 @@
       "path",
       "resolved_since_baseline",
       "tool"
+    ],
+    "vault_blueprint": [
+      "action",
+      "admitted_new",
+      "changed",
+      "declared_debt",
+      "doc",
+      "hint",
+      "layers",
+      "lines",
+      "new_uncovered_norms",
+      "norms_total",
+      "norms_uncovered",
+      "norms_uncovered_baseline",
+      "ok",
+      "problems",
+      "settled_uncovered_norms",
+      "tool",
+      "uncovered_norms"
     ],
     "vault_bug_save": [
       "action",
@@ -1068,6 +1087,24 @@
       "unchanged",
       "updated",
       "written"
+    ],
+    "vault_servicio": [
+      "capabilities",
+      "capabilities_total",
+      "capabilities_without_service",
+      "duplicated_groups",
+      "empty_capabilities",
+      "groups_total",
+      "hint",
+      "ok",
+      "orphan_groups",
+      "rows",
+      "service",
+      "tool",
+      "tools_by_capability",
+      "tools_total",
+      "trace",
+      "unknown_groups"
     ],
     "vault_slo_save": [
       "created",

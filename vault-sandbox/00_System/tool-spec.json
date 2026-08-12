@@ -318,6 +318,46 @@
         "F8"
       ]
     },
+    "vault_blueprint": {
+      "group": "Normas",
+      "group_id": 35,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "action",
+        "admitted_new",
+        "changed",
+        "declared_debt",
+        "doc",
+        "hint",
+        "layers",
+        "lines",
+        "new_uncovered_norms",
+        "norms_total",
+        "norms_uncovered",
+        "norms_uncovered_baseline",
+        "ok",
+        "problems",
+        "settled_uncovered_norms",
+        "tool",
+        "uncovered_norms"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "completeness",
+          "consistency",
+          "integrity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F8"
+      ]
+    },
     "vault_bug_save": {
       "group": "Defectos y Cuarentena",
       "group_id": 36,
@@ -3088,6 +3128,44 @@
       "fundamentals": [
         "F1",
         "F5"
+      ]
+    },
+    "vault_servicio": {
+      "group": "Normas",
+      "group_id": 35,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "capabilities",
+        "capabilities_total",
+        "capabilities_without_service",
+        "duplicated_groups",
+        "empty_capabilities",
+        "groups_total",
+        "hint",
+        "ok",
+        "orphan_groups",
+        "rows",
+        "service",
+        "tool",
+        "tools_by_capability",
+        "tools_total",
+        "trace",
+        "unknown_groups"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "completeness",
+          "consistency"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F8"
       ]
     },
     "vault_slo_save": {

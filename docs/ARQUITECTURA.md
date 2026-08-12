@@ -2,7 +2,7 @@
 
 > Documento derivado. Se genera con `python scripts/vault_arch.py --blueprint`; la fuente es `CONTEXTS` en `scripts/vault_arch.py`. No se edita a mano.
 
-**9 contextos**, **120 módulos** clasificados, **59 fronteras cruzadas** pendientes de publicar puerto.
+**9 contextos**, **122 módulos** clasificados, **58 fronteras cruzadas** pendientes de publicar puerto.
 
 ## Los límites
 
@@ -33,12 +33,12 @@ graph TD
     ciclo_de_vida --> kernel
     durabilidad --> kernel
     meta_toolkit --> kernel
+    meta_toolkit -.->|cruce| gobernanza
     autoria -.->|cruce| gobernanza
     meta_toolkit -.->|cruce| ciclo_de_vida
     grafo -.->|cruce| gobernanza
     grafo -.->|cruce| autoria
     consulta -.->|cruce| autoria
-    meta_toolkit -.->|cruce| gobernanza
     meta_toolkit -.->|cruce| consulta
     gobernanza -.->|cruce| meta_toolkit
     gobernanza -.->|cruce| indices
@@ -195,12 +195,13 @@ Fronteras que hoy cruza (15), deuda declarada:
 - **Lenguaje ubicuo:** catálogo, contrato, spec, smoke, conteo derivado
 - **Puertos publicados:** `GROUPS` → `vault_mcp_catalog:GROUPS`, `TOOLS_CATALOG` → `vault_mcp_catalog:TOOLS_CATALOG`, `check_contracts` → `vault_mcp_catalog:check_contracts`
 - **No cruza:** escribir en una sección de contenido: sus artefactos derivados viven en 00_System/
-- **Módulos (19):** `vault_arch`, `vault_blame_audit`, `vault_changelog_check`, `vault_doc_counts`, `vault_doc_sync`, `vault_error_contract`, `vault_firma_sitio`, `vault_foreign_check`, `vault_gate`, `vault_manifest`, `vault_mcp`, `vault_mcp_catalog`, `vault_noop_audit`, `vault_smoke`, `vault_spec_catalog_check`, `vault_spec_generate_catalog`, `vault_spec_memory`, `vault_spec_validate`, `vault_test_runner`
+- **Módulos (21):** `vault_arch`, `vault_blame_audit`, `vault_blueprint`, `vault_changelog_check`, `vault_doc_counts`, `vault_doc_sync`, `vault_error_contract`, `vault_firma_sitio`, `vault_foreign_check`, `vault_gate`, `vault_manifest`, `vault_mcp`, `vault_mcp_catalog`, `vault_noop_audit`, `vault_servicio`, `vault_smoke`, `vault_spec_catalog_check`, `vault_spec_generate_catalog`, `vault_spec_memory`, `vault_spec_validate`, `vault_test_runner`
 
-Fronteras que hoy cruza (7), deuda declarada:
+Fronteras que hoy cruza (8), deuda declarada:
 
 | Módulo | Importa | Contexto destino |
 |---|---|---|
+| `vault_blueprint` | `vault_norms` | Gobernanza |
 | `vault_changelog_check` | `vault_standard_upgrade` | Ciclo de vida |
 | `vault_doc_counts` | `vault_norms` | Gobernanza |
 | `vault_manifest` | `vault_fundamentals` | Gobernanza |

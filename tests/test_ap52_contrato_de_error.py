@@ -93,7 +93,11 @@ CASOS = [
 def test_deteccion(fuente, marcado, motivo, tmp_path, monkeypatch):
     modulo = tmp_path / "vault_caso.py"
     modulo.write_text(fuente, encoding="utf-8")
-    monkeypatch.setattr(vec, "SCRIPTS_DIR", tmp_path)
+    # v40.9: el alcance de los guards ya no es un glob por sitio sino
+    # `vault_arch.arboles_medidos()`. Se redirige el alcance, no el
+    # directorio, para que el guard vea exactamente el módulo de prueba.
+    monkeypatch.setattr(vec, "arboles_medidos",
+                        lambda: sorted(tmp_path.glob("vault_*.py")))
 
     encontrados = vec.offenders()
     assert bool(encontrados) is marcado, motivo
@@ -109,7 +113,11 @@ def test_se_excluye_a_si_misma_y_al_contrato(tmp_path, monkeypatch):
     fuente = 'x = {"ok": False, "error": "definicion"}\n'
     for nombre in ("vault_errors.py", "vault_errors_catalog.py", vec.Path(vec.__file__).name):
         (tmp_path / nombre).write_text(fuente, encoding="utf-8")
-    monkeypatch.setattr(vec, "SCRIPTS_DIR", tmp_path)
+    # v40.9: el alcance de los guards ya no es un glob por sitio sino
+    # `vault_arch.arboles_medidos()`. Se redirige el alcance, no el
+    # directorio, para que el guard vea exactamente el módulo de prueba.
+    monkeypatch.setattr(vec, "arboles_medidos",
+                        lambda: sorted(tmp_path.glob("vault_*.py")))
     assert vec.offenders() == []
 
 
@@ -187,12 +195,27 @@ def test_la_deuda_de_ap52_esta_saldada():
     y no un conteo, porque una baseline por conteo se salda arreglando uno y
     estrenando otro. Con la deuda en cero esa comprobación ya no dice nada, y
     lo que hay que fijar es lo contrario: que no vuelva a crecer.
+
+    v40.9 la reabrió, y no por una regresión: al ensanchar el alcance más allá
+    de `scripts/` aparecieron nueve envelopes en `vault/durabilidad` y
+    `vault/indices` que los adaptadores devuelven tal cual al consumidor. El
+    cero de v40.6 era un cero sobre un subconjunto. Los doce de `cli/` sí se
+    convirtieron en la misma tanda; los nueve del dominio quedan declarados en
+    `vault_blueprint.DEUDA_DECLARADA` porque decidir quién construye el
+    envelope ahí es una decisión de capas, no un reemplazo de literales.
+
+    Lo que este test fija sigue siendo lo mismo: en `scripts/` la deuda es cero,
+    y el total no puede pasar de lo congelado.
     """
-    assert vec.load_baseline() == []
-    assert vec.offenders() == [], (
-        "AP-52 vuelve a tener deuda: el envelope de error se construye a mano "
-        "en vez de salir por emit_error"
+    congelados = vec.load_baseline()
+    assert [f for f in congelados if "/" not in f] == [], (
+        "AP-52 vuelve a tener deuda en scripts/: el envelope de error se "
+        "construye a mano en vez de salir por emit_error"
     )
+    assert {o["firma"] for o in vec.offenders()} <= set(congelados), (
+        "AP-52 crece: hay un envelope a mano que no está en la baseline"
+    )
+    assert congelados, "una baseline vacía haría pasar el guard sin medir nada"
 
 
 def test_check_no_escribe_la_baseline():

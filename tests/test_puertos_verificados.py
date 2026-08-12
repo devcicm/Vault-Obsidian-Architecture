@@ -120,19 +120,74 @@ def test_un_puerto_no_puede_nombrar_un_simbolo_privado(monkeypatch):
 
 
 def test_ningun_simbolo_privado_cruza_una_frontera():
-    """Los cuatro que lo hacían, promovidos en v40.8 con su alias conservado.
+    """Siete en total: cuatro promovidos en v40.8 y tres que no se veían.
 
-    `vault_code_tag` leía `vault_norms._NORM_BY_CODE`, `vault_io` leía
-    `vault_tags._parse_frontmatter_tags`, y `vault_onboard` leía
-    `vault_write._deduce_type_from_folder` y `vault_norms._cuerpo_sin_marcadores`.
-    Un guion bajo atravesando un contexto acotado es lo contrario de una
-    superficie publicada, y ninguno de los cuatro se arreglaba declarando nada.
+    Los de v40.8 entraban por `from x import y`: `vault_code_tag` leía
+    `vault_norms._NORM_BY_CODE`, `vault_io` leía `vault_tags._parse_frontmatter_tags`
+    y `vault_onboard` leía `vault_write._deduce_type_from_folder` y
+    `vault_norms._cuerpo_sin_marcadores`.
+
+    **Este test pasaba en v40.8 por el motivo equivocado.** El detector filtraba
+    por `ast.ImportFrom`, así que `import vault_tags as _tags` seguido de
+    `_tags._raiz()` era invisible: la afirmación era universal y la medida no
+    podía observar lo que la habría falsificado — AP-44 dentro del guard. Al
+    mirar también `ast.Import` (v40.9) aparecieron tres más:
+    `vault_norms` leía `vault_tags._raiz` y `vault_tags._load_ledger`, y
+    `vault_sanacion` leía `vault_reindex._notas_en_disco`. Promovidos a
+    `raiz`, `load_ledger` y `notas_indexables`, con el nombre viejo conservado
+    como alias (no-derogación).
     """
     privados = [
         x for x in arch.cruces_fuera_de_puerto()
         if x["symbol"].rpartition(".")[2].startswith("_")
     ]
     assert privados == [], privados
+
+
+def test_el_detector_ve_los_dos_estilos_de_import():
+    """Lo que faltaba para que el test de arriba afirme algo.
+
+    Sin esto, «ningún privado cruza» se puede volver a cumplir mañana por
+    estrechar la medida en vez de arreglar el código, que es exactamente lo que
+    pasó entre v40.8 y v40.9.
+    """
+    fuera = arch.cruces_fuera_de_puerto()
+    # `from vault_smoke import SIN_SMOKE` en vault_norms — estilo ImportFrom.
+    assert [x for x in fuera if x["symbol"] == "vault_smoke.SIN_SMOKE"]
+    # `import vault_tags as _tags` + `_tags.normalize_tag` — estilo Import, que
+    # es el que el detector no veía.
+    assert [x for x in fuera if x["symbol"] == "vault_tags.normalize_tag"]
+
+
+def test_un_acceso_por_import_liso_se_reporta(tmp_path, monkeypatch):
+    """La puerta muerde sobre `import X`, no solo sobre `from X import y`."""
+    fichero = tmp_path / "vault_falso.py"
+    fichero.write_text(
+        "import vault_norms\n\ndef f():\n    return vault_norms.NO_ES_UN_PUERTO\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(arch, "arboles_medidos", lambda: [fichero])
+    monkeypatch.setattr(
+        arch,
+        "_mapa_modulos",
+        lambda: {"vault_falso": "meta_toolkit", "vault_norms": "gobernanza"},
+    )
+    hallazgos = arch.cruces_fuera_de_puerto()
+    assert [h["symbol"] for h in hallazgos] == ["vault_norms.NO_ES_UN_PUERTO"]
+
+
+def test_el_total_de_cruces_se_cuenta_como_su_baseline():
+    """Dos cifras contiguas que no se podían restar, en la medida hermana.
+
+    `off_port` se arregló en v40.8 y `crossings` se quedó publicando sitios
+    junto a una baseline de claves: 60 contra 58 sin una sola deuda nueva. Quien
+    leyera la diferencia como una regresión buscaría un cruce que no existe.
+    """
+    resultado = arch.check()
+    assert resultado["crossings_total"] == len(
+        {arch._clave(c) for c in arch.cruces()}
+    )
+    assert resultado["crossings_sites"] == len(arch.cruces())
 
 
 def test_el_lector_de_simbolos_no_importa_los_modulos():
@@ -174,9 +229,17 @@ def test_la_deuda_de_cruces_fuera_de_puerto_esta_saldada():
     llegó a cero, pero por dos vías distintas que conviene no confundir: ~40
     eran puertos que el registro no nombraba y 5 eran cruces reales que hubo
     que arreglar promoviendo el símbolo. Solo la segunda mitad era deuda.
+
+    En v40.9 vuelve a 13, y conviene no leerlo como una regresión: no apareció
+    ningún cruce nuevo, apareció la mitad de la medida que faltaba. El detector
+    solo miraba `from x import y`; al mirar también `import x` salieron 13
+    claves que llevaban ahí desde siempre, tres de ellas por símbolo privado —
+    ésas sí eran deuda, y se saldaron promoviendo. Las otras diez entran
+    congeladas, que es lo que se hace con la deuda que se descubre, no con la
+    que se estrena.
     """
     resultado = arch.check(strict=True)
-    assert resultado["off_port_total"] == 0
+    assert resultado["off_port_total"] == resultado["off_port_baseline"]
     assert resultado["new_off_port_crossings"] == []
     assert resultado["settled_off_port_crossings"] == []
 

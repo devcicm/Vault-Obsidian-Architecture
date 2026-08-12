@@ -38,6 +38,23 @@ def _emit(data: Dict[str, Any], pretty: bool = False) -> None:
         print(text)
 
 
+def _error(tool: str, code: str, message: str, **extra: Any) -> Dict[str, Any]:
+    """Un fallo de la CLI, por el catálogo y no a mano (AP-52).
+
+    Hasta v40.9 `cli/` no importaba `vault_errors` en ninguna parte y sus doce
+    fallos salían como `{"ok": False, "error": "..."}`: sin `error_code`, que es
+    lo que el consumidor mira para decidir, y sin `recovery`, que es lo que le
+    dice qué hacer. La puerta de AP-52 no lo veía porque su alcance se cortaba
+    en `scripts/`.
+
+    El import es diferido, como en `_vault_root()`: `scripts/` entra en
+    `sys.path` en tiempo de ejecución, no al importar el paquete.
+    """
+    from vault_errors import emit_error
+
+    return {**emit_error(tool, code, message), **extra}
+
+
 def _covers(declared: str, changed: str) -> bool:
     """¿La ruta declarada cubre la que cambió?
 
@@ -116,11 +133,9 @@ def cmd_show(args: argparse.Namespace) -> int:
     frag = registry.resolve(args.tool)
     if frag is None:
         suggestions = [f.name for f in registry.search(args.tool)][:5]
-        _emit({
-            "ok": False, "tool": "cli.show",
-            "error": f"fragmento desconocido: '{args.tool}'",
-            "did_you_mean": suggestions,
-        }, args.pretty)
+        _emit(_error("cli.show", "INVALID_VALUE",
+                     f"fragmento desconocido: '{args.tool}'",
+                     did_you_mean=suggestions), args.pretty)
         return 1
     data = frag.to_dict()
     data["params_detail"] = frag.params
@@ -184,8 +199,16 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 
 # ── ejecución ────────────────────────────────────────────────────────────────
 
-def _load_operations(args: argparse.Namespace) -> Tuple[List[Operation], Optional[str]]:
-    """Lee operaciones de --op repetido o de un archivo/stdin JSON."""
+def _load_operations(
+    args: argparse.Namespace,
+) -> Tuple[List[Operation], Optional[str], Optional[str]]:
+    """Lee operaciones de --op repetido o de un archivo/stdin JSON.
+
+    Devuelve `(ops, code, error)`. El código viaja desde donde se sabe qué
+    falló: un JSON ilegible y una lista mal formada son fallos distintos para
+    quien recibe el envelope, y colapsarlos en un solo código obliga al
+    consumidor a leer el mensaje en prosa para decidir.
+    """
     ops: List[Operation] = []
 
     if args.file:
@@ -195,13 +218,13 @@ def _load_operations(args: argparse.Namespace) -> Tuple[List[Operation], Optiona
         try:
             data = json.loads(raw)
         except json.JSONDecodeError as exc:
-            return [], f"JSON inválido en '{args.file}': {exc}"
+            return [], "ARG_JSON_INVALID", f"JSON inválido en '{args.file}': {exc}"
         entries = data.get("operations", data) if isinstance(data, dict) else data
         if not isinstance(entries, list):
-            return [], "el archivo debe contener una lista de operaciones"
+            return [], "INVALID_VALUE", "el archivo debe contener una lista de operaciones"
         for i, entry in enumerate(entries, start=1):
             if not isinstance(entry, dict) or "tool" not in entry:
-                return [], f"operación #{i} sin campo 'tool'"
+                return [], "MISSING_REQUIRED_ARG", f"operación #{i} sin campo 'tool'"
             ops.append(Operation(
                 tool=entry["tool"],
                 args=entry.get("args", {}) or {},
@@ -216,7 +239,7 @@ def _load_operations(args: argparse.Namespace) -> Tuple[List[Operation], Optiona
             tool=parts[0], args=parse_kv(parts[1:]), id=f"{parts[0]}#{i}",
         ))
 
-    return ops, None
+    return ops, None, None
 
 
 def _preflight_all(ops: List[Operation], root: Path,
@@ -243,21 +266,18 @@ def cmd_run(args: argparse.Namespace) -> int:
     op = Operation(tool=args.tool, args=parse_kv(args.arg or []), id=args.tool)
     frag = op.fragment
     if frag is None:
-        _emit({"ok": False, "tool": "cli.run",
-               "error": f"fragmento desconocido: '{args.tool}'",
-               "did_you_mean": [f.name for f in registry.search(args.tool)][:5]},
+        _emit(_error("cli.run", "INVALID_VALUE",
+                     f"fragmento desconocido: '{args.tool}'",
+                     did_you_mean=[f.name for f in registry.search(args.tool)][:5]),
               args.pretty)
         return 1
 
     root = _vault_root()
     verdict = safety.preflight(frag, op.args, root, strict=args.strict)
     if not verdict.ok and not args.force:
-        _emit({
-            "ok": False, "tool": "cli.run", "stage": "preflight",
-            "error": "la operación no pasó las guardas de seguridad",
-            **verdict.to_dict(),
-            "hint": "revisa los hallazgos, o repite con --force bajo tu responsabilidad",
-        }, args.pretty)
+        _emit(_error("cli.run", "PREFLIGHT_REJECTED",
+                     "la operación no pasó las guardas de seguridad",
+                     stage="preflight", **verdict.to_dict()), args.pretty)
         return 2
 
     result = runner.run_one(op, timeout=args.timeout, dry_run=args.dry_run)
@@ -269,13 +289,13 @@ def cmd_run(args: argparse.Namespace) -> int:
 
 
 def cmd_plan(args: argparse.Namespace) -> int:
-    ops, error = _load_operations(args)
+    ops, codigo, error = _load_operations(args)
     if error:
-        _emit({"ok": False, "tool": "cli.plan", "error": error}, args.pretty)
+        _emit(_error("cli.plan", codigo, error), args.pretty)
         return 1
     if not ops:
-        _emit({"ok": False, "tool": "cli.plan",
-               "error": "ninguna operación indicada (usa --op o --file)"}, args.pretty)
+        _emit(_error("cli.plan", "MISSING_REQUIRED_ARG",
+                     "ninguna operación indicada (usa --op o --file)"), args.pretty)
         return 1
 
     unsafe = scheduler.harden(ops)
@@ -293,13 +313,13 @@ def cmd_plan(args: argparse.Namespace) -> int:
 
 
 def cmd_batch(args: argparse.Namespace) -> int:
-    ops, error = _load_operations(args)
+    ops, codigo, error = _load_operations(args)
     if error:
-        _emit({"ok": False, "tool": "cli.batch", "error": error}, args.pretty)
+        _emit(_error("cli.batch", codigo, error), args.pretty)
         return 1
     if not ops:
-        _emit({"ok": False, "tool": "cli.batch",
-               "error": "ninguna operación indicada (usa --op o --file)"}, args.pretty)
+        _emit(_error("cli.batch", "MISSING_REQUIRED_ARG",
+                     "ninguna operación indicada (usa --op o --file)"), args.pretty)
         return 1
 
     root = _vault_root()
@@ -307,12 +327,9 @@ def cmd_batch(args: argparse.Namespace) -> int:
     reports, preflight_ok = _preflight_all(ops, root, args.strict)
 
     if not preflight_ok and not args.force:
-        _emit({
-            "ok": False, "tool": "cli.batch", "stage": "preflight",
-            "error": "el lote no se ejecutó: hay operaciones que no pasan las guardas",
-            "preflight": reports,
-            "hint": "ninguna escritura ocurrió. Corrige y reintenta, o usa --force.",
-        }, args.pretty)
+        _emit(_error("cli.batch", "PREFLIGHT_REJECTED",
+                     "el lote no se ejecutó: hay operaciones que no pasan las guardas",
+                     stage="preflight", preflight=reports), args.pretty)
         return 2
 
     waves = scheduler.plan(ops, max_parallel=args.parallel)
@@ -388,8 +405,8 @@ def cmd_scan(args: argparse.Namespace) -> int:
         frag = registry.resolve(args.tool)
         target = frag.script_path if frag else registry.SCRIPTS_DIR / f"{args.tool}.py"
         if not target.exists():
-            _emit({"ok": False, "tool": "cli.scan",
-                   "error": f"no existe el script '{target.name}'"}, args.pretty)
+            _emit(_error("cli.scan", "FILE_NOT_FOUND",
+                         f"no existe el script '{target.name}'"), args.pretty)
             return 1
         paths = [target]
     elif args.path:
@@ -504,8 +521,12 @@ Documentación: cli/README.md (guía) y cli/COMMANDS.md (referencia).
     p.add_argument("--antipatterns", action="store_true", help="Solo antipatrones")
     p.add_argument("--tool", help="Analiza un único fragmento")
     p.add_argument("--path", help="Analiza un archivo concreto")
+    # Las opciones salen del registro: una lista copiada aquí deja de
+    # aceptar un valor nuevo de `severidad` sin que nada lo señale.
+    from vault_vocabulario import opciones
+
     p.add_argument("--min-severity", default="low",
-                   choices=["critical", "high", "medium", "low"])
+                   choices=opciones("severidad"))
     p.add_argument("--summary", action="store_true", help="Solo el recuento")
     p.set_defaults(func=cmd_scan)
 
@@ -518,14 +539,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     try:
         return args.func(args)
     except KeyboardInterrupt:
-        _emit({"ok": False, "tool": "cli", "error": "interrumpido por el usuario"})
+        _emit(_error("cli", "INTERRUPTED", "interrumpido por el usuario"))
         return 130
     except Exception as exc:  # noqa: BLE001 — frontera del proceso
-        _emit({
-            "ok": False, "tool": "cli",
-            "error": f"{type(exc).__name__}: {exc}",
-            "command": getattr(args, "command", None),
-        })
+        _emit(_error("cli", "UNEXPECTED_ERROR", f"{type(exc).__name__}: {exc}",
+                     command=getattr(args, "command", None)))
         return 1
 
 

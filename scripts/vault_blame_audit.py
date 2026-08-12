@@ -56,6 +56,7 @@ from typing import Dict, List
 sys.path.insert(0, str(Path(__file__).parent))
 
 from vault_errors import emit_error, wrap_main
+from vault_arch import arboles_medidos, clave_de_modulo
 from vault_firma_sitio import (
     cargar_baseline,
     escribir_baseline,
@@ -130,7 +131,8 @@ def offenders() -> List[Dict]:
     como dato informativo —sirve para ir al sitio— pero ya no es la identidad.
     """
     fuera = []
-    for path in sorted(SCRIPTS_DIR.glob("vault_*.py")):
+    for path in arboles_medidos():
+        nombre = clave_de_modulo(path)
         if path.name == "vault_blame_audit.py":
             continue
         try:
@@ -150,14 +152,14 @@ def offenders() -> List[Dict]:
                 encontrados.append((handler, tipos))
         encontrados.sort(key=lambda par: par[0].lineno)
         firmas = firmar_todos(
-            (path.name, qualnames.get(id(h), ""), h) for h, _ in encontrados
+            (nombre, qualnames.get(id(h), ""), h) for h, _ in encontrados
         )
         for (handler, tipos), firma in zip(encontrados, firmas):
             fuera.append({
                 "firma": firma,
-                "module": path.name,
+                "module": nombre,
                 "line": handler.lineno,
-                "site": f"{path.name}:{handler.lineno}",  # informativo
+                "site": f"{nombre}:{handler.lineno}",  # informativo
                 "catches": ",".join(tipos),
             })
     return fuera

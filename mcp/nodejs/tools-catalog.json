@@ -366,6 +366,56 @@
         "vault_arch"
       ]
     },
+    "vault_blueprint": {
+      "name": "vault_blueprint",
+      "description": "El plano de construccion: ata los once registros canonicos en siete capas —servicio, capacidades, contextos, normas, tools, trazabilidad y deuda— y genera docs/BLUEPRINT.md. El documento es derivado: --check falla si diverge del registro, asi que ninguna cifra del plano se escribe a mano. No reimplementa ningun guard.",
+      "group": "Normas",
+      "script": "vault_blueprint.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "blueprint": {
+            "type": "string",
+            "description": "Regenera docs/BLUEPRINT.md desde los registros"
+          },
+          "check": {
+            "type": "string",
+            "description": "El doc publicado y la trazabilidad contra los registros"
+          },
+          "strict": {
+            "type": "string",
+            "description": "Exit 1 si el plano diverge o hay eslabon roto"
+          },
+          "freeze": {
+            "type": "string",
+            "description": "Congela la deuda de la capa 4 (norma sin puerta ni test)"
+          },
+          "admitir-nuevos": {
+            "type": "string",
+            "description": "Permite congelar normas sin cobertura sin precedente"
+          },
+          "layers": {
+            "type": "string",
+            "description": "Las 7 capas en JSON, sin generar el documento"
+          }
+        }
+      },
+      "guards": [
+        "El plano es derivado: editarlo a mano lo rompe en --check, porque el registro es la fuente y el documento el efecto",
+        "Solo la capa 4 tiene baseline, y solo encoge: una norma nueva sin puerta ni test no se congela, se le escribe el test",
+        "No reimplementa guards: delega en vault_arch, vault_mcp_catalog y vault_servicio para no ser una segunda fuente de verdad (AP-05)"
+      ],
+      "side_effects": [
+        "docs/BLUEPRINT.md",
+        "scripts/blueprint-baseline.json"
+      ],
+      "related": [
+        "vault_servicio",
+        "vault_arch",
+        "vault_gate",
+        "vault_norms"
+      ]
+    },
     "vault_bug_save": {
       "name": "vault_bug_save",
       "description": "Ciclo del defecto en 18_Bugs/: síntoma → causa raíz → corrección verificada, con aristas de causalidad tipadas.",
@@ -4109,6 +4159,44 @@
         "vault_log_error"
       ]
     },
+    "vault_servicio": {
+      "name": "vault_servicio",
+      "description": "El pilar: declara el servicio de negocio del estandar y las capacidades que lo realizan, y exige la trazabilidad tool -> grupo -> capacidad -> servicio. Todo grupo del catalogo pertenece a exactamente una capacidad y toda capacidad tiene al menos una tool viva; si no, falla. Los group_id salen de mapa_de_grupos(), no de una numeracion propia.",
+      "group": "Normas",
+      "script": "vault_servicio.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "list": {
+            "type": "string",
+            "description": "Servicio, restricciones y capacidades declaradas"
+          },
+          "trace": {
+            "type": "string",
+            "description": "Una fila por tool: grupo, capacidad y servicio"
+          },
+          "check": {
+            "type": "string",
+            "description": "Trazabilidad exigida: grupos huerfanos, capacidades vacias"
+          },
+          "strict": {
+            "type": "string",
+            "description": "Exit 1 si la trazabilidad tiene un eslabon roto"
+          }
+        }
+      },
+      "guards": [
+        "Sin baseline: se mide cero al declararla porque los 37 grupos se clasifican en la misma tanda. Una baseline permitiria anadir un grupo sin decidir a que sirve, que es el vacio que cierra",
+        "Un grupo huerfano no se arregla ampliando una capacidad al azar",
+        "Los group_id se derivan de mapa_de_grupos(): no hay numeracion propia"
+      ],
+      "side_effects": [],
+      "related": [
+        "vault_mcp_catalog",
+        "vault_arch",
+        "vault_gate"
+      ]
+    },
     "vault_slo_save": {
       "name": "vault_slo_save",
       "description": "Guarda SLO (Service Level Objective).",
@@ -4897,7 +4985,9 @@
       "vault_doc_sync",
       "vault_noop_audit",
       "vault_smoke",
-      "vault_voice"
+      "vault_voice",
+      "vault_servicio",
+      "vault_blueprint"
     ],
     "Producción/SRE": [
       "vault_incident_save",

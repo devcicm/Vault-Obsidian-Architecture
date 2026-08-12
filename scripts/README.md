@@ -1,13 +1,13 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 97 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
+Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 99 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **120 archivos Python** — 97 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
+- **122 archivos Python** — 99 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
 - **Saneamiento de índices (v38.1)** — `vault_section_index.py --heal [--root]` regenera índices con formato legacy `[[stem|alias]]` o ausentes; el auto-index post-write se auto-cura si un agente escribe `index.md` a mano
-- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 97 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
+- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 99 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
 - **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault; requiere marcador de CONTENIDO (01_Projects/02_Observability/03_Decisions/.obsidian), no solo 00_System/99_Index (evita el ciclo auto-reforzado de detección); override runtime con `set_vault_root()`/env `VAULT_ROOT`
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
@@ -59,7 +59,7 @@ Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan 
 | [Grupo 32 — Gestión de Carpetas](#grupo-32--gestión-de-carpetas) | vault_folder_registry |
 | [Grupo 33 — Corrección Automática](#grupo-33--corrección-automática) | vault_fix_brackets, vault_graph_fix |
 | [Grupo 34 — Memoria de Contexto](#grupo-34--memoria-de-contexto) | vault_preferences, vault_query_parse, vault_subgraph, vault_context_pack, vault_ingest |
-| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_changelog_check, vault_error_contract, vault_foreign_check, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_noop_audit, vault_smoke, vault_voice |
+| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_changelog_check, vault_error_contract, vault_foreign_check, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_noop_audit, vault_smoke, vault_voice, vault_servicio, vault_blueprint |
 | [Grupo 36 — Defectos y Cuarentena](#grupo-36--defectos-y-cuarentena) | vault_bug_save, vault_quarantine |
 | [Grupo 37 — Skills](#grupo-37--skills) | vault_sdd_init, vault_sanacion |
 | [Observabilidad de Tools](#observabilidad-de-tools) | vault_errors |
@@ -1732,7 +1732,7 @@ El vault expone sus herramientas como un **servidor MCP** que las IAs consumen d
 
 **Archivo:** `../mcp/nodejs/vault-mcp-server.mjs` (~1650 líneas, cero dependencias npm)  
 **Plan:** `../mcp/PLAN.md` — documento de evidencia con 8 fases de implementación
-**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (97 tools)
+**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (99 tools)
 
 Los parámetros que el catálogo publica **se derivan del `argparse` de cada script**,
 no se escriben a mano: el servidor compone `--<param>` literal, así que un param
@@ -2116,6 +2116,60 @@ python vault_voice.py --coverage           # normas que NINGUNA tool pronuncia
 `VAULT_VOICE=0` silencia el bloque; `VAULT_VOICE=verbose` añade descripción, señal y prevención de cada norma. Un fallo de la voz nunca puede romper una tool: se traga y la tool responde igual.
 
 **Por qué vive en `wrap_main` y no en cada tool.** Una capa de refuerzo que hubiera que invocar tool por tool sería exactamente el registro-que-nadie-consume que esta norma existe para evitar — el fallo característico de este repo. `--coverage` cierra el círculo por el otro lado: una norma sin `tools_enforcing` ni `tools_detecting` no se pronuncia jamás, y el audit la nombra.
+
+---
+
+### `vault_servicio.py`
+
+**El pilar.** Este repo tenía diez registros canónicos —`CONTEXTS`, `NORM_CATALOG`, `FUNDAMENTALS`, `GROUPS`, `VOCABULARIOS`, `PUERTAS`, `STATUS_VOCAB`, `LIFECYCLE_REGISTRY`, el `tool-spec.json` y la tabla de entorno— y ninguno decía **para qué**. Se podía responder «esta tool, ¿en qué contexto vive?» y «esta norma, ¿qué severidad tiene?», pero no «esta tool, ¿a qué servicio sirve?». Sin esa respuesta una tool nueva no tiene contra qué justificarse, y el catálogo crece por acumulación.
+
+Dos registros: `SERVICIO` —memoria documental persistente, auditable y gobernada para agentes LLM, sin base de datos, sin embeddings y sin servicio externo— y `CAPACIDADES`, que dice qué grupos del catálogo lo realizan. De aquí salen las capas 1 y 2 del plano de `vault_blueprint`.
+
+```bash
+python vault_servicio.py --list            # servicio, restricciones y capacidades
+python vault_servicio.py --trace           # una fila por tool: grupo → capacidad → servicio
+python vault_servicio.py --check --strict  # la trazabilidad, sin eslabón roto
+```
+
+**Trazabilidad exigida, que es lo que lo hace registro y no prosa:** todo grupo pertenece a exactamente una capacidad, ninguna capacidad reclama un grupo inexistente, ningún grupo está en dos, toda capacidad tiene al menos una tool viva y toda capacidad sirve a un servicio declarado. **Sin baseline**: se mide cero al declararla porque los 37 grupos se clasifican en la misma tanda, y una baseline aquí permitiría añadir un grupo sin decidir a qué sirve — justo el vacío que la tool cierra. Los `group_id` salen de `mapa_de_grupos()`; no hay una numeración propia.
+
+**Por qué son tres capacidades y no dos.** `CLAUDE.md` declara dos ejes —*escritura → gobernanza* (grupos 1–33) y *consulta → contexto* (Grupo 34)—, y al clasificar los 37 grupos contra esa prosa aparecieron dos desajustes que no se pueden tapar sin mentir en el registro:
+
+| Desajuste | Qué se midió |
+|---|---|
+| Grupo 35 (Normas, 14 tools) | Gobierna **el estándar**, no el vault de nadie: `vault_gate`, `vault_doc_sync`, `vault_arch`, `vault_changelog_check` y los tres audits con baseline no tocan una nota. Es una tercera capacidad, `gobernanza_del_estandar`, que existía desde la primera puerta y no tenía nombre |
+| Grupo 26 (Tokens) | Cae en el rango 1–33 del primer eje, pero sus tres tools viven en el contexto `consulta` y existen para que el paquete de contexto quepa en la ventana. El rango es cronológico, no clasificatorio |
+
+Forzar esas 17 tools al eje que no sirven habría sido el mismo fallo que la tool existe para evitar. El registro manda y la prosa se corrige.
+
+---
+
+### `vault_blueprint.py`
+
+**El plano de construcción.** Once registros canónicos —`SERVICIO`, `CAPACIDADES`, `CONTEXTS`, `NORM_CATALOG`, `FUNDAMENTALS`, `GROUPS`/`TOOLS_CATALOG`, `VOCABULARIOS`, `PUERTAS`, `STATUS_VOCAB`, `LIFECYCLE_REGISTRY` y el `tool-spec.json`— repartidos en diez módulos, y nada que los atara. Se podía responder cualquier pregunta *dentro* de un registro y ninguna que cruzara dos: «esta tool, ¿a qué servicio sirve?», «esta norma, ¿qué puerta la hace cumplir y qué test la muerde?».
+
+```bash
+python vault_blueprint.py --blueprint       # regenera docs/BLUEPRINT.md
+python vault_blueprint.py --check --strict  # el plano vs. los registros (puerta 13)
+python vault_blueprint.py --layers          # las 7 capas en JSON, sin escribir nada
+python vault_blueprint.py --freeze          # congela la deuda de la capa 4
+```
+
+| Capa | Deriva de | Guard |
+|---|---|---|
+| 1 Servicio de negocio | `vault_servicio.SERVICIO` | — |
+| 2 Capacidades → grupos | `CAPACIDADES` + `mapa_de_grupos()` | grupo huérfano = fallo |
+| 3 Contextos → puertos | `vault_arch.CONTEXTS` | reusa `puertos_rotos()` |
+| 4 Normas → puertas → tests | `NORM_CATALOG` + `PUERTAS` + `tests/` | **baseline que solo encoge** |
+| 5 Tools → grupos → contrato | `TOOLS_CATALOG` + `tool-spec.json` | reusa `check_contracts()` |
+| 6 Trazabilidad tool→capacidad→servicio | las anteriores | eslabón roto = fallo |
+| 7 Deuda viva | `DEUDA_DECLARADA` + las baselines | informativa |
+
+**El papelito manda porque lo escribe el código.** `docs/BLUEPRINT.md` es derivado y `--check` falla si diverge del registro: editarlo a mano no cambia nada y además rompe la puerta. Es la única forma de tener a la vez «fuente de verdad única en un documento» y la regla 3 —registro primero, doc después—, cuya nota advierte que documentar sin código ejecutable «es el fallo histórico que el estándar ya cometió una vez». Ni la deuda declarada se escapa: vive en el registro `DEUDA_DECLARADA` del módulo, porque una lista de deuda tecleada en un documento derivado se queda quieta el día que la deuda se salda, y entonces el plano miente en la dirección cómoda.
+
+**Por qué solo la capa 4 tiene baseline.** Las otras seis se midieron en cero el día que se declararon: sus datos ya existían y solo faltaba atarlos. La capa 4 no — al cruzar `NORM_CATALOG` con `PUERTAS` y con `tests/` por primera vez aparecieron **16 normas sin puerta ni test**. Exigir cero el primer día habría hecho nacer la puerta en rojo, y una puerta en rojo se desactiva. `--freeze` se niega a congelar deuda sin precedente (`DEBT_WOULD_GROW`) salvo con `--admitir-nuevos`, que además la lista en el envelope.
+
+**No reimplementa ningún guard.** Los puertos rotos los dice `vault_arch.puertos_rotos()`, los contratos `vault_mcp_catalog.check_contracts()` y la trazabilidad `vault_servicio.check()`. Un plano que midiera por su cuenta sería una segunda fuente de verdad sobre el repo (AP-05) midiendo con criterio propio (AP-44) — y `docs/ARQUITECTURA.md` no se absorbe: son dos documentos con dos sujetos, y fundirlos habría hecho uno solo que nadie regenera.
 
 ---
 

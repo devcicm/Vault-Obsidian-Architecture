@@ -30,6 +30,57 @@ SCRIPTS_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPTS_DIR.parent
 BASELINE_PATH = SCRIPTS_DIR / "arch-baseline.json"
 
+#: Alcance declarado de los guards que leen código fuente de este repo.
+#:
+#: Hasta v40.9 cada guard escribía su propio `SCRIPTS_DIR.glob("vault_*.py")`
+#: —siete veces en este módulo y una en cada audit— y publicaba un cero que solo
+#: valía dentro de ese glob. `cli/`, que es donde el consumidor lee el error, no
+#: lo medía nadie: doce envelopes sin `error_code` llevaban ahí desde siempre con
+#: la puerta de AP-52 en verde. Un recorte de alcance no declarado no se ve como
+#: un fallo; se ve como un cero, que es lo que lo hace caro.
+#:
+#: `mcp/python` entra hoy sin ningún módulo. Se declara igual: el día que alguien
+#: ponga uno, entra medido en vez de entrar invisible.
+ARBOLES_MEDIDOS: tuple[tuple[str, str], ...] = (
+    ("scripts", "vault_*.py"),
+    ("vault", "**/*.py"),
+    ("cli", "*.py"),
+    ("mcp/python", "**/*.py"),
+)
+
+
+def arboles_medidos() -> list[Path]:
+    """Los módulos Python dentro del alcance declarado, sin duplicados."""
+    vistos: dict[Path, None] = {}
+    for rel, patron in ARBOLES_MEDIDOS:
+        raiz = REPO_ROOT / rel
+        if not raiz.is_dir():
+            continue
+        for ruta in raiz.glob(patron):
+            if ruta.is_file():
+                vistos[ruta.resolve()] = None
+    return sorted(vistos)
+
+
+def clave_de_modulo(ruta: Path) -> str:
+    """Identidad de un módulo en las baselines.
+
+    Bajo `scripts/` sigue siendo el nombre de fichero, que es lo que las tres
+    baselines por firma de sitio ya llevan dentro: cambiarlo las reescribiría
+    enteras y estrenaría como deuda nueva todo lo ya saldado. Fuera de
+    `scripts/` se usa la ruta relativa, que además desambigua los homónimos
+    —`vault/*/repositorio.py` son ocho ficheros distintos con el mismo nombre—.
+    """
+    ruta = ruta.resolve()
+    try:
+        rel = ruta.relative_to(REPO_ROOT)
+    except ValueError:
+        return ruta.name
+    if rel.parent == Path("scripts"):
+        return ruta.name
+    return rel.as_posix()
+
+
 #: El paquete de dominio. El guard nació mirando solo `scripts/`, con lo que el
 #: único código que existe para imponer fronteras era el único que podía
 #: cruzarlas sin que saltara nada. Se vigila con la misma vara.
@@ -278,6 +329,16 @@ CONTEXTS: dict[str, dict] = {
             # con baseline. Vive aquí y no en el kernel porque no sabe nada de
             # vaults — solo de AST — y su único consumidor es el meta-toolkit.
             "vault_firma_sitio",
+            # El pilar: qué servicio presta el estándar y qué capacidad realiza
+            # cada grupo del catálogo. Es meta-toolkit porque su sujeto es el
+            # catálogo —no un vault—: lee `GROUPS` por el puerto de
+            # `vault_mcp_catalog` y no toca una nota en ninguna parte.
+            "vault_servicio",
+            # El plano. Ata los once registros canónicos y no reimplementa
+            # ninguno: los puertos rotos los dice `vault_arch`, los contratos
+            # `vault_mcp_catalog` y la trazabilidad `vault_servicio`. Un plano
+            # que midiera por su cuenta sería AP-05 con formato de tabla.
+            "vault_blueprint",
         ],
     },
 }
@@ -1022,10 +1083,18 @@ def cruces_fuera_de_puerto() -> list[dict]:
     cuatro `puertos` nombran el write path, no un permiso de acceso. Meterlo
     aquí convertiría 343 de los 392 hallazgos en ruido y enterraría los 49 que
     sí son fronteras cruzadas por detrás.
+
+    **Las dos formas de entrar, no solo una.** Hasta v40.8 esto filtraba por
+    `ast.ImportFrom` y nada más, así que `import vault_norms` seguido de
+    `vault_norms._NORM_BY_CODE` era invisible: el símbolo no está en el nodo de
+    import, hay que buscar los accesos `X.attr` por el árbol. El cero que
+    publicaba la puerta era un cero sobre un subconjunto sintáctico, y el test
+    que escribí para los símbolos privados pasaba porque el detector no podía
+    ver lo que lo habría falsificado — AP-44 cometido por el propio guard.
     """
     mapa = _mapa_modulos()
     fuera: list[dict] = []
-    for ruta in sorted(SCRIPTS_DIR.glob("vault_*.py")):
+    for ruta in arboles_medidos():
         origen = mapa.get(ruta.stem)
         if origen is None:
             continue
@@ -1033,25 +1102,46 @@ def cruces_fuera_de_puerto() -> list[dict]:
             arbol = ast.parse(ruta.read_text(encoding="utf-8", errors="replace"))
         except SyntaxError:
             continue
-        for nodo in ast.walk(arbol):
-            if not isinstance(nodo, ast.ImportFrom):
-                continue
-            if not nodo.module or not nodo.module.startswith("vault_"):
-                continue
-            destino = mapa.get(nodo.module.split(".")[0])
+
+        def _anotar(modulo: str, simbolo: str) -> None:
+            destino = mapa.get(modulo.split(".")[0])
             if destino is None or destino == origen or destino == KERNEL:
-                continue
-            publica = _superficie_publica(destino)
-            for alias in nodo.names:
-                if alias.name not in publica:
-                    fuera.append(
-                        {
-                            "module": ruta.stem,
-                            "from_context": origen,
-                            "to_context": destino,
-                            "symbol": f"{nodo.module}.{alias.name}",
-                        }
-                    )
+                return
+            if simbolo in _superficie_publica(destino):
+                return
+            fuera.append(
+                {
+                    "module": ruta.stem,
+                    "from_context": origen,
+                    "to_context": destino,
+                    "symbol": f"{modulo}.{simbolo}",
+                }
+            )
+
+        # `from vault_x import y` — el símbolo está en el nodo.
+        for nodo in ast.walk(arbol):
+            if isinstance(nodo, ast.ImportFrom):
+                if nodo.module and nodo.module.startswith("vault_"):
+                    for alias in nodo.names:
+                        _anotar(nodo.module, alias.name)
+
+        # `import vault_x [as vx]` — el símbolo no está en el nodo. Se ata el
+        # nombre local al módulo y se buscan los accesos `vx.attr`. Sin esto la
+        # forma más común de import queda sin medir.
+        ligados: dict[str, str] = {}
+        for nodo in ast.walk(arbol):
+            if isinstance(nodo, ast.Import):
+                for alias in nodo.names:
+                    if alias.name.startswith("vault_"):
+                        ligados[alias.asname or alias.name] = alias.name
+        if ligados:
+            for nodo in ast.walk(arbol):
+                if (
+                    isinstance(nodo, ast.Attribute)
+                    and isinstance(nodo.value, ast.Name)
+                    and nodo.value.id in ligados
+                ):
+                    _anotar(ligados[nodo.value.id], nodo.attr)
     return fuera
 
 
@@ -1081,7 +1171,7 @@ def lecturas_de_entorno_sin_registro() -> list[dict]:
     from vault_entorno import VARIABLES
 
     hallazgos: list[dict] = []
-    for ruta in sorted(SCRIPTS_DIR.glob("vault_*.py")):
+    for ruta in arboles_medidos():
         if ruta.stem in _COPIAS_DE_ENTORNO_LEGITIMAS:
             continue
         try:
@@ -1247,7 +1337,7 @@ def copias_de_vocabulario() -> list[dict]:
         por_conjunto.setdefault(conjunto, nombre)
 
     hallazgos: list[dict] = []
-    for ruta in sorted(SCRIPTS_DIR.glob("vault_*.py")):
+    for ruta in arboles_medidos():
         if ruta.stem in fuentes:
             continue
         try:
@@ -1382,7 +1472,13 @@ def check(strict: bool = False) -> dict:
         "contexts": len(CONTEXTS),
         "modules": len(_mapa_modulos()),
         "domain_modules": len(_modulos_dominio()),
-        "crossings_total": len(actuales),
+        # Claves, no sitios: `baseline_total` cuenta claves `origen -> destino`,
+        # y publicar el total en sitios ponía dos cifras contiguas que no se
+        # pueden restar —60 contra 58 sin una sola deuda nueva—. Es el mismo
+        # defecto que se arregló en `off_port` en v40.8 y que quedó vivo en la
+        # medida hermana. `crossings_sites` conserva el dato de antes.
+        "crossings_total": len(claves),
+        "crossings_sites": len(actuales),
         "baseline_total": len(base),
         "new_crossings": nuevos,
         "settled_crossings": saldados,

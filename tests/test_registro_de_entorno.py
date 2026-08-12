@@ -53,7 +53,11 @@ def test_el_guard_muerde(tmp_path, monkeypatch):
         'import os\nx = os.environ.get("VAULT_NO_DECLARADA", "1")\n',
         encoding="utf-8",
     )
-    monkeypatch.setattr(arch, "SCRIPTS_DIR", tmp_path)
+    # v40.9: el alcance de los guards ya no es un glob por sitio sino
+    # `vault_arch.arboles_medidos()`. Se redirige el alcance, no el
+    # directorio, para que el guard vea exactamente el módulo de prueba.
+    monkeypatch.setattr(arch, "arboles_medidos",
+                        lambda: sorted(tmp_path.glob("vault_*.py")))
     hallazgos = arch.lecturas_de_entorno_sin_registro()
     assert hallazgos == [
         {"module": "vault_inventado", "variable": "VAULT_NO_DECLARADA"}
@@ -65,7 +69,11 @@ def test_el_guard_ve_tambien_el_acceso_por_indice(tmp_path, monkeypatch):
     (tmp_path / "vault_indexado.py").write_text(
         'import os\nx = os.environ["VAULT_OTRA"]\n', encoding="utf-8"
     )
-    monkeypatch.setattr(arch, "SCRIPTS_DIR", tmp_path)
+    # v40.9: el alcance de los guards ya no es un glob por sitio sino
+    # `vault_arch.arboles_medidos()`. Se redirige el alcance, no el
+    # directorio, para que el guard vea exactamente el módulo de prueba.
+    monkeypatch.setattr(arch, "arboles_medidos",
+                        lambda: sorted(tmp_path.glob("vault_*.py")))
     assert arch.lecturas_de_entorno_sin_registro()[0]["variable"] == "VAULT_OTRA"
 
 

@@ -248,7 +248,11 @@ def _ensure_hub_notes() -> None:
             "python scripts/vault_backup_list.py\n"
             "\n"
             "# Restaurar desde un backup\n"
-            "python scripts/vault_restore.py --name <backup-name>\n"
+            # `--name` no existe: la tool declara `--backup_name` y el comando moría
+            # en `unrecognized arguments`. Lo escribía el generador, así que el
+            # comando roto viajaba a *cada vault que el estándar crea* — el defecto
+            # de v40.4 en la copia que el guard de v40.4 no estaba mirando.
+            "python scripts/vault_restore.py --backup_name <backup-name>\n"
             "```\n"
         )
         _commands_note().write_text(commands_content, encoding="utf-8")

@@ -137,6 +137,23 @@ PUERTAS: List[Dict[str, Any]] = [
                 "entorno declarado, AP-49 en cero",
         "fix": None,
     },
+    {
+        "id": "servicio",
+        "cmd": ["vault_servicio.py", "--check", "--strict"],
+        "mide": "Trazabilidad tool → grupo → capacidad → servicio: todo grupo "
+                "pertenece a una capacidad y toda capacidad tiene tool viva",
+        "fix": "clasificar el grupo en la capacidad a la que sirve; si no sirve "
+               "a ninguna, la pregunta es por qué existe el grupo",
+    },
+    {
+        "id": "blueprint",
+        "cmd": ["vault_blueprint.py", "--check", "--strict"],
+        "mide": "El plano de docs/BLUEPRINT.md no diverge de los registros, y "
+                "ninguna norma estrena falta de puerta y test a la vez",
+        "fix": "python scripts/vault_blueprint.py --blueprint  (regenera el "
+               "plano); una norma nueva sin cobertura se cubre con un test, no "
+               "se congela",
+    },
 ]
 
 

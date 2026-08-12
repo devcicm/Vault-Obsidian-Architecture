@@ -55,6 +55,7 @@ from typing import Dict, List
 sys.path.insert(0, str(Path(__file__).parent))
 
 from vault_errors import emit_error, wrap_main
+from vault_arch import arboles_medidos, clave_de_modulo
 from vault_firma_sitio import (
     cargar_baseline,
     escribir_baseline,
@@ -131,7 +132,8 @@ def offenders() -> List[Dict]:
     para ir al sitio, pero ya no es la identidad.
     """
     fuera = []
-    for path in sorted(SCRIPTS_DIR.glob("vault_*.py")):
+    for path in arboles_medidos():
+        nombre = clave_de_modulo(path)
         if path.name == Path(__file__).name or path.name.startswith(EXCLUIDOS):
             continue
         try:
@@ -151,19 +153,19 @@ def offenders() -> List[Dict]:
             ok = _valor_de(nodo, "ok")
             if not (isinstance(ok, ast.Constant) and ok.value is False):
                 continue
-            if f"{path.name}::{qualnames.get(id(nodo), '')}" in EXENCIONES:
+            if f"{nombre}::{qualnames.get(id(nodo), '')}" in EXENCIONES:
                 continue
             encontrados.append((nodo, sorted(claves)))
         encontrados.sort(key=lambda par: (par[0].lineno, par[0].col_offset))
         firmas = firmar_todos(
-            (path.name, qualnames.get(id(n), ""), n) for n, _ in encontrados
+            (nombre, qualnames.get(id(n), ""), n) for n, _ in encontrados
         )
         for (nodo, claves), firma in zip(encontrados, firmas):
             fuera.append({
                 "firma": firma,
-                "module": path.name,
+                "module": nombre,
                 "line": nodo.lineno,
-                "site": f"{path.name}:{nodo.lineno}",  # informativo
+                "site": f"{nombre}:{nodo.lineno}",  # informativo
                 "keys": claves,
             })
     return fuera

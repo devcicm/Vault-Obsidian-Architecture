@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.8 — 2026-08-12  
+**Versión:** v40.9 — 2026-08-12  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -4993,7 +4993,7 @@ Dos causas, y la segunda es la incómoda:
 
 1. **El audit no lo ejecuta nadie.** En las **1.356 ejecuciones de tools
    registradas** en los `.tool-trace.json` de ese parque, `vault_norms` no
-   aparece **ni una vez**. 41 de las 97 tools del catálogo no se han ejecutado
+   aparece **ni una vez**. 41 de las 99 tools del catálogo no se han ejecutado
    jamás. Los agentes escriben; no gobiernan. Un enforcement que depende de que
    alguien se acuerde de invocarlo es enforcement en el papel.
 2. **Los valores no canónicos los escribía el propio estándar.** El más
@@ -5602,7 +5602,7 @@ de envelope con su contrato de `00_System/tool-spec.json`:
 Y la divergencia peor no era de forma sino de efecto: `jsNativeGraph` no tiene un
 solo `writeFile`. Un agente llamaba `vault_graph` por MCP, recibía `ok: true`, y
 el grafo se quedaba sin regenerar — **AP-37 y AP-47 servidos a la vez por el único
-camino que un agente real usa**. `vault_smoke` recorre las 97 tools del catálogo,
+camino que un agente real usa**. `vault_smoke` recorre las 99 tools del catálogo,
 pero ejecuta el `.py`: probaba exactamente la implementación que el agente no toca.
 
 **Prevención:** backend nativo solo para lo que **no tiene** implementación en
@@ -6644,6 +6644,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.9 | 2026-08-12 | El pilar y el plano, y el cero que estaba medido sobre un subconjunto. Se declara el **servicio** (`vault_servicio`) y sus capacidades, y la medida corrigió al plan: no son dos ejes sino **tres** — el grupo 35 gobierna *el estándar*, no la memoria documental de nadie, y sus 14 tools se venían contando como si sirvieran al vault del usuario. Encima de eso, `vault_blueprint` genera `docs/BLUEPRINT.md` atando once registros canónicos que no tenían nada que los uniera, con la capa norma → puerta → test naciendo con 16 normas sin cobertura y baseline que solo encoge. El defecto de fondo era de **alcance**: siete guards hacían su propio `glob("vault_*.py")` y publicaban ceros que solo valían dentro de ese glob. Con un alcance único y declarado, AP-52 pasa de 0 a 21 sitios reales —doce en `cli/`, que es justo donde el consumidor lee el error, convertidos a `emit_error`— y el detector de cruces, que solo miraba `ast.ImportFrom`, pasa de 0 a 16: `import X` seguido de `X._privado` era invisible, y el test que escribí en v40.8 pasaba porque el guard no podía ver lo que lo falsificaba. Además el generador de `vault-commands.md` publicaba `vault_restore.py --name`, un flag inexistente, en cada vault que el estándar crea, y `escribir_baseline` destruía la lista v1 anotada en el segundo `--freeze` |
 | v40.8 | 2026-08-12 | La baseline de cruces fuera de puerto, de 47 a **0**, distinguiendo lo que nunca fue deuda de lo que sí: ~40 eran puertos que el código ya usaba y el registro no nombraba —doce `*_save` entrando por `status_frontmatter_lines` no son doce fugas—, y 5 eran cruces reales, cuatro de ellos un símbolo privado atravesando un contexto acotado. Antes de declarar nada se cerró el agujero que habría convertido el ejercicio en un blanqueo: un puerto ya no puede nombrar un símbolo que empiece por `_`, porque si no bastaba con escribir `vault_norms:_NORM_BY_CODE` en el registro para que la deuda desapareciera sin arreglar nada. Además `off_port_total` pasa a contarse por clave como su propia baseline —publicaba 48 junto a 47 sin que hubiera regresión— y el bootstrap del tool-spec deja de alimentarse de un derivado de su propia salida |
 | v40.7 | 2026-08-08 | Terminación del recorrido de grafos convertida en invariante comprobado al importar (`peso × HOP_DECAY ≤ 1`), medido en el punto exacto de vuelco: peso 1,6 visita 59 nodos, 1,7 pasa a 605 y 2,0 a más de 3,6 millones; el `RecursionError` de PyYAML ante un frontmatter con ~500 niveles de anidamiento deja de matar la auditoría entera y se contiene en la nota que lo trae; **AP-53** — el changelog publicaba 5 fechas que el commit citado desmentía, y `vault_changelog_check` lo convierte en la undécima puerta con `--fijar-hash` para el paso que se hacía a mano; **AP-54** — `file_lock` no era reentrante y un hilo se bloqueaba contra sí mismo (26 tomas, 13 fallidas, 65,14 s), pero el defecto era que al fallar el lock se escribía igual, sin sincronizar, encima de quien sí lo tenía |
 | v40.6 | 2026-08-07 | Las tres baselines de deuda pasan a indexarse por **firma de sitio** (`módulo::función::hash` sobre `ast.unparse`) porque `módulo:línea` reportaba como deuda nueva el mismo código diez líneas más abajo, y `--freeze` se niega a congelar sitios sin precedente en vez de fiarse de una receta manual de tres pasos; el heal de AP-46 dejaba de reparar tres de cada cuatro notas por deducir la clase de rotura de la presencia de un `---` que era una regla horizontal del cuerpo, y ahora prueba las candidatas contra `yaml.safe_load`; AP-52 de 110 sitios a **0** con tres códigos nuevos y exenciones por `módulo::función` para los tres sitios que parecen un envelope de error sin serlo; el `superseded_by` de `healthScore` deja de ser un registro sin consumidor y pasa a contrato de campos vigilado sobre 1.038 campos de 96 tools — décima puerta |
@@ -6973,6 +6974,79 @@ temp/
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
 
 ---
+
+### v40.9 — 2026-08-12 `git: pending`
+
+**Un pilar, un plano, y siete guards midiendo dentro de su propio glob**
+
+Este repo tenía once registros canónicos —`CONTEXTS`, `NORM_CATALOG`, `FUNDAMENTALS`,
+`GROUPS`/`TOOLS_CATALOG`, `VOCABULARIOS`, `PUERTAS`, `STATUS_VOCAB`,
+`LIFECYCLE_REGISTRY`, el `tool-spec.json`, la tabla de entorno— repartidos en nueve
+módulos y **sin nada que los atara**. No se podía responder «esta tool, ¿a qué sirve?»
+ni «esta norma, ¿qué puerta la hace cumplir?». `docs/ARQUITECTURA.md` cubría una capa
+de las siete.
+
+**El pilar.** `scripts/vault_servicio.py` declara el servicio —memoria documental
+persistente, auditable y gobernada sobre markdown plano, sin base de datos, sin
+embeddings y sin servicio externo, que es una decisión de producto y no una limitación
+pendiente— y las capacidades que lo realizan. El plan asumía dos ejes. La medida los
+desmintió: el **grupo 35** no sirve a la memoria de ningún usuario, gobierna *este
+estándar*, y sus catorce tools se venían contando como si tocasen las notas de alguien.
+Forzarlas dentro de un eje al que no sirven habría sido el mismo fallo que el registro
+existe para impedir, así que son tres capacidades y el motivo está escrito en el propio
+registro. El grupo 26 (Tokens) cae en el rango 1–33 por orden de llegada pero vive en
+`consulta`: existe para que el paquete quepa en la ventana. La puerta exige que **todo
+grupo pertenezca a exactamente una capacidad** y que ninguna capacidad se quede sin tool
+viva, y no lleva baseline a propósito — una baseline aquí permitiría añadir un grupo sin
+decidir a qué sirve, que es justo el vacío que cierra.
+
+**El plano.** `scripts/vault_blueprint.py` genera `docs/BLUEPRINT.md` en siete capas,
+de la declaración del servicio a la deuda viva. No reimplementa ningún guard: los
+puertos los dice `vault_arch`, los contratos `vault_mcp_catalog`, la trazabilidad
+`vault_servicio`. Si midiera por su cuenta sería una segunda fuente de verdad sobre el
+repo (AP-05) con criterio propio (AP-44). Y no se edita a mano: `--check` falla si el
+documento publicado diverge, que es lo que hace compatible «papelito manda» con la
+regla 3 — el papel manda porque lo escribe el código. Su capa 4 nació con **16 normas
+sin puerta ni test**; exigir cero el primer día habría hecho nacer la puerta en rojo, y
+una puerta en rojo se desactiva.
+
+**El defecto de fondo era de alcance, no una lista de defectos.** Siete guards hacían
+`SCRIPTS_DIR.glob("vault_*.py")` y publicaban ceros que solo valían dentro de ese glob.
+`cli/` —que es donde el consumidor lee el error— no lo medía nadie. Con un alcance único
+y declarado (`ARBOLES_MEDIDOS`: `scripts/`, `vault/`, `cli/`, `mcp/python`):
+
+- **AP-52 pasa de 0 a 21 sitios.** El cero de v40.6 era un cero sobre un subconjunto.
+  Los doce de `cli/vault_cli.py` salían como `{"ok": False, "error": "..."}` sin
+  `error_code` ni `recovery`, en el punto exacto donde el consumidor decide qué hacer;
+  se convierten a `emit_error`, con dos códigos nuevos —`PREFLIGHT_REJECTED` e
+  `INTERRUPTED`— porque etiquetarlos con un código ajeno habría sido mentir en el
+  campo que el consumidor lee. Los nueve de `vault/durabilidad` y `vault/indices` quedan
+  **declarados**: quién construye ahí el envelope es una decisión de capas.
+- **AP-51 suma uno**, `cli/registry.py::_load_spec`: un `tool-spec.json` ilegible se
+  presentaba como un catálogo sin entradas.
+- **El detector de cruces pasa de 0 a 16 sitios.** Filtraba solo `ast.ImportFrom`, así
+  que `import vault_tags as _tags` seguido de `_tags._raiz()` era invisible. Tres eran
+  símbolos privados atravesando una frontera, y se promueven conservando el alias. Lo
+  caro no es el número: el test que escribí en v40.8 —«ningún privado cruza una
+  frontera»— **pasaba porque el guard no podía ver lo que lo habría falsificado**. AP-44
+  cometido dentro del guard.
+
+**Dos defectos más, de los que no se ven porque el fichero sigue siendo válido.** El
+generador de `vault-commands.md` publicaba `python scripts/vault_restore.py --name`, un
+flag que la tool no declara, en **cada vault que el estándar crea**: el guard de v40.4
+medía los documentos escritos a mano y era ciego a la copia que viaja. Y
+`escribir_baseline` destruía `sites_v1_superseded` en el segundo `--freeze`: en la
+primera llamada la lista v1 salía de los strings de la baseline vieja, en la segunda ya
+era el dict anotado y `sorted(v1)` devolvía sus cuatro claves en el sitio de los 86
+sitios migrados. El dato que existe para auditar la migración lo borraba el código
+escrito para conservarlo.
+
+`crossings_total` pasa además a contarse por clave como su propia baseline —publicaba 60
+sitios junto a 58 claves, dos cifras contiguas que no se pueden restar—, y `cli/` deja
+de llevar su propia copia del vocabulario `severidad`.
+
+Trece puertas. Ninguna norma nueva: todo son motivos y alcances de guards que ya
+existían.
 
 ### v40.8 — 2026-08-12 `git: 684f4c3`
 

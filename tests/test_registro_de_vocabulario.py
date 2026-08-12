@@ -61,7 +61,11 @@ def test_el_guard_de_copias_muerde(tmp_path, monkeypatch):
     modulo.write_text(
         'SEVERITIES = ["critical", "high", "medium", "low"]\n', encoding="utf-8"
     )
-    monkeypatch.setattr(arch, "SCRIPTS_DIR", tmp_path)
+    # v40.9: el alcance de los guards ya no es un glob por sitio sino
+    # `vault_arch.arboles_medidos()`. Se redirige el alcance, no el
+    # directorio, para que el guard vea exactamente el módulo de prueba.
+    monkeypatch.setattr(arch, "arboles_medidos",
+                        lambda: sorted(tmp_path.glob("vault_*.py")))
     hallazgos = arch.copias_de_vocabulario()
     assert hallazgos == [
         {"module": "vault_copion", "line": 1, "vocabulary": "severidad"}
@@ -73,7 +77,11 @@ def test_una_copia_desordenada_tambien_es_una_copia(tmp_path, monkeypatch):
     (tmp_path / "vault_listillo.py").write_text(
         'X = ("low", "critical", "medium", "high")\n', encoding="utf-8"
     )
-    monkeypatch.setattr(arch, "SCRIPTS_DIR", tmp_path)
+    # v40.9: el alcance de los guards ya no es un glob por sitio sino
+    # `vault_arch.arboles_medidos()`. Se redirige el alcance, no el
+    # directorio, para que el guard vea exactamente el módulo de prueba.
+    monkeypatch.setattr(arch, "arboles_medidos",
+                        lambda: sorted(tmp_path.glob("vault_*.py")))
     assert arch.copias_de_vocabulario()[0]["vocabulary"] == "severidad"
 
 
@@ -244,7 +252,11 @@ def test_un_mapa_con_las_claves_del_vocabulario_es_una_copia(tmp_path, monkeypat
         'PESOS = {"critical": 4, "high": 3, "medium": 2, "low": 1}\n',
         encoding="utf-8",
     )
-    monkeypatch.setattr(arch, "SCRIPTS_DIR", tmp_path)
+    # v40.9: el alcance de los guards ya no es un glob por sitio sino
+    # `vault_arch.arboles_medidos()`. Se redirige el alcance, no el
+    # directorio, para que el guard vea exactamente el módulo de prueba.
+    monkeypatch.setattr(arch, "arboles_medidos",
+                        lambda: sorted(tmp_path.glob("vault_*.py")))
     assert arch.copias_de_vocabulario() == [
         {"module": "vault_mapon", "line": 1, "vocabulary": "severidad"}
     ]
@@ -255,7 +267,11 @@ def test_un_mapa_de_claves_calculadas_no_es_una_copia(tmp_path, monkeypatch):
     (tmp_path / "vault_dinamico.py").write_text(
         "M = {a: 1, b: 2, c: 3, d: 4}\n", encoding="utf-8"
     )
-    monkeypatch.setattr(arch, "SCRIPTS_DIR", tmp_path)
+    # v40.9: el alcance de los guards ya no es un glob por sitio sino
+    # `vault_arch.arboles_medidos()`. Se redirige el alcance, no el
+    # directorio, para que el guard vea exactamente el módulo de prueba.
+    monkeypatch.setattr(arch, "arboles_medidos",
+                        lambda: sorted(tmp_path.glob("vault_*.py")))
     assert arch.copias_de_vocabulario() == []
 
 
@@ -269,7 +285,11 @@ def test_el_mapa_declarado_es_el_camino_correcto_y_no_se_acusa(tmp_path, monkeyp
         'U = _mapa("severidad", {"critical": 8, "high": 4, "medium": 2, "low": 0})\n',
         encoding="utf-8",
     )
-    monkeypatch.setattr(arch, "SCRIPTS_DIR", tmp_path)
+    # v40.9: el alcance de los guards ya no es un glob por sitio sino
+    # `vault_arch.arboles_medidos()`. Se redirige el alcance, no el
+    # directorio, para que el guard vea exactamente el módulo de prueba.
+    monkeypatch.setattr(arch, "arboles_medidos",
+                        lambda: sorted(tmp_path.glob("vault_*.py")))
     assert arch.copias_de_vocabulario() == []
 
 

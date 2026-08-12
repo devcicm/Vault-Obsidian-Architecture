@@ -8,6 +8,7 @@
     "vault/gobernanza/repositorio.py -> vault/indices",
     "vault/grafo/repositorio.py -> vault/gobernanza",
     "vault/indices/repositorio.py -> vault/grafo",
+    "vault_blueprint -> vault_norms",
     "vault_bug_save -> vault_norms",
     "vault_change_log -> vault/gobernanza",
     "vault_changelog_check -> vault_standard_upgrade",
@@ -61,5 +62,19 @@
   ],
   "frozen_bindings": [],
   "duplicate_paths": [],
-  "off_port_crossings": []
+  "off_port_crossings": [
+    "vault_norms -> vault_mcp_catalog.check_params",
+    "vault_norms -> vault_smoke.SIN_SMOKE",
+    "vault_norms -> vault_smoke.invocation",
+    "vault_norms -> vault_smoke.load_baseline",
+    "vault_norms -> vault_tags.load_ledger",
+    "vault_norms -> vault_tags.normalize_tag",
+    "vault_norms -> vault_tags.raiz",
+    "vault_norms -> vault_tags.singular_tag",
+    "vault_norms -> vault_voice.coverage",
+    "vault_sanacion -> vault_norms.vault_norms_audit",
+    "vault_sanacion -> vault_reindex.notas_indexables",
+    "vault_write -> vault_tags.apply_vocabulary",
+    "vault_write -> vault_tags.record_new_tags"
+  ]
 }

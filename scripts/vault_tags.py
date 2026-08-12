@@ -74,8 +74,20 @@ def _repo(root=None) -> RepositorioIndices:
     return RepositorioIndices(construir(root))
 
 
-def _raiz() -> Path:
+def raiz() -> Path:
+    """La raíz del vault que este contexto está usando.
+
+    Pública desde v40.9. `vault_norms` la lee para comprobar que mide el mismo
+    vault que `vault_tags`, y un guion bajo atravesando un contexto acotado es
+    lo contrario de una superficie publicada: hasta v40.8 el detector no lo veía
+    porque solo miraba `from x import y`, no `import x`.
+    """
     return _repo().raiz
+
+
+#: superseded_by: `raiz`. Se conserva el nombre —tools y tests lo importan— con
+#: el mismo contrato (no-derogación).
+_raiz = raiz
 
 
 def _tag_registry() -> Path:
@@ -237,11 +249,21 @@ def resolve_tag(raw: str, indice: Optional[Dict[str, str]] = None) -> Tuple[str,
     return norma, "new"
 
 
-def _load_ledger() -> Dict[str, Any]:
+def load_ledger() -> Dict[str, Any]:
+    """La bitácora append-only de términos introducidos.
+
+    Pública desde v40.9 por el mismo motivo que `raiz`: `vault_norms` la lee
+    para saber qué etiquetas quedaron sin anotar, y esa lectura cruza una
+    frontera. Lo que cruza, se publica.
+    """
     try:
         return json.loads(_tag_ledger().read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return {"version": "v1.0", "entries": []}
+
+
+#: superseded_by: `load_ledger`. Cuatro tests lo importan por el nombre viejo.
+_load_ledger = load_ledger
 
 
 def record_new_tags(

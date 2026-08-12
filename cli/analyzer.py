@@ -26,7 +26,17 @@ from typing import Any, Dict, List, Optional, Set
 
 from .registry import GUARDED_ARTIFACTS, SCRIPTS_DIR
 
-SEVERITY_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+# El orden lo da el registro, no una copia. `severidad` ya vivía en
+# `vault_vocabulario`; tenerlo aquí escrito a mano hacía que ampliar la
+# escala en el registro dejase a `cli/` ordenando por una escala vieja sin
+# que nada avisara. El import es seguro: `.registry` ya puso `scripts/` en
+# `sys.path` una línea más arriba.
+from vault_vocabulario import rango  # noqa: E402
+
+# `mayor_primero=False` y `base=0`: aquí el número es la posición en la lista
+# —`critical` es 0— porque el filtro compara `> limit` para descartar lo menos
+# grave. Es el mismo orden declarado, leído del extremo contrario.
+SEVERITY_ORDER = rango("severidad", base=0, mayor_primero=False)
 
 CHECKS: Dict[str, Dict[str, str]] = {
     "RC-01": {"kind": "race", "severity": "critical",

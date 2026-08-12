@@ -94,7 +94,18 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # de mostrar el fallo que documenta — el guard no distingue un comando que se
 # dicta de uno que se exhibe. Se comprobó: los únicos tres positivos fuera de
 # esta lista son esas dos citas y una copia de backup que no se toca.
-DOCS_CON_COMANDOS = ("CLAUDE.md", "README.md", "scripts/README.md")
+#
+# Desde v40.9 entra también el documento de comandos que el estándar **genera**
+# (`vault_section_index` lo escribe en `<vault>/00_System/vault-commands.md`).
+# Publicaba `vault_restore.py --name`, un flag que la tool no acepta, y no lo
+# publicaba en un doc: lo repartía a cada vault creado. El guard de v40.4 medía
+# los documentos escritos a mano y era ciego justo a la copia que viaja.
+DOCS_CON_COMANDOS = (
+    "CLAUDE.md",
+    "README.md",
+    "scripts/README.md",
+    "vault-sandbox/00_System/vault-commands.md",
+)
 
 RE_COMANDO = re.compile(
     r"python\s+(scripts/[a-z0-9_]+\.py)((?:\s+--?[a-zA-Z0-9_-]+(?:[ =][^\s`|#]+)?)*)"

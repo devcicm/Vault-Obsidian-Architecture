@@ -10,9 +10,9 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | Ruta | Qué es |
 |---|---|
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~6.000 líneas). Fuente normativa. |
-| `scripts/*.py` | ~120 scripts, 97 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
+| `scripts/*.py` | ~122 scripts, 99 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (2453 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (2496 tests). Toda norma con guard debe tener test. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
 | `vault-sandbox/` | **Único** vault de pruebas del repo. Todo runtime va aquí. |
@@ -20,16 +20,36 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 
 ---
 
-## Los dos ejes
+## El servicio y sus tres capacidades
 
-El estándar cubre dos recorridos, y una tool nueva pertenece a uno de los dos:
+**Fuente única: `scripts/vault_servicio.py`** (`SERVICIO` + `CAPACIDADES`). Lo de aquí
+abajo es la lectura en prosa de ese registro, no una segunda declaración: si divergen,
+manda el registro y esta sección se corrige. Qué capacidad realiza cada grupo lo dice
+`python scripts/vault_servicio.py --trace`, y una puerta falla si algún grupo se queda
+sin ninguna.
 
-- **escritura → gobernanza** (grupos 1–33): capturar, normalizar, versionar, auditar.
-- **consulta → contexto** (Grupo 34, v39): `vault_query_parse` → `vault_subgraph` →
-  `vault_context_pack`, con `vault_preferences` (contexto estable en `17_Preferences/`)
-  y `vault_ingest` (única con superficie de escritura, con preflight anti-poison no
-  desactivable vía `cli/safety.py`). **Sin base de datos, sin embeddings y sin servicio
-  externo** — esa restricción es normativa, no una limitación pendiente de resolver.
+El servicio es uno: **dar a un agente LLM memoria documental persistente, auditable y
+gobernada sobre markdown plano**, sin base de datos, sin embeddings y sin servicio
+externo. Esa restricción es una decisión de producto, no una limitación pendiente de
+resolver: el vault tiene que seguir siendo legible con un editor de texto y sobrevivir a
+que este toolkit desaparezca.
+
+Lo realizan tres capacidades, y una tool nueva pertenece a exactamente una:
+
+- **escritura → gobernanza** (el grueso del catálogo): capturar, normalizar, versionar,
+  auditar. Cuántos grupos exactamente lo dice `--trace`, no esta línea.
+- **consulta → contexto** (grupos 26 y 34, v39): `vault_query_parse` → `vault_subgraph`
+  → `vault_context_pack`, con `vault_preferences` (contexto estable en
+  `17_Preferences/`) y `vault_ingest` (única con superficie de escritura, con preflight
+  anti-poison no desactivable vía `cli/safety.py`). El **grupo 26 (Tokens)** cae en el
+  rango 1–33 por orden de llegada, pero sus tres tools viven en el contexto `consulta` y
+  existen para que el paquete quepa en la ventana.
+- **gobernanza del estándar** (grupo 35): `vault_gate`, `vault_doc_sync`, `vault_arch`,
+  `vault_changelog_check`, los tres audits con baseline y el resto del meta-toolkit.
+  **No tocan las notas de nadie**: comprueban que este repo cumple lo que publica.
+  Hasta v40.9 esta capacidad no tenía nombre y sus 14 tools se contaban como si
+  sirvieran a la memoria del agente — que es como un catálogo empieza a crecer por
+  acumulación.
 
 ---
 
@@ -172,6 +192,19 @@ python scripts/vault_quality_check.py --min-score 0.7
       significa que otro lo tiene tomado **ahora mismo**, así que esa escritura
       no es una carrera improbable — es la única situación en la que ese código
       corre. Omitir la escritura sí es correcto y no se marca.
+- [ ] `python scripts/vault_servicio.py --check --strict` → `ok: true`. El pilar:
+      todo grupo del catálogo pertenece a **exactamente una** capacidad y toda
+      capacidad tiene al menos una tool viva. Sin baseline a propósito — una
+      baseline aquí permitiría añadir un grupo sin decidir a qué sirve, que es
+      justo el vacío que el registro cierra. Los `group_id` salen de
+      `mapa_de_grupos()`; no hay numeración propia.
+- [ ] `python scripts/vault_blueprint.py --check --strict` → `ok: true`. El plano
+      de `docs/BLUEPRINT.md` no diverge de los registros. **Es derivado: no se
+      edita a mano** — se regenera con `--blueprint`, y lo escrito a mano se
+      pierde, que es lo que lo mantiene honesto. Su capa 4 —norma → puerta →
+      test— es la única con baseline: nació con 16 normas sin puerta **ni** test,
+      y exigir cero el primer día habría hecho nacer la puerta en rojo. Una
+      norma nueva sin cobertura no se congela: se le escribe el test.
 - [ ] `python scripts/vault_doc_sync.py --check --strict` cubre además, desde v40.4, que
       **todo comando que la documentación publica exista y acepte sus flags**. `CLAUDE.md`
       publicaba los dos comandos de salud con `--root`, que ninguna de las dos tools

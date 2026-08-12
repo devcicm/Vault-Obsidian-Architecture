@@ -30,6 +30,7 @@ sys.path.insert(0, str(SCRIPTS))
 
 import vault_blame_audit as blame  # noqa: E402
 import vault_error_contract as contrato  # noqa: E402
+import vault_firma_sitio as fs  # noqa: E402
 from vault_firma_sitio import (  # noqa: E402
     SCHEMA,
     firmar,
@@ -171,10 +172,45 @@ def test_la_lista_v1_se_conserva_anotada():
         v1 = datos["sites_v1_superseded"]
         assert v1["superseded_by"] == "sites[].firma"
         assert v1["reason"].strip()
-        assert len(v1["sites"]) >= len(datos["sites"]), (
-            f"{path.name}: hay más sitios que en la lista v1 — la baseline "
-            "creció, que es justo lo que no puede pasar"
+        # La comparación es contra el **mismo alcance** que tenía la lista v1:
+        # `scripts/`. En v40.9 los audits pasaron a medir también `vault/`,
+        # `cli/` y `mcp/python`, y lo que apareció allí entró declarado con
+        # `--freeze --admitir-nuevos`. Comparar el total contra una lista v1 que
+        # solo cubría `scripts/` leería un ensanche de alcance como una
+        # regresión — y empujaría a estrechar la medida para volver al verde,
+        # que es el defecto que v40.9 existe para cerrar.
+        en_scripts = [s for s in datos["sites"] if "/" not in s["firma"]]
+        assert len(v1["sites"]) >= len(en_scripts), (
+            f"{path.name}: hay más sitios en `scripts/` que en la lista v1 — la "
+            "baseline creció, que es justo lo que no puede pasar"
         )
+
+
+def test_congelar_dos_veces_no_borra_la_lista_v1(tmp_path):
+    """La no-derogación aguantaba exactamente un `--freeze`.
+
+    En la primera llamada `sites_v1_superseded` no existía y la lista salía de
+    los strings de la baseline vieja. En la segunda ya era el dict anotado, y
+    `sorted(v1)` devolvía sus cuatro claves —`reason`, `since`, `sites`,
+    `superseded_by`— en el sitio de los 86 sitios migrados. El dato que existe
+    para auditar la migración lo destruía el código escrito para conservarlo, en
+    silencio y sin que ninguna puerta lo viera: el fichero seguía siendo un JSON
+    válido con todas sus claves.
+    """
+    path = tmp_path / "baseline.json"
+    original = ["vault_a.py:10", "vault_b.py:20", "vault_c.py:30"]
+    path.write_text(
+        json.dumps({"norm": "AP-99", "schema": 1, "description": "d",
+                    "sites": original}),
+        encoding="utf-8",
+    )
+
+    sitios = [{"firma": "vault_a.py::f::abc", "visto_en": "vault_a.py:10"}]
+    for _ in range(3):
+        _, _, previos = fs.cargar_baseline(path)
+        fs.escribir_baseline(path, "AP-99", "d", sitios, previos)
+        datos = json.loads(path.read_text(encoding="utf-8"))
+        assert datos["sites_v1_superseded"]["sites"] == sorted(original)
 
 
 def test_los_audits_no_reportan_deuda_nueva_al_desplazar_codigo(tmp_path):

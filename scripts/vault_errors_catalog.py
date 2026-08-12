@@ -128,6 +128,33 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": "vault-obsidian-architecture.md §Estructura de carpetas",
         },
     },
+    # Los dos códigos de la frontera de proceso de la CLI consolidada. Antes de
+    # v40.9 `cli/` no importaba `vault_errors` en ninguna parte: sus doce fallos
+    # salían como `{"ok": False, "error": "..."}` a mano, sin `error_code` ni
+    # `recovery`, justo en el punto donde el consumidor lee el error. La puerta
+    # de AP-52 estaba en verde porque su alcance no llegaba a `cli/`.
+    "PREFLIGHT_REJECTED": {
+        "category": "validation",
+        "severity": "error",
+        "message": "La operación no pasó las guardas de seguridad previas.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Revisar `findings`: cada hallazgo dice qué campo y por qué. "
+                    "Ninguna escritura ocurrió. Repetir con --force asume el riesgo.",
+            "docs": "vault-obsidian-architecture.md §Guards anti-poison",
+        },
+    },
+    "INTERRUPTED": {
+        "category": "infrastructure",
+        "severity": "warning",
+        "message": "La operación se interrumpió antes de terminar.",
+        "recovery": {
+            "action": "retry",
+            "hint": "Un lote interrumpido puede haber ejecutado parte de sus olas: "
+                    "comprobar el estado con `vault_audit` antes de reintentar.",
+            "docs": None,
+        },
+    },
     "INVALID_ACTION": {
         "category": "validation",
         "severity": "error",

@@ -2388,6 +2388,124 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         ),
         "related": ["vault_norms", "vault_arch", "vault_noop_audit", "vault_blame_audit"],
     },
+    "vault_blueprint": {
+        "name": "vault_blueprint",
+        "script": "vault_blueprint.py",
+        "group": "Normas",
+        "purpose": (
+            "El plano de construccion: ata los once registros canonicos en "
+            "siete capas —servicio, capacidades, contextos, normas, tools, "
+            "trazabilidad y deuda— y genera docs/BLUEPRINT.md. El documento es "
+            "derivado: --check falla si diverge del registro, asi que ninguna "
+            "cifra del plano se escribe a mano. No reimplementa ningun guard."
+        ),
+        "params": {
+            "blueprint": {
+                "type": "boolean",
+                "required": False,
+                "description": "Regenera docs/BLUEPRINT.md desde los registros",
+                "validators": [],
+            },
+            "check": {
+                "type": "boolean",
+                "required": False,
+                "description": "El doc publicado y la trazabilidad contra los registros",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit 1 si el plano diverge o hay eslabon roto",
+                "validators": [],
+            },
+            "freeze": {
+                "type": "boolean",
+                "required": False,
+                "description": "Congela la deuda de la capa 4 (norma sin puerta ni test)",
+                "validators": [],
+            },
+            "admitir-nuevos": {
+                "type": "boolean",
+                "required": False,
+                "description": "Permite congelar normas sin cobertura sin precedente",
+                "validators": [],
+            },
+            "layers": {
+                "type": "boolean",
+                "required": False,
+                "description": "Las 7 capas en JSON, sin generar el documento",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "El plano es derivado: editarlo a mano lo rompe en --check, porque "
+            "el registro es la fuente y el documento el efecto",
+            "Solo la capa 4 tiene baseline, y solo encoge: una norma nueva sin "
+            "puerta ni test no se congela, se le escribe el test",
+            "No reimplementa guards: delega en vault_arch, vault_mcp_catalog y "
+            "vault_servicio para no ser una segunda fuente de verdad (AP-05)",
+        ],
+        "side_effects": ["docs/BLUEPRINT.md", "scripts/blueprint-baseline.json"],
+        "example": (
+            "python vault_blueprint.py --blueprint\n"
+            "python vault_blueprint.py --check --strict\n"
+            "python vault_blueprint.py --freeze"
+        ),
+        "related": ["vault_servicio", "vault_arch", "vault_gate", "vault_norms"],
+    },
+    "vault_servicio": {
+        "name": "vault_servicio",
+        "script": "vault_servicio.py",
+        "group": "Normas",
+        "purpose": (
+            "El pilar: declara el servicio de negocio del estandar y las "
+            "capacidades que lo realizan, y exige la trazabilidad "
+            "tool -> grupo -> capacidad -> servicio. Todo grupo del catalogo "
+            "pertenece a exactamente una capacidad y toda capacidad tiene al "
+            "menos una tool viva; si no, falla. Los group_id salen de "
+            "mapa_de_grupos(), no de una numeracion propia."
+        ),
+        "params": {
+            "list": {
+                "type": "boolean",
+                "required": False,
+                "description": "Servicio, restricciones y capacidades declaradas",
+                "validators": [],
+            },
+            "trace": {
+                "type": "boolean",
+                "required": False,
+                "description": "Una fila por tool: grupo, capacidad y servicio",
+                "validators": [],
+            },
+            "check": {
+                "type": "boolean",
+                "required": False,
+                "description": "Trazabilidad exigida: grupos huerfanos, capacidades vacias",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit 1 si la trazabilidad tiene un eslabon roto",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "Sin baseline: se mide cero al declararla porque los 37 grupos se "
+            "clasifican en la misma tanda. Una baseline permitiria anadir un "
+            "grupo sin decidir a que sirve, que es el vacio que cierra",
+            "Un grupo huerfano no se arregla ampliando una capacidad al azar",
+            "Los group_id se derivan de mapa_de_grupos(): no hay numeracion propia",
+        ],
+        "side_effects": [],
+        "example": (
+            "python vault_servicio.py --list\n"
+            "python vault_servicio.py --trace\n"
+            "python vault_servicio.py --check --strict"
+        ),
+        "related": ["vault_mcp_catalog", "vault_arch", "vault_gate"],
+    },
     "vault_blame_audit": {
         "name": "vault_blame_audit",
         "script": "vault_blame_audit.py",
@@ -3483,6 +3601,8 @@ GROUPS: Dict[str, List[str]] = {
         "vault_noop_audit",
         "vault_smoke",
         "vault_voice",
+        "vault_servicio",
+        "vault_blueprint",
     ],
     "Producción/SRE": ["vault_incident_save", "vault_slo_save"],
     "Release": ["vault_release_save"],

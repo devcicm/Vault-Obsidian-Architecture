@@ -85,6 +85,41 @@ def _comando_documentado(script: str) -> list:
     pytest.fail(f"CLAUDE.md ya no documenta ningún comando para {script}")
 
 
+def test_el_documento_de_comandos_que_el_estandar_genera_esta_en_el_alcance():
+    """v40.4 midió los docs escritos a mano, no la copia que el toolkit reparte.
+
+    `vault_section_index` escribe `<vault>/00_System/vault-commands.md` en **cada
+    vault que el estándar crea**, y ahí publicaba `vault_restore.py --name`, un
+    flag que la tool no declara. El mismo defecto que este fichero cierra, en el
+    único sitio donde no cuesta un turno de agente sino todos los turnos de todos
+    los vaults creados desde entonces.
+    """
+    assert "vault-sandbox/00_System/vault-commands.md" in vds.DOCS_CON_COMANDOS
+    assert (REPO_ROOT / "vault-sandbox/00_System/vault-commands.md").exists()
+
+
+def test_el_generador_no_escribe_un_flag_que_su_tool_rechaza():
+    """Contra la fuente, no contra la copia.
+
+    Tener el documento generado dentro de `DOCS_CON_COMANDOS` solo muerde si
+    alguien regenera el fichero del sandbox. El defecto vive en el literal del
+    generador, así que es ahí donde se mide: un `--flag` nuevo en esa cadena
+    tiene que fallar el día que se escribe, no el día que se copia.
+    """
+    fuente = (REPO_ROOT / "scripts" / "vault_section_index.py").read_text(
+        encoding="utf-8"
+    )
+    revisados = 0
+    for m in vds.RE_COMANDO.finditer(fuente):
+        script = REPO_ROOT / m.group(1)
+        assert script.exists(), f"el generador publica {m.group(1)}, que no existe"
+        declarados = vds._flags_declarados(script)
+        for flag in vds.RE_FLAG_USADO.findall(m.group(2)):
+            assert flag in declarados, f"{m.group(1)} no acepta {flag}"
+        revisados += 1
+    assert revisados, "el generador ya no publica comandos; este test sobra"
+
+
 def test_el_audit_publica_la_lectura_que_discrimina():
     """El comando de salud tiene que devolver la lectura nueva, no solo el score.
 

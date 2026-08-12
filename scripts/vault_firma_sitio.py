@@ -146,9 +146,20 @@ def escribir_baseline(
         "description": descripcion,
         "sites": sorted(sitios, key=lambda s: s["firma"]),
     }
-    v1 = datos_previos.get("sites_v1_superseded") or [
-        s for s in datos_previos.get("sites", []) if isinstance(s, str)
-    ]
+    # El segundo `--freeze` es el que destruía la anotación. En la primera
+    # llamada `sites_v1_superseded` no existe y `v1` sale de los strings de la
+    # baseline v1; en la segunda ya es el **dict** anotado, y `sorted(v1)`
+    # devolvía sus cuatro claves —`reason`, `since`, `sites`, `superseded_by`—
+    # como si fueran los 86 sitios migrados. La no-derogación aguantaba una
+    # llamada y se perdía en la siguiente, en silencio y dentro del código
+    # escrito para conservarla.
+    previo = datos_previos.get("sites_v1_superseded")
+    if isinstance(previo, dict):
+        v1 = [s for s in previo.get("sites", []) if isinstance(s, str)]
+    elif isinstance(previo, list):
+        v1 = [s for s in previo if isinstance(s, str)]
+    else:
+        v1 = [s for s in datos_previos.get("sites", []) if isinstance(s, str)]
     if v1:
         salida["sites_v1_superseded"] = {
             "superseded_by": "sites[].firma",
