@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.9 — 2026-08-12  
+**Versión:** v40.10 — 2026-08-12  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -3501,7 +3501,7 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **66 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **67 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -4993,7 +4993,7 @@ Dos causas, y la segunda es la incómoda:
 
 1. **El audit no lo ejecuta nadie.** En las **1.356 ejecuciones de tools
    registradas** en los `.tool-trace.json` de ese parque, `vault_norms` no
-   aparece **ni una vez**. 41 de las 99 tools del catálogo no se han ejecutado
+   aparece **ni una vez**. 41 de las 100 tools del catálogo no se han ejecutado
    jamás. Los agentes escriben; no gobiernan. Un enforcement que depende de que
    alguien se acuerde de invocarlo es enforcement en el papel.
 2. **Los valores no canónicos los escribía el propio estándar.** El más
@@ -5602,7 +5602,7 @@ de envelope con su contrato de `00_System/tool-spec.json`:
 Y la divergencia peor no era de forma sino de efecto: `jsNativeGraph` no tiene un
 solo `writeFile`. Un agente llamaba `vault_graph` por MCP, recibía `ok: true`, y
 el grafo se quedaba sin regenerar — **AP-37 y AP-47 servidos a la vez por el único
-camino que un agente real usa**. `vault_smoke` recorre las 99 tools del catálogo,
+camino que un agente real usa**. `vault_smoke` recorre las 100 tools del catálogo,
 pero ejecuta el `.py`: probaba exactamente la implementación que el agente no toca.
 
 **Prevención:** backend nativo solo para lo que **no tiene** implementación en
@@ -6104,6 +6104,62 @@ trazas entraba en el ledger de AP-37, así que el indicador de trabajo **subía
 con el número de errores registrados**, que es justo lo contrario de lo que
 mide. La telemetría se declara en `vault_io._NO_ES_TRABAJO` y no cuenta;
 escribirla sigue ocurriendo, solo deja de contarse como trabajo sobre el vault.
+
+---
+
+### AP-55 — El catálogo de normas se certifica a sí mismo
+
+**Enforcement:** `guard+audit` · **Severidad:** high · **Introducido:** v40.10
+
+**Síntoma.** El catálogo publica, norma a norma, qué tools la hacen cumplir y
+cuáles la detectan. Los dos campos se escriben a mano. Nada los cruza con lo que
+las tools hacen, así que la cobertura publicada es una promesa: se lee como un
+hecho verificado y no lo es.
+
+Lo caro no es la lista. Es el guard. `vault_voice.coverage()` existe justo para
+detectar normas mudas, y comprueba que una norma tenga `tools_enforcing` o
+`tools_detecting` **leyendo `tools_enforcing` y `tools_detecting`**. Verifica el
+catálogo contra el catálogo. Da verde sobre las 47 afirmaciones que ningún módulo
+respalda, y no porque falle: porque es estructuralmente incapaz de verlas.
+
+Es AP-44 cometido dentro del guard de AP-43, y es la tercera vez que el mismo
+error aparece en tres sitios distintos —el test de cruces de v40.8, el cero de
+AP-52 medido sobre un subconjunto en v40.9, y este—. El patrón que los une: **el
+criterio de verificación salía del propio objeto verificado.**
+
+**La forma general.** Dos registros canónicos que hablan del mismo hecho no
+pueden contradecirse sin que algo falle. Medido en v40.10:
+
+- **54 valores de `tools_*` que no resolvían.** `"vault_norms --audit"` mezcla la
+  tool con su flag; ningún consumidor puede buscarlo en `mapa_de_grupos()`. El
+  flag no es parte de la identidad de la tool y se ha retirado.
+- **AP-22 declarada `critical`** mientras `vault_audit` la penalizaba con 2
+  puntos por unidad y tope 5, frente a los 5 y tope 15 de AP-24, que el catálogo
+  llamaba `high`. Seis versiones con los dos registros invertidos. Manda el que
+  se ejecuta (regla 3): AP-22 pasa a `medium`.
+- **47 afirmaciones de cobertura sin traza.** Ninguna línea del módulo nombrado
+  menciona la norma que dice aplicar. `AP-05` —severidad `critical`— nombra
+  `vault_graph_inspect` como detector, y esa tool no la menciona en ninguna parte.
+
+**Qué mide el guard, y qué no.** `vault_norms_coherence --check --strict` cruza
+el catálogo con el código y con `vault_audit.PENALIZACIONES`. La traza **no
+demuestra enforcement**, y no se presenta como si lo hiciera: `vault_write`
+podría rechazar AP-12 sin escribir nunca la cadena `"AP-12"`. Demuestra lo
+contrario, que es lo útil — si el código no nombra la norma en ninguna parte,
+nadie puede seguir la afirmación hasta el sitio que la cumple. Un guard que
+prometiera medir enforcement real sería justo la afirmación no falsable que
+AP-37 persigue.
+
+Las 47 entran en baseline que solo puede encoger. Se saldan de dos formas
+honestas: que el código nombre la norma en el sitio que la aplica, o que el
+catálogo deje de afirmar una cobertura que no tiene. Ampliar la baseline es la
+tercera y no lo es.
+
+**Distinguida de AP-44.** AP-44 se comete al verificar: la tool mide con su
+propia normalización y queda ciega a su error. AP-55 está en el dato antes de que
+nadie verifique: dos registros canónicos afirman cosas distintas sobre el mismo
+hecho. Se pueden dar por separado, y en v40.10 se dieron juntos — que es
+precisamente por lo que conviene tenerlos separados por escrito.
 
 ---
 
@@ -6644,6 +6700,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.10 | 2026-08-12 | Dos ejes que nadie había separado, y un catálogo que se certificaba a sí mismo. **AP-55**: `NORM_CATALOG` declara a mano qué tools aplican y detectan cada norma, y el guard que existía para vigilarlo —`vault_voice.coverage()`, el guard de AP-43— comprobaba esos dos campos **leyéndolos**. Verifica el catálogo contra el catálogo, así que daba verde sobre 47 afirmaciones que ningún módulo respalda y era estructuralmente incapaz de verlas: AP-44 cometido dentro de un guard, por tercera vez en tres sitios distintos. `vault_norms_coherence` lo cruza con el código y con `vault_audit.PENALIZACIONES`, y destapó 54 valores de `tools_*` que mezclaban la tool con su flag y no resolvían para ningún consumidor, y AP-22 declarada `critical` mientras el audit la penalizaba por debajo de una `high` — seis versiones con los dos registros canónicos invertidos. Manda el que se ejecuta. En paralelo, el registro `NATURALEZAS` separa por **tool** lo que `CAPACIDADES` solo podía decir por grupo: construcción, documentación, custodia, consulta y meta-estándar, porque la mezcla ocurría dentro de los grupos —el grupo 1 tenía `vault_write` junto a `vault_move`, que decide dónde vive una nota— y forzarlo a dos categorías habría exigido afirmar que `vault_backup` construye |
 | v40.9 | 2026-08-12 | El pilar y el plano, y el cero que estaba medido sobre un subconjunto. Se declara el **servicio** (`vault_servicio`) y sus capacidades, y la medida corrigió al plan: no son dos ejes sino **tres** — el grupo 35 gobierna *el estándar*, no la memoria documental de nadie, y sus 14 tools se venían contando como si sirvieran al vault del usuario. Encima de eso, `vault_blueprint` genera `docs/BLUEPRINT.md` atando once registros canónicos que no tenían nada que los uniera, con la capa norma → puerta → test naciendo con 16 normas sin cobertura y baseline que solo encoge. El defecto de fondo era de **alcance**: siete guards hacían su propio `glob("vault_*.py")` y publicaban ceros que solo valían dentro de ese glob. Con un alcance único y declarado, AP-52 pasa de 0 a 21 sitios reales —doce en `cli/`, que es justo donde el consumidor lee el error, convertidos a `emit_error`— y el detector de cruces, que solo miraba `ast.ImportFrom`, pasa de 0 a 16: `import X` seguido de `X._privado` era invisible, y el test que escribí en v40.8 pasaba porque el guard no podía ver lo que lo falsificaba. Además el generador de `vault-commands.md` publicaba `vault_restore.py --name`, un flag inexistente, en cada vault que el estándar crea, y `escribir_baseline` destruía la lista v1 anotada en el segundo `--freeze` |
 | v40.8 | 2026-08-12 | La baseline de cruces fuera de puerto, de 47 a **0**, distinguiendo lo que nunca fue deuda de lo que sí: ~40 eran puertos que el código ya usaba y el registro no nombraba —doce `*_save` entrando por `status_frontmatter_lines` no son doce fugas—, y 5 eran cruces reales, cuatro de ellos un símbolo privado atravesando un contexto acotado. Antes de declarar nada se cerró el agujero que habría convertido el ejercicio en un blanqueo: un puerto ya no puede nombrar un símbolo que empiece por `_`, porque si no bastaba con escribir `vault_norms:_NORM_BY_CODE` en el registro para que la deuda desapareciera sin arreglar nada. Además `off_port_total` pasa a contarse por clave como su propia baseline —publicaba 48 junto a 47 sin que hubiera regresión— y el bootstrap del tool-spec deja de alimentarse de un derivado de su propia salida |
 | v40.7 | 2026-08-08 | Terminación del recorrido de grafos convertida en invariante comprobado al importar (`peso × HOP_DECAY ≤ 1`), medido en el punto exacto de vuelco: peso 1,6 visita 59 nodos, 1,7 pasa a 605 y 2,0 a más de 3,6 millones; el `RecursionError` de PyYAML ante un frontmatter con ~500 niveles de anidamiento deja de matar la auditoría entera y se contiene en la nota que lo trae; **AP-53** — el changelog publicaba 5 fechas que el commit citado desmentía, y `vault_changelog_check` lo convierte en la undécima puerta con `--fijar-hash` para el paso que se hacía a mano; **AP-54** — `file_lock` no era reentrante y un hilo se bloqueaba contra sí mismo (26 tomas, 13 fallidas, 65,14 s), pero el defecto era que al fallar el lock se escribía igual, sin sincronizar, encima de quien sí lo tenía |
@@ -6972,6 +7029,85 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v40.10 — 2026-08-12 `git: pending`
+
+**El catálogo se certificaba a sí mismo, y dos ejes vivían dentro de uno.**
+
+`NORM_CATALOG` publica, norma a norma, qué tools la hacen cumplir y cuáles la
+detectan. Los dos campos se escriben a mano. Nada los cruzaba con lo que las
+tools hacen, así que la cobertura publicada se leía como un hecho verificado sin
+serlo.
+
+Lo caro no era la lista. `vault_voice.coverage()` existe justo para detectar
+normas mudas, y comprueba que una norma tenga `tools_enforcing` o
+`tools_detecting` **leyendo `tools_enforcing` y `tools_detecting`**. Verifica el
+catálogo contra el catálogo: daba verde sobre las 47 afirmaciones que ningún
+módulo respalda, y no por un fallo suyo sino porque es estructuralmente incapaz
+de verlas. Es AP-44 cometido dentro del guard de AP-43, y es la **tercera** vez
+que el mismo error aparece en tres sitios distintos —el test de cruces de v40.8,
+el cero de AP-52 medido sobre un subconjunto en v40.9, y este—. El patrón que los
+une está ahora escrito como norma: el criterio de verificación salía del propio
+objeto verificado.
+
+`vault_norms_coherence` (puerta 14) lo cruza con el código y con
+`vault_audit.PENALIZACIONES`. Cinco medidas; cuatro nacieron en cero después de
+corregir lo que destaparon:
+
+- **54 valores de `tools_*` que no resolvían.** `"vault_norms --audit"` mezcla la
+  tool con su flag; ningún consumidor puede buscar eso en `mapa_de_grupos()`. El
+  flag no es parte de la identidad de la tool y se ha retirado. Quedan siete
+  valores que no son tools y no por error —`vault_io.atomic_write_text`,
+  `vault_io.assert_within_vault`, `vault_errors`, `vault_mcp_catalog`—: son los
+  sitios donde AP-46, AP-36 y AP-43 se cumplen de verdad. Se verifican y se
+  publican aparte, porque obligarles a nombrar una tool solo conseguiría una
+  afirmación que resuelve y es falsa.
+- **AP-22 declarada `critical`** mientras `vault_audit` la penalizaba con 2
+  puntos por unidad y tope 5, frente a los 5 y tope 15 de AP-24, que el catálogo
+  llamaba `high`. Seis versiones con los dos registros canónicos invertidos.
+  Manda el que se ejecuta (regla 3): AP-22 pasa a `medium`.
+- **47 afirmaciones de cobertura sin traza.** Ninguna línea del módulo nombrado
+  menciona la norma que dice aplicar. `AP-05` —`critical`— nombra
+  `vault_graph_inspect` como detector, y esa tool no la menciona en ninguna
+  parte. Entran en baseline que solo encoge.
+
+La traza **no demuestra enforcement**, y el guard no lo pretende: `vault_write`
+podría rechazar AP-12 sin escribir nunca la cadena `"AP-12"`. Demuestra lo
+contrario, que es lo verificable — si el código no nombra la norma en ninguna
+parte, nadie puede seguir la afirmación hasta el sitio que la cumple. Prometer
+más habría sido justo la afirmación no falsable que AP-37 persigue.
+
+**Lo que no convergió, dicho en voz alta.** C5 iba a detectar por su cuenta qué
+dos normas describen el mismo defecto. Tres borradores —dos códigos en el mismo
+módulo, luego en la misma función, luego etiquetando registros de la misma
+forma— devolvieron decenas de pares de `vault_audit` y `vault_write` consigo
+mismos: son los orquestadores, acumulan todas las normas del informe porque lo
+arman entero, no porque duden entre dos. C5 quedó verificando que la distinción
+sea **recíproca** una vez que alguien la declara, que es poco y es cierto. Los
+borradores quedan en el módulo sin llamar, como registro de lo intentado.
+
+**Dos ejes, dos preguntas distintas.** `CAPACIDADES` responde «¿a qué sirve este
+grupo?» y se declara por grupo. No alcanza para «¿sobre qué actúa esta tool?»,
+porque la mezcla ocurre *dentro* de los grupos: el grupo 1 tiene `vault_write`
+junto a `vault_read`, `vault_search` y `vault_move`, y solo el último decide
+dónde vive una nota. El registro `NATURALEZAS` clasifica por **tool**: 13 de
+construcción, 34 de documentación, 21 de custodia, 16 de consulta y 15 de
+meta-estándar. Cinco y no dos porque forzar 99 tools a construcción/documentación
+exigiría afirmar que `vault_backup` construye y que `vault_read` documenta — la
+misma clase de mentira que la medida desmintió en v40.9. El único punto donde los
+dos ejes se tocan (`meta_estandar` ⟺ `gobernanza_del_estandar`) es el único donde
+uno puede desmentir al otro, y una puerta falla si discrepan.
+
+**De regalo, los tests encontraron dos defectos en el guard nuevo.**
+`--freeze` construía su negativa con `emit_error(..., new_claims=…)`, un kwarg
+que `emit_error` no acepta: la operación peligrosa **reventaba con `TypeError`
+justo en el camino de frenar**. Y `scan_claims()` tenía cuerpo propio que ya
+había divergido de `scan()` —no contemplaba los enforcers que no son tools—, así
+que la baseline se congelaba sobre un conjunto distinto del que `--check`
+publica. Dos lectores del mismo hecho, AP-05, dentro del guard escrito para
+perseguir esa clase de cosa.
 
 ---
 

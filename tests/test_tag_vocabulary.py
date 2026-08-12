@@ -190,7 +190,7 @@ def test_ap39_esta_en_el_catalogo_con_enforcement_real():
 
 def test_ap39_declara_las_tools_que_lo_detectan():
     norma = next(n for n in vault_norms.NORM_CATALOG if n["code"] == "AP-39")
-    assert "vault_tags --audit" in norma["tools_detecting"]
+    assert "vault_tags" in norma["tools_detecting"]
 
 
 # ── El camino de escritura, que es donde estaba el defecto ───────────────────

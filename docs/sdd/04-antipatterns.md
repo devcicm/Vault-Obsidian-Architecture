@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
-> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-54 más
-> las familias PAT, SP y CN. Por familia: AP 54, CN 3, PAT 6, SP 3.
-> Bilingual document. Full norm catalog: antipatterns AP-01..AP-54 plus the PAT,
-> SP and CN families. By family: AP 54, CN 3, PAT 6, SP 3.
+> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-55 más
+> las familias PAT, SP y CN. Por familia: AP 55, CN 3, PAT 6, SP 3.
+> Bilingual document. Full norm catalog: antipatterns AP-01..AP-55 plus the PAT,
+> SP and CN families. By family: AP 55, CN 3, PAT 6, SP 3.
 
 ---
 
 ## ES
 
-Total de normas registradas: 66 (AP 54, CN 3, PAT 6, SP 3)
+Total de normas registradas: 67 (AP 55, CN 3, PAT 6, SP 3)
 
 ### AP-01: Documentación alucinada
 
@@ -65,7 +65,7 @@ El mismo dato (IP, URL, versión, configuración) aparece en múltiples notas co
 
 - **Severidad:** low
 - **Enforcement:** audit
-- **Detectado por:** vault_norms --audit
+- **Detectado por:** vault_norms
 
 Archivos de template (SLOs, métricas, alertas, ADRs) que existen en el vault pero nunca se han instanciado con datos reales.
 
@@ -75,7 +75,7 @@ Archivos de template (SLOs, métricas, alertas, ADRs) que existen en el vault pe
 
 - **Severidad:** medium
 - **Enforcement:** audit
-- **Detectado por:** vault_norms --audit
+- **Detectado por:** vault_norms
 
 ADRs (Architecture Decision Records) sin secciones Contexto, Opciones evaluadas y Consecuencias. Un ADR sin estas secciones no aporta valor de auditoría.
 
@@ -95,7 +95,7 @@ Notas que mencionan versiones específicas de librerías, APIs o protocolos que 
 
 - **Severidad:** medium
 - **Enforcement:** audit
-- **Detectado por:** vault_norms --audit
+- **Detectado por:** vault_norms
 
 Procedimientos operativos guardados en carpetas genéricas (07_Knowledge/, 01_Projects/) en lugar de 06_Runbooks/. Dificulta la localización en incidentes.
 
@@ -105,7 +105,7 @@ Procedimientos operativos guardados en carpetas genéricas (07_Knowledge/, 01_Pr
 
 - **Severidad:** high
 - **Enforcement:** audit
-- **Detectado por:** vault_norms --audit, vault_migrate_rollback
+- **Detectado por:** vault_norms, vault_migrate_rollback
 
 Ejecutar vault_migrate_docs sin tener vault_migrate_rollback disponible o sin snapshot previo. Si la migración introduce errores, no hay manera de revertir.
 
@@ -155,7 +155,7 @@ Timestamps solo con fecha (2026-05-07), con '...' literal, sin zona horaria o en
 
 - **Severidad:** high
 - **Enforcement:** audit
-- **Detectado por:** vault_norms --audit
+- **Detectado por:** vault_norms
 
 Archivos .md colocados directamente en vault-{nombre}/ en lugar de en secciones numeradas. vault_graph parsea sus [[wiki-links]] como broken links reales del proyecto.
 
@@ -195,7 +195,7 @@ Mismo contenido byte-idéntico (MD5) en carpetas distintas. Penalización vault_
 
 - **Severidad:** medium
 - **Enforcement:** audit
-- **Detectado por:** vault_norms --audit
+- **Detectado por:** vault_norms
 
 Índices de sección creados manualmente, duplicando lo que vault_section_index genera automáticamente. Los índices manuales rotan en AP-02 con el tiempo.
 
@@ -221,15 +221,15 @@ Nota que pasa el content gate de 3 líneas porque tiene bullets, pero >50% de lo
 
 **Prevención:** Siempre [[stem]] o [[stem|título visible]]. vault_section_index genera solo [[stem|título]] desde v25.
 
-### AP-22: Bracket sanity -- corchetes desbalanceados o vacíos
+### AP-22: Wiki-link vacío -- [[]] sin destino
 
-- **Severidad:** critical
+- **Severidad:** medium
 - **Enforcement:** guard+audit
-- **Detectado por:** vault_audit
+- **Detectado por:** vault_audit, vault_fix_brackets
 
-Corchetes [[ sin ]] matching, o [[]] vacíos. Se detecta fuera de bloques de código. vault_write bloquea (hard stop). vault_write también advierte (non-blocking) si [[target]] no existe: ghost_links[].
+Wiki-link vacío: `[[]]` sin destino, fuera de bloques de código. No hay información que perder, así que la reparación es eliminarlo. vault_write bloquea (hard stop). vault_write también advierte (non-blocking) si [[target]] no existe: ghost_links[].
 
-**Prevención:** Cada [[ debe tener su ]]. Nunca escribir [[]] vacíos. Verificar que el target exista antes de linkar.
+**Prevención:** Nunca escribir [[]] vacíos. Verificar que el target exista antes de linkar.
 
 ### AP-23: Note complexity ceiling -- nota demasiado larga
 
@@ -365,7 +365,7 @@ El vault mantiene tres sistemas de relaciones en silos aislados: (a) wiki-links 
 
 - **Severidad:** critical
 - **Enforcement:** guard+audit
-- **Detectado por:** vault_norms --audit
+- **Detectado por:** vault_norms
 
 Toda operación de tooling debe: (1) escribir ÚNICAMENTE dentro del vault root (backups, traces, locks, stubs, logs incluidos); (2) ser idempotente -- ejecutarla dos veces no duplica artefactos ni carpetas; (3) dejar sus artefactos indexados o en ubicaciones registradas (vault_registry) para rastreabilidad. Casos históricos: vault-backups escrito en el abuelo del repo, 00_System/99_Index generados fuera del vault por detección de root defectuosa, .bak junto a nodos de contenido.
 
@@ -385,7 +385,7 @@ Una tool con side effects declarados devuelve ok: true sin exponer ningún campo
 
 - **Severidad:** high
 - **Enforcement:** guard+audit
-- **Detectado por:** vault_norms --audit
+- **Detectado por:** vault_norms
 
 Un campo con vocabulario cerrado se acepta tal cual en la escritura y se comprueba en un audit posterior. El audit no lo ejecuta nadie -- en 1.356 ejecuciones registradas del parque real, `vault_norms` no aparece ni una vez -- así que el vocabulario no gobierna: solo documenta una intención. Agravante: que varias tools publiquen vocabularios distintos para el mismo campo (AP-05 aplicado al dato). Un campo canónico se normaliza en el punto de escritura y rechaza lo que no pueda derivar; los ejes de dominio legítimos (resultado de un test, fase de un incidente) van a su propio campo, no compiten por `status`.
 
@@ -395,7 +395,7 @@ Un campo con vocabulario cerrado se acepta tal cual en la escritura y se comprue
 
 - **Severidad:** medium
 - **Enforcement:** guard+audit
-- **Detectado por:** vault_tags --audit, vault_norms --audit
+- **Detectado por:** vault_tags, vault_norms
 
 Un campo con vocabulario abierto (tags) admite términos nuevos sin dejar constancia de quién los introdujo ni cuándo. Sin registro no hay continuidad: cada sesión reinventa las palabras de la anterior, y el vocabulario crece sin converger -- 1.180 términos para 6.358 usos, el 45% usado una sola vez. A diferencia de AP-38, la respuesta correcta NO es rechazar: un vocabulario abierto que rechaza empuja a omitir el campo, y entonces lo que se incumple es AP-26. Lo que hay que cerrar es el olvido, no la entrada.
 
@@ -405,7 +405,7 @@ Un campo con vocabulario abierto (tags) admite términos nuevos sin dejar consta
 
 - **Severidad:** high
 - **Enforcement:** guard+audit
-- **Detectado por:** vault_mcp_catalog --check-params, vault_norms --audit
+- **Detectado por:** vault_mcp_catalog, vault_norms
 
 Una tool publica en su catálogo parámetros que su propio argparse no acepta. La tool aparece en tools/list, se puede invocar, y falla siempre con 'unrecognized arguments'. Medido en v39: 45 de 82 tools conciliables publicaban al menos un param inexistente -- más de la mitad de la superficie MCP era inalcanzable sin que nada lo señalara, porque el guard de sincronía comparaba el JSON contra el Python: dos copias de la misma equivocación coinciden perfectamente.
 
@@ -415,7 +415,7 @@ Una tool publica en su catálogo parámetros que su propio argparse no acepta. L
 
 - **Severidad:** high
 - **Enforcement:** guard+audit
-- **Detectado por:** vault_norms --audit
+- **Detectado por:** vault_norms
 
 El estándar declara STATUS_TRANSITIONS --las transiciones válidas del ciclo de vida de una nota-- y no las recorre nadie: su único consumidor era su propio test de coherencia. Un estado que no controla su transición es una etiqueta, no un ciclo de vida: una nota 'archived' podía volver a 'draft', o saltar de 'planned' a 'verified' sin pasar por revisión, y ningún guard lo veía. Es la misma forma del fallo histórico del estándar --declarar sin ejecutar-- con la agravante de que existía un test en verde que verificaba que el grafo estaba bien dibujado, no que alguien lo recorriera.
 
@@ -425,7 +425,7 @@ El estándar declara STATUS_TRANSITIONS --las transiciones válidas del ciclo de
 
 - **Severidad:** high
 - **Enforcement:** guard+audit
-- **Detectado por:** vault_smoke --check, vault_norms --audit
+- **Detectado por:** vault_smoke, vault_norms
 
 Una tool se publica en el catálogo MCP porque responde a `--help` y porque su entrada existe. `--help` demuestra que el argparse se construye: no que el módulo importe sus dependencias, ni que el ejemplo documentado sea aceptado por la CLI, ni que la salida sea el JSON que el contrato promete. La primera medición dio 41 de 87 tools cuyo ejemplo documentado no llegaba a emitir un JSON con `ok` --36 de ellas porque el ejemplo del catálogo usaba flags que la CLI rechazaba, exactamente el defecto de AP-40 trasladado a la superficie de documentación.
 
@@ -435,7 +435,7 @@ Una tool se publica en el catálogo MCP porque responde a `--help` y porque su e
 
 - **Severidad:** high
 - **Enforcement:** guard+audit
-- **Detectado por:** vault_voice --coverage, vault_norms --audit
+- **Detectado por:** vault_voice, vault_norms
 
 El catálogo de normas está completo, versionado y con guards, pero el agente que documenta el vault no lo tiene delante mientras trabaja: se entera de que una norma existe cuando la incumple --y solo si esa norma es una de las 14 que previenen, no una de las 33 que se limitan a detectar en un audit que puede no correrse nunca. El refuerzo llega tarde, fuera de contexto o no llega. Una norma que el agente no ve en el momento de escribir no gobierna la escritura: gobierna el post-mortem.
 
@@ -445,7 +445,7 @@ El catálogo de normas está completo, versionado y con guards, pero el agente q
 
 - **Severidad:** critical
 - **Enforcement:** guard+audit
-- **Detectado por:** vault_norms --audit, vault_audit
+- **Detectado por:** vault_norms, vault_audit
 
 Una tool escribe o mide con un criterio propio y verifica el resultado con ESE MISMO criterio, en vez de con el que usa el consumidor real --Obsidian al resolver un enlace, el parser de Mermaid al dibujar, YAML al leer un frontmatter, el audit del propio estándar al juzgar la nota que otra tool acaba de escribir. La tool queda internamente coherente y por eso mismo ciega a su propio fallo: no puede detectar el error porque lo comete en los dos lados de la comparación. Es más caro que un bug normal, porque el guard sale en verde y dirige el trabajo hacia donde no hay problema: reescribir enlaces que funcionan, 'corregir' diagramas válidos, retaguear notas ya etiquetadas.
 
@@ -455,7 +455,7 @@ Una tool escribe o mide con un criterio propio y verifica el resultado con ESE M
 
 - **Severidad:** high
 - **Enforcement:** guard+audit
-- **Detectado por:** vault_norms --audit, vault_audit
+- **Detectado por:** vault_norms, vault_audit
 
 Una nota se crea porque una sección estaba vacía, no porque hubiera algo que afirmar. Su cuerpo son encabezados y marcadores de pendiente --`_Pendiente_`, `TODO`, `-- No detectados`-- y no enlaza con nada. Sube la cobertura y baja la fiabilidad: el conteo de notas dice que la sección está cubierta, el health score la cuenta como nota real, y el siguiente lector la abre esperando contenido. Es más caro que la ausencia, porque la ausencia sí se ve: un hueco invita a llenarlo, un relleno declara que ya está hecho. El generador que la escribió creía estar documentando.
 
@@ -465,7 +465,7 @@ Una nota se crea porque una sección estaba vacía, no porque hubiera algo que a
 
 - **Severidad:** high
 - **Enforcement:** guard+audit
-- **Detectado por:** vault_norms --audit, vault_audit
+- **Detectado por:** vault_norms, vault_audit
 
 Veintiséis tools montan el frontmatter concatenando líneas y tres importan el write path canónico. Cada concatenación es un segundo autor del formato sin guard detrás: el bloque se cierra o no, `type:` está o no, la fecha lleva el formato de quien la escribió. El fallo no se ve al escribir --la tool devuelve `ok: true` porque el fichero se creó-- sino al auditar, y para entonces la nota ya es el dato. Es el mismo patrón que produjo 22 implementaciones de `slugify` y tres verdades para la lista de secciones: una fuente única declarada en la documentación y N implementaciones en el código. `vault_migrate_docs` cortaba el documento por la línea 7 y llevaba versiones publicándose así, con el bloque de frontmatter sin cerrar.
 
@@ -475,7 +475,7 @@ Veintiséis tools montan el frontmatter concatenando líneas y tres importan el 
 
 - **Severidad:** high
 - **Enforcement:** guard+audit
-- **Detectado por:** vault_norms --audit, vault_reindex --check
+- **Detectado por:** vault_norms, vault_reindex
 
 El vault es la fuente de verdad y `search-index.json` y `graph.json` son proyecciones suyas. Una escritura que no pasa por `vault_write` --un agente remoto, una tool que escribe la nota y no toca el índice, una copia a mano-- deja la proyección atrás, y a partir de ahí el agente busca sobre un mapa viejo: la nota existe y `vault_search` no la encuentra, así que la vuelve a escribir. La duplicación no es un descuido del agente, es la consecuencia lógica de un índice que miente.
 
@@ -487,7 +487,7 @@ El estándar no lleva base de datos por decisión normativa, y con consistencia 
 
 - **Severidad:** critical
 - **Enforcement:** guard+audit
-- **Detectado por:** vault_norms --audit, vault_mcp_catalog --check-contracts
+- **Detectado por:** vault_norms, vault_mcp_catalog
 
 La misma tool publicada tiene dos implementaciones y cuál se ejecuta depende de por dónde entres. No es una fachada sobre un núcleo común: son dos cuerpos de código que nadie contrasta, con un solo nombre y un solo contrato publicado -- así que el contrato describe como mucho a uno de los dos.
 
@@ -501,7 +501,7 @@ Medido en v39.5 sobre el servidor MCP: nueve tools con backend nativo en Node, s
 
 - **Severidad:** high
 - **Enforcement:** guard+audit
-- **Detectado por:** vault_norms --audit, vault_arch --check
+- **Detectado por:** vault_norms, vault_arch
 
 Un módulo deriva su ruta, su configuración o su dependencia en el momento de **importarse**, no en el de usarse. `SYSTEM_DIR = VAULT_ROOT / '00_System'` a nivel de módulo se evalúa una sola vez, cuando el intérprete carga el fichero, y a partir de ahí es una constante.
 
@@ -515,7 +515,7 @@ Medido en v40.0 por el propio guard: **0 vínculos congelados en 0 módulos**. E
 
 - **Severidad:** high
 - **Enforcement:** guard+audit
-- **Detectado por:** vault_norms --audit, vault_arch --check
+- **Detectado por:** vault_norms, vault_arch
 
 La misma **decisión** --qué valores son válidos, cuál es el default, cómo se escapa un campo-- se toma en más de un punto de uso sin que ningún registro declare quién manda. No es AP-05: aquel habla de un **dato** con dos fuentes, y se ve porque las dos copias divergen. Esto se ve cuando ya divergieron, que es tarde.
 
@@ -531,7 +531,7 @@ El dueño es la mitad que faltaba. `vault_norms.DOMAIN_STATUS_VOCABS` ya había 
 
 - **Severidad:** high
 - **Enforcement:** guard+audit
-- **Detectado por:** vault_blame_audit --check
+- **Detectado por:** vault_blame_audit
 
 Una tool falla al leer o al interpretar algo, se traga el fallo y devuelve un vacio que el llamante no puede distinguir de un resultado legitimo. El error deja de ser un error y pasa a ser un **hecho sobre el vault**: el informe que lo agregue dira que N notas no tienen aliases, y no sera cierto -- es que no se pudieron leer.
 
@@ -549,7 +549,7 @@ El propio detector estreno el fallo que persigue. La primera version midio 101 s
 
 - **Severidad:** medium
 - **Enforcement:** guard+audit
-- **Detectado por:** vault_error_contract --check
+- **Detectado por:** vault_error_contract
 
 Una tool falla, lo dice, y lo dice mal: devuelve `{"ok": false, "error": "..."}` escrito a mano en vez de pasar por `vault_errors.emit_error`. La frase es correcta; el contrato, no. El envelope del catalogo trae `error_code`, `category`, `severity`, `recovery` y `timestamp`; el escrito a mano no trae ninguno.
 
@@ -569,7 +569,7 @@ El guard mide **forma y no flujo**: un dict con `ok: False` y pinta de envelope 
 
 - **Severidad:** medium
 - **Enforcement:** guard
-- **Detectado por:** vault_changelog_check --list
+- **Detectado por:** vault_changelog_check
 
 La documentacion afirma un hecho del historial --que la version v39.0 la introdujo el commit `00731c6` el 2026-07-25-- y ese hecho vive tambien en git, que es donde de verdad existe. Una de las dos copias se escribe a mano y ninguna se contrasta con la otra, asi que la de mano se queda atras sin que nada lo note.
 
@@ -585,7 +585,7 @@ Detras hay un huevo y una gallina que conviene nombrar, porque es lo que empuja 
 
 - **Severidad:** high
 - **Enforcement:** guard
-- **Detectado por:** vault_arch --check
+- **Detectado por:** vault_arch
 
 Un bloque toma un `file_lock`, no lo consigue, y en el handler escribe de todos modos sin sincronizar. El razonamiento que lleva ahi es que perder el dato es peor que escribirlo sin lock. Es al reves, y por una razon que se ve al leer el `TimeoutError`: ese error significa que **otro lo tiene tomado ahora mismo**. La escritura del handler no es una carrera improbable, es la unica situacion en la que ese codigo llega a ejecutarse, y entra justo encima de la de quien si consiguio el lock.
 
@@ -596,6 +596,20 @@ La causa de las esperas era distinta de la norma y se corrigio aparte: `file_loc
 Omitir la escritura al fallar el lock **no** es esta norma: es la respuesta correcta, y `vault_quality_check` ya la tenia.
 
 **Prevención:** Al fallar el lock, descartar la escritura o propagar el error -- nunca escribir sin sincronizar. `vault_arch --check --strict` reporta el patron en `unsynced_writes`.
+
+### AP-55: El catálogo de normas se certifica a sí mismo
+
+- **Severidad:** high
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_norms_coherence
+
+`NORM_CATALOG` declara por norma qué tools la hacen cumplir (`tools_enforcing`) y cuáles la detectan (`tools_detecting`). Los dos campos se escriben a mano y nada los contrasta contra lo que las tools hacen: la cobertura publicada es una promesa sin verificar.
+
+Lo caro no es la lista, es el guard. `vault_voice.coverage()` existe para detectar normas mudas y comprueba que una norma tenga `tools_enforcing` o `tools_detecting` **leyendo `tools_enforcing` y `tools_detecting`**. Verifica el catálogo contra el catálogo, así que da verde sobre las 47 afirmaciones que ningún módulo respalda y es estructuralmente incapaz de verlas. Es AP-44 cometido dentro del guard de AP-43 -- la tercera vez que el criterio de verificación sale del objeto verificado, tras el test de cruces de v40.8 y el cero de AP-52 medido sobre un subconjunto en v40.9.
+
+La forma general: **dos registros canónicos que hablan del mismo hecho no pueden contradecirse sin que algo falle.** Medido en v41.0: 54 valores de `tools_*` que mezclaban la tool con su flag y ningún consumidor podía resolver; AP-22 declarada `critical` mientras `vault_audit` la penalizaba con 2 puntos por unidad frente a los 5 de AP-24, que el catálogo llamaba `high`; y 47 afirmaciones de cobertura sin una línea de código que nombre la norma. `AP-05` --`critical`-- nombra `vault_graph_inspect` como detector, y esa tool no la menciona en ninguna parte.
+
+**Prevención:** `vault_norms_coherence --check --strict` cruza el catálogo con el código y con `PENALIZACIONES`. La traza sin respaldo lleva baseline que solo puede encoger, y se salda de dos formas honestas: que el código nombre la norma en el sitio que la aplica, o que el catálogo deje de afirmar una cobertura que no tiene. Ampliar la baseline es la tercera y no lo es.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
@@ -611,7 +625,7 @@ Los archivos .md del vault deben usar kebab-case: minúsculas, palabras separada
 
 - **Severidad:** high
 - **Enforcement:** guard+audit
-- **Detectado por:** vault_section_index (guard), vault_norms --audit
+- **Detectado por:** vault_section_index, vault_norms
 
 Solo las secciones numeradas del registro canónico (vault_registry.SECTIONS, fuente de verdad única -- PAT-1) son destinos válidos para notas. Crear carpetas ad-hoc o escribir en la raíz viola este estándar (ver AP-15). NO duplicar la lista aquí: consultarla con vault_folder_registry o vault_registry.
 
@@ -621,7 +635,7 @@ Solo las secciones numeradas del registro canónico (vault_registry.SECTIONS, fu
 
 - **Severidad:** low
 - **Enforcement:** audit
-- **Detectado por:** vault_norms --audit
+- **Detectado por:** vault_norms
 
 El campo meta.status (o status en frontmatter) debe usar solo valores de vault_norms.STATUS_VOCAB (fuente única, v38 -- unifica el vocabulario CN-03 original con el ciclo de vida del spec §status): planned | draft | in-progress | reviewed | approved | implemented | verified | deprecated | obsolete | archived | stub | template. Valores fuera del vocabulario rompen filtros de vault_list y vault_audit.
 
@@ -691,7 +705,7 @@ Ejecutar vault_graph --typed al final de cada sesion productiva para generar gra
 
 - **Severidad:** critical
 - **Enforcement:** audit
-- **Detectado por:** vault_norms --audit
+- **Detectado por:** vault_norms
 
 Antes de eliminar cualquier nota del vault, el agente DEBE llamar: vault_change_log --action deleted --path <nota> --reason <motivo>. Sin este registro, la nota desaparece sin rastro auditado.
 
@@ -721,7 +735,7 @@ Antes de cualquier operación masiva (migración, rename en lote, vault_tags --r
 
 ## EN
 
-Total registered norms: 66 (AP 54, CN 3, PAT 6, SP 3)
+Total registered norms: 67 (AP 55, CN 3, PAT 6, SP 3)
 
 ### AP-01: Documentación alucinada
 
@@ -777,7 +791,7 @@ El mismo dato (IP, URL, versión, configuración) aparece en múltiples notas co
 
 - **Severity:** low
 - **Enforcement:** audit
-- **Detected by:** vault_norms --audit
+- **Detected by:** vault_norms
 
 Archivos de template (SLOs, métricas, alertas, ADRs) que existen en el vault pero nunca se han instanciado con datos reales.
 
@@ -787,7 +801,7 @@ Archivos de template (SLOs, métricas, alertas, ADRs) que existen en el vault pe
 
 - **Severity:** medium
 - **Enforcement:** audit
-- **Detected by:** vault_norms --audit
+- **Detected by:** vault_norms
 
 ADRs (Architecture Decision Records) sin secciones Contexto, Opciones evaluadas y Consecuencias. Un ADR sin estas secciones no aporta valor de auditoría.
 
@@ -807,7 +821,7 @@ Notas que mencionan versiones específicas de librerías, APIs o protocolos que 
 
 - **Severity:** medium
 - **Enforcement:** audit
-- **Detected by:** vault_norms --audit
+- **Detected by:** vault_norms
 
 Procedimientos operativos guardados en carpetas genéricas (07_Knowledge/, 01_Projects/) en lugar de 06_Runbooks/. Dificulta la localización en incidentes.
 
@@ -817,7 +831,7 @@ Procedimientos operativos guardados en carpetas genéricas (07_Knowledge/, 01_Pr
 
 - **Severity:** high
 - **Enforcement:** audit
-- **Detected by:** vault_norms --audit, vault_migrate_rollback
+- **Detected by:** vault_norms, vault_migrate_rollback
 
 Ejecutar vault_migrate_docs sin tener vault_migrate_rollback disponible o sin snapshot previo. Si la migración introduce errores, no hay manera de revertir.
 
@@ -867,7 +881,7 @@ Timestamps solo con fecha (2026-05-07), con '...' literal, sin zona horaria o en
 
 - **Severity:** high
 - **Enforcement:** audit
-- **Detected by:** vault_norms --audit
+- **Detected by:** vault_norms
 
 Archivos .md colocados directamente en vault-{nombre}/ en lugar de en secciones numeradas. vault_graph parsea sus [[wiki-links]] como broken links reales del proyecto.
 
@@ -907,7 +921,7 @@ Mismo contenido byte-idéntico (MD5) en carpetas distintas. Penalización vault_
 
 - **Severity:** medium
 - **Enforcement:** audit
-- **Detected by:** vault_norms --audit
+- **Detected by:** vault_norms
 
 Índices de sección creados manualmente, duplicando lo que vault_section_index genera automáticamente. Los índices manuales rotan en AP-02 con el tiempo.
 
@@ -933,15 +947,15 @@ Nota que pasa el content gate de 3 líneas porque tiene bullets, pero >50% de lo
 
 **Prevention:** Siempre [[stem]] o [[stem|título visible]]. vault_section_index genera solo [[stem|título]] desde v25.
 
-### AP-22: Bracket sanity -- corchetes desbalanceados o vacíos
+### AP-22: Wiki-link vacío -- [[]] sin destino
 
-- **Severity:** critical
+- **Severity:** medium
 - **Enforcement:** guard+audit
-- **Detected by:** vault_audit
+- **Detected by:** vault_audit, vault_fix_brackets
 
-Corchetes [[ sin ]] matching, o [[]] vacíos. Se detecta fuera de bloques de código. vault_write bloquea (hard stop). vault_write también advierte (non-blocking) si [[target]] no existe: ghost_links[].
+Wiki-link vacío: `[[]]` sin destino, fuera de bloques de código. No hay información que perder, así que la reparación es eliminarlo. vault_write bloquea (hard stop). vault_write también advierte (non-blocking) si [[target]] no existe: ghost_links[].
 
-**Prevention:** Cada [[ debe tener su ]]. Nunca escribir [[]] vacíos. Verificar que el target exista antes de linkar.
+**Prevention:** Nunca escribir [[]] vacíos. Verificar que el target exista antes de linkar.
 
 ### AP-23: Note complexity ceiling -- nota demasiado larga
 
@@ -1077,7 +1091,7 @@ El vault mantiene tres sistemas de relaciones en silos aislados: (a) wiki-links 
 
 - **Severity:** critical
 - **Enforcement:** guard+audit
-- **Detected by:** vault_norms --audit
+- **Detected by:** vault_norms
 
 Toda operación de tooling debe: (1) escribir ÚNICAMENTE dentro del vault root (backups, traces, locks, stubs, logs incluidos); (2) ser idempotente -- ejecutarla dos veces no duplica artefactos ni carpetas; (3) dejar sus artefactos indexados o en ubicaciones registradas (vault_registry) para rastreabilidad. Casos históricos: vault-backups escrito en el abuelo del repo, 00_System/99_Index generados fuera del vault por detección de root defectuosa, .bak junto a nodos de contenido.
 
@@ -1097,7 +1111,7 @@ Una tool con side effects declarados devuelve ok: true sin exponer ningún campo
 
 - **Severity:** high
 - **Enforcement:** guard+audit
-- **Detected by:** vault_norms --audit
+- **Detected by:** vault_norms
 
 Un campo con vocabulario cerrado se acepta tal cual en la escritura y se comprueba en un audit posterior. El audit no lo ejecuta nadie -- en 1.356 ejecuciones registradas del parque real, `vault_norms` no aparece ni una vez -- así que el vocabulario no gobierna: solo documenta una intención. Agravante: que varias tools publiquen vocabularios distintos para el mismo campo (AP-05 aplicado al dato). Un campo canónico se normaliza en el punto de escritura y rechaza lo que no pueda derivar; los ejes de dominio legítimos (resultado de un test, fase de un incidente) van a su propio campo, no compiten por `status`.
 
@@ -1107,7 +1121,7 @@ Un campo con vocabulario cerrado se acepta tal cual en la escritura y se comprue
 
 - **Severity:** medium
 - **Enforcement:** guard+audit
-- **Detected by:** vault_tags --audit, vault_norms --audit
+- **Detected by:** vault_tags, vault_norms
 
 Un campo con vocabulario abierto (tags) admite términos nuevos sin dejar constancia de quién los introdujo ni cuándo. Sin registro no hay continuidad: cada sesión reinventa las palabras de la anterior, y el vocabulario crece sin converger -- 1.180 términos para 6.358 usos, el 45% usado una sola vez. A diferencia de AP-38, la respuesta correcta NO es rechazar: un vocabulario abierto que rechaza empuja a omitir el campo, y entonces lo que se incumple es AP-26. Lo que hay que cerrar es el olvido, no la entrada.
 
@@ -1117,7 +1131,7 @@ Un campo con vocabulario abierto (tags) admite términos nuevos sin dejar consta
 
 - **Severity:** high
 - **Enforcement:** guard+audit
-- **Detected by:** vault_mcp_catalog --check-params, vault_norms --audit
+- **Detected by:** vault_mcp_catalog, vault_norms
 
 Una tool publica en su catálogo parámetros que su propio argparse no acepta. La tool aparece en tools/list, se puede invocar, y falla siempre con 'unrecognized arguments'. Medido en v39: 45 de 82 tools conciliables publicaban al menos un param inexistente -- más de la mitad de la superficie MCP era inalcanzable sin que nada lo señalara, porque el guard de sincronía comparaba el JSON contra el Python: dos copias de la misma equivocación coinciden perfectamente.
 
@@ -1127,7 +1141,7 @@ Una tool publica en su catálogo parámetros que su propio argparse no acepta. L
 
 - **Severity:** high
 - **Enforcement:** guard+audit
-- **Detected by:** vault_norms --audit
+- **Detected by:** vault_norms
 
 El estándar declara STATUS_TRANSITIONS --las transiciones válidas del ciclo de vida de una nota-- y no las recorre nadie: su único consumidor era su propio test de coherencia. Un estado que no controla su transición es una etiqueta, no un ciclo de vida: una nota 'archived' podía volver a 'draft', o saltar de 'planned' a 'verified' sin pasar por revisión, y ningún guard lo veía. Es la misma forma del fallo histórico del estándar --declarar sin ejecutar-- con la agravante de que existía un test en verde que verificaba que el grafo estaba bien dibujado, no que alguien lo recorriera.
 
@@ -1137,7 +1151,7 @@ El estándar declara STATUS_TRANSITIONS --las transiciones válidas del ciclo de
 
 - **Severity:** high
 - **Enforcement:** guard+audit
-- **Detected by:** vault_smoke --check, vault_norms --audit
+- **Detected by:** vault_smoke, vault_norms
 
 Una tool se publica en el catálogo MCP porque responde a `--help` y porque su entrada existe. `--help` demuestra que el argparse se construye: no que el módulo importe sus dependencias, ni que el ejemplo documentado sea aceptado por la CLI, ni que la salida sea el JSON que el contrato promete. La primera medición dio 41 de 87 tools cuyo ejemplo documentado no llegaba a emitir un JSON con `ok` --36 de ellas porque el ejemplo del catálogo usaba flags que la CLI rechazaba, exactamente el defecto de AP-40 trasladado a la superficie de documentación.
 
@@ -1147,7 +1161,7 @@ Una tool se publica en el catálogo MCP porque responde a `--help` y porque su e
 
 - **Severity:** high
 - **Enforcement:** guard+audit
-- **Detected by:** vault_voice --coverage, vault_norms --audit
+- **Detected by:** vault_voice, vault_norms
 
 El catálogo de normas está completo, versionado y con guards, pero el agente que documenta el vault no lo tiene delante mientras trabaja: se entera de que una norma existe cuando la incumple --y solo si esa norma es una de las 14 que previenen, no una de las 33 que se limitan a detectar en un audit que puede no correrse nunca. El refuerzo llega tarde, fuera de contexto o no llega. Una norma que el agente no ve en el momento de escribir no gobierna la escritura: gobierna el post-mortem.
 
@@ -1157,7 +1171,7 @@ El catálogo de normas está completo, versionado y con guards, pero el agente q
 
 - **Severity:** critical
 - **Enforcement:** guard+audit
-- **Detected by:** vault_norms --audit, vault_audit
+- **Detected by:** vault_norms, vault_audit
 
 Una tool escribe o mide con un criterio propio y verifica el resultado con ESE MISMO criterio, en vez de con el que usa el consumidor real --Obsidian al resolver un enlace, el parser de Mermaid al dibujar, YAML al leer un frontmatter, el audit del propio estándar al juzgar la nota que otra tool acaba de escribir. La tool queda internamente coherente y por eso mismo ciega a su propio fallo: no puede detectar el error porque lo comete en los dos lados de la comparación. Es más caro que un bug normal, porque el guard sale en verde y dirige el trabajo hacia donde no hay problema: reescribir enlaces que funcionan, 'corregir' diagramas válidos, retaguear notas ya etiquetadas.
 
@@ -1167,7 +1181,7 @@ Una tool escribe o mide con un criterio propio y verifica el resultado con ESE M
 
 - **Severity:** high
 - **Enforcement:** guard+audit
-- **Detected by:** vault_norms --audit, vault_audit
+- **Detected by:** vault_norms, vault_audit
 
 Una nota se crea porque una sección estaba vacía, no porque hubiera algo que afirmar. Su cuerpo son encabezados y marcadores de pendiente --`_Pendiente_`, `TODO`, `-- No detectados`-- y no enlaza con nada. Sube la cobertura y baja la fiabilidad: el conteo de notas dice que la sección está cubierta, el health score la cuenta como nota real, y el siguiente lector la abre esperando contenido. Es más caro que la ausencia, porque la ausencia sí se ve: un hueco invita a llenarlo, un relleno declara que ya está hecho. El generador que la escribió creía estar documentando.
 
@@ -1177,7 +1191,7 @@ Una nota se crea porque una sección estaba vacía, no porque hubiera algo que a
 
 - **Severity:** high
 - **Enforcement:** guard+audit
-- **Detected by:** vault_norms --audit, vault_audit
+- **Detected by:** vault_norms, vault_audit
 
 Veintiséis tools montan el frontmatter concatenando líneas y tres importan el write path canónico. Cada concatenación es un segundo autor del formato sin guard detrás: el bloque se cierra o no, `type:` está o no, la fecha lleva el formato de quien la escribió. El fallo no se ve al escribir --la tool devuelve `ok: true` porque el fichero se creó-- sino al auditar, y para entonces la nota ya es el dato. Es el mismo patrón que produjo 22 implementaciones de `slugify` y tres verdades para la lista de secciones: una fuente única declarada en la documentación y N implementaciones en el código. `vault_migrate_docs` cortaba el documento por la línea 7 y llevaba versiones publicándose así, con el bloque de frontmatter sin cerrar.
 
@@ -1187,7 +1201,7 @@ Veintiséis tools montan el frontmatter concatenando líneas y tres importan el 
 
 - **Severity:** high
 - **Enforcement:** guard+audit
-- **Detected by:** vault_norms --audit, vault_reindex --check
+- **Detected by:** vault_norms, vault_reindex
 
 El vault es la fuente de verdad y `search-index.json` y `graph.json` son proyecciones suyas. Una escritura que no pasa por `vault_write` --un agente remoto, una tool que escribe la nota y no toca el índice, una copia a mano-- deja la proyección atrás, y a partir de ahí el agente busca sobre un mapa viejo: la nota existe y `vault_search` no la encuentra, así que la vuelve a escribir. La duplicación no es un descuido del agente, es la consecuencia lógica de un índice que miente.
 
@@ -1199,7 +1213,7 @@ El estándar no lleva base de datos por decisión normativa, y con consistencia 
 
 - **Severity:** critical
 - **Enforcement:** guard+audit
-- **Detected by:** vault_norms --audit, vault_mcp_catalog --check-contracts
+- **Detected by:** vault_norms, vault_mcp_catalog
 
 La misma tool publicada tiene dos implementaciones y cuál se ejecuta depende de por dónde entres. No es una fachada sobre un núcleo común: son dos cuerpos de código que nadie contrasta, con un solo nombre y un solo contrato publicado -- así que el contrato describe como mucho a uno de los dos.
 
@@ -1213,7 +1227,7 @@ Medido en v39.5 sobre el servidor MCP: nueve tools con backend nativo en Node, s
 
 - **Severity:** high
 - **Enforcement:** guard+audit
-- **Detected by:** vault_norms --audit, vault_arch --check
+- **Detected by:** vault_norms, vault_arch
 
 Un módulo deriva su ruta, su configuración o su dependencia en el momento de **importarse**, no en el de usarse. `SYSTEM_DIR = VAULT_ROOT / '00_System'` a nivel de módulo se evalúa una sola vez, cuando el intérprete carga el fichero, y a partir de ahí es una constante.
 
@@ -1227,7 +1241,7 @@ Medido en v40.0 por el propio guard: **0 vínculos congelados en 0 módulos**. E
 
 - **Severity:** high
 - **Enforcement:** guard+audit
-- **Detected by:** vault_norms --audit, vault_arch --check
+- **Detected by:** vault_norms, vault_arch
 
 La misma **decisión** --qué valores son válidos, cuál es el default, cómo se escapa un campo-- se toma en más de un punto de uso sin que ningún registro declare quién manda. No es AP-05: aquel habla de un **dato** con dos fuentes, y se ve porque las dos copias divergen. Esto se ve cuando ya divergieron, que es tarde.
 
@@ -1243,7 +1257,7 @@ El dueño es la mitad que faltaba. `vault_norms.DOMAIN_STATUS_VOCABS` ya había 
 
 - **Severity:** high
 - **Enforcement:** guard+audit
-- **Detected by:** vault_blame_audit --check
+- **Detected by:** vault_blame_audit
 
 Una tool falla al leer o al interpretar algo, se traga el fallo y devuelve un vacio que el llamante no puede distinguir de un resultado legitimo. El error deja de ser un error y pasa a ser un **hecho sobre el vault**: el informe que lo agregue dira que N notas no tienen aliases, y no sera cierto -- es que no se pudieron leer.
 
@@ -1261,7 +1275,7 @@ El propio detector estreno el fallo que persigue. La primera version midio 101 s
 
 - **Severity:** medium
 - **Enforcement:** guard+audit
-- **Detected by:** vault_error_contract --check
+- **Detected by:** vault_error_contract
 
 Una tool falla, lo dice, y lo dice mal: devuelve `{"ok": false, "error": "..."}` escrito a mano en vez de pasar por `vault_errors.emit_error`. La frase es correcta; el contrato, no. El envelope del catalogo trae `error_code`, `category`, `severity`, `recovery` y `timestamp`; el escrito a mano no trae ninguno.
 
@@ -1281,7 +1295,7 @@ El guard mide **forma y no flujo**: un dict con `ok: False` y pinta de envelope 
 
 - **Severity:** medium
 - **Enforcement:** guard
-- **Detected by:** vault_changelog_check --list
+- **Detected by:** vault_changelog_check
 
 La documentacion afirma un hecho del historial --que la version v39.0 la introdujo el commit `00731c6` el 2026-07-25-- y ese hecho vive tambien en git, que es donde de verdad existe. Una de las dos copias se escribe a mano y ninguna se contrasta con la otra, asi que la de mano se queda atras sin que nada lo note.
 
@@ -1297,7 +1311,7 @@ Detras hay un huevo y una gallina que conviene nombrar, porque es lo que empuja 
 
 - **Severity:** high
 - **Enforcement:** guard
-- **Detected by:** vault_arch --check
+- **Detected by:** vault_arch
 
 Un bloque toma un `file_lock`, no lo consigue, y en el handler escribe de todos modos sin sincronizar. El razonamiento que lleva ahi es que perder el dato es peor que escribirlo sin lock. Es al reves, y por una razon que se ve al leer el `TimeoutError`: ese error significa que **otro lo tiene tomado ahora mismo**. La escritura del handler no es una carrera improbable, es la unica situacion en la que ese codigo llega a ejecutarse, y entra justo encima de la de quien si consiguio el lock.
 
@@ -1308,6 +1322,20 @@ La causa de las esperas era distinta de la norma y se corrigio aparte: `file_loc
 Omitir la escritura al fallar el lock **no** es esta norma: es la respuesta correcta, y `vault_quality_check` ya la tenia.
 
 **Prevention:** Al fallar el lock, descartar la escritura o propagar el error -- nunca escribir sin sincronizar. `vault_arch --check --strict` reporta el patron en `unsynced_writes`.
+
+### AP-55: El catálogo de normas se certifica a sí mismo
+
+- **Severity:** high
+- **Enforcement:** guard+audit
+- **Detected by:** vault_norms_coherence
+
+`NORM_CATALOG` declara por norma qué tools la hacen cumplir (`tools_enforcing`) y cuáles la detectan (`tools_detecting`). Los dos campos se escriben a mano y nada los contrasta contra lo que las tools hacen: la cobertura publicada es una promesa sin verificar.
+
+Lo caro no es la lista, es el guard. `vault_voice.coverage()` existe para detectar normas mudas y comprueba que una norma tenga `tools_enforcing` o `tools_detecting` **leyendo `tools_enforcing` y `tools_detecting`**. Verifica el catálogo contra el catálogo, así que da verde sobre las 47 afirmaciones que ningún módulo respalda y es estructuralmente incapaz de verlas. Es AP-44 cometido dentro del guard de AP-43 -- la tercera vez que el criterio de verificación sale del objeto verificado, tras el test de cruces de v40.8 y el cero de AP-52 medido sobre un subconjunto en v40.9.
+
+La forma general: **dos registros canónicos que hablan del mismo hecho no pueden contradecirse sin que algo falle.** Medido en v41.0: 54 valores de `tools_*` que mezclaban la tool con su flag y ningún consumidor podía resolver; AP-22 declarada `critical` mientras `vault_audit` la penalizaba con 2 puntos por unidad frente a los 5 de AP-24, que el catálogo llamaba `high`; y 47 afirmaciones de cobertura sin una línea de código que nombre la norma. `AP-05` --`critical`-- nombra `vault_graph_inspect` como detector, y esa tool no la menciona en ninguna parte.
+
+**Prevention:** `vault_norms_coherence --check --strict` cruza el catálogo con el código y con `PENALIZACIONES`. La traza sin respaldo lleva baseline que solo puede encoger, y se salda de dos formas honestas: que el código nombre la norma en el sitio que la aplica, o que el catálogo deje de afirmar una cobertura que no tiene. Ampliar la baseline es la tercera y no lo es.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
@@ -1323,7 +1351,7 @@ Los archivos .md del vault deben usar kebab-case: minúsculas, palabras separada
 
 - **Severity:** high
 - **Enforcement:** guard+audit
-- **Detected by:** vault_section_index (guard), vault_norms --audit
+- **Detected by:** vault_section_index, vault_norms
 
 Solo las secciones numeradas del registro canónico (vault_registry.SECTIONS, fuente de verdad única -- PAT-1) son destinos válidos para notas. Crear carpetas ad-hoc o escribir en la raíz viola este estándar (ver AP-15). NO duplicar la lista aquí: consultarla con vault_folder_registry o vault_registry.
 
@@ -1333,7 +1361,7 @@ Solo las secciones numeradas del registro canónico (vault_registry.SECTIONS, fu
 
 - **Severity:** low
 - **Enforcement:** audit
-- **Detected by:** vault_norms --audit
+- **Detected by:** vault_norms
 
 El campo meta.status (o status en frontmatter) debe usar solo valores de vault_norms.STATUS_VOCAB (fuente única, v38 -- unifica el vocabulario CN-03 original con el ciclo de vida del spec §status): planned | draft | in-progress | reviewed | approved | implemented | verified | deprecated | obsolete | archived | stub | template. Valores fuera del vocabulario rompen filtros de vault_list y vault_audit.
 
@@ -1403,7 +1431,7 @@ Ejecutar vault_graph --typed al final de cada sesion productiva para generar gra
 
 - **Severity:** critical
 - **Enforcement:** audit
-- **Detected by:** vault_norms --audit
+- **Detected by:** vault_norms
 
 Antes de eliminar cualquier nota del vault, el agente DEBE llamar: vault_change_log --action deleted --path <nota> --reason <motivo>. Sin este registro, la nota desaparece sin rastro auditado.
 

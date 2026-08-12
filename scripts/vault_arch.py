@@ -202,6 +202,14 @@ CONTEXTS: dict[str, dict] = {
             "registro_de_ciclo_de_vida": "vault_norms:LIFECYCLE_REGISTRY",
             "cuerpo_sin_marcadores": "vault_norms:cuerpo_sin_marcadores",
             "norma_por_codigo": "vault_norms:norma_por_codigo",
+            # El peso de cada norma en el healthIndex. Es la otra mitad
+            # canónica de la severidad —el catálogo dice cuánto importa, esto
+            # dice cuánto cuesta— y hasta v40.10 nadie las cruzaba: AP-22
+            # llevaba seis versiones declarada `critical` y penalizada por
+            # debajo de una `high`. Se publica como puerto para que el guard de
+            # AP-55 lo lea en vez de copiarlo, que es como habría nacido la
+            # tercera fuente de verdad sobre el mismo hecho.
+            "penalizaciones": "vault_audit:PENALIZACIONES",
             "FUNDAMENTOS": "vault_fundamentals:FUNDAMENTALS",
             "validar_mermaid": "vault_mermaid_check:validate_mermaid",
             # El gancho de secretos lo llama el write path del kernel: es la
@@ -339,6 +347,7 @@ CONTEXTS: dict[str, dict] = {
             # `vault_mcp_catalog` y la trazabilidad `vault_servicio`. Un plano
             # que midiera por su cuenta sería AP-05 con formato de tabla.
             "vault_blueprint",
+            "vault_norms_coherence",
         ],
     },
 }

@@ -10,9 +10,9 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | Ruta | Qué es |
 |---|---|
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~6.000 líneas). Fuente normativa. |
-| `scripts/*.py` | ~122 scripts, 99 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
+| `scripts/*.py` | ~123 scripts, 100 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (2496 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (2532 tests). Toda norma con guard debe tener test. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
 | `vault-sandbox/` | **Único** vault de pruebas del repo. Todo runtime va aquí. |
@@ -205,6 +205,14 @@ python scripts/vault_quality_check.py --min-score 0.7
       test— es la única con baseline: nació con 16 normas sin puerta **ni** test,
       y exigir cero el primer día habría hecho nacer la puerta en rojo. Una
       norma nueva sin cobertura no se congela: se le escribe el test.
+- [ ] `python scripts/vault_norms_coherence.py --check --strict` → `ok: true` (AP-55).
+      El catálogo de normas no se contradice con el código que lo aplica ni con
+      `vault_audit.PENALIZACIONES`, que es la otra mitad canónica del mismo hecho.
+      Cinco medidas; cuatro nacen en cero. La quinta —afirmaciones de cobertura
+      que ningún módulo respalda— lleva baseline que solo encoge, y **la traza no
+      demuestra enforcement**: demuestra que la afirmación no es seguible hasta el
+      código, que es lo verificable. Se salda nombrando la norma donde se aplica o
+      retirando la cobertura; ampliar la baseline no es la tercera forma.
 - [ ] `python scripts/vault_doc_sync.py --check --strict` cubre además, desde v40.4, que
       **todo comando que la documentación publica exista y acepte sus flags**. `CLAUDE.md`
       publicaba los dos comandos de salud con `--root`, que ninguna de las dos tools

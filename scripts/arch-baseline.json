@@ -27,6 +27,8 @@
     "vault_norms -> vault_smoke",
     "vault_norms -> vault_tags",
     "vault_norms -> vault_voice",
+    "vault_norms_coherence -> vault_audit",
+    "vault_norms_coherence -> vault_norms",
     "vault_onboard -> vault_mermaid_check",
     "vault_onboard -> vault_norms",
     "vault_onboard -> vault_reindex",

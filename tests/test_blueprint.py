@@ -75,24 +75,37 @@ def test_la_capa_4_cruza_todas_las_normas_del_catalogo():
     assert {n["code"] for n in cobertura} == {n["code"] for n in norms.NORM_CATALOG}
 
 
-def test_el_nombre_de_la_tool_se_lee_aunque_lleve_parentesis():
-    """`tools_enforcing` admite 'vault_section_index (guard CN-02)'.
+def test_hoy_ningun_valor_de_tools_lleva_decoracion():
+    """La invariante que AP-55 fijó: el valor es el nombre desnudo.
 
-    Comparar la cadena entera contra el nombre del script daría cero puertas para
-    esas normas y las mandaría a la baseline sin motivo — una medida rota que
-    parece deuda.
+    Eran 54 entradas con el flag o un paréntesis pegados —`"vault_norms --audit"`,
+    `"vault_section_index (guard CN-02)"`—, y ninguna resolvía contra
+    `mapa_de_grupos()`. `vault_norms_coherence` (C1) es quien lo vigila ahora;
+    aquí se afirma desde el otro lado, el del consumidor del catálogo.
     """
-    scripts = {p["cmd"][0][:-3] for p in gate.PUERTAS}
-    con_parentesis = [
+    decorados = [
         t
         for n in norms.NORM_CATALOG
         for t in list(n.get("tools_enforcing", [])) + list(n.get("tools_detecting", []))
-        if "(" in t
+        if " " in t or "(" in t
     ]
-    assert con_parentesis, "si ya no hay entradas con paréntesis, este test sobra"
-    assert any(t.split()[0] in scripts for t in con_parentesis) or True
-    # Lo que se afirma de verdad: el parser no arrastra el paréntesis al nombre.
-    assert all(" " not in t.split()[0] for t in con_parentesis)
+    assert decorados == []
+
+
+def test_el_nombre_de_la_tool_se_lee_aunque_llegue_decorado():
+    """El parser tolera la forma vieja, aunque el catálogo ya no la use.
+
+    El catálogo está limpio, así que este test no puede leerlo para probarse: si
+    lo hiciera, mediría cero y un parser roto pasaría igual —el defecto exacto
+    que AP-55 describe—. Se le da la cadena a mano.
+    """
+    scripts_de_puerta = {p["cmd"][0][:-3] for p in gate.PUERTAS}
+    for decorado in ("vault_arch --check --strict", "vault_arch (guard CN-02)"):
+        assert decorado.split()[0] == "vault_arch"
+        assert decorado.split()[0] in scripts_de_puerta, (
+            "comparar la cadena entera daría cero puertas para esa norma y la "
+            "mandaría a la baseline sin motivo: una medida rota que parece deuda"
+        )
 
 
 # ── La baseline de la capa 4 ─────────────────────────────────────────────────

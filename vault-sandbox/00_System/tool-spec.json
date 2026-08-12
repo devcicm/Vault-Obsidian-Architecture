@@ -2168,6 +2168,48 @@
       },
       "fundamentals": []
     },
+    "vault_norms_coherence": {
+      "group": "Normas",
+      "group_id": 35,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "admitted_new",
+        "baseline_size",
+        "enforcement_incoherent",
+        "error_code",
+        "frozen",
+        "hint",
+        "indistinguishable_norms",
+        "new_untraceable",
+        "non_catalog_enforcers",
+        "norm",
+        "norms_total",
+        "ok",
+        "recovery",
+        "resolved_since_baseline",
+        "severity_vs_penalty_inverted",
+        "tool",
+        "unknown_tools",
+        "untraceable_claims_total",
+        "vault_says"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency",
+          "integrity",
+          "completeness"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F8"
+      ]
+    },
     "vault_onboard": {
       "group": "Bootstrap",
       "group_id": 31,

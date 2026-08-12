@@ -148,7 +148,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "Notas con status:template que no tienen notas derivadas con wiki-link hacia ellas.",
         "prevention": "Si un template no tiene instancias en 30 días, moverlo a 10_Migrated/ o eliminarlo.",
         "tools_enforcing": [],
-        "tools_detecting": ["vault_norms --audit"],
+        "tools_detecting": ["vault_norms"],
         "introduced_version": "v19",
     },
     {
@@ -165,7 +165,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "Notas en 03_Decisions/ sin secciones ## Contexto, ## Opciones, ## Consecuencias.",
         "prevention": "Usar vault_write con template de ADR completo. vault_audit puede extenderse para validar secciones.",
         "tools_enforcing": [],
-        "tools_detecting": ["vault_norms --audit"],
+        "tools_detecting": ["vault_norms"],
         "introduced_version": "v19",
     },
     {
@@ -199,7 +199,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "Notas con title que contiene 'runbook', 'procedure', 'how-to' fuera de 06_Runbooks/.",
         "prevention": "Todo runbook va en 06_Runbooks/{proyecto}/. vault_migrate_docs para moverlos.",
         "tools_enforcing": [],
-        "tools_detecting": ["vault_norms --audit"],
+        "tools_detecting": ["vault_norms"],
         "introduced_version": "v19",
     },
     {
@@ -216,7 +216,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "vault_migrate_docs ejecutado sin llamar vault_drift_detect --snapshot primero.",
         "prevention": "PAT-4 (phased audit): siempre snapshot → migrate → verify → rollback si falla.",
         "tools_enforcing": [],
-        "tools_detecting": ["vault_norms --audit", "vault_migrate_rollback"],
+        "tools_detecting": ["vault_norms", "vault_migrate_rollback"],
         "introduced_version": "v19",
     },
     {
@@ -304,7 +304,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "vault_graph reporta decenas de orphans y broken links falsos.",
         "prevention": "Layout correcto: vault/ y scripts/ son hermanos, nunca anidados. Solo 00_System…11_Code y 99_Index son destinos válidos.",
         "tools_enforcing": [],
-        "tools_detecting": ["vault_norms --audit"],
+        "tools_detecting": ["vault_norms"],
         "introduced_version": "v20",
     },
     {
@@ -373,7 +373,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "Múltiples index.md o README.md en una sección que no fueron generados por vault_section_index.",
         "prevention": "vault_section_index es la única herramienta para índices. No editar index.md manualmente.",
         "tools_enforcing": [],
-        "tools_detecting": ["vault_norms --audit"],
+        "tools_detecting": ["vault_norms"],
         "introduced_version": "v25",
     },
     {
@@ -413,21 +413,44 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-22",
-        "name": "Bracket sanity — corchetes desbalanceados o vacíos",
+        "name": "Wiki-link vacío — [[]] sin destino",
         "type": "antipattern",
         "category": "linking",
-        "severity": "critical",
+        # Era `critical`, y contradecía al código que la aplica. `vault_audit`
+        # pesa AP-22 con 2/unidad (tope 5) y AP-24 con 5/unidad (tope 15), y
+        # escribe al lado por qué: «AP-22 es auto-fixable; AP-24 rompe el enlace
+        # de verdad». Dos registros canónicos afirmando lo contrario sobre cuál
+        # es peor. Manda el que se ejecuta (regla 3): un `[[]]` vacío no pierde
+        # información y se elimina solo. Corregido en v40.10 junto con el guard
+        # que compara los dos órdenes (`vault_norms_coherence`, AP-55).
+        "severity": "medium",
         "enforcement": "guard+audit",
         "description": (
-            "Corchetes [[ sin ]] matching, o [[]] vacíos. "
-            "Se detecta fuera de bloques de código. "
+            "Wiki-link vacío: `[[]]` sin destino, fuera de bloques de código. No hay "
+            "información que perder, así que la reparación es eliminarlo. "
             "vault_write bloquea (hard stop). "
             "vault_write también advierte (non-blocking) si [[target]] no existe: ghost_links[]."
         ),
-        "signal": "vault_write rechaza con error_code: malformed_wikilinks. vault_audit reporta malformedWikilinks[].",
-        "prevention": "Cada [[ debe tener su ]]. Nunca escribir [[]] vacíos. Verificar que el target exista antes de linkar.",
+        "signal": "vault_write rechaza con error_code: malformed_wikilinks. vault_audit reporta malformedWikilinks[] con norm_code AP-22.",
+        "prevention": "Nunca escribir [[]] vacíos. Verificar que el target exista antes de linkar.",
         "tools_enforcing": ["vault_write"],
-        "tools_detecting": ["vault_audit"],
+        "tools_detecting": ["vault_audit", "vault_fix_brackets"],
+        # El desbalance de corchetes **no** es esta norma, es AP-24. La
+        # `description` de AP-22 lo reclamaba —«corchetes [[ sin ]] matching»—
+        # desde v34.2, cuando nació AP-24, y durante seis versiones las dos
+        # normas dijeron cubrir el mismo defecto mientras el código ya las
+        # separaba sin ambigüedad. El discriminador es observable, no una
+        # cuestión de criterio, y por eso se declara aquí en vez de explicarse.
+        "distinguido_de": {
+            "AP-24": (
+                "AP-22 es el link vacío `[[]]`: no hay destino que recuperar y la "
+                "reparación no pierde nada. AP-24 es el desbalance —apertura sin "
+                "cierre, cierre sin apertura, anidamiento—: hay un destino escrito "
+                "que el desbalance vuelve inalcanzable. `vault_audit` los separa por "
+                "`norm_code` y, cuando una nota tiene ambos, publica AP-24 como "
+                "primario."
+            )
+        },
         "introduced_version": "v29",
     },
     # ── Patrones recomendados ──────────────────────────────────────────────────
@@ -569,6 +592,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         ),
         "tools_enforcing": ["vault_write", "vault_fix_brackets"],
         "tools_detecting": ["vault_audit", "vault_fix_brackets"],
+        "distinguido_de": {
+            "AP-22": (
+                "AP-24 es el desbalance de corchetes: hay un destino escrito y el "
+                "desbalance lo vuelve inalcanzable. AP-22 es el link vacío `[[]]`, "
+                "sin destino que recuperar. AP-24 pesa más en el healthIndex (5/unidad "
+                "frente a 2) precisamente por esa diferencia."
+            )
+        },
         "introduced_version": "v34.2",
     },
     # ── Anti-patrón AP-25 ──────────────────────────────────────────────────────
@@ -878,8 +909,8 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "Artefactos de mantenimiento van a 02_Observability/maintenance/ o 00_System/. "
             "vault_norms --audit detecta artefactos sueltos y secciones sin índice."
         ),
-        "tools_enforcing": ["vault_section_index (guard CN-02)", "vault_io.assert_within_vault"],
-        "tools_detecting": ["vault_norms --audit"],
+        "tools_enforcing": ["vault_section_index", "vault_io.assert_within_vault"],
+        "tools_detecting": ["vault_norms"],
         "introduced_version": "v38",
     },
     # ── Anti-patrón AP-37 ──────────────────────────────────────────────────────
@@ -915,7 +946,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "vault_noop_audit --check compara el catálogo contra una baseline "
             "congelada: la deuda histórica no bloquea, pero NO puede crecer."
         ),
-        "tools_enforcing": ["vault_noop_audit --strict"],
+        "tools_enforcing": ["vault_noop_audit"],
         "tools_detecting": ["vault_noop_audit"],
         "introduced_version": "v39",
     },
@@ -956,8 +987,8 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "Lo que arrastraba información y no era estado se conserva en status_note: "
             "no-derogación aplicada al dato."
         ),
-        "tools_enforcing": ["vault_write", "vault_norms --audit"],
-        "tools_detecting": ["vault_norms --audit"],
+        "tools_enforcing": ["vault_write", "vault_norms"],
+        "tools_detecting": ["vault_norms"],
         "introduced_version": "v39",
     },
     # ── Anti-patrón AP-39 ──────────────────────────────────────────────────────
@@ -998,8 +1029,8 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "append-only 19_Audits/vocabulary/tag-ledger.json con agente, fecha y nota "
             "de origen. Inventar sigue siendo posible; deja de ser silencioso."
         ),
-        "tools_enforcing": ["vault_write", "vault_tags --ledger"],
-        "tools_detecting": ["vault_tags --audit", "vault_norms --audit"],
+        "tools_enforcing": ["vault_write", "vault_tags"],
+        "tools_detecting": ["vault_tags", "vault_norms"],
         "introduced_version": "v39",
     },
     {
@@ -1030,8 +1061,8 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "vault_mcp_catalog --check-params audita el JSON ya generado (que es lo "
             "que el servidor consume) contra el argparse real."
         ),
-        "tools_enforcing": ["vault_mcp_catalog --sync", "vault_mcp_catalog --check-params"],
-        "tools_detecting": ["vault_mcp_catalog --check-params", "vault_norms --audit"],
+        "tools_enforcing": ["vault_mcp_catalog"],
+        "tools_detecting": ["vault_mcp_catalog", "vault_norms"],
         "introduced_version": "v39",
     },
     {
@@ -1066,7 +1097,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "no se reescriben, porque el estado actual es un hecho."
         ),
         "tools_enforcing": ["vault_write"],
-        "tools_detecting": ["vault_norms --audit"],
+        "tools_detecting": ["vault_norms"],
         "introduced_version": "v39",
     },
     {
@@ -1100,8 +1131,8 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "tools sin invocación posible (un servicio HTTP que no retorna) se "
             "declaran en SIN_SMOKE con su motivo, nunca se omiten en silencio."
         ),
-        "tools_enforcing": ["vault_smoke --strict"],
-        "tools_detecting": ["vault_smoke --check", "vault_norms --audit"],
+        "tools_enforcing": ["vault_smoke"],
+        "tools_detecting": ["vault_smoke", "vault_norms"],
         "introduced_version": "v39",
     },
     {
@@ -1134,7 +1165,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "fijo. vault_voice --coverage nombra las normas que ninguna tool pronuncia."
         ),
         "tools_enforcing": ["vault_voice", "vault_errors"],
-        "tools_detecting": ["vault_voice --coverage", "vault_norms --audit"],
+        "tools_detecting": ["vault_voice", "vault_norms"],
         "introduced_version": "v39",
     },
     {
@@ -1177,7 +1208,19 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "supuestos, así que no puede exhibir este fallo."
         ),
         "tools_enforcing": ["vault_audit", "vault_graph_fix", "vault_mermaid_check"],
-        "tools_detecting": ["vault_norms --audit", "vault_audit"],
+        "tools_detecting": ["vault_norms", "vault_audit"],
+        "distinguido_de": {
+            "AP-55": (
+                "AP-44 se comete al verificar: la tool mide con su propia "
+                "normalización y queda ciega a su error. AP-55 está en el dato "
+                "antes de que nadie verifique: dos registros canónicos afirman "
+                "cosas distintas sobre el mismo hecho. Un catálogo puede ser "
+                "coherente y estar verificado por un guard autoconsistente "
+                "(AP-44 solo), o ser incoherente aunque el guard mire fuera "
+                "(AP-55 solo). Se dieron juntos en v40.10, que es por lo que "
+                "conviene tenerlos separados por escrito."
+            )
+        },
         "introduced_version": "v39",
     },
     {
@@ -1213,7 +1256,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "20_Quarantine) se quedan vacías hasta que ocurre el evento."
         ),
         "tools_enforcing": ["vault_onboard", "vault_write"],
-        "tools_detecting": ["vault_norms --audit", "vault_audit"],
+        "tools_detecting": ["vault_norms", "vault_audit"],
         "introduced_version": "v39",
     },
     # ── Antipatrón AP-46 ───────────────────────────────────────────────────────
@@ -1254,7 +1297,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "regex por líneas— es AP-44 aplicado al generador."
         ),
         "tools_enforcing": ["vault_io.atomic_write_text", "vault_write"],
-        "tools_detecting": ["vault_norms --audit", "vault_audit"],
+        "tools_detecting": ["vault_norms", "vault_audit"],
         "introduced_version": "v39.3",
     },
     # ── Antipatrón AP-47 ───────────────────────────────────────────────────────
@@ -1296,8 +1339,8 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "bloquear: el desfase es un estado a reconciliar, no una escritura a "
             "rechazar."
         ),
-        "tools_enforcing": ["vault_reindex --check", "vault_write"],
-        "tools_detecting": ["vault_norms --audit", "vault_reindex --check"],
+        "tools_enforcing": ["vault_reindex", "vault_write"],
+        "tools_detecting": ["vault_norms", "vault_reindex"],
         "introduced_version": "v39.3",
     },
     {
@@ -1347,8 +1390,8 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "la tool por MCP y se contrasta el envelope contra el contrato, que "
             "es el criterio del consumidor y no el propio (AP-44)."
         ),
-        "tools_enforcing": ["vault_mcp_catalog --check-contracts"],
-        "tools_detecting": ["vault_norms --audit", "vault_mcp_catalog --check-contracts"],
+        "tools_enforcing": ["vault_mcp_catalog"],
+        "tools_detecting": ["vault_norms", "vault_mcp_catalog"],
         "introduced_version": "v39.5",
     },
     {
@@ -1410,8 +1453,8 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "baseline que solo puede encoger — la deuda medida no se arregla en "
             "un commit, pero no puede crecer."
         ),
-        "tools_enforcing": ["vault_arch --check"],
-        "tools_detecting": ["vault_norms --audit", "vault_arch --check"],
+        "tools_enforcing": ["vault_arch"],
+        "tools_detecting": ["vault_norms", "vault_arch"],
         "introduced_version": "v40.0",
     },
     {
@@ -1474,8 +1517,8 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "de verdad se leían por fuera de la superficie publicada, y así "
             "nacieron las catorce copias."
         ),
-        "tools_enforcing": ["vault_arch --check"],
-        "tools_detecting": ["vault_norms --audit", "vault_arch --check"],
+        "tools_enforcing": ["vault_arch"],
+        "tools_detecting": ["vault_norms", "vault_arch"],
         "introduced_version": "v40.1",
     },
     {
@@ -1538,12 +1581,12 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "envelope con `ok: false`, que es toda la distincion que la norma "
             "sostiene."
         ),
-        "tools_enforcing": ["vault_blame_audit --check --strict"],
+        "tools_enforcing": ["vault_blame_audit"],
         # No se lista `vault_norms --audit`: ese audita el **contenido del
         # vault**, y esta norma es sobre el codigo de las tools. Declararlo
         # aqui seria una tool_detecting que no detecta nada, que es la misma
         # afirmacion no falsable que AP-37 persigue.
-        "tools_detecting": ["vault_blame_audit --check"],
+        "tools_detecting": ["vault_blame_audit"],
         "introduced_version": "v40.1",
     },
     {
@@ -1600,10 +1643,10 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "una linea; no anadirlo traslada el coste a cada consumidor, para "
             "siempre. `vault_error_contract --check --strict` mide por AST."
         ),
-        "tools_enforcing": ["vault_error_contract --check --strict"],
+        "tools_enforcing": ["vault_error_contract"],
         # Como en AP-51, no se lista `vault_norms --audit`: audita el
         # contenido del vault, y esta norma es sobre el codigo de las tools.
-        "tools_detecting": ["vault_error_contract --check"],
+        "tools_detecting": ["vault_error_contract"],
         "introduced_version": "v40.2",
     },
     {
@@ -1653,8 +1696,8 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "`pending` y orden. Y `--fijar-hash` convierte en comando el paso "
             "manual que originaba la divergencia."
         ),
-        "tools_enforcing": ["vault_changelog_check --check --strict"],
-        "tools_detecting": ["vault_changelog_check --list"],
+        "tools_enforcing": ["vault_changelog_check"],
+        "tools_detecting": ["vault_changelog_check"],
         "introduced_version": "v40.7",
     },
     {
@@ -1700,9 +1743,70 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "nunca escribir sin sincronizar. `vault_arch --check --strict` "
             "reporta el patron en `unsynced_writes`."
         ),
-        "tools_enforcing": ["vault_arch --check --strict"],
-        "tools_detecting": ["vault_arch --check"],
+        "tools_enforcing": ["vault_arch"],
+        "tools_detecting": ["vault_arch"],
         "introduced_version": "v40.7",
+    },
+    {
+        "code": "AP-55",
+        "name": "El catálogo de normas se certifica a sí mismo",
+        "type": "antipattern",
+        "category": "process",
+        "severity": "high",
+        "enforcement": "guard+audit",
+        "description": (
+            "`NORM_CATALOG` declara por norma qué tools la hacen cumplir "
+            "(`tools_enforcing`) y cuáles la detectan (`tools_detecting`). Los "
+            "dos campos se escriben a mano y nada los contrasta contra lo que "
+            "las tools hacen: la cobertura publicada es una promesa sin "
+            "verificar.\n\n"
+            "Lo caro no es la lista, es el guard. `vault_voice.coverage()` "
+            "existe para detectar normas mudas y comprueba que una norma tenga "
+            "`tools_enforcing` o `tools_detecting` **leyendo `tools_enforcing` "
+            "y `tools_detecting`**. Verifica el catálogo contra el catálogo, "
+            "así que da verde sobre las 47 afirmaciones que ningún módulo "
+            "respalda y es estructuralmente incapaz de verlas. Es AP-44 "
+            "cometido dentro del guard de AP-43 — la tercera vez que el "
+            "criterio de verificación sale del objeto verificado, tras el test "
+            "de cruces de v40.8 y el cero de AP-52 medido sobre un subconjunto "
+            "en v40.9.\n\n"
+            "La forma general: **dos registros canónicos que hablan del mismo "
+            "hecho no pueden contradecirse sin que algo falle.** Medido en "
+            "v40.10: 54 valores de `tools_*` que mezclaban la tool con su flag "
+            "y ningún consumidor podía resolver; AP-22 declarada `critical` "
+            "mientras `vault_audit` la penalizaba con 2 puntos por unidad "
+            "frente a los 5 de AP-24, que el catálogo llamaba `high`; y 47 "
+            "afirmaciones de cobertura sin una línea de código que nombre la "
+            "norma. `AP-05` —`critical`— nombra `vault_graph_inspect` como "
+            "detector, y esa tool no la menciona en ninguna parte."
+        ),
+        "signal": (
+            "Un valor de `tools_*` que no resuelve contra `mapa_de_grupos()`; "
+            "una norma cuya `severity` invierte el orden que "
+            "`vault_audit.PENALIZACIONES` aplica dentro de su misma familia; un "
+            "módulo declarado enforcer que nunca nombra el código de la norma; "
+            "un `distinguido_de` que solo declara una de las dos partes."
+        ),
+        "prevention": (
+            "`vault_norms_coherence --check --strict` cruza el catálogo con el "
+            "código y con `PENALIZACIONES`. La traza sin respaldo lleva "
+            "baseline que solo puede encoger, y se salda de dos formas "
+            "honestas: que el código nombre la norma en el sitio que la "
+            "aplica, o que el catálogo deje de afirmar una cobertura que no "
+            "tiene. Ampliar la baseline es la tercera y no lo es."
+        ),
+        "tools_enforcing": ["vault_norms_coherence"],
+        "tools_detecting": ["vault_norms_coherence"],
+        "distinguido_de": {
+            "AP-44": (
+                "AP-44 es medir con el propio criterio del objeto medido, en "
+                "cualquier tool. AP-55 es su caso en el registro normativo: dos "
+                "registros canónicos que afirman cosas distintas sobre el mismo "
+                "hecho y nada los cruza. AP-44 se comete al verificar; AP-55 "
+                "está en el dato antes de que nadie verifique."
+            )
+        },
+        "introduced_version": "v40.10",
     },
     # ── Patrón PAT-6 ───────────────────────────────────────────────────────────
     {
@@ -1748,7 +1852,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "Si no hay entrada → llamar vault_change_log primero, luego eliminar."
         ),
         "tools_enforcing": ["vault_change_log"],
-        "tools_detecting": ["vault_norms --audit"],
+        "tools_detecting": ["vault_norms"],
         "introduced_version": "v30",
     },
     {
@@ -1827,7 +1931,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "Carpeta con nombre que no sigue el patrón NN_Nombre en el vault.",
         "prevention": "Elegir la sección más apropiada del vocabulario estándar. AP-15 para raíz del vault.",
         "tools_enforcing": ["vault_write"],
-        "tools_detecting": ["vault_section_index (guard)", "vault_norms --audit"],
+        "tools_detecting": ["vault_section_index", "vault_norms"],
         "introduced_version": "v30",
     },
     {
@@ -1847,7 +1951,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "vault_list filtra por status y retorna 0 cuando el valor es no-estándar.",
         "prevention": "Usar solo valores de STATUS_VOCAB. vault_norms --audit los valida (CN-03).",
         "tools_enforcing": [],
-        "tools_detecting": ["vault_norms --audit"],
+        "tools_detecting": ["vault_norms"],
         "introduced_version": "v30",
     },
 ]

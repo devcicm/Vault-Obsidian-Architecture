@@ -44,7 +44,7 @@ def test_hay_puertos_en_los_nueve_contextos():
     símbolo privado, así que la única forma de que un `_x` deje de reportarse
     es promoverlo de verdad.
     """
-    assert len(PUERTOS) == 56
+    assert len(PUERTOS) == 57
     assert {c for c, _, _ in PUERTOS} == set(arch.CONTEXTS)
 
 

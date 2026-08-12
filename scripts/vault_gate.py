@@ -154,6 +154,15 @@ PUERTAS: List[Dict[str, Any]] = [
                "plano); una norma nueva sin cobertura se cubre con un test, no "
                "se congela",
     },
+    {
+        "id": "norms_coherence",
+        "cmd": ["vault_norms_coherence.py", "--check", "--strict"],
+        "mide": "El catálogo de normas no se contradice ni con el código que "
+                "lo aplica ni con las penalizaciones que lo pesan (AP-55)",
+        "fix": "que el código nombre la norma en el sitio que la aplica, o que "
+               "el catálogo retire la cobertura que no tiene; ampliar la "
+               "baseline no es una de las dos",
+    },
 ]
 
 

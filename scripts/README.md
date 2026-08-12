@@ -1,13 +1,13 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 99 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
+Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 100 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **122 archivos Python** — 99 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
+- **123 archivos Python** — 100 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
 - **Saneamiento de índices (v38.1)** — `vault_section_index.py --heal [--root]` regenera índices con formato legacy `[[stem|alias]]` o ausentes; el auto-index post-write se auto-cura si un agente escribe `index.md` a mano
-- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 99 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
+- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 100 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
 - **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault; requiere marcador de CONTENIDO (01_Projects/02_Observability/03_Decisions/.obsidian), no solo 00_System/99_Index (evita el ciclo auto-reforzado de detección); override runtime con `set_vault_root()`/env `VAULT_ROOT`
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
@@ -59,7 +59,7 @@ Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan 
 | [Grupo 32 — Gestión de Carpetas](#grupo-32--gestión-de-carpetas) | vault_folder_registry |
 | [Grupo 33 — Corrección Automática](#grupo-33--corrección-automática) | vault_fix_brackets, vault_graph_fix |
 | [Grupo 34 — Memoria de Contexto](#grupo-34--memoria-de-contexto) | vault_preferences, vault_query_parse, vault_subgraph, vault_context_pack, vault_ingest |
-| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_changelog_check, vault_error_contract, vault_foreign_check, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_noop_audit, vault_smoke, vault_voice, vault_servicio, vault_blueprint |
+| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_changelog_check, vault_error_contract, vault_foreign_check, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_noop_audit, vault_smoke, vault_voice, vault_servicio, vault_blueprint, vault_norms_coherence |
 | [Grupo 36 — Defectos y Cuarentena](#grupo-36--defectos-y-cuarentena) | vault_bug_save, vault_quarantine |
 | [Grupo 37 — Skills](#grupo-37--skills) | vault_sdd_init, vault_sanacion |
 | [Observabilidad de Tools](#observabilidad-de-tools) | vault_errors |
@@ -1732,7 +1732,7 @@ El vault expone sus herramientas como un **servidor MCP** que las IAs consumen d
 
 **Archivo:** `../mcp/nodejs/vault-mcp-server.mjs` (~1650 líneas, cero dependencias npm)  
 **Plan:** `../mcp/PLAN.md` — documento de evidencia con 8 fases de implementación
-**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (99 tools)
+**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (100 tools)
 
 Los parámetros que el catálogo publica **se derivan del `argparse` de cada script**,
 no se escriben a mano: el servidor compone `--<param>` literal, así que un param
@@ -1780,7 +1780,7 @@ node mcp/nodejs/vault-mcp-server.mjs --port 3000
 
 ### `vault_norms.py`
 
-Registro canónico de las 66 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
+Registro canónico de las 67 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
 
 ```bash
 python vault_norms.py                             # catálogo completo
@@ -2170,6 +2170,34 @@ python vault_blueprint.py --freeze          # congela la deuda de la capa 4
 **Por qué solo la capa 4 tiene baseline.** Las otras seis se midieron en cero el día que se declararon: sus datos ya existían y solo faltaba atarlos. La capa 4 no — al cruzar `NORM_CATALOG` con `PUERTAS` y con `tests/` por primera vez aparecieron **16 normas sin puerta ni test**. Exigir cero el primer día habría hecho nacer la puerta en rojo, y una puerta en rojo se desactiva. `--freeze` se niega a congelar deuda sin precedente (`DEBT_WOULD_GROW`) salvo con `--admitir-nuevos`, que además la lista en el envelope.
 
 **No reimplementa ningún guard.** Los puertos rotos los dice `vault_arch.puertos_rotos()`, los contratos `vault_mcp_catalog.check_contracts()` y la trazabilidad `vault_servicio.check()`. Un plano que midiera por su cuenta sería una segunda fuente de verdad sobre el repo (AP-05) midiendo con criterio propio (AP-44) — y `docs/ARQUITECTURA.md` no se absorbe: son dos documentos con dos sujetos, y fundirlos habría hecho uno solo que nadie regenera.
+
+---
+
+### `vault_norms_coherence.py`
+
+**El catálogo de normas se certificaba a sí mismo (AP-55).** `NORM_CATALOG` declara, norma a norma, qué tools la hacen cumplir y cuáles la detectan. Los dos campos se escriben a mano y nada los cruzaba con lo que las tools hacen. Lo caro no era la lista: el guard que existía para detectar normas mudas —`vault_voice.coverage()`, el guard de AP-43— comprueba que una norma tenga `tools_enforcing` o `tools_detecting` **leyendo `tools_enforcing` y `tools_detecting`**. Verifica el catálogo contra el catálogo, así que daba verde sobre 47 afirmaciones que ningún módulo respalda y era estructuralmente incapaz de verlas. AP-44 cometido dentro del guard, por tercera vez en tres sitios distintos.
+
+```bash
+python vault_norms_coherence.py --check           # las cinco medidas
+python vault_norms_coherence.py --check --strict  # exit 1 si algo falla (puerta 14)
+python vault_norms_coherence.py --freeze          # recongela la baseline de C2
+```
+
+| Medida | Qué cruza | Estado al declararla |
+|---|---|---|
+| C1 enforcer resoluble | `tools_*` ↔ `mapa_de_grupos()` y `scripts/` | 54 valores corregidos → 0 |
+| C2 la afirmación tiene traza | `tools_*` ↔ el código del módulo | 47, **baseline que solo encoge** |
+| C3 enforcement ↔ campos | `enforcement` ↔ `tools_*` no vacíos | 0 |
+| C4 severidad ↔ penalización | `severity` ↔ `vault_audit.PENALIZACIONES` | 1 (AP-22) → 0 |
+| C5 distinción recíproca | `distinguido_de` ↔ `distinguido_de` | 0 |
+
+**La traza no demuestra enforcement, y no se presenta como si lo hiciera.** `vault_write` podría rechazar AP-12 sin escribir nunca la cadena `"AP-12"`. Lo que C2 demuestra es lo contrario, que es lo verificable: si el código no nombra la norma en ninguna parte, nadie puede seguir la afirmación hasta el sitio que la cumple. Un guard que prometiera medir enforcement real sería justo la afirmación no falsable que AP-37 persigue. Las 47 se saldan de dos formas honestas —que el código nombre la norma donde la aplica, o que el catálogo retire la cobertura que no tiene—; ampliar la baseline es la tercera y no lo es.
+
+**Lo que destapó C4.** AP-22 se declaraba `critical` mientras `vault_audit` la penalizaba con 2 puntos por unidad y tope 5, frente a los 5 y tope 15 de AP-24, que el catálogo llamaba `high`. Seis versiones con los dos registros invertidos. Manda el que se ejecuta (regla 3): AP-22 pasa a `medium`. El criterio se estrechó dos veces al medirlo — primero a la misma `familia` del healthIndex, después a exigir la inversión en **las dos** medidas del peso, porque AP-14 (`critical`, 2/unidad, tope 20) invierte una y no la otra y eso es una ponderación deliberada, no una contradicción.
+
+**Lo que C5 no hace, dicho en voz alta.** No descubre por su cuenta qué dos normas se solapan. Tres borradores lo intentaron y los tres devolvían decenas de pares de `vault_audit` y `vault_write` consigo mismos: son los orquestadores y acumulan todas las normas del informe porque lo arman entero, no porque duden entre dos. C5 verifica la distinción **una vez que alguien la declara**, y exige que sea recíproca: si solo la declara A, quien llegue leyendo B no ve la diferencia. Los borradores quedan en el módulo sin llamar, como registro de lo intentado.
+
+**Siete enforcers no son tools, y se admiten.** `vault_io.atomic_write_text` y `vault_io.assert_within_vault` son los helpers donde AP-46 y AP-36 se cumplen de verdad; `vault_errors` es donde vive el contrato de AP-43; `vault_mcp_catalog` es meta-toolkit que el catálogo MCP no se expone a sí mismo. Se verifican —módulo en `scripts/`, símbolo definido allí— y se publican aparte en `non_catalog_enforcers`. Obligarles a nombrar una tool solo conseguiría una afirmación que resuelve y es falsa.
 
 ---
 

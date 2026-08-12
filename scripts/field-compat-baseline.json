@@ -1,6 +1,6 @@
 {
   "schema": "field-compat/1",
-  "generated": "2026-08-12T09:24:53Z",
+  "generated": "2026-08-12T21:20:08Z",
   "why": "Campos que los repos consumidores pueden leer con garantía. Un campo que sale de aquí sin quedar anotado en superseded_fields rompe a quien lo leía, y por eso lo para una puerta.",
   "stable": {
     "vault_ai_decision": [
@@ -761,6 +761,27 @@
       "total_violations",
       "vault_root",
       "violations"
+    ],
+    "vault_norms_coherence": [
+      "admitted_new",
+      "baseline_size",
+      "enforcement_incoherent",
+      "error_code",
+      "frozen",
+      "hint",
+      "indistinguishable_norms",
+      "new_untraceable",
+      "non_catalog_enforcers",
+      "norm",
+      "norms_total",
+      "ok",
+      "recovery",
+      "resolved_since_baseline",
+      "severity_vs_penalty_inverted",
+      "tool",
+      "unknown_tools",
+      "untraceable_claims_total",
+      "vault_says"
     ],
     "vault_onboard": [
       "created",

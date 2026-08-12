@@ -104,7 +104,7 @@ def test_ap40_esta_en_el_catalogo_con_enforcement_real():
     norma = next((n for n in vault_norms.NORM_CATALOG if n["code"] == "AP-40"), None)
     assert norma is not None
     assert norma["enforcement"] in ("guard", "audit", "guard+audit", "recommended")
-    assert "vault_mcp_catalog --check-params" in norma["tools_detecting"]
+    assert "vault_mcp_catalog" in norma["tools_detecting"]
 
 
 def test_el_audit_de_normas_conoce_ap40():

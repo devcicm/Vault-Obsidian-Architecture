@@ -2453,6 +2453,63 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         ),
         "related": ["vault_servicio", "vault_arch", "vault_gate", "vault_norms"],
     },
+    "vault_norms_coherence": {
+        "name": "vault_norms_coherence",
+        "script": "vault_norms_coherence.py",
+        "group": "Normas",
+        "purpose": (
+            "AP-55: cruza NORM_CATALOG con el codigo y con "
+            "vault_audit.PENALIZACIONES. El catalogo declara a mano que tools "
+            "aplican y detectan cada norma, y hasta v40.10 nada lo contrastaba: "
+            "el guard que existia para ello leia el catalogo contra el "
+            "catalogo. Cinco medidas — el enforcer resuelve, la afirmacion "
+            "tiene traza, el enforcement concuerda con los campos, la "
+            "severidad no invierte la penalizacion y la distincion entre dos "
+            "normas es reciproca."
+        ),
+        "params": {
+            "check": {
+                "type": "boolean",
+                "required": False,
+                "description": "Las cinco medidas contra el catalogo vivo",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit 1 si alguna medida falla",
+                "validators": [],
+            },
+            "freeze": {
+                "type": "boolean",
+                "required": False,
+                "description": "Recongela la baseline de afirmaciones sin traza",
+                "validators": [],
+            },
+            "admitir-nuevos": {
+                "type": "boolean",
+                "required": False,
+                "description": "Permite congelar afirmaciones sin precedente",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "La traza no demuestra enforcement y no se presenta como si lo "
+            "hiciera: demuestra lo contrario, que la afirmacion no es "
+            "seguible hasta el codigo que la cumple",
+            "Solo C2 tiene baseline, y solo encoge: se salda nombrando la "
+            "norma en el sitio que la aplica o retirando la afirmacion",
+            "Los pesos se leen de vault_audit.PENALIZACIONES, no se copian: "
+            "el peso lo declara quien lo aplica",
+        ],
+        "side_effects": ["scripts/norms-coherence-baseline.json"],
+        "example": (
+            "python vault_norms_coherence.py --check\n"
+            "python vault_norms_coherence.py --check --strict\n"
+            "python vault_norms_coherence.py --freeze"
+        ),
+        "related": ["vault_norms", "vault_audit", "vault_voice", "vault_gate"],
+    },
     "vault_servicio": {
         "name": "vault_servicio",
         "script": "vault_servicio.py",
@@ -3603,6 +3660,7 @@ GROUPS: Dict[str, List[str]] = {
         "vault_voice",
         "vault_servicio",
         "vault_blueprint",
+        "vault_norms_coherence",
     ],
     "Producción/SRE": ["vault_incident_save", "vault_slo_save"],
     "Release": ["vault_release_save"],

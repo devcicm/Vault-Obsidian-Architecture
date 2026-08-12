@@ -38,7 +38,7 @@ def test_ap50_esta_en_el_catalogo_con_enforcement_real():
 def test_ap50_nombra_la_tool_que_la_hace_cumplir():
     """Una norma cuyo `tools_enforcing` no existe sería AP-42."""
     n = _norma()
-    assert "vault_arch --check" in n["tools_enforcing"]
+    assert "vault_arch" in n["tools_enforcing"]
     assert (REPO_ROOT / "scripts" / "vault_arch.py").exists()
 
 

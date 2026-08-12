@@ -231,7 +231,7 @@ def test_la_norma_esta_registrada_con_enforcement_real():
     norma = next((n for n in vault_norms.NORM_CATALOG if n["code"] == "AP-52"), None)
     assert norma is not None, "AP-52 no está en NORM_CATALOG"
     assert norma["enforcement"] != "manual", "regla 5: ninguna norma nueva es manual"
-    assert norma["tools_enforcing"] == ["vault_error_contract --check --strict"]
+    assert norma["tools_enforcing"] == ["vault_error_contract"]
 
 
 def test_la_norma_tiene_seccion_en_el_manifiesto():

@@ -2,7 +2,7 @@
 
 > Documento derivado. Se genera con `python scripts/vault_arch.py --blueprint`; la fuente es `CONTEXTS` en `scripts/vault_arch.py`. No se edita a mano.
 
-**9 contextos**, **122 módulos** clasificados, **58 fronteras cruzadas** pendientes de publicar puerto.
+**9 contextos**, **123 módulos** clasificados, **60 fronteras cruzadas** pendientes de publicar puerto.
 
 ## Los límites
 
@@ -115,7 +115,7 @@ Fronteras que hoy cruza (4), deuda declarada:
 ## Gobernanza
 
 - **Lenguaje ubicuo:** norma, guard, enforcement, severidad, violación, estado, transición de estado, fundamento, hallazgo
-- **Puertos publicados:** `FUNDAMENTOS` → `vault_fundamentals:FUNDAMENTALS`, `NORM_CATALOG` → `vault_norms:NORM_CATALOG`, `auditar` → `vault_audit:vault_audit`, `cuerpo_sin_marcadores` → `vault_norms:cuerpo_sin_marcadores`, `gancho_de_secretos` → `vault_secret_scan:vault_write_hook`, `hay_hallazgos_bloqueantes` → `vault_secret_scan:has_blocking_findings`, `lineas_de_estado` → `vault_norms:status_frontmatter_lines`, `norma_por_codigo` → `vault_norms:norma_por_codigo`, `normalizar_estado` → `vault_norms:normalize_status`, `puntuar_calidad` → `vault_quality_check:vault_quality_check`, `referencias_de_norma` → `vault_norms:compute_norm_refs`, `registro_de_ciclo_de_vida` → `vault_norms:LIFECYCLE_REGISTRY`, `transiciones_de_estado` → `vault_norms:STATUS_TRANSITIONS`, `validar_mermaid` → `vault_mermaid_check:validate_mermaid`, `valores_cia` → `vault_fundamentals:cia_valores`, `vocabulario_de_dominio` → `vault_norms:DOMAIN_STATUS_VOCABS`, `vocabulario_de_estado` → `vault_norms:STATUS_VOCAB`
+- **Puertos publicados:** `FUNDAMENTOS` → `vault_fundamentals:FUNDAMENTALS`, `NORM_CATALOG` → `vault_norms:NORM_CATALOG`, `auditar` → `vault_audit:vault_audit`, `cuerpo_sin_marcadores` → `vault_norms:cuerpo_sin_marcadores`, `gancho_de_secretos` → `vault_secret_scan:vault_write_hook`, `hay_hallazgos_bloqueantes` → `vault_secret_scan:has_blocking_findings`, `lineas_de_estado` → `vault_norms:status_frontmatter_lines`, `norma_por_codigo` → `vault_norms:norma_por_codigo`, `normalizar_estado` → `vault_norms:normalize_status`, `penalizaciones` → `vault_audit:PENALIZACIONES`, `puntuar_calidad` → `vault_quality_check:vault_quality_check`, `referencias_de_norma` → `vault_norms:compute_norm_refs`, `registro_de_ciclo_de_vida` → `vault_norms:LIFECYCLE_REGISTRY`, `transiciones_de_estado` → `vault_norms:STATUS_TRANSITIONS`, `validar_mermaid` → `vault_mermaid_check:validate_mermaid`, `valores_cia` → `vault_fundamentals:cia_valores`, `vocabulario_de_dominio` → `vault_norms:DOMAIN_STATUS_VOCABS`, `vocabulario_de_estado` → `vault_norms:STATUS_VOCAB`
 - **Módulos (9):** `vault_audit`, `vault_drift_detect`, `vault_fundamentals`, `vault_mermaid_check`, `vault_norms`, `vault_quality_check`, `vault_secret_scan`, `vault_security_scan`, `vault_validate`
 
 Fronteras que hoy cruza (6), deuda declarada:
@@ -195,9 +195,9 @@ Fronteras que hoy cruza (15), deuda declarada:
 - **Lenguaje ubicuo:** catálogo, contrato, spec, smoke, conteo derivado
 - **Puertos publicados:** `GROUPS` → `vault_mcp_catalog:GROUPS`, `TOOLS_CATALOG` → `vault_mcp_catalog:TOOLS_CATALOG`, `check_contracts` → `vault_mcp_catalog:check_contracts`
 - **No cruza:** escribir en una sección de contenido: sus artefactos derivados viven en 00_System/
-- **Módulos (21):** `vault_arch`, `vault_blame_audit`, `vault_blueprint`, `vault_changelog_check`, `vault_doc_counts`, `vault_doc_sync`, `vault_error_contract`, `vault_firma_sitio`, `vault_foreign_check`, `vault_gate`, `vault_manifest`, `vault_mcp`, `vault_mcp_catalog`, `vault_noop_audit`, `vault_servicio`, `vault_smoke`, `vault_spec_catalog_check`, `vault_spec_generate_catalog`, `vault_spec_memory`, `vault_spec_validate`, `vault_test_runner`
+- **Módulos (22):** `vault_arch`, `vault_blame_audit`, `vault_blueprint`, `vault_changelog_check`, `vault_doc_counts`, `vault_doc_sync`, `vault_error_contract`, `vault_firma_sitio`, `vault_foreign_check`, `vault_gate`, `vault_manifest`, `vault_mcp`, `vault_mcp_catalog`, `vault_noop_audit`, `vault_norms_coherence`, `vault_servicio`, `vault_smoke`, `vault_spec_catalog_check`, `vault_spec_generate_catalog`, `vault_spec_memory`, `vault_spec_validate`, `vault_test_runner`
 
-Fronteras que hoy cruza (8), deuda declarada:
+Fronteras que hoy cruza (10), deuda declarada:
 
 | Módulo | Importa | Contexto destino |
 |---|---|---|
@@ -206,6 +206,8 @@ Fronteras que hoy cruza (8), deuda declarada:
 | `vault_doc_counts` | `vault_norms` | Gobernanza |
 | `vault_manifest` | `vault_fundamentals` | Gobernanza |
 | `vault_mcp` | `vault_mcp_context` | Consulta |
+| `vault_norms_coherence` | `vault_audit` | Gobernanza |
+| `vault_norms_coherence` | `vault_norms` | Gobernanza |
 | `vault_spec_memory` | `vault_fundamentals` | Gobernanza |
 | `vault_spec_memory` | `vault/ciclo_de_vida` | Ciclo de vida |
 | `vault_spec_memory` | `vault/gobernanza` | Gobernanza |
