@@ -7077,7 +7077,7 @@ temp/
 
 ---
 
-### v40.11 — 2026-08-12 `git: pending`
+### v40.11 — 2026-08-12 `git: 2f80326`
 
 **Una deuda se salda leyendo el código, no buscándolo.**
 
