@@ -7032,7 +7032,7 @@ temp/
 
 ---
 
-### v40.10 — 2026-08-12 `git: pending`
+### v40.10 — 2026-08-12 `git: 861b37b`
 
 **El catálogo se certificaba a sí mismo, y dos ejes vivían dentro de uno.**
 
