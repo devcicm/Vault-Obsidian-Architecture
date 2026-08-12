@@ -313,8 +313,8 @@ def vault_code_tag_apply(
     else:
         # Unknown code — look in norm catalog
         try:
-            from vault_norms import _NORM_BY_CODE
-            norm = _NORM_BY_CODE.get(code.upper())
+            from vault_norms import norma_por_codigo
+            norm = norma_por_codigo(code.upper())
             tag_name = norm["name"] if norm else code.upper()
         except Exception:
             tag_name = code.upper()

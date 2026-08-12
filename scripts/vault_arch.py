@@ -81,6 +81,9 @@ CONTEXTS: dict[str, dict] = {
             "anexar": "vault_append:vault_append",
             "mover": "vault_move:move_note",
             "fusionar": "vault_merge:vault_merge",
+            "buscar": "vault_search:vault_search",
+            "hablar": "vault_voice:speak",
+            "tipo_por_carpeta": "vault_write:tipo_por_carpeta",
         },
         "prohibe": [],
         "modulos": [
@@ -117,7 +120,10 @@ CONTEXTS: dict[str, dict] = {
     },
     "gobernanza": {
         "titulo": "Gobernanza",
-        "lenguaje": ["norma", "guard", "enforcement", "severidad", "violación"],
+        "lenguaje": [
+            "norma", "guard", "enforcement", "severidad", "violación",
+            "estado", "transición de estado", "fundamento", "hallazgo",
+        ],
         "puertos": {
             "NORM_CATALOG": "vault_norms:NORM_CATALOG",
             "auditar": "vault_audit:vault_audit",
@@ -129,6 +135,29 @@ CONTEXTS: dict[str, dict] = {
             "vocabulario_de_estado": "vault_norms:STATUS_VOCAB",
             "vocabulario_de_dominio": "vault_norms:DOMAIN_STATUS_VOCABS",
             "valores_cia": "vault_fundamentals:cia_valores",
+            # Los concentradores de la baseline de `off_port`, y la razón de
+            # que aquella cifra engañara: doce `*_save` importando el mismo
+            # helper de estado no son doce fugas por la frontera, son **un
+            # puerto que el registro no nombraba**. El código llevaba razón y
+            # el registro iba por detrás — el mismo hallazgo que hizo que
+            # `puertos` dejara de ser una lista (ver la nota de arriba).
+            #
+            # Declararlos no relaja nada: los cuatro son públicos y el guard
+            # rechaza desde v40.8 que un puerto nombre un símbolo privado.
+            "lineas_de_estado": "vault_norms:status_frontmatter_lines",
+            "referencias_de_norma": "vault_norms:compute_norm_refs",
+            "normalizar_estado": "vault_norms:normalize_status",
+            "transiciones_de_estado": "vault_norms:STATUS_TRANSITIONS",
+            "registro_de_ciclo_de_vida": "vault_norms:LIFECYCLE_REGISTRY",
+            "cuerpo_sin_marcadores": "vault_norms:cuerpo_sin_marcadores",
+            "norma_por_codigo": "vault_norms:norma_por_codigo",
+            "FUNDAMENTOS": "vault_fundamentals:FUNDAMENTALS",
+            "validar_mermaid": "vault_mermaid_check:validate_mermaid",
+            # El gancho de secretos lo llama el write path del kernel: es la
+            # única forma que tiene gobernanza de intervenir antes de que una
+            # escritura ocurra, así que es frontera de pleno derecho.
+            "gancho_de_secretos": "vault_secret_scan:vault_write_hook",
+            "hay_hallazgos_bloqueantes": "vault_secret_scan:has_blocking_findings",
         },
         "prohibe": [],
         "modulos": [
@@ -139,11 +168,21 @@ CONTEXTS: dict[str, dict] = {
     },
     "indices": {
         "titulo": "Índices",
-        "lenguaje": ["índice", "etiqueta", "término", "sección indexada"],
+        "lenguaje": [
+            "índice", "etiqueta", "término", "sección indexada", "coherencia",
+        ],
         "puertos": {
             "reindexar": "vault_reindex:vault_reindex",
             "indice_maestro": "vault_master_index:vault_master_index",
             "vocabulario_de_tags": "vault_tags:canonical_tags",
+            # El índice de sección lo dispara el write path del kernel desde
+            # v39: es el punto por el que índices entra en cada escritura, y
+            # llevaba tres versiones cruzando la frontera sin nombre.
+            "indice_de_seccion": "vault_section_index:vault_section_index",
+            "registrar_tags": "vault_tags:registrar_tags_de_nota",
+            "tags_de_frontmatter": "vault_tags:tags_de_frontmatter",
+            "ledger_de_backfill_de_tags": "vault_tags:vault_tags_backfill_ledger",
+            "coherencia_de_indices": "vault_reindex:index_coherence",
         },
         "prohibe": [],
         "modulos": [
@@ -158,6 +197,13 @@ CONTEXTS: dict[str, dict] = {
             "parsear_consulta": "vault_query_parse:vault_query_parse",
             "subgrafo": "vault_subgraph:vault_subgraph",
             "empaquetar_contexto": "vault_context_pack:vault_context_pack",
+            # Fachada cohesiva: los cuatro verbos del contexto de sesión que
+            # consume el servidor MCP. Se declaran como puertos hermanos en
+            # vez de inventarles un envoltorio que nadie pidió.
+            "contexto_de_sesion": "vault_mcp_context:get_context",
+            "guardar_contexto": "vault_mcp_context:save_context",
+            "cargar_contexto": "vault_mcp_context:load_context",
+            "limpiar_contexto": "vault_mcp_context:clear_context",
         },
         "prohibe": ["base de datos", "embeddings", "servicio externo"],
         "modulos": [
@@ -915,6 +961,24 @@ def puertos_rotos() -> list[dict]:
                      "reason": "el destino no tiene la forma modulo:simbolo"}
                 )
                 continue
+            if simbolo.startswith("_"):
+                # El motivo que faltaba, y el que hace honesta a la baseline de
+                # `off_port`. Declarar un puerto encoge esa deuda sin tocar una
+                # línea de dominio, así que sin esta comprobación bastaba con
+                # escribir `vault_norms:_NORM_BY_CODE` aquí para que un cruce
+                # por detrás dejara de reportarse. La medida se relajaría y el
+                # número diría que mejoró: la tool certificándose a sí misma,
+                # que es AP-44 aplicado al propio guard.
+                #
+                # Un nombre privado es, por definición, lo contrario de una
+                # superficie publicada. Si otro contexto lo necesita, se
+                # promueve a público — que es trabajo real — o no entra.
+                rotos.append(
+                    {"context": ctx, "port": puerto, "target": destino,
+                     "reason": f"`{simbolo}` es privado: un puerto no puede "
+                               f"nombrar un símbolo que empieza por `_`"}
+                )
+                continue
             if modulo not in datos["modulos"]:
                 rotos.append(
                     {"context": ctx, "port": puerto, "target": destino,
@@ -1337,7 +1401,15 @@ def check(strict: bool = False) -> dict:
         "ports_total": sum(len(c["puertos"]) for c in CONTEXTS.values()),
         "broken_ports": rotos,
         # Y por dónde se cruza: símbolos importados fuera de la superficie.
-        "off_port_total": len(fuera_puerto),
+        #
+        # `len(claves_p)` y no `len(fuera_puerto)`: la baseline se guarda por
+        # clave `módulo -> símbolo`, así que contar sitios publicaba dos cifras
+        # contiguas que no se podían restar. Daban 48 y 47 sin que hubiera
+        # deuda nueva — `vault_io` importa `vault_section_index` dos veces en
+        # el mismo fichero y las dos colapsan en una clave. El detalle por
+        # sitio sigue entero en `crossings`.
+        "off_port_total": len(claves_p),
+        "off_port_sites": len(fuera_puerto),
         "off_port_baseline": len(base_puerto),
         "new_off_port_crossings": puerto_nuevos,
         "settled_off_port_crossings": puerto_saldados,

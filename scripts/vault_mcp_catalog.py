@@ -3788,6 +3788,37 @@ def check_sync(json_path: Optional[str] = None) -> Dict[str, Any]:
     return result
 
 
+def mapa_de_grupos() -> Dict[str, Dict[str, Any]]:
+    """`{tool: {"name": grupo, "id": group_id}}` derivado de la fuente única.
+
+    El grupo sale de `GROUPS` y el número de la numeración de
+    `scripts/README.md` — exactamente lo que `check_contracts` exige que el
+    tool-spec cumpla. Se extrae aquí para que la derivación tenga **un solo
+    sitio**: `check_contracts` la verificaba y `vault_manifest._bootstrap_spec`
+    la producía, y cada uno la sacaba de un lado distinto —el segundo, de
+    `vault_compact_contracts.GROUPS`, que ya es un derivado del tool-spec que
+    el propio bootstrap está generando—. El productor y el verificador leyendo
+    fuentes diferentes es la forma en que una divergencia se estrena.
+    """
+    import re
+    from pathlib import Path
+
+    readme = (Path(__file__).resolve().parent / "README.md").read_text(
+        encoding="utf-8"
+    )
+    gid_por_grupo = {
+        etiqueta: int(numero)
+        for numero, etiqueta in re.findall(
+            r"^## Grupo (\d+) — (.+?)\s*$", readme, re.M
+        )
+    }
+    return {
+        t: {"name": grupo, "id": gid_por_grupo.get(grupo, 0)}
+        for grupo, tools in GROUPS.items()
+        for t in tools
+    }
+
+
 def check_contracts(spec_path: Optional[str] = None) -> Dict[str, Any]:
     """Guard catálogo ↔ `tool-spec.json`.
 
@@ -3819,12 +3850,11 @@ def check_contracts(spec_path: Optional[str] = None) -> Dict[str, Any]:
     data = json.loads(ruta.read_text(encoding="utf-8"))
     entradas = data.get("tools", {})
 
-    readme = (Path(__file__).resolve().parent / "README.md").read_text(encoding="utf-8")
-    gid_por_grupo = {
-        etiqueta: int(numero)
-        for numero, etiqueta in re.findall(r"^## Grupo (\d+) — (.+?)\s*$", readme, re.M)
-    }
-    pertenencia = {t: g for g, tools in GROUPS.items() for t in tools}
+    # La derivación vive en `mapa_de_grupos()`, que es también la que consume
+    # el bootstrap del tool-spec: verificador y productor, la misma fuente.
+    mapa = mapa_de_grupos()
+    pertenencia = {t: d["name"] for t, d in mapa.items()}
+    gid_por_grupo = {d["name"]: d["id"] for d in mapa.values()}
 
     ESTADOS_SIN_CATALOGO = {"archived", "internal", "orphan"}
     result: Dict[str, Any] = {

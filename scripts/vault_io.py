@@ -983,11 +983,11 @@ def _auto_tag_ledger(path: Path, text: str) -> None:
         return
     try:
         from vault_tags import (  # lazy — evita el ciclo con el kernel
-            _parse_frontmatter_tags,
             registrar_tags_de_nota,
+            tags_de_frontmatter,
         )
 
-        registrar_tags_de_nota(_parse_frontmatter_tags(text), rel)
+        registrar_tags_de_nota(tags_de_frontmatter(text), rel)
     except Exception:
         pass
 

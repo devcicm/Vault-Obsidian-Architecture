@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.7 — 2026-08-08  
+**Versión:** v40.8 — 2026-08-12  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -6644,6 +6644,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.8 | 2026-08-12 | La baseline de cruces fuera de puerto, de 47 a **0**, distinguiendo lo que nunca fue deuda de lo que sí: ~40 eran puertos que el código ya usaba y el registro no nombraba —doce `*_save` entrando por `status_frontmatter_lines` no son doce fugas—, y 5 eran cruces reales, cuatro de ellos un símbolo privado atravesando un contexto acotado. Antes de declarar nada se cerró el agujero que habría convertido el ejercicio en un blanqueo: un puerto ya no puede nombrar un símbolo que empiece por `_`, porque si no bastaba con escribir `vault_norms:_NORM_BY_CODE` en el registro para que la deuda desapareciera sin arreglar nada. Además `off_port_total` pasa a contarse por clave como su propia baseline —publicaba 48 junto a 47 sin que hubiera regresión— y el bootstrap del tool-spec deja de alimentarse de un derivado de su propia salida |
 | v40.7 | 2026-08-08 | Terminación del recorrido de grafos convertida en invariante comprobado al importar (`peso × HOP_DECAY ≤ 1`), medido en el punto exacto de vuelco: peso 1,6 visita 59 nodos, 1,7 pasa a 605 y 2,0 a más de 3,6 millones; el `RecursionError` de PyYAML ante un frontmatter con ~500 niveles de anidamiento deja de matar la auditoría entera y se contiene en la nota que lo trae; **AP-53** — el changelog publicaba 5 fechas que el commit citado desmentía, y `vault_changelog_check` lo convierte en la undécima puerta con `--fijar-hash` para el paso que se hacía a mano; **AP-54** — `file_lock` no era reentrante y un hilo se bloqueaba contra sí mismo (26 tomas, 13 fallidas, 65,14 s), pero el defecto era que al fallar el lock se escribía igual, sin sincronizar, encima de quien sí lo tenía |
 | v40.6 | 2026-08-07 | Las tres baselines de deuda pasan a indexarse por **firma de sitio** (`módulo::función::hash` sobre `ast.unparse`) porque `módulo:línea` reportaba como deuda nueva el mismo código diez líneas más abajo, y `--freeze` se niega a congelar sitios sin precedente en vez de fiarse de una receta manual de tres pasos; el heal de AP-46 dejaba de reparar tres de cada cuatro notas por deducir la clase de rotura de la presencia de un `---` que era una regla horizontal del cuerpo, y ahora prueba las candidatas contra `yaml.safe_load`; AP-52 de 110 sitios a **0** con tres códigos nuevos y exenciones por `módulo::función` para los tres sitios que parecen un envelope de error sin serlo; el `superseded_by` de `healthScore` deja de ser un registro sin consumidor y pasa a contrato de campos vigilado sobre 1.038 campos de 96 tools — décima puerta |
 | v40.5 | 2026-08-07 | Contraste de la regla 7 contra dos vaults ajenos (609 y 128 notas): la documentación del estándar embarcada en un vault se contaba como enlaces rotos porque se excluía por nombre exacto, y una copia archivada con sufijo de versión —lo que la no-derogación pide— aportaba 75 falsos de 624 con `broken_links` saturando a los diez; pasa a ser el registro `DOCUMENTACION_DEL_ESTANDAR` y el `healthIndex` del sandbox sube de 60 a 64 sin tocar una nota; se confirma que el defecto de títulos de v40.2 llegó a vaults reales y que AP-46 tiene guard y audit pero **no heal**; deuda de AP-52 de 158 a 110, con dos clases de falso positivo del detector anotadas |
@@ -6970,6 +6971,70 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v40.8 — 2026-08-12 `git: pending`
+
+**Cuarenta y siete cruces por detrás, de los que solo cinco lo eran**
+
+`vault_arch` mide desde v40.0 **por dónde** entra un contexto acotado en otro,
+no solo hacia dónde. Nació con 47 congelados y esa deuda no se había tocado
+desde entonces. Al clasificarla entera resultó que la cifra mezclaba dos cosas
+que no se parecen en nada.
+
+- **Un registro que iba por detrás del código, no cuarenta fugas.** Los
+  concentradores eran tres: `status_frontmatter_lines` con doce consumidores,
+  `compute_norm_refs` con nueve, `vault_section_index` con tres. Doce `*_save`
+  importando el mismo helper de estado de Gobernanza no son doce fronteras
+  rotas — son **un puerto que el registro no nombraba**. Es literalmente el
+  mismo hallazgo que hizo que `puertos` dejara de ser una lista de nombres en
+  v40.7: el registro describía un borde imaginario mientras la API real vivía
+  al lado. Veintitrés puertos nuevos, ninguna API inventada, 33 → 56.
+
+- **El agujero que habría convertido esto en un blanqueo, cerrado primero.**
+  Declarar un puerto encoge la baseline sin tocar una línea de dominio.
+  `puertos_rotos()` comprobaba que el símbolo *existiera*, pero no que fuera
+  *público*: escribir `vault_norms:_NORM_BY_CODE` en el registro habría hecho
+  desaparecer un cruce real sin arreglarlo, y el número habría dicho que la
+  arquitectura mejoró. Eso es la tool certificándose a sí misma —AP-44
+  aplicado al propio guard—. Desde v40.8 un puerto que nombra un símbolo con
+  `_` delante es un puerto roto: puerta dura, sin baseline, porque se midió
+  cero al declararla. **Va primero a propósito**: el orden importa, un guard
+  que se relaja después de haber medido no prueba nada.
+
+- **Los cinco que sí eran cruces.** Cuatro símbolos privados atravesando un
+  contexto acotado —`vault_code_tag` leyendo `vault_norms._NORM_BY_CODE`,
+  `vault_io` leyendo `vault_tags._parse_frontmatter_tags`, `vault_onboard`
+  leyendo `vault_write._deduce_type_from_folder` y
+  `vault_norms._cuerpo_sin_marcadores`—. Un guion bajo cruzando una frontera
+  es la definición de lo contrario de una superficie publicada, y ninguno se
+  arreglaba declarando nada: los cuatro se promovieron a nombre público del
+  lenguaje del contexto (`norma_por_codigo`, `tags_de_frontmatter`,
+  `tipo_por_carpeta`, `cuerpo_sin_marcadores`) conservando el privado como
+  alias anotado, que es lo que pide la no-derogación.
+
+- **El quinto: un generador comiéndose su propia salida.**
+  `vault_manifest._bootstrap_spec()` —que *genera* `tool-spec.json`— tomaba
+  `group_id` de `vault_compact_contracts.GROUPS`, que desde v40.7 es un
+  derivado **del tool-spec que esa misma función está escribiendo**. Y el
+  verificador, `vault_mcp_catalog.check_contracts`, calculaba la suya aparte
+  desde `GROUPS` y la numeración de `scripts/README.md`. Productor y
+  verificador leyendo fuentes distintas es la forma exacta en que una
+  divergencia se estrena sin que nadie la vea nacer. Los dos pasan a
+  `mapa_de_grupos()`.
+
+- **Dos cifras contiguas que no se podían restar.** El envelope publicaba
+  `off_port_total: 48` junto a `off_port_baseline: 47` sin que hubiera deuda
+  nueva: el total contaba sitios y la baseline claves `módulo -> símbolo`, y
+  `vault_io` importa `vault_section_index` dos veces en el mismo fichero.
+  Quien leyera la diferencia como una regresión se habría puesto a buscar un
+  cruce que no existía. `off_port_total` pasa a contarse por clave;
+  `off_port_sites` conserva el recuento por sitio.
+
+Resultado: `off_port` 47 → 0 y un cruce de contexto menos (59 → 58), con la
+garantía de que ninguna de las cuarenta se fue por relajar la medida. Ningún
+argv ni envelope de tool cambia.
 
 ---
 

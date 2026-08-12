@@ -109,7 +109,7 @@ def _is_vault_note(path: Path) -> bool:
     return es_nota_indexable(path, _raiz(), VAULT_SECTIONS, incluir_indices=False)
 
 
-def _parse_frontmatter_tags(content: str) -> List[str]:
+def tags_de_frontmatter(content: str) -> List[str]:
     """Tags del frontmatter, con el mismo parser que usa el resto del toolkit.
 
     La versión anterior leía la línea `tags:` a mano y solo entendía la forma
@@ -125,6 +125,12 @@ def _parse_frontmatter_tags(content: str) -> List[str]:
     if not isinstance(crudos, list):
         return []
     return [str(t).strip() for t in crudos if str(t).strip()]
+
+
+#: superseded_by: `tags_de_frontmatter`. El nombre privado se conserva para los
+#: cuatro usos internos de este módulo; lo que dejó de valer en v40.8 es que el
+#: write path del kernel entrase por él desde otro contexto.
+_parse_frontmatter_tags = tags_de_frontmatter
 
 
 def _parse_frontmatter_title(content: str) -> str:

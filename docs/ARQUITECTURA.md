@@ -2,7 +2,7 @@
 
 > Documento derivado. Se genera con `python scripts/vault_arch.py --blueprint`; la fuente es `CONTEXTS` en `scripts/vault_arch.py`. No se edita a mano.
 
-**9 contextos**, **120 módulos** clasificados, **60 fronteras cruzadas** pendientes de publicar puerto.
+**9 contextos**, **120 módulos** clasificados, **59 fronteras cruzadas** pendientes de publicar puerto.
 
 ## Los límites
 
@@ -67,7 +67,7 @@ graph TD
 ## Autoría
 
 - **Lenguaje ubicuo:** nota, frontmatter, slug, sección, alias
-- **Puertos publicados:** `anexar` → `vault_append:vault_append`, `escribir_nota` → `vault_write:vault_write`, `fusionar` → `vault_merge:vault_merge`, `mover` → `vault_move:move_note`
+- **Puertos publicados:** `anexar` → `vault_append:vault_append`, `buscar` → `vault_search:vault_search`, `escribir_nota` → `vault_write:vault_write`, `fusionar` → `vault_merge:vault_merge`, `hablar` → `vault_voice:speak`, `mover` → `vault_move:move_note`, `tipo_por_carpeta` → `vault_write:tipo_por_carpeta`
 - **Módulos (38):** `vault_ai_decision`, `vault_append`, `vault_bibliography_save`, `vault_bug_save`, `vault_change_log`, `vault_dataset`, `vault_delta`, `vault_diagram_export`, `vault_diagram_save`, `vault_diff`, `vault_env_save`, `vault_fix_brackets`, `vault_flow_save`, `vault_incident_save`, `vault_infra_save`, `vault_knowledge_get`, `vault_knowledge_save`, `vault_list`, `vault_merge`, `vault_move`, `vault_ncr_save`, `vault_pattern_list`, `vault_pattern_save`, `vault_privacy_save`, `vault_project_overview`, `vault_project_status`, `vault_read`, `vault_release_save`, `vault_requirement_save`, `vault_risk_save`, `vault_runbook_log`, `vault_runbook_save`, `vault_search`, `vault_slo_save`, `vault_test_save`, `vault_timeline`, `vault_voice`, `vault_write`
 
 Fronteras que hoy cruza (22), deuda declarada:
@@ -114,8 +114,8 @@ Fronteras que hoy cruza (4), deuda declarada:
 
 ## Gobernanza
 
-- **Lenguaje ubicuo:** norma, guard, enforcement, severidad, violación
-- **Puertos publicados:** `NORM_CATALOG` → `vault_norms:NORM_CATALOG`, `auditar` → `vault_audit:vault_audit`, `puntuar_calidad` → `vault_quality_check:vault_quality_check`, `valores_cia` → `vault_fundamentals:cia_valores`, `vocabulario_de_dominio` → `vault_norms:DOMAIN_STATUS_VOCABS`, `vocabulario_de_estado` → `vault_norms:STATUS_VOCAB`
+- **Lenguaje ubicuo:** norma, guard, enforcement, severidad, violación, estado, transición de estado, fundamento, hallazgo
+- **Puertos publicados:** `FUNDAMENTOS` → `vault_fundamentals:FUNDAMENTALS`, `NORM_CATALOG` → `vault_norms:NORM_CATALOG`, `auditar` → `vault_audit:vault_audit`, `cuerpo_sin_marcadores` → `vault_norms:cuerpo_sin_marcadores`, `gancho_de_secretos` → `vault_secret_scan:vault_write_hook`, `hay_hallazgos_bloqueantes` → `vault_secret_scan:has_blocking_findings`, `lineas_de_estado` → `vault_norms:status_frontmatter_lines`, `norma_por_codigo` → `vault_norms:norma_por_codigo`, `normalizar_estado` → `vault_norms:normalize_status`, `puntuar_calidad` → `vault_quality_check:vault_quality_check`, `referencias_de_norma` → `vault_norms:compute_norm_refs`, `registro_de_ciclo_de_vida` → `vault_norms:LIFECYCLE_REGISTRY`, `transiciones_de_estado` → `vault_norms:STATUS_TRANSITIONS`, `validar_mermaid` → `vault_mermaid_check:validate_mermaid`, `valores_cia` → `vault_fundamentals:cia_valores`, `vocabulario_de_dominio` → `vault_norms:DOMAIN_STATUS_VOCABS`, `vocabulario_de_estado` → `vault_norms:STATUS_VOCAB`
 - **Módulos (9):** `vault_audit`, `vault_drift_detect`, `vault_fundamentals`, `vault_mermaid_check`, `vault_norms`, `vault_quality_check`, `vault_secret_scan`, `vault_security_scan`, `vault_validate`
 
 Fronteras que hoy cruza (6), deuda declarada:
@@ -131,8 +131,8 @@ Fronteras que hoy cruza (6), deuda declarada:
 
 ## Índices
 
-- **Lenguaje ubicuo:** índice, etiqueta, término, sección indexada
-- **Puertos publicados:** `indice_maestro` → `vault_master_index:vault_master_index`, `reindexar` → `vault_reindex:vault_reindex`, `vocabulario_de_tags` → `vault_tags:canonical_tags`
+- **Lenguaje ubicuo:** índice, etiqueta, término, sección indexada, coherencia
+- **Puertos publicados:** `coherencia_de_indices` → `vault_reindex:index_coherence`, `indice_de_seccion` → `vault_section_index:vault_section_index`, `indice_maestro` → `vault_master_index:vault_master_index`, `ledger_de_backfill_de_tags` → `vault_tags:vault_tags_backfill_ledger`, `registrar_tags` → `vault_tags:registrar_tags_de_nota`, `reindexar` → `vault_reindex:vault_reindex`, `tags_de_frontmatter` → `vault_tags:tags_de_frontmatter`, `vocabulario_de_tags` → `vault_tags:canonical_tags`
 - **Módulos (6):** `vault_folder_registry`, `vault_index`, `vault_master_index`, `vault_reindex`, `vault_section_index`, `vault_tags`
 
 Fronteras que hoy cruza (1), deuda declarada:
@@ -144,7 +144,7 @@ Fronteras que hoy cruza (1), deuda declarada:
 ## Consulta
 
 - **Lenguaje ubicuo:** intención, subgrafo, paquete de contexto, preferencia
-- **Puertos publicados:** `empaquetar_contexto` → `vault_context_pack:vault_context_pack`, `parsear_consulta` → `vault_query_parse:vault_query_parse`, `subgrafo` → `vault_subgraph:vault_subgraph`
+- **Puertos publicados:** `cargar_contexto` → `vault_mcp_context:load_context`, `contexto_de_sesion` → `vault_mcp_context:get_context`, `empaquetar_contexto` → `vault_context_pack:vault_context_pack`, `guardar_contexto` → `vault_mcp_context:save_context`, `limpiar_contexto` → `vault_mcp_context:clear_context`, `parsear_consulta` → `vault_query_parse:vault_query_parse`, `subgrafo` → `vault_subgraph:vault_subgraph`
 - **No cruza:** base de datos; embeddings; servicio externo
 - **Módulos (10):** `vault_compact_contracts`, `vault_context_pack`, `vault_ingest`, `vault_mcp_context`, `vault_preferences`, `vault_query_parse`, `vault_subgraph`, `vault_token_counter`, `vault_token_service`, `vault_tokens`
 
@@ -197,13 +197,12 @@ Fronteras que hoy cruza (15), deuda declarada:
 - **No cruza:** escribir en una sección de contenido: sus artefactos derivados viven en 00_System/
 - **Módulos (19):** `vault_arch`, `vault_blame_audit`, `vault_changelog_check`, `vault_doc_counts`, `vault_doc_sync`, `vault_error_contract`, `vault_firma_sitio`, `vault_foreign_check`, `vault_gate`, `vault_manifest`, `vault_mcp`, `vault_mcp_catalog`, `vault_noop_audit`, `vault_smoke`, `vault_spec_catalog_check`, `vault_spec_generate_catalog`, `vault_spec_memory`, `vault_spec_validate`, `vault_test_runner`
 
-Fronteras que hoy cruza (8), deuda declarada:
+Fronteras que hoy cruza (7), deuda declarada:
 
 | Módulo | Importa | Contexto destino |
 |---|---|---|
 | `vault_changelog_check` | `vault_standard_upgrade` | Ciclo de vida |
 | `vault_doc_counts` | `vault_norms` | Gobernanza |
-| `vault_manifest` | `vault_compact_contracts` | Consulta |
 | `vault_manifest` | `vault_fundamentals` | Gobernanza |
 | `vault_mcp` | `vault_mcp_context` | Consulta |
 | `vault_spec_memory` | `vault_fundamentals` | Gobernanza |

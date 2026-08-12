@@ -522,13 +522,18 @@ def _bootstrap_spec() -> Dict[str, Any]:
     except ImportError:
         pass
 
-    # Import GROUPS desde vault_compact_contracts para group_id
+    # `group` y `group_id`, derivados de la fuente única del catálogo.
+    #
+    # Hasta v40.8 esto leía `vault_compact_contracts.GROUPS`, que es un
+    # derivado **del tool-spec que esta misma función está generando**: el
+    # bootstrap se alimentaba de su propia salida anterior, y de paso cruzaba
+    # a otro contexto acotado por un símbolo que nadie había declarado puerto.
+    # `mapa_de_grupos()` es la misma derivación que `check_contracts` usa para
+    # comprobar el resultado — productor y verificador, una sola fuente.
     _group_by_tool: Dict[str, Dict] = {}
     try:
-        from vault_compact_contracts import GROUPS as _GROUPS
-        for g in _GROUPS:
-            for t in g["tools"]:
-                _group_by_tool[t] = g
+        from vault_mcp_catalog import mapa_de_grupos
+        _group_by_tool = mapa_de_grupos()
     except ImportError:
         pass
 

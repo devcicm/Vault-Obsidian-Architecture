@@ -35,7 +35,7 @@ from vault_registry import standard_folders
 SCRIPTS_DIR = Path(__file__).resolve().parent
 
 
-CURRENT_VERSION = "v40.7"
+CURRENT_VERSION = "v40.8"
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))

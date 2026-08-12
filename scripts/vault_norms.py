@@ -1855,6 +1855,18 @@ NORM_CATALOG: List[Dict[str, Any]] = [
 # Índice rápido por código
 _NORM_BY_CODE: Dict[str, Dict[str, Any]] = {n["code"]: n for n in NORM_CATALOG}
 
+
+def norma_por_codigo(code: str) -> Dict[str, Any] | None:
+    """La norma con ese código, o `None`.
+
+    El puerto público del índice. `vault_code_tag` —que es del contexto de
+    grafo— venía importando `_NORM_BY_CODE` directamente: un nombre privado
+    atravesando una frontera, que es lo contrario de una superficie publicada.
+    El dict sigue existiendo para uso interno de este módulo; lo que cambia es
+    que quien viene de fuera entra por aquí.
+    """
+    return _NORM_BY_CODE.get(code)
+
 _SEVERITY_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3, "N/A": 4}
 _CATEGORY_ORDER = {
     "linking": 0,
@@ -2742,7 +2754,7 @@ _LINEA_ANDAMIO = re.compile(
 )
 
 
-def _cuerpo_sin_marcadores(body: str) -> str:
+def cuerpo_sin_marcadores(body: str) -> str:
     """Lo que queda de un cuerpo tras quitar andamiaje y marcadores de pendiente.
 
     Cadena vacía significa que la nota no afirma nada: todo lo que contiene es
@@ -2773,6 +2785,13 @@ def _cuerpo_sin_marcadores(body: str) -> str:
         and not _APARTE_PENDIENTE.match(ln)
     ]
     return "\n".join(utiles).strip()
+
+
+#: superseded_by: `cuerpo_sin_marcadores`. El nombre privado no se borra —la
+#: no-derogación vale también para los símbolos— pero dejó de ser el canónico
+#: en v40.8: `vault_onboard`, que es de otro contexto, lo importaba tal cual, y
+#: un `_` cruzando una frontera no es una superficie publicada.
+_cuerpo_sin_marcadores = cuerpo_sin_marcadores
 
 
 #: Manifiesto público del estándar — referencia del guard anti-drift del marco.

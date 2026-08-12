@@ -439,7 +439,7 @@ def generate_frontmatter(
 # write path escribía, valor por valor.
 
 
-def _deduce_type_from_folder(folder: str) -> str:
+def tipo_por_carpeta(folder: str) -> str:
     """Derive type field value from the vault section folder."""
     if not folder:
         return ""
@@ -447,6 +447,12 @@ def _deduce_type_from_folder(folder: str) -> str:
 
     top = folder.split("/")[0].split("\\")[0]
     return section_default_type(top)
+
+
+#: superseded_by: `tipo_por_carpeta`. Se conserva el nombre privado —nada se
+#: deroga— pero dejó de ser el canónico en v40.8: `vault_onboard`, del contexto
+#: de ciclo de vida, lo importaba con el guion bajo por delante.
+_deduce_type_from_folder = tipo_por_carpeta
 
 
 def extract_wiki_links(content: str) -> List[str]:
