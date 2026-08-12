@@ -62,7 +62,13 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "Referencias a scripts/tools que no existen en el repo; funciones con firmas que no coinciden con el código.",
         "prevention": "Verificar existencia real antes de documentar. vault_read + grep sobre el código fuente.",
         "tools_enforcing": [],
-        "tools_detecting": ["vault_drift_detect"],
+        "tools_detecting": [],
+        "cobertura_descubierta": (
+            "Ninguna tool la detecta. Declaraba `vault_drift_detect`, que mide lo "
+            "contrario: cambios en el código que la documentación no recoge. AP-01 es "
+            "documentación que describe código inexistente, y para verla haría falta "
+            "resolver cada referencia contra el repo."
+        ),
         "introduced_version": "v19",
     },
     {
@@ -80,7 +86,16 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "vault_audit reporta canonicalShadow o crossFolderDuplicates.",
         "prevention": "Una nota por entidad. Usar .history/ para versiones anteriores (vault_write lo gestiona automáticamente).",
         "tools_enforcing": [],
-        "tools_detecting": ["vault_audit"],
+        "tools_detecting": [],
+        "cobertura_descubierta": (
+            "Sus dos variantes hermanas sí se miden —AP-17 canonical-shadow y "
+            "AP-18 cross-folder, ambas con penalización propia en "
+            "vault_audit.PENALIZACIONES—, pero la variante same-folder que es "
+            "AP-02 no la detecta nadie: `status-v1.md` y `status-v2.md` en la "
+            "misma carpeta no son duplicados por hash (AP-18) ni pasan el "
+            "umbral de similitud de título (AP-17). Declararlo aquí es lo que "
+            "impide que la cobertura de las hermanas se lea como suya."
+        ),
         "introduced_version": "v19",
     },
     {
@@ -114,7 +129,12 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "Notas sin campo status o con status:planned que describen funcionalidad en presente.",
         "prevention": "Usar status: planned/in-progress/implemented. Nunca describir en presente algo que no está deployado.",
         "tools_enforcing": [],
-        "tools_detecting": ["vault_drift_detect"],
+        "tools_detecting": [],
+        "cobertura_descubierta": (
+            "Ninguna tool la detecta. `vault_drift_detect` compara hashes y git; "
+            "distinguir «lo describe en presente» de «ya está deployado» exige leer el "
+            "cuerpo de la nota contra el estado real, que hoy no hace nadie."
+        ),
         "introduced_version": "v19",
     },
     {
@@ -131,7 +151,15 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "IPs/URLs/versiones que difieren entre notas del mismo proyecto.",
         "prevention": "PAT-1 (canonical source anchoring): una nota canónica por dato, las demás hacen [[wiki-link]] a ella.",
         "tools_enforcing": [],
-        "tools_detecting": ["vault_graph_inspect"],
+        "tools_detecting": [],
+        "cobertura_descubierta": (
+            "La única norma `critical` que hoy no mide nadie, y se declara así en vez "
+            "de esconderlo. Declaraba `vault_graph_inspect`, que no la menciona ni "
+            "compara valores entre notas. Diecisiete módulos citan AP-05 en un "
+            "comentario —al explicar por qué NO copian un dato— y citar no es "
+            "detectar. Detectarla de verdad exige decidir qué es «el mismo dato» "
+            "sin embeddings, que es un problema de diseño abierto."
+        ),
         "introduced_version": "v19",
     },
     {
@@ -182,7 +210,13 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "Notas con versiones hardcodeadas (v1.2.3) y updatedAt > 90 días.",
         "prevention": "Agregar campo version_pinned al frontmatter con la versión referenciada. vault_audit puede alertar.",
         "tools_enforcing": [],
-        "tools_detecting": ["vault_drift_detect"],
+        "tools_detecting": [],
+        "cobertura_descubierta": (
+            "Ninguna tool la detecta. Declaraba `vault_drift_detect`, que no lee "
+            "versiones del cuerpo de la nota. La propia `prevention` lo dice en "
+            "condicional —«vault_audit puede alertar»— y ese condicional lleva desde "
+            "v19 sin resolverse."
+        ),
         "introduced_version": "v19",
     },
     {
@@ -216,7 +250,10 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "vault_migrate_docs ejecutado sin llamar vault_drift_detect --snapshot primero.",
         "prevention": "PAT-4 (phased audit): siempre snapshot → migrate → verify → rollback si falla.",
         "tools_enforcing": [],
-        "tools_detecting": ["vault_norms", "vault_migrate_rollback"],
+        # `vault_migrate_rollback` **es** el rollback: tenerlo no detecta que una
+        # migración se hizo sin él. Quien lo mide es `vault_norms --audit`, que
+        # marca notas en `10_Migrated/` sin su `_report-*.md`.
+        "tools_detecting": ["vault_norms"],
         "introduced_version": "v19",
     },
     {
@@ -252,7 +289,10 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "vault_validate reporta campos faltantes. vault_audit detecta inconsistencias de tipo.",
         "prevention": "vault_write como único punto de creación; nunca editar frontmatter manualmente.",
         "tools_enforcing": ["vault_write"],
-        "tools_detecting": ["vault_validate", "vault_audit"],
+        # `vault_audit` no mide AP-12: mide los campos uno a uno (AP-16, AP-26,
+        # AP-27, AP-29, AP-30), cada uno con su penalización. Quien comprueba el
+        # bloque completo es `vault_validate.validate_frontmatter`.
+        "tools_detecting": ["vault_validate"],
         "introduced_version": "v19",
     },
     {
@@ -468,7 +508,8 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "vault_audit muestra 0 canonicalShadow y 0 crossFolderDuplicates.",
         "prevention": "N/A — es el patrón correcto. Aplicar siempre al crear documentación.",
         "tools_enforcing": [],
-        "tools_detecting": ["vault_audit"],
+        "tools_detecting": [],
+        "tools_del_patron": ["vault_audit"],
         "introduced_version": "v25",
     },
     {
@@ -485,7 +526,8 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "Stubs del vault tienen status:stub y fecha expand_by.",
         "prevention": "N/A — es el patrón correcto.",
         "tools_enforcing": [],
-        "tools_detecting": ["vault_audit"],
+        "tools_detecting": [],
+        "tools_del_patron": ["vault_audit"],
         "introduced_version": "v25",
     },
     {
@@ -503,7 +545,8 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "vault_audit canonicalShadow reducido después de aplicar.",
         "prevention": "N/A — es el algoritmo de resolución.",
         "tools_enforcing": [],
-        "tools_detecting": ["vault_audit"],
+        "tools_detecting": [],
+        "tools_del_patron": ["vault_audit", "vault_change_log", "vault_write"],
         "introduced_version": "v25",
     },
     {
@@ -521,7 +564,8 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "0 regresiones entre snapshot y estado final.",
         "prevention": "N/A — es el protocolo de auditoría.",
         "tools_enforcing": [],
-        "tools_detecting": ["vault_drift_detect"],
+        "tools_detecting": [],
+        "tools_del_patron": ["vault_drift_detect", "vault_audit", "vault_write", "vault_change_log"],
         "introduced_version": "v25",
     },
     {
@@ -538,8 +582,9 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         ),
         "signal": "vault_audit reporta 0 notas sin campo agent.",
         "prevention": "N/A — vault_write genera estos campos automáticamente.",
-        "tools_enforcing": ["vault_write"],
-        "tools_detecting": ["vault_audit"],
+        "tools_enforcing": [],
+        "tools_detecting": [],
+        "tools_del_patron": ["vault_write", "vault_audit"],
         "introduced_version": "v25",
     },
     # ── Anti-patrón AP-23 ──────────────────────────────────────────────────────
@@ -674,9 +719,11 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "type ↔ carpeta que sostiene la dimensión de exactitud (F4)."
         ),
         "signal": "vault_audit la cuenta en missing_type y penaliza -2 por nota (tope -10).",
-        "prevention": "Declarar --type en la escritura; vault_validate lo comprueba contra el registro.",
+        "prevention": "Declarar --type en la escritura; vault_audit lo cuenta en missing_type.",
         "tools_enforcing": [],
-        "tools_detecting": ["vault_audit", "vault_validate"],
+        # `vault_validate` no mira `type`: su lista de campos exigidos no lo
+        # incluye. Lo cuenta `vault_audit` en `missing_type`, con peso propio.
+        "tools_detecting": ["vault_audit"],
         "introduced_version": "v30",
     },
     {
@@ -738,7 +785,10 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "cia_integrity: low a lo ingerido por no estar verificado."
         ),
         "tools_enforcing": ["vault_ingest"],
-        "tools_detecting": ["vault_audit", "vault_quality_check"],
+        # `vault_quality_check` valida los valores CIA **cuando están** (`if
+        # "cia_integrity" in fm`); la ausencia, que es lo que AP-30 nombra, no la
+        # ve. La cuenta `vault_audit` en `missing_cia`.
+        "tools_detecting": ["vault_audit"],
         "introduced_version": "v30",
     },
     # ── Anti-patrón AP-31 ──────────────────────────────────────────────────────
@@ -796,7 +846,10 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "Para code relations: imports, extends, implements, calls, uses, re-exports, depends_on."
         ),
         "tools_enforcing": [],
-        "tools_detecting": ["vault_graph_merge", "vault_audit"],
+        # `vault_audit` pesa AP-31, AP-34 y AP-35 del grafo, no AP-32: no hay
+        # entrada suya en PENALIZACIONES. El predicate fuera de ontología lo
+        # reporta `vault_graph_merge` en `unknown_predicates`.
+        "tools_detecting": ["vault_graph_merge"],
         "introduced_version": "v37",
     },
     # ── Anti-patrón AP-33 ──────────────────────────────────────────────────────
@@ -1297,7 +1350,10 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "regex por líneas— es AP-44 aplicado al generador."
         ),
         "tools_enforcing": ["vault_io.atomic_write_text", "vault_write"],
-        "tools_detecting": ["vault_norms", "vault_audit"],
+        # AP-46 es una norma sobre **tools**, no sobre notas: dice que veintiséis
+        # tools montan el frontmatter a mano. `vault_audit` audita notas y no
+        # puede verlo. Quien lo mide es `vault_norms`.
+        "tools_detecting": ["vault_norms"],
         "introduced_version": "v39.3",
     },
     # ── Antipatrón AP-47 ───────────────────────────────────────────────────────
@@ -1830,7 +1886,8 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "protocol como paso automatico antes de vault_audit."
         ),
         "tools_enforcing": [],
-        "tools_detecting": ["vault_graph_merge", "vault_audit"],
+        "tools_detecting": [],
+        "tools_del_patron": ["vault_graph_merge", "vault_audit"],
         "introduced_version": "v37",
     },
     # ── Protocolo de sesión SP-XX ──────────────────────────────────────────────
@@ -1892,7 +1949,10 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "vault_delta --snapshot antes de cada sesión con cambios masivos."
         ),
         "tools_enforcing": [],
-        "tools_detecting": ["vault_backup"],
+        # `vault_backup` copia el vault entero; el snapshot que SP-03 pide —y que
+        # su propia descripción nombra— lo toma `vault_delta --snapshot`, que es
+        # además quien luego calcula el delta contra él.
+        "tools_detecting": ["vault_delta"],
         "introduced_version": "v30",
     },
     # ── Convenciones de nomenclatura CN-XX ────────────────────────────────────
@@ -1912,7 +1972,10 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "Archivos con espacios, mayúsculas o caracteres especiales en el nombre.",
         "prevention": "Siempre usar vault_write para crear notas. Nunca crear archivos .md directamente.",
         "tools_enforcing": ["vault_write"],
-        "tools_detecting": ["vault_validate"],
+        # Ninguna tool audita los nombres de fichero ya escritos: `vault_validate`
+        # no los mira. El guard de escritura sí existe (`slugify`), y por eso el
+        # enforcement es `guard` y no `guard+audit`.
+        "tools_detecting": [],
         "introduced_version": "v30",
     },
     {

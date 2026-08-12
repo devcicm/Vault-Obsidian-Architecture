@@ -154,7 +154,16 @@ def _cargar_baseline() -> Dict[str, str]:
 
 
 def comprobar(version_en_curso: Optional[str] = None) -> Dict[str, Any]:
-    """Contrasta cada entrada con hash real contra el commit que cita."""
+    """Contrasta cada entrada con hash real contra el commit que cita.
+
+    **AP-53** entera vive aquí: la documentación afirma un hecho del historial
+    —qué commit introdujo una versión y en qué fecha— y ese hecho existe de
+    verdad en git. Detectar es preguntárselo a git; aplicar es `--fijar-hash`,
+    que sustituye el `git: pending` por el hash real en vez de dejar que se
+    escriba a mano. La fecha se toma de la **autoría**, no del commit: un
+    rebase reescribe la segunda y desincronizaría la afirmación sin que nadie
+    hubiera tocado el changelog.
+    """
     todas = entradas()
     if not todas:
         return emit_error(

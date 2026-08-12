@@ -96,19 +96,25 @@ DEUDA_DECLARADA: List[Dict[str, str]] = [
         ),
     },
     {
-        "id": "catalogo_de_normas_contradictorio",
+        "id": "normas_criticas_sin_detector",
         "capa": "4",
         "que": (
-            "`guard` con dos significados sin declarar; AP-14/SP-02/CN-01/CN-02 "
-            "declaran rechazo en escritura que `vault_write` no hace; AP-22 y AP-24 "
-            "prescriben lo opuesto para el mismo defecto; AP-05 es `critical` sin "
-            "detector real; `vault_voice.coverage()` certifica el catálogo contra el "
-            "propio catálogo (AP-44 dentro del guard de AP-43)."
+            "Cinco normas no las mide nadie y desde v40.11 lo declaran por escrito "
+            "en `cobertura_descubierta`: AP-01, AP-02, AP-04, AP-08 y —el titular— "
+            "**AP-05, la única `critical` descubierta**. Diecisiete módulos citan "
+            "AP-05 en un comentario, al explicar por qué NO copian un dato, y citar "
+            "no es detectar: nada mide hoy que el mismo dato aparezca con valores "
+            "distintos en varias notas. AP-02 es la variante same-folder, cuyas dos "
+            "hermanas —AP-17 y AP-18— sí pesan en el healthIndex."
         ),
         "por_que_no_ahora": (
-            "Toca la fuente normativa, que es lo más caro de mover en este repo, y "
-            "arreglarlo de paso dentro de una tanda de alcance sería cambiar normas "
-            "sin la discusión que una norma merece."
+            "Detectar AP-05 sobre markdown plano, sin embeddings y sin base de "
+            "datos, es un problema de diseño abierto, no una tool que falte "
+            "escribir: la restricción que lo hace difícil es la misma decisión de "
+            "producto que sostiene el estándar. Merece su propia tanda. Lo que "
+            "v40.11 sí cierra es lo que era falso: la contradicción del catálogo "
+            "(v40.10, AP-55), las 47 afirmaciones de cobertura sin traza, y el "
+            "`vault_voice.coverage()` que certificaba el catálogo contra sí mismo."
         ),
     },
     {
@@ -220,8 +226,10 @@ def cobertura_de_normas() -> List[Dict[str, Any]]:
     filas = []
     for norma in r["norms"].NORM_CATALOG:
         code = norma["code"]
-        tools = list(norma.get("tools_enforcing", [])) + list(
-            norma.get("tools_detecting", [])
+        tools = (
+            list(norma.get("tools_enforcing", []))
+            + list(norma.get("tools_detecting", []))
+            + list(norma.get("tools_del_patron", []))
         )
         # `tools_enforcing` admite entradas con paréntesis explicativo
         # ("vault_section_index (guard CN-02)"): el nombre es el primer token.
@@ -233,6 +241,11 @@ def cobertura_de_normas() -> List[Dict[str, Any]]:
             }
         )
         tests = sorted(f for f, texto in textos.items() if code in texto)
+        # Una norma que declara `cobertura_descubierta` no es deuda descubierta
+        # por sorpresa: es un hueco escrito, con motivo, y se publica aparte.
+        # Mezclarla con las que nadie miró haría que declararse honestamente
+        # saliera más caro que callarse.
+        motivo = (norma.get("cobertura_descubierta") or "").strip()
         filas.append(
             {
                 "code": code,
@@ -241,6 +254,7 @@ def cobertura_de_normas() -> List[Dict[str, Any]]:
                 "gates": puertas,
                 "tests": tests,
                 "covered": bool(puertas or tests),
+                "uncovered_declared": motivo or None,
             }
         )
     return filas

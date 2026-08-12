@@ -67,7 +67,15 @@ def notas_indexables(root=None) -> List[Path]:
 
 
 def index_coherence(root=None) -> Dict[str, Any]:
-    """Contrasta search-index.json y graph.json contra lo que hay en disco."""
+    """Contrasta search-index.json y graph.json contra lo que hay en disco.
+
+    Es la mitad detectora de **AP-47**: el vault es la fuente de verdad y los
+    dos índices son proyecciones suyas, así que la única forma de saber que una
+    proyección se quedó atrás es contrastarla contra el disco y no contra la
+    escritura que la generó. La mitad aplicadora es `vault_reindex()`, que la
+    regenera; separadas porque detectar el desfase y repararlo no son la misma
+    operación y no siempre se piden juntas.
+    """
     return coherencia_indice(_repo(root))
 
 

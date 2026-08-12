@@ -70,6 +70,11 @@ def norms_for_tool(tool: str) -> List[Dict[str, Any]]:
             aplica.append(norma)
         elif _menciona(norma.get("tools_detecting"), tool):
             detecta.append(norma)
+        elif _menciona(norma.get("tools_del_patron"), tool):
+            # Un PAT-x no se detecta: se sigue. La tool que lo sigue es la que
+            # tiene que decirlo, o el patrón no llega nunca al agente aunque
+            # esté escrito en el catálogo.
+            detecta.append(norma)
     orden = _rango("severidad", base=0, mayor_primero=False)
     clave = lambda n: (orden.get(n.get("severity"), 9), n["code"])  # noqa: E731
     return sorted(aplica, key=clave) + sorted(detecta, key=clave)
@@ -184,8 +189,15 @@ def _rotacion() -> int:
 def coverage() -> Dict[str, Any]:
     """AP-43 — qué parte del catálogo llega alguna vez al agente por esta vía.
 
-    Una norma que no está en `tools_enforcing` ni en `tools_detecting` de
-    ninguna tool no se pronuncia nunca: es prosa, y esto la nombra.
+    Una norma que no está en `tools_enforcing`, `tools_detecting` ni
+    `tools_del_patron` de ninguna tool no se pronuncia nunca: es prosa, y esto
+    la nombra.
+
+    Muda y descubierta no son lo mismo, y desde v40.11 se separan. Una norma con
+    `cobertura_descubierta` declara por escrito que hoy no la mide nadie y por
+    qué: es un hueco conocido y publicado, no un olvido. Meterlas en el mismo
+    saco hacía lo contrario de lo que esta medida busca — el que se declara
+    honestamente quedaba indistinguible del que nadie miró.
     """
     try:
         from vault_mcp_catalog import TOOLS_CATALOG
@@ -195,7 +207,11 @@ def coverage() -> Dict[str, Any]:
         tools = []
     dichas = {n["code"] for t in tools for n in norms_for_tool(t)}
     todas = {n["code"] for n in _catalog()}
-    mudas = sorted(todas - dichas)
+    descubiertas = sorted(
+        n["code"] for n in _catalog()
+        if (n.get("cobertura_descubierta") or "").strip()
+    )
+    mudas = sorted(todas - dichas - set(descubiertas))
     return {
         "ok": not mudas,
         "tool": "vault_voice",
@@ -203,8 +219,11 @@ def coverage() -> Dict[str, Any]:
         "norms_total": len(todas),
         "norms_spoken": len(dichas),
         "silent": mudas,
+        "uncovered_declared": descubiertas,
         "hint": "Una norma que ninguna tool nombra no llega nunca al agente: "
-        "dale tools_enforcing o tools_detecting en vault_norms.NORM_CATALOG.",
+        "dale tools_enforcing, tools_detecting o tools_del_patron en "
+        "vault_norms.NORM_CATALOG — o, si de verdad no la mide nadie, "
+        "cobertura_descubierta con el motivo escrito.",
     }
 
 

@@ -1321,7 +1321,13 @@ def _nombre_llamado(func: ast.AST) -> str:
 
 
 def copias_de_vocabulario() -> list[dict]:
-    """Una lista literal que reproduce un vocabulario que el registro declara.
+    """AP-50: una lista literal que reproduce un vocabulario que el registro declara.
+
+    Este es uno de los tres detectores de AP-50 —con
+    `lecturas_de_entorno_sin_registro()` y `vocabularios_sin_dueno()`—, y a la
+    vez su guard: `--check --strict` falla, así que la decisión duplicada no
+    llega a merge. De ahí que AP-50 sea `guard+audit` con `vault_arch` en los
+    dos campos.
 
     `critical | high | medium | low` estaba escrito a mano en catorce ficheros:
     cuatro `choices=` de argparse y diez constantes de módulo. Coincidían todas

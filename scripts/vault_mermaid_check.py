@@ -120,6 +120,12 @@ def validate_flowchart(diagram: str) -> List[Dict[str, Any]]:
     core`) es un nodo perfectamente válido — se dibuja con su propio id como
     etiqueta. No es un error de sintaxis y por tanto no invalida el bloque; se
     reporta como aviso porque un id sin etiqueta documenta peor.
+
+    Esa distinción es **AP-44** aplicada, y es el motivo de que esta tool figure
+    como aplicadora de la norma: el criterio de «válido» lo pone el renderizador
+    de Mermaid, que es quien va a dibujar el diagrama, no el gusto de este
+    validador. Medir con el criterio propio habría invalidado bloques que
+    Mermaid dibuja sin quejarse — la tool certificándose a sí misma.
     """
     errors: List[Dict[str, Any]] = []
     lines = diagram.strip().split("\n")

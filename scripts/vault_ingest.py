@@ -308,6 +308,9 @@ def _build_note(
         f'updatedAt: "{utcnow()}"',
         f"source: {json.dumps(source, ensure_ascii=False)}",
         f"ingest_origin: {origin}",
+        # AP-30 se cumple aquí, y por eso `vault_ingest` la aplica en vez de
+        # solo detectarla: la tríada CIA se escribe en el mismo acto que crea la
+        # nota, así que por esta vía no puede entrar una nota sin clasificar.
         # Integridad baja mientras no se revise: el rerank de context_pack la
         # ordenará por detrás del conocimiento verificado, que es lo correcto.
         "cia_integrity: low",

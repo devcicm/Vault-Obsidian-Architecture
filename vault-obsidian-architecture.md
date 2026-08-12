@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.10 — 2026-08-12  
+**Versión:** v40.11 — 2026-08-12  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -6155,6 +6155,50 @@ honestas: que el código nombre la norma en el sitio que la aplica, o que el
 catálogo deje de afirmar una cobertura que no tiene. Ampliar la baseline es la
 tercera y no lo es.
 
+**Saldadas en v40.11, y lo que hizo falta para saldarlas.** La baseline quedó en
+`claims: []`. Al triarlas apareció que **la mayoría no eran coberturas falsas
+sino mal atribuidas**: AP-27, AP-28 y AP-30 nombraban `vault_validate` o
+`vault_quality_check` teniendo entrada propia, con nombre y peso, en
+`vault_audit.PENALIZACIONES`. El catálogo no mentía sobre *si* la norma se
+aplica; mentía sobre *quién*. Tres rutas, y cada claim se resolvió leyendo la
+función que supuestamente la cumple —nunca por grep—:
+
+- **Reatribuir**, cuando la norma se aplica en otra tool.
+- **Nombrar la norma en la función que la cumple**, no en la cabecera del
+  módulo: una mención de cabecera hace pasar la medida sin llevar a nadie al
+  sitio, que es saldarlo haciendo trampa.
+- **Retirar la cobertura** y declarar el hueco.
+
+El grep sirve para **descartar** —si nadie la nombra, nadie puede seguirla—,
+nunca para **confirmar**. El contraejemplo estaba en el propio dato:
+`vault_audit` emite `"norm": "CN-01"` sobre un hallazgo de *scaffold*, que es una
+etiqueta equivocada. Confirmar por grep habría cerrado CN-01 reatribuyéndosela, y
+eso es el AP-44 que esta tool existe para detectar, cometido al saldar su propia
+deuda.
+
+**Dos campos nuevos, porque faltaba vocabulario.** `tools_del_patron` para los
+`recommended`: un PAT-x no se detecta, se sigue, y sus ocho afirmaciones eran un
+error de categoría contado como deuda. Y `cobertura_descubierta: "<motivo>"`, la
+única forma de que un campo requerido quede vacío. **No es una exención**: es el
+único sitio del catálogo donde la ausencia de detector se ve al leer la norma en
+vez de deducirse de un `[]`, y el guard también muerde en la dirección inversa —
+declararse descubierta *y* nombrar tools que la aplican es la misma contradicción
+del revés. Cinco normas la declaran hoy: AP-01, AP-02, AP-04, AP-08 y **AP-05,
+la única `critical` sin detector**, nombrada aquí y en la capa 7 del plano
+porque un hueco de ese tamaño no se guarda en un campo.
+
+**C6 — el hueco en la dirección contraria.** C2 mide afirmaciones sin código;
+nadie medía código sin afirmación. Seis entradas de `vault_audit.PENALIZACIONES`
+—`orphans`, `stale`, `stuck_patterns`, `stale_projects`, `missing_updated` y
+`cia_penalty`— restaban del healthIndex con `norma: null` desde v19. Cada una
+declara ahora su norma o se declara **métrica sin norma** con el motivo escrito:
+una nota sin enlaces entrantes no incumple nada, y un proyecto parado es un hecho
+del proyecto. `missing_updated` es la excepción incómoda y se deja escrita como
+tal: sus cinco hermanas de familia tienen norma propia y ella no. No se le
+inventa una para tapar el hueco. **C6 nace en cero y sin baseline** — una
+baseline aquí permitiría añadir una penalización sin decidir qué norma la
+sostiene, que es justo el vacío que la medida cierra.
+
 **Distinguida de AP-44.** AP-44 se comete al verificar: la tool mide con su
 propia normalización y queda ciega a su error. AP-55 está en el dato antes de que
 nadie verifique: dos registros canónicos afirman cosas distintas sobre el mismo
@@ -6700,6 +6744,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.11 | 2026-08-12 | Las 47 afirmaciones de cobertura que v40.10 congeló, saldadas a cero **una a una**, y el hueco en la dirección contraria. Al triarlas se vio que la mayoría no eran coberturas falsas sino **mal atribuidas**: AP-27, AP-28 y AP-30 nombraban `vault_validate` o `vault_quality_check` teniendo entrada propia, con nombre y peso, en `vault_audit.PENALIZACIONES` — el catálogo no mentía sobre *si* la norma se aplica sino sobre *quién*. Cada claim se resolvió leyendo la función que dice cumplirla, nunca por grep: el grep sirve para **descartar**, jamás para **confirmar**, y el contraejemplo estaba en el propio dato — `vault_audit` emite `"norm": "CN-01"` sobre un hallazgo de *scaffold*, así que confirmar por grep habría cerrado CN-01 con el criterio del propio guard, que es el AP-44 que la tool existe para detectar. Dos campos nuevos porque faltaba vocabulario: `tools_del_patron` —un PAT-x no se detecta, se sigue, y sus ocho afirmaciones eran un error de categoría contado como deuda— y `cobertura_descubierta`, la única forma de que un campo requerido quede vacío, con el motivo escrito y mordiendo también en la dirección inversa. Cinco normas lo declaran, entre ellas **AP-05, la única `critical` sin detector**, nombrada en el changelog y en la capa 7 del plano en vez de esconderse en un `[]`. Y **C6**: seis penalizaciones del healthIndex restaban con `norma: null` desde v19 — nadie medía código sin afirmación mientras C2 medía afirmación sin código. Nace en cero y sin baseline, a propósito |
 | v40.10 | 2026-08-12 | Dos ejes que nadie había separado, y un catálogo que se certificaba a sí mismo. **AP-55**: `NORM_CATALOG` declara a mano qué tools aplican y detectan cada norma, y el guard que existía para vigilarlo —`vault_voice.coverage()`, el guard de AP-43— comprobaba esos dos campos **leyéndolos**. Verifica el catálogo contra el catálogo, así que daba verde sobre 47 afirmaciones que ningún módulo respalda y era estructuralmente incapaz de verlas: AP-44 cometido dentro de un guard, por tercera vez en tres sitios distintos. `vault_norms_coherence` lo cruza con el código y con `vault_audit.PENALIZACIONES`, y destapó 54 valores de `tools_*` que mezclaban la tool con su flag y no resolvían para ningún consumidor, y AP-22 declarada `critical` mientras el audit la penalizaba por debajo de una `high` — seis versiones con los dos registros canónicos invertidos. Manda el que se ejecuta. En paralelo, el registro `NATURALEZAS` separa por **tool** lo que `CAPACIDADES` solo podía decir por grupo: construcción, documentación, custodia, consulta y meta-estándar, porque la mezcla ocurría dentro de los grupos —el grupo 1 tenía `vault_write` junto a `vault_move`, que decide dónde vive una nota— y forzarlo a dos categorías habría exigido afirmar que `vault_backup` construye |
 | v40.9 | 2026-08-12 | El pilar y el plano, y el cero que estaba medido sobre un subconjunto. Se declara el **servicio** (`vault_servicio`) y sus capacidades, y la medida corrigió al plan: no son dos ejes sino **tres** — el grupo 35 gobierna *el estándar*, no la memoria documental de nadie, y sus 14 tools se venían contando como si sirvieran al vault del usuario. Encima de eso, `vault_blueprint` genera `docs/BLUEPRINT.md` atando once registros canónicos que no tenían nada que los uniera, con la capa norma → puerta → test naciendo con 16 normas sin cobertura y baseline que solo encoge. El defecto de fondo era de **alcance**: siete guards hacían su propio `glob("vault_*.py")` y publicaban ceros que solo valían dentro de ese glob. Con un alcance único y declarado, AP-52 pasa de 0 a 21 sitios reales —doce en `cli/`, que es justo donde el consumidor lee el error, convertidos a `emit_error`— y el detector de cruces, que solo miraba `ast.ImportFrom`, pasa de 0 a 16: `import X` seguido de `X._privado` era invisible, y el test que escribí en v40.8 pasaba porque el guard no podía ver lo que lo falsificaba. Además el generador de `vault-commands.md` publicaba `vault_restore.py --name`, un flag inexistente, en cada vault que el estándar crea, y `escribir_baseline` destruía la lista v1 anotada en el segundo `--freeze` |
 | v40.8 | 2026-08-12 | La baseline de cruces fuera de puerto, de 47 a **0**, distinguiendo lo que nunca fue deuda de lo que sí: ~40 eran puertos que el código ya usaba y el registro no nombraba —doce `*_save` entrando por `status_frontmatter_lines` no son doce fugas—, y 5 eran cruces reales, cuatro de ellos un símbolo privado atravesando un contexto acotado. Antes de declarar nada se cerró el agujero que habría convertido el ejercicio en un blanqueo: un puerto ya no puede nombrar un símbolo que empiece por `_`, porque si no bastaba con escribir `vault_norms:_NORM_BY_CODE` en el registro para que la deuda desapareciera sin arreglar nada. Además `off_port_total` pasa a contarse por clave como su propia baseline —publicaba 48 junto a 47 sin que hubiera regresión— y el bootstrap del tool-spec deja de alimentarse de un derivado de su propia salida |
@@ -7031,6 +7076,63 @@ temp/
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
 
 ---
+
+### v40.11 — 2026-08-12 `git: pending`
+
+**Una deuda se salda leyendo el código, no buscándolo.**
+
+v40.10 congeló 47 afirmaciones de cobertura sin traza: entradas de
+`tools_enforcing` / `tools_detecting` cuyo módulo nombrado no menciona la norma
+en ninguna parte. La baseline decía cómo se saldan —nombrando la norma donde se
+aplica, o retirando la cobertura— y esta versión la lleva a `claims: []`.
+
+Al triarlas apareció lo que el conteo no dejaba ver: **la mayoría no eran
+coberturas falsas sino mal atribuidas.** AP-27, AP-28 y AP-30 declaraban
+`vault_validate` o `vault_quality_check` como detector teniendo entrada propia,
+con nombre y peso, en `vault_audit.PENALIZACIONES`. El catálogo no mentía sobre
+*si* la norma se aplica; mentía sobre *quién*.
+
+**El grep sirve para descartar, nunca para confirmar.** Cerrar una afirmación
+porque el grep encuentra el código en otro módulo sería saldar la deuda con el
+criterio del propio guard: AP-44 por cuarta vez, y cometido justo en la tool que
+existe para detectarlo. El contraejemplo estaba en el dato — `vault_audit` emite
+`"norm": "CN-01"` sobre un hallazgo de *scaffold*, que es una etiqueta
+equivocada. Confirmar por grep habría «resuelto» CN-01 reatribuyéndosela. Cada
+claim se resolvió leyendo la función que dice cumplirla, y las anotaciones fueron
+**a la función**, no a la cabecera del módulo: una mención de cabecera pasa la
+medida sin llevar a nadie al sitio.
+
+**Dos campos nuevos, porque faltaba vocabulario.** `tools_del_patron` para los
+`recommended`: un PAT-x no se detecta, se sigue, y sus ocho afirmaciones eran un
+error de categoría contado como deuda. Y `cobertura_descubierta: "<motivo>"`, la
+única forma de que un campo requerido quede vacío — no una exención, sino el
+único sitio donde la ausencia de detector se ve al leer la norma en vez de
+deducirse de un `[]`. El guard muerde también al revés: declararse descubierta y
+a la vez nombrar tools que la aplican es la misma contradicción del otro lado.
+Cinco normas lo declaran hoy: AP-01, AP-02, AP-04, AP-08 y **AP-05, la única
+`critical` sin detector**, nombrada aquí y en la capa 7 del plano porque un hueco
+de ese tamaño no se guarda en un campo. AP-02 es el caso fino: sus dos variantes
+hermanas —AP-17 canonical-shadow y AP-18 cross-folder— sí pesan en el
+healthIndex, y esa cobertura vecina se venía leyendo como suya.
+
+**C6 — el hueco en la dirección contraria.** C2 mide afirmaciones sin código;
+nadie medía código sin afirmación. Seis entradas de `vault_audit.PENALIZACIONES`
+restaban del healthIndex con `norma: null` desde v19. Cada una declara ahora su
+norma o se declara **métrica sin norma** con el motivo: una nota sin enlaces
+entrantes no incumple nada, y un proyecto parado es un hecho del proyecto, no del
+vault. `missing_updated` es la excepción incómoda y queda escrita como tal —
+`agent`, `tags`, `type`, `status` y `cia` tienen anti-patrón propio y ella no; no
+se le inventa uno para tapar el hueco. C6 nace en cero y **sin baseline**: una
+baseline aquí permitiría añadir una penalización sin decidir qué norma la
+sostiene, que es el vacío que la medida cierra.
+
+**Y el guard que se certificaba a sí mismo, cerrado del todo.**
+`vault_voice.coverage()` dejó de contar como muda a la norma que declara por
+escrito por qué no la mide nadie: mezclarlas hacía que declararse honestamente
+saliera más caro que callarse. `vault_blueprint` distingue lo mismo en su capa 4,
+y `vault_sdd_init` deja de publicar `**Detectado por:** manual` —una cadena que
+contradice la regla 5 en cada vault que el estándar crea— para publicar el motivo
+real.
 
 ### v40.10 — 2026-08-12 `git: 861b37b`
 

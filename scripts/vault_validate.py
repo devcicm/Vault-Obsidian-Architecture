@@ -140,7 +140,22 @@ def _validate_cia_fields(data: Dict[str, Any]) -> List[str]:
 
 def validate_frontmatter(note_path: Path) -> Dict[str, Any]:
 
-    """Validate YAML frontmatter of a single note. Returns {valid, error?, data?}."""
+    """Validate YAML frontmatter of a single note. Returns {valid, error?, data?}.
+
+    Aquí se miden dos normas, y conviene no confundirlas:
+
+    - **AP-28** es el caso degenerado: no hay bloque de frontmatter en absoluto
+      (`No frontmatter block`, `Frontmatter not closed`, o un bloque que no es
+      un mapping YAML). Sin bloque no hay ningún campo que discutir.
+    - **AP-12** es la inconsistencia entre notas del mismo tipo, y se aplica
+      exigiendo el **mismo** conjunto `required` a toda nota de la misma clase
+      —contenido, índice derivado, `00_System/`— en vez de campo a campo. Que
+      la clase decida el conjunto es lo que impide que dos notas hermanas
+      lleguen a tener frontmatter distinto y las dos pasen.
+
+    `vault_audit` mide los campos uno por uno como AP-16/26/27/29/30; esa es
+    otra medida y no sustituye a esta.
+    """
 
     try:
 

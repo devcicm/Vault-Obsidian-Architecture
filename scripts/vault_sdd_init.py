@@ -688,13 +688,28 @@ def generate_antipatterns(vault_root: Path, drift: dict) -> str:
         severity = ap.get("severity", "")
         enforcement = ap.get("enforcement", "")
         prevention = ap.get("prevention", "")
-        tools_detecting = ap.get("tools_detecting", [])
+        # Regla 5: ninguna norma tiene enforcement `manual`, así que publicar
+        # «Detectado por: manual» cuando la lista viene vacía era escribirle al
+        # consumidor lo contrario de lo que el estándar promete. Desde v40.11 la
+        # ausencia de detector se declara en el catálogo con su motivo, y es ese
+        # motivo el que se publica.
+        tools_detecting = (
+            ap.get("tools_detecting")
+            or ap.get("tools_del_patron")
+            or []
+        )
+        descubierta = (ap.get("cobertura_descubierta") or "").strip()
+        detectado_por = (
+            ", ".join(tools_detecting) if tools_detecting
+            else (f"sin detector — {descubierta}" if descubierta
+                  else "sin detector declarado")
+        )
 
         ap_md_es.append(
             f"### {code}: {name}\n\n"
             f"- **Severidad:** {severity}\n"
             f"- **Enforcement:** {enforcement}\n"
-            f"- **Detectado por:** {', '.join(tools_detecting) if tools_detecting else 'manual'}\n\n"
+            f"- **Detectado por:** {detectado_por}\n\n"
             f"{desc}\n\n"
             f"**Prevención:** {prevention}\n"
         )
@@ -702,7 +717,7 @@ def generate_antipatterns(vault_root: Path, drift: dict) -> str:
             f"### {code}: {name}\n\n"
             f"- **Severity:** {severity}\n"
             f"- **Enforcement:** {enforcement}\n"
-            f"- **Detected by:** {', '.join(tools_detecting) if tools_detecting else 'manual'}\n\n"
+            f"- **Detected by:** {detectado_por}\n\n"
             f"{desc}\n\n"
             f"**Prevention:** {prevention}\n"
         )

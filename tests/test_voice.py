@@ -156,9 +156,24 @@ def test_un_fallo_de_la_voz_no_puede_romper_una_tool(monkeypatch):
 # ── Cobertura: la norma que nadie pronuncia ─────────────────────────────────
 
 def test_ninguna_norma_del_catalogo_es_muda():
+    """Muda y descubierta no son lo mismo, y desde v40.11 no se cuentan igual.
+
+    Una norma con `cobertura_descubierta` no la pronuncia ninguna tool porque
+    ninguna la mide, y eso está escrito con su motivo en el catálogo. Exigir que
+    lo pronunciado cubra el catálogo entero obligaría a inventarle un detector
+    o a callar el hueco — las dos peores salidas.
+    """
     r = voz.coverage()
     assert r["ok"], f"normas que ninguna tool pronuncia: {r['silent']}"
-    assert r["norms_spoken"] == r["norms_total"] == len(NORM_CATALOG)
+    assert r["norms_total"] == len(NORM_CATALOG)
+    assert r["norms_spoken"] + len(r["uncovered_declared"]) == len(NORM_CATALOG)
+
+
+def test_toda_norma_no_pronunciada_declara_por_escrito_por_que():
+    """El freno de la excepción: no vale declararse descubierta sin motivo."""
+    for codigo in voz.coverage()["uncovered_declared"]:
+        norma = next(n for n in NORM_CATALOG if n["code"] == codigo)
+        assert norma["cobertura_descubierta"].strip(), codigo
 
 
 def test_el_audit_reporta_una_norma_muda(tmp_path, monkeypatch):

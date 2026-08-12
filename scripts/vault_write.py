@@ -116,7 +116,9 @@ def _tag_registry() -> Path:
 
 
 def _check_content_gate(content: str, folder: str) -> bool:
-    """Return True if content passes the strict content gate. 00_System is exempt.
+    """AP-45: la puerta que impide la nota que existe para llenar la sección.
+
+    Return True if content passes the strict content gate. 00_System is exempt.
 
     The gate requires:
     - ≥ 3 real lines (excluding blank, TODO-only, lone-dashes, lone-headings)
@@ -297,7 +299,11 @@ def _tag_suggestions(new_tags: List[str]) -> List[Dict[str, Any]]:
 
 
 def slugify(title: str) -> str:
-    """Convert title to kebab-case filename.
+    """CN-01: el filename en kebab-case, derivado del título y no recibido.
+
+    Aquí se cumple CN-01 entera: ninguna otra tool audita después los nombres
+    ya escritos, así que si esto no normaliza, nada lo corrige. Por eso el
+    enforcement de CN-01 es `guard` y no `guard+audit`.
 
     Uses vault_encoding.sanitize_filename for cross-platform safety.
     """
@@ -307,7 +313,13 @@ def slugify(title: str) -> str:
 
 
 def _check_bracket_balance(content: str) -> Optional[str]:
-    """AP-22: detect unbalanced [[ ]] brackets outside code blocks."""
+    """AP-22 y AP-14: corchetes desbalanceados y wiki-links vacíos.
+
+    AP-22 nombra el `[[]]` vacío y AP-24 los corchetes rotos; los dos son
+    variantes de AP-14, que es la norma que gobierna el enlace que no resuelve.
+    Este es el punto de rechazo en escritura de AP-14 (`tools_enforcing`): más
+    allá de aquí el enlace roto ya es el dato.
+    """
     clean = strip_code_blocks(content)
     opens = len(re.findall(r"\[\[", clean))
 
@@ -325,7 +337,12 @@ def _check_bracket_balance(content: str) -> Optional[str]:
 
 
 def _collect_ghost_links(wiki_links: List[str]) -> List[str]:
-    """Return links whose target note does not exist anywhere in the vault (non-blocking)."""
+    """SP-02 y AP-14: enlaces cuyo destino no existe todavía en el vault.
+
+    SP-02 pide verificar antes de linkar. Esto lo hace por el agente en el
+    momento de escribir —no bloquea, avisa— y `vault_graph` y `vault_audit` lo
+    vuelven a medir después sobre el vault entero.
+    """
 
     all_stems = {
         normalize_stem(p.stem)
@@ -352,7 +369,19 @@ def generate_frontmatter(
     norm_refs: Optional[List[str]] = None,
     folder: str = "",
 ) -> str:
-    """Generate YAML frontmatter with v37-compliant metadata (type + status + CIA + agent + norm_refs)."""
+    """El único autor del frontmatter — AP-46, AP-12, AP-13 y CN-02 a la vez.
+
+    AP-46 dice que veintiséis tools montan el bloque concatenando líneas; esta
+    función es la que no hay que duplicar. De ahí cuelgan las otras tres:
+    AP-12 —el mismo juego de campos para todas las notas del mismo tipo— se
+    cumple porque el bloque se arma en un solo sitio; AP-13 —timestamps ISO
+    8601 completos— porque las fechas salen de `utcnow()` y no de quien llame;
+    y CN-02 porque `type` se deriva de la carpeta con `tipo_por_carpeta()`, que
+    es lo que ancla la nota a su sección canónica.
+
+    Generate YAML frontmatter with v37-compliant metadata (type + status + CIA
+    + agent + norm_refs).
+    """
 
     meta = dict(meta or {})
 
@@ -464,7 +493,13 @@ def extract_wiki_links(content: str) -> List[str]:
 def update_search_index(
     vault_path: str, title: str, content: str, tags: List[str], is_new: bool = True
 ) -> None:
-    """Update search index with new or updated note (lock-protected read-modify-write)."""
+    """AP-47: la proyección se actualiza en la misma escritura que la nota.
+
+    `search-index.json` es una proyección del disco. Aquí es donde AP-47 se
+    impide en vez de detectarse: una escritura que llegue hasta la nota y no
+    hasta aquí deja el índice atrás, y a partir de ahí el agente busca sobre un
+    mapa viejo. Lock-protected read-modify-write.
+    """
 
     _index_file().parent.mkdir(parents=True, exist_ok=True)
 

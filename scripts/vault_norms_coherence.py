@@ -110,12 +110,28 @@ BASELINE = SCRIPTS_DIR / "norms-coherence-baseline.json"
 GRAVEDAD = mapa("severidad", {"critical": 4, "high": 3, "medium": 2, "low": 1})
 
 #: Combinaciones válidas de `enforcement` → campos que no pueden estar vacíos.
+#:
+#: `recommended` exige `tools_del_patron` y no `tools_detecting`: un patrón no se
+#: detecta, se sigue. Los seis PAT-x declaraban sus tools en `tools_detecting` y
+#: eso hacía que C2 les exigiera una traza que no tiene sentido pedirles —el
+#: patrón no es un hallazgo que ninguna tool etiquete—. Ocho de las 47
+#: afirmaciones sin traza eran este error de categoría, no deuda.
 EXIGE_CAMPOS = {
     "guard": ("tools_enforcing",),
     "audit": ("tools_detecting",),
     "guard+audit": ("tools_enforcing", "tools_detecting"),
-    "recommended": (),
+    "recommended": ("tools_del_patron",),
 }
+
+#: La única forma de tener el campo vacío sin que C3 lo marque: decir por qué.
+#:
+#: Cuatro normas —AP-01, AP-04, AP-05 y AP-08— no las detecta nadie. Antes eso se
+#: escondía nombrando una tool que no las aplica, que es peor que el hueco:
+#: `AP-05` es `critical` y publicaba `vault_graph_inspect` como detector. Con el
+#: campo vacío a secas el hueco quedaría igual de mudo, así que la única salida
+#: es declararlo con motivo escrito, y `descubiertas()` lo publica en una lista
+#: que se lee de un vistazo. **No es una exención**: es la deuda con nombre.
+CAMPO_DESCUBIERTA = "cobertura_descubierta"
 
 RE_CODIGO = re.compile(r"\b(?:AP|PAT|SP|CN)-\d+\b")
 
@@ -151,6 +167,19 @@ def _penalizaciones() -> Dict[str, int]:
                 "familia": p.get("familia"),
             }
     return salida
+
+
+def _penalizaciones_crudas() -> List[Dict[str, Any]]:
+    """El registro entero, sin filtrar por norma — es lo que C6 necesita ver.
+
+    `_penalizaciones()` devuelve solo las que declaran norma, y esa es
+    exactamente la mitad que C6 no puede mirar: el hueco vive en las que no la
+    declaran. Leer el registro dos veces con dos criterios es deliberado y está
+    dicho aquí para que nadie las unifique creyendo que son la misma lectura.
+    """
+    from vault_audit import PENALIZACIONES
+
+    return PENALIZACIONES
 
 
 def _fuente(tool: str) -> str:
@@ -307,14 +336,32 @@ def scan() -> Dict[str, Any]:
                 {"norm": codigo, "problem": f"enforcement no permitido: {enforcement!r}"}
             )
         else:
+            motivo = (norma.get(CAMPO_DESCUBIERTA) or "").strip()
             for campo in EXIGE_CAMPOS[enforcement]:
-                if not norma.get(campo):
-                    c3_incoherentes.append(
-                        {
-                            "norm": codigo,
-                            "problem": f"enforcement={enforcement} con {campo} vacío",
-                        }
-                    )
+                if norma.get(campo):
+                    continue
+                if motivo:
+                    # Declarada descubierta: el hueco está dicho, no tapado.
+                    continue
+                c3_incoherentes.append(
+                    {
+                        "norm": codigo,
+                        "problem": f"enforcement={enforcement} con {campo} vacío",
+                    }
+                )
+            if motivo and any(norma.get(c) for c in EXIGE_CAMPOS[enforcement]):
+                # Lo contrario también miente: declararse descubierta teniendo
+                # quien la aplique deja una deuda publicada que ya no existe, y
+                # nadie la retira porque nada la contradice.
+                c3_incoherentes.append(
+                    {
+                        "norm": codigo,
+                        "problem": (
+                            f"declara {CAMPO_DESCUBIERTA} y a la vez nombra tools "
+                            f"que la aplican"
+                        ),
+                    }
+                )
         es_patron = norma.get("type") == "pattern"
         if es_patron and enforcement != "recommended":
             c3_incoherentes.append(
@@ -387,6 +434,45 @@ def scan() -> Dict[str, Any]:
                     }
                 )
 
+    # C6 — el espejo de C2: código que pesa sin afirmación que lo sostenga.
+    #
+    # C2 persigue afirmaciones del catálogo que ningún código respalda. La
+    # dirección contraria no la miraba nadie: seis entradas de `PENALIZACIONES`
+    # restaban puntos del healthIndex con `norma: None`, así que el vault podía
+    # perder salud por algo que el catálogo de normas no nombra en ninguna parte
+    # y el usuario no tenía dónde leer qué había hecho mal. O declaran su norma,
+    # o declaran que son una métrica sin norma —hay penalizaciones legítimas que
+    # no lo son, como la ponderación por CIA— pero eso se escribe, no se deja en
+    # `None`, que no distingue «no aplica» de «nadie lo decidió».
+    c6_sin_norma: List[Dict[str, Any]] = []
+    for entrada in _penalizaciones_crudas():
+        norma_de = entrada.get("norma")
+        if norma_de:
+            if norma_de not in por_codigo:
+                c6_sin_norma.append(
+                    {
+                        "penalty": entrada["id"],
+                        "problem": f"penaliza por {norma_de}, que no está en el catálogo",
+                    }
+                )
+            continue
+        if not (entrada.get("metrica_sin_norma") or "").strip():
+            c6_sin_norma.append(
+                {
+                    "penalty": entrada["id"],
+                    "problem": (
+                        "resta salud sin norma que lo sostenga y sin declararse "
+                        "métrica sin norma"
+                    ),
+                }
+            )
+
+    descubiertas = [
+        {"norm": n["code"], "severity": n.get("severity"), "why": n[CAMPO_DESCUBIERTA]}
+        for n in catalogo
+        if (n.get(CAMPO_DESCUBIERTA) or "").strip()
+    ]
+
     baseline = _cargar_baseline()
     claims = {c["claim"] for c in c2_sin_traza}
     nuevos = sorted(claims - baseline)
@@ -394,7 +480,7 @@ def scan() -> Dict[str, Any]:
 
     ok = not (
         c1_inexistentes or c3_incoherentes or c4_invertidas
-        or c5_sin_distincion or nuevos
+        or c5_sin_distincion or c6_sin_norma or nuevos
     )
     return {
         "ok": ok,
@@ -417,6 +503,12 @@ def scan() -> Dict[str, Any]:
         "enforcement_incoherent": c3_incoherentes,
         "severity_vs_penalty_inverted": c4_invertidas,
         "indistinguishable_norms": c5_sin_distincion,
+        "penalties_without_norm": c6_sin_norma,
+        # Deuda con nombre, no un hueco: las normas que hoy no mide nadie y lo
+        # dicen. Se publica siempre —también cuando la lista es corta— porque el
+        # sitio donde esto se esconde es justo el que AP-55 persigue.
+        "uncovered_norms": descubiertas,
+        "uncovered_total": len(descubiertas),
         "hint": (
             "Una afirmación sin traza se salda de dos formas honestas: que el código "
             "nombre la norma en el sitio que la aplica, o que el catálogo deje de "

@@ -252,6 +252,10 @@ def _merge_entity_relations(ontology: Dict[str, Any], stem_map: Dict[str, str]) 
 
         project = data.get("project", "unknown")
         for rel in data.get("relations", []):
+            # AP-33 se aplica en esta línea: las relaciones de entidad usan
+            # `relationType` y las de código `type` para el mismo concepto, así
+            # que el predicado se normaliza contra `predicate_synonyms` antes de
+            # compararlo. Sin este paso, un sinónimo legítimo saldría como AP-32.
             raw_predicate = rel.get("relationType", "wiki_link")
             predicate = synonym_map.get(raw_predicate, raw_predicate)
 
@@ -299,6 +303,10 @@ def _merge_entity_relations(ontology: Dict[str, Any], stem_map: Dict[str, str]) 
                     "source_file": str(rel_file.relative_to(_raiz())).replace("\\", "/"),
                 })
 
+            # AP-32: el predicado ya normalizado tampoco existe en la ontología.
+            # Se reportan los dos —`predicate` y `raw_predicate`— porque sin el
+            # crudo no se puede saber si el fallo fue del autor o del mapa de
+            # sinónimos, que es lo que el consumidor necesita para arreglarlo.
             if predicate not in valid_predicates:
                 closest = _closest_predicate(predicate, valid_predicates)
                 unknown_predicates.append({

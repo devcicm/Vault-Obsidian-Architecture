@@ -189,6 +189,15 @@ def vault_change_log_add(
     new_path: Optional[str] = None,
     propagate: Optional[str] = None,
 ) -> Dict[str, Any]:
+    """El registro que **SP-01** exige antes de eliminar una nota.
+
+    El protocolo pide llamar aquí con `action=deleted` ANTES de borrar, y el
+    orden no es ceremonia: después del borrado ya no queda de dónde sacar el
+    motivo ni la ruta, así que un registro posterior sería una reconstrucción
+    de memoria. Esta función no borra nada — deja la constancia; quien borra es
+    otra tool, y es esa separación la que permite que la constancia sobreviva
+    aunque el borrado falle.
+    """
     action = action.lower()
 
     if action not in VALID_ACTIONS:

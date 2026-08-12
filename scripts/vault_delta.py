@@ -227,6 +227,11 @@ def vault_delta(
 ) -> Dict[str, Any]:
     current = _collect_current_hashes(project)
 
+    # **SP-03** es esta rama: el snapshot que el protocolo pide capturar antes
+    # de una operación masiva. Se guarda el hash de cada nota, no su contenido,
+    # porque lo que hace falta después no es restaurar sino poder decir qué
+    # cambió — sin este índice previo, una migración en lote no deja forma de
+    # distinguir un cambio pretendido de una regresión.
     if snapshot_only:
         if not dry_run:
             atomic_write_json(_hash_index(), {"snapshot_at": utcnow(), "notes": current})

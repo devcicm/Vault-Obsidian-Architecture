@@ -578,6 +578,13 @@ def es_documentacion_del_estandar(rel: str, contenido: Optional[str] = None) -> 
 def _detect_broken_links(
     notes: List[Path], all_stems: Set[str]
 ) -> List[Dict[str, Any]]:
+    """AP-14 medido sobre el disco, y con él la única traza de **SP-02**.
+
+    SP-02 pide buscar la nota destino antes de escribir `[[…]]`. Un protocolo
+    de sesión no se puede observar mientras ocurre; lo que queda cuando no se
+    siguió es este enlace roto, así que es aquí donde se detecta y no en el
+    momento de la escritura.
+    """
     broken = []
 
     # Pre-compute a set of relative paths for path-anchored link resolution.
@@ -1658,10 +1665,26 @@ FAMILIAS_DE_SALUD: Dict[str, str] = {
 #: entrada puede restar por sí sola. Las entradas con `por_unidad: 1` reciben
 #: una penalización ya calculada por su detector.
 PENALIZACIONES: List[Dict[str, Any]] = [
-    {"id": "orphans", "familia": "conectividad", "norma": None, "por_unidad": 2, "tope": 30},
-    {"id": "stale", "familia": "ciclo_de_vida", "norma": None, "por_unidad": 1, "tope": 10},
-    {"id": "stuck_patterns", "familia": "ciclo_de_vida", "norma": None, "por_unidad": 3, "tope": 15},
-    {"id": "stale_projects", "familia": "ciclo_de_vida", "norma": None, "por_unidad": 5, "tope": 25},
+    {"id": "orphans", "familia": "conectividad", "norma": None, "por_unidad": 2, "tope": 30,
+     "metrica_sin_norma": (
+         "Una nota sin enlaces entrantes no incumple nada: puede ser una entrada "
+         "recién escrita, o una raíz legítima. Lo que mide es alcanzabilidad del "
+         "grafo, y por eso pesa en el healthIndex sin que exista un anti-patrón "
+         "que declarar incumplido.")},
+    {"id": "stale", "familia": "ciclo_de_vida", "norma": None, "por_unidad": 1, "tope": 10,
+     "metrica_sin_norma": (
+         "Que una nota lleve tiempo sin tocarse no es un defecto: una decisión "
+         "cerrada envejece bien. Es una señal de actualidad, ponderada por CIA, "
+         "no una norma que se pueda cumplir o incumplir.")},
+    {"id": "stuck_patterns", "familia": "ciclo_de_vida", "norma": None, "por_unidad": 3, "tope": 15,
+     "metrica_sin_norma": (
+         "Un patrón detenido en el mismo estado mide el proceso del equipo, no "
+         "la forma del vault. Convertirlo en norma exigiría fijar un plazo "
+         "canónico de avance, que este estándar no tiene por qué imponer.")},
+    {"id": "stale_projects", "familia": "ciclo_de_vida", "norma": None, "por_unidad": 5, "tope": 25,
+     "metrica_sin_norma": (
+         "Mismo caso que `stuck_patterns` y por el mismo motivo: un proyecto "
+         "parado es un hecho del proyecto, no un incumplimiento del vault.")},
     {"id": "broken_links", "familia": "conectividad", "norma": "AP-14", "por_unidad": 2, "tope": 20},
     {"id": "canonical_shadow", "familia": "estructura", "norma": "AP-17", "por_unidad": 2, "tope": 10},
     {"id": "cross_folder_dupes", "familia": "estructura", "norma": "AP-18", "por_unidad": 3, "tope": 10},
@@ -1676,9 +1699,24 @@ PENALIZACIONES: List[Dict[str, Any]] = [
     {"id": "missing_type", "familia": "metadatos", "norma": "AP-27", "por_unidad": 2, "tope": 10},
     {"id": "missing_status", "familia": "metadatos", "norma": "AP-29", "por_unidad": 1, "tope": 10},
     {"id": "missing_cia", "familia": "metadatos", "norma": "AP-30", "por_unidad": 2, "tope": 15},
-    {"id": "missing_updated", "familia": "metadatos", "norma": None, "por_unidad": 2, "tope": 10},
+    # La asimetría se declara en vez de disimularse: sus cinco hermanas de
+    # familia —agent, tags, type, status, cia— tienen norma propia y esta no.
+    # No se le inventa una para tapar el hueco; queda escrito que el catálogo
+    # cubre cinco de los seis campos por los que el vault se consulta.
+    {"id": "missing_updated", "familia": "metadatos", "norma": None, "por_unidad": 2, "tope": 10,
+     "metrica_sin_norma": (
+         "`updatedAt` ausente no tiene anti-patrón propio, a diferencia de sus "
+         "cinco hermanas de familia. `vault_validate` sí lo exige como campo "
+         "requerido, pero eso lo aplica AP-12 por clase de nota, no por campo: "
+         "atribuirle AP-12 a esta penalización afirmaría una cobertura que la "
+         "norma no da. Hueco declarado, no resuelto.")},
     {"id": "missing_frontmatter", "familia": "metadatos", "norma": "AP-28", "por_unidad": 3, "tope": 20},
-    {"id": "cia_penalty", "familia": "metadatos", "norma": None, "por_unidad": 1, "tope": 15},
+    {"id": "cia_penalty", "familia": "metadatos", "norma": None, "por_unidad": 1, "tope": 15,
+     "metrica_sin_norma": (
+         "No cuenta ocurrencias de un defecto: recibe una penalización ya "
+         "calculada que pondera las demás por la criticidad declarada de la "
+         "nota. Es el factor de riesgo del healthIndex —una nota `critical` "
+         "desactualizada cuesta más que una `low`—, y un factor no se incumple.")},
     {"id": "ap31", "familia": "grafo", "norma": "AP-31", "por_unidad": 1, "tope": 20},
     {"id": "ap34", "familia": "grafo", "norma": "AP-34", "por_unidad": 2, "tope": 10},
     {"id": "ap35", "familia": "grafo", "norma": "AP-35", "por_unidad": 5, "tope": 5},

@@ -66,7 +66,7 @@ regenera.*
 
 *Registros: `vault_norms.NORM_CATALOG` + `vault_gate.PUERTAS` + `tests/`*
 
-51 de 67 normas tienen puerta o test que las nombre.
+52 de 67 normas tienen puerta o test que las nombre.
 **Es la única capa con baseline**, y por un motivo concreto: las demás se midieron
 en cero el día que se declararon porque sus datos ya existían y solo faltaba
 atarlos. Ésta no. Exigir cero aquí el primer día habría hecho nacer la puerta en
@@ -96,7 +96,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-20** — Deceptive skeleton (empty-list) | guard | — | — |
 | **AP-21** — Path-anchored wiki-links | guard | — | `test_indices_dominio.py`, `test_vault_regex.py` |
 | **AP-22** — Wiki-link vacío — [[]] sin destino | guard+audit | — | `test_norms_coherence.py`, `test_vault_regex.py` |
-| **PAT-1** — Canonical source anchoring | recommended | — | — |
+| **PAT-1** — Canonical source anchoring | recommended | — | `test_norms_coherence.py` |
 | **PAT-2** — Stub enrichment gradient | recommended | — | — |
 | **PAT-3** — Duplicate chain resolution | recommended | — | — |
 | **PAT-4** — Phased audit execution | recommended | — | — |
@@ -142,7 +142,7 @@ rojo, y una puerta en rojo se desactiva.
 | **CN-02** — Numbered folder structure — secciones numeradas como únicos destinos | guard+audit | `framework` | `test_blueprint.py`, `test_indices_dominio.py`, `test_raiz_no_seccion.py`, `test_vault_norms.py`, `test_vault_norms_audit.py` |
 | **CN-03** — Standard status vocabulary — vocabulario canónico de meta.status | audit | `framework` | `test_status_machine.py`, `test_status_vocabulary.py`, `test_vault_norms.py`, `test_vault_norms_audit.py` |
 
-Sin puerta ni test (16): `AP-08`, `AP-12`, `AP-13`, `AP-18`, `AP-20`, `PAT-1`, `PAT-2`, `PAT-3`, `PAT-4`, `AP-27`, `AP-28`, `AP-31`, `AP-32`, `AP-33`, `AP-34`, `PAT-6`.
+Sin puerta ni test (15): `AP-08`, `AP-12`, `AP-13`, `AP-18`, `AP-20`, `PAT-2`, `PAT-3`, `PAT-4`, `AP-27`, `AP-28`, `AP-31`, `AP-32`, `AP-33`, `AP-34`, `PAT-6`.
 
 ## Capa 5 — Tools → grupos → contrato
 
@@ -316,7 +316,7 @@ es una situación distinta y peor.
 |---|---|---|---|
 | `envelopes_del_dominio_sin_error_code` | 5 | Nueve `{"ok": False, "error": ...}` en `vault/durabilidad/` y `vault/indices/` que los adaptadores de `scripts/` devuelven tal cual al consumidor: el envelope sale sin `error_code` ni `recovery`. Aparecieron en v40.9 al ensanchar el alcance de AP-52 más allá de `scripts/`, y quedan congelados en `error-contract-baseline.json`. | La pregunta de fondo no es cómo se escribe el envelope sino quién lo escribe: hacer que el dominio importe `vault_errors` lo ata al catálogo de la herramienta, y convertirlo en el adaptador exige decidir qué devuelve el dominio en su lugar. Es una decisión de capas, no un reemplazo de literales. |
 | `handler_amplio_en_el_registro_de_la_cli` | 5 | `cli/registry.py::_load_spec` responde a un `except Exception` con un vacío indistinguible: un `tool-spec.json` ilegible se presenta como un catálogo sin entradas (AP-51). Destapado por el mismo ensanche de alcance de v40.9 y congelado en `blame-baseline.json`. | Distinguir «no hay spec» de «la spec no se pudo leer» cambia lo que `cli doctor` reporta, y esa salida ya la consumen los repos consumidores. Se toca con su propio test de contrato. |
-| `catalogo_de_normas_contradictorio` | 4 | `guard` con dos significados sin declarar; AP-14/SP-02/CN-01/CN-02 declaran rechazo en escritura que `vault_write` no hace; AP-22 y AP-24 prescriben lo opuesto para el mismo defecto; AP-05 es `critical` sin detector real; `vault_voice.coverage()` certifica el catálogo contra el propio catálogo (AP-44 dentro del guard de AP-43). | Toca la fuente normativa, que es lo más caro de mover en este repo, y arreglarlo de paso dentro de una tanda de alcance sería cambiar normas sin la discusión que una norma merece. |
+| `normas_criticas_sin_detector` | 4 | Cinco normas no las mide nadie y desde v40.11 lo declaran por escrito en `cobertura_descubierta`: AP-01, AP-02, AP-04, AP-08 y —el titular— **AP-05, la única `critical` descubierta**. Diecisiete módulos citan AP-05 en un comentario, al explicar por qué NO copian un dato, y citar no es detectar: nada mide hoy que el mismo dato aparezca con valores distintos en varias notas. AP-02 es la variante same-folder, cuyas dos hermanas —AP-17 y AP-18— sí pesan en el healthIndex. | Detectar AP-05 sobre markdown plano, sin embeddings y sin base de datos, es un problema de diseño abierto, no una tool que falte escribir: la restricción que lo hace difícil es la misma decisión de producto que sostiene el estándar. Merece su propia tanda. Lo que v40.11 sí cierra es lo que era falso: la contradicción del catálogo (v40.10, AP-55), las 47 afirmaciones de cobertura sin traza, y el `vault_voice.coverage()` que certificaba el catálogo contra sí mismo. |
 | `fronteras_de_escritura_por_contexto` | 3 | Ningún guard dice qué contexto puede escribir dónde. `00_System` lo escriben hoy seis contextos. | Exige antes sanear `_LLAMADAS_DE_ESCRITURA` —incluye `replace`, que captura `str.replace`, y `write_report`, que no escribe— y una decisión de diseño que nadie ha tomado: de quién es `00_System`. |
 | `recursion_error_en_parsers` | 5 | `RecursionError` escapa a `except yaml.YAMLError` en 4 parsers: no es subclase. Reproducido a 400 corchetes anidados. El peor caso es `vault_foreign_check`, que es la tool de la regla 7. | Es un arreglo de robustez con su propia norma candidata; entra en la tanda donde se unifiquen los parsers, no en una de alcance. |
 | `parsers_de_frontmatter_divergentes` | 5 | 8 parsers de frontmatter distintos; `vault_write.slugify` no delega en `vault_lib` aunque 20 módulos sí; 6 aliases de v40.8 con el nombre viejo aún en uso; `--agent default="claude"` en 6 tools frente al AP-16 que `vault_bug_save` exige. | Es AP-50 acumulado y se salda unificando, no parcheando: hacerlo a medias deja nueve parsers en vez de ocho. |
@@ -330,7 +330,7 @@ es una situación distinta y peor.
 | `scripts/error-contract-baseline.json` | AP-52 | 9 |
 | `scripts/noop-baseline.json` | AP-37 | 0 |
 | `scripts/smoke-baseline.json` | AP-42 | 0 |
-| `scripts/blueprint-baseline.json` | capa 4 — norma sin puerta ni test | 16 |
+| `scripts/blueprint-baseline.json` | capa 4 — norma sin puerta ni test | 15 |
 
 Todas encogen y ninguna crece sin decirlo: los tres audits con baseline indexan
 por firma de sitio —`módulo::función::hash de `ast.unparse``— así que mover un

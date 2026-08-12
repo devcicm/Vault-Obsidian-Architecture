@@ -108,6 +108,92 @@ def test_c3_muerde_cuando_guard_no_declara_quien_lo_aplica(monkeypatch):
     assert r["enforcement_incoherent"]
 
 
+def test_c3_calla_si_la_ausencia_de_detector_esta_declarada(monkeypatch):
+    """La excepción de v40.11: un campo vacío CON motivo escrito no es C3.
+
+    Es la única forma de retirar una cobertura falsa sin dejar la norma
+    indistinguible de una a la que nadie miró.
+    """
+    r = _con_catalogo(monkeypatch, [
+        _norma(enforcement="audit", tools_detecting=[],
+               cobertura_descubierta="nadie la mide; el detector exigiría embeddings")])
+    assert r["enforcement_incoherent"] == []
+
+
+def test_c3_muerde_sobre_el_motivo_en_blanco(monkeypatch):
+    """Un motivo vacío es un campo vacío con adorno, no una declaración."""
+    r = _con_catalogo(monkeypatch, [
+        _norma(enforcement="audit", tools_detecting=[], cobertura_descubierta="   ")])
+    assert r["enforcement_incoherent"]
+
+
+def test_c3_muerde_cuando_se_declara_descubierta_y_ademas_se_nombran_tools(monkeypatch):
+    """La contradicción inversa: o no la mide nadie, o la mide alguien."""
+    r = _con_catalogo(monkeypatch, [
+        _norma(enforcement="audit", tools_detecting=["vault_audit"],
+               cobertura_descubierta="no la mide nadie")])
+    assert any("descubierta" in p["problem"] for p in r["enforcement_incoherent"])
+
+
+def test_un_patron_declara_quien_lo_sigue_no_quien_lo_detecta(monkeypatch):
+    """PAT-x es `recommended`: un patrón no se detecta, se sigue.
+
+    Antes de v40.11 sus tools vivían en `tools_detecting`, y C2 les pedía traza
+    a ocho afirmaciones que no afirmaban enforcement de nada — un error de
+    categoría contado como deuda.
+    """
+    r = _con_catalogo(monkeypatch, [
+        _norma(code="PAT-1", type="pattern", enforcement="recommended",
+               tools_del_patron=["vault_graph_inspect"])])
+    assert r["enforcement_incoherent"] == []
+    assert r["untraceable_claims"] == [], "a un patrón no se le pide traza de norma"
+
+
+def test_un_patron_sin_nadie_que_lo_siga_si_es_c3(monkeypatch):
+    r = _con_catalogo(monkeypatch, [
+        _norma(code="PAT-1", type="pattern", enforcement="recommended",
+               tools_del_patron=[])])
+    assert r["enforcement_incoherent"]
+
+
+# ── C6 ────────────────────────────────────────────────────────────────────────
+
+
+def test_c6_muerde_sobre_una_penalizacion_sin_norma_ni_motivo(monkeypatch):
+    """El espejo de C2: código que pesa en el healthIndex sin afirmación detrás.
+
+    C2 mide afirmaciones sin código. Sin C6 nadie medía la dirección contraria,
+    y seis entradas de `PENALIZACIONES` llevaban `norma: None` desde v19.
+    """
+    monkeypatch.setattr(coherencia, "_penalizaciones_crudas", lambda: [
+        {"id": "inventada", "familia": "estructura", "norma": None,
+         "por_unidad": 1, "tope": 5}])
+    r = coherencia.scan()
+    assert [p["penalty"] for p in r["penalties_without_norm"]] == ["inventada"]
+
+
+def test_c6_calla_cuando_la_metrica_declara_que_no_tiene_norma(monkeypatch):
+    monkeypatch.setattr(coherencia, "_penalizaciones_crudas", lambda: [
+        {"id": "orphans", "familia": "conectividad", "norma": None,
+         "por_unidad": 2, "tope": 30,
+         "metrica_sin_norma": "una nota sin enlaces entrantes no incumple nada"}])
+    assert coherencia.scan()["penalties_without_norm"] == []
+
+
+def test_c6_muerde_cuando_la_norma_citada_no_existe(monkeypatch):
+    """Declarar una norma no basta: tiene que ser una del catálogo."""
+    monkeypatch.setattr(coherencia, "_penalizaciones_crudas", lambda: [
+        {"id": "x", "familia": "grafo", "norma": "AP-9999",
+         "por_unidad": 1, "tope": 5}])
+    assert coherencia.scan()["penalties_without_norm"]
+
+
+def test_c6_no_tiene_baseline_y_nace_en_cero():
+    """Sin baseline a propósito: una permitiría añadir una penalización sin
+    decidir qué norma la sostiene, que es el vacío que la medida cierra."""
+    assert coherencia.scan()["penalties_without_norm"] == []
+
+
 # ── C4 ────────────────────────────────────────────────────────────────────────
 
 
@@ -196,6 +282,7 @@ def test_el_catalogo_vivo_pasa_las_cinco_medidas():
     assert r["enforcement_incoherent"] == []
     assert r["severity_vs_penalty_inverted"] == []
     assert r["indistinguishable_norms"] == []
+    assert r["penalties_without_norm"] == []
     assert r["new_untraceable"] == [], (
         "afirmación de cobertura sin traza y sin precedente: se salda nombrando "
         "la norma donde se aplica o retirando la cobertura, no congelándola"
@@ -216,12 +303,19 @@ def test_ap55_esta_en_el_catalogo_y_la_aplica_esta_tool():
 def test_freeze_se_niega_a_congelar_deuda_sin_precedente(monkeypatch, tmp_path):
     """La operación peligrosa, con freno — igual que las otras tres baselines.
 
-    Se apunta la baseline a un fichero vacío en `tmp_path`: sin precedente, todo
-    lo que hay es deuda nueva, y `--freeze` a secas tiene que negarse sin
-    escribir nada.
+    Se apunta la baseline a un fichero vacío en `tmp_path` y se inyecta una
+    afirmación sin traza: sin precedente, todo lo que hay es deuda nueva, y
+    `--freeze` a secas tiene que negarse sin escribir nada.
+
+    La afirmación se inyecta desde v40.11: el catálogo vivo quedó en cero, así
+    que apuntar solo a una baseline vacía ya no producía deuda nueva y el test
+    pasaba sin ejercitar la negativa — la trampa de siempre, esta vez en la
+    suite.
     """
     destino = tmp_path / "baseline.json"
     monkeypatch.setattr(coherencia, "BASELINE", destino)
+    monkeypatch.setattr(coherencia, "_catalogo", lambda: [
+        _norma(code="AP-05", tools_detecting=["vault_graph_inspect"])])
     envelope = coherencia.freeze()
     assert envelope["ok"] is False
     assert envelope["error_code"] == "DEBT_WOULD_GROW"
@@ -236,6 +330,19 @@ def test_la_baseline_publicada_esta_al_dia():
     congeladas = {c["claim"] for c in datos["claims"]}
     vivas = {c["claim"] for c in coherencia.scan()["untraceable_claims"]}
     assert vivas - congeladas == set(), "deuda nueva sin congelar"
+
+
+def test_la_baseline_quedo_saldada_y_no_retirada():
+    """v40.11: `claims: []` con el fichero en pie.
+
+    Que la lista esté vacía y el fichero exista es justo lo que distingue una
+    deuda saldada de una medida que alguien apagó.
+    """
+    ruta = SCRIPTS / "norms-coherence-baseline.json"
+    datos = json.loads(ruta.read_text(encoding="utf-8"))
+    assert datos["claims"] == []
+    assert datos["norm"] == "AP-55"
+    assert datos["description"].strip()
 
 
 def test_la_puerta_14_corre_esta_tool():

@@ -257,6 +257,13 @@ def vault_graph() -> Dict[str, Any]:
                 edges.append({"from": rel_path, "to": resolved, "type": "wiki-link"})
 
             else:
+                # AP-14: el wikilink que no resuelve contra el mapa de slugs.
+                # Es también la única evidencia de que **SP-02** no se siguió:
+                # el protocolo pide buscar la nota antes de escribir `[[…]]`, y
+                # un enlace roto es exactamente lo que queda cuando no se buscó.
+                # Se publica el `targetPath` sin normalizar a propósito, para
+                # que el consumidor vea el enlace tal como está escrito en la
+                # nota y no la versión que esta tool preferiría (AP-44).
                 broken_links.append(
                     {
                         "from": rel_path,

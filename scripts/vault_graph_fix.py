@@ -687,9 +687,13 @@ def classify_all_broken(
     system_stems: dict[str, list[str]] = defaultdict(list)
 
     def _add_stems(index: dict[str, list[str]], path: str, info: dict[str, Any]) -> None:
-        # Index BOTH title- and filename-derived stems (mirrors _stems_set in
-        # vault_graph_inspect) so [[links]] written against the filename resolve
-        # even when the note title normalizes to a different stem.
+        # AP-44 se cumple aquí: se indexa por el criterio del consumidor real
+        # —Obsidian resuelve `[[…]]` por nombre de fichero— y no solo por el
+        # que esta tool preferiría. Por eso se indexan AMBOS stems, el del
+        # título y el del filename (espeja `_stems_set` en
+        # vault_graph_inspect): con solo el del título, un enlace escrito
+        # contra el nombre del fichero saldría roto siendo válido, y la tool
+        # se estaría certificando con su propia normalización.
         for stem in {
             normalize_stem(info["title"] or Path(path).stem),
             normalize_stem(Path(path).stem),
