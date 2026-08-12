@@ -6975,7 +6975,7 @@ temp/
 
 ---
 
-### v40.9 — 2026-08-12 `git: pending`
+### v40.9 — 2026-08-12 `git: f20f736`
 
 **Un pilar, un plano, y siete guards midiendo dentro de su propio glob**
 
