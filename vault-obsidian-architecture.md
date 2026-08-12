@@ -6974,7 +6974,7 @@ temp/
 
 ---
 
-### v40.8 — 2026-08-12 `git: pending`
+### v40.8 — 2026-08-12 `git: 684f4c3`
 
 **Cuarenta y siete cruces por detrás, de los que solo cinco lo eran**
 
