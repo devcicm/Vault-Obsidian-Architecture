@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.11 — 2026-08-12  
+**Versión:** v40.12 — 2026-08-12  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -6783,6 +6783,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.12 | 2026-08-12 | **AP-56** y la mitad que faltaba desde v40.2: el frontmatter que existe y el consumidor no lee. v40.2 arregló la escritura —`yaml_scalar` cita el valor— y dio el asunto por cerrado; lo que ya estaba en disco nunca se tocó. El contraste de regla 7 contra los cuatro vaults consumidores encontró **doce notas** con bloque `---` que `yaml.safe_load` rechaza: para Obsidian no tienen id, ni tags, ni estado, y como el bloque se ve al abrir el fichero nadie las revisa. Dos causas —ocho por el `: ` sin escapar, cuatro porque **el bloque no cierra** y el parser revienta cientos de líneas más abajo, señalando dónde explotó y no dónde está el fallo—. `vault_frontmatter_heal` repara las dos y se niega al resto: completar un YAML truncado inventa dato. Su única garantía es del consumidor, no suya: tras reparar, `yaml.safe_load` devuelve un dict y **ninguna clave que ya se leía cambia de valor**, o no escribe. Y tres defectos más de `vault_foreign_check`, los tres con la misma forma —el registro canónico existía y esta tool no lo consultaba—: instantáneas congeladas contadas como notas, wikilinks dentro de un fence contados como enlaces rotos (87 de 301 en /ans; solo visibles tras excluir la doc del estándar) y destinos con carpeta resueltos por basename, que daba por bueno lo que Obsidian pinta roto — el sentido de error peligroso, porque la medida sale verde |
 | v40.11 | 2026-08-12 | Las 47 afirmaciones de cobertura que v40.10 congeló, saldadas a cero **una a una**, y el hueco en la dirección contraria. Al triarlas se vio que la mayoría no eran coberturas falsas sino **mal atribuidas**: AP-27, AP-28 y AP-30 nombraban `vault_validate` o `vault_quality_check` teniendo entrada propia, con nombre y peso, en `vault_audit.PENALIZACIONES` — el catálogo no mentía sobre *si* la norma se aplica sino sobre *quién*. Cada claim se resolvió leyendo la función que dice cumplirla, nunca por grep: el grep sirve para **descartar**, jamás para **confirmar**, y el contraejemplo estaba en el propio dato — `vault_audit` emite `"norm": "CN-01"` sobre un hallazgo de *scaffold*, así que confirmar por grep habría cerrado CN-01 con el criterio del propio guard, que es el AP-44 que la tool existe para detectar. Dos campos nuevos porque faltaba vocabulario: `tools_del_patron` —un PAT-x no se detecta, se sigue, y sus ocho afirmaciones eran un error de categoría contado como deuda— y `cobertura_descubierta`, la única forma de que un campo requerido quede vacío, con el motivo escrito y mordiendo también en la dirección inversa. Cinco normas lo declaran, entre ellas **AP-05, la única `critical` sin detector**, nombrada en el changelog y en la capa 7 del plano en vez de esconderse en un `[]`. Y **C6**: seis penalizaciones del healthIndex restaban con `norma: null` desde v19 — nadie medía código sin afirmación mientras C2 medía afirmación sin código. Nace en cero y sin baseline, a propósito |
 | v40.10 | 2026-08-12 | Dos ejes que nadie había separado, y un catálogo que se certificaba a sí mismo. **AP-55**: `NORM_CATALOG` declara a mano qué tools aplican y detectan cada norma, y el guard que existía para vigilarlo —`vault_voice.coverage()`, el guard de AP-43— comprobaba esos dos campos **leyéndolos**. Verifica el catálogo contra el catálogo, así que daba verde sobre 47 afirmaciones que ningún módulo respalda y era estructuralmente incapaz de verlas: AP-44 cometido dentro de un guard, por tercera vez en tres sitios distintos. `vault_norms_coherence` lo cruza con el código y con `vault_audit.PENALIZACIONES`, y destapó 54 valores de `tools_*` que mezclaban la tool con su flag y no resolvían para ningún consumidor, y AP-22 declarada `critical` mientras el audit la penalizaba por debajo de una `high` — seis versiones con los dos registros canónicos invertidos. Manda el que se ejecuta. En paralelo, el registro `NATURALEZAS` separa por **tool** lo que `CAPACIDADES` solo podía decir por grupo: construcción, documentación, custodia, consulta y meta-estándar, porque la mezcla ocurría dentro de los grupos —el grupo 1 tenía `vault_write` junto a `vault_move`, que decide dónde vive una nota— y forzarlo a dos categorías habría exigido afirmar que `vault_backup` construye |
 | v40.9 | 2026-08-12 | El pilar y el plano, y el cero que estaba medido sobre un subconjunto. Se declara el **servicio** (`vault_servicio`) y sus capacidades, y la medida corrigió al plan: no son dos ejes sino **tres** — el grupo 35 gobierna *el estándar*, no la memoria documental de nadie, y sus 14 tools se venían contando como si sirvieran al vault del usuario. Encima de eso, `vault_blueprint` genera `docs/BLUEPRINT.md` atando once registros canónicos que no tenían nada que los uniera, con la capa norma → puerta → test naciendo con 16 normas sin cobertura y baseline que solo encoge. El defecto de fondo era de **alcance**: siete guards hacían su propio `glob("vault_*.py")` y publicaban ceros que solo valían dentro de ese glob. Con un alcance único y declarado, AP-52 pasa de 0 a 21 sitios reales —doce en `cli/`, que es justo donde el consumidor lee el error, convertidos a `emit_error`— y el detector de cruces, que solo miraba `ast.ImportFrom`, pasa de 0 a 16: `import X` seguido de `X._privado` era invisible, y el test que escribí en v40.8 pasaba porque el guard no podía ver lo que lo falsificaba. Además el generador de `vault-commands.md` publicaba `vault_restore.py --name`, un flag inexistente, en cada vault que el estándar crea, y `escribir_baseline` destruía la lista v1 anotada en el segundo `--freeze` |
@@ -7115,6 +7116,72 @@ temp/
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
 
 ---
+
+### v40.12 — 2026-08-12 `git: pending`
+
+**El dato que parece estar y no está.**
+
+v40.2 arregló la prevención: `yaml_scalar` escapa el valor antes de escribirlo,
+así que un `title: Overview: demo` ya no sale de este toolkit. Lo que nunca se
+arregló es lo que ya estaba en disco, y nadie lo notó porque la mitad
+preventiva se sintió como el arreglo entero.
+
+El contraste de regla 7 contra los cuatro vaults consumidores encontró **doce
+notas** con bloque `---` que `yaml.safe_load` rechaza. Para el consumidor esas
+notas no tienen frontmatter: ni id, ni tags, ni tipo, ni estado. **No es
+AP-28**, que es la nota que nunca tuvo bloque — aquí el bloque está, se ve al
+abrir el fichero, y por eso nadie lo revisa.
+
+Dos causas, y la segunda es la que explica los meses de retraso:
+
+- ocho por el `: ` sin escapar que v40.2 dejó de producir pero no reparó;
+- cuatro porque **el bloque no cierra**. El parser se traga la nota entera y
+  revienta cientos de líneas más abajo, en un bloque de código o en una tabla,
+  así que su mensaje señala el sitio donde explotó y no el sitio donde está el
+  fallo.
+
+**`vault_frontmatter_heal`** (grupo 33, junto a `vault_fix_brackets`) repara
+las dos y se niega al resto: completar un YAML truncado es inventar dato, que
+es peor que el hueco. Su única garantía es la del consumidor y no la suya
+(AP-44): tras reparar, `yaml.safe_load` devuelve un dict **y ninguna clave que
+ya se leía cambia de valor**; si no, el fichero no se escribe.
+
+**El límite se declara en vez de taparse.** Si el bloque no cierra y el fichero
+no tiene ningún otro `---`, no hay bloque que partir y la nota es
+indistinguible de una sin frontmatter. Esas no se cuentan, y hay test que lo
+fija — una heurística que adivinara dónde acaba el bloque estaría inventándose
+dónde empieza la nota.
+
+**AP-56 se distingue de AP-28 en las dos direcciones.** La reparación es
+opuesta —AP-28 pide escribir el frontmatter, AP-56 pide arreglar el que ya
+está, y escribir uno encima perdería lo escrito—, así que declararlo solo en
+AP-56 dejaba ciego a quien leyera AP-28.
+
+**Y tres defectos más en `vault_foreign_check`, los tres con la misma forma:**
+existía un registro canónico y esta tool no lo consultaba. Instantáneas
+congeladas contadas como notas del vault (`vault_io.is_snapshot_path`).
+Wikilinks dentro de un fence contados como enlaces rotos
+(`vault_lib.strip_code_blocks`): 87 de 301 en `/ans`, y solo visibles **después**
+de excluir la documentación del estándar, porque las notas del propio vault que
+documentan su convención citan la misma sintaxis de ejemplo. Y destinos con
+carpeta resueltos tirando la carpeta: `[[containers/ct105]]` se daba por bueno
+si existía cualquier `ct105.md`, que es el sentido de error peligroso — la
+medida sale verde justo donde el consumidor pinta el enlace roto.
+
+Medido en los cuatro vaults consumidores, con el heal aplicado y los 60 alias
+que faltaban escritos en el destino:
+
+| vault | rotos antes | rotos después | frontmatter ilegible |
+|---|---|---|---|
+| `/ans` | 545 / 2216 | 221 / 1709 | 7 → 0 |
+| `/builderx` | 158 / 1115 | 106 / 1113 | 1 → 0 |
+| `/vcloud` | 4 / 575 | 3 / 574 | 0 |
+| `/electron` | 175 / 719 | 0 / 523 | 4 → 0 |
+
+Lo que queda **no se ha reparado a propósito**: 322 destinos que no existen,
+161 de ellos en dos ficheros índice. Crear una nota vacía por cada uno no
+arregla el hueco, lo esconde — el enlace deja de verse roto y la nota sigue sin
+existir. Cada vault recibe en su lugar una nota de auditoría con el reparto.
 
 ### v40.11 — 2026-08-12 `git: 2f80326`
 

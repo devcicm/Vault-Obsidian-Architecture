@@ -157,6 +157,31 @@ def _frontmatter(texto: str) -> Any:
     return datos if isinstance(datos, dict) else False
 
 
+def _resolver(bruto: str, desde: Path) -> str:
+    """La forma con la que se busca el destino, como la buscaría Obsidian.
+
+    Se quitan el alias de visualización (`|`) y el ancla (`#`), que no son
+    parte del destino, y una ruta relativa se resuelve contra la carpeta de la
+    nota que enlaza — `[[../containers/ct220]]` desde `09_Infrastructure/db/`
+    apunta a `09_Infrastructure/containers/ct220`, no a un fichero llamado
+    `..`.
+    """
+    crudo = bruto.split("|")[0].split("#")[0].strip().replace("\\", "/")
+    crudo = crudo.removesuffix(".md")
+    if not crudo:
+        return ""
+    if crudo.startswith("./") or crudo.startswith("../"):
+        partes: List[str] = list(desde.parent.parts)
+        for tramo in crudo.split("/"):
+            if tramo == "..":
+                if partes:
+                    partes.pop()
+            elif tramo not in (".", ""):
+                partes.append(tramo)
+        return "/".join(partes).lower()
+    return crudo.strip("/").lower()
+
+
 def contrastar(destino: Path) -> Dict[str, Any]:
     # `.history/` (historial local de VSCode), `.trash/` y `vault-backups/` son
     # instantáneas congeladas, no notas: la misma nota aparece ahí veinte veces
@@ -188,7 +213,18 @@ def contrastar(destino: Path) -> Dict[str, Any]:
 
     #: nombre de fichero y aliases: los dos criterios con los que Obsidian
     #: resuelve un wikilink. `title:` no entra a propósito.
-    destinos = {p.stem.lower() for p in notas}
+    #:
+    #: Un destino con carpeta —`[[containers/ct105]]`— no se resuelve tirando
+    #: la carpeta y quedándose con el nombre: Obsidian exige que la ruta case
+    #: como **sufijo** de la del fichero, así que un `ct105.md` en otra carpeta
+    #: NO lo resuelve. Comparar solo el basename daba por bueno un enlace que
+    #: el consumidor pinta roto —13 de 16 en /vcloud, que es el vault de
+    #: control— y ese sentido del error es el peor: la medida sale verde.
+    destinos = set()
+    for p in notas:
+        partes = p.relative_to(destino).with_suffix("").parts
+        for i in range(len(partes)):
+            destinos.add("/".join(partes[i:]).lower())
     enlaces_totales = 0
     textos: Dict[Path, str] = {}
 
@@ -238,7 +274,7 @@ def contrastar(destino: Path) -> Dict[str, Any]:
                       - len(WIKILINK.findall(sin_codigo)))
         for m in WIKILINK.finditer(sin_codigo):
             enlaces_totales += 1
-            objetivo = m.group(1).strip().split("/")[-1].lower()
+            objetivo = _resolver(m.group(1), p.relative_to(destino))
             if objetivo and objetivo not in destinos:
                 rotos.append({
                     "from": str(p.relative_to(destino)),

@@ -349,3 +349,35 @@ def test_el_criterio_de_codigo_no_se_reimplementa_aqui():
     import vault_lib
 
     assert vfc.strip_code_blocks is vault_lib.strip_code_blocks
+
+
+def test_una_ruta_equivocada_no_se_resuelve_por_el_nombre_del_fichero(tmp_path):
+    """El sentido del error importaba: comparar solo el basename salía verde.
+
+    Obsidian exige que la ruta case como sufijo de la del fichero. Tirar la
+    carpeta y quedarse con el nombre daba por bueno un enlace que el
+    consumidor pinta roto — 13 de 16 en /vcloud, el vault de control.
+    """
+    (tmp_path / "otra").mkdir()
+    (tmp_path / "otra" / "ct105.md").write_text("x\n", encoding="utf-8")
+    (tmp_path / "mapa.md").write_text(
+        "[[containers/ct105]] y [[otra/ct105]] y [[ct105]]\n", encoding="utf-8")
+    m = vfc.contrastar(tmp_path)
+    #: la ruta correcta y el nombre suelto resuelven; la carpeta inventada no
+    assert m["wikilinks_unresolved"] == 1
+    assert m["wikilinks_unresolved_sample"][0]["target"] == "containers/ct105"
+
+
+def test_una_ruta_relativa_se_resuelve_desde_la_nota_que_enlaza(tmp_path):
+    (tmp_path / "a" / "b").mkdir(parents=True)
+    (tmp_path / "a" / "destino.md").write_text("x\n", encoding="utf-8")
+    (tmp_path / "a" / "b" / "origen.md").write_text(
+        "[[../destino]]\n", encoding="utf-8")
+    assert vfc.contrastar(tmp_path)["wikilinks_unresolved"] == 0
+
+
+def test_el_alias_de_visualizacion_y_el_ancla_no_son_parte_del_destino(tmp_path):
+    (tmp_path / "nota.md").write_text("x\n", encoding="utf-8")
+    (tmp_path / "i.md").write_text(
+        "[[nota|Otro nombre]] y [[nota#Secci\u00f3n]]\n", encoding="utf-8")
+    assert vfc.contrastar(tmp_path)["wikilinks_unresolved"] == 0
