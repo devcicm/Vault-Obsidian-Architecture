@@ -38,7 +38,7 @@ Restricciones que son decisión de producto, no limitación pendiente:
 | **Gobernanza del estándar** (`gobernanza_del_estandar`) | El estándar cumple lo que publica: registro canónico primero, doc derivada, guard que falla si divergen. Ninguna de estas tools toca las notas de un usuario. | 35 | 17 |
 
 - **`consulta_a_contexto`** — El grupo 26 (Tokens) cae en el rango 1–33 que `CLAUDE.md` atribuye al primer eje, pero sus tres tools viven en el contexto `consulta` y existen para que el paquete quepa en la ventana. El rango es cronológico, no clasificatorio.
-- **`gobernanza_del_estandar`** — Tercera capacidad que `CLAUDE.md` no nombraba. Existía desde que se escribió la primera puerta; declararla es lo que impide que sus 13 tools se cuenten como si sirvieran a la memoria del agente.
+- **`gobernanza_del_estandar`** — Tercera capacidad que `CLAUDE.md` no nombraba. Existía desde que se escribió la primera puerta; declararla es lo que impide que sus tools se cuenten como si sirvieran a la memoria del agente.
 
 Guard: todo grupo del catálogo pertenece a exactamente una capacidad y toda
 capacidad tiene al menos una tool viva (`vault_servicio.py --check --strict`).

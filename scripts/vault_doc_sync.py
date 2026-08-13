@@ -107,8 +107,12 @@ DOCS_CON_COMANDOS = (
     "vault-sandbox/00_System/vault-commands.md",
 )
 
+# `scripts/` es opcional: `scripts/README.md` publica sus ejemplos como
+# `python vault_read.py --note X`, que es la forma en que se ejecutan con el
+# CWD dentro de `scripts/`. Exigir el prefijo dejaba fuera de la medida justo
+# el documento que más comandos publica — la referencia de tools por grupo.
 RE_COMANDO = re.compile(
-    r"python\s+(scripts/[a-z0-9_]+\.py)((?:\s+--?[a-zA-Z0-9_-]+(?:[ =][^\s`|#]+)?)*)"
+    r"python\s+(?:scripts/)?([a-z0-9_]+\.py)((?:\s+--?[a-zA-Z0-9_-]+(?:[ =][^\s`|#]+)?)*)"
 )
 RE_FLAG_USADO = re.compile(r"(?<![\w-])--[a-zA-Z][a-zA-Z0-9_-]*")
 RE_FLAG_DECLARADO = re.compile(r"""add_argument\(\s*["'](--[a-zA-Z][a-zA-Z0-9_-]*)["']""")
@@ -138,11 +142,12 @@ def comandos_publicados() -> List[Dict]:
             ruta.read_bytes().decode("utf-8", "replace").splitlines(), 1
         ):
             for m in RE_COMANDO.finditer(linea):
-                script = REPO_ROOT / m.group(1)
+                # El grupo ya no trae el prefijo: se ancla siempre en scripts/.
+                script = REPO_ROOT / "scripts" / m.group(1)
                 donde = f"{doc}:{numero}"
                 if not script.exists():
                     problems.append({"kind": "comando_sin_script",
-                                     "detail": f"{donde} — {m.group(1)} no existe"})
+                                     "detail": f"{donde} — scripts/{m.group(1)} no existe"})
                     continue
                 declarados = _flags_declarados(script)
                 for flag in RE_FLAG_USADO.findall(m.group(2)):

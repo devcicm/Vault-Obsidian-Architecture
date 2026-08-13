@@ -82,6 +82,23 @@ def count_sections() -> int:
     return len(vault_registry.standard_folders())
 
 
+def count_tools_write() -> int:
+    """Las tools que `python -m cli find "" --mode write` devuelve.
+
+    Por el dueño del criterio y no por uno propio (AP-57): la cifra que el doc
+    publica es la que ese comando imprime, así que medirla con «tiene
+    side_effects» daba 74 donde el comando dice 86 — un guard que compara dos
+    definiciones distintas de lo mismo y llama drift a la diferencia.
+    """
+    import sys as _sys
+
+    if str(REPO_ROOT) not in _sys.path:
+        _sys.path.insert(0, str(REPO_ROOT))
+    from cli.registry import load_registry
+
+    return sum(1 for f in load_registry().values() if f.mode == "write")
+
+
 def count_scripts() -> int:
     return len(list((REPO_ROOT / "scripts").glob("*.py")))
 
@@ -182,7 +199,24 @@ COUNTED_FACTS: List[Dict] = [
         "patterns": [
             r"(\d+)\s+archivos Python",
             r"~?(\d+) scripts,",
+            # `cli/README.md` decía «~106 scripts y 103 tools activas»: el
+            # patrón de arriba exige la coma, así que esa cifra —20 por
+            # debajo de la real— nunca se midió. La tilde no exime: `--fix`
+            # la conserva y corrige el número.
+            r"~?(\d+) scripts y",
             r"badge/scripts-(\d+)_total",
+        ],
+    },
+    {
+        "id": "tools_write",
+        "description": "Tools del catálogo con mode=write",
+        "value": count_tools_write,
+        # `cli/README.md` y `cli/COMMANDS.md` publicaban «las 61 tools que
+        # escriben» cuando eran 86. Nadie lo medía: la cifra no encajaba en
+        # ningún patrón, que es la forma en que una cifra a mano sobrevive
+        # (AP-47).
+        "patterns": [
+            r"las (\d+) tools que escriben",
         ],
     },
     {

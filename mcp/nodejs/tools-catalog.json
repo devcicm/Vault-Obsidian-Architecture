@@ -962,6 +962,10 @@
       "inputSchema": {
         "type": "object",
         "properties": {
+          "query": {
+            "type": "string",
+            "description": "Pregunta en lenguaje natural"
+          },
           "budget": {
             "type": "string",
             "description": "Presupuesto en tokens (default: 4000)"
@@ -2584,16 +2588,11 @@
       "script": "vault_master_index.py",
       "inputSchema": {
         "type": "object",
-        "properties": {
-          "include_subdirs": {
-            "type": "string",
-            "description": "Incluir subdirectorios"
-          }
-        }
+        "properties": {}
       },
       "guards": [],
       "side_effects": [
-        "Genera 99_Index/master-index.md"
+        "Genera 99_Index/index.md"
       ],
       "related": [
         "vault_section_index",
@@ -2910,6 +2909,10 @@
           "freeze": {
             "type": "string",
             "description": "Recongela scripts/noop-baseline.json tras saldar deuda"
+          },
+          "admitir-nuevos": {
+            "type": "string",
+            "description": "Permite que --freeze congele deuda sin precedente, listándola"
           }
         }
       },
@@ -3624,6 +3627,10 @@
       "inputSchema": {
         "type": "object",
         "properties": {
+          "query": {
+            "type": "string",
+            "description": "Pregunta en lenguaje natural"
+          },
           "explain": {
             "type": "string",
             "description": "Incluye la evidencia de cada campo inferido"

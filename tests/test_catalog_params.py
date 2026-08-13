@@ -42,9 +42,21 @@ def test_un_script_inexistente_no_revienta():
 
 
 def test_los_posicionales_no_se_publican():
-    """El servidor MCP compone `--<param>`: un posicional publicado así falla."""
-    params = cat.argparse_params("vault_query_parse.py")
-    assert "query" not in params
+    """El servidor MCP compone `--<param>`: un posicional publicado así falla.
+
+    `vault_query_parse` dejó de servir de ejemplo en v40.16 — la pregunta pasó
+    a tener **también** forma nombrada, que es lo que la hacía alcanzable por
+    MCP. La propiedad sigue siendo la misma y se prueba donde aún se ve: lo que
+    `argparse_params` devuelve son flags largos, nunca posicionales.
+    """
+    params = cat.argparse_params("vault_read.py")
+    assert params and all(not p.startswith("-") for p in params)
+    assert "note" not in params  # el posicional, si lo hubiera, no se publica
+
+
+def test_un_posicional_obligatorio_es_una_entrada_inalcanzable():
+    """La medida que cerró el caso de la capacidad consulta -> contexto."""
+    assert cat.posicionales_obligatorios("vault_query_parse.py") == []
 
 
 # ── Reconciliación ───────────────────────────────────────────────────────────

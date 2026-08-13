@@ -1844,16 +1844,17 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "script": "vault_master_index.py",
         "group": "Índices",
         "purpose": "Genera índice maestro del vault.",
-        "params": {
-            "include_subdirs": {
-                "type": "boolean",
-                "required": False,
-                "description": "Incluir subdirectorios",
-                "validators": [],
-            },
-        },
+        # `include_subdirs` se publicaba y el parser no tenía **ningún**
+        # `add_argument`: la invocación MCP moría en `unrecognized arguments`.
+        # `check_params` no lo veía porque saltaba las tools con `argparse`
+        # vacío —«sin argparse legible no hay contra qué comparar»—, que es
+        # justo el caso en que todo lo publicado sobra.
+        "params": {},
         "guards": [],
-        "side_effects": ["Genera 99_Index/master-index.md"],
+        # El fichero real es `99_Index/index.md`. `master-index.md` no lo
+        # escribe nadie: el side effect declarado apuntaba a una ruta que no
+        # existe, y es la que un consumidor mira para saber si hubo trabajo.
+        "side_effects": ["Genera 99_Index/index.md"],
         "example": "python vault_master_index.py\npython vault_master_index.py --include_subdirs",
         "related": ["vault_section_index", "vault_reindex"],
     },
@@ -3899,6 +3900,41 @@ def get_related_tools(name: str) -> List[Dict[str, Any]]:
 
 
 @lru_cache(maxsize=None)
+def posicionales_obligatorios(script: str) -> List[str]:
+    """Posicionales sin `nargs="?"` de un script.
+
+    Un posicional **no se puede publicar** en el `inputSchema`: MCP invoca con
+    flags. Así que un posicional obligatorio no es un detalle de estilo — es
+    una entrada que ningún consumidor MCP puede rellenar, y la tool queda
+    inalcanzable. `check_params` solo miraba `publicado ⊆ argparse`, que es la
+    dirección que no ve este caso: no sobraba nada, faltaba todo.
+    """
+    import ast
+
+    ruta = Path(__file__).resolve().parent / script
+    if not script or not ruta.is_file():
+        return []
+    try:
+        arbol = ast.parse(ruta.read_text(encoding="utf-8"))
+    except (OSError, SyntaxError):
+        return []
+
+    fuera: List[str] = []
+    for nodo in ast.walk(arbol):
+        if not (isinstance(nodo, ast.Call) and getattr(nodo.func, "attr", "") == "add_argument"):
+            continue
+        nombres = [a.value for a in nodo.args
+                   if isinstance(a, ast.Constant) and isinstance(a.value, str)]
+        if not nombres or nombres[0].startswith("-"):
+            continue
+        kw = {k.arg: k.value for k in nodo.keywords}
+        nargs = kw.get("nargs")
+        if isinstance(nargs, ast.Constant) and nargs.value in ("?", "*"):
+            continue
+        fuera.append(nombres[0])
+    return sorted(set(fuera))
+
+
 def argparse_params(script: str) -> Dict[str, Dict[str, Any]]:
     """Params reales de un script, leídos de sus `add_argument` largos."""
     import ast
@@ -4332,10 +4368,30 @@ def check_params(json_path: Optional[str] = None) -> Dict[str, Any]:
     for nombre, entrada in sorted(tools.items()):
         py = TOOLS_CATALOG.get(nombre, {})
         reales = argparse_params(py.get("script", ""))
-        if not reales:
-            continue  # sin argparse legible no hay contra qué comparar
+        if py.get("runtime") == "node":
+            # Las tools JS-native no tienen argparse contra el que comparar: su
+            # contrato lo implementa el servidor. Se excluyen por lo que son,
+            # no por parecer vacías — que era el efecto de la regla anterior.
+            continue
+        publicados_pre = (entrada.get("inputSchema") or {}).get("properties", {})
+        if not reales and not publicados_pre:
+            # Sin argparse y sin nada publicado no hay contra qué comparar. Con
+            # algo publicado sí lo hay, y el veredicto es duro: **todo** sobra.
+            # Saltar este caso era saltarse el único en que el fallo es total,
+            # y es el que tenía `vault_master_index`.
+            continue
         result["tools_checked"] += 1
         publicados = (entrada.get("inputSchema") or {}).get("properties", {})
+        inalcanzables = posicionales_obligatorios(py.get("script", ""))
+        if inalcanzables:
+            result["ok"] = False
+            result["problems"].append({
+                "tool": nombre,
+                "problem": ("entrada obligatoria que MCP no puede rellenar "
+                            f"(posicional): {', '.join(inalcanzables)}"),
+                "fix": ("añade la forma nombrada `--<param>` conservando el "
+                        "posicional para la CLI"),
+            })
         sobran = [p for p in publicados if p not in reales]
         if sobran:
             result["ok"] = False

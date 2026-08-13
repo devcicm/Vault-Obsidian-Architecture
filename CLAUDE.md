@@ -12,7 +12,7 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~6.000 líneas). Fuente normativa. |
 | `scripts/*.py` | ~126 scripts, 103 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (2676 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (2687 tests). Toda norma con guard debe tener test. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
 | `vault-sandbox/` | **Único** vault de pruebas del repo. Todo runtime va aquí. |
@@ -47,7 +47,7 @@ Lo realizan tres capacidades, y una tool nueva pertenece a exactamente una:
 - **gobernanza del estándar** (grupo 35): `vault_gate`, `vault_doc_sync`, `vault_arch`,
   `vault_changelog_check`, los tres audits con baseline y el resto del meta-toolkit.
   **No tocan las notas de nadie**: comprueban que este repo cumple lo que publica.
-  Hasta v40.9 esta capacidad no tenía nombre y sus 14 tools se contaban como si
+  Hasta v40.9 esta capacidad no tenía nombre y sus tools se contaban como si
   sirvieran a la memoria del agente — que es como un catálogo empieza a crecer por
   acumulación.
 

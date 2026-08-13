@@ -99,3 +99,16 @@ def test_ningun_test_compara_contra_la_version_corriente_escrita_a_mano():
         "la versión corriente está escrita a mano en la suite; derívala de "
         "`vault_standard_upgrade.CURRENT_VERSION`:\n" + "\n".join(culpables)
     )
+
+
+def test_el_banner_de_la_cli_coincide():
+    """`cli/README.md` publicaba v39.0 con el estándar seis versiones por delante.
+
+    Ningún guard lo miraba: `vault_doc_counts` vigila cifras, no versiones, y
+    los tests de coherencia solo cubrían manifiesto, badge y `pyproject`. El
+    banner de la CLI es lo primero que lee quien la usa.
+    """
+    texto = (ROOT / "cli" / "README.md").read_text(encoding="utf-8")
+    m = re.search(r"\*\*(v\d+\.\d+) ", texto)
+    assert m, "no se encontró el banner de versión en cli/README.md"
+    assert m.group(1) == VERSION

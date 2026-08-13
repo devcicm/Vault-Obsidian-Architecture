@@ -885,14 +885,20 @@ async function handleToolsCall(params, session) {
     } else if (name === "vault_graph_fix" || name === "vault_graph_inspect") {
       const scriptName = name + ".py";
       const scriptPath = join(SCRIPTS_DIR, scriptName);
-      result = await executePythonTool(scriptPath, args);
+      // El tercer argumento existía y no lo pasaba nadie: `env.VAULT_ROOT =
+      // vaultRoot` era código muerto, y `--vault <ruta>` solo movía una
+      // variable de módulo que el hijo Python nunca veía. El vault contra el
+      // que corría la tool era el que la autodetección encontrara — es decir,
+      // no necesariamente el que el servidor tiene abierto. Los tests no lo
+      // veían porque sembraban VAULT_ROOT en el entorno del padre.
+      result = await executePythonTool(scriptPath, args, vaultRoot);
     } else {
       const tool = TOOLS_CATALOG[name];
       if (!tool || !tool.script) {
         return formatToolError("tool_not_found", `Tool '${name}' not found.`);
       }
       const scriptPath = join(SCRIPTS_DIR, tool.script);
-      result = await executePythonTool(scriptPath, args);
+      result = await executePythonTool(scriptPath, args, vaultRoot);
     }
 
     await TraceLog.record(name, args, result);

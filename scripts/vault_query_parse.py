@@ -401,13 +401,29 @@ Notas:
   - `plan` describe las llamadas; quien las ejecuta es vault_context_pack
 """,
     )
-    parser.add_argument("query", help="Pregunta en lenguaje natural")
+    # La pregunta se admite **también** como `--query`. El catálogo MCP publica
+    # los parámetros por nombre de flag, así que un posicional no aparecía en el
+    # `inputSchema`: el servidor invocaba con `--query "..."` y argparse
+    # respondía `unrecognized arguments`. Toda la capacidad consulta -> contexto
+    # era inalcanzable por MCP, que es su único consumidor real.
+    #
+    # El posicional se conserva (no-derogación): quien lo usa desde la CLI sigue
+    # funcionando. Lo que cambia es que ahora hay una forma nombrada, que es la
+    # que un catálogo puede publicar.
+    parser.add_argument("query", nargs="?", default=None,
+                        help="Pregunta en lenguaje natural")
+    parser.add_argument("--query", dest="query_flag", default=None,
+                        help="La misma pregunta, en forma nombrada (la que usa MCP)")
     parser.add_argument("--explain", action="store_true",
                         help="Muestra la evidencia de cada campo inferido")
     parser.add_argument("--plan-only", action="store_true",
                         help="Emite solo el plan de tools")
 
     args = parser.parse_args()
+    pregunta = args.query_flag or args.query
+    if not pregunta:
+        parser.error("falta la pregunta: pasala como posicional o con --query")
+    args.query = pregunta
     result = vault_query_parse(args.query)
 
     if result.get("ok"):

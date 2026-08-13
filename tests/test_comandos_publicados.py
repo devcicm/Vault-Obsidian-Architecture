@@ -81,7 +81,10 @@ def _comando_documentado(script: str) -> list:
     for linea in texto.splitlines():
         for m in vds.RE_COMANDO.finditer(linea):
             if m.group(1).endswith(script):
-                return [str(REPO_ROOT / m.group(1)), *m.group(2).split()]
+                # RE_COMANDO ya no captura el prefijo `scripts/` (admite la
+                # forma corta que usa `scripts/README.md`): se ancla aquí.
+                return [str(REPO_ROOT / "scripts" / m.group(1)),
+                        *m.group(2).split()]
     pytest.fail(f"CLAUDE.md ya no documenta ningún comando para {script}")
 
 
@@ -111,7 +114,7 @@ def test_el_generador_no_escribe_un_flag_que_su_tool_rechaza():
     )
     revisados = 0
     for m in vds.RE_COMANDO.finditer(fuente):
-        script = REPO_ROOT / m.group(1)
+        script = REPO_ROOT / "scripts" / m.group(1)
         assert script.exists(), f"el generador publica {m.group(1)}, que no existe"
         declarados = vds._flags_declarados(script)
         for flag in vds.RE_FLAG_USADO.findall(m.group(2)):

@@ -31,7 +31,11 @@ Los dos ejes se cruzan en un solo punto verificable (`meta_estandar` ⟺
 *consulta → contexto* (Grupo 34). Al clasificar los 37 grupos del catálogo contra
 esa prosa aparecieron dos desajustes que no se pueden tapar sin mentir en el registro:
 
-1. **El Grupo 35 (Normas, 13 tools) gobierna el estándar, no el vault del usuario.**
+1. **El Grupo 35 (Normas) gobierna el estándar, no el vault del usuario.**
+   Cuántas tools son lo dice `--trace`, no esta línea: escribirlo aquí a mano
+   es AP-47, y de hecho ya se quedó en 13 mientras el grupo crecía a 17 —el
+   número viajó copiado a `docs/BLUEPRINT.md` y a `CLAUDE.md`, cada uno con
+   una cifra distinta y las tres verdes.
    `vault_gate`, `vault_doc_sync`, `vault_doc_counts`, `vault_changelog_check`,
    `vault_arch`, `vault_noop_audit`, `vault_blame_audit`, `vault_error_contract` y
    `vault_smoke` no tocan las notas de nadie: comprueban que este repo cumple lo que
@@ -147,7 +151,7 @@ CAPACIDADES: Dict[str, Dict[str, Any]] = {
         "grupos": [35],
         "nota": (
             "Tercera capacidad que `CLAUDE.md` no nombraba. Existía desde que se "
-            "escribió la primera puerta; declararla es lo que impide que sus 13 tools "
+            "escribió la primera puerta; declararla es lo que impide que sus tools "
             "se cuenten como si sirvieran a la memoria del agente."
         ),
     },

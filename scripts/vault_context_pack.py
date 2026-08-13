@@ -375,7 +375,19 @@ Notas:
   - `excluded` dice que se dejo fuera y por que: el recorte es auditable
 """,
     )
-    parser.add_argument("query", help="Pregunta en lenguaje natural")
+    # La pregunta se admite **también** como `--query`. El catálogo MCP publica
+    # los parámetros por nombre de flag, así que un posicional no aparecía en el
+    # `inputSchema`: el servidor invocaba con `--query "..."` y argparse
+    # respondía `unrecognized arguments`. Toda la capacidad consulta -> contexto
+    # era inalcanzable por MCP, que es su único consumidor real.
+    #
+    # El posicional se conserva (no-derogación): quien lo usa desde la CLI sigue
+    # funcionando. Lo que cambia es que ahora hay una forma nombrada, que es la
+    # que un catálogo puede publicar.
+    parser.add_argument("query", nargs="?", default=None,
+                        help="Pregunta en lenguaje natural")
+    parser.add_argument("--query", dest="query_flag", default=None,
+                        help="La misma pregunta, en forma nombrada (la que usa MCP)")
     parser.add_argument("--budget", type=int, default=DEFAULT_BUDGET,
                         dest="budget_tokens",
                         help=f"Presupuesto en tokens (default: {DEFAULT_BUDGET})")
@@ -392,6 +404,10 @@ Notas:
                         help="Incluye las señales del rerank por nota")
 
     args = parser.parse_args()
+    pregunta = args.query_flag or args.query
+    if not pregunta:
+        parser.error("falta la pregunta: pasala como posicional o con --query")
+    args.query = pregunta
 
     result = vault_context_pack(
         query=args.query, budget_tokens=args.budget_tokens, top_k=args.top_k,

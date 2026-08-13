@@ -143,7 +143,6 @@ Lee una nota del vault por ruta relativa o por título.
 
 ```bash
 python vault_read.py --path "01_Projects/mi-api/status.md"
-python vault_read.py --title "Status"
 ```
 
 ---
@@ -153,7 +152,7 @@ Búsqueda full-text en `search-index.json` con score ponderado.
 
 ```bash
 python vault_search.py --query "circuit breaker"
-python vault_search.py --query "deploy" --project "mi-api"
+python vault_search.py --query "deploy" --tag proyecto/mi-api
 python vault_search.py --query "error" --folder "02_Observability"
 ```
 
@@ -247,8 +246,8 @@ python vault_log_error.py --type slo --title "API Availability" --description ".
 Documenta un patrón de diseño, arquitectura, código o integración en `05_Patterns/`.
 
 ```bash
-python vault_pattern_save.py --project mi-api --title "Circuit Breaker" --category code \
-  --problem "Fallos en cascada" --solution "..." --implementation "..."
+python vault_pattern_save.py --project mi-api --name "Circuit Breaker" --type code \
+  --description "Fallos en cascada" --notes "Solución y implementación"
 ```
 
 | `--category` | Carpeta |
@@ -265,7 +264,7 @@ Lista todos los patrones documentados, opcionalmente filtrados por proyecto o ca
 
 ```bash
 python vault_pattern_list.py --project mi-api
-python vault_pattern_list.py --category architecture
+python vault_pattern_list.py --type architecture
 ```
 
 ---
@@ -421,7 +420,7 @@ Genera `99_Index/graph.json` con nodos (notas), aristas (wiki-links), orphans y 
 
 ```bash
 python vault_graph.py
-python vault_graph.py --project mi-api
+python vault_graph.py --typed
 ```
 
 Desde v40.0 las once tools del contexto **Grafo** resuelven sus rutas al usarlas, no al importarse: `99_Index/graph.json`, `graph-enriched.json`, `11_Code/.code-index.json`, el registro de etiquetas de código y los diagramas de entidad se declaran una sola vez en `vault/grafo/repositorio.py`. Antes eran dieciocho constantes congeladas repartidas entre once módulos, y solo once ubicaciones distintas: `GRAPH_FILE` se calculaba en tres ficheros y `CODE_DIR` en cinco (AP-05 + AP-49). El efecto visible es que `set_vault_root()` ya alcanza a estas tools.
@@ -598,8 +597,8 @@ python vault_runbook_save.py --project mi-api --title "Deploy a Producción" --c
 Registra la ejecución de un runbook (quién lo ejecutó, cuándo, resultado).
 
 ```bash
-python vault_runbook_log.py --runbook "deploy/mi-api-deploy" \
-  --status success --notes "Deploy v1.4.2 sin incidentes"
+python vault_runbook_log.py --path "06_Runbooks/deploy/mi-api-deploy.md" \
+  --outcome success --notes "Deploy v1.4.2 sin incidentes"
 ```
 
 ---
@@ -798,10 +797,10 @@ python vault_code_map.py --project mi-api
 Consulta el índice de código con filtros: por módulo, símbolo, lenguaje, relaciones. Retorna JSON sin leer los .md directamente.
 
 ```bash
-python vault_code_query.py --project mi-api --symbol "login"
-python vault_code_query.py --project mi-api --language python --iso_type service
-python vault_code_query.py --project mi-api --file_path "src/auth.py"
-python vault_code_query.py --project mi-api --relations "src/server.py"
+python vault_code_query.py --project mi-api --method "login"
+python vault_code_query.py --project mi-api --class "AuthService"
+python vault_code_query.py --project mi-api --file "src/auth.py"
+python vault_code_query.py --project mi-api --deps "src/server.py"
 ```
 
 ---
@@ -908,7 +907,7 @@ Genera `{folder}/index.md` con lista de notas de una sección. Se llama automát
 
 ```bash
 python vault_section_index.py --folder "01_Projects"
-python vault_section_index.py --folder "02_Observability" --include_subdirs false
+python vault_section_index.py --folder "02_Observability" --no-subdirs
 ```
 
 ---
@@ -927,8 +926,8 @@ Reconstruye `search-index.json` desde cero. Herramienta de recuperación para í
 
 ```bash
 python vault_reindex.py
-python vault_reindex.py --dry_run true        # ver qué se indexaría sin escribir
-python vault_reindex.py --graph true          # también reconstruye graph.json
+python vault_reindex.py --dry-run             # ver qué se indexaría sin escribir
+python vault_reindex.py --graph               # también reconstruye graph.json
 python vault_reindex.py --check               # solo verifica estado del índice
 ```
 
@@ -1006,10 +1005,10 @@ python vault_drift_detect.py --path "." --project mi-api --mode report
 Documenta flujos de trabajo, pipelines y ciclos de vida en `13_Flows/`.
 
 ```bash
-python vault_flow_save.py --project mi-api --title "Flujo de Pago" \
-  --flow_type workflow --content "# Flujo\n\n## Pasos\n1. Validar tarjeta..."
-python vault_flow_save.py --project mi-api --title "CI/CD Pipeline" \
-  --flow_type pipeline --content "..."
+python vault_flow_save.py --project mi-api --name "Flujo de Pago" \
+  --type workflow --steps "Validar tarjeta" "Cobrar" "Confirmar"
+python vault_flow_save.py --project mi-api --name "CI/CD Pipeline" \
+  --type pipeline --steps "Build" "Test" "Deploy"
 ```
 
 | `--flow_type` | Carpeta |
@@ -1292,7 +1291,7 @@ Evalúa 9 dimensiones de calidad (integrity, consistency, completeness, accuracy
 ```bash
 python vault_quality_check.py                     # score completo del vault
 python vault_quality_check.py --min-score 0.7    # falla si score < 0.7
-python vault_quality_check.py --folder 01_Projects/mi-api
+python vault_quality_check.py --path 01_Projects/mi-api
 ```
 
 ### `vault_fundamentals.py`
@@ -1302,7 +1301,7 @@ Desde v39 es además la **fuente única del Marco de Datos y Gobernanza**: `CIA_
 
 ```bash
 python vault_fundamentals.py                      # lista F1–F8 con tools mapeadas
-python vault_fundamentals.py --fundamental F1     # detalle de un fundamento
+python vault_fundamentals.py --list               # detalle de cada fundamento
 python vault_fundamentals.py --framework          # exporta 00_System/data-framework.{json,md}
 python vault_fundamentals.py --matrix             # matriz concepto → métrica → umbral → tool → enforcement
 ```
@@ -1316,7 +1315,7 @@ Analiza el impacto de un cambio sobre el grafo de wiki-links usando BFS. Devuelv
 
 ```bash
 python vault_impact.py --changed "01_Projects/api/overview.md"
-python vault_impact.py --changed "overview.md" --depth 3
+python vault_impact.py --changed "overview.md" --max-hops 3
 ```
 
 ### `vault_propagate.py`
@@ -1829,7 +1828,7 @@ Registro canónico de las 69 normas del estándar (AP-XX anti-patrones, PAT-X pa
 
 ```bash
 python vault_norms.py                             # catálogo completo
-python vault_norms.py --norm AP-36                # detalle de una norma
+python vault_norms.py --show AP-36                # detalle de una norma
 python vault_norms.py --audit --root vault-sandbox  # audita el vault contra las normas con guard/audit
 python vault_norms.py --audit --strict            # igual, pero exit 1 si hay violaciones (gate de CI)
 python vault_norms.py --check-framework           # guard anti-drift: el manifiesto documenta todos
