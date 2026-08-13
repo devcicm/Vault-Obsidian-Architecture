@@ -439,3 +439,69 @@ class TestApplyClassifiedFixes:
         result = apply_classified_fixes(decisions, notes_active, vault)
         assert result["stubs_created"] == 1
         assert (vault / "02_Observability/maintenance/stubs/orphan.md").exists()
+
+
+# ── El índice de destinos medía con criterio propio (v40.16) ────────────────
+#
+# Es el defecto que v40.14 cerró en `_collect_ghost_links` —la validación al
+# crear la nota— repetido en el grafo. Aquí no llegaba a corromper: el fuzzy
+# compara palabras sobre stems ya normalizados, que nunca tienen espacios, así
+# que la reescritura por parecido casi no dispara. Lo que sí hacía era mentir
+# en el informe, y en las dos direcciones a la vez.
+
+
+def test_el_indice_no_resuelve_por_title():
+    """`title:` no resuelve un wikilink: Obsidian no lo mira (regla 7).
+
+    Indexarlo daba por resuelto un enlace que el consumidor pinta roto — el
+    sentido del error en el que la medida sale verde y nadie vuelve a mirar.
+    """
+    from vault_graph_inspect import _stems_set
+
+    notas = {"infra/ct105.md": {"title": "Maquina de base de datos", "aliases": []}}
+    stems = _stems_set(notas)
+    assert "ct105" in stems
+    assert "maquinadebasededatos" not in stems
+
+
+def test_el_indice_resuelve_por_aliases():
+    """`aliases:` sí resuelve, y no se consultaba en ningún punto del módulo."""
+    from vault_graph_inspect import _stems_set
+
+    notas = {"infra/ct105.md": {"title": "CT", "aliases": ["Maquina vieja"]}}
+    assert _stems_set(notas).get("maquinavieja") == "infra/ct105.md"
+
+
+def test_los_aliases_se_leen_con_el_parser_y_no_con_un_regex():
+    from vault_graph_inspect import _extract_aliases
+
+    lista = "\n".join(["---", "title: X", "aliases:", "  - Uno", "  - Dos", "---", ""])
+    escalar = "\n".join(["---", "title: X", "alias: Solo uno", "---", ""])
+    assert _extract_aliases(lista) == ["Uno", "Dos"]
+    assert _extract_aliases(escalar) == ["Solo uno"]
+    assert _extract_aliases("sin frontmatter") == []
+
+
+def test_un_enlace_que_resuelve_no_se_propone_para_reescribir(tmp_path):
+    """La comprobación que va delante de todo lo demás en `_process_note`.
+
+    No reproduce una corrupción —no he conseguido construirla, y decirlo vale
+    más que un test que pase por mirar donde no es—: fija que una tool que
+    escribe pregunta primero si el enlace ya funciona, con el criterio del
+    consumidor y no con el suyo.
+    """
+    import vault_graph_fix as gf
+
+    (tmp_path / "infra").mkdir(parents=True)
+    (tmp_path / "infra/ct105.md").write_text(
+        "\n".join(["---", "title: CT", "aliases:", "  - maquina vieja", "---", "", "cuerpo", ""]),
+        encoding="utf-8",
+    )
+    destinos = gf._destinos_que_resuelven(tmp_path, ["infra/ct105.md"])
+    assert "infra/ct105" in destinos, "la ruta completa resuelve"
+    assert "ct105" in destinos, "el sufijo resuelve"
+    assert "maquina vieja" in destinos, "el alias resuelve"
+    assert "ct" not in destinos, "`title:` NO resuelve"
+
+    informe = gf.fix_vault(tmp_path, threshold=0.7)
+    assert informe["summary"]["broken_links_fixed"] == 0

@@ -109,6 +109,7 @@ def _load_notes(
         ).hexdigest()
         notes[rel_str] = {
             "body": body,
+            "aliases": _extract_aliases(text),
             "title": _extract_title(text) or rel.stem,
             "tags": _extract_tags(text),
             "body_hash": body_hash,
@@ -126,6 +127,23 @@ def _strip_frontmatter(content: str) -> str:
 def _extract_title(content: str) -> str | None:
     match = _TITLE_RE.search(content[:2000])
     return match.group(1).strip().strip("'\"") if match else None
+
+
+def _extract_aliases(content: str) -> list[str]:
+    """Los `aliases:` de la nota, con el parser de verdad.
+
+    Obsidian resuelve un wikilink por nombre de fichero y por `aliases:`
+    (`vault_lib.indice_de_destinos`, dueño del criterio). Este módulo no los
+    leía en ningún punto, así que un enlace escrito por su alias se contaba
+    como roto en el informe del grafo.
+    """
+    from vault_lib import parse_frontmatter
+
+    fm = parse_frontmatter(content)
+    crudos = fm.get("aliases") or fm.get("alias") or []
+    if isinstance(crudos, str):
+        crudos = [crudos]
+    return [a for a in crudos if isinstance(a, str) and a.strip()] if isinstance(crudos, list) else []
 
 
 def _extract_tags(content: str) -> set[str]:
@@ -158,17 +176,23 @@ def _build_graph(notes: dict[str, dict[str, Any]]) -> dict[str, set[str]]:
 def _stems_set(notes: dict[str, dict[str, Any]]) -> dict[str, str]:
     """Build {normalized_stem: relative_path} for quick existence lookup.
 
-    Includes BOTH title-derived and filename-derived stems so links like
-    [[00-14_requirements-primer]] resolve to the file (whose title is
-    '14_Requirements — Guía rápida' which would otherwise normalize to a
-    different stem).
+    El criterio es el del consumidor (AP-44, regla 7): un wikilink resuelve por
+    **nombre de fichero** y por `aliases:`. `title:` **no** entra — Obsidian no
+    lo mira—, y esta función lo indexaba desde siempre: un enlace que solo
+    casaba con un `title:` se daba por resuelto y se quedaba roto en el vault,
+    que es el peor sentido del error porque la medida sale verde. Los alias,
+    al revés, no se consultaban en ningún punto y engordaban el informe con
+    enlaces buenos.
+
+    El `title:` que se retira aquí seguía además una regex por líneas sobre los
+    primeros 2000 caracteres del fichero entero, no del bloque: una línea
+    `title: X` dentro de un fence entraba como destino válido.
     """
     stems: dict[str, str] = {}
     for p, info in notes.items():
-        fname_stem = Path(p).stem
-        title = info.get("title", "") or fname_stem
-        candidates = [normalize_stem(title), normalize_stem(fname_stem)]
-        for s in candidates:
+        candidatos = [normalize_stem(Path(p).stem)]
+        candidatos += [normalize_stem(a) for a in info.get("aliases", [])]
+        for s in candidatos:
             if s and s not in stems:
                 stems[s] = p
     return stems

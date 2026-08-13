@@ -94,7 +94,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-18** — Cross-folder content duplication | audit | — | — |
 | **AP-19** — Shadow indexing | audit | `framework` | — |
 | **AP-20** — Deceptive skeleton (empty-list) | guard | — | — |
-| **AP-21** — Path-anchored wiki-links | guard | — | `test_indices_dominio.py`, `test_vault_regex.py` |
+| **AP-21** — Path-anchored wiki-links | guard | — | `test_ap21_dentro_de_fence.py`, `test_indices_dominio.py`, `test_vault_regex.py` |
 | **AP-22** — Wiki-link vacío — [[]] sin destino | guard+audit | — | `test_norms_coherence.py`, `test_vault_regex.py` |
 | **PAT-1** — Canonical source anchoring | recommended | — | `test_norms_coherence.py` |
 | **PAT-2** — Stub enrichment gradient | recommended | — | — |
@@ -134,8 +134,8 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-53** — El historial se afirma a mano y nadie lo contrasta con git | guard | `changelog` | `test_changelog_check.py` |
 | **AP-54** — El lock falla y se escribe igual | guard | `arquitectura` | `test_lock_reentrante.py` |
 | **AP-55** — El catálogo de normas se certifica a sí mismo | guard+audit | `norms_coherence` | `test_blueprint.py`, `test_norms_coherence.py` |
-| **AP-56** — Frontmatter presente que el consumidor no puede leer | guard+audit | — | `test_ap56_frontmatter_heal.py` |
-| **AP-57** — Criterio con dueño, reimplementado en la medida | guard | `criterios` | `test_ap05_fuente_unica.py`, `test_ap57_criterios.py`, `test_validacion_al_crear.py` |
+| **AP-56** — Frontmatter presente que el consumidor no puede leer | guard+audit | — | `test_ap56_frontmatter_heal.py`, `test_ingest_v40_16.py` |
+| **AP-57** — Criterio con dueño, reimplementado en la medida | guard | `criterios` | `test_ap05_fuente_unica.py`, `test_ap57_criterios.py`, `test_ingest_v40_16.py`, `test_validacion_al_crear.py` |
 | **PAT-6** — Semantic graph enrichment — enriquecimiento periodico del grafo | recommended | — | — |
 | **SP-01** — Delete protocol — change_log obligatorio antes de eliminar | audit | `framework` | `test_vault_norms.py` |
 | **SP-02** — Forward-link verification — buscar antes de linkar | guard | — | `test_validacion_al_crear.py`, `test_vault_norms.py` |
@@ -335,7 +335,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 |---|---|---|
 | `scripts/arch-baseline.json` | cruces entre contextos | 61 |
 | `scripts/arch-baseline.json` | cruces fuera de puerto | 13 |
-| `scripts/blame-baseline.json` | AP-51 | 87 |
+| `scripts/blame-baseline.json` | AP-51 | 84 |
 | `scripts/error-contract-baseline.json` | AP-52 | 9 |
 | `scripts/noop-baseline.json` | AP-37 | 0 |
 | `scripts/smoke-baseline.json` | AP-42 | 0 |

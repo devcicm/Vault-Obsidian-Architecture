@@ -474,29 +474,44 @@ def generate_frontmatter(
     # `meta` salía por el bucle genérico del final y quedaba detrás del CIA y de
     # `agent`. El campo era el mismo pero el orden no, y un formato que depende
     # de por dónde entró el dato no es un formato.
-    frontmatter.append(f"status: {meta.pop('status', 'draft')}")
+    frontmatter.append(f"status: {yaml_scalar(str(meta.pop('status', 'draft')))}")
 
     # Lo que el valor original arrastraba y no era estado (progreso, versión en
     # que se resolvió, fecha) se conserva aquí en vez de perderse al normalizar.
     if status_note:
-        frontmatter.append(f"status_note: {status_note}")
+        frontmatter.append(f"status_note: {yaml_scalar(str(status_note))}")
 
     if norm_refs:
         frontmatter.append(f"norm_refs: {json.dumps(norm_refs)}")
 
     # v27 CIA schema — defaults overridable via meta
 
-    frontmatter.append(f"cia_integrity: {meta.pop('cia_integrity', 'medium')}")
+    frontmatter.append(f"cia_integrity: {yaml_scalar(str(meta.pop('cia_integrity', 'medium')))}")
 
-    frontmatter.append(f"cia_availability: {meta.pop('cia_availability', 'medium')}")
+    frontmatter.append(f"cia_availability: {yaml_scalar(str(meta.pop('cia_availability', 'medium')))}")
 
-    frontmatter.append(f"cia_sensitivity: {meta.pop('cia_sensitivity', 'internal')}")
+    frontmatter.append(f"cia_sensitivity: {yaml_scalar(str(meta.pop('cia_sensitivity', 'internal')))}")
 
-    frontmatter.append(f"agent: {meta.pop('agent', 'system')}")
+    frontmatter.append(f"agent: {yaml_scalar(str(meta.pop('agent', 'system')))}")
 
+    # AP-56 completo. Hasta v40.16 `yaml_scalar` se aplicaba **solo** al
+    # título, y todo lo demás salía por aquí concatenado en un f-string —
+    # exactamente lo que el docstring de `yaml_scalar` describe como el
+    # defecto. El campo con el que se midió: `--meta '{"owner":"#infra"}'`
+    # escribía `owner: #infra`, que YAML lee como comentario, así que el valor
+    # **desaparecía** y el bloque seguía parseando limpio. `_verificar_frontmatter`
+    # lo aprobaba y la nota quedaba en disco con el campo evaporado.
+    #
+    # La pérdida silenciosa era la peor cara, pero no la única: `"1.0"` volvía
+    # como float, `"no"` como False, `"007"` como 7 y `"2026-01-01"` como
+    # `datetime.date`. El consumidor no leía lo que el agente escribió.
+    #
+    # El guard de esto medía un solo campo —el literal del título—, que es por lo que
+    # la forma estaba cubierta para el título y no existía para el resto del
+    # bloque: un guard que vigila una línea no vigila una norma.
     for key, value in meta.items():
         if isinstance(value, str):
-            frontmatter.append(f"{key}: {value}")
+            frontmatter.append(f"{key}: {yaml_scalar(value)}")
 
         else:
             frontmatter.append(f"{key}: {json.dumps(value)}")
@@ -661,7 +676,12 @@ def vault_write(
 
     # AP-21 guard: path-anchored wiki-links — reject [[folder/note]] patterns
 
-    path_links = re.findall(r"\[\[[^\]]*\/[^\]]*\]\]", content)
+    # Por el dueño del criterio, no por un regex propio (AP-57): este sitio
+    # corría sobre el contenido **crudo**, así que una nota que documenta la
+    # sintaxis —`[[carpeta/nota]]` dentro de un fence, que es lo que enseña el
+    # propio manifiesto— se rechazaba por incumplir lo que estaba explicando.
+    # Las otras dos comprobaciones de AP-21 de este módulo ya usaban esta vía.
+    path_links = detect_path_anchored(content)
 
     if path_links:
         return {
@@ -818,7 +838,18 @@ def vault_write(
                 index_data = json_module.loads(search_index.read_text(encoding="utf-8"))
                 note_stem = slugify(title)
                 for note in index_data.get("notes", []):
-                    if note.get("stem") == note_stem:
+                    # El stem se **deriva de la ruta**, que es un campo que el
+                    # índice sí escribe. Esto comparaba `note.get("stem")`, una
+                    # clave que ningún escritor emite —`update_search_index`
+                    # escribe path/title/preview/tags/updatedAt—, así que el
+                    # guard llevaba muerto desde que se escribió: crear la
+                    # misma nota en dos carpetas producía dos notas duplicadas
+                    # en silencio, que es justo lo que este bloque impide.
+                    # Es la misma forma que la nota de AP-39 describe para
+                    # `registry["tags"]`: código escrito contra una clave
+                    # inexistente. Derivar de lo que hay evita estrenar un
+                    # campo que los índices ya escritos no tendrían.
+                    if Path(note.get("path", "")).stem == note_stem:
                         current_path = note.get("path", "")
                         if current_path and current_path != f"{folder}/{note_stem}.md":
                             return {
@@ -829,8 +860,17 @@ def vault_write(
                                 "suggestion": f'python scripts/vault_move.py --from "{current_path}" --to "{folder}/{note_stem}.md"',
                                 "current_path": current_path,
                             }
-            except Exception:
-                pass
+            except (OSError, json.JSONDecodeError, ValueError) as e:
+                # AP-51: el índice ilegible no se presenta como "no hay nota
+                # duplicada". Se sigue —la escritura es válida— pero se dice.
+                print(
+                    json.dumps({
+                        "warning": "search_index_unreadable",
+                        "detail": f"{type(e).__name__}: {e}",
+                        "impact": "no se pudo comprobar si la nota existe en otra carpeta",
+                    }, ensure_ascii=False),
+                    file=sys.stderr,
+                )
 
         # La extracción del frontmatter previo estaba aquí, dentro de la rama en
         # la que la nota no existe: no había nada que extraer. Vive ahora en la
@@ -918,27 +958,24 @@ def vault_write(
         is_new=(existing_id is None),
     )
 
-    # Regenerate section index in background — fire-and-forget, never blocks write
-
-    try:
-        import subprocess
-
-        _section_index_script = Path(__file__).parent / "vault_section_index.py"
-
-        if _section_index_script.exists():
-            subprocess.Popen(
-                [
-                    sys.executable,
-                    str(_section_index_script),
-                    "--folder",
-                    folder.split("/")[0],
-                ],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-
-    except Exception:
-        pass
+    # El índice de sección ya se regeneró **dentro** de la escritura:
+    # `atomic_write_text` llama a `vault_io._auto_section_index(path)` en este
+    # mismo proceso y con la raíz activa.
+    #
+    # Aquí vivía además un `subprocess.Popen` que lanzaba
+    # `vault_section_index.py` con la ruta derivada de `__file__` (AP-36) y sin
+    # pasarle `VAULT_ROOT` ni `--root`: el hijo **volvía a autodetectar** el
+    # vault. Si el padre había fijado el destino con `set_vault_root()` —tools
+    # con `--root`, la CLI, los tests con `tmp_path`—, la nota se escribía en un
+    # vault y el `index.md`, el `vault-hub.md` y el `vault-commands.md` se
+    # generaban en otro; si en el hijo la detección caía en
+    # `repo_root_fallback`, ese otro era la raíz de este repo. Con los dos
+    # `DEVNULL` y el `except Exception: pass` alrededor, era inobservable por
+    # construcción: ninguna prueba podía verlo desde dentro.
+    #
+    # No se sustituye por una versión con el entorno propagado porque no había
+    # nada que propagar: el trabajo ya estaba hecho, y lo único que el
+    # subproceso podía aportar era hacerlo en el vault equivocado.
 
     # AP-39: la nota ya está en disco, así que el término existe de verdad.
     # Anotarlo antes habría dejado en la bitácora palabras de escrituras que

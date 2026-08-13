@@ -60,7 +60,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 import yaml
 
 from vault_errors import emit_error, wrap_main
-from vault_io import atomic_write_text, get_vault_root, is_snapshot_path
+from vault_io import atomic_write_text, file_lock, get_vault_root, is_snapshot_path
 from vault_lib import yaml_scalar
 
 #: Lo que esta tool sabe arreglar. Cualquier otra causa se reporta con su
@@ -282,7 +282,20 @@ def heal(apply: bool = False) -> Dict[str, Any]:
                    "keys_recovered": arreglo.get("keys_recovered", []),
                    "cause": arreglo["cause"]}
         if apply:
-            atomic_write_text(p, arreglo["text"])
+            # AP-54: el arreglo se calculó sobre el texto leído arriba, así que
+            # leer y escribir son un solo acto lógico sobre el mismo fichero.
+            # Sin lock, una escritura ajena entremedias se perdía al pegar aquí
+            # una versión anterior — y este healer corre sobre el vault entero.
+            with file_lock(p):
+                if p.read_text(encoding="utf-8") != texto:
+                    irreparables.append({
+                        "path": rel,
+                        "error": ("la nota cambió entre el diagnóstico y la escritura: "
+                                  "reparar aquí revertiría esa edición"),
+                        "cause": "cambio_concurrente",
+                    })
+                    continue
+                atomic_write_text(p, arreglo["text"])
             entrada["written"] = True
         reparadas.append(entrada)
 

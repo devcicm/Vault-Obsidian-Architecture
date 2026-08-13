@@ -49,7 +49,7 @@ from vault_io import (  # noqa: E402
     atomic_write_text,
     update_section_index,
 )
-from vault_lib import slugify, utcnow  # noqa: E402
+from vault_lib import slugify, strip_code_blocks, utcnow, yaml_scalar  # noqa: E402
 
 # Secciones que esta tool NO puede alimentar: son artefactos generados o
 # propiedad exclusiva de otras tools. Ingerir texto libre ahí rompería la
@@ -246,7 +246,13 @@ def _extract_entities(text: str) -> Dict[str, List[str]]:
     No se infiere nada por semejanza. Un falso positivo aquí acaba siendo un
     wikilink roto o una nota fantasma, que es peor que no extraer.
     """
-    wikilinks = re.findall(r"\[\[([^\]|#]+)", text)
+    # El wikilink dentro de un fence es código que el texto enseña, no un
+    # destino: Obsidian no lo resuelve. Extraerlo de ahí convertía un
+    # `[[ejemplo]]` de documentación en un enlace real en `related:` y en el
+    # cuerpo, es decir, en una nota fantasma creada por la propia ingesta.
+    # El dueño del criterio es `vault_lib.strip_code_blocks` (AP-57).
+    sin_codigo = strip_code_blocks(text)
+    wikilinks = re.findall(r"\[\[([^\]|#]+)", sin_codigo)
     tags = re.findall(r"(?<!\w)#([A-Za-z][\w/-]{1,30})", text)
     urls = re.findall(r"https?://[^\s<>()\"']+", text)
     code = re.findall(r"`([A-Za-z_][\w.]{2,40})`", text)
@@ -307,7 +313,11 @@ def _build_note(
         f'createdAt: "{utcnow()}"',
         f'updatedAt: "{utcnow()}"',
         f"source: {json.dumps(source, ensure_ascii=False)}",
-        f"ingest_origin: {origin}",
+        # AP-56: ni `origin` ni `agent` son valores controlados por esta tool
+        # —vienen del invocante—, y un `agent: si: claro` rompía el YAML de la
+        # nota entera. `yaml_scalar` solo cita cuando el parser real no
+        # devolvería el mismo texto.
+        f"ingest_origin: {yaml_scalar(origin)}",
         # AP-30 se cumple aquí, y por eso `vault_ingest` la aplica en vez de
         # solo detectarla: la tríada CIA se escribe en el mismo acto que crea la
         # nota, así que por esta vía no puede entrar una nota sin clasificar.
@@ -316,7 +326,7 @@ def _build_note(
         "cia_integrity: low",
         "cia_availability: medium",
         "cia_sensitivity: internal",
-        f"agent: {agent}",
+        f"agent: {yaml_scalar(agent)}",
         "---",
     ]
 
@@ -419,6 +429,7 @@ def vault_ingest(
     # ── etapa 3: escritura, solo si se pidió ─────────────────────────────────
     written: List[str] = []
     skipped: List[Dict[str, str]] = []
+    failed: List[Dict[str, str]] = []
     if commit:
         for note in proposals:
             full = _raiz() / note["path"]
@@ -433,14 +444,28 @@ def vault_ingest(
                 skipped.append({"path": note["path"], "reason": "ya existe"})
                 continue
             full.parent.mkdir(parents=True, exist_ok=True)
-            atomic_write_text(full, note["content"])
+            try:
+                atomic_write_text(full, note["content"])
+            except OSError as exc:
+                # Una excepción en la nota k dejaba en disco las k-1 anteriores
+                # **y** se llevaba por delante el `update_section_index`: el vault
+                # quedaba con notas que ningún índice mencionaba, y la tool no
+                # devolvía ninguna de las dos cosas. Aquí el fallo de una nota es
+                # una fila del informe (`failed`), no la desaparición del lote.
+                failed.append({"path": note["path"], "reason": f"{type(exc).__name__}: {exc}"})
+                continue
             written.append(note["path"])
+        # Fuera del bucle y sin condicionar a que no hubiera fallos: si se
+        # escribió aunque sea una, el índice tiene que reflejarlo.
         if written:
             update_section_index(section)
 
     return {
-        "ok": True,
+        # No `True` fijo: un lote con notas caídas no es un éxito, y devolverlo
+        # como tal presentaba el fallo de la tool como ausencia en el dato (AP-51).
+        "ok": not failed,
         "committed": commit,
+        "failed": failed,
         "source": source,
         "origin": origin,
         "section": section,

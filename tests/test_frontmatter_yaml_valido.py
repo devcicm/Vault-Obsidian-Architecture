@@ -212,3 +212,58 @@ def test_ningun_envelope_sale_con_los_acentos_escapados():
 
     assert not culpables, (
         "json.dumps a stdout sin ensure_ascii=False: " + ", ".join(culpables))
+
+
+# ── El guard medía una línea, no la norma (v40.16) ───────────────────────────
+#
+# `test_ninguna_tool_escribe_el_titulo_sin_escapar` vigila el literal
+# `f"title: {`. Es un patrón, no una norma: `generate_frontmatter` escapaba el
+# título y concatenaba **todo lo demás** en crudo, y el guard salía verde.
+# Lo de abajo mide el bloque entero, y por su efecto —lo que el consumidor
+# lee— en vez de por la forma del código que lo escribe (AP-44).
+
+_VALORES_QUE_MIENTEN = [
+    ("owner", "#infra", "YAML lo lee como comentario: el valor DESAPARECE"),
+    ("version", "1.0", "vuelve como float"),
+    ("answer", "no", "vuelve como False"),
+    ("serie", "007", "vuelve como int 7"),
+    ("dia", "2026-01-01", "vuelve como datetime.date"),
+    ("summary", "Overview: demo", "dos puntos sin escapar rompen el bloque"),
+    ("owner2", "@carlos", "arroba reservada"),
+    ("marca", "*star", "alias YAML"),
+    ("hueco", "  con bordes  ", "el espacio de los extremos se pierde"),
+    ("multi", "una\nlinea mas", "el salto parte el bloque"),
+]
+
+
+@pytest.mark.parametrize("clave,valor,por_que", _VALORES_QUE_MIENTEN)
+def test_ningun_campo_de_meta_llega_distinto_al_consumidor(clave, valor, por_que):
+    """Todo `--meta` vuelve del parser igual que entró, o el guard falla.
+
+    El peor caso no es el que revienta: es `#infra`, que produce un bloque
+    perfectamente parseable con el campo vacío. La nota queda en disco, el
+    verificador la aprueba y el dato se perdió sin que nada lo dijera.
+    """
+    import vault_write
+
+    bloque = vault_write.generate_frontmatter(
+        title="Demo", tags=[], folder="07_Knowledge", meta={clave: valor}
+    )
+    datos = yaml.safe_load(bloque.split("---")[1])
+    assert datos.get(clave) == valor, (
+        f"`{clave}: {valor!r}` no sobrevive al viaje ({por_que}); "
+        f"volvió {datos.get(clave)!r}"
+    )
+
+
+def test_los_campos_propios_del_bloque_tambien_se_escapan():
+    """`agent`, `status_note` y los tres CIA son texto libre y salían crudos."""
+    import vault_write
+
+    bloque = vault_write.generate_frontmatter(
+        title="Demo", tags=[], folder="07_Knowledge",
+        meta={"agent": "claude: opus", "cia_sensitivity": "#interno"},
+    )
+    datos = yaml.safe_load(bloque.split("---")[1])
+    assert datos["agent"] == "claude: opus"
+    assert datos["cia_sensitivity"] == "#interno"

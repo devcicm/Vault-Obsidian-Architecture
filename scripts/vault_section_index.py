@@ -52,6 +52,23 @@ def _commands_note() -> Path:
     return get_vault_root() / "00_System" / "vault-commands.md"
 
 
+def _escribir_hub(destino: Path, contenido: str) -> None:
+    """Las dos notas hub por el mismo camino que los índices.
+
+    Se escribían con un `write_text` pelado: sin `assert_within_vault`, sin
+    lock, y —lo que más pesa— sin `record_raw_write`, que es donde vive el
+    escaneo de secretos y el ledger que hace falsable el `ok: true` (AP-37).
+    Son las dos únicas notas que el estándar escribe en todo vault que crea,
+    así que eran justo las que no podían ir por la puerta de atrás.
+    """
+    vroot = get_vault_root()
+    assert_within_vault(destino, vroot)
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    with file_lock(destino):
+        record_raw_write(destino, contenido)
+        destino.write_text(contenido, encoding="utf-8")
+
+
 def _ensure_hub_notes() -> None:
     """Idempotently create 00_System/vault-hub.md and vault-commands.md.
 
@@ -115,7 +132,7 @@ def _ensure_hub_notes() -> None:
             "\n"
             "Para detalles de cada comando, ver [[vault-commands|vault-commands]].\n"
         )
-        _hub_note().write_text(hub_content, encoding="utf-8")
+        _escribir_hub(_hub_note(), hub_content)
 
     if not _commands_note().exists():
         commands_content = (
@@ -255,7 +272,7 @@ def _ensure_hub_notes() -> None:
             "python scripts/vault_restore.py --backup_name <backup-name>\n"
             "```\n"
         )
-        _commands_note().write_text(commands_content, encoding="utf-8")
+        _escribir_hub(_commands_note(), commands_content)
 
 
 def _collect_notes(section_path: Path, include_subdirs: bool) -> List[Dict[str, Any]]:
@@ -341,11 +358,17 @@ def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, 
     # Ensure the hub notes exist (idempotent — only creates on first call).
     # This makes the vault self-bootstrapping: a single call to vault_section_index
     # for any section creates vault-hub.md and vault-commands.md if missing.
+    aviso_hub = None
     try:
         _ensure_hub_notes()
-    except Exception:
-        # hub note creation must never block the indexer
-        pass
+    except (OSError, ValueError, TimeoutError) as exc:
+        # Sigue sin bloquear al indexador, pero deja de ser invisible (AP-51):
+        # el `except Exception: pass` convertía "no pude crear el hub" en
+        # indistinguible de "ya existía", y el hub es el punto de entrada del
+        # vault entero. El tipo va acotado a propósito: un fallo de programación
+        # aquí debe salir, no absorberse.
+        aviso_hub = f"{type(exc).__name__}: {exc}"
+        print(f"[vault_section_index] hub no creado: {aviso_hub}", file=sys.stderr)
 
     vroot = get_vault_root()
     section_path = vroot / folder
@@ -410,6 +433,7 @@ def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, 
 
     return {
         "ok": True,
+        "hub_warning": aviso_hub,
         **write_report(),
         "path": str(index_path.relative_to(vroot)).replace("\\", "/"),
         "noteCount": len(notes),

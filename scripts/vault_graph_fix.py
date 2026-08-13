@@ -44,6 +44,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).parent))
 from vault_io import (
     atomic_write_text,
+    file_lock,
     get_vault_root,
     is_snapshot_path,  # dueño único de qué es una instantánea (AP-57)
     normalize_stem,
@@ -55,6 +56,12 @@ from vault_regex import (
     fix_nested_brackets,
     fix_whitespace_in_links,
     extract_wiki_links_strict,
+)
+# Los dueños canónicos del criterio que decide si un enlace resuelve (AP-57).
+from vault_lib import (
+    indice_de_destinos,
+    parse_frontmatter,
+    resolver_destino_wikilink,
 )
 from vault_graph_inspect import (
     _SKIP_DIRS,
@@ -257,16 +264,45 @@ def _fix_path_anchored(text: str, all_stems: dict[str, list[str]] | None = None)
     return new_text, fixes
 
 
+def _destinos_que_resuelven(root: Path, relativas: list[str]) -> set[str]:
+    """Lo que Obsidian resuelve de verdad: sufijos de ruta y `aliases:`.
+
+    Se construye con `vault_lib.indice_de_destinos`, que es el dueño canónico
+    del criterio (AP-57). Esta tool no lo usaba y pagaba el precio en las dos
+    direcciones: `_stems_set` indexa por `title:` —que Obsidian no mira— y no
+    consulta `aliases:` en ningún punto.
+
+    De las dos, la que hace daño es la segunda, porque esta tool **escribe**:
+    un `[[Change Log]]` que resuelve por alias no estaba en el índice, se daba
+    por roto, caía al fuzzy con umbral 0.7 y se reescribía apuntando a otra
+    nota. Un enlace que funcionaba quedaba en disco apuntando a otro sitio.
+    """
+    aliases: list[str] = []
+    for rel in relativas:
+        try:
+            fm = parse_frontmatter((root / rel).read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError):
+            continue
+        crudos = fm.get("aliases") or fm.get("alias") or []
+        if isinstance(crudos, str):
+            crudos = [crudos]
+        if isinstance(crudos, list):
+            aliases.extend(a for a in crudos if isinstance(a, str))
+    return indice_de_destinos(relativas, aliases)
+
+
 def _process_note(
     path: str,
     info: dict[str, Any],
     all_stems: dict[str, list[str]],
     threshold: float,
+    resuelven: set[str] | None = None,
 ) -> dict[str, Any]:
     """Process a single note. Returns fix report for that note."""
     text = info["body"]
     original = text
     fixes: list[dict[str, Any]] = []
+    resuelven = resuelven or set()
 
     existing_stems = set(all_stems.keys())
     # AP-57: los candidatos se buscan **fuera** del código. Un `[[ejemplo]]`
@@ -274,6 +310,12 @@ def _process_note(
     # resuelve, y esta tool escribe: proponerlo como roto acababa reescribiendo
     # la nota que documenta la sintaxis.
     for match in list(re.finditer(r"\[\[([^\]|]+)", _RE_CODIGO.sub("", text))):
+        # Antes de proponer nada: si el enlace resuelve con el criterio del
+        # consumidor, no está roto y esta tool no lo toca. Es la única
+        # comprobación que puede impedir que una reparación rompa lo que
+        # funcionaba, y por eso va delante de todo lo demás.
+        if resolver_destino_wikilink(match.group(1), desde=Path(path)) in resuelven:
+            continue
         target_stem = normalize_stem(match.group(1))
         if target_stem and target_stem not in existing_stems:
             result = _find_target(target_stem, all_stems, threshold)
@@ -335,6 +377,7 @@ def fix_vault(
     inverted_stems: dict[str, list[str]] = defaultdict(list)
     for stem, path in stems.items():
         inverted_stems[stem].append(path)
+    resuelven = _destinos_que_resuelven(root, sorted(all_notes_full))
 
     note_reports: list[dict[str, Any]] = []
     for path in sorted(notes):
@@ -364,9 +407,19 @@ def fix_vault(
                     }
                 )
         else:
-            note_reports.append(_process_note(path, info, inverted_stems, threshold))
+            note_reports.append(
+                _process_note(path, info, inverted_stems, threshold, resuelven)
+            )
 
     note_reports = [r for r in note_reports if r["changed"]]
+
+    # Sello de la versión sobre la que se calculó el arreglo. `apply_fix` pega
+    # un cuerpo calculado aquí sobre un frontmatter releído allí, y entre las
+    # dos cosas puede pasar cualquier escritura: sin este sello la nota editada
+    # entretanto se sobrescribía con una versión anterior y el informe decía
+    # `applied`. Con él, la discrepancia se ve y la nota se salta.
+    for r in note_reports:
+        r["source_sha"] = _sha_del_fichero(root / r["note"])
 
     total_brackets = sum(
         sum(f["count"] for f in r["fixes"] if f["type"] == "brackets")
@@ -396,6 +449,14 @@ def fix_vault(
     }
 
 
+def _sha_del_fichero(path: Path) -> str:
+    """Hash del contenido tal y como está en disco, o "" si no se puede leer."""
+    try:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError:
+        return ""
+
+
 def apply_fix(report: dict[str, Any], root: Path) -> dict[str, Any]:
     """Apply report['fixes'] by writing modified notes atomically."""
     log_dir = root / _FIX_LOG_DIR
@@ -415,11 +476,25 @@ def apply_fix(report: dict[str, Any], root: Path) -> dict[str, Any]:
             continue
         target = root / fix["note"]
         try:
-            existing_text = target.read_text(encoding="utf-8")
-            stripped = _strip_frontmatter(existing_text)
-            body_part = existing_text.replace(stripped, "", 1) if stripped else ""
-            new_full = body_part + fix["new_content"]
-            atomic_write_text(target, new_full)
+            # AP-54: leer, recomponer y escribir son tres pasos sobre el mismo
+            # fichero. Sin lock, otra tool que escriba entremedias pierde su
+            # cambio sin dejar rastro — y `--fix` masivo es justo cuando varias
+            # corren a la vez.
+            with file_lock(target):
+                existing_text = target.read_text(encoding="utf-8")
+                esperado = fix.get("source_sha")
+                if esperado and _sha_del_fichero(target) != esperado:
+                    errors.append({
+                        "note": fix["note"],
+                        "error": ("la nota cambió entre el análisis y la escritura: "
+                                  "aplicar el arreglo revertiría esa edición"),
+                        "error_code": "STALE_REPORT",
+                    })
+                    continue
+                stripped = _strip_frontmatter(existing_text)
+                body_part = existing_text.replace(stripped, "", 1) if stripped else ""
+                new_full = body_part + fix["new_content"]
+                atomic_write_text(target, new_full)
             applied += 1
         except Exception as exc:
             errors.append({"note": fix["note"], "error": str(exc)})

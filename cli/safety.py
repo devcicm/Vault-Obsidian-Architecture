@@ -243,8 +243,21 @@ def scan_content(text: str, field_name: str = "content") -> List[Finding]:
 
     # AP-21: wikilinks con ruta. Obsidian resuelve por nombre de nota; un link
     # con ruta se rompe en cuanto la nota se mueve, y el grafo pierde la arista.
+    # Sobre el texto sin fences: un wikilink con ruta dentro de un bloque de
+    # código es sintaxis que la nota enseña, no una arista del grafo, y
+    # rechazarlo impedía documentar la propia norma —el manifiesto la escribe
+    # así—. Qué es código y no enlace lo decide su dueño (AP-57).
+    #
+    # El resto de medidas de este scan siguen mirando el texto **crudo** a
+    # propósito: un carácter invisible o una inyección cuentan igual dentro de
+    # un fence. AP-21 no es una medida de seguridad, es una de resolución de
+    # enlaces, y por eso es la única que puede permitirse este recorte.
+    from vault_lib import strip_code_blocks  # import diferido: SCRIPTS_DIR
+
     path_links = sorted({
-        m.group(1) for m in re.finditer(r"\[\[([^\]|\n]*/[^\]|\n]*)(\|[^\]\n]*)?\]\]", text)
+        m.group(1)
+        for m in re.finditer(r"\[\[([^\]|\n]*/[^\]|\n]*)(\|[^\]\n]*)?\]\]",
+                             strip_code_blocks(text))
     })
     if path_links:
         findings.append(Finding(
