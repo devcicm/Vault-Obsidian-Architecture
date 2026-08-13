@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.15 — 2026-08-12  
+**Versión:** v40.16 — 2026-08-13  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -6837,6 +6837,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.16 | 2026-08-13 | Cinco defectos que un QA externo vio desde fuera y ninguna puerta veía desde dentro, todos con la misma forma: la medida estaba verde y verde no significaba lo que decía. `vault_ingest` extraía wikilinks de dentro de un fence, escribía frontmatter sin `yaml_scalar` y perdía en silencio la nota que no se pudo escribir; `vault_graph_fix` aplicaba un informe sobre un fichero ya cambiado y ahora lo para con `source_sha` y `STALE_REPORT`; dos tools respondían a un `file_lock` fallido escribiendo igual (AP-54). AP-21 corría sobre el texto crudo y rechazaba la nota que documenta AP-21 — es la única medida de `scan_content` que se recorta al fence, porque mide resolución de enlaces y no seguridad. La capacidad consulta → contexto era **inalcanzable por MCP**: la pregunta era posicional, no se publicaba en el `inputSchema` y `--check-params` medía la única dirección que no ve ese caso. Y tres guards medían menos de lo que decían: la capa 4 del plano daba una norma por cubierta si un test la **mencionaba** —22 de 69, irreversible por baseline que solo encoge—, `_BASELINES` publicaba 6 de las 9 baselines del repo, y C2 de AP-55 aceptaba la cabecera del módulo que su propia baseline prohíbe desde v40.11. El checklist de puertas de `CLAUDE.md` deja de escribirse a mano: lo genera `vault_gate --fix-doc` desde `PUERTAS` y `--check-doc` lo compara literalmente |
 | v40.15 | 2026-08-12 | **AP-05** deja de ser la última norma `critical` sin detector, diecisiete versiones después. El problema declarado —decidir qué es «el mismo dato» sin embeddings— sigue abierto **en general**, y no hacía falta resolverlo entero: un dato **tipado** (IP, URL, puerto, semver) escrito como `clave: valor` lleva su identidad al lado y se compara por igualdad. `vault_fuente_unica` (puerta 16) mide esa parte y declara el resto en `cobertura_parcial` — la prosa, el valor sin tipo y el sinónimo siguen sin medirlas nadie, porque una medida parcial presentada como total es peor que ninguna. El contraste de la regla 7 devolvió el ejemplo literal que el manifiesto usa desde v19: `host_ip` con `10.10.10.45` y `10.10.10.50` en dos notas del mismo servidor, y `pve_version` entre `9.1.1` y `8.4.16`. Los patrones tipados viven en `vault_regex`, su dueño (AP-50), y no en el detector. `vault_arch` cazó de paso una clasificación equivocada —la tool nació en el meta-toolkit, que no toca las notas de nadie— y se corrigió moviéndola, no ampliando la baseline |
 | v40.14 | 2026-08-12 | La validación que corre **al nacer la nota** medía con su propio criterio en los cuatro sitios donde ya había dueño (AP-57), y con los dos signos del error a la vez: resolvía por basename —el enlace roto pasaba, en verde— y no miraba `aliases:` —avisaba del bueno—. Los dos se sostienen: el ruido enseña a ignorar el aviso justo cuando el aviso deja escapar lo que importa, y así un vault real llega a 221 enlaces muertos con la validación puesta. `vault_lib` estrena dos dueños más, `resolver_destino_wikilink` e `indice_de_destinos`; sin origen, una ruta relativa se devuelve sin resolver, porque no saber no es resolver a la raíz. Ninguno de los dos entra en el registro de `vault_criterios`: sus señales (`"|"`, `"#"`, `"aliases"`) no distinguen nada y daban 10 falsos, así que el límite se declara en vez de comprarse el verde con ruido |
 | v40.13 | 2026-08-12 | **AP-57** — la norma que v40.12 debió traer y no trajo. Aquella tanda arregló **cuatro** defectos de una misma tool y los cuatro tenían la misma forma: el registro canónico existía y nadie lo consultaba. Cuatro parches sin norma es exactamente lo que la regla 4 prohíbe. AP-57 generaliza AP-50 de **datos** duplicados a **criterios**: qué es una instantánea, qué es documentación del estándar, qué es código y no enlace. La diferencia importa porque un dato duplicado se ve al compararlo y un criterio vive enterrado en un `if`. `vault_criterios` (puerta 15) lo detecta por la constante distintiva del dueño, y **declara su límite antes de que nadie se apoye en él**: la detección es sintáctica, así que verde no prueba que no haya copias — prueba que no hay copias de la forma que sabe reconocer. Auditar con ella el primer día encontró la misma forma en `vault_graph_fix`, que **escribe**: su `skip_set` de instantáneas ya divergía de `vault_io.SNAPSHOT_DIRS`, y ahí la divergencia no infla un número — repara dentro de una instantánea congelada, que es dejar de serlo. Mirando esa tool salieron dos defectos más de la misma familia, ambos de escritura: reescribía wikilinks **dentro de un fence** —corrompiendo el ejemplo de la nota que documenta la sintaxis— y despojaba la carpeta de `[[carpeta/nota]]` a ciegas, que es el error de basename de v40.12 con el signo contrario: allí un enlace roto salía verde, aquí un enlace bueno se vuelve ambiguo. Ahora solo despoja si el destino con carpeta no existe **y** el basename es único; sin índice no toca nada. Y un cuarto, latente: `emit_error` construye el envelope, no lo devuelve como exit code, así que `--apply --check` publicaba `UNEXPECTED_ERROR` —«fallo interno»— sobre un error de uso con arreglo. Ninguna prueba había pisado esa rama |
@@ -7171,6 +7172,78 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v40.16 — 2026-08-13 `git: pending`
+
+**Cinco defectos que un QA externo vio desde fuera y ninguna puerta veía desde
+dentro, y el checklist que llevaba dieciséis versiones copiándose a sí mismo.**
+
+Todos tienen la misma forma, y es la que este estándar ya conoce: **la medida
+estaba verde y verde no significaba lo que decía.** Ninguno lo destapó una
+puerta; los destapó mirar el repo con el criterio de quien lo consume.
+
+**El write path presentaba el fallo como resultado.** `vault_ingest` extraía
+wikilinks del texto crudo —así que un ejemplo dentro de un fence entraba en el
+grafo—, escribía `agent:` y `ingest_origin:` sin pasar por `yaml_scalar`
+(AP-56), y una escritura fallida se perdía sin aparecer en el envelope: el
+consumidor recibía `ok: true` con la nota ausente. Ahora hay `failed` y `ok`
+sale de él. `vault_graph_fix` aplicaba un informe sin comprobar que el fichero
+no hubiera cambiado desde que se midió: se añade `source_sha` por nota y un
+`STALE_REPORT` que se niega a escribir sobre otra versión.
+`vault_frontmatter_heal` y `vault_section_index` responden a un `file_lock`
+fallido omitiendo la escritura, no escribiendo igual (AP-54).
+
+**AP-21 rechazaba la nota que documenta AP-21.** El regex del wikilink anclado
+a ruta corría sobre el texto crudo en `vault_write` y en `cli/safety.py`, así
+que una nota que **enseña** la sintaxis mala dentro de un fence —que es como la
+escribe este manifiesto— no se podía guardar. AP-21 es una medida de resolución
+de enlaces, no de seguridad, y por eso es la única de `scan_content` que se
+recorta: las demás siguen mirando el crudo, porque un carácter invisible dentro
+de un fence sigue siendo un carácter invisible.
+
+**La capacidad consulta → contexto era inalcanzable por MCP.**
+`vault_query_parse` y `vault_context_pack` tomaban la pregunta como posicional;
+el catálogo publica parámetros por nombre de flag, así que `query` no aparecía
+en el `inputSchema` y el servidor invocaba con `--query`, que argparse
+rechazaba. `--check-params` medía `publicado ⊆ argparse`, la única dirección
+que no ve este caso: no sobraba nada, faltaba todo. Se añade la forma nombrada
+conservando la posicional (no-derogación) y una medida nueva de posicionales
+obligatorios. `scripts/README.md` publicaba además diecinueve comandos con
+flags que su tool no acepta, invisibles porque `RE_COMANDO` exigía el prefijo
+`scripts/` que ese documento no usa.
+
+**Tres guards medían menos de lo que decían.** La capa 4 del plano daba una
+norma por cubierta si algún fichero de `tests/` contenía su código **en
+cualquier sitio** —un docstring que la citaba de pasada bastaba—, y como esa
+baseline solo encoge, la certificación falsa era irreversible: 22 de 69 normas
+estaban cubiertas por mención. Ahora el código tiene que aparecer en el cuerpo
+de una función `test_*`, y el límite queda dicho (sigue siendo sintáctico).
+Destapó AP-03, AP-17 y AP-30 sin ningún test que tocara su detector: se les
+escribe, no se congelan. `_BASELINES` listaba seis de las nueve baselines del
+repo, así que tres deudas congeladas —AP-57, C2 de AP-55 y el contrato de
+campos— no aparecían en el plano; se añaden, y una puerta falla si vuelve a
+faltar alguna. C2 de AP-55 buscaba la norma en el fichero entero cuando su
+propia baseline dice desde v40.11 que la cabecera del módulo no vale: se cierra
+ahora porque hoy no cambia ningún veredicto, que es cuando cerrar sale gratis.
+
+**El checklist de puertas deja de escribirse a mano.** `CLAUDE.md` tenía
+dieciséis párrafos —135 líneas— describiendo lo que `vault_gate.PUERTAS` ya
+declara en `mide` y `fix`. Es AP-05 cometido en el documento que instruye al
+agente, y `--check-doc` no lo veía porque solo comprobaba que el nombre del
+script apareciera. Ahora el bloque lo genera `--fix-doc` desde el registro y
+`--check-doc` compara literalmente. El **porqué** de cada puerta no se deriva y
+sigue en el docstring de su tool; lo que no se deriva de ninguna parte quedó en
+una sección nueva, «Cuatro cosas que el registro no puede decirte».
+
+**Una norma que declara su hueco deja de contar como deuda nueva.** AP-04
+apareció como descubierta el día que la cobertura por mención dejó de valer, y
+declararse honestamente no puede salir más caro que callarse: `cobertura_
+descubierta` se descuenta de la capa 4, que ya la publica en su propia columna.
+
+`vault_criterios` publica por fin su alcance real —`modules_measured: 31` de
+125 escaneados—, porque una precondición que no se ve no se discute.
 
 ---
 
