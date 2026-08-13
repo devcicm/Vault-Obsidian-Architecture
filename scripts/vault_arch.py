@@ -149,6 +149,7 @@ CONTEXTS: dict[str, dict] = {
             "vault_runbook_save", "vault_runbook_log", "vault_slo_save",
             "vault_test_save", "vault_dataset", "vault_ai_decision",
             "vault_change_log", "vault_voice", "vault_fix_brackets",
+            "vault_frontmatter_heal",
             "vault_timeline", "vault_project_overview", "vault_project_status",
         ],
     },

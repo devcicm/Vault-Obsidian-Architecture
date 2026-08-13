@@ -387,6 +387,30 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "example": 'python vault_fix_brackets.py\npython vault_fix_brackets.py --apply\npython vault_fix_brackets.py --path "02_Observability/errors/foo.md"',
         "related": ["vault_audit", "vault_regex"],
     },
+    "vault_frontmatter_heal": {
+        "name": "vault_frontmatter_heal",
+        "script": "vault_frontmatter_heal.py",
+        "group": "Corrección Automática",
+        "purpose": "Repara el frontmatter que existe y no parsea (AP-56): escalar sin escapar y bloque sin cerrar.",
+        "params": {
+            "apply": {
+                "type": "boolean",
+                "required": False,
+                "description": "Escribe las reparaciones (default: dry-run)",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit 1 si queda frontmatter ilegible",
+                "validators": [],
+            },
+        },
+        "guards": [],
+        "side_effects": ["Reescribe la nota reparada por atomic_write_text"],
+        "example": "python vault_frontmatter_heal.py\npython vault_frontmatter_heal.py --apply",
+        "related": ["vault_fix_brackets", "vault_validate", "vault_foreign_check"],
+    },
     "vault_delta": {
         "name": "vault_delta",
         "script": "vault_delta.py",
@@ -3666,7 +3690,7 @@ GROUPS: Dict[str, List[str]] = {
     "Release": ["vault_release_save"],
     "Riesgos/Calidad": ["vault_risk_save", "vault_privacy_save", "vault_ncr_save"],
     "Bootstrap": ["vault_init", "vault_onboard"],
-    "Corrección Automática": ["vault_fix_brackets", "vault_graph_fix"],
+    "Corrección Automática": ["vault_fix_brackets", "vault_graph_fix", "vault_frontmatter_heal"],
     "Versionado": ["vault_standard_upgrade"],
     "Gestión de Carpetas": ["vault_folder_registry"],
     "Memoria de Contexto": [

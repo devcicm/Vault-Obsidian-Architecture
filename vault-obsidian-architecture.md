@@ -3501,7 +3501,7 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **67 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **68 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -4993,7 +4993,7 @@ Dos causas, y la segunda es la incómoda:
 
 1. **El audit no lo ejecuta nadie.** En las **1.356 ejecuciones de tools
    registradas** en los `.tool-trace.json` de ese parque, `vault_norms` no
-   aparece **ni una vez**. 41 de las 100 tools del catálogo no se han ejecutado
+   aparece **ni una vez**. 41 de las 101 tools del catálogo no se han ejecutado
    jamás. Los agentes escriben; no gobiernan. Un enforcement que depende de que
    alguien se acuerde de invocarlo es enforcement en el papel.
 2. **Los valores no canónicos los escribía el propio estándar.** El más
@@ -5602,7 +5602,7 @@ de envelope con su contrato de `00_System/tool-spec.json`:
 Y la divergencia peor no era de forma sino de efecto: `jsNativeGraph` no tiene un
 solo `writeFile`. Un agente llamaba `vault_graph` por MCP, recibía `ok: true`, y
 el grafo se quedaba sin regenerar — **AP-37 y AP-47 servidos a la vez por el único
-camino que un agente real usa**. `vault_smoke` recorre las 100 tools del catálogo,
+camino que un agente real usa**. `vault_smoke` recorre las 101 tools del catálogo,
 pero ejecuta el `.py`: probaba exactamente la implementación que el agente no toca.
 
 **Prevención:** backend nativo solo para lo que **no tiene** implementación en
@@ -6204,6 +6204,45 @@ propia normalización y queda ciega a su error. AP-55 está en el dato antes de 
 nadie verifique: dos registros canónicos afirman cosas distintas sobre el mismo
 hecho. Se pueden dar por separado, y en v40.10 se dieron juntos — que es
 precisamente por lo que conviene tenerlos separados por escrito.
+
+---
+
+### AP-56 — Frontmatter presente que el consumidor no puede leer
+
+**Enforcement:** `guard+audit` · **Severidad:** high · **Introducido:** v40.12
+
+**Síntoma.** La nota abre `---`, escribe sus claves y, para `yaml.safe_load`, no
+tiene frontmatter: ni id, ni tags, ni tipo, ni estado. El bloque **se ve** al
+abrir el fichero, y por eso nadie lo revisa. El dato parece estar y no está.
+
+**Cómo salió.** Midiendo cuatro vaults consumidores con la regla 7. Doce notas,
+dos causas:
+
+- **Escalar sin escapar** (nueve de doce). `title: Overview: demo` no es un
+  mapeo. Es el defecto que v40.2 ya arregló *en el camino de escritura*.
+- **Delimitador sin cerrar** (tres). El bloque nunca se cierra, así que el
+  parser se traga la nota entera y revienta cientos de líneas más abajo, dentro
+  de un bloque de código. El mensaje de YAML —`while scanning a block
+  scalar`— señala **dónde explotó, no dónde está el fallo**, y por eso esas tres
+  notas llevaban meses así sin que nadie las mirara.
+
+**La mitad que faltaba.** v40.2 arregló la prevención: `yaml_scalar` escapa antes
+de escribir, y desde entonces este toolkit no produce el defecto. Lo que nunca
+existió es la reparación de lo que ya estaba en disco — `vault_fix_brackets`
+llevaba versiones haciendo exactamente ese trabajo para AP-22/AP-24, y el
+frontmatter no tenía equivalente. Una norma que solo previene deja intacto todo
+el material anterior a ella, que en un vault consumidor es casi todo.
+
+**Qué se repara y qué no.** `vault_frontmatter_heal` toca las dos causas
+mecánicas y **se niega** a adivinar el resto: un YAML truncado se completa
+inventando dato, que es peor que el hueco. La reparación se acepta solo si
+después `yaml.safe_load` devuelve un mapa **y ninguna clave que ya se leía
+cambia de valor** — el criterio del consumidor y no el propio (AP-44).
+
+**Distinguida de AP-28.** AP-28 es la nota sin bloque: el hueco se ve y se
+cuenta. AP-56 es la nota con bloque que no parsea, que para toda métrica es
+idéntica a AP-28 pero para un humano parece correcta. Se separan porque solo una
+de las dos se repara sin escribir metadatos nuevos.
 
 ---
 

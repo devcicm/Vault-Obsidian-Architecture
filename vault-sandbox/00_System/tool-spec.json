@@ -3755,6 +3755,39 @@
         "F3",
         "F7"
       ]
+    },
+    "vault_frontmatter_heal": {
+      "group": "Corrección Automática",
+      "group_id": 33,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "action",
+        "healed",
+        "hint",
+        "notes_scanned",
+        "ok",
+        "repaired",
+        "repaired_count",
+        "tool",
+        "unparseable_total",
+        "unrepairable",
+        "unrepairable_count"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "validity",
+          "integrity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F5"
+      ]
     }
   },
   "_counts": {

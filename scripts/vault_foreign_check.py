@@ -177,6 +177,11 @@ def contrastar(destino: Path) -> Dict[str, Any]:
 
     ilegibles: List[str] = []
     sin_frontmatter = 0
+    #: AP-56 — el detector. Una nota con bloque `---` que `yaml.safe_load` no
+    #: lee no es una nota sin frontmatter: es una nota cuyo frontmatter el
+    #: consumidor no ve aunque el humano lo vea al abrir el fichero. Por eso va
+    #: en una lista propia y no sumada a `sin_frontmatter` — mezclarlas
+    #: escondería justo el caso que hay que reparar (`vault_frontmatter_heal`).
     frontmatter_roto: List[str] = []
     con_frontmatter = 0
 

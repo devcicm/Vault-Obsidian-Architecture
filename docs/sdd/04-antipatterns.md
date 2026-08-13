@@ -1,21 +1,21 @@
 # Antipatterns -- Antipatrones
 
-> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-55 más
-> las familias PAT, SP y CN. Por familia: AP 55, CN 3, PAT 6, SP 3.
-> Bilingual document. Full norm catalog: antipatterns AP-01..AP-55 plus the PAT,
-> SP and CN families. By family: AP 55, CN 3, PAT 6, SP 3.
+> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-56 más
+> las familias PAT, SP y CN. Por familia: AP 56, CN 3, PAT 6, SP 3.
+> Bilingual document. Full norm catalog: antipatterns AP-01..AP-56 plus the PAT,
+> SP and CN families. By family: AP 56, CN 3, PAT 6, SP 3.
 
 ---
 
 ## ES
 
-Total de normas registradas: 67 (AP 55, CN 3, PAT 6, SP 3)
+Total de normas registradas: 68 (AP 56, CN 3, PAT 6, SP 3)
 
 ### AP-01: Documentación alucinada
 
 - **Severidad:** high
 - **Enforcement:** audit
-- **Detectado por:** vault_drift_detect
+- **Detectado por:** sin detector -- Ninguna tool la detecta. Declaraba `vault_drift_detect`, que mide lo contrario: cambios en el código que la documentación no recoge. AP-01 es documentación que describe código inexistente, y para verla haría falta resolver cada referencia contra el repo.
 
 Documentar herramientas, endpoints, funciones o comportamientos que no existen en el código real. El agente genera información convincente pero incorrecta.
 
@@ -25,7 +25,7 @@ Documentar herramientas, endpoints, funciones o comportamientos que no existen e
 
 - **Severidad:** high
 - **Enforcement:** audit
-- **Detectado por:** vault_audit
+- **Detectado por:** sin detector -- Sus dos variantes hermanas sí se miden --AP-17 canonical-shadow y AP-18 cross-folder, ambas con penalización propia en vault_audit.PENALIZACIONES--, pero la variante same-folder que es AP-02 no la detecta nadie: `status-v1.md` y `status-v2.md` en la misma carpeta no son duplicados por hash (AP-18) ni pasan el umbral de similitud de título (AP-17). Declararlo aquí es lo que impide que la cobertura de las hermanas se lea como suya.
 
 Múltiples notas describiendo la misma entidad: status-v1.md, status-v2.md, status-final.md, status-final2.md. Variantes: same-folder (AP-02), cross-folder (AP-18), canonical-shadow (AP-17).
 
@@ -45,7 +45,7 @@ Nota con contenido real pero incompleto (≥3 líneas reales) sin fecha de expan
 
 - **Severidad:** high
 - **Enforcement:** audit
-- **Detectado por:** vault_drift_detect
+- **Detectado por:** sin detector -- Ninguna tool la detecta. `vault_drift_detect` compara hashes y git; distinguir "lo describe en presente" de "ya está deployado" exige leer el cuerpo de la nota contra el estado real, que hoy no hace nadie.
 
 Documentar comportamientos futuros o planeados como si ya existieran. Confunde al agente sobre el estado real del sistema.
 
@@ -55,7 +55,7 @@ Documentar comportamientos futuros o planeados como si ya existieran. Confunde a
 
 - **Severidad:** critical
 - **Enforcement:** audit
-- **Detectado por:** vault_graph_inspect
+- **Detectado por:** sin detector -- La única norma `critical` que hoy no mide nadie, y se declara así en vez de esconderlo. Declaraba `vault_graph_inspect`, que no la menciona ni compara valores entre notas. Diecisiete módulos citan AP-05 en un comentario --al explicar por qué NO copian un dato-- y citar no es detectar. Detectarla de verdad exige decidir qué es "el mismo dato" sin embeddings, que es un problema de diseño abierto.
 
 El mismo dato (IP, URL, versión, configuración) aparece en múltiples notas con valores inconsistentes. Causa decisiones del agente basadas en datos erróneos.
 
@@ -85,7 +85,7 @@ ADRs (Architecture Decision Records) sin secciones Contexto, Opciones evaluadas 
 
 - **Severidad:** medium
 - **Enforcement:** audit
-- **Detectado por:** vault_drift_detect
+- **Detectado por:** sin detector -- Ninguna tool la detecta. Declaraba `vault_drift_detect`, que no lee versiones del cuerpo de la nota. La propia `prevention` lo dice en condicional --"vault_audit puede alertar"-- y ese condicional lleva desde v19 sin resolverse.
 
 Notas que mencionan versiones específicas de librerías, APIs o protocolos que ya fueron actualizadas, sin indicar que el contenido puede estar desactualizado.
 
@@ -105,7 +105,7 @@ Procedimientos operativos guardados en carpetas genéricas (07_Knowledge/, 01_Pr
 
 - **Severidad:** high
 - **Enforcement:** audit
-- **Detectado por:** vault_norms, vault_migrate_rollback
+- **Detectado por:** vault_norms
 
 Ejecutar vault_migrate_docs sin tener vault_migrate_rollback disponible o sin snapshot previo. Si la migración introduce errores, no hay manera de revertir.
 
@@ -125,7 +125,7 @@ Nota creada con frontmatter correcto pero cuerpo vacío o solo con TODO/placehol
 
 - **Severidad:** high
 - **Enforcement:** audit
-- **Detectado por:** vault_validate, vault_audit
+- **Detectado por:** vault_validate
 
 Notas del mismo tipo con campos faltantes, tipos mezclados (timestamp con/sin comillas, migratedFrom relativo vs absoluto). Rompe vault_list, búsquedas y deduplicación.
 
@@ -205,7 +205,7 @@ Mismo contenido byte-idéntico (MD5) en carpetas distintas. Penalización vault_
 
 - **Severidad:** critical
 - **Enforcement:** guard
-- **Detectado por:** manual
+- **Detectado por:** sin detector declarado
 
 Nota que pasa el content gate de 3 líneas porque tiene bullets, pero >50% de los bullets están vacíos (- , - [ ], - []). Variante de AP-11 que evade el guard básico.
 
@@ -215,7 +215,7 @@ Nota que pasa el content gate de 3 líneas porque tiene bullets, pero >50% de lo
 
 - **Severidad:** critical
 - **Enforcement:** guard
-- **Detectado por:** manual
+- **Detectado por:** sin detector declarado
 
 [[carpeta/nota]] en lugar de [[nota]]. Obsidian no resuelve paths, solo stems. El link siempre aparece roto en el grafo.
 
@@ -275,11 +275,11 @@ Nota de contenido sin campo `tags` o con la lista vacía. Sin tags la nota es in
 
 - **Severidad:** medium
 - **Enforcement:** audit
-- **Detectado por:** vault_audit, vault_validate
+- **Detectado por:** vault_audit
 
 Nota sin campo `type`. El tipo es lo que ancla la nota a su sección canónica (CN-02): sin él no se puede verificar la coincidencia type ↔ carpeta que sostiene la dimensión de exactitud (F4).
 
-**Prevención:** Declarar --type en la escritura; vault_validate lo comprueba contra el registro.
+**Prevención:** Declarar --type en la escritura; vault_audit lo cuenta en missing_type.
 
 ### AP-28: Missing frontmatter -- nota sin bloque YAML
 
@@ -305,7 +305,7 @@ Nota sin campo `status`. Sin estado no se puede distinguir lo vigente de lo obso
 
 - **Severidad:** high
 - **Enforcement:** audit
-- **Detectado por:** vault_audit, vault_quality_check
+- **Detectado por:** vault_audit
 
 Nota sin `cia_integrity` / `cia_availability` / `cia_sensitivity`. Sin clasificación CIA la nota no puede endurecer su umbral de actualidad (30d → 15d en critical|high) ni ponderar su peso en el health score: el pilar del estándar queda sin aplicar sobre ella.
 
@@ -325,7 +325,7 @@ Todas las aristas del grafo usan el mismo tipo 'wiki-link' sin distinguir semán
 
 - **Severidad:** medium
 - **Enforcement:** audit
-- **Detectado por:** vault_graph_merge, vault_audit
+- **Detectado por:** vault_graph_merge
 
 Una relacion registrada en entity relations o code relations usa un relationType/type que no existe en vault-ontology.json. Esto produce edges que no pueden interpretarse semanticamente en el grafo enriquecido. Ej: relationType='inherits' cuando el predicate canonico es 'extends'.
 
@@ -465,7 +465,7 @@ Una nota se crea porque una sección estaba vacía, no porque hubiera algo que a
 
 - **Severidad:** high
 - **Enforcement:** guard+audit
-- **Detectado por:** vault_norms, vault_audit
+- **Detectado por:** vault_norms
 
 Veintiséis tools montan el frontmatter concatenando líneas y tres importan el write path canónico. Cada concatenación es un segundo autor del formato sin guard detrás: el bloque se cierra o no, `type:` está o no, la fecha lleva el formato de quien la escribió. El fallo no se ve al escribir --la tool devuelve `ok: true` porque el fichero se creó-- sino al auditar, y para entonces la nota ya es el dato. Es el mismo patrón que produjo 22 implementaciones de `slugify` y tres verdades para la lista de secciones: una fuente única declarada en la documentación y N implementaciones en el código. `vault_migrate_docs` cortaba el documento por la línea 7 y llevaba versiones publicándose así, con el bloque de frontmatter sin cerrar.
 
@@ -607,15 +607,31 @@ Omitir la escritura al fallar el lock **no** es esta norma: es la respuesta corr
 
 Lo caro no es la lista, es el guard. `vault_voice.coverage()` existe para detectar normas mudas y comprueba que una norma tenga `tools_enforcing` o `tools_detecting` **leyendo `tools_enforcing` y `tools_detecting`**. Verifica el catálogo contra el catálogo, así que da verde sobre las 47 afirmaciones que ningún módulo respalda y es estructuralmente incapaz de verlas. Es AP-44 cometido dentro del guard de AP-43 -- la tercera vez que el criterio de verificación sale del objeto verificado, tras el test de cruces de v40.8 y el cero de AP-52 medido sobre un subconjunto en v40.9.
 
-La forma general: **dos registros canónicos que hablan del mismo hecho no pueden contradecirse sin que algo falle.** Medido en v41.0: 54 valores de `tools_*` que mezclaban la tool con su flag y ningún consumidor podía resolver; AP-22 declarada `critical` mientras `vault_audit` la penalizaba con 2 puntos por unidad frente a los 5 de AP-24, que el catálogo llamaba `high`; y 47 afirmaciones de cobertura sin una línea de código que nombre la norma. `AP-05` --`critical`-- nombra `vault_graph_inspect` como detector, y esa tool no la menciona en ninguna parte.
+La forma general: **dos registros canónicos que hablan del mismo hecho no pueden contradecirse sin que algo falle.** Medido en v40.10: 54 valores de `tools_*` que mezclaban la tool con su flag y ningún consumidor podía resolver; AP-22 declarada `critical` mientras `vault_audit` la penalizaba con 2 puntos por unidad frente a los 5 de AP-24, que el catálogo llamaba `high`; y 47 afirmaciones de cobertura sin una línea de código que nombre la norma. `AP-05` --`critical`-- nombra `vault_graph_inspect` como detector, y esa tool no la menciona en ninguna parte.
 
 **Prevención:** `vault_norms_coherence --check --strict` cruza el catálogo con el código y con `PENALIZACIONES`. La traza sin respaldo lleva baseline que solo puede encoger, y se salda de dos formas honestas: que el código nombre la norma en el sitio que la aplica, o que el catálogo deje de afirmar una cobertura que no tiene. Ampliar la baseline es la tercera y no lo es.
+
+### AP-56: Frontmatter presente que el consumidor no puede leer
+
+- **Severidad:** high
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_frontmatter_heal, vault_foreign_check
+
+La nota abre `---`, escribe sus claves y, para `yaml.safe_load`, no tiene frontmatter: ni id, ni tags, ni tipo, ni estado. El bloque **se ve** al abrir el fichero, y por eso nadie lo revisa. El dato parece estar y no está.
+
+No es AP-28, que es la nota que nunca tuvo bloque y se cuenta sola. Aquí el hueco es invisible a ojo y solo aparece al medir con el parser real (AP-44).
+
+Dos causas, medidas sobre doce notas de cuatro vaults consumidores: **escalar sin escapar** --`title: Overview: demo` no es un mapeo, nueve de las doce-- y **delimitador sin cerrar**, las otras tres, donde el bloque nunca se cierra y el parser se traga la nota entera hasta reventar cientos de líneas más abajo, en un bloque de código. El mensaje de YAML señala ahí, que no es donde está el fallo; por eso llevaban meses así.
+
+v40.2 arregló la prevención: `yaml_scalar` escapa antes de escribir. Lo que faltaba era la otra mitad -- nada reparaba lo que ya estaba en disco, y `vault_fix_brackets` llevaba versiones haciendo exactamente eso para AP-22/AP-24.
+
+**Prevención:** Escribir por tool, nunca a mano (SP-04): el write path pasa todo escalar por `yaml_scalar` desde v40.2. Lo ya escrito se repara con `vault_frontmatter_heal --apply`, que solo toca las dos causas mecánicas y se niega a adivinar el resto: completar un YAML truncado inventa dato, que es peor que el hueco.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
 - **Severidad:** high
 - **Enforcement:** guard
-- **Detectado por:** vault_validate
+- **Detectado por:** sin detector declarado
 
 Los archivos .md del vault deben usar kebab-case: minúsculas, palabras separadas por guiones, sin espacios ni caracteres especiales. vault_write aplica slugify() automáticamente al título para generar el filename. Ej: 'ADR-001 Auth Decision' → adr-001-auth-decision.md.
 
@@ -665,7 +681,7 @@ Un stub con ≥3 líneas reales se enriquece progresivamente en cada sesión que
 
 - **Severidad:** N/A
 - **Enforcement:** recommended
-- **Detectado por:** vault_audit
+- **Detectado por:** vault_audit, vault_change_log, vault_write
 
 Algoritmo estándar para resolver duplicados: identificar canónica (más backlinks, más contenido, ubicación más apropiada) → change_log --action deleted → mover a 10_Migrated/ → actualizar wiki-links rotos → verificar con vault_audit.
 
@@ -675,7 +691,7 @@ Algoritmo estándar para resolver duplicados: identificar canónica (más backli
 
 - **Severidad:** N/A
 - **Enforcement:** recommended
-- **Detectado por:** vault_drift_detect
+- **Detectado por:** vault_drift_detect, vault_audit, vault_write, vault_change_log
 
 Las auditorías masivas se ejecutan en 4 fases atómicas: 1-Snapshot (vault_drift_detect --snapshot), 2-Detección (vault_audit), 3-Resolución (vault_write, vault_change_log), 4-Verificación (vault_drift_detect --report).
 
@@ -685,7 +701,7 @@ Las auditorías masivas se ejecutan en 4 fases atómicas: 1-Snapshot (vault_drif
 
 - **Severidad:** N/A
 - **Enforcement:** recommended
-- **Detectado por:** vault_audit
+- **Detectado por:** vault_write, vault_audit
 
 Los campos id + createdAt + updatedAt + agent + migratedFrom (si aplica) forman una cadena de custodia completa. Sin esta cadena es imposible auditar de dónde vino un dato o qué agente lo introdujo.
 
@@ -725,7 +741,7 @@ Antes de escribir [[nombre-nota]] en contenido, verificar que la nota destino ya
 
 - **Severidad:** medium
 - **Enforcement:** audit
-- **Detectado por:** vault_backup
+- **Detectado por:** vault_delta
 
 Antes de cualquier operación masiva (migración, rename en lote, vault_tags --rename múltiple, delete en lote), capturar snapshot con vault_delta --snapshot. Permite detectar regresiones y calcular impacto real de la operación.
 
@@ -735,13 +751,13 @@ Antes de cualquier operación masiva (migración, rename en lote, vault_tags --r
 
 ## EN
 
-Total registered norms: 67 (AP 55, CN 3, PAT 6, SP 3)
+Total registered norms: 68 (AP 56, CN 3, PAT 6, SP 3)
 
 ### AP-01: Documentación alucinada
 
 - **Severity:** high
 - **Enforcement:** audit
-- **Detected by:** vault_drift_detect
+- **Detected by:** sin detector -- Ninguna tool la detecta. Declaraba `vault_drift_detect`, que mide lo contrario: cambios en el código que la documentación no recoge. AP-01 es documentación que describe código inexistente, y para verla haría falta resolver cada referencia contra el repo.
 
 Documentar herramientas, endpoints, funciones o comportamientos que no existen en el código real. El agente genera información convincente pero incorrecta.
 
@@ -751,7 +767,7 @@ Documentar herramientas, endpoints, funciones o comportamientos que no existen e
 
 - **Severity:** high
 - **Enforcement:** audit
-- **Detected by:** vault_audit
+- **Detected by:** sin detector -- Sus dos variantes hermanas sí se miden --AP-17 canonical-shadow y AP-18 cross-folder, ambas con penalización propia en vault_audit.PENALIZACIONES--, pero la variante same-folder que es AP-02 no la detecta nadie: `status-v1.md` y `status-v2.md` en la misma carpeta no son duplicados por hash (AP-18) ni pasan el umbral de similitud de título (AP-17). Declararlo aquí es lo que impide que la cobertura de las hermanas se lea como suya.
 
 Múltiples notas describiendo la misma entidad: status-v1.md, status-v2.md, status-final.md, status-final2.md. Variantes: same-folder (AP-02), cross-folder (AP-18), canonical-shadow (AP-17).
 
@@ -771,7 +787,7 @@ Nota con contenido real pero incompleto (≥3 líneas reales) sin fecha de expan
 
 - **Severity:** high
 - **Enforcement:** audit
-- **Detected by:** vault_drift_detect
+- **Detected by:** sin detector -- Ninguna tool la detecta. `vault_drift_detect` compara hashes y git; distinguir "lo describe en presente" de "ya está deployado" exige leer el cuerpo de la nota contra el estado real, que hoy no hace nadie.
 
 Documentar comportamientos futuros o planeados como si ya existieran. Confunde al agente sobre el estado real del sistema.
 
@@ -781,7 +797,7 @@ Documentar comportamientos futuros o planeados como si ya existieran. Confunde a
 
 - **Severity:** critical
 - **Enforcement:** audit
-- **Detected by:** vault_graph_inspect
+- **Detected by:** sin detector -- La única norma `critical` que hoy no mide nadie, y se declara así en vez de esconderlo. Declaraba `vault_graph_inspect`, que no la menciona ni compara valores entre notas. Diecisiete módulos citan AP-05 en un comentario --al explicar por qué NO copian un dato-- y citar no es detectar. Detectarla de verdad exige decidir qué es "el mismo dato" sin embeddings, que es un problema de diseño abierto.
 
 El mismo dato (IP, URL, versión, configuración) aparece en múltiples notas con valores inconsistentes. Causa decisiones del agente basadas en datos erróneos.
 
@@ -811,7 +827,7 @@ ADRs (Architecture Decision Records) sin secciones Contexto, Opciones evaluadas 
 
 - **Severity:** medium
 - **Enforcement:** audit
-- **Detected by:** vault_drift_detect
+- **Detected by:** sin detector -- Ninguna tool la detecta. Declaraba `vault_drift_detect`, que no lee versiones del cuerpo de la nota. La propia `prevention` lo dice en condicional --"vault_audit puede alertar"-- y ese condicional lleva desde v19 sin resolverse.
 
 Notas que mencionan versiones específicas de librerías, APIs o protocolos que ya fueron actualizadas, sin indicar que el contenido puede estar desactualizado.
 
@@ -831,7 +847,7 @@ Procedimientos operativos guardados en carpetas genéricas (07_Knowledge/, 01_Pr
 
 - **Severity:** high
 - **Enforcement:** audit
-- **Detected by:** vault_norms, vault_migrate_rollback
+- **Detected by:** vault_norms
 
 Ejecutar vault_migrate_docs sin tener vault_migrate_rollback disponible o sin snapshot previo. Si la migración introduce errores, no hay manera de revertir.
 
@@ -851,7 +867,7 @@ Nota creada con frontmatter correcto pero cuerpo vacío o solo con TODO/placehol
 
 - **Severity:** high
 - **Enforcement:** audit
-- **Detected by:** vault_validate, vault_audit
+- **Detected by:** vault_validate
 
 Notas del mismo tipo con campos faltantes, tipos mezclados (timestamp con/sin comillas, migratedFrom relativo vs absoluto). Rompe vault_list, búsquedas y deduplicación.
 
@@ -931,7 +947,7 @@ Mismo contenido byte-idéntico (MD5) en carpetas distintas. Penalización vault_
 
 - **Severity:** critical
 - **Enforcement:** guard
-- **Detected by:** manual
+- **Detected by:** sin detector declarado
 
 Nota que pasa el content gate de 3 líneas porque tiene bullets, pero >50% de los bullets están vacíos (- , - [ ], - []). Variante de AP-11 que evade el guard básico.
 
@@ -941,7 +957,7 @@ Nota que pasa el content gate de 3 líneas porque tiene bullets, pero >50% de lo
 
 - **Severity:** critical
 - **Enforcement:** guard
-- **Detected by:** manual
+- **Detected by:** sin detector declarado
 
 [[carpeta/nota]] en lugar de [[nota]]. Obsidian no resuelve paths, solo stems. El link siempre aparece roto en el grafo.
 
@@ -1001,11 +1017,11 @@ Nota de contenido sin campo `tags` o con la lista vacía. Sin tags la nota es in
 
 - **Severity:** medium
 - **Enforcement:** audit
-- **Detected by:** vault_audit, vault_validate
+- **Detected by:** vault_audit
 
 Nota sin campo `type`. El tipo es lo que ancla la nota a su sección canónica (CN-02): sin él no se puede verificar la coincidencia type ↔ carpeta que sostiene la dimensión de exactitud (F4).
 
-**Prevention:** Declarar --type en la escritura; vault_validate lo comprueba contra el registro.
+**Prevention:** Declarar --type en la escritura; vault_audit lo cuenta en missing_type.
 
 ### AP-28: Missing frontmatter -- nota sin bloque YAML
 
@@ -1031,7 +1047,7 @@ Nota sin campo `status`. Sin estado no se puede distinguir lo vigente de lo obso
 
 - **Severity:** high
 - **Enforcement:** audit
-- **Detected by:** vault_audit, vault_quality_check
+- **Detected by:** vault_audit
 
 Nota sin `cia_integrity` / `cia_availability` / `cia_sensitivity`. Sin clasificación CIA la nota no puede endurecer su umbral de actualidad (30d → 15d en critical|high) ni ponderar su peso en el health score: el pilar del estándar queda sin aplicar sobre ella.
 
@@ -1051,7 +1067,7 @@ Todas las aristas del grafo usan el mismo tipo 'wiki-link' sin distinguir semán
 
 - **Severity:** medium
 - **Enforcement:** audit
-- **Detected by:** vault_graph_merge, vault_audit
+- **Detected by:** vault_graph_merge
 
 Una relacion registrada en entity relations o code relations usa un relationType/type que no existe en vault-ontology.json. Esto produce edges que no pueden interpretarse semanticamente en el grafo enriquecido. Ej: relationType='inherits' cuando el predicate canonico es 'extends'.
 
@@ -1191,7 +1207,7 @@ Una nota se crea porque una sección estaba vacía, no porque hubiera algo que a
 
 - **Severity:** high
 - **Enforcement:** guard+audit
-- **Detected by:** vault_norms, vault_audit
+- **Detected by:** vault_norms
 
 Veintiséis tools montan el frontmatter concatenando líneas y tres importan el write path canónico. Cada concatenación es un segundo autor del formato sin guard detrás: el bloque se cierra o no, `type:` está o no, la fecha lleva el formato de quien la escribió. El fallo no se ve al escribir --la tool devuelve `ok: true` porque el fichero se creó-- sino al auditar, y para entonces la nota ya es el dato. Es el mismo patrón que produjo 22 implementaciones de `slugify` y tres verdades para la lista de secciones: una fuente única declarada en la documentación y N implementaciones en el código. `vault_migrate_docs` cortaba el documento por la línea 7 y llevaba versiones publicándose así, con el bloque de frontmatter sin cerrar.
 
@@ -1333,15 +1349,31 @@ Omitir la escritura al fallar el lock **no** es esta norma: es la respuesta corr
 
 Lo caro no es la lista, es el guard. `vault_voice.coverage()` existe para detectar normas mudas y comprueba que una norma tenga `tools_enforcing` o `tools_detecting` **leyendo `tools_enforcing` y `tools_detecting`**. Verifica el catálogo contra el catálogo, así que da verde sobre las 47 afirmaciones que ningún módulo respalda y es estructuralmente incapaz de verlas. Es AP-44 cometido dentro del guard de AP-43 -- la tercera vez que el criterio de verificación sale del objeto verificado, tras el test de cruces de v40.8 y el cero de AP-52 medido sobre un subconjunto en v40.9.
 
-La forma general: **dos registros canónicos que hablan del mismo hecho no pueden contradecirse sin que algo falle.** Medido en v41.0: 54 valores de `tools_*` que mezclaban la tool con su flag y ningún consumidor podía resolver; AP-22 declarada `critical` mientras `vault_audit` la penalizaba con 2 puntos por unidad frente a los 5 de AP-24, que el catálogo llamaba `high`; y 47 afirmaciones de cobertura sin una línea de código que nombre la norma. `AP-05` --`critical`-- nombra `vault_graph_inspect` como detector, y esa tool no la menciona en ninguna parte.
+La forma general: **dos registros canónicos que hablan del mismo hecho no pueden contradecirse sin que algo falle.** Medido en v40.10: 54 valores de `tools_*` que mezclaban la tool con su flag y ningún consumidor podía resolver; AP-22 declarada `critical` mientras `vault_audit` la penalizaba con 2 puntos por unidad frente a los 5 de AP-24, que el catálogo llamaba `high`; y 47 afirmaciones de cobertura sin una línea de código que nombre la norma. `AP-05` --`critical`-- nombra `vault_graph_inspect` como detector, y esa tool no la menciona en ninguna parte.
 
 **Prevention:** `vault_norms_coherence --check --strict` cruza el catálogo con el código y con `PENALIZACIONES`. La traza sin respaldo lleva baseline que solo puede encoger, y se salda de dos formas honestas: que el código nombre la norma en el sitio que la aplica, o que el catálogo deje de afirmar una cobertura que no tiene. Ampliar la baseline es la tercera y no lo es.
+
+### AP-56: Frontmatter presente que el consumidor no puede leer
+
+- **Severity:** high
+- **Enforcement:** guard+audit
+- **Detected by:** vault_frontmatter_heal, vault_foreign_check
+
+La nota abre `---`, escribe sus claves y, para `yaml.safe_load`, no tiene frontmatter: ni id, ni tags, ni tipo, ni estado. El bloque **se ve** al abrir el fichero, y por eso nadie lo revisa. El dato parece estar y no está.
+
+No es AP-28, que es la nota que nunca tuvo bloque y se cuenta sola. Aquí el hueco es invisible a ojo y solo aparece al medir con el parser real (AP-44).
+
+Dos causas, medidas sobre doce notas de cuatro vaults consumidores: **escalar sin escapar** --`title: Overview: demo` no es un mapeo, nueve de las doce-- y **delimitador sin cerrar**, las otras tres, donde el bloque nunca se cierra y el parser se traga la nota entera hasta reventar cientos de líneas más abajo, en un bloque de código. El mensaje de YAML señala ahí, que no es donde está el fallo; por eso llevaban meses así.
+
+v40.2 arregló la prevención: `yaml_scalar` escapa antes de escribir. Lo que faltaba era la otra mitad -- nada reparaba lo que ya estaba en disco, y `vault_fix_brackets` llevaba versiones haciendo exactamente eso para AP-22/AP-24.
+
+**Prevention:** Escribir por tool, nunca a mano (SP-04): el write path pasa todo escalar por `yaml_scalar` desde v40.2. Lo ya escrito se repara con `vault_frontmatter_heal --apply`, que solo toca las dos causas mecánicas y se niega a adivinar el resto: completar un YAML truncado inventa dato, que es peor que el hueco.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
 - **Severity:** high
 - **Enforcement:** guard
-- **Detected by:** vault_validate
+- **Detected by:** sin detector declarado
 
 Los archivos .md del vault deben usar kebab-case: minúsculas, palabras separadas por guiones, sin espacios ni caracteres especiales. vault_write aplica slugify() automáticamente al título para generar el filename. Ej: 'ADR-001 Auth Decision' → adr-001-auth-decision.md.
 
@@ -1391,7 +1423,7 @@ Un stub con ≥3 líneas reales se enriquece progresivamente en cada sesión que
 
 - **Severity:** N/A
 - **Enforcement:** recommended
-- **Detected by:** vault_audit
+- **Detected by:** vault_audit, vault_change_log, vault_write
 
 Algoritmo estándar para resolver duplicados: identificar canónica (más backlinks, más contenido, ubicación más apropiada) → change_log --action deleted → mover a 10_Migrated/ → actualizar wiki-links rotos → verificar con vault_audit.
 
@@ -1401,7 +1433,7 @@ Algoritmo estándar para resolver duplicados: identificar canónica (más backli
 
 - **Severity:** N/A
 - **Enforcement:** recommended
-- **Detected by:** vault_drift_detect
+- **Detected by:** vault_drift_detect, vault_audit, vault_write, vault_change_log
 
 Las auditorías masivas se ejecutan en 4 fases atómicas: 1-Snapshot (vault_drift_detect --snapshot), 2-Detección (vault_audit), 3-Resolución (vault_write, vault_change_log), 4-Verificación (vault_drift_detect --report).
 
@@ -1411,7 +1443,7 @@ Las auditorías masivas se ejecutan en 4 fases atómicas: 1-Snapshot (vault_drif
 
 - **Severity:** N/A
 - **Enforcement:** recommended
-- **Detected by:** vault_audit
+- **Detected by:** vault_write, vault_audit
 
 Los campos id + createdAt + updatedAt + agent + migratedFrom (si aplica) forman una cadena de custodia completa. Sin esta cadena es imposible auditar de dónde vino un dato o qué agente lo introdujo.
 
@@ -1451,7 +1483,7 @@ Antes de escribir [[nombre-nota]] en contenido, verificar que la nota destino ya
 
 - **Severity:** medium
 - **Enforcement:** audit
-- **Detected by:** vault_backup
+- **Detected by:** vault_delta
 
 Antes de cualquier operación masiva (migración, rename en lote, vault_tags --rename múltiple, delete en lote), capturar snapshot con vault_delta --snapshot. Permite detectar regresiones y calcular impacto real de la operación.
 

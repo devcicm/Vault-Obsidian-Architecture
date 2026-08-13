@@ -407,6 +407,12 @@ def generate_frontmatter(
 
     frontmatter = ["---"]
 
+    # AP-56, la mitad preventiva. `yaml_scalar` cita solo si hace falta, y el
+    # criterio de "hace falta" es que el parser real no devuelva el mismo texto
+    # (AP-44). Sin esto, un título con `: ` dejaba la nota **entera** sin
+    # frontmatter para el consumidor: el bloque se ve al abrir el fichero, y
+    # por eso nadie lo revisa. Lo que ya está escrito así se repara con
+    # `vault_frontmatter_heal`; aquí solo se impide que vuelva a nacer.
     frontmatter.append(f"title: {yaml_scalar(title)}")
 
     frontmatter.append(f"id: {existing_id or str(uuid.uuid4())}")

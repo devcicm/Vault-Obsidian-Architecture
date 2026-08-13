@@ -33,7 +33,7 @@ Restricciones que son decisión de producto, no limitación pendiente:
 
 | Capacidad | Resultado | Grupos | Tools |
 |---|---|---|---|
-| **Escritura → gobernanza** (`escritura_a_gobernanza`) | Lo que el agente captura queda escrito una sola vez, normalizado contra las normas, versionado y auditable después. | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 36, 37 | 76 |
+| **Escritura → gobernanza** (`escritura_a_gobernanza`) | Lo que el agente captura queda escrito una sola vez, normalizado contra las normas, versionado y auditable después. | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 36, 37 | 77 |
 | **Consulta → contexto** (`consulta_a_contexto`) | Una pregunta del agente se convierte en un paquete de contexto acotado y presupuestado, recorriendo el grafo del vault sin índice externo. | 26, 34 | 8 |
 | **Gobernanza del estándar** (`gobernanza_del_estandar`) | El estándar cumple lo que publica: registro canónico primero, doc derivada, guard que falla si divergen. Ninguna de estas tools toca las notas de un usuario. | 35 | 16 |
 
@@ -53,7 +53,7 @@ regenera.*
 | Contexto | Puertos | Módulos | Prohíbe |
 |---|---|---|---|
 | **Kernel** (`kernel`) | 4 | 11 | depender de cualquier contexto de dominio |
-| **Autoría** (`autoria`) | 7 | 38 | — |
+| **Autoría** (`autoria`) | 7 | 39 | — |
 | **Grafo** (`grafo`) | 3 | 15 | — |
 | **Gobernanza** (`gobernanza`) | 19 | 9 | — |
 | **Índices** (`indices`) | 8 | 6 | — |
@@ -66,7 +66,7 @@ regenera.*
 
 *Registros: `vault_norms.NORM_CATALOG` + `vault_gate.PUERTAS` + `tests/`*
 
-52 de 67 normas tienen puerta o test que las nombre.
+54 de 68 normas tienen puerta o test que las nombre.
 **Es la única capa con baseline**, y por un motivo concreto: las demás se midieron
 en cero el día que se declararon porque sus datos ya existían y solo faltaba
 atarlos. Ésta no. Exigir cero aquí el primer día habría hecho nacer la puerta en
@@ -106,7 +106,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-25** — Mermaid diagram syntax errors — nodos/tipos no definidos | audit | — | `test_cobertura_de_secciones.py`, `test_mermaid_flowchart_parser.py`, `test_skills_catalogo.py`, `test_skills_contract.py`, `test_vault_norms.py`, `test_vault_sdd_init.py` |
 | **AP-26** — Missing tags — nota de contenido sin tags | audit | — | `test_context_memory.py`, `test_registry_derivation.py`, `test_tag_vocabulary.py` |
 | **AP-27** — Missing type field — nota sin tipo declarado | audit | — | — |
-| **AP-28** — Missing frontmatter — nota sin bloque YAML | audit | — | — |
+| **AP-28** — Missing frontmatter — nota sin bloque YAML | audit | — | `test_ap56_frontmatter_heal.py` |
 | **AP-29** — Missing status field — nota sin estado de ciclo de vida | audit | `framework` | — |
 | **AP-30** — Missing CIA classification — nota sin clasificación de la tríada | audit | — | `test_registry_derivation.py` |
 | **AP-31** — Grafo sin tipos semanticos — edges sin predicate explícito | audit | — | — |
@@ -115,14 +115,14 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-34** — Relacion tipada huerfana — endpoint inexistente en el vault | audit | — | — |
 | **AP-35** — Silos de relacion — sistemas de grafos aislados | audit | — | `test_cobertura_de_secciones.py`, `test_skills_catalogo.py` |
 | **AP-36** — Contención e idempotencia — side-effects fuera del vault o no rastreables | guard+audit | `framework` | `test_ap44_verificacion_autoconsistente.py`, `test_ap46_heal.py`, `test_ap51_culpar_al_dato.py`, `test_arquitectura.py`, `test_audit_no_audita_instantaneas.py`, `test_backup_base64.py`, `test_ciclo_de_vida_dominio.py`, `test_consulta_dominio.py`, `test_durabilidad_caracterizacion.py`, `test_gobernanza_dominio.py`, `test_grafo_dominio.py`, `test_indice_compartido_concurrente.py`, `test_indices_dominio.py`, `test_mermaid_flowchart_parser.py`, `test_run_context.py`, `test_skills_contract.py`, `test_standard_upgrade_path.py`, `test_vault_containment.py`, `test_vault_norms_audit.py` |
-| **AP-37** — No-op silencioso — ok: true sin indicador de trabajo | audit | `noop` | `test_ap46_write_path_unico.py`, `test_arquitectura.py`, `test_autoria_dominio.py`, `test_caracterizacion_de_los_save.py`, `test_comandos_publicados.py`, `test_degradacion_declarada.py`, `test_durabilidad_caracterizacion.py`, `test_indice_compartido_concurrente.py`, `test_indice_no_se_regenera_dos_veces.py`, `test_indices_dominio.py`, `test_lock_reentrante.py`, `test_mcp_runner.py`, `test_meta_toolkit_dominio.py`, `test_noop_audit.py`, `test_registro_de_entorno.py`, `test_registro_de_vocabulario.py`, `test_smoke_contrato.py`, `test_source_hygiene.py`, `test_standard_upgrade_path.py`, `test_versionado_consumidores.py`, `test_voice.py`, `test_write_ledger.py`, `test_write_path_contenido.py` |
+| **AP-37** — No-op silencioso — ok: true sin indicador de trabajo | audit | `noop` | `test_ap46_write_path_unico.py`, `test_ap56_frontmatter_heal.py`, `test_arquitectura.py`, `test_autoria_dominio.py`, `test_caracterizacion_de_los_save.py`, `test_comandos_publicados.py`, `test_degradacion_declarada.py`, `test_durabilidad_caracterizacion.py`, `test_indice_compartido_concurrente.py`, `test_indice_no_se_regenera_dos_veces.py`, `test_indices_dominio.py`, `test_lock_reentrante.py`, `test_mcp_runner.py`, `test_meta_toolkit_dominio.py`, `test_noop_audit.py`, `test_registro_de_entorno.py`, `test_registro_de_vocabulario.py`, `test_smoke_contrato.py`, `test_source_hygiene.py`, `test_standard_upgrade_path.py`, `test_versionado_consumidores.py`, `test_voice.py`, `test_write_ledger.py`, `test_write_path_contenido.py` |
 | **AP-38** — Vocabulario validado después de escribir, no antes | guard+audit | `framework` | `test_status_machine.py`, `test_status_vocabulary.py` |
 | **AP-39** — Vocabulario abierto sin memoria | guard+audit | `framework` | `test_ap39_registro_en_el_write_path.py`, `test_tag_vocabulary.py` |
 | **AP-40** — Contrato publicado que la CLI rechaza | guard+audit | `contratos`, `framework` | `test_catalog_params.py`, `test_smoke.py` |
 | **AP-41** — Máquina de estados declarada sin verificar | guard+audit | `framework` | `test_status_machine.py`, `test_voice.py` |
 | **AP-42** — Tool publicada sin haberse ejecutado nunca | guard+audit | `framework` | `test_ap49_vinculo_congelado.py`, `test_ap50_decision_duplicada.py`, `test_ap52_contrato_de_error.py`, `test_arquitectura.py`, `test_comandos_publicados.py`, `test_durabilidad_caracterizacion.py`, `test_durabilidad_dominio.py`, `test_skills_catalogo.py`, `test_smoke.py`, `test_vault_gate.py`, `test_vault_onboard.py` |
 | **AP-43** — Norma sin refuerzo en el punto de uso | guard+audit | `framework` | `test_ap39_registro_en_el_write_path.py`, `test_norms_coherence.py`, `test_voice.py` |
-| **AP-44** — Verificación autoconsistente — la tool se certifica a sí misma | guard+audit | `framework` | `test_ap17_convencion_de_nombres.py`, `test_ap44_verificacion_autoconsistente.py`, `test_ap45_cobertura_sin_evidencia.py`, `test_ap46_heal.py`, `test_ap46_write_path_unico.py`, `test_ap47_indice_refleja_disco.py`, `test_ap48_implementacion_paralela.py`, `test_ap49_vinculo_congelado.py`, `test_ap51_culpar_al_dato.py`, `test_ap52_contrato_de_error.py`, `test_arquitectura.py`, `test_audit_placeholder_no_traga_notas_reales.py`, `test_blueprint.py`, `test_calidad_no_castiga_el_vocabulario_canonico.py`, `test_caracterizacion_de_los_save.py`, `test_changelog_check.py`, `test_cobertura_de_secciones.py`, `test_documentacion_no_es_vault.py`, `test_durabilidad_caracterizacion.py`, `test_frontmatter_yaml_valido.py`, `test_indice_compartido_concurrente.py`, `test_indices_dominio.py`, `test_lifecycle_registry.py`, `test_mcp_runner.py`, `test_migrate_docs_distribucion.py`, `test_norms_coherence.py`, `test_puertos_verificados.py`, `test_registro_de_entorno.py`, `test_registro_de_vocabulario.py`, `test_regla7_contraste_ajeno.py`, `test_slug_canonico.py`, `test_standard_upgrade_path.py`, `test_validate_criterio_consumidor.py`, `test_vault_gate.py`, `test_vault_norms_audit.py`, `test_vault_onboard.py`, `test_write_path_contenido.py` |
+| **AP-44** — Verificación autoconsistente — la tool se certifica a sí misma | guard+audit | `framework` | `test_ap17_convencion_de_nombres.py`, `test_ap44_verificacion_autoconsistente.py`, `test_ap45_cobertura_sin_evidencia.py`, `test_ap46_heal.py`, `test_ap46_write_path_unico.py`, `test_ap47_indice_refleja_disco.py`, `test_ap48_implementacion_paralela.py`, `test_ap49_vinculo_congelado.py`, `test_ap51_culpar_al_dato.py`, `test_ap52_contrato_de_error.py`, `test_ap56_frontmatter_heal.py`, `test_arquitectura.py`, `test_audit_placeholder_no_traga_notas_reales.py`, `test_blueprint.py`, `test_calidad_no_castiga_el_vocabulario_canonico.py`, `test_caracterizacion_de_los_save.py`, `test_changelog_check.py`, `test_cobertura_de_secciones.py`, `test_documentacion_no_es_vault.py`, `test_durabilidad_caracterizacion.py`, `test_frontmatter_yaml_valido.py`, `test_indice_compartido_concurrente.py`, `test_indices_dominio.py`, `test_lifecycle_registry.py`, `test_mcp_runner.py`, `test_migrate_docs_distribucion.py`, `test_norms_coherence.py`, `test_puertos_verificados.py`, `test_registro_de_entorno.py`, `test_registro_de_vocabulario.py`, `test_regla7_contraste_ajeno.py`, `test_slug_canonico.py`, `test_standard_upgrade_path.py`, `test_validate_criterio_consumidor.py`, `test_vault_gate.py`, `test_vault_norms_audit.py`, `test_vault_onboard.py`, `test_write_path_contenido.py` |
 | **AP-45** — Cobertura sin evidencia — la nota existe para llenar la sección | guard+audit | `framework` | `test_ap45_cobertura_sin_evidencia.py`, `test_vault_onboard.py` |
 | **AP-46** — Frontmatter a mano — cada tool es su propio escritor | guard+audit | `framework` | `test_ap46_heal.py`, `test_ap46_write_path_unico.py`, `test_caracterizacion_de_los_save.py`, `test_norms_coherence.py` |
 | **AP-47** — Artefacto derivado desfasado — el índice dejó de reflejar el disco | guard+audit | `framework` | `test_ap39_registro_en_el_write_path.py`, `test_ap47_indice_refleja_disco.py`, `test_ap48_implementacion_paralela.py`, `test_arquitectura.py`, `test_blueprint.py`, `test_filtro_de_expresiones_regulares.py`, `test_indices_dominio.py`, `test_registro_de_entorno.py`, `test_salud_por_familias.py`, `test_skills_catalogo.py`, `test_vault_norms_audit.py`, `test_version_coherence.py` |
@@ -134,6 +134,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-53** — El historial se afirma a mano y nadie lo contrasta con git | guard | `changelog` | `test_changelog_check.py` |
 | **AP-54** — El lock falla y se escribe igual | guard | `arquitectura` | `test_lock_reentrante.py` |
 | **AP-55** — El catálogo de normas se certifica a sí mismo | guard+audit | `norms_coherence` | `test_blueprint.py`, `test_norms_coherence.py` |
+| **AP-56** — Frontmatter presente que el consumidor no puede leer | guard+audit | — | `test_ap56_frontmatter_heal.py` |
 | **PAT-6** — Semantic graph enrichment — enriquecimiento periodico del grafo | recommended | — | — |
 | **SP-01** — Delete protocol — change_log obligatorio antes de eliminar | audit | `framework` | `test_vault_norms.py` |
 | **SP-02** — Forward-link verification — buscar antes de linkar | guard | — | `test_vault_norms.py` |
@@ -142,13 +143,13 @@ rojo, y una puerta en rojo se desactiva.
 | **CN-02** — Numbered folder structure — secciones numeradas como únicos destinos | guard+audit | `framework` | `test_blueprint.py`, `test_indices_dominio.py`, `test_raiz_no_seccion.py`, `test_vault_norms.py`, `test_vault_norms_audit.py` |
 | **CN-03** — Standard status vocabulary — vocabulario canónico de meta.status | audit | `framework` | `test_status_machine.py`, `test_status_vocabulary.py`, `test_vault_norms.py`, `test_vault_norms_audit.py` |
 
-Sin puerta ni test (15): `AP-08`, `AP-12`, `AP-13`, `AP-18`, `AP-20`, `PAT-2`, `PAT-3`, `PAT-4`, `AP-27`, `AP-28`, `AP-31`, `AP-32`, `AP-33`, `AP-34`, `PAT-6`.
+Sin puerta ni test (14): `AP-08`, `AP-12`, `AP-13`, `AP-18`, `AP-20`, `PAT-2`, `PAT-3`, `PAT-4`, `AP-27`, `AP-31`, `AP-32`, `AP-33`, `AP-34`, `PAT-6`.
 
 ## Capa 5 — Tools → grupos → contrato
 
 *Registros: `vault_mcp_catalog.TOOLS_CATALOG` + `<vault>/00_System/tool-spec.json`*
 
-100 tools activas en 37 grupos. Toda tool
+101 tools activas en 37 grupos. Toda tool
 del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 `status: archived | internal | orphan` — no se borra, se anota
 (`vault_mcp_catalog.py --check-contracts`).
@@ -161,7 +162,7 @@ del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 | Change Log | 1 |
 | Conocimiento | 2 |
 | Core | 8 |
-| Corrección Automática | 2 |
+| Corrección Automática | 3 |
 | Código | 5 |
 | Data Quality | 2 |
 | Defectos y Cuarentena | 2 |
@@ -237,6 +238,7 @@ falla — no se rellena con el valor más cercano.
 | `vault_flow_save` | 18 — Flujos | escritura_a_gobernanza |
 | `vault_folder_registry` | 32 — Gestión de Carpetas | escritura_a_gobernanza |
 | `vault_foreign_check` | 35 — Normas | gobernanza_del_estandar |
+| `vault_frontmatter_heal` | 33 — Corrección Automática | escritura_a_gobernanza |
 | `vault_fundamentals` | 24 — Data Quality | escritura_a_gobernanza |
 | `vault_gate` | 35 — Normas | gobernanza_del_estandar |
 | `vault_graph` | 6 — Salud del Vault | escritura_a_gobernanza |
@@ -334,7 +336,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `scripts/error-contract-baseline.json` | AP-52 | 9 |
 | `scripts/noop-baseline.json` | AP-37 | 0 |
 | `scripts/smoke-baseline.json` | AP-42 | 0 |
-| `scripts/blueprint-baseline.json` | capa 4 — norma sin puerta ni test | 15 |
+| `scripts/blueprint-baseline.json` | capa 4 — norma sin puerta ni test | 14 |
 
 Todas encogen y ninguna crece sin decirlo: los tres audits con baseline indexan
 por firma de sitio —`módulo::función::hash de `ast.unparse``— así que mover un

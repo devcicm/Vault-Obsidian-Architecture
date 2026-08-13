@@ -1704,6 +1704,38 @@
         "vault_norms"
       ]
     },
+    "vault_frontmatter_heal": {
+      "name": "vault_frontmatter_heal",
+      "description": "Repara el frontmatter que existe y no parsea (AP-56): escalar sin escapar y bloque sin cerrar.",
+      "group": "Corrección Automática",
+      "script": "vault_frontmatter_heal.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "apply": {
+            "type": "string",
+            "description": "Escribe las reparaciones (default: dry-run)"
+          },
+          "check": {
+            "type": "string",
+            "description": "solo mide (por defecto)"
+          },
+          "strict": {
+            "type": "string",
+            "description": "Exit 1 si queda frontmatter ilegible"
+          }
+        }
+      },
+      "guards": [],
+      "side_effects": [
+        "Reescribe la nota reparada por atomic_write_text"
+      ],
+      "related": [
+        "vault_fix_brackets",
+        "vault_validate",
+        "vault_foreign_check"
+      ]
+    },
     "vault_fundamentals": {
       "name": "vault_fundamentals",
       "description": "Métricas fundamentales del vault.",
@@ -5053,7 +5085,8 @@
     ],
     "Corrección Automática": [
       "vault_fix_brackets",
-      "vault_graph_fix"
+      "vault_graph_fix",
+      "vault_frontmatter_heal"
     ],
     "Versionado": [
       "vault_standard_upgrade"
