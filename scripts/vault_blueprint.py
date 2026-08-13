@@ -120,22 +120,27 @@ DEUDA_DECLARADA: List[Dict[str, str]] = [
         "desde": "v40.11",
         "capa": "4",
         "que": (
-            "Cinco normas no las mide nadie y desde v40.11 lo declaran por escrito "
-            "en `cobertura_descubierta`: AP-01, AP-02, AP-04, AP-08 y —el titular— "
-            "**AP-05, la única `critical` descubierta**. Diecisiete módulos citan "
-            "AP-05 en un comentario, al explicar por qué NO copian un dato, y citar "
-            "no es detectar: nada mide hoy que el mismo dato aparezca con valores "
-            "distintos en varias notas. AP-02 es la variante same-folder, cuyas dos "
-            "hermanas —AP-17 y AP-18— sí pesan en el healthIndex."
+            "Cuatro normas no las mide nadie y desde v40.11 lo declaran por escrito "
+            "en `cobertura_descubierta`: AP-01, AP-02, AP-04 y AP-08. AP-02 es la "
+            "variante same-folder, cuyas dos hermanas —AP-17 y AP-18— sí pesan en "
+            "el healthIndex. **El titular de esta entrada era AP-05, la única "
+            "`critical` descubierta, y salió en v40.15**: `vault_fuente_unica` "
+            "(puerta 16) mide el mismo dato **tipado** —IP, URL, puerto, semver— "
+            "con valores distintos en un mismo ámbito. No cerró el problema "
+            "general: el catálogo la declara `cobertura_parcial`, porque la "
+            "divergencia en prosa, la de valores sin tipo y la del sinónimo "
+            "(`ip:` frente a `direccion_ip:`) siguen sin medirlas nadie. La "
+            "entrada sigue pendiente por las otras cuatro, no por AP-05."
         ),
         "por_que_no_ahora": (
-            "Detectar AP-05 sobre markdown plano, sin embeddings y sin base de "
-            "datos, es un problema de diseño abierto, no una tool que falte "
-            "escribir: la restricción que lo hace difícil es la misma decisión de "
-            "producto que sostiene el estándar. Merece su propia tanda. Lo que "
-            "v40.11 sí cierra es lo que era falso: la contradicción del catálogo "
-            "(v40.10, AP-55), las 47 afirmaciones de cobertura sin traza, y el "
-            "`vault_voice.coverage()` que certificaba el catálogo contra sí mismo."
+            "AP-05 tuvo su tanda en v40.15, y lo que la desbloqueó no fue "
+            "resolver el problema abierto: fue dejar de plantearlo entero. Un "
+            "valor **tipado** no se reconoce por parecido, se compara por "
+            "igualdad, y su identidad no se adivina —está escrita al lado, como "
+            "clave de un `clave: valor`—. Eso quita la semántica de en medio y "
+            "deja una parte decidible, que es la que se mide; el resto se "
+            "declara en vez de darse por cubierto. Las cuatro que quedan siguen "
+            "sin una reformulación equivalente, y ninguna es `critical`."
         ),
     },
     {
