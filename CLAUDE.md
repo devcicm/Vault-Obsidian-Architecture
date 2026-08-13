@@ -12,7 +12,7 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~6.000 líneas). Fuente normativa. |
 | `scripts/*.py` | ~126 scripts, 103 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (2702 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (2706 tests). Toda norma con guard debe tener test. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
 | `vault-sandbox/` | **Único** vault de pruebas del repo. Todo runtime va aquí. |
@@ -145,143 +145,118 @@ python scripts/vault_quality_check.py --min-score 0.7
 
 ## Antes de cerrar un cambio
 
-- [ ] **`python scripts/vault_gate.py --strict` → todas verdes.** Corre las puertas de golpe;
-      cuántas son lo dice el registro `PUERTAS`, no este checklist —escribir aquí
-      el número lo convierte en una cifra a mano, que es AP-47— y
-      `--check-doc` falla si alguna puerta no aparece aquí. Los ítems siguientes las
-      detallan una a una — están para saber qué mide cada una y cómo se arregla, no
-      para correrlas por separado. **No sustituye a la suite.**
+**Las puertas y la suite, las dos.** Las puertas son rápidas y la suite no; verde en las
+puertas no es verde en la suite. Cuántas puertas hay lo dice el registro `PUERTAS`, no
+este documento — escribir aquí el número lo convierte en una cifra a mano, que es AP-47.
+
+- [ ] `python scripts/vault_gate.py --strict` → todas verdes.
 - [ ] `python -m pytest tests/ --tb=short` en verde.
-- [ ] `python scripts/vault_norms.py --check-framework` → `ok: true`. Además de los ids
-      del marco, exige que toda norma de `NORM_CATALOG` tenga **sección propia** en el
-      manifiesto: una mención de pasada en un changelog no cuenta.
-- [ ] `python scripts/vault_mcp_catalog.py --check` → sincronizado.
-- [ ] `python scripts/vault_doc_counts.py --check --strict` → `ok: true`. Ninguna
-      cifra de la documentación se escribe a mano: si cambió un conteo, `--fix`.
-- [ ] `python scripts/vault_doc_sync.py --check --strict` → `ok: true`. Toda tool del
-      catálogo tiene sección en `scripts/README.md` y el índice tiene una fila por grupo.
-      Si solo cambió el índice, `--fix`; las secciones se escriben a mano.
-- [ ] `python scripts/vault_mcp_catalog.py --check-contracts` → `ok: true`. Toda tool del
-      catálogo tiene entrada en `<vault>/00_System/tool-spec.json`; toda entrada que ya no
-      está en el catálogo declara `status: archived | internal | orphan` (no se borra: se
-      anota). `group` y `group_id` se derivan de `GROUPS` y de la numeración de
-      `scripts/README.md` — no hay una numeración propia del tool-spec.
-- [ ] `python scripts/vault_spec_catalog_check.py --check-fields --strict` → `ok: true`.
-      El contrato de campos con los repos consumidores: un campo `stable` no
-      desaparece. Puede pasar a `superseded_fields` —con `superseded_by` y un motivo,
-      y siguiendo o no emitiéndose según el caso— pero no evaporarse, que rompe en
-      silencio a quien lo leía. `--fields-table` publica la clasificación derivada del
-      tool-spec; `--freeze-fields` solo después de revisar qué se está prometiendo.
-- [ ] `python scripts/vault_noop_audit.py --check --strict` → `ok: true` (AP-37).
-      Toda tool nueva con side effects declara un indicador de trabajo: la baseline
-      solo puede encoger. Tras saldar deuda, `--freeze`.
-- [ ] `python scripts/vault_blame_audit.py --check --strict` → `ok: true` (AP-51).
-      Ningún handler amplio (`except Exception`, `except:`) devuelve un vacío
-      indistinguible de un resultado legítimo: el fallo de la tool no se presenta como
-      ausencia en el dato. Baseline que solo puede encoger; tras saldar deuda, `--freeze`.
-- [ ] `python scripts/vault_error_contract.py --check --strict` → `ok: true` (AP-52).
-      Ningún envelope de error nuevo se construye a mano: el fallo sale por
-      `emit_error` con `error_code` y `recovery`, que es lo que el consumidor mira
-      para decidir. Baseline que solo puede encoger; tras saldar deuda, `--freeze`.
-- [ ] `python scripts/vault_changelog_check.py --check --strict` → `ok: true`. El
-      changelog del manifiesto no contradice a git: el hash citado existe, la fecha
-      es la del commit —de **autoría**, que un rebase no reescribe— y ninguna
-      versión ya cerrada sigue publicando `git: pending`. Cerrar una versión ya no
-      es un commit manual de ritual: `--fijar-hash` sustituye el `pending` por el
-      hash real y corrige la fecha de paso, que es justo el dato que se
-      desincronizó once días en v39.0.
-- [ ] `python scripts/vault_arch.py --check --strict` → `ok: true`. Contextos acotados:
-      fronteras, puertos, vocabularios con dueño, entorno declarado, AP-49 en cero.
-      Desde v40.7 mide también **AP-54** en `unsynced_writes`: ningún handler
-      responde a un `file_lock` fallido escribiendo igual. El `TimeoutError`
-      significa que otro lo tiene tomado **ahora mismo**, así que esa escritura
-      no es una carrera improbable — es la única situación en la que ese código
-      corre. Omitir la escritura sí es correcto y no se marca.
-- [ ] `python scripts/vault_servicio.py --check --strict` → `ok: true`. El pilar:
-      todo grupo del catálogo pertenece a **exactamente una** capacidad y toda
-      capacidad tiene al menos una tool viva. Sin baseline a propósito — una
-      baseline aquí permitiría añadir un grupo sin decidir a qué sirve, que es
-      justo el vacío que el registro cierra. Los `group_id` salen de
-      `mapa_de_grupos()`; no hay numeración propia.
-- [ ] `python scripts/vault_blueprint.py --check --strict` → `ok: true`. El plano
-      de `docs/BLUEPRINT.md` no diverge de los registros. **Es derivado: no se
-      edita a mano** — se regenera con `--blueprint`, y lo escrito a mano se
-      pierde, que es lo que lo mantiene honesto. Su capa 4 —norma → puerta →
-      test— es la única con baseline: nació con 16 normas sin puerta **ni** test,
-      y exigir cero el primer día habría hecho nacer la puerta en rojo. Una
-      norma nueva sin cobertura no se congela: se le escribe el test.
-      Su capa 7 es el registro de **deuda declarada**, y desde v40.11 toda
-      entrada dice `estado` (`pendiente` | `saldada`) y `desde` qué versión se
-      arrastra. Una deuda que se salda **no se borra**: pasa a `saldada` con la
-      versión que la cerró, porque una entrada borrada no se distingue de una
-      que nadie volvió a mirar. No hay `en_curso` a propósito — o se puede citar
-      la versión que la cerró, o sigue pendiente; un estado intermedio sería una
-      promesa, y una promesa no es un dato verificable. Hoy hay **siete
-      pendientes**, y la que encabeza la lista es **AP-05**: la única norma
-      `critical` sin detector, que ninguna tanda ha escrito todavía.
-- [ ] `python scripts/vault_norms_coherence.py --check --strict` → `ok: true` (AP-55).
-      El catálogo de normas no se contradice con el código que lo aplica ni con
-      `vault_audit.PENALIZACIONES`, que es la otra mitad canónica del mismo hecho.
-      Seis medidas, todas en cero desde v40.11. La quinta —afirmaciones de
-      cobertura que ningún módulo respalda— conserva su baseline **vacía**: el
-      fichero se queda en pie con `claims: []`, que es lo que distingue una deuda
-      saldada de una medida retirada. **La traza no demuestra enforcement**:
-      demuestra que la afirmación no es seguible hasta el código, que es lo
-      verificable. Se salda nombrando la norma **en la función que la cumple** —no
-      en la cabecera del módulo, que pasa la medida sin llevar a nadie al sitio— o
-      retirando la cobertura y declarando `cobertura_descubierta` con el motivo
-      escrito; ampliar la baseline no es la tercera forma. La sexta (C6) es el
-      espejo: ninguna entrada de `PENALIZACIONES` resta del healthIndex sin
-      declarar su norma o declararse `metrica_sin_norma`. **Sin baseline a
-      propósito** — una permitiría añadir una penalización sin decidir qué la
-      sostiene.
-
-      Al saldar una afirmación, el grep sirve para **descartar** (si nadie la
-      nombra, nadie puede seguirla), nunca para **confirmar**: `vault_audit` emite
-      `"norm": "CN-01"` sobre un hallazgo de *scaffold*, así que cerrar CN-01
-      reatribuyéndosela habría sido usar el criterio del propio guard — el AP-44
-      que esta tool existe para detectar.
-- [ ] `python scripts/vault_criterios.py --check --strict` → `ok: true` (AP-57). Ningún
-      módulo que clasifica notas reescribe un criterio que ya tiene dueño canónico:
-      qué es una instantánea lo dice `vault_io`, qué es documentación del estándar
-      `vault_audit`, qué es código y no enlace `vault_lib`. Nació de v40.12, donde
-      **cuatro** defectos de una misma tool tenían la misma forma —el registro existía
-      y nadie lo consultaba—, y uno de ellos ponía la medida **verde** justo donde
-      Obsidian pinta el enlace roto. Baseline que solo encoge; se salda importando al
-      dueño, no ampliándola. **La detección es sintáctica y el límite está declarado**:
-      verde no prueba que no haya copias, prueba que no hay copias de la forma que la
-      tool sabe reconocer — un módulo puede reimplementar un criterio sin repetir
-      ninguna constante y esto no lo verá.
-- [ ] `python scripts/vault_fuente_unica.py --check --strict` → `ok: true` (AP-05). El
-      mismo dato **tipado** —IP, URL, puerto, semver, escrito como `clave: valor`— no
-      tiene valores distintos en varias notas del mismo ámbito. Cierra en v40.15 la
-      última norma `critical` que quedaba sin detector, y solo en **su parte
-      decidible**: la identidad del dato no se adivina, está escrita al lado en la
-      clave, y la divergencia es una desigualdad de cadenas. **Verde no prueba una
-      sola fuente de verdad** — la divergencia en prosa, la de valores sin tipo y la
-      del sinónimo (`ip:` frente a `direccion_ip:`) siguen sin medirlas nadie, y por
-      eso el catálogo declara `cobertura_parcial` en vez de dar la norma por cubierta.
-      Acepta `--root` para el contraste de la regla 7, en solo lectura: fue ahí donde
-      encontró los dos conflictos reales —`host_ip` y `pve_version` divergentes entre
-      dos notas del mismo servidor— que `vault-sandbox/` no puede exhibir.
-
-- [ ] `python scripts/vault_doc_sync.py --check --strict` cubre además, desde v40.4, que
-      **todo comando que la documentación publica exista y acepte sus flags**. `CLAUDE.md`
-      publicaba los dos comandos de salud con `--root`, que ninguna de las dos tools
-      acepta: el comando que un agente copia para medir el vault moría en
-      `unrecognized arguments`. El manifiesto queda **fuera** de esa comprobación a
-      propósito — su changelog cita comandos rotos como prueba del defecto que describe.
 - [ ] `git diff --stat vault-obsidian-architecture.md` sin borrados netos de contenido.
-- [ ] Si tocaste una versión: banner del manifiesto, tabla de versiones, entrada de changelog
-      con hash real, badge del `README.md` y `version` de `pyproject.toml` coherentes.
+- [ ] Si tocaste una versión: banner del manifiesto, tabla de versiones, entrada de
+      changelog con hash real, badge del `README.md` y `version` de `pyproject.toml`.
 - [ ] Si añadiste una norma o un id de registro: guard + test que fallen cuando falte.
+
+### Las puertas, una a una
+
+**Este bloque es derivado.** Sale de `vault_gate.PUERTAS`, se regenera con
+`python scripts/vault_gate.py --fix-doc` y `--check-doc` falla si diverge; lo que se
+escriba a mano aquí se pierde. Hasta v40.16 cada puerta llevaba su propio párrafo: una
+segunda descripción de lo que el registro ya decía, envejeciendo en la dirección cómoda.
+El **porqué** de cada decisión no cabe en un campo y no está aquí — está en el docstring
+de cada tool, que es donde lo lee quien la abre. Lo que no se deriva de ninguna parte va
+abajo, en «Cuatro cosas que el registro no puede decirte».
+
+<!-- puertas:inicio — generado por vault_gate.py --fix-doc -->
+
+- [ ] `python scripts/vault_norms.py --check-framework`
+      El manifiesto documenta todo id del marco de datos y toda norma catalogada tiene sección propia.
+- [ ] `python scripts/vault_mcp_catalog.py --check`
+      El catálogo Python y tools-catalog.json no divergen.
+      *Se arregla con:* python scripts/vault_mcp_catalog.py --sync
+- [ ] `python scripts/vault_mcp_catalog.py --check-contracts`
+      Toda tool del catálogo tiene entrada en tool-spec.json, y toda entrada que ya no está declara su status en vez de borrarse.
+- [ ] `python scripts/vault_doc_counts.py --check --strict`
+      Ninguna cifra de la documentación está escrita a mano (AP-47).
+      *Se arregla con:* python scripts/vault_doc_counts.py --fix
+- [ ] `python scripts/vault_doc_sync.py --check --strict`
+      Toda tool tiene sección en scripts/README.md y el índice una fila por grupo.
+      *Se arregla con:* python scripts/vault_doc_sync.py --fix  (solo el índice; las secciones se escriben a mano)
+- [ ] `python scripts/vault_noop_audit.py --check --strict`
+      AP-37 — ninguna tool con side effects devuelve ok: true sin indicador de trabajo.
+      *Se arregla con:* saldar la deuda y luego --freeze
+- [ ] `python scripts/vault_blame_audit.py --check --strict`
+      AP-51 — ningún handler amplio devuelve un vacío indistinguible de un resultado legítimo.
+      *Se arregla con:* saldar la deuda y luego --freeze
+- [ ] `python scripts/vault_error_contract.py --check --strict`
+      AP-52 — ningun envelope de error nuevo se emite fuera del contrato de ERROR_CATALOG.
+      *Se arregla con:* emitir por emit_error y luego --freeze
+- [ ] `python scripts/vault_spec_catalog_check.py --check-fields --strict`
+      Contrato de campos con los repos consumidores: ningún campo estable desaparece sin quedar anotado en superseded_fields.
+      *Se arregla con:* anotar el campo en superseded_fields (superseded_by + why) o volver a emitirlo; --freeze-fields solo tras revisar
+- [ ] `python scripts/vault_changelog_check.py --check --strict`
+      El changelog no contradice a git: hash existente, fecha igual a la del commit, ningún `pending` de una versión ya cerrada.
+      *Se arregla con:* python scripts/vault_changelog_check.py --fijar-hash  (cierra la versión en curso); corregir la fecha contra su commit
+- [ ] `python scripts/vault_arch.py --check --strict`
+      Contextos acotados: fronteras, puertos, vocabularios con dueño, entorno declarado, AP-49 en cero.
+- [ ] `python scripts/vault_servicio.py --check --strict`
+      Trazabilidad tool → grupo → capacidad → servicio: todo grupo pertenece a una capacidad y toda capacidad tiene tool viva.
+      *Se arregla con:* clasificar el grupo en la capacidad a la que sirve; si no sirve a ninguna, la pregunta es por qué existe el grupo
+- [ ] `python scripts/vault_blueprint.py --check --strict`
+      El plano de docs/BLUEPRINT.md no diverge de los registros, y ninguna norma estrena falta de puerta y test a la vez.
+      *Se arregla con:* python scripts/vault_blueprint.py --blueprint  (regenera el plano); una norma nueva sin cobertura se cubre con un test, no se congela
+- [ ] `python scripts/vault_norms_coherence.py --check --strict`
+      El catálogo de normas no se contradice ni con el código que lo aplica ni con las penalizaciones que lo pesan (AP-55).
+      *Se arregla con:* que el código nombre la norma en el sitio que la aplica, o que el catálogo retire la cobertura que no tiene; ampliar la baseline no es una de las dos
+- [ ] `python scripts/vault_criterios.py --check --strict`
+      Ningún módulo que clasifica notas reescribe un criterio que ya tiene dueño canónico (AP-57).
+      *Se arregla con:* importar al dueño en vez de decidir por cuenta propia; la baseline solo encoge
+- [ ] `python scripts/vault_fuente_unica.py --check --strict`
+      El mismo dato tipado no tiene valores distintos en varias notas del mismo ámbito (AP-05).
+      *Se arregla con:* PAT-1: una nota canónica declara el dato y las demás la enlazan; verde solo cubre la parte decidible sin interpretar
+
+<!-- puertas:fin -->
+
+## Cuatro cosas que el registro no puede decirte
+
+Lo que sigue no sale de ningún campo y por eso está escrito: son decisiones y trampas
+que costaron una tanda cada una.
+
+**1. Un guard verde dice menos de lo que parece, y cada uno declara cuánto menos.**
+`vault_criterios` (AP-57) solo mira los módulos que nombran `*.md` —lo publica en
+`modules_measured`/`modules_skipped`— y detecta copias sintácticas: un módulo puede
+reimplementar un criterio sin repetir una constante y no lo verá. `vault_fuente_unica`
+(AP-05) cubre el dato **tipado** escrito como `clave: valor`; la divergencia en prosa y
+la del sinónimo (`ip:` frente a `direccion_ip:`) no las mide nadie, y por eso el catálogo
+declara `cobertura_parcial` en vez de dar la norma por cubierta. `vault_norms_coherence`
+(AP-55) mide **traza**, no enforcement: que la afirmación se pueda seguir hasta el código.
+
+**2. Una cobertura se salda nombrando la norma en la función que la cumple.** No en la
+cabecera del módulo —desde v40.16 el guard la descuenta— y no ampliando la baseline. Si
+de verdad no la mide nadie, se declara `cobertura_descubierta` con el motivo escrito: una
+norma que declara su hueco no cuenta como deuda nueva, porque declararse honestamente no
+puede salir más caro que callarse. Y el grep sirve para **descartar**, nunca para
+confirmar: `vault_audit` emite `"norm": "CN-01"` sobre un hallazgo de *scaffold*, así que
+cerrar CN-01 con ese grep habría sido usar el criterio del propio guard — el AP-44 que
+esa tool existe para detectar.
+
+**3. Lo derivado no se edita a mano.** `docs/BLUEPRINT.md`, el índice de
+`scripts/README.md`, las cifras de la documentación y el bloque de puertas de arriba se
+regeneran (`--blueprint`, `--fix`, `--fix-doc`). Que lo escrito a mano se pierda es lo
+que los mantiene honestos. Las secciones de `scripts/README.md` sí se escriben a mano.
+
+**4. Una deuda que se salda no se borra.** Pasa a `saldada` con la versión que la cerró
+(capa 7 del plano), y una baseline que encoge deja el fichero en pie con la lista vacía.
+Una entrada borrada no se distingue de una que nadie volvió a mirar.
 
 ---
 
 ## Trabajar con las baselines (leer antes de tocarlas)
 
-Tres guards —`vault_noop_audit` (AP-37), `vault_blame_audit` (AP-51) y
-`vault_error_contract` (AP-52)— llevan una **baseline que solo puede encoger**.
+Cinco guards llevan **baseline que solo puede encoger**: `vault_noop_audit` (AP-37),
+`vault_blame_audit` (AP-51), `vault_error_contract` (AP-52), `vault_criterios` (AP-57) y
+la capa 4 de `vault_blueprint`. Todas aparecen en la capa 6 del plano, y una puerta falla
+si alguna baseline del repo no está listada ahí: una deuda congelada que el plano no
+publica es una deuda que nadie revisa.
 
 1. **Se indexan por firma de sitio, no por línea** (desde v40.6). La firma es
    `módulo::función::hash del código normalizado`, y el hash sale de `ast.unparse`, así que
@@ -294,11 +269,11 @@ Tres guards —`vault_noop_audit` (AP-37), `vault_blame_audit` (AP-51) y
    Pasó tres veces en una semana. **Esa receta manual ya no hace falta y no debe reintroducirse:**
    un guard cuya corrección depende de que una persona ejecute bien tres pasos no es un guard.
 
-   Consecuencia directa: `--freeze` ahora **se niega** a congelar sitios sin precedente y
-   devuelve `DEBT_WOULD_GROW`. Congelar deuda nueva exige `--freeze --admitir-nuevos`, que
-   además la lista en el envelope. Si te encuentras una baseline en formato viejo, el audit
-   emite `MIGRATION_REQUIRED` en vez de leerla como vacía — que habría estrenado la deuda
-   entera como nueva — y se migra con `--migrate`.
+   Consecuencia directa: `--freeze` **se niega** a congelar sitios sin precedente y devuelve
+   `DEBT_WOULD_GROW`. Congelar deuda nueva exige `--freeze --admitir-nuevos`, que además la
+   lista en el envelope. Una baseline en formato viejo emite `MIGRATION_REQUIRED` en vez de
+   leerse como vacía —que habría estrenado la deuda entera como nueva— y se migra con
+   `--migrate`.
 
 2. **Los detectores tienen falsos positivos por clase.** No conviertas a ciegas lo que
    listan. Medido en la tanda de v40.5, AP-52 marca al menos dos cosas que **no** son
@@ -309,6 +284,11 @@ Tres guards —`vault_noop_audit` (AP-37), `vault_blame_audit` (AP-51) y
      El contrato ahí es el de HTTP, no el del catálogo de errores.
 
    Convertir cualquiera de las dos rompería al consumidor en nombre de cumplir la norma.
+
+3. **Una norma nueva sin cobertura no se congela: se le escribe el test.** La baseline
+   existe para la deuda que ya estaba. Y desde v40.16 la capa 4 no acepta una mención de
+   pasada como prueba: el código de la norma tiene que aparecer en el cuerpo de una
+   función `test_*`.
 
 ---
 
@@ -326,6 +306,9 @@ Lo que ha destapado hasta ahora, ninguno reproducible en `vault-sandbox/`:
 - El criterio de "esto es documentación, no una nota" comparaba el **nombre exacto** del
   manifiesto, así que una copia archivada con sufijo de versión —que es lo que la
   no-derogación pide a los consumidores— aportaba decenas de enlaces rotos falsos (v40.5).
+- Dos conflictos reales de AP-05 —`host_ip` y `pve_version` con valores distintos en dos
+  notas del mismo servidor— que `vault-sandbox/`, generado por este repo, no puede
+  exhibir (v40.15). `vault_fuente_unica` acepta `--root` para eso, en solo lectura.
 
 Cuando midas un vault ajeno, **solo lectura**. Ninguna tool de escritura se ejecuta contra
 material que no generó este repo sin que el dueño lo pida.

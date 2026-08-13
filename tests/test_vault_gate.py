@@ -153,3 +153,60 @@ def test_el_envelope_recuerda_que_no_sustituye_a_la_suite():
         "correr_todas debe emitir un hint que recuerde que la suite sigue siendo "
         "obligatoria; sin él, el recordatorio vive solo en el README y no se lee"
     )
+
+
+# --- el checklist derivado (v40.16) ------------------------------------------
+
+def test_el_bloque_del_checklist_sale_del_registro():
+    """Cada puerta aparece con su comando y con lo que mide, sin prosa a mano."""
+    bloque = vault_gate.checklist()
+    for p in vault_gate.PUERTAS:
+        assert "python scripts/" + " ".join(p["cmd"]) in bloque
+        assert p["mide"] in bloque
+        if p["fix"]:
+            assert p["fix"] in bloque
+
+
+def test_editar_a_mano_el_bloque_lo_pone_en_rojo(tmp_path, monkeypatch):
+    """El defecto que `--check-doc` no veía: el script sigue citado y el texto miente.
+
+    Comprobar solo la presencia del nombre dejaba pasar cualquier deriva del
+    texto — que es exactamente como los dieciséis párrafos se despegaron del
+    registro sin que nadie lo notara.
+    """
+    doc = tmp_path / "CLAUDE.md"
+    manipulado = vault_gate.checklist().replace(
+        vault_gate.PUERTAS[0]["mide"], "mide otra cosa"
+    )
+    doc.write_text(manipulado, encoding="utf-8")
+    monkeypatch.setattr(vault_gate, "REPO_ROOT", tmp_path)
+
+    r = vault_gate.check_doc()
+    assert r["ok"] is False
+    assert r["checklist_drift"] == "bloque_desactualizado"
+    assert r["gates_missing_from_checklist"] == [], (
+        "todas las puertas siguen citadas: el fallo es la deriva del texto"
+    )
+
+
+def test_fix_doc_conserva_los_finales_de_linea(tmp_path, monkeypatch):
+    """CRLF: reescribir el bloque no puede producir un diff de fichero entero."""
+    doc = tmp_path / "CLAUDE.md"
+    cuerpo = ("# Doc\n\n" + vault_gate.MARCA_INICIO + "\nviejo\n"
+              + vault_gate.MARCA_FIN + "\n\nfin\n")
+    doc.write_bytes(cuerpo.replace("\n", "\r\n").encode("utf-8"))
+    monkeypatch.setattr(vault_gate, "REPO_ROOT", tmp_path)
+
+    assert vault_gate.fix_doc()["changed"] is True
+    crudo = doc.read_bytes().decode("utf-8")
+    assert "\r\n" in crudo and "\n" not in crudo.replace("\r\n", "")
+    assert vault_gate.PUERTAS[0]["mide"] in crudo
+
+
+def test_sin_marcas_el_fix_no_inventa_donde_escribir(tmp_path, monkeypatch):
+    doc = tmp_path / "CLAUDE.md"
+    doc.write_text("# Doc sin marcas\n", encoding="utf-8")
+    monkeypatch.setattr(vault_gate, "REPO_ROOT", tmp_path)
+
+    r = vault_gate.fix_doc()
+    assert r["ok"] is False and r["error_code"] == "INVALID_INPUT"

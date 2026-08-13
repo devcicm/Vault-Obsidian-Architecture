@@ -252,13 +252,53 @@ def correr_todas(strict: bool = False) -> Dict[str, Any]:
     }
 
 
-def check_doc() -> Dict[str, Any]:
-    """El checklist de `CLAUDE.md` cita todas las puertas del registro.
+#: Marcas del bloque derivado dentro de `CLAUDE.md`. Lo de dentro lo escribe
+#: `checklist()`; lo de fuera se escribe a mano y no se toca.
+MARCA_INICIO = "<!-- puertas:inicio — generado por vault_gate.py --fix-doc -->"
+MARCA_FIN = "<!-- puertas:fin -->"
 
-    La comprobación es por **script**, no por la línea entera: el checklist
-    escribe cada comando con su prosa alrededor y exigir una coincidencia
-    exacta lo volvería frágil por la razón equivocada. Lo que se persigue es la
-    puerta ausente, no la coma de más.
+
+def checklist() -> str:
+    """El bloque del checklist, derivado de `PUERTAS`.
+
+    Hasta v40.16 cada puerta llevaba en `CLAUDE.md` su propio párrafo escrito a
+    mano: dieciséis ensayos que repetían `mide` y `fix` con otras palabras. Eso
+    es una segunda fuente de verdad sobre lo que mide cada puerta (AP-05) y
+    envejece en la dirección cómoda — el registro cambia y la prosa se queda.
+    Ahora se genera, y el `fix` que se lee cuando algo se pone en rojo es
+    literalmente el del registro.
+
+    Lo que **no** se deriva y sigue a mano fuera del bloque: por qué existe cada
+    decisión, y las trampas que no caben en un campo.
+    """
+    lineas = [MARCA_INICIO, ""]
+    for p in PUERTAS:
+        cmd = "python scripts/" + " ".join(p["cmd"])
+        lineas.append(f"- [ ] `{cmd}`")
+        lineas.append(f"      {p['mide']}.")
+        if p["fix"]:
+            lineas.append(f"      *Se arregla con:* {p['fix']}")
+    lineas += ["", MARCA_FIN]
+    return "\n".join(lineas)
+
+
+def _bloque_publicado(texto: str) -> str:
+    if MARCA_INICIO not in texto or MARCA_FIN not in texto:
+        return ""
+    return MARCA_INICIO + texto.split(MARCA_INICIO, 1)[1].split(MARCA_FIN, 1)[0] + MARCA_FIN
+
+
+def check_doc() -> Dict[str, Any]:
+    """El checklist de `CLAUDE.md` no diverge del registro de puertas.
+
+    Dos comprobaciones, y la segunda existe porque la primera se quedaba corta:
+
+    1. **Ninguna puerta ausente**, por nombre de script. Se mira el documento
+       entero: una puerta puede citarse también fuera del bloque.
+    2. **El bloque derivado coincide con `checklist()`**. Sin esto, editar a
+       mano el texto de una puerta pasaba desapercibido mientras el nombre del
+       script siguiera ahí — que es como los dieciséis párrafos se despegaron
+       del registro sin que nadie lo viera.
     """
     doc = REPO_ROOT / "CLAUDE.md"
     if not doc.exists():
@@ -266,16 +306,55 @@ def check_doc() -> Dict[str, Any]:
 
     texto = doc.read_text(encoding="utf-8", errors="replace")
     ausentes = [p["id"] for p in PUERTAS if p["cmd"][0] not in texto]
+    publicado = _bloque_publicado(texto)
+    if not publicado:
+        divergencia = "sin_bloque"
+    elif publicado.replace("\r\n", "\n").strip() != checklist().strip():
+        divergencia = "bloque_desactualizado"
+    else:
+        divergencia = None
     return {
-        "ok": not ausentes,
+        "ok": not ausentes and not divergencia,
         "tool": "vault_gate",
         "action": "check-doc",
         "gates_total": len(PUERTAS),
         "gates_missing_from_checklist": ausentes,
+        "checklist_drift": divergencia,
         "hint": (
             "El registro manda: si una puerta no está en el checklist, se añade "
-            "al checklist — no se quita del registro."
+            "al checklist — no se quita del registro. El bloque entre marcas es "
+            "derivado: se regenera con `--fix-doc`, y lo escrito a mano ahí se "
+            "pierde."
         ),
+    }
+
+
+def fix_doc() -> Dict[str, Any]:
+    """Reescribe el bloque derivado de `CLAUDE.md` conservando sus finales de línea."""
+    doc = REPO_ROOT / "CLAUDE.md"
+    if not doc.exists():
+        return emit_error("vault_gate", "FILE_NOT_FOUND", "CLAUDE.md no encontrado")
+
+    crudo = doc.read_bytes().decode("utf-8")
+    if MARCA_INICIO not in crudo or MARCA_FIN not in crudo:
+        return emit_error(
+            "vault_gate", "INVALID_INPUT",
+            "CLAUDE.md no tiene el bloque `puertas:inicio`/`puertas:fin`: "
+            "añade las dos marcas donde deba ir el checklist",
+        )
+    # El fichero es CRLF en este repo; se respeta el final de línea que ya tiene
+    # o el diff sale de fichero entero.
+    crlf = "\r\n" in crudo
+    nuevo_bloque = checklist().replace("\n", "\r\n") if crlf else checklist()
+    antes = crudo.split(MARCA_INICIO, 1)[0]
+    despues = crudo.split(MARCA_FIN, 1)[1]
+    salida = antes + nuevo_bloque + despues
+    cambiado = salida != crudo
+    if cambiado:
+        doc.write_bytes(salida.encode("utf-8"))
+    return {
+        "ok": True, "tool": "vault_gate", "action": "fix-doc",
+        "changed": cambiado, "gates_total": len(PUERTAS),
     }
 
 
@@ -318,7 +397,14 @@ No sustituye a la suite: `python -m pytest tests/` sigue siendo obligatorio.
                         help="Lista las puertas sin ejecutarlas")
     parser.add_argument("--check-doc", action="store_true", dest="check_doc",
                         help="Comprueba que el checklist de CLAUDE.md las cite todas")
+    parser.add_argument("--fix-doc", action="store_true", dest="fix_doc",
+                        help="Regenera el bloque derivado del checklist en CLAUDE.md")
     args = parser.parse_args()
+
+    if args.fix_doc:
+        r = fix_doc()
+        print(json.dumps(r, ensure_ascii=False))
+        return 0 if r["ok"] else 1
 
     if args.listar:
         print(json.dumps(listar(), ensure_ascii=False, indent=2))
