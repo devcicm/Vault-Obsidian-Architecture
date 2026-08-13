@@ -7117,7 +7117,7 @@ temp/
 
 ---
 
-### v40.12 — 2026-08-12 `git: pending`
+### v40.12 — 2026-08-12 `git: fedfbd4`
 
 **El dato que parece estar y no está.**
 
