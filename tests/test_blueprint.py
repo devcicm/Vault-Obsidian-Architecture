@@ -185,6 +185,61 @@ def test_la_deuda_declarada_vive_en_el_registro_y_no_en_el_documento():
         assert f"`{d['id']}`" in plano
 
 
+def test_toda_deuda_declara_su_estado_y_desde_cuando():
+    """v40.11: «pendiente» dejó de ser implícito.
+
+    Mientras la lista solo tuviera deuda viva, estar en ella *era* el estado —
+    y una propiedad implícita no la comprueba nadie. El día que una se saldara,
+    la forma cómoda de anotarlo habría sido borrarla.
+    """
+    for d in bp.DEUDA_DECLARADA:
+        assert d["estado"] in bp.ESTADOS_DE_DEUDA, d["id"]
+        assert d["desde"].strip(), d["id"]
+
+
+def test_el_check_muerde_sobre_una_deuda_sin_estado(monkeypatch):
+    monkeypatch.setattr(bp, "DEUDA_DECLARADA", [
+        {"id": "x", "capa": "5", "que": "q", "por_que_no_ahora": "p", "desde": "v0.1"}])
+    problemas = bp.check()["problems"]
+    assert any(p["kind"] == "deuda_sin_estado" for p in problemas)
+
+
+def test_el_check_muerde_sobre_un_estado_inventado(monkeypatch):
+    """`en_curso` no existe a propósito: sería una promesa, no un dato."""
+    monkeypatch.setattr(bp, "DEUDA_DECLARADA", [
+        {"id": "x", "capa": "5", "que": "q", "por_que_no_ahora": "p",
+         "estado": "en_curso", "desde": "v0.1"}])
+    assert any(p["kind"] == "deuda_sin_estado" for p in bp.check()["problems"])
+
+
+def test_el_check_muerde_cuando_no_se_dice_desde_que_version(monkeypatch):
+    monkeypatch.setattr(bp, "DEUDA_DECLARADA", [
+        {"id": "x", "capa": "5", "que": "q", "por_que_no_ahora": "p",
+         "estado": "pendiente", "desde": "  "}])
+    assert any(p["kind"] == "deuda_sin_version" for p in bp.check()["problems"])
+
+
+def test_el_check_publica_cuantas_siguen_vivas_y_no_solo_el_total():
+    """El total baja igual si una se salda que si alguien la borra."""
+    envelope = bp.check()
+    vivas = [d for d in bp.DEUDA_DECLARADA if d["estado"] == "pendiente"]
+    assert envelope["declared_debt_pending"] == len(vivas)
+    assert envelope["declared_debt"] == len(bp.DEUDA_DECLARADA)
+
+
+def test_ap05_sigue_declarada_pendiente_y_nombrada():
+    """La única `critical` sin detector no se pierde en un campo.
+
+    Si algún día se le escribe el detector, esta entrada pasa a `saldada` con la
+    versión que lo hizo — no se borra.
+    """
+    entrada = next(
+        d for d in bp.DEUDA_DECLARADA if d["id"] == "normas_criticas_sin_detector")
+    assert entrada["estado"] == "pendiente"
+    assert "AP-05" in entrada["que"]
+    assert "AP-05" in bp.blueprint()
+
+
 def test_las_dos_puertas_nuevas_estan_en_el_registro():
     """Añadir una puerta la pone en circulación en el mismo commit — o no cuenta."""
     ids = [p["id"] for p in gate.PUERTAS]

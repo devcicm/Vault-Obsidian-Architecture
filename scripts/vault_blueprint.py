@@ -57,13 +57,30 @@ BASELINE = SCRIPTS_DIR / "blueprint-baseline.json"
 TESTS_DIR = REPO_ROOT / "tests"
 
 
+#: Estados admitidos de una deuda declarada. `pendiente` es el único que la deja
+#: viva; `saldada` la conserva con la versión que la cerró, porque una deuda que
+#: desaparece del registro no se distingue de una que nadie volvió a mirar.
+#: No hay `en_curso`: o está saldada y se puede citar la versión, o está
+#: pendiente — un estado intermedio sería una promesa, y una promesa no es un
+#: dato verificable (AP-37).
+ESTADOS_DE_DEUDA = ("pendiente", "saldada")
+
 #: Deuda conocida que **no** se ataca en esta tanda, con el motivo por el que no.
 #: Vive aquí y no en la prosa del plano por la misma razón que todo lo demás: una
 #: lista de deuda escrita a mano en un documento derivado se queda quieta el día
 #: que la deuda se salda, y entonces el plano miente en la dirección cómoda.
+#:
+#: `estado` y `desde` son obligatorios desde v40.11, y son el mismo argumento
+#: llevado un paso más: hasta entonces la lista solo tenía deuda viva, así que
+#: «pendiente» era una propiedad implícita de estar en ella. Implícita significa
+#: que nadie la comprueba — y el día que una entrada se saldara, la forma natural
+#: de anotarlo habría sido borrarla, que es exactamente cómo un registro de deuda
+#: deja de servir para nada.
 DEUDA_DECLARADA: List[Dict[str, str]] = [
     {
         "id": "envelopes_del_dominio_sin_error_code",
+        "estado": "pendiente",
+        "desde": "v40.9",
         "capa": "5",
         "que": (
             "Nueve `{\"ok\": False, \"error\": ...}` en `vault/durabilidad/` y "
@@ -82,6 +99,8 @@ DEUDA_DECLARADA: List[Dict[str, str]] = [
     },
     {
         "id": "handler_amplio_en_el_registro_de_la_cli",
+        "estado": "pendiente",
+        "desde": "v40.9",
         "capa": "5",
         "que": (
             "`cli/registry.py::_load_spec` responde a un `except Exception` con un "
@@ -97,6 +116,8 @@ DEUDA_DECLARADA: List[Dict[str, str]] = [
     },
     {
         "id": "normas_criticas_sin_detector",
+        "estado": "pendiente",
+        "desde": "v40.11",
         "capa": "4",
         "que": (
             "Cinco normas no las mide nadie y desde v40.11 lo declaran por escrito "
@@ -119,6 +140,8 @@ DEUDA_DECLARADA: List[Dict[str, str]] = [
     },
     {
         "id": "fronteras_de_escritura_por_contexto",
+        "estado": "pendiente",
+        "desde": "v40.9",
         "capa": "3",
         "que": (
             "Ningún guard dice qué contexto puede escribir dónde. `00_System` lo "
@@ -132,6 +155,8 @@ DEUDA_DECLARADA: List[Dict[str, str]] = [
     },
     {
         "id": "recursion_error_en_parsers",
+        "estado": "pendiente",
+        "desde": "v40.9",
         "capa": "5",
         "que": (
             "`RecursionError` escapa a `except yaml.YAMLError` en 4 parsers: no es "
@@ -145,6 +170,8 @@ DEUDA_DECLARADA: List[Dict[str, str]] = [
     },
     {
         "id": "parsers_de_frontmatter_divergentes",
+        "estado": "pendiente",
+        "desde": "v40.9",
         "capa": "5",
         "que": (
             "8 parsers de frontmatter distintos; `vault_write.slugify` no delega en "
@@ -159,6 +186,8 @@ DEUDA_DECLARADA: List[Dict[str, str]] = [
     },
     {
         "id": "catch_vacios_en_el_servidor_mjs",
+        "estado": "pendiente",
+        "desde": "v40.9",
         "capa": "7",
         "que": "11 `catch (_) {}` en `mcp/nodejs/vault-mcp-server.mjs` (AP-51 en JS).",
         "por_que_no_ahora": (
@@ -446,10 +475,16 @@ def blueprint() -> str:
     A("todavía. Lo que no está aquí no es que no exista — es que nadie lo ha medido, que")
     A("es una situación distinta y peor.")
     A("")
-    A("| Deuda | Capa | Qué | Por qué no ahora |")
-    A("|---|---|---|---|")
+    pendientes = sum(1 for d in c["7_deuda"] if d.get("estado") == "pendiente")
+    A(f"**{pendientes} pendientes** de {len(c['7_deuda'])} declaradas. Una deuda saldada no")
+    A("desaparece de la tabla: se queda con `estado: saldada` y la versión que la cerró,")
+    A("porque una entrada borrada no se distingue de una que nadie volvió a mirar.")
+    A("")
+    A("| Deuda | Estado | Desde | Capa | Qué | Por qué no ahora |")
+    A("|---|---|---|---|---|---|")
     for d in c["7_deuda"]:
-        A(f"| `{d['id']}` | {d['capa']} | {d['que']} | {d['por_que_no_ahora']} |")
+        A(f"| `{d['id']}` | {d.get('estado', '—')} | {d.get('desde', '—')} "
+          f"| {d['capa']} | {d['que']} | {d['por_que_no_ahora']} |")
     A("")
     A("| Baseline | Norma | Congelado |")
     A("|---|---|---|")
@@ -530,6 +565,24 @@ def check(strict: bool = False) -> Dict[str, Any]:
             {"kind": "norma_sin_puerta_ni_test", "detail": ", ".join(nuevas)}
         )
 
+    # 4. Toda deuda declarada dice en qué estado está y desde cuándo. Sin esto,
+    #    «pendiente» sería una propiedad implícita de aparecer en la lista, y una
+    #    propiedad implícita no la comprueba nadie: el día que una se salde, la
+    #    forma cómoda de anotarlo es borrarla, y ahí el registro deja de servir.
+    for d in DEUDA_DECLARADA:
+        estado = d.get("estado")
+        if estado not in ESTADOS_DE_DEUDA:
+            problemas.append(
+                {"kind": "deuda_sin_estado",
+                 "detail": f"{d['id']}: estado {estado!r} no está en "
+                           f"{list(ESTADOS_DE_DEUDA)}"}
+            )
+        if not (d.get("desde") or "").strip():
+            problemas.append(
+                {"kind": "deuda_sin_version",
+                 "detail": f"{d['id']}: no dice desde qué versión se arrastra"}
+            )
+
     ok = not problemas
     resultado = {
         "ok": ok,
@@ -543,6 +596,13 @@ def check(strict: bool = False) -> Dict[str, Any]:
         "new_uncovered_norms": nuevas,
         "settled_uncovered_norms": saldadas,
         "declared_debt": len(DEUDA_DECLARADA),
+        # Publicado por separado y no solo como total: el número de deudas
+        # declaradas baja igual si una se salda que si alguien la borra, así que
+        # por sí solo no dice nada. Lo que se lee es cuántas siguen vivas.
+        "declared_debt_pending": sum(
+            1 for d in DEUDA_DECLARADA if d.get("estado") == "pendiente"),
+        "declared_debt_settled": sorted(
+            d["id"] for d in DEUDA_DECLARADA if d.get("estado") == "saldada"),
         "problems": problemas,
         "hint": (
             "Una norma nueva sin puerta ni test no se congela: se le escribe el test. "

@@ -12,7 +12,7 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~6.000 líneas). Fuente normativa. |
 | `scripts/*.py` | ~123 scripts, 100 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (2543 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (2549 tests). Toda norma con guard debe tener test. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
 | `vault-sandbox/` | **Único** vault de pruebas del repo. Todo runtime va aquí. |
@@ -205,6 +205,15 @@ python scripts/vault_quality_check.py --min-score 0.7
       test— es la única con baseline: nació con 16 normas sin puerta **ni** test,
       y exigir cero el primer día habría hecho nacer la puerta en rojo. Una
       norma nueva sin cobertura no se congela: se le escribe el test.
+      Su capa 7 es el registro de **deuda declarada**, y desde v40.11 toda
+      entrada dice `estado` (`pendiente` | `saldada`) y `desde` qué versión se
+      arrastra. Una deuda que se salda **no se borra**: pasa a `saldada` con la
+      versión que la cerró, porque una entrada borrada no se distingue de una
+      que nadie volvió a mirar. No hay `en_curso` a propósito — o se puede citar
+      la versión que la cerró, o sigue pendiente; un estado intermedio sería una
+      promesa, y una promesa no es un dato verificable. Hoy hay **siete
+      pendientes**, y la que encabeza la lista es **AP-05**: la única norma
+      `critical` sin detector, que ninguna tanda ha escrito todavía.
 - [ ] `python scripts/vault_norms_coherence.py --check --strict` → `ok: true` (AP-55).
       El catálogo de normas no se contradice con el código que lo aplica ni con
       `vault_audit.PENALIZACIONES`, que es la otra mitad canónica del mismo hecho.
