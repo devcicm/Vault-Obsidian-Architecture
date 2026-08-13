@@ -7162,7 +7162,7 @@ temp/
 
 ---
 
-### v40.13 — 2026-08-12 `git: pending`
+### v40.13 — 2026-08-12 `git: 60dc4e6`
 
 **Cuatro parches con la misma forma son una norma que falta.**
 
