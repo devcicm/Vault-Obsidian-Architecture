@@ -35,9 +35,11 @@ import shutil
 import sys
 
 import vault_tags
+import yaml
 from vault_errors import emit_error, wrap_main
 
 from vault_io import (
+    is_snapshot_path,  # dueño único de qué es una instantánea (AP-57)
     write_report,
     atomic_write_text,
     atomic_write_json,
@@ -61,6 +63,9 @@ from vault_regex import (
     WIKILINK_MAX_LEN,
 )
 from vault_lib import (
+    indice_de_destinos,          # dueño único de qué resuelve (AP-57)
+    resolver_destino_wikilink,   # dueño único de cómo se resuelve (AP-57)
+    read_frontmatter,
     yaml_scalar,
     utcnow,
     strip_code_blocks,
@@ -336,25 +341,59 @@ def _check_bracket_balance(content: str) -> Optional[str]:
     return None
 
 
-def _collect_ghost_links(wiki_links: List[str]) -> List[str]:
+def _collect_ghost_links(wiki_links: List[str], desde: Optional[Path] = None) -> List[str]:
     """SP-02 y AP-14: enlaces cuyo destino no existe todavía en el vault.
 
     SP-02 pide verificar antes de linkar. Esto lo hace por el agente en el
     momento de escribir —no bloquea, avisa— y `vault_graph` y `vault_audit` lo
     vuelven a medir después sobre el vault entero.
-    """
 
-    all_stems = {
-        normalize_stem(p.stem)
-        for p in _raiz().rglob("*.md")
-        if ".history" not in str(p)
-    }
+    **Es la validación que ocurre al nacer la nota**, y hasta v40.14 medía con
+    su propio criterio en los cuatro sitios donde hay un dueño canónico
+    (AP-57), con los dos sentidos del error a la vez:
+
+    - Resolvía por **basename**, así que `[[containers/ct105]]` pasaba si
+      existía cualquier `ct105.md` en cualquier carpeta. Falso negativo: el
+      enlace nace roto y la validación lo bendice — el peor sentido, porque
+      sale verde.
+    - Trataba `.history` como única instantánea, así que las notas de
+      `vault-backups/` y `.trash/` contaban como destinos válidos. Un enlace a
+      algo que solo existe en una copia congelada pasaba igual.
+    - **No miraba `aliases:`**, que es la mitad de cómo Obsidian resuelve. Un
+      `[[Change Log]]` con ese alias declarado se avisaba como fantasma. Falso
+      positivo: ruido, y un aviso con ruido se ignora — que es como un vault
+      llega a 221 enlaces muertos con la validación puesta.
+
+    Los dos errores se sostienen mutuamente: el ruido enseña a ignorar el aviso
+    justo cuando el aviso deja escapar lo que importa.
+    """
+    raiz = _raiz()
+    relativas = []
+    alias: List[str] = []
+    for p in raiz.rglob("*.md"):
+        rel = p.relative_to(raiz)
+        if is_snapshot_path(rel):
+            continue
+        relativas.append(rel)
+        try:
+            fm = read_frontmatter(p)
+        except (OSError, UnicodeDecodeError, yaml.YAMLError):
+            # Un frontmatter que no se lee no aporta aliases, pero el fichero
+            # sigue siendo un destino válido por su ruta: ya está en
+            # `relativas`. Se capturan las tres concretas y no `Exception`,
+            # que convertiría cualquier fallo propio en «esta nota no tiene
+            # aliases» (AP-51).
+            continue
+        for a in (fm or {}).get("aliases") or []:
+            if isinstance(a, str):
+                alias.append(a)
+
+    destinos = indice_de_destinos(relativas, alias)
 
     ghost = []
-
     for link in wiki_links:
-        stem = link.split("|")[0].strip()
-        if normalize_stem(stem) not in all_stems:
+        objetivo = resolver_destino_wikilink(link, desde)
+        if objetivo and objetivo not in destinos:
             ghost.append(link)
 
     return ghost
@@ -491,9 +530,16 @@ _deduce_type_from_folder = tipo_por_carpeta
 
 
 def extract_wiki_links(content: str) -> List[str]:
-    """Extract wiki-links [[note]] from content."""
+    """Los wikilinks de la nota — los que Obsidian resuelve, no los que enseña.
 
-    return RE_WIKILINK.findall(content)
+    Un `[[ejemplo]]` dentro de un fence es texto que el consumidor pinta tal
+    cual: no es una arista del grafo. Contarlo aquí propagaba el error a todo
+    lo que cuelga de esta lista —`norm_refs`, el aviso de enlaces fantasma y el
+    `wikiLinks` que publica el resultado—, así que la nota que documenta la
+    convención de enlaces nacía avisando de destinos que nunca quiso enlazar.
+    Qué es código y no un enlace lo decide `vault_lib.strip_code_blocks` (AP-57).
+    """
+    return RE_WIKILINK.findall(strip_code_blocks(content))
 
 
 def update_search_index(
@@ -912,7 +958,9 @@ def vault_write(
 
     tag_suggestions = _tag_suggestions(tags)
 
-    ghost_links = _collect_ghost_links(wiki_links)
+    # Se pasa la nota que se está escribiendo: un `[[../otra]]` se resuelve
+    # contra su carpeta, no contra la raíz (AP-57, el dueño es `vault_lib`).
+    ghost_links = _collect_ghost_links(wiki_links, Path(rel_path))
 
     result: Dict[str, Any] = {
         "ok": True,

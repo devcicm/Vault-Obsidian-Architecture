@@ -59,7 +59,11 @@ from typing import Any, Dict, List, Optional
 from vault_regex import RE_WIKILINK_DESTINO  # dueño único del patrón (AP-50)
 from vault_audit import es_documentacion_del_estandar  # dueño único del criterio
 from vault_io import is_snapshot_path  # dueño único de qué es una instantánea
-from vault_lib import strip_code_blocks  # dueño único de qué es código, no enlace
+from vault_lib import (  # dueños únicos de sus criterios (AP-57)
+    indice_de_destinos,
+    resolver_destino_wikilink,
+    strip_code_blocks,
+)
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -157,29 +161,13 @@ def _frontmatter(texto: str) -> Any:
     return datos if isinstance(datos, dict) else False
 
 
+#: El criterio ya no vive aquí: lo posee `vault_lib` desde v40.14 (AP-57).
+#: Se conserva el nombre porque era la superficie que consumían los informes
+#: —no-derogación—, pero delega: dos definiciones del mismo `if` es
+#: exactamente lo que la norma persigue.
 def _resolver(bruto: str, desde: Path) -> str:
-    """La forma con la que se busca el destino, como la buscaría Obsidian.
-
-    Se quitan el alias de visualización (`|`) y el ancla (`#`), que no son
-    parte del destino, y una ruta relativa se resuelve contra la carpeta de la
-    nota que enlaza — `[[../containers/ct220]]` desde `09_Infrastructure/db/`
-    apunta a `09_Infrastructure/containers/ct220`, no a un fichero llamado
-    `..`.
-    """
-    crudo = bruto.split("|")[0].split("#")[0].strip().replace("\\", "/")
-    crudo = crudo.removesuffix(".md")
-    if not crudo:
-        return ""
-    if crudo.startswith("./") or crudo.startswith("../"):
-        partes: List[str] = list(desde.parent.parts)
-        for tramo in crudo.split("/"):
-            if tramo == "..":
-                if partes:
-                    partes.pop()
-            elif tramo not in (".", ""):
-                partes.append(tramo)
-        return "/".join(partes).lower()
-    return crudo.strip("/").lower()
+    """Delega en `vault_lib.resolver_destino_wikilink`, su dueño canónico."""
+    return resolver_destino_wikilink(bruto, desde)
 
 
 def contrastar(destino: Path) -> Dict[str, Any]:
@@ -220,11 +208,7 @@ def contrastar(destino: Path) -> Dict[str, Any]:
     #: NO lo resuelve. Comparar solo el basename daba por bueno un enlace que
     #: el consumidor pinta roto —13 de 16 en /vcloud, que es el vault de
     #: control— y ese sentido del error es el peor: la medida sale verde.
-    destinos = set()
-    for p in notas:
-        partes = p.relative_to(destino).with_suffix("").parts
-        for i in range(len(partes)):
-            destinos.add("/".join(partes[i:]).lower())
+    destinos = indice_de_destinos(p.relative_to(destino) for p in notas)
     enlaces_totales = 0
     textos: Dict[Path, str] = {}
 

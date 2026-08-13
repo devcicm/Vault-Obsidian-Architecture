@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.13 — 2026-08-12  
+**Versión:** v40.14 — 2026-08-12  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -6827,6 +6827,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.14 | 2026-08-12 | La validación que corre **al nacer la nota** medía con su propio criterio en los cuatro sitios donde ya había dueño (AP-57), y con los dos signos del error a la vez: resolvía por basename —el enlace roto pasaba, en verde— y no miraba `aliases:` —avisaba del bueno—. Los dos se sostienen: el ruido enseña a ignorar el aviso justo cuando el aviso deja escapar lo que importa, y así un vault real llega a 221 enlaces muertos con la validación puesta. `vault_lib` estrena dos dueños más, `resolver_destino_wikilink` e `indice_de_destinos`; sin origen, una ruta relativa se devuelve sin resolver, porque no saber no es resolver a la raíz. Ninguno de los dos entra en el registro de `vault_criterios`: sus señales (`"|"`, `"#"`, `"aliases"`) no distinguen nada y daban 10 falsos, así que el límite se declara en vez de comprarse el verde con ruido |
 | v40.13 | 2026-08-12 | **AP-57** — la norma que v40.12 debió traer y no trajo. Aquella tanda arregló **cuatro** defectos de una misma tool y los cuatro tenían la misma forma: el registro canónico existía y nadie lo consultaba. Cuatro parches sin norma es exactamente lo que la regla 4 prohíbe. AP-57 generaliza AP-50 de **datos** duplicados a **criterios**: qué es una instantánea, qué es documentación del estándar, qué es código y no enlace. La diferencia importa porque un dato duplicado se ve al compararlo y un criterio vive enterrado en un `if`. `vault_criterios` (puerta 15) lo detecta por la constante distintiva del dueño, y **declara su límite antes de que nadie se apoye en él**: la detección es sintáctica, así que verde no prueba que no haya copias — prueba que no hay copias de la forma que sabe reconocer. Auditar con ella el primer día encontró la misma forma en `vault_graph_fix`, que **escribe**: su `skip_set` de instantáneas ya divergía de `vault_io.SNAPSHOT_DIRS`, y ahí la divergencia no infla un número — repara dentro de una instantánea congelada, que es dejar de serlo. Mirando esa tool salieron dos defectos más de la misma familia, ambos de escritura: reescribía wikilinks **dentro de un fence** —corrompiendo el ejemplo de la nota que documenta la sintaxis— y despojaba la carpeta de `[[carpeta/nota]]` a ciegas, que es el error de basename de v40.12 con el signo contrario: allí un enlace roto salía verde, aquí un enlace bueno se vuelve ambiguo. Ahora solo despoja si el destino con carpeta no existe **y** el basename es único; sin índice no toca nada. Y un cuarto, latente: `emit_error` construye el envelope, no lo devuelve como exit code, así que `--apply --check` publicaba `UNEXPECTED_ERROR` —«fallo interno»— sobre un error de uso con arreglo. Ninguna prueba había pisado esa rama |
 | v40.12 | 2026-08-12 | **AP-56** y la mitad que faltaba desde v40.2: el frontmatter que existe y el consumidor no lee. v40.2 arregló la escritura —`yaml_scalar` cita el valor— y dio el asunto por cerrado; lo que ya estaba en disco nunca se tocó. El contraste de regla 7 contra los cuatro vaults consumidores encontró **doce notas** con bloque `---` que `yaml.safe_load` rechaza: para Obsidian no tienen id, ni tags, ni estado, y como el bloque se ve al abrir el fichero nadie las revisa. Dos causas —ocho por el `: ` sin escapar, cuatro porque **el bloque no cierra** y el parser revienta cientos de líneas más abajo, señalando dónde explotó y no dónde está el fallo—. `vault_frontmatter_heal` repara las dos y se niega al resto: completar un YAML truncado inventa dato. Su única garantía es del consumidor, no suya: tras reparar, `yaml.safe_load` devuelve un dict y **ninguna clave que ya se leía cambia de valor**, o no escribe. Y tres defectos más de `vault_foreign_check`, los tres con la misma forma —el registro canónico existía y esta tool no lo consultaba—: instantáneas congeladas contadas como notas, wikilinks dentro de un fence contados como enlaces rotos (87 de 301 en /ans; solo visibles tras excluir la doc del estándar) y destinos con carpeta resueltos por basename, que daba por bueno lo que Obsidian pinta roto — el sentido de error peligroso, porque la medida sale verde |
 | v40.11 | 2026-08-12 | Las 47 afirmaciones de cobertura que v40.10 congeló, saldadas a cero **una a una**, y el hueco en la dirección contraria. Al triarlas se vio que la mayoría no eran coberturas falsas sino **mal atribuidas**: AP-27, AP-28 y AP-30 nombraban `vault_validate` o `vault_quality_check` teniendo entrada propia, con nombre y peso, en `vault_audit.PENALIZACIONES` — el catálogo no mentía sobre *si* la norma se aplica sino sobre *quién*. Cada claim se resolvió leyendo la función que dice cumplirla, nunca por grep: el grep sirve para **descartar**, jamás para **confirmar**, y el contraejemplo estaba en el propio dato — `vault_audit` emite `"norm": "CN-01"` sobre un hallazgo de *scaffold*, así que confirmar por grep habría cerrado CN-01 con el criterio del propio guard, que es el AP-44 que la tool existe para detectar. Dos campos nuevos porque faltaba vocabulario: `tools_del_patron` —un PAT-x no se detecta, se sigue, y sus ocho afirmaciones eran un error de categoría contado como deuda— y `cobertura_descubierta`, la única forma de que un campo requerido quede vacío, con el motivo escrito y mordiendo también en la dirección inversa. Cinco normas lo declaran, entre ellas **AP-05, la única `critical` sin detector**, nombrada en el changelog y en la capa 7 del plano en vez de esconderse en un `[]`. Y **C6**: seis penalizaciones del healthIndex restaban con `norma: null` desde v19 — nadie medía código sin afirmación mientras C2 medía afirmación sin código. Nace en cero y sin baseline, a propósito |
@@ -7159,6 +7160,51 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v40.14 — 2026-08-12 `git: pending`
+
+**El aviso que se ignoraba porque mentía en las dos direcciones a la vez.**
+
+Los 221 enlaces muertos de `/ans` no se acumularon a pesar de la validación:
+se acumularon **por** ella. `vault_write._collect_ghost_links` es el aviso de
+SP-02 en el único momento en que arreglar un enlace es barato —cuando se
+escribe—, y tenía los cuatro defectos de v40.12 a la vez, con los dos signos
+del error simultáneamente:
+
+- Resolvía por **basename**, así que `[[otra/ct105]]` pasaba si existía
+  cualquier `ct105.md`. Falso negativo, y el sentido peligroso: sale **verde**
+  justo donde Obsidian pinta el enlace roto.
+- Trataba `.history` como única instantánea, en vez de preguntar a
+  `vault_io.is_snapshot_path`.
+- **No miraba `aliases:`**, que es la mitad de cómo Obsidian resuelve. Falso
+  positivo puro: avisaba del enlace bueno.
+- Contaba wikilinks dentro de un fence, que Obsidian no resuelve: los enseña.
+
+Los dos sentidos se sostienen. El ruido de los falsos positivos enseña al
+operador a ignorar el aviso, y lo hace justo cuando el aviso está dejando
+escapar lo que sí importa. Un aviso que miente en una dirección se corrige; uno
+que miente en las dos se desactiva solo, sin que nadie lo decida.
+
+Cerrarlo pedía promover dos criterios más a `vault_lib`, que es AP-57 aplicado:
+`resolver_destino_wikilink` (quitar alias y ancla, resolver la relativa contra
+la carpeta de la nota) vivía privado en `vault_foreign_check._resolver`, e
+`indice_de_destinos` no vivía en ninguna parte —cada tool se hacía la suya, y
+cada una se dejaba una de las dos mitades—. Sin `desde`, una ruta relativa se
+devuelve sin resolver: **no saber no es lo mismo que resolver a la raíz**.
+
+Y una nota sobre el límite de AP-57, escrita porque el intento se hizo y falló.
+Los dos criterios nuevos **no** entran en el registro de `vault_criterios`: sus
+constantes distintivas serían `"|"`, `"#"` y `"aliases"`, que media docena de
+módulos escribe por motivos legítimos. Registrarlos daba 10 hallazgos, todos
+falsos, y congelarlos habría sido comprar el verde con ruido — lo mismo que la
+precondición del `"*.md"` existe para evitar. Tienen dueño y sus consumidores lo
+importan; lo que no tienen es forma sintáctica de vigilarlo. Decirlo es más
+honesto que fingir una señal que no distingue.
+
+La baseline de AP-57 encogió sola al arreglar la validación: `vault_write` deja
+de reimplementar qué es una instantánea. De 10 sitios a 9.
 
 ---
 

@@ -9,7 +9,6 @@
   "vault_move::que_es_una_instantanea",
   "vault_norms::que_es_documentacion_del_estandar",
   "vault_quality_check::que_es_una_instantanea",
-  "vault_validate::que_es_una_instantanea",
-  "vault_write::que_es_una_instantanea"
+  "vault_validate::que_es_una_instantanea"
  ]
 }

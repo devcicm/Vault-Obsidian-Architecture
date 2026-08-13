@@ -335,6 +335,65 @@ def extract_wikilinks_with_context(content: str) -> List[Tuple[str, int, str]]:
     return results
 
 
+def resolver_destino_wikilink(bruto: str, desde: "Path | None" = None) -> str:
+    """Cómo se busca el destino de un wikilink, como lo buscaría Obsidian.
+
+    **Dueño canónico del criterio (AP-57).** Vivía privado en
+    `vault_foreign_check._resolver`, que es AP-57 esperando a repetirse: el día
+    que una segunda tool necesite resolver un destino, o lo importa de aquí o
+    escribe la quinta copia del mismo `if`.
+
+    Se quitan el alias de visualización (`|`) y el ancla (`#`), que no son
+    parte del destino, y una ruta relativa se resuelve contra la carpeta de la
+    nota que enlaza — `[[../containers/ct220]]` desde `09_Infrastructure/db/`
+    apunta a `09_Infrastructure/containers/ct220`, no a un fichero llamado
+    `..`. Sin `desde`, una ruta relativa no se puede resolver y se devuelve
+    normalizada: no saber no es lo mismo que resolver a la raíz.
+    """
+    crudo = bruto.split("|")[0].split("#")[0].strip().replace("\\", "/")
+    crudo = crudo.removesuffix(".md")
+    if not crudo:
+        return ""
+    if crudo.startswith("./") or crudo.startswith("../"):
+        if desde is None:
+            return crudo.strip("/").lower()
+        partes: List[str] = list(desde.parent.parts)
+        for tramo in crudo.split("/"):
+            if tramo == "..":
+                if partes:
+                    partes.pop()
+            elif tramo not in (".", ""):
+                partes.append(tramo)
+        return "/".join(partes).lower()
+    return crudo.strip("/").lower()
+
+
+def indice_de_destinos(relativas, aliases=None) -> set:
+    """Todo lo que resuelve en un vault: sufijos de ruta y `aliases:`.
+
+    **Dueño canónico del criterio (AP-57).** Obsidian resuelve por **nombre de
+    fichero** y por `aliases:`; `title:` no entra, porque no lo mira.
+
+    Y un destino con carpeta no se resuelve tirando la carpeta: la ruta escrita
+    tiene que casar como **sufijo** de la del fichero, así que
+    `[[containers/ct105]]` NO lo resuelve un `ct105.md` que viva en otra
+    carpeta. Comparar solo el basename daba por bueno lo que el consumidor
+    pinta roto —13 de 16 en el vault de control—, y ese es el peor sentido del
+    error: la medida sale verde.
+
+    `relativas` son rutas relativas a la raíz del vault (`Path` o `str`).
+    """
+    destinos = set()
+    for r in relativas:
+        partes = Path(str(r).replace("\\", "/")).with_suffix("").parts
+        for i in range(len(partes)):
+            destinos.add("/".join(partes[i:]).lower())
+    for a in aliases or []:
+        if isinstance(a, str) and a.strip():
+            destinos.add(a.strip().lower())
+    return destinos
+
+
 def normalize_path(path: str) -> str:
     """Normalize path separators for cross-platform consistency."""
     return path.replace("\\", "/")

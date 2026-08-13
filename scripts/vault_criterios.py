@@ -31,6 +31,18 @@ la forma que sabemos reconocer. Es lo mismo que pasa con un linter, y es
 preferible a no mirar — el `skip_set` literal de `vault_graph_fix`, que llevaba
 versiones divergiendo de `vault_io.SNAPSHOT_DIRS`, cae dentro de lo que sí ve.
 
+El límite tiene un caso medido, y se escribe aquí para que nadie lo intente otra
+vez. v40.14 promovió a `vault_lib` dos criterios nuevos —cómo se resuelve un
+wikilink (`resolver_destino_wikilink`) y qué destinos resuelven de verdad,
+sufijos de ruta **y** `aliases:` (`indice_de_destinos`)— y **no** están en el
+registro de abajo: sus constantes distintivas serían `"|"`, `"#"` y `"aliases"`,
+que escribe media docena de módulos por motivos legítimos. Registrarlos daba 10
+hallazgos nuevos, todos falsos. Una señal que no distingue no es una señal, y
+congelarlos en la baseline habría sido comprar el verde con ruido — que es
+exactamente lo que la precondición del `"*.md"` existe para evitar. Esos dos
+criterios tienen dueño y sus consumidores lo importan; lo que no tienen es una
+forma sintáctica de vigilarlo, y decirlo es más honesto que fingirla.
+
     python scripts/vault_criterios.py --check --strict
     python scripts/vault_criterios.py --freeze     # solo puede encoger
 """
