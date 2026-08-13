@@ -130,7 +130,25 @@ def _modulos() -> List[Path]:
     return sorted(p for p in aqui.glob("*.py") if p.name != Path(__file__).name)
 
 
+#: Qué módulos entraron de verdad en la medida y cuáles quedaron fuera por la
+#: precondición del `*.md`. Se publica en el envelope: `modules_scanned` decía
+#: 125 mientras la medida miraba 31, y un alcance que no se ve no se discute.
+_ALCANCE: Dict[str, List[str]] = {"medidos": [], "saltados": []}
+
+
 def medir() -> List[Dict[str, str]]:
+    """Copias de un criterio con dueño, en los módulos que clasifican notas.
+
+    **La precondición del `*.md` es el alcance real de esta tool, y cuesta:**
+    de 125 módulos, solo los que nombran ese literal entran en la medida; el
+    resto se salta entero. Sin ella el detector marcaría a quien escribe la
+    constante por otro motivo legítimo (`vault_restore` nombra `vault-backups`
+    porque restaurar de ahí *es* su trabajo), pero el precio es que un módulo
+    que clasifique notas sin nombrar `*.md` no lo mira nadie. Los dos números
+    salen en el envelope como `modules_measured` / `modules_skipped`.
+    """
+    _ALCANCE["medidos"] = []
+    _ALCANCE["saltados"] = []
     hallazgos: List[Dict[str, str]] = []
     for p in _modulos():
         nombre = p.stem
@@ -150,7 +168,9 @@ def medir() -> List[Dict[str, str]]:
         # `vault_norms` nombra el manifiesto porque lo edita. Marcarlos sería
         # llenar la baseline de ruido, que es como un guard deja de leerse.
         if "*.md" not in literales:
+            _ALCANCE["saltados"].append(nombre)
             continue
+        _ALCANCE["medidos"].append(nombre)
         for c in CRITERIOS_CON_DUENO:
             if nombre == c["dueño"] or nombre in DUEÑOS:
                 continue
@@ -203,6 +223,11 @@ def check() -> Dict[str, Any]:
         "action": "check",
         "criterios": len(CRITERIOS_CON_DUENO),
         "modules_scanned": len(_modulos()),
+        # El alcance real, no el nominal: la precondición del `*.md` deja fuera
+        # a la mayoría, y hasta v40.16 solo se publicaba el total.
+        "modules_measured": len(_ALCANCE["medidos"]),
+        "modules_skipped": len(_ALCANCE["saltados"]),
+        "skip_reason": "sin literal `*.md`: no clasifica notas de forma reconocible",
         "copies": hallazgos,
         "copies_total": len(hallazgos),
         "baseline_size": len(base),
@@ -211,7 +236,8 @@ def check() -> Dict[str, Any]:
         "hint": (
             "Se salda importando al dueño, no ampliando la baseline. Verde aquí "
             "no prueba que no haya copias: prueba que no hay copias de la forma "
-            "que esta tool sabe reconocer."
+            "que esta tool sabe reconocer, y solo en los `modules_measured` que "
+            "nombran `*.md` — los `modules_skipped` no los mira nadie."
         ),
     }
 

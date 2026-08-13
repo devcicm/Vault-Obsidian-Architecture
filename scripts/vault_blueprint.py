@@ -41,6 +41,7 @@ un plano no puede permitirse.
 """
 
 import argparse
+import ast
 import json
 import sys
 from pathlib import Path
@@ -242,6 +243,35 @@ def _leer_baseline() -> Dict[str, Any]:
     return json.loads(BASELINE.read_text(encoding="utf-8"))
 
 
+def _test_ejercita(code: str, texto: str) -> bool:
+    """¿Ese fichero de tests **ejercita** la norma, o solo la nombra?
+
+    Hasta v40.16 bastaba `code in texto`: un docstring que citaba «AP-21» de
+    pasada certificaba la norma como cubierta, y como la baseline de la capa 4
+    solo encoge, la certificación era irreversible. Aquí el código tiene que
+    aparecer en el **cuerpo** de una función `test_*`, descontado su docstring.
+
+    El límite queda dicho: sigue siendo sintáctico. Un `assert` cuyo mensaje
+    menciona la norma cuenta, aunque no la mida. Distingue «nadie la prueba» de
+    «alguien la nombró», que es el salto que faltaba; no prueba enforcement.
+    """
+    if code not in texto:
+        return False
+    try:
+        arbol = ast.parse(texto)
+    except SyntaxError:
+        return False
+    for nodo in ast.walk(arbol):
+        if not isinstance(nodo, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        if not nodo.name.startswith("test_"):
+            continue
+        cuerpo = nodo.body[1:] if ast.get_docstring(nodo) else nodo.body
+        if any(code in ast.unparse(s) for s in cuerpo):
+            return True
+    return False
+
+
 def cobertura_de_normas() -> List[Dict[str, Any]]:
     """Capa 4: por cada norma, qué puerta la hace cumplir y qué tests la nombran.
 
@@ -274,7 +304,7 @@ def cobertura_de_normas() -> List[Dict[str, Any]]:
                 if t.split() and t.split()[0] in scripts_de_puerta
             }
         )
-        tests = sorted(f for f, texto in textos.items() if code in texto)
+        tests = sorted(f for f, texto in textos.items() if _test_ejercita(code, texto))
         # Una norma que declara `cobertura_descubierta` no es deuda descubierta
         # por sorpresa: es un hueco escrito, con motivo, y se publica aparte.
         # Mezclarla con las que nadie miró haría que declararse honestamente
@@ -498,8 +528,7 @@ def blueprint() -> str:
         if not ruta.exists():
             continue
         datos = json.loads(ruta.read_text(encoding="utf-8"))
-        valor = datos.get(clave)
-        total = len(valor) if isinstance(valor, (list, dict)) else valor
+        total = _congelado(datos.get(clave))
         A(f"| `scripts/{fichero}` | {norma} | {total} |")
     A("")
     A("Todas encogen y ninguna crece sin decirlo: los tres audits con baseline indexan")
@@ -514,7 +543,26 @@ def blueprint() -> str:
     return "\n".join(lineas) + "\n"
 
 
+def _congelado(valor: Any) -> Any:
+    """Cuántos elementos congela una baseline.
+
+    Un dict de listas —`field-compat` indexa por tool— congela **campos**, no
+    tools: contar las claves publicaría 111 donde hay más de mil, que es la
+    cifra a mano de AP-47 escrita por el propio generador.
+    """
+    if isinstance(valor, dict):
+        if valor and all(isinstance(v, list) for v in valor.values()):
+            return sum(len(v) for v in valor.values())
+        return len(valor)
+    if isinstance(valor, list):
+        return len(valor)
+    return valor
+
+
 #: Las baselines del repo, con la clave donde vive la lista y la norma que sostienen.
+#: Toda `scripts/*baseline*.json` aparece aquí — el guard lo comprueba. Tres
+#: faltaban hasta v40.16 y la capa 6 las publicaba como si no existieran: una
+#: deuda congelada que el plano no lista es una deuda que nadie revisa.
 _BASELINES = [
     ("arch-baseline.json", "crossings", "cruces entre contextos"),
     ("arch-baseline.json", "off_port_crossings", "cruces fuera de puerto"),
@@ -523,10 +571,27 @@ _BASELINES = [
     ("noop-baseline.json", "tools", "AP-37"),
     ("smoke-baseline.json", "failing", "AP-42"),
     ("blueprint-baseline.json", "uncovered_norms", "capa 4 — norma sin puerta ni test"),
+    ("criterios-baseline.json", "sitios", "AP-57"),
+    ("norms-coherence-baseline.json", "claims", "AP-55 — C2, afirmación sin traza"),
+    ("field-compat-baseline.json", "stable", "contrato de campos con los consumidores"),
 ]
 
 
 # ── Guards ───────────────────────────────────────────────────────────────────
+
+def _sin_cobertura() -> set:
+    """Normas sin puerta ni test, **descontadas las que lo declaran por escrito**.
+
+    Una norma con `cobertura_descubierta` es un hueco escrito y con motivo, y la
+    capa 4 ya lo publica en su propia columna. Contarla también como deuda haría
+    que declararse honestamente saliera más caro que callarse — que es como
+    AP-04 apareció aquí el día que la cobertura por mención dejó de valer.
+    """
+    return {
+        n["code"] for n in cobertura_de_normas()
+        if not n["covered"] and not n["uncovered_declared"]
+    }
+
 
 def check(strict: bool = False) -> Dict[str, Any]:
     r = _registros()
@@ -562,13 +627,25 @@ def check(strict: bool = False) -> Dict[str, Any]:
 
     # 3. Capa 4 contra la baseline: solo puede encoger.
     base = set(_leer_baseline().get("uncovered_norms", []))
-    descubiertas = {n["code"] for n in cobertura_de_normas() if not n["covered"]}
+    descubiertas = _sin_cobertura()
     nuevas = sorted(descubiertas - base)
     saldadas = sorted(base - descubiertas)
     if nuevas:
         problemas.append(
             {"kind": "norma_sin_puerta_ni_test", "detail": ", ".join(nuevas)}
         )
+
+    # 3.b Ninguna baseline queda fuera de la capa 6. Una deuda congelada que el
+    #     plano no publica es deuda que nadie revisa — y las tres que faltaban
+    #     (AP-57, C2 de AP-55, contrato de campos) llevaban desde su estreno.
+    listadas = {f for f, _clave, _norma in _BASELINES}
+    for ruta in sorted(SCRIPTS_DIR.glob("*baseline*.json")):
+        if ruta.name not in listadas:
+            problemas.append(
+                {"kind": "baseline_no_publicada",
+                 "detail": f"{ruta.name} congela deuda y no aparece en "
+                           "`vault_blueprint._BASELINES`: la capa 6 la omite"}
+            )
 
     # 4. Toda deuda declarada dice en qué estado está y desde cuándo. Sin esto,
     #    «pendiente» sería una propiedad implícita de aparecer en la lista, y una
@@ -627,7 +704,7 @@ def freeze(admitir_nuevos: bool = False) -> Dict[str, Any]:
     que hay, que es lo contrario de un techo.
     """
     base = set(_leer_baseline().get("uncovered_norms", []))
-    descubiertas = {n["code"] for n in cobertura_de_normas() if not n["covered"]}
+    descubiertas = _sin_cobertura()
     nuevas = sorted(descubiertas - base)
     if nuevas and not admitir_nuevos:
         salida = emit_error(

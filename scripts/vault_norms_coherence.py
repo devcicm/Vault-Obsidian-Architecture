@@ -189,6 +189,27 @@ def _fuente(tool: str) -> str:
     return ruta.read_text(encoding="utf-8", errors="ignore")
 
 
+def _sin_cabecera(fuente: str) -> str:
+    """El módulo sin su docstring de cabecera.
+
+    C2 buscaba el código de la norma en el fichero entero, así que nombrarla en
+    la cabecera saldaba la afirmación. La baseline de esta misma medida dice
+    desde v40.11 que eso no vale —«en la función que la cumple, no en la
+    cabecera del módulo, que pasa la medida sin llevar a nadie al sitio»— y
+    hasta v40.16 la regla estaba escrita y no medida. Hoy no cambia ningún
+    veredicto: las afirmaciones vivas nombran la norma en el cuerpo. Se cierra
+    ahora precisamente por eso, mientras es gratis.
+
+    Los comentarios dentro de una función siguen contando: la medida es traza,
+    no enforcement, y eso ya está dicho en el `hint`.
+    """
+    try:
+        doc = ast.get_docstring(ast.parse(fuente))
+    except (SyntaxError, ValueError):
+        return fuente
+    return fuente.replace(doc, "", 1) if doc else fuente
+
+
 def _sitio_de_modulo(valor: str) -> str:
     """Resuelve un enforcer que **no** es una tool del catálogo, o `""`.
 
@@ -319,7 +340,7 @@ def scan() -> Dict[str, Any]:
                     no_catalogo.append(
                         {"norm": codigo, "field": campo, "value": nombre}
                     )
-                if codigo not in fuente:
+                if codigo not in _sin_cabecera(fuente):
                     c2_sin_traza.append(
                         {
                             "norm": codigo,
