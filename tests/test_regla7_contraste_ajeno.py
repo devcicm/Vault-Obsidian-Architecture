@@ -319,3 +319,33 @@ def test_cero_notas_no_se_presenta_como_exito(tmp_path):
 def test_esta_en_el_catalogo_y_en_el_tool_spec():
     assert "vault_foreign_check" in vault_mcp_catalog.TOOLS_CATALOG
     assert SPEC["vault_foreign_check"]["status"] == "active"
+
+
+def test_un_wikilink_dentro_de_un_fence_no_es_un_enlace_roto(tmp_path):
+    """Obsidian no resuelve dentro de código: lo enseña, no lo enlaza.
+
+    Salió del contraste contra `/ans`, y solo se vio después de excluir la doc
+    del estándar: las notas del propio vault que documentan su convención
+    —`00_System/rules.md`— citan la misma sintaxis de ejemplo. Eran 87 de 301.
+    """
+    (tmp_path / "guia.md").write_text(
+        "Se escribe as\u00ed:\n\n```\n[[carpeta/nota]]\n[[stem]]\n```\n\n"
+        "y `[[Titulo]]` en l\u00ednea.\n",
+        encoding="utf-8")
+    m = vfc.contrastar(tmp_path)
+    assert m["wikilinks_unresolved"] == 0
+    assert m["wikilinks_in_code_excluded"] == 3
+
+
+def test_la_exclusion_de_codigo_tambien_se_publica(tmp_path):
+    (tmp_path / "n.md").write_text("`[[x]]` y [[y]]\n", encoding="utf-8")
+    m = vfc.contrastar(tmp_path)
+    assert m["wikilinks_in_code_excluded"] == 1
+    assert m["wikilinks_unresolved"] == 1  # el de fuera sigue contando
+
+
+def test_el_criterio_de_codigo_no_se_reimplementa_aqui():
+    """AP-05: `vault_lib` es el due\u00f1o de qu\u00e9 es c\u00f3digo y qu\u00e9 no."""
+    import vault_lib
+
+    assert vfc.strip_code_blocks is vault_lib.strip_code_blocks

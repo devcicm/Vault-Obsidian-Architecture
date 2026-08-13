@@ -59,6 +59,7 @@ from typing import Any, Dict, List, Optional
 from vault_regex import RE_WIKILINK_DESTINO  # dueño único del patrón (AP-50)
 from vault_audit import es_documentacion_del_estandar  # dueño único del criterio
 from vault_io import is_snapshot_path  # dueño único de qué es una instantánea
+from vault_lib import strip_code_blocks  # dueño único de qué es código, no enlace
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -220,12 +221,22 @@ def contrastar(destino: Path) -> Dict[str, Any]:
     # regla diría otra cosa el día que una de las dos cambiara (AP-05).
     docs: List[str] = []
     rotos: List[Dict[str, str]] = []
+    en_codigo = 0
     for p, texto in textos.items():
         rel = str(p.relative_to(destino))
         if es_documentacion_del_estandar(rel.replace("\\", "/"), texto):
             docs.append(rel)
             continue
-        for m in WIKILINK.finditer(texto):
+        # Un `[[stem]]` dentro de un fence no es un enlace: Obsidian no lo
+        # resuelve ni lo pinta roto, lo enseña. Que la doc del estándar ya se
+        # excluyera escondía esto — las notas del propio vault que documentan
+        # su convención (`00_System/rules.md`) citan la misma sintaxis, y ahí
+        # eran 71 de 301 «rotos» en /ans. El criterio tampoco se reescribe:
+        # `vault_lib.strip_code_blocks` es su dueño (AP-05).
+        sin_codigo = strip_code_blocks(texto)
+        en_codigo += (len(WIKILINK.findall(texto))
+                      - len(WIKILINK.findall(sin_codigo)))
+        for m in WIKILINK.finditer(sin_codigo):
             enlaces_totales += 1
             objetivo = m.group(1).strip().split("/")[-1].lower()
             if objetivo and objetivo not in destinos:
@@ -253,6 +264,8 @@ def contrastar(destino: Path) -> Dict[str, Any]:
         # silenciosa es indistinguible de un vault sin enlaces rotos.
         "standard_docs_excluded": docs,
         "standard_docs_excluded_count": len(docs),
+        # Tercera exclusión, y por el mismo motivo que las otras dos: dicha.
+        "wikilinks_in_code_excluded": en_codigo,
         "wikilinks_total": enlaces_totales,
         "wikilinks_unresolved": len(rotos),
         "wikilinks_unresolved_sample": rotos[:20],
