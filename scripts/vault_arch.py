@@ -210,6 +210,14 @@ CONTEXTS: dict[str, dict] = {
             # AP-55 lo lea en vez de copiarlo, que es como habría nacido la
             # tercera fuente de verdad sobre el mismo hecho.
             "penalizaciones": "vault_audit:PENALIZACIONES",
+            # Qué cuenta como documentación del estándar y no como nota del
+            # vault. Nació dentro de `vault_audit` en v40.5 —por contenido y no
+            # por ubicación— y allí se quedó, así que el contraste de regla 7
+            # medía los enlaces de ejemplo del manifiesto copiado como enlaces
+            # rotos del consumidor. Se publica como puerto en vez de
+            # reimplementarse: dos versiones del mismo criterio divergen el día
+            # que una cambia, y ésta ya cambió una vez.
+            "identidad_de_documentacion": "vault_audit:es_documentacion_del_estandar",
             "FUNDAMENTOS": "vault_fundamentals:FUNDAMENTALS",
             "validar_mermaid": "vault_mermaid_check:validate_mermaid",
             # El gancho de secretos lo llama el write path del kernel: es la

@@ -214,6 +214,39 @@ def test_el_wikilink_se_resuelve_por_fichero_y_alias_nunca_por_title(tmp_path):
     assert m["wikilinks_unresolved_sample"][0]["target"] == "Título Bonito"
 
 
+def test_la_doc_del_estandar_copiada_no_aporta_enlaces_rotos(tmp_path):
+    """El defecto que salió al medir los cuatro vaults consumidores.
+
+    Un consumidor copia el manifiesto dentro de su vault, y el manifiesto **cita**
+    sintaxis de wikilink como ejemplo. `vault_audit` ya excluía esa doc por
+    contenido desde v40.5; el contraste de regla 7 no, y era el único sitio donde
+    se notaba: en `vault-sandbox/` no hay copia del manifiesto, así que la medida
+    salía verde justo en el caso que la tool existe para ver. En el vault de `ans`
+    eran 199 de 545; en el de `electron`, los 175.
+    """
+    (tmp_path / "nota.md").write_text("[[nota]]\n", encoding="utf-8")
+    (tmp_path / "vault-obsidian-architecture.v27.backup.md").write_text(
+        "Se escribe `[[nombre-nota]]`, nunca `[[Título]]`.\n", encoding="utf-8")
+
+    m = vfc.contrastar(tmp_path)
+    assert m["standard_docs_excluded_count"] == 1
+    assert m["wikilinks_unresolved"] == 0, m["wikilinks_unresolved_sample"]
+    assert m["wikilinks_total"] == 1, "la doc no aporta ni el enlace ni el roto"
+
+
+def test_la_exclusion_de_doc_se_publica_en_vez_de_hacerse_en_silencio():
+    """Excluir sin decirlo es indistinguible de un vault sin enlaces rotos."""
+    campos = vfc.contrastar(Path(__file__).parent.parent / "docs")
+    assert "standard_docs_excluded" in campos
+
+
+def test_el_criterio_de_doc_no_se_reimplementa_aqui():
+    """AP-05: dos versiones de la misma regla divergen el día que una cambia."""
+    import vault_audit
+
+    assert vfc.es_documentacion_del_estandar is vault_audit.es_documentacion_del_estandar
+
+
 def test_lo_ilegible_no_se_cuenta_como_ausente(tmp_path):
     """AP-51 en la propia tool de contraste.
 

@@ -57,6 +57,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_regex import RE_WIKILINK_DESTINO  # dueño único del patrón (AP-50)
+from vault_audit import es_documentacion_del_estandar  # dueño único del criterio
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -185,8 +186,23 @@ def contrastar(destino: Path) -> Dict[str, Any]:
                 if isinstance(alias, str):
                     destinos.add(alias.lower())
 
+    # La documentación del estándar que el consumidor copia dentro de su vault
+    # —el manifiesto, la referencia de tools— cita sintaxis de wikilink como
+    # ejemplo: `[[nota]]`, `[[carpeta/nota]]`. No son enlaces rotos del vault,
+    # son la doc enseñando a escribirlos. Contarlos infla la medida justo en los
+    # vaults consumidores, que son los que más doc copiada llevan.
+    #
+    # El criterio no se reescribe aquí: lo tiene `vault_audit` desde v40.5 —por
+    # contenido y no por ubicación, que es lo que hace que una copia archivada
+    # con sufijo de versión siga siendo doc—. Una segunda versión de la misma
+    # regla diría otra cosa el día que una de las dos cambiara (AP-05).
+    docs: List[str] = []
     rotos: List[Dict[str, str]] = []
     for p, texto in textos.items():
+        rel = str(p.relative_to(destino))
+        if es_documentacion_del_estandar(rel.replace("\\", "/"), texto):
+            docs.append(rel)
+            continue
         for m in WIKILINK.finditer(texto):
             enlaces_totales += 1
             objetivo = m.group(1).strip().split("/")[-1].lower()
@@ -207,6 +223,10 @@ def contrastar(destino: Path) -> Dict[str, Any]:
         "with_frontmatter": con_frontmatter,
         "without_frontmatter": sin_frontmatter,
         "frontmatter_unparseable": frontmatter_roto,
+        # Qué se dejó fuera del recuento de enlaces, con nombre: una exclusión
+        # silenciosa es indistinguible de un vault sin enlaces rotos.
+        "standard_docs_excluded": docs,
+        "standard_docs_excluded_count": len(docs),
         "wikilinks_total": enlaces_totales,
         "wikilinks_unresolved": len(rotos),
         "wikilinks_unresolved_sample": rotos[:20],

@@ -55,7 +55,7 @@ regenera.*
 | **Kernel** (`kernel`) | 4 | 11 | depender de cualquier contexto de dominio |
 | **Autoría** (`autoria`) | 7 | 38 | — |
 | **Grafo** (`grafo`) | 3 | 15 | — |
-| **Gobernanza** (`gobernanza`) | 18 | 9 | — |
+| **Gobernanza** (`gobernanza`) | 19 | 9 | — |
 | **Índices** (`indices`) | 8 | 6 | — |
 | **Consulta** (`consulta`) | 7 | 10 | base de datos; embeddings; servicio externo |
 | **Ciclo de vida** (`ciclo_de_vida`) | 3 | 8 | — |
@@ -78,7 +78,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-02** — Proliferación de versiones del mismo documento | audit | — | `test_skills_contract.py` |
 | **AP-03** — Stubs sin política de expansión | audit | — | `test_audit_resuelve_como_obsidian.py` |
 | **AP-04** — Features aspiracionales documentadas como implementadas | audit | — | `test_cli_package.py`, `test_context_memory.py`, `test_data_framework.py`, `test_skills_contract.py` |
-| **AP-05** — Múltiples fuentes de verdad para el mismo dato | audit | — | `test_ap50_decision_duplicada.py`, `test_arquitectura.py`, `test_autoria_dominio.py`, `test_blueprint.py`, `test_ciclo_de_vida_dominio.py`, `test_consulta_dominio.py`, `test_durabilidad_caracterizacion.py`, `test_durabilidad_declarada.py`, `test_gobernanza_dominio.py`, `test_grafo_dominio.py`, `test_indices_dominio.py`, `test_lifecycle_registry.py`, `test_norms_coherence.py`, `test_raiz_no_seccion.py`, `test_registro_de_entorno.py`, `test_registro_de_vocabulario.py`, `test_vault_gate.py` |
+| **AP-05** — Múltiples fuentes de verdad para el mismo dato | audit | — | `test_ap50_decision_duplicada.py`, `test_arquitectura.py`, `test_autoria_dominio.py`, `test_blueprint.py`, `test_ciclo_de_vida_dominio.py`, `test_consulta_dominio.py`, `test_durabilidad_caracterizacion.py`, `test_durabilidad_declarada.py`, `test_gobernanza_dominio.py`, `test_grafo_dominio.py`, `test_indices_dominio.py`, `test_lifecycle_registry.py`, `test_norms_coherence.py`, `test_raiz_no_seccion.py`, `test_registro_de_entorno.py`, `test_registro_de_vocabulario.py`, `test_regla7_contraste_ajeno.py`, `test_vault_gate.py` |
 | **AP-06** — Templates sin instancias reales | audit | `framework` | — |
 | **AP-07** — ADRs incompletos | audit | `framework` | `test_audit_resuelve_como_obsidian.py`, `test_vault_norms_audit.py`, `test_vault_onboard.py` |
 | **AP-08** — Documentación anclada a versiones obsoletas | audit | — | — |
@@ -328,7 +328,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 
 | Baseline | Norma | Congelado |
 |---|---|---|
-| `scripts/arch-baseline.json` | cruces entre contextos | 60 |
+| `scripts/arch-baseline.json` | cruces entre contextos | 61 |
 | `scripts/arch-baseline.json` | cruces fuera de puerto | 13 |
 | `scripts/blame-baseline.json` | AP-51 | 87 |
 | `scripts/error-contract-baseline.json` | AP-52 | 9 |

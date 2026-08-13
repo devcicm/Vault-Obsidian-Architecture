@@ -17,6 +17,7 @@
     "vault_context_pack -> vault_search",
     "vault_doc_counts -> vault_norms",
     "vault_env_matrix -> vault_norms",
+    "vault_foreign_check -> vault_audit",
     "vault_incident_save -> vault_norms",
     "vault_infra_save -> vault_norms",
     "vault_manifest -> vault_fundamentals",
