@@ -2477,6 +2477,61 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         ),
         "related": ["vault_servicio", "vault_arch", "vault_gate", "vault_norms"],
     },
+    "vault_criterios": {
+        "name": "vault_criterios",
+        "script": "vault_criterios.py",
+        "group": "Normas",
+        "purpose": (
+            "AP-57: un criterio con dueno canonico, reimplementado en la "
+            "medida. Generaliza AP-50 de patrones regex a criterios — que es "
+            "una instantanea, que es documentacion del estandar, que es codigo "
+            "y no enlace. Sale de v40.12, donde los cuatro defectos de "
+            "vault_foreign_check tenian la misma forma: el registro existia y "
+            "la tool no lo consultaba. Detecta por la constante distintiva del "
+            "dueno, y solo en modulos que clasifican notas."
+        ),
+        "params": {
+            "check": {
+                "type": "boolean",
+                "required": False,
+                "description": "Mide los criterios contra los modulos vivos",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit 1 si aparece una copia nueva",
+                "validators": [],
+            },
+            "freeze": {
+                "type": "boolean",
+                "required": False,
+                "description": "Recongela la baseline de copias preexistentes",
+                "validators": [],
+            },
+            "admitir-nuevos": {
+                "type": "boolean",
+                "required": False,
+                "description": "Permite congelar copias sin precedente",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "Verde no prueba que no haya copias: prueba que no hay copias de "
+            "la forma que la tool sabe reconocer, y eso se dice en el envelope",
+            "Solo mira modulos que clasifican notas: quien escribe la "
+            "constante por otro motivo legitimo — vault_restore nombra "
+            "vault-backups porque restaurar de ahi es su trabajo — no es copia",
+            "Baseline que solo encoge: una copia nueva se importa, no se congela",
+        ],
+        "side_effects": ["scripts/criterios-baseline.json"],
+        "example": (
+            "python vault_criterios.py --check\n"
+            "python vault_criterios.py --check --strict\n"
+            "python vault_criterios.py --freeze"
+        ),
+        "related": ["vault_norms", "vault_io", "vault_lib", "vault_gate"],
+    },
     "vault_norms_coherence": {
         "name": "vault_norms_coherence",
         "script": "vault_norms_coherence.py",
@@ -3685,6 +3740,7 @@ GROUPS: Dict[str, List[str]] = {
         "vault_servicio",
         "vault_blueprint",
         "vault_norms_coherence",
+        "vault_criterios",
     ],
     "Producción/SRE": ["vault_incident_save", "vault_slo_save"],
     "Release": ["vault_release_save"],

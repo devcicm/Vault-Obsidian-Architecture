@@ -155,3 +155,24 @@ def test_ap56_y_ap28_se_distinguen_en_las_dos_direcciones():
     """Quien lea AP-28 tiene que ver la diferencia, no solo quien lea AP-56."""
     assert "AP-28" in _norma("AP-56").get("distinguido_de", {})
     assert "AP-56" in _norma("AP-28").get("distinguido_de", {})
+
+
+def test_apply_y_check_a_la_vez_sale_por_el_contrato_de_error():
+    """La rama que ninguna prueba pisaba hasta v40.13.
+
+    `emit_error` **construye** el envelope; devolverlo desde `main` hacía que
+    `wrap_main` publicara `UNEXPECTED_ERROR` — «fallo interno» sobre un error
+    de uso que tiene arreglo, que es justo lo que AP-52 existe para evitar.
+    """
+    import subprocess
+    import sys as _sys
+    from pathlib import Path as _Path
+
+    raiz = _Path(__file__).resolve().parents[1]
+    r = subprocess.run(
+        [_sys.executable, str(raiz / "scripts" / "vault_frontmatter_heal.py"),
+         "--apply", "--check"],
+        capture_output=True, text=True, encoding="utf-8")
+    assert r.returncode == 1
+    assert "CONFLICTING_ARGS" in r.stdout
+    assert "UNEXPECTED_ERROR" not in r.stdout

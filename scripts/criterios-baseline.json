@@ -1,0 +1,15 @@
+{
+ "description": "Copias de un criterio con dueño que ya estaban cuando nació AP-57. Solo puede encoger: una copia nueva se arregla, no se congela.",
+ "sitios": [
+  "vault_dataset::que_es_una_instantanea",
+  "vault_diagram_export::que_es_una_instantanea",
+  "vault_fix_brackets::que_es_documentacion_del_estandar",
+  "vault_graph_inspect::que_es_una_instantanea",
+  "vault_merge::que_es_una_instantanea",
+  "vault_move::que_es_una_instantanea",
+  "vault_norms::que_es_documentacion_del_estandar",
+  "vault_quality_check::que_es_una_instantanea",
+  "vault_validate::que_es_una_instantanea",
+  "vault_write::que_es_una_instantanea"
+ ]
+}

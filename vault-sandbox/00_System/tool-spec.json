@@ -2168,6 +2168,45 @@
       },
       "fundamentals": []
     },
+    "vault_criterios": {
+      "group": "Normas",
+      "group_id": 35,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "action",
+        "admitted_new",
+        "baseline_size",
+        "copies",
+        "copies_total",
+        "criterios",
+        "error_code",
+        "frozen",
+        "hint",
+        "modules_scanned",
+        "new_copies",
+        "norm",
+        "ok",
+        "recovery",
+        "resolved_since_baseline",
+        "tool",
+        "vault_says"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency",
+          "integrity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F8"
+      ]
+    },
     "vault_norms_coherence": {
       "group": "Normas",
       "group_id": 35,

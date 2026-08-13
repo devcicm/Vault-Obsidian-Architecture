@@ -42,7 +42,12 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).parent))
-from vault_io import atomic_write_text, get_vault_root, normalize_stem
+from vault_io import (
+    atomic_write_text,
+    get_vault_root,
+    is_snapshot_path,  # dueño único de qué es una instantánea (AP-57)
+    normalize_stem,
+)
 from vault_registry import ORDERED_SECTIONS
 from vault_regex import (
     RE_WIKILINK,
@@ -64,6 +69,31 @@ from vault_graph_inspect import (
     _strip_frontmatter as _vgi_strip_frontmatter,
 )
 from vault_errors import emit_error, wrap_main
+
+#: Bloques de código: valla triple y `inline`. El criterio de qué es código y
+#: no un enlace lo posee `vault_lib.strip_code_blocks` (AP-57), pero allí
+#: **borra** el bloque, y aquí hace falta lo contrario: conservarlo intacto y
+#: reescribir solo alrededor. Se comparte el patrón, no la operación.
+_RE_CODIGO = re.compile(r"```[\s\S]*?```|`[^`\n]+`")
+
+
+def _fuera_de_codigo(texto: str, fn) -> str:
+    """Aplica `fn` solo a los tramos que no son código.
+
+    Obsidian no resuelve un wikilink dentro de un fence: lo enseña tal cual.
+    Una tool que **mide** y no lo excluye infla un número; esta tool
+    **escribe**, así que reescribía el ejemplo de la nota que documenta la
+    sintaxis — el dato se corrompe en vez de solo contarse mal.
+    """
+    trozos: list[str] = []
+    fin = 0
+    for m in _RE_CODIGO.finditer(texto):
+        trozos.append(fn(texto[fin:m.start()]))
+        trozos.append(m.group(0))
+        fin = m.end()
+    trozos.append(fn(texto[fin:]))
+    return "".join(trozos)
+
 
 _MIGRATION_DIR = "10_Migrated"
 
@@ -176,19 +206,52 @@ def _fix_brackets_in_content(text: str) -> tuple[str, int]:
     return text, nested_fixes + ws_fixes
 
 
-def _fix_path_anchored(text: str) -> tuple[str, int]:
-    """Strip folder paths from [[folder/note]] → [[note]]. Returns (text, fixes_count)."""
+def _fix_path_anchored(text: str, all_stems: dict[str, list[str]] | None = None) -> tuple[str, int]:
+    """Despoja la carpeta de `[[carpeta/nota]]` → `[[nota]]`, con dos frenos.
+
+    Obsidian **sí** resuelve un destino con carpeta: `[[containers/ct105]]`
+    apunta a `containers/ct105.md` y a ningún otro. Despojar la carpeta a
+    ciegas era el mismo error que v40.12 arregló en la medida —resolver por
+    basename— pero cometido por una tool que **escribe**, y con el signo
+    contrario: allí un enlace roto salía verde; aquí un enlace bueno se
+    convierte en ambiguo. Con dos `ct105.md` en carpetas distintas, el destino
+    que Obsidian elija después ya no es el que la nota decía.
+
+    Así que solo se despoja cuando quitarlo no pierde información:
+
+    1. El destino con carpeta **no** existe (el enlace ya estaba roto), y
+    2. el basename es único en el vault (no hay a qué confundirse).
+
+    Sin índice (`all_stems is None`) no se toca nada: no saber es motivo para
+    no escribir, no para escribir igual.
+    """
     pattern = r"\[\[([^\]]*\/[^\]]+)\]\]"
     fixes = 0
+
+    rutas = set()
+    por_stem: dict[str, int] = {}
+    if all_stems:
+        for stem, caminos in all_stems.items():
+            por_stem[stem] = len(caminos)
+            for c in caminos:
+                rutas.add(str(Path(c).with_suffix("")).replace("\\", "/").lower())
 
     def _strip(match: re.Match) -> str:
         nonlocal fixes
         path = match.group(1)
-        if "/" in path and not path.startswith("http"):
-            note_only = path.rsplit("/", 1)[-1]
-            fixes += 1
-            return f"[[{note_only}]]"
-        return match.group(0)
+        if "/" not in path or path.startswith("http"):
+            return match.group(0)
+        if all_stems is None:
+            return match.group(0)
+        destino = path.split("|")[0].split("#")[0].strip().removesuffix(".md")
+        crudo = destino.strip("/").lower()
+        if any(r == crudo or r.endswith("/" + crudo) for r in rutas):
+            return match.group(0)  # resuelve tal cual: quitarlo solo puede romperlo
+        note_only = path.rsplit("/", 1)[-1]
+        if por_stem.get(normalize_stem(note_only), 0) != 1:
+            return match.group(0)  # ambiguo o inexistente: no se adivina
+        fixes += 1
+        return f"[[{note_only}]]"
 
     new_text = re.sub(pattern, _strip, text)
     return new_text, fixes
@@ -206,15 +269,22 @@ def _process_note(
     fixes: list[dict[str, Any]] = []
 
     existing_stems = set(all_stems.keys())
-    for match in list(re.finditer(r"\[\[([^\]|]+)", text)):
+    # AP-57: los candidatos se buscan **fuera** del código. Un `[[ejemplo]]`
+    # dentro de un fence es texto que Obsidian enseña, no un enlace que
+    # resuelve, y esta tool escribe: proponerlo como roto acababa reescribiendo
+    # la nota que documenta la sintaxis.
+    for match in list(re.finditer(r"\[\[([^\]|]+)", _RE_CODIGO.sub("", text))):
         target_stem = normalize_stem(match.group(1))
         if target_stem and target_stem not in existing_stems:
             result = _find_target(target_stem, all_stems, threshold)
             if result:
                 canonical_path, strategy = result
-                new_text, changed = _replace_wikilink(
-                    text, match.group(1), Path(canonical_path).stem
-                )
+                new_text, changed = _fuera_de_codigo(
+                    text,
+                    lambda t: _replace_wikilink(
+                        t, match.group(1), Path(canonical_path).stem)[0],
+                ), False
+                changed = new_text != text
                 if changed:
                     fixes.append(
                         {
@@ -232,7 +302,15 @@ def _process_note(
         fixes.append({"type": "brackets", "count": bracket_fixes})
         text = new_text
 
-    new_text, path_fixes = _fix_path_anchored(text)
+    path_fixes = 0
+
+    def _anchored(t: str) -> str:
+        nonlocal path_fixes
+        r, n = _fix_path_anchored(t, all_stems)
+        path_fixes += n
+        return r
+
+    new_text = _fuera_de_codigo(text, _anchored)
     if path_fixes:
         fixes.append({"type": "path_anchored", "count": path_fixes})
         text = new_text
@@ -381,14 +459,14 @@ def _load_notes_for_classify(root: Path) -> dict[str, dict[str, Any]]:
             continue
         rel_str = str(rel).replace("\\", "/")
         parts = rel.parts
-        skip_set = {
-            "99_Index",
-            ".history",
-            "vault-backups",
-            "vault-sandbox",
-            ".obsidian",
-            ".trash",
-        }
+        # AP-57: qué es una instantánea congelada lo decide `vault_io`, no esta
+        # lista. La local ya había divergido —tenía las tres carpetas de
+        # `SNAPSHOT_DIRS` copiadas a mano— y esta tool **escribe**, así que una
+        # divergencia aquí no infla una medida: repara dentro de una
+        # instantánea, que es precisamente dejar de serlo.
+        if is_snapshot_path(rel):
+            continue
+        skip_set = {"99_Index", "vault-sandbox", ".obsidian"}
         if any(p in skip_set for p in parts):
             continue
         if rel.name.startswith("."):

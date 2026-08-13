@@ -97,26 +97,63 @@ class TestBracketFixer:
 
 
 class TestPathAnchoredFixer:
-    def test_strips_folder(self):
+    """Despojar la carpeta no es gratis: Obsidian **sí** resuelve `[[a/b]]`.
+
+    Hasta v40.13 esta función quitaba la carpeta a ciegas, que es el mismo
+    error de basename que v40.12 arregló en la medida, cometido por una tool
+    que escribe y con el signo contrario: allí un enlace roto salía verde;
+    aquí un enlace bueno se vuelve ambiguo.
+    """
+
+    def test_sin_indice_no_toca_nada(self):
+        """No saber es motivo para no escribir, no para escribir igual."""
         text = "links to [[folder/note-target]] here"
         new_text, count = _fix_path_anchored(text)
+        assert count == 0
+        assert new_text == text
+
+    def test_strips_folder_cuando_el_destino_no_existe_y_el_stem_es_unico(self):
+        text = "links to [[folder/note-target]] here"
+        new_text, count = _fix_path_anchored(
+            text, {"notetarget": ["07_Knowledge/note-target.md"]})
         assert count == 1
         assert "[[note-target]]" in new_text
 
+    def test_no_toca_el_destino_que_ya_resuelve(self):
+        text = "links to [[07_Knowledge/real-note]] here"
+        new_text, count = _fix_path_anchored(
+            text, {"realnote": ["07_Knowledge/real-note.md"]})
+        assert count == 0
+        assert new_text == text
+
+    def test_no_desambigua_por_su_cuenta_cuando_hay_dos_con_el_mismo_nombre(self):
+        """Con dos `ct105.md`, quitar la carpeta borra la única pista."""
+        text = "[[containers/ct105]]"
+        new_text, count = _fix_path_anchored(
+            text, {"ct105": ["vms/ct105.md", "backups/ct105.md"]})
+        assert count == 0
+        assert new_text == text
+
     def test_keeps_unanchored(self):
         text = "links to [[note-target]] here"
-        new_text, count = _fix_path_anchored(text)
+        new_text, count = _fix_path_anchored(text, {})
         assert count == 0
         assert new_text == text
 
     def test_multiple_paths(self):
         text = "[[a/b]] and [[c/d]]"
-        new_text, count = _fix_path_anchored(text)
+        new_text, count = _fix_path_anchored(
+            text, {"b": ["x/b.md"], "d": ["y/d.md"]})
         assert count == 2
 
 
 class TestFixVaultEndToEnd:
-    def test_path_anchored_fix_in_vault(self, tmp_path):
+    def test_el_destino_con_carpeta_que_resuelve_no_se_reescribe(self, tmp_path):
+        """El caso que el test viejo exigía romper.
+
+        `[[07_Knowledge/real-note]]` apunta a esa nota y a ninguna otra.
+        Reescribirlo no arregla nada y pierde la única desambiguación escrita.
+        """
         vault = tmp_path / "vault"
         vault.mkdir()
         (vault / "07_Knowledge").mkdir()
@@ -129,6 +166,26 @@ class TestFixVaultEndToEnd:
             encoding="utf-8",
         )
         report = fix_vault(vault)
+        assert not any(
+            f["type"] == "path_anchored"
+            for fix in report["fixes"]
+            for f in fix["fixes"]
+        )
+
+    def test_path_anchored_fix_in_vault(self, tmp_path):
+        """Con carpeta inexistente y basename único, sí se despoja."""
+        vault = tmp_path / "vault"
+        vault.mkdir()
+        (vault / "07_Knowledge").mkdir()
+        (vault / "07_Knowledge" / "real-note.md").write_text(
+            "---\ntitle: Real Note\n---\n\nBody",
+            encoding="utf-8",
+        )
+        (vault / "07_Knowledge" / "index.md").write_text(
+            "---\ntitle: Index\n---\n\nLink to [[carpeta-que-no-existe/real-note]]",
+            encoding="utf-8",
+        )
+        report = fix_vault(vault)
         assert report["summary"]["notes_to_modify"] >= 1
         path_anchored_fix = any(
             f["type"] == "path_anchored"
@@ -136,6 +193,27 @@ class TestFixVaultEndToEnd:
             for f in fix["fixes"]
         )
         assert path_anchored_fix
+
+    def test_no_reescribe_wikilinks_dentro_de_un_fence(self, tmp_path):
+        """Obsidian no resuelve un wikilink dentro de un fence: lo enseña.
+
+        Una tool que mide y no lo excluye infla un número; esta escribe, así
+        que corrompía el ejemplo de la nota que documenta la sintaxis.
+        """
+        vault = tmp_path / "vault"
+        vault.mkdir()
+        (vault / "07_Knowledge").mkdir()
+        (vault / "07_Knowledge" / "real-note.md").write_text(
+            "---\ntitle: Real Note\n---\n\nBody", encoding="utf-8")
+        doc = vault / "07_Knowledge" / "convencion.md"
+        cuerpo = (
+            "---\ntitle: Convención\n---\n\n"
+            "Se escribe así:\n\n```md\n[[carpeta-inexistente/real-note]]\n```\n"
+        )
+        doc.write_text(cuerpo, encoding="utf-8")
+        report = fix_vault(vault)
+        modificadas = {f["note"] for f in report["fixes"] if f["changed"]}
+        assert not any("convencion" in m for m in modificadas)
 
     def test_bracket_fix_in_vault(self, tmp_path):
         vault = tmp_path / "vault"

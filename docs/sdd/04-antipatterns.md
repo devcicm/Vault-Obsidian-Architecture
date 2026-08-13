@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
-> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-56 más
-> las familias PAT, SP y CN. Por familia: AP 56, CN 3, PAT 6, SP 3.
-> Bilingual document. Full norm catalog: antipatterns AP-01..AP-56 plus the PAT,
-> SP and CN families. By family: AP 56, CN 3, PAT 6, SP 3.
+> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-57 más
+> las familias PAT, SP y CN. Por familia: AP 57, CN 3, PAT 6, SP 3.
+> Bilingual document. Full norm catalog: antipatterns AP-01..AP-57 plus the PAT,
+> SP and CN families. By family: AP 57, CN 3, PAT 6, SP 3.
 
 ---
 
 ## ES
 
-Total de normas registradas: 68 (AP 56, CN 3, PAT 6, SP 3)
+Total de normas registradas: 69 (AP 57, CN 3, PAT 6, SP 3)
 
 ### AP-01: Documentación alucinada
 
@@ -627,6 +627,22 @@ v40.2 arregló la prevención: `yaml_scalar` escapa antes de escribir. Lo que fa
 
 **Prevención:** Escribir por tool, nunca a mano (SP-04): el write path pasa todo escalar por `yaml_scalar` desde v40.2. Lo ya escrito se repara con `vault_frontmatter_heal --apply`, que solo toca las dos causas mecánicas y se niega a adivinar el resto: completar un YAML truncado inventa dato, que es peor que el hueco.
 
+### AP-57: Criterio con dueño, reimplementado en la medida
+
+- **Severidad:** high
+- **Enforcement:** guard
+- **Detectado por:** vault_criterios
+
+Un **criterio** --qué cuenta como instantánea congelada, qué es documentación del estándar y no una nota, qué es código y no un enlace-- tiene un dueño canónico en el toolkit, y otro módulo lo vuelve a decidir por su cuenta con un `if` local.
+
+No es AP-50, que habla de **patrones regex** y de vocabularios: aquellos son datos que alguien puede leer y comparar. Un criterio vive enterrado en una condición, así que la copia sobrevive años sin que nadie la vea, y el día que el dueño cambia solo cambia el dueño. `vault_graph_fix` llevaba su propio `skip_set` de instantáneas y ya divergía de `vault_io.SNAPSHOT_DIRS`; como esa tool **escribe**, la divergencia no inflaba una métrica: reparaba dentro de una instantánea, que es dejar de serlo.
+
+Sale de v40.12: cuatro defectos de `vault_foreign_check` arreglados en una tanda, los cuatro con la misma forma --el registro canónico existía y la tool no lo consultaba--. Uno de ellos tenía el sentido de error peligroso: resolver destinos por basename ponía la medida **verde** justo donde Obsidian pinta el enlace roto. La regla 4 pide norma, no cuatro parches.
+
+**Prevención:** Registro `vault_criterios.CRITERIOS_CON_DUENO`: criterio, dueño, símbolo por el que se consulta y las constantes que lo delatan. `vault_criterios --check --strict` (puerta 15) falla si aparece una copia nueva; la baseline **solo encoge** y se salda importando al dueño, no ampliándola.
+
+El límite se declara antes de que nadie se apoye en él: la detección es **sintáctica**. Un módulo puede reimplementar un criterio sin repetir ninguna constante y esta medida no lo verá. Verde no prueba que no haya copias -- prueba que no hay copias de la forma que sabemos reconocer, que es exactamente lo que da un linter y es preferible a no mirar.
+
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
 - **Severidad:** high
@@ -751,7 +767,7 @@ Antes de cualquier operación masiva (migración, rename en lote, vault_tags --r
 
 ## EN
 
-Total registered norms: 68 (AP 56, CN 3, PAT 6, SP 3)
+Total registered norms: 69 (AP 57, CN 3, PAT 6, SP 3)
 
 ### AP-01: Documentación alucinada
 
@@ -1368,6 +1384,22 @@ Dos causas, medidas sobre doce notas de cuatro vaults consumidores: **escalar si
 v40.2 arregló la prevención: `yaml_scalar` escapa antes de escribir. Lo que faltaba era la otra mitad -- nada reparaba lo que ya estaba en disco, y `vault_fix_brackets` llevaba versiones haciendo exactamente eso para AP-22/AP-24.
 
 **Prevention:** Escribir por tool, nunca a mano (SP-04): el write path pasa todo escalar por `yaml_scalar` desde v40.2. Lo ya escrito se repara con `vault_frontmatter_heal --apply`, que solo toca las dos causas mecánicas y se niega a adivinar el resto: completar un YAML truncado inventa dato, que es peor que el hueco.
+
+### AP-57: Criterio con dueño, reimplementado en la medida
+
+- **Severity:** high
+- **Enforcement:** guard
+- **Detected by:** vault_criterios
+
+Un **criterio** --qué cuenta como instantánea congelada, qué es documentación del estándar y no una nota, qué es código y no un enlace-- tiene un dueño canónico en el toolkit, y otro módulo lo vuelve a decidir por su cuenta con un `if` local.
+
+No es AP-50, que habla de **patrones regex** y de vocabularios: aquellos son datos que alguien puede leer y comparar. Un criterio vive enterrado en una condición, así que la copia sobrevive años sin que nadie la vea, y el día que el dueño cambia solo cambia el dueño. `vault_graph_fix` llevaba su propio `skip_set` de instantáneas y ya divergía de `vault_io.SNAPSHOT_DIRS`; como esa tool **escribe**, la divergencia no inflaba una métrica: reparaba dentro de una instantánea, que es dejar de serlo.
+
+Sale de v40.12: cuatro defectos de `vault_foreign_check` arreglados en una tanda, los cuatro con la misma forma --el registro canónico existía y la tool no lo consultaba--. Uno de ellos tenía el sentido de error peligroso: resolver destinos por basename ponía la medida **verde** justo donde Obsidian pinta el enlace roto. La regla 4 pide norma, no cuatro parches.
+
+**Prevention:** Registro `vault_criterios.CRITERIOS_CON_DUENO`: criterio, dueño, símbolo por el que se consulta y las constantes que lo delatan. `vault_criterios --check --strict` (puerta 15) falla si aparece una copia nueva; la baseline **solo encoge** y se salda importando al dueño, no ampliándola.
+
+El límite se declara antes de que nadie se apoye en él: la detección es **sintáctica**. Un módulo puede reimplementar un criterio sin repetir ninguna constante y esta medida no lo verá. Verde no prueba que no haya copias -- prueba que no hay copias de la forma que sabemos reconocer, que es exactamente lo que da un linter y es preferible a no mirar.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 

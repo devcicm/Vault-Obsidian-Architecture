@@ -1585,6 +1585,15 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         ),
         "tools_enforcing": ["vault_arch"],
         "tools_detecting": ["vault_norms", "vault_arch"],
+        "distinguido_de": {
+            "AP-57": (
+                "AP-50 mira **datos** duplicados —vocabularios, defaults, "
+                "regex—: dos copias que divergen se ven al compararlas. AP-57 "
+                "mira **criterios** enterrados en una condición, donde no hay "
+                "dato que comparar y la divergencia solo aparece por el "
+                "resultado equivocado."
+            )
+        },
         "introduced_version": "v40.1",
     },
     {
@@ -1925,6 +1934,64 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             )
         },
         "introduced_version": "v40.12",
+    },
+    {
+        "code": "AP-57",
+        "name": "Criterio con dueño, reimplementado en la medida",
+        "type": "antipattern",
+        "category": "architecture",
+        "severity": "high",
+        "enforcement": "guard",
+        "description": (
+            "Un **criterio** —qué cuenta como instantánea congelada, qué es "
+            "documentación del estándar y no una nota, qué es código y no un "
+            "enlace— tiene un dueño canónico en el toolkit, y otro módulo lo "
+            "vuelve a decidir por su cuenta con un `if` local.\n\n"
+            "No es AP-50, que habla de **patrones regex** y de vocabularios: "
+            "aquellos son datos que alguien puede leer y comparar. Un criterio "
+            "vive enterrado en una condición, así que la copia sobrevive años "
+            "sin que nadie la vea, y el día que el dueño cambia solo cambia el "
+            "dueño. `vault_graph_fix` llevaba su propio `skip_set` de "
+            "instantáneas y ya divergía de `vault_io.SNAPSHOT_DIRS`; como esa "
+            "tool **escribe**, la divergencia no inflaba una métrica: reparaba "
+            "dentro de una instantánea, que es dejar de serlo.\n\n"
+            "Sale de v40.12: cuatro defectos de `vault_foreign_check` "
+            "arreglados en una tanda, los cuatro con la misma forma —el "
+            "registro canónico existía y la tool no lo consultaba—. Uno de "
+            "ellos tenía el sentido de error peligroso: resolver destinos por "
+            "basename ponía la medida **verde** justo donde Obsidian pinta el "
+            "enlace roto. La regla 4 pide norma, no cuatro parches."
+        ),
+        "signal": (
+            "Un módulo que clasifica notas escribe una constante distintiva de "
+            "otro —`\".history\"`, el nombre del manifiesto, la valla de un "
+            "fence— sin importar el símbolo que la posee."
+        ),
+        "prevention": (
+            "Registro `vault_criterios.CRITERIOS_CON_DUENO`: criterio, dueño, "
+            "símbolo por el que se consulta y las constantes que lo delatan. "
+            "`vault_criterios --check --strict` (puerta 15) falla si aparece "
+            "una copia nueva; la baseline **solo encoge** y se salda "
+            "importando al dueño, no ampliándola.\n\n"
+            "El límite se declara antes de que nadie se apoye en él: la "
+            "detección es **sintáctica**. Un módulo puede reimplementar un "
+            "criterio sin repetir ninguna constante y esta medida no lo verá. "
+            "Verde no prueba que no haya copias — prueba que no hay copias de "
+            "la forma que sabemos reconocer, que es exactamente lo que da un "
+            "linter y es preferible a no mirar."
+        ),
+        "tools_enforcing": ["vault_criterios"],
+        "tools_detecting": ["vault_criterios"],
+        "distinguido_de": {
+            "AP-50": (
+                "AP-50 es la **decisión duplicada legible**: un vocabulario, "
+                "un default de entorno, un regex — dos copias que divergen se "
+                "ven al compararlas. AP-57 es su generalización a criterios "
+                "enterrados en una condición, donde no hay dato que comparar y "
+                "la divergencia solo se nota por el resultado equivocado."
+            )
+        },
+        "introduced_version": "v40.13",
     },
     # ── Patrón PAT-6 ───────────────────────────────────────────────────────────
     {

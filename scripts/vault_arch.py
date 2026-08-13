@@ -357,6 +357,7 @@ CONTEXTS: dict[str, dict] = {
             # que midiera por su cuenta sería AP-05 con formato de tabla.
             "vault_blueprint",
             "vault_norms_coherence",
+            "vault_criterios",
         ],
     },
 }

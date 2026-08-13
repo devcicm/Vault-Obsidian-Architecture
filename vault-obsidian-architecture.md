@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.12 — 2026-08-12  
+**Versión:** v40.13 — 2026-08-12  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -3501,7 +3501,7 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **68 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **69 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -4993,7 +4993,7 @@ Dos causas, y la segunda es la incómoda:
 
 1. **El audit no lo ejecuta nadie.** En las **1.356 ejecuciones de tools
    registradas** en los `.tool-trace.json` de ese parque, `vault_norms` no
-   aparece **ni una vez**. 41 de las 101 tools del catálogo no se han ejecutado
+   aparece **ni una vez**. 41 de las 102 tools del catálogo no se han ejecutado
    jamás. Los agentes escriben; no gobiernan. Un enforcement que depende de que
    alguien se acuerde de invocarlo es enforcement en el papel.
 2. **Los valores no canónicos los escribía el propio estándar.** El más
@@ -5602,7 +5602,7 @@ de envelope con su contrato de `00_System/tool-spec.json`:
 Y la divergencia peor no era de forma sino de efecto: `jsNativeGraph` no tiene un
 solo `writeFile`. Un agente llamaba `vault_graph` por MCP, recibía `ok: true`, y
 el grafo se quedaba sin regenerar — **AP-37 y AP-47 servidos a la vez por el único
-camino que un agente real usa**. `vault_smoke` recorre las 101 tools del catálogo,
+camino que un agente real usa**. `vault_smoke` recorre las 102 tools del catálogo,
 pero ejecuta el `.py`: probaba exactamente la implementación que el agente no toca.
 
 **Prevención:** backend nativo solo para lo que **no tiene** implementación en
@@ -6246,6 +6246,50 @@ de las dos se repara sin escribir metadatos nuevos.
 
 ---
 
+### AP-57 — Criterio con dueño, reimplementado en la medida
+
+**Enforcement:** `guard` · **Severidad:** high · **Introducido:** v40.13
+
+**Síntoma:** un criterio —qué cuenta como instantánea congelada, qué es documentación del
+estándar y no una nota, qué es código y no un enlace— tiene dueño canónico en el toolkit, y
+otro módulo lo vuelve a decidir por su cuenta con un `if` local.
+
+**De dónde sale.** v40.12 arregló cuatro defectos de `vault_foreign_check` en una sola tanda,
+y los cuatro tenían la misma forma: **el registro canónico existía y la tool no lo
+consultaba**. Instantáneas contadas como notas; documentación del estándar contada como
+enlaces rotos; wikilinks dentro de un fence contados como enlaces; destinos con carpeta
+resueltos por basename. Cuatro parches y ninguna norma es exactamente lo que la regla 4
+prohíbe.
+
+El cuarto tenía el **sentido de error peligroso**: resolver `[[containers/ct105]]` por
+basename lo daba por bueno si existía cualquier `ct105.md` en cualquier carpeta, así que la
+medida salía **verde** justo donde Obsidian pinta el enlace roto. 13 de 16 en el vault de
+control.
+
+**Distinguida de AP-50.** AP-50 mira **datos** duplicados —vocabularios, defaults de entorno,
+patrones regex—: dos copias que divergen se ven al compararlas, porque hay algo que leer. AP-57
+es su generalización a **criterios**, que viven enterrados en una condición: no hay dato que
+comparar y la divergencia solo aparece por el resultado equivocado, años después.
+
+**El caso que no era una métrica.** Auditar con la norma recién escrita encontró la misma
+forma en `vault_graph_fix`, que llevaba su propio `skip_set` de instantáneas ya divergido de
+`vault_io.SNAPSHOT_DIRS`. Esa tool **escribe**: la divergencia no inflaba un número, reparaba
+dentro de una instantánea congelada, que es precisamente dejar de serlo.
+
+**Enforcement:** `guard`. Registro `vault_criterios.CRITERIOS_CON_DUENO` —criterio, dueño,
+símbolo por el que se consulta y las constantes que lo delatan—, puerta 15
+(`vault_criterios --check --strict`), baseline que **solo encoge**. Se salda importando al
+dueño, no ampliando la baseline.
+
+**El límite, dicho antes de que nadie se apoye en él.** La detección es **sintáctica**: mira
+si un módulo que clasifica notas reescribe la constante distintiva del dueño sin importar su
+símbolo. No hay forma general de decidir si dos funciones calculan lo mismo, así que un módulo
+puede reimplementar un criterio sin repetir ninguna constante y esta medida no lo verá.
+**Verde aquí no significa que no haya copias**: significa que no hay copias de la forma que
+sabemos reconocer. Es lo que da un linter, y es preferible a no mirar.
+
+---
+
 ### PAT-6 — Semantic graph enrichment: enriquecimiento periódico del grafo
 
 **Enforcement:** `recommended` · **Introducido:** v37
@@ -6783,6 +6827,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.13 | 2026-08-12 | **AP-57** — la norma que v40.12 debió traer y no trajo. Aquella tanda arregló **cuatro** defectos de una misma tool y los cuatro tenían la misma forma: el registro canónico existía y nadie lo consultaba. Cuatro parches sin norma es exactamente lo que la regla 4 prohíbe. AP-57 generaliza AP-50 de **datos** duplicados a **criterios**: qué es una instantánea, qué es documentación del estándar, qué es código y no enlace. La diferencia importa porque un dato duplicado se ve al compararlo y un criterio vive enterrado en un `if`. `vault_criterios` (puerta 15) lo detecta por la constante distintiva del dueño, y **declara su límite antes de que nadie se apoye en él**: la detección es sintáctica, así que verde no prueba que no haya copias — prueba que no hay copias de la forma que sabe reconocer. Auditar con ella el primer día encontró la misma forma en `vault_graph_fix`, que **escribe**: su `skip_set` de instantáneas ya divergía de `vault_io.SNAPSHOT_DIRS`, y ahí la divergencia no infla un número — repara dentro de una instantánea congelada, que es dejar de serlo. Mirando esa tool salieron dos defectos más de la misma familia, ambos de escritura: reescribía wikilinks **dentro de un fence** —corrompiendo el ejemplo de la nota que documenta la sintaxis— y despojaba la carpeta de `[[carpeta/nota]]` a ciegas, que es el error de basename de v40.12 con el signo contrario: allí un enlace roto salía verde, aquí un enlace bueno se vuelve ambiguo. Ahora solo despoja si el destino con carpeta no existe **y** el basename es único; sin índice no toca nada. Y un cuarto, latente: `emit_error` construye el envelope, no lo devuelve como exit code, así que `--apply --check` publicaba `UNEXPECTED_ERROR` —«fallo interno»— sobre un error de uso con arreglo. Ninguna prueba había pisado esa rama |
 | v40.12 | 2026-08-12 | **AP-56** y la mitad que faltaba desde v40.2: el frontmatter que existe y el consumidor no lee. v40.2 arregló la escritura —`yaml_scalar` cita el valor— y dio el asunto por cerrado; lo que ya estaba en disco nunca se tocó. El contraste de regla 7 contra los cuatro vaults consumidores encontró **doce notas** con bloque `---` que `yaml.safe_load` rechaza: para Obsidian no tienen id, ni tags, ni estado, y como el bloque se ve al abrir el fichero nadie las revisa. Dos causas —ocho por el `: ` sin escapar, cuatro porque **el bloque no cierra** y el parser revienta cientos de líneas más abajo, señalando dónde explotó y no dónde está el fallo—. `vault_frontmatter_heal` repara las dos y se niega al resto: completar un YAML truncado inventa dato. Su única garantía es del consumidor, no suya: tras reparar, `yaml.safe_load` devuelve un dict y **ninguna clave que ya se leía cambia de valor**, o no escribe. Y tres defectos más de `vault_foreign_check`, los tres con la misma forma —el registro canónico existía y esta tool no lo consultaba—: instantáneas congeladas contadas como notas, wikilinks dentro de un fence contados como enlaces rotos (87 de 301 en /ans; solo visibles tras excluir la doc del estándar) y destinos con carpeta resueltos por basename, que daba por bueno lo que Obsidian pinta roto — el sentido de error peligroso, porque la medida sale verde |
 | v40.11 | 2026-08-12 | Las 47 afirmaciones de cobertura que v40.10 congeló, saldadas a cero **una a una**, y el hueco en la dirección contraria. Al triarlas se vio que la mayoría no eran coberturas falsas sino **mal atribuidas**: AP-27, AP-28 y AP-30 nombraban `vault_validate` o `vault_quality_check` teniendo entrada propia, con nombre y peso, en `vault_audit.PENALIZACIONES` — el catálogo no mentía sobre *si* la norma se aplica sino sobre *quién*. Cada claim se resolvió leyendo la función que dice cumplirla, nunca por grep: el grep sirve para **descartar**, jamás para **confirmar**, y el contraejemplo estaba en el propio dato — `vault_audit` emite `"norm": "CN-01"` sobre un hallazgo de *scaffold*, así que confirmar por grep habría cerrado CN-01 con el criterio del propio guard, que es el AP-44 que la tool existe para detectar. Dos campos nuevos porque faltaba vocabulario: `tools_del_patron` —un PAT-x no se detecta, se sigue, y sus ocho afirmaciones eran un error de categoría contado como deuda— y `cobertura_descubierta`, la única forma de que un campo requerido quede vacío, con el motivo escrito y mordiendo también en la dirección inversa. Cinco normas lo declaran, entre ellas **AP-05, la única `critical` sin detector**, nombrada en el changelog y en la capa 7 del plano en vez de esconderse en un `[]`. Y **C6**: seis penalizaciones del healthIndex restaban con `norma: null` desde v19 — nadie medía código sin afirmación mientras C2 medía afirmación sin código. Nace en cero y sin baseline, a propósito |
 | v40.10 | 2026-08-12 | Dos ejes que nadie había separado, y un catálogo que se certificaba a sí mismo. **AP-55**: `NORM_CATALOG` declara a mano qué tools aplican y detectan cada norma, y el guard que existía para vigilarlo —`vault_voice.coverage()`, el guard de AP-43— comprobaba esos dos campos **leyéndolos**. Verifica el catálogo contra el catálogo, así que daba verde sobre 47 afirmaciones que ningún módulo respalda y era estructuralmente incapaz de verlas: AP-44 cometido dentro de un guard, por tercera vez en tres sitios distintos. `vault_norms_coherence` lo cruza con el código y con `vault_audit.PENALIZACIONES`, y destapó 54 valores de `tools_*` que mezclaban la tool con su flag y no resolvían para ningún consumidor, y AP-22 declarada `critical` mientras el audit la penalizaba por debajo de una `high` — seis versiones con los dos registros canónicos invertidos. Manda el que se ejecuta. En paralelo, el registro `NATURALEZAS` separa por **tool** lo que `CAPACIDADES` solo podía decir por grupo: construcción, documentación, custodia, consulta y meta-estándar, porque la mezcla ocurría dentro de los grupos —el grupo 1 tenía `vault_write` junto a `vault_move`, que decide dónde vive una nota— y forzarlo a dos categorías habría exigido afirmar que `vault_backup` construye |
@@ -7116,6 +7161,63 @@ temp/
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
 
 ---
+
+### v40.13 — 2026-08-12 `git: pending`
+
+**Cuatro parches con la misma forma son una norma que falta.**
+
+v40.12 cerró cuatro defectos de `vault_foreign_check` en una sola tanda y los
+dio por cerrados. Eran cuatro correcciones puntuales, y la regla 4 dice qué
+pasa con esas: se vuelven a romper. Lo que las cuatro compartían no era el
+fichero — era la forma. En los cuatro casos **el registro canónico existía y la
+tool no lo consultaba**: `vault_io` sabe qué es una instantánea, `vault_audit`
+sabe qué es documentación del estándar, `vault_lib` sabe qué es código y no un
+enlace. Alguien volvió a decidirlo por su cuenta, tres veces, en la misma tool.
+
+**AP-57** es esa norma. AP-50 ya cubría la decisión duplicada, pero mirando
+**datos**: un vocabulario, un default de entorno, un patrón regex. Dos copias
+de un dato divergen y se ve al compararlas, porque hay algo que leer. Un
+criterio no: vive dentro de una condición, no hay dos listas que enfrentar, y
+la divergencia solo se manifiesta años después por el resultado equivocado.
+
+`vault_criterios` (puerta 15) lo detecta por la constante distintiva del dueño
+—`".history"`, el nombre del manifiesto, la valla del fence— en los módulos que
+clasifican notas. **El límite se declara antes de que nadie se apoye en él:**
+no hay forma general de decidir si dos funciones calculan lo mismo, así que la
+detección es sintáctica y un módulo puede reimplementar un criterio sin repetir
+ninguna constante. Verde aquí no significa que no haya copias; significa que no
+hay copias de la forma que sabemos reconocer. Es lo que da un linter, y es
+preferible a no mirar.
+
+**Lo que encontró el primer día, y por qué era peor que una métrica inflada.**
+`vault_graph_fix` llevaba su propio `skip_set` de instantáneas, ya divergido de
+`vault_io.SNAPSHOT_DIRS`. Esa tool **escribe**. La divergencia no inflaba un
+número: reparaba dentro de una instantánea congelada, que es precisamente
+dejar de serlo.
+
+Mirando esa tool con el criterio nuevo salieron dos más, ambos de escritura:
+
+- **Reescribía wikilinks dentro de un fence.** Obsidian no los resuelve, los
+  enseña. Medir sin excluirlos infla un número; escribir sin excluirlos
+  corrompe el ejemplo de la nota que documenta la convención.
+- **Despojaba la carpeta de `[[carpeta/nota]]` a ciegas.** Es el error de
+  basename de v40.12 con el signo contrario: allí un enlace roto salía verde,
+  aquí un enlace bueno se vuelve ambiguo. Con dos `ct105.md` en carpetas
+  distintas, quitar la carpeta borra la única desambiguación que la nota
+  llevaba escrita. Ahora solo despoja cuando quitarlo no pierde información
+  —el destino con carpeta no existe **y** el basename es único—, y sin índice
+  no toca nada: no saber es motivo para no escribir, no para escribir igual.
+
+**Y uno latente que salió al escribir el test.** `emit_error` **construye** el
+envelope; no imprime ni devuelve un exit code. Devolverlo desde `main` hacía
+que `wrap_main` lo tomara por un retorno inesperado y publicara
+`UNEXPECTED_ERROR`: el consumidor recibía «fallo interno» donde el fallo era
+suyo y tenía arreglo escrito. Estaba en `vault_frontmatter_heal` desde v40.12 y
+en `vault_criterios` desde su primera línea, y ninguna prueba había pisado esa
+rama. Ahora las dos la tienen.
+
+**Estado:** 2608 tests, 15 puertas, AP-57 con baseline de **10 copias
+preexistentes** que solo puede encoger. Ninguna se salda ampliándola.
 
 ### v40.12 — 2026-08-12 `git: fedfbd4`
 

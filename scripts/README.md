@@ -1,13 +1,13 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 101 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
+Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 102 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **124 archivos Python** — 101 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
+- **125 archivos Python** — 102 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
 - **Saneamiento de índices (v38.1)** — `vault_section_index.py --heal [--root]` regenera índices con formato legacy `[[stem|alias]]` o ausentes; el auto-index post-write se auto-cura si un agente escribe `index.md` a mano
-- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 101 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
+- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 102 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
 - **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault; requiere marcador de CONTENIDO (01_Projects/02_Observability/03_Decisions/.obsidian), no solo 00_System/99_Index (evita el ciclo auto-reforzado de detección); override runtime con `set_vault_root()`/env `VAULT_ROOT`
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
@@ -59,7 +59,7 @@ Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan 
 | [Grupo 32 — Gestión de Carpetas](#grupo-32--gestión-de-carpetas) | vault_folder_registry |
 | [Grupo 33 — Corrección Automática](#grupo-33--corrección-automática) | vault_fix_brackets, vault_graph_fix, vault_frontmatter_heal |
 | [Grupo 34 — Memoria de Contexto](#grupo-34--memoria-de-contexto) | vault_preferences, vault_query_parse, vault_subgraph, vault_context_pack, vault_ingest |
-| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_changelog_check, vault_error_contract, vault_foreign_check, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_noop_audit, vault_smoke, vault_voice, vault_servicio, vault_blueprint, vault_norms_coherence |
+| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_changelog_check, vault_error_contract, vault_foreign_check, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_noop_audit, vault_smoke, vault_voice, vault_servicio, vault_blueprint, vault_norms_coherence, vault_criterios |
 | [Grupo 36 — Defectos y Cuarentena](#grupo-36--defectos-y-cuarentena) | vault_bug_save, vault_quarantine |
 | [Grupo 37 — Skills](#grupo-37--skills) | vault_sdd_init, vault_sanacion |
 | [Observabilidad de Tools](#observabilidad-de-tools) | vault_errors |
@@ -1747,7 +1747,7 @@ El vault expone sus herramientas como un **servidor MCP** que las IAs consumen d
 
 **Archivo:** `../mcp/nodejs/vault-mcp-server.mjs` (~1650 líneas, cero dependencias npm)  
 **Plan:** `../mcp/PLAN.md` — documento de evidencia con 8 fases de implementación
-**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (101 tools)
+**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (102 tools)
 
 Los parámetros que el catálogo publica **se derivan del `argparse` de cada script**,
 no se escriben a mano: el servidor compone `--<param>` literal, así que un param
@@ -1795,7 +1795,7 @@ node mcp/nodejs/vault-mcp-server.mjs --port 3000
 
 ### `vault_norms.py`
 
-Registro canónico de las 68 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
+Registro canónico de las 69 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
 
 ```bash
 python vault_norms.py                             # catálogo completo
@@ -2213,6 +2213,31 @@ python vault_norms_coherence.py --freeze          # recongela la baseline de C2
 **Lo que C5 no hace, dicho en voz alta.** No descubre por su cuenta qué dos normas se solapan. Tres borradores lo intentaron y los tres devolvían decenas de pares de `vault_audit` y `vault_write` consigo mismos: son los orquestadores y acumulan todas las normas del informe porque lo arman entero, no porque duden entre dos. C5 verifica la distinción **una vez que alguien la declara**, y exige que sea recíproca: si solo la declara A, quien llegue leyendo B no ve la diferencia. Los borradores quedan en el módulo sin llamar, como registro de lo intentado.
 
 **Siete enforcers no son tools, y se admiten.** `vault_io.atomic_write_text` y `vault_io.assert_within_vault` son los helpers donde AP-46 y AP-36 se cumplen de verdad; `vault_errors` es donde vive el contrato de AP-43; `vault_mcp_catalog` es meta-toolkit que el catálogo MCP no se expone a sí mismo. Se verifican —módulo en `scripts/`, símbolo definido allí— y se publican aparte en `non_catalog_enforcers`. Obligarles a nombrar una tool solo conseguiría una afirmación que resuelve y es falsa.
+
+### `vault_criterios.py`
+
+**Un criterio con dueño, reimplementado en la medida (AP-57).** v40.12 arregló cuatro defectos de `vault_foreign_check` en una sola tanda, y los cuatro tenían la misma forma: **el registro canónico existía y la tool no lo consultaba**. Instantáneas congeladas contadas como notas; documentación del estándar contada como enlaces rotos; wikilinks dentro de un fence contados como enlaces; destinos con carpeta resueltos por basename. La regla 4 pide norma, no cuatro parches.
+
+```bash
+python vault_criterios.py --check                    # las copias que hay
+python vault_criterios.py --check --strict           # exit 1 si hay copias nuevas (puerta 15)
+python vault_criterios.py --freeze                   # baseline; solo puede encoger
+python vault_criterios.py --freeze --admitir-nuevos  # congela deuda nueva, y la lista
+```
+
+| Criterio | Dueño | Cómo se consulta |
+|---|---|---|
+| qué es una instantánea congelada | `vault_io` | `is_snapshot_path` |
+| qué es documentación del estándar | `vault_audit` | `es_documentacion_del_estandar` |
+| qué es código y no un enlace | `vault_lib` | `strip_code_blocks` |
+
+**No es AP-50.** AP-50 mira datos duplicados —vocabularios, defaults de entorno, patrones regex—: dos copias que divergen se ven al compararlas, porque hay algo que leer. Un criterio vive enterrado en un `if`, no hay dato que comparar, y la divergencia solo aparece por el resultado equivocado. El defecto de resolución por basename ponía la medida **verde** justo donde Obsidian pinta el enlace roto — 13 de 16 en el vault de control.
+
+**Lo que encontró el primer día.** `vault_graph_fix` llevaba su propio `skip_set` de instantáneas, ya divergido de `vault_io.SNAPSHOT_DIRS`. Esa tool **escribe**: la divergencia no inflaba un número, reparaba dentro de una instantánea congelada, que es precisamente dejar de serlo.
+
+**El límite, dicho antes de que nadie se apoye en él.** La detección es sintáctica: mira si un módulo que clasifica notas —los que escriben el literal `"*.md"`— reescribe la constante distintiva del dueño sin importar su símbolo. No hay forma general de decidir si dos funciones calculan lo mismo, así que un módulo puede reimplementar un criterio sin repetir ninguna constante y esta tool no lo verá. **Verde no significa que no haya copias**: significa que no hay copias de la forma que sabemos reconocer. Es lo que da un linter, y es preferible a no mirar.
+
+La precondición del `"*.md"` no es cosmética: sin ella el detector marcaba a `vault_restore` por nombrar `vault-backups` —restaurar de ahí *es* su trabajo— y a `vault_norms` por nombrar el manifiesto, que edita. Un guard con ruido deja de leerse.
 
 ---
 

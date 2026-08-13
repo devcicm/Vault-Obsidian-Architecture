@@ -317,11 +317,18 @@ def main() -> int:
     args = ap.parse_args()
 
     if args.apply and args.check:
-        return emit_error(
+        # `emit_error` construye el envelope, no lo imprime ni devuelve un exit
+        # code: devolverlo desde `main` hacía que `wrap_main` publicara
+        # `UNEXPECTED_ERROR` sobre un fallo de uso que tiene arreglo. Salió al
+        # escribir el test de la ruta gemela en `vault_criterios` (v40.13);
+        # aquí llevaba desde v40.12 sin que ninguna prueba pisara esta rama.
+        env = emit_error(
             "vault_frontmatter_heal", "CONFLICTING_ARGS",
             "--apply y --check piden cosas distintas: o mide o escribe",
-            recovery="elige uno",
         )
+        env["recovery"] = "elige uno"
+        print(__import__("json").dumps(env, ensure_ascii=False))
+        return 1
 
     resultado = heal(apply=args.apply)
     print(__import__("json").dumps(resultado, ensure_ascii=False))

@@ -10,9 +10,9 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | Ruta | Qué es |
 |---|---|
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~6.000 líneas). Fuente normativa. |
-| `scripts/*.py` | ~124 scripts, 101 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
+| `scripts/*.py` | ~125 scripts, 102 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (2578 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (2608 tests). Toda norma con guard debe tener test. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
 | `vault-sandbox/` | **Único** vault de pruebas del repo. Todo runtime va aquí. |
@@ -236,6 +236,17 @@ python scripts/vault_quality_check.py --min-score 0.7
       `"norm": "CN-01"` sobre un hallazgo de *scaffold*, así que cerrar CN-01
       reatribuyéndosela habría sido usar el criterio del propio guard — el AP-44
       que esta tool existe para detectar.
+- [ ] `python scripts/vault_criterios.py --check --strict` → `ok: true` (AP-57). Ningún
+      módulo que clasifica notas reescribe un criterio que ya tiene dueño canónico:
+      qué es una instantánea lo dice `vault_io`, qué es documentación del estándar
+      `vault_audit`, qué es código y no enlace `vault_lib`. Nació de v40.12, donde
+      **cuatro** defectos de una misma tool tenían la misma forma —el registro existía
+      y nadie lo consultaba—, y uno de ellos ponía la medida **verde** justo donde
+      Obsidian pinta el enlace roto. Baseline que solo encoge; se salda importando al
+      dueño, no ampliándola. **La detección es sintáctica y el límite está declarado**:
+      verde no prueba que no haya copias, prueba que no hay copias de la forma que la
+      tool sabe reconocer — un módulo puede reimplementar un criterio sin repetir
+      ninguna constante y esto no lo verá.
 - [ ] `python scripts/vault_doc_sync.py --check --strict` cubre además, desde v40.4, que
       **todo comando que la documentación publica exista y acepte sus flags**. `CLAUDE.md`
       publicaba los dos comandos de salud con `--root`, que ninguna de las dos tools

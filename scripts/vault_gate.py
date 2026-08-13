@@ -163,6 +163,14 @@ PUERTAS: List[Dict[str, Any]] = [
                "el catálogo retire la cobertura que no tiene; ampliar la "
                "baseline no es una de las dos",
     },
+    {
+        "id": "criterios",
+        "cmd": ["vault_criterios.py", "--check", "--strict"],
+        "mide": "Ningún módulo que clasifica notas reescribe un criterio que "
+                "ya tiene dueño canónico (AP-57)",
+        "fix": "importar al dueño en vez de decidir por cuenta propia; la "
+               "baseline solo encoge",
+    },
 ]
 
 
