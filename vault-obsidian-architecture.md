@@ -7175,7 +7175,7 @@ temp/
 
 ---
 
-### v40.16 — 2026-08-13 `git: pending`
+### v40.16 — 2026-08-13 `git: 033adf2`
 
 **Cinco defectos que un QA externo vio desde fuera y ninguna puerta veía desde
 dentro, y el checklist que llevaba dieciséis versiones copiándose a sí mismo.**
