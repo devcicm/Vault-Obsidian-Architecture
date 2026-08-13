@@ -7163,7 +7163,7 @@ temp/
 
 ---
 
-### v40.14 — 2026-08-12 `git: pending`
+### v40.14 — 2026-08-12 `git: d3d2762`
 
 **El aviso que se ignoraba porque mentía en las dos direcciones a la vez.**
 
