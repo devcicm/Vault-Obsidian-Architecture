@@ -7174,7 +7174,7 @@ temp/
 
 ---
 
-### v40.15 — 2026-08-12 `git: pending`
+### v40.15 — 2026-08-12 `git: 057cce1`
 
 **La última norma `critical` sin detector, y por qué el problema entero no
 había que resolverlo.**
