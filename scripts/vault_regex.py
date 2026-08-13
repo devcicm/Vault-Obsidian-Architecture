@@ -115,6 +115,78 @@ RE_TRAILING_WHITESPACE = re.compile(r"\[\s+\]\]")
 RE_LEADING_BRACKET = re.compile(r"^\[+")
 RE_TRAILING_BRACKET = re.compile(r"\]+$")
 
+# ------------------------------------------------------------
+# Valores tipados — la parte decidible de AP-05
+# ------------------------------------------------------------
+# AP-05 («el mismo dato con valores distintos en varias notas») es la única
+# norma `critical` que estuvo sin detector desde v19, y el motivo estaba
+# escrito en su `cobertura_descubierta`: decidir qué es «el mismo dato» sin
+# embeddings es un problema abierto.
+#
+# Lo es en general. NO lo es para un valor **tipado**: una IP, una URL, un
+# puerto o un semver no se parecen a otro dato, se comparan con él. Ahí la
+# identidad no hay que adivinarla — la da la clave bajo la que está escrito, y
+# la divergencia es una desigualdad de cadenas.
+#
+# Viven aquí y no en `vault_fuente_unica` porque AP-50 dice que un patrón
+# tiene un dueño único, y escribir el detector de una norma cometiendo otra
+# habría sido empezar torcido.
+
+#: IPv4. Los cuatro octetos se validan aparte (`es_ipv4`): un regex que además
+#: acota 0-255 es ilegible y aquí la legibilidad importa más que el rechazo.
+RE_IPV4 = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
+
+#: URL con esquema explícito. Sin esquema no se distingue de una ruta.
+RE_URL = re.compile(r"\bhttps?://[^\s\"'<>\]),]+", re.IGNORECASE)
+
+#: Semver, con `v` opcional y prerelease/build ignorados a propósito:
+#: `1.2.3` y `1.2.3-rc1` son valores distintos y deben compararse distintos.
+RE_SEMVER = re.compile(r"\bv?\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?\b")
+
+#: `clave: valor` al principio de línea o de item de lista. Es el único sitio
+#: donde un dato lleva su identidad escrita al lado; en prosa no la lleva, y
+#: eso es el límite declarado de la medida, no un caso pendiente.
+RE_CLAVE_VALOR = re.compile(r"^\s*(?:[-*]\s+)?([A-Za-z][\w .\-/]{0,40}?)\s*:\s*(\S.*?)\s*$",
+                            re.MULTILINE)
+
+
+def es_ipv4(texto: str) -> bool:
+    """¿Es una IPv4 con los cuatro octetos en rango?
+
+    `1.2.3.4` sí; `999.1.1.1` no, y tampoco `10.0.0` — que es lo que separa una
+    IP de un semver mal escrito o de un número de versión de cuatro partes.
+    """
+    partes = texto.split(".")
+    if len(partes) != 4:
+        return False
+    return all(p.isdigit() and len(p) <= 3 and 0 <= int(p) <= 255 for p in partes)
+
+
+def tipo_de_valor(valor: str) -> Optional[str]:
+    """Qué clase de dato comparable es este valor, si es alguno.
+
+    Devuelve `"ipv4" | "url" | "semver" | "puerto"`, o `None` cuando el valor
+    no es de un tipo que se pueda comparar sin interpretarlo. `None` es la
+    respuesta correcta y la más frecuente: una descripción, un estado o un
+    título divergen entre notas legítimamente, y medirlos sería el ruido que
+    hace que un guard deje de leerse.
+
+    El orden importa. `192.168.1.10` casa también con el regex de semver si se
+    prueba antes, así que IPv4 se decide primero y con los octetos validados.
+    """
+    v = valor.strip().strip("`\"'")
+    if not v:
+        return None
+    if RE_IPV4.fullmatch(v) and es_ipv4(v):
+        return "ipv4"
+    if RE_URL.fullmatch(v):
+        return "url"
+    if RE_SEMVER.fullmatch(v):
+        return "semver"
+    if v.isdigit() and 1 <= int(v) <= 65535 and len(v) >= 2:
+        return "puerto"
+    return None
+
 # ============================================================
 # DETECTION FUNCTIONS
 # ============================================================

@@ -10,9 +10,9 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | Ruta | Qué es |
 |---|---|
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~6.000 líneas). Fuente normativa. |
-| `scripts/*.py` | ~125 scripts, 102 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
+| `scripts/*.py` | ~126 scripts, 103 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (2621 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (2645 tests). Toda norma con guard debe tener test. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
 | `vault-sandbox/` | **Único** vault de pruebas del repo. Todo runtime va aquí. |
@@ -56,8 +56,13 @@ Lo realizan tres capacidades, y una tool nueva pertenece a exactamente una:
 ## Reglas no negociables
 
 1. **`vault-sandbox/` para cualquier ejecución.** Ninguna tool se ejecuta contra la raíz del
-   repo ni contra vaults reales del usuario. **Solo 4 tools aceptan `--root`**
-   (`vault_norms`, `vault_graph_fix`, `vault_graph_inspect`, `vault_section_index`); el resto
+   repo ni contra vaults reales del usuario. `--root` lo aceptan **dos conjuntos distintos**,
+   y confundirlos es lo que hacía que esta línea llevase versiones diciendo «solo 4» mientras
+   había un quinto: las que **escriben** en el vault que se les señala (`vault_norms`,
+   `vault_graph_fix`, `vault_graph_inspect`, `vault_section_index`) y las que existen **para
+   el contraste de la regla 7** y por eso miden un vault ajeno **en solo lectura**
+   (`vault_foreign_check`, que además lo exige y rechaza rutas dentro de este repo, y
+   `vault_fuente_unica`). El resto
    resuelve el vault por autodetección (`vault_io._detect_vault_root()`), que en este repo ya
    devuelve `vault-sandbox/` con origen `spec_repo_sandbox`. Para forzar un destino usa la
    variable de entorno `VAULT_ROOT`; para que una detección insegura falle en vez de caer a la
@@ -247,6 +252,19 @@ python scripts/vault_quality_check.py --min-score 0.7
       verde no prueba que no haya copias, prueba que no hay copias de la forma que la
       tool sabe reconocer — un módulo puede reimplementar un criterio sin repetir
       ninguna constante y esto no lo verá.
+- [ ] `python scripts/vault_fuente_unica.py --check --strict` → `ok: true` (AP-05). El
+      mismo dato **tipado** —IP, URL, puerto, semver, escrito como `clave: valor`— no
+      tiene valores distintos en varias notas del mismo ámbito. Cierra en v40.15 la
+      última norma `critical` que quedaba sin detector, y solo en **su parte
+      decidible**: la identidad del dato no se adivina, está escrita al lado en la
+      clave, y la divergencia es una desigualdad de cadenas. **Verde no prueba una
+      sola fuente de verdad** — la divergencia en prosa, la de valores sin tipo y la
+      del sinónimo (`ip:` frente a `direccion_ip:`) siguen sin medirlas nadie, y por
+      eso el catálogo declara `cobertura_parcial` en vez de dar la norma por cubierta.
+      Acepta `--root` para el contraste de la regla 7, en solo lectura: fue ahí donde
+      encontró los dos conflictos reales —`host_ip` y `pve_version` divergentes entre
+      dos notas del mismo servidor— que `vault-sandbox/` no puede exhibir.
+
 - [ ] `python scripts/vault_doc_sync.py --check --strict` cubre además, desde v40.4, que
       **todo comando que la documentación publica exista y acepte sus flags**. `CLAUDE.md`
       publicaba los dos comandos de salud con `--root`, que ninguna de las dos tools

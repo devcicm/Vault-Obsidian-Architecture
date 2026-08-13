@@ -151,14 +151,20 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "IPs/URLs/versiones que difieren entre notas del mismo proyecto.",
         "prevention": "PAT-1 (canonical source anchoring): una nota canónica por dato, las demás hacen [[wiki-link]] a ella.",
         "tools_enforcing": [],
-        "tools_detecting": [],
-        "cobertura_descubierta": (
-            "La única norma `critical` que hoy no mide nadie, y se declara así en vez "
-            "de esconderlo. Declaraba `vault_graph_inspect`, que no la menciona ni "
-            "compara valores entre notas. Diecisiete módulos citan AP-05 en un "
-            "comentario —al explicar por qué NO copian un dato— y citar no es "
-            "detectar. Detectarla de verdad exige decidir qué es «el mismo dato» "
-            "sin embeddings, que es un problema de diseño abierto."
+        "tools_detecting": ["vault_fuente_unica"],
+        "cobertura_parcial": (
+            "Detectada desde v40.15 **en su parte decidible**, y el resto se declara "
+            "en vez de darse por cubierto. `vault_fuente_unica` compara valores "
+            "**tipados** —IP, URL, puerto, semver— escritos como `clave: valor` "
+            "dentro de un mismo ámbito. Ahí la identidad del dato no hay que "
+            "adivinarla, porque está escrita al lado, y la divergencia es una "
+            "desigualdad de cadenas: no hacen falta embeddings. Lo que sigue sin "
+            "medir nadie es la divergencia **en prosa** («el servidor está en el "
+            ".20»), la de valores sin tipo y la del sinónimo (`ip:` frente a "
+            "`direccion_ip:`). Verde no prueba una sola fuente de verdad; prueba "
+            "que no hay divergencia de la clase que se puede decidir sin "
+            "interpretar. Estuvo descubierta desde v19 porque el problema se "
+            "planteó entero, y entero sigue abierto."
         ),
         "introduced_version": "v19",
     },

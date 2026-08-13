@@ -171,6 +171,14 @@ PUERTAS: List[Dict[str, Any]] = [
         "fix": "importar al dueño en vez de decidir por cuenta propia; la "
                "baseline solo encoge",
     },
+    {
+        "id": "fuente_unica",
+        "cmd": ["vault_fuente_unica.py", "--check", "--strict"],
+        "mide": "El mismo dato tipado no tiene valores distintos en varias "
+                "notas del mismo ámbito (AP-05)",
+        "fix": "PAT-1: una nota canónica declara el dato y las demás la "
+               "enlazan; verde solo cubre la parte decidible sin interpretar",
+    },
 ]
 
 

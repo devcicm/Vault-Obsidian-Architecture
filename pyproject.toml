@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vault-obsidian-architecture"
-version = "40.14"
+version = "40.15"
 description = "Spec-Driven Development vault toolkit — persistent documental memory for LLM agents"
 readme = "README.md"
 requires-python = ">=3.9"

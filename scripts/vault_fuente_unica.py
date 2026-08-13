@@ -1,0 +1,280 @@
+#!/usr/bin/env python3
+"""vault_fuente_unica — el mismo dato con valores distintos en varias notas (AP-05).
+
+## Por qué llega tan tarde
+
+AP-05 es `critical` desde v19 y estuvo sin detector hasta v40.15 — la única en
+esa situación, y declarada así en `cobertura_descubierta` en vez de escondida
+en una lista vacía. El motivo escrito era real: decidir qué es «el mismo dato»
+sin embeddings es un problema de diseño abierto.
+
+Lo es **en general**. La observación que lo desbloquea es que no hace falta
+resolverlo en general para medir lo que hace daño. Un dato **tipado** —una IP,
+una URL, un puerto, un semver— no hay que reconocerlo por parecido: se compara
+por igualdad. Y su identidad no hay que adivinarla, porque está escrita al lado
+en forma de clave. `ip: 192.168.1.10` en una nota y `ip: 192.168.1.20` en otra
+del mismo proyecto es AP-05 sin ninguna semántica de por medio.
+
+Esto no cubre AP-05 entera y decirlo forma parte de la medida. Cubre el trozo
+en que un agente LLM toma una decisión con un dato erróneo: se conecta a la IP
+que no es, llama al puerto que no es, documenta la versión que no es.
+
+## Qué NO ve, dicho antes de que nadie se apoye en ello
+
+- **La prosa.** «el servidor está en el .20» no lleva su clave escrita. Solo se
+  miran `clave: valor` en frontmatter y en línea del cuerpo.
+- **Los valores sin tipo.** Un `status:` o un `owner:` divergen entre notas
+  legítimamente; medirlos sería ruido, y un guard con ruido deja de leerse.
+- **El sinónimo.** `ip:` y `direccion_ip:` son la misma cosa para una persona y
+  dos claves distintas aquí. Reconocerlo pedía justo los embeddings que el
+  estándar no tiene.
+
+Verde aquí no significa que el vault tenga una sola fuente de verdad. Significa
+que no hay divergencia **de la clase que se puede decidir sin interpretar**.
+
+## Lo que sí ve, y por qué se puede confiar
+
+Excluye instantáneas congeladas (`vault_io.is_snapshot_path`), documentación
+del estándar embarcada (`vault_audit.es_documentacion_del_estandar`) y bloques
+de código (`vault_lib.strip_code_blocks`) preguntando a sus dueños canónicos.
+Un `ip: 10.0.0.1` dentro de un fence es un ejemplo, no una afirmación, y
+contarlo habría sido AP-57 cometido en la tool que se escribe para cumplirlo.
+
+    python scripts/vault_fuente_unica.py --check --strict
+    python scripts/vault_fuente_unica.py --report    # los conflictos, legibles
+    python scripts/vault_fuente_unica.py --freeze    # solo puede encoger
+"""
+
+import argparse
+import json
+import sys
+from collections import defaultdict
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+sys.path.insert(0, str(Path(__file__).parent))
+
+import yaml
+
+from vault_audit import es_documentacion_del_estandar
+from vault_errors import emit_error, wrap_main
+from vault_io import get_vault_root, is_snapshot_path
+from vault_lib import strip_code_blocks
+from vault_regex import RE_CLAVE_VALOR, tipo_de_valor
+
+BASELINE = Path(__file__).parent / "fuente-unica-baseline.json"
+
+#: Claves cuyo valor es **de la nota**, no un dato compartido del proyecto.
+#: Que dos notas tengan `version: 1.0.0` y `version: 2.0.0` no es que el dato
+#: diverja: es que son dos notas distintas. Sin esta lista la medida marca el
+#: frontmatter entero de cualquier vault y nace inservible.
+CLAVES_DE_LA_NOTA = frozenset({
+    "version", "created", "modified", "updated", "date", "fecha",
+    "id", "uid", "uuid", "hash", "size", "tamaño", "orden", "order",
+    "line", "linea", "count", "total", "score", "peso", "weight",
+    "confidence", "duration", "duracion", "port_local",
+})
+
+
+def _ambito(rel: Path, fm: Dict[str, Any]) -> str:
+    """A qué conjunto de notas pertenece este dato.
+
+    Dos notas solo pueden contradecirse si hablan de lo mismo. `project:` del
+    frontmatter es la respuesta cuando está, porque la escribió el autor; sin
+    ella, la carpeta de primer nivel es la aproximación menos inventada — y
+    cuando la nota está en la raíz, el ámbito es la raíz.
+
+    Es la decisión más discutible de la tool y por eso se declara: un ámbito
+    demasiado ancho produce falsos conflictos entre proyectos que comparten
+    nombre de clave; demasiado estrecho no ve la contradicción real.
+    """
+    p = fm.get("project") or fm.get("proyecto")
+    if isinstance(p, str) and p.strip():
+        return f"project:{p.strip()}"
+    partes = rel.parts
+    return f"folder:{partes[0]}" if len(partes) > 1 else "folder:."
+
+
+def _pares(texto: str) -> List[tuple]:
+    """`clave: valor` con valor tipado. Todo lo demás se descarta aquí."""
+    fuera = []
+    for m in RE_CLAVE_VALOR.finditer(texto):
+        clave = m.group(1).strip().lower().replace(" ", "_").replace("-", "_")
+        if not clave or clave in CLAVES_DE_LA_NOTA:
+            continue
+        valor = m.group(2).strip()
+        tipo = tipo_de_valor(valor)
+        if tipo:
+            fuera.append((clave, valor.strip("`\"'"), tipo))
+    return fuera
+
+
+def medir(raiz: Optional[Path] = None) -> List[Dict[str, Any]]:
+    """Los conflictos: misma clave tipada, mismo ámbito, valores distintos."""
+    raiz = Path(raiz) if raiz else get_vault_root()
+    # (ámbito, clave) -> valor -> [notas que lo afirman]
+    visto: Dict[tuple, Dict[str, List[str]]] = defaultdict(lambda: defaultdict(list))
+    tipos: Dict[tuple, str] = {}
+
+    for p in sorted(raiz.rglob("*.md")):
+        rel = p.relative_to(raiz)
+        if is_snapshot_path(rel):
+            continue
+        try:
+            crudo = p.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        if es_documentacion_del_estandar(crudo, rel):
+            continue
+
+        fm: Dict[str, Any] = {}
+        cuerpo = crudo
+        if crudo.startswith("---"):
+            corte = crudo.find("\n---", 3)
+            if corte != -1:
+                try:
+                    cargado = yaml.safe_load(crudo[3:corte])
+                    fm = cargado if isinstance(cargado, dict) else {}
+                except yaml.YAMLError:
+                    # Frontmatter roto es AP-46, no AP-05. Se sigue con el
+                    # cuerpo en vez de perder la nota entera: el defecto de
+                    # otro no debe volver ciega a esta medida.
+                    fm = {}
+                cuerpo = crudo[corte + 4:]
+
+        # Un valor dentro de un fence es un ejemplo, no una afirmación (AP-57).
+        texto = crudo[:0] + strip_code_blocks(cuerpo)
+        pares = _pares(texto)
+        for k, v in fm.items():
+            if isinstance(v, (str, int)) and str(k).lower() not in CLAVES_DE_LA_NOTA:
+                t = tipo_de_valor(str(v))
+                if t:
+                    pares.append((str(k).strip().lower().replace("-", "_"), str(v), t))
+
+        ambito = _ambito(rel, fm)
+        for clave, valor, tipo in pares:
+            llave = (ambito, clave)
+            tipos[llave] = tipo
+            notas = visto[llave][valor]
+            if str(rel) not in notas:
+                notas.append(str(rel))
+
+    conflictos = []
+    for (ambito, clave), valores in sorted(visto.items()):
+        if len(valores) < 2:
+            continue
+        conflictos.append({
+            "ambito": ambito,
+            "clave": clave,
+            "tipo": tipos[(ambito, clave)],
+            "valores": {v: sorted(ns) for v, ns in sorted(valores.items())},
+            "notas_afectadas": sum(len(ns) for ns in valores.values()),
+        })
+    return conflictos
+
+
+def _firma(c: Dict[str, Any]) -> str:
+    return f"{c['ambito']}::{c['clave']}"
+
+
+def _baseline() -> List[str]:
+    if not BASELINE.exists():
+        return []
+    try:
+        return json.loads(BASELINE.read_text(encoding="utf-8")).get("conflictos", [])
+    except (OSError, json.JSONDecodeError):
+        # Ilegible no es vacío: leerla como vacía estrenaría la deuda entera
+        # como nueva, que es la trampa que AP-37 ya documentó (AP-51).
+        raise RuntimeError("baseline de vault_fuente_unica ilegible; revísala a mano")
+
+
+def check(raiz: Optional[Path] = None) -> Dict[str, Any]:
+    conflictos = medir(raiz)
+    firmas = {_firma(c) for c in conflictos}
+    base = set(_baseline())
+    nuevos = sorted(firmas - base)
+    return {
+        "ok": not nuevos,
+        "tool": "vault_fuente_unica",
+        "norm": "AP-05",
+        "action": "check",
+        "conflicts": conflictos,
+        "conflicts_total": len(conflictos),
+        "baseline_size": len(base),
+        "new_conflicts": nuevos,
+        "resolved_since_baseline": sorted(base - firmas),
+        "hint": (
+            "Se salda con PAT-1: una nota canónica declara el dato y las demás "
+            "la enlazan. Verde aquí no prueba una sola fuente de verdad: prueba "
+            "que no hay divergencia de la clase decidible sin interpretar."
+        ),
+    }
+
+
+def freeze(raiz: Optional[Path] = None, admitir_nuevos: bool = False) -> Dict[str, Any]:
+    conflictos = medir(raiz)
+    firmas = sorted({_firma(c) for c in conflictos})
+    base = set(_baseline())
+    nuevos = sorted(set(firmas) - base)
+    if nuevos and not admitir_nuevos and base:
+        return {
+            "ok": False, "tool": "vault_fuente_unica", "action": "freeze",
+            "error_code": "DEBT_WOULD_GROW", "new_conflicts": nuevos,
+            "recovery": ("Resuélvelos con PAT-1. Si de verdad hay que congelar "
+                         "deuda nueva, `--freeze --admitir-nuevos` la lista aquí."),
+        }
+    BASELINE.write_text(json.dumps({
+        "description": (
+            "Conflictos de fuente de verdad que ya estaban cuando AP-05 estrenó "
+            "detector. Solo puede encoger: un conflicto nuevo se resuelve con "
+            "PAT-1, no se congela."
+        ),
+        "conflictos": firmas,
+    }, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    return {"ok": True, "tool": "vault_fuente_unica", "action": "freeze",
+            "frozen": len(firmas), "admitted_new": nuevos if admitir_nuevos else []}
+
+
+def report(raiz: Optional[Path] = None) -> Dict[str, Any]:
+    """El conflicto en forma legible: qué dato, qué valores, quién dice cuál."""
+    conflictos = medir(raiz)
+    lineas = []
+    for c in conflictos:
+        lineas.append(f"[{c['ambito']}] {c['clave']} ({c['tipo']})")
+        for valor, notas in c["valores"].items():
+            lineas.append(f"    {valor}  <- {', '.join(notas)}")
+    return {"ok": True, "tool": "vault_fuente_unica", "action": "report",
+            "conflicts_total": len(conflictos), "report": lineas}
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(
+        description="vault_fuente_unica — el mismo dato con valores distintos (AP-05)")
+    ap.add_argument("--check", action="store_true")
+    ap.add_argument("--strict", action="store_true")
+    ap.add_argument("--report", action="store_true")
+    ap.add_argument("--freeze", action="store_true")
+    ap.add_argument("--admitir-nuevos", action="store_true")
+    ap.add_argument("--root", help="solo para contrastar contra un vault ajeno (regla 7)")
+    args = ap.parse_args()
+
+    if args.freeze and (args.check or args.report):
+        env = emit_error("vault_fuente_unica", "CONFLICTING_ARGS",
+                         "--freeze y --check/--report piden cosas distintas: o mide o congela")
+        env["recovery"] = "elige uno"
+        print(json.dumps(env, ensure_ascii=False))
+        return 1
+
+    raiz = Path(args.root) if args.root else None
+    if args.freeze:
+        r = freeze(raiz, args.admitir_nuevos)
+    elif args.report:
+        r = report(raiz)
+    else:
+        r = check(raiz)
+    print(json.dumps(r, ensure_ascii=False, indent=1))
+    return 1 if args.strict and not r["ok"] else 0
+
+
+if __name__ == "__main__":
+    sys.exit(wrap_main(main, "vault_fuente_unica"))

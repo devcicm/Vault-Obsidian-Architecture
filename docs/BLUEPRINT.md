@@ -33,7 +33,7 @@ Restricciones que son decisión de producto, no limitación pendiente:
 
 | Capacidad | Resultado | Grupos | Tools |
 |---|---|---|---|
-| **Escritura → gobernanza** (`escritura_a_gobernanza`) | Lo que el agente captura queda escrito una sola vez, normalizado contra las normas, versionado y auditable después. | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 36, 37 | 77 |
+| **Escritura → gobernanza** (`escritura_a_gobernanza`) | Lo que el agente captura queda escrito una sola vez, normalizado contra las normas, versionado y auditable después. | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 36, 37 | 78 |
 | **Consulta → contexto** (`consulta_a_contexto`) | Una pregunta del agente se convierte en un paquete de contexto acotado y presupuestado, recorriendo el grafo del vault sin índice externo. | 26, 34 | 8 |
 | **Gobernanza del estándar** (`gobernanza_del_estandar`) | El estándar cumple lo que publica: registro canónico primero, doc derivada, guard que falla si divergen. Ninguna de estas tools toca las notas de un usuario. | 35 | 17 |
 
@@ -55,7 +55,7 @@ regenera.*
 | **Kernel** (`kernel`) | 4 | 11 | depender de cualquier contexto de dominio |
 | **Autoría** (`autoria`) | 7 | 39 | — |
 | **Grafo** (`grafo`) | 3 | 15 | — |
-| **Gobernanza** (`gobernanza`) | 19 | 9 | — |
+| **Gobernanza** (`gobernanza`) | 19 | 10 | — |
 | **Índices** (`indices`) | 8 | 6 | — |
 | **Consulta** (`consulta`) | 7 | 10 | base de datos; embeddings; servicio externo |
 | **Ciclo de vida** (`ciclo_de_vida`) | 3 | 8 | — |
@@ -78,7 +78,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-02** — Proliferación de versiones del mismo documento | audit | — | `test_skills_contract.py` |
 | **AP-03** — Stubs sin política de expansión | audit | — | `test_audit_resuelve_como_obsidian.py` |
 | **AP-04** — Features aspiracionales documentadas como implementadas | audit | — | `test_cli_package.py`, `test_context_memory.py`, `test_data_framework.py`, `test_skills_contract.py` |
-| **AP-05** — Múltiples fuentes de verdad para el mismo dato | audit | — | `test_ap50_decision_duplicada.py`, `test_arquitectura.py`, `test_autoria_dominio.py`, `test_blueprint.py`, `test_ciclo_de_vida_dominio.py`, `test_consulta_dominio.py`, `test_durabilidad_caracterizacion.py`, `test_durabilidad_declarada.py`, `test_gobernanza_dominio.py`, `test_grafo_dominio.py`, `test_indices_dominio.py`, `test_lifecycle_registry.py`, `test_norms_coherence.py`, `test_raiz_no_seccion.py`, `test_registro_de_entorno.py`, `test_registro_de_vocabulario.py`, `test_regla7_contraste_ajeno.py`, `test_vault_gate.py` |
+| **AP-05** — Múltiples fuentes de verdad para el mismo dato | audit | `fuente_unica` | `test_ap05_fuente_unica.py`, `test_ap50_decision_duplicada.py`, `test_arquitectura.py`, `test_autoria_dominio.py`, `test_blueprint.py`, `test_ciclo_de_vida_dominio.py`, `test_consulta_dominio.py`, `test_durabilidad_caracterizacion.py`, `test_durabilidad_declarada.py`, `test_gobernanza_dominio.py`, `test_grafo_dominio.py`, `test_indices_dominio.py`, `test_lifecycle_registry.py`, `test_norms_coherence.py`, `test_raiz_no_seccion.py`, `test_registro_de_entorno.py`, `test_registro_de_vocabulario.py`, `test_regla7_contraste_ajeno.py`, `test_vault_gate.py` |
 | **AP-06** — Templates sin instancias reales | audit | `framework` | — |
 | **AP-07** — ADRs incompletos | audit | `framework` | `test_audit_resuelve_como_obsidian.py`, `test_vault_norms_audit.py`, `test_vault_onboard.py` |
 | **AP-08** — Documentación anclada a versiones obsoletas | audit | — | — |
@@ -129,13 +129,13 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-48** — Implementación paralela por camino de acceso | guard+audit | `contratos`, `framework` | `test_ap48_implementacion_paralela.py`, `test_ciclo_de_vida_dominio.py`, `test_consulta_dominio.py` |
 | **AP-49** — Vínculo resuelto en tiempo de import | guard+audit | `arquitectura`, `framework` | `conftest.py`, `test_ap49_vinculo_congelado.py`, `test_arquitectura.py`, `test_autoria_dominio.py`, `test_catalogo_sin_copia_local.py`, `test_ciclo_de_vida_dominio.py`, `test_consulta_dominio.py`, `test_context_memory.py`, `test_durabilidad_caracterizacion.py`, `test_durabilidad_dominio.py`, `test_gobernanza_dominio.py`, `test_grafo_dominio.py`, `test_puertos_verificados.py`, `test_registro_de_vocabulario.py`, `test_tag_vocabulary.py`, `test_vault_containment.py`, `test_vault_graph_merge.py`, `test_vault_norms_audit.py`, `test_vault_relation_add.py` |
 | **AP-50** — Decisión duplicada sin dueño declarado | guard+audit | `arquitectura`, `framework` | `test_ap50_decision_duplicada.py`, `test_ap57_criterios.py`, `test_arquitectura.py`, `test_data_framework.py`, `test_filtro_de_expresiones_regulares.py`, `test_frontmatter_yaml_valido.py`, `test_vault_gate.py` |
-| **AP-51** — La tool culpa al dato de su propio fallo | guard+audit | `blame` | `test_ap51_culpar_al_dato.py`, `test_ap52_contrato_de_error.py`, `test_filtro_de_expresiones_regulares.py`, `test_firma_de_sitio.py`, `test_regla7_contraste_ajeno.py` |
-| **AP-52** — El error se emite fuera del contrato del catalogo | guard+audit | `contrato_error` | `test_ap46_heal.py`, `test_ap52_contrato_de_error.py`, `test_ap56_frontmatter_heal.py`, `test_arquitectura.py`, `test_contrato_de_campos.py`, `test_data_framework.py`, `test_firma_de_sitio.py`, `test_ingest_tope_de_fuente.py`, `test_regla7_contraste_ajeno.py`, `test_smoke.py`, `test_vault_norms_audit.py` |
+| **AP-51** — La tool culpa al dato de su propio fallo | guard+audit | `blame` | `test_ap05_fuente_unica.py`, `test_ap51_culpar_al_dato.py`, `test_ap52_contrato_de_error.py`, `test_filtro_de_expresiones_regulares.py`, `test_firma_de_sitio.py`, `test_regla7_contraste_ajeno.py` |
+| **AP-52** — El error se emite fuera del contrato del catalogo | guard+audit | `contrato_error` | `test_ap05_fuente_unica.py`, `test_ap46_heal.py`, `test_ap52_contrato_de_error.py`, `test_ap56_frontmatter_heal.py`, `test_arquitectura.py`, `test_contrato_de_campos.py`, `test_data_framework.py`, `test_firma_de_sitio.py`, `test_ingest_tope_de_fuente.py`, `test_regla7_contraste_ajeno.py`, `test_smoke.py`, `test_vault_norms_audit.py` |
 | **AP-53** — El historial se afirma a mano y nadie lo contrasta con git | guard | `changelog` | `test_changelog_check.py` |
 | **AP-54** — El lock falla y se escribe igual | guard | `arquitectura` | `test_lock_reentrante.py` |
 | **AP-55** — El catálogo de normas se certifica a sí mismo | guard+audit | `norms_coherence` | `test_blueprint.py`, `test_norms_coherence.py` |
 | **AP-56** — Frontmatter presente que el consumidor no puede leer | guard+audit | — | `test_ap56_frontmatter_heal.py` |
-| **AP-57** — Criterio con dueño, reimplementado en la medida | guard | `criterios` | `test_ap57_criterios.py`, `test_validacion_al_crear.py` |
+| **AP-57** — Criterio con dueño, reimplementado en la medida | guard | `criterios` | `test_ap05_fuente_unica.py`, `test_ap57_criterios.py`, `test_validacion_al_crear.py` |
 | **PAT-6** — Semantic graph enrichment — enriquecimiento periodico del grafo | recommended | — | — |
 | **SP-01** — Delete protocol — change_log obligatorio antes de eliminar | audit | `framework` | `test_vault_norms.py` |
 | **SP-02** — Forward-link verification — buscar antes de linkar | guard | — | `test_validacion_al_crear.py`, `test_vault_norms.py` |
@@ -150,7 +150,7 @@ Sin puerta ni test (14): `AP-08`, `AP-12`, `AP-13`, `AP-18`, `AP-20`, `PAT-2`, `
 
 *Registros: `vault_mcp_catalog.TOOLS_CATALOG` + `<vault>/00_System/tool-spec.json`*
 
-102 tools activas en 37 grupos. Toda tool
+103 tools activas en 37 grupos. Toda tool
 del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 `status: archived | internal | orphan` — no se borra, se anota
 (`vault_mcp_catalog.py --check-contracts`).
@@ -185,7 +185,7 @@ del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 | Requerimientos | 1 |
 | Riesgos/Calidad | 3 |
 | Runbooks | 2 |
-| Salud del Vault | 5 |
+| Salud del Vault | 6 |
 | Seguridad | 1 |
 | Session Delta y Tags | 2 |
 | Skills | 2 |
@@ -241,6 +241,7 @@ falla — no se rellena con el valor más cercano.
 | `vault_folder_registry` | 32 — Gestión de Carpetas | escritura_a_gobernanza |
 | `vault_foreign_check` | 35 — Normas | gobernanza_del_estandar |
 | `vault_frontmatter_heal` | 33 — Corrección Automática | escritura_a_gobernanza |
+| `vault_fuente_unica` | 6 — Salud del Vault | escritura_a_gobernanza |
 | `vault_fundamentals` | 24 — Data Quality | escritura_a_gobernanza |
 | `vault_gate` | 35 — Normas | gobernanza_del_estandar |
 | `vault_graph` | 6 — Salud del Vault | escritura_a_gobernanza |
@@ -347,4 +348,4 @@ no tiene precedente salvo con `--admitir-nuevos`, que además lo lista.
 
 ---
 
-*15 puertas de cierre. Generado por `scripts/vault_blueprint.py`.*
+*16 puertas de cierre. Generado por `scripts/vault_blueprint.py`.*

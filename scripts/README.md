@@ -1,13 +1,13 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 102 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
+Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 103 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **125 archivos Python** — 102 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
+- **126 archivos Python** — 103 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
 - **Saneamiento de índices (v38.1)** — `vault_section_index.py --heal [--root]` regenera índices con formato legacy `[[stem|alias]]` o ausentes; el auto-index post-write se auto-cura si un agente escribe `index.md` a mano
-- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 102 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
+- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 103 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
 - **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault; requiere marcador de CONTENIDO (01_Projects/02_Observability/03_Decisions/.obsidian), no solo 00_System/99_Index (evita el ciclo auto-reforzado de detección); override runtime con `set_vault_root()`/env `VAULT_ROOT`
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
@@ -30,7 +30,7 @@ Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan 
 | [Grupo 3 — Patrones](#grupo-3--patrones) | vault_pattern_save, vault_pattern_list |
 | [Grupo 4 — Diagramas](#grupo-4--diagramas) | vault_diagram_save, vault_relation_add, vault_mermaid_check, vault_diagram_export |
 | [Grupo 5 — Conocimiento](#grupo-5--conocimiento) | vault_knowledge_save, vault_knowledge_get |
-| [Grupo 6 — Salud del Vault](#grupo-6--salud-del-vault) | vault_audit, vault_validate, vault_graph, vault_graph_merge, vault_graph_inspect |
+| [Grupo 6 — Salud del Vault](#grupo-6--salud-del-vault) | vault_fuente_unica, vault_audit, vault_validate, vault_graph, vault_graph_merge, vault_graph_inspect |
 | [Grupo 7 — Runbooks](#grupo-7--runbooks) | vault_runbook_save, vault_runbook_log |
 | [Grupo 8 — Infraestructura](#grupo-8--infraestructura) | vault_infra_save, vault_infra_map, vault_env_save, vault_env_matrix |
 | [Grupo 9 — Migración](#grupo-9--migración) | vault_migrate_docs, vault_migrate_rollback |
@@ -539,6 +539,36 @@ Dos causas, las dos mecánicas: **escalar sin escapar** (`title: Overview: demo`
 Todo lo demás se reporta y **no se toca**: completar un YAML truncado inventa dato, que es peor que el hueco. Y una reparación se acepta solo si después `yaml.safe_load` devuelve un mapa y ninguna clave que ya se leía cambia de valor — el criterio del consumidor, no el propio (AP-44).
 
 No acepta `--root` (regla 1): el destino sale de la autodetección o de `VAULT_ROOT`.
+
+---
+
+### `vault_fuente_unica.py`
+
+**El mismo dato con valores distintos en varias notas (AP-05).** Puerta 16.
+
+```bash
+python vault_fuente_unica.py --check                 # los conflictos que hay
+python vault_fuente_unica.py --report                # legible: qué valor dice cada nota
+python vault_fuente_unica.py --check --strict        # exit 1 si hay conflictos nuevos (puerta 16)
+python vault_fuente_unica.py --freeze                # baseline; solo puede encoger
+python vault_fuente_unica.py --check --root <ajeno>  # contraste de la regla 7, solo lectura
+```
+
+**Por qué llegó en v40.15 y no en v19.** AP-05 es `critical` desde v19 y fue la última norma sin detector, declarada así en `cobertura_descubierta` en vez de escondida en una lista vacía. El motivo escrito era cierto: decidir qué es «el mismo dato» sin embeddings es un problema de diseño abierto.
+
+Lo es **en general**. La observación que lo desbloquea es que no hay que resolverlo en general para medir lo que hace daño. Un dato **tipado** —IP, URL, puerto, semver— no se reconoce por parecido: se compara por igualdad. Y su identidad no hay que adivinarla, porque está escrita al lado en forma de clave. `host_ip: 10.10.10.45` en una nota y `host_ip: 10.10.10.50` en otra del mismo ámbito es AP-05 sin semántica de por medio.
+
+| Qué se compara | Cómo se decide la identidad | Ámbito |
+|---|---|---|
+| `ipv4`, `url`, `puerto`, `semver` | la clave escrita al lado, en `clave: valor` | `project:` del frontmatter, o la carpeta de primer nivel |
+
+**Lo que NO ve, dicho antes de que nadie se apoye en ello.** La divergencia **en prosa** («el servidor está en el .20») no lleva su clave escrita. Los valores **sin tipo** —un `status:`, un `owner:`— divergen entre notas legítimamente, y medirlos sería el ruido que hace que un guard deje de leerse. El **sinónimo** (`ip:` frente a `direccion_ip:`) es la misma cosa para una persona y dos claves distintas aquí; reconocerlo pedía justo los embeddings que el estándar no tiene. **Verde no prueba que el vault tenga una sola fuente de verdad**: prueba que no hay divergencia de la clase que se puede decidir sin interpretar.
+
+**Las `CLAVES_DE_LA_NOTA` no son una exención.** Que dos notas tengan `version: 1.0.0` y `version: 2.0.0` no es que el dato diverja: es que son dos notas distintas. Sin esa lista la medida marca el frontmatter entero de cualquier vault y nace inservible.
+
+**Lo que encontró en el contraste de la regla 7** —y no era reproducible en `vault-sandbox/`, que lo genera este repo—: dos conflictos reales en `/ans`, ambos en `09_Infrastructure/servers/`. `host_ip` valía `10.10.10.45` en `proxmox-01.md` y `10.10.10.50` en `proxmox-new.md`; `pve_version`, `9.1.1` en la primera y `8.4.16` en la segunda. Es exactamente el daño que la norma describe: un agente que lea la nota equivocada se conecta al host que no es. `/vcloud`, el vault de control, salió en cero.
+
+Excluye instantáneas, documentación del estándar y bloques de código preguntando a sus dueños canónicos (AP-57) — un `ip: 10.9.9.9` dentro de un fence es un ejemplo, no una afirmación, y contarlo habría sido cometer AP-57 en la tool escrita para cumplirlo.
 
 ---
 
@@ -1747,7 +1777,7 @@ El vault expone sus herramientas como un **servidor MCP** que las IAs consumen d
 
 **Archivo:** `../mcp/nodejs/vault-mcp-server.mjs` (~1650 líneas, cero dependencias npm)  
 **Plan:** `../mcp/PLAN.md` — documento de evidencia con 8 fases de implementación
-**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (102 tools)
+**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (103 tools)
 
 Los parámetros que el catálogo publica **se derivan del `argparse` de cada script**,
 no se escriben a mano: el servidor compone `--<param>` literal, así que un param
@@ -2238,6 +2268,8 @@ python vault_criterios.py --freeze --admitir-nuevos  # congela deuda nueva, y la
 **El límite, dicho antes de que nadie se apoye en él.** La detección es sintáctica: mira si un módulo que clasifica notas —los que escriben el literal `"*.md"`— reescribe la constante distintiva del dueño sin importar su símbolo. No hay forma general de decidir si dos funciones calculan lo mismo, así que un módulo puede reimplementar un criterio sin repetir ninguna constante y esta tool no lo verá. **Verde no significa que no haya copias**: significa que no hay copias de la forma que sabemos reconocer. Es lo que da un linter, y es preferible a no mirar.
 
 La precondición del `"*.md"` no es cosmética: sin ella el detector marcaba a `vault_restore` por nombrar `vault-backups` —restaurar de ahí *es* su trabajo— y a `vault_norms` por nombrar el manifiesto, que edita. Un guard con ruido deja de leerse.
+
+**Dos criterios con dueño que NO están en el registro, y por qué.** v40.14 promovió a `vault_lib` la resolución de un wikilink (`resolver_destino_wikilink`) y el índice de destinos que resuelven (`indice_de_destinos`). Registrarlos exigía darles señales, y las suyas serían `"|"`, `"#"` y `"aliases"` — que media docena de módulos escribe por motivos legítimos. El intento se hizo: **10 hallazgos nuevos, todos falsos.** Una señal que no distingue no es una señal, y congelarlos en la baseline habría sido comprar el verde con ruido, que es justo lo que la precondición del `"*.md"` existe para evitar. Tienen dueño y sus consumidores lo importan; lo que no tienen es forma sintáctica de vigilarlo. El límite está escrito en el docstring y fijado por un test, porque declararlo es más honesto que fingir una señal.
 
 ---
 

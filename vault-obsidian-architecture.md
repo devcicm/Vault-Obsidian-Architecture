@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.14 — 2026-08-12  
+**Versión:** v40.15 — 2026-08-12  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -4333,6 +4333,16 @@ agente → vault_backup(label:"pre-migration-proyecto-x")   ← Fase 0: punto de
 - `vault_env_save` documenta que la variable `DB_HOST` existe y su proveedor — nunca el valor. La fuente real es el `.env` o el secret manager
 - `00_System/identity.md` es el lugar para declarar cuál archivo del proyecto es la fuente de verdad de cada tipo de dato (ej: `mcp_config.json` para nodos, `package.json` para versión)
 
+**Detección — `vault_fuente_unica`, puerta 16, desde v40.15.** Fue la última norma `critical` sin detector, y estuvo así desde v19 por un motivo escrito y cierto: decidir qué es «el mismo dato» sin embeddings es un problema de diseño abierto.
+
+Lo es **en general**. Lo que lo desbloquea es que no hace falta resolverlo en general para medir lo que hace daño. Un dato **tipado** —IP, URL, puerto, semver— no se reconoce por parecido: se compara por igualdad. Y su identidad no hay que adivinarla, porque está escrita al lado en forma de clave. `host_ip: 10.10.10.45` en una nota y `host_ip: 10.10.10.50` en otra del mismo ámbito es esta norma sin ninguna semántica de por medio.
+
+El ámbito es `project:` del frontmatter cuando está —lo escribió el autor— y la carpeta de primer nivel cuando no. Es la decisión más discutible de la medida y por eso se declara: demasiado ancho inventa conflictos entre proyectos que comparten nombre de clave; demasiado estrecho no ve la contradicción real.
+
+**Lo que no ve, dicho antes de que nadie se apoye en ello.** La divergencia **en prosa** («el servidor está en el .20») no lleva su clave escrita. Los valores **sin tipo** —un `status:`, un `owner:`— divergen entre notas legítimamente, y medirlos sería el ruido que hace que un guard deje de leerse. El **sinónimo** (`ip:` frente a `direccion_ip:`) es la misma cosa para una persona y dos claves distintas aquí. **Verde no prueba que el vault tenga una sola fuente de verdad**: prueba que no hay divergencia de la clase que se puede decidir sin interpretar. Por eso el catálogo declara `cobertura_parcial` y no da la norma por cubierta.
+
+**El ejemplo de esta sección no era hipotético.** El párrafo de arriba ilustra la norma con `10.10.10.45` frente a `10.10.10.50` desde v19. Al estrenar el detector y contrastarlo contra un vault ajeno —regla 7, solo lectura— apareció exactamente eso: `host_ip` valía `10.10.10.45` en una nota de servidor y `10.10.10.50` en otra del mismo host, y `pve_version` divergía entre `9.1.1` y `8.4.16` en el mismo par. El estándar llevaba diecisiete versiones describiendo el defecto con el número correcto y sin nada que lo mirase. `vault-sandbox/` no podía exhibirlo: lo genera este repo y comparte sus supuestos.
+
 ---
 
 ### AP-06 — Templates sin instancias reales
@@ -4993,7 +5003,7 @@ Dos causas, y la segunda es la incómoda:
 
 1. **El audit no lo ejecuta nadie.** En las **1.356 ejecuciones de tools
    registradas** en los `.tool-trace.json` de ese parque, `vault_norms` no
-   aparece **ni una vez**. 41 de las 102 tools del catálogo no se han ejecutado
+   aparece **ni una vez**. 41 de las 103 tools del catálogo no se han ejecutado
    jamás. Los agentes escriben; no gobiernan. Un enforcement que depende de que
    alguien se acuerde de invocarlo es enforcement en el papel.
 2. **Los valores no canónicos los escribía el propio estándar.** El más
@@ -5602,7 +5612,7 @@ de envelope con su contrato de `00_System/tool-spec.json`:
 Y la divergencia peor no era de forma sino de efecto: `jsNativeGraph` no tiene un
 solo `writeFile`. Un agente llamaba `vault_graph` por MCP, recibía `ok: true`, y
 el grafo se quedaba sin regenerar — **AP-37 y AP-47 servidos a la vez por el único
-camino que un agente real usa**. `vault_smoke` recorre las 102 tools del catálogo,
+camino que un agente real usa**. `vault_smoke` recorre las 103 tools del catálogo,
 pero ejecuta el `.py`: probaba exactamente la implementación que el agente no toca.
 
 **Prevención:** backend nativo solo para lo que **no tiene** implementación en
@@ -6827,6 +6837,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.15 | 2026-08-12 | **AP-05** deja de ser la última norma `critical` sin detector, diecisiete versiones después. El problema declarado —decidir qué es «el mismo dato» sin embeddings— sigue abierto **en general**, y no hacía falta resolverlo entero: un dato **tipado** (IP, URL, puerto, semver) escrito como `clave: valor` lleva su identidad al lado y se compara por igualdad. `vault_fuente_unica` (puerta 16) mide esa parte y declara el resto en `cobertura_parcial` — la prosa, el valor sin tipo y el sinónimo siguen sin medirlas nadie, porque una medida parcial presentada como total es peor que ninguna. El contraste de la regla 7 devolvió el ejemplo literal que el manifiesto usa desde v19: `host_ip` con `10.10.10.45` y `10.10.10.50` en dos notas del mismo servidor, y `pve_version` entre `9.1.1` y `8.4.16`. Los patrones tipados viven en `vault_regex`, su dueño (AP-50), y no en el detector. `vault_arch` cazó de paso una clasificación equivocada —la tool nació en el meta-toolkit, que no toca las notas de nadie— y se corrigió moviéndola, no ampliando la baseline |
 | v40.14 | 2026-08-12 | La validación que corre **al nacer la nota** medía con su propio criterio en los cuatro sitios donde ya había dueño (AP-57), y con los dos signos del error a la vez: resolvía por basename —el enlace roto pasaba, en verde— y no miraba `aliases:` —avisaba del bueno—. Los dos se sostienen: el ruido enseña a ignorar el aviso justo cuando el aviso deja escapar lo que importa, y así un vault real llega a 221 enlaces muertos con la validación puesta. `vault_lib` estrena dos dueños más, `resolver_destino_wikilink` e `indice_de_destinos`; sin origen, una ruta relativa se devuelve sin resolver, porque no saber no es resolver a la raíz. Ninguno de los dos entra en el registro de `vault_criterios`: sus señales (`"|"`, `"#"`, `"aliases"`) no distinguen nada y daban 10 falsos, así que el límite se declara en vez de comprarse el verde con ruido |
 | v40.13 | 2026-08-12 | **AP-57** — la norma que v40.12 debió traer y no trajo. Aquella tanda arregló **cuatro** defectos de una misma tool y los cuatro tenían la misma forma: el registro canónico existía y nadie lo consultaba. Cuatro parches sin norma es exactamente lo que la regla 4 prohíbe. AP-57 generaliza AP-50 de **datos** duplicados a **criterios**: qué es una instantánea, qué es documentación del estándar, qué es código y no enlace. La diferencia importa porque un dato duplicado se ve al compararlo y un criterio vive enterrado en un `if`. `vault_criterios` (puerta 15) lo detecta por la constante distintiva del dueño, y **declara su límite antes de que nadie se apoye en él**: la detección es sintáctica, así que verde no prueba que no haya copias — prueba que no hay copias de la forma que sabe reconocer. Auditar con ella el primer día encontró la misma forma en `vault_graph_fix`, que **escribe**: su `skip_set` de instantáneas ya divergía de `vault_io.SNAPSHOT_DIRS`, y ahí la divergencia no infla un número — repara dentro de una instantánea congelada, que es dejar de serlo. Mirando esa tool salieron dos defectos más de la misma familia, ambos de escritura: reescribía wikilinks **dentro de un fence** —corrompiendo el ejemplo de la nota que documenta la sintaxis— y despojaba la carpeta de `[[carpeta/nota]]` a ciegas, que es el error de basename de v40.12 con el signo contrario: allí un enlace roto salía verde, aquí un enlace bueno se vuelve ambiguo. Ahora solo despoja si el destino con carpeta no existe **y** el basename es único; sin índice no toca nada. Y un cuarto, latente: `emit_error` construye el envelope, no lo devuelve como exit code, así que `--apply --check` publicaba `UNEXPECTED_ERROR` —«fallo interno»— sobre un error de uso con arreglo. Ninguna prueba había pisado esa rama |
 | v40.12 | 2026-08-12 | **AP-56** y la mitad que faltaba desde v40.2: el frontmatter que existe y el consumidor no lee. v40.2 arregló la escritura —`yaml_scalar` cita el valor— y dio el asunto por cerrado; lo que ya estaba en disco nunca se tocó. El contraste de regla 7 contra los cuatro vaults consumidores encontró **doce notas** con bloque `---` que `yaml.safe_load` rechaza: para Obsidian no tienen id, ni tags, ni estado, y como el bloque se ve al abrir el fichero nadie las revisa. Dos causas —ocho por el `: ` sin escapar, cuatro porque **el bloque no cierra** y el parser revienta cientos de líneas más abajo, señalando dónde explotó y no dónde está el fallo—. `vault_frontmatter_heal` repara las dos y se niega al resto: completar un YAML truncado inventa dato. Su única garantía es del consumidor, no suya: tras reparar, `yaml.safe_load` devuelve un dict y **ninguna clave que ya se leía cambia de valor**, o no escribe. Y tres defectos más de `vault_foreign_check`, los tres con la misma forma —el registro canónico existía y esta tool no lo consultaba—: instantáneas congeladas contadas como notas, wikilinks dentro de un fence contados como enlaces rotos (87 de 301 en /ans; solo visibles tras excluir la doc del estándar) y destinos con carpeta resueltos por basename, que daba por bueno lo que Obsidian pinta roto — el sentido de error peligroso, porque la medida sale verde |
@@ -7162,6 +7173,60 @@ temp/
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
 
 ---
+
+### v40.15 — 2026-08-12 `git: pending`
+
+**La última norma `critical` sin detector, y por qué el problema entero no
+había que resolverlo.**
+
+AP-05 —el mismo dato con valores distintos en varias notas— es `critical` desde
+v19 y fue la última que quedaba descubierta. El motivo estaba escrito en su
+`cobertura_descubierta` y era cierto: decidir qué es «el mismo dato» sin
+embeddings es un problema de diseño abierto. Diecisiete módulos citaban AP-05
+en un comentario, al explicar por qué **no** copiaban un dato, y citar no es
+detectar.
+
+Sigue siendo cierto **en general**. Lo que desbloquea la medida es que no hace
+falta resolverlo en general para medir lo que hace daño. Un dato **tipado** —una
+IP, una URL, un puerto, un semver— no se reconoce por parecido: se compara por
+igualdad. Y su identidad no hay que adivinarla, porque está escrita al lado en
+forma de clave. `host_ip: 10.10.10.45` en una nota y `host_ip: 10.10.10.50` en
+otra del mismo ámbito es AP-05 sin ninguna semántica de por medio.
+
+`vault_fuente_unica` (puerta 16) mide eso y **declara el resto en vez de darlo
+por cubierto**: el catálogo pasa de `cobertura_descubierta` a
+`cobertura_parcial`. Fuera quedan la divergencia en prosa, la de valores sin
+tipo y la del sinónimo (`ip:` frente a `direccion_ip:`). Verde no prueba que el
+vault tenga una sola fuente de verdad; prueba que no hay divergencia de la clase
+que se puede decidir sin interpretar. La distinción no es un matiz: una medida
+parcial presentada como total es peor que ninguna, porque el verde se lee como
+garantía.
+
+**El ejemplo del manifiesto no era hipotético.** La sección de AP-05 ilustra la
+norma con `10.10.10.45` frente a `10.10.10.50` desde v19. El contraste de la
+regla 7 —vault ajeno, solo lectura— devolvió exactamente eso: `host_ip`
+divergente entre dos notas del mismo servidor, y `pve_version` entre `9.1.1` y
+`8.4.16` en el mismo par. Diecisiete versiones describiendo el defecto con el
+número correcto y sin nada que lo mirase. El vault de control salió en cero, que
+es lo que hace creíble el hallazgo.
+
+Tres cosas de método que esta tanda dejó por escrito:
+
+- **Los patrones tipados viven en `vault_regex`, no en el detector.** Es su dueño
+  (AP-50). Escribir el detector de una norma cometiendo otra habría sido empezar
+  torcido.
+- **La tool acabó en `Salud del Vault`, no en `Normas`.** El primer intento la
+  metió en el meta-toolkit, que por definición no toca las notas de nadie —y
+  esta las lee. Lo cazó `vault_arch`: la clasificación equivocada aparecía como
+  un cruce de frontera nuevo. La respuesta correcta era mover la tool, no
+  ampliar la baseline.
+- **El «solo 4 tools aceptan `--root`» de la regla 1 ya era falso.** Había un
+  quinto —`vault_foreign_check`— desde que existe la regla 7. Son dos conjuntos
+  distintos: las que escriben en el vault señalado y las que miden uno ajeno en
+  solo lectura. La cifra a mano estaba mal antes de esta tanda y se corrige aquí.
+
+20 tests nuevos. Los primeros que se escribieron no fijan lo que la tool ve,
+sino lo que declara que no ve.
 
 ### v40.14 — 2026-08-12 `git: d3d2762`
 

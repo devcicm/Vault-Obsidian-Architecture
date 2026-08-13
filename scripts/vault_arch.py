@@ -229,7 +229,8 @@ CONTEXTS: dict[str, dict] = {
         },
         "prohibe": [],
         "modulos": [
-            "vault_norms", "vault_audit", "vault_fundamentals",
+            "vault_norms", "vault_fuente_unica",
+            "vault_audit", "vault_fundamentals",
             "vault_quality_check", "vault_validate", "vault_security_scan",
             "vault_secret_scan", "vault_drift_detect", "vault_mermaid_check",
         ],

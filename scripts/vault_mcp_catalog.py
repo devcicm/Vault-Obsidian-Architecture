@@ -2532,6 +2532,74 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         ),
         "related": ["vault_norms", "vault_io", "vault_lib", "vault_gate"],
     },
+    "vault_fuente_unica": {
+        "name": "vault_fuente_unica",
+        "script": "vault_fuente_unica.py",
+        "group": "Salud del Vault",
+        "purpose": (
+            "AP-05: el mismo dato con valores distintos en varias notas. Era "
+            "la unica norma critical sin detector desde v19, porque decidir "
+            "que es el mismo dato sin embeddings es un problema abierto. Lo es "
+            "en general, no para un valor tipado: una IP, una URL, un puerto o "
+            "un semver escritos como clave: valor llevan su identidad al lado "
+            "y se comparan por igualdad. Cubre esa parte y declara el resto."
+        ),
+        "params": {
+            "check": {
+                "type": "boolean",
+                "required": False,
+                "description": "Mide los conflictos de fuente de verdad",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit 1 si aparece un conflicto nuevo",
+                "validators": [],
+            },
+            "report": {
+                "type": "boolean",
+                "required": False,
+                "description": "Los conflictos legibles: que valor dice cada nota",
+                "validators": [],
+            },
+            "freeze": {
+                "type": "boolean",
+                "required": False,
+                "description": "Recongela la baseline de conflictos preexistentes",
+                "validators": [],
+            },
+            "admitir-nuevos": {
+                "type": "boolean",
+                "required": False,
+                "description": "Permite congelar conflictos sin precedente",
+                "validators": [],
+            },
+            "root": {
+                "type": "string",
+                "required": False,
+                "description": "Vault ajeno a contrastar, solo lectura (regla 7)",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "Verde no prueba una sola fuente de verdad: prueba que no hay "
+            "divergencia de la clase decidible sin interpretar. La prosa, el "
+            "valor sin tipo y el sinonimo quedan fuera y se declaran",
+            "Solo compara valores tipados: un status o un owner divergen entre "
+            "notas legitimamente, y medirlos seria ruido",
+            "Excluye instantaneas, documentacion del estandar y bloques de "
+            "codigo preguntando a sus duenos canonicos (AP-57)",
+            "Baseline que solo encoge: un conflicto nuevo se resuelve con PAT-1",
+        ],
+        "side_effects": ["scripts/fuente-unica-baseline.json"],
+        "example": (
+            "python vault_fuente_unica.py --check\n"
+            "python vault_fuente_unica.py --report\n"
+            "python vault_fuente_unica.py --check --strict"
+        ),
+        "related": ["vault_norms", "vault_regex", "vault_audit", "vault_gate"],
+    },
     "vault_norms_coherence": {
         "name": "vault_norms_coherence",
         "script": "vault_norms_coherence.py",
@@ -3668,7 +3736,7 @@ GROUPS: Dict[str, List[str]] = {
         "vault_move",
     ],
     "Observabilidad": ["vault_log_error"],
-    "Salud del Vault": ["vault_audit", "vault_validate", "vault_graph", "vault_graph_merge", "vault_graph_inspect"],
+    "Salud del Vault": ["vault_fuente_unica", "vault_audit", "vault_validate", "vault_graph", "vault_graph_merge", "vault_graph_inspect"],
     "Patrones": ["vault_pattern_save", "vault_pattern_list"],
     "Diagramas": [
         "vault_diagram_save",

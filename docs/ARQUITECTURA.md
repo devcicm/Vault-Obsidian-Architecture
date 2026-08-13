@@ -2,7 +2,7 @@
 
 > Documento derivado. Se genera con `python scripts/vault_arch.py --blueprint`; la fuente es `CONTEXTS` en `scripts/vault_arch.py`. No se edita a mano.
 
-**9 contextos**, **125 módulos** clasificados, **61 fronteras cruzadas** pendientes de publicar puerto.
+**9 contextos**, **126 módulos** clasificados, **61 fronteras cruzadas** pendientes de publicar puerto.
 
 ## Los límites
 
@@ -116,7 +116,7 @@ Fronteras que hoy cruza (4), deuda declarada:
 
 - **Lenguaje ubicuo:** norma, guard, enforcement, severidad, violación, estado, transición de estado, fundamento, hallazgo
 - **Puertos publicados:** `FUNDAMENTOS` → `vault_fundamentals:FUNDAMENTALS`, `NORM_CATALOG` → `vault_norms:NORM_CATALOG`, `auditar` → `vault_audit:vault_audit`, `cuerpo_sin_marcadores` → `vault_norms:cuerpo_sin_marcadores`, `gancho_de_secretos` → `vault_secret_scan:vault_write_hook`, `hay_hallazgos_bloqueantes` → `vault_secret_scan:has_blocking_findings`, `identidad_de_documentacion` → `vault_audit:es_documentacion_del_estandar`, `lineas_de_estado` → `vault_norms:status_frontmatter_lines`, `norma_por_codigo` → `vault_norms:norma_por_codigo`, `normalizar_estado` → `vault_norms:normalize_status`, `penalizaciones` → `vault_audit:PENALIZACIONES`, `puntuar_calidad` → `vault_quality_check:vault_quality_check`, `referencias_de_norma` → `vault_norms:compute_norm_refs`, `registro_de_ciclo_de_vida` → `vault_norms:LIFECYCLE_REGISTRY`, `transiciones_de_estado` → `vault_norms:STATUS_TRANSITIONS`, `validar_mermaid` → `vault_mermaid_check:validate_mermaid`, `valores_cia` → `vault_fundamentals:cia_valores`, `vocabulario_de_dominio` → `vault_norms:DOMAIN_STATUS_VOCABS`, `vocabulario_de_estado` → `vault_norms:STATUS_VOCAB`
-- **Módulos (9):** `vault_audit`, `vault_drift_detect`, `vault_fundamentals`, `vault_mermaid_check`, `vault_norms`, `vault_quality_check`, `vault_secret_scan`, `vault_security_scan`, `vault_validate`
+- **Módulos (10):** `vault_audit`, `vault_drift_detect`, `vault_fuente_unica`, `vault_fundamentals`, `vault_mermaid_check`, `vault_norms`, `vault_quality_check`, `vault_secret_scan`, `vault_security_scan`, `vault_validate`
 
 Fronteras que hoy cruza (6), deuda declarada:
 

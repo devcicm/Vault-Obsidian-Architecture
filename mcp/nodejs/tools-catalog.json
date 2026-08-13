@@ -1777,6 +1777,56 @@
         "vault_foreign_check"
       ]
     },
+    "vault_fuente_unica": {
+      "name": "vault_fuente_unica",
+      "description": "AP-05: el mismo dato con valores distintos en varias notas. Era la unica norma critical sin detector desde v19, porque decidir que es el mismo dato sin embeddings es un problema abierto. Lo es en general, no para un valor tipado: una IP, una URL, un puerto o un semver escritos como clave: valor llevan su identidad al lado y se comparan por igualdad. Cubre esa parte y declara el resto.",
+      "group": "Salud del Vault",
+      "script": "vault_fuente_unica.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "check": {
+            "type": "string",
+            "description": "Mide los conflictos de fuente de verdad"
+          },
+          "strict": {
+            "type": "string",
+            "description": "Exit 1 si aparece un conflicto nuevo"
+          },
+          "report": {
+            "type": "string",
+            "description": "Los conflictos legibles: que valor dice cada nota"
+          },
+          "freeze": {
+            "type": "string",
+            "description": "Recongela la baseline de conflictos preexistentes"
+          },
+          "admitir-nuevos": {
+            "type": "string",
+            "description": "Permite congelar conflictos sin precedente"
+          },
+          "root": {
+            "type": "string",
+            "description": "Vault ajeno a contrastar, solo lectura (regla 7)"
+          }
+        }
+      },
+      "guards": [
+        "Verde no prueba una sola fuente de verdad: prueba que no hay divergencia de la clase decidible sin interpretar. La prosa, el valor sin tipo y el sinonimo quedan fuera y se declaran",
+        "Solo compara valores tipados: un status o un owner divergen entre notas legitimamente, y medirlos seria ruido",
+        "Excluye instantaneas, documentacion del estandar y bloques de codigo preguntando a sus duenos canonicos (AP-57)",
+        "Baseline que solo encoge: un conflicto nuevo se resuelve con PAT-1"
+      ],
+      "side_effects": [
+        "scripts/fuente-unica-baseline.json"
+      ],
+      "related": [
+        "vault_norms",
+        "vault_regex",
+        "vault_audit",
+        "vault_gate"
+      ]
+    },
     "vault_fundamentals": {
       "name": "vault_fundamentals",
       "description": "Métricas fundamentales del vault.",
@@ -4989,6 +5039,7 @@
       "vault_log_error"
     ],
     "Salud del Vault": [
+      "vault_fuente_unica",
       "vault_audit",
       "vault_validate",
       "vault_graph",

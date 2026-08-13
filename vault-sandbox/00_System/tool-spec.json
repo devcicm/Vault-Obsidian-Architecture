@@ -730,6 +730,45 @@
       "superseded_by": "vault_write",
       "reason": "Superseded por vault_write, que conserva su contrato."
     },
+    "vault_criterios": {
+      "group": "Normas",
+      "group_id": 35,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "action",
+        "admitted_new",
+        "baseline_size",
+        "copies",
+        "copies_total",
+        "criterios",
+        "error_code",
+        "frozen",
+        "hint",
+        "modules_scanned",
+        "new_copies",
+        "norm",
+        "ok",
+        "recovery",
+        "resolved_since_baseline",
+        "tool",
+        "vault_says"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency",
+          "integrity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F8"
+      ]
+    },
     "vault_dataset": {
       "group": "internal",
       "group_id": 0,
@@ -1234,6 +1273,77 @@
           "accuracy",
           "validity",
           "completeness"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F8"
+      ]
+    },
+    "vault_frontmatter_heal": {
+      "group": "Corrección Automática",
+      "group_id": 33,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "action",
+        "healed",
+        "hint",
+        "notes_scanned",
+        "ok",
+        "repaired",
+        "repaired_count",
+        "tool",
+        "unparseable_total",
+        "unrepairable",
+        "unrepairable_count"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "validity",
+          "integrity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F5"
+      ]
+    },
+    "vault_fuente_unica": {
+      "group": "Salud del Vault",
+      "group_id": 6,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "action",
+        "admitted_new",
+        "baseline_size",
+        "conflicts",
+        "conflicts_total",
+        "error_code",
+        "frozen",
+        "hint",
+        "new_conflicts",
+        "norm",
+        "ok",
+        "recovery",
+        "report",
+        "resolved_since_baseline",
+        "tool",
+        "vault_says"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency",
+          "accuracy"
         ],
         "cia_scope": [
           "integrity"
@@ -2167,45 +2277,6 @@
         "propagation_aware": false
       },
       "fundamentals": []
-    },
-    "vault_criterios": {
-      "group": "Normas",
-      "group_id": 35,
-      "status": "active",
-      "required_args": [],
-      "declared_returns": [
-        "action",
-        "admitted_new",
-        "baseline_size",
-        "copies",
-        "copies_total",
-        "criterios",
-        "error_code",
-        "frozen",
-        "hint",
-        "modules_scanned",
-        "new_copies",
-        "norm",
-        "ok",
-        "recovery",
-        "resolved_since_baseline",
-        "tool",
-        "vault_says"
-      ],
-      "dq": {
-        "dq_dimensions": [
-          "consistency",
-          "integrity"
-        ],
-        "cia_scope": [
-          "integrity"
-        ],
-        "propagation_aware": false
-      },
-      "fundamentals": [
-        "F1",
-        "F8"
-      ]
     },
     "vault_norms_coherence": {
       "group": "Normas",
@@ -3793,39 +3864,6 @@
         "F1",
         "F3",
         "F7"
-      ]
-    },
-    "vault_frontmatter_heal": {
-      "group": "Corrección Automática",
-      "group_id": 33,
-      "status": "active",
-      "required_args": [],
-      "declared_returns": [
-        "action",
-        "healed",
-        "hint",
-        "notes_scanned",
-        "ok",
-        "repaired",
-        "repaired_count",
-        "tool",
-        "unparseable_total",
-        "unrepairable",
-        "unrepairable_count"
-      ],
-      "dq": {
-        "dq_dimensions": [
-          "validity",
-          "integrity"
-        ],
-        "cia_scope": [
-          "integrity"
-        ],
-        "propagation_aware": false
-      },
-      "fundamentals": [
-        "F1",
-        "F5"
       ]
     }
   },
