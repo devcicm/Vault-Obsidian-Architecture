@@ -58,6 +58,7 @@ from typing import Any, Dict, List, Optional
 
 from vault_regex import RE_WIKILINK_DESTINO  # dueño único del patrón (AP-50)
 from vault_audit import es_documentacion_del_estandar  # dueño único del criterio
+from vault_io import is_snapshot_path  # dueño único de qué es una instantánea
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -156,7 +157,23 @@ def _frontmatter(texto: str) -> Any:
 
 
 def contrastar(destino: Path) -> Dict[str, Any]:
-    notas = [p for p in destino.rglob("*.md") if p.is_file()]
+    # `.history/` (historial local de VSCode), `.trash/` y `vault-backups/` son
+    # instantáneas congeladas, no notas: la misma nota aparece ahí veinte veces
+    # con el estado que tuvo veinte tardes distintas. Contarlas infla el total y
+    # sus enlaces a ficheros que ya se renombraron salen como rotos del vault
+    # vivo — 38 notas en el de `ans`, 2 en el de `electron`.
+    #
+    # Qué cuenta como instantánea lo dice `vault_io.SNAPSHOT_DIRS`, que es el
+    # dueño del criterio para todas las demás tools. Se importa por el mismo
+    # motivo que `es_documentacion_del_estandar`: una segunda lista de carpetas
+    # aquí se queda desactualizada el día que se añada la tercera.
+    todas = [p for p in destino.rglob("*.md") if p.is_file()]
+    instantaneas = [
+        str(p.relative_to(destino)) for p in todas
+        if is_snapshot_path(p.relative_to(destino))
+    ]
+    congeladas = set(instantaneas)
+    notas = [p for p in todas if str(p.relative_to(destino)) not in congeladas]
 
     ilegibles: List[str] = []
     sin_frontmatter = 0
@@ -215,6 +232,10 @@ def contrastar(destino: Path) -> Dict[str, Any]:
     medidas = len(notas) - len(ilegibles)
     return {
         "notes_found": len(notas),
+        # Igual que la doc excluida: dicho, no callado. Un total que encoge sin
+        # explicar por qué es indistinguible de una medida que dejó de mirar.
+        "snapshot_notes_excluded": instantaneas,
+        "snapshot_notes_excluded_count": len(instantaneas),
         "notes_measured": medidas,
         # Va junto al resultado y no enterrado: un recuento sobre `notes_measured`
         # no es un recuento sobre el vault, y quien lo lea tiene derecho a saberlo.

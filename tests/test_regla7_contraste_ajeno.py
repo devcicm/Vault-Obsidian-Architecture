@@ -234,6 +234,33 @@ def test_la_doc_del_estandar_copiada_no_aporta_enlaces_rotos(tmp_path):
     assert m["wikilinks_total"] == 1, "la doc no aporta ni el enlace ni el roto"
 
 
+def test_una_instantanea_congelada_no_es_una_nota_del_vault(tmp_path):
+    """El segundo hallazgo del contraste contra los cuatro consumidores.
+
+    `.history/` es el historial local de VSCode: la misma nota veinte veces, con
+    el estado que tuvo veinte tardes distintas. Sus enlaces apuntan a ficheros
+    que desde entonces se renombraron, así que salían como enlaces rotos del
+    vault vivo — 38 notas en el de `ans`, 2 en el de `electron`. Ninguna otra
+    tool las miraba: `vault_io.SNAPSHOT_DIRS` es el dueño del criterio desde
+    hace versiones, y el contraste era el único que no lo consultaba.
+    """
+    (tmp_path / "viva.md").write_text("[[viva]]\n", encoding="utf-8")
+    (tmp_path / ".history").mkdir()
+    (tmp_path / ".history" / "viva-2026-05-09T06-52-01.md").write_text(
+        "[[un-nombre-que-ya-no-existe]]\n", encoding="utf-8")
+
+    m = vfc.contrastar(tmp_path)
+    assert m["notes_found"] == 1, "la instantánea no cuenta como nota"
+    assert m["snapshot_notes_excluded_count"] == 1
+    assert m["wikilinks_unresolved"] == 0, m["wikilinks_unresolved_sample"]
+
+
+def test_el_criterio_de_instantanea_tampoco_se_reimplementa():
+    import vault_io
+
+    assert vfc.is_snapshot_path is vault_io.is_snapshot_path
+
+
 def test_la_exclusion_de_doc_se_publica_en_vez_de_hacerse_en_silencio():
     """Excluir sin decirlo es indistinguible de un vault sin enlaces rotos."""
     campos = vfc.contrastar(Path(__file__).parent.parent / "docs")
