@@ -178,3 +178,55 @@ def test_ap05_ya_no_esta_descubierta():
 def test_la_puerta_16_existe():
     from vault_gate import PUERTAS
     assert any(p["id"] == "fuente_unica" for p in PUERTAS)
+
+
+class TestLoQueDestapoElQADeV40_16:
+    """Tres defectos de esta tool que ninguna prueba de v40.15 podía ver.
+
+    Los tres tienen la misma forma: la tool salía verde y el verde no
+    significaba lo que decía. El sandbox no los exhibe porque no tiene ninguna
+    nota que cite un comando ni ninguna clave con guion — que es, otra vez, el
+    motivo por el que la regla 7 existe.
+    """
+
+    def test_la_exclusion_mira_la_ruta_y_no_el_texto_de_la_nota(self, tmp_path):
+        """v40.15 llamaba `es_documentacion_del_estandar(crudo, rel)`, invertido.
+
+        Con el contenido en el parámetro de la ruta, la función buscaba
+        `"/scripts/"` dentro del **texto**: cualquier nota que citara un comando
+        —lo que este toolkit escribe todo el rato— quedaba fuera de la medida.
+        """
+        _nota(tmp_path / "infra/a.md",
+              "---\nproject: acme\n---\n\nDespliegue: `python scripts/deploy.py`\nhost_ip: 10.0.0.1\n")
+        _nota(tmp_path / "infra/b.md",
+              "---\nproject: acme\n---\n\nVer `repo/scripts/otro.sh`\nhost_ip: 10.0.0.2\n")
+        conflictos = fu.medir(tmp_path)
+        claves = {c["clave"] for c in conflictos}
+        assert "host_ip" in claves, (
+            "Dos notas que citan una ruta con /scripts/ deben medirse igual: "
+            "el criterio de exclusión decide sobre la ruta de la nota, no "
+            "sobre lo que la nota cuenta."
+        )
+
+    def test_la_clave_del_frontmatter_se_normaliza_como_la_del_cuerpo(self, tmp_path):
+        """`port-local:` es «clave de la nota» en el cuerpo y lo era en el
+        frontmatter: se filtraba con `lower()` a secas y se normalizaba
+        después, así que el guion sobrevivía al filtro."""
+        _nota(tmp_path / "infra/a.md", "---\nproject: acme\nport-local: 8080\n---\n\ntexto\n")
+        _nota(tmp_path / "infra/b.md", "---\nproject: acme\nport-local: 9090\n---\n\ntexto\n")
+        assert fu.medir(tmp_path) == [], (
+            "`port_local` está en CLAVES_DE_LA_NOTA: escrito con guion en el "
+            "frontmatter tiene que excluirse igual que en el cuerpo."
+        )
+
+    def test_freeze_se_niega_aunque_la_baseline_este_vacia(self, tmp_path, monkeypatch):
+        """La condición llevaba `and base`, así que la negativa se desactivaba
+        justo cuando la baseline nace vacía — el momento más barato para
+        congelar la primera deuda sin que nadie la vea pasar."""
+        _nota(tmp_path / "infra/a.md", "---\nproject: acme\n---\n\nip: 1.1.1.1\n")
+        _nota(tmp_path / "infra/b.md", "---\nproject: acme\n---\n\nip: 2.2.2.2\n")
+        monkeypatch.setattr(fu, "BASELINE", tmp_path / "no-existe.json")
+        salida = fu.freeze(tmp_path)
+        assert salida["ok"] is False
+        assert salida["error_code"] == "DEBT_WOULD_GROW"
+        assert salida["new_conflicts"], "la deuda que se niega a congelar se lista"

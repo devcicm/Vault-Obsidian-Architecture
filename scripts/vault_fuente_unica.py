@@ -95,11 +95,23 @@ def _ambito(rel: Path, fm: Dict[str, Any]) -> str:
     return f"folder:{partes[0]}" if len(partes) > 1 else "folder:."
 
 
+def _clave(bruta: str) -> str:
+    """La forma normalizada de una clave, en un solo sitio.
+
+    El cuerpo y el frontmatter la normalizaban por separado y no igual: el
+    frontmatter filtraba `CLAVES_DE_LA_NOTA` con un `lower()` a secas y
+    normalizaba **después**, así que un `port-local:` en el frontmatter pasaba
+    el filtro que el mismo `port-local:` del cuerpo no pasaba. Dos lectores del
+    mismo campo con criterios distintos es lo que esta tool existe para señalar.
+    """
+    return bruta.strip().lower().replace(" ", "_").replace("-", "_")
+
+
 def _pares(texto: str) -> List[tuple]:
     """`clave: valor` con valor tipado. Todo lo demás se descarta aquí."""
     fuera = []
     for m in RE_CLAVE_VALOR.finditer(texto):
-        clave = m.group(1).strip().lower().replace(" ", "_").replace("-", "_")
+        clave = _clave(m.group(1))
         if not clave or clave in CLAVES_DE_LA_NOTA:
             continue
         valor = m.group(2).strip()
@@ -124,7 +136,14 @@ def medir(raiz: Optional[Path] = None) -> List[Dict[str, Any]]:
             crudo = p.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
             continue
-        if es_documentacion_del_estandar(crudo, rel):
+        # El orden importa y ya salió mal una vez: la firma es
+        # `(rel, contenido)`, y v40.15 la llamó al revés. Con el contenido en
+        # `rel`, la función buscaba `"/scripts/"` dentro del **texto** de la
+        # nota, así que cualquier nota que citara un comando quedaba fuera de
+        # la medida — y la documentación del estándar, que sí se excluye,
+        # entraba. Verde por no mirar en un sentido y ruido en el otro.
+        # `as_posix()` porque la firma pide la ruta con `/`, no un Path.
+        if es_documentacion_del_estandar(rel.as_posix(), crudo):
             continue
 
         fm: Dict[str, Any] = {}
@@ -146,10 +165,11 @@ def medir(raiz: Optional[Path] = None) -> List[Dict[str, Any]]:
         texto = crudo[:0] + strip_code_blocks(cuerpo)
         pares = _pares(texto)
         for k, v in fm.items():
-            if isinstance(v, (str, int)) and str(k).lower() not in CLAVES_DE_LA_NOTA:
+            clave = _clave(str(k))
+            if isinstance(v, (str, int)) and clave and clave not in CLAVES_DE_LA_NOTA:
                 t = tipo_de_valor(str(v))
                 if t:
-                    pares.append((str(k).strip().lower().replace("-", "_"), str(v), t))
+                    pares.append((clave, str(v), t))
 
         ambito = _ambito(rel, fm)
         for clave, valor, tipo in pares:
@@ -216,7 +236,10 @@ def freeze(raiz: Optional[Path] = None, admitir_nuevos: bool = False) -> Dict[st
     firmas = sorted({_firma(c) for c in conflictos})
     base = set(_baseline())
     nuevos = sorted(set(firmas) - base)
-    if nuevos and not admitir_nuevos and base:
+    # Sin `and base`: una baseline vacía —o todavía sin fichero, que es como
+    # nace esta— no es permiso para congelar la primera deuda en silencio. Es
+    # justo el momento en que más barato sale hacerlo y menos se nota.
+    if nuevos and not admitir_nuevos:
         return {
             "ok": False, "tool": "vault_fuente_unica", "action": "freeze",
             "error_code": "DEBT_WOULD_GROW", "new_conflicts": nuevos,

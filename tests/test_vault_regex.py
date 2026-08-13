@@ -275,3 +275,27 @@ class TestEdgeCases:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+def test_clave_vacia_no_se_come_la_linea_siguiente():
+    """El defecto que dejó a AP-05 ciega justo en la nota que cita un comando.
+
+    `strip_code_blocks` quita el `` `comando` `` inline y deja `Despliegue:`
+    con el valor vacío. Con la clase de espacio que incluye el salto de línea,
+    seguía leyendo y tomaba la línea de abajo como valor, así que el `host_ip:`
+    desaparecía de la medida sin que nada lo dijera.
+    """
+    from vault_regex import RE_CLAVE_VALOR
+
+    texto = "Despliegue: \nhost_ip: 10.0.0.1\n"
+    pares = {m.group(1): m.group(2) for m in RE_CLAVE_VALOR.finditer(texto)}
+    assert pares.get("host_ip") == "10.0.0.1"
+    assert "Despliegue" not in pares, "una clave sin valor no es un par"
+
+
+def test_el_par_no_cruza_lineas_en_blanco():
+    from vault_regex import RE_CLAVE_VALOR
+
+    pares = {m.group(1): m.group(2)
+             for m in RE_CLAVE_VALOR.finditer("clave:\n\n\nversion: 1.2.3\n")}
+    assert pares == {"version": "1.2.3"}

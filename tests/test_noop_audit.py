@@ -112,3 +112,29 @@ def test_freeze_produce_una_baseline_que_deja_el_scan_limpio(monkeypatch, tmp_pa
     monkeypatch.setattr(vna, "BASELINE_PATH", destino)
     vna.freeze()
     assert vna.scan()["new_offenders"] == []
+
+
+def test_freeze_se_niega_a_congelar_deuda_sin_precedente(tmp_path, monkeypatch):
+    """`CLAUDE.md` promete `DEBT_WOULD_GROW` para los tres guards con baseline.
+
+    De los tres era el único que no lo implementaba: `freeze()` reescribía la
+    baseline con lo que hubiera. Con la lista en cero, una tool nueva sin
+    indicador más un `--freeze` de rutina la congelaba y la puerta seguía
+    verde. La deuda entra por donde nadie mira, y nadie mira el `--freeze`.
+    """
+    import vault_noop_audit as na
+
+    monkeypatch.setattr(na, "offenders", lambda: [{"tool": "vault_inventada"}])
+    monkeypatch.setattr(na, "load_baseline", lambda: [])
+    salida = na.freeze()
+    assert salida["ok"] is False
+    assert salida["error_code"] == "DEBT_WOULD_GROW"
+    assert "vault_inventada" in salida["message"]
+
+    # `--admitir-nuevos` sí congela, y se comprueba contra una baseline de
+    # usar y tirar: la de verdad vive en `scripts/` y un test que la reescriba
+    # deja la deuda del repo en lo que el test inventó.
+    falsa = tmp_path / "noop-baseline.json"
+    monkeypatch.setattr(na, "BASELINE_PATH", falsa)
+    assert na.freeze(admitir_nuevos=True)["ok"] is True
+    assert json.loads(falsa.read_text(encoding="utf-8"))["tools"] == ["vault_inventada"]

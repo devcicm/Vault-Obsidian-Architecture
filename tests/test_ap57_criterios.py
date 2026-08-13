@@ -207,3 +207,21 @@ def test_la_puerta_15_existe_y_apunta_a_la_tool():
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-q"]))
+
+
+def test_una_baseline_corrupta_no_se_lee_como_vacia(tmp_path, monkeypatch):
+    """AP-51 dentro del propio guard.
+
+    Leerla como vacía tiene dos consecuencias y ninguna es visible: en `check`
+    estrena la deuda entera como nueva; en `freeze` la congela sin que nadie la
+    vea pasar. `vault_fuente_unica` lee el mismo formato y sí levantaba.
+    """
+    import pytest
+
+    import vault_criterios as vc
+
+    rota = tmp_path / "criterios-baseline.json"
+    rota.write_text("{no es json", encoding="utf-8")
+    monkeypatch.setattr(vc, "BASELINE", rota)
+    with pytest.raises(RuntimeError, match="corrupta"):
+        vc._baseline()

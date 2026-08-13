@@ -146,8 +146,18 @@ RE_SEMVER = re.compile(r"\bv?\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?\b")
 #: `clave: valor` al principio de línea o de item de lista. Es el único sitio
 #: donde un dato lleva su identidad escrita al lado; en prosa no la lleva, y
 #: eso es el límite declarado de la medida, no un caso pendiente.
-RE_CLAVE_VALOR = re.compile(r"^\s*(?:[-*]\s+)?([A-Za-z][\w .\-/]{0,40}?)\s*:\s*(\S.*?)\s*$",
-                            re.MULTILINE)
+#:
+#: Los espacios se escriben `[^\S\n]` y no `\s` a propósito: `\s` incluye el
+#: salto de línea, así que una clave con el valor vacío —lo que deja
+#: `strip_code_blocks` al quitar un `` `comando` `` inline— seguía leyendo y se
+#: **comía la línea siguiente** como su valor. `Despliegue:` con la orden entre
+#: comillas invertidas hacía desaparecer el `host_ip:` de debajo, y la nota
+#: quedaba fuera de AP-05 sin que nada lo dijera. Verde por no mirar, y en el
+#: caso más común de este toolkit: una nota que cita un comando.
+RE_CLAVE_VALOR = re.compile(
+    r"^[^\S\n]*(?:[-*][^\S\n]+)?([A-Za-z][\w .\-/]{0,40}?)[^\S\n]*:[^\S\n]*(\S.*?)[^\S\n]*$",
+    re.MULTILINE,
+)
 
 
 def es_ipv4(texto: str) -> bool:

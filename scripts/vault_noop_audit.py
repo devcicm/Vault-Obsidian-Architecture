@@ -41,7 +41,7 @@ from typing import Dict, List
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 BASELINE_PATH = Path(__file__).resolve().parent / "noop-baseline.json"
@@ -142,8 +142,24 @@ def scan() -> Dict:
     }
 
 
-def freeze() -> Dict:
+def freeze(admitir_nuevos: bool = False) -> Dict:
+    """Recongela, y se **niega** si eso haría crecer la deuda.
+
+    `CLAUDE.md` promete esta negativa para los tres guards con baseline, y de
+    los tres era el único que no la tenía: reescribía la baseline con lo que
+    hubiera. Con la lista hoy en cero, una tool nueva sin indicador más un
+    `--freeze` de rutina la congelaba en silencio y la puerta seguía verde —
+    la deuda entra por el sitio por el que nadie mira, que es el `--freeze`.
+    """
     nombres = sorted(o["tool"] for o in offenders())
+    nuevas = sorted(set(nombres) - set(load_baseline()))
+    if nuevas and not admitir_nuevos:
+        return emit_error(
+            "vault_noop_audit", "DEBT_WOULD_GROW",
+            f"{len(nuevas)} tool(s) sin precedente en la baseline: congelarlas "
+            f"aumentaría la deuda en silencio. Si es deliberado, "
+            f"`--freeze --admitir-nuevos`. Tools: {nuevas}",
+        )
     BASELINE_PATH.write_text(
         json.dumps(
             {
@@ -175,11 +191,16 @@ def main() -> int:
     parser.add_argument("--check", action="store_true", help="Reporta el estado de la deuda")
     parser.add_argument("--strict", action="store_true", help="Exit 1 si la deuda creció")
     parser.add_argument("--freeze", action="store_true", help="Recongela la baseline")
+    parser.add_argument(
+        "--admitir-nuevos", action="store_true",
+        help="Permite que --freeze congele deuda sin precedente, listándola",
+    )
     args = parser.parse_args()
 
     if args.freeze:
-        print(json.dumps(freeze(), ensure_ascii=False))
-        return 0
+        salida = freeze(admitir_nuevos=args.admitir_nuevos)
+        print(json.dumps(salida, ensure_ascii=False))
+        return 0 if salida.get("ok") else 1
 
     result = scan()
     print(json.dumps(result, ensure_ascii=False))

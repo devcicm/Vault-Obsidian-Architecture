@@ -175,10 +175,19 @@ def _firma(h: Dict[str, str]) -> str:
 def _baseline() -> List[str]:
     if not BASELINE.exists():
         return []
+    # No se traga el fallo (AP-51): una baseline ilegible leída como vacía
+    # estrena la deuda entera como nueva y, en `freeze`, la congela sin que
+    # nadie la vea pasar. El fallo de la tool no se presenta como ausencia en
+    # el dato. `vault_fuente_unica._baseline()` hace lo mismo, y esta lo hacía
+    # al revés siendo el mismo formato.
     try:
-        return json.loads(BASELINE.read_text(encoding="utf-8")).get("sitios", [])
-    except (OSError, json.JSONDecodeError):
-        return []
+        crudo = BASELINE.read_text(encoding="utf-8")
+    except OSError as e:
+        raise RuntimeError(f"baseline de AP-57 ilegible: {BASELINE} ({e})") from e
+    try:
+        return json.loads(crudo).get("sitios", [])
+    except json.JSONDecodeError as e:
+        raise RuntimeError(f"baseline de AP-57 corrupta: {BASELINE} ({e})") from e
 
 
 def check() -> Dict[str, Any]:
@@ -212,7 +221,9 @@ def freeze(admitir_nuevos: bool = False) -> Dict[str, Any]:
     firmas = sorted({_firma(h) for h in hallazgos})
     base = set(_baseline())
     nuevos = sorted(set(firmas) - base)
-    if nuevos and not admitir_nuevos and base:
+    # Sin `and base`: una baseline vacía no es permiso para congelar la
+    # primera deuda en silencio (ver la misma corrección en vault_fuente_unica).
+    if nuevos and not admitir_nuevos:
         return {
             "ok": False, "tool": "vault_criterios", "action": "freeze",
             "error_code": "DEBT_WOULD_GROW", "new_copies": nuevos,
