@@ -7441,7 +7441,7 @@ temp/
 
 ---
 
-### v40.23 — 2026-08-14 `git: pending`
+### v40.23 — 2026-08-14 `git: 77981b5`
 
 **El guard caía con el dato que venía a medir, y seis lectores del frontmatter no lo estaban
 leyendo.**
@@ -7473,7 +7473,8 @@ escrito— porque un guard que no publica su alcance certifica más de lo que mi
 **Los seis parsers ciegos.** Seis módulos leían el frontmatter con un regex línea a línea
 (`^---
 `, `split(":",1)`, `strip("\"'")`). Contrastado contra el dueño canónico sobre las 126
-notas de `vault-sandbox/`, ese regex devolvía `{}` en **110**: no casa `---
+notas de `vault-sandbox/`, ese regex devolvía `{}` en **110**: no casa `---
+
 ` y no sobrevive
 al BOM que dejan los editores de Windows, y el corpus real tiene las dos cosas. `{}` no es un
 error: es la respuesta legítima de «esta nota no tiene frontmatter», y por eso la ceguera llevaba
