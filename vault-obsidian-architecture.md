@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.21 — 2026-08-14  
+**Versión:** v40.22 — 2026-08-14  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -7056,6 +7056,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.22 | 2026-08-14 | **Las 57 normas mudas de AP-60 hablaron y la baseline quedó en cero**, saldada por atrición y no por congelación: 40 pares recíprocos de `distinguido_de`, escritos dentro de la categoría porque es donde vive la confusión real —el racimo `linking` AP-31/32/33/34 y el `metadata-completeness` AP-26/27/29/30 fueron los densos—. Cada texto nombra el **discriminador observable**, no la intención: presencia frente a valor (CN-03 vs AP-29), dirección del desfase (AP-04 va por delante del código, AP-08 por detrás), sujeto medido (AP-04 mide la nota, AP-42 mide la tool), dirección del cruce de frontera (AP-15 entra material ajeno, AP-36 salen side-effects). Ninguna necesitó `distincion_no_aplica`: las que parecían aisladas —AP-43 en `governance`, AP-41 en `lifecycle`— tenían pareja fuera de su categoría, que es exactamente lo que un detector por categoría no habría visto. **Contraste de la regla 7** sobre los cuatro vaults consumidores en solo lectura: cifras idénticas a v40.14 (ans 221/1709, builderx 106/1113, vcloud 3/574, electron 0/523), `frontmatter_unparseable` 0 en los cuatro y los dos conflictos de AP-05 de `/ans` en pie — no se reparan sin su dueño |
 | v40.21 | 2026-08-14 | Mirando el repo **como grafo** apareció el que ningún guard podía ver: `vault_norms_coherence` C5 comprueba que la distinción entre dos normas sea recíproca **iterando sobre `distinguido_de`**, así que solo alcanzaba a **13 normas de 71** — las otras 58 no estaban exentas, estaban invisibles. El incentivo estaba invertido: declarar una distinción obliga a editar la otra norma (AP-59 pagó tres ediciones y un fallo de puerta en v40.20) y callarse sale gratis y verde, que es justo lo que el estándar prohíbe en `cobertura_descubierta`. **AP-60** y C7 lo miden **por norma y no por par**, porque el detector de pares se probó y se descartó: de sus 68 pares confundibles, **59 eran `vault_audit`, `vault_write` y `vault_norms` consigo mismos** — cuarto intento fallido de detectar solapamiento semántico, que sigue abierto. Dos salidas honestas y ninguna tercera: `distinguido_de` con contenido o `distincion_no_aplica` con motivo escrito; el silencio cuenta como deuda, baseline de 57 que solo encoge. **Sin puerta nueva**: C7 vive en la tool que la puerta 14 ya ejecuta, porque sacarla aparte habría puesto un segundo dueño sobre el catálogo de normas — AP-57 cometido para ganar una casilla en la tabla |
 | v40.20 | 2026-08-14 | El **núcleo de este repo era una lista de quince nombres escrita a mano** en `vault_arch.CONTEXTS['kernel']['modulos']`, y ninguna puerta la contrastaba con nada. Sobre ella se apoyaba el guard de fronteras entre contextos: si la lista estaba mal, el verde era correcto respecto a un mapa equivocado. **AP-59** y `vault_kernel` (puerta 18) miden tres invariantes — K1 el núcleo no depende del dominio, K2 fan-in alto y fan-out bajo, K3 se mueve menos que lo que sostiene — con los umbrales **derivados del escalón** de la distribución y publicados con su ratio, porque un literal ahí sería AP-47 dentro de AP-59. Al medir para la tanda **dos hipótesis propias resultaron falsas** y quedaron corregidas antes de escribir código: K1 ya estaba medida y verde, y las seis «fugas» del kernel eran los seis `GANCHOS_DEL_KERNEL` declarados con motivo. Con la lista bien elegida aparecieron aun así **tres módulos que no se comportan como núcleo**: `vault_log_error` declarado kernel con fan-in 0, `vault_io` con fan-out 11 y 30 commits, `vault_errors` con 14 sobre una mediana de dominio de 9. Ninguno roto, ninguno visto. La precondición era otro AP-57 que nadie podía ver: **trece módulos parseaban imports por su cuenta** y los dos principales no coincidían —`vault_arch` filtra por prefijo e ignora los relativos, `vault_ciclos` filtra por pertenencia y los cuenta—, invisible para `vault_criterios` porque solo mide módulos que nombran `*.md`. `vault_grafo_import` es ahora el dueño, con fan-out cero y **las dos proyecciones conservadas con nombre**: unificarlas cambiaría los cruces de uno y las aristas del otro a la vez, estrenando deuda en dos baselines por un refactor que no arregla nada |
 | v40.19 | 2026-08-14 | AP-57 tenía un lado ciego declarado en ninguna parte: `vault_criterios` solo leía `scripts/*.py`, así que la copia de un criterio al otro lado de una **frontera de lenguaje** era justo la que la norma no podía ver — y v40.18 acababa de encontrar una. Se añade el registro `FRONTERAS`: cada frontera con su **zona** (clave de `vault_arch.CONTEXTS`), su **norma** y la **pasarela** por la que el criterio debe cruzar; al otro lado la exención no es importar al dueño, que no se puede, sino leer el artefacto derivado. Cuatro fronteras declaradas — `.mjs`, CI, `Makefile`, `.ps1` — y el alcance también: un ejecutable de otro lenguaje fuera de toda zona sale como `frontera_no_declarada`. Lo que midió al nacer: **la CI listaba a mano seis puertas de las diecisiete del registro y once no se ejecutaban en ningún PR** —changelog, arquitectura, blueprint, ciclos, criterios entre ellas—, y `make check` no ejecutaba ninguna. Nada estaba roto: la lista se quedó quieta mientras el registro crecía, que es como envejece una copia a través de una frontera. Los dos preguntan ahora al registro |
@@ -7398,6 +7399,46 @@ temp/
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
 
 ---
+
+### v40.22 — 2026-08-14 `git: pending`
+
+**Cincuenta y siete normas no decían de qué se distinguían, y la forma honesta de saldarlo
+era escribirlo, no congelarlo.**
+
+v40.21 dejó AP-60 midiendo por norma y una baseline de 57 mudas. Esta tanda la vacía. No hay
+código nuevo: hay 40 pares recíprocos de `distinguido_de`, que por C5 se instalan en las dos
+direcciones y por eso saldan 57 normas con 40 textos.
+
+**Dónde estaba la confusión.** En la categoría, casi siempre: `linking` (AP-31 arista sin
+`predicate`, AP-32 predicate fuera de la ontología, AP-33 sinónimo con canónico al que
+normalizar, AP-34 endpoint inexistente) y `metadata-completeness` (AP-26 `tags`, AP-27
+`type`, AP-29 `status`, AP-30 CIA) fueron los racimos densos. Pero **ninguna norma necesitó
+`distincion_no_aplica`**: las dos que parecían aisladas por categoría —AP-43 en `governance`,
+AP-41 en `lifecycle`— tenían pareja fuera de ella (AP-43 con AP-40, AP-41 con CN-03). Es la
+confirmación empírica de por qué el detector de pares por categoría de v40.21 no convergía:
+la categoría agrupa por dónde se aplica la norma, no por con qué se confunde.
+
+**Cada distinción nombra un discriminador observable, no una intención.** Presencia frente a
+valor: una nota sin `status` es AP-29 y no puede ser CN-03. Dirección del desfase: AP-04 va
+por delante del código, AP-08 por detrás. Sujeto medido: AP-04 mide la nota, AP-42 mide la
+tool, y por eso una la ve el audit de contenido y la otra el smoke. Dirección del cruce de
+frontera: AP-15 es material ajeno que entra al vault, AP-36 son side-effects que salen.
+Defecto frente a patrón que lo cierra: AP-03/PAT-2, AP-02/PAT-3, AP-05/PAT-1, AP-31/PAT-6 —
+saldar el anti-patrón *es* aplicar el patrón, y declararlo evita contarlos como dos hallazgos
+sobre la misma nota. Y los dos extremos del mismo eje: AP-11 es la nota vacía, AP-23 la que
+supera el techo de complejidad; ninguna nota puede incurrir en las dos.
+
+`scripts/norms-distincion-baseline.json` queda con la lista **vacía y el fichero en pie**:
+una deuda saldada no se borra, porque una entrada borrada no se distingue de una que nadie
+volvió a mirar.
+
+**Contraste de la regla 7, en solo lectura, sobre los cuatro vaults consumidores.** Las
+cifras salen idénticas a las de v40.14 —ans 221/1709, builderx 106/1113, vcloud 3/574,
+electron 0/523— con `frontmatter_unparseable` 0 en los cuatro: ninguna medida introducida
+desde entonces las movió, que es lo único que este contraste puede certificar. Los dos
+conflictos de AP-05 de `/ans` (`host_ip` y `pve_version` en dos notas del mismo servidor)
+siguen en pie: se miden, no se reparan — el material no lo generó este repo y su dueño no lo
+ha pedido. **No se propagó ninguna tool.**
 
 ### v40.21 — 2026-08-14 `git: bdcb2ac`
 

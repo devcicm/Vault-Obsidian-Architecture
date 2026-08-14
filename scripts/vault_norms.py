@@ -50,6 +50,16 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     # ── Anti-patrones ──────────────────────────────────────────────────────────
     {
         "code": "AP-01",
+        "distinguido_de": {
+            "AP-04": (
+                "Las dos documentan algo que el codigo no hace. AP-01 es la "
+                "afirmacion inventada: no hay implementacion ni intencion de tenerla, "
+                "y el discriminador es que no existe rastro en el repo. AP-04 es el "
+                "roadmap escrito en presente: la feature esta planeada y la nota la "
+                "presenta como ya entregada. Una se corrige borrando la afirmacion; "
+                "la otra, marcando el estado."
+            ),
+        },
         "name": "Documentación alucinada",
         "type": "antipattern",
         "category": "content-quality",
@@ -73,6 +83,19 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-02",
+        "distinguido_de": {
+            "AP-17": (
+                "AP-02 son varias versiones del mismo documento conviviendo, cada una "
+                "con su nombre. AP-17 es la duplicacion canonico-sombra: hay un "
+                "canonico declarado y una copia que lo sigue mal. El discriminador es "
+                "si existe un canonico designado."
+            ),
+            "PAT-3": (
+                "AP-02 es el defecto: la cadena de versiones duplicadas. PAT-3 es el "
+                "procedimiento que la resuelve, eligiendo canonico y anotando el "
+                "resto sin borrarlo. Saldar AP-02 es aplicar PAT-3."
+            ),
+        },
         "name": "Proliferación de versiones del mismo documento",
         "type": "antipattern",
         "category": "structure",
@@ -100,6 +123,15 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-03",
+        "distinguido_de": {
+            "PAT-2": (
+                "Miran el mismo stub desde los dos lados. AP-03 es el anti-patron: el "
+                "stub existe sin politica que diga cuando deja de serlo. PAT-2 es el "
+                "patron que la aporta: gradiente de enriquecimiento con umbrales. "
+                "Saldar AP-03 es aplicar PAT-2; no son dos hallazgos sobre la misma "
+                "nota."
+            ),
+        },
         "name": "Stubs sin política de expansión",
         "type": "antipattern",
         "category": "content-quality",
@@ -117,6 +149,30 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-04",
+        "distinguido_de": {
+            "AP-01": (
+                "Las dos documentan algo que el codigo no hace. AP-01 es la "
+                "afirmacion inventada: no hay implementacion ni intencion de tenerla, "
+                "y el discriminador es que no existe rastro en el repo. AP-04 es el "
+                "roadmap escrito en presente: la feature esta planeada y la nota la "
+                "presenta como ya entregada. Una se corrige borrando la afirmacion; "
+                "la otra, marcando el estado."
+            ),
+            "AP-08": (
+                "Las dos son documentacion desalineada del codigo, en sentidos "
+                "opuestos. AP-04 va por delante —describe lo que aun no existe—; "
+                "AP-08 va por detras —describe una version que ya paso—. El "
+                "discriminador es la direccion del desfase respecto a la version "
+                "viva."
+            ),
+            "AP-42": (
+                "AP-04 mide la nota: describe como entregado algo que no lo esta. "
+                "AP-42 mide la tool: esta publicada en el catalogo y nunca se "
+                "ejecuto. El discriminador es el sujeto medido —texto frente a "
+                "artefacto ejecutable—, y por eso una la detecta el audit de "
+                "contenido y la otra el smoke."
+            ),
+        },
         "name": "Features aspiracionales documentadas como implementadas",
         "type": "antipattern",
         "category": "content-quality",
@@ -139,6 +195,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-05",
+        "distinguido_de": {
+            "PAT-1": (
+                "AP-05 es el defecto: el mismo dato con valores distintos en varias "
+                "notas del mismo ambito. PAT-1 es el patron que lo cierra: una nota "
+                "canonica declara el dato y las demas la enlazan. Se declaran aparte "
+                "porque PAT-1 se aplica tambien donde AP-05 aun no ha ocurrido."
+            ),
+        },
         "name": "Múltiples fuentes de verdad para el mismo dato",
         "type": "antipattern",
         "category": "structure",
@@ -170,6 +234,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-06",
+        "distinguido_de": {
+            "AP-11": (
+                "AP-06 es la plantilla que nadie instancio: el fichero es un template "
+                "y su funcion es serlo. AP-11 es la nota real con frontmatter valido "
+                "y cuerpo vacio, que se presenta como contenido. El discriminador es "
+                "si el fichero se declara plantilla."
+            ),
+        },
         "name": "Templates sin instancias reales",
         "type": "antipattern",
         "category": "content-quality",
@@ -187,6 +259,16 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-07",
+        "distinguido_de": {
+            "AP-10": (
+                "Las dos son documentos de proceso incompletos. AP-07 es el ADR al "
+                "que le faltan secciones obligatorias —contexto, decision, "
+                "consecuencias—. AP-10 es la migracion sin plan de rollback: el "
+                "documento puede estar completo en todo lo demas. El discriminador es "
+                "que AP-10 nombra una seccion concreta cuya ausencia es "
+                "operativamente peligrosa."
+            ),
+        },
         "name": "ADRs incompletos",
         "type": "antipattern",
         "category": "process",
@@ -204,6 +286,15 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-08",
+        "distinguido_de": {
+            "AP-04": (
+                "Las dos son documentacion desalineada del codigo, en sentidos "
+                "opuestos. AP-04 va por delante —describe lo que aun no existe—; "
+                "AP-08 va por detras —describe una version que ya paso—. El "
+                "discriminador es la direccion del desfase respecto a la version "
+                "viva."
+            ),
+        },
         "name": "Documentación anclada a versiones obsoletas",
         "type": "antipattern",
         "category": "content-quality",
@@ -227,6 +318,15 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-09",
+        "distinguido_de": {
+            "CN-02": (
+                "CN-02 es la convencion general de destino: las secciones numeradas "
+                "son los unicos sitios validos. AP-09 es su incumplimiento con nombre "
+                "para un tipo concreto: los runbooks fuera de la estructura. Se "
+                "separa porque el runbook tiene ademas exigencias de contenido que "
+                "CN-02 no mira."
+            ),
+        },
         "name": "Runbooks fuera de estructura",
         "type": "antipattern",
         "category": "process",
@@ -244,6 +344,16 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-10",
+        "distinguido_de": {
+            "AP-07": (
+                "Las dos son documentos de proceso incompletos. AP-07 es el ADR al "
+                "que le faltan secciones obligatorias —contexto, decision, "
+                "consecuencias—. AP-10 es la migracion sin plan de rollback: el "
+                "documento puede estar completo en todo lo demas. El discriminador es "
+                "que AP-10 nombra una seccion concreta cuya ausencia es "
+                "operativamente peligrosa."
+            ),
+        },
         "name": "Migración sin plan de rollback",
         "type": "antipattern",
         "category": "process",
@@ -264,6 +374,27 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-11",
+        "distinguido_de": {
+            "AP-06": (
+                "AP-06 es la plantilla que nadie instancio: el fichero es un template "
+                "y su funcion es serlo. AP-11 es la nota real con frontmatter valido "
+                "y cuerpo vacio, que se presenta como contenido. El discriminador es "
+                "si el fichero se declara plantilla."
+            ),
+            "AP-20": (
+                "AP-11 es el cuerpo vacio: no hay nada que leer y se nota. AP-20 es "
+                "el esqueleto enganoso: hay estructura y campos, y las listas estan "
+                "vacias, asi que la nota pasa por completa ante cualquier medida que "
+                "cuente secciones. El discriminador es si el vacio es visible o esta "
+                "disfrazado."
+            ),
+            "AP-23": (
+                "Son los dos extremos del mismo eje. AP-11 es defecto de contenido "
+                "—la nota no dice nada—; AP-23 es exceso —la nota supera el techo de "
+                "complejidad y deberia partirse—. Ninguna nota puede incurrir en las "
+                "dos."
+            ),
+        },
         "name": "Skeleton files — frontmatter válido, contenido vacío",
         "type": "antipattern",
         "category": "content-quality",
@@ -282,6 +413,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-12",
+        "distinguido_de": {
+            "AP-46": (
+                "AP-12 es el sintoma medido en las notas: dos notas del mismo tipo "
+                "con frontmatter distinto. AP-46 es la causa medida en el codigo: no "
+                "hay escritor unico de frontmatter. Se separan porque el vault puede "
+                "quedar coherente a mano con la causa intacta."
+            ),
+        },
         "name": "Frontmatter inconsistente entre notas del mismo tipo",
         "type": "antipattern",
         "category": "frontmatter",
@@ -303,6 +442,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-13",
+        "distinguido_de": {
+            "AP-53": (
+                "AP-13 mide el timestamp del frontmatter contra su propio formato: "
+                "invalido o incompleto. AP-53 mide la afirmacion historica contra "
+                "git: la fecha es valida y no coincide con el commit. El "
+                "discriminador es si hay una fuente externa contra la que contrastar."
+            ),
+        },
         "name": "Timestamps inválidos o incompletos en frontmatter",
         "type": "antipattern",
         "category": "frontmatter",
@@ -320,6 +467,34 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-14",
+        "distinguido_de": {
+            "AP-21": (
+                "Las dos son wikilinks defectuosos. AP-14 es el link que no resuelve "
+                "a ningun destino. AP-21 resuelve, pero esta anclado a una ruta "
+                "concreta, asi que se rompe en cuanto la nota se mueve. El "
+                "discriminador es si hoy resuelve: AP-14 ya esta roto, AP-21 lo "
+                "estara."
+            ),
+            "AP-25": (
+                "Las dos son referencias que no resuelven. AP-14 vive en el grafo de "
+                "Obsidian —wikilinks entre notas—; AP-25 vive dentro de un diagrama "
+                "mermaid, donde el nodo citado no esta definido. El discriminador es "
+                "el espacio de nombres en el que se busca el destino."
+            ),
+            "AP-34": (
+                "AP-14 es el wikilink sin destino; AP-34 es la relacion tipada cuyo "
+                "endpoint no existe. La misma ausencia en dos capas: la sintactica "
+                "del enlace y la semantica del grafo de predicados. Una nota puede "
+                "tener AP-34 con todos sus wikilinks intactos."
+            ),
+            "SP-02": (
+                "AP-14 es el defecto ya escrito: el link roto esta en el vault. SP-02 "
+                "es el protocolo que lo evita —buscar el destino antes de escribir el "
+                "enlace—. Una se detecta auditando; la otra se cumple o no en el "
+                "momento de escribir, y su incumplimiento solo se ve como AP-14 mas "
+                "tarde."
+            ),
+        },
         "name": "Wiki-links rotos o vacíos",
         "type": "antipattern",
         "category": "linking",
@@ -338,6 +513,20 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-15",
+        "distinguido_de": {
+            "AP-36": (
+                "AP-15 es material ajeno depositado dentro del vault. AP-36 es lo "
+                "contrario: side-effects de las tools que salen del vault o no quedan "
+                "rastreados. El discriminador es la direccion del cruce de la "
+                "frontera."
+            ),
+            "CN-02": (
+                "CN-02 es la nota colocada en una carpeta que no toca, dentro del "
+                "esquema. AP-15 es el fichero externo depositado en la raiz del "
+                "vault, que ni siquiera es una nota. El discriminador es si el "
+                "fichero forma parte del material del vault."
+            ),
+        },
         "name": "Archivos externos depositados en la raíz del vault",
         "type": "antipattern",
         "category": "structure",
@@ -355,6 +544,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-16",
+        "distinguido_de": {
+            "PAT-5": (
+                "AP-16 es la falta del identificador de agente en una nota concreta. "
+                "PAT-5 es el patron que hace util ese campo: el frontmatter como "
+                "cadena de procedencia a lo largo de las ediciones. Un vault puede "
+                "tener el campo en todas las notas y no encadenar nada."
+            ),
+        },
         "name": "Sin identificador de agente en frontmatter",
         "type": "antipattern",
         "category": "frontmatter",
@@ -372,6 +569,20 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-17",
+        "distinguido_de": {
+            "AP-02": (
+                "AP-02 son varias versiones del mismo documento conviviendo, cada una "
+                "con su nombre. AP-17 es la duplicacion canonico-sombra: hay un "
+                "canonico declarado y una copia que lo sigue mal. El discriminador es "
+                "si existe un canonico designado."
+            ),
+            "AP-18": (
+                "AP-17 tiene canonico y sombra: una de las dos manda. AP-18 es "
+                "duplicacion entre carpetas sin jerarquia declarada —dos copias de "
+                "igual rango—, y por eso su reparacion empieza por decidir cual es la "
+                "canonica, que AP-17 ya tiene decidido."
+            ),
+        },
         "name": "Canonical-shadow duplication",
         "type": "antipattern",
         "category": "structure",
@@ -390,6 +601,19 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-18",
+        "distinguido_de": {
+            "AP-17": (
+                "AP-17 tiene canonico y sombra: una de las dos manda. AP-18 es "
+                "duplicacion entre carpetas sin jerarquia declarada —dos copias de "
+                "igual rango—, y por eso su reparacion empieza por decidir cual es la "
+                "canonica, que AP-17 ya tiene decidido."
+            ),
+            "AP-19": (
+                "AP-18 duplica contenido en dos carpetas. AP-19 duplica el indice: "
+                "hay un indice en la sombra que compite con el canonico. El "
+                "discriminador es si lo duplicado es material o navegacion."
+            ),
+        },
         "name": "Cross-folder content duplication",
         "type": "antipattern",
         "category": "structure",
@@ -407,6 +631,13 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-19",
+        "distinguido_de": {
+            "AP-18": (
+                "AP-18 duplica contenido en dos carpetas. AP-19 duplica el indice: "
+                "hay un indice en la sombra que compite con el canonico. El "
+                "discriminador es si lo duplicado es material o navegacion."
+            ),
+        },
         "name": "Shadow indexing",
         "type": "antipattern",
         "category": "structure",
@@ -424,6 +655,21 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-20",
+        "distinguido_de": {
+            "AP-11": (
+                "AP-11 es el cuerpo vacio: no hay nada que leer y se nota. AP-20 es "
+                "el esqueleto enganoso: hay estructura y campos, y las listas estan "
+                "vacias, asi que la nota pasa por completa ante cualquier medida que "
+                "cuente secciones. El discriminador es si el vacio es visible o esta "
+                "disfrazado."
+            ),
+            "AP-45": (
+                "AP-45 es la nota que existe para que la seccion no aparezca vacia: "
+                "la cobertura se afirma sin evidencia detras. AP-20 es la nota que "
+                "tiene estructura y listas vacias. AP-45 se mide contra lo que la "
+                "nota dice cubrir; AP-20, contra su propio contenido."
+            ),
+        },
         "name": "Deceptive skeleton (empty-list)",
         "type": "antipattern",
         "category": "content-quality",
@@ -442,6 +688,15 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-21",
+        "distinguido_de": {
+            "AP-14": (
+                "Las dos son wikilinks defectuosos. AP-14 es el link que no resuelve "
+                "a ningun destino. AP-21 resuelve, pero esta anclado a una ruta "
+                "concreta, asi que se rompe en cuanto la nota se mueve. El "
+                "discriminador es si hoy resuelve: AP-14 ya esta roto, AP-21 lo "
+                "estara."
+            ),
+        },
         "name": "Path-anchored wiki-links",
         "type": "antipattern",
         "category": "linking",
@@ -502,6 +757,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     # ── Patrones recomendados ──────────────────────────────────────────────────
     {
         "code": "PAT-1",
+        "distinguido_de": {
+            "AP-05": (
+                "AP-05 es el defecto: el mismo dato con valores distintos en varias "
+                "notas del mismo ambito. PAT-1 es el patron que lo cierra: una nota "
+                "canonica declara el dato y las demas la enlazan. Se declaran aparte "
+                "porque PAT-1 se aplica tambien donde AP-05 aun no ha ocurrido."
+            ),
+        },
         "name": "Canonical source anchoring",
         "type": "pattern",
         "category": "structure",
@@ -520,6 +783,15 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "PAT-2",
+        "distinguido_de": {
+            "AP-03": (
+                "Miran el mismo stub desde los dos lados. AP-03 es el anti-patron: el "
+                "stub existe sin politica que diga cuando deja de serlo. PAT-2 es el "
+                "patron que la aporta: gradiente de enriquecimiento con umbrales. "
+                "Saldar AP-03 es aplicar PAT-2; no son dos hallazgos sobre la misma "
+                "nota."
+            ),
+        },
         "name": "Stub enrichment gradient",
         "type": "pattern",
         "category": "content-quality",
@@ -538,6 +810,13 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "PAT-3",
+        "distinguido_de": {
+            "AP-02": (
+                "AP-02 es el defecto: la cadena de versiones duplicadas. PAT-3 es el "
+                "procedimiento que la resuelve, eligiendo canonico y anotando el "
+                "resto sin borrarlo. Saldar AP-02 es aplicar PAT-3."
+            ),
+        },
         "name": "Duplicate chain resolution",
         "type": "pattern",
         "category": "structure",
@@ -557,6 +836,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "PAT-4",
+        "distinguido_de": {
+            "SP-03": (
+                "PAT-4 ordena la auditoria en fases para que un fallo no invalide "
+                "todo el recorrido. SP-03 exige el snapshot delta antes de una "
+                "operacion masiva, para poder decir despues que cambio. Uno "
+                "estructura el trabajo; el otro conserva la evidencia de lo que hizo."
+            ),
+        },
         "name": "Phased audit execution",
         "type": "pattern",
         "category": "process",
@@ -576,6 +863,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "PAT-5",
+        "distinguido_de": {
+            "AP-16": (
+                "AP-16 es la falta del identificador de agente en una nota concreta. "
+                "PAT-5 es el patron que hace util ese campo: el frontmatter como "
+                "cadena de procedencia a lo largo de las ediciones. Un vault puede "
+                "tener el campo en todas las notas y no encadenar nada."
+            ),
+        },
         "name": "Frontmatter as provenance chain",
         "type": "pattern",
         "category": "frontmatter",
@@ -596,6 +891,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     # ── Anti-patrón AP-23 ──────────────────────────────────────────────────────
     {
         "code": "AP-23",
+        "distinguido_de": {
+            "AP-11": (
+                "Son los dos extremos del mismo eje. AP-11 es defecto de contenido "
+                "—la nota no dice nada—; AP-23 es exceso —la nota supera el techo de "
+                "complejidad y deberia partirse—. Ninguna nota puede incurrir en las "
+                "dos."
+            ),
+        },
         "name": "Note complexity ceiling — nota demasiado larga",
         "type": "antipattern",
         "category": "content-quality",
@@ -656,6 +959,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     # ── Anti-patrón AP-25 ──────────────────────────────────────────────────────
     {
         "code": "AP-25",
+        "distinguido_de": {
+            "AP-14": (
+                "Las dos son referencias que no resuelven. AP-14 vive en el grafo de "
+                "Obsidian —wikilinks entre notas—; AP-25 vive dentro de un diagrama "
+                "mermaid, donde el nodo citado no esta definido. El discriminador es "
+                "el espacio de nombres en el que se busca el destino."
+            ),
+        },
         "name": "Mermaid diagram syntax errors — nodos/tipos no definidos",
         "type": "antipattern",
         "category": "content-quality",
@@ -690,6 +1001,19 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     # AP-01..AP-25. Registrados sin cambiar el comportamiento del audit.
     {
         "code": "AP-26",
+        "distinguido_de": {
+            "AP-27": (
+                "Las dos son campos ausentes del frontmatter. AP-26 es `tags`, que "
+                "clasifica de forma abierta y multiple; AP-27 es `type`, que asigna "
+                "un unico tipo y decide que otras normas aplican. Por eso AP-27 "
+                "bloquea mas cosas aguas abajo que AP-26."
+            ),
+            "AP-30": (
+                "Las dos clasifican la nota. AP-26 lo hace por tema, con `tags` "
+                "libres; AP-30 lo hace por sensibilidad, con la triada CIA y valores "
+                "tasados. Un tag `confidencial` no salda AP-30."
+            ),
+        },
         "name": "Missing tags — nota de contenido sin tags",
         "type": "antipattern",
         "category": "metadata-completeness",
@@ -714,6 +1038,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-27",
+        "distinguido_de": {
+            "AP-26": (
+                "Las dos son campos ausentes del frontmatter. AP-26 es `tags`, que "
+                "clasifica de forma abierta y multiple; AP-27 es `type`, que asigna "
+                "un unico tipo y decide que otras normas aplican. Por eso AP-27 "
+                "bloquea mas cosas aguas abajo que AP-26."
+            ),
+        },
         "name": "Missing type field — nota sin tipo declarado",
         "type": "antipattern",
         "category": "metadata-completeness",
@@ -766,6 +1098,21 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-29",
+        "distinguido_de": {
+            "AP-30": (
+                "Las dos son campos ausentes. AP-29 es `status`, el estado del ciclo "
+                "de vida, que cambia con el tiempo. AP-30 es la clasificacion CIA, "
+                "que describe la sensibilidad del contenido y no cambia por avanzar "
+                "el trabajo. El discriminador es si el valor es temporal o "
+                "intrinseco."
+            ),
+            "CN-03": (
+                "CN-03 exige que el valor de `status` este en el vocabulario "
+                "canonico; AP-29 exige que el campo exista. El discriminador es "
+                "presencia frente a valor: una nota sin `status` es AP-29 y no puede "
+                "ser CN-03."
+            ),
+        },
         "name": "Missing status field — nota sin estado de ciclo de vida",
         "type": "antipattern",
         "category": "metadata-completeness",
@@ -784,6 +1131,20 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-30",
+        "distinguido_de": {
+            "AP-26": (
+                "Las dos clasifican la nota. AP-26 lo hace por tema, con `tags` "
+                "libres; AP-30 lo hace por sensibilidad, con la triada CIA y valores "
+                "tasados. Un tag `confidencial` no salda AP-30."
+            ),
+            "AP-29": (
+                "Las dos son campos ausentes. AP-29 es `status`, el estado del ciclo "
+                "de vida, que cambia con el tiempo. AP-30 es la clasificacion CIA, "
+                "que describe la sensibilidad del contenido y no cambia por avanzar "
+                "el trabajo. El discriminador es si el valor es temporal o "
+                "intrinseco."
+            ),
+        },
         "name": "Missing CIA classification — nota sin clasificación de la tríada",
         "type": "antipattern",
         "category": "metadata-completeness",
@@ -810,6 +1171,26 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     # ── Anti-patrón AP-31 ──────────────────────────────────────────────────────
     {
         "code": "AP-31",
+        "distinguido_de": {
+            "AP-32": (
+                "AP-31 es la arista sin `predicate`: la relacion existe y no dice de "
+                "que tipo es. AP-32 tiene predicate, pero no pertenece a la ontologia "
+                "declarada. El discriminador es si el campo esta presente: ausencia "
+                "frente a valor fuera de vocabulario."
+            ),
+            "AP-35": (
+                "AP-31 mira la arista —le falta tipo—; AP-35 mira el conjunto —hay "
+                "varios sistemas de relaciones que no se hablan entre si—. Un vault "
+                "puede tener todas sus aristas tipadas y aun asi estar en silos, y al "
+                "reves."
+            ),
+            "PAT-6": (
+                "AP-31 es el defecto: aristas sin predicate. PAT-6 es el patron que "
+                "lo cierra: enriquecimiento semantico periodico del grafo. Saldar "
+                "AP-31 una vez no basta si PAT-6 no se ejecuta; PAT-6 sin AP-31 "
+                "pendiente sigue siendo util."
+            ),
+        },
         "name": "Grafo sin tipos semanticos — edges sin predicate explícito",
         "type": "antipattern",
         "category": "linking",
@@ -840,6 +1221,21 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     # ── Anti-patrón AP-32 ──────────────────────────────────────────────────────
     {
         "code": "AP-32",
+        "distinguido_de": {
+            "AP-31": (
+                "AP-31 es la arista sin `predicate`: la relacion existe y no dice de "
+                "que tipo es. AP-32 tiene predicate, pero no pertenece a la ontologia "
+                "declarada. El discriminador es si el campo esta presente: ausencia "
+                "frente a valor fuera de vocabulario."
+            ),
+            "AP-33": (
+                "Las dos son predicados que la ontologia no acepta tal cual. AP-32 es "
+                "el predicado desconocido, sin equivalente canonico. AP-33 es el "
+                "sinonimo: existe un canonico al que normalizar, y por eso se repara "
+                "sin perder informacion. El discriminador es si hay destino de "
+                "normalizacion."
+            ),
+        },
         "name": "Relaciones tipadas sin predicate valido en la ontologia",
         "type": "antipattern",
         "category": "linking",
@@ -871,6 +1267,15 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     # ── Anti-patrón AP-33 ──────────────────────────────────────────────────────
     {
         "code": "AP-33",
+        "distinguido_de": {
+            "AP-32": (
+                "Las dos son predicados que la ontologia no acepta tal cual. AP-32 es "
+                "el predicado desconocido, sin equivalente canonico. AP-33 es el "
+                "sinonimo: existe un canonico al que normalizar, y por eso se repara "
+                "sin perder informacion. El discriminador es si hay destino de "
+                "normalizacion."
+            ),
+        },
         "name": "Predicado no canonico — sinonimo no normalizado",
         "type": "antipattern",
         "category": "linking",
@@ -899,6 +1304,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     # ── Anti-patrón AP-34 ──────────────────────────────────────────────────────
     {
         "code": "AP-34",
+        "distinguido_de": {
+            "AP-14": (
+                "AP-14 es el wikilink sin destino; AP-34 es la relacion tipada cuyo "
+                "endpoint no existe. La misma ausencia en dos capas: la sintactica "
+                "del enlace y la semantica del grafo de predicados. Una nota puede "
+                "tener AP-34 con todos sus wikilinks intactos."
+            ),
+        },
         "name": "Relacion tipada huerfana — endpoint inexistente en el vault",
         "type": "antipattern",
         "category": "linking",
@@ -926,6 +1339,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     # ── Anti-patrón AP-35 ──────────────────────────────────────────────────────
     {
         "code": "AP-35",
+        "distinguido_de": {
+            "AP-31": (
+                "AP-31 mira la arista —le falta tipo—; AP-35 mira el conjunto —hay "
+                "varios sistemas de relaciones que no se hablan entre si—. Un vault "
+                "puede tener todas sus aristas tipadas y aun asi estar en silos, y al "
+                "reves."
+            ),
+        },
         "name": "Silos de relacion — sistemas de grafos aislados",
         "type": "antipattern",
         "category": "structure",
@@ -956,6 +1377,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-36",
+        "distinguido_de": {
+            "AP-15": (
+                "AP-15 es material ajeno depositado dentro del vault. AP-36 es lo "
+                "contrario: side-effects de las tools que salen del vault o no quedan "
+                "rastreados. El discriminador es la direccion del cruce de la "
+                "frontera."
+            ),
+        },
         "name": "Contención e idempotencia — side-effects fuera del vault o no rastreables",
         "type": "antipattern",
         "category": "structure",
@@ -1037,6 +1466,15 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     # vocabularios de `status` en competencia y auditaba contra uno solo.
     {
         "code": "AP-38",
+        "distinguido_de": {
+            "AP-39": (
+                "Las dos fallan sobre el mismo vocabulario. AP-38 es de orden: se "
+                "valida despues de escribir, asi que el valor malo ya esta en disco. "
+                "AP-39 es de memoria: el vocabulario es abierto y nadie registra lo "
+                "que se acepto, asi que no hay contra que validar. El discriminador "
+                "es si existe la lista de referencia."
+            ),
+        },
         "name": "Vocabulario validado después de escribir, no antes",
         "type": "antipattern",
         "category": "consistency",
@@ -1079,6 +1517,15 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     # así que la sugerencia no se disparó nunca y un tag inventado costaba cero.
     {
         "code": "AP-39",
+        "distinguido_de": {
+            "AP-38": (
+                "Las dos fallan sobre el mismo vocabulario. AP-38 es de orden: se "
+                "valida despues de escribir, asi que el valor malo ya esta en disco. "
+                "AP-39 es de memoria: el vocabulario es abierto y nadie registra lo "
+                "que se acepto, asi que no hay contra que validar. El discriminador "
+                "es si existe la lista de referencia."
+            ),
+        },
         "name": "Vocabulario abierto sin memoria",
         "type": "antipattern",
         "category": "consistency",
@@ -1113,6 +1560,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-40",
+        "distinguido_de": {
+            "AP-43": (
+                "AP-40 es la contradiccion visible: el contrato publicado acepta algo "
+                "que la CLI rechaza. AP-43 es la ausencia: la norma existe y el punto "
+                "de uso no la menciona ni la aplica. El discriminador es si hay dos "
+                "afirmaciones en conflicto o solo una sin refuerzo."
+            ),
+        },
         "name": "Contrato publicado que la CLI rechaza",
         "type": "antipattern",
         "category": "consistency",
@@ -1145,6 +1600,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-41",
+        "distinguido_de": {
+            "CN-03": (
+                "CN-03 mira el valor aislado: pertenece al vocabulario. AP-41 mira la "
+                "transicion: la maquina de estados esta declarada y nadie verifica "
+                "que los saltos entre valores sean legales. Todos los valores pueden "
+                "ser validos y la secuencia imposible."
+            ),
+        },
         "name": "Máquina de estados declarada sin verificar",
         "type": "antipattern",
         "category": "lifecycle",
@@ -1180,6 +1643,15 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-42",
+        "distinguido_de": {
+            "AP-04": (
+                "AP-04 mide la nota: describe como entregado algo que no lo esta. "
+                "AP-42 mide la tool: esta publicada en el catalogo y nunca se "
+                "ejecuto. El discriminador es el sujeto medido —texto frente a "
+                "artefacto ejecutable—, y por eso una la detecta el audit de "
+                "contenido y la otra el smoke."
+            ),
+        },
         "name": "Tool publicada sin haberse ejecutado nunca",
         "type": "antipattern",
         "category": "process",
@@ -1215,6 +1687,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-43",
+        "distinguido_de": {
+            "AP-40": (
+                "AP-40 es la contradiccion visible: el contrato publicado acepta algo "
+                "que la CLI rechaza. AP-43 es la ausencia: la norma existe y el punto "
+                "de uso no la menciona ni la aplica. El discriminador es si hay dos "
+                "afirmaciones en conflicto o solo una sin refuerzo."
+            ),
+        },
         "name": "Norma sin refuerzo en el punto de uso",
         "type": "antipattern",
         "category": "governance",
@@ -1303,6 +1783,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-45",
+        "distinguido_de": {
+            "AP-20": (
+                "AP-45 es la nota que existe para que la seccion no aparezca vacia: "
+                "la cobertura se afirma sin evidencia detras. AP-20 es la nota que "
+                "tiene estructura y listas vacias. AP-45 se mide contra lo que la "
+                "nota dice cubrir; AP-20, contra su propio contenido."
+            ),
+        },
         "name": "Cobertura sin evidencia — la nota existe para llenar la sección",
         "type": "antipattern",
         "category": "quality",
@@ -1340,6 +1828,21 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     # ── Antipatrón AP-46 ───────────────────────────────────────────────────────
     {
         "code": "AP-46",
+        "distinguido_de": {
+            "AP-12": (
+                "AP-12 es el sintoma medido en las notas: dos notas del mismo tipo "
+                "con frontmatter distinto. AP-46 es la causa medida en el codigo: no "
+                "hay escritor unico de frontmatter. Se separan porque el vault puede "
+                "quedar coherente a mano con la causa intacta."
+            ),
+            "AP-48": (
+                "AP-46 es el caso particular de AP-48 sobre el frontmatter: cada tool "
+                "lo escribe a su manera en vez de pasar por un escritor unico. AP-48 "
+                "es la forma general: la misma funcionalidad implementada dos veces, "
+                "una por camino de acceso. Se declara asi para que saldar AP-46 no se "
+                "lea como haber saldado AP-48."
+            ),
+        },
         "name": "Frontmatter a mano — cada tool es su propio escritor",
         "type": "antipattern",
         "category": "consistency",
@@ -1435,6 +1938,15 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-48",
+        "distinguido_de": {
+            "AP-46": (
+                "AP-46 es el caso particular de AP-48 sobre el frontmatter: cada tool "
+                "lo escribe a su manera en vez de pasar por un escritor unico. AP-48 "
+                "es la forma general: la misma funcionalidad implementada dos veces, "
+                "una por camino de acceso. Se declara asi para que saldar AP-46 no se "
+                "lea como haber saldado AP-48."
+            ),
+        },
         "name": "Implementación paralela por camino de acceso",
         "type": "antipattern",
         "category": "consistency",
@@ -1632,6 +2144,15 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-51",
+        "distinguido_de": {
+            "AP-52": (
+                "Las dos son fallos del manejo de error en una tool. AP-51 es la "
+                "atribucion: la tool devuelve un vacio que culpa al dato de su propio "
+                "fallo. AP-52 es la forma: el envelope de error se emite fuera del "
+                "contrato de ERROR_CATALOG. Un error puede estar bien atribuido y mal "
+                "formado, y al reves."
+            ),
+        },
         "name": "La tool culpa al dato de su propio fallo",
         "type": "antipattern",
         "category": "quality",
@@ -1700,6 +2221,15 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-52",
+        "distinguido_de": {
+            "AP-51": (
+                "Las dos son fallos del manejo de error en una tool. AP-51 es la "
+                "atribucion: la tool devuelve un vacio que culpa al dato de su propio "
+                "fallo. AP-52 es la forma: el envelope de error se emite fuera del "
+                "contrato de ERROR_CATALOG. Un error puede estar bien atribuido y mal "
+                "formado, y al reves."
+            ),
+        },
         "name": "El error se emite fuera del contrato del catalogo",
         "type": "antipattern",
         "category": "quality",
@@ -1760,6 +2290,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "AP-53",
+        "distinguido_de": {
+            "AP-13": (
+                "AP-13 mide el timestamp del frontmatter contra su propio formato: "
+                "invalido o incompleto. AP-53 mide la afirmacion historica contra "
+                "git: la fecha es valida y no coincide con el commit. El "
+                "discriminador es si hay una fuente externa contra la que contrastar."
+            ),
+        },
         "name": "El historial se afirma a mano y nadie lo contrasta con git",
         "type": "antipattern",
         "category": "quality",
@@ -2299,6 +2837,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     # ── Patrón PAT-6 ───────────────────────────────────────────────────────────
     {
         "code": "PAT-6",
+        "distinguido_de": {
+            "AP-31": (
+                "AP-31 es el defecto: aristas sin predicate. PAT-6 es el patron que "
+                "lo cierra: enriquecimiento semantico periodico del grafo. Saldar "
+                "AP-31 una vez no basta si PAT-6 no se ejecuta; PAT-6 sin AP-31 "
+                "pendiente sigue siendo util."
+            ),
+        },
         "name": "Semantic graph enrichment — enriquecimiento periodico del grafo",
         "type": "pattern",
         "category": "linking",
@@ -2325,6 +2871,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     # ── Protocolo de sesión SP-XX ──────────────────────────────────────────────
     {
         "code": "SP-01",
+        "distinguido_de": {
+            "SP-03": (
+                "SP-01 protege el borrado concreto: no se elimina sin `change_log` "
+                "previo. SP-03 protege la tanda: no se opera en masa sin snapshot. El "
+                "discriminador es el alcance —una nota frente a una operacion— y por "
+                "eso un borrado masivo exige los dos."
+            ),
+        },
         "name": "Delete protocol — change_log obligatorio antes de eliminar",
         "type": "antipattern",
         "category": "session-protocol",
@@ -2346,6 +2900,15 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "SP-02",
+        "distinguido_de": {
+            "AP-14": (
+                "AP-14 es el defecto ya escrito: el link roto esta en el vault. SP-02 "
+                "es el protocolo que lo evita —buscar el destino antes de escribir el "
+                "enlace—. Una se detecta auditando; la otra se cumple o no en el "
+                "momento de escribir, y su incumplimiento solo se ve como AP-14 mas "
+                "tarde."
+            ),
+        },
         "name": "Forward-link verification — buscar antes de linkar",
         "type": "antipattern",
         "category": "session-protocol",
@@ -2365,6 +2928,20 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "SP-03",
+        "distinguido_de": {
+            "PAT-4": (
+                "PAT-4 ordena la auditoria en fases para que un fallo no invalide "
+                "todo el recorrido. SP-03 exige el snapshot delta antes de una "
+                "operacion masiva, para poder decir despues que cambio. Uno "
+                "estructura el trabajo; el otro conserva la evidencia de lo que hizo."
+            ),
+            "SP-01": (
+                "SP-01 protege el borrado concreto: no se elimina sin `change_log` "
+                "previo. SP-03 protege la tanda: no se opera en masa sin snapshot. El "
+                "discriminador es el alcance —una nota frente a una operacion— y por "
+                "eso un borrado masivo exige los dos."
+            ),
+        },
         "name": "Session snapshot pattern — delta antes de operaciones masivas",
         "type": "antipattern",
         "category": "session-protocol",
@@ -2390,6 +2967,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     # ── Convenciones de nomenclatura CN-XX ────────────────────────────────────
     {
         "code": "CN-01",
+        "distinguido_de": {
+            "CN-02": (
+                "Las dos son convenciones de ubicacion y nombre. CN-01 rige el nombre "
+                "del fichero —minusculas con guiones—; CN-02 rige el destino —las "
+                "secciones numeradas—. Un fichero bien nombrado en la carpeta "
+                "equivocada incumple solo CN-02."
+            ),
+        },
         "name": "Kebab-case filenames — nombres de archivo en minúsculas con guiones",
         "type": "antipattern",
         "category": "convention",
@@ -2412,6 +2997,27 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "CN-02",
+        "distinguido_de": {
+            "AP-09": (
+                "CN-02 es la convencion general de destino: las secciones numeradas "
+                "son los unicos sitios validos. AP-09 es su incumplimiento con nombre "
+                "para un tipo concreto: los runbooks fuera de la estructura. Se "
+                "separa porque el runbook tiene ademas exigencias de contenido que "
+                "CN-02 no mira."
+            ),
+            "AP-15": (
+                "CN-02 es la nota colocada en una carpeta que no toca, dentro del "
+                "esquema. AP-15 es el fichero externo depositado en la raiz del "
+                "vault, que ni siquiera es una nota. El discriminador es si el "
+                "fichero forma parte del material del vault."
+            ),
+            "CN-01": (
+                "Las dos son convenciones de ubicacion y nombre. CN-01 rige el nombre "
+                "del fichero —minusculas con guiones—; CN-02 rige el destino —las "
+                "secciones numeradas—. Un fichero bien nombrado en la carpeta "
+                "equivocada incumple solo CN-02."
+            ),
+        },
         "name": "Numbered folder structure — secciones numeradas como únicos destinos",
         "type": "antipattern",
         "category": "convention",
@@ -2431,6 +3037,20 @@ NORM_CATALOG: List[Dict[str, Any]] = [
     },
     {
         "code": "CN-03",
+        "distinguido_de": {
+            "AP-29": (
+                "CN-03 exige que el valor de `status` este en el vocabulario "
+                "canonico; AP-29 exige que el campo exista. El discriminador es "
+                "presencia frente a valor: una nota sin `status` es AP-29 y no puede "
+                "ser CN-03."
+            ),
+            "AP-41": (
+                "CN-03 mira el valor aislado: pertenece al vocabulario. AP-41 mira la "
+                "transicion: la maquina de estados esta declarada y nadie verifica "
+                "que los saltos entre valores sean legales. Todos los valores pueden "
+                "ser validos y la secuencia imposible."
+            ),
+        },
         "name": "Standard status vocabulary — vocabulario canónico de meta.status",
         "type": "antipattern",
         "category": "convention",

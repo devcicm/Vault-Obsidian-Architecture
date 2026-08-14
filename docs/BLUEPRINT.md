@@ -352,7 +352,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `scripts/criterios-baseline.json` | AP-57 | 9 |
 | `scripts/ciclos-baseline.json` | AP-58 — ciclo esquivado con import diferido | 30 |
 | `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 5 |
-| `scripts/norms-distincion-baseline.json` | AP-60 — normas que no declaran de qué se distinguen | 57 |
+| `scripts/norms-distincion-baseline.json` | AP-60 — normas que no declaran de qué se distinguen | 0 |
 | `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 |
 | `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1204 |
 
