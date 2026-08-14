@@ -7263,7 +7263,7 @@ temp/
 
 ---
 
-### v40.19 — 2026-08-14 `git: pending`
+### v40.19 — 2026-08-14 `git: 430c2f2`
 
 **La norma que parecía cubierta y no miraba a un lado.**
 
