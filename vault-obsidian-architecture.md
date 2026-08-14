@@ -7400,7 +7400,7 @@ temp/
 
 ---
 
-### v40.22 — 2026-08-14 `git: pending`
+### v40.22 — 2026-08-14 `git: 20744de`
 
 **Cincuenta y siete normas no decían de qué se distinguían, y la forma honesta de saldarlo
 era escribirlo, no congelarlo.**
