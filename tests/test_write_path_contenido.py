@@ -29,14 +29,19 @@ from vault_secret_scan import redact_secrets, scan_content  # noqa: E402
 #: de todo vault por definición: es un artefacto del repo del estándar, no un
 #: dato del vault. Es la única excepción, y se declara aquí para que cualquier
 #: otra aparezca en el test en vez de colarse.
-#: `vault_io` es el write path: su `open(temp, "w")` en `_escribir_temporal` es
+#: `vault_fs` es el write path: su `open(temp, "w")` en `_escribir_temporal` es
 #: la escritura que todas las demás delegan aquí, y va DESPUÉS del escaneo y del
 #: saneado. Se abre con un descriptor propio en vez de `Path.write_text` porque
 #: `VAULT_FSYNC=1` sincroniza sobre ese mismo descriptor: en Windows, reabrir el
 #: fichero en solo lectura para hacer `fsync` falla con `Bad file descriptor`.
+#:
+#: v40.17: la exención estaba a nombre de `vault_io`, que es donde vivía el
+#: mecanismo. Al separarlo, `vault_io` dejó de tener ninguna escritura cruda —y
+#: eso es una mejora, no una pérdida de cobertura: el fichero que concentra la
+#: política ya no necesita excepción.
 _ESCRITURA_FUERA_DEL_VAULT = {
     "vault_mcp_catalog.py": "tools-catalog.json es del repo",
-    "vault_io.py": "es el propio write path — el temp+replace vive ahí",
+    "vault_fs.py": "es el propio write path — el temp+replace vive ahí",
 }
 
 TOKEN_FALSO = "ghp_" + "a" * 36
@@ -69,14 +74,14 @@ def test_la_excepcion_de_vault_io_es_solo_el_temporal():
     """Eximir el fichero entero dejaría entrar la siguiente escritura cruda.
 
     La exención es de UNA línea con nombre y sitio: la del temporal dentro de
-    `_escribir_temporal`. Cualquier otra en `vault_io` sería exactamente lo que
+    `_escribir_temporal`. Cualquier otra en `vault_fs` sería exactamente lo que
     el test de arriba existe para cazar, escondida detrás de su propia excepción.
     """
-    fuente = (SCRIPTS / "vault_io.py").read_text(encoding="utf-8")
+    fuente = (SCRIPTS / "vault_fs.py").read_text(encoding="utf-8")
     assert _escrituras_crudas(fuente) == 1
     cuerpo = fuente.split("def _escribir_temporal", 1)[1].split("\ndef ", 1)[0]
     assert _escrituras_crudas(cuerpo) == 1, (
-        "la única escritura cruda de vault_io ya no está en _escribir_temporal"
+        "la única escritura cruda de vault_fs ya no está en _escribir_temporal"
     )
 
 
@@ -134,7 +139,12 @@ def test_el_escaner_roto_queda_registrado(tmp_path, monkeypatch):
     """Fallar abierto está bien; fallar abierto EN SILENCIO no (AP-37)."""
     import vault_secret_scan
 
-    monkeypatch.setattr(vault_io, "_ACTIVE_VAULT_ROOT", tmp_path)
+    # v40.17: el estado de la raíz vive en `vault_raiz`. Parchear el alias de
+    # `vault_io` crearía un atributo que nadie lee — el test pasaría midiendo
+    # nada, que es AP-44 cometido desde el test.
+    import vault_raiz
+
+    monkeypatch.setattr(vault_raiz, "_ACTIVE_VAULT_ROOT", tmp_path)
     vault_io._ESCANER_DEGRADADO.clear()
 
     def escaner_roto(_texto):

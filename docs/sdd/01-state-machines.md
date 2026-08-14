@@ -23,7 +23,7 @@
 | **Backup** | active / superseded | vault_backup_list |
 | **Propagación pendiente** | pending / reviewed | vault_propagate |
 | **Ciclo de vida de una tool** | active / archived / internal | vault_mcp_catalog |
-| **Versión del estándar** | v19 → … → v40.12 | vault_standard_upgrade |
+| **Versión del estándar** | v19 → … → v40.16 | vault_standard_upgrade |
 
 ### Vocabulario unificado
 
@@ -50,7 +50,7 @@
 | **Backup** | active / superseded | vault_backup_list |
 | **Propagation pending** | pending / reviewed | vault_propagate |
 | **Tool lifecycle** | active / archived / internal | vault_mcp_catalog |
-| **Standard version** | v19 → … → v40.12 | vault_standard_upgrade |
+| **Standard version** | v19 → … → v40.16 | vault_standard_upgrade |
 
 ### Unified vocabulary
 

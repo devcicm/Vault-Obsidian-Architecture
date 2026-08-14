@@ -1,13 +1,13 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 103 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
+Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 104 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **126 archivos Python** — 103 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
+- **130 archivos Python** — 104 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
 - **Saneamiento de índices (v38.1)** — `vault_section_index.py --heal [--root]` regenera índices con formato legacy `[[stem|alias]]` o ausentes; el auto-index post-write se auto-cura si un agente escribe `index.md` a mano
-- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 103 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
+- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 104 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
 - **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault; requiere marcador de CONTENIDO (01_Projects/02_Observability/03_Decisions/.obsidian), no solo 00_System/99_Index (evita el ciclo auto-reforzado de detección); override runtime con `set_vault_root()`/env `VAULT_ROOT`
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
@@ -59,7 +59,7 @@ Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan 
 | [Grupo 32 — Gestión de Carpetas](#grupo-32--gestión-de-carpetas) | vault_folder_registry |
 | [Grupo 33 — Corrección Automática](#grupo-33--corrección-automática) | vault_fix_brackets, vault_graph_fix, vault_frontmatter_heal |
 | [Grupo 34 — Memoria de Contexto](#grupo-34--memoria-de-contexto) | vault_preferences, vault_query_parse, vault_subgraph, vault_context_pack, vault_ingest |
-| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_changelog_check, vault_error_contract, vault_foreign_check, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_noop_audit, vault_smoke, vault_voice, vault_servicio, vault_blueprint, vault_norms_coherence, vault_criterios |
+| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_changelog_check, vault_error_contract, vault_foreign_check, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_noop_audit, vault_smoke, vault_voice, vault_servicio, vault_blueprint, vault_norms_coherence, vault_criterios, vault_ciclos |
 | [Grupo 36 — Defectos y Cuarentena](#grupo-36--defectos-y-cuarentena) | vault_bug_save, vault_quarantine |
 | [Grupo 37 — Skills](#grupo-37--skills) | vault_sdd_init, vault_sanacion |
 | [Observabilidad de Tools](#observabilidad-de-tools) | vault_errors |
@@ -1776,7 +1776,7 @@ El vault expone sus herramientas como un **servidor MCP** que las IAs consumen d
 
 **Archivo:** `../mcp/nodejs/vault-mcp-server.mjs` (~1650 líneas, cero dependencias npm)  
 **Plan:** `../mcp/PLAN.md` — documento de evidencia con 8 fases de implementación
-**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (103 tools)
+**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (104 tools)
 
 Los parámetros que el catálogo publica **se derivan del `argparse` de cada script**,
 no se escriben a mano: el servidor compone `--<param>` literal, así que un param
@@ -1824,7 +1824,7 @@ node mcp/nodejs/vault-mcp-server.mjs --port 3000
 
 ### `vault_norms.py`
 
-Registro canónico de las 69 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
+Registro canónico de las 70 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
 
 ```bash
 python vault_norms.py                             # catálogo completo
@@ -2272,6 +2272,32 @@ python vault_criterios.py --freeze --admitir-nuevos  # congela deuda nueva, y la
 La precondición del `"*.md"` no es cosmética: sin ella el detector marcaba a `vault_restore` por nombrar `vault-backups` —restaurar de ahí *es* su trabajo— y a `vault_norms` por nombrar el manifiesto, que edita. Un guard con ruido deja de leerse.
 
 **Dos criterios con dueño que NO están en el registro, y por qué.** v40.14 promovió a `vault_lib` la resolución de un wikilink (`resolver_destino_wikilink`) y el índice de destinos que resuelven (`indice_de_destinos`). Registrarlos exigía darles señales, y las suyas serían `"|"`, `"#"` y `"aliases"` — que media docena de módulos escribe por motivos legítimos. El intento se hizo: **10 hallazgos nuevos, todos falsos.** Una señal que no distingue no es una señal, y congelarlos en la baseline habría sido comprar el verde con ruido, que es justo lo que la precondición del `"*.md"` existe para evitar. Tienen dueño y sus consumidores lo importan; lo que no tienen es forma sintáctica de vigilarlo. El límite está escrito en el docstring y fijado por un test, porque declararlo es más honesto que fingir una señal.
+
+### `vault_ciclos.py`
+
+**El ciclo que se esquiva metiendo el import dentro de una función (AP-58).** Este repo declaraba **cero ciclos de importación**, y era verdad: leyendo solo los `import` de nivel de módulo, no hay ninguno. El cero estaba fabricado por **92 imports diferidos repartidos en 40 módulos** — el rompe-ciclos manual, aplicado tantas veces que dejó de ser una excepción y pasó a ser la arquitectura, sin que nadie lo decidiera.
+
+```bash
+python vault_ciclos.py --check                    # componentes y aristas diferidas
+python vault_ciclos.py --check --strict           # exit 1 si hay un ciclo diferido nuevo (puerta 17)
+python vault_ciclos.py --freeze                   # baseline; solo puede encoger
+python vault_ciclos.py --freeze --admitir-nuevos  # congela deuda nueva, y la lista
+```
+
+**Lo que aparece al contar esas aristas** (medido en v40.17):
+
+| Medida | Solo nivel de módulo | Contando las diferidas |
+|---|---|---|
+| componentes fuertemente conexos | 0 | 2 |
+| el mayor | — | **14 módulos**, el núcleo entero |
+
+Ese componente de 14 es lo que hacía que `vault_errors_trace` —un escritor de trazas de bajo nivel— importase `vault_io` entero para tres símbolos, y lo que obliga a `cli/runner.py` a aislar cada tool en un subproceso para que dos raíces no se contaminen. El daño no es el arranque: es que **la dirección de la dependencia deja de ser una decisión revisable**, porque un ciclo escondido no se discute en revisión — no aparece en ninguna medida.
+
+**Solo 30 de las 92 son deuda, y esa resta es el diseño.** Un import se difiere también por coste de arranque, por dependencia opcional o porque solo hace falta en una rama rara. Deuda es el que **esquiva un ciclo**: aquel cuyo destino puede volver al origen siguiendo el grafo completo. Los otros 62 se publican como `deferred_benign` sin congelarse. Congelar las 92 daba un número mayor y una señal peor: una baseline llena de aristas benignas es una baseline que nadie revisa, y el día que entre una importante no se distinguirá del ruido.
+
+**Cómo se salda.** Invirtiendo la dependencia — el módulo de bajo nivel deja de pedirle el módulo entero al de alto y recibe lo que necesita. El corte de v40.17 lo hizo una vez: `vault_raiz`, `vault_fs` y `vault_ledger` salieron de `vault_io` como hojas, `vault_errors_trace` pasó a pedir el mecanismo (`escritura_atomica` con `guarda_secretos`) en vez de la política entera, y el componente bajó de 15 a 14. **Subir el import a nivel de módulo no lo arregla**: solo hace que Python lo denuncie al arrancar.
+
+**El límite, dicho antes de que nadie se apoye en el verde.** Mide el grafo **estático** de módulos de `scripts/`. No ve `importlib`, ni un import construido con una cadena, ni el acoplamiento que pasa por el sistema de ficheros o por una variable global compartida. Dos módulos pueden estar perfectamente atados sin que ningún `import` lo diga, y esta tool los verá sueltos. Verde significa que no crecieron los ciclos que sabemos ver.
 
 ---
 

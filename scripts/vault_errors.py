@@ -164,7 +164,10 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
     def _writes() -> Dict[str, int]:
         """El ledger AP-37 es thread-local: hay que leerlo en ESTE hilo."""
         try:
-            from vault_io import write_report
+            # v40.17: la hoja `vault_ledger`, no `vault_io`. Contar escrituras no
+            # necesita saber de saneado ni de índices, y pedir el módulo entero
+            # era lo que ataba el módulo de errores al ciclo del núcleo.
+            from vault_ledger import write_report
 
             return write_report()
         except Exception:
@@ -177,7 +180,7 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
         # ESTE hilo, así que se pone a cero aquí — no en wrap_main, que se
         # ejecuta en el hilo principal y no vería el mismo ledger.
         try:
-            from vault_io import write_ledger_reset
+            from vault_ledger import write_ledger_reset
 
             write_ledger_reset()
         except Exception:

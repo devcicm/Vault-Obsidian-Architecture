@@ -110,11 +110,15 @@ CONTEXTS: dict[str, dict] = {
     KERNEL: {
         "titulo": "Kernel",
         "lenguaje": ["ruta", "envelope", "error", "bloqueo", "escritura atómica"],
+        # Los puertos se declaran donde el símbolo VIVE, no donde se reexporta
+        # (v40.17). `vault_io` sigue exponiendo los cuatro nombres y ninguna tool
+        # ha cambiado, pero un puerto que apunta al alias esconde justo el dato
+        # que este registro existe para publicar: quién es el dueño.
         "puertos": {
-            "get_vault_root": "vault_io:get_vault_root",
+            "get_vault_root": "vault_raiz:get_vault_root",
             "atomic_write_text": "vault_io:atomic_write_text",
             "wrap_main": "vault_errors:wrap_main",
-            "file_lock": "vault_io:file_lock",
+            "file_lock": "vault_fs:file_lock",
         },
         "prohibe": ["depender de cualquier contexto de dominio"],
         "modulos": [
@@ -122,6 +126,12 @@ CONTEXTS: dict[str, dict] = {
             "vault_encoding", "vault_registry", "vault_log_error",
             "vault_errors_catalog", "vault_errors_trace",
             "vault_entorno", "vault_vocabulario",
+            # Las tres hojas del kernel (v40.17). No son un contexto nuevo: son
+            # el mecanismo que `vault_io` mezclaba con su política — dónde está
+            # el vault, cómo se escribe sin que nadie vea el fichero a medias, y
+            # cuánto trabajo llevamos hecho. Separarlas sacó a `vault_errors_trace`
+            # del componente fuertemente conexo de 15 módulos que era el núcleo.
+            "vault_raiz", "vault_fs", "vault_ledger",
         ],
     },
     "autoria": {
@@ -359,6 +369,7 @@ CONTEXTS: dict[str, dict] = {
             "vault_blueprint",
             "vault_norms_coherence",
             "vault_criterios",
+            "vault_ciclos",
         ],
     },
 }
@@ -387,14 +398,19 @@ RAIZ_COMPOSICION = "vault/kernel/adaptadores.py"
 #: a uno. AP-49 penaliza derivar del vault al importar porque la constante deja
 #: de seguir al vault activo; aquí eso es justamente el requisito.
 #:
-#: `vault_io._VAULT_ROOT_DETECTADO` guarda el vault que la autodetección eligió
+#: `vault_raiz._VAULT_ROOT_DETECTADO` guarda el vault que la autodetección eligió
 #: al cargar, para que `reset_vault_root()` tenga a dónde volver. Si siguiera al
 #: vault activo no serviría de nada: sería una copia del sitio del que hay que
 #: salir. La exención va por nombre y no por heurística —«los que empiecen por
 #: guion bajo», por ejemplo— porque una heurística abre la puerta a que el
 #: próximo vínculo congelado se cuele por parecerse.
+#:
+#: v40.17: era `vault_io._VAULT_ROOT_DETECTADO`. El vínculo no es nuevo ni ha
+#: cambiado de forma — se mudó con el subsistema de raíz a su propia hoja. Se
+#: anota el nombre viejo aquí, y no en el conjunto, porque el símbolo ya no
+#: existe allí: una exención que no protege nada es ruido que se lee como deuda.
 VINCULOS_INTENCIONALES = frozenset({
-    "vault_io._VAULT_ROOT_DETECTADO",
+    "vault_raiz._VAULT_ROOT_DETECTADO",
 })
 
 
@@ -803,9 +819,11 @@ def _nombres_desechables(arbol: ast.AST) -> set[str]:
 #: Lo que sí se exige: que estén enumerados aquí y que cada uno diga por qué.
 #: Uno sin declarar rompe la puerta.
 GANCHOS_DEL_KERNEL: dict[tuple[str, str], str] = {
-    ("vault_io", "vault_secret_scan"): (
-        "Preflight anti-secretos de `atomic_write_text`. Tiene que correr en el "
-        "único punto por el que pasan todas las escrituras, o no protege."
+    ("vault_fs", "vault_secret_scan"): (
+        "Preflight anti-secretos del write path, en `vault_fs.guarda_secretos`. "
+        "Tiene que correr en el único punto por el que pasan todas las "
+        "escrituras, o no protege. v40.17: se mudó con el mecanismo desde "
+        "`vault_io`; el gancho es el mismo y sigue siendo perezoso."
     ),
     ("vault_io", "vault_section_index"): (
         "`_auto_section_index`: el índice de sección se regenera tras escribir "

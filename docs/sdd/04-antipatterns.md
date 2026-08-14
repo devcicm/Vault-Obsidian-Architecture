@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
-> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-57 más
-> las familias PAT, SP y CN. Por familia: AP 57, CN 3, PAT 6, SP 3.
-> Bilingual document. Full norm catalog: antipatterns AP-01..AP-57 plus the PAT,
-> SP and CN families. By family: AP 57, CN 3, PAT 6, SP 3.
+> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-58 más
+> las familias PAT, SP y CN. Por familia: AP 58, CN 3, PAT 6, SP 3.
+> Bilingual document. Full norm catalog: antipatterns AP-01..AP-58 plus the PAT,
+> SP and CN families. By family: AP 58, CN 3, PAT 6, SP 3.
 
 ---
 
 ## ES
 
-Total de normas registradas: 69 (AP 57, CN 3, PAT 6, SP 3)
+Total de normas registradas: 70 (AP 58, CN 3, PAT 6, SP 3)
 
 ### AP-01: Documentación alucinada
 
@@ -55,7 +55,7 @@ Documentar comportamientos futuros o planeados como si ya existieran. Confunde a
 
 - **Severidad:** critical
 - **Enforcement:** audit
-- **Detectado por:** sin detector -- La única norma `critical` que hoy no mide nadie, y se declara así en vez de esconderlo. Declaraba `vault_graph_inspect`, que no la menciona ni compara valores entre notas. Diecisiete módulos citan AP-05 en un comentario --al explicar por qué NO copian un dato-- y citar no es detectar. Detectarla de verdad exige decidir qué es "el mismo dato" sin embeddings, que es un problema de diseño abierto.
+- **Detectado por:** vault_fuente_unica
 
 El mismo dato (IP, URL, versión, configuración) aparece en múltiples notas con valores inconsistentes. Causa decisiones del agente basadas en datos erróneos.
 
@@ -643,6 +643,22 @@ Sale de v40.12: cuatro defectos de `vault_foreign_check` arreglados en una tanda
 
 El límite se declara antes de que nadie se apoye en él: la detección es **sintáctica**. Un módulo puede reimplementar un criterio sin repetir ninguna constante y esta medida no lo verá. Verde no prueba que no haya copias -- prueba que no hay copias de la forma que sabemos reconocer, que es exactamente lo que da un linter y es preferible a no mirar.
 
+### AP-58: Ciclo esquivado con un import diferido
+
+- **Severidad:** high
+- **Enforcement:** guard
+- **Detectado por:** vault_ciclos
+
+Dos módulos se necesitan mutuamente, y en vez de invertir la dependencia se mete uno de los `import` dentro del cuerpo de una función. Python deja de quejarse, el ciclo sigue ahí y **deja de verse**: cualquier medida que mire los imports de nivel de módulo dirá cero ciclos con toda honestidad.
+
+Aplicado una vez es una excepción razonable. Aplicado muchas es la arquitectura, tomada sin decidirla. Medido en v40.17 sobre este repo: **92 imports diferidos en 40 módulos**, de los cuales 30 esquivan un ciclo, y contándolos aparece un componente fuertemente conexo de **14 módulos** que contiene el núcleo entero. Ese componente es el que hacía que `vault_errors_trace` --un escritor de trazas de bajo nivel-- importase `vault_io` entero, y el que obliga a `cli/runner.py` a aislar cada tool en un subproceso para que dos raíces no se contaminen.
+
+El daño no es el arranque: es que la dirección de la dependencia deja de ser una decisión revisable. Un ciclo escondido no se discute en revisión porque no aparece en ninguna medida.
+
+**Prevención:** `vault_ciclos --check --strict` (puerta 17) calcula los componentes fuertemente conexos **contando las aristas diferidas**, que es la única forma de que la pregunta se pueda formular. La baseline **solo encoge** y se salda invirtiendo la dependencia --el módulo de bajo nivel deja de pedirle el módulo entero al de alto y se le pasa lo que necesita--, no subiendo el import ni ampliando la baseline.
+
+Dos límites, dichos antes de que nadie se apoye en el verde. Primero: solo entran en la deuda los diferidos que **esquivan un ciclo** (30 de 92); los otros 62 se difieren por coste de arranque o por dependencia opcional y se publican como `deferred_benign` sin congelarse, porque una baseline llena de ruido es una baseline que nadie revisa. Segundo: la medida es del grafo **estático** de módulos. No ve `importlib`, ni un import construido con una cadena, ni el acoplamiento que pasa por el sistema de ficheros o por una variable global compartida.
+
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
 - **Severidad:** high
@@ -767,7 +783,7 @@ Antes de cualquier operación masiva (migración, rename en lote, vault_tags --r
 
 ## EN
 
-Total registered norms: 69 (AP 57, CN 3, PAT 6, SP 3)
+Total registered norms: 70 (AP 58, CN 3, PAT 6, SP 3)
 
 ### AP-01: Documentación alucinada
 
@@ -813,7 +829,7 @@ Documentar comportamientos futuros o planeados como si ya existieran. Confunde a
 
 - **Severity:** critical
 - **Enforcement:** audit
-- **Detected by:** sin detector -- La única norma `critical` que hoy no mide nadie, y se declara así en vez de esconderlo. Declaraba `vault_graph_inspect`, que no la menciona ni compara valores entre notas. Diecisiete módulos citan AP-05 en un comentario --al explicar por qué NO copian un dato-- y citar no es detectar. Detectarla de verdad exige decidir qué es "el mismo dato" sin embeddings, que es un problema de diseño abierto.
+- **Detected by:** vault_fuente_unica
 
 El mismo dato (IP, URL, versión, configuración) aparece en múltiples notas con valores inconsistentes. Causa decisiones del agente basadas en datos erróneos.
 
@@ -1400,6 +1416,22 @@ Sale de v40.12: cuatro defectos de `vault_foreign_check` arreglados en una tanda
 **Prevention:** Registro `vault_criterios.CRITERIOS_CON_DUENO`: criterio, dueño, símbolo por el que se consulta y las constantes que lo delatan. `vault_criterios --check --strict` (puerta 15) falla si aparece una copia nueva; la baseline **solo encoge** y se salda importando al dueño, no ampliándola.
 
 El límite se declara antes de que nadie se apoye en él: la detección es **sintáctica**. Un módulo puede reimplementar un criterio sin repetir ninguna constante y esta medida no lo verá. Verde no prueba que no haya copias -- prueba que no hay copias de la forma que sabemos reconocer, que es exactamente lo que da un linter y es preferible a no mirar.
+
+### AP-58: Ciclo esquivado con un import diferido
+
+- **Severity:** high
+- **Enforcement:** guard
+- **Detected by:** vault_ciclos
+
+Dos módulos se necesitan mutuamente, y en vez de invertir la dependencia se mete uno de los `import` dentro del cuerpo de una función. Python deja de quejarse, el ciclo sigue ahí y **deja de verse**: cualquier medida que mire los imports de nivel de módulo dirá cero ciclos con toda honestidad.
+
+Aplicado una vez es una excepción razonable. Aplicado muchas es la arquitectura, tomada sin decidirla. Medido en v40.17 sobre este repo: **92 imports diferidos en 40 módulos**, de los cuales 30 esquivan un ciclo, y contándolos aparece un componente fuertemente conexo de **14 módulos** que contiene el núcleo entero. Ese componente es el que hacía que `vault_errors_trace` --un escritor de trazas de bajo nivel-- importase `vault_io` entero, y el que obliga a `cli/runner.py` a aislar cada tool en un subproceso para que dos raíces no se contaminen.
+
+El daño no es el arranque: es que la dirección de la dependencia deja de ser una decisión revisable. Un ciclo escondido no se discute en revisión porque no aparece en ninguna medida.
+
+**Prevention:** `vault_ciclos --check --strict` (puerta 17) calcula los componentes fuertemente conexos **contando las aristas diferidas**, que es la única forma de que la pregunta se pueda formular. La baseline **solo encoge** y se salda invirtiendo la dependencia --el módulo de bajo nivel deja de pedirle el módulo entero al de alto y se le pasa lo que necesita--, no subiendo el import ni ampliando la baseline.
+
+Dos límites, dichos antes de que nadie se apoye en el verde. Primero: solo entran en la deuda los diferidos que **esquivan un ciclo** (30 de 92); los otros 62 se difieren por coste de arranque o por dependencia opcional y se publican como `deferred_benign` sin congelarse, porque una baseline llena de ruido es una baseline que nadie revisa. Segundo: la medida es del grafo **estático** de módulos. No ve `importlib`, ni un import construido con una cadena, ni el acoplamiento que pasa por el sistema de ficheros o por una variable global compartida.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 

@@ -618,6 +618,47 @@
         "vault_norms"
       ]
     },
+    "vault_ciclos": {
+      "name": "vault_ciclos",
+      "description": "AP-58: el ciclo de importacion que se esquiva metiendo el import dentro de una funcion. Este repo declaraba cero ciclos y era verdad mirando solo el nivel de modulo; el cero lo fabricaban 92 imports diferidos en 40 modulos. Contando esas aristas aparece un componente fuertemente conexo de 14 modulos con el nucleo entero dentro. Solo entran en la deuda los 30 que esquivan un ciclo: los otros 62 se difieren por coste de arranque o dependencia opcional y se publican sin congelarse.",
+      "group": "Normas",
+      "script": "vault_ciclos.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "check": {
+            "type": "string",
+            "description": "Calcula los componentes contando aristas diferidas"
+          },
+          "strict": {
+            "type": "string",
+            "description": "Exit 1 si aparece un ciclo diferido nuevo"
+          },
+          "freeze": {
+            "type": "string",
+            "description": "Recongela la baseline de ciclos preexistentes"
+          },
+          "admitir-nuevos": {
+            "type": "string",
+            "description": "Permite congelar ciclos sin precedente"
+          }
+        }
+      },
+      "guards": [
+        "Mide el grafo estatico de modulos: no ve importlib, ni un import construido con una cadena, ni el acoplamiento que pasa por el sistema de ficheros o por una variable global compartida",
+        "Solo son deuda los diferidos cuyo destino vuelve al origen; una baseline llena de aristas benignas es una que nadie revisa",
+        "Baseline que solo encoge: un ciclo nuevo se invierte, no se congela, y subir el import tampoco lo arregla — solo lo hace visible al arrancar"
+      ],
+      "side_effects": [
+        "scripts/ciclos-baseline.json"
+      ],
+      "related": [
+        "vault_arch",
+        "vault_norms",
+        "vault_gate",
+        "vault_blueprint"
+      ]
+    },
     "vault_code_map": {
       "name": "vault_code_map",
       "description": "Genera mapa de dependencias entre módulos de código.",
@@ -1891,6 +1932,10 @@
           "check-doc": {
             "type": "string",
             "description": "Comprueba que el checklist de CLAUDE.md cite todas las puertas"
+          },
+          "fix-doc": {
+            "type": "string",
+            "description": "Regenera el bloque derivado del checklist en CLAUDE.md"
           }
         }
       },
@@ -5165,7 +5210,8 @@
       "vault_servicio",
       "vault_blueprint",
       "vault_norms_coherence",
-      "vault_criterios"
+      "vault_criterios",
+      "vault_ciclos"
     ],
     "Producción/SRE": [
       "vault_incident_save",

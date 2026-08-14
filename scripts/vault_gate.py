@@ -179,6 +179,15 @@ PUERTAS: List[Dict[str, Any]] = [
         "fix": "PAT-1: una nota canónica declara el dato y las demás la "
                "enlazan; verde solo cubre la parte decidible sin interpretar",
     },
+    {
+        "id": "ciclos",
+        "cmd": ["vault_ciclos.py", "--check", "--strict"],
+        "mide": "Ningún ciclo de importación nuevo se esquiva metiendo el "
+                "import dentro de una función (AP-58)",
+        "fix": "invertir la dependencia: el módulo de bajo nivel deja de "
+               "pedirle el módulo entero al de alto; subir el import o "
+               "ampliar la baseline no son la solución, solo esconden dónde",
+    },
 ]
 
 

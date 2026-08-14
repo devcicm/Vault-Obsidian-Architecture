@@ -572,6 +572,7 @@ _BASELINES = [
     ("smoke-baseline.json", "failing", "AP-42"),
     ("blueprint-baseline.json", "uncovered_norms", "capa 4 — norma sin puerta ni test"),
     ("criterios-baseline.json", "sitios", "AP-57"),
+    ("ciclos-baseline.json", "sitios", "AP-58 — ciclo esquivado con import diferido"),
     ("norms-coherence-baseline.json", "claims", "AP-55 — C2, afirmación sin traza"),
     ("field-compat-baseline.json", "stable", "contrato de campos con los consumidores"),
 ]

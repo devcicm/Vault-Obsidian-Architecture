@@ -39,258 +39,37 @@ from vault_regex import (
 from vault_entorno import leer as _env
 
 
-#: Origen de la detección del vault root — lo fija _detect_vault_root() y lo
-#: consulta el guard AP-36. `repo_root_fallback` es el único valor de baja
-#: confianza: significa que NO se encontró ningún vault y se está usando la raíz
-#: del repo como si lo fuera (v39: causa histórica de 00_System/ y 99_Index/
-#: generados fuera de todo vault-*).
-_VAULT_ROOT_ORIGIN: str = "unknown"
+# ── Dónde está el vault: lo decide `vault_raiz` (v40.17) ──────────────────────
+# Este bloque era 250 líneas de detección, override y reanclaje viviendo dentro
+# del módulo que además sanea codificación, escanea secretos y regenera índices.
+# Esa mezcla es la que metía a `vault_io` en un componente fuertemente conexo de
+# 15 módulos: quien solo necesitaba saber *dónde* escribir se llevaba entero al
+# que necesita emitir errores, que necesita trazarlos, que necesita saber dónde
+# escribir. Extraído a una hoja, la arista se corta en vez de esquivarse con un
+# import diferido.
+#
+# Se reexporta todo lo público **sin cambiar un solo nombre**: los ~89 módulos
+# que hacen `from vault_io import VAULT_ROOT, get_vault_root, set_vault_root`
+# siguen funcionando sin tocarse. No-derogación: la puerta de entrada histórica
+# no se retira porque haya aparecido otra mejor.
+import vault_raiz as _raiz
+from vault_raiz import (  # noqa: F401  (reexport deliberado)
+    LOW_CONFIDENCE_ORIGINS,
+    get_vault_root,
+    rebound_constants,
+    reset_vault_root,
+    set_vault_root,
+    vault_root_is_confident,
+    vault_root_origin,
+)
 
-#: Valores de _VAULT_ROOT_ORIGIN que NO identifican un vault real.
-LOW_CONFIDENCE_ORIGINS = frozenset({"repo_root_fallback"})
+#: Alias histórico. `VAULT_ROOT` se reancla igual que antes: `_reanclar_constantes`
+#: recorre `sys.modules` y reapunta toda constante en MAYÚSCULAS que sea un `Path`
+#: del vault, y este módulo entra en ese barrido como cualquier otro.
+VAULT_ROOT: Path = _raiz.VAULT_ROOT
 
+_detect_vault_root = _raiz._detect_vault_root
 
-def _detect_vault_root() -> Path:
-    """Auto-detect vault root.
-
-    Priority order:
-    1. VAULT_ROOT env var (explicit override)
-    2. vault-* subdirectory beside scripts/ (consumer repo layout):
-       - First pass: prefer dirs that already have 00_System/, 99_Index/ or .obsidian
-       - Second pass: accept any vault-* dir (fresh install, nothing initialized yet)
-       vault-backups* AND vault-sandbox* dirs are excluded from both passes
-       (vault-sandbox is a side-effect of the spec-repo fallback, not a real vault).
-    3. scripts/ parent (scripts-inside-vault layout) IF it has vault structure
-       (00_System/01_Projects/etc. directly under it). Previously this fallback
-       only triggered when the parent had vault-obsidian-architecture.md, which
-       caused a bug: any consumer vault that included the spec as a reference
-       doc got misidentified as the spec repo and redirected to vault-sandbox/.
-    4. Spec-repo sandbox: if the parent has vault-obsidian-architecture.md
-       AND no vault structure markers, treat as spec repo and use vault-sandbox/.
-    5. Último recurso: la raíz del repo. Marcada como `repo_root_fallback` —
-       ver `vault_root_origin()`. Con VAULT_STRICT_ROOT=1 esto es un error en
-       lugar de un silencio, porque es el caso en el que las tools escriben
-       artefactos de vault fuera de cualquier vault.
-
-    AP-36: esta función NO crea directorios. Antes hacía `sandbox.mkdir()` en
-    la rama 4, y como VAULT_ROOT se evalúa a nivel de módulo, *importar*
-    vault_io materializaba `vault-sandbox/` en cualquier repo que tuviera el
-    manifiesto como doc de referencia. Los directorios se crean ahora en la
-    primera escritura real (atomic_write_* ya hace mkdir del padre).
-    """
-    global _VAULT_ROOT_ORIGIN
-    if env := _env("VAULT_ROOT"):
-        _VAULT_ROOT_ORIGIN = "env"
-        return Path(env).resolve()
-    project_root = Path(__file__).parent.parent.resolve()
-    _MARKERS = {"00_System", "99_Index", ".obsidian"}
-    # Strong vault structure marker — at least 2 of these folders must exist
-    # at the root level for the directory to be considered a vault.
-    _VAULT_MARKERS = {
-        "00_System",
-        "01_Projects",
-        "02_Observability",
-        "03_Decisions",
-        "99_Index",
-        ".obsidian",
-    }
-    # Exclude vault-sandbox and *.bak from candidates — they're side-effects
-    # of the spec-repo fallback or backups, not real vaults. Excluding them
-    # prevents a chicken-and-egg situation where the old detection created
-    # vault-sandbox/ and the new detection picks it as the vault because it
-    # has 00_System.
-    candidates = [
-        s
-        for s in sorted(project_root.iterdir())
-        if s.is_dir()
-        and (s.name.startswith("vault-") or s.name == "vault")
-        and not s.name.startswith("vault-backups")
-        and s.name != "vault-sandbox"
-        and not s.name.endswith(".bak")
-        # Un paquete Python no es un vault, aunque se llame `vault/`. La rama
-        # "fresh" de abajo acepta un candidato por el NOMBRE, sin exigir un solo
-        # marcador, así que crear el paquete `vault/` del refactor bastó para
-        # que la autodetección dejara de devolver `vault-sandbox/` y empezara a
-        # apuntar al código fuente — con origen `sibling_vault_dir_fresh`, es
-        # decir, anunciando confianza. Es AP-44 en el detector: se validaba a sí
-        # mismo por convención de nombre en vez de por el criterio del
-        # consumidor, que es «¿tiene esto contenido de vault?».
-        and not (s / "__init__.py").exists()
-    ]
-    # Prefer candidates that already have vault content (initialized vault)
-    for c in candidates:
-        if any((c / m).exists() for m in _MARKERS):
-            _VAULT_ROOT_ORIGIN = "sibling_vault_dir"
-            return c
-    # Accept any vault-* dir (fresh vault, nothing initialized yet)
-    if candidates:
-        _VAULT_ROOT_ORIGIN = "sibling_vault_dir_fresh"
-        return candidates[0]
-    # Check if project_root itself IS a vault (scripts-inside-vault layout).
-    # This is the case when the consumer has 00_System/01_Projects/etc. directly
-    # under the same dir that contains scripts/ — common when a project ships
-    # the spec file as a reference doc and the vault sits at the same level.
-    marker_count = sum(1 for m in _VAULT_MARKERS if (project_root / m).exists())
-    # 00_System/ and 99_Index/ are auto-created by the observability layer
-    # (tool-trace, graph index) as a side-effect of running any tool, so their
-    # presence alone must NOT qualify project_root as a vault — that creates a
-    # self-reinforcing loop where one stray write makes the repo root the vault
-    # forever. Require at least one CONTENT marker authored by a human/init.
-    _CONTENT_MARKERS = {"01_Projects", "02_Observability", "03_Decisions", ".obsidian"}
-    has_content = any((project_root / m).exists() for m in _CONTENT_MARKERS)
-    if marker_count >= 2 and has_content:
-        _VAULT_ROOT_ORIGIN = "scripts_inside_vault"
-        return project_root
-    # Spec repo fallback: parent has vault-obsidian-architecture.md AND no
-    # vault structure (i.e., this IS the spec repo, not a consumer vault).
-    # NO se crea el directorio aquí — ver docstring (AP-36).
-    if (project_root / "vault-obsidian-architecture.md").exists():
-        _VAULT_ROOT_ORIGIN = "spec_repo_sandbox"
-        return project_root / "vault-sandbox"
-    # Último recurso: no hay vault. Devolvemos la raíz del repo para no romper
-    # los ~94 tools que no aceptan --root, pero queda marcado como baja
-    # confianza para que el guard AP-36 lo denuncie en vez de silenciarlo.
-    _VAULT_ROOT_ORIGIN = "repo_root_fallback"
-    if _env("VAULT_STRICT_ROOT"):
-        raise RuntimeError(
-            f"No se encontró ningún vault desde {project_root}. Con VAULT_STRICT_ROOT=1 "
-            "esto es un error: escribir aquí generaría 00_System/, 99_Index/ y demás "
-            "artefactos fuera de todo vault. Crea un directorio 'vault-<nombre>/' o "
-            "exporta VAULT_ROOT=<ruta del vault>."
-        )
-    return project_root
-
-
-VAULT_ROOT: Path = _detect_vault_root()
-
-#: El vault detectado al importar, guardado APARTE y nunca reescrito.
-#:
-#: `set_vault_root()` reancla las constantes de módulo derivadas del vault, y
-#: `VAULT_ROOT` es una de ellas: se reapunta a sí misma. Sin esta copia, poner
-#: el override a None no volvía al vault detectado —se quedaba en el último
-#: destino para siempre— mientras `vault_root_origin()` seguía respondiendo
-#: `spec_repo_sandbox`, es decir, anunciando confianza sobre una raíz que ya no
-#: era ésa. Es AP-44 en el propio detector: certificaba con su criterio en vez
-#: de con el del consumidor.
-#: Se guarda como `str` y no como `Path` a propósito: `_reanclar_constantes()`
-#: reapunta toda constante en mayúsculas cuyo valor sea un `Path` derivado del
-#: vault, y esta copia lo es. Guardada como ruta, el reanclaje se la llevaba por
-#: delante y el respaldo apuntaba al mismo sitio del que había que volver.
-_VAULT_ROOT_DETECTADO: str = str(VAULT_ROOT)
-_ORIGEN_DETECTADO: str = _VAULT_ROOT_ORIGIN
-
-
-def vault_root_origin() -> str:
-    """Qué regla de _detect_vault_root() eligió VAULT_ROOT.
-
-    Valores: env | sibling_vault_dir | sibling_vault_dir_fresh |
-    scripts_inside_vault | spec_repo_sandbox | repo_root_fallback |
-    explicit_override.
-
-    Con un override activo devuelve `explicit_override`: la raíz ya no la
-    eligió ninguna regla de detección, y seguir citando la regla anterior sería
-    atribuir a la autodetección una decisión que tomó quien llamó.
-    """
-    if _ACTIVE_VAULT_ROOT is not None:
-        return "explicit_override"
-    return _VAULT_ROOT_ORIGIN
-
-
-def vault_root_is_confident() -> bool:
-    """False cuando VAULT_ROOT es una suposición, no un vault identificado."""
-    return _VAULT_ROOT_ORIGIN not in LOW_CONFIDENCE_ORIGINS
-
-# ── Override en runtime (AP-36) ────────────────────────────────────────────────
-# Los tools que aceptan --root deben llamar set_vault_root() ANTES de escribir,
-# para que la capa de observabilidad (traces, tokens, locks) escriba en el vault
-# objetivo y no en el VAULT_ROOT detectado en import. Los writers deben resolver
-# la ruta vía get_vault_root() en tiempo de llamada, nunca como constante de módulo.
-_ACTIVE_VAULT_ROOT: Optional[Path] = None
-
-
-def _reanclar_constantes(anterior: Path, nueva: Path) -> List[str]:
-    """Reapunta al vault nuevo las constantes de módulo derivadas del viejo.
-
-    El problema que resuelve: 89 de 98 módulos hacen `from vault_io import
-    VAULT_ROOT` y derivan sus rutas EN EL IMPORT (`CODE_DIR = VAULT_ROOT /
-    "11_Code"`). Eso congela un `Path` literal, así que `set_vault_root()`
-    cambiaba `get_vault_root()` y no cambiaba nada de lo que las tools usan de
-    verdad para leer y escribir. Había dos verdades para "cuál es el vault", y
-    la API pública de cambiarlo mentía: medido, `get_vault_root()` devolvía el
-    vault nuevo mientras `vault_audit.VAULT_ROOT` seguía en el viejo.
-
-    Reanclar es lo único que arregla el caso sin reescribir los 89 módulos:
-    ningún proxy perezoso sobre `VAULT_ROOT` alcanzaría a las constantes ya
-    derivadas de él. Se toca solo lo inequívoco —nombres en MAYÚSCULAS de
-    módulos `vault_*` cuyo valor es un `Path` DENTRO de la raíz anterior—;
-    cualquier otra cosa se deja como está.
-
-    Devuelve los nombres reanclados, en `modulo.CONSTANTE`, para que la
-    operación sea auditable en vez de mágica.
-    """
-    import sys as _sys
-
-    tocados: List[str] = []
-    for nombre_mod, modulo in list(_sys.modules.items()):
-        if not nombre_mod.startswith("vault_") or modulo is None:
-            continue
-        for nombre, valor in list(vars(modulo).items()):
-            if not nombre.isupper() or not isinstance(valor, Path):
-                continue
-            if nombre == "VAULT_ROOT":
-                setattr(modulo, nombre, nueva)
-                tocados.append(f"{nombre_mod}.{nombre}")
-                continue
-            try:
-                relativa = valor.relative_to(anterior)
-            except ValueError:
-                continue  # no colgaba del vault: no es una ruta de vault
-            setattr(modulo, nombre, nueva / relativa)
-            tocados.append(f"{nombre_mod}.{nombre}")
-    return tocados
-
-
-#: Constantes reancladas por el último set_vault_root(). Auditable desde fuera.
-_REANCLADAS: List[str] = []
-
-
-def set_vault_root(path) -> Path:
-    """Fija el vault activo para esta ejecución (override de la auto-detección).
-
-    Además de fijar el override, reancla las constantes que los módulos ya
-    importados derivaron del vault anterior — ver `_reanclar_constantes()`.
-    """
-    global _ACTIVE_VAULT_ROOT, _REANCLADAS
-    anterior = get_vault_root().resolve()
-    nueva = Path(path).resolve()
-    _ACTIVE_VAULT_ROOT = nueva
-    _REANCLADAS = _reanclar_constantes(anterior, nueva) if nueva != anterior else []
-    return _ACTIVE_VAULT_ROOT
-
-
-def rebound_constants() -> List[str]:
-    """Constantes de módulo que el último set_vault_root() reapuntó."""
-    return list(_REANCLADAS)
-
-
-def reset_vault_root() -> Path:
-    """Deshace el override y devuelve las constantes al vault detectado.
-
-    Poner `_ACTIVE_VAULT_ROOT = None` a mano NO basta y ésa era la trampa: el
-    reanclaje ya había reescrito `VAULT_ROOT` y las constantes de los módulos
-    cargados, así que el proceso seguía apuntando al destino temporal. En una
-    suite eso se ve como fallos que dependen del orden de los ficheros; en una
-    tool, como escribir en el vault de la llamada anterior.
-    """
-    global _ACTIVE_VAULT_ROOT
-    set_vault_root(Path(_VAULT_ROOT_DETECTADO))
-    _ACTIVE_VAULT_ROOT = None
-    return VAULT_ROOT
-
-
-def get_vault_root() -> Path:
-    """Vault root efectivo: el override de set_vault_root() o el auto-detectado."""
-    return _ACTIVE_VAULT_ROOT if _ACTIVE_VAULT_ROOT is not None else VAULT_ROOT
 
 
 # ── Rutas de ENTRADA del usuario (AP-36) ──────────────────────────────────────
@@ -352,133 +131,28 @@ def resolve_tool_spec() -> Optional[Path]:
     return None
 
 
-# In-process locks keyed by lock-dir path. The mkdir directory-lock below is the
-# cross-PROCESS primitive, but rapid same-PROCESS mkdir/rmdir churn is racy on
-# Windows (handle caching / AV), so threads in one process could both acquire.
-# This threading.Lock layer serializes same-process callers deterministically;
-# the mkdir layer still guards across processes.
-_LOCAL_LOCKS: Dict[str, threading.Lock] = {}
-_LOCAL_LOCKS_GUARD = threading.Lock()
-
-
-def _local_lock_for(key: str) -> threading.Lock:
-    with _LOCAL_LOCKS_GUARD:
-        lk = _LOCAL_LOCKS.get(key)
-        if lk is None:
-            lk = threading.Lock()
-            _LOCAL_LOCKS[key] = lk
-        return lk
-
-
-#: Locks que ESTE hilo ya tiene tomados, por clave de lock-dir.
+# ── Exclusión mutua y escritura atómica: el mecanismo vive en `vault_fs` (v40.17)
+# El lock reentrante y el par temporal→os.replace no saben nada de vaults: son
+# sistema de ficheros puro. Estaban aquí, y por eso `vault_errors_trace` —que
+# solo quiere depositar un JSON que él mismo genera— tenía que importar el
+# módulo que sanea codificación y regenera índices, cerrando el ciclo
+# `errors → errors_trace → io → encoding → errors`.
 #
-# Sin esto, un hilo que vuelve a pedir un lock que él mismo sostiene espera el
-# timeout entero contra sí mismo y luego se le dice al llamante «no se pudo
-# bloquear». Casi todos los llamantes reaccionan igual: escribir de todos modos,
-# sin sincronizar. Medido en `vault_sdd_init`, que escribe con `atomic_write_text`
-# y cuyo saneador de codificación traza cada corrección: 26 tomas del lock del
-# fichero de trazas, 13 fallidas, 65 s de espera pura — y esas 13 acababan
-# escribiendo el trace SIN lock justo mientras el llamante externo lo estaba
-# reemplazando. El coste visible era que la tool se pasaba del timeout de 60 s;
-# el defecto era la escritura sin sincronizar.
-#
-# La reentrancia se concede sin volver a tomar nada: si el hilo ya lo tiene, la
-# exclusión que el lock promete YA está garantizada. Lo que no se hace es soltar
-# el lock al salir del bloque interno — solo el bloque más externo libera, o el
-# `finally` interno abriría la ventana que el externo cree cerrada.
-_HELD_LOCKS = threading.local()
-
-
-def _held(key: str) -> bool:
-    return key in getattr(_HELD_LOCKS, "keys", ())
-
-
-@contextmanager
-def file_lock(
-    target: Path, timeout: float = 30.0, stale_after: float = 120.0
-) -> Iterator[Path]:
-    """Create an atomic directory lock near the target file.
-
-    This avoids lost updates when multiple documentation tools update the same
-    JSON index during mass generation. Stale locks are removed after
-    ``stale_after`` seconds. Layered: an in-process threading.Lock serializes
-    threads in this process; the mkdir directory-lock serializes across processes.
-
-    Reentrante por hilo: si el hilo que llama ya sostiene este mismo lock, el
-    bloque se ejecuta sin volver a adquirirlo y sin liberar al salir. Ver
-    `_HELD_LOCKS` para qué pasaba antes — no era una espera de más, era una
-    escritura sin sincronizar.
-    """
-    lock_root = target.parent / ".locks"
-    lock_root.mkdir(parents=True, exist_ok=True)
-    lock_dir = lock_root / f"{target.name}.lock"
-    clave = str(lock_dir)
-    deadline = time.time() + timeout
-
-    if _held(clave):
-        yield lock_dir
-        return
-
-    local = _local_lock_for(clave)
-    acquired = local.acquire(blocking=False) if timeout <= 0 else local.acquire(timeout=timeout)
-    if not acquired:
-        raise TimeoutError(f"Timeout waiting for in-process lock: {lock_dir}")
-
-    while True:
-        try:
-            os.mkdir(lock_dir)
-            (lock_dir / "owner.json").write_text(
-                json.dumps({"pid": os.getpid(), "createdAt": time.time()}),
-                encoding="utf-8",
-            )
-            break
-        except FileExistsError:
-            try:
-                age = time.time() - lock_dir.stat().st_mtime
-                if age > stale_after:
-                    # Steal-by-rename: atomically move the stale lock aside before
-                    # removing it. Deleting lock_dir in place is a TOCTOU race — a
-                    # second process that also saw the lock as stale could unlink the
-                    # owner.json / rmdir the lock that a THIRD process just re-acquired,
-                    # silently breaking mutual exclusion. os.replace is atomic and fails
-                    # (OSError) if another process already stole or the owner released,
-                    # so only the winner of the rename owns the cleanup.
-                    steal = lock_root / f"{target.name}.stale.{os.getpid()}.{uuid.uuid4().hex[:8]}"
-                    try:
-                        os.replace(lock_dir, steal)
-                    except OSError:
-                        # Someone else stole it or it was released — just retry acquire.
-                        time.sleep(0.05)
-                        continue
-                    try:
-                        for child in steal.iterdir():
-                            child.unlink()
-                        steal.rmdir()
-                    except OSError:
-                        pass
-                    continue
-            except OSError:
-                pass
-            if time.time() >= deadline:
-                local.release()
-                raise TimeoutError(f"Timeout waiting for lock: {lock_dir}")
-            time.sleep(0.05)
-
-    if not hasattr(_HELD_LOCKS, "keys"):
-        _HELD_LOCKS.keys = set()
-    _HELD_LOCKS.keys.add(clave)
-    try:
-        yield lock_dir
-    finally:
-        _HELD_LOCKS.keys.discard(clave)
-        try:
-            for child in lock_dir.iterdir():
-                child.unlink()
-            lock_dir.rmdir()
-        except OSError:
-            pass
-        local.release()
-
+# Lo que se queda en este módulo es la POLÍTICA: qué se comprueba antes de
+# escribir, qué se sanea, qué se cuenta como trabajo y qué índices se recalculan
+# después. Ver `atomic_write_text`, que ahora se lee como lo que siempre fue.
+from vault_fs import (  # noqa: F401  (reexport deliberado)
+    _escribir_temporal,
+    _fsync_si_procede,
+    _held,
+    _local_lock_for,
+    _HELD_LOCKS,
+    _LOCAL_LOCKS,
+    _LOCAL_LOCKS_GUARD,
+    escritura_atomica,
+    file_lock,
+    guarda_secretos,
+)
 
 def assert_within_vault(path: Path, vault_root: Path) -> Path:
     """Resolve *path* and verify it stays inside *vault_root*.
@@ -501,83 +175,25 @@ def assert_within_vault(path: Path, vault_root: Path) -> Path:
     return resolved
 
 
-# ────────────────────────────────────────────────────────────────────────────
-# AP-37 — registro de escrituras
-# ────────────────────────────────────────────────────────────────────────────
-# El indicador de trabajo se MIDE donde el trabajo ocurre, no lo afirma cada
-# tool en su return. Una tool que se limita a declarar `ok: true` está haciendo
-# una afirmación no falsable; una que reporta `unchanged: 1` está diciendo algo
-# comprobable — y es justo el caso que AP-37 nació para destapar (una migración
-# que devolvía éxito habiendo aplicado cero cambios).
+# ── AP-37: el ledger de escrituras vive en `vault_ledger` (v40.17) ────────────
+# Contabilidad thread-local pura: cuenta created/updated/unchanged y no toca el
+# disco para nada. Que estuviera aquí es lo que obligaba a `vault_errors` —el
+# módulo con más fan-in del repo, 110 importadores— a importar `vault_io` solo
+# para poner un contador a cero antes de lanzar la tool. Esa arista cerraba el
+# ciclo `errors → io → encoding → errors`.
 #
-# El ledger es thread-local a propósito: la CLI consolidada ejecuta varias
-# operaciones a la vez y un contador de módulo mezclaría el trabajo de unas con
-# el de otras.
-_write_ledger = threading.local()
+# Reexportado sin cambiar nombres: `from vault_io import write_report` sigue
+# siendo válido.
+from vault_ledger import (  # noqa: F401  (reexport deliberado)
+    _NO_ES_TRABAJO,
+    _ledger,
+    _record_write,
+    _write_ledger,
+    record_raw_write,
+    write_ledger_reset,
+    write_report,
+)
 
-
-def _ledger() -> Dict[str, int]:
-    contadores = getattr(_write_ledger, "counts", None)
-    if contadores is None:
-        contadores = {"created": 0, "updated": 0, "unchanged": 0}
-        _write_ledger.counts = contadores
-    return contadores
-
-
-def write_ledger_reset() -> None:
-    """Pone el contador a cero. Lo llama `wrap_main` al arrancar cada tool."""
-    _write_ledger.counts = {"created": 0, "updated": 0, "unchanged": 0}
-
-
-def write_report() -> Dict[str, int]:
-    """Qué escribió esta ejecución. Pensado para expandirse en el return de la tool.
-
-    `written` es el total de archivos que cambiaron en disco: `unchanged` NO
-    cuenta, porque reescribir un archivo con el mismo contenido no es trabajo.
-    """
-    c = dict(_ledger())
-    c["written"] = c["created"] + c["updated"]
-    return c
-
-
-def record_raw_write(path: Path, text: str, encoding: str = "utf-8") -> str:
-    """Registra una escritura que NO pasa por `atomic_write_text`, a propósito.
-
-    Hay exactamente un motivo válido para escribir en crudo: `vault_section_index`
-    genera índices con `Path.write_text` porque `atomic_write_text` dispara
-    `_auto_section_index`, y el generador escribiéndose a sí mismo sería una
-    recursión infinita. Esas escrituras son trabajo real y tienen que contar.
-
-    Llamar a esto NO escribe: solo clasifica. Se invoca junto al `write_text`.
-    """
-    return _record_write(path, text, encoding)
-
-
-#: Ficheros de telemetría interna que NO son trabajo de la tool. Escribir una
-#: traza no es haber hecho nada por el vault, y contarla haría que el indicador
-#: de AP-37 subiera con el número de errores registrados — justo al revés de lo
-#: que mide. Se declaran por nombre porque viven en `00_System/`, que ya está
-#: fuera de la cascada de índices por el mismo motivo.
-_NO_ES_TRABAJO = frozenset({".tool-trace.json"})
-
-
-def _record_write(path: Path, text: str, encoding: str) -> str:
-    """Clasifica la escritura antes de hacerla. Nunca propaga errores."""
-    if path.name in _NO_ES_TRABAJO:
-        return "unchanged"
-    try:
-        if not path.exists():
-            resultado = "created"
-        else:
-            resultado = (
-                "unchanged"
-                if path.read_text(encoding=encoding, errors="replace") == text
-                else "updated"
-            )
-    except OSError:
-        resultado = "updated"
-    _ledger()[resultado] += 1
-    return resultado
 
 
 #: Fallos del escáner de secretos ocurridos en este proceso. En memoria además
@@ -746,66 +362,6 @@ def _verificar_frontmatter(path: Path, text: str) -> None:
         _FRONTMATTER_SIN_TIPO.append({"path": str(path), "reason": "missing_type"})
 
 
-def _escribir_temporal(temp: Path, text: str, encoding: str) -> None:
-    """Escribe el temporal y, si `VAULT_FSYNC=1`, lo vuelca a disco.
-
-    El volcado va **dentro** del `with`, sobre el descriptor con el que se
-    escribió: en Windows `os.fsync` sobre un `os.open(..., O_RDONLY)` falla con
-    `Bad file descriptor` —`_commit` exige acceso de escritura—, así que
-    sincronizar «después, reabriendo» funciona en POSIX y rompe en la plataforma
-    donde se desarrolla este repo. Se descubrió al ejecutarlo, no al leerlo.
-
-    `newline` queda por defecto a propósito: es lo que hacía `Path.write_text`, y
-    cambiarlo alteraría los saltos de línea de cada nota del estándar. La palanca
-    es de durabilidad, no de contenido.
-    """
-    import os
-
-    with open(temp, "w", encoding=encoding) as fh:
-        fh.write(text)
-        if _env("VAULT_FSYNC"):
-            fh.flush()
-            os.fsync(fh.fileno())
-
-
-def _fsync_si_procede(temp: Path) -> None:
-    """Vuelca el directorio padre si `VAULT_FSYNC=1`, para que el rename dure.
-
-    Aquí está la **decisión** de durabilidad del estándar; el volcado del
-    contenido lo hace `_escribir_temporal` sobre su propio descriptor.
-
-    **La durabilidad del estándar es la del sistema de ficheros, y eso es una
-    decisión, no un olvido.** `atomic_write_text` da atomicidad —temp + `os.replace`,
-    nadie ve la nota a medias— pero no durabilidad: entre el `replace` y el
-    volcado real hay una ventana en la que un corte de corriente deja la nota
-    truncada o vacía. Cerrarla por defecto cuesta un `fsync` por escritura, y hay
-    tools que escriben cientos de ficheros en una pasada (`vault_reindex`,
-    `vault_onboard`, `vault_migrate_docs`): el coste es del orden de milisegundos
-    por nota sobre discos que no lo agregan.
-
-    El reparto elegido: **por defecto no**, porque el contenido de un vault es
-    reconstruible —está en git, en el proyecto de origen o en los `vault-backups/`—
-    y perder la última escritura ante un corte es un daño acotado. **Opt-in con
-    `VAULT_FSYNC=1`** para quien escriba sobre almacenamiento volátil o en un
-    entorno donde el corte sea plausible.
-
-    Se sincroniza además el directorio padre en POSIX: sin eso, el `rename` puede
-    no haber llegado a disco aunque el contenido sí, y el fichero reaparecería con
-    el nombre viejo. En Windows no existe descriptor de directorio y `os.replace`
-    ya es atómico a nivel de metadatos, así que ese paso se omite —callando, que
-    es lo correcto aquí: no es una degradación, es que no aplica—.
-    """
-    import os
-
-    if not _env("VAULT_FSYNC"):
-        return
-    if hasattr(os, "O_DIRECTORY"):
-        dir_fd = os.open(str(temp.parent), os.O_RDONLY | os.O_DIRECTORY)
-        try:
-            os.fsync(dir_fd)
-        finally:
-            os.close(dir_fd)
-
 
 def atomic_write_text(
     path: Path, text: str, encoding: str = "utf-8", sanitize: bool = True
@@ -823,26 +379,9 @@ def atomic_write_text(
     write is aborted with a descriptive error. Set env var
     VAULT_SKIP_SECRET_SCAN=1 to bypass (not recommended).
     """
-    import os
-
     if text and not _env("VAULT_SKIP_SECRET_SCAN"):
         try:
-            from vault_secret_scan import vault_write_hook, has_blocking_findings
-
-            ok, findings = vault_write_hook(text)
-            if not ok:
-                critical = [f for f in findings if f["severity"] == "critical"]
-                details = "\n".join(
-                    f"  [{f['pattern_id']}] line {f['line_hint']}: {f['match_redacted']}"
-                    for f in critical[:5]
-                )
-                raise PermissionError(
-                    f"atomic_write_text blocked: {len(critical)} critical secret(s) "
-                    f"detected in content. Bypass with VAULT_SKIP_SECRET_SCAN=1.\n"
-                    f"{details}"
-                )
-        except ImportError:
-            pass  # vault_secret_scan not available — skip
+            guarda_secretos(path, text)
         except PermissionError:
             raise
         except Exception as exc:
@@ -876,26 +415,16 @@ def atomic_write_text(
             except Exception:
                 pass  # Don't fail writing if logging fails
 
-    # Short temp name avoids Windows MAX_PATH (260 chars) on deep vault paths.
-    # v36: wrap write+replace in try/except so the temp file is cleaned up
-    # if write_text fails (disk full, permissions, encoding). Without this,
-    # repeated failures leave .tmp.<pid>.<hex> orphans accumulating in
-    # path.parent, which is a slow disk-fill risk.
     # Se clasifica con el texto YA saneado: comparar contra el original daría
     # `updated` en escrituras que el saneado deja idénticas.
     _record_write(path, text, encoding)
 
-    temp = path.parent / f".tmp.{os.getpid()}.{uuid.uuid4().hex[:8]}"
-    try:
-        _escribir_temporal(temp, text, encoding)
-        _fsync_si_procede(temp)
-        os.replace(temp, path)
-    except Exception:
-        try:
-            temp.unlink(missing_ok=True)
-        except OSError:
-            pass
-        raise
+    # El mecanismo —temporal, fsync opcional, os.replace y limpieza del huérfano
+    # si algo falla— está en `vault_fs.escritura_atomica`. Las guardas ya se han
+    # ejecutado arriba, así que aquí no se pasa ninguna: esta función las quiere
+    # con su propio manejo de errores (el escáner degradado se registra en vez de
+    # abortar), y eso es política, no mecanismo.
+    escritura_atomica(path, text, encoding)
 
     _auto_section_index(path)
 

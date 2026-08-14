@@ -10,9 +10,9 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | Ruta | Qué es |
 |---|---|
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~6.000 líneas). Fuente normativa. |
-| `scripts/*.py` | ~126 scripts, 103 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
+| `scripts/*.py` | ~130 scripts, 104 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (2706 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (2736 tests). Toda norma con guard debe tener test. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
 | `vault-sandbox/` | **Único** vault de pruebas del repo. Todo runtime va aquí. |
@@ -213,6 +213,9 @@ abajo, en «Cuatro cosas que el registro no puede decirte».
 - [ ] `python scripts/vault_fuente_unica.py --check --strict`
       El mismo dato tipado no tiene valores distintos en varias notas del mismo ámbito (AP-05).
       *Se arregla con:* PAT-1: una nota canónica declara el dato y las demás la enlazan; verde solo cubre la parte decidible sin interpretar
+- [ ] `python scripts/vault_ciclos.py --check --strict`
+      Ningún ciclo de importación nuevo se esquiva metiendo el import dentro de una función (AP-58).
+      *Se arregla con:* invertir la dependencia: el módulo de bajo nivel deja de pedirle el módulo entero al de alto; subir el import o ampliar la baseline no son la solución, solo esconden dónde
 
 <!-- puertas:fin -->
 

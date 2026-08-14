@@ -338,9 +338,11 @@ def test_el_respaldo_de_la_raiz_no_lo_arrastra_el_reanclaje():
     ruta la hacía inútil: se reanclaba con las demás y apuntaba al mismo sitio
     del que había que volver.
     """
-    import vault_io
+    # v40.17: el subsistema de raíz vive en la hoja `vault_raiz`. Se mira ahí y
+    # no en el reexport de `vault_io`: medir el alias no dice nada del dueño.
+    import vault_raiz
 
-    assert isinstance(vault_io._VAULT_ROOT_DETECTADO, str)
+    assert isinstance(vault_raiz._VAULT_ROOT_DETECTADO, str)
 
 
 # ── AP-05 en el paquete de dominio ────────────────────────────────────────────
@@ -406,7 +408,9 @@ def test_el_kernel_declara_sus_ganchos_con_motivo():
     kernel y consume la escala de severidad.
     """
     ganchos_del_write_path = {
-        ("vault_io", "vault_secret_scan"),
+        # v40.17: el escaneo de secretos bajó con el mecanismo a `vault_fs`.
+        # El gancho es el mismo cruce de siempre; cambió de dueño, no de causa.
+        ("vault_fs", "vault_secret_scan"),
         ("vault_io", "vault_section_index"),
         ("vault_io", "vault_tags"),
         ("vault_errors", "vault_voice"),
@@ -433,10 +437,10 @@ def test_ningun_cruce_kernel_dominio_sin_declarar():
 def test_un_gancho_no_declarado_rompe_la_puerta(monkeypatch):
     """La puerta tiene que morder, o es decorativa (AP-44)."""
     sin_uno = dict(arch.GANCHOS_DEL_KERNEL)
-    sin_uno.pop(("vault_io", "vault_secret_scan"))
+    sin_uno.pop(("vault_fs", "vault_secret_scan"))
     monkeypatch.setattr(arch, "GANCHOS_DEL_KERNEL", sin_uno)
     hallazgos = arch.dependencias_del_kernel()
-    assert ("vault_io", "vault_secret_scan") in {
+    assert ("vault_fs", "vault_secret_scan") in {
         (h["from"], h["to"]) for h in hallazgos
     }
     assert arch.check()["ok"] is False

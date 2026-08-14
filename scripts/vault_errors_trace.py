@@ -10,7 +10,20 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from vault_io import atomic_write_text, file_lock, get_vault_root
+# v40.17 — se pide el mecanismo a las hojas, no el módulo de IO entero.
+#
+# Este fichero declara desde siempre «no debe importar vault_errors (circular)»,
+# y sin embargo cerraba el ciclo por el otro lado: `vault_io` importa
+# `vault_encoding`, que llama a `vault_errors.log_trace`, que importa este
+# módulo. El aviso del docstring señalaba la arista visible y no la que había.
+#
+# `escritura_atomica` con `guarda_secretos` conserva exactamente lo que hacía
+# `atomic_write_text(..., sanitize=False)` sobre este fichero: el escaneo de
+# secretos sigue corriendo. Lo que se deja fuera —saneado de codificación,
+# ledger, índice de sección, vocabulario de tags— no aplicaba a un JSON generado
+# aquí mismo dentro de `00_System/`, y era justamente lo que arrastraba el ciclo.
+from vault_fs import escritura_atomica, file_lock, guarda_secretos
+from vault_raiz import get_vault_root
 
 
 # AP-36: los paths se resuelven LAZY vía get_vault_root() en cada llamada, para
@@ -59,7 +72,7 @@ def _append_trace_entry(entry: Dict[str, Any], use_atomic: bool) -> None:
         # accidente. Al arreglar la reentrancia (v40.7) el bucle quedó al
         # descubierto. Además el trace es JSON generado aquí mismo: no hay
         # nada que sanear que no hayamos escrito nosotros.
-        atomic_write_text(tf, text, sanitize=False)
+        escritura_atomica(tf, text, guardas=(guarda_secretos,))
     else:
         tf.write_text(text, encoding="utf-8")
 

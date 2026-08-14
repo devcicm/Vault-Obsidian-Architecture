@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.16 — 2026-08-13  
+**Versión:** v40.17 — 2026-08-13  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -3501,7 +3501,7 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **69 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **70 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -5003,7 +5003,7 @@ Dos causas, y la segunda es la incómoda:
 
 1. **El audit no lo ejecuta nadie.** En las **1.356 ejecuciones de tools
    registradas** en los `.tool-trace.json` de ese parque, `vault_norms` no
-   aparece **ni una vez**. 41 de las 103 tools del catálogo no se han ejecutado
+   aparece **ni una vez**. 41 de las 104 tools del catálogo no se han ejecutado
    jamás. Los agentes escriben; no gobiernan. Un enforcement que depende de que
    alguien se acuerde de invocarlo es enforcement en el papel.
 2. **Los valores no canónicos los escribía el propio estándar.** El más
@@ -5612,7 +5612,7 @@ de envelope con su contrato de `00_System/tool-spec.json`:
 Y la divergencia peor no era de forma sino de efecto: `jsNativeGraph` no tiene un
 solo `writeFile`. Un agente llamaba `vault_graph` por MCP, recibía `ok: true`, y
 el grafo se quedaba sin regenerar — **AP-37 y AP-47 servidos a la vez por el único
-camino que un agente real usa**. `vault_smoke` recorre las 103 tools del catálogo,
+camino que un agente real usa**. `vault_smoke` recorre las 104 tools del catálogo,
 pero ejecuta el `.py`: probaba exactamente la implementación que el agente no toca.
 
 **Prevención:** backend nativo solo para lo que **no tiene** implementación en
@@ -6300,6 +6300,61 @@ sabemos reconocer. Es lo que da un linter, y es preferible a no mirar.
 
 ---
 
+### AP-58 — Ciclo esquivado con un import diferido
+
+**Enforcement:** `guard` · **Severidad:** high · **Introducido:** v40.17
+
+**Síntoma:** dos módulos se necesitan mutuamente y, en vez de invertir la dependencia, uno de
+los `import` se mete dentro del cuerpo de una función. Python deja de quejarse, el ciclo sigue
+ahí y **deja de verse**.
+
+**De dónde sale.** Este repositorio declaraba **cero ciclos de importación**, y era verdad:
+leyendo solo los `import` de nivel de módulo no hay ninguno. El cero lo fabricaban **92
+imports diferidos repartidos en 40 módulos** — el rompe-ciclos manual, aplicado tantas veces
+que dejó de ser una excepción y pasó a ser la arquitectura sin que nadie lo decidiera.
+
+Contando esas aristas aparece lo que había: un componente fuertemente conexo de **14 módulos**
+que contiene el núcleo entero. Ese componente es el que hacía que `vault_errors_trace` —un
+escritor de trazas de bajo nivel— importase `vault_io` completo para tres símbolos, y el que
+obliga a `cli/runner.py` a aislar cada tool en un subproceso para que dos raíces no se
+contaminen.
+
+**El daño no es el arranque.** Es que la **dirección** de la dependencia deja de ser una
+decisión revisable: un ciclo escondido no se discute en revisión porque no aparece en ninguna
+medida. Lo que se pierde no es rendimiento, es la posibilidad de que alguien objete.
+
+**Distinguida de AP-49.** AP-49 mira **cuándo** se resuelve un vínculo —un valor copiado en
+tiempo de import deja de responder a un reanclaje—. AP-58 mira la **dirección** de la
+dependencia, no su momento. Se tocan porque el ciclo del núcleo es parte de lo que obliga a
+congelar vínculos, pero un módulo puede tener ciclos sin un solo vínculo congelado, y al revés.
+
+**Distinguida de AP-54.** AP-54 habla de escrituras sin sincronizar, y no se confunde con esta
+por el tema sino por el remedio: las dos se arreglan moviendo una responsabilidad de sitio. Un
+ciclo puede vivir entero dentro de un contexto acotado sin cruzar ninguna frontera — el
+componente de 14 módulos está casi todo dentro del kernel.
+
+**Enforcement:** `guard`. `vault_ciclos --check --strict` (puerta 17) calcula los componentes
+fuertemente conexos **contando las aristas diferidas**, que es la única forma de que la
+pregunta se pueda formular. Baseline que **solo encoge**. Se salda invirtiendo la dependencia
+—el módulo de bajo nivel deja de pedirle el módulo entero al de alto y recibe lo que
+necesita—; **subir el import a nivel de módulo no lo arregla**, solo hace que Python lo
+denuncie al arrancar.
+
+**Por qué la deuda son 30 y no 92.** Un import se difiere también por coste de arranque, por
+dependencia opcional o porque solo hace falta en una rama rara. Deuda es el que **esquiva un
+ciclo**: aquel cuyo destino puede volver al origen siguiendo el grafo completo. Los otros 62 se
+publican como `deferred_benign` sin congelarse. Congelar las 92 daba un número mayor y una
+señal peor: una baseline llena de aristas benignas es una baseline que nadie revisa, y el día
+que entre una importante no se distinguirá del ruido.
+
+**El límite, dicho antes de que nadie se apoye en el verde.** La medida es del grafo
+**estático** de módulos. No ve `importlib`, ni un import construido con una cadena, ni el
+acoplamiento que pasa por el sistema de ficheros o por una variable global compartida. Dos
+módulos pueden estar perfectamente atados sin que ningún `import` lo diga, y esta medida los
+verá sueltos. Verde significa que no crecieron los ciclos que sabemos ver.
+
+---
+
 ### PAT-6 — Semantic graph enrichment: enriquecimiento periódico del grafo
 
 **Enforcement:** `recommended` · **Introducido:** v37
@@ -6837,6 +6892,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.17 | 2026-08-13 | El repo declaraba **cero ciclos de importación** y era verdad leyendo solo el nivel de módulo: el cero lo fabricaban **92 imports diferidos en 40 módulos**, el rompe-ciclos manual aplicado tantas veces que dejó de ser excepción y pasó a ser la arquitectura sin que nadie lo decidiera. Contándolos aparece un componente fuertemente conexo de **14 módulos** con el núcleo entero dentro — el que hacía que `vault_errors_trace`, un escritor de trazas de bajo nivel, importase `vault_io` completo para tres símbolos. **AP-58** y `vault_ciclos` (puerta 17) lo miden, y la deuda son **30 de 92**: solo los diferidos cuyo destino vuelve al origen; los otros 62 se publican sin congelarse, porque una baseline llena de ruido es una que nadie revisa. La inversión se ejecuta una vez: `vault_raiz`, `vault_fs` y `vault_ledger` salen de `vault_io` como hojas por la costura mecanismo/política, `vault_io` reexporta cada símbolo y ningún consumidor se toca. El trace pasa a pedir `escritura_atomica` con `guarda_secretos` en vez de la política entera. Y verificar las dos afirmaciones del cierre destapó un tercer defecto que el refactor no había tocado: el test que decía medir la cascada de trazas **pasaba con el bucle reintroducido**, porque alimentaba JSON impecable del que el saneado no saca ni un fix — AP-44 cometido dentro de la prueba que existe para cazarlo. Con comillas tipográficas y NBSP: 5 trazas, **960 escrituras** |
 | v40.16 | 2026-08-13 | Cinco defectos que un QA externo vio desde fuera y ninguna puerta veía desde dentro, todos con la misma forma: la medida estaba verde y verde no significaba lo que decía. `vault_ingest` extraía wikilinks de dentro de un fence, escribía frontmatter sin `yaml_scalar` y perdía en silencio la nota que no se pudo escribir; `vault_graph_fix` aplicaba un informe sobre un fichero ya cambiado y ahora lo para con `source_sha` y `STALE_REPORT`; dos tools respondían a un `file_lock` fallido escribiendo igual (AP-54). AP-21 corría sobre el texto crudo y rechazaba la nota que documenta AP-21 — es la única medida de `scan_content` que se recorta al fence, porque mide resolución de enlaces y no seguridad. La capacidad consulta → contexto era **inalcanzable por MCP**: la pregunta era posicional, no se publicaba en el `inputSchema` y `--check-params` medía la única dirección que no ve ese caso. Y tres guards medían menos de lo que decían: la capa 4 del plano daba una norma por cubierta si un test la **mencionaba** —22 de 69, irreversible por baseline que solo encoge—, `_BASELINES` publicaba 6 de las 9 baselines del repo, y C2 de AP-55 aceptaba la cabecera del módulo que su propia baseline prohíbe desde v40.11. El checklist de puertas de `CLAUDE.md` deja de escribirse a mano: lo genera `vault_gate --fix-doc` desde `PUERTAS` y `--check-doc` lo compara literalmente |
 | v40.15 | 2026-08-12 | **AP-05** deja de ser la última norma `critical` sin detector, diecisiete versiones después. El problema declarado —decidir qué es «el mismo dato» sin embeddings— sigue abierto **en general**, y no hacía falta resolverlo entero: un dato **tipado** (IP, URL, puerto, semver) escrito como `clave: valor` lleva su identidad al lado y se compara por igualdad. `vault_fuente_unica` (puerta 16) mide esa parte y declara el resto en `cobertura_parcial` — la prosa, el valor sin tipo y el sinónimo siguen sin medirlas nadie, porque una medida parcial presentada como total es peor que ninguna. El contraste de la regla 7 devolvió el ejemplo literal que el manifiesto usa desde v19: `host_ip` con `10.10.10.45` y `10.10.10.50` en dos notas del mismo servidor, y `pve_version` entre `9.1.1` y `8.4.16`. Los patrones tipados viven en `vault_regex`, su dueño (AP-50), y no en el detector. `vault_arch` cazó de paso una clasificación equivocada —la tool nació en el meta-toolkit, que no toca las notas de nadie— y se corrigió moviéndola, no ampliando la baseline |
 | v40.14 | 2026-08-12 | La validación que corre **al nacer la nota** medía con su propio criterio en los cuatro sitios donde ya había dueño (AP-57), y con los dos signos del error a la vez: resolvía por basename —el enlace roto pasaba, en verde— y no miraba `aliases:` —avisaba del bueno—. Los dos se sostienen: el ruido enseña a ignorar el aviso justo cuando el aviso deja escapar lo que importa, y así un vault real llega a 221 enlaces muertos con la validación puesta. `vault_lib` estrena dos dueños más, `resolver_destino_wikilink` e `indice_de_destinos`; sin origen, una ruta relativa se devuelve sin resolver, porque no saber no es resolver a la raíz. Ninguno de los dos entra en el registro de `vault_criterios`: sus señales (`"|"`, `"#"`, `"aliases"`) no distinguen nada y daban 10 falsos, así que el límite se declara en vez de comprarse el verde con ruido |
@@ -7175,6 +7231,69 @@ temp/
 
 ---
 
+### v40.17 — 2026-08-13 `git: pending`
+
+**El cero que estaba fabricado, y la inversión de dependencia que lo redujo.**
+
+Este repositorio declaraba cero ciclos de importación. Era verdad: leyendo los
+`import` de nivel de módulo no hay ninguno. El cero lo fabricaban **92 imports
+diferidos repartidos en 40 módulos** — mover un import dentro de una función es
+el rompe-ciclos manual, y aplicado 92 veces deja de ser una excepción para
+convertirse en la arquitectura, tomada sin decidirla.
+
+Contando esas aristas aparece lo que había: un componente fuertemente conexo de
+**14 módulos** que contiene el núcleo entero. Ese componente es el que hacía que
+`vault_errors_trace` —un escritor de trazas de bajo nivel— importase `vault_io`
+completo para tres símbolos, y el que obliga a `cli/runner.py` a aislar cada tool
+en un subproceso para que dos raíces no se contaminen. El daño no es el arranque:
+es que **la dirección de la dependencia deja de ser una decisión revisable**,
+porque un ciclo escondido no se discute en revisión — no aparece en ninguna medida.
+
+**Ni fachada ni contenedor de DI.** Las dos se consideraron y las dos se midieron
+antes de descartarlas. Una fachada añade un nodo con fan-out 103 y borra **cero**
+aristas del componente: desacopla al consumidor, no al núcleo, y ya había dos. Un
+contenedor empuja el binding más hacia el runtime, que es exactamente la forma que
+AP-49 penaliza. Lo que el grafo pedía era la D de SOLID sin ceremonia: hojas y
+parámetros explícitos.
+
+**El corte, por la costura mecanismo/política.** `atomic_write_text` era un
+mecanismo de tres pasos —temporal, fsync, `os.replace`— envuelto en seis políticas:
+escaneo de secretos, guardas de traversal y nombre reservado, verificación de
+frontmatter, saneado de codificación, ledger AP-37 e índices automáticos. Salen tres
+hojas: `vault_raiz` (subsistema de raíz y reanclaje), `vault_fs` (mecanismo y locks,
+con `escritura_atomica(path, text, guardas=(...))`) y `vault_ledger` (el contador
+AP-37). `vault_io` **reexporta cada símbolo sin cambiar una firma**, así que ninguno
+de los ~89 módulos dependientes se toca — no-derogación aplicada al refactor. El
+trace pasa a pedir `escritura_atomica(tf, text, guardas=(guarda_secretos,))`: conserva
+el escaneo, deja fuera lo que arrastraba el ciclo. Componente: 15 → 14.
+
+**AP-58 y la puerta 17.** `vault_ciclos` calcula los componentes **contando las
+aristas diferidas**, que es la única forma de que la pregunta se pueda formular. La
+deuda congelada son **30 de 92**: solo los diferidos cuyo destino puede volver al
+origen. Los otros 62 se difieren por coste de arranque o dependencia opcional y se
+publican como `deferred_benign` sin congelarse — congelar las 92 daba un número
+mayor y una señal peor, porque una baseline llena de aristas benignas es una
+baseline que nadie revisa.
+
+**Y el defecto que salió de verificar el propio cierre.** Al comprobar la
+afirmación «el bucle no puede reaparecer» reintroduciendo el bucle a propósito, el
+test de AST mordió en los tres mutantes — pero el test **de comportamiento**, el que
+dice medir la cascada en vez de leerla, **pasó en verde con el bucle dentro**.
+Alimentaba `{"tool": "prueba", "ok": True}`: JSON impecable del que
+`sanitize_content` no saca ni un fix, y sin fix no hay `log_encoding_fixes`, sin eso
+no hay `log_trace` y no hay cascada que contar. Medía con una entrada incapaz de
+exhibir el fallo: **AP-44 cometido dentro de la prueba que existe para cazarlo**,
+latente desde v40.7. Con comillas tipográficas, NBSP y guion largo —verificado
+ejecutando `sanitize_content`, no supuesto—: 5 trazas, **960 escrituras**.
+
+`vault_norms_coherence` también corrigió a quien lo escribía: rechazó AP-58 porque
+la distinción con AP-49 y AP-54 era **unilateral**, y quien leyera aquellas no vería
+la diferencia. La recíproca es ahora obligatoria en las tres.
+
+**Estado:** 2736 tests, 17 puertas, AP-58 con baseline de **30 aristas** que solo
+puede encoger.
+
+---
 ### v40.16 — 2026-08-13 `git: 033adf2`
 
 **Cinco defectos que un QA externo vio desde fuera y ninguna puerta veía desde

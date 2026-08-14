@@ -242,24 +242,48 @@ def test_el_trace_no_pasa_por_el_saneado_que_lo_vuelve_a_escribir():
     trace estando ya dentro de otro— antes fallaba y caía a la rama sin
     saneado, que rompía el ciclo por accidente. Al hacer el lock reentrante el
     accidente desapareció y el bucle quedó a la vista.
+
+    v40.17: el corte dejó de expresarse con `sanitize=False` sobre
+    `atomic_write_text` y pasó a expresarse por composición: el trace llama al
+    mecanismo (`escritura_atomica`) y le pasa la única política que sí quiere
+    —`guarda_secretos`—. El saneado ya no está ahí que desactivar, así que lo
+    que se comprueba es que el trace no vuelva a pedir la política entera.
     """
     fuente = (RAIZ / "scripts" / "vault_errors_trace.py").read_text(encoding="utf-8")
     arbol = ast.parse(fuente)
-    llamadas = [
-        n for n in ast.walk(arbol)
+    nombres = [
+        getattr(n.func, "id", None)
+        for n in ast.walk(arbol)
         if isinstance(n, ast.Call)
-        and getattr(n.func, "id", None) == "atomic_write_text"
     ]
-    assert llamadas, "desapareció la escritura atómica del trace"
-    for c in llamadas:
-        sanitize = next((k for k in c.keywords if k.arg == "sanitize"), None)
-        assert sanitize is not None and sanitize.value.value is False, (
-            "el trace volvió a pasar por el saneado: eso reabre el bucle"
-        )
+    assert "escritura_atomica" in nombres, "desapareció la escritura atómica del trace"
+    assert "atomic_write_text" not in nombres, (
+        "el trace volvió a llamar al write path con política: eso reabre el bucle"
+    )
+    for c in ast.walk(arbol):
+        if isinstance(c, ast.Call) and getattr(c.func, "id", None) == "escritura_atomica":
+            guardas = next((k for k in c.keywords if k.arg == "guardas"), None)
+            assert guardas is not None, (
+                "el trace escribe sin guardas: el escaneo de secretos era lo "
+                "único de la política que sí aplicaba aquí"
+            )
 
 
 def test_una_escritura_no_dispara_una_cascada_de_trazas(tmp_path, monkeypatch):
-    """La misma regresión, medida en vez de leída en el AST."""
+    """La misma regresión, medida en vez de leída en el AST.
+
+    v40.17 — este test era un placebo y pasaba con el bucle reintroducido.
+    Alimentaba `{"tool": "prueba", "n": 0, "ok": True}`: JSON impecable, del que
+    `sanitize_content` no saca **ningún** fix. Y sin fix no hay
+    `log_encoding_fixes`, sin `log_encoding_fixes` no hay `log_trace`, y sin eso
+    no hay cascada que contar. Medía con una entrada incapaz de exhibir el
+    fallo — el AP-44 cometido dentro de la prueba que existe para cazarlo.
+
+    La entrada de abajo lleva comillas tipográficas, NBSP y guion largo, que sí
+    producen fixes (verificado ejecutando `sanitize_content`, no supuesto).
+    Medido reintroduciendo el bucle a propósito: **960 escrituras** donde debe
+    haber cinco. Antes de este cambio, el mismo mutante pasaba en verde.
+    """
     monkeypatch.setenv("VAULT_ROOT", str(tmp_path))
     vault_io.set_vault_root(tmp_path)
     import vault_errors_trace as T
@@ -272,7 +296,14 @@ def test_una_escritura_no_dispara_una_cascada_de_trazas(tmp_path, monkeypatch):
     )
 
     for i in range(5):
-        T.log_trace({"tool": "prueba", "n": i, "ok": True})
+        T.log_trace({
+            "tool": "prueba",
+            "n": i,
+            "ok": True,
+            # Contenido que el saneado SÍ toca: si el trace vuelve a pasar por
+            # él, cada escritura genera un fix, que genera otra traza.
+            "message": "“dato” con NBSP y — guion largo",
+        })
 
     assert len(veces) == 5, (
         f"cinco trazas provocaron {len(veces)} escrituras: la cascada volvió"

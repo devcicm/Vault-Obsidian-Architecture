@@ -2533,6 +2533,64 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         ),
         "related": ["vault_norms", "vault_io", "vault_lib", "vault_gate"],
     },
+    "vault_ciclos": {
+        "name": "vault_ciclos",
+        "script": "vault_ciclos.py",
+        "group": "Normas",
+        "purpose": (
+            "AP-58: el ciclo de importacion que se esquiva metiendo el import "
+            "dentro de una funcion. Este repo declaraba cero ciclos y era "
+            "verdad mirando solo el nivel de modulo; el cero lo fabricaban 92 "
+            "imports diferidos en 40 modulos. Contando esas aristas aparece un "
+            "componente fuertemente conexo de 14 modulos con el nucleo entero "
+            "dentro. Solo entran en la deuda los 30 que esquivan un ciclo: los "
+            "otros 62 se difieren por coste de arranque o dependencia opcional "
+            "y se publican sin congelarse."
+        ),
+        "params": {
+            "check": {
+                "type": "boolean",
+                "required": False,
+                "description": "Calcula los componentes contando aristas diferidas",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit 1 si aparece un ciclo diferido nuevo",
+                "validators": [],
+            },
+            "freeze": {
+                "type": "boolean",
+                "required": False,
+                "description": "Recongela la baseline de ciclos preexistentes",
+                "validators": [],
+            },
+            "admitir-nuevos": {
+                "type": "boolean",
+                "required": False,
+                "description": "Permite congelar ciclos sin precedente",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "Mide el grafo estatico de modulos: no ve importlib, ni un import "
+            "construido con una cadena, ni el acoplamiento que pasa por el "
+            "sistema de ficheros o por una variable global compartida",
+            "Solo son deuda los diferidos cuyo destino vuelve al origen; una "
+            "baseline llena de aristas benignas es una que nadie revisa",
+            "Baseline que solo encoge: un ciclo nuevo se invierte, no se "
+            "congela, y subir el import tampoco lo arregla — solo lo hace "
+            "visible al arrancar",
+        ],
+        "side_effects": ["scripts/ciclos-baseline.json"],
+        "example": (
+            "python vault_ciclos.py --check\n"
+            "python vault_ciclos.py --check --strict\n"
+            "python vault_ciclos.py --freeze"
+        ),
+        "related": ["vault_arch", "vault_norms", "vault_gate", "vault_blueprint"],
+    },
     "vault_fuente_unica": {
         "name": "vault_fuente_unica",
         "script": "vault_fuente_unica.py",
@@ -3810,6 +3868,7 @@ GROUPS: Dict[str, List[str]] = {
         "vault_blueprint",
         "vault_norms_coherence",
         "vault_criterios",
+        "vault_ciclos",
     ],
     "Producción/SRE": ["vault_incident_save", "vault_slo_save"],
     "Release": ["vault_release_save"],
