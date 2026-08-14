@@ -24,17 +24,24 @@ SCRIPTS = REPO_ROOT / "scripts"
 SERVIDOR = REPO_ROOT / "mcp" / "nodejs" / "vault-mcp-server.mjs"
 sys.path.insert(0, str(SCRIPTS))
 
+import vault_mcp_catalog as vmc  # noqa: E402
 from vault_mcp_catalog import check_contracts  # noqa: E402
 from vault_norms import NORM_CATALOG  # noqa: E402
 
 
 def _js_native() -> list:
-    m = re.search(
-        r"const JS_NATIVE_TOOLS = new Set\(\[(.*?)\]\)",
-        SERVIDOR.read_text(encoding="utf-8"), re.S,
+    """Se pregunta al mismo lector que usa el guard, no a una regex propia.
+
+    Hasta v40.17 este test traía la suya, y por eso midió lo que quería medir
+    hasta el día en que el `.mjs` cambió un `const` por un `let`: la regex dejó
+    de casar y el test cayó en su propio `assert m`. Un test con lector propio
+    es la copia número cinco del mismo criterio.
+    """
+    nativas = vmc._js_native_del_servidor()
+    assert nativas is not None, (
+        "JS_NATIVE_TOOLS dejó de ser legible: el guard de AP-48 mide sobre esto"
     )
-    assert m, "JS_NATIVE_TOOLS dejó de ser legible: el guard de AP-48 mide sobre esto"
-    return sorted(set(re.findall(r'"(vault_[a-z0-9_]+)"', m.group(1))))
+    return sorted(nativas)
 
 
 # ── La norma ──────────────────────────────────────────────────────────────────
@@ -70,16 +77,16 @@ def test_el_guard_caza_una_reincidencia(tmp_path, monkeypatch):
     se está probando es el guard, y un guard que solo se ejerce cuando el repo
     está roto no se ejerce nunca.
     """
-    import vault_mcp_catalog as vmc
-
     falso = tmp_path / "mcp" / "nodejs"
     falso.mkdir(parents=True)
     (falso / "vault-mcp-server.mjs").write_text(
         'const JS_NATIVE_TOOLS = new Set([\n  "vault_graph", "vault_backup_base64",\n]);\n',
         encoding="utf-8",
     )
-    # `check_contracts` deriva la ruta del servidor de la del propio módulo.
+    # `check_contracts` deriva `scripts/` de la ruta del módulo, y la del
+    # servidor de `REPO_ROOT`: hay que mover las dos o el falso no se lee.
     monkeypatch.setattr(vmc, "__file__", str(tmp_path / "scripts" / "vault_mcp_catalog.py"))
+    monkeypatch.setattr(vmc, "REPO_ROOT", tmp_path)
     (tmp_path / "scripts").mkdir()
     (tmp_path / "scripts" / "vault_graph.py").write_text("# stub\n", encoding="utf-8")
     (tmp_path / "scripts" / "README.md").write_text(

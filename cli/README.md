@@ -1,6 +1,6 @@
 # `cli/` — CLI consolidada de Vault Obsidian Architecture
 
-**v40.17 · 104 tools · 37 grupos · un único punto de entrada**
+**v40.18 · 104 tools · 37 grupos · un único punto de entrada**
 
 ```bash
 python -m cli <comando> [opciones]

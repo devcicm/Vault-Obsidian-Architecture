@@ -60,7 +60,17 @@ GUARDED_ARTIFACTS = frozenset({
 # Tools sin script Python: implementadas de forma nativa en el servidor MCP
 # (mcp/nodejs/vault-mcp-server.mjs). No son fragmentos ausentes — son fragmentos
 # de otro runtime. Distinguirlas evita reportar un AP-04 falso.
-NATIVE_JS_TOOLS = frozenset({"vault_backup_base64", "vault_restore_base64"})
+#
+# v40.17 — deja de ser una segunda declaración. El mismo conjunto estaba escrito
+# aquí, en el `.mjs` y en ningún sitio que los comparase: AP-05 a través de una
+# frontera de lenguaje. El dueño es `vault_mcp_catalog.NATIVE_JS_TOOLS`, que lo
+# emite a `tools-catalog.json` para que el servidor lo lea; el literal de abajo
+# solo se usa si este repo no está importable desde el consumidor, y
+# `vault_mcp_catalog --check` falla si alguna de las tres copias diverge.
+try:  # pragma: no cover - depende de dónde se instale la CLI
+    from vault_mcp_catalog import NATIVE_JS_TOOLS  # type: ignore
+except ImportError:  # respaldo verificado por el guard, no una segunda verdad
+    NATIVE_JS_TOOLS = frozenset({"vault_backup_base64", "vault_restore_base64"})
 
 _ARTIFACT_HINTS = {
     "graph-enriched": "99_Index/graph-enriched.json",

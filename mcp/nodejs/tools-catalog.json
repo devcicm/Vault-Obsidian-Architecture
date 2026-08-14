@@ -5255,5 +5255,9 @@
       "vault_sdd_init",
       "vault_sanacion"
     ]
-  }
+  },
+  "js_native_tools": [
+    "vault_backup_base64",
+    "vault_restore_base64"
+  ]
 }

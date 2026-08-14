@@ -89,6 +89,7 @@ function loadCatalog() {
     const data = JSON.parse(raw);
     TOOLS_CATALOG = data.tools || {};
     TOOL_GROUPS = data.groups || {};
+    if (Array.isArray(data.js_native_tools)) JS_NATIVE_TOOLS = new Set(data.js_native_tools);
     log("info", `Loaded ${Object.keys(TOOLS_CATALOG).length} tools in ${Object.keys(TOOL_GROUPS).length} groups`);
   } catch (e) {
     log("warn", `Could not load catalog from ${CATALOG_PATH}: ${e.message}. Tools/list will be empty.`);
@@ -360,7 +361,13 @@ function fixNestedBrackets(text) {
 // Las `jsNative*` de las siete se conservan (no-derogación) pero dejan de
 // despacharse: `dispatchJsNative` solo mira este conjunto, y todo lo demás cae
 // al runner de Python, que es donde vive el contrato publicado.
-const JS_NATIVE_TOOLS = new Set([
+//
+// v40.17 — el conjunto ya no se decide aquí. Lo declara
+// `scripts/vault_mcp_catalog.NATIVE_JS_TOOLS` y viaja en `js_native_tools` del
+// catálogo; `loadCatalog` lo sobreescribe. Este literal es el respaldo para un
+// catálogo ausente, no una segunda verdad: `vault_mcp_catalog.py --check`
+// falla si diverge de Python o del JSON.
+let JS_NATIVE_TOOLS = new Set([
   "vault_backup_base64", "vault_restore_base64",
 ]);
 

@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.17 — 2026-08-13  
+**Versión:** v40.18 — 2026-08-13  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -6892,6 +6892,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.18 | 2026-08-13 | El criterio «esta tool no tiene script Python» estaba escrito **cinco veces** —`cli/registry.py`, el literal del `.mjs`, `check_contracts` con su propia regex, el test de AP-48 con la suya, y ninguna comparación entre ellas— a través de una frontera de lenguaje que `vault_criterios` (AP-57) no puede cruzar porque solo lee módulos Python. Ya había cobrado una vez: siete tools se despachaban en JS mientras `vault_smoke` probaba el `.py`, y `vault_graph` devolvía `ok: true` sin escribir el grafo. Ahora el dueño es `vault_mcp_catalog.NATIVE_JS_TOOLS`, viaja en `js_native_tools` del catálogo, y los cuatro consumidores lo leen de ahí; `--check` contrasta Python, JSON y el respaldo del `.mjs`, y `--check-contracts` y el test de AP-48 dejan de traer lector propio. El cambio de `const` a `let` —necesario para que el catálogo pueda sobreescribirlo— rompió dos lectores en el acto: la prueba de que eran copias, no vistas |
 | v40.17 | 2026-08-13 | El repo declaraba **cero ciclos de importación** y era verdad leyendo solo el nivel de módulo: el cero lo fabricaban **92 imports diferidos en 40 módulos**, el rompe-ciclos manual aplicado tantas veces que dejó de ser excepción y pasó a ser la arquitectura sin que nadie lo decidiera. Contándolos aparece un componente fuertemente conexo de **14 módulos** con el núcleo entero dentro — el que hacía que `vault_errors_trace`, un escritor de trazas de bajo nivel, importase `vault_io` completo para tres símbolos. **AP-58** y `vault_ciclos` (puerta 17) lo miden, y la deuda son **30 de 92**: solo los diferidos cuyo destino vuelve al origen; los otros 62 se publican sin congelarse, porque una baseline llena de ruido es una que nadie revisa. La inversión se ejecuta una vez: `vault_raiz`, `vault_fs` y `vault_ledger` salen de `vault_io` como hojas por la costura mecanismo/política, `vault_io` reexporta cada símbolo y ningún consumidor se toca. El trace pasa a pedir `escritura_atomica` con `guarda_secretos` en vez de la política entera. Y verificar las dos afirmaciones del cierre destapó un tercer defecto que el refactor no había tocado: el test que decía medir la cascada de trazas **pasaba con el bucle reintroducido**, porque alimentaba JSON impecable del que el saneado no saca ni un fix — AP-44 cometido dentro de la prueba que existe para cazarlo. Con comillas tipográficas y NBSP: 5 trazas, **960 escrituras** |
 | v40.16 | 2026-08-13 | Cinco defectos que un QA externo vio desde fuera y ninguna puerta veía desde dentro, todos con la misma forma: la medida estaba verde y verde no significaba lo que decía. `vault_ingest` extraía wikilinks de dentro de un fence, escribía frontmatter sin `yaml_scalar` y perdía en silencio la nota que no se pudo escribir; `vault_graph_fix` aplicaba un informe sobre un fichero ya cambiado y ahora lo para con `source_sha` y `STALE_REPORT`; dos tools respondían a un `file_lock` fallido escribiendo igual (AP-54). AP-21 corría sobre el texto crudo y rechazaba la nota que documenta AP-21 — es la única medida de `scan_content` que se recorta al fence, porque mide resolución de enlaces y no seguridad. La capacidad consulta → contexto era **inalcanzable por MCP**: la pregunta era posicional, no se publicaba en el `inputSchema` y `--check-params` medía la única dirección que no ve ese caso. Y tres guards medían menos de lo que decían: la capa 4 del plano daba una norma por cubierta si un test la **mencionaba** —22 de 69, irreversible por baseline que solo encoge—, `_BASELINES` publicaba 6 de las 9 baselines del repo, y C2 de AP-55 aceptaba la cabecera del módulo que su propia baseline prohíbe desde v40.11. El checklist de puertas de `CLAUDE.md` deja de escribirse a mano: lo genera `vault_gate --fix-doc` desde `PUERTAS` y `--check-doc` lo compara literalmente |
 | v40.15 | 2026-08-12 | **AP-05** deja de ser la última norma `critical` sin detector, diecisiete versiones después. El problema declarado —decidir qué es «el mismo dato» sin embeddings— sigue abierto **en general**, y no hacía falta resolverlo entero: un dato **tipado** (IP, URL, puerto, semver) escrito como `clave: valor` lleva su identidad al lado y se compara por igualdad. `vault_fuente_unica` (puerta 16) mide esa parte y declara el resto en `cobertura_parcial` — la prosa, el valor sin tipo y el sinónimo siguen sin medirlas nadie, porque una medida parcial presentada como total es peor que ninguna. El contraste de la regla 7 devolvió el ejemplo literal que el manifiesto usa desde v19: `host_ip` con `10.10.10.45` y `10.10.10.50` en dos notas del mismo servidor, y `pve_version` entre `9.1.1` y `8.4.16`. Los patrones tipados viven en `vault_regex`, su dueño (AP-50), y no en el detector. `vault_arch` cazó de paso una clasificación equivocada —la tool nació en el meta-toolkit, que no toca las notas de nadie— y se corrigió moviéndola, no ampliando la baseline |
@@ -7228,6 +7229,52 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v40.18 — 2026-08-13 `git: pending`
+
+**El mismo criterio escrito cinco veces, y por qué ningún guard lo veía.**
+
+Qué tools no tienen script Python y se resuelven en el servidor MCP es un
+criterio de despacho: decide qué código se ejecuta cuando un agente llama. Estaba
+declarado en `cli/registry.py`, otra vez como literal en `vault-mcp-server.mjs`,
+una tercera dentro de `check_contracts` con su propia regex sobre el `.mjs`, y
+una cuarta en el test de AP-48 con otra regex distinta. Cuatro lugares que tenían
+que coincidir y nada que lo comprobara.
+
+Coincidían hoy. No es un mérito: el propio comentario del `.mjs` registra la vez
+que no coincidieron —siete tools con backend nativo y `.py` a la vez— y lo llama
+AP-05 en el camino de ejecución. El efecto entonces fue que `vault_graph` por MCP
+devolvía `ok: true` sin un solo `writeFile`, mientras `vault_smoke` recorría el
+catálogo ejecutando el `.py` que el agente no toca. Las dos cosas verdes, el
+índice desfasado.
+
+**Por qué no lo veía nadie.** `vault_criterios` (AP-57) existe justo para esto:
+ningún módulo reescribe un criterio que ya tiene dueño canónico. Pero solo lee
+módulos Python. Un criterio copiado al otro lado de una frontera de lenguaje cae
+fuera de su alcance, y ese hueco no estaba declarado en ninguna parte — lo cual
+es peor que una norma sin detector, porque la norma parecía cubierta.
+
+**El arreglo.** El dueño es `vault_mcp_catalog.NATIVE_JS_TOOLS`. Se emite como
+`js_native_tools` en `tools-catalog.json`; `cli/registry.py` lo importa,
+`loadCatalog()` lo inyecta en el servidor, y `check_contracts` y el test de AP-48
+pasan a preguntar al mismo lector en vez de traer regex propia. El literal del
+`.mjs` sobrevive como respaldo para un catálogo ausente — pero `--check` lo
+contrasta también, porque un respaldo que nadie compara vuelve a ser la segunda
+declaración: bastaría con que el catálogo no cargara para que las dos fronteras
+despachasen distinto.
+
+**La prueba de que eran copias y no vistas.** Para que el catálogo pueda
+sobreescribirlo, `const JS_NATIVE_TOOLS` tuvo que pasar a `let`. Ese cambio de
+cuatro caracteres rompió en el acto los dos lectores con regex propia: uno falló
+la puerta de contratos, el otro cayó en su propio `assert`. Una vista no se rompe
+porque el original cambie de palabra clave.
+
+Once tests nuevos en `tests/test_js_native_frontera.py`. El que decide si esto
+sirve de algo es el par de mutantes: divergir Python del JSON, y divergir el
+`.mjs` de Python. Los tres pueden coincidir por casualidad; lo que hay que probar
+es que **dejar de coincidir se ve**.
 
 ---
 

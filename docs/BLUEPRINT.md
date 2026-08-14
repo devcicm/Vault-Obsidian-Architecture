@@ -78,7 +78,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-02** — Proliferación de versiones del mismo documento | audit | — | `test_skills_contract.py` |
 | **AP-03** — Stubs sin política de expansión | audit | — | `test_normas_de_audit_ejercitadas.py` |
 | **AP-04** — Features aspiracionales documentadas como implementadas | audit | — | — |
-| **AP-05** — Múltiples fuentes de verdad para el mismo dato | audit | `fuente_unica` | `test_ap05_fuente_unica.py`, `test_blueprint.py`, `test_norms_coherence.py` |
+| **AP-05** — Múltiples fuentes de verdad para el mismo dato | audit | `fuente_unica` | `test_ap05_fuente_unica.py`, `test_blueprint.py`, `test_js_native_frontera.py`, `test_norms_coherence.py` |
 | **AP-06** — Templates sin instancias reales | audit | `framework` | — |
 | **AP-07** — ADRs incompletos | audit | `framework` | `test_vault_norms_audit.py` |
 | **AP-08** — Documentación anclada a versiones obsoletas | audit | — | — |

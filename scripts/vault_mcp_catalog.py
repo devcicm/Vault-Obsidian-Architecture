@@ -17,10 +17,14 @@ Este catálogo es la fuente de verdad para el orquestador MCP.
 import argparse
 import json
 import os
+import re
 import sys
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+#: Raíz del repo — el guard de `js_native_tools` cruza a `mcp/nodejs/`.
+REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
 TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
@@ -3783,6 +3787,15 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
 
 # ──── end TOOLS_CATALOG ────
 
+#: Tools sin script Python: implementadas de forma nativa en el servidor MCP.
+#: **Fuente única** del criterio — `cli/registry.py` lo importa de aquí y el
+#: `.mjs` lo lee de `tools-catalog.json`. No son fragmentos ausentes: son
+#: fragmentos de otro runtime, y distinguirlas evita reportar un AP-04 falso.
+NATIVE_JS_TOOLS: frozenset = frozenset({
+    "vault_backup_base64",
+    "vault_restore_base64",
+})
+
 GROUPS: Dict[str, List[str]] = {
     "Core": [
         "vault_write",
@@ -4125,6 +4138,15 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
     catalog = {
         "tools": tools_json,
         "groups": GROUPS,
+        # v40.17 — dueño único del criterio «esta tool no tiene script Python».
+        # Vivía duplicado a los dos lados de la frontera de lenguaje:
+        # `cli/registry.NATIVE_JS_TOOLS` y `JS_NATIVE_TOOLS` en el `.mjs`, sin
+        # nada que los comparase. Ya divergieron una vez —siete contra el
+        # catálogo— y el efecto fue AP-05 en el camino de ejecución: el agente
+        # recibía `ok: true` de una implementación JS que no escribía, mientras
+        # `vault_smoke` probaba el `.py` que el agente no toca. Ahora sale de
+        # aquí y los dos consumidores lo leen; `--check` falla si divergen.
+        "js_native_tools": sorted(NATIVE_JS_TOOLS),
     }
 
     with open(output_path, "w", encoding="utf-8") as f:
@@ -4133,6 +4155,27 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
 
     return output_path
 
+
+
+def _js_native_del_servidor():
+    """El respaldo literal del `.mjs`, leído para poder contrastarlo.
+
+    El servidor prefiere `js_native_tools` del catálogo, pero conserva un
+    literal por si el catálogo falta. Un respaldo que nadie compara vuelve a
+    ser la segunda declaración que este guard existe para impedir: si diverge,
+    basta con que el catálogo no cargue para que las dos fronteras despachen
+    distinto. Devuelve None si no se encuentra — que el fichero no esté no es
+    lo mismo que que esté vacío (AP-51).
+    """
+    ruta = REPO_ROOT / "mcp" / "nodejs" / "vault-mcp-server.mjs"
+    try:
+        texto = ruta.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    m = re.search(r"JS_NATIVE_TOOLS\s*=\s*new Set\(\[(.*?)\]\)", texto, re.S)
+    if not m:
+        return None
+    return set(re.findall(r'"([^"]+)"', m.group(1)))
 
 def check_sync(json_path: Optional[str] = None) -> Dict[str, Any]:
     """Compara el JSON existente contra TOOLS_CATALOG + GROUPS actuales.
@@ -4173,6 +4216,27 @@ def check_sync(json_path: Optional[str] = None) -> Dict[str, Any]:
     if result["missing_in_py"]:
         result["ok"] = False
         result["diffs"].append(f"Tools in JSON but missing from Python: {', '.join(result['missing_in_py'])}")
+
+    # AP-57 — el criterio «esta tool no tiene script Python» tiene un dueño,
+    # y aquí se comprueba que nadie lo reescriba. La frontera de lenguaje es lo
+    # que lo hacía invisible para `vault_criterios`, que solo mira módulos
+    # Python: un criterio copiado en `.mjs` no lo ve ningún guard del repo.
+    # Sin esto, el servidor puede despachar como nativo lo que Python cree
+    # Python, y el agente recibe `ok: true` de algo que no se ejecutó.
+    js_en_json = set(existing.get("js_native_tools", []))
+    for origen, medido in (("mjs", _js_native_del_servidor()),):
+        if medido is not None and medido != set(NATIVE_JS_TOOLS):
+            result["ok"] = False
+            result["diffs"].append(
+                f"js_native_tools divergen ({origen}): "
+                f"Python={sorted(NATIVE_JS_TOOLS)} {origen}={sorted(medido)}"
+            )
+    if js_en_json != set(NATIVE_JS_TOOLS):
+        result["ok"] = False
+        result["diffs"].append(
+            f"js_native_tools divergen: Python={sorted(NATIVE_JS_TOOLS)} "
+            f"JSON={sorted(js_en_json)}"
+        )
 
     existing_groups = set(existing.get("groups", {}).keys())
     py_groups = set(GROUPS.keys())
@@ -4376,28 +4440,29 @@ def check_contracts(spec_path: Optional[str] = None) -> Dict[str, Any]:
     # de las nueve nativas tenían `.py`, ninguna coincidía con su contrato, y la
     # de `vault_graph` devolvía `ok: true` sin escribir el grafo.
     #
-    # Se lee el `.mjs` porque es lo que se ejecuta; una lista paralela en Python
-    # sería el mismo defecto que la norma persigue.
-    servidor = Path(__file__).resolve().parent.parent / "mcp" / "nodejs" / "vault-mcp-server.mjs"
+    # Hasta v40.17 esto leía el `.mjs` con su propia regex y el comentario decía
+    # que una lista en Python «sería el mismo defecto que la norma persigue».
+    # Era cierto mientras Python no fuese el dueño: había dos declaraciones y
+    # ninguna comparación. Ahora el dueño es `NATIVE_JS_TOOLS`, viaja al `.mjs`
+    # por `js_native_tools` del catálogo, y el literal del servidor sobrevive
+    # solo como respaldo — que `--check` contrasta. Sigue midiéndose lo que se
+    # ejecuta; lo que desaparece es el segundo lector con su propia regex, que
+    # es lo que se rompió al cambiar un `const` por un `let`.
+    nativas_mjs = _js_native_del_servidor()
     result["js_native"] = []
-    if servidor.is_file():
-        m = re.search(
-            r"const JS_NATIVE_TOOLS = new Set\(\[(.*?)\]\)",
-            servidor.read_text(encoding="utf-8"), re.S,
-        )
-        if m is None:
-            problema("js_native_ilegible", f"no se pudo leer JS_NATIVE_TOOLS de {servidor.name}")
-        else:
-            nativas = sorted(set(re.findall(r'"(vault_[a-z0-9_]+)"', m.group(1))))
-            result["js_native"] = nativas
-            scripts_dir = Path(__file__).resolve().parent
-            for nombre in nativas:
-                if (scripts_dir / f"{nombre}.py").is_file():
-                    problema(
-                        "implementacion_paralela",
-                        f"{nombre}: backend nativo en el servidor MCP y scripts/{nombre}.py "
-                        f"a la vez — dos implementaciones, un contrato (AP-48)",
-                    )
+    if nativas_mjs is None:
+        problema("js_native_ilegible", "no se pudo leer JS_NATIVE_TOOLS de vault-mcp-server.mjs")
+    else:
+        nativas = sorted(nativas_mjs)
+        result["js_native"] = nativas
+        scripts_dir = Path(__file__).resolve().parent
+        for nombre in nativas:
+            if (scripts_dir / f"{nombre}.py").is_file():
+                problema(
+                    "implementacion_paralela",
+                    f"{nombre}: backend nativo en el servidor MCP y scripts/{nombre}.py "
+                    f"a la vez — dos implementaciones, un contrato (AP-48)",
+                )
 
     return result
 
