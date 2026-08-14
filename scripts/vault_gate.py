@@ -188,6 +188,17 @@ PUERTAS: List[Dict[str, Any]] = [
                "pedirle el módulo entero al de alto; subir el import o "
                "ampliar la baseline no son la solución, solo esconden dónde",
     },
+    {
+        "id": "kernel",
+        "cmd": ["vault_kernel.py", "--check", "--strict"],
+        "mide": "La lista del núcleo no contradice a la forma medida del grafo: "
+                "K1 delegada, fan-in/fan-out contra el escalón derivado y churn "
+                "contra la mediana del dominio (AP-59)",
+        "fix": "sacar el módulo del kernel o darle forma de núcleo —fan-out "
+               "abajo, consumidores reales—; los umbrales se derivan del "
+               "escalón y se publican, así que ajustarlos para pasar no es una "
+               "opción, y la baseline solo encoge",
+    },
 ]
 
 

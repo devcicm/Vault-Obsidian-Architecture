@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
-> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-58 más
-> las familias PAT, SP y CN. Por familia: AP 58, CN 3, PAT 6, SP 3.
-> Bilingual document. Full norm catalog: antipatterns AP-01..AP-58 plus the PAT,
-> SP and CN families. By family: AP 58, CN 3, PAT 6, SP 3.
+> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-59 más
+> las familias PAT, SP y CN. Por familia: AP 59, CN 3, PAT 6, SP 3.
+> Bilingual document. Full norm catalog: antipatterns AP-01..AP-59 plus the PAT,
+> SP and CN families. By family: AP 59, CN 3, PAT 6, SP 3.
 
 ---
 
 ## ES
 
-Total de normas registradas: 70 (AP 58, CN 3, PAT 6, SP 3)
+Total de normas registradas: 71 (AP 59, CN 3, PAT 6, SP 3)
 
 ### AP-01: Documentación alucinada
 
@@ -639,7 +639,9 @@ No es AP-50, que habla de **patrones regex** y de vocabularios: aquellos son dat
 
 Sale de v40.12: cuatro defectos de `vault_foreign_check` arreglados en una tanda, los cuatro con la misma forma --el registro canónico existía y la tool no lo consultaba--. Uno de ellos tenía el sentido de error peligroso: resolver destinos por basename ponía la medida **verde** justo donde Obsidian pinta el enlace roto. La regla 4 pide norma, no cuatro parches.
 
-**Prevención:** Registro `vault_criterios.CRITERIOS_CON_DUENO`: criterio, dueño, símbolo por el que se consulta y las constantes que lo delatan. `vault_criterios --check --strict` (puerta 15) falla si aparece una copia nueva; la baseline **solo encoge** y se salda importando al dueño, no ampliándola.
+**Prevención:** Dos registros en `vault_criterios`. `CRITERIOS_CON_DUENO`: criterio, dueño, símbolo por el que se consulta y las constantes que lo delatan. `FRONTERAS`: cada frontera de lenguaje con su **zona dueña** (clave de `vault_arch.CONTEXTS`), su **norma** (código de `vault_norms`) y la **pasarela** --el artefacto derivado-- por la que el criterio debe cruzar. Al otro lado la exención no es importar al dueño, que no se puede: es leer la pasarela.
+
+`vault_criterios --check --strict` (puerta 15) falla si aparece una copia nueva; la baseline **solo encoge** y se salda importando al dueño o leyendo la pasarela, no ampliándola. El alcance se declara: un fichero ejecutable de otro lenguaje fuera de toda zona declarada sale como `frontera_no_declarada`, porque un sitio donde una copia no se vería vale tanto como una copia.
 
 El límite se declara antes de que nadie se apoye en él: la detección es **sintáctica**. Un módulo puede reimplementar un criterio sin repetir ninguna constante y esta medida no lo verá. Verde no prueba que no haya copias -- prueba que no hay copias de la forma que sabemos reconocer, que es exactamente lo que da un linter y es preferible a no mirar.
 
@@ -658,6 +660,26 @@ El daño no es el arranque: es que la dirección de la dependencia deja de ser u
 **Prevención:** `vault_ciclos --check --strict` (puerta 17) calcula los componentes fuertemente conexos **contando las aristas diferidas**, que es la única forma de que la pregunta se pueda formular. La baseline **solo encoge** y se salda invirtiendo la dependencia --el módulo de bajo nivel deja de pedirle el módulo entero al de alto y se le pasa lo que necesita--, no subiendo el import ni ampliando la baseline.
 
 Dos límites, dichos antes de que nadie se apoye en el verde. Primero: solo entran en la deuda los diferidos que **esquivan un ciclo** (30 de 92); los otros 62 se difieren por coste de arranque o por dependencia opcional y se publican como `deferred_benign` sin congelarse, porque una baseline llena de ruido es una baseline que nadie revisa. Segundo: la medida es del grafo **estático** de módulos. No ve `importlib`, ni un import construido con una cadena, ni el acoplamiento que pasa por el sistema de ficheros o por una variable global compartida.
+
+### AP-59: Núcleo declarado sin contraste
+
+- **Severidad:** high
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_kernel
+
+Un sistema declara cuál es su núcleo --la lista de módulos de los que todo lo demás depende-- y **ninguna medida contrasta esa afirmación** contra la forma real del grafo. La pertenencia al core deja de ser un hecho y pasa a ser una costumbre: se hereda de quien escribió la lista, y envejece en la dirección cómoda.
+
+Lo caro no es equivocarse de lista: es que **todo lo que se apoya en ella hereda el error en silencio**. Si un módulo está declarado como núcleo sin serlo, el guard de fronteras lo exime de reglas que sí debería cumplir y sale verde. Si uno lo es sin estar declarado, cada cambio suyo propaga hacia arriba sin que nadie lo trate como un cambio de núcleo. En ambos casos el verde es correcto respecto a un mapa equivocado.
+
+Medido en v40.20 sobre este repo, con la lista **bien elegida** --los cuatro de cabecera eran los correctos y K1 ya estaba verde--: aun así, **tres de quince módulos del kernel no se comportan como núcleo**. `vault_log_error` con fan-in 0, declarado núcleo y sin un solo consumidor; `vault_io` con fan-out 11 y 30 commits; `vault_errors` con 14, sobre una mediana de dominio de 9. Ninguno estaba roto. Ninguno se había visto, porque nadie miraba.
+
+La norma no exige que el núcleo sea perfecto: exige que su pertenencia sea **derivable y contrastada**, y que la distancia entre lo declarado y lo medido se publique en vez de suponerse cero.
+
+**Prevención:** `vault_kernel --check --strict` (puerta 18) mide tres invariantes. **K1** --el núcleo no depende del dominio-- no se reimplementa: se delega en `vault_arch.dependencias_del_kernel()`, porque una tool que mide su propia pureza con su propio criterio es AP-44 cometido en el sitio que existe para detectarlo. **K2** --fan-in alto, fan-out bajo-- sale del dueño único del grafo de imports (`vault_grafo_import`), no de un parser propio. **K3** --estabilidad-- del churn de git, y sin historia disponible emite `desconocido` y nunca `0`: un cero fabricado saldría verde por no haber mirado (AP-51).
+
+Los umbrales **se derivan del escalón** de la distribución --la mayor caída relativa-- y se publican en el envelope con su ratio en cada ejecución. Escribirlos a mano sería AP-47 en la tool que persigue los números a mano; por eso la baseline congela la **pertenencia** (qué módulo incumple qué invariante) y no el umbral, que puede oscilar al crecer el repo.
+
+Dos límites, dichos antes de que nadie se apoye en el verde. Primero: mide el grafo **estático** de imports y hereda sus cegueras (`importlib`, un import por cadena, el acoplamiento por fichero o por variable global). Segundo: mide **forma, no propósito**. Un módulo puede tener fan-in altísimo sin ser núcleo de nada, solo un cajón de utilidades que todo el mundo toca. Verde significa que la lista declarada no contradice a la forma medida.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
@@ -783,7 +805,7 @@ Antes de cualquier operación masiva (migración, rename en lote, vault_tags --r
 
 ## EN
 
-Total registered norms: 70 (AP 58, CN 3, PAT 6, SP 3)
+Total registered norms: 71 (AP 59, CN 3, PAT 6, SP 3)
 
 ### AP-01: Documentación alucinada
 
@@ -1413,7 +1435,9 @@ No es AP-50, que habla de **patrones regex** y de vocabularios: aquellos son dat
 
 Sale de v40.12: cuatro defectos de `vault_foreign_check` arreglados en una tanda, los cuatro con la misma forma --el registro canónico existía y la tool no lo consultaba--. Uno de ellos tenía el sentido de error peligroso: resolver destinos por basename ponía la medida **verde** justo donde Obsidian pinta el enlace roto. La regla 4 pide norma, no cuatro parches.
 
-**Prevention:** Registro `vault_criterios.CRITERIOS_CON_DUENO`: criterio, dueño, símbolo por el que se consulta y las constantes que lo delatan. `vault_criterios --check --strict` (puerta 15) falla si aparece una copia nueva; la baseline **solo encoge** y se salda importando al dueño, no ampliándola.
+**Prevention:** Dos registros en `vault_criterios`. `CRITERIOS_CON_DUENO`: criterio, dueño, símbolo por el que se consulta y las constantes que lo delatan. `FRONTERAS`: cada frontera de lenguaje con su **zona dueña** (clave de `vault_arch.CONTEXTS`), su **norma** (código de `vault_norms`) y la **pasarela** --el artefacto derivado-- por la que el criterio debe cruzar. Al otro lado la exención no es importar al dueño, que no se puede: es leer la pasarela.
+
+`vault_criterios --check --strict` (puerta 15) falla si aparece una copia nueva; la baseline **solo encoge** y se salda importando al dueño o leyendo la pasarela, no ampliándola. El alcance se declara: un fichero ejecutable de otro lenguaje fuera de toda zona declarada sale como `frontera_no_declarada`, porque un sitio donde una copia no se vería vale tanto como una copia.
 
 El límite se declara antes de que nadie se apoye en él: la detección es **sintáctica**. Un módulo puede reimplementar un criterio sin repetir ninguna constante y esta medida no lo verá. Verde no prueba que no haya copias -- prueba que no hay copias de la forma que sabemos reconocer, que es exactamente lo que da un linter y es preferible a no mirar.
 
@@ -1432,6 +1456,26 @@ El daño no es el arranque: es que la dirección de la dependencia deja de ser u
 **Prevention:** `vault_ciclos --check --strict` (puerta 17) calcula los componentes fuertemente conexos **contando las aristas diferidas**, que es la única forma de que la pregunta se pueda formular. La baseline **solo encoge** y se salda invirtiendo la dependencia --el módulo de bajo nivel deja de pedirle el módulo entero al de alto y se le pasa lo que necesita--, no subiendo el import ni ampliando la baseline.
 
 Dos límites, dichos antes de que nadie se apoye en el verde. Primero: solo entran en la deuda los diferidos que **esquivan un ciclo** (30 de 92); los otros 62 se difieren por coste de arranque o por dependencia opcional y se publican como `deferred_benign` sin congelarse, porque una baseline llena de ruido es una baseline que nadie revisa. Segundo: la medida es del grafo **estático** de módulos. No ve `importlib`, ni un import construido con una cadena, ni el acoplamiento que pasa por el sistema de ficheros o por una variable global compartida.
+
+### AP-59: Núcleo declarado sin contraste
+
+- **Severity:** high
+- **Enforcement:** guard+audit
+- **Detected by:** vault_kernel
+
+Un sistema declara cuál es su núcleo --la lista de módulos de los que todo lo demás depende-- y **ninguna medida contrasta esa afirmación** contra la forma real del grafo. La pertenencia al core deja de ser un hecho y pasa a ser una costumbre: se hereda de quien escribió la lista, y envejece en la dirección cómoda.
+
+Lo caro no es equivocarse de lista: es que **todo lo que se apoya en ella hereda el error en silencio**. Si un módulo está declarado como núcleo sin serlo, el guard de fronteras lo exime de reglas que sí debería cumplir y sale verde. Si uno lo es sin estar declarado, cada cambio suyo propaga hacia arriba sin que nadie lo trate como un cambio de núcleo. En ambos casos el verde es correcto respecto a un mapa equivocado.
+
+Medido en v40.20 sobre este repo, con la lista **bien elegida** --los cuatro de cabecera eran los correctos y K1 ya estaba verde--: aun así, **tres de quince módulos del kernel no se comportan como núcleo**. `vault_log_error` con fan-in 0, declarado núcleo y sin un solo consumidor; `vault_io` con fan-out 11 y 30 commits; `vault_errors` con 14, sobre una mediana de dominio de 9. Ninguno estaba roto. Ninguno se había visto, porque nadie miraba.
+
+La norma no exige que el núcleo sea perfecto: exige que su pertenencia sea **derivable y contrastada**, y que la distancia entre lo declarado y lo medido se publique en vez de suponerse cero.
+
+**Prevention:** `vault_kernel --check --strict` (puerta 18) mide tres invariantes. **K1** --el núcleo no depende del dominio-- no se reimplementa: se delega en `vault_arch.dependencias_del_kernel()`, porque una tool que mide su propia pureza con su propio criterio es AP-44 cometido en el sitio que existe para detectarlo. **K2** --fan-in alto, fan-out bajo-- sale del dueño único del grafo de imports (`vault_grafo_import`), no de un parser propio. **K3** --estabilidad-- del churn de git, y sin historia disponible emite `desconocido` y nunca `0`: un cero fabricado saldría verde por no haber mirado (AP-51).
+
+Los umbrales **se derivan del escalón** de la distribución --la mayor caída relativa-- y se publican en el envelope con su ratio en cada ejecución. Escribirlos a mano sería AP-47 en la tool que persigue los números a mano; por eso la baseline congela la **pertenencia** (qué módulo incumple qué invariante) y no el umbral, que puede oscilar al crecer el repo.
+
+Dos límites, dichos antes de que nadie se apoye en el verde. Primero: mide el grafo **estático** de imports y hereda sus cegueras (`importlib`, un import por cadena, el acoplamiento por fichero o por variable global). Segundo: mide **forma, no propósito**. Un módulo puede tener fan-in altísimo sin ser núcleo de nada, solo un cajón de utilidades que todo el mundo toca. Verde significa que la lista declarada no contradice a la forma medida.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 

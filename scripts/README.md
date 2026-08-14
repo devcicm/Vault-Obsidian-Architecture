@@ -1,13 +1,13 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 104 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
+Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 105 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **130 archivos Python** — 104 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
+- **132 archivos Python** — 105 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
 - **Saneamiento de índices (v38.1)** — `vault_section_index.py --heal [--root]` regenera índices con formato legacy `[[stem|alias]]` o ausentes; el auto-index post-write se auto-cura si un agente escribe `index.md` a mano
-- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 104 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
+- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 105 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
 - **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault; requiere marcador de CONTENIDO (01_Projects/02_Observability/03_Decisions/.obsidian), no solo 00_System/99_Index (evita el ciclo auto-reforzado de detección); override runtime con `set_vault_root()`/env `VAULT_ROOT`
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
@@ -59,7 +59,7 @@ Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan 
 | [Grupo 32 — Gestión de Carpetas](#grupo-32--gestión-de-carpetas) | vault_folder_registry |
 | [Grupo 33 — Corrección Automática](#grupo-33--corrección-automática) | vault_fix_brackets, vault_graph_fix, vault_frontmatter_heal |
 | [Grupo 34 — Memoria de Contexto](#grupo-34--memoria-de-contexto) | vault_preferences, vault_query_parse, vault_subgraph, vault_context_pack, vault_ingest |
-| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_changelog_check, vault_error_contract, vault_foreign_check, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_noop_audit, vault_smoke, vault_voice, vault_servicio, vault_blueprint, vault_norms_coherence, vault_criterios, vault_ciclos |
+| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_changelog_check, vault_error_contract, vault_foreign_check, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_noop_audit, vault_smoke, vault_voice, vault_servicio, vault_blueprint, vault_norms_coherence, vault_criterios, vault_ciclos, vault_kernel |
 | [Grupo 36 — Defectos y Cuarentena](#grupo-36--defectos-y-cuarentena) | vault_bug_save, vault_quarantine |
 | [Grupo 37 — Skills](#grupo-37--skills) | vault_sdd_init, vault_sanacion |
 | [Observabilidad de Tools](#observabilidad-de-tools) | vault_errors |
@@ -1776,7 +1776,7 @@ El vault expone sus herramientas como un **servidor MCP** que las IAs consumen d
 
 **Archivo:** `../mcp/nodejs/vault-mcp-server.mjs` (~1650 líneas, cero dependencias npm)  
 **Plan:** `../mcp/PLAN.md` — documento de evidencia con 8 fases de implementación
-**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (104 tools)
+**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (105 tools)
 
 Los parámetros que el catálogo publica **se derivan del `argparse` de cada script**,
 no se escriben a mano: el servidor compone `--<param>` literal, así que un param
@@ -1824,7 +1824,7 @@ node mcp/nodejs/vault-mcp-server.mjs --port 3000
 
 ### `vault_norms.py`
 
-Registro canónico de las 70 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
+Registro canónico de las 71 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
 
 ```bash
 python vault_norms.py                             # catálogo completo
@@ -2298,6 +2298,45 @@ Ese componente de 14 es lo que hacía que `vault_errors_trace` —un escritor de
 **Cómo se salda.** Invirtiendo la dependencia — el módulo de bajo nivel deja de pedirle el módulo entero al de alto y recibe lo que necesita. El corte de v40.17 lo hizo una vez: `vault_raiz`, `vault_fs` y `vault_ledger` salieron de `vault_io` como hojas, `vault_errors_trace` pasó a pedir el mecanismo (`escritura_atomica` con `guarda_secretos`) en vez de la política entera, y el componente bajó de 15 a 14. **Subir el import a nivel de módulo no lo arregla**: solo hace que Python lo denuncie al arrancar.
 
 **El límite, dicho antes de que nadie se apoye en el verde.** Mide el grafo **estático** de módulos de `scripts/`. No ve `importlib`, ni un import construido con una cadena, ni el acoplamiento que pasa por el sistema de ficheros o por una variable global compartida. Dos módulos pueden estar perfectamente atados sin que ningún `import` lo diga, y esta tool los verá sueltos. Verde significa que no crecieron los ciclos que sabemos ver.
+
+### `vault_kernel.py`
+
+**El núcleo se declara y nadie lo mide (AP-59).** `vault_arch.CONTEXTS['kernel']['modulos']` es una **lista de quince nombres escrita a mano**. Dice cuál es el núcleo de este repo, y hasta v40.20 ninguna puerta la contrastaba contra nada. La pertenencia al core no era un hecho: era una costumbre heredada de quien escribió la lista.
+
+```bash
+python vault_kernel.py --check                     # las tres invariantes y los umbrales derivados
+python vault_kernel.py --check --strict            # exit 1 si aparece un hallazgo nuevo (puerta 18)
+python vault_kernel.py --trace vault_context_pack  # si toco esto, ¿qué se cae?
+python vault_kernel.py --freeze                    # baseline; solo puede encoger
+```
+
+**Lo caro no es equivocarse de lista: es que todo lo que se apoya en ella hereda el error en silencio.** Un módulo declarado núcleo sin serlo queda eximido por `vault_arch` de reglas que sí debería cumplir, y sale verde. Uno que lo es sin estar declarado propaga cada cambio hacia arriba sin que nadie lo trate como un cambio de núcleo. En ambos casos el verde es correcto **respecto a un mapa equivocado**, que es la peor clase de verde.
+
+**Las tres invariantes, y de dónde sale cada una:**
+
+| | Qué afirma | De dónde sale |
+|---|---|---|
+| **K1** | el núcleo no depende del dominio | **delegada** en `vault_arch.dependencias_del_kernel()` |
+| **K2** | fan-in alto, fan-out bajo | `vault_grafo_import`, el dueño único del grafo |
+| **K3** | el núcleo se mueve menos que lo que sostiene | churn de git contra la mediana del dominio |
+
+**K1 no se reimplementa, y eso es la mitad del diseño.** Una tool que mide la pureza del núcleo con su propio criterio se certifica a sí misma: sería AP-44 cometido exactamente donde existe para detectarlo. `vault_kernel` no parsea un solo `import` —un test falla si el módulo llega a importar `ast`— y no vuelve a decidir K1: consume lo que `vault_arch` ya medía bien y publica el resultado junto al conteo de `GANCHOS_DEL_KERNEL`. K1 **es bloqueante y no baselinable**: si el núcleo pasa a depender del dominio, dejó de ser núcleo, y una baseline que se lo tragase convertiría la frontera en una sugerencia.
+
+**Los umbrales se derivan del escalón, no se escriben.** La distribución de fan-in del repo tiene un corte limpio (113, 83, 60 ‖ 27, 26, 20, …) y la de fan-out del kernel también (11 ‖ 5, 4, 2, …). El umbral es el valor por encima de la **mayor caída relativa**, y se publica en el envelope con su ratio en cada ejecución. Un literal aquí sería AP-47 dentro de AP-59. Consecuencia asumida: el umbral puede oscilar al crecer el repo, y por eso lo que se congela es la **pertenencia** —qué módulo incumple qué invariante— y nunca el umbral.
+
+**Con la lista bien elegida, aparecieron tres.** Al medir para v40.20 se comprobó que los cuatro de cabecera eran los correctos y que K1 ya estaba verde. Y aun así: `vault_log_error` está declarado núcleo con **fan-in 0** —ningún consumidor—, `vault_io` tiene **fan-out 11** y 30 commits, y `vault_errors` 14, sobre una mediana de dominio de 9. Ninguno estaba roto. Ninguno se había visto, porque nadie miraba. La norma no exige un núcleo perfecto: exige que la distancia entre lo declarado y lo medido **se publique en vez de suponerse cero**.
+
+**`--trace` responde la pregunta que antes no se podía formular.** Camino más corto de cualquier módulo hasta el núcleo, con profundidad y con las fugas del camino — los puntos por los que un cambio de arriba vuelve a bajar:
+
+```
+vault_context_pack → vault_errors ⊥   profundidad 1 · fugas: vault_errors
+```
+
+**Sin historia de git el churn sale `desconocido`, nunca `0`.** En CI es el caso normal, no el raro: `actions/checkout@v4` clona a profundidad 1, y un cero fabricado daría K3 verde para todo el mundo — verde respecto a una historia que no se llegó a leer, que es AP-51. La distinción tiene test propio en las dos direcciones: un módulo que existe y nunca se tocó cuenta 0; uno cuya historia no se pudo leer cuenta `desconocido`.
+
+**Dos límites, dichos antes de que nadie se apoye en el verde.** Mide el grafo **estático** de imports y hereda todas sus cegueras (`importlib`, un import por cadena, el acoplamiento por fichero o por variable global). Y mide **forma, no propósito**: un módulo puede tener fan-in altísimo sin ser núcleo de nada, solo un cajón de utilidades que todo el mundo toca. Verde significa que la lista declarada no contradice a la forma que el grafo deja ver.
+
+**Los seis ganchos del kernel se publican como informativos y no bloquean.** `GANCHOS_DEL_KERNEL` es la vía de escape declarada del núcleo, y solo puede crecer: nada mide su pendiente. El hallazgo `gancho_sin_presupuesto` apunta a un mecanismo —`objetivo` y pendiente publicada en las baselines— que todavía no existe, y bloquear con él solo enseñaría a ampliar baselines, que es lo contrario de lo que la norma persigue. Queda declarado en la capa 7 del plano.
 
 ---
 

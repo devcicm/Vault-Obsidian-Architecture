@@ -1,0 +1,10 @@
+{
+ "description": "Módulos del kernel que no se comportan como núcleo y ya estaban cuando nació AP-59. Indexada por nombre de módulo. Solo puede encoger: un hallazgo nuevo se arregla, no se congela. Los ganchos del kernel NO entran aquí: se publican como informativos hasta que las baselines tengan `objetivo` (movimiento 2).",
+ "sitios": [
+  "kernel_impuro::vault_io",
+  "kernel_inestable::vault_errors",
+  "kernel_inestable::vault_io",
+  "kernel_inestable::vault_log_error",
+  "kernel_sin_consumidores::vault_log_error"
+ ]
+}

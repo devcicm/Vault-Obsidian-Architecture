@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.19 — 2026-08-14  
+**Versión:** v40.20 — 2026-08-14  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -3501,7 +3501,7 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **70 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **71 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -5003,7 +5003,7 @@ Dos causas, y la segunda es la incómoda:
 
 1. **El audit no lo ejecuta nadie.** En las **1.356 ejecuciones de tools
    registradas** en los `.tool-trace.json` de ese parque, `vault_norms` no
-   aparece **ni una vez**. 41 de las 104 tools del catálogo no se han ejecutado
+   aparece **ni una vez**. 41 de las 105 tools del catálogo no se han ejecutado
    jamás. Los agentes escriben; no gobiernan. Un enforcement que depende de que
    alguien se acuerde de invocarlo es enforcement en el papel.
 2. **Los valores no canónicos los escribía el propio estándar.** El más
@@ -5612,7 +5612,7 @@ de envelope con su contrato de `00_System/tool-spec.json`:
 Y la divergencia peor no era de forma sino de efecto: `jsNativeGraph` no tiene un
 solo `writeFile`. Un agente llamaba `vault_graph` por MCP, recibía `ok: true`, y
 el grafo se quedaba sin regenerar — **AP-37 y AP-47 servidos a la vez por el único
-camino que un agente real usa**. `vault_smoke` recorre las 104 tools del catálogo,
+camino que un agente real usa**. `vault_smoke` recorre las 105 tools del catálogo,
 pero ejecuta el `.py`: probaba exactamente la implementación que el agente no toca.
 
 **Prevención:** backend nativo solo para lo que **no tiene** implementación en
@@ -6385,6 +6385,90 @@ verá sueltos. Verde significa que no crecieron los ciclos que sabemos ver.
 
 ---
 
+### AP-59 — Núcleo declarado sin contraste
+
+**Enforcement:** `guard+audit` · **Severidad:** high · **Introducido:** v40.20
+
+**Síntoma:** un sistema declara cuál es su núcleo —la lista de módulos de los que todo lo
+demás depende— y **ninguna medida contrasta esa afirmación** contra la forma real del grafo.
+La pertenencia al core deja de ser un hecho y pasa a ser una costumbre: se hereda de quien
+escribió la lista y envejece en la dirección cómoda.
+
+**De dónde sale.** `vault_arch.CONTEXTS['kernel']['modulos']` era una enumeración de quince
+nombres escrita a mano. Sobre ella se apoyaba el guard de fronteras entre contextos acotados
+—qué cruces son legítimos, qué dependencias están exentas— y nada la comparaba con nada. Es la
+misma clase de afirmación que AP-47 persigue en las cifras y AP-57 en los criterios, cometida
+en el sitio más caro que tiene un repositorio.
+
+**Lo caro no es equivocarse de lista.** Es que **todo lo que se apoya en ella hereda el error
+en silencio**. Si un módulo está declarado como núcleo sin serlo, el guard de fronteras lo
+exime de reglas que sí debería cumplir y sale verde. Si uno lo es sin estar declarado, cada
+cambio suyo propaga hacia arriba sin que nadie lo trate como un cambio de núcleo. En ambos
+casos el verde es correcto **respecto a un mapa equivocado**, que es la peor clase de verde:
+el que no se puede distinguir del bueno leyendo el resultado.
+
+**Con la lista bien elegida, aparecieron tres.** Al medir para v40.20 se comprobó que los
+cuatro de cabecera eran los correctos —`vault_errors` con fan-in 113, `vault_io` 83,
+`vault_lib` 60, `vault_registry` 27— y que K1 ya estaba verde. Y aun así **tres de quince
+módulos del kernel no se comportan como núcleo**: `vault_log_error` está declarado núcleo con
+**fan-in 0**, sin un solo consumidor; `vault_io` tiene **fan-out 11** y 30 commits; y
+`vault_errors` 14, sobre una mediana de dominio de 9. Ninguno estaba roto. Ninguno se había
+visto, porque nadie miraba.
+
+**Las tres invariantes.** **K1** — el núcleo no depende del dominio. **K2** — fan-in alto,
+fan-out bajo. **K3** — el núcleo se mueve menos que lo que sostiene.
+
+**K1 no se reimplementa, y eso es la mitad del diseño.** Una tool que mide la pureza del
+núcleo con su propio criterio se certifica a sí misma: sería **AP-44 cometido exactamente
+donde existe para detectarlo**. K1 se delega en `vault_arch.dependencias_del_kernel()`, que ya
+lo hacía bien, y K2 sale del dueño único del grafo de imports (`vault_grafo_import`), no de un
+parser propio — un test falla si `vault_kernel` llega a importar `ast`. K1 además **es
+bloqueante y no baselinable**: si el núcleo pasa a depender del dominio dejó de ser núcleo, y
+una baseline que se lo tragase convertiría la frontera en una sugerencia.
+
+**Los umbrales se derivan del escalón, no se escriben.** La distribución de fan-in exhibe un
+corte limpio (113, 83, 60 ‖ 27, 26, 20, …) y la de fan-out del kernel también (11 ‖ 5, 4,
+2, …). El umbral es el valor por encima de la **mayor caída relativa**, y se publica en el
+envelope con su ratio en cada ejecución. Escribirlo a mano sería AP-47 dentro de AP-59. La
+consecuencia se asume: el umbral **puede oscilar** al crecer el repo, y por eso la baseline
+congela la **pertenencia** —qué módulo incumple qué invariante— y nunca el umbral.
+
+**Sin historia de git, `desconocido` — nunca `0`.** En integración continua es el caso normal:
+`actions/checkout@v4` clona a profundidad 1 y un cero fabricado daría K3 verde para todo el
+mundo, verde respecto a una historia que no se llegó a leer. Es AP-51, y la distinción se
+prueba en las dos direcciones: un módulo que existe y nunca se tocó cuenta 0; uno cuya
+historia no se pudo leer cuenta `desconocido`.
+
+**Distinguida de AP-57.** AP-57 habla de un **criterio escrito dos veces sin dueño**. AP-59
+habla de una **pertenencia afirmada y no contrastada**: no hay copia ninguna, hay una sola
+lista y nada con qué compararla. Se tocan en el remedio —las dos se cierran dándole dueño a
+algo— pero AP-57 se salda importando al dueño y AP-59 derivando el dato de la forma medida.
+
+**Distinguida de AP-58.** AP-58 mira la **dirección** de las dependencias: quién importa a
+quién y si eso vuelve. AP-59 mira **quién está declarado como fondo de esa pila**. Un repo
+puede tener cero ciclos y un núcleo mal declarado, y un núcleo impecable lleno de ciclos.
+
+**Distinguida de AP-47.** AP-47 es la cifra escrita a mano en la documentación; AP-59 es su
+versión estructural, la **lista** escrita a mano en el código. Comparten disciplina —derivar
+en vez de escribir— y por eso los umbrales de esta norma no pueden ser literales sin cometer
+AP-47 dentro de AP-59.
+
+**Enforcement:** `guard+audit`. `vault_kernel --check --strict` (puerta 18). Un hallazgo se
+salda sacando el módulo del kernel o dándole forma de núcleo —fan-out abajo, consumidores
+reales—, no ampliando la baseline. `--trace <modulo>` publica el camino más corto de cualquier
+módulo hasta el núcleo, con su profundidad y las fugas del camino: responde *si toco esto, qué
+se cae*, que es la pregunta que antes no se podía ni formular.
+
+**Dos límites, dichos antes de que nadie se apoye en el verde.** Primero, mide el grafo
+**estático** de imports y hereda todas sus cegueras: `importlib`, un import construido con una
+cadena, el acoplamiento que pasa por el sistema de ficheros o por una variable global. Segundo
+—y es el importante— mide **forma, no propósito**: un módulo puede tener fan-in altísimo sin
+ser núcleo de nada, solo un cajón de utilidades que todo el mundo toca. Verde significa que la
+lista declarada no contradice a la forma que el grafo deja ver. No significa que la lista sea
+la correcta.
+
+---
+
 ### PAT-6 — Semantic graph enrichment: enriquecimiento periódico del grafo
 
 **Enforcement:** `recommended` · **Introducido:** v37
@@ -6922,6 +7006,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.20 | 2026-08-14 | El **núcleo de este repo era una lista de quince nombres escrita a mano** en `vault_arch.CONTEXTS['kernel']['modulos']`, y ninguna puerta la contrastaba con nada. Sobre ella se apoyaba el guard de fronteras entre contextos: si la lista estaba mal, el verde era correcto respecto a un mapa equivocado. **AP-59** y `vault_kernel` (puerta 18) miden tres invariantes — K1 el núcleo no depende del dominio, K2 fan-in alto y fan-out bajo, K3 se mueve menos que lo que sostiene — con los umbrales **derivados del escalón** de la distribución y publicados con su ratio, porque un literal ahí sería AP-47 dentro de AP-59. Al medir para la tanda **dos hipótesis propias resultaron falsas** y quedaron corregidas antes de escribir código: K1 ya estaba medida y verde, y las seis «fugas» del kernel eran los seis `GANCHOS_DEL_KERNEL` declarados con motivo. Con la lista bien elegida aparecieron aun así **tres módulos que no se comportan como núcleo**: `vault_log_error` declarado kernel con fan-in 0, `vault_io` con fan-out 11 y 30 commits, `vault_errors` con 14 sobre una mediana de dominio de 9. Ninguno roto, ninguno visto. La precondición era otro AP-57 que nadie podía ver: **trece módulos parseaban imports por su cuenta** y los dos principales no coincidían —`vault_arch` filtra por prefijo e ignora los relativos, `vault_ciclos` filtra por pertenencia y los cuenta—, invisible para `vault_criterios` porque solo mide módulos que nombran `*.md`. `vault_grafo_import` es ahora el dueño, con fan-out cero y **las dos proyecciones conservadas con nombre**: unificarlas cambiaría los cruces de uno y las aristas del otro a la vez, estrenando deuda en dos baselines por un refactor que no arregla nada |
 | v40.19 | 2026-08-14 | AP-57 tenía un lado ciego declarado en ninguna parte: `vault_criterios` solo leía `scripts/*.py`, así que la copia de un criterio al otro lado de una **frontera de lenguaje** era justo la que la norma no podía ver — y v40.18 acababa de encontrar una. Se añade el registro `FRONTERAS`: cada frontera con su **zona** (clave de `vault_arch.CONTEXTS`), su **norma** y la **pasarela** por la que el criterio debe cruzar; al otro lado la exención no es importar al dueño, que no se puede, sino leer el artefacto derivado. Cuatro fronteras declaradas — `.mjs`, CI, `Makefile`, `.ps1` — y el alcance también: un ejecutable de otro lenguaje fuera de toda zona sale como `frontera_no_declarada`. Lo que midió al nacer: **la CI listaba a mano seis puertas de las diecisiete del registro y once no se ejecutaban en ningún PR** —changelog, arquitectura, blueprint, ciclos, criterios entre ellas—, y `make check` no ejecutaba ninguna. Nada estaba roto: la lista se quedó quieta mientras el registro crecía, que es como envejece una copia a través de una frontera. Los dos preguntan ahora al registro |
 | v40.18 | 2026-08-13 | El criterio «esta tool no tiene script Python» estaba escrito **cinco veces** —`cli/registry.py`, el literal del `.mjs`, `check_contracts` con su propia regex, el test de AP-48 con la suya, y ninguna comparación entre ellas— a través de una frontera de lenguaje que `vault_criterios` (AP-57) no puede cruzar porque solo lee módulos Python. Ya había cobrado una vez: siete tools se despachaban en JS mientras `vault_smoke` probaba el `.py`, y `vault_graph` devolvía `ok: true` sin escribir el grafo. Ahora el dueño es `vault_mcp_catalog.NATIVE_JS_TOOLS`, viaja en `js_native_tools` del catálogo, y los cuatro consumidores lo leen de ahí; `--check` contrasta Python, JSON y el respaldo del `.mjs`, y `--check-contracts` y el test de AP-48 dejan de traer lector propio. El cambio de `const` a `let` —necesario para que el catálogo pueda sobreescribirlo— rompió dos lectores en el acto: la prueba de que eran copias, no vistas |
 | v40.17 | 2026-08-13 | El repo declaraba **cero ciclos de importación** y era verdad leyendo solo el nivel de módulo: el cero lo fabricaban **92 imports diferidos en 40 módulos**, el rompe-ciclos manual aplicado tantas veces que dejó de ser excepción y pasó a ser la arquitectura sin que nadie lo decidiera. Contándolos aparece un componente fuertemente conexo de **14 módulos** con el núcleo entero dentro — el que hacía que `vault_errors_trace`, un escritor de trazas de bajo nivel, importase `vault_io` completo para tres símbolos. **AP-58** y `vault_ciclos` (puerta 17) lo miden, y la deuda son **30 de 92**: solo los diferidos cuyo destino vuelve al origen; los otros 62 se publican sin congelarse, porque una baseline llena de ruido es una que nadie revisa. La inversión se ejecuta una vez: `vault_raiz`, `vault_fs` y `vault_ledger` salen de `vault_io` como hojas por la costura mecanismo/política, `vault_io` reexporta cada símbolo y ningún consumidor se toca. El trace pasa a pedir `escritura_atomica` con `guarda_secretos` en vez de la política entera. Y verificar las dos afirmaciones del cierre destapó un tercer defecto que el refactor no había tocado: el test que decía medir la cascada de trazas **pasaba con el bucle reintroducido**, porque alimentaba JSON impecable del que el saneado no saca ni un fix — AP-44 cometido dentro de la prueba que existe para cazarlo. Con comillas tipográficas y NBSP: 5 trazas, **960 escrituras** |
@@ -7260,6 +7345,103 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v40.20 — 2026-08-14 `git: pending`
+
+**El núcleo era una lista y nadie la había contrastado.**
+
+Diecisiete puertas, y **unas diez de ellas existen solo para reconciliar declaraciones
+duplicadas**. Cada vez que un dato apareció en dos sitios la respuesta fue una puerta que
+los compara — decisión correcta cada vez, pero diecisiete veces seguidas la suma es una
+arquitectura, y el coste de un incremento crece con la historia del repo. v40.19 fue el
+aviso: la CI listaba seis puertas a mano y once no se ejecutaban en ningún PR.
+
+Esta versión es el primero de cinco movimientos, y empieza por el kernel porque es el único
+que **no mueve nada y aun así cambia lo que sabemos**.
+
+**El síntoma.** `vault_arch.CONTEXTS['kernel']['modulos']` era una enumeración de quince
+nombres escrita a mano. Decía cuál es el núcleo del repo, y sobre ella se apoyaba el guard
+de fronteras entre contextos acotados —qué cruces son legítimos, qué dependencias están
+exentas—. Nada la comparaba con nada. Si la lista estaba mal, el verde seguía siendo
+correcto **respecto a un mapa equivocado**, que es la peor clase de verde: no se distingue
+del bueno leyendo el resultado.
+
+**Dos hipótesis propias, falsas, corregidas antes de escribir código.** Al medir para la
+tanda se cayeron las dos afirmaciones más llamativas de la propuesta inicial. Que el kernel
+tenía seis fugas hacia arriba sin detectar: **falso** — son exactamente los seis
+`GANCHOS_DEL_KERNEL`, cada uno con su motivo escrito, y `dependencias_del_kernel()` devuelve
+`[]`. K1 ya estaba medida y verde. Y que `vault_norms` era el núcleo real oculto: **también
+falso** — fan-in 26, no 113; los cuatro de cabecera estaban bien elegidos. Quedan escritas
+porque una propuesta que solo publica sus aciertos enseña a no medir.
+
+**Lo que sí quedó en pie, y es lo que se arregla.** La pertenencia al kernel era una
+afirmación sin contraste. **AP-59** la convierte en un dato derivado, y `vault_kernel`
+(puerta 18) mide tres invariantes: **K1** el núcleo no depende del dominio, **K2** fan-in
+alto y fan-out bajo, **K3** el núcleo se mueve menos que lo que sostiene.
+
+**K1 no se reimplementa, y esa es la mitad del diseño.** Una tool que mide la pureza del
+núcleo con su propio criterio se certifica a sí misma: sería AP-44 cometido exactamente
+donde existe para detectarlo. K1 se delega en `vault_arch.dependencias_del_kernel()`, y un
+test falla si `vault_kernel` llega a importar `ast`. K1 además es **bloqueante y no
+baselinable**: si el núcleo pasa a depender del dominio dejó de ser núcleo, y una baseline
+que se lo tragase convertiría la frontera en una sugerencia.
+
+**Los umbrales se derivan del escalón.** La distribución de fan-in tiene un corte limpio
+(113, 83, 60 ‖ 27, 26, 20, …) y la de fan-out del kernel también (11 ‖ 5, 4, 2, …). El
+umbral es el valor por encima de la mayor caída relativa y se publica en el envelope con su
+ratio en cada ejecución. Un literal ahí sería **AP-47 dentro de AP-59**. La consecuencia se
+asume: el umbral puede oscilar, y por eso la baseline congela la **pertenencia** y nunca el
+umbral.
+
+**Con la lista bien elegida, aparecieron tres.** `vault_log_error` está declarado núcleo con
+**fan-in 0** —ningún consumidor—; `vault_io` tiene **fan-out 11** y 30 commits; y
+`vault_errors` 14, sobre una mediana de dominio de 9. Ninguno estaba roto. Ninguno se había
+visto, porque nadie miraba.
+
+**La precondición era otro AP-57 que la norma no podía ver.** Trece módulos de este repo
+parseaban imports por su cuenta, y **los dos principales no coincidían**:
+`vault_arch._importaciones` filtra por el prefijo `vault_` e ignora los relativos;
+`vault_ciclos._grafo` filtra por pertenencia a `scripts/*.py` y los cuenta. Dos dueños del
+mismo criterio, y `vault_criterios` no podía verlo porque solo mide módulos que nombran
+`*.md`. El criterio más básico de todo el análisis estructural del repo estaba escrito dos
+veces y sin dueño.
+
+`vault_grafo_import` es ahora ese dueño: kernel, **fan-out cero, solo stdlib** — un dueño de
+criterio que importa a sus consumidores no es un dueño, es un nudo, y cerraría el ciclo que
+AP-58 mide. **Las dos proyecciones se conservan con nombre y no se funden**: `PREFIJO_VAULT`
+y `MODULOS_LOCALES`, con sus diferencias documentadas en un solo punto del código.
+Unificarlas cambiaría los cruces de `vault_arch` y las aristas de `vault_ciclos` a la vez,
+estrenando deuda en dos baselines por un refactor que no arregla nada; queda declarado como
+decisión aparte. Un test fija que las dos siguen siendo distintas, y otro que ninguno de los
+dos llamadores ha vuelto a parsear por su cuenta — mirando el **cuerpo de la función** y no
+el módulo, porque `vault_arch` usa `ast` legítimamente para otras medidas.
+
+**Sin historia de git, `desconocido` — nunca `0`.** En CI es el caso normal:
+`actions/checkout@v4` clona a profundidad 1, y un cero fabricado daría K3 verde para todo el
+mundo, verde respecto a una historia que no se llegó a leer (AP-51). Y el churn se pide en
+**una sola pasada** de `git log`, no una por módulo: preguntar fichero a fichero costaba 130
+subprocesos y 14 s, más de la mitad de lo que tarda la tanda entera de puertas.
+
+**`--trace` responde la pregunta que antes no se podía formular.** Camino más corto de
+cualquier módulo hasta el núcleo, con profundidad y con las fugas del camino: *si toco esto,
+qué se cae*.
+
+**Lo que esta versión declara y no ejecuta.** Los otros cuatro movimientos entran en la capa
+7 del plano con nombre y motivo: baselines con `objetivo` y pendiente publicada, partir
+`vault_norms` (4.257 líneas, fan-out 10, 9 de los 13 cruces sin puerto), la norma como
+paquete, y el kernel del vault. Y `CLAUDE.md` deja de decir «cinco guards llevan baseline»
+cuando ya eran diez: el documento que explica el mecanismo anti-drift había driftado, así
+que la línea pasa a apuntar al registro en vez de llevar la cifra.
+
+**Los seis ganchos del kernel se publican como informativos y no bloquean.** El hallazgo
+`gancho_sin_presupuesto` apunta a un mecanismo que todavía no existe, y bloquear con él solo
+enseñaría a ampliar baselines — lo contrario de lo que la norma persigue.
+
+**Estado:** 18 puertas, AP-59 con baseline de **5 hallazgos** que solo puede encoger, y
+`vault_arch` y `vault_ciclos` dando exactamente los mismos números que antes de la
+extracción.
 
 ---
 

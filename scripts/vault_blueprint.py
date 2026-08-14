@@ -202,6 +202,87 @@ DEUDA_DECLARADA: List[Dict[str, str]] = [
             "mismo cero sobre un subconjunto que esta versión vino a cerrar."
         ),
     },
+    # ── Los cuatro movimientos que v40.20 declara y no ejecuta ───────────────
+    #
+    # v40.20 fue el movimiento 1 de una arquitectura de cinco. Los otros cuatro
+    # entran aquí con nombre en vez de quedarse en una conversación: una deuda
+    # que el plano no publica es una deuda que nadie revisa, y ese es
+    # exactamente el mecanismo que AP-59 acaba de medir en la lista del kernel.
+    {
+        "id": "baselines_sin_objetivo_ni_pendiente",
+        "estado": "pendiente",
+        "desde": "v40.20",
+        "capa": "7",
+        "que": (
+            "Las baselines del repo solo pueden **encoger**, y eso es un suelo, "
+            "no una trayectoria: nada declara a cuánto deberían llegar ni a qué "
+            "ritmo. Falta un campo `objetivo` y la pendiente publicada. Es lo "
+            "que deja sin cerrar el hallazgo `gancho_sin_presupuesto` de "
+            "`vault_kernel`, que hoy se emite informativo y no bloquea: los seis "
+            "`GANCHOS_DEL_KERNEL` solo pueden crecer y nada mide su pendiente."
+        ),
+        "por_que_no_ahora": (
+            "Un `objetivo` sin quién lo revisa es una cifra a mano más (AP-47). "
+            "Exige decidir la cadencia de revisión antes que el campo, y esa "
+            "decisión no la resuelve el movimiento que la descubrió."
+        ),
+    },
+    {
+        "id": "vault_norms_es_un_modulo_dios",
+        "estado": "pendiente",
+        "desde": "v40.20",
+        "capa": "7",
+        "que": (
+            "`vault_norms` acumula 4.257 líneas, fan-out 10 y **9 de los 13 "
+            "cruces sin puerto** del repo. No es un problema de clasificación —al "
+            "medir para v40.20 se comprobó que su fan-in es 26, no el del "
+            "núcleo—: es un módulo que hace de catálogo, de motor y de fachada a "
+            "la vez, con las dependencias invertidas. Se parte en `catalog` / "
+            "`engine` / fachada y se invierten los nueve cruces."
+        ),
+        "por_que_no_ahora": (
+            "Es la tanda más cara de las cinco y depende de lo que el mapa del "
+            "núcleo revele. Partirlo antes de tener el grafo con dueño habría "
+            "sido mover código a ciegas."
+        ),
+    },
+    {
+        "id": "la_norma_no_es_un_paquete",
+        "estado": "pendiente",
+        "desde": "v40.20",
+        "capa": "7",
+        "que": (
+            "El ciclo obligatorio del repo —síntoma → norma → guard+audit+heal → "
+            "test— vive hoy en cuatro listas sincronizadas a mano: el catálogo, "
+            "la tool, la puerta y el fichero de tests. La norma como **paquete** "
+            "(`normas/AP-XX/` con `norma.py`, `guard.py`, `heal.py`, `test_*.py` "
+            "y `porque.md`) la convierte en una sola cosa con cuatro caras, y el "
+            "coste de una norma nueva deja de crecer con la historia del repo."
+        ),
+        "por_que_no_ahora": (
+            "Migra por atrición, no de golpe: 71 normas movidas en una tanda "
+            "serían 71 oportunidades de perder un matiz. Empieza por las que se "
+            "escriban a partir de ahora."
+        ),
+    },
+    {
+        "id": "el_vault_no_tiene_kernel_declarado",
+        "estado": "pendiente",
+        "desde": "v40.20",
+        "capa": "7",
+        "que": (
+            "`vault_kernel` traza el núcleo **del repo**. El mismo concepto "
+            "aplicado a las notas —qué subconjunto de un vault es su núcleo— "
+            "daría prioridad a `vault_context_pack` cuando el paquete no cabe, "
+            "orden a la sanación y pesos a `vault_audit`."
+        ),
+        "por_que_no_ahora": (
+            "Declarado sin fecha por decisión de alcance. El núcleo de un vault "
+            "no se deriva del grafo de imports sino del de enlaces, y esa medida "
+            "hay que contrastarla contra un vault ajeno antes de creérsela "
+            "(regla 7)."
+        ),
+    },
 ]
 
 
@@ -573,6 +654,7 @@ _BASELINES = [
     ("blueprint-baseline.json", "uncovered_norms", "capa 4 — norma sin puerta ni test"),
     ("criterios-baseline.json", "sitios", "AP-57"),
     ("ciclos-baseline.json", "sitios", "AP-58 — ciclo esquivado con import diferido"),
+    ("kernel-baseline.json", "sitios", "AP-59 — núcleo declarado sin contraste"),
     ("norms-coherence-baseline.json", "claims", "AP-55 — C2, afirmación sin traza"),
     ("field-compat-baseline.json", "stable", "contrato de campos con los consumidores"),
 ]

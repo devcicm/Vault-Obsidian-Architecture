@@ -10,9 +10,9 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | Ruta | Qué es |
 |---|---|
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~6.000 líneas). Fuente normativa. |
-| `scripts/*.py` | ~130 scripts, 104 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
+| `scripts/*.py` | ~132 scripts, 105 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (2763 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (2805 tests). Toda norma con guard debe tener test. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
 | `vault-sandbox/` | **Único** vault de pruebas del repo. Todo runtime va aquí. |
@@ -216,6 +216,9 @@ abajo, en «Cuatro cosas que el registro no puede decirte».
 - [ ] `python scripts/vault_ciclos.py --check --strict`
       Ningún ciclo de importación nuevo se esquiva metiendo el import dentro de una función (AP-58).
       *Se arregla con:* invertir la dependencia: el módulo de bajo nivel deja de pedirle el módulo entero al de alto; subir el import o ampliar la baseline no son la solución, solo esconden dónde
+- [ ] `python scripts/vault_kernel.py --check --strict`
+      La lista del núcleo no contradice a la forma medida del grafo: K1 delegada, fan-in/fan-out contra el escalón derivado y churn contra la mediana del dominio (AP-59).
+      *Se arregla con:* sacar el módulo del kernel o darle forma de núcleo —fan-out abajo, consumidores reales—; los umbrales se derivan del escalón y se publican, así que ajustarlos para pasar no es una opción, y la baseline solo encoge
 
 <!-- puertas:fin -->
 
@@ -262,11 +265,15 @@ Una entrada borrada no se distingue de una que nadie volvió a mirar.
 
 ## Trabajar con las baselines (leer antes de tocarlas)
 
-Cinco guards llevan **baseline que solo puede encoger**: `vault_noop_audit` (AP-37),
-`vault_blame_audit` (AP-51), `vault_error_contract` (AP-52), `vault_criterios` (AP-57) y
-la capa 4 de `vault_blueprint`. Todas aparecen en la capa 6 del plano, y una puerta falla
-si alguna baseline del repo no está listada ahí: una deuda congelada que el plano no
-publica es una deuda que nadie revisa.
+Varios guards llevan **baseline que solo puede encoger** — `vault_noop_audit` (AP-37),
+`vault_blame_audit` (AP-51), `vault_error_contract` (AP-52), `vault_criterios` (AP-57),
+`vault_ciclos` (AP-58), `vault_kernel` (AP-59) y la capa 4 de `vault_blueprint`, entre
+otras. **Cuántas son exactamente lo dice `vault_blueprint._BASELINES`, no esta línea**:
+hasta v40.20 aquí ponía «cinco» y ya eran diez, que es AP-47 cometido en el documento que
+explica el mecanismo anti-drift. Derivar el conteo es el movimiento 2, declarado en la
+capa 7 del plano. Todas aparecen en la capa 6, y una puerta falla si alguna baseline del
+repo no está listada ahí: una deuda congelada que el plano no publica es una deuda que
+nadie revisa.
 
 1. **Se indexan por firma de sitio, no por línea** (desde v40.6). La firma es
    `módulo::función::hash del código normalizado`, y el hash sale de `ast.unparse`, así que

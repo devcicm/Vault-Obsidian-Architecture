@@ -2595,6 +2595,76 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         ),
         "related": ["vault_arch", "vault_norms", "vault_gate", "vault_blueprint"],
     },
+    "vault_kernel": {
+        "name": "vault_kernel",
+        "script": "vault_kernel.py",
+        "group": "Normas",
+        "purpose": (
+            "AP-59: el nucleo se declara pero nadie lo mide. La lista del "
+            "kernel es una enumeracion escrita a mano en vault_arch y ninguna "
+            "puerta la contrasta con la forma real del grafo. Mide tres "
+            "invariantes: K1 (el nucleo no depende del dominio) delegada en "
+            "vault_arch.dependencias_del_kernel, K2 (fan-in alto, fan-out bajo) "
+            "desde el dueno unico del grafo de imports, y K3 (estabilidad) por "
+            "churn de git contra la mediana del dominio. Con la lista bien "
+            "elegida, en v40.20 salieron aun asi tres modulos del kernel que no "
+            "se comportan como nucleo. --trace responde si toco esto, que se cae."
+        ),
+        "params": {
+            "check": {
+                "type": "boolean",
+                "required": False,
+                "description": "Mide las tres invariantes y publica los umbrales derivados",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit 1 si aparece un hallazgo sin precedente",
+                "validators": [],
+            },
+            "trace": {
+                "type": "string",
+                "required": False,
+                "description": "Camino mas corto de un modulo hasta el nucleo",
+                "validators": [],
+            },
+            "freeze": {
+                "type": "boolean",
+                "required": False,
+                "description": "Recongela la baseline de hallazgos preexistentes",
+                "validators": [],
+            },
+            "admitir-nuevos": {
+                "type": "boolean",
+                "required": False,
+                "description": "Permite congelar hallazgos sin precedente",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "No parsea un solo import ni reimplementa K1: si midiera su propia "
+            "pureza con su propio criterio seria AP-44 cometido en la tool que "
+            "existe para trazar el nucleo",
+            "Los umbrales se derivan del escalon de la distribucion y se "
+            "publican con su ratio en cada ejecucion; un literal aqui seria "
+            "AP-47 dentro de AP-59",
+            "Sin historia de git el churn sale desconocido, nunca 0: un cero "
+            "fabricado saldria verde por no haber mirado (AP-51)",
+            "Mide forma, no proposito: un modulo puede tener fan-in altisimo y "
+            "no ser nucleo de nada, solo un cajon que todo el mundo toca",
+            "Baseline por nombre de modulo que solo encoge; los ganchos del "
+            "kernel se publican como informativos y no bloquean, porque el "
+            "mecanismo que los cerraria todavia no existe",
+        ],
+        "side_effects": ["scripts/kernel-baseline.json"],
+        "example": (
+            "python vault_kernel.py --check\n"
+            "python vault_kernel.py --check --strict\n"
+            "python vault_kernel.py --trace vault_context_pack"
+        ),
+        "related": ["vault_arch", "vault_ciclos", "vault_gate", "vault_blueprint"],
+    },
     "vault_fuente_unica": {
         "name": "vault_fuente_unica",
         "script": "vault_fuente_unica.py",
@@ -3882,6 +3952,7 @@ GROUPS: Dict[str, List[str]] = {
         "vault_norms_coherence",
         "vault_criterios",
         "vault_ciclos",
+        "vault_kernel",
     ],
     "Producción/SRE": ["vault_incident_save", "vault_slo_save"],
     "Release": ["vault_release_save"],

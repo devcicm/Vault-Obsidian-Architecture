@@ -26,6 +26,10 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import vault_grafo_import
+
 SCRIPTS_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPTS_DIR.parent
 BASELINE_PATH = SCRIPTS_DIR / "arch-baseline.json"
@@ -132,6 +136,11 @@ CONTEXTS: dict[str, dict] = {
             # cuánto trabajo llevamos hecho. Separarlas sacó a `vault_errors_trace`
             # del componente fuertemente conexo de 15 módulos que era el núcleo.
             "vault_raiz", "vault_fs", "vault_ledger",
+            # El dueño único del grafo de imports (v40.20). Está aquí y no en el
+            # meta-toolkit por una razón de dirección: lo consume `vault_arch`,
+            # que está por encima, y un dueño de criterio que importa a sus
+            # consumidores no es un dueño, es un nudo. Fan-out cero, solo stdlib.
+            "vault_grafo_import",
         ],
     },
     "autoria": {
@@ -370,6 +379,12 @@ CONTEXTS: dict[str, dict] = {
             "vault_norms_coherence",
             "vault_criterios",
             "vault_ciclos",
+            # AP-59 (v40.20). Está aquí y no en el kernel a propósito, aunque
+            # sea la tool que lo mide: consume `dependencias_del_kernel()` de
+            # este mismo módulo, y un módulo del núcleo que importa al
+            # meta-toolkit invertiría la dirección que la norma existe para
+            # vigilar. Quien mide el núcleo se queda fuera de él.
+            "vault_kernel",
         ],
     },
 }
@@ -442,22 +457,20 @@ def _modulos_en_disco() -> list[str]:
 def _importaciones(ruta: Path) -> set[str]:
     """Los módulos `vault_*` que importa este fichero, estén donde estén.
 
-    Se lee por AST y no por regex porque aquí importan los imports diferidos
-    dentro de una función tanto como los de cabecera: un `import vault_norms`
-    escondido en un `try:` cruza la frontera exactamente igual.
+    Cuentan los imports diferidos dentro de una función tanto como los de
+    cabecera: un `import vault_norms` escondido en un `try:` cruza la frontera
+    exactamente igual.
+
+    superseded_by: vault_grafo_import.importaciones (v40.20). El cuerpo vivía
+    aquí y `vault_ciclos._grafo` respondía a la misma pregunta con otro criterio
+    —contaba los relativos y no filtraba por prefijo—: el mismo criterio escrito
+    dos veces y sin dueño (AP-57). Las dos semánticas se conservan **con
+    nombre** en el dueño; ésta es `PREFIJO_VAULT`, y no se fundió con la otra
+    porque unificarlas cambiaría a la vez los cruces de aquí y las aristas de
+    allá, estrenando deuda en dos baselines por un refactor.
     """
-    try:
-        arbol = ast.parse(ruta.read_text(encoding="utf-8", errors="replace"))
-    except SyntaxError:
-        return set()
-    nombres: set[str] = set()
-    for nodo in ast.walk(arbol):
-        if isinstance(nodo, ast.Import):
-            for alias in nodo.names:
-                nombres.add(alias.name.split(".")[0])
-        elif isinstance(nodo, ast.ImportFrom) and nodo.module and nodo.level == 0:
-            nombres.add(nodo.module.split(".")[0])
-    return {n for n in nombres if n.startswith("vault_")}
+    return vault_grafo_import.importaciones(
+        ruta, vault_grafo_import.PREFIJO_VAULT)
 
 
 def _modulos_dominio() -> dict[str, str]:

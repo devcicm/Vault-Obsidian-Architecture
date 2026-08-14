@@ -41,7 +41,6 @@ significa que no crecieron los ciclos que sabemos ver.
 """
 
 import argparse
-import ast
 import json
 import sys
 from pathlib import Path
@@ -49,6 +48,7 @@ from typing import Any, Dict, List, Set
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+import vault_grafo_import
 from vault_errors import emit_error, wrap_main
 
 BASELINE = Path(__file__).parent / "ciclos-baseline.json"
@@ -56,47 +56,25 @@ DIRECTORIO = Path(__file__).parent
 
 
 def _modulos() -> Set[str]:
-    return {p.stem for p in DIRECTORIO.glob("*.py")}
+    """superseded_by: vault_grafo_import.modulos (v40.20).
+
+    Se conserva porque lo llama `_completo()` y porque el contrato de lectura no
+    cambia; el cuerpo ya no decide nada.
+    """
+    return vault_grafo_import.modulos()
 
 
 def _grafo() -> Dict[str, Dict[str, Set[str]]]:
     """Aristas de import, separadas por dónde está el `import`.
 
-    `top` es lo que ve cualquier lector; `diferido` es lo que el rompe-ciclos
-    manual escondió dentro de una función. La distinción ES la medida: sin ella
-    el grafo sale acíclico y la pregunta no se puede ni formular.
+    superseded_by: vault_grafo_import.grafo (v40.20). Hasta entonces el cuerpo
+    vivía aquí y `vault_arch._importaciones` respondía a la misma pregunta con
+    otro criterio —relativos y prefijo `vault_`—: el mismo criterio escrito dos
+    veces, sin dueño y sin nadie comparándolo, que es AP-57 en el análisis
+    estructural del propio repo. La proyección `MODULOS_LOCALES` es la de aquí,
+    con su nombre y su semántica intactas.
     """
-    mods = _modulos()
-    top: Dict[str, Set[str]] = {}
-    dif: Dict[str, Set[str]] = {}
-    for p in sorted(DIRECTORIO.glob("*.py")):
-        try:
-            arbol = ast.parse(p.read_text(encoding="utf-8"))
-        except (SyntaxError, UnicodeDecodeError):
-            # AP-51: un módulo ilegible no se cuenta como módulo sin aristas.
-            # Eso lo sacaría de todo ciclo y saldría verde por no haber mirado.
-            raise RuntimeError(f"módulo ilegible al medir ciclos: {p.name}")
-        en_funcion: Set[int] = set()
-        for f in ast.walk(arbol):
-            if isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                for n in ast.walk(f):
-                    en_funcion.add(id(n))
-        top.setdefault(p.stem, set())
-        dif.setdefault(p.stem, set())
-        for n in ast.walk(arbol):
-            if not isinstance(n, (ast.Import, ast.ImportFrom)):
-                continue
-            nombres = (
-                [a.name for a in n.names]
-                if isinstance(n, ast.Import)
-                else [n.module or ""]
-            )
-            for nm in nombres:
-                base = nm.split(".")[0]
-                if base in mods and base != p.stem:
-                    destino = dif if id(n) in en_funcion else top
-                    destino[p.stem].add(base)
-    return {"top": top, "diferido": dif}
+    return vault_grafo_import.grafo()
 
 
 def _completo(g: Dict[str, Dict[str, Set[str]]]) -> Dict[str, Set[str]]:

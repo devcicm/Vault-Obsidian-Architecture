@@ -35,7 +35,7 @@ Restricciones que son decisión de producto, no limitación pendiente:
 |---|---|---|---|
 | **Escritura → gobernanza** (`escritura_a_gobernanza`) | Lo que el agente captura queda escrito una sola vez, normalizado contra las normas, versionado y auditable después. | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 36, 37 | 78 |
 | **Consulta → contexto** (`consulta_a_contexto`) | Una pregunta del agente se convierte en un paquete de contexto acotado y presupuestado, recorriendo el grafo del vault sin índice externo. | 26, 34 | 8 |
-| **Gobernanza del estándar** (`gobernanza_del_estandar`) | El estándar cumple lo que publica: registro canónico primero, doc derivada, guard que falla si divergen. Ninguna de estas tools toca las notas de un usuario. | 35 | 18 |
+| **Gobernanza del estándar** (`gobernanza_del_estandar`) | El estándar cumple lo que publica: registro canónico primero, doc derivada, guard que falla si divergen. Ninguna de estas tools toca las notas de un usuario. | 35 | 19 |
 
 - **`consulta_a_contexto`** — El grupo 26 (Tokens) cae en el rango 1–33 que `CLAUDE.md` atribuye al primer eje, pero sus tres tools viven en el contexto `consulta` y existen para que el paquete quepa en la ventana. El rango es cronológico, no clasificatorio.
 - **`gobernanza_del_estandar`** — Tercera capacidad que `CLAUDE.md` no nombraba. Existía desde que se escribió la primera puerta; declararla es lo que impide que sus tools se cuenten como si sirvieran a la memoria del agente.
@@ -52,7 +52,7 @@ regenera.*
 
 | Contexto | Puertos | Módulos | Prohíbe |
 |---|---|---|---|
-| **Kernel** (`kernel`) | 4 | 14 | depender de cualquier contexto de dominio |
+| **Kernel** (`kernel`) | 4 | 15 | depender de cualquier contexto de dominio |
 | **Autoría** (`autoria`) | 7 | 39 | — |
 | **Grafo** (`grafo`) | 3 | 15 | — |
 | **Gobernanza** (`gobernanza`) | 19 | 10 | — |
@@ -60,13 +60,13 @@ regenera.*
 | **Consulta** (`consulta`) | 7 | 10 | base de datos; embeddings; servicio externo |
 | **Ciclo de vida** (`ciclo_de_vida`) | 3 | 8 | — |
 | **Durabilidad** (`durabilidad`) | 4 | 4 | escribir fuera de la raíz del vault (AP-36) |
-| **Meta-toolkit** (`meta_toolkit`) | 3 | 24 | escribir en una sección de contenido: sus artefactos derivados viven en 00_System/ |
+| **Meta-toolkit** (`meta_toolkit`) | 3 | 25 | escribir en una sección de contenido: sus artefactos derivados viven en 00_System/ |
 
 ## Capa 4 — Normas → puertas → tests
 
 *Registros: `vault_norms.NORM_CATALOG` + `vault_gate.PUERTAS` + `tests/`*
 
-55 de 70 normas tienen puerta o test que las nombre.
+56 de 71 normas tienen puerta o test que las nombre.
 **Es la única capa con baseline**, y por un motivo concreto: las demás se midieron
 en cero el día que se declararon porque sus datos ya existían y solo faltaba
 atarlos. Ésta no. Exigir cero aquí el primer día habría hecho nacer la puerta en
@@ -122,7 +122,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-41** — Máquina de estados declarada sin verificar | guard+audit | `framework` | `test_status_machine.py`, `test_voice.py` |
 | **AP-42** — Tool publicada sin haberse ejecutado nunca | guard+audit | `framework` | `test_smoke.py` |
 | **AP-43** — Norma sin refuerzo en el punto de uso | guard+audit | `framework` | `test_ap39_registro_en_el_write_path.py`, `test_voice.py` |
-| **AP-44** — Verificación autoconsistente — la tool se certifica a sí misma | guard+audit | `framework` | `test_ap44_verificacion_autoconsistente.py`, `test_norms_coherence.py` |
+| **AP-44** — Verificación autoconsistente — la tool se certifica a sí misma | guard+audit | `framework` | `test_ap44_verificacion_autoconsistente.py`, `test_kernel.py`, `test_norms_coherence.py` |
 | **AP-45** — Cobertura sin evidencia — la nota existe para llenar la sección | guard+audit | `framework` | `test_ap45_cobertura_sin_evidencia.py` |
 | **AP-46** — Frontmatter a mano — cada tool es su propio escritor | guard+audit | `framework` | `test_ap46_write_path_unico.py`, `test_norms_coherence.py` |
 | **AP-47** — Artefacto derivado desfasado — el índice dejó de reflejar el disco | guard+audit | `framework` | `test_ap47_indice_refleja_disco.py` |
@@ -135,8 +135,9 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-54** — El lock falla y se escribe igual | guard | `arquitectura` | `test_lock_reentrante.py` |
 | **AP-55** — El catálogo de normas se certifica a sí mismo | guard+audit | `norms_coherence` | `test_norms_coherence.py` |
 | **AP-56** — Frontmatter presente que el consumidor no puede leer | guard+audit | — | `test_ap56_frontmatter_heal.py` |
-| **AP-57** — Criterio con dueño, reimplementado en la medida | guard | `criterios` | `test_ap57_criterios.py`, `test_criterios_fronteras.py` |
+| **AP-57** — Criterio con dueño, reimplementado en la medida | guard | `criterios` | `test_ap57_criterios.py`, `test_criterios_fronteras.py`, `test_grafo_import.py` |
 | **AP-58** — Ciclo esquivado con un import diferido | guard | `ciclos` | `test_ciclos.py` |
+| **AP-59** — Núcleo declarado sin contraste | guard+audit | `kernel` | `test_kernel.py` |
 | **PAT-6** — Semantic graph enrichment — enriquecimiento periodico del grafo | recommended | — | — |
 | **SP-01** — Delete protocol — change_log obligatorio antes de eliminar | audit | `framework` | `test_vault_norms.py` |
 | **SP-02** — Forward-link verification — buscar antes de linkar | guard | — | `test_vault_norms.py` |
@@ -151,7 +152,7 @@ Sin puerta ni test (15): `AP-04`, `AP-08`, `AP-12`, `AP-13`, `AP-18`, `AP-20`, `
 
 *Registros: `vault_mcp_catalog.TOOLS_CATALOG` + `<vault>/00_System/tool-spec.json`*
 
-104 tools activas en 37 grupos. Toda tool
+105 tools activas en 37 grupos. Toda tool
 del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 `status: archived | internal | orphan` — no se borra, se anota
 (`vault_mcp_catalog.py --check-contracts`).
@@ -177,7 +178,7 @@ del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 | Línea de Tiempo | 1 |
 | Memoria de Contexto | 5 |
 | Migración | 2 |
-| Normas | 18 |
+| Normas | 19 |
 | Observabilidad | 1 |
 | Patrones | 2 |
 | Producción/SRE | 2 |
@@ -256,6 +257,7 @@ falla — no se rellena con el valor más cercano.
 | `vault_infra_save` | 8 — Infraestructura | escritura_a_gobernanza |
 | `vault_ingest` | 34 — Memoria de Contexto | consulta_a_contexto |
 | `vault_init` | 31 — Bootstrap | escritura_a_gobernanza |
+| `vault_kernel` | 35 — Normas | gobernanza_del_estandar |
 | `vault_knowledge_get` | 5 — Conocimiento | escritura_a_gobernanza |
 | `vault_knowledge_save` | 5 — Conocimiento | escritura_a_gobernanza |
 | `vault_list` | 1 — Core | escritura_a_gobernanza |
@@ -319,7 +321,7 @@ Deuda **declarada**: conocida, medida y con motivo escrito de por qué no se ata
 todavía. Lo que no está aquí no es que no exista — es que nadie lo ha medido, que
 es una situación distinta y peor.
 
-**7 pendientes** de 7 declaradas. Una deuda saldada no
+**11 pendientes** de 11 declaradas. Una deuda saldada no
 desaparece de la tabla: se queda con `estado: saldada` y la versión que la cerró,
 porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 
@@ -332,6 +334,10 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `recursion_error_en_parsers` | pendiente | v40.9 | 5 | `RecursionError` escapa a `except yaml.YAMLError` en 4 parsers: no es subclase. Reproducido a 400 corchetes anidados. El peor caso es `vault_foreign_check`, que es la tool de la regla 7. | Es un arreglo de robustez con su propia norma candidata; entra en la tanda donde se unifiquen los parsers, no en una de alcance. |
 | `parsers_de_frontmatter_divergentes` | pendiente | v40.9 | 5 | 8 parsers de frontmatter distintos; `vault_write.slugify` no delega en `vault_lib` aunque 20 módulos sí; 6 aliases de v40.8 con el nombre viejo aún en uso; `--agent default="claude"` en 6 tools frente al AP-16 que `vault_bug_save` exige. | Es AP-50 acumulado y se salda unificando, no parcheando: hacerlo a medias deja nueve parsers en vez de ocho. |
 | `catch_vacios_en_el_servidor_mjs` | pendiente | v40.9 | 7 | 11 `catch (_) {}` en `mcp/nodejs/vault-mcp-server.mjs` (AP-51 en JS). | Los tres audits con baseline miden AST de Python. Un detector de JavaScript es otro proyecto, y fingir que el alcance lo cubre sería el mismo cero sobre un subconjunto que esta versión vino a cerrar. |
+| `baselines_sin_objetivo_ni_pendiente` | pendiente | v40.20 | 7 | Las baselines del repo solo pueden **encoger**, y eso es un suelo, no una trayectoria: nada declara a cuánto deberían llegar ni a qué ritmo. Falta un campo `objetivo` y la pendiente publicada. Es lo que deja sin cerrar el hallazgo `gancho_sin_presupuesto` de `vault_kernel`, que hoy se emite informativo y no bloquea: los seis `GANCHOS_DEL_KERNEL` solo pueden crecer y nada mide su pendiente. | Un `objetivo` sin quién lo revisa es una cifra a mano más (AP-47). Exige decidir la cadencia de revisión antes que el campo, y esa decisión no la resuelve el movimiento que la descubrió. |
+| `vault_norms_es_un_modulo_dios` | pendiente | v40.20 | 7 | `vault_norms` acumula 4.257 líneas, fan-out 10 y **9 de los 13 cruces sin puerto** del repo. No es un problema de clasificación —al medir para v40.20 se comprobó que su fan-in es 26, no el del núcleo—: es un módulo que hace de catálogo, de motor y de fachada a la vez, con las dependencias invertidas. Se parte en `catalog` / `engine` / fachada y se invierten los nueve cruces. | Es la tanda más cara de las cinco y depende de lo que el mapa del núcleo revele. Partirlo antes de tener el grafo con dueño habría sido mover código a ciegas. |
+| `la_norma_no_es_un_paquete` | pendiente | v40.20 | 7 | El ciclo obligatorio del repo —síntoma → norma → guard+audit+heal → test— vive hoy en cuatro listas sincronizadas a mano: el catálogo, la tool, la puerta y el fichero de tests. La norma como **paquete** (`normas/AP-XX/` con `norma.py`, `guard.py`, `heal.py`, `test_*.py` y `porque.md`) la convierte en una sola cosa con cuatro caras, y el coste de una norma nueva deja de crecer con la historia del repo. | Migra por atrición, no de golpe: 71 normas movidas en una tanda serían 71 oportunidades de perder un matiz. Empieza por las que se escriban a partir de ahora. |
+| `el_vault_no_tiene_kernel_declarado` | pendiente | v40.20 | 7 | `vault_kernel` traza el núcleo **del repo**. El mismo concepto aplicado a las notas —qué subconjunto de un vault es su núcleo— daría prioridad a `vault_context_pack` cuando el paquete no cabe, orden a la sanación y pesos a `vault_audit`. | Declarado sin fecha por decisión de alcance. El núcleo de un vault no se deriva del grafo de imports sino del de enlaces, y esa medida hay que contrastarla contra un vault ajeno antes de creérsela (regla 7). |
 
 | Baseline | Norma | Congelado |
 |---|---|---|
@@ -344,8 +350,9 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `scripts/blueprint-baseline.json` | capa 4 — norma sin puerta ni test | 13 |
 | `scripts/criterios-baseline.json` | AP-57 | 9 |
 | `scripts/ciclos-baseline.json` | AP-58 — ciclo esquivado con import diferido | 30 |
+| `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 5 |
 | `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 |
-| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1168 |
+| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1204 |
 
 Todas encogen y ninguna crece sin decirlo: los tres audits con baseline indexan
 por firma de sitio —`módulo::función::hash de `ast.unparse``— así que mover un
@@ -354,4 +361,4 @@ no tiene precedente salvo con `--admitir-nuevos`, que además lo lista.
 
 ---
 
-*17 puertas de cierre. Generado por `scripts/vault_blueprint.py`.*
+*18 puertas de cierre. Generado por `scripts/vault_blueprint.py`.*
