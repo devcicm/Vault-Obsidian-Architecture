@@ -7399,7 +7399,7 @@ temp/
 
 ---
 
-### v40.21 — 2026-08-14 `git: pending`
+### v40.21 — 2026-08-14 `git: bdcb2ac`
 
 **El guard de distinciones entre normas cobraba por hablar y regalaba el silencio.**
 
