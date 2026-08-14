@@ -7348,7 +7348,7 @@ temp/
 
 ---
 
-### v40.20 — 2026-08-14 `git: pending`
+### v40.20 — 2026-08-14 `git: d899e73`
 
 **El núcleo era una lista y nadie la había contrastado.**
 
