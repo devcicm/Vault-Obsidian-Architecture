@@ -7231,7 +7231,7 @@ temp/
 
 ---
 
-### v40.17 — 2026-08-13 `git: pending`
+### v40.17 — 2026-08-13 `git: 6a6c311`
 
 **El cero que estaba fabricado, y la inversión de dependencia que lo redujo.**
 
