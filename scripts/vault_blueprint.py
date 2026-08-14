@@ -655,6 +655,8 @@ _BASELINES = [
     ("criterios-baseline.json", "sitios", "AP-57"),
     ("ciclos-baseline.json", "sitios", "AP-58 — ciclo esquivado con import diferido"),
     ("kernel-baseline.json", "sitios", "AP-59 — núcleo declarado sin contraste"),
+    ("norms-distincion-baseline.json", "normas",
+     "AP-60 — normas que no declaran de qué se distinguen"),
     ("norms-coherence-baseline.json", "claims", "AP-55 — C2, afirmación sin traza"),
     ("field-compat-baseline.json", "stable", "contrato de campos con los consumidores"),
 ]

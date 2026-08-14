@@ -66,7 +66,7 @@ regenera.*
 
 *Registros: `vault_norms.NORM_CATALOG` + `vault_gate.PUERTAS` + `tests/`*
 
-56 de 71 normas tienen puerta o test que las nombre.
+57 de 72 normas tienen puerta o test que las nombre.
 **Es la única capa con baseline**, y por un motivo concreto: las demás se midieron
 en cero el día que se declararon porque sus datos ya existían y solo faltaba
 atarlos. Ésta no. Exigir cero aquí el primer día habría hecho nacer la puerta en
@@ -74,7 +74,7 @@ rojo, y una puerta en rojo se desactiva.
 
 | Norma | Enforcement | Puertas | Tests |
 |---|---|---|---|
-| **AP-01** — Documentación alucinada | audit | — | `test_skills_catalogo.py`, `test_skills_contract.py` |
+| **AP-01** — Documentación alucinada | audit | — | `test_norms_coherence.py`, `test_skills_catalogo.py`, `test_skills_contract.py` |
 | **AP-02** — Proliferación de versiones del mismo documento | audit | — | `test_skills_contract.py` |
 | **AP-03** — Stubs sin política de expansión | audit | — | `test_normas_de_audit_ejercitadas.py` |
 | **AP-04** — Features aspiracionales documentadas como implementadas | audit | — | — |
@@ -115,7 +115,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-34** — Relacion tipada huerfana — endpoint inexistente en el vault | audit | — | — |
 | **AP-35** — Silos de relacion — sistemas de grafos aislados | audit | — | `test_skills_catalogo.py` |
 | **AP-36** — Contención e idempotencia — side-effects fuera del vault o no rastreables | guard+audit | `framework` | `test_ap46_heal.py`, `test_arquitectura.py`, `test_ciclo_de_vida_dominio.py`, `test_consulta_dominio.py`, `test_gobernanza_dominio.py`, `test_grafo_dominio.py`, `test_indices_dominio.py`, `test_skills_contract.py`, `test_vault_containment.py`, `test_vault_norms_audit.py` |
-| **AP-37** — No-op silencioso — ok: true sin indicador de trabajo | audit | `noop` | `test_noop_audit.py`, `test_voice.py` |
+| **AP-37** — No-op silencioso — ok: true sin indicador de trabajo | audit | `noop` | `test_noop_audit.py`, `test_norms_coherence.py`, `test_voice.py` |
 | **AP-38** — Vocabulario validado después de escribir, no antes | guard+audit | `framework` | `test_status_vocabulary.py` |
 | **AP-39** — Vocabulario abierto sin memoria | guard+audit | `framework` | `test_ap39_registro_en_el_write_path.py`, `test_tag_vocabulary.py` |
 | **AP-40** — Contrato publicado que la CLI rechaza | guard+audit | `contratos`, `framework` | `test_catalog_params.py` |
@@ -138,6 +138,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-57** — Criterio con dueño, reimplementado en la medida | guard | `criterios` | `test_ap57_criterios.py`, `test_criterios_fronteras.py`, `test_grafo_import.py` |
 | **AP-58** — Ciclo esquivado con un import diferido | guard | `ciclos` | `test_ciclos.py` |
 | **AP-59** — Núcleo declarado sin contraste | guard+audit | `kernel` | `test_kernel.py` |
+| **AP-60** — El guard cobra por declarar y regala el silencio | guard+audit | `norms_coherence` | `test_norms_coherence.py` |
 | **PAT-6** — Semantic graph enrichment — enriquecimiento periodico del grafo | recommended | — | — |
 | **SP-01** — Delete protocol — change_log obligatorio antes de eliminar | audit | `framework` | `test_vault_norms.py` |
 | **SP-02** — Forward-link verification — buscar antes de linkar | guard | — | `test_vault_norms.py` |
@@ -351,6 +352,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `scripts/criterios-baseline.json` | AP-57 | 9 |
 | `scripts/ciclos-baseline.json` | AP-58 — ciclo esquivado con import diferido | 30 |
 | `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 5 |
+| `scripts/norms-distincion-baseline.json` | AP-60 — normas que no declaran de qué se distinguen | 57 |
 | `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 |
 | `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1204 |
 

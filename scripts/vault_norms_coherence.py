@@ -23,7 +23,7 @@ sitios distintos: el criterio de verificación salía del propio objeto verifica
 
 ## Qué mide, y con qué criterio
 
-Cinco comprobaciones. Cuatro son exactas y nacen en cero; una lleva baseline.
+Siete comprobaciones. Cinco son exactas y nacen en cero; dos llevan baseline.
 
 **C1 — el enforcer nombrado existe.** Un valor de `tools_*` tiene que resolver
 contra algo real. `"vault_norms --audit"` no resolvía: mezcla la tool con el flag
@@ -82,6 +82,25 @@ lo arman entero, no porque duden. Detectar solapamiento semántico entre normas 
 un problema abierto; C5 verifica la distinción **una vez que alguien la declara**.
 Los borradores quedan en `_codigos_que_compiten_por_hallazgo()`, sin llamar, como
 registro de lo intentado y por qué no converge.
+
+**C7 — la norma dice de qué se distingue (baseline, AP-60).** C5 tiene un hueco
+que no es un descuido sino su forma: itera sobre `distinguido_de`, así que **solo
+mira a quien ya declaró algo**. Medido en v40.21: 13 normas de 71 declaraban
+alguna distinción, y las otras 58 estaban fuera del alcance del guard por no
+haber hablado. El incentivo estaba invertido — declarar una distinción obliga a
+editar la otra norma para que devuelva la simétrica, y callarse sale gratis. Es
+la forma exacta que este repo prohíbe en `cobertura_descubierta`: declararse
+honestamente no puede salir más caro que callarse.
+
+C7 mide **por norma, no por par**, y esa elección es el punto entero. Qué dos
+normas se solapan sigue sin saberlo medir nadie —los tres borradores de arriba, y
+un cuarto en v40.21 que emparejaba por categoría más tool compartida y del que
+**59 de 68 pares eran otra vez `vault_audit`, `vault_write` y `vault_norms`
+consigo mismos**—. Lo decidible sin interpretar es si la norma dijo algo alguna
+vez: `distinguido_de` con contenido, o `distincion_no_aplica` con el motivo
+escrito. El silencio no es una tercera opción. Una norma nueva **no se congela**:
+se le escribe la distinción, igual que la capa 4 del plano exige test a la norma
+que estrena.
 """
 
 import argparse
@@ -99,6 +118,9 @@ from vault_vocabulario import mapa
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
 BASELINE = SCRIPTS_DIR / "norms-coherence-baseline.json"
+#: C7 (AP-60). Separada de la de C2 a propósito: son dos deudas distintas y
+#: mezclarlas haría que saldar una moviera el conteo de la otra.
+BASELINE_DISTINCION = SCRIPTS_DIR / "norms-distincion-baseline.json"
 
 #: Orden de gravedad. El **orden** es del punto de uso —C4 necesita comparar
 #: severidades con números y nadie más lo necesita—, pero **qué términos
@@ -132,6 +154,9 @@ EXIGE_CAMPOS = {
 #: es declararlo con motivo escrito, y `descubiertas()` lo publica en una lista
 #: que se lee de un vistazo. **No es una exención**: es la deuda con nombre.
 CAMPO_DESCUBIERTA = "cobertura_descubierta"
+#: C7 (AP-60). La exención honesta: la norma declara que no se confunde con
+#: ninguna, y escribe por qué. El silencio no es una tercera opción.
+CAMPO_SIN_DISTINCION = "distincion_no_aplica"
 
 RE_CODIGO = re.compile(r"\b(?:AP|PAT|SP|CN)-\d+\b")
 
@@ -309,6 +334,33 @@ def _cargar_baseline() -> Set[str]:
         return set()
     datos = json.loads(BASELINE.read_text(encoding="utf-8"))
     return {c["claim"] for c in datos.get("claims", []) if isinstance(c, dict)}
+
+
+def _cargar_baseline_distincion() -> Set[str]:
+    if not BASELINE_DISTINCION.exists():
+        return set()
+    datos = json.loads(BASELINE_DISTINCION.read_text(encoding="utf-8"))
+    return {c["norm"] for c in datos.get("normas", []) if isinstance(c, dict)}
+
+
+def normas_mudas(catalogo: List[Dict[str, Any]]) -> List[str]:
+    """AP-60 — C7: normas que no dicen nada sobre de qué se distinguen.
+
+    Se indexa por código de norma y no por par: **qué dos normas se solapan no
+    lo sabe medir nadie** —está escrito arriba, en la nota de C5, y tres
+    borradores lo confirmaron—. Lo que sí es decidible sin interpretar es si la
+    norma dijo algo alguna vez. Se admiten las dos formas honestas: declarar
+    `distinguido_de` con contenido, o declarar `distincion_no_aplica` con el
+    motivo escrito. Lo que no se admite es el silencio, que es lo único que C5
+    no podía ver.
+    """
+    mudas = []
+    for norma in catalogo:
+        tiene = any((t or "").strip() for t in (norma.get("distinguido_de") or {}).values())
+        exime = (norma.get(CAMPO_SIN_DISTINCION) or "").strip()
+        if not tiene and not exime:
+            mudas.append(norma["code"])
+    return mudas
 
 
 def scan() -> Dict[str, Any]:
@@ -499,9 +551,22 @@ def scan() -> Dict[str, Any]:
     nuevos = sorted(claims - baseline)
     resueltos = sorted(baseline - claims)
 
+    # C7 (AP-60) — el hueco que C5 no podía ver por construcción.
+    #
+    # C5 itera sobre `distinguido_de`, así que solo mira a quien ya declaró
+    # algo: declarar una distinción obliga a editar la otra norma, y no
+    # declarar nada no cuesta nada. El guard cobraba por hablar y regalaba el
+    # silencio, que es la forma exacta del incentivo que este repo prohíbe en
+    # `cobertura_descubierta` — declararse honestamente no puede salir más caro
+    # que callarse. C7 mide la otra dirección: cuántas normas no dicen nada.
+    mudas = normas_mudas(catalogo)
+    baseline_dist = _cargar_baseline_distincion()
+    mudas_nuevas = sorted(set(mudas) - baseline_dist)
+    mudas_saldadas = sorted(baseline_dist - set(mudas))
+
     ok = not (
         c1_inexistentes or c3_incoherentes or c4_invertidas
-        or c5_sin_distincion or c6_sin_norma or nuevos
+        or c5_sin_distincion or c6_sin_norma or nuevos or mudas_nuevas
     )
     return {
         "ok": ok,
@@ -525,6 +590,13 @@ def scan() -> Dict[str, Any]:
         "severity_vs_penalty_inverted": c4_invertidas,
         "indistinguishable_norms": c5_sin_distincion,
         "penalties_without_norm": c6_sin_norma,
+        # C7 (AP-60). La lista entera, no solo las nuevas: una deuda que el
+        # envelope no publica es una deuda que nadie salda por atrición.
+        "norms_without_distinction": mudas,
+        "norms_without_distinction_total": len(mudas),
+        "distinction_baseline_size": len(baseline_dist),
+        "new_norms_without_distinction": mudas_nuevas,
+        "settled_norms_without_distinction": mudas_saldadas,
         # Deuda con nombre, no un hueco: las normas que hoy no mide nadie y lo
         # dicen. Se publica siempre —también cuando la lista es corta— porque el
         # sitio donde esto se esconde es justo el que AP-55 persigue.
@@ -534,7 +606,10 @@ def scan() -> Dict[str, Any]:
             "Una afirmación sin traza se salda de dos formas honestas: que el código "
             "nombre la norma en el sitio que la aplica, o que el catálogo deje de "
             "afirmar una cobertura que no tiene. Ampliar la baseline es la tercera y "
-            "no lo es."
+            "no lo es. Una norma nueva sin distinción (AP-60) no se congela: se "
+            "escribe de qué se distingue, o se declara `distincion_no_aplica` con "
+            "el motivo. C7 no adivina qué dos normas se solapan — eso no lo sabe "
+            "medir nadie; solo comprueba que la norma dijo algo alguna vez."
         ),
     }
 
@@ -581,6 +656,43 @@ def freeze(admitir_nuevos: bool = False) -> Dict[str, Any]:
     }
 
 
+def freeze_distincion(admitir_nuevos: bool = False) -> Dict[str, Any]:
+    """Recongela las normas mudas de C7 (AP-60). Solo encoge sin permiso."""
+    resultado = scan()
+    nuevas = resultado["new_norms_without_distinction"]
+    if nuevas and not admitir_nuevos:
+        return emit_error(
+            "vault_norms_coherence",
+            "DEBT_WOULD_GROW",
+            f"{len(nuevas)} normas sin distinción sin precedente en la baseline",
+            args={"new_norms": nuevas},
+        )
+    mudas = sorted(resultado["norms_without_distinction"])
+    BASELINE_DISTINCION.write_text(
+        json.dumps(
+            {
+                "norm": "AP-60",
+                "description": (
+                    "Normas de NORM_CATALOG que no declaran de qué se distinguen ni "
+                    "por qué no aplica. Solo puede encoger: se salda escribiendo la "
+                    "distinción, no ampliando esta lista."
+                ),
+                "normas": [{"norm": c} for c in mudas],
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return {
+        "ok": True,
+        "tool": "vault_norms_coherence",
+        "frozen": len(mudas),
+        "admitted_new": nuevas if admitir_nuevos else [],
+    }
+
+
 def scan_claims() -> List[Dict[str, str]]:
     """Solo las afirmaciones sin traza. Delega en `scan()`.
 
@@ -596,14 +708,23 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="vault_norms_coherence — AP-55: coherencia interna del catálogo de normas",
     )
-    parser.add_argument("--check", action="store_true", help="las cinco medidas")
+    parser.add_argument("--check", action="store_true", help="las siete medidas")
     parser.add_argument("--strict", action="store_true", help="exit 1 si algo falla")
     parser.add_argument("--freeze", action="store_true", help="recongela la traza")
     parser.add_argument(
         "--admitir-nuevos", action="store_true",
         help="con --freeze: congela también afirmaciones sin precedente",
     )
+    parser.add_argument(
+        "--freeze-distincion", action="store_true",
+        help="recongela las normas sin distinción de C7 (AP-60)",
+    )
     args = parser.parse_args()
+
+    if args.freeze_distincion:
+        resultado = freeze_distincion(admitir_nuevos=args.admitir_nuevos)
+        print(json.dumps(resultado, ensure_ascii=False, indent=2))
+        return 0 if resultado.get("ok") else 1
 
     if args.freeze:
         resultado = freeze(admitir_nuevos=args.admitir_nuevos)

@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
-> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-59 más
-> las familias PAT, SP y CN. Por familia: AP 59, CN 3, PAT 6, SP 3.
-> Bilingual document. Full norm catalog: antipatterns AP-01..AP-59 plus the PAT,
-> SP and CN families. By family: AP 59, CN 3, PAT 6, SP 3.
+> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-60 más
+> las familias PAT, SP y CN. Por familia: AP 60, CN 3, PAT 6, SP 3.
+> Bilingual document. Full norm catalog: antipatterns AP-01..AP-60 plus the PAT,
+> SP and CN families. By family: AP 60, CN 3, PAT 6, SP 3.
 
 ---
 
 ## ES
 
-Total de normas registradas: 71 (AP 59, CN 3, PAT 6, SP 3)
+Total de normas registradas: 72 (AP 60, CN 3, PAT 6, SP 3)
 
 ### AP-01: Documentación alucinada
 
@@ -681,6 +681,20 @@ Los umbrales **se derivan del escalón** de la distribución --la mayor caída r
 
 Dos límites, dichos antes de que nadie se apoye en el verde. Primero: mide el grafo **estático** de imports y hereda sus cegueras (`importlib`, un import por cadena, el acoplamiento por fichero o por variable global). Segundo: mide **forma, no propósito**. Un módulo puede tener fan-in altísimo sin ser núcleo de nada, solo un cajón de utilidades que todo el mundo toca. Verde significa que la lista declarada no contradice a la forma medida.
 
+### AP-60: El guard cobra por declarar y regala el silencio
+
+- **Severidad:** medium
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_norms_coherence
+
+Un guard comprueba una propiedad **iterando sobre quien ya la declaró**. Quien no declaró nada queda fuera de su alcance, no por una decisión sino por la forma del bucle. El efecto es un incentivo invertido: declarar cuesta --obliga a mantener lo declarado, a veces a editar el otro extremo-- y callarse sale gratis y verde.
+
+Medido en v40.21 sobre C5 de `vault_norms_coherence`: la comprobación de que dos normas se distinguen recorre `distinguido_de`, así que solo alcanzaba a **13 normas de 71**. Las otras 58 no estaban exentas: estaban invisibles. Y declarar una distinción en AP-59 costó tres ediciones recíprocas y un fallo de puerta, mientras no declarar ninguna habría salido verde a la primera.
+
+Es la misma forma que el repo ya prohíbe en `cobertura_descubierta` --una norma que declara su hueco no cuenta como deuda nueva, porque declararse honestamente no puede salir más caro que callarse--, cometida en el guard que vigila el catálogo donde esa regla está escrita.
+
+**Prevención:** Medir sobre el universo --el catálogo, el registro, el conjunto de módulos-- y no sobre el subconjunto que declaró. Admitir dos salidas honestas, la declaración y la exención con motivo escrito, y ninguna tercera: el silencio se cuenta como deuda. La baseline congela lo que ya estaba y solo encoge; lo que estrena se escribe.
+
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
 - **Severidad:** high
@@ -805,7 +819,7 @@ Antes de cualquier operación masiva (migración, rename en lote, vault_tags --r
 
 ## EN
 
-Total registered norms: 71 (AP 59, CN 3, PAT 6, SP 3)
+Total registered norms: 72 (AP 60, CN 3, PAT 6, SP 3)
 
 ### AP-01: Documentación alucinada
 
@@ -1476,6 +1490,20 @@ La norma no exige que el núcleo sea perfecto: exige que su pertenencia sea **de
 Los umbrales **se derivan del escalón** de la distribución --la mayor caída relativa-- y se publican en el envelope con su ratio en cada ejecución. Escribirlos a mano sería AP-47 en la tool que persigue los números a mano; por eso la baseline congela la **pertenencia** (qué módulo incumple qué invariante) y no el umbral, que puede oscilar al crecer el repo.
 
 Dos límites, dichos antes de que nadie se apoye en el verde. Primero: mide el grafo **estático** de imports y hereda sus cegueras (`importlib`, un import por cadena, el acoplamiento por fichero o por variable global). Segundo: mide **forma, no propósito**. Un módulo puede tener fan-in altísimo sin ser núcleo de nada, solo un cajón de utilidades que todo el mundo toca. Verde significa que la lista declarada no contradice a la forma medida.
+
+### AP-60: El guard cobra por declarar y regala el silencio
+
+- **Severity:** medium
+- **Enforcement:** guard+audit
+- **Detected by:** vault_norms_coherence
+
+Un guard comprueba una propiedad **iterando sobre quien ya la declaró**. Quien no declaró nada queda fuera de su alcance, no por una decisión sino por la forma del bucle. El efecto es un incentivo invertido: declarar cuesta --obliga a mantener lo declarado, a veces a editar el otro extremo-- y callarse sale gratis y verde.
+
+Medido en v40.21 sobre C5 de `vault_norms_coherence`: la comprobación de que dos normas se distinguen recorre `distinguido_de`, así que solo alcanzaba a **13 normas de 71**. Las otras 58 no estaban exentas: estaban invisibles. Y declarar una distinción en AP-59 costó tres ediciones recíprocas y un fallo de puerta, mientras no declarar ninguna habría salido verde a la primera.
+
+Es la misma forma que el repo ya prohíbe en `cobertura_descubierta` --una norma que declara su hueco no cuenta como deuda nueva, porque declararse honestamente no puede salir más caro que callarse--, cometida en el guard que vigila el catálogo donde esa regla está escrita.
+
+**Prevention:** Medir sobre el universo --el catálogo, el registro, el conjunto de módulos-- y no sobre el subconjunto que declaró. Admitir dos salidas honestas, la declaración y la exención con motivo escrito, y ninguna tercera: el silencio se cuenta como deuda. La baseline congela lo que ya estaba y solo encoge; lo que estrena se escribe.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 

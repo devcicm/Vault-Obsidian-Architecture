@@ -1,0 +1,177 @@
+{
+  "norm": "AP-60",
+  "description": "Normas de NORM_CATALOG que no declaran de qué se distinguen ni por qué no aplica. Solo puede encoger: se salda escribiendo la distinción, no ampliando esta lista.",
+  "normas": [
+    {
+      "norm": "AP-01"
+    },
+    {
+      "norm": "AP-02"
+    },
+    {
+      "norm": "AP-03"
+    },
+    {
+      "norm": "AP-04"
+    },
+    {
+      "norm": "AP-05"
+    },
+    {
+      "norm": "AP-06"
+    },
+    {
+      "norm": "AP-07"
+    },
+    {
+      "norm": "AP-08"
+    },
+    {
+      "norm": "AP-09"
+    },
+    {
+      "norm": "AP-10"
+    },
+    {
+      "norm": "AP-11"
+    },
+    {
+      "norm": "AP-12"
+    },
+    {
+      "norm": "AP-13"
+    },
+    {
+      "norm": "AP-14"
+    },
+    {
+      "norm": "AP-15"
+    },
+    {
+      "norm": "AP-16"
+    },
+    {
+      "norm": "AP-17"
+    },
+    {
+      "norm": "AP-18"
+    },
+    {
+      "norm": "AP-19"
+    },
+    {
+      "norm": "AP-20"
+    },
+    {
+      "norm": "AP-21"
+    },
+    {
+      "norm": "AP-23"
+    },
+    {
+      "norm": "AP-25"
+    },
+    {
+      "norm": "AP-26"
+    },
+    {
+      "norm": "AP-27"
+    },
+    {
+      "norm": "AP-29"
+    },
+    {
+      "norm": "AP-30"
+    },
+    {
+      "norm": "AP-31"
+    },
+    {
+      "norm": "AP-32"
+    },
+    {
+      "norm": "AP-33"
+    },
+    {
+      "norm": "AP-34"
+    },
+    {
+      "norm": "AP-35"
+    },
+    {
+      "norm": "AP-36"
+    },
+    {
+      "norm": "AP-38"
+    },
+    {
+      "norm": "AP-39"
+    },
+    {
+      "norm": "AP-40"
+    },
+    {
+      "norm": "AP-41"
+    },
+    {
+      "norm": "AP-42"
+    },
+    {
+      "norm": "AP-43"
+    },
+    {
+      "norm": "AP-45"
+    },
+    {
+      "norm": "AP-46"
+    },
+    {
+      "norm": "AP-48"
+    },
+    {
+      "norm": "AP-51"
+    },
+    {
+      "norm": "AP-52"
+    },
+    {
+      "norm": "AP-53"
+    },
+    {
+      "norm": "CN-01"
+    },
+    {
+      "norm": "CN-02"
+    },
+    {
+      "norm": "CN-03"
+    },
+    {
+      "norm": "PAT-1"
+    },
+    {
+      "norm": "PAT-2"
+    },
+    {
+      "norm": "PAT-3"
+    },
+    {
+      "norm": "PAT-4"
+    },
+    {
+      "norm": "PAT-5"
+    },
+    {
+      "norm": "PAT-6"
+    },
+    {
+      "norm": "SP-01"
+    },
+    {
+      "norm": "SP-02"
+    },
+    {
+      "norm": "SP-03"
+    }
+  ]
+}

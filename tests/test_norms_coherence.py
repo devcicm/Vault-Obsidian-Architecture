@@ -361,3 +361,105 @@ def test_la_cli_devuelve_exit_0_sobre_el_catalogo_vivo():
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert json.loads(proc.stdout.strip().splitlines()[0])["ok"] is True
+
+
+# ── C7 (AP-60) ────────────────────────────────────────────────────────────────
+#
+# AP-60 — el guard cobra por declarar y regala el silencio. Los tests que
+# deciden son los dos primeros: que el silencio se cuente, y que la exención
+# escrita salga gratis. Si alguna vez se invierten, el incentivo vuelve a estar
+# del revés y la norma deja de significar nada.
+
+
+def _sin_baseline_distincion(monkeypatch, tmp_path):
+    """La baseline real no puede decidir el resultado de un catálogo sintético."""
+    monkeypatch.setattr(
+        coherencia, "BASELINE_DISTINCION", tmp_path / "no-existe.json")
+
+
+def test_ap60_una_norma_muda_cuenta_como_deuda(monkeypatch, tmp_path):
+    _sin_baseline_distincion(monkeypatch, tmp_path)
+    r = _con_catalogo(monkeypatch, [_norma()])
+    assert r["norms_without_distinction"] == ["AP-99"]
+    assert r["new_norms_without_distinction"] == ["AP-99"]
+    assert r["ok"] is False
+
+
+def test_ap60_la_exencion_escrita_sale_gratis(monkeypatch, tmp_path):
+    """El punto entero de la norma: declararse no puede costar más que callarse."""
+    _sin_baseline_distincion(monkeypatch, tmp_path)
+    r = _con_catalogo(monkeypatch, [
+        _norma(**{coherencia.CAMPO_SIN_DISTINCION: "no se confunde con ninguna: motivo"})])
+    assert r["norms_without_distinction"] == []
+
+
+def test_ap60_una_exencion_vacia_no_es_una_exencion(monkeypatch, tmp_path):
+    """Sin motivo escrito el hueco queda igual de mudo que el silencio."""
+    _sin_baseline_distincion(monkeypatch, tmp_path)
+    r = _con_catalogo(monkeypatch, [_norma(**{coherencia.CAMPO_SIN_DISTINCION: "   "})])
+    assert r["norms_without_distinction"] == ["AP-99"]
+
+
+def test_ap60_un_discriminador_vacio_tampoco_salda(monkeypatch, tmp_path):
+    """`distinguido_de` con la clave puesta y el texto en blanco no dice nada."""
+    _sin_baseline_distincion(monkeypatch, tmp_path)
+    r = _con_catalogo(monkeypatch, [_norma(distinguido_de={"AP-01": ""})])
+    assert r["norms_without_distinction"] == ["AP-99"]
+
+
+def test_ap60_mide_el_universo_y_no_solo_a_quien_declaro(monkeypatch, tmp_path):
+    """La medida que C5 no podía dar: el denominador es el catálogo entero.
+
+    C5 itera sobre `distinguido_de`, así que sobre este catálogo —una norma
+    que habla y dos que callan— no tiene nada que decir. C7 sí.
+    """
+    _sin_baseline_distincion(monkeypatch, tmp_path)
+    r = _con_catalogo(monkeypatch, [
+        _norma(code="AP-97", distinguido_de={"AP-98": "se distinguen en esto"}),
+        _norma(code="AP-98", distinguido_de={"AP-97": "y en esto"}),
+        _norma(code="AP-99"),
+    ])
+    assert r["indistinguishable_norms"] == []
+    assert r["norms_without_distinction"] == ["AP-99"]
+
+
+def test_ap60_la_baseline_absorbe_lo_viejo_y_no_lo_nuevo(monkeypatch, tmp_path):
+    ruta = tmp_path / "baseline.json"
+    ruta.write_text(json.dumps({"normas": [{"norm": "AP-97"}]}), encoding="utf-8")
+    monkeypatch.setattr(coherencia, "BASELINE_DISTINCION", ruta)
+    r = _con_catalogo(monkeypatch, [_norma(code="AP-97"), _norma(code="AP-99")])
+    assert r["new_norms_without_distinction"] == ["AP-99"]
+    assert r["ok"] is False
+
+
+def test_ap60_freeze_se_niega_a_congelar_deuda_nueva(monkeypatch, tmp_path):
+    ruta = tmp_path / "baseline.json"
+    monkeypatch.setattr(coherencia, "BASELINE_DISTINCION", ruta)
+    monkeypatch.setattr(coherencia, "_catalogo", lambda: [_norma()])
+    r = coherencia.freeze_distincion()
+    assert r["ok"] is False and r["error_code"] == "DEBT_WOULD_GROW"
+    assert not ruta.exists()
+    admitido = coherencia.freeze_distincion(admitir_nuevos=True)
+    assert admitido["ok"] is True and admitido["admitted_new"] == ["AP-99"]
+
+
+def test_ap60_la_baseline_viva_solo_encoge():
+    """Lo que hay congelado hoy, y que el fichero declara su norma."""
+    datos = json.loads(
+        (SCRIPTS / "norms-distincion-baseline.json").read_text(encoding="utf-8"))
+    assert datos["norm"] == "AP-60"
+    assert datos["description"].strip()
+    from vault_norms import NORM_CATALOG
+
+    codigos = {n["code"] for n in NORM_CATALOG}
+    congeladas = {e["norm"] for e in datos["normas"]}
+    assert congeladas <= codigos, "la baseline congela normas que ya no existen"
+
+
+def test_ap60_la_norma_esta_en_el_catalogo_y_se_distingue_de_las_dos():
+    from vault_norms import NORM_CATALOG
+
+    ap60 = next(n for n in NORM_CATALOG if n["code"] == "AP-60")
+    assert ap60["enforcement"] == "guard+audit"
+    assert "vault_norms_coherence" in ap60["tools_enforcing"]
+    assert set(ap60["distinguido_de"]) == {"AP-55", "AP-37"}

@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.20 — 2026-08-14  
+**Versión:** v40.21 — 2026-08-14  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -3501,7 +3501,7 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **71 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **72 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -6469,6 +6469,56 @@ la correcta.
 
 ---
 
+### AP-60 — El guard cobra por declarar y regala el silencio
+
+**Enforcement:** `guard+audit` · **Severidad:** medium · **Introducido:** v40.21
+**Guard:** `python scripts/vault_norms_coherence.py --check --strict` (C7)
+
+Un guard comprueba una propiedad **iterando sobre quien ya la declaró**. Quien no declaró
+nada queda fuera de su alcance —no por una decisión, sino por la forma del bucle— y el
+envelope publica un verde que es cierto sobre el subconjunto equivocado. El efecto es un
+incentivo invertido: declarar cuesta, porque obliga a mantener lo declarado y a veces a
+editar el otro extremo; callarse sale gratis y sale verde.
+
+**Cómo se destapó.** C5 de `vault_norms_coherence` exige que si la norma A declara de qué se
+distingue de B, B declare lo simétrico. Es una comprobación correcta y con criterio ajeno —no
+comete AP-55— pero su bucle empieza en `distinguido_de`, así que en v40.21 alcanzaba a **13
+normas de 71**. Las otras 58 no estaban exentas: estaban invisibles. La prueba de que el
+incentivo estaba invertido es la tanda inmediatamente anterior: AP-59 declaró tres
+distinciones, y eso costó tres ediciones recíprocas y un fallo de puerta. No haber declarado
+ninguna habría salido verde a la primera.
+
+Es la misma forma que este estándar ya prohíbe en `cobertura_descubierta` —una norma que
+declara su hueco no cuenta como deuda nueva, porque declararse honestamente no puede salir
+más caro que callarse—, cometida en el guard que vigila el catálogo donde esa regla está
+escrita.
+
+**Qué mide C7, y qué no.** Mide **por norma, no por par**, y esa elección es el punto entero.
+Qué dos normas se solapan sigue sin saberlo medir nadie: tres borradores lo intentaron en
+v40.10 y un cuarto en v40.21 —emparejar por categoría más tool compartida—, y de sus 68 pares
+**59 eran otra vez `vault_audit`, `vault_write` y `vault_norms` consigo mismos**, que
+acumulan normas por orquestar el informe, no por dudar. Lo decidible sin interpretar es si la
+norma dijo algo alguna vez.
+
+Se admiten dos salidas, y ninguna tercera:
+
+| Salida | Campo | Qué significa |
+|---|---|---|
+| Declarar | `distinguido_de` con contenido | de qué otra norma se separa, y en qué |
+| Eximirse | `distincion_no_aplica` con motivo escrito | no se confunde con ninguna, y por qué |
+| — | silencio | cuenta como deuda |
+
+La baseline `scripts/norms-distincion-baseline.json` congela las 57 de hoy y **solo encoge**.
+Una norma nueva no se congela: se le escribe la distinción, igual que la capa 4 del plano
+exige test a la norma que estrena.
+
+**Lo que verde no prueba.** Que las distinciones declaradas sean correctas, ni que dos normas
+con distinción declarada no sigan solapándose de hecho. C7 mide que la pregunta se contestó,
+no que la respuesta sea buena — y esa limitación se declara aquí porque un guard que
+prometiera lo segundo sería la afirmación no falsable de AP-37.
+
+---
+
 ### PAT-6 — Semantic graph enrichment: enriquecimiento periódico del grafo
 
 **Enforcement:** `recommended` · **Introducido:** v37
@@ -7006,6 +7056,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.21 | 2026-08-14 | Mirando el repo **como grafo** apareció el que ningún guard podía ver: `vault_norms_coherence` C5 comprueba que la distinción entre dos normas sea recíproca **iterando sobre `distinguido_de`**, así que solo alcanzaba a **13 normas de 71** — las otras 58 no estaban exentas, estaban invisibles. El incentivo estaba invertido: declarar una distinción obliga a editar la otra norma (AP-59 pagó tres ediciones y un fallo de puerta en v40.20) y callarse sale gratis y verde, que es justo lo que el estándar prohíbe en `cobertura_descubierta`. **AP-60** y C7 lo miden **por norma y no por par**, porque el detector de pares se probó y se descartó: de sus 68 pares confundibles, **59 eran `vault_audit`, `vault_write` y `vault_norms` consigo mismos** — cuarto intento fallido de detectar solapamiento semántico, que sigue abierto. Dos salidas honestas y ninguna tercera: `distinguido_de` con contenido o `distincion_no_aplica` con motivo escrito; el silencio cuenta como deuda, baseline de 57 que solo encoge. **Sin puerta nueva**: C7 vive en la tool que la puerta 14 ya ejecuta, porque sacarla aparte habría puesto un segundo dueño sobre el catálogo de normas — AP-57 cometido para ganar una casilla en la tabla |
 | v40.20 | 2026-08-14 | El **núcleo de este repo era una lista de quince nombres escrita a mano** en `vault_arch.CONTEXTS['kernel']['modulos']`, y ninguna puerta la contrastaba con nada. Sobre ella se apoyaba el guard de fronteras entre contextos: si la lista estaba mal, el verde era correcto respecto a un mapa equivocado. **AP-59** y `vault_kernel` (puerta 18) miden tres invariantes — K1 el núcleo no depende del dominio, K2 fan-in alto y fan-out bajo, K3 se mueve menos que lo que sostiene — con los umbrales **derivados del escalón** de la distribución y publicados con su ratio, porque un literal ahí sería AP-47 dentro de AP-59. Al medir para la tanda **dos hipótesis propias resultaron falsas** y quedaron corregidas antes de escribir código: K1 ya estaba medida y verde, y las seis «fugas» del kernel eran los seis `GANCHOS_DEL_KERNEL` declarados con motivo. Con la lista bien elegida aparecieron aun así **tres módulos que no se comportan como núcleo**: `vault_log_error` declarado kernel con fan-in 0, `vault_io` con fan-out 11 y 30 commits, `vault_errors` con 14 sobre una mediana de dominio de 9. Ninguno roto, ninguno visto. La precondición era otro AP-57 que nadie podía ver: **trece módulos parseaban imports por su cuenta** y los dos principales no coincidían —`vault_arch` filtra por prefijo e ignora los relativos, `vault_ciclos` filtra por pertenencia y los cuenta—, invisible para `vault_criterios` porque solo mide módulos que nombran `*.md`. `vault_grafo_import` es ahora el dueño, con fan-out cero y **las dos proyecciones conservadas con nombre**: unificarlas cambiaría los cruces de uno y las aristas del otro a la vez, estrenando deuda en dos baselines por un refactor que no arregla nada |
 | v40.19 | 2026-08-14 | AP-57 tenía un lado ciego declarado en ninguna parte: `vault_criterios` solo leía `scripts/*.py`, así que la copia de un criterio al otro lado de una **frontera de lenguaje** era justo la que la norma no podía ver — y v40.18 acababa de encontrar una. Se añade el registro `FRONTERAS`: cada frontera con su **zona** (clave de `vault_arch.CONTEXTS`), su **norma** y la **pasarela** por la que el criterio debe cruzar; al otro lado la exención no es importar al dueño, que no se puede, sino leer el artefacto derivado. Cuatro fronteras declaradas — `.mjs`, CI, `Makefile`, `.ps1` — y el alcance también: un ejecutable de otro lenguaje fuera de toda zona sale como `frontera_no_declarada`. Lo que midió al nacer: **la CI listaba a mano seis puertas de las diecisiete del registro y once no se ejecutaban en ningún PR** —changelog, arquitectura, blueprint, ciclos, criterios entre ellas—, y `make check` no ejecutaba ninguna. Nada estaba roto: la lista se quedó quieta mientras el registro crecía, que es como envejece una copia a través de una frontera. Los dos preguntan ahora al registro |
 | v40.18 | 2026-08-13 | El criterio «esta tool no tiene script Python» estaba escrito **cinco veces** —`cli/registry.py`, el literal del `.mjs`, `check_contracts` con su propia regex, el test de AP-48 con la suya, y ninguna comparación entre ellas— a través de una frontera de lenguaje que `vault_criterios` (AP-57) no puede cruzar porque solo lee módulos Python. Ya había cobrado una vez: siete tools se despachaban en JS mientras `vault_smoke` probaba el `.py`, y `vault_graph` devolvía `ok: true` sin escribir el grafo. Ahora el dueño es `vault_mcp_catalog.NATIVE_JS_TOOLS`, viaja en `js_native_tools` del catálogo, y los cuatro consumidores lo leen de ahí; `--check` contrasta Python, JSON y el respaldo del `.mjs`, y `--check-contracts` y el test de AP-48 dejan de traer lector propio. El cambio de `const` a `let` —necesario para que el catálogo pueda sobreescribirlo— rompió dos lectores en el acto: la prueba de que eran copias, no vistas |
@@ -7347,6 +7398,46 @@ temp/
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
 
 ---
+
+### v40.21 — 2026-08-14 `git: pending`
+
+**El guard de distinciones entre normas cobraba por hablar y regalaba el silencio.**
+
+La tanda salió de mirar el repo como grafo, no como lista de tools. Tres grafos: el de
+imports (132 módulos, 450 aristas), el de normas↔tools y el de distinción entre normas. Los
+dos primeros no dieron nada nuevo — los 87 módulos sin consumidor son entrypoints que la CLI
+invoca por `subprocess`, el ciclo `vault_manifest ↔ vault_spec_memory` ya está congelado, y
+la concentración en `vault_errors` (al retirarlo, 12 módulos pierden el camino al núcleo
+frente a 3 del siguiente) ya la señala AP-59.
+
+El tercero sí. **13 normas de 71 declaraban alguna distinción; 58 estaban aisladas.** Y no
+por dejadez: C5 de `vault_norms_coherence` comprueba que la distinción sea recíproca
+*iterando sobre `distinguido_de`*, así que quien no declara nada queda fuera de su alcance
+por la forma del bucle. Declarar cuesta —AP-59 declaró tres distinciones en v40.20 y eso
+costó tres ediciones recíprocas y un fallo de puerta—; callarse sale gratis y sale verde. Es
+la forma exacta que el propio estándar prohíbe en `cobertura_descubierta`, cometida en el
+guard que vigila el catálogo donde esa regla está escrita.
+
+**Un detector se descartó por no converger, y queda escrito por qué.** El primer intento
+emparejaba normas confundibles por categoría más tool compartida: 68 pares. Al aplicar el
+corte derivado de orquestadores, **59 de los 68 eran `vault_audit`, `vault_write` y
+`vault_norms` consigo mismos**, que acumulan normas por armar el informe entero, no por
+dudar — la misma clase de falso positivo que ya había tumbado tres borradores en v40.10. Es
+el cuarto intento fallido de detectar solapamiento semántico entre normas, y sigue siendo un
+problema abierto.
+
+Así que **AP-60** y C7 miden lo que sí es decidible sin interpretar: no qué dos normas se
+solapan, sino si la norma dijo algo alguna vez. Dos salidas honestas —`distinguido_de` con
+contenido, o `distincion_no_aplica` con motivo escrito— y ninguna tercera: el silencio cuenta
+como deuda. Baseline `norms-distincion-baseline.json` con las 57 de hoy, solo encoge, y una
+norma nueva no se congela: se le escribe la distinción.
+
+**Sin puerta nueva.** C7 vive dentro de `vault_norms_coherence`, que la puerta 14 ya ejecuta.
+Sacarlo a una tool aparte habría puesto un segundo dueño sobre el catálogo de normas, que es
+AP-57 cometido para ganar una casilla en la tabla de puertas.
+
+Lo que verde no prueba, dicho en la norma: que las distinciones declaradas sean correctas.
+C7 mide que la pregunta se contestó, no que la respuesta sea buena.
 
 ### v40.20 — 2026-08-14 `git: d899e73`
 
