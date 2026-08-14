@@ -54,12 +54,10 @@ from typing import Any, Dict, List, Optional
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-import yaml
-
 from vault_audit import es_documentacion_del_estandar
 from vault_errors import emit_error, wrap_main
 from vault_io import get_vault_root, is_snapshot_path
-from vault_lib import strip_code_blocks
+from vault_lib import strip_code_blocks, parse_frontmatter_with_body
 from vault_regex import RE_CLAVE_VALOR, tipo_de_valor
 
 BASELINE = Path(__file__).parent / "fuente-unica-baseline.json"
@@ -146,20 +144,15 @@ def medir(raiz: Optional[Path] = None) -> List[Dict[str, Any]]:
         if es_documentacion_del_estandar(rel.as_posix(), crudo):
             continue
 
-        fm: Dict[str, Any] = {}
-        cuerpo = crudo
-        if crudo.startswith("---"):
-            corte = crudo.find("\n---", 3)
-            if corte != -1:
-                try:
-                    cargado = yaml.safe_load(crudo[3:corte])
-                    fm = cargado if isinstance(cargado, dict) else {}
-                except yaml.YAMLError:
-                    # Frontmatter roto es AP-46, no AP-05. Se sigue con el
-                    # cuerpo en vez de perder la nota entera: el defecto de
-                    # otro no debe volver ciega a esta medida.
-                    fm = {}
-                cuerpo = crudo[corte + 4:]
+        # Frontmatter roto es AP-46, no AP-05: el dueño del criterio devuelve
+        # `{}` y el cuerpo entero, así que la nota se sigue midiendo en vez de
+        # perderse — el defecto de otro no debe volver ciega a esta medida.
+        # Delega en `vault_lib` (AP-57) porque la copia que había aquí se quedó
+        # sin la contención de `RecursionError` del dueño (AP-61): una nota con
+        # el frontmatter muy anidado tumbaba el barrido completo, y esta tool
+        # acepta `--root` contra vaults ajenos, que es donde eso llega.
+        fm_bruto, cuerpo = parse_frontmatter_with_body(crudo)
+        fm: Dict[str, Any] = fm_bruto if isinstance(fm_bruto, dict) else {}
 
         # Un valor dentro de un fence es un ejemplo, no una afirmación (AP-57).
         texto = crudo[:0] + strip_code_blocks(cuerpo)

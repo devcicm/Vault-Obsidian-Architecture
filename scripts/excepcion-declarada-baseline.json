@@ -1,0 +1,5 @@
+{
+ "schema": 2,
+ "description": "Handlers que capturan la excepción declarada de una librería y dejan escapar la que esa librería lanza de verdad (AP-61). Indexada por firma de sitio, no por línea. Esta lista solo puede ENCOGER. Nace vacía: los doce sitios que había se corrigieron en v40.23 en vez de congelarse.",
+ "sitios": []
+}

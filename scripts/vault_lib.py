@@ -271,7 +271,7 @@ def yaml_scalar(value: Any) -> str:
         vuelta = yaml.safe_load(f"k: {texto}")
         if isinstance(vuelta, dict) and vuelta.get("k") == texto:
             return texto
-    except yaml.YAMLError:
+    except (yaml.YAMLError, RecursionError):  # AP-61 - ver vault_lib.parse_frontmatter
         pass
     return json.dumps(texto, ensure_ascii=False)
 

@@ -278,3 +278,55 @@ def test_todos_los_comandos_declaran_handler():
     for cmd in ("groups", "find", "show", "doctor", "run", "plan", "batch", "scan"):
         argv = [cmd, "x"] if cmd in ("find", "show", "run") else [cmd]
         assert callable(parser.parse_args(argv).func), cmd
+
+
+# ── el contrato ilegible no puede salir verde (AP-51, v40.23) ────────────────
+
+def _spec_corrupto(tmp_path, monkeypatch):
+    """Deja un `tool-spec.json` presente y sin parsear, y limpia la caché."""
+    spec = tmp_path / "tool-spec.json"
+    spec.write_text("{ esto no es JSON", encoding="utf-8")
+    monkeypatch.setattr(registry, "_leer_spec", lambda: (
+        {}, {"estado": "ilegible", "path": str(spec), "detail": "JSONDecodeError"}
+    ))
+    registry.load_registry.cache_clear()
+    return spec
+
+
+def test_un_spec_ilegible_no_se_confunde_con_uno_ausente(tmp_path, monkeypatch):
+    """Las cuatro situaciones que `_load_spec` colapsaba en `{}` eran distintas.
+
+    Ausente es legítimo —el catálogo basta— e ilegible no lo es: `required_args`
+    queda vacía por ignorancia, no por acuerdo.
+    """
+    try:
+        _spec_corrupto(tmp_path, monkeypatch)
+        frag = registry.load_registry()["vault_read"]
+        assert frag.contract_known is False
+        assert registry.spec_status()["estado"] == "ilegible"
+    finally:
+        registry.load_registry.cache_clear()
+
+
+def test_con_el_contrato_ilegible_la_validacion_falla_cerrado(tmp_path, monkeypatch):
+    """Sin esto, un fichero corrupto desactivaba `check_contract` en silencio.
+
+    Cero `required_args` daba cero hallazgos, que es indistinguible de una
+    llamada correcta — el vacío que AP-51 persigue.
+    """
+    try:
+        _spec_corrupto(tmp_path, monkeypatch)
+        frag = registry.load_registry()["vault_read"]
+        codigos = {f.code for f in safety.check_contract(frag, {})}
+        assert "CONTRACT-UNREADABLE" in codigos
+    finally:
+        registry.load_registry.cache_clear()
+
+
+def test_con_el_contrato_legible_no_hay_hallazgo_de_lectura():
+    """La contrapartida: el caso normal no estrena ruido."""
+    registry.load_registry.cache_clear()
+    frag = registry.load_registry()["vault_read"]
+    assert frag.contract_known is True
+    codigos = {f.code for f in safety.check_contract(frag, {"path": "x.md"})}
+    assert "CONTRACT-UNREADABLE" not in codigos

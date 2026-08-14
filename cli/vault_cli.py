@@ -166,12 +166,27 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         "hint": None if confident else
         "Raíz adivinada. Exporta VAULT_ROOT=<ruta> o VAULT_STRICT_ROOT=1 para fallar rápido.",
     })
+    # No basta con `resolve_tool_spec()`: eso solo dice si el fichero **está**.
+    # Un spec presente y corrupto salía `ok: true` aquí mientras dejaba a
+    # `check_contract` sin nada que validar — el diagnóstico decía que todo
+    # estaba bien justo en el caso que rompe la validación (AP-51, v40.23).
+    estado_spec = registry.spec_status()
+    spec_ok = estado_spec["estado"] != "ilegible"
     checks.append({
         "check": "tool_spec",
-        "ok": spec is not None,
+        "ok": spec_ok,
         "value": str(spec) if spec else None,
+        "state": estado_spec["estado"],
+        "detail": estado_spec["detail"],
         "expected": str(tool_spec_path()),
-        "hint": None if spec else "Genéralo con: python scripts/vault_manifest.py --bootstrap",
+        "hint": (
+            None if spec else
+            "Genéralo con: python scripts/vault_manifest.py --bootstrap"
+        ) if spec_ok else (
+            "El spec está y no se puede leer: mientras siga así, los "
+            "argumentos obligatorios no se validan. Repara el JSON o "
+            "regenéralo con `python scripts/vault_manifest.py --bootstrap`."
+        ),
     })
     missing = registry.missing_scripts()
     checks.append({

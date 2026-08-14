@@ -997,7 +997,7 @@ def _verificar_releyendo(vault_path: Path) -> None:
         raise ValueError(f"{vault_path.name}: se escribió sin frontmatter delimitado")
     try:
         fm = yaml.safe_load(m.group(1))
-    except yaml.YAMLError as exc:
+    except (yaml.YAMLError, RecursionError) as exc:  # AP-61 - ver vault_lib.parse_frontmatter
         raise ValueError(f"{vault_path.name}: frontmatter ilegible para YAML: {exc}")
     if not isinstance(fm, dict):
         raise ValueError(f"{vault_path.name}: el frontmatter no es un mapa YAML")

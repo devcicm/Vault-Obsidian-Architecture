@@ -10,9 +10,9 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | Ruta | Qué es |
 |---|---|
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~6.000 líneas). Fuente normativa. |
-| `scripts/*.py` | ~132 scripts, 105 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
+| `scripts/*.py` | ~133 scripts, 106 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (2815 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (2841 tests). Toda norma con guard debe tener test. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
 | `vault-sandbox/` | **Único** vault de pruebas del repo. Todo runtime va aquí. |
@@ -219,6 +219,9 @@ abajo, en «Cuatro cosas que el registro no puede decirte».
 - [ ] `python scripts/vault_kernel.py --check --strict`
       La lista del núcleo no contradice a la forma medida del grafo: K1 delegada, fan-in/fan-out contra el escalón derivado y churn contra la mediana del dominio (AP-59).
       *Se arregla con:* sacar el módulo del kernel o darle forma de núcleo —fan-out abajo, consumidores reales—; los umbrales se derivan del escalón y se publican, así que ajustarlos para pasar no es una opción, y la baseline solo encoge
+- [ ] `python scripts/vault_excepcion_declarada.py --check --strict`
+      Ningún handler captura la excepción que una librería declara dejando escapar la que lanza de verdad (AP-61).
+      *Se arregla con:* delegar en el dueño que ya la contuvo —para el frontmatter, vault_lib.parse_frontmatter— o nombrar la excepción citando al dueño; ampliar la tupla en trece sitios sin dueño es AP-57 cometido al arreglar AP-61
 
 <!-- puertas:fin -->
 

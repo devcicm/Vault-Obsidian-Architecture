@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.22 — 2026-08-14  
+**Versión:** v40.23 — 2026-08-14  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -3501,7 +3501,7 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **72 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **73 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -5003,7 +5003,7 @@ Dos causas, y la segunda es la incómoda:
 
 1. **El audit no lo ejecuta nadie.** En las **1.356 ejecuciones de tools
    registradas** en los `.tool-trace.json` de ese parque, `vault_norms` no
-   aparece **ni una vez**. 41 de las 105 tools del catálogo no se han ejecutado
+   aparece **ni una vez**. 41 de las 106 tools del catálogo no se han ejecutado
    jamás. Los agentes escriben; no gobiernan. Un enforcement que depende de que
    alguien se acuerde de invocarlo es enforcement en el papel.
 2. **Los valores no canónicos los escribía el propio estándar.** El más
@@ -5612,7 +5612,7 @@ de envelope con su contrato de `00_System/tool-spec.json`:
 Y la divergencia peor no era de forma sino de efecto: `jsNativeGraph` no tiene un
 solo `writeFile`. Un agente llamaba `vault_graph` por MCP, recibía `ok: true`, y
 el grafo se quedaba sin regenerar — **AP-37 y AP-47 servidos a la vez por el único
-camino que un agente real usa**. `vault_smoke` recorre las 105 tools del catálogo,
+camino que un agente real usa**. `vault_smoke` recorre las 106 tools del catálogo,
 pero ejecuta el `.py`: probaba exactamente la implementación que el agente no toca.
 
 **Prevención:** backend nativo solo para lo que **no tiene** implementación en
@@ -6519,6 +6519,44 @@ prometiera lo segundo sería la afirmación no falsable de AP-37.
 
 ---
 
+### AP-61 — El guard cae con el dato que vino a medir
+
+**Enforcement:** `guard+audit` · **Severidad:** high · **Introducido:** v40.23
+**Guard:** `python scripts/vault_excepcion_declarada.py --check --strict` (puerta 19)
+
+Un handler captura la excepción que una librería **declara** y deja escapar la que esa
+librería **lanza de verdad**. El `try` parece contener el fallo y no lo contiene. Lo caro no
+es el fallo: es la asimetría de alcance. El dato defectuoso es de una nota; la caída es del
+barrido entero, así que un solo fichero hostil deja al vault sin medida.
+
+**Cómo se destapó.** `RecursionError` no hereda de `yaml.YAMLError`. El parser de PyYAML es
+recursivo y el frontmatter es dato externo, así que `x: [[[[[…` —doce caracteres de
+escribir— desborda la pila **dentro** de `safe_load`, por encima de cualquier
+`except yaml.YAMLError`. `vault_lib.parse_frontmatter` lo resolvió en su día, lo dejó escrito
+y lo fijó con un test de profundidades. Los otros **doce sitios** que habían copiado el mismo
+`try` no se enteraron de la corrección: los cinco de `vault_frontmatter_heal`, los cuatro del
+heal de AP-46, `vault_onboard`, el escritor de escalares de `vault_lib` y —el que importa—
+`vault_foreign_check`, que es la tool de la regla 7 y por tanto la única que corre contra
+material que este repo no generó, que es exactamente donde el dato hostil aparece.
+
+Es primo de AP-57 y llega por su camino: un criterio copiado envejece por su lado, y aquí
+envejeció hacia el lado que deja caer la tool.
+
+**Cómo se salda.** Delegando en el dueño que ya lo contuvo —para el frontmatter,
+`vault_lib.parse_frontmatter`—, y solo cuando la firma de retorno lo impide, nombrando la
+excepción en la tupla y citando al dueño en un comentario. Ampliar la tupla en trece sitios
+sin dueño sería AP-57 cometido al arreglar AP-61: la corrección volvería a envejecer copia
+por copia. En v40.23 los doce se corrigieron en vez de congelarse, así que la baseline
+`scripts/excepcion-declarada-baseline.json` **nace vacía** y solo puede encoger.
+
+**Lo que verde no prueba.** El guard solo ve la llamada de riesgo escrita **a la vista** en
+el cuerpo del `try`. Un `safe_load` detrás de un helper queda fuera del alcance, y esa es la
+forma correcta de escribirlo: la tool mide mejor el código que peor está escrito, y ese sesgo
+se declara aquí en vez de suponerse cubierto. Tampoco valida que la contención sea correcta,
+solo que la excepción esté nombrada.
+
+---
+
 ### PAT-6 — Semantic graph enrichment: enriquecimiento periódico del grafo
 
 **Enforcement:** `recommended` · **Introducido:** v37
@@ -7056,6 +7094,9 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.23 | 2026-08-14 | **Una nota con doce corchetes tumbaba el barrido entero, y seis parsers llevaban versiones leyendo el vault como si no tuviera frontmatter.** AP-61 «el guard cae con el dato que vino a medir»: `RecursionError` no hereda de `yaml.YAMLError`, así que un `except yaml.YAMLError` alrededor de `safe_load` parece contener el fallo y lo deja subir entero — el radio es asimétrico, el dato malo es una nota y la caída es el vault. El plan contaba cuatro sitios; el barrido por AST encontró **doce**, y se corrigieron los doce en vez de congelarlos, así que la baseline de `vault_excepcion_declarada` **nace vacía**. Medido aparte y peor: los seis parsers de frontmatter escritos con `re.match(r"^---
+…")` devolvían `{}` en **110 de las 126** notas de `vault-sandbox/`, porque el patrón no casa `---
+` ni sobrevive al BOM de Windows y ambas cosas están en el material real; `{}` no es un error visible, es la respuesta legítima de «esta nota no tiene frontmatter», y por eso la ceguera no la vio ninguna puerta. Los seis delegan ya en `vault_lib.parse_frontmatter`. Y `cli/registry._load_spec` deja de presentar una spec corrupta como catálogo vacío: con ella ilegible `check_required_args` no validaba nada y `cli doctor` seguía diciendo que todo estaba bien — ahora falla cerrado y el diagnóstico distingue ausente de ilegible |
 | v40.22 | 2026-08-14 | **Las 57 normas mudas de AP-60 hablaron y la baseline quedó en cero**, saldada por atrición y no por congelación: 40 pares recíprocos de `distinguido_de`, escritos dentro de la categoría porque es donde vive la confusión real —el racimo `linking` AP-31/32/33/34 y el `metadata-completeness` AP-26/27/29/30 fueron los densos—. Cada texto nombra el **discriminador observable**, no la intención: presencia frente a valor (CN-03 vs AP-29), dirección del desfase (AP-04 va por delante del código, AP-08 por detrás), sujeto medido (AP-04 mide la nota, AP-42 mide la tool), dirección del cruce de frontera (AP-15 entra material ajeno, AP-36 salen side-effects). Ninguna necesitó `distincion_no_aplica`: las que parecían aisladas —AP-43 en `governance`, AP-41 en `lifecycle`— tenían pareja fuera de su categoría, que es exactamente lo que un detector por categoría no habría visto. **Contraste de la regla 7** sobre los cuatro vaults consumidores en solo lectura: cifras idénticas a v40.14 (ans 221/1709, builderx 106/1113, vcloud 3/574, electron 0/523), `frontmatter_unparseable` 0 en los cuatro y los dos conflictos de AP-05 de `/ans` en pie — no se reparan sin su dueño |
 | v40.21 | 2026-08-14 | Mirando el repo **como grafo** apareció el que ningún guard podía ver: `vault_norms_coherence` C5 comprueba que la distinción entre dos normas sea recíproca **iterando sobre `distinguido_de`**, así que solo alcanzaba a **13 normas de 71** — las otras 58 no estaban exentas, estaban invisibles. El incentivo estaba invertido: declarar una distinción obliga a editar la otra norma (AP-59 pagó tres ediciones y un fallo de puerta en v40.20) y callarse sale gratis y verde, que es justo lo que el estándar prohíbe en `cobertura_descubierta`. **AP-60** y C7 lo miden **por norma y no por par**, porque el detector de pares se probó y se descartó: de sus 68 pares confundibles, **59 eran `vault_audit`, `vault_write` y `vault_norms` consigo mismos** — cuarto intento fallido de detectar solapamiento semántico, que sigue abierto. Dos salidas honestas y ninguna tercera: `distinguido_de` con contenido o `distincion_no_aplica` con motivo escrito; el silencio cuenta como deuda, baseline de 57 que solo encoge. **Sin puerta nueva**: C7 vive en la tool que la puerta 14 ya ejecuta, porque sacarla aparte habría puesto un segundo dueño sobre el catálogo de normas — AP-57 cometido para ganar una casilla en la tabla |
 | v40.20 | 2026-08-14 | El **núcleo de este repo era una lista de quince nombres escrita a mano** en `vault_arch.CONTEXTS['kernel']['modulos']`, y ninguna puerta la contrastaba con nada. Sobre ella se apoyaba el guard de fronteras entre contextos: si la lista estaba mal, el verde era correcto respecto a un mapa equivocado. **AP-59** y `vault_kernel` (puerta 18) miden tres invariantes — K1 el núcleo no depende del dominio, K2 fan-in alto y fan-out bajo, K3 se mueve menos que lo que sostiene — con los umbrales **derivados del escalón** de la distribución y publicados con su ratio, porque un literal ahí sería AP-47 dentro de AP-59. Al medir para la tanda **dos hipótesis propias resultaron falsas** y quedaron corregidas antes de escribir código: K1 ya estaba medida y verde, y las seis «fugas» del kernel eran los seis `GANCHOS_DEL_KERNEL` declarados con motivo. Con la lista bien elegida aparecieron aun así **tres módulos que no se comportan como núcleo**: `vault_log_error` declarado kernel con fan-in 0, `vault_io` con fan-out 11 y 30 commits, `vault_errors` con 14 sobre una mediana de dominio de 9. Ninguno roto, ninguno visto. La precondición era otro AP-57 que nadie podía ver: **trece módulos parseaban imports por su cuenta** y los dos principales no coincidían —`vault_arch` filtra por prefijo e ignora los relativos, `vault_ciclos` filtra por pertenencia y los cuenta—, invisible para `vault_criterios` porque solo mide módulos que nombran `*.md`. `vault_grafo_import` es ahora el dueño, con fan-out cero y **las dos proyecciones conservadas con nombre**: unificarlas cambiaría los cruces de uno y las aristas del otro a la vez, estrenando deuda en dos baselines por un refactor que no arregla nada |
@@ -7397,6 +7438,65 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v40.23 — 2026-08-14 `git: pending`
+
+**El guard caía con el dato que venía a medir, y seis lectores del frontmatter no lo estaban
+leyendo.**
+
+**AP-61, y por qué es una norma y no un parche.** `RecursionError` no hereda de
+`yaml.YAMLError`. El parser de PyYAML es recursivo y el frontmatter es dato externo, así que
+`x: [[[[[…` —doce caracteres de escribir— desborda la pila DENTRO de `safe_load`. Un
+`except yaml.YAMLError` alrededor de esa llamada **parece** contención y no lo es: la excepción
+sube entera. La asimetría es lo que la hace grave: el dato defectuoso es una nota, la caída es
+el barrido completo del vault. `vault_lib.parse_frontmatter` lo había resuelto y lo dejó
+escrito; lo que nadie miraba es que el mismo `try` estaba copiado en otros doce sitios y
+ninguno se enteró de la corrección — AP-57 envejeciendo hacia el lado que tumba la tool.
+
+**Doce, no cuatro.** El plan listaba cuatro sitios porque se buscaron a ojo. El barrido por AST
+encontró doce: los cinco de `vault_frontmatter_heal`, los cuatro del heal de AP-46 dentro de
+`vault_norms`, más `vault_foreign_check` —la tool de la regla 7, que corre contra vaults
+ajenos—, `vault_fuente_unica`, `vault_validate`, `vault_migrate_docs`, `vault_onboard`,
+`vault_lib` y `vault/autoria/frontmatter`. Se corrigieron los doce en vez de congelarlos, así
+que la baseline de `vault_excepcion_declarada` **nace vacía**, que dice bastante más que una
+deuda de doce entradas. Donde se pudo, la corrección es delegar en el dueño; donde la forma de
+retorno lo impide —`vault_foreign_check` distingue tres estados y el dueño colapsa dos, que es
+justo lo que AP-51 pide conservar— se nombra la excepción y se cita al dueño en un comentario.
+
+**El guard declara lo que no ve.** Solo mira el `try` cuyo cuerpo contiene la llamada de riesgo
+escrita a la vista. Un `safe_load` detrás de un helper queda fuera, y esa es la forma correcta
+de escribirlo: el sesgo está declarado en el docstring —mide mejor el código que peor está
+escrito— porque un guard que no publica su alcance certifica más de lo que mide.
+
+**Los seis parsers ciegos.** Seis módulos leían el frontmatter con un regex línea a línea
+(`^---
+`, `split(":",1)`, `strip("\"'")`). Contrastado contra el dueño canónico sobre las 126
+notas de `vault-sandbox/`, ese regex devolvía `{}` en **110**: no casa `---
+` y no sobrevive
+al BOM que dejan los editores de Windows, y el corpus real tiene las dos cosas. `{}` no es un
+error: es la respuesta legítima de «esta nota no tiene frontmatter», y por eso la ceguera llevaba
+versiones sin que ninguna puerta la viera. Además leía todo valor como texto, y `'false'` es una
+cadena verdadera. Los seis delegan ya en `vault_lib.parse_frontmatter`
+(`parse_frontmatter_with_body` en `vault_read`, que conserva su `.strip()` del cuerpo porque ese
+contrato es suyo, no del dueño). El test de diferencia se escribió **antes** de migrar y se queda
+en el repo con el regex viejo dentro, para que la comparación siga siendo ejecutable.
+
+**La spec corrupta ya no se presenta como catálogo vacío.** `cli/registry._load_spec` respondía
+`{}` a cuatro situaciones distintas, y la consecuencia no era cosmética: con la spec ilegible
+`required_args` quedaba vacía, `check_required_args` dejaba de validar nada y `cli doctor` seguía
+publicando `tool_spec.ok = true` — el diagnóstico decía que todo iba bien justo en el caso que
+desactivaba la validación. Ahora `_leer_spec` distingue ausente de ilegible, `check_contract`
+**falla cerrado** con `CONTRACT-UNREADABLE` y el doctor reporta el estado. `blame-baseline.json`
+encoge de 84 a 83.
+
+**Los acentos de las distinciones.** Los textos de `distinguido_de` que escribió v40.22 iban sin
+acentuar mientras el resto del catálogo va acentuado: 55 bloques reacentuados, sin tocar nada
+dentro de backticks y dejando a mano las ambiguas que la automatización no puede decidir
+(`esta`/`está`, `aun así`, `cuando`/`cuándo`).
+
+**Cifras:** 19 puertas verdes, 2841 tests, 106 tools, 73 normas (61 AP).
 
 ---
 

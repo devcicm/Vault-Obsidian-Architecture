@@ -35,7 +35,7 @@ Restricciones que son decisión de producto, no limitación pendiente:
 |---|---|---|---|
 | **Escritura → gobernanza** (`escritura_a_gobernanza`) | Lo que el agente captura queda escrito una sola vez, normalizado contra las normas, versionado y auditable después. | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 36, 37 | 78 |
 | **Consulta → contexto** (`consulta_a_contexto`) | Una pregunta del agente se convierte en un paquete de contexto acotado y presupuestado, recorriendo el grafo del vault sin índice externo. | 26, 34 | 8 |
-| **Gobernanza del estándar** (`gobernanza_del_estandar`) | El estándar cumple lo que publica: registro canónico primero, doc derivada, guard que falla si divergen. Ninguna de estas tools toca las notas de un usuario. | 35 | 19 |
+| **Gobernanza del estándar** (`gobernanza_del_estandar`) | El estándar cumple lo que publica: registro canónico primero, doc derivada, guard que falla si divergen. Ninguna de estas tools toca las notas de un usuario. | 35 | 20 |
 
 - **`consulta_a_contexto`** — El grupo 26 (Tokens) cae en el rango 1–33 que `CLAUDE.md` atribuye al primer eje, pero sus tres tools viven en el contexto `consulta` y existen para que el paquete quepa en la ventana. El rango es cronológico, no clasificatorio.
 - **`gobernanza_del_estandar`** — Tercera capacidad que `CLAUDE.md` no nombraba. Existía desde que se escribió la primera puerta; declararla es lo que impide que sus tools se cuenten como si sirvieran a la memoria del agente.
@@ -60,13 +60,13 @@ regenera.*
 | **Consulta** (`consulta`) | 7 | 10 | base de datos; embeddings; servicio externo |
 | **Ciclo de vida** (`ciclo_de_vida`) | 3 | 8 | — |
 | **Durabilidad** (`durabilidad`) | 4 | 4 | escribir fuera de la raíz del vault (AP-36) |
-| **Meta-toolkit** (`meta_toolkit`) | 3 | 25 | escribir en una sección de contenido: sus artefactos derivados viven en 00_System/ |
+| **Meta-toolkit** (`meta_toolkit`) | 3 | 26 | escribir en una sección de contenido: sus artefactos derivados viven en 00_System/ |
 
 ## Capa 4 — Normas → puertas → tests
 
 *Registros: `vault_norms.NORM_CATALOG` + `vault_gate.PUERTAS` + `tests/`*
 
-57 de 72 normas tienen puerta o test que las nombre.
+58 de 73 normas tienen puerta o test que las nombre.
 **Es la única capa con baseline**, y por un motivo concreto: las demás se midieron
 en cero el día que se declararon porque sus datos ya existían y solo faltaba
 atarlos. Ésta no. Exigir cero aquí el primer día habría hecho nacer la puerta en
@@ -139,6 +139,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-58** — Ciclo esquivado con un import diferido | guard | `ciclos` | `test_ciclos.py` |
 | **AP-59** — Núcleo declarado sin contraste | guard+audit | `kernel` | `test_kernel.py` |
 | **AP-60** — El guard cobra por declarar y regala el silencio | guard+audit | `norms_coherence` | `test_norms_coherence.py` |
+| **AP-61** — El guard cae con el dato que vino a medir | guard+audit | `excepcion_declarada` | `test_excepcion_declarada.py` |
 | **PAT-6** — Semantic graph enrichment — enriquecimiento periodico del grafo | recommended | — | — |
 | **SP-01** — Delete protocol — change_log obligatorio antes de eliminar | audit | `framework` | `test_vault_norms.py` |
 | **SP-02** — Forward-link verification — buscar antes de linkar | guard | — | `test_vault_norms.py` |
@@ -153,7 +154,7 @@ Sin puerta ni test (15): `AP-04`, `AP-08`, `AP-12`, `AP-13`, `AP-18`, `AP-20`, `
 
 *Registros: `vault_mcp_catalog.TOOLS_CATALOG` + `<vault>/00_System/tool-spec.json`*
 
-105 tools activas en 37 grupos. Toda tool
+106 tools activas en 37 grupos. Toda tool
 del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 `status: archived | internal | orphan` — no se borra, se anota
 (`vault_mcp_catalog.py --check-contracts`).
@@ -179,7 +180,7 @@ del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 | Línea de Tiempo | 1 |
 | Memoria de Contexto | 5 |
 | Migración | 2 |
-| Normas | 19 |
+| Normas | 20 |
 | Observabilidad | 1 |
 | Patrones | 2 |
 | Producción/SRE | 2 |
@@ -240,6 +241,7 @@ falla — no se rellena con el valor más cercano.
 | `vault_env_matrix` | 8 — Infraestructura | escritura_a_gobernanza |
 | `vault_env_save` | 8 — Infraestructura | escritura_a_gobernanza |
 | `vault_error_contract` | 35 — Normas | gobernanza_del_estandar |
+| `vault_excepcion_declarada` | 35 — Normas | gobernanza_del_estandar |
 | `vault_fix_brackets` | 33 — Corrección Automática | escritura_a_gobernanza |
 | `vault_flow_save` | 18 — Flujos | escritura_a_gobernanza |
 | `vault_folder_registry` | 32 — Gestión de Carpetas | escritura_a_gobernanza |
@@ -344,7 +346,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 |---|---|---|
 | `scripts/arch-baseline.json` | cruces entre contextos | 62 |
 | `scripts/arch-baseline.json` | cruces fuera de puerto | 13 |
-| `scripts/blame-baseline.json` | AP-51 | 84 |
+| `scripts/blame-baseline.json` | AP-51 | 83 |
 | `scripts/error-contract-baseline.json` | AP-52 | 9 |
 | `scripts/noop-baseline.json` | AP-37 | 0 |
 | `scripts/smoke-baseline.json` | AP-42 | 0 |
@@ -354,7 +356,8 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 5 |
 | `scripts/norms-distincion-baseline.json` | AP-60 — normas que no declaran de qué se distinguen | 0 |
 | `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 |
-| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1204 |
+| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1220 |
+| `scripts/excepcion-declarada-baseline.json` | AP-61 — la excepción declarada no es la que escapa | 0 |
 
 Todas encogen y ninguna crece sin decirlo: los tres audits con baseline indexan
 por firma de sitio —`módulo::función::hash de `ast.unparse``— así que mover un
@@ -363,4 +366,4 @@ no tiene precedente salvo con `--admitir-nuevos`, que además lo lista.
 
 ---
 
-*18 puertas de cierre. Generado por `scripts/vault_blueprint.py`.*
+*19 puertas de cierre. Generado por `scripts/vault_blueprint.py`.*

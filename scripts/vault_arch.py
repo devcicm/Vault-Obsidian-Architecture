@@ -385,6 +385,12 @@ CONTEXTS: dict[str, dict] = {
             # meta-toolkit invertiría la dirección que la norma existe para
             # vigilar. Quien mide el núcleo se queda fuera de él.
             "vault_kernel",
+            # AP-61 (v40.23). Meta-toolkit por el mismo motivo que los de
+            # arriba: su sujeto es el código de este repo —los handlers de sus
+            # `try`— y no una nota de nadie. No importa ninguna tool de
+            # escritura; solo el recorrido de módulos de `vault_arch` y la
+            # firma de sitio que ya comparten los otros audits con baseline.
+            "vault_excepcion_declarada",
         ],
     },
 }

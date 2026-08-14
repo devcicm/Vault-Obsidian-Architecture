@@ -66,7 +66,7 @@ def _es_instante(valor: Any) -> bool:
 
     try:
         vuelta = yaml.safe_load(f"k: {valor}")
-    except yaml.YAMLError:
+    except (yaml.YAMLError, RecursionError):  # AP-61 - ver vault_lib.parse_frontmatter
         return False
     return isinstance(vuelta, dict) and isinstance(
         vuelta.get("k"), (_dt.datetime, _dt.date)

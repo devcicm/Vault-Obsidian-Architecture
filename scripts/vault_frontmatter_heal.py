@@ -104,7 +104,7 @@ def diagnosticar(texto: str) -> Optional[Dict[str, Any]]:
     bloque, _ = partido
     try:
         datos = yaml.safe_load(bloque)
-    except yaml.YAMLError as exc:
+    except (yaml.YAMLError, RecursionError) as exc:  # AP-61 - ver vault_lib.parse_frontmatter
         return {"error": str(exc).splitlines()[0].strip()}
     if not isinstance(datos, dict):
         # Un frontmatter que parsea a una cadena o a una lista tampoco es un
@@ -134,7 +134,7 @@ def _reparar_bloque(bloque: str) -> Tuple[str, List[str]]:
             continue
         try:
             yaml.safe_load(f"k: {valor}")
-        except yaml.YAMLError:
+        except (yaml.YAMLError, RecursionError):  # AP-61 - ver vault_lib.parse_frontmatter
             salida.append(f"{clave}: {yaml_scalar(valor)}")
             tocadas.append(clave.strip())
             continue
@@ -150,7 +150,7 @@ def _claves_legibles(bloque: str) -> Dict[str, Any]:
     """
     try:
         datos = yaml.safe_load(bloque)
-    except yaml.YAMLError:
+    except (yaml.YAMLError, RecursionError):  # AP-61 - ver vault_lib.parse_frontmatter
         return {}
     return datos if isinstance(datos, dict) else {}
 
@@ -172,7 +172,7 @@ def reparar(texto: str) -> Optional[Dict[str, Any]]:
 
     try:
         datos = yaml.safe_load(nuevo)
-    except yaml.YAMLError:
+    except (yaml.YAMLError, RecursionError):  # AP-61 - ver vault_lib.parse_frontmatter
         return None
     if not isinstance(datos, dict):
         return None
@@ -225,7 +225,7 @@ def _cerrar_bloque(texto: str) -> Optional[Dict[str, Any]]:
     bloque = "\n".join(l.rstrip("\r") for l in lineas[1:corte])
     try:
         datos = yaml.safe_load(bloque)
-    except yaml.YAMLError:
+    except (yaml.YAMLError, RecursionError):  # AP-61 - ver vault_lib.parse_frontmatter
         return None
     if not isinstance(datos, dict) or sorted(datos) != sorted(claves):
         return None

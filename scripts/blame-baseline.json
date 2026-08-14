@@ -4,10 +4,6 @@
   "description": "Deuda conocida de handlers amplios que se tragan el fallo propio y devuelven un vacío indistinguible de un resultado legítimo. Indexada por firma de sitio (módulo::función::hash del código normalizado), no por línea: desplazar el sitio no lo convierte en deuda nueva. Esta lista solo puede ENCOGER.",
   "sites": [
     {
-      "firma": "cli/registry.py::_load_spec::f1f60e49",
-      "visto_en": "cli/registry.py:176"
-    },
-    {
       "firma": "vault_audit.py::_aliases_de::08d90f38",
       "visto_en": "vault_audit.py:325"
     },
@@ -93,7 +89,7 @@
     },
     {
       "firma": "vault_doc_counts.py::fix::6f345a10",
-      "visto_en": "vault_doc_counts.py:300"
+      "visto_en": "vault_doc_counts.py:334"
     },
     {
       "firma": "vault_encoding.py::log_encoding_fixes::a36080b0",
@@ -109,31 +105,31 @@
     },
     {
       "firma": "vault_errors.py::wrap_main._target::a36080b0",
-      "visto_en": "vault_errors.py:183"
+      "visto_en": "vault_errors.py:186"
     },
     {
       "firma": "vault_errors.py::wrap_main._writes::f1f60e49",
-      "visto_en": "vault_errors.py:170"
+      "visto_en": "vault_errors.py:173"
     },
     {
       "firma": "vault_errors_trace.py::_count_tokens::a36080b0",
-      "visto_en": "vault_errors_trace.py:125"
+      "visto_en": "vault_errors_trace.py:138"
     },
     {
       "firma": "vault_errors_trace.py::_count_tokens::a36080b0#2",
-      "visto_en": "vault_errors_trace.py:133"
+      "visto_en": "vault_errors_trace.py:146"
     },
     {
       "firma": "vault_errors_trace.py::log_token_usage::a36080b0",
-      "visto_en": "vault_errors_trace.py:174"
+      "visto_en": "vault_errors_trace.py:187"
     },
     {
       "firma": "vault_errors_trace.py::log_trace::a36080b0",
-      "visto_en": "vault_errors_trace.py:87"
+      "visto_en": "vault_errors_trace.py:100"
     },
     {
       "firma": "vault_errors_trace.py::query_trace::08d90f38",
-      "visto_en": "vault_errors_trace.py:103"
+      "visto_en": "vault_errors_trace.py:116"
     },
     {
       "firma": "vault_fundamentals.py::_has_change_log_entry::7d17282f",
@@ -173,23 +169,23 @@
     },
     {
       "firma": "vault_io.py::_auto_section_index::a36080b0",
-      "visto_en": "vault_io.py:954"
+      "visto_en": "vault_io.py:483"
     },
     {
       "firma": "vault_io.py::_auto_tag_ledger::a36080b0",
-      "visto_en": "vault_io.py:991"
+      "visto_en": "vault_io.py:520"
     },
     {
       "firma": "vault_io.py::_registrar_escaner_degradado::a36080b0",
-      "visto_en": "vault_io.py:609"
+      "visto_en": "vault_io.py:225"
     },
     {
       "firma": "vault_io.py::atomic_write_text::a36080b0",
-      "visto_en": "vault_io.py:876"
+      "visto_en": "vault_io.py:415"
     },
     {
       "firma": "vault_io.py::update_section_index::a36080b0",
-      "visto_en": "vault_io.py:1148"
+      "visto_en": "vault_io.py:677"
     },
     {
       "firma": "vault_manifest.py::_bootstrap_spec::a36080b0",

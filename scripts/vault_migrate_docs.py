@@ -35,7 +35,7 @@ import re
 import sys
 
 from vault_errors import emit_error, wrap_main
-from vault_lib import yaml_scalar, slugify
+from vault_lib import yaml_scalar, slugify, parse_frontmatter
 
 from vault_io import (
     assert_within_vault,
@@ -43,7 +43,6 @@ from vault_io import (
     safe_wikilink,
     write_report,
 )
-import yaml
 import uuid
 
 from datetime import datetime, timezone
@@ -215,17 +214,14 @@ def _frontmatter_valido(texto: str) -> bool:
 
     Se valida con `yaml.safe_load`, no con un regex por líneas: es el criterio
     del consumidor (Obsidian, `vault_audit`), no el de quien escribe (AP-44).
+
+    Delega en `vault_lib.parse_frontmatter`, su dueño canónico (AP-57): hasta
+    v40.23 repetía aquí el `safe_load` con `except yaml.YAMLError`, y esa copia
+    se quedó sin la contención de `RecursionError` que el dueño ya tenía
+    (AP-61). Reescribir el criterio es lo que hace que las copias envejezcan
+    cada una por su lado.
     """
-    if not texto.startswith("---\n"):
-        return False
-    fin = texto.find("\n---", 3)
-    if fin == -1:
-        return False
-    try:
-        datos = yaml.safe_load(texto[4:fin])
-    except yaml.YAMLError:
-        return False
-    return isinstance(datos, dict) and bool(datos.get("type"))
+    return bool(parse_frontmatter(texto).get("type"))
 
 
 def classify_relevance(

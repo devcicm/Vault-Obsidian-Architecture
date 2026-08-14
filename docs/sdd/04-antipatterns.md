@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
-> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-60 más
-> las familias PAT, SP y CN. Por familia: AP 60, CN 3, PAT 6, SP 3.
-> Bilingual document. Full norm catalog: antipatterns AP-01..AP-60 plus the PAT,
-> SP and CN families. By family: AP 60, CN 3, PAT 6, SP 3.
+> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-61 más
+> las familias PAT, SP y CN. Por familia: AP 61, CN 3, PAT 6, SP 3.
+> Bilingual document. Full norm catalog: antipatterns AP-01..AP-61 plus the PAT,
+> SP and CN families. By family: AP 61, CN 3, PAT 6, SP 3.
 
 ---
 
 ## ES
 
-Total de normas registradas: 72 (AP 60, CN 3, PAT 6, SP 3)
+Total de normas registradas: 73 (AP 61, CN 3, PAT 6, SP 3)
 
 ### AP-01: Documentación alucinada
 
@@ -695,6 +695,22 @@ Es la misma forma que el repo ya prohíbe en `cobertura_descubierta` --una norma
 
 **Prevención:** Medir sobre el universo --el catálogo, el registro, el conjunto de módulos-- y no sobre el subconjunto que declaró. Admitir dos salidas honestas, la declaración y la exención con motivo escrito, y ninguna tercera: el silencio se cuenta como deuda. La baseline congela lo que ya estaba y solo encoge; lo que estrena se escribe.
 
+### AP-61: El guard cae con el dato que vino a medir
+
+- **Severidad:** high
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_excepcion_declarada
+
+Un handler captura la excepción que una librería **declara** y deja escapar la que esa librería **lanza de verdad**. El `try` parece contener el fallo y no lo contiene: la excepción sube entera y tumba la ejecución completa. Lo caro es la asimetría de alcance -- el dato defectuoso es de una nota, la caída es del barrido entero, así que un solo fichero hostil deja al vault sin medida.
+
+El caso que le dio nombre: `RecursionError` **no hereda de `yaml.YAMLError`**. El parser de PyYAML es recursivo y el frontmatter es dato externo, así que `x: [[[[[…` --doce caracteres de escribir-- desborda la pila dentro de `safe_load`, por encima de cualquier `except yaml.YAMLError`. `vault_lib.parse_frontmatter` lo resolvió y lo dejó escrito; los otros **doce sitios** que habían copiado el mismo `try` no se enteraron de la corrección, y entre ellos estaba `vault_foreign_check`, que es la tool de la regla 7 y por tanto la única que corre contra material que este repo no generó -- exactamente donde el dato hostil aparece.
+
+Es primo de AP-57 y llega por su camino: un criterio copiado envejece por su lado, y aquí envejeció hacia el lado que deja caer la tool.
+
+**Prevención:** `vault_excepcion_declarada --check --strict` recorre los `try` cuyo cuerpo contiene una llamada de riesgo declarada en `RIESGOS` y exige que la excepción que escapa esté nombrada. Se salda **delegando en el dueño que ya la contuvo** --para el frontmatter, `vault_lib.parse_frontmatter`-- y solo cuando la firma de retorno lo impide, nombrándola en la tupla y citando al dueño en un comentario: ampliar la tupla en trece sitios sin dueño es AP-57 cometido al arreglar AP-61.
+
+Límite declarado: solo ve la llamada de riesgo escrita **a la vista** en el cuerpo del `try`. Un `safe_load` detrás de un helper queda fuera del alcance, que es la forma correcta de escribirlo -- así que este guard mide mejor el código que peor está escrito, y eso se publica en vez de suponerse cubierto.
+
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
 - **Severidad:** high
@@ -819,7 +835,7 @@ Antes de cualquier operación masiva (migración, rename en lote, vault_tags --r
 
 ## EN
 
-Total registered norms: 72 (AP 60, CN 3, PAT 6, SP 3)
+Total registered norms: 73 (AP 61, CN 3, PAT 6, SP 3)
 
 ### AP-01: Documentación alucinada
 
@@ -1504,6 +1520,22 @@ Medido en v40.21 sobre C5 de `vault_norms_coherence`: la comprobación de que do
 Es la misma forma que el repo ya prohíbe en `cobertura_descubierta` --una norma que declara su hueco no cuenta como deuda nueva, porque declararse honestamente no puede salir más caro que callarse--, cometida en el guard que vigila el catálogo donde esa regla está escrita.
 
 **Prevention:** Medir sobre el universo --el catálogo, el registro, el conjunto de módulos-- y no sobre el subconjunto que declaró. Admitir dos salidas honestas, la declaración y la exención con motivo escrito, y ninguna tercera: el silencio se cuenta como deuda. La baseline congela lo que ya estaba y solo encoge; lo que estrena se escribe.
+
+### AP-61: El guard cae con el dato que vino a medir
+
+- **Severity:** high
+- **Enforcement:** guard+audit
+- **Detected by:** vault_excepcion_declarada
+
+Un handler captura la excepción que una librería **declara** y deja escapar la que esa librería **lanza de verdad**. El `try` parece contener el fallo y no lo contiene: la excepción sube entera y tumba la ejecución completa. Lo caro es la asimetría de alcance -- el dato defectuoso es de una nota, la caída es del barrido entero, así que un solo fichero hostil deja al vault sin medida.
+
+El caso que le dio nombre: `RecursionError` **no hereda de `yaml.YAMLError`**. El parser de PyYAML es recursivo y el frontmatter es dato externo, así que `x: [[[[[…` --doce caracteres de escribir-- desborda la pila dentro de `safe_load`, por encima de cualquier `except yaml.YAMLError`. `vault_lib.parse_frontmatter` lo resolvió y lo dejó escrito; los otros **doce sitios** que habían copiado el mismo `try` no se enteraron de la corrección, y entre ellos estaba `vault_foreign_check`, que es la tool de la regla 7 y por tanto la única que corre contra material que este repo no generó -- exactamente donde el dato hostil aparece.
+
+Es primo de AP-57 y llega por su camino: un criterio copiado envejece por su lado, y aquí envejeció hacia el lado que deja caer la tool.
+
+**Prevention:** `vault_excepcion_declarada --check --strict` recorre los `try` cuyo cuerpo contiene una llamada de riesgo declarada en `RIESGOS` y exige que la excepción que escapa esté nombrada. Se salda **delegando en el dueño que ya la contuvo** --para el frontmatter, `vault_lib.parse_frontmatter`-- y solo cuando la firma de retorno lo impide, nombrándola en la tupla y citando al dueño en un comentario: ampliar la tupla en trece sitios sin dueño es AP-57 cometido al arreglar AP-61.
+
+Límite declarado: solo ve la llamada de riesgo escrita **a la vista** en el cuerpo del `try`. Un `safe_load` detrás de un helper queda fuera del alcance, que es la forma correcta de escribirlo -- así que este guard mide mejor el código que peor está escrito, y eso se publica en vez de suponerse cubierto.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 

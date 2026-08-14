@@ -659,6 +659,8 @@ _BASELINES = [
      "AP-60 — normas que no declaran de qué se distinguen"),
     ("norms-coherence-baseline.json", "claims", "AP-55 — C2, afirmación sin traza"),
     ("field-compat-baseline.json", "stable", "contrato de campos con los consumidores"),
+    ("excepcion-declarada-baseline.json", "sitios",
+     "AP-61 — la excepción declarada no es la que escapa"),
 ]
 
 

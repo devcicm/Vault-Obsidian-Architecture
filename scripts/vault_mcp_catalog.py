@@ -2595,6 +2595,64 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         ),
         "related": ["vault_arch", "vault_norms", "vault_gate", "vault_blueprint"],
     },
+    "vault_excepcion_declarada": {
+        "name": "vault_excepcion_declarada",
+        "script": "vault_excepcion_declarada.py",
+        "group": "Normas",
+        "purpose": (
+            "AP-61: el handler que captura la excepcion que una libreria "
+            "declara y deja escapar la que lanza de verdad. RecursionError no "
+            "hereda de yaml.YAMLError, y el parser de PyYAML es recursivo: doce "
+            "caracteres de anidamiento en el frontmatter de UNA nota desbordan "
+            "la pila dentro de safe_load y tumban el barrido entero del vault. "
+            "vault_lib.parse_frontmatter lo contuvo en su dia; los otros doce "
+            "sitios que habian copiado el mismo try no se enteraron, uno de "
+            "ellos vault_foreign_check, que es la tool de la regla 7."
+        ),
+        "params": {
+            "check": {
+                "type": "boolean",
+                "required": False,
+                "description": "Recorre los try con llamada de riesgo a la vista",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit 1 si aparece un handler sin la excepcion que escapa",
+                "validators": [],
+            },
+            "freeze": {
+                "type": "boolean",
+                "required": False,
+                "description": "Recongela la baseline; nace vacia y solo encoge",
+                "validators": [],
+            },
+            "admitir-nuevos": {
+                "type": "boolean",
+                "required": False,
+                "description": "Permite congelar sitios sin precedente, y los lista",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "Solo ve la llamada de riesgo escrita a la vista en el cuerpo del "
+            "try: un safe_load detras de un helper queda fuera, asi que mide "
+            "mejor el codigo que peor esta escrito, y lo declara",
+            "No valida que la contencion sea correcta, solo que la excepcion "
+            "este nombrada",
+            "Baseline que solo encoge, y nace vacia: los doce sitios que habia "
+            "se corrigieron en v40.23 en vez de congelarse",
+        ],
+        "side_effects": ["scripts/excepcion-declarada-baseline.json"],
+        "example": (
+            "python vault_excepcion_declarada.py --check\n"
+            "python vault_excepcion_declarada.py --check --strict\n"
+            "python vault_excepcion_declarada.py --freeze"
+        ),
+        "related": ["vault_blame_audit", "vault_error_contract", "vault_criterios",
+                    "vault_gate"],
+    },
     "vault_kernel": {
         "name": "vault_kernel",
         "script": "vault_kernel.py",
@@ -3953,6 +4011,7 @@ GROUPS: Dict[str, List[str]] = {
         "vault_criterios",
         "vault_ciclos",
         "vault_kernel",
+        "vault_excepcion_declarada",
     ],
     "Producción/SRE": ["vault_incident_save", "vault_slo_save"],
     "Release": ["vault_release_save"],

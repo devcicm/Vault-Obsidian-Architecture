@@ -275,7 +275,7 @@ NATURALEZAS: Dict[str, Dict[str, Any]] = {
             "vault_doc_sync", "vault_error_contract", "vault_foreign_check",
             "vault_gate", "vault_noop_audit", "vault_norms",
             "vault_norms_coherence", "vault_criterios", "vault_ciclos",
-            "vault_kernel", "vault_servicio",
+            "vault_kernel", "vault_excepcion_declarada", "vault_servicio",
             "vault_smoke", "vault_voice",
         ],
     },

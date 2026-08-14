@@ -105,6 +105,14 @@ class Fragment:
     related: List[str] = field(default_factory=list)
     status: str = "active"
     required_args: List[str] = field(default_factory=list)
+    #: ¿Se pudo leer el contrato formal de esta tool? `False` significa que el
+    #: `tool-spec.json` estaba presente y **no** se pudo leer, así que
+    #: `required_args` viene vacía por ignorancia y no por contrato. Sin este
+    #: campo, `check_contract` validaba cero argumentos obligatorios y salía
+    #: verde: un fichero corrupto desactivaba la comprobación en silencio
+    #: (AP-51). Ausente no lo pone a `False` — el catálogo basta y eso siempre
+    #: fue legítimo.
+    contract_known: bool = True
 
     @property
     def mode(self) -> str:
@@ -174,17 +182,71 @@ def normalize_arg(name: str) -> str:
     return name.lstrip("-").replace("-", "_")
 
 
-def _load_spec() -> Dict[str, Any]:
-    """Contrato formal de tools. Ausente no es error: el catálogo basta."""
+def _leer_spec() -> tuple[Dict[str, Any], Dict[str, Any]]:
+    """El contrato formal, y **cómo fue** leerlo.
+
+    Hasta v40.23 esto devolvía `{}` a cuatro situaciones distintas —no hay
+    spec, el JSON es ilegible, `vault_io` no importa, falla la lectura— y el
+    llamante no podía distinguirlas. La consecuencia no era cosmética: con la
+    spec ilegible, `required_args` quedaba vacía y `cli/safety.check_contract`
+    dejaba de validar nada, mientras `cli doctor` reportaba `tool_spec.ok`
+    porque preguntaba por otro camino. Un fichero corrupto desactivaba una
+    comprobación de seguridad y el diagnóstico decía que todo estaba bien
+    (AP-51).
+
+    `ausente` sigue siendo legítimo: el catálogo basta. `ilegible` no.
+    """
     try:
         from vault_io import resolve_tool_spec
+    except ImportError as e:
+        return {}, {"estado": "ilegible", "path": None,
+                    "detail": f"vault_io no importable: {e}"}
 
+    try:
         path = resolve_tool_spec()
-        if path is None:
-            return {}
-        return json.loads(path.read_text(encoding="utf-8")).get("tools", {})
-    except Exception:
-        return {}
+    except OSError as e:
+        return {}, {"estado": "ilegible", "path": None,
+                    "detail": f"no se pudo resolver la ruta del spec: {e}"}
+
+    if path is None:
+        return {}, {"estado": "ausente", "path": None,
+                    "detail": "no hay tool-spec.json; el catálogo basta"}
+    try:
+        datos = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as e:
+        return {}, {"estado": "ilegible", "path": str(path),
+                    "detail": f"{type(e).__name__}: {e}"}
+    tools = datos.get("tools")
+    if not isinstance(tools, dict):
+        return {}, {"estado": "ilegible", "path": str(path),
+                    "detail": "el spec no tiene un mapa `tools`"}
+    return tools, {"estado": "legible", "path": str(path), "detail": None}
+
+
+def _load_spec() -> Dict[str, Any]:
+    """Contrato formal de tools. Ausente no es error: el catálogo basta.
+
+    superseded_by: `_leer_spec`, que además dice **cómo** fue leerlo. Se
+    conserva —no-derogación— porque su contrato de lectura sigue siendo válido
+    para quien solo necesita el mapa.
+    """
+    return _leer_spec()[0]
+
+
+def spec_status() -> Dict[str, Any]:
+    """Cómo fue leer el contrato formal en la última construcción del registro.
+
+    Lo consume `cli doctor`: su check `tool_spec` preguntaba a
+    `resolve_tool_spec()` —que solo dice si el fichero **está**— y por eso un
+    spec presente y corrupto salía verde.
+    """
+    load_registry()
+    return dict(_SPEC_STATUS)
+
+
+#: Estado de la última lectura del spec. Se rellena en `load_registry`, que
+#: está cacheado, así que refleja la lectura que construyó el registro vivo.
+_SPEC_STATUS: Dict[str, Any] = {"estado": "sin_leer", "path": None, "detail": None}
 
 
 @lru_cache(maxsize=1)
@@ -192,7 +254,10 @@ def load_registry() -> Dict[str, Fragment]:
     """Construye el índice de fragmentos. Cacheado — el catálogo es estático."""
     from vault_mcp_catalog import TOOLS_CATALOG
 
-    spec = _load_spec()
+    spec, estado = _leer_spec()
+    _SPEC_STATUS.clear()
+    _SPEC_STATUS.update(estado)
+    contrato_conocido = estado["estado"] != "ilegible"
     registry: Dict[str, Fragment] = {}
 
     for name, entry in TOOLS_CATALOG.items():
@@ -211,6 +276,7 @@ def load_registry() -> Dict[str, Fragment]:
             required_args=[
                 normalize_arg(a) for a in (spec_entry.get("required_args") or [])
             ],
+            contract_known=contrato_conocido,
         )
     return registry
 

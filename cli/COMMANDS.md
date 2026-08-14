@@ -77,7 +77,7 @@ python -m cli find <query> [--mode read|write] [--group <texto>] [--full]
 
 ```bash
 python -m cli find "backup grafo"
-python -m cli find "" --mode write          # las 88 tools que escriben
+python -m cli find "" --mode write          # las 89 tools que escriben
 python -m cli find "indice" --group Index --full --pretty
 ```
 

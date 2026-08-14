@@ -199,6 +199,16 @@ PUERTAS: List[Dict[str, Any]] = [
                "escalón y se publican, así que ajustarlos para pasar no es una "
                "opción, y la baseline solo encoge",
     },
+    {
+        "id": "excepcion_declarada",
+        "cmd": ["vault_excepcion_declarada.py", "--check", "--strict"],
+        "mide": "Ningún handler captura la excepción que una librería declara "
+                "dejando escapar la que lanza de verdad (AP-61)",
+        "fix": "delegar en el dueño que ya la contuvo —para el frontmatter, "
+               "vault_lib.parse_frontmatter— o nombrar la excepción citando al "
+               "dueño; ampliar la tupla en trece sitios sin dueño es AP-57 "
+               "cometido al arreglar AP-61",
+    },
 ]
 
 

@@ -152,11 +152,19 @@ def _frontmatter(texto: str) -> Any:
 
     try:
         datos = yaml.safe_load(partes[1])
-    except yaml.YAMLError:
-        # Solo el error de parseo, y solo aquí: un `except Exception` haría que
-        # un fallo de la tool se contase como frontmatter roto del vault ajeno,
-        # que es AP-51 exactamente en el sitio donde más caro sale — midiendo
-        # material que no conocemos y que no puede defenderse.
+    except (yaml.YAMLError, RecursionError):
+        # Solo los errores de parseo, y solo aquí: un `except Exception` haría
+        # que un fallo de la tool se contase como frontmatter roto del vault
+        # ajeno, que es AP-51 exactamente en el sitio donde más caro sale —
+        # midiendo material que no conocemos y que no puede defenderse.
+        #
+        # `RecursionError` va en la tupla por AP-61, y el porqué lo escribió su
+        # dueño canónico en `vault_lib.parse_frontmatter`: el parser de PyYAML
+        # es recursivo, `RecursionError` NO hereda de `YAMLError`, y doce
+        # caracteres de anidamiento en UNA nota tumbaban la medida entera. Aquí
+        # no se delega en `vault_lib` porque esta función devuelve tres estados
+        # —`None` sin bloque, `False` roto, dict— y el dueño colapsa los dos
+        # primeros en `{}`; distinguirlos es justo lo que AP-51 pide.
         return False
     return datos if isinstance(datos, dict) else False
 

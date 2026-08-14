@@ -204,8 +204,13 @@ def validate_frontmatter(note_path: Path) -> Dict[str, Any]:
 
         data = yaml.safe_load(parts[1])
 
-    except yaml.YAMLError as e:
+    except (yaml.YAMLError, RecursionError) as e:
 
+        # AP-61: `RecursionError` no hereda de `YAMLError` y el parser de PyYAML
+        # es recursivo — el porqué completo está en el dueño canónico del
+        # criterio, `vault_lib.parse_frontmatter`. Aquí no se delega en él
+        # porque esta función devuelve el motivo del rechazo (`{"valid": …,
+        # "error": …}`) y el dueño devuelve `{}` sin decir por qué.
         return {"valid": False, "error": f"YAML parse error: {e}"}
 
 

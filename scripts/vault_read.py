@@ -31,6 +31,7 @@ import re
 import sys
 
 from vault_errors import emit_error, wrap_main
+from vault_lib import parse_frontmatter_with_body as _parse_frontmatter_with_body
 
 from vault_io import assert_within_vault
 from vault_encoding import decode_safely, normalize_to_nfc
@@ -65,41 +66,21 @@ def _history_dir() -> Path:
 
 
 def parse_frontmatter(content: str) -> tuple[Dict[str, Any], str]:
-    """Parse YAML frontmatter and return meta dict and body."""
+    """Frontmatter de una nota. Delega en el dueño canónico (AP-44/AP-57).
 
-    frontmatter_match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
-
-    if not frontmatter_match:
-        return {}, content
-
-    frontmatter_text = frontmatter_match.group(1)
-
-    body = content[frontmatter_match.end() :].strip()
-
-    meta = {}
-
-    for line in frontmatter_text.split("\n"):
-        if ":" in line:
-            key, value = line.split(":", 1)
-
-            key = key.strip()
-
-            value = value.strip().strip("\"'")
-
-            # Handle JSON arrays/objects
-
-            if value.startswith("[") or value.startswith("{"):
-                try:
-                    value = json.loads(value)
-
-                except json.JSONDecodeError:
-                    pass
-
-            meta[key] = value
-
-    return meta, body
-
-
+    Hasta v40.23 esto era un regex línea a línea, copiado en seis módulos. Medido
+    sobre el corpus de `vault-sandbox/` (126 notas), devolvía `{{}}` —"esta nota no
+    tiene frontmatter"— en **110** de ellas: el patrón `^---
+` no casa `---
+`
+    ni sobrevive al BOM que dejan los editores de Windows, y ambas cosas están en
+    el material real. Además leía todo valor como texto: `evergreen: true` salía
+    `'true'`, que es verdadero como cadena aun cuando el dato diga lo contrario.
+    `vault_lib.parse_frontmatter` hace BOM-strip, YAML de verdad, normaliza fechas
+    y contiene `RecursionError` (AP-61).
+    """
+    meta, body = _parse_frontmatter_with_body(content)
+    return meta, body.strip()  # el `.strip()` es el contrato de esta tool, no del dueño
 def extract_wiki_links(content: str) -> List[str]:
     """Extract wiki-links [[note]] from content.
 

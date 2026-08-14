@@ -176,6 +176,18 @@ def check_contract(frag: Fragment, args: Dict[str, Any]) -> List[Finding]:
 
     supplied = {normalize_arg(k): v for k, v in args.items()}
 
+    # Falla cerrado: si el contrato no se pudo leer, `required_args` está vacía
+    # por ignorancia y no por acuerdo. Hasta v40.23 esto salía verde —cero
+    # obligatorios, cero hallazgos—, así que un `tool-spec.json` corrupto
+    # desactivaba esta comprobación entera sin que nada lo dijera (AP-51).
+    if not frag.contract_known:
+        findings.append(Finding(
+            "CONTRACT-UNREADABLE", "high", "tool-spec.json",
+            f"el contrato formal no se pudo leer, así que los argumentos "
+            f"obligatorios de '{frag.name}' no se están validando; "
+            "diagnostica con `python -m cli doctor`",
+        ))
+
     for req in frag.required_args:
         if req not in supplied or supplied[req] in (None, ""):
             findings.append(Finding(
