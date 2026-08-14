@@ -7232,7 +7232,7 @@ temp/
 
 ---
 
-### v40.18 — 2026-08-13 `git: pending`
+### v40.18 — 2026-08-13 `git: 1286e49`
 
 **El mismo criterio escrito cinco veces, y por qué ningún guard lo veía.**
 
