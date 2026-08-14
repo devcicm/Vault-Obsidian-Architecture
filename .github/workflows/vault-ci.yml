@@ -33,32 +33,20 @@ jobs:
       - name: Run unit tests
         run: python -m pytest tests/ --tb=short
 
-      - name: Catalog sync check
-        run: python scripts/vault_mcp_catalog.py --check
-
-      - name: Framework drift check (registro canónico ↔ manifiesto)
-        run: python scripts/vault_norms.py --check-framework
-
-      # Ninguna cifra de la documentación se escribe a mano sin verificarse.
-      # Sin --no-slow: aquí sí se cuenta la suite, que es la cifra que más
-      # envejece. El changelog queda excluido por diseño (es historia).
-      - name: Doc counts drift check (cifras ↔ registro)
-        run: python scripts/vault_doc_counts.py --check --strict
-
-      # La otra mitad del mismo problema: los nombres. Una tool nueva que no
-      # llega a scripts/README.md existe pero es invisible en la referencia.
-      - name: Doc sync check (catálogo ↔ scripts/README.md)
-        run: python scripts/vault_doc_sync.py --check --strict
-
-      # Y la tercera: los contratos. Una tool sin entrada en tool-spec.json se
-      # expone por MCP sin que nadie pueda validar lo que devuelve.
-      - name: Contract sync check (catálogo ↔ tool-spec.json)
-        run: python scripts/vault_mcp_catalog.py --check-contracts
-
-      # AP-37: la deuda de tools sin indicador de trabajo no bloquea, pero no
-      # puede crecer. Falla solo si aparece una infractora NUEVA.
-      - name: No-op audit (AP-37, la deuda no crece)
-        run: python scripts/vault_noop_audit.py --check --strict
+      # Las puertas, preguntándole al registro en vez de listándolas a mano.
+      #
+      # Hasta v40.19 este fichero enumeraba seis puertas escritas una a una:
+      # catálogo, framework, conteos, doc_sync, contratos y noop. El registro
+      # `vault_gate.PUERTAS` tenía diecisiete, así que **once no se ejecutaban
+      # en ningún PR** — changelog, arquitectura, servicio, blueprint,
+      # norms_coherence, criterios, fuente_unica, ciclos entre ellas. Ninguna se
+      # rompió: la lista simplemente se quedó quieta mientras el registro crecía,
+      # que es como envejece una copia. Es AP-57 a través de la frontera
+      # Python↔YAML, y `vault_criterios` lo mide desde v40.19.
+      #
+      # Una puerta nueva entra aquí sola, el día que entra en el registro.
+      - name: Puertas del estándar (registro vault_gate, todas)
+        run: python scripts/vault_gate.py --strict
 
       # AP-40: ningún param publicado por MCP puede ser rechazado por la CLI.
       # Se audita el JSON generado, que es lo que el servidor consume de verdad.

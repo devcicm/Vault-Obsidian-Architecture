@@ -12,7 +12,7 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~6.000 líneas). Fuente normativa. |
 | `scripts/*.py` | ~130 scripts, 104 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (2747 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (2763 tests). Toda norma con guard debe tener test. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
 | `vault-sandbox/` | **Único** vault de pruebas del repo. Todo runtime va aquí. |
@@ -225,9 +225,16 @@ Lo que sigue no sale de ningún campo y por eso está escrito: son decisiones y 
 que costaron una tanda cada una.
 
 **1. Un guard verde dice menos de lo que parece, y cada uno declara cuánto menos.**
-`vault_criterios` (AP-57) solo mira los módulos que nombran `*.md` —lo publica en
-`modules_measured`/`modules_skipped`— y detecta copias sintácticas: un módulo puede
-reimplementar un criterio sin repetir una constante y no lo verá. `vault_fuente_unica`
+`vault_criterios` (AP-57) mide dos cosas con alcances distintos. **En Python**, solo los
+módulos que nombran `*.md` —lo publica en `modules_measured`/`modules_skipped`— y por
+copia sintáctica: un módulo puede reimplementar un criterio sin repetir una constante y no
+lo verá. **En las fronteras de lenguaje** (v40.19) mide los ficheros de `FRONTERAS` —el
+`.mjs`, la CI, el `Makefile`, el `.ps1`— y allí la exención no es importar al dueño, que no
+se puede, sino **leer la pasarela**: el artefacto derivado por el que el criterio cruza.
+El alcance se declara: un ejecutable de otro lenguaje fuera de toda zona sale como
+`frontera_no_declarada`, porque un sitio donde una copia no se vería vale tanto como una
+copia. Lo que sigue sin ver es el `.mjs` que reimplemente la decisión sin escribir la
+constante. `vault_fuente_unica`
 (AP-05) cubre el dato **tipado** escrito como `clave: valor`; la divergencia en prosa y
 la del sinónimo (`ip:` frente a `direccion_ip:`) no las mide nadie, y por eso el catálogo
 declara `cobertura_parcial` en vez de dar la norma por cubierta. `vault_norms_coherence`

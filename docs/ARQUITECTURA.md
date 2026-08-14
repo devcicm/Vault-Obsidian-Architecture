@@ -2,7 +2,7 @@
 
 > Documento derivado. Se genera con `python scripts/vault_arch.py --blueprint`; la fuente es `CONTEXTS` en `scripts/vault_arch.py`. No se edita a mano.
 
-**9 contextos**, **130 módulos** clasificados, **61 fronteras cruzadas** pendientes de publicar puerto.
+**9 contextos**, **130 módulos** clasificados, **62 fronteras cruzadas** pendientes de publicar puerto.
 
 ## Los límites
 
@@ -197,12 +197,13 @@ Fronteras que hoy cruza (15), deuda declarada:
 - **No cruza:** escribir en una sección de contenido: sus artefactos derivados viven en 00_System/
 - **Módulos (24):** `vault_arch`, `vault_blame_audit`, `vault_blueprint`, `vault_changelog_check`, `vault_ciclos`, `vault_criterios`, `vault_doc_counts`, `vault_doc_sync`, `vault_error_contract`, `vault_firma_sitio`, `vault_foreign_check`, `vault_gate`, `vault_manifest`, `vault_mcp`, `vault_mcp_catalog`, `vault_noop_audit`, `vault_norms_coherence`, `vault_servicio`, `vault_smoke`, `vault_spec_catalog_check`, `vault_spec_generate_catalog`, `vault_spec_memory`, `vault_spec_validate`, `vault_test_runner`
 
-Fronteras que hoy cruza (11), deuda declarada:
+Fronteras que hoy cruza (12), deuda declarada:
 
 | Módulo | Importa | Contexto destino |
 |---|---|---|
 | `vault_blueprint` | `vault_norms` | Gobernanza |
 | `vault_changelog_check` | `vault_standard_upgrade` | Ciclo de vida |
+| `vault_criterios` | `vault_norms` | Gobernanza |
 | `vault_doc_counts` | `vault_norms` | Gobernanza |
 | `vault_foreign_check` | `vault_audit` | Gobernanza |
 | `vault_manifest` | `vault_fundamentals` | Gobernanza |

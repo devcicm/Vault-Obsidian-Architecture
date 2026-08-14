@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.18 — 2026-08-13  
+**Versión:** v40.19 — 2026-08-14  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -6291,6 +6291,36 @@ símbolo por el que se consulta y las constantes que lo delatan—, puerta 15
 (`vault_criterios --check --strict`), baseline que **solo encoge**. Se salda importando al
 dueño, no ampliando la baseline.
 
+**La frontera de lenguaje, y por qué la norma tenia un lado ciego (v40.19).** Hasta v40.18
+esta medida solo leia `scripts/*.py`. El hueco costo una tanda entera: el criterio «esta tool
+no tiene script Python» estaba escrito cuatro veces —`cli/registry.py`, el literal del `.mjs`,
+`check_contracts` con su regex y el test de AP-48 con otra— y AP-57 no podia verlo porque una
+de las copias no era Python. **Una norma que parece cubierta y tiene un lado ciego es peor que
+una sin detector**, porque nadie vuelve a mirar.
+
+Un `.mjs`, un workflow de CI o un `Makefile` no pueden importar un registro Python. Esa
+imposibilidad es lo que crea la frontera, y también lo que da la exención: al otro lado no se
+importa al dueño, se **lee la pasarela** —el artefacto derivado que lleva el criterio—.
+Nombrar la constante no es el delito; decidirla por cuenta propia sí. El servidor MCP nombra
+cinco variables de entorno y no es una copia: lee `env-table.json`.
+
+Cada frontera se declara con tres cosas que ya tienen dueño y no se redefinen ahí: la **zona**
+(clave de `vault_arch.CONTEXTS`), la **norma** (código de `vault_norms`) y la **pasarela**. El
+guard comprueba que las tres existen — el detector de criterios copiados no puede permitirse
+inventarse los suyos.
+
+Lo que midió al nacer no era hipotético: **la CI listaba a mano seis puertas de las diecisiete
+del registro**. Once no se ejecutaban en ningún PR —changelog, arquitectura, servicio,
+blueprint, norms_coherence, criterios, fuente_unica, ciclos entre ellas— y nada estaba roto. La
+lista simplemente se quedó quieta mientras el registro crecía. Una copia a través de una
+frontera no diverge de golpe: **se atrasa**, que es más difícil de ver. El `Makefile` decía
+`check` sin ejecutar ninguna. Los dos preguntan ahora al registro.
+
+Y el alcance se declara igual que la medida: un ejecutable de otro lenguaje que no cae en
+ninguna zona sale como `frontera_no_declarada`. **Un sitio donde una copia no se vería vale
+tanto como una copia** — es el cero fabricado que AP-58 acababa de destapar en los ciclos, un
+piso más arriba.
+
 **El límite, dicho antes de que nadie se apoye en él.** La detección es **sintáctica**: mira
 si un módulo que clasifica notas reescribe la constante distintiva del dueño sin importar su
 símbolo. No hay forma general de decidir si dos funciones calculan lo mismo, así que un módulo
@@ -6892,6 +6922,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.19 | 2026-08-14 | AP-57 tenía un lado ciego declarado en ninguna parte: `vault_criterios` solo leía `scripts/*.py`, así que la copia de un criterio al otro lado de una **frontera de lenguaje** era justo la que la norma no podía ver — y v40.18 acababa de encontrar una. Se añade el registro `FRONTERAS`: cada frontera con su **zona** (clave de `vault_arch.CONTEXTS`), su **norma** y la **pasarela** por la que el criterio debe cruzar; al otro lado la exención no es importar al dueño, que no se puede, sino leer el artefacto derivado. Cuatro fronteras declaradas — `.mjs`, CI, `Makefile`, `.ps1` — y el alcance también: un ejecutable de otro lenguaje fuera de toda zona sale como `frontera_no_declarada`. Lo que midió al nacer: **la CI listaba a mano seis puertas de las diecisiete del registro y once no se ejecutaban en ningún PR** —changelog, arquitectura, blueprint, ciclos, criterios entre ellas—, y `make check` no ejecutaba ninguna. Nada estaba roto: la lista se quedó quieta mientras el registro crecía, que es como envejece una copia a través de una frontera. Los dos preguntan ahora al registro |
 | v40.18 | 2026-08-13 | El criterio «esta tool no tiene script Python» estaba escrito **cinco veces** —`cli/registry.py`, el literal del `.mjs`, `check_contracts` con su propia regex, el test de AP-48 con la suya, y ninguna comparación entre ellas— a través de una frontera de lenguaje que `vault_criterios` (AP-57) no puede cruzar porque solo lee módulos Python. Ya había cobrado una vez: siete tools se despachaban en JS mientras `vault_smoke` probaba el `.py`, y `vault_graph` devolvía `ok: true` sin escribir el grafo. Ahora el dueño es `vault_mcp_catalog.NATIVE_JS_TOOLS`, viaja en `js_native_tools` del catálogo, y los cuatro consumidores lo leen de ahí; `--check` contrasta Python, JSON y el respaldo del `.mjs`, y `--check-contracts` y el test de AP-48 dejan de traer lector propio. El cambio de `const` a `let` —necesario para que el catálogo pueda sobreescribirlo— rompió dos lectores en el acto: la prueba de que eran copias, no vistas |
 | v40.17 | 2026-08-13 | El repo declaraba **cero ciclos de importación** y era verdad leyendo solo el nivel de módulo: el cero lo fabricaban **92 imports diferidos en 40 módulos**, el rompe-ciclos manual aplicado tantas veces que dejó de ser excepción y pasó a ser la arquitectura sin que nadie lo decidiera. Contándolos aparece un componente fuertemente conexo de **14 módulos** con el núcleo entero dentro — el que hacía que `vault_errors_trace`, un escritor de trazas de bajo nivel, importase `vault_io` completo para tres símbolos. **AP-58** y `vault_ciclos` (puerta 17) lo miden, y la deuda son **30 de 92**: solo los diferidos cuyo destino vuelve al origen; los otros 62 se publican sin congelarse, porque una baseline llena de ruido es una que nadie revisa. La inversión se ejecuta una vez: `vault_raiz`, `vault_fs` y `vault_ledger` salen de `vault_io` como hojas por la costura mecanismo/política, `vault_io` reexporta cada símbolo y ningún consumidor se toca. El trace pasa a pedir `escritura_atomica` con `guarda_secretos` en vez de la política entera. Y verificar las dos afirmaciones del cierre destapó un tercer defecto que el refactor no había tocado: el test que decía medir la cascada de trazas **pasaba con el bucle reintroducido**, porque alimentaba JSON impecable del que el saneado no saca ni un fix — AP-44 cometido dentro de la prueba que existe para cazarlo. Con comillas tipográficas y NBSP: 5 trazas, **960 escrituras** |
 | v40.16 | 2026-08-13 | Cinco defectos que un QA externo vio desde fuera y ninguna puerta veía desde dentro, todos con la misma forma: la medida estaba verde y verde no significaba lo que decía. `vault_ingest` extraía wikilinks de dentro de un fence, escribía frontmatter sin `yaml_scalar` y perdía en silencio la nota que no se pudo escribir; `vault_graph_fix` aplicaba un informe sobre un fichero ya cambiado y ahora lo para con `source_sha` y `STALE_REPORT`; dos tools respondían a un `file_lock` fallido escribiendo igual (AP-54). AP-21 corría sobre el texto crudo y rechazaba la nota que documenta AP-21 — es la única medida de `scan_content` que se recorta al fence, porque mide resolución de enlaces y no seguridad. La capacidad consulta → contexto era **inalcanzable por MCP**: la pregunta era posicional, no se publicaba en el `inputSchema` y `--check-params` medía la única dirección que no ve ese caso. Y tres guards medían menos de lo que decían: la capa 4 del plano daba una norma por cubierta si un test la **mencionaba** —22 de 69, irreversible por baseline que solo encoge—, `_BASELINES` publicaba 6 de las 9 baselines del repo, y C2 de AP-55 aceptaba la cabecera del módulo que su propia baseline prohíbe desde v40.11. El checklist de puertas de `CLAUDE.md` deja de escribirse a mano: lo genera `vault_gate --fix-doc` desde `PUERTAS` y `--check-doc` lo compara literalmente |
@@ -7229,6 +7260,56 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v40.19 — 2026-08-14 `git: pending`
+
+**La norma que parecía cubierta y no miraba a un lado.**
+
+v40.18 cerró un criterio escrito cuatro veces a través de la frontera Python↔JavaScript.
+Al cerrarlo quedó dicho, y sin arreglar, lo incómodo: **AP-57 existe exactamente para
+eso y no pudo verlo**, porque `vault_criterios` solo leía `scripts/*.py`. Una norma sin
+detector es una deuda declarada. Una norma con detector y un lado ciego que nadie
+publica es peor: parece cubierta, y por eso nadie vuelve a mirar.
+
+**Qué crea la frontera.** Un `.mjs`, un workflow de CI o un `Makefile` no pueden
+importar un registro Python. Esa imposibilidad es la frontera, y es también la que da
+la exención: al otro lado no se importa al dueño —no se puede—, se **lee la pasarela**,
+el artefacto derivado que lleva el criterio. Nombrar la constante no es el delito;
+decidirla por cuenta propia sí. El servidor MCP nombra cinco variables de entorno y no
+es una copia: lee `env-table.json`.
+
+**El registro.** `vault_criterios.FRONTERAS` declara cada frontera con tres cosas que ya
+tienen dueño en otro sitio y no se redefinen ahí: la **zona** (clave de
+`vault_arch.CONTEXTS`), la **norma** (código de `vault_norms`) y la **pasarela**. El
+guard comprueba que las tres existen — el detector de criterios copiados no puede
+permitirse inventarse los suyos. Cuatro fronteras: Node, CI, Make, PowerShell. La última
+hoy no nombra nada del registro y se declara igual, para que el día que alguien le añada
+una variable entre medida en vez de entrar invisible.
+
+**Lo que midió al nacer, que no era hipotético.** La CI listaba a mano **seis** puertas
+de las **diecisiete** del registro. Once no se ejecutaban en ningún PR: changelog,
+arquitectura, servicio, blueprint, norms_coherence, criterios, fuente_unica, ciclos entre
+ellas. Y `make check` —lo que ejecuta quien no ha leído `CLAUDE.md`— no ejecutaba
+ninguna. Nada estaba roto y nada había divergido: la lista escrita a mano simplemente se
+quedó quieta mientras el registro crecía. **Una copia a través de una frontera no diverge
+de golpe; se atrasa**, que es bastante más difícil de ver. Los dos preguntan ahora al
+registro, así que una puerta nueva entra sola el día que entra en `PUERTAS`.
+
+**El alcance se declara, no se supone.** Un ejecutable de otro lenguaje que no cae en
+ninguna zona declarada sale como `frontera_no_declarada`. No es una copia: es un sitio
+donde una copia no se vería, y vale lo mismo. Es el cero fabricado que AP-58 destapó en
+los ciclos, un piso más arriba. Las exclusiones se listan una a una y con motivo —una
+exclusión por patrón se traga lo que venga después.
+
+**Lo que sigue sin ver, dicho aquí y no en un campo vacío:** un `.mjs` que reimplemente
+la decisión sin escribir ninguna constante. La detección sigue siendo sintáctica a los
+dos lados de la frontera.
+
+Dieciséis tests en `tests/test_criterios_fronteras.py`. Los que deciden son los tres
+mutantes: un `.mjs` que nombra una tool nativa sin leer el catálogo, una CI que vuelve a
+listar puertas a mano, y un `.sh` en una zona que nadie declaró.
 
 ---
 

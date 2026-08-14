@@ -135,7 +135,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-54** — El lock falla y se escribe igual | guard | `arquitectura` | `test_lock_reentrante.py` |
 | **AP-55** — El catálogo de normas se certifica a sí mismo | guard+audit | `norms_coherence` | `test_norms_coherence.py` |
 | **AP-56** — Frontmatter presente que el consumidor no puede leer | guard+audit | — | `test_ap56_frontmatter_heal.py` |
-| **AP-57** — Criterio con dueño, reimplementado en la medida | guard | `criterios` | `test_ap57_criterios.py` |
+| **AP-57** — Criterio con dueño, reimplementado en la medida | guard | `criterios` | `test_ap57_criterios.py`, `test_criterios_fronteras.py` |
 | **AP-58** — Ciclo esquivado con un import diferido | guard | `ciclos` | `test_ciclos.py` |
 | **PAT-6** — Semantic graph enrichment — enriquecimiento periodico del grafo | recommended | — | — |
 | **SP-01** — Delete protocol — change_log obligatorio antes de eliminar | audit | `framework` | `test_vault_norms.py` |
@@ -335,7 +335,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 
 | Baseline | Norma | Congelado |
 |---|---|---|
-| `scripts/arch-baseline.json` | cruces entre contextos | 61 |
+| `scripts/arch-baseline.json` | cruces entre contextos | 62 |
 | `scripts/arch-baseline.json` | cruces fuera de puerto | 13 |
 | `scripts/blame-baseline.json` | AP-51 | 84 |
 | `scripts/error-contract-baseline.json` | AP-52 | 9 |

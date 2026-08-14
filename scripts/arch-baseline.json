@@ -15,6 +15,7 @@
     "vault_code_tag -> vault_norms",
     "vault_code_tag -> vault_write",
     "vault_context_pack -> vault_search",
+    "vault_criterios -> vault_norms",
     "vault_doc_counts -> vault_norms",
     "vault_env_matrix -> vault_norms",
     "vault_foreign_check -> vault_audit",
