@@ -19,13 +19,14 @@ import sys
 from pathlib import Path
 from typing import Any, Dict
 
-from vault_errors import wrap_main
+from vault_errors import emit_fallo, wrap_main
 from vault_io import write_report
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.durabilidad.restauracion import ServicioRestauracion  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.fallos import FalloDeDominio  # noqa: E402
 
 #: La ubicación anterior a v38.1: hermana del repo, FUERA de todo vault. Se
 #: sigue consultando **solo para leer** porque hay copias reales ahí de las que
@@ -37,9 +38,12 @@ LEGACY_BACKUP_ROOT = Path(__file__).resolve().parent.parent.parent / "vault-back
 
 def vault_restore(backup_name: str, confirm: bool = False, root=None) -> Dict[str, Any]:
     servicio = ServicioRestauracion(construir(root), raiz_legacy=LEGACY_BACKUP_ROOT)
-    resultado = servicio.restaurar(backup_name, confirm)
-    if not resultado.get("ok", True):
-        return resultado
+    try:
+        resultado = servicio.restaurar(backup_name, confirm)
+    except FalloDeDominio as e:
+        # La frontera. `hint` y `searched` sobreviven porque viajan en
+        # `fallo.datos` y son campos estables de esta tool (v40.29).
+        return emit_fallo("vault_restore", e)
     _reindexar_si_procede()
     return {"ok": True, **write_report(), **resultado}
 

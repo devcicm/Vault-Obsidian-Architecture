@@ -22,8 +22,11 @@ la fachada se paga el motor.
 ## Qué NO va aquí
 
 El número de versión aparece además en el banner del manifiesto, en la tabla de
-versiones, en el badge del `README.md`, en `pyproject.toml` y en el
-`tool-spec.json` del sandbox. **Esos no se importan de aquí y no deben:** son
+versiones, en el badge del `README.md`, en el banner de `cli/README.md`, en
+`pyproject.toml` y en el `tool-spec.json` del sandbox. Eran **seis y aquí
+ponía cinco**: el de `cli/README.md` faltaba de esta lista y lo destapó
+`test_el_banner_de_la_cli_coincide` al subir a v40.29, que es exactamente para
+lo que ese test existe. **Ninguno se importa de aquí y ninguno debe:** son
 documentos y metadatos de empaquetado, cada uno con su formato, y quien los
 vigila es `vault_doc_counts` y el test del banner. Convertir este módulo en el
 generador de los cinco sería mover el problema, no resolverlo.
@@ -32,4 +35,4 @@ generador de los cinco sería mover el problema, no resolverlo.
 #: La versión del estándar en curso. Se sube a mano en la tanda que la cierra,
 #: junto con el banner del manifiesto, la tabla de versiones, el badge del
 #: README, `pyproject.toml` y el `tool-spec.json` del sandbox.
-CURRENT_VERSION = "v40.28"
+CURRENT_VERSION = "v40.29"

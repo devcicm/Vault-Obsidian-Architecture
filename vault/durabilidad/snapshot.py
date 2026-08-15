@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Sequence
 
 from ..kernel.contexto import VaultContext
+from ..kernel.fallos import FalloDeDominio
 from .modelo import Backup
 from .repositorio import CARPETA_BACKUPS, FICHERO_MANIFIESTO, RepositorioDurabilidad
 
@@ -203,23 +204,28 @@ class ServicioSnapshot:
         try:
             ruta = self._repo.ruta_de(nombre)
         except ValueError:
-            return {"ok": False, "error": f"Backup no encontrado: {nombre}"}
+            raise FalloDeDominio("BACKUP_NO_ENCONTRADO",
+                                 f"Backup no encontrado: {nombre}") from None
         if not ruta.exists():
-            return {"ok": False, "error": f"Backup no encontrado: {nombre}"}
+            raise FalloDeDominio("BACKUP_NO_ENCONTRADO",
+                                 f"Backup no encontrado: {nombre}")
 
         manifiesto = ruta / FICHERO_MANIFIESTO
         if not manifiesto.exists():
-            return {"ok": False,
-                    "error": f"manifest {FICHERO_MANIFIESTO} no encontrado en el backup"}
+            raise FalloDeDominio(
+                "MANIFIESTO_AUSENTE",
+                f"manifest {FICHERO_MANIFIESTO} no encontrado en el backup")
         try:
             datos = json.loads(manifiesto.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError) as e:
-            return {"ok": False, "error": f"manifest no legible: {e}"}
+            raise FalloDeDominio("MANIFIESTO_ILEGIBLE",
+                                 f"manifest no legible: {e}") from e
 
         sellada = datos.get("merkle_root")
         if not sellada:
-            return {"ok": False,
-                    "error": "manifest no contiene merkle_root (backup pre-v29)"}
+            raise FalloDeDominio(
+                "MANIFIESTO_SIN_HUELLA",
+                "manifest no contiene merkle_root (backup pre-v29)")
 
         algo = datos.get("merkle_algo", 1)
         actual, cuenta = merkle_de(ruta, algo)

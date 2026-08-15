@@ -21,13 +21,14 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from vault_errors import wrap_main
+from vault_errors import emit_fallo, wrap_main
 from vault_io import write_report
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.durabilidad.snapshot import ServicioSnapshot  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.fallos import FalloDeDominio  # noqa: E402
 
 
 def vault_backup(label: Optional[str] = None, root=None) -> Dict[str, Any]:
@@ -43,7 +44,17 @@ def vault_backup(label: Optional[str] = None, root=None) -> Dict[str, Any]:
 
 
 def vault_backup_verify(backup_name: str, root=None) -> Dict[str, Any]:
-    return ServicioSnapshot(construir(root)).verificar(backup_name)
+    """Verifica la huella de un snapshot.
+
+    El `except` está aquí y no dentro del dominio porque esta función **es** la
+    frontera: el dominio nombra la causa —cuál de los tres estados del
+    manifiesto impide verificar— y el adaptador la convierte en `error_code` y
+    `recovery`. Ver `vault/kernel/fallos.py` (v40.29).
+    """
+    try:
+        return ServicioSnapshot(construir(root)).verificar(backup_name)
+    except FalloDeDominio as e:
+        return emit_fallo("vault_backup", e)
 
 
 def main():

@@ -68,6 +68,63 @@ def emit_error(
     return entry
 
 
+#: Causa del dominio -> código del catálogo. La otra mitad de la frase que
+#: `vault/kernel/fallos.py` empieza: allí se nombra **qué pasó**, aquí **qué
+#: puede hacer el consumidor**.
+#:
+#: Vive en un solo sitio a propósito. La misma tabla repartida entre
+#: `vault_folder_registry`, `vault_backup` y `vault_restore` sería AP-57
+#: cometido justo al saldar AP-52: tres adaptadores decidiendo por su cuenta
+#: qué código le toca a una causa que no es suya. Un test comprueba que cubre
+#: `fallos.CAUSAS` entera y que ningún destino falta del `ERROR_CATALOG`.
+#:
+#: Que tres causas del manifiesto compartan destino no pierde información: la
+#: causa exacta viaja en el campo `causa` del envelope. El catálogo dice cómo se
+#: recupera, y de las tres se recupera igual.
+MAPA_DE_FALLOS: Dict[str, str] = {
+    "CARPETA_YA_REGISTRADA": "INVALID_FOLDER",
+    "CARPETA_NO_ENCONTRADA": "FOLDER_NOT_FOUND",
+    "BACKUP_NO_ENCONTRADO": "BACKUP_NOT_FOUND",
+    "MANIFIESTO_AUSENTE": "BACKUP_MANIFEST_INVALID",
+    "MANIFIESTO_ILEGIBLE": "BACKUP_MANIFEST_INVALID",
+    "MANIFIESTO_SIN_HUELLA": "BACKUP_MANIFEST_INVALID",
+    "CONFIRMACION_REQUERIDA": "MISSING_REQUIRED_ARG",
+}
+
+
+def emit_fallo(tool: str, fallo: Any) -> Dict[str, Any]:
+    """Traduce un `FalloDeDominio` al envelope de la herramienta.
+
+    Es el único punto donde el vocabulario del dominio se convierte en contrato
+    de salida, y por eso es el único sitio de `scripts/` que sabe que
+    `fallos.CAUSAS` existe.
+
+    Toma el fallo por pato y no por `isinstance`: importar `vault/kernel` desde
+    aquí invertiría la dependencia —el kernel del vault no debe estar debajo del
+    catálogo de errores de la tool— y no compra nada, porque una causa que no
+    esté en `MAPA_DE_FALLOS` ya falla igual.
+
+    **`error` se sigue emitiendo.** No es redundante con `message`: es un campo
+    estable declarado en `field-compat-baseline.json` para `vault_restore`, y el
+    contrato dice que un campo estable no desaparece porque hayamos mejorado el
+    envelope por debajo. Lo mismo con `hint` y `searched`, que llegan por
+    `fallo.datos`. Quitarlos habría sido cambiar el arreglo de AP-52 por una
+    infracción del contrato de campos.
+    """
+    causa = getattr(fallo, "causa", None)
+    if causa not in MAPA_DE_FALLOS:
+        raise ValueError(
+            f"causa sin traducción al catálogo: {causa!r}. Añadirla a "
+            "MAPA_DE_FALLOS es parte de declararla en fallos.CAUSAS."
+        )
+    mensaje = getattr(fallo, "mensaje", None) or str(fallo)
+    envelope = emit_error(tool, MAPA_DE_FALLOS[causa], mensaje)
+    envelope["causa"] = causa
+    envelope["error"] = mensaje
+    envelope.update(getattr(fallo, "datos", None) or {})
+    return envelope
+
+
 def emit_ok(tool: str, data: Dict[str, Any]) -> Dict[str, Any]:
     """Produce envelope de éxito uniforme y registra en trace log."""
     result = {

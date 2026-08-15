@@ -95,6 +95,37 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": None,
         },
     },
+    # v40.29 — los dos que faltaban para que las causas del dominio de
+    # durabilidad tuvieran traducción. Sin ellos habría que haber mapeado
+    # «backup inexistente» a `FILE_NOT_FOUND`, cuya recuperación manda ejecutar
+    # `vault_search` sobre las notas: un `recovery` que no recupera es peor que
+    # no tenerlo, porque el consumidor sí lo obedece.
+    "BACKUP_NOT_FOUND": {
+        "category": "not_found",
+        "severity": "error",
+        "message": "No existe un snapshot con ese nombre.",
+        "recovery": {
+            "action": "run_tool",
+            "tool": "vault_backup",
+            "args": ["--list"],
+            "hint": "Listar los snapshots disponibles y reintentar con un "
+                    "nombre de la lista. `searched` dice dónde se buscó.",
+            "docs": None,
+        },
+    },
+    "BACKUP_MANIFEST_INVALID": {
+        "category": "io",
+        "severity": "error",
+        "message": "El manifiesto del snapshot no sirve para verificar su huella.",
+        "recovery": {
+            "action": "manual",
+            "hint": "El campo `causa` distingue los tres casos: sin manifiesto, "
+                    "manifiesto ilegible (la copia puede estar truncada) o "
+                    "manifiesto sin merkle_root (copia anterior a v29, que no "
+                    "es corrupción sino que aún no se sellaba).",
+            "docs": None,
+        },
+    },
     # ── Validation ────────────────────────────────────────────────────────────
     "MISSING_REQUIRED_ARG": {
         "category": "validation",

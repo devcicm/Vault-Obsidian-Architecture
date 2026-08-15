@@ -2,44 +2,7 @@
   "norm": "AP-52",
   "schema": 2,
   "description": "Deuda conocida de envelopes de error construidos a mano, sin error_code / category / severity / recovery del ERROR_CATALOG. Incluye algunos envelopes internos que nunca se imprimen: la medida es de forma, no de flujo. Indexada por firma de sitio (módulo::función::hash del código normalizado), no por línea. Esta lista solo puede ENCOGER.",
-  "sites": [
-    {
-      "firma": "vault/durabilidad/restauracion.py::ServicioRestauracion.restaurar::3a9c2bf1",
-      "visto_en": "vault/durabilidad/restauracion.py:84"
-    },
-    {
-      "firma": "vault/durabilidad/restauracion.py::ServicioRestauracion.restaurar::b21cfb12",
-      "visto_en": "vault/durabilidad/restauracion.py:75"
-    },
-    {
-      "firma": "vault/durabilidad/snapshot.py::ServicioSnapshot.verificar::16d9b5e7",
-      "visto_en": "vault/durabilidad/snapshot.py:221"
-    },
-    {
-      "firma": "vault/durabilidad/snapshot.py::ServicioSnapshot.verificar::3b0e5971",
-      "visto_en": "vault/durabilidad/snapshot.py:212"
-    },
-    {
-      "firma": "vault/durabilidad/snapshot.py::ServicioSnapshot.verificar::4c362fce",
-      "visto_en": "vault/durabilidad/snapshot.py:217"
-    },
-    {
-      "firma": "vault/durabilidad/snapshot.py::ServicioSnapshot.verificar::792349e7",
-      "visto_en": "vault/durabilidad/snapshot.py:206"
-    },
-    {
-      "firma": "vault/durabilidad/snapshot.py::ServicioSnapshot.verificar::792349e7#2",
-      "visto_en": "vault/durabilidad/snapshot.py:208"
-    },
-    {
-      "firma": "vault/indices/carpetas.py::ServicioCarpetas.anadir::edb1efe0",
-      "visto_en": "vault/indices/carpetas.py:135"
-    },
-    {
-      "firma": "vault/indices/carpetas.py::ServicioCarpetas.eliminar::a48060ba",
-      "visto_en": "vault/indices/carpetas.py:157"
-    }
-  ],
+  "sites": [],
   "sites_v1_superseded": {
     "superseded_by": "sites[].firma",
     "since": "v40.6",

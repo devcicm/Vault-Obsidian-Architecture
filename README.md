@@ -2,7 +2,7 @@
 
 **Estándar de diseño para dotar a agentes LLM de memoria documental persistente.**
 
-[![Version](https://img.shields.io/badge/version-v40.28-blue)](./vault-obsidian-architecture.md)
+[![Version](https://img.shields.io/badge/version-v40.29-blue)](./vault-obsidian-architecture.md)
 [![Tools](https://img.shields.io/badge/tools-107_active-green)](./scripts/)
 [![Scripts](https://img.shields.io/badge/scripts-141_total-lightblue)](./scripts/)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow)](./scripts/)

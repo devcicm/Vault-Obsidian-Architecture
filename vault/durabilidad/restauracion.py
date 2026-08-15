@@ -19,6 +19,7 @@ import shutil
 from pathlib import Path
 
 from ..kernel.contexto import VaultContext
+from ..kernel.fallos import FalloDeDominio
 from .repositorio import CARPETA_BACKUPS, FICHERO_MANIFIESTO, RepositorioDurabilidad
 
 #: Lo que el barrido previo al restore no toca nunca.
@@ -72,17 +73,18 @@ class ServicioRestauracion:
         que se puede omitir por olvido no es una confirmación.
         """
         if not confirmado:
-            return {
-                "ok": False,
-                "error": "confirm must be true to proceed. This is a destructive operation.",
-                "hint": "Run vault_backup(label) first to backup current state, "
-                        "then confirm with confirm:true",
-            }
+            raise FalloDeDominio(
+                "CONFIRMACION_REQUERIDA",
+                "confirm must be true to proceed. This is a destructive operation.",
+                hint="Run vault_backup(label) first to backup current state, "
+                     "then confirm with confirm:true",
+            )
 
         ruta, buscados = self._localizar(nombre)
         if ruta is None:
-            return {"ok": False, "error": f"Backup not found: {nombre}",
-                    "searched": buscados}
+            raise FalloDeDominio("BACKUP_NO_ENCONTRADO",
+                                 f"Backup not found: {nombre}",
+                                 searched=buscados)
 
         notas = self._notas_del_manifiesto(ruta)
 

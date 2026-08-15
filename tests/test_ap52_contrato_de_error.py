@@ -204,8 +204,18 @@ def test_la_deuda_de_ap52_esta_saldada():
     `vault_blueprint.DEUDA_DECLARADA` porque decidir quién construye el
     envelope ahí es una decisión de capas, no un reemplazo de literales.
 
-    Lo que este test fija sigue siendo lo mismo: en `scripts/` la deuda es cero,
-    y el total no puede pasar de lo congelado.
+    v40.29 la cerró de verdad, y la decisión de capas que faltaba fue la que
+    dice el nombre del módulo que nació: `vault/kernel/fallos.py`. El dominio
+    levanta un `FalloDeDominio` con la **causa**, y la traducción a
+    `error_code` vive en un único sitio del lado de la herramienta
+    (`vault_errors.emit_fallo`). Con eso la baseline queda vacía por primera
+    vez desde que la norma existe.
+
+    Lo que este test fija: la deuda es cero **en todo el alcance**, no solo en
+    `scripts/`, y el total no puede pasar de lo congelado. Que el detector
+    siga detectando no se comprueba aquí sino en `CASOS`: una baseline vacía ya
+    no puede servir de prueba de vida, así que el test que la usaba como tal
+    dejaría de decir nada si se conservara.
     """
     congelados = vec.load_baseline()
     assert [f for f in congelados if "/" not in f] == [], (
@@ -215,7 +225,10 @@ def test_la_deuda_de_ap52_esta_saldada():
     assert {o["firma"] for o in vec.offenders()} <= set(congelados), (
         "AP-52 crece: hay un envelope a mano que no está en la baseline"
     )
-    assert congelados, "una baseline vacía haría pasar el guard sin medir nada"
+    assert congelados == [], (
+        "AP-52 vuelve a tener deuda congelada: desde v40.29 el envelope del "
+        "dominio se traduce en la frontera y no queda nada que eximir"
+    )
 
 
 def test_check_no_escribe_la_baseline():

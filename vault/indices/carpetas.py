@@ -16,6 +16,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, List
 
+from ..kernel.fallos import FalloDeDominio
 from .repositorio import RepositorioIndices
 
 #: Prefijos que marcan una carpeta como no-contenido. `.` es oculta del sistema
@@ -132,7 +133,8 @@ class ServicioCarpetas:
 
         for carpeta in registro.get("folders", []):
             if carpeta["path"] == ruta:
-                return {"ok": False, "error": "Carpeta ya registrada"}
+                raise FalloDeDominio("CARPETA_YA_REGISTRADA",
+                                     "Carpeta ya registrada", path=ruta)
 
         entrada = {
             "path": ruta,
@@ -154,7 +156,9 @@ class ServicioCarpetas:
             f for f in registro.get("folders", []) if f["path"] != ruta
         ]
         if len(registro["folders"]) == antes:
-            return {"ok": False, "error": "Carpeta no encontrada en el registro"}
+            raise FalloDeDominio("CARPETA_NO_ENCONTRADA",
+                                 "Carpeta no encontrada en el registro",
+                                 path=ruta)
         self.guardar(registro)
         return {"ok": True, "removed": ruta}
 

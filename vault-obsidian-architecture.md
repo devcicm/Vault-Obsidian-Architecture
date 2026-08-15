@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.28 — 2026-08-15  
+**Versión:** v40.29 — 2026-08-15  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -7145,6 +7145,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.29 | 2026-08-15 | **La baseline de AP-52 llega a cero: 158 sitios en v40.0, nueve al empezar, ninguno al cerrar.** Los nueve que quedaban llevaban desde v40.9 declarados como deuda con el motivo escrito —«la pregunta de fondo no es cómo se escribe el envelope sino quién lo escribe»—: `vault/indices/` y `vault/durabilidad/` devolvían `{"ok": False, "error": ...}`, la forma exacta del envelope de una tool, y tres adaptadores lo reenviaban al consumidor sin `error_code` ni `recovery`. Las dos salidas obvias eran malas: que el dominio importe `vault_errors` lo ata al catálogo de la herramienta y deja de ser dominio; devolver un dict con más campos no mueve nada. La salida es **partir la frase en dos mitades con dueño**: el dominio nombra la **causa** (`vault/kernel/fallos.py`, hoja sin un solo import fuera de `typing`) y la herramienta nombra la **recuperación**, con la tabla de equivalencias en un único sitio (`vault_errors.emit_fallo`) porque copiarla en tres adaptadores habría sido AP-57 cometido al saldar AP-52. Se **levanta** en vez de devolver: un fallo devuelto como valor se ignora por olvido y uno de los cuatro casos es el borrado del vault sin confirmar. Dos códigos nuevos en el catálogo antes que forzar el mapeo a `FILE_NOT_FOUND`, cuyo `recovery` manda ejecutar `vault_search` sobre las notas: un `recovery` que no recupera es peor que ninguno, porque el consumidor sí lo obedece |
 | v40.28 | 2026-08-15 | **La pregunta que v40.27 dejó abierta era «¿cuántas veces más pasa esto?», y a ojo no se contesta con 136 módulos.** El hallazgo de v40.27 —veintiún importadores cruzando una frontera de negocio para leer una tabla— se convierte en norma medida: **AP-62, el consumidor paga el fan-out del productor**, con `vault_recursos` como guard y una vigésima puerta. Una arista es deuda cuando se dan las cuatro: el destino no está en el núcleo, tiene fan-out mayor que cero, todo lo que el origen le pide es un recurso —constante o función pura— y los dos están en contextos distintos. Lo caro fue la tercera: la primera versión miraba referencias directas y daba por «pura» una función que recorre el vault a través de un helper local, que es **AP-44 cometido en la tool que nace para detectar que el consumidor no ve lo que paga**; se arregla propagando el acoplamiento a punto fijo. Medidos diez sitios, se saldan ocho con el mismo movimiento cuatro veces —`vault_version`, `vault_fundamentals_catalog`, `vault_audit_catalog`, `vault_mermaid_reglas`, todos hojas de fan-out cero, con la fachada reexportando por no-derogación—: **10 → 2 sitios, 42 → 35 cruces, cero nuevos**. Los dos que quedan **declaran por qué**: `vault_spec_generate_catalog --write` reescribe `vault_mcp_catalog.py` entero, así que el corte se desharía solo en la primera regeneración. De paso, el test de v40.27 resultó estar **vacío** —comprobaba fan-out contra `grafo()`, que no devuelve una adyacencia, y por tanto era cierto siempre—: el mismo cero fabricado de v40.17, ahora con control negativo |
 | v40.27 | 2026-08-14 | **Veinte de los sesenta y dos cruces de contexto eran tools leyendo una tabla constante.** Los cruces de `arch-baseline.json` llevaban veintiséis versiones subiendo —48 → 62— sin que ninguna puerta se pusiera roja, y la medida dice por qué: veinticuatro de ellos iban al mismo destino, `vault_norms`, y veintiuno de sus veinticuatro importadores solo pedían datos. Hasta v40.26 eso no se podía ver, porque el catálogo compartía fichero con el motor que lo audita; partido, quedó con **fan-out cero** —ni un `vault_*`, solo `re` y `typing`—, que es la forma exacta de `vault_registry`, ya en el núcleo. Se muda allí, `compute_norm_refs` se va con él por ser derivación pura de catálogo, y los veintiún importadores pasan a pedirle el dato al dueño en vez de a la fachada que arrastra el motor entero. **62 → 42 cruces, cero nuevos, `off_port_total` intacto en 12.** Y como la cifra bajó por un movimiento y no por una regla más laxa, se añade lo que faltaba para que no vuelva a subir: `PRESUPUESTO_DE_CRUCES` presupuesta el **par de contextos**, no el sitio —«Autoría depende de Gobernanza» se decide una vez—, con `permanente`, `a_eliminar` + fecha o `en_estudio` + hipótesis escrita, y un par nuevo **bloquea la puerta**. La baseline decía cuánta deuda hay; esto dice hacia dónde va, que es la pregunta que nadie tuvo que responder mientras la cifra crecía |
 | v40.26 | 2026-08-14 | **`vault_norms` eran 5.158 líneas haciendo de catálogo, de motor y de fachada a la vez**, con el 60% del fichero ocupado por una sola constante. No era un problema de clasificación —su fan-in es 26, no el del núcleo— sino de que tres cosas distintas compartían fichero. Se parte en `vault_norms_catalog` (los datos: `NORM_CATALOG` y el vocabulario de estado, sin leer el vault, sin escribir nada, sin importar ninguna tool), `vault_norms_engine` (el motor de `--audit`, el drift del marco y el heal de AP-46) y la fachada, que **reexporta los siete símbolos públicos y los cinco privados que usan los tests**: por eso ningún llamador se toca y el diff se lee como movimiento puro. Las catorce entradas de `arch-baseline.json` cuyo origen cambió de nombre se migraron por sustitución explícita con el mapeo escrito, no con `--freeze`, y `crossings_total` sigue en 62 y `off_port_total` en 12 antes y después. El corte obligó a decir en voz alta dos cosas que estaban implícitas: `vault_vocabulario` apuntaba con `derivado_de` a la fachada, y al mudarse el dato eso habría contado al catálogo como copia de sí mismo (AP-49); y `vault_norms_coherence` dio diecisiete afirmaciones por sin traza porque el código había cambiado de fichero — ahora **deriva** los módulos hermanos de los imports de la fachada en vez de llevar el reparto escrito a mano, que habría envejecido a la siguiente partición |
@@ -7494,6 +7495,63 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v40.29 — 2026-08-15 `git: pending`
+
+**El envelope del dominio ya no lo escribe el dominio.**
+
+`error-contract-baseline.json` queda **vacía**. AP-52 empezó con 158 sitios en 60 módulos,
+v40.6 la dejó en cero sobre `scripts/`, v40.9 la reabrió al ensanchar el alcance —y ese
+ensanche destapó nueve envelopes en `vault/indices/` y `vault/durabilidad/`— y aquí llega a
+cero sobre el alcance entero.
+
+Los nueve no se saldaron antes a propósito, y el motivo estaba escrito en
+`vault_blueprint.DEUDA_DECLARADA` desde v40.9: *«la pregunta de fondo no es cómo se escribe
+el envelope sino quién lo escribe»*. Las dos salidas obvias eran malas:
+
+- **Que el dominio importe `vault_errors`** lo ata al catálogo de la herramienta. Un
+  dominio que sabe qué es un `recovery.action` ya no es dominio: es la tool escrita en otro
+  directorio, y el kernel dejaría de poder decir que no depende de nadie.
+- **Que devuelva un dict con más campos** no mueve nada: el envelope seguiría escrito donde
+  no se sabe quién lo va a leer.
+
+**La salida es partir la frase en dos mitades y darle dueño a cada una.** El dominio nombra
+la **causa** —qué pasó, en su vocabulario, sin saber que existe un JSON— y la herramienta
+nombra la **recuperación** —qué código del catálogo le toca y qué puede hacer el consumidor—.
+
+`vault/kernel/fallos.py` es lo primero: `FalloDeDominio` y `CAUSAS`, siete entradas con su
+significado, sin un solo import fuera de `typing`. Es kernel y el kernel no depende de
+nadie. La traducción vive en `vault_errors.emit_fallo`, **un solo sitio**: la misma tabla
+repartida entre `vault_folder_registry`, `vault_backup` y `vault_restore` habría sido AP-57
+cometido justo al saldar AP-52 —tres adaptadores decidiendo por su cuenta qué código le
+toca a una causa que no es suya—. Y toma el fallo por pato, no por `isinstance`, porque
+importar `vault/kernel` desde el catálogo de errores invertiría la dependencia sin comprar
+nada.
+
+**Se levanta, no se devuelve.** Un fallo devuelto como valor se ignora por olvido —basta
+con no mirar `["ok"]`— y uno de los cuatro casos es `vault_restore` borrando el vault sin
+confirmar. Que el adaptador tenga que escribir el `except` es el punto: es la frontera, y
+ahí es donde se decide qué ve el consumidor.
+
+**Dos códigos nuevos en el catálogo, antes que forzar el mapeo.** «Backup inexistente» a
+`FILE_NOT_FOUND` habría dado un `recovery` que manda ejecutar `vault_search` sobre las
+notas; un `recovery` que no recupera es peor que ninguno, porque el consumidor sí lo
+obedece. Entran `BACKUP_NOT_FOUND` y `BACKUP_MANIFEST_INVALID`. Que las tres causas del
+manifiesto —ausente, ilegible, sin `merkle_root`— compartan destino no pierde información:
+de las tres se recupera igual, y cuál fue lo dice el campo `causa` del envelope.
+
+**Los campos estables siguen saliendo.** `error`, `hint` y `searched` están declarados en
+`field-compat-baseline.json` para `vault_restore`, y `error` no es redundante con `message`
+por mucho que lo parezca: es contrato. Mejorar el envelope por debajo es exactamente la
+clase de cambio que se lleva por delante un `hint` que alguien lee, así que `emit_fallo`
+los reemite y un test los fija.
+
+Un test de `test_ap52_contrato_de_error.py` **cambió de sentido**, no se arrastró: afirmaba
+que una baseline vacía haría pasar el guard sin medir nada, y con la deuda en cero esa
+comprobación deja de decir nada. Que el detector siga detectando lo prueban sus `CASOS`,
+que es donde se probaba de verdad.
 
 ---
 

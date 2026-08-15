@@ -81,7 +81,8 @@ ESTADOS_DE_DEUDA = ("pendiente", "saldada")
 DEUDA_DECLARADA: List[Dict[str, str]] = [
     {
         "id": "envelopes_del_dominio_sin_error_code",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "v40.29",
         "desde": "v40.9",
         "capa": "5",
         "que": (
@@ -89,7 +90,18 @@ DEUDA_DECLARADA: List[Dict[str, str]] = [
             "`vault/indices/` que los adaptadores de `scripts/` devuelven tal cual "
             "al consumidor: el envelope sale sin `error_code` ni `recovery`. "
             "Aparecieron en v40.9 al ensanchar el alcance de AP-52 más allá de "
-            "`scripts/`, y quedan congelados en `error-contract-baseline.json`."
+            "`scripts/`, y quedan congelados en `error-contract-baseline.json`. "
+            "v40.29 los saldó partiendo la frase en dos mitades con dueño: el "
+            "dominio levanta un `FalloDeDominio` que nombra la **causa** "
+            "(`vault/kernel/fallos.py`, sin un solo import fuera de `typing`) y "
+            "la traducción a `error_code` vive en un único sitio del lado de la "
+            "herramienta, `vault_errors.emit_fallo`. Se levanta en vez de "
+            "devolver porque un fallo devuelto como valor se ignora por olvido, "
+            "y uno de los cuatro casos es el borrado del vault sin confirmar. "
+            "La baseline de AP-52 queda **vacía por primera vez desde que la "
+            "norma existe**, y los campos que el contrato declara estables "
+            "—`error`, `hint`, `searched`— siguen saliendo: mejorar el envelope "
+            "por debajo no autoriza a romper el contrato de arriba."
         ),
         "por_que_no_ahora": (
             "La pregunta de fondo no es cómo se escribe el envelope sino quién lo "

@@ -21,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from vault.indices.carpetas import ServicioCarpetas  # noqa: E402
+from vault.kernel.fallos import FalloDeDominio  # noqa: E402
 from vault.indices.coherencia import coherencia_indice  # noqa: E402
 from vault.indices.enumeracion import es_nota_indexable, notas_en_disco  # noqa: E402
 from vault.indices.reconstruccion import ServicioReindex  # noqa: E402
@@ -225,9 +226,20 @@ def test_una_carpeta_registrada_que_ya_no_existe_es_huerfana(tmp_path):
 
 
 def test_registrar_dos_veces_la_misma_carpeta_falla(tmp_path):
+    """Desde v40.29 el dominio **levanta** en vez de devolver un envelope.
+
+    El cambio es el punto de la tanda, no un detalle de forma: un fallo
+    devuelto como valor se ignora por olvido —basta con no mirar `["ok"]`— y
+    aquí el mismo mecanismo cubre el borrado del vault sin confirmar. Quien
+    quiera el envelope lo pide al adaptador, que es quien sabe a qué consumidor
+    le habla.
+    """
     servicio = ServicioCarpetas(_repo(_vault(tmp_path / "v")))
     assert servicio.anadir("11_Code/tests")["ok"] is True
-    assert servicio.anadir("11_Code/tests")["ok"] is False
+    with pytest.raises(FalloDeDominio) as exc:
+        servicio.anadir("11_Code/tests")
+    assert exc.value.causa == "CARPETA_YA_REGISTRADA"
+    assert exc.value.datos["path"] == "11_Code/tests"
 
 
 def test_las_secciones_salen_del_registro_no_de_una_copia(tmp_path):

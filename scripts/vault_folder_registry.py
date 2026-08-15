@@ -25,12 +25,13 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
-from vault_errors import wrap_main
+from vault_errors import emit_fallo, wrap_main
 from vault_registry import ORDERED_SECTIONS
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.indices.carpetas import ServicioCarpetas  # noqa: E402
+from vault.kernel.fallos import FalloDeDominio  # noqa: E402
 from vault.indices.repositorio import RepositorioIndices  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 
@@ -71,13 +72,24 @@ def list_folders(root=None) -> List[Dict[str, Any]]:
 
 
 def add_folder(path: str, created_by: str = "manual", root=None) -> Dict[str, Any]:
-    """Agrega una carpeta manualmente."""
-    return _servicio(root).anadir(path, created_by)
+    """Agrega una carpeta manualmente.
+
+    El `except` está aquí y no dentro del dominio porque esta función **es** la
+    frontera: el dominio nombra la causa y el adaptador decide qué ve el
+    consumidor. Ver `vault/kernel/fallos.py` (v40.29).
+    """
+    try:
+        return _servicio(root).anadir(path, created_by)
+    except FalloDeDominio as e:
+        return emit_fallo("vault_folder_registry", e)
 
 
 def remove_folder(path: str, root=None) -> Dict[str, Any]:
-    """Elimina una carpeta del registro."""
-    return _servicio(root).eliminar(path)
+    """Elimina una carpeta del registro. Traduce el fallo del dominio como `add_folder`."""
+    try:
+        return _servicio(root).eliminar(path)
+    except FalloDeDominio as e:
+        return emit_fallo("vault_folder_registry", e)
 
 
 def check_orphan_folders(root=None) -> List[str]:
@@ -129,9 +141,11 @@ Ejemplos:
     if args.scan:
         result = servicio.escanear()
     elif args.add:
-        result = servicio.anadir(args.add, created_by="manual")
+        # Por la función del módulo y no por `servicio`: la traducción del
+        # fallo vive allí, y llamar al dominio desde aquí la esquivaría.
+        result = add_folder(args.add, created_by="manual")
     elif args.remove:
-        result = servicio.eliminar(args.remove)
+        result = remove_folder(args.remove)
     elif args.cleanup:
         result = servicio.limpiar_huerfanas()
     else:
