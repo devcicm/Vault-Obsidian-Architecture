@@ -106,6 +106,27 @@ def test_un_modulo_del_kernel_que_se_mueve_mas_que_el_dominio_se_reporta(monkeyp
     assert m["churn_mediana_dominio"] == 4
 
 
+def test_rozar_la_mediana_no_convierte_al_nucleo_en_inestable(monkeypatch):
+    """El caso que disparó el criterio de v40.23, fijado para que no vuelva.
+
+    El churn es acumulado y nunca baja, así que contra la mediana pelada un
+    módulo del núcleo cruzaba el umbral **por seguir vivo**: `vault_lib` pasó
+    de 9 a 10 commits con la propia tanda que corregía AP-61, con la mediana
+    del dominio en 9. Eso mide edad, no forma. El umbral es hoy la mediana
+    separada por el ratio que la cola alta deja ver, y se publica.
+    """
+    dominio = {f"d{i}": c for i, c in enumerate(
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9, 10, 11, 12, 20, 30, 45])}
+    grafo = {"nucleo": set(), **{k: {"nucleo"} for k in dominio}}
+    _monta(monkeypatch, grafo, kernel=["nucleo"], dominio=sorted(dominio),
+           churns={"nucleo": 10, **dominio})
+    m = K.medir()
+    assert m["umbral_churn"] > m["churn_mediana_dominio"], (
+        "sin margen sobre la mediana, envejecer basta para ser inestable"
+    )
+    assert _de(m, "kernel_inestable") == set()
+
+
 # ── 2. AP-51: sin historia, `desconocido` — nunca `0` ───────────────────────
 
 def test_sin_historia_de_git_el_churn_es_desconocido_y_no_cero(monkeypatch):

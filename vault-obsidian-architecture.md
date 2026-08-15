@@ -7497,7 +7497,19 @@ acentuar mientras el resto del catálogo va acentuado: 55 bloques reacentuados, 
 dentro de backticks y dejando a mano las ambiguas que la automatización no puede decidir
 (`esta`/`está`, `aun así`, `cuando`/`cuándo`).
 
-**Cifras:** 19 puertas verdes, 2841 tests, 106 tools, 73 normas (61 AP).
+**K3 medía edad, no forma.** El propio commit de esta tanda puso roja la puerta del
+kernel: `vault_lib` pasó de 9 a 10 commits y la mediana del dominio era 9. El churn es
+acumulado y nunca baja, así que contra la mediana pelada cualquier módulo del núcleo acaba
+cruzando el umbral **por seguir vivo** — y K3 era el único de los tres criterios sin margen
+derivado. Ahora el umbral es la mediana separada por el ratio que deja ver la cola alta, y se
+publica (`threshold_churn`, `threshold_churn_ratio`). El corte absoluto se descartó midiendo:
+la distribución de churn no tiene escalón —su cola alta es continua, ratio 1.27—, así que
+aplicarlo habría dejado la invariante sin marcar a nadie, incluidos los tres de la baseline.
+Que un umbral se toque en la tanda a la que estorba es sospechoso por definición, así que el
+criterio queda fijado por un test con los números del caso real y la baseline sigue con los
+mismos cinco: no se resolvió nada por decreto.
+
+**Cifras:** 19 puertas verdes, 2842 tests, 106 tools, 73 normas (61 AP).
 
 ---
 

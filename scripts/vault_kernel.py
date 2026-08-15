@@ -23,9 +23,12 @@ como núcleo. Nadie los había visto porque nadie miraba.
   propio criterio.
 - **K2 — fan-in alto, fan-out bajo.** Del dueño único del grafo,
   `vault_grafo_import`. Esta tool no parsea un solo `import`.
-- **K3 — estabilidad.** Churn de `git log`, contra la mediana del dominio. Sin
-  historia de git el valor es `desconocido`, **nunca** `0`: un cero fabricado
-  saldría verde por no haber mirado, que es AP-51.
+- **K3 — estabilidad.** Churn de `git log`, contra la mediana del dominio
+  **separada por el ratio que la propia cola alta deja ver** (v40.23). Contra
+  la mediana pelada, un módulo del núcleo cruzaba el umbral por seguir vivo —el
+  churn es acumulado y nunca baja—, y eso mide edad, no forma. Sin historia de
+  git el valor es `desconocido`, **nunca** `0`: un cero fabricado saldría verde
+  por no haber mirado, que es AP-51.
 
 ## Los umbrales se derivan del escalón, no se escriben
 
@@ -179,6 +182,39 @@ def medir() -> Dict[str, Any]:
               for m in kernel + dominio}
     del_dominio = [c for m in dominio if (c := churns.get(m)) is not None]
     mediana = statistics.median(del_dominio) if del_dominio else None
+    # K3 también deriva su umbral, como K2 y el fan-in. Hasta v40.23 comparaba
+    # contra la mediana pelada y era el único de los tres criterios sin margen:
+    # el churn es acumulado y nunca baja, así que cualquier módulo del núcleo
+    # acababa cruzando la mediana con solo seguir vivo — `vault_lib` la cruzó
+    # con el commit de v40.23, de 9 a 10 frente a una mediana de 9. Eso
+    # convierte antigüedad en defecto, y la norma no afirma eso: afirma que el
+    # núcleo **se mueve menos que lo que sostiene**.
+    #
+    # El escalón se usa aquí como **ratio**, no como corte, y el motivo se
+    # midió: la distribución de churn no tiene escalón. Su cola alta es
+    # continua (52, 47, 37, 33, 28, …) y el derivador devuelve ratio ~1.27,
+    # que no es una caída; aplicado como corte absoluto daría 47 y dejaría la
+    # invariante sin marcar a nadie —incluidos los tres que ya están en la
+    # baseline—, que es fabricar verde. Aplicado sobre la mitad de abajo daría
+    # 2 y marcaría el núcleo entero. Lo que sí tiene significado es cuánto se
+    # separa de la mediana, y ese factor sale de la misma distribución en vez
+    # de escribirse a mano.
+    # El ratio se deriva de la **cola alta** —los que se mueven más que la
+    # mediana—, que es sobre quien K3 pregunta. Sobre la distribución entera el
+    # derivador se llevaría la caída de 2 a 1, que ocurre entre los módulos que
+    # apenas se tocan y no dice nada de la estabilidad del núcleo.
+    cola_alta = [c for c in del_dominio if mediana is not None and c > mediana]
+    r_churn = escalon(cola_alta)[1] if cola_alta else None
+    # Con menos de dos valores en la cola no hay ratio que derivar. El umbral
+    # cae entonces a la mediana pelada —el criterio de v40.22— en vez de quedar
+    # en `None`: sin umbral la invariante no mide nada, y no medir es peor que
+    # medir estrecho. Solo ocurre en un dominio diminuto.
+    if mediana is None:
+        u_churn = None
+    elif r_churn is None:
+        u_churn = mediana
+    else:
+        u_churn = round(mediana * r_churn, 2)
 
     hallazgos: List[Dict[str, Any]] = []
 
@@ -198,10 +234,11 @@ def medir() -> Dict[str, Any]:
                   "un módulo del que todos dependen y que depende de muchos "
                   "propaga cada cambio hacia arriba")
         c = churns.get(m)
-        if c is not None and mediana is not None and c > mediana:
+        if c is not None and u_churn is not None and c >= u_churn:
             anota("kernel_inestable", m, c,
-                  f"{c} commits frente a la mediana {mediana} del dominio: "
-                  "el núcleo debería moverse menos que lo que sostiene")
+                  f"{c} commits ≥ el escalón {u_churn} del dominio (mediana "
+                  f"{mediana}): el núcleo debería moverse menos que lo que "
+                  "sostiene")
 
     for m in dominio:
         entrada, salida = len(fi.get(m, ())), len(fo.get(m, ()))
@@ -232,6 +269,7 @@ def medir() -> Dict[str, Any]:
         "umbral_fan_out": u_out, "umbral_fan_out_ratio": r_out,
         "churn_disponible": con_historia,
         "churn_mediana_dominio": mediana,
+        "umbral_churn": u_churn, "umbral_churn_ratio": r_churn,
         "fan_in": {m: len(fi.get(m, ())) for m in kernel},
         "fan_out": {m: len(fo.get(m, ())) for m in kernel},
         "churn": {m: churns.get(m) for m in kernel},
@@ -294,6 +332,8 @@ def check() -> Dict[str, Any]:
         "threshold_fan_out_ratio": m["umbral_fan_out_ratio"],
         "churn_available": m["churn_disponible"],
         "churn_median_domain": m["churn_mediana_dominio"],
+        "threshold_churn": m["umbral_churn"],
+        "threshold_churn_ratio": m["umbral_churn_ratio"],
         "fan_in": m["fan_in"], "fan_out": m["fan_out"], "churn": m["churn"],
         "findings": m["hallazgos"],
         "findings_total": len(firmas),
