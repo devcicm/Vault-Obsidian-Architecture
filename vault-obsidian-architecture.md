@@ -7497,7 +7497,7 @@ temp/
 
 ---
 
-### v40.28 — 2026-08-15 `git: pending`
+### v40.28 — 2026-08-15 `git: 6653ba6`
 
 **El patrón que v40.27 encontró por accidente ahora se busca a propósito.**
 

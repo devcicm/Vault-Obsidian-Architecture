@@ -347,21 +347,21 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 
 | Baseline | Norma | Congelado | Objetivo | Pendiente |
 |---|---|---|---|---|
-| `scripts/arch-baseline.json` | cruces entre contextos | 35 | — *sin objetivo* | 58 → 60 → 61 → 62 → 62 → 42 (encoge, Δ-6) |
-| `scripts/arch-baseline.json` | cruces fuera de puerto | 12 | — *sin objetivo* | 13 → 13 → 13 → 13 → 12 → 12 (encoge, Δ-36) |
+| `scripts/arch-baseline.json` | cruces entre contextos | 35 | — *sin objetivo* | 60 → 61 → 62 → 62 → 42 → 35 (encoge, Δ-13) |
+| `scripts/arch-baseline.json` | cruces fuera de puerto | 12 | — *sin objetivo* | 13 → 13 → 13 → 12 → 12 → 12 (encoge, Δ-36) |
 | `scripts/blame-baseline.json` | AP-51 | 83 | — *sin objetivo* | 86 → 86 → 86 → 87 → 84 → 83 (encoge, Δ-3) |
 | `scripts/error-contract-baseline.json` | AP-52 | 9 | — *sin objetivo* | 158 → 158 → 110 → 110 → 0 → 9 (encoge, Δ-149) |
 | `scripts/noop-baseline.json` | AP-37 | 0 | — *sin objetivo* | — *1 muestra* |
 | `scripts/smoke-baseline.json` | AP-42 | 0 | — *sin objetivo* | — *1 muestra* |
 | `scripts/blueprint-baseline.json` | capa 4 — norma sin puerta ni test | 13 | — *sin objetivo* | 16 → 15 → 14 → 13 (encoge, Δ-3) |
 | `scripts/criterios-baseline.json` | AP-57 | 9 | — *sin objetivo* | 10 → 9 → 9 (encoge, Δ-1) |
-| `scripts/ciclos-baseline.json` | AP-58 — ciclo esquivado con import diferido | 14 | — *sin objetivo* | 30 → 30 → 15 (encoge, Δ-15) |
+| `scripts/ciclos-baseline.json` | AP-58 — ciclo esquivado con import diferido | 14 | — *sin objetivo* | 30 → 30 → 15 → 14 (encoge, Δ-16) |
 | `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 5 | — *sin objetivo* | — *1 muestra* |
 | `scripts/norms-distincion-baseline.json` | AP-60 — normas que no declaran de qué se distinguen | 0 | — *sin objetivo* | 57 → 0 (encoge, Δ-57) |
 | `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 | — *sin objetivo* | 47 → 0 (encoge, Δ-47) |
-| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1240 | — *sin objetivo* | 1114 → 1131 → 1147 → 1168 → 1204 → 1220 (crece, Δ+182) |
+| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1240 | — *sin objetivo* | 1131 → 1147 → 1168 → 1204 → 1220 → 1240 (crece, Δ+202) |
 | `scripts/excepcion-declarada-baseline.json` | AP-61 — la excepción declarada no es la que escapa | 0 | ≤ 0 para 2027-06-30 · cada 180 d · gobernanza → **cumple** | 0 → 0 (plana, Δ+0) |
-| `scripts/recursos-baseline.json` | AP-62 — el consumidor cruza para leer un recurso y paga el fan-out | 2 | — *sin objetivo* | — *0 muestra* |
+| `scripts/recursos-baseline.json` | AP-62 — el consumidor cruza para leer un recurso y paga el fan-out | 2 | — *sin objetivo* | — *1 muestra* |
 
 Todas encogen y ninguna crece sin decirlo: los tres audits con baseline indexan
 por firma de sitio —`módulo::función::hash de `ast.unparse``— así que mover un
