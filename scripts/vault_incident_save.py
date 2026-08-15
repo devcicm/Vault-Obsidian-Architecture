@@ -31,7 +31,7 @@ from typing import Any, Dict, List, Optional
 from vault_errors import wrap_main
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from vault_io import assert_within_vault, atomic_write_text, get_vault_root, write_report
-from vault_norms import compute_norm_refs, status_frontmatter_lines
+from vault_norms_catalog import compute_norm_refs, status_frontmatter_lines
 # El vocabulario se declara una vez y se consume, no se copia. Ver
 # `vault_vocabulario.py` para el registro y su contexto dueño.
 from vault_vocabulario import mapa as _mapa, opciones as _opciones

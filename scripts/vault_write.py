@@ -73,7 +73,7 @@ from vault_lib import (
     parse_frontmatter_with_body,
     canonical_utc,
 )
-from vault_norms import (
+from vault_norms_catalog import (
     compute_norm_refs,
     normalize_status,
     STATUS_VOCAB,

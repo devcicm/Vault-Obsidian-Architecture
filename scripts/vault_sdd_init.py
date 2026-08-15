@@ -87,7 +87,7 @@ def utcnow() -> str:
 def _norm_codes() -> set:
     """Codes present in the canonical registry. Empty set if unreadable."""
     try:
-        from vault_norms import NORM_CATALOG
+        from vault_norms_catalog import NORM_CATALOG
 
         return {n["code"] for n in NORM_CATALOG}
     except Exception:
@@ -236,7 +236,7 @@ def detect_drift(vault_root: Path) -> dict:
         drift["warnings"].append(f"Could not read CURRENT_VERSION: {e}")
 
     try:
-        from vault_norms import NORM_CATALOG
+        from vault_norms_catalog import NORM_CATALOG
 
         codes = {n["code"] for n in NORM_CATALOG}
         # El conjunto esperado se deriva del propio registro, no de un rango
@@ -453,7 +453,7 @@ def _lifecycle_states(fila: dict, vault_root: Path) -> str:
 
 def _lifecycle_table(vault_root: Path, en: bool = False) -> str:
     try:
-        from vault_norms import LIFECYCLE_REGISTRY
+        from vault_norms_catalog import LIFECYCLE_REGISTRY
     except Exception:
         return "| — | — | — |\n"
     clave = "entity_en" if en else "entity"
@@ -666,7 +666,7 @@ def generate_antipatterns(vault_root: Path, drift: dict) -> str:
     contrasta.
     """
     try:
-        from vault_norms import NORM_CATALOG
+        from vault_norms_catalog import NORM_CATALOG
 
         aps = list(NORM_CATALOG)
     except Exception:

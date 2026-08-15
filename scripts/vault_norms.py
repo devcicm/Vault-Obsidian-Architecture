@@ -69,6 +69,7 @@ from vault_norms_catalog import (  # noqa: F401
     _canonical_status,
     _CATEGORY_ORDER,
     _SEVERITY_ORDER,
+    compute_norm_refs,
     norma_por_codigo,
     normalize_status,
     split_domain_status,
@@ -92,38 +93,6 @@ from vault_norms_engine import (  # noqa: F401
 )
 
 # ─── Funciones públicas ────────────────────────────────────────────────────────
-
-
-def compute_norm_refs(folder: str, content: str, wiki_links: List[str]) -> List[str]:
-    """
-    Compute the list of norm codes that apply to a note based on its folder and content.
-    Used by vault_write to auto-embed norm_refs in frontmatter.
-
-    Rules:
-      - Universal (every note):    AP-11, AP-12, AP-13, AP-16, CN-01, CN-02, SP-01
-      - Wiki-links present:        + AP-14, AP-21, AP-22, SP-02
-      - Bullet-heavy content:      + AP-20
-      - 03_Decisions/ folder:      + AP-07
-      - 06_Runbooks/ folder:       + AP-09 excluded (note IS in correct folder)
-      - Content > 500 lines:       + AP-23 (advisory)
-    """
-    refs: set = {"AP-11", "AP-12", "AP-13", "AP-16", "CN-01", "CN-02", "SP-01"}
-
-    if wiki_links:
-        refs.update({"AP-14", "AP-21", "AP-22", "SP-02"})
-
-    bullets = re.findall(r"^\s*[-*]\s*(.*)", content, re.MULTILINE)
-    if bullets:
-        refs.add("AP-20")
-
-    folder_lower = folder.lower()
-    if folder_lower.startswith("03_decisions") or "decisions" in folder_lower:
-        refs.add("AP-07")
-
-    if len(content.split("\n")) > 500:
-        refs.add("AP-23")
-
-    return sorted(refs)
 
 
 def vault_norms_list(

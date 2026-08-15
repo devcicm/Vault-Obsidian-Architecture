@@ -1978,6 +1978,26 @@ El grafo se reconstruye **por AST en cada ejecución**, incluidos los imports di
 
 Se mide `scripts/` **y `vault/`**. Nació mirando solo el primero, con lo que el paquete que existe para imponer fronteras era el único que podía cruzarlas sin que saltara nada — pasaba por el guard de AP-49 y por ninguno más. En `vault/` la pertenencia la declara el directorio (`vault/<contexto>/`, sin registro paralelo: AP-05) y los imports relativos se resuelven a mano, porque `from ..gobernanza.x import y` cruza exactamente igual que `import vault_norms`.
 
+#### El presupuesto de cruces (v40.27): la baseline dice cuánto, esto dice hacia dónde
+
+`arch-baseline.json` se niega a crecer, y aun así los cruces subieron de **48 a 62 en veintiséis versiones** sin que ninguna puerta se pusiera roja. No estaba rota: ampliarla costaba teclear `--freeze`, y nadie tuvo que contestar nunca si el cruce nuevo **debía existir**.
+
+Al preguntarlo con datos, veinte de los sesenta y dos no eran cruces. Veinticuatro iban a `vault_norms`, y veintiuno de sus veinticuatro importadores solo pedían `status_frontmatter_lines`, `compute_norm_refs` o `NORM_CATALOG` — leer una tabla constante, contado como frontera de negocio. Hasta v40.26 no se podía ver, porque el catálogo compartía fichero con el motor que lo audita. Partido, quedó con **fan-out cero**, la forma exacta de `vault_registry`: se mudó al núcleo, `compute_norm_refs` con él, y los importadores pasaron a pedirle el dato al dueño en vez de a una fachada que arrastra el motor entero. **62 → 42, cero nuevos, `off_port_total` intacto en 12.**
+
+`PRESUPUESTO_DE_CRUCES` es lo que impide que vuelva a subir. Presupuesta el **par de contextos**, no el sitio: «Autoría depende de Gobernanza» se decide una vez, y que la ejerzan dos módulos o quince es consecuencia. Cada par declara `objetivo`:
+
+| `objetivo` | Qué significa | Campo obligatorio |
+|---|---|---|
+| `permanente` | Es arquitectura. Se revisa para comprobar que el motivo **sigue siendo cierto**, no para eliminarlo | — |
+| `a_eliminar` | Deuda con plazo | `fecha_limite` |
+| `en_estudio` | Sospecha sin verificar de que podría no ser un cruce | `hipotesis` |
+
+Un **par nuevo bloquea la puerta**, y sin baseline: los 21 pares se declararon al estrenar el registro, así que una baseline solo serviría para admitir el 22 sin decidir nada — el trámite que esto sustituye. La fecha vencida, en cambio, es informativa, igual que en `PRESUPUESTO_DE_GANCHOS`: un guard que se pone rojo por el calendario falla en un repo que nadie tocó, y lo primero que enseña es a mover la fecha.
+
+`en_estudio` no es un cajón, y su primera entrada apunta al siguiente frente: **once de los cuarenta y cuatro sitios restantes van a `indices`**, siempre porque quien escribe tiene que reindexar. Queda sin verificar a propósito — `vault_tags` lleva el ledger de AP-39 y `vault_reindex` escribe, así que fan-out cero no lo tienen y el movimiento del catálogo no se les aplica tal cual.
+
+Los nueve sitios que son `vault/<contexto>/repositorio.py` se declaran `permanente` y **se siguen contando**: cablear es el oficio de un adaptador, pero dejar de contarlo convertiría la capa de DI en un punto ciego, y esconder cableado es como se coló AP-48.
+
 Hay **una** excepción al límite 2, declarada por nombre en `RAIZ_COMPOSICION` y no escondida en el guard: `vault/kernel/adaptadores.py`, que cablea el `VaultContext` y por tanto tiene que conocer a todos. Lo que compra es que ese conocimiento viva en un fichero en vez de repartirse por el dominio; lo que cuesta es que ese fichero hay que leerlo entero al revisarlo.
 
 ---

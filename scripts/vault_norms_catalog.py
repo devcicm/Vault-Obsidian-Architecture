@@ -3572,3 +3572,38 @@ def _canonical_status(valor):
     if guion in STATUS_SYNONYMS:
         return STATUS_SYNONYMS[guion]
     return None
+
+
+def compute_norm_refs(folder: str, content: str, wiki_links: List[str]) -> List[str]:
+    """Las normas que aplican a una nota, deducidas de su carpeta y su cuerpo.
+
+    Vive aquí y no en la fachada (v40.27) porque es **derivación de catálogo**:
+    no lee el vault, no escribe nada y su única dependencia es `re`. Estaba
+    arriba por herencia del fichero único, y eso costaba nueve cruces de
+    contexto — nueve tools de Autoría importando `vault_norms`, y con él la
+    fachada que reexporta el motor entero, para pedir una lista de códigos.
+
+    Reglas:
+      - universales:             AP-11, AP-12, AP-13, AP-16, CN-01, CN-02, SP-01
+      - hay wikilinks:           + AP-14, AP-21, AP-22, SP-02
+      - hay viñetas:             + AP-20
+      - carpeta 03_Decisions/:   + AP-07
+      - más de 500 líneas:       + AP-23 (informativa)
+    """
+    refs: set = {"AP-11", "AP-12", "AP-13", "AP-16", "CN-01", "CN-02", "SP-01"}
+
+    if wiki_links:
+        refs.update({"AP-14", "AP-21", "AP-22", "SP-02"})
+
+    bullets = re.findall(r"^\s*[-*]\s*(.*)", content, re.MULTILINE)
+    if bullets:
+        refs.add("AP-20")
+
+    folder_lower = folder.lower()
+    if folder_lower.startswith("03_decisions") or "decisions" in folder_lower:
+        refs.add("AP-07")
+
+    if len(content.split("\n")) > 500:
+        refs.add("AP-23")
+
+    return sorted(refs)

@@ -3139,13 +3139,7 @@
           },
           "severity": {
             "type": "string",
-            "description": "Filtrar por severidad",
-            "enum": [
-              "critical",
-              "high",
-              "medium",
-              "low"
-            ]
+            "description": "Filtrar por severidad"
           },
           "sort": {
             "type": "string",

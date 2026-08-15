@@ -34,7 +34,7 @@ from typing import Any, Dict, List, Optional
 from vault_errors import wrap_main
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from vault_io import assert_within_vault, atomic_write_text, get_vault_root, write_report
-from vault_norms import compute_norm_refs, status_frontmatter_lines
+from vault_norms_catalog import compute_norm_refs, status_frontmatter_lines
 # Los `*_save` viven en `scripts/`; el paquete se importa desde la raiz.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 

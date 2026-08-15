@@ -55,7 +55,7 @@ from vault_io import atomic_write_json, file_lock, write_report
 # para por qué el modelo singular no era ampliable, solo sustituible.
 from vault_registry import SCAFFOLD_TYPE, SECTION_TYPES, type_misfiled_in
 from vault_fundamentals import cia_valores
-from vault_norms import STATUS_VOCAB
+from vault_norms_catalog import STATUS_VOCAB
 # El vocabulario se declara una vez y se consume, no se copia. Ver
 # `vault_vocabulario.py` para el registro y su contexto dueño.
 from vault_vocabulario import opciones as _opciones

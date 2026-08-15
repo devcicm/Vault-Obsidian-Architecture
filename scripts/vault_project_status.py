@@ -29,7 +29,7 @@ import re
 import sys
 
 from vault_errors import emit_error, wrap_main
-from vault_norms import status_frontmatter_lines
+from vault_norms_catalog import status_frontmatter_lines
 from vault_lib import utcnow
 import uuid
 

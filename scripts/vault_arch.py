@@ -151,6 +151,18 @@ CONTEXTS: dict[str, dict] = {
             # que está por encima, y un dueño de criterio que importa a sus
             # consumidores no es un dueño, es un nudo. Fan-out cero, solo stdlib.
             "vault_grafo_import",
+            # El catálogo de normas y el vocabulario de `status` (v40.27). No es
+            # una reclasificación de conveniencia para bajar una cifra: es que
+            # hasta v40.26 este dato no se podía clasificar, porque compartía
+            # fichero con el motor que lo audita. Partido, quedó con **fan-out
+            # cero** —no importa ningún `vault_*`, solo `re` y `typing`—, que es
+            # exactamente la forma de `vault_registry`, ya aquí. Y la
+            # consecuencia de tenerlo en Gobernanza era medible: veintidós de
+            # los sesenta y dos cruces del repo eran tools leyendo una tabla
+            # constante, contadas como si cruzaran una frontera de negocio.
+            # Leer una constante no es cruzar nada; el motor que decide con ella
+            # sí, y ese se queda arriba.
+            "vault_norms_catalog",
         ],
     },
     "autoria": {
@@ -269,12 +281,12 @@ CONTEXTS: dict[str, dict] = {
         },
         "prohibe": [],
         "modulos": [
-            # Las tres mitades de lo que hasta v40.26 era un solo fichero de
-            # 5.158 líneas. Van juntas en el mismo contexto a propósito: el
-            # corte separó datos, motor y fachada, no responsabilidades de
-            # negocio distintas, y meterlas en contextos distintos habría
-            # convertido un movimiento de código en tres fronteras nuevas.
-            "vault_norms", "vault_norms_catalog", "vault_norms_engine",
+            # Dos de las tres mitades de lo que hasta v40.26 era un solo
+            # fichero de 5.158 líneas. La tercera —`vault_norms_catalog`— se
+            # fue al núcleo en v40.27, y el motivo está escrito allí: cuando
+            # se partieron, en v40.26, todavía no se sabía cuál de las tres
+            # tenía forma de hoja. Ahora se mide.
+            "vault_norms", "vault_norms_engine",
             "vault_fuente_unica",
             "vault_audit", "vault_fundamentals",
             "vault_quality_check", "vault_validate", "vault_security_scan",
@@ -990,6 +1002,185 @@ PRESUPUESTO_DE_GANCHOS: dict[tuple[str, str], dict] = {
 }
 
 
+#: El presupuesto de cada **par de contextos** (v40.27). `arch-baseline.json` ya
+#: impide que la deuda crezca; esto le pone **dirección**, que es lo que faltaba.
+#:
+#: El síntoma que lo motiva está medido: los cruces subieron de 48 a 62 en
+#: veintiséis versiones sin que ninguna puerta se pusiera roja. Cada cruce nuevo
+#: era individualmente razonable y el único trámite era `--freeze`, una acción
+#: mecánica que nadie lee. Veinte de esos sesenta y dos resultaron ser tools
+#: leyendo una tabla constante: llevaban versiones contadas como fronteras de
+#: negocio porque nadie tuvo que responder nunca *si aquello era una frontera*.
+#:
+#: Por eso la unidad es el **par**, no el sitio. «Autoría depende de Gobernanza»
+#: es una decisión de arquitectura que se toma una vez; que la ejerzan dos
+#: módulos o quince es consecuencia, no decisión. Un sitio nuevo dentro de un par
+#: ya presupuestado lo sigue frenando la baseline; un **par nuevo** exige una
+#: entrada aquí, y escribirla obliga a contestar la pregunta que faltaba.
+#:
+#: `objetivo` toma tres valores:
+#:   - `permanente` — es arquitectura. Se revisa para comprobar que el motivo
+#:     **sigue siendo cierto**, no para eliminarlo.
+#:   - `a_eliminar`  — es deuda con fecha: exige `fecha_limite`.
+#:   - `en_estudio`  — hay una hipótesis escrita de por qué podría no ser un
+#:     cruce, y no está verificada. Es un estado honesto y acotado, no un cajón:
+#:     `hipotesis` es obligatoria, y decir «no lo sé» con la sospecha escrita es
+#:     lo que hizo falta para encontrar el catálogo de normas.
+#:
+#: Igual que en `PRESUPUESTO_DE_GANCHOS`, la fecha vencida es **informativa**: un
+#: guard que se pone rojo por el paso del calendario falla en un repo que nadie
+#: tocó, y lo primero que enseña es a mover la fecha.
+PRESUPUESTO_DE_CRUCES: dict[tuple[str, str], dict] = {}
+
+
+def _cruce(origen, destino, objetivo, dueno, por_que, **extra):
+    """Alta de una entrada del presupuesto, para que la tabla se lea."""
+    entrada = {
+        "objetivo": objetivo,
+        "dueno": dueno,
+        "revisado": "2026-08-14",
+        "cadencia_dias": 180,
+        "por_que": por_que,
+    }
+    entrada.update(extra)
+    PRESUPUESTO_DE_CRUCES[(origen, destino)] = entrada
+
+
+# --- Hacia Índices: el patrón sistémico, y el candidato a repetir v40.27 ------
+#
+# Once de los cuarenta y cuatro sitios apuntan a `indices`, y siempre por lo
+# mismo: quien escribe una nota tiene que reindexarla. Eso no se parece a una
+# dependencia de negocio, se parece a infraestructura — la misma forma que tenía
+# `vault_norms_catalog` antes de medirla. La hipótesis está escrita y sin
+# verificar a propósito: `vault_tags` lleva el ledger de AP-39 y `vault_reindex`
+# escribe, así que fan-out cero no lo tienen, y mudarlos al núcleo sin comprobar
+# eso sería bajar la cifra en vez de arreglar la estructura.
+_HIP_INDICES = (
+    "Once cruces piden lo mismo: reindexar tras escribir. Si `indices` resulta "
+    "ser infraestructura y no un contexto de negocio, los once dejan de ser "
+    "cruces igual que los veinte del catálogo de normas. Sin verificar: "
+    "`vault_tags` y `vault_reindex` escriben, así que no tienen la forma de hoja "
+    "que tenía el catálogo y el movimiento no es el mismo."
+)
+for _o in ("ciclo_de_vida", "autoria", "gobernanza"):
+    _cruce(_o, "indices", "en_estudio", "indices",
+           "Reindexado tras escritura.", hipotesis=_HIP_INDICES)
+
+# --- Los adaptadores de DI: cablear es su oficio -----------------------------
+#
+# Nueve sitios son `vault/<contexto>/repositorio.py`. Un adaptador que cablea el
+# dominio de otro contexto **tiene** que cruzar: es lo que lo hace un adaptador.
+# Se declaran permanentes y se siguen contando, que es lo correcto: dejar de
+# contarlos convertiría la capa de DI en un punto ciego, y esconder cableado es
+# exactamente como se coló AP-48.
+for _par in (("autoria", "grafo"), ("consulta", "ciclo_de_vida"),
+             ("grafo", "gobernanza"), ("indices", "grafo")):
+    _cruce(*_par, "permanente", "arquitectura",
+           "Adaptador de DI: cablear el dominio de otro contexto es su oficio. "
+           "Se cuenta igual — no contarlo dejaría la capa de DI ciega.")
+
+# --- Gobernanza mirando el vault, y el meta-toolkit mirando Gobernanza -------
+_cruce("meta_toolkit", "gobernanza", "permanente", "meta_toolkit",
+       "El meta-toolkit audita que este repo cumple lo que publica, y para eso "
+       "tiene que leer las normas y el audit. Es la dirección correcta: quien "
+       "verifica depende de lo verificado, nunca al revés.")
+_cruce("ciclo_de_vida", "gobernanza", "permanente", "ciclo_de_vida",
+       "Sanación y onboarding aplican las normas al vault del usuario. Sin este "
+       "cruce las doce fases tendrían que reimplementar el criterio, que es "
+       "AP-57.")
+_cruce("gobernanza", "meta_toolkit", "a_eliminar", "gobernanza",
+       "`vault_norms_engine` importa `vault_smoke` y `vault_mcp_catalog` en "
+       "diferido para auditar el catálogo. Va al revés: el motor de normas no "
+       "debería saber que existe un smoke. Sale cuando el audit del catálogo lo "
+       "pida el meta-toolkit en vez de pedirlo el motor.",
+       fecha_limite="2027-06-30")
+_cruce("gobernanza", "autoria", "a_eliminar", "gobernanza",
+       "`vault_norms_engine` -> `vault_voice`: presentación colgada del motor, "
+       "el mismo defecto que el gancho `vault_errors` -> `vault_voice` ya "
+       "declara. Sale con él, cuando la voz se aplique en el borde.",
+       fecha_limite="2027-06-30")
+_cruce("autoria", "gobernanza", "permanente", "autoria",
+       "Validar mermaid al escribir y registrar el cambio: la escritura no puede "
+       "publicar una nota que el propio estándar rechazaría.")
+_cruce("grafo", "gobernanza", "permanente", "grafo",
+       "Adaptador del contexto Grafo hacia el dominio de Gobernanza.")
+
+# --- El resto: cruces sueltos, uno por par -----------------------------------
+_cruce("meta_toolkit", "ciclo_de_vida", "permanente", "meta_toolkit",
+       "El checker del changelog necesita el camino de versión que define "
+       "`vault_standard_upgrade`. Duplicarlo sería AP-05 sobre el número de "
+       "versión, que es el dato más copiado del repo.")
+_cruce("ciclo_de_vida", "meta_toolkit", "en_estudio", "ciclo_de_vida",
+       "`vault_standard_upgrade` -> `vault_mcp_catalog` para sincronizar el "
+       "catálogo al subir de versión.",
+       hipotesis="Puede que la sincronización la deba disparar la puerta del "
+                 "meta-toolkit y no el propio upgrade. Sin verificar.")
+_cruce("autoria", "meta_toolkit", "en_estudio", "autoria",
+       "`vault_voice` -> `vault_mcp_catalog`: la voz consulta el catálogo.",
+       hipotesis="Mismo olor que `gobernanza -> meta_toolkit`: el catálogo lo "
+                 "debería inyectar quien construye la voz. Sin verificar.")
+_cruce("ciclo_de_vida", "autoria", "permanente", "ciclo_de_vida",
+       "Onboarding puebla el vault escribiendo notas: pasa por el write path "
+       "único (AP-46) en vez de escribir por su cuenta.")
+_cruce("ciclo_de_vida", "grafo", "permanente", "ciclo_de_vida",
+       "Propagar un cambio exige saber a qué alcanza, y el alcance lo mide el "
+       "grafo. Reimplementarlo aquí sería AP-57.")
+_cruce("grafo", "autoria", "permanente", "grafo",
+       "Etiquetar código escribe la nota por el write path único (AP-46).")
+_cruce("consulta", "autoria", "permanente", "consulta",
+       "El paquete de contexto busca notas: la búsqueda tiene dueño en Autoría.")
+_cruce("consulta", "grafo", "permanente", "consulta",
+       "El subgrafo lee el grafo. Es el caso legítimo que el docstring de "
+       "`cruces()` ya nombra.")
+_cruce("meta_toolkit", "consulta", "permanente", "meta_toolkit",
+       "El servidor MCP expone las tools de consulta: exponer es su oficio.")
+
+
+def pares_sin_presupuesto() -> list[dict]:
+    """Todo par de contextos que cruza sin haber declarado su dirección.
+
+    Es la mitad que a `arch-baseline.json` le faltaba. La baseline contesta
+    «¿cuánta deuda hay?» y se niega a crecer; esto contesta **«¿hacia dónde
+    va?»**, que es la pregunta que nadie tuvo que responder mientras los cruces
+    subían de 48 a 62.
+
+    Bloquea a propósito. Un par nuevo es una decisión de arquitectura, y el coste
+    de declararla —una entrada con dueño y motivo— es justo el trámite que hace
+    falta para que alguien se pregunte si el cruce debería existir. Sin él, el
+    único trámite era `--freeze`, que se teclea sin leer.
+    """
+    fuera = []
+    for par in sorted({(c["from_context"], c["to_context"]) for c in cruces()}):
+        if par in PRESUPUESTO_DE_CRUCES:
+            continue
+        fuera.append({
+            "from_context": par[0], "to_context": par[1],
+            "why": (
+                "Par de contextos sin entrada en PRESUPUESTO_DE_CRUCES. Declara "
+                "si depender así es arquitectura (`permanente`), deuda con fecha "
+                "(`a_eliminar` + `fecha_limite`) o una sospecha por verificar "
+                "(`en_estudio` + `hipotesis`)."
+            ),
+        })
+    return fuera
+
+
+def presupuesto_de_cruces_huerfano() -> list[dict]:
+    """Entradas del presupuesto para pares que ya no cruzan.
+
+    No es un error: es lo que pasa cuando un par se resuelve, y verlo es el
+    punto. Se reporta como informativo para que la entrada se retire a
+    conciencia —con la versión que la cerró— en vez de quedarse ahí explicando
+    una frontera que ya no existe.
+    """
+    vivos = {(c["from_context"], c["to_context"]) for c in cruces()}
+    return [
+        {"from_context": a, "to_context": b, "objetivo": v["objetivo"]}
+        for (a, b), v in sorted(PRESUPUESTO_DE_CRUCES.items())
+        if (a, b) not in vivos
+    ]
+
+
 def dependencias_del_kernel() -> list[dict]:
     """El kernel llamando al dominio: solo las que no están declaradas.
 
@@ -1639,8 +1830,16 @@ def check(strict: bool = False) -> dict:
     copias_vocab = copias_de_vocabulario()
     vocab_sin_dueno = vocabularios_sin_dueno()
 
+    # Sin baseline, y por el mismo motivo que las copias de vocabulario: los 21
+    # pares se declararon al estrenar el registro, así que la puerta nace en
+    # cero. Una baseline aquí solo serviría para admitir el par número 22 sin
+    # decidir nada, que es exactamente el trámite que este registro sustituye.
+    sin_presupuesto = pares_sin_presupuesto()
+    presupuesto_huerfano = presupuesto_de_cruces_huerfano()
+
     return {
         "ok": not nuevos and not huerfanos and not ausentes and not vinc_nuevos
+              and not sin_presupuesto
               and not prohibidas and not rutas_nuevas and not sin_lock
               and not kernel_sin_declarar and not nombre_crudo and not rotos
               and not puerto_nuevos and not entorno_sin_registro
@@ -1671,6 +1870,20 @@ def check(strict: bool = False) -> dict:
         # La frontera del kernel: ganchos declarados vs. cruces sin justificar.
         "kernel_hooks": len(GANCHOS_DEL_KERNEL),
         "undeclared_kernel_deps": kernel_sin_declarar,
+        # La dirección de cada frontera, no solo su cantidad (v40.27).
+        "crossing_budget_pairs": len(PRESUPUESTO_DE_CRUCES),
+        "crossing_budget_by_goal": {
+            objetivo: sum(
+                1 for v in PRESUPUESTO_DE_CRUCES.values()
+                if v["objetivo"] == objetivo
+            )
+            for objetivo in ("permanente", "a_eliminar", "en_estudio")
+        },
+        "unbudgeted_context_pairs": sin_presupuesto,
+        # Informativo: una entrada que sobrevive al par que explicaba. Se retira
+        # a conciencia, con la versión que lo cerró — borrarla en silencio no se
+        # distingue de una que nadie volvió a mirar.
+        "stale_crossing_budget": presupuesto_huerfano,
         # AP-49, su otra mitad: el nombre `VAULT_ROOT` importado sin alias.
         "raw_vault_root_imports": nombre_crudo,
         # La frontera vigilada: puertos declarados vs. puertos que existen.

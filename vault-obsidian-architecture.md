@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.26 — 2026-08-14  
+**Versión:** v40.27 — 2026-08-15  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -7094,6 +7094,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.27 | 2026-08-15 | **Veinte de los sesenta y dos cruces de contexto eran tools leyendo una tabla constante.** Los cruces de `arch-baseline.json` llevaban veintiséis versiones subiendo —48 → 62— sin que ninguna puerta se pusiera roja, y la medida dice por qué: veinticuatro de ellos iban al mismo destino, `vault_norms`, y veintiuno de sus veinticuatro importadores solo pedían datos. Hasta v40.26 eso no se podía ver, porque el catálogo compartía fichero con el motor que lo audita; partido, quedó con **fan-out cero** —ni un `vault_*`, solo `re` y `typing`—, que es la forma exacta de `vault_registry`, ya en el núcleo. Se muda allí, `compute_norm_refs` se va con él por ser derivación pura de catálogo, y los veintiún importadores pasan a pedirle el dato al dueño en vez de a la fachada que arrastra el motor entero. **62 → 42 cruces, cero nuevos, `off_port_total` intacto en 12.** Y como la cifra bajó por un movimiento y no por una regla más laxa, se añade lo que faltaba para que no vuelva a subir: `PRESUPUESTO_DE_CRUCES` presupuesta el **par de contextos**, no el sitio —«Autoría depende de Gobernanza» se decide una vez—, con `permanente`, `a_eliminar` + fecha o `en_estudio` + hipótesis escrita, y un par nuevo **bloquea la puerta**. La baseline decía cuánta deuda hay; esto dice hacia dónde va, que es la pregunta que nadie tuvo que responder mientras la cifra crecía |
 | v40.26 | 2026-08-14 | **`vault_norms` eran 5.158 líneas haciendo de catálogo, de motor y de fachada a la vez**, con el 60% del fichero ocupado por una sola constante. No era un problema de clasificación —su fan-in es 26, no el del núcleo— sino de que tres cosas distintas compartían fichero. Se parte en `vault_norms_catalog` (los datos: `NORM_CATALOG` y el vocabulario de estado, sin leer el vault, sin escribir nada, sin importar ninguna tool), `vault_norms_engine` (el motor de `--audit`, el drift del marco y el heal de AP-46) y la fachada, que **reexporta los siete símbolos públicos y los cinco privados que usan los tests**: por eso ningún llamador se toca y el diff se lee como movimiento puro. Las catorce entradas de `arch-baseline.json` cuyo origen cambió de nombre se migraron por sustitución explícita con el mapeo escrito, no con `--freeze`, y `crossings_total` sigue en 62 y `off_port_total` en 12 antes y después. El corte obligó a decir en voz alta dos cosas que estaban implícitas: `vault_vocabulario` apuntaba con `derivado_de` a la fachada, y al mudarse el dato eso habría contado al catálogo como copia de sí mismo (AP-49); y `vault_norms_coherence` dio diecisiete afirmaciones por sin traza porque el código había cambiado de fichero — ahora **deriva** los módulos hermanos de los imports de la fachada en vez de llevar el reparto escrito a mano, que habría envejecido a la siguiente partición |
 | v40.25 | 2026-08-14 | **Se sabía que había 221 enlaces rotos y no se podía decir cuáles.** El truncado a veinte de `wikilinks_unresolved_sample` es presentación — y se había colado en el dato: `--report` escribía a fichero ese mismo dict recortado, en el único destino donde no hay razón para cortar. Como reparar los enlaces es decisión del dueño y no del estándar, entregarle la lista era la única acción que el hallazgo desbloqueaba, y no se podía entregar. Con la lista entera, 221 dejan de ser 221: salen de **20 notas origen** y **125 de un solo fichero**, repartidos en tres tipos que se arreglan de forma distinta. Una nota de auditoría por vault en `/ans`, `vault-builderx` y `/vcloud`, con autorización explícita por vault, sin crear un solo stub —escondería el hueco en vez de cerrarlo— y sin tocar ningún enlace. El contraste devolvió `frontmatter_unparseable` vacío en los tres: las cuatro notas de `/ans` que no parseaban las lee ya la migración de v40.23 a `vault_lib.parse_frontmatter` |
 | v40.24 | 2026-08-14 | **Trece baselines, doce ficheros, ocho copias del mismo cargar-y-congelar** — tres de ellas con el cuerpo idéntico palabra por palabra y comentándose entre sí. El campo `objetivo` que pedía la capa 7 no se podía añadir sin escribir la novena copia, así que primero aparece el dueño: `vault_baseline` (núcleo, fan-out cero) se queda con la carga, la escritura, el contrato de metadatos y la negativa a crecer, y los `_baseline()` locales sobreviven reducidos a delegación con `superseded_by:`. Salió de ahí un fallo latente de v40.23: `vault_excepcion_declarada` escribía la clave `sitios` y leía `sites`, invisible solo porque la baseline nació vacía — el primer `--freeze` habría devuelto todo lo congelado como nuevo. Con el mecanismo ya en pie, `gancho_sin_presupuesto` deja de ser informativo: los seis ganchos del kernel declaran objetivo, dueño y cadencia en `PRESUPUESTO_DE_GANCHOS`, un séptimo sin declarar falla la puerta, y el vencimiento de la revisión se deriva de `revisado + cadencia_dias` en vez de escribirse. La pendiente de cada baseline sale de `git log` en cada ejecución — escribirla sería AP-53 |
@@ -7441,6 +7442,60 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v40.27 — 2026-08-15 `git: pending`
+
+**Veinte de los sesenta y dos cruces eran tools leyendo una tabla constante.**
+
+Los cruces de contexto de `arch-baseline.json` llevaban veintiséis versiones subiendo —48, 57,
+58, 60, 61, 62— y ninguna puerta se puso roja en todo ese tiempo. No estaba rota: la baseline
+hace lo que dice, negarse a crecer sin que alguien la amplíe a mano. El problema era el otro:
+ampliarla costaba teclear `--freeze`, y nadie tuvo que contestar nunca si el cruce nuevo
+**debía existir**.
+
+La medida señala dónde estaba el bulto. Veinticuatro de los sesenta y dos cruces iban al mismo
+destino, `vault_norms`. De sus veinticuatro importadores, **veintiuno solo pedían datos**:
+siete `status_frontmatter_lines`, nueve `compute_norm_refs`, y el resto `NORM_CATALOG`,
+`STATUS_VOCAB`, `LIFECYCLE_REGISTRY` o `norma_por_codigo`. Solo `vault_blueprint`,
+`vault_sanacion` y `vault_onboard` necesitaban algo del motor.
+
+**Hasta v40.26 ese dato no se podía ver.** El catálogo compartía fichero con el motor que lo
+audita, así que su forma era la del conjunto. Partido, se pudo medir: `vault_norms_catalog`
+tiene **fan-out cero** —no importa ningún `vault_*`, solo `re` y `typing`—, que es exactamente
+la forma de `vault_registry`, que lleva versiones en el núcleo por la misma razón. Leer una
+constante no es cruzar una frontera de negocio; el motor que decide con ella sí, y ese se
+queda en Gobernanza.
+
+Así que el catálogo se muda al núcleo, `compute_norm_refs` se va con él —derivación pura, su
+única dependencia es `re`, y estaba arriba por herencia del fichero único—, y los veintiún
+importadores pasan a pedirle el dato al dueño en vez de a una fachada que reexporta el motor y
+sus once dependencias. **62 → 42 cruces, veinte saldados, cero nuevos**, `off_port_total`
+intacto en 12 y `vocabulary_copies` vacío.
+
+**Y la otra mitad, que es la que importa a largo plazo.** Una cifra que baja por un movimiento
+vuelve a subir con el siguiente commit si nada cambió en el mecanismo. `PRESUPUESTO_DE_CRUCES`
+presupuesta el **par de contextos**, no el sitio: «Autoría depende de Gobernanza» es una
+decisión que se toma una vez, y que la ejerzan dos módulos o quince es consecuencia. Cada uno
+de los veintiún pares vivos declara `objetivo` —`permanente` si es arquitectura, `a_eliminar`
+con `fecha_limite` si es deuda, `en_estudio` con `hipotesis` escrita si es una sospecha sin
+verificar—, más dueño y cadencia. **Un par nuevo bloquea la puerta**, y
+`test_un_par_nuevo_bloquea_la_puerta` lo ve fallar, que es la única forma de saber que un
+guard guarda algo.
+
+`en_estudio` es un estado deliberado y no un cajón: `hipotesis` es obligatoria. La primera que
+se escribe apunta al siguiente frente, y es la misma forma que tenía el catálogo antes de
+medirlo — **once de los cuarenta y cuatro sitios restantes apuntan a `indices`**, siempre por
+lo mismo: quien escribe una nota tiene que reindexarla. Queda sin verificar a propósito, porque
+`vault_tags` lleva el ledger de AP-39 y `vault_reindex` escribe, así que fan-out cero no lo
+tienen y el movimiento no es el mismo. Decir «no lo sé» con la sospecha escrita es lo que hizo
+falta para encontrar esto.
+
+Los nueve sitios que son `vault/<contexto>/repositorio.py` se declaran `permanente` y **se
+siguen contando**: un adaptador que cablea el dominio de otro contexto cruza porque es su
+oficio, pero dejar de contarlo convertiría la capa de DI en un punto ciego, y esconder cableado
+es como se coló AP-48.
 
 ---
 

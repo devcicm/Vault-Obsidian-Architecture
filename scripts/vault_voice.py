@@ -49,7 +49,7 @@ _APERTURA = {
 @lru_cache(maxsize=1)
 def _catalog() -> List[Dict[str, Any]]:
     try:
-        from vault_norms import NORM_CATALOG
+        from vault_norms_catalog import NORM_CATALOG
 
         return list(NORM_CATALOG)
     except Exception:

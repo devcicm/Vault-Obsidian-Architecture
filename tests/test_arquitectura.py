@@ -563,3 +563,75 @@ def test_la_clave_de_modulo_no_reescribe_las_baselines_de_scripts():
         for p in arch.arboles_medidos() if p.name == "repositorio.py"
     }
     assert len(homonimos) > 1, homonimos
+
+
+# ─── El presupuesto de cruces (v40.27) ────────────────────────────────────────
+#
+# La baseline contesta «cuánta deuda hay» y se niega a crecer. Estas pruebas
+# fijan la mitad que faltaba: **hacia dónde va**. Sin ellas el registro sería un
+# documento, que es el fallo que la regla 3 nombra.
+
+
+def test_todo_par_que_cruza_tiene_presupuesto():
+    """La puerta nace en cero y ahí se queda.
+
+    Sin baseline a propósito: los 21 pares se declararon al estrenar el
+    registro, así que una baseline solo serviría para admitir el 22 sin decidir
+    nada — justo el trámite que el presupuesto sustituye.
+    """
+    assert arch.pares_sin_presupuesto() == []
+
+
+def test_un_par_nuevo_bloquea_la_puerta(monkeypatch):
+    """El guard tiene que **verse fallar**.
+
+    Un par nuevo es una decisión de arquitectura. Si esto no bloqueara, el
+    presupuesto sería prosa y los cruces volverían a subir de 48 a 62 sin que
+    ninguna puerta se pusiera roja, que es exactamente lo que pasó.
+    """
+    inventado = {
+        "from": "x", "from_context": "consulta",
+        "to": "y", "to_context": "meta_toolkit",
+    }
+    monkeypatch.setattr(arch, "cruces", lambda: [inventado])
+    fuera = arch.pares_sin_presupuesto()
+    assert [(f["from_context"], f["to_context"]) for f in fuera] == [
+        ("consulta", "meta_toolkit")]
+    assert arch.check()["ok"] is False
+
+
+def test_el_contrato_de_cada_entrada_del_presupuesto():
+    """`a_eliminar` sin fecha es una deuda sin plazo, y `en_estudio` sin
+    hipótesis es un cajón. Los dos campos son lo que hace que el estado
+    signifique algo."""
+    for par, p in arch.PRESUPUESTO_DE_CRUCES.items():
+        assert p["objetivo"] in {"permanente", "a_eliminar", "en_estudio"}, par
+        assert p["dueno"] and p["por_que"], par
+        assert "vence" not in p, f"{par} escribe a mano lo que se deriva"
+        if p["objetivo"] == "a_eliminar":
+            assert p.get("fecha_limite"), f"{par}: deuda sin plazo"
+        if p["objetivo"] == "en_estudio":
+            assert p.get("hipotesis"), f"{par}: sospecha sin escribir"
+
+
+def test_el_presupuesto_no_explica_fronteras_que_ya_no_existen():
+    """Una entrada huérfana es informativa, no un fallo — pero se ve.
+
+    Se retira a conciencia con la versión que cerró el par: borrarla en silencio
+    no se distingue de una que nadie volvió a mirar (capa 7 del plano).
+    """
+    assert arch.check()["stale_crossing_budget"] == []
+
+
+def test_el_catalogo_de_normas_es_una_hoja_del_nucleo():
+    """v40.27 — el movimiento que quitó 20 de los 62 cruces.
+
+    No fue una reclasificación de conveniencia: el catálogo tiene fan-out cero,
+    la misma forma que `vault_registry`. Si algún día importa una tool, deja de
+    tener sitio en el núcleo y esta prueba lo dice antes de que la cifra baje
+    por el motivo equivocado.
+    """
+    import vault_grafo_import as g
+    assert "vault_norms_catalog" in arch.CONTEXTS[arch.KERNEL]["modulos"]
+    assert g.grafo().get("vault_norms_catalog", set()) == set()
+    assert "vault_norms_engine" not in arch.CONTEXTS[arch.KERNEL]["modulos"]

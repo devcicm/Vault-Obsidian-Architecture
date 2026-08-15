@@ -2,7 +2,7 @@
 
 > Documento derivado. Se genera con `python scripts/vault_arch.py --blueprint`; la fuente es `CONTEXTS` en `scripts/vault_arch.py`. No se edita a mano.
 
-**9 contextos**, **136 módulos** clasificados, **62 fronteras cruzadas** pendientes de publicar puerto.
+**9 contextos**, **136 módulos** clasificados, **42 fronteras cruzadas** pendientes de publicar puerto.
 
 ## Los límites
 
@@ -36,7 +36,6 @@ graph TD
     meta_toolkit -.->|cruce| gobernanza
     autoria -.->|cruce| gobernanza
     meta_toolkit -.->|cruce| ciclo_de_vida
-    grafo -.->|cruce| gobernanza
     grafo -.->|cruce| autoria
     consulta -.->|cruce| autoria
     meta_toolkit -.->|cruce| consulta
@@ -46,7 +45,6 @@ graph TD
     ciclo_de_vida -.->|cruce| gobernanza
     ciclo_de_vida -.->|cruce| indices
     ciclo_de_vida -.->|cruce| autoria
-    consulta -.->|cruce| gobernanza
     ciclo_de_vida -.->|cruce| grafo
     ciclo_de_vida -.->|cruce| meta_toolkit
     consulta -.->|cruce| grafo
@@ -54,6 +52,7 @@ graph TD
     autoria -.->|cruce| indices
     autoria -.->|cruce| grafo
     consulta -.->|cruce| ciclo_de_vida
+    grafo -.->|cruce| gobernanza
     indices -.->|cruce| grafo
 ```
 
@@ -62,7 +61,7 @@ graph TD
 - **Lenguaje ubicuo:** ruta, envelope, error, bloqueo, escritura atómica
 - **Puertos publicados:** `atomic_write_text` → `vault_io:atomic_write_text`, `file_lock` → `vault_fs:file_lock`, `get_vault_root` → `vault_raiz:get_vault_root`, `wrap_main` → `vault_errors:wrap_main`
 - **No cruza:** depender de cualquier contexto de dominio
-- **Módulos (16):** `vault_baseline`, `vault_encoding`, `vault_entorno`, `vault_errors`, `vault_errors_catalog`, `vault_errors_trace`, `vault_fs`, `vault_grafo_import`, `vault_io`, `vault_ledger`, `vault_lib`, `vault_log_error`, `vault_raiz`, `vault_regex`, `vault_registry`, `vault_vocabulario`
+- **Módulos (17):** `vault_baseline`, `vault_encoding`, `vault_entorno`, `vault_errors`, `vault_errors_catalog`, `vault_errors_trace`, `vault_fs`, `vault_grafo_import`, `vault_io`, `vault_ledger`, `vault_lib`, `vault_log_error`, `vault_norms_catalog`, `vault_raiz`, `vault_regex`, `vault_registry`, `vault_vocabulario`
 
 ## Autoría
 
@@ -70,27 +69,13 @@ graph TD
 - **Puertos publicados:** `anexar` → `vault_append:vault_append`, `buscar` → `vault_search:vault_search`, `escribir_nota` → `vault_write:vault_write`, `fusionar` → `vault_merge:vault_merge`, `hablar` → `vault_voice:speak`, `mover` → `vault_move:move_note`, `tipo_por_carpeta` → `vault_write:tipo_por_carpeta`
 - **Módulos (39):** `vault_ai_decision`, `vault_append`, `vault_bibliography_save`, `vault_bug_save`, `vault_change_log`, `vault_dataset`, `vault_delta`, `vault_diagram_export`, `vault_diagram_save`, `vault_diff`, `vault_env_save`, `vault_fix_brackets`, `vault_flow_save`, `vault_frontmatter_heal`, `vault_incident_save`, `vault_infra_save`, `vault_knowledge_get`, `vault_knowledge_save`, `vault_list`, `vault_merge`, `vault_move`, `vault_ncr_save`, `vault_pattern_list`, `vault_pattern_save`, `vault_privacy_save`, `vault_project_overview`, `vault_project_status`, `vault_read`, `vault_release_save`, `vault_requirement_save`, `vault_risk_save`, `vault_runbook_log`, `vault_runbook_save`, `vault_search`, `vault_slo_save`, `vault_test_save`, `vault_timeline`, `vault_voice`, `vault_write`
 
-Fronteras que hoy cruza (22), deuda declarada:
+Fronteras que hoy cruza (8), deuda declarada:
 
 | Módulo | Importa | Contexto destino |
 |---|---|---|
-| `vault_bug_save` | `vault_norms` | Gobernanza |
 | `vault_change_log` | `vault/gobernanza` | Gobernanza |
-| `vault_incident_save` | `vault_norms` | Gobernanza |
-| `vault_infra_save` | `vault_norms` | Gobernanza |
-| `vault_ncr_save` | `vault_norms` | Gobernanza |
-| `vault_pattern_save` | `vault_norms` | Gobernanza |
-| `vault_privacy_save` | `vault_norms` | Gobernanza |
-| `vault_project_status` | `vault_norms` | Gobernanza |
-| `vault_release_save` | `vault_norms` | Gobernanza |
-| `vault_requirement_save` | `vault_norms` | Gobernanza |
-| `vault_risk_save` | `vault_norms` | Gobernanza |
-| `vault_slo_save` | `vault_norms` | Gobernanza |
-| `vault_test_save` | `vault_norms` | Gobernanza |
 | `vault_voice` | `vault_mcp_catalog` | Meta-toolkit |
-| `vault_voice` | `vault_norms` | Gobernanza |
 | `vault_write` | `vault_mermaid_check` | Gobernanza |
-| `vault_write` | `vault_norms` | Gobernanza |
 | `vault_write` | `vault_tags` | Índices |
 | `vault/autoria/repositorio.py` | `vault/indices` | Índices |
 | `vault/autoria/repositorio.py` | `vault/indices` | Índices |
@@ -103,20 +88,18 @@ Fronteras que hoy cruza (22), deuda declarada:
 - **Puertos publicados:** `construir_grafo` → `vault_graph:vault_graph`, `impacto` → `vault_impact:vault_impact`, `resolver_wikilink` → `vault_link_safety:validate_wikilinks`
 - **Módulos (15):** `vault_code_map`, `vault_code_module`, `vault_code_query`, `vault_code_relation`, `vault_code_sync`, `vault_code_tag`, `vault_env_matrix`, `vault_graph`, `vault_graph_fix`, `vault_graph_inspect`, `vault_graph_merge`, `vault_impact`, `vault_infra_map`, `vault_link_safety`, `vault_relation_add`
 
-Fronteras que hoy cruza (4), deuda declarada:
+Fronteras que hoy cruza (2), deuda declarada:
 
 | Módulo | Importa | Contexto destino |
 |---|---|---|
-| `vault_code_tag` | `vault_norms` | Gobernanza |
 | `vault_code_tag` | `vault_write` | Autoría |
-| `vault_env_matrix` | `vault_norms` | Gobernanza |
 | `vault/grafo/repositorio.py` | `vault/gobernanza` | Gobernanza |
 
 ## Gobernanza
 
 - **Lenguaje ubicuo:** norma, guard, enforcement, severidad, violación, estado, transición de estado, fundamento, hallazgo
 - **Puertos publicados:** `FUNDAMENTOS` → `vault_fundamentals:FUNDAMENTALS`, `NORM_CATALOG` → `vault_norms:NORM_CATALOG`, `auditar` → `vault_audit:vault_audit`, `auditar_normas` → `vault_norms:vault_norms_audit`, `cuerpo_sin_marcadores` → `vault_norms:cuerpo_sin_marcadores`, `gancho_de_secretos` → `vault_secret_scan:vault_write_hook`, `hay_hallazgos_bloqueantes` → `vault_secret_scan:has_blocking_findings`, `identidad_de_documentacion` → `vault_audit:es_documentacion_del_estandar`, `lineas_de_estado` → `vault_norms:status_frontmatter_lines`, `norma_por_codigo` → `vault_norms:norma_por_codigo`, `normalizar_estado` → `vault_norms:normalize_status`, `penalizaciones` → `vault_audit:PENALIZACIONES`, `puntuar_calidad` → `vault_quality_check:vault_quality_check`, `referencias_de_norma` → `vault_norms:compute_norm_refs`, `registro_de_ciclo_de_vida` → `vault_norms:LIFECYCLE_REGISTRY`, `transiciones_de_estado` → `vault_norms:STATUS_TRANSITIONS`, `validar_mermaid` → `vault_mermaid_check:validate_mermaid`, `valores_cia` → `vault_fundamentals:cia_valores`, `vocabulario_de_dominio` → `vault_norms:DOMAIN_STATUS_VOCABS`, `vocabulario_de_estado` → `vault_norms:STATUS_VOCAB`
-- **Módulos (12):** `vault_audit`, `vault_drift_detect`, `vault_fuente_unica`, `vault_fundamentals`, `vault_mermaid_check`, `vault_norms`, `vault_norms_catalog`, `vault_norms_engine`, `vault_quality_check`, `vault_secret_scan`, `vault_security_scan`, `vault_validate`
+- **Módulos (11):** `vault_audit`, `vault_drift_detect`, `vault_fuente_unica`, `vault_fundamentals`, `vault_mermaid_check`, `vault_norms`, `vault_norms_engine`, `vault_quality_check`, `vault_secret_scan`, `vault_security_scan`, `vault_validate`
 
 Fronteras que hoy cruza (6), deuda declarada:
 
@@ -148,12 +131,11 @@ Fronteras que hoy cruza (1), deuda declarada:
 - **No cruza:** base de datos; embeddings; servicio externo
 - **Módulos (10):** `vault_compact_contracts`, `vault_context_pack`, `vault_ingest`, `vault_mcp_context`, `vault_preferences`, `vault_query_parse`, `vault_subgraph`, `vault_token_counter`, `vault_token_service`, `vault_tokens`
 
-Fronteras que hoy cruza (4), deuda declarada:
+Fronteras que hoy cruza (3), deuda declarada:
 
 | Módulo | Importa | Contexto destino |
 |---|---|---|
 | `vault_context_pack` | `vault_search` | Autoría |
-| `vault_preferences` | `vault_norms` | Gobernanza |
 | `vault_subgraph` | `vault/grafo` | Grafo |
 | `vault/consulta/repositorio.py` | `vault/ciclo_de_vida` | Ciclo de vida |
 
@@ -163,7 +145,7 @@ Fronteras que hoy cruza (4), deuda declarada:
 - **Puertos publicados:** `CURRENT_VERSION` → `vault_standard_upgrade:CURRENT_VERSION`, `inicializar` → `vault_init:vault_init`, `migrar` → `vault_standard_upgrade:vault_standard_upgrade`
 - **Módulos (8):** `vault_init`, `vault_migrate_docs`, `vault_migrate_rollback`, `vault_onboard`, `vault_propagate`, `vault_sanacion`, `vault_sdd_init`, `vault_standard_upgrade`
 
-Fronteras que hoy cruza (15), deuda declarada:
+Fronteras que hoy cruza (14), deuda declarada:
 
 | Módulo | Importa | Contexto destino |
 |---|---|---|
@@ -178,7 +160,6 @@ Fronteras que hoy cruza (15), deuda declarada:
 | `vault_sanacion` | `vault_audit` | Gobernanza |
 | `vault_sanacion` | `vault_norms` | Gobernanza |
 | `vault_sanacion` | `vault_reindex` | Índices |
-| `vault_sdd_init` | `vault_norms` | Gobernanza |
 | `vault_standard_upgrade` | `vault_mcp_catalog` | Meta-toolkit |
 | `vault_standard_upgrade` | `vault_section_index` | Índices |
 | `vault/ciclo_de_vida/repositorio.py` | `vault/indices` | Índices |
@@ -197,14 +178,12 @@ Fronteras que hoy cruza (15), deuda declarada:
 - **No cruza:** escribir en una sección de contenido: sus artefactos derivados viven en 00_System/
 - **Módulos (26):** `vault_arch`, `vault_blame_audit`, `vault_blueprint`, `vault_changelog_check`, `vault_ciclos`, `vault_criterios`, `vault_doc_counts`, `vault_doc_sync`, `vault_error_contract`, `vault_excepcion_declarada`, `vault_firma_sitio`, `vault_foreign_check`, `vault_gate`, `vault_kernel`, `vault_manifest`, `vault_mcp`, `vault_mcp_catalog`, `vault_noop_audit`, `vault_norms_coherence`, `vault_servicio`, `vault_smoke`, `vault_spec_catalog_check`, `vault_spec_generate_catalog`, `vault_spec_memory`, `vault_spec_validate`, `vault_test_runner`
 
-Fronteras que hoy cruza (12), deuda declarada:
+Fronteras que hoy cruza (10), deuda declarada:
 
 | Módulo | Importa | Contexto destino |
 |---|---|---|
 | `vault_blueprint` | `vault_norms` | Gobernanza |
 | `vault_changelog_check` | `vault_standard_upgrade` | Ciclo de vida |
-| `vault_criterios` | `vault_norms` | Gobernanza |
-| `vault_doc_counts` | `vault_norms` | Gobernanza |
 | `vault_foreign_check` | `vault_audit` | Gobernanza |
 | `vault_manifest` | `vault_fundamentals` | Gobernanza |
 | `vault_mcp` | `vault_mcp_context` | Consulta |

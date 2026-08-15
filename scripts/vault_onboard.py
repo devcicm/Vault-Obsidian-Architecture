@@ -44,7 +44,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from vault_errors import emit_error, wrap_main
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from vault_io import assert_within_vault, atomic_write_text, normalize_stem
-from vault_norms import compute_norm_refs
+from vault_norms_catalog import compute_norm_refs
 from vault_registry import ORDERED_SECTIONS
 from vault_write import tipo_por_carpeta
 

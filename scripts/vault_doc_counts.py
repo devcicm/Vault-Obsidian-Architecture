@@ -62,14 +62,14 @@ def count_groups() -> int:
 
 
 def count_norms() -> int:
-    from vault_norms import NORM_CATALOG
+    from vault_norms_catalog import NORM_CATALOG
 
     return len(NORM_CATALOG)
 
 
 def count_norms_family(prefix: str) -> Callable[[], int]:
     def _count() -> int:
-        from vault_norms import NORM_CATALOG
+        from vault_norms_catalog import NORM_CATALOG
 
         return sum(1 for n in NORM_CATALOG if n["code"].startswith(f"{prefix}-"))
 

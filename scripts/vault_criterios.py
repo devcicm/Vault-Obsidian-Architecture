@@ -372,7 +372,7 @@ def _zonas_declaradas() -> List[Path]:
 def _registros_ajenos() -> Dict[str, set]:
     """Zonas y normas que existen de verdad, preguntadas a su dueño."""
     from vault_arch import CONTEXTS
-    from vault_norms import NORM_CATALOG
+    from vault_norms_catalog import NORM_CATALOG
 
     return {
         "zonas": set(CONTEXTS),

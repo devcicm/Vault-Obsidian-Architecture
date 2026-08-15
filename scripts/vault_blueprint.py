@@ -260,7 +260,8 @@ DEUDA_DECLARADA: List[Dict[str, str]] = [
     },
     {
         "id": "vault_norms_es_un_modulo_dios",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "v40.27",
         "desde": "v40.20",
         "capa": "7",
         "que": (
@@ -275,7 +276,15 @@ DEUDA_DECLARADA: List[Dict[str, str]] = [
             "medir para v40.20 se comprobó que su fan-in no es el del "
             "núcleo—: es un módulo que hace de catálogo, de motor y de fachada "
             "a la vez, con las dependencias invertidas. Se parte en `catalog` "
-            "/ `engine` / fachada y se invierten esos cruces."
+            "/ `engine` / fachada y se invierten esos cruces. v40.26 hizo el "
+            "corte y v40.27 lo cobró: partido, `vault_norms_catalog` resultó "
+            "tener fan-out cero —la forma de `vault_registry`— y se mudó al "
+            "núcleo con `compute_norm_refs`. Veintiuno de sus veinticuatro "
+            "importadores solo pedían datos y ahora se los piden al dueño: "
+            "**62 → 42 cruces, veinte saldados, cero nuevos**, y quince "
+            "ciclos diferidos de AP-58 resueltos de paso, porque `vault_voice` "
+            "dejó de importar la fachada. La deuda se cierra midiendo, no "
+            "declarándolo: el corte por sí solo no movió una sola cifra."
         ),
         "por_que_no_ahora": (
             "Es la tanda más cara de las cinco y depende de lo que el mapa del "
