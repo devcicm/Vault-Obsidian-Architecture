@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.24 — 2026-08-14  
+**Versión:** v40.25 — 2026-08-14  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -7094,6 +7094,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.25 | 2026-08-14 | **Se sabía que había 221 enlaces rotos y no se podía decir cuáles.** El truncado a veinte de `wikilinks_unresolved_sample` es presentación — y se había colado en el dato: `--report` escribía a fichero ese mismo dict recortado, en el único destino donde no hay razón para cortar. Como reparar los enlaces es decisión del dueño y no del estándar, entregarle la lista era la única acción que el hallazgo desbloqueaba, y no se podía entregar. Con la lista entera, 221 dejan de ser 221: salen de **20 notas origen** y **125 de un solo fichero**, repartidos en tres tipos que se arreglan de forma distinta. Una nota de auditoría por vault en `/ans`, `vault-builderx` y `/vcloud`, con autorización explícita por vault, sin crear un solo stub —escondería el hueco en vez de cerrarlo— y sin tocar ningún enlace. El contraste devolvió `frontmatter_unparseable` vacío en los tres: las cuatro notas de `/ans` que no parseaban las lee ya la migración de v40.23 a `vault_lib.parse_frontmatter` |
 | v40.24 | 2026-08-14 | **Trece baselines, doce ficheros, ocho copias del mismo cargar-y-congelar** — tres de ellas con el cuerpo idéntico palabra por palabra y comentándose entre sí. El campo `objetivo` que pedía la capa 7 no se podía añadir sin escribir la novena copia, así que primero aparece el dueño: `vault_baseline` (núcleo, fan-out cero) se queda con la carga, la escritura, el contrato de metadatos y la negativa a crecer, y los `_baseline()` locales sobreviven reducidos a delegación con `superseded_by:`. Salió de ahí un fallo latente de v40.23: `vault_excepcion_declarada` escribía la clave `sitios` y leía `sites`, invisible solo porque la baseline nació vacía — el primer `--freeze` habría devuelto todo lo congelado como nuevo. Con el mecanismo ya en pie, `gancho_sin_presupuesto` deja de ser informativo: los seis ganchos del kernel declaran objetivo, dueño y cadencia en `PRESUPUESTO_DE_GANCHOS`, un séptimo sin declarar falla la puerta, y el vencimiento de la revisión se deriva de `revisado + cadencia_dias` en vez de escribirse. La pendiente de cada baseline sale de `git log` en cada ejecución — escribirla sería AP-53 |
 | v40.23 | 2026-08-14 | **Una nota con doce corchetes tumbaba el barrido entero, y seis parsers llevaban versiones leyendo el vault como si no tuviera frontmatter.** AP-61 «el guard cae con el dato que vino a medir»: `RecursionError` no hereda de `yaml.YAMLError`, así que un `except yaml.YAMLError` alrededor de `safe_load` parece contener el fallo y lo deja subir entero — el radio es asimétrico, el dato malo es una nota y la caída es el vault. El plan contaba cuatro sitios; el barrido por AST encontró **doce**, y se corrigieron los doce en vez de congelarlos, así que la baseline de `vault_excepcion_declarada` **nace vacía**. Medido aparte y peor: los seis parsers de frontmatter escritos con `re.match(r"^---
 …")` devolvían `{}` en **110 de las 126** notas de `vault-sandbox/`, porque el patrón no casa `---
@@ -7439,6 +7440,56 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v40.25 — 2026-08-14 `git: pending`
+
+**Se sabía que había 221 enlaces rotos y no se podía decir cuáles.**
+
+**El truncado era presentación y se había colado en el dato.**
+`vault_foreign_check` corta `wikilinks_unresolved_sample` a veinte para que stdout siga
+cabiendo en una terminal — decisión correcta. Lo que no lo era: `--report` escribía a fichero
+**ese mismo dict recortado**, en el único destino donde no hay ninguna razón para cortar nada.
+La consecuencia no es cosmética. Los 221 enlaces sin resolver de `/ans` son material del
+dueño, no defecto de la medida —Obsidian los pinta rotos igual que nosotros—, así que lo único
+que el hallazgo desbloquea es **entregarle la lista**. Y la lista no se podía entregar. El
+fichero lleva ahora `wikilinks_unresolved_all` completa, stdout sigue con la muestra, y la
+muestra dice cuántos quedaron fuera y dónde están: una lista recortada en silencio se lee como
+la lista completa.
+
+**Con la lista entera, 221 dejan de ser 221.** Salen de **20 notas origen**, y **125 de un
+solo fichero** (`10_Migrated/legacy/INDEX.md`). En `builderx`, 106 de 44 notas con 36 en el
+`INDEX.md`. Y se reparten en tres tipos que se arreglan de forma distinta: destino que no
+existe (escribir la nota o retirar el enlace), prefijo `vault-ans/` que Obsidian no resuelve
+porque es la carpeta del vault y no una carpeta dentro de él (quitar el prefijo; el destino ya
+existe), y placeholder de plantilla escrito como wikilink real fuera de todo fence (meterlo en
+un fence). Ese reparto es la diferencia entre un número y una reparación.
+
+**Una nota de auditoría por vault, y nada más.** Escrita en `02_Observability/audits/` de
+`/ans`, `vault-builderx` y `/vcloud`, con autorización explícita por vault. No se ha creado un
+stub por destino: un stub vacío no arregla el hueco, lo esconde —el enlace deja de verse roto
+y la nota sigue sin existir—, y elegir entre escribir la nota y retirar el enlace es del dueño.
+No se ha tocado ningún enlace. No se ha propagado ninguna tool. La nota de `/ans` **cita** a la
+de v40.12 en vez de corregirla: si los recuentos no coinciden, la diferencia está en el
+criterio de medida —cada tanda corrige alguno— y no necesariamente en el vault.
+
+**El generador aprendió a no afirmar lo que no hay.** La primera versión imprimía «los tres
+tipos» con un solo tipo en la tabla, y en `/vcloud` —3 enlaces en 3 notas— anunciaba «1 de los
+3 (33%) salen de…» como si fuera una concentración. Es ruido con forma de dato, y en la nota
+donde no hay nada que arreglar es exactamente donde cuesta la credibilidad. Ahora la
+concentración solo se afirma cuando la hay.
+
+**Lo que el contraste de la regla 7 pagó esta vez.** `frontmatter_unparseable` sale **vacío**
+en los tres vaults. Las cuatro notas de `/ans` que no parseaban desde agosto las lee bien la
+migración de v40.23 a `vault_lib.parse_frontmatter`, que hace BOM-strip. Es el circuito
+completo funcionando: un defecto que solo aparecía en material ajeno, corregido en el dueño
+canónico, verificado otra vez contra el mismo material ajeno.
+
+**Los dos conflictos de AP-05 de `/ans` siguen abiertos, a propósito.** `host_ip` 10.10.10.45
+frente a 10.10.10.50 y `pve_version` 8.4.16 frente a 9.1.1, en `proxmox-01.md` y
+`proxmox-new.md`. Son datos de infraestructura real y **cuál es el bueno no lo sabe el
+estándar**. Elegir uno sería inventar.
 
 ---
 
