@@ -1,6 +1,6 @@
 # `cli/` — CLI consolidada de Vault Obsidian Architecture
 
-**v40.23 · 106 tools · 37 grupos · un único punto de entrada**
+**v40.24 · 106 tools · 37 grupos · un único punto de entrada**
 
 ```bash
 python -m cli <comando> [opciones]
@@ -12,7 +12,7 @@ Referencia exhaustiva de comandos: [`COMMANDS.md`](COMMANDS.md).
 
 ## Qué es esto
 
-El repo tiene ~133 scripts y 106 tools activas. Cada una es un ejecutable independiente
+El repo tiene ~134 scripts y 106 tools activas. Cada una es un ejecutable independiente
 con su propio `argparse`, su propio contrato y sus propios side-effects. Eso funciona
 bien para invocación puntual y mal para tres cosas:
 

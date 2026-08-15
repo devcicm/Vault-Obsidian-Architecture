@@ -1,5 +1,12 @@
 {
  "schema": 2,
  "description": "Handlers que capturan la excepción declarada de una librería y dejan escapar la que esa librería lanza de verdad (AP-61). Indexada por firma de sitio, no por línea. Esta lista solo puede ENCOGER. Nace vacía: los doce sitios que había se corrigieron en v40.23 en vez de congelarse.",
- "sitios": []
+ "sitios": [],
+ "objetivo": {
+  "tamano": 0,
+  "fecha_limite": "2027-06-30",
+  "cadencia_dias": 180,
+  "dueno": "gobernanza",
+  "por_que": "Nació vacía en v40.23 porque los doce sitios se corrigieron en vez de congelarse. El objetivo es que siga vacía: no hay deuda previa que amortizar, solo la de no estrenarla."
+ }
 }

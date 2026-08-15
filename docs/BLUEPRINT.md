@@ -52,7 +52,7 @@ regenera.*
 
 | Contexto | Puertos | Módulos | Prohíbe |
 |---|---|---|---|
-| **Kernel** (`kernel`) | 4 | 15 | depender de cualquier contexto de dominio |
+| **Kernel** (`kernel`) | 4 | 16 | depender de cualquier contexto de dominio |
 | **Autoría** (`autoria`) | 7 | 39 | — |
 | **Grafo** (`grafo`) | 3 | 15 | — |
 | **Gobernanza** (`gobernanza`) | 19 | 10 | — |
@@ -129,7 +129,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-48** — Implementación paralela por camino de acceso | guard+audit | `contratos`, `framework` | `test_ap48_implementacion_paralela.py` |
 | **AP-49** — Vínculo resuelto en tiempo de import | guard+audit | `arquitectura`, `framework` | `test_arquitectura.py`, `test_durabilidad_dominio.py` |
 | **AP-50** — Decisión duplicada sin dueño declarado | guard+audit | `arquitectura`, `framework` | `test_ap57_criterios.py` |
-| **AP-51** — La tool culpa al dato de su propio fallo | guard+audit | `blame` | `test_ap51_culpar_al_dato.py` |
+| **AP-51** — La tool culpa al dato de su propio fallo | guard+audit | `blame` | `test_ap51_culpar_al_dato.py`, `test_baseline.py` |
 | **AP-52** — El error se emite fuera del contrato del catalogo | guard+audit | `contrato_error` | `test_ap52_contrato_de_error.py`, `test_regla7_contraste_ajeno.py` |
 | **AP-53** — El historial se afirma a mano y nadie lo contrasta con git | guard | `changelog` | `test_changelog_check.py` |
 | **AP-54** — El lock falla y se escribe igual | guard | `arquitectura` | `test_lock_reentrante.py` |
@@ -324,7 +324,7 @@ Deuda **declarada**: conocida, medida y con motivo escrito de por qué no se ata
 todavía. Lo que no está aquí no es que no exista — es que nadie lo ha medido, que
 es una situación distinta y peor.
 
-**11 pendientes** de 11 declaradas. Una deuda saldada no
+**11 pendientes** de 12 declaradas. Una deuda saldada no
 desaparece de la tabla: se queda con `estado: saldada` y la versión que la cerró,
 porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 
@@ -337,32 +337,41 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `recursion_error_en_parsers` | pendiente | v40.9 | 5 | `RecursionError` escapa a `except yaml.YAMLError` en 4 parsers: no es subclase. Reproducido a 400 corchetes anidados. El peor caso es `vault_foreign_check`, que es la tool de la regla 7. | Es un arreglo de robustez con su propia norma candidata; entra en la tanda donde se unifiquen los parsers, no en una de alcance. |
 | `parsers_de_frontmatter_divergentes` | pendiente | v40.9 | 5 | 8 parsers de frontmatter distintos; `vault_write.slugify` no delega en `vault_lib` aunque 20 módulos sí; 6 aliases de v40.8 con el nombre viejo aún en uso; `--agent default="claude"` en 6 tools frente al AP-16 que `vault_bug_save` exige. | Es AP-50 acumulado y se salda unificando, no parcheando: hacerlo a medias deja nueve parsers en vez de ocho. |
 | `catch_vacios_en_el_servidor_mjs` | pendiente | v40.9 | 7 | 11 `catch (_) {}` en `mcp/nodejs/vault-mcp-server.mjs` (AP-51 en JS). | Los tres audits con baseline miden AST de Python. Un detector de JavaScript es otro proyecto, y fingir que el alcance lo cubre sería el mismo cero sobre un subconjunto que esta versión vino a cerrar. |
-| `baselines_sin_objetivo_ni_pendiente` | pendiente | v40.20 | 7 | Las baselines del repo solo pueden **encoger**, y eso es un suelo, no una trayectoria: nada declara a cuánto deberían llegar ni a qué ritmo. Falta un campo `objetivo` y la pendiente publicada. Es lo que deja sin cerrar el hallazgo `gancho_sin_presupuesto` de `vault_kernel`, que hoy se emite informativo y no bloquea: los seis `GANCHOS_DEL_KERNEL` solo pueden crecer y nada mide su pendiente. | Un `objetivo` sin quién lo revisa es una cifra a mano más (AP-47). Exige decidir la cadencia de revisión antes que el campo, y esa decisión no la resuelve el movimiento que la descubrió. |
-| `vault_norms_es_un_modulo_dios` | pendiente | v40.20 | 7 | `vault_norms` acumula 4.257 líneas, fan-out 10 y **9 de los 13 cruces sin puerto** del repo. No es un problema de clasificación —al medir para v40.20 se comprobó que su fan-in es 26, no el del núcleo—: es un módulo que hace de catálogo, de motor y de fachada a la vez, con las dependencias invertidas. Se parte en `catalog` / `engine` / fachada y se invierten los nueve cruces. | Es la tanda más cara de las cinco y depende de lo que el mapa del núcleo revele. Partirlo antes de tener el grafo con dueño habría sido mover código a ciegas. |
+| `baselines_sin_objetivo_ni_pendiente` | saldada en v40.24 | v40.20 | 7 | Las baselines del repo solo podían **encoger**, y eso es un suelo, no una trayectoria: nada declaraba a cuánto deberían llegar ni a qué ritmo. v40.24 lo cierra con el mecanismo, no con una cifra: `vault_baseline` es el dueño único de la carga, la escritura y la negativa a crecer, y el contrato de `objetivo` exige tamaño, fecha límite, cadencia y dueño — un número suelto no valida. La pendiente se deriva de `git log` cada vez que se genera este plano y **nunca se escribe** en el fichero, porque escribirla sería afirmar sobre la historia sin que git la respalde (AP-53). Las dos columnas nuevas de la tabla de abajo son eso. Con ello `gancho_sin_presupuesto` deja de ser informativo: los seis `GANCHOS_DEL_KERNEL` declaran presupuesto en `vault_arch.PRESUPUESTO_DE_GANCHOS` y el séptimo sin declarar bloquea la puerta. | Cerrada. Lo que queda no es esta deuda sino la siguiente, y va declarada aparte: el mecanismo existe y la mayoría de las baselines todavía publican `sin objetivo`. |
+| `baselines_sin_objetivo_asignado` | pendiente | v40.24 | 7 | El campo `objetivo` ya existe y se valida, pero solo `excepcion-declarada-baseline.json` lo declara — y allí el valor no es una decisión, es lo que la propia baseline ya decía: nació vacía y el objetivo es que siga vacía. Las demás publican `— sin objetivo` en la capa 6, que es el estado honesto y no se confunde con `cumple`. | A cuánto debe encoger cada baseline y para cuándo es un compromiso del dueño del repo, no un dato derivable. Escribir trece cifras plausibles para que la tabla se vea completa sería exactamente el AP-47 que el contrato de `objetivo` existe para impedir, cometido dentro del mecanismo que lo impide. |
+| `vault_norms_es_un_modulo_dios` | pendiente | v40.20 | 7 | `vault_norms` acumula miles de líneas y la mayor parte de los cruces sin puerto del repo. Las dos cifras iban escritas aquí y las dos habían envejecido —decía 4.257 líneas cuando ya eran más de cinco mil, y «9 de los 13 cruces» cuando el reparto había cambiado—, que es AP-47 cometido dentro del registro que publica la deuda de AP-47; se miden con `wc -l scripts/vault_norms.py` y con `off_port_crossings` de `scripts/arch-baseline.json`, y por eso ya no se copian. No es un problema de clasificación —al medir para v40.20 se comprobó que su fan-in no es el del núcleo—: es un módulo que hace de catálogo, de motor y de fachada a la vez, con las dependencias invertidas. Se parte en `catalog` / `engine` / fachada y se invierten esos cruces. | Es la tanda más cara de las cinco y depende de lo que el mapa del núcleo revele. Partirlo antes de tener el grafo con dueño habría sido mover código a ciegas. |
 | `la_norma_no_es_un_paquete` | pendiente | v40.20 | 7 | El ciclo obligatorio del repo —síntoma → norma → guard+audit+heal → test— vive hoy en cuatro listas sincronizadas a mano: el catálogo, la tool, la puerta y el fichero de tests. La norma como **paquete** (`normas/AP-XX/` con `norma.py`, `guard.py`, `heal.py`, `test_*.py` y `porque.md`) la convierte en una sola cosa con cuatro caras, y el coste de una norma nueva deja de crecer con la historia del repo. | Migra por atrición, no de golpe: 71 normas movidas en una tanda serían 71 oportunidades de perder un matiz. Empieza por las que se escriban a partir de ahora. |
 | `el_vault_no_tiene_kernel_declarado` | pendiente | v40.20 | 7 | `vault_kernel` traza el núcleo **del repo**. El mismo concepto aplicado a las notas —qué subconjunto de un vault es su núcleo— daría prioridad a `vault_context_pack` cuando el paquete no cabe, orden a la sanación y pesos a `vault_audit`. | Declarado sin fecha por decisión de alcance. El núcleo de un vault no se deriva del grafo de imports sino del de enlaces, y esa medida hay que contrastarla contra un vault ajeno antes de creérsela (regla 7). |
 
-| Baseline | Norma | Congelado |
-|---|---|---|
-| `scripts/arch-baseline.json` | cruces entre contextos | 62 |
-| `scripts/arch-baseline.json` | cruces fuera de puerto | 13 |
-| `scripts/blame-baseline.json` | AP-51 | 83 |
-| `scripts/error-contract-baseline.json` | AP-52 | 9 |
-| `scripts/noop-baseline.json` | AP-37 | 0 |
-| `scripts/smoke-baseline.json` | AP-42 | 0 |
-| `scripts/blueprint-baseline.json` | capa 4 — norma sin puerta ni test | 13 |
-| `scripts/criterios-baseline.json` | AP-57 | 9 |
-| `scripts/ciclos-baseline.json` | AP-58 — ciclo esquivado con import diferido | 30 |
-| `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 5 |
-| `scripts/norms-distincion-baseline.json` | AP-60 — normas que no declaran de qué se distinguen | 0 |
-| `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 |
-| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1220 |
-| `scripts/excepcion-declarada-baseline.json` | AP-61 — la excepción declarada no es la que escapa | 0 |
+| Baseline | Norma | Congelado | Objetivo | Pendiente |
+|---|---|---|---|---|
+| `scripts/arch-baseline.json` | cruces entre contextos | 62 | — *sin objetivo* | 58 → 57 → 58 → 60 → 61 → 62 (crece, Δ+14) |
+| `scripts/arch-baseline.json` | cruces fuera de puerto | 13 | — *sin objetivo* | 47 → 0 → 13 → 13 → 13 → 13 (encoge, Δ-35) |
+| `scripts/blame-baseline.json` | AP-51 | 83 | — *sin objetivo* | 86 → 86 → 86 → 87 → 84 → 83 (encoge, Δ-3) |
+| `scripts/error-contract-baseline.json` | AP-52 | 9 | — *sin objetivo* | 158 → 158 → 110 → 110 → 0 → 9 (encoge, Δ-149) |
+| `scripts/noop-baseline.json` | AP-37 | 0 | — *sin objetivo* | — *1 muestra* |
+| `scripts/smoke-baseline.json` | AP-42 | 0 | — *sin objetivo* | — *1 muestra* |
+| `scripts/blueprint-baseline.json` | capa 4 — norma sin puerta ni test | 13 | — *sin objetivo* | 16 → 15 → 14 → 13 (encoge, Δ-3) |
+| `scripts/criterios-baseline.json` | AP-57 | 9 | — *sin objetivo* | 10 → 9 (encoge, Δ-1) |
+| `scripts/ciclos-baseline.json` | AP-58 — ciclo esquivado con import diferido | 30 | — *sin objetivo* | — *1 muestra* |
+| `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 5 | — *sin objetivo* | — *1 muestra* |
+| `scripts/norms-distincion-baseline.json` | AP-60 — normas que no declaran de qué se distinguen | 0 | — *sin objetivo* | 57 → 0 (encoge, Δ-57) |
+| `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 | — *sin objetivo* | 47 → 0 (encoge, Δ-47) |
+| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1220 | — *sin objetivo* | 1114 → 1131 → 1147 → 1168 → 1204 → 1220 (crece, Δ+182) |
+| `scripts/excepcion-declarada-baseline.json` | AP-61 — la excepción declarada no es la que escapa | 0 | ≤ 0 para 2027-06-30 · cada 180 d · gobernanza → **cumple** | — *1 muestra* |
 
 Todas encogen y ninguna crece sin decirlo: los tres audits con baseline indexan
 por firma de sitio —`módulo::función::hash de `ast.unparse``— así que mover un
 sitio ya no lo estrena como deuda nueva, y `--freeze` se niega a congelar lo que
 no tiene precedente salvo con `--admitir-nuevos`, que además lo lista.
+
+Las dos últimas columnas son de v40.24 y no dicen lo mismo. **Objetivo** es un
+compromiso escrito —a cuánto debe encoger, para cuándo, con qué cadencia y quién
+lo revisa— y `sin objetivo` se publica como tal en vez de leerse como cumplido:
+no comprometerse no puede salir más barato que comprometerse. **Pendiente** no se
+escribe en ninguna parte: sale de `git log` sobre el propio fichero cada vez que
+se genera este plano, porque una pendiente escrita a mano sería una afirmación
+sobre la historia sin que git la respalde (AP-53).
 
 ---
 

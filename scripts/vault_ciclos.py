@@ -48,6 +48,7 @@ from typing import Any, Dict, List, Set
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+import vault_baseline
 import vault_grafo_import
 from vault_errors import emit_error, wrap_main
 
@@ -164,19 +165,15 @@ def medir() -> Dict[str, Any]:
 
 
 def _baseline() -> List[str]:
-    if not BASELINE.exists():
-        return []
-    # AP-51: una baseline ilegible NO se lee como vacía. Eso estrenaría las 30
-    # aristas como deuda nueva, y en `--freeze` las congelaría sin que nadie las
-    # viera pasar. Mismo criterio que `vault_criterios` y `vault_fuente_unica`.
-    try:
-        crudo = BASELINE.read_text(encoding="utf-8")
-    except OSError as e:
-        raise RuntimeError(f"baseline de AP-58 ilegible: {BASELINE} ({e})") from e
-    try:
-        return json.loads(crudo).get("sitios", [])
-    except json.JSONDecodeError as e:
-        raise RuntimeError(f"baseline de AP-58 corrupta: {BASELINE} ({e})") from e
+    """superseded_by: vault_baseline.cargar (v40.24).
+
+    El cuerpo que había aquí era el mismo que `vault_criterios._baseline` y
+    `vault_kernel._baseline`, palabra por palabra, con el número de la norma
+    cambiado — y sus comentarios se citaban entre sí como si eso lo justificara.
+    Se conserva la función porque la llaman `check` y `freeze`, pero decide el
+    dueño (AP-57).
+    """
+    return vault_baseline.cargar(BASELINE, "sitios", "AP-58")
 
 
 def check() -> Dict[str, Any]:
@@ -219,21 +216,17 @@ def freeze(admitir_nuevos: bool = False) -> Dict[str, Any]:
     base = set(_baseline())
     nuevos = sorted(set(firmas) - base)
     if nuevos and not admitir_nuevos:
-        return {
-            "ok": False, "tool": "vault_ciclos", "action": "freeze",
-            "error_code": "DEBT_WOULD_GROW", "new_cyclic_deferrals": nuevos,
-            "recovery": ("Invierte la dependencia. Si de verdad hay que congelar "
-                         "deuda nueva, `--freeze --admitir-nuevos` la lista aquí."),
-        }
-    BASELINE.write_text(json.dumps({
-        "description": (
-            "Imports diferidos que esquivan un ciclo y ya estaban cuando nació "
-            "AP-58. Solo puede encoger: un ciclo nuevo se invierte, no se "
-            "congela. Las diferidas benignas no entran aquí a propósito — una "
-            "baseline llena de ruido es una baseline que nadie revisa."
-        ),
-        "sitios": firmas,
-    }, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        return vault_baseline.negativa(
+            "vault_ciclos", "freeze", "new_cyclic_deferrals", nuevos,
+            "Invierte la dependencia. Si de verdad hay que congelar deuda "
+            "nueva, `--freeze --admitir-nuevos` la lista aquí.")
+    vault_baseline.escribir(
+        BASELINE, "sitios", "AP-58",
+        "Imports diferidos que esquivan un ciclo y ya estaban cuando nació "
+        "AP-58. Solo puede encoger: un ciclo nuevo se invierte, no se congela. "
+        "Las diferidas benignas no entran aquí a propósito — una baseline "
+        "llena de ruido es una baseline que nadie revisa.",
+        firmas)
     return {"ok": True, "tool": "vault_ciclos", "action": "freeze",
             "frozen": len(firmas), "admitted_new": nuevos if admitir_nuevos else []}
 

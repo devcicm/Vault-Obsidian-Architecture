@@ -2,7 +2,7 @@
 
 Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 106 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **133 archivos Python** — 106 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
+- **134 archivos Python** — 106 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
@@ -2336,7 +2336,7 @@ vault_context_pack → vault_errors ⊥   profundidad 1 · fugas: vault_errors
 
 **Dos límites, dichos antes de que nadie se apoye en el verde.** Mide el grafo **estático** de imports y hereda todas sus cegueras (`importlib`, un import por cadena, el acoplamiento por fichero o por variable global). Y mide **forma, no propósito**: un módulo puede tener fan-in altísimo sin ser núcleo de nada, solo un cajón de utilidades que todo el mundo toca. Verde significa que la lista declarada no contradice a la forma que el grafo deja ver.
 
-**Los seis ganchos del kernel se publican como informativos y no bloquean.** `GANCHOS_DEL_KERNEL` es la vía de escape declarada del núcleo, y solo puede crecer: nada mide su pendiente. El hallazgo `gancho_sin_presupuesto` apunta a un mecanismo —`objetivo` y pendiente publicada en las baselines— que todavía no existe, y bloquear con él solo enseñaría a ampliar baselines, que es lo contrario de lo que la norma persigue. Queda declarado en la capa 7 del plano.
+**Un gancho sin presupuesto declarado bloquea desde v40.24.** `GANCHOS_DEL_KERNEL` es la vía de escape declarada del núcleo, y hasta v40.23 solo podía crecer: `gancho_sin_presupuesto` salía en `informativos` porque el mecanismo al que apuntaba —`objetivo` y pendiente publicada— no existía todavía, y bloquear sin él solo habría enseñado a ampliar baselines. Ese mecanismo lo trajo `vault_baseline`, así que ahora cada gancho declara en `PRESUPUESTO_DE_GANCHOS` su objetivo (`permanente` o `a_eliminar` con fecha límite), su dueño y su cadencia de revisión, y un gancho **séptimo** sin esa declaración —o con ella a medias— falla la puerta. Los dos registros se mantienen separados a propósito: el motivo en prosa de `GANCHOS_DEL_KERNEL` lo consumen tres tests y el plano. El **vencimiento** de la revisión no bloquea: sale como `gancho_por_revisar`, y se deriva de `revisado + cadencia_dias` en vez de escribirse (AP-05).
 
 ---
 

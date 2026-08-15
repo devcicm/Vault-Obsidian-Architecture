@@ -47,9 +47,10 @@ from typing import Any, Dict, List
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+import vault_baseline
 from vault_arch import arboles_medidos, clave_de_modulo
 from vault_errors import emit_error, wrap_main
-from vault_firma_sitio import cargar_baseline, firmar_todos, mapa_de_qualnames
+from vault_firma_sitio import firmar_todos, mapa_de_qualnames
 
 BASELINE = Path(__file__).parent / "excepcion-declarada-baseline.json"
 
@@ -140,7 +141,13 @@ DESCRIPCION = (
 def check() -> Dict[str, Any]:
     actuales = offenders()
     firmas = {o["firma"] for o in actuales}
-    base, esquema, _ = cargar_baseline(BASELINE)
+    # `vault_firma_sitio.cargar_baseline` lee la lista bajo `sites`, y esta
+    # baseline la escribe bajo `sitios`. Nació vacía en v40.23, así que el
+    # desajuste no dio la cara: el primer `--freeze` habría escrito firmas que
+    # `check` no encontraría, y todo lo congelado saldría como nuevo en la
+    # ejecución siguiente. Es exactamente el caso raro por el que la carga tiene
+    # dueño desde v40.24 — la clave se declara aquí y se lee una sola vez.
+    base = vault_baseline.firmas(BASELINE, "sitios", "AP-61")
     nuevos = sorted(firmas - base)
     return {
         "ok": not nuevos,
@@ -167,24 +174,15 @@ def check() -> Dict[str, Any]:
 def freeze(admitir_nuevos: bool = False) -> Dict[str, Any]:
     actuales = offenders()
     firmas = sorted({o["firma"] for o in actuales})
-    base, _, _ = cargar_baseline(BASELINE)
+    base = vault_baseline.firmas(BASELINE, "sitios", "AP-61")
     nuevos = sorted(set(firmas) - base)
     if nuevos and not admitir_nuevos:
-        return {
-            "ok": False, "tool": "vault_excepcion_declarada", "action": "freeze",
-            "error_code": "DEBT_WOULD_GROW", "new_sites": nuevos,
-            "recovery": ("Contén la excepción que escapa. Si de verdad hay que "
-                         "congelar deuda nueva, `--freeze --admitir-nuevos` la "
-                         "lista aquí."),
-        }
-    BASELINE.write_text(json.dumps({
-        "schema": 2,
-        "description": DESCRIPCION,
-        "sitios": firmas,
-    # `newline="\n"` explícito: en Windows el default traduce a CRLF y la
-    # baseline saldría en el diff entera cada vez que se recongela, escondiendo
-    # el único dato que importa —qué firma entró o salió— dentro del ruido.
-    }, ensure_ascii=False, indent=1) + "\n", encoding="utf-8", newline="\n")
+        return vault_baseline.negativa(
+            "vault_excepcion_declarada", "freeze", "new_sites", nuevos,
+            "Contén la excepción que escapa. Si de verdad hay que congelar "
+            "deuda nueva, `--freeze --admitir-nuevos` la lista aquí.")
+    vault_baseline.escribir(BASELINE, "sitios", "AP-61", DESCRIPCION, firmas,
+                            extra={"schema": 2})
     return {"ok": True, "tool": "vault_excepcion_declarada", "action": "freeze",
             "frozen": len(firmas),
             "admitted_new": nuevos if admitir_nuevos else []}

@@ -56,6 +56,7 @@ from typing import Any, Dict, List
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+import vault_baseline
 from vault_errors import emit_error, wrap_main
 
 BASELINE = Path(__file__).parent / "criterios-baseline.json"
@@ -473,21 +474,14 @@ def _firma(h: Dict[str, str]) -> str:
 
 
 def _baseline() -> List[str]:
-    if not BASELINE.exists():
-        return []
-    # No se traga el fallo (AP-51): una baseline ilegible leída como vacía
-    # estrena la deuda entera como nueva y, en `freeze`, la congela sin que
-    # nadie la vea pasar. El fallo de la tool no se presenta como ausencia en
-    # el dato. `vault_fuente_unica._baseline()` hace lo mismo, y esta lo hacía
-    # al revés siendo el mismo formato.
-    try:
-        crudo = BASELINE.read_text(encoding="utf-8")
-    except OSError as e:
-        raise RuntimeError(f"baseline de AP-57 ilegible: {BASELINE} ({e})") from e
-    try:
-        return json.loads(crudo).get("sitios", [])
-    except json.JSONDecodeError as e:
-        raise RuntimeError(f"baseline de AP-57 corrupta: {BASELINE} ({e})") from e
+    """superseded_by: vault_baseline.cargar (v40.24).
+
+    Esta era una de las tres copias literales, y la que peor sienta: la tool que
+    publica AP-57 tenía el criterio de «cómo se lee una baseline» copiado de
+    `vault_fuente_unica`. Se conserva la función —la llaman `check` y `freeze`—
+    con el cuerpo reducido a delegación.
+    """
+    return vault_baseline.cargar(BASELINE, "sitios", "AP-57")
 
 
 def check() -> Dict[str, Any]:
@@ -538,19 +532,15 @@ def freeze(admitir_nuevos: bool = False) -> Dict[str, Any]:
     # Sin `and base`: una baseline vacía no es permiso para congelar la
     # primera deuda en silencio (ver la misma corrección en vault_fuente_unica).
     if nuevos and not admitir_nuevos:
-        return {
-            "ok": False, "tool": "vault_criterios", "action": "freeze",
-            "error_code": "DEBT_WOULD_GROW", "new_copies": nuevos,
-            "recovery": ("Importa al dueño. Si de verdad hay que congelar deuda "
-                         "nueva, `--freeze --admitir-nuevos` la lista aquí."),
-        }
-    BASELINE.write_text(json.dumps({
-        "description": (
-            "Copias de un criterio con dueño que ya estaban cuando nació AP-57. "
-            "Solo puede encoger: una copia nueva se arregla, no se congela."
-        ),
-        "sitios": firmas,
-    }, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        return vault_baseline.negativa(
+            "vault_criterios", "freeze", "new_copies", nuevos,
+            "Importa al dueño. Si de verdad hay que congelar deuda nueva, "
+            "`--freeze --admitir-nuevos` la lista aquí.")
+    vault_baseline.escribir(
+        BASELINE, "sitios", "AP-57",
+        "Copias de un criterio con dueño que ya estaban cuando nació AP-57. "
+        "Solo puede encoger: una copia nueva se arregla, no se congela.",
+        firmas)
     return {"ok": True, "tool": "vault_criterios", "action": "freeze",
             "frozen": len(firmas), "admitted_new": nuevos if admitir_nuevos else []}
 

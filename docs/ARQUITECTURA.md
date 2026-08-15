@@ -2,7 +2,7 @@
 
 > Documento derivado. Se genera con `python scripts/vault_arch.py --blueprint`; la fuente es `CONTEXTS` en `scripts/vault_arch.py`. No se edita a mano.
 
-**9 contextos**, **133 módulos** clasificados, **62 fronteras cruzadas** pendientes de publicar puerto.
+**9 contextos**, **134 módulos** clasificados, **62 fronteras cruzadas** pendientes de publicar puerto.
 
 ## Los límites
 
@@ -62,7 +62,7 @@ graph TD
 - **Lenguaje ubicuo:** ruta, envelope, error, bloqueo, escritura atómica
 - **Puertos publicados:** `atomic_write_text` → `vault_io:atomic_write_text`, `file_lock` → `vault_fs:file_lock`, `get_vault_root` → `vault_raiz:get_vault_root`, `wrap_main` → `vault_errors:wrap_main`
 - **No cruza:** depender de cualquier contexto de dominio
-- **Módulos (15):** `vault_encoding`, `vault_entorno`, `vault_errors`, `vault_errors_catalog`, `vault_errors_trace`, `vault_fs`, `vault_grafo_import`, `vault_io`, `vault_ledger`, `vault_lib`, `vault_log_error`, `vault_raiz`, `vault_regex`, `vault_registry`, `vault_vocabulario`
+- **Módulos (16):** `vault_baseline`, `vault_encoding`, `vault_entorno`, `vault_errors`, `vault_errors_catalog`, `vault_errors_trace`, `vault_fs`, `vault_grafo_import`, `vault_io`, `vault_ledger`, `vault_lib`, `vault_log_error`, `vault_raiz`, `vault_regex`, `vault_registry`, `vault_vocabulario`
 
 ## Autoría
 

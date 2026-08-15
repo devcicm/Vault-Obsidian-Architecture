@@ -2,9 +2,9 @@
 
 **Estándar de diseño para dotar a agentes LLM de memoria documental persistente.**
 
-[![Version](https://img.shields.io/badge/version-v40.23-blue)](./vault-obsidian-architecture.md)
+[![Version](https://img.shields.io/badge/version-v40.24-blue)](./vault-obsidian-architecture.md)
 [![Tools](https://img.shields.io/badge/tools-106_active-green)](./scripts/)
-[![Scripts](https://img.shields.io/badge/scripts-133_total-lightblue)](./scripts/)
+[![Scripts](https://img.shields.io/badge/scripts-134_total-lightblue)](./scripts/)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow)](./scripts/)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](./LICENSE)
 
@@ -422,7 +422,7 @@ Contiene:
 ## Scripts — estructura del repositorio
 
 ```
-scripts/                    ← 133 archivos Python (106 tools del catálogo + 8 archivadas en _archived/ + internas/meta)
+scripts/                    ← 134 archivos Python (106 tools del catálogo + 8 archivadas en _archived/ + internas/meta)
 ├── vault_io.py             — I/O base: _detect_vault_root, assert_within_vault, atomic_write_text/json, file_lock
 ├── vault_errors.py         — wrap_main (timeout 60s), emit_ok, trace log
 ├── vault_write.py          — tool principal de escritura (guards AP-20, AP-21, norm_refs auto-embed)

@@ -54,6 +54,7 @@ from typing import Any, Dict, List, Optional
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+import vault_baseline
 from vault_audit import es_documentacion_del_estandar
 from vault_errors import emit_error, wrap_main
 from vault_io import get_vault_root, is_snapshot_path
@@ -191,14 +192,14 @@ def _firma(c: Dict[str, Any]) -> str:
 
 
 def _baseline() -> List[str]:
-    if not BASELINE.exists():
-        return []
-    try:
-        return json.loads(BASELINE.read_text(encoding="utf-8")).get("conflictos", [])
-    except (OSError, json.JSONDecodeError):
-        # Ilegible no es vacío: leerla como vacía estrenaría la deuda entera
-        # como nueva, que es la trampa que AP-37 ya documentó (AP-51).
-        raise RuntimeError("baseline de vault_fuente_unica ilegible; revísala a mano")
+    """superseded_by: vault_baseline.cargar (v40.24).
+
+    Era la cuarta copia del mismo criterio, y la única que además distinguía mal
+    el fallo: `except (OSError, json.JSONDecodeError)` en un solo bloque perdía
+    cuál de las dos cosas había pasado antes de relanzar. Se conserva la función
+    porque la llaman `check` y `freeze`.
+    """
+    return vault_baseline.cargar(BASELINE, "conflictos", "AP-05")
 
 
 def check(raiz: Optional[Path] = None) -> Dict[str, Any]:
@@ -233,20 +234,16 @@ def freeze(raiz: Optional[Path] = None, admitir_nuevos: bool = False) -> Dict[st
     # nace esta— no es permiso para congelar la primera deuda en silencio. Es
     # justo el momento en que más barato sale hacerlo y menos se nota.
     if nuevos and not admitir_nuevos:
-        return {
-            "ok": False, "tool": "vault_fuente_unica", "action": "freeze",
-            "error_code": "DEBT_WOULD_GROW", "new_conflicts": nuevos,
-            "recovery": ("Resuélvelos con PAT-1. Si de verdad hay que congelar "
-                         "deuda nueva, `--freeze --admitir-nuevos` la lista aquí."),
-        }
-    BASELINE.write_text(json.dumps({
-        "description": (
-            "Conflictos de fuente de verdad que ya estaban cuando AP-05 estrenó "
-            "detector. Solo puede encoger: un conflicto nuevo se resuelve con "
-            "PAT-1, no se congela."
-        ),
-        "conflictos": firmas,
-    }, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        return vault_baseline.negativa(
+            "vault_fuente_unica", "freeze", "new_conflicts", nuevos,
+            "Resuélvelos con PAT-1. Si de verdad hay que congelar deuda "
+            "nueva, `--freeze --admitir-nuevos` la lista aquí.")
+    vault_baseline.escribir(
+        BASELINE, "conflictos", "AP-05",
+        "Conflictos de fuente de verdad que ya estaban cuando AP-05 estrenó "
+        "detector. Solo puede encoger: un conflicto nuevo se resuelve con "
+        "PAT-1, no se congela.",
+        firmas)
     return {"ok": True, "tool": "vault_fuente_unica", "action": "freeze",
             "frozen": len(firmas), "admitted_new": nuevos if admitir_nuevos else []}
 

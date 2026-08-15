@@ -136,6 +136,16 @@ CONTEXTS: dict[str, dict] = {
             # cuánto trabajo llevamos hecho. Separarlas sacó a `vault_errors_trace`
             # del componente fuertemente conexo de 15 módulos que era el núcleo.
             "vault_raiz", "vault_fs", "vault_ledger",
+            # El fichero de baseline (v40.24): carga, escritura, contrato de
+            # `objetivo` y la negativa a crecer. Aquí y no junto a
+            # `vault_firma_sitio` en el meta-toolkit, aunque sean vecinas de
+            # oficio, y la diferencia está en quién las consume: la firma solo
+            # la piden audits del meta-toolkit, mientras que la baseline la
+            # piden también tools que miden vaults —`vault_fuente_unica` es la
+            # primera—, así que dejarla arriba estrenaba un cruce de contexto
+            # por cada consumidor nuevo. Fan-out cero y ningún `vault_*`
+            # importado: cumple la prohibición del núcleo sin excepción.
+            "vault_baseline",
             # El dueño único del grafo de imports (v40.20). Está aquí y no en el
             # meta-toolkit por una razón de dirección: lo consume `vault_arch`,
             # que está por encima, y un dueño de criterio que importa a sus
@@ -870,6 +880,96 @@ GANCHOS_DEL_KERNEL: dict[tuple[str, str], str] = {
         "Los tres campos CIA salen de `CIA_TRIAD` por `cia_valores()`. Import "
         "perezoso y de solo lectura: ninguna decisión viaja de vuelta."
     ),
+}
+
+#: El presupuesto de cada gancho (v40.24). `GANCHOS_DEL_KERNEL` dice **por qué**
+#: existe la vía de escape; esto dice **hasta cuándo** y **quién lo revisa**.
+#:
+#: Va en un registro aparte y no como valor de aquel a propósito: el motivo en
+#: prosa es lo que consumen tres tests y el plano, y meterlo dentro de un dict
+#: los habría roto a todos para colar un campo. Las claves de los dos registros
+#: tienen que coincidir exactamente, y una puerta lo comprueba — dos registros
+#: con la misma clave que divergen serían AP-05 en el sitio donde se declara la
+#: excepción arquitectónica.
+#:
+#: Hasta v40.23 esto no existía y el hallazgo `gancho_sin_presupuesto` de
+#: `vault_kernel` era informativo, con el motivo escrito: la vía de escape solo
+#: podía crecer porque nada medía su pendiente. Un hallazgo que no se puede
+#: saldar y bloquea la puerta solo enseña a ampliar baselines.
+#:
+#: `objetivo` tiene dos valores y significan cosas distintas:
+#:   - `permanente` — es una decisión de arquitectura, no una deuda. Se revisa
+#:     cada `cadencia_dias` para comprobar que el motivo **sigue siendo cierto**,
+#:     no para eliminarlo.
+#:   - `a_eliminar` — es deuda con fecha: exige `fecha_limite`.
+#: Un gancho nuevo sin entrada aquí **bloquea**, y eso es todo lo que la puerta
+#: exige. Que la fecha de revisión haya vencido se publica como informativo y no
+#: rompe la puerta: un guard que se pone rojo por el paso del calendario falla
+#: en un repo que nadie tocó, y el primer arreglo que enseña es mover la fecha.
+PRESUPUESTO_DE_GANCHOS: dict[tuple[str, str], dict] = {
+    ("vault_fs", "vault_secret_scan"): {
+        "objetivo": "permanente",
+        "revisado": "2026-08-14",
+        "cadencia_dias": 180,
+        "dueno": "kernel",
+        "por_que": (
+            "Quitarlo desactivaría el preflight anti-secretos en silencio. La "
+            "revisión comprueba que sigue habiendo un único punto de escritura, "
+            "no si se puede eliminar."
+        ),
+    },
+    ("vault_io", "vault_section_index"): {
+        "objetivo": "permanente",
+        "revisado": "2026-08-14",
+        "cadencia_dias": 180,
+        "dueno": "kernel",
+        "por_que": (
+            "Regenerar el índice desde cada tool es AP-47 repetido quince "
+            "veces. La revisión mira si el índice pasó a derivarse bajo demanda."
+        ),
+    },
+    ("vault_io", "vault_tags"): {
+        "objetivo": "permanente",
+        "revisado": "2026-08-14",
+        "cadencia_dias": 180,
+        "dueno": "kernel",
+        "por_que": (
+            "AP-39 exige registrar el término nuevo en el write path. La "
+            "revisión mira si el ledger pasó a construirse por barrido."
+        ),
+    },
+    ("vault_errors", "vault_voice"): {
+        "objetivo": "a_eliminar",
+        "fecha_limite": "2027-06-30",
+        "revisado": "2026-08-14",
+        "cadencia_dias": 180,
+        "dueno": "gobernanza",
+        "por_que": (
+            "Es el único de los seis que no protege nada: es presentación "
+            "colgada del kernel, y el kernel ya la degrada a silencio si falla. "
+            "Sale cuando la voz se aplique en el borde —la CLI y el MCP— en vez "
+            "de dentro del emisor de errores."
+        ),
+    },
+    ("vault_vocabulario", "vault_norms"): {
+        "objetivo": "permanente",
+        "revisado": "2026-08-14",
+        "cadencia_dias": 180,
+        "dueno": "gobernanza",
+        "por_que": (
+            "Copiar el vocabulario aquí sería el AP-05 que el módulo existe "
+            "para cerrar, y mudarlo a Gobernanza mueve el cruce sin quitarlo."
+        ),
+    },
+    ("vault_vocabulario", "vault_fundamentals"): {
+        "objetivo": "permanente",
+        "revisado": "2026-08-14",
+        "cadencia_dias": 180,
+        "dueno": "gobernanza",
+        "por_que": (
+            "Solo lectura de `CIA_TRIAD`: ninguna decisión viaja de vuelta."
+        ),
+    },
 }
 
 

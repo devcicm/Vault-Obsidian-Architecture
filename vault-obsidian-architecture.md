@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.23 — 2026-08-14  
+**Versión:** v40.24 — 2026-08-14  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -7094,6 +7094,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.24 | 2026-08-14 | **Trece baselines, doce ficheros, ocho copias del mismo cargar-y-congelar** — tres de ellas con el cuerpo idéntico palabra por palabra y comentándose entre sí. El campo `objetivo` que pedía la capa 7 no se podía añadir sin escribir la novena copia, así que primero aparece el dueño: `vault_baseline` (núcleo, fan-out cero) se queda con la carga, la escritura, el contrato de metadatos y la negativa a crecer, y los `_baseline()` locales sobreviven reducidos a delegación con `superseded_by:`. Salió de ahí un fallo latente de v40.23: `vault_excepcion_declarada` escribía la clave `sitios` y leía `sites`, invisible solo porque la baseline nació vacía — el primer `--freeze` habría devuelto todo lo congelado como nuevo. Con el mecanismo ya en pie, `gancho_sin_presupuesto` deja de ser informativo: los seis ganchos del kernel declaran objetivo, dueño y cadencia en `PRESUPUESTO_DE_GANCHOS`, un séptimo sin declarar falla la puerta, y el vencimiento de la revisión se deriva de `revisado + cadencia_dias` en vez de escribirse. La pendiente de cada baseline sale de `git log` en cada ejecución — escribirla sería AP-53 |
 | v40.23 | 2026-08-14 | **Una nota con doce corchetes tumbaba el barrido entero, y seis parsers llevaban versiones leyendo el vault como si no tuviera frontmatter.** AP-61 «el guard cae con el dato que vino a medir»: `RecursionError` no hereda de `yaml.YAMLError`, así que un `except yaml.YAMLError` alrededor de `safe_load` parece contener el fallo y lo deja subir entero — el radio es asimétrico, el dato malo es una nota y la caída es el vault. El plan contaba cuatro sitios; el barrido por AST encontró **doce**, y se corrigieron los doce en vez de congelarlos, así que la baseline de `vault_excepcion_declarada` **nace vacía**. Medido aparte y peor: los seis parsers de frontmatter escritos con `re.match(r"^---
 …")` devolvían `{}` en **110 de las 126** notas de `vault-sandbox/`, porque el patrón no casa `---
 ` ni sobrevive al BOM de Windows y ambas cosas están en el material real; `{}` no es un error visible, es la respuesta legítima de «esta nota no tiene frontmatter», y por eso la ceguera no la vio ninguna puerta. Los seis delegan ya en `vault_lib.parse_frontmatter`. Y `cli/registry._load_spec` deja de presentar una spec corrupta como catálogo vacío: con ella ilegible `check_required_args` no validaba nada y `cli doctor` seguía diciendo que todo estaba bien — ahora falla cerrado y el diagnóstico distingue ausente de ilegible |
@@ -7438,6 +7439,86 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v40.24 — 2026-08-14 `git: pending`
+
+**El campo que faltaba no se podía añadir porque no había dónde ponerlo.**
+
+**Trece baselines, ocho copias del mismo criterio.** La capa 7 del plano llevaba desde v40.20
+pidiendo un campo `objetivo` en las baselines: un número al que la deuda tiene que bajar, con
+fecha y con dueño. Al ir a escribirlo apareció el problema de verdad. Hay **trece entradas de
+baseline en doce ficheros**, y de los diez guards que las leen, **ocho reimplementan carga y
+congelado**. Tres de esos ocho —`vault_criterios._baseline`, `vault_ciclos._baseline`,
+`vault_kernel._baseline`— eran **literalmente el mismo cuerpo** con el nombre de la norma
+cambiado, y sus comentarios se citaban entre sí, que es la forma que toma AP-57 cuando nadie
+la mira: cada copia justificándose con la existencia de la anterior. La negativa a congelar
+deuda nueva estaba reescrita ocho veces con mensajes de `recovery` distintos, y
+`vault_arch.freeze()` ni siquiera tenía `--admitir-nuevos`. Los formatos tampoco coincidían:
+nueve nombres distintos para la clave de la lista, el ítem string en unas y dict en otras, el
+metadato como `description` / `note` / `why` según el fichero. Añadir `objetivo` a trece
+ficheros con nueve formas habría sido escribir la **novena copia** del mismo criterio, en el
+repo que publica la norma que lo prohíbe.
+
+**Así que primero el dueño.** `scripts/vault_baseline.py` — núcleo, solo stdlib, **fan-out
+cero**, con un test que falla si alguna vez importa una tool. Se queda con las cuatro cosas
+que las ocho copias hacían cada una a su manera: cargar distinguiendo *ausente* de *corrupta*
+(AP-51: leer una baseline rota como vacía estrena la deuda entera como nueva, o peor, la
+congela en el `--freeze` siguiente sin que nadie la vea pasar), escribir **preservando las
+claves que el módulo no entiende** —ahí viven `sites_v1_superseded` y `off_port_crossings`, y
+borrarlas al reescribir sería derogar por descuido—, el contrato de metadatos, y una única
+negativa `DEBT_WOULD_GROW` que **siempre lista los nuevos**. No-derogación: los `_baseline()`
+locales siguen existiendo, reducidos a una línea de delegación con `superseded_by:` anotado,
+porque el contrato de llamada es de ellos.
+
+**El fallo latente que esto destapó.** `vault_excepcion_declarada`, nacido en v40.23, escribía
+su baseline bajo la clave `sitios` y la leía con `vault_firma_sitio.cargar_baseline`, que lee
+`sites`. Nunca dio la cara porque los doce sitios de AP-61 se corrigieron en vez de
+congelarse y el fichero nació vacío: leer la clave equivocada de un fichero vacío devuelve lo
+mismo que leer la correcta. El primer `--freeze` real habría devuelto **todo lo congelado como
+nuevo** en la ejecución siguiente. Un desajuste de una palabra, invisible durante una versión
+entera, que solo se vio al poner las trece formas una al lado de otra.
+
+**El `objetivo`, con la precondición que la propia deuda declaraba.** Un objetivo sin quién lo
+revisa es una cifra a mano más (AP-47), así que el registro no acepta un número suelto: exige
+`tamano`, `fecha_limite`, `cadencia_dias` y `dueno`, y un objetivo a medias se publica como
+`objetivo_invalido`, nunca como cumplido. No comprometerse no puede salir más barato que
+comprometerse. Y no se han inventado trece objetivos plausibles para que la tabla se vea
+completa: **solo uno se declara** —el de `excepcion-declarada-baseline.json`, cuya propia
+descripción ya decía que el objetivo era seguir vacía—, las demás publican `— sin objetivo`, y
+el residuo queda declarado como deuda nueva `baselines_sin_objetivo_asignado`. La **pendiente**
+de cada baseline se deriva de `git log` en cada ejecución, tamaño commit a commit; escribirla
+en el fichero sería afirmar sobre la historia sin que git la respalde, que es AP-53.
+
+**Lo primero que la pendiente derivada enseñó.** `arch-baseline.json` no está encogiendo: sus
+cruces van `58 → 57 → 58 → 60 → 61 → 62`. Es exactamente el dato que el campo existía para
+hacer visible, y ninguna puerta lo decía porque nadie medía la serie.
+
+**`gancho_sin_presupuesto` deja de ser informativo.** Su `why` decía literalmente que esperaba
+a este mecanismo: bloquear antes de tenerlo solo habría enseñado a ampliar baselines, que es
+lo contrario de lo que la norma persigue. Ahora los seis `GANCHOS_DEL_KERNEL` declaran en
+`PRESUPUESTO_DE_GANCHOS` su objetivo —`permanente`, o `a_eliminar` con fecha límite—, su dueño
+y su cadencia de revisión, y un **séptimo** gancho sin esa declaración falla la puerta. El
+vencimiento de la revisión **no** bloquea: sale como `gancho_por_revisar`, y se deriva de
+`revisado + cadencia_dias` en vez de escribirse (AP-05). Los dos registros se mantienen
+separados a propósito: el motivo en prosa lo consumen tres tests y el plano.
+
+**Un test cambió de sentido, y está escrito por qué.**
+`test_los_ganchos_del_kernel_son_informativos_y_no_bloquean` fijaba la decisión contraria, y
+esa decisión **era correcta cuando se tomó**. Se sustituye por cinco tests que fijan la nueva,
+con la razón del cambio en el docstring en vez de un borrado silencioso: un test que se
+arrastra sin que nadie explique por qué dejó de valer es la forma barata de perder el motivo.
+
+**Y dos cifras a mano dentro del mecanismo anti-drift.** `vault_blueprint.DEUDA_DECLARADA`
+decía que `vault_norms` tenía 4.257 líneas —ya eran más de cinco mil— y «9 de los 13 cruces
+sin puerto», que también había cambiado. Es AP-47 cometido en el registro que publica la deuda
+de AP-47. No se sustituyen por cifras nuevas, que envejecerían igual: se nombran los dos
+comandos que las miden y se dejan de copiar.
+
+**Lo que un verde aquí no dice.** El dueño garantiza la *forma* de la baseline, no su
+contenido: que una deuda tenga objetivo válido no la hace bajar, y doce de las trece siguen
+sin comprometerse a nada. Eso es ahora visible en la capa 6 del plano, que era el punto.
 
 ---
 

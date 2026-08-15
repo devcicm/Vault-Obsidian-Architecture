@@ -60,16 +60,19 @@ import json
 import statistics
 import subprocess
 import sys
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+import vault_baseline
 import vault_grafo_import
 from vault_arch import (
     CONTEXTS,
     GANCHOS_DEL_KERNEL,
     KERNEL,
+    PRESUPUESTO_DE_GANCHOS,
     dependencias_del_kernel,
 )
 from vault_errors import emit_error, wrap_main
@@ -159,6 +162,59 @@ def churn(modulo: str) -> Optional[int]:
 
 # ── La medida ────────────────────────────────────────────────────────────────
 
+#: Los dos valores de `objetivo` y qué exige cada uno. Vive aquí y no en
+#: `vault_arch` porque es criterio de medida —qué presupuesto vale—, no
+#: declaración: `vault_arch` dice qué ganchos hay, esta tool dice si están
+#: presupuestados.
+_OBJETIVOS = {"permanente": (), "a_eliminar": ("fecha_limite",)}
+
+
+def _presupuesto_invalido(p: Optional[Dict[str, Any]]) -> List[str]:
+    """Por qué este presupuesto no vale. Lista vacía = vale.
+
+    Ausente y mal escrito devuelven lo mismo a propósito: los dos dejan la vía
+    de escape sin fecha ni dueño, que es lo único que el hallazgo mide. Un
+    presupuesto a medias que pasara la puerta sería peor que no declararlo,
+    porque parecería declarado.
+    """
+    if p is None:
+        return ["sin entrada en PRESUPUESTO_DE_GANCHOS"]
+    problemas: List[str] = []
+    objetivo = p.get("objetivo")
+    if objetivo not in _OBJETIVOS:
+        problemas.append(f"`objetivo` debe ser uno de {sorted(_OBJETIVOS)}")
+    else:
+        for campo in _OBJETIVOS[objetivo]:
+            if not p.get(campo):
+                problemas.append(f"`objetivo: {objetivo}` exige `{campo}`")
+    for campo in ("revisado", "dueno", "por_que"):
+        if not str(p.get(campo, "")).strip():
+            problemas.append(f"falta `{campo}`")
+    cadencia = p.get("cadencia_dias")
+    if not isinstance(cadencia, int) or cadencia <= 0:
+        problemas.append("`cadencia_dias` debe ser un entero > 0")
+    for campo in ("revisado", "fecha_limite"):
+        valor = p.get(campo)
+        if valor is None:
+            continue
+        try:
+            datetime.strptime(str(valor), "%Y-%m-%d")
+        except ValueError:
+            problemas.append(f"`{campo}` debe ser `YYYY-MM-DD`")
+    return problemas
+
+
+def _vence(p: Dict[str, Any]) -> str:
+    """Cuándo tocaba revisar: `revisado + cadencia_dias`, derivado.
+
+    No se escribe en el registro porque sería el mismo dato dos veces y con la
+    forma que más fácil diverge (AP-05): mover `revisado` sin mover el
+    vencimiento dejaría la revisión hecha y la fecha caducada.
+    """
+    base = datetime.strptime(str(p["revisado"]), "%Y-%m-%d").date()
+    return (base + timedelta(days=int(p["cadencia_dias"]))).isoformat()
+
+
 def _dominio() -> Set[str]:
     fuera: Set[str] = set()
     for ctx, datos in CONTEXTS.items():
@@ -247,16 +303,38 @@ def medir() -> Dict[str, Any]:
                   f"fan-in {entrada} ≥ el escalón {u_in} y fan-out bajo: se "
                   "comporta como núcleo sin estar declarado en él")
 
-    # Informativo y NO bloqueante hasta el movimiento 2: el mecanismo que
-    # cerraría este hallazgo —`objetivo` y pendiente publicada en las
-    # baselines— todavía no existe, y un hallazgo que no se puede saldar
-    # bloqueando la puerta solo enseña a ampliar baselines.
+    # v40.24: deja de ser informativo. Hasta v40.23 este hallazgo se emitía
+    # para los seis ganchos y nunca entraba en `firmas`, porque el mecanismo
+    # que lo cerraba —declarar hasta cuándo vive la vía de escape y quién la
+    # revisa— no existía, y un hallazgo que no se puede saldar bloqueando la
+    # puerta solo enseña a ampliar baselines. Ahora existe
+    # (`vault_arch.PRESUPUESTO_DE_GANCHOS`), así que el hallazgo apunta a lo
+    # único que sigue sin respuesta: un gancho **sin presupuesto declarado**.
+    # Los seis de hoy lo tienen, de modo que esto nace en cero y lo que dispara
+    # es el séptimo — que es cuando la vía de escape crecería sin que nadie
+    # hubiera dicho hasta cuándo.
+    for (origen, destino) in sorted(GANCHOS_DEL_KERNEL):
+        problemas = _presupuesto_invalido(PRESUPUESTO_DE_GANCHOS.get((origen, destino)))
+        if problemas:
+            anota("gancho_sin_presupuesto", f"{origen}->{destino}", problemas,
+                  "la vía de escape del kernel solo puede crecer si nadie dice "
+                  "hasta cuándo vive: declárala en "
+                  "`vault_arch.PRESUPUESTO_DE_GANCHOS` con objetivo, cadencia "
+                  "y dueño")
+
+    # Vencido NO es lo mismo que sin declarar, y por eso va aparte: un guard
+    # que se pone rojo por el paso del calendario falla en un repo que nadie
+    # tocó, y el primer arreglo que enseña es mover la fecha. Se publica para
+    # que la revisión se pueda pedir; no bloquea.
     ganchos = [
-        {"finding": "gancho_sin_presupuesto", "module": origen, "to": destino,
-         "why": ("la vía de escape del kernel solo puede crecer: nada mide su "
-                 "pendiente. Se cierra con el `objetivo` de las baselines "
-                 "(movimiento 2), que aún no existe — por eso no bloquea")}
-        for (origen, destino) in sorted(GANCHOS_DEL_KERNEL)
+        {"finding": "gancho_por_revisar", "module": f"{o}->{d}",
+         "revisado": PRESUPUESTO_DE_GANCHOS[(o, d)]["revisado"],
+         "vence": _vence(PRESUPUESTO_DE_GANCHOS[(o, d)]),
+         "why": "la revisión pactada de esta vía de escape ya tocaba"}
+        for (o, d) in sorted(GANCHOS_DEL_KERNEL)
+        if (o, d) in PRESUPUESTO_DE_GANCHOS
+        and not _presupuesto_invalido(PRESUPUESTO_DE_GANCHOS[(o, d)])
+        and _vence(PRESUPUESTO_DE_GANCHOS[(o, d)]) < date.today().isoformat()
     ]
 
     return {
@@ -291,19 +369,12 @@ def firma(h: Dict[str, Any]) -> str:
 # ── Baseline: solo puede encoger ─────────────────────────────────────────────
 
 def _baseline() -> List[str]:
-    if not BASELINE.exists():
-        return []
-    # AP-51: una baseline ilegible NO se lee como vacía. Eso estrenaría los
-    # hallazgos como deuda nueva y `--freeze` los congelaría sin que nadie los
-    # viera pasar. Mismo criterio que `vault_ciclos` y `vault_criterios`.
-    try:
-        crudo = BASELINE.read_text(encoding="utf-8")
-    except OSError as e:
-        raise RuntimeError(f"baseline de AP-59 ilegible: {BASELINE} ({e})") from e
-    try:
-        return json.loads(crudo).get("sitios", [])
-    except json.JSONDecodeError as e:
-        raise RuntimeError(f"baseline de AP-59 corrupta: {BASELINE} ({e})") from e
+    """superseded_by: vault_baseline.cargar (v40.24).
+
+    Tercera copia literal del mismo cuerpo. Se conserva la función porque la
+    llaman `check` y `freeze`; el criterio lo decide el dueño (AP-57).
+    """
+    return vault_baseline.cargar(BASELINE, "sitios", "AP-59")
 
 
 def check() -> Dict[str, Any]:
@@ -417,23 +488,20 @@ def freeze(admitir_nuevos: bool = False) -> Dict[str, Any]:
     base = set(_baseline())
     nuevos = sorted(set(firmas) - base)
     if nuevos and not admitir_nuevos:
-        return {
-            "ok": False, "tool": "vault_kernel", "action": "freeze",
-            "error_code": "DEBT_WOULD_GROW", "new_findings": nuevos,
-            "recovery": ("Saca el módulo del kernel o dale forma de núcleo. Si "
-                         "de verdad hay que congelar deuda nueva, "
-                         "`--freeze --admitir-nuevos` la lista aquí."),
-        }
-    BASELINE.write_text(json.dumps({
-        "description": (
-            "Módulos del kernel que no se comportan como núcleo y ya estaban "
-            "cuando nació AP-59. Indexada por nombre de módulo. Solo puede "
-            "encoger: un hallazgo nuevo se arregla, no se congela. Los ganchos "
-            "del kernel NO entran aquí: se publican como informativos hasta "
-            "que las baselines tengan `objetivo` (movimiento 2)."
-        ),
-        "sitios": firmas,
-    }, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        return vault_baseline.negativa(
+            "vault_kernel", "freeze", "new_findings", nuevos,
+            "Saca el módulo del kernel o dale forma de núcleo. Si de verdad "
+            "hay que congelar deuda nueva, `--freeze --admitir-nuevos` la "
+            "lista aquí.")
+    vault_baseline.escribir(
+        BASELINE, "sitios", "AP-59",
+        "Módulos del kernel que no se comportan como núcleo y ya estaban "
+        "cuando nació AP-59. Indexada por nombre de módulo. Solo puede "
+        "encoger: un hallazgo nuevo se arregla, no se congela. Los ganchos del "
+        "kernel tampoco entran aquí, y desde v40.24 ya no por falta de "
+        "mecanismo: llevan `objetivo` propio en "
+        "`vault_arch.GANCHOS_DEL_KERNEL` y el hallazgo es bloqueante.",
+        firmas)
     return {"ok": True, "tool": "vault_kernel", "action": "freeze",
             "frozen": len(firmas),
             "admitted_new": nuevos if admitir_nuevos else []}

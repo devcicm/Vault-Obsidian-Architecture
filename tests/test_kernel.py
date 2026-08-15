@@ -264,19 +264,79 @@ def test_el_check_nombra_la_norma_ap_59_y_publica_lo_que_mide():
         assert clave in r, f"el envelope dejó de publicar {clave}"
 
 
-def test_los_ganchos_del_kernel_son_informativos_y_no_bloquean():
-    """Decisión de alcance de v40.20, escrita para que se note si cambia.
+def test_gancho_sin_presupuesto_paso_a_bloqueante_en_v40_24():
+    """Este test cambió de sentido a conciencia, y por eso lleva la fecha puesta.
 
-    El hallazgo apunta a un mecanismo —`objetivo` en las baselines— que aún no
-    existe. Bloquear con él solo enseñaría a ampliar baselines, que es lo
-    contrario de lo que la norma persigue.
+    Hasta v40.23 fijaba lo contrario: que los seis ganchos se publicaran como
+    informativos y **no** bloqueasen. Aquella decisión tenía un motivo escrito y
+    era correcto — el mecanismo que cerraba el hallazgo (decir hasta cuándo vive
+    la vía de escape y quién la revisa) no existía, y un hallazgo que no se puede
+    saldar bloqueando la puerta solo enseña a ampliar baselines.
+
+    v40.24 construyó ese mecanismo (`vault_arch.PRESUPUESTO_DE_GANCHOS`), así
+    que la razón para no bloquear desapareció. Lo que se mide ahora no es que el
+    gancho exista: es que exista **sin presupuesto declarado**. Los seis de hoy
+    lo tienen, de modo que esto nace en cero y lo que dispara es el séptimo.
     """
     r = K.check()
-    assert r["informational"], "los ganchos dejaron de publicarse"
-    assert all(i["finding"] == "gancho_sin_presupuesto" for i in r["informational"])
     firmas = set(r["new_findings"]) | {f"{h['finding']}::{h['module']}"
                                        for h in r["findings"]}
-    assert not any(f.startswith("gancho_sin_presupuesto") for f in firmas)
+    assert not any(f.startswith("gancho_sin_presupuesto") for f in firmas), (
+        "los seis ganchos declaran presupuesto: esto solo debe saltar con uno nuevo")
+    assert all(i["finding"] == "gancho_por_revisar" for i in r["informational"]), (
+        "lo informativo pasó a ser la revisión vencida, no el gancho en sí")
+
+
+def test_un_gancho_sin_presupuesto_bloquea(monkeypatch):
+    """La puerta tiene que morder, o el mecanismo es decorativo (AP-44)."""
+    import vault_arch as A
+    ganchos = dict(A.GANCHOS_DEL_KERNEL)
+    ganchos[("vault_io", "vault_inventado")] = "gancho de prueba sin presupuesto"
+    monkeypatch.setattr(K, "GANCHOS_DEL_KERNEL", ganchos)
+    m = K.medir()
+    culpables = {h["module"] for h in m["hallazgos"]
+                 if h["finding"] == "gancho_sin_presupuesto"}
+    assert culpables == {"vault_io->vault_inventado"}
+
+
+def test_un_presupuesto_a_medias_no_cuenta_como_declarado():
+    """Ausente y mal escrito valen lo mismo: los dos dejan la vía sin fecha.
+
+    Un presupuesto incompleto que pasara la puerta sería peor que ninguno,
+    porque parecería declarado.
+    """
+    completo = {"objetivo": "permanente", "revisado": "2026-08-14",
+                "cadencia_dias": 180, "dueno": "kernel", "por_que": "x"}
+    assert K._presupuesto_invalido(completo) == []
+    assert K._presupuesto_invalido(None)
+    assert K._presupuesto_invalido({**completo, "cadencia_dias": 0})
+    assert K._presupuesto_invalido({**completo, "revisado": "ayer"})
+    assert K._presupuesto_invalido({**completo, "dueno": "  "})
+    # `a_eliminar` es deuda con fecha: sin `fecha_limite` no es un objetivo.
+    assert K._presupuesto_invalido({**completo, "objetivo": "a_eliminar"})
+    assert K._presupuesto_invalido(
+        {**completo, "objetivo": "a_eliminar", "fecha_limite": "2027-06-30"}) == []
+
+
+def test_el_vencimiento_se_deriva_y_no_se_escribe():
+    """`revisado + cadencia` en un solo sitio (AP-05).
+
+    Escribir el vencimiento al lado del `revisado` deja mover uno sin el otro, y
+    entonces la revisión hecha convive con la fecha caducada.
+    """
+    import vault_arch as A
+    assert K._vence({"revisado": "2026-01-01", "cadencia_dias": 180}) == "2026-06-30"
+    for par, p in A.PRESUPUESTO_DE_GANCHOS.items():
+        assert "vence" not in p, f"{par} escribe a mano lo que se deriva"
+
+
+def test_los_dos_registros_de_ganchos_tienen_las_mismas_claves():
+    """Dos registros con la misma clave que divergen serían AP-05 en el sitio
+    donde se declara la excepción arquitectónica."""
+    import vault_arch as A
+    assert set(A.PRESUPUESTO_DE_GANCHOS) == set(A.GANCHOS_DEL_KERNEL)
+    for par, p in A.PRESUPUESTO_DE_GANCHOS.items():
+        assert K._presupuesto_invalido(p) == [], f"{par}: {K._presupuesto_invalido(p)}"
 
 
 def test_una_baseline_corrupta_no_se_lee_como_vacia(monkeypatch, tmp_path):

@@ -49,6 +49,7 @@ from typing import Any, Dict, List
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+import vault_baseline
 from vault_errors import emit_error, wrap_main
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
@@ -210,21 +211,51 @@ DEUDA_DECLARADA: List[Dict[str, str]] = [
     # exactamente el mecanismo que AP-59 acaba de medir en la lista del kernel.
     {
         "id": "baselines_sin_objetivo_ni_pendiente",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "v40.24",
         "desde": "v40.20",
         "capa": "7",
         "que": (
-            "Las baselines del repo solo pueden **encoger**, y eso es un suelo, "
-            "no una trayectoria: nada declara a cuánto deberían llegar ni a qué "
-            "ritmo. Falta un campo `objetivo` y la pendiente publicada. Es lo "
-            "que deja sin cerrar el hallazgo `gancho_sin_presupuesto` de "
-            "`vault_kernel`, que hoy se emite informativo y no bloquea: los seis "
-            "`GANCHOS_DEL_KERNEL` solo pueden crecer y nada mide su pendiente."
+            "Las baselines del repo solo podían **encoger**, y eso es un suelo, "
+            "no una trayectoria: nada declaraba a cuánto deberían llegar ni a "
+            "qué ritmo. v40.24 lo cierra con el mecanismo, no con una cifra: "
+            "`vault_baseline` es el dueño único de la carga, la escritura y la "
+            "negativa a crecer, y el contrato de `objetivo` exige tamaño, fecha "
+            "límite, cadencia y dueño — un número suelto no valida. La "
+            "pendiente se deriva de `git log` cada vez que se genera este "
+            "plano y **nunca se escribe** en el fichero, porque escribirla "
+            "sería afirmar sobre la historia sin que git la respalde (AP-53). "
+            "Las dos columnas nuevas de la tabla de abajo son eso. Con ello "
+            "`gancho_sin_presupuesto` deja de ser informativo: los seis "
+            "`GANCHOS_DEL_KERNEL` declaran presupuesto en "
+            "`vault_arch.PRESUPUESTO_DE_GANCHOS` y el séptimo sin declarar "
+            "bloquea la puerta."
         ),
         "por_que_no_ahora": (
-            "Un `objetivo` sin quién lo revisa es una cifra a mano más (AP-47). "
-            "Exige decidir la cadencia de revisión antes que el campo, y esa "
-            "decisión no la resuelve el movimiento que la descubrió."
+            "Cerrada. Lo que queda no es esta deuda sino la siguiente, y va "
+            "declarada aparte: el mecanismo existe y la mayoría de las "
+            "baselines todavía publican `sin objetivo`."
+        ),
+    },
+    {
+        "id": "baselines_sin_objetivo_asignado",
+        "estado": "pendiente",
+        "desde": "v40.24",
+        "capa": "7",
+        "que": (
+            "El campo `objetivo` ya existe y se valida, pero solo "
+            "`excepcion-declarada-baseline.json` lo declara — y allí el valor "
+            "no es una decisión, es lo que la propia baseline ya decía: nació "
+            "vacía y el objetivo es que siga vacía. Las demás publican `— sin "
+            "objetivo` en la capa 6, que es el estado honesto y no se confunde "
+            "con `cumple`."
+        ),
+        "por_que_no_ahora": (
+            "A cuánto debe encoger cada baseline y para cuándo es un "
+            "compromiso del dueño del repo, no un dato derivable. Escribir "
+            "trece cifras plausibles para que la tabla se vea completa sería "
+            "exactamente el AP-47 que el contrato de `objetivo` existe para "
+            "impedir, cometido dentro del mecanismo que lo impide."
         ),
     },
     {
@@ -233,12 +264,18 @@ DEUDA_DECLARADA: List[Dict[str, str]] = [
         "desde": "v40.20",
         "capa": "7",
         "que": (
-            "`vault_norms` acumula 4.257 líneas, fan-out 10 y **9 de los 13 "
-            "cruces sin puerto** del repo. No es un problema de clasificación —al "
-            "medir para v40.20 se comprobó que su fan-in es 26, no el del "
-            "núcleo—: es un módulo que hace de catálogo, de motor y de fachada a "
-            "la vez, con las dependencias invertidas. Se parte en `catalog` / "
-            "`engine` / fachada y se invierten los nueve cruces."
+            "`vault_norms` acumula miles de líneas y la mayor parte de los "
+            "cruces sin puerto del repo. Las dos cifras iban escritas aquí y "
+            "las dos habían envejecido —decía 4.257 líneas cuando ya eran más "
+            "de cinco mil, y «9 de los 13 cruces» cuando el reparto había "
+            "cambiado—, que es AP-47 cometido dentro del registro que publica "
+            "la deuda de AP-47; se miden con `wc -l scripts/vault_norms.py` y "
+            "con `off_port_crossings` de `scripts/arch-baseline.json`, y por "
+            "eso ya no se copian. No es un problema de clasificación —al "
+            "medir para v40.20 se comprobó que su fan-in no es el del "
+            "núcleo—: es un módulo que hace de catálogo, de motor y de fachada "
+            "a la vez, con las dependencias invertidas. Se parte en `catalog` "
+            "/ `engine` / fachada y se invierten esos cruces."
         ),
         "por_que_no_ahora": (
             "Es la tanda más cara de las cinco y depende de lo que el mapa del "
@@ -599,23 +636,35 @@ def blueprint() -> str:
     A("| Deuda | Estado | Desde | Capa | Qué | Por qué no ahora |")
     A("|---|---|---|---|---|---|")
     for d in c["7_deuda"]:
-        A(f"| `{d['id']}` | {d.get('estado', '—')} | {d.get('desde', '—')} "
+        estado = d.get("estado", "—")
+        if d.get("saldada_en"):
+            estado = f"{estado} en {d['saldada_en']}"
+        A(f"| `{d['id']}` | {estado} | {d.get('desde', '—')} "
           f"| {d['capa']} | {d['que']} | {d['por_que_no_ahora']} |")
     A("")
-    A("| Baseline | Norma | Congelado |")
-    A("|---|---|---|")
+    A("| Baseline | Norma | Congelado | Objetivo | Pendiente |")
+    A("|---|---|---|---|---|")
     for fichero, clave, norma in _BASELINES:
         ruta = SCRIPTS_DIR / fichero
         if not ruta.exists():
             continue
         datos = json.loads(ruta.read_text(encoding="utf-8"))
         total = _congelado(datos.get(clave))
-        A(f"| `scripts/{fichero}` | {norma} | {total} |")
+        A(f"| `scripts/{fichero}` | {norma} | {total} | {_objetivo(ruta, clave, norma)} "
+          f"| {_pendiente(ruta, clave, norma)} |")
     A("")
     A("Todas encogen y ninguna crece sin decirlo: los tres audits con baseline indexan")
     A("por firma de sitio —`módulo::función::hash de `ast.unparse``— así que mover un")
     A("sitio ya no lo estrena como deuda nueva, y `--freeze` se niega a congelar lo que")
     A("no tiene precedente salvo con `--admitir-nuevos`, que además lo lista.")
+    A("")
+    A("Las dos últimas columnas son de v40.24 y no dicen lo mismo. **Objetivo** es un")
+    A("compromiso escrito —a cuánto debe encoger, para cuándo, con qué cadencia y quién")
+    A("lo revisa— y `sin objetivo` se publica como tal en vez de leerse como cumplido:")
+    A("no comprometerse no puede salir más barato que comprometerse. **Pendiente** no se")
+    A("escribe en ninguna parte: sale de `git log` sobre el propio fichero cada vez que")
+    A("se genera este plano, porque una pendiente escrita a mano sería una afirmación")
+    A("sobre la historia sin que git la respalde (AP-53).")
     A("")
     A("---")
     A("")
@@ -624,20 +673,42 @@ def blueprint() -> str:
     return "\n".join(lineas) + "\n"
 
 
-def _congelado(valor: Any) -> Any:
-    """Cuántos elementos congela una baseline.
+def _objetivo(ruta: Path, clave: str, norma: str) -> str:
+    """La celda de `Objetivo`, pedida al dueño del contrato (`vault_baseline`).
 
-    Un dict de listas —`field-compat` indexa por tool— congela **campos**, no
-    tools: contar las claves publicaría 111 donde hay más de mil, que es la
-    cifra a mano de AP-47 escrita por el propio generador.
+    El plano no decide qué es un objetivo válido: eso lo dice `vault_baseline`,
+    igual que los puertos rotos los dice `vault_arch`. Un plano que midiera por
+    su cuenta sería AP-05 con formato de tabla.
     """
-    if isinstance(valor, dict):
-        if valor and all(isinstance(v, list) for v in valor.values()):
-            return sum(len(v) for v in valor.values())
-        return len(valor)
-    if isinstance(valor, list):
-        return len(valor)
-    return valor
+    e = vault_baseline.estado_objetivo(ruta, clave, norma)
+    if e["estado"] == "sin_objetivo":
+        return "— *sin objetivo*"
+    if e["estado"] == "objetivo_invalido":
+        return "⚠ inválido: " + "; ".join(e["problemas"])
+    o = e["objetivo"]
+    return (f"≤ {o['tamano']} para {o['fecha_limite']} · cada "
+            f"{o['cadencia_dias']} d · {o['dueno']} → **{e['estado']}**")
+
+
+def _pendiente(ruta: Path, clave: str, norma: str) -> str:
+    """La celda de `Pendiente`: derivada de git, nunca escrita en el fichero."""
+    p = vault_baseline.pendiente(ruta, clave, norma)
+    if not p["disponible"]:
+        return "— *sin historia de git*"
+    if p["muestras"] < 2:
+        return f"— *{p['muestras']} muestra*"
+    serie = " → ".join(str(x["tamano"]) for x in p["serie"][-6:])
+    return f"{serie} ({p['sentido']}, Δ{p['delta']:+d})"
+
+
+def _congelado(valor: Any) -> Any:
+    """superseded_by: vault_baseline.tamano_congelado (v40.24).
+
+    El cuerpo estaba aquí y `estado_objetivo` lo necesitaba también; dos sitios
+    decidiendo cuántos elementos congela un dict de listas es AP-57 en el plano
+    que publica AP-57. Se conserva la función porque la llama el generador.
+    """
+    return vault_baseline.tamano_congelado(valor)
 
 
 #: Las baselines del repo, con la clave donde vive la lista y la norma que sostienen.
@@ -750,6 +821,17 @@ def check(strict: bool = False) -> Dict[str, Any]:
             problemas.append(
                 {"kind": "deuda_sin_version",
                  "detail": f"{d['id']}: no dice desde qué versión se arrastra"}
+            )
+        # El comentario de `ESTADOS_DE_DEUDA` prometía desde v40.x que una deuda
+        # saldada «se conserva con la versión que la cerró», y nada lo exigía:
+        # no había ninguna saldada todavía, así que la promesa nunca se probó.
+        # `saldada` sin versión es indistinguible de un `pendiente` que alguien
+        # marcó y no fechó — que es la forma cómoda de dar por cerrado sin
+        # poder citar dónde.
+        if estado == "saldada" and not (d.get("saldada_en") or "").strip():
+            problemas.append(
+                {"kind": "deuda_saldada_sin_version",
+                 "detail": f"{d['id']}: saldada sin `saldada_en`"}
             )
 
     ok = not problemas
