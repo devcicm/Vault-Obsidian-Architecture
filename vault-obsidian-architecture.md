@@ -7442,7 +7442,7 @@ temp/
 
 ---
 
-### v40.24 — 2026-08-14 `git: pending`
+### v40.24 — 2026-08-14 `git: 1c07dc5`
 
 **El campo que faltaba no se podía añadir porque no había dónde ponerlo.**
 
