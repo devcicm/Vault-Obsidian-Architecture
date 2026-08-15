@@ -350,7 +350,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `scripts/arch-baseline.json` | cruces entre contextos | 35 | — *sin objetivo* | 60 → 61 → 62 → 62 → 42 → 35 (encoge, Δ-13) |
 | `scripts/arch-baseline.json` | cruces fuera de puerto | 12 | — *sin objetivo* | 13 → 13 → 13 → 12 → 12 → 12 (encoge, Δ-36) |
 | `scripts/blame-baseline.json` | AP-51 | 83 | — *sin objetivo* | 86 → 86 → 86 → 87 → 84 → 83 (encoge, Δ-3) |
-| `scripts/error-contract-baseline.json` | AP-52 | 0 | — *sin objetivo* | 158 → 158 → 110 → 110 → 0 → 9 (encoge, Δ-149) |
+| `scripts/error-contract-baseline.json` | AP-52 | 0 | — *sin objetivo* | 158 → 110 → 110 → 0 → 9 → 0 (encoge, Δ-158) |
 | `scripts/noop-baseline.json` | AP-37 | 0 | — *sin objetivo* | — *1 muestra* |
 | `scripts/smoke-baseline.json` | AP-42 | 0 | — *sin objetivo* | — *1 muestra* |
 | `scripts/blueprint-baseline.json` | capa 4 — norma sin puerta ni test | 13 | — *sin objetivo* | 16 → 15 → 14 → 13 (encoge, Δ-3) |

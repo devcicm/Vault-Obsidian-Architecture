@@ -7498,7 +7498,7 @@ temp/
 
 ---
 
-### v40.29 — 2026-08-15 `git: pending`
+### v40.29 — 2026-08-15 `git: ab844c1`
 
 **El envelope del dominio ya no lo escribe el dominio.**
 
