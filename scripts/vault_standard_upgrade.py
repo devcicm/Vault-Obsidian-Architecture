@@ -35,7 +35,14 @@ from vault_registry import standard_folders
 SCRIPTS_DIR = Path(__file__).resolve().parent
 
 
-CURRENT_VERSION = "v40.27"
+# superseded_by: vault_version.CURRENT_VERSION (v40.28).
+#
+# La constante vivía aquí porque este fue el primer sitio donde hizo falta, no
+# porque sea su casa: tres módulos importaban una tool de seis dependencias, con
+# CLI y escritura en disco, para leer siete caracteres. Es AP-62 en su forma más
+# pura. Se reexporta —no-derogación— y quien solo quiera el dato lo pide al
+# dueño; por aquí se paga el motor.
+from vault_version import CURRENT_VERSION  # noqa: F401
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))

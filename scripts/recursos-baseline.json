@@ -1,0 +1,7 @@
+{
+ "description": "Aristas donde el consumidor cruza un contexto para leer un recurso que no necesita el fan-out del productor, y que ya estaban cuando nació AP-62. Solo puede encoger: un arrastre nuevo se salda partiendo el productor, no congelándolo. El arrastre intracontexto no entra aquí a propósito — no es deuda mientras los dos módulos compartan contexto.",
+ "sitios": [
+  "vault_standard_upgrade->vault_mcp_catalog",
+  "vault_voice->vault_mcp_catalog"
+ ]
+}

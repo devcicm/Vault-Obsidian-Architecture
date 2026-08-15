@@ -630,8 +630,18 @@ def test_el_catalogo_de_normas_es_una_hoja_del_nucleo():
     la misma forma que `vault_registry`. Si algún día importa una tool, deja de
     tener sitio en el núcleo y esta prueba lo dice antes de que la cifra baje
     por el motivo equivocado.
+
+    v40.28 — esta prueba nació vacía. Preguntaba por `grafo()`, que devuelve
+    `{"top": …, "diferido": …}` y no una adyacencia, así que el `.get(módulo)`
+    caía siempre en el `set()` por defecto y la igualdad se cumplía sola. El
+    dueño de la adyacencia es `fan_out()`. Es el fallo de v40.17 otra vez —un
+    cero fabricado—, y la guarda contra repetirlo es el `fan_out` de abajo:
+    un módulo que sí importa tiene que salir distinto de vacío.
     """
     import vault_grafo_import as g
+    fan_out = g.fan_out()
     assert "vault_norms_catalog" in arch.CONTEXTS[arch.KERNEL]["modulos"]
-    assert g.grafo().get("vault_norms_catalog", set()) == set()
+    assert fan_out.get("vault_norms_catalog", set()) == set()
     assert "vault_norms_engine" not in arch.CONTEXTS[arch.KERNEL]["modulos"]
+    # el control negativo: si la medida volviera a ser vacía, esto falla.
+    assert fan_out.get("vault_norms_engine", set()) != set()

@@ -57,7 +57,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_regex import RE_WIKILINK_DESTINO  # dueño único del patrón (AP-50)
-from vault_audit import es_documentacion_del_estandar  # dueño único del criterio
+from vault_audit_catalog import es_documentacion_del_estandar  # dueño único del criterio
 from vault_io import is_snapshot_path  # dueño único de qué es una instantánea
 from vault_lib import (  # dueños únicos de sus criterios (AP-57)
     indice_de_destinos,
@@ -243,7 +243,7 @@ def contrastar(destino: Path) -> Dict[str, Any]:
     # son la doc enseñando a escribirlos. Contarlos infla la medida justo en los
     # vaults consumidores, que son los que más doc copiada llevan.
     #
-    # El criterio no se reescribe aquí: lo tiene `vault_audit` desde v40.5 —por
+    # El criterio no se reescribe aquí: lo tiene `vault_audit_catalog` —por
     # contenido y no por ubicación, que es lo que hace que una copia archivada
     # con sufijo de versión siga siendo doc—. Una segunda versión de la misma
     # regla diría otra cosa el día que una de las dos cambiara (AP-05).

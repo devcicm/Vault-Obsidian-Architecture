@@ -741,6 +741,8 @@ _BASELINES = [
     ("field-compat-baseline.json", "stable", "contrato de campos con los consumidores"),
     ("excepcion-declarada-baseline.json", "sitios",
      "AP-61 — la excepción declarada no es la que escapa"),
+    ("recursos-baseline.json", "sitios",
+     "AP-62 — el consumidor cruza para leer un recurso y paga el fan-out"),
 ]
 
 

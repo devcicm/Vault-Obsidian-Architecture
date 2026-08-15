@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.27 — 2026-08-14  
+**Versión:** v40.28 — 2026-08-15  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -3501,7 +3501,7 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **73 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **74 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -5003,7 +5003,7 @@ Dos causas, y la segunda es la incómoda:
 
 1. **El audit no lo ejecuta nadie.** En las **1.356 ejecuciones de tools
    registradas** en los `.tool-trace.json` de ese parque, `vault_norms` no
-   aparece **ni una vez**. 41 de las 106 tools del catálogo no se han ejecutado
+   aparece **ni una vez**. 41 de las 107 tools del catálogo no se han ejecutado
    jamás. Los agentes escriben; no gobiernan. Un enforcement que depende de que
    alguien se acuerde de invocarlo es enforcement en el papel.
 2. **Los valores no canónicos los escribía el propio estándar.** El más
@@ -5612,7 +5612,7 @@ de envelope con su contrato de `00_System/tool-spec.json`:
 Y la divergencia peor no era de forma sino de efecto: `jsNativeGraph` no tiene un
 solo `writeFile`. Un agente llamaba `vault_graph` por MCP, recibía `ok: true`, y
 el grafo se quedaba sin regenerar — **AP-37 y AP-47 servidos a la vez por el único
-camino que un agente real usa**. `vault_smoke` recorre las 106 tools del catálogo,
+camino que un agente real usa**. `vault_smoke` recorre las 107 tools del catálogo,
 pero ejecuta el `.py`: probaba exactamente la implementación que el agente no toca.
 
 **Prevención:** backend nativo solo para lo que **no tiene** implementación en
@@ -6557,6 +6557,57 @@ solo que la excepción esté nombrada.
 
 ---
 
+### AP-62 — El consumidor paga el fan-out del productor
+
+**Enforcement:** `guard+audit` · **Severidad:** medium · **Introducido:** v40.28
+**Guard:** `python scripts/vault_recursos.py --check --strict` (puerta 20)
+
+Un módulo importa a otro **solo para leer un recurso** —una tabla constante, una función
+pura— y con el import se lleva todas las dependencias del productor. Cuando los dos están en
+contextos distintos, la arquitectura registra un cruce de frontera de negocio donde lo único
+que ocurrió fue **leer un dato**.
+
+**Cómo se destapó, y por qué importa que fuera por accidente.** En v40.27 se midió que
+veinticuatro de los sesenta y dos cruces del repo iban al mismo destino, `vault_norms`, y que
+**veintiuno de sus veinticuatro importadores solo querían datos**: `NORM_CATALOG`,
+`STATUS_VOCAB`, `status_frontmatter_lines`. Entraban por una fachada que reexporta el motor de
+auditoría y sus once dependencias. Mudado el catálogo a una hoja del núcleo y repuntados los
+importadores, los cruces pasaron de **62 a 42** sin que se eliminara una sola capacidad.
+
+Ese hallazgo no lo produjo ninguna medida: salió de partir un fichero por otro motivo. La
+pregunta que dejó abierta —«cuántas veces más pasa esto»— no se contesta a ojo con 136
+módulos, y contestarla a ojo una vez tampoco sirve, porque el patrón se rehace con cada
+import nuevo. AP-62 existe para que la respuesta sea derivada y no encontrada.
+
+**Lo caro es que cada sitio, por separado, parece razonable.** Quien escribe
+`from vault_norms import STATUS_VOCAB` no está haciendo nada mal, y ningún guard tenía por
+qué ponerse rojo. El daño solo existe en el agregado —que es la forma exacta que tiene el
+deterioro por acumulación— y por eso se mide en vez de revisarse.
+
+**Qué cuenta como deuda.** Una arista `A -> B` cuando se dan las cuatro: B no está en el
+núcleo —leer del núcleo es gratis por definición, para eso está declarado—, B tiene fan-out
+mayor que cero, todo lo que A le pide a B es recurso, y A y B están en contextos distintos.
+Las que cumplen las tres primeras y no la cuarta se publican como `arrastre_intracontexto`
+sin congelarse: no son deuda mientras los dos compartan contexto, pero el día que uno se mueva
+lo serán, y el dato de que ya estaban ahí vale más no reconstruido a posteriori.
+
+**Cómo se salda.** Dándole al recurso **un dueño con forma de hoja**: partir el productor en
+catálogo y motor, mudar el catálogo al núcleo si de verdad tiene fan-out cero, y repuntar a
+los consumidores al dueño. La lección de v40.27 es la que hay que repetir en voz alta:
+**partir el fichero por sí solo no movió una sola cifra**. La arquitectura no cambió hasta
+que los importadores dejaron de entrar por la fachada. Y la corrección que **no** vale es
+copiar el recurso al consumidor: eso cambia un AP-62 por un AP-57.
+
+**Lo que verde no prueba.** Mide `from X import y` y no `import X`, porque quien importa el
+módulo entero no declara qué usa —esos salen del alcance y se publican en
+`importadores_opacos`—. Decide la pureza por AST y a punto fijo, propagando el acoplamiento
+por quién nombra a quién, así que una función que dependa de un global mutable del módulo
+pasará por pura. Da las clases por acopladas sin mirarles el cuerpo, prefiriendo no contar un
+sitio a contar uno que no lo es. Y no ve el acoplamiento que no pasa por un `import`: fichero
+compartido, variable de entorno, estado en disco.
+
+---
+
 ### PAT-6 — Semantic graph enrichment: enriquecimiento periódico del grafo
 
 **Enforcement:** `recommended` · **Introducido:** v37
@@ -7094,6 +7145,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.28 | 2026-08-15 | **La pregunta que v40.27 dejó abierta era «¿cuántas veces más pasa esto?», y a ojo no se contesta con 136 módulos.** El hallazgo de v40.27 —veintiún importadores cruzando una frontera de negocio para leer una tabla— se convierte en norma medida: **AP-62, el consumidor paga el fan-out del productor**, con `vault_recursos` como guard y una vigésima puerta. Una arista es deuda cuando se dan las cuatro: el destino no está en el núcleo, tiene fan-out mayor que cero, todo lo que el origen le pide es un recurso —constante o función pura— y los dos están en contextos distintos. Lo caro fue la tercera: la primera versión miraba referencias directas y daba por «pura» una función que recorre el vault a través de un helper local, que es **AP-44 cometido en la tool que nace para detectar que el consumidor no ve lo que paga**; se arregla propagando el acoplamiento a punto fijo. Medidos diez sitios, se saldan ocho con el mismo movimiento cuatro veces —`vault_version`, `vault_fundamentals_catalog`, `vault_audit_catalog`, `vault_mermaid_reglas`, todos hojas de fan-out cero, con la fachada reexportando por no-derogación—: **10 → 2 sitios, 42 → 35 cruces, cero nuevos**. Los dos que quedan **declaran por qué**: `vault_spec_generate_catalog --write` reescribe `vault_mcp_catalog.py` entero, así que el corte se desharía solo en la primera regeneración. De paso, el test de v40.27 resultó estar **vacío** —comprobaba fan-out contra `grafo()`, que no devuelve una adyacencia, y por tanto era cierto siempre—: el mismo cero fabricado de v40.17, ahora con control negativo |
 | v40.27 | 2026-08-14 | **Veinte de los sesenta y dos cruces de contexto eran tools leyendo una tabla constante.** Los cruces de `arch-baseline.json` llevaban veintiséis versiones subiendo —48 → 62— sin que ninguna puerta se pusiera roja, y la medida dice por qué: veinticuatro de ellos iban al mismo destino, `vault_norms`, y veintiuno de sus veinticuatro importadores solo pedían datos. Hasta v40.26 eso no se podía ver, porque el catálogo compartía fichero con el motor que lo audita; partido, quedó con **fan-out cero** —ni un `vault_*`, solo `re` y `typing`—, que es la forma exacta de `vault_registry`, ya en el núcleo. Se muda allí, `compute_norm_refs` se va con él por ser derivación pura de catálogo, y los veintiún importadores pasan a pedirle el dato al dueño en vez de a la fachada que arrastra el motor entero. **62 → 42 cruces, cero nuevos, `off_port_total` intacto en 12.** Y como la cifra bajó por un movimiento y no por una regla más laxa, se añade lo que faltaba para que no vuelva a subir: `PRESUPUESTO_DE_CRUCES` presupuesta el **par de contextos**, no el sitio —«Autoría depende de Gobernanza» se decide una vez—, con `permanente`, `a_eliminar` + fecha o `en_estudio` + hipótesis escrita, y un par nuevo **bloquea la puerta**. La baseline decía cuánta deuda hay; esto dice hacia dónde va, que es la pregunta que nadie tuvo que responder mientras la cifra crecía |
 | v40.26 | 2026-08-14 | **`vault_norms` eran 5.158 líneas haciendo de catálogo, de motor y de fachada a la vez**, con el 60% del fichero ocupado por una sola constante. No era un problema de clasificación —su fan-in es 26, no el del núcleo— sino de que tres cosas distintas compartían fichero. Se parte en `vault_norms_catalog` (los datos: `NORM_CATALOG` y el vocabulario de estado, sin leer el vault, sin escribir nada, sin importar ninguna tool), `vault_norms_engine` (el motor de `--audit`, el drift del marco y el heal de AP-46) y la fachada, que **reexporta los siete símbolos públicos y los cinco privados que usan los tests**: por eso ningún llamador se toca y el diff se lee como movimiento puro. Las catorce entradas de `arch-baseline.json` cuyo origen cambió de nombre se migraron por sustitución explícita con el mapeo escrito, no con `--freeze`, y `crossings_total` sigue en 62 y `off_port_total` en 12 antes y después. El corte obligó a decir en voz alta dos cosas que estaban implícitas: `vault_vocabulario` apuntaba con `derivado_de` a la fachada, y al mudarse el dato eso habría contado al catálogo como copia de sí mismo (AP-49); y `vault_norms_coherence` dio diecisiete afirmaciones por sin traza porque el código había cambiado de fichero — ahora **deriva** los módulos hermanos de los imports de la fachada en vez de llevar el reparto escrito a mano, que habría envejecido a la siguiente partición |
 | v40.25 | 2026-08-14 | **Se sabía que había 221 enlaces rotos y no se podía decir cuáles.** El truncado a veinte de `wikilinks_unresolved_sample` es presentación — y se había colado en el dato: `--report` escribía a fichero ese mismo dict recortado, en el único destino donde no hay razón para cortar. Como reparar los enlaces es decisión del dueño y no del estándar, entregarle la lista era la única acción que el hallazgo desbloqueaba, y no se podía entregar. Con la lista entera, 221 dejan de ser 221: salen de **20 notas origen** y **125 de un solo fichero**, repartidos en tres tipos que se arreglan de forma distinta. Una nota de auditoría por vault en `/ans`, `vault-builderx` y `/vcloud`, con autorización explícita por vault, sin crear un solo stub —escondería el hueco en vez de cerrarlo— y sin tocar ningún enlace. El contraste devolvió `frontmatter_unparseable` vacío en los tres: las cuatro notas de `/ans` que no parseaban las lee ya la migración de v40.23 a `vault_lib.parse_frontmatter` |
@@ -7444,6 +7496,63 @@ temp/
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
 
 ---
+
+### v40.28 — 2026-08-15 `git: pending`
+
+**El patrón que v40.27 encontró por accidente ahora se busca a propósito.**
+
+v40.27 quitó veinte cruces de contexto con un solo movimiento, y el hallazgo que lo
+permitió no se buscó: se tropezó con él. Veintiún importadores de `vault_norms` entraban
+por una fachada que arrastra el motor y sus once dependencias para leer una tabla
+constante. La pregunta que quedó abierta era la única que importaba —¿cuántas veces más
+pasa esto?— y con 136 módulos no se contesta a mano; contestarla a ojo una vez tampoco
+sirve, porque el patrón se rehace con cada import nuevo.
+
+**AP-62 — El consumidor paga el fan-out del productor.** `enforcement: guard+audit`,
+dueño `vault_recursos`, vigésima puerta. Una arista `A -> B` es deuda cuando se dan las
+cuatro condiciones a la vez:
+
+1. **B no está en el núcleo.** Leer del núcleo es gratis por definición: para eso está
+   declarado. Es lo que hace que `vault_lib`, con más de sesenta consumidores que solo le
+   piden recursos, no aparezca nunca — y hay un test que lo fija.
+2. **B tiene fan-out mayor que cero.** Un productor que ya es hoja no le cuesta nada a
+   nadie.
+3. **Todo lo que A importa de B es un recurso**: constante de módulo o función cuyo cuerpo
+   no toca ninguna dependencia `vault_*` de B.
+4. **A y B están en contextos distintos.** Ese es el daño medido. Las que cumplen 1–3 pero
+   no la 4 se publican como `arrastre_intracontexto` y no bloquean.
+
+**Lo caro fue la tercera condición, y el error merece quedar escrito.** La primera versión
+decidía la pureza mirando referencias *directas* a las dependencias importadas. Con ese
+criterio `vault_tags_backfill_ledger` salía «puro»: recorre el vault entero, pero lo hace a
+través de `_raiz()`, un helper local. Medir así es certificarse a uno mismo —**AP-44**— en
+la tool que nace precisamente para detectar que el consumidor no ve lo que paga. Se
+corrige propagando el acoplamiento a punto fijo: un símbolo se contagia si nombra a otro
+ya contagiado, y se itera hasta que nadie cambia. Doce sitios pasaron a diez, y los diez
+eran reales.
+
+**Ocho de los diez se saldan con el mismo movimiento, aplicado cuatro veces:** partir el
+productor en catálogo y motor, mudar el catálogo al núcleo con fan-out cero verificado, y
+repuntar a los consumidores al dueño. Salen `vault_version` (siete caracteres que tres
+módulos leían importando una tool con CLI y escrituras en disco), `vault_fundamentals_catalog`
+(565 líneas de registros), `vault_audit_catalog` (el criterio «esto es documentación, no una
+nota» y la tabla de penalizaciones) y `vault_mermaid_reglas` (la gramática, que es texto a
+diagnóstico y no sabe qué es un vault). Las cuatro fachadas siguen reexportando: ningún
+llamador se rompe. **10 → 2 sitios de arrastre, 42 → 35 cruces, cero nuevos.**
+
+**Los dos que quedan no se congelan en silencio: declaran su motivo.** El corte normal no
+se sostiene en `vault_mcp_catalog` porque `vault_spec_generate_catalog --write` **reescribe
+el fichero entero** desde `tool-spec.json`, así que el catálogo volvería a la fachada en la
+primera regeneración y la deuda reaparecería sin que nadie lo notase. El registro
+`EXENCIONES` empareja cada sitio congelado con su porqué y con la condición que lo
+desbloquea, y un test falla si algo en la baseline no lo tiene. Una deuda congelada sin
+motivo escrito es una deuda que nadie vuelve a mirar.
+
+**Y un cero fabricado más.** El test que v40.27 escribió para fijar que
+`vault_norms_catalog` es hoja comprobaba `grafo().get(...) == set()`, y `grafo()` no
+devuelve una adyacencia sino `{"top": …, "diferido": …}`: la aserción era cierta
+pasara lo que pasara. Es exactamente el fallo de v40.17. Ahora usa `fan_out()` y lleva
+control negativo — si la medida volviera a salir vacía, el test cae.
 
 ### v40.27 — 2026-08-14 `git: 469ed2a`
 

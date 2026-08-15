@@ -362,7 +362,7 @@ def _run_validation() -> Dict[str, Any]:
 
 def build_spec_memory(validate: bool = False) -> Dict[str, Any]:
     from vault_manifest import _build_manifest, DQ_METADATA, _FUND_BY_TOOL  # type: ignore
-    from vault_fundamentals import FUNDAMENTALS  # type: ignore
+    from vault_fundamentals_catalog import FUNDAMENTALS  # type: ignore
 
     manifest_entries = _build_manifest()
     version = _read_standard_version()

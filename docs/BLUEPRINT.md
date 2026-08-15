@@ -35,7 +35,7 @@ Restricciones que son decisión de producto, no limitación pendiente:
 |---|---|---|---|
 | **Escritura → gobernanza** (`escritura_a_gobernanza`) | Lo que el agente captura queda escrito una sola vez, normalizado contra las normas, versionado y auditable después. | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 36, 37 | 78 |
 | **Consulta → contexto** (`consulta_a_contexto`) | Una pregunta del agente se convierte en un paquete de contexto acotado y presupuestado, recorriendo el grafo del vault sin índice externo. | 26, 34 | 8 |
-| **Gobernanza del estándar** (`gobernanza_del_estandar`) | El estándar cumple lo que publica: registro canónico primero, doc derivada, guard que falla si divergen. Ninguna de estas tools toca las notas de un usuario. | 35 | 20 |
+| **Gobernanza del estándar** (`gobernanza_del_estandar`) | El estándar cumple lo que publica: registro canónico primero, doc derivada, guard que falla si divergen. Ninguna de estas tools toca las notas de un usuario. | 35 | 21 |
 
 - **`consulta_a_contexto`** — El grupo 26 (Tokens) cae en el rango 1–33 que `CLAUDE.md` atribuye al primer eje, pero sus tres tools viven en el contexto `consulta` y existen para que el paquete quepa en la ventana. El rango es cronológico, no clasificatorio.
 - **`gobernanza_del_estandar`** — Tercera capacidad que `CLAUDE.md` no nombraba. Existía desde que se escribió la primera puerta; declararla es lo que impide que sus tools se cuenten como si sirvieran a la memoria del agente.
@@ -52,7 +52,7 @@ regenera.*
 
 | Contexto | Puertos | Módulos | Prohíbe |
 |---|---|---|---|
-| **Kernel** (`kernel`) | 4 | 17 | depender de cualquier contexto de dominio |
+| **Kernel** (`kernel`) | 4 | 21 | depender de cualquier contexto de dominio |
 | **Autoría** (`autoria`) | 7 | 39 | — |
 | **Grafo** (`grafo`) | 3 | 15 | — |
 | **Gobernanza** (`gobernanza`) | 20 | 11 | — |
@@ -60,13 +60,13 @@ regenera.*
 | **Consulta** (`consulta`) | 7 | 10 | base de datos; embeddings; servicio externo |
 | **Ciclo de vida** (`ciclo_de_vida`) | 3 | 8 | — |
 | **Durabilidad** (`durabilidad`) | 4 | 4 | escribir fuera de la raíz del vault (AP-36) |
-| **Meta-toolkit** (`meta_toolkit`) | 3 | 26 | escribir en una sección de contenido: sus artefactos derivados viven en 00_System/ |
+| **Meta-toolkit** (`meta_toolkit`) | 3 | 27 | escribir en una sección de contenido: sus artefactos derivados viven en 00_System/ |
 
 ## Capa 4 — Normas → puertas → tests
 
 *Registros: `vault_norms.NORM_CATALOG` + `vault_gate.PUERTAS` + `tests/`*
 
-58 de 73 normas tienen puerta o test que las nombre.
+59 de 74 normas tienen puerta o test que las nombre.
 **Es la única capa con baseline**, y por un motivo concreto: las demás se midieron
 en cero el día que se declararon porque sus datos ya existían y solo faltaba
 atarlos. Ésta no. Exigir cero aquí el primer día habría hecho nacer la puerta en
@@ -140,6 +140,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-59** — Núcleo declarado sin contraste | guard+audit | `kernel` | `test_kernel.py` |
 | **AP-60** — El guard cobra por declarar y regala el silencio | guard+audit | `norms_coherence` | `test_norms_coherence.py` |
 | **AP-61** — El guard cae con el dato que vino a medir | guard+audit | `excepcion_declarada` | `test_excepcion_declarada.py` |
+| **AP-62** — El consumidor paga el fan-out del productor | guard+audit | `arquitectura`, `recursos` | `test_recursos.py` |
 | **PAT-6** — Semantic graph enrichment — enriquecimiento periodico del grafo | recommended | — | — |
 | **SP-01** — Delete protocol — change_log obligatorio antes de eliminar | audit | `framework` | `test_vault_norms.py` |
 | **SP-02** — Forward-link verification — buscar antes de linkar | guard | — | `test_vault_norms.py` |
@@ -154,7 +155,7 @@ Sin puerta ni test (15): `AP-04`, `AP-08`, `AP-12`, `AP-13`, `AP-18`, `AP-20`, `
 
 *Registros: `vault_mcp_catalog.TOOLS_CATALOG` + `<vault>/00_System/tool-spec.json`*
 
-106 tools activas en 37 grupos. Toda tool
+107 tools activas en 37 grupos. Toda tool
 del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 `status: archived | internal | orphan` — no se borra, se anota
 (`vault_mcp_catalog.py --check-contracts`).
@@ -180,7 +181,7 @@ del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 | Línea de Tiempo | 1 |
 | Memoria de Contexto | 5 |
 | Migración | 2 |
-| Normas | 20 |
+| Normas | 21 |
 | Observabilidad | 1 |
 | Patrones | 2 |
 | Producción/SRE | 2 |
@@ -287,6 +288,7 @@ falla — no se rellena con el valor más cercano.
 | `vault_quarantine` | 36 — Defectos y Cuarentena | escritura_a_gobernanza |
 | `vault_query_parse` | 34 — Memoria de Contexto | consulta_a_contexto |
 | `vault_read` | 1 — Core | escritura_a_gobernanza |
+| `vault_recursos` | 35 — Normas | gobernanza_del_estandar |
 | `vault_reindex` | 15 — Índices | escritura_a_gobernanza |
 | `vault_relation_add` | 4 — Diagramas | escritura_a_gobernanza |
 | `vault_release_save` | 29 — Release | escritura_a_gobernanza |
@@ -345,7 +347,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 
 | Baseline | Norma | Congelado | Objetivo | Pendiente |
 |---|---|---|---|---|
-| `scripts/arch-baseline.json` | cruces entre contextos | 42 | — *sin objetivo* | 58 → 60 → 61 → 62 → 62 → 42 (encoge, Δ-6) |
+| `scripts/arch-baseline.json` | cruces entre contextos | 35 | — *sin objetivo* | 58 → 60 → 61 → 62 → 62 → 42 (encoge, Δ-6) |
 | `scripts/arch-baseline.json` | cruces fuera de puerto | 12 | — *sin objetivo* | 13 → 13 → 13 → 13 → 12 → 12 (encoge, Δ-36) |
 | `scripts/blame-baseline.json` | AP-51 | 83 | — *sin objetivo* | 86 → 86 → 86 → 87 → 84 → 83 (encoge, Δ-3) |
 | `scripts/error-contract-baseline.json` | AP-52 | 9 | — *sin objetivo* | 158 → 158 → 110 → 110 → 0 → 9 (encoge, Δ-149) |
@@ -353,12 +355,13 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `scripts/smoke-baseline.json` | AP-42 | 0 | — *sin objetivo* | — *1 muestra* |
 | `scripts/blueprint-baseline.json` | capa 4 — norma sin puerta ni test | 13 | — *sin objetivo* | 16 → 15 → 14 → 13 (encoge, Δ-3) |
 | `scripts/criterios-baseline.json` | AP-57 | 9 | — *sin objetivo* | 10 → 9 → 9 (encoge, Δ-1) |
-| `scripts/ciclos-baseline.json` | AP-58 — ciclo esquivado con import diferido | 15 | — *sin objetivo* | 30 → 30 → 15 (encoge, Δ-15) |
+| `scripts/ciclos-baseline.json` | AP-58 — ciclo esquivado con import diferido | 14 | — *sin objetivo* | 30 → 30 → 15 (encoge, Δ-15) |
 | `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 5 | — *sin objetivo* | — *1 muestra* |
 | `scripts/norms-distincion-baseline.json` | AP-60 — normas que no declaran de qué se distinguen | 0 | — *sin objetivo* | 57 → 0 (encoge, Δ-57) |
 | `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 | — *sin objetivo* | 47 → 0 (encoge, Δ-47) |
-| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1220 | — *sin objetivo* | 1114 → 1131 → 1147 → 1168 → 1204 → 1220 (crece, Δ+182) |
+| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1240 | — *sin objetivo* | 1114 → 1131 → 1147 → 1168 → 1204 → 1220 (crece, Δ+182) |
 | `scripts/excepcion-declarada-baseline.json` | AP-61 — la excepción declarada no es la que escapa | 0 | ≤ 0 para 2027-06-30 · cada 180 d · gobernanza → **cumple** | 0 → 0 (plana, Δ+0) |
+| `scripts/recursos-baseline.json` | AP-62 — el consumidor cruza para leer un recurso y paga el fan-out | 2 | — *sin objetivo* | — *0 muestra* |
 
 Todas encogen y ninguna crece sin decirlo: los tres audits con baseline indexan
 por firma de sitio —`módulo::función::hash de `ast.unparse``— así que mover un
@@ -375,4 +378,4 @@ sobre la historia sin que git la respalde (AP-53).
 
 ---
 
-*19 puertas de cierre. Generado por `scripts/vault_blueprint.py`.*
+*20 puertas de cierre. Generado por `scripts/vault_blueprint.py`.*

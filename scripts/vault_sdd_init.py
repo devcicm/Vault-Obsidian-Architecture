@@ -229,7 +229,7 @@ def detect_drift(vault_root: Path) -> dict:
     drift = {"version": None, "missing_norms": [], "warnings": []}
 
     try:
-        from vault_standard_upgrade import CURRENT_VERSION
+        from vault_version import CURRENT_VERSION
 
         drift["version"] = CURRENT_VERSION
     except Exception as e:
@@ -444,7 +444,7 @@ def _lifecycle_states(fila: dict, vault_root: Path) -> str:
             return "(no resoluble)"
     if fila.get("source") == "standard_version":
         try:
-            from vault_standard_upgrade import CURRENT_VERSION
+            from vault_version import CURRENT_VERSION
             return f"v19 → … → {CURRENT_VERSION}"
         except Exception:
             return "(no resoluble)"

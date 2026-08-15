@@ -1,6 +1,6 @@
 {
   "schema": "field-compat/1",
-  "generated": "2026-08-14T23:31:50Z",
+  "generated": "2026-08-15T06:57:20Z",
   "why": "Campos que los repos consumidores pueden leer con garantía. Un campo que sale de aquí sin quedar anotado en superseded_fields rompe a quien lo leía, y por eso lo para una puerta.",
   "stable": {
     "vault_ai_decision": [
@@ -1052,6 +1052,28 @@
       "path",
       "stats",
       "wikiLinks"
+    ],
+    "vault_recursos": [
+      "action",
+      "admitted_new",
+      "baseline_size",
+      "drag_sites",
+      "drag_total",
+      "error_code",
+      "frozen",
+      "hint",
+      "intra_context_drag_total",
+      "leaves_outside_kernel",
+      "modules_unmeasured",
+      "new_drag_sites",
+      "norm",
+      "ok",
+      "opaque_importers_total",
+      "ranking",
+      "recovery",
+      "resolved_since_baseline",
+      "tool",
+      "vault_says"
     ],
     "vault_reindex": [
       "graph",

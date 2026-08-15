@@ -10,9 +10,9 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | Ruta | Qué es |
 |---|---|
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~6.000 líneas). Fuente normativa. |
-| `scripts/*.py` | ~136 scripts, 106 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
+| `scripts/*.py` | ~141 scripts, 107 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (2887 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (2920 tests). Toda norma con guard debe tener test. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
 | `vault-sandbox/` | **Único** vault de pruebas del repo. Todo runtime va aquí. |
@@ -110,8 +110,11 @@ Si necesitas un dato de estos, léelo del registro — no lo redefinas ni lo cop
 | Normas AP/PAT/SP/CN y su enforcement | `scripts/vault_norms_catalog.py` — **hoja del núcleo desde v40.27**. Importa de aquí si solo necesitas el dato; `vault_norms` sigue reexportándolo, pero entrar por la fachada arrastra el motor y sus once dependencias |
 | Dirección de cada frontera entre contextos | `vault_arch.PRESUPUESTO_DE_CRUCES` (un par nuevo bloquea la puerta) |
 | Vocabulario de `status` (12 valores) | `vault_norms.STATUS_VOCAB` |
-| Fundamentos F1–F8 y dimensiones DQ | `vault_fundamentals.FUNDAMENTALS` |
-| Tríada CIA, FAIR, V's del Big Data, cobertura ISO, matriz de trazabilidad | `vault_fundamentals.FRAMEWORK_REGISTRIES` |
+| Fundamentos F1–F8 y dimensiones DQ | `scripts/vault_fundamentals_catalog.py` — hoja del núcleo desde v40.28 (AP-62); `vault_fundamentals` lo reexporta, pero entrar por ahí arrastra el verificador |
+| Tríada CIA, FAIR, V's del Big Data, cobertura ISO, matriz de trazabilidad | `vault_fundamentals_catalog.FRAMEWORK_REGISTRIES` |
+| Versión vigente del estándar (en código) | `vault_version.CURRENT_VERSION` — hoja del núcleo desde v40.28. El banner, la tabla de versiones, el badge y `pyproject.toml` son documentación y los vigila `vault_doc_counts` |
+| Criterio «esto es documentación del estándar, no una nota» y tabla de penalizaciones | `vault_audit_catalog` — hoja del núcleo desde v40.28 |
+| Gramática de Mermaid (tipos y validadores) | `vault_mermaid_reglas` — hoja del núcleo desde v40.28; `vault_mermaid_check` es el que recorre el vault aplicándola |
 | Catálogo de tools expuesto por MCP | `scripts/vault_mcp_catalog.py` → `mcp/nodejs/tools-catalog.json` |
 | Raíz del vault en runtime | `vault_io.get_vault_root()` / `set_vault_root()` |
 | Cómo se detectó esa raíz (confianza) | `vault_io.vault_root_origin()` / `vault_root_is_confident()` |
@@ -223,6 +226,9 @@ abajo, en «Cuatro cosas que el registro no puede decirte».
 - [ ] `python scripts/vault_excepcion_declarada.py --check --strict`
       Ningún handler captura la excepción que una librería declara dejando escapar la que lanza de verdad (AP-61).
       *Se arregla con:* delegar en el dueño que ya la contuvo —para el frontmatter, vault_lib.parse_frontmatter— o nombrar la excepción citando al dueño; ampliar la tupla en trece sitios sin dueño es AP-57 cometido al arreglar AP-61
+- [ ] `python scripts/vault_recursos.py --check --strict`
+      Ningún consumidor cruza una frontera de contexto para leer un recurso que no necesita el fan-out del productor (AP-62).
+      *Se arregla con:* partir el productor en catálogo y motor y repuntar a los consumidores al dueño; partir el fichero solo no mueve la cifra —lo enseñó v40.27—, y reclasificar el productor al núcleo sin medirle el fan-out lo vería AP-59
 
 <!-- puertas:fin -->
 

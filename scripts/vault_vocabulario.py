@@ -89,7 +89,7 @@ VOCABULARIOS: Dict[str, Vocabulario] = {
         nombre="cia_integrity",
         contexto="gobernanza",
         proposito="Integridad del dato. Endurece el umbral de actualidad.",
-        derivado_de="vault_fundamentals:cia_valores",
+        derivado_de="vault_fundamentals_catalog:cia_valores",
         default="medium",
     ),
     "cia_availability": Vocabulario(
@@ -99,14 +99,14 @@ VOCABULARIOS: Dict[str, Vocabulario] = {
             "Disponibilidad del dato. La asimetría es del registro y es real: "
             "no admite `critical`."
         ),
-        derivado_de="vault_fundamentals:cia_valores",
+        derivado_de="vault_fundamentals_catalog:cia_valores",
         default="medium",
     ),
     "cia_sensitivity": Vocabulario(
         nombre="cia_sensitivity",
         contexto="gobernanza",
         proposito="Confidencialidad. `restricted` activa revisión de secretos.",
-        derivado_de="vault_fundamentals:cia_valores",
+        derivado_de="vault_fundamentals_catalog:cia_valores",
         default="internal",
     ),
     "status": Vocabulario(
@@ -179,8 +179,10 @@ def valores(nombre: str) -> Tuple[str, ...]:
         return voc.valores
 
     modulo, _, simbolo = voc.derivado_de.partition(":")
-    if modulo == "vault_fundamentals":
-        from vault_fundamentals import cia_valores
+    # v40.28 — el dueño real es la hoja; `vault_fundamentals` se acepta
+    # todavía porque la sigue reexportando (no-derogación, AP-62).
+    if modulo in ("vault_fundamentals", "vault_fundamentals_catalog"):
+        from vault_fundamentals_catalog import cia_valores
 
         return tuple(sorted(cia_valores(nombre)))
     # Se nombra al catálogo, no a la fachada que lo reexporta. `derivado_de` es

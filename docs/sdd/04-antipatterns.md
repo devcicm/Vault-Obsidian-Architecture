@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
-> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-61 más
-> las familias PAT, SP y CN. Por familia: AP 61, CN 3, PAT 6, SP 3.
-> Bilingual document. Full norm catalog: antipatterns AP-01..AP-61 plus the PAT,
-> SP and CN families. By family: AP 61, CN 3, PAT 6, SP 3.
+> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-62 más
+> las familias PAT, SP y CN. Por familia: AP 62, CN 3, PAT 6, SP 3.
+> Bilingual document. Full norm catalog: antipatterns AP-01..AP-62 plus the PAT,
+> SP and CN families. By family: AP 62, CN 3, PAT 6, SP 3.
 
 ---
 
 ## ES
 
-Total de normas registradas: 73 (AP 61, CN 3, PAT 6, SP 3)
+Total de normas registradas: 74 (AP 62, CN 3, PAT 6, SP 3)
 
 ### AP-01: Documentación alucinada
 
@@ -587,7 +587,7 @@ Detras hay un huevo y una gallina que conviene nombrar, porque es lo que empuja 
 - **Enforcement:** guard
 - **Detectado por:** vault_arch
 
-Un bloque toma un `file_lock`, no lo consigue, y en el handler escribe de todos modos sin sincronizar. El razonamiento que lleva ahi es que perder el dato es peor que escribirlo sin lock. Es al reves, y por una razon que se ve al leer el `TimeoutError`: ese error significa que **otro lo tiene tomado ahora mismo**. La escritura del handler no es una carrera improbable, es la unica situacion en la que ese codigo llega a ejecutarse, y entra justo encima de la de quien si consiguio el lock.
+Un bloque toma un `file_lock`, no lo consigue, y en el handler escribe de todos modos sin sincronizar. El razonamiento que lleva ahi es que perder el dato es peor que escribirlo sin lock. Es al revés, y por una razón que se ve al leer el `TimeoutError`: ese error significa que **otro lo tiene tomado ahora mismo**. La escritura del handler no es una carrera improbable, es la unica situacion en la que ese codigo llega a ejecutarse, y entra justo encima de la de quien si consiguio el lock.
 
 Medido en v40.7 en `vault_sdd_init`, que se pasaba del timeout de 60s de la tool y moria dejando `docs/sdd/` a medio escribir despues de haber anunciado `Drift status: PASS`. La medida: **26 tomas del lock del fichero de trazas, 13 fallidas, 65,14s de espera pura** --13 x 5s exactos--. Esas 13 acababan reescribiendo el trace sin lock mientras el llamante externo lo estaba reemplazando.
 
@@ -710,6 +710,24 @@ Es primo de AP-57 y llega por su camino: un criterio copiado envejece por su lad
 **Prevención:** `vault_excepcion_declarada --check --strict` recorre los `try` cuyo cuerpo contiene una llamada de riesgo declarada en `RIESGOS` y exige que la excepción que escapa esté nombrada. Se salda **delegando en el dueño que ya la contuvo** --para el frontmatter, `vault_lib.parse_frontmatter`-- y solo cuando la firma de retorno lo impide, nombrándola en la tupla y citando al dueño en un comentario: ampliar la tupla en trece sitios sin dueño es AP-57 cometido al arreglar AP-61.
 
 Límite declarado: solo ve la llamada de riesgo escrita **a la vista** en el cuerpo del `try`. Un `safe_load` detrás de un helper queda fuera del alcance, que es la forma correcta de escribirlo -- así que este guard mide mejor el código que peor está escrito, y eso se publica en vez de suponerse cubierto.
+
+### AP-62: El consumidor paga el fan-out del productor
+
+- **Severidad:** medium
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_recursos, vault_arch
+
+Un módulo importa a otro **solo para leer un recurso** --una tabla constante, una función pura-- y con el import se lleva todas las dependencias del productor. Cuando los dos están en contextos distintos, la arquitectura registra un cruce de frontera de negocio donde lo único que ocurrió fue **leer un dato**.
+
+El caso que le dio nombre no se buscó: se tropezó con él en v40.27. De los veinticuatro importadores de `vault_norms`, **veintiuno solo querían datos** --`NORM_CATALOG`, `STATUS_VOCAB`, `status_frontmatter_lines`-- y entraban por una fachada que reexporta el motor de auditoría y sus once dependencias. Mudado el catálogo a una hoja del núcleo y repuntados los importadores, los cruces del repo pasaron de **62 a 42** sin que se eliminara una sola capacidad.
+
+Lo caro es que **cada sitio, por separado, parece razonable**: quien escribe `from vault_norms import STATUS_VOCAB` no está haciendo nada mal, y ningún guard tenía por qué ponerse rojo. El daño solo existe en el agregado, y por eso hace falta medirlo en vez de revisarlo -- que es la forma exacta que tiene el deterioro por acumulación.
+
+**Prevención:** `vault_recursos --check --strict` clasifica cada arista del grafo y cuenta como deuda la que cumple las cuatro condiciones: el destino no está en el núcleo, tiene fan-out mayor que cero, todo lo que el origen le pide es recurso, y los dos están en contextos distintos. `--ranking` ordena los productores por cuántos cruces colapsaría mudar cada uno, que es lo que convierte la medida en un plan.
+
+Se salda **dándole al recurso un dueño con forma de hoja**: partir el productor en catálogo y motor, y repuntar a los consumidores al dueño. La lección de v40.27 es que **partir el fichero por sí solo no mueve una sola cifra** -- la arquitectura no cambia hasta que los importadores dejan de entrar por la fachada.
+
+Límites declarados: mide `from X import y` y no `import X`, porque quien importa el módulo entero no declara qué usa; decide la pureza por AST a punto fijo, así que una función que dependa de un global mutable pasará por pura; y da las clases por acopladas sin mirarlas, prefiriendo no contar un sitio a contar uno que no lo es.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
@@ -835,7 +853,7 @@ Antes de cualquier operación masiva (migración, rename en lote, vault_tags --r
 
 ## EN
 
-Total registered norms: 73 (AP 61, CN 3, PAT 6, SP 3)
+Total registered norms: 74 (AP 62, CN 3, PAT 6, SP 3)
 
 ### AP-01: Documentación alucinada
 
@@ -1413,7 +1431,7 @@ Detras hay un huevo y una gallina que conviene nombrar, porque es lo que empuja 
 - **Enforcement:** guard
 - **Detected by:** vault_arch
 
-Un bloque toma un `file_lock`, no lo consigue, y en el handler escribe de todos modos sin sincronizar. El razonamiento que lleva ahi es que perder el dato es peor que escribirlo sin lock. Es al reves, y por una razon que se ve al leer el `TimeoutError`: ese error significa que **otro lo tiene tomado ahora mismo**. La escritura del handler no es una carrera improbable, es la unica situacion en la que ese codigo llega a ejecutarse, y entra justo encima de la de quien si consiguio el lock.
+Un bloque toma un `file_lock`, no lo consigue, y en el handler escribe de todos modos sin sincronizar. El razonamiento que lleva ahi es que perder el dato es peor que escribirlo sin lock. Es al revés, y por una razón que se ve al leer el `TimeoutError`: ese error significa que **otro lo tiene tomado ahora mismo**. La escritura del handler no es una carrera improbable, es la unica situacion en la que ese codigo llega a ejecutarse, y entra justo encima de la de quien si consiguio el lock.
 
 Medido en v40.7 en `vault_sdd_init`, que se pasaba del timeout de 60s de la tool y moria dejando `docs/sdd/` a medio escribir despues de haber anunciado `Drift status: PASS`. La medida: **26 tomas del lock del fichero de trazas, 13 fallidas, 65,14s de espera pura** --13 x 5s exactos--. Esas 13 acababan reescribiendo el trace sin lock mientras el llamante externo lo estaba reemplazando.
 
@@ -1536,6 +1554,24 @@ Es primo de AP-57 y llega por su camino: un criterio copiado envejece por su lad
 **Prevention:** `vault_excepcion_declarada --check --strict` recorre los `try` cuyo cuerpo contiene una llamada de riesgo declarada en `RIESGOS` y exige que la excepción que escapa esté nombrada. Se salda **delegando en el dueño que ya la contuvo** --para el frontmatter, `vault_lib.parse_frontmatter`-- y solo cuando la firma de retorno lo impide, nombrándola en la tupla y citando al dueño en un comentario: ampliar la tupla en trece sitios sin dueño es AP-57 cometido al arreglar AP-61.
 
 Límite declarado: solo ve la llamada de riesgo escrita **a la vista** en el cuerpo del `try`. Un `safe_load` detrás de un helper queda fuera del alcance, que es la forma correcta de escribirlo -- así que este guard mide mejor el código que peor está escrito, y eso se publica en vez de suponerse cubierto.
+
+### AP-62: El consumidor paga el fan-out del productor
+
+- **Severity:** medium
+- **Enforcement:** guard+audit
+- **Detected by:** vault_recursos, vault_arch
+
+Un módulo importa a otro **solo para leer un recurso** --una tabla constante, una función pura-- y con el import se lleva todas las dependencias del productor. Cuando los dos están en contextos distintos, la arquitectura registra un cruce de frontera de negocio donde lo único que ocurrió fue **leer un dato**.
+
+El caso que le dio nombre no se buscó: se tropezó con él en v40.27. De los veinticuatro importadores de `vault_norms`, **veintiuno solo querían datos** --`NORM_CATALOG`, `STATUS_VOCAB`, `status_frontmatter_lines`-- y entraban por una fachada que reexporta el motor de auditoría y sus once dependencias. Mudado el catálogo a una hoja del núcleo y repuntados los importadores, los cruces del repo pasaron de **62 a 42** sin que se eliminara una sola capacidad.
+
+Lo caro es que **cada sitio, por separado, parece razonable**: quien escribe `from vault_norms import STATUS_VOCAB` no está haciendo nada mal, y ningún guard tenía por qué ponerse rojo. El daño solo existe en el agregado, y por eso hace falta medirlo en vez de revisarlo -- que es la forma exacta que tiene el deterioro por acumulación.
+
+**Prevention:** `vault_recursos --check --strict` clasifica cada arista del grafo y cuenta como deuda la que cumple las cuatro condiciones: el destino no está en el núcleo, tiene fan-out mayor que cero, todo lo que el origen le pide es recurso, y los dos están en contextos distintos. `--ranking` ordena los productores por cuántos cruces colapsaría mudar cada uno, que es lo que convierte la medida en un plan.
+
+Se salda **dándole al recurso un dueño con forma de hoja**: partir el productor en catálogo y motor, y repuntar a los consumidores al dueño. La lección de v40.27 es que **partir el fichero por sí solo no mueve una sola cifra** -- la arquitectura no cambia hasta que los importadores dejan de entrar por la fachada.
+
+Límites declarados: mide `from X import y` y no `import X`, porque quien importa el módulo entero no declara qué usa; decide la pureza por AST a punto fijo, así que una función que dependa de un global mutable pasará por pura; y da las clases por acopladas sin mirarlas, prefiriendo no contar un sitio a contar uno que no lo es.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 

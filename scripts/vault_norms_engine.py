@@ -816,7 +816,7 @@ def framework_drift_check(spec_path: Optional[Path] = None) -> Dict[str, Any]:
     direcciones (id registrado que el doc no explica, o id citado en el doc
     que ya no existe en el registro).
     """
-    from vault_fundamentals import FRAMEWORK_REGISTRIES
+    from vault_fundamentals_catalog import FRAMEWORK_REGISTRIES
 
     spec = Path(spec_path) if spec_path else Path(__file__).resolve().parent.parent / SPEC_FILENAME
     if not spec.exists():

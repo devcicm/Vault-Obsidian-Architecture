@@ -55,7 +55,7 @@ from typing import Any, Dict, List, Optional
 sys.path.insert(0, str(Path(__file__).parent))
 
 import vault_baseline
-from vault_audit import es_documentacion_del_estandar
+from vault_audit_catalog import es_documentacion_del_estandar
 from vault_errors import emit_error, wrap_main
 from vault_io import get_vault_root, is_snapshot_path
 from vault_lib import strip_code_blocks, parse_frontmatter_with_body

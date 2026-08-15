@@ -1756,7 +1756,11 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "estándar: `vault-sandbox/` lo genera el propio estándar y comparte sus "
             "supuestos, así que no puede exhibir este fallo."
         ),
-        "tools_enforcing": ["vault_audit", "vault_graph_fix", "vault_mermaid_check"],
+        # v40.28 — la gramática de Mermaid se mudó a `vault_mermaid_reglas`
+        # (AP-62), y con ella el sitio que aplica AP-44: validar contra la
+        # gramática real y no contra el criterio del generador. Se nombra al
+        # dueño, no a la fachada, porque la traza tiene que llevar al código.
+        "tools_enforcing": ["vault_audit", "vault_graph_fix", "vault_mermaid_reglas"],
         "tools_detecting": ["vault_norms", "vault_audit"],
         "distinguido_de": {
             "AP-55": (
@@ -2587,6 +2591,15 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "tools_enforcing": ["vault_criterios"],
         "tools_detecting": ["vault_criterios"],
         "distinguido_de": {
+            "AP-62": (
+                "AP-57 mira el criterio **escrito dos veces**; AP-62 mira el "
+                "criterio escrito una sola vez y **leído por la puerta cara**. "
+                "El consumidor de AP-62 hace justo lo que AP-57 pide —importar "
+                "al dueño en vez de copiar— y aun así paga, porque el dueño "
+                "trae el motor detrás. Se saldan al revés: AP-57 juntando el "
+                "criterio en un dueño, AP-62 partiendo a ese dueño en catálogo "
+                "y motor."
+            ),
             "AP-61": (
                 "AP-57 es el criterio escrito dos veces sin dueño; AP-61 es una "
                 "excepción mal nombrada, que puede darse en un sitio único y sin "
@@ -2665,6 +2678,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "tools_enforcing": ["vault_ciclos"],
         "tools_detecting": ["vault_ciclos"],
         "distinguido_de": {
+            "AP-62": (
+                "AP-58 mide una dependencia que **vuelve**: el ciclo. AP-62 "
+                "mide una que no vuelve nunca y aun así cuesta, porque el "
+                "importador solo quería un dato y se lleva el fan-out entero. "
+                "Un repo sin un solo ciclo puede estar lleno de arrastre, y el "
+                "remedio de AP-62 —partir el productor— es además una de las "
+                "formas de romper un ciclo, que es donde se tocan."
+            ),
             "AP-49": (
                 "AP-49 mira el **vínculo congelado al importar**: un valor que "
                 "se copia en tiempo de import y ya no responde a un reanclaje. "
@@ -2757,6 +2778,15 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         # nadie puede seguir hasta el código — el AP-55 que este catálogo mide.
         "tools_detecting": ["vault_kernel"],
         "distinguido_de": {
+            "AP-62": (
+                "AP-59 mira la **lista del núcleo** y pregunta si la forma "
+                "medida la sostiene. AP-62 mira las **aristas de fuera del "
+                "núcleo** y pregunta qué se paga al cruzarlas. Se tocan en la "
+                "tentación opuesta: quien quiera bajar la cifra de AP-62 "
+                "moviendo el productor al núcleo sin darle forma de hoja se "
+                "encuentra con AP-59, y por eso el remedio es partirlo, no "
+                "reclasificarlo."
+            ),
             "AP-57": (
                 "AP-57 habla de un **criterio** escrito dos veces sin dueño. "
                 "AP-59 habla de una **pertenencia afirmada y no contrastada**: "
@@ -2913,6 +2943,93 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             ),
         },
         "introduced_version": "v40.23",
+    },
+    # ── Anti-patrón AP-62 ──────────────────────────────────────────────────────
+    {
+        "code": "AP-62",
+        "name": "El consumidor paga el fan-out del productor",
+        "type": "antipattern",
+        "category": "architecture",
+        "severity": "medium",
+        "enforcement": "guard+audit",
+        "description": (
+            "Un módulo importa a otro **solo para leer un recurso** —una tabla "
+            "constante, una función pura— y con el import se lleva todas las "
+            "dependencias del productor. Cuando los dos están en contextos "
+            "distintos, la arquitectura registra un cruce de frontera de "
+            "negocio donde lo único que ocurrió fue **leer un dato**.\n\n"
+            "El caso que le dio nombre no se buscó: se tropezó con él en "
+            "v40.27. De los veinticuatro importadores de `vault_norms`, "
+            "**veintiuno solo querían datos** —`NORM_CATALOG`, `STATUS_VOCAB`, "
+            "`status_frontmatter_lines`— y entraban por una fachada que "
+            "reexporta el motor de auditoría y sus once dependencias. Mudado el "
+            "catálogo a una hoja del núcleo y repuntados los importadores, los "
+            "cruces del repo pasaron de **62 a 42** sin que se eliminara una "
+            "sola capacidad.\n\n"
+            "Lo caro es que **cada sitio, por separado, parece razonable**: "
+            "quien escribe `from vault_norms import STATUS_VOCAB` no está "
+            "haciendo nada mal, y ningún guard tenía por qué ponerse rojo. El "
+            "daño solo existe en el agregado, y por eso hace falta medirlo en "
+            "vez de revisarlo — que es la forma exacta que tiene el deterioro "
+            "por acumulación."
+        ),
+        "signal": (
+            "Un módulo con fan-out alto cuyos importadores solo le piden "
+            "constantes; una fachada que reexporta a la vez el catálogo y el "
+            "motor que lo consume; un cruce de contexto cuya única razón de ser "
+            "es un `from X import UNA_CONSTANTE`."
+        ),
+        "prevention": (
+            "`vault_recursos --check --strict` clasifica cada arista del grafo "
+            "y cuenta como deuda la que cumple las cuatro condiciones: el "
+            "destino no está en el núcleo, tiene fan-out mayor que cero, todo "
+            "lo que el origen le pide es recurso, y los dos están en contextos "
+            "distintos. `--ranking` ordena los productores por cuántos cruces "
+            "colapsaría mudar cada uno, que es lo que convierte la medida en un "
+            "plan.\n\n"
+            "Se salda **dándole al recurso un dueño con forma de hoja**: partir "
+            "el productor en catálogo y motor, y repuntar a los consumidores al "
+            "dueño. La lección de v40.27 es que **partir el fichero por sí solo "
+            "no mueve una sola cifra** — la arquitectura no cambia hasta que "
+            "los importadores dejan de entrar por la fachada.\n\n"
+            "Límites declarados: mide `from X import y` y no `import X`, porque "
+            "quien importa el módulo entero no declara qué usa; decide la "
+            "pureza por AST a punto fijo, así que una función que dependa de un "
+            "global mutable pasará por pura; y da las clases por acopladas sin "
+            "mirarlas, prefiriendo no contar un sitio a contar uno que no lo es."
+        ),
+        "tools_enforcing": ["vault_recursos"],
+        "tools_detecting": ["vault_recursos", "vault_arch"],
+        "distinguido_de": {
+            "AP-57": (
+                "AP-57 es el criterio escrito dos veces sin dueño; AP-62 es el "
+                "criterio con un dueño perfectamente claro al que se llega por "
+                "el camino caro. Son opuestos en el síntoma: AP-57 aparece "
+                "cuando alguien **no** importó al dueño y reimplementó, AP-62 "
+                "cuando sí lo importó y el dueño estaba envuelto en un módulo "
+                "que arrastra. Y por eso la corrección de AP-62 no puede ser "
+                "copiar el recurso al consumidor: eso lo cambia por un AP-57."
+            ),
+            "AP-58": (
+                "Los dos hablan de imports, pero AP-58 mide el **ciclo** —el "
+                "destino vuelve al origen— y AP-62 mide el **peso** —el destino "
+                "arrastra más de lo que hacía falta—. Un arrastre puede no "
+                "cerrar ningún ciclo y seguir siendo deuda, y un ciclo puede "
+                "darse entre dos módulos que se piden justo lo que necesitan. "
+                "Se cruzan al saldarlos: mudar el recurso a una hoja rompió de "
+                "paso quince ciclos diferidos en v40.27, y ese efecto fue una "
+                "consecuencia medida, no el objetivo."
+            ),
+            "AP-59": (
+                "AP-59 vigila la **forma del núcleo**: que lo declarado núcleo "
+                "lo parezca al medirlo. AP-62 vigila **quién paga por quién** "
+                "fuera de él. Se necesitan mutuamente y en direcciones "
+                "opuestas: la corrección típica de AP-62 es mudar un recurso al "
+                "núcleo, y AP-59 es lo único que impide que esa mudanza sea una "
+                "reclasificación de conveniencia para bajar la cifra."
+            ),
+        },
+        "introduced_version": "v40.28",
     },
     # ── Patrón PAT-6 ───────────────────────────────────────────────────────────
     {

@@ -173,7 +173,7 @@ def comprobar(version_en_curso: Optional[str] = None) -> Dict[str, Any]:
 
     if version_en_curso is None:
         try:
-            from vault_standard_upgrade import CURRENT_VERSION
+            from vault_version import CURRENT_VERSION
             version_en_curso = CURRENT_VERSION
         except ImportError:
             version_en_curso = None
@@ -287,7 +287,7 @@ def fijar_hash(hash_objetivo: Optional[str] = None,
             "No hay repositorio git: no se puede resolver ningún hash",
         )
     try:
-        from vault_standard_upgrade import CURRENT_VERSION
+        from vault_version import CURRENT_VERSION
     except ImportError:
         return emit_error(
             "vault_changelog_check", "REGISTRY_UNAVAILABLE",

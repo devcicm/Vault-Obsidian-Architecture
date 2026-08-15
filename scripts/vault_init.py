@@ -36,7 +36,7 @@ from typing import Any, Dict
 from vault_errors import wrap_main
 from vault_io import atomic_write_json, write_report
 from vault_lib import yaml_scalar, utcnow
-from vault_standard_upgrade import CURRENT_VERSION
+from vault_version import CURRENT_VERSION
 from vault_registry import (
     standard_folders,
     EVENT_DRIVEN_SECTIONS,

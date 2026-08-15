@@ -79,7 +79,10 @@ CRITERIOS_CON_DUENO: List[Dict[str, Any]] = [
     },
     {
         "criterio": "que_es_documentacion_del_estandar",
-        "dueño": "vault_audit",
+        # v40.28 — el criterio se mudó a la hoja del núcleo (AP-62). El dueño
+        # es quien lo **define**, no quien lo reexporta: apuntar a la fachada
+        # dejaría pasar una copia escrita junto al motor.
+        "dueño": "vault_audit_catalog",
         "simbolo": "es_documentacion_del_estandar",
         "senales": ["vault-obsidian-architecture.md"],
         "por_que": (

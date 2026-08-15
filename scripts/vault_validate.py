@@ -36,7 +36,7 @@ import sys
 from vault_registry import ORDERED_SECTIONS, es_artefacto_derivado
 from vault_encoding import strip_bom
 from vault_errors import wrap_main
-from vault_fundamentals import cia_valores
+from vault_fundamentals_catalog import cia_valores
 
 import yaml
 

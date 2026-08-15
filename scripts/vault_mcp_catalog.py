@@ -2595,6 +2595,73 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         ),
         "related": ["vault_arch", "vault_norms", "vault_gate", "vault_blueprint"],
     },
+    "vault_recursos": {
+        "name": "vault_recursos",
+        "script": "vault_recursos.py",
+        "group": "Normas",
+        "purpose": (
+            "AP-62: el consumidor cruza una frontera de contexto para leer un "
+            "recurso —una constante, una funcion pura— y por el camino paga "
+            "todo el fan-out del productor. Es el patron que v40.27 encontro "
+            "por accidente en vault_norms: 21 de sus 24 importadores solo "
+            "querian una tabla y entraban por una fachada que arrastra el "
+            "motor. Esta tool lo busca en los 136 modulos en vez de a ojo, y "
+            "publica el ranking de productores por cuantos cruces colapsaria "
+            "darle a cada recurso un dueno con forma de hoja."
+        ),
+        "params": {
+            "check": {
+                "type": "boolean",
+                "required": False,
+                "description": "Clasifica cada arista del grafo y mide el arrastre",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit 1 si aparece un sitio de arrastre nuevo",
+                "validators": [],
+            },
+            "ranking": {
+                "type": "boolean",
+                "required": False,
+                "description": "Productores ordenados por cruces que colapsan",
+                "validators": [],
+            },
+            "freeze": {
+                "type": "boolean",
+                "required": False,
+                "description": "Recongela la baseline de arrastre preexistente",
+                "validators": [],
+            },
+            "admitir-nuevos": {
+                "type": "boolean",
+                "required": False,
+                "description": "Permite congelar arrastre sin precedente",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "Mide `from X import y`, no `import X`: quien importa el modulo "
+            "entero no declara que usa, sale del alcance y se publica en "
+            "importadores_opacos",
+            "La pureza se decide por AST y a punto fijo: un simbolo se contagia "
+            "de acoplado si nombra a otro que ya lo esta. Una funcion que "
+            "dependa de un global mutable del modulo pasara por pura",
+            "Las clases se dan por acopladas sin mirar el cuerpo — se prefiere "
+            "no contar un sitio a contar uno que no lo es",
+            "Solo es deuda el arrastre que cruza contexto; el intracontexto se "
+            "publica sin congelarse, porque no lo es mientras los dos modulos "
+            "compartan contexto",
+        ],
+        "side_effects": ["scripts/recursos-baseline.json"],
+        "example": (
+            "python vault_recursos.py --check\n"
+            "python vault_recursos.py --ranking\n"
+            "python vault_recursos.py --check --strict"
+        ),
+        "related": ["vault_arch", "vault_ciclos", "vault_kernel", "vault_blueprint"],
+    },
     "vault_excepcion_declarada": {
         "name": "vault_excepcion_declarada",
         "script": "vault_excepcion_declarada.py",
@@ -4012,6 +4079,7 @@ GROUPS: Dict[str, List[str]] = {
         "vault_ciclos",
         "vault_kernel",
         "vault_excepcion_declarada",
+        "vault_recursos",
     ],
     "Producción/SRE": ["vault_incident_save", "vault_slo_save"],
     "Release": ["vault_release_save"],

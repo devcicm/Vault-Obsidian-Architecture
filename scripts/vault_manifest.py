@@ -611,7 +611,7 @@ def _bootstrap_spec() -> Dict[str, Any]:
 def _derive_fundamentals_by_tool() -> Dict[str, List[str]]:
     """Single source of truth: derive data_fundamentals per tool from vault_fundamentals registry."""
     try:
-        from vault_fundamentals import FUNDAMENTALS as _FUNDS
+        from vault_fundamentals_catalog import FUNDAMENTALS as _FUNDS
     except ImportError:
         return {}
     by_tool: Dict[str, List[str]] = {}

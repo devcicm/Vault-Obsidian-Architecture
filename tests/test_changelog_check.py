@@ -216,7 +216,8 @@ def test_fijar_hash_no_escribe_en_dry_run(tmp_path, monkeypatch):
     monkeypatch.setattr(C, "SPEC", falso)
     monkeypatch.setitem(sys.modules, "vault_standard_upgrade",
                         type(sys)("vault_standard_upgrade"))
-    sys.modules["vault_standard_upgrade"].CURRENT_VERSION = "v99.9"
+    monkeypatch.setattr(sys.modules["vault_version"],
+                        "CURRENT_VERSION", "v99.9")
 
     r = C.fijar_hash(dry_run=True)
     assert r["ok"] and r["dry_run"]
@@ -238,7 +239,8 @@ def test_fijar_hash_escribe_el_hash_y_la_fecha_reales(tmp_path, monkeypatch):
     monkeypatch.setattr(C, "SPEC", falso)
     monkeypatch.setitem(sys.modules, "vault_standard_upgrade",
                         type(sys)("vault_standard_upgrade"))
-    sys.modules["vault_standard_upgrade"].CURRENT_VERSION = "v99.9"
+    monkeypatch.setattr(sys.modules["vault_version"],
+                        "CURRENT_VERSION", "v99.9")
 
     head = C._git("rev-parse", "--short", "HEAD")
     fecha = C._git("show", "-s", "--format=%as", "HEAD")
@@ -259,7 +261,8 @@ def test_fijar_hash_no_inventa_nada_si_no_hay_pending(tmp_path, monkeypatch):
     monkeypatch.setattr(C, "SPEC", falso)
     monkeypatch.setitem(sys.modules, "vault_standard_upgrade",
                         type(sys)("vault_standard_upgrade"))
-    sys.modules["vault_standard_upgrade"].CURRENT_VERSION = "v99.9"
+    monkeypatch.setattr(sys.modules["vault_version"],
+                        "CURRENT_VERSION", "v99.9")
     if not C.hay_git():
         pytest.skip("sin repositorio git")
     r = C.fijar_hash()

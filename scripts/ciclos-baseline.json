@@ -13,7 +13,6 @@
   "vault_mcp_catalog->vault_io",
   "vault_section_index->vault_io",
   "vault_spec_memory->vault_manifest",
-  "vault_vocabulario->vault_fundamentals",
   "vault_voice->vault_io",
   "vault_voice->vault_mcp_catalog"
  ]

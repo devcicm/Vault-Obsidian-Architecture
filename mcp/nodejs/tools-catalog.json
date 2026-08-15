@@ -3804,6 +3804,52 @@
         "vault_search"
       ]
     },
+    "vault_recursos": {
+      "name": "vault_recursos",
+      "description": "AP-62: el consumidor cruza una frontera de contexto para leer un recurso —una constante, una funcion pura— y por el camino paga todo el fan-out del productor. Es el patron que v40.27 encontro por accidente en vault_norms: 21 de sus 24 importadores solo querian una tabla y entraban por una fachada que arrastra el motor. Esta tool lo busca en los 136 modulos en vez de a ojo, y publica el ranking de productores por cuantos cruces colapsaria darle a cada recurso un dueno con forma de hoja.",
+      "group": "Normas",
+      "script": "vault_recursos.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "check": {
+            "type": "string",
+            "description": "Clasifica cada arista del grafo y mide el arrastre"
+          },
+          "strict": {
+            "type": "string",
+            "description": "Exit 1 si aparece un sitio de arrastre nuevo"
+          },
+          "ranking": {
+            "type": "string",
+            "description": "Productores ordenados por cruces que colapsan"
+          },
+          "freeze": {
+            "type": "string",
+            "description": "Recongela la baseline de arrastre preexistente"
+          },
+          "admitir-nuevos": {
+            "type": "string",
+            "description": "Permite congelar arrastre sin precedente"
+          }
+        }
+      },
+      "guards": [
+        "Mide `from X import y`, no `import X`: quien importa el modulo entero no declara que usa, sale del alcance y se publica en importadores_opacos",
+        "La pureza se decide por AST y a punto fijo: un simbolo se contagia de acoplado si nombra a otro que ya lo esta. Una funcion que dependa de un global mutable del modulo pasara por pura",
+        "Las clases se dan por acopladas sin mirar el cuerpo — se prefiere no contar un sitio a contar uno que no lo es",
+        "Solo es deuda el arrastre que cruza contexto; el intracontexto se publica sin congelarse, porque no lo es mientras los dos modulos compartan contexto"
+      ],
+      "side_effects": [
+        "scripts/recursos-baseline.json"
+      ],
+      "related": [
+        "vault_arch",
+        "vault_ciclos",
+        "vault_kernel",
+        "vault_blueprint"
+      ]
+    },
     "vault_reindex": {
       "name": "vault_reindex",
       "description": "Actualiza search-index.json y opcionalmente hash-index.json.",
@@ -5299,7 +5345,8 @@
       "vault_criterios",
       "vault_ciclos",
       "vault_kernel",
-      "vault_excepcion_declarada"
+      "vault_excepcion_declarada",
+      "vault_recursos"
     ],
     "Producción/SRE": [
       "vault_incident_save",

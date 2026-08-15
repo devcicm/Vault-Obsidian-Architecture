@@ -163,6 +163,28 @@ CONTEXTS: dict[str, dict] = {
             # Leer una constante no es cruzar nada; el motor que decide con ella
             # sí, y ese se queda arriba.
             "vault_norms_catalog",
+            # v40.28 — el primer recurso que sale del ranking de AP-62. Siete
+            # caracteres que tres módulos iban a buscar dentro de la tool que
+            # migra vaults. Fan-out cero por construcción, y su docstring dice
+            # que el día que necesite importar algo deja de tener sitio aquí.
+            "vault_version",
+            # v40.28 — el segundo, y el que más pesaba: `FUNDAMENTALS` y
+            # `cia_valores` los leían tres contextos distintos entrando por el
+            # verificador que los usa. Declarar y decidir con lo declarado no
+            # son el mismo módulo, aunque hayan nacido en el mismo fichero.
+            "vault_fundamentals_catalog",
+            # v40.28 — el tercero. `vault_audit` tiene el fan-out más alto del
+            # ranking (8), y dos de sus consumidores solo querían un criterio y
+            # una tabla. Que el criterio de «esto es documentación, no una
+            # nota» viva donde se puede leer sin arrastrar el barrido del vault
+            # importa por sí mismo: es la decisión que en v40.5 comparaba el
+            # nombre exacto del manifiesto y falseaba decenas de enlaces rotos.
+            "vault_audit_catalog",
+            # v40.28 — el cuarto y último que se pudo cortar. La gramática de
+            # Mermaid es texto a diagnóstico: no toca disco ni sabe qué es un
+            # vault, así que `vault_onboard` y `vault_write` no tenían por qué
+            # cruzar una frontera para validar una cadena que ya tenían.
+            "vault_mermaid_reglas",
         ],
     },
     "autoria": {
@@ -344,6 +366,10 @@ CONTEXTS: dict[str, dict] = {
         "titulo": "Ciclo de vida",
         "lenguaje": ["versión", "migración", "sanación", "arranque"],
         "puertos": {
+            # v40.28 — el dueño es `vault_version`, hoja del núcleo (AP-62). El
+            # puerto se queda declarado aquí porque `vault_standard_upgrade`
+            # sigue reexportándolo y el contrato publicado no cambia; lo que
+            # cambia es que ya no hace falta cruzar para leerlo.
             "CURRENT_VERSION": "vault_standard_upgrade:CURRENT_VERSION",
             "inicializar": "vault_init:vault_init",
             "migrar": "vault_standard_upgrade:vault_standard_upgrade",
@@ -430,6 +456,14 @@ CONTEXTS: dict[str, dict] = {
             # escritura; solo el recorrido de módulos de `vault_arch` y la
             # firma de sitio que ya comparten los otros audits con baseline.
             "vault_excepcion_declarada",
+            # AP-62 (v40.28). Mide el arrastre productor/consumidor sobre el
+            # grafo de este repo, así que es meta-toolkit por el mismo motivo
+            # que `vault_ciclos` y `vault_kernel`: su sujeto es el código, no
+            # una nota. Consume `_mapa_modulos()` de aquí y el fan-out de
+            # `vault_grafo_import`, que es el dueño del grafo — medirlo por su
+            # cuenta habría sido AP-57 en la tool que nace para vigilar
+            # justamente que nadie pague por lo que no consume.
+            "vault_recursos",
         ],
     },
 }

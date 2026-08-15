@@ -712,7 +712,9 @@ def vault_write(
     mermaid_blocks = re.findall(mermaid_pattern, content, re.DOTALL)
     if mermaid_blocks:
         try:
-            from vault_mermaid_check import validate_mermaid
+            # v40.28 — AP-62: la gramática vive en la hoja; el recorrido del
+            # vault que la aplica se queda en `vault_mermaid_check`.
+            from vault_mermaid_reglas import validate_mermaid
 
             for block in mermaid_blocks:
                 errors = validate_mermaid(block)

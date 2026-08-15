@@ -180,7 +180,7 @@ def _penalizaciones() -> Dict[str, int]:
     lo aplica. Copiarlo aquí sería estrenar la segunda fuente de verdad que este
     módulo existe para perseguir.
     """
-    from vault_audit import PENALIZACIONES
+    from vault_audit_catalog import PENALIZACIONES
 
     salida: Dict[str, Dict[str, Any]] = {}
     for p in PENALIZACIONES:
@@ -202,7 +202,7 @@ def _penalizaciones_crudas() -> List[Dict[str, Any]]:
     declaran. Leer el registro dos veces con dos criterios es deliberado y está
     dicho aquí para que nadie las unifique creyendo que son la misma lectura.
     """
-    from vault_audit import PENALIZACIONES
+    from vault_audit_catalog import PENALIZACIONES
 
     return PENALIZACIONES
 

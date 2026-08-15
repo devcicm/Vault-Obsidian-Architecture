@@ -209,6 +209,16 @@ PUERTAS: List[Dict[str, Any]] = [
                "dueño; ampliar la tupla en trece sitios sin dueño es AP-57 "
                "cometido al arreglar AP-61",
     },
+    {
+        "id": "recursos",
+        "cmd": ["vault_recursos.py", "--check", "--strict"],
+        "mide": "Ningún consumidor cruza una frontera de contexto para leer un "
+                "recurso que no necesita el fan-out del productor (AP-62)",
+        "fix": "partir el productor en catálogo y motor y repuntar a los "
+               "consumidores al dueño; partir el fichero solo no mueve la "
+               "cifra —lo enseñó v40.27—, y reclasificar el productor al "
+               "núcleo sin medirle el fan-out lo vería AP-59",
+    },
 ]
 
 

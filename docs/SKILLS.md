@@ -162,7 +162,7 @@ python scripts/vault_sdd_init.py --bilingual --force
 #### Prerrequisitos
 
 - vault-spec >= v36.0 (`CURRENT_VERSION` actual: **v39.3**)
-- `NORM_CATALOG` legible — **73 normas** hoy. El desglose por familia tampoco se
+- `NORM_CATALOG` legible — **74 normas** hoy. El desglose por familia tampoco se
   escribe aquí: se leía «37 AP + 6 PAT + 3 SP + 3 CN», que suma 49 y no 59, y
   las puertas lo dejaron pasar porque `vault_doc_counts` vigila el total y no
   el desglose. Ni el rango ni el conteo se codifican en la skill: se derivan

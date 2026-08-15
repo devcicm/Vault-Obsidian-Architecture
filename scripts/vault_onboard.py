@@ -1134,14 +1134,17 @@ def _asunto_util(mensaje: str) -> str:
 
 
 def _errores_mermaid(diagrama: str) -> List[str]:
-    """Errores de sintaxis según `vault_mermaid_check`, la gramática real.
+    """Errores de sintaxis según `vault_mermaid_reglas`, la gramática real.
 
     Se consulta al validador del estándar en vez de confiar en que el generador
     escribió bien —es AP-44: el generador y su comprobación serían el mismo
     criterio, ciego al mismo fallo—.
+
+    Se entra por la hoja y no por `vault_mermaid_check` (v40.28, AP-62): aquí
+    solo hace falta la gramática, no el recorrido del vault que la aplica.
     """
     try:
-        from vault_mermaid_check import validate_mermaid
+        from vault_mermaid_reglas import validate_mermaid
     except ImportError:
         return []
     return [
