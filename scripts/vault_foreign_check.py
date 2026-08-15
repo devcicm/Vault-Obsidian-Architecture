@@ -296,7 +296,15 @@ def contrastar(destino: Path) -> Dict[str, Any]:
         "wikilinks_in_code_excluded": en_codigo,
         "wikilinks_total": enlaces_totales,
         "wikilinks_unresolved": len(rotos),
+        # La muestra existe para que stdout siga siendo legible en una terminal.
+        # La lista completa va aparte y no se trunca: el truncado es una decisión
+        # de presentación, y hasta v40.24 se coló en el dato — `--report` escribía
+        # este mismo dict a un fichero, donde no hay ninguna razón para cortar a
+        # veinte. Con 221 enlaces sin resolver en un vault ajeno, eso significaba
+        # que al dueño no se le podía entregar la lista que necesita para
+        # arreglarlos, que es la única acción que el hallazgo desbloquea.
         "wikilinks_unresolved_sample": rotos[:20],
+        "wikilinks_unresolved_all": rotos,
     }
 
 
@@ -437,6 +445,21 @@ material que el estandar genera no contrasta nada.
             json.dumps(resultado, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
         )
         resultado["report_path"] = str(salida)
+
+    # El fichero se lleva la lista completa; stdout, la muestra. Al revés —que era
+    # lo que pasaba— el truncado viajaba a los dos sitios y el único destino donde
+    # la lista entera sirve de algo se quedaba sin ella. Se dice cuántos quedaron
+    # fuera y dónde están, porque una lista recortada en silencio se lee como la
+    # lista completa.
+    completa = resultado.pop("wikilinks_unresolved_all", [])
+    if len(completa) > len(resultado.get("wikilinks_unresolved_sample", [])):
+        resultado["wikilinks_unresolved_sample_note"] = (
+            f"muestra de {len(resultado['wikilinks_unresolved_sample'])} sobre "
+            f"{len(completa)}; la lista completa va en `wikilinks_unresolved_all` "
+            f"de `--report`"
+            + (f" ({resultado['report_path']})" if args.report else
+               ", que esta ejecución no pidió")
+        )
 
     print(json.dumps(resultado, ensure_ascii=False, indent=2))
     return 0

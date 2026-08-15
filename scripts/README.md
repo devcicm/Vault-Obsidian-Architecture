@@ -2078,6 +2078,8 @@ python vault_foreign_check.py --self-test                                 # veri
 
 **El primer contraste real ya pagó la tool.** 317 notas de un vault consumidor: una con frontmatter que YAML no parsea. La causa no estaba en el vault sino en cómo el estándar escribe el título — siete sitios componían `title:` concatenando texto fuera de las comillas, y bastaba un `:` en un nombre de proyecto para romper el bloque entero (`vault_project_overview` lo rompía siempre: su título es literalmente `Overview: <proyecto>`). `vault-sandbox/` no podía exhibirlo, porque ninguno de sus nombres lleva `:`.
 
+**El truncado es presentación, y hasta v40.24 se había colado en el dato.** `wikilinks_unresolved_sample` corta a veinte para que stdout siga cabiendo en una terminal, y `--report` escribía a fichero ese **mismo dict recortado**, donde no hay ninguna razón para cortar nada. Con 221 enlaces sin resolver en un vault ajeno real, eso significaba que al dueño no se le podía entregar la lista que necesita para arreglarlos — que es la única acción que el hallazgo desbloquea, porque repararlos no es decisión del estándar. Desde v40.25 el fichero lleva `wikilinks_unresolved_all` entera, stdout sigue con la muestra, y la muestra **dice cuántos quedaron fuera y dónde están**: una lista recortada en silencio se lee como la lista completa.
+
 `--self-test` verifica las cuatro negativas sin necesitar un vault ajeno, y **no sustituye al contraste**: lo dice en su propio `hint`. La regla 7 solo se cumple ejecutando contra material de fuera.
 
 ---

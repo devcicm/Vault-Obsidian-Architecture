@@ -358,7 +358,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `scripts/norms-distincion-baseline.json` | AP-60 — normas que no declaran de qué se distinguen | 0 | — *sin objetivo* | 57 → 0 (encoge, Δ-57) |
 | `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 | — *sin objetivo* | 47 → 0 (encoge, Δ-47) |
 | `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1220 | — *sin objetivo* | 1114 → 1131 → 1147 → 1168 → 1204 → 1220 (crece, Δ+182) |
-| `scripts/excepcion-declarada-baseline.json` | AP-61 — la excepción declarada no es la que escapa | 0 | ≤ 0 para 2027-06-30 · cada 180 d · gobernanza → **cumple** | — *1 muestra* |
+| `scripts/excepcion-declarada-baseline.json` | AP-61 — la excepción declarada no es la que escapa | 0 | ≤ 0 para 2027-06-30 · cada 180 d · gobernanza → **cumple** | 0 → 0 (plana, Δ+0) |
 
 Todas encogen y ninguna crece sin decirlo: los tres audits con baseline indexan
 por firma de sitio —`módulo::función::hash de `ast.unparse``— así que mover un

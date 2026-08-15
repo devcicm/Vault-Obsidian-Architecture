@@ -195,6 +195,71 @@ def test_el_report_no_puede_caer_dentro_del_vault_medido(tmp_path):
     assert not (vault / "informe.json").exists()
 
 
+def test_el_report_lleva_la_lista_entera_y_stdout_solo_la_muestra(tmp_path):
+    """El truncado es presentación, y hasta v40.24 se había colado en el dato.
+
+    `--report` escribía el mismo dict recortado a veinte que se imprime en la
+    terminal. Con 221 enlaces sin resolver en un vault real, eso significaba que
+    al dueño no se le podía entregar la lista que necesita para arreglarlos —
+    que es la única acción que el hallazgo desbloquea. El fichero se lleva
+    `wikilinks_unresolved_all` completa; stdout sigue con la muestra, y dice
+    cuántos quedaron fuera, porque una lista recortada en silencio se lee como
+    la lista completa.
+    """
+    vault = tmp_path / "ajeno"
+    vault.mkdir()
+    for n in range(30):
+        (vault / f"n{n}.md").write_text(f"[[no-existe-{n}]]\n", encoding="utf-8")
+    informe = tmp_path / "informe.json"
+    proc = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "scripts" / "vault_foreign_check.py"),
+         "--root", str(vault), "--report", str(informe)],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        cwd=str(REPO_ROOT), timeout=60,
+    )
+    assert proc.returncode == 0, proc.stderr
+    en_disco = json.loads(informe.read_text(encoding="utf-8"))
+    assert en_disco["wikilinks_unresolved"] == 30
+    assert len(en_disco["wikilinks_unresolved_all"]) == 30
+
+    salida = json.loads(proc.stdout)
+    assert len(salida["wikilinks_unresolved_sample"]) == 20
+    assert "wikilinks_unresolved_all" not in salida, (
+        "la lista entera no va a la terminal: para eso está --report"
+    )
+    assert "30" in salida["wikilinks_unresolved_sample_note"]
+
+
+def test_sin_report_la_muestra_dice_donde_esta_el_resto(tmp_path):
+    """Decirle a alguien que hay 221 sin darle forma de verlos es medio dato."""
+    vault = tmp_path / "ajeno"
+    vault.mkdir()
+    for n in range(25):
+        (vault / f"n{n}.md").write_text(f"[[no-existe-{n}]]\n", encoding="utf-8")
+    proc = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "scripts" / "vault_foreign_check.py"),
+         "--root", str(vault)],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        cwd=str(REPO_ROOT), timeout=60,
+    )
+    nota = json.loads(proc.stdout)["wikilinks_unresolved_sample_note"]
+    assert "--report" in nota and "no pidió" in nota
+
+
+def test_una_lista_que_cabe_entera_no_estrena_nota_de_muestra(tmp_path):
+    """La nota aparece porque falta algo, no en cada ejecución."""
+    vault = tmp_path / "ajeno"
+    vault.mkdir()
+    (vault / "a.md").write_text("[[no-existe]]\n", encoding="utf-8")
+    proc = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "scripts" / "vault_foreign_check.py"),
+         "--root", str(vault)],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        cwd=str(REPO_ROOT), timeout=60,
+    )
+    assert "wikilinks_unresolved_sample_note" not in json.loads(proc.stdout)
+
+
 # ── Las medidas, con el criterio del consumidor ────────────────────────────
 
 def test_el_wikilink_se_resuelve_por_fichero_y_alias_nunca_por_title(tmp_path):
