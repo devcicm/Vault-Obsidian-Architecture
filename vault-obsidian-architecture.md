@@ -5932,11 +5932,55 @@ existe, añadirlo a `ERROR_CATALOG` — que es donde vive la decisión de cómo 
 recupera ese fallo. Añadir el código cuesta una línea; no añadirlo traslada el
 coste a cada consumidor, para siempre.
 
+**Quién escribe el envelope, cuando el que falla es el dominio.** La regla de
+arriba dice *cómo* se emite un error. Falta la mitad que costó nueve versiones
+decidir: **quién lo emite**. Un vault gobernado tiene código de dominio —el que
+sabe que una carpeta ya está registrada, o que un manifiesto no lleva huella— y
+código de herramienta —el que le habla al consumidor—. Si el dominio construye
+el envelope, cumplir AP-52 obligaría a que importase el catálogo de errores, y
+un dominio que sabe qué es un `recovery.action` ha dejado de ser dominio: es la
+herramienta escrita en otro directorio.
+
+La frase se parte en dos mitades, cada una con dueño:
+
+| Mitad | Quién | Qué sabe |
+|---|---|---|
+| **La causa** | el dominio (`vault/kernel/fallos.py`) | qué pasó, en su propio vocabulario, sin saber que existe un JSON |
+| **La recuperación** | la herramienta (`vault_errors.emit_fallo`) | qué código del catálogo le corresponde y qué puede hacer el consumidor |
+
+Tres consecuencias que no son de estilo:
+
+1. **La traducción vive en un solo sitio.** La tabla causa → código repartida
+   entre los adaptadores serían varios módulos decidiendo por su cuenta qué
+   código le toca a una causa que no es suya: AP-57 cometido al cumplir AP-52.
+2. **El dominio levanta, no devuelve.** Un fallo devuelto como valor se ignora
+   por olvido —basta con no mirar `ok`—, y entre los casos cubiertos está el
+   borrado del vault sin confirmar. Que el adaptador tenga que escribir el
+   `except` es el punto: es la frontera, y ahí es donde se decide qué ve el
+   consumidor.
+3. **El código que falta se añade al catálogo, no se aproxima.** Mapear «backup
+   inexistente» a `FILE_NOT_FOUND` habría entregado un `recovery` que manda
+   buscar entre las notas. Un `recovery` que no recupera es peor que ninguno,
+   porque el consumidor sí lo obedece. Varias causas pueden compartir código
+   cuando de todas se recupera igual; cuál fue viaja en `causa`.
+
+Y una restricción que sobrevive a la mejora: **los campos declarados estables
+siguen saliendo.** Que el envelope gane `error_code` no autoriza a que pierda
+`error` o `hint`. Mejorar la salida por debajo es exactamente la clase de
+cambio que rompe a un consumidor en nombre de cumplir una norma.
+
 **Enforcement.** `vault_error_contract --check --strict`, por AST. Medido en
 v40.2: **158 sitios en 58 módulos**. Nace con baseline por la misma razón que
 AP-37 —que empezó en 55 y llegó a 0— y que AP-51: un guard que falla en 158
 sitios se desactiva el primer día, y un guard desactivado no protege nada. La
-baseline **solo puede encoger**.
+baseline **solo puede encoger**, y llegó a cero en v40.29 sobre el alcance
+completo —el cero de v40.6 lo era sobre `scripts/`, y v40.9 lo reabrió al
+ensanchar el alcance—. Una baseline vacía deja el fichero en pie con la lista
+vacía: una entrada borrada no se distingue de una que nadie volvió a mirar. Lo
+que **no** puede hacer una baseline vacía es servir de prueba de vida del
+detector; eso lo prueban sus casos de detección, y el test que usaba lo primero
+como si fuera lo segundo se cambió de sentido a conciencia en vez de
+arrastrarse.
 
 **Límite declarado.** El guard mide **forma, no flujo**: un `dict` con
 `ok: False` y pinta de envelope que no lleva `error_code`. No sigue el valor

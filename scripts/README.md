@@ -1243,9 +1243,34 @@ Módulo de observabilidad centralizado. Todas las tools lo importan. No es un to
 **Funciones principales:**
 - `wrap_main(fn, tool_name)` — envuelve `main()` con timeout (60s) y catch de excepciones no manejadas. Emite JSON estructurado en lugar de traceback.
 - `emit_error(tool, code, message)` — construye error estructurado y lo registra en `00_System/.tool-trace.json`.
+- `emit_fallo(tool, fallo)` — traduce un `FalloDeDominio` (ver abajo) al envelope de la tool. **Es el único sitio donde el vocabulario del dominio se convierte en contrato de salida.**
 - `query_trace(tool, severity, category, last)` — para agentes que necesitan diagnóstico de fallos.
 
 **Timeout:** configurable via `VAULT_TOOL_TIMEOUT` env var (segundos). Default: 60.
+
+**Quién escribe el envelope (v40.29).** El código de `vault/` es dominio y no
+importa este módulo: si lo importara, sabría qué es un `recovery.action` y
+dejaría de ser dominio. En su lugar levanta un `FalloDeDominio`
+(`vault/kernel/fallos.py`) que nombra la **causa** —una clave de `CAUSAS`, más
+los datos que solo el dominio conoce— y el **adaptador de `scripts/` la traduce
+en la frontera**:
+
+```python
+from vault.kernel.fallos import FalloDeDominio
+from vault_errors import emit_fallo
+
+def vault_backup_verify(backup_name, root=None):
+    try:
+        return ServicioSnapshot(construir(root)).verificar(backup_name)
+    except FalloDeDominio as e:
+        return emit_fallo("vault_backup", e)
+```
+
+La tabla causa → código es `MAPA_DE_FALLOS`, y vive **solo aquí**: repartirla
+entre los adaptadores sería AP-57 cometido al cumplir AP-52. Una causa nueva se
+declara en `CAUSAS` **y** en `MAPA_DE_FALLOS` — un test comprueba las dos
+direcciones, porque una causa sin traducción saldría al consumidor como fallo
+opaco y una traducción sin causa es una entrada muerta.
 
 ```bash
 # Consultar últimas 10 entradas del trace log
@@ -1337,19 +1362,21 @@ Cuenta tokens de notas usando la cadena: `anthropic` → `tiktoken` → heuríst
 Contador interactivo de tokens para un archivo o string dado.
 
 ### `vault_token_service.py`
-Servicio de conteo de tokens con cache. Usado internamente por `wrap_main` cuando `VAULT_COUNT_TOKENS=1`.
+Servicio HTTP local de conteo de tokens por flujo, sobre `127.0.0.1:8765`. Usado internamente por `wrap_main` cuando `VAULT_COUNT_TOKENS=1`.
 
 **Funciones principales:**
-- `wrap_main(fn, tool_name)` — envuelve `main()` con timeout (60s) y catch de excepciones no manejadas. Emite JSON estructurado en lugar de traceback.
-- `emit_error(tool, code, message)` — construye error estructurado y lo registra en `00_System/.tool-trace.json`.
-- `query_trace(tool, severity, category, last)` — para agentes que necesitan diagnóstico de fallos.
+- `estimate_tokens(text)` — estimación sin dependencias externas.
+- `start_flow(payload)` / `add_event(payload)` / `end_flow(payload)` — ciclo de vida de un flujo de documentación, con totales acumulados.
+- `get_flow(flow_id)` / `service_status()` — consulta del estado.
 
-**Timeout:** configurable via `VAULT_TOOL_TIMEOUT` env var (segundos). Default: 60.
+**Nota de contrato.** Sus respuestas de error salen por `self._send(status, ...)`
+y **no** por `emit_error`: ahí el contrato es el código de estado HTTP, no el
+catálogo de errores del vault. Está declarado como exención en
+`vault_error_contract.EXENCIONES` por ese motivo, no por deuda.
 
 ```bash
-python vault_errors.py query --last 10
-python vault_errors.py query --tool vault_write --severity error
-python vault_errors.py catalog --code AP21_PATH_WIKILINKS
+# No tiene subcomandos: arranca el servidor y se queda sirviendo.
+python vault_token_service.py --host 127.0.0.1 --port 8765
 ```
 
 ---
