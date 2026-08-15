@@ -345,15 +345,15 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 
 | Baseline | Norma | Congelado | Objetivo | Pendiente |
 |---|---|---|---|---|
-| `scripts/arch-baseline.json` | cruces entre contextos | 62 | — *sin objetivo* | 58 → 57 → 58 → 60 → 61 → 62 (crece, Δ+14) |
-| `scripts/arch-baseline.json` | cruces fuera de puerto | 12 | — *sin objetivo* | 47 → 0 → 13 → 13 → 13 → 13 (encoge, Δ-35) |
+| `scripts/arch-baseline.json` | cruces entre contextos | 62 | — *sin objetivo* | 57 → 58 → 60 → 61 → 62 → 62 (crece, Δ+14) |
+| `scripts/arch-baseline.json` | cruces fuera de puerto | 12 | — *sin objetivo* | 0 → 13 → 13 → 13 → 13 → 12 (encoge, Δ-36) |
 | `scripts/blame-baseline.json` | AP-51 | 83 | — *sin objetivo* | 86 → 86 → 86 → 87 → 84 → 83 (encoge, Δ-3) |
 | `scripts/error-contract-baseline.json` | AP-52 | 9 | — *sin objetivo* | 158 → 158 → 110 → 110 → 0 → 9 (encoge, Δ-149) |
 | `scripts/noop-baseline.json` | AP-37 | 0 | — *sin objetivo* | — *1 muestra* |
 | `scripts/smoke-baseline.json` | AP-42 | 0 | — *sin objetivo* | — *1 muestra* |
 | `scripts/blueprint-baseline.json` | capa 4 — norma sin puerta ni test | 13 | — *sin objetivo* | 16 → 15 → 14 → 13 (encoge, Δ-3) |
-| `scripts/criterios-baseline.json` | AP-57 | 9 | — *sin objetivo* | 10 → 9 (encoge, Δ-1) |
-| `scripts/ciclos-baseline.json` | AP-58 — ciclo esquivado con import diferido | 30 | — *sin objetivo* | — *1 muestra* |
+| `scripts/criterios-baseline.json` | AP-57 | 9 | — *sin objetivo* | 10 → 9 → 9 (encoge, Δ-1) |
+| `scripts/ciclos-baseline.json` | AP-58 — ciclo esquivado con import diferido | 30 | — *sin objetivo* | 30 → 30 (plana, Δ+0) |
 | `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 5 | — *sin objetivo* | — *1 muestra* |
 | `scripts/norms-distincion-baseline.json` | AP-60 — normas que no declaran de qué se distinguen | 0 | — *sin objetivo* | 57 → 0 (encoge, Δ-57) |
 | `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 | — *sin objetivo* | 47 → 0 (encoge, Δ-47) |
