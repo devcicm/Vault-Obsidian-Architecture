@@ -232,6 +232,17 @@ CONTEXTS: dict[str, dict] = {
             "registro_de_ciclo_de_vida": "vault_norms:LIFECYCLE_REGISTRY",
             "cuerpo_sin_marcadores": "vault_norms:cuerpo_sin_marcadores",
             "norma_por_codigo": "vault_norms:norma_por_codigo",
+            # El motor que audita un vault contra el catálogo. Es la superficie
+            # más pública que tiene gobernanza —`vault_sanacion` la llama para
+            # las doce fases— y llevaba versiones sin declararse, así que ese
+            # cruce contaba como fuga por la frontera. No lo era: es la razón
+            # de que la frontera exista. Se declara **antes** de partir
+            # `vault_norms` a propósito; hacerlo en el mismo commit habría
+            # mezclado «este cruce siempre fue legítimo» con «este cruce cambió
+            # de módulo», y con la baseline indexada por la cadena
+            # `origen -> destino` no habría forma de saber cuál de las dos
+            # cosas movió la cifra.
+            "auditar_normas": "vault_norms:vault_norms_audit",
             # El peso de cada norma en el healthIndex. Es la otra mitad
             # canónica de la severidad —el catálogo dice cuánto importa, esto
             # dice cuánto cuesta— y hasta v40.10 nadie las cruzaba: AP-22
@@ -258,7 +269,13 @@ CONTEXTS: dict[str, dict] = {
         },
         "prohibe": [],
         "modulos": [
-            "vault_norms", "vault_fuente_unica",
+            # Las tres mitades de lo que hasta v40.26 era un solo fichero de
+            # 5.158 líneas. Van juntas en el mismo contexto a propósito: el
+            # corte separó datos, motor y fachada, no responsabilidades de
+            # negocio distintas, y meterlas en contextos distintos habría
+            # convertido un movimiento de código en tres fronteras nuevas.
+            "vault_norms", "vault_norms_catalog", "vault_norms_engine",
+            "vault_fuente_unica",
             "vault_audit", "vault_fundamentals",
             "vault_quality_check", "vault_validate", "vault_security_scan",
             "vault_secret_scan", "vault_drift_detect", "vault_mermaid_check",
@@ -868,7 +885,7 @@ GANCHOS_DEL_KERNEL: dict[tuple[str, str], str] = {
         "La voz del vault acompaña al error. Es presentación, no dominio, y el "
         "kernel la degrada a silencio si falla."
     ),
-    ("vault_vocabulario", "vault_norms"): (
+    ("vault_vocabulario", "vault_norms_catalog"): (
         "`status` y los estados de dominio ya tienen registro canónico en "
         "Gobernanza. El registro de vocabularios los declara con `derivado_de` "
         "y los pide al llamarse: copiarlos aquí sería exactamente el AP-05 que "
@@ -951,7 +968,7 @@ PRESUPUESTO_DE_GANCHOS: dict[tuple[str, str], dict] = {
             "de dentro del emisor de errores."
         ),
     },
-    ("vault_vocabulario", "vault_norms"): {
+    ("vault_vocabulario", "vault_norms_catalog"): {
         "objetivo": "permanente",
         "revisado": "2026-08-14",
         "cadencia_dias": 180,

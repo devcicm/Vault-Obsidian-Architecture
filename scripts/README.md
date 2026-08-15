@@ -2,7 +2,7 @@
 
 Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 106 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **134 archivos Python** — 106 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
+- **136 archivos Python** — 106 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
@@ -1825,6 +1825,12 @@ node mcp/nodejs/vault-mcp-server.mjs --port 3000
 ### `vault_norms.py`
 
 Registro canónico de las 73 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
+
+**Desde v40.26 son tres ficheros y una sola tool.** Eran 5.158 líneas que hacían de catálogo, de motor y de fachada a la vez, con el 60% del fichero ocupado por una constante. Ahora `vault_norms_catalog.py` tiene los datos —`NORM_CATALOG` y el vocabulario de estado, sin leer el vault, sin escribir nada y sin importar ninguna tool—, `vault_norms_engine.py` tiene el motor de `--audit`, el drift del marco y el heal de AP-46, y este módulo se queda con la fachada de datos, la CLI y la **reexportación** de todo lo que el repo consumía antes. Esa reexportación es el punto: la superficie externa real son siete símbolos y los tests usan cinco privados más, así que reexportarlos hace que **ningún llamador se toque** y el diff se lea como movimiento puro. Recortar de paso la superficie que usan los tests habría mezclado dos cambios y hecho imposible saber cuál rompió qué.
+
+Lo que el corte obligó a decir en voz alta, y no era gratis: `vault_vocabulario` declaraba `derivado_de="vault_norms:STATUS_VOCAB"`, y de esa declaración sale la exención de AP-49 — al mudarse el dato, seguir apuntando a la fachada habría dejado al fichero que de verdad declara el vocabulario contado como copia de sí mismo, así que ahora nombra al catálogo. Y `vault_norms_coherence` daba diecisiete afirmaciones por «sin traza» porque el código que nombra cada norma había cambiado de fichero: ahora **deriva** los módulos hermanos de los imports de la propia fachada, en vez de llevar el reparto escrito a mano, que habría envejecido a la siguiente partición (AP-47).
+
+Lo que **no** cambió, y se verificó de las dos formas antes y después del commit: `crossings_total` sigue en 62 y `off_port_total` en 12. Las catorce entradas de `arch-baseline.json` cuyo origen pasó a llamarse `vault_norms_engine` se migraron **por sustitución explícita con el mapeo escrito**, no con `--freeze`: congelar de nuevo habría dado el mismo número por un camino que no distingue «este cruce cambió de módulo» de «este cruce es nuevo». Por eso el puerto `vault_norms:vault_norms_audit` se declaró en el commit **anterior** al corte — la baseline se indexa por la cadena `origen -> destino`, y hacer las dos cosas a la vez habría hecho ilegible cuál movió la cifra.
 
 ```bash
 python vault_norms.py                             # catálogo completo

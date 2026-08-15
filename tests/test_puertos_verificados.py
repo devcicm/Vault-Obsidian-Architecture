@@ -44,7 +44,10 @@ def test_hay_puertos_en_los_nueve_contextos():
     símbolo privado, así que la única forma de que un `_x` deje de reportarse
     es promoverlo de verdad.
     """
-    assert len(PUERTOS) == 58  # +1: `identidad_de_documentacion`
+    # +1 en v40.26: `auditar_normas`. Se declaró antes de partir `vault_norms`
+    # porque el motor de audit era el único cruce entrante fuera de puerto, y
+    # mezclarlo con el troceado habría hecho ilegible cuál movió la cifra.
+    assert len(PUERTOS) == 59
     assert {c for c, _, _ in PUERTOS} == set(arch.CONTEXTS)
 
 

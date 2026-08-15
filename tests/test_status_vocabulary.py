@@ -214,9 +214,12 @@ def test_ninguna_tool_emite_status_sin_pasar_por_el_registro(script):
     el campo a mano. Cualquier tool nueva que lo intente falla aquí, antes de
     llegar a un vault real.
     """
-    # `vault_write` construye el frontmatter canónico y `vault_norms` es el
-    # registro: son el punto de normalización, no un bypass de él.
-    if script.name in {"vault_write.py", "vault_norms.py"}:
+    # `vault_write` construye el frontmatter canónico y el registro de normas es
+    # el punto de normalización, no un bypass de él. Desde v40.26 el registro son
+    # dos ficheros: `status_frontmatter_lines` y el vocabulario viven en el
+    # catálogo, y la fachada los reexporta. La exención sigue siendo del mismo
+    # código, no de un fichero más.
+    if script.name in {"vault_write.py", "vault_norms.py", "vault_norms_catalog.py"}:
         return
     directas = _lineas_con_emision_directa(script)
     assert not directas, (

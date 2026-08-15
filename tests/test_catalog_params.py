@@ -120,9 +120,21 @@ def test_ap40_esta_en_el_catalogo_con_enforcement_real():
 
 
 def test_el_audit_de_normas_conoce_ap40():
-    fuente = (SCRIPTS / "vault_norms.py").read_text(encoding="utf-8")
-    assert '"AP-40"' in fuente
-    assert "check_params" in fuente
+    """Las dos mitades, cada una en su fichero (v40.26).
+
+    Hasta el corte de `vault_norms` las dos afirmaciones se comprobaban sobre
+    el mismo texto, y bastaba con que la cadena apareciera en alguna parte de
+    las 5.158 líneas. Ahora se comprueban por separado y eso es más fuerte, no
+    menos: la norma tiene que estar **declarada** en el catálogo y
+    **verificada** en el motor. Leer los dos ficheros concatenados habría
+    dejado pasar el caso en que AP-40 se declara y nadie la mide.
+    """
+    catalogo = (SCRIPTS / "vault_norms_catalog.py").read_text(encoding="utf-8")
+    assert '"AP-40"' in catalogo
+
+    motor = (SCRIPTS / "vault_norms_engine.py").read_text(encoding="utf-8")
+    assert '"AP-40"' in motor
+    assert "check_params" in motor
 
 
 def test_el_schema_json_se_deriva_no_se_copia():

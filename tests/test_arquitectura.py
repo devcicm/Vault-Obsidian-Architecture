@@ -416,7 +416,9 @@ def test_el_kernel_declara_sus_ganchos_con_motivo():
         ("vault_errors", "vault_voice"),
     }
     lecturas_de_registro = {
-        ("vault_vocabulario", "vault_norms"),
+        # v40.26: el vocabulario se mudó con el catálogo al partirse
+        # `vault_norms`. Es el mismo gancho; cambió de fichero, no de causa.
+        ("vault_vocabulario", "vault_norms_catalog"),
         ("vault_vocabulario", "vault_fundamentals"),
     }
     assert set(arch.GANCHOS_DEL_KERNEL) == (

@@ -212,7 +212,7 @@ def test_el_cruce_del_registro_al_dominio_esta_declarado():
     Mudarlo a Gobernanza no eliminaría el cruce, lo movería: `vault_log_error`
     es kernel y consume la escala de severidad.
     """
-    for destino in ("vault_norms", "vault_fundamentals"):
+    for destino in ("vault_norms_catalog", "vault_fundamentals"):
         clave = ("vault_vocabulario", destino)
         assert clave in arch.GANCHOS_DEL_KERNEL
         assert arch.GANCHOS_DEL_KERNEL[clave].strip()
@@ -230,7 +230,9 @@ def test_la_tabla_derivada_se_puede_publicar():
     filas = {f["name"]: f for f in voc.tabla()}
     assert len(filas) == len(voc.VOCABULARIOS)
     assert filas["severidad"]["context"] == "gobernanza"
-    assert filas["status"]["derived_from"] == "vault_norms:STATUS_VOCAB"
+    # Nombra al catálogo, no a la fachada que lo reexporta: `derivado_de` dice
+    # dónde vive el dato, y de ahí sale la exención de AP-49 (v40.26).
+    assert filas["status"]["derived_from"] == "vault_norms_catalog:STATUS_VOCAB"
     assert filas["severidad_con_na"]["extends"] == "severidad"
 
 

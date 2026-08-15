@@ -116,7 +116,7 @@ VOCABULARIOS: Dict[str, Vocabulario] = {
             "Estado de ciclo de vida de una nota (CN-03). Único campo que ya "
             "tenía registro canónico antes de este módulo."
         ),
-        derivado_de="vault_norms:STATUS_VOCAB",
+        derivado_de="vault_norms_catalog:STATUS_VOCAB",
     ),
     # ── Autoría ───────────────────────────────────────────────────────────────
     "bug_state": Vocabulario(
@@ -126,19 +126,19 @@ VOCABULARIOS: Dict[str, Vocabulario] = {
             "Estado del defecto, en su propio campo y no compitiendo con "
             "`status` (AP-38)."
         ),
-        derivado_de="vault_norms:DOMAIN_STATUS_VOCABS",
+        derivado_de="vault_norms_catalog:DOMAIN_STATUS_VOCABS",
     ),
     "pattern_state": Vocabulario(
         nombre="pattern_state",
         contexto="autoria",
         proposito="Estado de implementación de un patrón.",
-        derivado_de="vault_norms:DOMAIN_STATUS_VOCABS",
+        derivado_de="vault_norms_catalog:DOMAIN_STATUS_VOCABS",
     ),
     "test_result": Vocabulario(
         nombre="test_result",
         contexto="autoria",
         proposito="Resultado de la última ejecución de un test.",
-        derivado_de="vault_norms:DOMAIN_STATUS_VOCABS",
+        derivado_de="vault_norms_catalog:DOMAIN_STATUS_VOCABS",
     ),
     "prioridad": Vocabulario(
         nombre="prioridad",
@@ -183,12 +183,16 @@ def valores(nombre: str) -> Tuple[str, ...]:
         from vault_fundamentals import cia_valores
 
         return tuple(sorted(cia_valores(nombre)))
+    # Se nombra al catálogo, no a la fachada que lo reexporta. `derivado_de` es
+    # una declaración de **dónde vive el dato**, y de ella sale la exención de
+    # AP-49: apuntar a `vault_norms` tras el corte de v40.26 habría dejado al
+    # fichero que de verdad declara el vocabulario contado como copia de sí mismo.
     if simbolo == "STATUS_VOCAB":
-        from vault_norms import STATUS_VOCAB
+        from vault_norms_catalog import STATUS_VOCAB
 
         return tuple(sorted(STATUS_VOCAB))
     if simbolo == "DOMAIN_STATUS_VOCABS":
-        from vault_norms import DOMAIN_STATUS_VOCABS
+        from vault_norms_catalog import DOMAIN_STATUS_VOCABS
 
         for campo, mapa in DOMAIN_STATUS_VOCABS.values():
             if campo == nombre:

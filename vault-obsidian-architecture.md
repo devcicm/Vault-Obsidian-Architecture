@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.25 — 2026-08-14  
+**Versión:** v40.26 — 2026-08-14  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -7094,6 +7094,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.26 | 2026-08-14 | **`vault_norms` eran 5.158 líneas haciendo de catálogo, de motor y de fachada a la vez**, con el 60% del fichero ocupado por una sola constante. No era un problema de clasificación —su fan-in es 26, no el del núcleo— sino de que tres cosas distintas compartían fichero. Se parte en `vault_norms_catalog` (los datos: `NORM_CATALOG` y el vocabulario de estado, sin leer el vault, sin escribir nada, sin importar ninguna tool), `vault_norms_engine` (el motor de `--audit`, el drift del marco y el heal de AP-46) y la fachada, que **reexporta los siete símbolos públicos y los cinco privados que usan los tests**: por eso ningún llamador se toca y el diff se lee como movimiento puro. Las catorce entradas de `arch-baseline.json` cuyo origen cambió de nombre se migraron por sustitución explícita con el mapeo escrito, no con `--freeze`, y `crossings_total` sigue en 62 y `off_port_total` en 12 antes y después. El corte obligó a decir en voz alta dos cosas que estaban implícitas: `vault_vocabulario` apuntaba con `derivado_de` a la fachada, y al mudarse el dato eso habría contado al catálogo como copia de sí mismo (AP-49); y `vault_norms_coherence` dio diecisiete afirmaciones por sin traza porque el código había cambiado de fichero — ahora **deriva** los módulos hermanos de los imports de la fachada en vez de llevar el reparto escrito a mano, que habría envejecido a la siguiente partición |
 | v40.25 | 2026-08-14 | **Se sabía que había 221 enlaces rotos y no se podía decir cuáles.** El truncado a veinte de `wikilinks_unresolved_sample` es presentación — y se había colado en el dato: `--report` escribía a fichero ese mismo dict recortado, en el único destino donde no hay razón para cortar. Como reparar los enlaces es decisión del dueño y no del estándar, entregarle la lista era la única acción que el hallazgo desbloqueaba, y no se podía entregar. Con la lista entera, 221 dejan de ser 221: salen de **20 notas origen** y **125 de un solo fichero**, repartidos en tres tipos que se arreglan de forma distinta. Una nota de auditoría por vault en `/ans`, `vault-builderx` y `/vcloud`, con autorización explícita por vault, sin crear un solo stub —escondería el hueco en vez de cerrarlo— y sin tocar ningún enlace. El contraste devolvió `frontmatter_unparseable` vacío en los tres: las cuatro notas de `/ans` que no parseaban las lee ya la migración de v40.23 a `vault_lib.parse_frontmatter` |
 | v40.24 | 2026-08-14 | **Trece baselines, doce ficheros, ocho copias del mismo cargar-y-congelar** — tres de ellas con el cuerpo idéntico palabra por palabra y comentándose entre sí. El campo `objetivo` que pedía la capa 7 no se podía añadir sin escribir la novena copia, así que primero aparece el dueño: `vault_baseline` (núcleo, fan-out cero) se queda con la carga, la escritura, el contrato de metadatos y la negativa a crecer, y los `_baseline()` locales sobreviven reducidos a delegación con `superseded_by:`. Salió de ahí un fallo latente de v40.23: `vault_excepcion_declarada` escribía la clave `sitios` y leía `sites`, invisible solo porque la baseline nació vacía — el primer `--freeze` habría devuelto todo lo congelado como nuevo. Con el mecanismo ya en pie, `gancho_sin_presupuesto` deja de ser informativo: los seis ganchos del kernel declaran objetivo, dueño y cadencia en `PRESUPUESTO_DE_GANCHOS`, un séptimo sin declarar falla la puerta, y el vencimiento de la revisión se deriva de `revisado + cadencia_dias` en vez de escribirse. La pendiente de cada baseline sale de `git log` en cada ejecución — escribirla sería AP-53 |
 | v40.23 | 2026-08-14 | **Una nota con doce corchetes tumbaba el barrido entero, y seis parsers llevaban versiones leyendo el vault como si no tuviera frontmatter.** AP-61 «el guard cae con el dato que vino a medir»: `RecursionError` no hereda de `yaml.YAMLError`, así que un `except yaml.YAMLError` alrededor de `safe_load` parece contener el fallo y lo deja subir entero — el radio es asimétrico, el dato malo es una nota y la caída es el vault. El plan contaba cuatro sitios; el barrido por AST encontró **doce**, y se corrigieron los doce en vez de congelarlos, así que la baseline de `vault_excepcion_declarada` **nace vacía**. Medido aparte y peor: los seis parsers de frontmatter escritos con `re.match(r"^---
@@ -7440,6 +7441,54 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v40.26 — 2026-08-14 `git: pending`
+
+**Un fichero de 5.158 líneas que era tres cosas.**
+
+`vault_norms` acumulaba el catálogo de las 73 normas, el motor que audita un vault contra ellas
+y la fachada por la que entra todo el repo. No era deuda de clasificación —su fan-in es 26, no
+el del núcleo—: era que el 60% del fichero lo ocupaba una constante y que las tres piezas no se
+entrelazaban en ningún punto, así que seguían juntas por inercia. Ahora `vault_norms_catalog`
+tiene los datos y no lee el vault, no escribe nada y no importa ninguna tool; `vault_norms_engine`
+tiene `--audit`, el drift del marco y el heal de AP-46; y `vault_norms` se queda con la fachada de
+datos y la CLI.
+
+**La reexportación es el punto del cambio, no un apaño.** La superficie externa real son siete
+símbolos y los tests usan cinco privados más. Reexportarlos todos hace que **ningún llamador se
+toque**, y eso es lo que permite leer el diff como movimiento puro: si algo se rompe, fue el
+movimiento y no una corrección colada dentro. Recortar de paso la superficie que usan los tests
+habría mezclado dos cambios y hecho imposible saber cuál rompió qué.
+
+**Las baselines se migraron a mano, y esa es la parte que no se podía automatizar.**
+`arch-baseline.json` se indexa por la cadena `origen -> destino`, así que catorce cruces vivos
+aparecieron como nuevos y catorce viejos como resueltos sin que nada se hubiera movido de sitio.
+Volver a congelar habría dado el mismo número por un camino que no distingue «este cruce cambió
+de módulo» de «este cruce es nuevo», así que se sustituyó entrada por entrada con el mapeo
+escrito y se verificó la cifra a los dos lados: `crossings_total` 62 y 62, `off_port_total` 12 y
+12. Por lo mismo, el puerto `vault_norms:vault_norms_audit` se declaró en el commit **anterior**:
+hacer las dos cosas a la vez habría hecho ilegible cuál movió la cifra. Igual en
+`ciclos-baseline.json`, donde el renombrado en bloque se pasó de largo con un sitio que no se
+había movido — y donde uno se resolvió de verdad, porque `vault_vocabulario` pide ahora el
+catálogo, que no importa ninguna tool y por tanto no cierra ciclo.
+
+**Dos cosas implícitas que el corte obligó a decir en voz alta.** `vault_vocabulario` declaraba
+`derivado_de="vault_norms:STATUS_VOCAB"`, y de esa declaración sale la exención de AP-49: seguir
+apuntando a la fachada tras mudar el dato habría dejado al fichero que de verdad declara el
+vocabulario contado como copia de sí mismo. Y `vault_norms_coherence` dio **diecisiete
+afirmaciones por sin traza**: el código que nombra cada norma seguía existiendo, había cambiado
+de fichero. Declarar el reparto a mano habría envejecido a la siguiente partición (AP-47), así
+que se deriva de los imports de la propia fachada: si mañana el motor se parte en dos, la traza
+sigue sola; si un módulo deja de importarse, deja de contar.
+
+**Un test que leía el fichero como texto salió reforzado, no parcheado.**
+`test_el_audit_de_normas_conoce_ap40` comprobaba dos afirmaciones sobre el mismo texto, y bastaba
+con que la cadena apareciera en alguna parte de las 5.158 líneas. Ahora se comprueban por
+separado: la norma tiene que estar **declarada** en el catálogo y **verificada** en el motor.
+Leer los dos ficheros concatenados habría dejado pasar el caso en que AP-40 se declara y nadie
+la mide.
 
 ---
 

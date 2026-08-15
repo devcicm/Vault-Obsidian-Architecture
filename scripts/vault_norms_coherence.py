@@ -208,10 +208,38 @@ def _penalizaciones_crudas() -> List[Dict[str, Any]]:
 
 
 def _fuente(tool: str) -> str:
+    """El código de una tool, incluidos los módulos en los que se partió.
+
+    Una tool sigue siendo una cuando su fichero se trocea. `vault_norms` se
+    partió en v40.26 en fachada + `vault_norms_catalog` + `vault_norms_engine`,
+    y de golpe diecisiete afirmaciones del catálogo se volvieron «sin traza»:
+    el código que nombra la norma seguía existiendo, había cambiado de fichero.
+    Declarar el reparto a mano habría envejecido a la siguiente partición
+    (AP-47), así que **se deriva**: se leen los módulos hermanos que la propia
+    fachada importa a nivel superior. Si mañana el motor se parte en dos, la
+    traza sigue sola; si un módulo deja de importarse, deja de contar, que es
+    justo lo que debe pasar.
+    """
     ruta = SCRIPTS_DIR / f"{tool}.py"
     if not ruta.is_file():
         return ""
-    return ruta.read_text(encoding="utf-8", errors="ignore")
+    fuente = ruta.read_text(encoding="utf-8", errors="ignore")
+
+    try:
+        arbol = ast.parse(fuente)
+    except SyntaxError:
+        return fuente
+    for nodo in arbol.body:
+        if not isinstance(nodo, ast.ImportFrom) or not nodo.module:
+            continue
+        # Solo hermanos: `vault_norms` recoge `vault_norms_engine`, nunca
+        # `vault_io`. Importar a otro no es partirse en él.
+        if not nodo.module.startswith(f"{tool}_"):
+            continue
+        parte = SCRIPTS_DIR / f"{nodo.module}.py"
+        if parte.is_file():
+            fuente += "\n" + parte.read_text(encoding="utf-8", errors="ignore")
+    return fuente
 
 
 def _sin_cabecera(fuente: str) -> str:
