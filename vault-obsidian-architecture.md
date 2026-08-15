@@ -7443,7 +7443,7 @@ temp/
 
 ---
 
-### v40.25 — 2026-08-14 `git: pending`
+### v40.25 — 2026-08-14 `git: 81a8788`
 
 **Se sabía que había 221 enlaces rotos y no se podía decir cuáles.**
 
