@@ -7545,7 +7545,7 @@ temp/
 
 ---
 
-### v40.32 — 2026-08-16 `git: pending`
+### v40.32 — 2026-08-16 `git: e62a1e6`
 
 **Lo que se publica es solo el estándar.**
 
