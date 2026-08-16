@@ -44,7 +44,8 @@ está escrita como registro ejecutable y no como recordatorio.
 | `sistemas_operativos` | ¿Se ejecuta en los sistemas donde se dice que corre? | ✅ cubierta | matriz os de la CI (ubuntu-latest, windows-latest) |
 | `superficie_expuesta` | ¿Está escrito qué expone y a quién, donde lo lee quien instala? | ✅ cubierta | INSTALL.md, sección «Servidor MCP» |
 | `ergonomia_de_entrada` | ¿Se invoca como un programa o como un montón de scripts? | ⚠️ descubierta | — |
-| `contrato_con_quien_contribuye` | ¿Sabe alguien de fuera cómo aportar o cómo reportar un fallo? | ⚠️ descubierta | — |
+| `contrato_con_quien_contribuye` | ¿Sabe alguien de fuera cómo aportar o cómo reportar un fallo? | ✅ cubierta | CONTRIBUTING.md + SECURITY.md |
+| `lo_publicado_es_solo_el_estandar` | ¿Puede irse en un push algo que no es de este repo? | ✅ cubierta | tests/test_publicacion_limpia.py (mide el índice de git, no el disco) |
 
 ## Los huecos, escritos
 
@@ -54,9 +55,7 @@ está escrita como registro ejecutable y no como recordatorio.
 
 *Por qué se deja así:* Decisión de producto sin tomar. Declarar entry points ata el nombre público de cada tool del catálogo, y renombrar uno después rompe a quien lo llamara. Se decide el día que esto se publique en un índice de paquetes, no hoy.
 
-**`contrato_con_quien_contribuye` — descubierta.** Hay LICENSE y no hay CONTRIBUTING ni SECURITY. Para un repo público eso no es un detalle de forma: es que un fallo de seguridad no tiene por dónde llegar salvo un issue abierto, que es el peor sitio para reportarlo.
-
-*Por qué se deja así:* Pendiente y barato. Se escribe cuando el repo reciba visitas de fuera; hoy no las tiene, y un CONTRIBUTING que describe un flujo que nadie sigue envejece igual que cualquier doc sin ejecutor.
+**`lo_publicado_es_solo_el_estandar` — cubierta con hueco.** Mide el índice de HOY. Lo que ya esté en un commit anterior del historial no lo ve nadie: para eso haría falta recorrer todos los árboles, y este repo nunca ha versionado esos directorios.
 
 ## Qué NO demuestra el verde
 

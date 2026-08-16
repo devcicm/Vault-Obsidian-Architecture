@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.31 — 2026-08-16  
+**Versión:** v40.32 — 2026-08-16  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -7190,6 +7190,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
 | v40.30 | 2026-08-16 | **Cuatro medidas cuyo alcance declarado era más ancho que el que de verdad recorrían, y tres defectos que solo existen fuera de este repo.** El resultado de una medida así no es un error sino un **cero**, que se lee igual que estar limpio: `cli/` llevaba en `ARBOLES_MEDIDOS` desde v40.9 sin contexto declarado, así que `_mapa_modulos()` devolvía `None` y las dos rutas de detección descartaban sus ficheros antes de leer un import; `vault_ciclos` medía el grafo de `scripts/`, de modo que `vault/` —el paquete que existe para imponer fronteras— era el único cuyos ciclos no contaba nadie; y `vault_audit` recorría el disco 25 veces por invocación para leer lo mismo. Los otros tres salieron de instalar `scripts vault cli mcp` **fuera del repo** y ejecutar contra un vault vacío, que es la regla 7 aplicada al propio programa: la autodetección caía a `repo_root_fallback` —«no encontré nada y estoy suponiendo»— y devolvía el directorio del toolkit, así que las escrituras aterrizaban dentro del programa; el servidor MCP escaneaba hacia arriba y registraba tres vaults ajenos **con `VAULT_ROOT` explícito puesto**, un inventario del disco del usuario expuesto al agente como default; y 23 llamadas a `subprocess` en 13 módulos decodificaban con la locale de la máquina mientras el toolkit emite UTF-8, lo que en cp1252 corrompe el acento en silencio y en cp932 tumba la tool entera. Ninguno de los siete podía verse desde dentro: el entorno que generó la medida comparte sus supuestos |
+| v40.32 | 2026-08-16 | **Lo que se publica es solo el estándar, y ahora lo mide algo.** Al preparar la primera publicación del repositorio apareció la promesa que ninguna puerta cubría: en el mismo disco, al lado del toolkit, viven copias de vaults reales de otros proyectos —notas privadas, runbooks con credenciales, datos de clientes— y lo único que las mantenía fuera de git era el `.gitignore`, que es **advisory**: no para un `git add -f`, ni para un directorio hermano que nadie añada al fichero, ni para una reordenación que rompa la cadena de des-ignorados de `vault-sandbox/`. Un fallo ahí no da error: da un commit publicado, y publicado es publicado aunque se borre después. `tests/test_publicacion_limpia.py` mide **el índice de git**, no el disco, y comprueba las dos direcciones —que nada prohibido entre, y que `tool-spec.json` no salga por exceso de exclusión—. Su propio test de autocomprobación cazó el fallo del primer intento: la exención de rutas de ejemplo buscaba `users` en cualquier posición y casaba con el `C:\Users\` del prefijo, o sea eximía toda ruta de Windows; verde y ciego a la vez, que es el defecto que el fichero existe para no cometer. De paso, `docs/SKILLS.md` afirmaba a mano que `CURRENT_VERSION` era **v39.3** —veintiocho versiones de retraso, en el documento que describe a los agentes qué sabe hacer el vault—: `test_version_coherence` declaraba medir «los cinco sitios» y `docs/` no era ninguno, otra vez alcance declarado más ancho que el recorrido. Y el repositorio estrena `SECURITY.md` y `CONTRIBUTING.md`, que cierran el hueco `contrato_con_quien_contribuye` que v40.31 había publicado como `descubierta` |
 | v40.31 | 2026-08-16 | **La pregunta que ninguna de las veinte puertas se hacía: ¿puede usar esto otra persona?** Todas medían el repo contra sus propios registros —que el catálogo no diverja del JSON, que la baseline no crezca, que el plano no envejezca— y en esa sala no estaba el consumidor. Hecha la pregunta con la versión anterior recién cerrada y todo en verde, apareció un defecto en menos de diez minutos: `pyproject.toml` prometía Python >=3.9 y la CI ejecutaba solo 3.11; seis sitios rompían **al importar** en 3.9 —`ast.AST | None` en una anotación se evalúa al definir la función—, dos de ellos en módulos que importa medio repo, de modo que quien instalara en 3.9 o 3.10 no habría arrancado nada. Es la misma forma que los siete ceros de v40.30 y el mismo argumento que la regla 7, aplicado esta vez a lo que el producto **promete**: `vault_produccion` registra cada promesa hecha a quien instala —versión mínima, dependencias, plataformas, superficie de red, forma de invocación— junto al predicado que la ejerce de verdad, y la puerta falla cuando una promesa marcada como cubierta se queda sin ejecutor. Dos huecos quedan publicados como `descubierta` con el motivo escrito, en vez de tapados |
 | v40.29 | 2026-08-15 | **La baseline de AP-52 llega a cero: 158 sitios en v40.0, nueve al empezar, ninguno al cerrar.** Los nueve que quedaban llevaban desde v40.9 declarados como deuda con el motivo escrito —«la pregunta de fondo no es cómo se escribe el envelope sino quién lo escribe»—: `vault/indices/` y `vault/durabilidad/` devolvían `{"ok": False, "error": ...}`, la forma exacta del envelope de una tool, y tres adaptadores lo reenviaban al consumidor sin `error_code` ni `recovery`. Las dos salidas obvias eran malas: que el dominio importe `vault_errors` lo ata al catálogo de la herramienta y deja de ser dominio; devolver un dict con más campos no mueve nada. La salida es **partir la frase en dos mitades con dueño**: el dominio nombra la **causa** (`vault/kernel/fallos.py`, hoja sin un solo import fuera de `typing`) y la herramienta nombra la **recuperación**, con la tabla de equivalencias en un único sitio (`vault_errors.emit_fallo`) porque copiarla en tres adaptadores habría sido AP-57 cometido al saldar AP-52. Se **levanta** en vez de devolver: un fallo devuelto como valor se ignora por olvido y uno de los cuatro casos es el borrado del vault sin confirmar. Dos códigos nuevos en el catálogo antes que forzar el mapeo a `FILE_NOT_FOUND`, cuyo `recovery` manda ejecutar `vault_search` sobre las notas: un `recovery` que no recupera es peor que ninguno, porque el consumidor sí lo obedece |
 | v40.28 | 2026-08-15 | **La pregunta que v40.27 dejó abierta era «¿cuántas veces más pasa esto?», y a ojo no se contesta con 136 módulos.** El hallazgo de v40.27 —veintiún importadores cruzando una frontera de negocio para leer una tabla— se convierte en norma medida: **AP-62, el consumidor paga el fan-out del productor**, con `vault_recursos` como guard y una vigésima puerta. Una arista es deuda cuando se dan las cuatro: el destino no está en el núcleo, tiene fan-out mayor que cero, todo lo que el origen le pide es un recurso —constante o función pura— y los dos están en contextos distintos. Lo caro fue la tercera: la primera versión miraba referencias directas y daba por «pura» una función que recorre el vault a través de un helper local, que es **AP-44 cometido en la tool que nace para detectar que el consumidor no ve lo que paga**; se arregla propagando el acoplamiento a punto fijo. Medidos diez sitios, se saldan ocho con el mismo movimiento cuatro veces —`vault_version`, `vault_fundamentals_catalog`, `vault_audit_catalog`, `vault_mermaid_reglas`, todos hojas de fan-out cero, con la fachada reexportando por no-derogación—: **10 → 2 sitios, 42 → 35 cruces, cero nuevos**. Los dos que quedan **declaran por qué**: `vault_spec_generate_catalog --write` reescribe `vault_mcp_catalog.py` entero, así que el corte se desharía solo en la primera regeneración. De paso, el test de v40.27 resultó estar **vacío** —comprobaba fan-out contra `grafo()`, que no devuelve una adyacencia, y por tanto era cierto siempre—: el mismo cero fabricado de v40.17, ahora con control negativo |
@@ -7541,6 +7542,63 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v40.32 — 2026-08-16 `git: pending`
+
+**Lo que se publica es solo el estándar.**
+
+Este repositorio es público y convive en el disco con `_datasets/`, `_datasets-reports/` y
+`_backups-builderx/`: copias de vaults reales de otros proyectos, con notas privadas, runbooks
+con credenciales y datos de clientes. Se copian aquí para estudiar cómo se degradan los vaults
+en uso real y volcar esas conclusiones en normas — nunca para versionarlas.
+
+Hasta hoy eso lo sostenía **solo el `.gitignore`**, y un `.gitignore` es advisory. No protege
+de un `git add -f`, no protege de un directorio hermano nuevo que nadie añada al fichero, y no
+protege de que una reordenación rompa la cadena de des-ignorados que mantiene versionado
+`vault-sandbox/00_System/tool-spec.json`. Un fallo ahí no devuelve error: devuelve un commit
+publicado. Y publicado es publicado aunque se borre después — queda en el historial, en los
+forks y en la caché de quien lo indexó.
+
+`tests/test_publicacion_limpia.py` lo convierte en registro ejecutable, midiendo **el índice de
+git** y no el disco, que es lo que de verdad se sube. Cubre las dos direcciones: que nada
+prohibido entre, y que el contrato de tools no salga por exceso de exclusión. La auditoría
+previa confirmó, recorriendo todas las ramas, que ninguno de esos directorios ha estado nunca
+en un commit.
+
+**El guard cazó su propio fallo antes que ninguna revisión.** La exención de rutas de ejemplo
+buscaba `users` en cualquier posición de la ruta, y casaba con el `C:\Users\` del prefijo: eximía
+**toda** ruta de Windows. Habría estado verde sin mirar nada. Lo destapó el test de
+autocomprobación que acompaña al barrido y se corrigió anclando la comprobación al segmento de
+usuario. Los dos falsos positivos reales quedan **declarados con su motivo** en vez de aflojar
+los patrones: los fixtures de `tests/test_vault_secret_scan.py` son secretos a propósito, porque
+un escáner de secretos sin secretos de prueba no prueba nada.
+
+`vault_produccion` gana la promesa como novena pregunta, con su hueco escrito: mide el índice de
+hoy, no el historial.
+
+**El sexto sitio de la versión, que eran todos los demás.** `docs/SKILLS.md` afirmaba a mano que
+`CURRENT_VERSION` era **v39.3** con el estándar en v40.31: veintiocho versiones de retraso, en el
+documento que a los agentes les describe qué capacidades tiene el vault. No falló nada, y esa es
+la cuestión — el docstring de `test_version_coherence` declaraba medir «los cinco sitios donde se
+escribe la versión», `docs/` no era ninguno de los cinco, y el hueco devolvía verde. Es
+exactamente la forma que `vault_produccion` nombra, cometida dentro del test escrito para
+impedirla. La cura no es actualizar el número: es no escribirlo. `docs/SKILLS.md` apunta ahora a
+su dueño, y un barrido recorre **todo** el markdown del repo en vez de llevar lista. El barrido
+se verifica en las dos direcciones antes de creerse nada: contra la cadena histórica que lo
+motivó —la primera versión estricta pasaba en verde **sin cazarla**, porque un backtick estaba
+donde el patrón esperaba un espacio— y contra tres menciones legítimas del pasado, porque un
+guard con falsos positivos acaba desactivado y entonces tampoco protege.
+
+**El canal para quien llega de fuera.** `SECURITY.md` declara el modelo de amenaza que hasta
+ahora solo estaba en la cabeza de quien lo escribió —el servidor MCP escucha en `127.0.0.1` sin
+autenticación **por diseño**, y ponerlo detrás de un proxy inverso publica el vault entero— y
+abre el reporte privado de vulnerabilidades. `CONTRIBUTING.md` publica el estado real del
+proyecto, sus riesgos conocidos y las reglas duras del repo, con el argumento de por qué un
+reporte de fuera vale más que una puerta más: todas las puertas miden el repo contra sí mismo, y
+en esa sala no está el consumidor. `README.md` lo lleva a la portada, antes de que nadie
+instale nada.
 
 ---
 

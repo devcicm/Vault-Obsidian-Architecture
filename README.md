@@ -2,11 +2,47 @@
 
 **Estándar de diseño para dotar a agentes LLM de memoria documental persistente.**
 
-[![Version](https://img.shields.io/badge/version-v40.31-blue)](./vault-obsidian-architecture.md)
+[![Version](https://img.shields.io/badge/version-v40.32-blue)](./vault-obsidian-architecture.md)
 [![Tools](https://img.shields.io/badge/tools-108_active-green)](./scripts/)
 [![Scripts](https://img.shields.io/badge/scripts-143_total-lightblue)](./scripts/)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow)](./scripts/)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](./LICENSE)
+
+---
+
+## Estado del proyecto — léelo antes de instalar
+
+**Funciona y se usa a diario, lo mantiene una persona, y evoluciona rápido.** Eso
+último no es un adorno: significa que hay cosas que todavía no están probadas
+donde importa, y prefiero decirlas aquí que dejar que las descubras tú.
+
+- **Se instala copiando carpetas.** No está en PyPI ni en npm, y no hay comando
+  `vault`: se invoca `python .../scripts/vault_x.py`. Ver [`INSTALL.md`](./INSTALL.md).
+- **El paseo de instalación fuera del repo solo se ha medido en Windows.** La CI
+  corre la suite en Linux y Windows; instalar-y-usar fuera del repositorio, no.
+  macOS no lo toca nadie.
+- **El servidor MCP escucha en `127.0.0.1` sin autenticación**, por diseño.
+  Ponerlo detrás de un proxy inverso publica el vault entero. Lee
+  [`SECURITY.md`](./SECURITY.md) antes de exponerlo a nada.
+- **Contra un vault que no sea tuyo, primero solo lectura:**
+  `python scripts/vault_foreign_check.py --root <ruta>`.
+
+Los huecos conocidos no están escondidos: están **medidos** y publicados en
+[`docs/GUIA-DE-PRODUCCION.md`](./docs/GUIA-DE-PRODUCCION.md), que se genera desde
+un registro ejecutable — si un hueco se cierra, la guía cambia sola; si alguien
+lo declara cerrado sin cerrarlo, falla una puerta.
+
+### Los issues están abiertos, y los de fuera son los que más valen
+
+Incluido el que solo dice «lo intenté y me perdí en el minuto dos». La razón es
+concreta: **todas las puertas de calidad de este repo miden el repo contra sí
+mismo**, y en esa sala no está el consumidor. La primera vez que se preguntó en
+serio «¿puede usar esto otra persona?» apareció en diez minutos un defecto que
+ninguna puerta veía — el paquete prometía Python 3.9 y ninguna máquina ejecutaba
+3.9. Tú ves lo que el proyecto no puede verse.
+
+Cómo reportar, qué adjuntar y cómo enviar un PR: [`CONTRIBUTING.md`](./CONTRIBUTING.md).
+Fallos de **seguridad**, en privado: [`SECURITY.md`](./SECURITY.md).
 
 ---
 

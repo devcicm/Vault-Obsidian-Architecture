@@ -161,7 +161,15 @@ python scripts/vault_sdd_init.py --bilingual --force
 
 #### Prerrequisitos
 
-- vault-spec >= v36.0 (`CURRENT_VERSION` actual: **v39.3**)
+- vault-spec >= v36.0. **La versión vigente no se escribe aquí:** su dueño es
+  `vault_version.CURRENT_VERSION`, y se lee con
+  `python -c "import sys; sys.path.insert(0,'scripts'); import vault_version; print(vault_version.CURRENT_VERSION)"`.
+  Escrita a mano decía **v39.3** durante veintiocho versiones, en el mismo
+  documento que dos párrafos más abajo explica por qué una cifra no se codifica
+  en la skill. `test_version_coherence` no la veía porque vigilaba cinco sitios
+  conocidos —banner, badge, `pyproject`, sandbox, CLI— y `docs/` no era ninguno:
+  alcance declarado más ancho que el recorrido, que es el defecto que
+  `vault_produccion` existe para nombrar. Desde v40.32 lo barre un test.
 - `NORM_CATALOG` legible — **74 normas** hoy. El desglose por familia tampoco se
   escribe aquí: se leía «37 AP + 6 PAT + 3 SP + 3 CN», que suma 49 y no 59, y
   las puertas lo dejaron pasar porque `vault_doc_counts` vigila el total y no

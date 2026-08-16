@@ -112,3 +112,122 @@ def test_el_banner_de_la_cli_coincide():
     m = re.search(r"\*\*(v\d+\.\d+) ", texto)
     assert m, "no se encontró el banner de versión en cli/README.md"
     assert m.group(1) == VERSION
+
+
+# ---------------------------------------------------------------------------
+# v40.32 — el sexto sitio, que eran todos los demás.
+#
+# Los cinco tests de arriba miden los cinco sitios que alguien recordó listar.
+# `docs/SKILLS.md` decía «`CURRENT_VERSION` actual: **v39.3**» con el estándar
+# en v40.31: veintiocho versiones de retraso en el documento que a los agentes
+# les describe qué capacidades tiene el vault. No falló nada — el alcance
+# declarado de este fichero («la versión se declara en cinco sitios») era más
+# ancho que el conjunto de sitios donde de verdad se escribe, y el hueco
+# devolvía verde.
+#
+# Es el mismo defecto que `vault_produccion` nombra, cometido dentro del test
+# que existe para impedirlo. Por eso el barrido no lleva lista: recorre.
+
+#: Solo la forma que **afirma vigencia**: un nombre de versión, un conector de
+#: igualdad (`:` o `es`) y el número, sin nada en medio.
+#:
+#: El primer intento fue laxo —cualquier `v\d+\.\d+` a menos de 80 caracteres de
+#: la palabra «versión»— y marcó tres sitios legítimos: «hoja del núcleo **desde**
+#: v40.28» en `CLAUDE.md` y dos entradas de changelog que citan bugs antiguos.
+#: Eso es historia, no una afirmación de qué versión corre hoy, y un guard que
+#: la marca acaba desactivado. La lección ya está escrita en
+#: `vault_doc_counts.COUNTED_FACTS`, donde el patrón de `scripts` exige la coma
+#: por este mismo motivo: preferir no ver un sitio a ver uno que no lo es.
+#: El adorno de markdown —backticks, negritas— va entre los dos, y la primera
+#: versión estricta no lo contemplaba: pasaba en verde **sin cazar el caso para
+#: el que se escribió**, porque el original decía «`CURRENT_VERSION` actual:» con
+#: el backtick justo donde el patrón esperaba un espacio. Un guard verde que no
+#: ve su propio motivo es AP-44 en estado puro, y por eso el test de abajo se
+#: verifica contra la cadena histórica antes de creerse nada.
+_ADORNO = r"[`*_\s]*"
+
+VERSIONES_EN_DOCS = re.compile(
+    r"(?:CURRENT_VERSION|[Vv]ersión (?:vigente|actual|del estándar))"
+    + _ADORNO + r"(?:actual|vigente)?" + _ADORNO
+    + r"(?:es|:|=)" + _ADORNO + r"v(\d+\.\d+)"
+)
+
+#: La cadena exacta que estuvo veintiocho versiones desfasada en `docs/SKILLS.md`.
+#: Se conserva como fixture, no como comentario: un ejemplo que no se ejecuta no
+#: prueba nada.
+CASO_HISTORICO = "- vault-spec >= v36.0 (`CURRENT_VERSION` actual: **v39.3**)"
+
+
+def _docs_del_repo():
+    """Todo markdown del repo salvo el vault de pruebas, lo archivado y `_datasets/`.
+
+    `_datasets/` queda fuera por dos razones que se refuerzan: es material de
+    vaults ajenos que este repo no generó —medirlo con nuestro criterio sería
+    lo contrario de la regla 7— y está fuera de git a propósito. Las versiones
+    que ahí se afirmen son del dueño de ese vault, no nuestras.
+
+    El manifiesto sí entra: su changelog cita versiones antiguas, pero como
+    historia (`### v40.30 — …`), nunca afirmando cuál es la vigente, y el patrón
+    de arriba solo mira la forma que afirma.
+    """
+    excluidos = (".git", "vault-sandbox", "node_modules", ".venv",
+                 "_archived", "_datasets", "_datasets-reports", "_backups-builderx")
+    return [
+        p for p in sorted(ROOT.rglob("*.md"))
+        if not any(x in p.parts for x in excluidos)
+    ]
+
+
+def test_ningun_documento_afirma_una_version_vigente_desfasada():
+    """Una versión escrita a mano en prosa es AP-47, y envejece callada.
+
+    La cura no es actualizarla: es no escribirla. Un documento que necesita
+    nombrar la versión vigente apunta a `vault_version.CURRENT_VERSION` —que es
+    su dueño— en vez de copiarla, igual que `docs/SKILLS.md` hace desde v40.32.
+    """
+    culpables = []
+    for ruta in _docs_del_repo():
+        texto = ruta.read_text(encoding="utf-8", errors="replace")
+        for m in VERSIONES_EN_DOCS.finditer(texto):
+            if m.group(1) != NUMERO:
+                linea = texto[: m.start()].count("\n") + 1
+                culpables.append(
+                    f"{ruta.relative_to(ROOT).as_posix()}:{linea}: "
+                    f"afirma v{m.group(1)}, vigente {VERSION}"
+                )
+    assert not culpables, (
+        "versión vigente escrita a mano y desfasada. No la actualices: "
+        "quítala y apunta a `vault_version.CURRENT_VERSION`, que es su dueño.\n  "
+        + "\n  ".join(culpables)
+    )
+
+
+def test_el_barrido_caza_el_caso_que_lo_motivo():
+    """Sin esto, el test de arriba puede estar verde por no mirar bien.
+
+    Es la trampa que este repo llama AP-44: verificar con el criterio propio.
+    Un barrido que no encuentra el defecto documentado no está limpio — está
+    ciego, y las dos cosas se leen igual desde fuera.
+    """
+    hallado = VERSIONES_EN_DOCS.findall(CASO_HISTORICO)
+    assert hallado == ["39.3"], (
+        f"el patrón no ve el caso histórico: {hallado!r}. Un guard que no caza "
+        "su propio motivo no protege de nada."
+    )
+
+
+def test_el_barrido_no_marca_una_mencion_historica():
+    """La otra mitad: no marcar lo que legítimamente cita una versión pasada.
+
+    Un guard con falsos positivos se desactiva, y entonces no protege tampoco.
+    Estas tres cadenas son reales del repo y las tres deben pasar limpias.
+    """
+    historicas = [
+        "`vault_version.CURRENT_VERSION` — hoja del núcleo desde v40.28.",
+        "la versión del estándar decía «v19 → v20» cuando el registro traía otra",
+        "### v40.30 — 2026-08-16 `git: b03e968`",
+    ]
+    for texto in historicas:
+        assert not VERSIONES_EN_DOCS.findall(texto), (
+            f"falso positivo sobre una mención histórica: {texto!r}"
+        )

@@ -35,4 +35,4 @@ generador de los cinco sería mover el problema, no resolverlo.
 #: La versión del estándar en curso. Se sube a mano en la tanda que la cierra,
 #: junto con el banner del manifiesto, la tabla de versiones, el badge del
 #: README, `pyproject.toml` y el `tool-spec.json` del sandbox.
-CURRENT_VERSION = "v40.31"
+CURRENT_VERSION = "v40.32"

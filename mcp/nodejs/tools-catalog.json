@@ -5436,5 +5436,5 @@
     "vault_backup_base64",
     "vault_restore_base64"
   ],
-  "standard_version": "v40.31"
+  "standard_version": "v40.32"
 }

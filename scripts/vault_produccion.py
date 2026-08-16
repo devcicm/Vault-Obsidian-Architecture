@@ -245,18 +245,35 @@ PREGUNTAS: List[Dict[str, Any]] = [
         "pregunta": "¿Sabe alguien de fuera cómo aportar o cómo reportar un fallo?",
         "promesa": "Repositorio público",
         "por_que": (
-            "Hay LICENSE y no hay CONTRIBUTING ni SECURITY. Para un repo "
-            "público eso no es un detalle de forma: es que un fallo de "
-            "seguridad no tiene por dónde llegar salvo un issue abierto, que es "
-            "el peor sitio para reportarlo."
+            "Para un repo público esto no es un detalle de forma: sin canal "
+            "declarado, un fallo de seguridad no tiene por dónde llegar salvo "
+            "un issue abierto, que es el peor sitio para reportarlo."
         ),
         "ejerce": lambda: _existe("CONTRIBUTING.md") and _existe("SECURITY.md"),
-        "quien": "—",
-        "estado": "descubierta",
-        "motivo": (
-            "Pendiente y barato. Se escribe cuando el repo reciba visitas de "
-            "fuera; hoy no las tiene, y un CONTRIBUTING que describe un flujo "
-            "que nadie sigue envejece igual que cualquier doc sin ejecutor."
+        "quien": "CONTRIBUTING.md + SECURITY.md",
+        "estado": "cubierta",
+    },
+    {
+        "id": "lo_publicado_es_solo_el_estandar",
+        "pregunta": "¿Puede irse en un push algo que no es de este repo?",
+        "promesa": "Repositorio público que convive con copias de vaults reales",
+        "por_que": (
+            "En el mismo disco, al lado del estándar, viven `_datasets/`, "
+            "`_datasets-reports/` y `_backups-builderx/`: notas privadas de "
+            "otros proyectos, runbooks con credenciales, datos de clientes. "
+            "Hasta hoy eso lo sostenía solo el `.gitignore`, que es advisory: "
+            "no para un `git add -f` ni un directorio hermano nuevo que nadie "
+            "añada al fichero. Y publicado es publicado, aunque se borre "
+            "después — la copia queda en el historial, en los forks y en la "
+            "caché de quien lo indexó."
+        ),
+        "ejerce": lambda: _existe("tests/test_publicacion_limpia.py"),
+        "quien": "tests/test_publicacion_limpia.py (mide el índice de git, no el disco)",
+        "estado": "cubierta",
+        "hueco_conocido": (
+            "Mide el índice de HOY. Lo que ya esté en un commit anterior del "
+            "historial no lo ve nadie: para eso haría falta recorrer todos los "
+            "árboles, y este repo nunca ha versionado esos directorios."
         ),
     },
 ]
