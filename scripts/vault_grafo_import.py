@@ -45,6 +45,9 @@ Fan-out cero, solo stdlib. Es la condición para que lo pueda consumir cualquier
 criterio que importa a sus consumidores no es un dueño: es un nudo.
 """
 
+from __future__ import annotations
+
+
 import ast
 from pathlib import Path
 from typing import Dict, Iterable, Set

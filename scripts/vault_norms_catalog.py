@@ -21,6 +21,9 @@ puras y no hacen otra cosa que consultarlos; separarlas de sus datos habría
 creado un cruce donde no hay ninguno.
 """
 
+from __future__ import annotations
+
+
 import re
 from typing import Any, Dict, List
 

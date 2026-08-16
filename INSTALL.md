@@ -6,9 +6,19 @@ dónde está el vault.
 
 ## Requisitos
 
-- **Python 3.9+**. Nada más: el toolkit vive de la stdlib. PyYAML es opcional y cada
-  módulo que lo importa tiene su `except ImportError` — sin él se pierde el parseo
-  estricto de frontmatter, no la ejecución.
+- **Python 3.9+** — medido, no prometido: los 142 módulos importan en 3.9.13, y la CI
+  prueba ese piso además de 3.11 en Linux y Windows.
+- **PyYAML**. Es la única dependencia fuera de la stdlib, y **no es opcional**: seis
+  módulos la importan sin red, entre ellos `vault_write` (el camino de escritura) y
+  `vault_validate`. Sin ella el resto del toolkit funciona y esos seis no arrancan.
+
+  ```bash
+  pip install PyYAML
+  ```
+
+  Que el frontmatter se lea con YAML de verdad y no con un regex por líneas es la
+  norma AP-44 del estándar, no una preferencia: Obsidian resuelve títulos compuestos,
+  listas y anidamiento como YAML, y medir con otra vara es certificarse a uno mismo.
 - **Node 18+** solo si vas a usar el servidor MCP. Cero dependencias npm.
 
 ## Instalación

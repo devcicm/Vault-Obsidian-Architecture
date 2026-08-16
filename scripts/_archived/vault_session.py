@@ -35,6 +35,9 @@ superseded_by: vault_delta.py
 reason: La sesion se deriva del cambio real registrado, no de un log a mano.
 """
 
+from __future__ import annotations
+
+
 import argparse
 import json
 import sys

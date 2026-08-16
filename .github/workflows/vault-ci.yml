@@ -14,7 +14,13 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        python-version: ['3.11']
+        # El piso tiene que ejecutarse en algún sitio o no es soporte, es una
+        # promesa. `pyproject.toml` dice >=3.9 y aquí solo corría 3.11: seis
+        # sitios rompían al IMPORTAR en 3.9 —`ast.AST | None` evaluado al
+        # definir— sin que nada lo viera, dos de ellos en módulos que importa
+        # medio repo. `tests/test_piso_python.py` falla si esta lista y
+        # `requires-python` vuelven a divergir.
+        python-version: ['3.9', '3.11']
 
     steps:
       - name: Checkout
