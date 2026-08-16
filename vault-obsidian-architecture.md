@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.29 — 2026-08-15  
+**Versión:** v40.30 — 2026-08-16  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -7189,6 +7189,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v37 | 2026-07-01 | MCP Server Monolith (JSON-RPC 2.0, stdio + SSE, 76 tools, cero dependencias npm), 3 validadores nuevos del Guard Chain, mejoras de graph-fix/graph-inspect |
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
+| v40.30 | 2026-08-16 | **Cuatro medidas cuyo alcance declarado era más ancho que el que de verdad recorrían, y tres defectos que solo existen fuera de este repo.** El resultado de una medida así no es un error sino un **cero**, que se lee igual que estar limpio: `cli/` llevaba en `ARBOLES_MEDIDOS` desde v40.9 sin contexto declarado, así que `_mapa_modulos()` devolvía `None` y las dos rutas de detección descartaban sus ficheros antes de leer un import; `vault_ciclos` medía el grafo de `scripts/`, de modo que `vault/` —el paquete que existe para imponer fronteras— era el único cuyos ciclos no contaba nadie; y `vault_audit` recorría el disco 25 veces por invocación para leer lo mismo. Los otros tres salieron de instalar `scripts vault cli mcp` **fuera del repo** y ejecutar contra un vault vacío, que es la regla 7 aplicada al propio programa: la autodetección caía a `repo_root_fallback` —«no encontré nada y estoy suponiendo»— y devolvía el directorio del toolkit, así que las escrituras aterrizaban dentro del programa; el servidor MCP escaneaba hacia arriba y registraba tres vaults ajenos **con `VAULT_ROOT` explícito puesto**, un inventario del disco del usuario expuesto al agente como default; y 23 llamadas a `subprocess` en 13 módulos decodificaban con la locale de la máquina mientras el toolkit emite UTF-8, lo que en cp1252 corrompe el acento en silencio y en cp932 tumba la tool entera. Ninguno de los siete podía verse desde dentro: el entorno que generó la medida comparte sus supuestos |
 | v40.29 | 2026-08-15 | **La baseline de AP-52 llega a cero: 158 sitios en v40.0, nueve al empezar, ninguno al cerrar.** Los nueve que quedaban llevaban desde v40.9 declarados como deuda con el motivo escrito —«la pregunta de fondo no es cómo se escribe el envelope sino quién lo escribe»—: `vault/indices/` y `vault/durabilidad/` devolvían `{"ok": False, "error": ...}`, la forma exacta del envelope de una tool, y tres adaptadores lo reenviaban al consumidor sin `error_code` ni `recovery`. Las dos salidas obvias eran malas: que el dominio importe `vault_errors` lo ata al catálogo de la herramienta y deja de ser dominio; devolver un dict con más campos no mueve nada. La salida es **partir la frase en dos mitades con dueño**: el dominio nombra la **causa** (`vault/kernel/fallos.py`, hoja sin un solo import fuera de `typing`) y la herramienta nombra la **recuperación**, con la tabla de equivalencias en un único sitio (`vault_errors.emit_fallo`) porque copiarla en tres adaptadores habría sido AP-57 cometido al saldar AP-52. Se **levanta** en vez de devolver: un fallo devuelto como valor se ignora por olvido y uno de los cuatro casos es el borrado del vault sin confirmar. Dos códigos nuevos en el catálogo antes que forzar el mapeo a `FILE_NOT_FOUND`, cuyo `recovery` manda ejecutar `vault_search` sobre las notas: un `recovery` que no recupera es peor que ninguno, porque el consumidor sí lo obedece |
 | v40.28 | 2026-08-15 | **La pregunta que v40.27 dejó abierta era «¿cuántas veces más pasa esto?», y a ojo no se contesta con 136 módulos.** El hallazgo de v40.27 —veintiún importadores cruzando una frontera de negocio para leer una tabla— se convierte en norma medida: **AP-62, el consumidor paga el fan-out del productor**, con `vault_recursos` como guard y una vigésima puerta. Una arista es deuda cuando se dan las cuatro: el destino no está en el núcleo, tiene fan-out mayor que cero, todo lo que el origen le pide es un recurso —constante o función pura— y los dos están en contextos distintos. Lo caro fue la tercera: la primera versión miraba referencias directas y daba por «pura» una función que recorre el vault a través de un helper local, que es **AP-44 cometido en la tool que nace para detectar que el consumidor no ve lo que paga**; se arregla propagando el acoplamiento a punto fijo. Medidos diez sitios, se saldan ocho con el mismo movimiento cuatro veces —`vault_version`, `vault_fundamentals_catalog`, `vault_audit_catalog`, `vault_mermaid_reglas`, todos hojas de fan-out cero, con la fachada reexportando por no-derogación—: **10 → 2 sitios, 42 → 35 cruces, cero nuevos**. Los dos que quedan **declaran por qué**: `vault_spec_generate_catalog --write` reescribe `vault_mcp_catalog.py` entero, así que el corte se desharía solo en la primera regeneración. De paso, el test de v40.27 resultó estar **vacío** —comprobaba fan-out contra `grafo()`, que no devuelve una adyacencia, y por tanto era cierto siempre—: el mismo cero fabricado de v40.17, ahora con control negativo |
 | v40.27 | 2026-08-14 | **Veinte de los sesenta y dos cruces de contexto eran tools leyendo una tabla constante.** Los cruces de `arch-baseline.json` llevaban veintiséis versiones subiendo —48 → 62— sin que ninguna puerta se pusiera roja, y la medida dice por qué: veinticuatro de ellos iban al mismo destino, `vault_norms`, y veintiuno de sus veinticuatro importadores solo pedían datos. Hasta v40.26 eso no se podía ver, porque el catálogo compartía fichero con el motor que lo audita; partido, quedó con **fan-out cero** —ni un `vault_*`, solo `re` y `typing`—, que es la forma exacta de `vault_registry`, ya en el núcleo. Se muda allí, `compute_norm_refs` se va con él por ser derivación pura de catálogo, y los veintiún importadores pasan a pedirle el dato al dueño en vez de a la fachada que arrastra el motor entero. **62 → 42 cruces, cero nuevos, `off_port_total` intacto en 12.** Y como la cifra bajó por un movimiento y no por una regla más laxa, se añade lo que faltaba para que no vuelva a subir: `PRESUPUESTO_DE_CRUCES` presupuesta el **par de contextos**, no el sitio —«Autoría depende de Gobernanza» se decide una vez—, con `permanente`, `a_eliminar` + fecha o `en_estudio` + hipótesis escrita, y un par nuevo **bloquea la puerta**. La baseline decía cuánta deuda hay; esto dice hacia dónde va, que es la pregunta que nadie tuvo que responder mientras la cifra crecía |
@@ -7541,6 +7542,76 @@ temp/
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
 
 ---
+
+### v40.30 — 2026-08-16 `git: pending`
+
+**Siete ceros que se leían como estar limpio.**
+
+Las cuatro primeras correcciones comparten una sola forma de defecto: una medida cuyo
+**alcance declarado es más ancho que el alcance que de verdad recorre**. No produce un
+error —produce un cero—, y un cero es la peor salida posible de un guard porque es
+indistinguible de no tener nada que reportar.
+
+- **`cli/` estaba medido y sin clasificar.** Llevaba en `vault_arch.ARBOLES_MEDIDOS` desde
+  v40.9, pero `CONTEXTS` no declaraba un contexto `cli`, así que `_mapa_modulos()` devolvía
+  `None` para sus ficheros y las dos rutas de detección los tiraban con
+  `if origen is None: continue` antes de leer un solo import. Al declararlo aparece un cruce
+  que existía desde que existe la CLI. La baseline **solo puede encoger**, así que la entrada
+  se declara como `excepcion_de_alcance` dentro del propio fichero, con el motivo escrito y
+  la anotación de que no es precedente: solo vale para deuda preexistente que un ensanche
+  saca a la luz. Contarla como deuda nueva presionaría en la dirección contraria —dejar el
+  punto ciego para no ensuciar la cifra—. Y `--freeze` la habría borrado en la siguiente
+  regeneración, así que ahora la conserva.
+- **`vault_ciclos` no medía `vault/`.** Medía el grafo de `scripts/`, de modo que el paquete
+  que existe precisamente para imponer fronteras era el único cuyos ciclos no contaba nadie.
+  Se mide sin tocar `vault_grafo_import`: de la forma de **ese** grafo derivan los umbrales
+  de AP-59, y ensancharlo movería todos los escalones y varias baselines a la vez —la
+  lección de v40.26—. Aparece un ciclo, el de la raíz de composición con lo que compone, y
+  se declara con su porqué en vez de congelarse.
+- **`vault_audit` recorría el disco 25 veces por invocación** para leer el mismo contenido.
+  Quedan 2, con salida byte a byte idéntica.
+
+Las otras tres salieron de **instalar el toolkit fuera del repo** —`scripts vault cli mcp`
+copiadas a otro sitio, contra un vault vacío— y son la regla 7 aplicada al propio programa:
+una medida tomada en el entorno que la generó comparte sus supuestos y no puede exhibir el
+fallo. La suite completa corre dentro del repo, donde los tres pasaban en verde.
+
+- **Escribir sobre una raíz que nadie identificó.** `vault_root_is_confident()` existía
+  desde v39 y no lo consultaba nadie. Fuera del repo, `_detect_vault_root()` cae a
+  `repo_root_fallback` —que significa literalmente «no encontré nada y estoy suponiendo»— y
+  devuelve el directorio del propio programa: las escrituras sembraban artefactos de vault
+  **dentro del toolkit**. Se rechaza en `atomic_write_text`, que es el único cuello por el
+  que pasa toda escritura, y no en la detección: levantar allí rompería `import vault_io`,
+  porque `VAULT_ROOT` se resuelve en tiempo de import. **Leer sigue permitido**: el daño
+  empieza al escribir, y rechazar la lectura habría roto el diagnóstico justo cuando hace
+  falta diagnosticar. `VAULT_PERMISSIVE_ROOT=1` devuelve el comportamiento anterior.
+- **El servidor MCP inventariaba el disco del usuario.** Escaneaba `join(REPO_ROOT, "..")`,
+  que aquí es el repo y fuera es una carpeta cualquiera: instalado fuera registró y expuso
+  al agente tres vaults ajenos **con `VAULT_ROOT` explícito puesto**. Dentro del repo el
+  barrido es legítimo —los vaults de al lado son los consumidores conocidos—; fuera, el
+  default pasa a ser no mirar nada. El marcador que distingue un caso del otro es el mismo
+  con el que Python decide `spec_repo_sandbox`, para que las dos mitades del toolkit no
+  discrepen sobre qué significa «estar dentro del repo».
+- **23 llamadas a `subprocess` leían al hijo con la locale de la máquina.** `text=True` sin
+  `encoding` decodifica con `locale.getpreferredencoding()`, la del sistema donde corre y no
+  la del proceso que escribió; todo este toolkit emite UTF-8. Es AP-44 cruzando una frontera
+  de proceso en vez de una de módulo. Medido: `"el Ã­ndice dejÃ³ de reflejar el disco"`
+  dentro de los envelopes que devuelve `vault_init`, y en cp932 o cp949 no es cosmético sino
+  un `UnicodeDecodeError` que tumba la tool por un acento. La corrección **no** es añadir
+  `encoding="utf-8"` en 23 sitios —eso es escribir el mismo criterio 23 veces, AP-57 con
+  nombre y apellidos y en el repo que publica esa norma—: es `vault_subproceso`, hoja del
+  kernel sin un solo import `vault_*`, con su propio detector AST al lado del dueño.
+- **Dos cifras a mano al otro lado de la frontera de lenguaje.** El `.mjs` anunciaba
+  `v39.3 (SDD)` con el estándar en v40.29 y «las 71 herramientas» cuando eran 107 — en el
+  handshake, en `--version` y en cada evento SSE, o sea en la superficie que ve el agente.
+  `vault_doc_counts` no llega ahí porque mira Python, así que la versión viaja por la única
+  pasarela que sí cruza, `tools-catalog.json`, y `--check` falla si se desfasa. El literal
+  que queda en el `.mjs` es solo el respaldo de arranque, y se llama así: si aparece en una
+  respuesta, es que el catálogo no cargó.
+
+Además, `INSTALL.md`: tres pasos, y el porqué de que `VAULT_ROOT` deje de ser opcional
+fuera del repo. El servidor SSE escucha solo en `127.0.0.1` y no tiene autenticación —es
+local por diseño—, y eso ahora está escrito donde lo lee quien lo instala.
 
 ### v40.29 — 2026-08-15 `git: ab844c1`
 

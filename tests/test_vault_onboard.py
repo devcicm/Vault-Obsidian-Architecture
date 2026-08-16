@@ -19,6 +19,8 @@ necesita sanación.**
 import json
 import os
 import subprocess
+
+import vault_subproceso
 import sys
 from pathlib import Path
 
@@ -109,12 +111,12 @@ def vault(tmp_path_factory, proyecto):
         [sys.executable, str(SCRIPTS / "vault_init.py")],
         env=env, capture_output=True, timeout=600,
     )
-    r = subprocess.run(
+    r = vault_subproceso.ejecutar(
         [
             sys.executable, str(SCRIPTS / "vault_onboard.py"),
             "--project", "demo-api", "--path", str(proyecto),
         ],
-        env=env, capture_output=True, text=True, timeout=600,
+        env=env, capture_output=True, timeout=600,
     )
     salida = json.loads(r.stdout)
     assert salida.get("ok"), salida
@@ -122,11 +124,11 @@ def vault(tmp_path_factory, proyecto):
 
 
 def _correr(script, vault_root, *args):
-    r = subprocess.run(
+    r = vault_subproceso.ejecutar(
         [sys.executable, str(SCRIPTS / script), *args],
         env={**os.environ, "VAULT_ROOT": str(vault_root),
              "PYTHONIOENCODING": "utf-8", "VAULT_TOOL_TIMEOUT": "600"},
-        capture_output=True, text=True, timeout=600,
+        capture_output=True, timeout=600,
     )
     return json.loads(r.stdout)
 
@@ -229,7 +231,7 @@ def test_el_bom_del_readme_no_viaja_al_frontmatter(vault):
 def test_el_tope_de_historia_se_declara_cuando_se_alcanza(proyecto, tmp_path):
     """`total_commits: 500` con `warnings: []` presentaba un parámetro de la
     invocación como un hecho del proyecto."""
-    r = subprocess.run(
+    r = vault_subproceso.ejecutar(
         [
             sys.executable, str(SCRIPTS / "vault_onboard.py"),
             "--project", "demo-api", "--path", str(proyecto),
@@ -237,7 +239,7 @@ def test_el_tope_de_historia_se_declara_cuando_se_alcanza(proyecto, tmp_path):
         ],
         env={**os.environ, "VAULT_ROOT": str(tmp_path), "PYTHONIOENCODING": "utf-8",
              "VAULT_TOOL_TIMEOUT": "600"},
-        capture_output=True, text=True, timeout=600,
+        capture_output=True, timeout=600,
     )
     salida = json.loads(r.stdout)
     assert any("max-commits" in w for w in salida["warnings"]), salida["warnings"]

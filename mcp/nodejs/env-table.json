@@ -16,6 +16,13 @@
       "purpose": "Hace fallar una detección insegura en vez de caer a la raíz del repo. Basta con estar definida (comportamiento heredado)."
     },
     {
+      "name": "VAULT_PERMISSIVE_ROOT",
+      "type": "bandera",
+      "default": false,
+      "context": "kernel",
+      "purpose": "Permite ESCRIBIR sobre una raíz detectada con baja confianza (`repo_root_fallback`). Sin ella, leer con esa raíz sigue permitido y escribir se rechaza: instalado fuera del repo, ese fallback devuelve el propio directorio del programa, así que la escritura caía dentro del toolkit en vez de en un vault."
+    },
+    {
       "name": "VAULT_CLIENT_CWD",
       "type": "ruta",
       "default": null,

@@ -272,6 +272,48 @@ def _rechazar_nombre_reservado(path: Path) -> None:
         )
 
 
+def _rechazar_raiz_insegura(path: Path) -> None:
+    """Bloquea la escritura cuando NO se sabe cuál es el vault (v40.30).
+
+    `vault_root_is_confident()` existía desde v39 y no lo hacía cumplir nadie:
+    era un dato que el guard AP-36 publicaba en un informe. Medido instalando el
+    toolkit fuera del repo, `_detect_vault_root()` cae a `repo_root_fallback` y
+    devuelve **el propio directorio del programa**, así que una tool de
+    escritura sembraba `00_System/`, `99_Index/` y notas dentro del toolkit.
+    Dentro de este repo no se ve nunca: el manifiesto activa la rama anterior
+    (`spec_repo_sandbox`), que sí es confiada.
+
+    Se rechaza aquí y no en la detección a propósito. Elevar el fallback a
+    excepción haría que `import vault_io` reventase en cualquier entorno sin
+    vault —el import evalúa `VAULT_ROOT` a nivel de módulo—, y romper la lectura
+    para proteger la escritura es un precio que no hay por qué pagar: leer con
+    una raíz dudosa no ensucia nada. El daño empieza al escribir, y este es el
+    único sitio por el que toda escritura pasa.
+
+    `VAULT_PERMISSIVE_ROOT=1` restaura el comportamiento anterior para quien
+    dependa de él (no-derogación), y `VAULT_ROOT` o `set_vault_root()` son la
+    salida buena: las dos dan un origen confiado y no hacen falta banderas.
+    """
+    if vault_root_is_confident() or _env("VAULT_PERMISSIVE_ROOT"):
+        return
+    # Solo si la escritura cae DENTRO de la raíz dudosa. Una tool con `--root`
+    # apuntada a un vault de verdad no tiene por qué pagar por el hecho de que
+    # la autodetección no encontrara nada.
+    raiz = get_vault_root().resolve()
+    try:
+        path.resolve().relative_to(raiz)
+    except ValueError:
+        return
+    raise PermissionError(
+        f"No se identificó ningún vault: la raíz activa es {raiz}, elegida por "
+        f"`{vault_root_origin()}`, que significa «no encontré nada y estoy "
+        "suponiendo». Escribir aquí sembraría artefactos de vault dentro del "
+        "propio toolkit. Exporta VAULT_ROOT=<ruta del vault>, o crea un "
+        "directorio 'vault-<nombre>/'. Para volver al comportamiento anterior, "
+        "VAULT_PERMISSIVE_ROOT=1."
+    )
+
+
 def _rechazar_traversal(path: Path) -> None:
     """Bloquea la escritura si la ruta SALE del vault por `..`.
 
@@ -392,6 +434,7 @@ def atomic_write_text(
             # silencioso se cuenta como éxito).
             _registrar_escaner_degradado(path, exc)
 
+    _rechazar_raiz_insegura(path)
     _rechazar_traversal(path)
     _rechazar_nombre_reservado(path)
     _verificar_frontmatter(path, text or "")

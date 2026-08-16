@@ -1,6 +1,7 @@
 {
   "note": "Deuda estructural congelada. SOLO PUEDE ENCOGER: un cruce nuevo es una frontera que se rompió y se arregla publicando un puerto, no ampliando esta lista; un vínculo nuevo es AP-49 y se arregla resolviendo tarde con get_vault_root().",
   "crossings": [
+    "cli/registry -> vault_mcp_catalog",
     "vault/autoria/repositorio.py -> vault/grafo",
     "vault/autoria/repositorio.py -> vault/indices",
     "vault/ciclo_de_vida/repositorio.py -> vault/indices",
@@ -52,5 +53,11 @@
     "vault_sanacion -> vault_reindex.notas_indexables",
     "vault_write -> vault_tags.apply_vocabulary",
     "vault_write -> vault_tags.record_new_tags"
-  ]
+  ],
+  "excepcion_de_alcance": {
+    "version": "v40.30",
+    "entrada": "cli/registry -> vault_mcp_catalog",
+    "por_que": "La lista creció en uno, y la regla dice que solo puede encoger. La excepción se declara aquí en vez de aplicarse en silencio. El cruce no es nuevo: existe desde que existe la CLI. Lo nuevo es que se pueda contar. `cli/` estaba en ARBOLES_MEDIDOS desde v40.9, pero CONTEXTS no declaraba un contexto `cli`, así que _mapa_modulos() devolvía None para sus ficheros y las dos rutas de detección los descartaban con `if origen is None: continue` antes de leer un import. Ampliar el alcance de una medida saca a la luz deuda que ya estaba; contarla como deuda nueva presionaría en la dirección contraria — dejar el punto ciego para no ensuciar la cifra.",
+    "no_es_precedente": "Solo vale para deuda preexistente que un ensanche de alcance hace visible por primera vez, y con el sitio nombrado uno a uno. Un cruce escrito después de v40.30 se arregla publicando el puerto."
+  }
 }

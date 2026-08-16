@@ -696,12 +696,12 @@ def _apply_migration(
 
         try:
             import subprocess
+            import vault_subproceso
 
-            result = subprocess.run(
+            result = vault_subproceso.ejecutar(
                 [sys.executable, script.name],
                 cwd=str(SCRIPTS_DIR),
                 capture_output=True,
-                text=True,
                 timeout=120,
             )
             if result.returncode == 0:

@@ -41,6 +41,7 @@ significa que no crecieron los ciclos que sabemos ver.
 """
 
 import argparse
+import ast
 import json
 import sys
 from pathlib import Path
@@ -164,6 +165,97 @@ def medir() -> Dict[str, Any]:
     }
 
 
+#: Los ciclos de `vault/` que existen a propósito, uno a uno y con su motivo.
+#:
+#: v40.30. `vault_ciclos` mide el grafo de `scripts/` —lo dice su docstring y lo
+#: repite el de `vault_grafo_import`—, así que el paquete que existe para
+#: imponer fronteras era el único cuyos ciclos no contaba nadie. Hay uno, es
+#: deliberado y está comentado en el propio código; lo que faltaba no era
+#: arreglarlo sino **vigilarlo**: un comentario no impide que mañana el ciclo
+#: pase de dos módulos a cinco.
+#:
+#: No se midió ensanchando `vault_grafo_import.grafo()` a `vault/`. Ese grafo
+#: alimenta también los umbrales de fan-in/fan-out que AP-59 deriva del escalón,
+#: así que ensancharlo movería todos los umbrales del repo y rompería puertas
+#: por un cambio de alcance — que es la lección que dejó v40.26. La medida vive
+#: aquí, con su alcance declarado y sin tocar la del núcleo.
+CICLOS_DEL_DOMINIO_ESPERADOS: Dict[str, str] = {
+    "vault/kernel/adaptadores.py <-> vault/kernel/contexto.py": (
+        "La raíz de composición y el contexto que construye. `contexto.py` "
+        "difiere su import de `adaptadores` dentro de una función y lo dice en "
+        "un comentario; `adaptadores` importa `VaultContext` en cabecera. Es el "
+        "ciclo que cualquier raíz de composición tiene con lo que compone, y "
+        "por eso `vault_arch` declara `adaptadores.py` como RAIZ_COMPOSICION: "
+        "el único fichero que puede cruzar a cualquier contexto."
+    ),
+}
+
+
+def _modulos_dominio() -> Dict[str, Path]:
+    """Los ficheros de `vault/`, por su ruta relativa al repo."""
+    raiz = DIRECTORIO.parent / "vault"
+    if not raiz.is_dir():
+        return {}
+    return {
+        str(p.relative_to(DIRECTORIO.parent)).replace("\\", "/"): p
+        for p in sorted(raiz.rglob("*.py"))
+    }
+
+
+def ciclos_del_dominio() -> List[str]:
+    """Pares de `vault/` que se importan mutuamente, en cualquier dirección.
+
+    Se miden los pares y no los componentes porque el dato accionable es
+    «quiénes se enredaron»: un componente de tamaño 5 se lee peor que los pares
+    que lo forman, y para el tamaño ya está `largest_component` del grafo de
+    `scripts/`.
+
+    Cuenta el import diferido igual que el de cabecera. Meterlo dentro de una
+    función es exactamente lo que AP-58 persigue, así que descontarlo aquí
+    dejaría verde el caso que la norma existe para ver.
+    """
+    modulos = _modulos_dominio()
+    if not modulos:
+        return []
+    # Módulo Python (`vault.kernel.contexto`) -> ruta, para resolver los
+    # imports relativos a un fichero concreto.
+    por_punto = {
+        k[:-3].replace("/", ".").removesuffix(".__init__"): k for k in modulos
+    }
+    aristas: Dict[str, Set[str]] = {k: set() for k in modulos}
+    for clave, ruta in modulos.items():
+        paquete = clave[:-3].replace("/", ".").removesuffix(".__init__")
+        try:
+            arbol = ast.parse(ruta.read_text(encoding="utf-8", errors="replace"))
+        except SyntaxError:
+            continue
+        for nodo in ast.walk(arbol):
+            destinos: Set[str] = set()
+            if isinstance(nodo, ast.ImportFrom):
+                if nodo.level:
+                    base = paquete.rsplit(".", nodo.level)[0]
+                    destinos.add(f"{base}.{nodo.module}" if nodo.module else base)
+                elif nodo.module and nodo.module.startswith("vault."):
+                    destinos.add(nodo.module)
+                # `from .paquete import modulo` — el destino puede ser el
+                # submódulo y no el paquete, y sin esto el ciclo se pierde.
+                for alias in nodo.names:
+                    destinos |= {f"{d}.{alias.name}" for d in set(destinos)}
+            elif isinstance(nodo, ast.Import):
+                destinos |= {
+                    a.name for a in nodo.names if a.name.startswith("vault.")
+                }
+            for d in destinos:
+                if d in por_punto and por_punto[d] != clave:
+                    aristas[clave].add(por_punto[d])
+    pares = set()
+    for a, salidas in aristas.items():
+        for b in salidas:
+            if a in aristas.get(b, set()):
+                pares.add(" <-> ".join(sorted((a, b))))
+    return sorted(pares)
+
+
 def _baseline() -> List[str]:
     """superseded_by: vault_baseline.cargar (v40.24).
 
@@ -182,8 +274,15 @@ def check() -> Dict[str, Any]:
     base = set(_baseline())
     nuevos = sorted(firmas - base)
     resueltos = sorted(base - firmas)
+    # El dominio, con su propio alcance declarado (v40.30). No entra en la
+    # baseline de AP-58: allí se congelan sitios de `scripts/` indexados por
+    # firma, y aquí el dato es un par de módulos con su motivo escrito en
+    # código. Un ciclo del dominio que no esté en la lista bloquea igual.
+    dominio = ciclos_del_dominio()
+    dominio_nuevos = [c for c in dominio if c not in CICLOS_DEL_DOMINIO_ESPERADOS]
+    dominio_resueltos = [c for c in CICLOS_DEL_DOMINIO_ESPERADOS if c not in dominio]
     return {
-        "ok": not nuevos,
+        "ok": not nuevos and not dominio_nuevos,
         "tool": "vault_ciclos",
         "norm": "AP-58",
         "action": "check",
@@ -200,6 +299,15 @@ def check() -> Dict[str, Any]:
         "baseline_size": len(base),
         "new_cyclic_deferrals": nuevos,
         "resolved_since_baseline": resueltos,
+        # `vault/` — el paquete que impone las fronteras era el único cuyos
+        # ciclos no medía nadie, porque el grafo de `vault_grafo_import` solo
+        # ve `scripts/` y ensancharlo movería los umbrales que AP-59 deriva de
+        # su forma (la lección de v40.26).
+        "domain_modules": len(_modulos_dominio()),
+        "domain_cycles": dominio,
+        "domain_cycles_expected": sorted(CICLOS_DEL_DOMINIO_ESPERADOS),
+        "new_domain_cycles": dominio_nuevos,
+        "resolved_domain_cycles": sorted(dominio_resueltos),
         "hint": (
             "Se salda invirtiendo la dependencia —el de bajo nivel deja de "
             "pedirle el módulo entero al de alto—, no subiendo el import ni "

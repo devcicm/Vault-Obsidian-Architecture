@@ -21,6 +21,8 @@ import argparse
 import json
 import re
 import subprocess
+
+import vault_subproceso
 import sys
 from pathlib import Path
 from typing import Callable, Dict, List, Optional
@@ -105,11 +107,10 @@ def count_scripts() -> int:
 
 def count_tests() -> int:
     """Conteo real de la suite. Lento: solo se evalúa si algún doc lo afirma."""
-    proc = subprocess.run(
+    proc = vault_subproceso.ejecutar(
         [sys.executable, "-m", "pytest", "tests/", "--collect-only", "-q"],
         cwd=str(REPO_ROOT),
         capture_output=True,
-        text=True,
     )
     m = re.search(r"(\d+) tests? collected", proc.stdout)
     if not m:

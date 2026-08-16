@@ -248,11 +248,12 @@ def vault_init(
     # Step 2: run vault_standard_upgrade --init <target>
     # We invoke the script as a subprocess to reuse its full logic
     import subprocess
+    import vault_subproceso
 
     scripts_dir = Path(__file__).parent
     upgrade_script = scripts_dir / "vault_standard_upgrade.py"
     if upgrade_script.exists():
-        proc = subprocess.run(
+        proc = vault_subproceso.ejecutar(
             [
                 sys.executable,
                 str(upgrade_script),
@@ -262,7 +263,6 @@ def vault_init(
                 "vault_init",
             ],
             capture_output=True,
-            text=True,
         )
         try:
             upgrade_data = json.loads(proc.stdout)
@@ -275,10 +275,9 @@ def vault_init(
     # Step 3: run vault_master_index which also indexes all sections
     master_script = scripts_dir / "vault_master_index.py"
     if master_script.exists():
-        proc = subprocess.run(
+        proc = vault_subproceso.ejecutar(
             [sys.executable, str(master_script)],
             capture_output=True,
-            text=True,
         )
         try:
             master_data = json.loads(proc.stdout)
@@ -295,10 +294,9 @@ def vault_init(
     # Step 4: run vault_reindex --graph to populate graph.json + search-index.json + hash-index.json
     reindex_script = scripts_dir / "vault_reindex.py"
     if reindex_script.exists():
-        proc = subprocess.run(
+        proc = vault_subproceso.ejecutar(
             [sys.executable, str(reindex_script), "--graph"],
             capture_output=True,
-            text=True,
         )
         try:
             reindex_data = json.loads(proc.stdout)
@@ -344,10 +342,9 @@ def vault_init(
     if run_audit:
         audit_script = scripts_dir / "vault_audit.py"
         if audit_script.exists():
-            proc = subprocess.run(
+            proc = vault_subproceso.ejecutar(
                 [sys.executable, str(audit_script)],
                 capture_output=True,
-                text=True,
             )
             try:
                 audit_data = json.loads(proc.stdout)

@@ -55,6 +55,8 @@ import argparse
 import json
 import re
 import subprocess
+
+import vault_subproceso
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -110,9 +112,9 @@ def _git(*args: str) -> Optional[str]:
     ausencia en el dato.
     """
     try:
-        r = subprocess.run(
+        r = vault_subproceso.ejecutar(
             ["git", *args], cwd=str(REPO_ROOT),
-            capture_output=True, text=True, timeout=30,
+            capture_output=True, timeout=30,
         )
     except (OSError, subprocess.SubprocessError):
         return None

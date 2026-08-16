@@ -30,7 +30,7 @@ PUERTOS = [
 ]
 
 
-def test_hay_puertos_en_los_nueve_contextos():
+def test_hay_puertos_en_los_contextos_que_publican_api():
     """56 en v40.8: los 33 anteriores más los 23 que el código ya usaba.
 
     Los 33 salieron de los 30 originales más los tres registros canónicos de
@@ -47,8 +47,22 @@ def test_hay_puertos_en_los_nueve_contextos():
     # +1 en v40.26: `auditar_normas`. Se declaró antes de partir `vault_norms`
     # porque el motor de audit era el único cruce entrante fuera de puerto, y
     # mezclarlo con el troceado habría hecho ilegible cuál movió la cifra.
-    assert len(PUERTOS) == 59
-    assert {c for c, _, _ in PUERTOS} == set(arch.CONTEXTS)
+    # +1 en v40.30: `NATIVE_JS_TOOLS`, en `meta_toolkit`. No es un puerto nuevo
+    # por conveniencia para que la puerta pase: `cli/registry.py` lo consume
+    # desde siempre y su comentario ya nombraba a `vault_mcp_catalog` como
+    # dueño. Lo que faltaba era declararlo, y mientras `cli/` no tuvo contexto
+    # no había dónde notar que el cruce existía.
+    assert len(PUERTOS) == 60
+    # `cli` queda fuera a propósito: es un adaptador de transporte y **nadie
+    # importa de `cli/`**, así que no publica API. Exigirle un puerto obligaría
+    # a inventar uno, que es justo lo contrario de lo que mide este fichero.
+    # Su contexto declara `puertos: {}` y `prohibe: decidir`.
+    SIN_API = {"cli"}
+    assert {c for c, _, _ in PUERTOS} == set(arch.CONTEXTS) - SIN_API
+    for ctx in SIN_API:
+        assert arch.CONTEXTS[ctx]["puertos"] == {}, (
+            f"{ctx} ya publica API: sácalo de SIN_API en vez de dejar el "
+            "hueco sin verificar")
 
 
 @pytest.mark.parametrize("ctx,puerto,destino", PUERTOS, ids=lambda v: str(v))

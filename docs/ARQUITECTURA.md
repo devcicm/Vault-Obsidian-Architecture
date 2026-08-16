@@ -2,7 +2,7 @@
 
 > Documento derivado. Se genera con `python scripts/vault_arch.py --blueprint`; la fuente es `CONTEXTS` en `scripts/vault_arch.py`. No se edita a mano.
 
-**9 contextos**, **141 módulos** clasificados, **35 fronteras cruzadas** pendientes de publicar puerto.
+**10 contextos**, **149 módulos** clasificados, **36 fronteras cruzadas** pendientes de publicar puerto.
 
 ## Los límites
 
@@ -25,6 +25,7 @@ graph TD
     ciclo_de_vida["Ciclo de vida"]
     durabilidad["Durabilidad"]
     meta_toolkit["Meta-toolkit"]
+    cli["CLI"]
     autoria --> kernel
     grafo --> kernel
     gobernanza --> kernel
@@ -33,6 +34,7 @@ graph TD
     ciclo_de_vida --> kernel
     durabilidad --> kernel
     meta_toolkit --> kernel
+    cli --> kernel
     meta_toolkit -.->|cruce| gobernanza
     autoria -.->|cruce| gobernanza
     grafo -.->|cruce| autoria
@@ -50,6 +52,7 @@ graph TD
     consulta -.->|cruce| grafo
     autoria -.->|cruce| meta_toolkit
     autoria -.->|cruce| indices
+    cli -.->|cruce| meta_toolkit
     autoria -.->|cruce| grafo
     consulta -.->|cruce| ciclo_de_vida
     grafo -.->|cruce| gobernanza
@@ -61,7 +64,7 @@ graph TD
 - **Lenguaje ubicuo:** ruta, envelope, error, bloqueo, escritura atómica
 - **Puertos publicados:** `atomic_write_text` → `vault_io:atomic_write_text`, `file_lock` → `vault_fs:file_lock`, `get_vault_root` → `vault_raiz:get_vault_root`, `wrap_main` → `vault_errors:wrap_main`
 - **No cruza:** depender de cualquier contexto de dominio
-- **Módulos (21):** `vault_audit_catalog`, `vault_baseline`, `vault_encoding`, `vault_entorno`, `vault_errors`, `vault_errors_catalog`, `vault_errors_trace`, `vault_fs`, `vault_fundamentals_catalog`, `vault_grafo_import`, `vault_io`, `vault_ledger`, `vault_lib`, `vault_log_error`, `vault_mermaid_reglas`, `vault_norms_catalog`, `vault_raiz`, `vault_regex`, `vault_registry`, `vault_version`, `vault_vocabulario`
+- **Módulos (22):** `vault_audit_catalog`, `vault_baseline`, `vault_encoding`, `vault_entorno`, `vault_errors`, `vault_errors_catalog`, `vault_errors_trace`, `vault_fs`, `vault_fundamentals_catalog`, `vault_grafo_import`, `vault_io`, `vault_ledger`, `vault_lib`, `vault_log_error`, `vault_mermaid_reglas`, `vault_norms_catalog`, `vault_raiz`, `vault_regex`, `vault_registry`, `vault_subproceso`, `vault_version`, `vault_vocabulario`
 
 ## Autoría
 
@@ -172,7 +175,7 @@ Fronteras que hoy cruza (13), deuda declarada:
 ## Meta-toolkit
 
 - **Lenguaje ubicuo:** catálogo, contrato, spec, smoke, conteo derivado
-- **Puertos publicados:** `GROUPS` → `vault_mcp_catalog:GROUPS`, `TOOLS_CATALOG` → `vault_mcp_catalog:TOOLS_CATALOG`, `check_contracts` → `vault_mcp_catalog:check_contracts`
+- **Puertos publicados:** `GROUPS` → `vault_mcp_catalog:GROUPS`, `NATIVE_JS_TOOLS` → `vault_mcp_catalog:NATIVE_JS_TOOLS`, `TOOLS_CATALOG` → `vault_mcp_catalog:TOOLS_CATALOG`, `check_contracts` → `vault_mcp_catalog:check_contracts`
 - **No cruza:** escribir en una sección de contenido: sus artefactos derivados viven en 00_System/
 - **Módulos (27):** `vault_arch`, `vault_blame_audit`, `vault_blueprint`, `vault_changelog_check`, `vault_ciclos`, `vault_criterios`, `vault_doc_counts`, `vault_doc_sync`, `vault_error_contract`, `vault_excepcion_declarada`, `vault_firma_sitio`, `vault_foreign_check`, `vault_gate`, `vault_kernel`, `vault_manifest`, `vault_mcp`, `vault_mcp_catalog`, `vault_noop_audit`, `vault_norms_coherence`, `vault_recursos`, `vault_servicio`, `vault_smoke`, `vault_spec_catalog_check`, `vault_spec_generate_catalog`, `vault_spec_memory`, `vault_spec_validate`, `vault_test_runner`
 
@@ -185,4 +188,17 @@ Fronteras que hoy cruza (5), deuda declarada:
 | `vault_norms_coherence` | `vault_norms` | Gobernanza |
 | `vault_spec_memory` | `vault/ciclo_de_vida` | Ciclo de vida |
 | `vault_spec_memory` | `vault/gobernanza` | Gobernanza |
+
+## CLI
+
+- **Lenguaje ubicuo:** comando, registro de tools, preflight, envelope
+- **Puertos publicados:** 
+- **No cruza:** decidir: traduce argumentos a llamadas y envelopes a salida; la decisión vive en la tool
+- **Módulos (7):** `__main__`, `analyzer`, `registry`, `runner`, `safety`, `scheduler`, `vault_cli`
+
+Fronteras que hoy cruza (1), deuda declarada:
+
+| Módulo | Importa | Contexto destino |
+|---|---|---|
+| `cli/registry` | `vault_mcp_catalog` | Meta-toolkit |
 

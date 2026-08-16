@@ -130,6 +130,11 @@ CONTEXTS: dict[str, dict] = {
             "vault_encoding", "vault_registry", "vault_log_error",
             "vault_errors_catalog", "vault_errors_trace",
             "vault_entorno", "vault_vocabulario",
+            # v40.30 — cómo se lee la salida de un proceso hijo. Hoja: no
+            # importa ningún `vault_*`. Es kernel por la misma razón que
+            # `vault_encoding`: un criterio de codificación que estaba escrito
+            # 23 veces en 13 módulos de cuatro contextos distintos.
+            "vault_subproceso",
             # Las tres hojas del kernel (v40.17). No son un contexto nuevo: son
             # el mecanismo que `vault_io` mezclaba con su política — dónde está
             # el vault, cómo se escribe sin que nadie vea el fichero a medias, y
@@ -403,6 +408,14 @@ CONTEXTS: dict[str, dict] = {
             "TOOLS_CATALOG": "vault_mcp_catalog:TOOLS_CATALOG",
             "GROUPS": "vault_mcp_catalog:GROUPS",
             "check_contracts": "vault_mcp_catalog:check_contracts",
+            # v40.30 — se declara al hacer visible a `cli/`. No es un puerto
+            # nuevo por conveniencia para que la puerta pase: `cli/registry.py`
+            # lo consume desde siempre y su comentario ya nombraba a este
+            # módulo como dueño, con `vault_mcp_catalog --check` vigilando que
+            # las tres copias de la frontera de lenguaje no diverjan. Lo que
+            # faltaba era decirlo aquí, y mientras `cli/` no tuvo contexto no
+            # había dónde notarlo.
+            "NATIVE_JS_TOOLS": "vault_mcp_catalog:NATIVE_JS_TOOLS",
         },
         # Éste es el contexto que v39.6 dejó a medias: sus módulos ya están
         # anotados `internal` con motivo, pero nada impedía que uno tocase un
@@ -464,6 +477,35 @@ CONTEXTS: dict[str, dict] = {
             # cuenta habría sido AP-57 en la tool que nace para vigilar
             # justamente que nadie pague por lo que no consume.
             "vault_recursos",
+        ],
+    },
+    # v40.30 — el contexto que faltaba, y el hueco que su ausencia abría.
+    #
+    # `cli/` entró en `ARBOLES_MEDIDOS` en v40.9 con el motivo escrito arriba:
+    # «donde el consumidor lee el error, no lo medía nadie». Pero el alcance se
+    # amplió en el **descubrimiento de ficheros** y no en la **clasificación**:
+    # `_mapa_modulos()` se construye solo desde `CONTEXTS`, así que
+    # `mapa.get("registry")` devolvía `None` y las dos rutas de detección
+    # —`cruces()` y el detector off-port— descartaban cada fichero de `cli/`
+    # con `if origen is None: continue` antes de mirar un solo import.
+    #
+    # El resultado era el mismo fallo que motivó ampliar el alcance, una capa
+    # más abajo: `cli/registry.py` importaba `vault_mcp_catalog` desde siempre y
+    # ese cruce no salía ni en `crossings` ni en `off_port_sites`. Un fichero
+    # medido que no puede clasificarse no está medido; publica un cero.
+    #
+    # No es un contexto de dominio y por eso no tiene puertos: es adaptador de
+    # transporte, exactamente como `scripts/` y el `.mjs`, y el límite 4 ya lo
+    # nombraba mientras el registro no lo conocía.
+    "cli": {
+        "titulo": "CLI",
+        "lenguaje": ["comando", "registro de tools", "preflight", "envelope"],
+        "puertos": {},
+        "prohibe": ["decidir: traduce argumentos a llamadas y envelopes a "
+                    "salida; la decisión vive en la tool"],
+        "modulos": [
+            "vault_cli", "registry", "safety", "runner", "analyzer",
+            "scheduler", "__main__",
         ],
     },
 }
@@ -529,6 +571,23 @@ def contexto_de(modulo: str) -> str | None:
 
 def _modulos_en_disco() -> list[str]:
     return sorted(p.stem for p in SCRIPTS_DIR.glob("vault_*.py"))
+
+
+def _modulos_cli() -> dict[str, Path]:
+    """Los ficheros de `cli/`, por su stem — la clave con que los ve el mapa.
+
+    Existe porque `cruces()` recorría `_modulos_en_disco()` (que globa
+    `scripts/vault_*.py`) y `_modulos_dominio()` (que recorre `vault/`), y
+    entre las dos no quedaba nadie que abriera `cli/`. El detector off-port sí
+    llegaba, por iterar `arboles_medidos()`, pero se frenaba un paso después en
+    el mapa vacío: por eso el arreglo de v40.30 son las dos mitades —declarar
+    el contexto y recorrer el árbol—, y no una sola.
+    """
+    raiz = REPO_ROOT / "cli"
+    if not raiz.is_dir():
+        return {}
+    return {p.stem: p for p in sorted(raiz.glob("*.py"))
+            if p.stem != "__init__"}
 
 
 # ── El grafo de importaciones, por AST ───────────────────────────────────────
@@ -649,6 +708,25 @@ def cruces() -> list[dict]:
                         "from": nombre, "from_context": origen,
                         "to": f"vault/{destino}", "to_context": destino,
                     })
+
+    # `cli/`, con la misma vara (v40.30). Estaba en `ARBOLES_MEDIDOS` desde
+    # v40.9 y ninguna de las dos rutas de detección lo abría: el alcance se
+    # amplió donde se buscan los ficheros y no donde se decide de qué contexto
+    # vienen. Un adaptador de transporte cruza igual que una tool.
+    for nombre, ruta in sorted(_modulos_cli().items()):
+        origen = mapa.get(nombre)
+        if origen is None:
+            continue
+        for destino_mod in sorted(_importaciones(ruta)):
+            destino = mapa.get(destino_mod)
+            if destino is None or destino == origen or destino == KERNEL:
+                continue
+            if (nombre, destino_mod) in GANCHOS_DEL_KERNEL:
+                continue
+            fuera.append({
+                "from": f"cli/{nombre}", "from_context": origen,
+                "to": destino_mod, "to_context": destino,
+            })
 
     # El dominio, con la misma vara. Un módulo de `vault/x/` que importe
     # `vault_norms` cruza igual que si viviera en `scripts/`.
@@ -1168,6 +1246,15 @@ _cruce("consulta", "grafo", "permanente", "consulta",
        "`cruces()` ya nombra.")
 _cruce("meta_toolkit", "consulta", "permanente", "meta_toolkit",
        "El servidor MCP expone las tools de consulta: exponer es su oficio.")
+_cruce("cli", "meta_toolkit", "permanente", "cli",
+       "`cli/registry.py` lee `TOOLS_CATALOG` y `NATIVE_JS_TOOLS` para saber "
+       "qué tools existen y cuáles viven en el `.mjs`. Un registro de comandos "
+       "que no consulta el catálogo tendría que declarar las tools por su "
+       "cuenta, que es AP-05 sobre el dato más derivado del repo. Permanente y "
+       "por puerto: los dos símbolos están declarados en `meta_toolkit`. "
+       "Aparece en v40.30 no porque el cruce sea nuevo —lleva ahí desde que "
+       "existe la CLI— sino porque hasta ahora no había contexto `cli` que lo "
+       "hiciera contable.")
 
 
 def pares_sin_presupuesto() -> list[dict]:
@@ -1362,8 +1449,16 @@ def escrituras_prohibidas() -> list[dict]:
 
 
 def fantasmas() -> list[str]:
-    """Módulos declarados en un contexto que ya no están en disco."""
-    en_disco = set(_modulos_en_disco())
+    """Módulos declarados en un contexto que ya no están en disco.
+
+    Mira los tres árboles que pueden alojar un módulo declarado, no solo
+    `scripts/`. Al declarar el contexto `cli` en v40.30 esta función dio por
+    ausentes sus siete ficheros —existían todos— porque solo sabía globear
+    `scripts/vault_*.py`: la misma forma del defecto que la tanda arregla, que
+    es medir con un alcance más estrecho que el declarado.
+    """
+    en_disco = set(_modulos_en_disco()) | set(_modulos_cli())
+    en_disco |= {k.rsplit("/", 1)[-1][:-3] for k in _modulos_dominio()}
     return sorted(m for m in _mapa_modulos() if m not in en_disco)
 
 
@@ -1967,6 +2062,19 @@ def freeze() -> dict:
     vinculos = sorted({
         f"{v['module']}.{v['binding']}" for v in vinculos_congelados()
     })
+    # Lo que el escritor no conoce, se conserva (v40.30). `excepcion_de_alcance`
+    # la escribe una persona para dejar dicho por qué la lista creció una vez, y
+    # un `--freeze` que la borrase dejaría el fichero indistinguible de uno donde
+    # nadie declaró nada. Es la misma razón por la que una deuda saldada pasa a
+    # `saldada` en vez de desaparecer.
+    conservado: dict = {}
+    if BASELINE_PATH.exists():
+        try:
+            previo = json.loads(BASELINE_PATH.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            previo = {}
+        if isinstance(previo, dict) and "excepcion_de_alcance" in previo:
+            conservado["excepcion_de_alcance"] = previo["excepcion_de_alcance"]
     BASELINE_PATH.write_text(
         json.dumps({
             "note": "Deuda estructural congelada. SOLO PUEDE ENCOGER: un cruce "
@@ -1977,6 +2085,7 @@ def freeze() -> dict:
             "frozen_bindings": vinculos,
             "duplicate_paths": sorted(d["file"] for d in rutas_duplicadas()),
             "off_port_crossings": fuera_puerto,
+            **conservado,
         }, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )

@@ -52,7 +52,7 @@ regenera.*
 
 | Contexto | Puertos | Módulos | Prohíbe |
 |---|---|---|---|
-| **Kernel** (`kernel`) | 4 | 21 | depender de cualquier contexto de dominio |
+| **Kernel** (`kernel`) | 4 | 22 | depender de cualquier contexto de dominio |
 | **Autoría** (`autoria`) | 7 | 39 | — |
 | **Grafo** (`grafo`) | 3 | 15 | — |
 | **Gobernanza** (`gobernanza`) | 20 | 11 | — |
@@ -60,7 +60,8 @@ regenera.*
 | **Consulta** (`consulta`) | 7 | 10 | base de datos; embeddings; servicio externo |
 | **Ciclo de vida** (`ciclo_de_vida`) | 3 | 8 | — |
 | **Durabilidad** (`durabilidad`) | 4 | 4 | escribir fuera de la raíz del vault (AP-36) |
-| **Meta-toolkit** (`meta_toolkit`) | 3 | 27 | escribir en una sección de contenido: sus artefactos derivados viven en 00_System/ |
+| **Meta-toolkit** (`meta_toolkit`) | 4 | 27 | escribir en una sección de contenido: sus artefactos derivados viven en 00_System/ |
+| **CLI** (`cli`) | 0 | 7 | decidir: traduce argumentos a llamadas y envelopes a salida; la decisión vive en la tool |
 
 ## Capa 4 — Normas → puertas → tests
 
@@ -347,7 +348,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 
 | Baseline | Norma | Congelado | Objetivo | Pendiente |
 |---|---|---|---|---|
-| `scripts/arch-baseline.json` | cruces entre contextos | 35 | — *sin objetivo* | 60 → 61 → 62 → 62 → 42 → 35 (encoge, Δ-13) |
+| `scripts/arch-baseline.json` | cruces entre contextos | 36 | — *sin objetivo* | 60 → 61 → 62 → 62 → 42 → 35 (encoge, Δ-13) |
 | `scripts/arch-baseline.json` | cruces fuera de puerto | 12 | — *sin objetivo* | 13 → 13 → 13 → 12 → 12 → 12 (encoge, Δ-36) |
 | `scripts/blame-baseline.json` | AP-51 | 83 | — *sin objetivo* | 86 → 86 → 86 → 87 → 84 → 83 (encoge, Δ-3) |
 | `scripts/error-contract-baseline.json` | AP-52 | 0 | — *sin objetivo* | 158 → 110 → 110 → 0 → 9 → 0 (encoge, Δ-158) |

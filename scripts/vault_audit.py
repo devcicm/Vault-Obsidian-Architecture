@@ -145,12 +145,37 @@ def _is_structural(path: Path) -> bool:
     return path.name.lower() in _STRUCTURAL_NAMES
 
 
+def _barrido_md() -> List[Path]:
+    """Todos los `.md` del vault, sin filtrar, en **un** recorrido.
+
+    v40.30. El flujo principal hacía cuatro `rglob("*.md")` completos por
+    invocación: dos en `_get_active_notes` (una por valor de
+    `include_structural`) y uno más en `_build_indexes` y en
+    `_detect_broken_links`, que además **recibían la lista ya construida** y la
+    ignoraban para volver a recorrer el disco.
+
+    Lo que no se podía hacer es derivar esos dos del `all_notes` que reciben, y
+    por eso no se hizo antes: `_get_active_notes` ya descartó los estructurales,
+    los `_privados` y las carpetas saltadas, mientras que el índice de stems y
+    el de rutas tienen que ver **todo** lo que no sea instantánea — si no, un
+    enlace a `index.md` saldría roto. El dato compartido es el barrido crudo,
+    no la lista filtrada.
+
+    No se cachea a nivel de módulo a propósito: el vault activo cambia con
+    `set_vault_root()` y los tests escriben notas entre llamadas, así que una
+    caché aquí serviría un disco viejo. Se recorre una vez por invocación y se
+    pasa como argumento, que es explícito y no puede quedarse rancio.
+    """
+    return list(_raiz().rglob("*.md"))
+
+
 def _get_active_notes(
-    project: Optional[str] = None, include_structural: bool = False
+    project: Optional[str] = None, include_structural: bool = False,
+    barrido: Optional[List[Path]] = None,
 ) -> List[Path]:
     notes = []
 
-    for n in _raiz().rglob("*.md"):
+    for n in (_barrido_md() if barrido is None else barrido):
         if _is_skipped(n) or n.name.startswith("_"):
             continue
 
@@ -330,8 +355,16 @@ def _aliases_de(p: Path) -> List[str]:
     return [a for a in raw if isinstance(a, str) and a.strip()]
 
 
-def _build_indexes(notes: List[Path]) -> Tuple[Dict[str, Set[str]], Set[str]]:
-    """Build backlink index and full-vault stem set for broken-link detection."""
+def _build_indexes(
+    notes: List[Path], barrido: Optional[List[Path]] = None
+) -> Tuple[Dict[str, Set[str]], Set[str]]:
+    """Build backlink index and full-vault stem set for broken-link detection.
+
+    `barrido` es el recorrido crudo del vault, que el llamador ya hizo. Sin él
+    se recorre por cuenta propia: la firma vieja sigue siendo válida (los tests
+    que llaman con un solo argumento no se tocan), pero el flujo principal lo
+    pasa y así el disco se lee una vez en vez de cuatro.
+    """
 
     stem_map: Dict[str, str] = {}
 
@@ -340,7 +373,7 @@ def _build_indexes(notes: List[Path]) -> Tuple[Dict[str, Set[str]], Set[str]]:
 
     all_stems: Set[str] = set()
 
-    for n in _raiz().rglob("*.md"):
+    for n in (_barrido_md() if barrido is None else barrido):
         # `.history` era la unica exclusion; `vault-backups/` y `.trash/` entraban,
         # y con ellas los enlaces de instantaneas congeladas. `is_snapshot_path`
         # centraliza el criterio en `vault_io` (AP-36): los side-effects viven
@@ -524,7 +557,8 @@ from vault_audit_catalog import (  # noqa: F401,E402
 
 
 def _detect_broken_links(
-    notes: List[Path], all_stems: Set[str]
+    notes: List[Path], all_stems: Set[str],
+    barrido: Optional[List[Path]] = None,
 ) -> List[Dict[str, Any]]:
     """AP-14 medido sobre el disco, y con él la única traza de **SP-02**.
 
@@ -540,7 +574,7 @@ def _detect_broken_links(
     # to a file at that relative path. The audit was treating them as broken
     # because stem-only normalization doesn't match the full path.
     all_paths: Set[str] = set()
-    for n in _raiz().rglob("*.md"):
+    for n in (_barrido_md() if barrido is None else barrido):
         if not _is_snapshot(n):
             rel = str(n.relative_to(_raiz())).replace("\\", "/")
             # Add both with and without .md extension
@@ -983,7 +1017,9 @@ def _detect_cross_folder_duplicates(notes: List[Path]) -> List[Dict[str, Any]]:
 _SECCIONES_POR_EVENTO = frozenset({"18_Bugs", "19_Audits", "20_Quarantine"})
 
 
-def _detect_empty_indexes() -> List[Dict[str, Any]]:
+def _detect_empty_indexes(
+    barrido: Optional[List[Path]] = None
+) -> List[Dict[str, Any]]:
     """AP-11/AP-03: detect section folders whose index.md has no real notes.
 
 
@@ -1020,10 +1056,15 @@ def _detect_empty_indexes() -> List[Dict[str, Any]]:
             if name in _SECCIONES_POR_EVENTO:
                 continue
 
+            # v40.30 — de `barrido` y no de un `rglob` por sección. Eran veinte
+            # recorridos, uno por carpeta de primer nivel: cada uno pequeño,
+            # pero juntos volvían a leer el vault entero por tercera vez. El
+            # filtro es el mismo, aplicado en memoria sobre lo ya leído.
             real_notes = [
                 p
-                for p in section_dir.rglob("*.md")
-                if p.name.lower() not in ("index.md", "readme.md")
+                for p in (_barrido_md() if barrido is None else barrido)
+                if section_dir in p.parents
+                and p.name.lower() not in ("index.md", "readme.md")
                 and not any(part.startswith(".") for part in p.parts)
             ]
 
@@ -1781,13 +1822,20 @@ def vault_audit(
 
     # all_notes: incluye estructurales — para que sus links cuenten como backlinks
 
-    content_notes = _get_active_notes(project, include_structural=False)
+    # Un solo recorrido del disco para las cuatro medidas que lo necesitan
+    # (v40.30). Antes eran cuatro `rglob` completos por invocación; en un vault
+    # grande, tres de ellos eran trabajo repetido sobre el mismo contenido.
+    barrido = _barrido_md()
 
-    all_notes = _get_active_notes(project, include_structural=True)
+    content_notes = _get_active_notes(project, include_structural=False,
+                                      barrido=barrido)
+
+    all_notes = _get_active_notes(project, include_structural=True,
+                                  barrido=barrido)
 
     # Indexes construidos desde all_notes para que index.md contribuya backlinks
 
-    backlinks, all_stems = _build_indexes(all_notes)
+    backlinks, all_stems = _build_indexes(all_notes, barrido=barrido)
 
     orphans = _detect_orphans(content_notes, backlinks)
 
@@ -1799,7 +1847,7 @@ def vault_audit(
 
     # broken_links en all_notes: index.md roto también importa (fix 2026-06-21: scope bug — antes pasaba content_notes)
 
-    broken_links = _detect_broken_links(all_notes, all_stems)
+    broken_links = _detect_broken_links(all_notes, all_stems, barrido=barrido)
 
     canonical_shadow = _detect_canonical_shadow(content_notes)
 
@@ -1807,7 +1855,7 @@ def vault_audit(
 
     malformed_wikilinks = _detect_malformed_wikilinks(all_notes)
 
-    empty_indexes = _detect_empty_indexes()
+    empty_indexes = _detect_empty_indexes(barrido=barrido)
 
     mermaid_errors = _detect_mermaid_errors()
 

@@ -2,10 +2,13 @@
 /**
  * vault-mcp-server.mjs — Vault Obsidian Architecture MCP Monolith
  *
- * Servidor MCP monolítico que expone las 71 herramientas del vault
- * como MCP tools accesibles directamente por IAs sin registro en harness.
+ * Servidor MCP monolítico que expone las herramientas del vault como MCP tools,
+ * accesibles directamente por IAs sin registro en harness.
  *
- * Versión: v39.0 (SDD)
+ * Cuántas son y de qué versión del estándar lo dice `tools-catalog.json`, que es
+ * la pasarela desde Python. Aquí ponía «las 71 herramientas» y «v39.0 (SDD)»
+ * cuando eran 107 y v40.29: dos cifras a mano al otro lado de una frontera de
+ * lenguaje, donde `vault_doc_counts` no llega.
  * Transporte: dual (stdio + SSE/HTTP)
  * Dependencias: CERO npm — solo node:* built-ins
  *
@@ -38,7 +41,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "..", "..");
 const SCRIPTS_DIR = join(REPO_ROOT, "scripts");
-const VERSION = "v39.3 (SDD)";
+// La versión NO se escribe aquí: llega por `tools-catalog.json`, que es la
+// pasarela por la que este servidor recibe todo lo que decide Python. Escrita a
+// mano decía `v39.3 (SDD)` con el estándar en v40.29 —nueve versiones de
+// desfase en el handshake, en `--version` y en cada evento SSE—, y ningún guard
+// del repo podía verlo: los de cifras a mano miran Python, y esto es `.mjs`.
+// Este literal es solo el respaldo para el arranque sin catálogo legible, y por
+// eso se llama así: si aparece en una respuesta, es que el catálogo no cargó.
+let VERSION = "desconocida (catálogo no cargado)";
 
 // Las variables de entorno se declaran una sola vez, en
 // `scripts/vault_entorno.py`, y este JSON es su artefacto derivado —igual que
@@ -69,10 +79,23 @@ function envDefault(nombre) {
 let VAULT_ROOT = process.env.VAULT_ROOT || envDefault("VAULT_ROOT");
 // La tabla declara `""` para SCAN_ROOTS, y «vacía» aquí significa las dos rutas
 // relativas al repo, no «ninguna». La asimetría está declarada en el registro.
-let VAULT_SCAN_ROOTS = process.env.VAULT_SCAN_ROOTS ? process.env.VAULT_SCAN_ROOTS.split(";").map(p => resolve(p)) : [
-  join(REPO_ROOT, ".."),
-  join(REPO_ROOT, "..", "..", ".."),
-];
+// El barrido automático sube por encima de la instalación, así que solo es
+// aceptable donde esas carpetas son del propio estándar: DENTRO de este repo,
+// donde los vaults hermanos son los consumidores conocidos. Instalado en
+// cualquier otro sitio, `join(REPO_ROOT, "..")` es una carpeta del usuario, y
+// medido en v40.30 el servidor registraba y exponía al agente vaults que nadie
+// le había pedido — con `VAULT_ROOT` explícito puesto. Un inventario del disco
+// ajeno no es un default: fuera del repo se escanea lo que te digan y nada más.
+//
+// El marcador es el mismo con el que `vault_raiz._detect_vault_root()` decide
+// `spec_repo_sandbox`, para que las dos mitades del toolkit no discrepen sobre
+// qué es «estar dentro del repo».
+const EN_REPO_DEL_ESTANDAR = existsSync(join(REPO_ROOT, "vault-obsidian-architecture.md"));
+let VAULT_SCAN_ROOTS = process.env.VAULT_SCAN_ROOTS
+  ? process.env.VAULT_SCAN_ROOTS.split(";").map(p => resolve(p))
+  : (EN_REPO_DEL_ESTANDAR
+      ? [join(REPO_ROOT, ".."), join(REPO_ROOT, "..", "..", "..")]
+      : []);
 let SSE_PORT = 0;
 let LOG_LEVEL = process.env.VAULT_MCP_LOG || envDefault("VAULT_MCP_LOG");
 
@@ -90,6 +113,7 @@ function loadCatalog() {
     TOOLS_CATALOG = data.tools || {};
     TOOL_GROUPS = data.groups || {};
     if (Array.isArray(data.js_native_tools)) JS_NATIVE_TOOLS = new Set(data.js_native_tools);
+    if (data.standard_version) VERSION = data.standard_version;
     log("info", `Loaded ${Object.keys(TOOLS_CATALOG).length} tools in ${Object.keys(TOOL_GROUPS).length} groups`);
   } catch (e) {
     log("warn", `Could not load catalog from ${CATALOG_PATH}: ${e.message}. Tools/list will be empty.`);
@@ -790,9 +814,13 @@ async function dispatchJsNative(name, args, vaultRoot) {
 // SECCIÓN 3: MCP Protocol (JSON-RPC 2.0)
 // ============================================================================
 
+// `version` es un getter y no un valor: este objeto se evalúa al cargar el
+// módulo y `loadCatalog()` corre en `main()`, así que copiar el número aquí lo
+// habría congelado en el respaldo justo cuando el catálogo sí cargó (AP-49, la
+// misma razón por la que `vault_entorno.leer()` resuelve al llamarse).
 const SERVER_INFO = {
   name: "vault-mcp-server",
-  version: VERSION,
+  get version() { return VERSION; },
 };
 
 const CAPABILITIES = {
@@ -1750,6 +1778,10 @@ async function validateWithObsidian(vaultRoot) {
 // ============================================================================
 
 function parseArgs() {
+  // `--version` y `--help` salen antes de llegar a `main()`, que es quien carga
+  // el catálogo. Sin esto imprimían el respaldo —«desconocida»— justo en los
+  // dos comandos cuya única razón de ser es decir la versión.
+  if (!Object.keys(TOOLS_CATALOG).length) loadCatalog();
   const args = process.argv.slice(2);
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--port" && i + 1 < args.length) {

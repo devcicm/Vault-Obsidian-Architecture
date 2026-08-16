@@ -87,6 +87,15 @@ VARIABLES: Dict[str, Variable] = {
             _presencia,
         ),
         Variable(
+            "VAULT_PERMISSIVE_ROOT", "bandera", False, "kernel",
+            "Permite ESCRIBIR sobre una raíz detectada con baja confianza "
+            "(`repo_root_fallback`). Sin ella, leer con esa raíz sigue "
+            "permitido y escribir se rechaza: instalado fuera del repo, ese "
+            "fallback devuelve el propio directorio del programa, así que la "
+            "escritura caía dentro del toolkit en vez de en un vault.",
+            _bandera,
+        ),
+        Variable(
             "VAULT_CLIENT_CWD", "ruta", None, "kernel",
             "El directorio del cliente MCP, que el servidor no comparte con "
             "el proceso Python. Sin ella la autodetección mira el CWD del "

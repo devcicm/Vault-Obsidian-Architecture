@@ -239,8 +239,29 @@ def test_ningun_guard_conserva_su_propia_carga_de_baseline():
 def test_el_dueno_no_importa_ninguna_tool():
     """Fan-out cero. Lo consumen guards del meta-toolkit y también tools que
     miden vaults; una dependencia hacia arriba desde aquí invertiría la
-    dirección que AP-59 vigila."""
+    dirección que AP-59 vigila.
+
+    La excepción son las **hojas del kernel**: módulos que no importan ningún
+    `vault_*` a su vez, así que depender de ellos no puede crear una dependencia
+    hacia arriba ni un ciclo. `vault_subproceso` (v40.30) es una de ellas, y la
+    alternativa a importarla era escribir `encoding="utf-8"` a mano en las dos
+    llamadas de este fichero — o sea, dos copias más de un criterio que acababa
+    de estrenar dueño (AP-57). La lista se escribe a mano a propósito: si crece
+    sin que nadie lo note, este test ha dejado de decir algo.
+    """
+    HOJAS_DEL_KERNEL = {"vault_subproceso"}
     fuente = (RAIZ / "scripts" / "vault_baseline.py").read_text(encoding="utf-8")
     for linea in fuente.splitlines():
-        if linea.startswith(("import ", "from ")):
-            assert "vault_" not in linea, linea
+        if not linea.startswith(("import ", "from ")):
+            continue
+        if any(hoja in linea for hoja in HOJAS_DEL_KERNEL):
+            continue
+        assert "vault_" not in linea, linea
+
+    # Y que la hoja siga siendo hoja: si algún día importa el toolkit, esta
+    # exención pasa a tapar justo la dependencia que el test vigila.
+    for hoja in HOJAS_DEL_KERNEL:
+        cuerpo = (RAIZ / "scripts" / f"{hoja}.py").read_text(encoding="utf-8")
+        for linea in cuerpo.splitlines():
+            if linea.startswith(("import ", "from ")):
+                assert "vault_" not in linea, f"{hoja}: {linea}"

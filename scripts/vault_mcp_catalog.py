@@ -23,6 +23,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from vault_version import CURRENT_VERSION
+
 #: Raíz del repo — el guard de `js_native_tools` cruza a `mcp/nodejs/`.
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -4345,6 +4347,14 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
         # `vault_smoke` probaba el `.py` que el agente no toca. Ahora sale de
         # aquí y los dos consumidores lo leen; `--check` falla si divergen.
         "js_native_tools": sorted(NATIVE_JS_TOOLS),
+        # v40.30 — la versión del estándar, para que el `.mjs` deje de escribirla.
+        # El servidor anunciaba `v39.3 (SDD)` en su handshake, en `--version` y
+        # en cada evento SSE mientras el estándar iba por v40.29: nueve versiones
+        # de desfase en la superficie que ve el agente, que es donde más caro
+        # sale. Es AP-47 al otro lado de la frontera de lenguaje, donde el guard
+        # de cifras a mano no llega — y por eso viaja por la pasarela que sí la
+        # cruza, este JSON, en vez de arreglarse escribiendo el número correcto.
+        "standard_version": CURRENT_VERSION,
     }
 
     with open(output_path, "w", encoding="utf-8") as f:
@@ -4421,6 +4431,16 @@ def check_sync(json_path: Optional[str] = None) -> Dict[str, Any]:
     # Python: un criterio copiado en `.mjs` no lo ve ningún guard del repo.
     # Sin esto, el servidor puede despachar como nativo lo que Python cree
     # Python, y el agente recibe `ok: true` de algo que no se ejecutó.
+    # La versión viaja por la pasarela, así que la pasarela también se vigila:
+    # un JSON con la versión vieja deja al servidor anunciando la vieja, que es
+    # el defecto que v40.30 corrigió.
+    if existing.get("standard_version") != CURRENT_VERSION:
+        result["ok"] = False
+        result["diffs"].append(
+            f"standard_version divergen: Python={CURRENT_VERSION} "
+            f"JSON={existing.get('standard_version')}"
+        )
+
     js_en_json = set(existing.get("js_native_tools", []))
     for origen, medido in (("mjs", _js_native_del_servidor()),):
         if medido is not None and medido != set(NATIVE_JS_TOOLS):

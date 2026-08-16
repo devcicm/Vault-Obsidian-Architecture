@@ -12,6 +12,8 @@ Tres causas, una prueba por cada una:
 
 import json
 import subprocess
+
+import vault_subproceso
 import sys
 from pathlib import Path
 
@@ -43,11 +45,10 @@ def _run_detect(tmp_path: Path, env_extra=None):
     env.pop("VAULT_ROOT", None)
     if env_extra:
         env.update(env_extra)
-    proc = subprocess.run(
+    proc = vault_subproceso.ejecutar(
         [sys.executable, "-c", code],
         cwd=scripts_dir,
         capture_output=True,
-        text=True,
         env=env,
     )
     return proc

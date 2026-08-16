@@ -126,9 +126,11 @@ def _rehacer_grafo() -> Dict[str, Any]:
 
         import subprocess
 
-        proc = subprocess.run(
+        import vault_subproceso
+
+        proc = vault_subproceso.ejecutar(
             [sys.executable, str(graph_script)],
-            capture_output=True, text=True, timeout=60,
+            capture_output=True, timeout=60,
         )
         datos = json.loads(proc.stdout) if proc.stdout else {}
         return datos.get("stats", {"error": proc.stderr[:200]})

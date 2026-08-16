@@ -53,11 +53,28 @@ def test_ningun_modulo_esta_en_dos_contextos():
 
 
 def test_cada_contexto_declara_lenguaje_y_puertos():
-    """Un contexto sin lenguaje ubicuo no es un contexto: es una carpeta."""
+    """Un contexto sin lenguaje ubicuo no es un contexto: es una carpeta.
+
+    El puerto se exige a todo el que **publica API**. `cli` no lo hace y por eso
+    queda fuera: nadie importa de `cli/`, es un adaptador de transporte que
+    traduce argumentos a llamadas y envelopes a salida. Obligarle a declarar un
+    puerto sería inventar una interfaz que ningún consumidor usa — el contrario
+    exacto de lo que este fichero mide. Lo que sí se le exige es que el hueco
+    sea deliberado y no un olvido: `puertos` vacío del todo, no a medias.
+    """
+    SIN_API = {"cli"}
     for nombre, datos in arch.CONTEXTS.items():
         assert datos["lenguaje"], nombre
-        assert datos["puertos"], nombre
         assert datos["modulos"], nombre
+        if nombre in SIN_API:
+            assert datos["puertos"] == {}, (
+                f"{nombre} ya publica API: sácalo de SIN_API en vez de dejar "
+                "sus puertos sin verificar")
+            assert datos["prohibe"], (
+                f"{nombre} no publica puertos y tampoco declara qué prohíbe: "
+                "entonces su frontera no está escrita en ninguna parte")
+            continue
+        assert datos["puertos"], nombre
 
 
 def test_el_meta_toolkit_declara_su_prohibicion():

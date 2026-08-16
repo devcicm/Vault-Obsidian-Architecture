@@ -59,6 +59,8 @@ import argparse
 import json
 import statistics
 import subprocess
+
+import vault_subproceso
 import sys
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -108,8 +110,8 @@ def _hay_historia() -> bool:
     """Un clon de profundidad 1 —lo que hace `actions/checkout@v4` por defecto—
     daría un commit por fichero y K3 saldría verde por no haber mirado."""
     for args in (["rev-parse", "--git-dir"], ["rev-parse", "--is-shallow-repository"]):
-        r = subprocess.run(["git", *args], cwd=RAIZ_REPO,
-                           capture_output=True, text=True)
+        r = vault_subproceso.ejecutar(["git", *args], cwd=RAIZ_REPO,
+                           capture_output=True)
         if r.returncode != 0:
             return False
         if args[-1] == "--is-shallow-repository" and r.stdout.strip() == "true":

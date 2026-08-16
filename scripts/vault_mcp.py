@@ -20,6 +20,8 @@ Usage:
 import argparse
 import json
 import subprocess
+
+import vault_subproceso
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -126,11 +128,10 @@ class VaultMCP:
     def health(self) -> Dict[str, Any]:
         """Ejecuta vault_audit y actualiza el contexto."""
         try:
-            result = subprocess.run(
+            result = vault_subproceso.ejecutar(
                 ["python", "vault_audit.py"],
                 cwd=str(SCRIPTS_DIR),
                 capture_output=True,
-                text=True,
                 timeout=120,
             )
             if result.returncode == 0:
@@ -264,11 +265,10 @@ class VaultMCP:
                     args.append(f"--{key}")
                     args.append(str(value))
 
-            result = subprocess.run(
+            result = vault_subproceso.ejecutar(
                 args,
                 cwd=str(SCRIPTS_DIR),
                 capture_output=True,
-                text=True,
                 timeout=120,
             )
 

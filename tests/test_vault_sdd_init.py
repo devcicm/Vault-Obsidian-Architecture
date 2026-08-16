@@ -10,6 +10,8 @@ import os
 import json
 import shutil
 import subprocess
+
+import vault_subproceso
 from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
@@ -137,7 +139,7 @@ class TestSkillExecution:
         sdd = tmp_test_dir / "docs" / "sdd"
 
         # Invoke main with --dry-run
-        result = subprocess.run(
+        result = vault_subproceso.ejecutar(
             [
                 sys.executable,
                 str(Path(__file__).parent.parent / "scripts" / "vault_sdd_init.py"),
@@ -146,7 +148,6 @@ class TestSkillExecution:
                 str(tmp_test_dir),
             ],
             capture_output=True,
-            text=True,
             cwd=Path(__file__).parent.parent,
         )
 

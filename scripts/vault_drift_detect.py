@@ -46,6 +46,8 @@ import re
 
 import subprocess
 
+import vault_subproceso
+
 import sys
 
 from vault_errors import emit_error, wrap_main
@@ -248,11 +250,10 @@ def slugify(text: str) -> str:
 
 def _has_git(path: Path) -> bool:
     try:
-        result = subprocess.run(
+        result = vault_subproceso.ejecutar(
             ["git", "rev-parse", "--git-dir"],
             cwd=str(path),
             capture_output=True,
-            text=True,
             timeout=5,
         )
 
@@ -264,11 +265,10 @@ def _has_git(path: Path) -> bool:
 
 def _git_head_commit(path: Path) -> Optional[str]:
     try:
-        result = subprocess.run(
+        result = vault_subproceso.ejecutar(
             ["git", "rev-parse", "HEAD"],
             cwd=str(path),
             capture_output=True,
-            text=True,
             timeout=5,
         )
 
@@ -301,8 +301,8 @@ def _git_changed_since(path: Path, since_commit: Optional[str]) -> Dict[str, Lis
         if since_commit:
             log_cmd = ["git", "diff", "--name-status", f"{since_commit}...HEAD"]
 
-            log_result = subprocess.run(
-                log_cmd, cwd=str(path), capture_output=True, text=True, timeout=10
+            log_result = vault_subproceso.ejecutar(
+                log_cmd, cwd=str(path), capture_output=True, timeout=10
             )
 
             for line in log_result.stdout.splitlines():
@@ -349,8 +349,8 @@ def _git_changed_since(path: Path, since_commit: Optional[str]) -> Dict[str, Lis
 
         diff_cmd = ["git", "diff", "--name-status", "HEAD"]
 
-        diff_result = subprocess.run(
-            diff_cmd, cwd=str(path), capture_output=True, text=True, timeout=10
+        diff_result = vault_subproceso.ejecutar(
+            diff_cmd, cwd=str(path), capture_output=True, timeout=10
         )
 
         for line in diff_result.stdout.splitlines():

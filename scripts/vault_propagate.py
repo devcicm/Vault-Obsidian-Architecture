@@ -26,6 +26,8 @@ import argparse
 import json
 import re
 import subprocess
+
+import vault_subproceso
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
@@ -166,7 +168,7 @@ def _action_reindex(folders: Set[str]) -> List[str]:
             folder,
         ]
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            result = vault_subproceso.ejecutar(cmd, capture_output=True, timeout=30)
             if result.returncode == 0:
                 reindexed.append(folder)
         except Exception:

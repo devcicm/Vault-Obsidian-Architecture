@@ -51,6 +51,8 @@ en vez de aparecer en el JSON sin que nadie la viera pasar.
 import json
 import re
 import subprocess
+
+import vault_subproceso
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
@@ -295,9 +297,9 @@ def pendiente(path: Path, clave: str, norma: str, ultimos: int = 20) -> Dict[str
     """
     rel = path.relative_to(REPO_ROOT).as_posix()
     try:
-        salida = subprocess.run(
+        salida = vault_subproceso.ejecutar(
             ["git", "log", f"-{ultimos}", "--format=%H %cs", "--", rel],
-            cwd=REPO_ROOT, capture_output=True, text=True, timeout=30, check=False)
+            cwd=REPO_ROOT, capture_output=True, timeout=30, check=False)
     except (OSError, subprocess.SubprocessError) as e:
         return {"disponible": False, "motivo": f"git no ejecutable: {e}", "serie": []}
     if salida.returncode != 0:
@@ -308,8 +310,8 @@ def pendiente(path: Path, clave: str, norma: str, ultimos: int = 20) -> Dict[str
         commit, _, fecha = linea.partition(" ")
         if not commit:
             continue
-        blob = subprocess.run(["git", "show", f"{commit}:{rel}"], cwd=REPO_ROOT,
-                              capture_output=True, text=True, timeout=30, check=False)
+        blob = vault_subproceso.ejecutar(["git", "show", f"{commit}:{rel}"], cwd=REPO_ROOT,
+                              capture_output=True, timeout=30, check=False)
         if blob.returncode != 0:
             continue
         try:
