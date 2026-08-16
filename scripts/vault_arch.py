@@ -477,6 +477,14 @@ CONTEXTS: dict[str, dict] = {
             # cuenta habría sido AP-57 en la tool que nace para vigilar
             # justamente que nadie pague por lo que no consume.
             "vault_recursos",
+            # v40.31. Meta-toolkit por sujeto —mide este repo, no ninguna nota—
+            # pero con una diferencia respecto a todas sus vecinas: las demás
+            # miden el repo contra sí mismo, y esta mide el repo contra lo que
+            # le promete a quien lo instala. Es hoja: solo lee ficheros del
+            # árbol (pyproject, la CI, INSTALL.md) y no importa ningún registro,
+            # porque preguntarle al registro qué prometemos sería volver a
+            # certificarnos con nuestro propio criterio (AP-44).
+            "vault_produccion",
         ],
     },
     # v40.30 — el contexto que faltaba, y el hueco que su ausencia abría.

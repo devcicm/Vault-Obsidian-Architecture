@@ -2664,6 +2664,65 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         ),
         "related": ["vault_arch", "vault_ciclos", "vault_kernel", "vault_blueprint"],
     },
+    "vault_produccion": {
+        "name": "vault_produccion",
+        "script": "vault_produccion.py",
+        "group": "Normas",
+        "purpose": (
+            "Puede usar esto otra persona, y con que fiabilidad. Las demas "
+            "puertas miden el repo contra si mismo —que el catalogo no "
+            "diverja del JSON, que la baseline no crezca— y en esa sala no "
+            "esta el consumidor. Esta tool registra cada promesa que se le hace "
+            "a quien instala (version minima, dependencias, plataformas, "
+            "superficie de red) junto a quien la ejerce de verdad, y falla "
+            "cuando una promesa marcada como cubierta se queda sin ejecutor. "
+            "Nacio de medir la pregunta en vez de opinarla: pyproject prometia "
+            ">=3.9, la CI corria solo 3.11, y seis sitios rompian al IMPORTAR "
+            "en 3.9 sin que nada lo viera."
+        ),
+        "params": {
+            "check": {
+                "type": "boolean",
+                "required": False,
+                "description": "Mide cada promesa contra su ejecutor",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit 1 si alguna promesa perdio su ejecutor",
+                "validators": [],
+            },
+            "guia": {
+                "type": "boolean",
+                "required": False,
+                "description": "Regenera docs/GUIA-DE-PRODUCCION.md desde el registro",
+                "validators": [],
+            },
+            "check-doc": {
+                "type": "boolean",
+                "required": False,
+                "description": "Falla si la guia diverge del registro",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "Verde significa que toda promesa LISTADA tiene ejecutor, no que la "
+            "lista este completa: una promesa que nadie escribio en el registro "
+            "sigue sin medirse, y esta tool no lee el README donde la hiciste",
+            "Comprueba que el ejecutor EXISTA, no que pase — eso es trabajo de "
+            "la CI y de la suite; existir era la condicion que faltaba",
+            "Una promesa `descubierta` con motivo escrito no rompe la puerta: "
+            "declarar un hueco no puede salir mas caro que callarlo",
+        ],
+        "side_effects": ["docs/GUIA-DE-PRODUCCION.md"],
+        "example": (
+            "python vault_produccion.py --check\n"
+            "python vault_produccion.py --check --strict\n"
+            "python vault_produccion.py --guia"
+        ),
+        "related": ["vault_gate", "vault_foreign_check", "vault_blueprint"],
+    },
     "vault_excepcion_declarada": {
         "name": "vault_excepcion_declarada",
         "script": "vault_excepcion_declarada.py",
@@ -4082,6 +4141,7 @@ GROUPS: Dict[str, List[str]] = {
         "vault_kernel",
         "vault_excepcion_declarada",
         "vault_recursos",
+        "vault_produccion",
     ],
     "Producción/SRE": ["vault_incident_save", "vault_slo_save"],
     "Release": ["vault_release_save"],

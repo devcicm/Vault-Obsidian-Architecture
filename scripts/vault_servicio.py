@@ -276,6 +276,10 @@ NATURALEZAS: Dict[str, Dict[str, Any]] = {
             "vault_gate", "vault_noop_audit", "vault_norms",
             "vault_norms_coherence", "vault_criterios", "vault_ciclos",
             "vault_kernel", "vault_excepcion_declarada", "vault_recursos",
+            # v40.31. Meta-estándar con un matiz que ninguna otra de esta lista
+            # tiene: las demás miden el repo contra sus propios registros, y
+            # esta lo mide contra lo que le promete a quien lo instala.
+            "vault_produccion",
             "vault_servicio",
             "vault_smoke", "vault_voice",
         ],

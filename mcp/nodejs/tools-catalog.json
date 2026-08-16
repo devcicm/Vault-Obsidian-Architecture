@@ -3538,6 +3538,46 @@
         "vault_security_scan"
       ]
     },
+    "vault_produccion": {
+      "name": "vault_produccion",
+      "description": "Puede usar esto otra persona, y con que fiabilidad. Las demas puertas miden el repo contra si mismo —que el catalogo no diverja del JSON, que la baseline no crezca— y en esa sala no esta el consumidor. Esta tool registra cada promesa que se le hace a quien instala (version minima, dependencias, plataformas, superficie de red) junto a quien la ejerce de verdad, y falla cuando una promesa marcada como cubierta se queda sin ejecutor. Nacio de medir la pregunta en vez de opinarla: pyproject prometia >=3.9, la CI corria solo 3.11, y seis sitios rompian al IMPORTAR en 3.9 sin que nada lo viera.",
+      "group": "Normas",
+      "script": "vault_produccion.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "check": {
+            "type": "string",
+            "description": "Mide cada promesa contra su ejecutor"
+          },
+          "strict": {
+            "type": "string",
+            "description": "Exit 1 si alguna promesa perdio su ejecutor"
+          },
+          "guia": {
+            "type": "string",
+            "description": "Regenera docs/GUIA-DE-PRODUCCION.md desde el registro"
+          },
+          "check-doc": {
+            "type": "string",
+            "description": "Falla si la guia diverge del registro"
+          }
+        }
+      },
+      "guards": [
+        "Verde significa que toda promesa LISTADA tiene ejecutor, no que la lista este completa: una promesa que nadie escribio en el registro sigue sin medirse, y esta tool no lee el README donde la hiciste",
+        "Comprueba que el ejecutor EXISTA, no que pase — eso es trabajo de la CI y de la suite; existir era la condicion que faltaba",
+        "Una promesa `descubierta` con motivo escrito no rompe la puerta: declarar un hueco no puede salir mas caro que callarlo"
+      ],
+      "side_effects": [
+        "docs/GUIA-DE-PRODUCCION.md"
+      ],
+      "related": [
+        "vault_gate",
+        "vault_foreign_check",
+        "vault_blueprint"
+      ]
+    },
     "vault_project_overview": {
       "name": "vault_project_overview",
       "description": "Genera overview consolidado de proyecto.",
@@ -5346,7 +5386,8 @@
       "vault_ciclos",
       "vault_kernel",
       "vault_excepcion_declarada",
-      "vault_recursos"
+      "vault_recursos",
+      "vault_produccion"
     ],
     "Producción/SRE": [
       "vault_incident_save",
@@ -5395,5 +5436,5 @@
     "vault_backup_base64",
     "vault_restore_base64"
   ],
-  "standard_version": "v40.30"
+  "standard_version": "v40.31"
 }

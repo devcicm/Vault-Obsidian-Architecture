@@ -2,9 +2,9 @@
 
 **Estándar de diseño para dotar a agentes LLM de memoria documental persistente.**
 
-[![Version](https://img.shields.io/badge/version-v40.30-blue)](./vault-obsidian-architecture.md)
-[![Tools](https://img.shields.io/badge/tools-107_active-green)](./scripts/)
-[![Scripts](https://img.shields.io/badge/scripts-142_total-lightblue)](./scripts/)
+[![Version](https://img.shields.io/badge/version-v40.31-blue)](./vault-obsidian-architecture.md)
+[![Tools](https://img.shields.io/badge/tools-108_active-green)](./scripts/)
+[![Scripts](https://img.shields.io/badge/scripts-143_total-lightblue)](./scripts/)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow)](./scripts/)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](./LICENSE)
 
@@ -248,7 +248,7 @@ python scripts/vault_audit.py
 
 ## CLI consolidada — `cli/`
 
-Las 107 tools bajo un único punto de entrada, con búsqueda, planificación de
+Las 108 tools bajo un único punto de entrada, con búsqueda, planificación de
 concurrencia y guardas de seguridad:
 
 ```bash
@@ -269,7 +269,7 @@ Guía: [`cli/README.md`](cli/README.md) · Referencia de comandos:
 
 ---
 
-## Las 107 tools activas — 37 grupos
+## Las 108 tools activas — 37 grupos
 
 | Grupo | Tools |
 |---|---|
@@ -394,7 +394,7 @@ Sistema de control de asistencia con autenticación biométrica.
 
 Contiene:
 - 8 principios de diseño
-- 107 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
+- 108 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
 - 49 normas: 62 antipatrones (AP-01–AP-37), 6 patrones (PAT-1–PAT-6), 3 SP, 3 CN
 - norm_refs auto-embebido en frontmatter + vault_code_tag para etiquetas en código fuente
 - 8 Fundamentos de Datos (F1–F8) con trazabilidad a tools
@@ -422,7 +422,7 @@ Contiene:
 ## Scripts — estructura del repositorio
 
 ```
-scripts/                    ← 142 archivos Python (107 tools del catálogo + 8 archivadas en _archived/ + internas/meta)
+scripts/                    ← 143 archivos Python (108 tools del catálogo + 8 archivadas en _archived/ + internas/meta)
 ├── vault_io.py             — I/O base: _detect_vault_root, assert_within_vault, atomic_write_text/json, file_lock
 ├── vault_errors.py         — wrap_main (timeout 60s), emit_ok, trace log
 ├── vault_write.py          — tool principal de escritura (guards AP-20, AP-21, norm_refs auto-embed)

@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.30 — 2026-08-16  
+**Versión:** v40.31 — 2026-08-16  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -5003,7 +5003,7 @@ Dos causas, y la segunda es la incómoda:
 
 1. **El audit no lo ejecuta nadie.** En las **1.356 ejecuciones de tools
    registradas** en los `.tool-trace.json` de ese parque, `vault_norms` no
-   aparece **ni una vez**. 41 de las 107 tools del catálogo no se han ejecutado
+   aparece **ni una vez**. 41 de las 108 tools del catálogo no se han ejecutado
    jamás. Los agentes escriben; no gobiernan. Un enforcement que depende de que
    alguien se acuerde de invocarlo es enforcement en el papel.
 2. **Los valores no canónicos los escribía el propio estándar.** El más
@@ -5612,7 +5612,7 @@ de envelope con su contrato de `00_System/tool-spec.json`:
 Y la divergencia peor no era de forma sino de efecto: `jsNativeGraph` no tiene un
 solo `writeFile`. Un agente llamaba `vault_graph` por MCP, recibía `ok: true`, y
 el grafo se quedaba sin regenerar — **AP-37 y AP-47 servidos a la vez por el único
-camino que un agente real usa**. `vault_smoke` recorre las 107 tools del catálogo,
+camino que un agente real usa**. `vault_smoke` recorre las 108 tools del catálogo,
 pero ejecuta el `.py`: probaba exactamente la implementación que el agente no toca.
 
 **Prevención:** backend nativo solo para lo que **no tiene** implementación en
@@ -7190,6 +7190,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
 | v40.30 | 2026-08-16 | **Cuatro medidas cuyo alcance declarado era más ancho que el que de verdad recorrían, y tres defectos que solo existen fuera de este repo.** El resultado de una medida así no es un error sino un **cero**, que se lee igual que estar limpio: `cli/` llevaba en `ARBOLES_MEDIDOS` desde v40.9 sin contexto declarado, así que `_mapa_modulos()` devolvía `None` y las dos rutas de detección descartaban sus ficheros antes de leer un import; `vault_ciclos` medía el grafo de `scripts/`, de modo que `vault/` —el paquete que existe para imponer fronteras— era el único cuyos ciclos no contaba nadie; y `vault_audit` recorría el disco 25 veces por invocación para leer lo mismo. Los otros tres salieron de instalar `scripts vault cli mcp` **fuera del repo** y ejecutar contra un vault vacío, que es la regla 7 aplicada al propio programa: la autodetección caía a `repo_root_fallback` —«no encontré nada y estoy suponiendo»— y devolvía el directorio del toolkit, así que las escrituras aterrizaban dentro del programa; el servidor MCP escaneaba hacia arriba y registraba tres vaults ajenos **con `VAULT_ROOT` explícito puesto**, un inventario del disco del usuario expuesto al agente como default; y 23 llamadas a `subprocess` en 13 módulos decodificaban con la locale de la máquina mientras el toolkit emite UTF-8, lo que en cp1252 corrompe el acento en silencio y en cp932 tumba la tool entera. Ninguno de los siete podía verse desde dentro: el entorno que generó la medida comparte sus supuestos |
+| v40.31 | 2026-08-16 | **La pregunta que ninguna de las veinte puertas se hacía: ¿puede usar esto otra persona?** Todas medían el repo contra sus propios registros —que el catálogo no diverja del JSON, que la baseline no crezca, que el plano no envejezca— y en esa sala no estaba el consumidor. Hecha la pregunta con la versión anterior recién cerrada y todo en verde, apareció un defecto en menos de diez minutos: `pyproject.toml` prometía Python >=3.9 y la CI ejecutaba solo 3.11; seis sitios rompían **al importar** en 3.9 —`ast.AST | None` en una anotación se evalúa al definir la función—, dos de ellos en módulos que importa medio repo, de modo que quien instalara en 3.9 o 3.10 no habría arrancado nada. Es la misma forma que los siete ceros de v40.30 y el mismo argumento que la regla 7, aplicado esta vez a lo que el producto **promete**: `vault_produccion` registra cada promesa hecha a quien instala —versión mínima, dependencias, plataformas, superficie de red, forma de invocación— junto al predicado que la ejerce de verdad, y la puerta falla cuando una promesa marcada como cubierta se queda sin ejecutor. Dos huecos quedan publicados como `descubierta` con el motivo escrito, en vez de tapados |
 | v40.29 | 2026-08-15 | **La baseline de AP-52 llega a cero: 158 sitios en v40.0, nueve al empezar, ninguno al cerrar.** Los nueve que quedaban llevaban desde v40.9 declarados como deuda con el motivo escrito —«la pregunta de fondo no es cómo se escribe el envelope sino quién lo escribe»—: `vault/indices/` y `vault/durabilidad/` devolvían `{"ok": False, "error": ...}`, la forma exacta del envelope de una tool, y tres adaptadores lo reenviaban al consumidor sin `error_code` ni `recovery`. Las dos salidas obvias eran malas: que el dominio importe `vault_errors` lo ata al catálogo de la herramienta y deja de ser dominio; devolver un dict con más campos no mueve nada. La salida es **partir la frase en dos mitades con dueño**: el dominio nombra la **causa** (`vault/kernel/fallos.py`, hoja sin un solo import fuera de `typing`) y la herramienta nombra la **recuperación**, con la tabla de equivalencias en un único sitio (`vault_errors.emit_fallo`) porque copiarla en tres adaptadores habría sido AP-57 cometido al saldar AP-52. Se **levanta** en vez de devolver: un fallo devuelto como valor se ignora por olvido y uno de los cuatro casos es el borrado del vault sin confirmar. Dos códigos nuevos en el catálogo antes que forzar el mapeo a `FILE_NOT_FOUND`, cuyo `recovery` manda ejecutar `vault_search` sobre las notas: un `recovery` que no recupera es peor que ninguno, porque el consumidor sí lo obedece |
 | v40.28 | 2026-08-15 | **La pregunta que v40.27 dejó abierta era «¿cuántas veces más pasa esto?», y a ojo no se contesta con 136 módulos.** El hallazgo de v40.27 —veintiún importadores cruzando una frontera de negocio para leer una tabla— se convierte en norma medida: **AP-62, el consumidor paga el fan-out del productor**, con `vault_recursos` como guard y una vigésima puerta. Una arista es deuda cuando se dan las cuatro: el destino no está en el núcleo, tiene fan-out mayor que cero, todo lo que el origen le pide es un recurso —constante o función pura— y los dos están en contextos distintos. Lo caro fue la tercera: la primera versión miraba referencias directas y daba por «pura» una función que recorre el vault a través de un helper local, que es **AP-44 cometido en la tool que nace para detectar que el consumidor no ve lo que paga**; se arregla propagando el acoplamiento a punto fijo. Medidos diez sitios, se saldan ocho con el mismo movimiento cuatro veces —`vault_version`, `vault_fundamentals_catalog`, `vault_audit_catalog`, `vault_mermaid_reglas`, todos hojas de fan-out cero, con la fachada reexportando por no-derogación—: **10 → 2 sitios, 42 → 35 cruces, cero nuevos**. Los dos que quedan **declaran por qué**: `vault_spec_generate_catalog --write` reescribe `vault_mcp_catalog.py` entero, así que el corte se desharía solo en la primera regeneración. De paso, el test de v40.27 resultó estar **vacío** —comprobaba fan-out contra `grafo()`, que no devuelve una adyacencia, y por tanto era cierto siempre—: el mismo cero fabricado de v40.17, ahora con control negativo |
 | v40.27 | 2026-08-14 | **Veinte de los sesenta y dos cruces de contexto eran tools leyendo una tabla constante.** Los cruces de `arch-baseline.json` llevaban veintiséis versiones subiendo —48 → 62— sin que ninguna puerta se pusiera roja, y la medida dice por qué: veinticuatro de ellos iban al mismo destino, `vault_norms`, y veintiuno de sus veinticuatro importadores solo pedían datos. Hasta v40.26 eso no se podía ver, porque el catálogo compartía fichero con el motor que lo audita; partido, quedó con **fan-out cero** —ni un `vault_*`, solo `re` y `typing`—, que es la forma exacta de `vault_registry`, ya en el núcleo. Se muda allí, `compute_norm_refs` se va con él por ser derivación pura de catálogo, y los veintiún importadores pasan a pedirle el dato al dueño en vez de a la fachada que arrastra el motor entero. **62 → 42 cruces, cero nuevos, `off_port_total` intacto en 12.** Y como la cifra bajó por un movimiento y no por una regla más laxa, se añade lo que faltaba para que no vuelva a subir: `PRESUPUESTO_DE_CRUCES` presupuesta el **par de contextos**, no el sitio —«Autoría depende de Gobernanza» se decide una vez—, con `permanente`, `a_eliminar` + fecha o `en_estudio` + hipótesis escrita, y un par nuevo **bloquea la puerta**. La baseline decía cuánta deuda hay; esto dice hacia dónde va, que es la pregunta que nadie tuvo que responder mientras la cifra crecía |
@@ -7540,6 +7541,62 @@ temp/
 
 > **Política de no-derogación:** las entradas de este changelog no se eliminan ni se reescriben.
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
+
+---
+
+### v40.31 — 2026-08-16 `git: pending`
+
+**La pregunta que ninguna puerta se hacía.**
+
+Las veinte puertas del estándar miden **el repo contra sí mismo**. Todas correctas, y todas
+ciegas a lo mismo: en esa sala no está el consumidor. Con v40.30 recién cerrada, las veinte
+en verde y la suite entera pasando, la pregunta *«¿ya puede usarlo otra persona, aparte de mí,
+y con resultados fiables?»* destapó un defecto en menos de diez minutos.
+
+`pyproject.toml` prometía **Python >=3.9**. La CI ejecutaba **solo 3.11**. Seis sitios rompían
+en 3.9, y no al llamarse: **al importar el módulo**, porque `ast.AST | None` en una anotación
+se evalúa al definir la función si el fichero no trae `from __future__ import annotations`.
+Dos de los seis eran `vault_grafo_import` —dueño del grafo del que AP-59 deriva sus umbrales—
+y `vault_norms_catalog`, que importa medio repo. Quien instalara en 3.9 o 3.10 no habría
+arrancado nada, y aquí nada estaba roto.
+
+Es la forma exacta de los siete ceros de v40.30, y el mismo argumento de la regla 7 aplicado
+al propio producto:
+
+```
+alcance declarado  >  alcance ejercido   ⇒   el hueco devuelve CERO,
+                                             y un cero se lee como limpio.
+```
+
+**Lo que se construye para que no vuelva a depender de que alguien se acuerde de preguntar.**
+`scripts/vault_produccion.py` es un registro, no un documento: cada promesa hecha a quien
+instala el toolkit —versión mínima, dependencias, plataformas soportadas, superficie de red,
+forma de invocación— va acompañada del **predicado que la ejerce**, y no de una descripción en
+prosa, que es lo que vuelve a convertir un criterio en un párrafo que nadie ejecuta. La puerta
+21 falla cuando una promesa marcada como `cubierta` se queda sin ejecutor: un fichero borrado,
+una versión que se cayó de la matriz de CI, un comando que ya no existe.
+
+Comprueba que el ejecutor **exista**, no que pase — eso es trabajo de la CI y de la suite.
+Existir era la condición que faltaba y que no miraba nadie.
+
+**La asimetría que hace que el registro sea barato de mantener.** Una promesa `descubierta`
+**con el motivo escrito** no rompe la puerta; lo que la rompe es una cubierta sin ejecutor, que
+es una mentira comprobable. Es la misma decisión que el repo tomó en v40.16 para las coberturas
+de norma: declararse honestamente no puede salir más caro que callarse. Quedan publicados dos
+huecos —no hay `[project.scripts]`, así que no existe un comando `vault`; y no hay
+`CONTRIBUTING.md` ni `SECURITY.md` en un repositorio público, lo que significa que hoy un fallo
+de seguridad no tiene por dónde llegar salvo un issue abierto— y un tercero declarado dentro de
+una promesa cubierta: la CI ejecuta la suite en Linux, pero el **paseo de instalación** fuera
+del repo solo se ha hecho en Windows.
+
+`docs/GUIA-DE-PRODUCCION.md` se deriva del registro y se regenera con `--guia`. Lo que se
+escriba a mano allí se pierde, que es lo que lo mantiene honesto.
+
+**Qué NO demuestra el verde de esta puerta**, y lo declara igual que `vault_criterios` declara
+el suyo: que toda promesa **listada** tiene quien la ejerza, no que la lista esté completa. Una
+promesa que nadie escribió en el registro sigue sin medirse, y la tool no puede leer lo que se
+prometió en un README que no conoce. El registro se amplía cuando alguien tropieza — que es
+exactamente como nació.
 
 ---
 

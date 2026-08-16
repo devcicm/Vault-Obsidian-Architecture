@@ -1,5 +1,5 @@
 {
-  "version": "v40.30",
+  "version": "v40.31",
   "schema": "1.0",
   "generated_at": "2026-06-25T02:00:00.000Z",
   "description": "Spec-driven tool contracts. Editar este archivo ANTES de implementar una nueva tool. Validar con: python vault_spec_validate.py. v36.0: Added naming convention with explicit suffixes (-runtime, -config, -client, -db, etc.) to eliminate ambiguity. Added detect_ambiguity() and suggest_suffix() functions to vault_migrate.py. Updated manifest with complete disambiguation rules for terms like redis, postgres, nginx, docker, kubernetes, etc.",
@@ -534,6 +534,44 @@
         "dq_dimensions": [
           "consistency",
           "integrity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F8"
+      ]
+    },
+    "vault_produccion": {
+      "group": "Normas",
+      "group_id": 35,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "action",
+        "cubiertas",
+        "descubiertas",
+        "descubiertas_sin_motivo",
+        "doc",
+        "estados_desconocidos",
+        "filas",
+        "hint",
+        "huecos_declarados",
+        "ok",
+        "promesas",
+        "promesas_sin_ejecutor",
+        "recovery",
+        "stale",
+        "tool",
+        "written"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "completeness",
+          "consistency"
         ],
         "cia_scope": [
           "integrity"
@@ -4049,10 +4087,10 @@
     }
   },
   "_counts": {
-    "active": 107,
+    "active": 108,
     "internal": 14,
     "archived": 5,
-    "total": 126,
+    "total": 127,
     "active_groups": 37,
     "schema_version": "1.0"
   }
