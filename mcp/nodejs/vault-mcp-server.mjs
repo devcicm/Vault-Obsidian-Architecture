@@ -102,6 +102,16 @@ let LOG_LEVEL = process.env.VAULT_MCP_LOG || envDefault("VAULT_MCP_LOG");
 const VAULT_REGISTRY = new Map();
 const sessions = new Map();
 
+const MODEL_MAPPING = {
+  "claude-desktop": "claude",
+  "claude": "claude",
+  "cursor": "cursor",
+  "openai-gpt": "gpt-4o",
+  "Codex": "gpt-4o",
+  "gemini-cli": "gemini",
+  "deepseek-chat": "deepseek",
+};
+
 const CATALOG_PATH = join(__dirname, "tools-catalog.json");
 let TOOLS_CATALOG = {};
 let TOOL_GROUPS = {};
@@ -842,8 +852,10 @@ function jsonrpcError(id, code, message, data) {
 function handleInitialize(params, session) {
   if (session) {
     session.clientCapabilities = params.capabilities || {};
+    session.clientInfo = params.clientInfo || null;
   } else {
     clientCapabilities = params.capabilities || {};
+    clientInfo = params.clientInfo || null;
   }
   return {
     protocolVersion: "2024-11-05",
@@ -855,6 +867,10 @@ function handleInitialize(params, session) {
 function handleInitialized(session) {
   if (session) {
     session.initialized = true;
+    if (session.clientInfo?.name && MODEL_MAPPING[session.clientInfo.name]) {
+      session.clientModelProfile = MODEL_MAPPING[session.clientInfo.name];
+      log("info", `Model profile auto-detected: ${session.clientInfo.name} → ${session.clientModelProfile}`);
+    }
   } else {
     initialized = true;
   }
@@ -926,14 +942,14 @@ async function handleToolsCall(params, session) {
       // que corría la tool era el que la autodetección encontrara — es decir,
       // no necesariamente el que el servidor tiene abierto. Los tests no lo
       // veían porque sembraban VAULT_ROOT en el entorno del padre.
-      result = await executePythonTool(scriptPath, args, vaultRoot);
+      result = await executePythonTool(scriptPath, args, vaultRoot, session);
     } else {
       const tool = TOOLS_CATALOG[name];
       if (!tool || !tool.script) {
         return formatToolError("tool_not_found", `Tool '${name}' not found.`);
       }
       const scriptPath = join(SCRIPTS_DIR, tool.script);
-      result = await executePythonTool(scriptPath, args, vaultRoot);
+      result = await executePythonTool(scriptPath, args, vaultRoot, session);
     }
 
     await TraceLog.record(name, args, result);
@@ -985,7 +1001,7 @@ function toolTimeoutMs() {
   return Math.max(envDefault("VAULT_TOOL_TIMEOUT") * 1000, 120000);
 }
 
-function executePythonTool(scriptPath, args, vaultRoot) {
+function executePythonTool(scriptPath, args, vaultRoot, session) {
   return new Promise((resolve, reject) => {
     const cliArgs = [];
     for (const [key, value] of Object.entries(args)) {
@@ -1010,6 +1026,7 @@ function executePythonTool(scriptPath, args, vaultRoot) {
     const python = detectPython();
     const env = { ...process.env };
     if (vaultRoot) env.VAULT_ROOT = vaultRoot;
+    if (session?.clientModelProfile) env.VAULT_MODEL_PROFILE = session.clientModelProfile;
     // Sin esto el hijo hereda la codificación de consola de Windows (cp1252) y
     // cualquier carácter que no exista ahí —`→` de la matriz de trazabilidad,
     // `≥` de la señal de AP-17— mata la tool con UnicodeEncodeError; los acentos,
@@ -1268,6 +1285,8 @@ function startSSE(port) {
         vaultVersion: version,
         initialized: false,
         clientCapabilities: null,
+        clientInfo: null,
+        clientModelProfile: null,
         connectedAt: new Date().toISOString(),
         res,
       });

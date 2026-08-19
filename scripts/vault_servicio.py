@@ -255,7 +255,7 @@ NATURALEZAS: Dict[str, Dict[str, Any]] = {
         "tools": [
             "vault_context_pack", "vault_code_query", "vault_diff", "vault_graph",
             "vault_impact", "vault_knowledge_get", "vault_list",
-            "vault_pattern_list", "vault_preferences", "vault_query_parse",
+            "vault_model_profile", "vault_pattern_list", "vault_preferences", "vault_query_parse",
             "vault_read", "vault_search", "vault_subgraph", "vault_token_counter",
             "vault_token_service", "vault_tokens",
         ],

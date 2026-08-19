@@ -164,6 +164,12 @@ VARIABLES: Dict[str, Variable] = {
             "Nivel de log del servidor MCP (`info` por defecto). Solo la lee "
             "el `.mjs`.",
         ),
+        Variable(
+            "VAULT_MODEL_PROFILE", "texto", "", "consulta",
+            "Perfil de modelo LLM activo. Lo propaga el servidor MCP al detectar "
+            "el cliente (clientInfo.name). Lo lee vault_model_profile y vault_context_pack "
+            "para adaptar el budget al modelo.",
+        ),
     ]
 }
 

@@ -126,6 +126,16 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": None,
         },
     },
+    "MODEL_PROFILE_UNKNOWN": {
+        "category": "infrastructure",
+        "severity": "warning",
+        "message": "El perfil de modelo no se reconoció. Se usa budget de fallback.",
+        "recovery": {
+            "action": "auto",
+            "hint": "El servidor MCP mapeó clientInfo a un perfil inexistente. Budget ajustado a 2000 tokens.",
+            "docs": None,
+        },
+    },
     # ── Validation ────────────────────────────────────────────────────────────
     "MISSING_REQUIRED_ARG": {
         "category": "validation",

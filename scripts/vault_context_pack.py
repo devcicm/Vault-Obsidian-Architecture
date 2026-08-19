@@ -43,7 +43,8 @@ from vault_search import vault_search
 from vault_subgraph import vault_subgraph
 from vault_token_service import estimate_tokens
 
-DEFAULT_BUDGET = 4000
+FLOOR_BUDGET = 2000
+DEFAULT_BUDGET = FLOOR_BUDGET
 DEFAULT_TOP_K = 12
 DEFAULT_EXCERPT_TOKENS = 350
 
@@ -75,6 +76,32 @@ from vault.kernel import construir  # noqa: E402
 from vault_vocabulario import peso as _peso
 
 CIA_WEIGHT: Dict[str, float] = _peso("severidad")
+
+
+def _resolve_budget_from_profile() -> int:
+    """AP-49: resuelve el budget desde el perfil de modelo al ejecutarse.
+
+    El servidor MCP propaga VAULT_MODEL_PROFILE en cada llamada. Si la
+    variable existe se usa; si no, se recurre al perfil activo. El floor
+    de 2000 tokens asegura que cualquier modelo recibir contexto.
+    """
+    import os
+    import subprocess
+    try:
+        profile_script = Path(__file__).resolve().parent / "vault_model_profile.py"
+        result = subprocess.run(
+            [sys.executable, str(profile_script), "--budget"],
+            capture_output=True, text=True, timeout=10,
+        )
+        if result.returncode == 0:
+            for line in result.stdout.strip().splitlines():
+                try:
+                    return int(line.strip())
+                except ValueError:
+                    continue
+    except (OSError, ValueError):
+        pass
+    return FLOOR_BUDGET
 
 
 def _raiz() -> Path:
@@ -388,9 +415,9 @@ Notas:
                         help="Pregunta en lenguaje natural")
     parser.add_argument("--query", dest="query_flag", default=None,
                         help="La misma pregunta, en forma nombrada (la que usa MCP)")
-    parser.add_argument("--budget", type=int, default=DEFAULT_BUDGET,
+    parser.add_argument("--budget", type=int, default=None,
                         dest="budget_tokens",
-                        help=f"Presupuesto en tokens (default: {DEFAULT_BUDGET})")
+                        help="Presupuesto en tokens (default: del perfil de modelo)")
     parser.add_argument("--top-k", type=int, default=DEFAULT_TOP_K,
                         help=f"Máximo de notas candidatas (default: {DEFAULT_TOP_K})")
     parser.add_argument("--excerpt-tokens", type=int, default=DEFAULT_EXCERPT_TOKENS,
@@ -409,8 +436,10 @@ Notas:
         parser.error("falta la pregunta: pasala como posicional o con --query")
     args.query = pregunta
 
+    budget = args.budget_tokens if args.budget_tokens is not None else _resolve_budget_from_profile()
+
     result = vault_context_pack(
-        query=args.query, budget_tokens=args.budget_tokens, top_k=args.top_k,
+        query=args.query, budget_tokens=budget, top_k=args.top_k,
         excerpt_tokens=args.excerpt_tokens, min_score=args.min_score,
         include_preferences=not args.no_preferences,
     )

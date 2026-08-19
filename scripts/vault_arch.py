@@ -362,9 +362,9 @@ CONTEXTS: dict[str, dict] = {
         "prohibe": ["base de datos", "embeddings", "servicio externo"],
         "modulos": [
             "vault_query_parse", "vault_subgraph", "vault_context_pack",
-            "vault_preferences", "vault_ingest", "vault_mcp_context",
-            "vault_tokens", "vault_token_counter", "vault_token_service",
-            "vault_compact_contracts",
+            "vault_model_profile", "vault_preferences", "vault_ingest",
+            "vault_mcp_context", "vault_tokens", "vault_token_counter",
+            "vault_token_service", "vault_compact_contracts",
         ],
     },
     "ciclo_de_vida": {

@@ -2643,6 +2643,39 @@
         "F7"
       ]
     },
+    "vault_model_profile": {
+      "group": "Memoria de Contexto",
+      "group_id": 34,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "ok",
+        "profile_id",
+        "context_window",
+        "budget",
+        "supports_mcp",
+        "source",
+        "profiles",
+        "warning",
+        "written",
+        "error",
+        "error_code"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "validity",
+          "completeness"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F5",
+        "F7"
+      ]
+    },
     "vault_preferences": {
       "group": "Memoria de Contexto",
       "group_id": 34,

@@ -2883,6 +2883,49 @@
         "vault_backup"
       ]
     },
+    "vault_model_profile": {
+      "name": "vault_model_profile",
+      "description": "Perfil de modelo LLM para contexto adaptativo. Auto-detecta el modelo desde VAULT_MODEL_PROFILE y expone budget correcto para vault_context_pack.",
+      "group": "Memoria de Contexto",
+      "script": "vault_model_profile.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "list": {
+            "type": "string",
+            "description": "Lista perfiles disponibles"
+          },
+          "active": {
+            "type": "string",
+            "description": "Devuelve el perfil activo"
+          },
+          "set": {
+            "type": "string",
+            "description": "Activa el perfil dado (id)"
+          },
+          "auto": {
+            "type": "string",
+            "description": "Auto-detecta desde nombre del cliente MCP"
+          },
+          "budget": {
+            "type": "string",
+            "description": "Solo imprime el budget (consumo interno)"
+          },
+          "window": {
+            "type": "string",
+            "description": "Solo imprime context_window"
+          }
+        }
+      },
+      "guards": [],
+      "side_effects": [
+        "Actualiza 17_Preferences/model_profile.active"
+      ],
+      "related": [
+        "vault_context_pack",
+        "vault_preferences"
+      ]
+    },
     "vault_move": {
       "name": "vault_move",
       "description": "Reubica notas entre carpetas del vault, actualiza wiki-links, índices y grafo.",
@@ -5418,6 +5461,7 @@
     ],
     "Memoria de Contexto": [
       "vault_preferences",
+      "vault_model_profile",
       "vault_query_parse",
       "vault_subgraph",
       "vault_context_pack",

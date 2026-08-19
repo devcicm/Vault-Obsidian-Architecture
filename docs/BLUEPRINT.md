@@ -34,7 +34,7 @@ Restricciones que son decisión de producto, no limitación pendiente:
 | Capacidad | Resultado | Grupos | Tools |
 |---|---|---|---|
 | **Escritura → gobernanza** (`escritura_a_gobernanza`) | Lo que el agente captura queda escrito una sola vez, normalizado contra las normas, versionado y auditable después. | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 36, 37 | 78 |
-| **Consulta → contexto** (`consulta_a_contexto`) | Una pregunta del agente se convierte en un paquete de contexto acotado y presupuestado, recorriendo el grafo del vault sin índice externo. | 26, 34 | 8 |
+| **Consulta → contexto** (`consulta_a_contexto`) | Una pregunta del agente se convierte en un paquete de contexto acotado y presupuestado, recorriendo el grafo del vault sin índice externo. | 26, 34 | 9 |
 | **Gobernanza del estándar** (`gobernanza_del_estandar`) | El estándar cumple lo que publica: registro canónico primero, doc derivada, guard que falla si divergen. Ninguna de estas tools toca las notas de un usuario. | 35 | 22 |
 
 - **`consulta_a_contexto`** — El grupo 26 (Tokens) cae en el rango 1–33 que `CLAUDE.md` atribuye al primer eje, pero sus tres tools viven en el contexto `consulta` y existen para que el paquete quepa en la ventana. El rango es cronológico, no clasificatorio.
@@ -57,7 +57,7 @@ regenera.*
 | **Grafo** (`grafo`) | 3 | 15 | — |
 | **Gobernanza** (`gobernanza`) | 20 | 11 | — |
 | **Índices** (`indices`) | 8 | 6 | — |
-| **Consulta** (`consulta`) | 7 | 10 | base de datos; embeddings; servicio externo |
+| **Consulta** (`consulta`) | 7 | 11 | base de datos; embeddings; servicio externo |
 | **Ciclo de vida** (`ciclo_de_vida`) | 3 | 8 | — |
 | **Durabilidad** (`durabilidad`) | 4 | 4 | escribir fuera de la raíz del vault (AP-36) |
 | **Meta-toolkit** (`meta_toolkit`) | 4 | 28 | escribir en una sección de contenido: sus artefactos derivados viven en 00_System/ |
@@ -156,7 +156,7 @@ Sin puerta ni test (15): `AP-04`, `AP-08`, `AP-12`, `AP-13`, `AP-18`, `AP-20`, `
 
 *Registros: `vault_mcp_catalog.TOOLS_CATALOG` + `<vault>/00_System/tool-spec.json`*
 
-108 tools activas en 37 grupos. Toda tool
+109 tools activas en 37 grupos. Toda tool
 del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 `status: archived | internal | orphan` — no se borra, se anota
 (`vault_mcp_catalog.py --check-contracts`).
@@ -180,7 +180,7 @@ del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 | IA Governance | 1 |
 | Infraestructura | 4 |
 | Línea de Tiempo | 1 |
-| Memoria de Contexto | 5 |
+| Memoria de Contexto | 6 |
 | Migración | 2 |
 | Normas | 22 |
 | Observabilidad | 1 |
@@ -272,6 +272,7 @@ falla — no se rellena con el valor más cercano.
 | `vault_mermaid_check` | 4 — Diagramas | escritura_a_gobernanza |
 | `vault_migrate_docs` | 9 — Migración | escritura_a_gobernanza |
 | `vault_migrate_rollback` | 9 — Migración | escritura_a_gobernanza |
+| `vault_model_profile` | 34 — Memoria de Contexto | consulta_a_contexto |
 | `vault_move` | 1 — Core | escritura_a_gobernanza |
 | `vault_ncr_save` | 30 — Riesgos/Calidad | escritura_a_gobernanza |
 | `vault_noop_audit` | 35 — Normas | gobernanza_del_estandar |
