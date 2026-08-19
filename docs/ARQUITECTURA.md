@@ -2,7 +2,7 @@
 
 > Documento derivado. Se genera con `python scripts/vault_arch.py --blueprint`; la fuente es `CONTEXTS` en `scripts/vault_arch.py`. No se edita a mano.
 
-**10 contextos**, **150 módulos** clasificados, **36 fronteras cruzadas** pendientes de publicar puerto.
+**10 contextos**, **151 módulos** clasificados, **36 fronteras cruzadas** pendientes de publicar puerto.
 
 ## Los límites
 
@@ -131,7 +131,7 @@ Fronteras que hoy cruza (1), deuda declarada:
 - **Lenguaje ubicuo:** intención, subgrafo, paquete de contexto, preferencia
 - **Puertos publicados:** `cargar_contexto` → `vault_mcp_context:load_context`, `contexto_de_sesion` → `vault_mcp_context:get_context`, `empaquetar_contexto` → `vault_context_pack:vault_context_pack`, `guardar_contexto` → `vault_mcp_context:save_context`, `limpiar_contexto` → `vault_mcp_context:clear_context`, `parsear_consulta` → `vault_query_parse:vault_query_parse`, `subgrafo` → `vault_subgraph:vault_subgraph`
 - **No cruza:** base de datos; embeddings; servicio externo
-- **Módulos (10):** `vault_compact_contracts`, `vault_context_pack`, `vault_ingest`, `vault_mcp_context`, `vault_preferences`, `vault_query_parse`, `vault_subgraph`, `vault_token_counter`, `vault_token_service`, `vault_tokens`
+- **Módulos (11):** `vault_compact_contracts`, `vault_context_pack`, `vault_ingest`, `vault_mcp_context`, `vault_model_profile`, `vault_preferences`, `vault_query_parse`, `vault_subgraph`, `vault_token_counter`, `vault_token_service`, `vault_tokens`
 
 Fronteras que hoy cruza (3), deuda declarada:
 

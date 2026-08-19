@@ -109,7 +109,7 @@ class TestCLIModes:
     def test_list_flag(self):
         r = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "vault_model_profile.py"), "--list"],
-            capture_output=True, text=True, cwd=str(REPO_ROOT),
+            capture_output=True, text=True, encoding="utf-8", cwd=str(REPO_ROOT),
         )
         assert r.returncode == 0
         data = json.loads(r.stdout)
@@ -119,7 +119,7 @@ class TestCLIModes:
     def test_budget_flag_prints_budget(self):
         r = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "vault_model_profile.py"), "--budget"],
-            capture_output=True, text=True, cwd=str(REPO_ROOT),
+            capture_output=True, text=True, encoding="utf-8", cwd=str(REPO_ROOT),
         )
         assert r.returncode == 0
         lines = r.stdout.strip().splitlines()
@@ -130,7 +130,7 @@ class TestCLIModes:
     def test_window_flag_prints_context_window(self):
         r = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "vault_model_profile.py"), "--window"],
-            capture_output=True, text=True, cwd=str(REPO_ROOT),
+            capture_output=True, text=True, encoding="utf-8", cwd=str(REPO_ROOT),
         )
         assert r.returncode == 0
         val = int(r.stdout.strip())
@@ -139,7 +139,7 @@ class TestCLIModes:
     def test_auto_claude_desktop_maps_to_claude(self):
         r = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "vault_model_profile.py"), "--auto", "claude-desktop"],
-            capture_output=True, text=True, cwd=str(REPO_ROOT),
+            capture_output=True, text=True, encoding="utf-8", cwd=str(REPO_ROOT),
         )
         assert r.returncode == 0
         data = json.loads(r.stdout)
@@ -149,7 +149,7 @@ class TestCLIModes:
     def test_set_and_active_workflow(self):
         r = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "vault_model_profile.py"), "--set", "gpt-4o"],
-            capture_output=True, text=True, cwd=str(REPO_ROOT),
+            capture_output=True, text=True, encoding="utf-8", cwd=str(REPO_ROOT),
         )
         assert r.returncode == 0
         data = json.loads(r.stdout)
@@ -157,7 +157,7 @@ class TestCLIModes:
 
         r2 = subprocess.run(
             [sys.executable, str(SCRIPTS_DIR / "vault_model_profile.py"), "--active"],
-            capture_output=True, text=True, cwd=str(REPO_ROOT),
+            capture_output=True, text=True, encoding="utf-8", cwd=str(REPO_ROOT),
         )
         assert r2.returncode == 0
         data2 = json.loads(r2.stdout)

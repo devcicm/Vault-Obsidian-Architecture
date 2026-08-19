@@ -91,7 +91,7 @@ def _resolve_budget_from_profile() -> int:
         profile_script = Path(__file__).resolve().parent / "vault_model_profile.py"
         result = subprocess.run(
             [sys.executable, str(profile_script), "--budget"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True, text=True, encoding="utf-8", timeout=10,
         )
         if result.returncode == 0:
             for line in result.stdout.strip().splitlines():

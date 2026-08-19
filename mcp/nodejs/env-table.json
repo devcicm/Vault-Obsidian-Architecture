@@ -98,6 +98,13 @@
       "default": "info",
       "context": "meta_toolkit",
       "purpose": "Nivel de log del servidor MCP (`info` por defecto). Solo la lee el `.mjs`."
+    },
+    {
+      "name": "VAULT_MODEL_PROFILE",
+      "type": "texto",
+      "default": "",
+      "context": "consulta",
+      "purpose": "Perfil de modelo LLM activo. Lo propaga el servidor MCP al detectar el cliente (clientInfo.name). Lo lee vault_model_profile y vault_context_pack para adaptar el budget al modelo."
     }
   ]
 }

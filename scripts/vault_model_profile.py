@@ -35,6 +35,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.consulta.repositorio import RepositorioConsulta
 from vault.kernel import construir
+from vault_entorno import leer
 
 
 FLOOR_BUDGET = 2000
@@ -221,7 +222,7 @@ el cliente (clientInfo.name en el handshake initialize).
 
     args = parser.parse_args()
 
-    env_profile = os.environ.get("VAULT_MODEL_PROFILE")
+    env_profile = leer("VAULT_MODEL_PROFILE")
 
     if args.list:
         result = vault_model_profile_list()
