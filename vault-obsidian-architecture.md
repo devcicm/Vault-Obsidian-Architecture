@@ -7547,7 +7547,7 @@ temp/
 
 ---
 
-### v40.34 — 2026-08-19 `git: pending`
+### v40.34 — 2026-08-20 `git: 6d80f0b`
 
 **La cadena de valor optimizada, sin tocar una regla del vault.**
 
