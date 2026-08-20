@@ -123,6 +123,75 @@ def _git(*args: str) -> Optional[str]:
     return r.stdout.strip()
 
 
+def _tipos_de_hashes(hashes: List[str]) -> Dict[str, str]:
+    """Tipos de objeto git para muchos hashes en un solo subprocess (v40.34).
+
+    Antes `comprobar()` llamaba `git cat-file -t` por cada entrada del
+    changelog (~40 subprocess). `git cat-file --batch-check` lee los hashes por
+    stdin y devuelve `%(objectname) %(objecttype)` en una sola pasada.
+
+    `--batch-check` devuelve el hash **completo** aunque la entrada sea corta
+    (como la del changelog, `rev-parse --short`). El resultado se mapea por
+    prefijo: la clave de entrada corta se resuelve contra el hash completo que
+    git devuelve, y también se registra el hash completo. Los hashes que git no
+    conoce quedan ausentes, igual que devolvería `None` la llamada individual.
+    """
+    if not hashes:
+        return {}
+    try:
+        r = vault_subproceso.ejecutar(
+            ["git", "cat-file", "--batch-check=%(objectname) %(objecttype)"],
+            cwd=str(REPO_ROOT), input="\n".join(hashes) + "\n",
+            capture_output=True, timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return {}
+    if r.returncode != 0:
+        return {}
+    tipos: Dict[str, str] = {}
+    for linea in r.stdout.splitlines():
+        partes = linea.split(" ")
+        if len(partes) != 2 or partes[1] != "commit":
+            continue
+        completo = partes[0]
+        tipos[completo] = "commit"
+        for h in hashes:
+            if completo.startswith(h):
+                tipos[h] = "commit"
+    return tipos
+
+
+def _fechas_de_hashes(hashes: List[str]) -> Dict[str, str]:
+    """Fecha de autoría (`%as`) de muchos hashes en un solo subprocess (v40.34).
+
+    `git show -s --format="%H %as"` acepta varios hashes y emite una línea por
+    cada uno con su hash delante, así que la fecha de cada commit se resuelve en
+    una sola pasada en vez de un `git show` por entrada.
+    """
+    if not hashes:
+        return {}
+    try:
+        r = vault_subproceso.ejecutar(
+            ["git", "show", "-s", "--format=%H %as", *hashes],
+            cwd=str(REPO_ROOT), capture_output=True, timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return {}
+    if r.returncode != 0:
+        return {}
+    fechas: Dict[str, str] = {}
+    for linea in r.stdout.splitlines():
+        partes = linea.split(" ", 1)
+        if len(partes) != 2:
+            continue
+        completo = partes[0]
+        fechas[completo] = partes[1]
+        for h in hashes:
+            if completo.startswith(h):
+                fechas[h] = partes[1]
+    return fechas
+
+
 #: Se usa la fecha de AUTORÍA (`%as`), no la de commit (`%cs`). Un rebase
 #: reescribe la segunda y conserva la primera, así que `%cs` haría que reordenar
 #: el historial estrenara divergencias falsas. En las cinco entradas que este
@@ -212,11 +281,20 @@ def comprobar(version_en_curso: Optional[str] = None) -> Dict[str, Any]:
         })
 
     git_disponible = hay_git()
+    if git_disponible:
+        # Los hashes a contrastar: los del changelog y los de la baseline (una
+        # entrada anotada puede citar un commit que ya no está en el changelog).
+        hashes_a_mirar = {e["hash"] for e in con_hash}
+        hashes_a_mirar.update(e["hash"] for e in con_hash
+                              if e["hash"] in baseline.values())
+        tipos = _tipos_de_hashes(sorted(hashes_a_mirar))
+        fechas = _fechas_de_hashes(sorted(hashes_a_mirar))
+
     for e in con_hash:
         if not git_disponible:
             break
         # (c) El hash existe y es un commit.
-        tipo = _git("cat-file", "-t", e["hash"])
+        tipo = tipos.get(e["hash"]) if git_disponible else None
         if tipo != "commit":
             problemas.append({
                 "version": e["version"],
@@ -228,7 +306,7 @@ def comprobar(version_en_curso: Optional[str] = None) -> Dict[str, Any]:
             })
             continue
         # (d) La fecha coincide con la del commit citado.
-        fecha_commit = _git("show", "-s", "--format=%as", e["hash"])
+        fecha_commit = fechas.get(e["hash"]) if git_disponible else None
         if fecha_commit and fecha_commit != e["fecha"]:
             detalle = (
                 f"el changelog dice {e['fecha']} y el commit `{e['hash']}` "
@@ -248,7 +326,7 @@ def comprobar(version_en_curso: Optional[str] = None) -> Dict[str, Any]:
         vivas = {e["version"]: e for e in con_hash}
         for version, fecha_commit in baseline.items():
             e = vivas.get(version)
-            if e is None or _git("show", "-s", "--format=%as", e["hash"]) == e["fecha"]:
+            if e is None or fechas.get(e["hash"]) == e["fecha"]:
                 saldadas.append(version)
 
     return {

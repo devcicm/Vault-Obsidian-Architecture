@@ -24,6 +24,7 @@ import argparse
 import ast
 import json
 import sys
+from functools import lru_cache
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -51,6 +52,28 @@ ARBOLES_MEDIDOS: tuple[tuple[str, str], ...] = (
     ("cli", "*.py"),
     ("mcp/python", "**/*.py"),
 )
+
+
+@lru_cache(maxsize=None)
+def _ast_de(ruta: Path) -> ast.Module:
+    """Árbol AST de un módulo, cacheado por ruta+mtime+tamaño (v40.34).
+
+    Antes cada analyzer re-parseaba los ~250 ficheros del alcance por su cuenta:
+    `arch.check()` hacía doce barridos completos y tardaba ~10 s por invocación.
+    La clave incluye `mtime_ns` y `size` para que un test que muta un fichero
+    entre llamadas siga viendo el cambio (los tests de `test_arquitectura.py`
+    editan módulos temporales y re-ejecutan los analyzers).
+
+    Re-lanza `SyntaxError`: los llamadores ya lo capturan y deciden qué hacer
+    con el módulo que no parsea.
+    """
+    clave = (str(ruta), ruta.stat().st_mtime_ns, ruta.stat().st_size)
+    return _ast_de_impl(clave, ruta)
+
+
+@lru_cache(maxsize=None)
+def _ast_de_impl(clave: tuple, ruta: Path) -> ast.Module:
+    return ast.parse(ruta.read_text(encoding="utf-8", errors="replace"))
 
 
 def arboles_medidos() -> list[Path]:
@@ -435,7 +458,7 @@ CONTEXTS: dict[str, dict] = {
             "vault_spec_memory", "vault_spec_validate", "vault_test_runner",
             "vault_doc_counts", "vault_doc_sync", "vault_noop_audit",
             "vault_blame_audit", "vault_error_contract", "vault_foreign_check",
-            "vault_gate", "vault_arch",
+            "vault_gate", "vault_arch", "vault_fix_all",
             # Mide el changelog del manifiesto contra git (AP-53). Es
             # meta-toolkit por el mismo motivo que `vault_doc_counts`: su
             # sujeto es este repo, no un vault.
@@ -704,9 +727,7 @@ def cruces() -> list[dict]:
         # Grafo— pero tiene que verse: cablear en silencio es como se coló
         # AP-48.
         try:
-            arbol_s = ast.parse(
-                (SCRIPTS_DIR / f"{nombre}.py").read_text(encoding="utf-8", errors="replace")
-            )
+            arbol_s = _ast_de(SCRIPTS_DIR / f"{nombre}.py")
         except SyntaxError:
             continue
         for nodo in ast.walk(arbol_s):
@@ -752,7 +773,7 @@ def cruces() -> list[dict]:
                 "to": destino_mod, "to_context": destino,
             })
         try:
-            arbol = ast.parse(ruta.read_text(encoding="utf-8", errors="replace"))
+            arbol = _ast_de(ruta)
         except SyntaxError:
             continue
         for nodo in ast.walk(arbol):
@@ -790,7 +811,7 @@ def usos_del_nombre_congelado() -> list[dict]:
     for nombre in sorted(_modulos_en_disco()):
         ruta = SCRIPTS_DIR / f"{nombre}.py"
         try:
-            arbol = ast.parse(ruta.read_text(encoding="utf-8", errors="replace"))
+            arbol = _ast_de(ruta)
         except SyntaxError:
             continue
         for nodo in ast.walk(arbol):
@@ -817,7 +838,7 @@ def vinculos_congelados() -> list[dict]:
     for nombre in _modulos_en_disco():
         ruta = SCRIPTS_DIR / f"{nombre}.py"
         try:
-            arbol = ast.parse(ruta.read_text(encoding="utf-8", errors="replace"))
+            arbol = _ast_de(ruta)
         except SyntaxError:
             continue
         for nodo in arbol.body:
@@ -903,7 +924,7 @@ def rutas_duplicadas() -> list[dict]:
     """
     por_fichero: dict[str, list[str]] = {}
     for repo in sorted(DOMINIO_DIR.glob("*/repositorio.py")):
-        arbol = ast.parse(repo.read_text(encoding="utf-8"))
+        arbol = _ast_de(repo)
         for nodo in arbol.body:
             if not (isinstance(nodo, ast.Assign) and len(nodo.targets) == 1):
                 continue
@@ -1366,7 +1387,7 @@ def escrituras_sin_lock(rutas: list[Path] | None = None) -> list[dict]:
                  else [SCRIPTS_DIR / f"{m}.py" for m in _modulos_en_disco()]):
         mod = ruta.stem
         try:
-            arbol = ast.parse(ruta.read_text(encoding="utf-8", errors="replace"))
+            arbol = _ast_de(ruta)
         except SyntaxError:
             continue
         for nodo in ast.walk(arbol):
@@ -1428,7 +1449,7 @@ def escrituras_prohibidas() -> list[dict]:
         ruta = SCRIPTS_DIR / f"{mod}.py"
         if not ruta.exists():
             continue
-        arbol = ast.parse(ruta.read_text(encoding="utf-8"))
+        arbol = _ast_de(ruta)
         desechables = _nombres_desechables(arbol)
         for nodo in ast.walk(arbol):
             if not isinstance(nodo, ast.Call):
@@ -1482,7 +1503,7 @@ def _simbolos_de_nivel_superior(modulo: str) -> set[str] | None:
     if not ruta.exists():
         return None
     try:
-        arbol = ast.parse(ruta.read_text(encoding="utf-8", errors="replace"))
+        arbol = _ast_de(ruta)
     except SyntaxError:
         return None
     nombres: set[str] = set()
@@ -1601,7 +1622,7 @@ def cruces_fuera_de_puerto() -> list[dict]:
         if origen is None:
             continue
         try:
-            arbol = ast.parse(ruta.read_text(encoding="utf-8", errors="replace"))
+            arbol = _ast_de(ruta)
         except SyntaxError:
             continue
 
@@ -1677,7 +1698,7 @@ def lecturas_de_entorno_sin_registro() -> list[dict]:
         if ruta.stem in _COPIAS_DE_ENTORNO_LEGITIMAS:
             continue
         try:
-            arbol = ast.parse(ruta.read_text(encoding="utf-8", errors="replace"))
+            arbol = _ast_de(ruta)
         except SyntaxError:
             continue
         for nodo in ast.walk(arbol):
@@ -1849,7 +1870,7 @@ def copias_de_vocabulario() -> list[dict]:
         if ruta.stem in fuentes:
             continue
         try:
-            arbol = ast.parse(ruta.read_text(encoding="utf-8", errors="replace"))
+            arbol = _ast_de(ruta)
         except SyntaxError:
             continue
         # `mapa("severidad", {...})` es la forma sancionada para los mapas cuyo

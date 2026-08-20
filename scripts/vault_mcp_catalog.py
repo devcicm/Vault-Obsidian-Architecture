@@ -2226,6 +2226,46 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         ),
         "related": ["vault_doc_counts", "vault_norms", "vault_mcp_catalog"],
     },
+    "vault_fix_all": {
+        "name": "vault_fix_all",
+        "script": "vault_fix_all.py",
+        "group": "Normas",
+        "purpose": (
+            "Regenera todos los artefactos derivados del registro en el orden "
+            "correcto: tools-catalog, env-table, baseline de campos, "
+            "ARQUITECTURA, BLUEPRINT, cifras de la documentación e índice de "
+            "scripts/README.md. Infraestructura de mantenimiento, no una puerta: "
+            "orquesta las herramientas de sync para cerrar el drift recurrente."
+        ),
+        "params": {
+            "dry-run": {
+                "type": "boolean",
+                "required": False,
+                "description": "Muestra el plan de pasos sin ejecutar ninguno",
+                "validators": [],
+            },
+            "step": {
+                "type": "integer",
+                "required": False,
+                "description": "Ejecuta solo un paso (1-7) en vez de todos",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "El orden de los pasos importa: cada uno lee lo que el anterior regenera",
+            "Un paso que falla no detiene los siguientes; se reportan todos",
+            "No mide nada: solo regenera; las puertas verifican el resultado",
+        ],
+        "side_effects": [
+            "Regenera tools-catalog.json, env-table.json, field-compat-baseline.json, "
+            "docs/ARQUITECTURA.md, docs/BLUEPRINT.md y las cifras del README",
+        ],
+        "example": (
+            "python vault_fix_all.py --dry-run\n"
+            "python vault_fix_all.py"
+        ),
+        "related": ["vault_mcp_catalog", "vault_arch", "vault_blueprint", "vault_doc_counts", "vault_doc_sync"],
+    },
     "vault_arch": {
         "name": "vault_arch",
         "script": "vault_arch.py",
@@ -4166,6 +4206,7 @@ GROUPS: Dict[str, List[str]] = {
         "vault_excepcion_declarada",
         "vault_recursos",
         "vault_produccion",
+        "vault_fix_all",
     ],
     "Producción/SRE": ["vault_incident_save", "vault_slo_save"],
     "Release": ["vault_release_save"],

@@ -1633,6 +1633,40 @@
         "vault_gate"
       ]
     },
+    "vault_fix_all": {
+      "name": "vault_fix_all",
+      "description": "Regenera todos los artefactos derivados del registro en el orden correcto: tools-catalog, env-table, baseline de campos, ARQUITECTURA, BLUEPRINT, cifras de la documentación e índice de scripts/README.md. Infraestructura de mantenimiento, no una puerta: orquesta las herramientas de sync para cerrar el drift recurrente.",
+      "group": "Normas",
+      "script": "vault_fix_all.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "dry-run": {
+            "type": "string",
+            "description": "Muestra el plan de pasos sin ejecutar ninguno"
+          },
+          "step": {
+            "type": "string",
+            "description": "Ejecuta solo un paso (1-7) en vez de todos"
+          }
+        }
+      },
+      "guards": [
+        "El orden de los pasos importa: cada uno lee lo que el anterior regenera",
+        "Un paso que falla no detiene los siguientes; se reportan todos",
+        "No mide nada: solo regenera; las puertas verifican el resultado"
+      ],
+      "side_effects": [
+        "Regenera tools-catalog.json, env-table.json, field-compat-baseline.json, docs/ARQUITECTURA.md, docs/BLUEPRINT.md y las cifras del README"
+      ],
+      "related": [
+        "vault_mcp_catalog",
+        "vault_arch",
+        "vault_blueprint",
+        "vault_doc_counts",
+        "vault_doc_sync"
+      ]
+    },
     "vault_fix_brackets": {
       "name": "vault_fix_brackets",
       "description": "Detecta y corrige anomalías de corchetes en wiki-links (AP-22, AP-24).",
@@ -5430,7 +5464,8 @@
       "vault_kernel",
       "vault_excepcion_declarada",
       "vault_recursos",
-      "vault_produccion"
+      "vault_produccion",
+      "vault_fix_all"
     ],
     "Producción/SRE": [
       "vault_incident_save",
@@ -5480,5 +5515,5 @@
     "vault_backup_base64",
     "vault_restore_base64"
   ],
-  "standard_version": "v40.33"
+  "standard_version": "v40.34"
 }

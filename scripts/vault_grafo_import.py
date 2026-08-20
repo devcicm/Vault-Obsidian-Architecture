@@ -49,6 +49,7 @@ from __future__ import annotations
 
 
 import ast
+from functools import lru_cache
 from pathlib import Path
 from typing import Dict, Iterable, Set
 
@@ -117,13 +118,45 @@ def _arbol(ruta: Path, proyeccion: str) -> ast.AST | None:
     """
     if proyeccion == PREFIJO_VAULT:
         try:
-            return ast.parse(ruta.read_text(encoding="utf-8", errors="replace"))
+            return _ast_cacheado(ruta, PREFIJO_VAULT)
         except SyntaxError:
             return None
     try:
-        return ast.parse(ruta.read_text(encoding="utf-8"))
+        return _ast_cacheado(ruta, MODULOS_LOCALES)
     except (SyntaxError, UnicodeDecodeError) as e:
         raise RuntimeError(f"módulo ilegible al medir imports: {ruta.name}") from e
+
+
+@lru_cache(maxsize=None)
+def _arbol_firma(ruta: str, mtime_ns: int, size: int, proyeccion: str) -> ast.AST | None:
+    """El árbol de `_arbol`, cacheado por firma del fichero (v40.34).
+
+    `vault_arch._importaciones` y `vault_ciclos._grafo` llaman a `_arbol`
+    cientos de veces por ejecución; cada llamada re-leía y re-parseaba el
+    fichero. La firma incluye `mtime_ns` y `size` para que un test que muta un
+    fichero entre llamadas siga viendo el cambio.
+
+    Conserva la semántica de cada proyección: la tolerante lee con `replace` y
+    devuelve `None` ante `SyntaxError`; la estricta lee sin `replace` para que
+    un fichero ilegible levante `UnicodeDecodeError` y, con él, el `RuntimeError`
+    de AP-51.
+    """
+    if proyeccion == PREFIJO_VAULT:
+        try:
+            return ast.parse(Path(ruta).read_text(encoding="utf-8", errors="replace"))
+        except SyntaxError:
+            return None
+    return ast.parse(Path(ruta).read_text(encoding="utf-8"))
+
+
+def _ast_cacheado(ruta: Path, proyeccion: str) -> ast.AST | None:
+    """Envoltorio de `_arbol_firma` que computa la firma del fichero.
+
+    Se separa del cuerpo cacheado para que la firma —dos `stat` por fichero, que
+    cuestan— solo se calcule cuando el árbol de esa ruta no esté ya en caché.
+    """
+    st = ruta.stat()
+    return _arbol_firma(str(ruta), st.st_mtime_ns, st.st_size, proyeccion)
 
 
 def importaciones(ruta: Path, proyeccion: str = PREFIJO_VAULT) -> Set[str]:

@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.33 — 2026-08-19  
+**Versión:** v40.34 — 2026-08-19  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -5003,7 +5003,7 @@ Dos causas, y la segunda es la incómoda:
 
 1. **El audit no lo ejecuta nadie.** En las **1.356 ejecuciones de tools
    registradas** en los `.tool-trace.json` de ese parque, `vault_norms` no
-   aparece **ni una vez**. 41 de las 109 tools del catálogo no se han ejecutado
+   aparece **ni una vez**. 41 de las 110 tools del catálogo no se han ejecutado
    jamás. Los agentes escriben; no gobiernan. Un enforcement que depende de que
    alguien se acuerde de invocarlo es enforcement en el papel.
 2. **Los valores no canónicos los escribía el propio estándar.** El más
@@ -5612,7 +5612,7 @@ de envelope con su contrato de `00_System/tool-spec.json`:
 Y la divergencia peor no era de forma sino de efecto: `jsNativeGraph` no tiene un
 solo `writeFile`. Un agente llamaba `vault_graph` por MCP, recibía `ok: true`, y
 el grafo se quedaba sin regenerar — **AP-37 y AP-47 servidos a la vez por el único
-camino que un agente real usa**. `vault_smoke` recorre las 109 tools del catálogo,
+camino que un agente real usa**. `vault_smoke` recorre las 110 tools del catálogo,
 pero ejecuta el `.py`: probaba exactamente la implementación que el agente no toca.
 
 **Prevención:** backend nativo solo para lo que **no tiene** implementación en
@@ -7190,6 +7190,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
 | v40.30 | 2026-08-16 | **Cuatro medidas cuyo alcance declarado era más ancho que el que de verdad recorrían, y tres defectos que solo existen fuera de este repo.** El resultado de una medida así no es un error sino un **cero**, que se lee igual que estar limpio: `cli/` llevaba en `ARBOLES_MEDIDOS` desde v40.9 sin contexto declarado, así que `_mapa_modulos()` devolvía `None` y las dos rutas de detección descartaban sus ficheros antes de leer un import; `vault_ciclos` medía el grafo de `scripts/`, de modo que `vault/` —el paquete que existe para imponer fronteras— era el único cuyos ciclos no contaba nadie; y `vault_audit` recorría el disco 25 veces por invocación para leer lo mismo. Los otros tres salieron de instalar `scripts vault cli mcp` **fuera del repo** y ejecutar contra un vault vacío, que es la regla 7 aplicada al propio programa: la autodetección caía a `repo_root_fallback` —«no encontré nada y estoy suponiendo»— y devolvía el directorio del toolkit, así que las escrituras aterrizaban dentro del programa; el servidor MCP escaneaba hacia arriba y registraba tres vaults ajenos **con `VAULT_ROOT` explícito puesto**, un inventario del disco del usuario expuesto al agente como default; y 23 llamadas a `subprocess` en 13 módulos decodificaban con la locale de la máquina mientras el toolkit emite UTF-8, lo que en cp1252 corrompe el acento en silencio y en cp932 tumba la tool entera. Ninguno de los siete podía verse desde dentro: el entorno que generó la medida comparte sus supuestos |
+| v40.34 | 2026-08-19 | **La cadena de valor optimizada con el algoritmo de Musk, sin tocar una regla del vault.** Tres ganancias de infraestructura que cumplen la misma promesa —memoria documental persistente, auditable y gobernada sobre markdown plano— más barata de mantener. **Caché AST** en `vault_arch` y `vault_grafo_import` (clave ruta+mtime+tamaño): el guard que dibuja las fronteras re-parseaba los ~250 ficheros del alcance en cada analyzer, y el que mide los imports 568 veces por ejecución; `test_arquitectura.py` pasa de 155s a 98s y el gate `arquitectura` de 12.8s a 8s. **Batch de git** en `vault_changelog_check`: ~80 subprocess por ejecución se reducen a dos pasadas (`cat-file --batch-check` + `show` múltiple), y el gate `changelog` pasa de 7.7s a 0.4s. **`vault_fix_all`** — una tool nueva que regenera todos los artefactos derivados en el orden correcto (tools-catalog → env-table → baseline de campos → ARQUITECTURA → BLUEPRINT → cifras → índice), cerrando el drift recurrente que dejaba derivados stale tras cada cambio. El README, además, mentía sobre sí mismo: decía v34, 49 normas y 17 carpetas cuando el registro decía v40.33, 74 y 22 — ninguna puerta lo veía porque `vault_doc_counts` vigila cifras y no prosa; corregido. Ninguna regla de ordenar, clasificar ni estructurar la data cambió: es infraestructura pura |
 | v40.33 | 2026-08-19 | **Adapter de modelo LLM: el vault se adapta al que conecta, sin intervención manual.** El estándar funciona con cualquier modelo, pero hasta ahora el budget de contexto era un número fijo (4000 tokens) independiente de la ventana real del modelo. `vault_model_profile` auto-detecta el modelo desde `clientInfo.name` del handshake MCP, resuelve el perfil en `model_profiles.json` y expone el budget correcto. `vault_context_pack` lo consume dinámicamente: claude y cursor reciben 15000 tokens, gpt-4o recibe 8000, deepseek 6000, gemini 4000, y cualquier modelo nuevo recibe un floor de 2000 tokens. La propagación funciona en tres capas: MCP detecta y propaga via `VAULT_MODEL_PROFILE`, la tool la lee via `leer()` del registro de entorno, y el consumer la usa al resolver el budget. El servidor MCP no necesita configuración adicional: el perfil se infiere del nombre del cliente en el handshake. Fix posterior: sincronización de registros derivados (`env-table.json`, `field-compat-baseline.json`, `docs/BLUEPRINT.md`), corrección de encoding UTF-8 en subprocess y registro de entorno vía `leer()` en vez de `os.environ` directo |
 | v40.32 | 2026-08-16 | **Lo que se publica es solo el estándar, y ahora lo mide algo.** Al preparar la primera publicación del repositorio apareció la promesa que ninguna puerta cubría: en el mismo disco, al lado del toolkit, viven copias de vaults reales de otros proyectos —notas privadas, runbooks con credenciales, datos de clientes— y lo único que las mantenía fuera de git era el `.gitignore`, que es **advisory**: no para un `git add -f`, ni para un directorio hermano que nadie añada al fichero, ni para una reordenación que rompa la cadena de des-ignorados de `vault-sandbox/`. Un fallo ahí no da error: da un commit publicado, y publicado es publicado aunque se borre después. `tests/test_publicacion_limpia.py` mide **el índice de git**, no el disco, y comprueba las dos direcciones —que nada prohibido entre, y que `tool-spec.json` no salga por exceso de exclusión—. Su propio test de autocomprobación cazó el fallo del primer intento: la exención de rutas de ejemplo buscaba `users` en cualquier posición y casaba con el `C:\Users\` del prefijo, o sea eximía toda ruta de Windows; verde y ciego a la vez, que es el defecto que el fichero existe para no cometer. De paso, `docs/SKILLS.md` afirmaba a mano que `CURRENT_VERSION` era **v39.3** —veintiocho versiones de retraso, en el documento que describe a los agentes qué sabe hacer el vault—: `test_version_coherence` declaraba medir «los cinco sitios» y `docs/` no era ninguno, otra vez alcance declarado más ancho que el recorrido. Y el repositorio estrena `SECURITY.md` y `CONTRIBUTING.md`, que cierran el hueco `contrato_con_quien_contribuye` que v40.31 había publicado como `descubierta` |
 | v40.31 | 2026-08-16 | **La pregunta que ninguna de las veinte puertas se hacía: ¿puede usar esto otra persona?** Todas medían el repo contra sus propios registros —que el catálogo no diverja del JSON, que la baseline no crezca, que el plano no envejezca— y en esa sala no estaba el consumidor. Hecha la pregunta con la versión anterior recién cerrada y todo en verde, apareció un defecto en menos de diez minutos: `pyproject.toml` prometía Python >=3.9 y la CI ejecutaba solo 3.11; seis sitios rompían **al importar** en 3.9 —`ast.AST | None` en una anotación se evalúa al definir la función—, dos de ellos en módulos que importa medio repo, de modo que quien instalara en 3.9 o 3.10 no habría arrancado nada. Es la misma forma que los siete ceros de v40.30 y el mismo argumento que la regla 7, aplicado esta vez a lo que el producto **promete**: `vault_produccion` registra cada promesa hecha a quien instala —versión mínima, dependencias, plataformas, superficie de red, forma de invocación— junto al predicado que la ejerce de verdad, y la puerta falla cuando una promesa marcada como cubierta se queda sin ejecutor. Dos huecos quedan publicados como `descubierta` con el motivo escrito, en vez de tapados |
@@ -7545,6 +7546,38 @@ temp/
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
 
 ---
+
+### v40.34 — 2026-08-19 `git: pending`
+
+**La cadena de valor optimizada, sin tocar una regla del vault.**
+
+Aplicar el algoritmo de Musk a la cadena de valor —entender → instalar → crear
+vault → operar sesión → recuperar contexto → mantener— destapó que el repo
+cumplía la promesa pero con costuras de infraestructura caras, y ninguna de las
+tres tocaba las normas.
+
+**Cuestionar (paso 1).** El README mentía sobre el repo en prosa que ninguna
+puerta vigila: decía v34, 5500+ líneas, 49 normas y 17 carpetas cuando el
+registro decía v40.33, ~6000 líneas, 74 normas y 22 carpetas. `vault_doc_counts`
+vigila cifras, no frases, y la tabla de tools listaba 34 grupos cuando el
+catálogo tenía 37. El consumidor entraba con información falsa.
+
+**Eliminar (paso 2).** Nada de reglas: se eliminó el trabajo repetido. `vault_arch`
+re-parseaba los ~250 ficheros del alcance en cada analyzer y `vault_grafo_import`
+568 veces por ejecución. `vault_changelog_check` lanzaba ~80 subprocess de git.
+
+**Simplificar y optimizar (paso 3).** Caché AST por firma (ruta, mtime, tamaño)
+en `vault_arch` y `vault_grafo_import`: `test_arquitectura.py` 155s → 98s, gate
+`arquitectura` 12.8s → 8s. Batch de git en el changelog: gate `changelog`
+7.7s → 0.4s.
+
+**Acelerar (paso 4).** El ciclo de verificación baja: la misma honestidad, más
+barata de mantener, porque revertir un riesgo cuesta menos.
+
+**Automatizar (paso 5).** `vault_fix_all` orquesta los siete comandos de
+regeneración en el orden correcto —`tools_catalog`, `env_table`,
+`field_compat`, `arquitectura`, `blueprint`, `doc_counts`, `doc_sync`— con
+`--dry-run` y `--step N`. Cierra el drift recurrente que dejaba derivados stale.
 
 ### v40.33 — 2026-08-19 `git: dd309b2`
 

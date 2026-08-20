@@ -282,6 +282,9 @@ NATURALEZAS: Dict[str, Dict[str, Any]] = {
             "vault_produccion",
             "vault_servicio",
             "vault_smoke", "vault_voice",
+            # v40.34. Infraestructura de mantenimiento del propio estándar:
+            # regenera los artefactos derivados en el orden correcto.
+            "vault_fix_all",
         ],
     },
 }

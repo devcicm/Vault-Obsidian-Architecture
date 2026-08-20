@@ -216,7 +216,9 @@ def test_el_lector_de_simbolos_no_importa_los_modulos():
     """
     fuente = Path(arch.__file__).read_text(encoding="utf-8")
     cuerpo = fuente.split("def _simbolos_de_nivel_superior")[1].split("\ndef ")[0]
-    assert "ast.parse" in cuerpo
+    # Va por AST (hoy vía el helper cacheado `_ast_de`, que lo envuelve): el
+    # requisito es no importar los módulos, no qué función llama a `ast.parse`.
+    assert "ast.parse" in cuerpo or "_ast_de(" in cuerpo
     assert "import_module" not in cuerpo and "__import__" not in cuerpo
 
 

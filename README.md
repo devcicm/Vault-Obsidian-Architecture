@@ -2,9 +2,9 @@
 
 **Estándar de diseño para dotar a agentes LLM de memoria documental persistente.**
 
-[![Version](https://img.shields.io/badge/version-v40.33-blue)](./vault-obsidian-architecture.md)
-[![Tools](https://img.shields.io/badge/tools-109_active-green)](./scripts/)
-[![Scripts](https://img.shields.io/badge/scripts-144_total-lightblue)](./scripts/)
+[![Version](https://img.shields.io/badge/version-v40.34-blue)](./vault-obsidian-architecture.md)
+[![Tools](https://img.shields.io/badge/tools-110_active-green)](./scripts/)
+[![Scripts](https://img.shields.io/badge/scripts-145_total-lightblue)](./scripts/)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow)](./scripts/)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](./LICENSE)
 
@@ -118,6 +118,21 @@ python scripts/vault_norms.py --check-framework    # guard anti-drift registro �
 
 ---
 
+## Novedades v40.33 — Adapter de modelo LLM
+
+- **El vault se adapta al modelo que lo consume, sin configuración.** El budget de contexto
+  de `vault_context_pack` era un número fijo (4000 tokens) independiente de la ventana real
+  del modelo. Ahora `vault_model_profile` auto-detecta el modelo desde `clientInfo.name`
+  del handshake MCP, lo resuelve contra `17_Preferences/model_profiles.json` y expone el
+  budget correcto.
+- **Tres capas, una sola decisión:** el servidor MCP detecta y propaga `VAULT_MODEL_PROFILE`,
+  la tool la lee a través del registro de entorno (`leer()`), y `vault_context_pack` la
+  consume al resolver el budget — claude/cursor 15000, gpt-4o 8000, deepseek 6000, gemini 4000,
+  cualquier modelo nuevo 2000 (floor).
+- **`vault_fix_all.py`** — un comando que regenera todos los artefactos derivados del registro
+  en el orden correcto (`tools-catalog`, `env-table`, baselines de campos, blueprints, cifras).
+  Cierra el drift recurrente de documentación derivada.
+
 ## Novedades v39.0 — Marco de Datos y Gobernanza explícito
 
 - **Sección nueva en el manifiesto**: CIA, F1–F8, 9 dimensiones DQ, FAIR, V's del Big Data,
@@ -202,7 +217,7 @@ python scripts/vault_norms.py --check-framework    # guard anti-drift registro �
 git clone https://github.com/devcicm/Vault-Obsidian-Architecture.git
 ```
 
-Los scripts no tienen dependencias externas. Solo Python 3.9+.
+Los scripts requieren Python 3.9+ y PyYAML. El servidor MCP requiere Node 18+. Sin más dependencias.
 
 ### 2. Inicializar un vault nuevo
 
@@ -284,7 +299,7 @@ python scripts/vault_audit.py
 
 ## CLI consolidada — `cli/`
 
-Las 109 tools bajo un único punto de entrada, con búsqueda, planificación de
+Las 110 tools bajo un único punto de entrada, con búsqueda, planificación de
 concurrencia y guardas de seguridad:
 
 ```bash
@@ -305,23 +320,23 @@ Guía: [`cli/README.md`](cli/README.md) · Referencia de comandos:
 
 ---
 
-## Las 109 tools activas — 37 grupos
+## Las 110 tools activas — 37 grupos
 
 | Grupo | Tools |
 |---|---|
-| 1 — Core | `vault_write`, `vault_read`, `vault_search`, `vault_list`, `vault_append`, `vault_diff`, `vault_merge` |
+| 1 — Core | `vault_write`, `vault_read`, `vault_search`, `vault_list`, `vault_append`, `vault_diff`, `vault_merge`, `vault_move` |
 | 2 — Observabilidad | `vault_log_error` |
 | 3 — Patrones | `vault_pattern_save`, `vault_pattern_list` |
-| 4 — Diagramas | `vault_diagram_save`, `vault_relation_add` |
+| 4 — Diagramas | `vault_diagram_save`, `vault_diagram_export`, `vault_mermaid_check`, `vault_relation_add` |
 | 5 — Conocimiento | `vault_knowledge_save`, `vault_knowledge_get` |
-| 6 — Salud del vault | `vault_audit`, `vault_validate`, `vault_graph` |
+| 6 — Salud del Vault | `vault_audit`, `vault_validate`, `vault_graph`, `vault_graph_merge`, `vault_graph_inspect`, `vault_fuente_unica` |
 | 7 — Runbooks | `vault_runbook_save`, `vault_runbook_log` |
-| 8 — Infraestructura | `vault_infra_save`, `vault_infra_map`, `vault_env_save` |
+| 8 — Infraestructura | `vault_infra_save`, `vault_infra_map`, `vault_env_save`, `vault_env_matrix` |
 | 9 — Migración | `vault_migrate_docs`, `vault_migrate_rollback` |
 | 10 — Línea de tiempo | `vault_timeline` |
 | 11 — Vista del proyecto | `vault_project_status`, `vault_project_overview` |
 | 12 — Código | `vault_code_module`, `vault_code_relation`, `vault_code_map`, `vault_code_query`, `vault_code_sync` |
-| 13 — Backups | `vault_backup`, `vault_backup_list`, `vault_restore` |
+| 13 — Backups | `vault_backup`, `vault_backup_list`, `vault_backup_base64`, `vault_restore`, `vault_restore_base64` |
 | 14 — Seguridad | `vault_security_scan` |
 | 15 — Índices | `vault_section_index`, `vault_master_index`, `vault_reindex` |
 | 16 — Bibliografía | `vault_bibliography_save` |
@@ -330,19 +345,22 @@ Guía: [`cli/README.md`](cli/README.md) · Referencia de comandos:
 | 19 — Requerimientos | `vault_requirement_save` |
 | 20 — Tests | `vault_test_save` |
 | 21 — IA Governance | `vault_ai_decision` |
-| 22 — Versionado | `vault_standard_upgrade`, `vault_onboard` |
+| 22 — Versionado | `vault_standard_upgrade` |
 | 23 — Change Log | `vault_change_log` |
 | 24 — Data Quality | `vault_quality_check`, `vault_fundamentals` |
 | 25 — Propagación | `vault_impact`, `vault_propagate` |
 | 26 — Tokens | `vault_tokens`, `vault_token_counter`, `vault_token_service` |
 | 27 — Session Delta y Tags | `vault_delta`, `vault_tags` |
-| 28 — Normas y Etiquetas | `vault_norms`, `vault_code_tag` |
-| 29 — Producción y SRE | `vault_incident_save`, `vault_slo_save` |
-| 30 — Release y Entornos | `vault_env_matrix`, `vault_release_save` |
-| 31 — Riesgos y Calidad | `vault_risk_save`, `vault_privacy_save`, `vault_ncr_save` |
-| 32 — Bootstrap | `vault_init` |
-| 33 — Corrección automática | `vault_fix_brackets` |
-| 34 — Memoria de Contexto | `vault_preferences`, `vault_query_parse`, `vault_subgraph`, `vault_context_pack`, `vault_ingest` |
+| 28 — Producción y SRE | `vault_incident_save`, `vault_slo_save` |
+| 29 — Release | `vault_release_save` |
+| 30 — Riesgos y Calidad | `vault_risk_save`, `vault_privacy_save`, `vault_ncr_save` |
+| 31 — Bootstrap | `vault_init`, `vault_onboard` |
+| 32 — Gestión de Carpetas | `vault_folder_registry` |
+| 33 — Corrección automática | `vault_fix_brackets`, `vault_frontmatter_heal`, `vault_graph_fix` |
+| 34 — Memoria de Contexto | `vault_preferences`, `vault_query_parse`, `vault_subgraph`, `vault_context_pack`, `vault_ingest`, `vault_model_profile` |
+| 35 — Normas | `vault_norms`, `vault_arch`, `vault_gate`, `vault_smoke`, `vault_servicio`, `vault_blueprint`, `vault_doc_counts`, `vault_doc_sync`, `vault_blame_audit`, `vault_changelog_check`, `vault_error_contract`, `vault_noop_audit`, `vault_voice`, `vault_norms_coherence`, `vault_criterios`, `vault_ciclos`, `vault_kernel`, `vault_excepcion_declarada`, `vault_recursos`, `vault_produccion`, `vault_foreign_check`, `vault_code_tag` |
+| 36 — Defectos y Cuarentena | `vault_bug_save`, `vault_quarantine` |
+| 37 — Skills | `vault_sdd_init`, `vault_sanacion` |
 
 Ver **[scripts/README.md](./scripts/README.md)** para contratos completos con parámetros, ejemplos y protocolo de sesión.
 
@@ -426,12 +444,12 @@ Sistema de control de asistencia con autenticación biométrica.
 
 ## La especificación completa
 
-**[vault-obsidian-architecture.md](./vault-obsidian-architecture.md)** — v34, 5500+ líneas.
+**[vault-obsidian-architecture.md](./vault-obsidian-architecture.md)** — v40.33, ~6000 líneas.
 
 Contiene:
 - 8 principios de diseño
-- 109 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
-- 49 normas: 62 antipatrones (AP-01–AP-37), 6 patrones (PAT-1–PAT-6), 3 SP, 3 CN
+- 110 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
+- 74 normas: 62 antipatrones (AP-01–AP-62), 6 patrones (PAT-1–PAT-6), 3 SP, 3 CN
 - norm_refs auto-embebido en frontmatter + vault_code_tag para etiquetas en código fuente
 - 8 Fundamentos de Datos (F1–F8) con trazabilidad a tools
 - CIA schema completo con semántica por tipo de nota
@@ -439,18 +457,19 @@ Contiene:
 - Propagación graph-aware (BFS sobre wiki-links, 3 estrategias)
 - **Spec-driven design:** tool-spec.json + vault_spec_validate — contratos formales antes de implementar
 - **Trazabilidad bidireccional:** @vault: tag en código fuente + vault_code_sync para auditar gaps código↔vault
-- **Grupo 32 — Bootstrap:** `vault_init` para inicializar un vault fresco en 1 comando (17 folders + scaffolds + audit)
+- **Grupo 31 — Bootstrap:** `vault_init` para inicializar un vault fresco en 1 comando (22 folders + scaffolds + audit)
 - **Grupo 34 — Memoria de Contexto:** eje consulta → contexto. `vault_query_parse`
   (lenguaje natural → consulta estructurada), `vault_subgraph` (K semillas, N saltos),
   `vault_context_pack` (rerank + Top-K bajo presupuesto de tokens), `vault_preferences`
-  (contexto estable del usuario) y `vault_ingest` (ingesta con pre-vuelo anti-poison)
+  (contexto estable del usuario), `vault_ingest` (ingesta con pre-vuelo anti-poison) y
+  `vault_model_profile` (budget de tokens adaptado al modelo del agente)
 - **nextActions prescriptivo:** `vault_audit` ahora devuelve qué hacer para mantener 100/100
-- Grupos 29-31: Producción/SRE, Release/Entornos, Riesgos/Calidad (ISO 20000, 22301, 12207, 31000, 27701, 9001)
+- Grupos 28-31: Producción/SRE, Release, Riesgos/Calidad (ISO 20000, 22301, 12207, 31000, 27701, 9001)
 - Mapa canónico script→carpeta (tabla authoritative)
 - Protocolo de inicialización corregido con comandos exactos
 - Protocolo de sesión para LLMs remotos (Claude API, GPT, Gemini, DeepSeek)
-- Sistema de versionado con migraciones automáticas (v19 → v34)
-- Changelog completo (v1 → v34)
+- Sistema de versionado con migraciones automáticas (v19 → v40)
+- Changelog completo (v1 → v40.33)
 - Compatibilidad con Obsidian Desktop
 
 ---
@@ -458,13 +477,13 @@ Contiene:
 ## Scripts — estructura del repositorio
 
 ```
-scripts/                    ← 144 archivos Python (109 tools del catálogo + 8 archivadas en _archived/ + internas/meta)
+scripts/                    ← 145 archivos Python (110 tools del catálogo + 8 archivadas en _archived/ + internas/meta)
 ├── vault_io.py             — I/O base: _detect_vault_root, assert_within_vault, atomic_write_text/json, file_lock
 ├── vault_errors.py         — wrap_main (timeout 60s), emit_ok, trace log
 ├── vault_write.py          — tool principal de escritura (guards AP-20, AP-21, norm_refs auto-embed)
 ├── vault_audit.py          — health score (CIA-weighted), DQ health, propagation pending, norm_code, nextActions
-├── vault_standard_upgrade.py — migraciones v19→v34, --init, --check, --validate
-├── vault_init.py           — bootstrap de 1 comando (17 folders + scaffolds + master_index + reindex + audit)
+├── vault_standard_upgrade.py — migraciones v19→v40, --init, --check, --validate
+├── vault_init.py           — bootstrap de 1 comando (22 folders + scaffolds + master_index + reindex + audit)
 ├── vault_code_module.py    — documentación IEEE 1016 para módulos de código (--tag-source inyecta @vault:)
 ├── vault_code_sync.py      — auditoría bidireccional código↔vault (complete/missing_tag/orphan, --fix)
 ├── vault_flow_save.py      — flujos con Mermaid embebido
