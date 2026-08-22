@@ -566,7 +566,8 @@ def _auto_tag_ledger(path: Path, text: str) -> None:
 
 def atomic_write_json(path: Path, data: Dict[str, Any]) -> None:
     atomic_write_text(
-        path, json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8"
+        path, json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8",
+        sanitize=False,
     )
 
 

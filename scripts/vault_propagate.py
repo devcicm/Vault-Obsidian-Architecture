@@ -106,7 +106,7 @@ def _action_notify(note_path: str, timestamp: str) -> bool:
     if not full_path.exists():
         return False
     try:
-        content = full_path.read_text(encoding="utf-8", errors="ignore")
+        content = full_path.read_text(encoding="utf-8", errors="replace")
         if content.startswith("---"):
             parts = content.split("---", 2)
             if len(parts) >= 3:
@@ -308,7 +308,7 @@ def vault_propagate_clear(note_path: str) -> Dict[str, Any]:
     full_path = _raiz() / note_path
     if full_path.exists():
         try:
-            content = full_path.read_text(encoding="utf-8", errors="ignore")
+            content = full_path.read_text(encoding="utf-8", errors="replace")
             if "propagation_pending" in content:
                 new_content = re.sub(r"\npropagation_pending:.*", "", content)
                 full_path.write_text(new_content, encoding="utf-8")

@@ -375,7 +375,7 @@ def vault_preferences_revoke(path: str, reason: str,
         return {"ok": False, "error_code": "INVALID_PATH", "error": str(exc)}
 
     if not note_path.is_file():
-        return {"ok": False, "error_code": "NOT_FOUND", "error": f"No existe: {path}"}
+        return {"ok": False, "error_code": "PREFERENCE_NOT_FOUND", "error": f"No existe: {path}"}
 
     pref = _load_preference(note_path)
     if pref is None:

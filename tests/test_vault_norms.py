@@ -72,3 +72,46 @@ class TestNormCatalog:
         for norm in NORM_CATALOG:
             missing = required - set(norm.keys())
             assert not missing, f"{norm.get('code', '?')} missing fields: {missing}"
+
+
+class TestVaultNormsRebuildIdempotency:
+    """P7: vault_norms --rebuild es idempotente bajo lock."""
+
+    def test_rebuild_devuelve_written_1_en_primera_ejecucion(self, tmp_path):
+        """Primera ejecución: written=1 porque el archivo no existía."""
+        import sys
+        import vault_io
+        import vault_norms
+        from pathlib import Path
+
+        sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
+        for seccion in ("00_System",):
+            (tmp_path / seccion).mkdir(parents=True, exist_ok=True)
+        vault_io.set_vault_root(tmp_path)
+        try:
+            r = vault_norms.vault_norms_rebuild()
+            assert r["ok"] is True
+            assert r["written"] == 1, "Primera ejecución debe escribir"
+        finally:
+            vault_io.reset_vault_root()
+
+    def test_rebuild_es_idempotente_segunda_ejecucion(self, tmp_path):
+        """Segunda ejecución con contenido idéntico: written=0, no se reescribe."""
+        import sys
+        import vault_io
+        import vault_norms
+        from pathlib import Path
+
+        sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
+        for seccion in ("00_System",):
+            (tmp_path / seccion).mkdir(parents=True, exist_ok=True)
+        vault_io.set_vault_root(tmp_path)
+        try:
+            r1 = vault_norms.vault_norms_rebuild()
+            assert r1["written"] == 1
+            r2 = vault_norms.vault_norms_rebuild()
+            assert r2["written"] == 0, "Segunda ejecución con contenido idéntico no debe escribir"
+            assert r2["ok"] is True
+            assert r2["total"] == r1["total"]
+        finally:
+            vault_io.reset_vault_root()

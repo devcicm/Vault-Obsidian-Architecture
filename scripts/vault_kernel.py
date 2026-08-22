@@ -432,7 +432,7 @@ def trace(modulo: str) -> Dict[str, Any]:
     """
     G = vault_grafo_import.completo()
     if modulo not in G:
-        env = emit_error("vault_kernel", "NOT_FOUND",
+        env = emit_error("vault_kernel", "MODULE_NOT_FOUND",
                          f"no existe scripts/{modulo}.py")
         env["recovery"] = "usa el stem del módulo, sin ruta ni extensión"
         return env

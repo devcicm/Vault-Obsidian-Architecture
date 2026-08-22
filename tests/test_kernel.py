@@ -384,4 +384,4 @@ def test_trace_de_un_modulo_inexistente_no_devuelve_un_vacio_ambiguo():
     """AP-51: un camino vacío por no existir el módulo no puede parecerse a un
     camino vacío por no depender del núcleo."""
     r = K.trace("vault_que_no_existe")
-    assert r["ok"] is False and r.get("error_code") == "NOT_FOUND"
+    assert r["ok"] is False and r.get("error_code") == "MODULE_NOT_FOUND"

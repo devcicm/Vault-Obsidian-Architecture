@@ -44,11 +44,12 @@ Usage:
 """
 
 import argparse
+import hashlib
 import json
 import re
 import sys
 from vault_errors import emit_error, wrap_main
-from vault_io import atomic_write_json, normalize_stem
+from vault_io import atomic_write_json, file_lock, normalize_stem
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -395,7 +396,12 @@ def vault_norms_apply(code: str, path: str) -> Dict[str, Any]:
 
 
 def vault_norms_rebuild() -> Dict[str, Any]:
-    """Regenerate 00_System/norm-registry.json from the embedded catalog."""
+    """Regenerate 00_System/norm-registry.json from the embedded catalog.
+
+    Idempotente: si el contenido es idéntico al existente, no reescribe.
+    Bajo lock para evitar race conditions con otras tools que escriban el mismo
+    archivo (AP-54).
+    """
     from datetime import datetime, timezone
 
     registry = {
@@ -406,10 +412,6 @@ def vault_norms_rebuild() -> Dict[str, Any]:
         "patterns": len([n for n in NORM_CATALOG if n["type"] == "pattern"]),
         "by_severity": {
             sev: len([n for n in NORM_CATALOG if n["severity"] == sev])
-            # Derivado del catálogo, no reescrito. Hasta v40.26 este literal
-            # estaba exento de AP-49 porque `vault_norms` era el módulo fuente
-            # del vocabulario; al mudarse el dato a `vault_norms_catalog` dejó
-            # de serlo, y el guard vio lo que siempre había sido: una copia.
             for sev in _SEVERITY_ORDER
         },
         "by_category": {
@@ -429,16 +431,40 @@ def vault_norms_rebuild() -> Dict[str, Any]:
         "norms": NORM_CATALOG,
     }
 
-    _norm_registry().parent.mkdir(parents=True, exist_ok=True)
-    atomic_write_json(_norm_registry(), registry)
+    registry_path = _norm_registry()
+    registry_path.parent.mkdir(parents=True, exist_ok=True)
+    # Hash de los campos estables (excluye updated_at que cambia en cada ejecución)
+    contenido_estable = json.dumps(
+        {k: v for k, v in registry.items() if k != "updated_at"},
+        indent=2, ensure_ascii=False,
+    )
+    nuevo_hash = hashlib.sha256(contenido_estable.encode()).hexdigest()
+
+    escrito = 0
+    with file_lock(registry_path):
+        if registry_path.exists():
+            reg_existente = json.loads(registry_path.read_text(encoding="utf-8"))
+            estable_existente = json.dumps(
+                {k: v for k, v in reg_existente.items() if k != "updated_at"},
+                indent=2, ensure_ascii=False,
+            )
+            if hashlib.sha256(estable_existente.encode()).hexdigest() == nuevo_hash:
+                escrito = 0
+            else:
+                atomic_write_json(registry_path, registry)
+                escrito = 1
+        else:
+            atomic_write_json(registry_path, registry)
+            escrito = 1
 
     return {
         "ok": True,
-        "registry": str(_norm_registry().relative_to(_raiz())).replace("\\", "/"),
+        "registry": str(registry_path.relative_to(_raiz())).replace("\\", "/"),
         "total": registry["total"],
         "antipatterns": registry["antipatterns"],
         "patterns": registry["patterns"],
         "by_severity": registry["by_severity"],
+        "written": escrito,
     }
 
 

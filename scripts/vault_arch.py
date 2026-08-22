@@ -64,10 +64,16 @@ def _ast_de(ruta: Path) -> ast.Module:
     entre llamadas siga viendo el cambio (los tests de `test_arquitectura.py`
     editan módulos temporales y re-ejecutan los analyzers).
 
+    Limitación (v40.34): en Windows, `st_mtime` tiene resolución de ~1 segundo.
+    Si un archivo cambia y se revierte en menos de 1 segundo con tamaño idéntico,
+    la caché puede devolver el AST antiguo. El hash de contenido como fallback
+    se evaluará para v40.35 si el caso de uso se confirma.
+
     Re-lanza `SyntaxError`: los llamadores ya lo capturan y deciden qué hacer
     con el módulo que no parsea.
     """
-    clave = (str(ruta), ruta.stat().st_mtime_ns, ruta.stat().st_size)
+    stat = ruta.stat()
+    clave = (str(ruta), stat.st_mtime_ns, stat.st_size)
     return _ast_de_impl(clave, ruta)
 
 

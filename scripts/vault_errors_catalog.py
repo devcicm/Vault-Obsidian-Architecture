@@ -257,6 +257,30 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": "vault-obsidian-architecture.md §Frontmatter obligatorio",
         },
     },
+    "CONFLICTING_ARGS": {
+        "category": "validation",
+        "severity": "error",
+        "message": "Dos flags de CLI mutuamente excluyentes fueron proporcionados juntos.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Revisar la ayuda de la tool y elegir solo una de las opciones en conflicto.",
+            "docs": None,
+        },
+    },
+    "STALE_REPORT": {
+        "category": "validation",
+        "severity": "error",
+        "message": (
+            "El reporte quedó obsoleto: el archivo cambió entre el análisis y la "
+            "operación. Aplicar el fix revertirá la edición que se hizo en el "
+            "interino."
+        ),
+        "recovery": {
+            "action": "retry",
+            "hint": "Volver a ejecutar la tool para generar un reporte fresco con el estado actual del archivo.",
+            "docs": None,
+        },
+    },
     # ── Governance (antipatrones del estándar) ────────────────────────────────
     "AP20_EMPTY_LIST": {
         "category": "governance",
@@ -415,6 +439,28 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "args": ["--query", "<title>"],
             "hint": "Usar vault_search para localizar la nota por título, tags o contenido.",
             "docs": None,
+        },
+    },
+    "MODULE_NOT_FOUND": {
+        "category": "not_found",
+        "severity": "error",
+        "message": "El módulo Python especificado no existe en scripts/.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Verificar el nombre del módulo: usar el stem sin ruta ni extensión (ej. vault_kernel, no scripts/vault_kernel.py).",
+            "docs": None,
+        },
+    },
+    "PREFERENCE_NOT_FOUND": {
+        "category": "not_found",
+        "severity": "error",
+        "message": "La nota de preferencia especificada no existe.",
+        "recovery": {
+            "action": "run_tool",
+            "tool": "vault_preferences",
+            "args": ["--list"],
+            "hint": "Ejecutar vault_preferences --list para ver las preferencias disponibles.",
+            "docs": "vault-obsidian-architecture.md §Grupo 34 — Memoria de Contexto",
         },
     },
     "PROJECT_NOT_FOUND": {
