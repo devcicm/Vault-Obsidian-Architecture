@@ -41,6 +41,66 @@ from vault_errors_trace import log_trace, log_token_usage
 TOOL_TIMEOUT_SECONDS: int = _env("VAULT_TOOL_TIMEOUT")
 
 
+class VaultWriteError(Exception):
+    """Error de escritura con código de catálogo conocido.
+
+    Permite a vault_io.atomic_write_text() emitir un error específico
+    (DISK_FULL, PERMISSION_DENIED) sin血行 un Exception genérico que
+    wrap_main convertiría en UNEXPECTED_ERROR.
+    """
+
+    def __init__(self, error_code: str, message: str) -> None:
+        self.error_code = error_code
+        self.message = message
+        super().__init__(message)
+
+
+def _map_exception_to_code(e: BaseException) -> str:
+    """Mapea excepciones Python comunes a códigos del catálogo.
+
+    Evita que PermissionError, OSError y MemoryError caigan en
+    UNEXPECTED_ERROR sin distinguir. Añadir aquí cuando se descubra
+    una excepción que el consumidor necesita identificar.
+    """
+    if isinstance(e, PermissionError):
+        return "PERMISSION_DENIED"
+    if isinstance(e, OSError):
+        import errno
+        if e.errno == errno.ENOSPC:
+            return "DISK_FULL"
+        if e.errno == errno.EACCES:
+            return "PERMISSION_DENIED"
+        if e.errno == errno.ENOENT:
+            return "FILE_NOT_FOUND"
+    if isinstance(e, FileNotFoundError):
+        return "FILE_NOT_FOUND"
+    if isinstance(e, IsADirectoryError):
+        return "INVALID_PATH"
+    if isinstance(e, NotADirectoryError):
+        return "INVALID_PATH"
+    if isinstance(e, MemoryError):
+        return "MEMORY_ERROR"
+    if isinstance(e, RecursionError):
+        return "FRONTMATTER_PARSE_ERROR"
+    if isinstance(e, KeyboardInterrupt):
+        return "INTERRUPTED"
+    if isinstance(e, (GeneratorExit, SystemExit)):
+        return "UNEXPECTED_ERROR"
+    return "UNEXPECTED_ERROR"
+
+
+MEMORY_ERROR: Dict[str, Any] = {
+    "category": "infrastructure",
+    "severity": "critical",
+    "message": "Memoria agotada durante la ejecución de la tool.",
+    "recovery": {
+        "action": "manual",
+        "hint": "Reducir el alcance de la operación: menos archivos, batches más pequeños. Verificar que no hay fuga de memoria en procesos hijos.",
+        "docs": None,
+    },
+}
+
+
 def emit_error(
     tool: str,
     code: str,
@@ -154,7 +214,7 @@ def _inject_voice(data: Any, tool_name: str, writes: Optional[Dict[str, int]]) -
         if bloque:
             data["vault_says"] = bloque
     except Exception:
-        pass
+        pass  # AP-37: fail-safe — voice injection must never break the tool
 
 
 def _inject_tool_envelope(
@@ -187,10 +247,11 @@ def _write_output(text: str, stdout_ref=None) -> None:
         else:
             print(text, file=target)
     except Exception:
+        # AP-37: fail-safe — error output must never crash the tool
         try:
             print(text)
         except Exception:
-            pass
+            pass  # AP-37: truly last resort — silent
 
 
 def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
@@ -227,7 +288,8 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
             from vault_ledger import write_report
 
             return write_report()
-        except Exception:
+        except Exception as exc:
+            emit_error("vault_errors", "WRITE_REPORT_ERROR", str(exc))
             return {}
 
     def _target():
@@ -241,11 +303,13 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
 
             write_ledger_reset()
         except Exception:
-            pass
+            pass  # AP-37: fail-safe — ledger reset must not crash the tool
         try:
             exit_code = _run()
             result_q.put(("ok", exit_code, captured.getvalue(), _writes()))
         except Exception as exc:
+            result_q.put(("exc", exc, captured.getvalue(), _writes()))
+        except BaseException as exc:
             result_q.put(("exc", exc, captured.getvalue(), _writes()))
         finally:
             sys.stdout = _real_stdout
@@ -269,12 +333,21 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
         return 1
 
     if kind == "exc":
-        err = emit_error(
-            tool=tool_name,
-            code="UNEXPECTED_ERROR",
-            message=f"{type(value).__name__}: {value}",
-            exception=value,
-        )
+        if isinstance(value, VaultWriteError):
+            err = emit_error(tool_name, value.error_code, value.message)
+        else:
+            code = _map_exception_to_code(value)
+            if code == "MEMORY_ERROR":
+                err = emit_error(tool_name, code, str(value), exception=value)
+            elif code == "UNEXPECTED_ERROR":
+                err = emit_error(
+                    tool=tool_name,
+                    code="UNEXPECTED_ERROR",
+                    message=f"{type(value).__name__}: {value}",
+                    exception=value,
+                )
+            else:
+                err = emit_error(tool_name, code, f"{type(value).__name__}: {value}")
         _inject_voice(err, tool_name, writes)
         _write_output(json.dumps(err, ensure_ascii=False), _real_stdout)
         return 1

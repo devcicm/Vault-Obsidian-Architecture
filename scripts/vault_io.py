@@ -523,8 +523,12 @@ def _auto_section_index(path: Path) -> None:
         # prohibido), regeneramos el índice canónico encima. Sin recursión:
         # el generador escribe via Path.write_text, no via atomic_write_text.
         vault_section_index(section)
-    except Exception:
-        pass  # index failure must never block the write that triggered it
+    except Exception as exc:
+        try:
+            from vault_errors import emit_error  # type: ignore
+            emit_error("_auto_section_index", "AUTO_INDEX_ERROR", str(exc))
+        except Exception:
+            pass  # AP-37: fail-safe logging — never crash the caller
 
 
 def _auto_tag_ledger(path: Path, text: str) -> None:
@@ -560,8 +564,12 @@ def _auto_tag_ledger(path: Path, text: str) -> None:
         )
 
         registrar_tags_de_nota(tags_de_frontmatter(text), rel)
-    except Exception:
-        pass
+    except Exception as exc:
+        try:
+            from vault_errors import emit_error  # type: ignore
+            emit_error("_auto_tag_ledger", "AUTO_TAG_LEDGER_ERROR", str(exc))
+        except Exception:
+            pass  # AP-37: fail-safe logging — never crash the caller
 
 
 def atomic_write_json(path: Path, data: Dict[str, Any]) -> None:

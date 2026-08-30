@@ -236,12 +236,13 @@ NATURALEZAS: Dict[str, Dict[str, Any]] = {
         "tools": [
             "vault_audit", "vault_backup", "vault_backup_base64",
             "vault_backup_list", "vault_code_sync", "vault_delta",
-            "vault_drift_detect", "vault_fix_brackets", "vault_frontmatter_heal",
-            "vault_fuente_unica", "vault_fundamentals",
+            "vault_delete", "vault_drift_detect", "vault_fix_brackets",
+            "vault_frontmatter_heal", "vault_fuente_unica", "vault_fundamentals",
             "vault_graph_fix", "vault_graph_inspect", "vault_graph_merge",
-            "vault_mermaid_check", "vault_propagate", "vault_quality_check",
-            "vault_quarantine", "vault_restore", "vault_restore_base64",
-            "vault_security_scan", "vault_tags", "vault_validate",
+            "vault_history_compact", "vault_mermaid_check", "vault_propagate",
+            "vault_quality_check", "vault_quarantine", "vault_restore",
+            "vault_restore_base64", "vault_security_scan", "vault_tags",
+            "vault_undo", "vault_validate",
         ],
     },
     "consulta": {
@@ -272,10 +273,11 @@ NATURALEZAS: Dict[str, Dict[str, Any]] = {
         "tools": [
             "vault_arch", "vault_blame_audit", "vault_blueprint",
             "vault_changelog_check", "vault_code_tag", "vault_doc_counts",
-            "vault_doc_sync", "vault_error_contract", "vault_foreign_check",
-            "vault_gate", "vault_noop_audit", "vault_norms",
-            "vault_norms_coherence", "vault_criterios", "vault_ciclos",
-            "vault_kernel", "vault_excepcion_declarada", "vault_recursos",
+            "vault_doc_staleness", "vault_doc_sync", "vault_error_contract",
+            "vault_foreign_check", "vault_gate", "vault_noop_audit",
+            "vault_norms", "vault_norms_coherence", "vault_criterios",
+            "vault_ciclos", "vault_kernel", "vault_excepcion_declarada",
+            "vault_recursos",
             # v40.31. Meta-estándar con un matiz que ninguna otra de esta lista
             # tiene: las demás miden el repo contra sus propios registros, y
             # esta lo mide contra lo que le promete a quien lo instala.

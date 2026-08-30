@@ -52,7 +52,12 @@ def _catalog() -> List[Dict[str, Any]]:
         from vault_norms_catalog import NORM_CATALOG
 
         return list(NORM_CATALOG)
+    except (ImportError, OSError):
+        # AP-51: caller cannot distinguish unavailable catalog from empty.
+        # Cannot call emit_error here (vault_voice is called from vault_errors.wrap_main).
+        return []
     except Exception:
+        # AP-51: same issue — degrade gracefully, caller cannot distinguish.
         return []
 
 
@@ -183,6 +188,7 @@ def _rotacion() -> int:
         ruta.write_text(str(n + 1), encoding="utf-8")
         return n
     except Exception:
+        # AP-37: fail-safe — counter failure must not break the tool.
         return os.getpid()
 
 
@@ -203,7 +209,11 @@ def coverage() -> Dict[str, Any]:
         from vault_mcp_catalog import TOOLS_CATALOG
 
         tools = sorted(TOOLS_CATALOG)
+    except (ImportError, OSError):
+        # AP-51: degrade gracefully, caller cannot distinguish unavailable catalog.
+        tools = []
     except Exception:
+        # AP-51: same issue.
         tools = []
     dichas = {n["code"] for t in tools for n in norms_for_tool(t)}
     todas = {n["code"] for n in _catalog()}

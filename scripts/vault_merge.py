@@ -86,8 +86,8 @@ def _note_updated_at(path: Path) -> str:
                 if line.startswith("updatedAt:"):
                     return line.split(":", 1)[1].strip().strip("\"'")
 
-    except Exception:
-        pass
+    except Exception as exc:
+        emit_error("vault_merge", "UPDATED_AT_PARSE_ERROR", str(exc))
 
     return datetime.fromtimestamp(path.stat().st_mtime).isoformat()
 

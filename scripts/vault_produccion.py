@@ -172,8 +172,8 @@ PREGUNTAS: List[Dict[str, Any]] = [
             "repo_root_fallback y las escrituras aterrizaban DENTRO del "
             "toolkit, y el servidor MCP inventariaba el disco del usuario."
         ),
-        "ejerce": lambda: _existe("INSTALL.md") and _existe("tests/test_portabilidad_v4030.py"),
-        "quien": "tests/test_portabilidad_v4030.py + INSTALL.md",
+        "ejerce": lambda: _existe("README.md") and _existe("tests/test_portabilidad_v4030.py"),
+        "quien": "tests/test_portabilidad_v4030.py + README.md (instrucciones de instalación inlined)",
         "estado": "cubierta",
     },
     {
@@ -203,7 +203,8 @@ PREGUNTAS: List[Dict[str, Any]] = [
         "estado": "cubierta",
         "hueco_conocido": (
             "La CI ejecuta la suite en ubuntu, pero el paseo de INSTALACIÓN "
-            "fuera del repo solo se ha hecho en Windows. macOS no lo toca nadie."
+            "fuera del repo solo se ha hecho en Windows. macOS no lo toca nadie. "
+            "Las instrucciones de instalación están inlined en README.md."
         ),
     },
     {
@@ -216,8 +217,8 @@ PREGUNTAS: List[Dict[str, Any]] = [
             "proxy sin saberlo publica el vault entero. La decisión es del "
             "usuario, pero solo si la tiene delante."
         ),
-        "ejerce": lambda: "autenticación" in (RAIZ / "INSTALL.md").read_text(encoding="utf-8"),
-        "quien": "INSTALL.md, sección «Servidor MCP»",
+        "ejerce": lambda: "autenticación" in (RAIZ / "README.md").read_text(encoding="utf-8"),
+        "quien": "README.md (sección «Estado del proyecto»)",
         "estado": "cubierta",
     },
     {
@@ -249,8 +250,8 @@ PREGUNTAS: List[Dict[str, Any]] = [
             "declarado, un fallo de seguridad no tiene por dónde llegar salvo "
             "un issue abierto, que es el peor sitio para reportarlo."
         ),
-        "ejerce": lambda: _existe("CONTRIBUTING.md") and _existe("SECURITY.md"),
-        "quien": "CONTRIBUTING.md + SECURITY.md",
+        "ejerce": lambda: "pull request" in (RAIZ / "README.md").read_text(encoding="utf-8"),
+        "quien": "README.md (sección «Estado del proyecto»)",
         "estado": "cubierta",
     },
     {

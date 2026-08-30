@@ -53,6 +53,26 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": None,
         },
     },
+    "DISK_FULL": {
+        "category": "infrastructure",
+        "severity": "critical",
+        "message": "No queda espacio en disco para completar la operación.",
+        "recovery": {
+            "action": "retry",
+            "hint": "Liberar espacio en disco y reintentar. Si persiste, verificar que no hay otro proceso llenando el disco y comprobar permisos de escritura.",
+            "docs": None,
+        },
+    },
+    "PERMISSION_DENIED": {
+        "category": "infrastructure",
+        "severity": "error",
+        "message": "No se tiene permiso de escritura en el directorio destino.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Verificar que el proceso tiene permisos de escritura en el directorio destino. En Windows, verificar que el archivo no está abierto por otro programa.",
+            "docs": None,
+        },
+    },
     "FILE_READ_ERROR": {
         "category": "infrastructure",
         "severity": "error",
@@ -312,6 +332,18 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": "vault-obsidian-architecture.md AP-21",
         },
     },
+    "CIRCULAR_WIKILINK": {
+        "category": "governance",
+        "severity": "warning",
+        "message": "Se detectó un ciclo de wikilinks en el grafo: A→B→C→A.",
+        "recovery": {
+            "action": "run_tool",
+            "tool": "vault_graph_fix",
+            "args": [],
+            "hint": "Ejecutar vault_graph_fix para romper el ciclo automáticamente, o revisar manualmente los wikilinks en las notas del ciclo.",
+            "docs": "vault-obsidian-architecture.md §Grafos",
+        },
+    },
     "AP17_DUPLICATE_TITLE": {
         "category": "governance",
         "severity": "warning",
@@ -415,6 +447,16 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "recovery": {
             "action": "manual",
             "hint": "Instalar la dependencia con pip. Ejemplo: pip install nltk",
+            "docs": None,
+        },
+    },
+    "YAML_UNAVAILABLE": {
+        "category": "dependency",
+        "severity": "warning",
+        "message": "PyYAML no está disponible. El frontmatter no se verificó.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Instalar PyYAML: pip install PyYAML. Sin ella, el frontmatter no se valida y puede contener errores de sintaxis que pasen desapercibidos.",
             "docs": None,
         },
     },

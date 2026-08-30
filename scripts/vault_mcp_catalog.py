@@ -417,6 +417,52 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "example": "python vault_frontmatter_heal.py\npython vault_frontmatter_heal.py --apply",
         "related": ["vault_fix_brackets", "vault_validate", "vault_foreign_check"],
     },
+    "vault_delete": {
+        "name": "vault_delete",
+        "script": "vault_delete.py",
+        "group": "Change Log",
+        "purpose": "Elimina notas con SP-01强制执行: crea change-log antes de borrar.",
+        "params": {
+            "path": {
+                "type": "string",
+                "required": True,
+                "description": "Ruta relativa de la nota a eliminar",
+                "validators": ["within_vault"],
+            },
+            "reason": {
+                "type": "string",
+                "required": True,
+                "description": "Motivo de eliminacion (SP-01)",
+                "validators": ["not_empty"],
+            },
+            "trash_only": {
+                "type": "boolean",
+                "required": False,
+                "description": "Solo mover a 20_Quarantine/",
+                "validators": [],
+            },
+            "dry_run": {
+                "type": "boolean",
+                "required": False,
+                "description": "Simular sin escribir",
+                "validators": [],
+            },
+            "force": {
+                "type": "boolean",
+                "required": False,
+                "description": "Omitir creacion de change-log",
+                "validators": [],
+            },
+        },
+        "guards": ["SP-01: change_log obligatorio antes de delete"],
+        "side_effects": [
+            "Escribe entrada en 00_System/.change-log.json",
+            "Escribe entrada en 00_System/change-log.md",
+            "Elimina o mueve a 20_Quarantine/",
+        ],
+        "example": "python vault_delete.py --path \"07_Knowledge/old.md\" --reason \"Duplicate of glossary/jwt.md\"",
+        "related": ["vault_change_log", "vault_undo"],
+    },
     "vault_delta": {
         "name": "vault_delta",
         "script": "vault_delta.py",
@@ -715,6 +761,51 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         ],
         "example": "python vault_standard_upgrade.py --check\npython vault_standard_upgrade.py --to v34\npython vault_standard_upgrade.py --report",
         "related": ["vault_init", "vault_audit"],
+    },
+    "vault_undo": {
+        "name": "vault_undo",
+        "script": "vault_undo.py",
+        "group": "Versionado",
+        "purpose": "Recupera una nota desde .history/. Lista versiones y restaura sin sobreescribir (por defecto).",
+        "params": {
+            "list": {
+                "type": "string",
+                "required": False,
+                "description": "Listar versiones disponibles para esta nota",
+                "validators": [],
+            },
+            "restore": {
+                "type": "string",
+                "required": False,
+                "description": "Restaurar version desde .history/",
+                "validators": [],
+            },
+            "version": {
+                "type": "string",
+                "required": False,
+                "description": "Version especifica a restaurar (filename en .history/)",
+                "validators": [],
+            },
+            "force": {
+                "type": "boolean",
+                "required": False,
+                "description": "Sobrescribir nota actual (default: restaurar como copia nueva)",
+                "validators": [],
+            },
+            "dry_run": {
+                "type": "boolean",
+                "required": False,
+                "description": "Simular sin escribir",
+                "validators": [],
+            },
+        },
+        "guards": [],
+        "side_effects": [
+            "SP-01: escribe change_log si --force",
+            "Crea nota restaurada o sobreescribe la actual",
+        ],
+        "example": "python vault_undo.py --list \"01_Projects/ans/status.md\"\npython vault_undo.py --restore \"01_Projects/ans/status.md\" --force",
+        "related": ["vault_write", "vault_diff", "vault_history_compact"],
     },
     "vault_sdd_init": {
         "name": "vault_sdd_init",
@@ -2225,6 +2316,40 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "python vault_doc_sync.py --fix"
         ),
         "related": ["vault_doc_counts", "vault_norms", "vault_mcp_catalog"],
+    },
+    "vault_doc_staleness": {
+        "name": "vault_doc_staleness",
+        "script": "vault_doc_staleness.py",
+        "group": "Normas",
+        "purpose": (
+            "Guard anti-drift de artefactos derivados: verifica que los JSON generados "
+            "por las tools del catálogo existen, contienen JSON válido y no están huérfanos. "
+            "Complemento de vault_doc_counts (cifras) y vault_doc_sync (nombres)."
+        ),
+        "params": {
+            "check": {
+                "type": "boolean",
+                "required": False,
+                "description": "Modo comprobación (informe sin exit code)",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit 1 si falta o está corrupto algún artefacto",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "No regenera nada: solo verifica existencia y validez de los JSON",
+            "Los artefactos los generan otras tools; esta solo los vigila",
+        ],
+        "side_effects": [],
+        "example": (
+            "python vault_doc_staleness.py --check\n"
+            "python vault_doc_staleness.py --check --strict"
+        ),
+        "related": ["vault_doc_counts", "vault_doc_sync", "vault_compact_contracts"],
     },
     "vault_fix_all": {
         "name": "vault_fix_all",
@@ -3814,6 +3939,36 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "example": 'python vault_graph_fix.py --apply --threshold 0.7\npython vault_graph_fix.py --only brackets',
         "related": ["vault_graph", "vault_graph_inspect", "vault_fix_brackets"],
     },
+    "vault_history_compact": {
+        "name": "vault_history_compact",
+        "script": "vault_history_compact.py",
+        "group": "Versionado",
+        "purpose": "Rota versiones en .history/: mantiene N mas recientes, borra el resto.",
+        "params": {
+            "keep": {
+                "type": "integer",
+                "required": False,
+                "description": "Numero de versiones a mantener (default: 10)",
+                "validators": ["min:1"],
+            },
+            "note": {
+                "type": "string",
+                "required": False,
+                "description": "Solo procesar esta nota",
+                "validators": [],
+            },
+            "apply": {
+                "type": "boolean",
+                "required": False,
+                "description": "Aplicar el pruning (sin esto solo dry-run)",
+                "validators": [],
+            },
+        },
+        "guards": [],
+        "side_effects": ["Borra archivos de .history/"],
+        "example": "python vault_history_compact.py --apply\npython vault_history_compact.py --apply --keep 5",
+        "related": ["vault_undo", "vault_write"],
+    },
     # Las dos únicas tools sin script Python: están implementadas nativas en
     # mcp/nodejs/vault-mcp-server.mjs. `script: ""` sola no dice eso — los guards
     # que iteran el catálogo las saltaban en silencio creyéndolas inexistentes.
@@ -4178,7 +4333,7 @@ GROUPS: Dict[str, List[str]] = {
     "Requerimientos": ["vault_requirement_save"],
     "Tests": ["vault_test_save"],
     "IA Governance": ["vault_ai_decision"],
-    "Change Log": ["vault_change_log"],
+    "Change Log": ["vault_change_log", "vault_delete"],
     "Data Quality": ["vault_quality_check", "vault_fundamentals"],
     "Propagación": ["vault_impact", "vault_propagate"],
     "Tokens": ["vault_tokens", "vault_token_counter", "vault_token_service"],
@@ -4194,6 +4349,7 @@ GROUPS: Dict[str, List[str]] = {
         "vault_code_tag",
         "vault_doc_counts",
         "vault_doc_sync",
+        "vault_doc_staleness",
         "vault_noop_audit",
         "vault_smoke",
         "vault_voice",
@@ -4213,7 +4369,7 @@ GROUPS: Dict[str, List[str]] = {
     "Riesgos/Calidad": ["vault_risk_save", "vault_privacy_save", "vault_ncr_save"],
     "Bootstrap": ["vault_init", "vault_onboard"],
     "Corrección Automática": ["vault_fix_brackets", "vault_graph_fix", "vault_frontmatter_heal"],
-    "Versionado": ["vault_standard_upgrade"],
+    "Versionado": ["vault_standard_upgrade", "vault_undo", "vault_history_compact"],
     "Gestión de Carpetas": ["vault_folder_registry"],
     "Memoria de Contexto": [
         "vault_preferences",
@@ -4439,24 +4595,46 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
     Si output_path es None, se guarda junto a este script como tools-catalog.json.
     Retorna la ruta del archivo generado.
     """
-    import json, os
+    import json, os, sys
+    from pathlib import Path
 
     if output_path is None:
-        # Catálogo canónico: mcp/nodejs/tools-catalog.json (consumido por el MCP server)
         output_path = os.path.join(
             os.path.dirname(__file__), "..", "mcp", "nodejs", "tools-catalog.json"
         )
 
+    # Leer tool-spec.json del vault para obtener status de cada tool.
+    # Auto-detecta el vault root (vault-sandbox en este repo).
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import vault_io
+    spec_path = Path(vault_io.resolve_tool_spec())
+    spec_data: Dict[str, Any] = {}
+    if spec_path and spec_path.exists():
+        spec_data = json.loads(spec_path.read_text(encoding="utf-8"))
+    spec_tools = spec_data.get("tools", {})
+
+    # Tools gobernanza/meta/internal no se exponen via MCP.
+    GRUPOS_NO_EXPUESTOS = {"Normas", "meta"}
+    STATUS_NO_EXPUESTO = {"internal", "archived", "orphan"}
+
     tools_json = {}
     for name, tool in sorted(TOOLS_CATALOG.items()):
+        spec_entry = spec_tools.get(name, {})
+        status = spec_entry.get("status", "active")
+        group = tool.get("group", "")
+        # exposed_via_mcp: false para tools de gobernanza, internal o archived.
+        exposed = status not in STATUS_NO_EXPUESTO and group not in GRUPOS_NO_EXPUESTOS
+
         tools_json[name] = {
             "name": tool["name"],
             "description": tool["purpose"],
-            "group": tool.get("group", ""),
+            "group": group,
             "script": tool.get("script", ""),
             "inputSchema": _convert_to_json_schema(tool),
             "guards": tool.get("guards", []),
             "side_effects": tool.get("side_effects", []),
+            "status": status,
+            "exposed_via_mcp": exposed,
         }
         if tool.get("related"):
             tools_json[name]["related"] = tool["related"]

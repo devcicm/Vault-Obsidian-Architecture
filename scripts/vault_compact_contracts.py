@@ -23,7 +23,7 @@ import json
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 
 SCRIPTS_DIR = Path(__file__).parent
 PROJECT_ROOT = SCRIPTS_DIR.parent
@@ -348,7 +348,10 @@ def _get_docstring(source: str) -> str:
     try:
         tree = ast.parse(source)
         return ast.get_docstring(tree) or ""
-    except Exception:
+    except SyntaxError:
+        return ""
+    except Exception as exc:
+        emit_error("vault_compact_contracts", "AST_PARSE_ERROR", str(exc))
         return ""
 
 
@@ -420,7 +423,11 @@ def introspect_tool(name: str) -> Optional[Dict[str, Any]]:
 
     try:
         source = path.read_text(encoding="utf-8", errors="replace")
-    except Exception:
+    except (OSError, UnicodeDecodeError, PermissionError) as exc:
+        emit_error("vault_compact_contracts", "FILE_READ_ERROR", str(exc))
+        return None
+    except Exception as exc:
+        emit_error("vault_compact_contracts", "UNEXPECTED_ERROR", str(exc))
         return None
 
     doc = _get_docstring(source)
@@ -472,7 +479,11 @@ def _read_current_profile() -> str:
     try:
         data = json.loads(_version_file().read_text(encoding="utf-8"))
         return data.get("profile", "full")
-    except Exception:
+    except (json.JSONDecodeError, UnicodeDecodeError, OSError) as exc:
+        emit_error("vault_compact_contracts", "PROFILE_READ_ERROR", str(exc))
+        return "full"
+    except Exception as exc:
+        emit_error("vault_compact_contracts", "UNEXPECTED_ERROR", str(exc))
         return "full"
 
 

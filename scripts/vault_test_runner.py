@@ -164,7 +164,7 @@ def _parse_json_output(stdout: str) -> Optional[Dict]:
             if line.startswith("{"):
                 try:
                     return json.loads(line)
-                except Exception:
+                except json.JSONDecodeError:
                     pass
     return None
 

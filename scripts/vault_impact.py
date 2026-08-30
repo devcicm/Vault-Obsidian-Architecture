@@ -81,7 +81,11 @@ def _load_graph(predicate_filter: Optional[List[str]] = None) -> Optional[Dict[s
         return None
     try:
         data = json.loads(graph_file.read_text(encoding="utf-8"))
-    except Exception:
+    except (json.JSONDecodeError, UnicodeDecodeError, OSError) as exc:
+        emit_error("vault_impact", "GRAPH_LOAD_ERROR", str(exc))
+        return None
+    except Exception as exc:
+        emit_error("vault_impact", "UNEXPECTED_ERROR", str(exc))
         return None
 
     if predicate_filter:
@@ -126,7 +130,11 @@ def _notes_changed_since(since_date: str) -> List[str]:
         return []
     try:
         entries = json.loads(_change_log_json().read_text(encoding="utf-8"))
-    except Exception:
+    except (json.JSONDecodeError, UnicodeDecodeError, OSError) as exc:
+        emit_error("vault_impact", "CHANGELOG_READ_ERROR", str(exc))
+        return []
+    except Exception as exc:
+        emit_error("vault_impact", "UNEXPECTED_ERROR", str(exc))
         return []
     cutoff = since_date.strip()
     changed = []

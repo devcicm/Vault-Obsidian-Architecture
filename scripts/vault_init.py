@@ -227,13 +227,15 @@ def vault_init(
     # are marked scaffold: true so the user can identify and remove them
     # as they add real content.
     scaffolds_created = []
+    scaffold_failed = False
     for section in _SCAFFOLD_SECTIONS:
         try:
             res = _create_scaffold_note(section)
             if res.get("created"):
                 scaffolds_created.append(res)
         except Exception as exc:
-            # scaffold failure must never block init
+            # scaffold failure must never block init (best-effort)
+            scaffold_failed = True
             result["steps"].append(
                 {"step": "scaffold_error", "section": section, "error": str(exc)}
             )
@@ -242,6 +244,7 @@ def vault_init(
             "step": "scaffolds",
             "created": scaffolds_created,
             "total": len(_SCAFFOLD_SECTIONS),
+            "failed": scaffold_failed,
         }
     )
 

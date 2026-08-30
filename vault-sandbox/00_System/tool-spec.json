@@ -1035,6 +1035,39 @@
       "fundamentals": [],
       "reason": "Manipula datasets de prueba fuera del modelo de notas."
     },
+    "vault_delete": {
+      "group": "Change Log",
+      "group_id": 23,
+      "status": "active",
+      "required_args": [
+        "--path",
+        "--reason"
+      ],
+      "declared_returns": [
+        "action",
+        "change_logged",
+        "deleted",
+        "dry_run",
+        "error",
+        "error_code",
+        "ok",
+        "path",
+        "tool",
+        "trashed"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "non_repudiation"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": true
+      },
+      "fundamentals": [
+        "F8"
+      ]
+    },
     "vault_delta": {
       "group": "Session Delta y Tags",
       "group_id": 27,
@@ -1231,6 +1264,36 @@
       "fundamentals": [
         "F2",
         "F3"
+      ]
+    },
+    "vault_doc_staleness": {
+      "group": "Normas",
+      "group_id": 35,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "fix",
+        "invalid",
+        "invalid_files",
+        "missing",
+        "missing_files",
+        "ok",
+        "present",
+        "present_files",
+        "tool",
+        "total"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F2"
       ]
     },
     "vault_drift_detect": {
@@ -1793,6 +1856,34 @@
       "fundamentals": [
         "F2",
         "F3"
+      ]
+    },
+    "vault_history_compact": {
+      "group": "Versionado",
+      "group_id": 22,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "applied",
+        "dry_run",
+        "errors",
+        "kept",
+        "ok",
+        "pruned",
+        "tool",
+        "total"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F2"
       ]
     },
     "vault_impact": {
@@ -4025,6 +4116,36 @@
       "fundamentals": [
         "F3",
         "F6"
+      ]
+    },
+    "vault_undo": {
+      "group": "Versionado",
+      "group_id": 22,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "action",
+        "error",
+        "error_code",
+        "force",
+        "ok",
+        "path",
+        "restored_from",
+        "restored_to",
+        "restored_at",
+        "tool",
+        "version",
+        "versions_restored"
+      ],
+      "dq": {
+        "dq_dimensions": [],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F2"
       ]
     },
     "vault_tools": {

@@ -189,7 +189,12 @@ def _must_preferences() -> List[Dict[str, Any]]:
 
         listing = vault_preferences_list(strength="must")
         return listing.get("preferences", []) if listing.get("ok") else []
-    except Exception:
+    except (ImportError, OSError) as exc:
+        emit_error("vault_context_pack", "PREFERENCES_UNAVAILABLE",
+                  f"No se pudieron cargar preferencias must: {exc}")
+        return []
+    except Exception as exc:
+        emit_error("vault_context_pack", "UNEXPECTED_ERROR", str(exc))
         return []
 
 

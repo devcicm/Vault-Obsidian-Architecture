@@ -25,7 +25,7 @@ from collections import defaultdict, deque
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_lib import utcnow
 from vault_io import atomic_write_json
 from vault_registry import ORDERED_SECTIONS
@@ -101,8 +101,8 @@ def _read_cia_integrity(path: Path) -> str:
         for line in parts[1].splitlines():
             if line.startswith("cia_integrity:"):
                 return line.split(":", 1)[1].strip().strip("\"'")
-    except Exception:
-        pass
+    except Exception as exc:
+        emit_error("vault_delta", "INTEGRITY_PARSE_ERROR", str(exc))
     return "medium"
 
 

@@ -22,7 +22,7 @@
 | **Principios FAIR** | localizable, accesible, interoperable y reutilizable por diseño |
 | **V's del Big Data** | volumen, velocidad, variedad, veracidad, valor y variabilidad, cada una atada a una métrica real |
 | **Gobernanza y auditabilidad** | catálogo de normas con enforcement automático, cadena de procedencia completa y trazabilidad código↔documento |
-| **Alineación normativa** | ISO/IEC 25010, 42001, 27001, 27005, 27701, 29148, 29119-3, 20000-1, 12207 · ISO 22301, 31000, 9001, 8601 |
+| **Alineación normativa** | ISO/IEC 25010, 42001, 27001, 27005, 27701, 29148, 29119-3, 20000-1, 12207 · ISO 22301, 31000, 9001, 8601 · OWASP Top 10 2021, OWASP API Security 2023 |
 
 Todo lo anterior está declarado, medido y forzado en **[Marco de Datos y Gobernanza](#marco-de-datos-y-gobernanza)**, con su matriz de trazabilidad concepto → métrica → tool → norma.
 
@@ -374,6 +374,8 @@ Referencia única y con formato canónico de cita. Las citas locales en cada gru
 | **ISO-27701** | ISO/IEC 27701:2019 | Tratamiento de datos personales (GDPR Art. 30 y 35) | `09_Infrastructure/privacy/` con DPIA automática | `vault_privacy_save` |
 | **ISO-9001** | ISO 9001:2015 | §9.2 Auditoría interna · §10.2 No conformidad y acción correctiva | NCR con 5-Whys y verificación de eficacia | `vault_ncr_save`, `vault_audit` |
 | **ISO-8601** | ISO 8601 | Formato de marcas temporales | todo timestamp es UTC `YYYY-MM-DDTHH:mm:ss.sssZ` (AP-13) | `vault_write`, `vault_validate` |
+| **OWASP-T10** | OWASP Top 10 2021 | Las 10 vulnerabilidades más críticas de aplicaciones web | escaneo con mapeo A01–A10, hallazgos con CWE | `vault_security_scan` |
+| **OWASP-API** | OWASP API Security 2023 | Las 10 vulnerabilidades más críticas de APIs | hallazgos con API-specific CWE, campos `owasp_category` + `cwe_id` | `vault_security_scan`, `vault_log_error` |
 
 ---
 
@@ -912,6 +914,8 @@ Registra errores, antipatrones, vulnerabilidades y reglas WAF con trazabilidad c
 | `severity` | string | `medium` | `critical` · `high` · `medium` · `low` · `info` |
 | `project` | string | — | Slug del proyecto al que pertenece el hallazgo |
 | `mitigation` | string | — | Acción correctiva aplicada o recomendada |
+| `owasp_category` | string | — | Categoría OWASP: `A01`–`A10` (A01:Broken Access Control, A02:Cryptographic Failures, A03:Injection, A04:Insecure Design, A05:Security Misconfiguration, A06:Vulnerable Components, A07:Auth Failures, A08:Data Integrity Failures, A09:Logging Failures, A10:SSRF) |
+| `cwe_id` | string | — | CWE-ID de la vulnerabilidad (ej: `CWE-798`, `CWE-89`, `CWE-79`) |
 
 **Retorna:**
 ```json
@@ -2681,6 +2685,7 @@ Escanea archivos de código fuente en busca de vulnerabilidades de seguridad con
 | `depth` | integer | `3` | Profundidad de recursión en directorios (1–5) |
 | `categories` | string[] | `["all"]` | Categorías a escanear. `["all"]` activa las 13 categorías |
 | `save_findings` | boolean | `true` | Guarda hallazgos en vault al finalizar |
+| `owasp_section` | boolean | `false` | Genera notas OWASP Top 10 en `02_Observability/security/owasp/{categoria}/` además del reporte consolidado |
 
 **Categorías disponibles:**
 
@@ -2726,6 +2731,7 @@ Escanea archivos de código fuente en busca de vulnerabilidades de seguridad con
 | Reporte consolidado | `02_Observability/vulnerabilities/security-scan-{proyecto}-{fecha}.md` | Resumen ejecutivo, hallazgos por severidad, todos los críticos/altos con código y mitigación, medios/bajos como lista |
 | Nota individual | `02_Observability/vulnerabilities/{ruleId}-{slug}-{fecha}.md` | Por cada hallazgo crítico/alto: archivo:línea, snippet de código (secrets redactados), OWASP, CWE, mitigación específica |
 | Resumen ejecutivo | `03_Decisions/security-audit-{fecha}.md` | Risk score, top 5 hallazgos por impacto, plan de remediación priorizado (generado por la skill) |
+| Nota OWASP | `02_Observability/security/owasp/{A01-A10}/{proyecto}-{slug}.md` | Nota por categoría OWASP con todos los hallazgos de esa categoría, mapeo CWE, severidad agregada, mitigación. Generado con `--owasp_section true` |
 
 **Secretos protegidos en outputs:** los valores de secretos detectados se redactan como `[REDACTED]` en los snippets del vault. Nunca se almacena el valor real del secreto.
 
@@ -5003,7 +5009,7 @@ Dos causas, y la segunda es la incómoda:
 
 1. **El audit no lo ejecuta nadie.** En las **1.356 ejecuciones de tools
    registradas** en los `.tool-trace.json` de ese parque, `vault_norms` no
-   aparece **ni una vez**. 41 de las 110 tools del catálogo no se han ejecutado
+   aparece **ni una vez**. 41 de las 114 tools del catálogo no se han ejecutado
    jamás. Los agentes escriben; no gobiernan. Un enforcement que depende de que
    alguien se acuerde de invocarlo es enforcement en el papel.
 2. **Los valores no canónicos los escribía el propio estándar.** El más
@@ -5612,7 +5618,7 @@ de envelope con su contrato de `00_System/tool-spec.json`:
 Y la divergencia peor no era de forma sino de efecto: `jsNativeGraph` no tiene un
 solo `writeFile`. Un agente llamaba `vault_graph` por MCP, recibía `ok: true`, y
 el grafo se quedaba sin regenerar — **AP-37 y AP-47 servidos a la vez por el único
-camino que un agente real usa**. `vault_smoke` recorre las 110 tools del catálogo,
+camino que un agente real usa**. `vault_smoke` recorre las 114 tools del catálogo,
 pero ejecuta el `.py`: probaba exactamente la implementación que el agente no toca.
 
 **Prevención:** backend nativo solo para lo que **no tiene** implementación en

@@ -31,7 +31,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_io import resolve_tool_spec, tool_spec_path
 from vault_registry import folder_owner, check_folder_collisions
 
@@ -91,7 +91,11 @@ def _read_source(name: str) -> Optional[str]:
     path = SCRIPTS_DIR / f"{name}.py"
     try:
         return path.read_text(encoding="utf-8", errors="replace") if path.exists() else None
-    except Exception:
+    except (OSError, UnicodeDecodeError, PermissionError) as exc:
+        emit_error("vault_spec_validate", "SOURCE_READ_ERROR", str(exc))
+        return None
+    except Exception as exc:
+        emit_error("vault_spec_validate", "UNEXPECTED_ERROR", str(exc))
         return None
 
 

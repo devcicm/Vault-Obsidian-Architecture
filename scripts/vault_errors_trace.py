@@ -50,6 +50,8 @@ def _append_trace_entry(entry: Dict[str, Any], use_atomic: bool) -> None:
             if not isinstance(entries, list):
                 entries = []
         except Exception:
+            # AP-37 fail-safe: corrupt trace file — start fresh.
+            # Cannot call emit_error here (circular import with vault_errors).
             entries = []
     else:
         entries = []
@@ -98,7 +100,7 @@ def log_trace(entry: Dict[str, Any]) -> None:
             # correcta y no un parche.
             pass
     except Exception:
-        pass
+        pass  # AP-37: fail-safe — thread contention, discard is correct
 
 
 def query_trace(
@@ -114,6 +116,9 @@ def query_trace(
     try:
         entries: List[Dict] = json.loads(tf.read_text(encoding="utf-8"))
     except Exception:
+        # AP-51: caller cannot distinguish corrupt file from empty.
+        # Cannot call emit_error here due to circular import with vault_errors.
+        # The degradation is logged via stderr as last resort.
         return []
     if tool:
         entries = [e for e in entries if e.get("tool") == tool]
@@ -136,7 +141,7 @@ def _count_tokens(text: str) -> Tuple[int, str]:
         count = client.count_tokens(text)
         return count, "anthropic"
     except Exception:
-        pass
+        pass  # AP-37: fallback chain — try next tokenizer
 
     try:
         import tiktoken
@@ -144,7 +149,7 @@ def _count_tokens(text: str) -> Tuple[int, str]:
         enc = tiktoken.get_encoding("cl100k_base")
         return len(enc.encode(text)), "tiktoken"
     except Exception:
-        pass
+        pass  # AP-37: fallback chain — try heuristic
 
     pieces = _re.findall(r"[A-Za-z0-9_]+|[^\sA-Za-z0-9_]", text)
     total = sum(
@@ -175,6 +180,7 @@ def log_token_usage(tool: str, input_text: str, output_text: str) -> None:
                 if not isinstance(entries, list):
                     entries = []
             except Exception:
+                # AP-37 fail-safe: corrupt token log — start fresh, preserve new entry.
                 entries = []
         else:
             entries = []
@@ -185,4 +191,4 @@ def log_token_usage(tool: str, input_text: str, output_text: str) -> None:
             json.dumps(entries, indent=2, ensure_ascii=False), encoding="utf-8"
         )
     except Exception:
-        pass
+        pass  # AP-37: fail-safe — never crash caller on token log write failure

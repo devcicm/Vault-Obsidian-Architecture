@@ -39,17 +39,17 @@ está escrita como registro ejecutable y no como recordatorio.
 |---|---|---|---|
 | `piso_de_lenguaje` | ¿La versión mínima que promete el paquete la ejecuta alguien? | ✅ cubierta | matriz python-version de .github/workflows/vault-ci.yml + tests/test_piso_python.py |
 | `dependencias_reales` | ¿Lo que se importa sin red está declarado como dependencia? | ✅ cubierta | pyproject.toml [project.dependencies] |
-| `instalacion_fuera_del_repo` | ¿Funciona copiado fuera de este repositorio? | ✅ cubierta | tests/test_portabilidad_v4030.py + INSTALL.md |
+| `instalacion_fuera_del_repo` | ¿Funciona copiado fuera de este repositorio? | ✅ cubierta | tests/test_portabilidad_v4030.py + README.md (instrucciones de instalación inlined) |
 | `material_ajeno` | ¿Se ha medido contra material que este repo no generó? | ✅ cubierta | vault_foreign_check --root <vault ajeno>, o --self-test sin uno a mano |
 | `sistemas_operativos` | ¿Se ejecuta en los sistemas donde se dice que corre? | ✅ cubierta | matriz os de la CI (ubuntu-latest, windows-latest) |
-| `superficie_expuesta` | ¿Está escrito qué expone y a quién, donde lo lee quien instala? | ✅ cubierta | INSTALL.md, sección «Servidor MCP» |
+| `superficie_expuesta` | ¿Está escrito qué expone y a quién, donde lo lee quien instala? | ✅ cubierta | README.md (sección «Estado del proyecto») |
 | `ergonomia_de_entrada` | ¿Se invoca como un programa o como un montón de scripts? | ⚠️ descubierta | — |
-| `contrato_con_quien_contribuye` | ¿Sabe alguien de fuera cómo aportar o cómo reportar un fallo? | ✅ cubierta | CONTRIBUTING.md + SECURITY.md |
+| `contrato_con_quien_contribuye` | ¿Sabe alguien de fuera cómo aportar o cómo reportar un fallo? | ✅ cubierta | README.md (sección «Estado del proyecto») |
 | `lo_publicado_es_solo_el_estandar` | ¿Puede irse en un push algo que no es de este repo? | ✅ cubierta | tests/test_publicacion_limpia.py (mide el índice de git, no el disco) |
 
 ## Los huecos, escritos
 
-**`sistemas_operativos` — cubierta con hueco.** La CI ejecuta la suite en ubuntu, pero el paseo de INSTALACIÓN fuera del repo solo se ha hecho en Windows. macOS no lo toca nadie.
+**`sistemas_operativos` — cubierta con hueco.** La CI ejecuta la suite en ubuntu, pero el paseo de INSTALACIÓN fuera del repo solo se ha hecho en Windows. macOS no lo toca nadie. Las instrucciones de instalación están inlined en README.md.
 
 **`ergonomia_de_entrada` — descubierta.** No hay [project.scripts], así que no existe un comando `vault`: se invoca `python .../scripts/vault_x.py`. Funciona y no engaña a nadie, pero es la diferencia entre un toolkit y un producto, y quien llega de fuera la nota en el primer minuto.
 

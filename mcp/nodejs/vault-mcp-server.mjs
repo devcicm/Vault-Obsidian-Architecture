@@ -879,11 +879,16 @@ function handleInitialized(session) {
 }
 
 async function handleToolsList() {
-  const tools = Object.values(TOOLS_CATALOG).map(t => ({
-    name: t.name,
-    description: t.description,
-    inputSchema: t.inputSchema || { type: "object", properties: {}, required: [] },
-  }));
+  // Solo se exponen via MCP las tools con exposed_via_mcp !== false.
+  // Las de gobernanza (Normas), meta e internal viven en el catálogo
+  // para vault_smoke y vault_spec_validate, pero no en el MCP del agente.
+  const tools = Object.values(TOOLS_CATALOG)
+    .filter(t => t.exposed_via_mcp !== false)
+    .map(t => ({
+      name: t.name,
+      description: t.description,
+      inputSchema: t.inputSchema || { type: "object", properties: {}, required: [] },
+    }));
 
   return { tools };
 }
@@ -1058,7 +1063,11 @@ function executePythonTool(scriptPath, args, vaultRoot, session) {
     proc.stdout.on("data", (d) => { stdout += d; });
     proc.stderr.on("data", (d) => { stderr += d; });
 
-    proc.on("close", (code) => {
+    proc.on("close", (code, signal) => {
+      if (signal !== null) {
+        reject(new Error(`Python process killed by signal ${signal}`));
+        return;
+      }
       const raw = stdout.trim();
       let envelope = null;
       if (raw) {

@@ -314,7 +314,7 @@ def process_file_staging(file_path: Path, project: str) -> Optional[Dict[str, An
 
     frontmatter.append(f"id: {str(uuid.uuid4())}")
 
-    frontmatter.append(f"migratedFrom: {str(file_path)}")
+    frontmatter.append(f"migratedFrom: {file_path.as_posix()}")
 
     frontmatter.append(f"type: migrated")
 
@@ -695,11 +695,33 @@ Notas:
         "--formats", nargs="*", default=[".md"], help="Formats to process"
     )
 
+    class BooleanOrStringAction(argparse.Action):
+        """Acepta --dry_run, --no-dry_run, --dry_run true y --dry_run false."""
+
+        def __call__(self, parser, namespace, values, option_string=None):
+            if option_string == "--no-dry_run":
+                setattr(namespace, self.dest, False)
+            elif isinstance(values, str):
+                setattr(namespace, self.dest, values.lower() == "true")
+            else:
+                setattr(namespace, self.dest, bool(values))
+
     parser.add_argument(
         "--dry_run",
-        type=lambda x: x.lower() == "true",
+        dest="dry_run",
+        nargs="?",
         default=True,
-        help="Dry run mode",
+        const=True,
+        action=BooleanOrStringAction,
+        help="Dry run mode (default: enabled). Use --dry_run, --no-dry_run, --dry_run true, or --dry_run false",
+    )
+    parser.add_argument(
+        "--no-dry_run",
+        dest="dry_run",
+        action=BooleanOrStringAction,
+        nargs=0,
+        default=None,
+        help="Disable dry run mode",
     )
 
     args = parser.parse_args()

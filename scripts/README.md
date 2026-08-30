@@ -1,13 +1,13 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 110 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
+Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 114 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **145 archivos Python** — 110 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
+- **149 archivos Python** — 114 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
 - **Saneamiento de índices (v38.1)** — `vault_section_index.py --heal [--root]` regenera índices con formato legacy `[[stem|alias]]` o ausentes; el auto-index post-write se auto-cura si un agente escribe `index.md` a mano
-- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 110 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
+- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 114 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
 - **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault; requiere marcador de CONTENIDO (01_Projects/02_Observability/03_Decisions/.obsidian), no solo 00_System/99_Index (evita el ciclo auto-reforzado de detección); override runtime con `set_vault_root()`/env `VAULT_ROOT`
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
@@ -46,8 +46,8 @@ Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan 
 | [Grupo 19 — Requerimientos](#grupo-19--requerimientos) | vault_requirement_save |
 | [Grupo 20 — Tests](#grupo-20--tests) | vault_test_save |
 | [Grupo 21 — IA Governance](#grupo-21--ia-governance) | vault_ai_decision |
-| [Grupo 22 — Versionado](#grupo-22--versionado) | vault_standard_upgrade |
-| [Grupo 23 — Change Log](#grupo-23--change-log) | vault_change_log |
+| [Grupo 22 — Versionado](#grupo-22--versionado) | vault_standard_upgrade, vault_undo, vault_history_compact |
+| [Grupo 23 — Change Log](#grupo-23--change-log) | vault_change_log, vault_delete |
 | [Grupo 24 — Data Quality](#grupo-24--data-quality) | vault_quality_check, vault_fundamentals |
 | [Grupo 25 — Propagación](#grupo-25--propagación) | vault_impact, vault_propagate |
 | [Grupo 26 — Tokens](#grupo-26--tokens) | vault_tokens, vault_token_counter, vault_token_service |
@@ -59,7 +59,7 @@ Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan 
 | [Grupo 32 — Gestión de Carpetas](#grupo-32--gestión-de-carpetas) | vault_folder_registry |
 | [Grupo 33 — Corrección Automática](#grupo-33--corrección-automática) | vault_fix_brackets, vault_graph_fix, vault_frontmatter_heal |
 | [Grupo 34 — Memoria de Contexto](#grupo-34--memoria-de-contexto) | vault_preferences, vault_model_profile, vault_query_parse, vault_subgraph, vault_context_pack, vault_ingest |
-| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_changelog_check, vault_error_contract, vault_foreign_check, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_noop_audit, vault_smoke, vault_voice, vault_servicio, vault_blueprint, vault_norms_coherence, vault_criterios, vault_ciclos, vault_kernel, vault_excepcion_declarada, vault_recursos, vault_produccion, vault_fix_all |
+| [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_changelog_check, vault_error_contract, vault_foreign_check, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_doc_staleness, vault_noop_audit, vault_smoke, vault_voice, vault_servicio, vault_blueprint, vault_norms_coherence, vault_criterios, vault_ciclos, vault_kernel, vault_excepcion_declarada, vault_recursos, vault_produccion, vault_fix_all |
 | [Grupo 36 — Defectos y Cuarentena](#grupo-36--defectos-y-cuarentena) | vault_bug_save, vault_quarantine |
 | [Grupo 37 — Skills](#grupo-37--skills) | vault_sdd_init, vault_sanacion |
 | [Observabilidad de Tools](#observabilidad-de-tools) | vault_errors |
@@ -1112,6 +1112,59 @@ python vault_standard_upgrade.py --to latest
 
 > Ejecutar `--check` al instalar el estándar en un vault existente para detectar brechas.
 
+### `vault_undo.py`
+Recupera notas desde `.history/`. Lista versiones disponibles y restaura sin sobreescribir la nota actual (por defecto crea una copia `-restored-`). Con `--force` sobreescribe y escribe change-log (SP-01).
+
+```bash
+# Listar versiones disponibles
+python vault_undo.py --list "01_Projects/ans/status.md"
+
+# Restaurar la más reciente como nuevo archivo
+python vault_undo.py --restore "01_Projects/ans/status.md"
+
+# Restaurar version específica
+python vault_undo.py --restore "01_Projects/ans/status.md" \
+  --version "01_Projects__ans__status-2026-07-15T09-00-00.md"
+
+# Sobrecribir la nota actual (SP-01: genera change-log)
+python vault_undo.py --restore "01_Projects/ans/status.md" --force
+
+# Simular sin escribir
+python vault_undo.py --restore "01_Projects/ans/status.md" --dry-run
+```
+
+| Parámetro | Descripción |
+|---|---|
+| `--list` | Listar versiones disponibles para esta nota |
+| `--restore` | Restaurar una versión desde `.history/` |
+| `--version` | Filename exacto en `.history/` (default: la más reciente) |
+| `--force` | Sobrescribir la nota actual en lugar de crear copia |
+| `--dry-run` | Solo reportar lo que haría, sin escribir |
+| `--agent` | Nombre del agente para change-log (default: `claude`) |
+
+### `vault_history_compact.py`
+Rota el contenido de `.history/`: mantiene las N versiones más recientes por nota y borra las demás. Default N=10 (como documenta v39).
+
+```bash
+# Ver qué se borraría (dry-run, default)
+python vault_history_compact.py
+
+# Aplicar el pruning
+python vault_history_compact.py --apply
+
+# Mantener solo 5 versiones por nota
+python vault_history_compact.py --apply --keep 5
+
+# Solo compactar una nota específica
+python vault_history_compact.py --apply --note "01_Projects/ans/status.md"
+```
+
+| Parámetro | Descripción |
+|---|---|
+| `--keep` | Número de versiones a mantener por nota (default: 10) |
+| `--note` | Solo procesar esta nota específica |
+| `--apply` | Aplicar el pruning (sin esto solo dry-run) |
+
 ---
 
 ## Grupo 23 — Change Log
@@ -1156,6 +1209,36 @@ python vault_change_log.py --query --action deleted
 | `--agent` | Nombre del agente (default: `claude`) |
 | `--query` | Modo consulta |
 | `--last` | Número de entradas a retornar (default: 20) |
+
+### `vault_delete.py`
+Elimina notas con SP-01强制执行: si no existe entrada de change-log para la nota, la crea ANTES de borrar. Por defecto mueve a `20_Quarantine/`; con `--force` elimina directamente.
+
+```bash
+# Eliminación normal (crea change-log si no existe, luego elimina)
+python vault_delete.py --path "07_Knowledge/old-note.md" \
+  --reason "Duplicate of glossary/jwt.md"
+
+# Solo mover a cuarentena (no elimina)
+python vault_delete.py --path "07_Knowledge/old-note.md" \
+  --reason "Needs review" --trash-only
+
+# Simular sin escribir nada
+python vault_delete.py --path "07_Knowledge/old-note.md" \
+  --reason "Test" --dry-run
+
+# Forzar sin change-log (uso interno)
+python vault_delete.py --path "07_Knowledge/old-note.md" \
+  --reason "Recovery" --force
+```
+
+| Parámetro | Descripción |
+|---|---|
+| `--path` | Ruta relativa al vault de la nota a eliminar |
+| `--reason` | Motivo de eliminación (SP-01, requerido) |
+| `--trash-only` | Solo mover a `20_Quarantine/` en vez de eliminar |
+| `--dry-run` | Simular sin escribir nada |
+| `--force` | Omitir creación de change-log (uso interno) |
+| `--agent` | Nombre del agente (default: `claude`) |
 
 ---
 
@@ -1816,7 +1899,7 @@ El vault expone sus herramientas como un **servidor MCP** que las IAs consumen d
 
 **Archivo:** `../mcp/nodejs/vault-mcp-server.mjs` (~1650 líneas, cero dependencias npm)  
 **Plan:** `../mcp/PLAN.md` — documento de evidencia con 8 fases de implementación
-**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (110 tools)
+**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (114 tools)
 
 Los parámetros que el catálogo publica **se derivan del `argparse` de cada script**,
 no se escriben a mano: el servidor compone `--<param>` literal, así que un param
@@ -1996,6 +2079,21 @@ Desde v40.4 comprueba además una sexta cosa: que **todo comando `python scripts
 La comprobación es **estática** —los flags declarados en `add_argument`— y no ejecuta nada: varios de los comandos documentados escriben en el vault. Un parser construido donde el regex no llega daría un falso positivo, no un falso negativo; el guard se equivoca hacia el lado que se nota. El contraste lo pone `tests/test_comandos_publicados.py`, que sí ejecuta los dos comandos de salud tal y como están escritos en `CLAUDE.md`, leídos del documento y no copiados.
 
 El encabezado de cada grupo usa la **clave literal de `GROUPS`**, no un título propio. Es deliberado: llegaron a convivir tres vocabularios de grupo (la etiqueta `group` de cada tool, la clave de `GROUPS` y el título del README) y ninguno fallaba al divergir. `--fix` regenera el índice pero **no escribe prosa**: una tool nueva sin sección se reporta, no se inventa.
+
+### `vault_doc_staleness.py`
+Guard anti-drift de **artefactos derivados**: verifica que los JSON generados por las tools del catálogo existen, contienen JSON válido y no están huérfanos. Complemento de `vault_doc_counts` (cifras) y `vault_doc_sync` (nombres).
+
+```bash
+python vault_doc_staleness.py --check      # informe sin exit code
+python vault_doc_staleness.py --check --strict  # exit 1 si falta alguno
+```
+
+**Artefactos verificados:** `data-framework.json`, `norm-registry.json`, `data-fundamentals.json`, `tool-contracts.json`, `quality-index.json`, `tag-registry.json`, `standard-version.json`.
+
+| Parámetro | Descripción |
+|---|---|
+| `--check` | Modo comprobación (informe sin exit code) |
+| `--strict` | Exit 1 si falta o está corrupto algún artefacto |
 
 ---
 

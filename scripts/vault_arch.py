@@ -246,7 +246,7 @@ CONTEXTS: dict[str, dict] = {
             "vault_runbook_save", "vault_runbook_log", "vault_slo_save",
             "vault_test_save", "vault_dataset", "vault_ai_decision",
             "vault_change_log", "vault_voice", "vault_fix_brackets",
-            "vault_frontmatter_heal",
+            "vault_frontmatter_heal", "vault_delete", "vault_undo",
             "vault_timeline", "vault_project_overview", "vault_project_status",
         ],
     },
@@ -412,7 +412,7 @@ CONTEXTS: dict[str, dict] = {
         "modulos": [
             "vault_init", "vault_onboard", "vault_standard_upgrade",
             "vault_sanacion", "vault_migrate_docs", "vault_migrate_rollback",
-            "vault_propagate", "vault_sdd_init",
+            "vault_propagate", "vault_sdd_init", "vault_history_compact",
         ],
     },
     "durabilidad": {
@@ -462,7 +462,7 @@ CONTEXTS: dict[str, dict] = {
             "vault_mcp", "vault_mcp_catalog", "vault_manifest", "vault_smoke",
             "vault_spec_catalog_check", "vault_spec_generate_catalog",
             "vault_spec_memory", "vault_spec_validate", "vault_test_runner",
-            "vault_doc_counts", "vault_doc_sync", "vault_noop_audit",
+            "vault_doc_counts", "vault_doc_sync", "vault_doc_staleness", "vault_noop_audit",
             "vault_blame_audit", "vault_error_contract", "vault_foreign_check",
             "vault_gate", "vault_arch", "vault_fix_all",
             # Mide el changelog del manifiesto contra git (AP-53). Es

@@ -274,6 +274,8 @@ def vault_log_error(
     project: str = "",
     mitigation: str = "",
     meta: Optional[Dict[str, Any]] = None,
+    owasp_category: str = "",
+    cwe_id: str = "",
 ) -> Dict[str, Any]:
     if error_type not in TYPE_FOLDERS:
         return emit_error("vault_log_error", "INVALID_VALUE", f"Tipo inválido: {error_type}. Válidos: {list(TYPE_FOLDERS.keys())}")
@@ -309,9 +311,13 @@ def vault_log_error(
 
         content_lines.append(f"**Severidad:** {severity.upper()}")
 
-        content_lines.append(f"**Proyecto:** {project or 'General'}\n")
+        content_lines.append(f"**Proyecto:** {project or 'General'}")
 
-        content_lines.append("---\n\n## Descripción\n\n" + description)
+        if error_type == "vulnerability" and (owasp_category or cwe_id):
+            content_lines.append(f"**OWASP:** {owasp_category or 'N/A'}")
+            content_lines.append(f"**CWE:** {cwe_id or 'N/A'}")
+
+        content_lines.append("\n---\n\n## Descripción\n\n" + description)
 
         if context:
             content_lines.append("\n\n---\n\n## Contexto\n\n" + context)
@@ -329,20 +335,30 @@ def vault_log_error(
 
     # v37: wrap content with YAML frontmatter for traceability
     fm_tags = [project, error_type] if project else [error_type]
-    frontmatter = (
-        f"---\n"
-        f"title: {yaml_scalar(title)}\n"
-        f"id: {str(uuid.uuid4())}\n"
-        f"type: {error_type}\n"
-        f"createdAt: {utcnow()}\n"
-        f"updatedAt: {utcnow()}\n"
-        f"tags: {json.dumps(fm_tags)}\n"
-        f"cia_integrity: medium\n"
-        f"cia_availability: medium\n"
-        f"cia_sensitivity: internal\n"
-        f"agent: system\n"
-        f"---\n\n"
-    )
+    frontmatter_parts = [
+        f"---",
+        f"title: {yaml_scalar(title)}",
+        f"id: {str(uuid.uuid4())}",
+        f"type: {error_type}",
+        f"createdAt: {utcnow()}",
+        f"updatedAt: {utcnow()}",
+        f"tags: {json.dumps(fm_tags)}",
+        f"severity: {severity}",
+        f"project: {project}",
+    ]
+    if error_type == "vulnerability":
+        if owasp_category:
+            frontmatter_parts.append(f"owasp_category: {owasp_category}")
+        if cwe_id:
+            frontmatter_parts.append(f"cwe_id: {cwe_id}")
+    frontmatter_parts.extend([
+        f"cia_integrity: medium",
+        f"cia_availability: medium",
+        f"cia_sensitivity: internal",
+        f"agent: system",
+        f"---\n",
+    ])
+    frontmatter = "\n".join(frontmatter_parts) + "\n\n"
 
     atomic_write_text(file_path, frontmatter + content)
 
@@ -367,7 +383,7 @@ Ejemplos:
 
   python vault_log_error.py --type error --title "SSH Timeout" --description "Connection timed out after 30s" --severity high
 
-  python vault_log_error.py --type vulnerability --title "API Key Exposed" --severity critical --description "Key found in git history"
+  python vault_log_error.py --type vulnerability --title "API Key Exposed" --severity critical --description "Key found in git history" --owasp_category "A02" --cwe_id "CWE-798"
 
   python vault_log_error.py --type metric --title "Response Time" --description "P99 response time" --severity info --meta '{"service":"api","value":"245ms","unit":"ms","objective":"200ms","tool":"prometheus"}'
 
@@ -402,6 +418,10 @@ Notas:
 
     parser.add_argument("--meta", help="Additional metadata as JSON")
 
+    parser.add_argument("--owasp_category", default="", help="OWASP category: A01-A10 (for vulnerability type)")
+
+    parser.add_argument("--cwe_id", default="", help="CWE ID, e.g. CWE-798 (for vulnerability type)")
+
     args = parser.parse_args()
 
     meta = None
@@ -422,6 +442,8 @@ Notas:
         args.project,
         args.mitigation,
         meta,
+        args.owasp_category,
+        args.cwe_id,
     )
 
     print(json.dumps(result, indent=2, ensure_ascii=False))

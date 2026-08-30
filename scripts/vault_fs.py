@@ -24,6 +24,7 @@ así el escaneo sigue siendo opcional para quien no lo necesita sin que este
 módulo dependa de él para cargar.
 """
 
+import errno
 import json
 import os
 import threading
@@ -125,7 +126,15 @@ def file_lock(
             break
         except FileExistsError:
             try:
-                age = time.time() - lock_dir.stat().st_mtime
+                owner_file = lock_dir / "owner.json"
+                if owner_file.exists():
+                    try:
+                        owner_data = json.loads(owner_file.read_text(encoding="utf-8"))
+                        age = time.time() - owner_data.get("createdAt", 0)
+                    except (json.JSONDecodeError, OSError):
+                        age = stale_after + 1
+                else:
+                    age = stale_after + 1
                 if age > stale_after:
                     # Steal-by-rename: atomically move the stale lock aside before
                     # removing it. Deleting lock_dir in place is a TOCTOU race — a
@@ -263,6 +272,17 @@ def escritura_atomica(
         _escribir_temporal(temp, text, encoding)
         _fsync_si_procede(temp)
         os.replace(temp, path)
+    except OSError as exc:
+        if exc.errno == errno.ENOSPC:
+            # Distinguible de PermissionError en la capa que traduce errores.
+            # No se raise DiskFullError aquí para no arrastrar vault_errors
+            # al módulo de mecanismo (AP-52: la traducción vive en vault_io).
+            exc.errno = errno.ENOSPC
+        try:
+            temp.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise
     except Exception:
         try:
             temp.unlink(missing_ok=True)

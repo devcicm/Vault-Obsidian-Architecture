@@ -542,7 +542,7 @@ def log_encoding_fixes(
         }
         log_trace(entry)
     except Exception:
-        pass  # Trace log failure must never block the encoding sanitization itself
+        pass  # AP-37: trace log failure must never block the encoding sanitization itself
 
 
 # Alias para compatibilidad

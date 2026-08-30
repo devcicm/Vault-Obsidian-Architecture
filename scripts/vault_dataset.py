@@ -8,7 +8,7 @@ Vault Dataset - Gestión de keywords y búsqueda avanzada tipo LINQ
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 
 import json
 
@@ -100,7 +100,7 @@ def get_nltk_stopwords():
 
         return stop_words
 
-    except:
+    except LookupError:
         nltk.download("stopwords", quiet=True)
 
         try:
@@ -110,32 +110,19 @@ def get_nltk_stopwords():
 
             return stop_words
 
-        except:
+        except LookupError:
             return {
-                "the",
-                "a",
-                "an",
-                "and",
-                "or",
-                "but",
-                "in",
-                "on",
-                "at",
-                "to",
-                "for",
-                "of",
-                "with",
-                "by",
-                "from",
-                "el",
-                "la",
-                "los",
-                "las",
-                "y",
-                "e",
-                "o",
-                "que",
+                "the", "a", "an", "and", "or", "but", "in", "on", "at", "to",
+                "for", "of", "with", "by", "from",
+                "el", "la", "los", "las", "y", "e", "o", "que",
             }
+
+    except Exception:
+        return {
+            "the", "a", "an", "and", "or", "but", "in", "on", "at", "to",
+            "for", "of", "with", "by", "from",
+            "el", "la", "los", "las", "y", "e", "o", "que",
+        }
 
 
 def extract_keywords_nltk(content: str) -> list:
@@ -159,14 +146,17 @@ def extract_keywords_nltk(content: str) -> list:
     try:
         tokens = word_tokenize(content)
 
-    except:
+    except LookupError:
         nltk.download("punkt", quiet=True)
 
         try:
             tokens = word_tokenize(content)
 
-        except:
+        except LookupError:
             tokens = content.split()
+
+    except Exception:
+        tokens = content.split()
 
     # Filtrar
 
@@ -290,8 +280,11 @@ def extract_all(mode: str = "nltk", custom_keywords: list = None):
                 "path": str(md.relative_to(_raiz())),
             }
 
-        except:
-            pass
+        except (OSError, UnicodeDecodeError, PermissionError):
+            pass  # Skip unreadable files gracefully
+        except Exception as exc:
+            emit_error("vault_dataset", "KEYWORD_EXTRACTION_ERROR",
+                      f"{md.name}: {exc}")
 
     # Calcular TF-IDF
 
@@ -527,7 +520,7 @@ Notas:
 
                 nltk.download("stopwords", quiet=True)
 
-            except:
+            except Exception:
                 print("NLTK not available. Using dictionary mode.")
 
                 args.mode = "dictionary"

@@ -30,6 +30,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from vault_errors import wrap_main
+from vault_fs import file_lock
 from vault_lib import parse_frontmatter
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -88,7 +89,9 @@ def vault_reindex(
     dry_run: bool = False, rebuild_graph: bool = False, root=None
 ) -> Dict[str, Any]:
     repo = _repo(root)
-    result = ServicioReindex(repo, parse_frontmatter).reconstruir(dry_run=dry_run)
+    lock_target = repo.indice_busqueda
+    with file_lock(lock_target, timeout=30.0):
+        result = ServicioReindex(repo, parse_frontmatter).reconstruir(dry_run=dry_run)
 
     if rebuild_graph and not dry_run:
         result["graph"] = _rehacer_grafo()

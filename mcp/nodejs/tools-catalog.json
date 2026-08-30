@@ -69,6 +69,8 @@
       "side_effects": [
         "Crea nota en 03_Decisions/"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_norms",
         "vault_audit"
@@ -106,6 +108,8 @@
       },
       "guards": [],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_write",
         "vault_read"
@@ -162,6 +166,8 @@
         "Con --freeze reescribe scripts/arch-baseline.json",
         "Con --blueprint reescribe docs/ARQUITECTURA.md"
       ],
+      "status": "active",
+      "exposed_via_mcp": false,
       "related": [
         "vault_norms",
         "vault_noop_audit",
@@ -192,6 +198,8 @@
       },
       "guards": [],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_validate",
         "vault_fix_brackets",
@@ -220,6 +228,8 @@
       "side_effects": [
         "Crea carpeta en vault-backups/"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_backup_list",
         "vault_restore"
@@ -243,6 +253,8 @@
       "side_effects": [
         "Genera archivo .b64zip.json en vault-backups/"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_restore_base64",
         "vault_backup"
@@ -264,6 +276,8 @@
       },
       "guards": [],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_backup",
         "vault_restore"
@@ -317,6 +331,8 @@
       "side_effects": [
         "Crea nota en 07_Knowledge/bibliography/"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_knowledge_save",
         "vault_search"
@@ -360,6 +376,8 @@
       "side_effects": [
         "Con --freeze reescribe scripts/blame-baseline.json"
       ],
+      "status": "active",
+      "exposed_via_mcp": false,
       "related": [
         "vault_norms",
         "vault_noop_audit",
@@ -409,6 +427,8 @@
         "docs/BLUEPRINT.md",
         "scripts/blueprint-baseline.json"
       ],
+      "status": "active",
+      "exposed_via_mcp": false,
       "related": [
         "vault_servicio",
         "vault_arch",
@@ -501,6 +521,8 @@
         "Crea nota en 18_Bugs/{open|root-causes|fixed}/",
         "Actualiza 18_Bugs/.bugs-index.json"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_log_error",
         "vault_test_save",
@@ -559,6 +581,8 @@
       },
       "guards": [],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_timeline",
         "vault_audit"
@@ -612,6 +636,8 @@
         "Con --fijar-hash reescribe la entrada de la versión en curso",
         "Con --freeze escribe scripts/changelog-baseline.json"
       ],
+      "status": "active",
+      "exposed_via_mcp": false,
       "related": [
         "vault_doc_counts",
         "vault_standard_upgrade",
@@ -652,6 +678,8 @@
       "side_effects": [
         "scripts/ciclos-baseline.json"
       ],
+      "status": "active",
+      "exposed_via_mcp": false,
       "related": [
         "vault_arch",
         "vault_norms",
@@ -680,6 +708,8 @@
       "side_effects": [
         "Genera 11_Code/{project}/map.md con diagrama"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_code_module",
         "vault_code_relation",
@@ -778,6 +808,8 @@
       "side_effects": [
         "Crea nota en 11_Code/{project}/"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_code_map",
         "vault_code_relation",
@@ -823,6 +855,8 @@
       },
       "guards": [],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_code_map",
         "vault_search"
@@ -872,6 +906,8 @@
       "side_effects": [
         "Actualiza índice de relaciones en 11_Code/"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_code_map",
         "vault_code_module"
@@ -911,6 +947,8 @@
       "side_effects": [
         "Actualiza 11_Code/{project}/index.json"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_code_map",
         "vault_reindex"
@@ -990,6 +1028,8 @@
       "side_effects": [
         "Actualiza frontmatter del módulo"
       ],
+      "status": "active",
+      "exposed_via_mcp": false,
       "related": [
         "vault_tags",
         "vault_code_module"
@@ -1046,6 +1086,8 @@
         "Requiere 99_Index/search-index.json y graph.json"
       ],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_query_parse",
         "vault_subgraph",
@@ -1087,11 +1129,66 @@
       "side_effects": [
         "scripts/criterios-baseline.json"
       ],
+      "status": "active",
+      "exposed_via_mcp": false,
       "related": [
         "vault_norms",
         "vault_io",
         "vault_lib",
         "vault_gate"
+      ]
+    },
+    "vault_delete": {
+      "name": "vault_delete",
+      "description": "Elimina notas con SP-01强制执行: crea change-log antes de borrar.",
+      "group": "Change Log",
+      "script": "vault_delete.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Ruta relativa de la nota a eliminar"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Motivo de eliminacion (SP-01)"
+          },
+          "agent": {
+            "type": "string",
+            "description": "Nombre del agente (default: claude)"
+          },
+          "trash-only": {
+            "type": "string",
+            "description": "Solo mover a 20_Quarantine/"
+          },
+          "dry-run": {
+            "type": "string",
+            "description": "Simular sin escribir"
+          },
+          "force": {
+            "type": "string",
+            "description": "Omitir creacion de change-log"
+          }
+        },
+        "required": [
+          "path",
+          "reason"
+        ]
+      },
+      "guards": [
+        "SP-01: change_log obligatorio antes de delete"
+      ],
+      "side_effects": [
+        "Escribe entrada en 00_System/.change-log.json",
+        "Escribe entrada en 00_System/change-log.md",
+        "Elimina o mueve a 20_Quarantine/"
+      ],
+      "status": "active",
+      "exposed_via_mcp": true,
+      "related": [
+        "vault_change_log",
+        "vault_undo"
       ]
     },
     "vault_delta": {
@@ -1124,6 +1221,8 @@
       "side_effects": [
         "Crea 00_System/delta-snapshot.json"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_tags",
         "vault_reindex",
@@ -1196,6 +1295,8 @@
       "side_effects": [
         "Genera archivos exportados"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_diagram_save",
         "vault_mermaid_check"
@@ -1260,6 +1361,8 @@
       "side_effects": [
         "Crea nota en 06_Diagrams/{category}/"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_relation_add",
         "vault_graph"
@@ -1305,6 +1408,8 @@
       },
       "guards": [],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_read",
         "vault_backup"
@@ -1347,10 +1452,43 @@
       "side_effects": [
         "Con --fix reescribe cifras en los documentos vigilados"
       ],
+      "status": "active",
+      "exposed_via_mcp": false,
       "related": [
         "vault_norms",
         "vault_mcp_catalog",
         "vault_fundamentals"
+      ]
+    },
+    "vault_doc_staleness": {
+      "name": "vault_doc_staleness",
+      "description": "Guard anti-drift de artefactos derivados: verifica que los JSON generados por las tools del catálogo existen, contienen JSON válido y no están huérfanos. Complemento de vault_doc_counts (cifras) y vault_doc_sync (nombres).",
+      "group": "Normas",
+      "script": "vault_doc_staleness.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "check": {
+            "type": "string",
+            "description": "Modo comprobación (informe sin exit code)"
+          },
+          "strict": {
+            "type": "string",
+            "description": "Exit 1 si falta o está corrupto algún artefacto"
+          }
+        }
+      },
+      "guards": [
+        "No regenera nada: solo verifica existencia y validez de los JSON",
+        "Los artefactos los generan otras tools; esta solo los vigila"
+      ],
+      "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": false,
+      "related": [
+        "vault_doc_counts",
+        "vault_doc_sync",
+        "vault_compact_contracts"
       ]
     },
     "vault_doc_sync": {
@@ -1383,6 +1521,8 @@
       "side_effects": [
         "Con --fix reescribe la tabla de índice de scripts/README.md"
       ],
+      "status": "active",
+      "exposed_via_mcp": false,
       "related": [
         "vault_doc_counts",
         "vault_norms",
@@ -1428,6 +1568,8 @@
       "side_effects": [
         "Reporta drift detectado"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_audit",
         "vault_env_matrix"
@@ -1495,6 +1637,8 @@
       "side_effects": [
         "Genera 09_Infrastructure/{project}/matrix.md"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_env_save",
         "vault_infra_map"
@@ -1542,6 +1686,8 @@
       "side_effects": [
         "Crea nota en 09_Infrastructure/{project}/"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_env_matrix",
         "vault_infra_save"
@@ -1585,6 +1731,8 @@
       "side_effects": [
         "scripts/error-contract-baseline.json (solo con --freeze)"
       ],
+      "status": "active",
+      "exposed_via_mcp": false,
       "related": [
         "vault_errors",
         "vault_blame_audit",
@@ -1626,6 +1774,8 @@
       "side_effects": [
         "scripts/excepcion-declarada-baseline.json"
       ],
+      "status": "active",
+      "exposed_via_mcp": false,
       "related": [
         "vault_blame_audit",
         "vault_error_contract",
@@ -1659,6 +1809,8 @@
       "side_effects": [
         "Regenera tools-catalog.json, env-table.json, field-compat-baseline.json, docs/ARQUITECTURA.md, docs/BLUEPRINT.md y las cifras del README"
       ],
+      "status": "active",
+      "exposed_via_mcp": false,
       "related": [
         "vault_mcp_catalog",
         "vault_arch",
@@ -1701,6 +1853,8 @@
       "side_effects": [
         "Backups en .vault-fix-backup-YYYYMMDD/"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_audit",
         "vault_regex"
@@ -1781,6 +1935,8 @@
       "side_effects": [
         "Crea nota en 13_Flows/{type}/"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_diagram_save",
         "vault_graph"
@@ -1824,6 +1980,8 @@
       "side_effects": [
         "Crea/actualiza 00_System/custom-folders.json"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_reindex",
         "vault_audit"
@@ -1859,6 +2017,8 @@
         "No emite veredicto de salud: mide si nuestras medidas sobreviven al material ajeno, no la calidad de ese material"
       ],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": false,
       "related": [
         "vault_validate",
         "vault_graph_inspect",
@@ -1891,6 +2051,8 @@
       "side_effects": [
         "Reescribe la nota reparada por atomic_write_text"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_fix_brackets",
         "vault_validate",
@@ -1940,6 +2102,8 @@
       "side_effects": [
         "scripts/fuente-unica-baseline.json"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_norms",
         "vault_regex",
@@ -1983,6 +2147,8 @@
       },
       "guards": [],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_audit",
         "vault_quality_check"
@@ -2020,6 +2186,8 @@
         "No sustituye a pytest: verde aqui no es verde en la suite"
       ],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": false,
       "related": [
         "vault_norms",
         "vault_arch",
@@ -2045,6 +2213,8 @@
       "side_effects": [
         "Crea 99_Index/graph.json"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_audit",
         "vault_impact",
@@ -2116,6 +2286,8 @@
         "Modifica wikilinks en notas",
         "Crea stubs si es necesario"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_graph",
         "vault_graph_inspect",
@@ -2158,6 +2330,8 @@
       },
       "guards": [],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_graph",
         "vault_graph_merge",
@@ -2187,10 +2361,45 @@
         "Genera 99_Index/graph-enriched.json",
         "Detecta AP-31 (untyped graph), AP-34 (orphan typed relations), AP-35 (relationship silos)"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_graph",
         "vault_graph_inspect",
         "vault_impact"
+      ]
+    },
+    "vault_history_compact": {
+      "name": "vault_history_compact",
+      "description": "Rota versiones en .history/: mantiene N mas recientes, borra el resto.",
+      "group": "Versionado",
+      "script": "vault_history_compact.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "keep": {
+            "type": "string",
+            "description": "Numero de versiones a mantener (default: 10)"
+          },
+          "note": {
+            "type": "string",
+            "description": "Solo procesar esta nota"
+          },
+          "apply": {
+            "type": "string",
+            "description": "Aplicar el pruning (sin esto solo dry-run)"
+          }
+        }
+      },
+      "guards": [],
+      "side_effects": [
+        "Borra archivos de .history/"
+      ],
+      "status": "active",
+      "exposed_via_mcp": true,
+      "related": [
+        "vault_undo",
+        "vault_write"
       ]
     },
     "vault_impact": {
@@ -2225,6 +2434,8 @@
       },
       "guards": [],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_propagate",
         "vault_graph"
@@ -2310,6 +2521,8 @@
       "side_effects": [
         "Crea nota en 02_Observability/incidents/"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_slo_save",
         "vault_runbook_save"
@@ -2337,6 +2550,8 @@
       "side_effects": [
         "Genera diagrama en 09_Infrastructure/{project}/"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_infra_save",
         "vault_diagram_save"
@@ -2398,6 +2613,8 @@
       "side_effects": [
         "Crea nota en 09_Infrastructure/{project}/"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_infra_map",
         "vault_env_save"
@@ -2479,6 +2696,8 @@
         "Con --commit: crea notas en la sección destino con status draft",
         "Actualiza el índice de la sección"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_write",
         "vault_knowledge_save",
@@ -2511,6 +2730,8 @@
       "side_effects": [
         "Crea carpetas, versiona, indexa, audit"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_standard_upgrade",
         "vault_onboard",
@@ -2557,6 +2778,8 @@
       "side_effects": [
         "scripts/kernel-baseline.json"
       ],
+      "status": "active",
+      "exposed_via_mcp": false,
       "related": [
         "vault_arch",
         "vault_ciclos",
@@ -2591,6 +2814,8 @@
       },
       "guards": [],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_knowledge_save",
         "vault_search"
@@ -2641,6 +2866,8 @@
       "side_effects": [
         "Crea nota en 07_Knowledge/{topic}/"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_knowledge_get",
         "vault_search"
@@ -2670,6 +2897,8 @@
       },
       "guards": [],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_search",
         "vault_read"
@@ -2730,6 +2959,14 @@
           "meta": {
             "type": "string",
             "description": "Metadatos adicionales"
+          },
+          "owasp_category": {
+            "type": "string",
+            "description": "OWASP category: A01-A10 (for vulnerability type)"
+          },
+          "cwe_id": {
+            "type": "string",
+            "description": "CWE ID, e.g. CWE-798 (for vulnerability type)"
           }
         },
         "required": [
@@ -2742,6 +2979,8 @@
       "side_effects": [
         "Crea/actualiza nota en 02_Observability/"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_audit",
         "vault_drift_detect",
@@ -2761,6 +3000,8 @@
       "side_effects": [
         "Genera 99_Index/index.md"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_section_index",
         "vault_reindex"
@@ -2802,6 +3043,8 @@
       "side_effects": [
         "Crea backups antes de modificar"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_backup",
         "vault_diff"
@@ -2835,6 +3078,8 @@
       },
       "guards": [],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_diagram_save",
         "vault_write"
@@ -2867,6 +3112,10 @@
           "dry_run": {
             "type": "string",
             "description": "Simular sin aplicar"
+          },
+          "no-dry_run": {
+            "type": "string",
+            "description": "Disable dry run mode"
           }
         },
         "required": [
@@ -2880,6 +3129,8 @@
       "side_effects": [
         "Copia/move archivos"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_migrate_rollback",
         "vault_merge"
@@ -2912,6 +3163,8 @@
       "side_effects": [
         "Revierte archivos migrados"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_migrate_docs",
         "vault_backup"
@@ -2955,6 +3208,8 @@
       "side_effects": [
         "Actualiza 17_Preferences/model_profile.active"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_context_pack",
         "vault_preferences"
@@ -3004,6 +3259,8 @@
       "side_effects": [
         "Actualiza wiki-links, search-index, graph.json, move-log"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_write",
         "vault_graph",
@@ -3095,6 +3352,8 @@
       "side_effects": [
         "Crea nota en 02_Observability/ncr/"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_risk_save",
         "vault_audit"
@@ -3133,6 +3392,8 @@
       "side_effects": [
         "Con --freeze reescribe scripts/noop-baseline.json"
       ],
+      "status": "active",
+      "exposed_via_mcp": false,
       "related": [
         "vault_norms",
         "vault_doc_counts",
@@ -3240,6 +3501,8 @@
       },
       "guards": [],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": false,
       "related": [
         "vault_ai_decision",
         "vault_audit"
@@ -3283,6 +3546,8 @@
       "side_effects": [
         "scripts/norms-coherence-baseline.json"
       ],
+      "status": "active",
+      "exposed_via_mcp": false,
       "related": [
         "vault_norms",
         "vault_audit",
@@ -3357,6 +3622,8 @@
         "Crea notas en las secciones 01…17 del vault destino",
         "No modifica el proyecto de origen: solo lo lee"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_init",
         "vault_migrate_docs",
@@ -3388,6 +3655,8 @@
       },
       "guards": [],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_pattern_save",
         "vault_search"
@@ -3445,6 +3714,8 @@
       "side_effects": [
         "Crea nota en 05_Patterns/"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_pattern_list",
         "vault_code_module"
@@ -3529,6 +3800,8 @@
         "Crea/actualiza nota en 17_Preferences/{category}/",
         "Actualiza índice de 17_Preferences"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_context_pack",
         "vault_write"
@@ -3610,6 +3883,8 @@
       "side_effects": [
         "Crea nota en 02_Observability/privacy/"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_risk_save",
         "vault_security_scan"
@@ -3649,6 +3924,8 @@
       "side_effects": [
         "docs/GUIA-DE-PRODUCCION.md"
       ],
+      "status": "active",
+      "exposed_via_mcp": false,
       "related": [
         "vault_gate",
         "vault_foreign_check",
@@ -3688,6 +3965,8 @@
       "side_effects": [
         "Crea/actualiza 01_Projects/{slug}/overview.md"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_project_status",
         "vault_audit"
@@ -3726,6 +4005,8 @@
       },
       "guards": [],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_project_overview",
         "vault_audit"
@@ -3777,6 +4058,8 @@
       "side_effects": [
         "Actualiza notas relacionadas"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_impact",
         "vault_write"
@@ -3812,6 +4095,8 @@
       "side_effects": [
         "Genera reporte en 00_System/"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_audit",
         "vault_fundamentals"
@@ -3861,6 +4146,8 @@
         "Mueve la nota a 20_Quarantine/{category}/",
         "Actualiza 20_Quarantine/.quarantine-ledger.json (append-only)"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_merge",
         "vault_security_scan",
@@ -3891,6 +4178,8 @@
       },
       "guards": [],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_context_pack",
         "vault_search",
@@ -3916,6 +4205,8 @@
       },
       "guards": [],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_write",
         "vault_search"
@@ -3960,6 +4251,8 @@
       "side_effects": [
         "scripts/recursos-baseline.json"
       ],
+      "status": "active",
+      "exposed_via_mcp": false,
       "related": [
         "vault_arch",
         "vault_ciclos",
@@ -3994,6 +4287,8 @@
         "Actualiza 99_Index/search-index.json",
         "Opcional: 99_Index/graph.json, hash-index.json"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_search",
         "vault_graph"
@@ -4051,6 +4346,8 @@
       "side_effects": [
         "Actualiza relaciones en 07_Knowledge/"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_diagram_save",
         "vault_code_relation"
@@ -4122,6 +4419,8 @@
       "side_effects": [
         "Crea nota en 01_Projects/{project}/releases/"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_change_log",
         "vault_incident_save"
@@ -4194,6 +4493,8 @@
       "side_effects": [
         "Crea nota en 01_Projects/{project}/requirements/"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_test_save",
         "vault_audit"
@@ -4226,6 +4527,8 @@
       "side_effects": [
         "Sobreescribe archivos del vault"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_backup",
         "vault_backup_list"
@@ -4258,6 +4561,8 @@
       "side_effects": [
         "Restaura vault a nuevo directorio"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_backup_base64",
         "vault_restore"
@@ -4339,6 +4644,8 @@
       "side_effects": [
         "Crea nota en 01_Projects/{project}/risks/"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_ncr_save",
         "vault_privacy_save"
@@ -4378,6 +4685,8 @@
       "side_effects": [
         "Actualiza log del runbook"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_runbook_save",
         "vault_audit"
@@ -4437,6 +4746,8 @@
       "side_effects": [
         "Crea nota en 08_Runbooks/{project}/"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_runbook_log",
         "vault_incident_save"
@@ -4465,6 +4776,8 @@
         "Vault destino por autodetección o VAULT_ROOT; sin flag de raíz propia"
       ],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_audit",
         "vault_norms",
@@ -4509,6 +4822,8 @@
         "Escribe 13 documentos derivados en docs/sdd/",
         "Escribe docs/sdd/gaps.md solo si no existe o no tiene contenido manual"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_norms",
         "vault_reindex",
@@ -4542,6 +4857,8 @@
       },
       "guards": [],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_read",
         "vault_list"
@@ -4577,6 +4894,8 @@
       "side_effects": [
         "Genera {section}/index.md"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_master_index",
         "vault_reindex"
@@ -4619,6 +4938,8 @@
       "side_effects": [
         "Genera reporte en 02_Observability/security/"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_audit",
         "vault_log_error"
@@ -4660,6 +4981,8 @@
         "Los group_id se derivan de mapa_de_grupos(): no hay numeracion propia"
       ],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": false,
       "related": [
         "vault_mcp_catalog",
         "vault_arch",
@@ -4734,6 +5057,8 @@
       "side_effects": [
         "Crea nota en 02_Observability/slos/"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_incident_save",
         "vault_audit"
@@ -4771,6 +5096,8 @@
       "side_effects": [
         "scripts/smoke-baseline.json"
       ],
+      "status": "active",
+      "exposed_via_mcp": false,
       "related": [
         "vault_mcp_catalog",
         "vault_noop_audit"
@@ -4831,6 +5158,8 @@
         "Actualiza 00_System/standard-version.json",
         "Ejecuta fixes automáticos"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_init",
         "vault_audit"
@@ -4902,6 +5231,8 @@
         "Requiere 99_Index/graph.json o graph-enriched.json"
       ],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_impact",
         "vault_graph",
@@ -4949,6 +5280,8 @@
         "Reconstruye 00_System/tag-registry.json y 99_Index/tag-index.md",
         "Anota términos nuevos en 19_Audits/vocabulary/tag-ledger.json (append-only)"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_delta",
         "vault_audit"
@@ -5018,6 +5351,8 @@
       "side_effects": [
         "Crea nota en 01_Projects/{project}/tests/"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_requirement_save",
         "vault_code_module"
@@ -5059,6 +5394,8 @@
       },
       "guards": [],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_audit",
         "vault_change_log"
@@ -5134,6 +5471,8 @@
       },
       "guards": [],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_tokens",
         "vault_token_service"
@@ -5159,6 +5498,8 @@
       },
       "guards": [],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_tokens",
         "vault_token_counter"
@@ -5198,9 +5539,58 @@
         "No guardar tokens en texto plano"
       ],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_token_counter",
         "vault_token_service"
+      ]
+    },
+    "vault_undo": {
+      "name": "vault_undo",
+      "description": "Recupera una nota desde .history/. Lista versiones y restaura sin sobreescribir (por defecto).",
+      "group": "Versionado",
+      "script": "vault_undo.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "list": {
+            "type": "string",
+            "description": "Listar versiones disponibles para esta nota"
+          },
+          "restore": {
+            "type": "string",
+            "description": "Restaurar version desde .history/"
+          },
+          "version": {
+            "type": "string",
+            "description": "Version especifica a restaurar (filename en .history/)"
+          },
+          "force": {
+            "type": "string",
+            "description": "Sobrescribir nota actual (default: restaurar como copia nueva)"
+          },
+          "dry-run": {
+            "type": "string",
+            "description": "Simular sin escribir"
+          },
+          "agent": {
+            "type": "string",
+            "description": "Nombre del agente para change-log (default: claude)"
+          }
+        }
+      },
+      "guards": [],
+      "side_effects": [
+        "SP-01: escribe change_log si --force",
+        "Crea nota restaurada o sobreescribe la actual"
+      ],
+      "status": "active",
+      "exposed_via_mcp": true,
+      "related": [
+        "vault_write",
+        "vault_diff",
+        "vault_history_compact"
       ]
     },
     "vault_validate": {
@@ -5233,6 +5623,8 @@
       },
       "guards": [],
       "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_audit",
         "vault_write"
@@ -5262,6 +5654,8 @@
       "side_effects": [
         "00_System/.voice-counter"
       ],
+      "status": "active",
+      "exposed_via_mcp": false,
       "related": [
         "vault_norms",
         "vault_errors"
@@ -5318,6 +5712,8 @@
         "Actualiza search-index.json",
         "Regenera section index"
       ],
+      "status": "active",
+      "exposed_via_mcp": true,
       "related": [
         "vault_read",
         "vault_append",
@@ -5423,7 +5819,8 @@
       "vault_ai_decision"
     ],
     "Change Log": [
-      "vault_change_log"
+      "vault_change_log",
+      "vault_delete"
     ],
     "Data Quality": [
       "vault_quality_check",
@@ -5453,6 +5850,7 @@
       "vault_code_tag",
       "vault_doc_counts",
       "vault_doc_sync",
+      "vault_doc_staleness",
       "vault_noop_audit",
       "vault_smoke",
       "vault_voice",
@@ -5489,7 +5887,9 @@
       "vault_frontmatter_heal"
     ],
     "Versionado": [
-      "vault_standard_upgrade"
+      "vault_standard_upgrade",
+      "vault_undo",
+      "vault_history_compact"
     ],
     "Gestión de Carpetas": [
       "vault_folder_registry"

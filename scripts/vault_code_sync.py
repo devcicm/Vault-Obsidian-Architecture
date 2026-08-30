@@ -28,7 +28,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_io import write_report, resolve_input_path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -102,7 +102,11 @@ def _vault_ref_in_file(file_path: Path) -> Optional[str]:
         content = file_path.read_text(encoding="utf-8", errors="ignore")
         m = _VAULT_TAG_PATTERN.search(content)
         return m.group(1).strip() if m else None
-    except Exception:
+    except (OSError, UnicodeDecodeError, PermissionError) as exc:
+        emit_error("vault_code_sync", "FILE_READ_ERROR", str(exc))
+        return None
+    except Exception as exc:
+        emit_error("vault_code_sync", "UNEXPECTED_ERROR", str(exc))
         return None
 
 
@@ -118,7 +122,11 @@ def _collect_code_notes(project: Optional[str]) -> List[Tuple[Path, Dict[str, st
         try:
             meta = parse_frontmatter(p.read_text(encoding="utf-8", errors="ignore"))
             notes.append((p, meta))
-        except Exception:
+        except (OSError, UnicodeDecodeError, ValueError):
+            continue
+        except Exception as exc:
+            emit_error("vault_code_sync", "PARSE_FRONTMATTER_ERROR",
+                      f"{p.name}: {exc}")
             continue
     return notes
 
@@ -200,8 +208,9 @@ def vault_code_sync(
                 fix_applied = tag_result.get("ok", False)
                 if fix_applied:
                     fixed += 1
-            except Exception:
-                pass
+            except Exception as exc:
+                emit_error("vault_code_sync", "TAG_FIX_ERROR",
+                          f"{note_rel}: {exc}")
 
         missing_tag.append(
             {
@@ -237,8 +246,8 @@ def vault_code_sync(
                                 break
                             scan_roots.append(root)
                             break
-        except Exception:
-            pass
+        except Exception as exc:
+            emit_error("vault_code_sync", "SCAN_ROOT_ERROR", str(exc))
 
     all_note_refs = {
         str(p.relative_to(_raiz())).replace("\\", "/").removesuffix(".md")

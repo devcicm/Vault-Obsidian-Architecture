@@ -27,7 +27,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from vault_io import atomic_write_json, atomic_write_text
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 
 
 SDD_OUTPUT_DIR = "docs/sdd"
@@ -90,7 +90,11 @@ def _norm_codes() -> set:
         from vault_norms_catalog import NORM_CATALOG
 
         return {n["code"] for n in NORM_CATALOG}
-    except Exception:
+    except (ImportError, OSError) as exc:
+        emit_error("vault_sdd_init", "NORM_CATALOG_UNAVAILABLE", str(exc))
+        return set()
+    except Exception as exc:
+        emit_error("vault_sdd_init", "UNEXPECTED_ERROR", str(exc))
         return set()
 
 
@@ -440,13 +444,21 @@ def _lifecycle_states(fila: dict, vault_root: Path) -> str:
             ).get("tools", {})
             estados = sorted({e.get("status", "active") for e in entradas.values()})
             return " / ".join(estados) or "(sin entradas)"
-        except Exception:
+        except (ImportError, OSError, json.JSONDecodeError) as exc:
+            emit_error("vault_sdd_init", "TOOL_SPEC_UNAVAILABLE", str(exc))
+            return "(no resoluble)"
+        except Exception as exc:
+            emit_error("vault_sdd_init", "UNEXPECTED_ERROR", str(exc))
             return "(no resoluble)"
     if fila.get("source") == "standard_version":
         try:
             from vault_version import CURRENT_VERSION
             return f"v19 → … → {CURRENT_VERSION}"
-        except Exception:
+        except (ImportError, OSError) as exc:
+            emit_error("vault_sdd_init", "VERSION_UNAVAILABLE", str(exc))
+            return "(no resoluble)"
+        except Exception as exc:
+            emit_error("vault_sdd_init", "UNEXPECTED_ERROR", str(exc))
             return "(no resoluble)"
     return "(sin declarar)"
 
@@ -454,7 +466,11 @@ def _lifecycle_states(fila: dict, vault_root: Path) -> str:
 def _lifecycle_table(vault_root: Path, en: bool = False) -> str:
     try:
         from vault_norms_catalog import LIFECYCLE_REGISTRY
-    except Exception:
+    except (ImportError, OSError) as exc:
+        emit_error("vault_sdd_init", "LIFECYCLE_UNAVAILABLE", str(exc))
+        return "| — | — | — |\n"
+    except Exception as exc:
+        emit_error("vault_sdd_init", "UNEXPECTED_ERROR", str(exc))
         return "| — | — | — |\n"
     clave = "entity_en" if en else "entity"
     filas = [
@@ -669,7 +685,11 @@ def generate_antipatterns(vault_root: Path, drift: dict) -> str:
         from vault_norms_catalog import NORM_CATALOG
 
         aps = list(NORM_CATALOG)
-    except Exception:
+    except (ImportError, OSError) as exc:
+        emit_error("vault_sdd_init", "NORM_CATALOG_UNAVAILABLE", str(exc))
+        aps = []
+    except Exception as exc:
+        emit_error("vault_sdd_init", "UNEXPECTED_ERROR", str(exc))
         aps = []
     ap_range = ap_range_label({n.get("code", "") for n in aps})
     familias: dict = {}

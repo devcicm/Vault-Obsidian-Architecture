@@ -53,6 +53,7 @@ BASELINE_PATH = Path(__file__).resolve().parent / "noop-baseline.json"
 # `files_included` / `files_restored` entran en v39 por las dos tools base64,
 # que son JS-native y no pueden usar el ledger de `vault_io.write_report()`.
 # Son recuentos reales de archivos, no banderas: cero sigue significando cero.
+# `versions_restored` sigue el mismo patrón para vault_undo (restauración de versiones).
 WORK_INDICATORS = {
     "added",
     "applied",
@@ -80,6 +81,7 @@ WORK_INDICATORS = {
     "skipped",
     "total",
     "updated",
+    "versions_restored",
     "written",
 }
 

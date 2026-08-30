@@ -1,6 +1,6 @@
 {
   "schema": "field-compat/1",
-  "generated": "2026-08-23T00:32:27Z",
+  "generated": "2026-08-30T08:04:26Z",
   "why": "Campos que los repos consumidores pueden leer con garantía. Un campo que sale de aquí sin quedar anotado en superseded_fields rompe a quien lo leía, y por eso lo para una puerta.",
   "stable": {
     "vault_ai_decision": [
@@ -304,6 +304,18 @@
       "tool",
       "vault_says"
     ],
+    "vault_delete": [
+      "action",
+      "change_logged",
+      "deleted",
+      "dry_run",
+      "error",
+      "error_code",
+      "ok",
+      "path",
+      "tool",
+      "trashed"
+    ],
     "vault_delta": [
       "action",
       "added",
@@ -365,6 +377,18 @@
       "ok",
       "tool",
       "values"
+    ],
+    "vault_doc_staleness": [
+      "fix",
+      "invalid",
+      "invalid_files",
+      "missing",
+      "missing_files",
+      "ok",
+      "present",
+      "present_files",
+      "tool",
+      "total"
     ],
     "vault_doc_sync": [
       "action",
@@ -616,6 +640,16 @@
       "unchanged",
       "updated",
       "written"
+    ],
+    "vault_history_compact": [
+      "applied",
+      "dry_run",
+      "errors",
+      "kept",
+      "ok",
+      "pruned",
+      "tool",
+      "total"
     ],
     "vault_impact": [
       "changed_notes",
@@ -1461,6 +1495,20 @@
       "tools",
       "top",
       "total_tokens"
+    ],
+    "vault_undo": [
+      "action",
+      "error",
+      "error_code",
+      "force",
+      "ok",
+      "path",
+      "restored_at",
+      "restored_from",
+      "restored_to",
+      "tool",
+      "version",
+      "versions_restored"
     ],
     "vault_validate": [
       "indexes",

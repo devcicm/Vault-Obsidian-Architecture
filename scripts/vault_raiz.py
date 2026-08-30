@@ -115,11 +115,20 @@ def _detect_vault_root() -> Path:
         # consumidor, que es «¿tiene esto contenido de vault?».
         and not (s / "__init__.py").exists()
     ]
-    # Prefer candidates that already have vault content (initialized vault)
+    # Prefer candidates that already have vault content (initialized vault).
+    # Con varios candidatos初始化ados se selecciona el de mayor madurez:
+    # el que más marcadores de estructura tenga. A igualdad, el primero
+    # alfabéticamente (candidates ya está sorted).
+    best_candidate: Optional[Path] = None
+    best_score = 0
     for c in candidates:
-        if any((c / m).exists() for m in _MARKERS):
-            _VAULT_ROOT_ORIGIN = "sibling_vault_dir"
-            return c
+        score = sum(1 for m in _MARKERS if (c / m).exists())
+        if score > best_score:
+            best_score = score
+            best_candidate = c
+    if best_candidate is not None:
+        _VAULT_ROOT_ORIGIN = "sibling_vault_dir"
+        return best_candidate
     # Accept any vault-* dir (fresh vault, nothing initialized yet)
     if candidates:
         _VAULT_ROOT_ORIGIN = "sibling_vault_dir_fresh"

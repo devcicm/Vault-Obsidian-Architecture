@@ -21,6 +21,8 @@ from ..kernel.contexto import VaultContext
 CARPETA_SISTEMA = "00_System"
 CARPETA_OBSERVABILIDAD = "02_Observability"
 SUBCARPETA_VULNERABILIDADES = "vulnerabilities"
+CARPETA_SEGURIDAD = "security"
+SUBCARPETA_OWASP = "owasp"
 
 FICHERO_REGISTRO_NORMAS = "norm-registry.json"
 FICHERO_INDICE_CALIDAD = "quality-index.json"
@@ -60,6 +62,14 @@ class RepositorioGobernanza:
     @property
     def dir_vulnerabilidades(self) -> Path:
         return self._ctx.ruta(CARPETA_OBSERVABILIDAD, SUBCARPETA_VULNERABILIDADES)
+
+    @property
+    def dir_seguridad(self) -> Path:
+        return self._ctx.ruta(CARPETA_OBSERVABILIDAD, CARPETA_SEGURIDAD)
+
+    @property
+    def dir_owasp(self) -> Path:
+        return self._ctx.ruta(CARPETA_OBSERVABILIDAD, CARPETA_SEGURIDAD, SUBCARPETA_OWASP)
 
     @property
     def registro_normas(self) -> Path:

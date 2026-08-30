@@ -455,7 +455,11 @@ def _load_spec() -> Optional[Dict[str, Any]]:
         return None
     try:
         return json.loads(spec_file.read_text(encoding="utf-8"))
-    except Exception:
+    except (json.JSONDecodeError, UnicodeDecodeError, OSError) as exc:
+        emit_error("vault_manifest", "SPEC_PARSE_ERROR", str(exc))
+        return None
+    except Exception as exc:
+        emit_error("vault_manifest", "UNEXPECTED_ERROR", str(exc))
         return None
 
 
@@ -570,8 +574,9 @@ def _bootstrap_spec() -> Dict[str, Any]:
             try:
                 src = script_path.read_text(encoding="utf-8", errors="replace")
                 required_args = _extract_required_flags(src)
-            except Exception:
-                pass
+            except Exception as exc:
+                emit_error("vault_manifest", "INTROSPECTION_ERROR",
+                          f"{name}: {exc}")
 
         entry: Dict[str, Any] = {
             "group":            group_name,
@@ -739,8 +744,10 @@ def _read_version() -> str:
         if sv.exists():
             v = json.loads(sv.read_text(encoding="utf-8")).get("version", "unknown")
             return f"v{v}" if isinstance(v, int) else str(v)
-    except Exception:
-        pass
+    except (json.JSONDecodeError, UnicodeDecodeError, OSError) as exc:
+        emit_error("vault_manifest", "VERSION_READ_ERROR", str(exc))
+    except Exception as exc:
+        emit_error("vault_manifest", "UNEXPECTED_ERROR", str(exc))
     return "unknown"
 
 

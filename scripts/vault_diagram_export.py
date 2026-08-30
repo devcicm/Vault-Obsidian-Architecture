@@ -136,7 +136,11 @@ def extract_diagram(file_path: Path, index: int = 0) -> Optional[str]:
     """Extrae un diagrama específico de un archivo."""
     try:
         content = file_path.read_text(encoding="utf-8", errors="ignore")
-    except Exception:
+    except (OSError, UnicodeDecodeError, PermissionError) as exc:
+        emit_error("vault_diagram_export", "FILE_READ_ERROR", str(exc))
+        return None
+    except Exception as exc:
+        emit_error("vault_diagram_export", "UNEXPECTED_ERROR", str(exc))
         return None
 
     pattern = r"```mermaid\s*\n(.*?)```"
@@ -219,7 +223,11 @@ def export_project(
 
         try:
             content = md.read_text(encoding="utf-8", errors="ignore")
-        except Exception:
+        except (OSError, UnicodeDecodeError, PermissionError) as exc:
+            emit_error("vault_diagram_export", "FILE_READ_ERROR", str(exc))
+            continue
+        except Exception as exc:
+            emit_error("vault_diagram_export", "UNEXPECTED_ERROR", str(exc))
             continue
 
         pattern = r"```mermaid\s*\n(.*?)```"

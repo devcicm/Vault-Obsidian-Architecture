@@ -28,7 +28,7 @@ from collections import defaultdict, deque
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
@@ -137,7 +137,11 @@ def _load_graph() -> Optional[Dict[str, Any]]:
         return None
     try:
         return json.loads(graph_file.read_text(encoding="utf-8"))
-    except Exception:
+    except (json.JSONDecodeError, UnicodeDecodeError, OSError) as exc:
+        emit_error("vault_subgraph", "GRAPH_LOAD_ERROR", str(exc))
+        return None
+    except Exception as exc:
+        emit_error("vault_subgraph", "UNEXPECTED_ERROR", str(exc))
         return None
 
 

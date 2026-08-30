@@ -173,6 +173,46 @@ def _build_graph(notes: dict[str, dict[str, Any]]) -> dict[str, set[str]]:
     return dict(graph)
 
 
+def _detect_circular_wikilinks(
+    graph: dict[str, set[str]], stems: dict[str, str]
+) -> list[dict[str, Any]]:
+    """Detecta ciclos en el grafo de wikilinks usando DFS con coloración.
+
+    WHITE=0 (no visitado), GRAY=1 (en recursion stack), BLACK=2 (completado).
+    Cuando se encuentra un neighbor en GRAY, se encontró un ciclo.
+    Solo reporta ciclos de longitud >= 2 (self-loops se manejan aparte).
+    """
+    WHITE, GRAY, BLACK = 0, 1, 2
+    color: dict[str, int] = {node: WHITE for node in graph}
+    cycles: list[dict[str, Any]] = []
+
+    def dfs(node: str, path: list[str]) -> None:
+        color[node] = GRAY
+        for neighbor in graph.get(node, set()):
+            if neighbor not in stems:
+                continue
+            dest = stems.get(neighbor)
+            if dest is None:
+                continue
+            if color.get(dest, WHITE) == GRAY:
+                cycle_start = path.index(dest)
+                cycle_path = path[cycle_start:] + [dest]
+                if len(cycle_path) >= 2:
+                    cycles.append({
+                        "cycle": cycle_path,
+                        "length": len(cycle_path) - 1,
+                    })
+            elif color.get(dest, WHITE) == WHITE:
+                dfs(dest, path + [dest])
+        color[node] = BLACK
+
+    for node in graph:
+        if color.get(node, WHITE) == WHITE:
+            dfs(node, [node])
+
+    return cycles
+
+
 def _stems_set(notes: dict[str, dict[str, Any]]) -> dict[str, str]:
     """Build {normalized_stem: relative_path} for quick existence lookup.
 
@@ -216,6 +256,8 @@ def _compute_metrics(
             if t not in stems:
                 broken.append({"source": source, "target": t})
 
+    cycles = _detect_circular_wikilinks(graph, stems)
+
     in_degree = {p: incoming.get(p, 0) for p in notes}
     out_degree = {p: len(graph.get(p, set())) for p in notes}
     total_edges = sum(out_degree.values())
@@ -241,6 +283,8 @@ def _compute_metrics(
         "total_edges": total_edges,
         "broken_links_count": len(broken),
         "broken_links": broken[:50],
+        "cycles_count": len(cycles),
+        "cycles": cycles[:20],
         "orphans_count": len(orphans),
         "orphans": sorted(orphans)[:50],
         "top_hubs": top_hubs,

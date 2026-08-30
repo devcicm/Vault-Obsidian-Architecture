@@ -33,9 +33,9 @@ Restricciones que son decisión de producto, no limitación pendiente:
 
 | Capacidad | Resultado | Grupos | Tools |
 |---|---|---|---|
-| **Escritura → gobernanza** (`escritura_a_gobernanza`) | Lo que el agente captura queda escrito una sola vez, normalizado contra las normas, versionado y auditable después. | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 36, 37 | 78 |
+| **Escritura → gobernanza** (`escritura_a_gobernanza`) | Lo que el agente captura queda escrito una sola vez, normalizado contra las normas, versionado y auditable después. | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 36, 37 | 81 |
 | **Consulta → contexto** (`consulta_a_contexto`) | Una pregunta del agente se convierte en un paquete de contexto acotado y presupuestado, recorriendo el grafo del vault sin índice externo. | 26, 34 | 9 |
-| **Gobernanza del estándar** (`gobernanza_del_estandar`) | El estándar cumple lo que publica: registro canónico primero, doc derivada, guard que falla si divergen. Ninguna de estas tools toca las notas de un usuario. | 35 | 23 |
+| **Gobernanza del estándar** (`gobernanza_del_estandar`) | El estándar cumple lo que publica: registro canónico primero, doc derivada, guard que falla si divergen. Ninguna de estas tools toca las notas de un usuario. | 35 | 24 |
 
 - **`consulta_a_contexto`** — El grupo 26 (Tokens) cae en el rango 1–33 que `CLAUDE.md` atribuye al primer eje, pero sus tres tools viven en el contexto `consulta` y existen para que el paquete quepa en la ventana. El rango es cronológico, no clasificatorio.
 - **`gobernanza_del_estandar`** — Tercera capacidad que `CLAUDE.md` no nombraba. Existía desde que se escribió la primera puerta; declararla es lo que impide que sus tools se cuenten como si sirvieran a la memoria del agente.
@@ -53,14 +53,14 @@ regenera.*
 | Contexto | Puertos | Módulos | Prohíbe |
 |---|---|---|---|
 | **Kernel** (`kernel`) | 4 | 22 | depender de cualquier contexto de dominio |
-| **Autoría** (`autoria`) | 7 | 39 | — |
+| **Autoría** (`autoria`) | 7 | 41 | — |
 | **Grafo** (`grafo`) | 3 | 15 | — |
 | **Gobernanza** (`gobernanza`) | 20 | 11 | — |
 | **Índices** (`indices`) | 8 | 6 | — |
 | **Consulta** (`consulta`) | 7 | 11 | base de datos; embeddings; servicio externo |
-| **Ciclo de vida** (`ciclo_de_vida`) | 3 | 8 | — |
+| **Ciclo de vida** (`ciclo_de_vida`) | 3 | 9 | — |
 | **Durabilidad** (`durabilidad`) | 4 | 4 | escribir fuera de la raíz del vault (AP-36) |
-| **Meta-toolkit** (`meta_toolkit`) | 4 | 29 | escribir en una sección de contenido: sus artefactos derivados viven en 00_System/ |
+| **Meta-toolkit** (`meta_toolkit`) | 4 | 30 | escribir en una sección de contenido: sus artefactos derivados viven en 00_System/ |
 | **CLI** (`cli`) | 0 | 7 | decidir: traduce argumentos a llamadas y envelopes a salida; la decisión vive en la tool |
 
 ## Capa 4 — Normas → puertas → tests
@@ -118,7 +118,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-36** — Contención e idempotencia — side-effects fuera del vault o no rastreables | guard+audit | `framework` | `test_ap46_heal.py`, `test_arquitectura.py`, `test_ciclo_de_vida_dominio.py`, `test_consulta_dominio.py`, `test_gobernanza_dominio.py`, `test_grafo_dominio.py`, `test_indices_dominio.py`, `test_skills_contract.py`, `test_vault_containment.py`, `test_vault_norms_audit.py` |
 | **AP-37** — No-op silencioso — ok: true sin indicador de trabajo | audit | `noop` | `test_noop_audit.py`, `test_norms_coherence.py`, `test_voice.py` |
 | **AP-38** — Vocabulario validado después de escribir, no antes | guard+audit | `framework` | `test_status_vocabulary.py` |
-| **AP-39** — Vocabulario abierto sin memoria | guard+audit | `framework` | `test_ap39_registro_en_el_write_path.py`, `test_tag_vocabulary.py` |
+| **AP-39** — Vocabulario abierto sin memoria | guard+audit | `framework` | `test_ap39_registro_en_el_write_path.py`, `test_tag_vocabulary.py`, `test_vault_init.py` |
 | **AP-40** — Contrato publicado que la CLI rechaza | guard+audit | `contratos`, `framework` | `test_catalog_params.py` |
 | **AP-41** — Máquina de estados declarada sin verificar | guard+audit | `framework` | `test_status_machine.py`, `test_voice.py` |
 | **AP-42** — Tool publicada sin haberse ejecutado nunca | guard+audit | `framework` | `test_smoke.py` |
@@ -156,7 +156,7 @@ Sin puerta ni test (15): `AP-04`, `AP-08`, `AP-12`, `AP-13`, `AP-18`, `AP-20`, `
 
 *Registros: `vault_mcp_catalog.TOOLS_CATALOG` + `<vault>/00_System/tool-spec.json`*
 
-110 tools activas en 37 grupos. Toda tool
+114 tools activas en 37 grupos. Toda tool
 del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 `status: archived | internal | orphan` — no se borra, se anota
 (`vault_mcp_catalog.py --check-contracts`).
@@ -166,7 +166,7 @@ del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 | Backups | 5 |
 | Bibliografía | 1 |
 | Bootstrap | 2 |
-| Change Log | 1 |
+| Change Log | 2 |
 | Conocimiento | 2 |
 | Core | 8 |
 | Corrección Automática | 3 |
@@ -182,7 +182,7 @@ del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 | Línea de Tiempo | 1 |
 | Memoria de Contexto | 6 |
 | Migración | 2 |
-| Normas | 23 |
+| Normas | 24 |
 | Observabilidad | 1 |
 | Patrones | 2 |
 | Producción/SRE | 2 |
@@ -197,7 +197,7 @@ del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 | Skills | 2 |
 | Tests | 1 |
 | Tokens | 3 |
-| Versionado | 1 |
+| Versionado | 3 |
 | Vista del Proyecto | 2 |
 | Índices | 3 |
 
@@ -233,11 +233,13 @@ falla — no se rellena con el valor más cercano.
 | `vault_code_tag` | 35 — Normas | gobernanza_del_estandar |
 | `vault_context_pack` | 34 — Memoria de Contexto | consulta_a_contexto |
 | `vault_criterios` | 35 — Normas | gobernanza_del_estandar |
+| `vault_delete` | 23 — Change Log | escritura_a_gobernanza |
 | `vault_delta` | 27 — Session Delta y Tags | escritura_a_gobernanza |
 | `vault_diagram_export` | 4 — Diagramas | escritura_a_gobernanza |
 | `vault_diagram_save` | 4 — Diagramas | escritura_a_gobernanza |
 | `vault_diff` | 1 — Core | escritura_a_gobernanza |
 | `vault_doc_counts` | 35 — Normas | gobernanza_del_estandar |
+| `vault_doc_staleness` | 35 — Normas | gobernanza_del_estandar |
 | `vault_doc_sync` | 35 — Normas | gobernanza_del_estandar |
 | `vault_drift_detect` | 17 — Drift Detection | escritura_a_gobernanza |
 | `vault_env_matrix` | 8 — Infraestructura | escritura_a_gobernanza |
@@ -257,6 +259,7 @@ falla — no se rellena con el valor más cercano.
 | `vault_graph_fix` | 33 — Corrección Automática | escritura_a_gobernanza |
 | `vault_graph_inspect` | 6 — Salud del Vault | escritura_a_gobernanza |
 | `vault_graph_merge` | 6 — Salud del Vault | escritura_a_gobernanza |
+| `vault_history_compact` | 22 — Versionado | escritura_a_gobernanza |
 | `vault_impact` | 25 — Propagación | escritura_a_gobernanza |
 | `vault_incident_save` | 28 — Producción/SRE | escritura_a_gobernanza |
 | `vault_infra_map` | 8 — Infraestructura | escritura_a_gobernanza |
@@ -318,6 +321,7 @@ falla — no se rellena con el valor más cercano.
 | `vault_token_counter` | 26 — Tokens | consulta_a_contexto |
 | `vault_token_service` | 26 — Tokens | consulta_a_contexto |
 | `vault_tokens` | 26 — Tokens | consulta_a_contexto |
+| `vault_undo` | 22 — Versionado | escritura_a_gobernanza |
 | `vault_validate` | 6 — Salud del Vault | escritura_a_gobernanza |
 | `vault_voice` | 35 — Normas | gobernanza_del_estandar |
 | `vault_write` | 1 — Core | escritura_a_gobernanza |
@@ -353,7 +357,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 |---|---|---|---|---|
 | `scripts/arch-baseline.json` | cruces entre contextos | 36 | — *sin objetivo* | 62 → 62 → 42 → 35 → 36 → 36 (encoge, Δ-13) |
 | `scripts/arch-baseline.json` | cruces fuera de puerto | 12 | — *sin objetivo* | 13 → 12 → 12 → 12 → 12 → 12 (encoge, Δ-36) |
-| `scripts/blame-baseline.json` | AP-51 | 83 | — *sin objetivo* | 86 → 86 → 86 → 87 → 84 → 83 (encoge, Δ-3) |
+| `scripts/blame-baseline.json` | AP-51 | 45 | — *sin objetivo* | 86 → 86 → 86 → 87 → 84 → 83 (encoge, Δ-3) |
 | `scripts/error-contract-baseline.json` | AP-52 | 0 | — *sin objetivo* | 158 → 110 → 110 → 0 → 9 → 0 (encoge, Δ-158) |
 | `scripts/noop-baseline.json` | AP-37 | 0 | — *sin objetivo* | 0 → 0 (plana, Δ+0) |
 | `scripts/smoke-baseline.json` | AP-42 | 0 | — *sin objetivo* | — *1 muestra* |
@@ -363,7 +367,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 5 | — *sin objetivo* | — *1 muestra* |
 | `scripts/norms-distincion-baseline.json` | AP-60 — normas que no declaran de qué se distinguen | 0 | — *sin objetivo* | 57 → 0 (encoge, Δ-57) |
 | `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 | — *sin objetivo* | 47 → 0 (encoge, Δ-47) |
-| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1278 | — *sin objetivo* | 1220 → 1240 → 1256 → 1267 → 1278 → 1278 (crece, Δ+240) |
+| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1318 | — *sin objetivo* | 1240 → 1256 → 1267 → 1278 → 1278 → 1278 (crece, Δ+240) |
 | `scripts/excepcion-declarada-baseline.json` | AP-61 — la excepción declarada no es la que escapa | 0 | ≤ 0 para 2027-06-30 · cada 180 d · gobernanza → **cumple** | 0 → 0 (plana, Δ+0) |
 | `scripts/recursos-baseline.json` | AP-62 — el consumidor cruza para leer un recurso y paga el fan-out | 2 | — *sin objetivo* | — *1 muestra* |
 
@@ -382,4 +386,4 @@ sobre la historia sin que git la respalde (AP-53).
 
 ---
 
-*21 puertas de cierre. Generado por `scripts/vault_blueprint.py`.*
+*22 puertas de cierre. Generado por `scripts/vault_blueprint.py`.*

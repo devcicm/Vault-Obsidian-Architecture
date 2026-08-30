@@ -89,7 +89,11 @@ def _read_propagation_queue() -> Dict[str, Any]:
         return (
             data if isinstance(data, dict) else {"updated_at": utcnow(), "pending": []}
         )
-    except Exception:
+    except (json.JSONDecodeError, UnicodeDecodeError, OSError) as exc:
+        emit_error("vault_propagate", "QUEUE_READ_ERROR", str(exc))
+        return {"updated_at": utcnow(), "pending": []}
+    except Exception as exc:
+        emit_error("vault_propagate", "UNEXPECTED_ERROR", str(exc))
         return {"updated_at": utcnow(), "pending": []}
 
 
@@ -117,8 +121,10 @@ def _action_notify(note_path: str, timestamp: str) -> bool:
                 new_content = "---" + fm_block + "---" + parts[2]
                 full_path.write_text(new_content, encoding="utf-8")
                 return True
-    except Exception:
-        pass
+    except (OSError, UnicodeDecodeError, PermissionError) as exc:
+        emit_error("vault_propagate", "NOTIFY_WRITE_ERROR", str(exc))
+    except Exception as exc:
+        emit_error("vault_propagate", "UNEXPECTED_ERROR", str(exc))
     return False
 
 
@@ -171,8 +177,8 @@ def _action_reindex(folders: Set[str]) -> List[str]:
             result = vault_subproceso.ejecutar(cmd, capture_output=True, timeout=30)
             if result.returncode == 0:
                 reindexed.append(folder)
-        except Exception:
-            pass
+        except Exception as exc:
+            emit_error("vault_propagate", "REINDEX_ERROR", str(exc))
     return reindexed
 
 
@@ -313,8 +319,10 @@ def vault_propagate_clear(note_path: str) -> Dict[str, Any]:
                 new_content = re.sub(r"\npropagation_pending:.*", "", content)
                 full_path.write_text(new_content, encoding="utf-8")
                 cleared_fm = True
-        except Exception:
-            pass
+        except (OSError, UnicodeDecodeError, PermissionError) as exc:
+            emit_error("vault_propagate", "CLEAR_FM_ERROR", str(exc))
+        except Exception as exc:
+            emit_error("vault_propagate", "UNEXPECTED_ERROR", str(exc))
 
     cleared_queue = False
     queue = _read_propagation_queue()

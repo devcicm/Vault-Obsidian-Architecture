@@ -1364,8 +1364,8 @@ def _onboard_02_observability(
                             "text": m.group(2).strip()[:100],
                         }
                     )
-        except Exception:
-            pass
+        except Exception as exc:
+            emit_error("vault_onboard", "OBSERVABILITY_SCAN_ERROR", str(exc))
 
     total = sum(len(v) for v in issues.values())
     if total == 0:
@@ -1604,8 +1604,8 @@ Revisar el archivo y extraer ADRs individuales con vault_write.
                 )
             )
             adr_counter[0] += 1
-        except Exception:
-            pass
+        except Exception as exc:
+            emit_error("vault_onboard", "DECISION_CREATE_ERROR", str(exc))
 
     return results
 
@@ -2051,8 +2051,8 @@ python scripts/vault_runbook_save.py --project {project} \\
                         dry_run,
                     )
                 )
-        except Exception:
-            pass
+        except Exception as exc:
+            emit_error("vault_onboard", "RUNBOOK_CREATE_ERROR", str(exc))
 
     return results[:8]
 
@@ -2210,21 +2210,16 @@ python scripts/vault_flow_save.py --project {project} \\
                     dry_run,
                 )
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            emit_error("vault_onboard", "FLOW_CREATE_ERROR", str(exc))
     return results
 
 
 def _onboard_14_requirements(
-    project: str, meta: Dict, agent: str, dry_run: bool
+    project: str, project_path: Path, meta: Dict, agent: str, dry_run: bool
 ) -> List[Tuple[str, str]]:
     results = []
-    readme_text, _ = _read_readme(
-        _raiz().parent
-        if not _raiz().name.startswith("vault-")
-        else _raiz().parent
-    )
-    # Find bullet points under ## Features or ## Requirements
+    readme_text, _ = _read_readme(project_path)
     headers = meta.get("readme_headers", [])
     feature_headers = [
         h
@@ -2234,27 +2229,22 @@ def _onboard_14_requirements(
     if not feature_headers:
         return []
 
-    # Re-read README to extract bullets
-    for project_path_candidate in [
-        _raiz().parent,
-        _raiz().parent.parent,
-    ]:
-        readme = project_path_candidate / "README.md"
-        if readme.exists():
-            try:
-                full_text = readme.read_text(encoding="utf-8", errors="replace")
-                for fh in feature_headers[:2]:
-                    section_match = re.search(
-                        rf"^## {re.escape(fh)}\s*\n(.*?)(?=^## |\Z)",
-                        full_text,
-                        re.MULTILINE | re.DOTALL,
-                    )
-                    if not section_match:
-                        continue
-                    bullets = re.findall(
-                        r"^[-*]\s+(.+)$", section_match.group(1), re.MULTILINE
-                    )
-                    for i, bullet in enumerate(bullets[:10], 1):
+    readme = project_path / "README.md"
+    if readme.exists():
+        try:
+            full_text = readme.read_text(encoding="utf-8", errors="replace")
+            for fh in feature_headers[:2]:
+                section_match = re.search(
+                    rf"^## {re.escape(fh)}\s*\n(.*?)(?=^## |\Z)",
+                    full_text,
+                    re.MULTILINE | re.DOTALL,
+                )
+                if not section_match:
+                    continue
+                bullets = re.findall(
+                    r"^[-*]\s+(.+)$", section_match.group(1), re.MULTILINE
+                )
+                for i, bullet in enumerate(bullets[:10], 1):
                         req_id = f"REQ-{i:03d}"
                         body = f"""# {req_id} — {bullet[:80]}
 
@@ -2297,9 +2287,8 @@ python scripts/vault_requirement_save.py --project {project} \\
                                 dry_run,
                             )
                         )
-            except Exception:
-                pass
-            break
+        except Exception as exc:
+            emit_error("vault_onboard", "REQUIREMENT_CREATE_ERROR", str(exc))
 
     return results[:10]
 
@@ -2386,9 +2375,9 @@ def _onboard_16_governance(
         hechos.append(
             f"- Infraestructura declarada en el repo: {', '.join(sorted(infra['files'])[:6])}"
         )
-    if infra.get("env_vars"):
+    if infra.get("envs"):
         hechos.append(
-            f"- {len(infra['env_vars'])} variables de entorno referenciadas por el código"
+            f"- {len(infra['envs'])} variables de entorno referenciadas por el código"
         )
     if meta.get("all_deps"):
         hechos.append(
@@ -2514,7 +2503,11 @@ def _update_indexes(sections: List[str], dry_run: bool) -> List[str]:
                 if r.get("ok"):
                     updated.append(r["path"])
         return updated
-    except Exception:
+    except (OSError, PermissionError) as exc:
+        emit_error("vault_onboard", "INDEX_UPDATE_ERROR", str(exc))
+        return []
+    except Exception as exc:
+        emit_error("vault_onboard", "UNEXPECTED_ERROR", str(exc))
         return []
 
 
@@ -2648,7 +2641,7 @@ def vault_onboard(
     if "13" not in skip:
         _record(_onboard_13_flows(project, project_path, agent, dry_run), "flows")
     if "14" not in skip:
-        _record(_onboard_14_requirements(project, meta, agent, dry_run), "requirements")
+        _record(_onboard_14_requirements(project, project_path, meta, agent, dry_run), "requirements")
     if "15" not in skip:
         _record(_onboard_15_tests(project, project_path, meta, agent, dry_run), "tests")
     if "16" not in skip:
@@ -2678,7 +2671,13 @@ def vault_onboard(
         try:
             from vault_reindex import vault_reindex
 
-            created["search_index"] = vault_reindex()
+            resultado_reindex = vault_reindex()
+            created["search_index"] = resultado_reindex
+            if not resultado_reindex.get("ok"):
+                warnings.append(
+                    "search-index returned ok=False; ejecuta `vault_reindex` "
+                    "antes de buscar en el vault (AP-47)"
+                )
         except Exception as exc:  # noqa: BLE001 — no tumbar el onboard por esto
             warnings.append(
                 f"search-index no reconstruido ({type(exc).__name__}: {exc}); "

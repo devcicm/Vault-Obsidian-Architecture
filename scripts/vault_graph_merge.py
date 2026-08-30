@@ -30,7 +30,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from vault_regex import RE_WIKILINK  # dueño único del patrón (AP-50)
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_io import atomic_write_json, write_report
 from vault_registry import ORDERED_SECTIONS
 
@@ -155,6 +155,75 @@ def _build_node_class_index(ontology: Dict[str, Any]) -> Dict[str, str]:
     return index
 
 
+# Cache global para búsquedas fuzzy: evita repetir SequenceMatcher para el mismo
+# entity name ya procesado. Key = (entity_norm, threshold), value = mejor match.
+_FUZZY_CACHE: Dict[Tuple[str, float], Optional[Tuple[float, str]]] = {}
+
+
+def _build_prefix_index(stem_map: Dict[str, str]) -> Dict[str, List[Tuple[str, str]]]:
+    """Construye índice inverso por prefijo (primeros 3 chars) para filtrado rápido.
+
+    En lugar de iterar por TODAS las notas en cada búsqueda fuzzy (O n),
+    se pre-filtra por prefijo común, reduciendo drásticamente los candidatos.
+    """
+    prefix_index: Dict[str, List[Tuple[str, str]]] = defaultdict(list)
+    for norm_stem, path in stem_map.items():
+        prefix = norm_stem[:3] if len(norm_stem) >= 3 else norm_stem
+        prefix_index[prefix].append((norm_stem, path))
+    return prefix_index
+
+
+def _fuzzy_resolve(
+    entity_norm: str,
+    stem_map: Dict[str, str],
+    prefix_index: Dict[str, List[Tuple[str, str]]],
+    threshold: float = 0.75,
+) -> Optional[str]:
+    """Resolución fuzzy O(k m) con pre-filtrado por prefijo y memoización.
+
+    1. Memoización: si ya buscamos este entity_norm, retorna el resultado cacheado.
+    2. Pre-filtrado: solo considera notas cuyo stem comparta los primeros 3 chars.
+    3. Búsqueda: SequenceMatcher sobre los candidatos filtrados.
+
+    Args:
+        entity_norm: nombre de entidad ya normalizado
+        stem_map: mapa de stems normalizados → paths
+        prefix_index: índice por prefijo construido con _build_prefix_index
+        threshold: umbral mínimo de similaridad (default 0.75)
+
+    Returns:
+        Path del mejor match o None si no supera el threshold.
+    """
+    cache_key = (entity_norm, threshold)
+    cached = _FUZZY_CACHE.get(cache_key)
+    if cached is not None:
+        return cached[1] if cached[0] >= threshold else None
+
+    # Longitud mínima para evitar matches ruidosos (entity_norm < 4 → skip)
+    if len(entity_norm) < 4:
+        _FUZZY_CACHE[cache_key] = None
+        return None
+
+    prefix = entity_norm[:3]
+    candidates = prefix_index.get(prefix, [])
+    # Si no hay candidatos con prefijo común, buscar en todos los stems (último recurso)
+    if not candidates:
+        candidates = [(ns, p) for ns, p in stem_map.items()]
+
+    best_score = 0.0
+    best_path = ""
+
+    for norm_stem, cand_path in candidates:
+        score = SequenceMatcher(None, entity_norm, norm_stem).ratio()
+        if score > best_score and score >= threshold:
+            best_score = score
+            best_path = cand_path
+
+    result = (best_score, best_path) if best_path else None
+    _FUZZY_CACHE[cache_key] = result
+    return best_path if best_score >= threshold else None
+
+
 def _build_wiki_link_graph() -> Tuple[Dict[str, Dict], List[Dict], List[Dict], Dict[str, str]]:
     """Scan all .md notes and build wiki-link graph."""
     nodes: Dict[str, Dict] = {}
@@ -174,7 +243,11 @@ def _build_wiki_link_graph() -> Tuple[Dict[str, Dict], List[Dict], List[Dict], D
 
         try:
             content = p.read_text(encoding="utf-8")
-        except Exception:
+        except (UnicodeDecodeError, PermissionError, OSError):
+            continue
+        except Exception as exc:
+            emit_error("vault_graph_merge", "FILE_READ_ERROR",
+                      f"{rel}: {exc}")
             continue
 
         title = _extract_title(content) or p.stem
@@ -202,7 +275,11 @@ def _build_wiki_link_graph() -> Tuple[Dict[str, Dict], List[Dict], List[Dict], D
         p = _raiz() / rel
         try:
             content = p.read_text(encoding="utf-8")
-        except Exception:
+        except (UnicodeDecodeError, PermissionError, OSError):
+            continue
+        except Exception as exc:
+            emit_error("vault_graph_merge", "FILE_READ_ERROR",
+                      f"{rel}: {exc}")
             continue
 
         for link in _extract_wiki_links(content):
@@ -240,6 +317,10 @@ def _merge_entity_relations(ontology: Dict[str, Any], stem_map: Dict[str, str]) 
     if not _entity_dir().exists():
         return edges
 
+    # Construir índice de prefijo UNA VEZ para todas las búsquedas fuzzy
+    # (antes se hacía O(n) por cada relación no resuelta → ahora O(1) amortizado)
+    prefix_index = _build_prefix_index(stem_map)
+
     for rel_file in _entity_dir().glob("*relations.json"):
         try:
             raw = rel_file.read_bytes()
@@ -247,7 +328,11 @@ def _merge_entity_relations(ontology: Dict[str, Any], stem_map: Dict[str, str]) 
                 raw = raw[3:]
             text = raw.decode("utf-8")
             data = json.loads(text)
-        except Exception:
+        except (json.JSONDecodeError, UnicodeDecodeError, OSError):
+            continue
+        except Exception as exc:
+            emit_error("vault_graph_merge", "ENTITY_PARSE_ERROR",
+                      f"{rel_file.name}: {exc}")
             continue
 
         project = data.get("project", "unknown")
@@ -268,21 +353,14 @@ def _merge_entity_relations(ontology: Dict[str, Any], stem_map: Dict[str, str]) 
             to_path = stem_map.get(to_norm, "")
 
             if not from_path or not to_path:
-                candidates = list(stem_map.values())
                 for entity_name, is_from in [(from_entity, True), (to_entity, False)]:
                     entity_norm = _normalize_stem(entity_name)
                     if is_from and from_path:
                         continue
                     if not is_from and to_path:
                         continue
-                    best_score = 0.0
-                    best_path = ""
-                    for cand_path in candidates:
-                        stem = Path(cand_path).stem
-                        score = SequenceMatcher(None, entity_norm, _normalize_stem(stem)).ratio()
-                        if score > best_score and score >= 0.75:
-                            best_score = score
-                            best_path = cand_path
+                    # O(k m) con pre-filtrado por prefijo + memoización
+                    best_path = _fuzzy_resolve(entity_norm, stem_map, prefix_index)
                     if best_path:
                         if is_from:
                             from_path = best_path
@@ -346,13 +424,20 @@ def _merge_code_relations(ontology: Dict[str, Any], stem_map: Dict[str, str]) ->
     if not _code_index().exists():
         return edges
 
+    # Construir índice de prefijo UNA VEZ para todas las búsquedas fuzzy
+    prefix_index = _build_prefix_index(stem_map)
+
     try:
         raw = _code_index().read_bytes()
         if raw.startswith(b"\xef\xbb\xbf"):
             raw = raw[3:]
         text = raw.decode("utf-8")
         data = json.loads(text)
-    except Exception:
+    except (json.JSONDecodeError, UnicodeDecodeError, OSError) as exc:
+        emit_error("vault_graph_merge", "CODE_INDEX_PARSE_ERROR", str(exc))
+        return edges
+    except Exception as exc:
+        emit_error("vault_graph_merge", "UNEXPECTED_ERROR", str(exc))
         return edges
 
     for rel in data.get("relations", []):
@@ -369,21 +454,14 @@ def _merge_code_relations(ontology: Dict[str, Any], stem_map: Dict[str, str]) ->
         to_path = stem_map.get(to_norm, "")
 
         if not from_path or not to_path:
-            candidates = list(stem_map.values())
             for fname, is_from in [(from_file, True), (to_file, False)]:
                 fnorm = _normalize_stem(Path(fname).stem)
                 if is_from and from_path:
                     continue
                 if not is_from and to_path:
                     continue
-                best_score = 0.0
-                best_path = ""
-                for cand_path in candidates:
-                    stem = Path(cand_path).stem
-                    score = SequenceMatcher(None, fnorm, _normalize_stem(stem)).ratio()
-                    if score > best_score and score >= 0.75:
-                        best_score = score
-                        best_path = cand_path
+                # O(k m) con pre-filtrado por prefijo + memoización
+                best_path = _fuzzy_resolve(fnorm, stem_map, prefix_index)
                 if best_path:
                     if is_from:
                         from_path = best_path
@@ -472,8 +550,10 @@ def _detect_silos() -> Dict[str, bool]:
                 hours_old = (datetime.now(timezone.utc) - dt).total_seconds() / 3600
                 flags["graph_enriched_hours_old"] = round(hours_old, 1)
                 flags["graph_enriched_stale"] = hours_old > 24
-        except Exception:
+        except (json.JSONDecodeError, ValueError, OSError):
             pass
+        except Exception as exc:
+            emit_error("vault_graph_merge", "ENRICHED_PARSE_ERROR", str(exc))
     else:
         flags["graph_enriched_exists"] = False
 
@@ -538,8 +618,10 @@ def vault_graph_merge(
                         "source": "graph_history",
                     })
                     deleted_nodes += 1
-        except Exception:
+        except (json.JSONDecodeError, OSError):
             pass
+        except Exception as exc:
+            emit_error("vault_graph_merge", "GRAPH_HISTORY_ERROR", str(exc))
 
     resolved_entity = len([e for e in entity_edges if e.get("endpoint_resolved")])
     unresolved_entity = len(entity_edges) - resolved_entity

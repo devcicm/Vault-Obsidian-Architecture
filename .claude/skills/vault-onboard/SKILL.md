@@ -39,7 +39,7 @@ python scripts/vault_onboard.py --project mi-api --path /repo --skip 07_Knowledg
 | `--depth` | How deep to walk the source tree for the module map |
 | `--max-commits` | Cap on commits read; hitting the cap lands in `warnings` |
 | `--max-modules` | Cap on modules mapped |
-| `--skip` | Section to leave alone |
+| `--skip` | Sections to leave alone (space-separated list) |
 | `--lang` | Language of the generated prose |
 | `--agent` | Agent name recorded in the frontmatter |
 

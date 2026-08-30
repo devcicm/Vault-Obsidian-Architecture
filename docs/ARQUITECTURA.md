@@ -2,7 +2,7 @@
 
 > Documento derivado. Se genera con `python scripts/vault_arch.py --blueprint`; la fuente es `CONTEXTS` en `scripts/vault_arch.py`. No se edita a mano.
 
-**10 contextos**, **152 módulos** clasificados, **36 fronteras cruzadas** pendientes de publicar puerto.
+**10 contextos**, **156 módulos** clasificados, **36 fronteras cruzadas** pendientes de publicar puerto.
 
 ## Los límites
 
@@ -70,7 +70,7 @@ graph TD
 
 - **Lenguaje ubicuo:** nota, frontmatter, slug, sección, alias
 - **Puertos publicados:** `anexar` → `vault_append:vault_append`, `buscar` → `vault_search:vault_search`, `escribir_nota` → `vault_write:vault_write`, `fusionar` → `vault_merge:vault_merge`, `hablar` → `vault_voice:speak`, `mover` → `vault_move:move_note`, `tipo_por_carpeta` → `vault_write:tipo_por_carpeta`
-- **Módulos (39):** `vault_ai_decision`, `vault_append`, `vault_bibliography_save`, `vault_bug_save`, `vault_change_log`, `vault_dataset`, `vault_delta`, `vault_diagram_export`, `vault_diagram_save`, `vault_diff`, `vault_env_save`, `vault_fix_brackets`, `vault_flow_save`, `vault_frontmatter_heal`, `vault_incident_save`, `vault_infra_save`, `vault_knowledge_get`, `vault_knowledge_save`, `vault_list`, `vault_merge`, `vault_move`, `vault_ncr_save`, `vault_pattern_list`, `vault_pattern_save`, `vault_privacy_save`, `vault_project_overview`, `vault_project_status`, `vault_read`, `vault_release_save`, `vault_requirement_save`, `vault_risk_save`, `vault_runbook_log`, `vault_runbook_save`, `vault_search`, `vault_slo_save`, `vault_test_save`, `vault_timeline`, `vault_voice`, `vault_write`
+- **Módulos (41):** `vault_ai_decision`, `vault_append`, `vault_bibliography_save`, `vault_bug_save`, `vault_change_log`, `vault_dataset`, `vault_delete`, `vault_delta`, `vault_diagram_export`, `vault_diagram_save`, `vault_diff`, `vault_env_save`, `vault_fix_brackets`, `vault_flow_save`, `vault_frontmatter_heal`, `vault_incident_save`, `vault_infra_save`, `vault_knowledge_get`, `vault_knowledge_save`, `vault_list`, `vault_merge`, `vault_move`, `vault_ncr_save`, `vault_pattern_list`, `vault_pattern_save`, `vault_privacy_save`, `vault_project_overview`, `vault_project_status`, `vault_read`, `vault_release_save`, `vault_requirement_save`, `vault_risk_save`, `vault_runbook_log`, `vault_runbook_save`, `vault_search`, `vault_slo_save`, `vault_test_save`, `vault_timeline`, `vault_undo`, `vault_voice`, `vault_write`
 
 Fronteras que hoy cruza (7), deuda declarada:
 
@@ -145,7 +145,7 @@ Fronteras que hoy cruza (3), deuda declarada:
 
 - **Lenguaje ubicuo:** versión, migración, sanación, arranque
 - **Puertos publicados:** `CURRENT_VERSION` → `vault_standard_upgrade:CURRENT_VERSION`, `inicializar` → `vault_init:vault_init`, `migrar` → `vault_standard_upgrade:vault_standard_upgrade`
-- **Módulos (8):** `vault_init`, `vault_migrate_docs`, `vault_migrate_rollback`, `vault_onboard`, `vault_propagate`, `vault_sanacion`, `vault_sdd_init`, `vault_standard_upgrade`
+- **Módulos (9):** `vault_history_compact`, `vault_init`, `vault_migrate_docs`, `vault_migrate_rollback`, `vault_onboard`, `vault_propagate`, `vault_sanacion`, `vault_sdd_init`, `vault_standard_upgrade`
 
 Fronteras que hoy cruza (13), deuda declarada:
 
@@ -177,7 +177,7 @@ Fronteras que hoy cruza (13), deuda declarada:
 - **Lenguaje ubicuo:** catálogo, contrato, spec, smoke, conteo derivado
 - **Puertos publicados:** `GROUPS` → `vault_mcp_catalog:GROUPS`, `NATIVE_JS_TOOLS` → `vault_mcp_catalog:NATIVE_JS_TOOLS`, `TOOLS_CATALOG` → `vault_mcp_catalog:TOOLS_CATALOG`, `check_contracts` → `vault_mcp_catalog:check_contracts`
 - **No cruza:** escribir en una sección de contenido: sus artefactos derivados viven en 00_System/
-- **Módulos (29):** `vault_arch`, `vault_blame_audit`, `vault_blueprint`, `vault_changelog_check`, `vault_ciclos`, `vault_criterios`, `vault_doc_counts`, `vault_doc_sync`, `vault_error_contract`, `vault_excepcion_declarada`, `vault_firma_sitio`, `vault_fix_all`, `vault_foreign_check`, `vault_gate`, `vault_kernel`, `vault_manifest`, `vault_mcp`, `vault_mcp_catalog`, `vault_noop_audit`, `vault_norms_coherence`, `vault_produccion`, `vault_recursos`, `vault_servicio`, `vault_smoke`, `vault_spec_catalog_check`, `vault_spec_generate_catalog`, `vault_spec_memory`, `vault_spec_validate`, `vault_test_runner`
+- **Módulos (30):** `vault_arch`, `vault_blame_audit`, `vault_blueprint`, `vault_changelog_check`, `vault_ciclos`, `vault_criterios`, `vault_doc_counts`, `vault_doc_staleness`, `vault_doc_sync`, `vault_error_contract`, `vault_excepcion_declarada`, `vault_firma_sitio`, `vault_fix_all`, `vault_foreign_check`, `vault_gate`, `vault_kernel`, `vault_manifest`, `vault_mcp`, `vault_mcp_catalog`, `vault_noop_audit`, `vault_norms_coherence`, `vault_produccion`, `vault_recursos`, `vault_servicio`, `vault_smoke`, `vault_spec_catalog_check`, `vault_spec_generate_catalog`, `vault_spec_memory`, `vault_spec_validate`, `vault_test_runner`
 
 Fronteras que hoy cruza (5), deuda declarada:
 

@@ -55,7 +55,11 @@ def _is_running(port: Optional[int] = None) -> bool:
     try:
         result = _request("GET", "/status", port=port)
         return bool(result.get("ok"))
-    except Exception:
+    except (URLError, OSError) as exc:
+        emit_error("vault_token_counter", "SERVICE_UNAVAILABLE", str(exc))
+        return False
+    except Exception as exc:
+        emit_error("vault_token_counter", "UNEXPECTED_ERROR", str(exc))
         return False
 
 

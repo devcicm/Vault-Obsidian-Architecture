@@ -231,6 +231,14 @@ PUERTAS: List[Dict[str, Any]] = [
                "consumidor, que es como >=3.9 pasó en verde sin que ninguna "
                "máquina ejecutara 3.9",
     },
+    {
+        "id": "doc_staleness",
+        "cmd": ["vault_doc_staleness.py", "--check", "--strict"],
+        "mide": "Todos los artefactos derivados del vault (data-framework.json, "
+                "norm-registry.json, quality-index.json, etc.) existen y contienen JSON válido",
+        "fix": "Regenerar con: vault_fundamentals --framework && vault_norms --rebuild && "
+               "vault_compact_contracts && vault_quality_check && vault_tags",
+    },
 ]
 
 
@@ -270,8 +278,11 @@ def _correr(puerta: Dict[str, Any], timeout: float = 180.0) -> Dict[str, Any]:
 
     # El envelope de la puerta, si lo emitió. Se guarda el detalle solo cuando
     # falla: en verde son ocho JSON grandes que nadie lee.
+    # Se parsea el output completo, no solo la última línea: scripts como
+    # vault_arch emiten JSON pretty-printed (múltiples líneas) y
+    # splitlines()[-1] devolvería solo "}", no JSON válido.
     try:
-        envelope = json.loads(proc.stdout.strip().splitlines()[-1])
+        envelope = json.loads(proc.stdout.strip())
     except (json.JSONDecodeError, IndexError):
         envelope = None
 
