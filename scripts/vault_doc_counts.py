@@ -332,7 +332,7 @@ def fix(docs: Optional[List[str]] = None, include_slow: bool = True) -> Dict:
             continue
         try:
             expected = fact["value"]()
-        except Exception:
+        except (TypeError, KeyError):
             continue
 
         for rel in docs:

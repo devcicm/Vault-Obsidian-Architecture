@@ -247,7 +247,7 @@ def vault_migrate_rollback(report_path_str: str, confirm: bool = False) -> Dict[
 
         report_deleted = True
 
-    except Exception:
+    except OSError:
 
         pass
 

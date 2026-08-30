@@ -1523,8 +1523,8 @@ def _dq_is_stale(qi: Dict[str, Any]) -> bool:
 
         return age_minutes > VAULT_DQ_CACHE_MINUTES
 
-    except Exception:
-        return True
+    except (ValueError, IndexError):
+        return None
 
 
 def _dq_is_locked() -> bool:
@@ -2193,7 +2193,7 @@ def vault_audit(
                             "norm": "AP-15",
                         }
                     )
-        except Exception:
+        except (FileNotFoundError, json.JSONDecodeError, UnicodeDecodeError, OSError):
             pass
 
     # Moved nodes: detectar notas reubicadas
@@ -2213,7 +2213,7 @@ def vault_audit(
                         "norm": "AP-16",
                     }
                 )
-        except Exception:
+        except (FileNotFoundError, json.JSONDecodeError, UnicodeDecodeError, OSError):
             pass
 
     # AP-25: Mermaid diagram errors - suggest running mermaid check with fix

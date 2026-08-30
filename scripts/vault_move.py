@@ -298,7 +298,7 @@ def move_folder(
     if not dry_run:
         try:
             shutil.rmtree(source)
-        except Exception:
+        except OSError:
             pass
 
     return {
@@ -332,7 +332,7 @@ def check_move_impact(from_path: str, to_path: str) -> Dict[str, Any]:
 
         try:
             md_content = md.read_text(encoding="utf-8", errors="ignore")
-        except Exception:
+        except (UnicodeDecodeError, PermissionError, OSError):
             continue
 
         if (

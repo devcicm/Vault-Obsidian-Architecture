@@ -106,8 +106,8 @@ def _has_change_log_entry(rel_path: str) -> bool:
         for e in entries:
             if e.get("path") == rel_path or e.get("new_path") == rel_path:
                 return True
-    except Exception:
-        return False
+    except (json.JSONDecodeError, OSError):
+        raise
     return False
 
 

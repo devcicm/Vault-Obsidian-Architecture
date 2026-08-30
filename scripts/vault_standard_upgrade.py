@@ -571,7 +571,7 @@ def _run_compliance_check(target_version: str) -> Dict[str, Any]:
                     if all(f"{field}:" in fm_text for field in FM_REQUIRED_FIELDS):
                         compliant_md += 1
             except Exception:
-                pass
+                compliant_md -= 1
         frontmatter_compliance = round(compliant_md / total_md, 2)
     else:
         frontmatter_compliance = 1.0

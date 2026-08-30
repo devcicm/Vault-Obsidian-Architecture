@@ -428,7 +428,8 @@ def _detect_graph_knowledge(root: Path) -> dict[str, Any]:
             result["graph_stale_hours"] = round(
                 (datetime.now(timezone.utc) - dt).total_seconds() / 3600, 1
             )
-    except Exception:
+    except (ValueError, KeyError):
+        emit_error("vault_graph_inspect", "GRAPH_METADATA_ERROR", "No se pudo leer merged_at del grafo enriquecido")
         pass
 
     return result

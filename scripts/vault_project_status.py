@@ -108,7 +108,7 @@ def vault_project_status(
                     elif line.startswith("createdAt:"):
                         existing_created = line.split(":", 1)[1].strip().strip("\"'")
 
-        except Exception:
+        except (OSError, UnicodeDecodeError):
             pass
 
     note_id = existing_id or str(uuid.uuid4())

@@ -164,7 +164,7 @@ def _medir_encoding(root):
                 afectadas += 1
         return afectadas
     except Exception:  # noqa: BLE001
-        return None
+        return -1
 
 
 def _secciones_ausentes(root):

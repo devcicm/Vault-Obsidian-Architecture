@@ -20,10 +20,6 @@
       "visto_en": "vault_audit.py:1113"
     },
     {
-      "firma": "vault_audit.py::_dq_is_stale::16cdacee",
-      "visto_en": "vault_audit.py:1526"
-    },
-    {
       "firma": "vault_audit.py::_read_propagation_pending::08d90f38",
       "visto_en": "vault_audit.py:1621"
     },
@@ -34,18 +30,6 @@
     {
       "firma": "vault_audit.py::_read_tag_health::ada2d5bf",
       "visto_en": "vault_audit.py:1736"
-    },
-    {
-      "firma": "vault_audit.py::vault_audit::a36080b0",
-      "visto_en": "vault_audit.py:2196"
-    },
-    {
-      "firma": "vault_audit.py::vault_audit::a36080b0#2",
-      "visto_en": "vault_audit.py:2216"
-    },
-    {
-      "firma": "vault_doc_counts.py::fix::6f345a10",
-      "visto_en": "vault_doc_counts.py:335"
     },
     {
       "firma": "vault_encoding.py::log_encoding_fixes::a36080b0",
@@ -84,14 +68,6 @@
       "visto_en": "vault_errors_trace.py:118"
     },
     {
-      "firma": "vault_fundamentals.py::_has_change_log_entry::7d17282f",
-      "visto_en": "vault_fundamentals.py:109"
-    },
-    {
-      "firma": "vault_graph_inspect.py::_detect_graph_knowledge::a36080b0",
-      "visto_en": "vault_graph_inspect.py:431"
-    },
-    {
       "firma": "vault_io.py::_auto_section_index::a36080b0",
       "visto_en": "vault_io.py:530"
     },
@@ -112,22 +88,6 @@
       "visto_en": "vault_io.py:729"
     },
     {
-      "firma": "vault_migrate_rollback.py::vault_migrate_rollback::a36080b0",
-      "visto_en": "vault_migrate_rollback.py:250"
-    },
-    {
-      "firma": "vault_move.py::check_move_impact::6f345a10",
-      "visto_en": "vault_move.py:335"
-    },
-    {
-      "firma": "vault_move.py::move_folder::a36080b0",
-      "visto_en": "vault_move.py:301"
-    },
-    {
-      "firma": "vault_project_status.py::vault_project_status::a36080b0",
-      "visto_en": "vault_project_status.py:111"
-    },
-    {
       "firma": "vault_quality_check.py::_compute_ap18::6f345a10",
       "visto_en": "vault_quality_check.py:463"
     },
@@ -142,10 +102,6 @@
     {
       "firma": "vault_sanacion.py::_medir_encoding::6f345a10",
       "visto_en": "vault_sanacion.py:160"
-    },
-    {
-      "firma": "vault_sanacion.py::_medir_encoding::ada2d5bf",
-      "visto_en": "vault_sanacion.py:166"
     },
     {
       "firma": "vault_spec_generate_catalog.py::_extract_dict_from_source::f1f60e49",
@@ -169,10 +125,6 @@
     },
     {
       "firma": "vault_standard_upgrade.py::_run_compliance_check::a36080b0",
-      "visto_en": "vault_standard_upgrade.py:573"
-    },
-    {
-      "firma": "vault_standard_upgrade.py::_run_compliance_check::a36080b0#2",
       "visto_en": "vault_standard_upgrade.py:602"
     },
     {

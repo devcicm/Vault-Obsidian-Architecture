@@ -241,6 +241,9 @@ abajo, en «Cuatro cosas que el registro no puede decirte».
 - [ ] `python scripts/vault_produccion.py --check --strict`
       Toda promesa hecha a quien instala esto —versión mínima, dependencia, plataforma, superficie de red— tiene a alguien que la ejerza, y los huecos están declarados con su motivo.
       *Se arregla con:* añadir el ejecutor que falta, o declarar la promesa como descubierta con el motivo escrito; las otras veinte puertas miden el repo contra sí mismo y en esa sala no está el consumidor, que es como >=3.9 pasó en verde sin que ninguna máquina ejecutara 3.9
+- [ ] `python scripts/vault_doc_staleness.py --check --strict`
+      Todos los artefactos derivados del vault (data-framework.json, norm-registry.json, quality-index.json, etc.) existen y contienen JSON válido.
+      *Se arregla con:* Regenerar con: vault_fundamentals --framework && vault_norms --rebuild && vault_compact_contracts && vault_quality_check && vault_tags
 
 <!-- puertas:fin -->
 

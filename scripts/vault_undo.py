@@ -24,6 +24,7 @@ from typing import Any, Dict, List, Optional
 
 from vault_errors import emit_error, emit_fallo, wrap_main
 from vault_io import atomic_write_text
+from vault_lib import utcnow
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
