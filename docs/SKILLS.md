@@ -24,9 +24,9 @@ LLM) puede invocar. Cada skill tiene:
 
 | Skill | Versión | Definición | Entry point | Descripción |
 |---|---|---|---|---|
-| `vault-sdd-init` | v1.0 | `.claude/skills/vault-sdd-init/SKILL.md` | `scripts/vault_sdd_init.py` | Inicializa el SDD (Spec-Driven Development documentation) de un vault |
-| `vault-sanacion` | v1.0 | `.claude/skills/vault-sanacion/SKILL.md` | `scripts/vault_sanacion.py` | Diagnostica un vault preexistente y devuelve el plan de 12 fases con veredicto y evidencia. **No escribe** |
-| `vault-onboard` | v1.0 | `.claude/skills/vault-onboard/SKILL.md` | `scripts/vault_onboard.py` | Puebla un vault desde un proyecto de código que no tiene ninguno |
+| `vault-sdd-init` | v1.0 | `agent/skills/vault-sdd-init/SKILL.md` | `scripts/vault_sdd_init.py` | Inicializa el SDD (Spec-Driven Development documentation) de un vault |
+| `vault-sanacion` | v1.0 | `agent/skills/vault-sanacion/SKILL.md` | `scripts/vault_sanacion.py` | Diagnostica un vault preexistente y devuelve el plan de 12 fases con veredicto y evidencia. **No escribe** |
+| `vault-onboard` | v1.0 | `agent/skills/vault-onboard/SKILL.md` | `scripts/vault_onboard.py` | Puebla un vault desde un proyecto de código que no tiene ninguno |
 
 Las tres cubren los tres recorridos que el estándar reconoce, y ese es el
 criterio para que exista una skill y no solo una tool: **hay skill donde hay un
@@ -47,16 +47,16 @@ Una skill vive en **dos piezas** y ambas tienen que estar presentes:
 
 | Pieza | Ruta | Para qué |
 |---|---|---|
-| **Definición** | `.claude/skills/<nombre>/SKILL.md` | Lo que el agente descubre e invoca (`/<nombre>`). Frontmatter con `name`, `description`, `allowed-tools`, `argument-hint`. |
+| **Definición** | `agent/skills/<nombre>/SKILL.md` | Lo que el agente descubre e invoca (`/<nombre>`). Frontmatter con `name`, `description`, `allowed-tools`, `argument-hint`. |
 | **Entry point** | `scripts/vault_<nombre>.py` | El código real. La definición sin script es una tool alucinada (AP-01/AP-04). |
 
 **No hay paso de instalación.** El descubrimiento es por convención de ruta:
-un agente que abre este repo encuentra `.claude/skills/` automáticamente. No se
+un agente que abre este repo encuentra `agent/skills/` automáticamente. No se
 copia nada, no se registra nada, no hay comando de install.
 
 ```bash
 # Verificar qué skills ve un agente en este repo
-ls .claude/skills/*/SKILL.md
+ls agent/skills/*/SKILL.md
 
 # Verificar que cada definición tiene su entry point
 python -m pytest tests/test_vault_sdd_init.py -q
@@ -68,7 +68,7 @@ python -m pytest tests/test_vault_sdd_init.py -q
    ```bash
    python /ruta/al/spec-repo/scripts/vault_sdd_init.py --vault-root . --bilingual
    ```
-2. **Copiar `.claude/skills/vault-sdd-init/`** al otro repo — solo si ese repo
+2. **Copiar `agent/skills/vault-sdd-init/`** al otro repo — solo si ese repo
    también tiene los `scripts/`. Copiar la definición sin el script produce una
    skill que falla al invocarse.
 
@@ -83,7 +83,7 @@ python -m pytest tests/test_vault_sdd_init.py -q
 
 | Operación | Cómo |
 |---|---|
-| **Añadir** | Crear `scripts/vault_<x>.py` **primero**, luego `.claude/skills/<x>/SKILL.md`, luego la fila en la tabla de arriba, luego el test. Nunca al revés. |
+| **Añadir** | Crear `scripts/vault_<x>.py` **primero**, luego `agent/skills/<x>/SKILL.md`, luego la fila en la tabla de arriba, luego el test. Nunca al revés. |
 | **Modificar argumentos** | Cambiar el `argparse` del script y sincronizar `argument-hint` + tabla de argumentos del `SKILL.md`. Divergir aquí es AP-01. |
 | **Retirar** | **No se borra.** Se anota `superseded_by:` conservando el contrato (política de no-derogación). Ver `SKILL_MANIFEST` en `vault_sdd_init.py` como ejemplo real de constante conservada y anotada. |
 | **Verificar alineación** | `python scripts/vault_sdd_init.py --dry-run` reporta `missing_norms` y la versión detectada. Un `missing_norms` no vacío significa que el registro tiene huecos. |

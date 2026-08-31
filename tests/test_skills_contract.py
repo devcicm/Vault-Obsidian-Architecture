@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-SKILLS_DIR = REPO_ROOT / ".claude" / "skills"
+SKILLS_DIR = REPO_ROOT / "agent" / "skills"
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import vault_sdd_init as sdd  # noqa: E402
@@ -38,7 +38,7 @@ def _frontmatter(text: str) -> dict:
 
 
 def test_hay_al_menos_una_skill():
-    assert _skill_files(), "ninguna .claude/skills/*/SKILL.md encontrada"
+    assert _skill_files(), "ninguna agent/skills/*/SKILL.md encontrada"
 
 
 @pytest.mark.parametrize("skill_path", _skill_files(), ids=lambda p: p.parent.name)

@@ -32,10 +32,10 @@ from vault_mcp_catalog import GROUPS, TOOLS_CATALOG  # noqa: E402
 # ── La skill está publicada ───────────────────────────────────────────────────
 
 def _entry_points_de_skills():
-    """Entry point de cada `.claude/skills/<x>/SKILL.md`, por convención de nombre."""
+    """Entry point de cada `agent/skills/<x>/SKILL.md`, por convención de nombre."""
     return {
         p.parent.name.replace("-", "_")
-        for p in (REPO_ROOT / ".claude" / "skills").glob("*/SKILL.md")
+        for p in (REPO_ROOT / "agent" / "skills").glob("*/SKILL.md")
     }
 
 

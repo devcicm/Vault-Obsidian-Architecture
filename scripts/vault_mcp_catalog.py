@@ -4439,7 +4439,7 @@ GROUPS: Dict[str, List[str]] = {
         "vault_quarantine",
     ],
     # Grupo 37 (v39.4) — las capacidades que un agente descubre e invoca por
-    # nombre. Existían desde v36 en `.claude/skills/` y en `docs/SKILLS.md`,
+    # nombre. Existían desde v36 en `agent/skills/` y en `docs/SKILLS.md`,
     # pero fuera del catálogo y fuera del tool-spec: AP-42 —tool publicada sin
     # contrato ejecutable— sobre la puerta de entrada de los agentes.
     "Skills": [

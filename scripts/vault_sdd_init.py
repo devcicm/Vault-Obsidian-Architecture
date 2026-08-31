@@ -32,7 +32,7 @@ from vault_errors import emit_error, wrap_main
 
 SDD_OUTPUT_DIR = "docs/sdd"
 
-# superseded_by: docs/SKILLS.md + .claude/skills/vault-sdd-init/SKILL.md
+# superseded_by: docs/SKILLS.md + agent/skills/vault-sdd-init/SKILL.md
 #
 # Contrato original (v36): la skill se publicaba como nota dentro del vault,
 # en 00_System/skills/. Nunca llegó a escribirse — la constante quedó definida
@@ -41,7 +41,7 @@ SDD_OUTPUT_DIR = "docs/sdd"
 # Se conserva sin derogar porque el contrato sigue siendo válido para un vault
 # consumidor. NO se escribe desde este repo por decisión deliberada: el repo
 # spec no es un vault y no debe materializar estructura de vault (ver docstring
-# del módulo). La ubicación vigente de la skill es `.claude/skills/` para el
+# del módulo). La ubicación vigente de la skill es `agent/skills/` para el
 # descubrimiento por agentes, y `docs/SKILLS.md` para la referencia.
 SKILL_MANIFEST = "00_System/skills/vault-sdd-init.md"
 

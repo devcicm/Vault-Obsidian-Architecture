@@ -2682,7 +2682,7 @@ cual estaban.
 
 ## Grupo 37 — Skills
 
-Una **skill** es una capacidad que un agente descubre e invoca por nombre, sin que nadie se la explique: vive en `.claude/skills/<nombre>/SKILL.md` y su entry point es un script de este directorio. Es la puerta por la que un agente entra al estándar.
+Una **skill** es una capacidad que un agente descubre e invoca por nombre, sin que nadie se la explique: vive en `agent/skills/<nombre>/SKILL.md` y su entry point es un script de este directorio. Es la puerta por la que un agente entra al estándar.
 
 Estaba fuera del catálogo. Cuatro versiones con la skill documentada en `docs/SKILLS.md`, con tests de contrato propios, y sin una sola entrada ni en `tools-catalog.json` ni en `00_System/tool-spec.json` — así que la capa MCP no la veía y `--check-contracts` no podía echarla en falta: la puerta verifica catálogo → contrato, y lo que no está en ninguno de los dos no lo echa en falta nadie. Es AP-42 —capacidad publicada sin contrato ejecutable— sobre el punto de entrada de los agentes.
 
