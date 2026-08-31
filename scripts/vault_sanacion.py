@@ -22,7 +22,7 @@ gobierne.
 
 El vault destino se resuelve por autodetección de `vault_io`, o se fuerza con la
 variable de entorno `VAULT_ROOT` — que es como se apunta a un vault ajeno, que es
-el único sitio donde esto sirve de algo (regla 7 de CLAUDE.md: `vault-sandbox/`
+el único sitio donde esto sirve de algo (regla 7 de AGENTS.md: `vault-sandbox/`
 comparte los supuestos de las tools y no puede revelar una discrepancia).
 
 Uso:

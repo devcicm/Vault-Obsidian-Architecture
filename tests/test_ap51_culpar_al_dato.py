@@ -134,7 +134,7 @@ def test_la_baseline_apunta_a_sitios_que_existen():
 
 
 def test_la_norma_esta_registrada_con_enforcement_real():
-    """Regla 5 de CLAUDE.md: ninguna norma nueva puede ser `manual`."""
+    """Regla 5 de AGENTS.md: ninguna norma nueva puede ser `manual`."""
     norma = next(n for n in vault_norms.NORM_CATALOG if n["code"] == "AP-51")
     assert norma["enforcement"] in {"guard", "audit", "guard+audit", "recommended"}
     assert norma["enforcement"] == "guard+audit"

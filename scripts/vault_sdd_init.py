@@ -127,7 +127,7 @@ def constant_generators() -> list:
     """Generadores que devuelven una constante literal, sin leer el registro.
 
     `docs/sdd/` se publica como **documentación derivada** —el orden que impone
-    `CLAUDE.md` es registro canónico → doc derivada → guard → test—, y ocho de
+    `AGENTS.md` es registro canónico → doc derivada → guard → test—, y ocho de
     sus catorce generadores no leían nada: devolvían un `return "..."` con la
     prosa incrustada. Eso es peor que documentación escrita a mano, porque
     *parece* generada: nadie la revisa como texto, ninguna puerta puede cazar su

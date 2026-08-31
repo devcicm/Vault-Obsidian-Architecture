@@ -147,7 +147,7 @@ def scan() -> Dict:
 def freeze(admitir_nuevos: bool = False) -> Dict:
     """Recongela, y se **niega** si eso haría crecer la deuda.
 
-    `CLAUDE.md` promete esta negativa para los tres guards con baseline, y de
+    `AGENTS.md` promete esta negativa para los tres guards con baseline, y de
     los tres era el único que no la tenía: reescribía la baseline con lo que
     hubiera. Con la lista hoy en cero, una tool nueva sin indicador más un
     `--freeze` de rutina la congelaba en silencio y la puerta seguía verde —

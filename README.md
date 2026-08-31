@@ -1,4 +1,4 @@
-﻿# Vault Obsidian Architecture
+# Vault Obsidian Architecture
 
 **Estándar de diseño para dotar a agentes LLM de memoria documental persistente.**
 
@@ -86,6 +86,7 @@ vault-{nombre}/          ← carpeta raíz (prefijo vault- obligatorio)
 ├── 18_Bugs/             — defectos con ciclo propio: open → root-causes → fixed
 ├── 19_Audits/           — bitácora del vault: auditorías y vocabulario introducido
 ├── 20_Quarantine/       — notas retenidas sin destino seguro (nunca borradas)
+├── 21_QA/               — planes de test, métricas, reportes (ISO 9001, ISO 25010)
 └── 99_Index/            — search-index.json, graph.json
 ```
 

@@ -1,6 +1,6 @@
 """AP-42 en la documentación: un comando publicado que no corre.
 
-`CLAUDE.md` publicaba, en su sección de comandos habituales, las dos formas de
+`AGENTS.md` publicaba, en su sección de comandos habituales, las dos formas de
 medir la salud del vault:
 
     python scripts/vault_audit.py --root vault-sandbox
@@ -50,7 +50,7 @@ def test_el_detector_ve_el_defecto_original():
     declarados = vds._flags_declarados(REPO_ROOT / "scripts" / "vault_audit.py")
     assert "--root" not in declarados, (
         "si vault_audit pasara a aceptar --root, este test sobra; "
-        "revisa la regla 1 de CLAUDE.md antes de borrarlo"
+        "revisa la regla 1 de AGENTS.md antes de borrarlo"
     )
 
 
@@ -71,13 +71,13 @@ def test_la_tool_de_salud_arranca_tal_y_como_se_documenta(script):
 
 
 def _comando_documentado(script: str) -> list:
-    """Extrae de CLAUDE.md el comando que se publica para esa tool.
+    """Extrae de AGENTS.md el comando que se publica para esa tool.
 
     No se copia aquí: se lee del documento. Copiarlo dejaría el test verde
     mientras la documentación se rompe, que es el defecto que este fichero
     cierra, cometido una segunda vez.
     """
-    texto = (REPO_ROOT / "CLAUDE.md").read_bytes().decode("utf-8")
+    texto = (REPO_ROOT / "AGENTS.md").read_bytes().decode("utf-8")
     for linea in texto.splitlines():
         for m in vds.RE_COMANDO.finditer(linea):
             if m.group(1).endswith(script):
@@ -85,7 +85,7 @@ def _comando_documentado(script: str) -> list:
                 # forma corta que usa `scripts/README.md`): se ancla aquí.
                 return [str(REPO_ROOT / "scripts" / m.group(1)),
                         *m.group(2).split()]
-    pytest.fail(f"CLAUDE.md ya no documenta ningún comando para {script}")
+    pytest.fail(f"AGENTS.md ya no documenta ningún comando para {script}")
 
 
 def test_el_documento_de_comandos_que_el_estandar_genera_esta_en_el_alcance():

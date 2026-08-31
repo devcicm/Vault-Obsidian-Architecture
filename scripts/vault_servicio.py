@@ -27,14 +27,14 @@ Los dos ejes se cruzan en un solo punto verificable (`meta_estandar` ⟺
 
 ## Por qué son tres capacidades y no dos
 
-`CLAUDE.md` declara dos ejes: *escritura → gobernanza* (grupos 1–33) y
+`AGENTS.md` declara dos ejes: *escritura → gobernanza* (grupos 1–33) y
 *consulta → contexto* (Grupo 34). Al clasificar los 37 grupos del catálogo contra
 esa prosa aparecieron dos desajustes que no se pueden tapar sin mentir en el registro:
 
 1. **El Grupo 35 (Normas) gobierna el estándar, no el vault del usuario.**
    Cuántas tools son lo dice `--trace`, no esta línea: escribirlo aquí a mano
    es AP-47, y de hecho ya se quedó en 13 mientras el grupo crecía a 17 —el
-   número viajó copiado a `docs/BLUEPRINT.md` y a `CLAUDE.md`, cada uno con
+   número viajó copiado a `docs/BLUEPRINT.md` y a `AGENTS.md`, cada uno con
    una cifra distinta y las tres verdes.
    `vault_gate`, `vault_doc_sync`, `vault_doc_counts`, `vault_changelog_check`,
    `vault_arch`, `vault_noop_audit`, `vault_blame_audit`, `vault_error_contract` y
@@ -44,7 +44,7 @@ esa prosa aparecieron dos desajustes que no se pueden tapar sin mentir en el reg
    sin nombre — de hecho es la que más ha crecido en las últimas versiones.
 2. **El Grupo 26 (Tokens) cae en el rango 1–33 pero sirve a la consulta.** Sus tres
    tools viven en el contexto `consulta` y existen para que un paquete de contexto
-   quepa en una ventana. El rango numérico de `CLAUDE.md` es el orden en que los
+   quepa en una ventana. El rango numérico de `AGENTS.md` es el orden en que los
    grupos se fueron añadiendo, no una clasificación.
 
 El registro manda y la prosa se corrige: la alternativa —forzar 16 tools a un eje que
@@ -81,7 +81,7 @@ SERVICIO: Dict[str, Any] = {
                 "el vault debe seguir siendo legible y editable por una persona con un "
                 "editor de texto, y sobrevivir a que este toolkit desaparezca."
             ),
-            "declarada_en": "CLAUDE.md — Los dos ejes; vault_arch.CONTEXTS['consulta']['prohibe']",
+            "declarada_en": "AGENTS.md — Los dos ejes; vault_arch.CONTEXTS['consulta']['prohibe']",
         },
         {
             "id": "sin_dependencias",
@@ -90,7 +90,7 @@ SERVICIO: Dict[str, Any] = {
                 "Un agente instala el toolkit en el repo del usuario; cada dependencia "
                 "es una razón para que no lo haga."
             ),
-            "declarada_en": "CLAUDE.md — Qué contiene",
+            "declarada_en": "AGENTS.md — Qué contiene",
         },
         {
             "id": "no_derogacion",
@@ -99,7 +99,7 @@ SERVICIO: Dict[str, Any] = {
                 "Los vaults consumidores leen contratos de este repo. Un campo que "
                 "evapora rompe en silencio a quien lo leía."
             ),
-            "declarada_en": "CLAUDE.md — regla 2; manifiesto § Política de no-derogación",
+            "declarada_en": "AGENTS.md — regla 2; manifiesto § Política de no-derogación",
         },
     ],
 }
@@ -134,7 +134,7 @@ CAPACIDADES: Dict[str, Dict[str, Any]] = {
         "sirve_a": "memoria_documental_gobernada",
         "grupos": [26, 34],
         "nota": (
-            "El grupo 26 (Tokens) cae en el rango 1–33 que `CLAUDE.md` atribuye al "
+            "El grupo 26 (Tokens) cae en el rango 1–33 que `AGENTS.md` atribuye al "
             "primer eje, pero sus tres tools viven en el contexto `consulta` y existen "
             "para que el paquete quepa en la ventana. El rango es cronológico, no "
             "clasificatorio."
@@ -150,7 +150,7 @@ CAPACIDADES: Dict[str, Dict[str, Any]] = {
         "sirve_a": "memoria_documental_gobernada",
         "grupos": [35],
         "nota": (
-            "Tercera capacidad que `CLAUDE.md` no nombraba. Existía desde que se "
+            "Tercera capacidad que `AGENTS.md` no nombraba. Existía desde que se "
             "escribió la primera puerta; declararla es lo que impide que sus tools "
             "se cuenten como si sirvieran a la memoria del agente."
         ),
@@ -169,7 +169,7 @@ CAPACIDADES: Dict[str, Dict[str, Any]] = {
 #   * el grupo 15 (Índices) es construcción pura, el 6 (Salud) es custodia pura,
 #     y ambos caen en la misma capacidad;
 #   * `vault_ingest` escribe notas —documentación— viviendo en la capacidad de
-#     consulta, que es justo lo que `CLAUDE.md` avisa cuando dice que es «la única
+#     consulta, que es justo lo que `AGENTS.md` avisa cuando dice que es «la única
 #     con superficie de escritura».
 #
 # Un eje por grupo no separa nada de eso. Por eso este es por tool.

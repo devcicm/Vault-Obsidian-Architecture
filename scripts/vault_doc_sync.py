@@ -23,7 +23,7 @@ Qué comprueba:
   6. Todo comando `python scripts/X.py --flag` que la documentación publica
      existe y acepta esos flags.
 
-La sexta llegó tarde y con factura. `CLAUDE.md` publicaba
+La sexta llegó tarde y con factura. `AGENTS.md` publicaba
 `vault_audit.py --root vault-sandbox` y `vault_quality_check.py --root ...` en
 su sección de comandos habituales: ninguno de los dos acepta `--root`, así que
 el comando que un agente copia para medir la salud del vault moría en
@@ -101,7 +101,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # publicaba en un doc: lo repartía a cada vault creado. El guard de v40.4 medía
 # los documentos escritos a mano y era ciego justo a la copia que viaja.
 DOCS_CON_COMANDOS = (
-    "CLAUDE.md",
+    "AGENTS.md",
     "README.md",
     "scripts/README.md",
     "vault-sandbox/00_System/vault-commands.md",

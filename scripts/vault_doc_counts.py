@@ -244,7 +244,7 @@ COUNTED_FACTS: List[Dict] = [
 # desde la que un número podía mentir indefinidamente.
 WATCHED_DOCS = [
     "README.md",
-    "CLAUDE.md",
+    "AGENTS.md",
     "cli/README.md",
     "cli/COMMANDS.md",
     "docs/SKILLS.md",

@@ -5,7 +5,7 @@ suite no los veía, por la misma razón en los dos casos: los tests existentes
 construían notas con frontmatter completo, que es justo el caso en el que
 ninguno de los dos se manifiesta. Ejecutar la tool contra el vault de pruebas
 —notas escritas por las demás tools, no por un fixture— los sacó a los dos a la
-primera (regla 7 de CLAUDE.md, en su versión de andar por casa).
+primera (regla 7 de AGENTS.md, en su versión de andar por casa).
 """
 
 import sys

@@ -39,7 +39,7 @@ def fold_accents(text: str) -> str:
     nombres ilegibles ('Características' -> 'caracter-sticas') y wikilinks que
     heredan el destrozo. Salió al correr el onboarding contra un proyecto real
     en español — `vault-sandbox/` no podía exhibirlo porque lo genera este
-    mismo repo, en inglés (regla 7 de CLAUDE.md, corolario de AP-44).
+    mismo repo, en inglés (regla 7 de AGENTS.md, corolario de AP-44).
     """
     explicit = {"ß": "ss", "ø": "o", "Ø": "O", "đ": "d", "Đ": "D", "ł": "l", "Ł": "L"}
     text = "".join(explicit.get(ch, ch) for ch in text)

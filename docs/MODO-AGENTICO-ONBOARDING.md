@@ -149,7 +149,7 @@ rellena.
 
 ## Por qué un proyecto ajeno, otra vez
 
-La regla 7 de `CLAUDE.md` dice que toda medida nueva se contrasta al menos una vez
+La regla 7 de `AGENTS.md` dice que toda medida nueva se contrasta al menos una vez
 contra material ajeno al estándar. Aquí se cumplió, y pagó.
 
 `vault_onboard` llevaba versiones publicado en el manifiesto, con su contrato

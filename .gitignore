@@ -8,16 +8,6 @@ __pycache__/
 vault-sandbox/
 00_System/
 
-# Excepción: el contrato de tools vive en <vault>/00_System/ desde v39 (AP-36),
-# y en este repo el vault es vault-sandbox/. Es fuente de verdad de los
-# contratos y de la generación del catálogo MCP, así que debe seguir versionado.
-# Git no re-incluye un archivo si un directorio padre está excluido: hay que
-# des-ignorar la cadena de directorios y volver a excluir su contenido.
-!vault-sandbox/
-vault-sandbox/*
-!vault-sandbox/00_System/
-vault-sandbox/00_System/*
-!vault-sandbox/00_System/tool-spec.json
 01_Projects/
 02_Observability/
 03_Decisions/
@@ -39,13 +29,10 @@ vault-sandbox/00_System/*
 .history/
 vault-backups/
 .vault-fix-backup-*/
-# Estado local del agente. Excepción: .claude/skills/ SON parte del estándar —
+# Estado local del agente. Excepción: agent/skills/ SON parte del estándar —
 # la definición de una skill es tan canónica como su entry point en scripts/.
-# vault-sdd-init sobrevivía solo por haberse trackeado antes de esta regla:
-# cualquier skill NUEVA quedaba fuera del repo en silencio, y con ella el
-# contrato que verifica tests/test_skills_contract.py.
-.claude/*
-!.claude/skills/
+agent/*
+!agent/skills/
 debug_brackets.py
 
 # Análisis local, no forma parte del estándar

@@ -8,7 +8,7 @@ todos el mismo: una capacidad implementada dos veces (AP-48), un side effect
 fuera del vault, cinco módulos ejecutables en ningún registro. Se detectan de
 uno en uno y después del hecho.
 
-Siguiendo la regla 3 de `CLAUDE.md` —registro canónico primero, doc después—
+Siguiendo la regla 3 de `AGENTS.md` —registro canónico primero, doc después—
 este plano **no es un documento**: es un registro con guard. `docs/ARQUITECTURA.md`
 se deriva de aquí con `--blueprint`, y `--check` reconstruye el grafo de
 importaciones por AST, no por una lista escrita a mano que envejecería sola.
@@ -278,7 +278,7 @@ CONTEXTS: dict[str, dict] = {
             "NORM_CATALOG": "vault_norms:NORM_CATALOG",
             "auditar": "vault_audit:vault_audit",
             "puntuar_calidad": "vault_quality_check:vault_quality_check",
-            # Los tres registros que `CLAUDE.md` declara fuente única de
+            # Los tres registros que `AGENTS.md` declara fuente única de
             # verdad y que, sin embargo, se entraban a leer por fuera de la
             # superficie publicada. Un dato canónico que no es puerto es un
             # dato que se acaba copiando: es lo que pasó con la severidad.

@@ -140,7 +140,7 @@ class TestMigrationExclusion:
 
     def test_is_not_migrated_other_folder(self):
         assert not _is_migrated("07_Knowledge/foo.md")
-        assert not _is_migrated("01_Projects/ans/CLAUDE.md")
+        assert not _is_migrated("01_Projects/ans/AGENTS.md")
         assert not _is_migrated("README.md")
 
     def test_load_notes_excludes_migrated_by_default(self, tmp_path):

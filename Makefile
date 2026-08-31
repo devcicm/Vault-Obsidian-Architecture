@@ -10,7 +10,7 @@ lint:
 	ruff check scripts/
 	ruff format --check scripts/
 
-# `make check` es lo que ejecuta quien no ha leído CLAUDE.md, así que tiene que
+# `make check` es lo que ejecuta quien no ha leído AGENTS.md, así que tiene que
 # decir lo mismo que el repo defiende. Hasta v40.19 corría tres tools y ninguna
 # puerta: publicaba una idea de «esto está bien» siete pasos por debajo de la
 # del estándar. Se pregunta al registro (vault_gate.PUERTAS), no se listan a

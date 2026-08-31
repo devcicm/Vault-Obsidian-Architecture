@@ -2,7 +2,7 @@
 
 Hasta v40.0 esa prohibición era prosa. `prohibe` aparecía en el registro, se
 renderizaba en el plano y no la leía ningún guard — enforcement `manual`, que es
-justo lo que la regla 5 de `CLAUDE.md` no permite. Peor: el enunciado que nadie
+justo lo que la regla 5 de `AGENTS.md` no permite. Peor: el enunciado que nadie
 comprobaba era **falso**. Decía «no escribir en un vault» y dos módulos llevaban
 años escribiendo dentro de `00_System/`.
 

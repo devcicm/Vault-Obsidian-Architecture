@@ -115,7 +115,7 @@ def test_freeze_produce_una_baseline_que_deja_el_scan_limpio(monkeypatch, tmp_pa
 
 
 def test_freeze_se_niega_a_congelar_deuda_sin_precedente(tmp_path, monkeypatch):
-    """`CLAUDE.md` promete `DEBT_WOULD_GROW` para los tres guards con baseline.
+    """`AGENTS.md` promete `DEBT_WOULD_GROW` para los tres guards con baseline.
 
     De los tres era el único que no lo implementaba: `freeze()` reescribía la
     baseline con lo que hubiera. Con la lista en cero, una tool nueva sin

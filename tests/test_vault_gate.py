@@ -1,7 +1,7 @@
 """La puerta única: el registro manda sobre el checklist, y no reimplementa nada.
 
 `vault_gate` nace de un fallo concreto: las puertas de cierre vivían en una lista
-en prosa dentro de `CLAUDE.md`, y una lista en prosa no sabe cuántos elementos
+en prosa dentro de `AGENTS.md`, y una lista en prosa no sabe cuántos elementos
 tiene. Se hablaba de "las siete puertas" mientras el checklist tenía ocho ítems y
 la práctica corría seis.
 
@@ -45,11 +45,11 @@ def test_toda_puerta_del_registro_esta_en_el_checklist():
 def test_el_checklist_no_puede_anadir_puertas_por_su_cuenta():
     """La dirección de la dependencia, explícita.
 
-    Si `CLAUDE.md` cita un script de puerta que el registro no conoce, el registro
+    Si `AGENTS.md` cita un script de puerta que el registro no conoce, el registro
     ha dejado de ser canónico. Se comprueba sobre los scripts que el propio
     checklist presenta como puertas de cierre (`--check --strict` / `--check-*`).
     """
-    texto = (REPO_ROOT / "CLAUDE.md").read_text(encoding="utf-8", errors="replace")
+    texto = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8", errors="replace")
     checklist = texto.split("## Antes de cerrar un cambio", 1)[1]
 
     del_registro = {p["cmd"][0] for p in vault_gate.PUERTAS}
@@ -174,7 +174,7 @@ def test_editar_a_mano_el_bloque_lo_pone_en_rojo(tmp_path, monkeypatch):
     texto — que es exactamente como los dieciséis párrafos se despegaron del
     registro sin que nadie lo notara.
     """
-    doc = tmp_path / "CLAUDE.md"
+    doc = tmp_path / "AGENTS.md"
     manipulado = vault_gate.checklist().replace(
         vault_gate.PUERTAS[0]["mide"], "mide otra cosa"
     )
@@ -191,7 +191,7 @@ def test_editar_a_mano_el_bloque_lo_pone_en_rojo(tmp_path, monkeypatch):
 
 def test_fix_doc_conserva_los_finales_de_linea(tmp_path, monkeypatch):
     """CRLF: reescribir el bloque no puede producir un diff de fichero entero."""
-    doc = tmp_path / "CLAUDE.md"
+    doc = tmp_path / "AGENTS.md"
     cuerpo = ("# Doc\n\n" + vault_gate.MARCA_INICIO + "\nviejo\n"
               + vault_gate.MARCA_FIN + "\n\nfin\n")
     doc.write_bytes(cuerpo.replace("\n", "\r\n").encode("utf-8"))
@@ -204,7 +204,7 @@ def test_fix_doc_conserva_los_finales_de_linea(tmp_path, monkeypatch):
 
 
 def test_sin_marcas_el_fix_no_inventa_donde_escribir(tmp_path, monkeypatch):
-    doc = tmp_path / "CLAUDE.md"
+    doc = tmp_path / "AGENTS.md"
     doc.write_text("# Doc sin marcas\n", encoding="utf-8")
     monkeypatch.setattr(vault_gate, "REPO_ROOT", tmp_path)
 

@@ -23,9 +23,9 @@ Restricciones que son decisión de producto, no limitación pendiente:
 
 | Restricción | Por qué | Declarada en |
 |---|---|---|
-| Sin base de datos, sin embeddings y sin servicio externo. | Es una decisión de producto, no una limitación pendiente de resolver: el vault debe seguir siendo legible y editable por una persona con un editor de texto, y sobrevivir a que este toolkit desaparezca. | `CLAUDE.md — Los dos ejes; vault_arch.CONTEXTS['consulta']['prohibe']` |
-| Solo stdlib + PyYAML. | Un agente instala el toolkit en el repo del usuario; cada dependencia es una razón para que no lo haga. | `CLAUDE.md — Qué contiene` |
-| Nada se elimina; lo reemplazado se anota `superseded_by:`. | Los vaults consumidores leen contratos de este repo. Un campo que evapora rompe en silencio a quien lo leía. | `CLAUDE.md — regla 2; manifiesto § Política de no-derogación` |
+| Sin base de datos, sin embeddings y sin servicio externo. | Es una decisión de producto, no una limitación pendiente de resolver: el vault debe seguir siendo legible y editable por una persona con un editor de texto, y sobrevivir a que este toolkit desaparezca. | `AGENTS.md — Los dos ejes; vault_arch.CONTEXTS['consulta']['prohibe']` |
+| Solo stdlib + PyYAML. | Un agente instala el toolkit en el repo del usuario; cada dependencia es una razón para que no lo haga. | `AGENTS.md — Qué contiene` |
+| Nada se elimina; lo reemplazado se anota `superseded_by:`. | Los vaults consumidores leen contratos de este repo. Un campo que evapora rompe en silencio a quien lo leía. | `AGENTS.md — regla 2; manifiesto § Política de no-derogación` |
 
 ## Capa 2 — Capacidades → grupos
 
@@ -37,8 +37,8 @@ Restricciones que son decisión de producto, no limitación pendiente:
 | **Consulta → contexto** (`consulta_a_contexto`) | Una pregunta del agente se convierte en un paquete de contexto acotado y presupuestado, recorriendo el grafo del vault sin índice externo. | 26, 34 | 9 |
 | **Gobernanza del estándar** (`gobernanza_del_estandar`) | El estándar cumple lo que publica: registro canónico primero, doc derivada, guard que falla si divergen. Ninguna de estas tools toca las notas de un usuario. | 35 | 24 |
 
-- **`consulta_a_contexto`** — El grupo 26 (Tokens) cae en el rango 1–33 que `CLAUDE.md` atribuye al primer eje, pero sus tres tools viven en el contexto `consulta` y existen para que el paquete quepa en la ventana. El rango es cronológico, no clasificatorio.
-- **`gobernanza_del_estandar`** — Tercera capacidad que `CLAUDE.md` no nombraba. Existía desde que se escribió la primera puerta; declararla es lo que impide que sus tools se cuenten como si sirvieran a la memoria del agente.
+- **`consulta_a_contexto`** — El grupo 26 (Tokens) cae en el rango 1–33 que `AGENTS.md` atribuye al primer eje, pero sus tres tools viven en el contexto `consulta` y existen para que el paquete quepa en la ventana. El rango es cronológico, no clasificatorio.
+- **`gobernanza_del_estandar`** — Tercera capacidad que `AGENTS.md` no nombraba. Existía desde que se escribió la primera puerta; declararla es lo que impide que sus tools se cuenten como si sirvieran a la memoria del agente.
 
 Guard: todo grupo del catálogo pertenece a exactamente una capacidad y toda
 capacidad tiene al menos una tool viva (`vault_servicio.py --check --strict`).

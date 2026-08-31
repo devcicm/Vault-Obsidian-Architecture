@@ -199,7 +199,7 @@ FRONTERAS: List[Dict[str, Any]] = [
             },
         ],
         "por_que": (
-            "`make check` es lo que ejecuta quien no ha leído CLAUDE.md. Si "
+            "`make check` es lo que ejecuta quien no ha leído AGENTS.md. Si "
             "nombra puertas sueltas en vez de al registro, publica una idea "
             "distinta de «esto está bien» que la que defiende el repo."
         ),

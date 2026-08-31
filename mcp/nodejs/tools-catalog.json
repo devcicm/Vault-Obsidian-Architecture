@@ -2156,7 +2156,7 @@
     },
     "vault_gate": {
       "name": "vault_gate",
-      "description": "La puerta unica: corre todas las puertas de cierre como subprocesos y agrega el veredicto. La lista canonica de puertas vive en el registro PUERTAS, y --check-doc verifica que el checklist de CLAUDE.md las cite todas. No reimplementa ninguna comprobacion ni baja el enforcement de ninguna norma.",
+      "description": "La puerta unica: corre todas las puertas de cierre como subprocesos y agrega el veredicto. La lista canonica de puertas vive en el registro PUERTAS, y --check-doc verifica que el checklist de AGENTS.md las cite todas. No reimplementa ninguna comprobacion ni baja el enforcement de ninguna norma.",
       "group": "Normas",
       "script": "vault_gate.py",
       "inputSchema": {
@@ -2172,11 +2172,11 @@
           },
           "check-doc": {
             "type": "string",
-            "description": "Comprueba que el checklist de CLAUDE.md cite todas las puertas"
+            "description": "Comprueba que el checklist de AGENTS.md cite todas las puertas"
           },
           "fix-doc": {
             "type": "string",
-            "description": "Regenera el bloque derivado del checklist en CLAUDE.md"
+            "description": "Regenera el bloque derivado del checklist en AGENTS.md"
           }
         }
       },

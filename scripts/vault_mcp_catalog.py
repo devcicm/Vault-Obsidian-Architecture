@@ -2598,7 +2598,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "La puerta unica: corre todas las puertas de cierre como "
             "subprocesos y agrega el veredicto. La lista canonica de puertas "
             "vive en el registro PUERTAS, y --check-doc verifica que el "
-            "checklist de CLAUDE.md las cite todas. No reimplementa ninguna "
+            "checklist de AGENTS.md las cite todas. No reimplementa ninguna "
             "comprobacion ni baja el enforcement de ninguna norma."
         ),
         "params": {
@@ -2617,7 +2617,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "check-doc": {
                 "type": "boolean",
                 "required": False,
-                "description": "Comprueba que el checklist de CLAUDE.md cite todas las puertas",
+                "description": "Comprueba que el checklist de AGENTS.md cite todas las puertas",
                 "validators": [],
             },
         },
@@ -4965,7 +4965,7 @@ def check_contracts(spec_path: Optional[str] = None) -> Dict[str, Any]:
     # `__main__` —`vault_errors`, `vault_mcp`, `vault_mcp_catalog`,
     # `vault_spec_catalog_check`, `vault_spec_generate_catalog`— estaban en ese
     # estado, y uno de ellos es el que ejecuta esta misma comprobación y aparece
-    # en el checklist de cierre de `CLAUDE.md`.
+    # en el checklist de cierre de `AGENTS.md`.
     #
     # La clasificación se saca del AST y no de una lista escrita a mano, porque
     # una lista a mano es justo la fuente de verdad paralela que AP-05 prohíbe:

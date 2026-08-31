@@ -196,7 +196,7 @@ def test_los_choices_de_argparse_salen_del_registro():
 def test_gobernanza_publica_sus_registros_canonicos():
     """Un dato canónico que no es puerto es un dato que se acaba copiando.
 
-    Los tres que `CLAUDE.md` declara fuente única de verdad se entraban a leer
+    Los tres que `AGENTS.md` declara fuente única de verdad se entraban a leer
     por fuera de la superficie publicada — que es exactamente cómo nacieron las
     catorce copias de la severidad.
     """

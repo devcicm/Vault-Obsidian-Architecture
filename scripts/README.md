@@ -2079,7 +2079,7 @@ nada más habría dicho «ok» sobre un fichero que no supo leer.
 
 Guard anti-drift de **cifras escritas a mano** en la documentación. Cada número que describe el estándar (cuántas tools activas hay, cuántas normas, cuántas secciones) es una mentira futura: se escribe una vez, deja de ser cierto en el commit siguiente y nadie lo nota. Esta tool invierte la relación — la cifra vive en el registro canónico y el documento se comprueba contra él.
 
-Hechos vigilados: `tools_active`, `groups`, `norms_total`, `norms_ap`, `sections`, `scripts`, `tests`. Documentos vigilados: `README.md`, `CLAUDE.md`, `docs/SKILLS.md`, `scripts/README.md`, `vault-obsidian-architecture.md`.
+Hechos vigilados: `tools_active`, `groups`, `norms_total`, `norms_ap`, `sections`, `scripts`, `tests`. Documentos vigilados: `README.md`, `AGENTS.md`, `docs/SKILLS.md`, `scripts/README.md`, `vault-obsidian-architecture.md`.
 
 ```bash
 python vault_doc_counts.py --list             # valores vivos derivados del registro
@@ -2103,9 +2103,9 @@ python vault_doc_sync.py --check --strict   # exit 1 si el README se quedó atr�
 python vault_doc_sync.py --fix              # regenera la tabla de índice desde GROUPS
 ```
 
-Desde v40.4 comprueba además una sexta cosa: que **todo comando `python scripts/X.py --flag` que la documentación publica exista y acepte esos flags**. Llegó tarde y con factura. `CLAUDE.md` publicaba, en su sección de comandos habituales, `vault_audit.py --root vault-sandbox` y `vault_quality_check.py --root vault-sandbox --min-score 0.7`: ninguna de las dos acepta `--root`, así que el comando que un agente copia para medir la salud del vault moría en `unrecognized arguments`. Lo contradecía la regla 1 del propio fichero —solo cuatro tools aceptan `--root`, el destino se fuerza con `VAULT_ROOT`— y duró versiones porque el manifiesto, el catálogo y los conteos tienen guard, y los comandos de la documentación no. Que el invisible fuese justo el de la salud es lo caro: nadie mide el vault a mano para descubrir que la herramienta de medirlo no arranca.
+Desde v40.4 comprueba además una sexta cosa: que **todo comando `python scripts/X.py --flag` que la documentación publica exista y acepte esos flags**. Llegó tarde y con factura. `AGENTS.md` publicaba, en su sección de comandos habituales, `vault_audit.py --root vault-sandbox` y `vault_quality_check.py --root vault-sandbox --min-score 0.7`: ninguna de las dos acepta `--root`, así que el comando que un agente copia para medir la salud del vault moría en `unrecognized arguments`. Lo contradecía la regla 1 del propio fichero —solo cuatro tools aceptan `--root`, el destino se fuerza con `VAULT_ROOT`— y duró versiones porque el manifiesto, el catálogo y los conteos tienen guard, y los comandos de la documentación no. Que el invisible fuese justo el de la salud es lo caro: nadie mide el vault a mano para descubrir que la herramienta de medirlo no arranca.
 
-La comprobación es **estática** —los flags declarados en `add_argument`— y no ejecuta nada: varios de los comandos documentados escriben en el vault. Un parser construido donde el regex no llega daría un falso positivo, no un falso negativo; el guard se equivoca hacia el lado que se nota. El contraste lo pone `tests/test_comandos_publicados.py`, que sí ejecuta los dos comandos de salud tal y como están escritos en `CLAUDE.md`, leídos del documento y no copiados.
+La comprobación es **estática** —los flags declarados en `add_argument`— y no ejecuta nada: varios de los comandos documentados escriben en el vault. Un parser construido donde el regex no llega daría un falso positivo, no un falso negativo; el guard se equivoca hacia el lado que se nota. El contraste lo pone `tests/test_comandos_publicados.py`, que sí ejecuta los dos comandos de salud tal y como están escritos en `AGENTS.md`, leídos del documento y no copiados.
 
 El encabezado de cada grupo usa la **clave literal de `GROUPS`**, no un título propio. Es deliberado: llegaron a convivir tres vocabularios de grupo (la etiqueta `group` de cada tool, la clave de `GROUPS` y el título del README) y ninguno fallaba al divergir. `--fix` regenera el índice pero **no escribe prosa**: una tool nueva sin sección se reporta, no se inventa.
 
@@ -2146,7 +2146,7 @@ El orden de los siete pasos: `vault_mcp_catalog --sync` → `vault_arch --sync-e
 
 **El plano técnico del estándar.** Los 37 grupos de este README son una taxonomía para *encontrar* una tool; no son fronteras. `vault_arch` declara las que sí lo son: **nueve contextos acotados** y un shared kernel, cada uno con su lenguaje ubicuo, sus puertos publicados y lo que no cruza.
 
-Siguiendo la regla 3 de `CLAUDE.md`, el plano no es un documento: es el registro `CONTEXTS` con guard. `docs/ARQUITECTURA.md` se **deriva** de él y un test falla si el fichero publicado se queda atrás (AP-47 aplicado al propio plano).
+Siguiendo la regla 3 de `AGENTS.md`, el plano no es un documento: es el registro `CONTEXTS` con guard. `docs/ARQUITECTURA.md` se **deriva** de él y un test falla si el fichero publicado se queda atrás (AP-47 aplicado al propio plano).
 
 ```bash
 python vault_arch.py --check --strict     # exit 1 si se cruzó una frontera nueva
@@ -2226,7 +2226,7 @@ python vault_blame_audit.py --freeze           # recongela scripts/blame-baselin
 
 **Baseline, no guard duro,** por la misma razón que AP-37: la primera medición encontró deuda en decenas de módulos, y un guard que falla ahí se desactiva el primer día. El conteo vivo lo da `--check`, no este README. La clave de la baseline es el **sitio** y no un contador por módulo, porque una baseline por conteo se "salda" arreglando un sitio y estrenando otro — que es justo la regresión que este audit existe para ver.
 
-Desde v40.6 ese sitio se identifica por **firma** (`módulo::función::hash del código normalizado`) y no por `módulo:línea`. El índice por línea convertía cualquier desplazamiento en deuda nueva: insertar diez líneas de comentario encima reportaba cuatro sitios nuevos y cuatro resueltos, y saldar deuda exigía verificar tres condiciones a mano antes de cada `--freeze`. Falló tres veces en una semana. El hash sale de `ast.unparse`, así que comentarios, sangrado y posición desaparecen antes de hashearse: mover un handler ya no lo reporta, cambiar su cuerpo sí. Ver `CLAUDE.md §Trabajar con las baselines`.
+Desde v40.6 ese sitio se identifica por **firma** (`módulo::función::hash del código normalizado`) y no por `módulo:línea`. El índice por línea convertía cualquier desplazamiento en deuda nueva: insertar diez líneas de comentario encima reportaba cuatro sitios nuevos y cuatro resueltos, y saldar deuda exigía verificar tres condiciones a mano antes de cada `--freeze`. Falló tres veces en una semana. El hash sale de `ast.unparse`, así que comentarios, sangrado y posición desaparecen antes de hashearse: mover un handler ya no lo reporta, cambiar su cuerpo sí. Ver `AGENTS.md §Trabajar con las baselines`.
 
 **Se mide por AST, no por texto,** y no es un detalle de implementación: un detector que buscara la cadena `except Exception` contaría los que están en comentarios y no distinguiría un handler que devuelve `[]` de uno que devuelve `ok: false`, que es toda la distinción que la norma sostiene. La primera versión del detector lo aprendió a su costa: midió 101 sitios porque clasificaba `except yaml.YAMLError` como captura amplia —son `ast.Attribute`, no `ast.Name`, y caían en la rama del `except` desnudo—, contando como infracción justo las capturas más precisas del repo. Quince falsos positivos, y el error era el de AP-44 cometido dentro del guard.
 
@@ -2301,15 +2301,15 @@ python vault_foreign_check.py --self-test                                 # veri
 python vault_gate.py            # corre todas
 python vault_gate.py --strict   # exit 1 si alguna falla (gate de CI)
 python vault_gate.py --list     # qué mide cada puerta y cómo se arregla
-python vault_gate.py --check-doc  # el checklist de CLAUDE.md vs. el registro
+python vault_gate.py --check-doc  # el checklist de AGENTS.md vs. el registro
 python vault_gate.py --fix-doc    # regenera el bloque derivado del checklist
 ```
 
 El problema que resuelve no es de comodidad. Las puertas estaban repartidas en un checklist de prosa, y una lista en prosa falla de tres maneras que ya se cobraron su precio aquí: **nadie sabe cuántas son** —se decía "las siete" mientras el checklist tenía ocho ítems y la práctica corría seis—; **añadir una puerta no la pone en circulación**, porque un guard que nadie añade al checklist no corre, que es AP-42 aplicado a las propias puertas; y **correrlas a mano las corre a medias**, porque el comando que se saltea siempre es el más lento.
 
-**La lista canónica vive en el registro `PUERTAS`, no en el doc,** y `--check-doc` verifica que el checklist de `CLAUDE.md` las cite todas. El orden es el del estándar —registro canónico primero, doc después, guard que falla si divergen—; al revés sería AP-50 estrenada en la misma versión que la declara. Si una puerta falta en el checklist, se añade al checklist: el registro manda.
+**La lista canónica vive en el registro `PUERTAS`, no en el doc,** y `--check-doc` verifica que el checklist de `AGENTS.md` las cite todas. El orden es el del estándar —registro canónico primero, doc después, guard que falla si divergen—; al revés sería AP-50 estrenada en la misma versión que la declara. Si una puerta falta en el checklist, se añade al checklist: el registro manda.
 
-**Desde v40.16 el checklist no se escribe, se genera.** Cada puerta llevaba en `CLAUDE.md` su propio párrafo a mano —dieciséis descripciones de lo que `mide` y `fix` ya decían—, que es una segunda fuente de verdad (AP-05) y envejece en la dirección cómoda: el registro cambia y la prosa se queda. Ahora el bloque vive entre marcas, lo escribe `--fix-doc` y `--check-doc` compara literalmente; comprobar solo que el nombre del script aparezca dejaba pasar justo esa deriva. El **porqué** de cada puerta no se deriva y sigue en el docstring de su tool.
+**Desde v40.16 el checklist no se escribe, se genera.** Cada puerta llevaba en `AGENTS.md` su propio párrafo a mano —dieciséis descripciones de lo que `mide` y `fix` ya decían—, que es una segunda fuente de verdad (AP-05) y envejece en la dirección cómoda: el registro cambia y la prosa se queda. Ahora el bloque vive entre marcas, lo escribe `--fix-doc` y `--check-doc` compara literalmente; comprobar solo que el nombre del script aparezca dejaba pasar justo esa deriva. El **porqué** de cada puerta no se deriva y sigue en el docstring de su tool.
 
 **No reimplementa nada y no baja el enforcement de ninguna norma** (regla 5). Cada puerta corre como subproceso con su propio exit code y su propio envelope, y esta tool solo agrega. Mirar los datos por su cuenta la convertiría en una segunda fuente de verdad sobre el estado del repo (AP-05) y la haría medir con su criterio en vez del de la puerta (AP-44).
 
@@ -2391,7 +2391,7 @@ python vault_servicio.py --check --strict  # la trazabilidad, sin eslabón roto
 
 **Trazabilidad exigida, que es lo que lo hace registro y no prosa:** todo grupo pertenece a exactamente una capacidad, ninguna capacidad reclama un grupo inexistente, ningún grupo está en dos, toda capacidad tiene al menos una tool viva y toda capacidad sirve a un servicio declarado. **Sin baseline**: se mide cero al declararla porque los 37 grupos se clasifican en la misma tanda, y una baseline aquí permitiría añadir un grupo sin decidir a qué sirve — justo el vacío que la tool cierra. Los `group_id` salen de `mapa_de_grupos()`; no hay una numeración propia.
 
-**Por qué son tres capacidades y no dos.** `CLAUDE.md` declara dos ejes —*escritura → gobernanza* (grupos 1–33) y *consulta → contexto* (Grupo 34)—, y al clasificar los 37 grupos contra esa prosa aparecieron dos desajustes que no se pueden tapar sin mentir en el registro:
+**Por qué son tres capacidades y no dos.** `AGENTS.md` declara dos ejes —*escritura → gobernanza* (grupos 1–33) y *consulta → contexto* (Grupo 34)—, y al clasificar los 37 grupos contra esa prosa aparecieron dos desajustes que no se pueden tapar sin mentir en el registro:
 
 | Desajuste | Qué se midió |
 |---|---|

@@ -133,7 +133,7 @@ def test_el_banner_de_la_cli_coincide():
 #:
 #: El primer intento fue laxo —cualquier `v\d+\.\d+` a menos de 80 caracteres de
 #: la palabra «versión»— y marcó tres sitios legítimos: «hoja del núcleo **desde**
-#: v40.28» en `CLAUDE.md` y dos entradas de changelog que citan bugs antiguos.
+#: v40.28» en `AGENTS.md` y dos entradas de changelog que citan bugs antiguos.
 #: Eso es historia, no una afirmación de qué versión corre hoy, y un guard que
 #: la marca acaba desactivado. La lección ya está escrita en
 #: `vault_doc_counts.COUNTED_FACTS`, donde el patrón de `scripts` exige la coma

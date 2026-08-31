@@ -15,7 +15,7 @@ sola capa —contextos y puertos— y no pretende otra cosa.
 
 ## El papelito manda porque el código lo escribe
 
-La petición era «papelito manda, fuente de verdad única»; `CLAUDE.md` regla 3 dice
+La petición era «papelito manda, fuente de verdad única»; `AGENTS.md` regla 3 dice
 «registro canónico primero, doc después», y añade que documentar sin código ejecutable
 «es el fallo histórico que el estándar ya cometió una vez». Las dos cosas se cumplen de
 la única forma que no se pudre: **el plano manda porque lo genera el código y una

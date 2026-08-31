@@ -53,13 +53,13 @@ def test_toda_tool_del_catalogo_llega_hasta_el_servicio():
 
 
 def test_son_tres_capacidades_porque_la_medida_no_cabia_en_dos():
-    """`CLAUDE.md` declara dos ejes; el catálogo tiene tres.
+    """`AGENTS.md` declara dos ejes; el catálogo tiene tres.
 
     El Grupo 35 gobierna el estándar —no las notas de nadie— y el Grupo 26 sirve a
     la consulta pese a caer en el rango 1–33. Meter esas 17 tools en un eje que no
     sirven habría sido el fallo que este registro existe para evitar. Si alguien
     reduce esto a dos capacidades, que sea porque reclasificó los grupos, no porque
-    la prosa de `CLAUDE.md` le pesó más que la medida.
+    la prosa de `AGENTS.md` le pesó más que la medida.
     """
     assert set(srv.CAPACIDADES) == {
         "escritura_a_gobernanza",

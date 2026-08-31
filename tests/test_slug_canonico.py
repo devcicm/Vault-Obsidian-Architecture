@@ -12,7 +12,7 @@ que no había fuente única. Es el mismo fallo que `vault_folder_registry` con s
 13 secciones de 22, y se cierra igual: derivación + guard anti-drift.
 
 `vault-sandbox/` no podía revelarlo. Lo genera este repo, en inglés, y sin un
-solo carácter fuera de ASCII no hay nada que transliterar (regla 7 de CLAUDE.md,
+solo carácter fuera de ASCII no hay nada que transliterar (regla 7 de AGENTS.md,
 corolario de AP-44: toda medida nueva se contrasta contra material ajeno).
 """
 

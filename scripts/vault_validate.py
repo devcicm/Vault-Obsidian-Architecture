@@ -46,7 +46,7 @@ from typing import Any, Dict, List, Optional
 
 
 # El vocabulario CIA lo declara `vault_fundamentals.CIA_TRIAD`, que es la fuente
-# única del marco según CLAUDE.md. Aquí estaba copiado a mano: coincidía, pero
+# única del marco según AGENTS.md. Aquí estaba copiado a mano: coincidía, pero
 # nada lo obligaba, y una tercera copia vivía dentro de `_check_fundamentals`.
 CIA_INTEGRITY_VALUES = cia_valores("cia_integrity")
 

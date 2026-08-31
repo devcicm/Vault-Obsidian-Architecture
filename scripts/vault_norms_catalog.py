@@ -2123,7 +2123,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "Lo que ya tiene registro canónico no se copia: se declara "
             "`derivado_de` y se resuelve al llamarse, nunca al importarse "
             "(AP-49). Un dato canónico que no es puerto de su contexto se acaba "
-            "copiando — los tres registros que `CLAUDE.md` declara fuente única "
+            "copiando — los tres registros que `AGENTS.md` declara fuente única "
             "de verdad se leían por fuera de la superficie publicada, y así "
             "nacieron las catorce copias."
         ),
@@ -3329,7 +3329,7 @@ STATUS_VOCAB = {
 # usa de verdad son `active/archived/internal`. Dos de trece filas incorrectas en
 # el documento cuyo trabajo entero es describir las máquinas de estado.
 #
-# El orden que fija CLAUDE.md es registro primero y doc después, así que la tabla
+# El orden que fija AGENTS.md es registro primero y doc después, así que la tabla
 # se declara aquí —junto a STATUS_VOCAB, que es la otra verdad sobre estados— y
 # el generador del SDD la deriva. Las dos filas que sí tienen fuente viva
 # (versión del estándar, estados de tool) se resuelven en tiempo de generación

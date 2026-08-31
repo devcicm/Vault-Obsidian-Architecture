@@ -8,7 +8,7 @@ nada de lo que las tools usan de verdad.
 
 Causa: 89 de 98 módulos hacen `from vault_io import VAULT_ROOT` y derivan sus
 rutas EN EL IMPORT (`SYSTEM_DIR = VAULT_ROOT / "00_System"`), congelando un `Path`
-literal. La API pública de cambiar el vault mentía, y `CLAUDE.md` ya declaraba
+literal. La API pública de cambiar el vault mentía, y `AGENTS.md` ya declaraba
 `get_vault_root()` como fuente única: el código no cumplía su propia tabla.
 
 No basta con un proxy perezoso sobre `VAULT_ROOT`: no alcanzaría a las

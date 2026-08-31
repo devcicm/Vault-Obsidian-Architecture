@@ -1,7 +1,7 @@
 """El plano técnico tiene guard, y el kernel de inyección funciona de verdad.
 
 `scripts/vault_arch.py` declara los nueve contextos acotados y sus fronteras.
-Sin estas pruebas sería un documento más: la regla 3 de `CLAUDE.md` pide
+Sin estas pruebas sería un documento más: la regla 3 de `AGENTS.md` pide
 registro canónico → doc derivada → guard que falla si divergen → test, y esto es
 el cuarto paso.
 

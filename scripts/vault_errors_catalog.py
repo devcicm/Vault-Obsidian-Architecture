@@ -547,7 +547,7 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
                 "Correr la tool con --migrate. Tratar una baseline vieja como "
                 "vacía estrenaría la deuda entera como nueva."
             ),
-            "docs": "CLAUDE.md §Trabajar con las baselines",
+            "docs": "AGENTS.md §Trabajar con las baselines",
         },
     },
     "MIGRATION_MISMATCH": {
@@ -561,7 +561,7 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
                 "y volver a migrar. Migrar sobre un árbol divergente mete la "
                 "deuda nueva en el formato nuevo como si siempre hubiera estado."
             ),
-            "docs": "CLAUDE.md §Trabajar con las baselines",
+            "docs": "AGENTS.md §Trabajar con las baselines",
         },
     },
     "DEBT_WOULD_GROW": {
@@ -574,7 +574,7 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
                 "Saldar los sitios nuevos, o congelarlos explícitamente con "
                 "--freeze --admitir-nuevos, que los deja listados en el envelope."
             ),
-            "docs": "CLAUDE.md §Trabajar con las baselines",
+            "docs": "AGENTS.md §Trabajar con las baselines",
         },
     },
     "CONTRACT_FIELD_REMOVED": {
@@ -592,7 +592,7 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
                 "nunca fue público, decláralo en `internal_fields` antes de "
                 "quitarlo."
             ),
-            "docs": "CLAUDE.md §No-derogación",
+            "docs": "AGENTS.md §No-derogación",
         },
     },
     # ── Lifecycle ─────────────────────────────────────────────────────────────
