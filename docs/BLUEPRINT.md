@@ -33,7 +33,7 @@ Restricciones que son decisión de producto, no limitación pendiente:
 
 | Capacidad | Resultado | Grupos | Tools |
 |---|---|---|---|
-| **Escritura → gobernanza** (`escritura_a_gobernanza`) | Lo que el agente captura queda escrito una sola vez, normalizado contra las normas, versionado y auditable después. | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 36, 37 | 81 |
+| **Escritura → gobernanza** (`escritura_a_gobernanza`) | Lo que el agente captura queda escrito una sola vez, normalizado contra las normas, versionado y auditable después. | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 36, 37 | 83 |
 | **Consulta → contexto** (`consulta_a_contexto`) | Una pregunta del agente se convierte en un paquete de contexto acotado y presupuestado, recorriendo el grafo del vault sin índice externo. | 26, 34 | 9 |
 | **Gobernanza del estándar** (`gobernanza_del_estandar`) | El estándar cumple lo que publica: registro canónico primero, doc derivada, guard que falla si divergen. Ninguna de estas tools toca las notas de un usuario. | 35 | 24 |
 
@@ -53,9 +53,9 @@ regenera.*
 | Contexto | Puertos | Módulos | Prohíbe |
 |---|---|---|---|
 | **Kernel** (`kernel`) | 4 | 22 | depender de cualquier contexto de dominio |
-| **Autoría** (`autoria`) | 7 | 41 | — |
+| **Autoría** (`autoria`) | 7 | 43 | — |
 | **Grafo** (`grafo`) | 3 | 15 | — |
-| **Gobernanza** (`gobernanza`) | 20 | 11 | — |
+| **Gobernanza** (`gobernanza`) | 20 | 12 | — |
 | **Índices** (`indices`) | 8 | 6 | — |
 | **Consulta** (`consulta`) | 7 | 11 | base de datos; embeddings; servicio externo |
 | **Ciclo de vida** (`ciclo_de_vida`) | 3 | 9 | — |
@@ -156,7 +156,7 @@ Sin puerta ni test (15): `AP-04`, `AP-08`, `AP-12`, `AP-13`, `AP-18`, `AP-20`, `
 
 *Registros: `vault_mcp_catalog.TOOLS_CATALOG` + `<vault>/00_System/tool-spec.json`*
 
-114 tools activas en 37 grupos. Toda tool
+116 tools activas en 37 grupos. Toda tool
 del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 `status: archived | internal | orphan` — no se borra, se anota
 (`vault_mcp_catalog.py --check-contracts`).
@@ -195,7 +195,7 @@ del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 | Seguridad | 1 |
 | Session Delta y Tags | 2 |
 | Skills | 2 |
-| Tests | 1 |
+| Tests | 3 |
 | Tokens | 3 |
 | Versionado | 3 |
 | Vista del Proyecto | 2 |
@@ -291,7 +291,9 @@ falla — no se rellena con el valor más cercano.
 | `vault_project_overview` | 11 — Vista del Proyecto | escritura_a_gobernanza |
 | `vault_project_status` | 11 — Vista del Proyecto | escritura_a_gobernanza |
 | `vault_propagate` | 25 — Propagación | escritura_a_gobernanza |
+| `vault_qa_save` | 20 — Tests | escritura_a_gobernanza |
 | `vault_quality_check` | 24 — Data Quality | escritura_a_gobernanza |
+| `vault_quality_dashboard` | 20 — Tests | escritura_a_gobernanza |
 | `vault_quarantine` | 36 — Defectos y Cuarentena | escritura_a_gobernanza |
 | `vault_query_parse` | 34 — Memoria de Contexto | consulta_a_contexto |
 | `vault_read` | 1 — Core | escritura_a_gobernanza |
@@ -357,7 +359,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 |---|---|---|---|---|
 | `scripts/arch-baseline.json` | cruces entre contextos | 36 | — *sin objetivo* | 62 → 62 → 42 → 35 → 36 → 36 (encoge, Δ-13) |
 | `scripts/arch-baseline.json` | cruces fuera de puerto | 12 | — *sin objetivo* | 13 → 12 → 12 → 12 → 12 → 12 (encoge, Δ-36) |
-| `scripts/blame-baseline.json` | AP-51 | 33 | — *sin objetivo* | 86 → 86 → 87 → 84 → 83 → 45 (encoge, Δ-41) |
+| `scripts/blame-baseline.json` | AP-51 | 33 | — *sin objetivo* | 86 → 87 → 84 → 83 → 45 → 33 (encoge, Δ-53) |
 | `scripts/error-contract-baseline.json` | AP-52 | 0 | — *sin objetivo* | 158 → 110 → 110 → 0 → 9 → 0 (encoge, Δ-158) |
 | `scripts/noop-baseline.json` | AP-37 | 0 | — *sin objetivo* | 0 → 0 (plana, Δ+0) |
 | `scripts/smoke-baseline.json` | AP-42 | 0 | — *sin objetivo* | — *1 muestra* |
@@ -367,7 +369,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 5 | — *sin objetivo* | — *1 muestra* |
 | `scripts/norms-distincion-baseline.json` | AP-60 — normas que no declaran de qué se distinguen | 0 | — *sin objetivo* | 57 → 0 (encoge, Δ-57) |
 | `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 | — *sin objetivo* | 47 → 0 (encoge, Δ-47) |
-| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1318 | — *sin objetivo* | 1256 → 1267 → 1278 → 1278 → 1278 → 1318 (crece, Δ+280) |
+| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1334 | — *sin objetivo* | 1267 → 1278 → 1278 → 1278 → 1318 → 1318 (crece, Δ+280) |
 | `scripts/excepcion-declarada-baseline.json` | AP-61 — la excepción declarada no es la que escapa | 0 | ≤ 0 para 2027-06-30 · cada 180 d · gobernanza → **cumple** | 0 → 0 (plana, Δ+0) |
 | `scripts/recursos-baseline.json` | AP-62 — el consumidor cruza para leer un recurso y paga el fan-out | 2 | — *sin objetivo* | — *1 muestra* |
 

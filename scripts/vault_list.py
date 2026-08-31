@@ -87,6 +87,7 @@ FOLDER_ICONS = {
     "18_Bugs": "🐞",
     "19_Audits": "🗒️",
     "20_Quarantine": "🚧",
+    "21_QA": "🧪",
     "99_Index": "🗂️",
 }
 

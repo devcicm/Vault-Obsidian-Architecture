@@ -4065,6 +4065,77 @@
         "vault_write"
       ]
     },
+    "vault_qa_save": {
+      "name": "vault_qa_save",
+      "description": "Registra planes de test, métricas, reportes y estrategias QA en 21_QA/.",
+      "group": "Tests",
+      "script": "vault_qa_save.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "description": "Slug del proyecto"
+          },
+          "title": {
+            "type": "string",
+            "description": "Título del documento QA"
+          },
+          "type": {
+            "type": "string",
+            "description": ""
+          },
+          "description": {
+            "type": "string",
+            "description": "Document description"
+          },
+          "related-tests": {
+            "type": "string",
+            "description": "Comma-separated test IDs (e.g. TEST-001,TEST-002)"
+          },
+          "related-requirements": {
+            "type": "string",
+            "description": "Comma-separated requirement IDs"
+          },
+          "coverage-target": {
+            "type": "string",
+            "description": "Target test coverage percentage"
+          },
+          "execution-frequency": {
+            "type": "string",
+            "description": "How often this plan/report is executed (e.g. 'before each release')"
+          },
+          "quality-criteria": {
+            "type": "string",
+            "description": "Quality criteria (e.g. 'coverage > 80%' 'defect-rate < 2%')"
+          },
+          "status": {
+            "type": "string",
+            "description": "Estado: draft | reviewed | approved | archived"
+          },
+          "tags": {
+            "type": "string",
+            "description": "Additional tags"
+          }
+        },
+        "required": [
+          "project",
+          "title",
+          "type",
+          "description"
+        ]
+      },
+      "guards": [],
+      "side_effects": [
+        "Crea 21_QA/.qa-index.json si no existe"
+      ],
+      "status": "active",
+      "exposed_via_mcp": true,
+      "related": [
+        "vault_test_save",
+        "vault_quality_dashboard"
+      ]
+    },
     "vault_quality_check": {
       "name": "vault_quality_check",
       "description": "Verifica calidad de datos del vault.",
@@ -4100,6 +4171,32 @@
       "related": [
         "vault_audit",
         "vault_fundamentals"
+      ]
+    },
+    "vault_quality_dashboard": {
+      "name": "vault_quality_dashboard",
+      "description": "Genera dashboard de calidad operacional en 02_Observability/qa/ combinando quality-index, tag-registry, qa-index y tests-index.",
+      "group": "Tests",
+      "script": "vault_quality_dashboard.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "check": {
+            "type": "string",
+            "description": "Solo lee y muestra sin escribir"
+          }
+        }
+      },
+      "guards": [],
+      "side_effects": [
+        "Genera 02_Observability/qa/quality-dashboard.md"
+      ],
+      "status": "active",
+      "exposed_via_mcp": true,
+      "related": [
+        "vault_quality_check",
+        "vault_qa_save",
+        "vault_test_save"
       ]
     },
     "vault_quarantine": {
@@ -4936,7 +5033,7 @@
       },
       "guards": [],
       "side_effects": [
-        "Genera reporte en 02_Observability/security/"
+        "Genera reporte en 02_Observability/vulnerabilities/"
       ],
       "status": "active",
       "exposed_via_mcp": true,
@@ -5813,7 +5910,9 @@
       "vault_requirement_save"
     ],
     "Tests": [
-      "vault_test_save"
+      "vault_test_save",
+      "vault_qa_save",
+      "vault_quality_dashboard"
     ],
     "IA Governance": [
       "vault_ai_decision"

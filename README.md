@@ -3,8 +3,8 @@
 **Estándar de diseño para dotar a agentes LLM de memoria documental persistente.**
 
 [![Version](https://img.shields.io/badge/version-v40.34-blue)](./vault-obsidian-architecture.md)
-[![Tools](https://img.shields.io/badge/tools-114_active-green)](./scripts/)
-[![Scripts](https://img.shields.io/badge/scripts-149_total-lightblue)](./scripts/)
+[![Tools](https://img.shields.io/badge/tools-116_active-green)](./scripts/)
+[![Scripts](https://img.shields.io/badge/scripts-152_total-lightblue)](./scripts/)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow)](./scripts/)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](./LICENSE)
 
@@ -240,7 +240,7 @@ mkdir vault-mi-proyecto
 cp -r Vault-Obsidian-Architecture/scripts ./scripts
 
 # v34: un solo comando hace todo el bootstrap (carpetas + version + indexes + audit)
-# Crea las 22 carpetas estándar, aplica migraciones hasta v39, auto-indexa, agrega
+# Crea las 23 carpetas estándar, aplica migraciones hasta v39, auto-indexa, agrega
 # scaffold primers en secciones vacías, y reporta el health score inicial.
 python scripts/vault_init.py
 
@@ -299,7 +299,7 @@ python scripts/vault_audit.py
 
 ## CLI consolidada — `cli/`
 
-Las 114 tools bajo un único punto de entrada, con búsqueda, planificación de
+Las 116 tools bajo un único punto de entrada, con búsqueda, planificación de
 concurrencia y guardas de seguridad:
 
 ```bash
@@ -320,7 +320,7 @@ Guía: [`cli/README.md`](cli/README.md) · Referencia de comandos:
 
 ---
 
-## Las 114 tools activas — 37 grupos
+## Las 116 tools activas — 37 grupos
 
 | Grupo | Tools |
 |---|---|
@@ -448,7 +448,7 @@ Sistema de control de asistencia con autenticación biométrica.
 
 Contiene:
 - 8 principios de diseño
-- 114 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
+- 116 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
 - 74 normas: 62 antipatrones (AP-01–AP-62), 6 patrones (PAT-1–PAT-6), 3 SP, 3 CN
 - norm_refs auto-embebido en frontmatter + vault_code_tag para etiquetas en código fuente
 - 8 Fundamentos de Datos (F1–F8) con trazabilidad a tools
@@ -477,7 +477,7 @@ Contiene:
 ## Scripts — estructura del repositorio
 
 ```
-scripts/                    ← 149 archivos Python (114 tools del catálogo + 8 archivadas en _archived/ + internas/meta)
+scripts/                    ← 152 archivos Python (116 tools del catálogo + 8 archivadas en _archived/ + internas/meta)
 ├── vault_io.py             — I/O base: _detect_vault_root, assert_within_vault, atomic_write_text/json, file_lock
 ├── vault_errors.py         — wrap_main (timeout 60s), emit_ok, trace log
 ├── vault_write.py          — tool principal de escritura (guards AP-20, AP-21, norm_refs auto-embed)

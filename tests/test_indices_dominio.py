@@ -247,7 +247,7 @@ def test_las_secciones_salen_del_registro_no_de_una_copia(tmp_path):
     repo = _repo(_vault(tmp_path / "v"))
     indexables = ServicioCarpetas(repo).carpetas_indexables()
     assert set(repo.ctx.secciones.ordenadas()) <= set(indexables)
-    assert len(repo.ctx.secciones.ordenadas()) == 22
+    assert len(repo.ctx.secciones.ordenadas()) == 23
 
 
 # --- El formato del índice, probado sin tocar disco ---------------------------

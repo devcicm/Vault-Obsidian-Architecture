@@ -1747,7 +1747,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             },
         },
         "guards": [],
-        "side_effects": ["Genera reporte en 02_Observability/security/"],
+        "side_effects": ["Genera reporte en 02_Observability/vulnerabilities/"],
         "example": 'python vault_security_scan.py --path "01_Projects"\npython vault_security_scan.py --path "01_Projects" --project "mi-api" --categories secrets pii',
         "related": ["vault_audit", "vault_log_error"],
     },
@@ -1829,6 +1829,48 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "example": 'python vault_propagate.py --changed "01_Projects/mi-api/overview.md" --queue-report',
         "related": ["vault_impact", "vault_write"],
     },
+    "vault_qa_save": {
+        "name": "vault_qa_save",
+        "script": "vault_qa_save.py",
+        "group": "Tests",
+        "purpose": "Registra planes de test, métricas, reportes y estrategias QA en 21_QA/.",
+        "params": {
+            "project": {
+                "type": "string",
+                "required": True,
+                "description": "Slug del proyecto",
+                "validators": [],
+            },
+            "qa_type": {
+                "type": "string",
+                "required": True,
+                "description": "Tipo: test-plan | qa-metrics | qa-report | qa-strategy | coverage-report",
+                "validators": ["one_of:test-plan,qa-metrics,qa-report,qa-strategy,coverage-report"],
+            },
+            "title": {
+                "type": "string",
+                "required": True,
+                "description": "Título del documento QA",
+                "validators": ["not_empty"],
+            },
+            "content": {
+                "type": "string",
+                "required": True,
+                "description": "Contenido Markdown del documento",
+                "validators": ["min_lines:3"],
+            },
+            "status": {
+                "type": "string",
+                "required": False,
+                "description": "Estado: draft | reviewed | approved | archived",
+                "validators": ["one_of:draft,reviewed,approved,archived"],
+            },
+        },
+        "guards": [],
+        "side_effects": ["Crea 21_QA/.qa-index.json si no existe"],
+        "example": 'python vault_qa_save.py --project "mi-api" --qa_type "test-plan" --title "Plan de Pruebas v2" --content "# Test Plan..."',
+        "related": ["vault_test_save", "vault_quality_dashboard"],
+    },
     "vault_quality_check": {
         "name": "vault_quality_check",
         "script": "vault_quality_check.py",
@@ -1852,6 +1894,17 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "side_effects": ["Genera reporte en 00_System/"],
         "example": 'python vault_quality_check.py\npython vault_quality_check.py --project "mi-api" --metrics "completeness"',
         "related": ["vault_audit", "vault_fundamentals"],
+    },
+    "vault_quality_dashboard": {
+        "name": "vault_quality_dashboard",
+        "script": "vault_quality_dashboard.py",
+        "group": "Tests",
+        "purpose": "Genera dashboard de calidad operacional en 02_Observability/qa/ combinando quality-index, tag-registry, qa-index y tests-index.",
+        "params": {},
+        "guards": [],
+        "side_effects": ["Genera 02_Observability/qa/quality-dashboard.md"],
+        "example": "python vault_quality_dashboard.py\npython vault_quality_dashboard.py --check",
+        "related": ["vault_quality_check", "vault_qa_save", "vault_test_save"],
     },
     "vault_fundamentals": {
         "name": "vault_fundamentals",
@@ -4331,7 +4384,7 @@ GROUPS: Dict[str, List[str]] = {
     "Drift Detection": ["vault_drift_detect"],
     "Flujos": ["vault_flow_save"],
     "Requerimientos": ["vault_requirement_save"],
-    "Tests": ["vault_test_save"],
+    "Tests": ["vault_test_save", "vault_qa_save", "vault_quality_dashboard"],
     "IA Governance": ["vault_ai_decision"],
     "Change Log": ["vault_change_log", "vault_delete"],
     "Data Quality": ["vault_quality_check", "vault_fundamentals"],
@@ -4885,12 +4938,12 @@ def check_contracts(spec_path: Optional[str] = None) -> Dict[str, Any]:
             continue
         grupo = pertenencia.get(nombre)
         if grupo and entrada.get("group") != grupo:
-            problema("group_divergente", f"{nombre}: {entrada.get('group')!r} ≠ {grupo!r}")
+            problema("group_divergente", f"{nombre}: {entrada.get('group')!r} != {grupo!r}")
         esperado = gid_por_grupo.get(grupo) if grupo else None
         if esperado is not None and entrada.get("group_id") != esperado:
             problema(
                 "group_id_divergente",
-                f"{nombre}: {entrada.get('group_id')} ≠ {esperado} (Grupo de scripts/README.md)",
+                f"{nombre}: {entrada.get('group_id')} != {esperado} (Grupo de scripts/README.md)",
             )
 
     for nombre in sorted(entradas):

@@ -277,6 +277,7 @@ PARCIALES_DELIBERADAS = {
     ("vault_migrate_docs.py", "CONTENT_SIGNALS"): "señales léxicas por prioridad; no toda sección tiene una",
     ("vault_query_parse.py", "SECTION_HINTS"): "pistas léxicas de consulta; no toda sección tiene vocabulario propio",
     ("vault_audit.py", "_SECTION_TOOL_HINT"): "capa de ejemplos de argumentos; lo no cubierto lo pone section_tool_hint()",
+    ("vault_onboard.py", "_SECCIONES_NO_POBLADAS"): "secciones dirigidas por eventos o mantenidas por otras tools; no se llenan al onboarding",
 }
 
 

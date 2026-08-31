@@ -1374,7 +1374,7 @@ Valida frontmatter YAML, campos requeridos, estructura de carpetas e integridad 
 
 **Diferencia con `vault_audit`:** `vault_audit` mide salud del vault (orphans, stale, broken links, score). `vault_validate` verifica contratos estructurales — frontmatter correcto, carpetas presentes, índices legibles — sin necesidad de leer el contenido completo de cada nota.
 
-> **Nota de implementación:** el check `structure` verifica las 22 carpetas estándar del vault (`00_System` … `17_Preferences` más `99_Index`). Las carpetas `11_Code`, `17_Preferences` y `99_Index` son opcionales en el check de estructura (un vault sin código documentado no necesita `11_Code`; `99_Index` se crea automáticamente al hacer la primera búsqueda). Las carpetas `14_Requirements`, `15_Tests`, `16_AI_Governance` se crean con `vault_standard_upgrade --to latest` si el vault es previo a v24. El check `indexes` verifica específicamente que `99_Index/search-index.json` y `99_Index/graph.json` sean legibles cuando existan.
+> **Nota de implementación:** el check `structure` verifica las 23 carpetas estándar del vault (`00_System` … `17_Preferences` más `99_Index`). Las carpetas `11_Code`, `17_Preferences` y `99_Index` son opcionales en el check de estructura (un vault sin código documentado no necesita `11_Code`; `99_Index` se crea automáticamente al hacer la primera búsqueda). Las carpetas `14_Requirements`, `15_Tests`, `16_AI_Governance` se crean con `vault_standard_upgrade --to latest` si el vault es previo a v24. El check `indexes` verifica específicamente que `99_Index/search-index.json` y `99_Index/graph.json` sean legibles cuando existan.
 
 **Cuándo usar:** antes de una migración (pre-flight), al detectar AP-12 o AP-13, al integrar notas de fuentes externas que pueden tener frontmatter no estándar.
 
@@ -2835,7 +2835,7 @@ Reconstruye `99_Index/search-index.json` desde cero escaneando todas las notas e
 | `--check` | flag | — | Retorna estado del índice sin modificarlo (`index_ok` o `index_empty_or_missing`) |
 
 **Comportamiento:**
-- Escanea solo notas dentro de las 22 secciones estándar (`00_System` … `17_Preferences` más `99_Index`) — ignora archivos en la raíz del vault (`vault-obsidian-architecture.md`, `scripts/`, etc.)
+- Escanea solo notas dentro de las 23 secciones estándar (`00_System` … `17_Preferences` más `99_Index`) — ignora archivos en la raíz del vault (`vault-obsidian-architecture.md`, `scripts/`, etc.)
 - Parsea frontmatter de cada nota para extraer `title`, `tags`, `updatedAt`
 - Genera `99_Index/search-index.json` con `{ notes: [...], rebuiltAt, totalNotes }`
 - Sobreescribe cualquier índice previo (incluyendo el vacío `{}`)
@@ -4532,7 +4532,7 @@ proyecto/
 ```
 
 **Prevención en el estándar:**
-- `vault_graph` y `vault_reindex` filtran activamente archivos fuera de las 22 secciones estándar — los root-level `.md` no se indexan ni se parsean
+- `vault_graph` y `vault_reindex` filtran activamente archivos fuera de las 23 secciones estándar — los root-level `.md` no se indexan ni se parsean
 - Al inicializar un vault: crear la carpeta `vault-{nombre}/` y mover todos los `.md` de especificación y scripts fuera de ella antes de la primera operación
 - `vault_validate(check:"structure")` puede extenderse para detectar `.md` en la raíz del vault y reportarlos como AP-15
 
@@ -5009,7 +5009,7 @@ Dos causas, y la segunda es la incómoda:
 
 1. **El audit no lo ejecuta nadie.** En las **1.356 ejecuciones de tools
    registradas** en los `.tool-trace.json` de ese parque, `vault_norms` no
-   aparece **ni una vez**. 41 de las 114 tools del catálogo no se han ejecutado
+   aparece **ni una vez**. 41 de las 116 tools del catálogo no se han ejecutado
    jamás. Los agentes escriben; no gobiernan. Un enforcement que depende de que
    alguien se acuerde de invocarlo es enforcement en el papel.
 2. **Los valores no canónicos los escribía el propio estándar.** El más
@@ -5618,7 +5618,7 @@ de envelope con su contrato de `00_System/tool-spec.json`:
 Y la divergencia peor no era de forma sino de efecto: `jsNativeGraph` no tiene un
 solo `writeFile`. Un agente llamaba `vault_graph` por MCP, recibía `ok: true`, y
 el grafo se quedaba sin regenerar — **AP-37 y AP-47 servidos a la vez por el único
-camino que un agente real usa**. `vault_smoke` recorre las 114 tools del catálogo,
+camino que un agente real usa**. `vault_smoke` recorre las 116 tools del catálogo,
 pero ejecuta el `.py`: probaba exactamente la implementación que el agente no toca.
 
 **Prevención:** backend nativo solo para lo que **no tiene** implementación en

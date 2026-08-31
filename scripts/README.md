@@ -1,13 +1,13 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 114 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
+Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 116 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **149 archivos Python** — 114 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
+- **152 archivos Python** — 116 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
 - **Saneamiento de índices (v38.1)** — `vault_section_index.py --heal [--root]` regenera índices con formato legacy `[[stem|alias]]` o ausentes; el auto-index post-write se auto-cura si un agente escribe `index.md` a mano
-- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 114 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
+- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 116 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
 - **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault; requiere marcador de CONTENIDO (01_Projects/02_Observability/03_Decisions/.obsidian), no solo 00_System/99_Index (evita el ciclo auto-reforzado de detección); override runtime con `set_vault_root()`/env `VAULT_ROOT`
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
@@ -44,7 +44,7 @@ Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan 
 | [Grupo 17 — Drift Detection](#grupo-17--drift-detection) | vault_drift_detect |
 | [Grupo 18 — Flujos](#grupo-18--flujos) | vault_flow_save |
 | [Grupo 19 — Requerimientos](#grupo-19--requerimientos) | vault_requirement_save |
-| [Grupo 20 — Tests](#grupo-20--tests) | vault_test_save |
+| [Grupo 20 — Tests](#grupo-20--tests) | vault_test_save, vault_qa_save, vault_quality_dashboard |
 | [Grupo 21 — IA Governance](#grupo-21--ia-governance) | vault_ai_decision |
 | [Grupo 22 — Versionado](#grupo-22--versionado) | vault_standard_upgrade, vault_undo, vault_history_compact |
 | [Grupo 23 — Change Log](#grupo-23--change-log) | vault_change_log, vault_delete |
@@ -1066,6 +1066,35 @@ python vault_test_save.py --project mi-api --title "TC-E2E-001 Flujo de pago" \
 | `security` | `15_Tests/security/` |
 | `acceptance` | `15_Tests/acceptance/` |
 
+### `vault_qa_save.py`
+Registra planes de test, métricas, reportes y estrategias QA en `21_QA/` (ISO 9001, ISO 29119, ISO 25010).
+
+```bash
+python vault_qa_save.py --project mi-api --title "Q1 2026 Test Plan" \
+  --qa_type test-plan --status draft \
+  --content "# Test Plan Q1 2026\n\n## Scope\n..."
+
+python vault_qa_save.py --project mi-api --title "QA Metrics Q1" \
+  --qa_type qa-metrics --status reviewed \
+  --content "# QA Metrics Q1 2026\n\n## Coverage\n..."
+```
+
+| `--qa_type` | Descripción |
+|---|---|
+| `test-plan` | Plan de pruebas |
+| `qa-metrics` | Métricas de calidad |
+| `qa-report` | Reporte de calidad |
+| `qa-strategy` | Estrategia y política QA |
+| `coverage-report` | Reporte de cobertura |
+
+### `vault_quality_dashboard.py`
+Genera dashboard de calidad operacional en `02_Observability/qa/` combinando quality-index, tag-registry, qa-index y tests-index.
+
+```bash
+python vault_quality_dashboard.py
+python vault_quality_dashboard.py --check
+```
+
 ---
 
 ## Grupo 21 — IA Governance
@@ -1899,7 +1928,7 @@ El vault expone sus herramientas como un **servidor MCP** que las IAs consumen d
 
 **Archivo:** `../mcp/nodejs/vault-mcp-server.mjs` (~1650 líneas, cero dependencias npm)  
 **Plan:** `../mcp/PLAN.md` — documento de evidencia con 8 fases de implementación
-**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (114 tools)
+**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (116 tools)
 
 Los parámetros que el catálogo publica **se derivan del `argparse` de cada script**,
 no se escriben a mano: el servidor compone `--<param>` literal, así que un param

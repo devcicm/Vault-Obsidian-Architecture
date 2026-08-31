@@ -2966,6 +2966,41 @@
         "F2"
       ]
     },
+    "vault_qa_save": {
+      "group": "Tests",
+      "group_id": 20,
+      "status": "active",
+      "required_args": [
+        "--project",
+        "--qa_type",
+        "--title"
+      ],
+      "declared_returns": [
+        "created",
+        "error",
+        "ok",
+        "path",
+        "project",
+        "qa_id",
+        "updated",
+        "written"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "integrity",
+          "completeness",
+          "validity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F3",
+        "F5"
+      ]
+    },
     "vault_quality_check": {
       "group": "Data Quality",
       "group_id": 24,
@@ -3005,6 +3040,38 @@
         "F6",
         "F7",
         "F8"
+      ]
+    },
+    "vault_quality_dashboard": {
+      "group": "Tests",
+      "group_id": 20,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "content",
+        "content_length",
+        "error",
+        "ok",
+        "path",
+        "written",
+        "created",
+        "updated"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "integrity",
+          "completeness",
+          "accuracy",
+          "timeliness"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F3",
+        "F5"
       ]
     },
     "vault_quarantine": {
@@ -4274,10 +4341,10 @@
     }
   },
   "_counts": {
-    "active": 114,
+    "active": 116,
     "internal": 14,
     "archived": 5,
-    "total": 133,
+    "total": 135,
     "active_groups": 37,
     "schema_version": "1.0"
   }

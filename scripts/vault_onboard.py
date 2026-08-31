@@ -62,6 +62,7 @@ _SECCIONES_NO_POBLADAS: Dict[str, str] = {
     "18_Bugs": "se puebla cuando aparece un bug (vault_bug_save)",
     "19_Audits": "se puebla al ejecutar una auditoría (vault_tags --audit)",
     "20_Quarantine": "se puebla cuando algo entra en cuarentena",
+    "21_QA": "se puebla con eventos QA: planes, métricas y reportes (vault_qa_save, vault_test_runner)",
 }
 
 # ── Language / extension maps ─────────────────────────────────────────────────

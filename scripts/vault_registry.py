@@ -187,6 +187,20 @@ SECTIONS: List[Dict[str, Optional[str]]] = [
         ),
         "tool_hint": "vault_quarantine --add <path> --reason <motivo>",
     },
+    # ── 21_QA (v40.35) ───────────────────────────────────────────────────────
+    #
+    # Gestión de calidad: planes de prueba, métricas QA, reportes y estrategia.
+    # Convive con 02_Observability/quality (NCRs y acciones correctivas, ISO 9001
+    # §10.2) y con 15_Tests (casos de prueba ejecutados, ISO 29119).
+    # 21_QA es el nivel de proceso: política, estrategia, métricas agregadas y
+    # reporting — lo que un QA manager necesita para saber cómo va el producto.
+    # Se puebla con eventos y con la ejecución de la suite de tests (AP-45).
+    {
+        "folder": "21_QA",
+        "name": "QA",
+        "description": "Gestión de calidad: planes de prueba, métricas, reportes y estrategia QA (ISO 9001, ISO 29119, ISO 25010)",
+        "tool_hint": "vault_qa_save --project <slug> --title <plan> --type test-plan",
+    },
     {
         "folder": "99_Index",
         "name": "Índices",
@@ -239,6 +253,7 @@ EVENT_DRIVEN_SECTIONS: Dict[str, str] = {
     "18_Bugs": "se puebla cuando aparece un bug (vault_bug_save)",
     "19_Audits": "se puebla al ejecutar una auditoría (vault_tags --audit)",
     "20_Quarantine": "se puebla cuando algo entra en cuarentena",
+    "21_QA": "se puebla con eventos QA: ejecución de suite, métricas, reporting (vault_qa_save, vault_test_runner)",
 }
 
 
@@ -318,6 +333,7 @@ SECTION_TYPES: Dict[str, tuple] = {
     "18_Bugs": ("bug",),
     "19_Audits": ("audit",),
     "20_Quarantine": ("quarantine",),
+    "21_QA": ("test-plan", "qa-metrics", "qa-report", "qa-strategy", "coverage-report"),
     "99_Index": ("index",),
 }
 
@@ -627,6 +643,30 @@ SUBFOLDERS: Dict[str, Dict[str, Optional[str]]] = {
     "20_Quarantine/duplicates": {
         "description": "Candidatas a duplicado pendientes de decidir cuál es la canónica (PAT-1)",
         "owner": "vault_quarantine",
+    },
+    # ── 21_QA ───────────────────────────────────────────────────────────────
+    "21_QA/test-plans": {
+        "description": "Planes de prueba y estrategia de testing (ISO 29119-1)",
+        "owner": "vault_qa_save",
+    },
+    "21_QA/metrics": {
+        "description": "KPIs y métricas de calidad: defect-rate, coverage, MTTR, pass-rate (ISO 25010)",
+        "owner": "vault_qa_save",
+    },
+    "21_QA/reports": {
+        "description": "Reportes de calidad por sprint, release o período (QA reporting)",
+        "owner": "vault_qa_save",
+    },
+    "21_QA/strategy": {
+        "description": "Política y estrategia QA: niveles de prueba, criterios de aceptación, gates",
+        "owner": "vault_qa_save",
+    },
+    # ── 02_Observability/qa ───────────────────────────────────────────────
+    # Dashboard de calidad operacional: se genera desde vault_quality_check
+    # y vault_test_runner, no se escribe a mano.
+    "02_Observability/qa": {
+        "description": "Dashboard de calidad operacional: healthScore, coverage, defect-rate y SLO compliance (ISO 9001 §9.1)",
+        "owner": "vault_quality_check",
     },
 }
 

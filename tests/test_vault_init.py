@@ -111,7 +111,7 @@ class TestSystemFiles:
 class TestPrimers:
     """Cada sección (menos 00_System y dirigidas por eventos) recibe un primer."""
 
-    EVENT_DRIVEN = {"18_Bugs", "19_Audits", "20_Quarantine"}
+    EVENT_DRIVEN = {"18_Bugs", "19_Audits", "20_Quarantine", "21_QA"}
     SECTION_NO_PRIMER = {"00_System"} | EVENT_DRIVEN
 
     def test_cada_seccion_tiene_primer(self, vault_vacio):

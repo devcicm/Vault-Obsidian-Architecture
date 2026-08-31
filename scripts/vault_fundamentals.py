@@ -406,7 +406,7 @@ def export_doc() -> Dict[str, Any]:
 #: Es la vista de una pantalla que hace verificable todo el marco. Cada fila
 #: apunta a un número que una tool ya produce hoy — no hay filas aspiracionales.
 TRACEABILITY_MATRIX: List[Dict[str, str]] = [
-    {"concept": "Confidencialidad (CIA-C)", "metric": "hallazgos de secretos expuestos", "threshold": "0", "tool": "vault_security_scan", "artifact": "02_Observability/security/", "enforcement": "guard+audit"},
+    {"concept": "Confidencialidad (CIA-C)", "metric": "hallazgos de secretos expuestos", "threshold": "0", "tool": "vault_security_scan", "artifact": "02_Observability/vulnerabilities/", "enforcement": "guard+audit"},
     {"concept": "Integridad (CIA-I / F1)", "metric": "dq.integrity", "threshold": "0.0–1.0, ≥0.7", "tool": "vault_quality_check", "artifact": "00_System/quality-index.json", "enforcement": "audit"},
     {"concept": "Disponibilidad (CIA-A)", "metric": "backups con manifiesto Merkle verificable", "threshold": "≥1 reciente", "tool": "vault_backup", "artifact": "vault-backups/", "enforcement": "guard (AP-36)"},
     {"concept": "Consistencia (F2)", "metric": "wiki-links rotos", "threshold": "0", "tool": "vault_audit", "artifact": "00_System/graph.json", "enforcement": "guard+audit"},

@@ -248,6 +248,7 @@ CONTEXTS: dict[str, dict] = {
             "vault_change_log", "vault_voice", "vault_fix_brackets",
             "vault_frontmatter_heal", "vault_delete", "vault_undo",
             "vault_timeline", "vault_project_overview", "vault_project_status",
+            "vault_qa_save", "vault_quality_dashboard",
         ],
     },
     "grafo": {
@@ -347,6 +348,7 @@ CONTEXTS: dict[str, dict] = {
             "vault_audit", "vault_fundamentals",
             "vault_quality_check", "vault_validate", "vault_security_scan",
             "vault_secret_scan", "vault_drift_detect", "vault_mermaid_check",
+            "vault_security_rules",
         ],
     },
     "indices": {
