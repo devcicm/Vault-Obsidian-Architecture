@@ -369,7 +369,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 5 | — *sin objetivo* | — *1 muestra* |
 | `scripts/norms-distincion-baseline.json` | AP-60 — normas que no declaran de qué se distinguen | 0 | — *sin objetivo* | 57 → 0 (encoge, Δ-57) |
 | `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 | — *sin objetivo* | 47 → 0 (encoge, Δ-47) |
-| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1334 | — *sin objetivo* | 1267 → 1278 → 1278 → 1278 → 1318 → 1318 (crece, Δ+280) |
+| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1334 | — *sin objetivo* | 1278 → 1278 → 1278 → 1318 → 1318 → 1334 (crece, Δ+283) |
 | `scripts/excepcion-declarada-baseline.json` | AP-61 — la excepción declarada no es la que escapa | 0 | ≤ 0 para 2027-06-30 · cada 180 d · gobernanza → **cumple** | 0 → 0 (plana, Δ+0) |
 | `scripts/recursos-baseline.json` | AP-62 — el consumidor cruza para leer un recurso y paga el fan-out | 2 | — *sin objetivo* | — *1 muestra* |
 
