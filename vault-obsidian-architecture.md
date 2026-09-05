@@ -274,7 +274,7 @@ El vault no maneja petabytes, pero sí las mismas tensiones a su escala. Cada V 
 |---|---|---|---|---|
 | **V1** | **Volumen** | cuánto conocimiento acumula sin degradar la navegación | total de notas y tamaño del grafo · `graph.json` | AP-23 (techo de complejidad por nota) + índices por sección |
 | **V2** | **Velocidad** | a qué ritmo cambia el conocimiento entre sesiones | cambios por sesión · `.change-log.json`, session-delta | SP-03 (snapshot antes de operación masiva) + `vault_impact` |
-| **V3** | **Variedad** | cuántas naturalezas de conocimiento conviven bajo un esquema | 18 secciones canónicas × vocabulario `type` · `vault_registry.SECTIONS` | CN-02 (destinos restringidos) + F4 (exactitud) |
+| **V3** | **Variedad** | cuántas naturalezas de conocimiento conviven bajo un esquema | 23 secciones canónicas × vocabulario `type` · `vault_registry.SECTIONS` | CN-02 (destinos restringidos) + F4 (exactitud) |
 | **V4** | **Veracidad** | cuánto se puede confiar en lo que el vault afirma — **la V que más importa a un agente LLM** | `overall_dq_score` 0.0–1.0, umbral 0.7 · `quality-index.json` | AP-01 (alucinación), AP-04 (aspiracional), AP-11 (skeleton) + content gate |
 | **V5** | **Valor** | cuánto del conocimiento se convierte en decisión útil | health score 0–100 · `vault_audit.nextActions` | el audit emite la lista ejecutable de comandos para recuperar 100/100 |
 | **V6** | **Variabilidad** | cuánto deriva el significado de la nota respecto al código real | drift doc↔código · tags `@vault:` | AP-08 (versiones obsoletas) + trazabilidad bidireccional |
@@ -666,6 +666,13 @@ vault-{nombre}/          ← raíz del vault (SIEMPRE con prefijo vault-)
 │   ├── suspicious/                  — disparó el pre-vuelo anti-poisoning (POISON-01..05), sin revisar
 │   └── duplicates/                  — candidatas a duplicado pendientes de decidir la canónica (PAT-1)
 │                                      (nota: la nota se MUEVE, no se copia · el origen viaja dentro de la nota)
+│
+├── 21_QA/                          ← ★ proceso QA (vault_qa_save, vault_test_runner — v40.35)
+│   ├── test-plans/                 — planes de test ISO 29119
+│   ├── metrics/                   — métricas de calidad ISO 25010
+│   ├── reports/                   — reportes de ejecución de suite
+│   ├── strategy/                 — estrategia QA ISO 9001
+│   └── coverage-reports/          — resultados de coverage
 │
 └── 99_Index/
     ├── search-index.json        — índice full-text (score ponderado: título×4, palabras, preview)

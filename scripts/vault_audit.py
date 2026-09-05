@@ -1014,7 +1014,7 @@ def _detect_cross_folder_duplicates(notes: List[Path]) -> List[Dict[str, Any]]:
 
 #: Secciones que solo existen cuando ocurre algo. Estar vacías es su estado
 #: correcto mientras no haya pasado nada — no es cobertura pendiente.
-_SECCIONES_POR_EVENTO = frozenset({"18_Bugs", "19_Audits", "20_Quarantine"})
+_SECCIONES_POR_EVENTO = frozenset({"18_Bugs", "19_Audits", "20_Quarantine", "21_QA"})
 
 
 def _detect_empty_indexes(
