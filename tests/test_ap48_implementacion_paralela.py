@@ -101,7 +101,8 @@ def test_el_guard_caza_una_reincidencia(tmp_path, monkeypatch):
 # ── El comportamiento, por el camino del agente ───────────────────────────────
 
 @pytest.fixture(scope="module")
-def sesion():
+def runtime_mcp(tmp_path_factory):
+    """Runtime reproducible: bootstrap explícito más una nota semilla."""
     import importlib.util
 
     spec = importlib.util.spec_from_file_location(
@@ -109,7 +110,20 @@ def sesion():
     )
     mr = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mr)
-    s = mr.SesionMCP(REPO_ROOT / "vault-sandbox")
+    vault = mr._init_vault(tmp_path_factory.mktemp("ap48-mcp") / "vault")
+    semilla = vault / "07_Knowledge" / "mcp-fixture.md"
+    semilla.write_text(
+        "---\ntitle: MCP Fixture\ntype: knowledge\nstatus: active\n"
+        "tags: [vault, fixture]\n---\n# MCP Fixture\n\nvault search seed\n",
+        encoding="utf-8",
+    )
+    return mr, vault
+
+
+@pytest.fixture(scope="module")
+def sesion(runtime_mcp):
+    mr, vault = runtime_mcp
+    s = mr.SesionMCP(vault)
     yield s
     s.cerrar()
 
@@ -118,22 +132,14 @@ def _envelope(sesion, tool, args):
     return json.loads(sesion.llamar(tool, args)["result"]["content"][0]["text"])
 
 
-def test_vault_graph_por_mcp_escribe_el_grafo():
+def test_vault_graph_por_mcp_escribe_el_grafo(runtime_mcp):
     """El defecto que motivó la norma, comprobado por efecto y no por envelope.
 
     El backend nativo devolvía `ok: true`, `totalNodes` y `totalEdges` sin tocar
     el disco. Un agente lo leía como «grafo regenerado» y seguía trabajando
     sobre un índice viejo.
     """
-    import importlib.util
-
-    spec = importlib.util.spec_from_file_location(
-        "mr", Path(__file__).resolve().parent / "test_mcp_runner.py"
-    )
-    mr = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mr)
-
-    vault = REPO_ROOT / "vault-sandbox"
+    mr, vault = runtime_mcp
     grafo = vault / "99_Index" / "graph.json"
     antes = grafo.stat().st_mtime_ns if grafo.exists() else None
 
