@@ -27,6 +27,7 @@ import shutil
 import subprocess
 import sys
 import threading
+from collections import deque
 from pathlib import Path
 
 import pytest
@@ -42,6 +43,9 @@ pytestmark = pytest.mark.skipif(
 
 class SesionMCP:
     """Cliente JSON-RPC mínimo sobre stdio, line-delimited."""
+
+    STDERR_CHUNK = 4096
+    STDERR_CHUNKS = 64
 
     def __init__(self, vault_root: Path, env_extra=None):
         env = {**os.environ, "VAULT_ROOT": str(vault_root), **(env_extra or {})}
@@ -60,6 +64,11 @@ class SesionMCP:
             env=env,
             cwd=str(REPO_ROOT),
         )
+        self._stderr_chunks = deque(maxlen=self.STDERR_CHUNKS)
+        self._stderr_thread = threading.Thread(
+            target=self._drenar_stderr, name="mcp-stderr-drain", daemon=True
+        )
+        self._stderr_thread.start()
         self._id = 0
         self._pedir("initialize", {
             "protocolVersion": "2024-11-05",
@@ -67,6 +76,23 @@ class SesionMCP:
             "clientInfo": {"name": "pytest", "version": "1"},
         })
         self._enviar({"jsonrpc": "2.0", "method": "notifications/initialized"})
+
+    def _drenar_stderr(self):
+        """Consume mientras el hijo vive y conserva solo un tail acotado."""
+        while True:
+            chunk = self.proc.stderr.read(self.STDERR_CHUNK)
+            if not chunk:
+                return
+            self._stderr_chunks.append(chunk)
+
+    @property
+    def stderr_tail(self) -> str:
+        return "".join(self._stderr_chunks)[-(self.STDERR_CHUNK * self.STDERR_CHUNKS):]
+
+    def _con_stderr(self, mensaje: str) -> str:
+        self._stderr_thread.join(timeout=0.2)
+        tail = self.stderr_tail.strip()
+        return f"{mensaje}; stderr tail: {tail}" if tail else mensaje
 
     def _enviar(self, mensaje):
         self.proc.stdin.write(json.dumps(mensaje) + "\n")
@@ -86,8 +112,12 @@ class SesionMCP:
         try:
             linea = cola.get(timeout=timeout)
         except queue.Empty:
-            raise AssertionError(f"el servidor no respondió a {method} en {timeout}s")
-        assert linea, f"el servidor cerró stdout sin responder a {method}"
+            raise AssertionError(self._con_stderr(
+                f"el servidor no respondió a {method} en {timeout}s"
+            ))
+        assert linea, self._con_stderr(
+            f"el servidor cerró stdout sin responder a {method}"
+        )
         return json.loads(linea)
 
     def llamar(self, tool, argumentos):
@@ -99,6 +129,10 @@ class SesionMCP:
             self.proc.wait(timeout=30)
         except Exception:
             self.proc.kill()
+            self.proc.wait(timeout=30)
+        finally:
+            self._stderr_thread.join(timeout=5)
+            assert not self._stderr_thread.is_alive(), "el drenaje de stderr no terminó"
 
 
 def _texto_de(respuesta) -> str:
@@ -180,12 +214,57 @@ def test_el_timeout_sale_de_vault_tool_timeout():
     assert "timeout: toolTimeoutMs()" in fuente, "el spawn volvió a un timeout literal"
 
 
-def test_el_runner_declara_la_codificacion_del_hijo():
+def test_el_runner_declara_la_codificacion_del_hijo(tmp_path, monkeypatch):
     fuente = SERVER.read_text(encoding="utf-8")
     assert 'env.PYTHONIOENCODING = "utf-8"' in fuente
     assert "setEncoding(\"utf8\")" in fuente, (
         "sin fijar la codificación del stream, un chunk parte un carácter multibyte"
     )
+
+    def servidor(modo):
+        ruta = tmp_path / f"stderr-{modo}.mjs"
+        ruta.write_text(
+            "import readline from 'node:readline';\n"
+            f"const mode = {json.dumps(modo)};\n"
+            "const rl = readline.createInterface({input: process.stdin});\n"
+            "const send = x => process.stdout.write(JSON.stringify(x) + '\\n');\n"
+            "rl.on('line', line => { const m = JSON.parse(line);\n"
+            "  if (m.method === 'initialize') return send({jsonrpc:'2.0',id:m.id,result:{}});\n"
+            "  if (m.method === 'tools/call') {\n"
+            "    if (mode === 'large') { process.stderr.write('x'.repeat(2*1024*1024)); process.stderr.write('TAIL-LARGE\\n'); }\n"
+            "    if (mode === 'normal') process.stderr.write('normal diagnostic\\n');\n"
+            "    if (mode === 'fail') { process.stderr.write('FAIL-MARKER\\n'); return process.exit(7); }\n"
+            "    return send({jsonrpc:'2.0',id:m.id,result:{content:[{type:'text',text:'ok'}]}});\n"
+            "  }\n"
+            "});\n",
+            encoding="utf-8",
+        )
+        return ruta
+
+    original = globals()["SERVER"]
+    try:
+        for modo, esperado in (("empty", ""), ("normal", "normal diagnostic"),
+                               ("large", "TAIL-LARGE")):
+            monkeypatch.setitem(globals(), "SERVER", servidor(modo))
+            s = SesionMCP(tmp_path)
+            try:
+                assert s.llamar("probe", {})["result"]["content"][0]["text"] == "ok"
+            finally:
+                s.cerrar()
+            assert esperado in s.stderr_tail
+            assert len(s.stderr_tail) <= s.STDERR_CHUNK * s.STDERR_CHUNKS
+            assert not s._stderr_thread.is_alive()
+
+        monkeypatch.setitem(globals(), "SERVER", servidor("fail"))
+        s = SesionMCP(tmp_path)
+        try:
+            with pytest.raises(AssertionError, match="FAIL-MARKER"):
+                s.llamar("probe", {})
+        finally:
+            s.cerrar()
+        assert not s._stderr_thread.is_alive()
+    finally:
+        monkeypatch.setitem(globals(), "SERVER", original)
 
 
 def test_la_salida_no_json_no_finge_trabajo():
