@@ -1,12 +1,77 @@
 # Vault Obsidian Architecture
 
-**Estándar de diseño para dotar a agentes LLM de memoria documental persistente.**
+Vault Obsidian Architecture es un estándar abierto con un toolkit para dar a agentes LLM memoria documental persistente, auditable y gobernada sobre Markdown plano.
 
 [![Version](https://img.shields.io/badge/version-v40.34-blue)](./vault-obsidian-architecture.md)
 [![Tools](https://img.shields.io/badge/tools-116_active-green)](./scripts/)
 [![Scripts](https://img.shields.io/badge/scripts-152_total-lightblue)](./scripts/)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow)](./scripts/)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](./LICENSE)
+
+---
+
+## Qué es
+
+Este repositorio reúne el estándar que define cómo construir la memoria
+documental y las herramientas que lo implementan. El vault de cada proyecto
+es una instancia de esa memoria; aquí, `vault-sandbox/` es el vault de pruebas.
+
+## El problema
+
+Entre sesiones, un agente puede perder el contexto del trabajo anterior:
+errores ya resueltos, estado del proyecto, decisiones técnicas, infraestructura
+y reglas de negocio. Volver a explicarlo cuesta tiempo y dificulta seguir
+el origen de una decisión.
+
+El estándar propone conservar ese conocimiento en documentos que el agente
+pueda consultar y actualizar, con metadatos, relaciones y trazabilidad.
+
+## Para quién sirve
+
+Para desarrolladores e integradores que usan agentes en proyectos con trabajo
+acumulado entre sesiones, y para maintainers que necesitan revisar cómo se
+conserva y evoluciona ese conocimiento.
+
+El agente necesita acceso al vault mediante su entorno de ejecución o
+herramientas. Obsidian es una interfaz humana compatible; no es necesario
+tenerlo instalado para que el agente utilice la memoria.
+
+## Estándar, toolkit y runtime
+
+| Nivel | Qué aporta |
+|---|---|
+| **Estándar** | Define estructura, reglas, contratos y gobernanza de la memoria documental. |
+| **Toolkit** | Implementa captura, consulta, custodia, recuperación y verificaciones del estándar. Incluye `scripts/`, el paquete `vault/` y las interfaces `cli/` y `mcp/`. |
+| **Runtime** | Es el vault concreto de un proyecto: su memoria operativa, notas, relaciones, preferencias, índices y artefactos. |
+
+Esta distinción explica el producto. Las capacidades y naturalezas del servicio
+siguen definidas en [su registro canónico](./scripts/vault_servicio.py).
+
+## Cómo fluye el conocimiento
+
+Evidencia → captura → conocimiento gobernado → persistencia → recuperación
+→ selección contextual → siguiente sesión del agente.
+
+El agente registra hechos, decisiones y aprendizajes. Las herramientas aplican
+las reglas que cubren, mantienen artefactos y permiten recuperar una selección
+como contexto. El agente o su harness —el entorno que ejecuta sus herramientas
+y prepara su contexto— debe incorporar este recorrido a su trabajo.
+
+## Límites y garantías reales
+
+La memoria se conserva en archivos locales, sin base de datos, embeddings ni
+servicio externo obligatorio. Las notas son Markdown con frontmatter YAML y
+wikilinks, legibles por una persona aunque deje de usar el toolkit.
+
+Las herramientas ofrecen validaciones, trazabilidad y mecanismos de recuperación
+según sus contratos. Una puntuación de salud no demuestra por sí sola que todo
+el contenido sea verdadero, completo o relevante. Las ediciones externas al
+toolkit no pasan automáticamente por sus guards, y conservar documentos no
+hace que un agente los consulte u obedezca por sí mismo.
+
+El alcance de las normas está en el [catálogo](./scripts/vault_norms_catalog.py);
+la evidencia de soporte y sus huecos, en la
+[guía de producción](./docs/GUIA-DE-PRODUCCION.md).
 
 ---
 
@@ -46,18 +111,132 @@ Fallos de **seguridad** en privado: contactar directamente, no en el repo públi
 
 ---
 
-## El problema
+## Qué leer después
 
-Los agentes LLM tienen memoria efímera. Cada sesión empieza desde cero aunque el proyecto lleve meses en desarrollo:
+| Si necesitas… | Sigue con… |
+|---|---|
+| Entender el propósito, las promesas y los límites | [Visión de producto](./docs/product/overview.md) |
+| Situar las piezas y sus responsabilidades | [Seis capas conceptuales](./docs/architecture/layers.md) |
+| Poblar memoria desde un proyecto sin vault | [Onboarding](./docs/MODO-AGENTICO-ONBOARDING.md) |
+| Adaptar un vault preexistente | [Sanación](./docs/MODO-AGENTICO-SANACION.md) |
+| Consultar la instalación y el uso documentados | [Quick Start](#quick-start), con su limitación de copia indicada |
+| Elegir y ejecutar herramientas | [Referencia de scripts](./scripts/README.md) y [CLI consolidada](./cli/README.md) |
+| Consultar la norma y la arquitectura vigente | [Manifiesto](./vault-obsidian-architecture.md), [arquitectura](./docs/ARQUITECTURA.md) y [blueprint](./docs/BLUEPRINT.md) |
 
-- Repiten errores ya resueltos
-- No conocen el estado real del proyecto
-- Las decisiones técnicas no tienen trazabilidad
-- La infraestructura y reglas de negocio deben re-explicarse cada vez
+---
 
-**Este estándar resuelve eso** definiendo un vault de conocimiento que el agente lee, actualiza y navega como memoria persistente — sin bases de datos, sin embeddings, sin infraestructura adicional.
+## Quick Start
 
-> El agente no necesita Obsidian instalado. Necesita el patrón y las tools.
+> Limitación conocida: la receta de copia de esta sección solo incluye `scripts/`,
+> aunque el código también importa el paquete `vault/`. Este recorrido queda
+> pendiente de revisión y validación como instalación completa.
+
+### 1. Clonar e instalar
+
+```bash
+git clone https://github.com/devcicm/Vault-Obsidian-Architecture.git
+```
+
+Los scripts requieren Python 3.9+ y PyYAML. El servidor MCP requiere Node 18+. Sin más dependencias.
+
+### 2. Inicializar un vault nuevo
+
+La estructura correcta para un consumer repo es:
+
+```
+mi-repo/
+├── scripts/          ← copiar aquí (gitignoreados)
+├── vault-mi-proyecto/ ← vault vive aquí
+└── ...resto del proyecto
+```
+
+`vault_io.py` detecta automáticamente el directorio `vault-*/` al ejecutarse. No requiere configuración de path.
+
+```bash
+# Crear el directorio del vault dentro del repo
+mkdir vault-mi-proyecto
+
+# Copiar scripts al repo (fuera del vault, gitignoreados)
+cp -r Vault-Obsidian-Architecture/scripts ./scripts
+
+# v34: un solo comando hace todo el bootstrap (carpetas + version + indexes + audit)
+# Crea las 23 carpetas estándar, aplica migraciones hasta v39, auto-indexa, agrega
+# scaffold primers en secciones vacías, y reporta el health score inicial.
+python scripts/vault_init.py
+
+# Equivalente manual (legacy, v30) — si necesitas paso a paso:
+# python scripts/vault_standard_upgrade.py --init v32
+# python scripts/vault_standard_upgrade.py --to v32
+# for folder in 00_System 01_Projects ... 16_AI_Governance 99_Index; do
+#   python scripts/vault_section_index.py --folder "$folder"
+# done
+
+# Health check baseline (debe dar 100/100 con vault recién inicializado)
+python scripts/vault_audit.py
+```
+
+### 3. `.gitignore` para el consumer repo
+
+```gitignore
+.claude/
+vault-*/scripts/
+vault-backups/
+```
+
+### 4. Documentar el proyecto
+
+```bash
+# Identidad del vault
+python scripts/vault_write.py --folder "00_System" \
+  --title "Vault Identity" \
+  --meta '{"cia_integrity":"high","agent":"claude","type":"identity"}' \
+  --content "Vault del proyecto X. Agente: claude."
+
+# Overview del proyecto
+python scripts/vault_project_overview.py \
+  --project "mi-proyecto" \
+  --description "Descripción del proyecto" \
+  --runtime "Node.js 20"
+
+# Documentar un módulo (IEEE 1016) e inyectar @vault: en el archivo fuente
+python scripts/vault_code_module.py \
+  --project "mi-proyecto" \
+  --file_path "src/services/AuthService.ts" \
+  --description "Servicio de autenticación JWT" \
+  --language typescript \
+  --iso_type service \
+  --tag-source
+
+# Auditar trazabilidad bidireccional código ↔ vault
+python scripts/vault_code_sync.py --project "mi-proyecto" --report
+python scripts/vault_code_sync.py --project "mi-proyecto" --fix   # inyecta @vault: donde falte
+
+# Auditar el vault
+python scripts/vault_audit.py
+```
+
+---
+
+## CLI consolidada — `cli/`
+
+Las 116 tools bajo un único punto de entrada, con búsqueda, planificación de
+concurrencia y guardas de seguridad:
+
+```bash
+python -m cli find "backup grafo"        # las tools como fragmentos buscables
+python -m cli doctor --pretty            # raíz, contrato, locks de artefactos
+python -m cli batch --file lote.json --parallel 4 --verify-integrity
+python -m cli scan --races --summary     # condiciones de carrera en los scripts
+```
+
+Ejecuta varias tools a la vez por olas sin pisarse (modelo EXCLUSIVE / GUARDED /
+GLOBAL, con la concurrencia sobre artefactos compartidos concedida **por
+verificación AST**, no por declaración), escanea el contenido por inyección de
+directivas antes de escribir, y contrasta lo que cambió en el vault contra lo
+que el plan declaraba.
+
+Guía: [`cli/README.md`](cli/README.md) · Referencia de comandos:
+[`cli/COMMANDS.md`](cli/COMMANDS.md).
 
 ---
 
@@ -207,117 +386,6 @@ python scripts/vault_norms.py --check-framework    # guard anti-drift registro �
 - **`STATUS_VOCAB` unificado** (12 valores) como fuente única del vocabulario de `status`.
 - **Vault-root lazy**: `set_vault_root()/get_vault_root()` — traces/locks/índices siguen
   al `--root` objetivo.
-
----
-
-## Quick Start
-
-### 1. Clonar e instalar
-
-```bash
-git clone https://github.com/devcicm/Vault-Obsidian-Architecture.git
-```
-
-Los scripts requieren Python 3.9+ y PyYAML. El servidor MCP requiere Node 18+. Sin más dependencias.
-
-### 2. Inicializar un vault nuevo
-
-La estructura correcta para un consumer repo es:
-
-```
-mi-repo/
-├── scripts/          ← copiar aquí (gitignoreados)
-├── vault-mi-proyecto/ ← vault vive aquí
-└── ...resto del proyecto
-```
-
-`vault_io.py` detecta automáticamente el directorio `vault-*/` al ejecutarse. No requiere configuración de path.
-
-```bash
-# Crear el directorio del vault dentro del repo
-mkdir vault-mi-proyecto
-
-# Copiar scripts al repo (fuera del vault, gitignoreados)
-cp -r Vault-Obsidian-Architecture/scripts ./scripts
-
-# v34: un solo comando hace todo el bootstrap (carpetas + version + indexes + audit)
-# Crea las 23 carpetas estándar, aplica migraciones hasta v39, auto-indexa, agrega
-# scaffold primers en secciones vacías, y reporta el health score inicial.
-python scripts/vault_init.py
-
-# Equivalente manual (legacy, v30) — si necesitas paso a paso:
-# python scripts/vault_standard_upgrade.py --init v32
-# python scripts/vault_standard_upgrade.py --to v32
-# for folder in 00_System 01_Projects ... 16_AI_Governance 99_Index; do
-#   python scripts/vault_section_index.py --folder "$folder"
-# done
-
-# Health check baseline (debe dar 100/100 con vault recién inicializado)
-python scripts/vault_audit.py
-```
-
-### 3. `.gitignore` para el consumer repo
-
-```gitignore
-.claude/
-vault-*/scripts/
-vault-backups/
-```
-
-### 4. Documentar el proyecto
-
-```bash
-# Identidad del vault
-python scripts/vault_write.py --folder "00_System" \
-  --title "Vault Identity" \
-  --meta '{"cia_integrity":"high","agent":"claude","type":"identity"}' \
-  --content "Vault del proyecto X. Agente: claude."
-
-# Overview del proyecto
-python scripts/vault_project_overview.py \
-  --project "mi-proyecto" \
-  --description "Descripción del proyecto" \
-  --runtime "Node.js 20"
-
-# Documentar un módulo (IEEE 1016) e inyectar @vault: en el archivo fuente
-python scripts/vault_code_module.py \
-  --project "mi-proyecto" \
-  --file_path "src/services/AuthService.ts" \
-  --description "Servicio de autenticación JWT" \
-  --language typescript \
-  --iso_type service \
-  --tag-source
-
-# Auditar trazabilidad bidireccional código ↔ vault
-python scripts/vault_code_sync.py --project "mi-proyecto" --report
-python scripts/vault_code_sync.py --project "mi-proyecto" --fix   # inyecta @vault: donde falte
-
-# Auditar el vault
-python scripts/vault_audit.py
-```
-
----
-
-## CLI consolidada — `cli/`
-
-Las 116 tools bajo un único punto de entrada, con búsqueda, planificación de
-concurrencia y guardas de seguridad:
-
-```bash
-python -m cli find "backup grafo"        # las tools como fragmentos buscables
-python -m cli doctor --pretty            # raíz, contrato, locks de artefactos
-python -m cli batch --file lote.json --parallel 4 --verify-integrity
-python -m cli scan --races --summary     # condiciones de carrera en los scripts
-```
-
-Ejecuta varias tools a la vez por olas sin pisarse (modelo EXCLUSIVE / GUARDED /
-GLOBAL, con la concurrencia sobre artefactos compartidos concedida **por
-verificación AST**, no por declaración), escanea el contenido por inyección de
-directivas antes de escribir, y contrasta lo que cambió en el vault contra lo
-que el plan declaraba.
-
-Guía: [`cli/README.md`](cli/README.md) · Referencia de comandos:
-[`cli/COMMANDS.md`](cli/COMMANDS.md).
 
 ---
 
@@ -495,7 +563,8 @@ scripts/                    ← 152 archivos Python (116 tools del catálogo + 8
 └── README.md               — referencia completa de parámetros y ejemplos
 ```
 
-**Requisitos:** Python 3.9+ · sin dependencias externas obligatorias  
+**Requisitos:** Python 3.9+ y PyYAML (dependencia obligatoria declarada en [pyproject.toml](./pyproject.toml))
+
 **Timeout automático:** todas las tools ≤ 60s (configurable via `VAULT_TOOL_TIMEOUT`)  
 **JSON siempre:** cualquier error devuelve `{"ok": false, "error_code": "...", "recovery": {...}}`
 
