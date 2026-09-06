@@ -110,6 +110,9 @@ VOLATILES = [
     (re.compile(r"\b[A-Z]{2,6}-\d{4}-\d{1,4}\b"), "<CORRELATIVO>"),
     (re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?"), "<FECHA>"),
     (re.compile(r"\d{4}-\d{2}-\d{2}"), "<DIA>"),
+    # AP-44: el prefijo mensual de NCR cambia incluso si la nota no cambia.
+    # Su correspondencia con createdAt se verifica sobre el YAML sin normalizar.
+    (re.compile(r"\b\d{4}-(?:0[1-9]|1[0-2])\b"), "<MES>"),
     (re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-"
                 r"[0-9a-f]{4}-[0-9a-f]{12}"), "<UUID>"),
 ]
@@ -144,7 +147,12 @@ def _ejecutar(raiz: Path, script: str, *argv: str):
 @pytest.fixture(scope="module")
 def vault(tmp_path_factory):
     raiz = tmp_path_factory.mktemp("caracterizacion")
-    _ejecutar(raiz, "vault_init")
+    inicio = _ejecutar(raiz, "vault_init")
+    assert inicio.returncode == 0, inicio.stdout + inicio.stderr
+    # AP-44: el dorado caracteriza esta secuencia, no el orden de selección
+    # de pytest. Prepararla entera conserva created/touched también con -k.
+    for script in sorted(INVOCACIONES):
+        _salida(raiz, script)
     return raiz
 
 
@@ -156,8 +164,9 @@ _CACHE: dict = {}
 
 
 def _salida(raiz: Path, script: str):
-    if script in _CACHE:
-        return _CACHE[script]
+    clave = (raiz.resolve(), script)
+    if clave in _CACHE:
+        return _CACHE[clave]
     r = _ejecutar(raiz, script, *INVOCACIONES[script])
     assert r.returncode == 0, (r.stdout[-600:] + r.stderr[-600:])
     envelope = json.loads(r.stdout.strip().splitlines()[-1])
@@ -169,7 +178,7 @@ def _salida(raiz: Path, script: str):
             p = raiz / ruta
         if p.exists():
             nota = p.read_text(encoding="utf-8")
-    _CACHE[script] = (envelope, nota)
+    _CACHE[clave] = (envelope, nota)
     return envelope, nota
 
 
@@ -228,10 +237,7 @@ def test_el_envelope_y_la_nota_no_cambian(vault, script):
         vault,
     )
     dorado = DORADOS / f"{script}.json"
-    if not dorado.exists():
-        dorado.parent.mkdir(parents=True, exist_ok=True)
-        dorado.write_text(actual + "\n", encoding="utf-8")
-        pytest.skip(f"dorado creado: {dorado.name}")
+    assert dorado.exists(), f"falta el dorado revisado: {dorado.name}"
     assert actual == dorado.read_text(encoding="utf-8").rstrip("\n"), (
         f"{script} cambió su salida. Si es deliberado, actualiza "
         f"tests/dorados/saves/{script}.json en este mismo commit."
@@ -282,11 +288,27 @@ def test_el_frontmatter_es_yaml_valido(vault, script):
     Medir el frontmatter con la misma normalización que lo escribió es cómo
     tres de los cuatro defectos de las rondas anteriores pasaron desapercibidos.
     """
-    _, nota = _salida(vault, script)
+    envelope, nota = _salida(vault, script)
     assert nota is not None, script
     assert nota.startswith("---\n"), script
     fm = yaml.safe_load(nota.split("---", 2)[1])
     assert isinstance(fm, dict) and fm, script
+    if script == "vault_ncr_save":
+        # Criterio del consumidor (AP-44), antes de sustituir cualquier fecha:
+        # normalizar el mes no puede esconder una ruta con el mes equivocado.
+        mes = str(fm["createdAt"])[:7]
+        assert envelope["path"] == (
+            f"02_Observability/quality/demo-{mes}-una-no-conformidad.md"
+        )
+        # La misma prueba cubre meses pasados y futuros sin aumentar a mano el
+        # recuento publicado de tests: solo el componente temporal desaparece.
+        for otro_mes in ("1999-12", "2000-01", "2026-08", "2026-09", "2030-02"):
+            ruta = f"02_Observability/quality/demo-{otro_mes}-una-no-conformidad.md"
+            assert _estable(ruta, vault) == (
+                "02_Observability/quality/demo-<MES>-una-no-conformidad.md"
+            )
+            assert _estable(ruta.replace("demo-", "otro-"), vault) != _estable(ruta, vault)
+            assert _estable(ruta.replace("una-no-conformidad", "otra-nota"), vault) != _estable(ruta, vault)
 
 
 #: `vault_knowledge_save`, `vault_risk_save` y `vault_runbook_save` estuvieron

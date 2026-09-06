@@ -8,6 +8,14 @@ __pycache__/
 vault-sandbox/
 00_System/
 
+# Contrato canónico del estándar (AP-36): vive en el sandbox, pero se publica.
+# Se conserva la exclusión de todos los demás artefactos y notas de runtime.
+!vault-sandbox/
+vault-sandbox/*
+!vault-sandbox/00_System/
+vault-sandbox/00_System/*
+!vault-sandbox/00_System/tool-spec.json
+
 01_Projects/
 02_Observability/
 03_Decisions/

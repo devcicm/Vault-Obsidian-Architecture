@@ -6,7 +6,7 @@
     "ncr_id": "<CORRELATIVO>",
     "ncr_type": "process",
     "ok": true,
-    "path": "02_Observability/quality/demo-2026-08-una-no-conformidad.md",
+    "path": "02_Observability/quality/demo-<MES>-una-no-conformidad.md",
     "project": "demo",
     "severity": "major",
     "status": "open",
