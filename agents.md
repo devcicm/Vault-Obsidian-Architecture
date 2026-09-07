@@ -12,7 +12,7 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~6.000 líneas). Fuente normativa. |
 | `scripts/*.py` | ~152 scripts, 116 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (3093 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (3094 tests). Toda norma con guard debe tener test. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
 | `vault-sandbox/` | **Único** vault de pruebas del repo. Todo runtime va aquí. |
@@ -128,7 +128,7 @@ Si necesitas un dato de estos, léelo del registro — no lo redefinas ni lo cop
 
 ```bash
 # Pre-commit hook — activa el cierre automático de drift (recomendado)
-# Instalar (una vez): cp .git/hooks/pre-commit.sample .git/hooks/pre-commit
+# Instalar (una vez): git config core.hooksPath .githooks
 # Automáticamente ejecuta vault_fix_all antes de cada commit.
 
 # Suite completa — debe quedar en verde antes de cerrar cualquier cambio
@@ -161,7 +161,7 @@ este documento — escribir aquí el número lo convierte en una cifra a mano, q
 El pre-commit hook ejecuta `vault_fix_all` automáticamente; si está instalado, el ciclo de
 drift se cierra en cada commit sin intervención manual.
 
-- [ ] Pre-commit hook instalado: `cp .git/hooks/pre-commit.sample .git/hooks/pre-commit`
+- [ ] Pre-commit hook instalado: `git config core.hooksPath .githooks`
 - [ ] `python scripts/vault_gate.py --strict` → todas verdes.
 - [ ] `python -m pytest tests/ --tb=short` en verde.
 - [ ] `git diff --stat vault-obsidian-architecture.md` sin borrados netos de contenido.

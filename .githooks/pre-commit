@@ -1,0 +1,39 @@
+#!/bin/sh
+# Cierra el drift de artefactos derivados antes de cada commit.
+
+set -e
+
+repo_root=$(git rev-parse --show-toplevel 2>/dev/null) || {
+    echo "[pre-commit] No se pudo resolver un checkout Git activo." >&2
+    exit 1
+}
+
+cd "$repo_root" || {
+    echo "[pre-commit] No se pudo entrar al checkout: $repo_root" >&2
+    exit 1
+}
+
+export PYTHONIOENCODING="utf-8"
+
+echo "[pre-commit] Regenerando artefactos derivados con vault_fix_all..."
+python scripts/vault_fix_all.py --dry-run 2>/dev/null
+python scripts/vault_fix_all.py 2>/dev/null
+
+ARTIFACTS="mcp/nodejs/tools-catalog.json \
+mcp/nodejs/env-table.json \
+scripts/field-compat-baseline.json \
+scripts/vault_errors_catalog.py \
+docs/BLUEPRINT.md \
+docs/ARQUITECTURA.md \
+scripts/README.md"
+
+git add $ARTIFACTS 2>/dev/null || true
+
+NEW_CHANGES=$(git diff --name-only 2>/dev/null || echo "")
+if [ -n "$NEW_CHANGES" ]; then
+    echo "[pre-commit] vault_fix_all modificó: $NEW_CHANGES"
+    echo "[pre-commit] Añadiendo cambios al commit..."
+    git add $NEW_CHANGES
+fi
+
+echo "[pre-commit] Artefactos derivados al día."
