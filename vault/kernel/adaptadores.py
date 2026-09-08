@@ -12,7 +12,6 @@ módulo: es la propia AP-49 que este paquete existe para eliminar.
 
 from __future__ import annotations
 
-import sys
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -22,14 +21,12 @@ from .contexto import VaultContext
 
 _SCRIPTS = Path(__file__).resolve().parent.parent.parent / "scripts"
 
+from vault_toolkit.loading import import_toolkit_module
+
 
 def _kernel():
     """`vault_io`, importado tarde y una sola vez por proceso."""
-    if str(_SCRIPTS) not in sys.path:
-        sys.path.insert(0, str(_SCRIPTS))
-    import vault_io
-
-    return vault_io
+    return import_toolkit_module("vault_io", legacy_scripts=_SCRIPTS)
 
 
 class EscritorAtomico:
@@ -77,9 +74,9 @@ class SeccionesDelRegistro:
         self._raiz = raiz
 
     def _registro(self):
-        if str(_SCRIPTS) not in sys.path:
-            sys.path.insert(0, str(_SCRIPTS))
-        import vault_registry
+        vault_registry = import_toolkit_module(
+            "vault_registry", legacy_scripts=_SCRIPTS
+        )
 
         return vault_registry
 
@@ -100,9 +97,7 @@ class SeccionesDelRegistro:
 
 class NormasDelCatalogo:
     def _catalogo(self):
-        if str(_SCRIPTS) not in sys.path:
-            sys.path.insert(0, str(_SCRIPTS))
-        import vault_norms
+        vault_norms = import_toolkit_module("vault_norms", legacy_scripts=_SCRIPTS)
 
         return vault_norms.NORM_CATALOG
 
@@ -124,9 +119,7 @@ class RelojUTC:
         Copiar aquí el `strftime` sería tener dos fuentes de un mismo formato
         (AP-05) y descubrir la divergencia el día que una de las dos cambie.
         """
-        if str(_SCRIPTS) not in sys.path:
-            sys.path.insert(0, str(_SCRIPTS))
-        import vault_lib
+        vault_lib = import_toolkit_module("vault_lib", legacy_scripts=_SCRIPTS)
 
         return vault_lib.utcnow()
 

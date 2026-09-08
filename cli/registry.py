@@ -14,17 +14,18 @@ existe en la CLI (AP-01/AP-04 — nada de documentación alucinada).
 from __future__ import annotations
 
 import json
-import sys
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional
+
+if TYPE_CHECKING:  # frontera arquitectónica visible; la carga runtime es estable
+    import vault_mcp_catalog
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS_DIR = REPO_ROOT / "scripts"
 
-if str(SCRIPTS_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS_DIR))
+from vault_toolkit.loading import import_toolkit_module
 
 
 # Verbos que identifican un fragmento de solo lectura cuando el catálogo no
@@ -68,7 +69,9 @@ GUARDED_ARTIFACTS = frozenset({
 # solo se usa si este repo no está importable desde el consumidor, y
 # `vault_mcp_catalog --check` falla si alguna de las tres copias diverge.
 try:  # pragma: no cover - depende de dónde se instale la CLI
-    from vault_mcp_catalog import NATIVE_JS_TOOLS  # type: ignore
+    NATIVE_JS_TOOLS = import_toolkit_module(
+        "vault_mcp_catalog", legacy_scripts=SCRIPTS_DIR
+    ).NATIVE_JS_TOOLS
 except ImportError:  # respaldo verificado por el guard, no una segunda verdad
     NATIVE_JS_TOOLS = frozenset({"vault_backup_base64", "vault_restore_base64"})
 
@@ -204,7 +207,9 @@ def _leer_spec() -> tuple[Dict[str, Any], Dict[str, Any]]:
     `ausente` sigue siendo legítimo: el catálogo basta. `ilegible` no.
     """
     try:
-        from vault_io import resolve_tool_spec
+        resolve_tool_spec = import_toolkit_module(
+            "vault_io", legacy_scripts=SCRIPTS_DIR
+        ).resolve_tool_spec
     except ImportError as e:
         return {}, {"estado": "ilegible", "path": None,
                     "detail": f"vault_io no importable: {e}"}
@@ -259,7 +264,9 @@ _SPEC_STATUS: Dict[str, Any] = {"estado": "sin_leer", "path": None, "detail": No
 @lru_cache(maxsize=1)
 def load_registry() -> Dict[str, Fragment]:
     """Construye el índice de fragmentos. Cacheado — el catálogo es estático."""
-    from vault_mcp_catalog import TOOLS_CATALOG
+    TOOLS_CATALOG = import_toolkit_module(
+        "vault_mcp_catalog", legacy_scripts=SCRIPTS_DIR
+    ).TOOLS_CATALOG
 
     spec, estado = _leer_spec()
     _SPEC_STATUS.clear()

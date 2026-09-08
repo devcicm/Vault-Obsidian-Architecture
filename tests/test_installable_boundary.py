@@ -3,6 +3,7 @@
 from vault.meta_toolkit.distribucion import clasificar_tools
 from vault.meta_toolkit.recursos_distribucion import clasificar_recurso, entra_al_wheel
 from cli.resolver import resolve_operation
+from vault_toolkit.loading import import_toolkit_module
 
 
 def _distribucion():
@@ -86,3 +87,50 @@ def test_resolver_reporta_operacion_ausente(monkeypatch, tmp_path):
     frag = registry.resolve("vault_read")
     monkeypatch.setattr("cli.resolver.importlib.util.find_spec", lambda _: None)
     assert resolve_operation(frag, legacy_scripts=tmp_path).kind == "missing"
+
+
+def test_loader_primario_no_necesita_checkout(monkeypatch, tmp_path):
+    modulo = "operacion_instalada_de_prueba"
+    (tmp_path / f"{modulo}.py").write_text("VALUE = 42\n", encoding="utf-8")
+    monkeypatch.syspath_prepend(tmp_path)
+    sys_modules = __import__("sys").modules
+    sys_modules.pop(modulo, None)
+    cargado = import_toolkit_module(modulo)
+    assert cargado.VALUE == 42
+    assert tmp_path in __import__("pathlib").Path(cargado.__file__).parents
+
+
+def test_fallback_legacy_no_deja_scripts_en_sys_path(tmp_path):
+    import sys
+
+    modulo = "operacion_legacy_de_prueba"
+    (tmp_path / f"{modulo}.py").write_text("VALUE = 7\n", encoding="utf-8")
+    sys.modules.pop(modulo, None)
+    antes = list(sys.path)
+    assert import_toolkit_module(modulo, legacy_scripts=tmp_path).VALUE == 7
+    assert sys.path == antes
+
+
+def test_puntos_distribuibles_no_insertan_scripts_en_sys_path():
+    import ast
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent
+    rutas = [
+        root / "cli/registry.py",
+        root / "cli/runner.py",
+        root / "cli/resolver.py",
+        root / "vault/kernel/adaptadores.py",
+        root / "vault/autoria/frontmatter.py",
+    ]
+    for ruta in rutas:
+        tree = ast.parse(ruta.read_text(encoding="utf-8"))
+        llamadas = [
+            n for n in ast.walk(tree)
+            if isinstance(n, ast.Call)
+            and isinstance(n.func, ast.Attribute)
+            and n.func.attr == "insert"
+            and isinstance(n.func.value, ast.Attribute)
+            and n.func.value.attr == "path"
+        ]
+        assert not llamadas, ruta

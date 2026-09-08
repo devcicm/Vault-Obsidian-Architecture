@@ -40,17 +40,17 @@ un caso raro de `yaml_scalar` que nadie sabría explicar.
 from __future__ import annotations
 
 import datetime as _dt
-import sys
 from pathlib import Path
 from typing import Any, Iterable, List, Tuple
 
 # Los `*_save` viven en `scripts/` y no se mueven de ahí; el paquete se importa
 # desde la raíz del repo, que ellos mismos ponen en el path.
 _SCRIPTS = Path(__file__).resolve().parent.parent.parent / "scripts"
-if str(_SCRIPTS) not in sys.path:  # pragma: no cover - depende del invocador
-    sys.path.insert(0, str(_SCRIPTS))
+from vault_toolkit.loading import import_toolkit_module
 
-from vault_lib import yaml_scalar  # noqa: E402
+yaml_scalar = import_toolkit_module(
+    "vault_lib", legacy_scripts=_SCRIPTS
+).yaml_scalar
 
 
 def _es_instante(valor: Any) -> bool:
