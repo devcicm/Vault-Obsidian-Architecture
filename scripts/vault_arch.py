@@ -464,7 +464,8 @@ CONTEXTS: dict[str, dict] = {
             "vault_mcp", "vault_mcp_catalog", "vault_manifest", "vault_smoke",
             "vault_spec_catalog_check", "vault_spec_generate_catalog",
             "vault_spec_memory", "vault_spec_validate", "vault_test_runner",
-            "vault_doc_counts", "vault_doc_sync", "vault_doc_staleness", "vault_noop_audit",
+            "vault_doc_counts", "vault_doc_sync", "vault_doc_staleness",
+            "vault_distribution_sync", "vault_noop_audit",
             "vault_blame_audit", "vault_error_contract", "vault_foreign_check",
             "vault_gate", "vault_arch", "vault_fix_all",
             # Mide el changelog del manifiesto contra git (AP-53). Es

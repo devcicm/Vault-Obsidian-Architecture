@@ -10,6 +10,16 @@ from types import ModuleType
 from typing import Iterator, Optional
 
 
+def legacy_scripts_for(anchor: str | Path) -> Optional[Path]:
+    """Localiza ``scripts/`` solo para compatibilidad con un source checkout."""
+    path = Path(anchor).resolve()
+    for parent in path.parents:
+        candidate = parent / "scripts"
+        if (candidate / "vault_mcp_catalog.py").is_file() and (parent / ".git").exists():
+            return candidate
+    return None
+
+
 @contextmanager
 def _legacy_path(path: Path) -> Iterator[None]:
     """Expone temporalmente el layout antiguo; nunca queda en ``sys.path``."""

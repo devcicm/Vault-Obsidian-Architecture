@@ -23,7 +23,7 @@ from typing import Any, Dict, List
 
 from vault_errors import emit_error, wrap_main
 from vault_io import get_vault_root
-from vault_lib import HISTORY_DIR, utcnow
+from vault_lib import Config, utcnow
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -36,7 +36,7 @@ def _raiz() -> Path:
 
 
 def _history_dir() -> Path:
-    return _raiz() / HISTORY_DIR
+    return _raiz() / Config.HISTORY_DIR
 
 
 def _note_stem_from_history_filename(filename: str) -> str:

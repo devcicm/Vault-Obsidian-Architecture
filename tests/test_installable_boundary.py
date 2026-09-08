@@ -134,3 +134,48 @@ def test_puntos_distribuibles_no_insertan_scripts_en_sys_path():
             and n.func.value.attr == "path"
         ]
         assert not llamadas, ruta
+
+
+def test_adaptadores_de_operacion_derivan_del_catalogo():
+    from vault_distribution_sync import sync
+
+    assert sync(check=True) == 0
+
+
+def test_toda_operacion_distribuible_tiene_namespace_importable():
+    import importlib
+
+    for d in _distribucion().values():
+        if d.distributable:
+            assert importlib.import_module(d.execution_module).main
+
+
+def test_modulo_y_fallback_legacy_conservan_semantica(tmp_path):
+    import json
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parent.parent
+    runtime = tmp_path / "runtime"
+    nota = runtime / "07_Knowledge" / "boundary.md"
+    nota.parent.mkdir(parents=True)
+    nota.write_text("---\ntitle: Boundary\ntype: knowledge\n---\n# Boundary\n", encoding="utf-8")
+    env = {**os.environ, "VAULT_ROOT": str(runtime), "VAULT_VOICE": "0"}
+    comandos = [
+        [sys.executable, str(root / "scripts/vault_read.py"), "--path", "07_Knowledge/boundary.md"],
+        [sys.executable, "-m", "vault_toolkit.operations.vault_read", "--path", "07_Knowledge/boundary.md"],
+    ]
+    salidas = []
+    for comando in comandos:
+        proc = subprocess.run(
+            comando, cwd=root, env=env, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=20,
+        )
+        assert proc.returncode == 0, proc.stderr
+        salidas.append(json.loads(proc.stdout))
+    for salida in salidas:
+        salida.pop("timestamp", None)
+        salida.pop("vault_says", None)
+    assert salidas[0] == salidas[1]

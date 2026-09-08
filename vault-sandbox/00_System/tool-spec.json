@@ -1296,6 +1296,27 @@
         "F2"
       ]
     },
+    "vault_distribution_sync": {
+      "group": "internal",
+      "group_id": 0,
+      "status": "internal",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [
+          "consistency",
+          "completeness"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F2"
+      ],
+      "reason": "Genera adaptadores instalables desde los registros canónicos; mantiene el toolkit, no opera conocimiento del runtime."
+    },
     "vault_drift_detect": {
       "group": "Drift Detection",
       "group_id": 17,
@@ -4342,9 +4363,9 @@
   },
   "_counts": {
     "active": 116,
-    "internal": 14,
+    "internal": 15,
     "archived": 5,
-    "total": 135,
+    "total": 136,
     "active_groups": 37,
     "schema_version": "1.0"
   }
