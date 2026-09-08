@@ -2,6 +2,7 @@
 
 from vault.meta_toolkit.distribucion import clasificar_tools
 from vault.meta_toolkit.recursos_distribucion import clasificar_recurso, entra_al_wheel
+from cli.resolver import resolve_operation
 
 
 def _distribucion():
@@ -55,3 +56,33 @@ def test_ownership_de_recursos_separa_runtime_toolkit_y_repo():
     assert entra_al_wheel("scripts/vault_ontology.json")
     assert not entra_al_wheel("scripts/arch-baseline.json")
     assert not entra_al_wheel("runtime/00_System/tool-spec.json")
+
+
+def test_resolver_prefiere_modulo_instalado(monkeypatch, tmp_path):
+    from cli import registry
+
+    frag = registry.resolve("vault_read")
+    monkeypatch.setattr("cli.resolver.importlib.util.find_spec", lambda _: object())
+    target = resolve_operation(frag, legacy_scripts=tmp_path)
+    assert target.kind == "installed"
+    assert target.module == frag.execution_module
+
+
+def test_resolver_conserva_fallback_legacy_del_checkout(monkeypatch, tmp_path):
+    from cli import registry
+
+    frag = registry.resolve("vault_read")
+    script = tmp_path / frag.script
+    script.write_text("", encoding="utf-8")
+    monkeypatch.setattr("cli.resolver.importlib.util.find_spec", lambda _: None)
+    target = resolve_operation(frag, legacy_scripts=tmp_path)
+    assert target.kind == "legacy"
+    assert target.path == script
+
+
+def test_resolver_reporta_operacion_ausente(monkeypatch, tmp_path):
+    from cli import registry
+
+    frag = registry.resolve("vault_read")
+    monkeypatch.setattr("cli.resolver.importlib.util.find_spec", lambda _: None)
+    assert resolve_operation(frag, legacy_scripts=tmp_path).kind == "missing"

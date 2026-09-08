@@ -128,6 +128,13 @@ class Fragment:
         return SCRIPTS_DIR / self.script
 
     @property
+    def execution_module(self) -> Optional[str]:
+        """Módulo derivado del script canónico, sin mapping paralelo."""
+        if self.runtime != "python":
+            return None
+        return f"vault_toolkit.operations.{Path(self.script).stem}"
+
+    @property
     def runtime(self) -> str:
         return "node" if self.name in NATIVE_JS_TOOLS else "python"
 
