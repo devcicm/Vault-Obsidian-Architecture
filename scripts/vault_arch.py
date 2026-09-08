@@ -2172,10 +2172,10 @@ def blueprint() -> str:
             f"## {datos['titulo']}",
             "",
             f"- **Lenguaje ubicuo:** {', '.join(datos['lenguaje'])}",
-            "- **Puertos publicados:** "
+            ("- **Puertos publicados:** "
             + ", ".join(
                 f"`{p}` → `{d}`" for p, d in sorted(datos["puertos"].items())
-            ),
+            )).rstrip(),
         ]
         if datos["prohibe"]:
             lineas.append(f"- **No cruza:** {'; '.join(datos['prohibe'])}")
