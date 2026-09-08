@@ -20,7 +20,6 @@
     "vault_norms_engine -> vault_smoke",
     "vault_norms_engine -> vault_tags",
     "vault_norms_engine -> vault_voice",
-    "vault_onboard -> vault_norms",
     "vault_onboard -> vault_reindex",
     "vault_onboard -> vault_section_index",
     "vault_onboard -> vault_tags",
