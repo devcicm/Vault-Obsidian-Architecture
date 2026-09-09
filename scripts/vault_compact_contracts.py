@@ -37,6 +37,7 @@ from vault.kernel import construir  # noqa: E402
 # El vocabulario se declara una vez y se consume, no se copia. Ver
 # `vault_vocabulario.py` para el registro y su contexto dueño.
 from vault_vocabulario import opciones as _opciones
+from vault_entorno import leer as leer_entorno
 
 
 def _repo(root=None) -> RepositorioConsulta:
@@ -54,6 +55,11 @@ def _resolve_output_dir() -> Path:
     la raíz en una asignación— pero `SYSTEM_DIR = _resolve_output_dir()`
     se evaluaba igual al importar. Parecía resolución tardía y no lo era.
     """
+    # Un destino explícito es contrato de runtime: incluso desde el checkout
+    # del estándar, los generadores de un fixture o consumidor no pueden caer
+    # silenciosamente en su sandbox vecino.
+    if leer_entorno("VAULT_ROOT") is not None:
+        return _repo().dir_sistema
     if (PROJECT_ROOT / "vault-obsidian-architecture.md").exists():
         sandbox = PROJECT_ROOT / "vault-sandbox" / "00_System"
         if sandbox.exists():
