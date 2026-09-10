@@ -52,7 +52,7 @@ def test_hay_puertos_en_los_contextos_que_publican_api():
     # desde siempre y su comentario ya nombraba a `vault_mcp_catalog` como
     # dueño. Lo que faltaba era declararlo, y mientras `cli/` no tuvo contexto
     # no había dónde notar que el cruce existía.
-    assert len(PUERTOS) == 60
+    assert len(PUERTOS) == 61
     # `cli` queda fuera a propósito: es un adaptador de transporte y **nadie
     # importa de `cli/`**, así que no publica API. Exigirle un puerto obligaría
     # a inventar uno, que es justo lo contrario de lo que mide este fichero.
@@ -69,7 +69,7 @@ def test_hay_puertos_en_los_contextos_que_publican_api():
 def test_cada_puerto_apunta_a_un_simbolo_que_existe(ctx, puerto, destino):
     modulo, _, simbolo = destino.partition(":")
     assert simbolo, f"{ctx}.{puerto}: falta el símbolo"
-    assert modulo in arch.CONTEXTS[ctx]["modulos"], (
+    assert arch._es_modulo_del_contexto(modulo, ctx), (
         f"{ctx}.{puerto} publica `{modulo}`, que no es suyo — un puerto que "
         "delega en otro contexto no es una frontera, es una fuga"
     )
@@ -171,9 +171,9 @@ def test_el_detector_ve_los_dos_estilos_de_import():
     fuera = arch.cruces_fuera_de_puerto()
     # `from vault_smoke import SIN_SMOKE` en vault_norms — estilo ImportFrom.
     assert [x for x in fuera if x["symbol"] == "vault_smoke.SIN_SMOKE"]
-    # `import vault_tags as _tags` + `_tags.normalize_tag` — estilo Import, que
+    # `import vault_tags` + `vault_tags.apply_vocabulary` — estilo Import, que
     # es el que el detector no veía.
-    assert [x for x in fuera if x["symbol"] == "vault_tags.normalize_tag"]
+    assert [x for x in fuera if x["symbol"] == "vault_tags.apply_vocabulary"]
 
 
 def test_un_acceso_por_import_liso_se_reporta(tmp_path, monkeypatch):

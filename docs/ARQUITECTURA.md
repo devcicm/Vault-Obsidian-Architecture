@@ -2,7 +2,7 @@
 
 > Documento derivado. Se genera con `python scripts/vault_arch.py --blueprint`; la fuente es `CONTEXTS` en `scripts/vault_arch.py`. No se edita a mano.
 
-**10 contextos**, **159 módulos** clasificados, **35 fronteras cruzadas** pendientes de publicar puerto.
+**10 contextos**, **159 módulos** clasificados, **34 fronteras cruzadas** pendientes de publicar puerto.
 
 ## Los límites
 
@@ -41,7 +41,6 @@ graph TD
     consulta -.->|cruce| autoria
     meta_toolkit -.->|cruce| consulta
     gobernanza -.->|cruce| meta_toolkit
-    gobernanza -.->|cruce| indices
     gobernanza -.->|cruce| autoria
     ciclo_de_vida -.->|cruce| indices
     ciclo_de_vida -.->|cruce| autoria
@@ -55,6 +54,7 @@ graph TD
     cli -.->|cruce| meta_toolkit
     autoria -.->|cruce| grafo
     consulta -.->|cruce| ciclo_de_vida
+    gobernanza -.->|cruce| indices
     grafo -.->|cruce| gobernanza
     indices -.->|cruce| grafo
 ```
@@ -100,18 +100,20 @@ Fronteras que hoy cruza (2), deuda declarada:
 ## Gobernanza
 
 - **Lenguaje ubicuo:** norma, guard, enforcement, severidad, violación, estado, transición de estado, fundamento, hallazgo
-- **Puertos publicados:** `FUNDAMENTOS` → `vault_fundamentals:FUNDAMENTALS`, `NORM_CATALOG` → `vault_norms:NORM_CATALOG`, `auditar` → `vault_audit:vault_audit`, `auditar_normas` → `vault_norms:vault_norms_audit`, `cuerpo_sin_marcadores` → `vault_norms:cuerpo_sin_marcadores`, `gancho_de_secretos` → `vault_secret_scan:vault_write_hook`, `hay_hallazgos_bloqueantes` → `vault_secret_scan:has_blocking_findings`, `identidad_de_documentacion` → `vault_audit:es_documentacion_del_estandar`, `lineas_de_estado` → `vault_norms:status_frontmatter_lines`, `norma_por_codigo` → `vault_norms:norma_por_codigo`, `normalizar_estado` → `vault_norms:normalize_status`, `penalizaciones` → `vault_audit:PENALIZACIONES`, `puntuar_calidad` → `vault_quality_check:vault_quality_check`, `referencias_de_norma` → `vault_norms:compute_norm_refs`, `registro_de_ciclo_de_vida` → `vault_norms:LIFECYCLE_REGISTRY`, `transiciones_de_estado` → `vault_norms:STATUS_TRANSITIONS`, `validar_mermaid` → `vault_mermaid_check:validate_mermaid`, `valores_cia` → `vault_fundamentals:cia_valores`, `vocabulario_de_dominio` → `vault_norms:DOMAIN_STATUS_VOCABS`, `vocabulario_de_estado` → `vault_norms:STATUS_VOCAB`
+- **Puertos publicados:** `FUNDAMENTOS` → `vault_fundamentals:FUNDAMENTALS`, `NORM_CATALOG` → `vault_norms:NORM_CATALOG`, `auditar` → `vault_audit:vault_audit`, `auditar_normas` → `vault_norms:vault_norms_audit`, `auditar_runtime` → `vault/gobernanza/auditoria_runtime:auditar_runtime`, `cuerpo_sin_marcadores` → `vault_norms:cuerpo_sin_marcadores`, `gancho_de_secretos` → `vault_secret_scan:vault_write_hook`, `hay_hallazgos_bloqueantes` → `vault_secret_scan:has_blocking_findings`, `identidad_de_documentacion` → `vault_audit:es_documentacion_del_estandar`, `lineas_de_estado` → `vault_norms:status_frontmatter_lines`, `norma_por_codigo` → `vault_norms:norma_por_codigo`, `normalizar_estado` → `vault_norms:normalize_status`, `penalizaciones` → `vault_audit:PENALIZACIONES`, `puntuar_calidad` → `vault_quality_check:vault_quality_check`, `referencias_de_norma` → `vault_norms:compute_norm_refs`, `registro_de_ciclo_de_vida` → `vault_norms:LIFECYCLE_REGISTRY`, `transiciones_de_estado` → `vault_norms:STATUS_TRANSITIONS`, `validar_mermaid` → `vault_mermaid_check:validate_mermaid`, `valores_cia` → `vault_fundamentals:cia_valores`, `vocabulario_de_dominio` → `vault_norms:DOMAIN_STATUS_VOCABS`, `vocabulario_de_estado` → `vault_norms:STATUS_VOCAB`
 - **Módulos (12):** `vault_audit`, `vault_drift_detect`, `vault_fuente_unica`, `vault_fundamentals`, `vault_mermaid_check`, `vault_norms`, `vault_norms_engine`, `vault_quality_check`, `vault_secret_scan`, `vault_security_rules`, `vault_security_scan`, `vault_validate`
 
-Fronteras que hoy cruza (6), deuda declarada:
+Fronteras que hoy cruza (8), deuda declarada:
 
 | Módulo | Importa | Contexto destino |
 |---|---|---|
 | `vault_norms_engine` | `vault_mcp_catalog` | Meta-toolkit |
-| `vault_norms_engine` | `vault_reindex` | Índices |
 | `vault_norms_engine` | `vault_smoke` | Meta-toolkit |
-| `vault_norms_engine` | `vault_tags` | Índices |
 | `vault_norms_engine` | `vault_voice` | Autoría |
+| `vault/gobernanza/auditoria_runtime.py` | `vault/indices` | Índices |
+| `vault/gobernanza/auditoria_runtime.py` | `vault/indices` | Índices |
+| `vault/gobernanza/auditoria_runtime.py` | `vault/indices` | Índices |
+| `vault/gobernanza/auditoria_runtime.py` | `vault/indices` | Índices |
 | `vault/gobernanza/repositorio.py` | `vault/indices` | Índices |
 
 ## Índices
@@ -158,8 +160,8 @@ Fronteras que hoy cruza (12), deuda declarada:
 | `vault_propagate` | `vault_impact` | Grafo |
 | `vault_propagate` | `vault/gobernanza` | Gobernanza |
 | `vault_sanacion` | `vault_audit` | Gobernanza |
-| `vault_sanacion` | `vault_norms` | Gobernanza |
 | `vault_sanacion` | `vault_reindex` | Índices |
+| `vault_sanacion` | `vault/gobernanza` | Gobernanza |
 | `vault_standard_upgrade` | `vault_mcp_catalog` | Meta-toolkit |
 | `vault_standard_upgrade` | `vault_section_index` | Índices |
 | `vault/ciclo_de_vida/repositorio.py` | `vault/indices` | Índices |

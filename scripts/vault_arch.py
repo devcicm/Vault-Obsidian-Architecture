@@ -312,6 +312,11 @@ CONTEXTS: dict[str, dict] = {
             # `origen -> destino` no habría forma de saber cuál de las dos
             # cosas movió la cifra.
             "auditar_normas": "vault_norms:vault_norms_audit",
+            # El audit que corre sobre un vault consumidor es una superficie
+            # distinta de la fachada histórica, que además observa el propio
+            # repositorio del estándar. El dueño vive en Gobernanza y la
+            # sanación entra aquí para no arrastrar smoke ni cobertura meta.
+            "auditar_runtime": "vault/gobernanza/auditoria_runtime:auditar_runtime",
             # El peso de cada norma en el healthIndex. Es la otra mitad
             # canónica de la severidad —el catálogo dice cuánto importa, esto
             # dice cuánto cuesta— y hasta v40.10 nadie las cruzaba: AP-22
@@ -1499,6 +1504,22 @@ def fantasmas() -> list[str]:
     return sorted(m for m in _mapa_modulos() if m not in en_disco)
 
 
+def _ruta_de_modulo(modulo: str) -> Path:
+    """Ruta de un módulo publicado, ya sea script o paquete de dominio."""
+    if modulo.startswith("vault/"):
+        return REPO_ROOT / f"{modulo}.py"
+    return SCRIPTS_DIR / f"{modulo}.py"
+
+
+def _es_modulo_del_contexto(modulo: str, contexto: str) -> bool:
+    """El destino publicado pertenece de verdad al contexto que lo anuncia."""
+    if modulo in CONTEXTS[contexto]["modulos"]:
+        return True
+    if not modulo.startswith("vault/"):
+        return False
+    return _modulos_dominio().get(f"{modulo}.py") == contexto
+
+
 def _simbolos_de_nivel_superior(modulo: str) -> set[str] | None:
     """Los nombres que `modulo` define en su nivel superior, por AST.
 
@@ -1507,7 +1528,7 @@ def _simbolos_de_nivel_superior(modulo: str) -> set[str] | None:
     Un guard que necesita un vault montado para decir si una frontera existe no
     es un guard, es otra dependencia.
     """
-    ruta = SCRIPTS_DIR / f"{modulo}.py"
+    ruta = _ruta_de_modulo(modulo)
     if not ruta.exists():
         return None
     try:
@@ -1571,7 +1592,7 @@ def puertos_rotos() -> list[dict]:
                                f"nombrar un símbolo que empieza por `_`"}
                 )
                 continue
-            if modulo not in datos["modulos"]:
+            if not _es_modulo_del_contexto(modulo, ctx):
                 rotos.append(
                     {"context": ctx, "port": puerto, "target": destino,
                      "reason": f"`{modulo}` no es un módulo de `{ctx}`"}

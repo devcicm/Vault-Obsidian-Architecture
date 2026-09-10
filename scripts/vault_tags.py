@@ -24,7 +24,6 @@ import json
 import os
 import re
 import sys
-import unicodedata
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -50,6 +49,12 @@ from vault_entorno import leer as _env
 from vault.indices.enumeracion import NOMBRES_DE_INDICE  # noqa: E402
 from vault.indices.enumeracion import es_nota_indexable  # noqa: E402
 from vault.indices.repositorio import RepositorioIndices  # noqa: E402
+from vault.indices.vocabulario import (  # noqa: E402
+    cargar_bitacora as _cargar_bitacora,
+    etiquetas_canonicas as _etiquetas_canonicas,
+    normalizar_etiqueta as _normalizar_etiqueta,
+    singularizar_etiqueta as _singularizar_etiqueta,
+)
 from vault.kernel import construir  # noqa: E402
 
 #: Derivado de `vault_registry.SECTIONS`, no copiado: la lista literal que vivía
@@ -176,49 +181,24 @@ def _parse_frontmatter_title(content: str) -> str:
 # era el correcto). Solo colapsa lo que es demostrablemente la misma palabra:
 # acentos, mayúsculas, separadores y plural.
 
-_TAG_SEPARADORES = re.compile(r"[\s_.:/\\]+")
-_TAG_INVALIDOS = re.compile(r"[^a-z0-9-]+")
-
-
 def normalize_tag(raw: str) -> str:
     """Forma normalizada de un tag: minúsculas, sin acentos, separado por `-`.
 
     Es la misma clase de normalización que `vault_norms.normalize_status`:
     colapsa variantes tipográficas del **mismo** término y nada más.
     """
-    texto = unicodedata.normalize("NFD", str(raw or "").strip().lower())
-    texto = "".join(c for c in texto if unicodedata.category(c) != "Mn")
-    texto = _TAG_SEPARADORES.sub("-", texto)
-    texto = _TAG_INVALIDOS.sub("-", texto)
-    texto = re.sub(r"-{2,}", "-", texto).strip("-")
-    return texto
+    return _normalizar_etiqueta(raw)
 
 
 def singular_tag(tag: str) -> str:
     """Plural inglés/castellano → singular, solo en los casos inequívocos."""
-    if len(tag) > 4 and tag.endswith("es") and not tag.endswith(("ses", "ees")):
-        return tag[:-2]
-    if len(tag) > 3 and tag.endswith("s") and not tag.endswith(("ss", "us", "is")):
-        return tag[:-1]
-    return tag
+    return _singularizar_etiqueta(tag)
 
 
 def canonical_tags() -> List[str]:
     """Tags canónicos del vault, aplanados desde las facetas del registro."""
-    try:
-        registro = json.loads(_tag_registry().read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return []
-    canonicos = registro.get("canonical_tags")
-    if isinstance(canonicos, dict):
-        planos: List[str] = []
-        for valores in canonicos.values():
-            if isinstance(valores, list):
-                planos.extend(str(v) for v in valores)
-        return planos
+    return _etiquetas_canonicas(_repo())
     # Formato legacy `{"tags": {"<tag>": {...}}}` — se sigue leyendo.
-    legacy = registro.get("tags")
-    return sorted(legacy) if isinstance(legacy, dict) else []
 
 
 def _canonical_index() -> Dict[str, str]:
@@ -256,10 +236,7 @@ def load_ledger() -> Dict[str, Any]:
     para saber qué etiquetas quedaron sin anotar, y esa lectura cruza una
     frontera. Lo que cruza, se publica.
     """
-    try:
-        return json.loads(_tag_ledger().read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return {"version": "v1.0", "entries": []}
+    return _cargar_bitacora(_repo())
 
 
 #: superseded_by: `load_ledger`. Cuatro tests lo importan por el nombre viejo.

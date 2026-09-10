@@ -15,10 +15,15 @@ contaminarse — que es la prueba de que la inyección no es decorativa.
 from .coherencia import coherencia_indice
 from .enumeracion import es_nota_indexable, notas_en_disco
 from .repositorio import RepositorioIndices
+from .vocabulario import cargar_bitacora, etiquetas_canonicas, normalizar_etiqueta, singularizar_etiqueta
 
 __all__ = [
     "RepositorioIndices",
     "coherencia_indice",
     "es_nota_indexable",
     "notas_en_disco",
+    "cargar_bitacora",
+    "etiquetas_canonicas",
+    "normalizar_etiqueta",
+    "singularizar_etiqueta",
 ]
