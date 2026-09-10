@@ -2172,10 +2172,12 @@ def blueprint() -> str:
             f"## {datos['titulo']}",
             "",
             f"- **Lenguaje ubicuo:** {', '.join(datos['lenguaje'])}",
-            "- **Puertos publicados:** "
-            + ", ".join(
-                f"`{p}` → `{d}`" for p, d in sorted(datos["puertos"].items())
-            ),
+            (
+                "- **Puertos publicados:** "
+                + ", ".join(
+                    f"`{p}` → `{d}`" for p, d in sorted(datos["puertos"].items())
+                )
+            ).rstrip(),
         ]
         if datos["prohibe"]:
             lineas.append(f"- **No cruza:** {'; '.join(datos['prohibe'])}")
@@ -2257,7 +2259,7 @@ def main() -> int:
 
     if args.blueprint:
         destino = REPO_ROOT / "docs" / "ARQUITECTURA.md"
-        destino.write_text(blueprint() + "\n", encoding="utf-8")
+        destino.write_text(blueprint() + "\n", encoding="utf-8", newline="\n")
         print(json.dumps({"ok": True, "tool": "vault_arch",
                           "path": str(destino)}, ensure_ascii=False))
         return 0

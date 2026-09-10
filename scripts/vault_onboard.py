@@ -1101,7 +1101,7 @@ def _tiene_evidencia(body: str) -> bool:
     vault recién creado saldría reprobado por el estándar que lo creó.
     """
     from vault_lib import extract_wikilinks
-    from vault_norms import cuerpo_sin_marcadores
+    from vault.kernel.contenido import cuerpo_sin_marcadores
 
     return bool(extract_wikilinks(body) or cuerpo_sin_marcadores(body))
 

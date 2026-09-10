@@ -101,93 +101,8 @@ _ES_PRIMER = re.compile(r"^\d{2}-\d{2}_.*-primer$")
 _ADR_TYPES = ("decision", "adr")
 
 
-#: Marcadores de pendiente: texto que ocupa sitio sin afirmar nada. La lista
-#: sale de lo que escriben los generadores del propio estándar —`vault_onboard`
-#: emitía 8 conceptos cuyo cuerpo entero era `_Pendiente. Leer la sección del
-#: README._`— más las convenciones habituales de un esqueleto a medio llenar.
-#:
-#: El marcador tiene que ser la LÍNEA ENTERA, no su comienzo. Casar por prefijo
-#: es el error de `PLACEHOLDER_PATTERNS` en `vault_audit` —que descartaba
-#: `[[patron-mcp-streaming]]` por empezar con `patron`— repetido aquí: se
-#: tragaría «Pendiente de revisar el retry, pero el flujo ya está descrito
-#: arriba», que es contenido real. Se admite el envoltorio de énfasis y de
-#: viñeta alrededor, y una cola de puntuación o un complemento corto tras dos
-#: puntos (`TODO: revisar`) sigue siendo un marcador solo si no trae frase.
-#: La sangría va **acotada**, y no es cosmética. `^\s*` seguido de otro `\s*`
-#: —con un grupo opcional en medio que puede casar vacío— deja al motor probar
-#: cada reparto posible de los espacios entre los dos, que es cuadrático en la
-#: longitud de la línea. Medido: 1.000 espacios, 31 ms; 4.000, 500 ms; 16.000,
-#: 8,3 s; 64.000, **137 segundos**. Una sola línea de una nota deja colgada la
-#: auditoría entera, y esa línea puede entrar por `vault_ingest` desde material
-#: que el vault no escribió.
-#:
-#: Acotarla a dieciséis lo vuelve lineal (64.000 → 83 ms, 1.600 veces más
-#: rápido) sin cambiar un solo veredicto: ninguna nota real sangra un marcador
-#: más de dieciséis espacios, y los casos con dos, ocho y veintitrés siguen
-#: dando lo mismo. Lo que se pierde es la sangría absurda, que es justamente el
-#: input que nadie escribe y sí construye quien busca colgar la tool.
-_MARCADORES_PENDIENTE = re.compile(
-    r"^[ \t]{0,16}(?:[-*+]\s+|>\s*)?[_*]{0,2}\s*(?:"
-    r"pendientes?|todo|fixme|tbd|t\.b\.d\.?"
-    r"|por (?:definir|documentar|completar|determinar)"
-    r"|sin (?:datos|contenido|informaci[oó]n|detectar|detectados?|detectadas?)"
-    r"|no (?:detectados?|detectadas?|disponible|aplica)"
-    r"|desconocidos?|desconocidas?|n/a"
-    r")\s*[_*]{0,2}\s*[.:;!]?\s*[_*]{0,2}\s*$",
-    re.IGNORECASE,
-)
-
-#: Aparte en cursiva que empieza por un marcador y ocupa la línea entera:
-#: `_Pendiente. Leer la sección del README._`. Aquí sí se casa por comienzo,
-#: pero el prefijo no basta: la línea completa tiene que ir envuelta en énfasis.
-#: Esa envoltura es la que distingue el aparte de un generador de la prosa de un
-#: autor —nadie escribe un párrafo real entero en cursiva— y es lo que impide
-#: que esta regla se coma contenido, que es el fallo que AP-44 castiga.
-_APARTE_PENDIENTE = re.compile(
-    r"^\s*(?:[-*+]\s+|>\s*)?([_*]{1,2})\s*(?:pendientes?|todo|tbd|por (?:definir|documentar|completar))"
-    r"\b.*\1\s*$",
-    re.IGNORECASE,
-)
-
-
-#: Línea que es puro andamiaje tipográfico: encabezado, regla horizontal,
-#: separador de tabla, viñeta vacía, comentario HTML.
-_LINEA_ANDAMIO = re.compile(
-    r"^\s*(?:#{1,6}\s|-{3,}\s*$|\*{3,}\s*$|\|[\s|:-]*\|\s*$|[-*+]\s*$|>\s*$|<!--)"
-)
-
-
-def cuerpo_sin_marcadores(body: str) -> str:
-    """Lo que queda de un cuerpo tras quitar andamiaje y marcadores de pendiente.
-
-    Cadena vacía significa que la nota no afirma nada: todo lo que contiene es
-    estructura anunciando contenido que no está. Es la mitad del guard de AP-45
-    —la otra mitad es que tampoco enlace con nada—.
-    """
-    if not body:
-        return ""
-    # El frontmatter ya viene separado, pero un cuerpo puede traer bloques de
-    # código vacíos que tampoco afirman nada.
-    limpio = re.sub(r"```[^\n]*\n\s*```", "", body)
-    # Tabla de solo cabecera y separador: promete columnas y no trae ni una
-    # fila. Es andamiaje, igual que un encabezado sin párrafo debajo — y hay
-    # que quitarla entera, porque la cabecera sí tiene texto y sobreviviría al
-    # filtro línea a línea.
-    limpio = re.sub(
-        r"^[ \t]*\|.*\|[ \t]*\n[ \t]*\|[\s|:-]+\|[ \t]*$(?!\n[ \t]*\|)",
-        "",
-        limpio,
-        flags=re.MULTILINE,
-    )
-    utiles = [
-        ln
-        for ln in limpio.splitlines()
-        if ln.strip()
-        and not _LINEA_ANDAMIO.match(ln)
-        and not _MARCADORES_PENDIENTE.match(ln)
-        and not _APARTE_PENDIENTE.match(ln)
-    ]
-    return "\n".join(utiles).strip()
+# La hoja reusable es la dueña. El nombre público histórico se conserva.
+from vault.kernel.contenido import cuerpo_sin_marcadores
 
 
 #: superseded_by: `cuerpo_sin_marcadores`. El nombre privado no se borra —la
@@ -1091,4 +1006,3 @@ def heal_ap46(root: Optional[Path] = None, apply: bool = False) -> Dict[str, Any
             "y sobre un vault que no generó este repo, solo si su dueño lo pide."
         ),
     }
-

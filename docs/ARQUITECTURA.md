@@ -2,7 +2,7 @@
 
 > Documento derivado. Se genera con `python scripts/vault_arch.py --blueprint`; la fuente es `CONTEXTS` en `scripts/vault_arch.py`. No se edita a mano.
 
-**10 contextos**, **159 módulos** clasificados, **36 fronteras cruzadas** pendientes de publicar puerto.
+**10 contextos**, **159 módulos** clasificados, **35 fronteras cruzadas** pendientes de publicar puerto.
 
 ## Los límites
 
@@ -43,10 +43,10 @@ graph TD
     gobernanza -.->|cruce| meta_toolkit
     gobernanza -.->|cruce| indices
     gobernanza -.->|cruce| autoria
-    ciclo_de_vida -.->|cruce| gobernanza
     ciclo_de_vida -.->|cruce| indices
     ciclo_de_vida -.->|cruce| autoria
     ciclo_de_vida -.->|cruce| grafo
+    ciclo_de_vida -.->|cruce| gobernanza
     meta_toolkit -.->|cruce| ciclo_de_vida
     ciclo_de_vida -.->|cruce| meta_toolkit
     consulta -.->|cruce| grafo
@@ -147,11 +147,10 @@ Fronteras que hoy cruza (3), deuda declarada:
 - **Puertos publicados:** `CURRENT_VERSION` → `vault_standard_upgrade:CURRENT_VERSION`, `inicializar` → `vault_init:vault_init`, `migrar` → `vault_standard_upgrade:vault_standard_upgrade`
 - **Módulos (9):** `vault_history_compact`, `vault_init`, `vault_migrate_docs`, `vault_migrate_rollback`, `vault_onboard`, `vault_propagate`, `vault_sanacion`, `vault_sdd_init`, `vault_standard_upgrade`
 
-Fronteras que hoy cruza (13), deuda declarada:
+Fronteras que hoy cruza (12), deuda declarada:
 
 | Módulo | Importa | Contexto destino |
 |---|---|---|
-| `vault_onboard` | `vault_norms` | Gobernanza |
 | `vault_onboard` | `vault_reindex` | Índices |
 | `vault_onboard` | `vault_section_index` | Índices |
 | `vault_onboard` | `vault_tags` | Índices |
@@ -192,7 +191,7 @@ Fronteras que hoy cruza (5), deuda declarada:
 ## CLI
 
 - **Lenguaje ubicuo:** comando, registro de tools, preflight, envelope
-- **Puertos publicados:** 
+- **Puertos publicados:**
 - **No cruza:** decidir: traduce argumentos a llamadas y envelopes a salida; la decisión vive en la tool
 - **Módulos (7):** `__main__`, `analyzer`, `registry`, `runner`, `safety`, `scheduler`, `vault_cli`
 
