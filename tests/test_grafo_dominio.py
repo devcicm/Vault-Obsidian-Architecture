@@ -6,6 +6,7 @@ ellos la misma ruta calculada en sitios distintos. El trabajo de esta fase fue
 AP-49 y AP-05, no desacoplar; estos tests fijan el resultado.
 """
 
+import subprocess
 import sys
 from pathlib import Path
 
@@ -15,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
+from vault.grafo.enlace_codigo import link_vault
 from vault.kernel import construir  # noqa: E402
 
 
@@ -85,6 +87,76 @@ def test_cambiar_el_vault_alcanza_a_las_rutas_del_contexto(tmp_path):
 
     vault_io.set_vault_root(_vault(tmp_path / "nuevo"))
     assert vault_code_map._code_dir() == (tmp_path / "nuevo" / "11_Code").resolve()
+
+
+def test_enlace_de_codigo_vive_en_grafo_y_la_fachada_legacy_delega(tmp_path):
+    """El runtime y la CLI histórica comparten una sola costura @vault."""
+    import vault_code_tag
+    import vault_io
+
+    root = _vault(tmp_path / "v")
+    vault_io.set_vault_root(root)
+    source = tmp_path / "program.py"
+    source.write_text("#!/usr/bin/env python3\nprint('ok')\n", encoding="utf-8")
+
+    first = vault_code_tag.vault_code_tag_link_vault(
+        "11_Code/demo/program", str(source), "Program"
+    )
+    again = link_vault("11_Code/demo/program", str(source), "Program", root=root)
+
+    assert first["action"] == "linked"
+    assert first["written"] == 2
+    assert again["action"] == "already_present"
+    assert source.read_text(encoding="utf-8").splitlines()[1].startswith(
+        "# @vault: 11_Code/demo/program"
+    )
+    registry = _repo(root).leer_json(_repo(root).registro_etiquetas_codigo)
+    assert registry["tags"]["vault:11_Code:demo:program"]["files"] == [str(source)]
+
+
+def test_enlace_reemplaza_la_referencia_y_conserva_shebang(tmp_path):
+    root = _vault(tmp_path / "v")
+    source = tmp_path / "program.py"
+    source.write_text(
+        "#!/usr/bin/env python3\n# @vault: 11_Code/old/program  — Old\nprint('ok')\n",
+        encoding="utf-8",
+    )
+
+    result = link_vault("11_Code/new/program.md", str(source), root=root)
+
+    assert result["action"] == "replaced"
+    lines = source.read_text(encoding="utf-8").splitlines()
+    assert lines[0] == "#!/usr/bin/env python3"
+    assert lines[1].startswith("# @vault: 11_Code/new/program")
+
+
+def test_enlace_de_codigo_preserva_errores_y_formato_no_soportado(tmp_path):
+    root = _vault(tmp_path / "v")
+    missing = link_vault("11_Code/demo/missing", str(tmp_path / "missing.py"), root=root)
+    markdown = tmp_path / "note.md"
+    markdown.write_text("# nota\n", encoding="utf-8")
+    unsupported = link_vault("11_Code/demo/note", str(markdown), root=root)
+
+    assert missing["error_code"] == "FILE_NOT_FOUND"
+    assert unsupported["error_code"] == "UNSUPPORTED_FORMAT"
+
+
+def test_servicio_de_enlace_es_importable_sin_scripts_en_sys_path(repo_root):
+    """La implementación estable carga como paquete; no importa la CLI legacy."""
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import vault.grafo.enlace_codigo as enlace; print(enlace.__name__)",
+        ],
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "vault.grafo.enlace_codigo"
 
 
 # ── Portabilidad del envelope ────────────────────────────────────────────────

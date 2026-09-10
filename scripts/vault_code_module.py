@@ -35,6 +35,7 @@ from vault_io import (
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
+from vault.grafo.enlace_codigo import link_vault  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 
 
@@ -480,12 +481,10 @@ def vault_code_module(
         abs_file = resolve_input_path(file_path)
         if abs_file.exists():
             try:
-                from vault_code_tag import vault_code_tag_link_vault
-
                 tag_title = f"{Path(file_path).name} ({iso_type or 'module'})"
                 note_ref = note_rel.removesuffix(".md")
-                tag_result = vault_code_tag_link_vault(
-                    note_ref, str(abs_file), title=tag_title
+                tag_result = link_vault(
+                    note_ref, str(abs_file), title=tag_title, report=write_report
                 )
                 result["source_tagged"] = tag_result.get("ok", False)
                 result["tag_action"] = tag_result.get("action", "error")
