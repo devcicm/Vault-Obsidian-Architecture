@@ -430,7 +430,6 @@ def test_el_kernel_declara_sus_ganchos_con_motivo():
         ("vault_fs", "vault_secret_scan"),
         ("vault_io", "vault_section_index"),
         ("vault_io", "vault_tags"),
-        ("vault_errors", "vault_voice"),
     }
     lecturas_de_registro = {
         # v40.26: el vocabulario se mudó con el catálogo al partirse

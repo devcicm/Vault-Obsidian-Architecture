@@ -230,7 +230,7 @@ CONTEXTS: dict[str, dict] = {
             "mover": "vault_move:move_note",
             "fusionar": "vault_merge:vault_merge",
             "buscar": "vault_search:vault_search",
-            "hablar": "vault_voice:speak",
+            "hablar": "vault/autoria/voz:speak",
             "tipo_por_carpeta": "vault_write:tipo_por_carpeta",
         },
         "prohibe": [],
@@ -1047,10 +1047,6 @@ GANCHOS_DEL_KERNEL: dict[tuple[str, str], str] = {
         "`*_save` cruzaría Autoría → Índices catorce veces y seguiría sin "
         "cubrir al decimoquinto (AP-43)."
     ),
-    ("vault_errors", "vault_voice"): (
-        "La voz del vault acompaña al error. Es presentación, no dominio, y el "
-        "kernel la degrada a silencio si falla."
-    ),
     ("vault_vocabulario", "vault_norms_catalog"): (
         "`status` y los estados de dominio ya tienen registro canónico en "
         "Gobernanza. El registro de vocabularios los declara con `derivado_de` "
@@ -1119,19 +1115,6 @@ PRESUPUESTO_DE_GANCHOS: dict[tuple[str, str], dict] = {
         "por_que": (
             "AP-39 exige registrar el término nuevo en el write path. La "
             "revisión mira si el ledger pasó a construirse por barrido."
-        ),
-    },
-    ("vault_errors", "vault_voice"): {
-        "objetivo": "a_eliminar",
-        "fecha_limite": "2027-06-30",
-        "revisado": "2026-08-14",
-        "cadencia_dias": 180,
-        "dueno": "gobernanza",
-        "por_que": (
-            "Es el único de los seis que no protege nada: es presentación "
-            "colgada del kernel, y el kernel ya la degrada a silencio si falla. "
-            "Sale cuando la voz se aplique en el borde —la CLI y el MCP— en vez "
-            "de dentro del emisor de errores."
         ),
     },
     ("vault_vocabulario", "vault_norms_catalog"): {
@@ -1233,6 +1216,13 @@ for _par in (("autoria", "grafo"), ("consulta", "ciclo_de_vida"),
            "Adaptador de DI: cablear el dominio de otro contexto es su oficio. "
            "Se cuenta igual — no contarlo dejaría la capa de DI ciega.")
 
+# `vault_errors` es el único borde que ve todos los envelopes. Consume el
+# puerto de presentación de Autoría, no la tool meta que audita su cobertura.
+_cruce("kernel", "autoria", "permanente", "kernel",
+       "El inyector común de envelopes llama al puerto `hablar` para que el "
+       "recordatorio llegue a todas las tools. El servicio degrada a silencio "
+       "si falla y no importa la fachada meta `vault_voice`.")
+
 # --- Gobernanza mirando el vault, y el meta-toolkit mirando Gobernanza -------
 _cruce("meta_toolkit", "gobernanza", "permanente", "meta_toolkit",
        "El meta-toolkit audita que este repo cumple lo que publica, y para eso "
@@ -1250,8 +1240,8 @@ _cruce("gobernanza", "meta_toolkit", "a_eliminar", "gobernanza",
        fecha_limite="2027-06-30")
 _cruce("gobernanza", "autoria", "a_eliminar", "gobernanza",
        "`vault_norms_engine` -> `vault_voice`: presentación colgada del motor, "
-       "el mismo defecto que el gancho `vault_errors` -> `vault_voice` ya "
-       "declara. Sale con él, cuando la voz se aplique en el borde.",
+       "se conserva solo en la fachada estándar para ejecutar AP-43. Sale "
+       "cuando el audit del catálogo se ejecute fuera del motor.",
        fecha_limite="2027-06-30")
 _cruce("autoria", "gobernanza", "permanente", "autoria",
        "Validar mermaid al escribir y registrar el cambio: la escritura no puede "

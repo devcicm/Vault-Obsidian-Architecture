@@ -13,6 +13,7 @@ import json
 import os
 import subprocess
 import sys
+import ast
 from pathlib import Path
 
 import pytest
@@ -142,6 +143,28 @@ def test_el_enganche_vive_en_el_punto_por_el_que_pasan_todas_las_tools():
     fuente = (SCRIPTS / "vault_errors.py").read_text(encoding="utf-8")
     assert "_inject_voice" in fuente
     assert "_inject_voice(data, tool_name, writes)" in fuente
+
+
+def test_el_runtime_usa_el_servicio_de_voz_y_no_importa_la_fachada_meta():
+    """La última fuga meta no puede volver como un import diferido."""
+    fuente = SCRIPTS / "vault_errors.py"
+    arbol = ast.parse(fuente.read_text(encoding="utf-8", errors="replace"))
+    modulos = {
+        nodo.module
+        for nodo in ast.walk(arbol)
+        if isinstance(nodo, ast.ImportFrom) and nodo.module
+    }
+    assert "vault.autoria.voz" in modulos
+    assert "vault_voice" not in modulos
+
+    servicio = ROOT / "vault" / "autoria" / "voz.py"
+    servicio_arbol = ast.parse(servicio.read_text(encoding="utf-8"))
+    imports = {
+        nodo.module
+        for nodo in ast.walk(servicio_arbol)
+        if isinstance(nodo, ast.ImportFrom) and nodo.module
+    }
+    assert "vault_voice" not in imports
 
 
 def test_un_fallo_de_la_voz_no_puede_romper_una_tool(monkeypatch):

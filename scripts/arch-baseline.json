@@ -14,6 +14,7 @@
     "vault_change_log -> vault/gobernanza",
     "vault_code_tag -> vault_write",
     "vault_context_pack -> vault_search",
+    "vault_errors -> vault/autoria",
     "vault_mcp -> vault_mcp_context",
     "vault_norms_coherence -> vault_norms",
     "vault_norms_engine -> vault_mcp_catalog",
