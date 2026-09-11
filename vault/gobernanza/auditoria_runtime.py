@@ -57,6 +57,10 @@ def auditar_runtime(
     from vault_registry import NON_SECTION_ROOT_FOLDERS, SECTIONS
 
     root_allowed = set(NON_SECTION_ROOT_FOLDERS)
+    # La semántica del argumento decide si esta auditoría usa la detección del
+    # proceso: un root explícito pertenece al consumidor y no puede juzgarse
+    # con la confianza de una autodetección que no se utilizó.
+    root_fue_explicito = root is not None
     root = (root or _raiz()).resolve()
     canonical_sections = {s["folder"] for s in SECTIONS}
     violations: List[Dict[str, Any]] = []
@@ -502,14 +506,12 @@ def auditar_runtime(
     # ("carpeta scripts no es sección canónica"), culpando al repo de no ser un
     # vault en lugar de señalar que el vault fue mal detectado.
     try:
-        from vault_io import VAULT_ROOT as _DETECTED_ROOT
         from vault_io import vault_root_origin, vault_root_is_confident
 
         # Solo aplica cuando se audita el root AUTO-DETECTADO. Con --root
         # explícito el usuario ya declaró cuál es el vault y la confianza de la
         # detección no dice nada sobre él.
-        audits_detected_root = root.resolve() == _DETECTED_ROOT.resolve()
-        if audits_detected_root and not vault_root_is_confident():
+        if not root_fue_explicito and not vault_root_is_confident():
             _flag(
                 "AP-36",
                 ".",
