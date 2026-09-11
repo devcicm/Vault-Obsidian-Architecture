@@ -96,6 +96,10 @@ def test_enlace_de_codigo_vive_en_grafo_y_la_fachada_legacy_delega(tmp_path):
 
     root = _vault(tmp_path / "v")
     vault_io.set_vault_root(root)
+    # La tool pública entra por ``wrap_main``, que inicia su ledger antes de
+    # ejecutar la operación. Esta caracterización llama a la implementación
+    # directamente, así que debe abrir explícitamente la misma frontera.
+    vault_io.write_ledger_reset()
     source = tmp_path / "program.py"
     source.write_text("#!/usr/bin/env python3\nprint('ok')\n", encoding="utf-8")
 
@@ -152,6 +156,8 @@ def test_servicio_de_enlace_es_importable_sin_scripts_en_sys_path(repo_root):
         cwd=repo_root,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         check=False,
     )
 
