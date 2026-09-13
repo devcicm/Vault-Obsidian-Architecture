@@ -92,6 +92,20 @@ def test_runner_usa_menos_m_para_un_destino_instalado(tmp_path, monkeypatch):
     assert build_argv(op, target) == [__import__("sys").executable, "-m", module]
 
 
+def test_la_primera_operacion_real_declara_su_modulo_estable():
+    fragment = registry.resolve("vault_query_parse")
+    assert fragment is not None and fragment.distribution is not None
+    target = resolve_operation(fragment, legacy_scripts=registry.SCRIPTS_DIR)
+    assert target.kind == "installed"
+    assert target.module == "vault.consulta.query_parse"
+    op = type("Operation", (), {"fragment": fragment, "tool": fragment.name, "args": {}})()
+    assert build_argv(op, target) == [
+        __import__("sys").executable,
+        "-m",
+        "vault.consulta.query_parse",
+    ]
+
+
 def test_el_resolver_no_contiene_un_catalogo_manual_de_tools():
     source = (registry.Path(__file__).resolve().parent.parent / "cli" / "resolver.py").read_text(
         encoding="utf-8"

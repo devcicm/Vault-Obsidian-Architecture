@@ -4232,6 +4232,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     "vault_query_parse": {
         "name": "vault_query_parse",
         "script": "vault_query_parse.py",
+        "execution_module": "vault.consulta.query_parse",
         "group": "Memoria de Contexto",
         "purpose": "Lenguaje natural → consulta estructurada (términos, secciones, tags, semillas, ventana temporal, intención) y plan de tools. Determinista, sin modelo.",
         "params": {

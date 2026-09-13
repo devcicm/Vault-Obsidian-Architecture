@@ -27,17 +27,31 @@ def test_runtime_y_meta_se_derivan_de_naturalezas_sin_lista_paralela():
     assert meta
     assert all(proyeccion[nombre].clase == "maintenance" for nombre in meta)
     assert all(not proyeccion[nombre].distributable for nombre in meta)
-    assert all(proyeccion[nombre].execution_module is None for nombre in proyeccion)
+    assert all(proyeccion[nombre].execution_module is None for nombre in meta)
 
 
-def test_distribuible_no_significa_que_la_operacion_instalada_ya_exista():
-    """PR5 aún define alcance; el resolver instalado todavía no existe."""
+def test_distribuible_no_significa_que_toda_operacion_ya_este_instalada():
+    """Una sola promesa explícita no convierte el alcance entero en instalado."""
     assert any(entrada.distributable for entrada in _projection().values())
-    assert all(
+    instaladas = {
+        nombre: entrada.execution_module
+        for nombre, entrada in _projection().items()
+        if entrada.execution_module is not None
+    }
+    assert instaladas == {"vault_query_parse": "vault.consulta.query_parse"}
+    assert any(
         entrada.execution_module is None
         for entrada in _projection().values()
         if entrada.distributable
     )
+
+
+def test_execution_module_invalido_falla_en_la_proyeccion():
+    with pytest.raises(ValueError, match="execution_module inválido"):
+        derivar_distribucion(
+            {"vault_x": {"script": "vault_x.py", "execution_module": ""}},
+            {"runtime": {"tools": ["vault_x"]}},
+        )
 
 
 def test_drift_entre_registros_falla_sin_importar_scripts_fisicos():
