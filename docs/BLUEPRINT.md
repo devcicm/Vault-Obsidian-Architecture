@@ -60,8 +60,8 @@ regenera.*
 | **Consulta** (`consulta`) | 7 | 11 | base de datos; embeddings; servicio externo |
 | **Ciclo de vida** (`ciclo_de_vida`) | 3 | 9 | — |
 | **Durabilidad** (`durabilidad`) | 4 | 4 | escribir fuera de la raíz del vault (AP-36) |
-| **Meta-toolkit** (`meta_toolkit`) | 4 | 30 | escribir en una sección de contenido: sus artefactos derivados viven en 00_System/ |
-| **CLI** (`cli`) | 0 | 7 | decidir: traduce argumentos a llamadas y envelopes a salida; la decisión vive en la tool |
+| **Meta-toolkit** (`meta_toolkit`) | 5 | 30 | escribir en una sección de contenido: sus artefactos derivados viven en 00_System/ |
+| **CLI** (`cli`) | 0 | 8 | decidir: traduce argumentos a llamadas y envelopes a salida; la decisión vive en la tool |
 
 ## Capa 4 — Normas → puertas → tests
 

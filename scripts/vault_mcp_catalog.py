@@ -4457,6 +4457,21 @@ def get_tool(name: str) -> Optional[Dict[str, Any]]:
     return TOOLS_CATALOG.get(name)
 
 
+@lru_cache(maxsize=1)
+def distribution_metadata():
+    """Proyección de distribución de los registros canónicos.
+
+    El catálogo ya es el puerto que consume la CLI. Exponer aquí esta lectura
+    evita que el adaptador de transporte abra un segundo cruce hacia el registro
+    de naturalezas; la lógica de clasificación sigue viviendo en el módulo
+    estable ``vault.meta_toolkit.distribucion``.
+    """
+    from vault.meta_toolkit.distribucion import derivar_distribucion
+    from vault.meta_toolkit.naturalezas import NATURALEZAS
+
+    return derivar_distribucion(TOOLS_CATALOG, NATURALEZAS)
+
+
 def get_group_tools(group: str) -> List[Dict[str, Any]]:
     """Retorna todas las tools de un grupo."""
     tool_names = GROUPS.get(group, [])

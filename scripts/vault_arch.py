@@ -452,6 +452,9 @@ CONTEXTS: dict[str, dict] = {
             # faltaba era decirlo aquí, y mientras `cli/` no tuvo contexto no
             # había dónde notarlo.
             "NATIVE_JS_TOOLS": "vault_mcp_catalog:NATIVE_JS_TOOLS",
+            # La CLI consume esta proyección derivada para saber si una tool
+            # tiene operación instalada real; no puede inferirlo del script.
+            "distribution_metadata": "vault_mcp_catalog:distribution_metadata",
         },
         # Éste es el contexto que v39.6 dejó a medias: sus módulos ya están
         # anotados `internal` con motivo, pero nada impedía que uno tocase un
@@ -548,7 +551,7 @@ CONTEXTS: dict[str, dict] = {
         "prohibe": ["decidir: traduce argumentos a llamadas y envelopes a "
                     "salida; la decisión vive en la tool"],
         "modulos": [
-            "vault_cli", "registry", "safety", "runner", "analyzer",
+            "vault_cli", "registry", "resolver", "safety", "runner", "analyzer",
             "scheduler", "__main__",
         ],
     },

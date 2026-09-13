@@ -40,6 +40,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from .registry import REPO_ROOT, SCRIPTS_DIR
+from .resolver import OperationTarget, resolve_operation
 from .scheduler import Operation, Wave
 
 DEFAULT_TIMEOUT = 120
@@ -82,7 +83,7 @@ class Result:
         return out
 
 
-def build_argv(op: Operation) -> List[str]:
+def build_argv(op: Operation, target: OperationTarget | None = None) -> List[str]:
     """Traduce args de la operación a la línea de comandos de la tool.
 
     Convención de argparse en este repo: todos los parámetros son largos
@@ -90,8 +91,10 @@ def build_argv(op: Operation) -> List[str]:
     expanden en múltiples valores tras la misma flag.
     """
     frag = op.fragment
-    script = SCRIPTS_DIR / (frag.script if frag else f"{op.tool}.py")
-    argv = [sys.executable, str(script)]
+    target = target or (resolve_operation(frag, legacy_scripts=SCRIPTS_DIR) if frag else None)
+    if target is None or target.kind in {"missing", "invalid"}:
+        raise FileNotFoundError(f"operación no resoluble: {op.tool}")
+    argv = [sys.executable, "-m", target.module] if target.kind == "installed" else [sys.executable, str(target.path)]
 
     for key, value in op.args.items():
         flag = f"--{key.replace('_', '-')}"
@@ -134,11 +137,12 @@ def run_one(op: Operation, *, timeout: int = DEFAULT_TIMEOUT,
     if frag.runtime == "node":
         return Result(op.id, op.tool, False, 1, 0,
                       error=f"'{op.tool}' es nativa del servidor MCP (Node)")
-    if not frag.exists:
+    target = resolve_operation(frag, legacy_scripts=SCRIPTS_DIR)
+    if target.kind in {"missing", "invalid"}:
         return Result(op.id, op.tool, False, 1, 0,
-                      error=f"script inexistente: {frag.script}")
+                      error=target.detail or f"operación no resoluble: {frag.script}")
 
-    argv = build_argv(op)
+    argv = build_argv(op, target)
     if dry_run:
         return Result(op.id, op.tool, True, 0, 0, skipped=True,
                       payload={"dry_run": True, "argv": argv[1:]})

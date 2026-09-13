@@ -43,3 +43,10 @@ def test_distribuible_no_significa_que_la_operacion_instalada_ya_exista():
 def test_drift_entre_registros_falla_sin_importar_scripts_fisicos():
     with pytest.raises(ValueError, match="divergentes"):
         derivar_distribucion({"vault_x": {"script": "vault_x.py"}}, {"runtime": {"tools": []}})
+
+
+def test_naturalezas_se_reexporta_desde_el_mismo_objeto_canonico():
+    import vault_servicio
+    from vault.meta_toolkit.naturalezas import NATURALEZAS
+
+    assert vault_servicio.NATURALEZAS is NATURALEZAS

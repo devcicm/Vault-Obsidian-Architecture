@@ -52,7 +52,9 @@ def test_hay_puertos_en_los_contextos_que_publican_api():
     # desde siempre y su comentario ya nombraba a `vault_mcp_catalog` como
     # dueño. Lo que faltaba era declararlo, y mientras `cli/` no tuvo contexto
     # no había dónde notar que el cruce existía.
-    assert len(PUERTOS) == 61
+    # +1 en PR5: la CLI consume la proyección derivada para no
+    # inventar un mapeo de operaciones instaladas desde los scripts legacy.
+    assert len(PUERTOS) == 62
     # `cli` queda fuera a propósito: es un adaptador de transporte y **nadie
     # importa de `cli/`**, así que no publica API. Exigirle un puerto obligaría
     # a inventar uno, que es justo lo contrario de lo que mide este fichero.

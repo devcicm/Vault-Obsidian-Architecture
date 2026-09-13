@@ -2,7 +2,7 @@
 
 > Documento derivado. Se genera con `python scripts/vault_arch.py --blueprint`; la fuente es `CONTEXTS` en `scripts/vault_arch.py`. No se edita a mano.
 
-**10 contextos**, **159 módulos** clasificados, **35 fronteras cruzadas** pendientes de publicar puerto.
+**10 contextos**, **160 módulos** clasificados, **35 fronteras cruzadas** pendientes de publicar puerto.
 
 ## Los límites
 
@@ -183,7 +183,7 @@ Fronteras que hoy cruza (12), deuda declarada:
 ## Meta-toolkit
 
 - **Lenguaje ubicuo:** catálogo, contrato, spec, smoke, conteo derivado
-- **Puertos publicados:** `GROUPS` → `vault_mcp_catalog:GROUPS`, `NATIVE_JS_TOOLS` → `vault_mcp_catalog:NATIVE_JS_TOOLS`, `TOOLS_CATALOG` → `vault_mcp_catalog:TOOLS_CATALOG`, `check_contracts` → `vault_mcp_catalog:check_contracts`
+- **Puertos publicados:** `GROUPS` → `vault_mcp_catalog:GROUPS`, `NATIVE_JS_TOOLS` → `vault_mcp_catalog:NATIVE_JS_TOOLS`, `TOOLS_CATALOG` → `vault_mcp_catalog:TOOLS_CATALOG`, `check_contracts` → `vault_mcp_catalog:check_contracts`, `distribution_metadata` → `vault_mcp_catalog:distribution_metadata`
 - **No cruza:** escribir en una sección de contenido: sus artefactos derivados viven en 00_System/
 - **Módulos (30):** `vault_arch`, `vault_blame_audit`, `vault_blueprint`, `vault_changelog_check`, `vault_ciclos`, `vault_criterios`, `vault_doc_counts`, `vault_doc_staleness`, `vault_doc_sync`, `vault_error_contract`, `vault_excepcion_declarada`, `vault_firma_sitio`, `vault_fix_all`, `vault_foreign_check`, `vault_gate`, `vault_kernel`, `vault_manifest`, `vault_mcp`, `vault_mcp_catalog`, `vault_noop_audit`, `vault_norms_coherence`, `vault_produccion`, `vault_recursos`, `vault_servicio`, `vault_smoke`, `vault_spec_catalog_check`, `vault_spec_generate_catalog`, `vault_spec_memory`, `vault_spec_validate`, `vault_test_runner`
 
@@ -202,7 +202,7 @@ Fronteras que hoy cruza (5), deuda declarada:
 - **Lenguaje ubicuo:** comando, registro de tools, preflight, envelope
 - **Puertos publicados:**
 - **No cruza:** decidir: traduce argumentos a llamadas y envelopes a salida; la decisión vive en la tool
-- **Módulos (7):** `__main__`, `analyzer`, `registry`, `runner`, `safety`, `scheduler`, `vault_cli`
+- **Módulos (8):** `__main__`, `analyzer`, `registry`, `resolver`, `runner`, `safety`, `scheduler`, `vault_cli`
 
 Fronteras que hoy cruza (1), deuda declarada:
 

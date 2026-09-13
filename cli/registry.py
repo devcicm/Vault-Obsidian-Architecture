@@ -113,6 +113,9 @@ class Fragment:
     #: (AP-51). Ausente no lo pone a `False` — el catálogo basta y eso siempre
     #: fue legítimo.
     contract_known: bool = True
+    # Proyección derivada, no otro registro de tools. ``None`` solo aparece en
+    # construcciones de prueba o si no fue posible construir el catálogo.
+    distribution: Any = None
 
     @property
     def mode(self) -> str:
@@ -252,9 +255,10 @@ _SPEC_STATUS: Dict[str, Any] = {"estado": "sin_leer", "path": None, "detail": No
 @lru_cache(maxsize=1)
 def load_registry() -> Dict[str, Fragment]:
     """Construye el índice de fragmentos. Cacheado — el catálogo es estático."""
-    from vault_mcp_catalog import TOOLS_CATALOG
+    from vault_mcp_catalog import TOOLS_CATALOG, distribution_metadata
 
     spec, estado = _leer_spec()
+    distribucion = distribution_metadata()
     _SPEC_STATUS.clear()
     _SPEC_STATUS.update(estado)
     contrato_conocido = estado["estado"] != "ilegible"
@@ -277,6 +281,7 @@ def load_registry() -> Dict[str, Fragment]:
                 normalize_arg(a) for a in (spec_entry.get("required_args") or [])
             ],
             contract_known=contrato_conocido,
+            distribution=distribucion[name],
         )
     return registry
 

@@ -20,7 +20,10 @@ class DistribucionTool:
     clase: str
     distributable: bool
     legacy_script: str | None
-    execution_module: None = None
+    # La proyección actual no asigna operaciones instaladas. El tipo admite la
+    # declaración futura para que el resolver pueda distinguir una ausencia
+    # honesta de un destino explícito que deba verificarse.
+    execution_module: str | None = None
 
 
 def derivar_distribucion(
