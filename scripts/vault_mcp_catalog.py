@@ -29,6 +29,17 @@ from vault_version import CURRENT_VERSION
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
+def _product_catalog_path() -> Path:
+    """Ruta física de la proyección empaquetada del catálogo canónico.
+
+    ``REPO_ROOT`` es deliberadamente sustituible en pruebas de la frontera
+    JS-native: representa el árbol que se quiere inspeccionar para el `.mjs`.
+    La proyección de producto, en cambio, pertenece a esta fuente canónica y
+    no debe desaparecer cuando el fixture hace ese árbol hostil.
+    """
+    return Path(__file__).resolve().parent.parent / "vault" / "meta_toolkit" / "tools-catalog.json"
+
+
 TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     "vault_write": {
         "name": "vault_write",
@@ -4667,6 +4678,7 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
     import json, os, sys
     from pathlib import Path
 
+    default_output = output_path is None
     if output_path is None:
         output_path = os.path.join(
             os.path.dirname(__file__), "..", "mcp", "nodejs", "tools-catalog.json"
@@ -4704,6 +4716,11 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
             "side_effects": tool.get("side_effects", []),
             "status": status,
             "exposed_via_mcp": exposed,
+            # Proyección de una promesa explícita de producto. El catálogo
+            # canónico conserva el dueño; el artefacto empaquetable sólo la
+            # transporta para que una instalación no tenga que importar este
+            # script ni inferir destinos por nombre.
+            "execution_module": tool.get("execution_module"),
         }
         if tool.get("related"):
             tools_json[name]["related"] = tool["related"]
@@ -4733,6 +4750,16 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(catalog, f, indent=2, ensure_ascii=False)
         f.write("\n")
+
+    # La CLI pública consume exactamente la misma proyección derivada que el
+    # transporte MCP, pero como recurso del paquete. Sólo la sincronización
+    # canónica actualiza ambas copias; el paquete no convierte el JSON en una
+    # segunda autoridad editorial.
+    if default_output:
+        product_output = _product_catalog_path()
+        with product_output.open("w", encoding="utf-8") as f:
+            json.dump(catalog, f, indent=2, ensure_ascii=False)
+            f.write("\n")
 
     return output_path
 
@@ -4765,6 +4792,7 @@ def check_sync(json_path: Optional[str] = None) -> Dict[str, Any]:
     """
     import json, os
 
+    default_json = json_path is None
     if json_path is None:
         json_path = os.path.join(
             os.path.dirname(__file__), "..", "mcp", "nodejs", "tools-catalog.json"
@@ -4860,6 +4888,24 @@ def check_sync(json_path: Optional[str] = None) -> Dict[str, Any]:
         if py_guard_count != js_guard_count:
             result["ok"] = False
             result["diffs"].append(f"{name}: guard count differs (py={py_guard_count}, js={js_guard_count})")
+
+    # El recurso instalado es una proyección, no un catálogo independiente.
+    # Sólo se contrasta en el camino canónico (sin --json de prueba).
+    if default_json:
+        product_path = _product_catalog_path()
+        if not product_path.is_file():
+            result["ok"] = False
+            result["diffs"].append(f"product catalog not found at {product_path}")
+        else:
+            try:
+                product_catalog = json.loads(product_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as exc:
+                result["ok"] = False
+                result["diffs"].append(f"invalid product catalog: {exc}")
+            else:
+                if product_catalog != existing:
+                    result["ok"] = False
+                    result["diffs"].append("product catalog differs from canonical JSON projection")
 
     return result
 

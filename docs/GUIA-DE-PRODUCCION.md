@@ -43,7 +43,7 @@ está escrita como registro ejecutable y no como recordatorio.
 | `material_ajeno` | ¿Se ha medido contra material que este repo no generó? | ✅ cubierta | vault_foreign_check --root <vault ajeno>, o --self-test sin uno a mano |
 | `sistemas_operativos` | ¿Se ejecuta en los sistemas donde se dice que corre? | ✅ cubierta | matriz os de la CI (ubuntu-latest, windows-latest) |
 | `superficie_expuesta` | ¿Está escrito qué expone y a quién, donde lo lee quien instala? | ✅ cubierta | README.md (sección «Estado del proyecto») |
-| `ergonomia_de_entrada` | ¿Se invoca como un programa o como un montón de scripts? | ⚠️ descubierta | — |
+| `ergonomia_de_entrada` | ¿Se invoca como un programa o como un montón de scripts? | ✅ descubierta | — |
 | `contrato_con_quien_contribuye` | ¿Sabe alguien de fuera cómo aportar o cómo reportar un fallo? | ✅ cubierta | README.md (sección «Estado del proyecto») |
 | `lo_publicado_es_solo_el_estandar` | ¿Puede irse en un push algo que no es de este repo? | ✅ cubierta | tests/test_publicacion_limpia.py (mide el índice de git, no el disco) |
 

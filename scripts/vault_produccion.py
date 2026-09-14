@@ -409,7 +409,10 @@ def _guia() -> str:
 
 def escribir_guia() -> Dict[str, Any]:
     GUIA.parent.mkdir(parents=True, exist_ok=True)
-    GUIA.write_text(_guia(), encoding="utf-8")
+    # El derivado versionado usa LF incluso cuando el productor corre en Windows:
+    # de otro modo el CR introducido por la traducción de texto se reporta como
+    # whitespace nuevo por ``git diff --check``.
+    GUIA.write_text(_guia(), encoding="utf-8", newline="\n")
     return {"ok": True, "tool": "vault_produccion", "action": "guia",
             "written": str(GUIA.relative_to(RAIZ)).replace("\\", "/"),
             "promesas": len(PREGUNTAS)}

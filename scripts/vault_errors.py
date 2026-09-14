@@ -26,7 +26,6 @@ import os
 import queue
 import sys
 import threading
-import traceback
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -42,7 +41,7 @@ if str(_REPO_ROOT) not in sys.path:
 from vault_entorno import leer as _env
 from typing import Any, Callable, Dict, List, Optional
 
-from vault_errors_catalog import ERROR_CATALOG, get_error
+from vault_errors_catalog import ERROR_CATALOG, construir_error, get_error
 from vault_errors_trace import log_trace, log_token_usage
 from vault.autoria.voz import speak as _speak_estable
 
@@ -117,21 +116,7 @@ def emit_error(
     exception: Exception = None,
 ) -> Dict[str, Any]:
     """Construye error estructurado y lo registra en el trace log."""
-    catalog_entry = get_error(code)
-    entry = {
-        "ok": False,
-        "tool": tool,
-        "error_code": code,
-        "category": catalog_entry["category"],
-        "severity": catalog_entry["severity"],
-        "message": message or catalog_entry["message"],
-        "recovery": catalog_entry["recovery"],
-        "timestamp": datetime.now(timezone.utc).isoformat()[:19] + "Z",
-    }
-    if args:
-        entry["args"] = args
-    if exception:
-        entry["traceback"] = traceback.format_exc()
+    entry = construir_error(tool, code, message, args, exception)
     log_trace(entry)
     return entry
 
