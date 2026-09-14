@@ -14,6 +14,11 @@ from importlib import metadata
 from typing import Any, Sequence
 
 from .kernel.errores import construir_error
+from .ciclo_de_vida.producto import (
+    inicializar_runtime,
+    diagnosticar_runtime,
+    estado_runtime,
+)
 from .meta_toolkit.catalogo_producto import catalogo_producto, obtener_tool
 from .meta_toolkit.resolucion_producto import (
     INSTALLED,
@@ -31,6 +36,8 @@ EXIT_NOT_INSTALLED = 4
 EXIT_NOT_RUNTIME = 5
 EXIT_INVALID_TARGET = 6
 EXIT_OPERATION_FAILED = 7
+EXIT_RUNTIME_INVALID = 8
+EXIT_INIT_CONFLICT = 9
 
 
 def toolkit_version() -> str:
@@ -104,6 +111,28 @@ def cmd_run(args: argparse.Namespace) -> int:
     return 0 if process.returncode == 0 else EXIT_OPERATION_FAILED
 
 
+def _lifecycle_result(result: dict[str, Any]) -> int:
+    if result.get("ok"):
+        _emit(result)
+        return 0
+    state = str(result.get("state", "INVALID_RUNTIME"))
+    detail = str(result.get("detail") or state)
+    code = EXIT_INIT_CONFLICT if state == "INIT_CONFLICT" else EXIT_RUNTIME_INVALID
+    return _error(state, detail, code)
+
+
+def cmd_init(args: argparse.Namespace) -> int:
+    return _lifecycle_result(inicializar_runtime(args.runtime))
+
+
+def cmd_doctor(args: argparse.Namespace) -> int:
+    return _lifecycle_result(diagnosticar_runtime(args.runtime))
+
+
+def cmd_status(args: argparse.Namespace) -> int:
+    return _lifecycle_result(estado_runtime(args.runtime))
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="vault")
     parser.add_argument("--version", action="version", version=toolkit_version())
@@ -121,6 +150,16 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("tool")
     run.add_argument("args", nargs=argparse.REMAINDER)
     run.set_defaults(func=cmd_run)
+
+    init = commands.add_parser("init", help="Crea un runtime externo nuevo")
+    init.add_argument("runtime")
+    init.set_defaults(func=cmd_init)
+    doctor = commands.add_parser("doctor", help="Diagnostica un runtime sin escribir")
+    doctor.add_argument("runtime")
+    doctor.set_defaults(func=cmd_doctor)
+    status = commands.add_parser("status", help="Muestra el estado read-only de un runtime")
+    status.add_argument("runtime")
+    status.set_defaults(func=cmd_status)
     return parser
 
 

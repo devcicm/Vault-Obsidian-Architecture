@@ -1,0 +1,29 @@
+{
+  "schema": 1,
+  "standard_version": "v40.34",
+  "sections": [
+    "00_System",
+    "01_Projects",
+    "02_Observability",
+    "03_Decisions",
+    "04_Sessions",
+    "05_Patterns",
+    "06_Diagrams",
+    "07_Knowledge",
+    "08_Runbooks",
+    "09_Infrastructure",
+    "10_Migrated",
+    "11_Code",
+    "12_Bibliography",
+    "13_Flows",
+    "14_Requirements",
+    "15_Tests",
+    "16_AI_Governance",
+    "17_Preferences",
+    "18_Bugs",
+    "19_Audits",
+    "20_Quarantine",
+    "21_QA",
+    "99_Index"
+  ]
+}

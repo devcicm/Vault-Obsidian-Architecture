@@ -51,6 +51,7 @@ packages = ["vault", "vault.kernel", "vault.durabilidad", "vault.indices", "vaul
 [tool.setuptools.package-data]
 scripts = ["tool-spec.json", "vault-obsidian-architecture.md", "README.md"]
 "vault.meta_toolkit" = ["tools-catalog.json"]
+"vault.ciclo_de_vida" = ["runtime-seed.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

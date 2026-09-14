@@ -86,7 +86,7 @@ def _product_error(
         _fail(f"{label} state={payload.get('state')!r}, expected={state!r}")
 
 
-def main() -> int:
+def main(*, gate: str = "CLEAN_INSTALL_GATE") -> int:
     with tempfile.TemporaryDirectory(prefix="voa-clean-install-") as raw:
         root = Path(raw)
         source = root / "source"
@@ -115,6 +115,8 @@ def main() -> int:
             "vault/product_cli.py",
             "vault/consulta/__init__.py",
             "vault/consulta/query_parse.py",
+            "vault/ciclo_de_vida/producto.py",
+            "vault/ciclo_de_vida/runtime-seed.json",
             "vault/meta_toolkit/tools-catalog.json",
         }
         forbidden_prefixes = ("scripts/", "tests/", "vault-sandbox/", ".git/", "build/")
@@ -191,6 +193,32 @@ def main() -> int:
             label="vault run unknown", code=3, state="unknown_tool",
         )
 
+        # Lifecycle: la misma instalación limpia crea, diagnostica, transporta
+        # e inicializa de nuevo un runtime que vive fuera de venv y checkout.
+        runtime = root / "consumer-runtime"
+        created = _json_output(
+            _run([str(vault), "init", str(runtime)], cwd=work, env=clean_env),
+            "vault init",
+        )
+        if created.get("state") != "INIT_CREATED" or not (runtime / "00_System" / "standard-version.json").is_file():
+            _fail(f"vault init did not create the minimum runtime: {created}")
+        if {"scripts", "cli", "tests", ".git", "pyproject.toml"} & {p.name for p in runtime.rglob("*")}:
+            _fail("runtime copied toolkit source")
+        doctor = _json_output(_run([str(vault), "doctor", str(runtime)], cwd=work, env=clean_env), "vault doctor")
+        status = _json_output(_run([str(vault), "status", str(runtime)], cwd=work, env=clean_env), "vault status")
+        if not doctor.get("ok") or not status.get("ok"):
+            _fail(f"lifecycle diagnosis failed: doctor={doctor}, status={status}")
+        before = {str(p.relative_to(runtime)): p.read_bytes() for p in runtime.rglob("*") if p.is_file()}
+        repeated = _json_output(_run([str(vault), "init", str(runtime)], cwd=work, env=clean_env), "vault init idempotent")
+        after = {str(p.relative_to(runtime)): p.read_bytes() for p in runtime.rglob("*") if p.is_file()}
+        if repeated.get("state") != "INIT_ALREADY_EXISTS" or after != before:
+            _fail("vault init was not idempotent")
+        moved = root / "moved-runtime"
+        shutil.copytree(runtime, moved)
+        moved_doctor = _json_output(_run([str(vault), "doctor", str(moved)], cwd=work, env=clean_env), "vault doctor moved runtime")
+        if not moved_doctor.get("ok"):
+            _fail(f"moved runtime is not portable: {moved_doctor}")
+
         invocation = _run([str(python), "-I", "-m", QUERY_MODULE, *QUERY_ARGS], cwd=work, env=clean_env)
         if invocation.returncode:
             _fail(f"installed operation failed:\n{invocation.stderr}\n{invocation.stdout}")
@@ -230,7 +258,7 @@ def main() -> int:
 
         print(json.dumps({
             "ok": True,
-            "gate": "CLEAN_INSTALL_GATE",
+            "gate": gate,
             "wheel": wheel.name,
             "module_origin": str(module_path),
             "public_vault_executable": str(vault),
@@ -238,6 +266,12 @@ def main() -> int:
             "checkout_import_path_absent": True,
             "source_tree_physically_absent": True,
             "scripts_workaround_absent": True,
+            "runtime_created": True,
+            "doctor_ok": True,
+            "status_ok": True,
+            "idempotent": True,
+            "runtime_external": True,
+            "runtime_contains_toolkit_source": False,
         }, ensure_ascii=False))
     return 0
 
