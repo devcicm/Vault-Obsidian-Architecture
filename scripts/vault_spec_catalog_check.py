@@ -233,7 +233,25 @@ def congelar_campos() -> Dict[str, Any]:
         for tool, campos in tabla.items()
     }
     estables = {t: c for t, c in estables.items() if c}
-    previa = _cargar_baseline()
+    previa = {}
+    if FIELDS_BASELINE.exists():
+        previa = json.loads(FIELDS_BASELINE.read_text(encoding="utf-8"))
+    previa_stable = previa.get("stable", {})
+    # `generated` is provenance, not contract content. Preserve the existing
+    # bytes when the canonical contract is unchanged; otherwise the clock
+    # makes every no-op pre-commit run dirty.
+    if (
+        previa.get("schema") == FIELDS_SCHEMA
+        and previa_stable == estables
+    ):
+        return {
+            "ok": True,
+            "tool": "vault_spec_catalog_check",
+            "frozen_tools": len(estables),
+            "frozen_fields": sum(len(c) for c in estables.values()),
+            "added_since_previous": 0,
+            "path": str(FIELDS_BASELINE),
+        }
     datos = {
         "schema": FIELDS_SCHEMA,
         "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -249,7 +267,7 @@ def congelar_campos() -> Dict[str, Any]:
         encoding="utf-8",
         newline="\n",
     )
-    nuevos = sum(len(set(c) - set(previa.get(t, []))) for t, c in estables.items())
+    nuevos = sum(len(set(c) - set(previa_stable.get(t, []))) for t, c in estables.items())
     return {
         "ok": True,
         "tool": "vault_spec_catalog_check",
