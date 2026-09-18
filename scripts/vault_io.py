@@ -141,18 +141,41 @@ def resolve_tool_spec() -> Optional[Path]:
 # Lo que se queda en este módulo es la POLÍTICA: qué se comprueba antes de
 # escribir, qué se sanea, qué se cuenta como trabajo y qué índices se recalculan
 # después. Ver `atomic_write_text`, que ahora se lee como lo que siempre fue.
+import vault_fs as _vault_fs
 from vault_fs import (  # noqa: F401  (reexport deliberado)
-    _escribir_temporal,
-    _fsync_si_procede,
     _held,
     _local_lock_for,
     _HELD_LOCKS,
     _LOCAL_LOCKS,
     _LOCAL_LOCKS_GUARD,
-    escritura_atomica,
     file_lock,
     guarda_secretos,
 )
+
+
+class _StablePrimitiveExport:
+    """Proxy explícito para un reexport legacy cargado al primer uso.
+
+    No usamos ``__getattr__`` de módulo: para el verificador de puertos eso
+    significa una API abierta y permitiría declarar cualquier símbolo ficticio
+    como puerto. Cada proxy conserva un nombre histórico concreto y obtiene su
+    documentación y comportamiento del único owner estable.
+    """
+
+    def __init__(self, name: str) -> None:
+        self._name = name
+
+    @property
+    def __doc__(self):
+        return getattr(_vault_fs, self._name).__doc__
+
+    def __call__(self, *args, **kwargs):
+        return getattr(_vault_fs, self._name)(*args, **kwargs)
+
+
+_escribir_temporal = _StablePrimitiveExport("_escribir_temporal")
+_fsync_si_procede = _StablePrimitiveExport("_fsync_si_procede")
+escritura_atomica = _StablePrimitiveExport("escritura_atomica")
 
 def assert_within_vault(path: Path, vault_root: Path) -> Path:
     """Resolve *path* and verify it stays inside *vault_root*.
@@ -467,7 +490,7 @@ def atomic_write_text(
     # ejecutado arriba, así que aquí no se pasa ninguna: esta función las quiere
     # con su propio manejo de errores (el escáner degradado se registra en vez de
     # abortar), y eso es política, no mecanismo.
-    escritura_atomica(path, text, encoding)
+    _vault_fs.escritura_atomica(path, text, encoding)
 
     _auto_section_index(path)
 

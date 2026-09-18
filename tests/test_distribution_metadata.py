@@ -38,7 +38,11 @@ def test_distribuible_no_significa_que_toda_operacion_ya_este_instalada():
         for nombre, entrada in _projection().items()
         if entrada.execution_module is not None
     }
-    assert instaladas == {"vault_query_parse": "vault.consulta.query_parse"}
+    assert instaladas == {
+        "vault_query_parse": "vault.consulta.query_parse",
+        "vault_knowledge_save": "vault.autoria.knowledge_save",
+        "vault_knowledge_get": "vault.autoria.knowledge_get",
+    }
     assert any(
         entrada.execution_module is None
         for entrada in _projection().values()

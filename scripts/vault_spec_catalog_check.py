@@ -245,7 +245,10 @@ def congelar_campos() -> Dict[str, Any]:
         "stable": estables,
     }
     FIELDS_BASELINE.write_text(
-        json.dumps(datos, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        json.dumps(datos, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
     nuevos = sum(len(set(c) - set(previa.get(t, []))) for t, c in estables.items())
     return {
         "ok": True,

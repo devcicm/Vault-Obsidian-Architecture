@@ -142,13 +142,13 @@ que no sea runtime y no publica un runtime parcial si falla el seed.
 ## Evidencia actual
 
 ```text
-FULL_SUITE:                    3155 passed / 0 failed
+FULL_SUITE (lifecycle checkpoint): 3155 passed / 0 failed
 EXISTING_GATES:                22 / 22 PASS
 CLEAN_INSTALL_GATE:            PASS
 RUNTIME_LIFECYCLE_GATE:        PASS
 SOURCE_TREE_PHYSICALLY_ABSENT: YES
 CHECKOUT_IMPORT_PATH_ABSENT:   YES
-REAL_INSTALLED_OPERATIONS:     1
+REAL_INSTALLED_OPERATIONS:     1 (at lifecycle checkpoint)
 RUNTIME_TOOLS / META_TOOLS:    92 / 24
 SCRIPT_MODULES:                152
 RUNTIME_CLOSURE:               113
@@ -160,6 +160,73 @@ NEW_DEFERRED_IMPORT_CYCLES:    0
 Los gates de instalación construyen un wheel, crean un venv, instalan sin modo
 editable, eliminan la copia temporal de fuente, ejecutan desde cwd externo y
 comprueban que módulos y ejecutable pertenecen a `site-packages`/venv.
+
+## Memory recovery checkpoint
+
+El primer vertical de memoria instalado queda cerrado con dos operaciones reales
+del catalogo, no wrappers ad hoc:
+
+```text
+vault_knowledge_save -> vault.autoria.knowledge_save
+vault_knowledge_get  -> vault.autoria.knowledge_get
+```
+
+Ambas delegan en `vault.autoria.conocimiento`. Markdown bajo `07_Knowledge/`
+es la autoridad: recovery recorre Markdown y frontmatter y aplica ranking
+determinista. `search-index.json` sigue siendo una proyeccion legacy opcional;
+el vertical no necesita base de datos, embeddings, daemon ni red.
+
+El write path tiene un unico primitive atomico fisico:
+
+```text
+installed write: vault.autoria.conocimiento -> vault.kernel.escritura -> Markdown
+legacy write:    scripts/vault_io -> scripts/vault_fs -> vault.kernel.escritura
+```
+
+`scripts/vault_fs` es solo frontera de compatibilidad. Resuelve el primitive
+estable de forma lazy y solo agrega el root del checkout durante ejecucion
+legacy directa cuando `ModuleNotFoundError.name == "vault"`; ningun modulo
+instalado importa `scripts/`. Se elimino la implementacion atomica historica
+duplicada. AP-46 prueba asi un unico primitive activo, mientras ledger e index
+hooks legacy permanecen en `vault_io`. El guard de frontmatter sigue siendo
+estructural: rechaza delimitadores manuales, delegacion en comentario, import
+sin uso y owner sin `Frontmatter`.
+
+`tests/memory_recovery_e2e_gate.py` construye wheel, instala dependencias en
+venv externo, borra la copia fuente, inicializa un runtime, comprueba un canary
+UUID ausente, lo escribe desde un proceso, lee el Markdown directamente,
+recupera su path exacto desde otro proceso, mueve el runtime y lo recupera de
+nuevo. Verifica los cuatro modulos (`conocimiento`, `knowledge_save`,
+`knowledge_get`, `kernel.escritura`) desde `site-packages`, checkout ausente de
+`sys.path` y ausencia medida de `.db`, `.sqlite` y `.sqlite3`.
+
+La evidencia final de este checkpoint:
+
+```text
+CLEAN_INSTALL_GATE:            PASS
+RUNTIME_LIFECYCLE_GATE:        PASS
+MEMORY_RECOVERY_E2E_GATE:      PASS
+FULL_SUITE:                    3180 passed / 0 failed
+EXISTING_GATES:                22 / 22 PASS
+REAL_INSTALLED_OPERATIONS:     3
+INSTALLED: vault_query_parse, vault_knowledge_save, vault_knowledge_get
+SOURCE_TREE_PHYSICALLY_ABSENT: YES
+RUNTIME_CLOSURE:               113
+META_STANDARD_RUNTIME_LEAKS:   0
+META_PATHS:                    NONE
+NEW_DEFERRED_IMPORT_CYCLES:    0
+```
+
+Durante la validacion final, la relacion ER de Mermaid resulto realmente
+cuadratica ante una tirada de caracteres de palabra sin match. Se aplico el
+mismo borde inicial `\\b` que ya usaban las relaciones equivalentes de
+flowchart, class y state. La regresion compara el patron historico sin borde
+contra el actual por ratios de doubling: el primero es superlineal y el actual
+es cercano a lineal. El umbral absoluto de 50 ms no se relajo.
+
+El estado global sigue siendo honesto: quedan 89 operaciones runtime legacy-only,
+por lo que `GLOBAL_SOURCE_CHECKOUT_DEPENDENCY=YES` y `PRODUCT_READY=NO`. Este
+checkpoint no selecciona una cuarta operacion.
 
 ## Deuda resuelta durante PR5
 
@@ -197,5 +264,5 @@ PUBLIC_CLI_MVP_ACCEPTED:          YES
 RUNTIME_LIFECYCLE_MVP_ACCEPTED:   YES
 GLOBAL_SOURCE_CHECKOUT_DEPENDENCY:YES
 PRODUCT_READY:                    NO
-NEXT CHECKPOINT:                  MEMORY_RECOVERY_E2E
+NEXT CHECKPOINT:                  TO BE DESIGNED FROM REMAINING INVENTORY
 ```

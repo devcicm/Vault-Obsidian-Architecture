@@ -2254,6 +2254,7 @@ def main() -> int:
             json.dumps(tabla_de_entorno_derivada(), indent=2,
                        ensure_ascii=False) + "\n",
             encoding="utf-8",
+            newline="\n",
         )
         print(json.dumps({"ok": True, "tool": "vault_arch",
                           "path": str(TABLA_ENTORNO_MJS)}, ensure_ascii=False))

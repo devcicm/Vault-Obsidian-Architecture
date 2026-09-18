@@ -1477,6 +1477,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     "vault_knowledge_save": {
         "name": "vault_knowledge_save",
         "script": "vault_knowledge_save.py",
+        "execution_module": "vault.autoria.knowledge_save",
         "group": "Conocimiento",
         "purpose": "Guarda conocimiento estructurado por tema.",
         "params": {
@@ -1513,6 +1514,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     "vault_knowledge_get": {
         "name": "vault_knowledge_get",
         "script": "vault_knowledge_get.py",
+        "execution_module": "vault.autoria.knowledge_get",
         "group": "Conocimiento",
         "purpose": "Recupera conocimiento por tema o búsqueda.",
         "params": {
@@ -4747,7 +4749,7 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
         "standard_version": CURRENT_VERSION,
     }
 
-    with open(output_path, "w", encoding="utf-8") as f:
+    with open(output_path, "w", encoding="utf-8", newline="\n") as f:
         json.dump(catalog, f, indent=2, ensure_ascii=False)
         f.write("\n")
 
@@ -4757,7 +4759,7 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
     # segunda autoridad editorial.
     if default_output:
         product_output = _product_catalog_path()
-        with product_output.open("w", encoding="utf-8") as f:
+        with product_output.open("w", encoding="utf-8", newline="\n") as f:
             json.dump(catalog, f, indent=2, ensure_ascii=False)
             f.write("\n")
 

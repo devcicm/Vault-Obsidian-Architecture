@@ -24,17 +24,41 @@ así el escaneo sigue siendo opcional para quien no lo necesita sin que este
 módulo dependa de él para cargar.
 """
 
-import errno
+import importlib
 import json
 import os
+import sys
 import threading
 import time
 import uuid
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Callable, Dict, Iterator, Sequence
+from typing import Callable, Dict, Iterator
 
 from vault_entorno import leer as _env
+
+# Frontera estrictamente legacy: algunos scripts se ejecutan como fichero y
+# Python sólo añade ``scripts/`` al path. El producto instalado nunca importa
+# este módulo. Reintentamos exclusivamente cuando falta el paquete superior;
+# errores internos de ``vault.kernel.escritura`` deben seguir siendo visibles.
+def _stable_escritura_module():
+    """Carga el primitive estable sólo cuando una escritura legacy lo necesita."""
+    try:
+        return importlib.import_module("vault.kernel.escritura")
+    except ModuleNotFoundError as exc:
+        if exc.name != "vault":
+            raise
+        legacy_repo_root = Path(__file__).resolve().parent.parent
+        if str(legacy_repo_root) not in sys.path:
+            sys.path.insert(0, str(legacy_repo_root))
+        return importlib.import_module("vault.kernel.escritura")
+
+
+def __getattr__(name: str):
+    """Reexporta el primitive estable sin cargarlo durante un import puro."""
+    if name in {"_escribir_temporal", "_fsync_si_procede", "escritura_atomica"}:
+        return getattr(_stable_escritura_module(), name)
+    raise AttributeError(name)
 
 
 #: Una guarda: se le da (ruta, texto) antes de escribir y aborta lanzando.
@@ -183,112 +207,7 @@ def file_lock(
 # ── Escritura atómica ──────────────────────────────────────────────────────────
 
 
-def _escribir_temporal(temp: Path, text: str, encoding: str) -> None:
-    """Escribe el temporal y, si `VAULT_FSYNC=1`, lo vuelca a disco.
-
-    El volcado va **dentro** del `with`, sobre el descriptor con el que se
-    escribió: en Windows `os.fsync` sobre un `os.open(..., O_RDONLY)` falla con
-    `Bad file descriptor` —`_commit` exige acceso de escritura—, así que
-    sincronizar «después, reabriendo» funciona en POSIX y rompe en la plataforma
-    donde se desarrolla este repo. Se descubrió al ejecutarlo, no al leerlo.
-
-    `newline` queda por defecto a propósito: es lo que hacía `Path.write_text`, y
-    cambiarlo alteraría los saltos de línea de cada nota del estándar. La palanca
-    es de durabilidad, no de contenido.
-    """
-    with open(temp, "w", encoding=encoding) as fh:
-        fh.write(text)
-        if _env("VAULT_FSYNC"):
-            fh.flush()
-            os.fsync(fh.fileno())
-
-
-def _fsync_si_procede(temp: Path) -> None:
-    """Vuelca el directorio padre si `VAULT_FSYNC=1`, para que el rename dure.
-
-    Aquí está la **decisión** de durabilidad del estándar; el volcado del
-    contenido lo hace `_escribir_temporal` sobre su propio descriptor.
-
-    **La durabilidad del estándar es la del sistema de ficheros, y eso es una
-    decisión, no un olvido.** `atomic_write_text` da atomicidad —temp + `os.replace`,
-    nadie ve la nota a medias— pero no durabilidad: entre el `replace` y el
-    volcado real hay una ventana en la que un corte de corriente deja la nota
-    truncada o vacía. Cerrarla por defecto cuesta un `fsync` por escritura, y hay
-    tools que escriben cientos de ficheros en una pasada (`vault_reindex`,
-    `vault_onboard`, `vault_migrate_docs`): el coste es del orden de milisegundos
-    por nota sobre discos que no lo agregan.
-
-    El reparto elegido: **por defecto no**, porque el contenido de un vault es
-    reconstruible —está en git, en el proyecto de origen o en los `vault-backups/`—
-    y perder la última escritura ante un corte es un daño acotado. **Opt-in con
-    `VAULT_FSYNC=1`** para quien escriba sobre almacenamiento volátil o en un
-    entorno donde el corte sea plausible.
-
-    Se sincroniza además el directorio padre en POSIX: sin eso, el `rename` puede
-    no haber llegado a disco aunque el contenido sí, y el fichero reaparecería con
-    el nombre viejo. En Windows no existe descriptor de directorio y `os.replace`
-    ya es atómico a nivel de metadatos, así que ese paso se omite —callando, que
-    es lo correcto aquí: no es una degradación, es que no aplica—.
-    """
-    if not _env("VAULT_FSYNC"):
-        return
-    if hasattr(os, "O_DIRECTORY"):
-        dir_fd = os.open(str(temp.parent), os.O_RDONLY | os.O_DIRECTORY)
-        try:
-            os.fsync(dir_fd)
-        finally:
-            os.close(dir_fd)
-
-
-def escritura_atomica(
-    path: Path,
-    text: str,
-    encoding: str = "utf-8",
-    guardas: Sequence[Guarda] = (),
-) -> None:
-    """Deposita *text* en *path* sin que nadie llegue a ver el fichero a medias.
-
-    El mecanismo entero: ejecutar las guardas que le pasen, crear el directorio,
-    escribir un temporal de nombre corto, volcarlo si toca y `os.replace`.
-
-    Las `guardas` corren **antes** de crear nada. Si una lanza, no se ha tocado
-    el disco: es la propiedad que hace que abortar por un secreto detectado no
-    deje un fichero a medio escribir. El mecanismo no las interpreta ni las
-    ordena por importancia — quien llama decide cuáles y en qué orden.
-
-    Short temp name avoids Windows MAX_PATH (260 chars) on deep vault paths.
-    El `try/except` alrededor de write+replace limpia el temporal si la escritura
-    falla (disco lleno, permisos, codificación): sin él, los fallos repetidos
-    dejaban huérfanos `.tmp.<pid>.<hex>` acumulándose en `path.parent`, que es un
-    riesgo lento de llenado de disco.
-    """
-    for guarda in guardas:
-        guarda(path, text)
-
-    path.parent.mkdir(parents=True, exist_ok=True)
-
-    temp = path.parent / f".tmp.{os.getpid()}.{uuid.uuid4().hex[:8]}"
-    try:
-        _escribir_temporal(temp, text, encoding)
-        _fsync_si_procede(temp)
-        os.replace(temp, path)
-    except OSError as exc:
-        if exc.errno == errno.ENOSPC:
-            # Distinguible de PermissionError en la capa que traduce errores.
-            # No se raise DiskFullError aquí para no arrastrar vault_errors
-            # al módulo de mecanismo (AP-52: la traducción vive en vault_io).
-            exc.errno = errno.ENOSPC
-        try:
-            temp.unlink(missing_ok=True)
-        except OSError:
-            pass
-        raise
-    except Exception:
-        try:
-            temp.unlink(missing_ok=True)
-        except OSError:
-            pass
-        raise
+# Reexports históricos: el mecanismo tiene un solo owner en el paquete estable.
 
 
 def guarda_secretos(path: Path, text: str) -> None:

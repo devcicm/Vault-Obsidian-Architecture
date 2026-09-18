@@ -262,6 +262,16 @@ def validate_state(diagram: str) -> List[Dict[str, Any]]:
     return errors
 
 
+# Un identificador Mermaid comienza con ``\w``. Sin ``\b``, ``search`` puede
+# ensayar ``\w+`` en cada sufijo de una tirada hostil, consumirlo completo y
+# retroceder buscando una cardinalidad inexistente: coste cuadrático. El borde
+# no excluye ninguna relación válida tras ``strip()`` y deja un único arranque
+# viable por tirada, igual que los patrones de flowchart, class y state.
+_ER_RELATION = re.compile(
+    r"\b(\w+)\s+(\|\|\-\-\|o|o\-\-\||\|\-\-\|o|o\-\-\|\||\|\-\-\|\||\|\|\-\-\||o\-\-\-o)\s*(\w+)"
+)
+
+
 def validate_er(diagram: str) -> List[Dict[str, Any]]:
     """Valida erDiagram."""
     errors = []
@@ -271,9 +281,7 @@ def validate_er(diagram: str) -> List[Dict[str, Any]]:
     relations = []
 
     entity_pattern = re.compile(r"^\s*(\w+)\s+\{")
-    relation_pattern = re.compile(
-        r"(\w+)\s+(\|\|\-\-\|o|o\-\-\||\|\-\-\|o|o\-\-\|\||\|\-\-\|\||\|\|\-\-\||o\-\-\-o)\s*(\w+)"
-    )
+    relation_pattern = _ER_RELATION
 
     for line in lines:
         line = line.strip()

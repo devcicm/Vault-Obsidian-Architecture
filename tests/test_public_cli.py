@@ -161,13 +161,17 @@ def test_catalogo_empaquetado_es_proyeccion_del_catalogo_mcp():
     assert json.loads(resource.read_text(encoding="utf-8")) == mcp
 
 
-def test_exactamente_una_operacion_instalada_y_no_hay_otra_tabla_manual():
+def test_las_operaciones_instaladas_salen_del_catalogo_y_no_de_otra_tabla_manual():
     installed = {
         name: tool.execution_module
         for name, tool in catalogo_producto().items()
         if tool.execution_module is not None
     }
-    assert installed == {"vault_query_parse": "vault.consulta.query_parse"}
+    assert installed == {
+        "vault_query_parse": "vault.consulta.query_parse",
+        "vault_knowledge_save": "vault.autoria.knowledge_save",
+        "vault_knowledge_get": "vault.autoria.knowledge_get",
+    }
 
 
 def test_superficie_publica_no_importa_checkout_ni_scripts():
