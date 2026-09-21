@@ -1,11 +1,26 @@
-# Visión de producto
+# Visión de producto — Vault Obsidian Architecture
 
-Vault Obsidian Architecture es un estándar abierto con un toolkit para dar a agentes LLM memoria documental persistente, auditable y gobernada sobre Markdown plano.
+**Versión:** 1.0
+**Fecha:** 2026-09-20
+**Estado:** Draft
 
-Este documento explica el producto. No añade normas ni reemplaza contratos:
-la declaración del servicio, sus capacidades y restricciones pertenecen a
-[vault_servicio](../../scripts/vault_servicio.py), y su representación pública
-está en el [manifiesto](../../vault-obsidian-architecture.md).
+---
+
+## Producto y subproductos
+
+Vault Obsidian Architecture tiene tres niveles de producto:
+
+| Nivel | Alcance | Versión independiente |
+|--------|---------|---------------------|
+| **Estándar** | Estructura, reglas, contratos, gobernanza. Manifiesto + registros canónicos. | **Sí** — `v40.x` |
+| **Toolkit** | Implementación Python/CLI/MCP/gates/migrations. Scripts + paquete `vault/`. | **Sí** — `41.x` (próxima) |
+| **Runtime** | Vault concreto de un proyecto: memoria operativa, notas, relaciones, preferencias. | No aplica |
+
+**CLI** y **MCP** son subproductos del toolkit — las dos superficies de entrada
+para agentes LLM. Comparten el mismo toolkit, misma gobernanza (a través de
+`GobernanzaBase`), mismo catálogo de tools, y mismo runtime.
+
+---
 
 ## Problema y premisa
 
@@ -17,116 +32,122 @@ visibilidad sobre qué información sustentó el trabajo.
 La premisa es que ese conocimiento puede conservarse como documentos con
 identidad, metadatos, relaciones y reglas de actualización. El agente puede
 recuperarlos después, y una persona puede revisar su contenido y procedencia.
-El toolkit ayuda a gobernar esa memoria; el agente o su integración debe usarlo.
+
+---
 
 ## Promesa
 
 | Perspectiva | Promesa |
-|---|---|
-| Técnica | Persistir conocimiento en Markdown con metadatos, relaciones y trazabilidad, aplicando reglas de escritura y recuperándolo bajo un presupuesto de contexto. |
-| De producto | Permitir que los agentes retomen proyectos con conocimiento documentado que las personas puedan revisar, mantener y recuperar. |
-| Simple | Que tu agente pueda retomar lo aprendido y tú puedas comprobarlo. |
+|-------------|---------|
+| **Técnica** | Persistir en Markdown con metadatos, relaciones, trazabilidad y presupuesto de contexto, sin base de datos ni embeddings. |
+| **De producto** | Agentes que retoman proyectos con conocimiento auditable por personas. |
+| **Simple** | Que tu agente pueda retomar lo aprendido y tú puedas comprobarlo. |
 
-Son formulaciones del resultado buscado. Su alcance depende de la evidencia
-capturada, los contratos de las operaciones y la integración del agente.
+---
 
-## Estándar, toolkit y runtime
+## Promesas por subproducto
 
-| Nivel | Alcance | Usuario principal |
-|---|---|---|
-| **Estándar** | Define estructura, reglas, contratos y gobernanza de la memoria documental. Se expresa en el manifiesto y en los registros canónicos que lo sustentan. | Arquitectos, integradores y maintainers que adoptan o evolucionan el modelo. |
-| **Toolkit** | Implementa captura, consulta, custodia, recuperación y verificaciones del estándar. Incluye `scripts/`, el paquete de dominio `vault/`, la CLI y el adaptador MCP. | Agentes mediante su harness, desarrolladores e integradores. |
-| **Runtime** | Es el vault concreto de un proyecto: su memoria operativa, notas, relaciones, preferencias, índices y artefactos. | El agente que trabaja en ese proyecto y la persona responsable de los datos. |
+### CLI (Command Line Interface)
 
-Aquí, runtime significa la instancia operativa de memoria; no exige un servidor
-permanente. `vault/` es código del toolkit, mientras que `vault-sandbox/` es el
-vault de pruebas de este repositorio. Los vaults consumidores pertenecen a sus
-respectivos proyectos.
+| Perspectiva | Promesa |
+|-------------|---------|
+| **Técnica** | Ejecuta cualquier tool del toolkit desde shell con pre-vuelo de seguridad (AP-36 containment, anti-poison), planificación de olas y verificación de integridad opcional. |
+| **De producto** | Automatización CI/scripts robusta y predecible. |
+| **Simple** | `vault run <tool>` funciona sin pensar en paths ni Python. |
 
-## Cómo fluye el conocimiento
+**Scope IN:** `run`, `batch`, `plan`, `scan`, `doctor`, `groups`, `find`, `show`; scheduler de olas; safety anti-poison; `--verify-integrity`; timeout configurable.
 
-```text
-evidencia
-    ↓
-captura
-    ↓
-conocimiento gobernado
-    ↓
-persistencia
-    ↓
-recuperación
-    ↓
-selección contextual
-    ↓
-siguiente sesión del agente
+**Scope OUT:** Interacción MCP; validación semántica de Mermaid/referencias; multi-vault discovery.
+
+### MCP (Model Context Protocol)
+
+| Perspectiva | Promesa |
+|-------------|---------|
+| **Técnica** | Servidor MCP monolítico, cero dependencias npm, expone 116 tools con guard chain de validación (secret scan, bracket balance, Mermaid syntax, content gate). |
+| **De producto** | Agentes LLM en tiempo real con validación semántica profunda. |
+| **Simple** | Cualquier IA compatible usa las tools sin configuración. |
+
+**Scope IN:** `tools/call`, `tools/list`; JS-native para 9 tools; validación semántica; multi-vault discovery; resources `vault://`.
+
+**Scope OUT:** Scheduling de olas; verify-integrity; batch execution.
+
+---
+
+## Versionado independiente
+
+```
+Estándar: v40.34 (solo contratos documentales)
+Toolkit:  41.0 (próxima release con installed operations)
+CLI:       v1.0
+MCP:       v1.0
 ```
 
-La evidencia procede del proyecto: una decisión explicada, un incidente o un
-procedimiento comprobado. La captura la convierte en documentos. Las operaciones
-del toolkit aplican las reglas que cubren y conservan información para su
-seguimiento. «Gobernado» describe ese tratamiento; no certifica la verdad del dato.
+El toolkit y el estándar NO necesitan coincidir. Un runtime puede leer
+documentos de cualquier versión del estándar dentro de la ventana de
+compatibilidad.
 
-Los archivos persisten fuera de la conversación. Cuando otra sesión necesita
-recordar algo, la búsqueda y el grafo permiten recuperar candidatos; el paquete
-de contexto selecciona contenido con un presupuesto de tokens estimado. La
-implementación está en [vault_context_pack](../../scripts/vault_context_pack.py)
-y las operaciones disponibles en la [referencia de herramientas](../../scripts/README.md).
+---
 
-Por ejemplo, registrar una decisión con su motivo y su fuente permite consultarla
-cuando vuelva a plantearse el mismo cambio. Ese recorrido necesita que la sesión
-inicial capture la decisión y que la siguiente consulte el vault.
+## Flujo de conocimiento
 
-## Qué garantiza el sistema y bajo qué condiciones
+```
+evidencia → captura → conocimiento gobernado → persistencia
+    → recuperación → selección contextual → siguiente sesión
+```
 
-| Base verificable | Alcance y condición | Fuente |
-|---|---|---|
-| Legibilidad documental | Las notas se conservan como Markdown con frontmatter YAML y wikilinks; pueden leerse sin ejecutar el toolkit. | [Manifiesto](../../vault-obsidian-architecture.md) |
-| Escritura contenida y atómica en el camino común | Las operaciones que usan ese camino comprueban el destino y reemplazan el archivo mediante un temporal. No equivale a una transacción de todo el vault. | [vault_io](../../scripts/vault_io.py), [vault_fs](../../scripts/vault_fs.py) |
-| Gobernanza verificable dentro de su cobertura | Los guards y audits detectan o previenen los casos que implementan; el catálogo declara su enforcement y sus límites. | [Catálogo de normas](../../scripts/vault_norms_catalog.py) |
-| Trazabilidad y recuperación mediante herramientas | Hay historial, trazas, backups y restauración según cada operación. Recuperar un estado requiere que exista el artefacto correspondiente. | [Referencia de herramientas](../../scripts/README.md), [durabilidad](../../vault/durabilidad/) |
-| Selección de contexto inspeccionable | El paquete informa qué notas incluye o excluye y su estimación de tokens. Su selección depende de la consulta, el contenido disponible y el presupuesto. | [vault_context_pack](../../scripts/vault_context_pack.py) |
+---
 
-## Qué no garantiza
+## Gobernanza (POO)
 
-- Veracidad, completitud o relevancia de todo lo escrito por el mero hecho de
-  obtener una puntuación de salud alta.
-- Recuerdo automático, consulta en cada sesión u obediencia del agente a una nota.
-- Cobertura de todos los errores posibles por las gates, ni certificación de
-  cumplimiento por mencionar marcos de calidad o seguridad.
-- Protección automática de ediciones hechas fuera del camino de escritura del
-  toolkit, ni recuperación sin historial o backups disponibles.
-- Identificación exacta del modelo a partir del nombre de su cliente, ni un
-  conteo de tokens idéntico al tokenizador de cualquier modelo.
-- Instalación completa demostrada en todos los entornos. La
-  [guía de producción](../GUIA-DE-PRODUCCION.md) publica el soporte y sus huecos;
-  el [Quick Start](../../README.md#quick-start) conserva una limitación de copia
-  pendiente de revisión.
+La gobernanza se modela como jerarquía de clases:
 
-## Papel de Obsidian y del agente
+```
+GobernanzaBase (abstract)
+  ├── pre_flight(tool, args) → ValidationResult
+  ├── post_flight(tool, result, args) → AuditResult
+  └── classify_tool(tool) → ToolNature
 
-Obsidian permite a una persona explorar las notas y sus enlaces. Es una interfaz
-compatible, no un requisito para que el agente acceda a los documentos.
+GobernanzaCLI (override)
+  └── _pre_flight_specific: AP-36 containment, anti-poison, required args
 
-El harness es el entorno que ejecuta al agente, conecta sus herramientas y
-prepara su contexto. Debe integrar la captura y consulta en el trabajo entre
-sesiones, respetando las instrucciones de la persona y los contratos de las
-operaciones. Los accesos disponibles están documentados en la
-[CLI](../../cli/README.md) y en el
-[servidor MCP](../../mcp/nodejs/vault-mcp-server.mjs).
+GobernanzaMCP (override)
+  └── _pre_flight_specific: secret scan, bracket balance,
+                            Mermaid syntax, content gate, referenced notes
+```
 
-## Propiedad y legibilidad humana
+CLI y MCP heredan de `GobernanzaBase` y overridean los métodos específicos
+de su superficie. El catálogo y las normas se comparten.
 
-El vault queda bajo control de la persona o del proyecto que lo mantiene. La
-persistencia documental no requiere una base de datos, embeddings ni un servicio
-externo. Las notas siguen siendo legibles aunque se deje de usar el toolkit.
+---
 
-La persona decide qué documentar, compartir y respaldar. Si configura un agente
-remoto, el contenido que le entregue depende de esa integración: almacenamiento
-local no implica que el contexto enviado al modelo permanezca en la máquina.
+## Garantías del sistema
+
+| Base | Alcance |
+|------|---------|
+| Legibilidad documental | Markdown + YAML frontmatter + wikilinks, sin toolkit |
+| Escritura contenida y atómica | Operations que usan el camino común verifican destino y usan temporales |
+| Gobernanza verificable | Guards y audits detectan o previenen casos que implementan |
+| Trazabilidad y recuperación | Historial, trazas, backups y restauración según cada operación |
+| Selección de contexto inspeccionable | Paquete informa qué incluye/excluye y su estimación de tokens |
+
+---
+
+## Qué NO garantiza
+
+- Veracidad, completitud o relevancia por tener alta puntuación de salud
+- Recuerdo automático u obediencia del agente
+- Cobertura de todos los errores posibles
+- Protección de ediciones fuera del toolkit
+- Conteo exacto de tokens para cualquier modelo
+- Instalación completa en todos los entornos (macOS no está en la CI)
+
+---
 
 ## Siguiente lectura
 
-- [Seis capas conceptuales](../architecture/layers.md): responsabilidades y fuentes.
-- [Onboarding](../MODO-AGENTICO-ONBOARDING.md): poblar memoria desde un proyecto.
-- [Sanación](../MODO-AGENTICO-SANACION.md): trabajar sobre un vault preexistente.
-- [README](../../README.md#qué-leer-después): instalación y referencias existentes.
+- [PRD-CLI](./prd-cli.md)
+- [PRD-MCP](./prd-mcp.md)
+- [PRD-Toolkit](./prd-toolkit.md)
+- [PRD-Estándar](./prd-estandar.md)
+- [Roadmap-CLI](./roadmap/roadmap-cli.md)
+- [Roadmap-MCP](./roadmap/roadmap-mcp.md)

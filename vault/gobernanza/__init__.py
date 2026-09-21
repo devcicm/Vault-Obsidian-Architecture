@@ -11,5 +11,27 @@ deuda en la baseline de `vault_arch`.
 """
 
 from .repositorio import RepositorioGobernanza
+from .base import (
+    GobernanzaBase,
+    ValidationResult,
+    AuditResult,
+    ToolNature,
+    ToolFragment,
+    ToolsCatalog,
+    NormCatalog,
+)
+from .cli_gobernanza import GobernanzaCLI
+from .mcp_gobernanza import GobernanzaMCP
 
-__all__ = ["RepositorioGobernanza"]
+__all__ = [
+    "RepositorioGobernanza",
+    "GobernanzaBase",
+    "ValidationResult",
+    "AuditResult",
+    "ToolNature",
+    "ToolFragment",
+    "ToolsCatalog",
+    "NormCatalog",
+    "GobernanzaCLI",
+    "GobernanzaMCP",
+]
