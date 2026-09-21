@@ -36,6 +36,9 @@ dev = ["pytest>=7.0", "pytest-cov>=4.0", "ruff>=0.3.0"]
 [project.urls]
 Homepage = "https://github.com/devcicm/Vault-Obsidian-Architecture"
 
+[project.scripts]
+vault = "vault.product_cli:main"
+
 [tool.setuptools]
 # `scripts/` sigue sin declararse a propósito: se resuelve por ruta de fichero
 # —el tool-spec, `cli/registry.py`, el runner del MCP y los repos consumidores
@@ -47,6 +50,8 @@ packages = ["vault", "vault.kernel", "vault.durabilidad", "vault.indices", "vaul
 
 [tool.setuptools.package-data]
 scripts = ["tool-spec.json", "vault-obsidian-architecture.md", "README.md"]
+"vault.meta_toolkit" = ["tools-catalog.json"]
+"vault.ciclo_de_vida" = ["runtime-seed.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

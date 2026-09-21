@@ -1,19 +1,12 @@
 {
  "description": "Imports diferidos que esquivan un ciclo y ya estaban cuando nació AP-58. Solo puede encoger: un ciclo nuevo se invierte, no se congela. Las diferidas benignas no entran aquí a propósito — una baseline llena de ruido es una baseline que nadie revisa.",
  "sitios": [
-  "vault_encoding->vault_errors",
-  "vault_errors->vault_voice",
-  "vault_io->vault_encoding",
-  "vault_io->vault_errors",
   "vault_io->vault_lib",
   "vault_io->vault_section_index",
   "vault_io->vault_tags",
   "vault_lib->vault_io",
   "vault_manifest->vault_spec_memory",
-  "vault_mcp_catalog->vault_io",
   "vault_section_index->vault_io",
-  "vault_spec_memory->vault_manifest",
-  "vault_voice->vault_io",
-  "vault_voice->vault_mcp_catalog"
+  "vault_spec_memory->vault_manifest"
  ]
 }

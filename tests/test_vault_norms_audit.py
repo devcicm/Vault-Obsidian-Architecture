@@ -1,11 +1,13 @@
 """Tests para vault_norms --audit y el guard CN-02 de vault_section_index."""
 
+import ast
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from vault_norms import NORM_CATALOG, STATUS_VOCAB, vault_norms_audit
+from vault.gobernanza.auditoria_runtime import auditar_runtime
 
 
 def _make_vault(tmp_path: Path) -> Path:
@@ -67,6 +69,72 @@ def test_audit_clean_vault(tmp_path):
     _sync_index(root)
     result = vault_norms_audit(root)
     assert result["ok"] and result["total_violations"] == 0
+
+
+def test_runtime_audit_no_arrastra_observabilidad_del_estandar(tmp_path, monkeypatch):
+    """AP-42/AP-43 siguen en la fachada legacy, no en un vault consumidor."""
+    import vault_smoke
+    import vault_voice
+
+    root = _make_vault(tmp_path)
+    _sync_index(root)
+    monkeypatch.setattr(vault_smoke, "load_baseline", lambda: ["vault_x"])
+    monkeypatch.setattr(vault_voice, "coverage", lambda: {"silent": ["AP-99"]})
+
+    runtime = auditar_runtime(root)
+    legacy = vault_norms_audit(root)
+
+    assert "AP-42" not in runtime["by_norm"]
+    assert "AP-43" not in runtime["by_norm"]
+    assert {"AP-42", "AP-43"} <= set(legacy["by_norm"])
+
+
+def test_runtime_audit_no_importa_fachadas_meta_del_estandar():
+    """Sanacion puede medir un vault sin cargar smoke, voz ni vault_norms."""
+    source = Path(__file__).parents[1] / "vault/gobernanza/auditoria_runtime.py"
+    tree = ast.parse(source.read_text(encoding="utf-8", errors="replace"))
+    imports = {
+        alias.name.split(".")[0]
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.Import, ast.ImportFrom))
+        for alias in node.names
+    }
+    assert not {"vault_norms", "vault_smoke", "vault_voice"} & imports
+
+
+def test_runtime_audit_explicit_root_no_juzga_la_autodeteccion(tmp_path, monkeypatch):
+    """Un root declarado no hereda la confianza del proceso llamador."""
+    import vault_io
+
+    root = _make_vault(tmp_path)
+    _sync_index(root)
+    monkeypatch.setattr(vault_io, "vault_root_is_confident", lambda: False)
+    monkeypatch.setattr(vault_io, "vault_root_origin", lambda: "repo_root_fallback")
+
+    result = auditar_runtime(root)
+
+    assert not any(
+        v["norm"] == "AP-36" and "vault root detectado por" in v["detail"]
+        for v in result["violations"]
+    )
+
+
+def test_runtime_audit_autodetectado_reporta_raiz_no_confiable(tmp_path, monkeypatch):
+    """Sin argumento, el audit debe conservar el guard de autodetección."""
+    import vault_io
+
+    root = _make_vault(tmp_path)
+    _sync_index(root)
+    monkeypatch.setattr(vault_io, "get_vault_root", lambda: root)
+    monkeypatch.setattr(vault_io, "vault_root_is_confident", lambda: False)
+    monkeypatch.setattr(vault_io, "vault_root_origin", lambda: "repo_root_fallback")
+
+    result = auditar_runtime()
+
+    assert any(
+        v["norm"] == "AP-36" and "repo_root_fallback" in v["detail"]
+        for v in result["violations"]
+    )
 
 
 def test_audit_detects_root_file_ap15(tmp_path):

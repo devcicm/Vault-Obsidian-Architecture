@@ -14,6 +14,7 @@ es que la decisión se tomaba veinticuatro veces.
 
 import json
 import re
+import ast
 import sys
 from pathlib import Path
 
@@ -122,21 +123,75 @@ def test_el_write_path_escribe_un_frontmatter_parseable():
 SAVES = sorted(p.stem for p in (REPO_ROOT / "scripts").glob("*_save.py"))
 
 
+def _usa_escritor_canonico(source: str, stable_source: str) -> bool:
+    """El adaptador instalado no reconstruye el frontmatter en ``scripts/``.
+
+    ``vault_knowledge_save`` conserva el nombre y las responsabilidades del
+    modo checkout (raíz, ledger e índices), pero delega la persistencia a
+    ``vault.autoria.conocimiento.guardar_conocimiento``. La implementación
+    estable es la que instancia ``Frontmatter``; exigir el literal también en
+    el adaptador confundiría reexportar/delegar con reconstruir la política.
+    """
+    adapter = ast.parse(source)
+    stable = ast.parse(stable_source)
+    imported = {
+        alias.asname or alias.name
+        for node in ast.walk(adapter)
+        if isinstance(node, ast.ImportFrom)
+        and node.module == "vault.autoria.conocimiento"
+        for alias in node.names
+        if alias.name == "guardar_conocimiento"
+    }
+    called = {
+        node.func.id
+        for node in ast.walk(adapter)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    }
+    manual_delimiter = any(
+        isinstance(node, ast.Constant) and node.value == "---"
+        for node in ast.walk(adapter)
+    )
+    stable_uses_frontmatter = any(
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "Frontmatter"
+        for node in ast.walk(stable)
+    )
+    return bool(imported & called) and not manual_delimiter and stable_uses_frontmatter
+
+
 def test_ningun_save_construye_el_frontmatter_a_mano():
     """El guard de AP-50 para este bloque: la decision se toma en un sitio.
 
     Un `*_save` que vuelva a abrir su frontmatter con un `"---"` literal esta
     tomando por su cuenta una decision que ya tiene dueno declarado.
     """
-    culpables = [
-        s for s in SAVES
-        if 'Frontmatter(' not in (REPO_ROOT / "scripts" / f"{s}.py").read_text(
-            encoding="utf-8")
-    ]
+    stable = (REPO_ROOT / "vault" / "autoria" / "conocimiento.py").read_text(
+        encoding="utf-8"
+    )
+    culpables = []
+    for save in SAVES:
+        source = (REPO_ROOT / "scripts" / f"{save}.py").read_text(encoding="utf-8")
+        if 'Frontmatter(' not in source and not _usa_escritor_canonico(source, stable):
+            culpables.append(save)
     assert not culpables, (
         "escriben su frontmatter a mano en vez de usar vault.autoria."
         "frontmatter: " + ", ".join(culpables)
     )
+
+
+def test_el_adaptador_estable_no_se_confunde_con_texto_muerto():
+    stable = "from vault.autoria.frontmatter import Frontmatter\ndef render(): return Frontmatter()"
+    good = "from vault.autoria.conocimiento import guardar_conocimiento\ndef save(): return guardar_conocimiento()"
+    manual = good + "\ncontenido = '---'"
+    comment = "# guardar_conocimiento\ndef save(): return None"
+    unused = "from vault.autoria.conocimiento import guardar_conocimiento\ndef save(): return None"
+    no_owner = "from vault.autoria.conocimiento import guardar_conocimiento\ndef save(): return guardar_conocimiento()"
+    assert _usa_escritor_canonico(good, stable)
+    assert not _usa_escritor_canonico(manual, stable)
+    assert not _usa_escritor_canonico(comment, stable)
+    assert not _usa_escritor_canonico(unused, stable)
+    assert not _usa_escritor_canonico(no_owner, "def render(): return None")
 
 
 @pytest.mark.parametrize("unidad", ["%", "ms", "req/s", "Overview: demo"])

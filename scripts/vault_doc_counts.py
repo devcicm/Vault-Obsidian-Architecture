@@ -339,7 +339,8 @@ def fix(docs: Optional[List[str]] = None, include_slow: bool = True) -> Dict:
             path = REPO_ROOT / rel
             if not path.exists():
                 continue
-            text = path.read_text(encoding="utf-8")
+            raw = path.read_bytes()
+            text = raw.decode("utf-8").replace("\r\n", "\n").replace("\r", "\n")
             body = _live_body(path)
             tail = text[len(body) :]
             new_body = body
@@ -363,8 +364,12 @@ def fix(docs: Optional[List[str]] = None, include_slow: bool = True) -> Dict:
 
                 new_body = re.sub(pattern, _sub, new_body)
 
-            if new_body != body:
-                path.write_text(new_body + tail, encoding="utf-8")
+            new_text = new_body + tail
+            if new_text != text or b"\r\n" in raw:
+                # Los derivados versionados son LF también en Windows. Dejar
+                # que TextIO traduzca `\n` a CRLF convierte un cambio de cifra
+                # en un diff completo que `git diff --check` rechaza.
+                path.write_text(new_text, encoding="utf-8", newline="\n")
 
     return {
         "ok": True,

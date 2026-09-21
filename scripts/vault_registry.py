@@ -685,6 +685,23 @@ def standard_folders() -> List[str]:
     return [s["folder"] for s in SECTIONS]
 
 
+def runtime_seed_projection() -> Dict[str, object]:
+    """Proyección mínima para crear un runtime desde el paquete instalado.
+
+    ``SECTIONS`` sigue siendo la autoridad editorial. El wheel sólo transporta
+    una proyección JSON comprobable de sus nombres y de la versión vigente; no
+    duplica el registro ni necesita importar ``scripts/`` al ejecutarse en un
+    consumidor.
+    """
+    from vault_version import CURRENT_VERSION
+
+    return {
+        "schema": 1,
+        "standard_version": CURRENT_VERSION,
+        "sections": standard_folders(),
+    }
+
+
 def section_name(folder: str) -> str:
     """Nombre corto de una sección (para tablas en master index)."""
     sec = _SECTION_BY_FOLDER.get(folder.split("/")[0])

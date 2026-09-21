@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "parser_notes": [
+    {
+      "path": "03_Decisions/adr-001-mcp-transport.md",
+      "content": "\ufeff---\r\ntitle: MCP transport\r\ntype: decision\r\nstatus: accepted\r\ntags: [mcp, transport]\r\nagent: sandbox-fixture\r\ncia_integrity: medium\r\ncia_availability: medium\r\ncia_sensitivity: internal\r\ncreatedAt: 2026-01-01T00:00:00Z\r\nupdatedAt: 2026-01-01T00:00:00Z\r\n---\r\n\r\n# MCP transport\r\n\r\nThe runtime keeps this decision as a deterministic graph seed. See [[mcp-transport-contract]].\r\n"
+    },
+    {
+      "path": "03_Decisions/mcp-transport-contract.md",
+      "content": "---\ntitle: MCP transport contract\ntype: decision\nstatus: accepted\ntags: [mcp, transport]\nagent: sandbox-fixture\ncia_integrity: medium\ncia_availability: medium\ncia_sensitivity: internal\ncreatedAt: 2026-01-01T00:00:00Z\nupdatedAt: 2026-01-01T00:00:00Z\n---\n\n# MCP transport contract\n\nThe MCP transport decision keeps its contract portable and auditable. See [[mcp-transport-operations]].\n"
+    },
+    {
+      "path": "03_Decisions/mcp-transport-operations.md",
+      "content": "---\ntitle: MCP transport operations\ntype: decision\nstatus: accepted\ntags: [mcp, transport]\nagent: sandbox-fixture\ncia_integrity: medium\ncia_availability: medium\ncia_sensitivity: internal\ncreatedAt: 2026-01-01T00:00:00Z\nupdatedAt: 2026-01-01T00:00:00Z\n---\n\n# MCP transport operations\n\nThe operating motive for the MCP transport is compatibility with the existing infrastructure. See [[mcp-transport-provenance]].\n"
+    },
+    {
+      "path": "03_Decisions/mcp-transport-provenance.md",
+      "content": "---\ntitle: MCP transport provenance\ntype: decision\nstatus: accepted\ntags: [mcp, transport]\nagent: sandbox-fixture\ncia_integrity: medium\ncia_availability: medium\ncia_sensitivity: internal\ncreatedAt: 2026-01-01T00:00:00Z\nupdatedAt: 2026-01-01T00:00:00Z\n---\n\n# MCP transport provenance\n\nThis note preserves the source and rationale of the MCP transport decision for the next agent session.\n"
+    },
+    {
+      "path": "07_Knowledge/parser-evidence.md",
+      "content": "---\ntitle: Parser evidence\ntype: knowledge\nstatus: active\ntags: [parser]\nagent: sandbox-fixture\ncia_integrity: low\ncia_availability: medium\ncia_sensitivity: internal\ncreatedAt: 2026-01-01T00:00:00Z\nupdatedAt: 2026-01-01T00:00:00Z\n---\n\n# Parser evidence\n\n[[adr-001-mcp-transport]] preserves provenance for parser tests.\n"
+    }
+  ],
+  "health_fixture": {
+    "incomplete_notes": 10,
+    "frontmatterless_notes": 10,
+    "broken_link": "missing-fixture-target"
+  }
+}

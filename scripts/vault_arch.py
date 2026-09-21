@@ -230,7 +230,7 @@ CONTEXTS: dict[str, dict] = {
             "mover": "vault_move:move_note",
             "fusionar": "vault_merge:vault_merge",
             "buscar": "vault_search:vault_search",
-            "hablar": "vault_voice:speak",
+            "hablar": "vault/autoria/voz:speak",
             "tipo_por_carpeta": "vault_write:tipo_por_carpeta",
         },
         "prohibe": [],
@@ -312,6 +312,11 @@ CONTEXTS: dict[str, dict] = {
             # `origen -> destino` no habría forma de saber cuál de las dos
             # cosas movió la cifra.
             "auditar_normas": "vault_norms:vault_norms_audit",
+            # El audit que corre sobre un vault consumidor es una superficie
+            # distinta de la fachada histórica, que además observa el propio
+            # repositorio del estándar. El dueño vive en Gobernanza y la
+            # sanación entra aquí para no arrastrar smoke ni cobertura meta.
+            "auditar_runtime": "vault/gobernanza/auditoria_runtime:auditar_runtime",
             # El peso de cada norma en el healthIndex. Es la otra mitad
             # canónica de la severidad —el catálogo dice cuánto importa, esto
             # dice cuánto cuesta— y hasta v40.10 nadie las cruzaba: AP-22
@@ -447,6 +452,9 @@ CONTEXTS: dict[str, dict] = {
             # faltaba era decirlo aquí, y mientras `cli/` no tuvo contexto no
             # había dónde notarlo.
             "NATIVE_JS_TOOLS": "vault_mcp_catalog:NATIVE_JS_TOOLS",
+            # La CLI consume esta proyección derivada para saber si una tool
+            # tiene operación instalada real; no puede inferirlo del script.
+            "distribution_metadata": "vault_mcp_catalog:distribution_metadata",
         },
         # Éste es el contexto que v39.6 dejó a medias: sus módulos ya están
         # anotados `internal` con motivo, pero nada impedía que uno tocase un
@@ -464,8 +472,7 @@ CONTEXTS: dict[str, dict] = {
             "vault_mcp", "vault_mcp_catalog", "vault_manifest", "vault_smoke",
             "vault_spec_catalog_check", "vault_spec_generate_catalog",
             "vault_spec_memory", "vault_spec_validate", "vault_test_runner",
-            "vault_doc_counts", "vault_doc_sync", "vault_doc_staleness",
-            "vault_distribution_sync", "vault_noop_audit",
+            "vault_doc_counts", "vault_doc_sync", "vault_doc_staleness", "vault_noop_audit",
             "vault_blame_audit", "vault_error_contract", "vault_foreign_check",
             "vault_gate", "vault_arch", "vault_fix_all",
             # Mide el changelog del manifiesto contra git (AP-53). Es
@@ -544,7 +551,7 @@ CONTEXTS: dict[str, dict] = {
         "prohibe": ["decidir: traduce argumentos a llamadas y envelopes a "
                     "salida; la decisión vive en la tool"],
         "modulos": [
-            "vault_cli", "registry", "safety", "runner", "analyzer",
+            "vault_cli", "registry", "resolver", "safety", "runner", "analyzer",
             "scheduler", "__main__",
         ],
     },
@@ -1043,10 +1050,6 @@ GANCHOS_DEL_KERNEL: dict[tuple[str, str], str] = {
         "`*_save` cruzaría Autoría → Índices catorce veces y seguiría sin "
         "cubrir al decimoquinto (AP-43)."
     ),
-    ("vault_errors", "vault_voice"): (
-        "La voz del vault acompaña al error. Es presentación, no dominio, y el "
-        "kernel la degrada a silencio si falla."
-    ),
     ("vault_vocabulario", "vault_norms_catalog"): (
         "`status` y los estados de dominio ya tienen registro canónico en "
         "Gobernanza. El registro de vocabularios los declara con `derivado_de` "
@@ -1115,19 +1118,6 @@ PRESUPUESTO_DE_GANCHOS: dict[tuple[str, str], dict] = {
         "por_que": (
             "AP-39 exige registrar el término nuevo en el write path. La "
             "revisión mira si el ledger pasó a construirse por barrido."
-        ),
-    },
-    ("vault_errors", "vault_voice"): {
-        "objetivo": "a_eliminar",
-        "fecha_limite": "2027-06-30",
-        "revisado": "2026-08-14",
-        "cadencia_dias": 180,
-        "dueno": "gobernanza",
-        "por_que": (
-            "Es el único de los seis que no protege nada: es presentación "
-            "colgada del kernel, y el kernel ya la degrada a silencio si falla. "
-            "Sale cuando la voz se aplique en el borde —la CLI y el MCP— en vez "
-            "de dentro del emisor de errores."
         ),
     },
     ("vault_vocabulario", "vault_norms_catalog"): {
@@ -1229,6 +1219,13 @@ for _par in (("autoria", "grafo"), ("consulta", "ciclo_de_vida"),
            "Adaptador de DI: cablear el dominio de otro contexto es su oficio. "
            "Se cuenta igual — no contarlo dejaría la capa de DI ciega.")
 
+# `vault_errors` es el único borde que ve todos los envelopes. Consume el
+# puerto de presentación de Autoría, no la tool meta que audita su cobertura.
+_cruce("kernel", "autoria", "permanente", "kernel",
+       "El inyector común de envelopes llama al puerto `hablar` para que el "
+       "recordatorio llegue a todas las tools. El servicio degrada a silencio "
+       "si falla y no importa la fachada meta `vault_voice`.")
+
 # --- Gobernanza mirando el vault, y el meta-toolkit mirando Gobernanza -------
 _cruce("meta_toolkit", "gobernanza", "permanente", "meta_toolkit",
        "El meta-toolkit audita que este repo cumple lo que publica, y para eso "
@@ -1246,8 +1243,8 @@ _cruce("gobernanza", "meta_toolkit", "a_eliminar", "gobernanza",
        fecha_limite="2027-06-30")
 _cruce("gobernanza", "autoria", "a_eliminar", "gobernanza",
        "`vault_norms_engine` -> `vault_voice`: presentación colgada del motor, "
-       "el mismo defecto que el gancho `vault_errors` -> `vault_voice` ya "
-       "declara. Sale con él, cuando la voz se aplique en el borde.",
+       "se conserva solo en la fachada estándar para ejecutar AP-43. Sale "
+       "cuando el audit del catálogo se ejecute fuera del motor.",
        fecha_limite="2027-06-30")
 _cruce("autoria", "gobernanza", "permanente", "autoria",
        "Validar mermaid al escribir y registrar el cambio: la escritura no puede "
@@ -1500,6 +1497,22 @@ def fantasmas() -> list[str]:
     return sorted(m for m in _mapa_modulos() if m not in en_disco)
 
 
+def _ruta_de_modulo(modulo: str) -> Path:
+    """Ruta de un módulo publicado, ya sea script o paquete de dominio."""
+    if modulo.startswith("vault/"):
+        return REPO_ROOT / f"{modulo}.py"
+    return SCRIPTS_DIR / f"{modulo}.py"
+
+
+def _es_modulo_del_contexto(modulo: str, contexto: str) -> bool:
+    """El destino publicado pertenece de verdad al contexto que lo anuncia."""
+    if modulo in CONTEXTS[contexto]["modulos"]:
+        return True
+    if not modulo.startswith("vault/"):
+        return False
+    return _modulos_dominio().get(f"{modulo}.py") == contexto
+
+
 def _simbolos_de_nivel_superior(modulo: str) -> set[str] | None:
     """Los nombres que `modulo` define en su nivel superior, por AST.
 
@@ -1508,7 +1521,7 @@ def _simbolos_de_nivel_superior(modulo: str) -> set[str] | None:
     Un guard que necesita un vault montado para decir si una frontera existe no
     es un guard, es otra dependencia.
     """
-    ruta = SCRIPTS_DIR / f"{modulo}.py"
+    ruta = _ruta_de_modulo(modulo)
     if not ruta.exists():
         return None
     try:
@@ -1572,7 +1585,7 @@ def puertos_rotos() -> list[dict]:
                                f"nombrar un símbolo que empieza por `_`"}
                 )
                 continue
-            if modulo not in datos["modulos"]:
+            if not _es_modulo_del_contexto(modulo, ctx):
                 rotos.append(
                     {"context": ctx, "port": puerto, "target": destino,
                      "reason": f"`{modulo}` no es un módulo de `{ctx}`"}
@@ -2173,10 +2186,12 @@ def blueprint() -> str:
             f"## {datos['titulo']}",
             "",
             f"- **Lenguaje ubicuo:** {', '.join(datos['lenguaje'])}",
-            ("- **Puertos publicados:** "
-            + ", ".join(
-                f"`{p}` → `{d}`" for p, d in sorted(datos["puertos"].items())
-            )).rstrip(),
+            (
+                "- **Puertos publicados:** "
+                + ", ".join(
+                    f"`{p}` → `{d}`" for p, d in sorted(datos["puertos"].items())
+                )
+            ).rstrip(),
         ]
         if datos["prohibe"]:
             lineas.append(f"- **No cruza:** {'; '.join(datos['prohibe'])}")
@@ -2239,6 +2254,7 @@ def main() -> int:
             json.dumps(tabla_de_entorno_derivada(), indent=2,
                        ensure_ascii=False) + "\n",
             encoding="utf-8",
+            newline="\n",
         )
         print(json.dumps({"ok": True, "tool": "vault_arch",
                           "path": str(TABLA_ENTORNO_MJS)}, ensure_ascii=False))
@@ -2258,7 +2274,7 @@ def main() -> int:
 
     if args.blueprint:
         destino = REPO_ROOT / "docs" / "ARQUITECTURA.md"
-        destino.write_text(blueprint() + "\n", encoding="utf-8")
+        destino.write_text(blueprint() + "\n", encoding="utf-8", newline="\n")
         print(json.dumps({"ok": True, "tool": "vault_arch",
                           "path": str(destino)}, ensure_ascii=False))
         return 0

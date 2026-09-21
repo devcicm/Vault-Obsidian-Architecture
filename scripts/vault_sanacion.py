@@ -37,9 +37,11 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault_errors import emit_error, wrap_main
 import vault_io
+from vault.gobernanza.auditoria_runtime import auditar_runtime
 
 #: Las 12 fases de `docs/MODO-AGENTICO-SANACION.md`. El orden **es** el
 #: contrato: cada fase asume cerradas las anteriores. Reubicar (7) antes de
@@ -112,11 +114,9 @@ def _medir_audit(root):
 
 
 def _medir_normas(root):
-    """Fase 6."""
+    """Fase 6: sólo deuda observable en el runtime consumidor."""
     try:
-        import vault_norms
-
-        return vault_norms.vault_norms_audit(root=root)
+        return auditar_runtime(root=root)
     except Exception as exc:  # noqa: BLE001
         return {"_error": f"{type(exc).__name__}: {exc}"}
 

@@ -215,6 +215,16 @@ def validate_class(diagram: str) -> List[Dict[str, Any]]:
     return errors
 
 
+# El borde inicial es semánticamente neutro para un identificador Mermaid:
+# `\w+` solo puede empezar al inicio de la línea o después de un no-palabra.
+# Sin él, `finditer` ensaya cada posición de una tirada hostil de caracteres de
+# palabra; en cada intento `\w+` consume el sufijo entero y retrocede buscando
+# una flecha inexistente. Eso vuelve cuadrático `validate_state` sobre contenido
+# externo. El borde deja un único arranque viable por tirada, como _NODE_SHAPES
+# y la relación de classDiagram.
+_STATE_TRANSITION = re.compile(r"\b(\w+)\s*-->?\s*(\w+)")
+
+
 def validate_state(diagram: str) -> List[Dict[str, Any]]:
     """Valida stateDiagram."""
     errors = []
@@ -224,8 +234,6 @@ def validate_state(diagram: str) -> List[Dict[str, Any]]:
     referenced_states = set()
 
     state_pattern = re.compile(r"^\s*(\w+)\s*\{")
-    transition_pattern = re.compile(r"(\w+)\s*-->?\s*(\w+)")
-
     for line in lines:
         line = line.strip()
         if line.startswith("stateDiagram"):
@@ -236,7 +244,7 @@ def validate_state(diagram: str) -> List[Dict[str, Any]]:
             defined_states.add(m.group(1))
             continue
 
-        for m in transition_pattern.finditer(line):
+        for m in _STATE_TRANSITION.finditer(line):
             referenced_states.add(m.group(1))
             referenced_states.add(m.group(2))
 
@@ -254,6 +262,16 @@ def validate_state(diagram: str) -> List[Dict[str, Any]]:
     return errors
 
 
+# Un identificador Mermaid comienza con ``\w``. Sin ``\b``, ``search`` puede
+# ensayar ``\w+`` en cada sufijo de una tirada hostil, consumirlo completo y
+# retroceder buscando una cardinalidad inexistente: coste cuadrático. El borde
+# no excluye ninguna relación válida tras ``strip()`` y deja un único arranque
+# viable por tirada, igual que los patrones de flowchart, class y state.
+_ER_RELATION = re.compile(
+    r"\b(\w+)\s+(\|\|\-\-\|o|o\-\-\||\|\-\-\|o|o\-\-\|\||\|\-\-\|\||\|\|\-\-\||o\-\-\-o)\s*(\w+)"
+)
+
+
 def validate_er(diagram: str) -> List[Dict[str, Any]]:
     """Valida erDiagram."""
     errors = []
@@ -263,9 +281,7 @@ def validate_er(diagram: str) -> List[Dict[str, Any]]:
     relations = []
 
     entity_pattern = re.compile(r"^\s*(\w+)\s+\{")
-    relation_pattern = re.compile(
-        r"(\w+)\s+(\|\|\-\-\|o|o\-\-\||\|\-\-\|o|o\-\-\|\||\|\-\-\|\||\|\|\-\-\||o\-\-\-o)\s*(\w+)"
-    )
+    relation_pattern = _ER_RELATION
 
     for line in lines:
         line = line.strip()

@@ -191,6 +191,18 @@ def test_la_puerta_del_desfase_muerde(tmp_path, monkeypatch):
     assert arch.check()["ok"] is False
 
 
+def test_sync_env_emite_json_con_lf_determinista(tmp_path, monkeypatch):
+    """El productor no puede convertir un derivado entero a CRLF en Windows."""
+    destino = tmp_path / "env-table.json"
+    monkeypatch.setattr(arch, "TABLA_ENTORNO_MJS", destino)
+    monkeypatch.setattr(sys, "argv", ["vault_arch.py", "--sync-env"])
+
+    assert arch.main() == 0
+    contenido = destino.read_bytes()
+    assert b"\r\n" not in contenido
+    assert contenido.endswith(b"\n")
+
+
 def test_el_mjs_ya_no_declara_sus_propios_defaults():
     """Cuatro variables declaradas por su cuenta; una ya divergía.
 

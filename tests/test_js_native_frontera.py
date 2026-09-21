@@ -97,6 +97,16 @@ def test_un_mjs_ausente_no_se_lee_como_conjunto_vacio(monkeypatch, tmp_path):
     assert MC.check_sync()["ok"] is True
 
 
+def test_la_proyeccion_de_producto_tampoco_puede_divergir(monkeypatch, tmp_path):
+    """La proyección empaquetada no sustituye al JSON MCP: ambos se verifican."""
+    product = tmp_path / "tools-catalog.json"
+    product.write_text('{"tools": {}}', encoding="utf-8")
+    monkeypatch.setattr(MC, "_product_catalog_path", lambda: product)
+    result = MC.check_sync()
+    assert result["ok"] is False
+    assert any("product catalog differs" in diff for diff in result["diffs"])
+
+
 def test_ninguna_js_native_tiene_script_python():
     """El criterio tiene que seguir siendo verdad: si una de ellas estrenara
     `.py`, el despacho JS la dejaría sin ejecutar."""

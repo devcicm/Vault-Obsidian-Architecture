@@ -50,6 +50,16 @@ from typing import Any, Dict, List, Optional
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
+from vault.grafo.enlace_codigo import (  # noqa: E402
+    COMMENT_STYLES as _stable_comment_styles,
+    VAULT_TAG_PATTERN as _stable_vault_tag_pattern,
+    VAULT_TAG_TEMPLATES as _stable_vault_tag_templates,
+    comment_style as _stable_comment_style,
+    extract_vault_ref as _stable_extract_vault_ref,
+    line_offset as _stable_line_offset,
+    link_vault as _stable_link_vault,
+    unlink_vault as _stable_unlink_vault,
+)
 from vault.kernel import construir  # noqa: E402
 
 
@@ -69,41 +79,6 @@ def _code_tag_registry() -> Path:
 
 # ─── Formatos de comentario por extensión ─────────────────────────────────────
 
-_COMMENT_STYLES: Dict[str, str] = {
-    # estilo: line, open_close, hash, dash
-    ".cs":    "line",
-    ".ts":    "line",
-    ".tsx":   "line",
-    ".js":    "line",
-    ".jsx":   "line",
-    ".java":  "line",
-    ".cpp":   "line",
-    ".c":     "line",
-    ".h":     "line",
-    ".go":    "line",
-    ".swift": "line",
-    ".kt":    "line",
-    ".rs":    "line",
-    ".dart":  "line",
-    ".py":    "hash",
-    ".rb":    "hash",
-    ".sh":    "hash",
-    ".bash":  "hash",
-    ".zsh":   "hash",
-    ".yml":   "hash",
-    ".yaml":  "hash",
-    ".r":     "hash",
-    ".html":  "open_close",
-    ".xml":   "open_close",
-    ".svg":   "open_close",
-    ".css":   "block",
-    ".scss":  "block",
-    ".sass":  "block",
-    ".less":  "block",
-    ".sql":   "dash",
-    ".md":    "none",  # vault notes use frontmatter norm_refs instead
-}
-
 _COMMENT_TEMPLATES = {
     "line":       "// @norm {code:<10} — {name}",
     "hash":       "# @norm {code:<10} — {name}",
@@ -113,28 +88,20 @@ _COMMENT_TEMPLATES = {
 }
 
 # @vault: templates — note path without .md extension, aligned for readability
-_VAULT_TAG_TEMPLATES = {
-    "line":       "// @vault: {note_path}  — {title}",
-    "hash":       "# @vault: {note_path}  — {title}",
-    "open_close": "<!-- @vault: {note_path}  — {title} -->",
-    "block":      "/* @vault: {note_path}  — {title} */",
-    "dash":       "-- @vault: {note_path}  — {title}",
-}
-
 _NORM_TAG_PATTERN = re.compile(
     r"^(?://|#|<!--|/\*|--)\s*@norm\s+(\S+)\s*[—\-]+\s*(.*?)(?:\s*(?:-->|\*/))?\s*$",
     re.MULTILINE,
 )
 
-# Matches: // @vault: 11_Code/project/module  — Title (type)
-_VAULT_TAG_PATTERN = re.compile(
-    r"^(?://|#|<!--|/\*|--)\s*@vault:\s*(\S+)\s*[—\-]+\s*(.*?)(?:\s*(?:-->|\*/))?\s*$",
-    re.MULTILINE,
-)
+# Los nombres privados históricos siguen siendo importables, pero Grafo es
+# el dueño canónico de la semántica @vault.
+_COMMENT_STYLES = _stable_comment_styles
+_VAULT_TAG_TEMPLATES = _stable_vault_tag_templates
+_VAULT_TAG_PATTERN = _stable_vault_tag_pattern
 
 
 def _comment_style(file_path: Path) -> str:
-    return _COMMENT_STYLES.get(file_path.suffix.lower(), "line")
+    return _stable_comment_style(file_path)
 
 
 def _format_norm_comment(code: str, name: str, style: str) -> str:
@@ -562,148 +529,45 @@ Nombre: {name}
 
 # ─── @vault: link / unlink ────────────────────────────────────────────────────
 
-@_bajo_lock_del_registro
 def vault_code_tag_link_vault(
     note_path_rel: str,
     file_path_str: str,
     title: str = "",
 ) -> Dict[str, Any]:
-    """Embed a @vault: reference in the header of a source file.
-
-    The @vault: tag is always placed FIRST in the tag block (before @norm lines)
-    to make the vault documentation reference the most prominent annotation.
-
-    Args:
-        note_path_rel: Path to vault note relative to vault root, WITHOUT .md extension
-                       e.g. "11_Code/my-api/auth-service"
-        file_path_str: Absolute or CWD-relative path to the source file
-        title:         Short description shown after — in the tag (40 chars max)
-    """
-    file_path = Path(file_path_str)
-    file_path = resolve_input_path(file_path)
-
-    if not file_path.exists():
-        return {"ok": False, "error_code": "FILE_NOT_FOUND",
-                "detail": f"Source file not found: {file_path}"}
-
-    style = _comment_style(file_path)
-    if style == "none":
-        return {"ok": False, "error_code": "UNSUPPORTED_FORMAT",
-                "detail": "Use frontmatter norm_refs for .md files."}
-
-    # Normalize note path: strip .md if accidentally included, use forward slashes
-    note_ref = note_path_rel.replace("\\", "/").removesuffix(".md")
-    tag_title = (title or note_ref.split("/")[-1])[:60]
-
-    tmpl = _VAULT_TAG_TEMPLATES.get(style, _VAULT_TAG_TEMPLATES["line"])
-    vault_comment = tmpl.format(note_path=note_ref, title=tag_title)
-
-    try:
-        original = file_path.read_text(encoding="utf-8", errors="ignore")
-    except Exception as e:
-        return {"ok": False, "error_code": "READ_ERROR", "detail": str(e)}
-
-    # If there's already a @vault: tag, replace it (idempotent)
-    existing = _VAULT_TAG_PATTERN.search(original)
-    if existing:
-        if existing.group(1).strip() == note_ref:
-            return {"ok": True, "action": "already_present",
-                    "file": str(file_path), "note": note_ref}
-        # Different vault reference — replace with new one
-        new_content = _VAULT_TAG_PATTERN.sub(vault_comment, original, count=1)
-        action = "replaced"
-    else:
-        # No @vault: yet — insert before any @norm block (or at top after shebang)
-        lines = original.splitlines(keepends=True)
-        insert_at = 1 if (lines and lines[0].startswith("#!")) else 0
-        offset = _line_offset(lines, insert_at)
-        new_content = original[:offset] + vault_comment + "\n" + original[offset:]
-        action = "linked"
-
-    try:
-        from vault_io import atomic_write_text
-        atomic_write_text(file_path, new_content)
-    except Exception as e:
-        return {"ok": False, "error_code": "WRITE_ERROR", "detail": str(e)}
-
-    # Register in code-tag-registry under a synthetic key
-    reg = _read_registry()
-    vault_key = f"vault:{note_ref.replace('/', ':')}"
-    tags = reg.setdefault("tags", {})
-    if vault_key not in tags:
-        from datetime import datetime, timezone
-        tags[vault_key] = {
-            "name": tag_title,
-            "description": f"Vault note: {note_ref}",
-            "files": [],
-            "vault_note": note_ref + ".md",
-            "created_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
-            "created_by": "vault_code_tag",
-            "tag_type": "vault_ref",
-        }
-    file_str = str(file_path)
-    if file_str not in tags[vault_key].get("files", []):
-        tags[vault_key].setdefault("files", []).append(file_str)
-    _save_registry(reg)
-
-    return {
-        "ok": True,
-        **write_report(),
-        "action": action,
-        "file": str(file_path),
-        "note": note_ref,
-        "comment": vault_comment,
-    }
+    """Compatibilidad pública del enlace @vault de la CLI histórica."""
+    return _stable_link_vault(
+        note_path_rel,
+        str(resolve_input_path(Path(file_path_str))),
+        title,
+        report=write_report,
+    )
 
 
-@_bajo_lock_del_registro
 def vault_code_tag_unlink_vault(file_path_str: str) -> Dict[str, Any]:
-    """Remove the @vault: tag from a source file."""
-    file_path = Path(file_path_str)
-    file_path = resolve_input_path(file_path)
+    """Compatibilidad pública de la desvinculación @vault histórica."""
+    return _stable_unlink_vault(str(resolve_input_path(Path(file_path_str))))
 
-    if not file_path.exists():
-        return {"ok": False, "error_code": "FILE_NOT_FOUND",
-                "detail": f"File not found: {file_path}"}
-
-    try:
-        content = file_path.read_text(encoding="utf-8", errors="ignore")
-    except Exception as e:
-        return {"ok": False, "error_code": "READ_ERROR", "detail": str(e)}
-
-    new_content, count = _VAULT_TAG_PATTERN.subn("", content)
-    if count == 0:
-        return {"ok": True, "action": "not_found", "file": str(file_path)}
-
-    from vault_io import atomic_write_text
-    atomic_write_text(file_path, new_content)
-    return {"ok": True, "action": "unlinked", "file": str(file_path), "lines_removed": count}
-
-
-# ─── Helpers ──────────────────────────────────────────────────────────────────
 
 def _extract_vault_ref_from_content(content: str) -> Optional[Dict[str, str]]:
-    """Extract the @vault: reference from file content, if present."""
-    m = _VAULT_TAG_PATTERN.search(content)
-    if not m:
-        return None
-    return {"note_path": m.group(1).strip(), "title": m.group(2).strip()}
+    return _stable_extract_vault_ref(content)
 
 
 def _extract_tags_from_content(content: str) -> List[Dict[str, str]]:
     tags = []
-    for m in _NORM_TAG_PATTERN.finditer(content):
-        code = m.group(1).strip()
-        name = m.group(2).strip()
-        tags.append({"code": code, "name": name, "tag_type": "norm"})
+    for match in _NORM_TAG_PATTERN.finditer(content):
+        tags.append(
+            {
+                "code": match.group(1).strip(),
+                "name": match.group(2).strip(),
+                "tag_type": "norm",
+            }
+        )
     return tags
 
 
 def _line_offset(lines: List[str], line_index: int) -> int:
-    return sum(len(l) for l in lines[:line_index])
+    return _stable_line_offset(lines, line_index)
 
-
-# ─── CLI ──────────────────────────────────────────────────────────────────────
 
 def main() -> int:
     parser = argparse.ArgumentParser(

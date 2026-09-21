@@ -40,17 +40,27 @@ un caso raro de `yaml_scalar` que nadie sabría explicar.
 from __future__ import annotations
 
 import datetime as _dt
-from pathlib import Path
+import json
 from typing import Any, Iterable, List, Tuple
 
 # Los `*_save` viven en `scripts/` y no se mueven de ahí; el paquete se importa
 # desde la raíz del repo, que ellos mismos ponen en el path.
-_SCRIPTS = Path(__file__).resolve().parent.parent.parent / "scripts"
-from vault_toolkit.loading import import_toolkit_module
+def yaml_scalar(value: Any) -> str:
+    """Serializa un escalar con el criterio YAML que consume el runtime."""
+    import yaml
 
-yaml_scalar = import_toolkit_module(
-    "vault_lib", legacy_scripts=_SCRIPTS
-).yaml_scalar
+    if isinstance(value, (list, dict)):
+        return json.dumps(value, ensure_ascii=False)
+    if isinstance(value, bool) or value is None or isinstance(value, (int, float)):
+        return json.dumps(value)
+    text = str(value)
+    try:
+        parsed = yaml.safe_load(f"k: {text}")
+        if isinstance(parsed, dict) and parsed.get("k") == text:
+            return text
+    except (yaml.YAMLError, RecursionError):
+        pass
+    return json.dumps(text, ensure_ascii=False)
 
 
 def _es_instante(valor: Any) -> bool:

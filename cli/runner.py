@@ -39,7 +39,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from .registry import SCRIPTS_DIR
+from .registry import REPO_ROOT, SCRIPTS_DIR
 from .resolver import OperationTarget, resolve_operation
 from .scheduler import Operation, Wave
 
@@ -83,7 +83,7 @@ class Result:
         return out
 
 
-def build_argv(op: Operation, target: Optional[OperationTarget] = None) -> List[str]:
+def build_argv(op: Operation, target: OperationTarget | None = None) -> List[str]:
     """Traduce args de la operación a la línea de comandos de la tool.
 
     Convención de argparse en este repo: todos los parámetros son largos
@@ -92,12 +92,9 @@ def build_argv(op: Operation, target: Optional[OperationTarget] = None) -> List[
     """
     frag = op.fragment
     target = target or (resolve_operation(frag, legacy_scripts=SCRIPTS_DIR) if frag else None)
-    if target is None or target.kind == "missing":
+    if target is None or target.kind in {"missing", "invalid"}:
         raise FileNotFoundError(f"operación no resoluble: {op.tool}")
-    if target.kind == "installed":
-        argv = [sys.executable, "-m", str(target.module)]
-    else:
-        argv = [sys.executable, str(target.path)]
+    argv = [sys.executable, "-m", target.module] if target.kind == "installed" else [sys.executable, str(target.path)]
 
     for key, value in op.args.items():
         flag = f"--{key.replace('_', '-')}"
@@ -141,9 +138,9 @@ def run_one(op: Operation, *, timeout: int = DEFAULT_TIMEOUT,
         return Result(op.id, op.tool, False, 1, 0,
                       error=f"'{op.tool}' es nativa del servidor MCP (Node)")
     target = resolve_operation(frag, legacy_scripts=SCRIPTS_DIR)
-    if target.kind == "missing":
+    if target.kind in {"missing", "invalid"}:
         return Result(op.id, op.tool, False, 1, 0,
-                      error=f"operación no resoluble: {frag.script}")
+                      error=target.detail or f"operación no resoluble: {frag.script}")
 
     argv = build_argv(op, target)
     if dry_run:
@@ -162,7 +159,7 @@ def run_one(op: Operation, *, timeout: int = DEFAULT_TIMEOUT,
             encoding="utf-8",
             errors="replace",
             timeout=timeout,
-            cwd=str(cwd) if cwd is not None else None,
+            cwd=str(cwd or REPO_ROOT),
             env=env,
         )
     except subprocess.TimeoutExpired:

@@ -107,11 +107,14 @@ def test_un_diferido_ciclico_nuevo_rompe_la_puerta(monkeypatch):
     deuda nueva y el check tiene que ponerse en rojo.
     """
     base = C._baseline()
-    assert base, "baseline vacía: el mutante no probaría nada"
-    monkeypatch.setattr(C, "_baseline", lambda: base[1:])
+    medidos = C.medir()["deferred_cyclic"]
+    assert medidos, "sin deuda cíclica el mutante no probaría nada"
+    objetivo = medidos[0]
+    assert objetivo in base, "la baseline debe contener la arista que mide"
+    monkeypatch.setattr(C, "_baseline", lambda: [sitio for sitio in base if sitio != objetivo])
     r = C.check()
     assert r["ok"] is False
-    assert base[0] in r["new_cyclic_deferrals"]
+    assert objetivo in r["new_cyclic_deferrals"]
 
 
 def test_freeze_se_niega_a_congelar_deuda_sin_precedente(monkeypatch, tmp_path):

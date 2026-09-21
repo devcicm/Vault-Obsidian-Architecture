@@ -41,7 +41,6 @@ from vault_secret_scan import redact_secrets, scan_content  # noqa: E402
 #: política ya no necesita excepción.
 _ESCRITURA_FUERA_DEL_VAULT = {
     "vault_mcp_catalog.py": "tools-catalog.json es del repo",
-    "vault_fs.py": "es el propio write path — el temp+replace vive ahí",
 }
 
 TOKEN_FALSO = "ghp_" + "a" * 36
@@ -70,18 +69,20 @@ def test_ninguna_tool_escribe_saltandose_el_write_path():
     )
 
 
-def test_la_excepcion_de_vault_io_es_solo_el_temporal():
+def test_el_primitive_estable_es_el_unico_sitio_de_escritura_cruda():
     """Eximir el fichero entero dejaría entrar la siguiente escritura cruda.
 
     La exención es de UNA línea con nombre y sitio: la del temporal dentro de
     `_escribir_temporal`. Cualquier otra en `vault_fs` sería exactamente lo que
     el test de arriba existe para cazar, escondida detrás de su propia excepción.
     """
-    fuente = (SCRIPTS / "vault_fs.py").read_text(encoding="utf-8")
+    fuente = (REPO_ROOT / "vault" / "kernel" / "escritura.py").read_text(encoding="utf-8")
+    legacy = (SCRIPTS / "vault_fs.py").read_text(encoding="utf-8")
+    assert _escrituras_crudas(legacy) == 0
     assert _escrituras_crudas(fuente) == 1
     cuerpo = fuente.split("def _escribir_temporal", 1)[1].split("\ndef ", 1)[0]
     assert _escrituras_crudas(cuerpo) == 1, (
-        "la única escritura cruda de vault_fs ya no está en _escribir_temporal"
+        "la única escritura cruda del primitive ya no está en _escribir_temporal"
     )
 
 

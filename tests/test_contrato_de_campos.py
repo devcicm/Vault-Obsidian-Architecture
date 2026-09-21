@@ -251,3 +251,26 @@ def test_check_fields_no_escribe_nada():
     antes = vscc.FIELDS_BASELINE.read_bytes()
     _correr("--check-fields", "--strict")
     assert vscc.FIELDS_BASELINE.read_bytes() == antes
+
+
+def test_freeze_fields_emite_json_con_lf_determinista(tmp_path, monkeypatch):
+    """El producer no puede convertir toda la baseline a CRLF en Windows."""
+    baseline = tmp_path / "field-compat-baseline.json"
+    monkeypatch.setattr(vscc, "FIELDS_BASELINE", baseline)
+    vscc.congelar_campos()
+    content = baseline.read_bytes()
+    assert b"\r\n" not in content
+    assert content.endswith(b"\n")
+
+
+def test_freeze_fields_es_idempotente_si_el_contrato_no_cambia(tmp_path, monkeypatch):
+    """El reloj no puede ensuciar un árbol limpio sin cambios semánticos."""
+    baseline = tmp_path / "field-compat-baseline.json"
+    baseline.write_bytes(vscc.FIELDS_BASELINE.read_bytes())
+    monkeypatch.setattr(vscc, "FIELDS_BASELINE", baseline)
+
+    antes = baseline.read_bytes()
+    resultado = vscc.congelar_campos()
+
+    assert resultado["ok"] is True
+    assert baseline.read_bytes() == antes

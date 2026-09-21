@@ -55,13 +55,13 @@ regenera.*
 | **Kernel** (`kernel`) | 4 | 22 | depender de cualquier contexto de dominio |
 | **Autoría** (`autoria`) | 7 | 43 | — |
 | **Grafo** (`grafo`) | 3 | 15 | — |
-| **Gobernanza** (`gobernanza`) | 20 | 12 | — |
+| **Gobernanza** (`gobernanza`) | 21 | 12 | — |
 | **Índices** (`indices`) | 8 | 6 | — |
 | **Consulta** (`consulta`) | 7 | 11 | base de datos; embeddings; servicio externo |
 | **Ciclo de vida** (`ciclo_de_vida`) | 3 | 9 | — |
 | **Durabilidad** (`durabilidad`) | 4 | 4 | escribir fuera de la raíz del vault (AP-36) |
-| **Meta-toolkit** (`meta_toolkit`) | 4 | 31 | escribir en una sección de contenido: sus artefactos derivados viven en 00_System/ |
-| **CLI** (`cli`) | 0 | 7 | decidir: traduce argumentos a llamadas y envelopes a salida; la decisión vive en la tool |
+| **Meta-toolkit** (`meta_toolkit`) | 5 | 30 | escribir en una sección de contenido: sus artefactos derivados viven en 00_System/ |
+| **CLI** (`cli`) | 0 | 8 | decidir: traduce argumentos a llamadas y envelopes a salida; la decisión vive en la tool |
 
 ## Capa 4 — Normas → puertas → tests
 
@@ -121,11 +121,11 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-39** — Vocabulario abierto sin memoria | guard+audit | `framework` | `test_ap39_registro_en_el_write_path.py`, `test_tag_vocabulary.py`, `test_vault_init.py` |
 | **AP-40** — Contrato publicado que la CLI rechaza | guard+audit | `contratos`, `framework` | `test_catalog_params.py` |
 | **AP-41** — Máquina de estados declarada sin verificar | guard+audit | `framework` | `test_status_machine.py`, `test_voice.py` |
-| **AP-42** — Tool publicada sin haberse ejecutado nunca | guard+audit | `framework` | `test_smoke.py` |
-| **AP-43** — Norma sin refuerzo en el punto de uso | guard+audit | `framework` | `test_ap39_registro_en_el_write_path.py`, `test_voice.py` |
+| **AP-42** — Tool publicada sin haberse ejecutado nunca | guard+audit | `framework` | `test_smoke.py`, `test_vault_norms_audit.py` |
+| **AP-43** — Norma sin refuerzo en el punto de uso | guard+audit | `framework` | `test_ap39_registro_en_el_write_path.py`, `test_vault_norms_audit.py`, `test_voice.py` |
 | **AP-44** — Verificación autoconsistente — la tool se certifica a sí misma | guard+audit | `framework` | `test_ap44_verificacion_autoconsistente.py`, `test_kernel.py`, `test_norms_coherence.py` |
 | **AP-45** — Cobertura sin evidencia — la nota existe para llenar la sección | guard+audit | `framework` | `test_ap45_cobertura_sin_evidencia.py` |
-| **AP-46** — Frontmatter a mano — cada tool es su propio escritor | guard+audit | `framework` | `test_ap46_write_path_unico.py`, `test_norms_coherence.py` |
+| **AP-46** — Frontmatter a mano — cada tool es su propio escritor | guard+audit | `framework` | `test_ap46_write_path_unico.py`, `test_norms_coherence.py`, `test_vault_sanacion.py` |
 | **AP-47** — Artefacto derivado desfasado — el índice dejó de reflejar el disco | guard+audit | `framework` | `test_ap47_indice_refleja_disco.py` |
 | **AP-48** — Implementación paralela por camino de acceso | guard+audit | `contratos`, `framework` | `test_ap48_implementacion_paralela.py` |
 | **AP-49** — Vínculo resuelto en tiempo de import | guard+audit | `arquitectura`, `framework` | `test_arquitectura.py`, `test_durabilidad_dominio.py` |
@@ -148,7 +148,7 @@ rojo, y una puerta en rojo se desactiva.
 | **SP-03** — Session snapshot pattern — delta antes de operaciones masivas | audit | — | `test_vault_norms.py` |
 | **CN-01** — Kebab-case filenames — nombres de archivo en minúsculas con guiones | guard | — | `test_vault_norms.py` |
 | **CN-02** — Numbered folder structure — secciones numeradas como únicos destinos | guard+audit | `framework` | `test_blueprint.py`, `test_raiz_no_seccion.py`, `test_vault_norms.py`, `test_vault_norms_audit.py` |
-| **CN-03** — Standard status vocabulary — vocabulario canónico de meta.status | audit | `framework` | `test_vault_norms.py`, `test_vault_norms_audit.py` |
+| **CN-03** — Standard status vocabulary — vocabulario canónico de meta.status | audit | `framework` | `test_vault_norms.py`, `test_vault_norms_audit.py`, `test_vault_sanacion.py` |
 
 Sin puerta ni test (15): `AP-04`, `AP-08`, `AP-12`, `AP-13`, `AP-18`, `AP-20`, `PAT-2`, `PAT-3`, `PAT-4`, `AP-27`, `AP-31`, `AP-32`, `AP-33`, `AP-34`, `PAT-6`.
 
@@ -358,14 +358,14 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | Baseline | Norma | Congelado | Objetivo | Pendiente |
 |---|---|---|---|---|
 | `scripts/arch-baseline.json` | cruces entre contextos | 35 | — *sin objetivo* | 42 → 35 → 36 → 36 → 36 → 35 (encoge, Δ-15) |
-| `scripts/arch-baseline.json` | cruces fuera de puerto | 12 | — *sin objetivo* | 12 → 12 → 12 → 12 → 12 → 12 (encoge, Δ-36) |
+| `scripts/arch-baseline.json` | cruces fuera de puerto | 8 | — *sin objetivo* | 12 → 12 → 12 → 12 → 12 → 12 (encoge, Δ-36) |
 | `scripts/blame-baseline.json` | AP-51 | 33 | — *sin objetivo* | 87 → 84 → 83 → 45 → 33 → 33 (encoge, Δ-53) |
 | `scripts/error-contract-baseline.json` | AP-52 | 0 | — *sin objetivo* | 158 → 110 → 110 → 0 → 9 → 0 (encoge, Δ-158) |
 | `scripts/noop-baseline.json` | AP-37 | 0 | — *sin objetivo* | 0 → 0 → 0 (plana, Δ+0) |
 | `scripts/smoke-baseline.json` | AP-42 | 0 | — *sin objetivo* | — *1 muestra* |
 | `scripts/blueprint-baseline.json` | capa 4 — norma sin puerta ni test | 13 | — *sin objetivo* | 16 → 15 → 14 → 13 → 13 (encoge, Δ-3) |
 | `scripts/criterios-baseline.json` | AP-57 | 9 | — *sin objetivo* | 10 → 9 → 9 → 9 (encoge, Δ-1) |
-| `scripts/ciclos-baseline.json` | AP-58 — ciclo esquivado con import diferido | 14 | — *sin objetivo* | 30 → 30 → 15 → 14 (encoge, Δ-16) |
+| `scripts/ciclos-baseline.json` | AP-58 — ciclo esquivado con import diferido | 7 | — *sin objetivo* | 30 → 30 → 15 → 14 (encoge, Δ-16) |
 | `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 5 | — *sin objetivo* | 5 → 5 (plana, Δ+0) |
 | `scripts/norms-distincion-baseline.json` | AP-60 — normas que no declaran de qué se distinguen | 0 | — *sin objetivo* | 57 → 0 → 0 (encoge, Δ-57) |
 | `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 | — *sin objetivo* | 47 → 0 (encoge, Δ-47) |

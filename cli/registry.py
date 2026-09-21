@@ -14,18 +14,17 @@ existe en la CLI (AP-01/AP-04 — nada de documentación alucinada).
 from __future__ import annotations
 
 import json
+import sys
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional
-
-if TYPE_CHECKING:  # frontera arquitectónica visible; la carga runtime es estable
-    import vault_mcp_catalog
+from typing import Any, Dict, Iterable, List, Optional
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS_DIR = REPO_ROOT / "scripts"
 
-from vault_toolkit.loading import import_toolkit_module
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
 
 
 # Verbos que identifican un fragmento de solo lectura cuando el catálogo no
@@ -69,9 +68,7 @@ GUARDED_ARTIFACTS = frozenset({
 # solo se usa si este repo no está importable desde el consumidor, y
 # `vault_mcp_catalog --check` falla si alguna de las tres copias diverge.
 try:  # pragma: no cover - depende de dónde se instale la CLI
-    NATIVE_JS_TOOLS = import_toolkit_module(
-        "vault_mcp_catalog", legacy_scripts=SCRIPTS_DIR
-    ).NATIVE_JS_TOOLS
+    from vault_mcp_catalog import NATIVE_JS_TOOLS  # type: ignore
 except ImportError:  # respaldo verificado por el guard, no una segunda verdad
     NATIVE_JS_TOOLS = frozenset({"vault_backup_base64", "vault_restore_base64"})
 
@@ -116,6 +113,9 @@ class Fragment:
     #: (AP-51). Ausente no lo pone a `False` — el catálogo basta y eso siempre
     #: fue legítimo.
     contract_known: bool = True
+    # Proyección derivada, no otro registro de tools. ``None`` solo aparece en
+    # construcciones de prueba o si no fue posible construir el catálogo.
+    distribution: Any = None
 
     @property
     def mode(self) -> str:
@@ -129,13 +129,6 @@ class Fragment:
     @property
     def script_path(self) -> Path:
         return SCRIPTS_DIR / self.script
-
-    @property
-    def execution_module(self) -> Optional[str]:
-        """Módulo derivado del script canónico, sin mapping paralelo."""
-        if self.runtime != "python":
-            return None
-        return f"vault_toolkit.operations.{Path(self.script).stem}"
 
     @property
     def runtime(self) -> str:
@@ -207,9 +200,7 @@ def _leer_spec() -> tuple[Dict[str, Any], Dict[str, Any]]:
     `ausente` sigue siendo legítimo: el catálogo basta. `ilegible` no.
     """
     try:
-        resolve_tool_spec = import_toolkit_module(
-            "vault_io", legacy_scripts=SCRIPTS_DIR
-        ).resolve_tool_spec
+        from vault_io import resolve_tool_spec
     except ImportError as e:
         return {}, {"estado": "ilegible", "path": None,
                     "detail": f"vault_io no importable: {e}"}
@@ -264,11 +255,10 @@ _SPEC_STATUS: Dict[str, Any] = {"estado": "sin_leer", "path": None, "detail": No
 @lru_cache(maxsize=1)
 def load_registry() -> Dict[str, Fragment]:
     """Construye el índice de fragmentos. Cacheado — el catálogo es estático."""
-    TOOLS_CATALOG = import_toolkit_module(
-        "vault_mcp_catalog", legacy_scripts=SCRIPTS_DIR
-    ).TOOLS_CATALOG
+    from vault_mcp_catalog import TOOLS_CATALOG, distribution_metadata
 
     spec, estado = _leer_spec()
+    distribucion = distribution_metadata()
     _SPEC_STATUS.clear()
     _SPEC_STATUS.update(estado)
     contrato_conocido = estado["estado"] != "ilegible"
@@ -291,6 +281,7 @@ def load_registry() -> Dict[str, Fragment]:
                 normalize_arg(a) for a in (spec_entry.get("required_args") or [])
             ],
             contract_known=contrato_conocido,
+            distribution=distribucion[name],
         )
     return registry
 

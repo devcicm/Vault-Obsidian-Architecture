@@ -26,17 +26,24 @@ import os
 import queue
 import sys
 import threading
-import traceback
 from datetime import datetime, timezone
 from pathlib import Path
+
+# Adaptador legacy: las tools históricas se ejecutan como ficheros dentro de
+# ``scripts/`` y pueden tener como CWD el runtime externo. El servicio de voz
+# sí es un módulo de paquete; se hace visible aquí, en el borde legacy.
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
 # La configuración se lee del registro único, no con un default por punto
 # de uso. Ver `vault_entorno.py`.
 from vault_entorno import leer as _env
 from typing import Any, Callable, Dict, List, Optional
 
-from vault_errors_catalog import ERROR_CATALOG, get_error
+from vault_errors_catalog import ERROR_CATALOG, construir_error, get_error
 from vault_errors_trace import log_trace, log_token_usage
+from vault.autoria.voz import speak as _speak_estable
 
 TOOL_TIMEOUT_SECONDS: int = _env("VAULT_TOOL_TIMEOUT")
 
@@ -109,21 +116,7 @@ def emit_error(
     exception: Exception = None,
 ) -> Dict[str, Any]:
     """Construye error estructurado y lo registra en el trace log."""
-    catalog_entry = get_error(code)
-    entry = {
-        "ok": False,
-        "tool": tool,
-        "error_code": code,
-        "category": catalog_entry["category"],
-        "severity": catalog_entry["severity"],
-        "message": message or catalog_entry["message"],
-        "recovery": catalog_entry["recovery"],
-        "timestamp": datetime.now(timezone.utc).isoformat()[:19] + "Z",
-    }
-    if args:
-        entry["args"] = args
-    if exception:
-        entry["traceback"] = traceback.format_exc()
+    entry = construir_error(tool, code, message, args, exception)
     log_trace(entry)
     return entry
 
@@ -208,9 +201,21 @@ def _inject_voice(data: Any, tool_name: str, writes: Optional[Dict[str, int]]) -
     if not isinstance(data, dict) or "vault_says" in data:
         return
     try:
-        from vault_voice import speak
-
-        bloque = speak(tool_name, data, writes)
+        # Compatibilidad para instrumentación histórica: si la fachada ya está
+        # cargada y un consumidor parcheó explícitamente su `speak`, se respeta
+        # ese seam. El camino normal llama al servicio de paquete directamente;
+        # no hay import de `vault_voice` desde el runtime.
+        legacy = sys.modules.get("vault_voice")
+        speak_legacy = getattr(legacy, "speak", None) if legacy is not None else None
+        if callable(speak_legacy):
+            bloque = speak_legacy(tool_name, data, writes)
+        else:
+            bloque = _speak_estable(
+                tool_name,
+                data,
+                writes,
+                voice_mode=_env("VAULT_VOICE"),
+            )
         if bloque:
             data["vault_says"] = bloque
     except Exception:

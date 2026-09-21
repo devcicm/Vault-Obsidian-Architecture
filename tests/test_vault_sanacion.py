@@ -132,3 +132,49 @@ def test_las_fases_salen_del_documento_que_las_define():
 
 def test_una_fase_fuera_de_rango_no_inventa_nada(plan_sandbox):
     assert not [f for f in plan_sandbox["phases"] if f["phase"] > 12]
+
+
+_USAR_AUDIT_REAL = object()
+
+
+def _plan_con_normas(monkeypatch, resultado=_USAR_AUDIT_REAL):
+    if resultado is not _USAR_AUDIT_REAL:
+        monkeypatch.setattr(san, "auditar_runtime", lambda root: resultado)
+    monkeypatch.setattr(san, "_medir_audit", lambda root: {"stats": {"total": 0}, "issues": {}})
+    monkeypatch.setattr(san, "_medir_indice", lambda root: {"ok": True, "indexed": 0})
+    monkeypatch.setattr(san, "_secciones_ausentes", lambda root: [])
+    monkeypatch.setattr(san, "_medir_encoding", lambda root: 0)
+    return san.plan_de_sanacion(Path.cwd())
+
+
+def test_fase_6_runtime_limpio_conserva_el_contrato(monkeypatch):
+    plan = _plan_con_normas(monkeypatch, {"ok": True, "violations": []})
+    fase = plan["phases"][5]
+
+    assert fase["verdict"] == "clean"
+    assert fase["measured"] == 0
+    assert 6 not in plan["phases_unknown"]
+
+
+def test_fase_6_cuenta_violaciones_del_runtime(monkeypatch):
+    plan = _plan_con_normas(
+        monkeypatch,
+        {"ok": True, "violations": [{"norm": "AP-46"}, {"norm": "CN-03"}]},
+    )
+    fase = plan["phases"][5]
+
+    assert fase["verdict"] == "applies"
+    assert fase["measured"] == 2
+    assert 6 in plan["phases_apply"]
+
+
+def test_fase_6_fallo_de_medida_es_unknown(monkeypatch):
+    def falla(root):
+        raise RuntimeError("audit unavailable")
+
+    monkeypatch.setattr(san, "auditar_runtime", falla)
+    plan = _plan_con_normas(monkeypatch)
+    fase = plan["phases"][5]
+
+    assert fase["verdict"] == "unknown"
+    assert 6 in plan["phases_unknown"]

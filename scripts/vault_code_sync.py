@@ -34,6 +34,7 @@ from vault_io import write_report, resolve_input_path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
+from vault.grafo.enlace_codigo import link_vault  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 
 
@@ -197,13 +198,11 @@ def vault_code_sync(
         fix_applied = False
         if fix and not dry_run:
             try:
-                from vault_code_tag import vault_code_tag_link_vault
-
                 title = meta.get("title", note_path.stem)
                 iso_type = meta.get("iso_type", "module")
                 tag_title = f"{Path(source_file_str).name} ({iso_type})"
-                tag_result = vault_code_tag_link_vault(
-                    note_ref, str(source_path), tag_title
+                tag_result = link_vault(
+                    note_ref, str(source_path), tag_title, report=write_report
                 )
                 fix_applied = tag_result.get("ok", False)
                 if fix_applied:

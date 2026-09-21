@@ -6,16 +6,38 @@ Run from repo root:
 """
 
 import sys
-import os
 from pathlib import Path
 
 import pytest
+
+from sandbox_fixture import bootstrap as bootstrap_sandbox
+from sandbox_fixture import clean as clean_sandbox
+from sandbox_fixture import ready as sandbox_ready
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS_DIR = REPO_ROOT / "scripts"
 
 # Ensure scripts/ is importable for all test modules
 sys.path.insert(0, str(SCRIPTS_DIR))
+
+
+def pytest_sessionstart(session):
+    """Materializa el runtime ignorado desde fuentes versionadas antes de colectar.
+
+    Una ejecución normal de pytest no presupone restos de `vault-sandbox/`.
+    Si un orquestador ya hizo el bootstrap para ejecutar gates después de la
+    suite, el hook no toma propiedad del runtime y no lo elimina.
+    """
+    if not sandbox_ready():
+        bootstrap_sandbox()
+        session.config._sandbox_fixture_owned = True
+    else:
+        session.config._sandbox_fixture_owned = False
+
+
+def pytest_sessionfinish(session, exitstatus):
+    if getattr(session.config, "_sandbox_fixture_owned", False):
+        clean_sandbox()
 
 
 @pytest.fixture
