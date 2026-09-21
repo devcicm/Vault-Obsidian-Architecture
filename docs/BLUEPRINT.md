@@ -357,7 +357,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 
 | Baseline | Norma | Congelado | Objetivo | Pendiente |
 |---|---|---|---|---|
-| `scripts/arch-baseline.json` | cruces entre contextos | 36 | — *sin objetivo* | 36 → 36 → 35 → 34 → 35 → 36 (encoge, Δ-24) |
+| `scripts/arch-baseline.json` | cruces entre contextos | 37 | — *sin objetivo* | 36 → 36 → 35 → 34 → 35 → 36 (encoge, Δ-24) |
 | `scripts/arch-baseline.json` | cruces fuera de puerto | 8 | — *sin objetivo* | 12 → 12 → 12 → 8 → 8 → 8 (encoge, Δ-40) |
 | `scripts/blame-baseline.json` | AP-51 | 33 | — *sin objetivo* | 87 → 84 → 83 → 45 → 33 → 33 (encoge, Δ-53) |
 | `scripts/error-contract-baseline.json` | AP-52 | 0 | — *sin objetivo* | 158 → 110 → 110 → 0 → 9 → 0 (encoge, Δ-158) |
