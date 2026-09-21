@@ -77,20 +77,23 @@ class GobernanzaCLI(GobernanzaBase):
                 "message": "Traversal a directorio padre detectado",
             })
 
-        if INVISIBLE_CHARS.search(args_str):
-            findings.append({
-                "rule": "anti-poison",
-                "kind": "invisible_chars",
-                "message": "Caracteres invisibles detectados en argumentos",
-            })
-
-        for i, pattern in enumerate(POISON_PATTERNS):
-            if pattern.search(args_str):
-                findings.append({
-                    "rule": "anti-poison",
-                    "kind": f"pattern_{i}",
-                    "message": "Patrón de potencial inyección detectado",
-                })
+        for key, value in args.items():
+            if isinstance(value, str):
+                if INVISIBLE_CHARS.search(value):
+                    findings.append({
+                        "rule": "anti-poison",
+                        "kind": "invisible_chars",
+                        "message": f"Caracteres invisibles detectados en argumento '{key}'",
+                    })
+                    break
+                for i, pattern in enumerate(POISON_PATTERNS):
+                    if pattern.search(value):
+                        findings.append({
+                            "rule": "anti-poison",
+                            "kind": f"pattern_{i}_in_{key}",
+                            "message": f"Patrón de potencial inyección en '{key}'",
+                        })
+                        break
 
         fragment_str = str(fragment.example or "")
         if INVISIBLE_CHARS.search(fragment_str):

@@ -10,6 +10,7 @@
     "vault/gobernanza/repositorio.py -> vault/indices",
     "vault/grafo/repositorio.py -> vault/gobernanza",
     "vault/indices/repositorio.py -> vault/grafo",
+    "vault/meta_toolkit/catalog_adapter.py -> vault/gobernanza",
     "vault_blueprint -> vault_norms",
     "vault_change_log -> vault/gobernanza",
     "vault_code_tag -> vault_write",
