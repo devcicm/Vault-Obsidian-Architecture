@@ -1477,7 +1477,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     "vault_knowledge_save": {
         "name": "vault_knowledge_save",
         "script": "vault_knowledge_save.py",
-        "execution_module": "vault.autoria.knowledge_save",
+        "execution_module": "vault_toolkit.operations.vault_knowledge_save",
         "group": "Conocimiento",
         "purpose": "Guarda conocimiento estructurado por tema.",
         "params": {
@@ -1514,7 +1514,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     "vault_knowledge_get": {
         "name": "vault_knowledge_get",
         "script": "vault_knowledge_get.py",
-        "execution_module": "vault.autoria.knowledge_get",
+        "execution_module": "vault_toolkit.operations.vault_knowledge_get",
         "group": "Conocimiento",
         "purpose": "Recupera conocimiento por tema o búsqueda.",
         "params": {
@@ -4245,7 +4245,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     "vault_query_parse": {
         "name": "vault_query_parse",
         "script": "vault_query_parse.py",
-        "execution_module": "vault.consulta.query_parse",
+        "execution_module": "vault_toolkit.operations.vault_query_parse",
         "group": "Memoria de Contexto",
         "purpose": "Lenguaje natural → consulta estructurada (términos, secciones, tags, semillas, ventana temporal, intención) y plan de tools. Determinista, sin modelo.",
         "params": {

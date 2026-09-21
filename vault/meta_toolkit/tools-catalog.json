@@ -2876,7 +2876,7 @@
       "side_effects": [],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": "vault.autoria.knowledge_get",
+      "execution_module": "vault_toolkit.operations.vault_knowledge_get",
       "related": [
         "vault_knowledge_save",
         "vault_search"
@@ -2929,7 +2929,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": "vault.autoria.knowledge_save",
+      "execution_module": "vault_toolkit.operations.vault_knowledge_save",
       "related": [
         "vault_knowledge_get",
         "vault_search"
@@ -4365,7 +4365,7 @@
       "side_effects": [],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": "vault.consulta.query_parse",
+      "execution_module": "vault_toolkit.operations.vault_query_parse",
       "related": [
         "vault_context_pack",
         "vault_search",

@@ -55,7 +55,14 @@ def derivar_distribucion(
     for nombre in sorted(catalogo):
         naturaleza = pertenencia[nombre][0]
         es_runtime = naturaleza != "meta_estandar"
-        execution_module = catalogo[nombre].get("execution_module")
+        explicit_module = catalogo[nombre].get("execution_module")
+        script_name = catalogo[nombre].get("script")
+        has_script = script_name and script_name.strip()
+        if has_script and es_runtime:
+            stem = script_name.removesuffix(".py")
+            execution_module = explicit_module or f"vault_toolkit.operations.{stem}"
+        else:
+            execution_module = explicit_module
         if execution_module is not None and (
             not isinstance(execution_module, str) or not execution_module.strip()
         ):
@@ -66,8 +73,8 @@ def derivar_distribucion(
             nombre=nombre,
             naturaleza=naturaleza,
             clase="runtime" if es_runtime else "maintenance",
-            distributable=es_runtime,
-            legacy_script=catalogo[nombre].get("script"),
+            distributable=es_runtime and bool(has_script),
+            legacy_script=script_name,
             execution_module=execution_module,
         )
     return resultado
