@@ -524,6 +524,9 @@ CONTEXTS: dict[str, dict] = {
             # porque preguntarle al registro qué prometemos sería volver a
             # certificarnos con nuestro propio criterio (AP-44).
             "vault_produccion",
+            # Genera adaptadores de operaciones desde registros canónicos.
+            # Meta-toolkit por sujeto: genera artefactos para la distribución.
+            "vault_distribution_sync",
         ],
     },
     # v40.30 — el contexto que faltaba, y el hueco que su ausencia abría.

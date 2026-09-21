@@ -60,7 +60,7 @@ regenera.*
 | **Consulta** (`consulta`) | 7 | 11 | base de datos; embeddings; servicio externo |
 | **Ciclo de vida** (`ciclo_de_vida`) | 3 | 9 | — |
 | **Durabilidad** (`durabilidad`) | 4 | 4 | escribir fuera de la raíz del vault (AP-36) |
-| **Meta-toolkit** (`meta_toolkit`) | 5 | 30 | escribir en una sección de contenido: sus artefactos derivados viven en 00_System/ |
+| **Meta-toolkit** (`meta_toolkit`) | 5 | 31 | escribir en una sección de contenido: sus artefactos derivados viven en 00_System/ |
 | **CLI** (`cli`) | 0 | 8 | decidir: traduce argumentos a llamadas y envelopes a salida; la decisión vive en la tool |
 
 ## Capa 4 — Normas → puertas → tests
@@ -357,19 +357,19 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 
 | Baseline | Norma | Congelado | Objetivo | Pendiente |
 |---|---|---|---|---|
-| `scripts/arch-baseline.json` | cruces entre contextos | 35 | — *sin objetivo* | 42 → 35 → 36 → 36 → 36 → 35 (encoge, Δ-15) |
-| `scripts/arch-baseline.json` | cruces fuera de puerto | 8 | — *sin objetivo* | 12 → 12 → 12 → 12 → 12 → 12 (encoge, Δ-36) |
+| `scripts/arch-baseline.json` | cruces entre contextos | 35 | — *sin objetivo* | 36 → 36 → 36 → 35 → 34 → 35 (encoge, Δ-20) |
+| `scripts/arch-baseline.json` | cruces fuera de puerto | 8 | — *sin objetivo* | 12 → 12 → 12 → 12 → 8 → 8 (encoge, Δ-40) |
 | `scripts/blame-baseline.json` | AP-51 | 33 | — *sin objetivo* | 87 → 84 → 83 → 45 → 33 → 33 (encoge, Δ-53) |
 | `scripts/error-contract-baseline.json` | AP-52 | 0 | — *sin objetivo* | 158 → 110 → 110 → 0 → 9 → 0 (encoge, Δ-158) |
 | `scripts/noop-baseline.json` | AP-37 | 0 | — *sin objetivo* | 0 → 0 → 0 (plana, Δ+0) |
 | `scripts/smoke-baseline.json` | AP-42 | 0 | — *sin objetivo* | — *1 muestra* |
 | `scripts/blueprint-baseline.json` | capa 4 — norma sin puerta ni test | 13 | — *sin objetivo* | 16 → 15 → 14 → 13 → 13 (encoge, Δ-3) |
 | `scripts/criterios-baseline.json` | AP-57 | 9 | — *sin objetivo* | 10 → 9 → 9 → 9 (encoge, Δ-1) |
-| `scripts/ciclos-baseline.json` | AP-58 — ciclo esquivado con import diferido | 7 | — *sin objetivo* | 30 → 30 → 15 → 14 (encoge, Δ-16) |
+| `scripts/ciclos-baseline.json` | AP-58 — ciclo esquivado con import diferido | 7 | — *sin objetivo* | 30 → 30 → 15 → 14 → 7 (encoge, Δ-23) |
 | `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 5 | — *sin objetivo* | 5 → 5 (plana, Δ+0) |
 | `scripts/norms-distincion-baseline.json` | AP-60 — normas que no declaran de qué se distinguen | 0 | — *sin objetivo* | 57 → 0 → 0 (encoge, Δ-57) |
 | `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 | — *sin objetivo* | 47 → 0 (encoge, Δ-47) |
-| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1334 | — *sin objetivo* | 1278 → 1278 → 1318 → 1318 → 1334 → 1334 (crece, Δ+250) |
+| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1334 | — *sin objetivo* | 1318 → 1318 → 1334 → 1334 → 1334 → 1334 (crece, Δ+220) |
 | `scripts/excepcion-declarada-baseline.json` | AP-61 — la excepción declarada no es la que escapa | 0 | ≤ 0 para 2027-06-30 · cada 180 d · gobernanza → **cumple** | 0 → 0 (plana, Δ+0) |
 | `scripts/recursos-baseline.json` | AP-62 — el consumidor cruza para leer un recurso y paga el fan-out | 2 | — *sin objetivo* | — *1 muestra* |
 
