@@ -71,3 +71,6 @@ def derivar_distribucion(
             execution_module=execution_module,
         )
     return resultado
+
+
+clasificar_tools = derivar_distribucion
