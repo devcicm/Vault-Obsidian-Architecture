@@ -253,9 +253,27 @@ toolkit completo funciona sin checkout.
    stable-owned, adaptador legacy y clean-install proof por cada una.
 4. Sustituir gradualmente la dependencia global de checkout de registry, runner,
    scripts físicos, recursos legacy y tests que asumen layout de repo.
-5. Sólo cuando todas las operaciones MVP públicas sean reales y empaquetadas:
+5. Sómismo cuando todas las operaciones MVP públicas sean reales y empaquetadas:
    ampliar lifecycle/product surfaces, definir compatibilidad completa y evaluar
    publicación.
+
+## Fallos pre-existentes en `test_installable_boundary.py`
+
+Los siguientes tests fallan en el estado base del branch `product/product-readiness`
+sin que los cambios de los checkpoints los hayan introducido. Son deuda de diseño
+de tests que existía antes de la integración de gobernanza.
+
+| Test | Causa raíz | Sección que lo detecta |
+|---|---|---|
+| `test_modulo_de_ejecucion_sale_del_script_del_catalogo` | El catálogo no poblaba `execution_module` para `vault_ai_decision` — queda `None` en la distribución, pero el test espera el módulo `vault_toolkit.operations.vault_ai_decision` | `derivar_distribucion` necesita inferir `execution_module` desde el adaptador para tools runtime con script existente |
+| `test_resolver_prefiere_modulo_instalado` | El monkeypatch de `find_spec` devuelve `object()` sin atributo `origin`; cuando `execution_module` es `None` el código toma el branch `legacy` (test pasa), pero con `execution_module` inferido entra a `_installed_target` y el mock incompleto falla | Test necesita mock más completo de `spec.origin` o usar `None` como valor de `execution_module` |
+| `test_puntos_distribuibles_no_insertan_scripts_en_sys_path` | `cli/registry.py` inserta `SCRIPTS_DIR` en `sys.path` en tiempo de import — el test detecta la llamada `sys.path.insert` y falla | Fuga real de `sys.path` que el test detecta; la operación inyecta `scripts/` donde no debe |
+| `test_adaptadores_de_operacion_derivan_del_catalogo` | `sync(check=True)` comparaba el filename derivado de `execution_module` contra el filename real; para `vault_knowledge_save` el stem de `vault.autoria.knowledge_save` es `knowledge_save.py` ≠ `vault_knowledge_save.py` | La función `render()` en `vault_distribution_sync.py` necesita usar `nombre` para el filename, no `execution_module.rsplit` |
+| `test_toda_operacion_distribuible_tiene_namespace_importable` | `vault_backup_base64` es JS-native y tiene `execution_module = None`; el test hace `importlib.import_module(None)` y falla | Las tools JS-native deben marcarse como `distributable=False` en la distribución |
+
+Ninguno de estos fallos es atribuible a los cambios de CHECKPOINT 1 o CHECKPOINT 2.
+El primero y el último requieren cambios en `derivar_distribucion` (módulo `meta_toolkit/distribucion.py`);
+el segundo y tercero son bugs de test; el cuarto requiere un fix en `vault_distribution_sync.py`.
 
 Estado honesto:
 
