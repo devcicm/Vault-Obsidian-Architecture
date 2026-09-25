@@ -4254,6 +4254,39 @@
       "archived_in": "v22",
       "reason": "Superseded por el catálogo MCP (vault_mcp_catalog)."
     },
+    "vault_gobernanza": {
+      "group": "Salud del Vault",
+      "group_id": 6,
+      "status": "active",
+      "required_args": [
+        "--content"
+      ],
+      "declared_returns": [
+        "findings",
+        "message",
+        "ok",
+        "tool",
+        "trace"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "validity",
+          "integrity",
+          "authenticity"
+        ],
+        "cia_scope": [
+          "integrity",
+          "availability",
+          "sensitivity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F1",
+        "F5",
+        "F8"
+      ]
+    },
     "vault_validate": {
       "group": "Salud del Vault",
       "group_id": 6,

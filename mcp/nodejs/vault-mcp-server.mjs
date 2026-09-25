@@ -936,9 +936,11 @@ async function handleToolsCall(params, session) {
     }
 
     let result;
-    if (JS_NATIVE_TOOLS.has(name)) {
+    if (name === "vault_gobernanza") {
+      result = await executePythonTool("__module__:vault.gobernanza.tool", args, vaultRoot, session);
+    } else if (JS_NATIVE_TOOLS.has(name)) {
       result = await dispatchJsNative(name, args, vaultRoot);
-    } else if (name === "vault_graph_fix" || name === "vault_graph_inspect") {
+    } else if (name === "vault_graph_fix" || name === "vault_graph_inspect" || name === "vault_gobernanza") {
       const scriptName = name + ".py";
       const scriptPath = join(SCRIPTS_DIR, scriptName);
       // El tercer argumento existía y no lo pasaba nadie: `env.VAULT_ROOT =
@@ -1046,8 +1048,21 @@ function executePythonTool(scriptPath, args, vaultRoot, session) {
     // implícito del proceso).
     env.VAULT_CLIENT_CWD = process.cwd();
 
-    const proc = spawn(python, [scriptPath, ...cliArgs], {
-      cwd: SCRIPTS_DIR,
+    const isModulePath = scriptPath.startsWith("__module__:") || scriptPath.includes("/vault/gobernanza/") || scriptPath.includes("\\vault\\gobernanza\\");
+    let spawnArgs;
+    let spawnCwd;
+    if (isModulePath) {
+      const moduleName = scriptPath.startsWith("__module__:")
+        ? scriptPath.slice(10)
+        : scriptPath.replace(/[/\\]/g, ".").replace(/^vault\./, "").replace(/\.py$/, "");
+      spawnArgs = ["-m", moduleName, ...cliArgs];
+      spawnCwd = REPO_ROOT;
+    } else {
+      spawnArgs = [scriptPath, ...cliArgs];
+      spawnCwd = SCRIPTS_DIR;
+    }
+    const proc = spawn(python, spawnArgs, {
+      cwd: spawnCwd,
       timeout: toolTimeoutMs(),
       stdio: ["pipe", "pipe", "pipe"],
       env,

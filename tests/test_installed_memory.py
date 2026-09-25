@@ -44,9 +44,9 @@ def test_write_rechaza_runtime_inexistente_sin_dejar_archivos(tmp_path):
 
 def test_las_tres_promesas_instaladas_salen_del_catalogo_canonico():
     expected = {
-        "vault_query_parse": "vault.consulta.query_parse",
-        "vault_knowledge_save": "vault.autoria.knowledge_save",
-        "vault_knowledge_get": "vault.autoria.knowledge_get",
+        "vault_query_parse": "vault_toolkit.operations.vault_query_parse",
+        "vault_knowledge_save": "vault_toolkit.operations.vault_knowledge_save",
+        "vault_knowledge_get": "vault_toolkit.operations.vault_knowledge_get",
     }
     installed = {name: tool.execution_module for name, tool in catalogo_producto().items()
                  if tool.execution_module is not None}

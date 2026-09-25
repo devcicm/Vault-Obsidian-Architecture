@@ -44,7 +44,7 @@ def _imports_scripts(source: Path) -> bool:
     return False
 
 
-def _installed_target(metadata: Any, *, legacy_scripts: Path | None) -> OperationTarget:
+def _installed_target(metadata: Any, *, legacy_scripts: Path | None) -> OperationTarget | None:
     """Verifica un destino instalado declarado, sin importarlo ni ejecutarlo."""
     module = metadata.execution_module
     try:
@@ -52,12 +52,14 @@ def _installed_target(metadata: Any, *, legacy_scripts: Path | None) -> Operatio
     except (ImportError, AttributeError, ValueError, ModuleNotFoundError) as exc:
         return OperationTarget("invalid", module=module,
                                detail=f"módulo instalado no resoluble: {exc}")
-    if spec is None or spec.origin in (None, "built-in", "frozen"):
+    if spec is None:
+        return None
+    _spec_origin = getattr(spec, 'origin', None)
+    if _spec_origin in ("built-in", "frozen"):
         return OperationTarget("invalid", module=module,
                                detail="módulo instalado no resoluble")
-
-    origin = Path(spec.origin).resolve()
-    if legacy_scripts is not None:
+    origin = Path(_spec_origin).resolve() if _spec_origin else None
+    if legacy_scripts is not None and origin is not None:
         try:
             origin.relative_to(legacy_scripts.resolve())
         except ValueError:
@@ -65,7 +67,7 @@ def _installed_target(metadata: Any, *, legacy_scripts: Path | None) -> Operatio
         else:
             return OperationTarget("invalid", module=module,
                                    detail="el módulo instalado vive en scripts/")
-    if _imports_scripts(origin):
+    if origin is not None and _imports_scripts(origin):
         return OperationTarget("invalid", module=module,
                                detail="el módulo instalado importa scripts/")
     return OperationTarget("installed", module=module, path=origin)
@@ -82,7 +84,9 @@ def resolve_operation(fragment: Any, *, legacy_scripts: Path | None) -> Operatio
     metadata = getattr(fragment, "distribution", None)
     module = getattr(metadata, "execution_module", None)
     if module is not None:
-        return _installed_target(metadata, legacy_scripts=legacy_scripts)
+        result = _installed_target(metadata, legacy_scripts=legacy_scripts)
+        if result is not None:
+            return result
 
     script_name = getattr(fragment, "script", None)
     if legacy_scripts is not None and script_name:

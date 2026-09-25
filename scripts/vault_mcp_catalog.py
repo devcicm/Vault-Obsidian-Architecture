@@ -2075,6 +2075,43 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "example": 'python vault_change_log.py --query --last 10\npython vault_change_log.py --action "updated" --path "01_Projects/mi-api/overview.md" --summary "Revision"',
         "related": ["vault_timeline", "vault_audit"],
     },
+    "vault_gobernanza": {
+        "name": "vault_gobernanza",
+        "group": "Gobernanza",
+        "purpose": "Valida contenido contra las normas de gobernanza del MCP (secret scan, content gate, brackets, Mermaid).",
+        "params": {
+            "content": {
+                "type": "string",
+                "required": True,
+                "description": "Contenido a validar",
+                "validators": [],
+            },
+            "folder": {
+                "type": "string",
+                "required": False,
+                "description": "Carpeta destino (para path-anchored links)",
+            },
+            "vault_root": {
+                "type": "string",
+                "required": False,
+                "description": "Ruta al vault",
+            },
+            "format": {
+                "type": "string",
+                "required": False,
+                "description": "Formato de salida (json o text)",
+            },
+            "trace": {
+                "type": "boolean",
+                "required": False,
+                "description": "Incluir trace de validación",
+            },
+        },
+        "guards": [],
+        "side_effects": [],
+        "status": "active",
+        "exposed_via_mcp": True,
+    },
     "vault_ai_decision": {
         "name": "vault_ai_decision",
         "script": "vault_ai_decision.py",
@@ -4350,7 +4387,7 @@ GROUPS: Dict[str, List[str]] = {
         "vault_move",
     ],
     "Observabilidad": ["vault_log_error"],
-    "Salud del Vault": ["vault_fuente_unica", "vault_audit", "vault_validate", "vault_graph", "vault_graph_merge", "vault_graph_inspect"],
+    "Salud del Vault": ["vault_fuente_unica", "vault_audit", "vault_gobernanza", "vault_validate", "vault_graph", "vault_graph_merge", "vault_graph_inspect"],
     "Patrones": ["vault_pattern_save", "vault_pattern_list"],
     "Diagramas": [
         "vault_diagram_save",

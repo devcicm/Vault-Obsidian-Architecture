@@ -10,6 +10,14 @@ consumidores quienes tienen que pasar por el puerto— y sigue declarado como
 deuda en la baseline de `vault_arch`.
 """
 
+import sys
+from pathlib import Path
+
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+_SCRIPTS = _REPO_ROOT / "scripts"
+if str(_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS))
+
 from .repositorio import RepositorioGobernanza
 from .base import (
     GobernanzaBase,

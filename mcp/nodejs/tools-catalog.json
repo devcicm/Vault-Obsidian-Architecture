@@ -2239,6 +2239,45 @@
         "vault_blame_audit"
       ]
     },
+    "vault_gobernanza": {
+      "name": "vault_gobernanza",
+      "description": "Valida contenido contra las normas de gobernanza del MCP (secret scan, content gate, brackets, Mermaid).",
+      "group": "Gobernanza",
+      "script": "",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "Contenido a validar"
+          },
+          "folder": {
+            "type": "string",
+            "description": "Carpeta destino (para path-anchored links)"
+          },
+          "vault_root": {
+            "type": "string",
+            "description": "Ruta al vault"
+          },
+          "format": {
+            "type": "string",
+            "description": "Formato de salida (json o text)"
+          },
+          "trace": {
+            "type": "string",
+            "description": "Incluir trace de validación"
+          }
+        },
+        "required": [
+          "content"
+        ]
+      },
+      "guards": [],
+      "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": true,
+      "execution_module": null
+    },
     "vault_graph": {
       "name": "vault_graph",
       "description": "Genera grafo de relaciones entre notas.",
@@ -5955,6 +5994,7 @@
     "Salud del Vault": [
       "vault_fuente_unica",
       "vault_audit",
+      "vault_gobernanza",
       "vault_validate",
       "vault_graph",
       "vault_graph_merge",

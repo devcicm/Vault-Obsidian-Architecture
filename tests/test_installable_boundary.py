@@ -63,10 +63,10 @@ def test_resolver_prefiere_modulo_instalado(monkeypatch, tmp_path):
     from cli import registry
 
     frag = registry.resolve("vault_read")
-    monkeypatch.setattr("cli.resolver.importlib.util.find_spec", lambda _: object())
+    monkeypatch.setattr("cli.resolver.importlib.util.find_spec", lambda _: type("Spec", (), {"origin": None})())
     target = resolve_operation(frag, legacy_scripts=tmp_path)
     assert target.kind == "installed"
-    assert target.module == frag.execution_module
+    assert target.module == frag.distribution.execution_module
 
 
 def test_resolver_conserva_fallback_legacy_del_checkout(monkeypatch, tmp_path):

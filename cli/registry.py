@@ -23,9 +23,6 @@ from typing import Any, Dict, Iterable, List, Optional
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS_DIR = REPO_ROOT / "scripts"
 
-if str(SCRIPTS_DIR) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS_DIR))
-
 
 # Verbos que identifican un fragmento de solo lectura cuando el catálogo no
 # declara side-effects. Conservador: ante la duda se clasifica como escritura,

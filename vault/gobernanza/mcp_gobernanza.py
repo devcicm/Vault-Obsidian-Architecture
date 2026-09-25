@@ -20,6 +20,8 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from vault_regex import RE_WIKILINK
+
 from .base import (
     AuditResult,
     ToolFragment,
@@ -186,7 +188,7 @@ class GobernanzaMCP(GobernanzaBase):
         """Path-anchored links (AP-21): wikilinks sin path deben ser relativos al vault."""
         findings = []
 
-        wikilinks = re.findall(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]", content)
+        wikilinks = RE_WIKILINK.findall(content)
         for link in wikilinks:
             link = link.strip()
             if "/" not in link and "\\" not in link and not link.startswith("#"):
