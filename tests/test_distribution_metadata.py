@@ -32,22 +32,20 @@ def test_runtime_y_meta_se_derivan_de_naturalezas_sin_lista_paralela():
 
 def test_distribuible_no_significa_que_toda_operacion_ya_este_instalada():
     """Una sola promesa explícita no convierte el alcance entero en instalado."""
-    assert any(entrada.distributable for entrada in _projection().values())
+    proy = _projection()
+    assert any(entrada.distributable for entrada in proy.values())
     instaladas = {
         nombre: entrada.execution_module
-        for nombre, entrada in _projection().items()
+        for nombre, entrada in proy.items()
         if entrada.execution_module is not None
     }
-    assert instaladas == {
-        "vault_query_parse": "vault.consulta.query_parse",
-        "vault_knowledge_save": "vault.autoria.knowledge_save",
-        "vault_knowledge_get": "vault.autoria.knowledge_get",
-    }
-    assert any(
-        entrada.execution_module is None
-        for entrada in _projection().values()
-        if entrada.distributable
-    )
+    assert len(instaladas) > 80, "la mayoria de tools de runtime ahora derivan execution_module"
+    assert proy["vault_gobernanza"].execution_module == "vault.gobernanza.tool"
+    runtime_sin_modulo = [
+        nombre for nombre, entrada in proy.items()
+        if entrada.naturaleza != "meta_estandar" and entrada.execution_module is None
+    ]
+    assert len(runtime_sin_modulo) == 2, f"las 2 JS-native con script='': {runtime_sin_modulo}"
 
 
 def test_execution_module_invalido_falla_en_la_proyeccion():

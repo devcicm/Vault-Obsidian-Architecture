@@ -59,16 +59,22 @@ def derivar_distribucion(
         script_name = catalogo[nombre].get("script")
         has_script = script_name and script_name.strip()
         if has_script and es_runtime:
+            if explicit_module is not None and (
+                not isinstance(explicit_module, str) or not explicit_module.strip()
+            ):
+                raise ValueError(
+                    f"execution_module inválido para {nombre}: {explicit_module!r}"
+                )
             stem = script_name.removesuffix(".py")
             execution_module = explicit_module or f"vault_toolkit.operations.{stem}"
         else:
             execution_module = explicit_module
-        if execution_module is not None and (
-            not isinstance(execution_module, str) or not execution_module.strip()
-        ):
-            raise ValueError(
-                f"execution_module inválido para {nombre}: {execution_module!r}"
-            )
+            if execution_module is not None and (
+                not isinstance(execution_module, str) or not execution_module.strip()
+            ):
+                raise ValueError(
+                    f"execution_module inválido para {nombre}: {execution_module!r}"
+                )
         resultado[nombre] = DistribucionTool(
             nombre=nombre,
             naturaleza=naturaleza,

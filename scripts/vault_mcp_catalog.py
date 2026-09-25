@@ -2111,6 +2111,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "side_effects": [],
         "status": "active",
         "exposed_via_mcp": True,
+        "execution_module": "vault.gobernanza.tool",
     },
     "vault_ai_decision": {
         "name": "vault_ai_decision",
@@ -5172,6 +5173,11 @@ def check_params(json_path: Optional[str] = None) -> Dict[str, Any]:
             # Las tools JS-native no tienen argparse contra el que comparar: su
             # contrato lo implementa el servidor. Se excluyen por lo que son,
             # no por parecer vacías — que era el efecto de la regla anterior.
+            continue
+        if py.get("script") is None:
+            # Las tools con script=None son invocadas via __module__: no tienen
+            # script en scripts/ y argparse_params devuelve {}. No hay contra
+            # qué comparar; el MCP las sirve por su execution_module.
             continue
         publicados_pre = (entrada.get("inputSchema") or {}).get("properties", {})
         if not reales and not publicados_pre:

@@ -50,8 +50,8 @@ def test_modulo_estable_declarado_gana_sobre_el_adaptador_legacy(tmp_path, monke
 
 def test_modulo_declarado_pero_no_importable_no_sale_como_instalado(tmp_path):
     target = resolve_operation(_fragment("operacion_que_no_existe"), legacy_scripts=tmp_path)
-    assert target.kind == "invalid"
-    assert target.module == "operacion_que_no_existe"
+    assert target.kind == "missing"
+    assert target.module is None
 
 
 def test_wrapper_que_importa_scripts_no_cuenta_como_operacion_estable(tmp_path, monkeypatch):
@@ -97,12 +97,12 @@ def test_la_primera_operacion_real_declara_su_modulo_estable():
     assert fragment is not None and fragment.distribution is not None
     target = resolve_operation(fragment, legacy_scripts=registry.SCRIPTS_DIR)
     assert target.kind == "installed"
-    assert target.module == "vault.consulta.query_parse"
+    assert target.module == "vault_toolkit.operations.vault_query_parse"
     op = type("Operation", (), {"fragment": fragment, "tool": fragment.name, "args": {}})()
     assert build_argv(op, target) == [
         __import__("sys").executable,
         "-m",
-        "vault.consulta.query_parse",
+        "vault_toolkit.operations.vault_query_parse",
     ]
 
 

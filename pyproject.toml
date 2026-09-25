@@ -38,6 +38,7 @@ Homepage = "https://github.com/devcicm/Vault-Obsidian-Architecture"
 
 [project.scripts]
 vault = "vault.product_cli:main"
+vault_gobernanza = "vault.gobernanza.tool:main"
 
 [tool.setuptools]
 # `scripts/` sigue sin declararse a propósito: se resuelve por ruta de fichero

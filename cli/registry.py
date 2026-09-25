@@ -135,7 +135,15 @@ class Fragment:
     def exists(self) -> bool:
         if self.runtime == "node":
             return True  # vive en el servidor MCP, no en scripts/
-        return self.script_path.exists()
+        if self.script_path.exists():
+            return True
+        # Si tiene execution_module declarado, existe aunque no haya script en scripts/
+        if (
+            self.distribution is not None
+            and getattr(self.distribution, "execution_module", None)
+        ):
+            return True
+        return False
 
     @property
     def touched_artifacts(self) -> List[str]:
