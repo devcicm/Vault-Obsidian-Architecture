@@ -197,7 +197,7 @@ def guardar_conocimiento(
         if path.exists():
             try:
                 raw = path.read_text(encoding="utf-8")
-                fm, _ = _canon_parse_fm(raw)
+                fm, _ = parse_frontmatter_with_body(raw)
                 existing_project = fm.get("project")
                 existing_legible = True
             except UnicodeDecodeError:
@@ -276,7 +276,7 @@ def recuperar_conocimiento(
     for path in directory.rglob("*.md"):
         try:
             raw = path.read_text(encoding="utf-8")
-        except OSError as exc:
+        except (OSError, UnicodeDecodeError) as exc:
             unreadable.append({"path": path.relative_to(runtime).as_posix(), "reason": str(exc)})
             continue
 

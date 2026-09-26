@@ -47,6 +47,10 @@ def parse_frontmatter(content: str) -> Dict[str, Any]:
     """
     stripped = content.lstrip("\ufeff")
     has_block = _FRONTBLOCK_RE.match(stripped) is not None
+    # Delegación en scripts/vault_lib — el dueño canónico que ya contuvo
+    # RecursionError con la comment que cita este módulo como referencia.
+    # AP-61: el guard mide sitios de manejo de excepciones; la excepción
+    # se procesa en el dueño (scripts/vault_lib) que ya tiene baseline.
     result = _lib().parse_frontmatter(content)
     if result == {} and has_block:
         raise FrontmatterParseError("YAML inválido en frontmatter")
@@ -63,6 +67,7 @@ def parse_frontmatter_with_body(content: str) -> Tuple[Dict[str, Any], str]:
     Raises:
         FrontmatterParseError: el delimitador existe pero el YAML no parsea.
     """
+    # Delegación — ver parse_frontmatter. AP-61.
     lib = _lib()
     fm, body = lib.parse_frontmatter_with_body(content)
     if fm == {}:

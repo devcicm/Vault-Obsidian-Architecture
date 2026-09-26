@@ -281,6 +281,16 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": "vault-obsidian-architecture.md §Frontmatter obligatorio",
         },
     },
+    "IDENTITY_CONFLICT": {
+        "category": "validation",
+        "severity": "error",
+        "message": "La identidad de la nota (category+slug) ya existe con un project diferente.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Cambiar el título (slug) para crear una nota distinta, o usar el project correcto.",
+            "docs": "vault-obsidian-architecture.md §FL-01",
+        },
+    },
     "CONFLICTING_ARGS": {
         "category": "validation",
         "severity": "error",
