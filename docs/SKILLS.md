@@ -93,6 +93,134 @@ escritura ocurre bajo `<vault-root>/docs/sdd/`. La skill es read-only sobre el
 resto del vault. Sin `--vault-root` se usa la autodetección de `vault_io`, que
 en este repo resuelve a `vault-sandbox/`.
 
+---
+
+## Tool Skills — Comandos del Toolkit
+
+> Las **tool skills** son capacidades invocables como comandos de shell. Cada una
+> tiene un propósito, una interfaz de argumentos y un contrato de salida.
+> A diferencia de las procedure skills (sdd-init, sanacion, onboard), una tool skill
+> es un comando que se ejecuta directamente.
+
+### Cómo invocar una tool
+
+**CLI instalada** (`pip install -e .`):
+
+```bash
+vault tools list                         # todas las 117 tools
+vault tools show vault_gobernanza        # detalle de una tool
+vault run vault_audit                   # ejecutar una tool
+```
+
+**Script directo** (sin instalación):
+
+```bash
+python scripts/vault_<nombre>.py --help
+```
+
+**Módulo Python** (para integración):
+
+```bash
+python -m vault.gobernanza.tool --content "..." --vault-root /ruta/al/vault
+```
+
+### Tool Skills disponibles
+
+| Tool Skill | Comando | Descripción |
+|---|---|---|
+| `vault_gobernanza` | `vault_gobernanza --content "..."` | Valida contenido contra normas MCP (secret scan, content gate, brackets, Mermaid) |
+| `vault_audit` | `vault_audit` | Health check del vault |
+| `vault_init` | `vault_init` | Bootstrap completo del vault |
+| `vault_query_parse` | `vault_query_parse --query "..."` | Parser de consultas de contexto |
+| `vault_quality_check` | `vault_quality_check` | Calidad de datos (DQ score) |
+| `vault_norms` | `vault_norms --audit` | Auditoría de normas AP/PAT/SP/CN |
+| `vault_fundamentals` | `vault_fundamentals --framework` | Marco CIA, FAIR, ISO |
+
+### Gestión de tools
+
+| Operación | Cómo |
+|---|---|
+| **Listar todas** | `vault tools list` |
+| **Ver detalle** | `vault tools show <tool>` |
+| **Documentación** | [`scripts/README.md`](../scripts/README.md) |
+| **Catálogo MCP** | [`mcp/nodejs/tools-catalog.json`](../mcp/nodejs/tools-catalog.json) |
+
+### `vault_gobernanza` v1.0
+
+```
++---------------------------------------------+
+|  GOBIERNO DEL MCP                            |
+|  Pre-flight validation gate                  |
++---------------------------------------------+
+
+Purpose:    Valida contenido contra las normas de
+            gobernanza del MCP antes de escribir.
+
+Invocación:
+  vault_gobernanza --content "..." [--folder FOLDER]
+  python -m vault.gobernanza.tool --content "..."
+  vault run vault_gobernanza --content "..."
+
+Inputs:
+  --content  Contenido a validar (requerido)
+  --folder   Carpeta destino (path-anchored links)
+  --vault-root  Ruta al vault (opcional, auto-detecta)
+  --format   json | text (default: text)
+  --trace    Incluir trace de validación
+
+Outputs:
+  {ok: true|false, message: "...", tool: "vault_gobernanza"}
+
+Constraints:
+  - No escribe en el vault
+  - Secret scan: AWS keys, GitHub tokens, passwords
+  - Content gate: mínimo 3 líneas, 10 palabras
+  - Bracket balance: [[...]], [...], (...), {...}
+  - Mermaid: graph type válido y braces balanceados
+
+Tests:
+  python -m vault.gobernanza.tool --content "..."
+```
+
+---
+
+## Vault como Skill — Usar Este Repo como Vault
+
+Este repositorio **es** un vault funcional. Puedes usarlo directamente o
+copiar su estructura a tu proyecto.
+
+### Usarlo sin instalar
+
+```bash
+git clone https://github.com/devcicm/Vault-Obsidian-Architecture.git
+cd Vault-Obsidian-Architecture
+export VAULT_ROOT=$(pwd)          # o auto-detecta vault-*/
+vault tools list
+vault run vault_audit
+```
+
+### Instalarlo en tu proyecto
+
+```bash
+pip install -e /ruta/al/Vault-Obsidian-Architecture
+export VAULT_ROOT=/ruta/al/tu-vault
+vault --version
+vault tools list
+```
+
+### Integrar el MCP server
+
+```bash
+# Instalar symlink
+sudo ln -sf /ruta/al/Vault-Obsidian-Architecture/mcp/nodejs/vault-mcp-server.mjs \
+            /usr/local/bin/vault-mcp
+
+# Ejecutar
+vault-mcp --vault /ruta/al/tu-vault
+```
+
+---
+
 ### `vault-sdd-init` v1.0
 
 ```

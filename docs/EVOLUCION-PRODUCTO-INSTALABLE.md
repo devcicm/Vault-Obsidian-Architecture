@@ -28,6 +28,7 @@ El objetivo final sigue siendo ejecutar un wheel desde un venv externo con el
 
 | Commit | Decisión y resultado |
 |---|---|
+| `569eba7` | Integró `vault_gobernanza` como tool de primera clase con `script=None` y `__module__:` MCP prefix. Entry point propio. Instaladores shell y Python. |
 | `ae25719` | Separó la auditoría runtime de los checks estándar. |
 | `8b3a9e0` | Aisló la caracterización de enlaces de código y su ledger. |
 | `524057c` | Restauró consistencia de auditoría runtime y derivados. |
@@ -89,7 +90,12 @@ instalado.
 
 ## Producto público actual
 
-El entry point del wheel es `vault = vault.product_cli:main`.
+Entry points del wheel:
+
+```text
+vault = vault.product_cli:main
+vault_gobernanza = vault.gobernanza.tool:main
+```
 
 Superficie aprobada:
 
@@ -98,9 +104,26 @@ vault --version
 vault tools list
 vault tools show <tool>
 vault run vault_query_parse ...
+vault_gobernanza --content "..."
 vault init <runtime>
 vault doctor <runtime>
 vault status <runtime>
+```
+
+Instaladores disponibles:
+
+```bash
+# CLI + entry points
+pip install -e .
+python -m vault.install          # con --mcp para el servidor MCP
+
+# Shell installers
+./install.sh                    # CLI
+./install-mcp.sh               # MCP server symlink
+
+# Desinstalar
+pip uninstall vault-obsidian-architecture
+python -m vault.uninstall
 ```
 
 `--version` viene de metadata de distribución, no de la versión del estándar.
@@ -139,19 +162,19 @@ migración y no son requisito del lifecycle MVP.
 `init` es idempotente para un runtime válido, rechaza un directorio no vacío
 que no sea runtime y no publica un runtime parcial si falla el seed.
 
-## Evidencia actual
+## Evidencia actual (v40.34)
 
 ```text
-FULL_SUITE (lifecycle checkpoint): 3155 passed / 0 failed
+FULL_SUITE (lifecycle checkpoint): 3198 passed / 0 failed
 EXISTING_GATES:                22 / 22 PASS
 CLEAN_INSTALL_GATE:            PASS
 RUNTIME_LIFECYCLE_GATE:        PASS
 SOURCE_TREE_PHYSICALLY_ABSENT: YES
 CHECKOUT_IMPORT_PATH_ABSENT:   YES
-REAL_INSTALLED_OPERATIONS:     1 (at lifecycle checkpoint)
-RUNTIME_TOOLS / META_TOOLS:    92 / 24
-SCRIPT_MODULES:                152
-RUNTIME_CLOSURE:               113
+REAL_INSTALLED_OPERATIONS:     3 (vault_query_parse, vault_knowledge_save, vault_knowledge_get)
+RUNTIME_TOOLS / META_TOOLS:    91 / 24
+SCRIPT_MODULES:                153
+RUNTIME_CLOSURE:               117
 META_STANDARD_RUNTIME_LEAKS:   0
 META_PATHS:                    NONE
 NEW_DEFERRED_IMPORT_CYCLES:    0

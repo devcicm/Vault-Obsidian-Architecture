@@ -225,6 +225,26 @@ FRONTERAS: List[Dict[str, Any]] = [
             "es lo mismo que `ARBOLES_MEDIDOS` hace con `mcp/python`, hoy vacío."
         ),
     },
+    {
+        "frontera": "python->shell",
+        "lenguaje": "shell",
+        "zona_dueña": "meta_toolkit",
+        "zona_ajena": (".", "*.sh"),
+        "norma": "AP-57",
+        "criterios": [
+            {
+                "criterio": "que_puertas_hay_que_pasar",
+                "dueño": "vault_gate:PUERTAS",
+                "senales_de": "puertas",
+                "pasarela": "vault_gate.py",
+            },
+        ],
+        "por_que": (
+            "Los instaladores shell (install*.sh, uninstall*.sh, install-mcp.sh) "
+            "leen el catálogo de puertas via pipelines de bash. No son wrappers "
+            "de scripts: son installers distribuidos como parte del producto instalable."
+        ),
+    },
 ]
 
 #: Extensiones que **son** código ejecutable de otro lenguaje. Un fichero así

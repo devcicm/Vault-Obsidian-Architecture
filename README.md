@@ -81,12 +81,10 @@ la evidencia de soporte y sus huecos, en la
 último no es un adorno: significa que hay cosas que todavía no están probadas
 donde importa, y prefiero decirlas aquí que dejar que las descubras tú.
 
-- **Se instala copiando carpetas.** No está en PyPI ni en npm, y no hay comando
-  `vault`: se invoca `python .../scripts/vault_x.py`. Tres pasos: clonar,
-  `pip install PyYAML`, exportar `VAULT_ROOT=<ruta-al-vault>`.
-- **El paseo de instalación fuera del repo solo se ha medido en Windows.** La CI
-  corre la suite en Linux y Windows; instalar-y-usar fuera del repositorio, no.
-  macOS no lo toca nadie.
+- **Se instala con `pip install -e .`** Entry points: `vault` y `vault_gobernanza`.
+  El servidor MCP no tiene dependencias npm — solo Node 18+ built-ins.
+- **VAULT_ROOT es la única variable esencial.** Sin ella, las tools auto-detectan
+  buscando `vault-*/` en el directorio actual.
 - **El servidor MCP escucha en `127.0.0.1` sin autenticación**, por diseño.
   Ponerlo detrás de un proxy inverso publica el vault entero.
 - **Contra un vault que no sea tuyo, primero solo lectura:**
@@ -127,60 +125,76 @@ Fallos de **seguridad** en privado: contactar directamente, no en el repo públi
 
 ## Quick Start
 
-> Limitación conocida: la receta de copia de esta sección solo incluye `scripts/`,
-> aunque el código también importa el paquete `vault/`. Este recorrido queda
-> pendiente de revisión y validación como instalación completa.
-
 ### 1. Clonar e instalar
 
 ```bash
 git clone https://github.com/devcicm/Vault-Obsidian-Architecture.git
+cd Vault-Obsidian-Architecture
 ```
 
-Los scripts requieren Python 3.9+ y PyYAML. El servidor MCP requiere Node 18+. Sin más dependencias.
-
-### 2. Inicializar un vault nuevo
-
-La estructura correcta para un consumer repo es:
-
-```
-mi-repo/
-├── scripts/          ← copiar aquí (gitignoreados)
-├── vault-mi-proyecto/ ← vault vive aquí
-└── ...resto del proyecto
-```
-
-`vault_io.py` detecta automáticamente el directorio `vault-*/` al ejecutarse. No requiere configuración de path.
+**CLI + entry points** (Python 3.9+, pip):
 
 ```bash
-# Crear el directorio del vault dentro del repo
-mkdir vault-mi-proyecto
-
-# Copiar scripts al repo (fuera del vault, gitignoreados)
-cp -r Vault-Obsidian-Architecture/scripts ./scripts
-
-# v34: un solo comando hace todo el bootstrap (carpetas + version + indexes + audit)
-# Crea las 23 carpetas estándar, aplica migraciones hasta v39, auto-indexa, agrega
-# scaffold primers en secciones vacías, y reporta el health score inicial.
-python scripts/vault_init.py
-
-# Equivalente manual (legacy, v30) — si necesitas paso a paso:
-# python scripts/vault_standard_upgrade.py --init v32
-# python scripts/vault_standard_upgrade.py --to v32
-# for folder in 00_System 01_Projects ... 16_AI_Governance 99_Index; do
-#   python scripts/vault_section_index.py --folder "$folder"
-# done
-
-# Health check baseline (debe dar 100/100 con vault recién inicializado)
-python scripts/vault_audit.py
+pip install -e .
 ```
 
-### 3. `.gitignore` para el consumer repo
+**MCP server** (Node 18+):
+
+```bash
+# Opción A: symlink (requiere sudo en Linux/macOS)
+sudo ln -sf "$(pwd)/mcp/nodejs/vault-mcp-server.mjs" /usr/local/bin/vault-mcp
+
+# Opción B: python installer
+python -m vault.install --mcp
+```
+
+**Desinstalar:**
+
+```bash
+pip uninstall -y vault-obsidian-architecture
+# Si instalaste MCP:
+rm -f /usr/local/bin/vault-mcp
+# O con el uninstaller:
+python -m vault.uninstall --mcp
+```
+
+### 2. Variables de entorno
+
+La única variable esencial es `VAULT_ROOT`:
+
+```bash
+export VAULT_ROOT=/ruta/al/tu-vault
+```
+
+Sin ella, las tools auto-detectan el vault buscando `vault-*/` en el directorio actual.
+
+### 3. Inicializar un vault nuevo
+
+```bash
+# Crear el directorio del vault
+mkdir vault-mi-proyecto
+
+# Bootstrap completo (carpetas + version + indexes + audit)
+python -m vault.gobernanza.tool --help  # verificar que funciona
+vault tools list                        # ver las 117 tools disponibles
+```
+
+### 4. `.gitignore` para el consumer repo
 
 ```gitignore
 .claude/
 vault-*/scripts/
 vault-backups/
+vault_obsidian_architecture.egg-info/
+```
+
+### 5. Verificar la instalación
+
+```bash
+vault --version                          # CLI version
+vault tools list                         # 117 tools
+python -m vault.gobernanza.tool --help   # tool de gobernanza
+vault-mcp --help                         # MCP server (si instalado)
 ```
 
 ### 4. Documentar el proyecto
@@ -217,25 +231,20 @@ python scripts/vault_audit.py
 
 ---
 
-## CLI consolidada — `cli/`
+## CLI consolidada — `vault`
 
 Las 117 tools bajo un único punto de entrada, con búsqueda, planificación de
 concurrencia y guardas de seguridad:
 
 ```bash
-python -m cli find "backup grafo"        # las tools como fragmentos buscables
-python -m cli doctor --pretty            # raíz, contrato, locks de artefactos
-python -m cli batch --file lote.json --parallel 4 --verify-integrity
-python -m cli scan --races --summary     # condiciones de carrera en los scripts
+vault --version                         # versión
+vault tools list                         # todas las tools
+vault tools show vault_gobernanza       # detalle de una tool
+vault run vault_audit                   # ejecutar una tool
 ```
 
-Ejecuta varias tools a la vez por olas sin pisarse (modelo EXCLUSIVE / GUARDED /
-GLOBAL, con la concurrencia sobre artefactos compartidos concedida **por
-verificación AST**, no por declaración), escanea el contenido por inyección de
-directivas antes de escribir, y contrasta lo que cambió en el vault contra lo
-que el plan declaraba.
-
-Guía: [`cli/README.md`](cli/README.md) · Referencia de comandos:
+El entry point `vault` se instala con `pip install -e .`. Guía:
+[`cli/README.md`](cli/README.md) · Referencia de comandos:
 [`cli/COMMANDS.md`](cli/COMMANDS.md).
 
 ---
@@ -297,6 +306,26 @@ python scripts/vault_norms.py --check-framework    # guard anti-drift registro �
 ```
 
 ---
+
+## Novedades v40.34 — Toolkit instalable + Gobernanza MCP
+
+- **`pip install -e .` validado end-to-end.** La receta de instalación por copia de carpetas
+  queda sustituida por el entry point oficial: `pip install -e .` instala `vault` y
+  `vault_gobernanza` como comandos de shell. El paseo completo (clone → pip → uso) está
+  probado y documentado.
+- **`vault_gobernanza` como tool de primera clase.** Integrada en el catálogo MCP
+  (`script=None`, `execution_module="vault.gobernanza.tool"`), expuesta via
+  `__module__:` prefix en el servidor MCP, con entry point propio en `pyproject.toml`.
+  El guard chain de gobernanza del MCP ahora es invocable desde CLI: `vault_gobernanza
+  --content "..." --vault-root /ruta`.
+- **MCP server zero-dependencies.** El servidor en `mcp/nodejs/vault-mcp-server.mjs`
+  sigue sin ninguna dependencia npm — solo Node.js built-ins. Soporta `--mcp` install
+  via symlink a `/usr/local/bin/vault-mcp`.
+- **Instaladores y desinstaladores** en `vault/install.py`, `vault/uninstall.py`,
+  `install.sh`, `uninstall.sh`, `install-mcp.sh`, `uninstall-mcp.sh`. Cobertura:
+  CLI (+ entry points), MCP server, desinstalación completa.
+- **23 gates verdes en 22 puertas.** `vault_gate --strict` pasa completo; la puerta de
+  `vault_blueprint` se regenera automáticamente. 3198 tests en la suite.
 
 ## Novedades v40.33 — Adapter de modelo LLM
 

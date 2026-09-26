@@ -59,3 +59,12 @@ _datasets-reports/
 
 # Artefacto de coverage.py: salida de una ejecucion local, no del estandar.
 .coverage
+
+# Egg-info de pip install -e . — genera PII local (Author del sistema)
+vault_obsidian_architecture.egg-info/
+
+# Body del PR — temporal, no forma parte del estándar
+PR_BODY.md
+
+# Analisis temporal generado durante revision
+auditado.md

@@ -98,11 +98,11 @@ Ver [roadmap-cli.md](./roadmap/roadmap-cli.md)
 
 ## 10. Definition of Done
 
-- [ ] Entry point declarado en `pyproject.toml [project.scripts]`
-- [ ] `vault run --help` muestra todos los comandos disponibles
-- [ ] `vault doctor` reporta estado del entorno
-- [ ] Pre-flight bloquea contenido peligroso
+- [x] Entry point declarado en `pyproject.toml [project.scripts]`
+- [x] `vault run --help` muestra todos los comandos disponibles
+- [x] `vault doctor` reporta estado del entorno
+- [x] Pre-flight bloquea contenido peligroso (anti-poison, AP-36)
 - [ ] Batch ejecuta con olas y `--stop-on-error` funciona
 - [ ] `--verify-integrity` registra hash antes/después
-- [ ] Tests de integración contra vault-sandbox
-- [ ] Gates: `vault_gate --strict` verde
+- [x] Tests de integración contra vault-sandbox
+- [x] Gates: `vault_gate --strict` verde

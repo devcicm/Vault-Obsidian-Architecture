@@ -25,8 +25,9 @@ Expone 116 tools como herramientas MCP con guard chain de validación.
 
 ## 3. Promise (Product)
 
-> "Expone 116 tools como herramientas MCP con guard chain de validación
-> (secret scan, bracket balance, Mermaid syntax, content gate)."
+> "Expone 117 tools como herramientas MCP con guard chain de validación
+> (secret scan, bracket balance, Mermaid syntax, content gate)." `vault_gobernanza`
+> es la tool de gobernanza del MCP, invocable como `__module__:vault.gobernanza.tool`.
 
 ---
 
@@ -38,6 +39,8 @@ Expone 116 tools como herramientas MCP con guard chain de validación.
 - JS-native tools: 9 tools implementadas en Node.js puro (sin npm deps)
 - Guard chain: secret scan, bracket balance, Mermaid syntax, content gate,
   referenced notes validation
+- **Tool `vault_gobernanza`**: validación de contenido contra normas MCP via
+  `__module__:vault.gobernanza.tool` prefix
 - Multi-vault discovery (`VAULT_SCAN_ROOTS`)
 - Trace log de ejecuciones
 - Versionado con `tools-catalog.json`
@@ -95,11 +98,11 @@ Ver [roadmap-mcp.md](./roadmap/roadmap-mcp.md)
 
 ## 10. Definition of Done
 
-- [ ] `tools/call` ejecuta cualquier tool del catálogo
-- [ ] `tools/list` devuelve el catálogo completo
+- [x] `tools/call` ejecuta cualquier tool del catálogo
+- [x] `tools/list` devuelve el catálogo completo
 - [ ] Resources `vault://` resuelven correctamente
-- [ ] Guard chain bloquea secrets, brackets, Mermaid inválido
-- [ ] JS-native tools funcionan sin Python
-- [ ] `tools-catalog.json` sincronizado con Python
+- [x] Guard chain bloquea secrets, brackets, Mermaid inválido
+- [x] JS-native tools funcionan sin Python
+- [x] `tools-catalog.json` sincronizado con Python
 - [ ] Tests de smoke contra MCP server
-- [ ] Gates: `vault_gate --strict` verde
+- [x] Gates: `vault_gate --strict` verde
