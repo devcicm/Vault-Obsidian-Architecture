@@ -37,7 +37,7 @@ def test_tools_list_sale_de_la_proyeccion_derivada(monkeypatch, capsys):
     assert product_cli.main(["tools", "list"]) == 0
     payload = _json(capsys)
     by_name = {entry["name"]: entry for entry in payload["tools"]}
-    assert len(by_name) == 116
+    assert len(by_name) == 117
     assert by_name["vault_query_parse"] == {
         "name": "vault_query_parse", "class": "runtime", "installed": True,
     }
@@ -52,7 +52,7 @@ def test_tools_show_distingue_instalada_legacy_y_mantenimiento(monkeypatch, caps
     assert product_cli.main(["tools", "show", "vault_query_parse"]) == 0
     installed = _json(capsys)
     assert installed["installed"] is True
-    assert installed["execution_module"] == "vault.consulta.query_parse"
+    assert installed["execution_module"] == "vault_toolkit.operations.vault_query_parse"
 
     assert product_cli.main(["tools", "show", "vault_read"]) == 0
     legacy = _json(capsys)
@@ -127,7 +127,7 @@ def test_run_installed_ejecuta_python_m_sin_scripts(monkeypatch):
     assert product_cli.main([
         "run", "vault_query_parse", "--query", "que decidimos sobre el transporte MCP", "--plan-only",
     ]) == 0
-    assert received["argv"][:3] == [product_cli.sys.executable, "-m", "vault.consulta.query_parse"]
+    assert received["argv"][:3] == [product_cli.sys.executable, "-m", "vault_toolkit.operations.vault_query_parse"]
 
 
 @pytest.mark.parametrize(("tool", "code", "state"), [
@@ -168,9 +168,10 @@ def test_las_operaciones_instaladas_salen_del_catalogo_y_no_de_otra_tabla_manual
         if tool.execution_module is not None
     }
     assert installed == {
-        "vault_query_parse": "vault.consulta.query_parse",
-        "vault_knowledge_save": "vault.autoria.knowledge_save",
-        "vault_knowledge_get": "vault.autoria.knowledge_get",
+        "vault_query_parse": "vault_toolkit.operations.vault_query_parse",
+        "vault_knowledge_save": "vault_toolkit.operations.vault_knowledge_save",
+        "vault_knowledge_get": "vault_toolkit.operations.vault_knowledge_get",
+        "vault_gobernanza": "vault.gobernanza.tool",
     }
 
 

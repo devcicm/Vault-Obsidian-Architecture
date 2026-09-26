@@ -8,7 +8,10 @@ Por eso esta frontera recibe la raíz explícitamente y no importa ``scripts``.
 
 from __future__ import annotations
 
+import errno
+import os
 import re
+import time
 import unicodedata
 import uuid
 from datetime import datetime, timezone
@@ -20,6 +23,11 @@ import yaml
 from .frontmatter import Frontmatter
 from ..kernel.errores import construir_error
 from ..kernel.escritura import escritura_atomica
+from ..kernel.frontmatter_parsing import (
+    FrontmatterParseError,
+    parse_frontmatter_robust as _canon_parse_fm,
+    parse_frontmatter_with_body,
+)
 
 
 CATEGORIES = (
@@ -55,12 +63,55 @@ def _contained(root: Path, path: Path) -> Path:
     return path
 
 
+class _FileLock:
+    """Bloqueo exclusivo por nota, mismo patrón que vault_fs.file_lock.
+
+    Crea .locks/<slug>.lock dentro del vault para evitar dependencias
+    entre fronteras y no asumir que la carpeta de la nota ya existe.
+    """
+
+    def __init__(self, note_path: Path, timeout: float = 30.0) -> None:
+        self._note_path = note_path
+        self._lock_root = note_path.parent / ".locks"
+        self._lock = self._lock_root / f"{note_path.stem}.lock"
+        self._timeout = timeout
+
+    def acquire(self) -> None:
+        self._lock_root.mkdir(parents=True, exist_ok=True)
+        deadline = time.monotonic() + self._timeout
+        while True:
+            try:
+                os.mkdir(self._lock)
+                return
+            except OSError as exc:
+                if exc.errno != errno.EEXIST:
+                    raise
+                if time.monotonic() >= deadline:
+                    raise TimeoutError(
+                        f"timeout acquiring lock for {self._note_path} after {self._timeout}s"
+                    )
+                time.sleep(0.05)
+
+    def release(self) -> None:
+        try:
+            os.rmdir(self._lock)
+        except OSError:
+            pass
+
+    def __enter__(self) -> "_FileLock":
+        self.acquire()
+        return self
+
+    def __exit__(self, *_: Any) -> None:
+        self.release()
+
+
 def _validate_frontmatter(text: str) -> None:
-    if not text.startswith("---\n"):
-        raise ValueError("FRONTMATTER_MISSING")
-    parts = text.split("---", 2)
-    if len(parts) != 3 or not isinstance(yaml.safe_load(parts[1]), Mapping):
-        raise ValueError("FRONTMATTER_PARSE_ERROR")
+    """Lanza ValueError si el texto no tiene frontmatter parseable."""
+    try:
+        parse_frontmatter_with_body(text)
+    except FrontmatterParseError as exc:
+        raise ValueError(f"FRONTMATTER_PARSE_ERROR: {exc}") from exc
 
 
 def _atomic_write(path: Path, text: str) -> None:
@@ -110,10 +161,19 @@ def guardar_conocimiento(
     writer: Optional[Callable[[Path, str], None]] = None,
     report: Optional[Callable[[], Mapping[str, Any]]] = None,
 ) -> Dict[str, Any]:
-    """Persiste una nota canónica; el adaptador legacy puede inyectar su I/O."""
+    """Persiste una nota canónica; el adaptador legacy puede inyectar su I/O.
+
+    FL-01: verificación de identidad antes de escribir.
+    Identidad = category + slug(título). Si existe una nota con el mismo slug
+    y distinto project → IDENTITY_CONFLICT. Proyecto ausente en ambas
+    escrituras → actualización intencional (misma identidad).
+    """
     category = category.lower().replace(" ", "-")
     if category not in CATEGORIES:
-        return construir_error("vault_knowledge_save", "INVALID_VALUE", f"Categoría inválida: {category}. Válidas: {list(CATEGORIES)}")
+        return construir_error(
+            "vault_knowledge_save", "INVALID_VALUE",
+            f"Categoría inválida: {category}. Válidas: {list(CATEGORIES)}"
+        )
     try:
         runtime = Path(root).resolve()
         if not runtime.is_dir():
@@ -121,11 +181,50 @@ def guardar_conocimiento(
         filename = _slug(title)
         if not filename:
             raise ValueError("el título no produce un nombre de nota válido")
-        path = _contained(runtime, runtime / "07_Knowledge" / CATEGORY_FOLDERS[category] / f"{filename}.md")
-        text = _render(category, title, content, project, tags, related)
-        (writer or _atomic_write)(path, text)
-    except (OSError, ValueError) as exc:
+        path = _contained(
+            runtime,
+            runtime / "07_Knowledge" / CATEGORY_FOLDERS[category] / f"{filename}.md"
+        )
+    except ValueError as exc:
         return construir_error("vault_knowledge_save", "FILE_WRITE_ERROR", str(exc))
+
+    text = _render(category, title, content, project, tags, related)
+
+    with _FileLock(path, timeout=30.0):
+        existing_project = None
+        existing_legible = False
+
+        if path.exists():
+            try:
+                raw = path.read_text(encoding="utf-8")
+                fm, _ = _canon_parse_fm(raw)
+                existing_project = fm.get("project")
+                existing_legible = True
+            except UnicodeDecodeError:
+                return construir_error(
+                    "vault_knowledge_save", "IDENTITY_CONFLICT",
+                    f"archivo no legible: {path.name}",
+                    extra={"path": path.relative_to(runtime).as_posix()}
+                )
+            except FrontmatterParseError:
+                existing_legible = False
+
+        if existing_legible and (existing_project or None) != (project or None):
+            return construir_error(
+                "vault_knowledge_save", "IDENTITY_CONFLICT",
+                f"el slug '{filename}' ya existe con project='{existing_project}'",
+                extra={
+                    "path": path.relative_to(runtime).as_posix(),
+                    "conflict_project": existing_project,
+                    "attempted_project": project,
+                }
+            )
+
+        try:
+            (writer or _atomic_write)(path, text)
+        except (OSError, ValueError) as exc:
+            return construir_error("vault_knowledge_save", "FILE_WRITE_ERROR", str(exc))
+
     payload: Dict[str, Any] = {
         "ok": True,
         "path": path.relative_to(runtime).as_posix(),
@@ -136,19 +235,6 @@ def guardar_conocimiento(
     if report:
         payload = {**payload, **dict(report())}
     return payload
-
-
-def _split_markdown(text: str) -> tuple[Dict[str, Any], str]:
-    if not text.startswith("---\n"):
-        return {}, text
-    parts = text.split("---", 2)
-    if len(parts) != 3:
-        return {}, text
-    try:
-        data = yaml.safe_load(parts[1]) or {}
-    except (yaml.YAMLError, RecursionError):
-        return {}, text
-    return (data if isinstance(data, dict) else {}), parts[2]
 
 
 def _score(metadata: Mapping[str, Any], body: str, query: str,
@@ -168,8 +254,13 @@ def _score(metadata: Mapping[str, Any], body: str, query: str,
     return score
 
 
-def recuperar_conocimiento(root: Union[str, Path], query: str, category: Optional[str] = None,
-                            project: Optional[str] = None, limit: int = 10) -> Dict[str, Any]:
+def recuperar_conocimiento(
+    root: Union[str, Path],
+    query: str,
+    category: Optional[str] = None,
+    project: Optional[str] = None,
+    limit: int = 10,
+) -> Dict[str, Any]:
     """Recupera desde Markdown, sin hacer de un índice una autoridad."""
     try:
         runtime = Path(root).resolve()
@@ -178,27 +269,68 @@ def recuperar_conocimiento(root: Union[str, Path], query: str, category: Optiona
             raise ValueError("runtime sin 07_Knowledge")
     except ValueError as exc:
         return construir_error("vault_knowledge_get", "VAULT_NOT_FOUND", str(exc))
-    matches = []
+
+    matches: List[tuple[int, Path, Dict[str, Any], str]] = []
+    unreadable: List[Dict[str, Any]] = []
+
     for path in directory.rglob("*.md"):
         try:
-            metadata, body = _split_markdown(path.read_text(encoding="utf-8"))
-        except (OSError, UnicodeDecodeError):
+            raw = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            unreadable.append({"path": path.relative_to(runtime).as_posix(), "reason": str(exc)})
             continue
-        score = _score(metadata, body, query, category, project)
+
+        fm, body, parse_ok, error_msg = _canon_parse_fm(raw)
+        if not parse_ok:
+            unreadable.append({"path": path.relative_to(runtime).as_posix(), "reason": error_msg})
+            continue
+
+        score = _score(fm, body, query, category, project)
         if score:
-            matches.append((score, path, metadata, body))
+            matches.append((score, path, fm, body))
+
     matches.sort(key=lambda item: (-item[0], item[1].as_posix()))
     results = [
-        {"path": path.relative_to(runtime).as_posix(), "title": str(data.get("title", path.stem)),
-         "category": str(data.get("category", "")), "score": score}
+        {
+            "path": path.relative_to(runtime).as_posix(),
+            "title": str(data.get("title", path.stem)),
+            "category": str(data.get("category", "")),
+            "score": score,
+        }
         for score, path, data, _ in matches[:limit]
     ]
-    response: Dict[str, Any] = {"ok": True, "query": query, "category": category,
-                                "project": project, "total": len(matches), "results": results}
+
+    warnings: List[str] = []
+    if unreadable:
+        warnings.append(
+            f"Notas no procesables ({len(unreadable)}): "
+            + ", ".join(u["path"] for u in unreadable)
+        )
+
+    response: Dict[str, Any] = {
+        "ok": True,
+        "query": query,
+        "category": category,
+        "project": project,
+        "total": len(matches),
+        "results": results,
+        "warnings": warnings,
+    }
+
+    if unreadable:
+        response["unreadable_files"] = unreadable
+        response["unreadable_count"] = len(unreadable)
+
     if len(matches) == 1 and matches[0][0] >= 60:
         score, path, data, body = matches[0]
-        response.update({"autoRead": True,
-                         "topMatch": {"path": path.relative_to(runtime).as_posix(),
-                                      "title": str(data.get("title", path.stem)), "score": score},
-                         "topContent": body.strip()})
+        response.update({
+            "autoRead": True,
+            "topMatch": {
+                "path": path.relative_to(runtime).as_posix(),
+                "title": str(data.get("title", path.stem)),
+                "score": score,
+            },
+            "topContent": body.strip(),
+        })
+
     return response

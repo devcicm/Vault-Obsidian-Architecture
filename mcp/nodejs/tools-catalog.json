@@ -2242,7 +2242,7 @@
     "vault_gobernanza": {
       "name": "vault_gobernanza",
       "description": "Valida contenido contra las normas de gobernanza del MCP (secret scan, content gate, brackets, Mermaid).",
-      "group": "Gobernanza",
+      "group": "Salud del Vault",
       "script": "",
       "inputSchema": {
         "type": "object",
@@ -2276,7 +2276,7 @@
       "side_effects": [],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null
+      "execution_module": "vault.gobernanza.tool"
     },
     "vault_graph": {
       "name": "vault_graph",

@@ -165,6 +165,13 @@ def test_toda_tool_del_catalogo_tiene_implementacion():
                 f"despacha: la tool está publicada y no existe en ninguna parte"
             )
             continue
+        em = spec.get("execution_module")
+        if em:
+            parts = em.split(".")
+            if len(parts) >= 2:
+                py_file = Path(*parts[:-1]) / f"{parts[-1]}.py"
+                if (ROOT / py_file).is_file():
+                    continue
         huerfanas.append(nombre)
 
     assert not huerfanas, (

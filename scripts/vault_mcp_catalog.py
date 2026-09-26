@@ -2077,7 +2077,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
     },
     "vault_gobernanza": {
         "name": "vault_gobernanza",
-        "group": "Gobernanza",
+        "group": "Salud del Vault",
         "purpose": "Valida contenido contra las normas de gobernanza del MCP (secret scan, content gate, brackets, Mermaid).",
         "params": {
             "content": {
