@@ -21,11 +21,8 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from vault_regex import RE_WIKILINK  # dueño único del patrón (AP-50)
-from vault.kernel.regex import strip_code_blocks
-
-
-# ============================================================
-# SLUGIFY
+from vault.kernel.regex import strip_code_blocks as _strip_code_blocks
+strip_code_blocks = _strip_code_blocks
 # ============================================================
 
 
