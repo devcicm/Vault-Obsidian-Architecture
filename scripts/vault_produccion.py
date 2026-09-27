@@ -277,6 +277,30 @@ PREGUNTAS: List[Dict[str, Any]] = [
             "árboles, y este repo nunca ha versionado esos directorios."
         ),
     },
+    {
+        "id": "wheel_instalada_funciona",
+        "pregunta": "¿Funciona la wheel instalada en un venv limpio fuera del repo?",
+        "promesa": "tests/run_product_gates.py ejecuta la wheel en venv aislado",
+        "por_que": (
+            "La wheel puede armarse mal y pasar los tests del repo (que usan el "
+            "source) pero fallar en un venv limpio (que solo tiene lo instalado)."
+        ),
+        "ejerce": lambda: (
+            "run_product_gates.py" in (RAIZ / ".github/workflows/vault-ci.yml").read_text(encoding="utf-8")
+            if (RAIZ / ".github/workflows/vault-ci.yml").is_file()
+            else False
+        ),
+        "quien": "tests/run_product_gates.py + job 'product-gates' en vault-ci.yml",
+        "estado": "descubierta",
+        "motivo": (
+            "La promesa existe (run_product_gates.py + CI) pero nunca se ha "
+            "ejecutado contra un venv limpio real fuera de este repo. "
+            "El gate ejecuta la wheel desde el mismo checkout fuente, así que "
+            "el test no garantiza que la wheel funcione aislada. "
+            "Pendiente: ejecutar run_product_gates.py en un CI separado o "
+            "desde una maquina limpia que no tenga este repo."
+        ),
+    },
 ]
 
 

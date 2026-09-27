@@ -341,6 +341,24 @@ DEUDA_DECLARADA: List[Dict[str, str]] = [
             "(regla 7)."
         ),
     },
+    {
+        "id": "puente_scripts_impl_sin_contrato",
+        "estado": "saldada",
+        "saldada_en": "v40.35",
+        "desde": "v40.35",
+        "capa": "3",
+        "que": (
+            "`scripts/vault_regex.py` re-exportaba desde `vault.kernel.regex` "
+            "(owner AP-50) pero la fachada vivía en `_impl/` sin contrato. "
+            "El directorio `_impl/` copiado durante el build de la wheel "
+            "no tenía garantias de sincronizacion con `scripts/`. "
+            "ADR-0002 formaliza el puente: fachada de re-export + package-dir."
+        ),
+        "por_que_no_ahora": (
+            "Saldada con ADR-0002: la fachada existe, package-dir esta declarado, "
+            "y test_impl_shadow verifica que el stub de _impl se prefiere."
+        ),
+    },
 ]
 
 

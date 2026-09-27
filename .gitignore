@@ -63,6 +63,12 @@ _datasets-reports/
 # Egg-info de pip install -e . — genera PII local (Author del sistema)
 vault_obsidian_architecture.egg-info/
 
+# Build artifacts from python -m build
+build/
+dist/
+dist_test/
+vault_regex/
+
 # Body del PR — temporal, no forma parte del estándar
 PR_BODY.md
 

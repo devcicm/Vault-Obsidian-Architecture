@@ -41,7 +41,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from cli import safety  # noqa: E402
+from vault.consulta import safety  # noqa: E402
 
 from vault_errors import wrap_main  # noqa: E402
 from vault_io import (  # noqa: E402

@@ -100,7 +100,7 @@ def test_loader_primario_no_necesita_checkout(monkeypatch, tmp_path):
     assert tmp_path in __import__("pathlib").Path(cargado.__file__).parents
 
 
-def test_fallback_legacy_no_deja_scripts_en_sys_path(tmp_path):
+def test_fallback_legacy_conserva_scripts_en_sys_path(tmp_path):
     import sys
 
     modulo = "operacion_legacy_de_prueba"
@@ -108,7 +108,7 @@ def test_fallback_legacy_no_deja_scripts_en_sys_path(tmp_path):
     sys.modules.pop(modulo, None)
     antes = list(sys.path)
     assert import_toolkit_module(modulo, legacy_scripts=tmp_path).VALUE == 7
-    assert sys.path == antes
+    assert sys.path[0] == str(tmp_path.resolve()), "legacy_scripts debe persistir en sys.path[0]"
 
 
 def test_puntos_distribuibles_no_insertan_scripts_en_sys_path():

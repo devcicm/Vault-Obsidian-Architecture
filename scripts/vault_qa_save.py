@@ -274,7 +274,7 @@ Status:
     parser.add_argument(
         "--quality-criteria",
         nargs="*",
-        help="Quality criteria (e.g. 'coverage > 80%' 'defect-rate < 2%')",
+        help="Quality criteria (e.g. 'coverage > 80%%' 'defect-rate < 2%%')",
     )
     parser.add_argument(
         "--status",

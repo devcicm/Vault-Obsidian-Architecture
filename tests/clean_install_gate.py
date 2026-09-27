@@ -19,7 +19,7 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-QUERY_MODULE = "vault.consulta.query_parse"
+QUERY_MODULE = "vault_toolkit.operations.vault_query_parse"
 QUERY_ARGS = (
     "--query",
     "que decidimos sobre el transporte MCP",
@@ -130,9 +130,26 @@ def main(*, gate: str = "CLEAN_INSTALL_GATE") -> int:
             _fail(f"venv creation failed:\n{create.stderr}")
         python = venv / "Scripts" / "python.exe" if os.name == "nt" else venv / "bin" / "python"
         vault = venv / "Scripts" / "vault.exe" if os.name == "nt" else venv / "bin" / "vault"
-        install = _run([str(python), "-m", "pip", "install", "--no-deps", str(wheel)], cwd=work, env=dict(os.environ))
+        install = _run([str(python), "-m", "pip", "install", str(wheel)], cwd=work, env=dict(os.environ))
         if install.returncode:
             _fail(f"wheel install failed:\n{install.stderr}\n{install.stdout}")
+
+        operations_members = sorted(m for m in members if m.startswith("vault_toolkit/operations/vault_") and m.endswith(".py"))
+        if len(operations_members) == 0:
+            _fail("wheel no tiene operaciones instaladas (0 encontradas)")
+        if len(operations_members) != 90:
+            _fail(f"wheel deberia tener 90 operaciones, tiene {len(operations_members)}")
+        help_failing = []
+        for member in operations_members:
+            op_name = Path(member).stem
+            rc, out, err = _run(
+                [str(python), "-m", f"vault_toolkit.operations.{op_name}", "--help"],
+                cwd=work, env=clean_env,
+            )
+            if rc != 0:
+                help_failing.append(f"{op_name}(exit={rc}): {err[:100]}")
+        if help_failing:
+            _fail(f"--help fallo en {len(help_failing)} ops: {help_failing[:3]}")
 
         # La copia existe sólo para construir el artefacto. Suprimirla antes de
         # importar demuestra que la operación instalada no puede recaer en el

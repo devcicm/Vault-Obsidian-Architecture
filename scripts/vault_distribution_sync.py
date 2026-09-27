@@ -36,12 +36,11 @@ def __getattr__(name):
 
 if __name__ == "__main__":
     import sys
-
-    wrap_main = import_toolkit_module(
+    _errores = import_toolkit_module(
         "vault_errors",
         legacy_scripts=legacy_scripts_for(__file__),
-    ).wrap_main
-    sys.exit(wrap_main(main, "{name}"))
+    )
+    sys.exit(_errores.wrap_main(main, "{name}"))
 '''
 
 

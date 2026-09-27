@@ -63,6 +63,24 @@ def test_normalize_tag_es_idempotente():
         assert vault_tags.normalize_tag(una) == una
 
 
+@pytest.mark.parametrize(
+    "crudo,esperado",
+    [
+        ("日本語", "日本語"),          # hasta v40.34 salía "" y el tag desaparecía
+        ("Проект", "проект"),
+        ("ブログ", "ブログ"),          # el dakuten no es un acento latino: no se pliega
+        ("ﬁle", "file"),              # ligadura: antes "le"
+        ("Straße", "strasse"),        # antes "stra-e"
+        ("Ｍi Title", "mi-title"),    # ancho completo: antes "i-title"
+        ("Łódź", "lodz"),
+    ],
+)
+def test_normalize_tag_no_borra_alfabetos_ni_formas_de_compatibilidad(crudo, esperado):
+    tag = vault_tags.normalize_tag(crudo)
+    assert tag == esperado
+    assert vault_tags.normalize_tag(tag) == tag
+
+
 # ── Resolución contra el registro ────────────────────────────────────────────
 
 INDICE = {"ci-cd": "ci-cd", "pattern": "pattern", "mcp": "mcp"}

@@ -94,10 +94,26 @@ def test_la_nota_acentuada_previa_y_la_nueva_son_la_misma_nota():
 _DELEGACION_JUSTIFICADA = {"vault_write.py": "usa vault_encoding.sanitize_filename"}
 
 
+#: Las fuentes: el kernel es el dueño y `vault_lib` conserva su respaldo para
+#: cuando `vault` no es importable (ver `test_el_respaldo_de_vault_lib_no_diverge`).
+_FUENTES = {"vault_lib.py", "normalizacion.py"}
+
+
 def _definiciones_de_slug():
-    for py in sorted(list((REPO_ROOT / "scripts").glob("*.py")) + list((REPO_ROOT / "cli").glob("*.py"))):
-        if py.name == "vault_lib.py":
-            continue  # la fuente
+    """Recorre `scripts/`, `cli/` y, desde v40.35, el paquete `vault/`.
+
+    Hasta entonces el guard solo miraba `scripts/` y `cli/`, y
+    `vault/autoria/conocimiento._slug` —la copia que decidía la ruta de
+    `vault_knowledge_save` en el paquete instalado— vivió fuera de su vista.
+    """
+    candidatos = (
+        list((REPO_ROOT / "scripts").glob("*.py"))
+        + list((REPO_ROOT / "cli").glob("*.py"))
+        + list((REPO_ROOT / "vault").rglob("*.py"))
+    )
+    for py in sorted(candidatos):
+        if py.name in _FUENTES:
+            continue
         arbol = ast.parse(py.read_text(encoding="utf-8"), filename=str(py))
         for nodo in ast.walk(arbol):
             if isinstance(nodo, ast.FunctionDef) and nodo.name in ("slugify", "_slug"):
@@ -130,3 +146,71 @@ def test_la_justificacion_no_se_queda_obsoleta():
     con_slug = {py.name for py, _ in _definiciones_de_slug()}
     huerfanas = set(_DELEGACION_JUSTIFICADA) - con_slug
     assert not huerfanas, f"excepciones sin módulo detrás: {sorted(huerfanas)}"
+
+
+def test_el_guard_ve_el_paquete_vault():
+    """Si el recorrido deja de entrar en `vault/`, la copia de v40.34 vuelve a esconderse."""
+    rutas = [py for py in (REPO_ROOT / "vault").rglob("*.py")]
+    assert any(py.parent.name == "autoria" for py in rutas)
+
+
+def test_el_respaldo_de_vault_lib_no_diverge_del_kernel():
+    """`vault_lib` guarda sus definiciones como respaldo; no pueden dar otra ruta.
+
+    Se ejecutan las definiciones tal como están escritas en el fuente —el import
+    del kernel las sustituye al cargar el módulo, así que llamarlas por el
+    módulo probaría al kernel contra sí mismo (AP-44).
+    """
+    import re as _re
+    import unicodedata as _ud
+
+    from vault.kernel import normalizacion as kernel
+
+    fuente = (REPO_ROOT / "scripts" / "vault_lib.py").read_text(encoding="utf-8")
+    arbol = ast.parse(fuente)
+    nombres = {"fold_accents", "slugify", "slugify_strict"}
+    defs = [n for n in arbol.body if isinstance(n, ast.FunctionDef) and n.name in nombres]
+    assert {d.name for d in defs} == nombres
+    ns = {"re": _re, "unicodedata": _ud}
+    exec(compile(ast.Module(body=defs, type_ignores=[]), "vault_lib_respaldo", "exec"), ns)
+    muestras = ("Índice", "Über-Straße", "Café  &  Crème", "日本語 ノート", "Заметка",
+                "-- Hola --- Mundo --", "C++ / C#", "ﬁle Ｍi", "Łódź Øre")
+    for t in muestras:
+        for nombre in nombres:
+            assert ns[nombre](t) == getattr(kernel, nombre)(t), (nombre, t)
+
+
+# ── Clave de equivalencia: «el mismo título» no es «el mismo slug» ────────────
+
+
+@pytest.mark.parametrize(
+    "a,b",
+    [
+        ("Mi Title", "MI  TITLE"),
+        ("Mi Title", " mi title "),
+        ("Mi Title", "Ｍi Title"),        # ancho completo
+        ("file", "ﬁle"),                  # ligadura
+        ("Straße", "STRASSE"),            # casefold
+        (2026, "2026"),                   # YAML leyó el título como entero
+        (None, ""),
+    ],
+)
+def test_clave_de_equivalencia_iguala_lo_que_un_lector_iguala(a, b):
+    from vault.kernel.normalizacion import equivalentes
+
+    assert equivalentes(a, b)
+
+
+@pytest.mark.parametrize(
+    "a,b",
+    [
+        ("C++", "C#"),        # mismo slug `c`, distinto título
+        ("Café", "Cafe"),     # la clave de equivalencia no pliega acentos
+        ("Mi Title", "Mi-Title"),
+        ("Mi Title", None),
+    ],
+)
+def test_clave_de_equivalencia_no_es_la_clave_de_ruta(a, b):
+    from vault.kernel.normalizacion import equivalentes
+
+    assert not equivalentes(a, b)

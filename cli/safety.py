@@ -37,62 +37,6 @@ MAX_ARG_LENGTH = 200_000
 MAX_ARG_COUNT = 64
 
 
-# ── Poisoning: patrones de directiva embebida ────────────────────────────────
-# Una nota es contexto que otro agente leerá como verdad. Estos patrones son
-# instrucciones dirigidas al lector-agente, no documentación.
-_INJECTION_PATTERNS: List[Tuple[str, str, str]] = [
-    ("POISON-01", r"(?i)\b(ignora|ignore|olvida|forget|disregard)\b[^.\n]{0,40}"
-                  r"\b(instrucciones|instructions|reglas|rules|anterior|previous|above|system)\b",
-     "directiva de anulación de instrucciones dirigida al agente lector"),
-    ("POISON-02", r"(?i)^\s*(system|assistant|user)\s*:\s*\S",
-     "turno de conversación falsificado — suplanta un rol del protocolo"),
-    ("POISON-03", r"(?i)<\s*/?\s*(system|system-reminder|important_instructions)\b",
-     "etiqueta de mensaje de sistema falsificada"),
-    ("POISON-04", r"(?i)\b(eres|you are)\s+(ahora|now)\b[^.\n]{0,30}\b(un|una|a|an)\b",
-     "reasignación de identidad del agente lector"),
-    ("POISON-05", r"(?i)\b(no|never|nunca)\s+(le\s+)?(digas|menciones|tell|mention|reveal)\b"
-                  r"[^.\n]{0,30}\b(usuario|user|humano|human)\b",
-     "instrucción de ocultar información al usuario"),
-]
-
-# Caracteres invisibles: texto que el humano revisor no ve pero el modelo sí.
-# Vector clásico de exfiltración e inyección encubierta.
-_INVISIBLE = {
-    "​": "ZERO WIDTH SPACE",
-    "‌": "ZERO WIDTH NON-JOINER",
-    "‍": "ZERO WIDTH JOINER",
-    "⁠": "WORD JOINER",
-    "﻿": "BOM / ZERO WIDTH NO-BREAK SPACE",
-    "‮": "RIGHT-TO-LEFT OVERRIDE",
-    "‭": "LEFT-TO-RIGHT OVERRIDE",
-    "⁦": "LEFT-TO-RIGHT ISOLATE",
-    "⁧": "RIGHT-TO-LEFT ISOLATE",
-}
-# Etiquetas de tag Unicode (U+E0000–U+E007F): completamente invisibles,
-# usadas para esconder instrucciones dentro de texto aparentemente normal.
-_TAG_BLOCK = range(0xE0000, 0xE0080)
-
-
-@dataclass
-class Finding:
-    code: str
-    severity: str          # critical | high | medium | low
-    field: str
-    detail: str
-    context: str = "prose"   # prose | comment | code
-
-    def to_dict(self) -> Dict[str, Any]:
-        d = {
-            "code": self.code,
-            "severity": self.severity,
-            "field": self.field,
-            "detail": self.detail,
-        }
-        if self.context != "prose":
-            d["context"] = self.context
-        return d
-
-
 @dataclass
 class Verdict:
     ok: bool
@@ -111,6 +55,12 @@ class Verdict:
 
 
 # ── 1. Contención de rutas ───────────────────────────────────────────────────
+
+from vault.consulta.safety import (
+    Finding, _INJECTION_PATTERNS, _INVISIBLE, _TAG_BLOCK,
+    _prose_only_lines, scan_content,
+)  # noqa: E402,F401
+
 
 _PATH_ARGS = ("folder", "path", "file", "output", "dest", "target", "source", "dir")
 
@@ -221,131 +171,6 @@ def check_contract(frag: Fragment, args: Dict[str, Any]) -> List[Finding]:
                 "ARG-SIZE", "high", key,
                 f"{len(value)} caracteres (máximo {MAX_ARG_LENGTH})",
             ))
-    return findings
-
-
-# ── 3. Anti-poisoning ────────────────────────────────────────────────────────
-
-def _prose_only_lines(text: str):
-    """Yield lines that are NOT inside a code fence and NOT a line comment.
-
-    Code fences (triple-backtick) are skipped entirely.
-    Lines starting with # (after lstrip) are comment lines and skipped for
-    POISON-01/04/05 which target natural-language injection in prose.
-    POISON-02/03 still apply everywhere since they target format markers.
-    """
-    in_fence = False
-    fence_kind = ""
-    for line in text.splitlines(keepends=True):
-        stripped = line.lstrip()
-        # Detect opening/closing fences (``` or ~~~)
-        m = re.match(r"^(```{1,3})(.*)$", stripped)
-        if m and not in_fence:
-            in_fence = True
-            fence_kind = m.group(1)
-            continue
-        if in_fence and (stripped.startswith(fence_kind) or stripped == fence_kind):
-            in_fence = False
-            fence_kind = ""
-            continue
-        if in_fence:
-            continue
-        if stripped.startswith("#"):
-            continue
-        yield line
-
-
-def scan_content(text: str, field_name: str = "content") -> List[Finding]:
-    """Busca directivas embebidas y caracteres invisibles en contenido a escribir."""
-    findings: List[Finding] = []
-    if not text:
-        return findings
-
-    # POISON-02 y POISON-03 son patrones de formato (roles de conversación,
-    # etiquetas XML). Aplican al texto completo sin distinción de bloque.
-    # POISON-01, 04 y 05 son inyección en lenguaje natural y solo aplican
-    # a bloques de prosa (no dentro de fences de código ni líneas de comentario).
-    _FORMATO_PATTERNS = [
-        p for p in _INJECTION_PATTERNS if p[0] in ("POISON-02", "POISON-03")
-    ]
-    _NATURAL_LANGUAGE_PATTERNS = [
-        p for p in _INJECTION_PATTERNS if p[0] not in ("POISON-02", "POISON-03")
-    ]
-
-    for code, pattern, detail in _FORMATO_PATTERNS:
-        match = re.search(pattern, text, re.MULTILINE)
-        if match:
-            fragment = match.group(0).strip()[:120]
-            findings.append(Finding(
-                code, "critical", field_name,
-                f"{detail}. Coincidencia: {fragment!r}",
-            ))
-
-    # Solo prosa: código fences y líneas de comentario se excluyen.
-    # Cualquier match encontrado viene de prosa de usuario → critical.
-    # Los comentarios se excluyen directamente: patrones como "no ignora el
-    # archivo" en un comentario de código no son inyección.
-    prose_text = "".join(_prose_only_lines(text))
-    for code, pattern, detail in _NATURAL_LANGUAGE_PATTERNS:
-        match = re.search(pattern, prose_text, re.MULTILINE)
-        if match:
-            fragment = match.group(0).strip()[:120]
-            findings.append(Finding(
-                code, "critical", field_name,
-                f"{detail}. Coincidencia: {fragment!r}",
-            ))
-
-    invisible_hits: Dict[str, int] = {}
-    for ch in text:
-        if ch in _INVISIBLE:
-            invisible_hits[_INVISIBLE[ch]] = invisible_hits.get(_INVISIBLE[ch], 0) + 1
-        elif ord(ch) in _TAG_BLOCK:
-            invisible_hits["UNICODE TAG (bloque E0000)"] = (
-                invisible_hits.get("UNICODE TAG (bloque E0000)", 0) + 1
-            )
-    for label, count in invisible_hits.items():
-        severity = "critical" if "TAG" in label or "OVERRIDE" in label else "high"
-        findings.append(Finding(
-            "POISON-INVISIBLE", severity, field_name,
-            f"{count} carácter(es) invisible(s) '{label}': contenido que el "
-            "revisor humano no ve pero el modelo sí lee",
-        ))
-
-    # AP-21: wikilinks con ruta. Obsidian resuelve por nombre de nota; un link
-    # con ruta se rompe en cuanto la nota se mueve, y el grafo pierde la arista.
-    # Sobre el texto sin fences: un wikilink con ruta dentro de un bloque de
-    # código es sintaxis que la nota enseña, no una arista del grafo, y
-    # rechazarlo impedía documentar la propia norma —el manifiesto la escribe
-    # así—. Qué es código y no enlace lo decide su dueño (AP-57).
-    #
-    # El resto de medidas de este scan siguen mirando el texto **crudo** a
-    # propósito: un carácter invisible o una inyección cuentan igual dentro de
-    # un fence. AP-21 no es una medida de seguridad, es una de resolución de
-    # enlaces, y por eso es la única que puede permitirse este recorte.
-    from vault_lib import strip_code_blocks  # import diferido: SCRIPTS_DIR
-
-    path_links = sorted({
-        m.group(1)
-        for m in re.finditer(r"\[\[([^\]|\n]*/[^\]|\n]*)(\|[^\]\n]*)?\]\]",
-                             strip_code_blocks(text))
-    })
-    if path_links:
-        findings.append(Finding(
-            "AP-21", "high", field_name,
-            f"{len(path_links)} wikilink(s) con ruta: {path_links[:3]} — "
-            "usa [[nombre-nota]] sin carpeta",
-        ))
-
-    controls = [
-        c for c in text
-        if unicodedata.category(c) == "Cc" and c not in "\n\r\t"
-    ]
-    if controls:
-        findings.append(Finding(
-            "POISON-CONTROL", "high", field_name,
-            f"{len(controls)} carácter(es) de control no imprimibles",
-        ))
-
     return findings
 
 

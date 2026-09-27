@@ -85,11 +85,14 @@ def main() -> int:
             _fail("vault executable missing from venv")
         _json(_run([str(vault), "init", str(runtime)], cwd=work, env=env), "vault init")
         canary = f"MEMORY_CANARY_{uuid.uuid4().hex}"
-        before, before_pid = _invoke([str(vault), "run", "vault_knowledge_get", "--root", str(runtime), "--query", canary], cwd=work, env=env)
+        runtime_env = dict(env)
+        runtime_env["VAULT_ROOT"] = str(runtime)
+        runtime_env["VAULT_STRICT_ROOT"] = "1"
+        before, before_pid = _invoke([str(vault), "run", "vault_knowledge_get", "--query", canary], cwd=work, env=runtime_env)
         before_payload = _json(before, "recovery before write")
         if before_payload.get("total") != 0:
             _fail(f"canary existed before write: {before_payload}")
-        write, write_pid = _invoke([str(vault), "run", "vault_knowledge_save", "--root", str(runtime), "--category", "concept", "--title", canary, "--content", f"Decisión {canary}: usar transporte Boreal-17."], cwd=work, env=env)
+        write, write_pid = _invoke([str(vault), "run", "vault_knowledge_save", "--category", "concept", "--title", canary, "--content", f"Decisión {canary}: usar transporte Boreal-17."], cwd=work, env=runtime_env)
         written = _json(write, "memory write")
         note = runtime / str(written.get("path", ""))
         if not note.is_file():
@@ -97,7 +100,7 @@ def main() -> int:
         markdown = note.read_text(encoding="utf-8")
         if canary not in markdown:
             _fail("canary is absent from Markdown authority")
-        recovered, recovery_pid = _invoke([str(vault), "run", "vault_knowledge_get", "--root", str(runtime), "--query", canary], cwd=work, env=env)
+        recovered, recovery_pid = _invoke([str(vault), "run", "vault_knowledge_get", "--query", canary], cwd=work, env=runtime_env)
         result = _json(recovered, "recovery in new process")
         if (
             result.get("total") != 1
@@ -108,7 +111,10 @@ def main() -> int:
         moved = root / "moved-runtime"
         shutil.copytree(runtime, moved)
         _json(_run([str(vault), "doctor", str(moved)], cwd=work, env=env), "doctor moved runtime")
-        moved_result, moved_pid = _invoke([str(vault), "run", "vault_knowledge_get", "--root", str(moved), "--query", canary], cwd=work, env=env)
+        moved_env = dict(env)
+        moved_env["VAULT_ROOT"] = str(moved)
+        moved_env["VAULT_STRICT_ROOT"] = "1"
+        moved_result, moved_pid = _invoke([str(vault), "run", "vault_knowledge_get", "--query", canary], cwd=work, env=moved_env)
         moved_payload = _json(moved_result, "recovery moved runtime")
         if (
             moved_payload.get("total") != 1

@@ -203,11 +203,14 @@ def test_el_extractor_de_wikilinks_tiene_un_solo_dueno():
     # `\[\[([^\]...]+)(?:...)?\]\]`. Es la firma del extractor, no la de
     # cualquier uso de `[[`.
     firma = re.compile(r"\\\[\\\[\(\[\^[^)]*\]\+\)\(\?:")
+    #: Dueño desde v40.35: ``vault.kernel.regex`` (AP-50). ``scripts/vault_regex.py``
+    #: re-exporta desde ahí.
+    DUENOS = ("scripts/vault_regex.py", "vault/kernel/regex.py")
     culpables = [
         f"{ubicacion}: {patron[:50]!r}"
         for ubicacion, patron in REGEX
         if firma.search(patron)
-        and not ubicacion.startswith("scripts/vault_regex.py")
+        and not any(ubicacion.startswith(d) for d in DUENOS)
     ]
     assert not culpables, (
         "extractores de wikilink escritos a mano fuera de vault_regex; usa "

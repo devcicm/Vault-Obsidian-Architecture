@@ -4230,7 +4230,7 @@
           },
           "quality-criteria": {
             "type": "string",
-            "description": "Quality criteria (e.g. 'coverage > 80%' 'defect-rate < 2%')"
+            "description": "Quality criteria (e.g. 'coverage > 80%%' 'defect-rate < 2%%')"
           },
           "status": {
             "type": "string",
