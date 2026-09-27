@@ -46,7 +46,7 @@ está escrita como registro ejecutable y no como recordatorio.
 | `ergonomia_de_entrada` | ¿Se invoca como un programa o como un montón de scripts? | ✅ descubierta | — |
 | `contrato_con_quien_contribuye` | ¿Sabe alguien de fuera cómo aportar o cómo reportar un fallo? | ✅ cubierta | README.md (sección «Estado del proyecto») |
 | `lo_publicado_es_solo_el_estandar` | ¿Puede irse en un push algo que no es de este repo? | ✅ cubierta | tests/test_publicacion_limpia.py (mide el índice de git, no el disco) |
-| `wheel_instalada_funciona` | ¿Funciona la wheel instalada en un venv limpio fuera del repo? | ✅ cubierta | tests/run_product_gates.py + job 'product-gates' en vault-ci.yml |
+| `wheel_instalada_funciona` | ¿Funciona la wheel instalada en un venv limpio fuera del repo? | ✅ descubierta | tests/run_product_gates.py + job 'product-gates' en vault-ci.yml |
 
 ## Los huecos, escritos
 
@@ -57,6 +57,10 @@ está escrita como registro ejecutable y no como recordatorio.
 *Por qué se deja así:* Decisión de producto sin tomar. Declarar entry points ata el nombre público de cada tool del catálogo, y renombrar uno después rompe a quien lo llamara. Se decide el día que esto se publique en un índice de paquetes, no hoy.
 
 **`lo_publicado_es_solo_el_estandar` — cubierta con hueco.** Mide el índice de HOY. Lo que ya esté en un commit anterior del historial no lo ve nadie: para eso haría falta recorrer todos los árboles, y este repo nunca ha versionado esos directorios.
+
+**`wheel_instalada_funciona` — descubierta.** La wheel puede armarse mal y pasar los tests del repo (que usan el source) pero fallar en un venv limpio (que solo tiene lo instalado).
+
+*Por qué se deja así:* La promesa existe (run_product_gates.py + CI) pero nunca se ha ejecutado contra un venv limpio real fuera de este repo. El gate ejecuta la wheel desde el mismo checkout fuente, así que el test no garantiza que la wheel funcione aislada. Pendiente: ejecutar run_product_gates.py en un CI separado o desde una maquina limpia que no tenga este repo.
 
 ## Qué NO demuestra el verde
 
