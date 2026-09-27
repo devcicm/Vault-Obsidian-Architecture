@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from vault_regex import RE_WIKILINK  # dueño único del patrón (AP-50)
+from vault.kernel.regex import strip_code_blocks
 
 
 # ============================================================
@@ -70,6 +71,18 @@ def slugify(text: str) -> str:
 def slugify_strict(text: str) -> str:
     """Strict slug: no leading/trailing hyphens, no consecutive hyphens."""
     return re.sub(r"-{2,}", "-", slugify(text)).strip("-")
+
+
+# Dueño desde v40.35: vault.kernel.normalizacion (frontera instalable), que además
+# separa la clave de ruta de la de equivalencia. Las tres definiciones de arriba
+# quedan como respaldo para cuando `vault` no es importable, igual que
+# parse_frontmatter; tests/test_slug_canonico.py verifica que dan lo mismo.
+try:
+    from vault.kernel.normalizacion import (  # noqa: F811
+        fold_accents, slugify, slugify_strict,
+    )
+except ImportError:
+    pass
 
 
 # ============================================================
@@ -198,47 +211,68 @@ def _coerce_dates(obj: Any) -> Any:
 def parse_frontmatter(content: str) -> Dict[str, Any]:
     """Extract frontmatter YAML fields as a dict from markdown content.
 
-    Supports multiline values (indented continuation). Returns empty dict
-    if no valid frontmatter block is found.
+    Returns empty dict if no valid frontmatter block is found or if parsing fails.
     """
-    import yaml  # optional dependency
-
-    # Notas editadas con herramientas Windows pueden llegar con BOM (﻿);
-    # sin esto el frontmatter completo se pierde silenciosamente.
+    # Delegación completa en vault.kernel.frontmatter_parsing (frontera instalable).
+    # vault.kernel captura ValueError/yaml.YAMLError/RecursionError y los expone
+    # como FrontmatterParseError. Esta fachada los convierte en {} por
+    # compatibilidad backward. El fallback local solo se activa si vault.kernel
+    # no está disponible (ImportError).
+    try:
+        from vault.kernel.frontmatter_parsing import (
+            parse_frontmatter as _parse, FrontmatterParseError,
+        )
+        return _parse(content)
+    except ImportError:
+        pass
+    except FrontmatterParseError:
+        return {}
+    import yaml as _yaml
     content = content.lstrip("﻿")
     match = re.match(r"^---\s*\n(.*?)\n---\s*\n?", content, re.DOTALL)
     if not match:
         return {}
     try:
-        return _coerce_dates(yaml.safe_load(match.group(1)) or {})
-    except (yaml.YAMLError, RecursionError):
-        # RecursionError: el parser de PyYAML es recursivo, y el frontmatter
-        # es dato externo. Un valor con ~500 niveles de anidamiento —`x: [[[[…`,
-        # 500 corchetes, doce caracteres de escribir— desborda la pila DENTRO de
-        # `safe_load`, antes de llegar a `_coerce_dates`. `RecursionError` no
-        # hereda de `YAMLError`, así que subía sin que nadie la parara: UNA nota
-        # así mataba la auditoría completa del vault, no la lectura de esa nota.
-        # Se trata como lo que es —frontmatter malformado— igual que el YAML
-        # roto de la línea de arriba: el mismo defecto de dato, el mismo veredicto.
+        raw = _yaml.safe_load(match.group(1))
+        if raw is None:
+            return {}
+        if not isinstance(raw, dict):
+            return {}
+        return _coerce_dates(raw)
+    except (_yaml.YAMLError, RecursionError, ValueError):
         return {}
 
 
 def parse_frontmatter_with_body(content: str) -> Tuple[Dict[str, Any], str]:
     """Extract frontmatter dict and body string from markdown content.
 
-    Returns ({}, content) if no frontmatter block is found.
+    Returns ({}, content) if no frontmatter block is found or if parsing fails.
     """
-    import yaml
-
-    content = content.lstrip("﻿")  # ver parse_frontmatter — BOM de Windows
+    # Delegación — ver parse_frontmatter. AP-61.
+    try:
+        from vault.kernel.frontmatter_parsing import (
+            parse_frontmatter_with_body as _parse, FrontmatterParseError,
+        )
+        return _parse(content)
+    except ImportError:
+        pass
+    except FrontmatterParseError:
+        return {}, content
+    import yaml as _yaml
+    content = content.lstrip("﻿")
     match = re.match(r"^---\s*\n(.*?)\n---\s*\n?(.*)", content, re.DOTALL)
     if not match:
         return {}, content
     try:
-        fm = _coerce_dates(yaml.safe_load(match.group(1)) or {})
+        raw = _yaml.safe_load(match.group(1))
+        if raw is None:
+            return {}, match.group(2)
+        if not isinstance(raw, dict):
+            return {}, match.group(2)
+        fm = _coerce_dates(raw)
         return fm, match.group(2)
-    except (yaml.YAMLError, RecursionError):
-        return {}, content  # ver parse_frontmatter — pila desbordada por anidamiento
+    except (_yaml.YAMLError, RecursionError, ValueError):
+        return {}, content
 
 
 def yaml_scalar(value: Any) -> str:
@@ -297,9 +331,14 @@ def read_frontmatter(path: Path) -> Dict[str, Any]:
     """Read file at path and return its frontmatter as a dict."""
     import yaml
 
+    # AP-61: `read_text` declara OSError, pero lo que lanza una nota guardada
+    # en ANSI/Latin-1 —habitual en Windows— es UnicodeDecodeError (ValueError).
+    # Sin nombrarla, una sola nota así tumbaba `vault_audit` entero con
+    # UNEXPECTED_ERROR. Quien necesite distinguir ilegible de vacía lee la nota
+    # con su propio registro de degradación (vault_audit._leer_nota).
     try:
         content = path.read_text(encoding="utf-8")
-    except OSError:
+    except (OSError, UnicodeDecodeError):
         return {}
     return parse_frontmatter(content)
 
@@ -307,13 +346,6 @@ def read_frontmatter(path: Path) -> Dict[str, Any]:
 # ============================================================
 # UTILIDADES DE TEXTO
 # ============================================================
-
-
-def strip_code_blocks(content: str) -> str:
-    """Remove ``` blocks and `inline` code from content."""
-    clean = re.sub(r"```[\s\S]*?```", "", content)
-    clean = re.sub(r"`[^`\n]+`", "", clean)
-    return clean
 
 
 def extract_wikilinks(content: str) -> List[str]:

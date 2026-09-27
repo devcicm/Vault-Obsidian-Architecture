@@ -93,6 +93,30 @@ jobs:
           cd ..
           python scripts/vault_norms.py --list --type ap | python -c "import json,sys; d=json.load(sys.stdin); print(f'AP norms registered: {d[\"total\"]}')"
 
+  product-gates:
+    name: Product gates (wheel)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ['3.9', '3.11']
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Build wheel
+        run: |
+          python -m pip install build
+          python -m build
+
+      - name: Run product gates
+        run: python tests/run_product_gates.py
+
   lint:
     name: Lint Python
     runs-on: ubuntu-latest

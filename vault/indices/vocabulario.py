@@ -11,16 +11,24 @@ import re
 import unicodedata
 from typing import Any, Dict, List
 
+from ..kernel.normalizacion import plegar_diacriticos_latinos
 from .repositorio import RepositorioIndices
 
 _TAG_SEPARADORES = re.compile(r"[\s_.:/\\\\]+")
-_TAG_INVALIDOS = re.compile(r"[^a-z0-9-]+")
+#: Letras y dígitos de cualquier alfabeto. Hasta v40.34 era ``[^a-z0-9-]`` y una
+#: etiqueta en japonés o cirílico salía vacía (``"日本語"`` → ``""``).
+_TAG_INVALIDOS = re.compile(r"[^\w-]+")
 
 
 def normalizar_etiqueta(raw: str) -> str:
-    """Forma estable: minúsculas, sin acentos y con guiones."""
-    texto = unicodedata.normalize("NFD", str(raw or "").strip().lower())
-    texto = "".join(c for c in texto if unicodedata.category(c) != "Mn")
+    """Forma estable: minúsculas, sin acentos latinos y con guiones.
+
+    NFKC primero para que ``"ﬁle"`` sea ``"file"`` y ``"Ｍi"`` sea ``"mi"`` (antes
+    salían ``"le"`` e ``"i"``); los diacríticos se pliegan solo sobre base latina,
+    así ``"Straße"`` → ``"strasse"`` sin convertir ``"ブログ"`` en ``"フロク"``.
+    """
+    texto = unicodedata.normalize("NFKC", str(raw or "")).casefold().strip()
+    texto = plegar_diacriticos_latinos(texto)
     texto = _TAG_SEPARADORES.sub("-", texto)
     texto = _TAG_INVALIDOS.sub("-", texto)
     return re.sub(r"-{2,}", "-", texto).strip("-")

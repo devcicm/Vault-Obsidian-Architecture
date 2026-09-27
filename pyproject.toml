@@ -41,16 +41,14 @@ vault = "vault.product_cli:main"
 vault_gobernanza = "vault.gobernanza.tool:main"
 
 [tool.setuptools]
-# `scripts/` sigue sin declararse a propósito: se resuelve por ruta de fichero
-# —el tool-spec, `cli/registry.py`, el runner del MCP y los repos consumidores
-# dependen de eso— y empaquetarlo cambiaría cómo se importa. `vault/` es lo
-# contrario: es un paquete de verdad, con imports relativos, y funcionaba solo
-# porque los adaptadores le añaden la raíz al `sys.path`. Declararlo hace que
-# una instalación lo lleve, en vez de dejarlo a merced del directorio de trabajo.
-packages = ["vault", "vault.kernel", "vault.durabilidad", "vault.indices", "vault.grafo", "vault.consulta", "vault.gobernanza", "vault.ciclo_de_vida", "vault.meta_toolkit", "vault.autoria"]
+# ADR-0002: _impl es una proyección de scripts/ en la wheel. La fachada
+# vault_regex.py re-exporta desde vault.kernel.regex (owner AP-50). No es
+# (ADR-0002: puente scripts->_impl formalizado)
+package-dir = {"vault_toolkit._impl" = "scripts"}
+
+packages = ["vault", "vault.kernel", "vault.durabilidad", "vault.indices", "vault.grafo", "vault.consulta", "vault.gobernanza", "vault.ciclo_de_vida", "vault.meta_toolkit", "vault.autoria", "vault_toolkit", "vault_toolkit.operations", "vault_toolkit._impl"]
 
 [tool.setuptools.package-data]
-scripts = ["tool-spec.json", "vault-obsidian-architecture.md", "README.md"]
 "vault.meta_toolkit" = ["tools-catalog.json"]
 "vault.ciclo_de_vida" = ["runtime-seed.json"]
 

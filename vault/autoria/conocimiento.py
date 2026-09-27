@@ -10,9 +10,7 @@ from __future__ import annotations
 
 import errno
 import os
-import re
 import time
-import unicodedata
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -28,6 +26,7 @@ from ..kernel.frontmatter_parsing import (
     parse_frontmatter_robust as _canon_parse_fm,
     parse_frontmatter_with_body,
 )
+from ..kernel.normalizacion import clave_de_equivalencia, slugify_strict
 
 
 CATEGORIES = (
@@ -38,15 +37,6 @@ CATEGORY_FOLDERS = {
     "business-rule": "business-rules", "config": "configs",
     "dependency": "dependencies", "framework": "frameworks",
 }
-
-
-def _slug(text: str) -> str:
-    explicit = {"ß": "ss", "ø": "o", "Ø": "O", "đ": "d", "Đ": "D", "ł": "l", "Ł": "L"}
-    text = "".join(explicit.get(char, char) for char in text)
-    folded = "".join(
-        char for char in unicodedata.normalize("NFKD", text) if not unicodedata.combining(char)
-    ).lower()
-    return re.sub(r"-{2,}", "-", re.sub(r"[\s_]+", "-", re.sub(r"[^\w\s-]", "", folded))).strip("-")
 
 
 def _timestamp() -> str:
@@ -121,13 +111,15 @@ def _atomic_write(path: Path, text: str) -> None:
 
 
 def _render(category: str, title: str, content: str, project: Optional[str],
-            tags: Optional[List[str]], related: Optional[List[str]]) -> str:
+            tags: Optional[List[str]], related: Optional[List[str]],
+            existing_id: Optional[str] = None,
+            existing_createdAt: Optional[str] = None) -> str:
     timestamp = _timestamp()
     frontmatter = Frontmatter()
     frontmatter.set("title", title)
-    frontmatter.set("id", str(uuid.uuid4()))
+    frontmatter.set("id", existing_id or str(uuid.uuid4()))
     frontmatter.set("category", category)
-    frontmatter.set("createdAt", timestamp)
+    frontmatter.set("createdAt", existing_createdAt or timestamp)
     frontmatter.set("updatedAt", timestamp)
     if project:
         frontmatter.set("project", project)
@@ -178,7 +170,7 @@ def guardar_conocimiento(
         runtime = Path(root).resolve()
         if not runtime.is_dir():
             raise ValueError("runtime inexistente o no es directorio")
-        filename = _slug(title)
+        filename = slugify_strict(str(title or ""))
         if not filename:
             raise ValueError("el título no produce un nombre de nota válido")
         path = _contained(
@@ -188,10 +180,11 @@ def guardar_conocimiento(
     except ValueError as exc:
         return construir_error("vault_knowledge_save", "FILE_WRITE_ERROR", str(exc))
 
-    text = _render(category, title, content, project, tags, related)
-
     with _FileLock(path, timeout=30.0):
         existing_project = None
+        existing_title = None
+        existing_id = None
+        existing_createdAt = None
         existing_legible = False
 
         if path.exists():
@@ -199,6 +192,9 @@ def guardar_conocimiento(
                 raw = path.read_text(encoding="utf-8")
                 fm, _ = parse_frontmatter_with_body(raw)
                 existing_project = fm.get("project")
+                existing_title = fm.get("title")
+                existing_id = fm.get("id")
+                existing_createdAt = fm.get("createdAt")
                 existing_legible = True
             except UnicodeDecodeError:
                 return construir_error(
@@ -206,8 +202,31 @@ def guardar_conocimiento(
                     f"archivo no legible: {path.name}",
                     extra={"path": path.relative_to(runtime).as_posix()}
                 )
-            except FrontmatterParseError:
+            except (yaml.YAMLError, RecursionError, FrontmatterParseError):
                 existing_legible = False
+
+        if path.exists() and not existing_legible:
+            return construir_error(
+                "vault_knowledge_save", "IDENTITY_CONFLICT",
+                f"el archivo '{filename}' tiene frontmatter que no es un objeto YAML",
+                extra={"path": path.relative_to(runtime).as_posix()}
+            )
+
+        # Título diferente en mismo archivo → conflicto. Un archivo sin frontmatter
+        # tiene existing_title=None; si el título intentado es no-None → conflicto.
+        # «Mismo título» se decide con la clave de equivalencia del kernel, no con
+        # el slug (haría iguales C++ y C#) ni con == (haría distintos "Mi Title"
+        # y "MI  TITLE"). Ver vault/kernel/normalizacion.py.
+        if existing_legible and clave_de_equivalencia(existing_title) != clave_de_equivalencia(title):
+            return construir_error(
+                "vault_knowledge_save", "IDENTITY_CONFLICT",
+                f"el archivo '{filename}' ya existe con título '{existing_title}'",
+                extra={
+                    "path": path.relative_to(runtime).as_posix(),
+                    "conflict_title": existing_title,
+                    "attempted_title": title,
+                }
+            )
 
         if existing_legible and (existing_project or None) != (project or None):
             return construir_error(
@@ -219,6 +238,9 @@ def guardar_conocimiento(
                     "attempted_project": project,
                 }
             )
+
+        text = _render(category, title, content, project, tags, related,
+                       existing_id=existing_id, existing_createdAt=existing_createdAt)
 
         try:
             (writer or _atomic_write)(path, text)

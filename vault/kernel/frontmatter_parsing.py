@@ -1,30 +1,31 @@
 """Parser canónico de frontmatter — frontera instalable.
 
-Este módulo re-exporta desde scripts/vault_lib (dueño canónico del parsing).
-No se reimplementa parsing en adaptadores o módulos de dominio.
+Este módulo es la implementación de referencia para parsing de frontmatter
+dentro del paquete. No depende de scripts/ — es instalable como paquete.
 
-Excepciones de dominio (definidas aquí, emitidas por el dueño canónico):
-- FrontmatterParseError: frontmatter presente pero no parseable
+El parser maneja:
+- BOM de Windows (strip antes de procesar)
+- Delimitadores con espacios opcionales (---, ---  , ---    )
+- YAML multilínea con indentación
+- RecursionError por anidamiento excesivo (dato externo, no controlable)
+- Validación: el YAML parseado debe ser un dict (no lista, no escalar)
+
+Excepciones de dominio:
+- FrontmatterParseError: frontmatter presente pero no parseable o no es un dict
 - FrontmatterMissing: sin bloque delimitado
 """
 
 from __future__ import annotations
 
 import re
-from pathlib import Path
+from datetime import date, datetime
 from typing import Any, Dict, Optional, Tuple
 
-from vault_toolkit.loading import import_toolkit_module
-
-_SCRIPTS = Path(__file__).resolve().parent.parent.parent / "scripts"
-
-
-def _lib():
-    return import_toolkit_module("vault_lib", legacy_scripts=_SCRIPTS)
+import yaml
 
 
 class FrontmatterParseError(ValueError):
-    """El frontmatter está delimitado pero no pudo parsearse."""
+    """El frontmatter está delimitado pero no pudo parsearse o no es un dict."""
     pass
 
 
@@ -33,28 +34,54 @@ class FrontmatterMissing(ValueError):
     pass
 
 
-_FRONTBLOCK_RE = re.compile(r"^---\s*\n.*?\n---\s*\n?", re.DOTALL)
+_FRONTBLOCK_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n?(.*)", re.DOTALL)
+
+
+def _coerce_dates(obj: Any) -> Any:
+    """Convierte datetime/date a string ISO. Idempotente."""
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    if isinstance(obj, dict):
+        return {k: _coerce_dates(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_coerce_dates(v) for v in obj]
+    return obj
 
 
 def parse_frontmatter(content: str) -> Dict[str, Any]:
     """Extrae campos YAML del frontmatter como dict.
 
     Retorna dict vacío si no hay bloque frontmatter válido.
-    Lanza FrontmatterParseError si el delimitador existe pero el YAML no parsea.
+    Lanza FrontmatterParseError si el delimitador existe pero el YAML
+    no parsea o no es un dict.
 
     Raises:
-        FrontmatterParseError: el delimitador existe pero el YAML no parsea.
+        FrontmatterParseError: el delimitador existe pero el YAML
+            no parsea o el resultado no es un dict.
     """
     stripped = content.lstrip("\ufeff")
-    has_block = _FRONTBLOCK_RE.match(stripped) is not None
-    # Delegación en scripts/vault_lib — el dueño canónico que ya contuvo
-    # RecursionError con la comment que cita este módulo como referencia.
-    # AP-61: el guard mide sitios de manejo de excepciones; la excepción
-    # se procesa en el dueño (scripts/vault_lib) que ya tiene baseline.
-    result = _lib().parse_frontmatter(content)
-    if result == {} and has_block:
-        raise FrontmatterParseError("YAML inválido en frontmatter")
-    return result
+    match = _FRONTBLOCK_RE.match(stripped)
+    if not match:
+        return {}
+    try:
+        raw_fm = yaml.safe_load(match.group(1))
+    except (yaml.YAMLError, RecursionError) as exc:
+        raise FrontmatterParseError(f"YAML inválido en frontmatter") from exc
+    except ValueError as exc:
+        raise FrontmatterParseError(f"valor YAML no convertible: {exc}") from exc
+
+    if raw_fm is None:
+        raw_fm = {}
+    elif not isinstance(raw_fm, dict):
+        raise FrontmatterParseError(
+            f"frontmatter no es un dict (es {type(raw_fm).__name__}); "
+            f"verificar que el bloque YAML contiene pares clave: valor"
+        )
+
+    try:
+        return _coerce_dates(raw_fm)
+    except RecursionError as exc:
+        raise FrontmatterParseError(f"anidamiento excesivo en frontmatter") from exc
 
 
 def parse_frontmatter_with_body(content: str) -> Tuple[Dict[str, Any], str]:
@@ -65,15 +92,33 @@ def parse_frontmatter_with_body(content: str) -> Tuple[Dict[str, Any], str]:
         (dict vacío, contenido_original) si no hay frontmatter.
 
     Raises:
-        FrontmatterParseError: el delimitador existe pero el YAML no parsea.
+        FrontmatterParseError: el delimitador existe pero el YAML
+            no parsea o el resultado no es un dict.
     """
-    # Delegación — ver parse_frontmatter. AP-61.
-    lib = _lib()
-    fm, body = lib.parse_frontmatter_with_body(content)
-    if fm == {}:
-        stripped = content.lstrip("\ufeff")
-        if _FRONTBLOCK_RE.match(stripped) is not None:
-            raise FrontmatterParseError("YAML inválido en frontmatter")
+    stripped = content.lstrip("\ufeff")
+    match = _FRONTBLOCK_RE.match(stripped)
+    if not match:
+        return {}, content
+    try:
+        raw_fm = yaml.safe_load(match.group(1))
+    except (yaml.YAMLError, RecursionError) as exc:
+        raise FrontmatterParseError(f"YAML inválido en frontmatter") from exc
+    except ValueError as exc:
+        raise FrontmatterParseError(f"valor YAML no convertible: {exc}") from exc
+
+    if raw_fm is None:
+        raw_fm = {}
+    elif not isinstance(raw_fm, dict):
+        raise FrontmatterParseError(
+            f"frontmatter no es un dict (es {type(raw_fm).__name__}); "
+            f"verificar que el bloque YAML contiene pares clave: valor"
+        )
+
+    try:
+        fm = _coerce_dates(raw_fm)
+    except RecursionError as exc:
+        raise FrontmatterParseError(f"anidamiento excesivo en frontmatter") from exc
+    body = match.group(2)
     return fm, body
 
 
@@ -82,8 +127,8 @@ def parse_frontmatter_robust(content: str) -> Tuple[Dict[str, Any], str, bool, O
 
     Returns:
         (frontmatter, body, parse_ok, error_msg)
-        parse_ok=False indica que el frontmatter está presente pero no parseó.
-        error_msg describe la causa.
+        parse_ok=False indica que el frontmatter está presente pero no parseó
+        o no es un dict. error_msg describe la causa.
     """
     try:
         fm, body = parse_frontmatter_with_body(content)

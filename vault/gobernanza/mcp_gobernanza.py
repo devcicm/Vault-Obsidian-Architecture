@@ -20,7 +20,7 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from vault_regex import RE_WIKILINK
+from ..kernel.regex import RE_WIKILINK
 
 from .base import (
     AuditResult,
