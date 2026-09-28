@@ -4734,13 +4734,28 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
         spec_data = json.loads(spec_path.read_text(encoding="utf-8"))
     spec_tools = spec_data.get("tools", {})
 
-    # Derivar execution_module desde la clasificación canónica (A2).
-    # El generador usa clasificar_tools para que toda tool con script runtime
-    # tenga su execution_module correcto, sin duplicar lógica en dos sitios.
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-    from vault.meta_toolkit.distribucion import clasificar_tools
-    from vault_servicio import NATURALEZAS
-    dist = clasificar_tools(TOOLS_CATALOG, NATURALEZAS)
+    from vault.meta_toolkit.naturalezas import NATURALEZAS
+
+    # Derivar execution_module sin dependencia circular (AP-58).
+    # A2: toda tool runtime con script tiene execution_module derivado.
+    # Inline de clasificar_tools para no importar vault_servicio desde vault_mcp_catalog.
+    naturaleza_por_tool: Dict[str, str] = {}
+    for _nat_key, _nat_entry in NATURALEZAS.items():
+        for _t in _nat_entry.get("tools", ()):
+            naturaleza_por_tool[_t] = _nat_key
+
+    def _execution_module(tool_name: str, tool_entry: Dict[str, Any]) -> Optional[str]:
+        if naturaleza_por_tool.get(tool_name) == "meta_estandar":
+            return None
+        explicit = tool_entry.get("execution_module")
+        if explicit and isinstance(explicit, str) and explicit.strip():
+            return explicit
+        script = tool_entry.get("script", "")
+        if script and script.strip():
+            stem = script.removesuffix(".py")
+            return f"vault_toolkit.operations.{stem}"
+        return None
 
     # Tools gobernanza/meta/internal no se exponen via MCP.
     GRUPOS_NO_EXPUESTOS = {"Normas", "meta"}
@@ -4764,12 +4779,8 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
             "side_effects": tool.get("side_effects", []),
             "status": status,
             "exposed_via_mcp": exposed,
-            # Proyección de una promesa explícita de producto. El catálogo
-            # canónico conserva el dueño; el artefacto empaquetable sólo la
-            # transporta para que una instalación no tenga que importar este
-            # script ni inferir destinos por nombre.
-            # A2: se deriva de clasificar_tools, no del valor en TOOLS_CATALOG.
-            "execution_module": dist[name].execution_module,
+            # A2: se deriva inline (misma lógica que clasificar_tools, sin ciclo).
+            "execution_module": _execution_module(name, tool),
         }
         if tool.get("related"):
             tools_json[name]["related"] = tool["related"]
