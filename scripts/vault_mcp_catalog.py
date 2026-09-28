@@ -4734,6 +4734,14 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
         spec_data = json.loads(spec_path.read_text(encoding="utf-8"))
     spec_tools = spec_data.get("tools", {})
 
+    # Derivar execution_module desde la clasificación canónica (A2).
+    # El generador usa clasificar_tools para que toda tool con script runtime
+    # tenga su execution_module correcto, sin duplicar lógica en dos sitios.
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from vault.meta_toolkit.distribucion import clasificar_tools
+    from vault_servicio import NATURALEZAS
+    dist = clasificar_tools(TOOLS_CATALOG, NATURALEZAS)
+
     # Tools gobernanza/meta/internal no se exponen via MCP.
     GRUPOS_NO_EXPUESTOS = {"Normas", "meta"}
     STATUS_NO_EXPUESTO = {"internal", "archived", "orphan"}
@@ -4760,7 +4768,8 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
             # canónico conserva el dueño; el artefacto empaquetable sólo la
             # transporta para que una instalación no tenga que importar este
             # script ni inferir destinos por nombre.
-            "execution_module": tool.get("execution_module"),
+            # A2: se deriva de clasificar_tools, no del valor en TOOLS_CATALOG.
+            "execution_module": dist[name].execution_module,
         }
         if tool.get("related"):
             tools_json[name]["related"] = tool["related"]

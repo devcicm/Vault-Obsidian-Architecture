@@ -61,7 +61,11 @@ from vault_norms_catalog import STATUS_VOCAB
 from vault_vocabulario import opciones as _opciones
 
 SKIP_FOLDERS = {"10_Migrated", "vault-backups", ".history"}
-STRUCTURAL_NAMES = frozenset({"index.md", "readme.md"})
+
+try:
+    from vault.kernel.indices_structural import RESERVED_INDEX_NAMES as STRUCTURAL_NAMES
+except ImportError:
+    STRUCTURAL_NAMES = frozenset({"index.md", "readme.md"})
 
 TIMELINESS_DEFAULT_DAYS = 30
 TIMELINESS_HIGH_DAYS = 15

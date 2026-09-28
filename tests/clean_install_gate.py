@@ -140,8 +140,18 @@ def main(*, gate: str = "CLEAN_INSTALL_GATE") -> int:
         operations_members = sorted(m for m in members if m.startswith("vault_toolkit/operations/vault_") and m.endswith(".py"))
         if len(operations_members) == 0:
             _fail("wheel no tiene operaciones instaladas (0 encontradas)")
-        if len(operations_members) != 89:
-            _fail(f"wheel deberia tener 89 operaciones, tiene {len(operations_members)}")
+
+        # AP-47: la cifra sale del registro, no de una constante a mano.
+        # El registro dice cuántas son distributable; el test mide el wheel.
+        _scripts = REPO_ROOT / "scripts"
+        if str(_scripts) not in sys.path:
+            sys.path.insert(0, str(_scripts))
+        from vault.meta_toolkit.distribucion import clasificar_tools
+        from vault_servicio import NATURALEZAS
+        from vault_mcp_catalog import TOOLS_CATALOG
+        expected_dist = sum(1 for d in clasificar_tools(TOOLS_CATALOG, NATURALEZAS).values() if d.distributable)
+        if len(operations_members) != expected_dist:
+            _fail(f"wheel deberia tener {expected_dist} operaciones, tiene {len(operations_members)}")
         help_failing = []
         for member in operations_members:
             op_name = Path(member).stem
@@ -193,8 +203,8 @@ def main(*, gate: str = "CLEAN_INSTALL_GATE") -> int:
         listed_by_name = {entry.get("name"): entry for entry in listed.get("tools", [])}
         if listed_by_name.get("vault_query_parse", {}).get("installed") is not True:
             _fail("vault tools list did not expose the installed operation")
-        if listed_by_name.get("vault_read", {}).get("installed") is not False:
-            _fail("vault tools list did not expose legacy-only status")
+        if listed_by_name.get("vault_read", {}).get("installed") is not True:
+            _fail("vault tools list did not expose vault_read as installed")
 
         shown = _json_output(
             _run([str(vault), "tools", "show", "vault_query_parse"], cwd=work, env=clean_env),
@@ -209,10 +219,6 @@ def main(*, gate: str = "CLEAN_INSTALL_GATE") -> int:
         )
         if public_run.get("ok") is not True or public_run.get("plan", [{}])[0].get("tool") != "vault_search":
             _fail(f"unexpected public query payload: {public_run}")
-        _product_error(
-            _run([str(vault), "run", "vault_read"], cwd=work, env=clean_env),
-            label="vault run legacy-only", code=4, state="known_not_installed",
-        )
         _product_error(
             _run([str(vault), "run", "vault_arch"], cwd=work, env=clean_env),
             label="vault run maintenance", code=5, state="not_runtime_operation",

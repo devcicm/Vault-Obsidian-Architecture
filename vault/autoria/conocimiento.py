@@ -27,11 +27,7 @@ from ..kernel.frontmatter_parsing import (
     parse_frontmatter_with_body,
 )
 from ..kernel.normalizacion import clave_de_equivalencia, slugify_strict
-
-# AP-57: el dueño del criterio "esto es un índice" es vault_audit._STRUCTURAL_NAMES.
-# Definido aquí para no cruzar la frontera scripts→vault en la wheel instalada.
-# Stems (sin extensión .md): index.md → "index", readme.md → "readme".
-_RESERVED_STRUCTURAL_STEMS: frozenset[str] = frozenset({"index", "readme"})
+from ..kernel.indices_structural import RESERVED_INDEX_STEMS
 
 CATEGORIES = (
     "glossary", "api", "concept", "business-rule", "config", "dependency", "framework",
@@ -177,7 +173,7 @@ def guardar_conocimiento(
         filename = slugify_strict(str(title or ""))
         if not filename:
             raise ValueError("el título no produce un nombre de nota válido")
-        if filename in _RESERVED_STRUCTURAL_STEMS:
+        if filename in RESERVED_INDEX_STEMS:
             return construir_error(
                 "vault_knowledge_save", "RESERVED_NAME",
                 f"El título '{title}' produce el archivo '{filename}.md', "
@@ -307,13 +303,10 @@ def recuperar_conocimiento(
     unreadable: List[Dict[str, Any]] = []
 
     # AP-57: el dueño del criterio "esto es un índice" es
-    # scripts/vault_audit._STRUCTURAL_NAMES (frozenset({"index.md", "readme.md"})).
-    # Definido aquí (en lugar de importar) para no cruzar la frontera scripts→vault
-    # en la wheel instalada. Transitorio hasta que scripts/ migre a vault/<contexto>.
-    _STRUCTURAL_NAMES: frozenset[str] = frozenset({"index.md", "readme.md"})
+    from ..kernel.indices_structural import RESERVED_INDEX_NAMES
 
     for path in directory.rglob("*.md"):
-        if path.name.lower() in _STRUCTURAL_NAMES:
+        if path.name.lower() in RESERVED_INDEX_NAMES:
             continue
         try:
             raw = path.read_text(encoding="utf-8")

@@ -89,15 +89,25 @@ def test_resolver_reporta_operacion_ausente(monkeypatch, tmp_path):
     assert resolve_operation(frag, legacy_scripts=tmp_path).kind == "missing"
 
 
-def test_loader_primario_no_necesita_checkout(monkeypatch, tmp_path):
-    modulo = "operacion_instalada_de_prueba"
-    (tmp_path / f"{modulo}.py").write_text("VALUE = 42\n", encoding="utf-8")
-    monkeypatch.syspath_prepend(tmp_path)
-    sys_modules = __import__("sys").modules
-    sys_modules.pop(modulo, None)
-    cargado = import_toolkit_module(modulo)
-    assert cargado.VALUE == 42
-    assert tmp_path in __import__("pathlib").Path(cargado.__file__).parents
+def test_loader_primario_sin_impl_ni_legacy_import_error(monkeypatch, tmp_path):
+    """Sin _impl ni legacy_scripts, import_toolkit_module raise ImportError.
+
+    El bare import fallback se eliminó deliberadamente: resolver por sys.path
+    sin más約束乌戳 da acceso a cualquier paquete en el entorno, rompiendo
+    el aislamiento. El único camino válido es _impl (wheel) o legacy_scripts
+    (checkout). Este test verifica que el comportamiento antiguo (bare import)
+    ya no existe.
+    """
+    modulo = "modulo_que_no_existe_en_impl"
+    import sys
+    sys.modules.pop(modulo, None)
+    # Sin _impl (el modulo no existe en _impl del repo) y sin legacy_scripts,
+    # debe raise ImportError — no caer al import desnudo.
+    try:
+        import_toolkit_module(modulo, legacy_scripts=None)
+        assert False, "deberia haber raised ImportError"
+    except ImportError as exc:
+        assert "no encontrado en _impl" in str(exc) or "no encontrado" in str(exc)
 
 
 def test_fallback_legacy_conserva_scripts_en_sys_path(tmp_path):

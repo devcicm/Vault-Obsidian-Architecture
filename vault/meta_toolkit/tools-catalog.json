@@ -71,7 +71,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_ai_decision",
       "related": [
         "vault_norms",
         "vault_audit"
@@ -111,7 +111,7 @@
       "side_effects": [],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_append",
       "related": [
         "vault_write",
         "vault_read"
@@ -203,7 +203,7 @@
       "side_effects": [],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_audit",
       "related": [
         "vault_validate",
         "vault_fix_brackets",
@@ -234,7 +234,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_backup",
       "related": [
         "vault_backup_list",
         "vault_restore"
@@ -284,7 +284,7 @@
       "side_effects": [],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_backup_list",
       "related": [
         "vault_backup",
         "vault_restore"
@@ -340,7 +340,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_bibliography_save",
       "related": [
         "vault_knowledge_save",
         "vault_search"
@@ -533,7 +533,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_bug_save",
       "related": [
         "vault_log_error",
         "vault_test_save",
@@ -594,7 +594,7 @@
       "side_effects": [],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_change_log",
       "related": [
         "vault_timeline",
         "vault_audit"
@@ -724,7 +724,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_code_map",
       "related": [
         "vault_code_module",
         "vault_code_relation",
@@ -825,7 +825,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_code_module",
       "related": [
         "vault_code_map",
         "vault_code_relation",
@@ -873,7 +873,7 @@
       "side_effects": [],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_code_query",
       "related": [
         "vault_code_map",
         "vault_search"
@@ -925,7 +925,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_code_relation",
       "related": [
         "vault_code_map",
         "vault_code_module"
@@ -967,7 +967,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_code_sync",
       "related": [
         "vault_code_map",
         "vault_reindex"
@@ -1108,7 +1108,7 @@
       "side_effects": [],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_context_pack",
       "related": [
         "vault_query_parse",
         "vault_subgraph",
@@ -1208,7 +1208,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_delete",
       "related": [
         "vault_change_log",
         "vault_undo"
@@ -1246,7 +1246,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_delta",
       "related": [
         "vault_tags",
         "vault_reindex",
@@ -1321,7 +1321,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_diagram_export",
       "related": [
         "vault_diagram_save",
         "vault_mermaid_check"
@@ -1388,7 +1388,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_diagram_save",
       "related": [
         "vault_relation_add",
         "vault_graph"
@@ -1436,7 +1436,7 @@
       "side_effects": [],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_diff",
       "related": [
         "vault_read",
         "vault_backup"
@@ -1600,7 +1600,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_drift_detect",
       "related": [
         "vault_audit",
         "vault_env_matrix"
@@ -1670,7 +1670,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_env_matrix",
       "related": [
         "vault_env_save",
         "vault_infra_map"
@@ -1720,7 +1720,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_env_save",
       "related": [
         "vault_env_matrix",
         "vault_infra_save"
@@ -1891,7 +1891,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_fix_brackets",
       "related": [
         "vault_audit",
         "vault_regex"
@@ -1974,7 +1974,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_flow_save",
       "related": [
         "vault_diagram_save",
         "vault_graph"
@@ -2020,7 +2020,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_folder_registry",
       "related": [
         "vault_reindex",
         "vault_audit"
@@ -2093,7 +2093,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_frontmatter_heal",
       "related": [
         "vault_fix_brackets",
         "vault_validate",
@@ -2145,7 +2145,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_fuente_unica",
       "related": [
         "vault_norms",
         "vault_regex",
@@ -2191,7 +2191,7 @@
       "side_effects": [],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_fundamentals",
       "related": [
         "vault_audit",
         "vault_quality_check"
@@ -2298,7 +2298,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_graph",
       "related": [
         "vault_audit",
         "vault_impact",
@@ -2372,7 +2372,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_graph_fix",
       "related": [
         "vault_graph",
         "vault_graph_inspect",
@@ -2417,7 +2417,7 @@
       "side_effects": [],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_graph_inspect",
       "related": [
         "vault_graph",
         "vault_graph_merge",
@@ -2449,7 +2449,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_graph_merge",
       "related": [
         "vault_graph",
         "vault_graph_inspect",
@@ -2484,7 +2484,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_history_compact",
       "related": [
         "vault_undo",
         "vault_write"
@@ -2524,7 +2524,7 @@
       "side_effects": [],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_impact",
       "related": [
         "vault_propagate",
         "vault_graph"
@@ -2612,7 +2612,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_incident_save",
       "related": [
         "vault_slo_save",
         "vault_runbook_save"
@@ -2642,7 +2642,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_infra_map",
       "related": [
         "vault_infra_save",
         "vault_diagram_save"
@@ -2706,7 +2706,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_infra_save",
       "related": [
         "vault_infra_map",
         "vault_env_save"
@@ -2790,7 +2790,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_ingest",
       "related": [
         "vault_write",
         "vault_knowledge_save",
@@ -2825,7 +2825,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_init",
       "related": [
         "vault_standard_upgrade",
         "vault_onboard",
@@ -3000,7 +3000,7 @@
       "side_effects": [],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_list",
       "related": [
         "vault_search",
         "vault_read"
@@ -3083,7 +3083,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_log_error",
       "related": [
         "vault_audit",
         "vault_drift_detect",
@@ -3105,7 +3105,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_master_index",
       "related": [
         "vault_section_index",
         "vault_reindex"
@@ -3149,7 +3149,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_merge",
       "related": [
         "vault_backup",
         "vault_diff"
@@ -3185,7 +3185,7 @@
       "side_effects": [],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_mermaid_check",
       "related": [
         "vault_diagram_save",
         "vault_write"
@@ -3237,7 +3237,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_migrate_docs",
       "related": [
         "vault_migrate_rollback",
         "vault_merge"
@@ -3272,7 +3272,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_migrate_rollback",
       "related": [
         "vault_migrate_docs",
         "vault_backup"
@@ -3318,7 +3318,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_model_profile",
       "related": [
         "vault_context_pack",
         "vault_preferences"
@@ -3370,7 +3370,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_move",
       "related": [
         "vault_write",
         "vault_graph",
@@ -3464,7 +3464,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_ncr_save",
       "related": [
         "vault_risk_save",
         "vault_audit"
@@ -3738,7 +3738,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_onboard",
       "related": [
         "vault_init",
         "vault_migrate_docs",
@@ -3772,7 +3772,7 @@
       "side_effects": [],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_pattern_list",
       "related": [
         "vault_pattern_save",
         "vault_search"
@@ -3832,7 +3832,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_pattern_save",
       "related": [
         "vault_pattern_list",
         "vault_code_module"
@@ -3919,7 +3919,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_preferences",
       "related": [
         "vault_context_pack",
         "vault_write"
@@ -4003,7 +4003,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_privacy_save",
       "related": [
         "vault_risk_save",
         "vault_security_scan"
@@ -4087,7 +4087,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_project_overview",
       "related": [
         "vault_project_status",
         "vault_audit"
@@ -4128,7 +4128,7 @@
       "side_effects": [],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_project_status",
       "related": [
         "vault_project_overview",
         "vault_audit"
@@ -4182,7 +4182,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_propagate",
       "related": [
         "vault_impact",
         "vault_write"
@@ -4254,7 +4254,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_qa_save",
       "related": [
         "vault_test_save",
         "vault_quality_dashboard"
@@ -4292,7 +4292,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_quality_check",
       "related": [
         "vault_audit",
         "vault_fundamentals"
@@ -4318,7 +4318,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_quality_dashboard",
       "related": [
         "vault_quality_check",
         "vault_qa_save",
@@ -4371,7 +4371,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_quarantine",
       "related": [
         "vault_merge",
         "vault_security_scan",
@@ -4432,7 +4432,7 @@
       "side_effects": [],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_read",
       "related": [
         "vault_write",
         "vault_search"
@@ -4516,7 +4516,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_reindex",
       "related": [
         "vault_search",
         "vault_graph"
@@ -4576,7 +4576,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_relation_add",
       "related": [
         "vault_diagram_save",
         "vault_code_relation"
@@ -4650,7 +4650,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_release_save",
       "related": [
         "vault_change_log",
         "vault_incident_save"
@@ -4725,7 +4725,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_requirement_save",
       "related": [
         "vault_test_save",
         "vault_audit"
@@ -4760,7 +4760,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_restore",
       "related": [
         "vault_backup",
         "vault_backup_list"
@@ -4879,7 +4879,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_risk_save",
       "related": [
         "vault_ncr_save",
         "vault_privacy_save"
@@ -4921,7 +4921,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_runbook_log",
       "related": [
         "vault_runbook_save",
         "vault_audit"
@@ -4983,7 +4983,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_runbook_save",
       "related": [
         "vault_runbook_log",
         "vault_incident_save"
@@ -5014,7 +5014,7 @@
       "side_effects": [],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_sanacion",
       "related": [
         "vault_audit",
         "vault_norms",
@@ -5061,7 +5061,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_sdd_init",
       "related": [
         "vault_norms",
         "vault_reindex",
@@ -5097,7 +5097,7 @@
       "side_effects": [],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_search",
       "related": [
         "vault_read",
         "vault_list"
@@ -5135,7 +5135,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_section_index",
       "related": [
         "vault_master_index",
         "vault_reindex"
@@ -5180,7 +5180,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_security_scan",
       "related": [
         "vault_audit",
         "vault_log_error"
@@ -5301,7 +5301,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_slo_save",
       "related": [
         "vault_incident_save",
         "vault_audit"
@@ -5404,7 +5404,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_standard_upgrade",
       "related": [
         "vault_init",
         "vault_audit"
@@ -5478,7 +5478,7 @@
       "side_effects": [],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_subgraph",
       "related": [
         "vault_impact",
         "vault_graph",
@@ -5528,7 +5528,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_tags",
       "related": [
         "vault_delta",
         "vault_audit"
@@ -5600,7 +5600,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_test_save",
       "related": [
         "vault_requirement_save",
         "vault_code_module"
@@ -5644,7 +5644,7 @@
       "side_effects": [],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_timeline",
       "related": [
         "vault_audit",
         "vault_change_log"
@@ -5722,7 +5722,7 @@
       "side_effects": [],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_token_counter",
       "related": [
         "vault_tokens",
         "vault_token_service"
@@ -5750,7 +5750,7 @@
       "side_effects": [],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_token_service",
       "related": [
         "vault_tokens",
         "vault_token_counter"
@@ -5792,7 +5792,7 @@
       "side_effects": [],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_tokens",
       "related": [
         "vault_token_counter",
         "vault_token_service"
@@ -5839,7 +5839,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_undo",
       "related": [
         "vault_write",
         "vault_diff",
@@ -5878,7 +5878,7 @@
       "side_effects": [],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_validate",
       "related": [
         "vault_audit",
         "vault_write"
@@ -5969,7 +5969,7 @@
       ],
       "status": "active",
       "exposed_via_mcp": true,
-      "execution_module": null,
+      "execution_module": "vault_toolkit.operations.vault_write",
       "related": [
         "vault_read",
         "vault_append",

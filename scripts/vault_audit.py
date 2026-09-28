@@ -58,6 +58,11 @@ from vault_regex import (
 )
 from vault_mermaid_check import scan_vault as _scan_mermaid
 
+try:
+    from vault.kernel.indices_structural import RESERVED_INDEX_NAMES as _STRUCTURAL_NAMES
+except ImportError:
+    _STRUCTURAL_NAMES = frozenset({"index.md", "readme.md"})
+
 SCRIPTS_DIR = Path(__file__).parent
 
 
@@ -76,10 +81,6 @@ VAULT_DQ_CACHE_MINUTES = _env("VAULT_DQ_CACHE_MINUTES")
 # Archivos estructurales: auto-generados o de convención, no son "notas de contenido"
 
 # Se excluyen de: orphans, stale, AP-17, duplicados
-
-# Se INCLUYEN en: fuentes de backlinks, broken links detection
-
-_STRUCTURAL_NAMES = frozenset({"index.md", "readme.md"})
 
 
 PLACEHOLDER_PATTERNS = [
