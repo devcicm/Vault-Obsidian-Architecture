@@ -295,7 +295,15 @@ def recuperar_conocimiento(
     matches: List[tuple[int, Path, Dict[str, Any], str]] = []
     unreadable: List[Dict[str, Any]] = []
 
+    # AP-57: el dueño del criterio "esto es un índice" es
+    # scripts/vault_audit._STRUCTURAL_NAMES (frozenset({"index.md", "readme.md"})).
+    # Definido aquí (en lugar de importar) para no cruzar la frontera scripts→vault
+    # en la wheel instalada. Transitorio hasta que scripts/ migre a vault/<contexto>.
+    _STRUCTURAL_NAMES: frozenset[str] = frozenset({"index.md", "readme.md"})
+
     for path in directory.rglob("*.md"):
+        if path.name.lower() in _STRUCTURAL_NAMES:
+            continue
         try:
             raw = path.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError) as exc:

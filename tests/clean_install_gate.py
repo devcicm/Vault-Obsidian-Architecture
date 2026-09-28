@@ -134,6 +134,9 @@ def main(*, gate: str = "CLEAN_INSTALL_GATE") -> int:
         if install.returncode:
             _fail(f"wheel install failed:\n{install.stderr}\n{install.stdout}")
 
+        clean_env = dict(os.environ)
+        clean_env.pop("PYTHONPATH", None)
+
         operations_members = sorted(m for m in members if m.startswith("vault_toolkit/operations/vault_") and m.endswith(".py"))
         if len(operations_members) == 0:
             _fail("wheel no tiene operaciones instaladas (0 encontradas)")
@@ -142,12 +145,12 @@ def main(*, gate: str = "CLEAN_INSTALL_GATE") -> int:
         help_failing = []
         for member in operations_members:
             op_name = Path(member).stem
-            rc, out, err = _run(
+            result = _run(
                 [str(python), "-m", f"vault_toolkit.operations.{op_name}", "--help"],
                 cwd=work, env=clean_env,
             )
-            if rc != 0:
-                help_failing.append(f"{op_name}(exit={rc}): {err[:100]}")
+            if result.returncode != 0:
+                help_failing.append(f"{op_name}(exit={result.returncode}): {result.stderr[:100]}")
         if help_failing:
             _fail(f"--help fallo en {len(help_failing)} ops: {help_failing[:3]}")
 
@@ -157,9 +160,6 @@ def main(*, gate: str = "CLEAN_INSTALL_GATE") -> int:
         shutil.rmtree(source)
         if source.exists():
             _fail(f"temporary source tree still exists: {source}")
-
-        clean_env = dict(os.environ)
-        clean_env.pop("PYTHONPATH", None)
 
         if not vault.is_file():
             _fail(f"public vault executable missing from venv: {vault}")

@@ -55,10 +55,8 @@ def import_toolkit_module(name: str, *, legacy_scripts: Optional[Path] = None) -
                     f"(checkout puede estar incompleto): {exc}"
                 ) from exc
 
-    try:
-        return importlib.import_module(name)
-    except ImportError as exc:
-        raise ImportError(
-            f"vault_toolkit.operations.{name} no encontrado en "
-            f"_impl ni en installed: {exc}"
-        ) from exc
+    raise ImportError(
+        f"vault_toolkit.operations.{name} no encontrado en _impl "
+        f"ni en legacy_scripts (y no se recurre al import desnudo "
+        f"para evitar sombras en CWD)."
+    )

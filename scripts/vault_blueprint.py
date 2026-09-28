@@ -343,20 +343,19 @@ DEUDA_DECLARADA: List[Dict[str, str]] = [
     },
     {
         "id": "puente_scripts_impl_sin_contrato",
-        "estado": "saldada",
-        "saldada_en": "v40.35",
+        "estado": "pendiente",
         "desde": "v40.35",
         "capa": "3",
         "que": (
-            "`scripts/vault_regex.py` re-exportaba desde `vault.kernel.regex` "
-            "(owner AP-50) pero la fachada vivía en `_impl/` sin contrato. "
-            "El directorio `_impl/` copiado durante el build de la wheel "
-            "no tenía garantias de sincronizacion con `scripts/`. "
-            "ADR-0002 formaliza el puente: fachada de re-export + package-dir."
+            "`_impl/` no es una copia de `scripts/`: es el destino del "
+            "package-dir que mapea `scripts/` → `vault_toolkit/_impl/`. "
+            "ADR-0002 formaliza el puente: fachada de re-export + package-dir. "
+            "La deuda es transitoria: desaparece cuando `scripts/` migre a "
+            "`vault/<contexto>/` y el puente ya no sea necesario."
         ),
         "por_que_no_ahora": (
-            "Saldada con ADR-0002: la fachada existe, package-dir esta declarado, "
-            "y test_impl_shadow verifica que el stub de _impl se prefiere."
+            "Transitorio hasta migrar scripts → vault/<contexto>, ADR-0002. "
+            "La fachada y el package-dir existen; la deuda es de diseño, no de implementacion."
         ),
     },
 ]
