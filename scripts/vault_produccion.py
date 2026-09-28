@@ -224,21 +224,45 @@ PREGUNTAS: List[Dict[str, Any]] = [
     {
         "id": "ergonomia_de_entrada",
         "pregunta": "¿Se invoca como un programa o como un montón de scripts?",
-        "promesa": "—",
+        "promesa": "[project.scripts] declarado + execution_module poblado para todas las distributables",
         "por_que": (
-            "No hay [project.scripts], así que no existe un comando `vault`: se "
-            "invoca `python .../scripts/vault_x.py`. Funciona y no engaña a "
-            "nadie, pero es la diferencia entre un toolkit y un producto, y "
-            "quien llega de fuera la nota en el primer minuto."
+            "[project.scripts] ya existe en pyproject.toml (`vault = vault.product_cli:main`), "
+            "y vault es invocable. El hueco real (A2) es que `execution_module` está vacío "
+            "en el catálogo del producto para 89 de las 93 tools runtime, así que `vault run` "
+            "solo resuelve las 4 que lo tienen declarado."
         ),
         "ejerce": lambda: "[project.scripts]" in (RAIZ / "pyproject.toml").read_text(encoding="utf-8"),
-        "quien": "—",
+        "quien": "catalogo_producto + distribucion.py",
         "estado": "descubierta",
         "motivo": (
-            "Decisión de producto sin tomar. Declarar entry points ata el "
-            "nombre público de cada tool del catálogo, y renombrar uno después "
-            "rompe a quien lo llamara. Se decide el día que esto se publique en "
-            "un índice de paquetes, no hoy."
+            "El catálogo del producto (tools-catalog.json) se genera desde TOOLS_CATALOG "
+            "con execution_module=null para la mayoría de las tools. La solución (A2) es "
+            "auto-derivar execution_module = vault_toolkit.operations.<tool> en "
+            "catalogo_producto cuando script existe y execution_module es null, igual que "
+            "hace distribucion.py en el source. La decisión ya está tomada en el código; "
+            "falta persistirla en el artefacto."
+        ),
+    },
+    {
+        "id": "mcp_requiere_checkout",
+        "pregunta": "¿Se puede instalar el servidor MCP con un solo comando de pip/npm?",
+        "promesa": "El servidor MCP se sirve con `node mcp/nodejs/vault-mcp-server.mjs`",
+        "por_que": (
+            "El servidor MCP vive en `mcp/nodejs/` y no está publicado en npm. "
+            "No hay `npm install -g @carloseam/vault-mcp` ni nada equivalente: "
+            "el único camino para levantarlo es un git clone de este repo y "
+            "`node mcp/nodejs/vault-mcp-server.mjs`. Quien llegue buscando "
+            "instrucciones de instalación estándar no las encuentra."
+        ),
+        "ejerce": lambda: (RAIZ / "mcp" / "nodejs" / "vault-mcp-server.mjs").exists(),
+        "quien": "README.md + docs/INSTALACION.md",
+        "estado": "descubierta",
+        "motivo": (
+            "Publicar el servidor en npm resolvería la expectativa pero ata el "
+            "nombre público y exige mantener un paquete conRelease flow. La "
+            "decisión de producto no tomada es si el servidor MCP es parte del "
+            "producto que se publica o una herramienta de desarrollo del "
+            "estándar. Mientras tanto, la promesa realista es «git clone + node»."
         ),
     },
     {

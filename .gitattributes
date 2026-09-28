@@ -1,0 +1,22 @@
+# Vault-Obsidian-Architecture — gitattributes
+# Line endings: all text files normalized to LF
+* text=auto eol=lf
+
+# Explicit file types
+*.py    text eol=lf
+*.toml  text eol=lf
+*.md    text eol=lf
+*.yml    text eol=lf
+*.yaml   text eol=lf
+*.json   text eol=lf
+*.txt    text eol=lf
+
+# Binary files
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.ico    binary
+*.pdf    binary
+*.whl    binary
+*.zip    binary

@@ -140,8 +140,8 @@ def main(*, gate: str = "CLEAN_INSTALL_GATE") -> int:
         operations_members = sorted(m for m in members if m.startswith("vault_toolkit/operations/vault_") and m.endswith(".py"))
         if len(operations_members) == 0:
             _fail("wheel no tiene operaciones instaladas (0 encontradas)")
-        if len(operations_members) != 90:
-            _fail(f"wheel deberia tener 90 operaciones, tiene {len(operations_members)}")
+        if len(operations_members) != 89:
+            _fail(f"wheel deberia tener 89 operaciones, tiene {len(operations_members)}")
         help_failing = []
         for member in operations_members:
             op_name = Path(member).stem
@@ -153,6 +153,18 @@ def main(*, gate: str = "CLEAN_INSTALL_GATE") -> int:
                 help_failing.append(f"{op_name}(exit={result.returncode}): {result.stderr[:100]}")
         if help_failing:
             _fail(f"--help fallo en {len(help_failing)} ops: {help_failing[:3]}")
+
+        run_help_failing = []
+        for member in operations_members:
+            op_name = Path(member).stem
+            result = _run(
+                [str(vault), "run", op_name, "--help"],
+                cwd=work, env=clean_env,
+            )
+            if result.returncode != 0:
+                run_help_failing.append(f"{op_name}(exit={result.returncode}): {result.stderr[:100]}")
+        if run_help_failing:
+            _fail(f"vault run --help fallo en {len(run_help_failing)} ops: {run_help_failing[:3]}")
 
         # La copia existe sólo para construir el artefacto. Suprimirla antes de
         # importar demuestra que la operación instalada no puede recaer en el

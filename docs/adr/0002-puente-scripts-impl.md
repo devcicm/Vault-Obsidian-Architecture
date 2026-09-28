@@ -45,3 +45,13 @@ Se adopta la **opción C**:
 
 - La fachada `vault_regex` no define ningún símbolo propio: es puro re-export. El guard AP-57 verifica que `strip_code_blocks` se importe desde `vault_lib`, que a su vez lo importa desde `vault.kernel.regex`.
 - El blocker B7 original era que `_impl/vault_io.py` (stub) podía ser ignorado si `vault_io.py` existía en el CWD. El test `test_impl_shadow` verifica que cuando `_impl/vault_io.py` existe, se prefiere sobre cualquier `vault_io.py` espurio en el CWD.
+
+## Addendum (v40.35): _impl en la wheel
+
+**Pregunta:** ¿Por qué incluir `_impl/` (copia de `scripts/`) en la wheel si `package-dir` ya mapea `_impl → scripts`?
+
+**Respuesta:** porque `import_toolkit_module` necesita que `_impl/` exista como directorio para poder priorizarlo en `sys.path`. Sin un `_impl/` físico en la wheel, la lookup de `importlib.import_module` para el stub de `vault_io` no encuentra dónde insertar la prioridad.
+
+El `package-dir` permite que `import vault_toolkit._impl.vault_regex` resuelva al fichero fuente en `scripts/`, pero no crea el directorio `_impl/` en el artefacto wheel. Para que la jerarquía de directorios de la wheel sea completa y `import_toolkit_module` pueda resolver `_impl/vault_io.py` como ruta real, se incluye `_impl/` en la wheel durante el build.
+
+**Decisión:** `_impl/` se incluye en la wheel. El pre-commit hook lo regenera desde `scripts/` en cada commit. Es una copia de trabajo, no la fuente autoritativa.

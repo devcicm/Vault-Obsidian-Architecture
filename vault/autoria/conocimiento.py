@@ -28,6 +28,10 @@ from ..kernel.frontmatter_parsing import (
 )
 from ..kernel.normalizacion import clave_de_equivalencia, slugify_strict
 
+# AP-57: el dueño del criterio "esto es un índice" es vault_audit._STRUCTURAL_NAMES.
+# Definido aquí para no cruzar la frontera scripts→vault en la wheel instalada.
+# Stems (sin extensión .md): index.md → "index", readme.md → "readme".
+_RESERVED_STRUCTURAL_STEMS: frozenset[str] = frozenset({"index", "readme"})
 
 CATEGORIES = (
     "glossary", "api", "concept", "business-rule", "config", "dependency", "framework",
@@ -173,6 +177,13 @@ def guardar_conocimiento(
         filename = slugify_strict(str(title or ""))
         if not filename:
             raise ValueError("el título no produce un nombre de nota válido")
+        if filename in _RESERVED_STRUCTURAL_STEMS:
+            return construir_error(
+                "vault_knowledge_save", "RESERVED_NAME",
+                f"El título '{title}' produce el archivo '{filename}.md', "
+                f"nombre reservado para índices generados automáticamente "
+                f"(index.md/readme.md). Usar otro título."
+            )
         path = _contained(
             runtime,
             runtime / "07_Knowledge" / CATEGORY_FOLDERS[category] / f"{filename}.md"

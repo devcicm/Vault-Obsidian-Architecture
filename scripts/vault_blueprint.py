@@ -344,7 +344,7 @@ DEUDA_DECLARADA: List[Dict[str, str]] = [
     {
         "id": "puente_scripts_impl_sin_contrato",
         "estado": "pendiente",
-        "desde": "v40.35",
+        "desde": "v40.34",
         "capa": "3",
         "que": (
             "`_impl/` no es una copia de `scripts/`: es el destino del "

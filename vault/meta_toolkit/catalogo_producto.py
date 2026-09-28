@@ -58,9 +58,14 @@ def catalogo_producto() -> dict[str, ToolProducto]:
             raise ValueError(f"entrada de producto inválida: {nombre}")
         naturaleza = naturalezas[nombre]
         runtime = naturaleza != "meta_estandar"
+        explicit_module = "execution_module" in entry
         module = entry.get("execution_module")
+        script = entry.get("script")
         if module is not None and (not isinstance(module, str) or not module.strip()):
             raise ValueError(f"execution_module inválido para {nombre}: {module!r}")
+        if runtime and script and not module and not explicit_module:
+            stem = script.removesuffix(".py") if script.endswith(".py") else script
+            module = f"vault_toolkit.operations.{stem}"
         resultado[nombre] = ToolProducto(
             nombre=nombre,
             proposito=str(entry.get("description", "")),
@@ -68,7 +73,7 @@ def catalogo_producto() -> dict[str, ToolProducto]:
             naturaleza=naturaleza,
             clase="runtime" if runtime else "maintenance",
             distributable=runtime,
-            legacy_script=entry.get("script") or None,
+            legacy_script=script or None,
             execution_module=module,
         )
     return dict(sorted(resultado.items()))

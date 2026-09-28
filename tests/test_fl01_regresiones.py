@@ -363,3 +363,25 @@ class TestWriterExtensibility:
         resultado = guardar_conocimiento(root, "concept", "Test", "contenido", report=report)
         assert resultado["ok"] is True
         assert resultado.get("escribio") is True
+
+
+class TestReservedStructuralNames:
+    """FL-01 — títulos cuyo slug es nombre reservado de índice se rechazan."""
+
+    @pytest.mark.parametrize("title", ["Index", "index", "INDEX", "README", "readme", "Readme"])
+    def test_reserved_name_rejected(self, tmp_path, title):
+        root = _runtime(tmp_path)
+        resultado = guardar_conocimiento(root, "concept", title, "contenido")
+        assert resultado["ok"] is False
+        assert resultado.get("error_code") == "RESERVED_NAME"
+        assert "índice" in resultado.get("message", "").lower() or "índice" in str(resultado.get("message", "")).lower()
+
+    def test_reserved_name_Index_no_silent_overwrite(self, tmp_path):
+        """El hook _auto_section_index no debe poder sobrescribir la nota 'Index' si se guardara."""
+        root = _runtime(tmp_path)
+        resultado = guardar_conocimiento(root, "concept", "MyIndex", "contenido real")
+        assert resultado["ok"] is True
+        path = root / resultado["path"]
+        assert path.exists()
+        content = path.read_text(encoding="utf-8")
+        assert "contenido real" in content

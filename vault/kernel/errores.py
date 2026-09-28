@@ -245,6 +245,17 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": "vault-obsidian-architecture.md §Vocabularios",
         },
     },
+    "RESERVED_NAME": {
+        "category": "validation",
+        "severity": "error",
+        "message": "El nombre produce un archivo de nombre reservado para índices generados automáticamente.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Los nombres reservados son 'index' y 'readme' (y sus variantes con mayúsculas). "
+                    "Son nombres de los índices de sección y maestro; elegir otro título.",
+            "docs": None,
+        },
+    },
     # Distinto de JSON_PARSE_ERROR a propósito: aquel habla de un índice del
     # vault y su recovery es `vault_reindex`, que aquí no arregla nada — el JSON
     # malformado lo escribió quien invocó la tool, en la propia línea de comandos.
