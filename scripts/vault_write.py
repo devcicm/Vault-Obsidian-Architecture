@@ -963,13 +963,20 @@ def vault_write(
 
     final_content = f"{frontmatter}\n\n{content}"
 
+    # Con `/` siempre, como escribe el dueño (`RepositorioIndices.relativa`).
+    # Hasta aquí iba `str(relative_to)`: en Windows el índice recibía
+    # `07_Knowledge\nota.md`, y `vault_context_pack`, que separa la sección con
+    # `split("/")`, descartaba toda coincidencia léxica en cuanto la consulta
+    # inducía una sección — «cómo funciona X» devolvía un paquete vacío.
+    rel_path = vault_path.relative_to(_raiz()).as_posix()
+
     with file_lock(vault_path, timeout=10.0):
         atomic_write_text(vault_path, final_content)
 
         # Update search index (inside lock for consistency)
 
         update_search_index(
-            str(vault_path.relative_to(_raiz())),
+            rel_path,
             title,
         content,
         tags,
@@ -998,7 +1005,6 @@ def vault_write(
     # AP-39: la nota ya está en disco, así que el término existe de verdad.
     # Anotarlo antes habría dejado en la bitácora palabras de escrituras que
     # fallaron — memoria de algo que nunca se escribió.
-    rel_path = str(vault_path.relative_to(_raiz())).replace("\\", "/")
     introduced = 0
     if new_terms:
         for t in new_terms:
