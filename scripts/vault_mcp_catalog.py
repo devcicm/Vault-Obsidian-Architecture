@@ -395,8 +395,8 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "only": {
                 "type": "string",
                 "required": False,
-                "description": "Filtrar por tipo: empty, nested",
-                "validators": ["enum:empty,nested"],
+                "description": "Filtrar por tipo de hallazgo (repetible); los valores los fija la CLI",
+                "validators": [],
             },
         },
         "guards": [],
@@ -4686,7 +4686,11 @@ def reconciled_params(py_tool: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
         if declarado:
             if declarado.get("description"):
                 entrada["description"] = declarado["description"]
-            if declarado.get("validators"):
+            # Unos `choices` en la CLI son la verdad sobre los valores: un
+            # enum escrito a mano no los sustituye. `vault_fix_brackets`
+            # publicaba `nested`, que la CLI rechaza, y un cliente que valida
+            # contra el esquema no podía enviar `nested_open`, que sí acepta.
+            if declarado.get("validators") and not real.get("validators"):
                 entrada["validators"] = declarado["validators"]
         salida[nombre] = entrada
     return salida
@@ -5226,6 +5230,22 @@ def check_params(json_path: Optional[str] = None) -> Dict[str, Any]:
                 "problem": f"params que la CLI rechaza: {', '.join(sorted(sobran))}",
                 "fix": "python scripts/vault_mcp_catalog.py --sync",
             })
+        # AP-40 también en los valores: un param que la CLI acepta con un enum
+        # publicado que ella rechaza falla igual, solo que para ciertos valores.
+        for param, prop in sorted(publicados.items()):
+            elecciones = [v[len("enum:"):].split(",")
+                          for v in (reales.get(param) or {}).get("validators", [])
+                          if v.startswith("enum:")]
+            if not elecciones or "enum" not in prop:
+                continue
+            ajenos = sorted(set(prop["enum"]) - set(elecciones[0]))
+            if ajenos:
+                result["ok"] = False
+                result["problems"].append({
+                    "tool": nombre,
+                    "problem": f"--{param}: valores publicados que la CLI rechaza: {', '.join(ajenos)}",
+                    "fix": "python scripts/vault_mcp_catalog.py --sync",
+                })
     return result
 
 

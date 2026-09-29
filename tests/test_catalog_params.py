@@ -105,6 +105,29 @@ def test_check_params_falla_cuando_alguien_publica_un_flag_inventado(tmp_path):
     assert any(p["tool"] == "vault_tags" for p in r["problems"])
 
 
+def test_reconciled_params_no_sustituye_los_choices_de_la_cli():
+    """AP-40 en los valores: `vault_fix_brackets` publicaba `nested`."""
+    publicados = cat.reconciled_params(cat.TOOLS_CATALOG["vault_fix_brackets"])
+    reales = cat.argparse_params("vault_fix_brackets.py")
+    assert publicados["only"]["validators"] == reales["only"]["validators"]
+    assert "nested_open" in reales["only"]["validators"][0]
+
+
+def test_check_params_falla_con_un_valor_de_enum_que_la_cli_rechaza(tmp_path):
+    real = json.loads(
+        (ROOT / "mcp" / "nodejs" / "tools-catalog.json").read_text(encoding="utf-8")
+    )
+    tools = real.get("tools", real)
+    tools["vault_fix_brackets"]["inputSchema"]["properties"]["only"]["enum"] = ["empty", "nested"]
+    roto = tmp_path / "tools-catalog.json"
+    roto.write_text(json.dumps(real), encoding="utf-8")
+
+    r = cat.check_params(str(roto))
+    assert not r["ok"]
+    assert [p for p in r["problems"]
+            if p["tool"] == "vault_fix_brackets" and "nested" in p["problem"]]
+
+
 def test_check_params_reporta_el_json_ausente(tmp_path):
     r = cat.check_params(str(tmp_path / "no-esta.json"))
     assert not r["ok"]

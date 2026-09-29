@@ -1877,10 +1877,13 @@
           },
           "only": {
             "type": "string",
-            "description": "Filtrar por tipo: empty, nested",
+            "description": "Filtrar por tipo de hallazgo (repetible); los valores los fija la CLI",
             "enum": [
               "empty",
-              "nested"
+              "nested_open",
+              "nested_close",
+              "imbalance_open",
+              "imbalance_close"
             ]
           },
           "include-sandbox": {
@@ -3140,8 +3143,8 @@
             "type": "string",
             "description": "Acción a realizar: detect, merge, dedup",
             "enum": [
-              "detect",
               "merge",
+              "detect",
               "dedup"
             ]
           }
