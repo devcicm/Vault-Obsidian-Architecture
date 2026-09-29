@@ -35,7 +35,9 @@ import sys
 
 from vault_registry import ORDERED_SECTIONS, es_artefacto_derivado
 from vault_encoding import strip_bom
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
+
+from vault_io import assert_within_vault
 from vault_fundamentals_catalog import cia_valores
 
 import yaml
@@ -394,6 +396,16 @@ def vault_validate(
         }
 
     """
+
+    # AP-36: `--path "../x.md"` validaba un fichero ajeno y `--folder ..`
+    # recorria el disco fuera del vault, informando de que existe y de que
+    # campos le faltan. Mismo guard que vault_read.
+    for ruta in (path, folder):
+        if ruta:
+            try:
+                assert_within_vault(_raiz() / ruta, _raiz())
+            except ValueError as exc:
+                return emit_error("vault_validate", "INVALID_PATH", str(exc))
 
     result: Dict[str, Any] = {"ok": True}
 
