@@ -1,5 +1,7 @@
 """Contrato anti-drift de la frontera instalable."""
 
+import pytest
+
 from vault.meta_toolkit.distribucion import clasificar_tools
 from vault.meta_toolkit.recursos_distribucion import clasificar_recurso, entra_al_wheel
 from cli.resolver import resolve_operation
@@ -93,7 +95,7 @@ def test_loader_primario_sin_impl_ni_legacy_import_error(monkeypatch, tmp_path):
     """Sin _impl ni legacy_scripts, import_toolkit_module raise ImportError.
 
     El bare import fallback se eliminó deliberadamente: resolver por sys.path
-    sin más約束乌戳 da acceso a cualquier paquete en el entorno, rompiendo
+    sin más da acceso a cualquier paquete en el entorno, rompiendo
     el aislamiento. El único camino válido es _impl (wheel) o legacy_scripts
     (checkout). Este test verifica que el comportamiento antiguo (bare import)
     ya no existe.
@@ -103,11 +105,9 @@ def test_loader_primario_sin_impl_ni_legacy_import_error(monkeypatch, tmp_path):
     sys.modules.pop(modulo, None)
     # Sin _impl (el modulo no existe en _impl del repo) y sin legacy_scripts,
     # debe raise ImportError — no caer al import desnudo.
-    try:
+    with pytest.raises(ImportError) as exc_info:
         import_toolkit_module(modulo, legacy_scripts=None)
-        assert False, "deberia haber raised ImportError"
-    except ImportError as exc:
-        assert "no encontrado en _impl" in str(exc) or "no encontrado" in str(exc)
+    assert "no encontrado en _impl" in str(exc_info.value) or "no encontrado" in str(exc_info.value)
 
 
 def test_fallback_legacy_conserva_scripts_en_sys_path(tmp_path):

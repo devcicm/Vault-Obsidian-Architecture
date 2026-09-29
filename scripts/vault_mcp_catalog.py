@@ -4735,27 +4735,10 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
     spec_tools = spec_data.get("tools", {})
 
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from vault.meta_toolkit.distribucion import derivar_distribucion
     from vault.meta_toolkit.naturalezas import NATURALEZAS
 
-    # Derivar execution_module sin dependencia circular (AP-58).
-    # A2: toda tool runtime con script tiene execution_module derivado.
-    # Inline de clasificar_tools para no importar vault_servicio desde vault_mcp_catalog.
-    naturaleza_por_tool: Dict[str, str] = {}
-    for _nat_key, _nat_entry in NATURALEZAS.items():
-        for _t in _nat_entry.get("tools", ()):
-            naturaleza_por_tool[_t] = _nat_key
-
-    def _execution_module(tool_name: str, tool_entry: Dict[str, Any]) -> Optional[str]:
-        if naturaleza_por_tool.get(tool_name) == "meta_estandar":
-            return None
-        explicit = tool_entry.get("execution_module")
-        if explicit and isinstance(explicit, str) and explicit.strip():
-            return explicit
-        script = tool_entry.get("script", "")
-        if script and script.strip():
-            stem = script.removesuffix(".py")
-            return f"vault_toolkit.operations.{stem}"
-        return None
+    dist = derivar_distribucion(TOOLS_CATALOG, NATURALEZAS)
 
     # Tools gobernanza/meta/internal no se exponen via MCP.
     GRUPOS_NO_EXPUESTOS = {"Normas", "meta"}
@@ -4779,8 +4762,8 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
             "side_effects": tool.get("side_effects", []),
             "status": status,
             "exposed_via_mcp": exposed,
-            # A2: se deriva inline (misma lógica que clasificar_tools, sin ciclo).
-            "execution_module": _execution_module(name, tool),
+            # A2: se deriva del dueño canónico (derivar_distribucion).
+            "execution_module": dist[name].execution_module,
         }
         if tool.get("related"):
             tools_json[name]["related"] = tool["related"]

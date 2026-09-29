@@ -3170,9 +3170,15 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "distinguido_de": {
             "CN-02": (
                 "Las dos son convenciones de ubicación y nombre. CN-01 rige el nombre "
-                "del fichero —minúsculas con guiones—; CN-02 rige el destino —las "
+                " del fichero —minúsculas con guiones—; CN-02 rige el destino —las "
                 "secciones numeradas—. Un fichero bien nombrado en la carpeta "
                 "equivocada incumple solo CN-02."
+            ),
+            "CN-04": (
+                "CN-01 rige el formato del nombre (kebab-case); CN-04 rige qué nombres "
+                "están reservados y no pueden usarse como título. Un fichero bem chamado "
+                "'Mi-index.md' infringe CN-01 mas não CN-04. São ortogonais: CN-01 mira "
+                "a forma, CN-04 mira a sustancia."
             ),
         },
         "name": "Kebab-case filenames — nombres de archivo en minúsculas con guiones",
@@ -3268,6 +3274,40 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "tools_enforcing": [],
         "tools_detecting": ["vault_norms"],
         "introduced_version": "v30",
+    },
+    {
+        "code": "CN-04",
+        "distinguido_de": {
+            "CN-01": (
+                "CN-01 rige el formato del nombre (kebab-case); CN-04 rige qué nombres "
+                "están reservados y no pueden usarse como título. Un ficheiro chamado "
+                "'Mi-index.md' infringe CN-01 mas não CN-04. Son ortogonales: CN-01 mira "
+                "la forma, CN-04 mira la sustancia."
+            ),
+        },
+        "name": "Reserved structural filenames — nombres reservados para índices",
+        "type": "antipattern",
+        "category": "convention",
+        "severity": "high",
+        "enforcement": "guard",
+        "description": (
+            "Los nombres 'index' y 'readme' (en cualquier variante de mayúsculas/minúsculas, "
+            "stem .md) están reservados para los índices de sección generados automáticamente. "
+            "Ninguna nota de contenido puede usar estos nombres. "
+            "La guarda está en vault_io.atomic_write_text: rechaza escribir 'index.md' o "
+            "'readme.md' a menos que el archivo ya exista con el marker "
+            "generated_by: vault_section_index. "
+            "El generador (vault_section_index) escribe con el marker; el guard comprueba "
+            "el marker antes de permitir escritura."
+        ),
+        "signal": "atomic_write bloqueado: 'index.md' es un nombre reservado.",
+        "prevention": (
+            "No usar 'Index', 'index', 'README' o 'Readme' como título de nota. "
+            "El guard de atomic_write_text lo rechaza con error RESERVED_NAME."
+        ),
+        "tools_enforcing": ["vault_io.atomic_write_text", "vault_write"],
+        "tools_detecting": ["vault_write"],
+        "introduced_version": "v40",
     },
 ]
 

@@ -13,7 +13,9 @@ Usage:
 
 import argparse
 import json
+import shutil
 import sys
+import uuid
 from vault_errors import emit_error, wrap_main
 from vault_lib import parse_frontmatter, utcnow
 from pathlib import Path
@@ -310,7 +312,32 @@ def _build_index_content(
     subdirs: Optional[List[str]] = None,
 ) -> str:
     """Adaptador: el formato del índice vive en el dominio de Índices."""
-    return _renderizador().render(folder, notes, now, subcarpetas=subdirs)
+    contenido = _renderizador().render(folder, notes, now, subcarpetas=subdirs)
+    return (
+        "---\n"
+        "generated_by: vault_section_index\n"
+        "---\n"
+        + contenido
+    )
+
+
+def _leer_generated_by_marker(path: Path) -> Optional[str]:
+    """Lee el campo generated_by del frontmatter si existe.
+
+    CN-X: evita importar vault_lib para no crear ciclo (AP-58).
+    El patrón `generated_by: valor` es simple y no necesita解析 YAML completo.
+    """
+    if not path.exists():
+        return None
+    try:
+        content = path.read_text(encoding="utf-8")
+        lines = content.splitlines()[:30]
+        for line in lines:
+            if line.strip().startswith("generated_by:"):
+                return line.split(":", 1)[1].strip()
+        return None
+    except (OSError, UnicodeDecodeError):
+        return None
 
 
 
@@ -405,6 +432,12 @@ def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, 
             sub_notes = _collect_notes(sub, include_subdirs=True)
             sub_index = sub / "index.md"
             assert_within_vault(sub_index, vroot)
+            # CN-X: si existe y NO tiene marca generated_by, es contenido de usuario — backup.
+            if sub_index.exists():
+                marker = _leer_generated_by_marker(sub_index)
+                if marker != "vault_section_index":
+                    backup = sub_index.parent / f".backup.{sub_index.name}.{uuid.uuid4().hex[:8]}"
+                    shutil.copy2(sub_index, backup)
             # Leaf lock on the index file itself: serializes concurrent regens of
             # this same sub-index (two notes in the section written at once). Safe
             # from deadlock — index.md is in _SKIP_AUTO_INDEX so writing it never
@@ -422,6 +455,12 @@ def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, 
     # Write main section index — includes subdir listing
     index_path = section_path / "index.md"
     assert_within_vault(index_path, vroot)
+    # CN-X: si existe y NO tiene marca generated_by, es contenido de usuario — backup.
+    if index_path.exists():
+        marker = _leer_generated_by_marker(index_path)
+        if marker != "vault_section_index":
+            backup = index_path.parent / f".backup.{index_path.name}.{uuid.uuid4().hex[:8]}"
+            shutil.copy2(index_path, backup)
     # Leaf lock (see sub-index note above): serialize concurrent regens of this
     # section index; deadlock-free because index.md is skipped by _auto_section_index.
     with file_lock(index_path):

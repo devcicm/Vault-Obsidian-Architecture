@@ -948,7 +948,18 @@ def vault_write(
     final_content = f"{frontmatter}\n\n{content}"
 
     with file_lock(vault_path, timeout=10.0):
-        atomic_write_text(vault_path, final_content)
+        try:
+            atomic_write_text(vault_path, final_content)
+        except ValueError as exc:
+            if "nombre reservado" in str(exc):
+                return {
+                    "ok": False,
+                    "error_code": "RESERVED_NAME",
+                    "error": "RESERVED_NAME",
+                    "norm_code": "CN-04",
+                    "message": str(exc),
+                }
+            raise
 
         # Update search index (inside lock for consistency)
 

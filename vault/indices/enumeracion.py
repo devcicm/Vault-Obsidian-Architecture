@@ -27,7 +27,8 @@ from typing import Iterable, List
 
 #: Ficheros que son índice, no contenido. Son navegación generada por este mismo
 #: contexto: indexar la salida del indexador es contarse a uno mismo.
-NOMBRES_DE_INDICE = frozenset({"index.md", "readme.md"})
+# AP-57: el dueño es vault.kernel.indices_structural; aquí solo se re-exporta.
+from vault.kernel.indices_structural import RESERVED_INDEX_NAMES as NOMBRES_DE_INDICE
 
 
 def es_nota_indexable(

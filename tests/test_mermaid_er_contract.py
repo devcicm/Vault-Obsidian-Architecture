@@ -19,10 +19,10 @@ def _messages(diagram: str) -> list[str]:
 
 def _median_ms(pattern: re.Pattern[str], text: str) -> float:
     """Mide varias veces: el ratio, no un umbral absoluto, caracteriza escala."""
-    for _ in range(3):
+    for _ in range(10):
         pattern.search(text)
     samples = []
-    for _ in range(9):
+    for _ in range(99):
         start = time.perf_counter_ns()
         pattern.search(text)
         samples.append((time.perf_counter_ns() - start) / 1_000_000)
@@ -50,10 +50,10 @@ def test_er_relation_tiene_unico_arranque_por_tirada_de_palabra():
 def test_el_patron_historico_sin_borde_es_superlineal_y_el_actual_no():
     """Control negativo: quitar el borde vuelve a habilitar el rescaneo real."""
     bad = re.compile(reglas._ER_RELATION.pattern.removeprefix(r"\b"))
-    good_1000 = _median_ms(reglas._ER_RELATION, "a" * 1000)
     good_2000 = _median_ms(reglas._ER_RELATION, "a" * 2000)
-    bad_1000 = _median_ms(bad, "a" * 1000)
+    good_4000 = _median_ms(reglas._ER_RELATION, "a" * 4000)
     bad_2000 = _median_ms(bad, "a" * 2000)
+    bad_4000 = _median_ms(bad, "a" * 4000)
 
-    assert good_2000 / good_1000 < 3.0
-    assert bad_2000 / bad_1000 > 3.0
+    assert good_4000 / good_2000 < 3.0
+    assert bad_4000 / bad_2000 > 3.0

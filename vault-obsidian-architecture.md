@@ -3514,7 +3514,7 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **74 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **75 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -6811,6 +6811,20 @@ fusiona el vocabulario CN-03 original con el ciclo de vida de requerimientos
 **Enforcement:** audit — `vault_norms --audit` valida cada `status` contra `STATUS_VOCAB`.
 
 **Señal de violación:** `vault_list` filtra por `status` y retorna 0 resultados cuando el valor no coincide con el vocabulario.
+
+### CN-04 — Reserved structural filenames — nombres reservados para índices
+
+**Regla:** Los nombres `index` y `readme` (en cualquier variante de mayúsculas/minúsculas,
+stem `.md`) están reservados para los índices de sección generados automáticamente.
+Ninguna nota de contenido puede usar estos nombres como título.
+
+**Enforcement:** guard — `vault_io.atomic_write_text` rechaza escribir `index.md` o
+`readme.md` a menos que el archivo ya exista con el marker `generated_by: vault_section_index`.
+El generador (`vault_section_index`) escribe con el marker; el guard comprueba el marker
+antes de permitir la escritura.
+
+**Señal de violación:** `atomic_write bloqueado: 'index.md' es un nombre reservado para
+índices generados automáticamente.`
 
 ---
 

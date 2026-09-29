@@ -19,8 +19,9 @@ jobs:
         # sitios rompían al IMPORTAR en 3.9 —`ast.AST | None` evaluado al
         # definir— sin que nada lo viera, dos de ellos en módulos que importa
         # medio repo. `tests/test_piso_python.py` falla si esta lista y
-        # `requires-python` vuelven a divergir.
-        python-version: ['3.9', '3.11']
+        # `requires-python` vuelven a divergir. Se alineó con los classifiers
+        # (3.10/3.12) para que M8 no discrepe con lo publicado.
+        python-version: ['3.10', '3.12']
 
     steps:
       - name: Checkout
@@ -38,6 +39,15 @@ jobs:
 
       - name: Run unit tests
         run: python -m pytest tests/ --tb=short
+
+      # Artefactos derivados: se generan tras la suite para que vault_gate los encuentre.
+      # doc_staleness mide que existan — la suite no los genera ni los garantiza.
+      # vault_mcp_catalog --sync NO va aquí: el pre-commit hook ya ejecuta vault_fix_all
+      # que lo hace, y regenerar en CI sin el hook crea un diff espurio en PRs de forks.
+      - name: Regenerar artefactos derivados
+        run: |
+          python scripts/vault_fundamentals.py --framework
+          python scripts/vault_norms.py --rebuild
 
       # Las puertas, preguntándole al registro en vez de listándolas a mano.
       #
@@ -70,27 +80,19 @@ jobs:
         run: python scripts/vault_norms.py --audit --root vault-sandbox --strict
 
       - name: Run vault_validate
-        working-directory: scripts
         run: |
-          cd ..
           python scripts/vault_validate.py || echo "vault_validate not yet implemented"
 
       - name: Run vault_audit (dry run)
-        working-directory: scripts
         run: |
-          cd ..
           python scripts/vault_audit.py --dry-run || echo "audit dry-run not yet implemented"
 
       - name: Run vault_spec_validate
-        working-directory: scripts
         run: |
-          cd ..
           python scripts/vault_spec_validate.py || echo "spec_validate not yet implemented"
 
       - name: Run vault_norms --list
-        working-directory: scripts
         run: |
-          cd ..
           python scripts/vault_norms.py --list --type ap | python -c "import json,sys; d=json.load(sys.stdin); print(f'AP norms registered: {d[\"total\"]}')"
 
   product-gates:
@@ -126,7 +128,5 @@ jobs:
         with:
           python-version: '3.11'
       - name: Check Python syntax
-        working-directory: scripts
         run: |
-          cd ..
           python -m py_compile scripts/*.py

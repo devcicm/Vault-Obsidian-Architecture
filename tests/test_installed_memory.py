@@ -43,12 +43,14 @@ def test_write_rechaza_runtime_inexistente_sin_dejar_archivos(tmp_path):
 
 
 def test_las_tres_promesas_instaladas_salen_del_catalogo_canonico():
-    expected = {
-        "vault_query_parse": "vault_toolkit.operations.vault_query_parse",
-        "vault_knowledge_save": "vault_toolkit.operations.vault_knowledge_save",
-        "vault_knowledge_get": "vault_toolkit.operations.vault_knowledge_get",
-        "vault_gobernanza": "vault.gobernanza.tool",
-    }
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from vault.meta_toolkit.distribucion import derivar_distribucion
+    from vault.meta_toolkit.naturalezas import NATURALEZAS
+    from vault_mcp_catalog import TOOLS_CATALOG
+
+    dist = derivar_distribucion(TOOLS_CATALOG, NATURALEZAS)
+    expected = {n: d.execution_module for n, d in dist.items() if d.execution_module}
     installed = {name: tool.execution_module for name, tool in catalogo_producto().items()
                  if tool.execution_module is not None}
     assert installed == expected

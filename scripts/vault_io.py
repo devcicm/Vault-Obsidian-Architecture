@@ -3,6 +3,7 @@
 
 import copy
 import json
+import sys
 import os
 import re
 import threading
@@ -37,6 +38,12 @@ from vault_regex import (
 # `test_vault_containment`, que copia solo este fichero a un repo vacío.
 # Colgarlo de `vault.kernel` lo rompía con un ModuleNotFoundError.
 from vault_entorno import leer as _env
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+try:
+    from vault.kernel.indices_structural import RESERVED_INDEX_STEMS
+except ImportError:
+    RESERVED_INDEX_STEMS = frozenset({"index", "readme"})
 
 
 # ── Dónde está el vault: lo decide `vault_raiz` (v40.17) ──────────────────────
@@ -265,6 +272,26 @@ _NOMBRES_RESERVADOS = frozenset(
 )
 
 
+def _leer_generated_by_marker(path: Path) -> Optional[str]:
+    """Lee el campo generated_by del frontmatter si existe.
+
+    CN-X: el generador de índices añade generated_by: vault_section_index
+    a sus archivos para que el guard de atomic_write_text pueda distinguirlos
+    del contenido de usuario. Evita importar vault_lib para no crear ciclo (AP-58).
+    """
+    if not path.exists():
+        return None
+    try:
+        content = path.read_text(encoding="utf-8")
+        lines = content.splitlines()[:30]
+        for line in lines:
+            if line.strip().startswith("generated_by:"):
+                return line.split(":", 1)[1].strip()
+        return None
+    except (OSError, UnicodeDecodeError):
+        return None
+
+
 def _rechazar_nombre_reservado(path: Path) -> None:
     """Bloquea nombres que en Windows son dispositivos, no ficheros.
 
@@ -461,6 +488,26 @@ def atomic_write_text(
     _rechazar_traversal(path)
     _rechazar_nombre_reservado(path)
     _verificar_frontmatter(path, text or "")
+
+    # CN-X: no sobrescribir un índice existente que no lleva la marca del
+    # generador. Si el archivo es nuevo, se permite (el generador crea por
+    # primera vez). Si existe y NO tiene generated_by: vault_section_index,
+    # es contenido de usuario y se rechaza.
+    _stem = path.stem.lower()
+    # CN-X: solo se protegen los índices de sección (index.md, readme.md).
+    # Los JSON indices (11_Code/{project}/index.json) no son índices de sección.
+    if (
+        path.exists()
+        and _stem in RESERVED_INDEX_STEMS
+        and path.suffix.lower() == ".md"
+    ):
+        _marker = _leer_generated_by_marker(path)
+        if _marker != "vault_section_index":
+            raise ValueError(
+                f"atomic_write bloqueado: '{path.name}' es un nombre reservado "
+                f"para índices generados automáticamente. "
+                f"Renombra la nota (p. ej. '{path.stem}-nota{path.suffix}')."
+            )
 
     path.parent.mkdir(parents=True, exist_ok=True)
 

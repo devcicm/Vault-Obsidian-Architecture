@@ -25,7 +25,8 @@ from pathlib import Path
 
 from vault_errors import emit_error, wrap_main
 
-SYSTEM_DIR = Path(__file__).resolve().parent.parent / "vault-sandbox" / "00_System"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from vault_io import get_vault_root
 
 ARTIFACTS = {
     "data-framework.json": "vault_fundamentals --framework",
@@ -39,6 +40,9 @@ ARTIFACTS = {
 
 
 def _check() -> dict:
+    # AP-49: la raíz del vault se determina en runtime, no en import.
+    # AP-49 viola la regla 6 si se hardcodea. El fix es derivar de get_vault_root().
+    SYSTEM_DIR = get_vault_root() / "00_System"
     missing = []
     invalid = []
     ok = []

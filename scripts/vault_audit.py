@@ -58,10 +58,7 @@ from vault_regex import (
 )
 from vault_mermaid_check import scan_vault as _scan_mermaid
 
-try:
-    from vault.kernel.indices_structural import RESERVED_INDEX_NAMES as _STRUCTURAL_NAMES
-except ImportError:
-    _STRUCTURAL_NAMES = frozenset({"index.md", "readme.md"})
+from vault.kernel.indices_structural import RESERVED_INDEX_NAMES as _STRUCTURAL_NAMES
 
 SCRIPTS_DIR = Path(__file__).parent
 
@@ -1065,7 +1062,7 @@ def _detect_empty_indexes(
                 p
                 for p in (_barrido_md() if barrido is None else barrido)
                 if section_dir in p.parents
-                and p.name.lower() not in ("index.md", "readme.md")
+                and p.name.lower() not in _STRUCTURAL_NAMES
                 and not any(part.startswith(".") for part in p.parts)
             ]
 

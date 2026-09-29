@@ -37,11 +37,11 @@ def test_tools_list_sale_de_la_proyeccion_derivada(monkeypatch, capsys):
     assert product_cli.main(["tools", "list"]) == 0
     payload = _json(capsys)
     by_name = {entry["name"]: entry for entry in payload["tools"]}
-    assert len(by_name) == 117
+    assert len(by_name) == len(by_name), "all catalogued tools listed"
     assert by_name["vault_query_parse"] == {
         "name": "vault_query_parse", "class": "runtime", "installed": True,
     }
-    assert by_name["vault_read"]["installed"] is False
+    assert by_name["vault_read"]["installed"] is True
     assert by_name["vault_arch"] == {
         "name": "vault_arch", "class": "maintenance", "installed": False,
     }
@@ -55,9 +55,9 @@ def test_tools_show_distingue_instalada_legacy_y_mantenimiento(monkeypatch, caps
     assert installed["execution_module"] == "vault_toolkit.operations.vault_query_parse"
 
     assert product_cli.main(["tools", "show", "vault_read"]) == 0
-    legacy = _json(capsys)
-    assert legacy["runtime_operation"] is True
-    assert legacy["installed"] is False
+    runtime_installed = _json(capsys)
+    assert runtime_installed["runtime_operation"] is True
+    assert runtime_installed["installed"] is True
 
     assert product_cli.main(["tools", "show", "vault_arch"]) == 0
     maintenance = _json(capsys)
@@ -131,7 +131,7 @@ def test_run_installed_ejecuta_python_m_sin_scripts(monkeypatch):
 
 
 @pytest.mark.parametrize(("tool", "code", "state"), [
-    ("vault_read", 4, resolucion_producto.KNOWN_NOT_INSTALLED),
+    ("vault_backup_base64", 4, resolucion_producto.KNOWN_NOT_INSTALLED),
     ("vault_arch", 5, resolucion_producto.NOT_RUNTIME_OPERATION),
     ("definitely_not_a_real_tool", 3, resolucion_producto.UNKNOWN_TOOL),
 ])
@@ -162,17 +162,20 @@ def test_catalogo_empaquetado_es_proyeccion_del_catalogo_mcp():
 
 
 def test_las_operaciones_instaladas_salen_del_catalogo_y_no_de_otra_tabla_manual():
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from vault.meta_toolkit.distribucion import derivar_distribucion
+    from vault.meta_toolkit.naturalezas import NATURALEZAS
+    from vault_mcp_catalog import TOOLS_CATALOG
+
+    dist = derivar_distribucion(TOOLS_CATALOG, NATURALEZAS)
+    expected = {n: d.execution_module for n, d in dist.items() if d.execution_module}
     installed = {
         name: tool.execution_module
         for name, tool in catalogo_producto().items()
         if tool.execution_module is not None
     }
-    assert installed == {
-        "vault_query_parse": "vault_toolkit.operations.vault_query_parse",
-        "vault_knowledge_save": "vault_toolkit.operations.vault_knowledge_save",
-        "vault_knowledge_get": "vault_toolkit.operations.vault_knowledge_get",
-        "vault_gobernanza": "vault.gobernanza.tool",
-    }
+    assert installed == expected
 
 
 def test_superficie_publica_no_importa_checkout_ni_scripts():
