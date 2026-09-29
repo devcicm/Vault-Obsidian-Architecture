@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import emit_error, emit_fallo, wrap_main
-from vault_io import atomic_write_text
+from vault_io import assert_within_vault, atomic_write_text
 from vault_lib import utcnow
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -42,6 +42,19 @@ def _repo(root=None) -> RepositorioAutoria:
 
 def _history_dir() -> Path:
     return _repo().dir_historial
+
+
+def _ruta_fuera_del_vault(path: str) -> Optional[Dict[str, Any]]:
+    """AP-36: el envelope INVALID_PATH si *path* sale del vault; None si no.
+
+    Sin esto una ruta absoluta acababa en UNEXPECTED_ERROR critical, y una con
+    `../` se buscaba en .history/ como si fuera una nota del vault.
+    """
+    try:
+        assert_within_vault(_raiz() / path, _raiz())
+    except ValueError as exc:
+        return emit_error("vault_undo", "INVALID_PATH", str(exc))
+    return None
 
 
 def get_history_versions(note_path: str) -> List[Dict[str, Any]]:
@@ -113,6 +126,10 @@ def vault_undo(
         dry_run: don't write anything, just report what would happen
         agent: agent name for change_log
     """
+    fuera = _ruta_fuera_del_vault(path)
+    if fuera:
+        return fuera
+
     vault_root = _raiz()
     note_path = vault_root / path
 
@@ -180,6 +197,9 @@ def vault_undo(
 
 def vault_undo_list(path: str) -> Dict[str, Any]:
     """List available versions in .history/ for a note."""
+    fuera = _ruta_fuera_del_vault(path)
+    if fuera:
+        return fuera
     versions = get_history_versions(path)
     if not versions:
         return emit_error(
