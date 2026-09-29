@@ -1481,10 +1481,10 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "group": "Conocimiento",
         "purpose": "Guarda conocimiento estructurado por tema.",
         "params": {
-            "topic": {
+            "category": {
                 "type": "string",
                 "required": True,
-                "description": "Tema principal",
+                "description": "Categoría; los valores válidos son vault.autoria.conocimiento.CATEGORIES",
                 "validators": ["not_empty"],
             },
             "title": {
@@ -1508,7 +1508,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Crea nota en 07_Knowledge/{topic}/"],
-        "example": 'python vault_knowledge_save.py --category "architecture" --title "Clean Architecture" --content "# Clean Architecture" --tags "architecture clean"',
+        "example": 'python vault_knowledge_save.py --category "concept" --title "Clean Architecture" --content "# Clean Architecture" --tags "architecture clean"',
         "related": ["vault_knowledge_get", "vault_search"],
     },
     "vault_knowledge_get": {
@@ -1854,7 +1854,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "Slug del proyecto",
                 "validators": [],
             },
-            "qa_type": {
+            "type": {
                 "type": "string",
                 "required": True,
                 "description": "Tipo: test-plan | qa-metrics | qa-report | qa-strategy | coverage-report",
@@ -1866,22 +1866,22 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "Título del documento QA",
                 "validators": ["not_empty"],
             },
-            "content": {
+            "description": {
                 "type": "string",
                 "required": True,
-                "description": "Contenido Markdown del documento",
-                "validators": ["min_lines:3"],
+                "description": "Descripción del documento QA",
+                "validators": ["not_empty"],
             },
             "status": {
                 "type": "string",
                 "required": False,
-                "description": "Estado: draft | reviewed | approved | archived",
-                "validators": ["one_of:draft,reviewed,approved,archived"],
+                "description": "Estado: draft | review | approved | published | archived",
+                "validators": ["one_of:draft,review,approved,published,archived"],
             },
         },
         "guards": [],
         "side_effects": ["Crea 21_QA/.qa-index.json si no existe"],
-        "example": 'python vault_qa_save.py --project "mi-api" --qa_type "test-plan" --title "Plan de Pruebas v2" --content "# Test Plan..."',
+        "example": 'python vault_qa_save.py --project "mi-api" --type "test-plan" --title "Plan de Pruebas v2" --description "Plan de pruebas de la API para la v2"',
         "related": ["vault_test_save", "vault_quality_dashboard"],
     },
     "vault_quality_check": {

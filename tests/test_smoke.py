@@ -75,6 +75,20 @@ def test_una_tool_real_pasa_el_smoke():
     assert r["passing"] == 1
 
 
+@pytest.mark.parametrize("tool", ["vault_knowledge_save", "vault_qa_save"])
+def test_los_ejemplos_que_rompian_la_ci_pasan_el_smoke(tool):
+    """Desde ca0d284 la CI estaba en rojo por estos dos ejemplos.
+
+    `vault_knowledge_save` documentaba `--category architecture`, que no es
+    una de las `CATEGORIES`; `vault_qa_save`, `--qa_type` y `--content`, que la
+    CLI no declara —pide `--type` y `--description`—. La suite no lo veía:
+    el barrido completo solo corre en la CI.
+    """
+    r = smoke.smoke([tool])
+    assert r["ok"], r["failures"]
+    assert r["passing"] == 1
+
+
 def test_un_ok_false_bien_formado_aprueba():
     """Lo que se persigue es el fallo mudo, no el rechazo educado."""
     r = smoke.run_one("vault_read")

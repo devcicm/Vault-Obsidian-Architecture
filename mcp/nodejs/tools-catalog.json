@@ -2935,7 +2935,7 @@
         "properties": {
           "category": {
             "type": "string",
-            "description": ""
+            "description": "Categoría; los valores válidos son vault.autoria.conocimiento.CATEGORIES"
           },
           "title": {
             "type": "string",
@@ -4210,11 +4210,11 @@
           },
           "type": {
             "type": "string",
-            "description": ""
+            "description": "Tipo: test-plan | qa-metrics | qa-report | qa-strategy | coverage-report"
           },
           "description": {
             "type": "string",
-            "description": "Document description"
+            "description": "Descripción del documento QA"
           },
           "related-tests": {
             "type": "string",
@@ -4238,7 +4238,7 @@
           },
           "status": {
             "type": "string",
-            "description": "Estado: draft | reviewed | approved | archived"
+            "description": "Estado: draft | review | approved | published | archived"
           },
           "tags": {
             "type": "string",
