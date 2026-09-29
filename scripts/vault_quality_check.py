@@ -62,11 +62,6 @@ from vault_vocabulario import opciones as _opciones
 
 SKIP_FOLDERS = {"10_Migrated", "vault-backups", ".history"}
 
-try:
-    from vault.kernel.indices_structural import RESERVED_INDEX_NAMES as STRUCTURAL_NAMES
-except ImportError:
-    STRUCTURAL_NAMES = frozenset({"index.md", "readme.md"})
-
 TIMELINESS_DEFAULT_DAYS = 30
 TIMELINESS_HIGH_DAYS = 15
 
@@ -133,6 +128,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+# AP-57: el nombre de índice lo decide su dueño; sin copia de respaldo, que
+# era la segunda declaración que envejece en silencio.
+from vault.kernel.indices_structural import RESERVED_INDEX_NAMES as STRUCTURAL_NAMES  # noqa: E402
 
 
 def _raiz() -> Path:

@@ -58,11 +58,6 @@ from vault_regex import (
 )
 from vault_mermaid_check import scan_vault as _scan_mermaid
 
-try:
-    from vault.kernel.indices_structural import RESERVED_INDEX_NAMES as _STRUCTURAL_NAMES
-except ImportError:
-    _STRUCTURAL_NAMES = frozenset({"index.md", "readme.md"})
-
 SCRIPTS_DIR = Path(__file__).parent
 
 
@@ -104,6 +99,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 
 from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
+# AP-57: el nombre de índice lo decide su dueño; sin copia de respaldo, que
+# era la segunda declaración que envejece en silencio.
+from vault.kernel.indices_structural import RESERVED_INDEX_NAMES as _STRUCTURAL_NAMES  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 
 
