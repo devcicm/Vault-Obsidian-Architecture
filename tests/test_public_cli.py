@@ -32,29 +32,50 @@ def test_version_usa_la_metadata_de_la_distribucion(monkeypatch):
     assert product_cli.toolkit_version() == "40.34"
 
 
+def _runtime_sin_modulo() -> str:
+    """Una tool runtime que el catálogo declara sin implementación instalada.
+
+    Se elige del catálogo y no se escribe a mano: hasta A2 era ``vault_read``, y
+    los tests que la nombraban quedaron rojos al instalarse (AP-47).
+    """
+    candidatas = sorted(
+        name for name, tool in catalogo_producto().items()
+        if tool.clase == "runtime" and tool.execution_module is None
+    )
+    if not candidatas:
+        pytest.skip("el catálogo ya no declara ninguna tool runtime sin instalar")
+    return candidatas[0]
+
+
 def test_tools_list_sale_de_la_proyeccion_derivada(monkeypatch, capsys):
     _version(monkeypatch)
     assert product_cli.main(["tools", "list"]) == 0
     payload = _json(capsys)
     by_name = {entry["name"]: entry for entry in payload["tools"]}
-    assert len(by_name) == 117
+    catalogo = catalogo_producto()
+    assert set(by_name) == set(catalogo)
+    # La CLI dice «instalada» exactamente cuando la resolución lo confirma.
+    for name, entry in by_name.items():
+        estado = resolucion_producto.resolver_producto(name).estado
+        assert entry["installed"] is (estado == resolucion_producto.INSTALLED), name
+        assert entry["class"] == catalogo[name].clase, name
     assert by_name["vault_query_parse"] == {
         "name": "vault_query_parse", "class": "runtime", "installed": True,
     }
-    assert by_name["vault_read"]["installed"] is False
+    assert by_name[_runtime_sin_modulo()]["installed"] is False
     assert by_name["vault_arch"] == {
         "name": "vault_arch", "class": "maintenance", "installed": False,
     }
 
 
-def test_tools_show_distingue_instalada_legacy_y_mantenimiento(monkeypatch, capsys):
+def test_tools_show_distingue_instalada_no_instalada_y_mantenimiento(monkeypatch, capsys):
     _version(monkeypatch)
     assert product_cli.main(["tools", "show", "vault_query_parse"]) == 0
     installed = _json(capsys)
     assert installed["installed"] is True
     assert installed["execution_module"] == "vault_toolkit.operations.vault_query_parse"
 
-    assert product_cli.main(["tools", "show", "vault_read"]) == 0
+    assert product_cli.main(["tools", "show", _runtime_sin_modulo()]) == 0
     legacy = _json(capsys)
     assert legacy["runtime_operation"] is True
     assert legacy["installed"] is False
@@ -131,12 +152,13 @@ def test_run_installed_ejecuta_python_m_sin_scripts(monkeypatch):
 
 
 @pytest.mark.parametrize(("tool", "code", "state"), [
-    ("vault_read", 4, resolucion_producto.KNOWN_NOT_INSTALLED),
+    (None, 4, resolucion_producto.KNOWN_NOT_INSTALLED),
     ("vault_arch", 5, resolucion_producto.NOT_RUNTIME_OPERATION),
     ("definitely_not_a_real_tool", 3, resolucion_producto.UNKNOWN_TOOL),
 ])
 def test_run_rechaza_estados_no_instalados_sin_fallback(monkeypatch, capsys, tool, code, state):
     _version(monkeypatch)
+    tool = tool or _runtime_sin_modulo()
     assert product_cli.main(["run", tool]) == code
     assert _error(capsys)["state"] == state
 
@@ -162,17 +184,27 @@ def test_catalogo_empaquetado_es_proyeccion_del_catalogo_mcp():
 
 
 def test_las_operaciones_instaladas_salen_del_catalogo_y_no_de_otra_tabla_manual():
+    """Invariantes en vez de una tabla copiada: la tabla envejecía con cada A-n."""
+    catalogo = catalogo_producto()
     installed = {
         name: tool.execution_module
-        for name, tool in catalogo_producto().items()
+        for name, tool in catalogo.items()
         if tool.execution_module is not None
     }
-    assert installed == {
+    # Mantenimiento nunca se instala; toda promesa de instalación resuelve.
+    assert all(catalogo[name].clase == "runtime" for name in installed)
+    for name in installed:
+        assert (
+            resolucion_producto.resolver_producto(name).estado
+            == resolucion_producto.INSTALLED
+        ), name
+    # Las cuatro promesas históricas siguen en pie con su destino declarado.
+    assert {
         "vault_query_parse": "vault_toolkit.operations.vault_query_parse",
         "vault_knowledge_save": "vault_toolkit.operations.vault_knowledge_save",
         "vault_knowledge_get": "vault_toolkit.operations.vault_knowledge_get",
         "vault_gobernanza": "vault.gobernanza.tool",
-    }
+    }.items() <= installed.items()
 
 
 def test_superficie_publica_no_importa_checkout_ni_scripts():

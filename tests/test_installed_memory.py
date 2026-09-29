@@ -51,7 +51,10 @@ def test_las_tres_promesas_instaladas_salen_del_catalogo_canonico():
     }
     installed = {name: tool.execution_module for name, tool in catalogo_producto().items()
                  if tool.execution_module is not None}
-    assert installed == expected
+    # Desde A2 el catálogo instala más que estas tres promesas de memoria y la
+    # de gobernanza; lo que se exige es que ninguna desaparezca ni cambie de
+    # destino, no que el catálogo deje de crecer.
+    assert expected.items() <= installed.items()
     for name in expected:
         assert resolver_producto(name).estado == INSTALLED
 
