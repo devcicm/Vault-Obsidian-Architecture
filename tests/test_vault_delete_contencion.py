@@ -91,3 +91,31 @@ def test_trash_only_mueve_la_nota_a_cuarentena(entorno):
     assert r["ok"] and r["quarantined_to"] == "20_Quarantine/vieja.md", r
     assert not nota.exists()
     assert (raiz / "20_Quarantine" / "vieja.md").is_file()
+
+
+# ── El índice de búsqueda no guarda notas borradas ───────────────────────────
+# Medido antes: tras `vault_delete`, `vault_search` seguía devolviendo la nota.
+
+def _indice(raiz: Path, *rutas: str) -> Path:
+    fichero = raiz / "99_Index" / "search-index.json"
+    fichero.write_text(json.dumps({"notes": [{"path": r, "title": r} for r in rutas]}),
+                       encoding="utf-8")
+    return fichero
+
+
+@pytest.mark.parametrize("modo", [[], ["--trash-only"]])
+def test_la_nota_borrada_sale_del_indice(entorno, modo):
+    raiz, _, _ = entorno
+    fichero = _indice(raiz, "07_Knowledge/vieja.md", "07_Knowledge/otra.md")
+    r = _ejecutar(raiz, "--path", "07_Knowledge/vieja.md", "--reason", "prueba", *modo)
+    assert r["ok"] and r["search_index"]["removed"] == 1, r
+    rutas = [n["path"] for n in json.loads(fichero.read_text(encoding="utf-8"))["notes"]]
+    assert rutas == ["07_Knowledge/otra.md"]
+
+
+def test_un_indice_corrupto_no_convierte_el_borrado_en_fallo(entorno):
+    raiz, nota, _ = entorno
+    (raiz / "99_Index" / "search-index.json").write_text("{roto", encoding="utf-8")
+    r = _ejecutar(raiz, "--path", "07_Knowledge/vieja.md", "--reason", "prueba")
+    assert r["ok"] and not r["search_index"]["updated"] and "error" in r["search_index"], r
+    assert not nota.exists()

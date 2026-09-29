@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 from vault_errors import emit_error, wrap_main
-from vault_io import assert_within_vault
+from vault_io import assert_within_vault, atomic_write_json
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -70,6 +70,37 @@ def _write_deleted_entry(path: str, reason: str, agent: str) -> str:
     if not result.get("ok"):
         raise RuntimeError(f"vault_change_log_add failed: {result}")
     return result["id"]
+
+
+def _quitar_del_indice(rel_path: str) -> Dict[str, Any]:
+    """Retira la nota de search-index.json.
+
+    Sin esto `vault_search` seguia devolviendo la nota borrada: una entrada
+    que apunta a un fichero que ya no existe. Es la contraparte de
+    `vault_move.update_search_index`, que reescribe la ruta en vez de quitarla.
+    """
+    indice = _repo().indice_busqueda
+    if not indice.exists():
+        return {"updated": False, "reason": "search-index not found"}
+    datos = json.loads(indice.read_text(encoding="utf-8"))
+    if not isinstance(datos, dict):
+        return {"updated": False, "reason": "search-index con esquema no reconocido"}
+    notas = datos.get("notes", [])
+    quedan = [n for n in notas if not (isinstance(n, dict) and n.get("path") == rel_path)]
+    if len(quedan) == len(notas):
+        return {"updated": False, "removed": 0}
+    datos["notes"] = quedan
+    atomic_write_json(indice, datos)
+    return {"updated": True, "removed": len(notas) - len(quedan)}
+
+
+def _indice_tras_borrar(rel_path: str) -> Dict[str, Any]:
+    """El borrado ya ocurrio: un indice ilegible se degrada a aviso, no a ok:false."""
+    try:
+        return _quitar_del_indice(rel_path)
+    except Exception as exc:  # noqa: BLE001 - la nota ya no esta en disco
+        return {"updated": False, "error": f"{type(exc).__name__}: {exc}",
+                "hint": "ejecutar vault_reindex"}
 
 
 def vault_delete(
@@ -133,6 +164,9 @@ def vault_delete(
             f" path '{path}' es una carpeta, no un archivo.",
         )
 
+    # La forma con la que vault_write indexa la nota: relativa y con `/`.
+    rel_path = note_path.resolve().relative_to(vault_root.resolve()).as_posix()
+
     already_logged = _already_deleted(path)
 
     if dry_run:
@@ -176,6 +210,7 @@ def vault_delete(
             "note": path,
             "quarantined_to": str(trash_dest.relative_to(vault_root)).replace("\\", "/"),
             "sp01_status": sp01_note,
+            "search_index": _indice_tras_borrar(rel_path),
         }
     else:
         note_path.unlink()
@@ -184,6 +219,7 @@ def vault_delete(
             "action": "deleted",
             "note": path,
             "sp01_status": sp01_note,
+            "search_index": _indice_tras_borrar(rel_path),
         }
 
 
