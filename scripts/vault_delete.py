@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 from vault_errors import emit_error, wrap_main
+from vault_io import assert_within_vault
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -102,6 +103,23 @@ def vault_delete(
 
     vault_root = _raiz()
     note_path = vault_root / path
+
+    # AP-36: `--path "../x"` o una ruta absoluta borraban —o movian a
+    # cuarentena— un fichero fuera del vault y devolvian ok: true. La
+    # contencion se comprueba antes de mirar si existe, para que la respuesta
+    # no revele que hay fuera del vault.
+    try:
+        assert_within_vault(note_path, vault_root)
+    except ValueError as exc:
+        return emit_error("vault_delete", "INVALID_PATH", str(exc))
+
+    # SP-01 es el protocolo de borrado de notas: los indices, el change-log y
+    # cualquier otro fichero del vault no se borran por esta via.
+    if note_path.suffix.lower() != ".md":
+        return emit_error(
+            "vault_delete", "INVALID_PATH",
+            f"'{path}' no es una nota (.md); vault_delete solo elimina notas.",
+        )
 
     if not note_path.exists():
         return emit_error(
