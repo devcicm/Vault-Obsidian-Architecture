@@ -231,3 +231,17 @@ def test_el_adaptador_legacy_reexporta_el_mismo_contrato_estable():
     import vault_errors_catalog
 
     assert vault_errors_catalog.ERROR_CATALOG is ERROR_CATALOG
+
+
+def test_python_m_vault_es_la_misma_cli():
+    """Sin `Scripts/` en el PATH, `python -m vault` es la única entrada fiable."""
+    import subprocess
+    import sys
+
+    raiz = Path(__file__).resolve().parent.parent
+    proceso = subprocess.run(
+        [sys.executable, "-m", "vault", "tools", "show", "vault_query_parse"],
+        cwd=str(raiz), capture_output=True, text=True, encoding="utf-8", timeout=120,
+    )
+    assert proceso.returncode == 0, proceso.stderr
+    assert json.loads(proceso.stdout)["name"] == "vault_query_parse"

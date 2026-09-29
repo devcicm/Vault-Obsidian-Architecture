@@ -184,6 +184,10 @@ class TestIdentidadConflicto:
         assert resultado["ok"] is False
         assert resultado["error_code"] == "IDENTITY_CONFLICT"
         assert nota.read_bytes() == original_bytes
+        # El dato conserva el None; la prosa no lo imprime como si fuera un título.
+        assert resultado["conflict_title"] is None
+        assert "'None'" not in resultado["message"]
+        assert "sin `title:`" in resultado["message"]
 
 
 class TestYamlYEncoding:

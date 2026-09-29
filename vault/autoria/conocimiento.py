@@ -227,7 +227,9 @@ def guardar_conocimiento(
         if existing_legible and clave_de_equivalencia(existing_title) != clave_de_equivalencia(title):
             return construir_error(
                 "vault_knowledge_save", "IDENTITY_CONFLICT",
-                f"el archivo '{filename}' ya existe con título '{existing_title}'",
+                f"el archivo '{filename}' ya existe "
+                + (f"con título '{existing_title}'" if existing_title is not None
+                   else "sin `title:` en el frontmatter"),
                 extra={
                     "path": path.relative_to(runtime).as_posix(),
                     "conflict_title": existing_title,
