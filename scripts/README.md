@@ -2129,14 +2129,20 @@ Guard anti-drift de **artefactos derivados**: verifica que los JSON generados po
 ```bash
 python vault_doc_staleness.py --check      # informe sin exit code
 python vault_doc_staleness.py --check --strict  # exit 1 si falta alguno
+python vault_doc_staleness.py --regenerar  # ejecuta el productor de lo que falte
 ```
 
 **Artefactos verificados:** `data-framework.json`, `norm-registry.json`, `data-fundamentals.json`, `tool-contracts.json`, `quality-index.json`, `tag-registry.json`, `standard-version.json`.
+
+El registro `ARTIFACTS` asocia cada artefacto a su productor, y de él salen el informe, la pista `fix` y `--regenerar`. `standard-version.json` no tiene productor: lo escribe `vault_init` al crear el vault, y rehacerlo es una migración, así que `--regenerar` lo reporta en `without_producer` en vez de inventarlo. La carpeta se resuelve con `vault_io.get_vault_root()` al usarse (AP-49); hasta ahora estaba congelada en `vault-sandbox/` desde `__file__`.
+
+En un checkout limpio la puerta solo es verde si el sandbox existe cuando corre: la sesión de pytest que hace el bootstrap también lo limpia al terminar. Por eso la CI hace el bootstrap (`tests/sandbox_fixture.py --bootstrap`) antes de la suite, y la suite ya no se adueña del runtime.
 
 | Parámetro | Descripción |
 |---|---|
 | `--check` | Modo comprobación (informe sin exit code) |
 | `--strict` | Exit 1 si falta o está corrupto algún artefacto |
+| `--regenerar` | Ejecuta el productor de cada artefacto ausente o inválido; `ok` sale del re-check |
 
 ---
 

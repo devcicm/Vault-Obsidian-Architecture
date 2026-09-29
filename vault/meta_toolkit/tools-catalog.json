@@ -1503,6 +1503,10 @@
           "strict": {
             "type": "string",
             "description": "Exit 1 si falta o está corrupto algún artefacto"
+          },
+          "regenerar": {
+            "type": "string",
+            "description": "Ejecuta el productor de cada artefacto ausente o inválido"
           }
         }
       },

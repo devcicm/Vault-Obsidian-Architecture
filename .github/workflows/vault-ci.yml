@@ -34,7 +34,16 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pytest-cov
+          # Las dependencias salen de pyproject.toml, su dueño. Antes se
+          # instalaban pytest y pytest-cov a mano y PyYAML —la única dependencia
+          # declarada— no se instalaba en ninguna parte.
+          pip install -e ".[dev]"
+
+      # El sandbox lo materializa la CI, no la suite. Si lo hace pytest, se
+      # adueña de él y lo limpia al terminar, y las puertas de abajo corren
+      # contra un runtime vacío: `vault_doc_staleness` salía rojo solo aquí.
+      - name: Bootstrap del sandbox
+        run: python tests/sandbox_fixture.py --bootstrap
 
       - name: Run unit tests
         run: python -m pytest tests/ --tb=short
