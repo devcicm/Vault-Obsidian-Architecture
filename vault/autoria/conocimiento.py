@@ -27,7 +27,7 @@ from ..kernel.frontmatter_parsing import (
     parse_frontmatter_with_body,
 )
 from ..kernel.normalizacion import clave_de_equivalencia, slugify_strict
-from ..kernel.indices_structural import RESERVED_INDEX_STEMS
+from ..kernel.indices_structural import es_nombre_reservado
 
 CATEGORIES = (
     "glossary", "api", "concept", "business-rule", "config", "dependency", "framework",
@@ -173,7 +173,7 @@ def guardar_conocimiento(
         filename = slugify_strict(str(title or ""))
         if not filename:
             raise ValueError("el título no produce un nombre de nota válido")
-        if filename in RESERVED_INDEX_STEMS:
+        if es_nombre_reservado(filename):
             return construir_error(
                 "vault_knowledge_save", "RESERVED_NAME",
                 f"El título '{title}' produce el archivo '{filename}.md', "

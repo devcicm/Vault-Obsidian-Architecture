@@ -35,7 +35,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_norms_catalog import status_frontmatter_lines
 from vault_io import (
     write_report,
@@ -55,6 +55,7 @@ from vault_entorno import leer as _env
 
 from vault.consulta.repositorio import RepositorioConsulta  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.indices_structural import es_nombre_reservado  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -199,6 +200,17 @@ def vault_preferences_set(
 
     folder = _preferences_dir() / category
     note_path = folder / f"{slugify(title)}.md"
+    # El index.md de la carpeta es del generador: una preferencia con ese
+    # nombre la pisaría la siguiente regeneración (mismo dueño que vault_write).
+    if es_nombre_reservado(note_path.name):
+        return {
+            **emit_error(
+                "vault_preferences", "RESERVED_NAME",
+                f"El título '{title}' produce '{note_path.name}', nombre reservado "
+                f"para el índice generado de la carpeta. Usar otro título.",
+            ),
+            "error": "RESERVED_NAME",
+        }
 
     try:
         assert_within_vault(note_path, _raiz())

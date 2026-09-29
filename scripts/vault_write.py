@@ -96,6 +96,7 @@ from vault_entorno import leer as _env
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.indices_structural import es_nombre_reservado  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -772,6 +773,21 @@ def vault_write(
     # Determine filename and validate path stays inside vault
 
     filename = f"{slugify(title)}.md"
+
+    # Nombre reservado: el index.md de cada carpeta es del generador. Una nota que se
+    # llame igual no convive con él — es el mismo fichero, también con otra
+    # capitalización en Windows/macOS — y la siguiente regeneración la pisa
+    # dejando el contenido solo en un backup oculto. Se rechaza antes de
+    # escribir nada, con el criterio del dueño canónico.
+    if es_nombre_reservado(filename):
+        return {
+            **emit_error(
+                "vault_write", "RESERVED_NAME",
+                f"El título '{title}' produce '{filename}', nombre reservado para "
+                f"el índice generado de la carpeta. Usar otro título.",
+            ),
+            "error": "RESERVED_NAME",
+        }
 
     vault_path = _raiz() / folder / filename
 
