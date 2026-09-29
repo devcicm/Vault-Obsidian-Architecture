@@ -158,12 +158,21 @@ def test_la_ci_prueba_el_piso_que_se_promete():
     dos salidas válidas, y cuál es la buena la decide quien publica el paquete.
     Lo que no vale es que diverjan en silencio, que es como se llegó aquí.
     """
-    ci = (RAIZ / ".github" / "workflows" / "vault-ci.yml").read_text(encoding="utf-8")
+    import yaml
+
+    # Se lee como YAML y solo la matriz de los jobs que ejecutan la suite: un
+    # regex sobre el texto contaba cualquier 'x.y', también de un job de lint o
+    # de un comentario, y daba el piso por probado sin que pytest corriera en él.
+    datos = yaml.safe_load(
+        (RAIZ / ".github" / "workflows" / "vault-ci.yml").read_text(encoding="utf-8")
+    )
     versiones = {
-        tuple(int(x) for x in v.split("."))
-        for v in re.findall(r"['\"](\d+\.\d+)['\"]", ci)
+        tuple(int(x) for x in str(v).split(".")[:2])
+        for job in datos["jobs"].values()
+        if any("pytest" in str(paso.get("run", "")) for paso in job.get("steps", []))
+        for v in (job.get("strategy") or {}).get("matrix", {}).get("python-version", [])
     }
-    assert versiones, "la CI no declara ninguna versión de Python"
+    assert versiones, "ningún job que ejecuta pytest declara versiones de Python"
     assert min(versiones) == piso_declarado(), (
         f"la CI prueba desde {min(versiones)} y pyproject.toml promete "
         f"{piso_declarado()}. O la CI baja, o la promesa sube."

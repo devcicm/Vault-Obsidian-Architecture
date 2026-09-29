@@ -66,6 +66,8 @@ import sys
 from pathlib import Path
 from typing import Any, Callable, Dict, List
 
+import yaml
+
 sys.path.insert(0, str(Path(__file__).parent))
 
 from vault_errors import emit_error, wrap_main
@@ -84,8 +86,27 @@ def _existe(rel: str) -> bool:
     return (RAIZ / rel).exists()
 
 
+def _versiones_que_ejecutan_la_suite(ci: Path) -> set:
+    """Versiones de Python de la matriz de los jobs que ejecutan pytest.
+
+    Se lee el YAML como YAML (AP-44): buscar cualquier ``'x.y'`` en el texto
+    contaba también versiones de jobs que no corren la suite, de comentarios o
+    de `setup-python` fijo, y un piso «probado» en el job de lint pasaba.
+    """
+    datos = yaml.safe_load(ci.read_text(encoding="utf-8")) or {}
+    versiones = set()
+    for job in (datos.get("jobs") or {}).values():
+        pasos = job.get("steps") or []
+        if not any("pytest" in str(paso.get("run", "")) for paso in pasos):
+            continue
+        matriz = (job.get("strategy") or {}).get("matrix") or {}
+        for v in matriz.get("python-version") or []:
+            versiones.add(tuple(int(x) for x in str(v).split(".")[:2]))
+    return versiones
+
+
 def _ci_prueba_el_piso() -> bool:
-    """La matriz de CI y `requires-python` dicen la misma versión mínima."""
+    """La matriz de los jobs de tests y `requires-python` dicen el mismo mínimo."""
     ci = RAIZ / ".github" / "workflows" / "vault-ci.yml"
     proj = RAIZ / "pyproject.toml"
     if not ci.exists() or not proj.exists():
@@ -95,10 +116,7 @@ def _ci_prueba_el_piso() -> bool:
     if not m:
         return False
     piso = (int(m.group(1)), int(m.group(2)))
-    versiones = {
-        tuple(int(x) for x in v.split("."))
-        for v in re.findall(r"['\"](\d+\.\d+)['\"]", ci.read_text(encoding="utf-8"))
-    }
+    versiones = _versiones_que_ejecutan_la_suite(ci)
     return bool(versiones) and min(versiones) == piso
 
 
