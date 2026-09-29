@@ -1,5 +1,17 @@
 #!/bin/sh
 # Cierra el drift de artefactos derivados antes de cada commit.
+#
+# Solo añade al commit lo que `vault_fix_all` cambió en ficheros que estaban
+# limpios. Hasta aquí terminaba con `git add $(git diff --name-only)`, que
+# metía en el commit TODO el trabajo sin stagear del árbol —cualquier tarea a
+# medias acababa dentro del commit de otra— y antes añadía una lista de
+# artefactos escrita a mano que ya omitía `vault/meta_toolkit/tools-catalog.json`
+# (AP-47) y que stageaba entero `scripts/README.md`, cuyas secciones se
+# escriben a mano.
+#
+# Un fichero que ya tenía cambios sin stagear no se toca aunque
+# `vault_fix_all` lo reescriba: no hay forma de separar el derivado de la
+# edición de quien commitea, así que se avisa y decide esa persona.
 
 set -e
 
@@ -15,25 +27,38 @@ cd "$repo_root" || {
 
 export PYTHONIOENCODING="utf-8"
 
+# Foto previa: ficheros con cambios sin stagear y el hash de su contenido.
+snapshot=$(mktemp)
+trap 'rm -f "$snapshot"' EXIT
+git diff --name-only | while IFS= read -r f; do
+    printf '%s\t%s\n' "$(git hash-object -- "$f" 2>/dev/null || echo ausente)" "$f"
+done > "$snapshot"
+
 echo "[pre-commit] Regenerando artefactos derivados con vault_fix_all..."
-python scripts/vault_fix_all.py --dry-run 2>/dev/null
-python scripts/vault_fix_all.py 2>/dev/null
+python scripts/vault_fix_all.py --dry-run >/dev/null 2>&1
+python scripts/vault_fix_all.py >/dev/null 2>&1
 
-ARTIFACTS="mcp/nodejs/tools-catalog.json \
-mcp/nodejs/env-table.json \
-scripts/field-compat-baseline.json \
-scripts/vault_errors_catalog.py \
-docs/BLUEPRINT.md \
-docs/ARQUITECTURA.md \
-scripts/README.md"
+added=""
+skipped=""
+despues=$(git diff --name-only)
+while IFS= read -r f; do
+    [ -n "$f" ] || continue
+    previo=$(awk -F '\t' -v f="$f" '$2 == f { print $1 }' "$snapshot")
+    if [ -z "$previo" ]; then
+        git add -- "$f"
+        added="$added $f"
+    elif [ "$previo" != "$(git hash-object -- "$f" 2>/dev/null || echo ausente)" ]; then
+        skipped="$skipped $f"
+    fi
+done <<EOF
+$despues
+EOF
 
-git add $ARTIFACTS 2>/dev/null || true
-
-NEW_CHANGES=$(git diff --name-only 2>/dev/null || echo "")
-if [ -n "$NEW_CHANGES" ]; then
-    echo "[pre-commit] vault_fix_all modificó: $NEW_CHANGES"
-    echo "[pre-commit] Añadiendo cambios al commit..."
-    git add $NEW_CHANGES
+if [ -n "$added" ]; then
+    echo "[pre-commit] Derivados regenerados y añadidos:$added"
 fi
-
+if [ -n "$skipped" ]; then
+    echo "[pre-commit] AVISO: vault_fix_all reescribió ficheros que ya tenían cambios" >&2
+    echo "[pre-commit] sin stagear; NO se añaden:$skipped" >&2
+fi
 echo "[pre-commit] Artefactos derivados al día."
