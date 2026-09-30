@@ -901,6 +901,13 @@ async function handleToolsCall(params, session) {
     return formatToolError("missing_tool_name", "Tool name is required");
   }
 
+  const rechazo = comprobarLlamada(name, args);
+  if (rechazo) {
+    log("warn", `Tool ${name} rechazada: ${rechazo.message}`);
+    return formatToolError(rechazo.code, rechazo.message, name);
+  }
+  const schema = TOOLS_CATALOG[name]?.inputSchema;
+
   log("info", `Executing tool: ${name}`, args);
 
   try {
@@ -937,7 +944,7 @@ async function handleToolsCall(params, session) {
 
     let result;
     if (name === "vault_gobernanza") {
-      result = await executePythonTool("__module__:vault.gobernanza.tool", args, vaultRoot, session);
+      result = await executePythonTool("__module__:vault.gobernanza.tool", args, vaultRoot, session, schema);
     } else if (JS_NATIVE_TOOLS.has(name)) {
       result = await dispatchJsNative(name, args, vaultRoot);
     } else if (name === "vault_graph_fix" || name === "vault_graph_inspect" || name === "vault_gobernanza") {
@@ -949,14 +956,14 @@ async function handleToolsCall(params, session) {
       // que corría la tool era el que la autodetección encontrara — es decir,
       // no necesariamente el que el servidor tiene abierto. Los tests no lo
       // veían porque sembraban VAULT_ROOT en el entorno del padre.
-      result = await executePythonTool(scriptPath, args, vaultRoot, session);
+      result = await executePythonTool(scriptPath, args, vaultRoot, session, schema);
     } else {
       const tool = TOOLS_CATALOG[name];
       if (!tool || !tool.script) {
         return formatToolError("tool_not_found", `Tool '${name}' not found.`);
       }
       const scriptPath = join(SCRIPTS_DIR, tool.script);
-      result = await executePythonTool(scriptPath, args, vaultRoot, session);
+      result = await executePythonTool(scriptPath, args, vaultRoot, session, schema);
     }
 
     await TraceLog.record(name, args, result);
@@ -966,6 +973,112 @@ async function handleToolsCall(params, session) {
     log("error", `Tool ${name} failed: ${e.message}`);
     return formatToolError("TOOL_EXECUTION_FAILED", e.message, name);
   }
+}
+
+// AP-40 en la dirección inversa: el servidor no acepta lo que el catálogo no
+// publica. Hasta v40.34 convertía cualquier clave en `--clave`, publicada o no,
+// y no miraba `exposed_via_mcp` al ejecutar: `root` —que el catálogo retira a
+// propósito— llevaba a `vault_graph_fix` a escribir en la carpeta que nombrara
+// el agente, y `vault_norms` se ejecutaba sin salir en `tools/list`. Se rechaza
+// aquí, antes de arrancar un proceso, con el esquema que el cliente ya vio.
+const TOOLS_SIN_CATALOGO = new Set(["vault_health", "vault_registry"]);
+
+function esObjetoPlano(v) {
+  return v !== null && typeof v === "object" && !Array.isArray(v);
+}
+
+function comprobarLlamada(name, args) {
+  if (!esObjetoPlano(args)) {
+    return { code: "INVALID_ARGS", message: "`arguments` tiene que ser un objeto" };
+  }
+  if (TOOLS_SIN_CATALOGO.has(name)) {
+    const sobran = Object.keys(args);
+    return sobran.length
+      ? { code: "INVALID_ARGS", message: `${name} no acepta parámetros: ${sobran.join(", ")}` }
+      : null;
+  }
+  const tool = Object.prototype.hasOwnProperty.call(TOOLS_CATALOG, name) ? TOOLS_CATALOG[name] : null;
+  if (!tool || tool.exposed_via_mcp === false) {
+    return { code: "tool_not_found", message: `Tool '${name}' not found.` };
+  }
+  const error = validarArgumentos(tool.inputSchema || { properties: {} }, args);
+  return error ? { code: "INVALID_ARGS", message: `${name}: ${error}` } : null;
+}
+
+function validarArgumentos(schema, args) {
+  const props = schema.properties || {};
+  for (const [clave, valor] of Object.entries(args)) {
+    if (!Object.prototype.hasOwnProperty.call(props, clave)) {
+      const publicados = Object.keys(props).join(", ") || "ninguno";
+      return `parámetro no publicado: ${clave} (publicados: ${publicados})`;
+    }
+    if (valor === null || valor === undefined) continue;
+    const prop = props[clave];
+    const tipo = prop.type || "string";
+    if (tipo === "boolean") {
+      if (!(typeof valor === "boolean" || valor === "true" || valor === "false")) {
+        return `${clave} tiene que ser booleano`;
+      }
+    } else if (tipo === "array") {
+      for (const e of Array.isArray(valor) ? valor : [valor]) {
+        if (typeof e !== "string" && typeof e !== "number") {
+          return `${clave} solo admite cadenas o números`;
+        }
+        // Un elemento de lista no puede ir con `=`: si empieza por guion,
+        // argparse lo lee como otro flag y la línea de órdenes cambia.
+        if (typeof e === "string" && e.startsWith("-")) {
+          return `${clave}: un elemento no puede empezar por '-' (${e})`;
+        }
+      }
+    } else if (tipo === "integer" || tipo === "number") {
+      const n = typeof valor === "string" && valor.trim() !== "" ? Number(valor) : valor;
+      if (typeof n !== "number" || !Number.isFinite(n) || (tipo === "integer" && !Number.isInteger(n))) {
+        return `${clave} tiene que ser ${tipo === "integer" ? "entero" : "numérico"}`;
+      }
+    } else if (Array.isArray(valor)) {
+      return `${clave} no admite una lista`;
+    }
+    if (Array.isArray(prop.enum)) {
+      const fuera = (Array.isArray(valor) ? valor : [valor]).filter((v) => !prop.enum.includes(String(v)));
+      if (fuera.length) return `${clave}=${fuera.join(",")} fuera de [${prop.enum.join(", ")}]`;
+    }
+  }
+  for (const obligatorio of schema.required || []) {
+    if (args[obligatorio] === undefined || args[obligatorio] === null) {
+      return `falta el parámetro obligatorio: ${obligatorio}`;
+    }
+  }
+  return null;
+}
+
+/**
+ * Argumentos ya validados → línea de órdenes de argparse. El tipo sale del
+ * esquema, no del valor: adivinar por `"true"`/`"false"` convertía en flag un
+ * texto que casualmente valía eso. Los escalares van como `--flag=valor`, así
+ * que un valor que empieza por `--` sigue siendo un valor.
+ */
+function argumentosACli(args, schema) {
+  const props = schema?.properties || {};
+  const cli = [];
+  for (const [key, value] of Object.entries(args)) {
+    if (value === null || value === undefined) continue;
+    // El nombre del param ES el sufijo exacto del flag de argparse (regenerado
+    // de cada add_argument), con sus guiones o guiones bajos.
+    const flag = "--" + key;
+    const tipo = props[key]?.type || "string";
+    if (tipo === "boolean") {
+      if (value === true || value === "true") cli.push(flag);
+    } else if (tipo === "array") {
+      const elementos = (Array.isArray(value) ? value : [value]).map(String);
+      if (elementos.length) cli.push(flag, ...elementos);
+    } else if (typeof value === "object") {
+      // Params objeto (p. ej. --meta) viajan como JSON, no como "[object Object]".
+      cli.push(`${flag}=${JSON.stringify(value)}`);
+    } else {
+      cli.push(`${flag}=${String(value)}`);
+    }
+  }
+  return cli;
 }
 
 function formatToolError(error, message, tool) {
@@ -1008,27 +1121,11 @@ function toolTimeoutMs() {
   return Math.max(envDefault("VAULT_TOOL_TIMEOUT") * 1000, 120000);
 }
 
-function executePythonTool(scriptPath, args, vaultRoot, session) {
+function executePythonTool(scriptPath, args, vaultRoot, session, schema) {
   return new Promise((resolve, reject) => {
-    const cliArgs = [];
-    for (const [key, value] of Object.entries(args)) {
-      // Pass the flag verbatim. The catalog param name IS the exact argparse flag
-      // suffix (regenerated from each script's add_argument), so it already carries
-      // the right underscores/hyphens. Rewriting _→- here broke underscore flags
-      // like --diagram_type / --new_path / --source_path / --dry_run.
-      const flag = "--" + key;
-      const isBool = typeof value === "boolean" || value === "true" || value === "false";
-      if (isBool) {
-        if (value === true || value === "true") cliArgs.push(flag);
-      } else if (Array.isArray(value)) {
-        cliArgs.push(flag, ...value.map((v) => (v !== null && typeof v === "object") ? JSON.stringify(v) : String(v)));
-      } else if (value !== null && typeof value === "object") {
-        // Object params (e.g. --meta) map to a JSON-string CLI arg, not "[object Object]".
-        cliArgs.push(flag, JSON.stringify(value));
-      } else {
-        cliArgs.push(flag, String(value));
-      }
-    }
+    // Rewriting _→- in the flag broke underscore flags like --diagram_type /
+    // --new_path / --source_path / --dry_run: the name goes verbatim.
+    const cliArgs = argumentosACli(args, schema);
 
     const python = detectPython();
     const env = { ...process.env };

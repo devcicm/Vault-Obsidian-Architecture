@@ -4696,11 +4696,38 @@ def reconciled_params(py_tool: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
     return salida
 
 
+#: Flags que la CLI acepta y MCP no publica: el vault de una llamada MCP lo fija
+#: la sesión del servidor (`VAULT_ROOT` del hijo), no el agente. Publicado,
+#: `root` dejaba a un agente dirigir `vault_graph_fix` o `vault_section_index`
+#: —que escriben— contra cualquier carpeta del disco, y a `vault_fuente_unica`
+#: leerla; `vault-root` hacía lo mismo con `vault_sdd_init`, y `vault_root` con
+#: `vault_gobernanza`. Se quitan del contrato, no se esconden: el servidor
+#: rechaza toda clave que el schema no publique (`additionalProperties: false`).
+PARAMS_FIJADOS_POR_LA_SESION = frozenset({"root", "vault-root", "vault_root"})
+
+#: Tipos JSON Schema que el servidor sabe validar y convertir a flags. Uno
+#: fuera de aquí se publica como `string`, que es como llega a argparse.
+_TIPOS_PUBLICABLES = frozenset({"string", "boolean", "array", "integer", "number", "object"})
+
+
 def _convert_to_json_schema(py_tool: Dict[str, Any]) -> Dict[str, Any]:
-    """Convierte una entrada de TOOLS_CATALOG al formato inputSchema del JSON."""
-    schema = {"type": "object", "properties": {}, "required": []}
+    """Convierte una entrada de TOOLS_CATALOG al formato inputSchema del JSON.
+
+    AP-40 en las dos direcciones. Hasta v40.34 toda propiedad salía como
+    `string` aunque `argparse_params` ya supiera que era `boolean` o `array`: un
+    cliente que validaba contra el esquema mandaba `tags: "api demo"` y la nota
+    acababa con un solo tag. Y sin `additionalProperties: false` el servidor
+    convertía cualquier clave en `--clave`, publicada o no.
+    """
+    schema = {"type": "object", "properties": {}, "required": [],
+              "additionalProperties": False}
     for pname, pinfo in reconciled_params(py_tool).items():
-        prop = {"type": "string", "description": pinfo.get("description", "")}
+        if pname in PARAMS_FIJADOS_POR_LA_SESION:
+            continue
+        tipo = pinfo.get("type") if pinfo.get("type") in _TIPOS_PUBLICABLES else "string"
+        prop = {"type": tipo, "description": pinfo.get("description", "")}
+        if tipo == "array":
+            prop["items"] = {"type": "string"}
         if pinfo.get("required"):
             schema["required"].append(pname)
         if "enum" in str(pinfo.get("validators", [])) or any(v.startswith("enum:") for v in pinfo.get("validators", [])):

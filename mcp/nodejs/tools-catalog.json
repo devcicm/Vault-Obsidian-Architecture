@@ -45,7 +45,7 @@
             "description": "Whether the decision can be reversed (default: true)"
           },
           "human_approved": {
-            "type": "string",
+            "type": "boolean",
             "description": "Flag: decision was reviewed and approved by a human"
           },
           "related_code": {
@@ -53,8 +53,11 @@
             "description": "Comma-separated list of related source files"
           },
           "tags": {
-            "type": "string",
-            "description": "Additional tags"
+            "type": "array",
+            "description": "Additional tags",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -63,7 +66,8 @@
           "decision_type",
           "description",
           "rationale"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -98,14 +102,15 @@
             "description": "Encabezado de sección donde agregar"
           },
           "no-timestamp": {
-            "type": "string",
+            "type": "boolean",
             "description": "Don't add timestamp"
           }
         },
         "required": [
           "path",
           "content"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [],
@@ -126,19 +131,19 @@
         "type": "object",
         "properties": {
           "check": {
-            "type": "string",
+            "type": "boolean",
             "description": "Reporta fronteras cruzadas y vínculos congelados"
           },
           "strict": {
-            "type": "string",
+            "type": "boolean",
             "description": "Exit 1 también si se saldó deuda sin recongelar (gate de CI)"
           },
           "freeze": {
-            "type": "string",
+            "type": "boolean",
             "description": "Recongela scripts/arch-baseline.json tras saldar deuda"
           },
           "blueprint": {
-            "type": "string",
+            "type": "boolean",
             "description": "Deriva docs/ARQUITECTURA.md desde el registro CONTEXTS"
           },
           "map": {
@@ -146,18 +151,19 @@
             "description": "Dice a qué contexto acotado pertenece un módulo"
           },
           "env": {
-            "type": "string",
+            "type": "boolean",
             "description": "la tabla de configuración derivada del registro"
           },
           "sync-env": {
-            "type": "string",
+            "type": "boolean",
             "description": "regenera mcp/nodejs/env-table.json desde el registro"
           },
           "vocab": {
-            "type": "string",
+            "type": "boolean",
             "description": "los vocabularios cerrados y su contexto dueño"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "Todo módulo en disco pertenece a un contexto: sin clasificar es puerta dura, no baseline",
@@ -194,10 +200,11 @@
             "description": "External directory path to audit instead of vault"
           },
           "refresh-dq": {
-            "type": "string",
+            "type": "boolean",
             "description": "Forzar refresh de Data Quality"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [],
@@ -226,7 +233,8 @@
             "type": "string",
             "description": "Verificar integridad de un backup existente"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -252,7 +260,8 @@
             "type": "string",
             "description": "Etiqueta del backup (default: backup-timestamp)"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -278,7 +287,8 @@
             "type": "string",
             "description": "Cantidad máxima (default: 20)"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [],
@@ -323,8 +333,11 @@
             "description": "Agent identifier (claude, codex, gpt, gemini, deepseek, human)"
           },
           "tags": {
-            "type": "string",
-            "description": "Tags separados por espacio"
+            "type": "array",
+            "description": "Tags separados por espacio",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -332,7 +345,8 @@
           "url",
           "summary",
           "source_type"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -355,26 +369,27 @@
         "type": "object",
         "properties": {
           "check": {
-            "type": "string",
+            "type": "boolean",
             "description": "Reporta el estado de la deuda AP-51"
           },
           "strict": {
-            "type": "string",
+            "type": "boolean",
             "description": "Exit 1 si aparecieron sitios nuevos (gate de CI)"
           },
           "freeze": {
-            "type": "string",
+            "type": "boolean",
             "description": "Recongela scripts/blame-baseline.json tras saldar deuda"
           },
           "admitir-nuevos": {
-            "type": "string",
+            "type": "boolean",
             "description": "Con --freeze: congela también sitios sin precedente"
           },
           "migrate": {
-            "type": "string",
+            "type": "boolean",
             "description": "Traduce una baseline v1 (por línea) a v2 (por firma)"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "La baseline solo puede encoger: todo codigo nuevo nace conforme",
@@ -402,30 +417,31 @@
         "type": "object",
         "properties": {
           "blueprint": {
-            "type": "string",
+            "type": "boolean",
             "description": "Regenera docs/BLUEPRINT.md desde los registros"
           },
           "check": {
-            "type": "string",
+            "type": "boolean",
             "description": "El doc publicado y la trazabilidad contra los registros"
           },
           "strict": {
-            "type": "string",
+            "type": "boolean",
             "description": "Exit 1 si el plano diverge o hay eslabon roto"
           },
           "freeze": {
-            "type": "string",
+            "type": "boolean",
             "description": "Congela la deuda de la capa 4 (norma sin puerta ni test)"
           },
           "admitir-nuevos": {
-            "type": "string",
+            "type": "boolean",
             "description": "Permite congelar normas sin cobertura sin precedente"
           },
           "layers": {
-            "type": "string",
+            "type": "boolean",
             "description": "Las 7 capas en JSON, sin generar el documento"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "El plano es derivado: editarlo a mano lo rompe en --check, porque el registro es la fuente y el documento el efecto",
@@ -491,12 +507,18 @@
             "description": "Corrección aplicada"
           },
           "causes": {
-            "type": "string",
-            "description": "Notas que este defecto causa (arista tipada)"
+            "type": "array",
+            "description": "Notas que este defecto causa (arista tipada)",
+            "items": {
+              "type": "string"
+            }
           },
           "caused-by": {
-            "type": "string",
-            "description": "Notas que lo causan (arista tipada)"
+            "type": "array",
+            "description": "Notas que lo causan (arista tipada)",
+            "items": {
+              "type": "string"
+            }
           },
           "verified-by": {
             "type": "string",
@@ -507,8 +529,11 @@
             "description": "Archivos separados por coma"
           },
           "tags": {
-            "type": "string",
-            "description": "Tags adicionales"
+            "type": "array",
+            "description": "Tags adicionales",
+            "items": {
+              "type": "string"
+            }
           },
           "agent": {
             "type": "string",
@@ -519,7 +544,8 @@
           "project",
           "title",
           "symptom"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [
         "AP-16: requiere agent o VAULT_AGENT",
@@ -577,7 +603,7 @@
             "description": "After recording, trigger propagation: conservative|transitive|critical-path"
           },
           "query": {
-            "type": "string",
+            "type": "boolean",
             "description": "Query mode: return recent log entries"
           },
           "project": {
@@ -588,7 +614,8 @@
             "type": "string",
             "description": "Number of entries to return in query (default: 20)"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [],
@@ -609,19 +636,19 @@
         "type": "object",
         "properties": {
           "check": {
-            "type": "string",
+            "type": "boolean",
             "description": "Contrasta cada entrada con el commit que cita"
           },
           "strict": {
-            "type": "string",
+            "type": "boolean",
             "description": "Exit code 1 ante cualquier problema (uso en CI)"
           },
           "list": {
-            "type": "string",
+            "type": "boolean",
             "description": "Tabla de entradas con la fecha real de su commit"
           },
           "fijar-hash": {
-            "type": "string",
+            "type": "boolean",
             "description": "Sustituye el `pending` de la versión en curso"
           },
           "hash": {
@@ -629,14 +656,15 @@
             "description": "Commit a citar con --fijar-hash (por defecto HEAD)"
           },
           "dry-run": {
-            "type": "string",
+            "type": "boolean",
             "description": "Con --fijar-hash, no escribe el manifiesto"
           },
           "freeze": {
-            "type": "string",
+            "type": "boolean",
             "description": "Anota divergencias de fecha que no se pueden corregir"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "Usa la fecha de autoría (%as), no la de commit: un rebase reescribe la segunda y estrenaría divergencias falsas",
@@ -666,22 +694,23 @@
         "type": "object",
         "properties": {
           "check": {
-            "type": "string",
+            "type": "boolean",
             "description": "Calcula los componentes contando aristas diferidas"
           },
           "strict": {
-            "type": "string",
+            "type": "boolean",
             "description": "Exit 1 si aparece un ciclo diferido nuevo"
           },
           "freeze": {
-            "type": "string",
+            "type": "boolean",
             "description": "Recongela la baseline de ciclos preexistentes"
           },
           "admitir-nuevos": {
-            "type": "string",
+            "type": "boolean",
             "description": "Permite congelar ciclos sin precedente"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "Mide el grafo estatico de modulos: no ve importlib, ni un import construido con una cadena, ni el acoplamiento que pasa por el sistema de ficheros o por una variable global compartida",
@@ -716,7 +745,8 @@
         },
         "required": [
           "project"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -783,8 +813,11 @@
             "description": "Additional notes"
           },
           "tags": {
-            "type": "string",
-            "description": "Additional tags"
+            "type": "array",
+            "description": "Additional tags",
+            "items": {
+              "type": "string"
+            }
           },
           "methods": {
             "type": "string",
@@ -811,13 +844,14 @@
             "description": "Directory to scan recursively for code files and document each one"
           },
           "tag-source": {
-            "type": "string",
+            "type": "boolean",
             "description": "Embed @vault: reference in the source file after creating the vault note"
           }
         },
         "required": [
           "project"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -857,17 +891,18 @@
             "description": "Class name to search across all modules"
           },
           "list": {
-            "type": "string",
+            "type": "boolean",
             "description": "List all documented modules for the project"
           },
           "deps": {
-            "type": "string",
+            "type": "boolean",
             "description": "Include dependency relations (use with --file)"
           }
         },
         "required": [
           "project"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [],
@@ -917,7 +952,8 @@
           "from_file",
           "to_file",
           "relation_type"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -948,18 +984,19 @@
             "description": "Directorio de código fuente a escanear para refs huérfanas"
           },
           "fix": {
-            "type": "string",
+            "type": "boolean",
             "description": "Inyectar @vault: en archivos sin tag"
           },
           "dry-run": {
-            "type": "string",
+            "type": "boolean",
             "description": "Mostrar qué se haría sin modificar archivos"
           },
           "report": {
-            "type": "string",
+            "type": "boolean",
             "description": "Salida human-readable en lugar de JSON"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -998,15 +1035,15 @@
             "description": "Embeber @vault: en archivo fuente (ruta nota sin .md)"
           },
           "unlink-vault": {
-            "type": "string",
+            "type": "boolean",
             "description": "Eliminar @vault: de un archivo fuente"
           },
           "scan": {
-            "type": "string",
+            "type": "boolean",
             "description": "Listar @vault: y @norm en un archivo"
           },
           "list": {
-            "type": "string",
+            "type": "boolean",
             "description": "Listar todos los tags registrados"
           },
           "tag-note": {
@@ -1030,8 +1067,11 @@
             "description": "Descripción detallada del tag"
           },
           "files": {
-            "type": "string",
-            "description": "Lista de archivos para --define (aplica inmediatamente)"
+            "type": "array",
+            "description": "Lista de archivos para --define (aplica inmediatamente)",
+            "items": {
+              "type": "string"
+            }
           },
           "prefix": {
             "type": "string",
@@ -1041,7 +1081,8 @@
             "type": "string",
             "description": "Agente que ejecuta la operación"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -1084,7 +1125,7 @@
             "description": "Descarta candidatas por debajo de este score"
           },
           "no-preferences": {
-            "type": "string",
+            "type": "boolean",
             "description": "No inyecta las preferencias 'must'"
           },
           "format": {
@@ -1096,10 +1137,11 @@
             ]
           },
           "explain": {
-            "type": "string",
+            "type": "boolean",
             "description": "Incluye las señales del rerank por nota"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "El presupuesto recorta notas enteras: nunca entrega media nota como entera",
@@ -1125,22 +1167,23 @@
         "type": "object",
         "properties": {
           "check": {
-            "type": "string",
+            "type": "boolean",
             "description": "Mide los criterios contra los modulos vivos"
           },
           "strict": {
-            "type": "string",
+            "type": "boolean",
             "description": "Exit 1 si aparece una copia nueva"
           },
           "freeze": {
-            "type": "string",
+            "type": "boolean",
             "description": "Recongela la baseline de copias preexistentes"
           },
           "admitir-nuevos": {
-            "type": "string",
+            "type": "boolean",
             "description": "Permite congelar copias sin precedente"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "Verde no prueba que no haya copias: prueba que no hay copias de la forma que la tool sabe reconocer, y eso se dice en el envelope",
@@ -1181,22 +1224,23 @@
             "description": "Nombre del agente (default: claude)"
           },
           "trash-only": {
-            "type": "string",
+            "type": "boolean",
             "description": "Solo mover a 20_Quarantine/"
           },
           "dry-run": {
-            "type": "string",
+            "type": "boolean",
             "description": "Simular sin escribir"
           },
           "force": {
-            "type": "string",
+            "type": "boolean",
             "description": "Omitir creacion de change-log"
           }
         },
         "required": [
           "path",
           "reason"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [
         "SP-01: change_log obligatorio antes de delete"
@@ -1223,11 +1267,11 @@
         "type": "object",
         "properties": {
           "dry-run": {
-            "type": "string",
+            "type": "boolean",
             "description": "Detectar cambios sin actualizar hash-index"
           },
           "snapshot": {
-            "type": "string",
+            "type": "boolean",
             "description": "Guardar snapshot actual"
           },
           "project": {
@@ -1238,7 +1282,8 @@
             "type": "string",
             "description": "Filtrar stale_deps por nivel minimo de riesgo"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -1290,7 +1335,7 @@
             "description": "Posición Y del pan"
           },
           "fit": {
-            "type": "string",
+            "type": "boolean",
             "description": "Ajustar al contenedor"
           },
           "direction": {
@@ -1306,14 +1351,15 @@
             "description": "Nodos a ocultar (coma)"
           },
           "config": {
-            "type": "string",
+            "type": "boolean",
             "description": "Guardar configuración global"
           },
           "json": {
-            "type": "string",
+            "type": "boolean",
             "description": "Salida JSON"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -1380,7 +1426,8 @@
           "diagram_type",
           "category",
           "content"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -1423,14 +1470,15 @@
             "description": "Archivo B para comparacion directa (requiere --compare)"
           },
           "stat": {
-            "type": "string",
+            "type": "boolean",
             "description": "Solo estadisticas (sin hunks) -- ideal para LLM"
           },
           "context": {
             "type": "string",
             "description": "Lineas de contexto alrededor de cada cambio (default: 3)"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [],
@@ -1451,26 +1499,27 @@
         "type": "object",
         "properties": {
           "check": {
-            "type": "string",
+            "type": "boolean",
             "description": "Reporta las cifras que divergen del registro"
           },
           "fix": {
-            "type": "string",
+            "type": "boolean",
             "description": "Reescribe solo el número, nunca la frase que lo rodea"
           },
           "list": {
-            "type": "string",
+            "type": "boolean",
             "description": "Emite los valores vivos derivados del registro"
           },
           "no-slow": {
-            "type": "string",
+            "type": "boolean",
             "description": "Omite el conteo de tests (requiere pytest --collect-only)"
           },
           "strict": {
-            "type": "string",
+            "type": "boolean",
             "description": "Exit code 1 ante cualquier divergencia (uso en CI)"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "No reescribe el changelog ni la tabla de versiones (cifras históricas)",
@@ -1497,18 +1546,19 @@
         "type": "object",
         "properties": {
           "check": {
-            "type": "string",
+            "type": "boolean",
             "description": "Modo comprobación (informe sin exit code)"
           },
           "strict": {
-            "type": "string",
+            "type": "boolean",
             "description": "Exit 1 si falta o está corrupto algún artefacto"
           },
           "regenerar": {
-            "type": "string",
+            "type": "boolean",
             "description": "Ejecuta el productor de cada artefacto ausente o inválido"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "No regenera nada: solo verifica existencia y validez de los JSON",
@@ -1533,18 +1583,19 @@
         "type": "object",
         "properties": {
           "check": {
-            "type": "string",
+            "type": "boolean",
             "description": "Reporta tools sin sección, grupos sin sección y filas de índice erróneas"
           },
           "fix": {
-            "type": "string",
+            "type": "boolean",
             "description": "Regenera la tabla de índice desde GROUPS (no inventa secciones)"
           },
           "strict": {
-            "type": "string",
+            "type": "boolean",
             "description": "Exit code 1 ante cualquier divergencia (uso en CI)"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "El encabezado de sección usa la clave literal de GROUPS: un título propio en el README crearía un cuarto vocabulario de grupos",
@@ -1589,14 +1640,18 @@
             ]
           },
           "extensions": {
-            "type": "string",
-            "description": "File extensions to track (e.g. .py .js .ts). Default: all code/config extensions."
+            "type": "array",
+            "description": "File extensions to track (e.g. .py .js .ts). Default: all code/config extensions.",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
           "path",
           "project"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -1666,7 +1721,8 @@
         "required": [
           "project",
           "env"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -1714,7 +1770,8 @@
           "project",
           "environment",
           "vars"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [
         "No guardar secrets en texto plano"
@@ -1739,26 +1796,27 @@
         "type": "object",
         "properties": {
           "check": {
-            "type": "string",
+            "type": "boolean",
             "description": "Reporta el estado de la deuda"
           },
           "strict": {
-            "type": "string",
+            "type": "boolean",
             "description": "Exit 1 si la deuda crecio respecto a la baseline"
           },
           "freeze": {
-            "type": "string",
+            "type": "boolean",
             "description": "Recongela la baseline tras saldar deuda"
           },
           "admitir-nuevos": {
-            "type": "string",
+            "type": "boolean",
             "description": "Con --freeze: congela también sitios sin precedente"
           },
           "migrate": {
-            "type": "string",
+            "type": "boolean",
             "description": "Traduce una baseline v1 (por línea) a v2 (por firma)"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "La baseline solo puede encoger: --strict falla por sitios nuevos, no por la deuda historica",
@@ -1787,22 +1845,23 @@
         "type": "object",
         "properties": {
           "check": {
-            "type": "string",
+            "type": "boolean",
             "description": "Recorre los try con llamada de riesgo a la vista"
           },
           "strict": {
-            "type": "string",
+            "type": "boolean",
             "description": "Exit 1 si aparece un handler sin la excepcion que escapa"
           },
           "freeze": {
-            "type": "string",
+            "type": "boolean",
             "description": "Recongela la baseline; nace vacia y solo encoge"
           },
           "admitir-nuevos": {
-            "type": "string",
+            "type": "boolean",
             "description": "Permite congelar sitios sin precedente, y los lista"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "Solo ve la llamada de riesgo escrita a la vista en el cuerpo del try: un safe_load detras de un helper queda fuera, asi que mide mejor el codigo que peor esta escrito, y lo declara",
@@ -1831,14 +1890,15 @@
         "type": "object",
         "properties": {
           "dry-run": {
-            "type": "string",
+            "type": "boolean",
             "description": "Muestra el plan de pasos sin ejecutar ninguno"
           },
           "step": {
             "type": "string",
             "description": "Ejecuta solo un paso (1-7) en vez de todos"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "El orden de los pasos importa: cada uno lee lo que el anterior regenera",
@@ -1868,7 +1928,7 @@
         "type": "object",
         "properties": {
           "apply": {
-            "type": "string",
+            "type": "boolean",
             "description": "Aplicar fixes (default: dry-run)"
           },
           "path": {
@@ -1887,10 +1947,11 @@
             ]
           },
           "include-sandbox": {
-            "type": "string",
+            "type": "boolean",
             "description": "Include vault-sandbox/ in scan (test fixtures)"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -1963,8 +2024,11 @@
             "description": "Comma-separated file paths of related source code"
           },
           "tags": {
-            "type": "string",
-            "description": "Additional tags"
+            "type": "array",
+            "description": "Additional tags",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -1973,7 +2037,8 @@
           "type",
           "description",
           "mermaid"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -1996,11 +2061,11 @@
         "type": "object",
         "properties": {
           "scan": {
-            "type": "string",
+            "type": "boolean",
             "description": "Escanear carpetas nuevas"
           },
           "list": {
-            "type": "string",
+            "type": "boolean",
             "description": "Listar carpetas"
           },
           "add": {
@@ -2012,14 +2077,15 @@
             "description": "Eliminar carpeta del registro"
           },
           "cleanup": {
-            "type": "string",
+            "type": "boolean",
             "description": "Limpiar carpetas huérfanas"
           },
           "json": {
-            "type": "string",
+            "type": "boolean",
             "description": "Salida JSON"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -2041,19 +2107,16 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "root": {
-            "type": "string",
-            "description": "Raiz del vault ajeno (obligatoria, sin default)"
-          },
           "report": {
             "type": "string",
             "description": "Fichero del informe, siempre fuera del vault medido"
           },
           "self-test": {
-            "type": "string",
+            "type": "boolean",
             "description": "Verifica las negativas de la tool, sin vault ajeno"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "Rechaza cualquier raiz dentro del repo del estandar, sandbox incluido",
@@ -2081,18 +2144,19 @@
         "type": "object",
         "properties": {
           "apply": {
-            "type": "string",
+            "type": "boolean",
             "description": "Escribe las reparaciones (default: dry-run)"
           },
           "check": {
-            "type": "string",
+            "type": "boolean",
             "description": "solo mide (por defecto)"
           },
           "strict": {
-            "type": "string",
+            "type": "boolean",
             "description": "Exit 1 si queda frontmatter ilegible"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -2116,30 +2180,27 @@
         "type": "object",
         "properties": {
           "check": {
-            "type": "string",
+            "type": "boolean",
             "description": "Mide los conflictos de fuente de verdad"
           },
           "strict": {
-            "type": "string",
+            "type": "boolean",
             "description": "Exit 1 si aparece un conflicto nuevo"
           },
           "report": {
-            "type": "string",
+            "type": "boolean",
             "description": "Los conflictos legibles: que valor dice cada nota"
           },
           "freeze": {
-            "type": "string",
+            "type": "boolean",
             "description": "Recongela la baseline de conflictos preexistentes"
           },
           "admitir-nuevos": {
-            "type": "string",
+            "type": "boolean",
             "description": "Permite congelar conflictos sin precedente"
-          },
-          "root": {
-            "type": "string",
-            "description": "Vault ajeno a contrastar, solo lectura (regla 7)"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "Verde no prueba una sola fuente de verdad: prueba que no hay divergencia de la clase decidible sin interpretar. La prosa, el valor sin tipo y el sinonimo quedan fuera y se declaran",
@@ -2169,7 +2230,7 @@
         "type": "object",
         "properties": {
           "list": {
-            "type": "string",
+            "type": "boolean",
             "description": "List all 8 fundamentals"
           },
           "check": {
@@ -2177,22 +2238,23 @@
             "description": "Verify fundamentals for a single note"
           },
           "coverage": {
-            "type": "string",
+            "type": "boolean",
             "description": "Per-tool coverage report"
           },
           "doc": {
-            "type": "string",
+            "type": "boolean",
             "description": "Generate data-fundamentals.md"
           },
           "framework": {
-            "type": "string",
+            "type": "boolean",
             "description": "Generate data-framework.json + .md (CIA, F1-F8, FAIR, V's, ISO)"
           },
           "matrix": {
-            "type": "string",
+            "type": "boolean",
             "description": "Print concept -> metric -> tool -> artifact -> enforcement matrix"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [],
@@ -2213,22 +2275,23 @@
         "type": "object",
         "properties": {
           "strict": {
-            "type": "string",
+            "type": "boolean",
             "description": "Exit 1 si alguna puerta falla (gate de CI)"
           },
           "list": {
-            "type": "string",
+            "type": "boolean",
             "description": "Lista las puertas y que mide cada una, sin ejecutarlas"
           },
           "check-doc": {
-            "type": "string",
+            "type": "boolean",
             "description": "Comprueba que el checklist de AGENTS.md cite todas las puertas"
           },
           "fix-doc": {
-            "type": "string",
+            "type": "boolean",
             "description": "Regenera el bloque derivado del checklist en AGENTS.md"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "El registro manda sobre el doc: una puerta ausente del checklist se anade al checklist, no se quita del registro",
@@ -2262,22 +2325,19 @@
             "type": "string",
             "description": "Carpeta destino (para path-anchored links)"
           },
-          "vault_root": {
-            "type": "string",
-            "description": "Ruta al vault"
-          },
           "format": {
             "type": "string",
             "description": "Formato de salida (json o text)"
           },
           "trace": {
-            "type": "string",
+            "type": "boolean",
             "description": "Incluir trace de validación"
           }
         },
         "required": [
           "content"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [],
@@ -2294,10 +2354,11 @@
         "type": "object",
         "properties": {
           "typed": {
-            "type": "string",
+            "type": "boolean",
             "description": "Generate graph-enriched.json with typed predicates (merges wiki-links + entity + code relations)"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -2320,12 +2381,8 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "root": {
-            "type": "string",
-            "description": "Vault root (default: VAULT_ROOT)"
-          },
           "apply": {
-            "type": "string",
+            "type": "boolean",
             "description": "Apply fixes (default: dry-run)"
           },
           "auto-apply-partial": {
@@ -2345,30 +2402,31 @@
             "description": "Fuzzy match threshold (default: 0.7)"
           },
           "json": {
-            "type": "string",
+            "type": "boolean",
             "description": "Output JSON (default)"
           },
           "classify": {
-            "type": "string",
+            "type": "boolean",
             "description": "Classify all broken links and emit JSON; no writes"
           },
           "auto-fix-safe": {
-            "type": "string",
+            "type": "boolean",
             "description": "Auto-resolve exact_candidate and points_to_migrated without prompting"
           },
           "wizard": {
-            "type": "string",
+            "type": "boolean",
             "description": "Interactive wizard for partial_match links (uses stdin/stdout)"
           },
           "stubs": {
-            "type": "string",
+            "type": "boolean",
             "description": "Create stub notes in 04_Sessions/stubs/ for no_match targets"
           },
           "stubs-all": {
-            "type": "string",
+            "type": "boolean",
             "description": "Create stubs for ALL unfixed broken links (overrides default skip)"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "Hacer backup antes de aplicar fixes"
@@ -2394,16 +2452,12 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "root": {
-            "type": "string",
-            "description": "Vault root (default: VAULT_ROOT auto-detect)"
-          },
           "json": {
-            "type": "string",
+            "type": "boolean",
             "description": "Output JSON (default)"
           },
           "md": {
-            "type": "string",
+            "type": "boolean",
             "description": "Output Markdown instead of JSON"
           },
           "threshold": {
@@ -2411,14 +2465,15 @@
             "description": "Jaccard threshold for near-dups (default: 0.85)"
           },
           "no-templates": {
-            "type": "string",
+            "type": "boolean",
             "description": "Exclude template notes from near-dup detection"
           },
           "include-migrated": {
-            "type": "string",
+            "type": "boolean",
             "description": "Include 10_Migrated/ in scan (default: excluded)"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [],
@@ -2447,7 +2502,8 @@
             "type": "string",
             "description": "Comma-separated list of predicates to include (e.g. depends_on,implements)"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -2480,10 +2536,11 @@
             "description": "Solo procesar esta nota"
           },
           "apply": {
-            "type": "string",
+            "type": "boolean",
             "description": "Aplicar el pruning (sin esto solo dry-run)"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -2506,8 +2563,11 @@
         "type": "object",
         "properties": {
           "changed": {
-            "type": "string",
-            "description": "Vault-relative paths of changed notes"
+            "type": "array",
+            "description": "Vault-relative paths of changed notes",
+            "items": {
+              "type": "string"
+            }
           },
           "since": {
             "type": "string",
@@ -2525,7 +2585,8 @@
             "type": "string",
             "description": "Comma-separated predicates to filter edges (e.g. depends_on,calls,implements). Uses graph-enriched.json."
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [],
@@ -2611,7 +2672,8 @@
         "required": [
           "project",
           "title"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -2641,7 +2703,8 @@
             "type": "string",
             "description": "Ubicación geográfica"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -2696,8 +2759,11 @@
             "description": "Component status"
           },
           "tags": {
-            "type": "string",
-            "description": "Tags"
+            "type": "array",
+            "description": "Tags",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -2705,7 +2771,8 @@
           "type",
           "description",
           "config"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -2736,7 +2803,7 @@
             "description": "Texto literal"
           },
           "stdin": {
-            "type": "string",
+            "type": "boolean",
             "description": "Lee de stdin"
           },
           "url": {
@@ -2752,11 +2819,11 @@
             "description": "Subcarpeta dentro de la sección"
           },
           "commit": {
-            "type": "string",
+            "type": "boolean",
             "description": "Escribe de verdad (por defecto es dry-run)"
           },
           "dry-run": {
-            "type": "string",
+            "type": "boolean",
             "description": "Explícito; es el comportamiento por defecto"
           },
           "max-notes": {
@@ -2768,11 +2835,14 @@
             "description": ""
           },
           "tags": {
-            "type": "string",
-            "description": "Tags adicionales"
+            "type": "array",
+            "description": "Tags adicionales",
+            "items": {
+              "type": "string"
+            }
           },
           "allow-network": {
-            "type": "string",
+            "type": "boolean",
             "description": "Permite descargar la URL"
           },
           "agent": {
@@ -2782,7 +2852,8 @@
         },
         "required": [
           "section"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [
         "Pre-vuelo anti-poison obligatorio (cli.safety)",
@@ -2817,14 +2888,15 @@
             "description": "Versión objetivo (default: v34)"
           },
           "no-audit": {
-            "type": "string",
+            "type": "boolean",
             "description": "No ejecutar vault_audit al final"
           },
           "clean": {
-            "type": "string",
+            "type": "boolean",
             "description": "Borrar contenido existente (DANGEROUS)"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -2848,11 +2920,11 @@
         "type": "object",
         "properties": {
           "check": {
-            "type": "string",
+            "type": "boolean",
             "description": "Mide las tres invariantes y publica los umbrales derivados"
           },
           "strict": {
-            "type": "string",
+            "type": "boolean",
             "description": "Exit 1 si aparece un hallazgo sin precedente"
           },
           "trace": {
@@ -2860,14 +2932,15 @@
             "description": "Camino mas corto de un modulo hasta el nucleo"
           },
           "freeze": {
-            "type": "string",
+            "type": "boolean",
             "description": "Recongela la baseline de hallazgos preexistentes"
           },
           "admitir-nuevos": {
-            "type": "string",
+            "type": "boolean",
             "description": "Permite congelar hallazgos sin precedente"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "No parsea un solo import ni reimplementa K1: si midiera su propia pureza con su propio criterio seria AP-44 cometido en la tool que existe para trazar el nucleo",
@@ -2916,7 +2989,8 @@
         },
         "required": [
           "query"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [],
@@ -2953,12 +3027,18 @@
             "description": ""
           },
           "tags": {
-            "type": "string",
-            "description": "Tags separados por espacio"
+            "type": "array",
+            "description": "Tags separados por espacio",
+            "items": {
+              "type": "string"
+            }
           },
           "related": {
-            "type": "string",
-            "description": ""
+            "type": "array",
+            "description": "",
+            "items": {
+              "type": "string"
+            }
           },
           "scan-path": {
             "type": "string",
@@ -2967,7 +3047,8 @@
         },
         "required": [
           "category"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -3001,7 +3082,8 @@
             "type": "string",
             "description": "Límite de resultados (default: 50)"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [],
@@ -3082,7 +3164,8 @@
           "type",
           "title",
           "description"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -3104,7 +3187,8 @@
       "script": "vault_master_index.py",
       "inputSchema": {
         "type": "object",
-        "properties": {}
+        "properties": {},
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -3148,7 +3232,8 @@
               "dedup"
             ]
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -3179,14 +3264,15 @@
             "description": "Proyecto a verificar"
           },
           "fix": {
-            "type": "string",
+            "type": "boolean",
             "description": "Auto-corregir errores"
           },
           "json": {
-            "type": "string",
+            "type": "boolean",
             "description": "Salida JSON"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [],
@@ -3215,26 +3301,36 @@
             "description": "Project slug"
           },
           "keywords": {
-            "type": "string",
-            "description": "Additional keywords"
+            "type": "array",
+            "description": "Additional keywords",
+            "items": {
+              "type": "string"
+            }
           },
           "formats": {
-            "type": "string",
-            "description": "Formats to process"
+            "type": "array",
+            "description": "Formats to process",
+            "items": {
+              "type": "string"
+            }
           },
           "dry_run": {
             "type": "string",
             "description": "Simular sin aplicar"
           },
           "no-dry_run": {
-            "type": "string",
-            "description": "Disable dry run mode"
+            "type": "array",
+            "description": "Disable dry run mode",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
           "source_path",
           "project"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [
         "Hacer backup antes de migrar"
@@ -3269,7 +3365,8 @@
         },
         "required": [
           "report_path"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [
         "Confirmar antes de revertir"
@@ -3294,11 +3391,11 @@
         "type": "object",
         "properties": {
           "list": {
-            "type": "string",
+            "type": "boolean",
             "description": "Lista perfiles disponibles"
           },
           "active": {
-            "type": "string",
+            "type": "boolean",
             "description": "Devuelve el perfil activo"
           },
           "set": {
@@ -3310,14 +3407,15 @@
             "description": "Auto-detecta desde nombre del cliente MCP"
           },
           "budget": {
-            "type": "string",
+            "type": "boolean",
             "description": "Solo imprime el budget (consumo interno)"
           },
           "window": {
-            "type": "string",
+            "type": "boolean",
             "description": "Solo imprime context_window"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -3356,18 +3454,19 @@
             "description": "Carpeta destino"
           },
           "dry-run": {
-            "type": "string",
+            "type": "boolean",
             "description": "Simular sin aplicar"
           },
           "impact": {
-            "type": "string",
+            "type": "boolean",
             "description": "Analizar impacto sin ejecutar"
           },
           "json": {
-            "type": "string",
+            "type": "boolean",
             "description": "Salida JSON"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "Confimar antes de sobreescribir"
@@ -3463,7 +3562,8 @@
         "required": [
           "project",
           "title"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -3486,22 +3586,23 @@
         "type": "object",
         "properties": {
           "check": {
-            "type": "string",
+            "type": "boolean",
             "description": "Reporta el estado de la deuda AP-37"
           },
           "strict": {
-            "type": "string",
+            "type": "boolean",
             "description": "Exit 1 si aparecieron infractoras nuevas (gate de CI)"
           },
           "freeze": {
-            "type": "string",
+            "type": "boolean",
             "description": "Recongela scripts/noop-baseline.json tras saldar deuda"
           },
           "admitir-nuevos": {
-            "type": "string",
+            "type": "boolean",
             "description": "Permite que --freeze congele deuda sin precedente, listándola"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "La baseline solo puede encoger: toda tool nueva nace conforme",
@@ -3528,7 +3629,7 @@
         "type": "object",
         "properties": {
           "list": {
-            "type": "string",
+            "type": "boolean",
             "description": "Listar normas"
           },
           "show": {
@@ -3536,7 +3637,7 @@
             "description": "Mostrar detalle de una norma (ej: AP-22)"
           },
           "scan": {
-            "type": "string",
+            "type": "boolean",
             "description": "Escanear nota para detectar normas aplicables"
           },
           "apply": {
@@ -3544,23 +3645,19 @@
             "description": "Agregar referencia de norma al frontmatter"
           },
           "rebuild": {
-            "type": "string",
+            "type": "boolean",
             "description": "Regenerar norm-registry.json"
           },
           "audit": {
-            "type": "string",
+            "type": "boolean",
             "description": "Auditar el vault contra las normas automatizables (AP-06/07/09/10/15/19, CN-02/03, SP-01)"
           },
-          "root": {
-            "type": "string",
-            "description": "Vault root para --audit (default: VAULT_ROOT auto-detect)"
-          },
           "strict": {
-            "type": "string",
+            "type": "boolean",
             "description": "Con --audit: salir con código 1 si hay violaciones (gate de CI). Sin este flag el audit informa pero siempre sale 0."
           },
           "check-framework": {
-            "type": "string",
+            "type": "boolean",
             "description": "Verificar que el manifiesto documente todos los ids del marco de datos (CIA/F/FAIR/V/ISO)"
           },
           "spec": {
@@ -3609,14 +3706,15 @@
             ]
           },
           "heal-ap46": {
-            "type": "string",
+            "type": "boolean",
             "description": "Repara frontmatter roto (AP-46). Informe en seco salvo --apply-heal"
           },
           "apply-heal": {
-            "type": "string",
+            "type": "boolean",
             "description": "Con --heal-ap46: escribe de verdad, con backup en .history/"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [],
@@ -3637,26 +3735,27 @@
         "type": "object",
         "properties": {
           "check": {
-            "type": "string",
+            "type": "boolean",
             "description": "Las cinco medidas contra el catalogo vivo"
           },
           "strict": {
-            "type": "string",
+            "type": "boolean",
             "description": "Exit 1 si alguna medida falla"
           },
           "freeze": {
-            "type": "string",
+            "type": "boolean",
             "description": "Recongela la baseline de afirmaciones sin traza"
           },
           "admitir-nuevos": {
-            "type": "string",
+            "type": "boolean",
             "description": "Permite congelar afirmaciones sin precedente"
           },
           "freeze-distincion": {
-            "type": "string",
+            "type": "boolean",
             "description": "recongela las normas sin distinción de C7 (AP-60)"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "La traza no demuestra enforcement y no se presenta como si lo hiciera: demuestra lo contrario, que la afirmacion no es seguible hasta el codigo que la cumple",
@@ -3705,7 +3804,7 @@
             "description": "Lenguaje principal si la autodetección falla"
           },
           "dry-run": {
-            "type": "string",
+            "type": "boolean",
             "description": "Simular sin escribir"
           },
           "agent": {
@@ -3713,8 +3812,11 @@
             "description": "Agente que firma las notas creadas"
           },
           "skip": {
-            "type": "string",
-            "description": "Secciones a omitir (01…17)"
+            "type": "array",
+            "description": "Secciones a omitir (01…17)",
+            "items": {
+              "type": "string"
+            }
           },
           "git-phases": {
             "type": "string",
@@ -3725,14 +3827,15 @@
             "description": "Ventana de historia leída. Si se alcanza, la salida lo declara en warnings: el tope es un parámetro de la invocación, no un hecho del proyecto"
           },
           "no-git": {
-            "type": "string",
+            "type": "boolean",
             "description": "Omitir la arqueología de historia"
           }
         },
         "required": [
           "project",
           "path"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [
         "AP-45: no escribe una nota sin evidencia detrás; lo omitido se reporta en skipped_no_evidence en vez de rellenarse",
@@ -3773,7 +3876,8 @@
             "type": "string",
             "description": "Filter by status"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [],
@@ -3814,12 +3918,18 @@
             "description": "Descripción del patrón"
           },
           "files": {
-            "type": "string",
-            "description": "Files implementing this pattern"
+            "type": "array",
+            "description": "Files implementing this pattern",
+            "items": {
+              "type": "string"
+            }
           },
           "related": {
-            "type": "string",
-            "description": "Related pattern names"
+            "type": "array",
+            "description": "Related pattern names",
+            "items": {
+              "type": "string"
+            }
           },
           "notes": {
             "type": "string",
@@ -3831,7 +3941,8 @@
           "name",
           "type",
           "status"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -3854,15 +3965,15 @@
         "type": "object",
         "properties": {
           "set": {
-            "type": "string",
+            "type": "boolean",
             "description": "Registra o actualiza una preferencia"
           },
           "list": {
-            "type": "string",
+            "type": "boolean",
             "description": "Lista las preferencias registradas"
           },
           "context": {
-            "type": "string",
+            "type": "boolean",
             "description": "Bloque markdown listo para inyectar"
           },
           "revoke": {
@@ -3894,15 +4005,18 @@
             "description": "Ámbito: 'global' o un slug de proyecto"
           },
           "tags": {
-            "type": "string",
-            "description": "Tags adicionales"
+            "type": "array",
+            "description": "Tags adicionales",
+            "items": {
+              "type": "string"
+            }
           },
           "reason": {
             "type": "string",
             "description": "Motivo de la revocación (obligatorio con --revoke)"
           },
           "include-revoked": {
-            "type": "string",
+            "type": "boolean",
             "description": "Incluye las revocadas en --list"
           },
           "max-items": {
@@ -3913,7 +4027,8 @@
             "type": "string",
             "description": "Agente que ejecuta (AP-16)"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "AP-16: requiere agent o VAULT_AGENT",
@@ -4002,7 +4117,8 @@
           "title",
           "purpose",
           "legal_basis"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -4025,22 +4141,23 @@
         "type": "object",
         "properties": {
           "check": {
-            "type": "string",
+            "type": "boolean",
             "description": "Mide cada promesa contra su ejecutor"
           },
           "strict": {
-            "type": "string",
+            "type": "boolean",
             "description": "Exit 1 si alguna promesa perdio su ejecutor"
           },
           "guia": {
-            "type": "string",
+            "type": "boolean",
             "description": "Regenera docs/GUIA-DE-PRODUCCION.md desde el registro"
           },
           "check-doc": {
-            "type": "string",
+            "type": "boolean",
             "description": "Falla si la guia diverge del registro"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "Verde significa que toda promesa LISTADA tiene ejecutor, no que la lista este completa: una promesa que nadie escribio en el registro sigue sin medirse, y esta tool no lee el README donde la hiciste",
@@ -4086,7 +4203,8 @@
         },
         "required": [
           "project"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -4121,15 +4239,19 @@
             "description": ""
           },
           "files": {
-            "type": "string",
-            "description": "Modified files"
+            "type": "array",
+            "description": "Modified files",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
           "project",
           "status",
           "summary"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [],
@@ -4150,8 +4272,11 @@
         "type": "object",
         "properties": {
           "changed": {
-            "type": "string",
-            "description": "Vault-relative paths of changed notes"
+            "type": "array",
+            "description": "Vault-relative paths of changed notes",
+            "items": {
+              "type": "string"
+            }
           },
           "strategy": {
             "type": "string",
@@ -4170,7 +4295,7 @@
             "description": "Augment --changed from change log since this date (YYYY-MM-DD)"
           },
           "queue-report": {
-            "type": "string",
+            "type": "boolean",
             "description": "List pending propagation items"
           },
           "min-priority": {
@@ -4181,7 +4306,8 @@
             "type": "string",
             "description": "Mark a note as reviewed (remove propagation_pending)"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -4236,16 +4362,22 @@
             "description": "How often this plan/report is executed (e.g. 'before each release')"
           },
           "quality-criteria": {
-            "type": "string",
-            "description": "Quality criteria (e.g. 'coverage > 80%%' 'defect-rate < 2%%')"
+            "type": "array",
+            "description": "Quality criteria (e.g. 'coverage > 80%%' 'defect-rate < 2%%')",
+            "items": {
+              "type": "string"
+            }
           },
           "status": {
             "type": "string",
             "description": "Estado: draft | review | approved | published | archived"
           },
           "tags": {
-            "type": "string",
-            "description": "Additional tags"
+            "type": "array",
+            "description": "Additional tags",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -4253,7 +4385,8 @@
           "title",
           "type",
           "description"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -4288,10 +4421,11 @@
             "description": "Filter output by CIA integrity level"
           },
           "check": {
-            "type": "string",
+            "type": "boolean",
             "description": "Compute scores without writing quality-index.json"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -4314,10 +4448,11 @@
         "type": "object",
         "properties": {
           "check": {
-            "type": "string",
+            "type": "boolean",
             "description": "Solo lee y muestra sin escribir"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -4349,7 +4484,7 @@
             "description": "Ruta en cuarentena a devolver a su origen"
           },
           "list": {
-            "type": "string",
+            "type": "boolean",
             "description": "Lista lo retenido y sin restaurar"
           },
           "reason": {
@@ -4364,7 +4499,8 @@
             "type": "string",
             "description": "Agente que actúa (AP-16)"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "AP-16: requiere agent o VAULT_AGENT",
@@ -4398,14 +4534,15 @@
             "description": "Pregunta en lenguaje natural"
           },
           "explain": {
-            "type": "string",
+            "type": "boolean",
             "description": "Incluye la evidencia de cada campo inferido"
           },
           "plan-only": {
-            "type": "string",
+            "type": "boolean",
             "description": "Emite solo el plan de tools"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [],
@@ -4433,7 +4570,8 @@
         },
         "required": [
           "path"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [],
@@ -4454,26 +4592,27 @@
         "type": "object",
         "properties": {
           "check": {
-            "type": "string",
+            "type": "boolean",
             "description": "Clasifica cada arista del grafo y mide el arrastre"
           },
           "strict": {
-            "type": "string",
+            "type": "boolean",
             "description": "Exit 1 si aparece un sitio de arrastre nuevo"
           },
           "ranking": {
-            "type": "string",
+            "type": "boolean",
             "description": "Productores ordenados por cruces que colapsan"
           },
           "freeze": {
-            "type": "string",
+            "type": "boolean",
             "description": "Recongela la baseline de arrastre preexistente"
           },
           "admitir-nuevos": {
-            "type": "string",
+            "type": "boolean",
             "description": "Permite congelar arrastre sin precedente"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "Mide `from X import y`, no `import X`: quien importa el modulo entero no declara que usa, sale del alcance y se publica en importadores_opacos",
@@ -4503,18 +4642,19 @@
         "type": "object",
         "properties": {
           "graph": {
-            "type": "string",
+            "type": "boolean",
             "description": "También generar graph.json"
           },
           "dry-run": {
-            "type": "string",
+            "type": "boolean",
             "description": "Show what would be indexed without writing"
           },
           "check": {
-            "type": "string",
+            "type": "boolean",
             "description": "Exit 0 si el índice refleja el disco, 1 si hay desfase"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -4575,7 +4715,8 @@
           "from",
           "to",
           "relation_type"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -4649,7 +4790,8 @@
         "required": [
           "project",
           "version"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -4714,8 +4856,11 @@
             "description": "Comma-separated list of related source files"
           },
           "tags": {
-            "type": "string",
-            "description": "Additional tags"
+            "type": "array",
+            "description": "Additional tags",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -4724,7 +4869,8 @@
           "description",
           "type",
           "priority"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -4757,7 +4903,8 @@
         },
         "required": [
           "backup_name"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [
         "Confirmar antes de sobreescribir"
@@ -4792,7 +4939,8 @@
         },
         "required": [
           "path"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [
         "Confirmación explícita requerida"
@@ -4878,7 +5026,8 @@
         "required": [
           "project",
           "title"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -4920,7 +5069,8 @@
         "required": [
           "path",
           "outcome"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -4972,8 +5122,11 @@
             "description": "Estimated time (e.g., '30 min')"
           },
           "prerequisites": {
-            "type": "string",
-            "description": "Prerequisites list"
+            "type": "array",
+            "description": "Prerequisites list",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -4982,7 +5135,8 @@
           "trigger",
           "category",
           "steps"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -5009,10 +5163,11 @@
             "description": "Detalle de una sola fase (1..12)"
           },
           "strict": {
-            "type": "string",
+            "type": "boolean",
             "description": "Exit 1 si alguna fase aplica o no se pudo medir"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "No escribe nada: la escritura la hace la tool que cada fase nombra",
@@ -5038,26 +5193,23 @@
         "type": "object",
         "properties": {
           "bilingual": {
-            "type": "string",
+            "type": "boolean",
             "description": "Genera contenido ES + EN en paralelo"
           },
           "dry-run": {
-            "type": "string",
+            "type": "boolean",
             "description": "Muestra el plan sin escribir"
           },
           "force": {
-            "type": "string",
+            "type": "boolean",
             "description": "Regenera los 13 documentos derivados; NO pisa gaps.md"
           },
           "check": {
-            "type": "string",
+            "type": "boolean",
             "description": "Compara el rango del disco contra NORM_CATALOG; falla si desfasado (AP-47)"
-          },
-          "vault-root": {
-            "type": "string",
-            "description": "Vault destino (default: autodetección de vault_io)"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "AP-36: toda escritura ocurre bajo <vault-root>/docs/sdd/"
@@ -5098,7 +5250,8 @@
         },
         "required": [
           "query"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [],
@@ -5123,18 +5276,15 @@
             "description": "Section folder relative to vault root"
           },
           "no-subdirs": {
-            "type": "string",
+            "type": "boolean",
             "description": "Exclude notes in subdirectories"
           },
           "heal": {
-            "type": "string",
+            "type": "boolean",
             "description": "Sanear todos los index.md (formato legacy con alias o ausentes)"
-          },
-          "root": {
-            "type": "string",
-            "description": "Vault root para --heal (default: auto-detect)"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -5169,8 +5319,11 @@
             "description": "Directory depth (1-5)"
           },
           "categories": {
-            "type": "string",
-            "description": ""
+            "type": "array",
+            "description": "",
+            "items": {
+              "type": "string"
+            }
           },
           "save_findings": {
             "type": "string",
@@ -5179,7 +5332,8 @@
         },
         "required": [
           "path"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -5202,26 +5356,27 @@
         "type": "object",
         "properties": {
           "list": {
-            "type": "string",
+            "type": "boolean",
             "description": "Servicio, restricciones y capacidades declaradas"
           },
           "trace": {
-            "type": "string",
+            "type": "boolean",
             "description": "Una fila por tool: grupo, capacidad y servicio"
           },
           "naturalezas": {
-            "type": "string",
+            "type": "boolean",
             "description": "tools agrupadas por naturaleza (construcción / documentación / …)"
           },
           "check": {
-            "type": "string",
+            "type": "boolean",
             "description": "Trazabilidad exigida: grupos huerfanos, capacidades vacias"
           },
           "strict": {
-            "type": "string",
+            "type": "boolean",
             "description": "Exit 1 si la trazabilidad tiene un eslabon roto"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "Sin baseline: se mide cero al declararla porque los 37 grupos se clasifican en la misma tanda. Una baseline permitiria anadir un grupo sin decidir a que sirve, que es el vacio que cierra",
@@ -5300,7 +5455,8 @@
           "service",
           "slo_type",
           "target"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -5323,22 +5479,23 @@
         "type": "object",
         "properties": {
           "check": {
-            "type": "string",
+            "type": "boolean",
             "description": "Corre el smoke sobre el catálogo"
           },
           "strict": {
-            "type": "string",
+            "type": "boolean",
             "description": "Exit 1 si la deuda creció"
           },
           "freeze": {
-            "type": "string",
+            "type": "boolean",
             "description": "Recongela la baseline"
           },
           "tool": {
             "type": "string",
             "description": "Ejecuta el smoke de una sola tool"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "AP-42"
@@ -5371,7 +5528,7 @@
             "description": "Versión objetivo (default: v34)"
           },
           "check": {
-            "type": "string",
+            "type": "boolean",
             "description": "Solo reportar sin aplicar"
           },
           "init": {
@@ -5387,22 +5544,23 @@
             "description": "Set the tool profile in standard-version.json (minimal=10, standard=30, full=61)"
           },
           "validate": {
-            "type": "string",
+            "type": "boolean",
             "description": "Run compliance check: folders, frontmatter, health score (non-blocking)"
           },
           "fixes-only": {
-            "type": "string",
+            "type": "boolean",
             "description": "Solo ejecutar fixes sin migrar"
           },
           "dry-run": {
-            "type": "string",
+            "type": "boolean",
             "description": "Simular sin aplicar cambios"
           },
           "report": {
-            "type": "string",
+            "type": "boolean",
             "description": "Generar reporte de fixes disponibles"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -5426,8 +5584,11 @@
         "type": "object",
         "properties": {
           "seeds": {
-            "type": "string",
-            "description": "Notas de partida (ruta, ruta sin .md o título)"
+            "type": "array",
+            "description": "Notas de partida (ruta, ruta sin .md o título)",
+            "items": {
+              "type": "string"
+            }
           },
           "hops": {
             "type": "string",
@@ -5447,8 +5608,11 @@
             "description": "Tope de nodos (default: 50)"
           },
           "predicate": {
-            "type": "string",
-            "description": "Filtra por tipo de relación"
+            "type": "array",
+            "description": "Filtra por tipo de relación",
+            "items": {
+              "type": "string"
+            }
           },
           "section": {
             "type": "string",
@@ -5459,8 +5623,11 @@
             "description": "Limita a una clase de nota"
           },
           "tags": {
-            "type": "string",
-            "description": "Limita a notas con alguno de estos tags"
+            "type": "array",
+            "description": "Limita a notas con alguno de estos tags",
+            "items": {
+              "type": "string"
+            }
           },
           "min-weight": {
             "type": "string",
@@ -5477,7 +5644,8 @@
         },
         "required": [
           "seeds"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [
         "Requiere 99_Index/graph.json o graph-enriched.json"
@@ -5501,7 +5669,7 @@
         "type": "object",
         "properties": {
           "audit": {
-            "type": "string",
+            "type": "boolean",
             "description": "Reporte de salud de tags (orphans, near-dupes, singletons)"
           },
           "suggest": {
@@ -5509,22 +5677,26 @@
             "description": "Ruta de una nota — sugiere tags canónicos para ella"
           },
           "rename": {
-            "type": "string",
-            "description": "OLD NEW — renombra un tag en todas las notas"
+            "type": "array",
+            "description": "OLD NEW — renombra un tag en todas las notas",
+            "items": {
+              "type": "string"
+            }
           },
           "backfill-ledger": {
-            "type": "string",
+            "type": "boolean",
             "description": "Heal AP-39: anota en la bitácora el vocabulario ya en uso"
           },
           "ledger": {
-            "type": "string",
+            "type": "boolean",
             "description": "Bitácora de vocabulario: qué término se introdujo, quién y cuándo (AP-39)"
           },
           "dry-run": {
-            "type": "string",
+            "type": "boolean",
             "description": "Simular sin escribir archivos"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "AP-39: el vocabulario introducido queda registrado, no se pierde"
@@ -5590,8 +5762,11 @@
             "description": ""
           },
           "tags": {
-            "type": "string",
-            "description": "Additional tags"
+            "type": "array",
+            "description": "Additional tags",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -5599,7 +5774,8 @@
           "title",
           "test_type",
           "description"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -5645,7 +5821,8 @@
             "type": "string",
             "description": "Max events"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [],
@@ -5716,14 +5893,15 @@
             "description": "Explicit token count if known from provider"
           },
           "store-text": {
-            "type": "string",
+            "type": "boolean",
             "description": "Persist raw text; default stores only token metadata"
           }
         },
         "required": [
           "flow-id",
           "text"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [],
@@ -5751,7 +5929,8 @@
             "type": "string",
             "description": ""
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [],
@@ -5772,7 +5951,7 @@
         "type": "object",
         "properties": {
           "summary": {
-            "type": "string",
+            "type": "boolean",
             "description": "Resumen global de uso de tokens"
           },
           "top": {
@@ -5788,10 +5967,11 @@
             "description": "Filtrar desde fecha (YYYY-MM-DD o ISO)"
           },
           "reset": {
-            "type": "string",
+            "type": "boolean",
             "description": "Borrar el log de tokens"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "No guardar tokens en texto plano"
@@ -5826,18 +6006,19 @@
             "description": "Version especifica a restaurar (filename en .history/)"
           },
           "force": {
-            "type": "string",
+            "type": "boolean",
             "description": "Sobrescribir nota actual (default: restaurar como copia nueva)"
           },
           "dry-run": {
-            "type": "string",
+            "type": "boolean",
             "description": "Simular sin escribir"
           },
           "agent": {
             "type": "string",
             "description": "Nombre del agente para change-log (default: claude)"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [
@@ -5879,7 +6060,8 @@
               "all"
             ]
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [],
       "side_effects": [],
@@ -5904,10 +6086,11 @@
             "description": "Normas que gobiernan una tool"
           },
           "coverage": {
-            "type": "string",
+            "type": "boolean",
             "description": "Normas que ninguna tool pronuncia"
           }
-        }
+        },
+        "additionalProperties": false
       },
       "guards": [
         "AP-43"
@@ -5944,8 +6127,11 @@
             "description": "Contenido Markdown. Usar @file:ruta para leer de archivo"
           },
           "tags": {
-            "type": "string",
-            "description": "Etiquetas separadas por espacio"
+            "type": "array",
+            "description": "Etiquetas separadas por espacio",
+            "items": {
+              "type": "string"
+            }
           },
           "meta": {
             "type": "string",
@@ -5962,7 +6148,8 @@
         },
         "required": [
           "folder"
-        ]
+        ],
+        "additionalProperties": false
       },
       "guards": [
         "AP-20 (no bullets vacíos)",
