@@ -8,7 +8,7 @@ Returns structured hunks with line numbers, similarity ratio and stats.
 Usage:
     python vault_diff.py --path "01_Projects/ans/overview.md"
     python vault_diff.py --path "01_Projects/ans/overview.md" --version "2"
-    python vault_diff.py --compare "scripts/vault_errors.py" --with "scripts/vault_errors_v2.py"
+    python vault_diff.py --compare "07_Knowledge/a.md" --with "07_Knowledge/b.md"
     python vault_diff.py --path "01_Projects/ans/overview.md" --stat
     python vault_diff.py --hash "01_Projects/ans/overview.md"
 """
@@ -19,6 +19,7 @@ import hashlib
 import json
 import sys
 from vault_errors import emit_error, wrap_main
+from vault_io import assert_within_vault
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -48,7 +49,7 @@ def get_history(note_path: Path) -> List[str]:
     if not _history_dir().exists():
         return []
     note_name = note_path.stem
-    rel_parent = str(note_path.parent.relative_to(_raiz()))
+    rel_parent = str(note_path.parent.relative_to(_raiz().resolve()))
     folder_prefix = rel_parent.replace("\\", "__").replace("/", "__")
     prefix = f"{folder_prefix}__{note_name}-"
     versions = [f.name for f in _history_dir().iterdir() if f.is_file() and f.name.startswith(prefix)]
@@ -58,11 +59,13 @@ def get_history(note_path: Path) -> List[str]:
 
 def _compute_hash(path: Path) -> Dict[str, Any]:
     """Return MD5 + SHA1 for a file."""
+    if not path.is_file():
+        return emit_error("vault_diff", "FILE_NOT_FOUND", f"No existe: {_relativa(path)}")
     try:
         data = path.read_bytes()
         return {
             "ok": True,
-            "path": str(path.relative_to(_raiz())).replace("\\", "/"),
+            "path": _relativa(path),
             "hash_md5":   hashlib.md5(data).hexdigest(),
             "hash_sha1":  hashlib.sha1(data).hexdigest(),
             "size_bytes": len(data),
@@ -126,15 +129,30 @@ def _run_diff(
 
 
 def _resolve_path(p: str) -> Path:
-    """Resuelve ruta: absoluta > vault-relative > scripts-relative."""
-    raw = Path(p)
-    if raw.is_absolute():
-        return raw
-    candidate = _raiz() / p
-    if candidate.exists():
-        return candidate
-    candidate2 = Path(__file__).parent / p
-    return candidate2 if candidate2.exists() else candidate
+    """Resuelve una ruta del vault; fuera de él lanza ValueError (AP-36).
+
+    superseded_by: v40.34 — antes el orden era absoluta > vault-relative >
+    scripts-relative, sin contención: `--compare /etc/x --with nota.md`
+    devolvía el fichero ajeno línea a línea en los hunks, y una ruta que no
+    existiera en el vault se buscaba en `scripts/`. Por MCP eso es leer el
+    disco del usuario desde una sesión que solo debía ver su vault. Una ruta
+    absoluta sigue valiendo si cae dentro.
+    """
+    raiz = _raiz()
+    return assert_within_vault(raiz / p, raiz)
+
+
+def _relativa(p: Path) -> str:
+    """La etiqueta pública de una ruta ya contenida: relativa y con `/`."""
+    return p.relative_to(_raiz().resolve()).as_posix()
+
+
+def _fuera_del_vault(p: str) -> Dict[str, Any]:
+    # El mensaje no repite la ruta resuelta: diría qué hay fuera del vault.
+    return emit_error(
+        "vault_diff", "INVALID_PATH",
+        f"'{p}' queda fuera del vault; vault_diff solo compara ficheros del vault.",
+    )
 
 
 def vault_diff(
@@ -158,8 +176,16 @@ def vault_diff(
     """
     # ── Mode: arbitrary file comparison ──────────────────────────────────────
     if compare_a is not None and compare_b is not None:
-        path_a = _resolve_path(compare_a)
-        path_b = _resolve_path(compare_b)
+        # La contención se comprueba antes de mirar si existe, para que la
+        # respuesta no revele qué hay fuera del vault.
+        try:
+            path_a = _resolve_path(compare_a)
+        except ValueError:
+            return _fuera_del_vault(compare_a)
+        try:
+            path_b = _resolve_path(compare_b)
+        except ValueError:
+            return _fuera_del_vault(compare_b)
 
         if hash_only:
             return {
@@ -169,18 +195,21 @@ def vault_diff(
             }
 
         for p in (path_a, path_b):
-            if not p.exists():
-                return emit_error("vault_diff", "FILE_NOT_FOUND", f"No existe: {p}")
+            if not p.is_file():
+                return emit_error("vault_diff", "FILE_NOT_FOUND", f"No existe: {_relativa(p)}")
 
         lines_a = path_a.read_text(encoding="utf-8", errors="replace").splitlines()
         lines_b = path_b.read_text(encoding="utf-8", errors="replace").splitlines()
-        return _run_diff(lines_a, lines_b, str(path_a), str(path_b), context, stat_only)
+        return _run_diff(lines_a, lines_b, _relativa(path_a), _relativa(path_b), context, stat_only)
 
     # ── Mode: note vs .history/ ───────────────────────────────────────────────
     if path is None:
         return emit_error("vault_diff", "MISSING_REQUIRED_ARG", f"Indica --path, o bien --compare y --with")
 
-    note_path = _raiz() / path
+    try:
+        note_path = _resolve_path(path)
+    except ValueError:
+        return _fuera_del_vault(path)
     if not note_path.exists():
         return emit_error("vault_diff", "NOTE_NOT_FOUND", f"No existe la nota: {path}")
 
@@ -225,8 +254,10 @@ Ejemplos:
   # Nota vs version especifica
   python vault_diff.py --path "01_Projects/ans/overview.md" --version "01_Projects__ans__overview-2026-05-01.md"
 
-  # Dos archivos arbitrarios (rutas relativas al vault o absolutas)
-  python vault_diff.py --compare scripts/vault_errors.py --with /tmp/vault_errors_backup.py
+  # Dos ficheros del vault (relativos o absolutos, siempre dentro del vault).
+  # superseded_by v40.34: el ejemplo con /tmp y scripts/ ya no vale; una ruta
+  # fuera del vault devuelve INVALID_PATH (AP-36).
+  python vault_diff.py --compare 07_Knowledge/a.md --with 07_Knowledge/b.md
 
   # Solo estadisticas (sin contenido de hunks -- mucho mas compacto para LLM)
   python vault_diff.py --path "01_Projects/ans/overview.md" --stat
@@ -234,8 +265,8 @@ Ejemplos:
   # Solo hash (verificar si cambio sin leer el archivo)
   python vault_diff.py --hash "01_Projects/ans/overview.md"
 
-  # Hash de dos archivos para comparar
-  python vault_diff.py --compare scripts/vault_errors.py --with /tmp/backup.py --hash
+  # Hash de una nota
+  python vault_diff.py --hash 07_Knowledge/a.md
 """,
     )
     group = parser.add_mutually_exclusive_group()
@@ -255,8 +286,10 @@ Ejemplos:
     args = parser.parse_args()
 
     if args.hash_path:
-        resolved = _resolve_path(args.hash_path)
-        result = _compute_hash(resolved)
+        try:
+            result = _compute_hash(_resolve_path(args.hash_path))
+        except ValueError:
+            result = _fuera_del_vault(args.hash_path)
     elif args.compare and args.with_file:
         result = vault_diff(
             compare_a=args.compare,
