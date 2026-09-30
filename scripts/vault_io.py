@@ -333,6 +333,12 @@ def _rechazar_raiz_insegura(path: Path) -> None:
         path.resolve().relative_to(raiz)
     except ValueError:
         return
+    if vault_root_origin() == "env_inexistente":
+        raise PermissionError(
+            f"VAULT_ROOT apunta a '{raiz}', que no es un directorio. Escribir "
+            "ahí crearía un vault fantasma. Revisa la variable (¿está sin "
+            "expandir?) o crea el directorio y ejecuta vault_init."
+        )
     raise PermissionError(
         f"No se identificó ningún vault: la raíz activa es {raiz}, elegida por "
         f"`{vault_root_origin()}`, que significa «no encontré nada y estoy "

@@ -41,7 +41,15 @@ from vault_entorno import leer as _env
 _VAULT_ROOT_ORIGIN: str = "unknown"
 
 #: Valores de _VAULT_ROOT_ORIGIN que NO identifican un vault real.
-LOW_CONFIDENCE_ORIGINS = frozenset({"repo_root_fallback"})
+#:
+#: `env_inexistente` (v40.34): `VAULT_ROOT` apunta a algo que no es un
+#: directorio. Medido con `VAULT_ROOT=%V%` —una variable de Windows sin
+#: expandir, lo que un cliente MCP pasa tal cual—: `vault_write` devolvía
+#: `ok: true` y sembraba `00_System/`, `99_Index/`, `19_Audits/` y la nota en
+#: `<cwd>/%V%`, un vault fantasma que nadie abre. Una raíz explícita que no
+#: existe no es una orden de crearla —`vault_init` tampoco lo hace—, es un
+#: error de configuración, y su sitio es el mismo que el del fallback.
+LOW_CONFIDENCE_ORIGINS = frozenset({"repo_root_fallback", "env_inexistente"})
 
 
 def _detect_vault_root() -> Path:
@@ -78,8 +86,9 @@ def _detect_vault_root() -> Path:
     """
     global _VAULT_ROOT_ORIGIN
     if env := _env("VAULT_ROOT"):
-        _VAULT_ROOT_ORIGIN = "env"
-        return Path(env).resolve()
+        raiz = Path(env).resolve()
+        _VAULT_ROOT_ORIGIN = "env" if raiz.is_dir() else "env_inexistente"
+        return raiz
     project_root = Path(__file__).parent.parent.resolve()
     _MARKERS = {"00_System", "99_Index", ".obsidian"}
     # Strong vault structure marker — at least 2 of these folders must exist
@@ -190,9 +199,9 @@ _ORIGEN_DETECTADO: str = _VAULT_ROOT_ORIGIN
 def vault_root_origin() -> str:
     """Qué regla de _detect_vault_root() eligió VAULT_ROOT.
 
-    Valores: env | sibling_vault_dir | sibling_vault_dir_fresh |
-    scripts_inside_vault | spec_repo_sandbox | repo_root_fallback |
-    explicit_override.
+    Valores: env | env_inexistente | sibling_vault_dir |
+    sibling_vault_dir_fresh | scripts_inside_vault | spec_repo_sandbox |
+    repo_root_fallback | explicit_override.
 
     Con un override activo devuelve `explicit_override`: la raíz ya no la
     eligió ninguna regla de detección, y seguir citando la regla anterior sería
@@ -200,11 +209,26 @@ def vault_root_origin() -> str:
     """
     if _ACTIVE_VAULT_ROOT is not None:
         return "explicit_override"
+    if _VAULT_ROOT_ORIGIN == "env_inexistente" and _raiz_env_ya_existe():
+        return "env"
     return _VAULT_ROOT_ORIGIN
+
+
+def _raiz_env_ya_existe() -> bool:
+    """`env_inexistente` se reevalúa: el origen se fija al importar.
+
+    Un proceso que crea el directorio después —un fixture, una sesión MCP
+    larga— no puede quedarse bloqueado por lo que vio en el import.
+    """
+    return Path(_VAULT_ROOT_DETECTADO).is_dir()
 
 
 def vault_root_is_confident() -> bool:
     """False cuando VAULT_ROOT es una suposición, no un vault identificado."""
+    if _VAULT_ROOT_ORIGIN == "env_inexistente":
+        # Un override explícito ya dice cuál es el vault; la variable rota
+        # que se vio al importar deja de importar.
+        return _ACTIVE_VAULT_ROOT is not None or _raiz_env_ya_existe()
     return _VAULT_ROOT_ORIGIN not in LOW_CONFIDENCE_ORIGINS
 
 

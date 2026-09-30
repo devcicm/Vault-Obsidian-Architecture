@@ -40,6 +40,7 @@ if str(_REPO_ROOT) not in sys.path:
 # La configuración se lee del registro único, no con un default por punto
 # de uso. Ver `vault_entorno.py`.
 from vault_entorno import leer as _env
+from vault_raiz import get_vault_root, vault_root_origin
 from typing import Any, Callable, Dict, List, Optional
 
 from vault_errors_catalog import ERROR_CATALOG, construir_error, get_error
@@ -310,6 +311,28 @@ def _write_output(text: str, stdout_ref=None) -> None:
             pass  # AP-37: truly last resort — silent
 
 
+def _rechazo_por_raiz_inexistente(tool_name: str) -> Optional[Dict[str, Any]]:
+    """AP-36: con `VAULT_ROOT` apuntando a nada, la tool no llega a ejecutarse.
+
+    Bloquear solo la escritura de la nota no basta: medido en v40.34, los
+    locks, la traza y el contador de voz se escriben por su cuenta y dejaban
+    igualmente `00_System/` en la raíz inexistente. Aquí es el único punto por
+    el que pasan las 127 tools antes de tocar nada. El envelope no pasa por
+    `emit_error` a propósito: registrarlo en la traza sería escribir en el
+    vault fantasma justo al rechazarlo.
+    """
+    if vault_root_origin() != "env_inexistente":
+        return None
+    return construir_error(
+        tool_name, "VAULT_NOT_FOUND",
+        _sin_rutas_locales(
+            f"VAULT_ROOT apunta a '{get_vault_root()}', que no es un directorio. "
+            "No se ejecuta nada para no crear un vault fantasma: revisa la "
+            "variable (¿está sin expandir?) o crea el directorio y ejecuta vault_init."
+        ),
+    )
+
+
 def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
     """Envuelve main() con timeout, captura de excepciones, y trace log.
 
@@ -321,6 +344,11 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
     Returns: exit code (0 = éxito, 1 = error)
     """
     limit = timeout if timeout is not None else TOOL_TIMEOUT_SECONDS
+
+    rechazo = _rechazo_por_raiz_inexistente(tool_name)
+    if rechazo is not None:
+        _write_output(json.dumps(rechazo, ensure_ascii=False), sys.stdout)
+        return 1
 
     def _run():
         try:
