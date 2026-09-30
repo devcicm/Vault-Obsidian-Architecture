@@ -1,4 +1,4 @@
-"""SP-11 — el transporte HTTP/SSE del servidor MCP no lo abre cualquiera.
+"""SP-04 — el transporte HTTP/SSE del servidor MCP no lo abre cualquiera.
 
 Medido antes del arreglo con `--port`: el servidor respondía
 `Access-Control-Allow-Origin: *` y no pedía credencial alguna. Cualquier página
