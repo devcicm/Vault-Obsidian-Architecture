@@ -32,6 +32,7 @@ from vault_errors import emit_error, wrap_main
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
+from vault.kernel.enumeracion import notas_en_disco  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 
 
@@ -130,9 +131,50 @@ def _check_hop_decay_invariant() -> None:
 _check_hop_decay_invariant()
 
 
+def _fichero_de_grafo() -> Path:
+    """El enriquecido (trae predicados y clase) solo si no es más viejo.
+
+    superseded_by: v40.34 — antes se prefería siempre el enriquecido. Medido
+    en `vault-sandbox/`: `graph-enriched.json` con 113 nodos frente a los 114
+    de un `graph.json` regenerado después; la nota nueva no existía para
+    `vault_subgraph` aunque el grafo básico ya la tuviera.
+    """
+    enriquecido, basico = _enriched_file(), _graph_file()
+    if not enriquecido.exists():
+        return basico
+    if basico.exists() and basico.stat().st_mtime > enriquecido.stat().st_mtime:
+        return basico
+    return enriquecido
+
+
+def _desfase(nodes: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+    """Cuánto se aleja el grafo del disco, con el enumerador canónico.
+
+    Se compara el CONJUNTO de notas y no fechas: los `index.md` se regeneran en
+    cada escritura y un criterio por mtime daría el grafo por viejo siempre.
+    No se reconstruye aquí: una tool de consulta que escribe el grafo tendría
+    efectos que su contrato no declara. Se publica el desfase para que quien
+    consume sepa que las aristas de esas notas faltan (AP-37: un resultado
+    incompleto no se presenta como completo).
+    """
+    repo = _grafo()
+    en_disco = {
+        repo.relativa(p)
+        for p in notas_en_disco(repo.raiz, repo.ctx.secciones.ordenadas())
+    }
+    nuevas = sorted(en_disco - set(nodes))
+    borradas = sorted(set(nodes) - en_disco)
+    return {
+        "stale_graph": bool(nuevas or borradas),
+        "stale": {"new": len(nuevas), "gone": len(borradas),
+                  "sample_new": nuevas[:5], "sample_gone": borradas[:5],
+                  "hint": "python scripts/vault_graph.py"},
+    }
+
+
 def _load_graph() -> Optional[Dict[str, Any]]:
-    """Carga el grafo, prefiriendo el enriquecido (trae predicados y clase)."""
-    graph_file = _enriched_file() if _enriched_file().exists() else _graph_file()
+    """Carga el grafo; cuál de los dos lo decide `_fichero_de_grafo`."""
+    graph_file = _fichero_de_grafo()
     if not graph_file.exists():
         return None
     try:
@@ -251,6 +293,7 @@ def vault_subgraph(
         }
 
     nodes = _nodes_by_path(graph)
+    desfase = _desfase(nodes)
     adj = _adjacency(graph, direction, set(predicates) if predicates else None)
 
     resolved: List[str] = []
@@ -262,12 +305,18 @@ def vault_subgraph(
     resolved = list(dict.fromkeys(resolved))
 
     if not resolved:
-        return {
+        fallo = {
             "ok": False,
             "error_code": "NO_SEEDS_RESOLVED",
             "error": "Ninguna semilla existe en el grafo",
             "unresolved": unresolved,
         }
+        # «No existe» y «el grafo aún no la conoce» piden cosas distintas: la
+        # segunda se arregla regenerando el grafo, no cambiando la semilla.
+        if desfase["stale_graph"]:
+            fallo["error"] += " (el grafo está desactualizado: regenéralo con vault_graph)"
+        fallo.update(desfase)
+        return fallo
 
     # BFS. `best` guarda la mejor relevancia vista para cada nodo: un nodo
     # alcanzable por dos caminos se queda con el mas fuerte, no con el primero.
@@ -364,9 +413,9 @@ def vault_subgraph(
             "edge_count": len(edges_kept),
             "by_hop": dict(sorted(by_hop.items())),
             "truncated": truncated,
-            "graph_source": _enriched_file().name if _enriched_file().exists()
-                            else _graph_file().name,
+            "graph_source": _fichero_de_grafo().name,
         },
+        **desfase,
     }
 
 

@@ -246,6 +246,7 @@ def vault_context_pack(
     graph_rel: Dict[str, float] = {}
     graph_via: Dict[str, Any] = {}
     graph_error: Optional[str] = None
+    graph_stale: Optional[Dict[str, Any]] = None
     if seeds:
         sub = vault_subgraph(seeds=seeds, hops=structured["hops"],
                              max_nodes=max(top_k * 3, 30))
@@ -256,6 +257,11 @@ def vault_context_pack(
                     graph_via[node["path"]] = node["via"]
         else:
             graph_error = sub.get("error")
+        # Con el grafo desfasado las notas nuevas entran por la vía léxica pero
+        # sin sus aristas: el paquete sale, pero no puede presentarse como
+        # completo sin decirlo.
+        if sub.get("stale_graph"):
+            graph_stale = sub.get("stale", {})
 
     # ── 3. rerank ────────────────────────────────────────────────────────────
     candidates: List[Dict[str, Any]] = []
@@ -365,6 +371,12 @@ def vault_context_pack(
         warnings.append(f"búsqueda léxica: {search_error}")
     if graph_error:
         warnings.append(f"expansión por grafo: {graph_error}")
+    if graph_stale:
+        warnings.append(
+            f"grafo desactualizado: {graph_stale.get('new', 0)} nota(s) nuevas y "
+            f"{graph_stale.get('gone', 0)} borradas sin reflejar; sus aristas no "
+            "cuentan. Regenera con vault_graph."
+        )
     if not included:
         warnings.append("ninguna nota entró en el contexto: revisa la consulta "
                         "o amplía --budget")
