@@ -191,9 +191,15 @@ def assert_within_vault(path: Path, vault_root: Path) -> Path:
     try:
         resolved.relative_to(vault_resolved)
     except ValueError:
+        # AP-36 también en el mensaje: hasta v40.34 repetía la ruta resuelta y
+        # la raíz del vault, y ese texto viaja tal cual a los envelopes por MCP.
+        # Se nombra lo que el usuario escribió, no dónde cae en el disco.
+        try:
+            pedida = path.relative_to(vault_root).as_posix()
+        except ValueError:
+            pedida = "<ruta absoluta>"
         raise ValueError(
-            f"Path '{path}' resolves to '{resolved}' which is outside "
-            f"vault root '{vault_resolved}'. Use a relative path within the vault."
+            f"Path '{pedida}' is outside the vault. Use a relative path within the vault."
         )
     return resolved
 

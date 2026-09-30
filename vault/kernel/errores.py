@@ -657,12 +657,18 @@ def construir_error(
     args: Optional[Mapping[str, Any]] = None,
     exception: Optional[BaseException] = None,
     extra: Optional[Mapping[str, Any]] = None,
+    incluir_traceback: bool = False,
 ) -> Dict[str, Any]:
     """Construye el envelope canónico sin efectos de I/O.
 
     El consumidor decide por ``error_code`` y ``recovery``; ``extra`` permite
     que una frontera de transporte publique su estado sin reescribir el
     contrato. El adaptador legacy es quien opcionalmente lo registra en trace.
+
+    ``incluir_traceback`` es cerrado por defecto (v40.34): el traceback lleva
+    rutas absolutas del intérprete y del usuario, y un envelope es salida para
+    terceros. Quien lo quiere lo pide —``emit_error`` con ``VAULT_DEBUG=1``—;
+    el kernel no lee el entorno.
     """
     catalog_entry = get_error(code)
     entry: Dict[str, Any] = {
@@ -677,7 +683,7 @@ def construir_error(
     }
     if args:
         entry["args"] = dict(args)
-    if exception:
+    if exception and incluir_traceback:
         entry["traceback"] = traceback.format_exc()
     if extra:
         entry.update(extra)

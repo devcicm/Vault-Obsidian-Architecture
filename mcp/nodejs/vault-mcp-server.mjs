@@ -1191,6 +1191,9 @@ function executePythonTool(scriptPath, args, vaultRoot, session, schema) {
       // dejaba al agente con "exited with code 1" justo cuando más falta le hacía
       // el informe. Solo se rechaza cuando no hay nada estructurado que devolver.
       if (envelope !== null && typeof envelope === "object") {
+        // El traceback lleva rutas absolutas del intérprete y del usuario; solo
+        // viaja si quien depura lo pide, aunque el hijo lo haya adjuntado.
+        if (process.env.VAULT_DEBUG !== "1") delete envelope.traceback;
         if (code !== 0) {
           envelope.exit_code = code;
           if (stderr.trim()) envelope.stderr = stderr.trim();

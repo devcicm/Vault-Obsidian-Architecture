@@ -24,6 +24,7 @@ import io
 import json
 import os
 import queue
+import re
 import sys
 import threading
 from datetime import datetime, timezone
@@ -108,6 +109,49 @@ MEMORY_ERROR: Dict[str, Any] = {
 }
 
 
+def _rutas_locales() -> List[tuple]:
+    """(prefijo, marcador) a reducir, del más largo al más corto.
+
+    La raíz del vault va antes que el home porque suele colgar de él. Solo se
+    usan rutas absolutas: con `VAULT_ROOT=vault` sustituir el texto crudo
+    borraría la palabra «vault» de cualquier mensaje.
+    """
+    pares = []
+    raiz = _env("VAULT_ROOT")
+    if raiz and Path(raiz).is_absolute():
+        for p in {Path(raiz), Path(raiz).resolve()}:
+            pares.append((p, "<vault>"))
+    try:
+        home = Path.home()
+    except RuntimeError:
+        home = None
+    if home is not None:
+        for p in {home, home.resolve()}:
+            pares.append((p, "~"))
+    salida = []
+    for ruta, marcador in pares:
+        if len(ruta.parts) < 2:  # `/` o `C:\` como home: reducirlo lo borraría todo
+            continue
+        for forma in {str(ruta), ruta.as_posix()}:
+            salida.append((forma, marcador))
+    return sorted(salida, key=lambda par: len(par[0]), reverse=True)
+
+
+def _sin_rutas_locales(texto: Optional[str]) -> Optional[str]:
+    """AP-36 aplicado a la salida: el mensaje no publica el disco local.
+
+    Un envelope sale por MCP hacia el agente y sus logs. La raíz del vault se
+    reduce a `<vault>` —la parte relativa sigue siendo útil— y el directorio
+    del usuario a `~`.
+    """
+    if not texto:
+        return texto
+    bandera = re.IGNORECASE if os.name == "nt" else 0
+    for forma, marcador in _rutas_locales():
+        texto = re.sub(re.escape(forma), lambda _m, m=marcador: m, texto, flags=bandera)
+    return texto
+
+
 def emit_error(
     tool: str,
     code: str,
@@ -115,8 +159,15 @@ def emit_error(
     args: Dict[str, Any] = None,
     exception: Exception = None,
 ) -> Dict[str, Any]:
-    """Construye error estructurado y lo registra en el trace log."""
-    entry = construir_error(tool, code, message, args, exception)
+    """Construye error estructurado y lo registra en el trace log.
+
+    El traceback solo viaja con `VAULT_DEBUG=1`, y las rutas locales del
+    mensaje se reducen antes de construirlo.
+    """
+    entry = construir_error(
+        tool, code, _sin_rutas_locales(message), args, exception,
+        incluir_traceback=bool(_env("VAULT_DEBUG")),
+    )
     log_trace(entry)
     return entry
 

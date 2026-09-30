@@ -72,6 +72,13 @@
       "purpose": "Añade el conteo de tokens al envelope de error. Apagado por defecto: contar cuesta más que el propio error."
     },
     {
+      "name": "VAULT_DEBUG",
+      "type": "bandera",
+      "default": false,
+      "context": "kernel",
+      "purpose": "Adjunta el traceback a los envelopes de error. Apagada por defecto: el traceback lleva rutas absolutas del intérprete y del usuario, y por MCP llega al agente y a sus logs."
+    },
+    {
       "name": "VAULT_SMOKE_TIMEOUT",
       "type": "entero",
       "default": 90,

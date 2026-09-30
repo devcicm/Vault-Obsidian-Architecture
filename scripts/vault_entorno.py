@@ -137,6 +137,13 @@ VARIABLES: Dict[str, Variable] = {
             _bandera,
         ),
         Variable(
+            "VAULT_DEBUG", "bandera", False, "kernel",
+            "Adjunta el traceback a los envelopes de error. Apagada por "
+            "defecto: el traceback lleva rutas absolutas del intérprete y del "
+            "usuario, y por MCP llega al agente y a sus logs.",
+            _bandera,
+        ),
+        Variable(
             "VAULT_SMOKE_TIMEOUT", "entero", 90, "meta_toolkit",
             "Segundos por tool en la pasada de humo. Más alto que "
             "`VAULT_TOOL_TIMEOUT` porque el smoke arranca un intérprete nuevo.",
