@@ -164,6 +164,14 @@ VARIABLES: Dict[str, Variable] = {
             "Nivel de log del servidor MCP (`info` por defecto). Solo la lee "
             "el `.mjs`.",
         ),
+        # SP-04. Vacía no significa «sin autenticación»: el `.mjs` genera un
+        # token al arrancar y lo imprime por stderr. El default es cerrado.
+        Variable(
+            "VAULT_MCP_TOKEN", "texto", "", "meta_toolkit",
+            "Token que exige el transporte HTTP/SSE del servidor MCP "
+            "(`Authorization: Bearer`). Si falta, se genera uno por arranque. "
+            "Solo la lee el `.mjs`; stdio no la usa.",
+        ),
         Variable(
             "VAULT_MODEL_PROFILE", "texto", "", "consulta",
             "Perfil de modelo LLM activo. Lo propaga el servidor MCP al detectar "

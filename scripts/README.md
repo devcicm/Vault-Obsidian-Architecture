@@ -1961,8 +1961,10 @@ python vault_mcp_catalog.py --sync            # heal
 node mcp/nodejs/vault-mcp-server.mjs
 
 # Modo servicio (IAs se conectan directamente a la URL)
-node mcp/nodejs/vault-mcp-server.mjs --port 3000
-# → http://localhost:3000/sse
+VAULT_MCP_TOKEN=<secreto> node mcp/nodejs/vault-mcp-server.mjs --port 3000
+# → http://localhost:3000/sse con 'Authorization: Bearer <secreto>' (SP-04)
+# Sin VAULT_MCP_TOKEN se genera un token por arranque y se imprime por stderr.
+# Se rechaza toda petición con cabecera Origin o con un Host que no sea 127.0.0.1/localhost.
 ```
 
 ### Capas del monolito
@@ -1990,7 +1992,7 @@ node mcp/nodejs/vault-mcp-server.mjs --port 3000
 
 ### `vault_norms.py`
 
-Registro canónico de las 74 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
+Registro canónico de las 75 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
 
 **Desde v40.26 son tres ficheros y una sola tool.** Eran 5.158 líneas que hacían de catálogo, de motor y de fachada a la vez, con el 60% del fichero ocupado por una constante. Ahora `vault_norms_catalog.py` tiene los datos —`NORM_CATALOG` y el vocabulario de estado, sin leer el vault, sin escribir nada y sin importar ninguna tool—, `vault_norms_engine.py` tiene el motor de `--audit`, el drift del marco y el heal de AP-46, y este módulo se queda con la fachada de datos, la CLI y la **reexportación** de todo lo que el repo consumía antes. Esa reexportación es el punto: la superficie externa real son siete símbolos y los tests usan cinco privados más, así que reexportarlos hace que **ningún llamador se toque** y el diff se lea como movimiento puro. Recortar de paso la superficie que usan los tests habría mezclado dos cambios y hecho imposible saber cuál rompió qué.
 

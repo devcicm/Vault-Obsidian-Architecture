@@ -228,15 +228,17 @@ PREGUNTAS: List[Dict[str, Any]] = [
     {
         "id": "superficie_expuesta",
         "pregunta": "¿Está escrito qué expone y a quién, donde lo lee quien instala?",
-        "promesa": "El servidor MCP es local y sin autenticación",
+        "promesa": "El servidor MCP por HTTP es local y exige token, sin Origin ni Host ajenos",
         "por_que": (
-            "Escucha en 127.0.0.1 y no comprueba ninguna cabecera. Es correcto "
-            "como diseño y peligroso como sorpresa: quien lo ponga detrás de un "
-            "proxy sin saberlo publica el vault entero. La decisión es del "
-            "usuario, pero solo si la tiene delante."
+            "Hasta v40.34 esta fila prometía «local y sin autenticación» y lo "
+            "llamaba correcto como diseño. No lo era: el navegador del usuario "
+            "también vive en 127.0.0.1, y con CORS `*` cualquier página abría "
+            "/sse y llamaba a vault_delete. SP-04 es la corrección, y se ejerce "
+            "con el servidor real por HTTP, no leyendo el README."
         ),
-        "ejerce": lambda: "autenticación" in (RAIZ / "README.md").read_text(encoding="utf-8"),
-        "quien": "README.md (sección «Estado del proyecto»)",
+        "ejerce": lambda: _existe("tests/test_mcp_http_seguridad.py")
+        and "tokenValido" in (RAIZ / "mcp" / "nodejs" / "vault-mcp-server.mjs").read_text(encoding="utf-8"),
+        "quien": "tests/test_mcp_http_seguridad.py (servidor real por HTTP) + README.md",
         "estado": "cubierta",
     },
     {

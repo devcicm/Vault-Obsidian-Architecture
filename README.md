@@ -85,8 +85,11 @@ donde importa, y prefiero decirlas aquí que dejar que las descubras tú.
   El servidor MCP no tiene dependencias npm — solo Node 18+ built-ins.
 - **VAULT_ROOT es la única variable esencial.** Sin ella, las tools auto-detectan
   buscando `vault-*/` en el directorio actual.
-- **El servidor MCP escucha en `127.0.0.1` sin autenticación**, por diseño.
-  Ponerlo detrás de un proxy inverso publica el vault entero.
+- **El servidor MCP por HTTP (`--port`) escucha en `127.0.0.1` y exige token**
+  (`Authorization: Bearer`, desde `VAULT_MCP_TOKEN` o generado e impreso por
+  stderr al arrancar). Rechaza peticiones de navegador (`Origin`) y un `Host`
+  distinto de `127.0.0.1`/`localhost`. No es autenticación de red: ponerlo detrás
+  de un proxy inverso sigue sin ser un uso soportado. Por stdio no hay puerto.
 - **Contra un vault que no sea tuyo, primero solo lectura:**
   `python scripts/vault_foreign_check.py --root <ruta>`.
 
@@ -296,7 +299,7 @@ Detalle completo en [Marco de Datos y Gobernanza](./vault-obsidian-architecture.
 | **Principios FAIR** | Findable, Accessible, Interoperable, Reusable — con el mecanismo concreto que ya los cumple | `vault_search`, `vault_master_index`, `.history/` |
 | **V's del Big Data** | Volumen, velocidad, variedad, veracidad, valor, variabilidad — cada V apunta a un número real | `vault_audit`, `vault_change_log`, `vault_delta` |
 | **Trazabilidad** | Cadena verificable `agent:` → `.change-log.json` → `.tool-trace.json` → `.history/` → manifiesto Merkle | `vault_audit --trace` |
-| **Gobernanza** | 74 normas AP/PAT/SP/CN, 0 con enforcement manual | `vault_norms --audit` |
+| **Gobernanza** | 75 normas AP/PAT/SP/CN, 0 con enforcement manual | `vault_norms --audit` |
 | **Alineación ISO** | 13 normas mapeadas cláusula → implementación → tool | `vault_fundamentals --framework` |
 
 ```bash
@@ -407,7 +410,7 @@ python scripts/vault_norms.py --check-framework    # guard anti-drift registro �
 - **AP-36** (critical): toda operación escribe solo dentro del vault, es idempotente
   y deja artefactos rastreables. Backups en `VAULT_ROOT/vault-backups/`, `.bak` de
   moves en `00_System/.trash/`, stubs de mantenimiento en `02_Observability/maintenance/stubs/`.
-- **0 normas con enforcement `manual`**: las 74 normas del catálogo tienen guard o audit.
+- **0 normas con enforcement `manual`**: las 75 normas del catálogo tienen guard o audit.
   `python scripts/vault_norms.py --audit [--root X]` audita AP-06/07/09/10/15/19/36, CN-02/03, SP-01.
 - **Saneamiento de índices**: tablas con `| [[stem]] | Título | ... |` (nunca alias en
   celda); `python scripts/vault_section_index.py --heal` cura índices legacy; escribir

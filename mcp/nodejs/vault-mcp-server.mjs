@@ -23,7 +23,7 @@ import { createServer } from "node:http";
 import { spawn, execSync } from "node:child_process";
 import { readFile, readdir, stat, writeFile, mkdir, rename, rmdir } from "node:fs/promises";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { createHash, randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { resolve, basename, dirname, join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { deflateSync, inflateSync } from "node:zlib";
@@ -1245,21 +1245,71 @@ function startStdio() {
 // SECCIÓN 6: Transport — SSE/HTTP (modo multi-tenant)
 // ============================================================================
 
+// SP-04 — el transporte HTTP no lo abre cualquiera que comparta la máquina.
+//
+// Escuchar en 127.0.0.1 no basta: el navegador del usuario también vive ahí.
+// Con `Access-Control-Allow-Origin: *` y sin credencial, cualquier página podía
+// abrir `/sse`, leer el `sessionId` y llamar a `vault_delete` por `/message`.
+// Tres barreras, cada una contra un camino distinto:
+//   · token  — quien no lo tiene no abre sesión ni la usa;
+//   · Origin — un navegador la envía y un cliente MCP no la necesita: su
+//              presencia es la señal;
+//   · Host   — contra DNS rebinding, donde el navegador cree hablar con
+//              `evil.example` y en realidad llega aquí.
+// El token sale de `VAULT_MCP_TOKEN` o se genera al arrancar y se imprime una
+// vez por stderr: el default es cerrado, no abierto.
+function resolverTokenHttp() {
+  const declarado = process.env.VAULT_MCP_TOKEN || envDefault("VAULT_MCP_TOKEN");
+  if (declarado) return { token: declarado, generado: false };
+  return { token: randomBytes(32).toString("hex"), generado: true };
+}
+
+function tokenValido(cabecera, esperado) {
+  const m = /^Bearer\s+(.+)$/i.exec(cabecera || "");
+  if (!m) return false;
+  // Se comparan digests de longitud fija: `timingSafeEqual` exige longitudes
+  // iguales, y comparar longitudes primero filtraría la del token.
+  const a = createHash("sha256").update(m[1].trim()).digest();
+  const b = createHash("sha256").update(esperado).digest();
+  return timingSafeEqual(a, b);
+}
+
+function hostPermitido(host, port) {
+  return host === `127.0.0.1:${port}` || host === `localhost:${port}`;
+}
+
 function startSSE(port) {
-  const clients = new Set();
+  const { token, generado } = resolverTokenHttp();
+  if (generado) {
+    process.stderr.write(`[MCP AUTH] token de esta ejecución: ${token}\n`);
+    process.stderr.write(`[MCP AUTH] envíalo como 'Authorization: Bearer <token>' o fija VAULT_MCP_TOKEN\n`);
+  }
 
   const server = createServer(async (req, res) => {
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Accept, X-MCP-Session");
+    const rechazar = (codigo, motivo, extra = {}) => {
+      res.writeHead(codigo, { "Content-Type": "application/json", ...extra });
+      res.end(JSON.stringify({ ok: false, error: motivo }));
+    };
 
-    if (req.method === "OPTIONS") {
-      res.writeHead(204);
-      res.end();
+    if (!hostPermitido(req.headers.host, port)) {
+      rechazar(403, "Host no permitido: el servidor solo atiende a 127.0.0.1 o localhost.");
+      return;
+    }
+    if (req.headers.origin !== undefined) {
+      rechazar(403, "Las peticiones desde un navegador (cabecera Origin) no se aceptan.");
       return;
     }
 
+    const autenticado = tokenValido(req.headers.authorization, token);
+
     if (req.method === "GET" && req.url.startsWith("/health")) {
+      // Sin token solo se contesta a la comprobación de vida, y sin rutas: el
+      // inventario de vaults es información del usuario, no del servidor.
+      if (!autenticado) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, server: "vault-mcp-server", version: VERSION }));
+        return;
+      }
       const url = new URL(req.url, `http://127.0.0.1:${port}`);
       const vaultName = url.searchParams.get("vault") || "all";
       if (vaultName === "all") {
@@ -1278,6 +1328,12 @@ function startSSE(port) {
         res.writeHead(info ? 200 : 404, { "Content-Type": "application/json" });
         res.end(JSON.stringify(info ? { ok: true, ...info } : { ok: false, error: `Vault '${vaultName}' not registered` }));
       }
+      return;
+    }
+
+    if (!autenticado) {
+      rechazar(401, "Falta el token: 'Authorization: Bearer <VAULT_MCP_TOKEN>'.",
+               { "WWW-Authenticate": "Bearer" });
       return;
     }
 
@@ -1321,9 +1377,7 @@ function startSSE(port) {
         Connection: "keep-alive",
       });
       res.write(`data: ${JSON.stringify({ type: "connected", sessionId, server: SERVER_INFO, vault: vaultName, vaultRoot, version })}\n\n`);
-      clients.add(res);
       req.on("close", () => {
-        clients.delete(res);
         sessions.delete(sessionId);
         log("info", `Session ${sessionId} disconnected (vault: ${vaultName})`);
       });
@@ -1348,7 +1402,10 @@ function startSSE(port) {
             const out = JSON.stringify(response);
             res.writeHead(200, { "Content-Type": "application/json" });
             res.end(out);
-            notifyVaultClients(out, session.vaultName, clients, sessions);
+            // Solo a la sesión que preguntó. Antes se reenviaba a toda sesión
+            // abierta sobre el mismo vault: el resultado de una llamada no es
+            // un evento del vault, es la respuesta a quien la hizo.
+            try { session.res.write(`data: ${out}\n\n`); } catch (_) { /* sesión cerrada */ }
           } else {
             res.writeHead(202);
             res.end();
@@ -1368,6 +1425,7 @@ function startSSE(port) {
   server.listen(port, "127.0.0.1", () => {
     log("info", `========================================`);
     log("info", `MCP Multi-Tenant SSE Server on http://127.0.0.1:${port}`);
+    log("info", `Auth:    Authorization: Bearer <token> (VAULT_MCP_TOKEN)`);
     log("info", `Connect: GET /sse?vault=NAME -> get sessionId`);
     log("info", `Call:   POST /message (Header: X-MCP-Session: <id>)`);
     log("info", `Health: GET /health or /health?vault=NAME`);
@@ -1376,19 +1434,6 @@ function startSSE(port) {
     log("info", `Tools loaded: ${Object.keys(TOOLS_CATALOG).length}`);
     log("info", `========================================`);
   });
-}
-
-function notifyVaultClients(msg, vaultName, clients, sessions) {
-  for (const client of clients) {
-    try {
-      for (const [sid, s] of sessions) {
-        if (s.res === client && s.vaultName === vaultName) {
-          client.write(`data: ${msg}\n\n`);
-          break;
-        }
-      }
-    } catch (_) { clients.delete(client); }
-  }
 }
 
 // ============================================================================

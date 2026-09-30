@@ -67,7 +67,7 @@ regenera.*
 
 *Registros: `vault_norms.NORM_CATALOG` + `vault_gate.PUERTAS` + `tests/`*
 
-59 de 74 normas tienen puerta o test que las nombre.
+60 de 75 normas tienen puerta o test que las nombre.
 **Es la única capa con baseline**, y por un motivo concreto: las demás se midieron
 en cero el día que se declararon porque sus datos ya existían y solo faltaba
 atarlos. Ésta no. Exigir cero aquí el primer día habría hecho nacer la puerta en
@@ -115,7 +115,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-33** — Predicado no canonico — sinonimo no normalizado | audit | — | — |
 | **AP-34** — Relacion tipada huerfana — endpoint inexistente en el vault | audit | — | — |
 | **AP-35** — Silos de relacion — sistemas de grafos aislados | audit | — | `test_skills_catalogo.py` |
-| **AP-36** — Contención e idempotencia — side-effects fuera del vault o no rastreables | guard+audit | `framework` | `test_ap46_heal.py`, `test_arquitectura.py`, `test_ciclo_de_vida_dominio.py`, `test_consulta_dominio.py`, `test_gobernanza_dominio.py`, `test_grafo_dominio.py`, `test_indices_dominio.py`, `test_skills_contract.py`, `test_vault_containment.py`, `test_vault_norms_audit.py` |
+| **AP-36** — Contención e idempotencia — side-effects fuera del vault o no rastreables | guard+audit | `framework` | `test_ap46_heal.py`, `test_arquitectura.py`, `test_ciclo_de_vida_dominio.py`, `test_consulta_dominio.py`, `test_gobernanza_dominio.py`, `test_grafo_dominio.py`, `test_indices_dominio.py`, `test_mcp_http_seguridad.py`, `test_skills_contract.py`, `test_vault_containment.py`, `test_vault_norms_audit.py` |
 | **AP-37** — No-op silencioso — ok: true sin indicador de trabajo | audit | `noop` | `test_noop_audit.py`, `test_norms_coherence.py`, `test_voice.py` |
 | **AP-38** — Vocabulario validado después de escribir, no antes | guard+audit | `framework` | `test_status_vocabulary.py` |
 | **AP-39** — Vocabulario abierto sin memoria | guard+audit | `framework` | `test_ap39_registro_en_el_write_path.py`, `test_tag_vocabulary.py`, `test_vault_init.py` |
@@ -146,6 +146,7 @@ rojo, y una puerta en rojo se desactiva.
 | **SP-01** — Delete protocol — change_log obligatorio antes de eliminar | audit | `framework` | `test_vault_norms.py` |
 | **SP-02** — Forward-link verification — buscar antes de linkar | guard | — | `test_vault_norms.py` |
 | **SP-03** — Session snapshot pattern — delta antes de operaciones masivas | audit | — | `test_vault_norms.py` |
+| **SP-04** — Sesión MCP por HTTP sin credencial — cualquier proceso local la abre | guard | `produccion` | `test_mcp_http_seguridad.py` |
 | **CN-01** — Kebab-case filenames — nombres de archivo en minúsculas con guiones | guard | — | `test_vault_norms.py` |
 | **CN-02** — Numbered folder structure — secciones numeradas como únicos destinos | guard+audit | `framework` | `test_blueprint.py`, `test_raiz_no_seccion.py`, `test_vault_norms.py`, `test_vault_norms_audit.py` |
 | **CN-03** — Standard status vocabulary — vocabulario canónico de meta.status | audit | `framework` | `test_vault_norms.py`, `test_vault_norms_audit.py`, `test_vault_sanacion.py` |

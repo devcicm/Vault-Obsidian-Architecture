@@ -100,6 +100,13 @@
       "purpose": "Nivel de log del servidor MCP (`info` por defecto). Solo la lee el `.mjs`."
     },
     {
+      "name": "VAULT_MCP_TOKEN",
+      "type": "texto",
+      "default": "",
+      "context": "meta_toolkit",
+      "purpose": "Token que exige el transporte HTTP/SSE del servidor MCP (`Authorization: Bearer`). Si falta, se genera uno por arranque. Solo la lee el `.mjs`; stdio no la usa."
+    },
+    {
       "name": "VAULT_MODEL_PROFILE",
       "type": "texto",
       "default": "",

@@ -3514,7 +3514,7 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **74 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **75 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -4038,7 +4038,7 @@ El vault ahora expone sus 76 herramientas como un **servidor MCP monolítico** q
 
 ### Transporte dual
 - **Modo stdio:** el cliente MCP lanza `node mcp/nodejs/vault-mcp-server.mjs` como proceso hijo
-- **Modo SSE:** `node mcp/nodejs/vault-mcp-server.mjs --port 3000` expone `http://localhost:3000/sse` accesible por cualquier IA sin configuración adicional
+- **Modo SSE:** `node mcp/nodejs/vault-mcp-server.mjs --port 3000` expone `http://localhost:3000/sse` accesible por cualquier IA sin configuración adicional *(superseded_by: SP-04, v40.34 — hoy exige `Authorization: Bearer` con `VAULT_MCP_TOKEN` o el token que el servidor imprime al arrancar, y rechaza `Origin` y `Host` ajenos)*
 
 ### Capas del monolito
 
@@ -6742,6 +6742,34 @@ Permite detectar regresiones y calcular el impacto real de la operación compara
 **Señal de violación:** No existe `99_Index/hash-index.json` antes de la operación, o el snapshot fue capturado después en lugar de antes.
 
 **Relación con PAT-4:** SP-03 es el paso 1 de PAT-4 (Phased audit execution). PAT-4 describe el ciclo completo; SP-03 la regla atómica del snapshot inicial.
+
+---
+
+### SP-04 — Sesión MCP por HTTP sin credencial — cualquier proceso local la abre
+
+**Regla:** el transporte HTTP/SSE del servidor MCP (`--port`) no abre ni atiende una sesión sin
+`Authorization: Bearer <token>`. El token sale de `VAULT_MCP_TOKEN` o se genera al arrancar y se
+imprime una vez por stderr: el default es cerrado. Además:
+
+- una petición con cabecera `Origin` —la firma de un navegador— se rechaza con 403;
+- un `Host` distinto de `127.0.0.1:<port>` o `localhost:<port>` se rechaza con 403 (DNS rebinding);
+- no hay CORS;
+- `/health` sin token solo dice `{ok, version}`, sin rutas;
+- cada respuesta va a la sesión que la pidió, nunca a las demás del mismo vault.
+
+stdio no abre puerto y no cambia.
+
+**Por qué:** escuchar en `127.0.0.1` no aislaba nada. El navegador del usuario también vive ahí, y
+con `Access-Control-Allow-Origin: *` cualquier página podía abrir `/sse`, leer el `sessionId` del
+primer evento e invocar `vault_delete` por `POST /message`.
+
+**Enforcement:** guard. `tests/test_mcp_http_seguridad.py` lo ejerce contra el servidor real por
+HTTP, y `vault_produccion` (promesa `superficie_expuesta`) falla si esa promesa se queda sin ejecutor.
+
+**Señal de violación:** `GET /sse` sin token devuelve 200, o una respuesta lleva
+`Access-Control-Allow-Origin`.
+
+**Distinta de AP-36:** AP-36 mira *adónde* escribe una tool; SP-04 mira *quién* puede pedírselo.
 
 ---
 

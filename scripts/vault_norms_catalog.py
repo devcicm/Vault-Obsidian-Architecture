@@ -1378,6 +1378,11 @@ NORM_CATALOG: List[Dict[str, Any]] = [
                 "rastreados. El discriminador es la dirección del cruce de la "
                 "frontera."
             ),
+            "SP-04": (
+                "AP-36 mira **adónde** escribe una tool; SP-04 mira **quién** puede "
+                "pedírselo. Contener la escritura no protege de un invocador "
+                "ilegítimo, y autenticarlo no legitima una ruta fuera del vault."
+            ),
         },
         "name": "Contención e idempotencia — side-effects fuera del vault o no rastreables",
         "type": "antipattern",
@@ -3163,6 +3168,47 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         # además quien luego calcula el delta contra él.
         "tools_detecting": ["vault_delta"],
         "introduced_version": "v30",
+    },
+    {
+        "code": "SP-04",
+        "distinguido_de": {
+            "AP-36": (
+                "AP-36 mira **adónde** escribe una tool: dentro del vault o fuera. "
+                "SP-04 mira **quién** puede pedirle que escriba. Una tool contenida "
+                "a la perfección sigue siendo un borrado remoto si cualquier página "
+                "del navegador puede invocarla; y una sesión autenticada no vuelve "
+                "legítima una ruta `../`. Hacen falta las dos."
+            ),
+        },
+        "name": "Sesión MCP por HTTP sin credencial — cualquier proceso local la abre",
+        "type": "antipattern",
+        "category": "session-protocol",
+        "severity": "critical",
+        "enforcement": "guard",
+        "description": (
+            "El transporte HTTP/SSE del servidor MCP acepta sesiones sin token, "
+            "responde con CORS abierto o atiende un `Host` que no es el suyo. "
+            "Escuchar en 127.0.0.1 no lo impide: el navegador del usuario "
+            "también vive ahí, y una página cualquiera podía abrir `/sse`, leer "
+            "el `sessionId` e invocar `vault_delete` por `/message`."
+        ),
+        "signal": (
+            "`GET /sse` sin `Authorization: Bearer` devuelve 200; una petición "
+            "con `Origin` o con un `Host` ajeno se atiende; `/health` sin token "
+            "publica rutas; la respuesta de una sesión llega a otra."
+        ),
+        "prevention": (
+            "Token por `VAULT_MCP_TOKEN` o generado al arrancar (default "
+            "cerrado), comparado en tiempo constante; `Origin` presente → 403; "
+            "`Host` distinto de 127.0.0.1/localhost → 403 (DNS rebinding); sin "
+            "CORS; cada respuesta solo a su sesión. stdio no abre puerto y no "
+            "cambia. Lo ejerce `tests/test_mcp_http_seguridad.py` contra el "
+            "servidor real, y `vault_produccion` (puerta 21) falla si la "
+            "promesa `superficie_expuesta` se queda sin ese ejecutor."
+        ),
+        "tools_enforcing": ["vault_produccion"],
+        "tools_detecting": [],
+        "introduced_version": "v40.34",
     },
     # ── Convenciones de nomenclatura CN-XX ────────────────────────────────────
     {
