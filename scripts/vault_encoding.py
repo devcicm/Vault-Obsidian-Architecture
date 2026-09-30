@@ -76,6 +76,14 @@ INVISIBLE_CHARS = [
 # Caracteres inválidos para nombres de archivo por SO
 INVALID_FILENAME_CHARS = r'[<>:"/\\|?*\x00-\x1f]'
 
+# AP-14 con el criterio del consumidor (AP-44): el sistema de ficheros acepta
+# `#`, `^`, `[` y `]`, pero Obsidian los reserva dentro de `[[...]]` —encabezado,
+# bloque y el propio enlace— y una nota cuyo nombre los lleve no se puede
+# enlazar. Hasta v40.34 `--title "C# tips"` escribía `C#-tips.md`, y
+# `[[C#-tips]]` apuntaba al encabezado `-tips` de una nota `C`. `|` ya lo quita
+# INVALID_FILENAME_CHARS.
+OBSIDIAN_LINK_CHARS = r"[#^\[\]]"
+
 
 def normalize_to_nfc(text: str) -> str:
     """Normaliza texto a forma NFC (compuesta).
@@ -380,6 +388,7 @@ def sanitize_filename(name: str, max_length: int = 200) -> str:
 
     # Eliminar caracteres inválidos para文件名
     result = re.sub(INVALID_FILENAME_CHARS, "", result)
+    result = re.sub(OBSIDIAN_LINK_CHARS, "", result)
 
     # Reemplazar espacios y guiones bajos con guiones
     result = re.sub(r"[\s_]+", "-", result)
