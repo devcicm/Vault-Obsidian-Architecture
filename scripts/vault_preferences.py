@@ -43,7 +43,7 @@ from vault_io import (
     atomic_write_text,
     update_section_index,
 )
-from vault_lib import yaml_scalar, parse_frontmatter_with_body, slugify, utcnow
+from vault_lib import yaml_scalar, parse_frontmatter_with_body, slugify, utcnow, valor_de_frontmatter
 
 
 
@@ -235,7 +235,7 @@ def vault_preferences_set(
         f"id: {uuid.uuid4()}",
         "type: preference",
         f"category: {yaml_scalar(category)}",
-        f"strength: {strength}",
+        f"strength: {valor_de_frontmatter(strength)}",
         *status_frontmatter_lines("vault_preferences", STATUS_ACTIVE),
         f"scope: {yaml_scalar(scope)}",
         f"statement: {json.dumps(statement, ensure_ascii=False)}",
@@ -249,7 +249,7 @@ def vault_preferences_set(
         "cia_integrity: high",
         "cia_availability: high",
         "cia_sensitivity: internal",
-        f"agent: {agent}",
+        f"agent: {valor_de_frontmatter(agent)}",
         "---",
     ]
 

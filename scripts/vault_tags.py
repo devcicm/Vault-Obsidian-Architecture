@@ -29,7 +29,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from vault_errors import emit_error, wrap_main
-from vault_lib import utcnow, parse_frontmatter_with_body
+from vault_lib import utcnow, parse_frontmatter_with_body, valor_de_frontmatter
 from vault_io import (
     atomic_write_json,
     atomic_write_text,
@@ -484,7 +484,7 @@ def _generate_tag_index_md(tag_map: Dict[str, List[str]], untagged: List[str]) -
     lines = [
         "---",
         "title: Tag Index",
-        f"updatedAt: {now}",
+        f"updatedAt: {valor_de_frontmatter(now)}",
         "type: index",
         "cia_integrity: low",
         "cia_availability: low",

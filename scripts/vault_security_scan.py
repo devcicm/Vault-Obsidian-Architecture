@@ -31,7 +31,7 @@ import re
 import sys
 
 from vault_errors import emit_error, wrap_main
-from vault_lib import yaml_scalar, slugify_strict, utcnow
+from vault_lib import yaml_scalar, slugify_strict, utcnow, valor_de_frontmatter
 import uuid
 
 from datetime import datetime, timezone
@@ -223,7 +223,7 @@ def save_findings_to_vault(findings: List[Dict], project: str) -> List[str]:
 
     report_lines.append(f"project: {yaml_scalar(project)}")
 
-    report_lines.append(f"date: {timestamp}")
+    report_lines.append(f"date: {valor_de_frontmatter(timestamp)}")
 
     report_lines.append(f"type: security-scan")
 
@@ -274,17 +274,17 @@ def save_findings_to_vault(findings: List[Dict], project: str) -> List[str]:
 
             note_lines.append(f"ruleId: {yaml_scalar(str(f['ruleId']))}")
 
-            note_lines.append(f"severity: {f['severity']}")
+            note_lines.append(f"severity: {valor_de_frontmatter(f['severity'])}")
 
             note_lines.append(f"category: {yaml_scalar(f['category'])}")
 
             note_lines.append(f"project: {yaml_scalar(project)}")
 
-            note_lines.append(f"date: {timestamp}")
+            note_lines.append(f"date: {valor_de_frontmatter(timestamp)}")
 
-            note_lines.append(f"owasp: {f['owasp']}")
+            note_lines.append(f"owasp: {valor_de_frontmatter(f['owasp'])}")
 
-            note_lines.append(f"cwe: {f['cwe']}")
+            note_lines.append(f"cwe: {valor_de_frontmatter(f['cwe'])}")
 
             note_lines.append("---")
 

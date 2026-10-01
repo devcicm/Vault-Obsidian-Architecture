@@ -63,6 +63,48 @@ def yaml_scalar(value: Any) -> str:
     return json.dumps(texto, ensure_ascii=False)
 
 
+def es_instante(valor: Any) -> bool:
+    """`True` si YAML leería este texto como fecha u hora.
+
+    Lo decide el parser real, no un regex de forma ISO: quien decide qué es
+    una fecha en un frontmatter es el que lo lee (AP-44).
+    """
+    if not isinstance(valor, str) or not valor:
+        return False
+    try:
+        vuelta = yaml.safe_load(f"k: {valor}")
+    except (yaml.YAMLError, RecursionError):  # AP-61 - ver parse_frontmatter
+        return False
+    return isinstance(vuelta, dict) and isinstance(vuelta.get("k"), (datetime, date))
+
+
+def valor_de_frontmatter(valor: Any) -> str:
+    """Lo que va tras `clave: ` en una línea de frontmatter montada a mano.
+
+    AP-56, medido en v40.34: `vault_log_error --project $'demo\\nstatus: active'`
+    escribía `project: demo` y una línea `status: active` que nadie había
+    pedido. El bloque seguía parseando —la inyección no rompe el YAML, le añade
+    claves— y la tool devolvía `ok: true`. Un valor interpolado crudo es una
+    clave que el invocante puede escribir.
+
+    Se comporta como `yaml_scalar` con las dos excepciones que ya declara
+    `vault.autoria.frontmatter.Frontmatter.set`, para que el mismo valor no se
+    escriba de dos maneras según el camino:
+
+    - un instante sale crudo: citarlo convertiría el `datetime` que hoy recibe
+      el lector en un `str`, y un instante ISO no puede inyectar nada;
+    - la cadena vacía sale vacía (`clave: `, que YAML lee como `null`): es lo
+      que escribe hoy el f-string, y citarla cambiaría el dato, no el escape.
+
+    Un valor que el parser ya devuelve idéntico sale byte a byte igual.
+    """
+    if valor == "" and isinstance(valor, str):
+        return ""
+    if es_instante(valor):
+        return valor
+    return yaml_scalar(valor)
+
+
 class FrontmatterParseError(ValueError):
     """El frontmatter está delimitado pero no pudo parsearse o no es un dict."""
     pass

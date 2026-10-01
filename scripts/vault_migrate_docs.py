@@ -35,7 +35,7 @@ import re
 import sys
 
 from vault_errors import emit_error, wrap_main
-from vault_lib import yaml_scalar, slugify, parse_frontmatter
+from vault_lib import yaml_scalar, slugify, parse_frontmatter, valor_de_frontmatter
 
 from vault_io import (
     assert_within_vault,
@@ -314,19 +314,19 @@ def process_file_staging(file_path: Path, project: str) -> Optional[Dict[str, An
 
     frontmatter.append(f"id: {str(uuid.uuid4())}")
 
-    frontmatter.append(f"migratedFrom: {file_path.as_posix()}")
+    frontmatter.append(f"migratedFrom: {valor_de_frontmatter(file_path.as_posix())}")
 
     frontmatter.append(f"type: migrated")
 
-    frontmatter.append(f"createdAt: {now}")
+    frontmatter.append(f"createdAt: {valor_de_frontmatter(now)}")
 
-    frontmatter.append(f"updatedAt: {now}")
+    frontmatter.append(f"updatedAt: {valor_de_frontmatter(now)}")
 
     frontmatter.append(f"tags: {json.dumps(tags)}")
 
-    frontmatter.append(f"migratedAt: {timestamp}")
+    frontmatter.append(f"migratedAt: {valor_de_frontmatter(timestamp)}")
 
-    frontmatter.append(f"stagedAt: {timestamp}")
+    frontmatter.append(f"stagedAt: {valor_de_frontmatter(timestamp)}")
 
     frontmatter.append(f"distributedTo: ''")
 
@@ -557,7 +557,7 @@ _{staged["preview"][:200]}..._
 
     report_lines.append(f"project: {yaml_scalar(project)}")
 
-    report_lines.append(f"date: {timestamp}")
+    report_lines.append(f"date: {valor_de_frontmatter(timestamp)}")
 
     report_lines.append(f"type: migration-report")
 

@@ -47,6 +47,8 @@ from typing import Any, Dict, List, Optional
 
 from vault_io import atomic_write_text, get_vault_root, write_report
 
+from vault_lib import valor_de_frontmatter
+
 
 def _read_note(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="ignore")
@@ -56,7 +58,7 @@ def _tag_frontmatter(content: str, source: str) -> str:
     """Inject mergedFrom and mergedAt into existing frontmatter, or prepend one."""
 
     tag_lines = [
-        f"mergedFrom: {source}",
+        f"mergedFrom: {valor_de_frontmatter(source)}",
         f"mergedAt: {datetime.now(timezone.utc).isoformat()[:19]}Z",
     ]
 

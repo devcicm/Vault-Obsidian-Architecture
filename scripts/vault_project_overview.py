@@ -17,7 +17,7 @@ import uuid
 import re
 import sys
 from vault_errors import wrap_main
-from vault_lib import yaml_scalar, utcnow, slugify
+from vault_lib import yaml_scalar, utcnow, slugify, valor_de_frontmatter
 from vault_lib import parse_frontmatter as _parse_frontmatter
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -212,8 +212,8 @@ def vault_project_overview(
     frontmatter.append(f"id: {str(uuid.uuid4())}")
     frontmatter.append(f"project: {yaml_scalar(project)}")
     frontmatter.append(f"type: project-overview")
-    frontmatter.append(f"createdAt: {timestamp}")
-    frontmatter.append(f"updatedAt: {timestamp}")
+    frontmatter.append(f"createdAt: {valor_de_frontmatter(timestamp)}")
+    frontmatter.append(f"updatedAt: {valor_de_frontmatter(timestamp)}")
     frontmatter.append(f"tags: {json.dumps([safe_project, 'project', 'overview'])}")
     frontmatter.append("cia_integrity: medium")
     frontmatter.append("cia_availability: medium")

@@ -38,7 +38,7 @@ import re
 import sys
 
 from vault_errors import emit_error, wrap_main
-from vault_lib import yaml_scalar, utcnow, slugify
+from vault_lib import yaml_scalar, utcnow, slugify, valor_de_frontmatter
 from vault_io import atomic_write_text, get_vault_root, safe_wikilink, write_report
 from datetime import datetime, timezone
 
@@ -339,18 +339,18 @@ def vault_log_error(
         f"---",
         f"title: {yaml_scalar(title)}",
         f"id: {str(uuid.uuid4())}",
-        f"type: {error_type}",
+        f"type: {valor_de_frontmatter(error_type)}",
         f"createdAt: {utcnow()}",
         f"updatedAt: {utcnow()}",
         f"tags: {json.dumps(fm_tags)}",
-        f"severity: {severity}",
-        f"project: {project}",
+        f"severity: {valor_de_frontmatter(severity)}",
+        f"project: {valor_de_frontmatter(project)}",
     ]
     if error_type == "vulnerability":
         if owasp_category:
-            frontmatter_parts.append(f"owasp_category: {owasp_category}")
+            frontmatter_parts.append(f"owasp_category: {valor_de_frontmatter(owasp_category)}")
         if cwe_id:
-            frontmatter_parts.append(f"cwe_id: {cwe_id}")
+            frontmatter_parts.append(f"cwe_id: {valor_de_frontmatter(cwe_id)}")
     frontmatter_parts.extend([
         f"cia_integrity: medium",
         f"cia_availability: medium",

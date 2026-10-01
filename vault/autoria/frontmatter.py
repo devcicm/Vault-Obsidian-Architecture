@@ -39,7 +39,6 @@ un caso raro de `yaml_scalar` que nadie sabría explicar.
 
 from __future__ import annotations
 
-import datetime as _dt
 import json
 from typing import Any, Iterable, List, Tuple
 
@@ -48,27 +47,14 @@ from typing import Any, Iterable, List, Tuple
 # superseded_by: vault.kernel.frontmatter_parsing.yaml_scalar (v40.34, AP-57).
 # Era una copia idéntica de la de `vault_lib`; el nombre se conserva aquí
 # porque es la API que consumen los `*_save`.
-from ..kernel.frontmatter_parsing import yaml_scalar  # noqa: E402,F401
+from ..kernel.frontmatter_parsing import es_instante, yaml_scalar  # noqa: E402,F401
 
 
-def _es_instante(valor: Any) -> bool:
-    """`True` si YAML leería este texto como fecha u hora.
-
-    Solo entonces se emite crudo. La comprobación se hace con el parser real
-    —no con un regex de forma ISO— por lo mismo que todo lo demás aquí: quien
-    decide qué es una fecha en un frontmatter es el que lo lee.
-    """
-    if not isinstance(valor, str) or not valor:
-        return False
-    import yaml
-
-    try:
-        vuelta = yaml.safe_load(f"k: {valor}")
-    except (yaml.YAMLError, RecursionError):  # AP-61 - ver vault_lib.parse_frontmatter
-        return False
-    return isinstance(vuelta, dict) and isinstance(
-        vuelta.get("k"), (_dt.datetime, _dt.date)
-    )
+# superseded_by: vault.kernel.frontmatter_parsing.es_instante (v40.34, AP-57).
+# El cuerpo pasó al núcleo para que `valor_de_frontmatter` —los sitios que aún
+# montan la línea a mano— decida igual que `Frontmatter.set`. Se conserva el
+# nombre: dos criterios de "qué es una fecha" serían el AP-57 que esto cierra.
+_es_instante = es_instante
 
 
 class Frontmatter:

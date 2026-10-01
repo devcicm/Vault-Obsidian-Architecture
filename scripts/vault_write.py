@@ -72,6 +72,7 @@ from vault_lib import (
     Config,
     parse_frontmatter_with_body,
     canonical_utc,
+    valor_de_frontmatter,
 )
 from vault_norms_catalog import (
     compute_norm_refs,
@@ -456,9 +457,9 @@ def generate_frontmatter(
     # `vault_frontmatter_heal`; aquí solo se impide que vuelva a nacer.
     frontmatter.append(f"title: {yaml_scalar(title)}")
 
-    frontmatter.append(f"id: {existing_id or str(uuid.uuid4())}")
+    frontmatter.append(f"id: {valor_de_frontmatter(existing_id or str(uuid.uuid4()))}")
 
-    frontmatter.append(f"createdAt: {existing_created or utcnow()}")
+    frontmatter.append(f"createdAt: {valor_de_frontmatter(existing_created or utcnow())}")
 
     frontmatter.append(f"updatedAt: {utcnow()}")
 
@@ -469,7 +470,7 @@ def generate_frontmatter(
     if "type" not in meta and folder:
         deduced = _deduce_type_from_folder(folder)
         if deduced:
-            frontmatter.append(f"type: {deduced}")
+            frontmatter.append(f"type: {valor_de_frontmatter(deduced)}")
 
     # v37: status defaults to draft if not provided in meta.
     # v39: se emite siempre en esta posición — antes, un `status` que venía en

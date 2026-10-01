@@ -42,7 +42,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from vault_errors import emit_error, wrap_main
-from vault_lib import yaml_scalar, slugify_strict, utcnow
+from vault_lib import yaml_scalar, slugify_strict, utcnow, valor_de_frontmatter
 from vault_io import assert_within_vault, atomic_write_text, normalize_stem
 from vault_norms_catalog import compute_norm_refs
 from vault_registry import ORDERED_SECTIONS
@@ -1067,16 +1067,16 @@ def _make_frontmatter(
         "---",
         f"title: {yaml_scalar(title)}",
         f"id: {uuid.uuid4()}",
-        f"type: {tipo}",
-        f"createdAt: {now}",
-        f"updatedAt: {now}",
+        f"type: {valor_de_frontmatter(tipo)}",
+        f"createdAt: {valor_de_frontmatter(now)}",
+        f"updatedAt: {valor_de_frontmatter(now)}",
         f"tags: {json.dumps(tags)}",
         f"norm_refs: {json.dumps(norm_refs)}",
         "status: stub",
-        f"cia_integrity: {extra.get('cia_integrity', 'medium')}",
-        f"cia_availability: {extra.get('cia_availability', 'medium')}",
-        f"cia_sensitivity: {extra.get('cia_sensitivity', 'internal')}",
-        f"agent: {extra.get('agent', 'claude')}",
+        f"cia_integrity: {valor_de_frontmatter(extra.get('cia_integrity', 'medium'))}",
+        f"cia_availability: {valor_de_frontmatter(extra.get('cia_availability', 'medium'))}",
+        f"cia_sensitivity: {valor_de_frontmatter(extra.get('cia_sensitivity', 'internal'))}",
+        f"agent: {valor_de_frontmatter(extra.get('agent', 'claude'))}",
     ]
     skip = {"cia_integrity", "cia_availability", "cia_sensitivity", "agent", "type"}
     for k, v in extra.items():

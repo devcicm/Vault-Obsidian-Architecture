@@ -18,7 +18,7 @@ import json
 import re
 import sys
 from vault_errors import emit_error, wrap_main
-from vault_lib import yaml_scalar, utcnow, slugify
+from vault_lib import yaml_scalar, utcnow, slugify, valor_de_frontmatter
 import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -238,17 +238,17 @@ def vault_code_module(
         tags.append(iso_type)
 
     frontmatter = ["---"]
-    frontmatter.append(f"id: {note_id}")
+    frontmatter.append(f"id: {valor_de_frontmatter(note_id)}")
     frontmatter.append(f"title: {yaml_scalar(Path(file_path).name)}")
     frontmatter.append(f"project: {yaml_scalar(project)}")
     frontmatter.append(f"file_path: {yaml_scalar(file_path)}")
     frontmatter.append(f"type: code-module")
     if language:
-        frontmatter.append(f"language: {language}")
+        frontmatter.append(f"language: {valor_de_frontmatter(language)}")
     if iso_type:
-        frontmatter.append(f"iso_type: {iso_type}")
-    frontmatter.append(f"createdAt: {created_at}")
-    frontmatter.append(f"updatedAt: {now}")
+        frontmatter.append(f"iso_type: {valor_de_frontmatter(iso_type)}")
+    frontmatter.append(f"createdAt: {valor_de_frontmatter(created_at)}")
+    frontmatter.append(f"updatedAt: {valor_de_frontmatter(now)}")
     if tags:
         frontmatter.append(f"tags: {json.dumps(list(dict.fromkeys(tags)))}")
     frontmatter.append("cia_integrity: medium")

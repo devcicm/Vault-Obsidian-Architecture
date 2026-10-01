@@ -27,7 +27,7 @@ import re
 import sys
 
 from vault_errors import wrap_main
-from vault_lib import yaml_scalar, slugify_strict, utcnow
+from vault_lib import yaml_scalar, slugify_strict, utcnow, valor_de_frontmatter
 from pathlib import Path
 from typing import Any, Dict
 
@@ -163,7 +163,7 @@ def vault_code_map(project: str) -> Dict[str, Any]:
 
     frontmatter.append(f"type: code-map")
 
-    frontmatter.append(f"updatedAt: {timestamp}")
+    frontmatter.append(f"updatedAt: {valor_de_frontmatter(timestamp)}")
 
     frontmatter.append("---")
 

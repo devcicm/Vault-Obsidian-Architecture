@@ -37,7 +37,7 @@ import re
 import sys
 
 from vault_errors import emit_error, wrap_main
-from vault_lib import yaml_scalar, slugify_strict, utcnow
+from vault_lib import yaml_scalar, slugify_strict, utcnow, valor_de_frontmatter
 from vault_io import (
     write_report,
     atomic_write_text,
@@ -198,30 +198,30 @@ def vault_ai_decision(
 
         frontmatter = ["---"]
 
-        frontmatter.append(f"id: {note_id}")
+        frontmatter.append(f"id: {valor_de_frontmatter(note_id)}")
 
-        frontmatter.append(f"decision_id: {decision_id}")
+        frontmatter.append(f"decision_id: {valor_de_frontmatter(decision_id)}")
 
         frontmatter.append(f"title: {yaml_scalar(title)}")
 
         frontmatter.append(f"project: {yaml_scalar(project)}")
 
-        frontmatter.append(f"decision_type: {decision_type}")
+        frontmatter.append(f"decision_type: {valor_de_frontmatter(decision_type)}")
 
-        frontmatter.append(f"impact_level: {impact_level}")
+        frontmatter.append(f"impact_level: {valor_de_frontmatter(impact_level)}")
 
-        frontmatter.append(f"human_approved: {str(human_approved).lower()}")
+        frontmatter.append(f"human_approved: {valor_de_frontmatter(bool(human_approved))}")
 
-        frontmatter.append(f"reversible: {str(reversible).lower()}")
+        frontmatter.append(f"reversible: {valor_de_frontmatter(bool(reversible))}")
 
-        frontmatter.append(f"createdAt: {now}")
+        frontmatter.append(f"createdAt: {valor_de_frontmatter(now)}")
 
-        frontmatter.append(f"updatedAt: {now}")
+        frontmatter.append(f"updatedAt: {valor_de_frontmatter(now)}")
 
         if tags_list:
             frontmatter.append(f"tags: {json.dumps(list(dict.fromkeys(tags_list)))}")
 
-        frontmatter.append(f"cia_integrity: {cia_integrity}")
+        frontmatter.append(f"cia_integrity: {valor_de_frontmatter(cia_integrity)}")
 
         frontmatter.append(f"cia_availability: medium")
 

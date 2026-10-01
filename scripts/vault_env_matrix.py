@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
-from vault_lib import yaml_scalar, slugify_strict, utcnow
+from vault_lib import yaml_scalar, slugify_strict, utcnow, valor_de_frontmatter
 from vault_io import assert_within_vault, atomic_write_text, get_vault_root, update_section_index, write_report
 from vault_norms_catalog import compute_norm_refs
 
@@ -246,21 +246,21 @@ _Documentar qué es diferente en este entorno vs producción: datos, escala, ser
         "---",
         f'title: "Entorno: {project} — {profile["label"]} ({env.upper()})"',
         f"id: {uuid.uuid4()}",
-        f"createdAt: {now}",
-        f"updatedAt: {now}",
+        f"createdAt: {valor_de_frontmatter(now)}",
+        f"updatedAt: {valor_de_frontmatter(now)}",
         f"tags: {json.dumps(['environment', 'infrastructure', project, env])}",
         f"norm_refs: {json.dumps(norm_refs)}",
         f"project: {yaml_scalar(project)}",
-        f"env: {env}",
-        f"env_label: {profile['label']}",
-        f"runtime: {runtime}",
-        f"region: {region}",
-        f"iso_classification: {profile['iso_classification']}",
+        f"env: {valor_de_frontmatter(env)}",
+        f"env_label: {valor_de_frontmatter(profile['label'])}",
+        f"runtime: {valor_de_frontmatter(runtime)}",
+        f"region: {valor_de_frontmatter(region)}",
+        f"iso_classification: {valor_de_frontmatter(profile['iso_classification'])}",
         f"iso_standard: ISO 20000-1:2018 §8.5",
         f"cia_integrity: high",
         f"cia_availability: high",
-        f"cia_sensitivity: {profile['cia_sensitivity']}",
-        f"agent: {agent}",
+        f"cia_sensitivity: {valor_de_frontmatter(profile['cia_sensitivity'])}",
+        f"agent: {valor_de_frontmatter(agent)}",
         "---",
     ]
     full = "\n".join(fm_lines) + "\n\n" + body
