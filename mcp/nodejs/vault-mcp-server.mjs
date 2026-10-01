@@ -24,7 +24,7 @@ import { spawn, execSync } from "node:child_process";
 import { readFile, readdir, stat, writeFile, mkdir, rename, rmdir } from "node:fs/promises";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
-import { resolve, basename, dirname, join, sep } from "node:path";
+import { resolve, basename, dirname, join, sep, isAbsolute } from "node:path";
 import { fileURLToPath } from "node:url";
 import { deflateSync, inflateSync } from "node:zlib";
 import { createWriteStream, createReadStream } from "node:fs";
@@ -729,21 +729,51 @@ async function jsNativeBackupBase64(args, vaultRoot) {
   };
 }
 
+// Tope de lo que el restore descomprime. El backup es entrada no confiable y
+// `inflateSync` sin límite deja que unos KB de base64 pidan gigas de memoria.
+const RESTORE_MAX_BYTES = Number(process.env.VAULT_RESTORE_MAX_BYTES) || 256 * 1024 * 1024;
+
 async function jsNativeRestoreBase64(args, vaultRoot) {
-  const backupPath = args.path;
-  if (!backupPath) return { ok: false, error: "Missing --path to .b64zip.json backup file" };
+  const tool = "vault_restore_base64";
+  if (!args.path) return construirError(tool, "MISSING_REQUIRED_ARG", "Falta --path: el fichero .b64zip.json del backup.");
+
+  // AP-36 — `path` se leía tal cual: cualquier JSON del disco, y el mensaje
+  // de error decía si existía. Los backups viven en el vault; la ruta se
+  // resuelve contra él y se contiene, como `entry.path` más abajo.
+  let backupPath;
+  try {
+    backupPath = assertWithinVault(isAbsolute(args.path) ? args.path : join(vaultRoot, args.path), vaultRoot);
+  } catch (_) {
+    return construirError(tool, "INVALID_PATH", "La ruta del backup sale del vault.");
+  }
 
   let data;
   try { data = JSON.parse(await readFile(backupPath, "utf-8")); } catch (e) {
-    return { ok: false, error: `Cannot read backup: ${e.message}` };
+    // Sin `e.message`: lleva la ruta absoluta del disco del usuario.
+    return e && e.code === "ENOENT"
+      ? construirError(tool, "BACKUP_NOT_FOUND", "No existe ese fichero de backup en el vault.")
+      : construirError(tool, "BACKUP_MANIFEST_INVALID", "El fichero de backup no es JSON legible.", { causa: "ilegible" });
   }
 
-  if (!data.b64_data) return { ok: false, error: "Invalid backup format: missing b64_data" };
+  if (!data || typeof data.b64_data !== "string") {
+    return construirError(tool, "BACKUP_MANIFEST_INVALID", "El backup no trae b64_data.", { causa: "sin_datos" });
+  }
 
-  const compressed = Buffer.from(data.b64_data, "base64");
-  const payload = inflateSync(compressed).toString("utf-8");
-  const backup = JSON.parse(payload);
-  const { manifest, entries } = backup;
+  let backup;
+  try {
+    const compressed = Buffer.from(data.b64_data, "base64");
+    backup = JSON.parse(inflateSync(compressed, { maxOutputLength: RESTORE_MAX_BYTES }).toString("utf-8"));
+  } catch (e) {
+    if (e && e.code === "ERR_BUFFER_TOO_LARGE") {
+      return construirError(tool, "SOURCE_TOO_LARGE",
+        `El backup descomprimido supera ${RESTORE_MAX_BYTES} bytes (VAULT_RESTORE_MAX_BYTES).`);
+    }
+    return construirError(tool, "BACKUP_MANIFEST_INVALID", "El contenido del backup no se puede descomprimir.", { causa: "ilegible" });
+  }
+  const { manifest, entries } = backup || {};
+  if (!manifest || typeof manifest.created_at !== "string" || !Array.isArray(entries)) {
+    return construirError(tool, "BACKUP_MANIFEST_INVALID", "El backup no trae manifest.created_at o entries.", { causa: "sin_manifiesto" });
+  }
 
   const confirm = args.confirm;
   if (confirm !== "true" && confirm !== true) {

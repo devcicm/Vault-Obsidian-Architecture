@@ -44,9 +44,9 @@ def vault(tmp_path):
     return destino
 
 
-def _llamar(vault, tool, args):
+def _llamar(vault, tool, args, env_extra=None):
     mr = _mcp()
-    s = mr.SesionMCP(vault)
+    s = mr.SesionMCP(vault, env_extra)
     try:
         return json.loads(s.llamar(tool, args)["result"]["content"][0]["text"])
     finally:
@@ -149,3 +149,49 @@ def test_una_ruta_con_traversal_se_rechaza(vault):
     assert [r["path"] for r in env["rejected"]] == ["../../escapada.md"], env["rejected"]
     assert not (vault.parent.parent / "escapada.md").exists()
     assert not (Path(env["path"]).parent.parent / "escapada.md").exists()
+
+
+def _reempaquetar(ruta, contenido):
+    envoltorio = json.loads(ruta.read_text(encoding="utf-8"))
+    envoltorio["b64_data"] = b64encode(
+        zlib.compress(json.dumps(contenido).encode("utf-8"))
+    ).decode("ascii")
+    ruta.write_text(json.dumps(envoltorio), encoding="utf-8")
+
+
+def test_ap36_el_restore_no_lee_un_backup_fuera_del_vault(vault):
+    """`path` se leía tal cual: cualquier JSON del disco, y el mensaje decía si
+    el fichero existía."""
+    ajeno = vault.parent / "ajeno.b64zip.json"
+    ajeno.write_text('{"b64_data": "x"}', encoding="utf-8")
+    env = _llamar(vault, "vault_restore_base64", {"path": str(ajeno), "confirm": "true"})
+    assert env["ok"] is False and env["error_code"] == "INVALID_PATH", env
+    assert str(vault.parent) not in json.dumps(env)
+
+
+def test_ap52_un_backup_que_no_existe_no_filtra_la_ruta(vault):
+    env = _llamar(vault, "vault_restore_base64", {"path": "vault-backups/no-existe.b64zip.json"})
+    assert env["error_code"] == "BACKUP_NOT_FOUND", env
+    assert env["recovery"]["tool"] == "vault_backup_list"
+    assert str(vault) not in json.dumps(env)
+
+
+def test_el_restore_no_descomprime_sin_tope(vault):
+    """`inflateSync` sin `maxOutputLength`: unos KB de base64 podían pedir gigas."""
+    backup = _llamar(vault, "vault_backup_base64", {"label": "bomba"})
+    env = _llamar(vault, "vault_restore_base64", {"path": backup["path"], "confirm": "true"},
+                  {"VAULT_RESTORE_MAX_BYTES": "1024"})
+    assert env["ok"] is False and env["error_code"] == "SOURCE_TOO_LARGE", env
+
+
+def test_un_manifiesto_sin_fecha_es_un_backup_invalido(vault):
+    """Sin `created_at` el restore moría con un TypeError del transporte."""
+    backup = _llamar(vault, "vault_backup_base64", {"label": "sin-fecha"})
+    ruta = Path(backup["path"])
+    envoltorio = json.loads(ruta.read_text(encoding="utf-8"))
+    contenido = json.loads(zlib.decompress(b64decode(envoltorio["b64_data"])).decode("utf-8"))
+    del contenido["manifest"]["created_at"]
+    _reempaquetar(ruta, contenido)
+    env = _llamar(vault, "vault_restore_base64", {"path": str(ruta), "confirm": "true"})
+    assert env["ok"] is False and env["error_code"] == "BACKUP_MANIFEST_INVALID", env
+    assert env["causa"] == "sin_manifiesto"
