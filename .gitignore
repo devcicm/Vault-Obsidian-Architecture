@@ -70,10 +70,14 @@ dist_test/
 vault_regex/
 
 # Body del PR — temporal, no forma parte del estándar
-PR_BODY.md
+# superseded_by: docs/archivo/ (2026-10-01). El cuerpo del PR se archiva
+# versionado en vez de quedar suelto e ignorado en la raíz.
+# PR_BODY.md
 
 # Analisis temporal generado durante revision
-auditado.md
+# superseded_by: docs/auditorias/ (2026-10-01). Los análisis se archivan
+# versionados en vez de quedar sueltos e ignorados en la raíz.
+# auditado.md
 
 # Vault fantasma: lo sembraba un VAULT_ROOT sin expandir (`%V%`) hasta que
 # O1 (v40.34) dejó de crearlo. Se ignora por si un checkout viejo lo dejó.

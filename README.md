@@ -121,6 +121,8 @@ Fallos de **seguridad** en privado: contactar directamente, no en el repo públi
 | Poblar memoria desde un proyecto sin vault | [Onboarding](./docs/MODO-AGENTICO-ONBOARDING.md) |
 | Adaptar un vault preexistente | [Sanación](./docs/MODO-AGENTICO-SANACION.md) |
 | Consultar la instalación y el uso documentados | [Quick Start](#quick-start), con su limitación de copia indicada |
+| Quitar una instalación previa, instalar la wheel y registrar el MCP | [Instalación limpia](./docs/INSTALACION-LIMPIA.md) |
+| Ver auditorías, comparativas entre versiones y documentos archivados | [Índice de `docs/`](./docs/README.md) |
 | Elegir y ejecutar herramientas | [Referencia de scripts](./scripts/README.md) y [CLI consolidada](./cli/README.md) |
 | Consultar la norma y la arquitectura vigente | [Manifiesto](./vault-obsidian-architecture.md), [arquitectura](./docs/ARQUITECTURA.md) y [blueprint](./docs/BLUEPRINT.md) |
 
