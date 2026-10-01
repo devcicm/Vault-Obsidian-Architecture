@@ -31,6 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.indices_structural import es_nombre_reservado  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -268,7 +269,20 @@ def move_note(
 def move_folder(
     from_folder: str, to_folder: str, dry_run: bool = False
 ) -> Dict[str, Any]:
-    """Mueve una carpeta completa."""
+    """Mueve una carpeta completa: notas, subcarpetas y adjuntos.
+
+    Medido en v40.34: con `relative.name` las notas de una subcarpeta se
+    buscaban en la raíz de la carpeta, fallaban con FILE_NOT_FOUND, y el
+    `shutil.rmtree(source)` final las borraba junto con todo adjunto que no
+    fuera `.md` — con `ok: true`. Ahora nada se borra:
+
+    - todos los destinos se comprueban ANTES de mover nada; si uno existe,
+      INVALID_PATH y la carpeta queda intacta;
+    - cada fichero conserva su ruta relativa (subcarpetas incluidas);
+    - los índices generados (`index.md`) los rehace el destino, así que el
+      del origen va a `00_System/.trash/` en vez de a la basura;
+    - del origen solo se retiran los directorios que quedan vacíos.
+    """
     source = _raiz() / from_folder
     destination = _raiz() / to_folder
 
@@ -278,30 +292,69 @@ def move_folder(
     if destination.exists():
         return emit_error("vault_move", "INVALID_PATH", f"El destino ya existe: {to_folder}")
 
-    notes_moved = []
+    ficheros = sorted(
+        f for f in source.rglob("*")
+        if f.is_file() and ".history" not in f.parts and ".locks" not in f.parts
+    )
+    indices = [f for f in ficheros if f.suffix == ".md" and es_nombre_reservado(f.name)]
+    notas = [f for f in ficheros if f.suffix == ".md" and f not in indices]
+    adjuntos = [f for f in ficheros if f.suffix != ".md"]
 
-    for md in source.rglob("*.md"):
-        if ".history" in str(md):
-            continue
-
-        relative = md.relative_to(source)
-        new_path = f"{to_folder}/{relative}"
-
-        result = move_note(
-            str(from_folder + "/" + relative.name),
-            new_path,
-            dry_run=dry_run,
-            backup=False,
+    plan = [(f, f.relative_to(source).as_posix()) for f in notas + adjuntos]
+    ocupados = [rel for _, rel in plan if (destination / rel).exists()]
+    if ocupados:
+        return emit_error(
+            "vault_move", "INVALID_PATH",
+            f"Destinos ya existentes en {to_folder}: {ocupados[:5]}",
         )
 
-        if result.get("ok"):
-            notes_moved.append({"from": str(relative), "to": new_path})
+    notes_moved = []
+    attachments_moved = []
+    for k, (f, rel) in enumerate(plan):
+        origen = f"{from_folder}/{rel}"
+        nuevo = f"{to_folder}/{rel}"
+        if f.suffix == ".md":
+            result = move_note(origen, nuevo, dry_run=dry_run, backup=False)
+            if not result.get("ok"):
+                # El plan se comprobó entero; si aun así falla, se para aquí con
+                # lo ya movido declarado, y el origen conserva el resto.
+                return {
+                    **result,
+                    "notes_moved": len(notes_moved),
+                    "details": notes_moved,
+                    "attachments_moved": attachments_moved,
+                    "pending": [r for _, r in plan[k:]],
+                }
+            notes_moved.append({"from": rel, "to": nuevo})
+        else:
+            if not dry_run:
+                (destination / rel).parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(f), str(destination / rel))
+            attachments_moved.append(nuevo)
 
+    trashed = []
     if not dry_run:
-        try:
-            shutil.rmtree(source)
-        except OSError:
-            pass
+        if indices:
+            trash_dir = _raiz() / "00_System" / ".trash"
+            trash_dir.mkdir(parents=True, exist_ok=True)
+            ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+            for f in indices:
+                rel = f.relative_to(source).as_posix()
+                if not f.exists():
+                    continue
+                apartado = trash_dir / f"{rel.replace('/', '__')}-{ts}.bak"
+                shutil.move(str(f), str(apartado))
+                trashed.append(apartado.relative_to(_raiz()).as_posix())
+        # Solo directorios vacíos, de dentro hacia fuera. Lo que quede (un
+        # fichero que llegó durante el movimiento) se queda donde está.
+        for d in sorted((p for p in source.rglob("*") if p.is_dir()),
+                        key=lambda p: len(p.parts), reverse=True) + [source]:
+            try:
+                if (d / ".locks").is_dir():
+                    (d / ".locks").rmdir()  # solo si está vacío
+                d.rmdir()
+            except OSError:
+                pass
 
     return {
         "ok": True,
@@ -309,6 +362,9 @@ def move_folder(
         "dry_run": dry_run,
         "notes_moved": len(notes_moved),
         "details": notes_moved,
+        "attachments_moved": attachments_moved,
+        "indexes_trashed": trashed,
+        "source_removed": not source.exists(),
     }
 
 
