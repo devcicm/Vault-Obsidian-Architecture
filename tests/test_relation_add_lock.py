@@ -78,3 +78,19 @@ def test_con_el_json_tomado_no_escribe_y_lo_dice(tmp_path):
     assert r["ok"] is False and r["error_code"] == "NOTE_LOCKED", r
     assert problemas_de_forma(r) == [], r
     assert fichero.read_text(encoding="utf-8") == antes
+
+
+def test_un_json_ilegible_no_se_reescribe_vacio(tmp_path):
+    """Medido en v40.34: una coma de más hecha a mano y el alta siguiente
+    dejaba el fichero con una sola relación, la nueva, y `ok: true`."""
+    raiz, env = _vault(tmp_path)
+    assert _leer(_lanzar(env, tmp_path / "cwd", "A0"))["ok"]
+    fichero, _ = _relaciones(raiz)
+    roto = fichero.read_text(encoding="utf-8").rstrip().rstrip("}").rstrip().rstrip("]") + ",]}"
+    fichero.write_text(roto, encoding="utf-8")
+
+    r = _leer(_lanzar(env, tmp_path / "cwd", "A1"))
+
+    assert r["ok"] is False and r["error_code"] == "DATA_FILE_CORRUPT", r
+    assert problemas_de_forma(r) == [], r
+    assert fichero.read_text(encoding="utf-8") == roto

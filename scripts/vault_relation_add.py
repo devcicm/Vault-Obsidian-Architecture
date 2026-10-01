@@ -116,11 +116,15 @@ def slugify(text: str) -> str:
 def load_relations(project: str) -> Dict[str, Any]:
     project_file = _entity_dir() / f"{slugify(project)}-relations.json"
 
+    # Solo la ausencia es «sin relaciones». Un JSON ilegible se devolvía también
+    # como lista vacía, y el alta siguiente lo reescribía con una sola relación:
+    # medido en v40.34, una coma de más hecha a mano borraba todas las demás con
+    # `ok: true`. Ahora la excepción sube y quien escribe decide no hacerlo.
     try:
         with open(project_file, "r", encoding="utf-8") as f:
             return json.load(f)
 
-    except (FileNotFoundError, json.JSONDecodeError):
+    except FileNotFoundError:
         return {"project": project, "relations": []}
 
 
@@ -219,7 +223,14 @@ def _anadir_bajo_lock(
     description: Optional[str],
     entity_type: Optional[str],
 ) -> Dict[str, Any]:
-    data = load_relations(project)
+    try:
+        data = load_relations(project)
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        return emit_error(
+            "vault_relation_add", "DATA_FILE_CORRUPT",
+            f"{slugify(project)}-relations.json no se puede leer ({exc}); "
+            "no se reescribe para no perder las relaciones que guarda",
+        )
 
     relations = data.get("relations", [])
 

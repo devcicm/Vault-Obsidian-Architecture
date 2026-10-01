@@ -6583,6 +6583,16 @@
         "docs": "AGENTS.md §No-derogación"
       }
     },
+    "DATA_FILE_CORRUPT": {
+      "category": "io",
+      "severity": "error",
+      "message": "Un fichero de datos de origen está mal formado; no se reescribe.",
+      "recovery": {
+        "action": "manual",
+        "hint": "Corregir el fichero a mano o restaurarlo desde git o un backup, y repetir.",
+        "docs": null
+      }
+    },
     "DEBT_WOULD_GROW": {
       "category": "validation",
       "severity": "error",

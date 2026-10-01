@@ -443,6 +443,20 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": None,
         },
     },
+    # Distinto de JSON_PARSE_ERROR a propósito: aquel es un índice derivado que
+    # `vault_reindex` regenera; este es un fichero de datos de origen —las
+    # relaciones de un proyecto— que nada regenera. Reescribirlo con lo que se
+    # pudo leer, que es nada, borra lo que guardaba.
+    "DATA_FILE_CORRUPT": {
+        "category": "io",
+        "severity": "error",
+        "message": "Un fichero de datos de origen está mal formado; no se reescribe.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Corregir el fichero a mano o restaurarlo desde git o un backup, y repetir.",
+            "docs": None,
+        },
+    },
     "JSON_WRITE_ERROR": {
         "category": "io",
         "severity": "error",
