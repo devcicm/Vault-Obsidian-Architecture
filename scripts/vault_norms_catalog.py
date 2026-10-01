@@ -25,6 +25,7 @@ from __future__ import annotations
 
 
 import re
+from enum import Enum
 from typing import Any, Dict, List
 
 # ─── Catálogo canónico (fuente de verdad) ──────────────────────────────────────
@@ -3364,6 +3365,19 @@ STATUS_VOCAB = {
     "stub",
     "template",
 }
+
+#: `STATUS_VOCAB` como tipo (D4, v40.34). Se **deriva** del set, no repite los
+#: doce valores: una segunda lista es un segundo dueño, y el set ya tuvo dos
+#: vocabularios contradictorios antes de v38. Hereda de `str`, así que
+#: `Status.IN_PROGRESS == "in-progress"` y lo que se escribe en el frontmatter
+#: no cambia. Comprobar pertenencia se sigue haciendo contra el set: `"x" in
+#: Status` lanza TypeError antes de Python 3.12, y el piso es 3.9.
+Status = Enum(
+    "Status",
+    {valor.replace("-", "_").upper(): valor for valor in sorted(STATUS_VOCAB)},
+    type=str,
+)
+Status.__doc__ = "Valor canónico de meta.status (CN-03); derivado de STATUS_VOCAB."
 
 # ─── Registro de lifecycles ──────────────────────────────────────────────────
 #
