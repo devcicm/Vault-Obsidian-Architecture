@@ -159,6 +159,7 @@ def emit_error(
     message: str = None,
     args: Dict[str, Any] = None,
     exception: Exception = None,
+    pista: str = None,
 ) -> Dict[str, Any]:
     """Construye error estructurado y lo registra en el trace log.
 
@@ -168,6 +169,7 @@ def emit_error(
     entry = construir_error(
         tool, code, _sin_rutas_locales(message), args, exception,
         incluir_traceback=bool(_env("VAULT_DEBUG")),
+        pista=pista,
     )
     log_trace(entry)
     return entry

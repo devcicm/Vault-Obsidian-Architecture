@@ -1722,6 +1722,7 @@ def construir_error(
     exception: Optional[BaseException] = None,
     extra: Optional[Mapping[str, Any]] = None,
     incluir_traceback: bool = False,
+    pista: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Construye el envelope canónico sin efectos de I/O.
 
@@ -1750,6 +1751,12 @@ def construir_error(
         "recovery": copy.deepcopy(catalog_entry["recovery"]),
         "timestamp": datetime.now(timezone.utc).isoformat()[:19] + "Z",
     }
+    # La pista del sitio es más específica que la del catálogo y va a `hint`;
+    # la `action` sigue siendo la del catálogo, que es por la que se decide.
+    # Hasta v40.34 nueve sitios la escribían con `env["recovery"] = "…"`
+    # después de la llamada y dejaban `recovery` en cadena (AP-52).
+    if pista:
+        entry["recovery"]["hint"] = pista
     if args:
         entry["args"] = dict(args)
     if exception and incluir_traceback:
@@ -1785,9 +1792,10 @@ def completar_envelope(tool: str, envelope: Dict[str, Any]) -> Dict[str, Any]:
     recuperacion = propio.pop("recovery", None)
     for clave in _ErrorEnvelopeBase.__annotations__:
         propio.pop(clave, None)
-    entry = construir_error(tool, code, message=mensaje if isinstance(mensaje, str) else None)
-    if isinstance(recuperacion, str) and recuperacion:
-        entry["recovery"] = {**entry["recovery"], "hint": recuperacion}
+    entry = construir_error(
+        tool, code, message=mensaje if isinstance(mensaje, str) else None,
+        pista=recuperacion if isinstance(recuperacion, str) else None,
+    )
     entry.update(propio)
     return entry
 

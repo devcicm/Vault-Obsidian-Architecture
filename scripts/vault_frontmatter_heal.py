@@ -338,8 +338,8 @@ def main() -> int:
         env = emit_error(
             "vault_frontmatter_heal", "CONFLICTING_ARGS",
             "--apply y --check piden cosas distintas: o mide o escribe",
+            pista="elige uno",
         )
-        env["recovery"] = "elige uno"
         print(__import__("json").dumps(env, ensure_ascii=False))
         return 1
 

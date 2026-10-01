@@ -386,8 +386,8 @@ def main() -> int:
 
     if args.freeze and args.check:
         env = emit_error("vault_recursos", "CONFLICTING_ARGS",
-                         "--freeze y --check piden cosas distintas: o mide o congela")
-        env["recovery"] = "elige uno"
+                         "--freeze y --check piden cosas distintas: o mide o congela",
+                         pista="elige uno")
         print(json.dumps(env, ensure_ascii=False))
         return 1
 

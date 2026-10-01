@@ -433,8 +433,8 @@ def trace(modulo: str) -> Dict[str, Any]:
     G = vault_grafo_import.completo()
     if modulo not in G:
         env = emit_error("vault_kernel", "MODULE_NOT_FOUND",
-                         f"no existe scripts/{modulo}.py")
-        env["recovery"] = "usa el stem del módulo, sin ruta ni extensión"
+                         f"no existe scripts/{modulo}.py",
+                         pista="usa el stem del módulo, sin ruta ni extensión")
         return env
     kernel = set(CONTEXTS[KERNEL]["modulos"])
     previo: Dict[str, Optional[str]] = {modulo: None}
@@ -522,8 +522,8 @@ def main() -> int:
 
     if args.freeze and (args.check or args.trace):
         env = emit_error("vault_kernel", "CONFLICTING_ARGS",
-                         "--freeze y --check/--trace piden cosas distintas")
-        env["recovery"] = "elige uno"
+                         "--freeze y --check/--trace piden cosas distintas",
+                         pista="elige uno")
         print(json.dumps(env, ensure_ascii=False))
         return 1
 

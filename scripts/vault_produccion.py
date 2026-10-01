@@ -595,8 +595,8 @@ def main() -> int:
 
     if args.guia and args.check:
         env = emit_error("vault_produccion", "CONFLICTING_ARGS",
-                         "--guia escribe y --check mide: elige uno")
-        env["recovery"] = "elige uno"
+                         "--guia escribe y --check mide: elige uno",
+                         pista="elige uno")
         print(json.dumps(env, ensure_ascii=False))
         return 1
 

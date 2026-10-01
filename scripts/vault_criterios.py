@@ -636,8 +636,8 @@ def main() -> int:
         # fallo era suyo y tenía arreglo. AP-52 pide el contrato, no solo la
         # llamada.
         env = emit_error("vault_criterios", "CONFLICTING_ARGS",
-                         "--freeze y --check piden cosas distintas: o mide o congela")
-        env["recovery"] = "elige uno"
+                         "--freeze y --check piden cosas distintas: o mide o congela",
+                         pista="elige uno")
         print(json.dumps(env, ensure_ascii=False))
         return 1
 

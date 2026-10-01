@@ -273,8 +273,8 @@ def main() -> int:
 
     if args.freeze and (args.check or args.report):
         env = emit_error("vault_fuente_unica", "CONFLICTING_ARGS",
-                         "--freeze y --check/--report piden cosas distintas: o mide o congela")
-        env["recovery"] = "elige uno"
+                         "--freeze y --check/--report piden cosas distintas: o mide o congela",
+                         pista="elige uno")
         print(json.dumps(env, ensure_ascii=False))
         return 1
 
