@@ -636,6 +636,19 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": None,
         },
     },
+    # v40.34: leer-modificar-escribir una nota sin lock perdía appends
+    # concurrentes con ok:true. Con lock, quien no lo consigue a tiempo no
+    # escribe nada y lo dice: la nota queda como la dejó el otro escritor.
+    "NOTE_LOCKED": {
+        "category": "infrastructure",
+        "severity": "error",
+        "message": "Otra escritura tiene la nota bloqueada; no se escribió nada.",
+        "recovery": {
+            "action": "retry",
+            "hint": "Reintentar la misma llamada: la nota no se modificó.",
+            "docs": None,
+        },
+    },
     # ── Catch-all ─────────────────────────────────────────────────────────────
     # ── Catalogados en v40.34 (D3) ────────────────────────────────────────────
     # Se emitían por `emit_error` sin estar aquí: el envelope llevaba el código

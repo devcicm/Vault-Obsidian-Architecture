@@ -7341,6 +7341,16 @@
         "docs": null
       }
     },
+    "NOTE_LOCKED": {
+      "category": "infrastructure",
+      "severity": "error",
+      "message": "Otra escritura tiene la nota bloqueada; no se escribió nada.",
+      "recovery": {
+        "action": "retry",
+        "hint": "Reintentar la misma llamada: la nota no se modificó.",
+        "docs": null
+      }
+    },
     "NOTE_NOT_FOUND": {
       "category": "not_found",
       "severity": "error",
