@@ -170,7 +170,7 @@ def vault_search(query: str, folder: Optional[str] = None, tag: Optional[str] = 
         return {
 
             **emit_error("vault_search", "INDEX_NOT_FOUND",
-                         "Search index not found. Run vault_index.py first."),
+                         "Search index not found. Run vault_reindex first."),
 
             "query": query,
 
