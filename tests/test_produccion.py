@@ -198,7 +198,11 @@ def _con_classifier(tmp_path, monkeypatch, classifier):
 def test_estable_con_descubiertas_rompe_la_puerta(tmp_path, monkeypatch):
     """Lo que había hasta v40.34: 5 - Production/Stable con huecos declarados."""
     _con_classifier(tmp_path, monkeypatch, vp.CLASSIFIER_ESTABLE)
-    assert any(p["estado"] == "descubierta" for p in vp.PREGUNTAS)
+    # La propiedad, no el registro de hoy: desde v40.34 no queda ninguna
+    # descubierta, y el test no puede depender de que las haya.
+    una_abierta = [dict(p, estado="descubierta", motivo="fixture")
+                   if p["id"] == "wheel_instalada_funciona" else p for p in vp.PREGUNTAS]
+    monkeypatch.setattr(vp, "PREGUNTAS", una_abierta)
     assert not vp._madurez_coherente()
 
 
@@ -230,3 +234,54 @@ def test_el_mcp_instalable_se_mide_y_no_se_afirma(tmp_path, monkeypatch):
     (tmp_path / "pyproject.toml").write_text("[project]\nname = 'x'\n", encoding="utf-8")
     monkeypatch.setattr(vp, "RAIZ", tmp_path)
     assert not vp._mcp_en_la_wheel()
+
+
+def _raiz_falsa(tmp_path, monkeypatch, tools, fuera=()):
+    import json
+    (tmp_path / "vault" / "meta_toolkit").mkdir(parents=True)
+    (tmp_path / "empaquetado").mkdir()
+    (tmp_path / "vault_toolkit" / "operations").mkdir(parents=True)
+    (tmp_path / "vault_toolkit" / "operations" / "vault_a.py").write_text("", encoding="utf-8")
+    (tmp_path / "pyproject.toml").write_text(
+        '[project.scripts]\nvault = "vault.product_cli:main"\n', encoding="utf-8")
+    (tmp_path / "vault" / "meta_toolkit" / "tools-catalog.json").write_text(
+        json.dumps({"tools": tools}), encoding="utf-8")
+    (tmp_path / "empaquetado" / "fuera-de-la-wheel.json").write_text(
+        json.dumps({"modulos": list(fuera)}), encoding="utf-8")
+    monkeypatch.setattr(vp, "RAIZ", tmp_path)
+
+
+def test_vault_run_se_mide_contra_el_catalogo_instalado(tmp_path, monkeypatch):
+    """Hasta v40.34 bastaba con que pyproject dijera `[project.scripts]`."""
+    assert vp._vault_run_resuelve_el_producto()
+    a = {"name": "vault_a", "script": "vault_a.py",
+         "execution_module": "vault_toolkit.operations.vault_a"}
+    nativa = {"name": "vault_js", "script": "", "execution_module": None}
+    gobierno = {"name": "vault_g", "script": "vault_g.py", "execution_module": None}
+    _raiz_falsa(tmp_path, monkeypatch, [a, nativa, gobierno], fuera=["vault_g"])
+    assert vp._vault_run_resuelve_el_producto()
+
+    sin_modulo = {"name": "vault_b", "script": "vault_b.py", "execution_module": None}
+    (tmp_path / "vault" / "meta_toolkit" / "tools-catalog.json").write_text(
+        __import__("json").dumps({"tools": [a, sin_modulo]}), encoding="utf-8")
+    assert not vp._vault_run_resuelve_el_producto()
+
+    modulo_fantasma = dict(a, execution_module="vault_toolkit.operations.vault_z")
+    (tmp_path / "vault" / "meta_toolkit" / "tools-catalog.json").write_text(
+        __import__("json").dumps({"tools": [modulo_fantasma]}), encoding="utf-8")
+    assert not vp._vault_run_resuelve_el_producto()
+
+
+def test_la_wheel_probada_exige_venv_y_fuente_retirada(tmp_path, monkeypatch):
+    assert vp._wheel_probada_sin_la_fuente()
+    (tmp_path / ".github" / "workflows").mkdir(parents=True)
+    (tmp_path / ".github" / "workflows" / "vault-ci.yml").write_text(
+        "run: python tests/run_product_gates.py\n", encoding="utf-8")
+    (tmp_path / "tests").mkdir()
+    for gate in ("clean_install_gate.py", "memory_recovery_e2e_gate.py"):
+        (tmp_path / "tests" / gate).write_text(
+            'run(["-m", "venv"])\nreport = {"source_tree_physically_absent": True}\n',
+            encoding="utf-8")
+    monkeypatch.setattr(vp, "RAIZ", tmp_path)
+    # Declarar la ausencia en el informe no es retirar la fuente.
+    assert not vp._wheel_probada_sin_la_fuente()

@@ -200,6 +200,54 @@ def _wheel_sin_gobernanza() -> bool:
     return bool(lista.get("modulos")) and _existe("empaquetado/construir.py")
 
 
+def _vault_run_resuelve_el_producto() -> bool:
+    """`vault` es el programa y `vault run` alcanza toda tool Python de producto.
+
+    Hasta v40.34 este predicado era `"[project.scripts]" in pyproject`, que no
+    mide la promesa sino su prólogo, y la fila seguía declarando un hueco de
+    «89 de 93 sin execution_module» que ya no existía. Se mide lo que viaja en
+    la wheel: el catálogo instalado, menos lo que el build deja fuera, menos
+    las nativas del servidor (`script` vacío, no tienen módulo que resolver).
+    """
+    proj = (RAIZ / "pyproject.toml").read_text(encoding="utf-8")
+    if 'vault = "vault.product_cli:main"' not in proj:
+        return False
+    try:
+        catalogo = json.loads(
+            (RAIZ / "vault" / "meta_toolkit" / "tools-catalog.json").read_text(encoding="utf-8"))
+        fuera = set(json.loads(
+            (RAIZ / "empaquetado" / "fuera-de-la-wheel.json").read_text(encoding="utf-8")
+        )["modulos"])
+    except (OSError, ValueError, KeyError):
+        return False
+    tools = catalogo.get("tools", catalogo) if isinstance(catalogo, dict) else catalogo
+    tools = list(tools.values()) if isinstance(tools, dict) else tools
+    producto = [t for t in tools if t.get("script") and Path(t["script"]).stem not in fuera]
+    return bool(producto) and all(
+        t.get("execution_module")
+        and (RAIZ / Path(*t["execution_module"].split("."))).with_suffix(".py").is_file()
+        for t in producto
+    )
+
+
+def _wheel_probada_sin_la_fuente() -> bool:
+    """La CI ejecuta las product gates y estas instalan la wheel en un venv
+    nuevo y comprueban que la fuente no está —ni en disco ni en `sys.path`—.
+    Que pasen lo dice su ejecución; aquí se mide que existan y que lo exijan."""
+    ci = RAIZ / ".github" / "workflows" / "vault-ci.yml"
+    if not ci.is_file() or "run_product_gates.py" not in ci.read_text(encoding="utf-8"):
+        return False
+    for gate in ("clean_install_gate.py", "memory_recovery_e2e_gate.py"):
+        ruta = RAIZ / "tests" / gate
+        if not ruta.is_file():
+            return False
+        texto = ruta.read_text(encoding="utf-8")
+        # El acto, no la clave del informe: un `True` escrito no retira nada.
+        if '"venv"' not in texto or "shutil.rmtree(source)" not in texto:
+            return False
+    return True
+
+
 #: El registro. **Fuente única**: la guía de `docs/` se deriva de aquí y se
 #: regenera con `--guia`; lo que se escriba a mano allí se pierde.
 #:
@@ -302,15 +350,21 @@ PREGUNTAS: List[Dict[str, Any]] = [
         "pregunta": "¿Se invoca como un programa o como un montón de scripts?",
         "promesa": "[project.scripts] declarado + execution_module poblado para todas las distributables",
         "por_que": (
-            "[project.scripts] ya existe en pyproject.toml (`vault = vault.product_cli:main`), "
-            "y vault es invocable. El hueco real (A2) es que `execution_module` está vacío "
-            "en el catálogo del producto para 89 de las 93 tools runtime, así que `vault run` "
-            "solo resuelve las 4 que lo tienen declarado."
+            "Un toolkit que se invoca como `python scripts/vault_x.py` exige el "
+            "checkout. `vault = vault.product_cli:main` es el programa, y `vault run` "
+            "solo alcanza las tools cuyo `execution_module` resuelve en lo instalado. "
+            "Medido en v40.34: toda tool Python de producto lo tiene y el módulo "
+            "existe; las dos nativas del servidor no tienen módulo que resolver."
         ),
-        "ejerce": lambda: "[project.scripts]" in (RAIZ / "pyproject.toml").read_text(encoding="utf-8"),
-        "quien": "catalogo_producto + distribucion.py",
-        "estado": "descubierta",
-        "motivo": (
+        "ejerce": _vault_run_resuelve_el_producto,
+        "quien": (
+            "vault/meta_toolkit/tools-catalog.json + empaquetado/fuera-de-la-wheel.json + "
+            "`vault run` en tests/clean_install_gate.py"
+        ),
+        "estado": "cubierta",
+        # superseded_by: _vault_run_resuelve_el_producto (v40.34). El hueco A2 se
+        # cerró en el catálogo y esta fila siguió declarándolo; se conserva.
+        "motivo_hasta_v40_34": (
             "El catálogo del producto (tools-catalog.json) se genera desde TOOLS_CATALOG "
             "con execution_module=null para la mayoría de las tools. La solución (A2) es "
             "auto-derivar execution_module = vault_toolkit.operations.<tool> en "
@@ -386,14 +440,17 @@ PREGUNTAS: List[Dict[str, Any]] = [
             "La wheel puede armarse mal y pasar los tests del repo (que usan el "
             "source) pero fallar en un venv limpio (que solo tiene lo instalado)."
         ),
-        "ejerce": lambda: (
-            "run_product_gates.py" in (RAIZ / ".github/workflows/vault-ci.yml").read_text(encoding="utf-8")
-            if (RAIZ / ".github/workflows/vault-ci.yml").is_file()
-            else False
+        "ejerce": _wheel_probada_sin_la_fuente,
+        "quien": (
+            "tests/run_product_gates.py (clean_install + memory_e2e) + job "
+            "'product-gates' en vault-ci.yml"
         ),
-        "quien": "tests/run_product_gates.py + job 'product-gates' en vault-ci.yml",
-        "estado": "descubierta",
-        "motivo": (
+        "estado": "cubierta",
+        # superseded_by: _wheel_probada_sin_la_fuente (v40.34). Las dos gates
+        # instalan la wheel en un venv nuevo, borran la copia de la fuente y
+        # fallan si una ruta del checkout aparece en sys.path: lo que este motivo
+        # decía que faltaba. Ejecutadas en verde el 2026-09-29; se conserva.
+        "motivo_hasta_v40_34": (
             "La promesa existe (run_product_gates.py + CI) pero nunca se ha "
             "ejecutado contra un venv limpio real fuera de este repo. "
             "El gate ejecuta la wheel desde el mismo checkout fuente, así que "

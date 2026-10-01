@@ -43,11 +43,11 @@ está escrita como registro ejecutable y no como recordatorio.
 | `material_ajeno` | ¿Se ha medido contra material que este repo no generó? | ✅ cubierta | vault_foreign_check --root <vault ajeno>, o --self-test sin uno a mano |
 | `sistemas_operativos` | ¿Se ejecuta en los sistemas donde se dice que corre? | ✅ cubierta | matriz os de la CI (ubuntu-latest, windows-latest) |
 | `superficie_expuesta` | ¿Está escrito qué expone y a quién, donde lo lee quien instala? | ✅ cubierta | tests/test_mcp_http_seguridad.py (servidor real por HTTP) + README.md |
-| `ergonomia_de_entrada` | ¿Se invoca como un programa o como un montón de scripts? | ✅ descubierta | catalogo_producto + distribucion.py |
+| `ergonomia_de_entrada` | ¿Se invoca como un programa o como un montón de scripts? | ✅ cubierta | vault/meta_toolkit/tools-catalog.json + empaquetado/fuera-de-la-wheel.json + `vault run` en tests/clean_install_gate.py |
 | `mcp_requiere_checkout` | ¿Se puede instalar el servidor MCP con un solo comando de pip/npm? | ✅ cubierta | pyproject.toml (package data) + vault mcp-path + tests/test_mcp_instalado.py + tests/clean_install_gate.py |
 | `contrato_con_quien_contribuye` | ¿Sabe alguien de fuera cómo aportar o cómo reportar un fallo? | ✅ cubierta | README.md (sección «Estado del proyecto») |
 | `lo_publicado_es_solo_el_estandar` | ¿Puede irse en un push algo que no es de este repo? | ✅ cubierta | tests/test_publicacion_limpia.py (mide el índice de git, no el disco) |
-| `wheel_instalada_funciona` | ¿Funciona la wheel instalada en un venv limpio fuera del repo? | ✅ descubierta | tests/run_product_gates.py + job 'product-gates' en vault-ci.yml |
+| `wheel_instalada_funciona` | ¿Funciona la wheel instalada en un venv limpio fuera del repo? | ✅ cubierta | tests/run_product_gates.py (clean_install + memory_e2e) + job 'product-gates' en vault-ci.yml |
 | `madurez_declarada` | ¿El grado de madurez publicado lo sostiene este registro? | ✅ cubierta | vault_produccion._madurez_coherente + tests/test_produccion.py |
 | `wheel_sin_gobernanza` | ¿Lo que instalo es el producto, o también las herramientas que miden este repo? | ✅ cubierta | empaquetado/construir.py + vault_servicio --check (invariante 11) + tests/clean_install_gate.py |
 
@@ -55,15 +55,7 @@ está escrita como registro ejecutable y no como recordatorio.
 
 **`sistemas_operativos` — cubierta con hueco.** La CI ejecuta la suite en ubuntu, pero el paseo de INSTALACIÓN fuera del repo solo se ha hecho en Windows. macOS no lo toca nadie. Las instrucciones de instalación están inlined en README.md.
 
-**`ergonomia_de_entrada` — descubierta.** [project.scripts] ya existe en pyproject.toml (`vault = vault.product_cli:main`), y vault es invocable. El hueco real (A2) es que `execution_module` está vacío en el catálogo del producto para 89 de las 93 tools runtime, así que `vault run` solo resuelve las 4 que lo tienen declarado.
-
-*Por qué se deja así:* El catálogo del producto (tools-catalog.json) se genera desde TOOLS_CATALOG con execution_module=null para la mayoría de las tools. La solución (A2) es auto-derivar execution_module = vault_toolkit.operations.<tool> en catalogo_producto cuando script existe y execution_module es null, igual que hace distribucion.py en el source. La decisión ya está tomada en el código; falta persistirla en el artefacto.
-
 **`lo_publicado_es_solo_el_estandar` — cubierta con hueco.** Mide el índice de HOY. Lo que ya esté en un commit anterior del historial no lo ve nadie: para eso haría falta recorrer todos los árboles, y este repo nunca ha versionado esos directorios.
-
-**`wheel_instalada_funciona` — descubierta.** La wheel puede armarse mal y pasar los tests del repo (que usan el source) pero fallar en un venv limpio (que solo tiene lo instalado).
-
-*Por qué se deja así:* La promesa existe (run_product_gates.py + CI) pero nunca se ha ejecutado contra un venv limpio real fuera de este repo. El gate ejecuta la wheel desde el mismo checkout fuente, así que el test no garantiza que la wheel funcione aislada. Pendiente: ejecutar run_product_gates.py en un CI separado o desde una maquina limpia que no tenga este repo.
 
 ## Qué NO demuestra el verde
 
