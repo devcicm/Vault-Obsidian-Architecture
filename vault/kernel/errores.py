@@ -6,6 +6,7 @@ producto instalado como el adaptador histórico ``vault_errors``. No registra
 trazas ni conoce ``scripts/``: esas son responsabilidades del adaptador.
 """
 
+import copy
 import traceback
 from datetime import datetime, timezone
 from enum import Enum
@@ -1744,7 +1745,9 @@ def construir_error(
         "category": catalog_entry["category"],
         "severity": catalog_entry["severity"],
         "message": message or catalog_entry["message"],
-        "recovery": catalog_entry["recovery"],
+        # Copia, no referencia: el envelope es del invocante y el catálogo es
+        # de todos. Una pista añadida a uno no puede llegar a los siguientes.
+        "recovery": copy.deepcopy(catalog_entry["recovery"]),
         "timestamp": datetime.now(timezone.utc).isoformat()[:19] + "Z",
     }
     if args:

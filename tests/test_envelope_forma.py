@@ -90,3 +90,19 @@ def test_una_recuperacion_especifica_pasa_a_hint():
 def test_un_exito_no_se_toca():
     ok = {"ok": True, "written": 1}
     assert completar_envelope("vault_write", ok) is ok
+
+
+def test_el_envelope_no_comparte_el_recovery_del_catalogo():
+    """`construir_error` devolvía el dict del catálogo por referencia.
+
+    Un sitio que añadiera su pista con `env["recovery"]["hint"] = …` la habría
+    escrito en `ERROR_CATALOG`, y cada error posterior con ese código, de
+    cualquier tool, la habría heredado.
+    """
+    from vault.kernel.errores import construir_error
+
+    antes = dict(ERROR_CATALOG["CONFLICTING_ARGS"]["recovery"])
+    env = construir_error("vault_x", "CONFLICTING_ARGS")
+    env["recovery"]["hint"] = "solo para vault_x"
+    assert ERROR_CATALOG["CONFLICTING_ARGS"]["recovery"] == antes
+    assert construir_error("vault_y", "CONFLICTING_ARGS")["recovery"] == antes
