@@ -726,11 +726,13 @@ def vault_tags_rename(
             continue
 
         new_tags = [new_tag if t == old_tag else t for t in tags]
-        new_tags_json = json.dumps(new_tags)
-        # Replace tags line in frontmatter
+        # Replace tags line in frontmatter. La línea va como función, no como
+        # plantilla: `json.dumps` escribe `ó` como `ó` y `re` leía ese
+        # `\u` como escape de plantilla (`bad escape \u`); un `\1` en el tag
+        # insertaba el grupo capturado.
         new_content = re.sub(
             r"^(tags:\s*).*$",
-            f"tags: {new_tags_json}",
+            lambda _m: f"tags: {json.dumps(new_tags)}",
             content,
             count=1,
             flags=re.MULTILINE,
