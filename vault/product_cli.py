@@ -13,6 +13,7 @@ import re
 import subprocess
 import sys
 from importlib import metadata
+from pathlib import Path
 from typing import Any, Sequence
 
 from .kernel.errores import construir_error
@@ -212,6 +213,43 @@ def cmd_status(args: argparse.Namespace) -> int:
     return _lifecycle_result(estado_runtime(args.runtime))
 
 
+def _servidor_mcp() -> Path | None:
+    """El `.mjs` instalado (`vault_toolkit/mcp/`) o, en el checkout, el del repo."""
+    import vault_toolkit
+
+    candidatos = (
+        Path(vault_toolkit.__file__).resolve().parent / "mcp",
+        Path(__file__).resolve().parent.parent / "mcp" / "nodejs",
+    )
+    for carpeta in candidatos:
+        servidor = carpeta / "vault-mcp-server.mjs"
+        if servidor.is_file():
+            return servidor
+    return None
+
+
+def cmd_mcp_path(_: argparse.Namespace) -> int:
+    """Ruta del servidor MCP y la entrada de configuración de un cliente.
+
+    `VAULT_MCP_PYTHON` va fijada a este intérprete: el primer Python del PATH
+    no tiene por qué ser el del venv donde se instaló el toolkit.
+    """
+    servidor = _servidor_mcp()
+    if servidor is None:
+        return _error("mcp_server_missing", "el servidor MCP no está en esta instalación", 1)
+    _emit({
+        "ok": True,
+        "server": str(servidor),
+        "python": sys.executable,
+        "config": {
+            "command": "node",
+            "args": [str(servidor)],
+            "env": {"VAULT_ROOT": "<ruta absoluta del vault>", "VAULT_MCP_PYTHON": sys.executable},
+        },
+    })
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="vault")
     parser.add_argument("--version", action="version", version=toolkit_version())
@@ -239,6 +277,8 @@ def build_parser() -> argparse.ArgumentParser:
     status = commands.add_parser("status", help="Muestra el estado read-only de un runtime")
     status.add_argument("runtime")
     status.set_defaults(func=cmd_status)
+    mcp_path = commands.add_parser("mcp-path", help="Ruta del servidor MCP y su configuración de cliente")
+    mcp_path.set_defaults(func=cmd_mcp_path)
     return parser
 
 

@@ -221,3 +221,12 @@ def test_la_wheel_sin_gobernanza_se_mide_y_no_se_afirma(tmp_path, monkeypatch):
     (tmp_path / "pyproject.toml").write_text("[project]\nname = 'x'\n", encoding="utf-8")
     monkeypatch.setattr(vp, "RAIZ", tmp_path)
     assert not vp._wheel_sin_gobernanza()
+
+
+def test_el_mcp_instalable_se_mide_y_no_se_afirma(tmp_path, monkeypatch):
+    """P3: sin package data del servidor en pyproject, la promesa no se ejerce."""
+    promesa = next(p for p in vp.PREGUNTAS if p["id"] == "mcp_requiere_checkout")
+    assert promesa["estado"] == "cubierta" and promesa["ejerce"]()
+    (tmp_path / "pyproject.toml").write_text("[project]\nname = 'x'\n", encoding="utf-8")
+    monkeypatch.setattr(vp, "RAIZ", tmp_path)
+    assert not vp._mcp_en_la_wheel()

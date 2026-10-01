@@ -44,7 +44,7 @@ está escrita como registro ejecutable y no como recordatorio.
 | `sistemas_operativos` | ¿Se ejecuta en los sistemas donde se dice que corre? | ✅ cubierta | matriz os de la CI (ubuntu-latest, windows-latest) |
 | `superficie_expuesta` | ¿Está escrito qué expone y a quién, donde lo lee quien instala? | ✅ cubierta | tests/test_mcp_http_seguridad.py (servidor real por HTTP) + README.md |
 | `ergonomia_de_entrada` | ¿Se invoca como un programa o como un montón de scripts? | ✅ descubierta | catalogo_producto + distribucion.py |
-| `mcp_requiere_checkout` | ¿Se puede instalar el servidor MCP con un solo comando de pip/npm? | ✅ descubierta | README.md + docs/INSTALACION.md |
+| `mcp_requiere_checkout` | ¿Se puede instalar el servidor MCP con un solo comando de pip/npm? | ✅ cubierta | pyproject.toml (package data) + vault mcp-path + tests/test_mcp_instalado.py + tests/clean_install_gate.py |
 | `contrato_con_quien_contribuye` | ¿Sabe alguien de fuera cómo aportar o cómo reportar un fallo? | ✅ cubierta | README.md (sección «Estado del proyecto») |
 | `lo_publicado_es_solo_el_estandar` | ¿Puede irse en un push algo que no es de este repo? | ✅ cubierta | tests/test_publicacion_limpia.py (mide el índice de git, no el disco) |
 | `wheel_instalada_funciona` | ¿Funciona la wheel instalada en un venv limpio fuera del repo? | ✅ descubierta | tests/run_product_gates.py + job 'product-gates' en vault-ci.yml |
@@ -58,10 +58,6 @@ está escrita como registro ejecutable y no como recordatorio.
 **`ergonomia_de_entrada` — descubierta.** [project.scripts] ya existe en pyproject.toml (`vault = vault.product_cli:main`), y vault es invocable. El hueco real (A2) es que `execution_module` está vacío en el catálogo del producto para 89 de las 93 tools runtime, así que `vault run` solo resuelve las 4 que lo tienen declarado.
 
 *Por qué se deja así:* El catálogo del producto (tools-catalog.json) se genera desde TOOLS_CATALOG con execution_module=null para la mayoría de las tools. La solución (A2) es auto-derivar execution_module = vault_toolkit.operations.<tool> en catalogo_producto cuando script existe y execution_module es null, igual que hace distribucion.py en el source. La decisión ya está tomada en el código; falta persistirla en el artefacto.
-
-**`mcp_requiere_checkout` — descubierta.** El servidor MCP vive en `mcp/nodejs/` y no está publicado en npm. No hay `npm install -g @carloseam/vault-mcp` ni nada equivalente: el único camino para levantarlo es un git clone de este repo y `node mcp/nodejs/vault-mcp-server.mjs`. Quien llegue buscando instrucciones de instalación estándar no las encuentra.
-
-*Por qué se deja así:* Publicar el servidor en npm resolvería la expectativa pero ata el nombre público y exige mantener un paquete conRelease flow. La decisión de producto no tomada es si el servidor MCP es parte del producto que se publica o una herramienta de desarrollo del estándar. Mientras tanto, la promesa realista es «git clone + node».
 
 **`lo_publicado_es_solo_el_estandar` — cubierta con hueco.** Mide el índice de HOY. Lo que ya esté en un commit anterior del historial no lo ve nadie: para eso haría falta recorrer todos los árboles, y este repo nunca ha versionado esos directorios.
 

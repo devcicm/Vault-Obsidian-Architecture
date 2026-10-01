@@ -180,6 +180,13 @@ VARIABLES: Dict[str, Variable] = {
             "Solo la lee el `.mjs`; stdio no la usa.",
         ),
         Variable(
+            "VAULT_MCP_PYTHON", "ruta", None, "meta_toolkit",
+            "Intérprete con el que el servidor MCP lanza las tools. Vacía, "
+            "prueba `py`, `python3` y `python` del PATH; instalado en un venv, "
+            "solo el de ese venv ve el toolkit, y `vault mcp-path` la fija a "
+            "él. Solo la lee el `.mjs`.",
+        ),
+        Variable(
             "VAULT_MODEL_PROFILE", "texto", "", "consulta",
             "Perfil de modelo LLM activo. Lo propaga el servidor MCP al detectar "
             "el cliente (clientInfo.name). Lo lee vault_model_profile y vault_context_pack "

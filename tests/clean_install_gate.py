@@ -86,6 +86,49 @@ def _product_error(
         _fail(f"{label} state={payload.get('state')!r}, expected={state!r}")
 
 
+def _mcp_instalado(vault: Path, runtime: Path, work: Path, env: dict[str, str]) -> dict:
+    """`vault mcp-path` y una sesión stdio contra el servidor instalado.
+
+    Sin Node se declara omitido en el informe en vez de darse por ejercido.
+    """
+    info = _json_output(_run([str(vault), "mcp-path"], cwd=work, env=env), "vault mcp-path")
+    server = Path(info.get("server", ""))
+    if "site-packages" not in server.parts or not server.is_file():
+        _fail(f"vault mcp-path no apunta a la instalación: {info}")
+    if shutil.which("node") is None:
+        return {"server": str(server), "stdio": "omitido: node no está en el PATH"}
+    mensajes = [
+        {"jsonrpc": "2.0", "id": 0, "method": "initialize", "params": {
+            "protocolVersion": "2024-11-05", "capabilities": {},
+            "clientInfo": {"name": "clean-install-gate", "version": "1"}}},
+        {"jsonrpc": "2.0", "method": "notifications/initialized"},
+        {"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}},
+        {"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {
+            "name": "vault_query_parse", "arguments": {"query": QUERY_ARGS[1]}}},
+    ]
+    sesion = subprocess.run(
+        ["node", str(server)], input="".join(json.dumps(m) + "\n" for m in mensajes),
+        cwd=work, env={**env, **info["config"]["env"], "VAULT_ROOT": str(runtime)},
+        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300,
+    )
+    respuestas = {}
+    for linea in sesion.stdout.splitlines():
+        try:
+            m = json.loads(linea)
+        except json.JSONDecodeError:
+            continue
+        if "id" in m:
+            respuestas[m["id"]] = m
+    try:
+        nombres = {t["name"] for t in respuestas[1]["result"]["tools"]}
+        payload = json.loads(respuestas[2]["result"]["content"][0]["text"])
+    except (KeyError, IndexError, json.JSONDecodeError) as exc:
+        _fail(f"sesión MCP instalada inválida ({exc}): {sesion.stderr[-2000:]}")
+    if "vault_query_parse" not in nombres or payload.get("ok") is not True:
+        _fail(f"el servidor MCP instalado no ejecutó la tool: {payload}")
+    return {"server": str(server), "stdio": "ok", "tools": len(nombres)}
+
+
 def main(*, gate: str = "CLEAN_INSTALL_GATE") -> int:
     with tempfile.TemporaryDirectory(prefix="voa-clean-install-") as raw:
         root = Path(raw)
@@ -118,6 +161,10 @@ def main(*, gate: str = "CLEAN_INSTALL_GATE") -> int:
             "vault/ciclo_de_vida/producto.py",
             "vault/ciclo_de_vida/runtime-seed.json",
             "vault/meta_toolkit/tools-catalog.json",
+            # P3: el servidor MCP viaja en la wheel; sin checkout no hay otro.
+            "vault_toolkit/mcp/vault-mcp-server.mjs",
+            "vault_toolkit/mcp/tools-catalog.json",
+            "vault_toolkit/mcp/env-table.json",
         }
         forbidden_prefixes = ("scripts/", "tests/", "vault-sandbox/", ".git/", "build/")
         missing = sorted(required - members)
@@ -261,6 +308,8 @@ def main(*, gate: str = "CLEAN_INSTALL_GATE") -> int:
         if not moved_doctor.get("ok"):
             _fail(f"moved runtime is not portable: {moved_doctor}")
 
+        mcp = _mcp_instalado(vault, runtime, work, clean_env)
+
         invocation = _run([str(python), "-I", "-m", QUERY_MODULE, *QUERY_ARGS], cwd=work, env=clean_env)
         if invocation.returncode:
             _fail(f"installed operation failed:\n{invocation.stderr}\n{invocation.stdout}")
@@ -314,6 +363,7 @@ def main(*, gate: str = "CLEAN_INSTALL_GATE") -> int:
             "idempotent": True,
             "runtime_external": True,
             "runtime_contains_toolkit_source": False,
+            "mcp": mcp,
         }, ensure_ascii=False))
     return 0
 

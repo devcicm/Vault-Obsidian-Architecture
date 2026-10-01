@@ -40,7 +40,14 @@ const pipelineAsync = promisify(pipeline);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "..", "..");
-const SCRIPTS_DIR = join(REPO_ROOT, "scripts");
+// Instalado desde la wheel este fichero vive en `vault_toolkit/mcp/` y las
+// tools en `vault_toolkit/_impl/` (la proyección de `scripts/`, sin la
+// gobernanza del estándar). REPO_ROOT queda en `site-packages`, que es donde
+// `python -m vault.gobernanza.tool` resuelve. Hasta v40.34 solo existía el
+// camino del checkout y el servidor no se podía usar sin clonar el repo.
+const IMPL_INSTALADO = resolve(__dirname, "..", "_impl");
+const INSTALADO = existsSync(IMPL_INSTALADO);
+const SCRIPTS_DIR = INSTALADO ? IMPL_INSTALADO : join(REPO_ROOT, "scripts");
 // La versión NO se escribe aquí: llega por `tools-catalog.json`, que es la
 // pasarela por la que este servidor recibe todo lo que decide Python. Escrita a
 // mano decía `v39.3 (SDD)` con el estándar en v40.29 —nueve versiones de
@@ -123,6 +130,14 @@ function loadCatalog() {
     TOOLS_CATALOG = data.tools || {};
     TOOL_GROUPS = data.groups || {};
     if (Array.isArray(data.js_native_tools)) JS_NATIVE_TOOLS = new Set(data.js_native_tools);
+    // El catálogo describe el repo entero; la instalación lleva solo el
+    // producto. Ofrecer una tool cuyo script no viajó sería prometer algo que
+    // falla al llamarlo: se retira, y se dice cuál, en vez de callarlo.
+    const ausentes = Object.values(TOOLS_CATALOG)
+      .filter(t => t.script && !JS_NATIVE_TOOLS.has(t.name) && !existsSync(join(SCRIPTS_DIR, t.script)))
+      .map(t => t.name);
+    for (const n of ausentes) delete TOOLS_CATALOG[n];
+    if (ausentes.length) log("warn", `Tools sin script en ${SCRIPTS_DIR}, retiradas: ${ausentes.join(", ")}`);
     if (data.standard_version) VERSION = data.standard_version;
     log("info", `Loaded ${Object.keys(TOOLS_CATALOG).length} tools in ${Object.keys(TOOL_GROUPS).length} groups`);
   } catch (e) {
@@ -132,6 +147,23 @@ function loadCatalog() {
 
 function detectVaultRoot() {
   if (VAULT_ROOT) return VAULT_ROOT;
+  const MARCAS = ["00_System", "01_Projects", "99_Index", ".obsidian"];
+  if (INSTALADO) {
+    // Instalado, los candidatos del checkout son `site-packages` y su padre:
+    // el fallback `vault-sandbox` caería dentro de la instalación (AP-36). Se
+    // acepta el directorio desde el que el cliente lanza el servidor si es un
+    // vault, y si no se falla con la costura declarada en vez de inventar uno.
+    try {
+      if (readdirSync(process.cwd()).filter(e => MARCAS.includes(e)).length >= 2) {
+        VAULT_ROOT = process.cwd();
+        return VAULT_ROOT;
+      }
+    } catch (_) { /* cae al error */ }
+    throw new Error(
+      "No hay vault: define VAULT_ROOT (o lanza el servidor desde la carpeta del vault). " +
+      "`vault mcp-path` imprime la configuración del cliente.",
+    );
+  }
   const candidates = [
     join(REPO_ROOT, "vault-sandbox"),
     ...Array.from({ length: 20 }, (_, i) => join(REPO_ROOT, `..`)).map(p => resolve(p))
@@ -1092,6 +1124,13 @@ let PYTHON_CMD = null;
 
 function detectPython() {
   if (PYTHON_CMD) return PYTHON_CMD;
+  // El primer Python del PATH no tiene por qué ser el que instaló el toolkit;
+  // instalado en un venv, solo ese ve `vault` y `_impl`. `vault mcp-path` la
+  // fija a `sys.executable`.
+  if (process.env.VAULT_MCP_PYTHON) {
+    PYTHON_CMD = process.env.VAULT_MCP_PYTHON;
+    return PYTHON_CMD;
+  }
   for (const cmd of ["py", "python3", "python"]) {
     try {
       execSync(`"${cmd}" --version`, { stdio: "ignore", timeout: 5000 });
@@ -2003,7 +2042,12 @@ Usage:
 function main() {
   parseArgs();
   loadCatalog();
-  detectVaultRoot();
+  try {
+    detectVaultRoot();
+  } catch (e) {
+    log("error", e.message);
+    process.exit(2);
+  }
   refreshVaultRegistry();
 
   if (SSE_PORT > 0) {

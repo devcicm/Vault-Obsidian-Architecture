@@ -168,6 +168,20 @@ def _madurez_coherente() -> bool:
     ]
 
 
+def _mcp_en_la_wheel() -> bool:
+    """La wheel declara el servidor como package data y el servidor sabe dónde
+    están las tools instaladas. Que funcione de verdad lo ejerce la product
+    gate de instalación limpia con una sesión stdio."""
+    proj = (RAIZ / "pyproject.toml").read_text(encoding="utf-8")
+    servidor = RAIZ / "mcp" / "nodejs" / "vault-mcp-server.mjs"
+    return (
+        '"vault_toolkit.mcp" = "mcp/nodejs"' in proj
+        and '"vault_toolkit.mcp" = ["vault-mcp-server.mjs"' in proj
+        and servidor.is_file()
+        and "IMPL_INSTALADO" in servidor.read_text(encoding="utf-8")
+    )
+
+
 def _wheel_sin_gobernanza() -> bool:
     """El build declara el hook y el hook tiene una lista que filtrar.
 
@@ -308,24 +322,25 @@ PREGUNTAS: List[Dict[str, Any]] = [
     {
         "id": "mcp_requiere_checkout",
         "pregunta": "¿Se puede instalar el servidor MCP con un solo comando de pip/npm?",
-        "promesa": "El servidor MCP se sirve con `node mcp/nodejs/vault-mcp-server.mjs`",
+        "promesa": (
+            "`pip install` deja el servidor MCP en la instalación y `vault mcp-path` "
+            "imprime su ruta y la configuración del cliente"
+        ),
         "por_que": (
-            "El servidor MCP vive en `mcp/nodejs/` y no está publicado en npm. "
-            "No hay `npm install -g @carloseam/vault-mcp` ni nada equivalente: "
-            "el único camino para levantarlo es un git clone de este repo y "
-            "`node mcp/nodejs/vault-mcp-server.mjs`. Quien llegue buscando "
-            "instrucciones de instalación estándar no las encuentra."
+            "Hasta v40.34 el servidor vivía solo en `mcp/nodejs/` y resolvía las "
+            "tools en `../../scripts`, que en una instalación no existe: el único "
+            "camino era un git clone y `node mcp/nodejs/vault-mcp-server.mjs`. "
+            "Ahora viaja como package data de `vault_toolkit.mcp` —el mismo "
+            "fichero, sin copia— y lanza las tools desde `vault_toolkit/_impl/`. "
+            "Sigue sin publicarse en npm: esa decisión de nombre público no se "
+            "ha tomado, y pip ya cubre la instalación con un comando."
         ),
-        "ejerce": lambda: (RAIZ / "mcp" / "nodejs" / "vault-mcp-server.mjs").exists(),
-        "quien": "README.md + docs/INSTALACION.md",
-        "estado": "descubierta",
-        "motivo": (
-            "Publicar el servidor en npm resolvería la expectativa pero ata el "
-            "nombre público y exige mantener un paquete conRelease flow. La "
-            "decisión de producto no tomada es si el servidor MCP es parte del "
-            "producto que se publica o una herramienta de desarrollo del "
-            "estándar. Mientras tanto, la promesa realista es «git clone + node»."
+        "ejerce": _mcp_en_la_wheel,
+        "quien": (
+            "pyproject.toml (package data) + vault mcp-path + "
+            "tests/test_mcp_instalado.py + tests/clean_install_gate.py"
         ),
+        "estado": "cubierta",
     },
     {
         "id": "contrato_con_quien_contribuye",

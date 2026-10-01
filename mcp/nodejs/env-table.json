@@ -114,6 +114,13 @@
       "purpose": "Token que exige el transporte HTTP/SSE del servidor MCP (`Authorization: Bearer`). Si falta, se genera uno por arranque. Solo la lee el `.mjs`; stdio no la usa."
     },
     {
+      "name": "VAULT_MCP_PYTHON",
+      "type": "ruta",
+      "default": null,
+      "context": "meta_toolkit",
+      "purpose": "Intérprete con el que el servidor MCP lanza las tools. Vacía, prueba `py`, `python3` y `python` del PATH; instalado en un venv, solo el de ese venv ve el toolkit, y `vault mcp-path` la fija a él. Solo la lee el `.mjs`."
+    },
+    {
       "name": "VAULT_MODEL_PROFILE",
       "type": "texto",
       "default": "",

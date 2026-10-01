@@ -144,7 +144,12 @@ pip install -e .
 **MCP server** (Node 18+):
 
 ```bash
-# Opción A: symlink (requiere sudo en Linux/macOS)
+# Instalado con pip (wheel o `pip install .`): el servidor viaja en el paquete.
+# Imprime su ruta y la entrada lista para la configuración del cliente MCP,
+# con VAULT_MCP_PYTHON fijado al intérprete del venv. Pon tu VAULT_ROOT.
+vault mcp-path
+
+# Alternativa desde el checkout — Opción A: symlink (requiere sudo en Linux/macOS)
 sudo ln -sf "$(pwd)/mcp/nodejs/vault-mcp-server.mjs" /usr/local/bin/vault-mcp
 
 # Opción B: python installer

@@ -45,9 +45,11 @@ vault_gobernanza = "vault.gobernanza.tool:main"
 # vault_regex.py re-exporta desde vault.kernel.regex (owner AP-50). El package-dir
 # permite que vault_toolkit._impl.<module> resuelva al fichero en scripts/.
 # Ver: docs/adr/0002-puente-scripts-impl.md
-package-dir = {"vault_toolkit._impl" = "scripts"}
+# v40.34: el servidor MCP viaja como package data de vault_toolkit.mcp, sin
+# copia: el mismo fichero que se sirve desde el checkout (`vault mcp-path`).
+package-dir = {"vault_toolkit._impl" = "scripts", "vault_toolkit.mcp" = "mcp/nodejs"}
 
-packages = ["vault", "vault.kernel", "vault.durabilidad", "vault.indices", "vault.grafo", "vault.consulta", "vault.gobernanza", "vault.ciclo_de_vida", "vault.meta_toolkit", "vault.autoria", "vault_toolkit", "vault_toolkit.operations", "vault_toolkit._impl"]
+packages = ["vault", "vault.kernel", "vault.durabilidad", "vault.indices", "vault.grafo", "vault.consulta", "vault.gobernanza", "vault.ciclo_de_vida", "vault.meta_toolkit", "vault.autoria", "vault_toolkit", "vault_toolkit.operations", "vault_toolkit._impl", "vault_toolkit.mcp"]
 
 # v40.34: la wheel de producto deja fuera la gobernanza del estándar (grupo 35).
 # La lista no está aquí: el hook lee empaquetado/fuera-de-la-wheel.json, que
@@ -58,6 +60,7 @@ build_py = "empaquetado.construir.BuildPy"
 [tool.setuptools.package-data]
 "vault.meta_toolkit" = ["tools-catalog.json"]
 "vault.ciclo_de_vida" = ["runtime-seed.json"]
+"vault_toolkit.mcp" = ["vault-mcp-server.mjs", "tools-catalog.json", "env-table.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
