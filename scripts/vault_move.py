@@ -199,8 +199,10 @@ def move_note(
 
     old_stem = source.stem
     new_stem = destination.stem
-    old_folder = str(source.parent.relative_to(_raiz()))
-    new_folder = str(destination.parent.relative_to(_raiz()))
+    # Con `/` aunque corra en Windows: es la forma en que Obsidian escribe el
+    # enlace anclado, y con `\` el `[[carpeta/nota]]` no se reescribía nunca.
+    old_folder = source.parent.relative_to(_raiz()).as_posix()
+    new_folder = destination.parent.relative_to(_raiz()).as_posix()
 
     links_updated = 0
     files_checked = 0
@@ -319,7 +321,7 @@ def check_move_impact(from_path: str, to_path: str) -> Dict[str, Any]:
 
     content = source.read_text(encoding="utf-8")
     old_stem = source.stem
-    old_folder = str(source.parent.relative_to(_raiz()))
+    old_folder = source.parent.relative_to(_raiz()).as_posix()
 
     wiki_links = RE_WIKILINK.findall(content)
 
@@ -339,7 +341,7 @@ def check_move_impact(from_path: str, to_path: str) -> Dict[str, Any]:
             f"[[{old_stem}]]" in md_content
             or f"[[{old_folder}/{old_stem}]]" in md_content
         ):
-            backlinks.append(str(md.relative_to(_raiz())))
+            backlinks.append(md.relative_to(_raiz()).as_posix())
 
     return {
         "ok": True,

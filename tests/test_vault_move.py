@@ -157,3 +157,33 @@ def test_origen_inexistente_si_es_error(tmp_path):
     root = _vault(tmp_path, GRAPH_MODERNO, {"notes": []})
     (root / "01_Projects" / "nota-vieja.md").unlink()
     assert _mover(root)["ok"] is False
+
+
+# ─── Enlaces anclados a carpeta ──────────────────────────────────────────────
+
+
+def test_el_enlace_anclado_a_carpeta_se_reescribe_tambien_en_windows(tmp_path):
+    """La carpeta se formaba con `str(Path)`, que en Windows lleva barra
+    invertida: el patrón buscado nunca coincidía con el `[[carpeta/nota]]` que
+    escribe Obsidian, así que mover una nota dejaba esos enlaces rotos y
+    `--impact` no los contaba."""
+    root = _vault(tmp_path, GRAPH_MODERNO, {"notes": []})
+    cita = root / "01_Projects" / "cita.md"
+    cita.write_text(
+        "Ver [[01_Projects/nota-vieja]] y [[01_Projects/nota-vieja|la vieja]].\n",
+        encoding="utf-8",
+    )
+    impacto = subprocess.run(
+        [sys.executable, str(SCRIPTS / "vault_move.py"), "--impact",
+         "--from", "01_Projects/nota-vieja.md", "--to", "03_Decisions/nota-vieja.md",
+         "--json"],
+        capture_output=True, encoding="utf-8", cwd=str(REPO_ROOT),
+        env={**_env(), "VAULT_ROOT": str(root), "VAULT_VOICE": "0"},
+    )
+    r = json.loads(impacto.stdout)
+    assert r["backlinks"] == ["01_Projects/cita.md"], r
+
+    assert _mover(root)["ok"] is True
+    texto = cita.read_text(encoding="utf-8")
+    assert "[[03_Decisions/nota-vieja]]" in texto
+    assert "[[03_Decisions/nota-vieja|la vieja]]" in texto
