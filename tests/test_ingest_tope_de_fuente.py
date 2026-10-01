@@ -33,6 +33,9 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 
 def _corre(tmp_path, *argv, entrada=None):
+    # Hasta v40.34 no se creaba: vault_init lo rechazaba y vault_ingest sembraba
+    # el vault fantasma (AP-36) que este test usaba sin saberlo.
+    tmp_path.mkdir(parents=True, exist_ok=True)
     entorno = dict(os.environ, VAULT_ROOT=str(tmp_path), PYTHONIOENCODING="utf-8")
     subprocess.run([sys.executable, str(REPO_ROOT / "scripts" / "vault_init.py")],
                    env=entorno, capture_output=True, cwd=str(REPO_ROOT))
