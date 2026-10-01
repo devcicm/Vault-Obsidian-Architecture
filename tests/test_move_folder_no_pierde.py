@@ -73,3 +73,23 @@ def test_un_destino_ocupado_no_mueve_nada(vault):
     despues = _contenido(vault)
     assert {k: v for k, v in despues.items() if not k.startswith("00_System")} == \
            {k: v for k, v in antes.items() if not k.startswith("00_System")}
+
+
+@pytest.mark.parametrize("argv", [
+    ["--from", "07_Knowledge/viejo/sub/b.md", "--to", "07_Knowledge/nuevo/z.md"],
+    ["--folder", "07_Knowledge/viejo", "--to-folder", "07_Knowledge/destino"],
+])
+def test_dry_run_no_toca_el_disco(vault, argv):
+    """Medido en v40.34: la simulación reescribía `[[b]]` → `[[z]]` en las
+    notas que enlazaban y creaba la carpeta destino con su índice. Tras un
+    dry-run el vault quedaba con enlaces a una nota que no se movió."""
+    antes = _contenido(vault)
+    r = _mover(vault, *argv, "--dry-run")
+    assert r["ok"] and r["dry_run"], r
+    despues = _contenido(vault)
+    traza = "00_System/.tool-trace.json"
+    antes.pop(traza, None)
+    despues.pop(traza, None)
+    assert despues == antes
+    assert not (vault / "07_Knowledge" / "nuevo").exists()
+    assert not (vault / "07_Knowledge" / "destino").exists()

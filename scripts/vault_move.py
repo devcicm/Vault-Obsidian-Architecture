@@ -78,9 +78,10 @@ def save_move_log(log: List[Dict[str, Any]]) -> None:
 
 
 def update_wiki_links_in_file(
-    file_path: Path, old_stem: str, new_stem: str, old_folder: str, new_folder: str
+    file_path: Path, old_stem: str, new_stem: str, old_folder: str, new_folder: str,
+    dry_run: bool = False,
 ) -> Dict[str, Any]:
-    """Actualiza los wiki-links en un archivo."""
+    """Actualiza los wiki-links en un archivo. Con `dry_run`, solo los cuenta."""
     content = file_path.read_text(encoding="utf-8")
     original = content
 
@@ -97,13 +98,14 @@ def update_wiki_links_in_file(
     content = content.replace(old_alias, new_alias)
 
     if content != original:
-        atomic_write_text(file_path, content)
-        return {"updated": True, "links_changed": True}
+        if not dry_run:
+            atomic_write_text(file_path, content)
+        return {"updated": not dry_run, "links_changed": True}
 
     return {"updated": False, "links_changed": False}
 
 
-def update_search_index(old_path: str, new_path: str) -> Dict[str, Any]:
+def update_search_index(old_path: str, new_path: str, dry_run: bool = False) -> Dict[str, Any]:
     """Actualiza search-index.json con la nueva ubicación."""
     if not _search_index().exists():
         return {"updated": False, "reason": "search-index not found"}
@@ -121,7 +123,7 @@ def update_search_index(old_path: str, new_path: str) -> Dict[str, Any]:
             note["updated_at"] = datetime.now(timezone.utc).isoformat()
             updated = True
 
-    if updated:
+    if updated and not dry_run:
         atomic_write_text(
             _search_index(), json.dumps(index_data, indent=2, ensure_ascii=False)
         )
@@ -184,9 +186,12 @@ def move_note(
     if destination.exists():
         return emit_error("vault_move", "INVALID_PATH", f"El destino ya existe: {to_path}")
 
-    destination.parent.mkdir(parents=True, exist_ok=True)
-
+    # Con --dry-run nada toca el disco: ni la carpeta destino, ni los enlaces
+    # de otras notas, ni el índice. Medido en v40.34: la simulación reescribía
+    # `[[a]]` → `[[z]]` en las notas que enlazaban y creaba la carpeta destino
+    # con su index.md, dejando enlaces a una nota que no se había movido.
     if not dry_run:
+        destination.parent.mkdir(parents=True, exist_ok=True)
         if backup:
             # AP-36: el .bak NO se deja junto al nodo (contamina la sección y el
             # grafo); va a 00_System/.trash/ con timestamp para rastreabilidad.
@@ -216,7 +221,7 @@ def move_note(
 
         files_checked += 1
         result = update_wiki_links_in_file(
-            md, old_stem, new_stem, old_folder, new_folder
+            md, old_stem, new_stem, old_folder, new_folder, dry_run=dry_run
         )
         if result.get("links_changed"):
             links_updated += 1
@@ -234,7 +239,7 @@ def move_note(
             degraded.append(f"{nombre}: {type(exc).__name__}: {exc}")
             return {"updated": False, "error": str(exc)}
 
-    search_result = _safe("search-index", lambda: update_search_index(from_path, to_path))
+    search_result = _safe("search-index", lambda: update_search_index(from_path, to_path, dry_run))
     graph_result = _safe("graph", lambda: update_graph(from_path, to_path, dry_run))
 
     move_record = {
