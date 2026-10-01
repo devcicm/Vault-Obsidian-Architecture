@@ -112,6 +112,24 @@ def test_instalado_el_servidor_lanza_las_tools_desde_impl(tmp_path):
 
 
 @requiere_node
+def test_instalado_el_handshake_responde_por_stdio(tmp_path):
+    """Sin respuesta a `initialize` ningún cliente MCP llega a pedir tools.
+
+    Medido en v40.34 con la wheel instalada: en stdio, `handleInitialize`
+    asignaba a un `clientInfo` que nunca se declaró —`ReferenceError` en un
+    módulo ES— y el servidor no contestaba al primer mensaje. `_sesion`
+    enviaba `initialize` en cada test pero ninguno miraba su respuesta.
+    """
+    site = tmp_path / "site"
+    servidor = _instalacion(site)
+    vault = _vault(tmp_path / "vault")
+    rc, resp, err = _sesion(servidor, vault, _entorno(site, VAULT_ROOT=str(vault)), [])
+    assert rc == 0, err[-2000:]
+    assert "error" not in resp.get(0, {}), resp.get(0)
+    assert resp.get(0, {}).get("result", {}).get("serverInfo"), err[-2000:]
+
+
+@requiere_node
 def test_instalado_una_tool_sin_script_no_se_ofrece(tmp_path):
     """Lo que no viaja en la wheel no sale en `tools/list` ni se ejecuta."""
     site = tmp_path / "site"

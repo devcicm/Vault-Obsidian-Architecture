@@ -904,6 +904,9 @@ const CAPABILITIES = {
 
 let initialized = false;
 let clientCapabilities = null;
+// Sin declarar, `handleInitialize` en stdio lanzaba ReferenceError (módulo ES)
+// y el servidor no respondía al handshake de ningún cliente (v40.34).
+let clientInfo = null;
 
 function jsonrpcResult(id, result) {
   return { jsonrpc: "2.0", id, result };
