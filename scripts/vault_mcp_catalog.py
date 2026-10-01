@@ -4754,6 +4754,23 @@ def _convert_to_json_schema(py_tool: Dict[str, Any]) -> Dict[str, Any]:
     return schema
 
 
+def errores_para_transporte() -> Dict[str, Any]:
+    """La parte de `ERROR_CATALOG` que el servidor MCP necesita para emitir el
+    envelope canónico: lo mismo que `construir_error` copia de cada entrada.
+
+    Dueño único de la proyección (AP-57): `sync_to_json` la escribe y
+    `check_sync` la compara con esta misma función.
+    """
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from vault.kernel.errores import ERROR_CATALOG
+    return {
+        code: {campo: entrada[campo] for campo in ("category", "severity", "message", "recovery")}
+        for code, entrada in sorted(ERROR_CATALOG.items())
+    }
+
+
 def sync_to_json(output_path: Optional[str] = None) -> str:
     """Exporta TOOLS_CATALOG + GROUPS al formato JSON canónico.
     
@@ -4853,6 +4870,13 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
         # de cifras a mano no llega — y por eso viaja por la pasarela que sí la
         # cruza, este JSON, en vez de arreglarse escribiendo el número correcto.
         "standard_version": CURRENT_VERSION,
+        # AP-52 al otro lado de la frontera de lenguaje: el servidor construía
+        # sus errores como `{ok, error_code, tool, message}`, sin `category`,
+        # `severity`, `recovery` ni `timestamp`, y el agente no tenía
+        # `recovery.action` por el que decidir justo en los fallos del
+        # transporte. El `.mjs` no puede importar `ERROR_CATALOG`; lo lee de
+        # aquí, y `--check` falla si la copia envejece.
+        "errors": errores_para_transporte(),
     }
 
     with open(output_path, "w", encoding="utf-8", newline="\n") as f:
@@ -4948,6 +4972,13 @@ def check_sync(json_path: Optional[str] = None) -> Dict[str, Any]:
         result["diffs"].append(
             f"standard_version divergen: Python={CURRENT_VERSION} "
             f"JSON={existing.get('standard_version')}"
+        )
+
+    if existing.get("errors") != errores_para_transporte():
+        result["ok"] = False
+        result["diffs"].append(
+            "errors divergen: el catálogo de errores del JSON no es el de "
+            "vault.kernel.errores.ERROR_CATALOG"
         )
 
     js_en_json = set(existing.get("js_native_tools", []))

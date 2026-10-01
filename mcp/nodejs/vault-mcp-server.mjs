@@ -122,6 +122,7 @@ const MODEL_MAPPING = {
 const CATALOG_PATH = join(__dirname, "tools-catalog.json");
 let TOOLS_CATALOG = {};
 let TOOL_GROUPS = {};
+let ERROR_CATALOG = {};
 
 function loadCatalog() {
   try {
@@ -129,6 +130,7 @@ function loadCatalog() {
     const data = JSON.parse(raw);
     TOOLS_CATALOG = data.tools || {};
     TOOL_GROUPS = data.groups || {};
+    ERROR_CATALOG = data.errors || {};
     if (Array.isArray(data.js_native_tools)) JS_NATIVE_TOOLS = new Set(data.js_native_tools);
     // El catálogo describe el repo entero; la instalación lleva solo el
     // producto. Ofrecer una tool cuyo script no viajó sería prometer algo que
@@ -1115,9 +1117,29 @@ function argumentosACli(args, schema) {
   return cli;
 }
 
+// AP-52 — el envelope de error con la forma de `construir_error` en Python:
+// `category`, `severity`, `recovery` y `timestamp` salen del catálogo, que
+// cruza la frontera por `tools-catalog.json` (`errors`). Un código que el
+// catálogo no tiene cae a UNEXPECTED_ERROR, como en `get_error`.
+function construirError(tool, code, message, extra = {}) {
+  const entrada = ERROR_CATALOG[code] || ERROR_CATALOG.UNEXPECTED_ERROR
+    || { category: "unknown", severity: "error", message: "", recovery: { action: "manual", hint: null, docs: null } };
+  return {
+    ok: false,
+    tool: tool || "unknown",
+    error_code: code,
+    category: entrada.category,
+    severity: entrada.severity,
+    message: message || entrada.message,
+    recovery: JSON.parse(JSON.stringify(entrada.recovery)),
+    timestamp: new Date().toISOString().slice(0, 19) + "Z",
+    ...extra,
+  };
+}
+
 function formatToolError(error, message, tool) {
   return {
-    content: [{ type: "text", text: JSON.stringify({ ok: false, error_code: error, tool: tool || "unknown", message }, null, 2) }],
+    content: [{ type: "text", text: JSON.stringify(construirError(tool, error, message), null, 2) }],
     isError: true,
   };
 }
