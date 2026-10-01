@@ -228,7 +228,7 @@ def vault_list(folder: Optional[str] = None, status: Optional[str] = None, limit
 
                         "noteCount": note_count,
 
-                        "path": str(item.relative_to(get_vault_root())),
+                        "path": item.relative_to(get_vault_root()).as_posix(),
 
                     }
 
@@ -268,7 +268,7 @@ def vault_list(folder: Optional[str] = None, status: Optional[str] = None, limit
 
             {
 
-                "path": str(note_path.relative_to(get_vault_root())),
+                "path": note_path.relative_to(get_vault_root()).as_posix(),
 
                 "title": meta.get("title", note_path.stem),
 

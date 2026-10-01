@@ -166,7 +166,7 @@ def _action_detect() -> Dict[str, Any]:
 
         key = _normalize(note.stem)
 
-        buckets.setdefault(key, []).append(str(note.relative_to(get_vault_root())))
+        buckets.setdefault(key, []).append(note.relative_to(get_vault_root()).as_posix())
 
     duplicates = {k: v for k, v in buckets.items() if len(v) > 1}
 
