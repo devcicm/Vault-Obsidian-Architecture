@@ -1,0 +1,5 @@
+# v40.34: el hook de build de la wheel de producto y su lista derivada.
+# Sin ellos, construir la wheel desde el sdist fallaría al importar el hook.
+include empaquetado/__init__.py
+include empaquetado/construir.py
+include empaquetado/fuera-de-la-wheel.json

@@ -168,6 +168,24 @@ def _madurez_coherente() -> bool:
     ]
 
 
+def _wheel_sin_gobernanza() -> bool:
+    """El build declara el hook y el hook tiene una lista que filtrar.
+
+    Que la lista coincida con la capacidad lo exige `vault_servicio --check`;
+    aquí no se importa —esta tool es hoja— y se mide lo que ve quien construye.
+    """
+    proj = (RAIZ / "pyproject.toml").read_text(encoding="utf-8")
+    if 'build_py = "empaquetado.construir.BuildPy"' not in proj:
+        return False
+    try:
+        lista = json.loads(
+            (RAIZ / "empaquetado" / "fuera-de-la-wheel.json").read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return False
+    return bool(lista.get("modulos")) and _existe("empaquetado/construir.py")
+
+
 #: El registro. **Fuente única**: la guía de `docs/` se deriva de aquí y se
 #: regenera con `--guia`; lo que se escriba a mano allí se pierde.
 #:
@@ -382,6 +400,23 @@ PREGUNTAS: List[Dict[str, Any]] = [
         ),
         "ejerce": _madurez_coherente,
         "quien": "vault_produccion._madurez_coherente + tests/test_produccion.py",
+        "estado": "cubierta",
+    },
+    {
+        "id": "wheel_sin_gobernanza",
+        "pregunta": "¿Lo que instalo es el producto, o también las herramientas que miden este repo?",
+        "promesa": "La wheel no lleva la capacidad gobernanza_del_estandar (grupo 35)",
+        "por_que": (
+            "Hasta v40.34 la wheel llevaba vault_gate, vault_arch y el resto del "
+            "meta-toolkit sin sus baselines ni su manifiesto: código que en la "
+            "máquina de un tercero no tiene sobre qué actuar. La lista de lo que "
+            "queda fuera se deriva de vault_servicio.CAPACIDADES."
+        ),
+        "ejerce": _wheel_sin_gobernanza,
+        "quien": (
+            "empaquetado/construir.py + vault_servicio --check (invariante 11) + "
+            "tests/clean_install_gate.py"
+        ),
         "estado": "cubierta",
     },
 ]

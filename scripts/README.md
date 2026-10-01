@@ -2422,6 +2422,14 @@ python vault_servicio.py --check --strict  # la trazabilidad, sin eslabón roto
 
 Forzar esas 17 tools al eje que no sirven habría sido el mismo fallo que la tool existe para evitar. El registro manda y la prosa se corrige.
 
+**La wheel de producto sale de aquí (v40.34).** La capacidad `gobernanza_del_estandar` mide este repo: sin sus baselines, su manifiesto y su `git`, en la instalación de un tercero no tiene sobre qué actuar, y hasta v40.34 viajaba entera en la wheel. Ahora se queda fuera, y la lista no se escribe a mano:
+
+```bash
+python vault_servicio.py --wheel-sync      # regenera empaquetado/fuera-de-la-wheel.json desde CAPACIDADES
+```
+
+El hook `empaquetado/construir.py` (declarado en `[tool.setuptools.cmdclass]`) lee ese JSON con solo stdlib —el build aislado no tiene PyYAML ni este repo en `sys.path`— y omite esos módulos de `vault_toolkit._impl`. `--check` añade la invariante 11: el volcado coincide con la derivación, y ningún módulo que sí viaja importa uno excluido salvo dentro de un `try` que capture `ImportError` (una degradación declarada, como `vault_norms_engine` con `vault_smoke`). `tests/clean_install_gate.py` lo comprueba en la wheel real.
+
 ---
 
 ### `vault_blueprint.py`

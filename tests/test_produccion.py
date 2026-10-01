@@ -213,3 +213,11 @@ def test_estable_sin_descubiertas_es_coherente(tmp_path, monkeypatch):
 def test_sin_classifier_de_madurez_no_cuenta_como_verde(tmp_path, monkeypatch):
     _con_classifier(tmp_path, monkeypatch, "Programming Language :: Python :: 3")
     assert not vp._madurez_coherente()
+
+
+def test_la_wheel_sin_gobernanza_se_mide_y_no_se_afirma(tmp_path, monkeypatch):
+    """Sin el hook declarado en pyproject, la promesa no se ejerce."""
+    assert vp._wheel_sin_gobernanza()
+    (tmp_path / "pyproject.toml").write_text("[project]\nname = 'x'\n", encoding="utf-8")
+    monkeypatch.setattr(vp, "RAIZ", tmp_path)
+    assert not vp._wheel_sin_gobernanza()

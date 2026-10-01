@@ -5371,6 +5371,10 @@
             "type": "boolean",
             "description": "Trazabilidad exigida: grupos huerfanos, capacidades vacias"
           },
+          "wheel-sync": {
+            "type": "boolean",
+            "description": "regenera empaquetado/fuera-de-la-wheel.json desde CAPACIDADES"
+          },
           "strict": {
             "type": "boolean",
             "description": "Exit 1 si la trazabilidad tiene un eslabon roto"

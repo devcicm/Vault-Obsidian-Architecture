@@ -122,6 +122,13 @@ def main(*, gate: str = "CLEAN_INSTALL_GATE") -> int:
         forbidden_prefixes = ("scripts/", "tests/", "vault-sandbox/", ".git/", "build/")
         missing = sorted(required - members)
         forbidden = sorted(member for member in members if member.startswith(forbidden_prefixes))
+        # v40.34: la gobernanza del estándar no viaja. La lista es la derivada
+        # que lee el hook de build, no una copia.
+        fuera = json.loads((REPO_ROOT / "empaquetado" / "fuera-de-la-wheel.json").read_text(encoding="utf-8"))
+        forbidden += sorted(
+            f"vault_toolkit/_impl/{m}.py" for m in fuera["modulos"]
+            if f"vault_toolkit/_impl/{m}.py" in members
+        )
         if missing or forbidden:
             _fail(f"wheel content invalid: missing={missing}, forbidden={forbidden}")
 

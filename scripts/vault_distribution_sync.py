@@ -10,10 +10,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from vault_mcp_catalog import TOOLS_CATALOG
-from vault_servicio import NATURALEZAS
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+# v40.34: del dueño y no de `vault_servicio`, que es grupo 35 y no viaja en la
+# wheel de producto. `vault_servicio` solo lo reexporta.
+from vault.meta_toolkit.naturalezas import NATURALEZAS
 from vault.meta_toolkit.distribucion import clasificar_tools
 
 ROOT = Path(__file__).resolve().parent.parent

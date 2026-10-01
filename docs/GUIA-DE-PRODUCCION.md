@@ -49,6 +49,7 @@ está escrita como registro ejecutable y no como recordatorio.
 | `lo_publicado_es_solo_el_estandar` | ¿Puede irse en un push algo que no es de este repo? | ✅ cubierta | tests/test_publicacion_limpia.py (mide el índice de git, no el disco) |
 | `wheel_instalada_funciona` | ¿Funciona la wheel instalada en un venv limpio fuera del repo? | ✅ descubierta | tests/run_product_gates.py + job 'product-gates' en vault-ci.yml |
 | `madurez_declarada` | ¿El grado de madurez publicado lo sostiene este registro? | ✅ cubierta | vault_produccion._madurez_coherente + tests/test_produccion.py |
+| `wheel_sin_gobernanza` | ¿Lo que instalo es el producto, o también las herramientas que miden este repo? | ✅ cubierta | empaquetado/construir.py + vault_servicio --check (invariante 11) + tests/clean_install_gate.py |
 
 ## Los huecos, escritos
 

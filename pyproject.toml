@@ -49,6 +49,12 @@ package-dir = {"vault_toolkit._impl" = "scripts"}
 
 packages = ["vault", "vault.kernel", "vault.durabilidad", "vault.indices", "vault.grafo", "vault.consulta", "vault.gobernanza", "vault.ciclo_de_vida", "vault.meta_toolkit", "vault.autoria", "vault_toolkit", "vault_toolkit.operations", "vault_toolkit._impl"]
 
+# v40.34: la wheel de producto deja fuera la gobernanza del estándar (grupo 35).
+# La lista no está aquí: el hook lee empaquetado/fuera-de-la-wheel.json, que
+# deriva `vault_servicio --wheel-sync` y vigila `vault_servicio --check`.
+[tool.setuptools.cmdclass]
+build_py = "empaquetado.construir.BuildPy"
+
 [tool.setuptools.package-data]
 "vault.meta_toolkit" = ["tools-catalog.json"]
 "vault.ciclo_de_vida" = ["runtime-seed.json"]

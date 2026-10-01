@@ -1,0 +1,32 @@
+{
+  "_generado_por": "python scripts/vault_servicio.py --wheel-sync",
+  "_no_editar": "Derivado de vault_servicio.CAPACIDADES['gobernanza_del_estandar']. vault_servicio --check falla si diverge.",
+  "capacidad": "gobernanza_del_estandar",
+  "paquete": "vault_toolkit._impl",
+  "modulos": [
+    "vault_arch",
+    "vault_blame_audit",
+    "vault_blueprint",
+    "vault_changelog_check",
+    "vault_ciclos",
+    "vault_code_tag",
+    "vault_criterios",
+    "vault_doc_counts",
+    "vault_doc_staleness",
+    "vault_doc_sync",
+    "vault_error_contract",
+    "vault_excepcion_declarada",
+    "vault_fix_all",
+    "vault_foreign_check",
+    "vault_gate",
+    "vault_kernel",
+    "vault_noop_audit",
+    "vault_norms",
+    "vault_norms_coherence",
+    "vault_produccion",
+    "vault_recursos",
+    "vault_servicio",
+    "vault_smoke",
+    "vault_voice"
+  ]
+}

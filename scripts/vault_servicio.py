@@ -15,6 +15,7 @@ deriva las capas 1 y 2 del plano.
     python scripts/vault_servicio.py --trace           # tool → grupo → capacidad → servicio
     python scripts/vault_servicio.py --naturalezas     # qué construye, qué documenta, qué custodia
     python scripts/vault_servicio.py --check --strict  # la trazabilidad sin eslabón roto
+    python scripts/vault_servicio.py --wheel-sync      # regenera empaquetado/fuera-de-la-wheel.json
 
 ## Dos ejes, dos preguntas distintas
 
@@ -52,6 +53,7 @@ no sirven— es exactamente el fallo que este módulo existe para evitar.
 """
 
 import argparse
+import ast
 import json
 import sys
 from pathlib import Path
@@ -214,6 +216,144 @@ def naturaleza_por_tool() -> Dict[str, str]:
     return salida
 
 
+# ── La wheel de producto ─────────────────────────────────────────────────────
+#
+# La capacidad `gobernanza_del_estandar` mide este repo y no las notas de nadie:
+# sin sus baselines, su manifiesto y su `git`, en la instalación de un tercero
+# no tiene sobre qué actuar. Hasta v40.34 viajaba entera en la wheel. La lista
+# de lo que se queda fuera **no se escribe a mano**: sale de `CAPACIDADES`, se
+# vuelca a un JSON que el hook de build (`empaquetado/construir.py`) lee con
+# solo stdlib —el build aislado no tiene PyYAML ni este repo en `sys.path`— y
+# `check()` falla si el volcado y la derivación divergen.
+
+_RAIZ = Path(__file__).resolve().parent.parent
+FUERA_DE_LA_WHEEL = _RAIZ / "empaquetado" / "fuera-de-la-wheel.json"
+PAQUETE_DE_LA_WHEEL = "vault_toolkit._impl"
+_EXCEPCIONES_DE_IMPORT = {"ImportError", "ModuleNotFoundError"}
+
+
+def _scripts_por_tool() -> Dict[str, str]:
+    """`{tool: módulo}` del catálogo — mismo puerto que `_mapa_de_grupos`."""
+    from vault_mcp_catalog import TOOLS_CATALOG
+
+    return {
+        tool: datos["script"].strip().removesuffix(".py")
+        for tool, datos in TOOLS_CATALOG.items()
+        if (datos.get("script") or "").strip()
+    }
+
+
+def modulos_fuera_de_la_wheel() -> List[str]:
+    """Los módulos de `scripts/` cuya tool sirve a la gobernanza del estándar."""
+    por_grupo = capacidad_por_grupo()
+    scripts = _scripts_por_tool()
+    return sorted(
+        scripts[tool]
+        for tool, datos in _mapa_de_grupos().items()
+        if por_grupo.get(datos["id"]) == "gobernanza_del_estandar" and tool in scripts
+    )
+
+
+def volcado_de_la_wheel() -> Dict[str, Any]:
+    return {
+        "_generado_por": "python scripts/vault_servicio.py --wheel-sync",
+        "_no_editar": (
+            "Derivado de vault_servicio.CAPACIDADES['gobernanza_del_estandar']. "
+            "vault_servicio --check falla si diverge."
+        ),
+        "capacidad": "gobernanza_del_estandar",
+        "paquete": PAQUETE_DE_LA_WHEEL,
+        "modulos": modulos_fuera_de_la_wheel(),
+    }
+
+
+def escribir_volcado_de_la_wheel() -> Dict[str, Any]:
+    datos = volcado_de_la_wheel()
+    FUERA_DE_LA_WHEEL.parent.mkdir(parents=True, exist_ok=True)
+    FUERA_DE_LA_WHEEL.write_text(
+        json.dumps(datos, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8", newline="\n",
+    )
+    return {"ok": True, "tool": "vault_servicio", "action": "wheel_sync",
+            "written": str(FUERA_DE_LA_WHEEL.relative_to(_RAIZ)).replace("\\", "/"),
+            "modules": len(datos["modulos"])}
+
+
+def _protegido(cadena: List[ast.AST]) -> bool:
+    """¿Algún `try` de la cadena captura el fallo de importar?"""
+    for nodo in cadena:
+        if isinstance(nodo, ast.Try):
+            for h in nodo.handlers:
+                tipos = h.type.elts if isinstance(h.type, ast.Tuple) else [h.type]
+                if h.type is None or any(
+                    getattr(t, "id", None) in _EXCEPCIONES_DE_IMPORT for t in tipos
+                ):
+                    return True
+    return False
+
+
+def importaciones_sin_proteger(codigo: str, fuera: set) -> List[Dict[str, Any]]:
+    """Imports de un módulo excluido que fallarían en la wheel.
+
+    Cuenta `import x`, `from x import …` e `import_toolkit_module("x")`. Un
+    import dentro de un `try` que captura `ImportError` es una degradación
+    declarada —`vault_norms_engine` hace eso con `vault_smoke`— y no cuenta.
+    """
+    hallados: List[Dict[str, Any]] = []
+
+    def visitar(nodo: ast.AST, cadena: List[ast.AST]) -> None:
+        nombres: List[str] = []
+        if isinstance(nodo, ast.Import):
+            nombres = [a.name.split(".")[0] for a in nodo.names]
+        elif isinstance(nodo, ast.ImportFrom) and nodo.module and not nodo.level:
+            nombres = [nodo.module.split(".")[-1]]
+            if nodo.module == PAQUETE_DE_LA_WHEEL:
+                nombres += [a.name for a in nodo.names]
+        elif isinstance(nodo, ast.Call) and nodo.args:
+            f = nodo.func
+            if (getattr(f, "id", None) or getattr(f, "attr", None)) == "import_toolkit_module":
+                arg = nodo.args[0]
+                if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                    nombres = [arg.value.split(".")[-1]]
+        for n in nombres:
+            if n in fuera and not _protegido(cadena):
+                hallados.append({"module": n, "line": nodo.lineno})
+        for hijo in ast.iter_child_nodes(nodo):
+            visitar(hijo, cadena + [nodo])
+
+    visitar(ast.parse(codigo), [])
+    return hallados
+
+
+def _fuentes_de_la_wheel(fuera: set) -> List[Path]:
+    fuentes = [p for p in sorted((_RAIZ / "scripts").glob("*.py")) if p.stem not in fuera]
+    for paquete in ("vault", "vault_toolkit"):
+        fuentes += sorted((_RAIZ / paquete).rglob("*.py"))
+    return fuentes
+
+
+def check_de_la_wheel() -> Dict[str, Any]:
+    derivado = modulos_fuera_de_la_wheel()
+    try:
+        volcado = json.loads(FUERA_DE_LA_WHEEL.read_text(encoding="utf-8")).get("modulos")
+    except (OSError, ValueError):
+        volcado = None
+    fuera = set(derivado)
+    rotos = []
+    for fuente in _fuentes_de_la_wheel(fuera):
+        for h in importaciones_sin_proteger(fuente.read_text(encoding="utf-8"), fuera):
+            rel = str(fuente.relative_to(_RAIZ)).replace("\\", "/")
+            rotos.append({"file": rel, **h})
+    return {
+        "excluded_modules": len(derivado),
+        "exclusion_drift": None if volcado == derivado else {
+            "derived": derivado, "dumped": volcado,
+            "fix": "python scripts/vault_servicio.py --wheel-sync",
+        },
+        "shipped_imports_of_excluded": rotos,
+    }
+
+
 def trazabilidad() -> List[Dict[str, Any]]:
     """La cadena completa, una fila por tool: tool → grupo → capacidad → servicio.
 
@@ -344,10 +484,15 @@ def check(strict: bool = False) -> Dict[str, Any]:
                 }
             )
 
+    # 11. La wheel deja fuera exactamente la gobernanza del estándar, y nada
+    #     de lo que viaja la necesita sin declararlo con un `except ImportError`.
+    wheel = check_de_la_wheel()
+
     ok = not (
         huerfanos or inventados or duplicados or vacias or sin_servicio
         or sin_naturaleza or naturaleza_inventada or naturaleza_duplicada
         or naturalezas_vacias or desacuerdos
+        or wheel["exclusion_drift"] or wheel["shipped_imports_of_excluded"]
     )
     resultado = {
         "ok": ok,
@@ -369,6 +514,7 @@ def check(strict: bool = False) -> Dict[str, Any]:
         "duplicated_natures": naturaleza_duplicada,
         "empty_natures": naturalezas_vacias,
         "axis_disagreements": desacuerdos,
+        "wheel": wheel,
         "hint": (
             "Un grupo huérfano no se arregla ampliando una capacidad al azar: se "
             "decide a qué servicio sirve. Si no sirve a ninguno, la pregunta es por "
@@ -419,10 +565,16 @@ def main() -> int:
         help="tools agrupadas por naturaleza (construcción / documentación / …)",
     )
     parser.add_argument("--check", action="store_true", help="trazabilidad exigida")
+    parser.add_argument(
+        "--wheel-sync", action="store_true",
+        help="regenera empaquetado/fuera-de-la-wheel.json desde CAPACIDADES",
+    )
     parser.add_argument("--strict", action="store_true", help="exit 1 si falla")
     args = parser.parse_args()
 
-    if args.naturalezas:
+    if args.wheel_sync:
+        salida = escribir_volcado_de_la_wheel()
+    elif args.naturalezas:
         salida = {
             "ok": True,
             "tool": "vault_servicio",
