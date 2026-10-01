@@ -24,7 +24,7 @@ from typing import Any, Dict, List, Optional, Set
 from vault_regex import RE_WIKILINK  # dueño único del patrón (AP-50)
 
 from vault_errors import emit_error, wrap_main
-from vault_io import atomic_write_text, write_report
+from vault_io import atomic_write_text, file_lock, tomar_lock, write_report
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -64,6 +64,29 @@ def _move_log() -> Path:
     return _repo().dir_sistema / "move-log.json"
 
 
+#: Espera máxima por el lock de una nota o de un índice. La misma que
+#: `vault_write` y `vault_append`: el move compite con ellos por las mismas notas.
+_LOCK_TIMEOUT = 10.0
+
+
+def _reescribir_json(path: Path, cambiar) -> Dict[str, Any]:
+    """Lee, cambia y escribe `path` bajo su lock (F1).
+
+    No es `atomic_update_json`: esa sustituye un esquema que no sea dict por el
+    default, y aquí un índice legacy con otra forma se deja como está.
+    `cambiar(data)` devuelve True si modificó `data`. Un lock que no se consigue
+    sale como TimeoutError, que el llamador declara como degradado.
+    """
+    with file_lock(path, timeout=_LOCK_TIMEOUT):
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            return {"updated": False, "reason": f"{path.name} con esquema no reconocido"}
+        updated = cambiar(data)
+        if updated:
+            atomic_write_text(path, json.dumps(data, indent=2, ensure_ascii=False))
+        return {"updated": updated}
+
+
 def load_move_log() -> List[Dict[str, Any]]:
     """Carga el historial de movimientos."""
     if _move_log().exists():
@@ -74,7 +97,17 @@ def load_move_log() -> List[Dict[str, Any]]:
 def save_move_log(log: List[Dict[str, Any]]) -> None:
     """Guarda el historial de movimientos."""
     _system_dir().mkdir(parents=True, exist_ok=True)
-    _move_log().write_text(json.dumps(log, indent=2, ensure_ascii=False), encoding="utf-8")
+    atomic_write_text(_move_log(), json.dumps(log, indent=2, ensure_ascii=False))
+
+
+def append_move_log(record: Dict[str, Any]) -> None:
+    """Añade una entrada al historial bajo su lock: dos moves en paralelo no se
+    comen la entrada del otro (F1)."""
+    _system_dir().mkdir(parents=True, exist_ok=True)
+    with file_lock(_move_log(), timeout=_LOCK_TIMEOUT):
+        log = load_move_log()
+        log.append(record)
+        save_move_log(log)
 
 
 def update_wiki_links_in_file(
@@ -110,25 +143,23 @@ def update_search_index(old_path: str, new_path: str, dry_run: bool = False) -> 
     if not _search_index().exists():
         return {"updated": False, "reason": "search-index not found"}
 
-    index_data = json.loads(_search_index().read_text(encoding="utf-8"))
-    if not isinstance(index_data, dict):
-        return {"updated": False, "reason": "search-index con esquema no reconocido"}
-    updated = False
+    def cambiar(index_data: Dict[str, Any]) -> bool:
+        updated = False
+        for note in index_data.get("notes", []):
+            if not isinstance(note, dict):
+                continue
+            if note.get("path") == old_path:
+                note["path"] = new_path
+                note["updated_at"] = datetime.now(timezone.utc).isoformat()
+                updated = True
+        return updated
 
-    for note in index_data.get("notes", []):
-        if not isinstance(note, dict):
-            continue
-        if note.get("path") == old_path:
-            note["path"] = new_path
-            note["updated_at"] = datetime.now(timezone.utc).isoformat()
-            updated = True
-
-    if updated and not dry_run:
-        atomic_write_text(
-            _search_index(), json.dumps(index_data, indent=2, ensure_ascii=False)
-        )
-
-    return {"updated": updated}
+    if dry_run:
+        index_data = json.loads(_search_index().read_text(encoding="utf-8"))
+        if not isinstance(index_data, dict):
+            return {"updated": False, "reason": "search-index con esquema no reconocido"}
+        return {"updated": cambiar(index_data)}
+    return _reescribir_json(_search_index(), cambiar)
 
 
 def update_graph(old_path: str, new_path: str, dry_run: bool = False) -> Dict[str, Any]:
@@ -136,41 +167,39 @@ def update_graph(old_path: str, new_path: str, dry_run: bool = False) -> Dict[st
     if not _graph_file().exists():
         return {"updated": False, "reason": "graph not found"}
 
-    graph_data = json.loads(_graph_file().read_text(encoding="utf-8"))
-    if not isinstance(graph_data, dict):
-        return {"updated": False, "reason": "graph con esquema no reconocido"}
     old_stem = Path(old_path).stem
     new_stem = Path(new_path).stem
     old_folder = str(Path(old_path).parent)
     new_folder = str(Path(new_path).parent)
 
-    updated = False
-
-    # Los grafos legacy guardan `nodes` como lista de strings (el stem), no de
-    # objetos. Un vault preexistente puede traer cualquiera de las dos formas y
-    # mover una nota no puede depender de cuál le tocó.
-    nodes = graph_data.get("nodes", [])
-    for i, node in enumerate(nodes):
-        if isinstance(node, str):
-            if node == old_stem or node == old_path:
-                nodes[i] = new_stem if node == old_stem else new_path
+    def cambiar(graph_data: Dict[str, Any]) -> bool:
+        updated = False
+        # Los grafos legacy guardan `nodes` como lista de strings (el stem), no de
+        # objetos. Un vault preexistente puede traer cualquiera de las dos formas y
+        # mover una nota no puede depender de cuál le tocó.
+        nodes = graph_data.get("nodes", [])
+        for i, node in enumerate(nodes):
+            if isinstance(node, str):
+                if node == old_stem or node == old_path:
+                    nodes[i] = new_stem if node == old_stem else new_path
+                    updated = True
+                continue
+            if not isinstance(node, dict):
+                continue
+            if node.get("id") == old_stem or node.get("path") == old_path:
+                node["id"] = new_stem
+                node["path"] = new_path
+                node["title"] = new_stem.replace("-", " ").replace("_", " ").title()
+                node["updated_at"] = datetime.now(timezone.utc).isoformat()
                 updated = True
-            continue
-        if not isinstance(node, dict):
-            continue
-        if node.get("id") == old_stem or node.get("path") == old_path:
-            node["id"] = new_stem
-            node["path"] = new_path
-            node["title"] = new_stem.replace("-", " ").replace("_", " ").title()
-            node["updated_at"] = datetime.now(timezone.utc).isoformat()
-            updated = True
+        return updated
 
-    if not dry_run and updated:
-        atomic_write_text(
-            _graph_file(), json.dumps(graph_data, indent=2, ensure_ascii=False)
-        )
-
-    return {"updated": updated}
+    if dry_run:
+        graph_data = json.loads(_graph_file().read_text(encoding="utf-8"))
+        if not isinstance(graph_data, dict):
+            return {"updated": False, "reason": "graph con esquema no reconocido"}
+        return {"updated": cambiar(graph_data)}
+    return _reescribir_json(_graph_file(), cambiar)
 
 
 def move_note(
@@ -186,6 +215,30 @@ def move_note(
     if destination.exists():
         return emit_error("vault_move", "INVALID_PATH", f"El destino ya existe: {to_path}")
 
+    if dry_run:
+        return _mover_nota(source, destination, from_path, to_path, dry_run, backup)
+    # La nota se mueve bajo su lock: un vault_append o vault_write concurrente
+    # no puede escribir en el origen mientras desaparece (F1). Si otro escritor
+    # la tiene, no se mueve nada y se dice.
+    lock = tomar_lock(source, _LOCK_TIMEOUT)
+    if lock is None:
+        return {
+            **emit_error(
+                "vault_move", "NOTE_LOCKED",
+                f"Otro escritor tiene {from_path}; no se movió nada.",
+            ),
+            "path": from_path,
+        }
+    with lock:
+        if not source.exists():
+            return emit_error("vault_move", "FILE_NOT_FOUND", f"Archivo no encontrado: {from_path}")
+        return _mover_nota(source, destination, from_path, to_path, dry_run, backup)
+
+
+def _mover_nota(
+    source: Path, destination: Path, from_path: str, to_path: str,
+    dry_run: bool, backup: bool,
+) -> Dict[str, Any]:
     # Con --dry-run nada toca el disco: ni la carpeta destino, ni los enlaces
     # de otras notas, ni el índice. Medido en v40.34: la simulación reescribía
     # `[[a]]` → `[[z]]` en las notas que enlazaban y creaba la carpeta destino
@@ -212,6 +265,7 @@ def move_note(
 
     links_updated = 0
     files_checked = 0
+    links_pending: List[str] = []
 
     for md in _raiz().rglob("*.md"):
         if ".history" in str(md):
@@ -220,9 +274,25 @@ def move_note(
             continue
 
         files_checked += 1
-        result = update_wiki_links_in_file(
-            md, old_stem, new_stem, old_folder, new_folder, dry_run=dry_run
+        # Sonda sin lock: casi ninguna nota enlaza a la movida, y tomar un lock
+        # por cada nota del vault sería caro. Solo las que cambian se reescriben,
+        # y se releen bajo su lock para no escribir encima de un append (F1).
+        sonda = update_wiki_links_in_file(
+            md, old_stem, new_stem, old_folder, new_folder, dry_run=True
         )
+        if not sonda.get("links_changed"):
+            continue
+        if dry_run:
+            links_updated += 1
+            continue
+        nota_lock = tomar_lock(md, _LOCK_TIMEOUT)
+        if nota_lock is None:
+            links_pending.append(md.relative_to(_raiz()).as_posix())
+            continue
+        with nota_lock:
+            result = update_wiki_links_in_file(
+                md, old_stem, new_stem, old_folder, new_folder, dry_run=False
+            )
         if result.get("links_changed"):
             links_updated += 1
 
@@ -230,7 +300,10 @@ def move_note(
     # actualización de los índices falla (esquema legacy, JSON corrupto), la tool
     # no puede devolver ok:false: eso deja al agente creyendo que no movió nada
     # cuando sí lo hizo. Se degrada a aviso y se pide el reindex.
-    degraded: List[str] = []
+    degraded: List[str] = [
+        f"links: {rel} tenía el lock tomado; su enlace sigue apuntando a {old_stem}"
+        for rel in links_pending
+    ]
 
     def _safe(nombre: str, fn) -> Dict[str, Any]:
         try:
@@ -252,9 +325,7 @@ def move_note(
     }
 
     if not dry_run:
-        move_log = load_move_log()
-        move_log.append(move_record)
-        save_move_log(move_log)
+        _safe("move-log", lambda: append_move_log(move_record))
 
     return {
         "ok": True,
@@ -265,6 +336,7 @@ def move_note(
         "files_checked": files_checked,
         "search_index_updated": search_result.get("updated"),
         "graph_updated": graph_result.get("updated"),
+        "links_pending": links_pending,
         "degraded": degraded,
         "next": "vault_reindex --graph" if degraded else None,
         "record": move_record,
