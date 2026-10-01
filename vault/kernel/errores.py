@@ -132,8 +132,9 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "message": "No existe un snapshot con ese nombre.",
         "recovery": {
             "action": "run_tool",
-            "tool": "vault_backup",
-            "args": ["--list"],
+            # `vault_backup --list` no existe; lista quien se llama así.
+            "tool": "vault_backup_list",
+            "args": [],
             "hint": "Listar los snapshots disponibles y reintentar con un "
                     "nombre de la lista. `searched` dice dónde se buscó.",
             "docs": None,
@@ -279,7 +280,8 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "recovery": {
             "action": "run_tool",
             "tool": "vault_write",
-            "args": ["--path", "<path>", "--title", "<title>"],
+            # `vault_write` no tiene `--path`: la nota se nombra por carpeta y título.
+            "args": ["--folder", "<folder>", "--title", "<title>", "--content", "<content>"],
             "hint": "Usar vault_write para reescribir la nota con frontmatter completo.",
             "docs": "vault-obsidian-architecture.md §Frontmatter obligatorio",
         },
@@ -391,7 +393,8 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "action": "run_tool",
             "tool": "vault_audit",
             "args": [],
-            "hint": "Ejecutar vault_audit --hash para identificar duplicados exactos cross-folder.",
+            # `--hash` no existe: el audit por defecto ya detecta AP-18.
+            "hint": "Ejecutar vault_audit: el informe lista los duplicados exactos cross-folder bajo AP-18.",
             "docs": "vault-obsidian-architecture.md §AP-18, PAT-3",
         },
     },
@@ -1531,7 +1534,9 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "message": "No se pudo cargar tool-spec.json.",
         "recovery": {
             "action": "manual",
-            "hint": "Regenerar el contrato con vault_compact_contracts.",
+            # Hasta v40.34 decía `vault_compact_contracts`, que lo lee y no lo
+            # escribe: el agente obedecía y volvía al mismo error.
+            "hint": "Regenerar el contrato con `python scripts/vault_manifest.py --bootstrap`.",
             "docs": None,
         },
     },
