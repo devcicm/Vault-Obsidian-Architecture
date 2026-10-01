@@ -287,6 +287,11 @@ FUERA_DE_FRONTERA = {
     "_datasets-reports": "informes derivados de esos datos",
     "_backups-builderx": "copias de un repo ajeno, en solo lectura",
     "node_modules": "dependencias instaladas, no fuente",
+    # Salida de `python -m build`, fuera de git: copias del `.mjs` que la
+    # wheel empaqueta. Sin estas entradas, construir la wheel ponía la puerta
+    # en rojo con `build/lib/vault_toolkit/mcp/*.mjs` (medido en v40.34).
+    "build": "salida de python -m build: copias empaquetadas, no fuente",
+    "dist": "wheels y sdist construidos: artefactos, no fuente",
 }
 
 

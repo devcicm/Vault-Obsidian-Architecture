@@ -171,6 +171,24 @@ def test_un_lenguaje_sin_frontera_declarada_sale_como_hallazgo(monkeypatch, tmp_
     assert [h for h in sin_declarar if h["modulo"].endswith("deploy.sh")]
 
 
+def test_la_salida_de_construir_la_wheel_no_es_frontera(monkeypatch, tmp_path):
+    """`python -m build` deja en `build/` y `dist/` copias del `.mjs` empaquetado.
+
+    Medido en v40.34: tras reconstruir la wheel para reinstalarla, la puerta
+    salía en rojo con `build/lib/vault_toolkit/mcp/vault-mcp-server.mjs` como
+    `frontera_no_declarada` — la copia que genera el empaquetado, no código
+    del toolkit. Quien construye la wheel y luego pasa las puertas las veía
+    fallar sin haber tocado nada.
+    """
+    for rel in ("build/lib/vault_toolkit/mcp/servidor.mjs", "dist/x/servidor.mjs"):
+        (tmp_path / rel).parent.mkdir(parents=True)
+        (tmp_path / rel).write_text("export {}\n", encoding="utf-8")
+    monkeypatch.setattr(C, "REPO", tmp_path)
+    sin_declarar = [h["modulo"] for h in C.medir_fronteras()
+                    if h["criterio"] == "frontera_no_declarada"]
+    assert sin_declarar == []
+
+
 def test_un_fichero_ajeno_ilegible_no_se_cuenta_como_limpio(monkeypatch, tmp_path):
     """AP-51: el fallo de la tool no se presenta como ausencia en el dato."""
     (tmp_path / "mcp" / "nodejs").mkdir(parents=True)
