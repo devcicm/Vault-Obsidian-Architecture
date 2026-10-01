@@ -47,6 +47,7 @@ from vault_errors import wrap_main  # noqa: E402
 from vault_io import (  # noqa: E402
     assert_within_vault,
     atomic_write_text,
+    tomar_lock,
     update_section_index,
 )
 from vault_lib import slugify, strip_code_blocks, utcnow, yaml_scalar  # noqa: E402
@@ -57,6 +58,7 @@ from vault_lib import slugify, strip_code_blocks, utcnow, yaml_scalar  # noqa: E
 FORBIDDEN_SECTIONS = frozenset({"00_System", "99_Index", "17_Preferences"})
 
 MIN_CHUNK_CHARS = 120
+_LOCK_TIMEOUT = 10.0
 DEFAULT_MAX_NOTES = 20
 
 #: Tope de lo que se ingiere de una vez, en caracteres.
@@ -445,16 +447,29 @@ def vault_ingest(
                 skipped.append({"path": note["path"], "reason": "ya existe"})
                 continue
             full.parent.mkdir(parents=True, exist_ok=True)
-            try:
-                atomic_write_text(full, note["content"])
-            except OSError as exc:
-                # Una excepción en la nota k dejaba en disco las k-1 anteriores
-                # **y** se llevaba por delante el `update_section_index`: el vault
-                # quedaba con notas que ningún índice mencionaba, y la tool no
-                # devolvía ninguna de las dos cosas. Aquí el fallo de una nota es
-                # una fila del informe (`failed`), no la desaparición del lote.
-                failed.append({"path": note["path"], "reason": f"{type(exc).__name__}: {exc}"})
+            # F1: el `exists()` de arriba y la escritura no eran atómicos. Un
+            # `vault_write` —que escribe bajo el lock de la nota— o una segunda
+            # ingesta que creara la misma ruta entre medias quedaba pisada con
+            # material sin revisar. Se toma el mismo lock y se vuelve a mirar.
+            lock = tomar_lock(full, _LOCK_TIMEOUT)
+            if lock is None:
+                failed.append({"path": note["path"],
+                               "reason": "NOTE_LOCKED: otro escritor tiene la nota; no se escribió"})
                 continue
+            with lock:
+                if full.exists():
+                    skipped.append({"path": note["path"], "reason": "ya existe"})
+                    continue
+                try:
+                    atomic_write_text(full, note["content"])
+                except OSError as exc:
+                    # Una excepción en la nota k dejaba en disco las k-1 anteriores
+                    # **y** se llevaba por delante el `update_section_index`: el vault
+                    # quedaba con notas que ningún índice mencionaba, y la tool no
+                    # devolvía ninguna de las dos cosas. Aquí el fallo de una nota es
+                    # una fila del informe (`failed`), no la desaparición del lote.
+                    failed.append({"path": note["path"], "reason": f"{type(exc).__name__}: {exc}"})
+                    continue
             written.append(note["path"])
         # Fuera del bucle y sin condicionar a que no hubiera fallos: si se
         # escribió aunque sea una, el índice tiene que reflejarlo.
