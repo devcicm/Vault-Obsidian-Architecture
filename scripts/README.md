@@ -1254,7 +1254,7 @@ python vault_change_log.py --query --action deleted
 | `--last` | Número de entradas a retornar (default: 20) |
 
 ### `vault_delete.py`
-Elimina notas con SP-01强制执行: si no existe entrada de change-log para la nota, la crea ANTES de borrar. Por defecto mueve a `20_Quarantine/`; con `--force` elimina directamente.
+Elimina notas con SP-01 obligatorio: si no existe entrada de change-log para la nota, la crea ANTES de borrar. Por defecto mueve a `20_Quarantine/`; con `--force` elimina directamente.
 
 ```bash
 # Eliminación normal (crea change-log si no existe, luego elimina)

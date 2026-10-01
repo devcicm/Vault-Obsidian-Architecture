@@ -93,7 +93,7 @@ def test_loader_primario_sin_impl_ni_legacy_import_error(monkeypatch, tmp_path):
     """Sin _impl ni legacy_scripts, import_toolkit_module raise ImportError.
 
     El bare import fallback se eliminó deliberadamente: resolver por sys.path
-    sin más約束乌戳 da acceso a cualquier paquete en el entorno, rompiendo
+    sin más restricción da acceso a cualquier paquete en el entorno, rompiendo
     el aislamiento. El único camino válido es _impl (wheel) o legacy_scripts
     (checkout). Este test verifica que el comportamiento antiguo (bare import)
     ya no existe.

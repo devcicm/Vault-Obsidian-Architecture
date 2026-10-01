@@ -386,7 +386,7 @@ def sanitize_filename(name: str, max_length: int = 200) -> str:
     # Eliminar caracteres invisibles primero
     result, _ = remove_invisible_chars(result)
 
-    # Eliminar caracteres inválidos para文件名
+    # Eliminar caracteres inválidos para nombres de fichero
     result = re.sub(INVALID_FILENAME_CHARS, "", result)
     result = re.sub(OBSIDIAN_LINK_CHARS, "", result)
 

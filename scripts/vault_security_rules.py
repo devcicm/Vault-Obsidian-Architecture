@@ -4,7 +4,7 @@ Una sola declaración: las 45 reglas de escaneo de código viva aquí.
 `vault_security_scan` las consume; `vault_log_error` acepta owasp_category y cwe_id
 pero no necesita el mapeo completo — lo obtiene del finding que le pasa el escáner.
 
-来源: vault_security_scan.py (original inline, extraído en v40.29).
+Origen: vault_security_scan.py (original inline, extraído en v40.29).
 No se duplica el dato en ningún otro módulo.
 """
 

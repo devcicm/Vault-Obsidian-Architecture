@@ -56,7 +56,7 @@ class VaultWriteError(Exception):
     """Error de escritura con código de catálogo conocido.
 
     Permite a vault_io.atomic_write_text() emitir un error específico
-    (DISK_FULL, PERMISSION_DENIED) sin血行 un Exception genérico que
+    (DISK_FULL, PERMISSION_DENIED) sin lanzar un Exception genérico que
     wrap_main convertiría en UNEXPECTED_ERROR.
     """
 

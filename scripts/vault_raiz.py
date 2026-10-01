@@ -125,7 +125,7 @@ def _detect_vault_root() -> Path:
         and not (s / "__init__.py").exists()
     ]
     # Prefer candidates that already have vault content (initialized vault).
-    # Con varios candidatos初始化ados se selecciona el de mayor madurez:
+    # Con varios candidatos inicializados se selecciona el de mayor madurez:
     # el que más marcadores de estructura tenga. A igualdad, el primero
     # alfabéticamente (candidates ya está sorted).
     best_candidate: Optional[Path] = None

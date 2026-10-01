@@ -432,7 +432,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "name": "vault_delete",
         "script": "vault_delete.py",
         "group": "Change Log",
-        "purpose": "Elimina notas con SP-01强制执行: crea change-log antes de borrar.",
+        "purpose": "Elimina notas con SP-01 obligatorio: crea change-log antes de borrar.",
         "params": {
             "path": {
                 "type": "string",
