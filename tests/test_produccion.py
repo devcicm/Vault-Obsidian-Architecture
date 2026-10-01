@@ -180,3 +180,36 @@ def test_el_dueno_es_una_hoja():
             assert not base.startswith("vault_") or base in permitidos, (
                 f"vault_produccion importa {base}: deja de ser hoja"
             )
+
+
+def test_el_classifier_publicado_es_beta():
+    """Decisión de v40.34: Beta hasta que la Fase 6 cierre las descubiertas."""
+    proj = (RAIZ / "pyproject.toml").read_text(encoding="utf-8")
+    assert vp.CLASSIFIER_BETA in proj
+    assert vp.CLASSIFIER_ESTABLE not in proj
+
+
+def _con_classifier(tmp_path, monkeypatch, classifier):
+    (tmp_path / "pyproject.toml").write_text(
+        f'classifiers = [\n    "{classifier}",\n]\n', encoding="utf-8")
+    monkeypatch.setattr(vp, "RAIZ", tmp_path)
+
+
+def test_estable_con_descubiertas_rompe_la_puerta(tmp_path, monkeypatch):
+    """Lo que había hasta v40.34: 5 - Production/Stable con huecos declarados."""
+    _con_classifier(tmp_path, monkeypatch, vp.CLASSIFIER_ESTABLE)
+    assert any(p["estado"] == "descubierta" for p in vp.PREGUNTAS)
+    assert not vp._madurez_coherente()
+
+
+def test_estable_sin_descubiertas_es_coherente(tmp_path, monkeypatch):
+    """Subir a 5 se gana cerrando huecos, no se prohíbe."""
+    _con_classifier(tmp_path, monkeypatch, vp.CLASSIFIER_ESTABLE)
+    cerradas = [dict(p, estado="cubierta") for p in vp.PREGUNTAS]
+    monkeypatch.setattr(vp, "PREGUNTAS", cerradas)
+    assert vp._madurez_coherente()
+
+
+def test_sin_classifier_de_madurez_no_cuenta_como_verde(tmp_path, monkeypatch):
+    _con_classifier(tmp_path, monkeypatch, "Programming Language :: Python :: 3")
+    assert not vp._madurez_coherente()

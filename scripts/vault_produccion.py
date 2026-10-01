@@ -144,6 +144,30 @@ def _hay_dependencias_declaradas() -> bool:
     return (not duros) or ("PyYAML" in proj or "pyyaml" in proj.lower())
 
 
+#: Lo que el classifier de `pyproject.toml` puede afirmar. «Production/Stable»
+#: es una promesa sobre todas las demás: se gana cuando ninguna queda
+#: descubierta, no cuando alguien decide subirlo.
+CLASSIFIER_ESTABLE = "Development Status :: 5 - Production/Stable"
+CLASSIFIER_BETA = "Development Status :: 4 - Beta"
+
+
+def _madurez_coherente() -> bool:
+    """El classifier no promete más madurez de la que el registro sostiene.
+
+    Medido en v40.34: `pyproject.toml` declaraba 5 - Production/Stable con
+    tres promesas descubiertas en este mismo registro, una de ellas que la
+    wheel nunca se había ejecutado en un venv limpio. Beta siempre es
+    coherente; Estable solo si no queda ninguna otra descubierta.
+    """
+    proj = (RAIZ / "pyproject.toml").read_text(encoding="utf-8")
+    if CLASSIFIER_ESTABLE not in proj:
+        return CLASSIFIER_BETA in proj
+    return not [
+        p["id"] for p in PREGUNTAS
+        if p["id"] != "madurez_declarada" and p["estado"] == "descubierta"
+    ]
+
+
 #: El registro. **Fuente única**: la guía de `docs/` se deriva de aquí y se
 #: regenera con `--guia`; lo que se escriba a mano allí se pierde.
 #:
@@ -344,6 +368,21 @@ PREGUNTAS: List[Dict[str, Any]] = [
             "Pendiente: ejecutar run_product_gates.py en un CI separado o "
             "desde una maquina limpia que no tenga este repo."
         ),
+    },
+    {
+        "id": "madurez_declarada",
+        "pregunta": "¿El grado de madurez publicado lo sostiene este registro?",
+        "promesa": "El classifier Development Status de pyproject.toml",
+        "por_que": (
+            "Quien instala lee el classifier antes que cualquier documento. "
+            "Hasta v40.34 decía 5 - Production/Stable mientras tres filas de "
+            "esta misma tabla seguían descubiertas: la etiqueta prometía lo "
+            "que el registro negaba. Subirlo a 5 no es una decisión de "
+            "redacción; se gana cerrando las descubiertas."
+        ),
+        "ejerce": _madurez_coherente,
+        "quien": "vault_produccion._madurez_coherente + tests/test_produccion.py",
+        "estado": "cubierta",
     },
 ]
 
