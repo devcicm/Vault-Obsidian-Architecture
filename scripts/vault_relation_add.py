@@ -40,12 +40,15 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-from vault_io import atomic_write_text, atomic_write_json, write_report
+from vault_io import atomic_write_text, atomic_write_json, tomar_lock, write_report
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+
+
+_LOCK_TIMEOUT = 10.0
 
 
 def _raiz() -> Path:
@@ -189,6 +192,33 @@ def vault_relation_add(
     if relation_type not in RELATION_TYPES:
         return emit_error("vault_relation_add", "INVALID_VALUE", f"Tipo inválido: {relation_type}. Válidos: {RELATION_TYPES}")
 
+    # F1: leer, añadir y reescribir el JSON sin lock perdía relaciones. Medido
+    # en v40.34: ocho altas en paralelo respondían las ocho `ok: true` y en
+    # disco quedaban seis. El ERD se regenera dentro del mismo lock para que
+    # refleje la lista que quedó escrita, no la que leyó cada proceso.
+    _entity_dir().mkdir(parents=True, exist_ok=True)
+    project_file = _entity_dir() / f"{slugify(project)}-relations.json"
+    lock = tomar_lock(project_file, _LOCK_TIMEOUT)
+    if lock is None:
+        return emit_error(
+            "vault_relation_add", "NOTE_LOCKED",
+            f"{project_file.name} lo tiene otro escritor; no se añadió la relación",
+        )
+    with lock:
+        return _anadir_bajo_lock(project, from_entity, to_entity, relation_type,
+                                 cardinality, label, description, entity_type)
+
+
+def _anadir_bajo_lock(
+    project: str,
+    from_entity: str,
+    to_entity: str,
+    relation_type: str,
+    cardinality: Optional[str],
+    label: Optional[str],
+    description: Optional[str],
+    entity_type: Optional[str],
+) -> Dict[str, Any]:
     data = load_relations(project)
 
     relations = data.get("relations", [])
