@@ -198,6 +198,7 @@ MAPA_DE_FALLOS: Dict[str, str] = {
     "MANIFIESTO_ILEGIBLE": "BACKUP_MANIFEST_INVALID",
     "MANIFIESTO_SIN_HUELLA": "BACKUP_MANIFEST_INVALID",
     "CONFIRMACION_REQUERIDA": "MISSING_REQUIRED_ARG",
+    "INDICE_ILEGIBLE": "DATA_FILE_CORRUPT",
 }
 
 
@@ -441,6 +442,11 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
     if kind == "exc":
         if isinstance(value, VaultWriteError):
             err = emit_error(tool_name, value.error_code, value.message)
+        elif getattr(value, "causa", None) in MAPA_DE_FALLOS:
+            # Un fallo con causa del dominio que ningún adaptador capturó —el
+            # `IndiceIlegible` de `vault_io.indice_compartido`, que comparten
+            # nueve tools— sale con su código y no como UNEXPECTED_ERROR.
+            err = emit_fallo(tool_name, value)
         else:
             code = _map_exception_to_code(value)
             if code == "MEMORY_ERROR":

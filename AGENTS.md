@@ -12,7 +12,7 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~6.000 líneas). Fuente normativa. |
 | `scripts/*.py` | ~153 scripts, 117 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (3527 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (3530 tests). Toda norma con guard debe tener test. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
 | `vault-sandbox/` | **Único** vault de pruebas del repo. Todo runtime va aquí. |
@@ -115,7 +115,7 @@ Si necesitas un dato de estos, léelo del registro — no lo redefinas ni lo cop
 | Versión vigente del estándar (en código) | `vault_version.CURRENT_VERSION` — hoja del núcleo desde v40.28. El banner, la tabla de versiones, el badge y `pyproject.toml` son documentación y los vigila `vault_doc_counts` |
 | Criterio «esto es documentación del estándar, no una nota» y tabla de penalizaciones | `vault_audit_catalog` — hoja del núcleo desde v40.28 |
 | Gramática de Mermaid (tipos y validadores) | `vault_mermaid_reglas` — hoja del núcleo desde v40.28; `vault_mermaid_check` es el que recorre el vault aplicándola |
-| Causa de un fallo del **dominio** (vocabulario, 7 entradas) | `vault/kernel/fallos.py` — `CAUSAS` + `FalloDeDominio`. Hoja del núcleo: sin un solo import fuera de `typing`. El dominio nombra qué pasó; **no** construye el envelope ni conoce `ERROR_CATALOG` |
+| Causa de un fallo del **dominio** (vocabulario cerrado; cuántas entradas lo dice `CAUSAS`) | `vault/kernel/fallos.py` — `CAUSAS` + `FalloDeDominio`. Hoja del núcleo: sin un solo import fuera de `typing`. El dominio nombra qué pasó; **no** construye el envelope ni conoce `ERROR_CATALOG` |
 | Traducción causa del dominio → código del catálogo | `vault_errors.MAPA_DE_FALLOS`, emitida por `emit_fallo`. Un solo sitio: repartirla entre adaptadores es AP-57 cometido al cumplir AP-52 |
 | Catálogo de tools expuesto por MCP | `scripts/vault_mcp_catalog.py` → `mcp/nodejs/tools-catalog.json` |
 | Raíz del vault en runtime | `vault_io.get_vault_root()` / `set_vault_root()` |

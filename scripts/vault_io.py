@@ -615,6 +615,27 @@ def atomic_write_json(path: Path, data: Dict[str, Any]) -> None:
     )
 
 
+class IndiceIlegible(Exception):
+    """Un índice compartido existe y no se puede leer: no se cede vacío.
+
+    Tiene la forma de `vault.kernel.fallos.FalloDeDominio` —`causa`, `mensaje`,
+    `datos`— sin importarlo: este módulo tiene que funcionar copiado suelto.
+    `vault_errors.emit_fallo` lo traduce por esos atributos, y `wrap_main` lo
+    reconoce igual, así que las tools que entran por `indice_compartido` no
+    necesitan un `except` cada una para no devolver un fallo opaco.
+    """
+
+    causa = "INDICE_ILEGIBLE"
+
+    def __init__(self, path: Path, exc: Exception) -> None:
+        self.mensaje = (
+            f"{path.name} no se puede leer ({type(exc).__name__}: {exc}); "
+            "no se reescribe para no perder sus entradas ni reiniciar sus correlativos"
+        )
+        self.datos = {"index": path.name}
+        super().__init__(self.mensaje)
+
+
 @contextmanager
 def indice_compartido(path: Path, vacio: Dict[str, Any]) -> Iterator[Dict[str, Any]]:
     """Lee un índice compartido, deja mutarlo y lo devuelve al disco, bajo lock.
@@ -650,10 +671,17 @@ def indice_compartido(path: Path, vacio: Dict[str, Any]) -> Iterator[Dict[str, A
     """
     path.parent.mkdir(parents=True, exist_ok=True)
     with file_lock(path, timeout=30.0):
+        # Solo la ausencia es «índice vacío». Un JSON ilegible se cedía también
+        # vacío y el guardado lo reescribía con una sola entrada; los que son
+        # contador del correlativo volvían a numerar desde 1. Medido en v40.34:
+        # una coma de más en `.bugs-index.json` y el bug siguiente salía como
+        # `BUG-001`, el id de otra nota, con `ok: true`.
         try:
             datos = json.loads(path.read_text(encoding="utf-8"))
-        except (FileNotFoundError, json.JSONDecodeError):
+        except FileNotFoundError:
             datos = copy.deepcopy(vacio)
+        except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+            raise IndiceIlegible(path, exc) from exc
         antes = json.dumps(datos, sort_keys=True, ensure_ascii=False)
         yield datos
         if json.dumps(datos, sort_keys=True, ensure_ascii=False) != antes:

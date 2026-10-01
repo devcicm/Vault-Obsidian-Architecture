@@ -67,6 +67,9 @@ CAUSAS: Dict[str, str] = {
     "CONFIRMACION_REQUERIDA":
         "la operación borra datos del usuario y no se confirmó. No tiene "
         "default permisivo a propósito.",
+    "INDICE_ILEGIBLE":
+        "un índice compartido existe pero no se puede leer como JSON. No es lo mismo que no existir: cederlo vacío haría que el guardado borrase sus "
+        "entradas y reiniciase sus correlativos.",
 }
 
 
