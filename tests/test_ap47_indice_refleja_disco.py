@@ -142,17 +142,26 @@ def test_comprobar_y_reconstruir_usan_el_mismo_criterio():
     # reconstrucción lo consumen. Un segundo `rglob` filtrando por su cuenta
     # sería otra definición de "nota indexable", y el desfase que reportara no
     # sería el que `vault_reindex` cierra.
+    # Desde v40.34 el dueño es `vault/kernel/enumeracion.py` (la consulta lo
+    # lee sin cruzar hacia Índices) y `vault/indices/enumeracion.py` lo
+    # reexporta. El test seguía mirando el sitio viejo y el criterio, que no
+    # cambió, se daba por perdido.
     from pathlib import Path
 
-    dominio = Path(SCRIPTS).parent / "vault" / "indices"
-    enumeracion = (dominio / "enumeracion.py").read_text(encoding="utf-8")
+    paquete = Path(SCRIPTS).parent / "vault"
+    dueño = paquete / "kernel" / "enumeracion.py"
+    enumeracion = dueño.read_text(encoding="utf-8")
     assert enumeracion.count("def notas_en_disco") == 1
     assert enumeracion.count('rglob("*.md")') == 1
+    reexport = (paquete / "indices" / "enumeracion.py").read_text(encoding="utf-8")
+    assert "from ..kernel.enumeracion import" in reexport
+    assert "def notas_en_disco" not in reexport
 
     otros = [
-        f.name
-        for f in dominio.glob("*.py")
-        if f.name != "enumeracion.py"
+        f.relative_to(paquete).as_posix()
+        for d in ("indices", "kernel")
+        for f in (paquete / d).glob("*.py")
+        if f != dueño
         and 'rglob("*.md")' in f.read_text(encoding="utf-8")
     ]
     assert not otros, f"más de un sitio enumera notas indexables: {otros}"
