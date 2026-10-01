@@ -283,5 +283,12 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    # El contrato es JSON en UTF-8, no en la codificación de la consola: con
+    # stdout redirigido en Windows salía cp1252 y el consumidor recibía bytes
+    # inválidos dentro del envelope (v40.34).
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            reconfigure(encoding="utf-8")
     args = build_parser().parse_args(argv)
     return int(args.func(args))
