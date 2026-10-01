@@ -41,6 +41,7 @@ from vault_io import (
     write_report,
     assert_within_vault,
     atomic_write_text,
+    tomar_lock,
     update_section_index,
 )
 from vault_lib import yaml_scalar, parse_frontmatter_with_body, slugify, utcnow, valor_de_frontmatter
@@ -52,6 +53,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 # La configuración se lee del registro único, no con un default por punto
 # de uso. Ver `vault_entorno.py`.
 from vault_entorno import leer as _env
+
+#: Lo que espera una escritura a que otra suelte la nota (igual que vault_write).
+_LOCK_TIMEOUT = 10.0
 
 from vault.consulta.repositorio import RepositorioConsulta  # noqa: E402
 from vault.kernel import construir  # noqa: E402
@@ -217,56 +221,62 @@ def vault_preferences_set(
     except ValueError as exc:
         return {"ok": False, "error_code": "INVALID_PATH", "error": str(exc)}
 
-    timestamp = utcnow()
-    created = timestamp
-    previous = None
-    if note_path.exists():
-        previous = _load_preference(note_path)
-        if previous:
-            created = previous.get("createdAt") or timestamp
+    # createdAt se lee de la versión previa y se escribe en la nueva: las dos
+    # cosas bajo el mismo lock, o un revoke concurrente se pierde.
+    lock = tomar_lock(note_path, _LOCK_TIMEOUT)
+    if lock is None:
+        return emit_error("vault_preferences", "NOTE_LOCKED", f"Preferencia bloqueada: {note_path.name}")
+    with lock:
+        timestamp = utcnow()
+        created = timestamp
+        previous = None
+        if note_path.exists():
+            previous = _load_preference(note_path)
+            if previous:
+                created = previous.get("createdAt") or timestamp
 
-    # AP-26: toda nota de contenido lleva tags. La categoría y la fuerza son
-    # tags implícitos y siempre presentes, así que la norma se cumple sola.
-    all_tags = sorted({"preference", category, strength, *(tags or [])})
+        # AP-26: toda nota de contenido lleva tags. La categoría y la fuerza son
+        # tags implícitos y siempre presentes, así que la norma se cumple sola.
+        all_tags = sorted({"preference", category, strength, *(tags or [])})
 
-    frontmatter = [
-        "---",
-        f"title: {json.dumps(title, ensure_ascii=False)}",
-        f"id: {uuid.uuid4()}",
-        "type: preference",
-        f"category: {yaml_scalar(category)}",
-        f"strength: {valor_de_frontmatter(strength)}",
-        *status_frontmatter_lines("vault_preferences", STATUS_ACTIVE),
-        f"scope: {yaml_scalar(scope)}",
-        f"statement: {json.dumps(statement, ensure_ascii=False)}",
-        f"tags: {json.dumps(all_tags, ensure_ascii=False)}",
-        # Entrecomillados a propósito: sin comillas, YAML los convierte en
-        # datetime y la reescritura de --revoke los devuelve con otro formato.
-        f'createdAt: "{created}"',
-        f'updatedAt: "{timestamp}"',
-        # Una preferencia es integridad alta por definición: si se corrompe o
-        # se pierde, el agente actúa contra la voluntad del usuario.
-        "cia_integrity: high",
-        "cia_availability: high",
-        "cia_sensitivity: internal",
-        f"agent: {valor_de_frontmatter(agent)}",
-        "---",
-    ]
+        frontmatter = [
+            "---",
+            f"title: {json.dumps(title, ensure_ascii=False)}",
+            f"id: {uuid.uuid4()}",
+            "type: preference",
+            f"category: {yaml_scalar(category)}",
+            f"strength: {valor_de_frontmatter(strength)}",
+            *status_frontmatter_lines("vault_preferences", STATUS_ACTIVE),
+            f"scope: {yaml_scalar(scope)}",
+            f"statement: {json.dumps(statement, ensure_ascii=False)}",
+            f"tags: {json.dumps(all_tags, ensure_ascii=False)}",
+            # Entrecomillados a propósito: sin comillas, YAML los convierte en
+            # datetime y la reescritura de --revoke los devuelve con otro formato.
+            f'createdAt: "{created}"',
+            f'updatedAt: "{timestamp}"',
+            # Una preferencia es integridad alta por definición: si se corrompe o
+            # se pierde, el agente actúa contra la voluntad del usuario.
+            "cia_integrity: high",
+            "cia_availability: high",
+            "cia_sensitivity: internal",
+            f"agent: {valor_de_frontmatter(agent)}",
+            "---",
+        ]
 
-    body = [f"# {title}", "", f"> **{strength.upper()}** — {statement}", ""]
-    if rationale:
-        body += ["## Por qué", "", rationale.strip(), ""]
-    body += [
-        "## Alcance",
-        "",
-        f"- Categoría: `{category}`",
-        f"- Ámbito: `{scope}`",
-        f"- Fuerza: `{strength}`",
-        "",
-    ]
+        body = [f"# {title}", "", f"> **{strength.upper()}** — {statement}", ""]
+        if rationale:
+            body += ["## Por qué", "", rationale.strip(), ""]
+        body += [
+            "## Alcance",
+            "",
+            f"- Categoría: `{category}`",
+            f"- Ámbito: `{scope}`",
+            f"- Fuerza: `{strength}`",
+            "",
+        ]
 
-    folder.mkdir(parents=True, exist_ok=True)
-    atomic_write_text(note_path, "\n".join(frontmatter) + "\n\n" + "\n".join(body))
+        folder.mkdir(parents=True, exist_ok=True)
+        atomic_write_text(note_path, "\n".join(frontmatter) + "\n\n" + "\n".join(body))
     update_section_index("17_Preferences")
 
     return {
@@ -389,35 +399,41 @@ def vault_preferences_revoke(path: str, reason: str,
     if not note_path.is_file():
         return {"ok": False, "error_code": "PREFERENCE_NOT_FOUND", "error": f"No existe: {path}"}
 
-    pref = _load_preference(note_path)
-    if pref is None:
-        return {
-            "ok": False,
-            "error_code": "NOT_A_PREFERENCE",
-            "error": f"'{path}' no es una nota de preferencia (falta type: preference)",
-        }
-    if pref["status"] == STATUS_REVOKED:
-        return {"ok": True, "action": "noop", "path": pref["path"],
-                "message": "Ya estaba revocada"}
+    # Leer y reescribir bajo el lock de la nota (el mismo de vault_write):
+    # sin él, un --set concurrente se perdía bajo la reescritura del revoke.
+    lock = tomar_lock(note_path, _LOCK_TIMEOUT)
+    if lock is None:
+        return emit_error("vault_preferences", "NOTE_LOCKED", f"Preferencia bloqueada: {note_path.name}")
+    with lock:
+        pref = _load_preference(note_path)
+        if pref is None:
+            return {
+                "ok": False,
+                "error_code": "NOT_A_PREFERENCE",
+                "error": f"'{path}' no es una nota de preferencia (falta type: preference)",
+            }
+        if pref["status"] == STATUS_REVOKED:
+            return {"ok": True, "action": "noop", "path": pref["path"],
+                    "message": "Ya estaba revocada"}
 
-    raw = note_path.read_text(encoding="utf-8")
-    fm, body = parse_frontmatter_with_body(raw)
-    fm["status"], fm["preference_state"] = "deprecated", STATUS_REVOKED
-    fm["revoked_reason"] = reason
-    fm["revoked_at"] = utcnow()
-    fm["revoked_by"] = agent
-    fm["updatedAt"] = utcnow()
+        raw = note_path.read_text(encoding="utf-8")
+        fm, body = parse_frontmatter_with_body(raw)
+        fm["status"], fm["preference_state"] = "deprecated", STATUS_REVOKED
+        fm["revoked_reason"] = reason
+        fm["revoked_at"] = utcnow()
+        fm["revoked_by"] = agent
+        fm["updatedAt"] = utcnow()
 
-    lines = ["---"]
-    for key, value in fm.items():
-        lines.append(f"{key}: {json.dumps(value, ensure_ascii=False)}"
-                     if isinstance(value, (str, list, dict)) else f"{key}: {value}")
-    lines.append("---")
+        lines = ["---"]
+        for key, value in fm.items():
+            lines.append(f"{key}: {json.dumps(value, ensure_ascii=False)}"
+                         if isinstance(value, (str, list, dict)) else f"{key}: {value}")
+        lines.append("---")
 
-    note = "\n".join(lines) + "\n\n" + body.strip() + (
-        f"\n\n> **Revocada** el {fm['revoked_at']} por `{agent}`: {reason}\n"
-    )
-    atomic_write_text(note_path, note)
+        note = "\n".join(lines) + "\n\n" + body.strip() + (
+            f"\n\n> **Revocada** el {fm['revoked_at']} por `{agent}`: {reason}\n"
+        )
+        atomic_write_text(note_path, note)
     update_section_index("17_Preferences")
 
     return {
