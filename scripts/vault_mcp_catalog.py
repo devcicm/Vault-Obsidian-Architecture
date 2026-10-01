@@ -62,7 +62,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "content": {
                 "type": "string",
                 "required": True,
-                "description": "Contenido Markdown. Usar @file:ruta para leer de archivo",
+                "description": "Contenido Markdown (solo por CLI: @file:ruta lee de un archivo)",
                 "validators": [
                     "min_lines:3",
                     "min_words:10",

@@ -5866,11 +5866,11 @@
           },
           "budget": {
             "type": "string",
-            "description": "JSON budget metadata or @file:path, e.g. '{\"max_tokens\":100000}'"
+            "description": "JSON budget metadata (CLI only: @file:path), e.g. '{\"max_tokens\":100000}'"
           },
           "text": {
             "type": "string",
-            "description": "Text to count, or @file:path"
+            "description": "Text to count (CLI only: @file:path)"
           },
           "source": {
             "type": "string",
@@ -6134,7 +6134,7 @@
           },
           "content": {
             "type": "string",
-            "description": "Contenido Markdown. Usar @file:ruta para leer de archivo"
+            "description": "Contenido Markdown (solo por CLI: @file:ruta lee de un archivo)"
           },
           "tags": {
             "type": "array",

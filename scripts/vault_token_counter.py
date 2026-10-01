@@ -258,11 +258,11 @@ Operational rule:
     p_begin = sub.add_parser("begin")
     p_begin.add_argument("--flow-id", required=True)
     p_begin.add_argument("--operation", default="")
-    p_begin.add_argument("--budget", help="JSON budget metadata or @file:path, e.g. '{\"max_tokens\":100000}'")
+    p_begin.add_argument("--budget", help="JSON budget metadata (CLI only: @file:path), e.g. '{\"max_tokens\":100000}'")
 
     p_event = sub.add_parser("event")
     p_event.add_argument("--flow-id", required=True)
-    p_event.add_argument("--text", required=True, help="Text to count, or @file:path")
+    p_event.add_argument("--text", required=True, help="Text to count (CLI only: @file:path)")
     p_event.add_argument("--source", default="agent")
     p_event.add_argument("--phase", default="")
     p_event.add_argument("--tool", default="")
@@ -272,7 +272,7 @@ Operational rule:
     p_event.add_argument("--store-text", action="store_true", help="Persist raw text; default stores only token metadata")
 
     p_count = sub.add_parser("count")
-    p_count.add_argument("--text", required=True, help="Text to count, or @file:path")
+    p_count.add_argument("--text", required=True, help="Text to count (CLI only: @file:path)")
 
     p_report = sub.add_parser("report")
     p_report.add_argument("--flow-id", required=True)

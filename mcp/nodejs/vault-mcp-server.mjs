@@ -1079,6 +1079,16 @@ function validarArgumentos(schema, args) {
       return `parámetro no publicado: ${clave} (publicados: ${publicados})`;
     }
     if (valor === null || valor === undefined) continue;
+    // AP-36: `@file:<ruta>` es una comodidad de la CLI —quien la escribe lee
+    // su propio disco—. Por MCP la ruta la elige el agente y el proceso hijo
+    // lee el disco de quien instaló esto: medido en v40.34, `vault_write` con
+    // `content: "@file:<cualquier fichero>"` lo copiaba a una nota, sin pasar
+    // por el pre-vuelo de `vault_ingest`. Por MCP el contenido viaja en el valor.
+    const atFile = (Array.isArray(valor) ? valor : [valor])
+      .find((v) => typeof v === "string" && v.trimStart().startsWith("@file:"));
+    if (atFile !== undefined) {
+      return `${clave}: '@file:' no se acepta por MCP; pasa el contenido en el propio valor`;
+    }
     const prop = props[clave];
     const tipo = prop.type || "string";
     if (tipo === "boolean") {
