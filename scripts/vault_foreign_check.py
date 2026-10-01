@@ -60,6 +60,7 @@ from vault_regex import RE_WIKILINK_DESTINO  # dueño único del patrón (AP-50)
 from vault_audit_catalog import es_documentacion_del_estandar  # dueño único del criterio
 from vault_io import is_snapshot_path  # dueño único de qué es una instantánea
 from vault_lib import (  # dueños únicos de sus criterios (AP-57)
+    separar_frontmatter,
     indice_de_destinos,
     resolver_destino_wikilink,
     strip_code_blocks,
@@ -145,13 +146,13 @@ def _frontmatter(texto: str) -> Any:
     """
     if not texto.startswith("---"):
         return None
-    partes = texto.split("---", 2)
-    if len(partes) < 3:
+    bloque, _ = separar_frontmatter(texto)
+    if bloque is None:
         return None
     import yaml
 
     try:
-        datos = yaml.safe_load(partes[1])
+        datos = yaml.safe_load(bloque)
     except (yaml.YAMLError, RecursionError):
         # Solo los errores de parseo, y solo aquí: un `except Exception` haría
         # que un fallo de la tool se contase como frontmatter roto del vault

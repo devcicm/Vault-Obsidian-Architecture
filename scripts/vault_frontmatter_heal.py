@@ -61,7 +61,7 @@ import yaml
 
 from vault_errors import emit_error, wrap_main
 from vault_io import atomic_write_text, file_lock, get_vault_root, is_snapshot_path
-from vault_lib import yaml_scalar
+from vault_lib import separar_frontmatter, yaml_scalar
 
 #: Lo que esta tool sabe arreglar. Cualquier otra causa se reporta con su
 #: mensaje de YAML y se deja en paz — el catálogo de lo que NO se toca es la
@@ -81,15 +81,17 @@ SIN_CERRAR = "delimitador_sin_cerrar"
 def _partir(texto: str) -> Optional[Tuple[str, str]]:
     """`(bloque, resto)` si hay frontmatter delimitado, o None.
 
-    Se parte por el delimitador y no por regex de líneas: el criterio del
-    consumidor es `texto.startswith("---")` y el siguiente `---` (AP-44).
+    El criterio es el del dueño (AP-57): el bloque cierra en una **línea**
+    `---`, como lo leen Obsidian y `yaml.safe_load` (AP-44). Hasta 2026-10-01
+    se partía en el siguiente `---` del texto, incluido el de un título.
+    El resto empieza tras el salto de la línea de cierre.
     """
     if not texto.startswith("---"):
         return None
-    partes = texto.split("---", 2)
-    if len(partes) < 3:
+    bloque, resto = separar_frontmatter(texto)
+    if bloque is None:
         return None
-    return partes[1], partes[2]
+    return bloque, resto
 
 
 def diagnosticar(texto: str) -> Optional[Dict[str, Any]]:
@@ -184,7 +186,8 @@ def reparar(texto: str) -> Optional[Dict[str, Any]]:
         return None
 
     return {
-        "text": f"---{nuevo}---{resto}",
+        # `_partir` entrega el bloque sin sus líneas delimitadoras (AP-57).
+        "text": f"---\n{nuevo}\n---\n{resto}",
         "keys_quoted": tocadas,
         "cause": REPARABLE,
     }

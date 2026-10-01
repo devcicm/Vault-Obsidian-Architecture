@@ -30,7 +30,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import emit_error, wrap_main
-from vault_lib import read_frontmatter, utcnow
+from vault_lib import read_frontmatter, separar_frontmatter, utcnow
 from vault_io import atomic_write_json, atomic_write_text
 SCRIPTS_DIR = Path(__file__).parent
 
@@ -124,11 +124,7 @@ def check_note(rel_path: str) -> Dict[str, Any]:
 
     fm = read_frontmatter(note_path)
     content = note_path.read_text(encoding="utf-8", errors="ignore")
-    body = (
-        content.split("---", 2)[2]
-        if content.startswith("---") and "---" in content[3:]
-        else content
-    )
+    body = separar_frontmatter(content)[1]
     body_lines = [l for l in body.splitlines() if l.strip()]
 
     results: Dict[str, Dict[str, Any]] = {}

@@ -50,6 +50,7 @@ import re
 import sys
 from vault_errors import emit_error, wrap_main
 from vault_io import atomic_write_json, file_lock, normalize_stem
+from vault_lib import separar_frontmatter
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -181,15 +182,13 @@ def vault_norms_scan(path: str) -> Dict[str, Any]:
             applicable.append({"code": code, "name": norm["name"], "reason": reason})
 
     # Frontmatter checks
-    has_frontmatter = content.startswith("---")
+    bloque, cuerpo = separar_frontmatter(content)
     fm: Dict[str, str] = {}
-    if has_frontmatter:
-        parts = content.split("---", 2)
-        if len(parts) >= 3:
-            for line in parts[1].splitlines():
-                if ":" in line:
-                    k, _, v = line.partition(":")
-                    fm[k.strip()] = v.strip().strip("\"'")
+    if bloque is not None:
+        for line in bloque.splitlines():
+            if ":" in line:
+                k, _, v = line.partition(":")
+                fm[k.strip()] = v.strip().strip("\"'")
 
     if not fm.get("agent"):
         _add("AP-16", "campo agent ausente en frontmatter")
@@ -199,7 +198,7 @@ def vault_norms_scan(path: str) -> Dict[str, Any]:
         _add("AP-12", "campos id/title ausentes en frontmatter")
 
     # Content length
-    body = content.split("---", 2)[-1] if has_frontmatter else content
+    body = cuerpo
     real_lines = [
         l for l in body.split("\n") if l.strip() and not l.strip().startswith("TODO")
     ]
@@ -338,13 +337,15 @@ def vault_norms_apply(code: str, path: str) -> Dict[str, Any]:
             "La nota no tiene frontmatter YAML; créala con `vault_write`.",
         )
 
-    parts = content.split("---", 2)
-    if len(parts) < 3:
+    bloque, cuerpo = separar_frontmatter(content)
+    if bloque is None:
         return emit_error("vault_norms", "FRONTMATTER_PARSE_ERROR",
                           f"Frontmatter sin cierre `---` en {path}")
 
-    fm_block = parts[1]
-    body = parts[2]
+    # Se conserva la forma de `split`: el bloque entre saltos y el cuerpo
+    # tras la línea de cierre, para que el reensamblado no cambie bytes.
+    fm_block = "\n" + bloque + "\n" if bloque else "\n"
+    body = "\n" + cuerpo
 
     # Parse existing norm_refs
     norm_refs_match = re.search(r"^norm_refs:\s*(.+)$", fm_block, re.MULTILINE)

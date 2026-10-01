@@ -15,6 +15,7 @@ from __future__ import annotations
 import hashlib
 from typing import Any, Callable, Dict, List
 
+from ..kernel.frontmatter_parsing import separar_frontmatter
 from .enumeracion import notas_en_disco
 from .repositorio import RepositorioIndices
 
@@ -24,7 +25,7 @@ PREVIO = 200
 
 
 def _previo(contenido: str) -> str:
-    cuerpo = contenido.split("---", 2)[-1] if contenido.count("---") >= 2 else contenido
+    cuerpo = separar_frontmatter(contenido)[1]
     return cuerpo.strip()[:PREVIO].replace("\n", " ")
 
 

@@ -45,7 +45,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from vault_errors import wrap_main
-from vault_lib import utcnow
+from vault_lib import separar_frontmatter, utcnow
 from vault_io import atomic_write_json, file_lock, write_report
 
 
@@ -191,17 +191,15 @@ def _read_frontmatter_raw(path: Path) -> Tuple[Dict[str, str], str]:
         content = path.read_text(encoding="utf-8", errors="ignore")
     except Exception:
         return {}, ""
-    if not content.startswith("---"):
-        return {}, content
-    parts = content.split("---", 2)
-    if len(parts) < 3:
+    bloque, cuerpo = separar_frontmatter(content)
+    if bloque is None:
         return {}, content
     fm: Dict[str, str] = {}
-    for line in parts[1].splitlines():
+    for line in bloque.splitlines():
         if ":" in line:
             k, _, v = line.partition(":")
             fm[k.strip()] = v.strip().strip("\"'")
-    return fm, parts[2]
+    return fm, cuerpo
 
 
 def _parse_date(val: str) -> Optional[datetime]:

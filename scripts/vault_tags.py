@@ -30,6 +30,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from vault_errors import emit_error, wrap_main
 from vault_lib import utcnow, parse_frontmatter_with_body, valor_de_frontmatter
+from vault_lib import separar_frontmatter
 from vault_io import (
     atomic_write_json,
     atomic_write_text,
@@ -151,12 +152,10 @@ _parse_frontmatter_tags = tags_de_frontmatter
 
 
 def _parse_frontmatter_title(content: str) -> str:
-    if not content.startswith("---"):
+    bloque, _ = separar_frontmatter(content)
+    if bloque is None:
         return ""
-    parts = content.split("---", 2)
-    if len(parts) < 3:
-        return ""
-    for line in parts[1].splitlines():
+    for line in bloque.splitlines():
         if line.startswith("title:"):
             return line.split(":", 1)[1].strip().strip("\"'")
     return ""
@@ -365,7 +364,7 @@ def vault_tags_backfill_ledger(dry_run: bool = False) -> Dict[str, Any]:
             continue
         rel = str(md.relative_to(_raiz())).replace("\\", "/")
         agente = ""
-        for linea in contenido.split("---", 2)[1].splitlines() if contenido.startswith("---") else []:
+        for linea in (separar_frontmatter(contenido)[0] or "").splitlines():
             if linea.startswith("agent:"):
                 agente = linea.split(":", 1)[1].strip().strip("\"'")
                 break

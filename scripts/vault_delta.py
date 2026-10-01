@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 from vault_errors import emit_error, wrap_main
-from vault_lib import utcnow
+from vault_lib import separar_frontmatter, utcnow
 from vault_io import atomic_write_json
 from vault_registry import ORDERED_SECTIONS
 
@@ -95,10 +95,10 @@ def _read_cia_integrity(path: Path) -> str:
         content = path.read_text(encoding="utf-8", errors="ignore")
         if not content.startswith("---"):
             return "medium"
-        parts = content.split("---", 2)
-        if len(parts) < 3:
+        bloque, _ = separar_frontmatter(content)
+        if bloque is None:
             return "medium"
-        for line in parts[1].splitlines():
+        for line in bloque.splitlines():
             if line.startswith("cia_integrity:"):
                 return line.split(":", 1)[1].strip().strip("\"'")
     except Exception as exc:

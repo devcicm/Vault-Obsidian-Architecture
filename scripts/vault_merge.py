@@ -48,7 +48,7 @@ from typing import Any, Dict, List, Optional
 from vault_io import atomic_write_text, get_vault_root, tomar_lock, write_report
 from vault_undo import _guardar_version_actual
 
-from vault_lib import valor_de_frontmatter
+from vault_lib import separar_frontmatter, valor_de_frontmatter
 
 
 #: Espera máxima por el lock de la nota; la misma que vault_write y vault_undo.
@@ -67,13 +67,13 @@ def _tag_frontmatter(content: str, source: str) -> str:
         f"mergedAt: {datetime.now(timezone.utc).isoformat()[:19]}Z",
     ]
 
-    if content.startswith("---"):
-        parts = content.split("---", 2)
+    bloque, cuerpo = separar_frontmatter(content)
 
-        if len(parts) >= 3:
-            fm_body = parts[1].rstrip("\n")
+    if bloque is not None:
+        fm_body = bloque.rstrip("\n")
+        previo = fm_body + "\n" if fm_body else ""
 
-            return "---\n" + fm_body + "\n" + "\n".join(tag_lines) + "\n---" + parts[2]
+        return "---\n" + previo + "\n".join(tag_lines) + "\n---\n" + cuerpo
 
     # No frontmatter — prepend minimal block
 
@@ -86,10 +86,10 @@ def _note_updated_at(path: Path) -> str:
     try:
         content = _read_note(path)
 
-        if content.startswith("---"):
-            parts = content.split("---", 2)
+        bloque, _ = separar_frontmatter(content)
 
-            for line in parts[1].splitlines():
+        if bloque is not None:
+            for line in bloque.splitlines():
                 if line.startswith("updatedAt:"):
                     return line.split(":", 1)[1].strip().strip("\"'")
 
@@ -248,10 +248,7 @@ def _action_dedup() -> Dict[str, Any]:
 
             # Strip frontmatter from the non-canonical note
 
-            if body.startswith("---"):
-                parts = body.split("---", 2)
-
-                body = parts[2] if len(parts) >= 3 else body
+            body = separar_frontmatter(body)[1]
 
             canonical_content += "\n\n---\n\n" + body.strip()
 

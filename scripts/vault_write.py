@@ -66,6 +66,7 @@ from vault_lib import (
     indice_de_destinos,          # dueño único de qué resuelve (AP-57)
     resolver_destino_wikilink,   # dueño único de cómo se resuelve (AP-57)
     read_frontmatter,
+    separar_frontmatter,
     yaml_scalar,
     utcnow,
     strip_code_blocks,
@@ -573,7 +574,7 @@ def update_search_index(
 
     _index_file().parent.mkdir(parents=True, exist_ok=True)
 
-    body = content.split("---", 2)[-1] if content.startswith("---") else content
+    body = separar_frontmatter(content)[1]
 
     preview = body.strip()[:200].replace("\n", " ")
 

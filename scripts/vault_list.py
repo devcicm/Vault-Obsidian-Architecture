@@ -39,6 +39,7 @@ import sys
 from vault_registry import ORDERED_SECTIONS, section_description
 from vault_errors import emit_error, wrap_main
 from vault_lib import parse_frontmatter as _parse_frontmatter
+from vault_lib import separar_frontmatter
 
 from datetime import datetime
 
@@ -132,7 +133,7 @@ def get_note_metadata(note_path: Path) -> Dict[str, Any]:
 
     # Get preview
 
-    body = content.split("---", 2)[-1] if content.startswith("---") else content
+    body = separar_frontmatter(content)[1]
 
     preview = body.strip()[:150].replace("\n", " ")
 

@@ -279,6 +279,8 @@ def parse_frontmatter_with_body(content: str) -> Tuple[Dict[str, Any], str]:
 from vault.kernel.frontmatter_parsing import yaml_scalar  # noqa: E402,F401
 # AP-56 (v40.34): la línea `clave: valor` montada a mano pasa por aquí.
 from vault.kernel.frontmatter_parsing import valor_de_frontmatter  # noqa: E402,F401
+# AP-57 (2026-10-01): dónde acaba el bloque lo decide el kernel, por líneas.
+from vault.kernel.frontmatter_parsing import separar_frontmatter  # noqa: E402,F401
 
 
 def serialize_frontmatter(frontmatter: Dict[str, Any]) -> str:

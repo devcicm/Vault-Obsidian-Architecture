@@ -192,7 +192,7 @@ def _get_active_notes(
     return notes
 
 
-from vault_lib import read_frontmatter
+from vault_lib import read_frontmatter, separar_frontmatter
 
 # El vocabulario se declara una vez y se consume, no se copia. Ver
 # `vault_vocabulario.py` para el registro y su contexto dueno.
@@ -2362,9 +2362,9 @@ def _audit_external_path(path: Path) -> Dict[str, Any]:
 
             continue
 
-        parts = content.split("---", 2)
+        bloque, _ = separar_frontmatter(content)
 
-        if len(parts) < 3:
+        if bloque is None:
             no_frontmatter.append(str(md_file))
 
             no_title.append(str(md_file))
@@ -2373,7 +2373,7 @@ def _audit_external_path(path: Path) -> Dict[str, Any]:
 
         has_title = False
 
-        for line in parts[1].splitlines():
+        for line in bloque.splitlines():
             if line.lower().startswith("title:") and line.split(":", 1)[1].strip():
                 has_title = True
 

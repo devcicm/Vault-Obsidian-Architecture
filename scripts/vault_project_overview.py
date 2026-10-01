@@ -19,6 +19,7 @@ import sys
 from vault_errors import wrap_main
 from vault_lib import yaml_scalar, utcnow, slugify, valor_de_frontmatter
 from vault_lib import parse_frontmatter as _parse_frontmatter
+from vault_lib import separar_frontmatter
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -193,7 +194,7 @@ def vault_project_overview(
 
         meta = parse_frontmatter(content)
         existing_description = meta.get("description", "")
-        body = content.split("---", 2)[-1] if content.startswith("---") else content
+        body = separar_frontmatter(content)[1]
         runtime_match = re.search(r"\*\*Runtime:\*\* (.+)", body)
         if runtime_match:
             existing_runtime = runtime_match.group(1).strip()

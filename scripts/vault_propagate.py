@@ -33,7 +33,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 from vault_errors import emit_error, wrap_main
-from vault_lib import utcnow
+from vault_lib import separar_frontmatter, utcnow
 from vault_impact import vault_impact
 from vault_io import (
     assert_within_vault, atomic_write_json, atomic_write_text, file_lock,
@@ -133,16 +133,17 @@ def _action_notify(note_path: str, timestamp: str) -> bool:
     try:
         with lock:
             content = full_path.read_text(encoding="utf-8", errors="replace")
-            if content.startswith("---"):
-                parts = content.split("---", 2)
-                if len(parts) >= 3:
-                    fm_block = parts[1]
-                    # Remove existing propagation_pending if present
-                    fm_block = re.sub(r"\npropagation_pending:.*", "", fm_block)
-                    fm_block = fm_block.rstrip() + f'\npropagation_pending: "{timestamp}"\n'
-                    new_content = "---" + fm_block + "---" + parts[2]
-                    atomic_write_text(full_path, new_content)
-                    return True
+            bloque, cuerpo = separar_frontmatter(content)
+            if bloque is not None:
+                # El salto inicial conserva la forma de `split`: así el
+                # `re.sub` también ve una clave en la primera línea.
+                fm_block = "\n" + bloque
+                # Remove existing propagation_pending if present
+                fm_block = re.sub(r"\npropagation_pending:.*", "", fm_block)
+                fm_block = fm_block.rstrip() + f'\npropagation_pending: "{timestamp}"\n'
+                new_content = "---" + fm_block + "---\n" + cuerpo
+                atomic_write_text(full_path, new_content)
+                return True
     except (OSError, UnicodeDecodeError, PermissionError) as exc:
         emit_error("vault_propagate", "NOTIFY_WRITE_ERROR", str(exc))
     except Exception as exc:

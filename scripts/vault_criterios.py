@@ -409,6 +409,58 @@ def medir_definiciones(raiz: Path = None) -> List[Dict[str, str]]:
     return hallazgos
 
 
+#: Dónde acaba el frontmatter (2026-10-01). Medido en la comparativa v34/v40:
+#: catorce módulos partían con `split("---", 2)`, que corta en cualquier `---`
+#: del texto —el de un título entre comillas incluido— y no en la **línea** de
+#: cierre que leen Obsidian y `yaml.safe_load` (AP-44). La señal es la llamada,
+#: no una constante: `"---"` aparece legítimamente en mil sitios.
+PARTICION_CON_DUENO = {
+    "criterio": "particion_de_frontmatter",
+    "senal": 'split("---")',
+    "dueño": "vault/kernel/frontmatter_parsing.py:separar_frontmatter",
+}
+
+
+def medir_particiones(raiz: Path = None) -> List[Dict[str, str]]:
+    """Llamadas `<x>.split("---", …)` fuera del dueño del criterio.
+
+    Alcance declarado: solo la forma `split` con el literal `"---"`. Un regex
+    propio (`re.match(r"^---\\s*\\n(.*?)\\n---", …)`) decide lo mismo y **no** se
+    ve aquí — hay varios y siguen siendo copias; esta medida cierra la forma que
+    rompía notas válidas, no prueba que no haya otras. `_archived/` queda
+    fuera: es código conservado por no-derogación, no ejecutado.
+    """
+    raiz = raiz or REPO
+    dueño = PARTICION_CON_DUENO["dueño"].split(":")[0]
+    hallazgos: List[Dict[str, str]] = []
+    for zona in _ZONAS_DE_DEFINICION:
+        for p in sorted((raiz / zona).rglob("*.py")):
+            if "__pycache__" in p.parts or "_archived" in p.parts:
+                continue
+            rel = p.relative_to(raiz).as_posix()
+            if rel == dueño:
+                continue
+            try:
+                arbol = ast.parse(p.read_text(encoding="utf-8"))
+            except (OSError, SyntaxError, UnicodeDecodeError):
+                continue  # `medir` ya lo reporta como `_no_parsea`
+            for n in ast.walk(arbol):
+                if (isinstance(n, ast.Call)
+                        and isinstance(n.func, ast.Attribute)
+                        and n.func.attr == "split"
+                        and n.args
+                        and isinstance(n.args[0], ast.Constant)
+                        and n.args[0].value == "---"):
+                    hallazgos.append({
+                        "modulo": rel,
+                        "criterio": PARTICION_CON_DUENO["criterio"],
+                        "senal": PARTICION_CON_DUENO["senal"],
+                        "dueño": PARTICION_CON_DUENO["dueño"],
+                    })
+                    break  # la firma es por módulo
+    return hallazgos
+
+
 # ── La medida de las fronteras ───────────────────────────────────────────────
 
 REPO = Path(__file__).resolve().parent.parent
@@ -563,7 +615,8 @@ def _baseline() -> List[str]:
 
 
 def check() -> Dict[str, Any]:
-    hallazgos = medir() + medir_fronteras() + medir_definiciones()
+    hallazgos = (medir() + medir_fronteras() + medir_definiciones()
+                 + medir_particiones())
     firmas = {_firma(h) for h in hallazgos}
     base = set(_baseline())
     nuevos = sorted(firmas - base)
@@ -604,7 +657,8 @@ def check() -> Dict[str, Any]:
 
 
 def freeze(admitir_nuevos: bool = False) -> Dict[str, Any]:
-    hallazgos = medir() + medir_fronteras() + medir_definiciones()
+    hallazgos = (medir() + medir_fronteras() + medir_definiciones()
+                 + medir_particiones())
     firmas = sorted({_firma(h) for h in hallazgos})
     base = set(_baseline())
     nuevos = sorted(set(firmas) - base)
