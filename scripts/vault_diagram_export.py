@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import emit_error, wrap_main
-from vault_io import write_report
+from vault_io import assert_within_vault, atomic_write_text, write_report
 
 
 DEFAULT_CONFIG = {
@@ -165,7 +165,7 @@ def export_diagram(
     """Exporta un diagrama con opciones de visualización."""
     result = {
         "ok": True,
-        "file": str(file_path),
+        "file": _relativa(file_path),
     }
 
     diagram = extract_diagram(file_path)
@@ -192,8 +192,8 @@ def export_diagram(
 
     if output_path:
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_text(f"```mermaid\n{diagram}\n```", encoding="utf-8")
-        result["output"] = str(output_path)
+        atomic_write_text(output_path, f"```mermaid\n{diagram}\n```")
+        result["output"] = _relativa(output_path)
     else:
         result["diagram"] = diagram
 
@@ -247,8 +247,8 @@ def export_project(
 
             filename = f"{md.stem}-{idx}.mmd"
             out_path = output_dir / filename
-            out_path.write_text(f"```mermaid\n{diagram}\n```", encoding="utf-8")
-            exported.append(str(out_path))
+            atomic_write_text(out_path, f"```mermaid\n{diagram}\n```")
+            exported.append(_relativa(out_path))
 
     return {
         "ok": True,
@@ -257,6 +257,36 @@ def export_project(
         "exported": len(exported),
         "files": exported,
     }
+
+
+def _en_el_vault(ruta: str):
+    """`(Path, None)` si *ruta* cae dentro del vault; `(None, envelope)` si no.
+
+    Medido en v40.34: `--output` era `Path(args.output)` —relativo al CWD del
+    proceso o absoluto— y por MCP escribía donde se le nombrase del disco de
+    quien instala esto; `--path` leía los bloques mermaid de cualquier fichero.
+    Las dos rutas se resuelven ahora contra la raíz del vault y se contienen
+    antes de leer o escribir nada (AP-36).
+    """
+    destino = _raiz() / ruta
+    try:
+        assert_within_vault(destino, _raiz())
+    except ValueError as exc:
+        return None, emit_error("vault_diagram_export", "INVALID_PATH", str(exc))
+    return destino, None
+
+
+def _relativa(ruta: Path) -> str:
+    """Ruta POSIX relativa al vault: el envelope no publica la del disco."""
+    return ruta.resolve().relative_to(_raiz().resolve()).as_posix()
+
+
+def _salir(envelope: Dict[str, Any], como_json: bool) -> int:
+    if como_json:
+        print(json.dumps(envelope, indent=2, ensure_ascii=False))
+    else:
+        print(f"Error: {envelope.get('message')}")
+    return 1
 
 
 def save_config(config: Dict[str, Any]) -> Dict[str, Any]:
@@ -337,8 +367,10 @@ Ejemplos:
         )
         result = save_config(config)
     elif args.path:
-        file_path = _raiz() / args.path
-        output_path = Path(args.output) if args.output else None
+        file_path, fuera = _en_el_vault(args.path)
+        output_path, fuera_salida = _en_el_vault(args.output) if args.output else (None, None)
+        if fuera or fuera_salida:
+            return _salir(fuera or fuera_salida, args.json)
         result = export_diagram(
             file_path,
             output_path,
@@ -351,7 +383,11 @@ Ejemplos:
             direction=args.direction,
         )
     elif args.project:
-        output_dir = Path(args.output) if args.output else _diagrams_dir() / "export"
+        output_dir, fuera = (
+            _en_el_vault(args.output) if args.output else (_diagrams_dir() / "export", None)
+        )
+        if fuera:
+            return _salir(fuera, args.json)
         result = export_project(
             args.project,
             output_dir,
