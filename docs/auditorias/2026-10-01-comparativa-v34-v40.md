@@ -94,3 +94,16 @@ nota del escenario de inyección, cuyo título contiene `---` entre comillas.
 Es el mismo AP-44 que se corrigió en `vault_validate`, cometido por el
 medidor. Cerrando el bloque en una línea `---`, la nota es válida, el título
 se conserva literal y `status` vale `draft`.
+
+## Cierre de lo pendiente (2026-10-01, mismo día)
+
+Lo de «Pendiente» queda resuelto; la sección se conserva tal cual porque es lo
+que se midió.
+
+| Pendiente | Commit | Qué cambia |
+|---|---|---|
+| Partición del frontmatter con `split("---")` repartida por 14 módulos | `76ac541` | Un solo dueño (`separar_frontmatter`); `vault_criterios` falla si vuelve una partición propia |
+| Secreto como `PERMISSION_DENIED`, y detrás de AP-26 | `1ca0e63` | `SECRET_DETECTED` (gobernanza) con `secrets` redactados; el mensaje ya no enseña cómo desactivar el escáner; `vault_write` lo mira antes que la forma |
+| `vault_validate` con `ok: false` sin código | `ef0020b` | `VALIDATION_FAILED` con `recovery`; `invalid`, `structure` e `indexes` se conservan |
+| Que los defectos de v34.1 no vuelvan | `7857a61` | `tests/test_regresiones_v34.py`: ocho escenarios ejecutados como un tercero que miran el disco. Contra los scripts de v34.1, con solo la línea `VAULT_ROOT = …` redirigida al entorno, fallan 7 de 8 |
+| Fragmentos CJK colados en prosa (encontrado al corregir) | `e0baa59` | Seis sitios, uno en el `purpose` de `vault_delete` que ve cada agente por MCP; `test_sin_texto_corrupto` no los deja volver |
