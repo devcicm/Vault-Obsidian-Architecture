@@ -45,9 +45,14 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-from vault_io import atomic_write_text, get_vault_root, write_report
+from vault_io import atomic_write_text, get_vault_root, tomar_lock, write_report
+from vault_undo import _guardar_version_actual
 
 from vault_lib import valor_de_frontmatter
+
+
+#: Espera máxima por el lock de la nota; la misma que vault_write y vault_undo.
+_LOCK_TIMEOUT = 10.0
 
 
 def _read_note(path: Path) -> str:
@@ -106,6 +111,8 @@ def _action_merge(source_dir: Path, conflict: str) -> Dict[str, Any]:
 
     merged = skipped = conflicts = 0
 
+    locked: List[str] = []
+
     for src in notes:
         # Preserve relative structure from source root
 
@@ -117,28 +124,55 @@ def _action_merge(source_dir: Path, conflict: str) -> Dict[str, Any]:
 
         dest = get_vault_root() / rel
 
-        if dest.exists():
+        if dest.exists() and conflict == "rename":
+            stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+
+            dest = dest.with_stem(f"{dest.stem}-{stamp}")
+
             conflicts += 1
-
-            if conflict == "skip":
-                skipped += 1
-
-                continue
-
-            elif conflict == "rename":
-                stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
-
-                dest = dest.with_stem(f"{dest.stem}-{stamp}")
-
-            # "overwrite" → dest stays as-is, content gets replaced
 
         dest.parent.mkdir(parents=True, exist_ok=True)
 
         content = _tag_frontmatter(_read_note(src), str(source_dir))
 
-        atomic_write_text(dest, content)
+        # CIA-A / F1: `overwrite` tapaba la nota del vault sin copiarla antes a
+        # .history/ y sin lock. Medido en v40.34: `vault_undo` no tenía nada que
+        # devolver y una nota con el lock de otro escritor se reescribía igual,
+        # con `ok: true`. La existencia se decide dentro del lock: fuera, `skip`
+        # era comprobar-y-luego-escribir.
+        lock = tomar_lock(dest, _LOCK_TIMEOUT)
+
+        if lock is None:
+            locked.append(rel.as_posix())
+
+            continue
+
+        with lock:
+            if dest.exists():
+                if conflict == "skip":
+                    conflicts += 1
+
+                    skipped += 1
+
+                    continue
+
+                if conflict == "overwrite":
+                    conflicts += 1
+
+                # overwrite, o un rename cuyo nombre sellado ya creó otro
+                # escritor en el mismo segundo: lo tapado queda en el historial.
+                _guardar_version_actual(dest)
+
+            atomic_write_text(dest, content)
 
         merged += 1
+
+    if locked:
+        return emit_error(
+            "vault_merge", "NOTE_LOCKED",
+            f"{len(locked)} nota(s) las tiene otro escritor y no se fusionaron "
+            f"({', '.join(locked)}); se fusionaron {merged} y se omitieron {skipped}",
+        )
 
     return {
         "ok": True,
