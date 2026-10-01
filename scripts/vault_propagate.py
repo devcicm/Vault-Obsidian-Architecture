@@ -35,7 +35,10 @@ from typing import Any, Dict, List, Optional, Set
 from vault_errors import emit_error, wrap_main
 from vault_lib import utcnow
 from vault_impact import vault_impact
-from vault_io import atomic_write_json, file_lock, write_report
+from vault_io import (
+    assert_within_vault, atomic_write_json, atomic_write_text, file_lock,
+    tomar_lock, write_report,
+)
 
 SCRIPTS_DIR = Path(__file__).parent
 
@@ -104,23 +107,42 @@ def _write_propagation_queue(data: Dict[str, Any]) -> None:
         atomic_write_json(_propagation_queue(), data)
 
 
+#: Espera máxima por el lock de una nota; la misma que vault_write y vault_append.
+_LOCK_TIMEOUT = 10.0
+
+
+def _fuera_del_vault(note_path: str) -> Optional[str]:
+    """El motivo si *note_path* sale del vault (AP-36); None si no."""
+    try:
+        assert_within_vault(_raiz() / note_path, _raiz())
+    except ValueError as exc:
+        return str(exc)
+    return None
+
+
 def _action_notify(note_path: str, timestamp: str) -> bool:
     """Write propagation_pending field to frontmatter of a note."""
     full_path = _raiz() / note_path
-    if not full_path.exists():
+    # La ruta sale del grafo, no del agente, pero un graph.json ajeno o
+    # envenenado puede nombrar `../x.md`: se contiene igual (AP-36).
+    if _fuera_del_vault(note_path) or not full_path.exists():
+        return False
+    lock = tomar_lock(full_path, _LOCK_TIMEOUT)
+    if lock is None:
         return False
     try:
-        content = full_path.read_text(encoding="utf-8", errors="replace")
-        if content.startswith("---"):
-            parts = content.split("---", 2)
-            if len(parts) >= 3:
-                fm_block = parts[1]
-                # Remove existing propagation_pending if present
-                fm_block = re.sub(r"\npropagation_pending:.*", "", fm_block)
-                fm_block = fm_block.rstrip() + f'\npropagation_pending: "{timestamp}"\n'
-                new_content = "---" + fm_block + "---" + parts[2]
-                full_path.write_text(new_content, encoding="utf-8")
-                return True
+        with lock:
+            content = full_path.read_text(encoding="utf-8", errors="replace")
+            if content.startswith("---"):
+                parts = content.split("---", 2)
+                if len(parts) >= 3:
+                    fm_block = parts[1]
+                    # Remove existing propagation_pending if present
+                    fm_block = re.sub(r"\npropagation_pending:.*", "", fm_block)
+                    fm_block = fm_block.rstrip() + f'\npropagation_pending: "{timestamp}"\n'
+                    new_content = "---" + fm_block + "---" + parts[2]
+                    atomic_write_text(full_path, new_content)
+                    return True
     except (OSError, UnicodeDecodeError, PermissionError) as exc:
         emit_error("vault_propagate", "NOTIFY_WRITE_ERROR", str(exc))
     except Exception as exc:
@@ -311,14 +333,31 @@ def vault_propagate_queue_report(min_priority: Optional[str] = None) -> Dict[str
 def vault_propagate_clear(note_path: str) -> Dict[str, Any]:
     """Mark a note as reviewed: remove propagation_pending from frontmatter and queue."""
     cleared_fm = False
+    # Medido en v40.34: `--clear ../canario.md` reescribía un fichero de fuera
+    # del vault con ok: true. `Path.write_text` en crudo se saltaba el guard de
+    # atomic_write_text; se contiene aquí, antes de leer nada (AP-36).
+    fuera = _fuera_del_vault(note_path)
+    if fuera:
+        return emit_error("vault_propagate", "INVALID_PATH", fuera)
     full_path = _raiz() / note_path
     if full_path.exists():
+        lock = tomar_lock(full_path, _LOCK_TIMEOUT)
+        if lock is None:
+            return {
+                **emit_error(
+                    "vault_propagate", "NOTE_LOCKED",
+                    f"Otro escritor tiene {note_path}; no se limpió nada.",
+                ),
+                "path": note_path,
+            }
         try:
-            content = full_path.read_text(encoding="utf-8", errors="replace")
-            if "propagation_pending" in content:
-                new_content = re.sub(r"\npropagation_pending:.*", "", content)
-                full_path.write_text(new_content, encoding="utf-8")
-                cleared_fm = True
+            # Lectura y escritura bajo el lock de la nota (F1).
+            with lock:
+                content = full_path.read_text(encoding="utf-8", errors="replace")
+                if "propagation_pending" in content:
+                    new_content = re.sub(r"\npropagation_pending:.*", "", content)
+                    atomic_write_text(full_path, new_content)
+                    cleared_fm = True
         except (OSError, UnicodeDecodeError, PermissionError) as exc:
             emit_error("vault_propagate", "CLEAR_FM_ERROR", str(exc))
         except Exception as exc:
