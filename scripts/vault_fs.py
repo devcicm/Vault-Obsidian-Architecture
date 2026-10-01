@@ -242,6 +242,41 @@ def file_lock(
         local.release()
 
 
+class _LockTomado:
+    """Un `file_lock` ya adquirido, para usarlo en un `with` que lo suelte."""
+
+    def __init__(self, cm) -> None:
+        self._cm = cm
+
+    def __enter__(self) -> "_LockTomado":
+        return self
+
+    def __exit__(self, *exc):
+        return self._cm.__exit__(*exc)
+
+
+def tomar_lock(target: Path, timeout: float):
+    """Adquiere `file_lock(target)` o devuelve None si no llega a tiempo.
+
+    Separa la adquisición del cuerpo protegido. Un `except TimeoutError`
+    alrededor de todo el `with file_lock(...)` también captura el timeout de
+    un lock interno —el del índice de sección, el del ledger— y el llamante
+    respondería «no se escribió nada» con la nota ya escrita (F4)::
+
+        lock = tomar_lock(nota, 10.0)
+        if lock is None:
+            return emit_error(tool, "NOTE_LOCKED", ...)
+        with lock:
+            ...  # un TimeoutError de aquí dentro NO es NOTE_LOCKED
+    """
+    cm = file_lock(target, timeout=timeout)
+    try:
+        cm.__enter__()
+    except TimeoutError:
+        return None
+    return _LockTomado(cm)
+
+
 # ── Escritura atómica ──────────────────────────────────────────────────────────
 
 

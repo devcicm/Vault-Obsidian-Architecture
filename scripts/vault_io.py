@@ -150,6 +150,7 @@ from vault_fs import (  # noqa: F401  (reexport deliberado)
     _LOCAL_LOCKS_GUARD,
     file_lock,
     guarda_secretos,
+    tomar_lock,
 )
 
 

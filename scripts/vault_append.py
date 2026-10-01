@@ -30,7 +30,7 @@ import sys
 
 from vault_errors import emit_error, wrap_main
 
-from vault_io import assert_within_vault, atomic_write_text, file_lock, get_vault_root
+from vault_io import assert_within_vault, atomic_write_text, get_vault_root, tomar_lock
 from datetime import datetime, timezone
 
 from pathlib import Path
@@ -82,11 +82,14 @@ def vault_append(
     # Leer, modificar y escribir bajo el mismo lock que `vault_write`: sin él,
     # dos appends leían la misma versión y el segundo `os.replace` borraba el
     # primero con los dos envelopes en ok:true (medido: 7 de 12 en paralelo).
-    try:
-        with file_lock(note_path, timeout=10.0):
-            return _append_bajo_lock(note_path, path, content, section, timestamped)
-    except TimeoutError:
+    # `tomar_lock` y no `except TimeoutError` alrededor del bloque: el de un
+    # lock interno (índice de sección) saldría como NOTE_LOCKED con la nota
+    # ya escrita.
+    lock = tomar_lock(note_path, 10.0)
+    if lock is None:
         return {**emit_error("vault_append", "NOTE_LOCKED", f"Note locked: {path}"), "path": path}
+    with lock:
+        return _append_bajo_lock(note_path, path, content, section, timestamped)
 
 
 def _append_bajo_lock(
