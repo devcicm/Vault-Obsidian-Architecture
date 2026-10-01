@@ -916,7 +916,7 @@ async function handleToolsCall(params, session) {
     if ((name === "vault_write" || name === "vault_append") && args.content) {
       const guard = await runGuardChain(args.content, args.folder, vaultRoot);
       if (!guard.ok) {
-        await TraceLog.record(name, args, { ok: false, guard_result: guard });
+        await TraceLog.record(name, args, { ok: false, guard_result: guard }, vaultRoot);
         return formatToolError("GUARD_CHAIN_FAILED",
           `Guard chain blocked at ${guard.failed_at}: ${JSON.stringify(guard.results[guard.failed_at])}`);
       }
@@ -932,7 +932,7 @@ async function handleToolsCall(params, session) {
 
     if (name === "vault_health") {
       const result = await runHealthCheck(vaultRoot);
-      await TraceLog.record(name, args, result);
+      await TraceLog.record(name, args, result, vaultRoot);
       return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
     }
 
@@ -966,7 +966,7 @@ async function handleToolsCall(params, session) {
       result = await executePythonTool(scriptPath, args, vaultRoot, session, schema);
     }
 
-    await TraceLog.record(name, args, result);
+    await TraceLog.record(name, args, result, vaultRoot);
 
     return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
   } catch (e) {
@@ -1784,11 +1784,19 @@ function guardTagCompleteness(args, folder) {
 // SECCIÓN 8: Traceability Engine
 // ============================================================================
 
-const TRACE_LOG_PATH = join(__dirname, ".mcp-trace-log.json");
-const TRACE_LOG_MD_PATH = join(__dirname, ".mcp-trace-log.md");
+// AP-36 (v40.34): la traza vive en `<vault>/00_System/`, junto a la
+// `.tool-trace.json` de Python. Hasta aquí se escribía junto al `.mjs`: en una
+// instalación, el directorio del paquete, con la bitácora de todos los vaults
+// de la máquina mezclada fuera de todos ellos, y `vault://traceability/mutations`
+// devolviendo a un vault las llamadas de otro. Sin `00_System/` no se escribe:
+// sembrarlo desde la traza sería el vault fantasma que O1 cerró en Python.
+function tracePaths(vaultRoot) {
+  const dir = join(vaultRoot || detectVaultRoot(), "00_System");
+  return { dir, json: join(dir, ".mcp-trace-log.json") };
+}
 
 class TraceLog {
-  static async record(tool, params, result, agent = "mcp-server") {
+  static async record(tool, params, result, vaultRoot, agent = "mcp-server") {
     const entry = {
       id: randomUUID(),
       timestamp: new Date().toISOString(),
@@ -1799,33 +1807,29 @@ class TraceLog {
       agent,
       session_id: this._sessionId,
     };
-    await this._appendJson(entry);
-    await this._appendMd(entry);
+    const paths = tracePaths(vaultRoot);
+    if (!existsSync(paths.dir)) return entry;
+    await this._appendJson(entry, paths.json);
     return entry;
   }
 
   static _sessionId = `session-${Date.now()}`;
 
-  static async _appendJson(entry) {
+  static async _appendJson(entry, path) {
     try {
       let entries = [];
-      try { entries = JSON.parse(await readFile(TRACE_LOG_PATH, "utf-8")); } catch (_) {}
+      try { entries = JSON.parse(await readFile(path, "utf-8")); } catch (_) {}
       entries.push(entry);
       if (entries.length > 1000) entries = entries.slice(-500);
-      await writeFile(TRACE_LOG_PATH, JSON.stringify(entries, null, 2));
+      await writeFile(path, JSON.stringify(entries, null, 2));
     } catch (e) { log("warn", "Failed to write trace JSON log", e.message); }
   }
 
-  static async _appendMd(entry) {
-    try {
-      const row = `| ${entry.id} | ${entry.timestamp} | ${entry.tool} | ${entry.result_ok ? "OK" : "FAIL"} | ${entry.agent} |`;
-      let content = "";
-      try { content = await readFile(TRACE_LOG_MD_PATH, "utf-8"); } catch (_) {
-        content = "| ID | Timestamp | Tool | Result | Agent |\n|---|---|---|---|---|\n";
-      }
-      await writeFile(TRACE_LOG_MD_PATH, content + row + "\n");
-    } catch (e) { log("warn", "Failed to write trace MD log", e.message); }
-  }
+  // superseded_by: `.mcp-trace-log.json` + `vault://traceability/mutations`
+  // (v40.34). La tabla `.mcp-trace-log.md` no se escribe dentro del vault:
+  // medido, `vault_audit` la contaba como nota sin frontmatter y
+  // `vault_quality_check` le daba integridad 0, así que cada llamada MCP
+  // bajaba la salud del vault del usuario. Los mismos campos siguen en el JSON.
 }
 
 // ============================================================================
@@ -1871,7 +1875,7 @@ async function handleResourcesList() {
   };
 }
 
-async function handleResourcesRead(params) {
+async function handleResourcesRead(params, session) {
   const uri = params?.uri || "";
   try {
     switch (uri) {
@@ -1908,7 +1912,8 @@ async function handleResourcesRead(params) {
       }
       case "vault://traceability/mutations": {
         let entries = [];
-        try { entries = JSON.parse(await readFile(TRACE_LOG_PATH, "utf-8")); } catch (_) {}
+        const vaultRoot = session?.vaultRoot || resolveVaultRoot(session?.sessionId);
+        try { entries = JSON.parse(await readFile(tracePaths(vaultRoot).json, "utf-8")); } catch (_) {}
         return { contents: [{ uri, mimeType: "application/json", text: JSON.stringify({ count: entries.length, entries: entries.slice(-50) }, null, 2) }] };
       }
       case "vault://catalog": {
