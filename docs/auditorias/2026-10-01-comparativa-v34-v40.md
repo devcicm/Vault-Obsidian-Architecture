@@ -69,3 +69,28 @@ Cada uno se corrigió en su propio commit con un test que falla sin el cambio.
 - El rechazo por falta de `tags` (AP-26) llega antes que el escaneo de secretos:
   un contenido con un secreto y sin tags se rechaza por los tags, y quien lo
   corrija se encontrará el segundo rechazo después.
+
+## Verificación tras reinstalar
+
+Con la wheel reconstruida desde `73d2eba` e instalada con
+`pip install --user --force-reinstall`, sobre un vault nuevo creado con
+`vault init` en la copia de `/ans`:
+
+- **Handshake MCP por stdio:** `initialize` responde con `serverInfo`
+  (`vault-mcp-server` v40.34); `tools/list` expone 93 tools, ninguna de
+  gobernanza.
+- **Contención por MCP:** `vault_read` con `../fuera-del-vault/…` da
+  `INVALID_PATH`; `vault_write` con `root` da `INVALID_ARGS` sin lanzar el
+  proceso; nada escrito fuera del vault y ningún trace en `site-packages`.
+- **Salida de la CLI:** el envelope de rechazo sale en UTF-8 aunque la
+  consola sea cp1252.
+- **Pistas de recuperación:** una tool desconocida remite a `vault tools list`;
+  una de mantenimiento (`vault_gate`), a un checkout del repositorio.
+- **Batería v34/v40:** repetida con los mismos resultados de la tabla de arriba.
+
+Una nota de método, por si alguien repite la medida: el script de la
+comparativa partía el frontmatter con `split("---")` y marcaba como rota la
+nota del escenario de inyección, cuyo título contiene `---` entre comillas.
+Es el mismo AP-44 que se corrigió en `vault_validate`, cometido por el
+medidor. Cerrando el bloque en una línea `---`, la nota es válida, el título
+se conserva literal y `status` vale `draft`.
