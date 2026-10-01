@@ -38,7 +38,10 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 
-from vault_io import atomic_write_text, get_vault_root, write_report
+from vault_io import atomic_write_text, get_vault_root, tomar_lock, write_report
+
+#: Espera máxima por el lock de la nota; la misma que vault_write y vault_append.
+_LOCK_TIMEOUT = 10.0
 
 
 OUTCOMES = ["success", "failed", "partial"]
@@ -100,6 +103,26 @@ def vault_runbook_log(
     if not note_path.exists():
         return emit_error("vault_runbook_log", "NOTE_NOT_FOUND", f"Runbook not found: {path}")
 
+    # Lectura, entrada nueva, contador y escritura bajo el lock de la nota (F1):
+    # sin él, dos ejecuciones registradas a la vez se pisaban y la segunda
+    # borraba la entrada de la primera con los dos envelopes en ok: true.
+    lock = tomar_lock(note_path, _LOCK_TIMEOUT)
+    if lock is None:
+        return {
+            **emit_error(
+                "vault_runbook_log", "NOTE_LOCKED",
+                f"Otro escritor tiene {path}; la ejecución no se registró.",
+            ),
+            "path": path,
+        }
+    with lock:
+        return _registrar_bajo_lock(note_path, path, outcome, notes, duration)
+
+
+def _registrar_bajo_lock(
+    note_path: Path, path: str, outcome: str,
+    notes: Optional[str], duration: Optional[str],
+) -> Dict[str, Any]:
     with open(note_path, "r", encoding="utf-8") as f:
         content = f.read()
 
