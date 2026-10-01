@@ -63,3 +63,16 @@ def test_una_carpeta_del_vault_se_sigue_validando(entorno):
     r = _ejecutar(raiz, "--folder", "07_Knowledge", "--check", "frontmatter")
     assert "error_code" not in r, r
     assert len(r["invalid"]) == 1  # la nota sin frontmatter
+
+
+def test_folder_publica_las_rutas_con_barra_en_todas_las_plataformas(entorno):
+    """`--path` devolvía `07_Knowledge/x.md` y `--folder`, en Windows,
+    la misma ruta con barra invertida: la misma nota con dos claves distintas según cómo se
+    pidiera, y una ruta que ninguna otra tool del vault acepta de vuelta."""
+    raiz, _ = entorno
+    sub = raiz / "07_Knowledge" / "sub"
+    sub.mkdir()
+    (sub / "otra.md").write_text("# otra\n", encoding="utf-8")
+    r = _ejecutar(raiz, "--folder", "07_Knowledge", "--check", "frontmatter")
+    rutas = sorted(x["path"] for x in r["invalid"])
+    assert rutas == ["07_Knowledge/nota.md", "07_Knowledge/sub/otra.md"], r

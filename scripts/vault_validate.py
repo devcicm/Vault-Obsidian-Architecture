@@ -305,7 +305,7 @@ def check_frontmatter(path: Optional[str], folder: Optional[str]) -> Dict[str, A
 
         result = validate_frontmatter(note)
 
-        rel = str(note.relative_to(_raiz()))
+        rel = note.relative_to(_raiz()).as_posix()
 
         if result["valid"]:
 
