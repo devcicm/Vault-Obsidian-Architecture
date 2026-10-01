@@ -17,11 +17,50 @@ Excepciones de dominio:
 
 from __future__ import annotations
 
+import json
 import re
 from datetime import date, datetime
 from typing import Any, Dict, Optional, Tuple
 
 import yaml
+
+
+def yaml_scalar(value: Any) -> str:
+    """Un escalar YAML seguro para meter tras `clave: ` en un frontmatter.
+
+    **Dueño único** desde v40.34 (AP-57): `vault_lib` y `vault.autoria.frontmatter`
+    lo reexportan. Vive aquí porque el escape se decide con el mismo parser que
+    lee el frontmatter, y en el núcleo ninguno de los dos consumidores cruza
+    una frontera para alcanzarlo.
+
+    Veinticuatro tools construían su frontmatter concatenando f-strings, y ocho
+    de ellas se acordaban de pasar el título por `json.dumps`. Las otras
+    dieciséis producían YAML inválido en cuanto el valor llevaba `: ` —
+    `title: Overview: demo` no es un mapeo— o empezaba por un carácter que YAML
+    reserva (`%`, `#`, `*`, `&`). El fichero se escribía sin error y la nota
+    perdía **todo** el frontmatter al leerse: sin id, sin tags, sin tipo.
+
+    No cita por si acaso: cita solo si hace falta. El criterio es el del
+    consumidor (AP-44) — se comprueba que el parser real devuelva exactamente
+    el mismo texto, y solo si no, se cita. Así lo que hoy se escribe sin
+    comillas se sigue escribiendo igual, byte a byte.
+    """
+    # Una lista o un dict ya viajan como JSON —que es YAML de flujo válido— y
+    # así es como se escriben hoy `tags:` y `norm_refs:`. Compararlos como
+    # texto los citaría, convirtiendo una lista en una cadena.
+    if isinstance(value, (list, dict)):
+        return json.dumps(value, ensure_ascii=False)
+    if isinstance(value, bool) or value is None or isinstance(value, (int, float)):
+        return json.dumps(value)
+
+    texto = str(value)
+    try:
+        vuelta = yaml.safe_load(f"k: {texto}")
+        if isinstance(vuelta, dict) and vuelta.get("k") == texto:
+            return texto
+    except (yaml.YAMLError, RecursionError):  # AP-61 - ver parse_frontmatter
+        pass
+    return json.dumps(texto, ensure_ascii=False)
 
 
 class FrontmatterParseError(ValueError):

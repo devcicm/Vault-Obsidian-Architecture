@@ -107,6 +107,26 @@ CRITERIOS_CON_DUENO: List[Dict[str, Any]] = [
 #: El dueño escribe sus propias constantes: es su trabajo, no una copia.
 DUEÑOS = {c["dueño"] for c in CRITERIOS_CON_DUENO}
 
+#: Funciones con dueño (v40.34). Las señales de arriba son literales y no ven
+#: lo que pasó con `yaml_scalar`: dos cuerpos idénticos en `vault_lib` y en
+#: `vault.autoria.frontmatter`, sin una sola constante que los delatara. Aquí la
+#: señal es la propia definición: un `def <simbolo>` fuera del dueño es una
+#: copia; importarlo o reexportarlo, no.
+FUNCIONES_CON_DUENO: List[Dict[str, Any]] = [
+    {
+        "simbolo": "yaml_scalar",
+        "dueño": "vault/kernel/frontmatter_parsing.py",
+        "por_que": (
+            "El escape de un valor de frontmatter se decide con el parser que "
+            "lo lee. Tres criterios de escapado convivían en el mismo vault "
+            "antes de que existiera un escritor único."
+        ),
+    },
+]
+
+#: Dónde se buscan definiciones: el código que viaja o que se ejecuta.
+_ZONAS_DE_DEFINICION = ("scripts", "vault", "vault_toolkit", "cli")
+
 
 # ── Fronteras de lenguaje (v40.19) ───────────────────────────────────────────
 #
@@ -354,6 +374,36 @@ def medir() -> List[Dict[str, str]]:
     return hallazgos
 
 
+def medir_definiciones(raiz: Path = None) -> List[Dict[str, str]]:
+    """Segundas definiciones de una función con dueño (`FUNCIONES_CON_DUENO`).
+
+    Solo cuentan las de nivel de módulo: una función local con el mismo nombre
+    no compite por el import de nadie.
+    """
+    raiz = raiz or REPO
+    simbolos = {f["simbolo"]: f["dueño"] for f in FUNCIONES_CON_DUENO}
+    hallazgos: List[Dict[str, str]] = []
+    for zona in _ZONAS_DE_DEFINICION:
+        for p in sorted((raiz / zona).rglob("*.py")):
+            if "__pycache__" in p.parts:
+                continue
+            rel = p.relative_to(raiz).as_posix()
+            try:
+                arbol = ast.parse(p.read_text(encoding="utf-8"))
+            except (OSError, SyntaxError, UnicodeDecodeError):
+                continue  # `medir` ya lo reporta como `_no_parsea`
+            for n in arbol.body:
+                if (isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
+                        and n.name in simbolos and rel != simbolos[n.name]):
+                    hallazgos.append({
+                        "modulo": rel,
+                        "criterio": f"definicion_de_{n.name}",
+                        "senal": f"def {n.name}",
+                        "dueño": f"{simbolos[n.name]}:{n.name}",
+                    })
+    return hallazgos
+
+
 # ── La medida de las fronteras ───────────────────────────────────────────────
 
 REPO = Path(__file__).resolve().parent.parent
@@ -508,7 +558,7 @@ def _baseline() -> List[str]:
 
 
 def check() -> Dict[str, Any]:
-    hallazgos = medir() + medir_fronteras()
+    hallazgos = medir() + medir_fronteras() + medir_definiciones()
     firmas = {_firma(h) for h in hallazgos}
     base = set(_baseline())
     nuevos = sorted(firmas - base)
@@ -519,6 +569,7 @@ def check() -> Dict[str, Any]:
         "norm": "AP-57",
         "action": "check",
         "criterios": len(CRITERIOS_CON_DUENO),
+        "funciones_con_dueño": len(FUNCIONES_CON_DUENO),
         "modules_scanned": len(_modulos()),
         # El alcance real, no el nominal: la precondición del `*.md` deja fuera
         # a la mayoría, y hasta v40.16 solo se publicaba el total.
@@ -548,7 +599,7 @@ def check() -> Dict[str, Any]:
 
 
 def freeze(admitir_nuevos: bool = False) -> Dict[str, Any]:
-    hallazgos = medir() + medir_fronteras()
+    hallazgos = medir() + medir_fronteras() + medir_definiciones()
     firmas = sorted({_firma(h) for h in hallazgos})
     base = set(_baseline())
     nuevos = sorted(set(firmas) - base)

@@ -45,22 +45,10 @@ from typing import Any, Iterable, List, Tuple
 
 # Los `*_save` viven en `scripts/` y no se mueven de ahí; el paquete se importa
 # desde la raíz del repo, que ellos mismos ponen en el path.
-def yaml_scalar(value: Any) -> str:
-    """Serializa un escalar con el criterio YAML que consume el runtime."""
-    import yaml
-
-    if isinstance(value, (list, dict)):
-        return json.dumps(value, ensure_ascii=False)
-    if isinstance(value, bool) or value is None or isinstance(value, (int, float)):
-        return json.dumps(value)
-    text = str(value)
-    try:
-        parsed = yaml.safe_load(f"k: {text}")
-        if isinstance(parsed, dict) and parsed.get("k") == text:
-            return text
-    except (yaml.YAMLError, RecursionError):
-        pass
-    return json.dumps(text, ensure_ascii=False)
+# superseded_by: vault.kernel.frontmatter_parsing.yaml_scalar (v40.34, AP-57).
+# Era una copia idéntica de la de `vault_lib`; el nombre se conserva aquí
+# porque es la API que consumen los `*_save`.
+from ..kernel.frontmatter_parsing import yaml_scalar  # noqa: E402,F401
 
 
 def _es_instante(valor: Any) -> bool:

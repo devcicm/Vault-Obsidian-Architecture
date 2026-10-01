@@ -272,39 +272,11 @@ def parse_frontmatter_with_body(content: str) -> Tuple[Dict[str, Any], str]:
         return {}, content
 
 
-def yaml_scalar(value: Any) -> str:
-    """Un escalar YAML seguro para meter tras `clave: ` en un frontmatter.
-
-    Veinticuatro tools construyen su frontmatter concatenando f-strings, y ocho
-    de ellas se acordaban de pasar el título por `json.dumps`. Las otras
-    dieciséis producían YAML inválido en cuanto el valor llevaba `: ` —
-    `title: Overview: demo` no es un mapeo— o empezaba por un carácter que YAML
-    reserva (`%`, `#`, `*`, `&`). El fichero se escribía sin error y la nota
-    perdía **todo** el frontmatter al leerse: sin id, sin tags, sin tipo.
-
-    No cita por si acaso: cita solo si hace falta. El criterio es el del
-    consumidor (AP-44) — se comprueba que el parser real devuelva exactamente
-    el mismo texto, y solo si no, se cita. Así lo que hoy se escribe sin
-    comillas se sigue escribiendo igual, byte a byte.
-    """
-    import yaml
-
-    # Una lista o un dict ya viajan como JSON —que es YAML de flujo válido— y
-    # así es como se escriben hoy `tags:` y `norm_refs:`. Compararlos como
-    # texto los citaría, convirtiendo una lista en una cadena.
-    if isinstance(value, (list, dict)):
-        return json.dumps(value, ensure_ascii=False)
-    if isinstance(value, bool) or value is None or isinstance(value, (int, float)):
-        return json.dumps(value)
-
-    texto = str(value)
-    try:
-        vuelta = yaml.safe_load(f"k: {texto}")
-        if isinstance(vuelta, dict) and vuelta.get("k") == texto:
-            return texto
-    except (yaml.YAMLError, RecursionError):  # AP-61 - ver vault_lib.parse_frontmatter
-        pass
-    return json.dumps(texto, ensure_ascii=False)
+# superseded_by: vault.kernel.frontmatter_parsing.yaml_scalar (v40.34, AP-57).
+# El cuerpo era idéntico al de `vault.autoria.frontmatter`: dos dueños del mismo
+# criterio de escapado, que es como empezó la divergencia que esa función
+# existe para cerrar. Se conserva el nombre: lo importan veinte tools.
+from vault.kernel.frontmatter_parsing import yaml_scalar  # noqa: E402,F401
 
 
 def serialize_frontmatter(frontmatter: Dict[str, Any]) -> str:
