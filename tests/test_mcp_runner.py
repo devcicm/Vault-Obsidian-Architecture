@@ -283,3 +283,18 @@ def test_ninguna_tool_ancla_rutas_de_entrada_en_el_cwd():
     assert not culpables, (
         f"resuelven contra el CWD del proceso en vez de vault_io.resolve_input_path: {culpables}"
     )
+
+
+def test_la_tool_por_modulo_se_ejecuta_por_mcp(sesion):
+    """`__module__:` tiene 11 caracteres y se cortaban 10.
+
+    El hijo recibía `python -m :vault.gobernanza.tool`, Python fallaba al
+    buscar el módulo y `vault_gobernanza` estaba rota por MCP desde que se
+    expuso por `execution_module`. Por CLI funcionaba, así que solo se ve
+    desde una sesión JSON-RPC real.
+    """
+    r = sesion.llamar("vault_gobernanza", {"content": "Texto sin secretos."})
+    texto = _texto_de(r)
+    assert ":vault.gobernanza" not in texto, texto
+    assert "No module named" not in texto, texto
+    assert "TOOL_EXECUTION_FAILED" not in texto, texto

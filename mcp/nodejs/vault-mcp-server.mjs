@@ -1189,7 +1189,7 @@ function executePythonTool(scriptPath, args, vaultRoot, session, schema) {
     let spawnCwd;
     if (isModulePath) {
       const moduleName = scriptPath.startsWith("__module__:")
-        ? scriptPath.slice(10)
+        ? scriptPath.slice("__module__:".length)
         : scriptPath.replace(/[/\\]/g, ".").replace(/^vault\./, "").replace(/\.py$/, "");
       spawnArgs = ["-m", moduleName, ...cliArgs];
       spawnCwd = REPO_ROOT;
