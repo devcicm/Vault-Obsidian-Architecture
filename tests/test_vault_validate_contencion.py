@@ -61,7 +61,9 @@ def test_una_ruta_absoluta_es_invalid_path(entorno):
 def test_una_carpeta_del_vault_se_sigue_validando(entorno):
     raiz, _ = entorno
     r = _ejecutar(raiz, "--folder", "07_Knowledge", "--check", "frontmatter")
-    assert "error_code" not in r, r
+    # Desde 2026-10-01 una medida con notas inválidas lleva VALIDATION_FAILED
+    # (AP-52); lo que este test protege es que la carpeta no se rechace.
+    assert r.get("error_code") in (None, "VALIDATION_FAILED"), r
     assert len(r["invalid"]) == 1  # la nota sin frontmatter
 
 

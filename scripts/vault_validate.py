@@ -78,6 +78,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.errores import completar_envelope  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -443,6 +444,20 @@ def vault_validate(
 
             result["ok"] = False
 
+
+    if not result["ok"]:
+        # AP-52 (2026-10-01): el resultado de la medida se conserva entero;
+        # lo que se añade es el código por el que el consumidor decide.
+        partes = []
+        if result.get("invalid"):
+            partes.append(f"{len(result['invalid'])} nota(s) inválida(s)")
+        if (result.get("structure") or {}).get("missing"):
+            partes.append(f"{len(result['structure']['missing'])} carpeta(s) ausente(s)")
+        if (result.get("indexes") or {}).get("invalid"):
+            partes.append(f"{len(result['indexes']['invalid'])} índice(s) inválido(s)")
+        result["error_code"] = "VALIDATION_FAILED"
+        result["message"] = "Validación con problemas: " + ", ".join(partes) + "."
+        result = completar_envelope("vault_validate", result)
 
     return result
 

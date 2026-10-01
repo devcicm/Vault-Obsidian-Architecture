@@ -1258,6 +1258,21 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
     # 2026-10-01 (AP-52): hasta aquí el bloqueo salía como PERMISSION_DENIED,
     # cuya pista manda revisar permisos del disco. El consumidor no podía
     # distinguir «no puedo escribir» de «no debo escribir esto».
+    # 2026-10-01 (AP-52): `vault_validate` devolvía `ok: false` sin código
+    # cuando el vault tenía notas inválidas. No es un fallo de la tool —la
+    # medida terminó y el detalle viaja en `invalid`, `structure` e
+    # `indexes`—, pero el consumidor que decide por `recovery.action` no
+    # tenía por dónde leerlo.
+    "VALIDATION_FAILED": {
+        "category": "validation",
+        "severity": "error",
+        "message": "La validación terminó y encontró notas, carpetas o índices que no cumplen el contrato.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "El detalle está en `invalid` (nota y motivo), `structure.missing` e `indexes.invalid`. Un frontmatter que no parsea se repara con vault_frontmatter_heal; los campos que faltan se completan editando la nota.",
+            "docs": None,
+        },
+    },
     "SECRET_DETECTED": {
         "category": "governance",
         "severity": "error",
