@@ -1,7 +1,7 @@
 """Implementaciones reales de los puertos, apoyadas en el kernel existente.
 
 Esto es la frontera con `scripts/`: el único fichero de `vault/` al que se le
-permite importar `vault_io`, `vault_registry` y `vault_norms`. Se hace por
+permite importar `vault_io`, `vault_registry` y `vault_norms_catalog`. Se hace por
 delegación y no por copia — la garantía atómica, el bloqueo y el catálogo de
 normas siguen siendo los de siempre, que llevan versiones probados. Reimplementar
 aquí sería AP-48 (implementación paralela) recién estrenada.
@@ -97,9 +97,11 @@ class SeccionesDelRegistro:
 
 class NormasDelCatalogo:
     def _catalogo(self):
-        vault_norms = import_toolkit_module("vault_norms", legacy_scripts=_SCRIPTS)
+        # AP-62 (v40.34): de la hoja, no de la fachada `vault_norms`, que arrastra
+        # el motor y con él el meta-toolkit (grupo 35) que la wheel no lleva.
+        catalogo = import_toolkit_module("vault_norms_catalog", legacy_scripts=_SCRIPTS)
 
-        return vault_norms.NORM_CATALOG
+        return catalogo.NORM_CATALOG
 
     def por_codigo(self, codigo: str) -> dict | None:
         return next((n for n in self._catalogo() if n["code"] == codigo), None)
