@@ -74,3 +74,8 @@ PR_BODY.md
 
 # Analisis temporal generado durante revision
 auditado.md
+
+# Vault fantasma: lo sembraba un VAULT_ROOT sin expandir (`%V%`) hasta que
+# O1 (v40.34) dejó de crearlo. Se ignora por si un checkout viejo lo dejó.
+%V%/
+scripts/%V%/
