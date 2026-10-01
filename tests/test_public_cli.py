@@ -97,7 +97,12 @@ def test_error_publico_sale_del_contrato_estable(monkeypatch, capsys):
     assert product_cli.main(["run", "definitely_not_a_real_tool"]) == 3
     payload = _error(capsys)
     assert payload["error_code"] == "INVALID_ACTION"
-    assert payload["recovery"] == construir_error("vault", "INVALID_ACTION")["recovery"]
+    # La `action` es la del catálogo, que es por la que decide el consumidor;
+    # la pista es la del sitio, que sabe por qué no se ejecutó (v40.34).
+    catalogo = construir_error("vault", "INVALID_ACTION")["recovery"]
+    assert payload["recovery"]["action"] == catalogo["action"]
+    assert payload["recovery"]["hint"] == product_cli._PISTAS_DE_RESOLUCION[
+        resolucion_producto.UNKNOWN_TOOL]
     assert payload["state"] == resolucion_producto.UNKNOWN_TOOL
 
 
@@ -129,6 +134,7 @@ def test_error_publico_delega_en_el_owner_estable(monkeypatch, capsys):
             "state": resolucion_producto.UNKNOWN_TOOL,
             "error": "tool desconocida: definitely_not_a_real_tool",
         },
+        "pista": product_cli._PISTAS_DE_RESOLUCION[resolucion_producto.UNKNOWN_TOOL],
     }
     assert _error(capsys)["timestamp"] == "stable-owner"
 

@@ -111,6 +111,27 @@ def _sanitize_payload(obj: Any) -> Any:
     return obj
 
 
+#: Qué hacer con la CLI instalada según por qué no se ejecutó la tool. Sin
+#: esto salía la pista del catálogo, «Ejecutar el script con --help», que no
+#: tiene sentido sin checkout y no distinguía los casos (v40.34).
+_PISTAS_DE_RESOLUCION = {
+    UNKNOWN_TOOL: "`vault tools list` muestra las tools de esta instalación.",
+    KNOWN_NOT_INSTALLED: (
+        "La tool está catalogada pero esta instalación no la trae; "
+        "`vault tools list` marca cuáles están instaladas."
+    ),
+    NOT_RUNTIME_OPERATION: (
+        "Es mantenimiento del estándar, no operación sobre un vault: se ejecuta "
+        "desde un checkout del repositorio (python scripts/<tool>.py), no desde "
+        "la instalación."
+    ),
+    INVALID_INSTALLED_TARGET: (
+        "La instalación está incompleta: reinstala el paquete y comprueba con "
+        "`vault tools list`."
+    ),
+}
+
+
 def _error(state: str, detail: str, exit_code: int) -> int:
     _emit(
         construir_error(
@@ -118,6 +139,7 @@ def _error(state: str, detail: str, exit_code: int) -> int:
             "INVALID_ACTION",
             detail,
             extra={"state": state, "error": detail},
+            pista=_PISTAS_DE_RESOLUCION.get(state),
         ),
         stream=sys.stderr,
     )
