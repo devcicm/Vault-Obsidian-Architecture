@@ -115,7 +115,56 @@ class FrontmatterMissing(ValueError):
     pass
 
 
+# superseded_by: _DELIMITADO_RE (2026-10-01). Cerraba en el primer `\n---`
+# aunque la línea siguiese (`---más`) y se comía los blancos tras el cierre,
+# así que no servía a quien reescribe el bloque. Se conserva el contrato.
 _FRONTBLOCK_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n?(.*)", re.DOTALL)
+
+#: El bloque se cierra en una **línea** `---` —como mucho con espacios detrás—,
+#: que es como lo leen Obsidian y `yaml.safe_load` (AP-44). Única definición
+#: del criterio en el paquete (AP-57): `split("---", 2)` cortaba en cualquier
+#: `---` del texto, incluido el de un título entre comillas.
+_DELIMITADO_RE = re.compile(
+    r"---[ \t]*\r?\n(?:(.*?)\r?\n)?---[ \t]*(?:\r?\n|\Z)", re.DOTALL
+)
+
+
+def separar_frontmatter(content: str) -> Tuple[Optional[str], str]:
+    """`(bloque YAML, cuerpo)` sin interpretar el YAML.
+
+    El bloque va sin las líneas delimitadoras; el cuerpo es lo que sigue a la
+    línea de cierre, sin tocar: `"---\\n" + bloque + "\\n---\\n" + cuerpo`
+    devuelve los mismos bytes en un fichero LF, que es lo que necesita quien
+    reescribe el frontmatter. `(None, content)` si no hay bloque cerrado.
+    """
+    sin_bom = content.lstrip("﻿")
+    match = _DELIMITADO_RE.match(sin_bom)
+    if not match:
+        return None, content
+    return match.group(1) or "", sin_bom[match.end():]
+
+
+def _cargar_bloque(bloque: str) -> Dict[str, Any]:
+    """El bloque según `yaml.safe_load`, como dict con fechas en ISO."""
+    try:
+        raw_fm = yaml.safe_load(bloque)
+    except (yaml.YAMLError, RecursionError) as exc:
+        raise FrontmatterParseError(f"YAML inválido en frontmatter") from exc
+    except ValueError as exc:
+        raise FrontmatterParseError(f"valor YAML no convertible: {exc}") from exc
+
+    if raw_fm is None:
+        raw_fm = {}
+    elif not isinstance(raw_fm, dict):
+        raise FrontmatterParseError(
+            f"frontmatter no es un dict (es {type(raw_fm).__name__}); "
+            f"verificar que el bloque YAML contiene pares clave: valor"
+        )
+
+    try:
+        return _coerce_dates(raw_fm)
+    except RecursionError as exc:
+        raise FrontmatterParseError(f"anidamiento excesivo en frontmatter") from exc
 
 
 def _coerce_dates(obj: Any) -> Any:
@@ -140,29 +189,10 @@ def parse_frontmatter(content: str) -> Dict[str, Any]:
         FrontmatterParseError: el delimitador existe pero el YAML
             no parsea o el resultado no es un dict.
     """
-    stripped = content.lstrip("\ufeff")
-    match = _FRONTBLOCK_RE.match(stripped)
-    if not match:
+    bloque, _ = separar_frontmatter(content)
+    if bloque is None:
         return {}
-    try:
-        raw_fm = yaml.safe_load(match.group(1))
-    except (yaml.YAMLError, RecursionError) as exc:
-        raise FrontmatterParseError(f"YAML inválido en frontmatter") from exc
-    except ValueError as exc:
-        raise FrontmatterParseError(f"valor YAML no convertible: {exc}") from exc
-
-    if raw_fm is None:
-        raw_fm = {}
-    elif not isinstance(raw_fm, dict):
-        raise FrontmatterParseError(
-            f"frontmatter no es un dict (es {type(raw_fm).__name__}); "
-            f"verificar que el bloque YAML contiene pares clave: valor"
-        )
-
-    try:
-        return _coerce_dates(raw_fm)
-    except RecursionError as exc:
-        raise FrontmatterParseError(f"anidamiento excesivo en frontmatter") from exc
+    return _cargar_bloque(bloque)
 
 
 def parse_frontmatter_with_body(content: str) -> Tuple[Dict[str, Any], str]:
@@ -176,31 +206,12 @@ def parse_frontmatter_with_body(content: str) -> Tuple[Dict[str, Any], str]:
         FrontmatterParseError: el delimitador existe pero el YAML
             no parsea o el resultado no es un dict.
     """
-    stripped = content.lstrip("\ufeff")
-    match = _FRONTBLOCK_RE.match(stripped)
-    if not match:
+    bloque, cuerpo = separar_frontmatter(content)
+    if bloque is None:
         return {}, content
-    try:
-        raw_fm = yaml.safe_load(match.group(1))
-    except (yaml.YAMLError, RecursionError) as exc:
-        raise FrontmatterParseError(f"YAML inválido en frontmatter") from exc
-    except ValueError as exc:
-        raise FrontmatterParseError(f"valor YAML no convertible: {exc}") from exc
-
-    if raw_fm is None:
-        raw_fm = {}
-    elif not isinstance(raw_fm, dict):
-        raise FrontmatterParseError(
-            f"frontmatter no es un dict (es {type(raw_fm).__name__}); "
-            f"verificar que el bloque YAML contiene pares clave: valor"
-        )
-
-    try:
-        fm = _coerce_dates(raw_fm)
-    except RecursionError as exc:
-        raise FrontmatterParseError(f"anidamiento excesivo en frontmatter") from exc
-    body = match.group(2)
-    return fm, body
+    # El cuerpo se entrega sin el blanco inicial, como hacía `_FRONTBLOCK_RE`
+    # con su `\s*` tras el cierre: los consumidores ya cuentan con ello.
+    return _cargar_bloque(bloque), cuerpo.lstrip()
 
 
 def parse_frontmatter_robust(content: str) -> Tuple[Dict[str, Any], str, bool, Optional[str]]:
