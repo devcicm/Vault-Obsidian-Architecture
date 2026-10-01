@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import emit_error, emit_fallo, wrap_main
-from vault_io import assert_within_vault, atomic_write_text
+from vault_io import assert_within_vault, atomic_write_text, tomar_lock
 from vault_lib import utcnow
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -89,6 +89,31 @@ def get_history_versions(note_path: str) -> List[Dict[str, Any]]:
 
     versions.sort(key=lambda x: x["modified"], reverse=True)
     return versions
+
+
+#: Espera máxima por el lock de la nota; la misma que vault_write y vault_append.
+_LOCK_TIMEOUT = 10.0
+
+
+def _guardar_version_actual(note_path: Path) -> str:
+    """Copia la versión actual a .history/ antes de taparla (CIA-A).
+
+    Mismo nombre que leen `get_history_versions` y escribe `vault_write`, así
+    que la versión tapada pasa a ser la más reciente y otro `--force` la
+    devuelve. Devuelve el nombre del fichero guardado.
+    """
+    folder = note_path.parent.relative_to(_raiz()).as_posix()
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
+    base = f"{folder.replace('/', '__')}__{note_path.stem}-{timestamp}"
+    destino = _history_dir() / f"{base}.md"
+    n = 1
+    while destino.exists():
+        # Dos versiones en el mismo segundo: la segunda no pisa a la primera.
+        destino = _history_dir() / f"{base}-{n}.md"
+        n += 1
+    _history_dir().mkdir(parents=True, exist_ok=True)
+    atomic_write_text(destino, note_path.read_text(encoding="utf-8", errors="replace"))
+    return destino.name
 
 
 def _restore_change_log(note_path: str, version_filename: str, agent: str) -> str:
@@ -161,14 +186,30 @@ def vault_undo(
     restored_content = history_file.read_text(encoding="utf-8", errors="replace")
 
     if force:
+        previous_saved_as = None
         if not dry_run:
-            _restore_change_log(path, target["filename"], agent)
-            atomic_write_text(note_path, restored_content)
+            # Bajo el lock de la nota: un vault_append concurrente no se pierde
+            # bajo la versión restaurada (F1). Y la actual se guarda antes de
+            # taparla, o un undo equivocado no tendría vuelta (CIA-A).
+            lock = tomar_lock(note_path, _LOCK_TIMEOUT)
+            if lock is None:
+                return {
+                    **emit_error(
+                        "vault_undo", "NOTE_LOCKED",
+                        f"Otro escritor tiene {path}; no se restauró nada.",
+                    ),
+                    "path": path,
+                }
+            with lock:
+                previous_saved_as = _guardar_version_actual(note_path)
+                _restore_change_log(path, target["filename"], agent)
+                atomic_write_text(note_path, restored_content)
         return {
             "ok": True,
             "action": "overwritten",
             "note": path,
             "restored_from": target["filename"],
+            "previous_saved_as": previous_saved_as,
             "restored_at": utcnow(),
             "versions_restored": 1,
             "dry_run": dry_run,
