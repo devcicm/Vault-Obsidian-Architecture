@@ -988,14 +988,16 @@ async function handleToolsCall(params, session) {
       // que corría la tool era el que la autodetección encontrara — es decir,
       // no necesariamente el que el servidor tiene abierto. Los tests no lo
       // veían porque sembraban VAULT_ROOT en el entorno del padre.
-      result = await executePythonTool(scriptPath, args, vaultRoot, session, schema);
+      result = await executePythonTool(scriptPath, args, vaultRoot, session, schema,
+        TOOLS_CATALOG[name]?.json_flag === true);
     } else {
       const tool = TOOLS_CATALOG[name];
       if (!tool || !tool.script) {
         return formatToolError("tool_not_found", `Tool '${name}' not found.`);
       }
       const scriptPath = join(SCRIPTS_DIR, tool.script);
-      result = await executePythonTool(scriptPath, args, vaultRoot, session, schema);
+      result = await executePythonTool(scriptPath, args, vaultRoot, session, schema,
+        TOOLS_CATALOG[name]?.json_flag === true);
     }
 
     await TraceLog.record(name, args, result, vaultRoot);
@@ -1160,11 +1162,15 @@ function toolTimeoutMs() {
   return Math.max(envDefault("VAULT_TOOL_TIMEOUT") * 1000, 120000);
 }
 
-function executePythonTool(scriptPath, args, vaultRoot, session, schema) {
+function executePythonTool(scriptPath, args, vaultRoot, session, schema, modoJson = false) {
   return new Promise((resolve, reject) => {
     // Rewriting _→- in the flag broke underscore flags like --diagram_type /
     // --new_path / --source_path / --dry_run: the name goes verbatim.
     const cliArgs = argumentosACli(args, schema);
+    // `json_flag` lo publica el catálogo para las tools que contestan en prosa
+    // salvo que se les pida JSON. Sin esto el agente recibía `non_json_output`
+    // justo donde el smoke, que sí lo pedía, daba el contrato por cumplido.
+    if (modoJson && !cliArgs.includes("--json")) cliArgs.push("--json");
 
     const python = detectPython();
     const env = { ...process.env };

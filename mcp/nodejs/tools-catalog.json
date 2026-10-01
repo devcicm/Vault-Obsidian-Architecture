@@ -1371,7 +1371,8 @@
       "related": [
         "vault_diagram_save",
         "vault_mermaid_check"
-      ]
+      ],
+      "json_flag": true
     },
     "vault_diagram_save": {
       "name": "vault_diagram_save",
@@ -2097,7 +2098,8 @@
       "related": [
         "vault_reindex",
         "vault_audit"
-      ]
+      ],
+      "json_flag": true
     },
     "vault_foreign_check": {
       "name": "vault_foreign_check",
@@ -2442,7 +2444,8 @@
         "vault_graph",
         "vault_graph_inspect",
         "vault_fix_brackets"
-      ]
+      ],
+      "json_flag": true
     },
     "vault_graph_inspect": {
       "name": "vault_graph_inspect",
@@ -2484,7 +2487,8 @@
         "vault_graph",
         "vault_graph_merge",
         "vault_graph_fix"
-      ]
+      ],
+      "json_flag": true
     },
     "vault_graph_merge": {
       "name": "vault_graph_merge",
@@ -3282,7 +3286,8 @@
       "related": [
         "vault_diagram_save",
         "vault_write"
-      ]
+      ],
+      "json_flag": true
     },
     "vault_migrate_docs": {
       "name": "vault_migrate_docs",
@@ -3481,7 +3486,8 @@
         "vault_write",
         "vault_graph",
         "vault_reindex"
-      ]
+      ],
+      "json_flag": true
     },
     "vault_ncr_save": {
       "name": "vault_ncr_save",

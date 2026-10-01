@@ -95,10 +95,11 @@ def _con_json(script: str, argv: List[str]) -> List[str]:
 
     Su modo por defecto es texto para una persona, y eso es legítimo: lo que
     AP-42 mide es el contrato de máquina, que es el que consume el servidor MCP.
+    El criterio es del catálogo, que es también quien se lo dice al servidor.
     """
-    from vault_mcp_catalog import argparse_params
+    from vault_mcp_catalog import acepta_modo_json
 
-    if "--json" not in argv and "json" in argparse_params(script):
+    if "--json" not in argv and acepta_modo_json(script):
         return argv + ["--json"]
     return argv
 

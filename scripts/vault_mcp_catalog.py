@@ -4662,6 +4662,20 @@ def argparse_params(script: str) -> Dict[str, Dict[str, Any]]:
     return params
 
 
+def acepta_modo_json(script: str) -> bool:
+    """La tool habla a una persona por defecto y a una máquina con `--json`.
+
+    Dueño único del criterio (AP-57): lo consultan `vault_smoke`, que mide el
+    contrato de máquina, y `sync_to_json`, que lo publica como `json_flag` para
+    que el servidor MCP pida el JSON. Hasta v40.34 solo el smoke lo pedía, así
+    que el smoke probaba un contrato que el agente nunca recibía: por MCP
+    `vault_move` y otras cuatro devolvían su texto como `non_json_output`.
+    Solo cuenta un `--json` booleano; uno que toma una ruta es otra cosa.
+    """
+    param = argparse_params(script).get("json")
+    return bool(param) and param["type"] == "boolean"
+
+
 def reconciled_params(py_tool: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
     """Params publicables: los que la CLI acepta de verdad.
 
@@ -4815,6 +4829,9 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
         }
         if tool.get("related"):
             tools_json[name]["related"] = tool["related"]
+        if acepta_modo_json(tool.get("script", "")):
+            # El transporte añade `--json`: sin él la tool contesta en prosa.
+            tools_json[name]["json_flag"] = True
 
     catalog = {
         "tools": tools_json,
