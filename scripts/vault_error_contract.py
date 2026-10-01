@@ -48,6 +48,7 @@ precisión que no tiene es la clase de afirmación no falsable que AP-37 persigu
 import argparse
 import ast
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Dict, List
@@ -171,6 +172,68 @@ def offenders() -> List[Dict]:
     return fuera
 
 
+#: Llamadas cuyo segundo argumento posicional (o `code=`) es un código.
+_EMISORES = {"emit_error", "construir_error"}
+
+#: Literales de código en el servidor MCP: no importa el catálogo, así que se
+#: leen sus literales. `formatToolError("X", …)` y `{ code: "X", … }`.
+_CODIGO_JS = re.compile(r"""(?:formatToolError\(\s*|\bcode:\s*)["']([A-Za-z_]+)["']""")
+
+
+def codigos_fuera_del_catalogo(raiz: Path = None) -> List[Dict]:
+    """Códigos de error literales que `ERROR_CATALOG` no declara (D3, v40.34).
+
+    La otra mitad de AP-52. El detector de arriba ve el envelope **sin**
+    `error_code`; este ve el que lo lleva pero con un nombre que el catálogo
+    no conoce. `emit_error` no falla con él: `get_error` cae a UNEXPECTED_ERROR
+    y el envelope sale con el código inventado y la recuperación de otro. Había
+    104 así —41 por `emit_error`, 58 en envelopes a mano, 5 en el MCP— y
+    ninguna puerta los veía.
+
+    Sin baseline: se saldaron todos al nacer el guard, catalogándolos con el
+    mismo nombre que ya emitían. Un código nuevo se declara en el catálogo en el
+    mismo commit que lo emite, o no se emite.
+    """
+    from vault.kernel.errores import ERROR_CATALOG
+
+    raiz = raiz or REPO_ROOT
+    fuera: List[Dict] = []
+
+    def anotar(ruta: Path, linea: int, codigo: str) -> None:
+        if codigo not in ERROR_CATALOG:
+            fuera.append({"module": ruta.relative_to(raiz).as_posix(),
+                          "line": linea, "code": codigo})
+
+    for zona in ("scripts", "vault", "vault_toolkit", "cli"):
+        for ruta in sorted((raiz / zona).rglob("*.py")):
+            if "__pycache__" in ruta.parts:
+                continue
+            try:
+                arbol = ast.parse(ruta.read_text(encoding="utf-8", errors="replace"))
+            except SyntaxError:
+                continue
+            for nodo in ast.walk(arbol):
+                if isinstance(nodo, ast.Call):
+                    f = nodo.func
+                    nombre = f.attr if isinstance(f, ast.Attribute) else getattr(f, "id", None)
+                    if nombre not in _EMISORES:
+                        continue
+                    candidatos = nodo.args[1:2] + [k.value for k in nodo.keywords if k.arg == "code"]
+                    for c in candidatos:
+                        if isinstance(c, ast.Constant) and isinstance(c.value, str):
+                            anotar(ruta, nodo.lineno, c.value)
+                elif isinstance(nodo, ast.Dict):
+                    v = _valor_de(nodo, "error_code")
+                    if isinstance(v, ast.Constant) and isinstance(v.value, str):
+                        anotar(ruta, nodo.lineno, v.value)
+
+    for ruta in sorted((raiz / "mcp" / "nodejs").glob("*.mjs")):
+        for n, linea in enumerate(ruta.read_text(encoding="utf-8").splitlines(), 1):
+            for m in _CODIGO_JS.finditer(linea):
+                anotar(ruta, n, m.group(1))
+    return fuera
+
+
 def load_baseline() -> List[str]:
     """Las claves congeladas, ordenadas.
 
@@ -198,10 +261,12 @@ def scan() -> Dict:
 
     nuevos = sorted(firmas - baseline)      # la deuda CRECIÓ: es un fallo
     resueltos = sorted(baseline - firmas)   # deuda saldada: hay que recongelar
+    sin_catalogo = codigos_fuera_del_catalogo()
 
     return {
         # `ok` solo mira los nuevos: la deuda histórica no bloquea, pero no crece.
-        "ok": not nuevos,
+        # Los códigos fuera del catálogo no tienen baseline: cualquiera bloquea.
+        "ok": not nuevos and not sin_catalogo,
         "tool": "vault_error_contract",
         "norm": "AP-52",
         "schema": esquema,
@@ -211,6 +276,7 @@ def scan() -> Dict:
         "new_offenders": nuevos,
         "resolved_since_baseline": resueltos,
         "offenders": actuales,
+        "codes_outside_catalog": sin_catalogo,
     }
 
 

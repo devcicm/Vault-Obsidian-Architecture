@@ -8,7 +8,8 @@ trazas ni conoce ``scripts/``: esas son responsabilidades del adaptador.
 
 import traceback
 from datetime import datetime, timezone
-from typing import Any, Dict, Mapping, Optional
+from enum import Enum
+from typing import Any, Dict, List, Literal, Mapping, Optional, TypedDict
 
 
 ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
@@ -632,6 +633,1059 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         },
     },
     # ── Catch-all ─────────────────────────────────────────────────────────────
+    # ── Catalogados en v40.34 (D3) ────────────────────────────────────────────
+    # Se emitían por `emit_error` sin estar aquí: el envelope llevaba el código
+    # pero category/severity/recovery de UNEXPECTED_ERROR, así que el
+    # consumidor recibía un nombre que el catálogo no declaraba y una
+    # recuperación que no era la suya. Se conservan los nombres byte a byte —
+    # tests y consumidores los leen— y `vault_error_contract` falla desde
+    # entonces ante un código literal que no esté en este dict.
+    "PARSE_FAILED": {
+        "category": "validation",
+        "severity": "error",
+        "message": "No se reconoció la estructura esperada en el documento de entrada.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Comprobar que el documento conserva el formato que la tool documenta.",
+            "docs": None,
+        },
+    },
+    "INVALID_INPUT": {
+        "category": "validation",
+        "severity": "error",
+        "message": "El valor de entrada no es válido para esta operación.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Revisar el argumento indicado en el mensaje.",
+            "docs": None,
+        },
+    },
+    "GIT_UNAVAILABLE": {
+        "category": "dependency",
+        "severity": "error",
+        "message": "No hay repositorio git o git no está disponible.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Ejecutar dentro de un repositorio git con `git` en el PATH.",
+            "docs": None,
+        },
+    },
+    "REGISTRY_UNAVAILABLE": {
+        "category": "dependency",
+        "severity": "error",
+        "message": "No se pudo leer un registro canónico del toolkit.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Verificar que la instalación está completa (vault_version).",
+            "docs": None,
+        },
+    },
+    "PREFERENCES_UNAVAILABLE": {
+        "category": "dependency",
+        "severity": "warning",
+        "message": "No se pudieron cargar las preferencias; el paquete sale sin ellas.",
+        "recovery": {
+            "action": "run_tool",
+            "hint": "Ejecutar vault_preferences --list para ver el error de origen.",
+            "docs": None,
+        },
+    },
+    "GRAPH_LOAD_ERROR": {
+        "category": "io",
+        "severity": "error",
+        "message": "No se pudo leer el grafo del vault.",
+        "recovery": {
+            "action": "run_tool",
+            "hint": "Regenerar el grafo con vault_reindex --graph.",
+            "docs": None,
+        },
+    },
+    "CHANGELOG_READ_ERROR": {
+        "category": "io",
+        "severity": "warning",
+        "message": "No se pudo leer el registro de cambios del vault.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "PARSE_FRONTMATTER_ERROR": {
+        "category": "validation",
+        "severity": "warning",
+        "message": "No se pudo leer el frontmatter de una nota; se omite.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "SCAN_ROOT_ERROR": {
+        "category": "io",
+        "severity": "warning",
+        "message": "No se pudo recorrer una raíz de código; se omite.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "TAG_FIX_ERROR": {
+        "category": "io",
+        "severity": "warning",
+        "message": "No se pudo corregir los tags de una nota.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "AST_PARSE_ERROR": {
+        "category": "io",
+        "severity": "warning",
+        "message": "No se pudo analizar un módulo Python; se omite.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "PROFILE_READ_ERROR": {
+        "category": "io",
+        "severity": "warning",
+        "message": "No se pudo leer el perfil instalado; se asume 'full'.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "KEYWORD_EXTRACTION_ERROR": {
+        "category": "io",
+        "severity": "warning",
+        "message": "No se pudieron extraer palabras clave de una nota; se omite.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "INTEGRITY_PARSE_ERROR": {
+        "category": "validation",
+        "severity": "warning",
+        "message": "No se pudo leer cia_integrity; se asume 'medium'.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "WRITE_REPORT_ERROR": {
+        "category": "io",
+        "severity": "warning",
+        "message": "No se pudo escribir el informe de errores.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "GRAPH_METADATA_ERROR": {
+        "category": "io",
+        "severity": "warning",
+        "message": "No se pudieron leer los metadatos del grafo enriquecido.",
+        "recovery": {
+            "action": "run_tool",
+            "hint": "Regenerar el grafo con vault_graph_merge.",
+            "docs": None,
+        },
+    },
+    "CODE_INDEX_PARSE_ERROR": {
+        "category": "io",
+        "severity": "warning",
+        "message": "No se pudo leer el índice de código; el grafo sale sin esas aristas.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "ENTITY_PARSE_ERROR": {
+        "category": "io",
+        "severity": "warning",
+        "message": "No se pudo leer un fichero de entidades; se omite.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "ENRICHED_PARSE_ERROR": {
+        "category": "io",
+        "severity": "warning",
+        "message": "No se pudo leer el grafo enriquecido previo.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "GRAPH_HISTORY_ERROR": {
+        "category": "io",
+        "severity": "warning",
+        "message": "No se pudo actualizar el histórico del grafo.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "AUTO_INDEX_ERROR": {
+        "category": "io",
+        "severity": "warning",
+        "message": "No se pudo actualizar el índice de sección tras la escritura; la nota sí se escribió.",
+        "recovery": {
+            "action": "run_tool",
+            "hint": "Ejecutar vault_section_index para regenerar el índice.",
+            "docs": None,
+        },
+    },
+    "AUTO_TAG_LEDGER_ERROR": {
+        "category": "io",
+        "severity": "warning",
+        "message": "No se pudo actualizar el registro de tags tras la escritura; la nota sí se escribió.",
+        "recovery": {
+            "action": "run_tool",
+            "hint": "Ejecutar vault_tags para regenerar el registro.",
+            "docs": None,
+        },
+    },
+    "SPEC_PARSE_ERROR": {
+        "category": "io",
+        "severity": "error",
+        "message": "No se pudo leer tool-spec.json.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "VERSION_READ_ERROR": {
+        "category": "io",
+        "severity": "warning",
+        "message": "No se pudo leer la versión declarada del vault.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "INTROSPECTION_ERROR": {
+        "category": "io",
+        "severity": "warning",
+        "message": "No se pudo introspeccionar una tool; se omite del manifiesto.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "UPDATED_AT_PARSE_ERROR": {
+        "category": "validation",
+        "severity": "warning",
+        "message": "No se pudo leer updated_at; se usa la fecha del fichero.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "INDEX_UPDATE_ERROR": {
+        "category": "io",
+        "severity": "warning",
+        "message": "No se pudieron actualizar los índices tras el onboarding.",
+        "recovery": {
+            "action": "run_tool",
+            "hint": "Ejecutar vault_reindex.",
+            "docs": None,
+        },
+    },
+    "OBSERVABILITY_SCAN_ERROR": {
+        "category": "io",
+        "severity": "warning",
+        "message": "No se pudo completar el análisis de observabilidad.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "DECISION_CREATE_ERROR": {
+        "category": "io",
+        "severity": "warning",
+        "message": "No se pudo crear una nota de decisión durante el onboarding.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "RUNBOOK_CREATE_ERROR": {
+        "category": "io",
+        "severity": "warning",
+        "message": "No se pudo crear un runbook durante el onboarding.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "FLOW_CREATE_ERROR": {
+        "category": "io",
+        "severity": "warning",
+        "message": "No se pudo crear una nota de flujo durante el onboarding.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "REQUIREMENT_CREATE_ERROR": {
+        "category": "io",
+        "severity": "warning",
+        "message": "No se pudo crear una nota de requisito durante el onboarding.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "QUEUE_READ_ERROR": {
+        "category": "io",
+        "severity": "warning",
+        "message": "No se pudo leer la cola de propagación; se parte de una vacía.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "NOTIFY_WRITE_ERROR": {
+        "category": "io",
+        "severity": "warning",
+        "message": "No se pudo marcar una nota como pendiente de revisión.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "REINDEX_ERROR": {
+        "category": "io",
+        "severity": "warning",
+        "message": "No se pudo reindexar una carpeta tras la propagación.",
+        "recovery": {
+            "action": "run_tool",
+            "hint": "Ejecutar vault_reindex.",
+            "docs": None,
+        },
+    },
+    "CLEAR_FM_ERROR": {
+        "category": "io",
+        "severity": "warning",
+        "message": "No se pudo limpiar la marca de revisión del frontmatter.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "NORM_CATALOG_UNAVAILABLE": {
+        "category": "dependency",
+        "severity": "warning",
+        "message": "No se pudo leer el catálogo de normas.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "LIFECYCLE_UNAVAILABLE": {
+        "category": "dependency",
+        "severity": "warning",
+        "message": "No se pudo leer el registro de ciclo de vida.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "TOOL_SPEC_UNAVAILABLE": {
+        "category": "dependency",
+        "severity": "warning",
+        "message": "No se pudo leer el contrato de tools.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "VERSION_UNAVAILABLE": {
+        "category": "dependency",
+        "severity": "warning",
+        "message": "No se pudo leer la versión vigente del estándar.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    "SOURCE_READ_ERROR": {
+        "category": "io",
+        "severity": "warning",
+        "message": "No se pudo leer un fichero fuente; se omite.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el trace log en 00_System/.tool-trace.json para el detalle completo del error.",
+            "docs": None,
+        },
+    },
+    # Y los que viajaban en envelopes construidos a mano, con `error_code` pero
+    # sin el resto del contrato. Catalogarlos no completa esos envelopes —eso
+    # es pasarlos por `emit_error`, deuda aparte—, pero el código deja de ser
+    # un nombre que solo conoce quien lo escribió: `get_error` ya lo resuelve.
+    "EMPTY_QUERY": {
+        "category": "validation",
+        "severity": "error",
+        "message": "La consulta está vacía.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Pasar un valor no vacío en el argumento indicado.",
+            "docs": None,
+        },
+    },
+    "INVALID_BUDGET": {
+        "category": "validation",
+        "severity": "error",
+        "message": "El presupuesto de tokens no es válido.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "INVALID_DIRECTION": {
+        "category": "validation",
+        "severity": "error",
+        "message": "La dirección de recorrido del grafo no es válida.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "INVALID_HOPS": {
+        "category": "validation",
+        "severity": "error",
+        "message": "El número de saltos no es válido.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "GRAPH_MISSING": {
+        "category": "not_found",
+        "severity": "error",
+        "message": "El vault no tiene grafo generado.",
+        "recovery": {
+            "action": "run_tool",
+            "hint": "Generar el grafo con vault_reindex --graph.",
+            "docs": None,
+        },
+    },
+    "NO_SEEDS_RESOLVED": {
+        "category": "not_found",
+        "severity": "warning",
+        "message": "Ninguna semilla de la consulta existe en el grafo.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Revisar `unresolved` en el envelope; si la nota es nueva, regenerar el grafo.",
+            "docs": None,
+        },
+    },
+    "EMPTY_SOURCE": {
+        "category": "validation",
+        "severity": "error",
+        "message": "La fuente a ingerir está vacía.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Pasar un valor no vacío en el argumento indicado.",
+            "docs": None,
+        },
+    },
+    "NO_SOURCE": {
+        "category": "validation",
+        "severity": "error",
+        "message": "No se indicó ninguna fuente que ingerir.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Pasar --file, --url o --text.",
+            "docs": None,
+        },
+    },
+    "SOURCE_NOT_FOUND": {
+        "category": "not_found",
+        "severity": "error",
+        "message": "La fuente indicada no existe.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "SOURCE_UNREADABLE": {
+        "category": "io",
+        "severity": "error",
+        "message": "La fuente indicada no se pudo leer.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Comprobar permisos y codificación del fichero.",
+            "docs": None,
+        },
+    },
+    "SOURCE_TOO_LARGE": {
+        "category": "validation",
+        "severity": "error",
+        "message": "La fuente supera el tamaño máximo admitido.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Partir la fuente en ficheros más pequeños.",
+            "docs": None,
+        },
+    },
+    "INVALID_URL": {
+        "category": "validation",
+        "severity": "error",
+        "message": "La URL no es válida o usa un esquema no admitido.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "NETWORK_DISABLED": {
+        "category": "validation",
+        "severity": "error",
+        "message": "Descargar una URL requiere permiso de red explícito.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Descargar el contenido y usar --file, o pasar --allow-network.",
+            "docs": None,
+        },
+    },
+    "FETCH_FAILED": {
+        "category": "io",
+        "severity": "error",
+        "message": "No se pudo descargar la URL.",
+        "recovery": {
+            "action": "retry",
+            "hint": "Comprobar la conectividad y reintentar, o descargar y usar --file.",
+            "docs": None,
+        },
+    },
+    "FORBIDDEN_SECTION": {
+        "category": "governance",
+        "severity": "error",
+        "message": "La sección no admite ingesta: es generada o de otra tool.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Elegir una sección de las que no aparecen en `forbidden`.",
+            "docs": None,
+        },
+    },
+    "UNKNOWN_SECTION": {
+        "category": "validation",
+        "severity": "error",
+        "message": "La sección indicada no existe en el vault.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "POISON_DETECTED": {
+        "category": "governance",
+        "severity": "error",
+        "message": "La fuente contiene patrones de inyección; no se escribió nada.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar `preflight` en el envelope; el preflight anti-poison no es desactivable.",
+            "docs": None,
+        },
+    },
+    "NO_CONTENT": {
+        "category": "validation",
+        "severity": "error",
+        "message": "Ningún bloque de la fuente tiene contenido útil suficiente.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Aportar una fuente con más contenido.",
+            "docs": None,
+        },
+    },
+    "EMPTY_REASON": {
+        "category": "validation",
+        "severity": "error",
+        "message": "La razón es obligatoria.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Pasar un valor no vacío en el argumento indicado.",
+            "docs": None,
+        },
+    },
+    "EMPTY_STATEMENT": {
+        "category": "validation",
+        "severity": "error",
+        "message": "El enunciado es obligatorio.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Pasar un valor no vacío en el argumento indicado.",
+            "docs": None,
+        },
+    },
+    "INVALID_CATEGORY": {
+        "category": "validation",
+        "severity": "error",
+        "message": "La categoría no es válida.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "INVALID_STRENGTH": {
+        "category": "validation",
+        "severity": "error",
+        "message": "La fuerza de la preferencia no es válida.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "NOT_A_PREFERENCE": {
+        "category": "validation",
+        "severity": "error",
+        "message": "La nota indicada no es una preferencia.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "NOT_FOUND": {
+        "category": "not_found",
+        "severity": "error",
+        "message": "La nota indicada no existe.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "NOT_QUARANTINED": {
+        "category": "validation",
+        "severity": "error",
+        "message": "La nota indicada no está en cuarentena.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "ORIGIN_OCCUPIED": {
+        "category": "validation",
+        "severity": "error",
+        "message": "La ruta de origen ya está ocupada; restaurar la sobrescribiría.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Mover o renombrar la nota que ocupa el origen antes de restaurar.",
+            "docs": None,
+        },
+    },
+    "EMPTY_SYMPTOM": {
+        "category": "validation",
+        "severity": "error",
+        "message": "El síntoma es obligatorio.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Pasar un valor no vacío en el argumento indicado.",
+            "docs": None,
+        },
+    },
+    "INVALID_DATA_SUBJECT": {
+        "category": "validation",
+        "severity": "error",
+        "message": "El interesado no es válido.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "INVALID_DETECTED_BY": {
+        "category": "validation",
+        "severity": "error",
+        "message": "El origen de la detección no es válido.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "INVALID_ENV": {
+        "category": "validation",
+        "severity": "error",
+        "message": "El entorno no es válido.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "INVALID_IMPACT": {
+        "category": "validation",
+        "severity": "error",
+        "message": "El impacto no es válido.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "INVALID_JSON": {
+        "category": "validation",
+        "severity": "error",
+        "message": "El argumento no contiene JSON válido.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Pasar JSON válido en el argumento indicado.",
+            "docs": None,
+        },
+    },
+    "INVALID_LEGAL_BASIS": {
+        "category": "validation",
+        "severity": "error",
+        "message": "La base legal no es válida.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "INVALID_LIKELIHOOD": {
+        "category": "validation",
+        "severity": "error",
+        "message": "La probabilidad no es válida.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "INVALID_NCR_TYPE": {
+        "category": "validation",
+        "severity": "error",
+        "message": "El tipo de no conformidad no es válido.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "INVALID_PHASE": {
+        "category": "validation",
+        "severity": "error",
+        "message": "La fase no es válida.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "INVALID_RELEASE_TYPE": {
+        "category": "validation",
+        "severity": "error",
+        "message": "El tipo de release no es válido.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "INVALID_RISK_TYPE": {
+        "category": "validation",
+        "severity": "error",
+        "message": "El tipo de riesgo no es válido.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "INVALID_SEVERITY": {
+        "category": "validation",
+        "severity": "error",
+        "message": "La severidad no es válida.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "INVALID_SLO_TYPE": {
+        "category": "validation",
+        "severity": "error",
+        "message": "El tipo de SLO no es válido.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "INVALID_STATUS": {
+        "category": "validation",
+        "severity": "error",
+        "message": "El status no es válido.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "INVALID_TREATMENT": {
+        "category": "validation",
+        "severity": "error",
+        "message": "El tratamiento no es válido.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "INVALID_WINDOW": {
+        "category": "validation",
+        "severity": "error",
+        "message": "La ventana no es válida.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "missing_agent": {
+        "category": "governance",
+        "severity": "error",
+        "message": "AP-16: falta el agente que firma la escritura.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Pasar --agent <nombre> o exportar VAULT_AGENT.",
+            "docs": None,
+        },
+    },
+    "READ_ERROR": {
+        "category": "io",
+        "severity": "error",
+        "message": "No se pudo leer el fichero indicado.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Comprobar permisos y codificación del fichero.",
+            "docs": None,
+        },
+    },
+    "WRITE_ERROR": {
+        "category": "io",
+        "severity": "error",
+        "message": "No se pudo escribir el fichero indicado.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Comprobar permisos y espacio en disco.",
+            "docs": None,
+        },
+    },
+    "UNSUPPORTED_FORMAT": {
+        "category": "validation",
+        "severity": "error",
+        "message": "El formato del fichero no está soportado.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "SPEC_LOAD_ERROR": {
+        "category": "io",
+        "severity": "error",
+        "message": "No se pudo cargar tool-spec.json.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Regenerar el contrato con vault_compact_contracts.",
+            "docs": None,
+        },
+    },
+    "TOOL_NOT_IN_SPEC": {
+        "category": "validation",
+        "severity": "error",
+        "message": "La tool no tiene entrada en tool-spec.json.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "NOTHING_TO_FIX": {
+        "category": "validation",
+        "severity": "warning",
+        "message": "No hay nada que corregir.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el argumento indicado en el mensaje; el envelope trae los valores admitidos cuando los hay.",
+            "docs": None,
+        },
+    },
+    "content_too_short": {
+        "category": "governance",
+        "severity": "error",
+        "message": "El contenido es demasiado corto.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el contenido según la norma que cita `norm_code`.",
+            "docs": None,
+        },
+    },
+    "content_empty_list": {
+        "category": "governance",
+        "severity": "error",
+        "message": "El contenido tiene listas vacías (AP-20).",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el contenido según la norma que cita `norm_code`.",
+            "docs": None,
+        },
+    },
+    "path_anchored_wikilinks": {
+        "category": "governance",
+        "severity": "error",
+        "message": "Hay wikilinks con ruta (AP-21).",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el contenido según la norma que cita `norm_code`.",
+            "docs": None,
+        },
+    },
+    "malformed_wikilinks": {
+        "category": "governance",
+        "severity": "error",
+        "message": "Hay wikilinks mal formados.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el contenido según la norma que cita `norm_code`.",
+            "docs": None,
+        },
+    },
+    "mermaid_syntax_error": {
+        "category": "governance",
+        "severity": "error",
+        "message": "Un bloque Mermaid no es válido.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el contenido según la norma que cita `norm_code`.",
+            "docs": None,
+        },
+    },
+    "missing_tags": {
+        "category": "governance",
+        "severity": "error",
+        "message": "La nota no lleva tags.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Pasar --tags.",
+            "docs": None,
+        },
+    },
+    "note_moved": {
+        "category": "validation",
+        "severity": "error",
+        "message": "La nota existe en otra carpeta.",
+        "recovery": {
+            "action": "run_tool",
+            "hint": "Usar vault_move para reubicarla o especificar otra carpeta.",
+            "docs": None,
+        },
+    },
+    "illegal_status_transition": {
+        "category": "governance",
+        "severity": "error",
+        "message": "La transición de status no está permitida (AP-41).",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el contenido según la norma que cita `norm_code`.",
+            "docs": None,
+        },
+    },
+    # Los que emite el servidor MCP (`mcp/nodejs/vault-mcp-server.mjs`). No
+    # puede importar este dict, pero el guard lee sus literales igual.
+    "missing_tool_name": {
+        "category": "validation",
+        "severity": "error",
+        "message": "La llamada MCP no nombra ninguna tool.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Pasar `name` en tools/call.",
+            "docs": None,
+        },
+    },
+    "tool_not_found": {
+        "category": "not_found",
+        "severity": "error",
+        "message": "La tool no existe o no se expone por MCP.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Consultar tools/list.",
+            "docs": None,
+        },
+    },
+    "INVALID_ARGS": {
+        "category": "validation",
+        "severity": "error",
+        "message": "Los argumentos no cumplen el inputSchema de la tool; no se ejecutó nada.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Ajustar los argumentos al inputSchema que publica tools/list.",
+            "docs": None,
+        },
+    },
+    "GUARD_CHAIN_FAILED": {
+        "category": "governance",
+        "severity": "error",
+        "message": "La cadena de guards del servidor MCP bloqueó la escritura.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Corregir el contenido según el guard que cita el mensaje.",
+            "docs": None,
+        },
+    },
+    "TOOL_EXECUTION_FAILED": {
+        "category": "infrastructure",
+        "severity": "error",
+        "message": "El servidor MCP no pudo ejecutar la tool.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Revisar el log del servidor MCP y que VAULT_MCP_PYTHON apunte al Python del toolkit.",
+            "docs": None,
+        },
+    },
     "UNEXPECTED_ERROR": {
         "category": "infrastructure",
         "severity": "critical",
@@ -645,9 +1699,18 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
 }
 
 
+#: Los códigos del catálogo como tipo (D3, v40.34). Se **deriva** de
+#: `ERROR_CATALOG` en vez de escribirse: dos listas de los mismos nombres son
+#: dos dueños, y la segunda envejece. Hereda de `str`, así que
+#: `ErrorCode.INVALID_PATH == "INVALID_PATH"` y los consumidores que comparan
+#: con la cadena no notan nada.
+ErrorCode = Enum("ErrorCode", {codigo: codigo for codigo in ERROR_CATALOG}, type=str)
+ErrorCode.__doc__ = "Código de error del catálogo; derivado de ERROR_CATALOG."
+
+
 def get_error(code: str) -> Dict[str, Any]:
     """Return error metadata for a code, or UNEXPECTED_ERROR as fallback."""
-    return ERROR_CATALOG.get(code, ERROR_CATALOG["UNEXPECTED_ERROR"])
+    return ERROR_CATALOG.get(getattr(code, "value", code), ERROR_CATALOG["UNEXPECTED_ERROR"])
 
 
 def construir_error(
@@ -670,6 +1733,9 @@ def construir_error(
     terceros. Quien lo quiere lo pide —``emit_error`` con ``VAULT_DEBUG=1``—;
     el kernel no lee el entorno.
     """
+    # Un `ErrorCode` viaja como su valor: `json.dumps` lo haría igual, pero un
+    # f-string o un `repr` no, y el envelope es contrato con terceros.
+    code = getattr(code, "value", code)
     catalog_entry = get_error(code)
     entry: Dict[str, Any] = {
         "ok": False,
@@ -688,3 +1754,66 @@ def construir_error(
     if extra:
         entry.update(extra)
     return entry
+
+
+# ── DTOs del envelope (D5, v40.34) ────────────────────────────────────────────
+#
+# La forma que `construir_error` produce, escrita como tipo. Hasta aquí el
+# contrato solo existía como el cuerpo de una función: 349 firmas devolvían
+# `Dict[str, Any]` y ninguna decía qué claves trae. Python 3.9 no tiene
+# `NotRequired`, así que lo obligatorio va en la base y lo opcional en la
+# subclase `total=False`.
+
+
+class Recovery(TypedDict):
+    action: str
+    hint: str
+    docs: Optional[str]
+
+
+class _ErrorEnvelopeBase(TypedDict):
+    ok: Literal[False]
+    tool: str
+    error_code: str
+    category: str
+    severity: str
+    message: str
+    recovery: Recovery
+    timestamp: str
+
+
+class ErrorEnvelope(_ErrorEnvelopeBase, total=False):
+    args: Dict[str, Any]
+    traceback: str
+
+
+class OkEnvelope(TypedDict, total=False):
+    """El de éxito solo garantiza `ok`; el resto es de cada tool."""
+    ok: Literal[True]
+    tool: str
+
+
+def problemas_de_forma(envelope: Mapping[str, Any]) -> List[str]:
+    """Qué le falta a un envelope de error para cumplir `ErrorEnvelope`.
+
+    Lista vacía si cumple. Es el criterio del consumidor (AP-44): el servidor
+    MCP y `cli/` deciden por `error_code` y `recovery.action`, así que eso es lo
+    que se mide, sobre el envelope real y no sobre la función que lo construye.
+    """
+    problemas: List[str] = []
+    if envelope.get("ok") is not False:
+        return ["ok no es False"]
+    for clave, tipo in _ErrorEnvelopeBase.__annotations__.items():
+        if clave not in envelope:
+            problemas.append(f"falta {clave}")
+        elif tipo is str and not isinstance(envelope[clave], str):
+            problemas.append(f"{clave} no es str")
+    rec = envelope.get("recovery")
+    if isinstance(rec, Mapping):
+        problemas += [f"falta recovery.{k}" for k in Recovery.__annotations__ if k not in rec]
+    elif "recovery" in envelope:
+        problemas.append("recovery no es un objeto")
+    codigo = envelope.get("error_code")
+    if isinstance(codigo, str) and codigo not in ERROR_CATALOG:
+        problemas.append(f"error_code {codigo!r} fuera de ERROR_CATALOG")
+    return problemas
