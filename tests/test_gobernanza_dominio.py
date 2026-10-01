@@ -139,3 +139,26 @@ def test_un_fichero_ausente_y_uno_corrupto_se_leen_igual_de_vacios(tmp_path):
     assert repo.leer_json(repo.indice_calidad) == {}
     repo.indice_calidad.write_text("{roto", encoding="utf-8")
     assert repo.leer_json(repo.indice_calidad) == {}
+
+
+def test_importar_la_tool_no_mete_en_sys_path_una_ruta_que_no_existe():
+    """`vault/gobernanza/tool.py` calculaba su raíz con `parent.parent`, que es
+    `vault/`, e insertaba `vault/scripts` en `sys.path` de quien lo importase.
+    Esa ruta no existe ni en el repo ni en la wheel: lo único que hacía era
+    ensuciar la ruta de búsqueda de un consumidor."""
+    import json
+    import subprocess
+
+    codigo = (
+        "import json, os, sys\n"
+        "antes = list(sys.path)\n"
+        "import vault.gobernanza.tool\n"
+        "nuevas = [p for p in sys.path if p not in antes]\n"
+        "print(json.dumps([p for p in nuevas if not os.path.isdir(p)]))\n"
+    )
+    raiz = Path(__file__).resolve().parent.parent
+    salida = subprocess.run(
+        [sys.executable, "-c", codigo], cwd=raiz, capture_output=True,
+        text=True, encoding="utf-8", check=True,
+    ).stdout
+    assert json.loads(salida.strip().splitlines()[-1]) == []

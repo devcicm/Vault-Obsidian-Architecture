@@ -13,17 +13,12 @@ syntax, y más — más completo que el runGuardChain en JS.
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-_REPO_ROOT = Path(__file__).resolve().parent.parent
-_SCRIPTS = _REPO_ROOT / "scripts"
-if str(_SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(_SCRIPTS))
-
+# Aquí había un `sys.path.insert` con `parent.parent`, que desde este fichero es
+# `vault/` y no la raíz: metía `vault/scripts` —que no existe— en `sys.path` de
+# quien importase la tool, también en la wheel. Nunca sirvió de nada porque el
+# `__init__` del paquete, que corre antes, ya pone la ruta correcta en el repo.
 import argparse
 import json
-import sys
 from typing import Any, Dict, List
 
 from .mcp_gobernanza import GobernanzaMCP
