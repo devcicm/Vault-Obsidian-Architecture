@@ -36,7 +36,7 @@ import sys
 
 import vault_tags
 import yaml
-from vault_errors import emit_error, wrap_main
+from vault_errors import emit_error, emit_fallo, wrap_main
 
 from vault_io import (
     is_snapshot_path,  # dueño único de qué es una instantánea (AP-57)
@@ -47,6 +47,7 @@ from vault_io import (
     assert_within_vault,
     normalize_stem,
     file_lock,
+    guarda_secretos,  # dueño único del escaneo de secretos (AP-57)
 )
 from vault_encoding import (
     sanitize_content,
@@ -640,6 +641,18 @@ def vault_write(
     tags = tags or []
 
     meta = meta or {}
+
+    # Secretos antes que forma (2026-10-01). El escaneo solo ocurría al escribir,
+    # detrás de once guardas: una nota con una clave AWS y sin tags volvía
+    # AP-26 y el agente, obediente, añadía tags y reintentaba con la clave
+    # dentro. Lo primero que tiene que oír es lo que no debe escribir. El
+    # criterio es del dueño, `guarda_secretos`; aquí solo se adelanta.
+    try:
+        guarda_secretos(_raiz() / folder, f"{title}\n{content}")
+    except PermissionError as exc:
+        if getattr(exc, "causa", None) is None:
+            raise
+        return emit_fallo("vault_write", exc)
 
     # Content gate: new notes must pass strict content quality gate (00_System exempt)
 

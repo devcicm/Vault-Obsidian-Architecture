@@ -280,6 +280,26 @@ def tomar_lock(target: Path, timeout: float):
 # ── Escritura atómica ──────────────────────────────────────────────────────────
 
 
+class SecretoDetectado(PermissionError):
+    """El escáner bloqueó la escritura por un secreto (AP-52, 2026-10-01).
+
+    Sigue siendo `PermissionError` para que los `except` que ya lo
+    distinguían —`vault_io.atomic_write_text` lo relanza— no cambien. Lleva
+    `causa`, `mensaje` y `datos` para que `wrap_main` lo traduzca por
+    `vault_errors.emit_fallo` a `SECRET_DETECTED`: antes salía como
+    `PERMISSION_DENIED`, con una pista sobre permisos del disco. Se lee
+    por pato y no hereda de `FalloDeDominio`: este módulo es hoja y no
+    importa el kernel para un nombre.
+    """
+
+    causa = "SECRETO_EN_CONTENIDO"
+
+    def __init__(self, mensaje: str, hallazgos: list) -> None:
+        super().__init__(mensaje)
+        self.mensaje = mensaje
+        self.datos = {"secrets": hallazgos}
+
+
 # Reexports históricos: el mecanismo tiene un solo owner en el paquete estable.
 
 
@@ -310,8 +330,12 @@ def guarda_secretos(path: Path, text: str) -> None:
         f"  [{f['pattern_id']}] line {f['line_hint']}: {f['match_redacted']}"
         for f in critical[:5]
     )
-    raise PermissionError(
+    # El mensaje ya no enseña la variable que desactiva el escáner: lo lee
+    # un agente, y la salida de un control no es el sitio donde anunciar
+    # cómo saltárselo. La variable sigue existiendo (vault_entorno).
+    raise SecretoDetectado(
         f"atomic_write_text blocked: {len(critical)} critical secret(s) "
-        f"detected in content. Bypass with VAULT_SKIP_SECRET_SCAN=1.\n"
-        f"{details}"
+        f"detected in content.\n{details}",
+        [{"pattern": f["pattern_id"], "line": f["line_hint"],
+          "match": f["match_redacted"]} for f in critical[:5]],
     )

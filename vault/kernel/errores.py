@@ -1255,6 +1255,19 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": None,
         },
     },
+    # 2026-10-01 (AP-52): hasta aquí el bloqueo salía como PERMISSION_DENIED,
+    # cuya pista manda revisar permisos del disco. El consumidor no podía
+    # distinguir «no puedo escribir» de «no debo escribir esto».
+    "SECRET_DETECTED": {
+        "category": "governance",
+        "severity": "error",
+        "message": "El contenido incluye un secreto; no se escribió nada.",
+        "recovery": {
+            "action": "manual",
+            "hint": "Quitar el secreto del contenido y referenciarlo (nombre de la variable de entorno o del gestor de secretos) en vez de copiarlo. `secrets` en el envelope dice qué patrón y en qué línea, ya redactado.",
+            "docs": None,
+        },
+    },
     "NO_CONTENT": {
         "category": "validation",
         "severity": "error",

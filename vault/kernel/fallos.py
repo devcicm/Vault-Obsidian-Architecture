@@ -67,6 +67,10 @@ CAUSAS: Dict[str, str] = {
     "CONFIRMACION_REQUERIDA":
         "la operación borra datos del usuario y no se confirmó. No tiene "
         "default permisivo a propósito.",
+    "SECRETO_EN_CONTENIDO":
+        "el contenido lleva una credencial con forma reconocible (clave de "
+        "nube, token, clave privada). No se escribió nada: un secreto en "
+        "una nota viaja con cada copia, backup e índice del vault.",
     "INDICE_ILEGIBLE":
         "un índice compartido existe pero no se puede leer como JSON. No es lo mismo que no existir: cederlo vacío haría que el guardado borrase sus "
         "entradas y reiniciase sus correlativos.",

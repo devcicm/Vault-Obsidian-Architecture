@@ -7665,6 +7665,16 @@
         "docs": null
       }
     },
+    "SECRET_DETECTED": {
+      "category": "governance",
+      "severity": "error",
+      "message": "El contenido incluye un secreto; no se escribió nada.",
+      "recovery": {
+        "action": "manual",
+        "hint": "Quitar el secreto del contenido y referenciarlo (nombre de la variable de entorno o del gestor de secretos) en vez de copiarlo. `secrets` en el envelope dice qué patrón y en qué línea, ya redactado.",
+        "docs": null
+      }
+    },
     "SERVICE_UNAVAILABLE": {
       "category": "dependency",
       "severity": "error",
