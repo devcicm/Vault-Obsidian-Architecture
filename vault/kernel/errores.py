@@ -1756,6 +1756,39 @@ def construir_error(
     return entry
 
 
+def completar_envelope(tool: str, envelope: Dict[str, Any]) -> Dict[str, Any]:
+    """Lleva un envelope de error construido a mano a la forma canónica (D5).
+
+    Medido en v40.34: `vault_write` y `vault_ingest` devolvían `{"ok": False,
+    "error_code": …, "error": …}` sin `category`, `severity`, `recovery` ni
+    `timestamp`, y el consumidor no tenía `recovery.action` por el que decidir.
+    Se aplica en la salida de la tool, no en cada `return`: un solo sitio.
+
+    - Lo propio del sitio (`norm_code`, `fixes`, `preflight`, …) se conserva.
+    - Lo canónico (`tool`, `category`, `severity`, `timestamp`) lo pone el
+      catálogo; el sitio no lo pisa, porque es lo que el consumidor lee.
+    - `message` del sitio gana sobre el del catálogo, y si no hay, `error`.
+    - Un `recovery` en cadena es más específico que el del catálogo y pasa a
+      `recovery.hint`; la `action` sigue saliendo del catálogo.
+
+    Un éxito, o un fallo sin `error_code`, se devuelve tal cual: inventarle un
+    código sería el defecto que AP-52 persigue.
+    """
+    if envelope.get("ok") is not False or not envelope.get("error_code"):
+        return envelope
+    propio = dict(envelope)
+    code = propio.pop("error_code")
+    mensaje = propio.pop("message", None) or propio.get("error")
+    recuperacion = propio.pop("recovery", None)
+    for clave in _ErrorEnvelopeBase.__annotations__:
+        propio.pop(clave, None)
+    entry = construir_error(tool, code, message=mensaje if isinstance(mensaje, str) else None)
+    if isinstance(recuperacion, str) and recuperacion:
+        entry["recovery"] = {**entry["recovery"], "hint": recuperacion}
+    entry.update(propio)
+    return entry
+
+
 # ── DTOs del envelope (D5, v40.34) ────────────────────────────────────────────
 #
 # La forma que `construir_error` produce, escrita como tipo. Hasta aquí el

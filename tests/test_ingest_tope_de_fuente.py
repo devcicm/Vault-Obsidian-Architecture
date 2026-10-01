@@ -77,7 +77,7 @@ def test_el_mismo_texto_grande_se_rechaza_por_las_tres_puertas(tmp_path, puerta)
     assert salida["ok"] is False, salida
     assert salida["error_code"] == "SOURCE_TOO_LARGE", salida
     # El envelope dice cómo salir de aquí (AP-52), no sólo que falló.
-    assert "recovery" in salida and "--max-chars" in salida["recovery"]
+    assert "--max-chars" in salida["recovery"]["hint"]
 
 
 def test_por_debajo_del_tope_no_se_rechaza(tmp_path):

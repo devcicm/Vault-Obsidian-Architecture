@@ -96,6 +96,7 @@ from vault_entorno import leer as _env
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.errores import completar_envelope  # noqa: E402
 from vault.kernel.indices_structural import es_nombre_reservado  # noqa: E402
 
 
@@ -1249,7 +1250,9 @@ Notas:
         with open(args.meta_file, "r", encoding="utf-8") as f:
             meta = json.load(f)
 
-    result = vault_write(args.folder, title, content, args.tags, meta)
+    # D5: los guards de contenido devuelven el envelope a mano; sale canónico.
+    result = completar_envelope(
+        "vault_write", vault_write(args.folder, title, content, args.tags, meta))
 
     print(json.dumps(result, indent=2, ensure_ascii=False))
 

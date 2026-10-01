@@ -92,6 +92,7 @@ from vault_entorno import leer as _env
 
 from vault.consulta.repositorio import RepositorioConsulta  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.errores import completar_envelope  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -538,6 +539,7 @@ Notas:
 
     source = _check_size(_read_source(args), args.max_chars)
     if not source.get("ok"):
+        source = completar_envelope("vault_ingest", source)
         print(json.dumps(source, indent=2, ensure_ascii=False))
         return 1
 
@@ -547,6 +549,8 @@ Notas:
         commit=args.commit and not args.dry_run, max_notes=args.max_notes,
         tags=args.tags, agent=args.agent,
     )
+    # D5: un solo sitio lleva los envelopes a mano a la forma canónica.
+    result = completar_envelope("vault_ingest", result)
 
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0 if result.get("ok") else 1

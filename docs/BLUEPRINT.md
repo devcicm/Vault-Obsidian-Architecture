@@ -85,7 +85,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-08** — Documentación anclada a versiones obsoletas | audit | — | — |
 | **AP-09** — Runbooks fuera de estructura | audit | `framework` | `test_vault_norms_audit.py` |
 | **AP-10** — Migración sin plan de rollback | audit | `framework` | — |
-| **AP-11** — Skeleton files — frontmatter válido, contenido vacío | guard | — | `test_voice.py` |
+| **AP-11** — Skeleton files — frontmatter válido, contenido vacío | guard | — | `test_envelope_forma.py`, `test_voice.py` |
 | **AP-12** — Frontmatter inconsistente entre notas del mismo tipo | audit | — | — |
 | **AP-13** — Timestamps inválidos o incompletos en frontmatter | audit | — | — |
 | **AP-14** — Wiki-links rotos o vacíos | guard+audit | — | `test_norms_coherence.py` |
