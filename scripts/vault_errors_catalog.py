@@ -6,6 +6,11 @@ no necesite importar ``scripts/``. Se reexportan los nombres públicos para
 preservar los consumidores históricos.
 """
 
-from vault.kernel.errores import ERROR_CATALOG, construir_error, get_error
+from vault.kernel.errores import (
+    ERROR_CATALOG, completar_envelope, construir_error, get_error, problemas_de_forma,
+)
 
-__all__ = ["ERROR_CATALOG", "construir_error", "get_error"]
+__all__ = [
+    "ERROR_CATALOG", "completar_envelope", "construir_error", "get_error",
+    "problemas_de_forma",
+]

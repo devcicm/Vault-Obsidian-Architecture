@@ -43,7 +43,9 @@ from vault_entorno import leer as _env
 from vault_raiz import get_vault_root, vault_root_origin
 from typing import Any, Callable, Dict, List, Optional
 
-from vault_errors_catalog import ERROR_CATALOG, construir_error, get_error
+from vault_errors_catalog import (
+    ERROR_CATALOG, completar_envelope, construir_error, get_error, problemas_de_forma,
+)
 from vault_errors_trace import log_trace, log_token_usage
 from vault.autoria.voz import speak as _speak_estable
 
@@ -279,7 +281,16 @@ def _inject_voice(data: Any, tool_name: str, writes: Optional[Dict[str, int]]) -
 def _inject_tool_envelope(
     text: str, tool_name: str, writes: Optional[Dict[str, int]] = None
 ) -> str:
-    """Inyecta tool+timestamp en el JSON de salida si aún no los tiene."""
+    """Inyecta tool+timestamp en el JSON de salida si aún no los tiene.
+
+    Un fallo con `error_code` construido a mano sale en la forma del contrato
+    (AP-52, v40.34): había 82 `return {"ok": False, "error_code": …}` en 30
+    tools, sin `category`, `severity`, `recovery` ni `timestamp`. Se canoniza
+    aquí, la salida por la que pasan todas, y no en cada `return`: así el 83
+    no nace igual. Sus textos pasan por el mismo reductor de rutas que
+    `emit_error`, para que el error hecho a mano no publique más que el
+    canónico.
+    """
     text = text.strip()
     if not text:
         return text
@@ -288,6 +299,15 @@ def _inject_tool_envelope(
         if isinstance(data, dict) and data.get("ok") is True and "tool" not in data:
             data["tool"] = tool_name
             data["timestamp"] = datetime.now(timezone.utc).isoformat()[:19] + "Z"
+            log_trace(data)
+        elif (isinstance(data, dict) and data.get("ok") is False
+              and data.get("error_code") and problemas_de_forma(data)):
+            # Solo lo que no está en forma: lo que ya emitió `emit_error` está
+            # canónico y en el trace, y rehacerlo lo registraría dos veces.
+            data = completar_envelope(tool_name, data)
+            for clave in ("message", "error"):
+                if isinstance(data.get(clave), str):
+                    data[clave] = _sin_rutas_locales(data[clave])
             log_trace(data)
         _inject_voice(data, tool_name, writes)
         return json.dumps(data, ensure_ascii=False)
