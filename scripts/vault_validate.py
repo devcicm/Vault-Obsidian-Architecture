@@ -38,6 +38,7 @@ from vault_encoding import strip_bom
 from vault_errors import emit_error, wrap_main
 
 from vault_io import assert_within_vault
+from vault.kernel.frontmatter_parsing import FrontmatterParseError, parse_frontmatter_with_body
 from vault_fundamentals_catalog import cia_valores
 
 import yaml
@@ -195,30 +196,28 @@ def validate_frontmatter(note_path: Path) -> Dict[str, Any]:
         return {"valid": False, "error": "No frontmatter block"}
 
 
-    parts = content.split("---", 2)
-
-    if len(parts) < 3:
-
-        return {"valid": False, "error": "Frontmatter not closed"}
-
-
+    # AP-44 / AP-57: el bloque se cierra en una línea que es `---`, no en
+    # cualquier `---` del texto. `split("---", 2)` cortaba dentro de un título
+    # entre comillas —`title: "x\n---"`, YAML válido y escrito así por el
+    # propio `vault_write`— y declaraba rota la nota. El corte lo decide el
+    # dueño del criterio; aquí solo se conserva el motivo del rechazo, que el
+    # dueño encadena como causa.
     try:
 
-        data = yaml.safe_load(parts[1])
+        data, cuerpo = parse_frontmatter_with_body(content)
 
-    except (yaml.YAMLError, RecursionError) as e:
+    except FrontmatterParseError as e:
 
-        # AP-61: `RecursionError` no hereda de `YAMLError` y el parser de PyYAML
-        # es recursivo — el porqué completo está en el dueño canónico del
-        # criterio, `vault_lib.parse_frontmatter`. Aquí no se delega en él
-        # porque esta función devuelve el motivo del rechazo (`{"valid": …,
-        # "error": …}`) y el dueño devuelve `{}` sin decir por qué.
-        return {"valid": False, "error": f"YAML parse error: {e}"}
+        if e.__cause__ is None:
+
+            return {"valid": False, "error": "Frontmatter is not a YAML mapping"}
+
+        return {"valid": False, "error": f"YAML parse error: {e.__cause__}"}
 
 
-    if not isinstance(data, dict):
+    if cuerpo == content:
 
-        return {"valid": False, "error": "Frontmatter is not a YAML mapping"}
+        return {"valid": False, "error": "Frontmatter not closed"}
 
 
     # v37: required fields expanded
