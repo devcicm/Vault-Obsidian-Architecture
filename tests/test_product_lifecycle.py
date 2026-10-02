@@ -148,3 +148,37 @@ def test_producto_lifecycle_no_importa_scripts_ni_checkout():
     assert "scripts/" not in source
     assert "REPO_ROOT" not in source
     assert "sys.path" not in source
+
+
+def test_cada_fallo_del_ciclo_de_vida_lleva_su_codigo_y_su_pista(tmp_path, capsys, monkeypatch):
+    """Medido el 2026-10-01 con la wheel: `vault init` sobre un padre que no
+    existe salía como INVALID_ACTION con la pista «Ejecutar el script con
+    --help para ver las acciones disponibles». Todo fallo de init, doctor y
+    status salía igual: el consumidor no podía distinguir una ruta mala de un
+    runtime dañado, y la pista no tenía nada que ver con ninguno."""
+    from vault.kernel.errores import ERROR_CATALOG
+
+    monkeypatch.setattr("vault.product_cli.toolkit_version", lambda: "test")
+    fichero = tmp_path / "fichero.txt"
+    fichero.write_text("x", encoding="utf-8")
+    ocupado = tmp_path / "ocupado"
+    ocupado.mkdir()
+    (ocupado / "nota.md").write_text("de otro", encoding="utf-8")
+    sin_seccion = tmp_path / "sin-seccion"
+    assert producto.inicializar_runtime(sin_seccion)["ok"]
+    shutil.rmtree(sin_seccion / "07_Knowledge")
+    casos = {
+        "INIT_INVALID_TARGET": ["init", str(tmp_path / "no-existe" / "hijo")],
+        "INIT_CONFLICT": ["init", str(ocupado)],
+        "RUNTIME_MISSING": ["doctor", str(tmp_path / "no-existe")],
+        "NOT_RUNTIME": ["doctor", str(fichero)],
+        "STANDARD_VERSION_MISSING": ["doctor", str(ocupado)],
+        "SYSTEM_FILES_MISSING": ["status", str(sin_seccion)],
+    }
+    for estado, argv in casos.items():
+        assert main(argv) != 0
+        error = json.loads(capsys.readouterr().err)
+        assert error["state"] == estado, error
+        assert error["error_code"] in ERROR_CATALOG, error
+        assert error["error_code"] != "INVALID_ACTION", (estado, error)
+        assert "--help" not in error["recovery"]["hint"], (estado, error)

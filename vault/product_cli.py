@@ -132,14 +132,66 @@ _PISTAS_DE_RESOLUCION = {
 }
 
 
+#: Código del catálogo y pista para cada fallo de init, doctor y status. Hasta
+#: 2026-10-01 todos salían como INVALID_ACTION con la pista de `--help`: una
+#: ruta mala y un runtime dañado eran indistinguibles para el consumidor.
+_CICLO_DE_VIDA = {
+    "INIT_INVALID_TARGET": (
+        "INVALID_PATH",
+        "Indica un directorio vacío o inexistente cuyo padre exista: "
+        "`vault init` no crea directorios intermedios.",
+    ),
+    "INIT_CONFLICT": (
+        "INVALID_PATH",
+        "El directorio tiene contenido y no es un runtime: `vault init` nunca "
+        "mezcla el seed con datos ajenos. Usa un directorio vacío.",
+    ),
+    "INIT_FAILED": (
+        "UNEXPECTED_ERROR",
+        "No quedó nada a medias; el detalle está en `message`. Comprueba "
+        "permisos y espacio en el directorio padre.",
+    ),
+    "RUNTIME_MISSING": (
+        "VAULT_NOT_FOUND",
+        "Crea el runtime con `vault init <ruta>` o indica uno existente.",
+    ),
+    "NOT_RUNTIME": (
+        "VAULT_NOT_FOUND",
+        "La ruta no es un directorio: indica la raíz de un runtime.",
+    ),
+    "STANDARD_VERSION_MISSING": (
+        "VERSION_READ_ERROR",
+        "Falta 00_System/standard-version.json: el directorio no es un runtime "
+        "creado por `vault init`, o se borró ese fichero.",
+    ),
+    "STANDARD_VERSION_INVALID": (
+        "VERSION_READ_ERROR",
+        "00_System/standard-version.json no se puede leer; el detalle está en "
+        "`message`.",
+    ),
+    "SYSTEM_FILES_MISSING": (
+        "FOLDER_NOT_FOUND",
+        "Faltan las rutas de `missing`; vault_standard_upgrade --check las "
+        "detecta y migra.",
+    ),
+    "STANDARD_INCOMPATIBLE": (
+        "VERSION_NOT_FOUND",
+        "El runtime es de otra versión del estándar: si es más nueva, actualiza "
+        "el paquete; si es más vieja, vault_standard_upgrade --check da la ruta.",
+    ),
+}
+
+
 def _error(state: str, detail: str, exit_code: int) -> int:
+    code, pista = _CICLO_DE_VIDA.get(
+        state, ("INVALID_ACTION", _PISTAS_DE_RESOLUCION.get(state)))
     _emit(
         construir_error(
             "vault",
-            "INVALID_ACTION",
+            code,
             detail,
             extra={"state": state, "error": detail},
-            pista=_PISTAS_DE_RESOLUCION.get(state),
+            pista=pista,
         ),
         stream=sys.stderr,
     )
