@@ -78,10 +78,22 @@ def _move_log() -> Path:
 VAULT_SECTIONS = frozenset(ORDERED_SECTIONS)
 
 
-def _load_ontology() -> Dict[str, Any]:
-    if not ONTOLOGY_FILE.exists():
-        return {}
-    return json.loads(ONTOLOGY_FILE.read_text(encoding="utf-8"))
+def _load_ontology() -> Tuple[Dict[str, Any], str]:
+    """`(ontología, origen)`: la del vault primero, la del paquete después.
+
+    `vault_init` copia la ontología a `00_System/vault-ontology.json` para que
+    cada vault pueda ajustarla; leer solo la de `__file__` dejaba esa copia sin
+    consumidor. Sin ninguna de las dos el origen es `ausente` y el resultado lo
+    dice: devolver `{}` a secas tipaba el grafo con cero predicados bajo un
+    `ok: true` igual al de un grafo bien tipado (AP-51).
+    """
+    for origen, ruta in (
+        ("vault", _repo().dir_sistema / "vault-ontology.json"),
+        ("paquete", ONTOLOGY_FILE),
+    ):
+        if ruta.exists():
+            return json.loads(ruta.read_text(encoding="utf-8")), origen
+    return {}, "ausente"
 
 
 def _is_vault_note(note_path: Path) -> bool:
@@ -583,7 +595,7 @@ def vault_graph_merge(
     Returns:
         Dict with nodes, edges, stats, diagnostics, and metadata.
     """
-    ontology = _load_ontology()
+    ontology, ontology_source = _load_ontology()
 
     nodes, wiki_edges, broken_links, stem_map = _build_wiki_link_graph()
 
@@ -646,6 +658,7 @@ def vault_graph_merge(
             "generator_version": CURRENT_VERSION,
             "merged_at": now_iso,
             "ontology_version": ontology.get("version", "unknown"),
+            "ontology_source": ontology_source,
             "total_edges": total_edges,
             "wiki_edges": len(wiki_edges),
             "entity_edges": len(entity_edges),
@@ -685,6 +698,12 @@ def vault_graph_merge(
     atomic_write_json(_enriched_file(), enriched)
 
     next_actions = []
+    if ontology_source == "ausente":
+        next_actions.append(
+            "Sin ontología: ni 00_System/vault-ontology.json ni la del paquete "
+            "existen, así que ninguna relación se tipó contra predicados válidos "
+            "(AP-51). Ejecutar vault_init o reinstalar el toolkit."
+        )
     if unresolved_entity > 0:
         next_actions.append(
             f"{unresolved_entity} entity relations con endpoints no resueltos (AP-34). "
