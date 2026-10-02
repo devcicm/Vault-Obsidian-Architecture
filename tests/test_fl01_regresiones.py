@@ -116,6 +116,11 @@ class TestIdentidadConflicto:
         assert resultado["error_code"] == "IDENTITY_CONFLICT"
         assert resultado["conflict_project"] is None
         assert resultado["attempted_project"] == "proj-B"
+        # Medido 2026-10-01: el mensaje decía «ya existe con project='None'»,
+        # el mismo defecto que ya se corrigió para `title:`. El dato conserva
+        # el None; la prosa no lo imprime como si fuera un proyecto.
+        assert "'None'" not in resultado["message"]
+        assert "sin `project:`" in resultado["message"]
 
     def test_slug_collision_diferente_titulo_mismo_slug_project_diferente(self, tmp_path):
         """'Mi Title' y 'MI  TITLE' producen el mismo slug; project diferente → conflicto."""

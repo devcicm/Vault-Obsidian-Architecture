@@ -240,7 +240,9 @@ def guardar_conocimiento(
         if existing_legible and (existing_project or None) != (project or None):
             return construir_error(
                 "vault_knowledge_save", "IDENTITY_CONFLICT",
-                f"el slug '{filename}' ya existe con project='{existing_project}'",
+                f"el slug '{filename}' ya existe "
+                + (f"con project='{existing_project}'" if existing_project
+                   else "sin `project:` en el frontmatter"),
                 extra={
                     "path": path.relative_to(runtime).as_posix(),
                     "conflict_project": existing_project,
