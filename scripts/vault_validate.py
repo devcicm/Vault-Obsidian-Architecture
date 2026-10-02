@@ -455,7 +455,15 @@ def vault_validate(
             partes.append(f"{len(result['structure']['missing'])} carpeta(s) ausente(s)")
         if (result.get("indexes") or {}).get("invalid"):
             partes.append(f"{len(result['indexes']['invalid'])} índice(s) inválido(s)")
-        result["error_code"] = "VALIDATION_FAILED"
+        # Solo índices ausentes —el caso de todo runtime recién creado— tiene
+        # una recuperación ejecutable: la de INDEX_NOT_FOUND. Con notas o
+        # carpetas mal, reindexar no lo arregla y el código no lo promete.
+        indices = (result.get("indexes") or {}).get("invalid") or []
+        solo_indices_ausentes = (
+            len(partes) == 1 and indices
+            and all(i.endswith("(missing)") for i in indices))
+        result["error_code"] = (
+            "INDEX_NOT_FOUND" if solo_indices_ausentes else "VALIDATION_FAILED")
         result["message"] = "Validación con problemas: " + ", ".join(partes) + "."
         result = completar_envelope("vault_validate", result)
 

@@ -63,3 +63,39 @@ def test_ap52_validacion_limpia_no_inventa_codigo(vault):
     rc, r = _validate(vault, "--folder", "07_Knowledge", "--check", "frontmatter")
     assert rc == 0 and r["ok"] is True, r
     assert "error_code" not in r and "recovery" not in r
+
+
+def test_un_runtime_nuevo_sin_indices_recibe_la_recuperacion_que_lo_arregla(tmp_path):
+    """Medido el 2026-10-01 con la wheel: `vault init` y `vault_validate`
+    daban VALIDATION_FAILED con `fix_input` y la pista de editar notas, cuando
+    lo único que faltaba eran los índices. El consumidor sigue la recuperación
+    del envelope tal cual y la validación tiene que quedar limpia."""
+    from vault.ciclo_de_vida import producto
+
+    raiz = tmp_path / "runtime"
+    assert producto.inicializar_runtime(raiz)["ok"]
+    rc, r = _validate(raiz)
+    assert r["error_code"] == "INDEX_NOT_FOUND", r
+    assert r["indexes"]["invalid"], "el detalle de la medida se conserva"
+
+    rec = r["recovery"]
+    assert rec["action"] == "run_tool"
+    env = dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",
+               PYTHONIOENCODING="utf-8")
+    p = subprocess.run(
+        [sys.executable, str(SCRIPTS / f"{rec['tool']}.py"), *rec["args"]],
+        env=env, capture_output=True, text=True, encoding="utf-8",
+        errors="replace", cwd=str(tmp_path), timeout=300)
+    assert p.returncode == 0, p.stderr[-1000:]
+
+    rc, r = _validate(raiz)
+    assert rc == 0 and r["ok"] is True, r
+
+
+def test_notas_invalidas_y_sin_indices_sigue_siendo_validation_failed(vault):
+    (vault / "07_Knowledge" / "rota.md").write_text(
+        "---\ntitle: [sin cerrar\n---\n\ncuerpo\n", encoding="utf-8")
+    rc, r = _validate(vault, "--check", "all")
+    assert r["indexes"]["invalid"] and r["invalid"], r
+    assert r["error_code"] == "VALIDATION_FAILED", (
+        "reindexar no arregla una nota rota: el código no puede prometerlo")
