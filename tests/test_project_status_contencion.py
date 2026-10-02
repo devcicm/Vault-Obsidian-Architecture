@@ -42,3 +42,24 @@ def test_ap36_un_proyecto_con_traversal_no_crea_nada_fuera_del_vault(tmp_path):
     assert env["ok"] is False
     assert env["error_code"] == "INVALID_PATH", env
     assert not (tmp_path / "fuera").exists(), "creó un directorio fuera del vault"
+
+
+def test_ap46_el_proyecto_con_almohadilla_no_se_trunca_en_el_frontmatter(tmp_path):
+    """`--project "Alfa #1"` escribía `title: Alfa #1 — Status` y
+    `project: Alfa #1` sin escapar: ` #` abre un comentario YAML, y la nota
+    quedaba con `project: Alfa` — atribuida en silencio a otro proyecto. Se
+    lee con `yaml.safe_load`, que es como la lee el consumidor (AP-44)."""
+    import yaml
+
+    vault = _runtime(tmp_path)
+    proyecto = "Alfa #1 l'beta"
+    env = _ejecutar(vault, "--project", proyecto, "--status", "en_desarrollo",
+                    "--summary", "prueba")
+    assert env["ok"] is True, env
+    texto = (vault / "01_Projects" / proyecto / "status.md").read_text(encoding="utf-8")
+    fm = yaml.safe_load(texto.split("---\n", 2)[1])
+    assert fm["project"] == proyecto
+    # El guion largo lo normaliza la capa de escritura (`vault_encoding`), en
+    # todo el fichero y desde antes: no es parte de este defecto.
+    assert fm["title"].startswith(proyecto) and fm["title"].endswith("Status")
+    assert fm["tags"] == ["status", proyecto]

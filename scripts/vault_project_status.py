@@ -30,7 +30,7 @@ import sys
 
 from vault_errors import emit_error, wrap_main
 from vault_norms_catalog import status_frontmatter_lines
-from vault_lib import utcnow
+from vault_lib import utcnow, yaml_scalar
 import uuid
 
 from pathlib import Path
@@ -129,13 +129,19 @@ def vault_project_status(
         status_frontmatter_lines("vault_project_status", status)
     )
 
+    # AP-46: el proyecto entra al YAML escapado. Crudo, `Alfa #1` dejaba
+    # `project: Alfa` —` #` abre un comentario— y la nota quedaba atribuida
+    # a otro proyecto (medido 2026-10-01). En la lista de flujo va como
+    # JSON: un escalar plano con `,` o `]` también la rompería.
+    titulo_yaml = yaml_scalar(f"{project} — Status")
+
     status_content = f"""---
 
-title: {project} — Status
+title: {titulo_yaml}
 
 id: {note_id}
 
-project: {project}
+project: {yaml_scalar(project)}
 
 {status_lines}
 
@@ -143,7 +149,7 @@ createdAt: {created_at}
 
 updatedAt: {now}
 
-tags: ["status", "{project}"]
+tags: ["status", {json.dumps(project, ensure_ascii=False)}]
 
 ---
 
