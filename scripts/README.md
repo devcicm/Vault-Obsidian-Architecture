@@ -448,6 +448,8 @@ python vault_graph_merge.py --predicate-filter depends_on,implements,calls
 
 **Aristas únicas.** Las aristas se consolidan por `(from, predicate, to)` con `vault/grafo/aristas.consolidar_aristas`, por fuente y después en conjunto: cada una lleva `id` y `occurrences`, y si dos declaraciones de la misma relación difieren en un atributo (`label`, `cardinality`…) lo distinto se conserva en `variants` en vez de quedarse con la primera.
 
+**Un predicado desconocido se informa, no se corrige (AP-32).** Si el `relationType`/`type` no está en la ontología ni en `predicate_synonyms`, la arista conserva el que escribió el autor con `predicate_known: false`, y `unknownPredicates` lo publica con `source`, `suggestion` (el predicado válido más parecido, que no se aplica) y `occurrences`. Hasta ahora se sustituía en silencio por el parecido y la lista no se emitía.
+
 ---
 
 ### `vault_graph_inspect.py`

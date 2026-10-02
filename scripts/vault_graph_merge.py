@@ -421,11 +421,45 @@ def _resolver_extremo(
     return ""
 
 
-def _merge_entity_relations(ontology: Dict[str, Any], identidades: "_Identidades") -> List[Dict]:
+def _registrar_predicado_desconocido(
+    desconocidos: Dict[Tuple[str, str, str], Dict],
+    predicate: str,
+    raw_predicate: str,
+    source: str,
+    valid_predicates: Set[str],
+) -> None:
+    """AP-32: el predicado fuera de la ontología se informa, no se corrige.
+
+    `_closest_predicate` lo sustituía por el más parecido (ratio ≥ 0.5) y la
+    lista era una variable local que nadie emitía: la arista afirmaba un
+    predicado que el autor no escribió y el informe que el catálogo promete
+    no existía. Lo parecido es una sugerencia (AP-17); se agrupa por
+    predicado para que mil relaciones con la misma errata sean una entrada.
+    """
+    firma = (predicate, raw_predicate, source)
+    entrada = desconocidos.get(firma)
+    if entrada is None:
+        desconocidos[firma] = {
+            "predicate": predicate,
+            "raw_predicate": raw_predicate,
+            "source": source,
+            "suggestion": _closest_predicate(predicate, valid_predicates),
+            "occurrences": 1,
+        }
+    else:
+        entrada["occurrences"] += 1
+
+
+def _merge_entity_relations(
+    ontology: Dict[str, Any],
+    identidades: "_Identidades",
+    desconocidos: Optional[Dict[Tuple[str, str, str], Dict]] = None,
+) -> List[Dict]:
     """Read entity relations and convert to enriched edges."""
     edges: List[Dict] = []
     unresolved: List[Dict] = []
-    unknown_predicates: List[Dict] = []
+    if desconocidos is None:
+        desconocidos = {}
 
     valid_predicates = set(ontology.get("predicates", {}).keys())
     synonym_map = ontology.get("predicate_synonyms", {})
@@ -483,21 +517,17 @@ def _merge_entity_relations(ontology: Dict[str, Any], identidades: "_Identidades
             # Se reportan los dos —`predicate` y `raw_predicate`— porque sin el
             # crudo no se puede saber si el fallo fue del autor o del mapa de
             # sinónimos, que es lo que el consumidor necesita para arreglarlo.
-            if predicate not in valid_predicates:
-                closest = _closest_predicate(predicate, valid_predicates)
-                unknown_predicates.append({
-                    "predicate": predicate,
-                    "raw_predicate": raw_predicate,
-                    "source": "entity",
-                    "suggestion": closest,
-                })
-                if closest:
-                    predicate = closest
+            predicate_known = predicate in valid_predicates
+            if not predicate_known:
+                _registrar_predicado_desconocido(
+                    desconocidos, predicate, raw_predicate, "entity", valid_predicates
+                )
 
             edge = {
                 "from": from_path or from_entity,
                 "to": to_path or to_entity,
                 "predicate": predicate,
+                "predicate_known": predicate_known,
                 "source": "entity_relations",
                 "project": project,
                 "cardinality": rel.get("cardinality"),
@@ -510,11 +540,16 @@ def _merge_entity_relations(ontology: Dict[str, Any], identidades: "_Identidades
     return edges
 
 
-def _merge_code_relations(ontology: Dict[str, Any], identidades: "_Identidades") -> List[Dict]:
+def _merge_code_relations(
+    ontology: Dict[str, Any],
+    identidades: "_Identidades",
+    desconocidos: Optional[Dict[Tuple[str, str, str], Dict]] = None,
+) -> List[Dict]:
     """Read code relations and convert to enriched edges."""
     edges: List[Dict] = []
     unresolved: List[Dict] = []
-    unknown_predicates: List[Dict] = []
+    if desconocidos is None:
+        desconocidos = {}
 
     valid_predicates = set(ontology.get("predicates", {}).keys())
     synonym_map = ontology.get("predicate_synonyms", {})
@@ -561,21 +596,17 @@ def _merge_code_relations(ontology: Dict[str, Any], identidades: "_Identidades")
                 "missing_endpoints": unresolved_parts,
             })
 
-        if predicate not in valid_predicates:
-            closest = _closest_predicate(predicate, valid_predicates)
-            unknown_predicates.append({
-                "predicate": predicate,
-                "raw_predicate": raw_predicate,
-                "source": "code",
-                "suggestion": closest,
-            })
-            if closest:
-                predicate = closest
+        predicate_known = predicate in valid_predicates
+        if not predicate_known:
+            _registrar_predicado_desconocido(
+                desconocidos, predicate, raw_predicate, "code", valid_predicates
+            )
 
         edge = {
             "from": from_path or from_file,
             "to": to_path or to_file,
             "predicate": predicate,
+            "predicate_known": predicate_known,
             "source": "code_relations",
             "project": rel.get("project", ""),
             "cardinality": rel.get("cardinality"),
@@ -588,7 +619,7 @@ def _merge_code_relations(ontology: Dict[str, Any], identidades: "_Identidades")
 
 
 def _closest_predicate(predicate: str, valid: Set[str]) -> Optional[str]:
-    """Find the closest valid predicate by string similarity."""
+    """El predicado válido más parecido: solo para `suggestion`, nunca se aplica (AP-32)."""
     best = None
     best_score = 0.0
     for v in valid:
@@ -669,8 +700,10 @@ def vault_graph_merge(
     # Una arista por relación (from, predicate, to): por fuente, para que las
     # métricas de cada una cuenten relaciones, y después el conjunto.
     wiki_edges = consolidar_aristas(wiki_edges)
-    entity_edges = consolidar_aristas(_merge_entity_relations(ontology, identidades))
-    code_edges = consolidar_aristas(_merge_code_relations(ontology, identidades))
+    desconocidos: Dict[Tuple[str, str, str], Dict] = {}
+    entity_edges = consolidar_aristas(_merge_entity_relations(ontology, identidades, desconocidos))
+    code_edges = consolidar_aristas(_merge_code_relations(ontology, identidades, desconocidos))
+    unknown_predicates = list(desconocidos.values())
 
     all_edges = consolidar_aristas(wiki_edges + entity_edges + code_edges)
 
@@ -746,6 +779,7 @@ def vault_graph_merge(
             "brokenWikiLinks": len(broken_links),
             "ambiguousLinks": len(identidades.ambiguos),
             "suggestions": len(identidades.sugerencias),
+            "unknownPredicates": len(unknown_predicates),
             "deletedNodes": deleted_nodes,
             "predicateCounts": predicate_counts,
         },
@@ -753,6 +787,7 @@ def vault_graph_merge(
         "brokenLinks": broken_links,
         "ambiguousLinks": identidades.ambiguos,
         "suggestions": identidades.sugerencias,
+        "unknownPredicates": unknown_predicates,
         "diagnostics": {
             "entity_relations": {
                 "total": len(entity_edges),
@@ -794,6 +829,12 @@ def vault_graph_merge(
             "sugerencias de identidad (AP-17): un nombre parecido, un title: o dos notas "
             "con el mismo nombre no crean arista. Confirmar con la carpeta en el enlace, "
             "un alias o renombrando; ver suggestions en graph-enriched.json."
+        )
+    if unknown_predicates:
+        next_actions.append(
+            f"{len(unknown_predicates)} predicados fuera de la ontología (AP-32): la arista "
+            "conserva el que se escribió y la suggestion de unknownPredicates no se aplica. "
+            "Corregir el relationType/type o añadirlo a predicate_synonyms."
         )
     if typed_edges == 0 and (entity_edges or code_edges):
         next_actions.append(

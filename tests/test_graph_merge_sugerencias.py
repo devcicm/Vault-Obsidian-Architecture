@@ -163,3 +163,29 @@ def test_ap17_una_entidad_por_title_es_sugerencia(vault):
     assert any(
         s["endpoint"] == "Billing Engine" and s["criterion"] == "title" for s in g["suggestions"]
     ), g["suggestions"]
+
+
+def test_ap32_un_predicado_desconocido_no_se_sustituye_por_el_parecido(vault):
+    """`_closest_predicate` cambiaba `depend_on` por `depends_on` en silencio y
+    `unknown_predicates` era una variable local que nadie leía: la arista
+    afirmaba un predicado que el autor no escribió y el catálogo prometía un
+    informe (AP-32) que no existía. Lo parecido es una sugerencia (AP-17)."""
+    _nota(vault, "07_Knowledge/user-service.md", "u", title="U")
+    _nota(vault, "07_Knowledge/orders.md", "o", title="O")
+    (vault / "06_Diagrams" / "entity" / "demo-relations.json").write_text(
+        json.dumps({"project": "demo", "relations": [
+            {"fromEntity": "orders", "toEntity": "user-service", "relationType": "depend_on"},
+            {"fromEntity": "user-service", "toEntity": "orders", "relationType": "depend_on"},
+        ]}),
+        encoding="utf-8",
+    )
+    r, g = _enriquecido(vault)
+    predicados = {e["predicate"] for e in _entidad(g)}
+    assert predicados == {"depend_on"}, predicados
+    assert all(e["predicate_known"] is False for e in _entidad(g))
+    [desconocido] = g["unknownPredicates"]
+    assert desconocido["predicate"] == "depend_on"
+    assert desconocido["source"] == "entity"
+    assert desconocido["suggestion"] == "depends_on"
+    assert desconocido["occurrences"] == 2
+    assert r["stats"]["unknownPredicates"] == 1
