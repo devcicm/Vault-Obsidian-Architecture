@@ -970,6 +970,59 @@ def _detect_malformed_wikilinks(notes: List[Path]) -> List[Dict[str, Any]]:
     return findings
 
 
+#: AP-02: sufijos con los que una nota se declara versión de otra dentro de su
+#: carpeta. Se quitan en bucle: `status-v1-final` es versión de `status`.
+_SUFIJO_DE_VERSION = re.compile(
+    r"^(?P<base>.+?)[-_ .](?:v\d+|final\d*|old|new|copy|copia|draft|borrador|backup|bak)$",
+    re.IGNORECASE,
+)
+
+
+def _tronco_de_version(stem: str) -> Tuple[str, bool]:
+    """El nombre sin sufijos de versión, y si tenía alguno."""
+    tronco, tenia = stem, False
+    while True:
+        m = _SUFIJO_DE_VERSION.match(tronco)
+        if not m:
+            return tronco.lower(), tenia
+        tronco, tenia = m.group("base"), True
+
+
+def _detect_same_folder_versions(notes: List[Path]) -> List[Dict[str, Any]]:
+    """AP-02: varias versiones de la misma nota conviviendo en su carpeta.
+
+    Las hermanas ya se medían —AP-18 por hash entre carpetas, AP-17 por
+    similitud de título— y ninguna veía `status-v1.md` junto a `status-v2.md`:
+    no son idénticas byte a byte y AP-17 compara títulos, que pueden no
+    parecerse. Aquí el criterio es el nombre de fichero, que es por donde
+    Obsidian resuelve el enlace (AP-44): dos ficheros de la misma carpeta cuyo
+    tronco coincide al quitar un sufijo de versión, y al menos uno lo lleva.
+
+    `04_Sessions/` queda fuera, como en AP-17: una sesión se nombra por fecha y
+    `2026-05-31-v095.md` es la sesión de la release 0.95, no otra versión de
+    `2026-05-31.md` — el único hallazgo de los trece consumidores medidos era
+    ese. Parcial por diseño: `status-actualizado.md` no declara versión y no se
+    ve; el catálogo lo dice en `cobertura_parcial`.
+    """
+    grupos: Dict[Tuple[str, str], List[Tuple[str, bool]]] = defaultdict(list)
+    for n in notes:
+        rel = str(n.relative_to(_raiz())).replace("\\", "/")
+        if rel.startswith("04_Sessions/"):
+            continue
+        carpeta = rel.rsplit("/", 1)[0] if "/" in rel else ""
+        tronco, versionada = _tronco_de_version(n.stem)
+        grupos[(carpeta, tronco)].append((rel, versionada))
+
+    hallazgos = []
+    for (carpeta, tronco), miembros in sorted(grupos.items()):
+        if len(miembros) < 2 or not any(v for _, v in miembros):
+            continue
+        hallazgos.append(
+            {"folder": carpeta, "stem": tronco, "files": sorted(r for r, _ in miembros)}
+        )
+    return hallazgos
+
+
 def _detect_cross_folder_duplicates(notes: List[Path]) -> List[Dict[str, Any]]:
     """AP-18: detect byte-identical content across different folders via MD5 hash."""
 
@@ -1846,6 +1899,8 @@ def vault_audit(
 
     cross_folder_dupes = _detect_cross_folder_duplicates(content_notes)
 
+    same_folder_versions = _detect_same_folder_versions(content_notes)
+
     malformed_wikilinks = _detect_malformed_wikilinks(all_notes)
 
     empty_indexes = _detect_empty_indexes(barrido=barrido)
@@ -1943,6 +1998,9 @@ def vault_audit(
     if cross_folder_dupes:
         summary_parts.append(f"{len(cross_folder_dupes)} duplicados AP-18")
 
+    if same_folder_versions:
+        summary_parts.append(f"{len(same_folder_versions)} versiones AP-02")
+
     if malformed_wikilinks:
         ap22_count = sum(
             1 for m in malformed_wikilinks if m.get("norm_code") == "AP-22"
@@ -2014,6 +2072,12 @@ def vault_audit(
             "canonicalShadow": [{"norm_code": "AP-17", **e} for e in canonical_shadow],
             "crossFolderDuplicates": [
                 {"norm_code": "AP-18", **e} for e in cross_folder_dupes
+            ],
+            # AP-02 se informa y no pesa: sin penalización en
+            # vault_audit_catalog.PENALIZACIONES hasta medirla en más vaults
+            # que los trece consumidores, donde dio cero tras excluir sesiones.
+            "sameFolderVersions": [
+                {"norm_code": "AP-02", **e} for e in same_folder_versions
             ],
             "malformedWikilinks": [
                 {"norm_code": "AP-22", **e} for e in malformed_wikilinks

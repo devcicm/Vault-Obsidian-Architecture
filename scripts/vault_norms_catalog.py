@@ -101,18 +101,26 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "status-final.md, status-final2.md. Variantes: same-folder (AP-02), "
             "cross-folder (AP-18), canonical-shadow (AP-17)."
         ),
-        "signal": "vault_audit reporta canonicalShadow o crossFolderDuplicates.",
+        "signal": (
+            "vault_audit reporta sameFolderVersions (AP-02); sus hermanas, "
+            "canonicalShadow (AP-17) y crossFolderDuplicates (AP-18)."
+        ),
         "prevention": "Una nota por entidad. Usar .history/ para versiones anteriores (vault_write lo gestiona automáticamente).",
         "tools_enforcing": [],
-        "tools_detecting": [],
-        "cobertura_descubierta": (
-            "Sus dos variantes hermanas sí se miden —AP-17 canonical-shadow y "
-            "AP-18 cross-folder, ambas con penalización propia en "
-            "vault_audit.PENALIZACIONES—, pero la variante same-folder que es "
-            "AP-02 no la detecta nadie: `status-v1.md` y `status-v2.md` en la "
-            "misma carpeta no son duplicados por hash (AP-18) ni pasan el "
-            "umbral de similitud de título (AP-17). Declararlo aquí es lo que "
-            "impide que la cobertura de las hermanas se lea como suya."
+        "tools_detecting": ["vault_audit"],
+        "cobertura_parcial": (
+            "Estuvo descubierta desde v40.11: las hermanas AP-17 y AP-18 se "
+            "medían y la variante same-folder no la veía nadie, porque "
+            "`status-v1.md` y `status-v2.md` no son idénticos por hash ni "
+            "tienen por qué pasar el umbral de título. Ahora "
+            "`vault_audit._detect_same_folder_versions` mide **la parte que el "
+            "nombre declara**: dos ficheros de la misma carpeta cuyo tronco "
+            "coincide al quitar un sufijo de versión (`-v2`, `-final`, `-old`, "
+            "`-copia`…). Lo que sigue sin medir es la versión que no lo dice "
+            "(`status-actualizado.md`) y `04_Sessions/`, excluida porque allí el "
+            "sufijo nombra una release, no una copia. Se informa sin pesar en el "
+            "healthIndex: medida contra trece consumidores dio cero tras excluir "
+            "sesiones, y un peso no se fija con un solo dato."
         ),
         "introduced_version": "v19",
     },

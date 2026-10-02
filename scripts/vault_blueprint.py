@@ -134,17 +134,19 @@ DEUDA_DECLARADA: List[Dict[str, str]] = [
         "desde": "v40.11",
         "capa": "4",
         "que": (
-            "Cuatro normas no las mide nadie y desde v40.11 lo declaran por escrito "
-            "en `cobertura_descubierta`: AP-01, AP-02, AP-04 y AP-08. AP-02 es la "
-            "variante same-folder, cuyas dos hermanas —AP-17 y AP-18— sí pesan en "
-            "el healthIndex. **El titular de esta entrada era AP-05, la única "
+            "Tres normas no las mide nadie y lo declaran por escrito en "
+            "`cobertura_descubierta`: AP-01, AP-04 y AP-08. Desde v40.11 eran "
+            "cuatro; AP-02, la variante same-folder cuyas hermanas AP-17 y AP-18 "
+            "sí pesan en el healthIndex, pasó a `cobertura_parcial` cuando "
+            "`vault_audit` empezó a medir la versión que el nombre declara "
+            "(`sameFolderVersions`). **El titular de esta entrada era AP-05, la única "
             "`critical` descubierta, y salió en v40.15**: `vault_fuente_unica` "
             "(puerta 16) mide el mismo dato **tipado** —IP, URL, puerto, semver— "
             "con valores distintos en un mismo ámbito. No cerró el problema "
             "general: el catálogo la declara `cobertura_parcial`, porque la "
             "divergencia en prosa, la de valores sin tipo y la del sinónimo "
             "(`ip:` frente a `direccion_ip:`) siguen sin medirlas nadie. La "
-            "entrada sigue pendiente por las otras cuatro, no por AP-05."
+            "entrada sigue pendiente por las otras tres, no por AP-05 ni AP-02."
         ),
         "por_que_no_ahora": (
             "AP-05 tuvo su tanda en v40.15, y lo que la desbloqueó no fue "
@@ -153,7 +155,7 @@ DEUDA_DECLARADA: List[Dict[str, str]] = [
             "igualdad, y su identidad no se adivina —está escrita al lado, como "
             "clave de un `clave: valor`—. Eso quita la semántica de en medio y "
             "deja una parte decidible, que es la que se mide; el resto se "
-            "declara en vez de darse por cubierto. Las cuatro que quedan siguen "
+            "declara en vez de darse por cubierto. Las tres que quedan siguen "
             "sin una reformulación equivalente, y ninguna es `critical`."
         ),
     },
