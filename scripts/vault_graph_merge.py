@@ -33,6 +33,12 @@ from vault_regex import RE_WIKILINK  # dueño único del patrón (AP-50)
 from vault_errors import emit_error, wrap_main
 from vault_version import CURRENT_VERSION  # generator_version de los artefactos (AP-47)
 from vault_io import atomic_write_json, normalize_stem, write_report
+from vault_lib import (  # dueño único de la identidad por nombre (AP-57, AP-17)
+    clave_de_nombre,
+    indice_de_nombres,
+    parse_frontmatter,
+    resolver_wikilink,
+)
 from vault_registry import ORDERED_SECTIONS
 
 ONTOLOGY_FILE = Path(__file__).parent / "vault_ontology.json"
@@ -242,16 +248,47 @@ def _fuzzy_resolve(
     return result
 
 
-def _build_wiki_link_graph() -> Tuple[Dict[str, Dict], List[Dict], List[Dict], Dict[str, str]]:
+class _Identidades:
+    """A qué nota se refiere un nombre, y lo que no llega a fijarlo (AP-17).
+
+    `destinos` es el criterio de Obsidian para los wikilinks —nombre de
+    fichero, sufijo de ruta y `aliases:`—; `por_clave` agrupa por
+    `clave_de_nombre` los nombres de fichero y los alias, que es como se
+    identifica a una entidad o a un fichero de código que no se escribió como
+    enlace. `por_titulo` y la similitud solo sirven para **sugerir**: el
+    `title:` no lo mira Obsidian y un parecido no es una identidad.
+    """
+
+    def __init__(self) -> None:
+        self.destinos: Dict[str, List[str]] = {}
+        self.por_clave: Dict[str, List[str]] = defaultdict(list)
+        self.por_titulo: Dict[str, List[str]] = defaultdict(list)
+        self.ambiguos: List[Dict] = []
+        self.sugerencias: List[Dict] = []
+        self._vistas: Set[Tuple] = set()
+
+    def unicos(self) -> Dict[str, str]:
+        """Clave → ruta de las claves con una sola nota: el universo del fuzzy."""
+        return {clave: rutas[0] for clave, rutas in self.por_clave.items() if len(rutas) == 1}
+
+    def sugerir(self, sugerencia: Dict) -> None:
+        firma = (sugerencia["source"], sugerencia.get("from"), sugerencia["endpoint"])
+        if firma not in self._vistas:
+            self._vistas.add(firma)
+            self.sugerencias.append(sugerencia)
+
+
+def _build_wiki_link_graph() -> Tuple[Dict[str, Dict], List[Dict], List[Dict], "_Identidades"]:
     """Scan all .md notes and build wiki-link graph."""
     nodes: Dict[str, Dict] = {}
     edges: List[Dict] = []
     broken: List[Dict] = []
-    stem_map: Dict[str, str] = {}
+    identidades = _Identidades()
     # Los enlaces se resuelven en una segunda pasada porque necesitan el
-    # stem_map completo, pero no el disco: se guardan aquí al leer la nota.
-    # Releerla duplicaba la E/S y la extracción por nota.
+    # índice de nombres completo, pero no el disco: se guardan aquí al leer la
+    # nota. Releerla duplicaba la E/S y la extracción por nota.
     enlaces: Dict[str, List[str]] = {}
+    aliases_por_ruta: Dict[str, List[str]] = {}
 
     all_files = [
         p for p in _raiz().rglob("*.md")
@@ -260,8 +297,6 @@ def _build_wiki_link_graph() -> Tuple[Dict[str, Dict], List[Dict], List[Dict], D
 
     for p in all_files:
         rel = str(p.relative_to(_raiz())).replace("\\", "/")
-        stem_map[_normalize_stem(p.stem)] = rel
-        fname_stem = _normalize_stem(p.stem)
 
         try:
             content = p.read_text(encoding="utf-8")
@@ -274,10 +309,25 @@ def _build_wiki_link_graph() -> Tuple[Dict[str, Dict], List[Dict], List[Dict], D
 
         title = _extract_title(content) or p.stem
         tags = _extract_tags(content)
+        aliases = parse_frontmatter(content).get("aliases") or []
+        if isinstance(aliases, str):
+            aliases = [aliases]
+        if not isinstance(aliases, list):
+            aliases = []
+        aliases = [a for a in aliases if isinstance(a, str) and a.strip()]
+        aliases_por_ruta[rel] = aliases
 
-        title_stem = _normalize_stem(title)
-        if title_stem != fname_stem:
-            stem_map[title_stem] = rel
+        # Identidad: el nombre de fichero y los alias. El `title:` no fija
+        # nada —Obsidian no lo mira— y solo se guarda para sugerir.
+        clave = clave_de_nombre(p.stem)
+        identidades.por_clave[clave].append(rel)
+        for alias in aliases:
+            clave_alias = clave_de_nombre(alias)
+            if rel not in identidades.por_clave[clave_alias]:
+                identidades.por_clave[clave_alias].append(rel)
+        clave_titulo = clave_de_nombre(title)
+        if clave_titulo != clave:
+            identidades.por_titulo[clave_titulo].append(rel)
 
         folder = rel.split("/")[0] if "/" in rel else ""
         node_class = _folder_to_class(folder)
@@ -294,13 +344,13 @@ def _build_wiki_link_graph() -> Tuple[Dict[str, Dict], List[Dict], List[Dict], D
         }
         enlaces[rel] = wiki_links
 
+    for rutas in (*identidades.por_clave.values(), *identidades.por_titulo.values()):
+        rutas.sort()
+    identidades.destinos = indice_de_nombres(list(nodes), aliases_por_ruta)
+
     for rel, wiki_links in enlaces.items():
         for link in wiki_links:
-            link_norm = _normalize_stem(link)
-            raw_target = link.split("|")[0].strip() if "|" in link else link
-            target_norm = _normalize_stem(raw_target)
-
-            resolved = stem_map.get(target_norm)
+            resolved, candidatos = resolver_wikilink(link, Path(rel), identidades.destinos)
             if resolved:
                 edges.append({
                     "from": rel,
@@ -308,17 +358,69 @@ def _build_wiki_link_graph() -> Tuple[Dict[str, Dict], List[Dict], List[Dict], D
                     "predicate": "wiki_link",
                     "source": "wikilinks",
                 })
+            elif candidatos:
+                identidades.ambiguos.append(
+                    {"from": rel, "link": link, "candidates": candidatos}
+                )
             else:
                 broken.append({
                     "from": rel,
                     "link": link,
                     "targetPath": link.replace("\\", "/"),
                 })
+                nombre = link.split("|")[0].split("#")[0].strip()
+                clave = clave_de_nombre(nombre.replace("\\", "/").rsplit("/", 1)[-1])
+                for criterio, indice in (("name_key", identidades.por_clave),
+                                         ("title", identidades.por_titulo)):
+                    if indice.get(clave):
+                        identidades.sugerir({
+                            "source": "wikilinks",
+                            "from": rel,
+                            "endpoint": nombre,
+                            "criterion": criterio,
+                            "candidates": list(indice[clave]),
+                        })
+                        break
 
-    return nodes, edges, broken, stem_map
+    return nodes, edges, broken, identidades
 
 
-def _merge_entity_relations(ontology: Dict[str, Any], stem_map: Dict[str, str]) -> List[Dict]:
+def _resolver_extremo(
+    nombre: str,
+    identidades: "_Identidades",
+    prefix_index: Dict[str, List[Tuple[str, str]]],
+    source: str,
+) -> str:
+    """La nota de un extremo de relación, o `""` y una sugerencia (AP-17).
+
+    Solo una nota con la misma `clave_de_nombre` —en su nombre de fichero o
+    en un alias— fija el extremo. Dos o más notas con la clave, un `title:`
+    que coincide o un nombre parecido (`_fuzzy_resolve`) dejan el extremo sin
+    resolver y lo publican en `suggestions`: confirmarlo es de quien conoce el
+    vault, renombrando la entidad o añadiendo el alias.
+    """
+    clave = clave_de_nombre(nombre)
+    candidatos = identidades.por_clave.get(clave, [])
+    if len(candidatos) == 1:
+        return candidatos[0]
+    criterio = "ambiguous" if candidatos else ""
+    if not candidatos and identidades.por_titulo.get(clave):
+        candidatos, criterio = identidades.por_titulo[clave], "title"
+    if not candidatos:
+        similar = _fuzzy_resolve(clave, identidades.unicos(), prefix_index)
+        if similar:
+            candidatos, criterio = [similar], "similar"
+    if candidatos:
+        identidades.sugerir({
+            "source": source,
+            "endpoint": nombre,
+            "criterion": criterio,
+            "candidates": list(candidatos),
+        })
+    return ""
+
+
+def _merge_entity_relations(ontology: Dict[str, Any], identidades: "_Identidades") -> List[Dict]:
     """Read entity relations and convert to enriched edges."""
     edges: List[Dict] = []
     unresolved: List[Dict] = []
@@ -332,7 +434,7 @@ def _merge_entity_relations(ontology: Dict[str, Any], stem_map: Dict[str, str]) 
 
     # Construir índice de prefijo UNA VEZ para todas las búsquedas fuzzy
     # (antes se hacía O(n) por cada relación no resuelta → ahora O(1) amortizado)
-    prefix_index = _build_prefix_index(stem_map)
+    prefix_index = _build_prefix_index(identidades.unicos())
 
     for rel_file in _entity_dir().glob("*relations.json"):
         try:
@@ -359,26 +461,8 @@ def _merge_entity_relations(ontology: Dict[str, Any], stem_map: Dict[str, str]) 
 
             from_entity = rel.get("fromEntity", "")
             to_entity = rel.get("toEntity", "")
-            from_norm = _normalize_stem(from_entity)
-            to_norm = _normalize_stem(to_entity)
-
-            from_path = stem_map.get(from_norm, "")
-            to_path = stem_map.get(to_norm, "")
-
-            if not from_path or not to_path:
-                for entity_name, is_from in [(from_entity, True), (to_entity, False)]:
-                    entity_norm = _normalize_stem(entity_name)
-                    if is_from and from_path:
-                        continue
-                    if not is_from and to_path:
-                        continue
-                    # O(k m) con pre-filtrado por prefijo + memoización
-                    best_path = _fuzzy_resolve(entity_norm, stem_map, prefix_index)
-                    if best_path:
-                        if is_from:
-                            from_path = best_path
-                        else:
-                            to_path = best_path
+            from_path = _resolver_extremo(from_entity, identidades, prefix_index, "entity_relations")
+            to_path = _resolver_extremo(to_entity, identidades, prefix_index, "entity_relations")
 
             unresolved_parts = []
             if not from_path:
@@ -425,7 +509,7 @@ def _merge_entity_relations(ontology: Dict[str, Any], stem_map: Dict[str, str]) 
     return edges
 
 
-def _merge_code_relations(ontology: Dict[str, Any], stem_map: Dict[str, str]) -> List[Dict]:
+def _merge_code_relations(ontology: Dict[str, Any], identidades: "_Identidades") -> List[Dict]:
     """Read code relations and convert to enriched edges."""
     edges: List[Dict] = []
     unresolved: List[Dict] = []
@@ -438,7 +522,7 @@ def _merge_code_relations(ontology: Dict[str, Any], stem_map: Dict[str, str]) ->
         return edges
 
     # Construir índice de prefijo UNA VEZ para todas las búsquedas fuzzy
-    prefix_index = _build_prefix_index(stem_map)
+    prefix_index = _build_prefix_index(identidades.unicos())
 
     try:
         raw = _code_index().read_bytes()
@@ -460,26 +544,8 @@ def _merge_code_relations(ontology: Dict[str, Any], stem_map: Dict[str, str]) ->
         from_file = rel.get("from", "")
         to_file = rel.get("to", "")
 
-        from_norm = _normalize_stem(Path(from_file).stem)
-        to_norm = _normalize_stem(Path(to_file).stem)
-
-        from_path = stem_map.get(from_norm, "")
-        to_path = stem_map.get(to_norm, "")
-
-        if not from_path or not to_path:
-            for fname, is_from in [(from_file, True), (to_file, False)]:
-                fnorm = _normalize_stem(Path(fname).stem)
-                if is_from and from_path:
-                    continue
-                if not is_from and to_path:
-                    continue
-                # O(k m) con pre-filtrado por prefijo + memoización
-                best_path = _fuzzy_resolve(fnorm, stem_map, prefix_index)
-                if best_path:
-                    if is_from:
-                        from_path = best_path
-                    else:
-                        to_path = best_path
+        from_path = _resolver_extremo(Path(from_file).stem, identidades, prefix_index, "code_relations")
+        to_path = _resolver_extremo(Path(to_file).stem, identidades, prefix_index, "code_relations")
 
         unresolved_parts = []
         if not from_path:
@@ -597,10 +663,10 @@ def vault_graph_merge(
     """
     ontology, ontology_source = _load_ontology()
 
-    nodes, wiki_edges, broken_links, stem_map = _build_wiki_link_graph()
+    nodes, wiki_edges, broken_links, identidades = _build_wiki_link_graph()
 
-    entity_edges = _merge_entity_relations(ontology, stem_map)
-    code_edges = _merge_code_relations(ontology, stem_map)
+    entity_edges = _merge_entity_relations(ontology, identidades)
+    code_edges = _merge_code_relations(ontology, identidades)
 
     all_edges = wiki_edges + entity_edges + code_edges
 
@@ -674,11 +740,15 @@ def vault_graph_merge(
             "typedEdges": typed_edges,
             "orphanNotes": len(orphans),
             "brokenWikiLinks": len(broken_links),
+            "ambiguousLinks": len(identidades.ambiguos),
+            "suggestions": len(identidades.sugerencias),
             "deletedNodes": deleted_nodes,
             "predicateCounts": predicate_counts,
         },
         "orphans": orphans,
         "brokenLinks": broken_links,
+        "ambiguousLinks": identidades.ambiguos,
+        "suggestions": identidades.sugerencias,
         "diagnostics": {
             "entity_relations": {
                 "total": len(entity_edges),
@@ -714,10 +784,17 @@ def vault_graph_merge(
             f"{unresolved_code} code relations con endpoints no resueltos (AP-34). "
             "Verificar que los modulos de codigo esten documentados en 11_Code/."
         )
+    if identidades.ambiguos or identidades.sugerencias:
+        next_actions.append(
+            f"{len(identidades.ambiguos)} enlaces ambiguos y {len(identidades.sugerencias)} "
+            "sugerencias de identidad (AP-17): un nombre parecido, un title: o dos notas "
+            "con el mismo nombre no crean arista. Confirmar con la carpeta en el enlace, "
+            "un alias o renombrando; ver suggestions en graph-enriched.json."
+        )
     if typed_edges == 0 and (entity_edges or code_edges):
         next_actions.append(
             "El grafo tiene entity/code relations pero 0 edges tipados (AP-31). "
-            "Verificar que stem_map resuelva correctamente los endpoints."
+            "Verificar que el nombre de cada entidad coincida con el de su nota o con un alias."
         )
     if silo_flags.get("graph_enriched_stale"):
         next_actions.append(

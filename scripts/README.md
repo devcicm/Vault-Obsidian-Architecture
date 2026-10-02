@@ -442,6 +442,8 @@ python vault_graph_merge.py --project "ans"
 python vault_graph_merge.py --predicate-filter depends_on,implements,calls
 ```
 
+**Lo parecido es una sugerencia, no una arista (AP-17).** Un wikilink se resuelve con el mismo dueño que `vault_graph` (`vault_lib.resolver_wikilink`); el extremo de una relación de entidad o de código, por `clave_de_nombre` sobre el nombre de fichero y los `aliases:` de las notas, y solo si responde **una** nota. Hasta ahora fijaban un extremo tres vías que el vault no respalda: el `title:` (que Obsidian no mira), la última nota con el mismo stem normalizado y `SequenceMatcher ≥ 0.75`. Ahora ninguna crea arista: cada caso sale en `suggestions` con `criterion` (`name_key`, `title`, `ambiguous`, `similar`) y `candidates`, y los enlaces con dos notas posibles en `ambiguousLinks`. Se confirma con la carpeta en el enlace, un alias o renombrando. Contrastado contra `/vcloud`: `containers/ct105.md` y `services/ct105.md` hacían que `[[ct105]]` apuntara a la última leída —32 enlaces—, y 14 enlaces relativos o con ancla que salían rotos ahora resuelven.
+
 ---
 
 ### `vault_graph_inspect.py`
