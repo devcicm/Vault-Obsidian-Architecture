@@ -28,7 +28,7 @@ from typing import Any, Optional
 
 __all__ = [
     "fold_accents", "plegar_diacriticos_latinos", "slugify", "slugify_strict",
-    "clave_de_equivalencia", "equivalentes",
+    "clave_de_equivalencia", "equivalentes", "clave_de_nombre",
 ]
 
 #: Letras que NFKD no descompone en base + marca y que borrar las destrozaría.
@@ -116,3 +116,23 @@ def clave_de_equivalencia(valor: Any) -> Optional[str]:
 def equivalentes(a: Any, b: Any) -> bool:
     """``True`` si ``a`` y ``b`` son el mismo dato según la clave de equivalencia."""
     return clave_de_equivalencia(a) == clave_de_equivalencia(b)
+
+
+def clave_de_nombre(nombre: Any) -> str:
+    """Clave de identidad de una nota por su nombre: a qué fichero apunta un enlace.
+
+    Es la que comparan los wikilinks y los `aliases:` contra el nombre de
+    fichero: pliega acentos —``slugify`` translitera al nombrar, así que
+    ``Índice.md`` e ``indice.md`` son la misma nota— y quita mayúsculas y los
+    separadores ``-``, ``_``, espacio y punto, porque ``[[Mi Proyecto]]``
+    apunta a ``mi-proyecto.md``.
+
+    La extensión ``.md`` se quita **antes** que los puntos. Al revés —como hacían
+    las cinco copias de v40.35— cualquier nombre terminado en ``md`` perdía esas
+    letras: ``cmd.md`` y ``c.md`` daban la misma clave, dos notas con un solo
+    ID (AP-17).
+    """
+    texto = fold_accents(str(nombre)).lower().strip().removesuffix(".md")
+    for separador in ("-", "_", " ", "."):
+        texto = texto.replace(separador, "")
+    return texto

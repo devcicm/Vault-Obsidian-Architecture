@@ -762,18 +762,14 @@ def normalize_stem(s: str) -> str:
     que se derivaría hoy) parecerían dos notas distintas y el vault acabaría con
     las dos. El criterio de comparación tiene que ser el del consumidor, no el
     de quien escribe (AP-44).
-    """
-    from vault_lib import fold_accents
 
-    return (
-        fold_accents(s)
-        .lower()
-        .replace("-", "")
-        .replace("_", "")
-        .replace(" ", "")
-        .replace(".", "")
-        .removesuffix("md")
-    )
+    Delega en `clave_de_nombre` (dueño: `vault.kernel.normalizacion`, vía el
+    respaldo de `vault_lib`). La versión propia quitaba los puntos antes que el
+    `.md` y `cmd.md` acababa con la clave de `c.md` (AP-17).
+    """
+    from vault_lib import clave_de_nombre
+
+    return clave_de_nombre(s)
 
 
 def update_section_index(folder: str) -> None:

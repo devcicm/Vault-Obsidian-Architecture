@@ -70,13 +70,21 @@ def slugify_strict(text: str) -> str:
     return re.sub(r"-{2,}", "-", slugify(text)).strip("-")
 
 
+def clave_de_nombre(nombre: Any) -> str:
+    """Clave de identidad por nombre de nota (respaldo de vault.kernel.normalizacion)."""
+    texto = fold_accents(str(nombre)).lower().strip().removesuffix(".md")
+    for separador in ("-", "_", " ", "."):
+        texto = texto.replace(separador, "")
+    return texto
+
+
 # Dueño desde v40.35: vault.kernel.normalizacion (frontera instalable), que además
 # separa la clave de ruta de la de equivalencia. Las tres definiciones de arriba
 # quedan como respaldo para cuando `vault` no es importable, igual que
 # parse_frontmatter; tests/test_slug_canonico.py verifica que dan lo mismo.
 try:
     from vault.kernel.normalizacion import (  # noqa: F811
-        fold_accents, slugify, slugify_strict,
+        fold_accents, slugify, slugify_strict, clave_de_nombre,
     )
 except ImportError:
     pass
