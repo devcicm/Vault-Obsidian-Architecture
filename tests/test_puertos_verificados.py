@@ -57,7 +57,9 @@ def test_hay_puertos_en_los_contextos_que_publican_api():
     # +1 en 7a2390a: `refresco_de_busqueda`, en `indices`. El kernel ya llamaba
     # a `vault_section_index` por un gancho declarado; refrescar la búsqueda va
     # por el mismo gancho, y sin puerto el nombre nuevo cruzaba por detrás.
-    assert len(PUERTOS) == 63
+    # +1: `refresco_de_grafo`, en `grafo`. Lo mismo que el refresco de búsqueda:
+    # el gancho del write path refresca el grafo y el nombre se publica.
+    assert len(PUERTOS) == 64
     # `cli` queda fuera a propósito: es un adaptador de transporte y **nadie
     # importa de `cli/`**, así que no publica API. Exigirle un puerto obligaría
     # a inventar uno, que es justo lo contrario de lo que mide este fichero.

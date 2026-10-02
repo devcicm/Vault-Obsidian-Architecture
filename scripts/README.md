@@ -435,6 +435,8 @@ En el mismo paso se corrigió que `vault_graph` devolviera `savedTo: "99_Index\g
 
 **Un solo enumerador.** Los dos productores enumeran con `vault.kernel.enumeracion.notas_en_disco`, el mismo que usa `vault_subgraph` para declarar el desfase. Hasta ahora descartaban las notas con un tramo oculto mirando la ruta **absoluta**: un vault colgado de `~/.claude/` —donde vive `vault-standard`— salía con cero nodos y sin error (AP-44).
 
+**Nota a nota en cada escritura.** `vault_io.atomic_write_text` pone la nota escrita en `graph.json` (gancho `_auto_grafo`, AP-47): una nota de `vault_write`, `vault_ingest` o cualquier `*_save` existe para `vault_subgraph` sin reconstruir. Solo se lee la nota escrita; los nodos guardan `aliases` y `links`, y con eso la resolución se repite en memoria para el vault entero, así que una nota nueva arregla los enlaces rotos de otras y una homónima vuelve ambiguo un enlace que antes resolvía (AP-17). La reconstrucción y el refresco ensamblan con el mismo `vault.grafo.refresco.ensamblar_grafo`, y un test exige que dejen el mismo grafo. No crea un `graph.json` que no existe, y uno anterior sin `aliases` en sus nodos no se toca: devuelve `graph_without_aliases` con la pista de reconstruir. A mano: `refrescar_nota_en_grafo(ruta)`.
+
 ---
 
 ### `vault_graph_merge.py`

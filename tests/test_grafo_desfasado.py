@@ -42,6 +42,15 @@ def _escribir(raiz: Path, titulo: str, extra: str = "") -> None:
     assert env["ok"] is True, env
 
 
+def _escribir_a_mano(raiz: Path, slug: str, extra: str = "") -> None:
+    """Una nota que llega por fuera del toolkit —Obsidian, un editor—: no pasa
+    por `atomic_write_text` y por eso tampoco por el gancho que refresca el
+    grafo. Es el único caso en que el grafo puede quedar desfasado."""
+    (raiz / "07_Knowledge" / f"{slug}.md").write_text(
+        f"---\ntitle: {slug.title()}\ntags: [t]\n---\n\n{CUERPO}{extra}\n", encoding="utf-8"
+    )
+
+
 @pytest.fixture
 def raiz(tmp_path):
     raiz = tmp_path / "vault"
@@ -58,8 +67,20 @@ def test_grafo_al_dia_no_se_declara_desfasado(raiz):
     assert env["stale_graph"] is False, env["stale"]
 
 
-def test_ap37_una_nota_nueva_se_declara_en_vez_de_negarse(raiz):
+def test_ap47_una_nota_escrita_por_el_toolkit_ya_esta_en_el_grafo(raiz):
+    """Desde el gancho `_auto_grafo` la escritura refresca el grafo: lo que
+    antes había que declarar como desfase ya no ocurre por esta vía."""
     _escribir(raiz, "Beta", " [[Alfa]]")
+    env = _ejecutar(raiz, "vault_subgraph.py", "--seeds", "Beta")
+    assert env["ok"] is True, env
+    assert env["stale_graph"] is False, env["stale"]
+    assert "07_Knowledge/alfa.md" in {n["path"] for n in env["nodes"]}
+
+
+def test_ap37_una_nota_nueva_se_declara_en_vez_de_negarse(raiz):
+    # superseded_by: v40.x (AP-47) — escribía con `vault_write`, que ahora
+    # refresca el grafo; el desfase solo lo produce una escritura de fuera.
+    _escribir_a_mano(raiz, "beta", " [[Alfa]]")
     env = _ejecutar(raiz, "vault_subgraph.py", "--seeds", "Beta")
     assert env["ok"] is False and env["error_code"] == "NO_SEEDS_RESOLVED"
     assert env["stale_graph"] is True
@@ -69,7 +90,7 @@ def test_ap37_una_nota_nueva_se_declara_en_vez_de_negarse(raiz):
 
 
 def test_ap37_context_pack_avisa_del_desfase(raiz):
-    _escribir(raiz, "Beta", " [[Alfa]]")
+    _escribir_a_mano(raiz, "beta", " [[Alfa]]")
     env = _ejecutar(raiz, "vault_context_pack.py", "--query", "Beta siete ocho")
     assert env["ok"] is True, env
     assert any("grafo desactualizado" in w for w in env["warnings"]), env["warnings"]

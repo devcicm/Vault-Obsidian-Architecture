@@ -53,6 +53,7 @@ from vault_entorno import leer as _env
 # siguen funcionando sin tocarse. No-derogación: la puerta de entrada histórica
 # no se retira porque haya aparecido otra mejor.
 import vault_raiz as _raiz
+from vault.kernel.fallos import FalloDeDominio
 from vault_raiz import (  # noqa: F401  (reexport deliberado)
     LOW_CONFIDENCE_ORIGINS,
     get_vault_root,
@@ -507,6 +508,8 @@ def atomic_write_text(
 
     _auto_section_index(path)
 
+    _auto_grafo(path)
+
     _auto_tag_ledger(path, text)
 
 
@@ -570,6 +573,65 @@ def _auto_section_index(path: Path) -> None:
             emit_error("_auto_section_index", "AUTO_INDEX_ERROR", str(exc))
         except Exception:
             pass  # AP-37: fail-safe logging — never crash the caller
+
+
+def refrescar_grafo(path: Path, *mas: Path) -> Dict[str, Any]:
+    """Pone la nota en `graph.json` sin reconstruir el grafo (AP-47).
+
+    El dueño es `vault.grafo.refresco`; aquí solo se compone con el dueño del
+    escaneo (`vault_lib`), que el paquete de dominio no puede importar. Es el
+    mismo patrón que el índice de búsqueda: la nota entra en la misma escritura,
+    escriba quien escriba, y `vault_subgraph` deja de ver un grafo desfasado.
+    """
+    from vault_lib import (  # lazy: vault_lib -> vault_io ya es un ciclo diferido
+        colisiones_de_nombre,
+        leer_notas_de_grafo,
+        resolver_enlaces,
+    )
+    from vault.grafo.refresco import ServicioRefrescoGrafo
+    from vault.grafo.repositorio import RepositorioGrafo
+    from vault.kernel import construir
+
+    return ServicioRefrescoGrafo(
+        RepositorioGrafo(construir()), leer_notas_de_grafo, resolver_enlaces, colisiones_de_nombre
+    ).refrescar(Path(path), *mas)
+
+
+def _auto_grafo(path: Path) -> None:
+    """Refresca la nota en el grafo tras escribirla. Nunca bloquea la escritura.
+
+    Va aparte de `_auto_section_index` porque el criterio de nota es otro: el
+    grafo incluye `00_System/` y las secciones con índice propio, que el índice
+    de sección salta. El criterio lo decide el servicio, con el de la
+    reconstrucción.
+    """
+    if path.suffix != ".md":
+        return
+    try:
+        # Los `index.md` de la cadena de carpetas de la nota: el índice de
+        # sección los acaba de regenerar con `Path.write_text`, fuera de este
+        # gancho, y la reconstrucción los cuenta como nodos.
+        indices = []
+        raiz = get_vault_root().resolve()
+        path = Path(path).resolve()  # ruta corta 8.3 frente a la raíz resuelta
+        carpeta = path.parent
+        while carpeta != raiz and raiz in carpeta.parents:
+            if (carpeta / "index.md").exists() and carpeta / "index.md" != path:
+                indices.append(carpeta / "index.md")
+            carpeta = carpeta.parent
+        refrescar_grafo(path, *indices)
+    except FalloDeDominio as fallo:
+        # Grafo ilegible: la escritura ya está hecha y no se deshace por esto;
+        # queda en la traza con su causa y la pista de reconstruir.
+        from vault_errors import emit_fallo  # lazy: vault_errors -> vault_io
+
+        emit_fallo("_auto_grafo", fallo)
+    except (OSError, ValueError, TimeoutError) as exc:
+        # Acotado a propósito (AP-51): lo que el disco o el lock pueden hacer
+        # no bloquea la escritura; un fallo de programación sí debe salir.
+        from vault_errors import emit_error  # lazy: vault_errors -> vault_io
+
+        emit_error("_auto_grafo", "AUTO_INDEX_ERROR", f"{type(exc).__name__}: {exc}")
 
 
 def _auto_tag_ledger(path: Path, text: str) -> None:

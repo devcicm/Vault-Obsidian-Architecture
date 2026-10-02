@@ -430,6 +430,9 @@ def test_el_kernel_declara_sus_ganchos_con_motivo():
         ("vault_fs", "vault_secret_scan"),
         ("vault_io", "vault_section_index"),
         ("vault_io", "vault_tags"),
+        # El grafo nota a nota (AP-47). Va al dominio de Grafo y no a
+        # `vault_graph` porque aquel importa `vault_io` y estrenaría un ciclo.
+        ("vault_io", "vault/grafo"),
     }
     lecturas_de_registro = {
         # v40.26: el vocabulario se mudó con el catálogo al partirse

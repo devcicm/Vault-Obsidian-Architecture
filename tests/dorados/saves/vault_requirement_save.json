@@ -7,7 +7,7 @@
     "req_id": "REQ-001",
     "timestamp": "<FECHA>",
     "tool": "vault_requirement_save",
-    "touched": 6,
+    "touched": 7,
     "unchanged": "<BEST-EFFORT>",
     "updated": "<BEST-EFFORT>",
     "written": "<BEST-EFFORT>"

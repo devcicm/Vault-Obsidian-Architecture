@@ -258,6 +258,9 @@ CONTEXTS: dict[str, dict] = {
             "construir_grafo": "vault_graph:vault_graph",
             "resolver_wikilink": "vault_link_safety:validate_wikilinks",
             "impacto": "vault_impact:vault_impact",
+            # Lo que el gancho del write path hace con cada nota (AP-47), con la
+            # misma composición, para quien quiera refrescar una a mano.
+            "refresco_de_grafo": "vault_graph:refrescar_nota_en_grafo",
         },
         "prohibe": [],
         "modulos": [
@@ -756,6 +759,10 @@ def cruces() -> list[dict]:
         for nodo in ast.walk(arbol_s):
             for destino in _destino_de_import(nodo, Path(nombre)):
                 if destino in CONTEXTS and destino not in (origen, KERNEL):
+                    # Mismo criterio que arriba: un gancho del kernel hacia el
+                    # dominio de otro contexto es una frontera declarada.
+                    if (nombre, f"vault/{destino}") in GANCHOS_DEL_KERNEL:
+                        continue
                     fuera.append({
                         "from": nombre, "from_context": origen,
                         "to": f"vault/{destino}", "to_context": destino,
@@ -1057,6 +1064,13 @@ GANCHOS_DEL_KERNEL: dict[tuple[str, str], str] = {
         "`*_save` cruzaría Autoría → Índices catorce veces y seguiría sin "
         "cubrir al decimoquinto (AP-43)."
     ),
+    ("vault_io", "vault/grafo"): (
+        "`_auto_grafo`: la nota escrita entra en `graph.json` en la misma "
+        "escritura, escriba quien escriba (AP-47); antes `vault_subgraph` no "
+        "la veía hasta la siguiente reconstrucción. Va al dominio y no a "
+        "`vault_graph` porque `vault_graph` importa `vault_io` y el gancho "
+        "estrenaría un ciclo (AP-58); el escaneo de `vault_lib` se inyecta."
+    ),
     ("vault_vocabulario", "vault_norms_catalog"): (
         "`status` y los estados de dominio ya tienen registro canónico en "
         "Gobernanza. El registro de vocabularios los declara con `derivado_de` "
@@ -1125,6 +1139,16 @@ PRESUPUESTO_DE_GANCHOS: dict[tuple[str, str], dict] = {
         "por_que": (
             "AP-39 exige registrar el término nuevo en el write path. La "
             "revisión mira si el ledger pasó a construirse por barrido."
+        ),
+    },
+    ("vault_io", "vault/grafo"): {
+        "objetivo": "permanente",
+        "revisado": "2026-10-02",
+        "cadencia_dias": 180,
+        "dueno": "kernel",
+        "por_que": (
+            "Refrescar el grafo desde cada tool es AP-47 repetido en cada "
+            "escritor. La revisión mira si el grafo pasó a derivarse bajo demanda."
         ),
     },
     ("vault_vocabulario", "vault_norms_catalog"): {

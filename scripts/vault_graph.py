@@ -23,9 +23,8 @@ import json
 
 import sys
 
-from vault_errors import wrap_main
+from vault_errors import emit_fallo, wrap_main
 
-from collections import defaultdict
 
 from pathlib import Path
 
@@ -45,7 +44,7 @@ from vault_registry import ORDERED_SECTIONS
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from vault.grafo.aristas import consolidar_aristas  # noqa: E402
+from vault.grafo.refresco import ensamblar_grafo, nodo_de_nota  # noqa: E402
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 from vault.kernel.enumeracion import notas_en_disco  # noqa: E402
@@ -195,13 +194,7 @@ def vault_graph() -> Dict[str, Any]:
 
     """
 
-    nodes = {}  # path -> {title, type, tags, links}
-
-    edges = []  # [{from, to, type}]
-
-    broken_links = []  # [{from, link}]
-
-    orphans = []  # [{path, title}]
+    nodes = {}  # path -> {title, type, tags, aliases, links}
 
     # Scan only notes inside the 13 standard vault sections
 
@@ -232,50 +225,20 @@ def vault_graph() -> Dict[str, Any]:
 
     escaneo = escanear_wikilinks(contenidos)
 
+    # El nodo y el ensamblado son los mismos que usa el refresco de una nota
+    # (`vault.grafo.refresco`): reconstruir y refrescar no pueden discrepar
+    # sobre qué es `graph.json` (AP-57). El nodo guarda `aliases` y `links`,
+    # que es lo que deja repetir la resolución sin volver a leer el disco.
+    #
+    # AP-17: un enlace al que responden dos notas sale en `ambiguousLinks`, sin
+    # arista. AP-14: el que no resuelve sale en `brokenLinks`, con `targetPath`
+    # tal como está escrito (AP-44); es también la evidencia de que **SP-02**
+    # —buscar la nota antes de escribir `[[…]]`— no se siguió.
     for rel_path, nota in escaneo["notas"].items():
-        nodes[rel_path] = {
-            "title": nota["title"],
-            "type": rel_path.split("/")[0] if "/" in rel_path else "other",
-            "tags": nota["tags"],
-            "links": nota["links"],
-            "linkCount": len(nota["links"]),
-        }
-
-    edges = [
-        {"from": a["from"], "to": a["to"], "type": "wiki-link"} for a in escaneo["aristas"]
-    ]
-
-    # AP-17: el destino existe, pero responden dos notas. Elegir una sería
-    # inventar la identidad; la carpeta en el enlace es lo que la fija.
-    ambiguous_links = escaneo["ambiguos"]  # [{from, link, candidates}]
-
-    # AP-14: el wikilink que no resuelve. Es también la única evidencia de que
-    # **SP-02** no se siguió: el protocolo pide buscar la nota antes de escribir
-    # `[[…]]`, y un enlace roto es exactamente lo que queda cuando no se buscó.
-    # `targetPath` va sin normalizar a propósito, para que el consumidor vea el
-    # enlace tal como está escrito en la nota (AP-44).
-    broken_links = escaneo["rotos"]
-
-    # Una arista por relación (from, type, to), con sus apariciones.
-
-    edges = consolidar_aristas(edges)
-
-    # Find orphan notes (no incoming links, except 00_System)
-
-    incoming_links = defaultdict(list)
-
-    for edge in edges:
-        incoming_links[edge["to"]].append(edge["from"])
-
-    for path, node in nodes.items():
-        if path not in incoming_links and not path.startswith("00_System/"):
-            orphans.append({"path": path, "title": node["title"], "type": node["type"]})
-
-    # Add status to each node (active, deleted, moved)
-    for path, node in nodes.items():
-        node["status"] = "active"
+        nodes[rel_path] = nodo_de_nota(rel_path, nota)
 
     # Check for deleted nodes from previous graph
+    extras = []
     if _graph_file().exists():
         try:
             old_graph = json.loads(_graph_file().read_text(encoding="utf-8"))
@@ -284,7 +247,7 @@ def vault_graph() -> Dict[str, Any]:
             for old_path in old_nodes:
                 if old_path not in nodes:
                     old_node = old_nodes[old_path]
-                    edges.append(
+                    extras.append(
                         {
                             "from": old_path,
                             "to": "__deleted__",
@@ -310,32 +273,13 @@ def vault_graph() -> Dict[str, Any]:
         except (json.JSONDecodeError, PermissionError):
             pass
 
-    name_collisions = colisiones_de_nombre(relativas)
-
-    # Count deleted/moved nodes
-    deleted_count = sum(1 for n in nodes.values() if n.get("status") == "deleted")
-    moved_count = sum(1 for n in nodes.values() if n.get("status") == "moved")
-
-    # Save graph
-
-    graph_data = {
-        "nodes": nodes,
-        "edges": edges,
-        "stats": {
-            "totalNodes": len(nodes),
-            "totalEdges": len(edges),
-            "orphanNotes": len(orphans),
-            "brokenLinks": len(broken_links),
-            "ambiguousLinks": len(ambiguous_links),
-            "nameCollisions": len(name_collisions),
-            "deletedNodes": deleted_count,
-            "movedNodes": moved_count,
-        },
-        "orphans": orphans,
-        "brokenLinks": broken_links,
-        "ambiguousLinks": ambiguous_links,
-        "nameCollisions": name_collisions,
-    }
+    graph_data = ensamblar_grafo(
+        nodes, escaneo, extras, colisiones_de_nombre(relativas)
+    )
+    orphans = graph_data["orphans"]
+    broken_links = graph_data["brokenLinks"]
+    ambiguous_links = graph_data["ambiguousLinks"]
+    name_collisions = graph_data["nameCollisions"]
 
     _graph_file().parent.mkdir(parents=True, exist_ok=True)
 
@@ -354,6 +298,22 @@ def vault_graph() -> Dict[str, Any]:
         "ambiguousLinks": ambiguous_links[:10],  # Top 10
         "nameCollisions": name_collisions[:10],  # Top 10
     }
+
+
+def refrescar_nota_en_grafo(path) -> Dict[str, Any]:
+    """Pone UNA nota en `graph.json` sin reconstruir (AP-47).
+
+    Es lo que hace el gancho del write path tras cada escritura; se publica
+    aquí para quien escribe por fuera de `atomic_write_text` y para los tests.
+    El dueño del refresco es `vault.grafo.refresco`; esto solo lo compone.
+    """
+    from vault_io import refrescar_grafo
+    from vault.kernel.fallos import FalloDeDominio
+
+    try:
+        return refrescar_grafo(Path(path))
+    except FalloDeDominio as fallo:
+        return emit_fallo("vault_graph", fallo)
 
 
 def vault_graph_typed() -> Dict[str, Any]:

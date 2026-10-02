@@ -54,7 +54,7 @@ regenera.*
 |---|---|---|---|
 | **Kernel** (`kernel`) | 4 | 22 | depender de cualquier contexto de dominio |
 | **Autoría** (`autoria`) | 7 | 43 | — |
-| **Grafo** (`grafo`) | 3 | 15 | — |
+| **Grafo** (`grafo`) | 4 | 15 | — |
 | **Gobernanza** (`gobernanza`) | 21 | 12 | — |
 | **Índices** (`indices`) | 9 | 6 | — |
 | **Consulta** (`consulta`) | 7 | 11 | base de datos; embeddings; servicio externo |
@@ -126,7 +126,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-44** — Verificación autoconsistente — la tool se certifica a sí misma | guard+audit | `framework` | `test_ap44_verificacion_autoconsistente.py`, `test_kernel.py`, `test_norms_coherence.py` |
 | **AP-45** — Cobertura sin evidencia — la nota existe para llenar la sección | guard+audit | `framework` | `test_ap45_cobertura_sin_evidencia.py` |
 | **AP-46** — Frontmatter a mano — cada tool es su propio escritor | guard+audit | `framework` | `test_ap46_interpolacion_cruda.py`, `test_ap46_write_path_unico.py`, `test_norms_coherence.py`, `test_vault_sanacion.py` |
-| **AP-47** — Artefacto derivado desfasado — el índice dejó de reflejar el disco | guard+audit | `framework` | `test_ap47_indice_refleja_disco.py` |
+| **AP-47** — Artefacto derivado desfasado — el índice dejó de reflejar el disco | guard+audit | `framework` | `test_ap47_indice_refleja_disco.py`, `test_grafo_refresco.py` |
 | **AP-48** — Implementación paralela por camino de acceso | guard+audit | `contratos`, `framework` | `test_ap48_implementacion_paralela.py` |
 | **AP-49** — Vínculo resuelto en tiempo de import | guard+audit | `arquitectura`, `framework` | `test_arquitectura.py`, `test_durabilidad_dominio.py` |
 | **AP-50** — Decisión duplicada sin dueño declarado | guard+audit | `arquitectura`, `framework` | `test_ap57_criterios.py` |

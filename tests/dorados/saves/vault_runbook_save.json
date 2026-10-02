@@ -8,7 +8,7 @@
     "steps": 2,
     "timestamp": "<FECHA>",
     "tool": "vault_runbook_save",
-    "touched": 5,
+    "touched": 6,
     "unchanged": "<BEST-EFFORT>",
     "updated": "<BEST-EFFORT>",
     "written": "<BEST-EFFORT>"

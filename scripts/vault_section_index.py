@@ -24,6 +24,7 @@ from vault_io import (
     file_lock,
     get_vault_root,
     record_raw_write,
+    refrescar_grafo,
     safe_wikilink,
     write_report,
 )
@@ -70,6 +71,10 @@ def _escribir_hub(destino: Path, contenido: str) -> None:
     with file_lock(destino):
         record_raw_write(destino, contenido)
         destino.write_text(contenido, encoding="utf-8")
+    # AP-47: el grafo las cuenta como nodos y se escriben fuera del gancho de
+    # `atomic_write_text`; sin esto el grafo refrescado no las ve hasta la
+    # siguiente reconstrucción. Fuera del lock: el refresco toma el suyo.
+    refrescar_grafo(destino)
 
 
 def _ensure_hub_notes() -> None:

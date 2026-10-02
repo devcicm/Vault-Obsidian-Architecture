@@ -94,7 +94,7 @@ Fronteras que hoy cruza (7), deuda declarada:
 ## Grafo
 
 - **Lenguaje ubicuo:** nodo, arista, wikilink, huérfano, componente
-- **Puertos publicados:** `construir_grafo` → `vault_graph:vault_graph`, `impacto` → `vault_impact:vault_impact`, `resolver_wikilink` → `vault_link_safety:validate_wikilinks`
+- **Puertos publicados:** `construir_grafo` → `vault_graph:vault_graph`, `impacto` → `vault_impact:vault_impact`, `refresco_de_grafo` → `vault_graph:refrescar_nota_en_grafo`, `resolver_wikilink` → `vault_link_safety:validate_wikilinks`
 - **Módulos (15):** `vault_code_map`, `vault_code_module`, `vault_code_query`, `vault_code_relation`, `vault_code_sync`, `vault_code_tag`, `vault_env_matrix`, `vault_graph`, `vault_graph_fix`, `vault_graph_inspect`, `vault_graph_merge`, `vault_impact`, `vault_infra_map`, `vault_link_safety`, `vault_relation_add`
 
 Fronteras que hoy cruza (2), deuda declarada:

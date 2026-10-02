@@ -484,6 +484,16 @@ def escanear_wikilinks(notas: Dict[str, str]) -> Dict[str, Any]:
     `ambiguos` (`from`, `link`, `candidates`) y `rotos` (`from`, `link`,
     `targetPath`).
     """
+    meta = leer_notas_de_grafo(notas)
+    return {"notas": meta, **resolver_enlaces(meta)}
+
+
+def leer_notas_de_grafo(notas: Dict[str, str]) -> Dict[str, Dict[str, Any]]:
+    """La mitad de lectura de `escanear_wikilinks`: contenido → `title`, `tags`, `aliases`, `links`.
+
+    Separada para que el refresco de una sola nota (`vault.grafo.refresco`) la
+    lea con el mismo dueño que la reconstrucción entera, sin leer las demás.
+    """
     meta: Dict[str, Dict[str, Any]] = {}
     for rel, contenido in notas.items():
         fm = parse_frontmatter(contenido)
@@ -494,12 +504,22 @@ def escanear_wikilinks(notas: Dict[str, str]) -> Dict[str, Any]:
             "aliases": _lista_de_cadenas(fm.get("aliases")),
             "links": RE_WIKILINK.findall(contenido),
         }
-    indice = indice_de_nombres(list(meta), {rel: m["aliases"] for rel, m in meta.items()})
+    return meta
+
+
+def resolver_enlaces(meta: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+    """La mitad de resolución: `ruta → {aliases, links}` → `indice`, `aristas`, `ambiguos`, `rotos`.
+
+    No necesita el contenido, solo los nombres y los enlaces ya leídos: es lo
+    que permite repetir la resolución del vault entero desde los nodos de
+    `graph.json` cuando cambia una nota (AP-47) sin volver a leer el disco.
+    """
+    indice = indice_de_nombres(list(meta), {rel: m.get("aliases") or [] for rel, m in meta.items()})
     aristas: List[Dict[str, str]] = []
     ambiguos: List[Dict[str, Any]] = []
     rotos: List[Dict[str, str]] = []
     for rel, m in meta.items():
-        for link in m["links"]:
+        for link in m.get("links") or []:
             destino, candidatos = resolver_wikilink(link, Path(rel), indice)
             if destino:
                 aristas.append({"from": rel, "to": destino})
@@ -507,7 +527,7 @@ def escanear_wikilinks(notas: Dict[str, str]) -> Dict[str, Any]:
                 ambiguos.append({"from": rel, "link": link, "candidates": candidatos})
             else:
                 rotos.append({"from": rel, "link": link, "targetPath": link.replace("\\", "/")})
-    return {"notas": meta, "indice": indice, "aristas": aristas, "ambiguos": ambiguos, "rotos": rotos}
+    return {"indice": indice, "aristas": aristas, "ambiguos": ambiguos, "rotos": rotos}
 
 
 def normalize_path(path: str) -> str:
