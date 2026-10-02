@@ -46,7 +46,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from vault_errors import wrap_main
 from vault_lib import separar_frontmatter, utcnow
-from vault_io import atomic_write_json, file_lock, write_report
+from vault_io import atomic_write_json, file_lock, normalize_stem, write_report
 
 
 # F4 exactitud: qué tipos pertenecen a cada sección lo declara el registro.
@@ -231,7 +231,8 @@ def _extract_wiki_links(content: str) -> List[str]:
 
 
 def _normalize(s: str) -> str:
-    return s.lower().replace("-", "").replace("_", "")
+    # Identidad por nombre: la del dueño, no una copia (AP-57, AP-17).
+    return normalize_stem(s)
 
 
 def _build_all_stems() -> Set[str]:

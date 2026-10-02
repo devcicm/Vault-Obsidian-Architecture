@@ -60,3 +60,37 @@ def test_ap17_el_respaldo_de_vault_lib_coincide_con_el_nucleo():
     for a, b in DISTINTOS + IGUALES:
         for x in (a, b):
             assert ns["clave_de_nombre"](x) == clave_de_nombre(x), x
+
+
+#: La copia típica: quitar guiones y luego guiones bajos encadenando `.replace`.
+#: El dueño y su respaldo lo hacen en un bucle, así que no casan.
+_COPIA = __import__("re").compile(
+    r"""\.replace\(\s*["']-["']\s*,\s*["']{2}\s*\)\s*\.replace\(\s*["']_["']"""
+)
+
+
+def _copias_en(fuentes):
+    return [
+        f"{nombre}:{texto[:m.start()].count(chr(10)) + 1}"
+        for nombre, texto in fuentes
+        for m in _COPIA.finditer(texto)
+    ]
+
+
+def test_ap57_ningun_modulo_reimplementa_la_clave_de_nombre():
+    """Había seis: vault_audit (tapando su propio import), vault_graph_merge,
+    vault_merge, vault_quality_check y dos en vault_norms. Cada una resolvía el
+    mismo enlace a su manera, así que una nota podía existir para una tool y
+    estar rota para otra."""
+    fuentes = [
+        (str(py.relative_to(REPO)), py.read_text(encoding="utf-8", errors="replace"))
+        for carpeta in ("scripts", "vault", "cli", "vault_toolkit")
+        for py in (REPO / carpeta).rglob("*.py")
+        if "_archived" not in py.parts
+    ]
+    assert len(fuentes) > 100
+    assert _copias_en(fuentes) == []
+
+
+def test_ap57_el_guard_ve_una_copia():
+    assert _copias_en([("x.py", 's.lower().replace("-", "").replace("_", "")')]) == ["x.py:1"]

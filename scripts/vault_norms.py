@@ -246,7 +246,7 @@ def vault_norms_scan(path: str) -> Dict[str, Any]:
 
         # AP-14: check for ghost links (note doesn't exist)
         all_stems = {
-            p.stem.lower().replace("-", "").replace("_", "").replace(" ", "")
+            normalize_stem(p.stem)
             for p in _raiz().rglob("*.md")
             # El hueco simétrico al del barrido principal, y en la direccion
             # contraria: si los stems de las instantaneas cuentan, un enlace
@@ -257,13 +257,8 @@ def vault_norms_scan(path: str) -> Dict[str, Any]:
         ghost = [
             l
             for l in wiki_links
-            if l.split("|")[0]
-            .strip()
-            .lower()
-            .replace("-", "")
-            .replace("_", "")
-            .replace(" ", "")
-            not in all_stems
+            # Identidad por nombre: la del dueño, no una copia (AP-57, AP-17).
+            if normalize_stem(l.split("|")[0]) not in all_stems
         ]
         if ghost:
             _add("AP-14", f"wiki-links posiblemente rotos: {ghost[:3]}")

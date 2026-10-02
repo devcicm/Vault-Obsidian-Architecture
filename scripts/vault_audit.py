@@ -265,21 +265,10 @@ def _extract_wiki_links(
     return links
 
 
-def _normalize(s: str) -> str:
-    """Normalize a stem for fuzzy comparison.
-
-    Strips: case, dashes, underscores, spaces, dots, and the .md suffix.
-    Matches vault_write._collect_ghost_links normalization so a wiki-link
-    like `[[Mi Proyecto Demo]]` correctly resolves to `mi-proyecto-demo.md`.
-    """
-    return (
-        s.lower()
-        .replace("-", "")
-        .replace("_", "")
-        .replace(" ", "")
-        .replace(".", "")
-        .removesuffix("md")
-    )
+# `_normalize` es `vault_io.normalize_stem` (import de arriba). Aquí había una
+# redefinición que tapaba ese import con una copia sin plegar acentos y con el
+# `md` mal quitado: el mismo enlace resolvía distinto aquí que en vault_write
+# (AP-57, AP-17).
 
 
 def _is_snapshot(p: Path) -> bool:

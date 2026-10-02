@@ -45,7 +45,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
-from vault_io import atomic_write_text, get_vault_root, tomar_lock, write_report
+from vault_io import atomic_write_text, get_vault_root, normalize_stem, tomar_lock, write_report
 from vault_undo import _guardar_version_actual
 
 from vault_lib import separar_frontmatter, valor_de_frontmatter
@@ -188,7 +188,8 @@ def _action_merge(source_dir: Path, conflict: str) -> Dict[str, Any]:
 
 
 def _normalize(stem: str) -> str:
-    return stem.lower().replace("-", "").replace("_", "")
+    # Identidad por nombre: la del dueño, no una copia (AP-57, AP-17).
+    return normalize_stem(stem)
 
 
 def _action_detect() -> Dict[str, Any]:
