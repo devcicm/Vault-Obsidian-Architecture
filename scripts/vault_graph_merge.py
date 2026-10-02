@@ -44,6 +44,7 @@ from vault_registry import ORDERED_SECTIONS
 ONTOLOGY_FILE = Path(__file__).parent / "vault_ontology.json"
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from vault.grafo.aristas import consolidar_aristas  # noqa: E402
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 
@@ -665,10 +666,13 @@ def vault_graph_merge(
 
     nodes, wiki_edges, broken_links, identidades = _build_wiki_link_graph()
 
-    entity_edges = _merge_entity_relations(ontology, identidades)
-    code_edges = _merge_code_relations(ontology, identidades)
+    # Una arista por relación (from, predicate, to): por fuente, para que las
+    # métricas de cada una cuenten relaciones, y después el conjunto.
+    wiki_edges = consolidar_aristas(wiki_edges)
+    entity_edges = consolidar_aristas(_merge_entity_relations(ontology, identidades))
+    code_edges = consolidar_aristas(_merge_code_relations(ontology, identidades))
 
-    all_edges = wiki_edges + entity_edges + code_edges
+    all_edges = consolidar_aristas(wiki_edges + entity_edges + code_edges)
 
     if project:
         all_edges = [

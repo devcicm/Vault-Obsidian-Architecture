@@ -48,6 +48,7 @@ from vault_registry import ORDERED_SECTIONS
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from vault.grafo.aristas import consolidar_aristas  # noqa: E402
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 
@@ -314,6 +315,10 @@ def vault_graph() -> Dict[str, Any]:
                         "targetPath": link.replace("\\", "/"),
                     }
                 )
+
+    # Una arista por relación (from, type, to), con sus apariciones.
+
+    edges = consolidar_aristas(edges)
 
     # Find orphan notes (no incoming links, except 00_System)
 

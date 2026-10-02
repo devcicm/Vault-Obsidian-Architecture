@@ -87,7 +87,9 @@ def test_ap17_el_wikilink_se_resuelve_como_en_obsidian(vault):
     _nota(vault, "07_Knowledge/cache.md", "c", title="Cache", aliases="[Redis]")
     _nota(vault, "07_Knowledge/hub.md", "[[Redis]] [[cache|la caché]] [[cache#Uso]]", title="Hub")
     _, g = _enriquecido(vault)
-    assert _wiki(g, "07_Knowledge/hub.md") == ["07_Knowledge/cache.md"] * 3
+    assert _wiki(g, "07_Knowledge/hub.md") == ["07_Knowledge/cache.md"]
+    [arista] = [e for e in g["edges"] if e["from"] == "07_Knowledge/hub.md"]
+    assert arista["occurrences"] == 3
 
 
 def _relaciones(vault, *pares):

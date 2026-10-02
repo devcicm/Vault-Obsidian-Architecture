@@ -429,6 +429,8 @@ En el mismo paso se corrigió que `vault_graph` devolviera `savedTo: "99_Index\g
 
 **Identidad por nombre (AP-17).** Un enlace se resuelve con el dueño, `vault_lib.resolver_wikilink`: nombre de fichero, sufijo de ruta y `aliases:`, nunca `title:`. Si dos notas responden al mismo destino —`[[overview]]` con `01_Projects/overview.md` y `07_Knowledge/overview.md`—, el grafo no crea la arista: publica el enlace en `ambiguousLinks` con todos los `candidates`, y la carpeta en el enlace es lo que lo desambigua. Hasta ahora ganaba la nota que el recorrido del disco devolviera antes. Las notas cuyo nombre colapsa a la misma `clave_de_nombre` (`Mi Proyecto.md` / `mi-proyecto.md`) salen en `nameCollisions`. Un enlace ambiguo no se cuenta como roto, porque su destino existe: lo que sobra es una nota.
 
+**Una arista es una relación, no una aparición.** Cada arista sale una vez por `(from, type, to)`, con `id` estable (`from|type|to`) y `occurrences` = cuántas veces se escribió el enlace. `totalEdges` cuenta relaciones: antes, tres `[[cache]]` en una nota eran tres aristas iguales. La identidad la declara `vault/grafo/aristas.py` (`consolidar_aristas`), compartida con `vault_graph_merge`. No se llama `weight` porque `vault_subgraph` ya usa ese nombre para el peso del predicado.
+
 ---
 
 ### `vault_graph_merge.py`
@@ -443,6 +445,8 @@ python vault_graph_merge.py --predicate-filter depends_on,implements,calls
 ```
 
 **Lo parecido es una sugerencia, no una arista (AP-17).** Un wikilink se resuelve con el mismo dueño que `vault_graph` (`vault_lib.resolver_wikilink`); el extremo de una relación de entidad o de código, por `clave_de_nombre` sobre el nombre de fichero y los `aliases:` de las notas, y solo si responde **una** nota. Hasta ahora fijaban un extremo tres vías que el vault no respalda: el `title:` (que Obsidian no mira), la última nota con el mismo stem normalizado y `SequenceMatcher ≥ 0.75`. Ahora ninguna crea arista: cada caso sale en `suggestions` con `criterion` (`name_key`, `title`, `ambiguous`, `similar`) y `candidates`, y los enlaces con dos notas posibles en `ambiguousLinks`. Se confirma con la carpeta en el enlace, un alias o renombrando. Contrastado contra `/vcloud`: `containers/ct105.md` y `services/ct105.md` hacían que `[[ct105]]` apuntara a la última leída —32 enlaces—, y 14 enlaces relativos o con ancla que salían rotos ahora resuelven.
+
+**Aristas únicas.** Las aristas se consolidan por `(from, predicate, to)` con `vault/grafo/aristas.consolidar_aristas`, por fuente y después en conjunto: cada una lleva `id` y `occurrences`, y si dos declaraciones de la misma relación difieren en un atributo (`label`, `cardinality`…) lo distinto se conserva en `variants` en vez de quedarse con la primera.
 
 ---
 
