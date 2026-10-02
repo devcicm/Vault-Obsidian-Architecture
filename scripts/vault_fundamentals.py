@@ -407,7 +407,7 @@ TRACEABILITY_MATRIX: List[Dict[str, str]] = [
     {"concept": "Confidencialidad (CIA-C)", "metric": "hallazgos de secretos expuestos", "threshold": "0", "tool": "vault_security_scan", "artifact": "02_Observability/vulnerabilities/", "enforcement": "guard+audit"},
     {"concept": "Integridad (CIA-I / F1)", "metric": "dq.integrity", "threshold": "0.0–1.0, ≥0.7", "tool": "vault_quality_check", "artifact": "00_System/quality-index.json", "enforcement": "audit"},
     {"concept": "Disponibilidad (CIA-A)", "metric": "backups con manifiesto Merkle verificable", "threshold": "≥1 reciente", "tool": "vault_backup", "artifact": "vault-backups/", "enforcement": "guard (AP-36)"},
-    {"concept": "Consistencia (F2)", "metric": "wiki-links rotos", "threshold": "0", "tool": "vault_audit", "artifact": "00_System/graph.json", "enforcement": "guard+audit"},
+    {"concept": "Consistencia (F2)", "metric": "wiki-links rotos", "threshold": "0", "tool": "vault_audit", "artifact": "99_Index/graph.json", "enforcement": "guard+audit"},
     {"concept": "Completitud (F3)", "metric": "líneas reales de contenido", "threshold": "≥3", "tool": "vault_write", "artifact": "content gate", "enforcement": "guard"},
     {"concept": "Exactitud (F4)", "metric": "coincidencia type ↔ carpeta", "threshold": "100%", "tool": "vault_validate", "artifact": "vault_registry.SECTIONS", "enforcement": "audit (CN-02)"},
     {"concept": "Validez (F5)", "metric": "status dentro de STATUS_VOCAB", "threshold": "12 valores", "tool": "vault_norms --audit", "artifact": "vault_norms.STATUS_VOCAB", "enforcement": "audit (CN-03)"},

@@ -388,7 +388,7 @@ La vista de una pantalla que hace verificable todo lo anterior. Generada por `va
 | Confidencialidad (CIA-C) | hallazgos de secretos expuestos | 0 | `vault_security_scan` | `02_Observability/security/` | guard+audit |
 | Integridad (CIA-I / F1) | `dq.integrity` | 0.0–1.0, ≥0.7 | `vault_quality_check` | `00_System/quality-index.json` | audit |
 | Disponibilidad (CIA-A) | backups con manifiesto Merkle verificable | ≥1 reciente | `vault_backup` | `vault-backups/` | guard (AP-36) |
-| Consistencia (F2) | wiki-links rotos | 0 | `vault_audit` | `00_System/graph.json` | guard+audit |
+| Consistencia (F2) | wiki-links rotos | 0 | `vault_audit` | `99_Index/graph.json` | guard+audit |
 | Completitud (F3) | líneas reales de contenido | ≥3 | `vault_write` | content gate | guard |
 | Exactitud (F4) | coincidencia `type` ↔ carpeta | 100% | `vault_validate` | `vault_registry.SECTIONS` | audit (CN-02) |
 | Validez (F5) | `status` dentro de `STATUS_VOCAB` | 12 valores | `vault_norms --audit` | `vault_norms.STATUS_VOCAB` | audit (CN-03) |

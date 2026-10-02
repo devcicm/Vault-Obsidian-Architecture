@@ -404,7 +404,7 @@ BIGDATA_VS: List[Dict[str, Any]] = [
         "english": "volume",
         "description": "Cuánto conocimiento acumula el vault sin degradar la navegación.",
         "metric": "total de notas y tamaño del grafo",
-        "artifact": "00_System/graph.json · vault_audit.stats",
+        "artifact": "99_Index/graph.json · vault_audit.stats",
         "control": "AP-23 (techo de complejidad por nota) e índices por sección evitan que el crecimiento rompa la búsqueda.",
         "tools": ["vault_audit", "vault_graph", "vault_list"],
     },
