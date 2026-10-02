@@ -985,7 +985,7 @@ async function handleToolsCall(params, session) {
       if (!guard.ok) {
         await TraceLog.record(name, args, { ok: false, guard_result: guard }, vaultRoot);
         return formatToolError("GUARD_CHAIN_FAILED",
-          `Guard chain blocked at ${guard.failed_at}: ${JSON.stringify(guard.results[guard.failed_at])}`);
+          `Guard chain blocked at ${guard.failed_at}: ${JSON.stringify(guard.results[guard.failed_at])}`, name);
       }
     }
 
@@ -993,7 +993,7 @@ async function handleToolsCall(params, session) {
       const tagGuard = guardTagCompleteness(args, args.folder);
       if (!tagGuard.ok) {
         return formatToolError("GUARD_CHAIN_FAILED",
-          `Guard chain blocked at tagCompleteness: ${JSON.stringify(tagGuard)}`);
+          `Guard chain blocked at tagCompleteness: ${JSON.stringify(tagGuard)}`, name);
       }
     }
 
@@ -1028,7 +1028,7 @@ async function handleToolsCall(params, session) {
     } else {
       const tool = TOOLS_CATALOG[name];
       if (!tool || !tool.script) {
-        return formatToolError("tool_not_found", `Tool '${name}' not found.`);
+        return formatToolError("tool_not_found", `Tool '${name}' not found.`, name);
       }
       const scriptPath = join(SCRIPTS_DIR, tool.script);
       result = await executePythonTool(scriptPath, args, vaultRoot, session, schema,

@@ -54,6 +54,8 @@ def test_ap52_todo_codigo_literal_del_servidor_esta_en_el_catalogo():
 @pytest.mark.parametrize("tool,argumentos,codigo", [
     ("vault_read", {"no_existe": 1}, "INVALID_ARGS"),
     ("vault_que_no_existe", {}, "tool_not_found"),
+    ("vault_write", {"folder": "07_Knowledge", "title": "Corta", "content": "una linea"},
+     "GUARD_CHAIN_FAILED"),
 ])
 def test_ap52_el_rechazo_del_transporte_sale_canonico(tmp_path, tool, argumentos, codigo):
     vault = _init_vault(tmp_path / "vault")
@@ -64,5 +66,8 @@ def test_ap52_el_rechazo_del_transporte_sale_canonico(tmp_path, tool, argumentos
         sesion.cerrar()
     env = json.loads(r["result"]["content"][0]["text"])
     assert env["error_code"] == codigo, env
+    # Decía `"tool": "unknown"` al bloquear la cadena de guardas: el servidor
+    # sabía qué tool había rechazado y no lo pasaba al envelope.
+    assert env["tool"] == tool, env
     assert problemas_de_forma(env) == [], env
     assert env["recovery"]["action"] == ERROR_CATALOG[codigo]["recovery"]["action"]
