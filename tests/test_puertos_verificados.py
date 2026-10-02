@@ -54,7 +54,10 @@ def test_hay_puertos_en_los_contextos_que_publican_api():
     # no había dónde notar que el cruce existía.
     # +1 en PR5: la CLI consume la proyección derivada para no
     # inventar un mapeo de operaciones instaladas desde los scripts legacy.
-    assert len(PUERTOS) == 62
+    # +1 en 7a2390a: `refresco_de_busqueda`, en `indices`. El kernel ya llamaba
+    # a `vault_section_index` por un gancho declarado; refrescar la búsqueda va
+    # por el mismo gancho, y sin puerto el nombre nuevo cruzaba por detrás.
+    assert len(PUERTOS) == 63
     # `cli` queda fuera a propósito: es un adaptador de transporte y **nadie
     # importa de `cli/`**, así que no publica API. Exigirle un puerto obligaría
     # a inventar uno, que es justo lo contrario de lo que mide este fichero.

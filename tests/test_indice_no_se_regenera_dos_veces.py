@@ -121,4 +121,7 @@ def test_el_envelope_ya_no_declara_la_escritura_fantasma(vault):
     # entrando en el ledger de AP-37. Contar la telemetría como trabajo hacía
     # que el indicador subiera con el número de errores registrados, que es
     # justo lo contrario de lo que mide. Ver `_NO_ES_TRABAJO` en `vault_io`.
-    assert envelope["written"] == 4, envelope
+    # 4 → 5 en 7a2390a, y esta vez sí es trabajo: la nota entra en
+    # `search-index.json` en la misma escritura (AP-47). Sin ese quinto,
+    # `vault_search` no encontraba lo que el `*_save` acababa de escribir.
+    assert envelope["written"] == 5, envelope
