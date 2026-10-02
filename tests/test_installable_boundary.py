@@ -189,3 +189,24 @@ def test_modulo_y_fallback_legacy_conservan_semantica(tmp_path):
         salida.pop("timestamp", None)
         salida.pop("vault_says", None)
     assert salidas[0] == salidas[1]
+
+
+def test_todo_recurso_de_scripts_que_entra_al_wheel_esta_en_su_package_data():
+    """El registro decía que `vault_ontology.json` entra a la wheel y el test de
+    arriba lo confirmaba contra el propio registro (AP-44): `pyproject.toml` no
+    la declaraba, la wheel salía sin ella y `vault_graph_merge` tipaba el grafo
+    con una ontología vacía. Aquí se mide contra lo que lee setuptools."""
+    import pytest
+    from pathlib import Path
+
+    tomllib = pytest.importorskip("tomllib")
+    raiz = Path(__file__).resolve().parent.parent
+    st = tomllib.loads((raiz / "pyproject.toml").read_text(encoding="utf-8"))["tool"]["setuptools"]
+    assert st["package-dir"]["vault_toolkit._impl"] == "scripts"
+    declarados = set(st.get("package-data", {}).get("vault_toolkit._impl", []))
+    deben = {
+        f.name for f in (raiz / "scripts").iterdir()
+        if f.is_file() and f.suffix != ".py" and entra_al_wheel(f"scripts/{f.name}")
+    }
+    assert "vault_ontology.json" in deben
+    assert deben <= declarados, sorted(deben - declarados)
