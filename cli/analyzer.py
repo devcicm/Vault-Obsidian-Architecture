@@ -29,8 +29,8 @@ from .registry import GUARDED_ARTIFACTS, SCRIPTS_DIR
 # El orden lo da el registro, no una copia. `severidad` ya vivía en
 # `vault_vocabulario`; tenerlo aquí escrito a mano hacía que ampliar la
 # escala en el registro dejase a `cli/` ordenando por una escala vieja sin
-# que nada avisara. El import es seguro: `.registry` ya puso `scripts/` en
-# `sys.path` una línea más arriba.
+# que nada avisara. `scripts/` lo pone en `sys.path` el punto de entrada
+# (`cli/__main__.py`); `.registry` dejó de hacerlo en f1132aa.
 from vault_vocabulario import rango  # noqa: E402
 
 # `mayor_primero=False` y `base=0`: aquí el número es la posición en la lista

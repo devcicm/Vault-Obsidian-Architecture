@@ -330,3 +330,26 @@ def test_con_el_contrato_legible_no_hay_hallazgo_de_lectura():
     assert frag.contract_known is True
     codigos = {f.code for f in safety.check_contract(frag, {"path": "x.md"})}
     assert "CONTRACT-UNREADABLE" not in codigos
+
+
+# ── arranque como lo usa el consumidor ───────────────────────────────────────
+
+def _python_m_cli(*args: str):
+    """`python -m cli` en otro proceso y sin `PYTHONPATH`: el `sys.path` que
+    este fichero prepara arriba es el que escondía el fallo (AP-44)."""
+    import os
+    import subprocess
+
+    env = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
+    env["PYTHONIOENCODING"] = "utf-8"
+    return subprocess.run([sys.executable, "-m", "cli", *args], cwd=str(REPO_ROOT),
+                          env=env, capture_output=True, text=True,
+                          encoding="utf-8", timeout=120)
+
+
+def test_python_m_cli_arranca_sin_sys_path_preparado():
+    """AP-42: desde f1132aa `python -m cli` caía al importar con
+    `No module named 'vault_vocabulario'`, y la suite seguía verde."""
+    p = _python_m_cli("--version")
+    assert p.returncode == 0, p.stderr[-800:]
+    assert "ModuleNotFoundError" not in p.stderr
