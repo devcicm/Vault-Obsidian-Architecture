@@ -38,6 +38,12 @@ from vault_regex import RE_WIKILINK  # dueño único del patrón (AP-50)
 # Configuration
 
 from vault_io import atomic_write_json, write_report
+from vault_lib import (  # dueño único de la identidad por nombre (AP-57, AP-17)
+    colisiones_de_nombre,
+    indice_de_nombres,
+    parse_frontmatter,
+    resolver_wikilink,
+)
 from vault_registry import ORDERED_SECTIONS
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -104,6 +110,11 @@ def _build_slug_map(all_files: List[Path]) -> Dict[str, str]:
 
     Build a map from possible wiki-link names to relative paths.
 
+    superseded_by: vault_lib.indice_de_nombres. Con `if stem not in slug_map`
+    un nombre compartido por dos notas resolvía a la que el recorrido del disco
+    diera primero (AP-17); se conserva por la política de no-derogación, pero
+    `vault_graph` ya no la usa.
+
     Handles: bare stem ('identity'), path with subdirs ('01_Projects/overview'),
 
     and Windows-style paths ('grooming-scheduler/overview\\').
@@ -142,7 +153,11 @@ def _build_slug_map(all_files: List[Path]) -> Dict[str, str]:
 
 
 def _resolve_link(slug: str, slug_map: Dict[str, str]) -> str:
-    """Try to resolve a wiki-link slug to a vault-relative path."""
+    """Try to resolve a wiki-link slug to a vault-relative path.
+
+    superseded_by: vault_lib.resolver_wikilink, que devuelve los candidatos en
+    vez de uno solo y quita alias y ancla antes de buscar.
+    """
 
     # Normalize: backslashes, strip trailing separators
 
@@ -192,18 +207,38 @@ def vault_graph() -> Dict[str, Any]:
         if _is_vault_note(p) and not any(part.startswith(".") for part in p.parts)
     ]
 
-    # Build slug→path map for link resolution across the whole vault
+    ambiguous_links = []  # [{from, link, candidates}]
 
-    slug_map = _build_slug_map(all_files)
+    # Primera pasada: el índice de nombres necesita los `aliases:` de todas
+    # las notas antes de resolver el primer enlace.
+
+    repo = _repo()
+
+    contenidos: Dict[Path, str] = {}
+
+    aliases_por_ruta: Dict[str, List[str]] = {}
 
     for note_path in all_files:
         try:
             with open(note_path, "r", encoding="utf-8") as f:
-                content = f.read()
+                contenidos[note_path] = f.read()
 
         except (UnicodeDecodeError, PermissionError):
             continue
 
+        aliases = parse_frontmatter(contenidos[note_path]).get("aliases") or []
+
+        if isinstance(aliases, str):
+            aliases = [aliases]
+
+        if isinstance(aliases, list):
+            aliases_por_ruta[repo.relativa(note_path)] = aliases
+
+    relativas = [repo.relativa(p) for p in all_files]
+
+    indice = indice_de_nombres(relativas, aliases_por_ruta)
+
+    for note_path, content in contenidos.items():
         rel_path = str(note_path.relative_to(_raiz())).replace("\\", "/")
 
         # Parse frontmatter
@@ -251,10 +286,18 @@ def vault_graph() -> Dict[str, Any]:
         # Create edges — use recursive slug map instead of root-only lookup
 
         for link in wiki_links:
-            resolved = _resolve_link(link, slug_map)
+            resolved, candidatos = resolver_wikilink(link, Path(rel_path), indice)
 
             if resolved:
                 edges.append({"from": rel_path, "to": resolved, "type": "wiki-link"})
+
+            elif candidatos:
+                # AP-17: el destino existe, pero responden dos notas. Elegir
+                # una sería inventar la identidad; la carpeta en el enlace es
+                # lo que la fija.
+                ambiguous_links.append(
+                    {"from": rel_path, "link": link, "candidates": candidatos}
+                )
 
             else:
                 # AP-14: el wikilink que no resuelve contra el mapa de slugs.
@@ -322,6 +365,8 @@ def vault_graph() -> Dict[str, Any]:
         except (json.JSONDecodeError, PermissionError):
             pass
 
+    name_collisions = colisiones_de_nombre(relativas)
+
     # Count deleted/moved nodes
     deleted_count = sum(1 for n in nodes.values() if n.get("status") == "deleted")
     moved_count = sum(1 for n in nodes.values() if n.get("status") == "moved")
@@ -336,11 +381,15 @@ def vault_graph() -> Dict[str, Any]:
             "totalEdges": len(edges),
             "orphanNotes": len(orphans),
             "brokenLinks": len(broken_links),
+            "ambiguousLinks": len(ambiguous_links),
+            "nameCollisions": len(name_collisions),
             "deletedNodes": deleted_count,
             "movedNodes": moved_count,
         },
         "orphans": orphans,
         "brokenLinks": broken_links,
+        "ambiguousLinks": ambiguous_links,
+        "nameCollisions": name_collisions,
     }
 
     _graph_file().parent.mkdir(parents=True, exist_ok=True)
@@ -357,6 +406,8 @@ def vault_graph() -> Dict[str, Any]:
         "stats": graph_data["stats"],
         "orphans": orphans[:10],  # Top 10
         "brokenLinks": broken_links[:10],  # Top 10
+        "ambiguousLinks": ambiguous_links[:10],  # Top 10
+        "nameCollisions": name_collisions[:10],  # Top 10
     }
 
 

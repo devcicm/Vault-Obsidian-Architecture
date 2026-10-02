@@ -427,6 +427,8 @@ Desde v40.0 las once tools del contexto **Grafo** resuelven sus rutas al usarlas
 
 En el mismo paso se corrigió que `vault_graph` devolviera `savedTo: "99_Index\graph.json"` en Windows mientras `vault_graph_merge` ya devolvía la forma POSIX — la misma ruta con dos formas dentro del mismo contexto, y la de Windows no la resuelve quien lee el envelope desde otra plataforma.
 
+**Identidad por nombre (AP-17).** Un enlace se resuelve con el dueño, `vault_lib.resolver_wikilink`: nombre de fichero, sufijo de ruta y `aliases:`, nunca `title:`. Si dos notas responden al mismo destino —`[[overview]]` con `01_Projects/overview.md` y `07_Knowledge/overview.md`—, el grafo no crea la arista: publica el enlace en `ambiguousLinks` con todos los `candidates`, y la carpeta en el enlace es lo que lo desambigua. Hasta ahora ganaba la nota que el recorrido del disco devolviera antes. Las notas cuyo nombre colapsa a la misma `clave_de_nombre` (`Mi Proyecto.md` / `mi-proyecto.md`) salen en `nameCollisions`. Un enlace ambiguo no se cuenta como roto, porque su destino existe: lo que sobra es una nota.
+
 ---
 
 ### `vault_graph_merge.py`

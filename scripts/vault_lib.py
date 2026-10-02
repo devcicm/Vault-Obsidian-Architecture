@@ -396,15 +396,64 @@ def indice_de_destinos(relativas, aliases=None) -> set:
 
     `relativas` son rutas relativas a la raíz del vault (`Path` o `str`).
     """
-    destinos = set()
+    return set(indice_de_nombres(relativas, {"": aliases or []}))
+
+
+def indice_de_nombres(relativas, aliases_por_ruta=None) -> Dict[str, List[str]]:
+    """Cada destino que resuelve en el vault → **todas** las notas que lo resuelven.
+
+    El mismo criterio que `indice_de_destinos` —sufijos de ruta y `aliases:`,
+    nunca `title:`—, pero sin tirar la información que decide si un nombre es
+    una identidad: cuántas notas responden a él. Un mapa destino → ruta con
+    `if clave not in mapa` se quedaba con la que el recorrido del disco diera
+    primero y escondía a la otra (AP-17). Las listas salen ordenadas, así que
+    el resultado no depende de ese recorrido.
+
+    `aliases_por_ruta` mapea ruta relativa → lista de alias de esa nota.
+    """
+    indice: Dict[str, set] = {}
     for r in relativas:
-        partes = Path(str(r).replace("\\", "/")).with_suffix("").parts
+        rel = str(r).replace("\\", "/")
+        partes = Path(rel).with_suffix("").parts
         for i in range(len(partes)):
-            destinos.add("/".join(partes[i:]).lower())
-    for a in aliases or []:
-        if isinstance(a, str) and a.strip():
-            destinos.add(a.strip().lower())
-    return destinos
+            indice.setdefault("/".join(partes[i:]).lower(), set()).add(rel)
+    for rel, aliases in (aliases_por_ruta or {}).items():
+        for a in aliases or []:
+            if isinstance(a, str) and a.strip():
+                indice.setdefault(a.strip().lower(), set()).add(str(rel).replace("\\", "/"))
+    return {destino: sorted(rutas) for destino, rutas in indice.items()}
+
+
+def resolver_wikilink(
+    bruto: str, desde: "Path | None", indice: Dict[str, List[str]]
+) -> Tuple[str, List[str]]:
+    """`(ruta, candidatos)`: la nota del enlace si es una sola, y quién responde.
+
+    Con un candidato, `ruta` es ese candidato. Con dos o más el enlace es
+    **ambiguo** y `ruta` sale vacía: elegir uno sería inventar la identidad que
+    el vault no fija, y la carpeta en el enlace (`[[09_Infra/overview]]`) es lo
+    que la fija. Sin candidatos, el enlace está roto.
+    """
+    candidatos = indice.get(resolver_destino_wikilink(bruto, desde), [])
+    return (candidatos[0] if len(candidatos) == 1 else "", list(candidatos))
+
+
+def colisiones_de_nombre(relativas) -> List[Dict[str, Any]]:
+    """Grupos de notas cuyo nombre colapsa a la misma `clave_de_nombre` (AP-17).
+
+    Es la identidad, no la resolución: `Mi Proyecto.md` y `mi-proyecto.md`
+    son dos enlaces distintos para Obsidian, pero el mismo nombre para quien
+    lee el vault, y cualquier tool que identifique por nombre los confunde.
+    """
+    grupos: Dict[str, List[str]] = {}
+    for r in relativas:
+        rel = str(r).replace("\\", "/")
+        grupos.setdefault(clave_de_nombre(Path(rel).stem), []).append(rel)
+    return [
+        {"clave": clave, "paths": sorted(rutas)}
+        for clave, rutas in sorted(grupos.items())
+        if len(rutas) > 1
+    ]
 
 
 def normalize_path(path: str) -> str:
