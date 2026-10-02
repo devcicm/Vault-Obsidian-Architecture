@@ -35,6 +35,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import re
 import sys
 from collections import defaultdict
@@ -331,12 +332,49 @@ def _detect_near_duplicates(
 
     pairs: list[dict[str, Any]] = []
     paths_with_shingles = list(shingle_map)
-    for i, a in enumerate(paths_with_shingles):
-        for b in paths_with_shingles[i + 1 :]:
-            sim = _jaccard(shingle_map[a], shingle_map[b])
-            if sim >= threshold:
-                pairs.append({"files": [a, b], "similarity": round(sim, 3)})
+    for i, j in _candidate_pairs(paths_with_shingles, shingle_map, threshold):
+        a, b = paths_with_shingles[i], paths_with_shingles[j]
+        sim = _jaccard(shingle_map[a], shingle_map[b])
+        if sim >= threshold:
+            pairs.append({"files": [a, b], "similarity": round(sim, 3)})
     return sorted(pairs, key=lambda x: -x["similarity"])
+
+
+def _candidate_pairs(
+    paths: list[str], shingle_map: dict[str, set[str]], threshold: float
+) -> list[tuple[int, int]]:
+    """Pares (i, j), i < j, que pueden alcanzar `threshold`: filtrado por prefijo.
+
+    AP-18: comparar todos los pares era O(n²) conjuntos de shingles, casi todos
+    entre notas sin un shingle en común. Con los shingles en un orden global
+    —los raros primero—, dos conjuntos con J ≥ t comparten al menos uno dentro
+    de sus prefijos de longitud |x| − ⌈t·|x|⌉ + 1, y |y| ≥ t·|x|. Es exacto: el
+    filtro descarta solo pares que no pueden pasar, y la verificación sigue
+    siendo `_jaccard`. El margen `_EPS` alarga el prefijo, nunca lo acorta, para
+    que el redondeo de `t·|x|` no pierda un par. Se devuelven en el orden de la
+    doble iteración de antes, que es el que conserva el desempate del `sorted`.
+    """
+    n = len(paths)
+    if threshold <= 0:
+        return [(i, j) for i in range(n) for j in range(i + 1, n)]
+    _EPS = 1e-9
+    freq: dict[str, int] = defaultdict(int)
+    for p in paths:
+        for sh in shingle_map[p]:
+            freq[sh] += 1
+    index: dict[str, list[int]] = defaultdict(list)
+    found: set[tuple[int, int]] = set()
+    for k in sorted(range(n), key=lambda k: len(shingle_map[paths[k]])):
+        tokens = sorted(shingle_map[paths[k]], key=lambda sh: (freq[sh], sh))
+        size = len(tokens)
+        prefix = size - max(1, math.ceil(threshold * size - _EPS)) + 1
+        min_size = threshold * size - _EPS
+        for sh in tokens[:prefix]:
+            for other in index[sh]:
+                if len(shingle_map[paths[other]]) >= min_size:
+                    found.add((min(k, other), max(k, other)))
+            index[sh].append(k)
+    return sorted(found)
 
 
 def _detect_canonical_shadows(notes: dict[str, dict[str, Any]]) -> list[list[str]]:
