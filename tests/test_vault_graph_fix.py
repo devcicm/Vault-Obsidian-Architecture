@@ -382,6 +382,25 @@ class TestStubCreation:
         )
         assert result["created"] is False
 
+    def test_ap46_el_stub_de_un_destino_raro_tiene_frontmatter_legible(self, tmp_path):
+        """El destino sale de un wikilink ajeno y entraba crudo en `title:` e
+        `id:`. `[[%tasa #uno]]` es un nombre de fichero válido en las tres
+        plataformas, y escribía un stub cuyo frontmatter YAML no lee: `%` es
+        un indicador reservado y ` #` abre un comentario. Medido 2026-10-01;
+        se lee con `yaml.safe_load`, como el consumidor (AP-44)."""
+        import yaml
+        from vault_graph_fix import _create_stub
+
+        vault = tmp_path / "vault"
+        vault.mkdir()
+        destino = "%tasa #uno"
+        result = _create_stub(vault, destino, ["01_Projects/foo.md"], {"category": "no_match"})
+        assert result["created"] is True
+        texto = (vault / result["path"]).read_text(encoding="utf-8")
+        fm = yaml.safe_load(texto.split("---\n", 2)[1])
+        assert fm["title"] == destino
+        assert fm["id"].startswith(f"stub-{destino}-")
+
 
 class TestApplyClassifiedFixes:
     def test_apply_fix_modifies_source(self, tmp_path):

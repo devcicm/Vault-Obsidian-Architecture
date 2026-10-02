@@ -62,6 +62,7 @@ from vault_lib import (
     indice_de_destinos,
     parse_frontmatter,
     resolver_destino_wikilink,
+    yaml_scalar,
 )
 from vault_graph_inspect import (
     _SKIP_DIRS,
@@ -999,9 +1000,11 @@ def _create_stub(
     if len(referenced_by) > 20:
         ref_list += f"\n- ... and {len(referenced_by) - 20} more"
 
+    # AP-46: el destino sale de un wikilink ajeno y entraba crudo en `title:`
+    # e `id:`; `[[%tasa #uno]]` dejaba un stub que YAML no lee (2026-10-01).
     body = f"""---
-id: stub-{target_stem}-{now[:10]}
-title: {target_stem}
+id: {yaml_scalar(f'stub-{target_stem}-{now[:10]}')}
+title: {yaml_scalar(target_stem)}
 type: stub
 createdAt: {now}
 updatedAt: {now}
