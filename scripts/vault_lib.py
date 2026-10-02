@@ -456,6 +456,60 @@ def colisiones_de_nombre(relativas) -> List[Dict[str, Any]]:
     ]
 
 
+def _lista_de_cadenas(valor: Any) -> List[str]:
+    """`tags:`/`aliases:` como lista de cadenas: YAML admite escalar o lista."""
+    if isinstance(valor, str):
+        valor = [valor]
+    if not isinstance(valor, list):
+        return []
+    return [str(v).strip() for v in valor if isinstance(v, (str, int, float)) and str(v).strip()]
+
+
+def escanear_wikilinks(notas: Dict[str, str]) -> Dict[str, Any]:
+    """El único escaneo del grafo de wikilinks: `ruta relativa → contenido` → notas y aristas.
+
+    Lo usan `vault_graph` y `vault_graph_merge`, que hasta ahora recorrían el
+    vault cada uno a su manera y leían `title:`/`tags:` con un regex por
+    líneas: las etiquetas en lista de bloque, en flujo sin comillas o en una
+    nota CRLF salían vacías (AP-44). Aquí el frontmatter lo lee
+    `parse_frontmatter` y los enlaces se resuelven con `indice_de_nombres` y
+    `resolver_wikilink` —nombre de fichero, sufijo de ruta y `aliases:`,
+    nunca `title:`—, así que los dos productores no pueden discrepar sobre
+    qué nota es cuál (AP-17, AP-57). No hace E/S: leer el disco y qué hacer
+    con un fichero ilegible es de cada productor, y cada uno proyecta su
+    esquema (`type: "wiki-link"` o `predicate: "wiki_link"`).
+
+    Devuelve `notas` (ruta → `title`, `tags`, `aliases`, `links`), `aristas`
+    (`from`, `to`, una por aparición: consolidar es de `vault.grafo.aristas`),
+    `ambiguos` (`from`, `link`, `candidates`) y `rotos` (`from`, `link`,
+    `targetPath`).
+    """
+    meta: Dict[str, Dict[str, Any]] = {}
+    for rel, contenido in notas.items():
+        fm = parse_frontmatter(contenido)
+        titulo = fm.get("title")
+        meta[rel] = {
+            "title": str(titulo).strip() if titulo not in (None, "") else Path(rel).stem,
+            "tags": _lista_de_cadenas(fm.get("tags")),
+            "aliases": _lista_de_cadenas(fm.get("aliases")),
+            "links": RE_WIKILINK.findall(contenido),
+        }
+    indice = indice_de_nombres(list(meta), {rel: m["aliases"] for rel, m in meta.items()})
+    aristas: List[Dict[str, str]] = []
+    ambiguos: List[Dict[str, Any]] = []
+    rotos: List[Dict[str, str]] = []
+    for rel, m in meta.items():
+        for link in m["links"]:
+            destino, candidatos = resolver_wikilink(link, Path(rel), indice)
+            if destino:
+                aristas.append({"from": rel, "to": destino})
+            elif candidatos:
+                ambiguos.append({"from": rel, "link": link, "candidates": candidatos})
+            else:
+                rotos.append({"from": rel, "link": link, "targetPath": link.replace("\\", "/")})
+    return {"notas": meta, "indice": indice, "aristas": aristas, "ambiguos": ambiguos, "rotos": rotos}
+
+
 def normalize_path(path: str) -> str:
     """Normalize path separators for cross-platform consistency."""
     return path.replace("\\", "/")

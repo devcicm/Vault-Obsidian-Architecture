@@ -35,9 +35,7 @@ from vault_version import CURRENT_VERSION  # generator_version de los artefactos
 from vault_io import atomic_write_json, normalize_stem, write_report
 from vault_lib import (  # dueño único de la identidad por nombre (AP-57, AP-17)
     clave_de_nombre,
-    indice_de_nombres,
-    parse_frontmatter,
-    resolver_wikilink,
+    escanear_wikilinks,
 )
 from vault_registry import ORDERED_SECTIONS
 
@@ -123,6 +121,8 @@ def _extract_wiki_links(content: str) -> List[str]:
 
 
 def _extract_title(content: str) -> Optional[str]:
+    """superseded_by: vault_lib.escanear_wikilinks. Lee `title:` con un regex por
+    líneas (AP-44); se conserva por contrato, ningún productor la usa ya."""
     m = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
     if m:
         t = re.search(r"^title:\s*(.+)$", m.group(1), re.MULTILINE)
@@ -132,6 +132,8 @@ def _extract_title(content: str) -> Optional[str]:
 
 
 def _extract_tags(content: str) -> List[str]:
+    """superseded_by: vault_lib.escanear_wikilinks. Lee `tags:` con un regex por
+    líneas (AP-44); se conserva por contrato, ningún productor la usa ya."""
     m = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
     if not m:
         return []
@@ -285,11 +287,7 @@ def _build_wiki_link_graph() -> Tuple[Dict[str, Dict], List[Dict], List[Dict], "
     edges: List[Dict] = []
     broken: List[Dict] = []
     identidades = _Identidades()
-    # Los enlaces se resuelven en una segunda pasada porque necesitan el
-    # índice de nombres completo, pero no el disco: se guardan aquí al leer la
-    # nota. Releerla duplicaba la E/S y la extracción por nota.
-    enlaces: Dict[str, List[str]] = {}
-    aliases_por_ruta: Dict[str, List[str]] = {}
+    contenidos: Dict[str, str] = {}
 
     all_files = [
         p for p in _raiz().rglob("*.md")
@@ -300,7 +298,7 @@ def _build_wiki_link_graph() -> Tuple[Dict[str, Dict], List[Dict], List[Dict], "
         rel = str(p.relative_to(_raiz())).replace("\\", "/")
 
         try:
-            content = p.read_text(encoding="utf-8")
+            contenidos[rel] = p.read_text(encoding="utf-8")
         except (UnicodeDecodeError, PermissionError, OSError):
             continue
         except Exception as exc:
@@ -308,80 +306,59 @@ def _build_wiki_link_graph() -> Tuple[Dict[str, Dict], List[Dict], List[Dict], "
                       f"{rel}: {exc}")
             continue
 
-        title = _extract_title(content) or p.stem
-        tags = _extract_tags(content)
-        aliases = parse_frontmatter(content).get("aliases") or []
-        if isinstance(aliases, str):
-            aliases = [aliases]
-        if not isinstance(aliases, list):
-            aliases = []
-        aliases = [a for a in aliases if isinstance(a, str) and a.strip()]
-        aliases_por_ruta[rel] = aliases
+    # El frontmatter, el índice de nombres y la resolución de los enlaces son
+    # del escaneo único que comparte con `vault_graph` (AP-57): hasta ahora
+    # `_extract_title`/`_extract_tags` leían con un regex por líneas y dejaban
+    # vacías las etiquetas en lista de bloque, sin comillas o CRLF (AP-44).
+    escaneo = escanear_wikilinks(contenidos)
 
+    for rel, nota in escaneo["notas"].items():
         # Identidad: el nombre de fichero y los alias. El `title:` no fija
         # nada —Obsidian no lo mira— y solo se guarda para sugerir.
-        clave = clave_de_nombre(p.stem)
+        clave = clave_de_nombre(Path(rel).stem)
         identidades.por_clave[clave].append(rel)
-        for alias in aliases:
+        for alias in nota["aliases"]:
             clave_alias = clave_de_nombre(alias)
             if rel not in identidades.por_clave[clave_alias]:
                 identidades.por_clave[clave_alias].append(rel)
-        clave_titulo = clave_de_nombre(title)
+        clave_titulo = clave_de_nombre(nota["title"])
         if clave_titulo != clave:
             identidades.por_titulo[clave_titulo].append(rel)
 
         folder = rel.split("/")[0] if "/" in rel else ""
-        node_class = _folder_to_class(folder)
-
-        wiki_links = _extract_wiki_links(content)
-
         nodes[rel] = {
             "path": rel,
-            "title": title,
+            "title": nota["title"],
             "type": folder,
-            "class": node_class,
-            "tags": tags,
-            "linkCount": len(wiki_links),
+            "class": _folder_to_class(folder),
+            "tags": nota["tags"],
+            "linkCount": len(nota["links"]),
         }
-        enlaces[rel] = wiki_links
 
     for rutas in (*identidades.por_clave.values(), *identidades.por_titulo.values()):
         rutas.sort()
-    identidades.destinos = indice_de_nombres(list(nodes), aliases_por_ruta)
+    identidades.destinos = escaneo["indice"]
+    identidades.ambiguos = escaneo["ambiguos"]
 
-    for rel, wiki_links in enlaces.items():
-        for link in wiki_links:
-            resolved, candidatos = resolver_wikilink(link, Path(rel), identidades.destinos)
-            if resolved:
-                edges.append({
-                    "from": rel,
-                    "to": resolved,
-                    "predicate": "wiki_link",
+    edges = [
+        {"from": a["from"], "to": a["to"], "predicate": "wiki_link", "source": "wikilinks"}
+        for a in escaneo["aristas"]
+    ]
+    broken = escaneo["rotos"]
+    for roto in broken:
+        nombre = roto["link"].split("|")[0].split("#")[0].strip()
+        clave = clave_de_nombre(nombre.replace("\\", "/").rsplit("/", 1)[-1])
+        for criterio, indice in (("name_key", identidades.por_clave),
+                                 ("title", identidades.por_titulo)):
+            if indice.get(clave):
+                identidades.sugerir({
                     "source": "wikilinks",
+                    "from": roto["from"],
+                    "endpoint": nombre,
+                    "criterion": criterio,
+                    "candidates": list(indice[clave]),
                 })
-            elif candidatos:
-                identidades.ambiguos.append(
-                    {"from": rel, "link": link, "candidates": candidatos}
-                )
-            else:
-                broken.append({
-                    "from": rel,
-                    "link": link,
-                    "targetPath": link.replace("\\", "/"),
-                })
-                nombre = link.split("|")[0].split("#")[0].strip()
-                clave = clave_de_nombre(nombre.replace("\\", "/").rsplit("/", 1)[-1])
-                for criterio, indice in (("name_key", identidades.por_clave),
-                                         ("title", identidades.por_titulo)):
-                    if indice.get(clave):
-                        identidades.sugerir({
-                            "source": "wikilinks",
-                            "from": rel,
-                            "endpoint": nombre,
-                            "criterion": criterio,
-                            "candidates": list(indice[clave]),
-                        })
-                        break
+                break
 
     return nodes, edges, broken, identidades
 

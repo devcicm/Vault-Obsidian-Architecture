@@ -431,6 +431,8 @@ En el mismo paso se corrigió que `vault_graph` devolviera `savedTo: "99_Index\g
 
 **Una arista es una relación, no una aparición.** Cada arista sale una vez por `(from, type, to)`, con `id` estable (`from|type|to`) y `occurrences` = cuántas veces se escribió el enlace. `totalEdges` cuenta relaciones: antes, tres `[[cache]]` en una nota eran tres aristas iguales. La identidad la declara `vault/grafo/aristas.py` (`consolidar_aristas`), compartida con `vault_graph_merge`. No se llama `weight` porque `vault_subgraph` ya usa ese nombre para el peso del predicado.
 
+**Un solo escaneo.** `vault_graph` y `vault_graph_merge` leen las notas con `vault_lib.escanear_wikilinks`: el frontmatter con `parse_frontmatter` y los enlaces con el resolvedor de Obsidian; cada uno solo proyecta su esquema (`type: "wiki-link"` aquí, `predicate: "wiki_link"` en el enriquecido). Hasta ahora `title:` y `tags:` se leían con un regex por líneas que dejaba vacías las etiquetas en lista de bloque, sin comillas o de una nota CRLF: contrastado contra `/vcloud`, 86 de 145 notas salían sin etiquetas y 9 sin su título.
+
 ---
 
 ### `vault_graph_merge.py`

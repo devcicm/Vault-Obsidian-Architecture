@@ -20,7 +20,6 @@ Usage:
 
 import json
 
-import re
 
 import sys
 
@@ -40,9 +39,7 @@ from vault_regex import RE_WIKILINK  # dueño único del patrón (AP-50)
 from vault_io import atomic_write_json, write_report
 from vault_lib import (  # dueño único de la identidad por nombre (AP-57, AP-17)
     colisiones_de_nombre,
-    indice_de_nombres,
-    parse_frontmatter,
-    resolver_wikilink,
+    escanear_wikilinks,
 )
 from vault_registry import ORDERED_SECTIONS
 
@@ -208,113 +205,51 @@ def vault_graph() -> Dict[str, Any]:
         if _is_vault_note(p) and not any(part.startswith(".") for part in p.parts)
     ]
 
-    ambiguous_links = []  # [{from, link, candidates}]
-
-    # Primera pasada: el índice de nombres necesita los `aliases:` de todas
-    # las notas antes de resolver el primer enlace.
+    # Leer el disco es de este productor; parsear el frontmatter, indexar los
+    # nombres y resolver los enlaces es del escaneo único que comparte con
+    # `vault_graph_merge` (AP-57). Hasta ahora aquí se leían `title:` y `tags:`
+    # con un regex por líneas que dejaba vacías las etiquetas en lista de
+    # bloque, sin comillas o de una nota CRLF (AP-44).
 
     repo = _repo()
 
-    contenidos: Dict[Path, str] = {}
-
-    aliases_por_ruta: Dict[str, List[str]] = {}
+    contenidos: Dict[str, str] = {}
 
     for note_path in all_files:
         try:
             with open(note_path, "r", encoding="utf-8") as f:
-                contenidos[note_path] = f.read()
+                contenidos[repo.relativa(note_path)] = f.read()
 
         except (UnicodeDecodeError, PermissionError):
             continue
 
-        aliases = parse_frontmatter(contenidos[note_path]).get("aliases") or []
-
-        if isinstance(aliases, str):
-            aliases = [aliases]
-
-        if isinstance(aliases, list):
-            aliases_por_ruta[repo.relativa(note_path)] = aliases
-
     relativas = [repo.relativa(p) for p in all_files]
 
-    indice = indice_de_nombres(relativas, aliases_por_ruta)
+    escaneo = escanear_wikilinks(contenidos)
 
-    for note_path, content in contenidos.items():
-        rel_path = str(note_path.relative_to(_raiz())).replace("\\", "/")
-
-        # Parse frontmatter
-
-        frontmatter_match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
-
-        if frontmatter_match:
-            title = re.search(
-                r"^title:\s*(.+)$", frontmatter_match.group(1), re.MULTILINE
-            )
-
-            tags_match = re.search(
-                r"^tags:\s*(.+)$", frontmatter_match.group(1), re.MULTILINE
-            )
-
-            title = title.group(1).strip("\"'") if title else note_path.stem
-
-            if tags_match:
-                try:
-                    tags = json.loads(tags_match.group(1))
-
-                except json.JSONDecodeError:
-                    tags = []
-
-            else:
-                tags = []
-
-        else:
-            title = note_path.stem
-
-            tags = []
-
-        # Extract wiki-links
-
-        wiki_links = extract_wiki_links(content)
-
+    for rel_path, nota in escaneo["notas"].items():
         nodes[rel_path] = {
-            "title": title,
+            "title": nota["title"],
             "type": rel_path.split("/")[0] if "/" in rel_path else "other",
-            "tags": tags,
-            "links": wiki_links,
-            "linkCount": len(wiki_links),
+            "tags": nota["tags"],
+            "links": nota["links"],
+            "linkCount": len(nota["links"]),
         }
 
-        # Create edges — use recursive slug map instead of root-only lookup
+    edges = [
+        {"from": a["from"], "to": a["to"], "type": "wiki-link"} for a in escaneo["aristas"]
+    ]
 
-        for link in wiki_links:
-            resolved, candidatos = resolver_wikilink(link, Path(rel_path), indice)
+    # AP-17: el destino existe, pero responden dos notas. Elegir una sería
+    # inventar la identidad; la carpeta en el enlace es lo que la fija.
+    ambiguous_links = escaneo["ambiguos"]  # [{from, link, candidates}]
 
-            if resolved:
-                edges.append({"from": rel_path, "to": resolved, "type": "wiki-link"})
-
-            elif candidatos:
-                # AP-17: el destino existe, pero responden dos notas. Elegir
-                # una sería inventar la identidad; la carpeta en el enlace es
-                # lo que la fija.
-                ambiguous_links.append(
-                    {"from": rel_path, "link": link, "candidates": candidatos}
-                )
-
-            else:
-                # AP-14: el wikilink que no resuelve contra el mapa de slugs.
-                # Es también la única evidencia de que **SP-02** no se siguió:
-                # el protocolo pide buscar la nota antes de escribir `[[…]]`, y
-                # un enlace roto es exactamente lo que queda cuando no se buscó.
-                # Se publica el `targetPath` sin normalizar a propósito, para
-                # que el consumidor vea el enlace tal como está escrito en la
-                # nota y no la versión que esta tool preferiría (AP-44).
-                broken_links.append(
-                    {
-                        "from": rel_path,
-                        "link": link,
-                        "targetPath": link.replace("\\", "/"),
-                    }
-                )
+    # AP-14: el wikilink que no resuelve. Es también la única evidencia de que
+    # **SP-02** no se siguió: el protocolo pide buscar la nota antes de escribir
+    # `[[…]]`, y un enlace roto es exactamente lo que queda cuando no se buscó.
+    # `targetPath` va sin normalizar a propósito, para que el consumidor vea el
+    # enlace tal como está escrito en la nota (AP-44).
+    broken_links = escaneo["rotos"]
 
     # Una arista por relación (from, type, to), con sus apariciones.
 
