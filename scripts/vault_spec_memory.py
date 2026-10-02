@@ -303,12 +303,19 @@ def _read_change_memory() -> Dict[str, Any]:
 
 
 def _read_standard_version() -> str:
+    """La versión que declara el vault, o `"unknown"` si no se puede leer.
+
+    Al fallar devolvía `"v27"`: una versión inventada que no se distingue de
+    una leída (AP-51), y que en un vault v40 decía que estaba trece versiones
+    atrás. `"unknown"` es lo que esta misma función ya devuelve cuando el
+    fichero existe pero no trae el campo.
+    """
     try:
         data = json.loads(_standard_version_file().read_text(encoding="utf-8"))
         v = data.get("version", "unknown")
         return f"v{v}" if isinstance(v, int) else str(v)
     except Exception:
-        return "v27"
+        return "unknown"
 
 
 # ──────────────────────────────────────────────────────────────────────────────

@@ -15,6 +15,8 @@ import ast
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT))
@@ -165,3 +167,21 @@ def test_el_check_falla_si_hay_una_escritura_prohibida(monkeypatch):
     resultado = vault_arch.check()
     assert resultado["ok"] is False
     assert resultado["forbidden_writes"]
+
+
+@pytest.mark.parametrize("contenido", [None, "{no es json", '{"version": 40}'])
+def test_ap51_la_version_ilegible_no_se_inventa(tmp_path, contenido):
+    """Sin fichero o con uno corrupto, `_read_standard_version` devolvía
+    `"v27"`: una versión que no se distingue de una leída. Debe decir que no
+    la sabe; la que sí se lee se sigue devolviendo tal cual."""
+    import vault_io
+    import vault_spec_memory
+
+    raiz = tmp_path / "v"
+    vault_io.set_vault_root(raiz)  # lo deshace el fixture autouse de conftest
+    fichero = vault_spec_memory._standard_version_file()
+    if contenido is not None:
+        fichero.parent.mkdir(parents=True, exist_ok=True)
+        fichero.write_text(contenido, encoding="utf-8")
+    esperado = "v40" if contenido == '{"version": 40}' else "unknown"
+    assert vault_spec_memory._read_standard_version() == esperado
