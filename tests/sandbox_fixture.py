@@ -141,10 +141,26 @@ def bootstrap(root: Path | None = None) -> Path:
     return target
 
 
+def _semilla_intacta(target: Path) -> bool:
+    """Cada nota de la semilla está, y byte a byte como la semilla la escribe.
+
+    Hasta 2026-10-01 bastaba con que existiera `adr-001-mcp-transport.md`: un
+    sandbox de una siembra anterior —con otro `adr-001` y sin las notas
+    `mcp-transport-*`— se daba por listo, no se reconstruía, y
+    `test_context_memory` fallaba en el repo y pasaba en un worktree limpio.
+    Un resultado que depende de restos ignorados no mide el código.
+    """
+    for note in _seed()["parser_notes"]:
+        path = target / note["path"]
+        if not path.is_file() or path.read_bytes() != note["content"].encode("utf-8"):
+            return False
+    return True
+
+
 def ready(root: Path | None = None) -> bool:
     target = _assert_target(root or default_root())
     return (
-        (target / "03_Decisions" / "adr-001-mcp-transport.md").is_file()
+        _semilla_intacta(target)
         and (target / "00_System" / "vault-commands.md").is_file()
         and all((target / "00_System" / name).is_file() for name in DERIVED_FILES)
     )
