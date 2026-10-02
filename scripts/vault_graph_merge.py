@@ -247,6 +247,10 @@ def _build_wiki_link_graph() -> Tuple[Dict[str, Dict], List[Dict], List[Dict], D
     edges: List[Dict] = []
     broken: List[Dict] = []
     stem_map: Dict[str, str] = {}
+    # Los enlaces se resuelven en una segunda pasada porque necesitan el
+    # stem_map completo, pero no el disco: se guardan aquí al leer la nota.
+    # Releerla duplicaba la E/S y la extracción por nota.
+    enlaces: Dict[str, List[str]] = {}
 
     all_files = [
         p for p in _raiz().rglob("*.md")
@@ -287,19 +291,10 @@ def _build_wiki_link_graph() -> Tuple[Dict[str, Dict], List[Dict], List[Dict], D
             "tags": tags,
             "linkCount": len(wiki_links),
         }
+        enlaces[rel] = wiki_links
 
-    for rel, node in nodes.items():
-        p = _raiz() / rel
-        try:
-            content = p.read_text(encoding="utf-8")
-        except (UnicodeDecodeError, PermissionError, OSError):
-            continue
-        except Exception as exc:
-            emit_error("vault_graph_merge", "FILE_READ_ERROR",
-                      f"{rel}: {exc}")
-            continue
-
-        for link in _extract_wiki_links(content):
+    for rel, wiki_links in enlaces.items():
+        for link in wiki_links:
             link_norm = _normalize_stem(link)
             raw_target = link.split("|")[0].strip() if "|" in link else link
             target_norm = _normalize_stem(raw_target)

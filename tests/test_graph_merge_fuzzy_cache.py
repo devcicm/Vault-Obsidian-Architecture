@@ -49,3 +49,30 @@ def test_ap49_un_vault_nuevo_no_hereda_la_resolucion_del_anterior():
     assert gm._fuzzy_resolve("arquitecturax", nuevo, gm._build_prefix_index(nuevo)) == (
         "03_Docs/arquitecturas.md"
     )
+
+
+def test_ap49_cada_nota_se_lee_una_sola_vez(tmp_path, monkeypatch):
+    """La segunda pasada releía del disco lo que la primera ya había extraído."""
+    import vault_io
+
+    kn = tmp_path / "07_Knowledge"
+    kn.mkdir()
+    (tmp_path / "00_System").mkdir()
+    for i in range(5):
+        (kn / f"n{i}.md").write_text(
+            f"---\ntitle: N{i}\n---\n\n[[n{(i + 1) % 5}]] [[falta]]\n", encoding="utf-8"
+        )
+    vault_io.set_vault_root(tmp_path)
+
+    lecturas = []
+    real = Path.read_text
+
+    def contar(self, *a, **k):
+        if self.suffix == ".md":
+            lecturas.append(self.name)
+        return real(self, *a, **k)
+
+    monkeypatch.setattr(Path, "read_text", contar)
+    nodes, edges, broken, _ = gm._build_wiki_link_graph()
+    assert sorted(lecturas) == sorted(f"n{i}.md" for i in range(5))
+    assert len(nodes) == 5 and len(edges) == 5 and len(broken) == 5
