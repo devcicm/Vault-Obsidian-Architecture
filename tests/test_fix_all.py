@@ -21,6 +21,36 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import vault_fix_all as vfa  # noqa: E402
 
 
+def _ficheros_de_la_copia(raiz):
+    """Lo que la copia tiene que traer para probar el árbol de trabajo.
+
+    AP-44: hasta aquí era `git ls-files`, el criterio de git —lo que ya está en
+    el índice— y no el del árbol que se está probando. Un módulo nuevo sin
+    `git add` faltaba en la copia, la recolección fallaba dentro de
+    `doc_counts` y el test culpaba a la tool. `--others --exclude-standard`
+    añade lo nuevo y sigue dejando fuera lo ignorado.
+    """
+    salida = subprocess.run(
+        ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+        cwd=raiz, capture_output=True, check=True,
+    ).stdout.decode("utf-8")
+    return sorted(set(filter(None, salida.split("\0"))))
+
+
+def test_ap44_la_copia_trae_los_ficheros_nuevos_sin_los_ignorados(tmp_path):
+    def git(*args):
+        subprocess.run(["git", *args], cwd=tmp_path, capture_output=True, check=True)
+
+    git("init", "-q")
+    (tmp_path / ".gitignore").write_text("local/\n", encoding="utf-8")
+    (tmp_path / "viejo.py").write_text("x = 1\n", encoding="utf-8")
+    git("add", ".gitignore", "viejo.py")
+    (tmp_path / "nuevo.py").write_text("y = 2\n", encoding="utf-8")
+    (tmp_path / "local").mkdir()
+    (tmp_path / "local" / "dato.json").write_text("{}", encoding="utf-8")
+    assert _ficheros_de_la_copia(tmp_path) == [".gitignore", "nuevo.py", "viejo.py"]
+
+
 @pytest.fixture
 def repo_temporal(tmp_path, monkeypatch):
     """AP-36/AP-44: regeneración real, sobre una copia con historia propia.
@@ -28,7 +58,8 @@ def repo_temporal(tmp_path, monkeypatch):
     Cambiar solo cwd no basta: el padre y los scripts resuelven su raíz por
     __file__. El worktree conserva el historial que leen los generadores;
     la superposición prueba los archivos actuales, incluidos cambios sin commit.
-    Solo se copian archivos del índice, nunca notas ni datasets locales.
+    Se copian los archivos del índice y los nuevos sin ignorar
+    (`_ficheros_de_la_copia`), nunca lo que `.gitignore` deja fuera.
     """
     destino = (tmp_path / "repo").resolve()
     assert destino.is_relative_to(tmp_path.resolve())
@@ -37,10 +68,7 @@ def repo_temporal(tmp_path, monkeypatch):
         cwd=ROOT, capture_output=True, check=True,
     )
     try:
-        rutas = subprocess.run(
-            ["git", "ls-files", "-z"], cwd=ROOT, capture_output=True, check=True,
-        ).stdout.decode("utf-8").split("\0")
-        for relativa in filter(None, rutas):
+        for relativa in _ficheros_de_la_copia(ROOT):
             origen = ROOT / relativa
             if origen.is_file():
                 copia = destino / relativa
