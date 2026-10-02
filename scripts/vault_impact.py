@@ -32,6 +32,7 @@ from vault_errors import emit_error, wrap_main
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.grafo.aristas import predicado_de  # noqa: E402
+from vault.grafo.lectura import grafo_para_consulta  # noqa: E402
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 
@@ -76,12 +77,17 @@ CIA_WEIGHT: Dict[str, int] = _rango("severidad")
 
 
 def _load_graph(predicate_filter: Optional[List[str]] = None) -> Optional[Dict[str, Any]]:
-    """Load graph, preferring enriched graph. Optionally filter edges by predicate."""
-    graph_file = _enriched_file() if _enriched_file().exists() else _graph_file()
-    if not graph_file.exists():
-        return None
+    """El grafo de consulta, opcionalmente filtrado por predicado.
+
+    superseded_by: v40.x — antes se prefería siempre el enriquecido, también
+    cuando era más viejo que el básico, y las notas escritas después del
+    último `vault_graph_merge` no tenían impacto. El criterio es ahora el de
+    `vault_subgraph`, porque los dos piden al mismo dueño (AP-57).
+    """
     try:
-        data = json.loads(graph_file.read_text(encoding="utf-8"))
+        data = grafo_para_consulta(_repo())
+        if data is None:
+            return None
     except (json.JSONDecodeError, UnicodeDecodeError, OSError) as exc:
         emit_error("vault_impact", "GRAPH_LOAD_ERROR", str(exc))
         return None

@@ -143,11 +143,12 @@ Fronteras que hoy cruza (1), deuda declarada:
 - **No cruza:** base de datos; embeddings; servicio externo
 - **Módulos (11):** `vault_compact_contracts`, `vault_context_pack`, `vault_ingest`, `vault_mcp_context`, `vault_model_profile`, `vault_preferences`, `vault_query_parse`, `vault_subgraph`, `vault_token_counter`, `vault_token_service`, `vault_tokens`
 
-Fronteras que hoy cruza (4), deuda declarada:
+Fronteras que hoy cruza (5), deuda declarada:
 
 | Módulo | Importa | Contexto destino |
 |---|---|---|
 | `vault_context_pack` | `vault_search` | Autoría |
+| `vault_subgraph` | `vault/grafo` | Grafo |
 | `vault_subgraph` | `vault/grafo` | Grafo |
 | `vault_subgraph` | `vault/grafo` | Grafo |
 | `vault/consulta/repositorio.py` | `vault/ciclo_de_vida` | Ciclo de vida |

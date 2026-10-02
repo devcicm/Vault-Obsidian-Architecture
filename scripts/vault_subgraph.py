@@ -32,6 +32,7 @@ from vault_errors import emit_error, wrap_main
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.grafo.aristas import predicado_de  # noqa: E402
+from vault.grafo.lectura import grafo_para_consulta, nodos_por_ruta  # noqa: E402
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
 from vault.kernel.enumeracion import notas_en_disco  # noqa: E402
 from vault.kernel import construir  # noqa: E402
@@ -133,19 +134,21 @@ _check_hop_decay_invariant()
 
 
 def _fichero_de_grafo() -> Path:
-    """El enriquecido (trae predicados y clase) solo si no es más viejo.
+    """El fichero que hace de base: el básico si existe.
+
+    superseded_by: v40.x — `vault.grafo.lectura.grafo_para_consulta`. Elegir uno
+    de los dos ficheros perdía siempre una mitad: el enriquecido viejo no trae
+    las notas nuevas y el básico no trae predicados tipados ni `class`. Ahora
+    la base es el básico y el enriquecido se superpone; se conserva para
+    `graph_source`, que publica cuál fue la base.
 
     superseded_by: v40.34 — antes se prefería siempre el enriquecido. Medido
     en `vault-sandbox/`: `graph-enriched.json` con 113 nodos frente a los 114
     de un `graph.json` regenerado después; la nota nueva no existía para
     `vault_subgraph` aunque el grafo básico ya la tuviera.
     """
-    enriquecido, basico = _enriched_file(), _graph_file()
-    if not enriquecido.exists():
-        return basico
-    if basico.exists() and basico.stat().st_mtime > enriquecido.stat().st_mtime:
-        return basico
-    return enriquecido
+    basico = _graph_file()
+    return basico if basico.exists() or not _enriched_file().exists() else _enriched_file()
 
 
 def _desfase(nodes: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
@@ -174,12 +177,13 @@ def _desfase(nodes: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
 
 
 def _load_graph() -> Optional[Dict[str, Any]]:
-    """Carga el grafo; cuál de los dos lo decide `_fichero_de_grafo`."""
-    graph_file = _fichero_de_grafo()
-    if not graph_file.exists():
-        return None
+    """El grafo de consulta: el básico con el enriquecido superpuesto.
+
+    Lo decide el dueño (`grafo_para_consulta`), el mismo que usa `vault_impact`
+    (AP-57).
+    """
     try:
-        return json.loads(graph_file.read_text(encoding="utf-8"))
+        return grafo_para_consulta(_grafo())
     except (json.JSONDecodeError, UnicodeDecodeError, OSError) as exc:
         emit_error("vault_subgraph", "GRAPH_LOAD_ERROR", str(exc))
         return None
@@ -189,16 +193,8 @@ def _load_graph() -> Optional[Dict[str, Any]]:
 
 
 def _nodes_by_path(graph: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
-    """Normaliza `nodes`: el grafo lo emite como dict, versiones viejas como lista."""
-    nodes = graph.get("nodes", {})
-    if isinstance(nodes, dict):
-        return nodes
-    out: Dict[str, Dict[str, Any]] = {}
-    for node in nodes:
-        path = node.get("path") or node.get("id")
-        if path:
-            out[path] = node
-    return out
+    """Normaliza `nodes`; el criterio es de `vault.grafo.lectura` (AP-57)."""
+    return nodos_por_ruta(graph)
 
 
 def _adjacency(
@@ -416,6 +412,7 @@ def vault_subgraph(
             "by_hop": dict(sorted(by_hop.items())),
             "truncated": truncated,
             "graph_source": _fichero_de_grafo().name,
+            "overlay": graph.get("overlay", {"applied": False}),
         },
         **desfase,
     }
