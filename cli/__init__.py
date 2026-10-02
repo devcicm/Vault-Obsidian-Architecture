@@ -16,4 +16,22 @@ Módulos (fragmentos, buscables por separado):
 
 __all__ = ["__version__"]
 
-__version__ = "39.0"
+
+def _version_del_estandar() -> str:
+    """La versión sale de `vault_version.CURRENT_VERSION`, no de un literal.
+
+    Aquí ponía `"39.0"` mientras el estándar iba por v40.34: `--version`,
+    `doctor` y el banner anunciaban otra versión. Se carga por ruta —es una
+    hoja sin imports— para no tocar `sys.path` al importar el paquete.
+    """
+    from importlib.util import module_from_spec, spec_from_file_location
+    from pathlib import Path
+
+    ruta = Path(__file__).resolve().parent.parent / "scripts" / "vault_version.py"
+    spec = spec_from_file_location("_cli_vault_version", ruta)
+    modulo = module_from_spec(spec)
+    spec.loader.exec_module(modulo)
+    return modulo.CURRENT_VERSION.lstrip("v")
+
+
+__version__ = _version_del_estandar()

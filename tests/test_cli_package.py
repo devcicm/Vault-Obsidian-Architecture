@@ -353,3 +353,14 @@ def test_python_m_cli_arranca_sin_sys_path_preparado():
     p = _python_m_cli("--version")
     assert p.returncode == 0, p.stderr[-800:]
     assert "ModuleNotFoundError" not in p.stderr
+
+
+def test_la_version_de_la_cli_sale_del_registro():
+    """`cli/__init__.py` decía `"39.0"` con el estándar en v40.34: `--version`,
+    `doctor` y el banner anunciaban otra versión. La fuente es
+    `vault_version.CURRENT_VERSION`; se mira lo que imprime, no la constante."""
+    from vault_version import CURRENT_VERSION
+
+    p = _python_m_cli("--version")
+    assert p.returncode == 0, p.stderr[-800:]
+    assert p.stdout.strip() == f"cli {CURRENT_VERSION.lstrip('v')}"
