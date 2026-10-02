@@ -114,7 +114,17 @@ def count_tests() -> int:
     )
     m = re.search(r"(\d+) tests? collected", proc.stdout)
     if not m:
-        raise RuntimeError("no se pudo contar la suite con pytest --collect-only")
+        # AP-52: el fallo lleva su prueba. Sin ella el envelope decía «no se
+        # pudo contar» y la causa —un fichero nuevo sin añadir a la copia, un
+        # import roto— había que reproducirla a mano. Primero las líneas de
+        # error, porque `scan` recorta el mensaje.
+        salida = (proc.stderr or "") + "\n" + (proc.stdout or "")
+        lineas = [l.strip() for l in salida.splitlines() if l.strip()]
+        errores = [l for l in lineas if "Error" in l or l.startswith("ERROR")]
+        evidencia = " | ".join((errores or lineas)[-3:]) or "sin salida"
+        raise RuntimeError(
+            f"pytest --collect-only salió con {proc.returncode} sin dar la cifra: {evidencia}"
+        )
     return int(m.group(1))
 
 
