@@ -282,10 +282,20 @@ function log(level, msg, data) {
 // SECCIÓN 2: Core Utilities (JS-native equivalents of Python vault_*)
 // ============================================================================
 
+// Clave de identidad por nombre: réplica de `clave_de_nombre`
+// (vault/kernel/normalizacion.py), que es el dueño. La frontera de lenguaje
+// impide importarlo; tests/test_clave_de_nombre_mcp.py ejecuta las dos sobre
+// las mismas muestras. La copia anterior no plegaba acentos y quitaba `md`
+// después de los puntos: `cmd.md` y `c.md` eran la misma nota (AP-17, AP-57).
+const TRANSLITERACION_EXPLICITA = { "ß": "ss", "ø": "o", "Ø": "O", "đ": "d", "Đ": "D", "ł": "l", "Ł": "L" };
+
 function normalizeStem(s) {
-  return s.toLowerCase()
-    .replace(/-/g, "").replace(/_/g, "").replace(/ /g, "")
-    .replace(/\./g, "").replace(/md$/, "");
+  const plegado = Array.from(String(s), (ch) => TRANSLITERACION_EXPLICITA[ch] ?? ch).join("")
+    .normalize("NFKD").replace(/\p{Mn}/gu, "");
+  let texto = plegado.toLowerCase().trim();
+  if (texto.endsWith(".md")) texto = texto.slice(0, -3);
+  for (const separador of ["-", "_", " ", "."]) texto = texto.split(separador).join("");
+  return texto;
 }
 
 function extractWikilinks(content) {
