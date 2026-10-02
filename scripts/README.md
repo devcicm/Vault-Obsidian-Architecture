@@ -433,6 +433,8 @@ En el mismo paso se corrigió que `vault_graph` devolviera `savedTo: "99_Index\g
 
 **Un solo escaneo.** `vault_graph` y `vault_graph_merge` leen las notas con `vault_lib.escanear_wikilinks`: el frontmatter con `parse_frontmatter` y los enlaces con el resolvedor de Obsidian; cada uno solo proyecta su esquema (`type: "wiki-link"` aquí, `predicate: "wiki_link"` en el enriquecido). Hasta ahora `title:` y `tags:` se leían con un regex por líneas que dejaba vacías las etiquetas en lista de bloque, sin comillas o de una nota CRLF: contrastado contra `/vcloud`, 86 de 145 notas salían sin etiquetas y 9 sin su título.
 
+**Un solo enumerador.** Los dos productores enumeran con `vault.kernel.enumeracion.notas_en_disco`, el mismo que usa `vault_subgraph` para declarar el desfase. Hasta ahora descartaban las notas con un tramo oculto mirando la ruta **absoluta**: un vault colgado de `~/.claude/` —donde vive `vault-standard`— salía con cero nodos y sin error (AP-44).
+
 ---
 
 ### `vault_graph_merge.py`

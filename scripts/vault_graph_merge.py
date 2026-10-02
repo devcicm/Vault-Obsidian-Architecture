@@ -45,6 +45,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.grafo.aristas import consolidar_aristas  # noqa: E402
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.enumeracion import notas_en_disco  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -102,6 +103,8 @@ def _load_ontology() -> Tuple[Dict[str, Any], str]:
 
 
 def _is_vault_note(note_path: Path) -> bool:
+    """superseded_by: vault.kernel.enumeracion.notas_en_disco — el escaneo ya no
+    enumera con esto (AP-44). Se conserva el contrato por no-derogación."""
     try:
         parts = note_path.relative_to(_raiz()).parts
     except ValueError:
@@ -289,10 +292,9 @@ def _build_wiki_link_graph() -> Tuple[Dict[str, Dict], List[Dict], List[Dict], "
     identidades = _Identidades()
     contenidos: Dict[str, str] = {}
 
-    all_files = [
-        p for p in _raiz().rglob("*.md")
-        if _is_vault_note(p) and not any(part.startswith(".") for part in p.parts)
-    ]
+    # El mismo enumerador que `vault_graph` (AP-44, AP-57): el tramo oculto se
+    # mide en la ruta relativa al vault, no en la de la máquina que lo aloja.
+    all_files = notas_en_disco(_raiz(), ORDERED_SECTIONS)
 
     for p in all_files:
         rel = str(p.relative_to(_raiz())).replace("\\", "/")

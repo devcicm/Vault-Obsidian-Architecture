@@ -48,6 +48,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.grafo.aristas import consolidar_aristas  # noqa: E402
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.enumeracion import notas_en_disco  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -83,7 +84,12 @@ VAULT_SECTIONS = frozenset(ORDERED_SECTIONS)
 
 
 def _is_vault_note(note_path: Path) -> bool:
-    """Return True only for .md files inside a standard vault section."""
+    """Return True only for .md files inside a standard vault section.
+
+    superseded_by: vault.kernel.enumeracion.notas_en_disco — `vault_graph` ya
+    no enumera con esto (AP-44: el tramo oculto se medía en la ruta absoluta).
+    Se conserva el contrato por no-derogación.
+    """
 
     try:
         parts = note_path.relative_to(_raiz()).parts
@@ -199,11 +205,10 @@ def vault_graph() -> Dict[str, Any]:
 
     # Scan only notes inside the 13 standard vault sections
 
-    all_files = [
-        p
-        for p in _raiz().rglob("*.md")
-        if _is_vault_note(p) and not any(part.startswith(".") for part in p.parts)
-    ]
+    # El enumerador del núcleo (AP-44, AP-57): el tramo oculto se mide en la
+    # ruta relativa al vault. Con `p.parts` absoluto, un vault colgado de
+    # `~/.claude/` salía con cero nodos y sin error.
+    all_files = notas_en_disco(_raiz(), ORDERED_SECTIONS)
 
     # Leer el disco es de este productor; parsear el frontmatter, indexar los
     # nombres y resolver los enlaces es del escaneo único que comparte con
