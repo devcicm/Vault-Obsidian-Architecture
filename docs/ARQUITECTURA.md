@@ -127,7 +127,7 @@ Fronteras que hoy cruza (9), deuda declarada:
 ## Índices
 
 - **Lenguaje ubicuo:** índice, etiqueta, término, sección indexada, coherencia
-- **Puertos publicados:** `coherencia_de_indices` → `vault_reindex:index_coherence`, `indice_de_seccion` → `vault_section_index:vault_section_index`, `indice_maestro` → `vault_master_index:vault_master_index`, `ledger_de_backfill_de_tags` → `vault_tags:vault_tags_backfill_ledger`, `registrar_tags` → `vault_tags:registrar_tags_de_nota`, `reindexar` → `vault_reindex:vault_reindex`, `tags_de_frontmatter` → `vault_tags:tags_de_frontmatter`, `vocabulario_de_tags` → `vault_tags:canonical_tags`
+- **Puertos publicados:** `coherencia_de_indices` → `vault_reindex:index_coherence`, `indice_de_seccion` → `vault_section_index:vault_section_index`, `indice_maestro` → `vault_master_index:vault_master_index`, `ledger_de_backfill_de_tags` → `vault_tags:vault_tags_backfill_ledger`, `refresco_de_busqueda` → `vault_section_index:refrescar_busqueda`, `registrar_tags` → `vault_tags:registrar_tags_de_nota`, `reindexar` → `vault_reindex:vault_reindex`, `tags_de_frontmatter` → `vault_tags:tags_de_frontmatter`, `vocabulario_de_tags` → `vault_tags:canonical_tags`
 - **Módulos (6):** `vault_folder_registry`, `vault_index`, `vault_master_index`, `vault_reindex`, `vault_section_index`, `vault_tags`
 
 Fronteras que hoy cruza (1), deuda declarada:

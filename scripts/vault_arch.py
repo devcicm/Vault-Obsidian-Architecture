@@ -369,6 +369,10 @@ CONTEXTS: dict[str, dict] = {
             # v39: es el punto por el que índices entra en cada escritura, y
             # llevaba tres versiones cruzando la frontera sin nombre.
             "indice_de_seccion": "vault_section_index:vault_section_index",
+            # Por la misma puerta y en el mismo gancho (v40.34): la nota entra en
+            # `search-index.json` escriba quien escriba (AP-47). Publicarlo aquí
+            # y no importarlo desde cada escritor evita un cruce por escritor.
+            "refresco_de_busqueda": "vault_section_index:refrescar_busqueda",
             "registrar_tags": "vault_tags:registrar_tags_de_nota",
             "tags_de_frontmatter": "vault_tags:tags_de_frontmatter",
             "ledger_de_backfill_de_tags": "vault_tags:vault_tags_backfill_ledger",

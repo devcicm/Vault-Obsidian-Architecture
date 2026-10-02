@@ -56,7 +56,7 @@ regenera.*
 | **Autoría** (`autoria`) | 7 | 43 | — |
 | **Grafo** (`grafo`) | 3 | 15 | — |
 | **Gobernanza** (`gobernanza`) | 21 | 12 | — |
-| **Índices** (`indices`) | 8 | 6 | — |
+| **Índices** (`indices`) | 9 | 6 | — |
 | **Consulta** (`consulta`) | 7 | 11 | base de datos; embeddings; servicio externo |
 | **Ciclo de vida** (`ciclo_de_vida`) | 3 | 9 | — |
 | **Durabilidad** (`durabilidad`) | 4 | 4 | escribir fuera de la raíz del vault (AP-36) |

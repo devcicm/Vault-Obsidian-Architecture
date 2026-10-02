@@ -41,6 +41,9 @@ from vault.indices.seccion import (  # noqa: E402
     migaja,
     recolectar_notas,
 )
+from vault.indices.reconstruccion import ServicioReindex  # noqa: E402
+from vault.indices.repositorio import RepositorioIndices  # noqa: E402
+from vault.kernel import construir  # noqa: E402
 
 
 # AP-36: paths lazy — respetan set_vault_root() en runtime (--root).
@@ -440,6 +443,18 @@ def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, 
         "is_empty": len(notes) == 0,
         "subdirIndexes": subdir_indexes,
     }
+
+
+def refrescar_busqueda(path: Path) -> Dict[str, Any]:
+    """Pone la nota recién escrita en `search-index.json` (AP-47).
+
+    Vive aquí y no en cada escritor porque `vault_io -> vault_section_index` es
+    el gancho que el kernel ya tiene declarado: importarlo desde `vault_ingest`
+    estrenaba un cruce consulta -> autoría que ningún puerto descuenta.
+    """
+    return ServicioReindex(
+        RepositorioIndices(construir()), parse_frontmatter
+    ).refrescar(Path(path))
 
 
 # Nombre público conservado (lo importan tests y `vault_norms`); la definición

@@ -559,6 +559,11 @@ def _auto_section_index(path: Path) -> None:
         # prohibido), regeneramos el índice canónico encima. Sin recursión:
         # el generador escribe via Path.write_text, no via atomic_write_text.
         vault_section_index(section)
+        # AP-47: la nota entra en el índice de búsqueda en la misma escritura,
+        # escriba quien escriba. Mismo módulo, mismo gancho declarado.
+        from vault_section_index import refrescar_busqueda  # lazy, ídem
+
+        refrescar_busqueda(path)
     except Exception as exc:
         try:
             from vault_errors import emit_error  # type: ignore

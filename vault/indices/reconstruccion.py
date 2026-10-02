@@ -13,10 +13,12 @@ Es el mismo trato que recibió `vault/durabilidad/cuarentena.py`.
 from __future__ import annotations
 
 import hashlib
+import json
+from pathlib import Path
 from typing import Any, Callable, Dict, List
 
 from ..kernel.frontmatter_parsing import separar_frontmatter
-from .enumeracion import notas_en_disco
+from .enumeracion import es_nota_indexable, notas_en_disco
 from .repositorio import RepositorioIndices
 
 #: Longitud del extracto que se guarda por nota. Va al índice, así que es
@@ -38,6 +40,52 @@ class ServicioReindex:
         self._repo = repo
         self._parsear = parsear_frontmatter
 
+    def _entrada(self, ruta: Path, contenido: str, meta: dict) -> Dict[str, Any]:
+        """La fila de `search-index.json` para una nota. Un solo dueño (AP-57):
+        la reconstrucción entera y el refresco de una nota la sacan de aquí, así
+        que no pueden discrepar sobre qué ve `vault_search`."""
+        etiquetas = meta.get("tags") or []
+        if isinstance(etiquetas, str):
+            etiquetas = [t.strip() for t in etiquetas.split(",") if t.strip()]
+        return {
+            "path": self._repo.relativa(ruta),
+            "title": meta.get("title") or ruta.stem,
+            "preview": _previo(contenido),
+            "tags": etiquetas,
+            "updatedAt": meta.get("updatedAt") or meta.get("createdAt") or "",
+        }
+
+    def refrescar(self, ruta: Path) -> Dict[str, Any]:
+        """AP-47: inserta o sustituye la fila de UNA nota recién escrita.
+
+        Solo `vault_write` actualizaba el índice; `vault_ingest` y los `*_save`
+        escribían la nota y `vault_search` no la encontraba hasta un reindex.
+        Lo llama el gancho del kernel tras cada escritura, igual que el índice
+        de sección, y con el mismo criterio de «qué es nota» que la
+        reconstrucción. Usa el mismo cerrojo que `atomic_update_json`, así que
+        se serializa con `vault_write` y con `vault_reindex`.
+        """
+        repo = self._repo
+        if not es_nota_indexable(ruta, repo.raiz, repo.ctx.secciones.ordenadas()):
+            return {"ok": True, "refreshed": False, "reason": "no_indexable"}
+        contenido = repo.ctx.lector.leer(ruta)
+        entrada = self._entrada(ruta, contenido, self._parsear(contenido) or {})
+        destino = repo.indice_busqueda
+        with repo.ctx.escritor.bloquear(destino):
+            try:
+                indice = json.loads(repo.ctx.lector.leer(destino))
+            except (FileNotFoundError, json.JSONDecodeError):
+                indice = {}
+            if not isinstance(indice, dict):
+                indice = {}
+            notas = [n for n in indice.get("notes", []) if n.get("path") != entrada["path"]]
+            notas.append(entrada)
+            indice["notes"] = notas
+            if "totalNotes" in indice:
+                indice["totalNotes"] = len(notas)
+            repo.ctx.escritor.escribir_json(destino, indice)
+        return {"ok": True, "refreshed": True, "path": entrada["path"]}
+
     def reconstruir(self, dry_run: bool = False) -> Dict[str, Any]:
         repo = self._repo
         notas: List[Dict[str, Any]] = []
@@ -58,18 +106,7 @@ class ServicioReindex:
 
             rel = repo.relativa(ruta)
             meta = self._parsear(contenido) or {}
-
-            etiquetas = meta.get("tags") or []
-            if isinstance(etiquetas, str):
-                etiquetas = [t.strip() for t in etiquetas.split(",") if t.strip()]
-
-            notas.append({
-                "path": rel,
-                "title": meta.get("title") or ruta.stem,
-                "preview": _previo(contenido),
-                "tags": etiquetas,
-                "updatedAt": meta.get("updatedAt") or meta.get("createdAt") or "",
-            })
+            notas.append(self._entrada(ruta, contenido, meta))
 
             hashes[rel] = {
                 "hash": hashlib.sha256(contenido.encode("utf-8")).hexdigest(),
