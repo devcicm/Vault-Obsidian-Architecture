@@ -78,7 +78,23 @@ def _write_seed(root: Path, seed: RuntimeSeed) -> None:
         encoding="utf-8",
         newline="\n",
     )
+    # 2026-10-01: el hub nacía sin frontmatter y `vault_validate` —la misma
+    # wheel— lo daba por inválido: ningún vault recién creado validaba limpio.
+    # Lleva los campos que exige el validador; `vault_section_index` ya no lo
+    # reescribe porque solo crea el hub si falta.
+    ahora = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     (root / "00_System" / "vault-hub.md").write_text(
+        "---\n"
+        "title: Vault Hub\n"
+        "id: vault-hub\n"
+        f"createdAt: {ahora}\n"
+        f"updatedAt: {ahora}\n"
+        "cia_integrity: high\n"
+        "cia_availability: high\n"
+        "cia_sensitivity: internal\n"
+        "agent: system\n"
+        'tags: ["nav", "hub"]\n'
+        "---\n\n"
         "# Vault runtime\n\n"
         "Runtime documental inicializado por el toolkit instalado.\n",
         encoding="utf-8",

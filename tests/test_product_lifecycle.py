@@ -30,6 +30,28 @@ def test_seed_empaquetado_es_proyeccion_del_registro_canonico():
         sys.path.remove(str(scripts))
 
 
+def test_un_runtime_recien_creado_valida_limpio(tmp_path):
+    """Medido el 2026-10-01 con la wheel instalada: `vault init` y luego
+    `vault_validate` daban VALIDATION_FAILED por `00_System/vault-hub.md`
+    sin frontmatter. Se mide con el validador real, en otro proceso."""
+    import os
+    import subprocess
+    import sys
+
+    root = tmp_path / "consumer-runtime"
+    assert producto.inicializar_runtime(root)["ok"]
+    scripts = Path(__file__).resolve().parents[1] / "scripts"
+    env = dict(os.environ, VAULT_ROOT=str(root), VAULT_STRICT_ROOT="1",
+               PYTHONIOENCODING="utf-8")
+    p = subprocess.run(
+        [sys.executable, str(scripts / "vault_validate.py"), "--check", "frontmatter"],
+        env=env, capture_output=True, text=True, encoding="utf-8", cwd=str(scripts))
+    salida = p.stdout.strip()
+    resultado = json.loads(salida[salida.index("{"):])
+    assert resultado["ok"] is True, resultado.get("invalid")
+    assert "00_System/vault-hub.md" in resultado["valid"]
+
+
 def test_init_crea_runtime_minimo_e_idempotente(tmp_path):
     root = tmp_path / "consumer-runtime"
     first = producto.inicializar_runtime(root)
