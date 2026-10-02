@@ -168,9 +168,13 @@ def _build_node_class_index(ontology: Dict[str, Any]) -> Dict[str, str]:
     return index
 
 
-# Cache global para búsquedas fuzzy: evita repetir SequenceMatcher para el mismo
-# entity name ya procesado. Key = (entity_norm, threshold), value = mejor match.
-_FUZZY_CACHE: Dict[Tuple[str, float], Optional[Tuple[float, str]]] = {}
+# Cache para búsquedas fuzzy: evita repetir SequenceMatcher para el mismo
+# entity name ya procesado. Key = (entity_norm, threshold), value = ruta o None.
+# Vale solo para el stem_map del último índice: `_build_prefix_index` la vacía,
+# porque la clave no nombra el vault y un segundo vault heredaba las rutas del
+# primero (AP-49). El fallo se guarda como None y se distingue de la ausencia
+# con `in`: con `.get() is not None` nunca se memoizaba.
+_FUZZY_CACHE: Dict[Tuple[str, float], Optional[str]] = {}
 
 
 def _build_prefix_index(stem_map: Dict[str, str]) -> Dict[str, List[Tuple[str, str]]]:
@@ -179,6 +183,7 @@ def _build_prefix_index(stem_map: Dict[str, str]) -> Dict[str, List[Tuple[str, s
     En lugar de iterar por TODAS las notas en cada búsqueda fuzzy (O n),
     se pre-filtra por prefijo común, reduciendo drásticamente los candidatos.
     """
+    _FUZZY_CACHE.clear()
     prefix_index: Dict[str, List[Tuple[str, str]]] = defaultdict(list)
     for norm_stem, path in stem_map.items():
         prefix = norm_stem[:3] if len(norm_stem) >= 3 else norm_stem
@@ -208,9 +213,8 @@ def _fuzzy_resolve(
         Path del mejor match o None si no supera el threshold.
     """
     cache_key = (entity_norm, threshold)
-    cached = _FUZZY_CACHE.get(cache_key)
-    if cached is not None:
-        return cached[1] if cached[0] >= threshold else None
+    if cache_key in _FUZZY_CACHE:
+        return _FUZZY_CACHE[cache_key]
 
     # Longitud mínima para evitar matches ruidosos (entity_norm < 4 → skip)
     if len(entity_norm) < 4:
@@ -232,9 +236,9 @@ def _fuzzy_resolve(
             best_score = score
             best_path = cand_path
 
-    result = (best_score, best_path) if best_path else None
+    result = best_path if best_score >= threshold and best_path else None
     _FUZZY_CACHE[cache_key] = result
-    return best_path if best_score >= threshold else None
+    return result
 
 
 def _build_wiki_link_graph() -> Tuple[Dict[str, Dict], List[Dict], List[Dict], Dict[str, str]]:
