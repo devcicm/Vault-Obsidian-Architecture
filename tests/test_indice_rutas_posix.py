@@ -69,7 +69,7 @@ def test_el_indice_guarda_rutas_con_barra(vault):
         (vault / "99_Index" / "search-index.json").read_text(encoding="utf-8")
     )
     rutas = [n["path"] for n in indice["notes"]]
-    assert "07_Knowledge/Resiliencia.md" in rutas
+    assert "07_Knowledge/resiliencia.md" in rutas
     assert not [r for r in rutas if "\\" in r]
 
 
@@ -83,4 +83,4 @@ def test_consulta_con_seccion_inferida_entrega_la_nota(vault):
     # La precondición del defecto: la consulta induce la sección.
     assert paquete["structured"]["sections"] == ["07_Knowledge"]
     incluidas = [n["path"] for n in paquete["included"]]
-    assert "07_Knowledge/Resiliencia.md" in incluidas, paquete
+    assert "07_Knowledge/resiliencia.md" in incluidas, paquete

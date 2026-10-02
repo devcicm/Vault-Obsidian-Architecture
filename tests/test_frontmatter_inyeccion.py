@@ -108,9 +108,9 @@ def test_vault_preferences_conserva_el_enunciado(raiz, carga):
 
 
 @pytest.mark.parametrize("titulo, nombre", [
-    ("C# tips", "C-tips.md"),
-    ("Nota [borrador]", "Nota-borrador.md"),
-    ("Bloque ^ref", "Bloque-ref.md"),
+    ("C# tips", "c-tips.md"),
+    ("Nota [borrador]", "nota-borrador.md"),
+    ("Bloque ^ref", "bloque-ref.md"),
     ("a | b", "a-b.md"),
 ])
 def test_ap14_el_nombre_del_fichero_se_puede_enlazar(raiz, titulo, nombre):

@@ -318,8 +318,31 @@ def slugify(title: str) -> str:
     Uses vault_encoding.sanitize_filename for cross-platform safety.
     """
     # Use the encoding module's sanitize_filename for proper handling
-    # of Unicode, invisible chars, and cross-platform compatibility
-    return sanitize_filename(title, max_length=200)
+    # of Unicode, invisible chars, and cross-platform compatibility.
+    # `.lower()`: CN-01 son minúsculas, y `sanitize_filename` conserva la
+    # capitalización — `vault_write` escribía `Decision-transporte-MCP.md`
+    # (medido 2026-10-01). Las notas ya escritas así las resuelve
+    # `_nota_heredada`, para no duplicarlas.
+    return sanitize_filename(title, max_length=200).lower()
+
+
+def _nota_heredada(vault_path: Path) -> Path:
+    """CN-01: la nota escrita antes de que el slug fuera a minúsculas.
+
+    Si en su carpeta hay un fichero que solo difiere en mayúsculas, es la
+    misma nota: se actualiza ella, con su nombre y su identidad. Sin esto, en
+    un sistema de ficheros sensible a mayúsculas la primera actualización tras
+    el cambio crearía un duplicado (AP-02); y en Windows, donde `exists()` sí
+    la encuentra, la escritura atómica la renombraba a minúsculas — medido, no
+    supuesto: el test de esta función lo destapó.
+    """
+    if not vault_path.parent.is_dir():
+        return vault_path
+    nombre = vault_path.name.lower()
+    for candidato in sorted(vault_path.parent.iterdir()):
+        if candidato.is_file() and candidato.name.lower() == nombre:
+            return candidato
+    return vault_path
 
 
 def _check_bracket_balance(content: str) -> Optional[str]:
@@ -805,7 +828,7 @@ def vault_write(
             "error": "RESERVED_NAME",
         }
 
-    vault_path = _raiz() / folder / filename
+    vault_path = _nota_heredada(_raiz() / folder / filename)
 
     try:
         assert_within_vault(vault_path, _raiz())

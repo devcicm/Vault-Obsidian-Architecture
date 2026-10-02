@@ -64,7 +64,7 @@ def test_ap37_una_nota_nueva_se_declara_en_vez_de_negarse(raiz):
     assert env["ok"] is False and env["error_code"] == "NO_SEEDS_RESOLVED"
     assert env["stale_graph"] is True
     assert env["stale"]["new"] == 1
-    assert "07_Knowledge/Beta.md" in env["stale"]["sample_new"]
+    assert "07_Knowledge/beta.md" in env["stale"]["sample_new"]
     assert "vault_graph" in env["error"]
 
 
