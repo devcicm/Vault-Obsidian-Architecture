@@ -71,3 +71,21 @@ def test_ap52_el_rechazo_del_transporte_sale_canonico(tmp_path, tool, argumentos
     assert env["tool"] == tool, env
     assert problemas_de_forma(env) == [], env
     assert env["recovery"]["action"] == ERROR_CATALOG[codigo]["recovery"]["action"]
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="el servidor MCP necesita Node")
+def test_jsonrpc_el_error_de_despacho_conserva_el_id_de_la_peticion(tmp_path):
+    """JSON-RPC 2.0: la respuesta de error lleva el `id` de la petición; `null`
+    solo cuando no se pudo leer. El servidor devolvía `null` en todo error de
+    despacho —método inexistente, petición antes de `initialized`—, y un
+    cliente que espera su `id` se quedaba colgado para siempre: visto al llamar
+    al MCP instalado desde un cliente que se saltaba `notifications/initialized`.
+    """
+    vault = _init_vault(tmp_path / "vault")
+    sesion = SesionMCP(vault)
+    try:
+        r = sesion._pedir("metodo/que_no_existe", {}, timeout=60)
+    finally:
+        sesion.cerrar()
+    assert r["error"]["code"] == -32601, r
+    assert r["id"] == sesion._id, r

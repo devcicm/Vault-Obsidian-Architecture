@@ -1374,8 +1374,13 @@ async function dispatch(method, params, session) {
 }
 
 async function processMessage(msg, session) {
+  // El error lleva el id de la petición (JSON-RPC 2.0); null solo si no se
+  // pudo leer. Con null en todo error de despacho, el cliente que esperaba su
+  // id se quedaba colgado.
+  let peticionId = null;
   try {
     const rpc = JSON.parse(msg.trim());
+    if (rpc && rpc.id !== undefined) peticionId = rpc.id;
     if (!rpc.jsonrpc || rpc.jsonrpc !== "2.0") {
       throw { code: -32600, message: "Invalid Request: jsonrpc must be '2.0'" };
     }
@@ -1394,10 +1399,10 @@ async function processMessage(msg, session) {
     return null;
   } catch (e) {
     if (e.code && e.message) {
-      return jsonrpcError(null, e.code, e.message, e.data);
+      return jsonrpcError(peticionId, e.code, e.message, e.data);
     }
     log("error", "Unhandled dispatch error", e.message);
-    return jsonrpcError(null, -32603, "Internal error", e.message);
+    return jsonrpcError(peticionId, -32603, "Internal error", e.message);
   }
 }
 
