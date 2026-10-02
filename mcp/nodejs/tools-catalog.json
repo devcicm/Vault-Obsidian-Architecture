@@ -6908,8 +6908,10 @@
       "recovery": {
         "action": "run_tool",
         "tool": "vault_reindex",
-        "args": [],
-        "hint": "Ejecutar vault_reindex para regenerar todos los índices (graph.json, search-index.json).",
+        "args": [
+          "--graph"
+        ],
+        "hint": "Ejecutar vault_reindex --graph para regenerar todos los índices (graph.json, search-index.json); sin --graph solo se regenera search-index.json.",
         "docs": "vault-obsidian-architecture.md §Grupo 10 — Indexación"
       }
     },

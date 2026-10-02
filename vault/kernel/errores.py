@@ -96,8 +96,11 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "recovery": {
             "action": "run_tool",
             "tool": "vault_reindex",
-            "args": [],
-            "hint": "Ejecutar vault_reindex para regenerar todos los índices (graph.json, search-index.json).",
+            # 2026-10-01: era `args: []` con la misma pista, y sin `--graph`
+            # vault_reindex solo escribe search-index.json: quien seguía la
+            # recuperación al pie de la letra seguía sin graph.json.
+            "args": ["--graph"],
+            "hint": "Ejecutar vault_reindex --graph para regenerar todos los índices (graph.json, search-index.json); sin --graph solo se regenera search-index.json.",
             "docs": "vault-obsidian-architecture.md §Grupo 10 — Indexación",
         },
     },
