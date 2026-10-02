@@ -2233,15 +2233,24 @@ def blueprint() -> str:
         ]
         salientes = por_ctx.get(ctx, [])
         if salientes:
+            # Una fila por frontera, no por sitio: `cruces()` da una entrada por
+            # cada import, y `vault_subgraph` salía tres veces con la misma fila
+            # y el título contaba sitios donde decía fronteras. Los sitios se
+            # conservan como cifra en la fila; el dato está en `crossings_sites`.
+            fronteras = {}
+            for c in salientes:
+                clave = (c["from"], c["to"], c["to_context"])
+                fronteras[clave] = fronteras.get(clave, 0) + 1
             lineas += [
-                f"Fronteras que hoy cruza ({len(salientes)}), deuda declarada:",
+                f"Fronteras que hoy cruza ({len(fronteras)}), deuda declarada:",
                 "",
                 "| Módulo | Importa | Contexto destino |",
                 "|---|---|---|",
             ]
             lineas += [
-                f"| `{c['from']}` | `{c['to']}` | {CONTEXTS[c['to_context']]['titulo']} |"
-                for c in salientes
+                f"| `{origen}` | `{destino}`{f' ({n} imports)' if n > 1 else ''} "
+                f"| {CONTEXTS[ctx_destino]['titulo']} |"
+                for (origen, destino, ctx_destino), n in fronteras.items()
             ]
             lineas.append("")
     return "\n".join(lineas)
