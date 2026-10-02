@@ -10,7 +10,31 @@ declara una vez qué hace a dos aristas la misma, para que los dos productores
 
 from typing import Any, Dict, Iterable, List
 
-__all__ = ["consolidar_aristas", "id_de_arista"]
+__all__ = [
+    "PREDICADO_WIKILINK",
+    "TIPO_WIKILINK",
+    "consolidar_aristas",
+    "id_de_arista",
+    "predicado_de",
+]
+
+#: El wikilink tiene dos nombres: `graph.json` escribe `type: "wiki-link"`
+#: (legacy, lo leen los consumidores y no se reescribe) y `graph-enriched.json`
+#: `predicate: "wiki_link"`. Quien consulta el grafo los lee con `predicado_de`.
+TIPO_WIKILINK = "wiki-link"
+PREDICADO_WIKILINK = "wiki_link"
+_TIPOS_LEGACY = {TIPO_WIKILINK: PREDICADO_WIKILINK}
+
+
+def predicado_de(arista: Dict[str, Any]) -> str:
+    """El predicado canónico de una arista de cualquiera de los dos grafos (AP-57).
+
+    Las consultas leían `predicate or type` sin traducir: sobre `graph.json`
+    la tabla de pesos no encontraba `wiki-link` y un filtro por `wiki_link`
+    devolvía vacío. Un `type` que no es legacy pasa tal cual (`deleted-node`).
+    """
+    predicado = arista.get("predicate") or arista.get("type") or PREDICADO_WIKILINK
+    return _TIPOS_LEGACY.get(predicado, predicado)
 
 # Lo que identifica a la arista y lo que cuenta sus apariciones: ninguno de
 # los dos es un atributo que pueda variar entre declaraciones.

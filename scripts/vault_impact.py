@@ -31,6 +31,7 @@ from vault_errors import emit_error, wrap_main
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from vault.grafo.aristas import predicado_de  # noqa: E402
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 
@@ -93,7 +94,8 @@ def _load_graph(predicate_filter: Optional[List[str]] = None) -> Optional[Dict[s
         edges = data.get("edges", [])
         filtered = [
             e for e in edges
-            if e.get("predicate", e.get("type", "wiki_link")) in predicate_set
+            # AP-57: `wiki-link` de graph.json es `wiki_link`; lo traduce el dueño.
+            if predicado_de(e) in predicate_set
         ]
         data = dict(data)
         data["edges"] = filtered

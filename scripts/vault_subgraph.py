@@ -31,6 +31,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from vault_errors import emit_error, wrap_main
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from vault.grafo.aristas import predicado_de  # noqa: E402
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
 from vault.kernel.enumeracion import notas_en_disco  # noqa: E402
 from vault.kernel import construir  # noqa: E402
@@ -212,7 +213,8 @@ def _adjacency(
         tgt = edge.get("to") or edge.get("target") or ""
         if not src or not tgt:
             continue
-        predicate = edge.get("predicate") or edge.get("type") or "wiki_link"
+        # AP-57: `wiki-link` de graph.json es `wiki_link`; lo traduce el dueño.
+        predicate = predicado_de(edge)
         if predicates and predicate not in predicates:
             continue
         weight = PREDICATE_WEIGHT.get(predicate, DEFAULT_WEIGHT)

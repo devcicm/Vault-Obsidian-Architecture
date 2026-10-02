@@ -24,13 +24,12 @@ from typing import Any, Callable, Dict, List
 
 from ..kernel.enumeracion import es_nota_indexable
 from ..kernel.fallos import FalloDeDominio
-from .aristas import consolidar_aristas
+from .aristas import TIPO_WIKILINK, consolidar_aristas
 from .repositorio import RepositorioGrafo
 
-#: El tipo de las aristas que salen de un wikilink. Las demás (`deleted-node`)
-#: las añade la reconstrucción comparando con el grafo anterior, y el refresco
-#: las conserva tal cual.
-TIPO_WIKILINK = "wiki-link"
+# `TIPO_WIKILINK` (dueño: `aristas`) es el tipo de las aristas que salen de un
+# wikilink. Las demás (`deleted-node`) las añade la reconstrucción comparando
+# con el grafo anterior, y el refresco las conserva tal cual.
 
 PISTA_RECONSTRUIR = "python scripts/vault_graph.py"
 
