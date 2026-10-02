@@ -50,6 +50,33 @@ def test_ap03_ve_la_seccion_cuyo_indice_es_un_stub(tmp_path):
     assert "01_Projects" not in vacias, "AP-03 marca una seccion que si tiene notas"
 
 
+def test_ap03_no_ve_stub_donde_no_hay_indice(tmp_path):
+    """Medido el 2026-10-01: `vault init` y luego `vault_audit` daban AP-03 en
+    dieciocho secciones —«index es stub sin contenido real»— que no tenían
+    `index.md`. Sin índice no hay stub: el vault recién creado perdía diez
+    puntos de estructura por ser nuevo, y saldarlo empujaba a llenar secciones
+    con contenido inventado (AP-45), igual que con `_SECCIONES_POR_EVENTO`.
+    Se mide con el audit real, en otro proceso, sobre un runtime de `init`."""
+    import json
+    import os
+    import subprocess
+
+    from vault.ciclo_de_vida import producto
+
+    raiz = tmp_path / "runtime"
+    assert producto.inicializar_runtime(raiz)["ok"]
+    p = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "vault_audit.py")],
+        env=dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",
+                 PYTHONIOENCODING="utf-8"),
+        capture_output=True, text=True, encoding="utf-8", cwd=str(tmp_path),
+        timeout=300)
+    salida = p.stdout
+    informe = json.loads(salida[salida.index("{"):])
+    assert informe["issues"]["emptyIndexes"] == [], informe["issues"]["emptyIndexes"]
+    assert not [x for x in informe["penalties"] if x["norm_code"] == "AP-03"]
+
+
 def test_ap17_ve_el_par_canonico_y_su_sombra(tmp_path):
     """AP-17: dos notas cuyo titulo se parece por encima del umbral."""
     root = _vault(tmp_path)

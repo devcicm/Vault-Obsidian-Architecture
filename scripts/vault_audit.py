@@ -1055,6 +1055,13 @@ def _detect_empty_indexes(
             if name in _SECCIONES_POR_EVENTO:
                 continue
 
+            # AP-03 es el stub; sin `index.md` no hay stub que reprochar. Un
+            # runtime recién iniciado tiene todas sus secciones así, y contarlas
+            # restaba diez puntos a un vault por ser nuevo (medido 2026-10-01).
+            index_md = section_dir / "index.md"
+            if not index_md.exists():
+                continue
+
             # v40.30 — de `barrido` y no de un `rglob` por sección. Eran veinte
             # recorridos, uno por carpeta de primer nivel: cada uno pequeño,
             # pero juntos volvían a leer el vault entero por tercera vez. El
@@ -1066,8 +1073,6 @@ def _detect_empty_indexes(
                 and p.name.lower() not in ("index.md", "readme.md")
                 and not any(part.startswith(".") for part in p.parts)
             ]
-
-            index_md = section_dir / "index.md"
 
             if len(real_notes) == 0:
                 empty.append(
