@@ -45,6 +45,7 @@ from vault_io import (  # noqa: E402
     tool_spec_path,
 )
 from vault_errors import emit_error, wrap_main
+from vault_version import CURRENT_VERSION  # generator_version de los artefactos (AP-47)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Tool status registry
@@ -602,6 +603,7 @@ def _bootstrap_spec() -> Dict[str, Any]:
 
     return {
         "version":     "v32",
+        "generator_version": CURRENT_VERSION,
         "schema":      "1.0",
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "description": (

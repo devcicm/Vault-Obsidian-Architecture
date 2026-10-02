@@ -30,6 +30,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import emit_error, wrap_main
+from vault_version import CURRENT_VERSION  # generator_version de los artefactos (AP-47)
 from vault_lib import read_frontmatter, separar_frontmatter, utcnow
 from vault_io import atomic_write_json, atomic_write_text
 SCRIPTS_DIR = Path(__file__).parent
@@ -303,6 +304,7 @@ def export_registry() -> Dict[str, Any]:
     """Write 00_System/data-fundamentals.json with the canonical registry."""
     data = {
         "version": "v27",
+        "generator_version": CURRENT_VERSION,
         "generated_at": utcnow(),
         "generated_by": "vault_fundamentals",
         "source": "fundamentos de datos.txt",
@@ -440,6 +442,7 @@ def export_framework() -> Dict[str, Any]:
     """Write 00_System/data-framework.json + .md with the full data framework."""
     data = {
         "version": "v39",
+        "generator_version": CURRENT_VERSION,
         "generated_at": utcnow(),
         "generated_by": "vault_fundamentals",
         "totals": {name: len(reg) for name, reg in FRAMEWORK_REGISTRIES.items()},

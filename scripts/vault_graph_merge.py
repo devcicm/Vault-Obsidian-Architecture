@@ -31,6 +31,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from vault_regex import RE_WIKILINK  # dueño único del patrón (AP-50)
 
 from vault_errors import emit_error, wrap_main
+from vault_version import CURRENT_VERSION  # generator_version de los artefactos (AP-47)
 from vault_io import atomic_write_json, write_report
 from vault_registry import ORDERED_SECTIONS
 
@@ -642,6 +643,7 @@ def vault_graph_merge(
     enriched = {
         "metadata": {
             "version": "v37",
+            "generator_version": CURRENT_VERSION,
             "merged_at": now_iso,
             "ontology_version": ontology.get("version", "unknown"),
             "total_edges": total_edges,

@@ -49,6 +49,7 @@ import json
 import re
 import sys
 from vault_errors import emit_error, wrap_main
+from vault_version import CURRENT_VERSION  # generator_version de los artefactos (AP-47)
 from vault_io import atomic_write_json, file_lock, normalize_stem
 from vault_lib import separar_frontmatter
 from pathlib import Path
@@ -407,6 +408,7 @@ def vault_norms_rebuild() -> Dict[str, Any]:
 
     registry = {
         "version": "v29",
+        "generator_version": CURRENT_VERSION,
         "updated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
         "total": len(NORM_CATALOG),
         "antipatterns": len([n for n in NORM_CATALOG if n["type"] == "antipattern"]),
