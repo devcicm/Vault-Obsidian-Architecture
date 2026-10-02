@@ -70,7 +70,9 @@ def _entity_dir() -> Path:
 
 
 
-RELATIONS_FILE = _entity_dir() / "relations.json"
+def _relations_file() -> Path:
+    """Resuelto al usarse: como constante de módulo se fijaba al importar (AP-49)."""
+    return _entity_dir() / "relations.json"
 
 
 RELATION_TYPES = [

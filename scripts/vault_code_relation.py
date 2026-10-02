@@ -63,7 +63,9 @@ def _code_dir() -> Path:
     return _repo().dir_codigo
 
 
-INDEX_FILE = _code_dir() / ".code-index.json"
+def _index_file() -> Path:
+    """Resuelto al usarse: como constante de módulo se fijaba al importar (AP-49)."""
+    return _code_dir() / ".code-index.json"
 
 
 RELATION_TYPES = [
@@ -96,7 +98,7 @@ def slugify(text: str) -> str:
 # `indice_compartido`, que cubre desde la lectura hasta la escritura.
 def load_index() -> Dict[str, Any]:
     try:
-        with open(INDEX_FILE, "r", encoding="utf-8") as f:
+        with open(_index_file(), "r", encoding="utf-8") as f:
             return json.load(f)
 
     except (FileNotFoundError, json.JSONDecodeError):
@@ -116,7 +118,7 @@ def save_index(data: Dict[str, Any]) -> None:
     # atomic_write_* y no `open(..., "w")`: el escaneo de secretos, el
     # saneado de encoding y el temp+replace viven ahí. Escribir en crudo los
     # esquivaba los tres (AP-36) y dejaba la nota a medias si el proceso moría.
-    atomic_write_json(INDEX_FILE, data)
+    atomic_write_json(_index_file(), data)
 
 
 def get_module_nodes(index: Dict[str, Any], project: str) -> List[Dict]:
@@ -244,7 +246,7 @@ def vault_code_relation(
     # dos ejecuciones concurrentes leen el mismo indice, cada una anade su
     # entrada, gana la segunda y la primera desaparece con las dos tools
     # devolviendo `ok: true` (AP-37 por la puerta de atras).
-    with indice_compartido(INDEX_FILE, {"modules": [], "relations": []}) as index:
+    with indice_compartido(_index_file(), {"modules": [], "relations": []}) as index:
 
         already_existed = False
 

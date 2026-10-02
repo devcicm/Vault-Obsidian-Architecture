@@ -52,7 +52,11 @@ def _repo(root=None) -> RepositorioGrafo:
 def _code_dir() -> Path:
     return _repo().dir_codigo
 
-INDEX_FILE = _code_dir() / ".code-index.json"
+
+def _index_file() -> Path:
+    """Resuelto al usarse: como constante de módulo se fijaba al importar (AP-49)."""
+    return _code_dir() / ".code-index.json"
+
 
 LANGUAGES = [
     "javascript",
@@ -98,7 +102,7 @@ def file_slug(file_path: str) -> str:
 
 def load_index() -> Dict[str, Any]:
     try:
-        with open(INDEX_FILE, "r", encoding="utf-8") as f:
+        with open(_index_file(), "r", encoding="utf-8") as f:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return {"modules": [], "relations": []}
@@ -113,7 +117,7 @@ def load_index() -> Dict[str, Any]:
 # `indice_compartido`, que cubre desde la lectura hasta la escritura.
 def save_index(data: Dict[str, Any]) -> None:
     _code_dir().mkdir(parents=True, exist_ok=True)
-    atomic_write_json(INDEX_FILE, data)
+    atomic_write_json(_index_file(), data)
 
 
 def _build_class_diagram(classes: List[Dict[str, Any]]) -> str:
@@ -429,7 +433,7 @@ def vault_code_module(
     # dos ejecuciones concurrentes leen el mismo indice, cada una anade su
     # entrada, gana la segunda y la primera desaparece con las dos tools
     # devolviendo `ok: true` (AP-37 por la puerta de atras).
-    with indice_compartido(INDEX_FILE, {"modules": [], "relations": []}) as index:
+    with indice_compartido(_index_file(), {"modules": [], "relations": []}) as index:
 
         method_names = [m.get("name", "") for m in (methods or [])] if methods else []
         class_names = [c.get("name", "") for c in (classes or [])] if classes else []

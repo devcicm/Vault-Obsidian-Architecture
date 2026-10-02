@@ -40,21 +40,24 @@ def _repo(root=None) -> RepositorioConsulta:
 def _system_dir() -> Path:
     return _repo().dir_sistema
 
-CONTEXT_FILE = _system_dir() / "vault_context.json"
+
+def _context_file() -> Path:
+    """Resuelto al usarse: como constante de módulo se fijaba al importar (AP-49)."""
+    return _system_dir() / "vault_context.json"
 
 
 def _read_context() -> Dict[str, Any]:
-    if not CONTEXT_FILE.exists():
+    if not _context_file().exists():
         return _default_context()
     try:
-        return json.loads(CONTEXT_FILE.read_text(encoding="utf-8"))
+        return json.loads(_context_file().read_text(encoding="utf-8"))
     except (json.JSONDecodeError, IOError):
         return _default_context()
 
 
 def _write_context(data: Dict[str, Any]) -> None:
     _system_dir().mkdir(parents=True, exist_ok=True)
-    CONTEXT_FILE.write_text(
+    _context_file().write_text(
         json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8"
     )
 
@@ -157,7 +160,7 @@ def get_context(persist: bool = True) -> VaultContext:
 def save_context() -> Dict[str, Any]:
     """Fuerza el guardado del contexto."""
     context = VaultContext(persist=True)
-    return {"ok": True, "path": str(CONTEXT_FILE)}
+    return {"ok": True, "path": str(_context_file())}
 
 
 def load_context() -> Dict[str, Any]:

@@ -65,7 +65,9 @@ def _infra_dir() -> Path:
     return _repo().dir_infra
 
 
-INDEX_FILE = _infra_dir() / ".infra-index.json"
+def _index_file() -> Path:
+    """Resuelto al usarse: como constante de módulo se fijaba al importar (AP-49)."""
+    return _infra_dir() / ".infra-index.json"
 
 
 LOCATIONS = [
@@ -106,7 +108,7 @@ def slugify(text: str) -> str:
 
 def load_index() -> Dict[str, Any]:
     try:
-        with open(INDEX_FILE, "r", encoding="utf-8") as f:
+        with open(_index_file(), "r", encoding="utf-8") as f:
             return json.load(f)
 
     except (FileNotFoundError, json.JSONDecodeError):
