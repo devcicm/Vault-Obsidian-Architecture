@@ -37,7 +37,7 @@ from pathlib import Path
 
 
 # Configuration
-from vault_io import atomic_write_text, get_vault_root
+from vault_io import assert_within_vault, atomic_write_text, get_vault_root
 
 
 # Valid states
@@ -77,6 +77,15 @@ def vault_project_status(
         return emit_error("vault_project_status", "INVALID_VALUE", f"Invalid status: {status}. Valid: {VALID_STATES}")
 
     project_path = get_vault_root() / "01_Projects" / project
+
+    # AP-36: se contiene ANTES del `mkdir`. La escritura atómica ya rechazaba
+    # `--project ../../x`, pero el directorio se creaba primero, fuera del
+    # vault, en la rama que luego se declaraba fallida (medido 2026-10-01).
+    try:
+        assert_within_vault(project_path, get_vault_root() / "01_Projects")
+    except ValueError as exc:
+        return emit_error("vault_project_status", "INVALID_PATH",
+                          f"El proyecto '{project}' no es un nombre dentro de 01_Projects: {exc}")
 
     status_file = project_path / "status.md"
 
