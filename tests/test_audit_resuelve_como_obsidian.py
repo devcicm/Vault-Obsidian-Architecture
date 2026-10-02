@@ -190,3 +190,23 @@ def test_el_primer_de_vault_init_declara_status(tmp_path):
 
     assert fm.get("status") == "template"
     assert fm["status"] in STATUS_VOCAB
+
+
+def test_ap46_el_titulo_del_primer_se_escapa_entero(tmp_path):
+    """`title: {yaml_scalar(section)} — Guía rápida` escapaba la mitad del
+    valor: si la sección necesita comillas sale `title: "x" — Guía rápida`, que
+    YAML no lee. Las secciones de hoy salen del registro y no las necesitan; el
+    defecto es latente y se cierra antes de que el registro lo destape. Se lee
+    con `yaml.safe_load`, como el consumidor (AP-44)."""
+    import yaml
+    import vault_init as vi
+    import vault_io
+
+    raiz = tmp_path / "v"
+    vault_io.set_vault_root(raiz)
+    seccion = "%raro #1"
+    (raiz / seccion).mkdir(parents=True)
+    creado = vi._create_scaffold_note(seccion)
+    texto = (raiz / creado["path"]).read_text(encoding="utf-8")
+    fm = yaml.safe_load(texto.split("---\n", 2)[1])
+    assert fm["title"] == f"{seccion} — Guía rápida"

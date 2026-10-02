@@ -130,8 +130,10 @@ python scripts/{tool_hint}
 """
     frontmatter = (
         "---\n"
-        f"title: {yaml_scalar(section)} — Guía rápida\n"
-        f"id: {section.lower()}-primer\n"
+        # AP-46: el escape va sobre el valor entero; sobre la mitad salía
+        # `title: "x" — Guía rápida`, que YAML no lee.
+        f"title: {yaml_scalar(section + ' — Guía rápida')}\n"
+        f"id: {yaml_scalar(section.lower() + '-primer')}\n"
         f"createdAt: {utcnow()}\n"
         f"updatedAt: {utcnow()}\n"
         f"cia_integrity: medium\n"
