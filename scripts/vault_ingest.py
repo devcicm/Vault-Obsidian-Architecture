@@ -422,10 +422,15 @@ def vault_ingest(
         note = _build_note(chunk, entities, section, subfolder, source, origin,
                            agent, tags or [])
         # Dos encabezados iguales producirían el mismo slug y una nota
-        # sobrescribiría a la otra en silencio.
+        # sobrescribiría a la otra en silencio. El sufijo se busca libre: el
+        # de `len(seen_paths)` sin recomprobar podía caer sobre una ruta ya
+        # propuesta («Alfa 2», «Alfa», «Alfa» → dos `alfa-2`) (AP-18).
         if note["path"] in seen_paths:
             base, ext = note["path"].rsplit(".", 1)
-            note["path"] = f"{base}-{len(seen_paths)}.{ext}"
+            n = 1
+            while f"{base}-{n}.{ext}" in seen_paths:
+                n += 1
+            note["path"] = f"{base}-{n}.{ext}"
         seen_paths.add(note["path"])
         proposals.append(note)
 
