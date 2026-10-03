@@ -199,7 +199,7 @@ def vault_env_save(
 
     frontmatter.set("title", f"Environment Variables - {project}")
 
-    frontmatter.set("project", project)
+    frontmatter.set("project", project, texto=True)
 
     frontmatter.set("type", "envs")
 

@@ -257,7 +257,7 @@ def vault_privacy_save(
     fm_lines.set("updatedAt", now)
     fm_lines.set("tags", ['privacy', 'gdpr', 'pii', project, legal_basis])
     fm_lines.set("norm_refs", norm_refs)
-    fm_lines.set("project", project)
+    fm_lines.set("project", project, texto=True)
     fm_lines.set("legal_basis", legal_basis)
     fm_lines.set("pii_categories", pii_categories)
     fm_lines.set("data_subjects", data_subjects)

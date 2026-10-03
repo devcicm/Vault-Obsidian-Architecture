@@ -191,9 +191,9 @@ def vault_test_save(
 
         frontmatter.set("test_id", test_id)
 
-        frontmatter.set("title", title)
+        frontmatter.set("title", title, texto=True)
 
-        frontmatter.set("project", project)
+        frontmatter.set("project", project, texto=True)
 
         frontmatter.set("test_type", test_type)
 

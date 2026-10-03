@@ -259,7 +259,7 @@ def save_infra_map(
     frontmatter.set("updatedAt", utcnow())
 
     if project:
-        frontmatter.set("project", project)
+        frontmatter.set("project", project, texto=True)
 
     if location:
         frontmatter.set("location", location)
@@ -320,7 +320,7 @@ def vault_infra_save(
 
     frontmatter = Frontmatter()
 
-    frontmatter.set("title", name)
+    frontmatter.set("title", name, texto=True)
 
     frontmatter.set("id", str(uuid.uuid4()))
 
@@ -333,7 +333,7 @@ def vault_infra_save(
     frontmatter.set("updatedAt", timestamp)
 
     if project:
-        frontmatter.set("project", project)
+        frontmatter.set("project", project, texto=True)
 
     if status:
         frontmatter.lineas(status_frontmatter_lines("vault_infra_save", status))

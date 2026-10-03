@@ -236,7 +236,7 @@ def vault_risk_save(
     fm_lines.set("updatedAt", now)
     fm_lines.set("tags", ['risk', project, risk_type, level.lower(), status])
     fm_lines.set("norm_refs", norm_refs)
-    fm_lines.set("project", project)
+    fm_lines.set("project", project, texto=True)
     fm_lines.set("risk_type", risk_type)
     fm_lines.set("likelihood", likelihood)
     fm_lines.set("impact", impact)

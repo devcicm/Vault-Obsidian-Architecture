@@ -230,7 +230,7 @@ _¿Qué cambio sistémico previene esta categoría de no conformidad en el futur
     fm_lines.set("updatedAt", now)
     fm_lines.set("tags", ['ncr', 'quality', project, ncr_type, severity])
     fm_lines.set("norm_refs", norm_refs)
-    fm_lines.set("project", project)
+    fm_lines.set("project", project, texto=True)
     fm_lines.set("ncr_type", ncr_type)
     fm_lines.set("severity", severity)
     fm_lines.set("detected_by", detected_by)

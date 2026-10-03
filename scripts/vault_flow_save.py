@@ -172,8 +172,8 @@ def vault_flow_save(
 
     frontmatter = Frontmatter()
     frontmatter.set("id", note_id)
-    frontmatter.set("title", name)
-    frontmatter.set("project", project)
+    frontmatter.set("title", name, texto=True)
+    frontmatter.set("project", project, texto=True)
     frontmatter.set("flow_type", flow_type)
     frontmatter.set("type", "flow")
     frontmatter.set("createdAt", created_at)

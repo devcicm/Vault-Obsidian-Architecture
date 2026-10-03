@@ -166,11 +166,11 @@ def vault_diagram_save(
 
     frontmatter = Frontmatter()
 
-    frontmatter.set("title", title)
+    frontmatter.set("title", title, texto=True)
 
     frontmatter.set("id", str(uuid.uuid4()))
 
-    frontmatter.set("project", project)
+    frontmatter.set("project", project, texto=True)
 
     frontmatter.set("diagramType", diagram_type)
 

@@ -134,7 +134,7 @@ def vault_bibliography_save(
 
     frontmatter_lines = Frontmatter()
 
-    frontmatter_lines.set("title", title)
+    frontmatter_lines.set("title", title, texto=True)
 
     frontmatter_lines.set("id", note_id)
 
@@ -143,7 +143,7 @@ def vault_bibliography_save(
     frontmatter_lines.set("source_type", source_type)
 
     if project:
-        frontmatter_lines.set("project", project)
+        frontmatter_lines.set("project", project, texto=True)
 
     frontmatter_lines.set("agent", agent or 'system')
 

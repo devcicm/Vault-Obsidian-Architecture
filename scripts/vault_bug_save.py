@@ -205,11 +205,11 @@ def vault_bug_save(
         tags_list = list(dict.fromkeys([*(tags or []), safe_project, "bug", severity]))
 
         frontmatter = Frontmatter()
-        frontmatter.set("title", title)
+        frontmatter.set("title", title, texto=True)
         frontmatter.set("id", note_id)
         frontmatter.set("bug_id", bug_id)
         frontmatter.set("type", "bug")
-        frontmatter.set("project", project)
+        frontmatter.set("project", project, texto=True)
         frontmatter.set("phase", phase)
         frontmatter.lineas(status_frontmatter_lines("vault_bug_save", status))
         frontmatter.set("severity", severity)

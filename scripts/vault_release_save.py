@@ -194,7 +194,7 @@ def vault_release_save(
     fm_lines.set("updatedAt", now)
     fm_lines.set("tags", ['release', 'deploy', project, release_type, version])
     fm_lines.set("norm_refs", norm_refs)
-    fm_lines.set("project", project)
+    fm_lines.set("project", project, texto=True)
     fm_lines.set("version", version)
     fm_lines.set("release_type", release_type)
     fm_lines.lineas(status_frontmatter_lines("vault_release_save", status))

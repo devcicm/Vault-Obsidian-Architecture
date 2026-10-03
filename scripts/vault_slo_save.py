@@ -288,7 +288,7 @@ def vault_slo_save(
     fm_lines.set("updatedAt", now)
     fm_lines.set("tags", ['slo', 'observability', project, service, slo_type])
     fm_lines.set("norm_refs", norm_refs)
-    fm_lines.set("project", project)
+    fm_lines.set("project", project, texto=True)
     fm_lines.set("service", service)
     fm_lines.set("slo_type", slo_type)
     fm_lines.set("target", target)

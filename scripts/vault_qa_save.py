@@ -143,8 +143,8 @@ def vault_qa_save(
         frontmatter = Frontmatter()
         frontmatter.set("id", note_id)
         frontmatter.set("qa_id", doc_id)
-        frontmatter.set("title", title)
-        frontmatter.set("project", project)
+        frontmatter.set("title", title, texto=True)
+        frontmatter.set("project", project, texto=True)
         frontmatter.set("qa_type", qa_type)
         frontmatter.lineas(status_frontmatter_lines("vault_qa_save", status))
         if coverage_target is not None:

@@ -195,9 +195,9 @@ def vault_requirement_save(
 
         frontmatter.set("req_id", req_id)
 
-        frontmatter.set("title", title)
+        frontmatter.set("title", title, texto=True)
 
-        frontmatter.set("project", project)
+        frontmatter.set("project", project, texto=True)
 
         frontmatter.set("req_type", req_type)
 

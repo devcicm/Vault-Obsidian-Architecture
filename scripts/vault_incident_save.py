@@ -239,7 +239,7 @@ _Qué salió bien, qué salió mal, qué hacer diferente._
     fm_lines.set("updatedAt", now)
     fm_lines.set("tags", ['incident', project, severity.lower(), status])
     fm_lines.set("norm_refs", norm_refs)
-    fm_lines.set("project", project)
+    fm_lines.set("project", project, texto=True)
     fm_lines.set("severity", severity)
     fm_lines.lineas(status_frontmatter_lines("vault_incident_save", status))
     fm_lines.set("detected_at", detected_at)
