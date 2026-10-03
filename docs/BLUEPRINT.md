@@ -53,9 +53,9 @@ regenera.*
 | Contexto | Puertos | Módulos | Prohíbe |
 |---|---|---|---|
 | **Kernel** (`kernel`) | 4 | 23 | depender de cualquier contexto de dominio |
-| **Autoría** (`autoria`) | 7 | 43 | — |
+| **Autoría** (`autoria`) | 7 | 42 | — |
 | **Grafo** (`grafo`) | 4 | 15 | — |
-| **Gobernanza** (`gobernanza`) | 21 | 12 | — |
+| **Gobernanza** (`gobernanza`) | 21 | 13 | — |
 | **Índices** (`indices`) | 9 | 6 | — |
 | **Consulta** (`consulta`) | 7 | 11 | base de datos; embeddings; servicio externo |
 | **Ciclo de vida** (`ciclo_de_vida`) | 3 | 9 | — |

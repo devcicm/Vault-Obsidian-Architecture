@@ -37,7 +37,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
 from vault.grafo.enlace_codigo import link_vault  # noqa: E402
 from vault.kernel import construir  # noqa: E402
-from vault.autoria.frontmatter import Frontmatter  # noqa: E402
+from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 
 
 def _raiz() -> Path:

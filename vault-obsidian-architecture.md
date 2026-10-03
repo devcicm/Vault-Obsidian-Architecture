@@ -5723,7 +5723,10 @@ que existir en `vault_arch.CONTEXTS`.
 **Prevención:** registro canónico con dueño, consumidores derivados, guard sin
 baseline. Los vocabularios cerrados en `scripts/vault_vocabulario.py`, la
 configuración en `scripts/vault_entorno.py`, el escapado del frontmatter en
-`vault/autoria/frontmatter.py`, y `vault_arch --check` fallando si aparece una
+`vault/autoria/frontmatter.py` (hoy reexporta a su dueño en el núcleo,
+`vault/kernel/frontmatter_escritura.py`: lo escriben todos los contextos y desde
+Autoría cada escritor ajeno que lo adoptaba cruzaba una frontera), y
+`vault_arch --check` fallando si aparece una
 copia, una lectura sin declarar o un vocabulario huérfano. **Sin baseline a
 propósito**: las catorce copias se saldaron al declarar el registro, así que la
 puerta nace en cero y una baseline solo serviría para admitir la número quince.

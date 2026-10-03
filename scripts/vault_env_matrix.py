@@ -30,7 +30,7 @@ from vault_errors import wrap_main
 from vault_lib import slugify_strict, utcnow
 from vault_io import assert_within_vault, atomic_write_text, get_vault_root, update_section_index, write_report
 from vault_norms_catalog import compute_norm_refs
-from vault.autoria.frontmatter import Frontmatter  # noqa: E402
+from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 
 FOLDER = "09_Infrastructure/env-matrix"
 

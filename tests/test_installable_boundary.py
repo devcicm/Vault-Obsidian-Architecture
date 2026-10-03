@@ -132,6 +132,7 @@ def test_puntos_distribuibles_no_insertan_scripts_en_sys_path():
         root / "cli/resolver.py",
         root / "vault/kernel/adaptadores.py",
         root / "vault/autoria/frontmatter.py",
+        root / "vault/kernel/frontmatter_escritura.py",
     ]
     for ruta in rutas:
         tree = ast.parse(ruta.read_text(encoding="utf-8"))

@@ -171,3 +171,21 @@ def test_ap46_el_primer_de_init_nace_con_una_sola_hora_y_su_tipo(vault):
 def _frontmatter_o_nada(path: Path) -> dict:
     bloque, _ = separar_frontmatter(path.read_text(encoding="utf-8"))
     return yaml.safe_load(bloque) or {} if bloque else {}
+
+
+def test_ap46_cumplirla_no_estrena_cruces_hacia_autoria():
+    """El dueño vive en el núcleo: adoptarlo no cruza ninguna frontera.
+
+    Desde `vault/autoria/`, cada escritor de Grafo, Infraestructura o Ciclo
+    de vida que dejaba de montar el bloque a mano estrenaba un cruce hacia
+    Autoría — seis en una tanda, y `vault_arch --check` en rojo. Autoría
+    conserva el nombre como reexportación: misma clase, no una segunda.
+    """
+    import vault_arch
+    from vault.autoria.frontmatter import Frontmatter as reexportada
+    from vault.kernel.frontmatter_escritura import Frontmatter
+
+    assert reexportada is Frontmatter
+    cruces = [c for c in vault_arch.cruces()
+              if c["from"] in MIGRADOS and c["to"] == "vault/autoria"]
+    assert cruces == []

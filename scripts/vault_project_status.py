@@ -38,7 +38,7 @@ from pathlib import Path
 
 # Configuration
 from vault_io import assert_within_vault, atomic_write_text, get_vault_root
-from vault.autoria.frontmatter import Frontmatter  # noqa: E402
+from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 
 
 # Valid states
