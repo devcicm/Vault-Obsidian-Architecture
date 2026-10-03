@@ -34,7 +34,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 from vault_errors import wrap_main
-from vault_io import atomic_write_json, write_report
+from vault_io import atomic_write_json, atomic_write_text, write_report
 from vault_lib import utcnow
 from vault_version import CURRENT_VERSION
 from vault_registry import (
@@ -165,7 +165,9 @@ python scripts/{tool_hint}
         + "\n\n"
     )
     primer_path.parent.mkdir(parents=True, exist_ok=True)
-    primer_path.write_text(frontmatter + content, encoding="utf-8")
+    # AP-36: `Path.write_text` esquivaba el temp+replace, el escaneo de
+    # secretos y el ledger, y los primers no contaban como trabajo (AP-37).
+    atomic_write_text(primer_path, frontmatter + content)
     return {
         "section": section,
         "path": str(primer_path.relative_to(_raiz())).replace("\\", "/"),
