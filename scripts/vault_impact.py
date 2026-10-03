@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 from vault_errors import emit_error, wrap_main
+from vault_io import assert_within_vault
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -199,11 +200,22 @@ def vault_impact(
             "hint": "python scripts/vault_graph.py",
         }
 
+    # Normalize changed note paths: el grafo indexa con `/` y relativo al
+    # vault; una ruta que sale de él no es una nota, es un error (AP-36).
+    changed_set: Set[str] = set()
+    for nota in changed_notes:
+        nota = nota.replace("\\", "/")
+        try:
+            assert_within_vault(_raiz() / nota, _raiz())
+        except ValueError as exc:
+            return emit_error("vault_impact", "INVALID_PATH", str(exc))
+        changed_set.add(nota)
+
     reverse = _build_reverse_graph(graph)
     nodes = graph.get("nodes", {})
-
-    # Normalize changed note paths
-    changed_set: Set[str] = set(changed_notes)
+    # AP-51: una nota que el grafo no conoce no tiene «impacto cero», tiene
+    # impacto desconocido —errata o grafo desactualizado—. Se nombra.
+    fuera_del_grafo = sorted(c for c in changed_set if c not in nodes and c not in reverse)
 
     # BFS
     visited: Dict[str, Dict[str, Any]] = {}
@@ -259,12 +271,19 @@ def vault_impact(
         if impacted
         else "Sin impacto detectado en el grafo"
     )
+    if fuera_del_grafo:
+        aviso = (
+            f"{len(fuera_del_grafo)} nota(s) no están en el grafo y su impacto es "
+            "desconocido (¿ruta errónea o grafo desactualizado? vault_graph)"
+        )
+        summary = f"{summary}; {aviso}" if impacted else f"Impacto no medible: {aviso}"
 
     return {
         "ok": True,
         "changed_notes": list(changed_set),
         "impact_radius": len(impacted),
         "impacted": impacted,
+        "not_in_graph": fuera_del_grafo,
         "summary": summary,
     }
 
