@@ -64,6 +64,11 @@ def test_ap63_resolver_un_nombre_libre_falla_sin_crear_nada(raiz):
     assert not r["ok"] and r["error_code"] == "PROJECT_NOT_FOUND", r
     assert r["sugerencias"] == ["mi-api-real"]
     assert not (raiz / "01_Projects" / "mi-api").exists()
+    # La recuperación lleva al alta explícita. Hasta aquí mandaba a
+    # `vault_project_overview`, que creaba la carpeta: el proyecto fantasma
+    # que AP-63 existe para impedir, recomendado por su propio error.
+    assert r["recovery"]["tool"] == "vault_project", r["recovery"]
+    assert r["recovery"]["args"] == ["--add", "<project>"]
 
 
 def test_ap63_un_alias_ajeno_no_se_reasigna(raiz):

@@ -558,10 +558,10 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "message": "El proyecto especificado no tiene carpeta en 01_Projects/.",
         "recovery": {
             "action": "run_tool",
-            "tool": "vault_project_overview",
-            "args": ["--project", "<project>"],
-            "hint": "Usar vault_project_overview --project <slug> para crear la estructura inicial del proyecto.",
-            "docs": "vault-obsidian-architecture.md §Grupo 2 — Proyectos",
+            "tool": "vault_project",
+            "args": ["--add", "<project>"],
+            "hint": "Si el proyecto es nuevo, darlo de alta con vault_project --add <slug>; si es una errata, usar uno de los slugs de `sugerencias`. vault_project --list enseña los registrados.",
+            "docs": "vault-obsidian-architecture.md §AP-63",
         },
     },
     "PROJECT_AMBIGUOUS": {
