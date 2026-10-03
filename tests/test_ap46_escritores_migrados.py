@@ -39,6 +39,7 @@ MIGRADOS = {
     "vault_tags": "_generate_tag_index_md",
     "vault_section_index": "_ensure_hub_notes",
     "vault_security_scan": "save_findings_to_vault",
+    "vault_write": "generate_frontmatter",
     # Fuera de `scripts/`: la clave es la ruta del módulo sin `.py`.
     "vault/ciclo_de_vida/producto": "_write_seed",
 }
@@ -306,3 +307,20 @@ def test_ap46_la_semilla_de_producto_nace_con_un_hub_legible(tmp_path):
     fm = _frontmatter(tmp_path / "rt" / "00_System" / "vault-hub.md")
     assert fm["id"] == "vault-hub" and fm["tags"] == ["nav", "hub"]
     assert fm["createdAt"] == fm["updatedAt"]
+
+
+def test_ap46_vault_write_conserva_texto_y_escribe_legible():
+    """El escritor central: lo que entra como texto sale como texto, y una
+    etiqueta acentuada se escribe legible en vez de escapada por `json.dumps`
+    con su `ensure_ascii` por defecto."""
+    import vault_write
+
+    bloque = vault_write.generate_frontmatter(
+        HOSTIL, tags=["Ñandú"], norm_refs=["AP-46"],
+        meta={"owner": "#infra", "v": "1.0", "fecha": FECHA, "n": 3, "lista": ["é"]},
+    )
+    fm = yaml.safe_load(separar_frontmatter(bloque + "\n")[0])
+    assert fm["title"] == HOSTIL and fm["tags"] == ["Ñandú"]
+    assert fm["owner"] == "#infra" and fm["v"] == "1.0" and fm["fecha"] == FECHA
+    assert fm["n"] == 3 and fm["lista"] == ["é"] and fm["norm_refs"] == ["AP-46"]
+    assert "Ñandú" in bloque

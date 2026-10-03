@@ -68,13 +68,11 @@ from vault_lib import (
     resolver_destino_wikilink,   # dueño único de cómo se resuelve (AP-57)
     read_frontmatter,
     separar_frontmatter,
-    yaml_scalar,
     utcnow,
     strip_code_blocks,
     Config,
     parse_frontmatter_with_body,
     canonical_utc,
-    valor_de_frontmatter,
 )
 from vault_norms_catalog import (
     compute_norm_refs,
@@ -100,6 +98,7 @@ from vault_entorno import leer as _env
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 from vault.kernel.errores import completar_envelope  # noqa: E402
+from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 from vault.kernel.indices_structural import es_nombre_reservado  # noqa: E402
 
 
@@ -472,7 +471,9 @@ def generate_frontmatter(
             )
         meta["status"] = canonico
 
-    frontmatter = ["---"]
+    # AP-46: aquí se deciden los campos y su orden; el bloque y su escapado
+    # los escribe el dueño del núcleo.
+    fm = Frontmatter()
 
     # AP-56, la mitad preventiva. `yaml_scalar` cita solo si hace falta, y el
     # criterio de "hace falta" es que el parser real no devuelva el mismo texto
@@ -480,47 +481,47 @@ def generate_frontmatter(
     # frontmatter para el consumidor: el bloque se ve al abrir el fichero, y
     # por eso nadie lo revisa. Lo que ya está escrito así se repara con
     # `vault_frontmatter_heal`; aquí solo se impide que vuelva a nacer.
-    frontmatter.append(f"title: {yaml_scalar(title)}")
+    fm.set("title", title, texto=True)
 
-    frontmatter.append(f"id: {valor_de_frontmatter(existing_id or str(uuid.uuid4()))}")
+    fm.set("id", existing_id or str(uuid.uuid4()))
 
-    frontmatter.append(f"createdAt: {valor_de_frontmatter(existing_created or utcnow())}")
+    fm.set("createdAt", existing_created or utcnow())
 
-    frontmatter.append(f"updatedAt: {utcnow()}")
+    fm.set("updatedAt", utcnow())
 
     if tags:
-        frontmatter.append(f"tags: {json.dumps(tags)}")
+        fm.set("tags", tags)
 
     # v37: type auto-deduced from folder if not provided in meta
     if "type" not in meta and folder:
         deduced = _deduce_type_from_folder(folder)
         if deduced:
-            frontmatter.append(f"type: {valor_de_frontmatter(deduced)}")
+            fm.set("type", deduced)
 
     # v37: status defaults to draft if not provided in meta.
     # v39: se emite siempre en esta posición — antes, un `status` que venía en
     # `meta` salía por el bucle genérico del final y quedaba detrás del CIA y de
     # `agent`. El campo era el mismo pero el orden no, y un formato que depende
     # de por dónde entró el dato no es un formato.
-    frontmatter.append(f"status: {yaml_scalar(str(meta.pop('status', 'draft')))}")
+    fm.set("status", str(meta.pop("status", "draft")), texto=True)
 
     # Lo que el valor original arrastraba y no era estado (progreso, versión en
     # que se resolvió, fecha) se conserva aquí en vez de perderse al normalizar.
     if status_note:
-        frontmatter.append(f"status_note: {yaml_scalar(str(status_note))}")
+        fm.set("status_note", str(status_note), texto=True)
 
     if norm_refs:
-        frontmatter.append(f"norm_refs: {json.dumps(norm_refs)}")
+        fm.set("norm_refs", norm_refs)
 
     # v27 CIA schema — defaults overridable via meta
 
-    frontmatter.append(f"cia_integrity: {yaml_scalar(str(meta.pop('cia_integrity', 'medium')))}")
+    fm.set("cia_integrity", str(meta.pop("cia_integrity", "medium")), texto=True)
 
-    frontmatter.append(f"cia_availability: {yaml_scalar(str(meta.pop('cia_availability', 'medium')))}")
+    fm.set("cia_availability", str(meta.pop("cia_availability", "medium")), texto=True)
 
-    frontmatter.append(f"cia_sensitivity: {yaml_scalar(str(meta.pop('cia_sensitivity', 'internal')))}")
+    fm.set("cia_sensitivity", str(meta.pop("cia_sensitivity", "internal")), texto=True)
 
-    frontmatter.append(f"agent: {yaml_scalar(str(meta.pop('agent', 'system')))}")
+    fm.set("agent", str(meta.pop("agent", "system")), texto=True)
 
     # AP-56 completo. Hasta v40.16 `yaml_scalar` se aplicaba **solo** al
     # título, y todo lo demás salía por aquí concatenado en un f-string —
@@ -537,16 +538,13 @@ def generate_frontmatter(
     # El guard de esto medía un solo campo —el literal del título—, que es por lo que
     # la forma estaba cubierta para el título y no existía para el resto del
     # bloque: un guard que vigila una línea no vigila una norma.
+    #
+    # Un `str` de `meta` es texto aunque tenga forma de fecha; lo demás sale
+    # como JSON, que es YAML de flujo válido.
     for key, value in meta.items():
-        if isinstance(value, str):
-            frontmatter.append(f"{key}: {yaml_scalar(value)}")
+        fm.set(key, value, texto=isinstance(value, str))
 
-        else:
-            frontmatter.append(f"{key}: {json.dumps(value)}")
-
-    frontmatter.append("---")
-
-    return "\n".join(frontmatter)
+    return fm.render()
 
 
 # El mapa sección→tipo vivía aquí completo y era la cuarta copia del mismo
