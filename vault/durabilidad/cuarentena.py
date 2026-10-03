@@ -24,6 +24,7 @@ import uuid
 from pathlib import Path
 
 from ..kernel.contexto import VaultContext
+from ..kernel.frontmatter_escritura import Frontmatter
 
 CARPETA = "20_Quarantine"
 FICHERO_LEDGER = ".quarantine-ledger.json"
@@ -35,14 +36,18 @@ CATEGORIAS = ["unclassified", "suspicious", "duplicates"]
 
 
 def _serializar_frontmatter(fm: dict) -> str:
-    lineas = ["---"]
+    """El bloque de una nota que entra o sale de cuarentena (AP-46).
+
+    Escribía cada `str` crudo tras `k: `, así que un título que la nota
+    original guardaba citado —`"a: b #c"`— salía como `title: a: b #c`: YAML
+    inválido, y la nota retenida perdía el frontmatter entero; al devolverla,
+    lo perdía también en su sitio. El dueño cita lo que hace falta y deja los
+    instantes crudos, que es como los escribió quien creó la nota.
+    """
+    bloque = Frontmatter()
     for k, v in fm.items():
-        lineas.append(
-            f"{k}: {v}" if isinstance(v, str)
-            else f"{k}: {json.dumps(v, ensure_ascii=False)}"
-        )
-    lineas.append("---")
-    return "\n".join(lineas)
+        bloque.set(k, v)
+    return bloque.render()
 
 
 class ServicioCuarentena:
