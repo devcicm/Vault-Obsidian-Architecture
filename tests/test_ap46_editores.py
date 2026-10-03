@@ -102,6 +102,31 @@ def test_ap46_revocar_una_preferencia_no_convierte_null_en_texto(vault):
     assert len(_claves(texto)) == len(set(_claves(texto)))
 
 
+def test_ap46_propagar_marca_una_vez_y_limpiar_no_toca_el_cuerpo(vault):
+    """La marca se reemplaza en su sitio y va citada, como siempre. Limpiarla
+    con `re.sub` sobre el contenido entero borraba también la línea del
+    cuerpo que la documentaba."""
+    import vault_propagate
+
+    nota = vault / "07_Knowledge" / "n.md"
+    cuerpo = "\nEjemplo:\npropagation_pending: algo\n"
+    nota.write_text(f"---\ntitle: '{HOSTIL}'\n---\n" + cuerpo, encoding="utf-8")
+    assert vault_propagate._action_notify("07_Knowledge/n.md", "2026-10-02T00:00:00Z")
+    assert vault_propagate._action_notify("07_Knowledge/n.md", "2026-10-03T00:00:00Z")
+    texto = nota.read_text(encoding="utf-8")
+    assert _claves(texto) == ["title", "propagation_pending"]
+    assert yaml.safe_load(_bloque(texto))["propagation_pending"] == "2026-10-03T00:00:00Z"
+
+    r = vault_propagate.vault_propagate_clear("07_Knowledge/n.md")
+    texto = nota.read_text(encoding="utf-8")
+    assert _claves(texto) == ["title"] and texto.endswith(cuerpo)
+    assert yaml.safe_load(_bloque(texto))["title"] == HOSTIL
+
+    nota.write_text(f"---\ntitle: t\n---\n" + cuerpo, encoding="utf-8")
+    vault_propagate.vault_propagate_clear("07_Knowledge/n.md")
+    assert nota.read_text(encoding="utf-8").endswith(cuerpo)
+
+
 def test_ap46_el_erd_de_relation_add_conserva_el_proyecto(vault):
     import vault_relation_add
 

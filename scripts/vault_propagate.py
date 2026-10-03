@@ -24,7 +24,6 @@ Usage:
 
 import argparse
 import json
-import re
 import subprocess
 
 import vault_subproceso
@@ -52,6 +51,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.ciclo_de_vida.repositorio import RepositorioCicloDeVida  # noqa: E402
 from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 # El vocabulario se declara una vez y se consume, no se copia. Ver
 # `vault_vocabulario.py` para el registro y su contexto dueño.
 from vault_vocabulario import opciones as _opciones, rango as _rango
@@ -135,13 +135,11 @@ def _action_notify(note_path: str, timestamp: str) -> bool:
             content = full_path.read_text(encoding="utf-8", errors="replace")
             bloque, cuerpo = separar_frontmatter(content)
             if bloque is not None:
-                # El salto inicial conserva la forma de `split`: así el
-                # `re.sub` también ve una clave en la primera línea.
-                fm_block = "\n" + bloque
-                # Remove existing propagation_pending if present
-                fm_block = re.sub(r"\npropagation_pending:.*", "", fm_block)
-                fm_block = fm_block.rstrip() + f'\npropagation_pending: "{timestamp}"\n'
-                new_content = "---" + fm_block + "---\n" + cuerpo
+                # AP-46: el dueño reemplaza la marca anterior en su sitio. Va
+                # citada (`texto=True`) como siempre: el lector recibe `str`.
+                fm = Frontmatter.editar(bloque).set(
+                    "propagation_pending", timestamp, texto=True)
+                new_content = fm.render() + "\n" + cuerpo
                 atomic_write_text(full_path, new_content)
                 return True
     except (OSError, UnicodeDecodeError, PermissionError) as exc:
@@ -355,10 +353,18 @@ def vault_propagate_clear(note_path: str) -> Dict[str, Any]:
             # Lectura y escritura bajo el lock de la nota (F1).
             with lock:
                 content = full_path.read_text(encoding="utf-8", errors="replace")
-                if "propagation_pending" in content:
-                    new_content = re.sub(r"\npropagation_pending:.*", "", content)
-                    atomic_write_text(full_path, new_content)
-                    cleared_fm = True
+                # AP-46: la marca se retira del bloque por su dueño. El
+                # `re.sub` sobre el contenido entero borraba también una línea
+                # `propagation_pending:` del cuerpo —una nota que documenta
+                # esta tool, por ejemplo— y daba la limpieza por hecha aunque
+                # el frontmatter no la tuviera.
+                bloque, cuerpo = separar_frontmatter(content)
+                if bloque is not None:
+                    antes = Frontmatter.editar(bloque)
+                    despues = Frontmatter.editar(bloque).quitar("propagation_pending")
+                    if despues.campos() != antes.campos():
+                        atomic_write_text(full_path, despues.render() + "\n" + cuerpo)
+                        cleared_fm = True
         except (OSError, UnicodeDecodeError, PermissionError) as exc:
             emit_error("vault_propagate", "CLEAR_FM_ERROR", str(exc))
         except Exception as exc:
