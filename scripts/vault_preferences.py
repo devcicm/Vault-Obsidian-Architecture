@@ -44,7 +44,7 @@ from vault_io import (
     tomar_lock,
     update_section_index,
 )
-from vault_lib import yaml_scalar, parse_frontmatter_with_body, slugify, utcnow, valor_de_frontmatter
+from vault_lib import parse_frontmatter_with_body, slugify, utcnow
 
 
 
@@ -59,6 +59,7 @@ _LOCK_TIMEOUT = 10.0
 
 from vault.consulta.repositorio import RepositorioConsulta  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 from vault.kernel.indices_structural import es_nombre_reservado  # noqa: E402
 
 
@@ -239,28 +240,29 @@ def vault_preferences_set(
         # tags implícitos y siempre presentes, así que la norma se cumple sola.
         all_tags = sorted({"preference", category, strength, *(tags or [])})
 
+        # AP-46: el bloque lo escribe su dueño; aquí solo se declaran los campos.
         frontmatter = [
-            "---",
-            f"title: {json.dumps(title, ensure_ascii=False)}",
-            f"id: {uuid.uuid4()}",
-            "type: preference",
-            f"category: {yaml_scalar(category)}",
-            f"strength: {valor_de_frontmatter(strength)}",
-            *status_frontmatter_lines("vault_preferences", STATUS_ACTIVE),
-            f"scope: {yaml_scalar(scope)}",
-            f"statement: {json.dumps(statement, ensure_ascii=False)}",
-            f"tags: {json.dumps(all_tags, ensure_ascii=False)}",
-            # Entrecomillados a propósito: sin comillas, YAML los convierte en
-            # datetime y la reescritura de --revoke los devuelve con otro formato.
-            f'createdAt: "{created}"',
-            f'updatedAt: "{timestamp}"',
+            Frontmatter()
+            .set("title", title, texto=True)
+            .set("id", str(uuid.uuid4()))
+            .set("type", "preference")
+            .set("category", category, texto=True)
+            .set("strength", strength)
+            .lineas(status_frontmatter_lines("vault_preferences", STATUS_ACTIVE))
+            .set("scope", scope, texto=True)
+            .set("statement", statement, texto=True)
+            .set("tags", all_tags)
+            # Citados a propósito (`texto=True`): sin comillas, YAML los convierte
+            # en datetime y la reescritura de --revoke los devuelve con otro formato.
+            .set("createdAt", str(created), texto=True)
+            .set("updatedAt", timestamp, texto=True)
             # Una preferencia es integridad alta por definición: si se corrompe o
             # se pierde, el agente actúa contra la voluntad del usuario.
-            "cia_integrity: high",
-            "cia_availability: high",
-            "cia_sensitivity: internal",
-            f"agent: {valor_de_frontmatter(agent)}",
-            "---",
+            .set("cia_integrity", "high")
+            .set("cia_availability", "high")
+            .set("cia_sensitivity", "internal")
+            .set("agent", agent)
+            .render()
         ]
 
         body = [f"# {title}", "", f"> **{strength.upper()}** — {statement}", ""]

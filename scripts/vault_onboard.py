@@ -42,7 +42,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from vault_errors import emit_error, wrap_main
-from vault_lib import yaml_scalar, slugify_strict, utcnow, valor_de_frontmatter
+from vault_lib import slugify_strict, utcnow
 from vault_io import assert_within_vault, atomic_write_text, normalize_stem
 from vault_norms_catalog import compute_norm_refs
 from vault_registry import ORDERED_SECTIONS
@@ -177,6 +177,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.ciclo_de_vida.repositorio import RepositorioCicloDeVida  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 
 # El vocabulario se declara una vez y se consume, no se copia. Ver
 # `vault_vocabulario.py` para el registro y su contexto dueno.
@@ -1063,27 +1064,29 @@ def _make_frontmatter(
     # —eso sería una segunda verdad— sino que se deriva del mismo mapa
     # sección→tipo que usa el write path canónico.
     tipo = extra.get("type") or tipo_por_carpeta(folder)
-    lines = [
-        "---",
-        f"title: {yaml_scalar(title)}",
-        f"id: {uuid.uuid4()}",
-        f"type: {valor_de_frontmatter(tipo)}",
-        f"createdAt: {valor_de_frontmatter(now)}",
-        f"updatedAt: {valor_de_frontmatter(now)}",
-        f"tags: {json.dumps(tags)}",
-        f"norm_refs: {json.dumps(norm_refs)}",
-        "status: stub",
-        f"cia_integrity: {valor_de_frontmatter(extra.get('cia_integrity', 'medium'))}",
-        f"cia_availability: {valor_de_frontmatter(extra.get('cia_availability', 'medium'))}",
-        f"cia_sensitivity: {valor_de_frontmatter(extra.get('cia_sensitivity', 'internal'))}",
-        f"agent: {valor_de_frontmatter(extra.get('agent', 'claude'))}",
-    ]
+    # AP-46: el bloque lo escribe su dueño; aquí solo se declaran los campos.
+    fm = (
+        Frontmatter()
+        .set("title", title, texto=True)
+        .set("id", str(uuid.uuid4()))
+        .set("type", tipo)
+        .set("createdAt", now)
+        .set("updatedAt", now)
+        .set("tags", tags)
+        .set("norm_refs", norm_refs)
+        .set("status", "stub")
+        .set("cia_integrity", extra.get("cia_integrity", "medium"))
+        .set("cia_availability", extra.get("cia_availability", "medium"))
+        .set("cia_sensitivity", extra.get("cia_sensitivity", "internal"))
+        .set("agent", extra.get("agent", "claude"))
+    )
     skip = {"cia_integrity", "cia_availability", "cia_sensitivity", "agent", "type"}
+    # AP-56: un `str` de `extra` salía crudo —`k: v`—, así que `#x` se leía
+    # como comentario y `a: b` rompía el bloque entero. Ahora es texto.
     for k, v in extra.items():
         if k not in skip:
-            lines.append(f"{k}: {json.dumps(v) if not isinstance(v, str) else v}")
-    lines.append("---")
-    return "\n".join(lines)
+            fm.set(k, v, texto=isinstance(v, str))
+    return fm.render()
 
 
 #: Notas que el onboard no escribió por falta de evidencia (AP-45). Se vacía al

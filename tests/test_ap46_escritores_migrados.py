@@ -40,6 +40,9 @@ MIGRADOS = {
     "vault_section_index": "_ensure_hub_notes",
     "vault_security_scan": "save_findings_to_vault",
     "vault_write": "generate_frontmatter",
+    "vault_ingest": "_build_note",
+    "vault_onboard": "_make_frontmatter",
+    "vault_preferences": "vault_preferences_set",
     # Fuera de `scripts/`: la clave es la ruta del módulo sin `.py`.
     "vault/ciclo_de_vida/producto": "_write_seed",
 }
@@ -324,3 +327,48 @@ def test_ap46_vault_write_conserva_texto_y_escribe_legible():
     assert fm["owner"] == "#infra" and fm["v"] == "1.0" and fm["fecha"] == FECHA
     assert fm["n"] == 3 and fm["lista"] == ["é"] and fm["norm_refs"] == ["AP-46"]
     assert "Ñandú" in bloque
+
+
+def test_ap46_ingest_conserva_texto_e_instantes_citados():
+    """`createdAt` de una nota ingerida siempre salió citado —el lector recibe
+    `str`— y el dueño lo mantiene con `texto=True`."""
+    import vault_ingest
+
+    nota = vault_ingest._build_note(
+        {"title": HOSTIL, "body": "Cuerpo con suficiente texto para la nota."},
+        {"tags": [], "wikilinks": []},
+        "07_Knowledge", "", FECHA, "inline", "a: b", [],
+    )
+    fm = yaml.safe_load(separar_frontmatter(nota["content"])[0])
+    assert fm["title"] == HOSTIL and fm["source"] == FECHA and fm["agent"] == "a: b"
+    assert isinstance(fm["createdAt"], str) and fm["tags"] == ["ingested", "inline"]
+
+
+def test_ap46_onboard_no_deja_un_extra_crudo():
+    """AP-56: un `str` de `extra` salía tal cual tras `k: `, y `#x` se leía
+    como comentario: el campo desaparecía con el bloque parseando limpio."""
+    import vault_onboard
+
+    bloque = vault_onboard._make_frontmatter(
+        HOSTIL, "07_Knowledge", ["Ñandú"],
+        {"owner": "#infra", "nota": "a: b", "fecha": FECHA, "n": 2}, "",
+    )
+    fm = yaml.safe_load(separar_frontmatter(bloque + "\n")[0])
+    assert fm["title"] == HOSTIL and fm["tags"] == ["Ñandú"]
+    assert fm["owner"] == "#infra" and fm["nota"] == "a: b"
+    assert fm["fecha"] == FECHA and fm["n"] == 2 and fm["status"] == "stub"
+
+
+def test_ap46_preferences_set_conserva_texto_y_createdAt(vault):
+    import vault_preferences
+
+    r = vault_preferences.vault_preferences_set(
+        "style", HOSTIL, "nunca: usar #tabs", scope="a: b", agent="bot")
+    assert r["ok"], r
+    [nota] = [n for n in vault.rglob("*.md") if _frontmatter_o_nada(n).get("type") == "preference"]
+    fm = _frontmatter(nota)
+    assert fm["title"] == HOSTIL and fm["statement"] == "nunca: usar #tabs"
+    assert fm["scope"] == "a: b" and isinstance(fm["createdAt"], str)
+    creado = fm["createdAt"]
+    assert vault_preferences.vault_preferences_set("style", HOSTIL, "otra", agent="bot")["ok"]
+    assert _frontmatter(nota)["createdAt"] == creado

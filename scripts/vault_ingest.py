@@ -50,7 +50,7 @@ from vault_io import (  # noqa: E402
     tomar_lock,
     update_section_index,
 )
-from vault_lib import slugify, strip_code_blocks, utcnow, yaml_scalar  # noqa: E402
+from vault_lib import slugify, strip_code_blocks, utcnow  # noqa: E402
 
 # Secciones que esta tool NO puede alimentar: son artefactos generados o
 # propiedad exclusiva de otras tools. Ingerir texto libre ahí rompería la
@@ -94,6 +94,7 @@ from vault_entorno import leer as _env
 
 from vault.consulta.repositorio import RepositorioConsulta  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 from vault.kernel.errores import completar_envelope  # noqa: E402
 
 
@@ -305,32 +306,34 @@ def _build_note(
     tags = sorted({"ingested", origin, *extra_tags, *entities["tags"][:5]})
     related = entities["wikilinks"][:10]
 
+    # AP-46: el bloque lo escribe su dueño; aquí solo se declaran los campos.
+    # Los instantes van con `texto=True` porque esta nota siempre los citó: el
+    # lector recibe `str`, y pasarlos a crudo le cambiaría el tipo.
     frontmatter = [
-        "---",
-        f"title: {json.dumps(title, ensure_ascii=False)}",
-        f"id: {uuid.uuid4()}",
-        "type: ingested",
-        "status: draft",  # nunca 'active': lo ingerido se revisa antes de valer
-        f"tags: {json.dumps(tags, ensure_ascii=False)}",
-        f"related: {json.dumps(related, ensure_ascii=False)}",
-        f'createdAt: "{utcnow()}"',
-        f'updatedAt: "{utcnow()}"',
-        f"source: {json.dumps(source, ensure_ascii=False)}",
+        Frontmatter()
+        .set("title", title, texto=True)
+        .set("id", str(uuid.uuid4()))
+        .set("type", "ingested")
+        .set("status", "draft")  # nunca 'active': lo ingerido se revisa antes de valer
+        .set("tags", tags)
+        .set("related", related)
+        .set("createdAt", utcnow(), texto=True)
+        .set("updatedAt", utcnow(), texto=True)
+        .set("source", source, texto=True)
         # AP-56: ni `origin` ni `agent` son valores controlados por esta tool
         # —vienen del invocante—, y un `agent: si: claro` rompía el YAML de la
-        # nota entera. `yaml_scalar` solo cita cuando el parser real no
-        # devolvería el mismo texto.
-        f"ingest_origin: {yaml_scalar(origin)}",
+        # nota entera.
+        .set("ingest_origin", origin, texto=True)
         # AP-30 se cumple aquí, y por eso `vault_ingest` la aplica en vez de
         # solo detectarla: la tríada CIA se escribe en el mismo acto que crea la
         # nota, así que por esta vía no puede entrar una nota sin clasificar.
         # Integridad baja mientras no se revise: el rerank de context_pack la
         # ordenará por detrás del conocimiento verificado, que es lo correcto.
-        "cia_integrity: low",
-        "cia_availability: medium",
-        "cia_sensitivity: internal",
-        f"agent: {yaml_scalar(agent)}",
-        "---",
+        .set("cia_integrity", "low")
+        .set("cia_availability", "medium")
+        .set("cia_sensitivity", "internal")
+        .set("agent", agent, texto=True)
+        .render()
     ]
 
     body = [f"# {title}", "", chunk["body"].strip(), ""]
