@@ -564,6 +564,16 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": "vault-obsidian-architecture.md §Grupo 2 — Proyectos",
         },
     },
+    "PROJECT_AMBIGUOUS": {
+        "category": "validation",
+        "severity": "error",
+        "message": "El nombre de proyecto lo reclaman varios proyectos registrados.",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Usar el slug exacto de uno de los candidatos, o quitar el alias duplicado de la ficha project.md que no le corresponde.",
+            "docs": None,
+        },
+    },
     "VERSION_NOT_FOUND": {
         "category": "not_found",
         "severity": "error",

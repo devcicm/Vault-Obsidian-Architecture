@@ -74,6 +74,13 @@ CAUSAS: Dict[str, str] = {
     "INDICE_ILEGIBLE":
         "un índice compartido existe pero no se puede leer como JSON. No es lo mismo que no existir: cederlo vacío haría que el guardado borrase sus "
         "entradas y reiniciase sus correlativos.",
+    "PROYECTO_NO_REGISTRADO":
+        "el nombre de proyecto no resuelve a ninguna carpeta de 01_Projects/ "
+        "ni a ningún alias de su ficha. No se crea: un nombre libre que funda "
+        "un proyecto es como nacen los fantasmas (AP-63).",
+    "PROYECTO_AMBIGUO":
+        "el nombre lo reclaman dos o más proyectos registrados, como slug o "
+        "como alias. Elegir uno en silencio sería inventar la identidad.",
 }
 
 
