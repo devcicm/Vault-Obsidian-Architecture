@@ -33,6 +33,7 @@ MIGRADOS = {
     "vault_code_module": "vault_code_module",
     "vault_code_relation": "save_code_map",
     "vault_project_status": "vault_project_status",
+    "vault_init": "_create_scaffold_note",
 }
 
 
@@ -153,6 +154,18 @@ def test_ap46_project_status_conserva_proyecto_estado_e_id(vault):
     vault_project_status.vault_project_status(proyecto, "bloqueado", "otro")
     segunda = _frontmatter(nota)
     assert segunda["id"] == fm["id"] and segunda["createdAt"] == fm["createdAt"]
+
+
+def test_ap46_el_primer_de_init_nace_con_una_sola_hora_y_su_tipo(vault):
+    import vault_init
+    from vault_registry import SCAFFOLD_TYPE
+
+    seccion = "Ñandú #1 & beta"
+    r = vault_init._create_scaffold_note(seccion)
+    fm = _frontmatter(vault / r["path"])
+    assert fm["title"].startswith(seccion) and fm["id"] == seccion.lower() + "-primer"
+    assert fm["scaffold"] is True and fm["type"] == SCAFFOLD_TYPE
+    assert fm["createdAt"] == fm["updatedAt"] and fm["status"] == "template"
 
 
 def _frontmatter_o_nada(path: Path) -> dict:

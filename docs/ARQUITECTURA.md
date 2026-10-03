@@ -2,7 +2,7 @@
 
 > Documento derivado. Se genera con `python scripts/vault_arch.py --blueprint`; la fuente es `CONTEXTS` en `scripts/vault_arch.py`. No se edita a mano.
 
-**10 contextos**, **162 módulos** clasificados, **42 fronteras cruzadas** pendientes de publicar puerto.
+**10 contextos**, **162 módulos** clasificados, **43 fronteras cruzadas** pendientes de publicar puerto.
 
 ## Los límites
 
@@ -40,11 +40,11 @@ graph TD
     grafo -.->|cruce| autoria
     consulta -.->|cruce| autoria
     kernel -.->|cruce| autoria
+    ciclo_de_vida -.->|cruce| autoria
     meta_toolkit -.->|cruce| consulta
     gobernanza -.->|cruce| meta_toolkit
     gobernanza -.->|cruce| autoria
     ciclo_de_vida -.->|cruce| indices
-    ciclo_de_vida -.->|cruce| autoria
     ciclo_de_vida -.->|cruce| grafo
     ciclo_de_vida -.->|cruce| gobernanza
     meta_toolkit -.->|cruce| ciclo_de_vida
@@ -157,10 +157,11 @@ Fronteras que hoy cruza (3), deuda declarada:
 - **Puertos publicados:** `CURRENT_VERSION` → `vault_standard_upgrade:CURRENT_VERSION`, `inicializar` → `vault_init:vault_init`, `migrar` → `vault_standard_upgrade:vault_standard_upgrade`
 - **Módulos (9):** `vault_history_compact`, `vault_init`, `vault_migrate_docs`, `vault_migrate_rollback`, `vault_onboard`, `vault_propagate`, `vault_sanacion`, `vault_sdd_init`, `vault_standard_upgrade`
 
-Fronteras que hoy cruza (12), deuda declarada:
+Fronteras que hoy cruza (13), deuda declarada:
 
 | Módulo | Importa | Contexto destino |
 |---|---|---|
+| `vault_init` | `vault/autoria` | Autoría |
 | `vault_onboard` | `vault_reindex` | Índices |
 | `vault_onboard` | `vault_section_index` | Índices |
 | `vault_onboard` | `vault_tags` | Índices |

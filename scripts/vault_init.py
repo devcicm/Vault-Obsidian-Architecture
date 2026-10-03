@@ -35,7 +35,7 @@ from typing import Any, Dict
 
 from vault_errors import wrap_main
 from vault_io import atomic_write_json, write_report
-from vault_lib import yaml_scalar, utcnow
+from vault_lib import utcnow
 from vault_version import CURRENT_VERSION
 from vault_registry import (
     standard_folders,
@@ -67,6 +67,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.ciclo_de_vida.repositorio import RepositorioCicloDeVida  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -128,25 +129,29 @@ python scripts/{tool_hint}
 
 > **Más comandos:** ver [[vault-commands|Comandos del vault]].
 """
+    # AP-46: el bloque lo escribe su dueño. Una sola hora para las dos marcas:
+    # con dos llamadas a `utcnow()` un primer recién creado podía nacer con
+    # `updatedAt` un segundo posterior a su `createdAt`.
+    ahora = utcnow()
     frontmatter = (
-        "---\n"
-        # AP-46: el escape va sobre el valor entero; sobre la mitad salía
+        Frontmatter()
+        # El escape va sobre el valor entero; sobre la mitad salía
         # `title: "x" — Guía rápida`, que YAML no lee.
-        f"title: {yaml_scalar(section + ' — Guía rápida')}\n"
-        f"id: {yaml_scalar(section.lower() + '-primer')}\n"
-        f"createdAt: {utcnow()}\n"
-        f"updatedAt: {utcnow()}\n"
-        f"cia_integrity: medium\n"
-        f"cia_availability: medium\n"
-        f"cia_sensitivity: internal\n"
-        f"agent: vault_init\n"
-        f'tags: ["primer", "scaffold", "onboarding"]\n'
-        f"scaffold: true\n"
+        .set("title", section + " — Guía rápida", vacio_citado=True)
+        .set("id", section.lower() + "-primer", vacio_citado=True)
+        .set("createdAt", ahora)
+        .set("updatedAt", ahora)
+        .set("cia_integrity", "medium")
+        .set("cia_availability", "medium")
+        .set("cia_sensitivity", "internal")
+        .set("agent", "vault_init")
+        .set("tags", ["primer", "scaffold", "onboarding"])
+        .set("scaffold", True)
         # `SCAFFOLD_TYPE`, no el literal: `vault_registry.is_scaffold_note()`
         # decide con esa misma constante qué nota es andamio y cuál contenido.
         # Escrito a mano aquí, el escritor y el lector del mismo campo podían
         # dejar de coincidir sin que nada lo notara.
-        f"type: {SCAFFOLD_TYPE}\n"
+        .set("type", SCAFFOLD_TYPE)
         # Sin `status`, el propio `vault_audit` marcaba como incompleta cada nota
         # que este generador acaba de escribir: 18 primers de 18 en el vault de
         # BuilderX. El generador del estándar producía notas que su auditoría
@@ -154,10 +159,10 @@ python scripts/{tool_hint}
         # `template` — y no `draft` — porque un primer es andamiaje estable, no un
         # borrador en camino a otra cosa; es además el valor que AP-03 y AP-07
         # eximen de exigencias de contenido y estructura de ADR.
-        f"status: template\n"
-        f'norm_refs: ["CN-01"]\n'
-        "---\n"
-        "\n"
+        .set("status", "template")
+        .set("norm_refs", ["CN-01"])
+        .render()
+        + "\n\n"
     )
     primer_path.parent.mkdir(parents=True, exist_ok=True)
     primer_path.write_text(frontmatter + content, encoding="utf-8")
