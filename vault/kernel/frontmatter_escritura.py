@@ -17,6 +17,7 @@ escapado (`yaml_scalar`, `es_instante`)— ya era del núcleo desde v40.34
 
 from __future__ import annotations
 
+import re
 from typing import Any, Iterable, List, Tuple
 
 from .frontmatter_parsing import es_instante, yaml_scalar
@@ -33,6 +34,49 @@ class Frontmatter:
 
     def __init__(self) -> None:
         self._lineas: List[str] = []
+
+    @classmethod
+    def editar(cls, bloque: str) -> "Frontmatter":
+        """Un frontmatter que ya existe, para cambiarle campos (AP-46).
+
+        Los editores —revocar una preferencia, marcar una propagación, anotar
+        una fusión, añadir una norma— montaban el bloque a mano igual que los
+        creadores, cada uno con su escapado: `json.dumps` en uno, comillas
+        literales en otro, un `re.sub` por línea en un tercero. Este es el mismo
+        dueño en modo edición: lo que no se toca se conserva línea a línea, y lo
+        que se toca pasa por `set`, que es el único que decide el escapado.
+
+        `bloque` es lo que devuelve `separar_frontmatter`: sin delimitadores.
+        Las líneas vacías del final se descartan; el cierre `---` va justo
+        detrás del último campo, que es como lo dejaban los editores.
+        """
+        fm = cls()
+        lineas = bloque.split("\n") if bloque else []
+        while lineas and not lineas[-1].strip():
+            lineas.pop()
+        fm._lineas = lineas
+        return fm
+
+    def _tramo(self, clave: str) -> "Tuple[int, int] | None":
+        """`(inicio, fin)` de las líneas de `clave`, continuación incluida.
+
+        Una clave de nivel superior ocupa su línea y las que la continúan: las
+        sangradas y los `- item` de una lista en bloque, que YAML acepta a
+        columna cero bajo su clave. Reemplazar solo la primera dejaría los
+        ítems viejos colgando del valor nuevo.
+        """
+        patron = re.compile(rf"^{re.escape(clave)}\s*:(\s|$)")
+        for i, linea in enumerate(self._lineas):
+            if patron.match(linea):
+                fin = i + 1
+                while fin < len(self._lineas) and (
+                    self._lineas[fin][:1] in (" ", "\t")
+                    or self._lineas[fin] == "-"
+                    or self._lineas[fin].startswith("- ")
+                ):
+                    fin += 1
+                return i, fin
+        return None
 
     # ── Escritura ────────────────────────────────────────────────────────────
 
@@ -64,23 +108,39 @@ class Frontmatter:
         instante, y sin esto el lector los recibía como `datetime.date`.
         Es lo que escribían los sitios que llamaban a `yaml_scalar` a mano,
         así que migrarlos con `texto=True` no cambia un byte.
+
+        Si la clave ya está —un bloque abierto con `editar`—, su línea y su
+        continuación se reemplazan en el sitio: una clave duplicada la lee
+        YAML como «gana la última» y Obsidian no siempre, así que el orden y
+        la unicidad se conservan aquí en vez de confiar en el lector.
         """
         if omitir_vacio and valor in (None, "", [], {}):
             return self
         if texto:
-            self._lineas.append(f"{clave}: {yaml_scalar(valor)}")
-            return self
-        if valor == "" and not isinstance(valor, (list, dict)) and not vacio_citado:
+            linea = f"{clave}: {yaml_scalar(valor)}"
+        elif valor == "" and not isinstance(valor, (list, dict)) and not vacio_citado:
             # `clave: ` a secas, que es lo que se escribe hoy y lo que YAML
             # lee como `null`. Citarlo a `""` convertiría un campo ausente en
             # una cadena vacía, y hay notas que ya distinguen las dos cosas
             # —`resolved_at` de un incidente sin resolver, por ejemplo—.
             # Cambiar eso no es unificar el escapado, es cambiar el dato.
-            self._lineas.append(f"{clave}: ")
+            linea = f"{clave}: "
         elif es_instante(valor):
-            self._lineas.append(f"{clave}: {valor}")
+            linea = f"{clave}: {valor}"
         else:
-            self._lineas.append(f"{clave}: {yaml_scalar(valor)}")
+            linea = f"{clave}: {yaml_scalar(valor)}"
+        tramo = self._tramo(clave)
+        if tramo is None:
+            self._lineas.append(linea)
+        else:
+            self._lineas[tramo[0]:tramo[1]] = [linea]
+        return self
+
+    def quitar(self, clave: str) -> "Frontmatter":
+        """Retira `clave` con su continuación; no hace nada si no está."""
+        tramo = self._tramo(clave)
+        if tramo is not None:
+            del self._lineas[tramo[0]:tramo[1]]
         return self
 
     def lineas(self, lineas: Iterable[str]) -> "Frontmatter":
