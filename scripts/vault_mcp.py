@@ -407,7 +407,6 @@ Ejemplos:
     subparsers.add_parser("context-load", help="Carga contexto")
 
     # Gestión de carpetas
-    subparsers.add_parser("folders", help="Carpetas personalizadas")
     folders_parser = subparsers.add_parser("folders", help="Carpetas registradas")
     folders_parser.add_argument(
         "--scan", action="store_true", help="Escanear carpetas nuevas"
