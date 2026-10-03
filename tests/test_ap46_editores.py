@@ -100,3 +100,16 @@ def test_ap46_revocar_una_preferencia_no_convierte_null_en_texto(vault):
     assert fm["revoked_reason"] == "a: b #c" and isinstance(fm["revoked_at"], str)
     assert fm["createdAt"] == antes["createdAt"] and fm["preference_state"] == "revoked"
     assert len(_claves(texto)) == len(set(_claves(texto)))
+
+
+def test_ap46_el_erd_de_relation_add_conserva_el_proyecto(vault):
+    import vault_relation_add
+
+    r = vault_relation_add.vault_relation_add(FECHA_PROYECTO, "a", "b", "depends_on")
+    assert r["ok"], r
+    [erd] = list(vault.rglob("*-erd.md"))
+    fm = yaml.safe_load(_bloque(erd.read_text(encoding="utf-8")))
+    assert fm["project"] == FECHA_PROYECTO and fm["title"] == f"{FECHA_PROYECTO} ERD"
+
+
+FECHA_PROYECTO = "2026-10-02"

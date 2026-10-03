@@ -31,7 +31,7 @@ import re
 import sys
 
 from vault_errors import emit_error, wrap_main
-from vault_lib import yaml_scalar, slugify_strict, utcnow
+from vault_lib import slugify_strict, utcnow
 import uuid
 
 from pathlib import Path
@@ -46,6 +46,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 
 
 _LOCK_TIMEOUT = 10.0
@@ -273,15 +274,14 @@ def _anadir_bajo_lock(
 
     erd_path = _entity_dir() / f"{slugify(project)}-erd.md"
 
-    erd_frontmatter = ["---"]
-
-    erd_frontmatter.append(f"title: {yaml_scalar(f'{project} ERD')}")
-
-    erd_frontmatter.append(f"project: {yaml_scalar(project)}")
-
-    erd_frontmatter.append(f"updatedAt: {utcnow()}")
-
-    erd_frontmatter.append("---")
+    # AP-46: el bloque lo escribe su dueño; aquí solo se declaran los campos.
+    erd_frontmatter = [
+        Frontmatter()
+        .set("title", f"{project} ERD", texto=True)
+        .set("project", project, texto=True)
+        .set("updatedAt", utcnow())
+        .render()
+    ]
 
     erd_frontmatter.append(
         f"\n## Entity Relationship Diagram\n\n```mermaid\n{erd_content}\n```\n"
