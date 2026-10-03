@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from vault_errors import emit_error, wrap_main
-from vault_io import is_snapshot_path
+from vault_io import assert_within_vault, is_snapshot_path
 SCRIPTS_DIR = Path(__file__).parent
 
 
@@ -191,7 +191,14 @@ Ejemplos:
     args = parser.parse_args()
 
     if args.path:
-        path = _raiz() / args.path
+        # AP-36: el catálogo declara `within_vault` sobre --path; sin esto
+        # `../x.md` o una ruta absoluta leían cualquier fichero del disco.
+        try:
+            path = assert_within_vault(_raiz() / args.path, _raiz())
+        except ValueError as exc:
+            print(json.dumps(emit_error("vault_mermaid_check", "INVALID_PATH", str(exc)),
+                             ensure_ascii=False))
+            return 1
         if not path.exists():
             print(
                 json.dumps(
