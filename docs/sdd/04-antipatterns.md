@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
-> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-62 más
-> las familias PAT, SP y CN. Por familia: AP 62, CN 3, PAT 6, SP 3.
-> Bilingual document. Full norm catalog: antipatterns AP-01..AP-62 plus the PAT,
-> SP and CN families. By family: AP 62, CN 3, PAT 6, SP 3.
+> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-63 más
+> las familias PAT, SP y CN. Por familia: AP 63, CN 3, PAT 6, SP 4.
+> Bilingual document. Full norm catalog: antipatterns AP-01..AP-63 plus the PAT,
+> SP and CN families. By family: AP 63, CN 3, PAT 6, SP 4.
 
 ---
 
 ## ES
 
-Total de normas registradas: 74 (AP 62, CN 3, PAT 6, SP 3)
+Total de normas registradas: 76 (AP 63, CN 3, PAT 6, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -25,7 +25,7 @@ Documentar herramientas, endpoints, funciones o comportamientos que no existen e
 
 - **Severidad:** high
 - **Enforcement:** audit
-- **Detectado por:** sin detector -- Sus dos variantes hermanas sí se miden --AP-17 canonical-shadow y AP-18 cross-folder, ambas con penalización propia en vault_audit.PENALIZACIONES--, pero la variante same-folder que es AP-02 no la detecta nadie: `status-v1.md` y `status-v2.md` en la misma carpeta no son duplicados por hash (AP-18) ni pasan el umbral de similitud de título (AP-17). Declararlo aquí es lo que impide que la cobertura de las hermanas se lea como suya.
+- **Detectado por:** vault_audit
 
 Múltiples notas describiendo la misma entidad: status-v1.md, status-v2.md, status-final.md, status-final2.md. Variantes: same-folder (AP-02), cross-folder (AP-18), canonical-shadow (AP-17).
 
@@ -247,9 +247,9 @@ Una nota con más de 500 líneas de contenido real se vuelve difícil de mantene
 - **Enforcement:** guard+audit
 - **Detectado por:** vault_audit, vault_fix_brackets
 
-Wiki-links malformados por desbalance de corchetes. Tres variantes: (1) apertura sin cierre ([[nota sin ]]), (2) cierre sin apertura (]] sin [[), (3) anidamiento incorrecto ([[[[nota]]]] o [[nota]]]]). En Obsidian el link se renderiza como texto literal, no como enlace navegable. Rompe la trazabilidad y produce falsos negativos en vault_audit --broken-links.
+Wiki-links malformados por desbalance de corchetes. Tres variantes: (1) apertura sin cierre ([[nota sin ]]), (2) cierre sin apertura (]] sin [[), (3) anidamiento incorrecto ([[[[nota]]]] o [[nota]]]]). En Obsidian el link se renderiza como texto literal, no como enlace navegable. Rompe la trazabilidad y produce falsos negativos en vault_audit (brokenLinks).
 
-**Prevención:** Usar siempre el formato [[stem]] o [[stem|alias]]. Validar balance con vault_fix_brackets --fix antes de commit. El content_gate de vault_write rechaza contenido con bracket imbalance.
+**Prevención:** Usar siempre el formato [[stem]] o [[stem|alias]]. Validar balance con vault_fix_brackets --apply antes de commit. El content_gate de vault_write rechaza contenido con bracket imbalance.
 
 ### AP-25: Mermaid diagram syntax errors -- nodos/tipos no definidos
 
@@ -525,7 +525,7 @@ Medido en v40.1 por sus tres guards: **0 copias de vocabulario, 0 lecturas de en
 
 El dueño es la mitad que faltaba. `vault_norms.DOMAIN_STATUS_VOCABS` ya había resuelto esto para `status` en v39 y se quedó solo: compartir la constante evita la copia, pero no contesta quién decide cuándo cambia. Por eso cada entrada del registro declara el contexto acotado que manda sobre ella, y ese contexto tiene que existir en `vault_arch.CONTEXTS`.
 
-**Prevención:** Registro canónico con dueño, consumidores derivados, guard sin baseline. Los vocabularios cerrados en `vault_vocabulario.py`, la configuración en `vault_entorno.py`, y `vault_arch --check` fallando si aparece una copia, una lectura sin declarar o un vocabulario huérfano. **Sin baseline a propósito**: las catorce copias se saldaron al declarar el registro, así que la puerta nace en cero y una baseline solo serviría para admitir la número quince. Lo que ya tiene registro canónico no se copia: se declara `derivado_de` y se resuelve al llamarse, nunca al importarse (AP-49). Un dato canónico que no es puerto de su contexto se acaba copiando -- los tres registros que `CLAUDE.md` declara fuente única de verdad se leían por fuera de la superficie publicada, y así nacieron las catorce copias.
+**Prevención:** Registro canónico con dueño, consumidores derivados, guard sin baseline. Los vocabularios cerrados en `vault_vocabulario.py`, la configuración en `vault_entorno.py`, y `vault_arch --check` fallando si aparece una copia, una lectura sin declarar o un vocabulario huérfano. **Sin baseline a propósito**: las catorce copias se saldaron al declarar el registro, así que la puerta nace en cero y una baseline solo serviría para admitir la número quince. Lo que ya tiene registro canónico no se copia: se declara `derivado_de` y se resuelve al llamarse, nunca al importarse (AP-49). Un dato canónico que no es puerto de su contexto se acaba copiando -- los tres registros que `AGENTS.md` declara fuente única de verdad se leían por fuera de la superficie publicada, y así nacieron las catorce copias.
 
 ### AP-51: La tool culpa al dato de su propio fallo
 
@@ -729,6 +729,20 @@ Se salda **dándole al recurso un dueño con forma de hoja**: partir el producto
 
 Límites declarados: mide `from X import y` y no `import X`, porque quien importa el módulo entero no declara qué usa; decide la pureza por AST a punto fijo, así que una función que dependa de un global mutable pasará por pura; y da las clases por acopladas sin mirarlas, prefiriendo no contar un sitio a contar uno que no lo es.
 
+### AP-63: El nombre de un proyecto como texto libre
+
+- **Severidad:** high
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_project
+
+El nombre de un proyecto es **identidad**, y hasta v40.34 era texto libre: cada `--project` escribía su valor tal cual, así que una errata, una variante de mayúsculas o un ejemplo del manifiesto **fundaban** un proyecto con su carpeta. Medido en solo lectura contra un vault consumidor (regla 7): cuatro proyectos fantasma --`mi-api`, `mi-proyecto`, `demo`, `website-demo`-- que eran los ejemplos del estándar copiados por un agente.
+
+El registro existe sin que nadie lo declare: la carpeta `01_Projects/<slug>/` registra el slug. La ficha opcional `project.md` aporta `aliases`, `title` y `status`. Un nombre resuelve a **un** slug o falla: `PROJECT_NOT_FOUND` con sugerencias, `PROJECT_AMBIGUOUS` si un alias lo reclaman dos.
+
+**Prevención:** `vault_project` es la puerta de entrada: `--add` registra y rechaza un alias que ya es de otro proyecto, `--resolve` devuelve el slug o el código de error, `--audit` lista fantasmas y claves no canónicas sin escribir nada. La ruta local va a `00_System/.local/project-paths.json`, con su propio `.gitignore`: es de una máquina, no del proyecto.
+
+Límites declarados: las tools con `--project` todavía no pasan por el resolutor, así que la escritura sigue pudiendo fundar un fantasma que el audit verá después; y el audit no mira el cuerpo de las notas, donde los ejemplos del manifiesto citan nombres que no son proyectos.
+
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
 - **Severidad:** high
@@ -795,7 +809,7 @@ Algoritmo estándar para resolver duplicados: identificar canónica (más backli
 - **Enforcement:** recommended
 - **Detectado por:** vault_drift_detect, vault_audit, vault_write, vault_change_log
 
-Las auditorías masivas se ejecutan en 4 fases atómicas: 1-Snapshot (vault_drift_detect --snapshot), 2-Detección (vault_audit), 3-Resolución (vault_write, vault_change_log), 4-Verificación (vault_drift_detect --report).
+Las auditorías masivas se ejecutan en 4 fases atómicas: 1-Snapshot (vault_drift_detect --mode snapshot), 2-Detección (vault_audit), 3-Resolución (vault_write, vault_change_log), 4-Verificación (vault_drift_detect --mode report).
 
 **Prevención:** N/A -- es el protocolo de auditoría.
 
@@ -849,11 +863,21 @@ Antes de cualquier operación masiva (migración, rename en lote, vault_tags --r
 
 **Prevención:** PAT-4 (phased audit): snapshot → operación → vault_audit() → comparar score. vault_delta --snapshot antes de cada sesión con cambios masivos.
 
+### SP-04: Sesión MCP por HTTP sin credencial -- cualquier proceso local la abre
+
+- **Severidad:** critical
+- **Enforcement:** guard
+- **Detectado por:** sin detector declarado
+
+El transporte HTTP/SSE del servidor MCP acepta sesiones sin token, responde con CORS abierto o atiende un `Host` que no es el suyo. Escuchar en 127.0.0.1 no lo impide: el navegador del usuario también vive ahí, y una página cualquiera podía abrir `/sse`, leer el `sessionId` e invocar `vault_delete` por `/message`.
+
+**Prevención:** Token por `VAULT_MCP_TOKEN` o generado al arrancar (default cerrado), comparado en tiempo constante; `Origin` presente → 403; `Host` distinto de 127.0.0.1/localhost → 403 (DNS rebinding); sin CORS; cada respuesta solo a su sesión. stdio no abre puerto y no cambia. Lo ejerce `tests/test_mcp_http_seguridad.py` contra el servidor real, y `vault_produccion` (puerta 21) falla si la promesa `superficie_expuesta` se queda sin ese ejecutor.
+
 ---
 
 ## EN
 
-Total registered norms: 74 (AP 62, CN 3, PAT 6, SP 3)
+Total registered norms: 76 (AP 63, CN 3, PAT 6, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -869,7 +893,7 @@ Documentar herramientas, endpoints, funciones o comportamientos que no existen e
 
 - **Severity:** high
 - **Enforcement:** audit
-- **Detected by:** sin detector -- Sus dos variantes hermanas sí se miden --AP-17 canonical-shadow y AP-18 cross-folder, ambas con penalización propia en vault_audit.PENALIZACIONES--, pero la variante same-folder que es AP-02 no la detecta nadie: `status-v1.md` y `status-v2.md` en la misma carpeta no son duplicados por hash (AP-18) ni pasan el umbral de similitud de título (AP-17). Declararlo aquí es lo que impide que la cobertura de las hermanas se lea como suya.
+- **Detected by:** vault_audit
 
 Múltiples notas describiendo la misma entidad: status-v1.md, status-v2.md, status-final.md, status-final2.md. Variantes: same-folder (AP-02), cross-folder (AP-18), canonical-shadow (AP-17).
 
@@ -1091,9 +1115,9 @@ Una nota con más de 500 líneas de contenido real se vuelve difícil de mantene
 - **Enforcement:** guard+audit
 - **Detected by:** vault_audit, vault_fix_brackets
 
-Wiki-links malformados por desbalance de corchetes. Tres variantes: (1) apertura sin cierre ([[nota sin ]]), (2) cierre sin apertura (]] sin [[), (3) anidamiento incorrecto ([[[[nota]]]] o [[nota]]]]). En Obsidian el link se renderiza como texto literal, no como enlace navegable. Rompe la trazabilidad y produce falsos negativos en vault_audit --broken-links.
+Wiki-links malformados por desbalance de corchetes. Tres variantes: (1) apertura sin cierre ([[nota sin ]]), (2) cierre sin apertura (]] sin [[), (3) anidamiento incorrecto ([[[[nota]]]] o [[nota]]]]). En Obsidian el link se renderiza como texto literal, no como enlace navegable. Rompe la trazabilidad y produce falsos negativos en vault_audit (brokenLinks).
 
-**Prevention:** Usar siempre el formato [[stem]] o [[stem|alias]]. Validar balance con vault_fix_brackets --fix antes de commit. El content_gate de vault_write rechaza contenido con bracket imbalance.
+**Prevention:** Usar siempre el formato [[stem]] o [[stem|alias]]. Validar balance con vault_fix_brackets --apply antes de commit. El content_gate de vault_write rechaza contenido con bracket imbalance.
 
 ### AP-25: Mermaid diagram syntax errors -- nodos/tipos no definidos
 
@@ -1369,7 +1393,7 @@ Medido en v40.1 por sus tres guards: **0 copias de vocabulario, 0 lecturas de en
 
 El dueño es la mitad que faltaba. `vault_norms.DOMAIN_STATUS_VOCABS` ya había resuelto esto para `status` en v39 y se quedó solo: compartir la constante evita la copia, pero no contesta quién decide cuándo cambia. Por eso cada entrada del registro declara el contexto acotado que manda sobre ella, y ese contexto tiene que existir en `vault_arch.CONTEXTS`.
 
-**Prevention:** Registro canónico con dueño, consumidores derivados, guard sin baseline. Los vocabularios cerrados en `vault_vocabulario.py`, la configuración en `vault_entorno.py`, y `vault_arch --check` fallando si aparece una copia, una lectura sin declarar o un vocabulario huérfano. **Sin baseline a propósito**: las catorce copias se saldaron al declarar el registro, así que la puerta nace en cero y una baseline solo serviría para admitir la número quince. Lo que ya tiene registro canónico no se copia: se declara `derivado_de` y se resuelve al llamarse, nunca al importarse (AP-49). Un dato canónico que no es puerto de su contexto se acaba copiando -- los tres registros que `CLAUDE.md` declara fuente única de verdad se leían por fuera de la superficie publicada, y así nacieron las catorce copias.
+**Prevention:** Registro canónico con dueño, consumidores derivados, guard sin baseline. Los vocabularios cerrados en `vault_vocabulario.py`, la configuración en `vault_entorno.py`, y `vault_arch --check` fallando si aparece una copia, una lectura sin declarar o un vocabulario huérfano. **Sin baseline a propósito**: las catorce copias se saldaron al declarar el registro, así que la puerta nace en cero y una baseline solo serviría para admitir la número quince. Lo que ya tiene registro canónico no se copia: se declara `derivado_de` y se resuelve al llamarse, nunca al importarse (AP-49). Un dato canónico que no es puerto de su contexto se acaba copiando -- los tres registros que `AGENTS.md` declara fuente única de verdad se leían por fuera de la superficie publicada, y así nacieron las catorce copias.
 
 ### AP-51: La tool culpa al dato de su propio fallo
 
@@ -1573,6 +1597,20 @@ Se salda **dándole al recurso un dueño con forma de hoja**: partir el producto
 
 Límites declarados: mide `from X import y` y no `import X`, porque quien importa el módulo entero no declara qué usa; decide la pureza por AST a punto fijo, así que una función que dependa de un global mutable pasará por pura; y da las clases por acopladas sin mirarlas, prefiriendo no contar un sitio a contar uno que no lo es.
 
+### AP-63: El nombre de un proyecto como texto libre
+
+- **Severity:** high
+- **Enforcement:** guard+audit
+- **Detected by:** vault_project
+
+El nombre de un proyecto es **identidad**, y hasta v40.34 era texto libre: cada `--project` escribía su valor tal cual, así que una errata, una variante de mayúsculas o un ejemplo del manifiesto **fundaban** un proyecto con su carpeta. Medido en solo lectura contra un vault consumidor (regla 7): cuatro proyectos fantasma --`mi-api`, `mi-proyecto`, `demo`, `website-demo`-- que eran los ejemplos del estándar copiados por un agente.
+
+El registro existe sin que nadie lo declare: la carpeta `01_Projects/<slug>/` registra el slug. La ficha opcional `project.md` aporta `aliases`, `title` y `status`. Un nombre resuelve a **un** slug o falla: `PROJECT_NOT_FOUND` con sugerencias, `PROJECT_AMBIGUOUS` si un alias lo reclaman dos.
+
+**Prevention:** `vault_project` es la puerta de entrada: `--add` registra y rechaza un alias que ya es de otro proyecto, `--resolve` devuelve el slug o el código de error, `--audit` lista fantasmas y claves no canónicas sin escribir nada. La ruta local va a `00_System/.local/project-paths.json`, con su propio `.gitignore`: es de una máquina, no del proyecto.
+
+Límites declarados: las tools con `--project` todavía no pasan por el resolutor, así que la escritura sigue pudiendo fundar un fantasma que el audit verá después; y el audit no mira el cuerpo de las notas, donde los ejemplos del manifiesto citan nombres que no son proyectos.
+
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
 - **Severity:** high
@@ -1639,7 +1677,7 @@ Algoritmo estándar para resolver duplicados: identificar canónica (más backli
 - **Enforcement:** recommended
 - **Detected by:** vault_drift_detect, vault_audit, vault_write, vault_change_log
 
-Las auditorías masivas se ejecutan en 4 fases atómicas: 1-Snapshot (vault_drift_detect --snapshot), 2-Detección (vault_audit), 3-Resolución (vault_write, vault_change_log), 4-Verificación (vault_drift_detect --report).
+Las auditorías masivas se ejecutan en 4 fases atómicas: 1-Snapshot (vault_drift_detect --mode snapshot), 2-Detección (vault_audit), 3-Resolución (vault_write, vault_change_log), 4-Verificación (vault_drift_detect --mode report).
 
 **Prevention:** N/A -- es el protocolo de auditoría.
 
@@ -1692,3 +1730,13 @@ Antes de escribir [[nombre-nota]] en contenido, verificar que la nota destino ya
 Antes de cualquier operación masiva (migración, rename en lote, vault_tags --rename múltiple, delete en lote), capturar snapshot con vault_delta --snapshot. Permite detectar regresiones y calcular impacto real de la operación.
 
 **Prevention:** PAT-4 (phased audit): snapshot → operación → vault_audit() → comparar score. vault_delta --snapshot antes de cada sesión con cambios masivos.
+
+### SP-04: Sesión MCP por HTTP sin credencial -- cualquier proceso local la abre
+
+- **Severity:** critical
+- **Enforcement:** guard
+- **Detected by:** sin detector declarado
+
+El transporte HTTP/SSE del servidor MCP acepta sesiones sin token, responde con CORS abierto o atiende un `Host` que no es el suyo. Escuchar en 127.0.0.1 no lo impide: el navegador del usuario también vive ahí, y una página cualquiera podía abrir `/sse`, leer el `sessionId` e invocar `vault_delete` por `/message`.
+
+**Prevention:** Token por `VAULT_MCP_TOKEN` o generado al arrancar (default cerrado), comparado en tiempo constante; `Origin` presente → 403; `Host` distinto de 127.0.0.1/localhost → 403 (DNS rebinding); sin CORS; cada respuesta solo a su sesión. stdio no abre puerto y no cambia. Lo ejerce `tests/test_mcp_http_seguridad.py` contra el servidor real, y `vault_produccion` (puerta 21) falla si la promesa `superficie_expuesta` se queda sin ese ejecutor.

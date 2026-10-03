@@ -8,6 +8,8 @@ Medido 2026-10-02 en un vault ajeno de 647 notas (regla 7, solo lectura):
 `index.md` era un índice generado — por eso la ficha es `project.md`.
 """
 
+from __future__ import annotations
+
 import sys
 from pathlib import Path
 

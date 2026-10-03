@@ -4182,6 +4182,90 @@
         "vault_blueprint"
       ]
     },
+    "vault_project": {
+      "name": "vault_project",
+      "description": "Registro de proyectos (AP-63): lista, resuelve nombre->slug, audita fantasmas, da de alta con alias y enlaza la ruta local en 00_System/.local/.",
+      "group": "Vista del Proyecto",
+      "script": "vault_project.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "list": {
+            "type": "boolean",
+            "description": "Lista proyectos, alias, ambigüedades e incidencias"
+          },
+          "resolve": {
+            "type": "string",
+            "description": "Nombre o alias a resolver a su slug canónico"
+          },
+          "audit": {
+            "type": "boolean",
+            "description": "Notas cuyo project: no resuelve y claves no canónicas (solo lectura)"
+          },
+          "add": {
+            "type": "string",
+            "description": "Slug a registrar, o al que sumar alias si ya existe"
+          },
+          "link": {
+            "type": "string",
+            "description": "Proyecto cuya ruta local se guarda (con path)"
+          },
+          "rebuild": {
+            "type": "boolean",
+            "description": "Regenera 00_System/project-registry.json"
+          },
+          "title": {
+            "type": "string",
+            "description": "Título de la ficha (con add)"
+          },
+          "alias": {
+            "type": "array",
+            "description": "Alias del proyecto (con add)",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "description": "Estado de la ficha nueva (con add; default in-progress)",
+            "enum": [
+              "approved",
+              "archived",
+              "deprecated",
+              "draft",
+              "implemented",
+              "in-progress",
+              "obsolete",
+              "planned",
+              "reviewed",
+              "stub",
+              "template",
+              "verified"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "description": "Ruta local del repositorio (con link)"
+          }
+        },
+        "additionalProperties": false
+      },
+      "guards": [
+        "AP-63: un nombre de proyecto resuelve a un único slug o la tool falla"
+      ],
+      "side_effects": [
+        "Crea 01_Projects/<slug>/project.md (add)",
+        "Escribe 00_System/.local/project-paths.json y su .gitignore (link)",
+        "Escribe 00_System/project-registry.json (rebuild)"
+      ],
+      "status": "active",
+      "exposed_via_mcp": true,
+      "execution_module": "vault_toolkit.operations.vault_project",
+      "related": [
+        "vault_project_status",
+        "vault_project_overview"
+      ]
+    },
     "vault_project_overview": {
       "name": "vault_project_overview",
       "description": "Genera overview consolidado de proyecto.",
@@ -6237,7 +6321,8 @@
     ],
     "Vista del Proyecto": [
       "vault_project_status",
-      "vault_project_overview"
+      "vault_project_overview",
+      "vault_project"
     ],
     "Código": [
       "vault_code_module",
@@ -7569,7 +7654,7 @@
       "recovery": {
         "action": "fix_input",
         "hint": "Usar el slug exacto de uno de los candidatos, o quitar el alias duplicado de la ficha project.md que no le corresponde.",
-        "docs": null
+        "docs": "vault-obsidian-architecture.md §AP-63"
       }
     },
     "PROJECT_NOT_FOUND": {

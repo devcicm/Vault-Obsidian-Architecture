@@ -3514,7 +3514,7 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **75 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **76 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -5016,7 +5016,7 @@ Dos causas, y la segunda es la incómoda:
 
 1. **El audit no lo ejecuta nadie.** En las **1.356 ejecuciones de tools
    registradas** en los `.tool-trace.json` de ese parque, `vault_norms` no
-   aparece **ni una vez**. 41 de las 117 tools del catálogo no se han ejecutado
+   aparece **ni una vez**. 41 de las 118 tools del catálogo no se han ejecutado
    jamás. Los agentes escriben; no gobiernan. Un enforcement que depende de que
    alguien se acuerde de invocarlo es enforcement en el papel.
 2. **Los valores no canónicos los escribía el propio estándar.** El más
@@ -5625,7 +5625,7 @@ de envelope con su contrato de `00_System/tool-spec.json`:
 Y la divergencia peor no era de forma sino de efecto: `jsNativeGraph` no tiene un
 solo `writeFile`. Un agente llamaba `vault_graph` por MCP, recibía `ok: true`, y
 el grafo se quedaba sin regenerar — **AP-37 y AP-47 servidos a la vez por el único
-camino que un agente real usa**. `vault_smoke` recorre las 117 tools del catálogo,
+camino que un agente real usa**. `vault_smoke` recorre las 118 tools del catálogo,
 pero ejecuta el `.py`: probaba exactamente la implementación que el agente no toca.
 
 **Prevención:** backend nativo solo para lo que **no tiene** implementación en
@@ -6665,6 +6665,42 @@ por quién nombra a quién, así que una función que dependa de un global mutab
 pasará por pura. Da las clases por acopladas sin mirarles el cuerpo, prefiriendo no contar un
 sitio a contar uno que no lo es. Y no ve el acoplamiento que no pasa por un `import`: fichero
 compartido, variable de entorno, estado en disco.
+
+---
+
+### AP-63 — El nombre de un proyecto como texto libre
+
+**Enforcement:** `guard+audit` · **Severidad:** high · **Introducido:** v40.34
+**Guard:** `python scripts/vault_project.py --resolve NOMBRE` · **Audit:** `python scripts/vault_project.py --audit`
+
+El nombre de un proyecto es **identidad**: decide a qué ámbito pertenece cada nota que lo
+cita. Hasta v40.34 era texto libre — cada `--project` escribía su valor tal cual, así que una
+errata, una variante de mayúsculas o un ejemplo del manifiesto **fundaban** un proyecto con su
+carpeta. Medido en solo lectura contra un vault consumidor (regla 7), aparecieron cuatro
+proyectos fantasma —`mi-api`, `mi-proyecto`, `demo`, `website-demo`—: los ejemplos de este
+documento, copiados por un agente.
+
+**Dónde vive el registro.** La carpeta `01_Projects/<slug>/` registra el slug; no hace falta
+declarar nada más para existir. La ficha opcional `01_Projects/<slug>/project.md` aporta
+`title`, `aliases` y `status`. No es `index.md`: ese nombre está reservado y lo regenera
+`vault_section_index`, y en los vaults ajenos medidos es un índice generado sin frontmatter.
+`00_System/project-registry.json` es un **derivado** (`--rebuild`), nunca la fuente.
+
+**Un nombre resuelve a un slug o falla.** `vault_project --resolve` compara por
+`slugify_strict` contra slugs y alias. Sin coincidencia, `PROJECT_NOT_FOUND` con
+`sugerencias`; con un alias reclamado por dos proyectos, `PROJECT_AMBIGUOUS` con
+`candidatos`. Elegir en silencio es exactamente el defecto. `--add` rechaza por la misma razón
+un alias que ya es de otro proyecto.
+
+**La ruta local no es del proyecto.** Dónde está el repositorio en disco es de una máquina:
+escrita en una nota, viajaría con cada copia del vault. Va a
+`00_System/.local/project-paths.json`, y el directorio lleva su propio `.gitignore` (`*`), de
+modo que queda fuera de git sin depender del `.gitignore` del vault.
+
+**Lo que verde no prueba.** Las tools que reciben `--project` aún no pasan por el resolutor:
+la escritura todavía puede fundar un fantasma, que el audit verá después. El audit lee el
+frontmatter (`project:` y sus variantes de clave) y no el cuerpo, así que un nombre citado en
+prosa no cuenta — que es lo que impide contar como proyectos los ejemplos de este manifiesto.
 
 ---
 

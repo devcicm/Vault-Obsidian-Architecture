@@ -34,7 +34,7 @@ NATURALEZAS: Dict[str, Dict[str, Any]] = {
             "vault_flow_save", "vault_incident_save", "vault_infra_map",
             "vault_infra_save", "vault_ingest", "vault_knowledge_save",
             "vault_log_error", "vault_ncr_save", "vault_pattern_save",
-            "vault_privacy_save", "vault_project_overview", "vault_project_status",
+            "vault_privacy_save", "vault_project", "vault_project_overview", "vault_project_status",
             "vault_relation_add", "vault_release_save", "vault_requirement_save",
             "vault_risk_save", "vault_runbook_log", "vault_runbook_save",
             "vault_slo_save", "vault_test_save", "vault_timeline", "vault_write",

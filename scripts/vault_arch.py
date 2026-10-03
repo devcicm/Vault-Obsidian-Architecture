@@ -253,7 +253,7 @@ CONTEXTS: dict[str, dict] = {
             "vault_change_log", "vault_voice", "vault_fix_brackets",
             "vault_frontmatter_heal", "vault_delete", "vault_undo",
             "vault_timeline", "vault_project_overview", "vault_project_status",
-            "vault_qa_save",
+            "vault_qa_save", "vault_project",
         ],
     },
     "grafo": {

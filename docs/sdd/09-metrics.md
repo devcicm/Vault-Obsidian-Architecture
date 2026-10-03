@@ -15,7 +15,7 @@
 | **dqHealth.notes_below_07** | int | vault_quality_check | Notas con DQ < 0.7 |
 | **tag_health_score** | 0-100 | vault_audit | Salud del tag registry |
 | **orphan_count** | int | vault_graph | Notas sin relaciones |
-| **broken_link_count** | int | vault_audit --broken-links | Links a notas inexistentes |
+| **broken_link_count** | int | vault_audit (brokenLinks) | Links a notas inexistentes |
 | **mermaid_error_count** | int | vault_mermaid_check | Errores de sintaxis Mermaid |
 | **render_error_count** | int | vault_fix_brackets | Errores de render markdown (AP-26) |
 | **idempotency_score** | 0-100 | (v36 nuevo) | Cobertura de file_lock + atomic_write |

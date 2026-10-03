@@ -35,7 +35,7 @@ CIA: enum values `high`, `medium`, `low`
 ### 5. Backup / Restore
 
 - `vault_backup` → snapshot completo + Merkle root
-- `vault_restore --backup <name>` → copia + `vault_reindex --graph`
+- `vault_restore --backup_name <name>` → copia + `vault_reindex --graph`
 
 ---
 

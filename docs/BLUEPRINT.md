@@ -33,7 +33,7 @@ Restricciones que son decisión de producto, no limitación pendiente:
 
 | Capacidad | Resultado | Grupos | Tools |
 |---|---|---|---|
-| **Escritura → gobernanza** (`escritura_a_gobernanza`) | Lo que el agente captura queda escrito una sola vez, normalizado contra las normas, versionado y auditable después. | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 36, 37 | 84 |
+| **Escritura → gobernanza** (`escritura_a_gobernanza`) | Lo que el agente captura queda escrito una sola vez, normalizado contra las normas, versionado y auditable después. | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 36, 37 | 85 |
 | **Consulta → contexto** (`consulta_a_contexto`) | Una pregunta del agente se convierte en un paquete de contexto acotado y presupuestado, recorriendo el grafo del vault sin índice externo. | 26, 34 | 9 |
 | **Gobernanza del estándar** (`gobernanza_del_estandar`) | El estándar cumple lo que publica: registro canónico primero, doc derivada, guard que falla si divergen. Ninguna de estas tools toca las notas de un usuario. | 35 | 24 |
 
@@ -53,7 +53,7 @@ regenera.*
 | Contexto | Puertos | Módulos | Prohíbe |
 |---|---|---|---|
 | **Kernel** (`kernel`) | 4 | 23 | depender de cualquier contexto de dominio |
-| **Autoría** (`autoria`) | 7 | 42 | — |
+| **Autoría** (`autoria`) | 7 | 43 | — |
 | **Grafo** (`grafo`) | 4 | 15 | — |
 | **Gobernanza** (`gobernanza`) | 21 | 13 | — |
 | **Índices** (`indices`) | 9 | 6 | — |
@@ -67,7 +67,7 @@ regenera.*
 
 *Registros: `vault_norms.NORM_CATALOG` + `vault_gate.PUERTAS` + `tests/`*
 
-60 de 75 normas tienen puerta o test que las nombre.
+61 de 76 normas tienen puerta o test que las nombre.
 **Es la única capa con baseline**, y por un motivo concreto: las demás se midieron
 en cero el día que se declararon porque sus datos ya existían y solo faltaba
 atarlos. Ésta no. Exigir cero aquí el primer día habría hecho nacer la puerta en
@@ -142,6 +142,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-60** — El guard cobra por declarar y regala el silencio | guard+audit | `norms_coherence` | `test_norms_coherence.py` |
 | **AP-61** — El guard cae con el dato que vino a medir | guard+audit | `excepcion_declarada` | `test_excepcion_declarada.py` |
 | **AP-62** — El consumidor paga el fan-out del productor | guard+audit | `arquitectura`, `recursos` | `test_recursos.py` |
+| **AP-63** — El nombre de un proyecto como texto libre | guard+audit | — | `test_vault_project.py` |
 | **PAT-6** — Semantic graph enrichment — enriquecimiento periodico del grafo | recommended | — | — |
 | **SP-01** — Delete protocol — change_log obligatorio antes de eliminar | audit | `framework` | `test_vault_norms.py` |
 | **SP-02** — Forward-link verification — buscar antes de linkar | guard | — | `test_vault_norms.py` |
@@ -157,7 +158,7 @@ Sin puerta ni test (15): `AP-04`, `AP-08`, `AP-12`, `AP-13`, `AP-18`, `AP-20`, `
 
 *Registros: `vault_mcp_catalog.TOOLS_CATALOG` + `<vault>/00_System/tool-spec.json`*
 
-117 tools activas en 37 grupos. Toda tool
+118 tools activas en 37 grupos. Toda tool
 del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 `status: archived | internal | orphan` — no se borra, se anota
 (`vault_mcp_catalog.py --check-contracts`).
@@ -199,7 +200,7 @@ del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 | Tests | 3 |
 | Tokens | 3 |
 | Versionado | 3 |
-| Vista del Proyecto | 2 |
+| Vista del Proyecto | 3 |
 | Índices | 3 |
 
 ## Capa 6 — Trazabilidad
@@ -290,6 +291,7 @@ falla — no se rellena con el valor más cercano.
 | `vault_preferences` | 34 — Memoria de Contexto | consulta_a_contexto |
 | `vault_privacy_save` | 30 — Riesgos/Calidad | escritura_a_gobernanza |
 | `vault_produccion` | 35 — Normas | gobernanza_del_estandar |
+| `vault_project` | 11 — Vista del Proyecto | escritura_a_gobernanza |
 | `vault_project_overview` | 11 — Vista del Proyecto | escritura_a_gobernanza |
 | `vault_project_status` | 11 — Vista del Proyecto | escritura_a_gobernanza |
 | `vault_propagate` | 25 — Propagación | escritura_a_gobernanza |
@@ -372,7 +374,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 6 | — *sin objetivo* | 5 → 5 → 6 (crece, Δ+1) |
 | `scripts/norms-distincion-baseline.json` | AP-60 — normas que no declaran de qué se distinguen | 0 | — *sin objetivo* | 57 → 0 → 0 (encoge, Δ-57) |
 | `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 | — *sin objetivo* | 47 → 0 (encoge, Δ-47) |
-| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1339 | — *sin objetivo* | 1318 → 1334 → 1334 → 1334 → 1334 → 1339 (crece, Δ+225) |
+| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1357 | — *sin objetivo* | 1318 → 1334 → 1334 → 1334 → 1334 → 1339 (crece, Δ+225) |
 | `scripts/excepcion-declarada-baseline.json` | AP-61 — la excepción declarada no es la que escapa | 0 | ≤ 0 para 2027-06-30 · cada 180 d · gobernanza → **cumple** | 0 → 0 (plana, Δ+0) |
 | `scripts/recursos-baseline.json` | AP-62 — el consumidor cruza para leer un recurso y paga el fan-out | 2 | — *sin objetivo* | — *1 muestra* |
 

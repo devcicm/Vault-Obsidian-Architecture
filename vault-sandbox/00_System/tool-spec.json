@@ -2893,6 +2893,46 @@
       },
       "fundamentals": []
     },
+    "vault_project": {
+      "group": "Vista del Proyecto",
+      "group_id": 11,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "action",
+        "ambiguous",
+        "created",
+        "error",
+        "ficha",
+        "file",
+        "issues",
+        "non_canonical_keys",
+        "norm",
+        "ok",
+        "phantoms",
+        "phantoms_total",
+        "project",
+        "project_resolved_from",
+        "projects",
+        "projects_registered",
+        "projects_total",
+        "written"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "integrity",
+          "consistency"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F3",
+        "F6"
+      ]
+    },
     "vault_project_overview": {
       "group": "Vista del Proyecto",
       "group_id": 11,
@@ -4395,10 +4435,10 @@
     }
   },
   "_counts": {
-    "active": 117,
+    "active": 118,
     "internal": 15,
     "archived": 5,
-    "total": 137,
+    "total": 138,
     "active_groups": 37,
     "schema_version": "1.0"
   }

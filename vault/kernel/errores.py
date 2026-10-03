@@ -571,7 +571,7 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "recovery": {
             "action": "fix_input",
             "hint": "Usar el slug exacto de uno de los candidatos, o quitar el alias duplicado de la ficha project.md que no le corresponde.",
-            "docs": None,
+            "docs": "vault-obsidian-architecture.md §AP-63",
         },
     },
     "VERSION_NOT_FOUND": {
