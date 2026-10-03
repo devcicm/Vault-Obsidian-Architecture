@@ -142,7 +142,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-60** — El guard cobra por declarar y regala el silencio | guard+audit | `norms_coherence` | `test_norms_coherence.py` |
 | **AP-61** — El guard cae con el dato que vino a medir | guard+audit | `excepcion_declarada` | `test_excepcion_declarada.py` |
 | **AP-62** — El consumidor paga el fan-out del productor | guard+audit | `arquitectura`, `recursos` | `test_recursos.py` |
-| **AP-63** — El nombre de un proyecto como texto libre | guard+audit | — | `test_vault_project.py` |
+| **AP-63** — El nombre de un proyecto como texto libre | guard+audit | — | `test_project_registrado.py`, `test_vault_project.py` |
 | **PAT-6** — Semantic graph enrichment — enriquecimiento periodico del grafo | recommended | — | — |
 | **SP-01** — Delete protocol — change_log obligatorio antes de eliminar | audit | `framework` | `test_vault_norms.py` |
 | **SP-02** — Forward-link verification — buscar antes de linkar | guard | — | `test_vault_norms.py` |

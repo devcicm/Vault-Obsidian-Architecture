@@ -32,7 +32,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from vault_audit_catalog import es_documentacion_del_estandar
 from vault_errors import emit_error, emit_fallo, wrap_main
@@ -68,6 +68,39 @@ def _raiz() -> Path:
 
 def _registro() -> proyectos.Registro:
     return proyectos.leer_registro(_raiz())
+
+
+def proyecto_registrado(tool: str) -> Callable[[str], str]:
+    """`type=` de argparse para el `--project` de toda tool (AP-63).
+
+    Un solo punto de resolución: lo que llega a la tool ya es el slug canónico,
+    así que lo que escribe en `project:` o en la ruta es la identidad y no la
+    cadena que tecleó alguien. Resolver en `type=` y no dentro de cada tool es
+    lo que deja medirlo: un `add_argument("--project")` sin él es una tool que
+    vuelve a aceptar texto libre, y `test_project_registrado` lo nombra.
+
+    Un nombre que no resuelve no llega a la tool: se imprime el envelope de
+    `emit_fallo` con el nombre de **la tool que llama** —por eso es una
+    fábrica— y se sale con 1, antes de que la tool cree nada. No se usa
+    `ArgumentTypeError`: argparse lo convertiría en un texto por stderr con
+    código 2, fuera del contrato de errores que leen la CLI y el MCP.
+
+    La cadena vacía pasa tal cual: es el «sin proyecto» de las tools que lo
+    declaran opcional con `default=""`, y argparse aplica `type=` también al
+    default cuando es una cadena.
+    """
+
+    def _resolver(valor: str) -> str:
+        if valor == "":
+            return valor
+        try:
+            return _registro().resolver(valor)
+        except FalloDeDominio as fallo:
+            print(json.dumps(emit_fallo(tool, fallo), ensure_ascii=False))
+            raise SystemExit(1)
+
+    _resolver.__name__ = "proyecto_registrado"
+    return _resolver
 
 
 def listar() -> Dict[str, Any]:
