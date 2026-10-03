@@ -35,7 +35,19 @@ MIGRADOS = {
     "vault_project_status": "vault_project_status",
     "vault_init": "_create_scaffold_note",
     "vault_quality_dashboard": "_build_dashboard",
+    "vault_graph_fix": "_create_stub",
+    "vault_tags": "_generate_tag_index_md",
+    "vault_section_index": "_ensure_hub_notes",
+    "vault_security_scan": "save_findings_to_vault",
+    # Fuera de `scripts/`: la clave es la ruta del módulo sin `.py`.
+    "vault/ciclo_de_vida/producto": "_write_seed",
 }
+
+
+def _fuente(modulo: str) -> Path:
+    if "/" in modulo:
+        return ROOT / f"{modulo}.py"
+    return ROOT / "scripts" / f"{modulo}.py"
 
 
 @pytest.fixture
@@ -59,7 +71,7 @@ def _frontmatter(path: Path) -> dict:
 
 @pytest.mark.parametrize("modulo,funcion", sorted(MIGRADOS.items()))
 def test_ap46_el_escritor_no_monta_el_bloque_a_mano(modulo, funcion):
-    arbol = ast.parse((ROOT / "scripts" / f"{modulo}.py").read_text(encoding="utf-8"))
+    arbol = ast.parse(_fuente(modulo).read_text(encoding="utf-8"))
     [f] = [n for n in ast.walk(arbol) if isinstance(n, ast.FunctionDef) and n.name == funcion]
     # Las dos formas: el delimitador suelto en una lista y la plantilla de
     # cadena que abre con él (`f"""---\ntitle: …`).
@@ -234,3 +246,63 @@ def test_ap46_set_texto_es_yaml_scalar():
     for valor in ("2026-10-02", "2026-10-02T00:00:00Z", "", "a: b", "plano"):
         [linea] = Frontmatter().set("k", valor, texto=True).campos()
         assert linea == f"k: {yaml_scalar(valor)}"
+
+
+FECHA = "2026-10-02"
+
+
+def test_ap46_el_stub_de_graph_fix_conserva_un_destino_hostil(vault):
+    """El destino sale de un wikilink ajeno: ni `#` ni una fecha lo cambian."""
+    import vault_graph_fix
+
+    for destino in (HOSTIL.replace('"', "").replace(":", ""), FECHA):
+        r = vault_graph_fix._create_stub(vault, destino, ["a.md"], {"category": "concept"})
+        assert r["created"], r
+        [stub] = [n for n in vault.rglob(f"{destino}.md")]
+        fm = _frontmatter(stub)
+        assert fm["title"] == destino and fm["referenced_by_count"] == 1
+        assert fm["tags"] == ["stub", "graph-fix", "needs-review"]
+
+
+def test_ap46_el_indice_de_tags_y_los_hubs_nacen_legibles(vault):
+    import vault_section_index
+    import vault_tags
+
+    texto = vault_tags._generate_tag_index_md({"x": ["a.md"]}, [])
+    bloque, _ = separar_frontmatter(texto)
+    fm = yaml.safe_load(bloque)
+    assert fm["title"] == "Tag Index" and fm["type"] == "index"
+
+    vault_section_index._ensure_hub_notes()
+    hub = _frontmatter(vault_section_index._hub_note())
+    comandos = _frontmatter(vault_section_index._commands_note())
+    assert hub["tags"] == ["nav", "hub"] and hub["norm_refs"] == ["CN-01"]
+    assert comandos["id"] == "vault-commands" and comandos["tags"] == ["nav", "commands"]
+
+
+def test_ap46_security_scan_conserva_proyecto_y_categoria(vault):
+    import vault_security_scan
+
+    hallazgo = {
+        "ruleId": "SEC-1", "category": "a: b #c", "severity": "critical",
+        "owasp": "A01", "cwe": "CWE-79", "file": "x.py", "line": 1,
+        "snippet": "x", "mitigation": "m",
+    }
+    for proyecto in (HOSTIL, FECHA):
+        rutas = vault_security_scan.save_findings_to_vault([hallazgo], proyecto)
+        assert rutas
+        for ruta in rutas:
+            fm = _frontmatter(Path(ruta) if Path(ruta).is_absolute() else vault / ruta)
+            assert fm["project"] == proyecto
+            if "ruleId" in fm:
+                assert fm["category"] == "a: b #c" and fm["ruleId"] == "SEC-1"
+
+
+def test_ap46_la_semilla_de_producto_nace_con_un_hub_legible(tmp_path):
+    from vault.ciclo_de_vida import producto
+
+    r = producto.inicializar_runtime(tmp_path / "rt")
+    assert r["ok"], r
+    fm = _frontmatter(tmp_path / "rt" / "00_System" / "vault-hub.md")
+    assert fm["id"] == "vault-hub" and fm["tags"] == ["nav", "hub"]
+    assert fm["createdAt"] == fm["updatedAt"]

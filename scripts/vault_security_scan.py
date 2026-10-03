@@ -31,7 +31,7 @@ import re
 import sys
 
 from vault_errors import emit_error, wrap_main
-from vault_lib import yaml_scalar, slugify_strict, utcnow, valor_de_frontmatter
+from vault_lib import slugify_strict, utcnow
 import uuid
 
 from datetime import datetime, timezone
@@ -44,6 +44,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -217,17 +218,15 @@ def save_findings_to_vault(findings: List[Dict], project: str) -> List[str]:
     for f in findings:
         by_severity[f["severity"]].append(f)
 
-    report_lines = ["---"]
-
-    report_lines.append(f"title: {yaml_scalar(f'Security Scan Report - {project}')}")
-
-    report_lines.append(f"project: {yaml_scalar(project)}")
-
-    report_lines.append(f"date: {valor_de_frontmatter(timestamp)}")
-
-    report_lines.append(f"type: security-scan")
-
-    report_lines.append("---")
+    # AP-46: el bloque lo escribe su dueño; aquí solo se declaran los campos.
+    report_lines = [
+        Frontmatter()
+        .set("title", f"Security Scan Report - {project}", texto=True)
+        .set("project", project, texto=True)
+        .set("date", timestamp)
+        .set("type", "security-scan")
+        .render()
+    ]
 
     report_lines.append(f"\n# Security Scan Report: {project}\n")
 
@@ -268,25 +267,18 @@ def save_findings_to_vault(findings: List[Dict], project: str) -> List[str]:
 
             note_path = _vulnerabilities_dir() / f"{f['ruleId']}-{slug}-{timestamp}.md"
 
-            note_lines = ["---"]
-
-            note_lines.append(f"title: {yaml_scalar(str(f['ruleId']) + ' - ' + str(f['category']))}")
-
-            note_lines.append(f"ruleId: {yaml_scalar(str(f['ruleId']))}")
-
-            note_lines.append(f"severity: {valor_de_frontmatter(f['severity'])}")
-
-            note_lines.append(f"category: {yaml_scalar(f['category'])}")
-
-            note_lines.append(f"project: {yaml_scalar(project)}")
-
-            note_lines.append(f"date: {valor_de_frontmatter(timestamp)}")
-
-            note_lines.append(f"owasp: {valor_de_frontmatter(f['owasp'])}")
-
-            note_lines.append(f"cwe: {valor_de_frontmatter(f['cwe'])}")
-
-            note_lines.append("---")
+            note_lines = [
+                Frontmatter()
+                .set("title", str(f["ruleId"]) + " - " + str(f["category"]), texto=True)
+                .set("ruleId", str(f["ruleId"]), texto=True)
+                .set("severity", f["severity"])
+                .set("category", f["category"], texto=True)
+                .set("project", project, texto=True)
+                .set("date", timestamp)
+                .set("owasp", f["owasp"])
+                .set("cwe", f["cwe"])
+                .render()
+            ]
 
             note_lines.append(f"\n# {f['ruleId']}: {f['category']}\n")
 

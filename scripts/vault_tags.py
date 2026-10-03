@@ -29,7 +29,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from vault_errors import emit_error, wrap_main
-from vault_lib import utcnow, parse_frontmatter_with_body, valor_de_frontmatter
+from vault_lib import utcnow, parse_frontmatter_with_body
 from vault_lib import separar_frontmatter
 from vault_io import (
     atomic_write_json,
@@ -57,6 +57,7 @@ from vault.indices.vocabulario import (  # noqa: E402
     singularizar_etiqueta as _singularizar_etiqueta,
 )
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 
 #: Derivado de `vault_registry.SECTIONS`, no copiado: la lista literal que vivía
 #: aquí se quedó en 18 carpetas y dejaba de escanear cada sección nueva del
@@ -480,16 +481,17 @@ def _scan_all_notes() -> Tuple[Dict[str, List[str]], List[str]]:
 
 def _generate_tag_index_md(tag_map: Dict[str, List[str]], untagged: List[str]) -> str:
     now = utcnow()
+    # AP-46: el bloque lo escribe su dueño; aquí solo se declaran los campos.
     lines = [
-        "---",
-        "title: Tag Index",
-        f"updatedAt: {valor_de_frontmatter(now)}",
-        "type: index",
-        "cia_integrity: low",
-        "cia_availability: low",
-        "cia_sensitivity: internal",
-        "agent: system",
-        "---",
+        Frontmatter()
+        .set("title", "Tag Index")
+        .set("updatedAt", now)
+        .set("type", "index")
+        .set("cia_integrity", "low")
+        .set("cia_availability", "low")
+        .set("cia_sensitivity", "internal")
+        .set("agent", "system")
+        .render(),
         "",
         "# Tag Index",
         "",

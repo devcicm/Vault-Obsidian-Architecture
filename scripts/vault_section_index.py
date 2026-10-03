@@ -45,6 +45,7 @@ from vault.indices.seccion import (  # noqa: E402
 from vault.indices.reconstruccion import ServicioReindex  # noqa: E402
 from vault.indices.repositorio import RepositorioIndices  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 
 
 # AP-36: paths lazy — respetan set_vault_root() en runtime (--root).
@@ -77,6 +78,25 @@ def _escribir_hub(destino: Path, contenido: str) -> None:
     refrescar_grafo(destino)
 
 
+def _bloque_de_navegacion(titulo: str, id_: str, etiqueta: str) -> str:
+    """El frontmatter de las dos notas de navegación, que solo difieren en
+    título, id y su segunda etiqueta."""
+    return (
+        Frontmatter()
+        .set("title", titulo, texto=True)
+        .set("id", id_)
+        .set("createdAt", utcnow())
+        .set("updatedAt", utcnow())
+        .set("cia_integrity", "high")
+        .set("cia_availability", "high")
+        .set("cia_sensitivity", "internal")
+        .set("agent", "system")
+        .set("tags", ["nav", etiqueta])
+        .set("norm_refs", ["CN-01"])
+        .render()
+    )
+
+
 def _ensure_hub_notes() -> None:
     """Idempotently create 00_System/vault-hub.md and vault-commands.md.
 
@@ -89,19 +109,9 @@ def _ensure_hub_notes() -> None:
     This protects manual edits while still bootstrapping a fresh vault.
     """
     if not _hub_note().exists():
-        hub_content = (
-            "---\n"
-            "title: Vault Hub\n"
-            "id: vault-hub\n"
-            "createdAt: " + utcnow() + "\n"
-            "updatedAt: " + utcnow() + "\n"
-            "cia_integrity: high\n"
-            "cia_availability: high\n"
-            "cia_sensitivity: internal\n"
-            "agent: system\n"
-            'tags: ["nav", "hub"]\n'
-            'norm_refs: ["CN-01"]\n'
-            "---\n"
+        # AP-46: el bloque lo escribe su dueño; aquí solo se declaran los campos.
+        hub_content = _bloque_de_navegacion("Vault Hub", "vault-hub", "hub") + (
+            "\n"
             "\n"
             "# Vault Hub — Punto único de navegación\n"
             "\n"
@@ -143,19 +153,10 @@ def _ensure_hub_notes() -> None:
         _escribir_hub(_hub_note(), hub_content)
 
     if not _commands_note().exists():
-        commands_content = (
-            "---\n"
-            "title: Vault Commands\n"
-            "id: vault-commands\n"
-            "createdAt: " + utcnow() + "\n"
-            "updatedAt: " + utcnow() + "\n"
-            "cia_integrity: high\n"
-            "cia_availability: high\n"
-            "cia_sensitivity: internal\n"
-            "agent: system\n"
-            'tags: ["nav", "commands"]\n'
-            'norm_refs: ["CN-01"]\n'
-            "---\n"
+        commands_content = _bloque_de_navegacion(
+            "Vault Commands", "vault-commands", "commands"
+        ) + (
+            "\n"
             "\n"
             "# Vault Commands — Referencia unificada de comandos CLI\n"
             "\n"

@@ -17,6 +17,8 @@ from importlib import resources
 from pathlib import Path
 from typing import Any
 
+from ..kernel.frontmatter_escritura import Frontmatter
+
 
 CREATED = "INIT_CREATED"
 ALREADY_INITIALIZED = "INIT_ALREADY_EXISTS"
@@ -83,18 +85,22 @@ def _write_seed(root: Path, seed: RuntimeSeed) -> None:
     # Lleva los campos que exige el validador; `vault_section_index` ya no lo
     # reescribe porque solo crea el hub si falta.
     ahora = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    # AP-46: el bloque lo escribe su dueño; aquí solo se declaran los campos.
+    frontmatter = (
+        Frontmatter()
+        .set("title", "Vault Hub")
+        .set("id", "vault-hub")
+        .set("createdAt", ahora)
+        .set("updatedAt", ahora)
+        .set("cia_integrity", "high")
+        .set("cia_availability", "high")
+        .set("cia_sensitivity", "internal")
+        .set("agent", "system")
+        .set("tags", ["nav", "hub"])
+        .render()
+    )
     (root / "00_System" / "vault-hub.md").write_text(
-        "---\n"
-        "title: Vault Hub\n"
-        "id: vault-hub\n"
-        f"createdAt: {ahora}\n"
-        f"updatedAt: {ahora}\n"
-        "cia_integrity: high\n"
-        "cia_availability: high\n"
-        "cia_sensitivity: internal\n"
-        "agent: system\n"
-        'tags: ["nav", "hub"]\n'
-        "---\n\n"
+        frontmatter + "\n\n"
         "# Vault runtime\n\n"
         "Runtime documental inicializado por el toolkit instalado.\n",
         encoding="utf-8",

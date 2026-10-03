@@ -62,8 +62,8 @@ from vault_lib import (
     indice_de_destinos,
     parse_frontmatter,
     resolver_destino_wikilink,
-    yaml_scalar,
 )
+from vault.kernel.frontmatter_escritura import Frontmatter
 from vault_graph_inspect import (
     _SKIP_DIRS,
     _is_migrated,
@@ -1002,20 +1002,24 @@ def _create_stub(
 
     # AP-46: el destino sale de un wikilink ajeno y entraba crudo en `title:`
     # e `id:`; `[[%tasa #uno]]` dejaba un stub que YAML no lee (2026-10-01).
-    body = f"""---
-id: {yaml_scalar(f'stub-{target_stem}-{now[:10]}')}
-title: {yaml_scalar(target_stem)}
-type: stub
-createdAt: {now}
-updatedAt: {now}
-created_by: vault_graph_fix
-classification: {classification["category"]}
-referenced_by_count: {len(referenced_by)}
-cia_integrity: low
-cia_availability: low
-cia_sensitivity: internal
-tags: [stub, graph-fix, needs-review]
----
+    # El bloque lo escribe su dueño; aquí solo se declaran los campos.
+    frontmatter = (
+        Frontmatter()
+        .set("id", f"stub-{target_stem}-{now[:10]}", texto=True)
+        .set("title", target_stem, texto=True)
+        .set("type", "stub")
+        .set("createdAt", now)
+        .set("updatedAt", now)
+        .set("created_by", "vault_graph_fix")
+        .set("classification", classification["category"])
+        .set("referenced_by_count", len(referenced_by))
+        .set("cia_integrity", "low")
+        .set("cia_availability", "low")
+        .set("cia_sensitivity", "internal")
+        .set("tags", ["stub", "graph-fix", "needs-review"])
+        .render()
+    )
+    body = frontmatter + f"""
 
 # {target_stem}
 
