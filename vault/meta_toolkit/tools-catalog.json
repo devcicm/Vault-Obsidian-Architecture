@@ -4217,6 +4217,14 @@
             "type": "boolean",
             "description": "Regenera 00_System/project-registry.json"
           },
+          "heal": {
+            "type": "boolean",
+            "description": "Canoniza project: al slug registrado (dry-run salvo --apply)"
+          },
+          "apply": {
+            "type": "boolean",
+            "description": "Con --heal: escribe (copia previa en .history/)"
+          },
           "title": {
             "type": "string",
             "description": "Título de la ficha (con add)"

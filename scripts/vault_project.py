@@ -23,6 +23,10 @@ Esta es la puerta de entrada al registro que lee `vault.kernel.proyectos`:
   enlazado y da los commits pendientes de volcar al vault. Solo lectura.
   `vault_drift_detect --mode snapshot` y `vault_code_sync` (con trazabilidad
   completa) son quienes anotan `synced_commit`.
+- `--heal [--apply]`: canoniza `project:` al slug del registro —clave no
+  canónica y valor por alias o variante—. Dry-run salvo `--apply`, que deja
+  la versión anterior en `.history/` (la lee `vault_undo`). Los fantasmas y
+  los conflictos se listan; no se tocan.
 - `--rebuild`: regenera el derivado `00_System/project-registry.json`.
 
 Ejemplos:
@@ -32,6 +36,8 @@ Ejemplos:
     python vault_project.py --link ans --path ../ans
     python vault_project.py --sync-status ans
     python vault_project.py --audit
+    python vault_project.py --heal            # dry-run
+    python vault_project.py --heal --apply
 """
 
 import argparse
@@ -46,9 +52,10 @@ from vault_errors import emit_error, emit_fallo, wrap_main
 # superseded_by: vault_errors.proyecto_registrado (v40.34). Vivió aquí;
 # se reexporta para quien lo importara de la tool.
 from vault_errors import proyecto_registrado  # noqa: F401
-from vault_io import atomic_write_json, atomic_write_text, get_vault_root, is_snapshot_path, write_report
+from vault_io import atomic_write_json, atomic_write_text, file_lock, get_vault_root, is_snapshot_path, write_report
 from vault_lib import parse_frontmatter_with_body
 from vault_norms_catalog import STATUS_VOCAB
+from vault_undo import _guardar_version_actual
 import vault_subproceso
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -106,17 +113,7 @@ def auditar(raiz: Optional[Path] = None) -> Dict[str, Any]:
     registro = proyectos.leer_registro(raiz)
     citas: Dict[str, List[str]] = {}
     no_canonicas: List[Dict[str, str]] = []
-    for p in sorted(raiz.rglob("*.md")):
-        rel = p.relative_to(raiz)
-        if is_snapshot_path(rel):
-            continue
-        try:
-            crudo = p.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
-            continue
-        # La copia del manifiesto cita `mi-api` como ejemplo: no es un proyecto.
-        if es_documentacion_del_estandar(rel.as_posix(), crudo):
-            continue
+    for _p, rel, crudo in _notas_de_proyecto(raiz):
         fm, _cuerpo = parse_frontmatter_with_body(crudo)
         if not isinstance(fm, dict):
             continue
@@ -136,6 +133,119 @@ def auditar(raiz: Optional[Path] = None) -> Dict[str, Any]:
         "non_canonical_keys": no_canonicas,
         "ambiguous": registro.ambiguedades(),
         "issues": registro.incidencias,
+    }
+
+def _notas_de_proyecto(raiz: Path):
+    """`(ruta, rel, crudo)` de las notas que mide el audit: sin snapshots ni la
+    documentación del estándar. Un solo recorrido para `auditar` y `sanar`."""
+    for p in sorted(raiz.rglob("*.md")):
+        rel = p.relative_to(raiz)
+        if is_snapshot_path(rel):
+            continue
+        try:
+            crudo = p.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        # La copia del manifiesto cita `mi-api` como ejemplo: no es un proyecto.
+        if es_documentacion_del_estandar(rel.as_posix(), crudo):
+            continue
+        yield p, rel, crudo
+
+
+def _plan_de_nota(registro: proyectos.Registro, fm: Dict[str, Any]):
+    """AP-63: qué cambiaría en el `project:` de una nota, o por qué no.
+
+    Devuelve `(slug, claves_a_retirar, motivo)`. Solo se repara lo que resuelve
+    a **un** proyecto registrado: un nombre sin dueño o con dos no se adivina.
+    """
+    claves = [c for c in fm if str(c).lower() in _CLAVES_DE_PROYECTO and fm[c] not in (None, "")]
+    if not claves:
+        return None, [], None
+    indice = registro.claves()
+    destinos = set()
+    for clave in claves:
+        valor = fm[clave]
+        if isinstance(valor, (list, dict)):
+            return None, [], "valor_no_escalar"
+        candidatos = indice.get(slugify_strict(str(valor)), set())
+        if len(candidatos) != 1:
+            return None, [], "ambiguo" if candidatos else "no_registrado"
+        destinos |= candidatos
+    if len(destinos) != 1:
+        return None, [], "conflicto"
+    slug = destinos.pop()
+    retirar = [c for c in claves if c != "project"]
+    if not retirar and fm.get("project") == slug:
+        return None, [], None
+    return slug, retirar, None
+
+
+def _valores_de_proyecto(fm: Dict[str, Any]) -> Dict[str, Any]:
+    return {str(c): fm[c] for c in fm if str(c).lower() in _CLAVES_DE_PROYECTO}
+
+
+def sanar(apply: bool = False) -> Dict[str, Any]:
+    """AP-63, heal: `project:` canónico con el slug del registro.
+
+    Dry-run salvo `apply`. Repara solo lo mecánico —clave no canónica
+    (`Proyecto:`, `PROJECT:`) y valor que resuelve por alias o variante—; los
+    fantasmas y los conflictos se listan y no se tocan: inventar el dueño de
+    un nombre es peor que el hueco. Antes de escribir, la versión anterior va
+    a `.history/` con el nombre que lee `vault_undo`, y la nota se relee con el
+    criterio del consumidor (`parse_frontmatter_with_body`): el resto de las
+    claves tiene que leerse igual o no se escribe.
+    """
+    raiz = _raiz()
+    registro = proyectos.leer_registro(raiz)
+    reparadas: List[Dict[str, Any]] = []
+    sin_reparar: List[Dict[str, Any]] = []
+    for p, rel, crudo in _notas_de_proyecto(raiz):
+        fm, _cuerpo = parse_frontmatter_with_body(crudo)
+        if not isinstance(fm, dict):
+            continue
+        slug, retirar, motivo = _plan_de_nota(registro, fm)
+        if motivo:
+            sin_reparar.append({"note": rel.as_posix(), "cause": motivo,
+                                "values": _valores_de_proyecto(fm)})
+            continue
+        if slug is None:
+            continue
+        bloque, cuerpo = separar_frontmatter(crudo)
+        editado = Frontmatter.editar(bloque or "")
+        for clave in retirar:
+            editado.quitar(str(clave))
+        nuevo = editado.set("project", slug, texto=True).render() + "\n" + cuerpo
+        despues, _ = parse_frontmatter_with_body(nuevo)
+        esperado = {k: v for k, v in fm.items() if k not in retirar}
+        esperado["project"] = slug
+        if despues != esperado:
+            sin_reparar.append({"note": rel.as_posix(), "cause": "lectura_distinta",
+                                "values": _valores_de_proyecto(fm)})
+            continue
+        entrada: Dict[str, Any] = {"note": rel.as_posix(), "project": slug,
+                                   "from": _valores_de_proyecto(fm)}
+        if apply:
+            # AP-54: diagnóstico y escritura sobre el mismo texto.
+            with file_lock(p):
+                if p.read_text(encoding="utf-8") != crudo:
+                    sin_reparar.append({"note": rel.as_posix(), "cause": "cambio_concurrente"})
+                    continue
+                entrada["backup"] = ".history/" + _guardar_version_actual(p)
+                atomic_write_text(p, nuevo)
+            entrada["written"] = True
+        reparadas.append(entrada)
+    return {
+        "ok": True, "tool": TOOL, "action": "heal", "norm": "AP-63",
+        "mode": "apply" if apply else "dry-run",
+        # AP-37: lo escrito en disco, que en dry-run es cero.
+        "healed": sum(1 for r in reparadas if r.get("written")),
+        "repairable": reparadas,
+        "repairable_count": len(reparadas),
+        "unrepaired": sin_reparar,
+        "unrepaired_count": len(sin_reparar),
+        "hint": ("Lo que no resuelve a un proyecto registrado no se adivina: "
+                 "regístralo con --add (o súmale el alias) y vuelve a pasar --heal."),
+        **(write_report() if apply else {}),
     }
 
 
@@ -302,6 +412,9 @@ def main() -> int:
     accion.add_argument("--sync-status", metavar="PROYECTO",
                         help="Commits del repo enlazado pendientes de volcar al vault")
     accion.add_argument("--rebuild", action="store_true", help="Regenera project-registry.json")
+    accion.add_argument("--heal", action="store_true",
+                        help="Canoniza project: al slug registrado (dry-run salvo --apply)")
+    ap.add_argument("--apply", action="store_true", help="Con --heal: escribe (copia previa en .history/)")
     ap.add_argument("--title", help="Título de la ficha (con --add)")
     ap.add_argument("--alias", nargs="*", default=[], help="Alias del proyecto (con --add)")
     ap.add_argument("--status", default="in-progress", choices=sorted(STATUS_VOCAB),
@@ -323,6 +436,8 @@ def main() -> int:
         r = enlazar(args.link, args.path)
     elif args.sync_status:
         r = estado_sync(args.sync_status)
+    elif args.heal:
+        r = sanar(apply=args.apply)
     else:
         r = reconstruir()
     print(json.dumps(r, ensure_ascii=False, indent=2))
