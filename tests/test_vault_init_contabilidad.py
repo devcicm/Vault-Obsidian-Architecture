@@ -32,3 +32,14 @@ def test_ap36_un_primer_pasa_por_la_escritura_atomica(vacio):
     # >= y no ==: la escritura atómica arrastra el índice de la sección y el
     # hub, que vault_init generaría igualmente después.
     assert vault_io.write_report()["created"] >= 1
+
+
+def test_ap37_el_informe_de_vault_init_se_mide_al_terminar(vacio):
+    import vault_init
+
+    r = vault_init.vault_init(run_audit=False)
+    assert r["ok"]
+    primers = next(s for s in r["steps"] if s["step"] == "scaffolds")["total"]
+    # `write_report()` se evaluaba al construir el resultado, antes de escribir
+    # nada: declaraba `written: 0` tras crear el vault entero.
+    assert r["written"] >= primers > 0

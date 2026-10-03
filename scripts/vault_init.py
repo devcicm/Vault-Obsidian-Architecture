@@ -395,6 +395,9 @@ def vault_init(
                     result["noteCount"] = out.get("stats", {}).get("total", 0)
                     break
 
+    # AP-37: el indicador se mide al terminar. Expandido solo al construir
+    # `result`, antes de escribir nada, declaraba `written: 0` siempre.
+    result.update(write_report())
     return result
 
 
