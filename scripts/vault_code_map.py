@@ -27,7 +27,7 @@ import re
 import sys
 
 from vault_errors import wrap_main
-from vault_lib import yaml_scalar, slugify_strict, utcnow, valor_de_frontmatter
+from vault_lib import slugify_strict, utcnow
 from pathlib import Path
 from typing import Any, Dict
 
@@ -38,6 +38,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -157,17 +158,15 @@ def vault_code_map(project: str) -> Dict[str, Any]:
 
     timestamp = utcnow()
 
-    frontmatter = ["---"]
-
-    frontmatter.append(f"title: {yaml_scalar(f'Code Map - {project}')}")
-
-    frontmatter.append(f"project: {yaml_scalar(project)}")
-
-    frontmatter.append(f"type: code-map")
-
-    frontmatter.append(f"updatedAt: {valor_de_frontmatter(timestamp)}")
-
-    frontmatter.append("---")
+    # AP-46: el bloque lo escribe su dueño; aquí solo se declaran los campos.
+    frontmatter = [
+        Frontmatter()
+        .set("title", f"Code Map - {project}")
+        .set("project", project)
+        .set("type", "code-map")
+        .set("updatedAt", timestamp)
+        .render()
+    ]
 
     frontmatter.append(f"\n## Code Map: {project}\n")
 

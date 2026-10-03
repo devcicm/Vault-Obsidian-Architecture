@@ -2,7 +2,7 @@
 
 > Documento derivado. Se genera con `python scripts/vault_arch.py --blueprint`; la fuente es `CONTEXTS` en `scripts/vault_arch.py`. No se edita a mano.
 
-**10 contextos**, **162 módulos** clasificados, **37 fronteras cruzadas** pendientes de publicar puerto.
+**10 contextos**, **162 módulos** clasificados, **40 fronteras cruzadas** pendientes de publicar puerto.
 
 ## Los límites
 
@@ -95,11 +95,14 @@ Fronteras que hoy cruza (5), deuda declarada:
 - **Puertos publicados:** `construir_grafo` → `vault_graph:vault_graph`, `impacto` → `vault_impact:vault_impact`, `refresco_de_grafo` → `vault_graph:refrescar_nota_en_grafo`, `resolver_wikilink` → `vault_link_safety:validate_wikilinks`
 - **Módulos (15):** `vault_code_map`, `vault_code_module`, `vault_code_query`, `vault_code_relation`, `vault_code_sync`, `vault_code_tag`, `vault_env_matrix`, `vault_graph`, `vault_graph_fix`, `vault_graph_inspect`, `vault_graph_merge`, `vault_impact`, `vault_infra_map`, `vault_link_safety`, `vault_relation_add`
 
-Fronteras que hoy cruza (2), deuda declarada:
+Fronteras que hoy cruza (5), deuda declarada:
 
 | Módulo | Importa | Contexto destino |
 |---|---|---|
+| `vault_code_map` | `vault/autoria` | Autoría |
 | `vault_code_tag` | `vault_write` | Autoría |
+| `vault_env_matrix` | `vault/autoria` | Autoría |
+| `vault_infra_map` | `vault/autoria` | Autoría |
 | `vault/grafo/repositorio.py` | `vault/gobernanza` | Gobernanza |
 
 ## Gobernanza

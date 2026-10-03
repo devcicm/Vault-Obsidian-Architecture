@@ -27,9 +27,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
-from vault_lib import yaml_scalar, slugify_strict, utcnow, valor_de_frontmatter
+from vault_lib import slugify_strict, utcnow
 from vault_io import assert_within_vault, atomic_write_text, get_vault_root, update_section_index, write_report
 from vault_norms_catalog import compute_norm_refs
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 FOLDER = "09_Infrastructure/env-matrix"
 
@@ -242,28 +243,30 @@ _Documentar qué es diferente en este entorno vs producción: datos, escala, ser
 """
 
     norm_refs = compute_norm_refs(FOLDER, body, [])
-    fm_lines = [
-        "---",
-        f'title: "Entorno: {project} — {profile["label"]} ({env.upper()})"',
-        f"id: {uuid.uuid4()}",
-        f"createdAt: {valor_de_frontmatter(now)}",
-        f"updatedAt: {valor_de_frontmatter(now)}",
-        f"tags: {json.dumps(['environment', 'infrastructure', project, env])}",
-        f"norm_refs: {json.dumps(norm_refs)}",
-        f"project: {yaml_scalar(project)}",
-        f"env: {valor_de_frontmatter(env)}",
-        f"env_label: {valor_de_frontmatter(profile['label'])}",
-        f"runtime: {valor_de_frontmatter(runtime)}",
-        f"region: {valor_de_frontmatter(region)}",
-        f"iso_classification: {valor_de_frontmatter(profile['iso_classification'])}",
-        f"iso_standard: ISO 20000-1:2018 §8.5",
-        f"cia_integrity: high",
-        f"cia_availability: high",
-        f"cia_sensitivity: {valor_de_frontmatter(profile['cia_sensitivity'])}",
-        f"agent: {valor_de_frontmatter(agent)}",
-        "---",
-    ]
-    full = "\n".join(fm_lines) + "\n\n" + body
+    # AP-46: el bloque lo escribe su dueño. El título se citaba a mano entre
+    # comillas dobles sin escapar, así que un proyecto con `"` rompía el YAML
+    # y la nota perdía el frontmatter entero.
+    fm = (
+        Frontmatter()
+        .set("title", f"Entorno: {project} — {profile['label']} ({env.upper()})")
+        .set("id", str(uuid.uuid4()))
+        .set("createdAt", now)
+        .set("updatedAt", now)
+        .set("tags", ["environment", "infrastructure", project, env])
+        .set("norm_refs", norm_refs)
+        .set("project", project)
+        .set("env", env)
+        .set("env_label", profile["label"])
+        .set("runtime", runtime)
+        .set("region", region)
+        .set("iso_classification", profile["iso_classification"])
+        .set("iso_standard", "ISO 20000-1:2018 §8.5")
+        .set("cia_integrity", "high")
+        .set("cia_availability", "high")
+        .set("cia_sensitivity", profile["cia_sensitivity"])
+        .set("agent", agent)
+    )
+    full = fm.render() + "\n\n" + body
 
     filename = f"{_slug(project)}-{env}.md"
     path = get_vault_root() / FOLDER / filename

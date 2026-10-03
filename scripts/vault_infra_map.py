@@ -31,7 +31,7 @@ import re
 import sys
 
 from vault_errors import emit_error, wrap_main
-from vault_lib import yaml_scalar, slugify_strict, utcnow
+from vault_lib import slugify_strict, utcnow
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -49,6 +49,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -248,19 +249,15 @@ def vault_infra_map(
 
     map_path = _infra_dir() / "infra-map.md"
 
-    frontmatter = ["---"]
-
-    frontmatter.append("title: Infrastructure Map")
-
-    frontmatter.append(f"updatedAt: {utcnow()}")
-
-    if project:
-        frontmatter.append(f"project: {yaml_scalar(project)}")
-
-    if location:
-        frontmatter.append(f"location: {yaml_scalar(location)}")
-
-    frontmatter.append("---")
+    # AP-46: el bloque lo escribe su dueño; aquí solo se declaran los campos.
+    frontmatter = [
+        Frontmatter()
+        .set("title", "Infrastructure Map")
+        .set("updatedAt", utcnow())
+        .set("project", project, omitir_vacio=True)
+        .set("location", location, omitir_vacio=True)
+        .render()
+    ]
 
     frontmatter.append("\n## Network Map\n\n```mermaid\n" + mermaid_content + "\n```\n")
 

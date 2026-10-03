@@ -17,7 +17,7 @@ import uuid
 import re
 import sys
 from vault_errors import wrap_main
-from vault_lib import yaml_scalar, utcnow, slugify, valor_de_frontmatter
+from vault_lib import utcnow, slugify
 from vault_lib import parse_frontmatter as _parse_frontmatter
 from vault_lib import separar_frontmatter
 from pathlib import Path
@@ -31,6 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -208,20 +209,23 @@ def vault_project_overview(
     patterns = collect_patterns(project)
     infrastructure = collect_infrastructure(project)
 
-    frontmatter = ["---"]
-    frontmatter.append(f"title: {yaml_scalar(f'Overview: {project}')}")
-    frontmatter.append(f"id: {str(uuid.uuid4())}")
-    frontmatter.append(f"project: {yaml_scalar(project)}")
-    frontmatter.append(f"type: project-overview")
-    frontmatter.append(f"createdAt: {valor_de_frontmatter(timestamp)}")
-    frontmatter.append(f"updatedAt: {valor_de_frontmatter(timestamp)}")
-    frontmatter.append(f"tags: {json.dumps([safe_project, 'project', 'overview'])}")
-    frontmatter.append("cia_integrity: medium")
-    frontmatter.append("cia_availability: medium")
-    frontmatter.append("cia_sensitivity: internal")
-    frontmatter.append("status: draft")
-    frontmatter.append("agent: system")
-    frontmatter.append("---")
+    # AP-46: el bloque lo escribe su dueño; aquí solo se declaran los campos.
+    frontmatter = [
+        Frontmatter()
+        .set("title", f"Overview: {project}")
+        .set("id", str(uuid.uuid4()))
+        .set("project", project)
+        .set("type", "project-overview")
+        .set("createdAt", timestamp)
+        .set("updatedAt", timestamp)
+        .set("tags", [safe_project, "project", "overview"])
+        .set("cia_integrity", "medium")
+        .set("cia_availability", "medium")
+        .set("cia_sensitivity", "internal")
+        .set("status", "draft")
+        .set("agent", "system")
+        .render()
+    ]
 
     body_sections = [f"# Overview: {project}\n"]
 
