@@ -686,7 +686,9 @@ def get_vault_path(name: str) -> Path:
     Args:
         name: One of: search_index, quality_index, tag_registry, history, standard_version
     """
-    from vault_io import get_vault_root
+    # El dueño del puerto es `vault_raiz` (hoja). Pedírselo a `vault_io` cerraba
+    # el ciclo vault_lib <-> vault_io por un solo nombre (AP-58).
+    from vault_raiz import get_vault_root
 
     paths = {
         "search_index": get_vault_root() / Config.SEARCH_INDEX,

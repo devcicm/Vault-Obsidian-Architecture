@@ -52,7 +52,7 @@ regenera.*
 
 | Contexto | Puertos | Módulos | Prohíbe |
 |---|---|---|---|
-| **Kernel** (`kernel`) | 4 | 22 | depender de cualquier contexto de dominio |
+| **Kernel** (`kernel`) | 4 | 23 | depender de cualquier contexto de dominio |
 | **Autoría** (`autoria`) | 7 | 43 | — |
 | **Grafo** (`grafo`) | 4 | 15 | — |
 | **Gobernanza** (`gobernanza`) | 21 | 12 | — |
@@ -368,7 +368,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `scripts/smoke-baseline.json` | AP-42 | 0 | — *sin objetivo* | — *1 muestra* |
 | `scripts/blueprint-baseline.json` | capa 4 — norma sin puerta ni test | 13 | — *sin objetivo* | 16 → 15 → 14 → 13 → 13 (encoge, Δ-3) |
 | `scripts/criterios-baseline.json` | AP-57 | 9 | — *sin objetivo* | 10 → 9 → 9 → 9 (encoge, Δ-1) |
-| `scripts/ciclos-baseline.json` | AP-58 — ciclo esquivado con import diferido | 7 | — *sin objetivo* | 30 → 30 → 15 → 14 → 7 (encoge, Δ-23) |
+| `scripts/ciclos-baseline.json` | AP-58 — ciclo esquivado con import diferido | 5 | — *sin objetivo* | 30 → 30 → 15 → 14 → 7 (encoge, Δ-23) |
 | `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 5 | — *sin objetivo* | 5 → 5 (plana, Δ+0) |
 | `scripts/norms-distincion-baseline.json` | AP-60 — normas que no declaran de qué se distinguen | 0 | — *sin objetivo* | 57 → 0 → 0 (encoge, Δ-57) |
 | `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 | — *sin objetivo* | 47 → 0 (encoge, Δ-47) |
