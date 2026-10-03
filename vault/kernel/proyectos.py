@@ -37,8 +37,10 @@ from pathlib import Path
 from typing import Callable, Dict, Iterable, List, Mapping, Optional, Set, Tuple
 
 from .errores import envelope_de_fallo
+from .escritura import escritura_atomica
 from .fallos import FalloDeDominio
-from .frontmatter_parsing import parse_frontmatter_robust
+from .frontmatter_escritura import Frontmatter
+from .frontmatter_parsing import parse_frontmatter_robust, separar_frontmatter
 from .normalizacion import slugify_strict
 
 CARPETA_PROYECTOS = "01_Projects"
@@ -248,6 +250,77 @@ def pertenencia(registro: Registro, nombre: str) -> Callable[[object], bool]:
 def pertenencia_en(raiz: Path, nombre: str) -> Callable[[object], bool]:
     """`pertenencia` leyendo el registro de ``raiz``: lo que llama un lector."""
     return pertenencia(leer_registro(raiz), nombre)
+
+
+#: Local de cada máquina, fuera de git: la ruta del repositorio en disco.
+#: En una nota viajaría con cada copia del vault (`_sin_rutas_locales`).
+DIRECTORIO_LOCAL = Path("00_System") / ".local"
+RUTAS_LOCALES = DIRECTORIO_LOCAL / "project-paths.json"
+#: Lo portable de la relación con el repositorio, en la ficha bajo `repo:`.
+CAMPOS_REPO = ("remote", "default_branch", "synced_commit", "synced_at")
+
+
+def ruta_local(raiz: Path, slug: str) -> Optional[Path]:
+    """La ruta del repo enlazada con `vault_project --link`, o ``None``.
+
+    Un fichero ilegible es ``None`` y no un fallo: quien lo necesita pide
+    `--path`, como antes de P4. Lo reescribe `--link`, que sí lo rechaza."""
+    fichero = Path(raiz) / RUTAS_LOCALES
+    try:
+        rutas = json.loads(fichero.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    valor = rutas.get(slug) if isinstance(rutas, dict) else None
+    return Path(valor) if isinstance(valor, str) and valor else None
+
+
+def _ficha(raiz: Path, slug: str) -> Path:
+    return Path(raiz) / CARPETA_PROYECTOS / slug / FICHA
+
+
+def repo_de(raiz: Path, slug: str) -> Dict[str, str]:
+    """El bloque `repo:` de la ficha, solo con los campos de `CAMPOS_REPO`."""
+    try:
+        texto = _ficha(raiz, slug).read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return {}
+    fm, _cuerpo, _ok, _error = parse_frontmatter_robust(texto)
+    repo = fm.get("repo") if isinstance(fm, dict) else None
+    if not isinstance(repo, dict):
+        return {}
+    return {k: str(repo[k]) for k in CAMPOS_REPO if repo.get(k) not in (None, "")}
+
+
+def anotar_repo(
+    raiz: Path,
+    slug: str,
+    escribir: Callable[[Path, str], object] = escritura_atomica,
+    **campos: Optional[str],
+) -> Optional[str]:
+    """Mezcla ``campos`` en `repo:` de la ficha; la ruta relativa, o ``None``.
+
+    Sin ficha no se crea ninguna: el registro lo funda `vault_project --add`,
+    y anotar el commit no es la forma de dar de alta un proyecto. Si nada
+    cambia, no se escribe. `escribir` es el transporte: las tools pasan
+    `vault_io.atomic_write_text`, que cuenta la escritura (AP-37) y aplica
+    sus guardas; el núcleo no conoce el ledger."""
+    desconocidos = set(campos) - set(CAMPOS_REPO)
+    if desconocidos:
+        raise ValueError(f"campos de repo desconocidos: {sorted(desconocidos)}")
+    ficha = _ficha(raiz, slug)
+    if not ficha.is_file():
+        return None
+    actual = repo_de(raiz, slug)
+    nuevo = dict(actual)
+    nuevo.update({k: v for k, v in campos.items() if v})
+    rel = f"{CARPETA_PROYECTOS}/{slug}/{FICHA}"
+    if nuevo == actual:
+        return rel
+    bloque, cuerpo = separar_frontmatter(ficha.read_text(encoding="utf-8"))
+    ordenado = {k: nuevo[k] for k in CAMPOS_REPO if k in nuevo}
+    fm = Frontmatter.editar(bloque or "").set("repo", ordenado)
+    escribir(ficha, fm.render() + "\n" + cuerpo)
+    return rel
 
 
 def proyecto_registrado(

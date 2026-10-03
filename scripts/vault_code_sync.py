@@ -19,17 +19,25 @@ Usage:
     python vault_code_sync.py --project my-api --fix --dry-run
     python vault_code_sync.py                         # todos los proyectos
     python vault_code_sync.py --scan-dir src/         # audita archivos fuente en dir
+
+Con el repo enlazado (`vault_project --link`), `--project` basta: un
+`source_file` relativo se resuelve contra el repo y la pasada de huérfanas lo
+recorre entero. Si la trazabilidad sale limpia y no es `--dry-run`, anota el
+HEAD como `repo.synced_commit` en la ficha (AP-63, P4).
 """
 
 import argparse
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from vault_errors import emit_error, wrap_main, proyecto_registrado
-from vault_io import write_report, resolve_input_path
+from vault_io import atomic_write_text, write_report, resolve_input_path
+from vault_lib import utcnow
+import vault_subproceso
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -137,6 +145,15 @@ def _collect_code_notes(project: Optional[str]) -> List[Tuple[Path, Dict[str, st
 # ──────────────────────────────────────────────────────────────────────────────
 
 
+def _head(repo: Path) -> Optional[str]:
+    try:
+        r = vault_subproceso.ejecutar(["git", "rev-parse", "HEAD"], cwd=str(repo),
+                                      capture_output=True, timeout=10)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return r.stdout.strip() if r.returncode == 0 and r.stdout.strip() else None
+
+
 def vault_code_sync(
     project: Optional[str] = None,
     scan_dir: Optional[str] = None,
@@ -160,6 +177,9 @@ def vault_code_sync(
       }
     """
     es_del = _proyectos.pertenencia_en(_raiz(), project)
+    repo = _proyectos.ruta_local(_raiz(), project) if project else None
+    if repo is not None and not repo.is_dir():
+        repo = None
     complete: List[Dict] = []
     missing_tag: List[Dict] = []
     missing_file: List[Dict] = []
@@ -179,6 +199,10 @@ def vault_code_sync(
             continue
 
         source_path = resolve_input_path(source_file_str)
+        if repo is not None and not Path(source_file_str).is_absolute():
+            en_repo = repo / source_file_str
+            if en_repo.exists() or not source_path.exists():
+                source_path = en_repo
 
         if not source_path.exists():
             missing_file.append(
@@ -227,6 +251,8 @@ def vault_code_sync(
         d = Path(scan_dir)
         if d.exists():
             scan_roots.append(d)
+    elif repo is not None:
+        scan_roots.append(repo)
     else:
         # Derive likely project source root from code index
         try:
@@ -284,11 +310,21 @@ def vault_code_sync(
         else "gaps_found"
     )
 
+    synced = None
+    if status == "clean" and complete and repo is not None and not dry_run:
+        head = _head(repo)
+        if head:
+            ficha = _proyectos.anotar_repo(_raiz(), project, atomic_write_text, synced_commit=head,
+                                           synced_at=utcnow()[:10])
+            synced = {"commit": head, "ficha": ficha} if ficha else None
+
     return {
         "ok": True,
         **write_report(),
         "status": status,
         "project": project or "all",
+        "repo_linked": repo is not None,
+        "synced_commit_recorded": synced,
         "dry_run": dry_run,
         "summary": summary,
         "complete": complete,

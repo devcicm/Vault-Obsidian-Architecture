@@ -18,6 +18,11 @@ Esta es la puerta de entrada al registro que lee `vault.kernel.proyectos`:
   `00_System/.local/project-paths.json`, que lleva su propio `.gitignore`.
   Una ruta de disco es de una máquina, no del proyecto: en una nota viajaría
   con cada copia del vault (y `_sin_rutas_locales` la rechaza).
+  Lo portable —remoto y rama por defecto— va a `repo:` de la ficha.
+- `--sync-status PROYECTO`: compara `repo.synced_commit` con el HEAD del repo
+  enlazado y da los commits pendientes de volcar al vault. Solo lectura.
+  `vault_drift_detect --mode snapshot` y `vault_code_sync` (con trazabilidad
+  completa) son quienes anotan `synced_commit`.
 - `--rebuild`: regenera el derivado `00_System/project-registry.json`.
 
 Ejemplos:
@@ -25,11 +30,13 @@ Ejemplos:
     python vault_project.py --resolve "VCloud SaaS"
     python vault_project.py --add ans --title "ANS" --alias ans-api
     python vault_project.py --link ans --path ../ans
+    python vault_project.py --sync-status ans
     python vault_project.py --audit
 """
 
 import argparse
 import json
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -42,6 +49,7 @@ from vault_errors import proyecto_registrado  # noqa: F401
 from vault_io import atomic_write_json, atomic_write_text, get_vault_root, is_snapshot_path, write_report
 from vault_lib import parse_frontmatter_with_body
 from vault_norms_catalog import STATUS_VOCAB
+import vault_subproceso
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -55,9 +63,11 @@ TOOL = "vault_project"
 
 #: Derivado: se regenera con `--rebuild` y nunca es la fuente.
 REGISTRO_DERIVADO = Path("00_System") / "project-registry.json"
-#: Local de cada máquina, fuera de git.
-DIRECTORIO_LOCAL = Path("00_System") / ".local"
-RUTAS_LOCALES = DIRECTORIO_LOCAL / "project-paths.json"
+#: Local de cada máquina, fuera de git. superseded_by: vault.kernel.proyectos
+#: (v40.34) — `code_sync` y `drift_detect` también la leen, y desde otro
+#: contexto; se conservan los nombres.
+DIRECTORIO_LOCAL = proyectos.DIRECTORIO_LOCAL
+RUTAS_LOCALES = proyectos.RUTAS_LOCALES
 _GITIGNORE_LOCAL = "*\n"
 
 #: Claves que en un vault real declaran el proyecto. Solo `project` es la
@@ -207,8 +217,71 @@ def enlazar(nombre: str, ruta: str) -> Dict[str, Any]:
     if rutas.get(slug) != str(destino):
         rutas[slug] = str(destino)
         atomic_write_json(fichero, dict(sorted(rutas.items())))
+    # Lo portable va a la ficha; la ruta, nunca. Un repo sin remoto o sin git
+    # se enlaza igual: la ruta basta para `drift_detect` por hash.
+    remoto = _git(destino, "config", "--get", "remote.origin.url")
+    rama = _git(destino, "symbolic-ref", "--short", "refs/remotes/origin/HEAD")
+    rama = rama.split("/", 1)[1] if rama and "/" in rama else _git(destino, "branch", "--show-current")
+    ficha = proyectos.anotar_repo(_raiz(), slug, atomic_write_text,
+                                  remote=remoto, default_branch=rama)
     return {"ok": True, "tool": TOOL, "action": "link", "project": slug,
-            "file": RUTAS_LOCALES.as_posix(), **write_report()}
+            "file": RUTAS_LOCALES.as_posix(), "ficha": ficha,
+            "repo": proyectos.repo_de(_raiz(), slug), **write_report()}
+
+
+def _git(ruta: Path, *args: str) -> Optional[str]:
+    """Salida de `git <args>` en ``ruta``, o ``None`` si no hay git o falla."""
+    try:
+        r = vault_subproceso.ejecutar(["git", *args], cwd=str(ruta),
+                                      capture_output=True, timeout=10)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    salida = (r.stdout or "").strip()
+    return salida if r.returncode == 0 and salida else None
+
+
+def _git_ok(ruta: Path, *args: str) -> bool:
+    """`git <args>` terminó con 0 (para los que no imprimen nada)."""
+    try:
+        return vault_subproceso.ejecutar(["git", *args], cwd=str(ruta),
+                                         capture_output=True, timeout=10).returncode == 0
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+
+
+def estado_sync(nombre: str, limite: int = 20) -> Dict[str, Any]:
+    """AP-63, P4. Solo lectura: cuánto va el repo por delante del vault."""
+    try:
+        slug = _registro().resolver(nombre)
+    except FalloDeDominio as fallo:
+        return emit_fallo(TOOL, fallo)
+    repo = proyectos.repo_de(_raiz(), slug)
+    ruta = proyectos.ruta_local(_raiz(), slug)
+    base = {"ok": True, "tool": TOOL, "action": "sync-status", "project": slug,
+            "repo": repo, "linked": ruta is not None,
+            "synced_commit": repo.get("synced_commit")}
+    if ruta is None:
+        return {**base, "state": "unlinked",
+                "hint": f"python vault_project.py --link {slug} --path <repo>"}
+    if not ruta.is_dir():
+        return emit_error(TOOL, "INVALID_PATH",
+                          f"la ruta enlazada de {slug} ya no es un directorio; vuelve a --link")
+    head = _git(ruta, "rev-parse", "HEAD")
+    if head is None:
+        return {**base, "state": "no_git", "head": None}
+    sincronizado = repo.get("synced_commit")
+    if not sincronizado:
+        return {**base, "state": "never_synced", "head": head,
+                "hint": f"python vault_drift_detect.py --project {slug} --mode snapshot"}
+    if not _git_ok(ruta, "cat-file", "-e", f"{sincronizado}^{{commit}}"):
+        return {**base, "state": "unknown_commit", "head": head,
+                "hint": "synced_commit no existe en este clon: fetch, o vuelve a sincronizar"}
+    cuenta = _git(ruta, "rev-list", "--count", f"{sincronizado}..HEAD")
+    pendientes = int(cuenta) if cuenta and cuenta.isdigit() else 0
+    lista = _git(ruta, "log", "--format=%h %s", f"-{limite}", f"{sincronizado}..HEAD")
+    return {**base, "state": "in_sync" if pendientes == 0 else "behind", "head": head,
+            "pending_commits": pendientes,
+            "pending": lista.splitlines() if lista else []}
 
 
 def reconstruir() -> Dict[str, Any]:
@@ -227,6 +300,8 @@ def main() -> int:
     accion.add_argument("--audit", action="store_true", help="Fantasmas y claves no canónicas")
     accion.add_argument("--add", metavar="SLUG", help="Registra un proyecto o le suma alias")
     accion.add_argument("--link", metavar="PROYECTO", help="Guarda la ruta local del repo")
+    accion.add_argument("--sync-status", metavar="PROYECTO",
+                        help="Commits del repo enlazado pendientes de volcar al vault")
     accion.add_argument("--rebuild", action="store_true", help="Regenera project-registry.json")
     ap.add_argument("--title", help="Título de la ficha (con --add)")
     ap.add_argument("--alias", nargs="*", default=[], help="Alias del proyecto (con --add)")
@@ -247,6 +322,8 @@ def main() -> int:
         r = registrar(args.add, args.title, args.alias, args.status)
     elif args.link:
         r = enlazar(args.link, args.path)
+    elif args.sync_status:
+        r = estado_sync(args.sync_status)
     else:
         r = reconstruir()
     print(json.dumps(r, ensure_ascii=False, indent=2))

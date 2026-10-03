@@ -1625,7 +1625,7 @@
         "properties": {
           "path": {
             "type": "string",
-            "description": "Project root path to scan"
+            "description": "Project root path to scan (por defecto, el enlazado con vault_project --link)"
           },
           "project": {
             "type": "string",
@@ -1649,7 +1649,6 @@
           }
         },
         "required": [
-          "path",
           "project"
         ],
         "additionalProperties": false
@@ -4209,6 +4208,10 @@
           "link": {
             "type": "string",
             "description": "Proyecto cuya ruta local se guarda (con path)"
+          },
+          "sync-status": {
+            "type": "string",
+            "description": "Commits del repo enlazado pendientes de volcar al vault"
           },
           "rebuild": {
             "type": "boolean",

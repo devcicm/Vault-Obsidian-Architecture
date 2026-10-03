@@ -34,6 +34,12 @@ Usage:
 
     python vault_drift_detect.py --path "src/" --project "ans" --mode status
 
+    # Con el repo enlazado (vault_project --link), --path sobra (AP-63, P4)
+    python vault_drift_detect.py --project "ans" --mode snapshot
+
+Un snapshot sobre git anota `repo.synced_commit` en la ficha del proyecto: es
+el punto hasta el que el vault documenta el código, el que lee
+`vault_project --sync-status`.
 """
 
 import argparse
@@ -60,7 +66,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-from vault_io import atomic_write_json
+from vault_io import atomic_write_json, atomic_write_text
 
 
 TRACK_EXTENSIONS = {
@@ -738,6 +744,13 @@ def vault_drift_detect(
 
         _save_snapshot(project, snapshot)
 
+        # La ficha guarda el punto, no la ruta: sin ficha no se anota nada.
+        ficha = None
+        if snapshot.get("git_commit"):
+            ficha = _proyectos.anotar_repo(
+                _raiz(), project, atomic_write_text,
+                synced_commit=snapshot["git_commit"], synced_at=now[:10])
+
         return {
             "ok": True,
             "mode": "snapshot",
@@ -746,6 +759,7 @@ def vault_drift_detect(
             "timestamp": now,
             "backend": "git" if use_git else "hash",
             "git_commit": snapshot.get("git_commit"),
+            "synced_commit_recorded_in": ficha,
             "files_tracked": len(snapshot.get("files", {}))
             if not use_git
             else "git-managed",
@@ -874,7 +888,7 @@ Notas:
 """,
     )
 
-    parser.add_argument("--path", required=True, help="Project root path to scan")
+    parser.add_argument("--path", help="Project root path to scan (por defecto, el enlazado con vault_project --link)")
 
     parser.add_argument("--project", type=proyecto_registrado("vault_drift_detect"), required=True, help="Project slug")
 
@@ -893,7 +907,19 @@ Notas:
 
     args = parser.parse_args()
 
-    result = vault_drift_detect(args.path, args.project, args.mode, args.extensions)
+    ruta = args.path
+    if not ruta:
+        enlazada = _proyectos.ruta_local(_raiz(), args.project)
+        if enlazada is None:
+            print(json.dumps(emit_error(
+                "vault_drift_detect", "MISSING_REQUIRED_ARG",
+                f"--path no se dio y {args.project} no tiene repo enlazado",
+                pista=f"python vault_project.py --link {args.project} --path <repo>",
+            ), indent=2, ensure_ascii=False))
+            return 1
+        ruta = str(enlazada)
+
+    result = vault_drift_detect(ruta, args.project, args.mode, args.extensions)
 
     print(json.dumps(result, indent=2, ensure_ascii=False))
 
