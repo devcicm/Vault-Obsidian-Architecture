@@ -30,7 +30,6 @@ from vault_io import atomic_write_text, get_vault_root, write_report
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from vault.autoria.repositorio import RepositorioAutoria
 from vault.gobernanza.repositorio import RepositorioGobernanza
 from vault.kernel import construir
 
@@ -39,8 +38,8 @@ def _raiz() -> Path:
     return Path(get_vault_root())
 
 
-def _repo() -> RepositorioAutoria:
-    return RepositorioAutoria(construir(_raiz()))
+def _repo() -> RepositorioGobernanza:
+    return RepositorioGobernanza(construir(_raiz()))
 
 
 def _system_dir() -> Path:
@@ -48,16 +47,15 @@ def _system_dir() -> Path:
 
 
 def _quality_index() -> Path:
-    # El índice de calidad lo publica Gobernanza (`vault_quality_check`), no
-    # Autoría. Pedírselo a `RepositorioAutoria` levantaba AttributeError en
-    # cada ejecución desde 90c3fe6: la tool entera devolvía UNEXPECTED_ERROR
-    # y ningún test la ejecutaba. El cruce autoria -> gobernanza ya está
-    # declarado permanente en `vault_arch.PRESUPUESTO_DE_CRUCES`.
-    return RepositorioGobernanza(construir(_raiz())).indice_calidad
+    # El índice de calidad lo publica Gobernanza (`vault_quality_check`), y
+    # este módulo vive en ese contexto. Pedírselo a `RepositorioAutoria`
+    # levantaba AttributeError en cada ejecución desde 90c3fe6: la tool
+    # entera devolvía UNEXPECTED_ERROR y ningún test la ejecutaba.
+    return _repo().indice_calidad
 
 
 def _tag_registry() -> Path:
-    return _system_dir() / "tag-registry.json"
+    return _repo().registro_etiquetas
 
 
 def _qa_index() -> Path:
@@ -69,7 +67,7 @@ def _tests_index() -> Path:
 
 
 def _dashboard_path() -> Path:
-    return _raiz() / "02_Observability" / "qa" / "quality-dashboard.md"
+    return _repo().dir_observabilidad / "qa" / "quality-dashboard.md"
 
 
 def utcnow() -> str:

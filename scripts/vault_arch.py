@@ -253,7 +253,7 @@ CONTEXTS: dict[str, dict] = {
             "vault_change_log", "vault_voice", "vault_fix_brackets",
             "vault_frontmatter_heal", "vault_delete", "vault_undo",
             "vault_timeline", "vault_project_overview", "vault_project_status",
-            "vault_qa_save", "vault_quality_dashboard",
+            "vault_qa_save",
         ],
     },
     "grafo": {
@@ -362,6 +362,11 @@ CONTEXTS: dict[str, dict] = {
             "vault_quality_check", "vault_validate", "vault_security_scan",
             "vault_secret_scan", "vault_drift_detect", "vault_mermaid_check",
             "vault_security_rules",
+            # Estaba en Autoría. Lo que compone —el índice de calidad, el
+            # registro de etiquetas y la nota de `02_Observability/`— lo
+            # publica Gobernanza, y desde Autoría leer el índice era un cruce
+            # de frontera que ningún test había ejecutado.
+            "vault_quality_dashboard",
         ],
     },
     "indices": {

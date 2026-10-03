@@ -49,3 +49,12 @@ def test_dashboard_lee_el_indice_que_publica_gobernanza(vault):
     assert r["ok"], r
     texto = (vault / r["path"]).read_text(encoding="utf-8")
     assert "0.812" in texto and "| Total notas | 4 |" in texto
+
+
+def test_dashboard_vive_en_gobernanza_y_no_cruza_fronteras():
+    """Todo lo que compone lo publica Gobernanza; desde Autoría, leer el
+    índice de calidad era un cruce que la puerta de arquitectura veía."""
+    import vault_arch
+
+    assert vault_arch.contexto_de("vault_quality_dashboard") == "gobernanza"
+    assert [c for c in vault_arch.cruces() if c["from"] == "vault_quality_dashboard"] == []
