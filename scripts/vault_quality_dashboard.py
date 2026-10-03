@@ -31,6 +31,7 @@ from vault_io import atomic_write_text, get_vault_root, write_report
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from vault.autoria.repositorio import RepositorioAutoria
+from vault.gobernanza.repositorio import RepositorioGobernanza
 from vault.kernel import construir
 
 
@@ -47,7 +48,12 @@ def _system_dir() -> Path:
 
 
 def _quality_index() -> Path:
-    return _repo().indice_calidad
+    # El índice de calidad lo publica Gobernanza (`vault_quality_check`), no
+    # Autoría. Pedírselo a `RepositorioAutoria` levantaba AttributeError en
+    # cada ejecución desde 90c3fe6: la tool entera devolvía UNEXPECTED_ERROR
+    # y ningún test la ejecutaba. El cruce autoria -> gobernanza ya está
+    # declarado permanente en `vault_arch.PRESUPUESTO_DE_CRUCES`.
+    return RepositorioGobernanza(construir(_raiz())).indice_calidad
 
 
 def _tag_registry() -> Path:
