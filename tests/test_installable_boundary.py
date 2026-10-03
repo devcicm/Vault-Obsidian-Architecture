@@ -121,30 +121,58 @@ def test_fallback_legacy_conserva_scripts_en_sys_path(tmp_path):
     assert sys.path[0] == str(tmp_path.resolve()), "legacy_scripts debe persistir en sys.path[0]"
 
 
-def test_puntos_distribuibles_no_insertan_scripts_en_sys_path():
+#: Los únicos módulos instalables que tocan `sys.path`, cada uno con su motivo.
+#: Hasta 2026-10-02 el test miraba una lista de seis ficheros escrita a mano:
+#: un `sys.path.insert` en cualquier otro módulo de la wheel pasaba sin ruido.
+#: Ahora el mundo es cerrado —todo `.py` de `vault/`, `vault_toolkit/` y
+#: `cli/`— y lo que no está aquí falla. Esta tabla solo encoge.
+SYS_PATH_DECLARADOS = {
+    "cli/__main__.py": "punto de entrada de `python -m cli` en un checkout",
+    "vault_toolkit/loading.py": "el cargador: pone `_impl` (o el checkout) primero",
+    "vault/gobernanza/__init__.py":
+        "auditoria_runtime importa vault_io/vault_lib por nombre desnudo; "
+        "sale cuando esos imports pasen por el cargador",
+}
+
+
+def _inserta_en_sys_path(ruta) -> bool:
     import ast
+
+    tree = ast.parse(ruta.read_text(encoding="utf-8"))
+    return any(
+        isinstance(n, ast.Call)
+        and isinstance(n.func, ast.Attribute)
+        and n.func.attr == "insert"
+        and isinstance(n.func.value, ast.Attribute)
+        and n.func.value.attr == "path"
+        for n in ast.walk(tree)
+    )
+
+
+def _instalables():
     from pathlib import Path
 
     root = Path(__file__).resolve().parent.parent
-    rutas = [
-        root / "cli/registry.py",
-        root / "cli/runner.py",
-        root / "cli/resolver.py",
-        root / "vault/kernel/adaptadores.py",
-        root / "vault/autoria/frontmatter.py",
-        root / "vault/kernel/frontmatter_escritura.py",
-    ]
-    for ruta in rutas:
-        tree = ast.parse(ruta.read_text(encoding="utf-8"))
-        llamadas = [
-            n for n in ast.walk(tree)
-            if isinstance(n, ast.Call)
-            and isinstance(n.func, ast.Attribute)
-            and n.func.attr == "insert"
-            and isinstance(n.func.value, ast.Attribute)
-            and n.func.value.attr == "path"
-        ]
-        assert not llamadas, ruta
+    for zona in ("vault", "vault_toolkit", "cli"):
+        for ruta in sorted((root / zona).rglob("*.py")):
+            if "__pycache__" not in ruta.parts:
+                yield ruta.relative_to(root).as_posix(), ruta
+
+
+def test_puntos_distribuibles_no_insertan_scripts_en_sys_path():
+    insertan = {rel for rel, ruta in _instalables() if _inserta_en_sys_path(ruta)}
+    assert insertan - set(SYS_PATH_DECLARADOS) == set(), "sys.path.insert nuevo en la wheel"
+    # Un declarado que ya no inserta se retira de la tabla: solo encoge.
+    assert set(SYS_PATH_DECLARADOS) - insertan == set()
+
+
+def test_la_medida_de_sys_path_ve_un_insert_nuevo(tmp_path):
+    nuevo = tmp_path / "m.py"
+    nuevo.write_text("import sys\nsys.path.insert(0, 'x')\n", encoding="utf-8")
+    limpio = tmp_path / "n.py"
+    limpio.write_text("import sys\nprint(sys.path)\n", encoding="utf-8")
+    assert _inserta_en_sys_path(nuevo)
+    assert not _inserta_en_sys_path(limpio)
 
 
 def test_adaptadores_de_operacion_derivan_del_catalogo():
