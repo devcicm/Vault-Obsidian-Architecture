@@ -24,7 +24,9 @@ from typing import Any, Dict, List, Optional, Set
 from vault_regex import RE_WIKILINK  # dueño único del patrón (AP-50)
 
 from vault_errors import emit_error, wrap_main
-from vault_io import atomic_write_text, file_lock, tomar_lock, write_report
+from vault_io import (
+    assert_within_vault, atomic_write_text, file_lock, tomar_lock, write_report,
+)
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -42,6 +44,24 @@ def _raiz() -> Path:
 def _repo(root=None) -> RepositorioAutoria:
     """Resuelve el vault al usarse, no al importarse (AP-49)."""
     return RepositorioAutoria(construir(root))
+
+
+def _fuera_del_vault(*rutas: str) -> Optional[Dict[str, Any]]:
+    """AP-36: el envelope de rechazo si alguna ruta sale del vault, o None.
+
+    Hasta 2026-10-02 nada lo comprobaba: `--from ../x.md` metía en el vault un
+    fichero de fuera y borraba el original, `--to ../x.md` sacaba la nota, y
+    `--impact` leía lo que se le señalara. La raíz misma tampoco vale: mover el
+    vault dentro de sí mismo no es mover una carpeta.
+    """
+    raiz = _raiz()
+    for ruta in rutas:
+        try:
+            if assert_within_vault(raiz / ruta, raiz) == raiz.resolve():
+                raise ValueError(f"'{ruta}' es la raíz del vault, no una ruta dentro de él.")
+        except ValueError as exc:
+            return emit_error("vault_move", "INVALID_PATH", str(exc))
+    return None
 
 
 def _system_dir() -> Path:
@@ -206,6 +226,9 @@ def move_note(
     from_path: str, to_path: str, dry_run: bool = False, backup: bool = True
 ) -> Dict[str, Any]:
     """Mueve una nota a una nueva ubicación."""
+    rechazo = _fuera_del_vault(from_path, to_path)
+    if rechazo:
+        return rechazo
     source = _raiz() / from_path
     destination = _raiz() / to_path
 
@@ -360,6 +383,9 @@ def move_folder(
       del origen va a `00_System/.trash/` en vez de a la basura;
     - del origen solo se retiran los directorios que quedan vacíos.
     """
+    rechazo = _fuera_del_vault(from_folder, to_folder)
+    if rechazo:
+        return rechazo
     source = _raiz() / from_folder
     destination = _raiz() / to_folder
 
@@ -447,6 +473,9 @@ def move_folder(
 
 def check_move_impact(from_path: str, to_path: str) -> Dict[str, Any]:
     """Analiza el impacto de un movimiento sin ejecutarlo."""
+    rechazo = _fuera_del_vault(from_path, to_path)
+    if rechazo:
+        return rechazo
     source = _raiz() / from_path
 
     if not source.exists():
