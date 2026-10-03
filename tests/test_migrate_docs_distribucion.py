@@ -71,6 +71,8 @@ def migrado(tmp_path_factory):
     )
 
     _correr("vault_init.py", vault)
+    # AP-63: `--project demo` resuelve contra el registro; se da de alta.
+    _correr("vault_project.py", vault, "--add", "demo")
     r = _correr(
         "vault_migrate_docs.py",
         vault,

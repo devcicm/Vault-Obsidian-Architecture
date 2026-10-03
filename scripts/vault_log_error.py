@@ -37,7 +37,7 @@ import re
 
 import sys
 
-from vault_errors import emit_error, wrap_main
+from vault_errors import emit_error, wrap_main, proyecto_registrado
 from vault_lib import utcnow, slugify
 from vault_io import atomic_write_text, get_vault_root, safe_wikilink, write_report
 from datetime import datetime, timezone
@@ -411,7 +411,7 @@ Notas:
 
     parser.add_argument("--severity", default="medium", choices=SEVERITIES)
 
-    parser.add_argument("--project", default="")
+    parser.add_argument("--project", type=proyecto_registrado("vault_log_error"), default="")
 
     parser.add_argument("--mitigation", default="")
 

@@ -26,8 +26,7 @@ import re
 
 import sys
 
-from vault_errors import wrap_main
-from vault_proyecto_arg import proyecto_registrado
+from vault_errors import wrap_main, proyecto_registrado
 from vault_lib import slugify_strict, utcnow
 from pathlib import Path
 from typing import Any, Dict

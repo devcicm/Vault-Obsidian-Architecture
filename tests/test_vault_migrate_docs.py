@@ -56,6 +56,8 @@ def vault_preparado(tmp_path, fuente_con_docs):
     v = tmp_path / "vault-test-migrate"
     v.mkdir()
     _correr("vault_init.py", v)
+    # AP-63: `--project testpr` resuelve contra el registro; se da de alta.
+    _correr("vault_project.py", v, "--add", "testpr")
     return v, fuente_con_docs
 
 

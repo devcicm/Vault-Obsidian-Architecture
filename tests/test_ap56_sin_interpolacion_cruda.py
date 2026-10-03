@@ -129,16 +129,36 @@ def test_ap56_un_salto_de_linea_no_crea_claves():
 
 
 def test_ap56_vault_log_error_no_admite_claves_por_project(tmp_path):
-    """El caso medido, con el criterio del consumidor: `yaml.safe_load`."""
+    """El caso medido, con el criterio del consumidor: `yaml.safe_load`.
+
+    Desde AP-63 la CLI ya no deja llegar el valor hostil: no es un proyecto
+    registrado y sale `PROJECT_NOT_FOUND` sin escribir. El escapado del
+    escritor sigue medido llamando a la función, que es quien lo garantiza
+    para cualquier otro llamador."""
     raiz = tmp_path / "vault"
     (raiz / "00_System").mkdir(parents=True)
     hostil = "demo\nstatus: active\ncia_sensitivity: public"
+    env = dict(os.environ, VAULT_ROOT=str(raiz), PYTHONIOENCODING="utf-8")
     p = subprocess.run(
         [sys.executable, str(RAIZ / "scripts" / "vault_log_error.py"),
          "--type", "error", "--title", "Fallo de prueba",
          "--description", "Descripcion suficientemente larga del fallo.",
          "--project", hostil],
-        env=dict(os.environ, VAULT_ROOT=str(raiz), PYTHONIOENCODING="utf-8"),
+        env=env,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        cwd=str(RAIZ / "scripts"), timeout=180,
+    )
+    salida = json.loads(p.stdout[p.stdout.index("{"):])
+    assert salida["error_code"] == "PROJECT_NOT_FOUND", salida
+    assert [x.name for x in raiz.iterdir()] == ["00_System"]
+
+    p = subprocess.run(
+        [sys.executable, "-c",
+         "import json, sys; from vault_log_error import vault_log_error; "
+         "print(json.dumps(vault_log_error('error', 'Fallo de prueba', "
+         "'Descripcion suficientemente larga del fallo.', project=sys.argv[1])))",
+         hostil],
+        env=env,
         capture_output=True, text=True, encoding="utf-8", errors="replace",
         cwd=str(RAIZ / "scripts"), timeout=180,
     )

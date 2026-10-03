@@ -25,8 +25,7 @@ from collections import defaultdict, deque
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
-from vault_errors import emit_error, wrap_main
-from vault_proyecto_arg import proyecto_registrado
+from vault_errors import emit_error, wrap_main, proyecto_registrado
 from vault_lib import separar_frontmatter, utcnow
 from vault_io import atomic_write_json
 from vault_registry import ORDERED_SECTIONS

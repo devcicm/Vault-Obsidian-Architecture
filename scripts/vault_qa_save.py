@@ -31,8 +31,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from vault_errors import emit_error, wrap_main
-from vault_proyecto_arg import proyecto_registrado
+from vault_errors import emit_error, wrap_main, proyecto_registrado
 from vault_io import (
     indice_compartido,
     write_report,

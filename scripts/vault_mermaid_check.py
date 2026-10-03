@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from vault_errors import emit_error, wrap_main
+from vault_errors import emit_error, wrap_main, proyecto_registrado
 from vault_io import assert_within_vault, is_snapshot_path
 SCRIPTS_DIR = Path(__file__).parent
 
@@ -184,7 +184,7 @@ Ejemplos:
     )
 
     parser.add_argument("--path", type=str, help="Archivo específico a verificar")
-    parser.add_argument("--project", type=str, help="Proyecto a verificar")
+    parser.add_argument("--project", type=proyecto_registrado("vault_mermaid_check"), help="Proyecto a verificar")
     parser.add_argument("--fix", action="store_true", help="Intentar auto-corrección")
     parser.add_argument("--json", action="store_true", help="Salida JSON")
 

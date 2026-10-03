@@ -30,8 +30,7 @@ import re
 
 import sys
 
-from vault_errors import emit_error, wrap_main
-from vault_proyecto_arg import proyecto_registrado
+from vault_errors import emit_error, wrap_main, proyecto_registrado
 from vault_norms_catalog import status_frontmatter_lines
 from vault_lib import yaml_scalar, utcnow, slugify
 from vault_lib import parse_frontmatter as _parse_frontmatter

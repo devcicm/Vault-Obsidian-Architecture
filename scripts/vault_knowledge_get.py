@@ -13,8 +13,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from vault.autoria.conocimiento import recuperar_conocimiento
-from vault_errors import wrap_main
-from vault_proyecto_arg import proyecto_registrado
+from vault_errors import wrap_main, proyecto_registrado
 from vault_io import get_vault_root
 
 

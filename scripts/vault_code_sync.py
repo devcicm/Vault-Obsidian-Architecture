@@ -28,8 +28,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from vault_errors import emit_error, wrap_main
-from vault_proyecto_arg import proyecto_registrado
+from vault_errors import emit_error, wrap_main, proyecto_registrado
 from vault_io import write_report, resolve_input_path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))

@@ -222,9 +222,10 @@ def run_contracts() -> Dict[str, Any]:
 
 
 def _run_contracts_in_vault(vault_dir: Path) -> Dict[str, Any]:
-    # Create minimal vault structure
+    # Create minimal vault structure. `01_Projects/smoke` registra el proyecto
+    # que usan los contratos: desde AP-63 `--project` no funda carpetas.
     for folder in [
-        "00_System", "01_Projects", "02_Observability/errors", "03_Decisions",
+        "00_System", "01_Projects/smoke", "02_Observability/errors", "03_Decisions",
         "04_Sessions", "05_Patterns", "06_Diagrams/entity", "07_Knowledge",
         "08_Runbooks", "09_Infrastructure", "10_Migrated", "11_Code",
         "12_Bibliography", "13_Flows", "14_Requirements", "15_Tests",

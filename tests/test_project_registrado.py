@@ -1,6 +1,6 @@
 """AP-63 — todo `--project` pasa por el registro antes de llegar a la tool.
 
-Dos cosas. La primera, el comportamiento de `vault_proyecto_arg.proyecto_registrado`:
+Dos cosas. La primera, el comportamiento de `vault_errors.proyecto_registrado`:
 un alias llega a la tool como su slug, un nombre que no resuelve no llega y
 sale como `PROJECT_NOT_FOUND` con el nombre de la tool que llamó, y la cadena
 vacía —el «sin proyecto» de las opcionales— pasa tal cual.
@@ -26,7 +26,7 @@ SCRIPTS = ROOT / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 import vault_io  # noqa: E402
-import vault_proyecto_arg  # noqa: E402
+import vault_errors  # noqa: E402
 
 #: Las que no deben resolver, con el motivo. No es deuda: es el diseño.
 EXENTAS = {
@@ -37,14 +37,9 @@ EXENTAS = {
 
 #: Sitios sin `type=proyecto_registrado` al estrenar el guard, por módulo.
 #: Solo encoge: se convierten por lotes y cada lote quita sus líneas.
-PENDIENTES = {
-    "vault_audit": 1,
-    "vault_drift_detect": 1,
-    "vault_log_error": 1,
-    "vault_mcp": 2,
-    "vault_mermaid_check": 1,
-    "vault_migrate_docs": 1,
-    "vault_security_scan": 1,
+PENDIENTES: dict = {
+    # Saldada en v40.34: las 43 resuelven. Se deja en pie y vacía (deuda saldada
+    # no se borra), para que una tool nueva sin `type=` siga fallando.
 }
 
 
@@ -116,7 +111,7 @@ def registro(tmp_path):
 
 def _parser():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--project", default="", type=vault_proyecto_arg.proyecto_registrado("vault_x"))
+    ap.add_argument("--project", default="", type=vault_errors.proyecto_registrado("vault_x"))
     return ap
 
 
@@ -199,14 +194,13 @@ def test_ap63_las_tools_de_proyecto_no_fundan_carpetas_fantasma(registro, script
     assert sorted(p.name for p in (registro / "01_Projects").iterdir()) == ["mi-api"]
 
 
-def test_ap63_la_fabrica_vive_en_el_nucleo_y_la_tool_la_reexporta():
+def test_ap63_la_fabrica_vive_junto_a_emit_fallo_y_la_tool_la_reexporta():
     """Vivió en `vault_project` (Autoría); cada tool de otro contexto que la
-    importaba de allí abría un cruce. Se movió al núcleo sin derogarla."""
-    import vault_arch
+    importaba de allí abría un cruce. Vive en `vault_errors`, que todas esas
+    tools ya importaban, y `vault_project` la reexporta sin derogarla."""
     import vault_project
     from vault.autoria import proyectos as viejo
     from vault.kernel import proyectos as dueno
 
-    assert vault_project.proyecto_registrado is vault_proyecto_arg.proyecto_registrado
+    assert vault_project.proyecto_registrado is vault_errors.proyecto_registrado
     assert viejo is dueno
-    assert "vault_proyecto_arg" in vault_arch.CONTEXTS[vault_arch.KERNEL]["modulos"]

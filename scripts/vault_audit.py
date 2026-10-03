@@ -36,7 +36,7 @@ import sys
 from vault_entorno import leer as _env
 
 from vault_registry import es_andamio
-from vault_errors import emit_error, wrap_main
+from vault_errors import emit_error, wrap_main, proyecto_registrado
 
 from collections import defaultdict
 
@@ -2489,7 +2489,7 @@ Notas:
 """,
     )
 
-    parser.add_argument("--project", help="Optional project slug to filter audit scope")
+    parser.add_argument("--project", type=proyecto_registrado("vault_audit"), help="Optional project slug to filter audit scope")
 
     parser.add_argument(
         "--path", help="External directory path to audit instead of vault"

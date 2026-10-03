@@ -50,7 +50,7 @@ import vault_subproceso
 
 import sys
 
-from vault_errors import emit_error, wrap_main
+from vault_errors import emit_error, wrap_main, proyecto_registrado
 from vault_lib import slugify_strict, utcnow
 from datetime import datetime, timezone
 
@@ -875,7 +875,7 @@ Notas:
 
     parser.add_argument("--path", required=True, help="Project root path to scan")
 
-    parser.add_argument("--project", required=True, help="Project slug")
+    parser.add_argument("--project", type=proyecto_registrado("vault_drift_detect"), required=True, help="Project slug")
 
     parser.add_argument(
         "--mode",

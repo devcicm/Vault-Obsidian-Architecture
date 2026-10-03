@@ -26,7 +26,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from vault_errors import emit_error, wrap_main
+from vault_errors import emit_error, wrap_main, proyecto_registrado
 from vault_io import get_vault_root
 
 from vault_mcp_catalog import (
@@ -424,7 +424,7 @@ Ejemplos:
         "mermaid-validate", help="Valida diagramas Mermaid"
     )
     mermaid_parser.add_argument("--path", help="Archivo específico")
-    mermaid_parser.add_argument("--project", help="Proyecto específico")
+    mermaid_parser.add_argument("--project", type=proyecto_registrado("vault_mcp"), help="Proyecto específico")
     mermaid_parser.add_argument("--json", action="store_true", help="Salida JSON")
 
     mermaid_fix_parser = subparsers.add_parser(
@@ -438,7 +438,7 @@ Ejemplos:
     # Diagramas export
     diagram_parser = subparsers.add_parser("diagram-export", help="Exporta diagramas")
     diagram_parser.add_argument("--path", help="Archivo a exportar")
-    diagram_parser.add_argument("--project", help="Proyecto a exportar")
+    diagram_parser.add_argument("--project", type=proyecto_registrado("vault_mcp"), help="Proyecto a exportar")
     diagram_parser.add_argument("--output", help="Carpeta de salida")
     diagram_parser.add_argument("--zoom", type=float, default=1.0, help="Zoom")
     diagram_parser.add_argument("--filter", help="Filtrar por tipo")

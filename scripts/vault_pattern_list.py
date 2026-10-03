@@ -31,8 +31,7 @@ import json
 
 import sys
 
-from vault_errors import emit_error, wrap_main
-from vault_proyecto_arg import proyecto_registrado
+from vault_errors import emit_error, wrap_main, proyecto_registrado
 
 from pathlib import Path
 

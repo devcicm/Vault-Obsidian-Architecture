@@ -41,8 +41,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from vault_errors import wrap_main
-from vault_proyecto_arg import proyecto_registrado
+from vault_errors import wrap_main, proyecto_registrado
 from vault_norms_catalog import status_frontmatter_lines
 from vault_io import (
     indice_compartido,

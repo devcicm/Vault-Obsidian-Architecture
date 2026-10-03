@@ -30,8 +30,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from vault_regex import RE_WIKILINK  # dueño único del patrón (AP-50)
 
-from vault_errors import emit_error, wrap_main
-from vault_proyecto_arg import proyecto_registrado
+from vault_errors import emit_error, wrap_main, proyecto_registrado
 from vault_version import CURRENT_VERSION  # generator_version de los artefactos (AP-47)
 from vault_io import atomic_write_json, normalize_stem, write_report
 from vault_escaneo_grafo import escanear_wikilinks  # el único escaneo del grafo

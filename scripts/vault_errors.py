@@ -48,6 +48,8 @@ from vault_errors_catalog import (
 )
 from vault_errors_trace import log_trace, log_token_usage
 from vault.autoria.voz import speak as _speak_estable
+from vault.kernel import proyectos as _proyectos
+from vault.kernel.fallos import FalloDeDominio
 
 TOOL_TIMEOUT_SECONDS: int = _env("VAULT_TOOL_TIMEOUT")
 
@@ -236,6 +238,47 @@ def emit_fallo(tool: str, fallo: Any) -> Dict[str, Any]:
     envelope["error"] = mensaje
     envelope.update(getattr(fallo, "datos", None) or {})
     return envelope
+
+
+def proyecto_registrado(tool: str) -> Callable[[str], str]:
+    """`type=` de argparse para el `--project` de toda tool (AP-63).
+
+    El nombre de un proyecto es identidad, no texto libre: lo que llega a la
+    tool ya es el slug canónico, así que lo que escribe en `project:` o en la
+    ruta es la identidad y no la cadena que tecleó alguien. Resolver en
+    `type=` y no dentro de cada tool es lo que deja medirlo: un
+    `add_argument("--project")` sin él es una tool que vuelve a aceptar texto
+    libre, y `test_project_registrado` lo nombra.
+
+    Un nombre que no resuelve no llega a la tool: se imprime el envelope de
+    `emit_fallo` con el nombre de **la tool que llama** —por eso es una
+    fábrica— y se sale con 1, antes de que la tool cree nada. No se usa
+    `ArgumentTypeError`: argparse lo convertiría en un texto por stderr con
+    código 2, fuera del contrato de errores que leen la CLI y el MCP. La
+    cadena vacía pasa tal cual: es el «sin proyecto» de las opcionales con
+    `default=""`.
+
+    **Por qué aquí (v40.34).** Vivió en `vault_project` (Autoría), y cada tool
+    de otro contexto que la importaba abría un cruce. Después en un módulo
+    propio del núcleo, `vault_proyecto_arg`, que le subía el fan-out a
+    `vault_log_error` y volteaba el escalón de AP-59. Aquí no añade ninguna
+    arista: todas las tools con `--project` ya importan este módulo, y este
+    módulo ya dependía de `vault/kernel` por `vault_errors_catalog`. Es además
+    el vecino natural: quien traduce el fallo es `emit_fallo`, dos líneas más
+    arriba.
+    """
+
+    def _resolver(valor: str) -> str:
+        if valor == "":
+            return valor
+        try:
+            return _proyectos.leer_registro(get_vault_root()).resolver(valor)
+        except FalloDeDominio as fallo:
+            print(json.dumps(emit_fallo(tool, fallo), ensure_ascii=False))
+            raise SystemExit(1)
+
+    _resolver.__name__ = "proyecto_registrado"
+    return _resolver
 
 
 def emit_ok(tool: str, data: Dict[str, Any]) -> Dict[str, Any]:

@@ -36,9 +36,9 @@ from typing import Any, Dict, List, Optional
 
 from vault_audit_catalog import es_documentacion_del_estandar
 from vault_errors import emit_error, emit_fallo, wrap_main
-# superseded_by: vault_proyecto_arg.proyecto_registrado (v40.34). Vivió aquí;
+# superseded_by: vault_errors.proyecto_registrado (v40.34). Vivió aquí;
 # se reexporta para quien lo importara de la tool.
-from vault_proyecto_arg import proyecto_registrado  # noqa: F401
+from vault_errors import proyecto_registrado  # noqa: F401
 from vault_io import atomic_write_json, atomic_write_text, get_vault_root, is_snapshot_path, write_report
 from vault_lib import parse_frontmatter_with_body
 from vault_norms_catalog import STATUS_VOCAB

@@ -34,7 +34,7 @@ import re
 
 import sys
 
-from vault_errors import emit_error, wrap_main
+from vault_errors import emit_error, wrap_main, proyecto_registrado
 from vault_lib import slugify, parse_frontmatter
 
 from vault_io import (
@@ -671,7 +671,7 @@ Notas:
 
     parser.add_argument("--source_path", required=True, help="Source directory")
 
-    parser.add_argument("--project", required=True, help="Project slug")
+    parser.add_argument("--project", type=proyecto_registrado("vault_migrate_docs"), required=True, help="Project slug")
 
     parser.add_argument("--keywords", nargs="*", help="Additional keywords")
 
