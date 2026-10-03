@@ -51,7 +51,8 @@ import sys
 from vault_errors import emit_error, wrap_main
 from vault_version import CURRENT_VERSION  # generator_version de los artefactos (AP-47)
 from vault_io import atomic_write_json, file_lock, normalize_stem
-from vault_lib import separar_frontmatter
+from vault_lib import parse_frontmatter, separar_frontmatter
+from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -338,56 +339,35 @@ def vault_norms_apply(code: str, path: str) -> Dict[str, Any]:
         return emit_error("vault_norms", "FRONTMATTER_PARSE_ERROR",
                           f"Frontmatter sin cierre `---` en {path}")
 
-    # Se conserva la forma de `split`: el bloque entre saltos y el cuerpo
-    # tras la línea de cierre, para que el reensamblado no cambie bytes.
-    fm_block = "\n" + bloque + "\n" if bloque else "\n"
-    body = "\n" + cuerpo
+    # AP-44: `norm_refs` se lee con el parser real. El regex por líneas tomaba
+    # `norm_refs:\n- AP-01` —lista en bloque, YAML válido— como el valor
+    # `- AP-01` y lo reescribía como `["- AP-01", …]`.
+    existing_refs = parse_frontmatter(content).get("norm_refs") or []
+    if not isinstance(existing_refs, list):
+        existing_refs = [existing_refs]
+    if code in existing_refs:
+        return {
+            "ok": True,
+            "path": path,
+            "norm_refs": existing_refs,
+            "message": f"{code} already present",
+        }
+    existing_refs = [*existing_refs, code]
 
-    # Parse existing norm_refs
-    norm_refs_match = re.search(r"^norm_refs:\s*(.+)$", fm_block, re.MULTILINE)
-    if norm_refs_match:
-        existing_raw = norm_refs_match.group(1).strip()
-        try:
-            existing_refs = json.loads(existing_raw)
-        except json.JSONDecodeError:
-            existing_refs = [
-                r.strip().strip('"')
-                for r in existing_raw.strip("[]").split(",")
-                if r.strip()
-            ]
-        if code in existing_refs:
-            return {
-                "ok": True,
-                "path": path,
-                "norm_refs": existing_refs,
-                "message": f"{code} already present",
-            }
-        existing_refs.append(code)
-        new_refs_line = f"norm_refs: {json.dumps(existing_refs)}"
-        fm_block = re.sub(
-            r"^norm_refs:\s*.+$", new_refs_line, fm_block, flags=re.MULTILINE
-        )
-    else:
-        # Insert norm_refs after last field in frontmatter
-        new_refs_line = f"norm_refs: {json.dumps([code])}"
-        fm_block = fm_block.rstrip("\n") + f"\n{new_refs_line}\n"
-
-    new_content = f"---{fm_block}---{body}"
+    # AP-46: el dueño reemplaza la clave en su sitio, continuación incluida.
+    new_content = (
+        Frontmatter.editar(bloque).set("norm_refs", existing_refs).render()
+        + "\n" + cuerpo
+    )
 
     from vault_io import atomic_write_text
 
     atomic_write_text(note_path, new_content)
 
-    # Read back to return final norm_refs
-    norm_refs_match2 = re.search(r"^norm_refs:\s*(.+)$", fm_block, re.MULTILINE)
-    final_refs = (
-        json.loads(norm_refs_match2.group(1).strip()) if norm_refs_match2 else [code]
-    )
-
     return {
         "ok": True,
         "path": path,
-        "norm_refs": final_refs,
+        "norm_refs": existing_refs,
         "message": f"Added {code} to norm_refs",
     }
 

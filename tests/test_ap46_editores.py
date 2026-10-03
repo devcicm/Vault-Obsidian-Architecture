@@ -45,3 +45,34 @@ def test_ap46_fusionar_dos_veces_no_duplica_mergedFrom():
     assert dos.endswith("\n---\n\ncuerpo\n")
     sin_bloque = _tag_frontmatter("solo cuerpo\n", "a.md")
     assert sin_bloque.endswith("\n---\n\nsolo cuerpo\n")
+
+
+@pytest.fixture
+def vault(tmp_path):
+    import vault_io
+
+    root = tmp_path / "v"
+    for sec in ("00_System", "07_Knowledge", "17_Preferences"):
+        (root / sec).mkdir(parents=True)
+    vault_io.set_vault_root(root)
+    return root
+
+
+def test_ap46_aplicar_una_norma_respeta_una_lista_en_bloque(vault):
+    """AP-44: `norm_refs:\n- AP-01` es una lista YAML válida. El regex por
+    líneas la leía como el valor `- AP-01` y la reescribía `["- AP-01", …]`."""
+    import vault_norms
+
+    nota = vault / "07_Knowledge" / "n.md"
+    nota.write_text(
+        f"---\ntitle: '{HOSTIL}'\nnorm_refs:\n- AP-01\nn: 1\n---\n\ncuerpo\n",
+        encoding="utf-8",
+    )
+    r = vault_norms.vault_norms_apply("AP-05", "07_Knowledge/n.md")
+    assert r["ok"], r
+    texto = nota.read_text(encoding="utf-8")
+    fm = yaml.safe_load(_bloque(texto))
+    assert fm["norm_refs"] == ["AP-01", "AP-05"] and fm["title"] == HOSTIL
+    assert _claves(texto) == ["title", "norm_refs", "n"]
+    assert texto.endswith("\n---\n\ncuerpo\n")
+    assert vault_norms.vault_norms_apply("AP-05", "07_Knowledge/n.md")["message"].endswith("present")
