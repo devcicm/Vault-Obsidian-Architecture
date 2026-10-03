@@ -42,7 +42,7 @@ MIGRADOS = {
     "vault_write": "generate_frontmatter",
     "vault_ingest": "_build_note",
     "vault_onboard": "_make_frontmatter",
-    "vault_preferences": "vault_preferences_set",
+    "vault_preferences": ("vault_preferences_set", "vault_preferences_revoke"),
     "vault_fundamentals": ("export_doc", "export_framework"),
     "vault_log_error": "vault_log_error",
     "vault_migrate_docs": ("process_file_staging", "vault_migrate_docs"),

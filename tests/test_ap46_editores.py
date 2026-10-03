@@ -76,3 +76,27 @@ def test_ap46_aplicar_una_norma_respeta_una_lista_en_bloque(vault):
     assert _claves(texto) == ["title", "norm_refs", "n"]
     assert texto.endswith("\n---\n\ncuerpo\n")
     assert vault_norms.vault_norms_apply("AP-05", "07_Knowledge/n.md")["message"].endswith("present")
+
+
+def test_ap46_revocar_una_preferencia_no_convierte_null_en_texto(vault):
+    """Revocar volvía a serializar el dict entero a mano: lo que no era texto,
+    lista ni dict salía con `str()`, y un campo nulo volvía como "None"."""
+    import vault_preferences
+
+    r = vault_preferences.vault_preferences_set(
+        "style", HOSTIL, "nunca: usar #tabs", agent="bot")
+    assert r["ok"], r
+    nota = vault / r["path"]
+    bloque, cuerpo = separar_frontmatter(nota.read_text(encoding="utf-8"))
+    nota.write_text("---\n" + bloque + "\nrevisado_por: \n---\n" + cuerpo, encoding="utf-8")
+    antes = yaml.safe_load(bloque)
+
+    r = vault_preferences.vault_preferences_revoke(r["path"], "a: b #c", agent="bot")
+    assert r["ok"], r
+    texto = nota.read_text(encoding="utf-8")
+    fm = yaml.safe_load(_bloque(texto))
+    assert fm["revisado_por"] is None
+    assert fm["title"] == HOSTIL and fm["statement"] == antes["statement"]
+    assert fm["revoked_reason"] == "a: b #c" and isinstance(fm["revoked_at"], str)
+    assert fm["createdAt"] == antes["createdAt"] and fm["preference_state"] == "revoked"
+    assert len(_claves(texto)) == len(set(_claves(texto)))

@@ -44,7 +44,7 @@ from vault_io import (
     tomar_lock,
     update_section_index,
 )
-from vault_lib import parse_frontmatter_with_body, slugify, utcnow
+from vault_lib import parse_frontmatter_with_body, separar_frontmatter, slugify, utcnow
 
 
 
@@ -419,21 +419,24 @@ def vault_preferences_revoke(path: str, reason: str,
                     "message": "Ya estaba revocada"}
 
         raw = note_path.read_text(encoding="utf-8")
-        fm, body = parse_frontmatter_with_body(raw)
-        fm["status"], fm["preference_state"] = "deprecated", STATUS_REVOKED
-        fm["revoked_reason"] = reason
-        fm["revoked_at"] = utcnow()
-        fm["revoked_by"] = agent
-        fm["updatedAt"] = utcnow()
+        bloque, body = separar_frontmatter(raw)
+        revoked_at = utcnow()
+        # AP-46: el dueño reescribe solo los campos que cambian. Antes se
+        # volvía a serializar el dict entero a mano, y lo que no era texto,
+        # lista ni dict salía con `str()`: un campo nulo volvía como la
+        # cadena "None". Los instantes van citados, como al crear la nota.
+        fm = (
+            Frontmatter.editar(bloque or "")
+            .set("status", "deprecated")
+            .set("preference_state", STATUS_REVOKED)
+            .set("revoked_reason", reason, texto=True)
+            .set("revoked_at", revoked_at, texto=True)
+            .set("revoked_by", agent, texto=True)
+            .set("updatedAt", revoked_at, texto=True)
+        )
 
-        lines = ["---"]
-        for key, value in fm.items():
-            lines.append(f"{key}: {json.dumps(value, ensure_ascii=False)}"
-                         if isinstance(value, (str, list, dict)) else f"{key}: {value}")
-        lines.append("---")
-
-        note = "\n".join(lines) + "\n\n" + body.strip() + (
-            f"\n\n> **Revocada** el {fm['revoked_at']} por `{agent}`: {reason}\n"
+        note = fm.render() + "\n\n" + body.strip() + (
+            f"\n\n> **Revocada** el {revoked_at} por `{agent}`: {reason}\n"
         )
         atomic_write_text(note_path, note)
     update_section_index("17_Preferences")
