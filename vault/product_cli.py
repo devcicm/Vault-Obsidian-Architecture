@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from .kernel.errores import construir_error
+from .kernel import proyectos as _proyectos
 from .kernel.adaptadores import NormasDelCatalogo
 from .ciclo_de_vida.producto import (
     inicializar_runtime,
@@ -174,6 +175,11 @@ _CICLO_DE_VIDA = {
         "Faltan las rutas de `missing`; vault_standard_upgrade --check las "
         "detecta y migra.",
     ),
+    "MCP_PROJECT_WITHOUT_ROOT": (
+        "MISSING_REQUIRED_ARG",
+        "`--project` se resuelve contra el registro del vault: pasa `--root "
+        "<vault>` o define VAULT_ROOT con una carpeta que exista.",
+    ),
     "STANDARD_INCOMPATIBLE": (
         "VERSION_NOT_FOUND",
         "El runtime es de otra versión del estándar: si es más nueva, actualiza "
@@ -302,25 +308,60 @@ def _servidor_mcp() -> Path | None:
     return None
 
 
-def cmd_mcp_path(_: argparse.Namespace) -> int:
+#: `--root` y `--project` de `mcp-path`, leídos antes del parse: la fábrica de
+#: `--project` resuelve durante el parse y `--root` puede venir detrás en el
+#: argv; el nombre crudo hace falta para `project_resolved_from`.
+_PREVIO: dict[str, str] = {}
+
+
+def _raiz_pedida(root: str | None) -> str:
+    return root or os.environ.get("VAULT_ROOT") or ""
+
+
+def _raiz_de_mcp_path() -> Path:
+    """Raíz contra la que se resuelve `mcp-path --project`, o fallo explícito.
+
+    Sin vault, la fábrica resolvería contra el CWD y diría `PROJECT_NOT_FOUND`
+    de un proyecto que quizá existe: el error tiene que nombrar lo que falta.
+    """
+    raiz = _raiz_pedida(_PREVIO.get("root"))
+    if not raiz or not Path(raiz).is_dir():
+        raise SystemExit(_error(
+            "MCP_PROJECT_WITHOUT_ROOT",
+            "--project necesita el vault (--root o VAULT_ROOT) para resolverse", 1))
+    return Path(raiz)
+
+
+def cmd_mcp_path(args: argparse.Namespace) -> int:
     """Ruta del servidor MCP y la entrada de configuración de un cliente.
 
     `VAULT_MCP_PYTHON` va fijada a este intérprete: el primer Python del PATH
     no tiene por qué ser el del venv donde se instaló el toolkit.
+
+    Con `--project` (AP-63, P5) la configuración ata la sesión a ese proyecto:
+    `VAULT_PROJECT` con el slug **ya resuelto aquí**, contra el registro del
+    vault, y `VAULT_PROJECT_LOCK=1`. El servidor no resuelve nombres: copia el
+    entorno a cada tool, y la fábrica de `--project` aplica el candado. El
+    `--project` de este comando lo resuelve la misma fábrica que el de las 43
+    tools (`_raiz_de_mcp_path`), así que llega aquí siendo ya el slug.
     """
     servidor = _servidor_mcp()
     if servidor is None:
         return _error("mcp_server_missing", "el servidor MCP no está en esta instalación", 1)
-    _emit({
-        "ok": True,
-        "server": str(servidor),
-        "python": sys.executable,
-        "config": {
-            "command": "node",
-            "args": [str(servidor)],
-            "env": {"VAULT_ROOT": "<ruta absoluta del vault>", "VAULT_MCP_PYTHON": sys.executable},
-        },
-    })
+    raiz = _raiz_pedida(args.root)
+    env: dict[str, str] = {
+        "VAULT_ROOT": str(Path(raiz).resolve()) if raiz else "<ruta absoluta del vault>",
+        "VAULT_MCP_PYTHON": sys.executable,
+    }
+    payload: dict[str, Any] = {"ok": True, "server": str(servidor), "python": sys.executable}
+    if args.project:
+        slug, pedido = args.project, _PREVIO.get("project") or args.project
+        env[_proyectos.ENTORNO_PROYECTO] = slug
+        env[_proyectos.ENTORNO_CANDADO] = "1"
+        payload["project"] = slug
+        payload["project_resolved_from"] = _proyectos.resuelto_desde(pedido, slug)
+    payload["config"] = {"command": "node", "args": [str(servidor)], "env": env}
+    _emit(payload)
     return 0
 
 
@@ -352,6 +393,8 @@ def build_parser() -> argparse.ArgumentParser:
     status.add_argument("runtime")
     status.set_defaults(func=cmd_status)
     mcp_path = commands.add_parser("mcp-path", help="Ruta del servidor MCP y su configuración de cliente")
+    mcp_path.add_argument("--root", help="Vault que servirá el MCP (por defecto, VAULT_ROOT)")
+    mcp_path.add_argument("--project", type=_proyectos.proyecto_registrado("vault", _raiz_de_mcp_path), help="Ata la sesión MCP a este proyecto (slug o alias registrado)")
     mcp_path.set_defaults(func=cmd_mcp_path)
     return parser
 
@@ -364,5 +407,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         reconfigure = getattr(stream, "reconfigure", None)
         if callable(reconfigure):
             reconfigure(encoding="utf-8")
+    previo = argparse.ArgumentParser(add_help=False)
+    previo.add_argument("--root")
+    _PREVIO["root"] = previo.parse_known_args(argv)[0].root or ""
+    # El nombre crudo, sin un segundo `add_argument("--project")`: ese solo
+    # existe con la fábrica (AP-63), y aquí no se resuelve nada.
+    crudo = list(sys.argv[1:] if argv is None else argv)
+    for i, arg in enumerate(crudo):
+        if arg == "--project" and i + 1 < len(crudo):
+            _PREVIO["project"] = crudo[i + 1]
+        elif arg.startswith("--project="):
+            _PREVIO["project"] = arg.split("=", 1)[1]
     args = build_parser().parse_args(argv)
     return int(args.func(args))

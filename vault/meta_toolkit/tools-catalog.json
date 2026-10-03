@@ -7660,6 +7660,16 @@
         "docs": "vault-obsidian-architecture.md §AP-63"
       }
     },
+    "PROJECT_LOCKED": {
+      "category": "governance",
+      "severity": "error",
+      "message": "La sesión está atada a otro proyecto (VAULT_PROJECT_LOCK=1).",
+      "recovery": {
+        "action": "fix_input",
+        "hint": "Usar el proyecto de la sesión (`session_project`), o abrir otra sesión con VAULT_PROJECT apuntando al proyecto pedido. Si el candado está puesto sin VAULT_PROJECT, fijarla: el candado no se abre solo.",
+        "docs": "vault-obsidian-architecture.md §AP-63"
+      }
+    },
     "PROJECT_NOT_FOUND": {
       "category": "not_found",
       "severity": "error",

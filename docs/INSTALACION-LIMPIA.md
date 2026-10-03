@@ -88,6 +88,22 @@ de proyecto) o en `~/.claude.json`. Regístralo por proyecto: un servidor
 global con un `VAULT_ROOT` fijo escribe en el mismo vault desde cualquier
 proyecto.
 
+### Atar la sesión a un proyecto
+
+Un vault guarda la memoria de varios proyectos. Para que el agente que trabaja
+en uno no escriba en la de otro:
+
+```bash
+vault mcp-path --root <ruta-del-vault> --project <slug o alias>
+```
+
+El nombre se resuelve **aquí**, contra el registro del vault (`01_Projects/`):
+uno que no existe sale con `PROJECT_NOT_FOUND` en vez de fundar un proyecto.
+La entrada que imprime lleva además `VAULT_PROJECT=<slug>` y
+`VAULT_PROJECT_LOCK=1`; con ellas, toda tool a la que se pida otro `--project`
+falla con `PROJECT_LOCKED` antes de escribir nada. El servidor no interpreta
+nombres: pasa el entorno a cada tool y el candado lo aplica Python.
+
 ### Comprobar el handshake antes de fiarte del cliente
 
 Un cliente MCP que no recibe respuesta a `initialize` suele mostrar solo «server

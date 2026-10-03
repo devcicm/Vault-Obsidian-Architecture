@@ -186,6 +186,22 @@ VARIABLES: Dict[str, Variable] = {
             "solo el de ese venv ve el toolkit, y `vault mcp-path` la fija a "
             "él. Solo la lee el `.mjs`.",
         ),
+        # AP-63, P5. Las dos van juntas: sin el candado, el proyecto de la
+        # sesión no restringe nada; con el candado y sin proyecto, se cierra.
+        Variable(
+            "VAULT_PROJECT", "texto", "", "kernel",
+            "Proyecto al que está atada la sesión (slug o alias registrado). "
+            "Solo restringe con `VAULT_PROJECT_LOCK=1`. `vault mcp-path "
+            "--project` la fija ya resuelta.",
+        ),
+        Variable(
+            "VAULT_PROJECT_LOCK", "bandera", False, "kernel",
+            "Con `1`, todo `--project` que no resuelva al de `VAULT_PROJECT` "
+            "se rechaza con `PROJECT_LOCKED` antes de que la tool haga nada. "
+            "Encendida sin `VAULT_PROJECT`, rechaza todos: el candado no se "
+            "abre por falta de configuración.",
+            _bandera,
+        ),
         Variable(
             "VAULT_MODEL_PROFILE", "texto", "", "consulta",
             "Perfil de modelo LLM activo. Lo propaga el servidor MCP al detectar "

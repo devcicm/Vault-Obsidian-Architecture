@@ -574,6 +574,16 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": "vault-obsidian-architecture.md §AP-63",
         },
     },
+    "PROJECT_LOCKED": {
+        "category": "governance",
+        "severity": "error",
+        "message": "La sesión está atada a otro proyecto (VAULT_PROJECT_LOCK=1).",
+        "recovery": {
+            "action": "fix_input",
+            "hint": "Usar el proyecto de la sesión (`session_project`), o abrir otra sesión con VAULT_PROJECT apuntando al proyecto pedido. Si el candado está puesto sin VAULT_PROJECT, fijarla: el candado no se abre solo.",
+            "docs": "vault-obsidian-architecture.md §AP-63",
+        },
+    },
     "VERSION_NOT_FOUND": {
         "category": "not_found",
         "severity": "error",
@@ -1868,6 +1878,7 @@ MAPA_DE_FALLOS: Dict[str, str] = {
     "SECRETO_EN_CONTENIDO": "SECRET_DETECTED",
     "PROYECTO_NO_REGISTRADO": "PROJECT_NOT_FOUND",
     "PROYECTO_AMBIGUO": "PROJECT_AMBIGUOUS",
+    "PROYECTO_FUERA_DE_SESION": "PROJECT_LOCKED",
 }
 
 

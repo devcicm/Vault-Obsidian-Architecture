@@ -81,6 +81,10 @@ CAUSAS: Dict[str, str] = {
     "PROYECTO_AMBIGUO":
         "el nombre lo reclaman dos o más proyectos registrados, como slug o "
         "como alias. Elegir uno en silencio sería inventar la identidad.",
+    "PROYECTO_FUERA_DE_SESION":
+        "la sesión está atada a un proyecto (`VAULT_PROJECT_LOCK=1`) y el "
+        "nombre pedido resuelve a otro, o el candado está puesto sin proyecto. "
+        "Un agente que trabaja en un repo no escribe en la memoria de otro.",
 }
 
 

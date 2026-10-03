@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import difflib
 import json
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Dict, Iterable, List, Mapping, Optional, Set, Tuple
@@ -323,6 +324,59 @@ def anotar_repo(
     return rel
 
 
+def resuelto_desde(nombre: str, slug: str) -> str:
+    """`project_resolved_from`: `slug` si el nombre ya era la clave, si no `alias`.
+
+    Campo estable del envelope (`field-compat-baseline.json`). Lo emiten
+    `vault_project --resolve` y `vault mcp-path --project`; el criterio vive
+    aquí para que no haya dos.
+    """
+    return "slug" if slugify_strict(nombre or "") == slug else "alias"
+
+
+#: AP-63, P5 — proyecto por sesión. Declaradas en `vault_entorno.VARIABLES`;
+#: se leen aquí directamente porque el núcleo no importa `scripts/`.
+ENTORNO_PROYECTO = "VAULT_PROJECT"
+ENTORNO_CANDADO = "VAULT_PROJECT_LOCK"
+
+
+def proyecto_de_sesion(registro: Registro,
+                       entorno: Optional[Mapping[str, str]] = None) -> Optional[str]:
+    """El slug al que está atada la sesión, o `None` si no hay candado.
+
+    Sin `VAULT_PROJECT_LOCK=1`, `VAULT_PROJECT` no restringe nada. Con el
+    candado, el proyecto se resuelve contra el registro como cualquier
+    `--project`: un alias vale y un nombre que no resuelve falla. Candado sin
+    proyecto falla también —cerrado por defecto—: la alternativa sería que una
+    variable olvidada abriese la sesión entera.
+    """
+    entorno = os.environ if entorno is None else entorno
+    if entorno.get(ENTORNO_CANDADO) != "1":
+        return None
+    nombre = (entorno.get(ENTORNO_PROYECTO) or "").strip()
+    if not nombre:
+        raise FalloDeDominio(
+            "PROYECTO_FUERA_DE_SESION",
+            f"{ENTORNO_CANDADO}=1 sin {ENTORNO_PROYECTO}: la sesión no tiene "
+            "proyecto y el candado no deja trabajar en ninguno.",
+            session_project=None,
+        )
+    return registro.resolver(nombre)
+
+
+def comprobar_sesion(registro: Registro, slug: str,
+                     entorno: Optional[Mapping[str, str]] = None) -> None:
+    """`FalloDeDominio` si la sesión está atada a un proyecto que no es `slug`."""
+    sesion = proyecto_de_sesion(registro, entorno)
+    if sesion is not None and slug != sesion:
+        raise FalloDeDominio(
+            "PROYECTO_FUERA_DE_SESION",
+            f"La sesión está atada a {sesion!r} y se pidió {slug!r}.",
+            session_project=sesion,
+            project=slug,
+        )
+
+
 def proyecto_registrado(
     tool: str,
     raiz: Callable[[], Path],
@@ -341,13 +395,21 @@ def proyecto_registrado(
     salir del propio argv (`--root` de los entry modules) o del entorno.
     `emitir` es el transporte: `vault_errors` pasa `emit_fallo`, que además
     deja traza; el código instalado usa el envelope sin I/O del núcleo.
+
+    Con `VAULT_PROJECT_LOCK=1` (P5), un nombre que resuelve a otro proyecto
+    que el de la sesión sale con `PROJECT_LOCKED`. Es el único punto por el
+    que pasan los `--project` de las 43 tools, así que el candado no depende
+    de que cada una se acuerde de mirarlo.
     """
 
     def _resolver(valor: str) -> str:
         if valor == "":
             return valor
         try:
-            return leer_registro(Path(raiz())).resolver(valor)
+            registro = leer_registro(Path(raiz()))
+            slug = registro.resolver(valor)
+            comprobar_sesion(registro, slug)
+            return slug
         except FalloDeDominio as fallo:
             print(json.dumps(emitir(tool, fallo), ensure_ascii=False))
             raise SystemExit(1)

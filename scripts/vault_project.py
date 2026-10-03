@@ -95,9 +95,8 @@ def resolver(nombre: str) -> Dict[str, Any]:
         slug = registro.resolver(nombre)
     except FalloDeDominio as fallo:
         return emit_fallo(TOOL, fallo)
-    origen = "slug" if slugify_strict(nombre) == slug else "alias"
     return {"ok": True, "tool": TOOL, "action": "resolve", "project": slug,
-            "project_resolved_from": origen}
+            "project_resolved_from": proyectos.resuelto_desde(nombre, slug)}
 
 
 def auditar(raiz: Optional[Path] = None) -> Dict[str, Any]:

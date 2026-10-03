@@ -756,13 +756,14 @@ python vault_project_overview.py --project mi-api \
 ### `vault_project.py`
 Registro de proyectos (AP-63). El nombre de un proyecto es identidad: resuelve a **un** slug o la tool falla con `PROJECT_NOT_FOUND` (con `sugerencias`) o `PROJECT_AMBIGUOUS` (con `candidatos`). La carpeta `01_Projects/<slug>/` registra el slug; la ficha opcional `01_Projects/<slug>/project.md` aporta `title`, `aliases` y `status`. No es `index.md`: ese nombre está reservado y lo regenera `vault_section_index`.
 
-La ruta local del repositorio **no va en ninguna nota**: es de cada máquina y vive en `00_System/.local/project-paths.json`, que lleva su propio `.gitignore`. Lo portable sí va a la ficha, bajo `repo:` —`remote`, `default_branch`, `synced_commit`, `synced_at`—: `--link` anota remoto y rama, `vault_drift_detect --mode snapshot` y `vault_code_sync` (con trazabilidad limpia) anotan el commit, y `--sync-status` cuenta los commits que el repo lleva por delante del vault (P4). `00_System/project-registry.json` es un derivado que regenera `--rebuild`. `--audit` es de solo lectura: lista las notas cuyo `project:` no resuelve (fantasmas) y las claves no canónicas (`proyecto:`, `PROJECT:`), sin contar la copia del manifiesto.
+La ruta local del repositorio **no va en ninguna nota**: es de cada máquina y vive en `00_System/.local/project-paths.json`, que lleva su propio `.gitignore`. Lo portable sí va a la ficha, bajo `repo:` —`remote`, `default_branch`, `synced_commit`, `synced_at`—: `--link` anota remoto y rama, `vault_drift_detect --mode snapshot` y `vault_code_sync` (con trazabilidad limpia) anotan el commit, y `--sync-status` cuenta los commits que el repo lleva por delante del vault (P4). **Proyecto por sesión (P5):** con `VAULT_PROJECT=<slug|alias>` y `VAULT_PROJECT_LOCK=1`, la fábrica `proyecto_registrado` —por la que pasa el `--project` de toda tool— rechaza con `PROJECT_LOCKED` cualquier otro proyecto antes de que la tool escriba; el candado sin `VAULT_PROJECT` rechaza todos. `vault mcp-path --project` emite esa configuración con el slug ya resuelto. `00_System/project-registry.json` es un derivado que regenera `--rebuild`. `--audit` es de solo lectura: lista las notas cuyo `project:` no resuelve (fantasmas) y las claves no canónicas (`proyecto:`, `PROJECT:`), sin contar la copia del manifiesto.
 
 ```bash
 python vault_project.py --add ans --title "ANS" --alias ans-api
 python vault_project.py --resolve "ANS API"          # → ans, project_resolved_from: alias
 python vault_project.py --link ans --path ../ans     # → 00_System/.local/ + repo: en la ficha
 python vault_project.py --sync-status ans            # → in_sync | behind (pending_commits) | never_synced
+vault mcp-path --root <vault> --project ans           # → env con VAULT_PROJECT=ans + VAULT_PROJECT_LOCK=1
 python vault_project.py --audit
 python vault_project.py --rebuild
 ```
