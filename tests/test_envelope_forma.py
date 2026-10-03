@@ -51,6 +51,15 @@ CASOS = [
     ("vault_ingest", ["--url", "http://example.com", "--section", "07_Knowledge"]),
     ("vault_ingest", ["--file", "no-existe.txt", "--section", "07_Knowledge"]),
     ("vault_ingest", ["--text", CUERPO_LARGO, "--section", "99_Index"]),
+    # Ampliado 2026-10-02 al resto de las tools de escritura del plan D5.
+    ("vault_delete", ["--path", "07_Knowledge/no-existe.md", "--reason", "r"]),
+    ("vault_delete", ["--path", "../fuera.md", "--reason", "r"]),
+    ("vault_append", ["--path", "07_Knowledge/no-existe.md", "--content", "x"]),
+    ("vault_append", ["--path", "../fuera.md", "--content", "x"]),
+    ("vault_move", ["--from", "07_Knowledge/no-existe.md", "--to", "07_Knowledge/b.md", "--json"]),
+    ("vault_move", ["--from", "../fuera.md", "--to", "07_Knowledge/b.md", "--json"]),
+    ("vault_undo", ["--restore", "07_Knowledge/no-existe.md"]),
+    ("vault_undo", ["--list", "../fuera.md"]),
 ]
 
 
