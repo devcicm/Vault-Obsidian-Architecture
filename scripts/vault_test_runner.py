@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from vault_errors import wrap_main
+from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 
 SCRIPTS_DIR = Path(__file__).parent
 PYTHON = sys.executable
@@ -237,9 +238,12 @@ def _run_contracts_in_vault(vault_dir: Path) -> Dict[str, Any]:
         encoding="utf-8"
     )
 
-    # Stub migration report for vault_migrate_rollback contract test
+    # Stub migration report for vault_migrate_rollback contract test.
+    # AP-46: aun siendo un literal fijo, el bloque lo escribe su dueño; un
+    # montaje a mano es la forma que `vault_criterios` no deja entrar.
     (vault_dir / "10_Migrated" / "_report-smoke.md").write_text(
-        "---\ntitle: smoke migration report\nid: smoke-report\n---\n\n"
+        Frontmatter().set("title", "smoke migration report")
+        .set("id", "smoke-report").render() + "\n\n"
         "## Archivos Distribuidos\n\n"
         "| Archivo | Destino | Relevancia |\n|---|---|---|\n"
         "| `note.md` | [[01_Projects/smoke/note.md]] | high |\n\n"

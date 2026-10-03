@@ -50,6 +50,7 @@ forma sintáctica de vigilarlo, y decirlo es más honesto que fingirla.
 import argparse
 import ast
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any, Dict, List
@@ -461,6 +462,106 @@ def medir_particiones(raiz: Path = None) -> List[Dict[str, str]]:
     return hallazgos
 
 
+#: Quién monta un bloque de frontmatter (2026-10-02). Medido al cerrar la tanda
+#: AP-46: antes de ella, dieciséis funciones lo montaban a mano —`["---",
+#: f"title: {…}", …, "---"]` o `"---\n" + … + "\n---\n"`—, cada una con su
+#: escapado, y tres de ellas perdían datos en silencio. Desde v40.34 lo escribe
+#: un dueño, también en modo edición (`Frontmatter.editar`).
+MONTAJE_CON_DUENO = {
+    "criterio": "montaje_de_frontmatter",
+    "senal": '"---" como pieza de ensamblado + línea `clave: …` en la misma función',
+    "dueño": "vault/kernel/frontmatter_escritura.py:Frontmatter",
+}
+
+#: Una clave de frontmatter empieza en minúscula (`title`, `createdAt`,
+#: `cia_integrity`). La mayúscula deja fuera la prosa de un informe en
+#: markdown —`Guard: todo grupo…`— que no es una clave de nadie.
+_LINEA_DE_CLAVE = re.compile(r"^[a-z_][\w-]*: ")
+
+
+def _es_delimitador(n: ast.AST) -> bool:
+    """`---` como pieza: constante suelta o con salto, o f-string que abre con él."""
+    if isinstance(n, ast.Constant) and isinstance(n.value, str):
+        return n.value in ("---", "---\n") or n.value.startswith("---\n")
+    if isinstance(n, ast.JoinedStr) and n.values:
+        primero = n.values[0]
+        return (isinstance(primero, ast.Constant) and isinstance(primero.value, str)
+                and primero.value.startswith("---"))
+    return False
+
+
+def _es_linea_de_clave(n: ast.AST) -> bool:
+    """Un literal con alguna línea `clave: …`.
+
+    Línea a línea y no solo al principio: en una plantilla que abre con el
+    delimitador, la clave va en la segunda línea del mismo trozo literal.
+    """
+    return (isinstance(n, ast.Constant) and isinstance(n.value, str)
+            and any(_LINEA_DE_CLAVE.match(l) for l in n.value.split("\n")))
+
+
+def _comparados(f: ast.AST) -> set:
+    """Literales que solo se comparan o se buscan: así lee un parser, no escribe."""
+    vistos = set()
+    for n in ast.walk(f):
+        if isinstance(n, ast.Compare):
+            vistos.update(id(c) for c in ast.walk(n))
+        elif (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+              and n.func.attr in ("startswith", "endswith", "index", "find",
+                                  "split", "count", "replace", "strip")):
+            for a in n.args:
+                vistos.update(id(c) for c in ast.walk(a))
+    return vistos
+
+
+def medir_montajes(raiz: Path = None) -> List[Dict[str, str]]:
+    """AP-46: funciones que montan un frontmatter a mano en vez de pedírselo al dueño.
+
+    La señal son **dos** piezas en la misma función: un `---` usado para
+    ensamblar —no comparado: `startswith("---")` es un lector— y una línea
+    `clave: …` construida. Una sola no basta: `"---"` es también la regla
+    horizontal de cualquier cuerpo en markdown, y `clave: valor` aparece en
+    mensajes y plantillas.
+
+    Alcance declarado: una función que reciba el delimitador de otra o lo
+    guarde en una constante con nombre no se ve, y tampoco una que añada la
+    línea con un salto delante (`"\nclave: …"`). Quedan fuera por diseño los
+    que reparan un bloque roto —`vault_frontmatter_heal`, la cura de AP-46 en
+    `vault_norms_engine`— y el serializador heredado de `vault_lib`, que
+    ninguno de los tres coincide hoy con la señal; si un día coinciden, se
+    decide entonces si son deuda. `_archived/` no se ejecuta.
+    """
+    raiz = raiz or REPO
+    dueño = MONTAJE_CON_DUENO["dueño"].split(":")[0]
+    hallazgos: List[Dict[str, str]] = []
+    for zona in _ZONAS_DE_DEFINICION:
+        for p in sorted((raiz / zona).rglob("*.py")):
+            if "__pycache__" in p.parts or "_archived" in p.parts:
+                continue
+            rel = p.relative_to(raiz).as_posix()
+            if rel == dueño:
+                continue
+            try:
+                arbol = ast.parse(p.read_text(encoding="utf-8"))
+            except (OSError, SyntaxError, UnicodeDecodeError):
+                continue  # `medir` ya lo reporta como `_no_parsea`
+            for f in ast.walk(arbol):
+                if not isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    continue
+                comparados = _comparados(f)
+                nodos = [n for n in ast.walk(f) if id(n) not in comparados]
+                if (any(_es_delimitador(n) for n in nodos)
+                        and any(_es_linea_de_clave(n) for n in nodos)):
+                    hallazgos.append({
+                        "modulo": rel,
+                        "criterio": MONTAJE_CON_DUENO["criterio"],
+                        "senal": f"{f.name}: {MONTAJE_CON_DUENO['senal']}",
+                        "dueño": MONTAJE_CON_DUENO["dueño"],
+                    })
+                    break  # la firma es por módulo
+    return hallazgos
+
+
 # ── La medida de las fronteras ───────────────────────────────────────────────
 
 REPO = Path(__file__).resolve().parent.parent
@@ -616,7 +717,7 @@ def _baseline() -> List[str]:
 
 def check() -> Dict[str, Any]:
     hallazgos = (medir() + medir_fronteras() + medir_definiciones()
-                 + medir_particiones())
+                 + medir_particiones() + medir_montajes())
     firmas = {_firma(h) for h in hallazgos}
     base = set(_baseline())
     nuevos = sorted(firmas - base)
@@ -658,7 +759,7 @@ def check() -> Dict[str, Any]:
 
 def freeze(admitir_nuevos: bool = False) -> Dict[str, Any]:
     hallazgos = (medir() + medir_fronteras() + medir_definiciones()
-                 + medir_particiones())
+                 + medir_particiones() + medir_montajes())
     firmas = sorted({_firma(h) for h in hallazgos})
     base = set(_baseline())
     nuevos = sorted(set(firmas) - base)
