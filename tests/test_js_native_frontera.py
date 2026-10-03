@@ -140,3 +140,20 @@ def test_el_comentario_del_mjs_sigue_registrando_por_que():
     fallo de las siete tools es la única memoria de por qué existe el conjunto."""
     texto = SERVIDOR.read_text(encoding="utf-8")
     assert re.search(r"AP-05 en el camino de ejecuci", texto)
+
+
+def test_un_esquema_obsoleto_en_el_json_rompe_la_puerta(tmp_path):
+    """AP-40 medido en v40.34: `vault_drift_detect` dejó de exigir `--path` y
+    el JSON seguía con `required: ["path", "project"]`. La puerta comparaba
+    nombres y descripciones y salía verde; el servidor, que valida contra el
+    esquema, habría rechazado la llamada que la CLI ya acepta."""
+    import json
+
+    canonico = json.loads((Path(MC.__file__).resolve().parent.parent / "mcp" / "nodejs"
+                           / "tools-catalog.json").read_text(encoding="utf-8"))
+    canonico["tools"]["vault_drift_detect"]["inputSchema"]["required"] = ["path", "project"]
+    viejo = tmp_path / "tools-catalog.json"
+    viejo.write_text(json.dumps(canonico), encoding="utf-8")
+    r = MC.check_sync(str(viejo))
+    assert r["ok"] is False
+    assert "vault_drift_detect: inputSchema differs (regenerar con --sync)" in r["diffs"]

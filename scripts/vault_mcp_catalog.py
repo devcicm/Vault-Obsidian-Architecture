@@ -5048,6 +5048,14 @@ def check_sync(json_path: Optional[str] = None) -> Dict[str, Any]:
             result["ok"] = False
             result["diffs"].append(f"{name}: group differs (py={py_group}, js={js_group})")
 
+        # AP-40 — el esquema es lo que el servidor valida (S2) antes de
+        # despachar. Hasta v40.34 esta puerta comparaba nombres, grupo y
+        # descripción, y un `required: ["path"]` que la CLI ya no exige
+        # pasaba en verde: el servidor habría rechazado la llamada válida.
+        if existing["tools"][name].get("inputSchema") != _convert_to_json_schema(TOOLS_CATALOG[name]):
+            result["ok"] = False
+            result["diffs"].append(f"{name}: inputSchema differs (regenerar con --sync)")
+
         py_guard_count = len(TOOLS_CATALOG[name].get("guards", []))
         js_guard_count = len(existing["tools"][name].get("guards", []))
         if py_guard_count != js_guard_count:
