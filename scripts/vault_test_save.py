@@ -54,7 +54,7 @@ from typing import Any, Dict, List, Optional
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
-from vault.kernel import construir  # noqa: E402
+from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
@@ -138,6 +138,7 @@ def vault_test_save(
     status: str = "not_run",
     tags: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
+    es_del = _proyectos.pertenencia_en(_raiz(), project)
     if test_type not in TEST_TYPES:
         return emit_error("vault_test_save", "INVALID_VALUE", f"test_type '{test_type}' not valid. Use: {TEST_TYPES}")
 
@@ -158,7 +159,7 @@ def vault_test_save(
 
         # Count existing tests for this project to get sequential ID
 
-        project_tests = [t for t in index["tests"] if t.get("project") == project]
+        project_tests = [t for t in index["tests"] if es_del(t.get("project"))]
 
         test_number = len(project_tests) + 1
 

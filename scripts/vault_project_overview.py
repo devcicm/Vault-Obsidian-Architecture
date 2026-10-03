@@ -30,7 +30,7 @@ from vault_io import atomic_write_text, safe_wikilink, write_report
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
-from vault.kernel import construir  # noqa: E402
+from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 
 
@@ -70,14 +70,16 @@ def get_notes_by_project(project: str) -> List[Dict[str, Any]]:
     except (FileNotFoundError, json.JSONDecodeError):
         return []
 
-    project_lower = project.lower()
+    # Etiqueta igual al proyecto, no que lo contenga: `api` se quedaba con
+    # las notas de `mi-api` (AP-63).
+    es_del = _proyectos.pertenencia_en(_raiz(), project)
     notes = []
 
     for note in index.get("notes", []):
         tags = note.get("tags", [])
         if isinstance(tags, str):
             tags = [tags]
-        project_tag = next((t for t in tags if project_lower in t.lower()), None)
+        project_tag = next((t for t in tags if es_del(t)), None)
         if project_tag:
             note["_projectTag"] = project_tag
             notes.append(note)
@@ -133,6 +135,7 @@ def collect_patterns(project: str) -> List[Dict[str, str]]:
         return []
 
     patterns = []
+    es_del = _proyectos.pertenencia_en(_raiz(), project)
     for pattern_type in ["design", "architecture", "code", "integration"]:
         type_dir = patterns_dir / pattern_type
         if not type_dir.exists():
@@ -145,7 +148,7 @@ def collect_patterns(project: str) -> List[Dict[str, str]]:
                 continue
 
             meta = parse_frontmatter(content)
-            if meta.get("project", "").lower() == project.lower():
+            if es_del(meta.get("project")):
                 status = meta.get("status", "")
                 if status != "deprecado":
                     patterns.append(

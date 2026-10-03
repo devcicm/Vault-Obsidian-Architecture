@@ -48,7 +48,7 @@ from vault_io import atomic_write_text, write_report
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
-from vault.kernel import construir  # noqa: E402
+from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 
 
@@ -121,9 +121,10 @@ def generate_infra_map(
     project: Optional[str] = None,
     location: Optional[str] = None,
 ) -> str:
+    es_del = _proyectos.pertenencia_en(_raiz(), project)
     if project:
         components = [
-            c for c in components if c.get("project", "").lower() == project.lower()
+            c for c in components if es_del(c.get("project"))
         ]
 
     if location:
@@ -214,6 +215,7 @@ def generate_infra_map(
 def vault_infra_map(
     project: Optional[str] = None, location: Optional[str] = None
 ) -> Dict[str, Any]:
+    es_del = _proyectos.pertenencia_en(_raiz(), project)
     if location and location not in LOCATIONS:
         return emit_error("vault_infra_map", "INVALID_VALUE", f"Ubicación inválida: {location}. Válidas: {LOCATIONS}")
 
@@ -231,7 +233,7 @@ def vault_infra_map(
 
     if project:
         filtered = [
-            c for c in filtered if c.get("project", "").lower() == project.lower()
+            c for c in filtered if es_del(c.get("project"))
         ]
 
     if location:

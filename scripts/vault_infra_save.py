@@ -50,7 +50,7 @@ from typing import Any, Dict, List, Optional
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
-from vault.kernel import construir  # noqa: E402
+from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
@@ -167,9 +167,10 @@ def generate_infra_map(
     project: Optional[str] = None,
     location: Optional[str] = None,
 ) -> str:
+    es_del = _proyectos.pertenencia_en(_raiz(), project)
     if project:
         components = [
-            c for c in components if c.get("project", "").lower() == project.lower()
+            c for c in components if es_del(c.get("project"))
         ]
 
     if location:

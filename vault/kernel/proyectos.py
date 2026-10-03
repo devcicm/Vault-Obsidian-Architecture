@@ -33,7 +33,7 @@ from __future__ import annotations
 import difflib
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Iterable, List, Mapping, Optional, Set, Tuple
+from typing import Callable, Dict, Iterable, List, Mapping, Optional, Set, Tuple
 
 from .fallos import FalloDeDominio
 from .frontmatter_parsing import parse_frontmatter_robust
@@ -208,3 +208,41 @@ def fantasmas(registro: Registro, valores: Mapping[str, Iterable[str]]) -> List[
             "notes": sorted(notas),
         })
     return hallazgos
+
+
+def pertenencia(registro: Registro, nombre: str) -> Callable[[object], bool]:
+    """Predicado único «este valor es del proyecto ``nombre``» (AP-63, P3).
+
+    Cada lector decidía a su manera si una nota, una entrada de índice o una
+    etiqueta eran de un proyecto: `==` exacto en unos, `.lower() ==` en otros
+    y **subcadena** en `vault_change_log`, `vault_timeline` y
+    `vault_project_overview`, donde `--project api` contaba como suyo todo lo
+    de `mi-api`. Tres criterios para una sola identidad es AP-57.
+
+    El valor guardado se compara por su clave normalizada contra las claves
+    del proyecto: su slug y los alias que **solo** él reclama. Así una nota
+    escrita antes del registro con `project: Mi API` sigue siendo de `mi-api`,
+    y un alias ambiguo no se atribuye a nadie. Si ``nombre`` no resuelve —una
+    llamada directa a la función, sin la CLI que ya lo habría rechazado— se
+    compara solo por su propia clave: filtrar no es el sitio donde fallar.
+    """
+    try:
+        slug = registro.resolver(nombre)
+    except FalloDeDominio:
+        propias = {slugify_strict(nombre or "")} - {""}
+    else:
+        propias = {
+            clave for clave, slugs in registro.claves().items() if slugs == {slug}
+        } | {slugify_strict(slug)}
+
+    def es_del_proyecto(valor: object) -> bool:
+        if valor is None or isinstance(valor, (dict, list, tuple, set)):
+            return False
+        return slugify_strict(str(valor)) in propias
+
+    return es_del_proyecto
+
+
+def pertenencia_en(raiz: Path, nombre: str) -> Callable[[object], bool]:
+    """`pertenencia` leyendo el registro de ``raiz``: lo que llama un lector."""
+    return pertenencia(leer_registro(raiz), nombre)

@@ -56,7 +56,7 @@ from typing import Any, Dict, List, Optional
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
-from vault.kernel import construir  # noqa: E402
+from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
@@ -137,6 +137,7 @@ def vault_requirement_save(
     related_code: Optional[List[str]] = None,
     tags: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
+    es_del = _proyectos.pertenencia_en(_raiz(), project)
     if req_type not in REQ_TYPES:
         return emit_error("vault_requirement_save", "INVALID_VALUE", f"req_type '{req_type}' not valid. Use: {REQ_TYPES}")
 
@@ -160,7 +161,7 @@ def vault_requirement_save(
 
         # Count existing requirements for this project to get sequential ID
 
-        project_reqs = [r for r in index["requirements"] if r.get("project") == project]
+        project_reqs = [r for r in index["requirements"] if es_del(r.get("project"))]
 
         req_number = len(project_reqs) + 1
 

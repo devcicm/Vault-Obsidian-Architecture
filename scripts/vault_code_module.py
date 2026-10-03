@@ -36,7 +36,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
 from vault.grafo.enlace_codigo import link_vault  # noqa: E402
-from vault.kernel import construir  # noqa: E402
+from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 
 
@@ -166,6 +166,7 @@ def vault_code_module(
     quality: Optional[List[Dict[str, Any]]] = None,
     tag_source: bool = False,
 ) -> Dict[str, Any]:
+    es_del = _proyectos.pertenencia_en(_raiz(), project)
     safe_project = slugify(project)
     fslug = file_slug(file_path)
 
@@ -203,7 +204,7 @@ def vault_code_module(
     for existing_mod in index.get("modules", []):
         if (
             existing_mod.get("filePath") == file_path
-            and existing_mod.get("project") == project
+            and es_del(existing_mod.get("project"))
         ):
             canonical_rel = existing_mod.get("relPath", "")
             canonical_path = _raiz() / canonical_rel if canonical_rel else None

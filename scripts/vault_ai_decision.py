@@ -72,7 +72,7 @@ IMPACT_LEVELS = list(reversed(_opciones("severidad")))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
-from vault.kernel import construir  # noqa: E402
+from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 
 
@@ -148,6 +148,7 @@ def vault_ai_decision(
     related_code: Optional[List[str]] = None,
     tags: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
+    es_del = _proyectos.pertenencia_en(_raiz(), project)
     if decision_type not in DECISION_TYPES:
         return emit_error("vault_ai_decision", "INVALID_VALUE", f"decision_type '{decision_type}' not valid. Use: {DECISION_TYPES}")
 
@@ -168,7 +169,7 @@ def vault_ai_decision(
 
         # Count existing decisions for this project to get sequential ID
 
-        project_decisions = [d for d in index["decisions"] if d.get("project") == project]
+        project_decisions = [d for d in index["decisions"] if es_del(d.get("project"))]
 
         decision_number = len(project_decisions) + 1
 

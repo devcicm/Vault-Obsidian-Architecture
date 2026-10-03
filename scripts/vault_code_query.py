@@ -54,7 +54,7 @@ from typing import Any, Dict, List, Optional
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
-from vault.kernel import construir  # noqa: E402
+from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -190,7 +190,7 @@ def find_module(index: Dict[str, Any], project: str, file_query: str) -> Optiona
 
     """Find a module by partial filePath match."""
 
-    project_lower = project.lower()
+    es_del = _proyectos.pertenencia_en(_raiz(), project)
 
     query_lower = file_query.lower()
 
@@ -198,7 +198,7 @@ def find_module(index: Dict[str, Any], project: str, file_query: str) -> Optiona
 
         m for m in index.get("modules", [])
 
-        if m.get("project", "").lower() == project_lower
+        if es_del(m.get("project"))
 
         and query_lower in m.get("filePath", "").lower()
 
@@ -356,7 +356,7 @@ def cmd_file(index: Dict[str, Any], project: str, file_query: str, deps: bool) -
 
 def cmd_method(index: Dict[str, Any], project: str, method_query: str) -> Dict[str, Any]:
 
-    project_lower = project.lower()
+    es_del = _proyectos.pertenencia_en(_raiz(), project)
 
     query_lower = method_query.lower()
 
@@ -366,7 +366,7 @@ def cmd_method(index: Dict[str, Any], project: str, method_query: str) -> Dict[s
 
     for module in index.get("modules", []):
 
-        if module.get("project", "").lower() != project_lower:
+        if not es_del(module.get("project")):
 
             continue
 
@@ -404,7 +404,7 @@ def cmd_method(index: Dict[str, Any], project: str, method_query: str) -> Dict[s
 
 def cmd_class_search(index: Dict[str, Any], project: str, class_query: str) -> Dict[str, Any]:
 
-    project_lower = project.lower()
+    es_del = _proyectos.pertenencia_en(_raiz(), project)
 
     query_lower = class_query.lower()
 
@@ -414,7 +414,7 @@ def cmd_class_search(index: Dict[str, Any], project: str, class_query: str) -> D
 
     for module in index.get("modules", []):
 
-        if module.get("project", "").lower() != project_lower:
+        if not es_del(module.get("project")):
 
             continue
 
@@ -452,7 +452,7 @@ def cmd_class_search(index: Dict[str, Any], project: str, class_query: str) -> D
 
 def cmd_list(index: Dict[str, Any], project: str) -> Dict[str, Any]:
 
-    project_lower = project.lower()
+    es_del = _proyectos.pertenencia_en(_raiz(), project)
 
     modules = [
 
@@ -480,7 +480,7 @@ def cmd_list(index: Dict[str, Any], project: str) -> Dict[str, Any]:
 
         for m in index.get("modules", [])
 
-        if m.get("project", "").lower() == project_lower
+        if es_del(m.get("project"))
 
     ]
 

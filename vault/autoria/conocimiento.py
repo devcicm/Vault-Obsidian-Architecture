@@ -27,6 +27,7 @@ from ..kernel.frontmatter_parsing import (
     parse_frontmatter_with_body,
 )
 from ..kernel.normalizacion import clave_de_equivalencia, slugify_strict
+from ..kernel.proyectos import pertenencia_en
 from ..kernel.indices_structural import es_nombre_reservado
 
 CATEGORIES = (
@@ -271,10 +272,12 @@ def guardar_conocimiento(
 
 
 def _score(metadata: Mapping[str, Any], body: str, query: str,
-           category: Optional[str], project: Optional[str]) -> int:
+           category: Optional[str], es_del: Optional[Callable[[object], bool]]) -> int:
     if category and str(metadata.get("category", "")).lower() != category.lower():
         return 0
-    if project and str(metadata.get("project", "")).lower() != project.lower():
+    # El predicado único de AP-63: un `project: Mi API` escrito antes del
+    # registro sigue siendo de `mi-api`.
+    if es_del and not es_del(metadata.get("project")):
         return 0
     query = query.lower()
     title = str(metadata.get("title", "")).lower()
@@ -309,6 +312,8 @@ def recuperar_conocimiento(
     # AP-57: el dueño del criterio "esto es un índice" es
     from ..kernel.indices_structural import RESERVED_INDEX_NAMES
 
+    es_del = pertenencia_en(runtime, project) if project else None
+
     for path in directory.rglob("*.md"):
         if path.name.lower() in RESERVED_INDEX_NAMES:
             continue
@@ -323,7 +328,7 @@ def recuperar_conocimiento(
             unreadable.append({"path": path.relative_to(runtime).as_posix(), "reason": error_msg})
             continue
 
-        score = _score(fm, body, query, category, project)
+        score = _score(fm, body, query, category, es_del)
         if score:
             matches.append((score, path, fm, body))
 

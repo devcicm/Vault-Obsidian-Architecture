@@ -69,7 +69,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
-from vault.kernel import construir  # noqa: E402
+from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -277,7 +277,13 @@ def vault_change_log_query(
         entries = [e for e in entries if e.get("action") == action_filter.lower()]
 
     if project:
-        entries = [e for e in entries if project.lower() in e.get("path", "").lower()]
+        # Por segmento de ruta, no por subcadena: `ans` contaba como suyo todo
+        # `transferencias.md`, y `api` todo lo de `mi-api` (AP-63).
+        es_del = _proyectos.pertenencia_en(_raiz(), project)
+        entries = [
+            e for e in entries
+            if any(es_del(seg) for seg in str(e.get("path", "")).replace("\\", "/").split("/"))
+        ]
 
     entries_sorted = sorted(entries, key=lambda e: e.get("timestamp", ""), reverse=True)
 

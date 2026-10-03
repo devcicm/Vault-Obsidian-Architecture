@@ -35,7 +35,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
 from vault.grafo.enlace_codigo import link_vault  # noqa: E402
-from vault.kernel import construir  # noqa: E402
+from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -159,6 +159,7 @@ def vault_code_sync(
         "dry_run":        bool,
       }
     """
+    es_del = _proyectos.pertenencia_en(_raiz(), project)
     complete: List[Dict] = []
     missing_tag: List[Dict] = []
     missing_file: List[Dict] = []
@@ -232,7 +233,7 @@ def vault_code_sync(
             if _code_index().exists():
                 index = json.loads(_code_index().read_text(encoding="utf-8"))
                 for mod in index.get("modules", []):
-                    if project and mod.get("project") != project:
+                    if project and not es_del(mod.get("project")):
                         continue
                     fp = Path(mod.get("filePath", ""))
                     if fp.is_absolute() and fp.parent.exists():

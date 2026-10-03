@@ -41,7 +41,7 @@ from typing import Any, Dict, List, Optional
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
-from vault.kernel import construir  # noqa: E402
+from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 
 # El vocabulario se declara una vez y se consume, no se copia. Ver
 # `vault_vocabulario.py` para el registro y su contexto dueno.
@@ -76,6 +76,7 @@ def vault_pattern_list(
 
 ) -> Dict[str, Any]:
 
+    es_del = _proyectos.pertenencia_en(_raiz(), project)
     try:
 
         with open(_index_file(), "r", encoding="utf-8") as f:
@@ -92,7 +93,7 @@ def vault_pattern_list(
 
     if project:
 
-        patterns = [p for p in patterns if p.get("project", "").lower() == project.lower()]
+        patterns = [p for p in patterns if es_del(p.get("project"))]
 
     if pattern_type:
 

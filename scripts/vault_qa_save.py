@@ -45,7 +45,7 @@ from vault_norms_catalog import status_frontmatter_lines
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
-from vault.kernel import construir  # noqa: E402
+from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 QA_TYPES = ["test-plan", "qa-metrics", "qa-report", "qa-strategy", "coverage-report"]
@@ -101,6 +101,7 @@ def vault_qa_save(
     status: str = "draft",
     tags: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
+    es_del = _proyectos.pertenencia_en(_raiz(), project)
     if qa_type not in QA_TYPES:
         return emit_error(
             "vault_qa_save",
@@ -120,7 +121,7 @@ def vault_qa_save(
     now = utcnow()
 
     with indice_compartido(_index_file(), {"qa": []}) as index:
-        project_docs = [d for d in index["qa"] if d.get("project") == project]
+        project_docs = [d for d in index["qa"] if es_del(d.get("project"))]
         doc_number = len(project_docs) + 1
         doc_id = f"QA-{doc_number:03d}"
         note_id = str(uuid.uuid4())

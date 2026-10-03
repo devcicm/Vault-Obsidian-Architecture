@@ -35,7 +35,6 @@ import re
 import sys
 
 from vault_errors import wrap_main, proyecto_registrado
-from vault_lib import slugify
 
 from datetime import datetime, timedelta, timezone
 
@@ -79,7 +78,7 @@ RUNBOOK_PATHS = ["08_Runbooks"]
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
-from vault.kernel import construir  # noqa: E402
+from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -195,6 +194,8 @@ def search_changelog(
 ) -> List[Dict[str, Any]]:
     events = []
 
+    es_del = _proyectos.pertenencia_en(_raiz(), project)
+
     for base_path in CHANGELOG_PATHS:
         project_path = _raiz() / base_path
 
@@ -205,7 +206,7 @@ def search_changelog(
             if not project_folder.is_dir():
                 continue
 
-            if project and slugify(project_folder.name) != slugify(project):
+            if project and not es_del(project_folder.name):
                 continue
 
             changelog_path = project_folder / "changelog.md"
@@ -274,7 +275,7 @@ def search_notes(
 
     events = []
 
-    project_lower = project.lower() if project else ""
+    es_del = _proyectos.pertenencia_en(_raiz(), project) if project else None
 
     for note in index.get("notes", []):
         path = note.get("path", "")
@@ -310,13 +311,14 @@ def search_notes(
         else:
             continue
 
-        if project_lower:
+        if es_del:
             tags = note.get("tags", [])
 
             if isinstance(tags, str):
                 tags = [tags]
 
-            if not any(project_lower in str(t).lower() for t in tags):
+            # Etiqueta igual al proyecto, no que lo contenga (AP-63).
+            if not (es_del(note.get("project")) or any(es_del(t) for t in tags)):
                 continue
 
         title = note.get("title", "")

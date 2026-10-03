@@ -221,7 +221,7 @@ DOC_SUGGESTIONS = {
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
-from vault.kernel import construir  # noqa: E402
+from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -454,6 +454,7 @@ def _hash_changed_since(
 
 
 def _load_snapshot(project: str) -> Optional[Dict[str, Any]]:
+    es_del = _proyectos.pertenencia_en(_raiz(), project)
     try:
         with open(_snapshot_file(), "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -465,7 +466,7 @@ def _load_snapshot(project: str) -> Optional[Dict[str, Any]]:
 
         # Legacy: single snapshot
 
-        if data.get("project") == project:
+        if es_del(data.get("project")):
             return data
 
         return None

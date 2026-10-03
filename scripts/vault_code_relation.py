@@ -46,7 +46,7 @@ from vault_io import (
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
-from vault.kernel import construir  # noqa: E402
+from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 
 
@@ -123,20 +123,22 @@ def save_index(data: Dict[str, Any]) -> None:
 
 
 def get_module_nodes(index: Dict[str, Any], project: str) -> List[Dict]:
+    es_del = _proyectos.pertenencia_en(_raiz(), project)
     return [
         m
         for m in index.get("modules", [])
-        if m.get("project", "").lower() == project.lower()
+        if es_del(m.get("project"))
     ]
 
 
 def generate_code_map(project: str, index: Dict[str, Any]) -> str:
+    es_del = _proyectos.pertenencia_en(_raiz(), project)
     modules = get_module_nodes(index, project)
 
     relations = [
         r
         for r in index.get("relations", [])
-        if r.get("project", "").lower() == project.lower()
+        if es_del(r.get("project"))
     ]
 
     if not modules:
@@ -233,6 +235,7 @@ def vault_code_relation(
     cardinality: Optional[str] = None,
     label: Optional[str] = None,
 ) -> Dict[str, Any]:
+    es_del = _proyectos.pertenencia_en(_raiz(), project)
     relation_type = relation_type.lower()
 
     if relation_type not in RELATION_TYPES:
@@ -276,7 +279,7 @@ def vault_code_relation(
     modules = get_module_nodes(index, project)
 
     relations = [
-        r for r in index["relations"] if r.get("project", "").lower() == project.lower()
+        r for r in index["relations"] if es_del(r.get("project"))
     ]
 
     mermaid_content = generate_code_map(project, index)

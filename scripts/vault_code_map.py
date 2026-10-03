@@ -37,7 +37,7 @@ from vault_io import atomic_write_text, write_report
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
-from vault.kernel import construir  # noqa: E402
+from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 
 
@@ -77,16 +77,17 @@ def load_index() -> Dict[str, Any]:
 
 
 def generate_code_map(project: str, index: Dict[str, Any]) -> str:
+    es_del = _proyectos.pertenencia_en(_raiz(), project)
     modules = [
         m
         for m in index.get("modules", [])
-        if m.get("project", "").lower() == project.lower()
+        if es_del(m.get("project"))
     ]
 
     relations = [
         r
         for r in index.get("relations", [])
-        if r.get("project", "").lower() == project.lower()
+        if es_del(r.get("project"))
     ]
 
     if not modules:
@@ -144,6 +145,7 @@ def generate_code_map(project: str, index: Dict[str, Any]) -> str:
 
 
 def vault_code_map(project: str) -> Dict[str, Any]:
+    es_del = _proyectos.pertenencia_en(_raiz(), project)
     index = load_index()
 
     safe_project = slugify(project)
@@ -180,13 +182,13 @@ def vault_code_map(project: str) -> Dict[str, Any]:
     modules = [
         m
         for m in index.get("modules", [])
-        if m.get("project", "").lower() == project.lower()
+        if es_del(m.get("project"))
     ]
 
     relations = [
         r
         for r in index.get("relations", [])
-        if r.get("project", "").lower() == project.lower()
+        if es_del(r.get("project"))
     ]
 
     return {

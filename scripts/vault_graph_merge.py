@@ -42,7 +42,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.grafo.aristas import consolidar_aristas  # noqa: E402
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
-from vault.kernel import construir  # noqa: E402
+from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 from vault.kernel.enumeracion import notas_en_disco  # noqa: E402
 
 
@@ -670,6 +670,7 @@ def vault_graph_merge(
     Returns:
         Dict with nodes, edges, stats, diagnostics, and metadata.
     """
+    es_del = _proyectos.pertenencia_en(_raiz(), project)
     ontology, ontology_source = _load_ontology()
 
     nodes, wiki_edges, broken_links, identidades = _build_wiki_link_graph()
@@ -687,7 +688,7 @@ def vault_graph_merge(
     if project:
         all_edges = [
             e for e in all_edges
-            if e.get("project", "").lower() == project.lower() or e.get("source") == "wikilinks"
+            if es_del(e.get("project")) or e.get("source") == "wikilinks"
         ]
 
     if predicate_filter:
