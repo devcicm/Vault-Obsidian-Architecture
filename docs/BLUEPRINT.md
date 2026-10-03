@@ -52,7 +52,7 @@ regenera.*
 
 | Contexto | Puertos | Módulos | Prohíbe |
 |---|---|---|---|
-| **Kernel** (`kernel`) | 4 | 23 | depender de cualquier contexto de dominio |
+| **Kernel** (`kernel`) | 4 | 24 | depender de cualquier contexto de dominio |
 | **Autoría** (`autoria`) | 7 | 43 | — |
 | **Grafo** (`grafo`) | 4 | 15 | — |
 | **Gobernanza** (`gobernanza`) | 21 | 13 | — |

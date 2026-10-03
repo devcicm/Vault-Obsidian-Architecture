@@ -177,6 +177,19 @@ def test_el_escalon_es_la_mayor_caida_relativa_y_no_la_caida_a_cero():
     assert K.escalon([]) == (None, None)
 
 
+
+def test_ap59_el_escalon_no_colapsa_en_la_caida_de_dos_a_uno():
+    """La distribución real de fan-in con un módulo legítimo en 37: el hueco
+    72 ‖ 27 se parte en dos caídas menores que 2/1, y sin ignorar los unos el
+    umbral caía de 72 a 2 — doce falsos `nucleo_no_declarado` de golpe. Entre
+    enteros consecutivos no cabe ningún valor: esa caída no es un hueco."""
+    fan_in = [128, 95, 72, 37, 27, 20, 17, 16, 14, 11, 10, 7, 5, 4, 3, 2, 1, 1, 0]
+    umbral, _ = K.escalon(fan_in)
+    assert umbral == 72
+    # Sin hueco no hay escalón; con hueco, el suelo de la escala vale.
+    assert K.escalon([3, 2, 1]) == (None, None)
+    assert K.escalon([12, 1]) == (12, 12.0)
+
 def test_el_umbral_publicado_coincide_con_el_derivado():
     """Publicar uno y aplicar otro dejaría el envelope decorativo (AP-47)."""
     r = K.check()
