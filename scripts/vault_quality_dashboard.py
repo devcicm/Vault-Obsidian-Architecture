@@ -32,6 +32,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from vault.gobernanza.repositorio import RepositorioGobernanza
 from vault.kernel import construir
+from vault.kernel.frontmatter_escritura import Frontmatter
 
 
 def _raiz() -> Path:
@@ -193,16 +194,18 @@ def _build_dashboard() -> str:
         sections.append("\n## Vocabulario del Vault\n\n_Sin registry de tags._")
 
     # ── Build final markdown ──────────────────────────────────────────────────
+    # AP-46: el bloque lo escribe su dueño; aquí solo se declaran los campos.
     frontmatter = (
-        "---\n"
-        "title: Quality Dashboard\n"
-        "id: quality-dashboard\n"
-        f"createdAt: {now}\n"
-        f"updatedAt: {now}\n"
-        'tags: ["quality", "dashboard", "qa"]\n'
-        'type: observability\n'
-        "norm_refs: [\"ISO 9001:2015 §9.1\"]\n"
-        "---\n"
+        Frontmatter()
+        .set("title", "Quality Dashboard")
+        .set("id", "quality-dashboard")
+        .set("createdAt", now)
+        .set("updatedAt", now)
+        .set("tags", ["quality", "dashboard", "qa"])
+        .set("type", "observability")
+        .set("norm_refs", ["ISO 9001:2015 §9.1"])
+        .render()
+        + "\n"
     )
 
     body = "# Quality Dashboard — Resumen Operacional\n\n"

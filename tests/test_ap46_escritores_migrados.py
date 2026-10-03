@@ -34,6 +34,7 @@ MIGRADOS = {
     "vault_code_relation": "save_code_map",
     "vault_project_status": "vault_project_status",
     "vault_init": "_create_scaffold_note",
+    "vault_quality_dashboard": "_build_dashboard",
 }
 
 
@@ -189,3 +190,15 @@ def test_ap46_cumplirla_no_estrena_cruces_hacia_autoria():
     cruces = [c for c in vault_arch.cruces()
               if c["from"] in MIGRADOS and c["to"] == "vault/autoria"]
     assert cruces == []
+
+
+def test_ap46_el_dashboard_nace_con_un_frontmatter_que_se_lee(vault):
+    import json
+
+    import vault_quality_dashboard as qd
+
+    qd._quality_index().write_text(json.dumps({"overall_dq_score": 0.5}), encoding="utf-8")
+    r = qd.vault_quality_dashboard()
+    fm = _frontmatter(vault / r["path"])
+    assert fm["id"] == "quality-dashboard" and fm["tags"] == ["quality", "dashboard", "qa"]
+    assert fm["norm_refs"] == ["ISO 9001:2015 §9.1"] and fm["type"] == "observability"
