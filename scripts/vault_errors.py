@@ -44,7 +44,7 @@ from vault_raiz import get_vault_root, vault_root_origin
 from typing import Any, Callable, Dict, List, Optional
 
 from vault_errors_catalog import (
-    ERROR_CATALOG, completar_envelope, construir_error, get_error, problemas_de_forma,
+    ERROR_CATALOG, completar_envelope, construir_error, get_error, mensaje_de, problemas_de_forma,
 )
 from vault_errors_trace import log_trace, log_token_usage
 from vault.autoria.voz import speak as _speak_estable

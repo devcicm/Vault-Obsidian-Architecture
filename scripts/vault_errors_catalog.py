@@ -7,10 +7,10 @@ preservar los consumidores históricos.
 """
 
 from vault.kernel.errores import (
-    ERROR_CATALOG, completar_envelope, construir_error, get_error, problemas_de_forma,
+    ERROR_CATALOG, completar_envelope, construir_error, get_error, mensaje_de, problemas_de_forma,
 )
 
 __all__ = [
-    "ERROR_CATALOG", "completar_envelope", "construir_error", "get_error",
+    "ERROR_CATALOG", "completar_envelope", "construir_error", "get_error", "mensaje_de",
     "problemas_de_forma",
 ]

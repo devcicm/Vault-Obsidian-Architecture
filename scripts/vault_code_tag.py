@@ -42,7 +42,7 @@ import json
 import re
 import sys
 import threading
-from vault_errors import emit_error, wrap_main
+from vault_errors import emit_error, mensaje_de, wrap_main
 from vault_io import atomic_write_json, write_report, resolve_input_path, file_lock
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -235,7 +235,7 @@ def vault_code_tag_define(
             if result.get("ok"):
                 applied.append(f)
             else:
-                errors.append({"file": f, "error": result.get("error")})
+                errors.append({"file": f, "error": mensaje_de(result)})
 
     return {
         "ok": True,

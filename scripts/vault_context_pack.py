@@ -36,7 +36,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from vault_errors import emit_error, wrap_main
+from vault_errors import emit_error, mensaje_de, wrap_main
 from vault_lib import parse_frontmatter_with_body
 from vault_query_parse import vault_query_parse
 from vault_search import vault_search
@@ -227,7 +227,7 @@ def vault_context_pack(
         section = structured["sections"][0] if structured["sections"] else None
         found = vault_search(" ".join(terms[:8]), folder=section)
         if not found.get("ok"):
-            search_error = found.get("error")
+            search_error = mensaje_de(found)
         for hit in found.get("results", []):
             lexical[hit["path"]] = hit
         # Una sección inferida por pista léxica es una apuesta, no un filtro
@@ -256,7 +256,7 @@ def vault_context_pack(
                     graph_rel[node["path"]] = node["relevance"]
                     graph_via[node["path"]] = node["via"]
         else:
-            graph_error = sub.get("error")
+            graph_error = mensaje_de(sub)
         # Con el grafo desfasado las notas nuevas entran por la vía léxica pero
         # sin sus aristas: el paquete sale, pero no puede presentarse como
         # completo sin decirlo.

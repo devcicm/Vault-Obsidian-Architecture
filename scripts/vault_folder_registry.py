@@ -25,7 +25,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
-from vault_errors import emit_fallo, wrap_main
+from vault_errors import emit_fallo, mensaje_de, wrap_main
 from vault_registry import ORDERED_SECTIONS
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -182,7 +182,7 @@ Ejemplos:
             else:
                 print("Carpeta agregada correctamente")
         else:
-            print(f"Error: {result.get('error', 'Unknown error')}")
+            print(f"Error: {mensaje_de(result) or 'Unknown error'}")
             return 1
 
     return 0 if result.get("ok", True) else 1

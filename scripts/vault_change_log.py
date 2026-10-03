@@ -48,7 +48,7 @@ import subprocess
 
 import sys
 
-from vault_errors import emit_error, wrap_main
+from vault_errors import emit_error, mensaje_de, wrap_main
 from vault_lib import utcnow
 from vault_io import atomic_write_text, file_lock
 import uuid
@@ -261,7 +261,7 @@ def vault_change_log_add(
         response["impacted_count"] = prop_result.get("impacted_count", 0)
 
         if not prop_result.get("ok"):
-            response["propagation_error"] = prop_result.get("error")
+            response["propagation_error"] = mensaje_de(prop_result)
 
     return response
 

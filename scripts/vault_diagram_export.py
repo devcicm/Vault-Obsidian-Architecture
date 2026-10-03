@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from vault_errors import emit_error, wrap_main
+from vault_errors import emit_error, mensaje_de, wrap_main
 from vault_io import assert_within_vault, atomic_write_text, write_report
 
 
@@ -413,7 +413,7 @@ Ejemplos:
             else:
                 print(f"Configuración guardada: {_config_file()}")
         else:
-            print(f"Error: {result.get('error', 'Unknown error')}")
+            print(f"Error: {mensaje_de(result) or 'Unknown error'}")
             return 1
 
     return 0 if result.get("ok", True) else 1

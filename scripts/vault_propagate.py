@@ -31,7 +31,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
-from vault_errors import emit_error, wrap_main
+from vault_errors import emit_error, mensaje_de, wrap_main
 from vault_lib import separar_frontmatter, utcnow
 from vault_impact import vault_impact
 from vault_io import (
@@ -239,7 +239,7 @@ def vault_propagate(
     impact = vault_impact(list(changed_notes), max_hops=hops, since=since)
 
     if not impact.get("ok"):
-        return emit_error("vault_propagate", "UNEXPECTED_ERROR", f"vault_impact failed: {impact.get('error')}")
+        return emit_error("vault_propagate", "UNEXPECTED_ERROR", f"vault_impact failed: {mensaje_de(impact)}")
 
     impacted = impact.get("impacted", [])
 

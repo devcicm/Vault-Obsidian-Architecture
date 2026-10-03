@@ -23,7 +23,7 @@ from typing import Any, Dict, List, Optional, Set
 
 from vault_regex import RE_WIKILINK  # dueño único del patrón (AP-50)
 
-from vault_errors import emit_error, wrap_main
+from vault_errors import emit_error, mensaje_de, wrap_main
 from vault_io import (
     assert_within_vault, atomic_write_text, file_lock, tomar_lock, write_report,
 )
@@ -576,7 +576,7 @@ Ejemplos:
                 if args.impact:
                     print(f"Backlinks encontrados: {result.get('backlinks_count')}")
         else:
-            print(f"Error: {result.get('error', 'Unknown error')}")
+            print(f"Error: {mensaje_de(result) or 'Unknown error'}")
             return 1
 
     return 0 if result.get("ok", True) else 1

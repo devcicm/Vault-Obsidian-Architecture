@@ -1829,6 +1829,18 @@ def construir_error(
     return entry
 
 
+def mensaje_de(envelope: Mapping[str, Any]) -> Optional[str]:
+    """El mensaje de un envelope de error, venga en la forma que venga.
+
+    Desde que todo error pasa por `construir_error` el texto vive en `message`;
+    los envelopes escritos a mano que aún quedan lo ponen en `error`. Hasta
+    2026-10-02 ocho consumidores leían solo `error`, recibían None y
+    `vault_context_pack` culpaba a la consulta de un índice ausente.
+    """
+    mensaje = envelope.get("message") or envelope.get("error")
+    return mensaje if isinstance(mensaje, str) else None
+
+
 def completar_envelope(tool: str, envelope: Dict[str, Any]) -> Dict[str, Any]:
     """Lleva un envelope de error construido a mano a la forma canónica (D5).
 
@@ -1851,12 +1863,13 @@ def completar_envelope(tool: str, envelope: Dict[str, Any]) -> Dict[str, Any]:
         return envelope
     propio = dict(envelope)
     code = propio.pop("error_code")
-    mensaje = propio.pop("message", None) or propio.get("error")
+    mensaje = mensaje_de(propio)
+    propio.pop("message", None)
     recuperacion = propio.pop("recovery", None)
     for clave in _ErrorEnvelopeBase.__annotations__:
         propio.pop(clave, None)
     entry = construir_error(
-        tool, code, message=mensaje if isinstance(mensaje, str) else None,
+        tool, code, message=mensaje,
         pista=recuperacion if isinstance(recuperacion, str) else None,
     )
     entry.update(propio)
