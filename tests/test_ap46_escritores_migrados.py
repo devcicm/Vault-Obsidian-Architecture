@@ -120,8 +120,8 @@ def test_ap46_infra_map_omite_lo_vacio_como_antes(vault):
 
     import vault_infra_map
 
-    # Sin componentes no escribe nota (y aun así devuelve su `path`), así que
-    # se siembra uno: lo que se prueba aquí es el frontmatter.
+    # Se siembra un componente para que el filtro por proyecto tenga qué
+    # contar: lo que se prueba aquí es el frontmatter.
     indice = vault_infra_map._index_file()
     indice.parent.mkdir(parents=True, exist_ok=True)
     indice.write_text(json.dumps({"components": [

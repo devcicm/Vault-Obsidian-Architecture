@@ -221,15 +221,9 @@ def vault_infra_map(
 
     components = index.get("components", [])
 
-    if not components:
-        return {
-            "ok": True,
-            "path": str((_infra_dir() / "infra-map.md").relative_to(_raiz())).replace(
-                "\\", "/"
-            ),
-            "nodesTotal": 0,
-            "edgesTotal": 0,
-        }
+    # Sin componentes también se escribe: `generate_infra_map` pinta el grafo
+    # vacío. Devolver el `path` sin escribirlo (hasta 2026-10-02) dejaba al
+    # consumidor ante un fichero inexistente o ante el mapa anterior (AP-44).
 
     # Apply filters for counting
 
