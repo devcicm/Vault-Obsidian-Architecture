@@ -27,6 +27,7 @@ import re
 import sys
 
 from vault_errors import wrap_main
+from vault_proyecto_arg import proyecto_registrado
 from vault_lib import slugify_strict, utcnow
 from pathlib import Path
 from typing import Any, Dict
@@ -225,7 +226,7 @@ Notas:
 """,
     )
 
-    parser.add_argument("--project", required=True, help="Project slug")
+    parser.add_argument("--project", type=proyecto_registrado("vault_code_map"), required=True, help="Project slug")
 
     args = parser.parse_args()
 

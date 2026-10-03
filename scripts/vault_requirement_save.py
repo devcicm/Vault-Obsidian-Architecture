@@ -35,7 +35,7 @@ import re
 import sys
 
 from vault_errors import emit_error, wrap_main
-from vault_project import proyecto_registrado
+from vault_proyecto_arg import proyecto_registrado
 from vault_norms_catalog import status_frontmatter_lines
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from datetime import datetime, timezone

@@ -19,6 +19,13 @@ pasada. Se midió en los dos vaults ajenos antes de escribir esto: sus
 **Qué no hace.** No escribe nada, no sabe del catálogo de errores y no conoce
 rutas locales de repositorio. Nombra lo que pasó con `FalloDeDominio`; la tool
 lo traduce con `vault_errors.emit_fallo`.
+
+**Por qué en el núcleo (v40.34).** Nació en `vault/autoria/`, y en cuanto las
+tools de grafo, gobernanza o ciclo de vida empezaron a resolver su `--project`
+cada una sumaba un cruce de contexto hacia Autoría. El nombre de un proyecto no
+es vocabulario de un contexto: es identidad que leen todos, como la raíz del
+vault. Ya dependía solo del núcleo, así que moverlo no le cambia ni una
+importación. `vault.autoria.proyectos` queda como reexportación.
 """
 
 from __future__ import annotations
@@ -28,9 +35,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterable, List, Mapping, Optional, Set, Tuple
 
-from ..kernel.fallos import FalloDeDominio
-from ..kernel.frontmatter_parsing import parse_frontmatter_robust
-from ..kernel.normalizacion import slugify_strict
+from .fallos import FalloDeDominio
+from .frontmatter_parsing import parse_frontmatter_robust
+from .normalizacion import slugify_strict
 
 CARPETA_PROYECTOS = "01_Projects"
 

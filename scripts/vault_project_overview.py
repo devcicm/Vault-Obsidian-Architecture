@@ -17,7 +17,7 @@ import uuid
 import re
 import sys
 from vault_errors import wrap_main
-from vault_project import proyecto_registrado
+from vault_proyecto_arg import proyecto_registrado
 from vault_lib import utcnow, slugify
 from vault_lib import parse_frontmatter as _parse_frontmatter
 from vault_lib import separar_frontmatter

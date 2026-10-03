@@ -19,7 +19,7 @@ if str(ROOT) not in sys.path:
 
 from vault.autoria.conocimiento import CATEGORIES, guardar_conocimiento
 from vault_errors import emit_error, wrap_main
-from vault_project import proyecto_registrado
+from vault_proyecto_arg import proyecto_registrado
 from vault_io import atomic_write_text, get_vault_root, write_report
 
 

@@ -29,7 +29,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
-from vault_project import proyecto_registrado
+from vault_proyecto_arg import proyecto_registrado
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from vault_io import assert_within_vault, atomic_write_text, get_vault_root, write_report
 from vault_norms_catalog import compute_norm_refs, status_frontmatter_lines

@@ -164,6 +164,10 @@ CONTEXTS: dict[str, dict] = {
             # `vault_encoding`: un criterio de codificación que estaba escrito
             # 23 veces en 13 módulos de cuatro contextos distintos.
             "vault_subproceso",
+            # v40.34 — el `type=` de `--project` (AP-63). Lo importan tools de
+            # seis contextos: en Autoría, cada una abría un cruce nuevo. El
+            # registro que lee también es núcleo (`vault.kernel.proyectos`).
+            "vault_proyecto_arg",
             # Las tres hojas del kernel (v40.17). No son un contexto nuevo: son
             # el mecanismo que `vault_io` mezclaba con su política — dónde está
             # el vault, cómo se escribe sin que nadie vea el fichero a medias, y

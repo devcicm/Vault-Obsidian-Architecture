@@ -2,7 +2,7 @@
 """vault_project — registro de proyectos del vault (AP-63).
 
 El nombre de un proyecto es identidad: resuelve a **un** slug o la tool falla.
-Esta es la puerta de entrada al registro que lee `vault.autoria.proyectos`:
+Esta es la puerta de entrada al registro que lee `vault.kernel.proyectos`:
 
 - `--list`: los proyectos registrados, sus alias, ambigüedades e incidencias.
 - `--resolve NOMBRE`: el slug canónico, o `PROJECT_NOT_FOUND` con sugerencias
@@ -32,17 +32,20 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from vault_audit_catalog import es_documentacion_del_estandar
 from vault_errors import emit_error, emit_fallo, wrap_main
+# superseded_by: vault_proyecto_arg.proyecto_registrado (v40.34). Vivió aquí;
+# se reexporta para quien lo importara de la tool.
+from vault_proyecto_arg import proyecto_registrado  # noqa: F401
 from vault_io import atomic_write_json, atomic_write_text, get_vault_root, is_snapshot_path, write_report
 from vault_lib import parse_frontmatter_with_body
 from vault_norms_catalog import STATUS_VOCAB
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from vault.autoria import proyectos  # noqa: E402
+from vault.kernel import proyectos  # noqa: E402
 from vault.kernel.fallos import FalloDeDominio  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 from vault.kernel.frontmatter_parsing import separar_frontmatter  # noqa: E402
@@ -70,37 +73,6 @@ def _registro() -> proyectos.Registro:
     return proyectos.leer_registro(_raiz())
 
 
-def proyecto_registrado(tool: str) -> Callable[[str], str]:
-    """`type=` de argparse para el `--project` de toda tool (AP-63).
-
-    Un solo punto de resolución: lo que llega a la tool ya es el slug canónico,
-    así que lo que escribe en `project:` o en la ruta es la identidad y no la
-    cadena que tecleó alguien. Resolver en `type=` y no dentro de cada tool es
-    lo que deja medirlo: un `add_argument("--project")` sin él es una tool que
-    vuelve a aceptar texto libre, y `test_project_registrado` lo nombra.
-
-    Un nombre que no resuelve no llega a la tool: se imprime el envelope de
-    `emit_fallo` con el nombre de **la tool que llama** —por eso es una
-    fábrica— y se sale con 1, antes de que la tool cree nada. No se usa
-    `ArgumentTypeError`: argparse lo convertiría en un texto por stderr con
-    código 2, fuera del contrato de errores que leen la CLI y el MCP.
-
-    La cadena vacía pasa tal cual: es el «sin proyecto» de las tools que lo
-    declaran opcional con `default=""`, y argparse aplica `type=` también al
-    default cuando es una cadena.
-    """
-
-    def _resolver(valor: str) -> str:
-        if valor == "":
-            return valor
-        try:
-            return _registro().resolver(valor)
-        except FalloDeDominio as fallo:
-            print(json.dumps(emit_fallo(tool, fallo), ensure_ascii=False))
-            raise SystemExit(1)
-
-    _resolver.__name__ = "proyecto_registrado"
-    return _resolver
 
 
 def listar() -> Dict[str, Any]:

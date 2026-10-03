@@ -22,7 +22,8 @@ from vault.kernel.errores import problemas_de_forma  # noqa: E402
 
 def _vault(tmp_path):
     raiz = tmp_path / "vault"
-    for d in ("00_System", "06_Diagrams", "99_Index"):
+    # AP-63: `--project p` resuelve contra el registro; sin la carpeta no existe.
+    for d in ("00_System", "06_Diagrams", "99_Index", "01_Projects/p"):
         (raiz / d).mkdir(parents=True)
     (tmp_path / "cwd").mkdir()
     env = dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",

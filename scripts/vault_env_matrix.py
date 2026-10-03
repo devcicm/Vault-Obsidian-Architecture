@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
+from vault_proyecto_arg import proyecto_registrado
 from vault_lib import slugify_strict, utcnow
 from vault_io import assert_within_vault, atomic_write_text, get_vault_root, update_section_index, write_report
 from vault_norms_catalog import compute_norm_refs
@@ -306,7 +307,7 @@ Ejemplos:
     --runtime "Node.js 20 LTS" --region "us-east-1"
 """,
     )
-    parser.add_argument("--project", required=True)
+    parser.add_argument("--project", type=proyecto_registrado("vault_env_matrix"), required=True)
     parser.add_argument("--env", required=True, choices=list(ENV_PROFILES.keys()))
     parser.add_argument("--services", default="[]")
     parser.add_argument("--features", default="{}")

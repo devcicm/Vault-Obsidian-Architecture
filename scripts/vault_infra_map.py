@@ -31,6 +31,7 @@ import re
 import sys
 
 from vault_errors import emit_error, wrap_main
+from vault_proyecto_arg import proyecto_registrado
 from vault_lib import slugify_strict, utcnow
 from datetime import datetime, timezone
 from pathlib import Path
@@ -298,7 +299,7 @@ Notas:
 """,
     )
 
-    parser.add_argument("--project", help="Filter by project")
+    parser.add_argument("--project", type=proyecto_registrado("vault_infra_map"), help="Filter by project")
 
     parser.add_argument("--location", help=f"Filter by location: {LOCATIONS}")
 

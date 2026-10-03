@@ -39,7 +39,9 @@ META = json.dumps({"agent": "regresion"})
 @pytest.fixture
 def entorno(tmp_path):
     raiz = tmp_path / "vault"
-    for seccion in ("00_System", "03_Decisions", "07_Knowledge", "99_Index"):
+    # AP-63: los `--project demo` de estas regresiones resuelven contra el registro.
+    for seccion in ("00_System", "03_Decisions", "07_Knowledge", "99_Index",
+                    "01_Projects/demo"):
         (raiz / seccion).mkdir(parents=True)
     fuera = tmp_path / "fuera-del-vault"
     fuera.mkdir()

@@ -20,7 +20,7 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 sys.path.insert(0, str(REPO_ROOT))
 
 import vault_errors  # noqa: E402
-from vault.autoria import proyectos  # noqa: E402
+from vault.kernel import proyectos  # noqa: E402
 from vault.kernel.fallos import FalloDeDominio  # noqa: E402
 from vault.kernel.indices_structural import es_nombre_reservado  # noqa: E402
 

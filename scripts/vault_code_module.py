@@ -18,6 +18,7 @@ import json
 import re
 import sys
 from vault_errors import emit_error, wrap_main
+from vault_proyecto_arg import proyecto_registrado
 from vault_lib import utcnow, slugify
 import uuid
 from pathlib import Path
@@ -554,7 +555,7 @@ Notas:
   - VAULT_ROOT se detecta automaticamente desde la ubicacion del script
 """,
     )
-    parser.add_argument("--project", required=True, help="Project slug")
+    parser.add_argument("--project", type=proyecto_registrado("vault_code_module"), required=True, help="Project slug")
     parser.add_argument(
         "--file_path", help="Real file path on disk (canonical identifier)"
     )

@@ -49,7 +49,7 @@ import subprocess
 import sys
 
 from vault_errors import emit_error, mensaje_de, wrap_main
-from vault_project import proyecto_registrado
+from vault_proyecto_arg import proyecto_registrado
 from vault_lib import utcnow
 from vault_io import atomic_write_text, file_lock
 import uuid

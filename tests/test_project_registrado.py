@@ -1,6 +1,6 @@
 """AP-63 — todo `--project` pasa por el registro antes de llegar a la tool.
 
-Dos cosas. La primera, el comportamiento de `vault_project.proyecto_registrado`:
+Dos cosas. La primera, el comportamiento de `vault_proyecto_arg.proyecto_registrado`:
 un alias llega a la tool como su slug, un nombre que no resuelve no llega y
 sale como `PROJECT_NOT_FOUND` con el nombre de la tool que llamó, y la cadena
 vacía —el «sin proyecto» de las opcionales— pasa tal cual.
@@ -26,7 +26,7 @@ SCRIPTS = ROOT / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 import vault_io  # noqa: E402
-import vault_project  # noqa: E402
+import vault_proyecto_arg  # noqa: E402
 
 #: Las que no deben resolver, con el motivo. No es deuda: es el diseño.
 EXENTAS = {
@@ -39,20 +39,11 @@ EXENTAS = {
 #: Solo encoge: se convierten por lotes y cada lote quita sus líneas.
 PENDIENTES = {
     "vault_audit": 1,
-    "vault_code_map": 1,
-    "vault_code_module": 1,
-    "vault_code_query": 1,
-    "vault_code_relation": 1,
-    "vault_code_sync": 1,
     "vault_drift_detect": 1,
-    "vault_env_matrix": 1,
-    "vault_graph_merge": 1,
-    "vault_infra_map": 1,
     "vault_log_error": 1,
     "vault_mcp": 2,
     "vault_mermaid_check": 1,
     "vault_migrate_docs": 1,
-    "vault_relation_add": 1,
     "vault_security_scan": 1,
 }
 
@@ -125,7 +116,7 @@ def registro(tmp_path):
 
 def _parser():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--project", default="", type=vault_project.proyecto_registrado("vault_x"))
+    ap.add_argument("--project", default="", type=vault_proyecto_arg.proyecto_registrado("vault_x"))
     return ap
 
 
@@ -206,3 +197,16 @@ def test_ap63_las_tools_de_proyecto_no_fundan_carpetas_fantasma(registro, script
     r = json.loads(proceso.stdout[proceso.stdout.index("{"):])
     assert proceso.returncode == 1 and r["error_code"] == "PROJECT_NOT_FOUND", r
     assert sorted(p.name for p in (registro / "01_Projects").iterdir()) == ["mi-api"]
+
+
+def test_ap63_la_fabrica_vive_en_el_nucleo_y_la_tool_la_reexporta():
+    """Vivió en `vault_project` (Autoría); cada tool de otro contexto que la
+    importaba de allí abría un cruce. Se movió al núcleo sin derogarla."""
+    import vault_arch
+    import vault_project
+    from vault.autoria import proyectos as viejo
+    from vault.kernel import proyectos as dueno
+
+    assert vault_project.proyecto_registrado is vault_proyecto_arg.proyecto_registrado
+    assert viejo is dueno
+    assert "vault_proyecto_arg" in vault_arch.CONTEXTS[vault_arch.KERNEL]["modulos"]

@@ -29,6 +29,7 @@ import re
 import sys
 
 from vault_errors import emit_error, wrap_main
+from vault_proyecto_arg import proyecto_registrado
 from vault_lib import slugify_strict, utcnow
 import uuid
 
@@ -329,7 +330,7 @@ Notas:
 """,
     )
 
-    parser.add_argument("--project", required=True, help="Project slug")
+    parser.add_argument("--project", type=proyecto_registrado("vault_code_relation"), required=True, help="Project slug")
 
     parser.add_argument("--from_file", required=True, help="Source file path")
 

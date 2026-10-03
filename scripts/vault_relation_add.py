@@ -31,6 +31,7 @@ import re
 import sys
 
 from vault_errors import emit_error, wrap_main
+from vault_proyecto_arg import proyecto_registrado
 from vault_lib import slugify_strict, utcnow
 import uuid
 
@@ -331,7 +332,7 @@ Notas:
 """,
     )
 
-    parser.add_argument("--project", required=True, help="Project name")
+    parser.add_argument("--project", type=proyecto_registrado("vault_relation_add"), required=True, help="Project name")
 
     parser.add_argument(
         "--from", dest="from_entity", required=True, help="Source entity"
