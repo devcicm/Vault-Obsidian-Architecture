@@ -2,7 +2,7 @@
   "envelope": {
     "action": "created",
     "bug_id": "BUG-001",
-    "created": 4,
+    "created": 3,
     "ok": true,
     "path": "18_Bugs/open/demo-excepcion-al-guardar.md",
     "phase": "open",
