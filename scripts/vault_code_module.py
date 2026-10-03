@@ -18,7 +18,7 @@ import json
 import re
 import sys
 from vault_errors import emit_error, wrap_main
-from vault_lib import yaml_scalar, utcnow, slugify, valor_de_frontmatter
+from vault_lib import utcnow, slugify
 import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -37,6 +37,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
 from vault.grafo.enlace_codigo import link_vault  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -241,26 +242,26 @@ def vault_code_module(
     if iso_type:
         tags.append(iso_type)
 
-    frontmatter = ["---"]
-    frontmatter.append(f"id: {valor_de_frontmatter(note_id)}")
-    frontmatter.append(f"title: {yaml_scalar(Path(file_path).name)}")
-    frontmatter.append(f"project: {yaml_scalar(project)}")
-    frontmatter.append(f"file_path: {yaml_scalar(file_path)}")
-    frontmatter.append(f"type: code-module")
-    if language:
-        frontmatter.append(f"language: {valor_de_frontmatter(language)}")
-    if iso_type:
-        frontmatter.append(f"iso_type: {valor_de_frontmatter(iso_type)}")
-    frontmatter.append(f"createdAt: {valor_de_frontmatter(created_at)}")
-    frontmatter.append(f"updatedAt: {valor_de_frontmatter(now)}")
-    if tags:
-        frontmatter.append(f"tags: {json.dumps(list(dict.fromkeys(tags)))}")
-    frontmatter.append("cia_integrity: medium")
-    frontmatter.append("cia_availability: medium")
-    frontmatter.append("cia_sensitivity: internal")
-    frontmatter.append("status: draft")
-    frontmatter.append("agent: system")
-    frontmatter.append("---")
+    # AP-46: el bloque lo escribe su dueño; aquí solo se declaran los campos.
+    frontmatter = [
+        Frontmatter()
+        .set("id", note_id)
+        .set("title", Path(file_path).name, vacio_citado=True)
+        .set("project", project, vacio_citado=True)
+        .set("file_path", file_path, vacio_citado=True)
+        .set("type", "code-module")
+        .set("language", language, omitir_vacio=True)
+        .set("iso_type", iso_type, omitir_vacio=True)
+        .set("createdAt", created_at)
+        .set("updatedAt", now)
+        .set("tags", list(dict.fromkeys(tags)), omitir_vacio=True)
+        .set("cia_integrity", "medium")
+        .set("cia_availability", "medium")
+        .set("cia_sensitivity", "internal")
+        .set("status", "draft")
+        .set("agent", "system")
+        .render()
+    ]
 
     body_sections = []
 

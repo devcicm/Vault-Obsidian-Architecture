@@ -29,6 +29,9 @@ MIGRADOS = {
     "vault_project_overview": "vault_project_overview",
     "vault_infra_map": "vault_infra_map",
     "vault_env_matrix": "vault_env_matrix",
+    "vault_ai_decision": "vault_ai_decision",
+    "vault_code_module": "vault_code_module",
+    "vault_code_relation": "save_code_map",
 }
 
 
@@ -101,3 +104,32 @@ def test_ap46_env_matrix_no_rompe_el_yaml_con_comillas_en_el_titulo(vault):
     assert HOSTIL in fm["tags"] and fm["runtime"] == "node: 20"
     # El tag acentuado se escribe legible, no como `\\u00d1` (json.dumps ascii).
     assert "\\u00d1" not in nota.read_text(encoding="utf-8")
+
+
+def test_ap46_ai_decision_y_code_module_conservan_valores_hostiles(vault):
+    import vault_ai_decision
+    import vault_code_module
+    import vault_code_relation
+
+    r = vault_ai_decision.vault_ai_decision(
+        HOSTIL, f"Elegir {HOSTIL}", vault_ai_decision.DECISION_TYPES[0],
+        "desc", "porque", tags=[HOSTIL])
+    assert r["ok"], r
+    [decision] = [n for n in vault.rglob("*.md") if "decisions" in n.parts and n.name != "index.md"]
+    fm = _frontmatter(decision)
+    assert fm["title"] == f"Elegir {HOSTIL}" and HOSTIL in fm["tags"]
+    assert fm["human_approved"] is False and fm["reversible"] is True
+
+    r = vault_code_module.vault_code_module(HOSTIL, "src/app: main.py", "desc", language="python")
+    assert r["ok"], r
+    [modulo] = [n for n in vault.rglob("*.md") if _frontmatter_o_nada(n).get("type") == "code-module"]
+    fm = _frontmatter(modulo)
+    assert fm["file_path"] == "src/app: main.py" and fm["project"] == HOSTIL
+
+    mapa = vault_code_relation.save_code_map(HOSTIL, "graph LR\n a-->b")
+    assert _frontmatter(mapa)["project"] == HOSTIL
+
+
+def _frontmatter_o_nada(path: Path) -> dict:
+    bloque, _ = separar_frontmatter(path.read_text(encoding="utf-8"))
+    return yaml.safe_load(bloque) or {} if bloque else {}

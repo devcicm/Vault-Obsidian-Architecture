@@ -37,7 +37,7 @@ import re
 import sys
 
 from vault_errors import emit_error, wrap_main
-from vault_lib import yaml_scalar, slugify_strict, utcnow, valor_de_frontmatter
+from vault_lib import slugify_strict, utcnow
 from vault_io import (
     write_report,
     atomic_write_text,
@@ -73,6 +73,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -196,40 +197,26 @@ def vault_ai_decision(
 
         cia_integrity = "high" if impact_level in ("high", "critical") else "medium"
 
-        frontmatter = ["---"]
-
-        frontmatter.append(f"id: {valor_de_frontmatter(note_id)}")
-
-        frontmatter.append(f"decision_id: {valor_de_frontmatter(decision_id)}")
-
-        frontmatter.append(f"title: {yaml_scalar(title)}")
-
-        frontmatter.append(f"project: {yaml_scalar(project)}")
-
-        frontmatter.append(f"decision_type: {valor_de_frontmatter(decision_type)}")
-
-        frontmatter.append(f"impact_level: {valor_de_frontmatter(impact_level)}")
-
-        frontmatter.append(f"human_approved: {valor_de_frontmatter(bool(human_approved))}")
-
-        frontmatter.append(f"reversible: {valor_de_frontmatter(bool(reversible))}")
-
-        frontmatter.append(f"createdAt: {valor_de_frontmatter(now)}")
-
-        frontmatter.append(f"updatedAt: {valor_de_frontmatter(now)}")
-
-        if tags_list:
-            frontmatter.append(f"tags: {json.dumps(list(dict.fromkeys(tags_list)))}")
-
-        frontmatter.append(f"cia_integrity: {valor_de_frontmatter(cia_integrity)}")
-
-        frontmatter.append(f"cia_availability: medium")
-
-        frontmatter.append(f"cia_sensitivity: internal")
-
-        frontmatter.append(f"agent: system")
-
-        frontmatter.append("---")
+        # AP-46: el bloque lo escribe su dueño; aquí solo se declaran los campos.
+        frontmatter = [
+            Frontmatter()
+            .set("id", note_id)
+            .set("decision_id", decision_id)
+            .set("title", title, vacio_citado=True)
+            .set("project", project, vacio_citado=True)
+            .set("decision_type", decision_type)
+            .set("impact_level", impact_level)
+            .set("human_approved", bool(human_approved))
+            .set("reversible", bool(reversible))
+            .set("createdAt", now)
+            .set("updatedAt", now)
+            .set("tags", list(dict.fromkeys(tags_list)), omitir_vacio=True)
+            .set("cia_integrity", cia_integrity)
+            .set("cia_availability", "medium")
+            .set("cia_sensitivity", "internal")
+            .set("agent", "system")
+            .render()
+        ]
 
         body_sections = []
 
