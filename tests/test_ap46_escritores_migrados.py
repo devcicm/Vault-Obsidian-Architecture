@@ -43,6 +43,9 @@ MIGRADOS = {
     "vault_ingest": "_build_note",
     "vault_onboard": "_make_frontmatter",
     "vault_preferences": "vault_preferences_set",
+    "vault_fundamentals": ("export_doc", "export_framework"),
+    "vault_log_error": "vault_log_error",
+    "vault_migrate_docs": ("process_file_staging", "vault_migrate_docs"),
     # Fuera de `scripts/`: la clave es la ruta del módulo sin `.py`.
     "vault/ciclo_de_vida/producto": "_write_seed",
 }
@@ -73,7 +76,14 @@ def _frontmatter(path: Path) -> dict:
     return datos
 
 
-@pytest.mark.parametrize("modulo,funcion", sorted(MIGRADOS.items()))
+# Un módulo con más de un escritor los declara en una tupla.
+_PARES = sorted(
+    (m, f) for m, fs in MIGRADOS.items()
+    for f in (fs if isinstance(fs, tuple) else (fs,))
+)
+
+
+@pytest.mark.parametrize("modulo,funcion", _PARES)
 def test_ap46_el_escritor_no_monta_el_bloque_a_mano(modulo, funcion):
     arbol = ast.parse(_fuente(modulo).read_text(encoding="utf-8"))
     [f] = [n for n in ast.walk(arbol) if isinstance(n, ast.FunctionDef) and n.name == funcion]
@@ -372,3 +382,39 @@ def test_ap46_preferences_set_conserva_texto_y_createdAt(vault):
     creado = fm["createdAt"]
     assert vault_preferences.vault_preferences_set("style", HOSTIL, "otra", agent="bot")["ok"]
     assert _frontmatter(nota)["createdAt"] == creado
+
+
+def test_ap46_los_documentos_de_fundamentals_nacen_legibles(vault):
+    import vault_fundamentals
+
+    vault_fundamentals.export_doc()
+    vault_fundamentals.export_framework()
+    doc = _frontmatter(vault / "00_System" / "data-fundamentals.md")
+    marco = _frontmatter(vault / "00_System" / "data-framework.md")
+    assert doc["id"] == "data-fundamentals" and doc["evergreen"] is True
+    assert marco["id"] == "data-framework" and marco["cia_sensitivity"] == "public"
+
+
+def test_ap46_log_error_conserva_titulo_y_proyecto_y_omite_lo_vacio(vault):
+    import vault_log_error
+
+    r = vault_log_error.vault_log_error(
+        "vulnerability", HOSTIL, "desc", project=FECHA, owasp_category="A01: #x")
+    assert r["ok"], r
+    fm = _frontmatter(vault / r["path"])
+    assert fm["title"] == HOSTIL and fm["project"] == FECHA
+    assert fm["owasp_category"] == "A01: #x" and "cwe_id" not in fm
+
+    r = vault_log_error.vault_log_error("error", "sin proyecto", "desc")
+    assert _frontmatter(vault / r["path"])["project"] is None
+
+
+def test_ap46_migrate_docs_conserva_proyecto_titulo_y_distributedTo(tmp_path):
+    import vault_migrate_docs
+
+    origen = tmp_path / f"{FECHA}.md"
+    origen.write_text("Texto de un documento heredado.\n", encoding="utf-8")
+    r = vault_migrate_docs.process_file_staging(origen, HOSTIL)
+    fm = yaml.safe_load(separar_frontmatter(r["content"])[0])
+    assert fm["title"] == FECHA and fm["project"] == HOSTIL
+    assert fm["tags"] == [HOSTIL, "migrated"] and fm["distributedTo"] == ""

@@ -35,7 +35,7 @@ import re
 import sys
 
 from vault_errors import emit_error, wrap_main
-from vault_lib import yaml_scalar, slugify, parse_frontmatter, valor_de_frontmatter
+from vault_lib import slugify, parse_frontmatter
 
 from vault_io import (
     assert_within_vault,
@@ -94,6 +94,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.ciclo_de_vida.repositorio import RepositorioCicloDeVida  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -308,41 +309,27 @@ def process_file_staging(file_path: Path, project: str) -> Optional[Dict[str, An
     now = utcnow()
     tags = [project, "migrated"]
 
-    frontmatter = ["---"]
-
-    frontmatter.append(f"title: {yaml_scalar(file_path.stem)}")
-
-    frontmatter.append(f"id: {str(uuid.uuid4())}")
-
-    frontmatter.append(f"migratedFrom: {valor_de_frontmatter(file_path.as_posix())}")
-
-    frontmatter.append(f"type: migrated")
-
-    frontmatter.append(f"createdAt: {valor_de_frontmatter(now)}")
-
-    frontmatter.append(f"updatedAt: {valor_de_frontmatter(now)}")
-
-    frontmatter.append(f"tags: {json.dumps(tags)}")
-
-    frontmatter.append(f"migratedAt: {valor_de_frontmatter(timestamp)}")
-
-    frontmatter.append(f"stagedAt: {valor_de_frontmatter(timestamp)}")
-
-    frontmatter.append(f"distributedTo: ''")
-
-    frontmatter.append(f"project: {yaml_scalar(project)}")
-
-    frontmatter.append("cia_integrity: low")
-
-    frontmatter.append("cia_availability: low")
-
-    frontmatter.append("cia_sensitivity: internal")
-
-    frontmatter.append("status: migrated")
-
-    frontmatter.append("agent: vault_migrate_docs")
-
-    frontmatter.append("---")
+    # AP-46: el bloque lo escribe su dueño; aquí solo se declaran los campos.
+    frontmatter = [
+        Frontmatter()
+        .set("title", file_path.stem, texto=True)
+        .set("id", str(uuid.uuid4()))
+        .set("migratedFrom", file_path.as_posix())
+        .set("type", "migrated")
+        .set("createdAt", now)
+        .set("updatedAt", now)
+        .set("tags", tags)
+        .set("migratedAt", timestamp)
+        .set("stagedAt", timestamp)
+        .set("distributedTo", "", vacio_citado=True)
+        .set("project", project, texto=True)
+        .set("cia_integrity", "low")
+        .set("cia_availability", "low")
+        .set("cia_sensitivity", "internal")
+        .set("status", "migrated")
+        .set("agent", "vault_migrate_docs")
+        .render()
+    ]
 
     frontmatter.append(f"\n{content_converted.strip()}\n")
 
@@ -551,17 +538,14 @@ _{staged["preview"][:200]}..._
 
     excluded_count = sum(1 for d in distributed if d["relevance"] == "excluded")
 
-    report_lines = ["---"]
-
-    report_lines.append(f"title: {yaml_scalar(f'Migration Report - {project}')}")
-
-    report_lines.append(f"project: {yaml_scalar(project)}")
-
-    report_lines.append(f"date: {valor_de_frontmatter(timestamp)}")
-
-    report_lines.append(f"type: migration-report")
-
-    report_lines.append("---")
+    report_lines = [
+        Frontmatter()
+        .set("title", f"Migration Report - {project}", texto=True)
+        .set("project", project, texto=True)
+        .set("date", timestamp)
+        .set("type", "migration-report")
+        .render()
+    ]
 
     report_lines.append(f"\n# Migration Report: {project}\n")
 

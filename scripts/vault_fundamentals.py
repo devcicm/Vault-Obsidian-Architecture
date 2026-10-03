@@ -58,6 +58,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -321,20 +322,26 @@ def export_registry() -> Dict[str, Any]:
     }
 
 
+# Regla horizontal del cuerpo en markdown. Tiene nombre para no confundirse
+# con el delimitador del frontmatter, que solo escribe `Frontmatter` (AP-46).
+_REGLA_HORIZONTAL = "---"
+
+
 def export_doc() -> Dict[str, Any]:
     """Write 00_System/data-fundamentals.md as human-readable reference."""
+    # AP-46: el bloque lo escribe su dueño; aquí solo se declaran los campos.
     lines: List[str] = [
-        "---",
-        "id: data-fundamentals",
-        "title: Fundamentos de Datos",
-        "type: knowledge",
-        "agent: vault_fundamentals",
-        f"createdAt: {utcnow()}",
-        f"updatedAt: {utcnow()}",
-        "cia_integrity: high",
-        "cia_availability: high",
-        "evergreen: true",
-        "---",
+        Frontmatter()
+        .set("id", "data-fundamentals")
+        .set("title", "Fundamentos de Datos")
+        .set("type", "knowledge")
+        .set("agent", "vault_fundamentals")
+        .set("createdAt", utcnow())
+        .set("updatedAt", utcnow())
+        .set("cia_integrity", "high")
+        .set("cia_availability", "high")
+        .set("evergreen", True)
+        .render(),
         "",
         "# Fundamentos de Datos",
         "",
@@ -350,7 +357,7 @@ def export_doc() -> Dict[str, Any]:
             f"| {f['id']}  | {f['name']:16} | {f['dq_dimension']:17} | {tools_str} |"
         )
 
-    lines.extend(["", "---", ""])
+    lines.extend(["", _REGLA_HORIZONTAL, ""])
 
     for f in FUNDAMENTALS:
         lines.append(f"## {f['id']} {f['name']}")
@@ -371,7 +378,7 @@ def export_doc() -> Dict[str, Any]:
         lines.append(f"**Implementado por:** {', '.join(f['tools'])}")
         lines.append("")
 
-    lines.append("---")
+    lines.append(_REGLA_HORIZONTAL)
     lines.append("")
     lines.append("## Uso")
     lines.append("")
@@ -453,18 +460,18 @@ def export_framework() -> Dict[str, Any]:
     atomic_write_json(_framework_json(), data)
 
     lines: List[str] = [
-        "---",
-        "id: data-framework",
-        "title: Marco de Datos y Gobernanza",
-        "type: knowledge",
-        "agent: vault_fundamentals",
-        f"createdAt: {utcnow()}",
-        f"updatedAt: {utcnow()}",
-        "cia_integrity: high",
-        "cia_availability: high",
-        "cia_sensitivity: public",
-        "evergreen: true",
-        "---",
+        Frontmatter()
+        .set("id", "data-framework")
+        .set("title", "Marco de Datos y Gobernanza")
+        .set("type", "knowledge")
+        .set("agent", "vault_fundamentals")
+        .set("createdAt", utcnow())
+        .set("updatedAt", utcnow())
+        .set("cia_integrity", "high")
+        .set("cia_availability", "high")
+        .set("cia_sensitivity", "public")
+        .set("evergreen", True)
+        .render(),
         "",
         "# Marco de Datos y Gobernanza",
         "",

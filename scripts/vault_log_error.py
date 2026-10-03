@@ -38,7 +38,7 @@ import re
 import sys
 
 from vault_errors import emit_error, wrap_main
-from vault_lib import yaml_scalar, utcnow, slugify, valor_de_frontmatter
+from vault_lib import utcnow, slugify
 from vault_io import atomic_write_text, get_vault_root, safe_wikilink, write_report
 from datetime import datetime, timezone
 
@@ -62,6 +62,7 @@ TYPE_FOLDERS = {
 # El vocabulario se declara una vez y se consume, no se copia. Ver
 # `vault_vocabulario.py` para el registro y su contexto dueño.
 from vault_vocabulario import opciones as _opciones
+from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 
 #: `info` no es una gravedad: es lo que se registra sin que sea un
 #: problema. Por eso es una ampliación declarada y no otra escala.
@@ -335,30 +336,28 @@ def vault_log_error(
 
     # v37: wrap content with YAML frontmatter for traceability
     fm_tags = [project, error_type] if project else [error_type]
-    frontmatter_parts = [
-        f"---",
-        f"title: {yaml_scalar(title)}",
-        f"id: {str(uuid.uuid4())}",
-        f"type: {valor_de_frontmatter(error_type)}",
-        f"createdAt: {utcnow()}",
-        f"updatedAt: {utcnow()}",
-        f"tags: {json.dumps(fm_tags)}",
-        f"severity: {valor_de_frontmatter(severity)}",
-        f"project: {valor_de_frontmatter(project)}",
-    ]
+    # AP-46: el bloque lo escribe su dueño; aquí solo se declaran los campos.
+    fm = (
+        Frontmatter()
+        .set("title", title, texto=True)
+        .set("id", str(uuid.uuid4()))
+        .set("type", error_type)
+        .set("createdAt", utcnow())
+        .set("updatedAt", utcnow())
+        .set("tags", fm_tags)
+        .set("severity", severity)
+        # Un proyecto es texto aunque parezca fecha; sin proyecto se sigue
+        # escribiendo `project: ` (null), no `""`.
+        .set("project", project, texto=bool(project))
+    )
     if error_type == "vulnerability":
-        if owasp_category:
-            frontmatter_parts.append(f"owasp_category: {valor_de_frontmatter(owasp_category)}")
-        if cwe_id:
-            frontmatter_parts.append(f"cwe_id: {valor_de_frontmatter(cwe_id)}")
-    frontmatter_parts.extend([
-        f"cia_integrity: medium",
-        f"cia_availability: medium",
-        f"cia_sensitivity: internal",
-        f"agent: system",
-        f"---\n",
-    ])
-    frontmatter = "\n".join(frontmatter_parts) + "\n\n"
+        fm.set("owasp_category", owasp_category, omitir_vacio=True)
+        fm.set("cwe_id", cwe_id, omitir_vacio=True)
+    fm.set("cia_integrity", "medium")
+    fm.set("cia_availability", "medium")
+    fm.set("cia_sensitivity", "internal")
+    fm.set("agent", "system")
+    frontmatter = fm.render() + "\n\n\n"
 
     atomic_write_text(file_path, frontmatter + content)
 
