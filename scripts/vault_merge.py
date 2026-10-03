@@ -48,7 +48,8 @@ from typing import Any, Dict, List, Optional
 from vault_io import atomic_write_text, get_vault_root, normalize_stem, tomar_lock, write_report
 from vault_undo import _guardar_version_actual
 
-from vault_lib import separar_frontmatter, valor_de_frontmatter
+from vault_lib import separar_frontmatter
+from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 
 
 #: Espera máxima por el lock de la nota; la misma que vault_write y vault_undo.
@@ -62,22 +63,24 @@ def _read_note(path: Path) -> str:
 def _tag_frontmatter(content: str, source: str) -> str:
     """Inject mergedFrom and mergedAt into existing frontmatter, or prepend one."""
 
-    tag_lines = [
-        f"mergedFrom: {valor_de_frontmatter(source)}",
-        f"mergedAt: {datetime.now(timezone.utc).isoformat()[:19]}Z",
-    ]
-
     bloque, cuerpo = separar_frontmatter(content)
 
-    if bloque is not None:
-        fm_body = bloque.rstrip("\n")
-        previo = fm_body + "\n" if fm_body else ""
+    # AP-46: el bloque lo reescribe su dueño. Antes se añadían las dos líneas
+    # al final, así que fusionar dos veces en la misma nota dejaba dos
+    # `mergedFrom:` —YAML se queda con la última; otros lectores, no—. Ahora
+    # la segunda fusión reemplaza a la primera en su sitio.
+    fm = (
+        Frontmatter.editar(bloque or "")
+        .set("mergedFrom", source)
+        .set("mergedAt", f"{datetime.now(timezone.utc).isoformat()[:19]}Z")
+    )
 
-        return "---\n" + previo + "\n".join(tag_lines) + "\n---\n" + cuerpo
+    if bloque is not None:
+        return fm.render() + "\n" + cuerpo
 
     # No frontmatter — prepend minimal block
 
-    return "---\n" + "\n".join(tag_lines) + "\n---\n\n" + content
+    return fm.render() + "\n\n" + content
 
 
 def _note_updated_at(path: Path) -> str:

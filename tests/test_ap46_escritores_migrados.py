@@ -46,6 +46,8 @@ MIGRADOS = {
     "vault_fundamentals": ("export_doc", "export_framework"),
     "vault_log_error": "vault_log_error",
     "vault_migrate_docs": ("process_file_staging", "vault_migrate_docs"),
+    # Editores: reescriben un bloque existente por `Frontmatter.editar`.
+    "vault_merge": "_tag_frontmatter",
     # Fuera de `scripts/`: la clave es la ruta del módulo sin `.py`.
     "vault/ciclo_de_vida/producto": "_write_seed",
 }
