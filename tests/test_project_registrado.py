@@ -38,8 +38,17 @@ EXENTAS = {
 #: Sitios sin `type=proyecto_registrado` al estrenar el guard, por módulo.
 #: Solo encoge: se convierten por lotes y cada lote quita sus líneas.
 PENDIENTES: dict = {
-    # Saldada en v40.34: las 43 resuelven. Se deja en pie y vacía (deuda saldada
-    # no se borra), para que una tool nueva sin `type=` siga fallando.
+    # Las 43 de `scripts/` se saldaron en v40.34; sus líneas no se reponen.
+    #
+    # Los entry modules de `vault/autoria/` (`python -m`, `--root` explícito).
+    # No los usa `vault knowledge_save` —la wheel despacha al de `scripts/`,
+    # que resuelve—, pero son instalables. No pueden importar
+    # `vault_errors.proyecto_registrado`: el paquete no importa `scripts`, y
+    # traducir el fallo aquí con su propio código sería repartir
+    # `MAPA_DE_FALLOS`, AP-57 cometido al cumplir AP-63. Se saldan cuando la
+    # traducción tenga un dueño que `vault/` pueda importar.
+    "vault/autoria/knowledge_get": 1,
+    "vault/autoria/knowledge_save": 1,
 }
 
 
@@ -52,10 +61,23 @@ def _es_proyecto_registrado(nodo: ast.AST) -> bool:
     )
 
 
+def _modulo(fichero: Path) -> str:
+    """`scripts/` por su nombre, como siempre; `vault/` por su ruta."""
+    if fichero.parent == SCRIPTS:
+        return fichero.stem
+    return fichero.relative_to(ROOT).with_suffix("").as_posix()
+
+
 def _sitios_sin_resolver() -> dict:
-    """Módulo -> número de `add_argument("--project", ...)` sin el `type=`."""
+    """Módulo -> número de `add_argument("--project", ...)` sin el `type=`.
+
+    Mide `scripts/` y también `vault/`: el paquete instalable tiene entry
+    modules propios, y un guard que solo mira `scripts/` dejaría fuera justo
+    lo que se instala."""
     sin = {}
-    for fichero in sorted(SCRIPTS.glob("*.py")):
+    ficheros = sorted(SCRIPTS.glob("*.py")) + sorted(
+        f for f in (ROOT / "vault").rglob("*.py") if "__pycache__" not in f.parts)
+    for fichero in ficheros:
         arbol = ast.parse(fichero.read_text(encoding="utf-8"))
         for nodo in ast.walk(arbol):
             if not (
@@ -69,7 +91,8 @@ def _sitios_sin_resolver() -> dict:
                 continue
             tipo = next((k.value for k in nodo.keywords if k.arg == "type"), None)
             if tipo is None or not _es_proyecto_registrado(tipo):
-                sin[fichero.stem] = sin.get(fichero.stem, 0) + 1
+                m = _modulo(fichero)
+                sin[m] = sin.get(m, 0) + 1
     return sin
 
 
