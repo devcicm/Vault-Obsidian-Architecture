@@ -209,4 +209,10 @@ def test_ap46_el_titulo_del_primer_se_escapa_entero(tmp_path):
     creado = vi._create_scaffold_note(seccion)
     texto = (raiz / creado["path"]).read_text(encoding="utf-8")
     fm = yaml.safe_load(texto.split("---\n", 2)[1])
-    assert fm["title"] == f"{seccion} — Guía rápida"
+    # Desde 76cde6d el primer pasa por `atomic_write_text`, que sanea lo que
+    # escribe (`normalize_dashes`: la raya larga pasa a `--`). Lo esperado se
+    # pide al dueño del saneado en vez de copiar su tabla aquí (AP-57).
+    from vault_encoding import sanitize_content
+
+    esperado, _ = sanitize_content(f"{seccion} — Guía rápida")
+    assert fm["title"] == esperado
