@@ -32,6 +32,24 @@ def _fail(message: str) -> None:
     raise AssertionError(message)
 
 
+def _registros_de_distribucion():
+    """Los registros con los que se juzga la wheel, leídos del repo (AP-44).
+
+    Lanzado como `python tests/clean_install_gate.py`, `sys.path[0]` es
+    `tests/`: sin la raíz delante, `import vault` lo resolvía la instalación
+    global de `site-packages`, y la gate medía la wheel contra el registro de
+    otra versión —o caía con un ImportError que no era del producto—.
+    """
+    for ruta in (REPO_ROOT / "scripts", REPO_ROOT):
+        if str(ruta) in sys.path:
+            sys.path.remove(str(ruta))
+        sys.path.insert(0, str(ruta))
+    from vault.meta_toolkit.distribucion import clasificar_tools
+    from vault_servicio import NATURALEZAS
+    from vault_mcp_catalog import TOOLS_CATALOG
+    return clasificar_tools, NATURALEZAS, TOOLS_CATALOG
+
+
 def _copy_source(destination: Path) -> None:
     """Copia una fuente limpia para que el build no deje artefactos en git."""
     ignored = shutil.ignore_patterns(
@@ -197,12 +215,7 @@ def main(*, gate: str = "CLEAN_INSTALL_GATE") -> int:
 
         # AP-47: la cifra sale del registro, no de una constante a mano.
         # El registro dice cuántas son distributable; el test mide el wheel.
-        _scripts = REPO_ROOT / "scripts"
-        if str(_scripts) not in sys.path:
-            sys.path.insert(0, str(_scripts))
-        from vault.meta_toolkit.distribucion import clasificar_tools
-        from vault_servicio import NATURALEZAS
-        from vault_mcp_catalog import TOOLS_CATALOG
+        clasificar_tools, NATURALEZAS, TOOLS_CATALOG = _registros_de_distribucion()
         expected_dist = sum(1 for d in clasificar_tools(TOOLS_CATALOG, NATURALEZAS).values() if d.distributable)
         if len(operations_members) != expected_dist:
             _fail(f"wheel deberia tener {expected_dist} operaciones, tiene {len(operations_members)}")
