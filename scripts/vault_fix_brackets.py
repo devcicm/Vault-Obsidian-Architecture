@@ -52,7 +52,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_io import assert_within_vault, atomic_write_text, get_vault_root
 from vault_lib import utcnow, strip_code_blocks
 from vault_regex import (
@@ -353,6 +353,19 @@ def vault_fix_brackets(
     include_sandbox: bool = False,
 ) -> Dict[str, Any]:
     """Scan and optionally fix bracket problems. Returns a JSON-serializable report."""
+    if path:
+        # AP-51: una ruta que no se puede mirar no es «cero hallazgos».
+        # `_collect_notes` devolvía [] y el informe salía ok con scanned 0.
+        target = Path(path)
+        if not target.is_absolute():
+            target = get_vault_root() / path
+        try:
+            target = assert_within_vault(target, get_vault_root())
+        except ValueError as exc:
+            return emit_error("vault_fix_brackets", "INVALID_PATH", str(exc))
+        if not target.exists():
+            return emit_error("vault_fix_brackets", "FILE_NOT_FOUND",
+                              f"Ruta no encontrada en el vault: {path}")
     notes = _collect_notes(path)
     scanned = 0
     skipped = 0
