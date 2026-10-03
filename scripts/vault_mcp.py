@@ -37,6 +37,7 @@ from vault_mcp_catalog import (
     get_all_groups,
     find_tools_by_purpose,
     get_related_tools,
+    reconciled_params,
 )
 from vault_mcp_context import (
     get_context,
@@ -104,7 +105,7 @@ class VaultMCP:
             "script": tool["script"],
             "group": tool["group"],
             "purpose": tool["purpose"],
-            "params": tool["params"],
+            "params": reconciled_params(tool),
             "guards": tool["guards"],
             "side_effects": tool["side_effects"],
             "example": tool["example"],
@@ -189,7 +190,9 @@ class VaultMCP:
                           f"La tool {tool_name} no está en el catálogo")
 
         errors = []
-        for param_name, spec in tool["params"].items():
+        # Los params que la CLI acepta, no los declarados a mano: 81 de estos
+        # no existían y `validate` exigía `decision` a vault_ai_decision.
+        for param_name, spec in reconciled_params(tool).items():
             value = params.get(param_name)
 
             if spec.get("required") and not value:

@@ -472,6 +472,10 @@ CONTEXTS: dict[str, dict] = {
             # La CLI consume esta proyección derivada para saber si una tool
             # tiene operación instalada real; no puede inferirlo del script.
             "distribution_metadata": "vault_mcp_catalog:distribution_metadata",
+            # Los params que la tool acepta de verdad (argparse conciliado con lo
+            # declarado). La CLI leía `TOOLS_CATALOG[t]["params"]` crudo, con 81
+            # params que ningún script tiene; el dueño es el que publica el MCP.
+            "reconciled_params": "vault_mcp_catalog:reconciled_params",
         },
         # Éste es el contexto que v39.6 dejó a medias: sus módulos ya están
         # anotados `internal` con motivo, pero nada impedía que uno tocase un

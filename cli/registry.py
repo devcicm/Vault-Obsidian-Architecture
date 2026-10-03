@@ -16,7 +16,7 @@ from __future__ import annotations
 import json
 import sys
 from dataclasses import dataclass, field
-from functools import lru_cache
+from functools import cached_property, lru_cache
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
@@ -95,7 +95,9 @@ class Fragment:
     script: str
     group: str
     purpose: str
-    params: Dict[str, Any] = field(default_factory=dict)
+    #: Los params escritos a mano en TOOLS_CATALOG. No se leen directamente:
+    #: `params` los concilia con argparse, que es lo que la tool acepta.
+    declared_params: Dict[str, Any] = field(default_factory=dict)
     guards: List[str] = field(default_factory=list)
     side_effects: List[str] = field(default_factory=list)
     example: str = ""
@@ -122,6 +124,17 @@ class Fragment:
         if any(v in self.name for v in _READ_VERBS):
             return "read"
         return "write"  # sin evidencia de lectura pura → se asume escritura
+
+    @cached_property
+    def params(self) -> Dict[str, Any]:
+        """Lo que argparse acepta (AP-40), conciliado por el mismo dueño que
+        publica el MCP. Los declarados a mano incluían 81 params que ningún
+        script tiene, y safety los daba por buenos. Perezoso: conciliar las
+        117 tools al cargar el registro costaba medio segundo a cada orden.
+        """
+        from vault_mcp_catalog import reconciled_params
+
+        return reconciled_params({"script": self.script, "params": self.declared_params}) or {}
 
     @property
     def script_path(self) -> Path:
@@ -276,7 +289,7 @@ def load_registry() -> Dict[str, Fragment]:
             script=entry.get("script") or f"{name}.py",
             group=entry.get("group", "Sin grupo"),
             purpose=entry.get("purpose", ""),
-            params=entry.get("params", {}) or {},
+            declared_params=entry.get("params", {}) or {},
             guards=list(entry.get("guards", []) or []),
             side_effects=list(entry.get("side_effects", []) or []),
             example=entry.get("example", "") or "",
