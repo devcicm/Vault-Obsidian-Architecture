@@ -38,6 +38,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
+from vault_project import proyecto_registrado
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from vault_io import assert_within_vault, atomic_write_text, get_vault_root, write_report
 from vault_norms_catalog import compute_norm_refs, status_frontmatter_lines
@@ -289,7 +290,7 @@ Ejemplos:
     --corrective_actions '["Validación con Zod","Test de regresión"]'
 """,
     )
-    parser.add_argument("--project", required=True)
+    parser.add_argument("--project", type=proyecto_registrado("vault_ncr_save"), required=True)
     parser.add_argument("--title", required=True)
     parser.add_argument("--ncr_type", default="process", choices=list(NCR_TYPES.keys()))
     parser.add_argument(

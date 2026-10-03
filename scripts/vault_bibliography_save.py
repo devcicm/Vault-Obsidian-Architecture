@@ -29,6 +29,7 @@ import re
 import sys
 
 from vault_errors import emit_error, wrap_main
+from vault_project import proyecto_registrado
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from vault_io import atomic_write_text, assert_within_vault, write_report
 import uuid
@@ -234,7 +235,7 @@ Notas:
         help=f"Source type: {SOURCE_TYPES}",
     )
 
-    parser.add_argument("--project", help="Project slug this reference applies to")
+    parser.add_argument("--project", type=proyecto_registrado("vault_bibliography_save"), help="Project slug this reference applies to")
 
     parser.add_argument(
         "--agent", help="Agent identifier (claude, codex, gpt, gemini, deepseek, human)"

@@ -29,6 +29,7 @@ import re
 import sys
 
 from vault_errors import emit_error, wrap_main
+from vault_project import proyecto_registrado
 from vault_registry import section_default_type
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from vault_io import atomic_write_text, assert_within_vault, write_report
@@ -266,7 +267,7 @@ Notas:
 """,
     )
 
-    parser.add_argument("--project", required=True, help="Project name")
+    parser.add_argument("--project", type=proyecto_registrado("vault_diagram_save"), required=True, help="Project name")
 
     parser.add_argument("--title", required=True, help="Diagram title")
 

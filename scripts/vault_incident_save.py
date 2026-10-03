@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
+from vault_project import proyecto_registrado
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from vault_io import assert_within_vault, atomic_write_text, get_vault_root, write_report
 from vault_norms_catalog import compute_norm_refs, status_frontmatter_lines
@@ -298,7 +299,7 @@ Ejemplos:
     --action_items '["Agregar monitoreo de índices","Revisar checklist de migraciones"]'
 """,
     )
-    parser.add_argument("--project", required=True)
+    parser.add_argument("--project", type=proyecto_registrado("vault_incident_save"), required=True)
     parser.add_argument("--title", required=True)
     parser.add_argument("--severity", default="P3", choices=_opciones("prioridad"))
     parser.add_argument("--status", default="detected", choices=VALID_STATUS)

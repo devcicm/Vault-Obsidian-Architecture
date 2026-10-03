@@ -1,6 +1,6 @@
 {
   "envelope": {
-    "created": 2,
+    "created": 1,
     "environment": "staging",
     "message": "envs.md updated with 1 variables for staging",
     "ok": true,

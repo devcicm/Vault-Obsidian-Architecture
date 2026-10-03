@@ -38,10 +38,7 @@ EXENTAS = {
 #: Sitios sin `type=proyecto_registrado` al estrenar el guard, por módulo.
 #: Solo encoge: se convierten por lotes y cada lote quita sus líneas.
 PENDIENTES = {
-    "vault_ai_decision": 1,
     "vault_audit": 1,
-    "vault_bibliography_save": 1,
-    "vault_bug_save": 1,
     "vault_change_log": 1,
     "vault_code_map": 1,
     "vault_code_module": 1,
@@ -50,36 +47,20 @@ PENDIENTES = {
     "vault_code_sync": 1,
     "vault_delta": 1,
     "vault_diagram_export": 1,
-    "vault_diagram_save": 1,
     "vault_drift_detect": 1,
     "vault_env_matrix": 1,
-    "vault_env_save": 1,
-    "vault_flow_save": 1,
     "vault_graph_merge": 1,
-    "vault_incident_save": 1,
     "vault_infra_map": 1,
-    "vault_infra_save": 1,
     "vault_knowledge_get": 1,
-    "vault_knowledge_save": 1,
     "vault_log_error": 1,
     "vault_mcp": 2,
     "vault_mermaid_check": 1,
     "vault_migrate_docs": 1,
-    "vault_ncr_save": 1,
     "vault_pattern_list": 1,
-    "vault_pattern_save": 1,
-    "vault_privacy_save": 1,
     "vault_project_overview": 1,
     "vault_project_status": 1,
-    "vault_qa_save": 1,
     "vault_relation_add": 1,
-    "vault_release_save": 1,
-    "vault_requirement_save": 1,
-    "vault_risk_save": 1,
-    "vault_runbook_save": 1,
     "vault_security_scan": 1,
-    "vault_slo_save": 1,
-    "vault_test_save": 1,
     "vault_timeline": 1,
 }
 
@@ -174,3 +155,39 @@ def test_ap63_un_nombre_libre_no_llega_a_la_tool(registro, capsys):
     assert envelope["error_code"] == "PROJECT_NOT_FOUND"
     assert envelope["sugerencias"] == ["mi-api"]
     assert not (registro / "01_Projects" / "mi-apii").exists()
+
+
+def _decision(raiz, proyecto):
+    import os
+    import subprocess
+
+    proceso = subprocess.run(
+        [sys.executable, str(SCRIPTS / "vault_ai_decision.py"), "--project", proyecto,
+         "--title", "Usar colas", "--decision_type", "architectural",
+         "--description", "Se usan colas.", "--rationale", "Desacoplan."],
+        env=dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",
+                 PYTHONIOENCODING="utf-8", VAULT_AGENT="pytest"),
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        cwd=str(SCRIPTS), timeout=120,
+    )
+    salida = proceso.stdout.strip()
+    assert salida, proceso.stderr
+    return proceso.returncode, json.loads(salida[salida.index("{"):])
+
+
+def test_ap63_una_tool_real_escribe_el_slug_y_no_la_errata(registro):
+    """El criterio de aceptación de P2, de punta a punta por la CLI."""
+    import yaml
+
+    codigo, r = _decision(registro, "Mi API")
+    assert codigo == 0 and r["ok"], r
+    nota = registro / r["path"]
+    fm = yaml.safe_load(nota.read_text(encoding="utf-8").split("---")[1])
+    assert fm["project"] == "mi-api", fm
+
+    antes = sorted(p.relative_to(registro) for p in registro.rglob("*") if p.is_file())
+    codigo, r = _decision(registro, "mi-apii")
+    assert codigo == 1 and r["error_code"] == "PROJECT_NOT_FOUND", r
+    assert r["tool"] == "vault_ai_decision" and r["sugerencias"] == ["mi-api"]
+    despues = sorted(p.relative_to(registro) for p in registro.rglob("*") if p.is_file())
+    assert despues == antes, set(despues) - set(antes)

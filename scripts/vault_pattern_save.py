@@ -31,6 +31,7 @@ import re
 import sys
 
 from vault_errors import emit_error, wrap_main
+from vault_project import proyecto_registrado
 from vault_norms_catalog import status_frontmatter_lines
 from vault_lib import yaml_scalar, utcnow, slugify
 from vault_lib import parse_frontmatter as _parse_frontmatter
@@ -360,7 +361,7 @@ Notas:
 """,
     )
 
-    parser.add_argument("--project", required=True, help="Project name")
+    parser.add_argument("--project", type=proyecto_registrado("vault_pattern_save"), required=True, help="Project name")
 
     parser.add_argument("--name", required=True, help="Pattern name")
 

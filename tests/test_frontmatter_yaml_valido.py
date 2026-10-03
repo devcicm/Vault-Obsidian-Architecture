@@ -215,6 +215,7 @@ def test_el_slo_escribe_una_unidad_hostil_y_se_relee(unidad):
                 encoding="utf-8", cwd=str(REPO_ROOT))
 
         corre("vault_init")
+        corre("vault_project", "--add", "demo")  # AP-63: el proyecto se da de alta
         r = corre(
             "vault_slo_save",
             "--project", "demo", "--service", "api de migración",

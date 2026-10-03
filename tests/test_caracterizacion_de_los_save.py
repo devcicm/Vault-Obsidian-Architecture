@@ -149,6 +149,10 @@ def vault(tmp_path_factory):
     raiz = tmp_path_factory.mktemp("caracterizacion")
     inicio = _ejecutar(raiz, "vault_init")
     assert inicio.returncode == 0, inicio.stdout + inicio.stderr
+    # AP-63: `--project demo` ya no funda el proyecto; se da de alta antes,
+    # como lo haría quien usa el vault.
+    alta = _ejecutar(raiz, "vault_project", "--add", "demo")
+    assert alta.returncode == 0, alta.stdout + alta.stderr
     # AP-44: el dorado caracteriza esta secuencia, no el orden de selección
     # de pytest. Prepararla entera conserva created/touched también con -k.
     for script in sorted(INVOCACIONES):

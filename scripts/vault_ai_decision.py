@@ -37,6 +37,7 @@ import re
 import sys
 
 from vault_errors import emit_error, wrap_main
+from vault_project import proyecto_registrado
 from vault_lib import slugify_strict, utcnow
 from vault_io import (
     write_report,
@@ -335,7 +336,7 @@ Notes:
 """,
     )
 
-    parser.add_argument("--project", required=True, help="Project slug")
+    parser.add_argument("--project", type=proyecto_registrado("vault_ai_decision"), required=True, help="Project slug")
 
     parser.add_argument("--title", required=True, help="Short decision title")
 

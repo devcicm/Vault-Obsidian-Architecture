@@ -19,6 +19,7 @@ if str(ROOT) not in sys.path:
 
 from vault.autoria.conocimiento import CATEGORIES, guardar_conocimiento
 from vault_errors import emit_error, wrap_main
+from vault_project import proyecto_registrado
 from vault_io import atomic_write_text, get_vault_root, write_report
 
 
@@ -36,7 +37,7 @@ def main() -> int:
     parser.add_argument("--category", required=True, choices=CATEGORIES)
     parser.add_argument("--title")
     parser.add_argument("--content")
-    parser.add_argument("--project")
+    parser.add_argument("--project", type=proyecto_registrado("vault_knowledge_save"))
     parser.add_argument("--tags", nargs="*")
     parser.add_argument("--related", nargs="*")
     parser.add_argument("--scan-path")

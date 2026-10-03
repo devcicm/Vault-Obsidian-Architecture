@@ -33,6 +33,7 @@ import re
 import sys
 
 from vault_errors import emit_error, wrap_main
+from vault_project import proyecto_registrado
 from vault_norms_catalog import status_frontmatter_lines
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from datetime import datetime, timezone
@@ -324,7 +325,7 @@ Notes:
 """,
     )
 
-    parser.add_argument("--project", required=True, help="Project slug")
+    parser.add_argument("--project", type=proyecto_registrado("vault_test_save"), required=True, help="Project slug")
 
     parser.add_argument("--title", required=True, help="Short test case title")
 

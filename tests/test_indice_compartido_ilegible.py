@@ -64,7 +64,9 @@ def _bug(raiz: Path, cwd: Path, titulo: str) -> dict:
 
 def test_bug_save_con_el_indice_roto_no_reutiliza_ids(tmp_path):
     raiz = tmp_path / "vault"
-    for d in ("00_System", "18_Bugs"):
+    # `01_Projects/p` registra el proyecto `p` (AP-63): sin él, `--project p`
+    # no llegaría a la tool.
+    for d in ("00_System", "18_Bugs", "01_Projects/p"):
         (raiz / d).mkdir(parents=True)
     cwd = tmp_path / "cwd"
     cwd.mkdir()

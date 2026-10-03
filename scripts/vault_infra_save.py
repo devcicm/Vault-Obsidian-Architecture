@@ -29,6 +29,7 @@ import re
 import sys
 
 from vault_errors import emit_error, wrap_main
+from vault_project import proyecto_registrado
 from vault_norms_catalog import status_frontmatter_lines
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from datetime import datetime, timezone
@@ -533,7 +534,7 @@ Notas:
 
     parser.add_argument("--location", default="local", help=f"Location: {LOCATIONS}")
 
-    parser.add_argument("--project", help="Optional project")
+    parser.add_argument("--project", type=proyecto_registrado("vault_infra_save"), help="Optional project")
 
     parser.add_argument("--status", help="Component status")
 

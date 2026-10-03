@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
+from vault_project import proyecto_registrado
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from vault_io import assert_within_vault, atomic_write_text, file_lock, get_vault_root, write_report
 from vault_norms_catalog import compute_norm_refs, status_frontmatter_lines
@@ -282,7 +283,7 @@ Ejemplos:
     --smoke_tests '["GET /health → 200","GET /api/v1/products → 200"]'
 """,
     )
-    parser.add_argument("--project", required=True)
+    parser.add_argument("--project", type=proyecto_registrado("vault_release_save"), required=True)
     parser.add_argument("--version", required=True)
     parser.add_argument(
         "--type",

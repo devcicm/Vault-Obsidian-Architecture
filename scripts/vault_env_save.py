@@ -29,6 +29,7 @@ import re
 import sys
 
 from vault_errors import emit_error, wrap_main
+from vault_project import proyecto_registrado
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from datetime import datetime, timezone
 from vault_io import atomic_write_text, assert_within_vault, write_report
@@ -280,7 +281,7 @@ Notas:
 """,
     )
 
-    parser.add_argument("--project", required=True, help="Project slug")
+    parser.add_argument("--project", type=proyecto_registrado("vault_env_save"), required=True, help="Project slug")
 
     parser.add_argument(
         "--environment",

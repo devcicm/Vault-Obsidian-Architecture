@@ -32,6 +32,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import emit_error, wrap_main
+from vault_project import proyecto_registrado
 from vault_io import (
     indice_compartido,
     write_report,
@@ -245,7 +246,7 @@ Status:
   draft | review | approved | published | archived
 """,
     )
-    parser.add_argument("--project", required=True, help="Project slug")
+    parser.add_argument("--project", type=proyecto_registrado("vault_qa_save"), required=True, help="Project slug")
     parser.add_argument("--title", required=True, help="Short document title")
     parser.add_argument(
         "--type",

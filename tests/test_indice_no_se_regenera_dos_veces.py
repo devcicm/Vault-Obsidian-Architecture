@@ -61,6 +61,8 @@ def _ejecutar(raiz: Path, script: str, *argv: str):
 @pytest.fixture
 def vault(tmp_path):
     _ejecutar(tmp_path, "vault_init")
+    # AP-63: `--project demo` ya no funda el proyecto.
+    _ejecutar(tmp_path, "vault_project", "--add", "demo")
     return tmp_path
 
 

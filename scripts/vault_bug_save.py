@@ -42,6 +42,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main
+from vault_project import proyecto_registrado
 from vault_norms_catalog import status_frontmatter_lines
 from vault_io import (
     indice_compartido,
@@ -305,7 +306,7 @@ Notas:
   - --causes / --caused_by son aristas tipadas del grafo, no `related` genérico
 """,
     )
-    parser.add_argument("--project", required=True, help="Slug del proyecto")
+    parser.add_argument("--project", type=proyecto_registrado("vault_bug_save"), required=True, help="Slug del proyecto")
     parser.add_argument("--title", required=True, help="Título breve del defecto")
     parser.add_argument("--symptom", required=True, help="Qué se observa que falla")
     parser.add_argument("--phase", default="open", choices=PHASES)
