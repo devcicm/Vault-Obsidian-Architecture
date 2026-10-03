@@ -254,7 +254,7 @@ _Documentar qué es diferente en este entorno vs producción: datos, escala, ser
         .set("updatedAt", now)
         .set("tags", ["environment", "infrastructure", project, env])
         .set("norm_refs", norm_refs)
-        .set("project", project)
+        .set("project", project, texto=True)
         .set("env", env)
         .set("env_label", profile["label"])
         .set("runtime", runtime)

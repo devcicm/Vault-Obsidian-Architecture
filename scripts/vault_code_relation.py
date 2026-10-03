@@ -209,7 +209,7 @@ def save_code_map(project: str, mermaid_content: str) -> Path:
     frontmatter = [
         Frontmatter()
         .set("title", f"Code Map - {project}")
-        .set("project", project, vacio_citado=True)
+        .set("project", project, texto=True)
         .set("type", "code-map")
         .set("updatedAt", timestamp)
         .render()

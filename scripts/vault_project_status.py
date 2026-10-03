@@ -134,7 +134,7 @@ def vault_project_status(
         Frontmatter()
         .set("title", f"{project} — Status")
         .set("id", note_id)
-        .set("project", project, vacio_citado=True)
+        .set("project", project, texto=True)
         # `status` canónico + `project_state` con el valor de dominio intacto.
         .lineas(status_frontmatter_lines("vault_project_status", status))
         .set("createdAt", created_at)

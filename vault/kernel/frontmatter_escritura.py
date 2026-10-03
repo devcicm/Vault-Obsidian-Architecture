@@ -42,6 +42,7 @@ class Frontmatter:
         valor: Any,
         omitir_vacio: bool = False,
         vacio_citado: bool = False,
+        texto: bool = False,
     ) -> "Frontmatter":
         """Añade `clave: valor`, escapado según el criterio único.
 
@@ -55,8 +56,19 @@ class Frontmatter:
         mismo y no lo son, así que el punto de uso lo declara en vez de que
         este escritor elija por todos. Unificarlo es otra tanda: se decide
         mirando qué lee cada consumidor, no de paso aquí.
+
+        `texto` declara que el valor es texto aunque YAML lo leyera como
+        fecha: sale exactamente como lo decide `yaml_scalar`, que lo cita.
+        La excepción de los instantes existe para `createdAt` y compañía; un
+        proyecto, un título o una ruta llamados `2026-10-02` no son un
+        instante, y sin esto el lector los recibía como `datetime.date`.
+        Es lo que escribían los sitios que llamaban a `yaml_scalar` a mano,
+        así que migrarlos con `texto=True` no cambia un byte.
         """
         if omitir_vacio and valor in (None, "", [], {}):
+            return self
+        if texto:
+            self._lineas.append(f"{clave}: {yaml_scalar(valor)}")
             return self
         if valor == "" and not isinstance(valor, (list, dict)) and not vacio_citado:
             # `clave: ` a secas, que es lo que se escribe hoy y lo que YAML

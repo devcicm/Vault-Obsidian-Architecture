@@ -202,3 +202,35 @@ def test_ap46_el_dashboard_nace_con_un_frontmatter_que_se_lee(vault):
     fm = _frontmatter(vault / r["path"])
     assert fm["id"] == "quality-dashboard" and fm["tags"] == ["quality", "dashboard", "qa"]
     assert fm["norm_refs"] == ["ISO 9001:2015 §9.1"] and fm["type"] == "observability"
+
+
+def test_ap46_un_texto_con_forma_de_fecha_sigue_siendo_texto(vault):
+    """`yaml_scalar` cita lo que YAML leería como fecha; `set` a secas no,
+    porque un `createdAt` tiene que seguir llegando como instante. Un
+    proyecto o un fichero llamado `2026-10-02` es texto: la migración que lo
+    escribía con `set` lo devolvía al lector como `datetime.date`."""
+    import vault_code_map
+    import vault_code_module
+    import vault_project_status
+
+    fecha = "2026-10-02"
+    vault_code_map.vault_code_map(fecha)
+    [mapa] = list(vault.rglob("code-map.md"))
+    assert _frontmatter(mapa)["project"] == fecha
+
+    assert vault_code_module.vault_code_module(fecha, fecha, "desc")["ok"]
+    [modulo] = [n for n in vault.rglob("*.md") if _frontmatter_o_nada(n).get("type") == "code-module"]
+    fm = _frontmatter(modulo)
+    assert fm["project"] == fm["file_path"] == fm["title"] == fecha
+
+    vault_project_status.vault_project_status(fecha, "en_desarrollo", "r")
+    assert _frontmatter(vault / "01_Projects" / fecha / "status.md")["project"] == fecha
+
+
+def test_ap46_set_texto_es_yaml_scalar():
+    from vault.kernel.frontmatter_escritura import Frontmatter
+    from vault.kernel.frontmatter_parsing import yaml_scalar
+
+    for valor in ("2026-10-02", "2026-10-02T00:00:00Z", "", "a: b", "plano"):
+        [linea] = Frontmatter().set("k", valor, texto=True).campos()
+        assert linea == f"k: {yaml_scalar(valor)}"

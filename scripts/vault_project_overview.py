@@ -214,7 +214,7 @@ def vault_project_overview(
         Frontmatter()
         .set("title", f"Overview: {project}")
         .set("id", str(uuid.uuid4()))
-        .set("project", project)
+        .set("project", project, texto=True)
         .set("type", "project-overview")
         .set("createdAt", timestamp)
         .set("updatedAt", timestamp)

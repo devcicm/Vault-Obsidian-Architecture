@@ -246,9 +246,9 @@ def vault_code_module(
     frontmatter = [
         Frontmatter()
         .set("id", note_id)
-        .set("title", Path(file_path).name, vacio_citado=True)
-        .set("project", project, vacio_citado=True)
-        .set("file_path", file_path, vacio_citado=True)
+        .set("title", Path(file_path).name, texto=True)
+        .set("project", project, texto=True)
+        .set("file_path", file_path, texto=True)
         .set("type", "code-module")
         .set("language", language, omitir_vacio=True)
         .set("iso_type", iso_type, omitir_vacio=True)

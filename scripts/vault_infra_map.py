@@ -254,8 +254,8 @@ def vault_infra_map(
         Frontmatter()
         .set("title", "Infrastructure Map")
         .set("updatedAt", utcnow())
-        .set("project", project, omitir_vacio=True)
-        .set("location", location, omitir_vacio=True)
+        .set("project", project, omitir_vacio=True, texto=True)
+        .set("location", location, omitir_vacio=True, texto=True)
         .render()
     ]
 

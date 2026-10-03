@@ -137,8 +137,8 @@ python scripts/{tool_hint}
         Frontmatter()
         # El escape va sobre el valor entero; sobre la mitad salía
         # `title: "x" — Guía rápida`, que YAML no lee.
-        .set("title", section + " — Guía rápida", vacio_citado=True)
-        .set("id", section.lower() + "-primer", vacio_citado=True)
+        .set("title", section + " — Guía rápida", texto=True)
+        .set("id", section.lower() + "-primer", texto=True)
         .set("createdAt", ahora)
         .set("updatedAt", ahora)
         .set("cia_integrity", "medium")
