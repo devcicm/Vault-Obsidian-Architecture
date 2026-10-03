@@ -115,8 +115,20 @@ def vault_project_status(
             if existentes.get("createdAt") is not None:
                 existing_created = str(existentes["createdAt"])
 
-        except (OSError, UnicodeDecodeError):
-            pass
+        except (OSError, UnicodeDecodeError) as exc:
+            # AP-51: callarse aquí acuñaba un id nuevo y reescribía la nota
+            # que no se había podido leer.
+            return emit_error("vault_project_status", "FILE_READ_ERROR",
+                              f"No se pudo leer {status_file.name}: {exc}")
+
+    # El changelog también se lee antes de escribir nada: leerlo después de
+    # reescribir status.md dejaba la actualización a medias si fallaba.
+    try:
+        existing = (changelog_file.read_text(encoding="utf-8")
+                    if changelog_file.exists() else "# Changelog\n\n")
+    except (OSError, UnicodeDecodeError) as exc:
+        return emit_error("vault_project_status", "FILE_READ_ERROR",
+                          f"No se pudo leer {changelog_file.name}: {exc}")
 
     note_id = existing_id or str(uuid.uuid4())
 
@@ -205,13 +217,6 @@ def vault_project_status(
 {f"- Archivos: {', '.join(modified_files)}" if modified_files else ""}
 
 """
-
-    if changelog_file.exists():
-        with open(changelog_file, "r", encoding="utf-8") as f:
-            existing = f.read()
-
-    else:
-        existing = f"# Changelog\n\n"
 
     # atomic_write_* y no `open(..., "w")`: el escaneo de secretos, el
     # saneado de encoding y el temp+replace viven ahí. Escribir en crudo los

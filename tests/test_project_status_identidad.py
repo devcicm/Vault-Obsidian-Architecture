@@ -3,6 +3,10 @@
 Releía `id` y `createdAt` partiendo líneas por `:` en vez de con YAML:
 `id: 'x' # copiado` volvía como `x' # copiado` y la nota cambiaba de
 identidad en la primera actualización (medido 2026-10-02).
+
+Y si `status.md` no se podía leer, se callaba y lo reescribía con un id
+nuevo; si el ilegible era `changelog.md`, la excepción escapaba después de
+reescribir `status.md`. Ahora no escribe nada: FILE_READ_ERROR (AP-51).
 """
 
 import sys
@@ -40,3 +44,24 @@ def test_ap44_un_comentario_yaml_no_cambia_la_identidad(proyecto):
     assert fm["id"] == ID
     # El dueño normaliza el instante; lo que se conserva es el instante.
     assert fm["createdAt"] == "2026-01-01T00:00:00+00:00"
+
+
+def test_ap51_un_status_ilegible_no_se_reescribe_con_otro_id(proyecto):
+    import vault_project_status
+
+    original = b"---\nid: x\n---\n\xff\xfe no es utf-8"
+    (proyecto / "status.md").write_bytes(original)
+    r = vault_project_status.vault_project_status("alfa", "en_desarrollo", "hecho")
+    assert not r["ok"] and r["error_code"] == "FILE_READ_ERROR"
+    assert (proyecto / "status.md").read_bytes() == original
+
+
+def test_ap51_un_changelog_ilegible_no_deja_la_actualizacion_a_medias(proyecto):
+    import vault_project_status
+
+    estado = f"---\nid: {ID}\n---\nantes\n".encode()
+    (proyecto / "status.md").write_bytes(estado)
+    (proyecto / "changelog.md").write_bytes(b"\xff\xfe no es utf-8")
+    r = vault_project_status.vault_project_status("alfa", "en_desarrollo", "hecho")
+    assert not r["ok"] and r["error_code"] == "FILE_READ_ERROR"
+    assert (proyecto / "status.md").read_bytes() == estado
