@@ -1839,6 +1839,69 @@ def construir_error(
     return entry
 
 
+#: Causa del dominio -> código del catálogo. La otra mitad de la frase que
+#: `vault/kernel/fallos.py` empieza: allí se nombra **qué pasó**, aquí **qué
+#: puede hacer el consumidor**.
+#:
+#: Vive en un solo sitio a propósito. La misma tabla repartida entre
+#: `vault_folder_registry`, `vault_backup` y `vault_restore` sería AP-57
+#: cometido justo al saldar AP-52: tres adaptadores decidiendo por su cuenta
+#: qué código le toca a una causa que no es suya. Un test comprueba que cubre
+#: `fallos.CAUSAS` entera y que ningún destino falta del `ERROR_CATALOG`.
+#:
+#: Vivió en `vault_errors` hasta v40.34; bajó al núcleo para que los entry
+#: modules de `vault/` —que no importan `scripts/`— traduzcan con la misma
+#: tabla en vez de con una copia. `vault_errors` la reexporta.
+#:
+#: Que tres causas del manifiesto compartan destino no pierde información: la
+#: causa exacta viaja en el campo `causa` del envelope. El catálogo dice cómo se
+#: recupera, y de las tres se recupera igual.
+MAPA_DE_FALLOS: Dict[str, str] = {
+    "CARPETA_YA_REGISTRADA": "INVALID_FOLDER",
+    "CARPETA_NO_ENCONTRADA": "FOLDER_NOT_FOUND",
+    "BACKUP_NO_ENCONTRADO": "BACKUP_NOT_FOUND",
+    "MANIFIESTO_AUSENTE": "BACKUP_MANIFEST_INVALID",
+    "MANIFIESTO_ILEGIBLE": "BACKUP_MANIFEST_INVALID",
+    "MANIFIESTO_SIN_HUELLA": "BACKUP_MANIFEST_INVALID",
+    "CONFIRMACION_REQUERIDA": "MISSING_REQUIRED_ARG",
+    "INDICE_ILEGIBLE": "DATA_FILE_CORRUPT",
+    "SECRETO_EN_CONTENIDO": "SECRET_DETECTED",
+    "PROYECTO_NO_REGISTRADO": "PROJECT_NOT_FOUND",
+    "PROYECTO_AMBIGUO": "PROJECT_AMBIGUOUS",
+}
+
+
+def traducir_fallo(fallo: Any) -> "tuple[str, str, Dict[str, Any]]":
+    """`(código, mensaje, campos)` de un fallo del dominio, sin construir nada.
+
+    Es la traducción entera: quien emite —`vault_errors.emit_fallo`, con su
+    traza, o `envelope_de_fallo`, sin ella— solo decide el transporte. Toma el
+    fallo por pato: este módulo es hoja y no importa `fallos`.
+
+    `error` se sigue emitiendo: es un campo estable declarado en
+    `field-compat-baseline.json` para `vault_restore`. Lo mismo `hint` y
+    `searched`, que llegan por `fallo.datos`.
+    """
+    causa = getattr(fallo, "causa", None)
+    if causa not in MAPA_DE_FALLOS:
+        raise ValueError(
+            f"causa sin traducción al catálogo: {causa!r}. Añadirla a "
+            "MAPA_DE_FALLOS es parte de declararla en fallos.CAUSAS."
+        )
+    mensaje = getattr(fallo, "mensaje", None) or str(fallo)
+    campos: Dict[str, Any] = {"causa": causa, "error": mensaje}
+    campos.update(getattr(fallo, "datos", None) or {})
+    return MAPA_DE_FALLOS[causa], mensaje, campos
+
+
+def envelope_de_fallo(tool: str, fallo: Any) -> Dict[str, Any]:
+    """El envelope de un fallo del dominio, sin I/O: para el código instalado."""
+    codigo, mensaje, campos = traducir_fallo(fallo)
+    envelope = construir_error(tool, codigo, mensaje)
+    envelope.update(campos)
+    return envelope
+
+
 def mensaje_de(envelope: Mapping[str, Any]) -> Optional[str]:
     """El mensaje de un envelope de error, venga en la forma que venga.
 

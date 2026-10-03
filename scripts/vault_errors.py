@@ -49,7 +49,7 @@ from vault_errors_catalog import (
 from vault_errors_trace import log_trace, log_token_usage
 from vault.autoria.voz import speak as _speak_estable
 from vault.kernel import proyectos as _proyectos
-from vault.kernel.fallos import FalloDeDominio
+from vault.kernel.errores import MAPA_DE_FALLOS as _MAPA_DE_FALLOS, traducir_fallo as _traducir_fallo
 
 TOOL_TIMEOUT_SECONDS: int = _env("VAULT_TOOL_TIMEOUT")
 
@@ -179,32 +179,9 @@ def emit_error(
     return entry
 
 
-#: Causa del dominio -> código del catálogo. La otra mitad de la frase que
-#: `vault/kernel/fallos.py` empieza: allí se nombra **qué pasó**, aquí **qué
-#: puede hacer el consumidor**.
-#:
-#: Vive en un solo sitio a propósito. La misma tabla repartida entre
-#: `vault_folder_registry`, `vault_backup` y `vault_restore` sería AP-57
-#: cometido justo al saldar AP-52: tres adaptadores decidiendo por su cuenta
-#: qué código le toca a una causa que no es suya. Un test comprueba que cubre
-#: `fallos.CAUSAS` entera y que ningún destino falta del `ERROR_CATALOG`.
-#:
-#: Que tres causas del manifiesto compartan destino no pierde información: la
-#: causa exacta viaja en el campo `causa` del envelope. El catálogo dice cómo se
-#: recupera, y de las tres se recupera igual.
-MAPA_DE_FALLOS: Dict[str, str] = {
-    "CARPETA_YA_REGISTRADA": "INVALID_FOLDER",
-    "CARPETA_NO_ENCONTRADA": "FOLDER_NOT_FOUND",
-    "BACKUP_NO_ENCONTRADO": "BACKUP_NOT_FOUND",
-    "MANIFIESTO_AUSENTE": "BACKUP_MANIFEST_INVALID",
-    "MANIFIESTO_ILEGIBLE": "BACKUP_MANIFEST_INVALID",
-    "MANIFIESTO_SIN_HUELLA": "BACKUP_MANIFEST_INVALID",
-    "CONFIRMACION_REQUERIDA": "MISSING_REQUIRED_ARG",
-    "INDICE_ILEGIBLE": "DATA_FILE_CORRUPT",
-    "SECRETO_EN_CONTENIDO": "SECRET_DETECTED",
-    "PROYECTO_NO_REGISTRADO": "PROJECT_NOT_FOUND",
-    "PROYECTO_AMBIGUO": "PROJECT_AMBIGUOUS",
-}
+#: La tabla y su traducción viven en el núcleo desde v40.34 (`vault.kernel.
+#: errores`); se reexporta para no derogar el nombre.
+MAPA_DE_FALLOS = _MAPA_DE_FALLOS
 
 
 def emit_fallo(tool: str, fallo: Any) -> Dict[str, Any]:
@@ -226,17 +203,9 @@ def emit_fallo(tool: str, fallo: Any) -> Dict[str, Any]:
     `fallo.datos`. Quitarlos habría sido cambiar el arreglo de AP-52 por una
     infracción del contrato de campos.
     """
-    causa = getattr(fallo, "causa", None)
-    if causa not in MAPA_DE_FALLOS:
-        raise ValueError(
-            f"causa sin traducción al catálogo: {causa!r}. Añadirla a "
-            "MAPA_DE_FALLOS es parte de declararla en fallos.CAUSAS."
-        )
-    mensaje = getattr(fallo, "mensaje", None) or str(fallo)
-    envelope = emit_error(tool, MAPA_DE_FALLOS[causa], mensaje)
-    envelope["causa"] = causa
-    envelope["error"] = mensaje
-    envelope.update(getattr(fallo, "datos", None) or {})
+    codigo, mensaje, campos = _traducir_fallo(fallo)
+    envelope = emit_error(tool, codigo, mensaje)
+    envelope.update(campos)
     return envelope
 
 
@@ -268,17 +237,7 @@ def proyecto_registrado(tool: str) -> Callable[[str], str]:
     arriba.
     """
 
-    def _resolver(valor: str) -> str:
-        if valor == "":
-            return valor
-        try:
-            return _proyectos.leer_registro(get_vault_root()).resolver(valor)
-        except FalloDeDominio as fallo:
-            print(json.dumps(emit_fallo(tool, fallo), ensure_ascii=False))
-            raise SystemExit(1)
-
-    _resolver.__name__ = "proyecto_registrado"
-    return _resolver
+    return _proyectos.proyecto_registrado(tool, get_vault_root, emitir=emit_fallo)
 
 
 def emit_ok(tool: str, data: Dict[str, Any]) -> Dict[str, Any]:

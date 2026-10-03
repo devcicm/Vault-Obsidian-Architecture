@@ -38,17 +38,8 @@ EXENTAS = {
 #: Sitios sin `type=proyecto_registrado` al estrenar el guard, por módulo.
 #: Solo encoge: se convierten por lotes y cada lote quita sus líneas.
 PENDIENTES: dict = {
-    # Las 43 de `scripts/` se saldaron en v40.34; sus líneas no se reponen.
-    #
-    # Los entry modules de `vault/autoria/` (`python -m`, `--root` explícito).
-    # No los usa `vault knowledge_save` —la wheel despacha al de `scripts/`,
-    # que resuelve—, pero son instalables. No pueden importar
-    # `vault_errors.proyecto_registrado`: el paquete no importa `scripts`, y
-    # traducir el fallo aquí con su propio código sería repartir
-    # `MAPA_DE_FALLOS`, AP-57 cometido al cumplir AP-63. Se saldan cuando la
-    # traducción tenga un dueño que `vault/` pueda importar.
-    "vault/autoria/knowledge_get": 1,
-    "vault/autoria/knowledge_save": 1,
+    # Las 43 de `scripts/` se saldaron en v40.34, y los dos entry modules de
+    # `vault/autoria/` al bajar `MAPA_DE_FALLOS` al núcleo. No se reponen.
 }
 
 
@@ -227,3 +218,30 @@ def test_ap63_la_fabrica_vive_junto_a_emit_fallo_y_la_tool_la_reexporta():
 
     assert vault_project.proyecto_registrado is vault_errors.proyecto_registrado
     assert viejo is dueno
+
+
+@pytest.mark.parametrize("modulo, argv", [
+    ("vault.autoria.knowledge_save",
+     ["--category", "concepts", "--title", "T", "--content", "c"]),
+    ("vault.autoria.knowledge_get", ["--query", "t"]),
+])
+def test_ap63_los_entry_modules_instalados_resuelven(registro, modulo, argv, capsys):
+    """El código instalado no importa `scripts/`; resuelve con la fábrica y la
+    tabla del núcleo. `--root` va detrás de `--project` a propósito: el
+    registro sale de él aunque argparse aún no lo haya leído."""
+    import importlib
+
+    main = importlib.import_module(modulo).main
+    with pytest.raises(SystemExit) as salida:
+        main(["--project", "mi-apii", *argv, "--root", str(registro)])
+    assert salida.value.code == 1
+    r = json.loads(capsys.readouterr().out)
+    assert r["error_code"] == "PROJECT_NOT_FOUND" and r["sugerencias"] == ["mi-api"], r
+    assert r["tool"] == modulo.replace("vault.autoria.", "vault_")
+    assert sorted(p.name for p in (registro / "01_Projects").iterdir()) == ["mi-api"]
+
+
+def test_ap63_la_traduccion_de_fallos_tiene_un_solo_dueno():
+    from vault.kernel import errores
+
+    assert vault_errors.MAPA_DE_FALLOS is errores.MAPA_DE_FALLOS

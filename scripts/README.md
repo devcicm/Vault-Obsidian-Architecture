@@ -1423,7 +1423,9 @@ def vault_backup_verify(backup_name, root=None):
         return emit_fallo("vault_backup", e)
 ```
 
-La tabla causa → código es `MAPA_DE_FALLOS`, y vive **solo aquí**: repartirla
+La tabla causa → código es `MAPA_DE_FALLOS`, y vive en un solo sitio —desde
+v40.34 en `vault.kernel.errores`, para que el código instalado traduzca sin
+importar `scripts/`; aquí se reexporta—: repartirla
 entre los adaptadores sería AP-57 cometido al cumplir AP-52. Una causa nueva se
 declara en `CAUSAS` **y** en `MAPA_DE_FALLOS` — un test comprueba las dos
 direcciones, porque una causa sin traducción saldría al consumidor como fallo

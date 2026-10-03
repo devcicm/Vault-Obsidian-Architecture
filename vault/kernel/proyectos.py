@@ -31,10 +31,12 @@ importación. `vault.autoria.proyectos` queda como reexportación.
 from __future__ import annotations
 
 import difflib
+import json
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Dict, Iterable, List, Mapping, Optional, Set, Tuple
 
+from .errores import envelope_de_fallo
 from .fallos import FalloDeDominio
 from .frontmatter_parsing import parse_frontmatter_robust
 from .normalizacion import slugify_strict
@@ -246,3 +248,36 @@ def pertenencia(registro: Registro, nombre: str) -> Callable[[object], bool]:
 def pertenencia_en(raiz: Path, nombre: str) -> Callable[[object], bool]:
     """`pertenencia` leyendo el registro de ``raiz``: lo que llama un lector."""
     return pertenencia(leer_registro(raiz), nombre)
+
+
+def proyecto_registrado(
+    tool: str,
+    raiz: Callable[[], Path],
+    emitir: Callable[[str, FalloDeDominio], Dict[str, object]] = envelope_de_fallo,
+) -> Callable[[str], str]:
+    """`type=` de argparse para el `--project` de toda tool (AP-63).
+
+    Lo que llega a la tool ya es el slug canónico. Un nombre que no resuelve
+    no llega: se imprime el envelope con el nombre de **la tool que llama**
+    —por eso es una fábrica— y se sale con 1 antes de que la tool cree nada.
+    No se usa `ArgumentTypeError`: argparse lo volvería texto por stderr con
+    código 2, fuera del contrato que leen la CLI y el MCP. La cadena vacía
+    pasa tal cual: es el «sin proyecto» de las opcionales.
+
+    `raiz` se llama al resolver, no al construir el parser: la raíz puede
+    salir del propio argv (`--root` de los entry modules) o del entorno.
+    `emitir` es el transporte: `vault_errors` pasa `emit_fallo`, que además
+    deja traza; el código instalado usa el envelope sin I/O del núcleo.
+    """
+
+    def _resolver(valor: str) -> str:
+        if valor == "":
+            return valor
+        try:
+            return leer_registro(Path(raiz())).resolver(valor)
+        except FalloDeDominio as fallo:
+            print(json.dumps(emitir(tool, fallo), ensure_ascii=False))
+            raise SystemExit(1)
+
+    _resolver.__name__ = "proyecto_registrado"
+    return _resolver
