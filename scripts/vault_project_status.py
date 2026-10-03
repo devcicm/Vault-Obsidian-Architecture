@@ -24,13 +24,11 @@ import argparse
 
 import json
 
-import re
-
 import sys
 
 from vault_errors import emit_error, wrap_main
 from vault_norms_catalog import status_frontmatter_lines
-from vault_lib import utcnow
+from vault_lib import parse_frontmatter, utcnow
 import uuid
 
 from pathlib import Path
@@ -108,15 +106,14 @@ def vault_project_status(
         try:
             existing_content = status_file.read_text(encoding="utf-8")
 
-            fm_match = re.match(r"^---\n(.*?)\n---", existing_content, re.DOTALL)
-
-            if fm_match:
-                for line in fm_match.group(1).split("\n"):
-                    if line.startswith("id:"):
-                        existing_id = line.split(":", 1)[1].strip().strip("\"'")
-
-                    elif line.startswith("createdAt:"):
-                        existing_created = line.split(":", 1)[1].strip().strip("\"'")
+            # AP-44: con YAML, como lo lee el consumidor. Partir líneas por
+            # `:` devolvía `id: 'x' # copiado` como `x' # copiado` y la nota
+            # cambiaba de identidad en la primera actualización.
+            existentes = parse_frontmatter(existing_content)
+            if existentes.get("id") is not None:
+                existing_id = str(existentes["id"])
+            if existentes.get("createdAt") is not None:
+                existing_created = str(existentes["createdAt"])
 
         except (OSError, UnicodeDecodeError):
             pass
