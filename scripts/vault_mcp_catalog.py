@@ -154,7 +154,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": [],
-        "example": 'python vault_search.py --query "circuit breaker"\npython vault_search.py --query "deploy" --project "mi-api"',
+        "example": 'python vault_search.py --query "circuit breaker"\npython vault_search.py --query "deploy" --folder "01_Projects"',
         "related": ["vault_read", "vault_list"],
     },
     "vault_list": {
@@ -573,7 +573,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "Actualiza 99_Index/search-index.json",
             "Opcional: 99_Index/graph.json, hash-index.json",
         ],
-        "example": "python vault_reindex.py\npython vault_reindex.py --graph --hash",
+        "example": "python vault_reindex.py\npython vault_reindex.py --graph --check",
         "related": ["vault_search", "vault_graph"],
     },
     "vault_graph": {
@@ -935,7 +935,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": ["Confimar antes de sobreescribir"],
         "side_effects": ["Actualiza wiki-links, search-index, graph.json, move-log"],
-        "example": 'python vault_move.py --from "01_Projects/foo.md" --to "03_Decisions/foo.md"\npython vault_move.py --folder "01_Projects/old" --to_folder "01_Projects/new"',
+        "example": 'python vault_move.py --from "01_Projects/foo.md" --to "03_Decisions/foo.md"\npython vault_move.py --folder "01_Projects/old" --to-folder "01_Projects/new"',
         "related": ["vault_write", "vault_graph", "vault_reindex"],
     },
     "vault_folder_registry": {
@@ -1237,7 +1237,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Genera 11_Code/{project}/map.md con diagrama"],
-        "example": 'python vault_code_map.py --project "mi-api"\npython vault_code_map.py --project "mi-api" --depth 2',
+        "example": 'python vault_code_map.py --project "mi-api"',
         "related": ["vault_code_module", "vault_code_relation", "vault_graph"],
     },
     "vault_code_relation": {
@@ -1303,7 +1303,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": [],
-        "example": 'python vault_code_query.py --project "mi-api" --list\npython vault_code_query.py --query "imports" --pattern "auth"',
+        "example": 'python vault_code_query.py --project "mi-api" --list\npython vault_code_query.py --project "mi-api" --class "AuthService" --deps',
         "related": ["vault_code_map", "vault_search"],
     },
     "vault_code_sync": {
@@ -1327,7 +1327,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Actualiza 11_Code/{project}/index.json"],
-        "example": 'python vault_code_sync.py --project "mi-api"\npython vault_code_sync.py --project "mi-api" --action "update"',
+        "example": 'python vault_code_sync.py --project "mi-api"\npython vault_code_sync.py --project "mi-api" --dry-run',
         "related": ["vault_code_map", "vault_reindex"],
     },
     "vault_code_tag": {
@@ -1471,7 +1471,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": [],
-        "example": 'python vault_pattern_list.py\npython vault_pattern_list.py --category "architectural"',
+        "example": 'python vault_pattern_list.py\npython vault_pattern_list.py --type "architectural"',
         "related": ["vault_pattern_save", "vault_search"],
     },
     "vault_knowledge_save": {
@@ -1569,7 +1569,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Crea carpeta en vault-backups/"],
-        "example": 'python vault_backup.py\npython vault_backup.py --compress --label "pre-migration"',
+        "example": 'python vault_backup.py\npython vault_backup.py --label "pre-migration"',
         "related": ["vault_backup_list", "vault_restore"],
     },
     "vault_backup_list": {
@@ -1905,7 +1905,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Genera reporte en 00_System/"],
-        "example": 'python vault_quality_check.py\npython vault_quality_check.py --project "mi-api" --metrics "completeness"',
+        "example": 'python vault_quality_check.py\npython vault_quality_check.py --min-score 0.7',
         "related": ["vault_audit", "vault_fundamentals"],
     },
     "vault_quality_dashboard": {
@@ -2018,7 +2018,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         # escribe nadie: el side effect declarado apuntaba a una ruta que no
         # existe, y es la que un consumidor mira para saber si hubo trabajo.
         "side_effects": ["Genera 99_Index/index.md"],
-        "example": "python vault_master_index.py\npython vault_master_index.py --include_subdirs",
+        "example": "python vault_master_index.py",
         "related": ["vault_section_index", "vault_reindex"],
     },
     "vault_timeline": {
@@ -2042,7 +2042,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": [],
-        "example": "python vault_timeline.py\npython vault_timeline.py --days 7",
+        "example": "python vault_timeline.py\npython vault_timeline.py --project mi-api --limit 20",
         "related": ["vault_audit", "vault_change_log"],
     },
     "vault_change_log": {
@@ -2176,7 +2176,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": [],
-        "example": 'python vault_norms.py --list\npython vault_norms.py --action "add" --name "AP-25" --content "Code style rules"',
+        "example": 'python vault_norms.py --list\npython vault_norms.py --show AP-25',
         "related": ["vault_ai_decision", "vault_audit"],
     },
     "vault_smoke": {
@@ -3414,7 +3414,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": ["No guardar tokens en texto plano"],
         "side_effects": [],
-        "example": 'python vault_tokens.py --summary\npython vault_tokens.py --project "mi-api" --action "add" --token_type "api_key"',
+        "example": 'python vault_tokens.py --summary\npython vault_tokens.py --since "2026-01-01" --top 10',
         "related": ["vault_token_counter", "vault_token_service"],
     },
     "vault_token_counter": {

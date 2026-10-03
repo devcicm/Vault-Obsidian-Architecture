@@ -366,7 +366,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "Ejecutar vault_migrate_docs sin tener vault_migrate_rollback disponible "
             "o sin snapshot previo. Si la migración introduce errores, no hay manera de revertir."
         ),
-        "signal": "vault_migrate_docs ejecutado sin llamar vault_drift_detect --snapshot primero.",
+        "signal": "vault_migrate_docs ejecutado sin llamar vault_drift_detect --mode snapshot primero.",
         "prevention": "PAT-4 (phased audit): siempre snapshot → migrate → verify → rollback si falla.",
         "tools_enforcing": [],
         # `vault_migrate_rollback` **es** el rollback: tenerlo no detecta que una
@@ -854,8 +854,8 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "enforcement": "recommended",
         "description": (
             "Las auditorías masivas se ejecutan en 4 fases atómicas: "
-            "1-Snapshot (vault_drift_detect --snapshot), 2-Detección (vault_audit), "
-            "3-Resolución (vault_write, vault_change_log), 4-Verificación (vault_drift_detect --report)."
+            "1-Snapshot (vault_drift_detect --mode snapshot), 2-Detección (vault_audit), "
+            "3-Resolución (vault_write, vault_change_log), 4-Verificación (vault_drift_detect --mode report)."
         ),
         "signal": "0 regresiones entre snapshot y estado final.",
         "prevention": "N/A — es el protocolo de auditoría.",
@@ -935,7 +935,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "(1) apertura sin cierre ([[nota sin ]]), (2) cierre sin apertura (]] sin [[), "
             "(3) anidamiento incorrecto ([[[[nota]]]] o [[nota]]]]). En Obsidian el link "
             "se renderiza como texto literal, no como enlace navegable. Rompe la trazabilidad "
-            "y produce falsos negativos en vault_audit --broken-links."
+            "y produce falsos negativos en vault_audit (brokenLinks)."
         ),
         "signal": (
             "vault_write content_gate detecta balance desigual en línea y rechaza la escritura. "
@@ -944,7 +944,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         ),
         "prevention": (
             "Usar siempre el formato [[stem]] o [[stem|alias]]. Validar balance con "
-            "vault_fix_brackets --fix antes de commit. El content_gate de vault_write "
+            "vault_fix_brackets --apply antes de commit. El content_gate de vault_write "
             "rechaza contenido con bracket imbalance."
         ),
         "tools_enforcing": ["vault_write", "vault_fix_brackets"],

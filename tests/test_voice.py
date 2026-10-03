@@ -63,7 +63,7 @@ def test_cuando_una_norma_frena_la_llamada_la_voz_nombra_esa_norma():
     d = voz.speak("vault_write", {"ok": False, "norm_code": "AP-41"})
     assert d["moment"] == "blocked" and d["focus"] == "AP-41"
     assert "AP-41" in d["message"]
-    assert d["next"] == "python scripts/vault_norms.py --explain AP-41"
+    assert d["next"] == "python scripts/vault_norms.py --show AP-41"
 
 
 def test_cuando_hubo_escritura_la_voz_dice_cuanto_cambio():

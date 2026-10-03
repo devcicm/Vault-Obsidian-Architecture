@@ -643,7 +643,7 @@ CIA: enum values `high`, `medium`, `low`
 ### 5. Backup / Restore
 
 - `vault_backup` → snapshot completo + Merkle root
-- `vault_restore --backup <name>` → copia + `vault_reindex --graph`
+- `vault_restore --backup_name <name>` → copia + `vault_reindex --graph`
 
 ---
 
@@ -777,13 +777,13 @@ def generate_reference_matrix(vault_root: Path, drift: dict) -> str:
 |---|---|---|---|
 | AP-11 Skeleton files | vault_validate | vault_write (re-create) | content gate |
 | AP-13 Timestamps inválidos | vault_audit | vault_write (regenera) | frontmatter schema |
-| AP-14 Wiki-links rotos | vault_audit --broken-links | (manual) | SP-02 forward-link verification |
+| AP-14 Wiki-links rotos | vault_audit (brokenLinks) | (manual) | SP-02 forward-link verification |
 | AP-17 Canonical-shadow | vault_audit | vault_deduplicate | vault_code_module AP-17 guard |
 | AP-18 Cross-folder dup | vault_audit | vault_deduplicate | migration idempotent |
 | AP-21 Path-anchored links | vault_write (guard) | vault_write (reject) | content gate |
 | AP-22 Empty wikilinks | vault_write (guard) | vault_write (reject) | content gate |
 | AP-23 Note > 500 lines | vault_write (advisory) | (manual split) | guidelines |
-| AP-24 Bracket imbalance | vault_write (guard) + vault_audit | vault_fix_brackets --fix | content gate |
+| AP-24 Bracket imbalance | vault_write (guard) + vault_audit | vault_fix_brackets --apply | content gate |
 | AP-25 Mermaid errors | vault_audit + vault_mermaid_check | (manual) | vault_mermaid_check |
 
 ---
@@ -794,13 +794,13 @@ def generate_reference_matrix(vault_root: Path, drift: dict) -> str:
 |---|---|---|---|
 | AP-11 Skeleton files | vault_validate | vault_write (re-create) | content gate |
 | AP-13 Invalid timestamps | vault_audit | vault_write (regenerate) | frontmatter schema |
-| AP-14 Broken wiki-links | vault_audit --broken-links | (manual) | SP-02 forward-link verification |
+| AP-14 Broken wiki-links | vault_audit (brokenLinks) | (manual) | SP-02 forward-link verification |
 | AP-17 Canonical-shadow | vault_audit | vault_deduplicate | vault_code_module AP-17 guard |
 | AP-18 Cross-folder dup | vault_audit | vault_deduplicate | migration idempotent |
 | AP-21 Path-anchored links | vault_write (guard) | vault_write (reject) | content gate |
 | AP-22 Empty wikilinks | vault_write (guard) | vault_write (reject) | content gate |
 | AP-23 Note > 500 lines | vault_write (advisory) | (manual split) | guidelines |
-| AP-24 Bracket imbalance | vault_write (guard) + vault_audit | vault_fix_brackets --fix | content gate |
+| AP-24 Bracket imbalance | vault_write (guard) + vault_audit | vault_fix_brackets --apply | content gate |
 | AP-25 Mermaid errors | vault_audit + vault_mermaid_check | (manual) | vault_mermaid_check |
 """
 
@@ -1033,7 +1033,7 @@ def generate_metrics(vault_root: Path, drift: dict) -> str:
 | **dqHealth.notes_below_07** | int | vault_quality_check | Notas con DQ < 0.7 |
 | **tag_health_score** | 0-100 | vault_audit | Salud del tag registry |
 | **orphan_count** | int | vault_graph | Notas sin relaciones |
-| **broken_link_count** | int | vault_audit --broken-links | Links a notas inexistentes |
+| **broken_link_count** | int | vault_audit (brokenLinks) | Links a notas inexistentes |
 | **mermaid_error_count** | int | vault_mermaid_check | Errores de sintaxis Mermaid |
 | **render_error_count** | int | vault_fix_brackets | Errores de render markdown (AP-26) |
 | **idempotency_score** | 0-100 | (v36 nuevo) | Cobertura de file_lock + atomic_write |

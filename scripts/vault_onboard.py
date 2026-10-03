@@ -2101,8 +2101,8 @@ def _onboard_09_infrastructure(
 ## Para enriquecer
 
 ```bash
-python scripts/vault_infra_save.py --project {project} --component "..."
-python scripts/vault_env_save.py --project {project} --env_file ".env"
+python scripts/vault_infra_save.py --project {project} --name "..." --type server --description "..." --config '{{}}'
+python scripts/vault_env_save.py --project {project} --environment dev --vars '[...]'
 ```
 """
     return [

@@ -104,7 +104,7 @@ def _etiqueta(norma: Mapping[str, Any]) -> str:
 
 def _siguiente(momento: str, tool: str, foco: Mapping[str, Any]) -> str:
     if momento == "blocked":
-        return f"python scripts/vault_norms.py --explain {foco['code']}"
+        return f"python scripts/vault_norms.py --show {foco['code']}"
     if momento == "wrote":
         return "python scripts/vault_norms.py --audit"
     return f"python scripts/vault_voice.py --tool {tool}"

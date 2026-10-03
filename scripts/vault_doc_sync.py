@@ -22,6 +22,9 @@ Qué comprueba:
      etiqueta, ancla resuelta, y las tools de `GROUPS` en la fila.
   6. Todo comando `python scripts/X.py --flag` que la documentación publica
      existe y acepta esos flags.
+  7. Toda receta `vault_x --flag` que el **código** entrega —ejemplos del
+     catálogo MCP, `nextActions`, `tool_hint`, plantillas de vault_sdd_init—
+     usa flags que la tool acepta (ver `recetas_en_codigo`).
 
 La sexta llegó tarde y con factura. `AGENTS.md` publicaba
 `vault_audit.py --root vault-sandbox` y `vault_quality_check.py --root ...` en
@@ -159,10 +162,131 @@ def comandos_publicados() -> List[Dict]:
     return problems
 
 
+# Séptima comprobación (2026-10-02). La sexta medía los `.md` escritos a mano y
+# era ciega a las recetas que de verdad llegan al agente: el `example` del
+# catálogo MCP, `nextActions` del audit, el `tool_hint` del registro de
+# carpetas, la siguiente acción de `vault/autoria/voz.py` y las tablas que
+# `vault_sdd_init` reparte a cada vault. Medidas ese día: 46 sitios con un
+# flag que la tool no acepta — `vault_audit --broken-links`,
+# `vault_norms --explain`, `vault_restore --backup`, `vault_fix_brackets --fix`.
+# Se leen los literales por AST, no las líneas: un comentario que *cita* un
+# flag roto para explicar por qué no existe no es una receta.
+ZONAS_DE_RECETAS = ("scripts", "vault", "cli")
+
+# Sitios que exhiben un comando roto como prueba del defecto que documentan,
+# igual que el changelog del manifiesto. Mundo cerrado: una entrada que ya no
+# aparece falla el test, así que la tabla solo encoge.
+RECETAS_EXHIBIDAS = {
+    ("scripts/vault_doc_sync.py", "vault_audit", "--root"):
+        "el docstring cita el comando que originó la comprobación 6",
+    ("scripts/vault_doc_sync.py", "vault_quality_check", "--root"):
+        "el docstring cita el comando que originó la comprobación 6",
+}
+
+VERBOS_CON_TOOL = {"show", "exec", "validate", "run"}
+RE_TOOL_EN_TEXTO = re.compile(r"(?<![\w.-])(vault_[a-z0-9_]+)(?:\.py)?(?![\w.])")
+RE_TOKEN = re.compile(r"\"[^\"\n]*\"|'[^'\n]*'|<[^>\n]*>|[^\s]+")
+_CIERRE = "`),;:|."
+
+
+def _literales(tree) -> List[tuple]:
+    """(línea, texto) de cada literal de cadena; los f-strings con `<x>` en sus huecos."""
+    import ast
+
+    dentro_de_fstring = set()
+    salida = []
+    for nodo in ast.walk(tree):
+        if isinstance(nodo, ast.JoinedStr):
+            partes = []
+            for v in nodo.values:
+                dentro_de_fstring.add(id(v))
+                partes.append(v.value if isinstance(v, ast.Constant) else "<x>")
+            salida.append((nodo.lineno, "".join(str(p) for p in partes)))
+    for nodo in ast.walk(tree):
+        if (isinstance(nodo, ast.Constant) and isinstance(nodo.value, str)
+                and id(nodo) not in dentro_de_fstring):
+            salida.append((nodo.lineno, nodo.value))
+    return salida
+
+
+def _flags_de_receta(resto: str) -> List[str]:
+    """Los flags de la invocación que empieza en `resto`: `(--flag valor?)*`.
+
+    Se para en lo que deja de ser la misma invocación —`&&`, una tubería, el
+    cierre de un span de código o la primera palabra que no es flag ni valor
+    de uno—, para no cargarle a una tool los flags de la siguiente.
+    """
+    flags: List[str] = []
+    espera_valor = False
+    for tok in RE_TOKEN.findall(resto.split("\n", 1)[0]):
+        if tok in ("&&", "||", "|", ";", "+", "→", "->"):
+            break
+        limpio = tok.rstrip(_CIERRE)
+        if re.fullmatch(r"--[A-Za-z][\w-]*", limpio):
+            flags.append(limpio)
+            espera_valor = True
+        elif espera_valor:
+            espera_valor = False
+        else:
+            break
+        if limpio != tok:
+            break
+    return flags
+
+
+def recetas_en_codigo(raices=None, repo_root: Path = None) -> List[Dict]:
+    """AP-42 en el código: recetas `vault_x --flag` con un flag que la tool no acepta."""
+    import ast
+
+    repo_root = repo_root or REPO_ROOT
+    scripts = REPO_ROOT / "scripts"
+    flags_cache: Dict[str, set] = {}
+    problems: List[Dict] = []
+    for zona in raices or ZONAS_DE_RECETAS:
+        for ruta in sorted((repo_root / zona).rglob("*.py")):
+            if "__pycache__" in ruta.parts:
+                continue
+            rel = ruta.relative_to(repo_root).as_posix()
+            try:
+                tree = ast.parse(ruta.read_bytes().decode("utf-8", "replace"))
+            except SyntaxError:
+                continue
+            for linea0, texto in _literales(tree):
+                for m in RE_TOOL_EN_TEXTO.finditer(texto):
+                    script = scripts / f"{m.group(1)}.py"
+                    if not script.exists():
+                        continue
+                    # `--tool vault_write --summary`, `cli show vault_write --pretty`,
+                    # `vault_mcp.py exec vault_write --params`: ahí el nombre es el
+                    # argumento de otro comando, y los flags son de ese otro.
+                    previa = texto[:m.start()].rstrip().rsplit(None, 1)
+                    if previa and (previa[-1].startswith("--") or previa[-1] in VERBOS_CON_TOOL):
+                        continue
+                    if m.group(1) not in flags_cache:
+                        src = script.read_bytes().decode("utf-8", "replace")
+                        declarados = set(RE_FLAG_DECLARADO.findall(src))
+                        if "BooleanOptionalAction" in src:
+                            declarados |= {"--no-" + f[2:] for f in declarados}
+                        flags_cache[m.group(1)] = declarados
+                    for flag in _flags_de_receta(texto[m.end():]):
+                        if flag in flags_cache[m.group(1)] or flag == "--help":
+                            continue
+                        if (rel, m.group(1), flag) in RECETAS_EXHIBIDAS:
+                            continue
+                        linea = linea0 + texto.count("\n", 0, m.start())
+                        problems.append({
+                            "kind": "receta_flag_no_aceptado",
+                            "detail": f"{rel}:{linea} — {m.group(1)} no acepta {flag}",
+                            "sitio": (rel, m.group(1), flag),
+                        })
+    return problems
+
+
 def scan() -> Dict:
     text = README.read_text(encoding="utf-8")
     problems: List[Dict] = []
     problems.extend(comandos_publicados())
+    problems.extend({k: v for k, v in p.items() if k != "sitio"} for p in recetas_en_codigo())
 
     sections = {label: int(num) for num, label in RE_SECTION.findall(text)}
     numbers = [int(num) for num, _ in RE_SECTION.findall(text)]

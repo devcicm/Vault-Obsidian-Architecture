@@ -1382,20 +1382,20 @@ def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]
 # enriquecimiento y lo que no cubre lo pone el registro, no un genérico.
 _SECTION_TOOL_HINT: Dict[str, str] = {
     "01_Projects": "vault_project_overview --project <slug> --description '...' --runtime 'Node.js 20'",
-    "02_Observability": "vault_log_error --project <slug> --error '<msg>'",
+    "02_Observability": "vault_log_error --project <slug> --type error --title '<msg>' --description '...'",
     "03_Decisions": "vault_write --folder 03_Decisions --title 'ADR-001 <titulo>' --content '...'",
     "04_Sessions": "vault_write --folder 04_Sessions --title '$(date +%Y-%m-%d)' --content '...'",
     "05_Patterns": "vault_pattern_save --project <slug> --name <patron> --status planificado",
-    "06_Diagrams": "vault_diagram_save --project <slug> --type erd --content '...'",
+    "06_Diagrams": "vault_diagram_save --project <slug> --title <diagrama> --diagram_type mermaid --category entity --content '...'",
     "07_Knowledge": "vault_knowledge_save --project <slug> --title <concepto> --category concept",
     "08_Runbooks": "vault_runbook_save --project <slug> --title <runbook> --steps '...'",
     "09_Infrastructure": "vault_infra_save --project <slug> --name <servicio> --type server",
-    "10_Migrated": "vault_migrate_docs --source <path>",
+    "10_Migrated": "vault_migrate_docs --project <slug> --source_path <path>",
     "11_Code": "vault_code_module --project <slug> --file_path <path> --description '...'",
-    "12_Bibliography": "vault_bibliography_save --title <ref> --type web --url '...'",
-    "13_Flows": "vault_flow_save --project <slug> --title <flow> --type workflow",
+    "12_Bibliography": "vault_bibliography_save --title <ref> --source_type web --url '...'",
+    "13_Flows": "vault_flow_save --project <slug> --name <flow> --type workflow",
     "14_Requirements": "vault_requirement_save --project <slug> --title 'REQ-001 ...'",
-    "15_Tests": "vault_test_save --project <slug> --title <test> --type unit",
+    "15_Tests": "vault_test_save --project <slug> --title <test> --test_type unit",
     "16_AI_Governance": "vault_ai_decision --project <slug> --title <decision> --decision_type architecture",
     # Sin entrada, `_suggest_command_for_folder` caía al genérico `vault_write`
     # para las cuatro secciones más nuevas: la acción sugerida saltaba la tool
@@ -1495,7 +1495,7 @@ def _get_roadmap_for_populated_vault(content_notes: List[Path]) -> List[Dict[str
                 "priority": "medium",
                 "category": "guidance",
                 "description": "Registra SLOs y métricas operacionales con `vault_slo_save` y `vault_log_error`.",
-                "command": "python scripts/vault_slo_save.py --project <slug> --title 'API Availability' --sli 'requests < 500ms' --objective 99.9",
+                "command": "python scripts/vault_slo_save.py --project <slug> --service api --slo_type availability --target 99.9",
             }
         )
     if by_folder.get("14_Requirements", 0) < 1:
@@ -1513,7 +1513,7 @@ def _get_roadmap_for_populated_vault(content_notes: List[Path]) -> List[Dict[str
                 "priority": "medium",
                 "category": "guidance",
                 "description": "Registra los casos de test formales (ISO 29119) con trazabilidad a requirements.",
-                "command": "python scripts/vault_test_save.py --project <slug> --title 'Test: ...' --type unit",
+                "command": "python scripts/vault_test_save.py --project <slug> --title 'Test: ...' --test_type unit --description '...'",
             }
         )
     if by_folder.get("11_Code", 0) < 1:

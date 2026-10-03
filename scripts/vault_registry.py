@@ -52,7 +52,7 @@ SECTIONS: List[Dict[str, Optional[str]]] = [
         "folder": "02_Observability",
         "name": "Observabilidad",
         "description": "Errores, métricas, alertas e incidentes",
-        "tool_hint": "vault_log_error --project <slug> --error <msg>",
+        "tool_hint": "vault_log_error --project <slug> --type error --title <msg>",
     },
     {
         "folder": "03_Decisions",
@@ -76,7 +76,7 @@ SECTIONS: List[Dict[str, Optional[str]]] = [
         "folder": "06_Diagrams",
         "name": "Diagramas",
         "description": "Diagramas y representaciones visuales",
-        "tool_hint": "vault_diagram_save --project <slug> --type erd",
+        "tool_hint": "vault_diagram_save --project <slug> --title <diagrama> --diagram_type mermaid",
     },
     {
         "folder": "07_Knowledge",
@@ -100,7 +100,7 @@ SECTIONS: List[Dict[str, Optional[str]]] = [
         "folder": "10_Migrated",
         "name": "Migrados",
         "description": "Documentos migrados de otras fuentes",
-        "tool_hint": "vault_migrate_docs --source <path>",
+        "tool_hint": "vault_migrate_docs --project <slug> --source_path <path>",
     },
     {
         "folder": "11_Code",
@@ -112,13 +112,13 @@ SECTIONS: List[Dict[str, Optional[str]]] = [
         "folder": "12_Bibliography",
         "name": "Bibliografía",
         "description": "Fuentes externas: artículos, papers, APIs, libros y docs consultados",
-        "tool_hint": "vault_bibliography_save --title <ref> --type web",
+        "tool_hint": "vault_bibliography_save --title <ref> --source_type web",
     },
     {
         "folder": "13_Flows",
         "name": "Flujos",
         "description": "Flujos de trabajo, pipelines, ciclos de vida y diagramas de flujo",
-        "tool_hint": "vault_flow_save --project <slug> --title <flow>",
+        "tool_hint": "vault_flow_save --project <slug> --name <flow>",
     },
     {
         "folder": "14_Requirements",
@@ -174,7 +174,7 @@ SECTIONS: List[Dict[str, Optional[str]]] = [
             "impide que cada sesión reinvente el vocabulario de la anterior "
             "(ISO 9001 §9.2, ISO/IEC 42001 §9)"
         ),
-        "tool_hint": "vault_tags --registry",
+        "tool_hint": "vault_tags --audit",
     },
     {
         "folder": "20_Quarantine",

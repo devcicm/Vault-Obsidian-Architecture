@@ -395,7 +395,7 @@ La vista de una pantalla que hace verificable todo lo anterior. Generada por `va
 | Oportunidad / Actualidad (F6) | antigüedad de `updatedAt` | 30d · 15d si CIA `critical\|high` | `vault_audit` | bloque `stale` | audit |
 | Autenticidad (F7) | cobertura del campo `agent` | 100% | `vault_quality_check` | frontmatter `agent:` | audit (AP-16) |
 | No repudio (F8) | entradas en change-log | 1 por borrado | `vault_change_log` | `00_System/.change-log.json` | audit (SP-01) |
-| Unicidad (DQ-9) | duplicados canonical-shadow | 0 | `vault_merge --detect` | `quality-index.json` | audit (AP-17/18) |
+| Unicidad (DQ-9) | duplicados canonical-shadow | 0 | `vault_merge --action detect` | `quality-index.json` | audit (AP-17/18) |
 | Localizable (FAIR-F) | notas huérfanas | 0 | `vault_audit` | `99_Index/index.md` | audit |
 | Interoperable (FAIR-I) | errores de sintaxis de wiki-link | 0 | `vault_graph_inspect` | `graph.json` | guard (AP-22/24) |
 | Reutilizable (FAIR-R) | cadena de procedencia completa | `agent` + timestamps | `vault_diff` | `.history/` | audit (PAT-5) |
@@ -5864,10 +5864,10 @@ Los siguientes patrones fueron identificados en auditorías reales de vaults en 
 
 | Fase | Qué hace | Herramienta | Criterio de completitud |
 |---|---|---|---|
-| 1. Snapshot | Captura estado inicial | `vault_drift_detect --snapshot` | Archivo `.drift-snapshot.json` creado |
+| 1. Snapshot | Captura estado inicial | `vault_drift_detect --mode snapshot` | Archivo `.drift-snapshot.json` creado |
 | 2. Detección | Identifica issues sin modificar nada | `vault_audit()` | JSON con todos los issues, sin cambios al vault |
 | 3. Resolución | Aplica fixes en orden de menor a mayor riesgo | `vault_write`, `vault_change_log` | Cada fix verificado antes del siguiente |
-| 4. Verificación | Compara contra snapshot inicial | `vault_drift_detect --report` | Score mejorado, 0 regresiones |
+| 4. Verificación | Compara contra snapshot inicial | `vault_drift_detect --mode report` | Score mejorado, 0 regresiones |
 
 **Por qué importa:** Auditorías no-faseadas mezclan detección y corrección, generando loops donde la corrección de un issue introduce otro. La fase de snapshot permite rollback si algo sale mal.
 

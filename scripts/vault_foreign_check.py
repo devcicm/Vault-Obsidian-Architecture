@@ -11,7 +11,7 @@ Hasta ahora eso era disciplina personal: alguien se acordaba, o no. Esta tool lo
 convierte en algo ejecutable.
 
     python scripts/vault_foreign_check.py --root <vault ajeno>
-    python scripts/vault_foreign_check.py --root <vault> --json
+    python scripts/vault_foreign_check.py --root <vault>
     python scripts/vault_foreign_check.py --self-test   # sin vault a mano
 
 ## Por qué NO tiene destino por defecto
