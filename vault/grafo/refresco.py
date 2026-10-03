@@ -11,7 +11,7 @@ El refresco no lee más nota que la escrita. Los nodos guardan `aliases` y
 memoria para el vault entero, y por eso una nota nueva arregla los enlaces rotos
 de otras que no se vuelven a leer, y una homónima vuelve ambiguo un enlace que
 antes resolvía (AP-17). Leer y resolver son del dueño del escaneo
-(`vault_lib.leer_notas_de_grafo` / `resolver_enlaces`), que se inyecta: este
+(`vault_escaneo_grafo.leer_notas_de_grafo` / `resolver_enlaces`), que se inyecta: este
 paquete no importa `scripts/`.
 """
 

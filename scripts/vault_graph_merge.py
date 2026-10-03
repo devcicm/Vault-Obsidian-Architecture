@@ -33,10 +33,8 @@ from vault_regex import RE_WIKILINK  # dueño único del patrón (AP-50)
 from vault_errors import emit_error, wrap_main
 from vault_version import CURRENT_VERSION  # generator_version de los artefactos (AP-47)
 from vault_io import atomic_write_json, normalize_stem, write_report
-from vault_lib import (  # dueño único de la identidad por nombre (AP-57, AP-17)
-    clave_de_nombre,
-    escanear_wikilinks,
-)
+from vault_escaneo_grafo import escanear_wikilinks  # el único escaneo del grafo
+from vault_lib import clave_de_nombre  # dueño único de la identidad por nombre (AP-57, AP-17)
 from vault_registry import ORDERED_SECTIONS
 
 ONTOLOGY_FILE = Path(__file__).parent / "vault_ontology.json"
@@ -124,7 +122,7 @@ def _extract_wiki_links(content: str) -> List[str]:
 
 
 def _extract_title(content: str) -> Optional[str]:
-    """superseded_by: vault_lib.escanear_wikilinks. Lee `title:` con un regex por
+    """superseded_by: vault_escaneo_grafo.escanear_wikilinks. Lee `title:` con un regex por
     líneas (AP-44); se conserva por contrato, ningún productor la usa ya."""
     m = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
     if m:
@@ -135,7 +133,7 @@ def _extract_title(content: str) -> Optional[str]:
 
 
 def _extract_tags(content: str) -> List[str]:
-    """superseded_by: vault_lib.escanear_wikilinks. Lee `tags:` con un regex por
+    """superseded_by: vault_escaneo_grafo.escanear_wikilinks. Lee `tags:` con un regex por
     líneas (AP-44); se conserva por contrato, ningún productor la usa ya."""
     m = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
     if not m:

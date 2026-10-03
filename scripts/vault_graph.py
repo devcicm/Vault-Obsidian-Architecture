@@ -36,10 +36,8 @@ from vault_regex import RE_WIKILINK  # dueño único del patrón (AP-50)
 # Configuration
 
 from vault_io import atomic_write_json, write_report
-from vault_lib import (  # dueño único de la identidad por nombre (AP-57, AP-17)
-    colisiones_de_nombre,
-    escanear_wikilinks,
-)
+from vault_escaneo_grafo import escanear_wikilinks  # el único escaneo del grafo
+from vault_lib import colisiones_de_nombre  # dueño único de la identidad por nombre (AP-57, AP-17)
 from vault_registry import ORDERED_SECTIONS
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))

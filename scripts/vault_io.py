@@ -579,15 +579,15 @@ def refrescar_grafo(path: Path, *mas: Path) -> Dict[str, Any]:
     """Pone la nota en `graph.json` sin reconstruir el grafo (AP-47).
 
     El dueño es `vault.grafo.refresco`; aquí solo se compone con el dueño del
-    escaneo (`vault_lib`), que el paquete de dominio no puede importar. Es el
+    escaneo (`vault_escaneo_grafo`), que el paquete de dominio no puede importar. Es el
     mismo patrón que el índice de búsqueda: la nota entra en la misma escritura,
     escriba quien escriba, y `vault_subgraph` deja de ver un grafo desfasado.
     """
-    from vault_lib import (  # lazy: vault_lib -> vault_io ya es un ciclo diferido
-        colisiones_de_nombre,
+    from vault_escaneo_grafo import (  # lazy: vault_lib -> vault_io ya es un ciclo diferido
         leer_notas_de_grafo,
         resolver_enlaces,
     )
+    from vault_lib import colisiones_de_nombre
     from vault.grafo.refresco import ServicioRefrescoGrafo
     from vault.grafo.repositorio import RepositorioGrafo
     from vault.kernel import construir

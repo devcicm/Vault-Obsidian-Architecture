@@ -180,6 +180,11 @@ CONTEXTS: dict[str, dict] = {
             # por cada consumidor nuevo. Fan-out cero y ningún `vault_*`
             # importado: cumple la prohibición del núcleo sin excepción.
             "vault_baseline",
+            # El escaneo del grafo de wikilinks, separado de `vault_lib`
+            # porque era la parte que se movía (AP-59, K3): lo consumen
+            # `vault_io` (núcleo) y los dos productores del grafo. Fan-out dos,
+            # ambos del núcleo: `vault_lib` y `vault_regex`.
+            "vault_escaneo_grafo",
             # El dueño único del grafo de imports (v40.20). Está aquí y no en el
             # meta-toolkit por una razón de dirección: lo consume `vault_arch`,
             # que está por encima, y un dueño de criterio que importa a sus

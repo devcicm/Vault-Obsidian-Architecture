@@ -8,7 +8,7 @@ CRLF perdía además su título. Es AP-44: una medida que lee con su propio
 criterio y no con el del consumidor (`yaml.safe_load`). `vault-sandbox/` lo
 escribe este repo con JSON entre comillas y no podía exhibirlo.
 
-Ahora `vault_lib.escanear_wikilinks` es el único escaneo —frontmatter por
+Ahora `vault_escaneo_grafo.escanear_wikilinks` es el único escaneo —frontmatter por
 `parse_frontmatter`, enlaces por el resolvedor de Obsidian— y cada productor
 solo proyecta su esquema: `type: "wiki-link"` en `graph.json`,
 `predicate: "wiki_link"` en `graph-enriched.json`.
@@ -23,7 +23,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 import vault_io  # noqa: E402
-from vault_lib import escanear_wikilinks  # noqa: E402
+from vault_escaneo_grafo import escanear_wikilinks  # noqa: E402
 
 _NOTAS = {
     "07_Knowledge/bloque.md": "---\ntitle: Bloque\ntags:\n  - api\n  - demo\n---\n\n[[flujo]]\n",

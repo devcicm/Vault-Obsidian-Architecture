@@ -2,7 +2,7 @@
 
 Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 117 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **153 archivos Python** — 117 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
+- **154 archivos Python** — 117 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
@@ -431,7 +431,7 @@ En el mismo paso se corrigió que `vault_graph` devolviera `savedTo: "99_Index\g
 
 **Una arista es una relación, no una aparición.** Cada arista sale una vez por `(from, type, to)`, con `id` estable (`from|type|to`) y `occurrences` = cuántas veces se escribió el enlace. `totalEdges` cuenta relaciones: antes, tres `[[cache]]` en una nota eran tres aristas iguales. La identidad la declara `vault/grafo/aristas.py` (`consolidar_aristas`), compartida con `vault_graph_merge`. No se llama `weight` porque `vault_subgraph` ya usa ese nombre para el peso del predicado.
 
-**Un solo escaneo.** `vault_graph` y `vault_graph_merge` leen las notas con `vault_lib.escanear_wikilinks`: el frontmatter con `parse_frontmatter` y los enlaces con el resolvedor de Obsidian; cada uno solo proyecta su esquema (`type: "wiki-link"` aquí, `predicate: "wiki_link"` en el enriquecido). Hasta ahora `title:` y `tags:` se leían con un regex por líneas que dejaba vacías las etiquetas en lista de bloque, sin comillas o de una nota CRLF: contrastado contra `/vcloud`, 86 de 145 notas salían sin etiquetas y 9 sin su título.
+**Un solo escaneo.** `vault_graph` y `vault_graph_merge` leen las notas con `vault_escaneo_grafo.escanear_wikilinks`: el frontmatter con `parse_frontmatter` y los enlaces con el resolvedor de Obsidian; cada uno solo proyecta su esquema (`type: "wiki-link"` aquí, `predicate: "wiki_link"` en el enriquecido). Hasta ahora `title:` y `tags:` se leían con un regex por líneas que dejaba vacías las etiquetas en lista de bloque, sin comillas o de una nota CRLF: contrastado contra `/vcloud`, 86 de 145 notas salían sin etiquetas y 9 sin su título.
 
 **Un solo enumerador.** Los dos productores enumeran con `vault.kernel.enumeracion.notas_en_disco`, el mismo que usa `vault_subgraph` para declarar el desfase. Hasta ahora descartaban las notas con un tramo oculto mirando la ruta **absoluta**: un vault colgado de `~/.claude/` —donde vive `vault-standard`— salía con cero nodos y sin error (AP-44).
 
