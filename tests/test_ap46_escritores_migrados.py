@@ -32,6 +32,7 @@ MIGRADOS = {
     "vault_ai_decision": "vault_ai_decision",
     "vault_code_module": "vault_code_module",
     "vault_code_relation": "save_code_map",
+    "vault_project_status": "vault_project_status",
 }
 
 
@@ -58,7 +59,13 @@ def _frontmatter(path: Path) -> dict:
 def test_ap46_el_escritor_no_monta_el_bloque_a_mano(modulo, funcion):
     arbol = ast.parse((ROOT / "scripts" / f"{modulo}.py").read_text(encoding="utf-8"))
     [f] = [n for n in ast.walk(arbol) if isinstance(n, ast.FunctionDef) and n.name == funcion]
-    delimitadores = [n for n in ast.walk(f) if isinstance(n, ast.Constant) and n.value == "---"]
+    # Las dos formas: el delimitador suelto en una lista y la plantilla de
+    # cadena que abre con él (`f"""---\ntitle: …`).
+    delimitadores = [
+        n for n in ast.walk(f)
+        if isinstance(n, ast.Constant) and isinstance(n.value, str)
+        and (n.value == "---" or n.value.startswith("---\n"))
+    ]
     assert delimitadores == [], f"{modulo}.{funcion} vuelve a escribir `---` a mano"
 
 
@@ -128,6 +135,24 @@ def test_ap46_ai_decision_y_code_module_conservan_valores_hostiles(vault):
 
     mapa = vault_code_relation.save_code_map(HOSTIL, "graph LR\n a-->b")
     assert _frontmatter(mapa)["project"] == HOSTIL
+
+
+def test_ap46_project_status_conserva_proyecto_estado_e_id(vault):
+    import vault_project_status
+
+    # `:` y `"` no caben en un nombre de carpeta de Windows y el proyecto es
+    # la carpeta; `#` y `&` sí, y son los que rompían el YAML crudo.
+    proyecto = "Ñandú #1 & beta"
+    r = vault_project_status.vault_project_status(proyecto, "en_desarrollo", "resumen")
+    assert r["ok"], r
+    nota = vault / "01_Projects" / proyecto / "status.md"
+    fm = _frontmatter(nota)
+    # El guion largo lo normaliza el saneado de atomic_write (`—` → `--`).
+    assert fm["project"] == proyecto and fm["title"] == f"{proyecto} -- Status"
+    assert fm["tags"] == ["status", proyecto] and fm["project_state"] == "en_desarrollo"
+    vault_project_status.vault_project_status(proyecto, "bloqueado", "otro")
+    segunda = _frontmatter(nota)
+    assert segunda["id"] == fm["id"] and segunda["createdAt"] == fm["createdAt"]
 
 
 def _frontmatter_o_nada(path: Path) -> dict:

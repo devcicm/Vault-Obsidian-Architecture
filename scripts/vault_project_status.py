@@ -30,7 +30,7 @@ import sys
 
 from vault_errors import emit_error, wrap_main
 from vault_norms_catalog import status_frontmatter_lines
-from vault_lib import utcnow, yaml_scalar
+from vault_lib import utcnow
 import uuid
 
 from pathlib import Path
@@ -38,6 +38,7 @@ from pathlib import Path
 
 # Configuration
 from vault_io import assert_within_vault, atomic_write_text, get_vault_root
+from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
 # Valid states
@@ -124,34 +125,24 @@ def vault_project_status(
 
     created_at = existing_created or now
 
-    # `status` canónico + `project_state` con el valor de dominio intacto.
-    status_lines = "\n\n".join(
-        status_frontmatter_lines("vault_project_status", status)
+    # AP-46: el bloque lo escribe su dueño. Crudo, `Alfa #1` dejaba
+    # `project: Alfa` —` #` abre un comentario— y la nota quedaba atribuida
+    # a otro proyecto (medido 2026-10-01). El bloque llevaba una línea en
+    # blanco entre campos; YAML las ignora y el dueño no las escribe, así que
+    # el frontmatter queda compacto con los mismos datos.
+    fm = (
+        Frontmatter()
+        .set("title", f"{project} — Status")
+        .set("id", note_id)
+        .set("project", project, vacio_citado=True)
+        # `status` canónico + `project_state` con el valor de dominio intacto.
+        .lineas(status_frontmatter_lines("vault_project_status", status))
+        .set("createdAt", created_at)
+        .set("updatedAt", now)
+        .set("tags", ["status", project])
     )
 
-    # AP-46: el proyecto entra al YAML escapado. Crudo, `Alfa #1` dejaba
-    # `project: Alfa` —` #` abre un comentario— y la nota quedaba atribuida
-    # a otro proyecto (medido 2026-10-01). En la lista de flujo va como
-    # JSON: un escalar plano con `,` o `]` también la rompería.
-    titulo_yaml = yaml_scalar(f"{project} — Status")
-
-    status_content = f"""---
-
-title: {titulo_yaml}
-
-id: {note_id}
-
-project: {yaml_scalar(project)}
-
-{status_lines}
-
-createdAt: {created_at}
-
-updatedAt: {now}
-
-tags: ["status", {json.dumps(project, ensure_ascii=False)}]
-
----
+    status_content = f"""{fm.render()}
 
 
 
