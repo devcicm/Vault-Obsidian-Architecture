@@ -23,7 +23,7 @@ from typing import Any, Dict, List, Optional, Set
 
 from vault_regex import RE_WIKILINK  # dueño único del patrón (AP-50)
 
-from vault_errors import emit_error, mensaje_de, wrap_main
+from vault_errors import emit_error, fuera_de_sesion, mensaje_de, wrap_main
 from vault_io import (
     assert_within_vault, atomic_write_text, file_lock, tomar_lock, write_report,
 )
@@ -62,6 +62,13 @@ def _fuera_del_vault(*rutas: str) -> Optional[Dict[str, Any]]:
         except ValueError as exc:
             return emit_error("vault_move", "INVALID_PATH", str(exc))
     return None
+
+
+def _fuera_de_sesion(*rutas: str) -> Optional[Dict[str, Any]]:
+    """AP-63, P5: con la sesión atada, ni el origen ni el destino pueden ser
+    de otro proyecto — mover es escribir en los dos. `--impact` solo lee y
+    no pasa por aquí."""
+    return fuera_de_sesion("vault_move", *(_raiz() / ruta for ruta in rutas))
 
 
 def _system_dir() -> Path:
@@ -226,7 +233,7 @@ def move_note(
     from_path: str, to_path: str, dry_run: bool = False, backup: bool = True
 ) -> Dict[str, Any]:
     """Mueve una nota a una nueva ubicación."""
-    rechazo = _fuera_del_vault(from_path, to_path)
+    rechazo = _fuera_del_vault(from_path, to_path) or _fuera_de_sesion(from_path, to_path)
     if rechazo:
         return rechazo
     source = _raiz() / from_path
@@ -383,7 +390,7 @@ def move_folder(
       del origen va a `00_System/.trash/` en vez de a la basura;
     - del origen solo se retiran los directorios que quedan vacíos.
     """
-    rechazo = _fuera_del_vault(from_folder, to_folder)
+    rechazo = _fuera_del_vault(from_folder, to_folder) or _fuera_de_sesion(from_folder, to_folder)
     if rechazo:
         return rechazo
     source = _raiz() / from_folder

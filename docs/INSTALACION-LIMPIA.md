@@ -101,7 +101,9 @@ El nombre se resuelve **aquí**, contra el registro del vault (`01_Projects/`):
 uno que no existe sale con `PROJECT_NOT_FOUND` en vez de fundar un proyecto.
 La entrada que imprime lleva además `VAULT_PROJECT=<slug>` y
 `VAULT_PROJECT_LOCK=1`; con ellas, toda tool a la que se pida otro `--project`
-falla con `PROJECT_LOCKED` antes de escribir nada. El servidor no interpreta
+falla con `PROJECT_LOCKED` antes de escribir nada, y lo mismo `vault_write`,
+`vault_append`, `vault_move` y `vault_delete` con una ruta `<carpeta>/<otro
+proyecto>/…`. El servidor no interpreta
 nombres: pasa el entorno a cada tool y el candado lo aplica Python.
 
 ### Comprobar el handshake antes de fiarte del cliente

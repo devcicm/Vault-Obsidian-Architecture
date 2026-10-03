@@ -377,6 +377,44 @@ def comprobar_sesion(registro: Registro, slug: str,
         )
 
 
+def comprobar_ruta_en_sesion(raiz: Path, ruta: object,
+                             entorno: Optional[Mapping[str, str]] = None) -> None:
+    """El candado de P5 para las tools que reciben ruta y no `--project`.
+
+    `vault_write`, `vault_append`, `vault_move` y `vault_delete` escriben donde
+    se les señala, así que la fábrica de `--project` no las ve. El proyecto de
+    una ruta es el segundo segmento —`<carpeta>/<slug>/...`, la forma de
+    `01_Projects/`, `11_Code/` y las de cada tipo de nota— cuando su clave
+    pertenece a un proyecto registrado. Un segmento que reclaman varios cuenta
+    como de otro salvo que el de la sesión esté entre ellos: el candado se
+    equivoca hacia cerrar. Fuera de esa forma no hay proyecto que comprobar; la
+    contención en el vault es de `assert_within_vault`, no de aquí.
+    """
+    entorno = os.environ if entorno is None else entorno
+    if entorno.get(ENTORNO_CANDADO) != "1":
+        return
+    registro = leer_registro(Path(raiz))
+    sesion = proyecto_de_sesion(registro, entorno)
+    try:
+        partes = Path(str(ruta)).resolve().relative_to(Path(raiz).resolve()).parts
+    except ValueError:
+        return
+    # `<carpeta>/<slug>` a secas es la carpeta del proyecto (un `vault_move`
+    # de carpeta); `<carpeta>/nota.md` no tiene proyecto en la ruta.
+    if len(partes) < 2 or (len(partes) == 2 and Path(partes[1]).suffix):
+        return
+    duenos = registro.claves().get(slugify_strict(partes[1]), set())
+    if duenos and sesion not in duenos:
+        raise FalloDeDominio(
+            "PROYECTO_FUERA_DE_SESION",
+            f"La sesión está atada a {sesion!r} y la ruta "
+            f"{'/'.join(partes)!r} es de {', '.join(sorted(duenos))}.",
+            session_project=sesion,
+            project=sorted(duenos)[0] if len(duenos) == 1 else sorted(duenos),
+            path="/".join(partes),
+        )
+
+
 def proyecto_registrado(
     tool: str,
     raiz: Callable[[], Path],

@@ -36,7 +36,7 @@ import sys
 
 import vault_tags
 import yaml
-from vault_errors import emit_error, emit_fallo, wrap_main
+from vault_errors import emit_error, emit_fallo, fuera_de_sesion, wrap_main
 
 from vault_io import (
     is_snapshot_path,  # dueño único de qué es una instantánea (AP-57)
@@ -838,6 +838,10 @@ def vault_write(
             "error": "INVALID_PATH",
             "message": str(exc),
         }
+
+    bloqueo = fuera_de_sesion("vault_write", vault_path)
+    if bloqueo:
+        return bloqueo
 
     existing_id = None
 

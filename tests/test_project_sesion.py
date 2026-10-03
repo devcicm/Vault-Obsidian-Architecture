@@ -118,3 +118,48 @@ def test_ap63_mcp_path_no_inventa_el_proyecto(vault):
     assert d["ok"] is False and d["error_code"] == "PROJECT_NOT_FOUND", d
     d = _mcp_path("--project", "mi-api")
     assert d["ok"] is False and d["error_code"] == "MISSING_REQUIRED_ARG", d
+
+
+def test_ap63_comprobar_ruta_en_sesion_mira_el_segundo_segmento(tmp_path):
+    for slug in ("mi-api", "otra"):
+        (tmp_path / "01_Projects" / slug).mkdir(parents=True)
+    candado = {"VAULT_PROJECT": "mi-api", "VAULT_PROJECT_LOCK": "1"}
+    ok = ("01_Projects/mi-api/status.md", "11_Code/mi-api/app.md",
+          "07_Knowledge/jwt.md", "07_Knowledge/otra.md", "00_System/x.json")
+    for ruta in ok:
+        proyectos.comprobar_ruta_en_sesion(tmp_path, tmp_path / ruta, candado)
+    for ruta in ("01_Projects/otra/status.md", "11_Code/otra/app.md", "01_Projects/otra"):
+        with pytest.raises(FalloDeDominio) as e:
+            proyectos.comprobar_ruta_en_sesion(tmp_path, tmp_path / ruta, candado)
+        assert e.value.datos["project"] == "otra", ruta
+    # Sin candado, nada.
+    proyectos.comprobar_ruta_en_sesion(tmp_path, tmp_path / "01_Projects/otra/s.md", {})
+
+
+def test_ap63_las_tools_por_ruta_respetan_el_candado(vault):
+    candado = {"VAULT_PROJECT": "mi-api", "VAULT_PROJECT_LOCK": "1"}
+    texto = "Primera línea con contenido." + chr(10) + "Segunda línea con contenido." + chr(10) + "Tercera línea."
+    ajena = vault / "01_Projects" / "otra" / "notas.md"
+    ajena.write_text("---\ntitle: notas\n---\n\nhola\n", encoding="utf-8")
+    original = ajena.read_bytes()
+
+    llamadas = [
+        ("vault_write.py", "--folder", "01_Projects/otra", "--title", "Intrusa", "--tags", "prueba",
+         "--content", texto),
+        ("vault_append.py", "--path", "01_Projects/otra/notas.md", "--content", texto),
+        ("vault_move.py", "--from", "01_Projects/otra/notas.md",
+         "--to", "01_Projects/mi-api/notas.md", "--json"),
+        ("vault_move.py", "--from", "01_Projects/mi-api/project.md",
+         "--to", "01_Projects/otra/project.md", "--json"),
+        ("vault_delete.py", "--path", "01_Projects/otra/notas.md", "--reason", "x"),
+    ]
+    for script, *args in llamadas:
+        codigo, r = _cli(vault, script, *args, **candado)
+        assert codigo == 1 and r["error_code"] == "PROJECT_LOCKED", (script, r)
+    assert ajena.read_bytes() == original
+    assert not (vault / "01_Projects" / "otra" / "intrusa.md").exists()
+
+    # En el proyecto de la sesión, vault_write escribe.
+    codigo, r = _cli(vault, "vault_write.py", "--folder", "01_Projects/mi-api",
+                     "--title", "Propia", "--tags", "prueba", "--content", texto, **candado)
+    assert r["ok"], r

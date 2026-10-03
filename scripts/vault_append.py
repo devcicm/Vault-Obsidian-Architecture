@@ -28,7 +28,7 @@ import re
 
 import sys
 
-from vault_errors import emit_error, wrap_main
+from vault_errors import emit_error, fuera_de_sesion, wrap_main
 
 from vault_io import assert_within_vault, atomic_write_text, get_vault_root, tomar_lock
 from datetime import datetime, timezone
@@ -75,6 +75,10 @@ def vault_append(
 
     except ValueError as exc:
         return {"ok": False, "error_code": "INVALID_PATH", "error": str(exc)}
+
+    bloqueo = fuera_de_sesion("vault_append", note_path)
+    if bloqueo:
+        return bloqueo
 
     if not note_path.exists():
         return {**emit_error("vault_append", "NOTE_NOT_FOUND", f"Note not found: {path}"), "path": path}

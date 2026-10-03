@@ -240,6 +240,22 @@ def proyecto_registrado(tool: str) -> Callable[[str], str]:
     return _proyectos.proyecto_registrado(tool, get_vault_root, emitir=emit_fallo)
 
 
+def fuera_de_sesion(tool: str, *rutas: Any) -> Optional[Dict[str, Any]]:
+    """El envelope `PROJECT_LOCKED` si alguna ruta es de otro proyecto, o None.
+
+    AP-63, P5: el candado de `proyecto_registrado` para las tools que reciben
+    ruta y no `--project`. El criterio es del núcleo
+    (`proyectos.comprobar_ruta_en_sesion`); aquí solo se elige el transporte.
+    """
+    raiz = get_vault_root()
+    for ruta in rutas:
+        try:
+            _proyectos.comprobar_ruta_en_sesion(raiz, ruta)
+        except _proyectos.FalloDeDominio as fallo:
+            return emit_fallo(tool, fallo)
+    return None
+
+
 def emit_ok(tool: str, data: Dict[str, Any]) -> Dict[str, Any]:
     """Produce envelope de éxito uniforme y registra en trace log."""
     result = {

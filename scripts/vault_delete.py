@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict
 
-from vault_errors import emit_error, wrap_main
+from vault_errors import emit_error, fuera_de_sesion, wrap_main
 from vault_io import assert_within_vault, atomic_write_json
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -143,6 +143,10 @@ def vault_delete(
         assert_within_vault(note_path, vault_root)
     except ValueError as exc:
         return emit_error("vault_delete", "INVALID_PATH", str(exc))
+
+    bloqueo = fuera_de_sesion("vault_delete", note_path)
+    if bloqueo:
+        return bloqueo
 
     # SP-01 es el protocolo de borrado de notas: los indices, el change-log y
     # cualquier otro fichero del vault no se borran por esta via.
