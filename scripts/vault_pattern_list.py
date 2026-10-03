@@ -32,6 +32,7 @@ import json
 import sys
 
 from vault_errors import emit_error, wrap_main
+from vault_project import proyecto_registrado
 
 from pathlib import Path
 
@@ -192,7 +193,7 @@ Notas:
 
     )
 
-    parser.add_argument("--project", help="Filter by project")
+    parser.add_argument("--project", type=proyecto_registrado("vault_pattern_list"), help="Filter by project")
 
     parser.add_argument("--type", help="Filter by pattern type (design, architecture, code, integration)")
 

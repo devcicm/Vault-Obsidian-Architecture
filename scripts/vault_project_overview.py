@@ -17,6 +17,7 @@ import uuid
 import re
 import sys
 from vault_errors import wrap_main
+from vault_project import proyecto_registrado
 from vault_lib import utcnow, slugify
 from vault_lib import parse_frontmatter as _parse_frontmatter
 from vault_lib import separar_frontmatter
@@ -335,7 +336,7 @@ Notas:
   - Genera o actualiza 01_Projects/{slug}/overview.md
 """,
     )
-    parser.add_argument("--project", required=True, help="Project slug")
+    parser.add_argument("--project", type=proyecto_registrado("vault_project_overview"), required=True, help="Project slug")
     parser.add_argument("--description", help="Project description")
     parser.add_argument("--runtime", help="Runtime (e.g., 'Python 3.10')")
 

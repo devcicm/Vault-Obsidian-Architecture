@@ -35,6 +35,7 @@ import re
 import sys
 
 from vault_errors import wrap_main
+from vault_project import proyecto_registrado
 from vault_lib import slugify
 
 from datetime import datetime, timedelta, timezone
@@ -492,7 +493,7 @@ Notas:
 
     parser.add_argument("--query", help="Topic to trace")
 
-    parser.add_argument("--project", help="Filter by project")
+    parser.add_argument("--project", type=proyecto_registrado("vault_timeline"), help="Filter by project")
 
     parser.add_argument("--from", dest="from_date", help="Start date YYYY-MM-DD")
 

@@ -44,7 +44,9 @@ def _exportar(raiz: Path, *argv: str) -> dict:
 def entorno(tmp_path):
     raiz = tmp_path / "vault"
     (tmp_path / "cwd").mkdir()
-    for d in ("00_System", "06_Diagrams", "99_Index"):
+    # `01_Projects/p` registra el proyecto `p` (AP-63): sin él, `--project p`
+    # no llegaría a la tool y el rechazo de `--output` no se mediría.
+    for d in ("00_System", "06_Diagrams", "99_Index", "01_Projects/p"):
         (raiz / d).mkdir(parents=True)
     (raiz / "06_Diagrams" / "d.md").write_text(NOTA, encoding="utf-8")
     canario = tmp_path / "canario.md"

@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import emit_error, mensaje_de, wrap_main
+from vault_project import proyecto_registrado
 from vault_io import assert_within_vault, atomic_write_text, write_report
 
 
@@ -318,7 +319,7 @@ Ejemplos:
     )
 
     parser.add_argument("--path", type=str, help="Archivo con diagrama a exportar")
-    parser.add_argument("--project", type=str, help="Proyecto a exportar")
+    parser.add_argument("--project", type=proyecto_registrado("vault_diagram_export"), help="Proyecto a exportar")
     parser.add_argument("--output", type=str, help="Carpeta de salida")
     parser.add_argument(
         "--filter", type=str, help="Filtrar por tipo (flowchart, sequence, etc)"

@@ -27,6 +27,7 @@ import json
 import sys
 
 from vault_errors import emit_error, wrap_main
+from vault_project import proyecto_registrado
 from vault_norms_catalog import status_frontmatter_lines
 from vault_lib import parse_frontmatter, utcnow
 import uuid
@@ -261,7 +262,7 @@ Notas:
 """,
     )
 
-    parser.add_argument("--project", required=True)
+    parser.add_argument("--project", type=proyecto_registrado("vault_project_status"), required=True)
 
     parser.add_argument("--status", required=True, choices=VALID_STATES)
 

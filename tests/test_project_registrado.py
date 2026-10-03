@@ -39,29 +39,21 @@ EXENTAS = {
 #: Solo encoge: se convierten por lotes y cada lote quita sus líneas.
 PENDIENTES = {
     "vault_audit": 1,
-    "vault_change_log": 1,
     "vault_code_map": 1,
     "vault_code_module": 1,
     "vault_code_query": 1,
     "vault_code_relation": 1,
     "vault_code_sync": 1,
-    "vault_delta": 1,
-    "vault_diagram_export": 1,
     "vault_drift_detect": 1,
     "vault_env_matrix": 1,
     "vault_graph_merge": 1,
     "vault_infra_map": 1,
-    "vault_knowledge_get": 1,
     "vault_log_error": 1,
     "vault_mcp": 2,
     "vault_mermaid_check": 1,
     "vault_migrate_docs": 1,
-    "vault_pattern_list": 1,
-    "vault_project_overview": 1,
-    "vault_project_status": 1,
     "vault_relation_add": 1,
     "vault_security_scan": 1,
-    "vault_timeline": 1,
 }
 
 
@@ -191,3 +183,26 @@ def test_ap63_una_tool_real_escribe_el_slug_y_no_la_errata(registro):
     assert r["tool"] == "vault_ai_decision" and r["sugerencias"] == ["mi-api"]
     despues = sorted(p.relative_to(registro) for p in registro.rglob("*") if p.is_file())
     assert despues == antes, set(despues) - set(antes)
+
+
+@pytest.mark.parametrize("script, argv", [
+    ("vault_project_overview", []),
+    ("vault_project_status", ["--status", "en_desarrollo", "--summary", "x"]),
+])
+def test_ap63_las_tools_de_proyecto_no_fundan_carpetas_fantasma(registro, script, argv):
+    """Las dos creaban `01_Projects/<lo que llegase>/` en la primera llamada:
+    eran la forma por la que un typo se volvía un proyecto. Ahora fundarlo es
+    `vault_project --add` y nada más."""
+    import os
+    import subprocess
+
+    proceso = subprocess.run(
+        [sys.executable, str(SCRIPTS / f"{script}.py"), "--project", "Otra Cosa", *argv],
+        env=dict(os.environ, VAULT_ROOT=str(registro), VAULT_STRICT_ROOT="1",
+                 PYTHONIOENCODING="utf-8", VAULT_AGENT="pytest"),
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        cwd=str(SCRIPTS), timeout=120,
+    )
+    r = json.loads(proceso.stdout[proceso.stdout.index("{"):])
+    assert proceso.returncode == 1 and r["error_code"] == "PROJECT_NOT_FOUND", r
+    assert sorted(p.name for p in (registro / "01_Projects").iterdir()) == ["mi-api"]

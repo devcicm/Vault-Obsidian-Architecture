@@ -14,6 +14,7 @@ if str(ROOT) not in sys.path:
 
 from vault.autoria.conocimiento import recuperar_conocimiento
 from vault_errors import wrap_main
+from vault_project import proyecto_registrado
 from vault_io import get_vault_root
 
 
@@ -26,7 +27,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Vault Knowledge Get Tool")
     parser.add_argument("--query", required=True)
     parser.add_argument("--category")
-    parser.add_argument("--project")
+    parser.add_argument("--project", type=proyecto_registrado("vault_knowledge_get"))
     parser.add_argument("--limit", type=int, default=10)
     args = parser.parse_args()
     result = recuperar_conocimiento(get_vault_root(), args.query, args.category,

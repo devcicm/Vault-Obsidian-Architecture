@@ -26,6 +26,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 from vault_errors import emit_error, wrap_main
+from vault_project import proyecto_registrado
 from vault_lib import separar_frontmatter, utcnow
 from vault_io import atomic_write_json
 from vault_registry import ORDERED_SECTIONS
@@ -329,7 +330,7 @@ Notas:
     parser.add_argument(
         "--snapshot", action="store_true", help="Solo guardar snapshot sin comparar"
     )
-    parser.add_argument("--project", help="Acotar deteccion a un proyecto slug")
+    parser.add_argument("--project", type=proyecto_registrado("vault_delta"), help="Acotar deteccion a un proyecto slug")
     parser.add_argument(
         "--min-risk",
         choices=MIN_RISK_ORDER,
