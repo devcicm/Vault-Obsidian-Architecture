@@ -463,8 +463,9 @@ def medir_particiones(raiz: Path = None) -> List[Dict[str, str]]:
 
 
 #: Quién monta un bloque de frontmatter (2026-10-02). Medido al cerrar la tanda
-#: AP-46: antes de ella, dieciséis funciones lo montaban a mano —`["---",
-#: f"title: {…}", …, "---"]` o `"---\n" + … + "\n---\n"`—, cada una con su
+#: AP-46: antes de ella, dieciséis funciones lo montaban a mano —una lista de
+#: líneas entre dos `---` con la clave interpolada en una f-string, o una
+#: concatenación entre dos `---`—, cada una con su
 #: escapado, y tres de ellas perdían datos en silencio. Desde v40.34 lo escribe
 #: un dueño, también en modo edición (`Frontmatter.editar`).
 MONTAJE_CON_DUENO = {
