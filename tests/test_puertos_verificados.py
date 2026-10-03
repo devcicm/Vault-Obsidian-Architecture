@@ -59,7 +59,10 @@ def test_hay_puertos_en_los_contextos_que_publican_api():
     # por el mismo gancho, y sin puerto el nombre nuevo cruzaba por detrás.
     # +1: `refresco_de_grafo`, en `grafo`. Lo mismo que el refresco de búsqueda:
     # el gancho del write path refresca el grafo y el nombre se publica.
-    assert len(PUERTOS) == 64
+    # +1 en 0134101: `reconciled_params`, en `meta_toolkit`. `cli/registry.py`
+    # dejó de leer los params crudos del catálogo (81 fantasma en 41 tools) y
+    # pide al dueño los que argparse acepta; el cruce se declara, no se esconde.
+    assert len(PUERTOS) == 65
     # `cli` queda fuera a propósito: es un adaptador de transporte y **nadie
     # importa de `cli/`**, así que no publica API. Exigirle un puerto obligaría
     # a inventar uno, que es justo lo contrario de lo que mide este fichero.
