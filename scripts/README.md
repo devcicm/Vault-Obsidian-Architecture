@@ -536,7 +536,7 @@ python vault_fix_brackets.py --include-sandbox
 - Solo aplica cambios a notas marcadas como `auto_fixable: true` en el dry-run
 - El kind `imbalance_*` NUNCA se auto-arregla — siempre requiere revisión manual
 
-**Relación con `vault_audit`:** el bloque `nextActions` del audit ahora incluye `command: "python scripts/vault_fix_brackets.py --apply <path>"` para cada nota auto-fixeable, y `command: "Revisar <path>..."` para las que requieren revisión manual. El fix-tool y el audit comparten los mismos patrones de detección (`RE_EMPTY`, `RE_NESTED_*`, stack-based walk).
+**Relación con `vault_audit`:** el bloque `nextActions` del audit ahora incluye `command: "python scripts/vault_fix_brackets.py --apply --path \"<path>\""` para cada nota auto-fixeable, y `command: "Revisar <path>..."` para las que requieren revisión manual. El fix-tool y el audit comparten los mismos patrones de detección (`RE_EMPTY`, `RE_NESTED_*`, stack-based walk).
 
 ---
 

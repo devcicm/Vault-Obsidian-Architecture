@@ -2176,7 +2176,9 @@ def vault_audit(
         norm = ml.get("norm_code", "AP-22")
         path = ml.get("from", ml.get("path", ""))
         if auto_fixable:
-            cmd = f"python scripts/vault_fix_brackets.py --apply {path}"
+            # `--path` y comillas: la ruta como posicional no existe y argparse
+            # rechazaba la receta entera (AP-44: medido ejecutándola).
+            cmd = f'python scripts/vault_fix_brackets.py --apply --path "{path}"'
             desc_kind = ", ".join(kinds)
             next_actions.append(
                 {
