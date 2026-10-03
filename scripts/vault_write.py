@@ -99,7 +99,7 @@ from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 from vault.kernel.errores import completar_envelope  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
-from vault.kernel.indices_structural import es_nombre_reservado  # noqa: E402
+from vault.kernel.indices_structural import describir_reserva, es_nombre_reservado  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -820,8 +820,8 @@ def vault_write(
         return {
             **emit_error(
                 "vault_write", "RESERVED_NAME",
-                f"El título '{title}' produce '{filename}', nombre reservado para "
-                f"el índice generado de la carpeta. Usar otro título.",
+                f"El título '{title}' produce '{filename}': "
+                f"{describir_reserva(filename)}. Usar otro título.",
             ),
             "error": "RESERVED_NAME",
         }

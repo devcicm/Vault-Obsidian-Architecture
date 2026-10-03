@@ -28,7 +28,7 @@ from ..kernel.frontmatter_parsing import (
 )
 from ..kernel.normalizacion import clave_de_equivalencia, slugify_strict
 from ..kernel.proyectos import pertenencia_en
-from ..kernel.indices_structural import es_nombre_reservado
+from ..kernel.indices_structural import describir_reserva, es_nombre_reservado
 
 CATEGORIES = (
     "glossary", "api", "concept", "business-rule", "config", "dependency", "framework",
@@ -177,9 +177,8 @@ def guardar_conocimiento(
         if es_nombre_reservado(filename):
             return construir_error(
                 "vault_knowledge_save", "RESERVED_NAME",
-                f"El título '{title}' produce el archivo '{filename}.md', "
-                f"nombre reservado para índices generados automáticamente "
-                f"(index.md/readme.md). Usar otro título."
+                f"El título '{title}' produce el archivo '{filename}.md': "
+                f"{describir_reserva(filename)}. Usar otro título."
             )
         path = _contained(
             runtime,

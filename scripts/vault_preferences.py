@@ -60,7 +60,7 @@ _LOCK_TIMEOUT = 10.0
 from vault.consulta.repositorio import RepositorioConsulta  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
-from vault.kernel.indices_structural import es_nombre_reservado  # noqa: E402
+from vault.kernel.indices_structural import describir_reserva, es_nombre_reservado  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -211,8 +211,8 @@ def vault_preferences_set(
         return {
             **emit_error(
                 "vault_preferences", "RESERVED_NAME",
-                f"El título '{title}' produce '{note_path.name}', nombre reservado "
-                f"para el índice generado de la carpeta. Usar otro título.",
+                f"El título '{title}' produce '{note_path.name}': "
+                f"{describir_reserva(note_path.name)}. Usar otro título.",
             ),
             "error": "RESERVED_NAME",
         }

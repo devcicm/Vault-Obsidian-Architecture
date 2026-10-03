@@ -54,6 +54,7 @@ from vault_entorno import leer as _env
 # no se retira porque haya aparecido otra mejor.
 import vault_raiz as _raiz
 from vault.kernel.fallos import FalloDeDominio
+from vault.kernel.indices_structural import DISPOSITIVOS_WINDOWS, es_dispositivo_windows
 from vault_raiz import (  # noqa: F401  (reexport deliberado)
     LOW_CONFIDENCE_ORIGINS,
     get_vault_root,
@@ -262,15 +263,11 @@ def scanner_degradations() -> List[Dict[str, str]]:
     return list(_ESCANER_DEGRADADO)
 
 
-#: Nombres de dispositivo reservados de Windows. Un fichero llamado así no es un
-#: fichero: `CON` es la consola, `NUL` el vacío, `COM1`/`LPT1` puertos. La
-#: reserva ignora la extensión —`con.md` es `CON` igual— y no distingue
-#: mayúsculas.
-_NOMBRES_RESERVADOS = frozenset(
-    {"CON", "PRN", "AUX", "NUL"}
-    | {f"COM{i}" for i in range(1, 10)}
-    | {f"LPT{i}" for i in range(1, 10)}
-)
+#: superseded_by: vault.kernel.indices_structural.DISPOSITIVOS_WINDOWS (v40.34).
+#: El criterio tiene dueño en el núcleo (AP-57); este nombre se conserva para
+#: quien lo importara. Mirar solo `path.stem` dejaba pasar `con.tar.md` y
+#: `con .md`, que Windows también abre como la consola.
+_NOMBRES_RESERVADOS = DISPOSITIVOS_WINDOWS
 
 
 def _rechazar_nombre_reservado(path: Path) -> None:
@@ -294,10 +291,10 @@ def _rechazar_nombre_reservado(path: Path) -> None:
     forma más barata — el estándar se desarrolla en Windows y aun así nadie lo
     había escrito).
     """
-    if path.stem.upper() in _NOMBRES_RESERVADOS:
+    if es_dispositivo_windows(path.name):
         raise ValueError(
-            f"atomic_write bloqueado: '{path.name}' usa el nombre de dispositivo "
-            f"reservado '{path.stem.upper()}'. En Windows no sería un fichero sino "
+            f"atomic_write bloqueado: '{path.name}' usa un nombre de dispositivo "
+            f"reservado. En Windows no sería un fichero sino "
             f"un dispositivo, y leerlo cuelga al proceso en vez de fallar. Renombra "
             f"la nota (p. ej. '{path.stem}-nota{path.suffix}')."
         )
