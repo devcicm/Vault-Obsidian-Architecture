@@ -60,3 +60,21 @@ _es_instante = es_instante
 # un cruce de frontera. Se conserva el nombre porque es la API que importan los
 # `*_save`; una segunda clase sería el AP-57 que esto cierra.
 from ..kernel.frontmatter_escritura import Frontmatter  # noqa: E402,F401
+
+
+def firmante(explicito: object = None, entorno: object = None) -> str:
+    """Quién firma una nota que escribe una tool tipada (AP-16).
+
+    Medido el 2026-10-04 en un vault recién creado con las tools oficiales:
+    `vault_write` honraba `VAULT_AGENT`, pero `knowledge_save`,
+    `runbook_save`, `ai_decision` y `project_overview` escribían
+    `agent: system` siempre, así que la autoría mentía en cuanto un agente
+    usaba la tool con contrato en vez de la genérica. El orden es uno: el
+    explícito, `VAULT_AGENT` (declarada en `vault_entorno.VARIABLES`,
+    contexto autoria) y, sin ninguno, `system` — lo que esas tools ya
+    escribían, así que nadie que no la exporte ve un cambio.
+    """
+    import os
+
+    entorno = os.environ if entorno is None else entorno
+    return str(explicito or entorno.get("VAULT_AGENT") or "system")

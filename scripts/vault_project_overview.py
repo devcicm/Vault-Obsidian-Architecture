@@ -32,6 +32,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
+from vault.autoria.frontmatter import firmante as _agente  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -226,7 +227,7 @@ def vault_project_overview(
         .set("cia_availability", "medium")
         .set("cia_sensitivity", "internal")
         .set("status", "draft")
-        .set("agent", "system")
+        .set("agent", _agente())
         .render()
     ]
 

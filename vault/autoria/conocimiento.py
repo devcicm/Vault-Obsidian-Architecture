@@ -18,7 +18,7 @@ from typing import Any, Callable, Dict, List, Mapping, Optional, Union
 
 import yaml
 
-from .frontmatter import Frontmatter
+from .frontmatter import Frontmatter, firmante
 from ..kernel.errores import construir_error
 from ..kernel.escritura import escritura_atomica
 from ..kernel.frontmatter_parsing import (
@@ -114,12 +114,19 @@ def _atomic_write(path: Path, text: str) -> None:
 def _render(category: str, title: str, content: str, project: Optional[str],
             tags: Optional[List[str]], related: Optional[List[str]],
             existing_id: Optional[str] = None,
-            existing_createdAt: Optional[str] = None) -> str:
+            existing_createdAt: Optional[str] = None,
+            agent: Optional[str] = None,
+            tipo: Optional[str] = None) -> str:
     timestamp = _timestamp()
     frontmatter = Frontmatter()
     frontmatter.set("title", title)
     frontmatter.set("id", existing_id or str(uuid.uuid4()))
+    # El tipo lo inyecta el adaptador desde `vault_registry.SECTION_TYPES`: la
+    # implementación instalada no importa el registro (ver query_parse._sections).
+    if tipo:
+        frontmatter.set("type", tipo)
     frontmatter.set("category", category)
+    frontmatter.set("status", "draft")
     frontmatter.set("createdAt", existing_createdAt or timestamp)
     frontmatter.set("updatedAt", timestamp)
     if project:
@@ -131,7 +138,7 @@ def _render(category: str, title: str, content: str, project: Optional[str],
     frontmatter.set("cia_integrity", "medium")
     frontmatter.set("cia_availability", "medium")
     frontmatter.set("cia_sensitivity", "internal")
-    frontmatter.set("agent", "system")
+    frontmatter.set("agent", firmante(agent))
     if category in ("dependency", "framework"):
         parts = [f"## {title}\n", f"\n**Propósito:** {content}\n", "\n**Caveats:** *(pendiente de documentar)*\n"]
         body = "\n".join(parts)
@@ -153,6 +160,8 @@ def guardar_conocimiento(
     *,
     writer: Optional[Callable[[Path, str], None]] = None,
     report: Optional[Callable[[], Mapping[str, Any]]] = None,
+    agent: Optional[str] = None,
+    tipo: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Persiste una nota canónica; el adaptador legacy puede inyectar su I/O.
 
@@ -251,7 +260,8 @@ def guardar_conocimiento(
             )
 
         text = _render(category, title, content, project, tags, related,
-                       existing_id=existing_id, existing_createdAt=existing_createdAt)
+                       existing_id=existing_id, existing_createdAt=existing_createdAt,
+                       agent=agent, tipo=tipo)
 
         try:
             (writer or _atomic_write)(path, text)

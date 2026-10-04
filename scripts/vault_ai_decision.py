@@ -45,6 +45,7 @@ from vault_io import (
     indice_compartido,
     assert_within_vault,
 )
+from vault_registry import section_default_type
 import uuid
 
 from pathlib import Path
@@ -74,6 +75,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
+from vault.autoria.frontmatter import firmante as _agente  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -205,6 +207,8 @@ def vault_ai_decision(
             .set("decision_id", decision_id)
             .set("title", title, texto=True)
             .set("project", project, texto=True)
+            .set("type", section_default_type("16_AI_Governance"))
+            .set("status", "approved" if human_approved else "draft")
             .set("decision_type", decision_type)
             .set("impact_level", impact_level)
             .set("human_approved", bool(human_approved))
@@ -215,7 +219,7 @@ def vault_ai_decision(
             .set("cia_integrity", cia_integrity)
             .set("cia_availability", "medium")
             .set("cia_sensitivity", "internal")
-            .set("agent", "system")
+            .set("agent", _agente())
             .render()
         ]
 

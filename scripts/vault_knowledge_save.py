@@ -20,6 +20,7 @@ if str(ROOT) not in sys.path:
 from vault.autoria.conocimiento import CATEGORIES, guardar_conocimiento
 from vault_errors import emit_error, wrap_main, proyecto_registrado
 from vault_io import atomic_write_text, get_vault_root, write_report
+from vault_registry import section_default_type
 
 
 def vault_knowledge_save(category: str, title: str, content: str,
@@ -28,6 +29,7 @@ def vault_knowledge_save(category: str, title: str, content: str,
     return guardar_conocimiento(
         get_vault_root(), category, title, content, project, tags, related,
         writer=atomic_write_text, report=write_report,
+        tipo=section_default_type("07_Knowledge"),
     )
 
 

@@ -31,6 +31,7 @@ import sys
 from vault_errors import emit_error, wrap_main, proyecto_registrado
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from vault_io import atomic_write_text, assert_within_vault, write_report
+from vault_registry import section_default_type
 import uuid
 
 from pathlib import Path
@@ -54,6 +55,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
+from vault.autoria.frontmatter import firmante as _agente  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -145,14 +147,21 @@ def vault_bibliography_save(
     if project:
         frontmatter_lines.set("project", project, texto=True)
 
-    frontmatter_lines.set("agent", agent or 'system')
+    frontmatter_lines.set("type", section_default_type("12_Bibliography"))
+
+    frontmatter_lines.set("status", "draft")
+
+    frontmatter_lines.set("agent", _agente(agent))
 
     frontmatter_lines.set("accessed_at", now)
 
-    if tags:
-        tags_str = json.dumps(tags, ensure_ascii=False)
+    frontmatter_lines.set("createdAt", now)
 
-        frontmatter_lines.set("tags", tags_str)
+    frontmatter_lines.set("updatedAt", now)
+
+    # Hasta v40.35 iba `json.dumps(tags)` como valor: `Frontmatter` lo citaba
+    # y `yaml.safe_load` leía el texto '["a"]', no una lista (AP-26).
+    frontmatter_lines.set("tags", list(tags or []), omitir_vacio=True)
 
     frontmatter_lines.set("cia_integrity", "medium")
 

@@ -31,6 +31,7 @@ import sys
 from vault_errors import emit_error, wrap_main, proyecto_registrado
 from vault_lib import yaml_scalar, utcnow, slugify
 from vault_io import atomic_write_text, assert_within_vault, safe_wikilink, write_report
+from vault_registry import section_default_type
 import uuid
 
 from pathlib import Path
@@ -54,6 +55,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
+from vault.autoria.frontmatter import firmante as _agente  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -117,6 +119,8 @@ def vault_runbook_save(
 
     frontmatter.set("project", project, texto=True)
 
+    frontmatter.set("type", section_default_type("08_Runbooks"))
+
     frontmatter.set("category", category)
 
     frontmatter.set("trigger", trigger)
@@ -138,7 +142,9 @@ def vault_runbook_save(
 
     frontmatter.set("cia_sensitivity", "internal")
 
-    frontmatter.set("agent", "system")
+    frontmatter.set("tags", [safe_project, "runbook", category])
+
+    frontmatter.set("agent", _agente())
 
 
     body_sections = []
