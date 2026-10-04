@@ -24,6 +24,8 @@ Usage:
 
 import argparse
 
+import difflib
+
 import json
 
 import os
@@ -459,6 +461,92 @@ def _collect_ghost_links(wiki_links: List[str], desde: Optional[Path] = None) ->
     return ghost
 
 
+#: Campos que decide el write path y no quien llama. `--meta` los sobrescribía
+#: en silencio (medido el 2026-10-04): `{"id":"fijo","createdAt":"ayer"}` dejaba
+#: en disco una nota con otra identidad que la que la tool devolvía en `id`, y
+#: un timestamp que no es ISO 8601. La identidad no puede ser ambigua (CN-01) y
+#: las fechas salen del reloj, no del agente (AP-13).
+CAMPOS_DEL_WRITE_PATH: Dict[str, str] = {
+    "title": "usa --title",
+    "id": "es la identidad de la nota: la acuña vault_write o la conserva al actualizar (CN-01)",
+    "createdAt": "sale del reloj al crear, no de quien llama (AP-13)",
+    "updatedAt": "sale del reloj en cada escritura (AP-13)",
+    "tags": "usa --tags",
+    "norm_refs": "se derivan de las normas que aplica la escritura",
+    "status_note": "lo deriva la normalización de status (AP-38)",
+}
+
+#: Campos con significado que `--meta` sí puede fijar, y por eso los que una
+#: errata suele imitar.
+CAMPOS_DE_META = ("type", "status", "cia_integrity", "cia_availability",
+                  "cia_sensitivity", "agent")
+
+
+def problemas_de_meta(meta: Any, folder: str = "") -> List[str]:
+    """Lo que `--meta` no puede decir, antes de escribir nada.
+
+    `--meta` es la puerta abierta del frontmatter: el vocabulario de claves es
+    abierto a propósito (propiedades propias de quien usa el vault), así que
+    aquí no se rechaza lo desconocido sino lo que se hace pasar por conocido:
+    un campo del write path, una errata de un campo con significado
+    (`statsu`, `tag`, `Status`) o un valor fuera del vocabulario que el
+    registro ya declara. Antes todo ello pasaba con `ok: true`.
+    """
+    if meta is None:
+        return []
+    if not isinstance(meta, dict):
+        return [f"--meta tiene que ser un objeto JSON; llegó {type(meta).__name__}"]
+
+    conocidos = {c.lower(): c for c in (*CAMPOS_DEL_WRITE_PATH, *CAMPOS_DE_META)}
+    problemas: List[str] = []
+    for clave in meta:
+        canon = conocidos.get(clave.lower())
+        if canon in CAMPOS_DEL_WRITE_PATH:
+            problemas.append(
+                f"`{clave}` no se fija por --meta: {CAMPOS_DEL_WRITE_PATH[canon]}"
+            )
+        elif canon and canon != clave:
+            problemas.append(f"`{clave}` no es un campo; el campo es `{canon}`")
+        elif canon is None:
+            parecido = difflib.get_close_matches(clave.lower(), list(conocidos), n=1, cutoff=0.8)
+            if parecido:
+                problemas.append(
+                    f"`{clave}` parece una errata de `{conocidos[parecido[0]]}`; "
+                    "corrígela o usa un nombre que no se confunda con un campo del estándar"
+                )
+
+    if "status" in meta:
+        if not isinstance(meta["status"], str) or normalize_status(meta["status"])[0] is None:
+            problemas.append(
+                f"status {meta['status']!r} no pertenece al vocabulario canónico "
+                f"(CN-03); usa uno de {sorted(STATUS_VOCAB)}"
+            )
+
+    from vault_fundamentals_catalog import cia_valores
+
+    for campo in ("cia_integrity", "cia_availability", "cia_sensitivity"):
+        if campo in meta and meta[campo] not in cia_valores(campo):
+            problemas.append(
+                f"{campo} {meta[campo]!r} fuera de {sorted(cia_valores(campo))}"
+            )
+
+    for campo in ("type", "agent"):
+        if campo in meta and (not isinstance(meta[campo], str) or not meta[campo].strip()):
+            problemas.append(f"{campo} tiene que ser texto no vacío")
+
+    if isinstance(meta.get("type"), str) and folder:
+        from vault_registry import type_misfiled_in
+
+        destino = type_misfiled_in(folder, meta["type"])
+        if destino:
+            problemas.append(
+                f"type {meta['type']!r} pertenece a {', '.join(destino)}, no a "
+                f"{folder.split('/')[0]} (CN-02): escribe la nota allí o deja que el "
+                "tipo se derive de la carpeta"
+            )
+    return problemas
+
+
 def generate_frontmatter(
     title: str,
     tags: Optional[List[str]] = None,
@@ -483,6 +571,12 @@ def generate_frontmatter(
     """
 
     meta = dict(meta or {})
+
+    pisados = sorted(set(meta) & set(CAMPOS_DEL_WRITE_PATH))
+    if pisados:
+        raise ValueError(
+            f"meta no puede fijar {pisados}: los decide el write path (CN-01, AP-13)"
+        )
 
     # AP-38 — normalizar antes de escribir, no auditar después.
     #
@@ -694,7 +788,19 @@ def vault_write(
 
     tags = tags or []
 
-    meta = meta or {}
+    # Antes de tocar nada: un `--meta` que pisa la identidad, imita un campo con
+    # una errata o trae un valor fuera de vocabulario se rechaza entero, con
+    # todos sus problemas a la vez (CN-01, CN-02, CN-03, AP-13).
+    problemas = problemas_de_meta(meta, folder)
+    if problemas:
+        return emit_error(
+            "vault_write",
+            "INVALID_INPUT",
+            "--meta rechazado: " + "; ".join(problemas),
+            args={"meta_keys": sorted(meta) if isinstance(meta, dict) else None},
+        )
+
+    meta = dict(meta or {})
 
     # Secretos antes que forma (2026-10-01). El escaneo solo ocurría al escribir,
     # detrás de once guardas: una nota con una clave AWS y sin tags volvía
