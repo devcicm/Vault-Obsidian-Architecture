@@ -33,7 +33,8 @@ import sys
 from pathlib import Path
 from typing import Any, Dict
 
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
+from vault_standard_upgrade import version_conocida
 from vault_io import atomic_write_json, atomic_write_text, write_report
 from vault_lib import utcnow
 from vault_version import CURRENT_VERSION
@@ -182,6 +183,17 @@ def vault_init(
 
     Returns a structured result suitable for both CLI JSON output and tests.
     """
+    # Antes de crear una sola carpeta: `--target` es una versión, no una ruta,
+    # y lo que llegue aquí acaba como `applied_version` del vault.
+    if not version_conocida(target_version):
+        return emit_error(
+            "vault_init",
+            "INVALID_INPUT",
+            f"--target {target_version!r} no es una versión del estándar "
+            f"(se espera vNN o vNN.M; la vigente es {CURRENT_VERSION}). "
+            "El vault de destino se fija con VAULT_ROOT, no con --target.",
+            args={"target": target_version},
+        )
     result = {
         "ok": True,
         **write_report(),

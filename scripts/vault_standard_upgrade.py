@@ -17,8 +17,9 @@ Usage:
 
 import argparse
 import json
+import re
 import sys
-from vault_errors import wrap_main
+from vault_errors import emit_error, wrap_main
 from vault_lib import utcnow
 from datetime import datetime, timezone
 from pathlib import Path
@@ -505,6 +506,24 @@ def _version_index(v: str) -> int:
     return -1
 
 
+_FORMA_DE_VERSION = re.compile(r"v\d+(?:\.\d+)?")
+
+
+def version_conocida(v: Any) -> bool:
+    """Una versión que el registro reconoce: `vNN` o `vNN.M` con `vNN` en VERSION_ORDER.
+
+    `--init` escribía lo que recibiera en `standard-version.json`: una ruta
+    pasada por error a `vault_init --target` quedaba como `applied_version` y
+    la tool respondía `ok: true`. Desde ahí `_version_index` devuelve -1 y
+    ninguna migración vuelve a aplicarse, en silencio (AP-51).
+    """
+    return (
+        isinstance(v, str)
+        and _FORMA_DE_VERSION.fullmatch(v) is not None
+        and _version_index(v) >= 0
+    )
+
+
 def _read_version_file() -> Dict[str, Any]:
     if not _version_file().exists():
         return {
@@ -770,6 +789,14 @@ def vault_standard_upgrade(
         return result
 
     if init_version:
+        if not version_conocida(init_version):
+            return emit_error(
+                "vault_standard_upgrade",
+                "INVALID_INPUT",
+                f"--init {init_version!r} no es una versión del estándar "
+                f"(se espera vNN o vNN.M; la vigente es {CURRENT_VERSION})",
+                args={"init_version": init_version},
+            )
         data = {
             "applied_version": init_version,
             "applied_at": utcnow(),
