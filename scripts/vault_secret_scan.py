@@ -179,13 +179,17 @@ def vault_write_hook(text: str) -> tuple[bool, List[Dict[str, Any]]]:
 
 
 if __name__ == "__main__":
+    import argparse
     import sys
 
-    if len(sys.argv) < 2:
-        print("Usage: python vault_secret_scan.py <file_or_dir>")
-        sys.exit(1)
-
-    target = Path(sys.argv[1])
+    # Hasta 2026-10-04 leía `sys.argv[1]` a mano e ignoraba el resto: `f --json`
+    # corría sin avisar de que `--json` no existe. argparse lo rechaza (rc 2).
+    parser = argparse.ArgumentParser(
+        description="Busca patrones de secretos en un .md o en un directorio",
+        allow_abbrev=False,
+    )
+    parser.add_argument("target", help="Fichero o directorio a escanear")
+    target = Path(parser.parse_args().target)
     if target.is_file():
         findings = scan_note(target)
         if findings:

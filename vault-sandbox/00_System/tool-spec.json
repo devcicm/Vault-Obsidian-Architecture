@@ -4432,6 +4432,20 @@
         "F3",
         "F7"
       ]
+    },
+    "vault_secret_scan": {
+      "group": "internal",
+      "group_id": 0,
+      "status": "internal",
+      "required_args": [],
+      "declared_returns": [],
+      "dq": {
+        "dq_dimensions": [],
+        "cia_scope": [],
+        "propagation_aware": false
+      },
+      "fundamentals": [],
+      "reason": "Librería del gancho de secretos del write path (vault_write_hook); su CLI es de diagnóstico para escanear un .md o un directorio y no es un camino de acceso del agente."
     }
   },
   "_counts": {

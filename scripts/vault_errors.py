@@ -377,6 +377,27 @@ def _rechazo_por_raiz_inexistente(tool_name: str) -> Optional[Dict[str, Any]]:
     )
 
 
+class _ArgumentosRechazados(SystemExit):
+    """argparse rechazó la línea de órdenes antes de que la tool hiciera nada.
+
+    Hereda de `SystemExit`, como el `exit(2)` que sustituye: un `except
+    Exception` dentro de la tool no debe tragárselo y seguir ejecutando.
+    """
+
+    def __init__(self, prog: str, usage: str, detalle: str):
+        super().__init__(2)
+        self.prog = prog
+        self.usage = usage
+        self.detalle = detalle
+
+
+def _rechazar_argumentos(self, message):
+    # Sustituye a `ArgumentParser.error` mientras corre la tool: el texto de
+    # uso sigue yendo a stderr, como siempre, y además la tool responde con
+    # su envelope en vez de dejar stdout vacío.
+    raise _ArgumentosRechazados(self.prog, self.format_usage(), message)
+
+
 def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
     """Envuelve main() con timeout, captura de excepciones, y trace log.
 
@@ -400,6 +421,24 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
             if result is None:
                 return 0
             return int(result)
+        except _ArgumentosRechazados as rechazo:
+            # Medido el 2026-10-04: un flag que la tool no programa salía solo
+            # como texto de uso en stderr, con stdout vacío. Quien consume el
+            # contrato JSON (`vault run`, el agente) no tenía envelope que leer
+            # y lo veía como salida no estructurada. El rc sigue siendo 2, el
+            # de argparse, y no se ha ejecutado nada.
+            sys.stderr.write(f"{rechazo.usage}{rechazo.prog}: error: {rechazo.detalle}\n")
+            # Solo los nombres de los flags: los valores pueden ser el
+            # contenido de una nota, y el envelope va también al trace log.
+            err = emit_error(
+                tool_name,
+                "INVALID_ARGS",
+                f"argumentos rechazados: {rechazo.detalle}",
+                args={"flags": [a.split("=", 1)[0] for a in sys.argv[1:] if a.startswith("-")]},
+                pista=f"`{rechazo.prog} --help` lista los argumentos que acepta.",
+            )
+            _write_output(json.dumps(err, ensure_ascii=False), _real_stdout)
+            return 2
         except SystemExit as e:
             code = e.code if isinstance(e.code, int) else (1 if e.code else 0)
             return code
@@ -442,9 +481,16 @@ def wrap_main(fn: Callable, tool_name: str, timeout: int = None) -> int:
         finally:
             sys.stdout = _real_stdout
 
+    import argparse
+
+    _error_original = argparse.ArgumentParser.error
+    argparse.ArgumentParser.error = _rechazar_argumentos
     t = threading.Thread(target=_target, daemon=True)
     t.start()
-    t.join(timeout=limit)
+    try:
+        t.join(timeout=limit)
+    finally:
+        argparse.ArgumentParser.error = _error_original
 
     if t.is_alive():
         err = emit_error(
