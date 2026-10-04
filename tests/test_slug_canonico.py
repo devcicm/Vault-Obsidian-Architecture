@@ -91,7 +91,14 @@ def test_la_nota_acentuada_previa_y_la_nueva_son_la_misma_nota():
 #: `vault_encoding.sanitize_filename`, que resuelve además caracteres inválidos
 #: por plataforma, invisibles y longitud máxima. Es un contrato distinto —el del
 #: write path canónico—, no una copia del slug. Se anota, no se borra.
-_DELEGACION_JUSTIFICADA = {"vault_write.py": "usa vault_encoding.sanitize_filename"}
+#:
+#: superseded_by: v40.35 — `vault_write.slugify` delega en `slugify_strict`. La
+#: excepción ocultaba que el mismo título daba dos nombres según la tool
+#: («Mapa de Código — ANS (v2)»: `mapa-de-código-—-ans-(v2)` frente a
+#: `mapa-de-codigo-ans-v2`), que es la identidad ambigua que CN-01 prohíbe. El
+#: slug viejo vive en `vault_write._slug_heredado`, solo para encontrar las
+#: notas que ya produjo (tests/test_vault_write_slug_canonico.py).
+_DELEGACION_JUSTIFICADA: dict = {}
 
 
 #: Las fuentes: el kernel es el dueño y `vault_lib` conserva su respaldo para

@@ -196,7 +196,9 @@ DEUDA_DECLARADA: List[Dict[str, str]] = [
         "capa": "5",
         "que": (
             "8 parsers de frontmatter distintos; `vault_write.slugify` no delega en "
-            "`vault_lib` aunque 20 módulos sí; 6 aliases de v40.8 con el nombre viejo "
+            "`vault_lib` aunque 20 módulos sí (esa parte, saldada en v40.35: delega "
+            "en `slugify_strict` y el slug viejo queda solo para encontrar notas "
+            "ya escritas); 6 aliases de v40.8 con el nombre viejo "
             "aún en uso; `--agent default=\"claude\"` en 6 tools frente al AP-16 que "
             "`vault_bug_save` exige."
         ),

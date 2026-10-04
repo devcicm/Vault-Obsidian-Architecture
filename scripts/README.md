@@ -89,6 +89,14 @@ python vault_write.py --folder "03_Decisions" --title "ADR-001" --content "..." 
 | `--meta` | no | JSON adicional para frontmatter |
 | `--meta-file` | no | Ruta a JSON con frontmatter adicional (evita problemas de quoting en PowerShell) |
 
+**CN-01 — el nombre sale del slug canónico (v40.35).** El fichero se deriva del título con
+`slugify_strict`, el mismo que usa el resto del toolkit: «Mapa de Código — ANS (v2)» es
+`mapa-de-codigo-ans-v2.md`. Hasta v40.34 `vault_write` conservaba acentos y puntuación
+(`mapa-de-código-—-ans-(v2).md`). Una nota ya escrita con ese nombre, o con otras
+mayúsculas, **se actualiza en su sitio** con su nombre y su `id`; el nombre nuevo solo se
+estrena cuando no existe ninguna. Un título sin letras ni dígitos (`!!!`) conserva el nombre
+del criterio anterior en vez de quedarse vacío.
+
 **AP-41 — el ciclo de vida se verifica al escribir.** Al actualizar una nota
 existente, `vault_write` lee su frontmatter y comprueba la transición de `status`
 contra `vault_norms.STATUS_TRANSITIONS`. Una transición que no está en la máquina

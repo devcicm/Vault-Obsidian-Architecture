@@ -68,6 +68,7 @@ from vault_lib import (
     resolver_destino_wikilink,   # dueño único de cómo se resuelve (AP-57)
     read_frontmatter,
     separar_frontmatter,
+    slugify_strict,              # dueño único del slug (CN-01, v40.35)
     utcnow,
     strip_code_blocks,
     Config,
@@ -314,29 +315,61 @@ def slugify(title: str) -> str:
     ya escritos, así que si esto no normaliza, nada lo corrige. Por eso el
     enforcement de CN-01 es `guard` y no `guard+audit`.
 
-    Uses vault_encoding.sanitize_filename for cross-platform safety.
+    Delega en el dueño canónico, `slugify_strict` (v40.35). Hasta v40.34 este
+    módulo derivaba su propio slug con `sanitize_filename(...).lower()`, que
+    conserva acentos, `—`, paréntesis y puntos: «Mapa de Código — ANS (v2)»
+    daba `mapa-de-código-—-ans-(v2)` aquí y `mapa-de-codigo-ans-v2` en el resto
+    del toolkit — dos identidades para una nota (AP-57). Las notas escritas con
+    el slug viejo las sigue encontrando `_nota_heredada`, para no duplicarlas.
+
+    Un título sin un solo carácter de palabra (`!!!`) deja vacío el slug
+    estricto; entonces se usa el viejo, que es el nombre que esa nota tendría
+    ya, en vez de inventar uno.
     """
-    # Use the encoding module's sanitize_filename for proper handling
-    # of Unicode, invisible chars, and cross-platform compatibility.
-    # `.lower()`: CN-01 son minúsculas, y `sanitize_filename` conserva la
-    # capitalización — `vault_write` escribía `Decision-transporte-MCP.md`
-    # (medido 2026-10-01). Las notas ya escritas así las resuelve
-    # `_nota_heredada`, para no duplicarlas.
+    slug = slugify_strict(title)[:200].strip("-")
+    return slug or _slug_heredado(title)
+
+
+def _slug_heredado(title: str) -> str:
+    """superseded_by: slugify (v40.35) — solo para encontrar notas ya escritas.
+
+    Es el slug que `vault_write` usó hasta v40.34. Se conserva su contrato
+    (`sanitize_filename` + minúsculas) porque las notas que produjo siguen en
+    los vaults de los consumidores, y actualizar una no puede duplicarla.
+    """
     return sanitize_filename(title, max_length=200).lower()
 
 
-def _nota_heredada(vault_path: Path) -> Path:
-    """CN-01: la nota escrita antes de que el slug fuera a minúsculas.
+def _nota_heredada(vault_path: Path, titulo: Optional[str] = None) -> Path:
+    """CN-01: la nota ya escrita con otro nombre para el mismo título.
 
-    Si en su carpeta hay un fichero que solo difiere en mayúsculas, es la
-    misma nota: se actualiza ella, con su nombre y su identidad. Sin esto, en
-    un sistema de ficheros sensible a mayúsculas la primera actualización tras
-    el cambio crearía un duplicado (AP-02); y en Windows, donde `exists()` sí
-    la encuentra, la escritura atómica la renombraba a minúsculas — medido, no
-    supuesto: el test de esta función lo destapó.
+    Dos generaciones de nombres heredados, en este orden:
+
+    1. El mismo nombre con otras mayúsculas — antes de que el slug fuera a
+       minúsculas. En un sistema de ficheros sensible a mayúsculas la primera
+       actualización tras el cambio crearía un duplicado (AP-02); y en Windows,
+       donde `exists()` sí la encuentra, la escritura atómica la renombraba a
+       minúsculas — medido, no supuesto: el test de esta función lo destapó.
+    2. El nombre del slug anterior a v40.35 (`_slug_heredado`), con acentos y
+       puntuación, si se pasa el título.
+
+    Si alguno existe, es la misma nota: se actualiza ella, con su nombre y su
+    identidad. El nombre nuevo solo se estrena cuando no hay ninguna.
     """
-    if not vault_path.parent.is_dir():
+    carpeta = vault_path.parent
+    if not carpeta.is_dir():
         return vault_path
+    buscados = [vault_path.name.lower()]
+    if titulo is not None:
+        buscados.append(f"{_slug_heredado(titulo)}.md".lower())
+    existentes: dict = {}
+    for candidato in sorted(carpeta.iterdir()):
+        if candidato.is_file():
+            existentes.setdefault(candidato.name.lower(), candidato)
+    for nombre in buscados:
+        if nombre in existentes:
+            return existentes[nombre]
+    return vault_path
     nombre = vault_path.name.lower()
     for candidato in sorted(vault_path.parent.iterdir()):
         if candidato.is_file() and candidato.name.lower() == nombre:
@@ -826,7 +859,7 @@ def vault_write(
             "error": "RESERVED_NAME",
         }
 
-    vault_path = _nota_heredada(_raiz() / folder / filename)
+    vault_path = _nota_heredada(_raiz() / folder / filename, title)
 
     try:
         assert_within_vault(vault_path, _raiz())
@@ -896,6 +929,10 @@ def vault_write(
 
                 index_data = json_module.loads(search_index.read_text(encoding="utf-8"))
                 note_stem = slugify(title)
+                # Los dos nombres que este título ha tenido (CN-01, v40.35):
+                # una nota escrita con el slug viejo en otra carpeta es la
+                # misma nota y también se detecta.
+                stems = {note_stem, _slug_heredado(title)}
                 for note in index_data.get("notes", []):
                     # El stem se **deriva de la ruta**, que es un campo que el
                     # índice sí escribe. Esto comparaba `note.get("stem")`, una
@@ -908,9 +945,9 @@ def vault_write(
                     # `registry["tags"]`: código escrito contra una clave
                     # inexistente. Derivar de lo que hay evita estrenar un
                     # campo que los índices ya escritos no tendrían.
-                    if Path(note.get("path", "")).stem == note_stem:
+                    if Path(note.get("path", "")).stem.lower() in stems:
                         current_path = note.get("path", "")
-                        if current_path and current_path != f"{folder}/{note_stem}.md":
+                        if current_path and Path(current_path).parent.as_posix() != Path(folder).as_posix():
                             return {
                                 "ok": False,
                                 "error_code": "note_moved",
@@ -1208,7 +1245,7 @@ Notas:
 
             filename = f"{slugify(title)}.md"
 
-            vault_path = _raiz() / args.folder / filename
+            vault_path = _nota_heredada(_raiz() / args.folder / filename, title)
 
             if vault_path.exists():
                 skipped.append(

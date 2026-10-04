@@ -64,12 +64,21 @@ def vault(tmp_path):
     return v
 
 
-@pytest.mark.parametrize("titulo", ["CON", "aux", "Com1", "con.tar"])
+# «con.tar» estuvo aquí hasta v40.34, cuando el slug conservaba el punto y
+# producía `con.tar.md`. Con el slug canónico (CN-01, v40.35) da `contar.md`,
+# que no es un dispositivo: el caso pasa a `..._ya_no_es_dispositivo`.
+@pytest.mark.parametrize("titulo", ["CON", "aux", "Com1", "Con!"])
 def test_vault_write_rechaza_el_dispositivo_sin_colgarse(vault, titulo):
     r = _cli(vault, "vault_write.py", "--folder", "07_Knowledge", "--title", titulo,
              "--tags", "prueba", "--content", CONTENIDO)
     assert r["ok"] is False and r["error_code"] == "RESERVED_NAME", r
     assert "dispositivo" in r["message"]
+
+
+def test_vault_write_con_punto_ya_no_es_dispositivo(vault):
+    r = _cli(vault, "vault_write.py", "--folder", "07_Knowledge", "--title", "con.tar",
+             "--tags", "prueba", "--content", CONTENIDO)
+    assert r["ok"] is True and r["filename"] == "contar.md", r
 
 
 def test_vault_preferences_rechaza_el_dispositivo(vault):
