@@ -74,6 +74,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
+from vault.kernel.contenido import con_titulo  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 from vault.autoria.frontmatter import firmante as _agente  # noqa: E402
 
@@ -271,7 +272,8 @@ def vault_ai_decision(
             "> *Registrado bajo ISO/IEC 42001:2023 — AI Management System*"
         )
 
-        final_content = "\n".join(frontmatter) + "\n\n" + "\n\n".join(body_sections)
+        # CN-04: la decisión abre con su título, antes de la línea de metadatos.
+        final_content = "\n".join(frontmatter) + "\n\n" + con_titulo(title, "\n\n".join(body_sections))
 
         note_path.parent.mkdir(parents=True, exist_ok=True)
 

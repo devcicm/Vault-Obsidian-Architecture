@@ -104,6 +104,7 @@ from vault_entorno import leer as _env
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.contenido import con_titulo  # noqa: E402
 from vault.kernel.errores import completar_envelope  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 from vault.kernel.indices_structural import describir_reserva, es_nombre_reservado  # noqa: E402
@@ -1164,7 +1165,8 @@ def vault_write(
         title, tags, meta, nota_id, existing_created, norm_refs, folder
     )
 
-    final_content = f"{frontmatter}\n\n{content}"
+    # CN-04: la nota abre con su título; el dueño respeta un H1 que ya venga.
+    final_content = f"{frontmatter}\n\n{con_titulo(title, content)}"
 
     # Con `/` siempre, como escribe el dueño (`RepositorioIndices.relativa`).
     # Hasta aquí iba `str(relative_to)`: en Windows el índice recibía

@@ -67,7 +67,7 @@ regenera.*
 
 *Registros: `vault_norms.NORM_CATALOG` + `vault_gate.PUERTAS` + `tests/`*
 
-61 de 76 normas tienen puerta o test que las nombre.
+62 de 77 normas tienen puerta o test que las nombre.
 **Es la única capa con baseline**, y por un motivo concreto: las demás se midieron
 en cero el día que se declararon porque sus datos ya existían y solo faltaba
 atarlos. Ésta no. Exigir cero aquí el primer día habría hecho nacer la puerta en
@@ -151,6 +151,7 @@ rojo, y una puerta en rojo se desactiva.
 | **CN-01** — Kebab-case filenames — nombres de archivo en minúsculas con guiones | guard | — | `test_ap46_escritores_migrados.py`, `test_meta_contrato.py`, `test_vault_norms.py` |
 | **CN-02** — Numbered folder structure — secciones numeradas como únicos destinos | guard+audit | `framework` | `test_blueprint.py`, `test_raiz_no_seccion.py`, `test_vault_norms.py`, `test_vault_norms_audit.py` |
 | **CN-03** — Standard status vocabulary — vocabulario canónico de meta.status | audit | `framework` | `test_vault_norms.py`, `test_vault_norms_audit.py`, `test_vault_sanacion.py` |
+| **CN-04** — Note opens with its title — la nota abre con su título como H1 | guard | — | `test_cn04_nota_abre_con_titulo.py` |
 
 Sin puerta ni test (15): `AP-04`, `AP-08`, `AP-12`, `AP-13`, `AP-18`, `AP-20`, `PAT-2`, `PAT-3`, `PAT-4`, `AP-27`, `AP-31`, `AP-32`, `AP-33`, `AP-34`, `PAT-6`.
 

@@ -26,6 +26,7 @@ from vault_registry import section_default_type
 def vault_knowledge_save(category: str, title: str, content: str,
                          project: Optional[str] = None, tags: Optional[List[str]] = None,
                          related: Optional[List[str]] = None) -> Dict[str, Any]:
+    # CN-04: el H1 lo pone `guardar_conocimiento` al renderizar, con `con_titulo`.
     return guardar_conocimiento(
         get_vault_root(), category, title, content, project, tags, related,
         writer=atomic_write_text, report=write_report,

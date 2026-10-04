@@ -46,3 +46,30 @@ def cuerpo_sin_marcadores(body: str) -> str:
         and not _APARTE_PENDIENTE.match(ln)
     ]
     return "\n".join(utiles).strip()
+
+
+_H1 = re.compile(r"^ {0,3}#[ \t]+\S")
+
+
+def con_titulo(titulo: str, cuerpo: str) -> str:
+    """CN-04: el cuerpo de una nota abre con su título como H1.
+
+    Medido el 2026-10-04 en la QA de producto: `vault_write`,
+    `vault_knowledge_save` y `vault_ai_decision` escribían el título solo en
+    el frontmatter, y la nota abierta fuera de Obsidian —un editor de texto,
+    un visor de Markdown, un diff— empezaba en la primera frase o en una línea
+    de metadatos, sin decir qué era. El vault tiene que seguir siendo legible
+    sin la herramienta que lo generó.
+
+    Un cuerpo que ya abre con un H1 se respeta tal cual: quien lo escribió
+    eligió su título. `#etiqueta` no es un encabezado y no cuenta.
+    """
+    for linea in cuerpo.splitlines():
+        if linea.strip():
+            if _H1.match(linea):
+                return cuerpo
+            break
+    titulo = " ".join(str(titulo or "").split())
+    if not titulo:
+        return cuerpo
+    return f"# {titulo}\n\n{cuerpo.lstrip(chr(10))}"

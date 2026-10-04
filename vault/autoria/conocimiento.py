@@ -19,6 +19,7 @@ from typing import Any, Callable, Dict, List, Mapping, Optional, Union
 import yaml
 
 from .frontmatter import Frontmatter, firmante
+from ..kernel.contenido import con_titulo
 from ..kernel.errores import construir_error
 from ..kernel.escritura import escritura_atomica
 from ..kernel.frontmatter_parsing import (
@@ -140,13 +141,14 @@ def _render(category: str, title: str, content: str, project: Optional[str],
     frontmatter.set("cia_sensitivity", "internal")
     frontmatter.set("agent", firmante(agent))
     if category in ("dependency", "framework"):
-        parts = [f"## {title}\n", f"\n**Propósito:** {content}\n", "\n**Caveats:** *(pendiente de documentar)*\n"]
+        parts = [f"# {title}\n",f"\n**Propósito:** {content}\n", "\n**Caveats:** *(pendiente de documentar)*\n"]
         body = "\n".join(parts)
     else:
         body = content
     if related and category not in ("dependency", "framework"):
         body += "\n\n## Relacionado\n\n" + " ".join(f"[[{item}]]" for item in related)
-    return frontmatter.render() + "\n\n" + body
+    # CN-04: la nota abre con su título como H1 (el dueño no duplica uno que ya esté).
+    return frontmatter.render() + "\n\n" + con_titulo(title, body)
 
 
 def guardar_conocimiento(

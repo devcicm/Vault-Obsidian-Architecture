@@ -11,7 +11,16 @@
     "touched": 5,
     "unchanged": "<BEST-EFFORT>",
     "updated": "<BEST-EFFORT>",
+    "vault_says": {
+      "focus": "CN-04",
+      "message": "Acabas de cambiar lo que soy. 5 notas en disco, y eso queda en mi historial. Recuerda CN-04 — Note opens with its title — la nota abre con su título como H1: Escribir por las tools: `vault.kernel.contenido.con_titulo` antepone el H1 y respeta uno que ya venga.",
+      "moment": "wrote",
+      "next": "python scripts/vault_norms.py --audit",
+      "norms": [
+        "CN-04 — Note opens with its title — la nota abre con su título como H1"
+      ]
+    },
     "written": "<BEST-EFFORT>"
   },
-  "nota": "---\ntitle: Un concepto con acentuación\nid: <UUID>\ntype: knowledge\ncategory: concept\nstatus: draft\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ncia_integrity: medium\ncia_availability: medium\ncia_sensitivity: internal\nagent: system\n---\n\nUna línea.\nOtra línea.\nY una tercera con palabras."
+  "nota": "---\ntitle: Un concepto con acentuación\nid: <UUID>\ntype: knowledge\ncategory: concept\nstatus: draft\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ncia_integrity: medium\ncia_availability: medium\ncia_sensitivity: internal\nagent: system\n---\n\n# Un concepto con acentuación\n\nUna línea.\nOtra línea.\nY una tercera con palabras."
 }

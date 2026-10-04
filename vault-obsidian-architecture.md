@@ -3516,7 +3516,7 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **76 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **77 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -6890,6 +6890,26 @@ fusiona el vocabulario CN-03 original con el ciclo de vida de requerimientos
 **Enforcement:** audit — `vault_norms --audit` valida cada `status` contra `STATUS_VOCAB`.
 
 **Señal de violación:** `vault_list` filtra por `status` y retorna 0 resultados cuando el valor no coincide con el vocabulario.
+
+---
+
+### CN-04 — Note opens with its title — la nota abre con su título como H1
+
+**Regla:** El cuerpo de una nota empieza con su título como encabezado H1 (`# Título`).
+Un cuerpo que ya abre con un H1 se respeta: quien lo escribió eligió su título.
+
+Medido en la QA de producto de v40.35: `vault_write`, `vault_knowledge_save` y
+`vault_ai_decision` dejaban el título solo en el frontmatter. Obsidian lo disimula con su
+título en línea, pero la nota abierta en un editor de texto, en un visor de Markdown o en
+un diff empezaba en la primera frase —o, en las decisiones, en una línea de metadatos—
+sin decir qué era. El vault tiene que seguir siendo legible sin la herramienta que lo
+generó, y eso empieza por saber qué nota tienes delante.
+
+**Enforcement:** guard — `vault.kernel.contenido.con_titulo` es el dueño; las tres tools
+lo aplican al escribir. Una nota escrita a mano sin H1 no la detecta nadie todavía
+(`tools_detecting` vacío): el hueco se declara, no se da por cubierto.
+
+**Señal de violación:** la primera línea no vacía del cuerpo no es un `# Título`.
 
 ---
 

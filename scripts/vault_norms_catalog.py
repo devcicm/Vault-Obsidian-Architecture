@@ -1821,6 +1821,11 @@ NORM_CATALOG: List[Dict[str, Any]] = [
                 "tiene estructura y listas vacías. AP-45 se mide contra lo que la "
                 "nota dice cubrir; AP-20, contra su propio contenido."
             ),
+            "CN-04": (
+                "AP-45 mide si el cuerpo tiene evidencia; CN-04, solo si la nota "
+                "abre diciendo qué es. Poner el H1 no salda AP-45: una nota con "
+                "título y sin evidencia sigue incumpliéndola."
+            ),
         },
         "name": "Cobertura sin evidencia — la nota existe para llenar la sección",
         "type": "antipattern",
@@ -3308,6 +3313,11 @@ NORM_CATALOG: List[Dict[str, Any]] = [
                 "secciones numeradas—. Un fichero bien nombrado en la carpeta "
                 "equivocada incumple solo CN-02."
             ),
+            "CN-04": (
+                "CN-01 rige el nombre del fichero, que lee quien navega el árbol; "
+                "CN-04, el H1 con que abre la nota, que lee quien ya está dentro. "
+                "Un fichero en kebab-case sin H1 incumple solo CN-04."
+            ),
         },
         "name": "Kebab-case filenames — nombres de archivo en minúsculas con guiones",
         "type": "antipattern",
@@ -3402,6 +3412,42 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "tools_enforcing": [],
         "tools_detecting": ["vault_norms"],
         "introduced_version": "v30",
+    },
+    {
+        "code": "CN-04",
+        "distinguido_de": {
+            "CN-01": (
+                "CN-01 fija cómo se llama el fichero; CN-04, cómo se presenta la "
+                "nota al abrirla. El nombre lo lee quien navega el árbol; el H1, "
+                "quien ya está dentro del documento."
+            ),
+            "AP-45": (
+                "AP-45 mide si el cuerpo tiene evidencia; CN-04, si dice qué es. "
+                "Un H1 no es contenido: la nota que solo tiene título sigue siendo "
+                "AP-45."
+            ),
+        },
+        "name": "Note opens with its title — la nota abre con su título como H1",
+        "type": "antipattern",
+        "category": "convention",
+        "severity": "low",
+        "enforcement": "guard",
+        "description": (
+            "El cuerpo de una nota empieza con su título como encabezado H1. Hasta "
+            "v40.34 `vault_write`, `vault_knowledge_save` y `vault_ai_decision` lo "
+            "dejaban solo en el frontmatter, y la nota abierta fuera de Obsidian "
+            "—un editor de texto, un visor de Markdown, un diff— empezaba en la "
+            "primera frase o en una línea de metadatos sin decir qué era. El vault "
+            "tiene que seguir siendo legible sin la herramienta que lo generó."
+        ),
+        "signal": "La primera línea no vacía del cuerpo no es un `# Título`.",
+        "prevention": (
+            "Escribir por las tools: `vault.kernel.contenido.con_titulo` antepone el "
+            "H1 y respeta uno que ya venga."
+        ),
+        "tools_enforcing": ["vault_write", "vault_knowledge_save", "vault_ai_decision"],
+        "tools_detecting": [],
+        "introduced_version": "v40.35",
     },
 ]
 
