@@ -2793,7 +2793,9 @@ Genera o actualiza `{folder}/index.md` con un índice legible de todas las notas
 
 **Comportamiento:**
 - Lee todas las notas `.md` de la carpeta (respetando `include_subdirs`)
-- Genera `{folder}/index.md` con: descripción de la sección, tabla de notas (título, tipo, fecha de actualización)
+- Genera `{folder}/index.md` con: descripción de la sección, tabla de notas (nota, título, **resumen**, tipo, fecha de actualización)
+- **Resumen (v40.35):** sale de lo que la nota declara —`summary`, luego `description`— o, si no declara nada, de su primera afirmación: se saltan encabezados, marcadores de pendiente y bloques de código; los wikilinks quedan como texto y el `|` se escapa para no romper la tabla. Acotado a 120 caracteres. Un índice que solo da el nombre obliga a abrir cada nota para saber de qué va, que es lo que un índice existe para evitar
+- **Navegación (v40.35, AP-21 precisado):** la migaja enlaza hub, comandos, índice maestro y, en una subcarpeta, el índice padre; cada subcarpeta tiene fila con enlace a su índice. Como `index` es un nombre que comparten todas las secciones, el enlace lleva la ruta entera (`[[02_Observability/index|índice]]`), y **solo se enlaza un índice que existe o que la misma ejecución escribe** — el resto se nombra en texto, porque un enlace a un índice que no llega a existir es un enlace roto
 - Si `index.md` ya existe → lo sobreescribe sin versionar en `.history/` (es artefacto derivado, no nota de contenido)
 - No llamar `vault_section_index` sobre `99_Index/` — esa carpeta tiene sus propios índices JSON
 
@@ -2817,13 +2819,13 @@ Genera o actualiza `99_Index/index.md` con un índice maestro del vault completo
 **Parámetros:** ninguno.
 
 **Comportamiento:**
-1. Llama internamente a `vault_section_index` para cada sección numerada (`00_System` … `17_Preferences`)
+1. Llama internamente a `vault_section_index` para cada sección numerada de `vault_registry.ORDERED_SECTIONS` (`00_System` … `21_QA`; hasta v40.34 este paso decía `… 17_Preferences`, anterior a las secciones 18–21)
 2. Genera `99_Index/index.md` con tabla: carpeta, descripción de la sección, notas totales, link al section index
 3. Si una carpeta no tiene notas, la incluye como vacía — el índice maestro siempre muestra el vault completo
 
 **Retorna:**
 ```json
-{ "ok": true, "path": "99_Index/index.md", "sectionsTotal": 17, "notesTotal": 108 }
+{ "ok": true, "path": "99_Index/index.md", "sectionsTotal": 22, "notesTotal": 108 }
 ```
 
 **Cuándo usar:** al inicializar un vault nuevo (paso final después de crear la estructura), después de una migración masiva, cuando el usuario pide una vista general del vault, como primer paso de onboarding en una sesión nueva para entender el estado actual del vault.
@@ -2842,7 +2844,7 @@ Reconstruye `99_Index/search-index.json` desde cero escaneando todas las notas e
 | `--check` | flag | — | Retorna estado del índice sin modificarlo (`index_ok` o `index_empty_or_missing`) |
 
 **Comportamiento:**
-- Escanea solo notas dentro de las 23 secciones estándar (`00_System` … `17_Preferences` más `99_Index`) — ignora archivos en la raíz del vault (`vault-obsidian-architecture.md`, `scripts/`, etc.)
+- Escanea solo notas dentro de las 23 secciones estándar (`00_System` … `21_QA` más `99_Index`, según `vault_registry.ORDERED_SECTIONS`) — ignora archivos en la raíz del vault (`vault-obsidian-architecture.md`, `scripts/`, etc.)
 - Parsea frontmatter de cada nota para extraer `title`, `tags`, `updatedAt`
 - Genera `99_Index/search-index.json` con `{ notes: [...], rebuiltAt, totalNotes }`
 - Sobreescribe cualquier índice previo (incluyendo el vacío `{}`)

@@ -177,17 +177,29 @@ export VAULT_ROOT=/ruta/al/tu-vault
 ```
 
 Sin ella, las tools auto-detectan el vault buscando `vault-*/` en el directorio actual.
+Para que una detección dudosa falle en vez de adivinar, exporta también
+`VAULT_STRICT_ROOT=1`.
+
+Toda escritura lleva autor. `vault_write` y las tools que escriben notas lo leen de
+`--meta '{"agent":"<nombre>"}'` o, si no viene, de `VAULT_AGENT`; sin ninguno de los dos
+la escritura se rechaza con su `recovery`, no se firma como anónima:
+
+```bash
+export VAULT_AGENT=claude
+```
 
 ### 3. Inicializar un vault nuevo
 
 ```bash
-# Crear el directorio del vault
-mkdir vault-mi-proyecto
+# Bootstrap completo: carpetas, versión, hub, índices navegables y nota de comandos
+vault init vault-mi-proyecto
+export VAULT_ROOT="$PWD/vault-mi-proyecto"
 
-# Bootstrap completo (carpetas + version + indexes + audit)
-python -m vault.gobernanza.tool --help  # verificar que funciona
-vault tools list                        # ver las 117 tools disponibles
+vault tools list                        # ver las tools disponibles
 ```
+
+`vault init` sobre un vault que ya existe no lo repuebla: responde
+`INIT_ALREADY_INITIALIZED`.
 
 ### 4. `.gitignore` para el consumer repo
 
@@ -202,12 +214,12 @@ vault_obsidian_architecture.egg-info/
 
 ```bash
 vault --version                          # CLI version
-vault tools list                         # 117 tools
+vault tools list                         # tools activas
 python -m vault.gobernanza.tool --help   # tool de gobernanza
 vault-mcp --help                         # MCP server (si instalado)
 ```
 
-### 4. Documentar el proyecto
+### 6. Documentar el proyecto
 
 ```bash
 # Identidad del vault
@@ -215,6 +227,9 @@ python scripts/vault_write.py --folder "00_System" \
   --title "Vault Identity" \
   --meta '{"cia_integrity":"high","agent":"claude","type":"identity"}' \
   --content "Vault del proyecto X. Agente: claude."
+
+# Registrar el proyecto: las tools de proyecto lo exigen (PROJECT_NOT_FOUND si falta)
+python scripts/vault_project.py --add mi-proyecto --title "Mi proyecto"
 
 # Overview del proyecto
 python scripts/vault_project_overview.py \
