@@ -715,15 +715,23 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "type": "antipattern",
         "category": "linking",
         "severity": "critical",
-        "enforcement": "guard",
+        "enforcement": "guard+audit",
+        # Precisada en v40.35. Decía «Obsidian no resuelve paths, solo stems»,
+        # que no es cierto: Obsidian resuelve el sufijo de ruta y, con su formato
+        # por defecto, escribe [[demo/overview]] cuando el nombre se repite. La
+        # prohibición total dejaba [[overview]] como único enlace a dos notas.
+        # El criterio vive en `vault_lib.ruta_necesaria`.
         "description": (
-            "[[carpeta/nota]] en lugar de [[nota]]. Obsidian no resuelve paths, "
-            "solo stems. El link siempre aparece roto en el grafo."
+            "[[carpeta/nota]] cuando la carpeta no fija la identidad: la ruta no "
+            "resuelve, o sobra porque el nombre ya es único. Con dos notas del "
+            "mismo nombre la ruta más corta que desambigua es legítima."
         ),
         "signal": "vault_write rechaza con error_code: path_anchored_wikilinks.",
-        "prevention": "Siempre [[stem]] o [[stem|título visible]]. vault_section_index genera solo [[stem|título]] desde v25.",
+        "prevention": "[[stem]] si el nombre es único; si se repite, la ruta más corta que resuelve a una sola nota (vault_lib.destino_mas_corto).",
         "tools_enforcing": ["vault_write"],
-        "tools_detecting": [],
+        # v40.35: vault_audit mide el otro lado de la regla precisada, el
+        # [[nombre]] que resuelve a varias notas (issues.ambiguousLinks).
+        "tools_detecting": ["vault_audit"],
         "introduced_version": "v25",
     },
     {

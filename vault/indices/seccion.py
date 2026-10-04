@@ -115,10 +115,14 @@ class RenderizadorDeIndice:
         describir_seccion: Callable[[str], str],
         pista_de_tool: Callable[[str], str],
         enlace_seguro: Callable[[str], str],
+        destino: Optional[Callable[[str], str]] = None,
     ) -> None:
         self._describir = describir_seccion
         self._pista = pista_de_tool
         self._enlace = enlace_seguro
+        # Ruta relativa al vault → destino más corto que la identifica. Sin él
+        # el enlace va por nombre, que es lo que había antes de v40.35.
+        self._destino = destino
 
     def render(
         self,
@@ -171,7 +175,16 @@ class RenderizadorDeIndice:
                 # parece celda combinada, dispara falsos positivos de sintaxis y
                 # provoca notas en blanco creadas a partir del alias. El título
                 # va en su propia columna.
-                stem = self._enlace(Path(ruta).stem)
+                #
+                # AP-21 precisado (v40.35): si el nombre se repite en el vault
+                # —`overview` de dos proyectos—, `[[overview]]` es ambiguo. El
+                # destino es entonces la ruta más corta que lo identifica, como
+                # la escribe Obsidian.
+                if self._destino is not None:
+                    destino = self._destino(f"{clave}/{ruta}")
+                    stem = "/".join(self._enlace(t) for t in destino.split("/"))
+                else:
+                    stem = self._enlace(Path(ruta).stem)
                 titulo = (
                     str(n["title"]).replace("|", "\\|").replace("[", "").replace("]", "")
                 )

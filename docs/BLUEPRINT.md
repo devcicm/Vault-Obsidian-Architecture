@@ -95,7 +95,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-18** — Cross-folder content duplication | audit | — | — |
 | **AP-19** — Shadow indexing | audit | `framework` | — |
 | **AP-20** — Deceptive skeleton (empty-list) | guard | — | — |
-| **AP-21** — Path-anchored wiki-links | guard | — | `test_ap21_dentro_de_fence.py`, `test_vault_regex.py` |
+| **AP-21** — Path-anchored wiki-links | guard+audit | — | `test_ap21_dentro_de_fence.py`, `test_ap21_ruta_necesaria.py`, `test_vault_regex.py` |
 | **AP-22** — Wiki-link vacío — [[]] sin destino | guard+audit | — | `test_norms_coherence.py`, `test_vault_regex.py` |
 | **PAT-1** — Canonical source anchoring | recommended | — | `test_norms_coherence.py` |
 | **PAT-2** — Stub enrichment gradient | recommended | — | — |

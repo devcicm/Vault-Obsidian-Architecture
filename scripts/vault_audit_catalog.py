@@ -144,6 +144,11 @@ PENALIZACIONES: List[Dict[str, Any]] = [
          "Mismo caso que `stuck_patterns` y por el mismo motivo: un proyecto "
          "parado es un hecho del proyecto, no un incumplimiento del vault.")},
     {"id": "broken_links", "familia": "conectividad", "norma": "AP-14", "por_unidad": 2, "tope": 20},
+    # Un enlace ambiguo no está roto hoy, pero lo que abre no lo decide el
+    # vault (v40.35). Pesa 5 y no 2 porque AP-21 es `critical`: con 2 quedaba
+    # por debajo de AP-24 (`high`, 5) en la misma familia, y AP-55 lo marca
+    # como severidad invertida.
+    {"id": "ambiguous_links", "familia": "conectividad", "norma": "AP-21", "por_unidad": 5, "tope": 10},
     {"id": "canonical_shadow", "familia": "estructura", "norma": "AP-17", "por_unidad": 2, "tope": 10},
     {"id": "cross_folder_dupes", "familia": "estructura", "norma": "AP-18", "por_unidad": 3, "tope": 10},
     # AP-22 (wikilink vacío) es auto-fixable; AP-24 (brackets rotos) rompe el

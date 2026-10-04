@@ -15,7 +15,13 @@ import argparse
 import json
 import sys
 from vault_errors import emit_error, wrap_main
-from vault_lib import parse_frontmatter, utcnow
+from vault_lib import (
+    destino_mas_corto,
+    indice_de_nombres,
+    inventario_de_nombres,
+    parse_frontmatter,
+    utcnow,
+)
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -25,6 +31,7 @@ from vault_io import (
     get_vault_root,
     record_raw_write,
     refrescar_grafo,
+    is_snapshot_path,
     safe_wikilink,
     write_report,
 )
@@ -305,10 +312,21 @@ def _breadcrumb(folder_key: str) -> str:
 def _renderizador() -> RenderizadorDeIndice:
     """Se construye por llamada: `section_description` lee el registro y
     `safe_wikilink` el kernel, y ninguno de los dos se congela en el import."""
+    # El índice de nombres se construye la primera vez que hace falta: una
+    # sección vacía no enlaza nada y no tiene por qué recorrer el vault.
+    indice: Dict[str, List[str]] = {}
+
+    def destino(rel: str) -> str:
+        if not indice:
+            indice.update(indice_de_nombres(
+                *inventario_de_nombres(get_vault_root(), is_snapshot_path)))
+        return destino_mas_corto(rel, indice)
+
     return RenderizadorDeIndice(
         describir_seccion=section_description,
         pista_de_tool=section_tool_hint,
         enlace_seguro=safe_wikilink,
+        destino=destino,
     )
 
 

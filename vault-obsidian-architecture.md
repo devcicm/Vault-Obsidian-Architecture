@@ -4664,6 +4664,16 @@ proyecto/
 - `vault_section_index` genera únicamente `[[stem|título]]` (sin path) desde v25
 - Para corregir links existentes: `grep -r "\[\[.*/" vault/` → reemplazar `[[carpeta/nota]]` por `[[nota]]`
 
+> **v40.35 — Regla precisada (`superseded_by: vault_lib.ruta_necesaria`).** La premisa
+> «Obsidian resuelve wiki-links únicamente por stem» no es cierta: Obsidian resuelve el
+> sufijo de ruta y, con su formato por defecto («ruta más corta posible»), escribe
+> `[[demo/overview]]` cuando `overview` se repite. La prohibición total dejaba un solo
+> enlace para dos notas del mismo nombre —`[[overview]]`, ambiguo—, medido en un vault de
+> consumidor con dos proyectos. La regla vigente: **`[[stem]]` si el nombre es único; si
+> se repite, la ruta más corta que resuelve a una sola nota**. Una ruta que no resuelve
+> (los 160 enlaces de ANS) o que sobra sigue siendo AP-21, y `vault_write` la rechaza
+> igual. El texto de arriba se conserva por la política de no-derogación.
+
 ---
 
 ### AP-22 — Bracket sanity — wiki-links vacíos `[[]]`

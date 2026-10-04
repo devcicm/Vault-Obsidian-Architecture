@@ -192,7 +192,13 @@ def _get_active_notes(
     return notes
 
 
-from vault_lib import read_frontmatter, separar_frontmatter
+from vault_lib import (
+    destino_mas_corto,
+    indice_de_nombres,
+    read_frontmatter,
+    resolver_wikilink,
+    separar_frontmatter,
+)
 
 # El vocabulario se declara una vez y se consume, no se copia. Ver
 # `vault_vocabulario.py` para el registro y su contexto dueno.
@@ -596,6 +602,49 @@ def _detect_broken_links(
             broken.append({"from": rel, "link": link})
 
     return broken
+
+
+def _detect_ambiguous_links(
+    notes: List[Path], all_stems: Set[str],
+    barrido: Optional[List[Path]] = None,
+) -> List[Dict[str, Any]]:
+    """AP-21 precisado (v40.35): el enlace que el nombre solo no basta a resolver.
+
+    `_detect_broken_links` pregunta si el destino **existe**, y un
+    `[[overview]]` con dos proyectos existe dos veces: salía verde. Medido el
+    2026-10-04 en un vault de consumidor con dos proyectos, `brokenLinks: []`
+    mientras el índice enlazaba dos notas con el mismo nombre. Obsidian abre
+    una de las dos sin avisar; cuál, no lo decide el vault.
+
+    El criterio es el del núcleo —`resolver_wikilink`, sufijos de ruta y
+    `aliases:`—, y la sugerencia es la ruta más corta de cada candidata.
+    """
+    relativas: List[str] = []
+    alias_por_ruta: Dict[str, List[str]] = {}
+    for n in (_barrido_md() if barrido is None else barrido):
+        if _is_snapshot(n):
+            continue
+        rel = n.relative_to(_raiz()).as_posix()
+        relativas.append(rel)
+        alias_por_ruta[rel] = _aliases_de(n)
+    indice = indice_de_nombres(relativas, alias_por_ruta)
+
+    ambiguos: List[Dict[str, Any]] = []
+    for n in notes:
+        rel = n.relative_to(_raiz()).as_posix()
+        content = _leer_nota(n)
+        if content is None or es_documentacion_del_estandar(rel, content):
+            continue
+        for link in _extract_wiki_links(content, known=all_stems):
+            _, candidatos = resolver_wikilink(link, Path(rel), indice)
+            if len(candidatos) > 1:
+                ambiguos.append({
+                    "from": rel,
+                    "link": link,
+                    "candidates": candidatos,
+                    "suggest": [destino_mas_corto(c, indice) for c in candidatos],
+                })
+    return ambiguos
 
 
 #: Marcadores de convención de nomenclatura que distinguen DOS artefactos
@@ -1895,6 +1944,8 @@ def vault_audit(
 
     broken_links = _detect_broken_links(all_notes, all_stems, barrido=barrido)
 
+    ambiguous_links = _detect_ambiguous_links(all_notes, all_stems, barrido=barrido)
+
     canonical_shadow = _detect_canonical_shadow(content_notes)
 
     cross_folder_dupes = _detect_cross_folder_duplicates(content_notes)
@@ -1944,6 +1995,7 @@ def vault_audit(
         "stuck_patterns": len(stuck_patterns),
         "stale_projects": len(stale_projects),
         "broken_links": len(broken_links),
+        "ambiguous_links": len(ambiguous_links),
         "canonical_shadow": len(canonical_shadow),
         "cross_folder_dupes": len(cross_folder_dupes),
         "ap22": ap22_count,
@@ -1985,6 +2037,9 @@ def vault_audit(
         summary_parts.append(
             f"{cnt} link{'s' if cnt != 1 else ''} roto{'s' if cnt != 1 else ''}"
         )
+
+    if ambiguous_links:
+        summary_parts.append(f"{len(ambiguous_links)} link(s) ambiguo(s)")
 
     if stuck_patterns:
         summary_parts.append(f"{len(stuck_patterns)} patrones bloqueados")
@@ -2069,6 +2124,7 @@ def vault_audit(
             "stuckPatterns": stuck_patterns,
             "staleProjects": stale_projects,
             "brokenLinks": [{"norm_code": "AP-14", **e} for e in broken_links],
+            "ambiguousLinks": [{"norm_code": "AP-21", **e} for e in ambiguous_links],
             "canonicalShadow": [{"norm_code": "AP-17", **e} for e in canonical_shadow],
             "crossFolderDuplicates": [
                 {"norm_code": "AP-18", **e} for e in cross_folder_dupes

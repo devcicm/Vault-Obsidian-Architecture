@@ -236,6 +236,16 @@ def vault_norms_scan(path: str) -> Dict[str, Any]:
         # "CI/CD". Un alias con una barra no es un enlace anclado a ruta.
         path_links = [l for l in wiki_links if "/" in l.split("|")[0]]
         if path_links:
+            # AP-21 precisado (v40.35): la ruta que desambigua dos notas del
+            # mismo nombre es legítima. Lo decide el dueño, sobre el vault.
+            from vault_io import is_snapshot_path
+            from vault_lib import indice_de_nombres, inventario_de_nombres, ruta_necesaria
+
+            indice = indice_de_nombres(*inventario_de_nombres(_raiz(), is_snapshot_path))
+            path_links = [
+                l for l in path_links if not ruta_necesaria(l, Path(rel), indice)
+            ]
+        if path_links:
             _add("AP-21", f"path-anchored wiki-links: {path_links[:3]}")
 
         # AP-22: bracket balance

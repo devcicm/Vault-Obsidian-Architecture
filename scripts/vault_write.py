@@ -59,6 +59,7 @@ from vault_encoding import (
 )
 from vault_regex import (
     RE_WIKILINK,
+    RE_WIKILINK_CON_ALIAS,
     detect_bracket_anomalies,
     detect_path_anchored,
     fix_nested_brackets,
@@ -67,6 +68,9 @@ from vault_regex import (
 )
 from vault_lib import (
     indice_de_destinos,          # dueño único de qué resuelve (AP-57)
+    indice_de_nombres,
+    ruta_necesaria,              # dueño único de AP-21 precisado (AP-57)
+    inventario_de_nombres,
     resolver_destino_wikilink,   # dueño único de cómo se resuelve (AP-57)
     read_frontmatter,
     separar_frontmatter,
@@ -171,9 +175,9 @@ def _check_content_gate(content: str, folder: str) -> bool:
     # Reject minified blobs
     if any(len(l) > 800 for l in real_lines):
         return False
-    # AP-21 prevention: reject path-anchored wiki-links [[folder/note]]
-    path_anchored = detect_path_anchored(content)
-    if path_anchored:
+    # AP-21 prevention: reject [[folder/note]] unless the folder is what
+    # fixes the identity (`ruta_necesaria`).
+    if _rutas_sin_necesidad(content, folder):
         return False
 
     # AP-24 prevention: detect bracket anomalies (nested, mixed, etc)
@@ -228,9 +232,9 @@ def _content_gate_reason(content: str, folder: str) -> Optional[str]:
         return "line longer than 800 chars (minified blob?)"
 
     # AP-21: path-anchored wiki-links check
-    path_anchored = detect_path_anchored(content)
+    path_anchored = _rutas_sin_necesidad(content, folder)
     if path_anchored:
-        return f"AP-21: path-anchored wiki-links detected: {path_anchored}. Use [[note-name]] without folder path."
+        return f"AP-21: path-anchored wiki-links detected: {path_anchored}. Use [[note-name]]; a folder is only allowed when the name alone is ambiguous."
 
     # AP-24 / AP-22 reasons — checked AFTER basic quality gates
     # First try auto-fix
@@ -403,6 +407,37 @@ def _check_bracket_balance(content: str) -> Optional[str]:
     return None
 
 
+def _inventario():
+    """Adaptador: el recorrido vive en `vault_lib.inventario_de_nombres`."""
+    return inventario_de_nombres(_raiz(), is_snapshot_path)
+
+
+def _rutas_sin_necesidad(content: str, folder: str) -> List[str]:
+    """AP-21: enlaces con carpeta que **no** fijan una identidad.
+
+    `detect_path_anchored` encuentra los candidatos sin leer el vault; solo si
+    hay alguno se construye el índice, y `ruta_necesaria` —el dueño del
+    criterio— decide cuáles sobran o no resuelven. Una ruta que desambigua dos
+    notas del mismo nombre es lo que Obsidian escribe, y se acepta.
+    """
+    if not detect_path_anchored(content):
+        return []
+    limpio = re.sub(r"`[^`\n]+`", "", strip_code_blocks(content))
+    enlaces = [
+        e for e in RE_WIKILINK_CON_ALIAS.findall(limpio)
+        if "/" in e[0] or "\\" in e[0]
+    ]
+    if not enlaces:
+        return []
+    relativas, alias_por_ruta = _inventario()
+    indice = indice_de_nombres(relativas, alias_por_ruta)
+    desde = Path(folder) / "_.md"
+    return [
+        f"[[{destino}]]" for destino, _ in enlaces
+        if not ruta_necesaria(destino, desde, indice)
+    ]
+
+
 def _collect_ghost_links(wiki_links: List[str], desde: Optional[Path] = None) -> List[str]:
     """SP-02 y AP-14: enlaces cuyo destino no existe todavía en el vault.
 
@@ -429,27 +464,8 @@ def _collect_ghost_links(wiki_links: List[str], desde: Optional[Path] = None) ->
     Los dos errores se sostienen mutuamente: el ruido enseña a ignorar el aviso
     justo cuando el aviso deja escapar lo que importa.
     """
-    raiz = _raiz()
-    relativas = []
-    alias: List[str] = []
-    for p in raiz.rglob("*.md"):
-        rel = p.relative_to(raiz)
-        if is_snapshot_path(rel):
-            continue
-        relativas.append(rel)
-        try:
-            fm = read_frontmatter(p)
-        except (OSError, UnicodeDecodeError, yaml.YAMLError):
-            # Un frontmatter que no se lee no aporta aliases, pero el fichero
-            # sigue siendo un destino válido por su ruta: ya está en
-            # `relativas`. Se capturan las tres concretas y no `Exception`,
-            # que convertiría cualquier fallo propio en «esta nota no tiene
-            # aliases» (AP-51).
-            continue
-        for a in (fm or {}).get("aliases") or []:
-            if isinstance(a, str):
-                alias.append(a)
-
+    relativas, alias_por_ruta = _inventario()
+    alias = [a for lista in alias_por_ruta.values() for a in lista]
     destinos = indice_de_destinos(relativas, alias)
 
     ghost = []
@@ -858,7 +874,7 @@ def vault_write(
     # sintaxis —`[[carpeta/nota]]` dentro de un fence, que es lo que enseña el
     # propio manifiesto— se rechazaba por incumplir lo que estaba explicando.
     # Las otras dos comprobaciones de AP-21 de este módulo ya usaban esta vía.
-    path_links = detect_path_anchored(content)
+    path_links = _rutas_sin_necesidad(content, folder)
 
     if path_links:
         return {
@@ -867,7 +883,7 @@ def vault_write(
             "error": "path_anchored_wikilinks",
             "norm_code": "AP-21",
             "norm_name": "Path-anchored wiki-links",
-            "message": f"AP-21: path-anchored wiki-links detected: {path_links}. Use [[note-name]] without folder path.",
+            "message": f"AP-21: path-anchored wiki-links detected: {path_links}. Use [[note-name]]; a folder is only allowed when the name alone is ambiguous.",
         }
 
     # AP-22 guard: unbalanced or empty wiki-link brackets

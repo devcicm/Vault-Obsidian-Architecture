@@ -45,10 +45,13 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).parent))
 from vault_io import get_vault_root, normalize_stem
+from vault_lib import indice_de_nombres, ruta_necesaria
 from vault_regex import (
     extract_wiki_links_strict,
     detect_bracket_anomalies,
+    RE_WIKILINK_CON_ALIAS,
     detect_path_anchored,
+    strip_code_blocks,
 )
 from vault_errors import emit_error, wrap_main
 
@@ -393,10 +396,24 @@ def _detect_wikilink_syntax_errors(
 ) -> list[dict[str, Any]]:
     """Detect malformed brackets, path-anchored links, and other syntax issues per note."""
     errors: list[dict[str, Any]] = []
+    # AP-21 precisado (v40.35): una ruta que desambigua dos notas del mismo
+    # nombre es legítima; lo decide `vault_lib.ruta_necesaria`.
+    indice = indice_de_nombres(
+        list(notes), {p: i.get("aliases", []) for p, i in notes.items()}
+    )
     for path, info in sorted(notes.items()):
         body = info["body"]
         bracket_errors = detect_bracket_anomalies(body)
         path_anchored = detect_path_anchored(body)
+        if path_anchored:
+            # Mismo recorte que el detector: fuera los fences y el código en línea.
+            limpio = re.sub(r"`[^`\n]+`", "", strip_code_blocks(body))
+            path_anchored = [
+                f"[[{destino}]]"
+                for destino, _ in RE_WIKILINK_CON_ALIAS.findall(limpio)
+                if ("/" in destino or "\\" in destino)
+                and not ruta_necesaria(destino, Path(path), indice)
+            ]
         for err in bracket_errors:
             errors.append(
                 {

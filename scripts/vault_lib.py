@@ -438,6 +438,81 @@ def resolver_wikilink(
     return (candidatos[0] if len(candidatos) == 1 else "", list(candidatos))
 
 
+def ruta_necesaria(bruto: str, desde: "Path | None", indice: Dict[str, List[str]]) -> bool:
+    """AP-21 precisado: ¿la carpeta de `[[carpeta/nota]]` fija una identidad?
+
+    **Dueño canónico del criterio (AP-57).** Hasta v40.34 AP-21 prohibía toda
+    ruta en un enlace alegando que Obsidian solo resuelve por nombre. No es
+    así: Obsidian resuelve el sufijo de ruta y, con su formato por defecto
+    («ruta más corta posible»), escribe él mismo `[[demo/overview]]` cuando
+    `overview` se repite. Prohibirlo dejaba un solo enlace posible para dos
+    notas del mismo nombre — `[[overview]]`, que es ambiguo.
+
+    La carpeta es legítima solo si hace falta: el enlace resuelve a **una**
+    nota y el nombre solo resuelve a **varias**. Una ruta que no resuelve
+    (los 160 enlaces rotos de ANS que originaron AP-21) o que sobra porque el
+    nombre ya es único sigue siendo AP-21.
+    """
+    destino = resolver_destino_wikilink(bruto, desde)
+    if "/" not in destino:
+        return False
+    ruta, _ = resolver_wikilink(bruto, desde, indice)
+    return bool(ruta) and len(indice.get(destino.rsplit("/", 1)[-1], [])) >= 2
+
+
+def destino_mas_corto(relativa: str, indice: Dict[str, List[str]]) -> str:
+    """El destino más corto que resuelve a `relativa` y a ninguna otra nota.
+
+    Es el formato «ruta más corta posible» de Obsidian: el nombre si es único,
+    y si no, tantas carpetas como hagan falta. Con eso un índice nunca escribe
+    un enlace ambiguo, y tampoco una ruta que `ruta_necesaria` rechazaría.
+    """
+    rel = str(relativa).replace("\\", "/")
+    partes = Path(rel).with_suffix("").parts
+    for i in range(len(partes) - 1, -1, -1):
+        destino = "/".join(partes[i:])
+        if indice.get(destino.lower(), []) == [rel]:
+            return destino
+    # Una nota que el índice no conoce no tiene identidad que fijar: se enlaza
+    # por nombre, como antes de v40.35, y no por una ruta que nadie verificó.
+    return partes[-1]
+
+
+def inventario_de_nombres(
+    raiz: Path, es_instantanea: Callable[[Path], bool]
+) -> Tuple[List[Path], Dict[str, List[str]]]:
+    """Notas del vault (rutas relativas) y sus `aliases:`, sin instantáneas.
+
+    Es la entrada de `indice_de_nombres` para quien mide identidad sobre el
+    vault entero —el write path (SP-02, AP-21) y los índices—: si cada uno
+    hiciera su recorrido, uno vería una nota que el otro no y la misma ruta
+    saldría única para el índice y ambigua para el guard. `es_instantanea` se
+    inyecta porque su dueño es `vault_io.is_snapshot_path` y este módulo no
+    depende de `vault_io`.
+    """
+    import yaml
+
+    relativas: List[Path] = []
+    alias_por_ruta: Dict[str, List[str]] = {}
+    for p in Path(raiz).rglob("*.md"):
+        rel = p.relative_to(raiz)
+        if es_instantanea(rel):
+            continue
+        relativas.append(rel)
+        try:
+            fm = read_frontmatter(p)
+        except (OSError, UnicodeDecodeError, yaml.YAMLError):
+            # Un frontmatter que no se lee no aporta aliases, pero el fichero
+            # sigue siendo un destino válido por su ruta: ya está en
+            # `relativas`. Las tres concretas y no `Exception`, que convertiría
+            # cualquier fallo propio en «esta nota no tiene aliases» (AP-51).
+            continue
+        alias_por_ruta[rel.as_posix()] = [
+            a for a in (fm or {}).get("aliases") or [] if isinstance(a, str)
+        ]
+    return relativas, alias_por_ruta
+
+
 def colisiones_de_nombre(relativas) -> List[Dict[str, Any]]:
     """Grupos de notas cuyo nombre colapsa a la misma `clave_de_nombre` (AP-17).
 
