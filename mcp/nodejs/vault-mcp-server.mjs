@@ -1084,6 +1084,19 @@ function comprobarLlamada(name, args) {
   return error ? { code: "INVALID_ARGS", message: `${name}: ${error}` } : null;
 }
 
+function esNumero(valor, tipo) {
+  const n = typeof valor === "string" && valor.trim() !== "" ? Number(valor) : valor;
+  return typeof n === "number" && Number.isFinite(n) && (tipo !== "integer" || Number.isInteger(n));
+}
+
+function esObjetoJson(texto) {
+  try {
+    return esObjetoPlano(JSON.parse(texto));
+  } catch {
+    return false;
+  }
+}
+
 function validarArgumentos(schema, args) {
   const props = schema.properties || {};
   for (const [clave, valor] of Object.entries(args)) {
@@ -1109,9 +1122,13 @@ function validarArgumentos(schema, args) {
         return `${clave} tiene que ser booleano`;
       }
     } else if (tipo === "array") {
+      const items = prop.items?.type || "string";
       for (const e of Array.isArray(valor) ? valor : [valor]) {
         if (typeof e !== "string" && typeof e !== "number") {
           return `${clave} solo admite cadenas o números`;
+        }
+        if ((items === "integer" || items === "number") && !esNumero(e, items)) {
+          return `${clave}: cada elemento tiene que ser ${items === "integer" ? "entero" : "numérico"} (${e})`;
         }
         // Un elemento de lista no puede ir con `=`: si empieza por guion,
         // argparse lo lee como otro flag y la línea de órdenes cambia.
@@ -1120,12 +1137,21 @@ function validarArgumentos(schema, args) {
         }
       }
     } else if (tipo === "integer" || tipo === "number") {
-      const n = typeof valor === "string" && valor.trim() !== "" ? Number(valor) : valor;
-      if (typeof n !== "number" || !Number.isFinite(n) || (tipo === "integer" && !Number.isInteger(n))) {
+      if (!esNumero(valor, tipo)) {
         return `${clave} tiene que ser ${tipo === "integer" ? "entero" : "numérico"}`;
+      }
+    } else if (tipo === "object") {
+      // Un objeto, o su JSON en texto (lo que la CLI recibe). Cualquier otra
+      // cosa llegaba a `json.loads` y salía como texto de uso de argparse.
+      if (!esObjetoPlano(valor) && !(typeof valor === "string" && esObjetoJson(valor))) {
+        return `${clave} tiene que ser un objeto JSON`;
       }
     } else if (Array.isArray(valor)) {
       return `${clave} no admite una lista`;
+    } else if (esObjetoPlano(valor)) {
+      // Un objeto donde el esquema publica texto acababa como su JSON en el
+      // flag: la tool recibía `{"a":1}` como título sin que nadie lo pidiera.
+      return `${clave} tiene que ser texto, no un objeto`;
     }
     if (Array.isArray(prop.enum)) {
       const fuera = (Array.isArray(valor) ? valor : [valor]).filter((v) => !prop.enum.includes(String(v)));

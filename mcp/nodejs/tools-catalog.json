@@ -284,7 +284,7 @@
         "type": "object",
         "properties": {
           "limit": {
-            "type": "string",
+            "type": "integer",
             "description": "Cantidad máxima (default: 20)"
           }
         },
@@ -611,7 +611,7 @@
             "description": "Proyecto específico"
           },
           "last": {
-            "type": "string",
+            "type": "integer",
             "description": "Number of entries to return in query (default: 20)"
           }
         },
@@ -1109,19 +1109,19 @@
             "description": "Pregunta en lenguaje natural"
           },
           "budget": {
-            "type": "string",
+            "type": "integer",
             "description": "Presupuesto en tokens (default: 4000)"
           },
           "top-k": {
-            "type": "string",
+            "type": "integer",
             "description": "Máximo de notas candidatas (default: 12)"
           },
           "excerpt-tokens": {
-            "type": "string",
+            "type": "integer",
             "description": "Tope por nota (default: 350)"
           },
           "min-score": {
-            "type": "string",
+            "type": "number",
             "description": "Descarta candidatas por debajo de este score"
           },
           "no-preferences": {
@@ -1323,15 +1323,15 @@
             "description": "Filtrar por tipo"
           },
           "zoom": {
-            "type": "string",
+            "type": "number",
             "description": "Nivel de zoom (default: 1.0)"
           },
           "pan_x": {
-            "type": "string",
+            "type": "integer",
             "description": "Posición X del pan"
           },
           "pan_y": {
-            "type": "string",
+            "type": "integer",
             "description": "Posición Y del pan"
           },
           "fit": {
@@ -1475,7 +1475,7 @@
             "description": "Solo estadisticas (sin hunks) -- ideal para LLM"
           },
           "context": {
-            "type": "string",
+            "type": "integer",
             "description": "Lineas de contexto alrededor de cada cambio (default: 3)"
           }
         },
@@ -1894,7 +1894,7 @@
             "description": "Muestra el plan de pasos sin ejecutar ninguno"
           },
           "step": {
-            "type": "string",
+            "type": "integer",
             "description": "Ejecuta solo un paso (1-7) en vez de todos"
           }
         },
@@ -2387,7 +2387,7 @@
             "description": "Apply fixes (default: dry-run)"
           },
           "auto-apply-partial": {
-            "type": "string",
+            "type": "number",
             "description": "Auto-fix partial matches above this threshold"
           },
           "only": {
@@ -2399,7 +2399,7 @@
             ]
           },
           "threshold": {
-            "type": "string",
+            "type": "number",
             "description": "Fuzzy match threshold (default: 0.7)"
           },
           "json": {
@@ -2463,7 +2463,7 @@
             "description": "Output Markdown instead of JSON"
           },
           "threshold": {
-            "type": "string",
+            "type": "number",
             "description": "Jaccard threshold for near-dups (default: 0.85)"
           },
           "no-templates": {
@@ -2531,7 +2531,7 @@
         "type": "object",
         "properties": {
           "keep": {
-            "type": "string",
+            "type": "integer",
             "description": "Numero de versiones a mantener (default: 10)"
           },
           "note": {
@@ -2577,7 +2577,7 @@
             "description": "Include notes changed since this date (YYYY-MM-DD) from change log"
           },
           "max-hops": {
-            "type": "string",
+            "type": "integer",
             "description": "Maximum BFS depth (default: 10)"
           },
           "min-risk": {
@@ -2830,11 +2830,11 @@
             "description": "Explícito; es el comportamiento por defecto"
           },
           "max-notes": {
-            "type": "string",
+            "type": "integer",
             "description": "Tope de notas derivadas (default: 20)"
           },
           "max-chars": {
-            "type": "string",
+            "type": "integer",
             "description": ""
           },
           "tags": {
@@ -2986,7 +2986,7 @@
             "description": ""
           },
           "limit": {
-            "type": "string",
+            "type": "integer",
             "description": "Límite de resultados (default: 10)"
           }
         },
@@ -3082,7 +3082,7 @@
             "description": "Filtrar por status"
           },
           "limit": {
-            "type": "string",
+            "type": "integer",
             "description": "Límite de resultados (default: 50)"
           }
         },
@@ -3797,11 +3797,11 @@
             "description": "Ruta del repositorio a leer (solo lectura)"
           },
           "depth": {
-            "type": "string",
+            "type": "integer",
             "description": "Profundidad de escaneo de directorios"
           },
           "max-modules": {
-            "type": "string",
+            "type": "integer",
             "description": "Tope de módulos que reciben nota en 11_Code"
           },
           "lang": {
@@ -3824,11 +3824,11 @@
             }
           },
           "git-phases": {
-            "type": "string",
+            "type": "integer",
             "description": "Número máximo de fases a reconstruir"
           },
           "max-commits": {
-            "type": "string",
+            "type": "integer",
             "description": "Ventana de historia leída. Si se alcanza, la salida lo declara en warnings: el tope es un parámetro de la invocación, no un hecho del proyecto"
           },
           "no-git": {
@@ -4025,7 +4025,7 @@
             "description": "Incluye las revocadas en --list"
           },
           "max-items": {
-            "type": "string",
+            "type": "integer",
             "description": "Máximo de preferencias en --context (default: 40)"
           },
           "agent": {
@@ -4388,7 +4388,7 @@
             "description": "Comma-separated actions: notify,queue,reindex (default: notify,queue)"
           },
           "max-hops": {
-            "type": "string",
+            "type": "integer",
             "description": "Max BFS depth for transitive strategy (default: 5)"
           },
           "since": {
@@ -4455,7 +4455,7 @@
             "description": "Comma-separated requirement IDs"
           },
           "coverage-target": {
-            "type": "string",
+            "type": "number",
             "description": "Target test coverage percentage"
           },
           "execution-frequency": {
@@ -4514,7 +4514,7 @@
             "description": "Vault-relative folder prefix to scope the check"
           },
           "min-score": {
-            "type": "string",
+            "type": "number",
             "description": "Report only notes with overall score below this (0.0-1.0)"
           },
           "integrity": {
@@ -5078,11 +5078,11 @@
             "description": ""
           },
           "likelihood": {
-            "type": "string",
+            "type": "integer",
             "description": ""
           },
           "impact": {
-            "type": "string",
+            "type": "integer",
             "description": "Impacto: low, medium, high, critical",
             "enum": [
               "low",
@@ -5260,7 +5260,7 @@
         "type": "object",
         "properties": {
           "phase": {
-            "type": "string",
+            "type": "integer",
             "description": "Detalle de una sola fase (1..12)"
           },
           "strict": {
@@ -5416,7 +5416,7 @@
             "description": "Proyecto específico"
           },
           "depth": {
-            "type": "string",
+            "type": "integer",
             "description": "Directory depth (1-5)"
           },
           "categories": {
@@ -5519,7 +5519,7 @@
             "description": ""
           },
           "target": {
-            "type": "string",
+            "type": "number",
             "description": "Target: 99.9%, 99.99%, etc"
           },
           "unit": {
@@ -5539,7 +5539,7 @@
             "description": "Descripción del SLO"
           },
           "alert_threshold": {
-            "type": "string",
+            "type": "number",
             "description": ""
           },
           "data_source": {
@@ -5696,7 +5696,7 @@
             }
           },
           "hops": {
-            "type": "string",
+            "type": "integer",
             "description": "Saltos de expansión (default: 2)"
           },
           "direction": {
@@ -5709,7 +5709,7 @@
             ]
           },
           "max-nodes": {
-            "type": "string",
+            "type": "integer",
             "description": "Tope de nodos (default: 50)"
           },
           "predicate": {
@@ -5735,7 +5735,7 @@
             }
           },
           "min-weight": {
-            "type": "string",
+            "type": "number",
             "description": "Descarta aristas por debajo de este peso"
           },
           "format": {
@@ -5923,7 +5923,7 @@
             "description": ""
           },
           "limit": {
-            "type": "string",
+            "type": "integer",
             "description": "Max events"
           }
         },
@@ -5948,7 +5948,7 @@
         "type": "object",
         "properties": {
           "port": {
-            "type": "string",
+            "type": "integer",
             "description": ""
           },
           "flow-id": {
@@ -5994,7 +5994,7 @@
             "description": ""
           },
           "tokens": {
-            "type": "string",
+            "type": "integer",
             "description": "Explicit token count if known from provider"
           },
           "store-text": {
@@ -6031,7 +6031,7 @@
             "description": ""
           },
           "port": {
-            "type": "string",
+            "type": "integer",
             "description": ""
           }
         },
@@ -6060,7 +6060,7 @@
             "description": "Resumen global de uso de tokens"
           },
           "top": {
-            "type": "string",
+            "type": "integer",
             "description": "Top N tools por tokens consumidos"
           },
           "query": {
@@ -6239,7 +6239,7 @@
             }
           },
           "meta": {
-            "type": "string",
+            "type": "object",
             "description": "JSON con frontmatter adicional"
           },
           "meta-file": {

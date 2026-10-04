@@ -4635,6 +4635,12 @@ def posicionales_obligatorios(script: str) -> List[str]:
     return sorted(set(fuera))
 
 
+#: Conversor de argparse → tipo JSON Schema. Uno que no está aquí (`str`, una
+#: función propia como `proyecto_registrado`) se publica como `string`, que es
+#: lo que argparse recibe antes de convertirlo.
+_TIPO_DE_CONVERSOR = {"int": "integer", "float": "number", "json.loads": "object"}
+
+
 def argparse_params(script: str) -> Dict[str, Dict[str, Any]]:
     """Params reales de un script, leídos de sus `add_argument` largos."""
     import ast
@@ -4664,12 +4670,27 @@ def argparse_params(script: str) -> Dict[str, Dict[str, Any]]:
             return v.value if isinstance(v, ast.Constant) else None
 
         accion, nargs = _const("action"), _const("nargs")
+        # El `type=` de argparse es el contrato real del valor: hasta v40.34 se
+        # ignoraba y `limit`, `budget`, `hops`… salían como `string`, así que un
+        # cliente que validaba contra el esquema mandaba `"diez"` y solo se
+        # enteraba por el texto de uso de argparse, y `--meta` (`json.loads`)
+        # se publicaba como texto en vez de como objeto.
+        convierte = kw.get("type")
+        if isinstance(convierte, ast.Name):
+            convierte = convierte.id
+        elif isinstance(convierte, ast.Attribute):
+            convierte = ast.unparse(convierte)
+        else:
+            convierte = None
+        escalar = _TIPO_DE_CONVERSOR.get(convierte, "string")
+        items = None
         if accion in ("store_true", "store_false"):
             tipo = "boolean"
         elif nargs in ("*", "+") or isinstance(nargs, int):
             tipo = "array"
+            items = escalar if escalar in ("integer", "number") else "string"
         else:
-            tipo = "string"
+            tipo = escalar
 
         opciones = []
         elecciones = kw.get("choices")
@@ -4685,6 +4706,8 @@ def argparse_params(script: str) -> Dict[str, Dict[str, Any]]:
             "description": _const("help") or "",
             "validators": [f"enum:{','.join(opciones)}"] if opciones else [],
         }
+        if items:
+            params[largos[0][2:]]["items"] = items
     return params
 
 
@@ -4767,7 +4790,7 @@ def _convert_to_json_schema(py_tool: Dict[str, Any]) -> Dict[str, Any]:
         tipo = pinfo.get("type") if pinfo.get("type") in _TIPOS_PUBLICABLES else "string"
         prop = {"type": tipo, "description": pinfo.get("description", "")}
         if tipo == "array":
-            prop["items"] = {"type": "string"}
+            prop["items"] = {"type": pinfo.get("items", "string")}
         if pinfo.get("required"):
             schema["required"].append(pname)
         if "enum" in str(pinfo.get("validators", [])) or any(v.startswith("enum:") for v in pinfo.get("validators", [])):

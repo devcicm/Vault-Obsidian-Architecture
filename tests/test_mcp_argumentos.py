@@ -146,3 +146,57 @@ def test_ap40_el_esquema_publica_el_tipo_real_y_se_cierra():
         tipos |= {p["type"] for p in props.values()}
     assert {"boolean", "array"} <= tipos
     assert tools["vault_write"]["inputSchema"]["properties"]["tags"]["type"] == "array"
+
+
+# Medido el 2026-10-04: el `type=` de argparse no llegaba al esquema. `limit`,
+# `budget`, `hops`… se publicaban como `string`, así que `limit: "diez"` pasaba
+# la validación y fallaba en el hijo con el texto de uso de argparse; `--meta`
+# (`json.loads`) era texto, y un objeto donde el esquema pedía texto viajaba
+# como su JSON en el flag.
+
+def test_el_esquema_publica_el_tipo_del_conversor_de_argparse():
+    import sys
+    sys.path.insert(0, str(REPO_ROOT / "scripts"))
+    import vault_mcp_catalog as vmc
+
+    tools = json.loads(CATALOGO.read_text(encoding="utf-8"))["tools"]
+    props = lambda t: tools[t]["inputSchema"]["properties"]  # noqa: E731
+    assert props("vault_list")["limit"]["type"] == "integer"
+    assert props("vault_subgraph")["min-weight"]["type"] == "number"
+    assert props("vault_write")["meta"]["type"] == "object"
+    # Derivado, no a mano: todo `type=int` del script sale como `integer`.
+    for nombre, entrada in tools.items():
+        reales = vmc.argparse_params(entrada.get("script", ""))
+        for p, s in entrada["inputSchema"].get("properties", {}).items():
+            if p in reales and reales[p]["type"] != "array":
+                assert s["type"] == reales[p]["type"], (nombre, p)
+
+
+@pytest.mark.parametrize("tool,args", [
+    ("vault_list", {"limit": "diez"}),
+    ("vault_list", {"limit": 2.5}),
+    ("vault_subgraph", {"seeds": ["x"], "min-weight": "alto"}),
+    ("vault_write", {"folder": "07_Knowledge", "title": "M", "content": CUERPO,
+                     "tags": ["demo"], "meta": "no es json"}),
+    ("vault_write", {"folder": "07_Knowledge", "title": "M", "content": CUERPO,
+                     "tags": ["demo"], "meta": ["agent"]}),
+    ("vault_write", {"folder": "07_Knowledge", "title": {"a": 1}, "content": CUERPO,
+                     "tags": ["demo"], "meta": AUTOR}),
+])
+def test_un_valor_que_no_es_del_tipo_publicado_no_llega_al_hijo(sesion, tool, args):
+    env = _envelope(sesion.llamar(tool, args))
+    assert env["ok"] is False and env["error_code"] == "INVALID_ARGS", env
+
+
+def test_meta_como_objeto_llega_como_frontmatter(sesion, vault):
+    env = _envelope(sesion.llamar("vault_write", {
+        "folder": "07_Knowledge", "title": "Meta objeto", "content": CUERPO,
+        "tags": ["demo"], "meta": {"agent": "pytest", "owner": "infra"},
+    }))
+    assert env["ok"] is True, env
+    assert _frontmatter(_nota(vault, "meta-objeto"))["owner"] == "infra"
+
+
+def test_un_entero_en_texto_sigue_aceptandose(sesion):
+    env = _envelope(sesion.llamar("vault_list", {"limit": "1"}))
+    assert env["ok"] is True, env
