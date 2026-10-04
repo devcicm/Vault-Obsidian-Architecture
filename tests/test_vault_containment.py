@@ -41,7 +41,13 @@ def _run_detect(tmp_path: Path, env_extra=None):
     )
     import os
 
-    env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
+    # `vault_io` importa `vault.kernel`: que lo resuelva el código del repo
+    # bajo prueba y no una instalación del usuario. Hasta v40.34 salía del
+    # user-site — pasaba mientras la wheel global tuviera los nombres que pedía
+    # y fallaba en cuanto el repo iba por delante (AP-44).
+    env = {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONNOUSERSITE": "1",
+           "PYTHONPATH": os.pathsep.join(
+               p for p in (str(SCRIPTS.parent), os.environ.get("PYTHONPATH")) if p)}
     env.pop("VAULT_ROOT", None)
     if env_extra:
         env.update(env_extra)
