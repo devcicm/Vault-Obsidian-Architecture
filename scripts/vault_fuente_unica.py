@@ -262,7 +262,7 @@ def report(raiz: Optional[Path] = None) -> Dict[str, Any]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(
-        description="vault_fuente_unica — el mismo dato con valores distintos (AP-05)")
+        description="vault_fuente_unica — el mismo dato con valores distintos (AP-05)", allow_abbrev=False)
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--strict", action="store_true")
     ap.add_argument("--report", action="store_true")

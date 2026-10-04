@@ -315,6 +315,7 @@ Ejemplos:
   python vault_diagram_export.py --project "mi-api" --filter "flowchart" --output "export/"
   python vault_diagram_export.py --config --zoom 1.5 --fit
         """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--path", type=str, help="Archivo con diagrama a exportar")

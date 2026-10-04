@@ -399,6 +399,7 @@ Notas:
   - Severidades: critical, high, medium, low, info
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--type", required=True, choices=list(TYPE_FOLDERS.keys()))

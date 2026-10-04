@@ -533,6 +533,7 @@ Notas:
   - Nunca sobrescribe una nota existente
   - AP-16: requiere --agent o VAULT_AGENT
 """,
+        allow_abbrev=False,
     )
     source_group = parser.add_mutually_exclusive_group(required=True)
     source_group.add_argument("--file", help="Fichero de origen")

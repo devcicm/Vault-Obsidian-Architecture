@@ -176,7 +176,7 @@ def fix_all(dry_run: bool = False, solo_paso: int | None = None) -> Dict[str, An
 def main() -> int:
     ap = argparse.ArgumentParser(
         description="vault_fix_all — regenera todos los artefactos derivados del registro"
-    )
+    , allow_abbrev=False)
     ap.add_argument("--dry-run", action="store_true", help="muestra el plan sin ejecutar")
     ap.add_argument("--step", type=int, metavar="N", help="ejecuta solo el paso N (1-7)")
     args = ap.parse_args()

@@ -337,6 +337,7 @@ Notas:
   - Consolida automaticamente frameworks, deps, ADRs, patrones e infra filtrados por proyecto
   - Genera o actualiza 01_Projects/{slug}/overview.md
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--project", type=proyecto_registrado("vault_project_overview"), required=True, help="Project slug")
     parser.add_argument("--description", help="Project description")

@@ -414,6 +414,7 @@ Ejemplos:
   # Propagar con --since (auto-detecta que cambio)
   python vault_propagate.py --since "2026-05-09" --strategy conservative --action queue
 """,
+        allow_abbrev=False,
     )
     parser.add_argument(
         "--changed",

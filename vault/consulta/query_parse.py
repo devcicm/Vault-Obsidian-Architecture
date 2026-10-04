@@ -405,6 +405,7 @@ Notas:
   - `confidence` baja = conviene pedir aclaracion antes de responder
   - `plan` describe las llamadas; quien las ejecuta es vault_context_pack
 """,
+        allow_abbrev=False,
     )
     # La pregunta se admite **también** como `--query`. El catálogo MCP publica
     # los parámetros por nombre de flag, así que un posicional no aparecía en el

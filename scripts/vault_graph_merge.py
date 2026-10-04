@@ -851,6 +851,7 @@ Notas:
   - Detecta unknown_predicates, unresolved_entities (AP-34), y silos (AP-35)
   - La ontologia se define en vault_ontology.json
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--project", type=proyecto_registrado("vault_graph_merge"), help="Optional project slug to filter scope")
     parser.add_argument(

@@ -1268,6 +1268,7 @@ Notas:
   - Solo se procesan archivos .md en --scan-path
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument(

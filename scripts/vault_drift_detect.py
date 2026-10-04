@@ -886,6 +886,7 @@ Notas:
   - mode=report cruza cambios con el vault para detectar que no fue documentado
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--path", help="Project root path to scan (por defecto, el enlazado con vault_project --link)")

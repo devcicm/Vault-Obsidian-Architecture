@@ -67,6 +67,7 @@ Notas:
   - Genera 99_Index/index.md con tabla resumen de todo el vault
 
 """,
+        allow_abbrev=False,
     )
 
     parser.parse_args()

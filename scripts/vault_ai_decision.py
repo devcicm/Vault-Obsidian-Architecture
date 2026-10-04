@@ -334,6 +334,7 @@ Notes:
   - --related_code accepts comma-separated file paths
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--project", type=proyecto_registrado("vault_ai_decision"), required=True, help="Project slug")

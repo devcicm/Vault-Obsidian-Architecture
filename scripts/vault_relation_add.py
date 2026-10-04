@@ -329,6 +329,7 @@ Notas:
   - Deduplica relaciones con mismo from+to+type
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--project", type=proyecto_registrado("vault_relation_add"), required=True, help="Project name")

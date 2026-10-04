@@ -403,6 +403,7 @@ Ejemplos:
   python vault_code_sync.py --project my-api --fix
   python vault_code_sync.py --scan-dir src/
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--project", type=proyecto_registrado("vault_code_sync"), help="Slug del proyecto (omitir = todos)")
     parser.add_argument(

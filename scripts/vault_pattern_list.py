@@ -191,6 +191,7 @@ Notas:
 
 """,
 
+        allow_abbrev=False,
     )
 
     parser.add_argument("--project", type=proyecto_registrado("vault_pattern_list"), help="Filter by project")

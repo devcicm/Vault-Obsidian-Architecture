@@ -437,6 +437,7 @@ Notas:
     genera hub/commands notes y reporta el health score.
   - --clean borra TODO el contenido del vault actual excepto .locks
         """,
+        allow_abbrev=False,
     )
     parser.add_argument(
         "--target",

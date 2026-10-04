@@ -30,6 +30,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="vault_query_parse — lenguaje natural → consulta estructurada",
         formatter_class=argparse.RawDescriptionHelpFormatter,
+        allow_abbrev=False,
     )
     parser.add_argument("query", nargs="?", default=None,
                         help="Pregunta en lenguaje natural")

@@ -217,6 +217,7 @@ Notas:
   - Establece trazabilidad del conocimiento incorporado al vault
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--title", required=True, help="Title of the source")

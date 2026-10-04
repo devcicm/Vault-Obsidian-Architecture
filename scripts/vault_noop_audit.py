@@ -189,7 +189,7 @@ def freeze(admitir_nuevos: bool = False) -> Dict:
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="vault_noop_audit — AP-37: no-op silencioso"
-    )
+    , allow_abbrev=False)
     parser.add_argument("--check", action="store_true", help="Reporta el estado de la deuda")
     parser.add_argument("--strict", action="store_true", help="Exit 1 si la deuda creció")
     parser.add_argument("--freeze", action="store_true", help="Recongela la baseline")

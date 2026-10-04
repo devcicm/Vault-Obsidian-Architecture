@@ -298,6 +298,7 @@ Notas:
   - Genera diagrama Mermaid en 09_Infrastructure/infra-map.md
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--project", type=proyecto_registrado("vault_infra_map"), help="Filter by project")

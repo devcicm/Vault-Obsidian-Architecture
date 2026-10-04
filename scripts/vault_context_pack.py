@@ -418,6 +418,7 @@ Notas:
   - Las preferencias 'must' entran siempre primero (--no-preferences las omite)
   - `excluded` dice que se dejo fuera y por que: el recorte es auditable
 """,
+        allow_abbrev=False,
     )
     # La pregunta se admite **también** como `--query`. El catálogo MCP publica
     # los parámetros por nombre de flag, así que un posicional no aparecía en el

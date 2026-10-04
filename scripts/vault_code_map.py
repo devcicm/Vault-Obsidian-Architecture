@@ -225,6 +225,7 @@ Notas:
   - Genera diagrama Mermaid en 11_Code/{project}/code-map.md
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--project", type=proyecto_registrado("vault_code_map"), required=True, help="Project slug")

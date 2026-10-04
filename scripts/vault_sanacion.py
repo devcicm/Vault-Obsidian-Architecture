@@ -334,6 +334,7 @@ def plan_de_sanacion(root=None):
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="vault_sanacion — plan de sanación medido; no escribe nada",
+        allow_abbrev=False,
     )
     parser.add_argument(
         "--phase", type=int, help="Detalle de una sola fase (1..12)"

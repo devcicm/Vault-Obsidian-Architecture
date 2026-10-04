@@ -375,7 +375,7 @@ def freeze(admitir_nuevos: bool = False) -> Dict[str, Any]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(
-        description="vault_recursos — arrastre productor/consumidor (AP-62)")
+        description="vault_recursos — arrastre productor/consumidor (AP-62)", allow_abbrev=False)
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--strict", action="store_true")
     ap.add_argument("--ranking", action="store_true",

@@ -766,6 +766,7 @@ Ejemplos:
   python vault_manifest.py --status deprecated # lista solo tools deprecadas
   python vault_manifest.py --status active     # lista solo tools activas
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--bootstrap", action="store_true",
                         help="Genera/actualiza <vault>/00_System/tool-spec.json desde datos hardcodeados + introspección")

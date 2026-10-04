@@ -256,6 +256,7 @@ Notas:
   - --trash-only mueve a 20_Quarantine/ en vez de eliminar
   - --force omite la creacion de change-log (para recovery de la propia tool)
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--path", required=True, help="Ruta relativa al vault de la nota a eliminar")
     parser.add_argument("--reason", required=True, help="Motivo de eliminacion (SP-01)")

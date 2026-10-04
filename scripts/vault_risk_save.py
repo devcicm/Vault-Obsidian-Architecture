@@ -301,6 +301,7 @@ Ejemplos:
     --risk_type operational --likelihood 2 --impact 4 \\
     --treatment transfer --status accepted
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--project", type=proyecto_registrado("vault_risk_save"), required=True)
     parser.add_argument("--title", required=True)

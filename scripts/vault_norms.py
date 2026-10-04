@@ -475,6 +475,7 @@ Ejemplos:
   # Reconstruir norm-registry.json
   python vault_norms.py --rebuild
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--list", action="store_true", help="Listar normas")

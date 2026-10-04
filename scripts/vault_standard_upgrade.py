@@ -1051,6 +1051,7 @@ Ejemplos:
   - --report genera reporte de fixes disponibles
   - Versiones disponibles: v19 a v34
 """,
+        allow_abbrev=False,
     )
     parser.add_argument(
         "--from",

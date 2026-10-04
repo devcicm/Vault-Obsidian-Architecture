@@ -276,6 +276,7 @@ Notas:
 
 """,
 
+        allow_abbrev=False,
     )
 
     parser.add_argument("--query", required=True, help="Search terms")

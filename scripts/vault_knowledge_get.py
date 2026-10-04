@@ -23,7 +23,7 @@ def vault_knowledge_get(query: str, category: Optional[str] = None,
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Vault Knowledge Get Tool")
+    parser = argparse.ArgumentParser(description="Vault Knowledge Get Tool", allow_abbrev=False)
     parser.add_argument("--query", required=True)
     parser.add_argument("--category")
     parser.add_argument("--project", type=proyecto_registrado("vault_knowledge_get"))

@@ -315,6 +315,7 @@ Notas:
   - stale_risk = distance x CIA_weight (critical=4, high=3, medium=2, low=1)
   - --predicate filtra edges semanticamente (usa graph-enriched.json si existe)
 """,
+        allow_abbrev=False,
     )
     parser.add_argument(
         "--changed",

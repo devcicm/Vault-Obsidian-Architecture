@@ -508,6 +508,7 @@ Notas:
 
 """,
 
+        allow_abbrev=False,
     )
 
     parser.add_argument("--path", help="Relative path to a specific note")

@@ -41,7 +41,7 @@ def _uninstall_mcp() -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="python -m vault.uninstall")
+    parser = argparse.ArgumentParser(prog="python -m vault.uninstall", allow_abbrev=False)
     parser.add_argument("--mcp", action="store_true", help="También eliminar MCP symlink")
     parser.add_argument("--all", action="store_true", help="Desinstalar todo (CLI + MCP)")
     parser.add_argument("--dry-run", action="store_true", help="Solo mostrar qué haría")

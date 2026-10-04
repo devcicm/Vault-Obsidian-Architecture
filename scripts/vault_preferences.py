@@ -479,6 +479,7 @@ Notas:
   - AP-16: requiere --agent o VAULT_AGENT
   - Revocar NO borra: marca status: revoked conservando el historico
 """,
+        allow_abbrev=False,
     )
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--set", action="store_true", help="Registra o actualiza")

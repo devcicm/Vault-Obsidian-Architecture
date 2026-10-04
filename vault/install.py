@@ -80,7 +80,7 @@ def _install_skills() -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="python -m vault.install")
+    parser = argparse.ArgumentParser(prog="python -m vault.install", allow_abbrev=False)
     parser.add_argument("--mcp", action="store_true", help="Instalar MCP server")
     parser.add_argument("--all", action="store_true", help="Instalar CLI + MCP + skills")
     parser.add_argument("--dry-run", action="store_true", help="Solo mostrar qué haría")

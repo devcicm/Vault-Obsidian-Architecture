@@ -146,6 +146,7 @@ Notas:
 
 """,
 
+        allow_abbrev=False,
     )
 
     parser.add_argument("--index", "-i", action="store_true", help="Generar indice")

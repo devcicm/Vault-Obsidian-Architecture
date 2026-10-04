@@ -259,6 +259,7 @@ Notas:
   - Actualiza status.md y agrega entrada a changelog.md del proyecto
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--project", type=proyecto_registrado("vault_project_status"), required=True)

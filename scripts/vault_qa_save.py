@@ -245,6 +245,7 @@ Types:
 Status:
   draft | review | approved | published | archived
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--project", type=proyecto_registrado("vault_qa_save"), required=True, help="Project slug")
     parser.add_argument("--title", required=True, help="Short document title")

@@ -648,6 +648,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Vault graph inspector + duplicate detector + syntax checker",
         formatter_class=argparse.RawDescriptionHelpFormatter,
+        allow_abbrev=False,
     )
     parser.add_argument("--root", help="Vault root (default: VAULT_ROOT auto-detect)")
     parser.add_argument("--json", action="store_true", help="Output JSON (default)")

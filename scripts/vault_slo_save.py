@@ -347,6 +347,7 @@ Ejemplos:
   python vault_slo_save.py --project my-api --service orders \\
     --slo_type error_rate --target 0.1 --window 30d
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--project", type=proyecto_registrado("vault_slo_save"), required=True)
     parser.add_argument("--service", required=True)

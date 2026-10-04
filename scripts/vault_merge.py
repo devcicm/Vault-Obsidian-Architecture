@@ -351,6 +351,7 @@ Notas:
   - conflict=skip (default), overwrite, rename
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument(

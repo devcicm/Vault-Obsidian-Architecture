@@ -281,6 +281,7 @@ Ejemplos:
     --deploy_steps '["npm run build","docker push","kubectl rollout"]' \\
     --smoke_tests '["GET /health → 200","GET /api/v1/products → 200"]'
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--project", type=proyecto_registrado("vault_release_save"), required=True)
     parser.add_argument("--version", required=True)

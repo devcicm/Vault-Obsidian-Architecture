@@ -362,6 +362,7 @@ Notas:
   - --query retorna JSON ordenado por timestamp desc
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--action", help=f"Action to record: {VALID_ACTIONS}")

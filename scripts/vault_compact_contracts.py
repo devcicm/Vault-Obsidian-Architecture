@@ -573,6 +573,7 @@ Ejemplos:
   python vault_compact_contracts.py --profile full    # las 53 tools
   python vault_compact_contracts.py --check           # muestra JSON sin escribir archivos
 """,
+        allow_abbrev=False,
     )
     parser.add_argument(
         "--profile",

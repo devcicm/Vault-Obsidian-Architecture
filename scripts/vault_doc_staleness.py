@@ -145,6 +145,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="Verifica que los artefactos derivados existen y son JSON válido.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
+        allow_abbrev=False,
     )
     parser.add_argument("--check", action="store_true", help="Modo comprobación")
     parser.add_argument(

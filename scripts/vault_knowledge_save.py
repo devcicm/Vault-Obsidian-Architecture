@@ -32,7 +32,7 @@ def vault_knowledge_save(category: str, title: str, content: str,
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Vault Knowledge Save Tool")
+    parser = argparse.ArgumentParser(description="Vault Knowledge Save Tool", allow_abbrev=False)
     parser.add_argument("--category", required=True, choices=CATEGORIES)
     parser.add_argument("--title")
     parser.add_argument("--content")

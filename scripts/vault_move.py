@@ -535,6 +535,7 @@ Ejemplos:
   python vault_move.py --from "01_Projects/foo.md" --to "03_Decisions/foo.md" --dry-run
   python vault_move.py --impact --from "01_Projects/foo.md" --to "03_Decisions/foo.md"
         """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--from", dest="from_path", type=str, help="Nota origen")

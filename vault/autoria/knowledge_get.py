@@ -8,10 +8,10 @@ from vault.kernel.proyectos import proyecto_registrado
 from .conocimiento import recuperar_conocimiento
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
-    parser = argparse.ArgumentParser(prog="vault_knowledge_get")
+    parser = argparse.ArgumentParser(prog="vault_knowledge_get", allow_abbrev=False)
     # `--project` resuelve contra el registro del vault de `--root`, que
     # puede venir detrás en el argv: se lee antes, sin consumir nada.
-    previo = argparse.ArgumentParser(add_help=False)
+    previo = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     previo.add_argument("--root")
     raiz = previo.parse_known_args(argv)[0].root
     parser.add_argument("--root", required=True)

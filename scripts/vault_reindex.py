@@ -166,6 +166,7 @@ Notas:
   - --check retorna exit 0 si el indice REFLEJA el disco, exit 1 si hay desfase
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--graph", action="store_true", help="Also rebuild graph.json")

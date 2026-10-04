@@ -190,7 +190,7 @@ def freeze(admitir_nuevos: bool = False) -> Dict[str, Any]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(
-        description="vault_excepcion_declarada — la excepción que escapa (AP-61)")
+        description="vault_excepcion_declarada — la excepción que escapa (AP-61)", allow_abbrev=False)
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--strict", action="store_true")
     ap.add_argument("--freeze", action="store_true")

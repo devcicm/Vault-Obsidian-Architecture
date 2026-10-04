@@ -518,6 +518,7 @@ Notas:
   - Ubicaciones validas: local, homelab, vps, cloud-aws, cloud-gcp, cloud-azure, datacenter, hybrid
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--name", required=True, help="Component name")

@@ -533,6 +533,7 @@ Notas:
   - Se llama automaticamente por vault_write despues de cada escritura exitosa
   - El index.md generado es un artefacto derivado -- no editar manualmente
 """,
+        allow_abbrev=False,
     )
     parser.add_argument(
         "--folder", help="Section folder relative to vault root"

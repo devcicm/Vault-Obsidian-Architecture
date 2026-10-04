@@ -293,7 +293,7 @@ def _render_tabla_markdown() -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Validate tool-spec.json vs TOOLS_CATALOG sync"
-    )
+    , allow_abbrev=False)
     parser.add_argument(
         "--fix",
         action="store_true",

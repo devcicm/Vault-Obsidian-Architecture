@@ -305,6 +305,7 @@ Ejemplos:
     --env_vars '["DATABASE_URL","STRIPE_SECRET_KEY","JWT_SECRET"]' \\
     --runtime "Node.js 20 LTS" --region "us-east-1"
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--project", type=proyecto_registrado("vault_env_matrix"), required=True)
     parser.add_argument("--env", required=True, choices=list(ENV_PROFILES.keys()))

@@ -779,6 +779,7 @@ Notas:
   - Bitacora append-only: 19_Audits/vocabulary/tag-ledger.json
   - vault_audit incluye tag_health en su output cuando el registry existe
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--audit", action="store_true", help="Reporte de salud de tags")
     parser.add_argument(

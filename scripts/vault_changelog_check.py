@@ -515,7 +515,7 @@ def listar() -> Dict[str, Any]:
 
 
 def main() -> int:
-    p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    p = argparse.ArgumentParser(description=__doc__.split("\n")[0], allow_abbrev=False)
     p.add_argument("--check", action="store_true",
                    help="contrasta el changelog contra git")
     p.add_argument("--strict", action="store_true",

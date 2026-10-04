@@ -511,6 +511,7 @@ Ejemplos:
   python vault_errors.py catalog
   python vault_errors.py catalog --code AP21_PATH_WIKILINKS
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("command", choices=["query", "catalog"], help="Comando")
     parser.add_argument("--tool", "-t", help="Filtrar por tool")

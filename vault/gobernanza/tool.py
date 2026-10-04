@@ -41,6 +41,7 @@ def _build_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog=TOOL_NAME,
         description="Valida contenido contra las normas de gobernanza del MCP.",
+        allow_abbrev=False,
     )
     parser.add_argument("--content", required=True, help="Contenido a validar")
     parser.add_argument("--folder", default="", help="Carpeta destino (para path-anchored links)")

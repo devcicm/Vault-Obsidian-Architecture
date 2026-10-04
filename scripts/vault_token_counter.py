@@ -244,23 +244,24 @@ Operational rule:
   Invoke begin before mass documentation. Other vault tools stay independent;
   this service receives explicit flow events and reports token usage separately.
 """,
+        allow_abbrev=False,
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p_start = sub.add_parser("start-service")
+    p_start = sub.add_parser("start-service", allow_abbrev=False)
     p_start.add_argument("--port", type=int, default=DEFAULT_PORT)
-    sub.add_parser("stop-service")
-    sub.add_parser("status")
-    p_serve = sub.add_parser("serve")
+    sub.add_parser("stop-service", allow_abbrev=False)
+    sub.add_parser("status", allow_abbrev=False)
+    p_serve = sub.add_parser("serve", allow_abbrev=False)
     p_serve.add_argument("--port", type=int, default=DEFAULT_PORT)
-    sub.add_parser("self-test")
+    sub.add_parser("self-test", allow_abbrev=False)
 
-    p_begin = sub.add_parser("begin")
+    p_begin = sub.add_parser("begin", allow_abbrev=False)
     p_begin.add_argument("--flow-id", required=True)
     p_begin.add_argument("--operation", default="")
     p_begin.add_argument("--budget", help="JSON budget metadata (CLI only: @file:path), e.g. '{\"max_tokens\":100000}'")
 
-    p_event = sub.add_parser("event")
+    p_event = sub.add_parser("event", allow_abbrev=False)
     p_event.add_argument("--flow-id", required=True)
     p_event.add_argument("--text", required=True, help="Text to count (CLI only: @file:path)")
     p_event.add_argument("--source", default="agent")
@@ -271,13 +272,13 @@ Operational rule:
     p_event.add_argument("--tokens", type=int, help="Explicit token count if known from provider")
     p_event.add_argument("--store-text", action="store_true", help="Persist raw text; default stores only token metadata")
 
-    p_count = sub.add_parser("count")
+    p_count = sub.add_parser("count", allow_abbrev=False)
     p_count.add_argument("--text", required=True, help="Text to count (CLI only: @file:path)")
 
-    p_report = sub.add_parser("report")
+    p_report = sub.add_parser("report", allow_abbrev=False)
     p_report.add_argument("--flow-id", required=True)
 
-    p_end = sub.add_parser("end")
+    p_end = sub.add_parser("end", allow_abbrev=False)
     p_end.add_argument("--flow-id", required=True)
 
     args = parser.parse_args()

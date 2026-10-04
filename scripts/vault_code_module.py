@@ -554,6 +554,7 @@ Notas:
   - Con --scan-path, --file_path y --description son opcionales
   - VAULT_ROOT se detecta automaticamente desde la ubicacion del script
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--project", type=proyecto_registrado("vault_code_module"), required=True, help="Project slug")
     parser.add_argument(

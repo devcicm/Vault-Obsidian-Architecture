@@ -374,43 +374,44 @@ Ejemplos:
   python vault_mcp.py graph-status
   python vault_mcp.py graph-clean
 """,
+        allow_abbrev=False,
     )
 
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    catalog_parser = subparsers.add_parser("catalog", help="Lista tools")
+    catalog_parser = subparsers.add_parser("catalog", help="Lista tools", allow_abbrev=False)
     catalog_parser.add_argument("--group", help="Filtrar por grupo")
 
-    subparsers.add_parser("find", help="Busca tools por propósito").add_argument(
+    subparsers.add_parser("find", help="Busca tools por propósito", allow_abbrev=False).add_argument(
         "query", help="Palabra clave"
     )
 
-    subparsers.add_parser("show", help="Muestra detail de tool").add_argument(
+    subparsers.add_parser("show", help="Muestra detail de tool", allow_abbrev=False).add_argument(
         "tool", help="Nombre de tool"
     )
 
-    subparsers.add_parser("status", help="Estado del vault")
+    subparsers.add_parser("status", help="Estado del vault", allow_abbrev=False)
 
-    subparsers.add_parser("health", help="Ejecuta vault_audit")
+    subparsers.add_parser("health", help="Ejecuta vault_audit", allow_abbrev=False)
 
-    subparsers.add_parser("next", help="Próximas acciones")
+    subparsers.add_parser("next", help="Próximas acciones", allow_abbrev=False)
 
-    subparsers.add_parser("session", help="Resumen de sesión")
+    subparsers.add_parser("session", help="Resumen de sesión", allow_abbrev=False)
 
-    validate_parser = subparsers.add_parser("validate", help="Valida parámetros")
+    validate_parser = subparsers.add_parser("validate", help="Valida parámetros", allow_abbrev=False)
     validate_parser.add_argument("tool", help="Nombre de tool")
     validate_parser.add_argument("--params", help="JSON con parámetros", default="{}")
 
-    exec_parser = subparsers.add_parser("exec", help="Ejecuta tool")
+    exec_parser = subparsers.add_parser("exec", help="Ejecuta tool", allow_abbrev=False)
     exec_parser.add_argument("tool", help="Nombre de tool")
     exec_parser.add_argument("--params", help="JSON con parámetros", default="{}")
 
-    subparsers.add_parser("context-save", help="Guarda contexto")
+    subparsers.add_parser("context-save", help="Guarda contexto", allow_abbrev=False)
 
-    subparsers.add_parser("context-load", help="Carga contexto")
+    subparsers.add_parser("context-load", help="Carga contexto", allow_abbrev=False)
 
     # Gestión de carpetas
-    folders_parser = subparsers.add_parser("folders", help="Carpetas registradas")
+    folders_parser = subparsers.add_parser("folders", help="Carpetas registradas", allow_abbrev=False)
     folders_parser.add_argument(
         "--scan", action="store_true", help="Escanear carpetas nuevas"
     )
@@ -422,21 +423,21 @@ Ejemplos:
     # Mermaid
     mermaid_parser = subparsers.add_parser(
         "mermaid-validate", help="Valida diagramas Mermaid"
-    )
+    , allow_abbrev=False)
     mermaid_parser.add_argument("--path", help="Archivo específico")
     mermaid_parser.add_argument("--project", type=proyecto_registrado("vault_mcp"), help="Proyecto específico")
     mermaid_parser.add_argument("--json", action="store_true", help="Salida JSON")
 
     mermaid_fix_parser = subparsers.add_parser(
         "mermaid-fix", help="Auto-corrección de Mermaid"
-    )
+    , allow_abbrev=False)
     mermaid_fix_parser.add_argument("--path", help="Archivo específico")
     mermaid_fix_parser.add_argument(
         "--dry-run", action="store_true", help="Simular sin aplicar"
     )
 
     # Diagramas export
-    diagram_parser = subparsers.add_parser("diagram-export", help="Exporta diagramas")
+    diagram_parser = subparsers.add_parser("diagram-export", help="Exporta diagramas", allow_abbrev=False)
     diagram_parser.add_argument("--path", help="Archivo a exportar")
     diagram_parser.add_argument("--project", type=proyecto_registrado("vault_mcp"), help="Proyecto a exportar")
     diagram_parser.add_argument("--output", help="Carpeta de salida")
@@ -444,7 +445,7 @@ Ejemplos:
     diagram_parser.add_argument("--filter", help="Filtrar por tipo")
 
     # Move
-    move_parser = subparsers.add_parser("move", help="Reubica notas")
+    move_parser = subparsers.add_parser("move", help="Reubica notas", allow_abbrev=False)
     move_parser.add_argument("--from", dest="from_path", help="Nota origen")
     move_parser.add_argument("--to", dest="to_path", help="Nota destino")
     move_parser.add_argument("--folder", help="Carpeta origen")
@@ -453,8 +454,8 @@ Ejemplos:
     move_parser.add_argument("--impact", action="store_true", help="Analizar impacto")
 
     # Graph
-    subparsers.add_parser("graph-status", help="Estado del grafo")
-    subparsers.add_parser("graph-clean", help="Limpia nodos huérfanos")
+    subparsers.add_parser("graph-status", help="Estado del grafo", allow_abbrev=False)
+    subparsers.add_parser("graph-clean", help="Limpia nodos huérfanos", allow_abbrev=False)
 
     args = parser.parse_args()
 

@@ -212,6 +212,7 @@ Notas:
   - La ruta debe ser relativa a la raiz del vault
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--path", required=True, help="Relative path to note")

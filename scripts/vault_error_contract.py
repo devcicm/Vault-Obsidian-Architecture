@@ -365,6 +365,7 @@ Qué cuenta como infracción:
                                                          con codigo, categoria,
                                                          severidad y recovery.
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--check", action="store_true",
                         help="Reporta el estado de la deuda")

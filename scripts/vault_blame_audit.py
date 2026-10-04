@@ -296,6 +296,7 @@ Qué cuenta como infracción:
   except FileNotFoundError:  -> NO. Es un criterio, no una renuncia a saber.
       return []
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--check", action="store_true",
                         help="Reporta el estado de la deuda")

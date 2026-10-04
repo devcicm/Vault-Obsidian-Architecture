@@ -193,6 +193,7 @@ Notas:
   - Sin --no-timestamp se agrega marca de tiempo automaticamente
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--path", required=True, help="Relative path to note")

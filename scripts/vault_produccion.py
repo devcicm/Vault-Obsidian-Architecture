@@ -644,7 +644,7 @@ def check_doc() -> Dict[str, Any]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(
-        description="vault_produccion — ¿puede usar esto otra persona? (guía de construcción)")
+        description="vault_produccion — ¿puede usar esto otra persona? (guía de construcción)", allow_abbrev=False)
     ap.add_argument("--check", action="store_true", help="Mide cada promesa contra su ejecutor")
     ap.add_argument("--strict", action="store_true", help="Exit 1 si alguna promesa perdió ejecutor")
     ap.add_argument("--guia", action="store_true", help="Regenera docs/GUIA-DE-PRODUCCION.md")

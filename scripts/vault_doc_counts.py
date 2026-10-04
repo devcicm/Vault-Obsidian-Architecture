@@ -392,7 +392,7 @@ def fix(docs: Optional[List[str]] = None, include_slow: bool = True) -> Dict:
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="vault_doc_counts — guard anti-drift de cifras en documentación"
-    )
+    , allow_abbrev=False)
     parser.add_argument("--check", action="store_true", help="Falla si un doc miente")
     parser.add_argument("--fix", action="store_true", help="Reescribe las cifras")
     parser.add_argument("--list", action="store_true", help="Valores vivos del registro")

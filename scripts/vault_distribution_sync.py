@@ -75,7 +75,7 @@ def sync(*, check: bool = False) -> int:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(allow_abbrev=False)
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
     return sync(check=args.check)

@@ -315,6 +315,7 @@ Notes:
   - req_id is auto-generated as REQ-001, REQ-002, etc. per project
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--project", type=proyecto_registrado("vault_requirement_save"), required=True, help="Project slug")

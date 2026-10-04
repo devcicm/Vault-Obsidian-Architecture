@@ -147,7 +147,7 @@ def _pretty_dict(d: dict) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Generate vault_mcp_catalog.py from tool-spec.json"
-    )
+    , allow_abbrev=False)
     parser.add_argument(
         "--check",
         action="store_true",

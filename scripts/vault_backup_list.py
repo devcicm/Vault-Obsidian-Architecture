@@ -65,6 +65,7 @@ Notas:
   - Los backups se crean con vault_backup.py
   - --limit acota los devueltos; `total` sigue diciendo cuántos hay
 """,
+        allow_abbrev=False,
     )
     parser.add_argument(
         "--limit", type=int, default=LIMITE_DEFECTO,

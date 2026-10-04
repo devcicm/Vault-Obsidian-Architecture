@@ -463,6 +463,7 @@ Notas:
   - La relevancia decae 0.6 por salto y se pondera por predicado
   - Requiere 99_Index/graph.json (o graph-enriched.json): ejecuta vault_graph
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--seeds", nargs="+", required=True,
                         help="Notas de partida (ruta o título)")

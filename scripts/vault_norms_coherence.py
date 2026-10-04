@@ -735,6 +735,7 @@ def scan_claims() -> List[Dict[str, str]]:
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="vault_norms_coherence — AP-55: coherencia interna del catálogo de normas",
+        allow_abbrev=False,
     )
     parser.add_argument("--check", action="store_true", help="las siete medidas")
     parser.add_argument("--strict", action="store_true", help="exit 1 si algo falla")

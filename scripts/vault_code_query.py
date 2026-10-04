@@ -554,6 +554,7 @@ Notas:
 
 """,
 
+        allow_abbrev=False,
     )
 
     parser.add_argument("--project", type=proyecto_registrado("vault_code_query"), required=True, help="Project slug")

@@ -452,6 +452,7 @@ Ejemplos:
   python vault_test_runner.py --contracts
   python vault_test_runner.py --smoke --contracts --errors
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--smoke",     action="store_true", help="Run syntax + --help checks")
     parser.add_argument("--contracts", action="store_true", help="Run happy-path contract tests")

@@ -366,33 +366,33 @@ def cmd_mcp_path(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="vault")
+    parser = argparse.ArgumentParser(prog="vault", allow_abbrev=False)
     parser.add_argument("--version", action="version", version=toolkit_version())
     commands = parser.add_subparsers(dest="command", required=True)
 
-    tools = commands.add_parser("tools", help="Descubre tools del toolkit instalado")
+    tools = commands.add_parser("tools", help="Descubre tools del toolkit instalado", allow_abbrev=False)
     tool_commands = tools.add_subparsers(dest="tools_command", required=True)
-    listing = tool_commands.add_parser("list", help="Lista tools declaradas")
+    listing = tool_commands.add_parser("list", help="Lista tools declaradas", allow_abbrev=False)
     listing.set_defaults(func=cmd_tools_list)
-    showing = tool_commands.add_parser("show", help="Muestra metadata derivada")
+    showing = tool_commands.add_parser("show", help="Muestra metadata derivada", allow_abbrev=False)
     showing.add_argument("tool")
     showing.set_defaults(func=cmd_tools_show)
 
-    run = commands.add_parser("run", help="Ejecuta una operación instalada")
+    run = commands.add_parser("run", help="Ejecuta una operación instalada", allow_abbrev=False)
     run.add_argument("tool")
     run.add_argument("args", nargs=argparse.REMAINDER)
     run.set_defaults(func=cmd_run)
 
-    init = commands.add_parser("init", help="Crea un runtime externo nuevo")
+    init = commands.add_parser("init", help="Crea un runtime externo nuevo", allow_abbrev=False)
     init.add_argument("runtime")
     init.set_defaults(func=cmd_init)
-    doctor = commands.add_parser("doctor", help="Diagnostica un runtime sin escribir")
+    doctor = commands.add_parser("doctor", help="Diagnostica un runtime sin escribir", allow_abbrev=False)
     doctor.add_argument("runtime")
     doctor.set_defaults(func=cmd_doctor)
-    status = commands.add_parser("status", help="Muestra el estado read-only de un runtime")
+    status = commands.add_parser("status", help="Muestra el estado read-only de un runtime", allow_abbrev=False)
     status.add_argument("runtime")
     status.set_defaults(func=cmd_status)
-    mcp_path = commands.add_parser("mcp-path", help="Ruta del servidor MCP y su configuración de cliente")
+    mcp_path = commands.add_parser("mcp-path", help="Ruta del servidor MCP y su configuración de cliente", allow_abbrev=False)
     mcp_path.add_argument("--root", help="Vault que servirá el MCP (por defecto, VAULT_ROOT)")
     mcp_path.add_argument("--project", type=_proyectos.proyecto_registrado("vault", _raiz_de_mcp_path), help="Ata la sesión MCP a este proyecto (slug o alias registrado)")
     mcp_path.set_defaults(func=cmd_mcp_path)
@@ -407,7 +407,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         reconfigure = getattr(stream, "reconfigure", None)
         if callable(reconfigure):
             reconfigure(encoding="utf-8")
-    previo = argparse.ArgumentParser(add_help=False)
+    previo = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     previo.add_argument("--root")
     _PREVIO["root"] = previo.parse_known_args(argv)[0].root or ""
     # El nombre crudo, sin un segundo `add_argument("--project")`: ese solo

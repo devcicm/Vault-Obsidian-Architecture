@@ -330,6 +330,7 @@ Notas:
   - Regenera automaticamente code-map.md
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--project", type=proyecto_registrado("vault_code_relation"), required=True, help="Project slug")

@@ -249,6 +249,7 @@ def vault_quality_dashboard(check_only: bool = False) -> Dict[str, Any]:
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="vault_quality_dashboard — ISO 9001 §9.1 quality dashboard",
+        allow_abbrev=False,
     )
     parser.add_argument(
         "--check",

@@ -95,6 +95,7 @@ Notas:
   - la nota se MUEVE (no se copia): dos copias de una nota dudosa es peor que una
   - el origen viaja dentro de la nota y en el ledger append-only
 """,
+        allow_abbrev=False,
     )
     grupo = parser.add_mutually_exclusive_group(required=True)
     grupo.add_argument("--add", metavar="PATH", help="Retener esta nota")

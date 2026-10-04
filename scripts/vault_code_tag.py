@@ -610,6 +610,7 @@ Formatos de comentario por extensión:
   .sql                        →  -- @norm cr-0989 — Cola de prioridad
   .md                         →  ⚠ usar vault_norms --apply (frontmatter norm_refs)
 """,
+        allow_abbrev=False,
     )
 
     # Operations

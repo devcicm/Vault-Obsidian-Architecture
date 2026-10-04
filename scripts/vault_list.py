@@ -331,6 +331,7 @@ Notas:
 
 """,
 
+        allow_abbrev=False,
     )
 
     parser.add_argument("--folder", help="Folder to list")

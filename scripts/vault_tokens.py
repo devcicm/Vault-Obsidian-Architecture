@@ -192,6 +192,7 @@ Consultas:
   python vault_tokens.py --top 5 --since 2026-05-10
   python vault_tokens.py --reset
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--summary", action="store_true", help="Resumen global de uso de tokens")
     parser.add_argument("--top", type=int, metavar="N", help="Top N tools por tokens consumidos")

@@ -958,7 +958,7 @@ def freeze(admitir_nuevos: bool = False) -> Dict[str, Any]:
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Plano de construcción: registros atados y verificados"
-    )
+    , allow_abbrev=False)
     parser.add_argument("--blueprint", action="store_true", help="regenera docs/BLUEPRINT.md")
     parser.add_argument("--check", action="store_true", help="el doc y la trazabilidad")
     parser.add_argument("--strict", action="store_true", help="exit 1 si falla")

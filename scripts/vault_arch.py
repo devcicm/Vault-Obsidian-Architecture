@@ -2271,7 +2271,7 @@ def blueprint() -> str:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Plano técnico: contextos acotados")
+    ap = argparse.ArgumentParser(description="Plano técnico: contextos acotados", allow_abbrev=False)
     ap.add_argument("--check", action="store_true", help="guard de fronteras")
     ap.add_argument("--strict", action="store_true",
                     help="además exige que la baseline se haya actualizado al encoger")

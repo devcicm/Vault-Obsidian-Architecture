@@ -341,7 +341,7 @@ def freeze(admitir_nuevos: bool = False) -> Dict[str, Any]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(
-        description="vault_ciclos — ciclos esquivados con import diferido (AP-58)")
+        description="vault_ciclos — ciclos esquivados con import diferido (AP-58)", allow_abbrev=False)
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--strict", action="store_true")
     ap.add_argument("--freeze", action="store_true")

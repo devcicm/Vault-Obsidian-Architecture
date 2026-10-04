@@ -85,6 +85,7 @@ Notas:
   - Ejecutar vault_backup.py primero para preservar estado actual
   - --confirm false (default) solo muestra info sin restaurar
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--backup_name", required=True, help="Exact backup name")
     parser.add_argument(

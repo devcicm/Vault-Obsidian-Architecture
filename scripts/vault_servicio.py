@@ -557,7 +557,7 @@ def listar() -> Dict[str, Any]:
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Servicio de negocio del estándar y capacidades que lo realizan"
-    )
+    , allow_abbrev=False)
     parser.add_argument("--list", action="store_true", help="servicio y capacidades")
     parser.add_argument("--trace", action="store_true", help="tool → capacidad → servicio")
     parser.add_argument(

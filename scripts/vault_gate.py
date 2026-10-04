@@ -465,6 +465,7 @@ Ejemplos:
 
 No sustituye a la suite: `python -m pytest tests/` sigue siendo obligatorio.
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--strict", action="store_true",
                         help="Exit 1 si alguna puerta falla")

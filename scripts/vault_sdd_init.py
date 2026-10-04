@@ -1226,6 +1226,7 @@ GENERATORS = {
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="vault-sdd-init — Generate SDD documentation for the vault",
+        allow_abbrev=False,
     )
     parser.add_argument(
         "--bilingual", action="store_true", help="Generate ES + EN content"

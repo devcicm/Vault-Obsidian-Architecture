@@ -323,6 +323,7 @@ Notes:
   - test_id is auto-generated as TEST-001, TEST-002, etc. per project
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--project", type=proyecto_registrado("vault_test_save"), required=True, help="Project slug")

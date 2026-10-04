@@ -320,6 +320,7 @@ Notas:
   - Expande el conjunto cambiado via BFS sobre graph.json (backlinks)
   - --min-risk acepta: critical, high, medium, low
 """,
+        allow_abbrev=False,
     )
     parser.add_argument(
         "--dry-run",

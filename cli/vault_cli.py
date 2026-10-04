@@ -445,7 +445,7 @@ def build_parser() -> argparse.ArgumentParser:
     # --pretty se declara además en cada subcomando: nadie recuerda que una
     # flag global tiene que ir ANTES del subcomando, y fallar por eso es
     # gratuito. Con el parent se acepta en las dos posiciones.
-    common = argparse.ArgumentParser(add_help=False)
+    common = argparse.ArgumentParser(add_help=False, allow_abbrev=False)
     # SUPPRESS es deliberado: sin él, el subparser reescribe con su default
     # (False) el `--pretty` que ya venía del parser principal, y la opción solo
     # funcionaría después del subcomando.
@@ -479,29 +479,30 @@ Ejemplos:
 
 Documentación: cli/README.md (guía) y cli/COMMANDS.md (referencia).
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--pretty", action="store_true", help="JSON indentado")
     parser.add_argument("--version", action="version", version=f"cli {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p = sub.add_parser("groups", parents=[common], help="Catálogo completo por grupo")
+    p = sub.add_parser("groups", parents=[common], help="Catálogo completo por grupo", allow_abbrev=False)
     p.set_defaults(func=cmd_groups)
 
-    p = sub.add_parser("find", parents=[common], help="Busca fragmentos por texto libre")
+    p = sub.add_parser("find", parents=[common], help="Busca fragmentos por texto libre", allow_abbrev=False)
     p.add_argument("query", help="Términos (todos deben aparecer)")
     p.add_argument("--mode", choices=["read", "write"], help="Filtra por modo")
     p.add_argument("--group", help="Filtra por grupo")
     p.add_argument("--full", action="store_true", help="Ficha completa de cada fragmento")
     p.set_defaults(func=cmd_find)
 
-    p = sub.add_parser("show", parents=[common], help="Ficha de un fragmento")
+    p = sub.add_parser("show", parents=[common], help="Ficha de un fragmento", allow_abbrev=False)
     p.add_argument("tool")
     p.set_defaults(func=cmd_show)
 
-    p = sub.add_parser("doctor", parents=[common], help="Estado del entorno: raíz, contrato, locks")
+    p = sub.add_parser("doctor", parents=[common], help="Estado del entorno: raíz, contrato, locks", allow_abbrev=False)
     p.set_defaults(func=cmd_doctor)
 
-    p = sub.add_parser("run", parents=[common], help="Ejecuta una tool con pre-vuelo de seguridad")
+    p = sub.add_parser("run", parents=[common], help="Ejecuta una tool con pre-vuelo de seguridad", allow_abbrev=False)
     p.add_argument("tool")
     p.add_argument("arg", nargs="*", help="Argumentos clave=valor (@archivo para leer)")
     p.add_argument("--timeout", type=int, default=runner.DEFAULT_TIMEOUT)
@@ -514,7 +515,7 @@ Documentación: cli/README.md (guía) y cli/COMMANDS.md (referencia).
         ("plan", cmd_plan, "Planifica un lote sin ejecutarlo"),
         ("batch", cmd_batch, "Ejecuta varias tools en paralelo con seguridad"),
     ):
-        p = sub.add_parser(name, parents=[common], help=help_text)
+        p = sub.add_parser(name, parents=[common], help=help_text, allow_abbrev=False)
         p.add_argument("--op", action="append",
                        help='Operación: "vault_audit" o "vault_write folder=X title=Y"')
         p.add_argument("--file", help="JSON con lista de operaciones ('-' = stdin)")
@@ -531,7 +532,7 @@ Documentación: cli/README.md (guía) y cli/COMMANDS.md (referencia).
                            help="Hashea el vault antes/después y compara con el plan")
         p.set_defaults(func=func)
 
-    p = sub.add_parser("scan", parents=[common], help="Antipatrones y condiciones de carrera")
+    p = sub.add_parser("scan", parents=[common], help="Antipatrones y condiciones de carrera", allow_abbrev=False)
     p.add_argument("--races", action="store_true", help="Solo condiciones de carrera")
     p.add_argument("--antipatterns", action="store_true", help="Solo antipatrones")
     p.add_argument("--tool", help="Analiza un único fragmento")

@@ -210,6 +210,7 @@ Notas:
   - El analisis es por stem de nota: todas las versiones de la misma nota
     (mismo path original) se agrupan juntas
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--keep", type=int, default=DEFAULT_KEEP,
                         help=f"Numero de versiones a mantener por nota (default: {DEFAULT_KEEP})")

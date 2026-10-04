@@ -264,6 +264,7 @@ Notas:
   - Para ciclos de vida usar --category lifecycle
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--project", type=proyecto_registrado("vault_diagram_save"), required=True, help="Project name")

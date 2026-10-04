@@ -473,6 +473,7 @@ Notas:
   - Los indices se guardan en 99_Index/keywords-index.json y 99_Index/notes-keywords.json
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument(

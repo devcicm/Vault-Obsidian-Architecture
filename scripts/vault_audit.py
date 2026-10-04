@@ -2487,6 +2487,7 @@ Notas:
   - Con --path audita una ruta externa al vault (reporta frontmatter, vacios, sin titulo)
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--project", type=proyecto_registrado("vault_audit"), help="Optional project slug to filter audit scope")

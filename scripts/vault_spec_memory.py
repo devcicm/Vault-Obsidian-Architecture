@@ -614,6 +614,7 @@ Ejemplos:
   python vault_spec_memory.py --summary           # dashboard legible por humano
   python vault_spec_memory.py --validate --summary  # validar + mostrar dashboard
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--check",    action="store_true", help="Mostrar spec-memory sin escribir")
     parser.add_argument("--validate", action="store_true", help="Correr tests y actualizar test_status")

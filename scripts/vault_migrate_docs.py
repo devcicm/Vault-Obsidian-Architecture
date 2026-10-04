@@ -667,6 +667,7 @@ Notas:
   - dry_run=true (default) solo muestra lo que se haria
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--source_path", required=True, help="Source directory")

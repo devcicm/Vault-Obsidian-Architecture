@@ -120,6 +120,7 @@ Ejemplos:
   python vault_folder_registry.py --remove "11_Code/tests"
   python vault_folder_registry.py --cleanup
         """,
+        allow_abbrev=False,
     )
 
     parser.add_argument(

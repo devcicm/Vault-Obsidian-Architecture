@@ -209,6 +209,7 @@ Notas:
   - Incrementa automaticamente el contador de ejecuciones en el frontmatter
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument(

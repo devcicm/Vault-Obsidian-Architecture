@@ -402,7 +402,7 @@ def reconstruir() -> Dict[str, Any]:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="vault_project — registro de proyectos (AP-63)")
+    ap = argparse.ArgumentParser(description="vault_project — registro de proyectos (AP-63)", allow_abbrev=False)
     accion = ap.add_mutually_exclusive_group(required=True)
     accion.add_argument("--list", action="store_true", help="Lista el registro")
     accion.add_argument("--resolve", metavar="NOMBRE", help="Resuelve un nombre a su slug")

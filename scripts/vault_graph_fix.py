@@ -1166,6 +1166,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Auto-fix broken wiki-links + bracket/path issues + wizard + stubs",
         formatter_class=argparse.RawDescriptionHelpFormatter,
+        allow_abbrev=False,
     )
     parser.add_argument("--root", help="Vault root (default: VAULT_ROOT)")
     parser.add_argument(

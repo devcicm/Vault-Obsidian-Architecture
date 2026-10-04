@@ -288,6 +288,7 @@ Ejemplos:
     --root_cause "No se aplicó el estándar de validación SP-01" \\
     --corrective_actions '["Validación con Zod","Test de regresión"]'
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--project", type=proyecto_registrado("vault_ncr_save"), required=True)
     parser.add_argument("--title", required=True)

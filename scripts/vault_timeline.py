@@ -490,6 +490,7 @@ Notas:
   - Las fuentes disponibles: sessions, changelog, decisions, errors, patterns, infra, knowledge, dependencies, runbooks
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--query", help="Topic to trace")

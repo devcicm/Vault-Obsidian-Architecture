@@ -304,6 +304,7 @@ Notas:
   - status: vocabulario de dominio (bug_state); `status` se emite canónico (AP-38)
   - --causes / --caused_by son aristas tipadas del grafo, no `related` genérico
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--project", type=proyecto_registrado("vault_bug_save"), required=True, help="Slug del proyecto")
     parser.add_argument("--title", required=True, help="Título breve del defecto")

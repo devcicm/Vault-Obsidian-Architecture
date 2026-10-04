@@ -382,7 +382,7 @@ def fix() -> Dict:
 def main() -> int:
     ap = argparse.ArgumentParser(
         description="vault_doc_sync — guard anti-drift registro ↔ scripts/README.md"
-    )
+    , allow_abbrev=False)
     ap.add_argument("--check", action="store_true", help="reporta divergencias (default)")
     ap.add_argument("--fix", action="store_true", help="regenera la tabla de índice desde GROUPS")
     ap.add_argument("--strict", action="store_true", help="exit 1 si hay divergencias")

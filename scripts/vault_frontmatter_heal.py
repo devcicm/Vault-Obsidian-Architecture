@@ -326,7 +326,7 @@ def heal(apply: bool = False) -> Dict[str, Any]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(
-        description="vault_frontmatter_heal — repara el frontmatter que no parsea (AP-56)")
+        description="vault_frontmatter_heal — repara el frontmatter que no parsea (AP-56)", allow_abbrev=False)
     ap.add_argument("--apply", action="store_true", help="escribe las reparaciones")
     ap.add_argument("--check", action="store_true", help="solo mide (por defecto)")
     ap.add_argument("--strict", action="store_true", help="exit 1 si queda algo roto")

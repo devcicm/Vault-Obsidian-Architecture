@@ -293,7 +293,7 @@ def freeze() -> Dict[str, Any]:
 
 
 def main() -> int:
-    p = argparse.ArgumentParser(description="vault_smoke — AP-42: toda tool se ejecuta al menos una vez")
+    p = argparse.ArgumentParser(description="vault_smoke — AP-42: toda tool se ejecuta al menos una vez", allow_abbrev=False)
     p.add_argument("--check", action="store_true", help="Corre el smoke sobre el catálogo")
     p.add_argument("--strict", action="store_true", help="Exit 1 si la deuda creció")
     p.add_argument("--freeze", action="store_true", help="Recongela la baseline")

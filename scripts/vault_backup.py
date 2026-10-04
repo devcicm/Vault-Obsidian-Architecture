@@ -76,6 +76,7 @@ Notas:
   - files_copied dice cuantos ficheros se copiaron; created/updated/written
     cuentan solo lo que escribio el kernel de forma atomica
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--label", help="Optional label (e.g., 'antes-de-migracion')")
     parser.add_argument(

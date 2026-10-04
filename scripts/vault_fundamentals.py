@@ -587,6 +587,7 @@ Notas:
     cobertura ISO y matriz de trazabilidad. Es la fuente unica que el manifiesto
     documenta y que vault_norms --audit verifica contra el documento (anti-drift).
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--list", action="store_true", help="List all 8 fundamentals")
     parser.add_argument(

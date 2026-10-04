@@ -281,6 +281,7 @@ Notas:
   - Con --force: sobreescribe la nota actual y escribe entrada en change-log (SP-01)
   - Solo funciona para notas que fueron editadas con vault_write (que crea el .history/)
 """,
+        allow_abbrev=False,
     )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--list", dest="list_path", metavar="PATH",

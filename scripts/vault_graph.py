@@ -346,6 +346,7 @@ Notas:
   - --typed genera graph-enriched.json con predicates semanticos de entity + code relations
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument(

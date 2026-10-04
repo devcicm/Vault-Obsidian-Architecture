@@ -5359,7 +5359,7 @@ def check_params(json_path: Optional[str] = None) -> Dict[str, Any]:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Vault MCP Catalog — sincronizar con JSON canónico")
+    parser = argparse.ArgumentParser(description="Vault MCP Catalog — sincronizar con JSON canónico", allow_abbrev=False)
     parser.add_argument("--sync", action="store_true", help="Generar tools-catalog.json desde PY")
     parser.add_argument("--check", action="store_true", help="Verificar que JSON está en sync con PY")
     parser.add_argument("--stats", action="store_true", help="Mostrar estadísticas del catálogo")

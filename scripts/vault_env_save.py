@@ -278,6 +278,7 @@ Notas:
   - Ambientes conocidos: dev, staging, production, test, ci (cualquier nombre custom tambien es valido)
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--project", type=proyecto_registrado("vault_env_save"), required=True, help="Project slug")

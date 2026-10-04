@@ -313,6 +313,7 @@ Ejemplos:
     --pii_categories '["email","name","phone"]' \\
     --retention_period "Cuenta activa + 2 años"
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--project", type=proyecto_registrado("vault_privacy_save"), required=True)
     parser.add_argument("--title", required=True)

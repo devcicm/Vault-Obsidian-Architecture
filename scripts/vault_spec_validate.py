@@ -354,6 +354,7 @@ Ejemplos:
   python vault_spec_validate.py --report            # human-readable
   python vault_spec_validate.py --strict            # falla en unspecced también
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--tool",   help="Validar solo esta tool (nombre del script sin .py)")
     parser.add_argument("--report", action="store_true", help="Salida human-readable")

@@ -641,6 +641,7 @@ Notas:
   - CIA: cia_integrity critical/high -> timeliness umbral 15d (vs 30d por defecto)
   - F8 NO_REPUDIO: requiere entrada en 00_System/.change-log.json para la nota
 """,
+        allow_abbrev=False,
     )
     parser.add_argument(
         "--path",

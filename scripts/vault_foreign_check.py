@@ -392,6 +392,7 @@ No escribe nada en el vault medido. --root no tiene valor por defecto y
 rechaza cualquier ruta dentro de este repositorio: un contraste contra el
 material que el estandar genera no contrasta nada.
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--root", help="Raíz del vault AJENO a medir (obligatorio)")
     parser.add_argument("--report", help="Escribe el informe en este fichero (fuera del vault)")

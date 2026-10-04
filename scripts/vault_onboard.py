@@ -2783,6 +2783,7 @@ Ejemplos:
   python vault_onboard.py --project my-api --path . --skip 02 05 13
   python vault_onboard.py --project my-api --path . --no-git --git-phases 6
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--project", required=True)
     parser.add_argument("--path", required=True)

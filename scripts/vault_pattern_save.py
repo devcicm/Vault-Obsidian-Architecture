@@ -358,6 +358,7 @@ Notas:
   - Las transiciones de estado se validan y se registran en el historial de evolucion
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--project", type=proyecto_registrado("vault_pattern_save"), required=True, help="Project name")

@@ -216,6 +216,7 @@ Notas:
   - Cada paso puede tener: step (requerido), command (opcional), note (opcional)
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--project", type=proyecto_registrado("vault_runbook_save"), required=True, help="Project name")

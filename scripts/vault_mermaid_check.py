@@ -181,6 +181,7 @@ Ejemplos:
   python vault_mermaid_check.py --fix
   python vault_mermaid_check.py --path "06_Diagrams/foo.md" --fix
         """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--path", type=str, help="Archivo específico a verificar")

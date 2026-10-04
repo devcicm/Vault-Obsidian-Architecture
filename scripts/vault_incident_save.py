@@ -297,6 +297,7 @@ Ejemplos:
     --timeline '[{"time":"14:30","event":"Alert fired","who":"PagerDuty"}]' \\
     --action_items '["Agregar monitoreo de índices","Revisar checklist de migraciones"]'
 """,
+        allow_abbrev=False,
     )
     parser.add_argument("--project", type=proyecto_registrado("vault_incident_save"), required=True)
     parser.add_argument("--title", required=True)

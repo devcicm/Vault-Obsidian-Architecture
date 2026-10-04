@@ -268,6 +268,7 @@ Ejemplos:
   # Hash de una nota
   python vault_diff.py --hash 07_Knowledge/a.md
 """,
+        allow_abbrev=False,
     )
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--path",    help="Ruta relativa de nota (vs .history/)")

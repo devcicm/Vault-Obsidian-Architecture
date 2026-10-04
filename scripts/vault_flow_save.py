@@ -325,6 +325,7 @@ Notas:
   - --related_code acepta rutas separadas por coma: "src/auth.py,src/user.py"
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--project", type=proyecto_registrado("vault_flow_save"), required=True, help="Project slug")

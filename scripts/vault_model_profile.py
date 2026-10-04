@@ -211,6 +211,7 @@ Ejemplos:
 El servidor MCP propaga VAULT_MODEL_PROFILE automaticamente al detectar
 el cliente (clientInfo.name en el handshake initialize).
 """,
+        allow_abbrev=False,
     )
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--list",   action="store_true", help="Lista perfiles disponibles")

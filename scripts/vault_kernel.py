@@ -522,7 +522,7 @@ def freeze(admitir_nuevos: bool = False) -> Dict[str, Any]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(
-        description="vault_kernel — el núcleo derivado y trazado (AP-59)")
+        description="vault_kernel — el núcleo derivado y trazado (AP-59)", allow_abbrev=False)
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--strict", action="store_true")
     ap.add_argument("--trace", metavar="MODULO",

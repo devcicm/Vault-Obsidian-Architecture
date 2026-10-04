@@ -508,6 +508,7 @@ Kinds (for --only):
   nested_close  AP-24 — ]]]] (dobles corchetes cerrados)
   imbalance_*   AP-24 — manual review only (not auto-fixed)
 """,
+        allow_abbrev=False,
     )
     parser.add_argument(
         "--apply", action="store_true", help="Apply safe fixes (default: dry-run)"

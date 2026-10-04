@@ -402,6 +402,7 @@ Notas:
   - Categorias disponibles: secrets, injection, command_injection, xss, auth, crypto, path_traversal, ssrf, xxe, deserialize, prototype_pollution, redos, config, dependencies
 
 """,
+        allow_abbrev=False,
     )
 
     parser.add_argument("--path", required=True, help="Path to scan")

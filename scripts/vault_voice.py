@@ -121,7 +121,7 @@ def coverage() -> Dict[str, Any]:
 def main() -> int:
     import argparse
 
-    parser = argparse.ArgumentParser(description="vault_voice — refuerzo de normas por interacción")
+    parser = argparse.ArgumentParser(description="vault_voice — refuerzo de normas por interacción", allow_abbrev=False)
     parser.add_argument("--tool", help="Normas que gobiernan una tool")
     parser.add_argument("--coverage", action="store_true", help="Normas que ninguna tool pronuncia")
     args = parser.parse_args()
