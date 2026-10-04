@@ -242,7 +242,19 @@ PUERTAS: List[Dict[str, Any]] = [
 ]
 
 
-def _correr(puerta: Dict[str, Any], timeout: float = 180.0) -> Dict[str, Any]:
+# Límite de cada puerta. El de la corrida entera se deriva de él y del registro:
+# heredar los 60 s por defecto de `wrap_main` mataba a `vault_gate --strict`
+# —el comando que AGENTS.md publica— a mitad de las puertas, que en serie
+# tardan cerca de dos minutos; solo pasaba con VAULT_TOOL_TIMEOUT exportado.
+LIMITE_POR_PUERTA = 180.0
+
+
+def limite_total() -> int:
+    """Lo que puede tardar la corrida completa sin que nadie la mate antes."""
+    return int(len(PUERTAS) * LIMITE_POR_PUERTA) + 60
+
+
+def _correr(puerta: Dict[str, Any], timeout: float = LIMITE_POR_PUERTA) -> Dict[str, Any]:
     """Ejecuta una puerta como subproceso y traduce su resultado.
 
     `encoding` y `errors` explícitos porque en Windows el default del sistema
@@ -484,4 +496,4 @@ No sustituye a la suite: `python -m pytest tests/` sigue siendo obligatorio.
 
 
 if __name__ == "__main__":
-    sys.exit(wrap_main(main, "vault_gate"))
+    sys.exit(wrap_main(main, "vault_gate", timeout=limite_total()))

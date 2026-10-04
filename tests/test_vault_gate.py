@@ -210,3 +210,24 @@ def test_sin_marcas_el_fix_no_inventa_donde_escribir(tmp_path, monkeypatch):
 
     r = vault_gate.fix_doc()
     assert r["ok"] is False and r["error_code"] == "INVALID_INPUT"
+
+
+def test_la_corrida_no_hereda_el_limite_por_defecto_de_wrap_main():
+    """`vault_gate --strict` sin VAULT_TOOL_TIMEOUT moría a los 60 s (TOOL_TIMEOUT).
+
+    El límite de la corrida tiene que cubrir todas las puertas en serie, cada una
+    con su propio límite, y el `__main__` tiene que pasárselo a `wrap_main`.
+    """
+    import vault_errors
+
+    assert vault_gate.limite_total() >= len(vault_gate.PUERTAS) * vault_gate.LIMITE_POR_PUERTA
+    assert vault_gate.limite_total() > vault_errors.TOOL_TIMEOUT_SECONDS
+
+    arbol = ast.parse((REPO_ROOT / "scripts" / "vault_gate.py").read_text(encoding="utf-8"))
+    llamadas = [n for n in ast.walk(arbol) if isinstance(n, ast.Call)
+                and getattr(n.func, "id", None) == "wrap_main"]
+    assert llamadas, "vault_gate ya no se envuelve con wrap_main"
+    for c in llamadas:
+        nombres = {k.arg: k.value for k in c.keywords}
+        assert "timeout" in nombres, "wrap_main sin timeout hereda el límite por defecto"
+        assert ast.unparse(nombres["timeout"]) == "limite_total()"
