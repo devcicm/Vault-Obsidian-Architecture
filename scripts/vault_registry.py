@@ -199,7 +199,7 @@ SECTIONS: List[Dict[str, Optional[str]]] = [
         "folder": "21_QA",
         "name": "QA",
         "description": "Gestión de calidad: planes de prueba, métricas, reportes y estrategia QA (ISO 9001, ISO 29119, ISO 25010)",
-        "tool_hint": "vault_qa_save --project <slug> --title <plan> --type test-plan",
+        "tool_hint": "vault_qa_save --project <slug> --title <plan> --type test-plan --description '...'",
     },
     {
         "folder": "99_Index",

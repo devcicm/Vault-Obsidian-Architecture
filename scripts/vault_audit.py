@@ -1434,25 +1434,25 @@ _SECTION_TOOL_HINT: Dict[str, str] = {
     "02_Observability": "vault_log_error --project <slug> --type error --title '<msg>' --description '...'",
     "03_Decisions": "vault_write --folder 03_Decisions --title 'ADR-001 <titulo>' --content '...'",
     "04_Sessions": "vault_write --folder 04_Sessions --title '$(date +%Y-%m-%d)' --content '...'",
-    "05_Patterns": "vault_pattern_save --project <slug> --name <patron> --status planificado",
+    "05_Patterns": "vault_pattern_save --project <slug> --name <patron> --type design --status planificado",
     "06_Diagrams": "vault_diagram_save --project <slug> --title <diagrama> --diagram_type mermaid --category entity --content '...'",
-    "07_Knowledge": "vault_knowledge_save --project <slug> --title <concepto> --category concept",
-    "08_Runbooks": "vault_runbook_save --project <slug> --title <runbook> --steps '...'",
-    "09_Infrastructure": "vault_infra_save --project <slug> --name <servicio> --type server",
+    "07_Knowledge": "vault_knowledge_save --project <slug> --title <concepto> --category concept --content '...'",
+    "08_Runbooks": "vault_runbook_save --project <slug> --title <runbook> --trigger '...' --category deploy --steps '[{\"step\": \"...\"}]'",
+    "09_Infrastructure": "vault_infra_save --project <slug> --name <servicio> --type server --description '...' --config '{}'",
     "10_Migrated": "vault_migrate_docs --project <slug> --source_path <path>",
     "11_Code": "vault_code_module --project <slug> --file_path <path> --description '...'",
-    "12_Bibliography": "vault_bibliography_save --title <ref> --source_type web --url '...'",
-    "13_Flows": "vault_flow_save --project <slug> --name <flow> --type workflow",
-    "14_Requirements": "vault_requirement_save --project <slug> --title 'REQ-001 ...'",
-    "15_Tests": "vault_test_save --project <slug> --title <test> --test_type unit",
-    "16_AI_Governance": "vault_ai_decision --project <slug> --title <decision> --decision_type architecture",
+    "12_Bibliography": "vault_bibliography_save --title <ref> --source_type web --url 'https://...' --summary '...'",
+    "13_Flows": "vault_flow_save --project <slug> --name <flow> --type workflow --description '...' --mermaid 'flowchart LR; A-->B'",
+    "14_Requirements": "vault_requirement_save --project <slug> --title 'REQ-001 ...' --description '...' --type functional --priority must-have",
+    "15_Tests": "vault_test_save --project <slug> --title <test> --test_type unit --description '...'",
+    "16_AI_Governance": "vault_ai_decision --project <slug> --title <decision> --decision_type architectural --description '...' --rationale '...'",
     # Sin entrada, `_suggest_command_for_folder` caía al genérico `vault_write`
     # para las cuatro secciones más nuevas: la acción sugerida saltaba la tool
     # con contrato y su guard. La sugerencia de un audit es la que el usuario
     # copia y pega, así que apuntar al camino sin gobernar es peor que no
     # sugerir nada.
-    "17_Preferences": "vault_preferences --set --title <preferencia> --statement '...' --strength should",
-    "18_Bugs": "vault_bug_save --project <slug> --title <bug> --severity high",
+    "17_Preferences": "vault_preferences --set --category workflow --title <preferencia> --statement '...' --strength should",
+    "18_Bugs": "vault_bug_save --project <slug> --title <bug> --symptom '...' --severity high",
     "19_Audits": "vault_tags --audit",
     "20_Quarantine": "vault_quarantine --list",
 }
@@ -1464,8 +1464,9 @@ def _suggest_command_for_folder(folder: str) -> str:
 
     hint = _SECTION_TOOL_HINT.get(folder) or section_tool_hint(folder)
     if hint:
-        return f"python scripts/{hint}"
-    return f"python scripts/vault_write --folder {folder} --title '<titulo>' --content '...'"
+        tool, _, args = hint.partition(" ")
+        return f"python scripts/{tool}.py {args}".rstrip()
+    return f"python scripts/vault_write.py --folder {folder} --title '<titulo>' --content '...'"
 
 
 def _detect_scaffold_only_sections(content_notes: List[Path]) -> List[str]:
