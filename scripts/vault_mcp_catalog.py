@@ -4644,6 +4644,67 @@ def posicionales_obligatorios(script: str) -> List[str]:
 _TIPO_DE_CONVERSOR = {"int": "integer", "float": "number", "json.loads": "object"}
 
 
+#: Obligatorios que argparse no conoce porque los exige la función: la CLI
+#: acepta la llamada y es el código quien la rechaza. Cada alternativa es un
+#: conjunto de params que, juntos, bastan. `test_mcp_requisitos_alternativos`
+#: ejecuta la CLI sin ninguna alternativa y comprueba que la rechaza: una
+#: entrada que la CLI no exige no puede quedarse aquí.
+REQUISITOS_EN_CODIGO: Dict[str, List[List[str]]] = {
+    "vault_write": [["title", "content"], ["scan-path"]],
+    "vault_knowledge_save": [["title", "content"], ["scan-path"]],
+}
+
+
+def grupos_obligatorios(script: str) -> List[List[List[str]]]:
+    """Grupos `add_mutually_exclusive_group(required=True)` de un script.
+
+    Hasta v40.35 el esquema no los publicaba: `vault_preferences`,
+    `vault_project`, `vault_undo`… salían sin un solo obligatorio y la llamada
+    vacía llegaba a argparse. Cada grupo es una restricción cuyas alternativas
+    son sus flags, uno a uno.
+    """
+    import ast
+
+    ruta = Path(__file__).resolve().parent / script
+    if not script or not ruta.is_file():
+        return []
+    arbol = ast.parse(ruta.read_text(encoding="utf-8"))
+    grupos: Dict[str, List[List[str]]] = {}
+    for nodo in ast.walk(arbol):
+        if (isinstance(nodo, ast.Assign) and isinstance(nodo.value, ast.Call)
+                and getattr(nodo.value.func, "attr", "") == "add_mutually_exclusive_group"
+                and any(k.arg == "required" and isinstance(k.value, ast.Constant)
+                        and k.value.value is True for k in nodo.value.keywords)):
+            for destino in nodo.targets:
+                if isinstance(destino, ast.Name):
+                    grupos[destino.id] = []
+    for nodo in ast.walk(arbol):
+        if not (isinstance(nodo, ast.Call) and getattr(nodo.func, "attr", "") == "add_argument"
+                and isinstance(nodo.func.value, ast.Name) and nodo.func.value.id in grupos):
+            continue
+        largos = [a.value for a in nodo.args
+                  if isinstance(a, ast.Constant) and isinstance(a.value, str) and a.value.startswith("--")]
+        if largos:
+            grupos[nodo.func.value.id].append([largos[0][2:]])
+    return [alternativas for alternativas in grupos.values() if alternativas]
+
+
+def alternativas_obligatorias(py_tool: Dict[str, Any]) -> List[List[List[str]]]:
+    """Restricciones «al menos una de estas alternativas» de una tool.
+
+    No van como `anyOf` dentro del `inputSchema`: la API de Claude rechaza un
+    esquema de entrada con `anyOf`/`oneOf`/`allOf` en el nivel superior, así que
+    publicarlo ahí dejaría la tool inservible para el cliente más común. Viajan
+    como `requires_one_of` junto al esquema, el servidor las hace cumplir antes
+    de lanzar el proceso, y la descripción de cada param las anuncia.
+    """
+    restricciones = grupos_obligatorios(py_tool.get("script") or "")
+    codigo = REQUISITOS_EN_CODIGO.get(py_tool.get("name", ""))
+    if codigo:
+        restricciones.append(codigo)
+    return restricciones
+
+
 def _elecciones_del_modulo(script: str, expresion: Any) -> List[str]:
     """Valores de un `choices=` que no es una lista literal (AP-44).
 
@@ -4830,6 +4891,15 @@ def _convert_to_json_schema(py_tool: Dict[str, Any]) -> Dict[str, Any]:
                         convierte = int if tipo == "integer" else float
                         prop["enum"] = [convierte(e) for e in prop["enum"]]
         schema["properties"][pname] = prop
+    for restriccion in alternativas_obligatorias(py_tool):
+        texto = " | ".join(" + ".join(alt) for alt in restriccion)
+        for alternativa in restriccion:
+            for pname in alternativa:
+                prop = schema["properties"].get(pname)
+                if prop is not None:
+                    previa = prop["description"]
+                    prop["description"] = f"{previa} " if previa else ""
+                    prop["description"] += f"(obligatorio uno de: {texto})"
     if not schema["required"]:
         del schema["required"]
     return schema
@@ -4930,6 +5000,9 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
         if acepta_modo_json(tool.get("script", "")):
             # El transporte añade `--json`: sin él la tool contesta en prosa.
             tools_json[name]["json_flag"] = True
+        alternativas = alternativas_obligatorias(tool)
+        if alternativas:
+            tools_json[name]["requires_one_of"] = alternativas
 
     catalog = {
         "tools": tools_json,
@@ -5110,6 +5183,9 @@ def check_sync(json_path: Optional[str] = None) -> Dict[str, Any]:
         if existing["tools"][name].get("inputSchema") != _convert_to_json_schema(TOOLS_CATALOG[name]):
             result["ok"] = False
             result["diffs"].append(f"{name}: inputSchema differs (regenerar con --sync)")
+        if existing["tools"][name].get("requires_one_of") != (alternativas_obligatorias(TOOLS_CATALOG[name]) or None):
+            result["ok"] = False
+            result["diffs"].append(f"{name}: requires_one_of differs (regenerar con --sync)")
 
         py_guard_count = len(TOOLS_CATALOG[name].get("guards", []))
         js_guard_count = len(existing["tools"][name].get("guards", []))

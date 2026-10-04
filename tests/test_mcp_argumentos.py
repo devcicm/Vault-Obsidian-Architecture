@@ -218,3 +218,20 @@ def test_un_enum_de_enteros_acepta_el_entero(sesion):
     dentro = _envelope(sesion.llamar("vault_risk_save", {"impact": 4}))
     assert "fuera de" not in dentro["message"], dentro
     assert "obligatorio" in dentro["message"], dentro
+
+
+def test_un_condicional_en_codigo_se_rechaza_sin_ejecutar(sesion):
+    """`vault_write {folder}` llegaba al hijo; `title + content` o `scan-path`
+    son obligatorios aunque argparse no lo sepa."""
+    env = _envelope(sesion.llamar("vault_write", {"folder": "07_Knowledge"}))
+    assert env["error_code"] == "INVALID_ARGS", env
+    assert "title + content | scan-path" in env["message"], env
+
+
+def test_un_grupo_excluyente_obligatorio_se_rechaza_sin_ejecutar(sesion):
+    env = _envelope(sesion.llamar("vault_undo", {}))
+    assert env["error_code"] == "INVALID_ARGS", env
+    assert "uno de list | restore" in env["message"], env
+    # Un booleano a false no cuenta como presente.
+    env = _envelope(sesion.llamar("vault_undo", {"list": False}))
+    assert env["error_code"] == "INVALID_ARGS", env

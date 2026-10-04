@@ -2931,19 +2931,19 @@
         "properties": {
           "file": {
             "type": "string",
-            "description": "Fichero de origen"
+            "description": "Fichero de origen (obligatorio uno de: file | text | stdin | url)"
           },
           "text": {
             "type": "string",
-            "description": "Texto literal"
+            "description": "Texto literal (obligatorio uno de: file | text | stdin | url)"
           },
           "stdin": {
             "type": "boolean",
-            "description": "Lee de stdin"
+            "description": "Lee de stdin (obligatorio uno de: file | text | stdin | url)"
           },
           "url": {
             "type": "string",
-            "description": "URL http(s); requiere allow_network"
+            "description": "URL http(s); requiere allow_network (obligatorio uno de: file | text | stdin | url)"
           },
           "section": {
             "type": "string",
@@ -3008,6 +3008,22 @@
         "vault_write",
         "vault_knowledge_save",
         "vault_context_pack"
+      ],
+      "requires_one_of": [
+        [
+          [
+            "file"
+          ],
+          [
+            "text"
+          ],
+          [
+            "stdin"
+          ],
+          [
+            "url"
+          ]
+        ]
       ]
     },
     "vault_init": {
@@ -3160,11 +3176,11 @@
           },
           "title": {
             "type": "string",
-            "description": "Título del conocimiento"
+            "description": "Título del conocimiento (obligatorio uno de: title + content | scan-path)"
           },
           "content": {
             "type": "string",
-            "description": "Contenido estructurado"
+            "description": "Contenido estructurado (obligatorio uno de: title + content | scan-path)"
           },
           "project": {
             "type": "string",
@@ -3186,7 +3202,7 @@
           },
           "scan-path": {
             "type": "string",
-            "description": ""
+            "description": "(obligatorio uno de: title + content | scan-path)"
           }
         },
         "required": [
@@ -3204,6 +3220,17 @@
       "related": [
         "vault_knowledge_get",
         "vault_search"
+      ],
+      "requires_one_of": [
+        [
+          [
+            "title",
+            "content"
+          ],
+          [
+            "scan-path"
+          ]
+        ]
       ]
     },
     "vault_list": {
@@ -3537,27 +3564,27 @@
         "properties": {
           "list": {
             "type": "boolean",
-            "description": "Lista perfiles disponibles"
+            "description": "Lista perfiles disponibles (obligatorio uno de: list | active | set | auto | budget | window)"
           },
           "active": {
             "type": "boolean",
-            "description": "Devuelve el perfil activo"
+            "description": "Devuelve el perfil activo (obligatorio uno de: list | active | set | auto | budget | window)"
           },
           "set": {
             "type": "string",
-            "description": "Activa el perfil dado (id)"
+            "description": "Activa el perfil dado (id) (obligatorio uno de: list | active | set | auto | budget | window)"
           },
           "auto": {
             "type": "string",
-            "description": "Auto-detecta desde nombre del cliente MCP"
+            "description": "Auto-detecta desde nombre del cliente MCP (obligatorio uno de: list | active | set | auto | budget | window)"
           },
           "budget": {
             "type": "boolean",
-            "description": "Solo imprime el budget (consumo interno)"
+            "description": "Solo imprime el budget (consumo interno) (obligatorio uno de: list | active | set | auto | budget | window)"
           },
           "window": {
             "type": "boolean",
-            "description": "Solo imprime context_window"
+            "description": "Solo imprime context_window (obligatorio uno de: list | active | set | auto | budget | window)"
           }
         },
         "additionalProperties": false
@@ -3572,6 +3599,28 @@
       "related": [
         "vault_context_pack",
         "vault_preferences"
+      ],
+      "requires_one_of": [
+        [
+          [
+            "list"
+          ],
+          [
+            "active"
+          ],
+          [
+            "set"
+          ],
+          [
+            "auto"
+          ],
+          [
+            "budget"
+          ],
+          [
+            "window"
+          ]
+        ]
       ]
     },
     "vault_move": {
@@ -4148,19 +4197,19 @@
         "properties": {
           "set": {
             "type": "boolean",
-            "description": "Registra o actualiza una preferencia"
+            "description": "Registra o actualiza una preferencia (obligatorio uno de: set | list | context | revoke)"
           },
           "list": {
             "type": "boolean",
-            "description": "Lista las preferencias registradas"
+            "description": "Lista las preferencias registradas (obligatorio uno de: set | list | context | revoke)"
           },
           "context": {
             "type": "boolean",
-            "description": "Bloque markdown listo para inyectar"
+            "description": "Bloque markdown listo para inyectar (obligatorio uno de: set | list | context | revoke)"
           },
           "revoke": {
             "type": "string",
-            "description": "Ruta de la preferencia a revocar"
+            "description": "Ruta de la preferencia a revocar (obligatorio uno de: set | list | context | revoke)"
           },
           "category": {
             "type": "string",
@@ -4232,6 +4281,22 @@
       "related": [
         "vault_context_pack",
         "vault_write"
+      ],
+      "requires_one_of": [
+        [
+          [
+            "set"
+          ],
+          [
+            "list"
+          ],
+          [
+            "context"
+          ],
+          [
+            "revoke"
+          ]
+        ]
       ]
     },
     "vault_privacy_save": {
@@ -4387,35 +4452,35 @@
         "properties": {
           "list": {
             "type": "boolean",
-            "description": "Lista proyectos, alias, ambigüedades e incidencias"
+            "description": "Lista proyectos, alias, ambigüedades e incidencias (obligatorio uno de: list | resolve | audit | add | link | sync-status | rebuild | heal)"
           },
           "resolve": {
             "type": "string",
-            "description": "Nombre o alias a resolver a su slug canónico"
+            "description": "Nombre o alias a resolver a su slug canónico (obligatorio uno de: list | resolve | audit | add | link | sync-status | rebuild | heal)"
           },
           "audit": {
             "type": "boolean",
-            "description": "Notas cuyo project: no resuelve y claves no canónicas (solo lectura)"
+            "description": "Notas cuyo project: no resuelve y claves no canónicas (solo lectura) (obligatorio uno de: list | resolve | audit | add | link | sync-status | rebuild | heal)"
           },
           "add": {
             "type": "string",
-            "description": "Slug a registrar, o al que sumar alias si ya existe"
+            "description": "Slug a registrar, o al que sumar alias si ya existe (obligatorio uno de: list | resolve | audit | add | link | sync-status | rebuild | heal)"
           },
           "link": {
             "type": "string",
-            "description": "Proyecto cuya ruta local se guarda (con path)"
+            "description": "Proyecto cuya ruta local se guarda (con path) (obligatorio uno de: list | resolve | audit | add | link | sync-status | rebuild | heal)"
           },
           "sync-status": {
             "type": "string",
-            "description": "Commits del repo enlazado pendientes de volcar al vault"
+            "description": "Commits del repo enlazado pendientes de volcar al vault (obligatorio uno de: list | resolve | audit | add | link | sync-status | rebuild | heal)"
           },
           "rebuild": {
             "type": "boolean",
-            "description": "Regenera 00_System/project-registry.json"
+            "description": "Regenera 00_System/project-registry.json (obligatorio uno de: list | resolve | audit | add | link | sync-status | rebuild | heal)"
           },
           "heal": {
             "type": "boolean",
-            "description": "Canoniza project: al slug registrado (dry-run salvo --apply)"
+            "description": "Canoniza project: al slug registrado (dry-run salvo --apply) (obligatorio uno de: list | resolve | audit | add | link | sync-status | rebuild | heal)"
           },
           "apply": {
             "type": "boolean",
@@ -4471,6 +4536,34 @@
       "related": [
         "vault_project_status",
         "vault_project_overview"
+      ],
+      "requires_one_of": [
+        [
+          [
+            "list"
+          ],
+          [
+            "resolve"
+          ],
+          [
+            "audit"
+          ],
+          [
+            "add"
+          ],
+          [
+            "link"
+          ],
+          [
+            "sync-status"
+          ],
+          [
+            "rebuild"
+          ],
+          [
+            "heal"
+          ]
+        ]
       ]
     },
     "vault_project_overview": {
@@ -4806,15 +4899,15 @@
         "properties": {
           "add": {
             "type": "string",
-            "description": "Ruta de la nota a retener"
+            "description": "Ruta de la nota a retener (obligatorio uno de: add | restore | list)"
           },
           "restore": {
             "type": "string",
-            "description": "Ruta en cuarentena a devolver a su origen"
+            "description": "Ruta en cuarentena a devolver a su origen (obligatorio uno de: add | restore | list)"
           },
           "list": {
             "type": "boolean",
-            "description": "Lista lo retenido y sin restaurar"
+            "description": "Lista lo retenido y sin restaurar (obligatorio uno de: add | restore | list)"
           },
           "reason": {
             "type": "string",
@@ -4853,6 +4946,19 @@
         "vault_merge",
         "vault_security_scan",
         "vault_move"
+      ],
+      "requires_one_of": [
+        [
+          [
+            "add"
+          ],
+          [
+            "restore"
+          ],
+          [
+            "list"
+          ]
+        ]
       ]
     },
     "vault_query_parse": {
@@ -6453,11 +6559,11 @@
         "properties": {
           "list": {
             "type": "string",
-            "description": "Listar versiones disponibles para esta nota"
+            "description": "Listar versiones disponibles para esta nota (obligatorio uno de: list | restore)"
           },
           "restore": {
             "type": "string",
-            "description": "Restaurar version desde .history/"
+            "description": "Restaurar version desde .history/ (obligatorio uno de: list | restore)"
           },
           "version": {
             "type": "string",
@@ -6490,6 +6596,16 @@
         "vault_write",
         "vault_diff",
         "vault_history_compact"
+      ],
+      "requires_one_of": [
+        [
+          [
+            "list"
+          ],
+          [
+            "restore"
+          ]
+        ]
       ]
     },
     "vault_validate": {
@@ -6578,11 +6694,11 @@
           },
           "title": {
             "type": "string",
-            "description": "Título de la nota"
+            "description": "Título de la nota (obligatorio uno de: title + content | scan-path)"
           },
           "content": {
             "type": "string",
-            "description": "Contenido Markdown (solo por CLI: @file:ruta lee de un archivo)"
+            "description": "Contenido Markdown (solo por CLI: @file:ruta lee de un archivo) (obligatorio uno de: title + content | scan-path)"
           },
           "tags": {
             "type": "array",
@@ -6601,7 +6717,7 @@
           },
           "scan-path": {
             "type": "string",
-            "description": "Directory to scan for .md files and write each one to --folder"
+            "description": "Directory to scan for .md files and write each one to --folder (obligatorio uno de: title + content | scan-path)"
           }
         },
         "required": [
@@ -6626,6 +6742,17 @@
         "vault_read",
         "vault_append",
         "vault_audit"
+      ],
+      "requires_one_of": [
+        [
+          [
+            "title",
+            "content"
+          ],
+          [
+            "scan-path"
+          ]
+        ]
       ]
     }
   },

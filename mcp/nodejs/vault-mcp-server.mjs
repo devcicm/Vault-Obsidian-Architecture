@@ -1080,8 +1080,24 @@ function comprobarLlamada(name, args) {
   if (!tool || tool.exposed_via_mcp === false) {
     return { code: "tool_not_found", message: `Tool '${name}' not found.` };
   }
-  const error = validarArgumentos(tool.inputSchema || { properties: {} }, args);
+  const error = validarArgumentos(tool.inputSchema || { properties: {} }, args)
+    || validarAlternativas(tool.requires_one_of || [], args);
   return error ? { code: "INVALID_ARGS", message: `${name}: ${error}` } : null;
+}
+
+// «Al menos una de estas alternativas» (grupos excluyentes obligatorios de
+// argparse, y lo que la función exige sin que argparse lo sepa). No viaja como
+// `anyOf` en el esquema porque la API de Claude lo rechaza en el nivel
+// superior; viaja junto a él y se hace cumplir aquí, antes del proceso hijo.
+function validarAlternativas(restricciones, args) {
+  const presente = (v) => v !== undefined && v !== null && v !== false && v !== "false";
+  for (const alternativas of restricciones) {
+    if (!alternativas.some((alt) => alt.every((k) => presente(args[k])))) {
+      const texto = alternativas.map((alt) => alt.join(" + ")).join(" | ");
+      return `falta el parámetro obligatorio: uno de ${texto}`;
+    }
+  }
+  return null;
 }
 
 function esNumero(valor, tipo) {
