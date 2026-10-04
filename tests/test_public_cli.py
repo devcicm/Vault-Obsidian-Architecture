@@ -251,3 +251,17 @@ def test_python_m_vault_es_la_misma_cli():
     )
     assert proceso.returncode == 0, proceso.stderr
     assert json.loads(proceso.stdout)["name"] == "vault_query_parse"
+
+
+def test_python_m_product_cli_ejecuta_la_cli():
+    """AP-37: `python -m vault.product_cli` salía con rc=0 sin hacer nada."""
+    import subprocess
+    import sys
+
+    raiz = Path(__file__).resolve().parents[1]
+    proc = subprocess.run(
+        [sys.executable, "-m", "vault.product_cli", "--version"],
+        capture_output=True, text=True, encoding="utf-8", cwd=str(raiz), timeout=60,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.strip(), "python -m vault.product_cli no hizo nada"

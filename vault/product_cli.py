@@ -420,3 +420,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             _PREVIO["project"] = arg.split("=", 1)[1]
     args = build_parser().parse_args(argv)
     return int(args.func(args))
+
+
+# `python -m vault.product_cli` terminaba con rc=0 sin hacer nada: el módulo
+# solo definía `main`. Un éxito sin trabajo es AP-37; `python -m vault` sigue
+# siendo la forma documentada.
+if __name__ == "__main__":
+    sys.exit(main())
