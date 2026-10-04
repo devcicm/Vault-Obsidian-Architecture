@@ -137,7 +137,7 @@ def extract_keywords_nltk(content: str) -> list:
 
     content = re.sub(r"```[\s\S]*?```", "", content)
 
-    content = re.sub(r"\[\[([^\]]+)\]\]", r"\1", content)
+    content = re.sub(r"\[\[((?:[^\[\]]|\[(?!\[))+)\]\]", r"\1", content)
 
     content = re.sub(r"[^\w\s]", " ", content.lower())
 

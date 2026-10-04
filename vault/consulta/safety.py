@@ -134,7 +134,7 @@ def scan_content(text: str, field_name: str = "content") -> List[Finding]:
 
     path_links = sorted({
         m.group(1)
-        for m in re.finditer(r"\[\[([^\]|\n]*/[^\]|\n]*)(\|[^\]\n]*)?\]\]",
+        for m in re.finditer(r"\[\[((?:[^\[\]|\n]|\[(?!\[))*/(?:[^\[\]|\n]|\[(?!\[))*)(\|[^\]\n]*)?\]\]",
                              strip_code_blocks(text))
     })
     if path_links:

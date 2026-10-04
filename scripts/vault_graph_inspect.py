@@ -71,7 +71,7 @@ _TITLE_RE = re.compile(r"^title:\s*(.+)$", re.MULTILINE)
 _TAG_RE = re.compile(r"^tags:\s*(.+)$", re.MULTILINE)
 _FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n?", re.DOTALL)
 
-_WIKILINK_RAW_RE = re.compile(r"\[\[([^\]]*)\]\]")
+_WIKILINK_RAW_RE = re.compile(r"\[\[((?:[^\[\]]|\[(?!\[))*)\]\]")
 
 
 def _is_migrated(rel_path: str) -> bool:

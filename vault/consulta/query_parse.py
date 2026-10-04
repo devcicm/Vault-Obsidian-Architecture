@@ -236,7 +236,7 @@ def vault_query_parse(
         evidence.append({"field": "tags", "value": tag, "why": "prefijo #"})
 
     # Rutas y wikilinks explícitos son semillas de grafo, no términos de búsqueda.
-    seeds = re.findall(r"\[\[([^\]]+)\]\]", query)
+    seeds = re.findall(r"\[\[((?:[^\[\]]|\[(?!\[))+)\]\]", query)
     # `\\` además de `/`: la consulta la escribe una persona, y en Windows —donde
     # se desarrolla este estándar— copiar una ruta del explorador da
     # `07_Knowledge\nota.md`. El patrón viejo solo veía `/`, así que esa semilla

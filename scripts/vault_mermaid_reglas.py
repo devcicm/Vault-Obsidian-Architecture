@@ -337,7 +337,7 @@ def validate_gantt(diagram: str) -> List[Dict[str, Any]]:
             has_title = True
         if line.startswith("section "):
             has_sections = True
-        if re.match(r"^\w+.*:\s*\w+", line):
+        if re.match(r"^\w.*?:\s*\w", line):
             has_tasks = True
 
     return errors

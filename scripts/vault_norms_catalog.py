@@ -3792,7 +3792,7 @@ def normalize_status(raw):
     # primero si hay delimitador cuesta una pasada lineal y evita el caso malo
     # entero, que es además el único que un valor hostil puede provocar.
     if any(c in original for c in "([—-"):
-        m = re.match(r"^(.*?)\s*[\(\[—-]\s*(.+?)[\)\]]?$", original)
+        m = re.match(r"^([^\(\[—-]*?)(?<!\s)\s*[\(\[—-]\s*(.+?)[\)\]]?$", original)
     else:
         m = None
     base = original

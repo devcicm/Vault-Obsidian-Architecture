@@ -224,7 +224,7 @@ def vault_norms_scan(path: str) -> Dict[str, Any]:
     # Wiki-link checks
     clean = re.sub(r"```[\s\S]*?```", "", body)
     clean = re.sub(r"`[^`]+`", "", clean)
-    wiki_links = re.findall(r"\[\[([^\]]+)\]\]", clean)
+    wiki_links = re.findall(r"\[\[((?:[^\[\]]|\[(?!\[))+)\]\]", clean)
 
     if wiki_links:
         # AP-21: path-anchored — el `/` cuenta solo en el destino, no en el

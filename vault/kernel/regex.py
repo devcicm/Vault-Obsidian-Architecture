@@ -101,7 +101,7 @@ RE_EMPTY_LINK = re.compile(r"\[\[\s*\]\]")
 RE_EMPTY_WITH_SPACES = re.compile(r"\[\[\s+\]\]")
 
 # Path-anchored (AP-21) — solo el segmento target (antes de `|`); un "/" en el alias es válido
-RE_PATH_ANCHORED = re.compile(r"\[\[/|\[\[[^\]|]*\/")
+RE_PATH_ANCHORED = re.compile(r"\[\[/|\[\[(?:[^\[\]|]|\[(?!\[))*\/")
 
 # Contenido inválido en wiki-links
 RE_INVALID_LINK_CHARS = re.compile(r"[\x00-\x1f<>\"\\|]")
@@ -477,7 +477,7 @@ def fix_whitespace_in_links(text: str) -> str:
     # Limpiar whitespace excesivo en links no-vacíos
     # [[  nota  ]] -> [[nota]]
     result = re.sub(r"\[\[\s+", "[[", result)
-    result = re.sub(r"\s+\]\]", "]]", result)
+    result = re.sub(r"(?<!\s)\s+\]\]", "]]", result)
 
     # Colapsar múltiples espacios dentro del link. El interior excluye también
     # `[`: con `[^\]]+` una tirada de `[[` sin cierre se recorría hasta el final

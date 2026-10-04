@@ -246,7 +246,7 @@ def _extract_wiki_links(
 
     links = []
 
-    for m in re.finditer(r"\[\[([^\]]+)\]\]", content_clean):
+    for m in re.finditer(r"\[\[((?:[^\[\]]|\[(?!\[))+)\]\]", content_clean):
         link = m.group(1).strip()
 
         if "|" in link:

@@ -292,7 +292,7 @@ def _apply_fixes(content: str, kinds: Optional[List[str]] = None) -> str:
         # Remove `[[]]` and `[[ ]]` along with one adjacent space if present.
         # Run twice to handle cases where multiple empties are adjacent.
         for _ in range(3):
-            new2 = re.sub(r"\s*\[\[\s*\]\]\s*", " ", new)
+            new2 = re.sub(r"(?:(?<!\s)\s+)?\[\[\s*\]\]\s*", " ", new)
             new2 = re.sub(r" +", " ", new2)  # collapse double spaces
             if new2 == new:
                 break

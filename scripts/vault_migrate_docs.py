@@ -116,9 +116,9 @@ def _staging_dir() -> Path:
 
 
 def convert_links(content: str) -> str:
-    content = re.sub(r"\[([^\]]+)\]\(([^)]+\.md)\)", r"[[\2|\1]]", content)
+    content = re.sub(r"\[([^\[\]]+)\]\(([^)]+\.md)\)", r"[[\2|\1]]", content)
 
-    content = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", r"![[\2]]", content)
+    content = re.sub(r"!\[([^\[\]]*)\]\(([^)]+)\)", r"![[\2]]", content)
 
     return content
 

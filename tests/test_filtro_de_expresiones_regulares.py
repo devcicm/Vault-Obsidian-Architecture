@@ -54,21 +54,37 @@ _METODOS_RE = {
 #: patrón lineal los resuelve en microsegundos, así que 50 ms ya es un factor
 #: enorme. No se afina más: medir tiempos en CI es ruidoso y lo que se busca
 #: aquí es la diferencia entre lineal y cuadrático, no una regresión de un 20%.
+#:
+#: superseded_by v40.35 — con 2.000 caracteres la diferencia no se veía: trece
+#: regex cuadráticas tardaban de 3 a 17 ms y solo cruzaban el umbral con la
+#: máquina cargada, así que el guard salía verde o rojo según la carga y cada
+#: rojo parecía ruido. Los cebos son ahora de `_LARGO` caracteres: un patrón
+#: cuadrático tarda cientos de milisegundos y uno lineal, uno o dos. El umbral
+#: no se toca; lo que crece es la distancia entre las dos clases.
 _UMBRAL_MS = 50.0
+_LARGO = 20_000
 
 #: Entradas hostiles: tiradas del mismo carácter, que es lo que dispara el
 #: retroceso cuando un cuantificador goloso puede empezar en cada posición.
+#:
+#: Hueco declarado: tiradas **alternas** sin cierre (`[a[a[a…`, `(a(a…`). Con
+#: ellas `vault_mermaid_reglas._NODE_SHAPES` sigue siendo cuadrática —137 ms
+#: con 8.000 caracteres en una sola línea de un bloque mermaid—. La forma
+#: lineal evidente (que la etiqueta excluya su apertura) se probó y cambia 13
+#: líneas reales de /ans: etiquetas entrecomilladas con corchetes dentro, que
+#: hoy se leen bien. Cerrarlo exige tratar las comillas en la etiqueta, no un
+#: cebo nuevo; mientras tanto el cebo no está, y este párrafo dice por qué.
 _CEBOS = [
-    " " * 2000,
-    "\t" * 2000,
-    "a" * 2000,
-    "[" * 2000,
-    "]" * 2000,
-    "[[" * 1000,
-    "-" * 2000,
-    "#" * 2000,
-    "*" * 2000,
-    "x " * 1000,
+    " " * _LARGO,
+    "\t" * _LARGO,
+    "a" * _LARGO,
+    "[" * _LARGO,
+    "]" * _LARGO,
+    "[[" * (_LARGO // 2),
+    "-" * _LARGO,
+    "#" * _LARGO,
+    "*" * _LARGO,
+    "x " * (_LARGO // 2),
 ]
 
 
@@ -156,7 +172,7 @@ def test_ninguna_regex_casa_la_cadena_vacia():
 
 
 def test_ninguna_regex_escala_peor_que_lineal():
-    """La propiedad cara: entrada hostil de 2.000 caracteres, en milisegundos.
+    """La propiedad cara: entrada hostil de `_LARGO` caracteres, en milisegundos.
 
     Las dos que fallaban llegaban desde material ajeno vía `vault_ingest`: una
     línea de espacios en el detector de marcadores pendientes y una tirada de
@@ -179,7 +195,7 @@ def test_ninguna_regex_escala_peor_que_lineal():
         if peor > _UMBRAL_MS:
             lentas.append(f"{ubicacion}: {peor:.0f} ms — {patron[:50]!r}")
     assert not lentas, (
-        f"regex que tardan más de {_UMBRAL_MS:.0f} ms con 2.000 caracteres "
+        f"regex que tardan más de {_UMBRAL_MS:.0f} ms con {_LARGO} caracteres "
         "hostiles; a escala de una nota real eso es un cuelgue:\n  "
         + "\n  ".join(lentas))
 
