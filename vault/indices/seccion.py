@@ -22,12 +22,61 @@ import re
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional
 
+from ..kernel.contenido import cuerpo_sin_marcadores
+from ..kernel.frontmatter_parsing import separar_frontmatter
+from ..kernel.regex import RE_WIKILINK_CON_ALIAS, strip_code_blocks
 from .enumeracion import notas_en_disco
 
 # Alias-wikilink dentro de celda de tabla — formato prohibido en índices:
 # combina identidad y título en una celda, confunde a agentes (crean notas en
 # blanco a partir del alias) y dispara falsos positivos de sintaxis.
 RE_ALIAS_EN_TABLA = re.compile(r"^\|\s*\[\[[^\]|]+\|[^\]]+\]\]", re.MULTILINE)
+
+#: Caracteres del resumen en la tabla del índice: lo bastante para decidir si
+#: se abre la nota, no tanto como para que la tabla deje de leerse.
+LIMITE_DE_RESUMEN = 120
+
+_MARCA_DE_LINEA = re.compile(r"^\s*(?:>\s*|[-*+]\s+|\d+[.)]\s+)+")
+
+
+def resumen_de_nota(meta: Dict[str, Any], cuerpo: str, limite: int = LIMITE_DE_RESUMEN) -> str:
+    """Una línea que dice de qué va la nota, apta para una celda de tabla.
+
+    Medido el 2026-10-04 en la QA de producto: el índice de una sección
+    listaba nota, título, tipo y fecha. Para saber de qué iba cada una había
+    que abrirlas todas, que es justo lo que un índice existe para evitar.
+
+    Primero lo que la nota declara (`summary`, luego `description`); si no
+    declara nada, la primera afirmación del cuerpo. Qué es afirmación y qué es
+    andamiaje —encabezados, tablas, marcadores de pendiente— lo decide
+    `cuerpo_sin_marcadores`, y qué es código `strip_code_blocks`: este
+    módulo no reescribe ninguno de los dos criterios (AP-57). Los wikilinks
+    quedan en su texto visible —un resumen no añade aristas al grafo— y el
+    `|` se escapa para no partir la celda.
+    """
+    texto = ""
+    for clave in ("summary", "description"):
+        valor = meta.get(clave)
+        if isinstance(valor, str) and valor.strip():
+            texto = valor
+            break
+    if not texto:
+        # Una línea de un bloque de código desaparece al quitar los bloques;
+        # la de prosa sobrevive, con su código en línea quitado. Se compara
+        # así para conservar el código en línea en el resumen.
+        fuera_de_bloques = {
+            ln.strip() for ln in strip_code_blocks(cuerpo).splitlines() if ln.strip()}
+        for linea in cuerpo_sin_marcadores(cuerpo).splitlines():
+            if strip_code_blocks(linea).strip() in fuera_de_bloques:
+                texto = linea
+                break
+    texto = RE_WIKILINK_CON_ALIAS.sub(lambda m: m.group(2) or m.group(1), texto)
+    texto = " ".join(_MARCA_DE_LINEA.sub("", texto).split())
+    # Un `[[` o `]]` suelto que no formaba enlace abriría uno roto en la celda.
+    texto = texto.replace("[[", "").replace("]]", "")
+    if len(texto) > limite:
+        texto = texto[: limite - 1].rstrip() + "…"
+    return texto.replace("|", "\\|")
 
 
 def recolectar_notas(
@@ -71,12 +120,14 @@ def recolectar_notas(
         except (UnicodeDecodeError, PermissionError):
             continue
         meta = leer_frontmatter(contenido)
+        _, cuerpo = separar_frontmatter(contenido)
         rel = str(ruta.relative_to(ruta_seccion)).replace("\\", "/")
         notas.append(
             {
                 "title": meta.get("title") or ruta.stem,
                 "path": rel,
                 "type": meta.get("type") or "",
+                "summary": resumen_de_nota(meta, cuerpo),
                 "updatedAt": meta.get("updatedAt") or meta.get("createdAt") or "",
             }
         )
@@ -191,8 +242,8 @@ class RenderizadorDeIndice:
             lineas += [
                 "## Notas" if subcarpetas else "",
                 "",
-                "| Nota | Título | Tipo | Actualizado |",
-                "|---|---|---|---|",
+                "| Nota | Título | Resumen | Tipo | Actualizado |",
+                "|---|---|---|---|---|",
             ]
             for n in notas:
                 ruta = n["path"].replace("\\", "/")
@@ -214,8 +265,11 @@ class RenderizadorDeIndice:
                 titulo = (
                     str(n["title"]).replace("|", "\\|").replace("[", "").replace("]", "")
                 )
+                # Quien recolecta sin pasar por `recolectar_notas` no trae
+                # resumen: la celda queda vacía, no falla.
                 lineas.append(
-                    f"| [[{stem}]] | {titulo} | {n['type']} | {n['updatedAt']} |"
+                    f"| [[{stem}]] | {titulo} | {n.get('summary', '')} "
+                    f"| {n['type']} | {n['updatedAt']} |"
                 )
         else:
             # Sección vacía — stub mínimo, SIN bloque bash embebido. Los comandos
