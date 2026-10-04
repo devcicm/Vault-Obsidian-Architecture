@@ -21,6 +21,7 @@ if str(SCRIPTS) not in sys.path:
 
 import vault_io  # noqa: E402
 from vault.autoria.frontmatter import firmante  # noqa: E402
+from vault_norms_catalog import STATUS_VOCAB  # noqa: E402
 
 CAMPOS = ("agent", "type", "status", "tags", "updatedAt")
 
@@ -72,6 +73,8 @@ def test_la_tool_tipada_firma_con_vault_agent_y_completa_la_nota(vault, tool):
     assert faltan == [], (tool, faltan, fm)
     assert fm["agent"] == "probe", fm
     assert isinstance(fm["tags"], list), fm["tags"]
+    # CN-03: `runbook_save` escribía `status: active`, fuera del vocabulario.
+    assert fm["status"] in STATUS_VOCAB, fm["status"]
 
 
 def test_el_overview_firma_con_vault_agent(vault):

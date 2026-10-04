@@ -32,6 +32,7 @@ from vault_errors import emit_error, wrap_main, proyecto_registrado
 from vault_lib import yaml_scalar, utcnow, slugify
 from vault_io import atomic_write_text, assert_within_vault, safe_wikilink, write_report
 from vault_registry import section_default_type
+from vault_norms_catalog import status_frontmatter_lines
 import uuid
 
 from pathlib import Path
@@ -125,7 +126,7 @@ def vault_runbook_save(
 
     frontmatter.set("trigger", trigger)
 
-    frontmatter.set("status", "active")
+    frontmatter.lineas(status_frontmatter_lines("vault_runbook_save", "active"))
 
     frontmatter.set("executions", 0)
 

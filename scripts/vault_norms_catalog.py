@@ -3722,6 +3722,14 @@ DOMAIN_STATUS_VOCABS = {
         "decommissioned": "archived",
         "offline": "archived",
     }),
+    # `vault_runbook_save` escribía `status: active` a pelo desde su creación:
+    # fuera de STATUS_VOCAB, solo aceptado como sinónimo de `in-progress`, que
+    # además no es lo que un runbook listo para ejecutarse está. Mismo caso que
+    # privacy y preferences: el valor de dominio se conserva, el canónico va en
+    # `status` (CN-03, v40.35).
+    "vault_runbook_save": ("runbook_state", {
+        "active": "implemented",
+    }),
     "vault_project_status": ("project_state", {
         "en_desarrollo": "in-progress",
         "en_revision": "reviewed",
