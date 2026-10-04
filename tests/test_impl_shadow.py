@@ -77,3 +77,26 @@ def test_impl_preferred_over_fake_cwd_vault_io(tmp_path_factory):
         f"esperado 'from_implNO_FAUX', obtenido {output!r}. "
         f"El modulo se cargo desde CWD en vez de _impl/"
     )
+
+
+def test_sin_impl_ni_legacy_no_cae_al_import_desnudo(tmp_path, monkeypatch):
+    """El caso negativo: ni `_impl` ni `legacy_scripts` lo tienen → ImportError.
+
+    Un módulo del mismo nombre en `sys.path` (el CWD, por ejemplo) no puede
+    colarse como respaldo: eso es justo la sombra que el loader existe para
+    evitar. Con `legacy_scripts` señalando a un directorio sin el módulo, igual.
+    """
+    import pytest
+
+    from vault_toolkit.loading import import_toolkit_module
+
+    nombre = "vault_sombra_sin_dueno_b6"
+    (tmp_path / f"{nombre}.py").write_text("SOMBRA = True\n", encoding="utf-8")
+    monkeypatch.syspath_prepend(str(tmp_path))
+    vacio = tmp_path / "legacy_vacio"
+    vacio.mkdir()
+
+    for legacy in (None, vacio):
+        with pytest.raises(ImportError, match="no encontrado en _impl"):
+            import_toolkit_module(nombre, legacy_scripts=legacy)
+    assert nombre not in sys.modules
