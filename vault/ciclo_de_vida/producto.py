@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from importlib import resources
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from ..kernel.frontmatter_escritura import Frontmatter
 
@@ -72,7 +72,7 @@ def _version_data(seed: RuntimeSeed) -> dict[str, Any]:
     }
 
 
-def _write_seed(root: Path, seed: RuntimeSeed) -> None:
+def _write_seed(root: Path, seed: RuntimeSeed, con_hub: bool = True) -> None:
     for section in seed.sections:
         (root / section).mkdir(parents=True, exist_ok=False)
     _version_path(root).write_text(
@@ -80,6 +80,17 @@ def _write_seed(root: Path, seed: RuntimeSeed) -> None:
         encoding="utf-8",
         newline="\n",
     )
+    if con_hub:
+        _write_hub_minimo(root)
+
+
+def _write_hub_minimo(root: Path) -> None:
+    """El hub de respaldo: sin bootstrap, o cuando el bootstrap falló.
+
+    Hasta v40.35 era el único hub que el `vault init` instalado escribía, y
+    como `vault_section_index` solo crea el hub si falta, el completo —el que
+    enlaza las secciones y la nota de comandos— no llegaba a existir nunca.
+    """
     # 2026-10-01: el hub nacía sin frontmatter y `vault_validate` —la misma
     # wheel— lo daba por inválido: ningún vault recién creado validaba limpio.
     # Lleva los campos que exige el validador; `vault_section_index` ya no lo
@@ -119,7 +130,14 @@ def _initialized(root: Path, seed: RuntimeSeed) -> bool:
     return root.is_dir() and all(path.exists() for path in _required_paths(root, seed))
 
 
-def inicializar_runtime(target: str | Path) -> dict[str, Any]:
+#: Puebla un runtime recién creado (índices, hub, nota de comandos, primers).
+#: Lo inyecta quien sabe ejecutar las tools —la CLI—: este módulo no las conoce.
+Bootstrap = Callable[[Path], dict]
+
+
+def inicializar_runtime(
+    target: str | Path, bootstrap: Bootstrap | None = None
+) -> dict[str, Any]:
     """Crea un runtime nuevo de manera staging→rename y sin sobrescribir datos.
 
     Un directorio ya válido es idempotente. Cualquier directorio no vacío que
@@ -148,20 +166,32 @@ def inicializar_runtime(target: str | Path) -> dict[str, Any]:
 
     staging = Path(tempfile.mkdtemp(prefix=f".{root.name}.init-", dir=parent))
     try:
-        _write_seed(staging, seed)
+        _write_seed(staging, seed, con_hub=bootstrap is None)
         if root.exists():
             root.rmdir()
         os.replace(staging, root)
     except Exception as exc:
         shutil.rmtree(staging, ignore_errors=True)
         return {"ok": False, "state": FAILED, "detail": f"no se pudo inicializar: {exc}"}
-    return {
+    result = {
         "ok": True,
         "state": CREATED,
         "runtime": str(root),
         "standard_version": seed.standard_version,
         "sections": list(seed.sections),
     }
+    if bootstrap is not None:
+        # Sobre la ruta final y no en staging: las tools registran la raíz
+        # absoluta en sus trazas, y en staging quedaría la de un directorio
+        # que ya no existe.
+        try:
+            poblado = bootstrap(root)
+        except Exception as exc:  # el runtime ya existe: se informa, no se pierde
+            poblado = {"ok": False, "detail": f"{type(exc).__name__}: {exc}"}
+        if not (root / "00_System" / "vault-hub.md").is_file():
+            _write_hub_minimo(root)
+        result["bootstrap"] = poblado
+    return result
 
 
 def _compatibility(version: str, seed: RuntimeSeed) -> str:

@@ -281,8 +281,31 @@ def _lifecycle_result(result: dict[str, Any]) -> int:
     return _error(state, detail, code)
 
 
+def _poblar_con_vault_init(root: Path) -> dict[str, Any]:
+    """Ejecuta el `vault_init` instalado sobre el runtime recién creado.
+
+    Es lo mismo que haría `vault run vault_init` con `VAULT_ROOT` apuntando al
+    runtime: índices de sección, hub con enlaces, nota de comandos y primers.
+    Su salida JSON se recoge y no se reemite: el envelope de `vault init` es uno.
+    """
+    resolucion = resolver_producto("vault_init")
+    if resolucion.estado != INSTALLED or resolucion.module is None:
+        return {"ok": False, "detail": resolucion.detail or resolucion.estado}
+    env = dict(os.environ, VAULT_ROOT=str(root), VAULT_STRICT_ROOT="1")
+    proceso = subprocess.run(
+        [sys.executable, "-m", resolucion.module, "--no-audit"],
+        env=env, capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if proceso.returncode != 0:
+        return {"ok": False, "detail": (proceso.stderr or proceso.stdout)[-500:],
+                "hint": f"Reintentar con VAULT_ROOT={root} vault run vault_init"}
+    return {"ok": True, "tool": "vault_init"}
+
+
 def cmd_init(args: argparse.Namespace) -> int:
-    return _lifecycle_result(inicializar_runtime(args.runtime))
+    return _lifecycle_result(
+        inicializar_runtime(args.runtime, bootstrap=_poblar_con_vault_init)
+    )
 
 
 def cmd_doctor(args: argparse.Namespace) -> int:
