@@ -67,9 +67,19 @@ def test_una_descubierta_con_motivo_no_rompe_la_puerta():
 
     Es la misma asimetría que el repo ya decidió en v40.16 para las coberturas
     de norma: `cobertura_descubierta` con motivo escrito no cuenta como deuda.
+
+    Se mide con Beta publicado: con Estable, una descubierta sí rompe la puerta
+    a través de `madurez_declarada`, y eso lo fija
+    `test_estable_con_descubiertas_rompe_la_puerta`.
     """
     original = list(vp.PREGUNTAS)
     try:
+        # Beta siempre es coherente (`_madurez_coherente`), así que la fila de
+        # madurez se ejerce como lo haría con Beta en pyproject.toml.
+        vp.PREGUNTAS[:] = [
+            dict(p, ejerce=lambda: True) if p["id"] == "madurez_declarada" else p
+            for p in original
+        ]
         vp.PREGUNTAS.append({
             "id": "_fixture_honesta", "pregunta": "¿?", "promesa": "—",
             "por_que": "—", "quien": "—",
@@ -182,11 +192,14 @@ def test_el_dueno_es_una_hoja():
             )
 
 
-def test_el_classifier_publicado_es_beta():
-    """Decisión de v40.34: Beta hasta que la Fase 6 cierre las descubiertas."""
+def test_el_classifier_publicado_es_estable_y_lo_sostiene_el_registro():
+    """v40.34 publicó Beta hasta que la Fase 6 cerrase las descubiertas; cerradas
+    (2026-10-04), se publica Estable. Si una fila vuelve a quedar descubierta,
+    este test cae junto con la puerta: la etiqueta no puede ir por delante."""
     proj = (RAIZ / "pyproject.toml").read_text(encoding="utf-8")
-    assert vp.CLASSIFIER_BETA in proj
-    assert vp.CLASSIFIER_ESTABLE not in proj
+    assert vp.CLASSIFIER_ESTABLE in proj
+    assert vp.CLASSIFIER_BETA not in proj
+    assert vp._madurez_coherente()
 
 
 def _con_classifier(tmp_path, monkeypatch, classifier):

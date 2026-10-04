@@ -468,7 +468,8 @@ PREGUNTAS: List[Dict[str, Any]] = [
             "Hasta v40.34 decía 5 - Production/Stable mientras tres filas de "
             "esta misma tabla seguían descubiertas: la etiqueta prometía lo "
             "que el registro negaba. Subirlo a 5 no es una decisión de "
-            "redacción; se gana cerrando las descubiertas."
+            "redacción; se gana cerrando las descubiertas. Se ganó tras la "
+            "validación de la Fase 6 (2026-10-04), con cero descubiertas."
         ),
         "ejerce": _madurez_coherente,
         "quien": "vault_produccion._madurez_coherente + tests/test_produccion.py",
