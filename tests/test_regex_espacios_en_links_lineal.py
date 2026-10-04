@@ -1,4 +1,4 @@
-"""`fix_whitespace_in_links` resuelve en tiempo lineal una tirada de `[[` sin cierre.
+r"""`fix_whitespace_in_links` resuelve en tiempo lineal una tirada de `[[` sin cierre.
 
 El barrido de `test_filtro_de_expresiones_regulares` cayó en rojo el
 2026-10-03 con `vault/kernel/regex.py`: `\[\[([^\]]+)\]\]` tardaba 107 ms
