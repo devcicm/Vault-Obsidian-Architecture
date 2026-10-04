@@ -5364,7 +5364,7 @@ def main():
     parser.add_argument("--check", action="store_true", help="Verificar que JSON está en sync con PY")
     parser.add_argument("--stats", action="store_true", help="Mostrar estadísticas del catálogo")
     parser.add_argument("--output", type=str, default=None, help="Ruta de salida para --sync")
-    parser.add_argument("--json", type=str, default=None, help="Ruta del JSON para --check")
+    parser.add_argument("--json", type=str, default=None, help="Ruta del JSON para --check y --check-params")
     parser.add_argument("--check-contracts", action="store_true",
                         # Sin flechas Unicode: el help se imprime en la consola
                         # de Windows (cp1252) y un '↔' aquí rompe `--help`.
@@ -5376,7 +5376,10 @@ def main():
     args = parser.parse_args()
 
     if args.check_params:
-        result = check_params()
+        # `--json` es la ruta del catálogo a medir. Hasta v40.34 no se pasaba:
+        # `--check-params --json otro.json` medía en silencio el del repo y
+        # salía verde aunque el catálogo señalado estuviera roto (AP-44).
+        result = check_params(args.json)
         print(json.dumps(result, ensure_ascii=False, indent=2))
         sys.exit(0 if result["ok"] else 1)
 

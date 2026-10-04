@@ -133,6 +133,35 @@ def test_check_params_reporta_el_json_ausente(tmp_path):
     assert not r["ok"]
 
 
+def test_la_cli_mide_el_json_que_se_le_senala(tmp_path):
+    """`--check-params --json X` mide X, no el catálogo del repo (AP-44).
+
+    Hasta v40.34 la CLI no pasaba `--json` a `check_params`: con un catálogo
+    roto señalado devolvía verde, porque medía otro.
+    """
+    import os
+    import subprocess
+
+    real = json.loads(
+        (ROOT / "mcp" / "nodejs" / "tools-catalog.json").read_text(encoding="utf-8")
+    )
+    tools = real.get("tools", real)
+    tools["vault_tags"]["inputSchema"]["properties"]["flag-inventado"] = {"type": "string"}
+    roto = tmp_path / "tools-catalog.json"
+    roto.write_text(json.dumps(real), encoding="utf-8")
+
+    p = subprocess.run(
+        [sys.executable, str(SCRIPTS / "vault_mcp_catalog.py"), "--check-params",
+         "--json", str(roto)],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        env=dict(os.environ, PYTHONIOENCODING="utf-8"), timeout=120,
+    )
+    r = json.loads(p.stdout)
+    assert p.returncode == 1, r
+    assert Path(r["json_path"]) == roto
+    assert any(x["tool"] == "vault_tags" for x in r["problems"])
+
+
 # ── La norma existe y tiene enforcement real ─────────────────────────────────
 
 def test_ap40_esta_en_el_catalogo_con_enforcement_real():
