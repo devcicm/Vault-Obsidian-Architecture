@@ -39,6 +39,7 @@ from vault_registry import (
     MACHINERY_FOLDERS,
     ORDERED_SECTIONS,
     section_description,
+    comando_de_tool,
     section_tool_hint,
 )
 
@@ -146,149 +147,116 @@ def _ensure_hub_notes() -> None:
             "## Protocolo de sesión\n"
             "\n"
             "Inicio:\n"
-            "1. `python scripts/vault_standard_upgrade.py --check`\n"
-            "2. `python scripts/vault_reindex.py`\n"
-            "3. `python scripts/vault_audit.py`\n"
+            f"1. `{comando_de_tool('vault_standard_upgrade --check')}`\n"
+            f"2. `{comando_de_tool('vault_reindex')}`\n"
+            f"3. `{comando_de_tool('vault_audit')}`\n"
             "\n"
             "Cierre:\n"
-            "1. `python scripts/vault_audit.py`\n"
-            "2. `python scripts/vault_tags.py`\n"
-            "3. `python scripts/vault_reindex.py --graph`\n"
+            f"1. `{comando_de_tool('vault_audit')}`\n"
+            f"2. `{comando_de_tool('vault_tags')}`\n"
+            f"3. `{comando_de_tool('vault_reindex --graph')}`\n"
             "\n"
             "Para detalles de cada comando, ver [[vault-commands|vault-commands]].\n"
         )
         _escribir_hub(_hub_note(), hub_content)
 
     if not _commands_note().exists():
-        commands_content = _bloque_de_navegacion(
-            "Vault Commands", "vault-commands", "commands"
-        ) + (
-            "\n"
-            "\n"
-            "# Vault Commands — Referencia unificada de comandos CLI\n"
-            "\n"
-            "> Esta nota es la **referencia única de comandos** del vault. Ningún "
-            "otro archivo (incluyendo índices auto-generados y stubs de sección) "
-            "debería embeber un bloque `python scripts/...` inline. Si necesitas un "
-            "comando nuevo, agrégalo aquí.\n"
-            "\n"
-            "Los ejemplos asumen que el CWD es la raíz del repositorio consumidor.\n"
-            "\n"
-            "## Inicialización\n"
-            "\n"
-            "```bash\n"
-            "# Inicializar un vault nuevo con todas las carpetas y auto-indexar\n"
-            "python scripts/vault_standard_upgrade.py --init v32\n"
-            "\n"
-            "# Aplicar migraciones pendientes (v20 → v32)\n"
-            "python scripts/vault_standard_upgrade.py --to v32\n"
-            "\n"
-            "# Verificar estado de versión y carpetas\n"
-            "python scripts/vault_standard_upgrade.py --check\n"
-            "```\n"
-            "\n"
-            "## Bootstrap de un vault fresco (todo en uno)\n"
-            "\n"
-            "```bash\n"
-            "# Equivalente a: init v32 + aplicar migraciones + auto-indexar todas las secciones\n"
-            "python scripts/vault_init.py\n"
-            "```\n"
-            "\n"
-            "## Escritura y lectura de notas\n"
-            "\n"
-            "```bash\n"
-            "# Crear o actualizar una nota\n"
-            'python scripts/vault_write.py --folder "01_Projects/mi-api" --title "Status" --content "# Status\\n\\nActivo"\n'
-            "\n"
-            "# Leer una nota por ruta\n"
-            'python scripts/vault_read.py --path "01_Projects/mi-api/status.md"\n'
-            "\n"
-            "# Buscar full-text\n"
-            'python scripts/vault_search.py --query "circuit breaker"\n'
-            "\n"
-            "# Listar notas de una carpeta\n"
-            'python scripts/vault_list.py --folder "01_Projects"\n'
-            "\n"
-            "# Agregar contenido al final (changelogs, session logs)\n"
-            'python scripts/vault_append.py --path "04_Sessions/2026-06-19.md" --content "## Tasks\\n\\n- [x] Fix init"\n'
-            "```\n"
-            "\n"
-            "## Índices\n"
-            "\n"
-            "```bash\n"
-            "# Regenerar índice de una sección\n"
-            'python scripts/vault_section_index.py --folder "01_Projects"\n'
-            "\n"
-            "# Regenerar TODOS los índices de sección + el master index\n"
-            "python scripts/vault_master_index.py\n"
-            "\n"
-            "# Regenerar search-index.json + graph.json + hash-index.json\n"
-            "python scripts/vault_reindex.py --graph\n"
-            "```\n"
-            "\n"
-            "## Salud y auditoría\n"
-            "\n"
-            "```bash\n"
-            "# Health score + issues (link rotos, orphan notes, etc.)\n"
-            "python scripts/vault_audit.py\n"
-            "\n"
-            "# Validar contratos de las tools\n"
-            "python scripts/vault_spec_validate.py\n"
-            "\n"
-            "# Validar estructura del vault (notas, frontmatter, CIA)\n"
-            "python scripts/vault_validate.py\n"
-            "```\n"
-            "\n"
-            "## Comandos por sección\n"
-            "\n"
-        )
-        for section, hint in [
-            ("00_System", None),
-            ("01_Projects", "vault_project_overview --project <slug>"),
-            ("02_Observability", "vault_log_error --project <slug> --type error --title <msg>"),
-            ("03_Decisions", "vault_write --folder 03_Decisions --title <adr>"),
-            ("04_Sessions", "vault_write --folder 04_Sessions --title YYYY-MM-DD"),
-            ("05_Patterns", "vault_pattern_save --name <pattern>"),
-            ("06_Diagrams", "vault_diagram_save --project <slug> --title <diagrama> --diagram_type mermaid"),
-            ("07_Knowledge", "vault_knowledge_save --title <concept>"),
-            ("08_Runbooks", "vault_runbook_save --title <runbook>"),
-            ("09_Infrastructure", "vault_infra_save --project <slug>"),
-            ("10_Migrated", "vault_migrate_docs --project <slug> --source_path <path>"),
-            ("11_Code", "vault_code_module --project <slug> --file_path <path>"),
-            ("12_Bibliography", "vault_bibliography_save --title <ref> --source_type web"),
-            ("13_Flows", "vault_flow_save --project <slug> --name <flow>"),
-            (
-                "14_Requirements",
-                "vault_requirement_save --project <slug> --title <req>",
-            ),
-            ("15_Tests", "vault_test_save --project <slug> --title <test>"),
-            (
-                "16_AI_Governance",
-                "vault_ai_decision --project <slug> --title <decision>",
-            ),
-        ]:
-            if hint:
-                commands_content += f"- **{section}** — `{hint}`\n"
-        commands_content += (
-            "\n"
-            "## Backups\n"
-            "\n"
-            "```bash\n"
-            "# Crear snapshot con Merkle tree para verificación de integridad\n"
-            "python scripts/vault_backup.py\n"
-            "\n"
-            "# Listar backups disponibles\n"
-            "python scripts/vault_backup_list.py\n"
-            "\n"
-            "# Restaurar desde un backup\n"
-            # `--name` no existe: la tool declara `--backup_name` y el comando moría
-            # en `unrecognized arguments`. Lo escribía el generador, así que el
-            # comando roto viajaba a *cada vault que el estándar crea* — el defecto
-            # de v40.4 en la copia que el guard de v40.4 no estaba mirando.
-            "python scripts/vault_restore.py --backup_name <backup-name>\n"
-            "```\n"
-        )
-        _escribir_hub(_commands_note(), commands_content)
+        _escribir_hub(_commands_note(), _nota_de_comandos())
+
+
+#: Bloques de la nota de comandos: (título, [(comentario, receta)]). La receta
+#: va sin forma de invocación — la pone `comando_de_tool` según dónde corra.
+#:
+#: Hasta v40.35 la nota era un literal con `python scripts/...`, que en una
+#: instalación por wheel no existe; citaba `--init v32`, catorce versiones
+#: atrás; publicaba `vault_spec_validate`, que no es una tool instalable, y su
+#: lista por sección —escrita a mano, 01–16— daba a once de ellas un comando
+#: al que le faltaban flags obligatorios. Las secciones salen ahora del
+#: registro, con las mismas recetas que sugiere `vault_audit`.
+BLOQUES_DE_COMANDOS = (
+    ("Inicialización", (
+        ("Crear o completar el vault: carpetas, índices de sección y hub",
+         "vault_init"),
+        ("Versión del estándar y migraciones pendientes, sin aplicar nada",
+         "vault_standard_upgrade --check"),
+        ("Aplicar las migraciones pendientes hasta la versión vigente",
+         "vault_standard_upgrade"),
+    )),
+    ("Escritura y lectura de notas", (
+        ("Crear o actualizar una nota",
+         "vault_write --folder 07_Knowledge --title 'Mi nota' --content '...'"),
+        ("Leer una nota por ruta", "vault_read --path 07_Knowledge/mi-nota.md"),
+        ("Buscar full-text", "vault_search --query 'circuit breaker'"),
+        ("Listar notas de una carpeta", "vault_list --folder 07_Knowledge"),
+        ("Agregar contenido al final (changelogs, session logs)",
+         "vault_append --path 07_Knowledge/mi-nota.md --content '...'"),
+    )),
+    ("Índices", (
+        ("Regenerar el índice de una sección",
+         "vault_section_index --folder 07_Knowledge"),
+        ("Regenerar todos los índices de sección y el índice maestro",
+         "vault_master_index"),
+        ("Regenerar search-index.json, graph.json y hash-index.json",
+         "vault_reindex --graph"),
+    )),
+    ("Salud y auditoría", (
+        ("Health score e issues (enlaces rotos, notas huérfanas…)", "vault_audit"),
+        ("Validar estructura del vault (notas, frontmatter, CIA)", "vault_validate"),
+    )),
+    ("Backups", (
+        ("Snapshot con árbol Merkle para verificar integridad", "vault_backup"),
+        ("Listar backups disponibles", "vault_backup_list"),
+        # `--name` no existe: la tool declara `--backup_name` y el comando moría
+        # en `unrecognized arguments`. Lo escribía el generador, así que el
+        # comando roto viajaba a *cada vault que el estándar crea* — el defecto
+        # de v40.4 en la copia que el guard de v40.4 no estaba mirando.
+        ("Restaurar desde un backup", "vault_restore --backup_name <backup-name>"),
+    )),
+)
+
+
+def recetas_de_la_nota_de_comandos() -> List[str]:
+    """Toda receta que la nota publica, en el orden en que aparece."""
+    recetas = [r for _, filas in BLOQUES_DE_COMANDOS for _, r in filas]
+    recetas += [section_tool_hint(s) for s in ORDERED_SECTIONS if section_tool_hint(s)]
+    return recetas
+
+
+def _nota_de_comandos() -> str:
+    lineas = [
+        _bloque_de_navegacion("Vault Commands", "vault-commands", "commands"),
+        "",
+        "# Vault Commands — Referencia unificada de comandos CLI",
+        "",
+        "> Esta nota es la **referencia única de comandos** del vault. Ningún "
+        "otro archivo (incluyendo índices auto-generados y stubs de sección) "
+        "debería embeber un bloque de comandos inline. Si necesitas un "
+        "comando nuevo, agrégalo aquí.",
+        "",
+        "Con el paquete instalado cada comando es `vault run <tool> <flags>`; desde "
+        "un checkout del estándar, `python scripts/<tool>.py <flags>`. Esta nota "
+        "está escrita en la forma del sitio que la generó. El vault destino se "
+        "fija con la variable de entorno `VAULT_ROOT`.",
+        "",
+    ]
+    for titulo, filas in BLOQUES_DE_COMANDOS:
+        lineas += [f"## {titulo}", ""]
+        lineas += [f"- {comentario} — `{comando_de_tool(receta)}`"
+                   for comentario, receta in filas]
+        lineas.append("")
+    lineas += [
+        "## Comandos por sección",
+        "",
+        "La receta con la que se crea la primera nota de cada sección. `<...>` y "
+        "`'...'` son lo que rellenas tú.",
+        "",
+    ]
+    for section in ORDERED_SECTIONS:
+        receta = section_tool_hint(section)
+        if receta:
+            lineas.append(f"- **{section}** — `{comando_de_tool(receta)}`")
+    lineas.append("")
+    return "\n".join(lineas)
 
 
 def _collect_notes(section_path: Path, include_subdirs: bool) -> List[Dict[str, Any]]:

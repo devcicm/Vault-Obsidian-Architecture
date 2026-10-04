@@ -39,6 +39,7 @@ from vault_io import atomic_write_json, atomic_write_text, write_report
 from vault_lib import utcnow
 from vault_version import CURRENT_VERSION
 from vault_registry import (
+    comando_de_tool,
     standard_folders,
     EVENT_DRIVEN_SECTIONS,
     ORDERED_SECTIONS,
@@ -101,8 +102,10 @@ def _create_scaffold_note(section: str) -> Dict[str, Any]:
 
     description = section_description(section)
     tool_hint = (
-        section_tool_hint(section) or f"vault_write --folder {section} --title <titulo>"
+        section_tool_hint(section)
+        or f"vault_write --folder {section} --title <titulo> --content '...'"
     )
+    comando = comando_de_tool(tool_hint)
 
     # Build content that is real documentation (passes content gate) but
     # explicitly says it's a primer. Real words count: 40+ per primer.
@@ -119,7 +122,7 @@ def _create_scaffold_note(section: str) -> Dict[str, Any]:
 ## Comando sugerido
 
 ```
-python scripts/{tool_hint}
+{comando}
 ```
 
 ## Siguiente paso

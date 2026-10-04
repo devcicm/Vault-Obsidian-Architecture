@@ -35,7 +35,7 @@ import sys
 # de uso. Ver `vault_entorno.py`.
 from vault_entorno import leer as _env
 
-from vault_registry import es_andamio
+from vault_registry import SECTIONS as _REGISTRO_DE_SECCIONES, es_andamio
 from vault_errors import emit_error, wrap_main, proyecto_registrado
 
 from collections import defaultdict
@@ -1429,44 +1429,23 @@ def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]
 # el registro cambia, la copia se queda vieja y nadie se entera. Lo que aporta
 # de verdad es el ejemplo de argumentos, así que se queda como capa de
 # enriquecimiento y lo que no cubre lo pone el registro, no un genérico.
+# superseded_by: vault_registry.SECTIONS[*]["tool_hint"] (v40.35). Era una
+# segunda copia, completa, de la receta por sección mientras el registro tenía
+# la incompleta: la nota de comandos y los índices publicaban la que fallaba.
+# Las recetas completas viven ahora en el registro y esto se deriva de él.
 _SECTION_TOOL_HINT: Dict[str, str] = {
-    "01_Projects": "vault_project_overview --project <slug> --description '...' --runtime 'Node.js 20'",
-    "02_Observability": "vault_log_error --project <slug> --type error --title '<msg>' --description '...'",
-    "03_Decisions": "vault_write --folder 03_Decisions --title 'ADR-001 <titulo>' --content '...'",
-    "04_Sessions": "vault_write --folder 04_Sessions --title '$(date +%Y-%m-%d)' --content '...'",
-    "05_Patterns": "vault_pattern_save --project <slug> --name <patron> --type design --status planificado",
-    "06_Diagrams": "vault_diagram_save --project <slug> --title <diagrama> --diagram_type mermaid --category entity --content '...'",
-    "07_Knowledge": "vault_knowledge_save --project <slug> --title <concepto> --category concept --content '...'",
-    "08_Runbooks": "vault_runbook_save --project <slug> --title <runbook> --trigger '...' --category deploy --steps '[{\"step\": \"...\"}]'",
-    "09_Infrastructure": "vault_infra_save --project <slug> --name <servicio> --type server --description '...' --config '{}'",
-    "10_Migrated": "vault_migrate_docs --project <slug> --source_path <path>",
-    "11_Code": "vault_code_module --project <slug> --file_path <path> --description '...'",
-    "12_Bibliography": "vault_bibliography_save --title <ref> --source_type web --url 'https://...' --summary '...'",
-    "13_Flows": "vault_flow_save --project <slug> --name <flow> --type workflow --description '...' --mermaid 'flowchart LR; A-->B'",
-    "14_Requirements": "vault_requirement_save --project <slug> --title 'REQ-001 ...' --description '...' --type functional --priority must-have",
-    "15_Tests": "vault_test_save --project <slug> --title <test> --test_type unit --description '...'",
-    "16_AI_Governance": "vault_ai_decision --project <slug> --title <decision> --decision_type architectural --description '...' --rationale '...'",
-    # Sin entrada, `_suggest_command_for_folder` caía al genérico `vault_write`
-    # para las cuatro secciones más nuevas: la acción sugerida saltaba la tool
-    # con contrato y su guard. La sugerencia de un audit es la que el usuario
-    # copia y pega, así que apuntar al camino sin gobernar es peor que no
-    # sugerir nada.
-    "17_Preferences": "vault_preferences --set --category workflow --title <preferencia> --statement '...' --strength should",
-    "18_Bugs": "vault_bug_save --project <slug> --title <bug> --symptom '...' --severity high",
-    "19_Audits": "vault_tags --audit",
-    "20_Quarantine": "vault_quarantine --list",
+    s["folder"]: s["tool_hint"] for s in _REGISTRO_DE_SECCIONES if s["tool_hint"]
 }
 
 
 def _suggest_command_for_folder(folder: str) -> str:
     """Return a copy-paste ready command for populating an empty section."""
-    from vault_registry import section_tool_hint
+    from vault_registry import comando_de_tool, section_tool_hint
 
     hint = _SECTION_TOOL_HINT.get(folder) or section_tool_hint(folder)
-    if hint:
-        tool, _, args = hint.partition(" ")
-        return f"python scripts/{tool}.py {args}".rstrip()
-    return f"python scripts/vault_write.py --folder {folder} --title '<titulo>' --content '...'"
+    return comando_de_tool(
+        hint or f"vault_write --folder {folder} --title '<titulo>' --content '...'"
+    )
 
 
 def _detect_scaffold_only_sections(content_notes: List[Path]) -> List[str]:

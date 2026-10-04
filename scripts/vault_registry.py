@@ -18,6 +18,7 @@ NO importa de vault_io ni de ningún otro vault_* — importar desde aquí
 nunca crea dependencias circulares.
 """
 
+from pathlib import Path
 from typing import Dict, List, Optional
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -46,55 +47,55 @@ SECTIONS: List[Dict[str, Optional[str]]] = [
         "folder": "01_Projects",
         "name": "Proyectos",
         "description": "Estado, contexto y progreso de proyectos activos",
-        "tool_hint": "vault_project_overview --project <slug>",
+        "tool_hint": "vault_project_overview --project <slug> --description '...' --runtime 'Node.js 20'",
     },
     {
         "folder": "02_Observability",
         "name": "Observabilidad",
         "description": "Errores, métricas, alertas e incidentes",
-        "tool_hint": "vault_log_error --project <slug> --type error --title <msg>",
+        "tool_hint": "vault_log_error --project <slug> --type error --title '<msg>' --description '...'",
     },
     {
         "folder": "03_Decisions",
         "name": "Decisiones",
         "description": "Decisiones de arquitectura y diseño (ADRs)",
-        "tool_hint": "vault_write --folder 03_Decisions --title <adr>",
+        "tool_hint": "vault_write --folder 03_Decisions --title 'ADR-001 <titulo>' --content '...'",
     },
     {
         "folder": "04_Sessions",
         "name": "Sesiones",
         "description": "Diarios de sesión y contexto de trabajo",
-        "tool_hint": "vault_write --folder 04_Sessions --title <fecha>",
+        "tool_hint": "vault_write --folder 04_Sessions --title '$(date +%Y-%m-%d)' --content '...'",
     },
     {
         "folder": "05_Patterns",
         "name": "Patrones",
         "description": "Patrones reutilizables de código y arquitectura",
-        "tool_hint": "vault_pattern_save --name <pattern>",
+        "tool_hint": "vault_pattern_save --project <slug> --name <patron> --type design --status planificado",
     },
     {
         "folder": "06_Diagrams",
         "name": "Diagramas",
         "description": "Diagramas y representaciones visuales",
-        "tool_hint": "vault_diagram_save --project <slug> --title <diagrama> --diagram_type mermaid",
+        "tool_hint": "vault_diagram_save --project <slug> --title <diagrama> --diagram_type mermaid --category entity --content '...'",
     },
     {
         "folder": "07_Knowledge",
         "name": "Conocimiento",
         "description": "Base de conocimiento técnico y conceptual",
-        "tool_hint": "vault_knowledge_save --title <concept>",
+        "tool_hint": "vault_knowledge_save --project <slug> --title <concepto> --category concept --content '...'",
     },
     {
         "folder": "08_Runbooks",
         "name": "Runbooks",
         "description": "Procedimientos operativos paso a paso",
-        "tool_hint": "vault_runbook_save --title <runbook>",
+        "tool_hint": "vault_runbook_save --project <slug> --title <runbook> --trigger '...' --category deploy --steps '[{\"step\": \"...\"}]'",
     },
     {
         "folder": "09_Infrastructure",
         "name": "Infraestructura",
         "description": "Infraestructura, entornos y configuraciones",
-        "tool_hint": "vault_infra_save --project <slug>",
+        "tool_hint": "vault_infra_save --project <slug> --name <servicio> --type server --description '...' --config '{}'",
     },
     {
         "folder": "10_Migrated",
@@ -106,37 +107,37 @@ SECTIONS: List[Dict[str, Optional[str]]] = [
         "folder": "11_Code",
         "name": "Código",
         "description": "Módulos de código y relaciones entre ellos",
-        "tool_hint": "vault_code_module --project <slug> --file_path <path>",
+        "tool_hint": "vault_code_module --project <slug> --file_path <path> --description '...'",
     },
     {
         "folder": "12_Bibliography",
         "name": "Bibliografía",
         "description": "Fuentes externas: artículos, papers, APIs, libros y docs consultados",
-        "tool_hint": "vault_bibliography_save --title <ref> --source_type web",
+        "tool_hint": "vault_bibliography_save --title <ref> --source_type web --url 'https://...' --summary '...'",
     },
     {
         "folder": "13_Flows",
         "name": "Flujos",
         "description": "Flujos de trabajo, pipelines, ciclos de vida y diagramas de flujo",
-        "tool_hint": "vault_flow_save --project <slug> --name <flow>",
+        "tool_hint": "vault_flow_save --project <slug> --name <flow> --type workflow --description '...' --mermaid 'flowchart LR; A-->B'",
     },
     {
         "folder": "14_Requirements",
         "name": "Requerimientos",
         "description": "Requerimientos funcionales y no funcionales (ISO 29148)",
-        "tool_hint": "vault_requirement_save --project <slug> --title <req>",
+        "tool_hint": "vault_requirement_save --project <slug> --title 'REQ-001 ...' --description '...' --type functional --priority must-have",
     },
     {
         "folder": "15_Tests",
         "name": "Tests",
         "description": "Casos de prueba y resultados (ISO 29119): unit, integration, e2e, performance",
-        "tool_hint": "vault_test_save --project <slug> --title <test>",
+        "tool_hint": "vault_test_save --project <slug> --title <test> --test_type unit --description '...'",
     },
     {
         "folder": "16_AI_Governance",
         "name": "IA Governance",
         "description": "Decisiones y auditorías de agentes IA (ISO 42001)",
-        "tool_hint": "vault_ai_decision --project <slug> --title <decision>",
+        "tool_hint": "vault_ai_decision --project <slug> --title <decision> --decision_type architectural --description '...' --rationale '...'",
     },
     {
         "folder": "17_Preferences",
@@ -145,7 +146,7 @@ SECTIONS: List[Dict[str, Optional[str]]] = [
             "Preferencias del usuario: cómo quiere trabajar, estilo, herramientas "
             "y restricciones. Contexto estable que el agente debe respetar entre sesiones"
         ),
-        "tool_hint": "vault_preferences --set --category workflow --title <pref> --statement <regla>",
+        "tool_hint": "vault_preferences --set --category workflow --title <preferencia> --statement '...' --strength should",
     },
     # ── Secciones 18–20 (v39) ───────────────────────────────────────────────
     #
@@ -163,7 +164,7 @@ SECTIONS: List[Dict[str, Optional[str]]] = [
             "es un evento observado y un bug es un defecto que se persigue hasta "
             "cerrarlo (ISO/IEC 25010 §fiabilidad)"
         ),
-        "tool_hint": "vault_bug_save --project <slug> --title <bug> --status open",
+        "tool_hint": "vault_bug_save --project <slug> --title <bug> --symptom '...' --severity high",
     },
     {
         "folder": "19_Audits",
@@ -185,7 +186,7 @@ SECTIONS: List[Dict[str, Optional[str]]] = [
             "Existe porque la alternativa a cuarentena no es limpieza, es borrado "
             "— y aquí nada se borra (política de no-derogación)"
         ),
-        "tool_hint": "vault_quarantine --add <path> --reason <motivo>",
+        "tool_hint": "vault_quarantine --list",
     },
     # ── 21_QA (v40.35) ───────────────────────────────────────────────────────
     #
@@ -729,6 +730,20 @@ def section_tool_hint(folder: str) -> Optional[str]:
     top = folder.replace("\\", "/").split("/")[0]
     sec = _SECTION_BY_FOLDER.get(top)
     return sec["tool_hint"] if sec else None
+
+
+def comando_de_tool(receta: str) -> str:
+    """La receta `vault_x --flag ...` en la forma que corre donde se ejecuta.
+
+    Hasta v40.35 cada consumidor anteponía `python scripts/` a mano, y la nota
+    de comandos que se reparte a cada vault la publicaba también en la wheel,
+    donde `scripts/` no existe. Instalado, este módulo vive en
+    `vault_toolkit/_impl/` y la forma que corre es `vault run`.
+    """
+    tool, _, args = receta.strip().partition(" ")
+    if Path(__file__).resolve().parent.name == "_impl":
+        return f"vault run {tool} {args}".rstrip()
+    return f"python scripts/{tool}.py {args}".rstrip()
 
 
 def es_andamio(texto: str) -> bool:
