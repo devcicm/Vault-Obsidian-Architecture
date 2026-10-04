@@ -48,18 +48,20 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_audit_catalog import es_documentacion_del_estandar
+from vault_fundamentals_catalog import cia_por_defecto
 from vault_errors import emit_error, emit_fallo, wrap_main
 # superseded_by: vault_errors.proyecto_registrado (v40.34). Vivió aquí;
 # se reexporta para quien lo importara de la tool.
 from vault_errors import proyecto_registrado  # noqa: F401
 from vault_io import atomic_write_json, atomic_write_text, file_lock, get_vault_root, is_snapshot_path, write_report
-from vault_lib import parse_frontmatter_with_body
+from vault_lib import parse_frontmatter_with_body, utcnow
 from vault_norms_catalog import STATUS_VOCAB
 from vault_undo import _guardar_version_actual
 import vault_subproceso
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from vault.autoria.frontmatter import firmante  # noqa: E402
 from vault.kernel import proyectos  # noqa: E402
 from vault.kernel.fallos import FalloDeDominio  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
@@ -250,6 +252,10 @@ def sanar(apply: bool = False) -> Dict[str, Any]:
 
 
 def _ficha_nueva(slug: str, titulo: str, alias: List[str], status: str) -> str:
+    # La ficha es una nota de contenido como cualquier otra: hasta v40.34 salía
+    # sin autor, tags, CIA ni fechas, y el audit la penalizaba en cuanto se
+    # registraba un proyecto (AP-16, AP-26, AP-30, missing_updated).
+    ahora = utcnow()
     fm = (
         Frontmatter()
         .set("title", titulo, texto=True)
@@ -257,7 +263,13 @@ def _ficha_nueva(slug: str, titulo: str, alias: List[str], status: str) -> str:
         .set("project", slug, texto=True)
         .set("aliases", alias)
         .set("status", status)
+        .set("tags", [slug, "project"])
+        .set("createdAt", ahora)
+        .set("updatedAt", ahora)
     )
+    for campo, valor in cia_por_defecto().items():
+        fm.set(campo, valor, texto=True)
+    fm.set("agent", firmante(), texto=True)
     return (
         fm.render()
         + f"\n\n# {titulo}\n\n"
@@ -290,7 +302,8 @@ def registrar(slug: str, titulo: Optional[str], alias: List[str], status: str) -
         previos = list(registro.proyectos[canonico].aliases) if canonico in registro.proyectos else []
         nuevos = [a for a in alias if slugify_strict(a) not in {slugify_strict(x) for x in previos}]
         if nuevos:
-            fm = Frontmatter.editar(bloque or "").set("aliases", previos + nuevos)
+            fm = (Frontmatter.editar(bloque or "").set("aliases", previos + nuevos)
+                  .set("updatedAt", utcnow()))
             # `render()` va sin salto final y `cuerpo` empieza tras la línea de
             # cierre: el salto entre los dos es el que `separar_frontmatter` quitó.
             atomic_write_text(ficha, fm.render() + "\n" + cuerpo)

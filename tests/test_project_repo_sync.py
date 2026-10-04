@@ -77,7 +77,8 @@ def test_ap63_link_guarda_lo_portable_en_la_ficha_y_la_ruta_fuera(entorno):
     fm = _ficha(vault)
     assert fm["repo"] == {"remote": "git@example.com:org/mi-api.git", "default_branch": "main"}
     # La ruta del disco no viaja con la ficha: es de esta máquina.
-    assert str(repo) not in json.dumps(fm) and repo.name not in json.dumps(fm["repo"])
+    # `default=str`: la ficha lleva fechas desde v40.35, y YAML las carga como datetime.
+    assert str(repo) not in json.dumps(fm, default=str) and repo.name not in json.dumps(fm["repo"])
     assert proyectos.ruta_local(vault, "mi-api") == repo.resolve()
 
 

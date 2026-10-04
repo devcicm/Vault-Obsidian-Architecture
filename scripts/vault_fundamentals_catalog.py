@@ -593,3 +593,13 @@ def cia_valores(campo: str) -> set:
         if c["frontmatter_field"] == campo:
             return set(c["values"])
     return set()
+
+
+def cia_por_defecto() -> Dict[str, str]:
+    """Campo CIA → valor por defecto, según el `default` de `CIA_TRIAD`.
+
+    Una tool que escribe una nota sin CIA explícita la deja fuera del esquema
+    (el audit la marca en `missingCIA`); una que la rellena con literales
+    propios es otra copia del registro. Esta es la lectura del registro.
+    """
+    return {c["frontmatter_field"]: c["default"] for c in CIA_TRIAD}
