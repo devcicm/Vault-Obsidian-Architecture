@@ -69,7 +69,10 @@ class ServicioIndiceMaestro:
         ]
         for r in resultados:
             seccion = r["section"]
-            enlace = f"`{seccion}/index.md`" if r["ok"] else "_(vacía)_"
+            # Recién escrito por `_indexar`: el enlace resuelve. La ruta entera
+            # es la que fija cuál de los `index` es (AP-21 precisado); el alias
+            # no abre la fila (RE_ALIAS_EN_TABLA).
+            enlace = f"[[{seccion}/index|índice]]" if r["ok"] else "_(vacía)_"
             lineas.append(
                 f"| `{seccion}` | {self._describir(seccion)} | {r['noteCount']} "
                 f"| {enlace} |"

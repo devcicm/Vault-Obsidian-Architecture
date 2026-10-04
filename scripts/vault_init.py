@@ -245,6 +245,25 @@ def vault_init(
         }
     )
 
+    # Step 1.2: índices y hub sobre la estructura vacía, antes que la primera
+    # nota. El hub se crea una sola vez y no se reescribe; si lo creara el
+    # primer andamio, al escribirse solo existiría el índice de esa sección y
+    # el hub nacería sin enlazar ninguna otra (QA de producto, 2026-10-04).
+    # Dentro de `vault_master_index` sí enlaza todas: es una regeneración
+    # completa. El paso 3 vuelve a pasar para contar las notas ya escritas.
+    master_script = Path(__file__).parent / "vault_master_index.py"
+    if master_script.exists():
+        import vault_subproceso
+
+        proc = vault_subproceso.ejecutar(
+            [sys.executable, str(master_script)], capture_output=True
+        )
+        result["steps"].append(
+            {"step": "navigation", "ok": proc.returncode == 0}
+            if proc.returncode == 0
+            else {"step": "navigation", "ok": False, "raw_stderr": proc.stderr}
+        )
+
     # Step 1.5: create a primer note in each content section so the vault
     # starts at healthScore 100/100. Each primer has real content (passes
     # the strict content gate) and explains what the section is for. They

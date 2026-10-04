@@ -83,22 +83,37 @@ def recolectar_notas(
     return notas
 
 
-def migaja(clave_carpeta: str) -> str:
+def migaja(
+    clave_carpeta: str, indice_disponible: Optional[Callable[[str], bool]] = None
+) -> str:
     """Navegación de cabecera para un índice de sección o subsección.
 
-    AP-21: nunca un wikilink anclado a ruta (`[[carpeta/index]]`). Obsidian
-    resuelve por stem, e `index` es un stem que comparten todas las secciones:
-    el enlace apuntaría a cualquiera de ellas. Se navega en texto plano y con un
-    único enlace al hub, que sí es un nombre único.
+    AP-21: nunca `[[index]]` a secas. `index` es un stem que comparten todas
+    las secciones y el enlace apuntaría a cualquiera de ellas.
+
+    AP-21 precisado (v40.35): la ruta entera del vault (`[[99_Index/index]]`)
+    sí fija la identidad, y es la carpeta necesaria que `ruta_necesaria`
+    admite. Hasta entonces la migaja escribía el índice maestro y el de la
+    sección padre en cursiva: navegación que no se podía pulsar, y a la del
+    padre le faltaba el cierre de la cursiva.
+
+    `indice_disponible(ruta)` dice si ese índice existe o se escribe en la
+    misma ejecución. Sin él —o si dice que no— se queda en texto: un enlace a
+    un índice que no existe es un enlace roto, peor que el texto.
     """
+    def indice(ruta: str, texto: str) -> str:
+        if indice_disponible is not None and indice_disponible(ruta):
+            return f"[[{ruta[:-3]}|{texto}]]"
+        return f"_{ruta}_"
+
     partes = clave_carpeta.split("/")
-    if len(partes) == 1:
-        return "> **←** [[vault-hub|Hub]]  ·  [[vault-commands|Comandos]]  ·  _99_Index/index.md_"
-    padre = partes[0]
-    return (
-        f"> **←** [[vault-hub|Hub]]  ·  [[vault-commands|Comandos]]  "
-        f"·  _99_Index/index.md_  ·  _{padre}/"
+    linea = (
+        "> **←** [[vault-hub|Hub]]  ·  [[vault-commands|Comandos]]  ·  "
+        + indice("99_Index/index.md", "Índice maestro")
     )
+    if len(partes) == 1:
+        return linea
+    return linea + "  ·  " + indice(f"{partes[0]}/index.md", partes[0])
 
 
 class RenderizadorDeIndice:
@@ -116,6 +131,7 @@ class RenderizadorDeIndice:
         pista_de_tool: Callable[[str], str],
         enlace_seguro: Callable[[str], str],
         destino: Optional[Callable[[str], str]] = None,
+        indice_disponible: Optional[Callable[[str], bool]] = None,
     ) -> None:
         self._describir = describir_seccion
         self._pista = pista_de_tool
@@ -123,6 +139,9 @@ class RenderizadorDeIndice:
         # Ruta relativa al vault → destino más corto que la identifica. Sin él
         # el enlace va por nombre, que es lo que había antes de v40.35.
         self._destino = destino
+        # Ruta de un `index.md` → ¿existe o se escribe en esta ejecución? Sin
+        # él, los índices se nombran en texto, como antes de v40.35.
+        self._indice_disponible = indice_disponible
 
     def render(
         self,
@@ -140,25 +159,32 @@ class RenderizadorDeIndice:
         lineas = [
             f"# {clave} — Índice",
             "",
-            migaja(clave),
+            migaja(clave, self._indice_disponible),
             f"> **Propósito:** {descripcion}",
             f"> Generado automáticamente · {ahora} · {len(notas)} nota(s)",
             "",
         ]
 
         # Subcarpetas antes que notas: se descubre primero la estructura.
-        # AP-21: nada de [[02_Observability/errors/index]] — ruta en texto plano
-        # y una sola fila que remite al hub para navegar.
+        # AP-21 precisado: `[[02_Observability/errors/index]]` es la ruta que
+        # fija cuál de los `index` es; el alias va en la segunda columna,
+        # nunca al empezar la fila (RE_ALIAS_EN_TABLA). Hasta v40.35 la
+        # subcarpeta salía en código y la fila de abajo pedía abrir
+        # `{folder}/{subcarpeta}/index.md` a mano — con las llaves sin
+        # sustituir, porque la cadena no era un f-string.
         if subcarpetas:
             lineas += ["## Subcarpetas", ""]
-            lineas += ["| Carpeta | Propósito |", "|---|---|"]
+            lineas += ["| Carpeta | Índice | Propósito |", "|---|---|---|"]
             for sub in sorted(subcarpetas):
                 sub_clave = sub.replace("\\", "/")
-                lineas.append(f"| `{sub_clave}/` | {self._describir(sub_clave)} |")
-            lineas.append("")
-            lineas.append(
-                "> Para navegar a una subcarpeta, abre `{folder}/{subcarpeta}/index.md` desde tu editor, o usa el [[vault-hub|Hub]]."
-            )
+                ruta_indice = f"{sub_clave}/index.md"
+                if self._indice_disponible is not None and self._indice_disponible(ruta_indice):
+                    enlace = f"[[{sub_clave}/index|índice]]"
+                else:
+                    enlace = f"`{ruta_indice}`"
+                lineas.append(
+                    f"| `{sub_clave}/` | {enlace} | {self._describir(sub_clave)} |"
+                )
             lineas.append("")
 
         if notas:

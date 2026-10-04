@@ -304,11 +304,18 @@ def test_una_seccion_vacia_no_embebe_comandos():
 
 
 def test_la_migaja_nunca_enlaza_un_stem_generico():
-    """`index` es el stem de las 22 secciones: enlazarlo apunta a cualquiera."""
+    """`index` es el stem de las 22 secciones: enlazarlo apunta a cualquiera.
+
+    AP-21 precisado (v40.35): la ruta entera sí fija cuál es, y solo se
+    escribe si el índice existe. Sin saberlo, la migaja se queda en texto.
+    """
     for clave in ("07_Knowledge", "02_Observability/errors"):
-        assert "[[vault-hub|Hub]]" in migaja(clave)
-        assert "[[index" not in migaja(clave)
-        assert "/index]]" not in migaja(clave)
+        for disponible in (None, lambda ruta: True):
+            texto = migaja(clave, disponible)
+            assert "[[vault-hub|Hub]]" in texto
+            assert "[[index" not in texto
+        # Sin predicado, solo el hub y la nota de comandos son enlaces.
+        assert migaja(clave).count("[[") == 2
 
 
 def test_el_indice_no_se_cuenta_a_si_mismo(tmp_path):

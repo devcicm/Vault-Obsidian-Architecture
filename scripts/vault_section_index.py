@@ -105,7 +105,7 @@ def _bloque_de_navegacion(titulo: str, id_: str, etiqueta: str) -> str:
     )
 
 
-def _ensure_hub_notes() -> None:
+def _ensure_hub_notes(indice_disponible=None) -> None:
     """Idempotently create 00_System/vault-hub.md and vault-commands.md.
 
     The hub note is the single authoritative entry point — it links to every
@@ -115,7 +115,17 @@ def _ensure_hub_notes() -> None:
 
     Both are user-editable: if the file already exists we leave it alone.
     This protects manual edits while still bootstrapping a fresh vault.
+
+    `indice_disponible(ruta)` dice qué índices existen o se escriben en la
+    misma ejecución: esos se enlazan, el resto se nombra en código. Hasta
+    v40.35 el hub nombraba todos en código y ninguno se podía pulsar — el
+    punto único de navegación no navegaba a ninguna sección.
     """
+    def enlace_a_indice(ruta: str, texto: str) -> Optional[str]:
+        if indice_disponible is not None and indice_disponible(ruta):
+            return f"[[{ruta[:-3]}|{texto}]]"
+        return None
+
     if not _hub_note().exists():
         # AP-46: el bloque lo escribe su dueño; aquí solo se declaran los campos.
         hub_content = _bloque_de_navegacion("Vault Hub", "vault-hub", "hub") + (
@@ -129,7 +139,8 @@ def _ensure_hub_notes() -> None:
             "## Navegación principal\n"
             "\n"
             "- [[vault-commands|Comandos del vault]] — referencia unificada de comandos CLI\n"
-            "- `99_Index/index.md` (Índice Maestro) — tabla resumen con conteo de notas por sección\n"
+            f"- {enlace_a_indice('99_Index/index.md', 'Índice maestro') or '`99_Index/index.md` (Índice Maestro)'}"
+            " — tabla resumen con conteo de notas por sección\n"
             "\n"
             "## Secciones\n"
             "\n"
@@ -141,7 +152,8 @@ def _ensure_hub_notes() -> None:
         # que es la única página por la que se navega el vault. Se deriva.
         for section in ORDERED_SECTIONS:
             desc = section_description(section)
-            hub_content += f"| `{section}` | {desc} | `{section}/index.md` |\n"
+            enlace = enlace_a_indice(f"{section}/index.md", "índice") or f"`{section}/index.md`"
+            hub_content += f"| `{section}` | {desc} | {enlace} |\n"
         hub_content += (
             "\n"
             "## Protocolo de sesión\n"
@@ -277,7 +289,23 @@ def _breadcrumb(folder_key: str) -> str:
     return migaja(folder_key)
 
 
-def _renderizador() -> RenderizadorDeIndice:
+def _indices_de_una_regeneracion_completa(vroot: Path) -> set:
+    """Los `index.md` que `vault_master_index` escribe en una pasada: el de
+    cada sección con carpeta en disco y el suyo propio."""
+    return {"99_Index/index.md"} | {
+        f"{s}/index.md" for s in ORDERED_SECTIONS if (vroot / s).is_dir()}
+
+
+def _indices_disponibles(vroot: Path, previstos: set):
+    """Ruta de un índice → ¿se puede enlazar? Lo está si existe o si esta
+    ejecución lo va a escribir. Enlazar uno que no llega a existir es un
+    enlace roto, peor que nombrarlo en texto."""
+    def disponible(ruta: str) -> bool:
+        return ruta in previstos or (vroot / ruta).is_file()
+    return disponible
+
+
+def _renderizador(indice_disponible=None) -> RenderizadorDeIndice:
     """Se construye por llamada: `section_description` lee el registro y
     `safe_wikilink` el kernel, y ninguno de los dos se congela en el import."""
     # El índice de nombres se construye la primera vez que hace falta: una
@@ -295,6 +323,7 @@ def _renderizador() -> RenderizadorDeIndice:
         pista_de_tool=section_tool_hint,
         enlace_seguro=safe_wikilink,
         destino=destino,
+        indice_disponible=indice_disponible,
     )
 
 
@@ -303,13 +332,17 @@ def _build_index_content(
     notes: List[Dict[str, Any]],
     now: str,
     subdirs: Optional[List[str]] = None,
+    indice_disponible=None,
 ) -> str:
     """Adaptador: el formato del índice vive en el dominio de Índices."""
-    return _renderizador().render(folder, notes, now, subcarpetas=subdirs)
+    return _renderizador(indice_disponible).render(
+        folder, notes, now, subcarpetas=subdirs)
 
 
 
-def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, Any]:
+def vault_section_index(
+    folder: str, include_subdirs: bool = True, regeneracion_completa: bool = False
+) -> Dict[str, Any]:
     """
     Generate or update {folder}/index.md with navigation, notes table and subdir listing.
     Always produces populated content — never a bare empty file.
@@ -318,6 +351,10 @@ def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, 
     Args:
         folder: Section folder relative to vault root (e.g. "01_Projects")
         include_subdirs: If True, include notes in subdirectories and index their subdirs
+        regeneracion_completa: el llamador garantiza que en esta misma ejecución
+            escribe el índice de cada sección y `99_Index/index.md`
+            (`vault_master_index`). Con eso la migaja y el hub los enlazan
+            aunque todavía no estén en disco; sin él, solo los que ya existen.
 
     Returns:
         {"ok": True, "path": "01_Projects/index.md", "noteCount": 12, "is_empty": False,
@@ -353,9 +390,17 @@ def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, 
     # Ensure the hub notes exist (idempotent — only creates on first call).
     # This makes the vault self-bootstrapping: a single call to vault_section_index
     # for any section creates vault-hub.md and vault-commands.md if missing.
+    # Qué índices se pueden enlazar: los que existen y los que esta ejecución
+    # va a escribir. Enlazar uno que no llega a existir es un enlace roto.
+    vroot = get_vault_root()
+    previstos = {f"{folder}/index.md"}
+    if regeneracion_completa:
+        previstos |= _indices_de_una_regeneracion_completa(vroot)
+    indice_disponible = _indices_disponibles(vroot, previstos)
+
     aviso_hub = None
     try:
-        _ensure_hub_notes()
+        _ensure_hub_notes(indice_disponible)
     except (OSError, ValueError, TimeoutError) as exc:
         # Sigue sin bloquear al indexador, pero deja de ser invisible (AP-51):
         # el `except Exception: pass` convertía "no pude crear el hub" en
@@ -365,7 +410,6 @@ def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, 
         aviso_hub = f"{type(exc).__name__}: {exc}"
         print(f"[vault_section_index] hub no creado: {aviso_hub}", file=sys.stderr)
 
-    vroot = get_vault_root()
     section_path = vroot / folder
     if not section_path.exists():
         return {**emit_error("vault_section_index", "FOLDER_NOT_FOUND", f"La seccion no existe: {folder}"), "folder": folder}
@@ -406,7 +450,8 @@ def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, 
             # re-enters _auto_section_index, and no caller holds this lock.
             with file_lock(sub_index):
                 sub_contenido = _build_index_content(
-                    sub_folder, sub_notes, now, subdirs=None
+                    sub_folder, sub_notes, now, subdirs=None,
+                    indice_disponible=indice_disponible,
                 )
                 record_raw_write(sub_index, sub_contenido)
                 sub_index.write_text(sub_contenido, encoding="utf-8")
@@ -421,7 +466,8 @@ def vault_section_index(folder: str, include_subdirs: bool = True) -> Dict[str, 
     # section index; deadlock-free because index.md is skipped by _auto_section_index.
     with file_lock(index_path):
         contenido = _build_index_content(
-            folder, notes, now, subdirs=subdir_folders or None
+            folder, notes, now, subdirs=subdir_folders or None,
+            indice_disponible=indice_disponible,
         )
         record_raw_write(index_path, contenido)
         index_path.write_text(contenido, encoding="utf-8")

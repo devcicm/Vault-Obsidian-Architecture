@@ -41,7 +41,10 @@ def vault_master_index(root=None) -> Dict[str, Any]:
 
     servicio = ServicioIndiceMaestro(
         RepositorioIndices(construir(root)),
-        indexar_seccion=lambda s: vault_section_index(s, include_subdirs=True),
+        # El maestro escribe el índice de cada sección y luego el suyo: con
+        # `regeneracion_completa` la migaja de cada índice ya los enlaza.
+        indexar_seccion=lambda s: vault_section_index(
+            s, include_subdirs=True, regeneracion_completa=True),
         describir_seccion=section_description,
     )
     return {"ok": True, **write_report(), **servicio.generar()}
