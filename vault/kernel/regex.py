@@ -479,9 +479,12 @@ def fix_whitespace_in_links(text: str) -> str:
     result = re.sub(r"\[\[\s+", "[[", result)
     result = re.sub(r"\s+\]\]", "]]", result)
 
-    # Colapsar múltiples espacios dentro del link
+    # Colapsar múltiples espacios dentro del link. El interior excluye también
+    # `[`: con `[^\]]+` una tirada de `[[` sin cierre se recorría hasta el final
+    # desde cada posición —cuadrático, 200 ms con 8.000 caracteres— y esta
+    # función está en el camino de escritura (`vault_io`).
     result = re.sub(
-        r"\[\[([^\]]+)\]\]",
+        r"\[\[([^\[\]]+)\]\]",
         lambda m: "[[" + re.sub(r"\s+", " ", m.group(1)) + "]]",
         result,
     )
