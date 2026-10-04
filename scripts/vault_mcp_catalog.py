@@ -3779,11 +3779,14 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
                 "description": "Probabilidad: low, medium, high",
                 "validators": ["enum:low,medium,high"],
             },
+            # Hasta v40.35 declaraba `low..critical` como texto obligatorio: la
+            # CLI pide un entero 1-5 con 3 por defecto, y el esquema publicado
+            # anunciaba cuatro valores que ella rechaza.
             "impact": {
-                "type": "string",
-                "required": True,
-                "description": "Impacto: low, medium, high, critical",
-                "validators": ["enum:low,medium,high,critical"],
+                "type": "integer",
+                "required": False,
+                "description": "Impacto en la matriz de riesgo, 1-5 (por defecto 3)",
+                "validators": ["enum:1,2,3,4,5"],
             },
             "description": {
                 "type": "string",
@@ -4641,6 +4644,26 @@ def posicionales_obligatorios(script: str) -> List[str]:
 _TIPO_DE_CONVERSOR = {"int": "integer", "float": "number", "json.loads": "object"}
 
 
+def _elecciones_del_modulo(script: str, expresion: Any) -> List[str]:
+    """Valores de un `choices=` que no es una lista literal (AP-44).
+
+    Hasta v40.35 solo se publicaban los `choices=[...]` escritos en la llamada:
+    35 de 50 eran un nombre —`CATEGORIES`, `list(TYPE_FOLDERS.keys())`,
+    `_opciones("severidad")`— y salían al esquema MCP sin `enum`, así que un
+    cliente que validaba contra el esquema aceptaba cualquier cadena y se
+    enteraba por el exit 2 de argparse. Los valores se leen con el criterio del
+    consumidor: la misma expresión, evaluada en el módulo que se la da a
+    argparse. Sin `except`: un script que no se importa es un fallo de la
+    sincronización, no un enum vacío que la haga pasar en verde.
+    """
+    import ast
+    import importlib
+
+    modulo = importlib.import_module(Path(script).stem)
+    valores = eval(compile(ast.Expression(expresion), script, "eval"), vars(modulo))
+    return [str(v) for v in valores]
+
+
 def argparse_params(script: str) -> Dict[str, Dict[str, Any]]:
     """Params reales de un script, leídos de sus `add_argument` largos."""
     import ast
@@ -4695,10 +4718,14 @@ def argparse_params(script: str) -> Dict[str, Dict[str, Any]]:
         opciones = []
         elecciones = kw.get("choices")
         if isinstance(elecciones, (ast.List, ast.Tuple)):
+            # También los enteros: `--likelihood choices=[1, 2, 3, 4, 5]` se
+            # descartaba por no ser texto y salía sin enum.
             opciones = [
-                e.value for e in elecciones.elts
-                if isinstance(e, ast.Constant) and isinstance(e.value, str)
+                str(e.value) for e in elecciones.elts
+                if isinstance(e, ast.Constant) and isinstance(e.value, (str, int, float))
             ]
+        elif elecciones is not None:
+            opciones = _elecciones_del_modulo(script, elecciones)
 
         params[largos[0][2:]] = {
             "type": tipo,
@@ -4797,6 +4824,11 @@ def _convert_to_json_schema(py_tool: Dict[str, Any]) -> Dict[str, Any]:
             for v in pinfo.get("validators", []):
                 if v.startswith("enum:"):
                     prop["enum"] = v.replace("enum:", "").split(",")
+                    # El enum de un entero son enteros: `["1", "2"]` en un
+                    # `integer` es un esquema que ningún valor válido cumple.
+                    if tipo in ("integer", "number"):
+                        convierte = int if tipo == "integer" else float
+                        prop["enum"] = [convierte(e) for e in prop["enum"]]
         schema["properties"][pname] = prop
     if not schema["required"]:
         del schema["required"]
@@ -5370,7 +5402,7 @@ def check_params(json_path: Optional[str] = None) -> Dict[str, Any]:
                           if v.startswith("enum:")]
             if not elecciones or "enum" not in prop:
                 continue
-            ajenos = sorted(set(prop["enum"]) - set(elecciones[0]))
+            ajenos = sorted(set(map(str, prop["enum"])) - set(elecciones[0]))
             if ajenos:
                 result["ok"] = False
                 result["problems"].append({

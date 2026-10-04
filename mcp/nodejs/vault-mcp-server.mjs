@@ -1154,7 +1154,7 @@ function validarArgumentos(schema, args) {
       return `${clave} tiene que ser texto, no un objeto`;
     }
     if (Array.isArray(prop.enum)) {
-      const fuera = (Array.isArray(valor) ? valor : [valor]).filter((v) => !prop.enum.includes(String(v)));
+      const fuera = (Array.isArray(valor) ? valor : [valor]).filter((v) => !prop.enum.map(String).includes(String(v)));
       if (fuera.length) return `${clave}=${fuera.join(",")} fuera de [${prop.enum.join(", ")}]`;
     }
   }

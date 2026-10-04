@@ -200,3 +200,21 @@ def test_meta_como_objeto_llega_como_frontmatter(sesion, vault):
 def test_un_entero_en_texto_sigue_aceptandose(sesion):
     env = _envelope(sesion.llamar("vault_list", {"limit": "1"}))
     assert env["ok"] is True, env
+
+
+def test_un_choices_por_nombre_se_valida_como_enum(sesion):
+    """`choices=CATEGORIES` salía como texto libre: el servidor dejaba pasar
+    `nope` y el rechazo llegaba como texto de uso de argparse."""
+    env = _envelope(sesion.llamar("vault_knowledge_save", {"category": "nope"}))
+    assert env["error_code"] == "INVALID_ARGS", env
+    assert "concept" in env["message"], env
+
+
+def test_un_enum_de_enteros_acepta_el_entero(sesion):
+    """El enum `[1..5]` de `--impact` se compara por valor, no por tipo JS: el
+    4 pasa la validación y lo que falta después es un obligatorio."""
+    fuera = _envelope(sesion.llamar("vault_risk_save", {"impact": 9}))
+    assert fuera["error_code"] == "INVALID_ARGS" and "fuera de" in fuera["message"], fuera
+    dentro = _envelope(sesion.llamar("vault_risk_save", {"impact": 4}))
+    assert "fuera de" not in dentro["message"], dentro
+    assert "obligatorio" in dentro["message"], dentro

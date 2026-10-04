@@ -322,7 +322,14 @@
           },
           "source_type": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "web",
+              "paper",
+              "docs",
+              "api",
+              "book"
+            ]
           },
           "project": {
             "type": "string",
@@ -484,15 +491,34 @@
           },
           "phase": {
             "type": "string",
-            "description": "open | root-cause | fixed — determina la subcarpeta"
+            "description": "open | root-cause | fixed — determina la subcarpeta",
+            "enum": [
+              "open",
+              "root-cause",
+              "fixed"
+            ]
           },
           "status": {
             "type": "string",
-            "description": "open | confirmed | in_fix | fixed | wont_fix | duplicate"
+            "description": "open | confirmed | in_fix | fixed | wont_fix | duplicate",
+            "enum": [
+              "open",
+              "confirmed",
+              "in_fix",
+              "fixed",
+              "wont_fix",
+              "duplicate"
+            ]
           },
           "severity": {
             "type": "string",
-            "description": "critical | high | medium | low"
+            "description": "critical | high | medium | low",
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low"
+            ]
           },
           "repro": {
             "type": "string",
@@ -600,7 +626,12 @@
           },
           "propagate": {
             "type": "string",
-            "description": "After recording, trigger propagation: conservative|transitive|critical-path"
+            "description": "After recording, trigger propagation: conservative|transitive|critical-path",
+            "enum": [
+              "conservative",
+              "transitive",
+              "critical-path"
+            ]
           },
           "query": {
             "type": "boolean",
@@ -1280,7 +1311,13 @@
           },
           "min-risk": {
             "type": "string",
-            "description": "Filtrar stale_deps por nivel minimo de riesgo"
+            "description": "Filtrar stale_deps por nivel minimo de riesgo",
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low"
+            ]
           }
         },
         "additionalProperties": false
@@ -1679,7 +1716,14 @@
           },
           "env": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "dev",
+              "staging",
+              "prod",
+              "dr",
+              "perf"
+            ]
           },
           "services": {
             "type": "string",
@@ -2582,7 +2626,13 @@
           },
           "min-risk": {
             "type": "string",
-            "description": "Filter by minimum stale_risk level"
+            "description": "Filter by minimum stale_risk level",
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low"
+            ]
           },
           "predicate": {
             "type": "string",
@@ -2621,15 +2671,24 @@
             "type": "string",
             "description": "Severidad: SEV1, SEV2, SEV3, SEV4",
             "enum": [
-              "SEV1",
-              "SEV2",
-              "SEV3",
-              "SEV4"
+              "P1",
+              "P2",
+              "P3",
+              "P4"
             ]
           },
           "status": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "detected",
+              "investigating",
+              "identified",
+              "mitigating",
+              "resolved",
+              "closed",
+              "post-mortem"
+            ]
           },
           "detected_at": {
             "type": "string",
@@ -3015,7 +3074,16 @@
         "properties": {
           "category": {
             "type": "string",
-            "description": "Categoría; los valores válidos son vault.autoria.conocimiento.CATEGORIES"
+            "description": "Categoría; los valores válidos son vault.autoria.conocimiento.CATEGORIES",
+            "enum": [
+              "glossary",
+              "api",
+              "concept",
+              "business-rule",
+              "config",
+              "dependency",
+              "framework"
+            ]
           },
           "title": {
             "type": "string",
@@ -3506,15 +3574,23 @@
           },
           "ncr_type": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "product",
+              "process",
+              "service",
+              "documentation",
+              "audit"
+            ]
           },
           "severity": {
             "type": "string",
             "description": "Severidad: minor, major, critical",
             "enum": [
-              "minor",
+              "critical",
               "major",
-              "critical"
+              "minor",
+              "observation"
             ]
           },
           "detected_by": {
@@ -3524,7 +3600,9 @@
               "audit",
               "customer",
               "internal",
-              "automated"
+              "automated",
+              "security_scan",
+              "code_review"
             ]
           },
           "description": {
@@ -3549,7 +3627,14 @@
           },
           "status": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "open",
+              "in_progress",
+              "pending_verification",
+              "closed",
+              "cancelled"
+            ]
           },
           "owner": {
             "type": "string",
@@ -3698,7 +3783,13 @@
           },
           "severity": {
             "type": "string",
-            "description": "Filtrar por severidad"
+            "description": "Filtrar por severidad",
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low"
+            ]
           },
           "sort": {
             "type": "string",
@@ -3999,7 +4090,12 @@
           },
           "strength": {
             "type": "string",
-            "description": "must | should | may (default: should)"
+            "description": "must | should | may (default: should)",
+            "enum": [
+              "must",
+              "should",
+              "may"
+            ]
           },
           "rationale": {
             "type": "string",
@@ -4074,7 +4170,15 @@
           },
           "legal_basis": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "consent",
+              "contract",
+              "legal_obligation",
+              "vital_interest",
+              "public_task",
+              "legitimate_interest"
+            ]
           },
           "pii_categories": {
             "type": "string",
@@ -4110,7 +4214,13 @@
           },
           "status": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "active",
+              "under_review",
+              "deprecated",
+              "closed"
+            ]
           },
           "agent": {
             "type": "string",
@@ -4333,7 +4443,15 @@
           },
           "status": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "en_desarrollo",
+              "en_revision",
+              "bloqueado",
+              "completado",
+              "archivado",
+              "en_produccion"
+            ]
           },
           "summary": {
             "type": "string",
@@ -4381,7 +4499,12 @@
           },
           "strategy": {
             "type": "string",
-            "description": "Propagation strategy (default: conservative)"
+            "description": "Propagation strategy (default: conservative)",
+            "enum": [
+              "conservative",
+              "transitive",
+              "critical-path"
+            ]
           },
           "action": {
             "type": "string",
@@ -4401,7 +4524,13 @@
           },
           "min-priority": {
             "type": "string",
-            "description": "Filter queue-report by minimum priority"
+            "description": "Filter queue-report by minimum priority",
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low"
+            ]
           },
           "clear": {
             "type": "string",
@@ -4519,7 +4648,13 @@
           },
           "integrity": {
             "type": "string",
-            "description": "Filter output by CIA integrity level"
+            "description": "Filter output by CIA integrity level",
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low"
+            ]
           },
           "check": {
             "type": "boolean",
@@ -4594,7 +4729,12 @@
           },
           "category": {
             "type": "string",
-            "description": "unclassified | suspicious | duplicates"
+            "description": "unclassified | suspicious | duplicates",
+            "enum": [
+              "unclassified",
+              "suspicious",
+              "duplicates"
+            ]
           },
           "agent": {
             "type": "string",
@@ -4849,11 +4989,25 @@
           },
           "type": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "major",
+              "minor",
+              "patch",
+              "hotfix",
+              "rollback"
+            ]
           },
           "status": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "planned",
+              "in_progress",
+              "deployed",
+              "rolled_back",
+              "cancelled"
+            ]
           },
           "changes": {
             "type": "string",
@@ -5075,20 +5229,36 @@
           },
           "risk_type": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "security",
+              "operational",
+              "financial",
+              "legal",
+              "reputational",
+              "technical"
+            ]
           },
           "likelihood": {
             "type": "integer",
-            "description": ""
+            "description": "",
+            "enum": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
           },
           "impact": {
             "type": "integer",
-            "description": "Impacto: low, medium, high, critical",
+            "description": "Impacto en la matriz de riesgo, 1-5 (por defecto 3)",
             "enum": [
-              "low",
-              "medium",
-              "high",
-              "critical"
+              1,
+              2,
+              3,
+              4,
+              5
             ]
           },
           "threat": {
@@ -5105,7 +5275,13 @@
           },
           "treatment": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "accept",
+              "mitigate",
+              "transfer",
+              "avoid"
+            ]
           },
           "controls": {
             "type": "string",
@@ -5113,7 +5289,13 @@
           },
           "status": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "open",
+              "in_treatment",
+              "accepted",
+              "closed"
+            ]
           },
           "owner": {
             "type": "string",
@@ -5516,7 +5698,16 @@
           },
           "slo_type": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "availability",
+              "latency",
+              "error_rate",
+              "throughput",
+              "durability",
+              "freshness",
+              "saturation"
+            ]
           },
           "target": {
             "type": "number",
@@ -5528,7 +5719,15 @@
           },
           "window": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "7d",
+              "14d",
+              "30d",
+              "60d",
+              "90d",
+              "1y"
+            ]
           },
           "percentile": {
             "type": "string",
@@ -5646,7 +5845,12 @@
           },
           "set-profile": {
             "type": "string",
-            "description": "Set the tool profile in standard-version.json (minimal=10, standard=30, full=61)"
+            "description": "Set the tool profile in standard-version.json (minimal=10, standard=30, full=61)",
+            "enum": [
+              "minimal",
+              "standard",
+              "full"
+            ]
           },
           "validate": {
             "type": "boolean",
