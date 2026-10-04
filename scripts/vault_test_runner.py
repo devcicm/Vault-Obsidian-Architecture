@@ -37,7 +37,10 @@ PYTHON = sys.executable
 # ──────────────────────────────────────────────────────────────────────────────
 
 # Tools that take --folder --title --content as minimum args
-_WRITE_ARGS = ["--folder", "01_Projects/smoke", "--title", "SmokTest", "--content", "## Test\n\nSmoke test content.\n\nAdditional detail for minimum content gate.\n"]
+# `--tags`: AP-26 los exige en notas de contenido. Sin ellos el primer contrato
+# fallaba con `missing_tags` y arrastraba en cascada a read, search, append,
+# diff y validate, que leen la nota que write no llegaba a crear.
+_WRITE_ARGS = ["--folder", "01_Projects/smoke", "--title", "SmokTest", "--tags", "smoke", "--content", "## Test\n\nSmoke test content.\n\nAdditional detail for minimum content gate.\n"]
 
 TOOL_CONTRACTS: List[Dict[str, Any]] = [
     # Group 1 — Core
@@ -112,9 +115,11 @@ TOOL_CONTRACTS: List[Dict[str, Any]] = [
 ]
 
 # Error-path test cases: (script, args, expected_ok_false)
+# El caso AP-20 lleva diez palabras reales: con menos, la puerta de contenido
+# mínimo (`content_too_short`) salta antes y el caso medía otra norma.
 ERROR_CASES: List[Dict[str, Any]] = [
     {"name": "vault_write",        "args": ["--folder", "01_Projects"], "desc": "missing --title"},
-    {"name": "vault_write",        "args": ["--folder", "01_Projects/smoke", "--title", "SmokTest", "--content", "First line.\nSecond line.\nThird line.\n- valid bullet\n- \n- \n- \n- \n"], "desc": "AP-20 empty bullets", "expect_error_code": "content_empty_list"},
+    {"name": "vault_write",        "args": ["--folder", "01_Projects/smoke", "--title", "SmokTest", "--content", "First line about the smoke run.\nSecond line with more words.\nThird line closes the body.\n- valid bullet\n- \n- \n- \n- \n"], "desc": "AP-20 empty bullets", "expect_error_code": "content_empty_list"},
     {"name": "vault_read",         "args": ["--path", "nonexistent/path.md"], "desc": "file not found"},
     {"name": "vault_append",       "args": ["--path", "nonexistent.md", "--content", "x"], "desc": "file not found"},
     {"name": "vault_project_status","args": ["--project", "smoke", "--status", "invalid_status", "--summary", "x"], "desc": "invalid status"},
@@ -150,6 +155,30 @@ def _run_script(script: str, args: List[str], vault_root: Optional[Path] = None,
         return 124, "", f"TIMEOUT after {timeout}s"
     except Exception as e:
         return 1, "", str(e)
+
+
+def _entorno(vault_dir: Path) -> Dict[str, str]:
+    """El entorno de cada tool bajo prueba: el vault temporal y el código del repo.
+
+    - `VAULT_ROOT`: la autodetección por `scripts/` copiado dentro del vault
+      cede ante un `VAULT_ROOT` heredado —el que fija el servidor MCP, por
+      ejemplo—, y entonces los contratos escribían en el vault real (AP-36).
+    - `PYTHONPATH`: los scripts copiados no llevan el paquete `vault/` al lado,
+      así que `vault.kernel` salía de la instalación del usuario y se probaba
+      otro código que el del repo (AP-44). Solo se antepone si el repo lo tiene:
+      instalado desde la wheel, el paquete ya es el del mismo build. Va en
+      `PYTHONPATH` y no con `PYTHONNOUSERSITE`: `PYTHONPATH` precede al
+      user-site, y apagarlo entero se lleva también PyYAML si vive ahí.
+    """
+    env = os.environ.copy()
+    env["VAULT_ROOT"] = str(vault_dir)
+    env.setdefault("VAULT_AGENT", "vault_test_runner")
+    env["PYTHONIOENCODING"] = "utf-8"
+    raiz = SCRIPTS_DIR.resolve().parent
+    if (raiz / "vault" / "__init__.py").is_file():
+        env["PYTHONPATH"] = os.pathsep.join(
+            p for p in (str(raiz), env.get("PYTHONPATH")) if p)
+    return env
 
 
 def _parse_json_output(stdout: str) -> Optional[Dict]:
@@ -262,7 +291,7 @@ def _run_contracts_in_vault(vault_dir: Path) -> Dict[str, Any]:
     tmp_scripts = vault_dir / "scripts"
     shutil.copytree(str(SCRIPTS_DIR), str(tmp_scripts))
 
-    env = os.environ.copy()
+    env = _entorno(vault_dir)
 
     for tc in TOOL_CONTRACTS:
         name = tc["name"]
@@ -367,6 +396,7 @@ def _run_errors_in_vault(vault_dir: Path) -> Dict[str, Any]:
                 errors="replace",
                 timeout=15,
                 cwd=str(tmp_scripts),
+                env=_entorno(vault_dir),
             )
             stdout = result.stdout.strip()
             data = _parse_json_output(stdout)
@@ -479,4 +509,6 @@ Ejemplos:
 
 
 if __name__ == "__main__":
-    sys.exit(wrap_main(main, "vault_test_runner"))
+    # Lanza decenas de subprocesos: con el límite por defecto (60 s) `--contracts`
+    # moría en `TOOL_TIMEOUT` antes de informar. Mismo criterio que vault_smoke.
+    sys.exit(wrap_main(main, "vault_test_runner", timeout=3600))
