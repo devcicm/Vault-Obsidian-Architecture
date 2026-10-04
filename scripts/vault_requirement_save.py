@@ -327,11 +327,11 @@ Notes:
     )
 
     parser.add_argument(
-        "--type", dest="req_type", required=True, help=f"Requirement type: {REQ_TYPES}"
+        "--type", choices=REQ_TYPES, dest="req_type", required=True, help=f"Requirement type: {REQ_TYPES}"
     )
 
     parser.add_argument(
-        "--priority", required=True, help=f"MoSCoW priority: {PRIORITIES}"
+        "--priority", choices=PRIORITIES, required=True, help=f"MoSCoW priority: {PRIORITIES}"
     )
 
     parser.add_argument(
@@ -343,7 +343,7 @@ Notes:
     )
 
     parser.add_argument(
-        "--status",
+        "--status", choices=STATUSES,
         default="draft",
         help=f"Requirement status (default: draft): {STATUSES}",
     )

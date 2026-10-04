@@ -303,7 +303,7 @@ Notas:
 
     parser.add_argument("--project", type=proyecto_registrado("vault_infra_map"), help="Filter by project")
 
-    parser.add_argument("--location", help=f"Filter by location: {LOCATIONS}")
+    parser.add_argument("--location", choices=LOCATIONS, help=f"Filter by location: {LOCATIONS}")
 
     args = parser.parse_args()
 

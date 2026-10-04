@@ -341,7 +341,7 @@ Notas:
     parser.add_argument("--to", dest="to_entity", required=True, help="Target entity")
 
     parser.add_argument(
-        "--relation_type", required=True, help=f"Relation type: {RELATION_TYPES}"
+        "--relation_type", choices=RELATION_TYPES, required=True, help=f"Relation type: {RELATION_TYPES}"
     )
 
     parser.add_argument("--cardinality", help="Cardinality (e.g., 1:N)")

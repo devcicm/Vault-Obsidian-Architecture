@@ -524,7 +524,7 @@ Notas:
     parser.add_argument("--name", required=True, help="Component name")
 
     parser.add_argument(
-        "--type", required=True, help=f"Component type: {list(COMPONENT_TYPES.keys())}"
+        "--type", choices=list(COMPONENT_TYPES), required=True, help=f"Component type: {list(COMPONENT_TYPES.keys())}"
     )
 
     parser.add_argument("--description", required=True, help="Component description")
@@ -533,7 +533,7 @@ Notas:
 
     parser.add_argument("--connections", help="Connections as JSON array")
 
-    parser.add_argument("--location", default="local", help=f"Location: {LOCATIONS}")
+    parser.add_argument("--location", choices=LOCATIONS, default="local", help=f"Location: {LOCATIONS}")
 
     parser.add_argument("--project", type=proyecto_registrado("vault_infra_save"), help="Optional project")
 

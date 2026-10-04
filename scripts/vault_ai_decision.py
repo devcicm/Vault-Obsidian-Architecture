@@ -346,7 +346,7 @@ Notes:
     parser.add_argument("--title", required=True, help="Short decision title")
 
     parser.add_argument(
-        "--decision_type", required=True, help=f"Decision type: {DECISION_TYPES}"
+        "--decision_type", choices=DECISION_TYPES, required=True, help=f"Decision type: {DECISION_TYPES}"
     )
 
     parser.add_argument("--description", required=True, help="What decision was made")
@@ -363,7 +363,7 @@ Notes:
     )
 
     parser.add_argument(
-        "--impact_level",
+        "--impact_level", choices=IMPACT_LEVELS,
         default="medium",
         help=f"Impact level (default: medium): {IMPACT_LEVELS}",
     )

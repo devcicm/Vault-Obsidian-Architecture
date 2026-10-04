@@ -18,7 +18,15 @@
           },
           "decision_type": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "architectural",
+              "security",
+              "data-model",
+              "algorithm",
+              "configuration",
+              "process"
+            ]
           },
           "description": {
             "type": "string",
@@ -38,7 +46,13 @@
           },
           "impact_level": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ]
           },
           "reversible": {
             "type": "string",
@@ -602,7 +616,13 @@
         "properties": {
           "action": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "created",
+              "updated",
+              "deleted",
+              "moved"
+            ]
           },
           "path": {
             "type": "string",
@@ -967,11 +987,26 @@
           },
           "relation_type": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "imports",
+              "extends",
+              "implements",
+              "calls",
+              "uses",
+              "re-exports",
+              "depends_on"
+            ]
           },
           "cardinality": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "1:1",
+              "1:N",
+              "N:1",
+              "N:M"
+            ]
           },
           "label": {
             "type": "string",
@@ -2763,7 +2798,18 @@
           },
           "location": {
             "type": "string",
-            "description": "Ubicación geográfica"
+            "description": "Ubicación geográfica",
+            "enum": [
+              "local",
+              "homelab",
+              "vps",
+              "cloud-aws",
+              "cloud-gcp",
+              "cloud-azure",
+              "cloud-other",
+              "datacenter",
+              "hybrid"
+            ]
           }
         },
         "additionalProperties": false
@@ -2794,7 +2840,23 @@
           },
           "type": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "server",
+              "vm",
+              "container",
+              "service",
+              "database",
+              "queue",
+              "storage",
+              "proxy",
+              "loadbalancer",
+              "network",
+              "firewall",
+              "cdn",
+              "pipeline",
+              "secret"
+            ]
           },
           "description": {
             "type": "string",
@@ -2810,7 +2872,18 @@
           },
           "location": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "local",
+              "homelab",
+              "vps",
+              "cloud-aws",
+              "cloud-gcp",
+              "cloud-azure",
+              "cloud-other",
+              "datacenter",
+              "hybrid"
+            ]
           },
           "project": {
             "type": "string",
@@ -4003,11 +4076,24 @@
           },
           "type": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "design",
+              "architecture",
+              "code",
+              "integration"
+            ]
           },
           "status": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "planificado",
+              "en_progreso",
+              "implementado",
+              "deprecado",
+              "refactoring"
+            ]
           },
           "description": {
             "type": "string",
@@ -4569,7 +4655,14 @@
           },
           "type": {
             "type": "string",
-            "description": "Tipo: test-plan | qa-metrics | qa-report | qa-strategy | coverage-report"
+            "description": "Tipo: test-plan | qa-metrics | qa-report | qa-strategy | coverage-report",
+            "enum": [
+              "test-plan",
+              "qa-metrics",
+              "qa-report",
+              "qa-strategy",
+              "coverage-report"
+            ]
           },
           "description": {
             "type": "string",
@@ -4932,7 +5025,20 @@
           },
           "relation_type": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "has_one",
+              "has_many",
+              "belongs_to",
+              "many_to_many",
+              "implements",
+              "extends",
+              "depends_on",
+              "uses",
+              "calls",
+              "owns",
+              "aggregates"
+            ]
           },
           "cardinality": {
             "type": "string",
@@ -5082,16 +5188,22 @@
           },
           "type": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "functional",
+              "non-functional",
+              "constraint",
+              "assumption"
+            ]
           },
           "priority": {
             "type": "string",
             "description": "Prioridad: critical, high, medium, low",
             "enum": [
-              "critical",
-              "high",
-              "medium",
-              "low"
+              "must-have",
+              "should-have",
+              "nice-to-have",
+              "wont-have"
             ]
           },
           "acceptance_criteria": {
@@ -5104,7 +5216,15 @@
           },
           "status": {
             "type": "string",
-            "description": "Status: draft, reviewed, approved, implemented, verified, obsolete"
+            "description": "Status: draft, reviewed, approved, implemented, verified, obsolete",
+            "enum": [
+              "draft",
+              "reviewed",
+              "approved",
+              "implemented",
+              "verified",
+              "obsolete"
+            ]
           },
           "related_code": {
             "type": "string",
@@ -5338,7 +5458,12 @@
           },
           "outcome": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "success",
+              "failed",
+              "partial"
+            ]
           },
           "notes": {
             "type": "string",
@@ -5394,7 +5519,16 @@
           },
           "category": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "deploy",
+              "debug",
+              "setup",
+              "rollback",
+              "maintenance",
+              "pipeline",
+              "incident"
+            ]
           },
           "steps": {
             "type": "string",
@@ -6040,7 +6174,15 @@
           },
           "test_type": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "unit",
+              "integration",
+              "e2e",
+              "performance",
+              "security",
+              "acceptance"
+            ]
           },
           "description": {
             "type": "string",
@@ -6068,7 +6210,14 @@
           },
           "status": {
             "type": "string",
-            "description": ""
+            "description": "",
+            "enum": [
+              "not_run",
+              "pass",
+              "fail",
+              "blocked",
+              "skip"
+            ]
           },
           "tags": {
             "type": "array",

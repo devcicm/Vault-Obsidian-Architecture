@@ -234,7 +234,7 @@ Notas:
         "--trigger", required=True, help="When this runbook should be triggered"
     )
 
-    parser.add_argument("--category", required=True, help=f"Category: {CATEGORIES}")
+    parser.add_argument("--category", choices=CATEGORIES, required=True, help=f"Category: {CATEGORIES}")
 
     parser.add_argument("--steps", required=True, help="Steps as JSON array")
 

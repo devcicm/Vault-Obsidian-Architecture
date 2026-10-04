@@ -271,9 +271,9 @@ Notas:
 
     parser.add_argument("--title", required=True, help="Diagram title")
 
-    parser.add_argument("--diagram_type", required=True, help=f"Type: {DIAGRAM_TYPES}")
+    parser.add_argument("--diagram_type", choices=DIAGRAM_TYPES, required=True, help=f"Type: {DIAGRAM_TYPES}")
 
-    parser.add_argument("--category", required=True, help=f"Category: {CATEGORIES}")
+    parser.add_argument("--category", choices=CATEGORIES, required=True, help=f"Category: {CATEGORIES}")
 
     parser.add_argument(
         "--content", required=True, help="Diagram content (code without backticks)"

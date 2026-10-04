@@ -330,7 +330,7 @@ Notes:
 
     parser.add_argument("--title", required=True, help="Short test case title")
 
-    parser.add_argument("--test_type", required=True, help=f"Test type: {TEST_TYPES}")
+    parser.add_argument("--test_type", choices=TEST_TYPES, required=True, help=f"Test type: {TEST_TYPES}")
 
     parser.add_argument("--description", required=True, help="What is being tested")
 
@@ -354,7 +354,7 @@ Notes:
     )
 
     parser.add_argument(
-        "--status",
+        "--status", choices=STATUSES,
         default="not_run",
         help=f"Test status (default: not_run): {STATUSES}",
     )

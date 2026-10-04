@@ -333,7 +333,7 @@ Notas:
     parser.add_argument("--name", required=True, help="Flow name")
 
     parser.add_argument(
-        "--type", required=True, dest="flow_type", help=f"Flow type: {FLOW_TYPES}"
+        "--type", choices=FLOW_TYPES, required=True, dest="flow_type", help=f"Flow type: {FLOW_TYPES}"
     )
 
     parser.add_argument(

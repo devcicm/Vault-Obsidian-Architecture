@@ -63,6 +63,8 @@ def test_cada_choices_se_publica_como_enum(nombre, script, flag):
     ("vault_log_error", "vault_log_error.py", "--type"),
     ("vault_bug_save", "vault_bug_save.py", "--severity"),
     ("vault_risk_save", "vault_risk_save.py", "--impact"),  # entero: se le da 9
+    ("vault_ai_decision", "vault_ai_decision.py", "--decision_type"),
+    ("vault_requirement_save", "vault_requirement_save.py", "--priority"),
 ])
 def test_el_enum_es_lo_que_argparse_acepta(nombre, script, flag):
     """Criterio del consumidor (AP-44): no la expresión evaluada por el
@@ -85,3 +87,30 @@ def test_el_enum_de_un_entero_son_enteros():
     for flag in ("likelihood", "impact"):
         assert props[flag]["type"] == "integer"
         assert props[flag]["enum"] == [1, 2, 3, 4, 5], props[flag]
+
+
+#: Vocabularios que la función comparaba con `not in` y argparse no conocía:
+#: el esquema MCP los publicaba como texto libre y el valor inválido llegaba
+#: hasta la tool. Fuera quedan, con su motivo, los que no son un `not in` exacto:
+#: `vault_code_module --language/--iso_type` normaliza con `lower()` (unos
+#: `choices` rechazarían `Python`), y `vault_preferences --category` y
+#: `vault_relation_add --entity_type` no rechazan nada fuera de la lista.
+VALIDADOS_EN_LA_FUNCION = [
+    ("vault_ai_decision", "decision_type"), ("vault_ai_decision", "impact_level"),
+    ("vault_change_log", "action"), ("vault_code_relation", "relation_type"),
+    ("vault_code_relation", "cardinality"), ("vault_diagram_save", "diagram_type"),
+    ("vault_diagram_save", "category"), ("vault_flow_save", "type"),
+    ("vault_infra_map", "location"), ("vault_infra_save", "type"),
+    ("vault_infra_save", "location"), ("vault_pattern_save", "type"),
+    ("vault_pattern_save", "status"), ("vault_qa_save", "type"),
+    ("vault_relation_add", "relation_type"), ("vault_requirement_save", "type"),
+    ("vault_requirement_save", "priority"), ("vault_requirement_save", "status"),
+    ("vault_runbook_log", "outcome"), ("vault_runbook_save", "category"),
+    ("vault_test_save", "test_type"), ("vault_test_save", "status"),
+]
+
+
+@pytest.mark.parametrize("nombre,param", VALIDADOS_EN_LA_FUNCION)
+def test_el_vocabulario_validado_en_la_funcion_se_publica(nombre, param):
+    prop = PUBLICADO[nombre]["inputSchema"]["properties"][param]
+    assert prop.get("enum"), (nombre, param, prop)

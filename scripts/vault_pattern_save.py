@@ -365,10 +365,10 @@ Notas:
 
     parser.add_argument("--name", required=True, help="Pattern name")
 
-    parser.add_argument("--type", required=True, help=f"Pattern type: {PATTERN_TYPES}")
+    parser.add_argument("--type", choices=PATTERN_TYPES, required=True, help=f"Pattern type: {PATTERN_TYPES}")
 
     parser.add_argument(
-        "--status", required=True, help=f"Pattern status: {PATTERN_STATUSES}"
+        "--status", choices=PATTERN_STATUSES, required=True, help=f"Pattern status: {PATTERN_STATUSES}"
     )
 
     parser.add_argument("--description", help="Pattern description")

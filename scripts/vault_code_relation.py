@@ -340,10 +340,10 @@ Notas:
     parser.add_argument("--to_file", required=True, help="Target file path")
 
     parser.add_argument(
-        "--relation_type", required=True, help=f"Relation type: {RELATION_TYPES}"
+        "--relation_type", choices=RELATION_TYPES, required=True, help=f"Relation type: {RELATION_TYPES}"
     )
 
-    parser.add_argument("--cardinality", help=f"Cardinality: {CARDINALITIES}")
+    parser.add_argument("--cardinality", choices=CARDINALITIES, help=f"Cardinality: {CARDINALITIES}")
 
     parser.add_argument("--label", help="Additional label")
 

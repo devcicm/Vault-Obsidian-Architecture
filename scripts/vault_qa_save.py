@@ -250,7 +250,7 @@ Status:
     parser.add_argument("--project", type=proyecto_registrado("vault_qa_save"), required=True, help="Project slug")
     parser.add_argument("--title", required=True, help="Short document title")
     parser.add_argument(
-        "--type",
+        "--type", choices=QA_TYPES,
         required=True,
         dest="qa_type",
         help=f"QA document type: {QA_TYPES}",

@@ -216,7 +216,7 @@ Notas:
         "--path", required=True, help="Path to runbook (relative to vault root)"
     )
 
-    parser.add_argument("--outcome", required=True, help=f"Outcome: {OUTCOMES}")
+    parser.add_argument("--outcome", choices=OUTCOMES, required=True, help=f"Outcome: {OUTCOMES}")
 
     parser.add_argument("--notes", help="Execution notes")
 

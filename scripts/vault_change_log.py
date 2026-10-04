@@ -365,7 +365,7 @@ Notas:
         allow_abbrev=False,
     )
 
-    parser.add_argument("--action", help=f"Action to record: {VALID_ACTIONS}")
+    parser.add_argument("--action", choices=VALID_ACTIONS, help=f"Action to record: {VALID_ACTIONS}")
 
     parser.add_argument("--path", help="Vault-relative path of the affected note")
 
