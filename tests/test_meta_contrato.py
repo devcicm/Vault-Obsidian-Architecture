@@ -92,3 +92,25 @@ def test_propiedades_propias_siguen_permitidas_y_el_id_es_el_de_la_nota(vault_va
 def test_el_autor_del_bloque_no_deja_que_meta_lo_pise():
     with pytest.raises(ValueError, match="CN-01"):
         vault_write.generate_frontmatter(title="Demo", meta={"id": "fijo"})
+
+
+def test_la_pista_de_missing_agent_nombra_un_flag_que_vault_write_acepta(tmp_path):
+    """Medido el 2026-10-04 desde la wheel: la pista decía `--agent`, que
+    `vault_write` no declara; seguirla daba INVALID_ARGS (AP-16)."""
+    import json
+    import os
+    import subprocess
+
+    (tmp_path / "01_Projects").mkdir()
+    env = {k: v for k, v in os.environ.items() if k != "VAULT_AGENT"}
+    r = subprocess.run(
+        [sys.executable, str(SCRIPTS / "vault_write.py"), "--folder", "01_Projects",
+         "--title", "Sin Agente", "--content", CONTENIDO, "--tags", "demo"],
+        capture_output=True, text=True, encoding="utf-8", cwd=str(ROOT),
+        env={**env, "VAULT_ROOT": str(tmp_path)}, timeout=120,
+    )
+    sobre = json.loads(r.stdout)
+    assert sobre["error_code"] == "missing_agent", sobre
+    pista = sobre["recovery"]["hint"]
+    assert "--meta" in pista and "--agent" not in pista, pista
+    assert sobre["recovery"]["action"] == "fix_input"

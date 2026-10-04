@@ -944,6 +944,9 @@ def vault_write(
                 "message": "AP-16: agent field required for content notes. "
                 "Set --meta '{\"agent\":\"my-agent\"}' or VAULT_AGENT env var. "
                 "System notes (00_System/) exempt.",
+                # La pista del catálogo dice `--agent`, que esta tool no declara:
+                # seguirla daría INVALID_ARGS. Aquí el agente viaja en `--meta`.
+                "recovery": "Pasar --meta '{\"agent\":\"<nombre>\"}' o exportar VAULT_AGENT.",
             }
 
     # Determine filename and validate path stays inside vault
