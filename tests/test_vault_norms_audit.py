@@ -278,7 +278,9 @@ def test_section_index_table_separates_link_and_title(tmp_path, monkeypatch):
         "2026-07-12T00:00:00.000Z",
         subdirs=None,
     )
-    assert "| [[mi-flujo]] | Mi Flujo — Título/largo | flow |" in content
+    # v40.35: la columna Resumen va entre el título y el tipo; sin `summary`
+    # ni cuerpo que resumir, la celda queda vacía en vez de inventar.
+    assert "| [[mi-flujo]] | Mi Flujo — Título/largo |  | flow |" in content
     assert "[[mi-flujo|" not in content
 
 
