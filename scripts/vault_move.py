@@ -554,21 +554,32 @@ Ejemplos:
 
     args = parser.parse_args()
 
+    def uso_invalido(mensaje: str) -> int:
+        # Con --json (lo que pasa siempre el MCP) la salida entera es un
+        # envelope: un «Error:» en texto plano no lo puede leer el servidor.
+        if args.json:
+            print(json.dumps(emit_error("vault_move", "INVALID_INPUT", mensaje),
+                             indent=2, ensure_ascii=False))
+        elif mensaje:
+            print(f"Error: {mensaje}")
+        else:
+            parser.print_help()
+        return 1
+
     if args.impact:
         if not args.from_path or not args.to_path:
-            print("Error: --impact requiere --from y --to")
-            return 1
+            return uso_invalido("--impact requiere --from y --to")
         result = check_move_impact(args.from_path, args.to_path)
     elif args.folder:
         if not args.to_folder:
-            print("Error: --folder requiere --to-folder")
-            return 1
+            return uso_invalido("--folder requiere --to-folder")
         result = move_folder(args.folder, args.to_folder, dry_run=args.dry_run)
     elif args.from_path and args.to_path:
         result = move_note(args.from_path, args.to_path, dry_run=args.dry_run)
+    elif args.json:
+        return uso_invalido("indica --from y --to, o --folder y --to-folder")
     else:
-        parser.print_help()
-        return 1
+        return uso_invalido("")
 
     if args.json:
         print(json.dumps(result, indent=2, ensure_ascii=False))
