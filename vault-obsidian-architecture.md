@@ -7660,7 +7660,7 @@ temp/
 
 ---
 
-### v40.35 — 2026-10-04 `git: pending`
+### v40.35 — 2026-10-04 `git: a686fb9`
 
 **Producto que un tercero instala y usa sin exponer su disco ni su vault.**
 
