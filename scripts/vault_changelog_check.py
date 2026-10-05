@@ -56,6 +56,7 @@ import json
 import re
 import subprocess
 
+import vault_baseline
 import vault_subproceso
 import sys
 from pathlib import Path
@@ -210,13 +211,9 @@ def hay_git() -> bool:
 
 
 def _cargar_baseline() -> Dict[str, str]:
-    if not BASELINE.exists():
-        return {}
-    try:
-        datos = json.loads(BASELINE.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {}
-    return datos.get("fechas_divergentes", {})
+    # El dueño del fichero es `vault_baseline` (AP-57): ausente es `{}`, pero
+    # ilegible lanza `BaselineIlegible` en vez de leerse como vacía (AP-51).
+    return vault_baseline.cargar_datos(BASELINE, "AP-53").get("fechas_divergentes", {})
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -475,19 +472,13 @@ def congelar() -> Dict[str, Any]:
                 "es para historia que ya estaba mal, no para estrenar deuda"
             ),
         }
-    BASELINE.write_bytes((
-        json.dumps(
-            {
-                "_comment": (
-                    "Entradas del changelog cuya fecha no coincide con la del "
-                    "commit que citan. Historia, no permiso: la lista solo "
-                    "puede encoger. version -> fecha real del commit."
-                ),
-                "fechas_divergentes": dict(sorted(nueva.items())),
-            },
-            indent=2, ensure_ascii=False,
-        ) + "\n"
-    ).encode("utf-8"))
+    vault_baseline.escribir(
+        BASELINE, "fechas_divergentes", "AP-53",
+        "Entradas del changelog cuya fecha no coincide con la del commit que "
+        "citan. Historia, no permiso: la lista solo puede encoger. "
+        "version -> fecha real del commit.",
+        nueva,
+    )
     return {
         "ok": True,
         "tool": "vault_changelog_check",

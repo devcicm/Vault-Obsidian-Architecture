@@ -323,3 +323,38 @@ def test_la_tool_corre_por_cli():
         cwd=str(RAIZ), timeout=120,
     )
     assert r.returncode == 0, r.stdout + r.stderr
+
+
+# ── La baseline la lee y la escribe su dueño (AP-57) ─────────────────────────
+
+
+def test_una_baseline_corrupta_no_se_lee_como_vacia(tmp_path, monkeypatch):
+    """Hasta v40.36 un JSON roto devolvía `{}`: el fallo que `vault_baseline`
+    existe para impedir (AP-51), escrito una novena vez aquí."""
+    import vault_baseline
+    roto = tmp_path / "changelog-baseline.json"
+    roto.write_bytes(b"{ no es json")
+    monkeypatch.setattr(C, "BASELINE", roto)
+    with pytest.raises(vault_baseline.BaselineIlegible):
+        C._cargar_baseline()
+
+
+def test_congelar_conserva_lo_que_no_entiende_y_escribe_en_lf(tmp_path, monkeypatch):
+    """Escribir a mano el JSON borraba las claves ajenas, como `objetivo`."""
+    import json
+    if not C.hay_git():
+        pytest.skip("sin repositorio git")
+    base = tmp_path / "changelog-baseline.json"
+    base.write_bytes(json.dumps({
+        "fechas_divergentes": {},
+        "objetivo": {"tamano": 0, "fecha_limite": "2027-01-01",
+                     "cadencia_dias": 30, "dueno": "changelog"},
+    }).encode("utf-8"))
+    monkeypatch.setattr(C, "BASELINE", base)
+    r = C.congelar()
+    assert r["ok"] is True, r
+    crudo = base.read_bytes()
+    assert b"\r\n" not in crudo
+    datos = json.loads(crudo)
+    assert datos["objetivo"]["dueno"] == "changelog"
+    assert datos["fechas_divergentes"] == {}

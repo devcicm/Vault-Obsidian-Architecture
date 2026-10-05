@@ -55,7 +55,8 @@ import subprocess
 import vault_subproceso
 from datetime import date, datetime
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from typing import (Any, Dict, Iterable, List, Mapping, Optional, Sequence, Set,
+                    Tuple, Union)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -182,7 +183,7 @@ def negativa(tool: str, accion: str, clave_nuevos: str,
 # ── Escritura ────────────────────────────────────────────────────────────────
 
 def escribir(path: Path, clave: str, norma: str, descripcion: str,
-             elementos: Sequence[Any],
+             elementos: Union[Sequence[Any], Mapping[str, Any]],
              extra: Optional[Dict[str, Any]] = None) -> int:
     """Escribe la baseline conservando todo lo que este módulo no entiende.
 
@@ -195,7 +196,10 @@ def escribir(path: Path, clave: str, norma: str, descripcion: str,
     previo = cargar_datos(path, norma)
     salida: Dict[str, Any] = dict(previo)
     salida["description"] = descripcion
-    salida[clave] = list(elementos)
+    # Un dict se guarda como dict: `changelog-baseline.json` indexa por versión
+    # (`tamano_congelado` ya contaba esa forma) y `list()` le dejaría las claves.
+    salida[clave] = (dict(sorted(elementos.items())) if isinstance(elementos, Mapping)
+                     else list(elementos))
     for k, v in (extra or {}).items():
         salida[k] = v
     # `newline="\n"` explícito: en Windows el default traduce a CRLF y la
