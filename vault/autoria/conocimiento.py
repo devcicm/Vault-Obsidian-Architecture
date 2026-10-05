@@ -58,14 +58,17 @@ def _contained(root: Path, path: Path) -> Path:
 class _FileLock:
     """Bloqueo exclusivo por nota, mismo patrón que vault_fs.file_lock.
 
-    Crea .locks/<slug>.lock dentro del vault para evitar dependencias
+    Crea .locks/<nombre>.md.lock dentro del vault para evitar dependencias
     entre fronteras y no asumir que la carpeta de la nota ya existe.
     """
 
     def __init__(self, note_path: Path, timeout: float = 30.0) -> None:
         self._note_path = note_path
         self._lock_root = note_path.parent / ".locks"
-        self._lock = self._lock_root / f"{note_path.stem}.lock"
+        # Mismo nombre que `vault_fs.file_lock` (`<nombre>.md.lock`): con
+        # `<stem>.lock` cada uno tomaba un directorio distinto para la misma
+        # nota y `vault_knowledge_save` escribía a la vez que `vault_write`.
+        self._lock = self._lock_root / f"{note_path.name}.lock"
         self._timeout = timeout
 
     def acquire(self) -> None:
@@ -75,6 +78,10 @@ class _FileLock:
             try:
                 os.mkdir(self._lock)
                 return
+            except FileNotFoundError:
+                # Otro escritor retiró `.locks/` vacío al soltar el suyo.
+                self._lock_root.mkdir(parents=True, exist_ok=True)
+                continue
             except OSError as exc:
                 if exc.errno != errno.EEXIST:
                     raise
@@ -87,6 +94,11 @@ class _FileLock:
     def release(self) -> None:
         try:
             os.rmdir(self._lock)
+        except OSError:
+            pass
+        # Como `vault_fs.file_lock`: `.locks/` vacío no se deja en el vault.
+        try:
+            os.rmdir(self._lock_root)
         except OSError:
             pass
 
