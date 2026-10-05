@@ -369,7 +369,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `scripts/error-contract-baseline.json` | AP-52 | 0 | — *sin objetivo* | 158 → 110 → 110 → 0 → 9 → 0 (encoge, Δ-158) |
 | `scripts/noop-baseline.json` | AP-37 | 0 | — *sin objetivo* | 0 → 0 → 0 (plana, Δ+0) |
 | `scripts/smoke-baseline.json` | AP-42 | 0 | — *sin objetivo* | — *1 muestra* |
-| `scripts/blueprint-baseline.json` | capa 4 — norma sin puerta ni test | 8 | — *sin objetivo* | 16 → 15 → 14 → 13 → 13 (encoge, Δ-3) |
+| `scripts/blueprint-baseline.json` | capa 4 — norma sin puerta ni test | 8 | — *sin objetivo* | 16 → 15 → 14 → 13 → 13 → 8 (encoge, Δ-8) |
 | `scripts/criterios-baseline.json` | AP-57 | 9 | — *sin objetivo* | 10 → 9 → 9 → 9 (encoge, Δ-1) |
 | `scripts/ciclos-baseline.json` | AP-58 — ciclo esquivado con import diferido | 5 | — *sin objetivo* | 30 → 30 → 15 → 14 → 7 → 5 (encoge, Δ-25) |
 | `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 6 | — *sin objetivo* | 5 → 5 → 6 (crece, Δ+1) |
