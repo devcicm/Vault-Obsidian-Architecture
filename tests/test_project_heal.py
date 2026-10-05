@@ -106,3 +106,20 @@ def test_ap63_heal_no_toca_la_copia_del_manifiesto(vault):
     codigo, r = _cli(vault, "vault_project.py", "--heal", "--apply")
     assert codigo == 0 and all("99_Archive" not in x["note"] for x in r["repairable"] + r["unrepaired"]), r
     assert copia.read_bytes() == antes
+
+
+def test_ap63_una_nota_ilegible_se_declara_en_vez_de_saltarse(vault, notas):
+    """Regla 7 contra /ans (2026-10-04): una nota con `title: ADR-004 — … (Musk): …`
+    sin comillas no parsea, y el audit la saltaba sin decirlo. Si esa nota
+    citaba un proyecto fantasma, el audit salía limpio sin haberla leído."""
+    rota = vault / "03_Decisions" / "adr.md"
+    rota.parent.mkdir(parents=True)
+    rota.write_text("---\ntitle: ADR-004 — Algoritmo (Musk): eliminar\nproject: nadie\n---\n\n# ADR\n",
+                    encoding="utf-8")
+    antes = rota.read_bytes()
+    codigo, r = _cli(vault, "vault_project.py", "--audit")
+    assert r["notes_unreadable_total"] == 1, r
+    assert r["notes_unreadable"][0]["note"] == "03_Decisions/adr.md"
+    codigo, r = _cli(vault, "vault_project.py", "--heal", "--apply")
+    assert {"note": "03_Decisions/adr.md", "cause": "frontmatter_ilegible"} in r["unrepaired"], r
+    assert rota.read_bytes() == antes

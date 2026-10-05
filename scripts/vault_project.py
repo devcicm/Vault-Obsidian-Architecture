@@ -65,7 +65,7 @@ from vault.autoria.frontmatter import firmante  # noqa: E402
 from vault.kernel import proyectos  # noqa: E402
 from vault.kernel.fallos import FalloDeDominio  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
-from vault.kernel.frontmatter_parsing import separar_frontmatter  # noqa: E402
+from vault.kernel.frontmatter_parsing import parse_frontmatter_robust, separar_frontmatter  # noqa: E402
 from vault.kernel.normalizacion import slugify_strict  # noqa: E402
 
 TOOL = "vault_project"
@@ -115,9 +115,14 @@ def auditar(raiz: Optional[Path] = None) -> Dict[str, Any]:
     registro = proyectos.leer_registro(raiz)
     citas: Dict[str, List[str]] = {}
     no_canonicas: List[Dict[str, str]] = []
+    ilegibles: List[Dict[str, str]] = []
     for _p, rel, crudo in _notas_de_proyecto(raiz):
-        fm, _cuerpo = parse_frontmatter_with_body(crudo)
-        if not isinstance(fm, dict):
+        # AP-51: un frontmatter que no parsea no es una nota sin proyecto. Hasta
+        # v40.35 se saltaba en silencio y el audit salía limpio sin haberla
+        # leído; la regla 7 lo destapó con un título sin comillas en /ans.
+        fm, _cuerpo, legible, causa = parse_frontmatter_robust(crudo)
+        if not legible:
+            ilegibles.append({"note": rel.as_posix(), "cause": str(causa)})
             continue
         for clave, valor in fm.items():
             if str(clave).lower() not in _CLAVES_DE_PROYECTO or valor in (None, ""):
@@ -133,6 +138,8 @@ def auditar(raiz: Optional[Path] = None) -> Dict[str, Any]:
         "phantoms": hallazgos,
         "phantoms_total": len(hallazgos),
         "non_canonical_keys": no_canonicas,
+        "notes_unreadable": ilegibles,
+        "notes_unreadable_total": len(ilegibles),
         "ambiguous": registro.ambiguedades(),
         "issues": registro.incidencias,
     }
@@ -202,8 +209,10 @@ def sanar(apply: bool = False) -> Dict[str, Any]:
     reparadas: List[Dict[str, Any]] = []
     sin_reparar: List[Dict[str, Any]] = []
     for p, rel, crudo in _notas_de_proyecto(raiz):
-        fm, _cuerpo = parse_frontmatter_with_body(crudo)
-        if not isinstance(fm, dict):
+        fm, _cuerpo, legible, _causa = parse_frontmatter_robust(crudo)
+        if not legible:
+            # AP-51: se declara; reparar el YAML no es cosa de AP-63.
+            sin_reparar.append({"note": rel.as_posix(), "cause": "frontmatter_ilegible"})
             continue
         slug, retirar, motivo = _plan_de_nota(registro, fm)
         if motivo:
