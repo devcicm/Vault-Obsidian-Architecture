@@ -53,6 +53,16 @@ def test_ap36_vault_root_absoluto_inexistente_no_se_crea(tmp_path):
     assert not raiz.exists()
 
 
+
+def test_ap36_la_pista_del_rechazo_habla_de_la_variable_y_no_de_99_index(tmp_path):
+    """La pista genérica de VAULT_NOT_FOUND manda a crear `99_Index/`, que con
+    una VAULT_ROOT que apunta a nada no arregla nada (QA 2026-10-04)."""
+    env = _ejecutar(tmp_path, str(tmp_path / "no-existe"), "vault_init.py", "--json")
+    assert env["error_code"] == "VAULT_NOT_FOUND"
+    pista = env["recovery"]["hint"]
+    assert "99_Index" not in pista
+    assert "VAULT_ROOT" in pista and "vault init" in pista
+
 def test_una_raiz_que_existe_sigue_escribiendo(tmp_path):
     raiz = tmp_path / "vault"
     for seccion in ("00_System", "07_Knowledge"):

@@ -374,6 +374,14 @@ def _rechazo_por_raiz_inexistente(tool_name: str) -> Optional[Dict[str, Any]]:
             "No se ejecuta nada para no crear un vault fantasma: revisa la "
             "variable (¿está sin expandir?) o crea el directorio y ejecuta vault_init."
         ),
+        # La pista del catálogo habla de `99_Index/` y de la autodetección, que
+        # aquí no aplican: la variable ya está definida y apunta a nada. El
+        # código no cambia porque los consumidores deciden por él.
+        pista=(
+            "Corregir VAULT_ROOT: si contiene %VAR% o $VAR literal, la shell no la "
+            "expandió. Para un vault nuevo, `vault init <ruta>` crea el directorio "
+            "(el padre debe existir) y después VAULT_ROOT apunta a esa ruta."
+        ),
     )
 
 
