@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_version import CURRENT_VERSION
+from vault_registry import runtime_seed_projection
 
 #: Raíz del repo — el guard de `js_native_tools` cruza a `mcp/nodejs/`.
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -38,6 +39,23 @@ def _product_catalog_path() -> Path:
     no debe desaparecer cuando el fixture hace ese árbol hostil.
     """
     return Path(__file__).resolve().parent.parent / "vault" / "meta_toolkit" / "tools-catalog.json"
+
+
+def _runtime_seed_path() -> Path:
+    """Ruta de la semilla que `vault init` lee desde el paquete instalado."""
+    return Path(__file__).resolve().parent.parent / "vault" / "ciclo_de_vida" / "runtime-seed.json"
+
+
+def _runtime_seed_text() -> str:
+    """La semilla tal como debe estar, derivada de `vault_registry`.
+
+    Es la otra proyección empaquetada que lleva la versión. En v40.35 el bump
+    la dejó en v40.34 porque nadie la escribía ni la comparaba: `vault init`
+    sellaba runtimes que `vault doctor` rechazaba como STANDARD_INCOMPATIBLE,
+    y solo un test de la suite lo veía. Ahora viaja con el catálogo: `--sync`
+    la escribe y `--check`, que es puerta, falla si envejece.
+    """
+    return json.dumps(runtime_seed_projection(), indent=2, ensure_ascii=False) + "\n"
 
 
 TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
@@ -5046,6 +5064,7 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
         with product_output.open("w", encoding="utf-8", newline="\n") as f:
             json.dump(catalog, f, indent=2, ensure_ascii=False)
             f.write("\n")
+        _runtime_seed_path().write_text(_runtime_seed_text(), encoding="utf-8", newline="\n")
 
     return output_path
 
@@ -5210,6 +5229,17 @@ def check_sync(json_path: Optional[str] = None) -> Dict[str, Any]:
                 if product_catalog != existing:
                     result["ok"] = False
                     result["diffs"].append("product catalog differs from canonical JSON projection")
+        seed_path = _runtime_seed_path()
+        try:
+            seed_actual = seed_path.read_text(encoding="utf-8")
+        except OSError:
+            seed_actual = None
+        if seed_actual != _runtime_seed_text():
+            result["ok"] = False
+            result["diffs"].append(
+                f"runtime seed {seed_path.name} differs from vault_registry.runtime_seed_projection() "
+                "(regenerar con --sync)"
+            )
 
     return result
 

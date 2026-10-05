@@ -30,6 +30,31 @@ def test_seed_empaquetado_es_proyeccion_del_registro_canonico():
         sys.path.remove(str(scripts))
 
 
+def test_una_semilla_desfasada_rompe_la_puerta_del_catalogo(monkeypatch, tmp_path):
+    """v40.35: el bump dejó la semilla en v40.34 y ninguna puerta lo vio, así
+    que `vault init` creaba runtimes que `vault doctor` rechazaba. La semilla
+    viaja ahora con el catálogo: `--check` falla si envejece y `--sync` la
+    regenera desde `vault_registry`."""
+    import sys
+
+    scripts = Path(__file__).resolve().parents[1] / "scripts"
+    sys.path.insert(0, str(scripts))
+    try:
+        import vault_mcp_catalog as MC
+
+        seed = tmp_path / "runtime-seed.json"
+        seed.write_text(MC._runtime_seed_text().replace(MC.CURRENT_VERSION, "v0.0"), encoding="utf-8")
+        monkeypatch.setattr(MC, "_runtime_seed_path", lambda: seed)
+        result = MC.check_sync()
+        assert result["ok"] is False
+        assert any("runtime seed" in diff for diff in result["diffs"])
+
+        seed.unlink()
+        assert MC.check_sync()["ok"] is False, "una semilla ausente no puede pasar"
+    finally:
+        sys.path.remove(str(scripts))
+
+
 def test_un_runtime_recien_creado_valida_limpio(tmp_path):
     """Medido el 2026-10-01 con la wheel instalada: `vault init` y luego
     `vault_validate` daban VALIDATION_FAILED por `00_System/vault-hub.md`
