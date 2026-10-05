@@ -27,6 +27,7 @@ from typing import Any, Dict, List, Optional
 
 from vault_io import (
     assert_within_vault,
+    escritura_atomica,
     file_lock,
     get_vault_root,
     record_raw_write,
@@ -79,7 +80,7 @@ def _escribir_hub(destino: Path, contenido: str) -> None:
     destino.parent.mkdir(parents=True, exist_ok=True)
     with file_lock(destino):
         record_raw_write(destino, contenido)
-        destino.write_text(contenido, encoding="utf-8")
+        escritura_atomica(destino, contenido)
     # AP-47: el grafo las cuenta como nodos y se escriben fuera del gancho de
     # `atomic_write_text`; sin esto el grafo refrescado no las ve hasta la
     # siguiente reconstrucción. Fuera del lock: el refresco toma el suyo.
@@ -454,7 +455,7 @@ def vault_section_index(
                     indice_disponible=indice_disponible,
                 )
                 record_raw_write(sub_index, sub_contenido)
-                sub_index.write_text(sub_contenido, encoding="utf-8")
+                escritura_atomica(sub_index, sub_contenido)
             subdir_indexes.append(
                 str(sub_index.relative_to(vroot)).replace("\\", "/")
             )
@@ -470,7 +471,7 @@ def vault_section_index(
             indice_disponible=indice_disponible,
         )
         record_raw_write(index_path, contenido)
-        index_path.write_text(contenido, encoding="utf-8")
+        escritura_atomica(index_path, contenido)
 
     return {
         "ok": True,
