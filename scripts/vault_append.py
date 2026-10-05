@@ -96,6 +96,21 @@ def vault_append(
         return _append_bajo_lock(note_path, path, content, section, timestamped)
 
 
+def _insertar(texto: str, pos: int, bloque: str) -> str:
+    """Inserta `bloque` en `pos` separado por una línea en blanco a cada lado.
+
+    Medido el 2026-10-05 sobre una copia de un vault real: concatenar
+    `"\n\n" + bloque` dejaba tres saltos delante y ninguno al final, y el
+    `end-of-file-fixer` del consumidor ensuciaba el commit siguiente con un
+    cambio que la tool no había pedido. La nota acaba en un solo `\n`.
+    """
+    antes = texto[:pos].rstrip("\n")
+    despues = texto[pos:].lstrip("\n")
+    bloque = bloque.strip("\n")
+    cabeza = f"{antes}\n\n{bloque}" if antes else bloque
+    return f"{cabeza}\n\n{despues}" if despues else f"{cabeza}\n"
+
+
 def _append_bajo_lock(
     note_path: Path, path: str, content: str, section: Optional[str], timestamped: bool
 ) -> dict:
@@ -140,19 +155,15 @@ def _append_bajo_lock(
             else:
                 insert_pos = len(existing_content)
 
-            existing_content = (
-                existing_content[:insert_pos]
-                + append_text
-                + existing_content[insert_pos:]
-            )
+            existing_content = _insertar(existing_content, insert_pos, append_text)
 
         else:
             # Section not found, append at end
 
-            existing_content += append_text
+            existing_content = _insertar(existing_content, len(existing_content), append_text)
 
     else:
-        existing_content += append_text
+        existing_content = _insertar(existing_content, len(existing_content), append_text)
 
     # Write back
 
