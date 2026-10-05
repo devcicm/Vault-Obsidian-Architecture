@@ -40,18 +40,32 @@ from vault_entorno import leer as _env
 # Frontera estrictamente legacy: algunos scripts se ejecutan como fichero y
 # Python sólo añade ``scripts/`` al path. El producto instalado nunca importa
 # este módulo. Reintentamos exclusivamente cuando falta el paquete superior;
-# errores internos de ``vault.kernel.escritura`` deben seguir siendo visibles.
+# errores internos de los módulos de ``vault.kernel`` deben seguir siendo visibles.
+def _modulo_del_paquete(nombre: str):
+    """Carga un primitive estable de ``vault.kernel`` sólo cuando se necesita.
+
+    En un checkout, ``scripts/`` usa el ``vault/`` de su propio repo, no el que
+    haya instalado. Hasta v40.36 solo se recurría al repo si faltaba ``vault``
+    del todo, así que una instalación de otra versión ganaba en silencio y se
+    mezclaban versiones. Medido el 2026-10-05 al añadir ``vault.kernel.bloqueo``:
+    ModuleNotFoundError con la wheel anterior en el user-site. En la wheel este
+    fichero vive en ``vault_toolkit/_impl/`` y no hay ``vault/`` al lado: se
+    importa el instalado, que es el de su misma versión.
+    """
+    legacy_repo_root = Path(__file__).resolve().parent.parent
+    if (legacy_repo_root / "vault" / "kernel").is_dir() and str(legacy_repo_root) not in sys.path:
+        sys.path.insert(0, str(legacy_repo_root))
+    return importlib.import_module(nombre)
+
+
 def _stable_escritura_module():
     """Carga el primitive estable sólo cuando una escritura legacy lo necesita."""
-    try:
-        return importlib.import_module("vault.kernel.escritura")
-    except ModuleNotFoundError as exc:
-        if exc.name != "vault":
-            raise
-        legacy_repo_root = Path(__file__).resolve().parent.parent
-        if str(legacy_repo_root) not in sys.path:
-            sys.path.insert(0, str(legacy_repo_root))
-        return importlib.import_module("vault.kernel.escritura")
+    return _modulo_del_paquete("vault.kernel.escritura")
+
+
+def _bloqueo():
+    """Las piezas del lock compartidas con `vault.autoria.conocimiento`."""
+    return _modulo_del_paquete("vault.kernel.bloqueo")
 
 
 def __getattr__(name: str):
@@ -109,30 +123,6 @@ def _held(key: str) -> bool:
     return key in getattr(_HELD_LOCKS, "keys", ())
 
 
-# Cuánto se reintenta el hueco de un `.locks/` en borrado pendiente. Soltar el
-# último lock de una carpeta lo retira, y en Windows un directorio en borrado
-# pendiente sigue ocupando el nombre un instante: crearlo da FileExistsError
-# con `is_dir()` ya en falso, y crear un lock dentro da PermissionError. Medido
-# el 2026-10-05: 1 de 12 procesos moría así en
-# tests/test_file_lock_entre_procesos.py. Es el mismo hueco que
-# FileNotFoundError, pero los mismos errores también los da una carpeta en la
-# que de verdad no se puede escribir: la ventana es corta para que ese caso
-# siga saliendo con su error y no como un timeout.
-_HUECO_BORRADO_PENDIENTE = 1.0
-
-
-def _crear_carpeta_de_locks(lock_root: Path) -> None:
-    hasta = time.time() + _HUECO_BORRADO_PENDIENTE
-    while True:
-        try:
-            lock_root.mkdir(parents=True, exist_ok=True)
-            return
-        except (FileExistsError, PermissionError):
-            if time.time() >= hasta:
-                raise
-            time.sleep(0.01)
-
-
 @contextmanager
 def file_lock(
     target: Path, timeout: float = 30.0, stale_after: float = 120.0
@@ -149,9 +139,11 @@ def file_lock(
     `_HELD_LOCKS` para qué pasaba antes — no era una espera de más, era una
     escritura sin sincronizar.
     """
-    lock_root = target.parent / ".locks"
-    _crear_carpeta_de_locks(lock_root)
-    lock_dir = lock_root / f"{target.name}.lock"
+    # Ruta, alta de `.locks/` y su retirada salen de `vault.kernel.bloqueo`:
+    # `_FileLock` de conocimiento toma el mismo lock y no puede importar esto.
+    bloqueo = _bloqueo()
+    lock_root, lock_dir = bloqueo.rutas_de_lock(target)
+    bloqueo.crear_carpeta_de_locks(lock_root)
     clave = str(lock_dir)
     deadline = time.time() + timeout
 
@@ -169,7 +161,7 @@ def file_lock(
     # tercero con el ladrón todavía dentro (medido en v40.34, ver
     # tests/test_file_lock_entre_procesos.py).
     token = uuid.uuid4().hex
-    hueco_hasta = None
+    hueco = bloqueo.HuecoDeBorrado()
     while True:
         try:
             os.mkdir(lock_dir)
@@ -178,23 +170,19 @@ def file_lock(
             # `.locks/` vacío entre nuestro `mkdir` del padre y este. Se
             # vuelve a crear y se compite de nuevo.
             try:
-                _crear_carpeta_de_locks(lock_root)
+                bloqueo.crear_carpeta_de_locks(lock_root)
             except OSError:
                 local.release()
                 raise
             continue
         except PermissionError:
             # El mismo retiro visto un instante antes: `.locks/` está en
-            # borrado pendiente (ver `_HUECO_BORRADO_PENDIENTE`).
-            ahora = time.time()
-            if hueco_hasta is None:
-                hueco_hasta = ahora + _HUECO_BORRADO_PENDIENTE
-            if ahora >= min(hueco_hasta, deadline):
+            # borrado pendiente (ver `HUECO_BORRADO_PENDIENTE`).
+            if time.time() >= deadline or not hueco.reintentar():
                 local.release()
                 raise
-            time.sleep(0.01)
             try:
-                _crear_carpeta_de_locks(lock_root)
+                bloqueo.crear_carpeta_de_locks(lock_root)
             except OSError:
                 local.release()
                 raise
@@ -290,15 +278,8 @@ def file_lock(
                     suelto.rmdir()
                 except OSError:
                     pass
-            # `.locks/` vacío no se deja atrás: medido el 2026-10-05, un
-            # reindex de un vault real dejaba uno en cada una de sus 68
-            # secciones. `rmdir` solo borra si está vacío; si otro proceso ya
-            # tiene su lock dentro falla y se queda, y quien llegue entre
-            # medias lo recrea (ver `FileNotFoundError` al adquirir).
-            try:
-                lock_root.rmdir()
-            except OSError:
-                pass
+            # `.locks/` vacío no se deja atrás (ver `retirar_carpeta_si_vacia`).
+            bloqueo.retirar_carpeta_si_vacia(lock_root)
         local.release()
 
 

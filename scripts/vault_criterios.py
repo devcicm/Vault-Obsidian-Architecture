@@ -132,6 +132,31 @@ FUNCIONES_CON_DUENO: List[Dict[str, Any]] = [
             "siguiente y el esqueleto pasaba el guard (v40.35)."
         ),
     },
+    {
+        "simbolo": "rutas_de_lock",
+        "dueño": "vault/kernel/bloqueo.py",
+        "por_que": (
+            "`vault_fs.file_lock` y el lock de `vault_knowledge_save` nombraban "
+            "el directorio del lock cada uno a su manera, tomaban dos distintos "
+            "para la misma nota y escribían a la vez (dd593d0)."
+        ),
+    },
+    {
+        "simbolo": "crear_carpeta_de_locks",
+        "dueño": "vault/kernel/bloqueo.py",
+        "por_que": (
+            "El hueco de un `.locks/` en borrado pendiente (Windows) hubo que "
+            "arreglarlo dos veces, una por cada tomador del mismo lock (ad5b10b)."
+        ),
+    },
+    {
+        "simbolo": "retirar_carpeta_si_vacia",
+        "dueño": "vault/kernel/bloqueo.py",
+        "por_que": (
+            "Retirar `.locks/` al soltar es lo que abre el hueco que "
+            "`crear_carpeta_de_locks` tolera: los dos lados viven juntos."
+        ),
+    },
 ]
 
 #: Dónde se buscan definiciones: el código que viaja o que se ejecuta.

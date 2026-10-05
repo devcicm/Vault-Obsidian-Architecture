@@ -93,7 +93,7 @@ def test_el_mecanismo_atomico_es_un_primitive_compartido_y_no_otro_write_path():
     assert not any(token in stable for token in ("mkstemp", "os.replace", "os.fsync"))
     assert "def escritura_atomica(" in primitive
     assert "def _stable_escritura_module" in legacy_fs
-    assert 'import_module("vault.kernel.escritura")' in legacy_fs
+    assert '_modulo_del_paquete("vault.kernel.escritura")' in legacy_fs
     assert "writer=atomic_write_text, report=write_report" in legacy_adapter
 
 

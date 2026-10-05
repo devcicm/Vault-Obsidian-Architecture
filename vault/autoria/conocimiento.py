@@ -19,6 +19,12 @@ from typing import Any, Callable, Dict, List, Mapping, Optional, Union
 import yaml
 
 from .frontmatter import Frontmatter, firmante
+from ..kernel.bloqueo import (
+    HuecoDeBorrado,
+    crear_carpeta_de_locks,
+    retirar_carpeta_si_vacia,
+    rutas_de_lock,
+)
 from ..kernel.contenido import con_titulo
 from ..kernel.errores import construir_error
 from ..kernel.escritura import escritura_atomica
@@ -56,59 +62,36 @@ def _contained(root: Path, path: Path) -> Path:
 
 
 class _FileLock:
-    """Bloqueo exclusivo por nota, mismo patrón que vault_fs.file_lock.
+    """Bloqueo exclusivo por nota: el mismo lock que `vault_fs.file_lock`.
 
-    Crea .locks/<nombre>.md.lock dentro del vault para evitar dependencias
-    entre fronteras y no asumir que la carpeta de la nota ya existe.
+    Crea .locks/<nombre>.md.lock dentro del vault. Ruta, alta de `.locks/` y
+    su retirada vienen de `vault.kernel.bloqueo`, compartidas con
+    `vault_fs.file_lock`: escritas aquí por separado divergieron dos veces
+    (dd593d0, ad5b10b). Este módulo no importa `scripts/`.
     """
 
     def __init__(self, note_path: Path, timeout: float = 30.0) -> None:
         self._note_path = note_path
-        self._lock_root = note_path.parent / ".locks"
-        # Mismo nombre que `vault_fs.file_lock` (`<nombre>.md.lock`): con
-        # `<stem>.lock` cada uno tomaba un directorio distinto para la misma
-        # nota y `vault_knowledge_save` escribía a la vez que `vault_write`.
-        self._lock = self._lock_root / f"{note_path.name}.lock"
+        self._lock_root, self._lock = rutas_de_lock(note_path)
         self._timeout = timeout
 
-    # Como `vault_fs._HUECO_BORRADO_PENDIENTE`: en Windows un `.locks/` que
-    # otro escritor está retirando sigue ocupando el nombre un instante, y da
-    # FileExistsError al crearlo o PermissionError al crear el lock dentro.
-    # La ventana es corta para que una carpeta sin permiso de verdad siga
-    # saliendo con su error y no como un timeout.
-    _HUECO = 1.0
-
-    def _crear_raiz(self) -> None:
-        hasta = time.monotonic() + self._HUECO
-        while True:
-            try:
-                self._lock_root.mkdir(parents=True, exist_ok=True)
-                return
-            except (FileExistsError, PermissionError):
-                if time.monotonic() >= hasta:
-                    raise
-                time.sleep(0.01)
-
     def acquire(self) -> None:
-        self._crear_raiz()
+        crear_carpeta_de_locks(self._lock_root)
         deadline = time.monotonic() + self._timeout
-        hueco_hasta = None
+        hueco = HuecoDeBorrado()
         while True:
             try:
                 os.mkdir(self._lock)
                 return
             except FileNotFoundError:
                 # Otro escritor retiró `.locks/` vacío al soltar el suyo.
-                self._crear_raiz()
+                crear_carpeta_de_locks(self._lock_root)
                 continue
             except PermissionError:
-                ahora = time.monotonic()
-                if hueco_hasta is None:
-                    hueco_hasta = ahora + self._HUECO
-                if ahora >= min(hueco_hasta, deadline):
+                # El mismo retiro visto un instante antes (borrado pendiente).
+                if time.monotonic() >= deadline or not hueco.reintentar():
                     raise
-                time.sleep(0.01)
-                self._crear_raiz()
+                crear_carpeta_de_locks(self._lock_root)
                 continue
             except OSError as exc:
                 if exc.errno != errno.EEXIST:
@@ -124,11 +107,7 @@ class _FileLock:
             os.rmdir(self._lock)
         except OSError:
             pass
-        # Como `vault_fs.file_lock`: `.locks/` vacío no se deja en el vault.
-        try:
-            os.rmdir(self._lock_root)
-        except OSError:
-            pass
+        retirar_carpeta_si_vacia(self._lock_root)
 
     def __enter__(self) -> "_FileLock":
         self.acquire()
