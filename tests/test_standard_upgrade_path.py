@@ -226,3 +226,21 @@ def test_el_upgrade_deja_la_estructura_que_doctor_exige(tmp_path, desde):
         assert "missing" not in diagnostico, diagnostico
     finally:
         vault_io.set_vault_root(anterior)
+
+
+def test_el_fichero_de_version_sale_como_lo_escribe_init(tmp_path):
+    """Medido el 2026-10-05 al subir un vault real a v40.35: `vault init`
+    escribe `standard-version.json` en LF y con salto final; el upgrade lo
+    reescribía en CRLF y sin él, y el repo del consumidor lo veía cambiar de
+    forma además de contenido."""
+    import vault_io
+
+    anterior = vault_io.get_vault_root()
+    vault_io.set_vault_root(tmp_path)
+    try:
+        vsu._write_version_file({"applied_version": vsu.CURRENT_VERSION})
+        crudo = (tmp_path / "00_System" / "standard-version.json").read_bytes()
+    finally:
+        vault_io.set_vault_root(anterior)
+    assert b"\r\n" not in crudo
+    assert crudo.endswith(b"}\n")

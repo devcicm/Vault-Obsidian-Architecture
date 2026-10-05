@@ -545,8 +545,11 @@ def _read_version_file() -> Dict[str, Any]:
 
 def _write_version_file(data: Dict[str, Any]) -> None:
     _system_dir().mkdir(parents=True, exist_ok=True)
+    # Como lo escribe `vault init`: LF y salto final, en cualquier plataforma.
     _version_file().write_text(
-        json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8"
+        json.dumps(data, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+        newline="\n",
     )
 
 
