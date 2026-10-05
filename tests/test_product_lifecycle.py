@@ -223,3 +223,30 @@ def test_cada_fallo_del_ciclo_de_vida_lleva_su_codigo_y_su_pista(tmp_path, capsy
         assert error["error_code"] in ERROR_CATALOG, error
         assert error["error_code"] != "INVALID_ACTION", (estado, error)
         assert "--help" not in error["recovery"]["hint"], (estado, error)
+
+
+def test_el_envelope_lleva_los_campos_que_su_pista_nombra(tmp_path, capsys, monkeypatch):
+    """Medido el 2026-10-05 con la wheel 40.35 contra un vault v34.1 real: doctor
+    y status decían «Faltan las rutas de `missing`» y el envelope no traía
+    `missing`. El diagnóstico sí la calculaba; `_error` la tiraba. Igual con
+    STANDARD_INCOMPATIBLE: la pista distingue «más nueva» de «más vieja» y el
+    envelope no decía cuál de las dos."""
+    monkeypatch.setattr("vault.product_cli.toolkit_version", lambda: "test")
+    root = tmp_path / "runtime"
+    assert producto.inicializar_runtime(root)["ok"]
+    shutil.rmtree(root / "07_Knowledge")
+    for comando in ("doctor", "status"):
+        assert main([comando, str(root)]) != 0
+        error = json.loads(capsys.readouterr().err)
+        assert "`missing`" in error["recovery"]["hint"]
+        assert error.get("missing") == ["07_Knowledge"], (comando, error)
+    (root / "07_Knowledge").mkdir()
+    version = root / "00_System" / "standard-version.json"
+    data = json.loads(version.read_text(encoding="utf-8"))
+    data["applied_version"] = "v999.0"
+    version.write_text(json.dumps(data), encoding="utf-8")
+    assert main(["doctor", str(root)]) != 0
+    error = json.loads(capsys.readouterr().err)
+    assert error["state"] == "STANDARD_INCOMPATIBLE", error
+    assert error.get("compatibility") == "unsupported_newer", error
+    assert error.get("standard_version") == "v999.0", error

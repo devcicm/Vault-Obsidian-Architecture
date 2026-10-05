@@ -188,7 +188,8 @@ _CICLO_DE_VIDA = {
 }
 
 
-def _error(state: str, detail: str, exit_code: int) -> int:
+def _error(state: str, detail: str, exit_code: int,
+           datos: dict[str, Any] | None = None) -> int:
     code, pista = _CICLO_DE_VIDA.get(
         state, ("INVALID_ACTION", _PISTAS_DE_RESOLUCION.get(state)))
     _emit(
@@ -196,12 +197,18 @@ def _error(state: str, detail: str, exit_code: int) -> int:
             "vault",
             code,
             detail,
-            extra={"state": state, "error": detail},
+            extra={**(datos or {}), "state": state, "error": detail},
             pista=pista,
         ),
         stream=sys.stderr,
     )
     return exit_code
+
+
+#: Campos del diagnóstico que las pistas de `_CICLO_DE_VIDA` nombran o de los que
+#: depende elegir entre sus ramas. La ruta del runtime no viaja: la puso el
+#: propio consumidor, y los envelopes no publican rutas absolutas.
+_CAMPOS_DEL_DIAGNOSTICO = ("missing", "standard_version", "compatibility")
 
 
 def cmd_tools_list(_: argparse.Namespace) -> int:
@@ -285,7 +292,8 @@ def _lifecycle_result(result: dict[str, Any]) -> int:
     state = str(result.get("state", "INVALID_RUNTIME"))
     detail = str(result.get("detail") or state)
     code = EXIT_INIT_CONFLICT if state == "INIT_CONFLICT" else EXIT_RUNTIME_INVALID
-    return _error(state, detail, code)
+    datos = {k: result[k] for k in _CAMPOS_DEL_DIAGNOSTICO if result.get(k) is not None}
+    return _error(state, detail, code, datos)
 
 
 def _poblar_con_vault_init(root: Path) -> dict[str, Any]:

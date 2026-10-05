@@ -245,7 +245,7 @@ def diagnosticar_runtime(target: str | Path) -> dict[str, Any]:
 def estado_runtime(target: str | Path) -> dict[str, Any]:
     """Vista breve, determinista y read-only construida desde el diagnóstico."""
     diagnosis = diagnosticar_runtime(target)
-    return {
+    vista = {
         "ok": diagnosis["ok"],
         "state": diagnosis["state"],
         "runtime": diagnosis.get("runtime", str(Path(target).expanduser())),
@@ -253,3 +253,8 @@ def estado_runtime(target: str | Path) -> dict[str, Any]:
         "compatibility": diagnosis.get("compatibility"),
         "sections_present": diagnosis.get("sections_present", 0),
     }
+    # Lo que falta es lo único accionable de un SYSTEM_FILES_MISSING: una vista
+    # breve que lo omite deja al consumidor sabiendo que algo falta, no qué.
+    if "missing" in diagnosis:
+        vista["missing"] = diagnosis["missing"]
+    return vista
