@@ -332,6 +332,22 @@ python scripts/vault_norms.py --check-framework    # guard anti-drift registro �
 
 ---
 
+## Novedades v40.35 — Producto para terceros
+
+- **El MCP por HTTP ya no está abierto.** Exige `Authorization: Bearer` (`VAULT_MCP_TOKEN`
+  o el token que el servidor imprime al arrancar) y rechaza `Origin` y `Host` ajenos
+  (SP-04). Los argumentos se validan contra el schema antes de ejecutar nada.
+- **Nada sale del vault.** `vault_diff` no compara ficheros de fuera, los envelopes de
+  error no publican rutas absolutas ni traceback (salvo `VAULT_DEBUG=1`) y con un
+  `VAULT_ROOT` que no existe ninguna tool se ejecuta, y el rechazo dice qué corregir.
+- **Identidad sin ambigüedad.** Registro de proyectos (`vault_project`, AP-63), nombres
+  de fichero con `slugify_strict` (CN-01), `Status` y `ErrorCode` derivados de sus
+  registros y la nota abre con su título como H1 (CN-04).
+- **Escrituras íntegras.** Un solo escritor de frontmatter (AP-46) y locks que excluyen
+  de verdad entre procesos (F1).
+- **Wheel de producto.** Deja fuera la gobernanza del estándar y lleva dentro el servidor
+  MCP, así que funciona sin un checkout del repo.
+
 ## Novedades v40.34 — Toolkit instalable + Gobernanza MCP
 
 - **`pip install -e .` validado end-to-end.** La receta de instalación por copia de carpetas

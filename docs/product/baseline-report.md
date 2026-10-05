@@ -36,7 +36,7 @@
 
 | Dato | Valor |
 |------|-------|
-| TOOLKIT_VERSION | `40.34` → `41.0` (en `pyproject.toml` tras merge) |
+| TOOLKIT_VERSION | `40.34` → `41.0` (en `pyproject.toml` tras merge) *(superseded_by: v40.35, `a686fb9` — el 41.0 previsto no se aplicó; la siguiente versión fue la menor 40.35, porque no hubo migración de estructura)* |
 | STANDARD_VERSION | `v40.34` |
 | RUNTIME_SCHEMA | `2` (nuevo, en `vault/ciclo_de_vida/runtime-seed.json`) |
 | **VERSION_MODEL** | **DECOUPLED** — toolkit ≠ standard ≠ schema |
