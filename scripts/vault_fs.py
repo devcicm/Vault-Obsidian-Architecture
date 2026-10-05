@@ -109,6 +109,30 @@ def _held(key: str) -> bool:
     return key in getattr(_HELD_LOCKS, "keys", ())
 
 
+# Cuánto se reintenta el hueco de un `.locks/` en borrado pendiente. Soltar el
+# último lock de una carpeta lo retira, y en Windows un directorio en borrado
+# pendiente sigue ocupando el nombre un instante: crearlo da FileExistsError
+# con `is_dir()` ya en falso, y crear un lock dentro da PermissionError. Medido
+# el 2026-10-05: 1 de 12 procesos moría así en
+# tests/test_file_lock_entre_procesos.py. Es el mismo hueco que
+# FileNotFoundError, pero los mismos errores también los da una carpeta en la
+# que de verdad no se puede escribir: la ventana es corta para que ese caso
+# siga saliendo con su error y no como un timeout.
+_HUECO_BORRADO_PENDIENTE = 1.0
+
+
+def _crear_carpeta_de_locks(lock_root: Path) -> None:
+    hasta = time.time() + _HUECO_BORRADO_PENDIENTE
+    while True:
+        try:
+            lock_root.mkdir(parents=True, exist_ok=True)
+            return
+        except (FileExistsError, PermissionError):
+            if time.time() >= hasta:
+                raise
+            time.sleep(0.01)
+
+
 @contextmanager
 def file_lock(
     target: Path, timeout: float = 30.0, stale_after: float = 120.0
@@ -126,7 +150,7 @@ def file_lock(
     escritura sin sincronizar.
     """
     lock_root = target.parent / ".locks"
-    lock_root.mkdir(parents=True, exist_ok=True)
+    _crear_carpeta_de_locks(lock_root)
     lock_dir = lock_root / f"{target.name}.lock"
     clave = str(lock_dir)
     deadline = time.time() + timeout
@@ -145,6 +169,7 @@ def file_lock(
     # tercero con el ladrón todavía dentro (medido en v40.34, ver
     # tests/test_file_lock_entre_procesos.py).
     token = uuid.uuid4().hex
+    hueco_hasta = None
     while True:
         try:
             os.mkdir(lock_dir)
@@ -152,7 +177,27 @@ def file_lock(
             # Otro proceso soltó el último lock de la carpeta y retiró
             # `.locks/` vacío entre nuestro `mkdir` del padre y este. Se
             # vuelve a crear y se compite de nuevo.
-            lock_root.mkdir(parents=True, exist_ok=True)
+            try:
+                _crear_carpeta_de_locks(lock_root)
+            except OSError:
+                local.release()
+                raise
+            continue
+        except PermissionError:
+            # El mismo retiro visto un instante antes: `.locks/` está en
+            # borrado pendiente (ver `_HUECO_BORRADO_PENDIENTE`).
+            ahora = time.time()
+            if hueco_hasta is None:
+                hueco_hasta = ahora + _HUECO_BORRADO_PENDIENTE
+            if ahora >= min(hueco_hasta, deadline):
+                local.release()
+                raise
+            time.sleep(0.01)
+            try:
+                _crear_carpeta_de_locks(lock_root)
+            except OSError:
+                local.release()
+                raise
             continue
         except FileExistsError:
             try:

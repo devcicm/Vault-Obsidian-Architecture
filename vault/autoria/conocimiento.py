@@ -71,16 +71,44 @@ class _FileLock:
         self._lock = self._lock_root / f"{note_path.name}.lock"
         self._timeout = timeout
 
+    # Como `vault_fs._HUECO_BORRADO_PENDIENTE`: en Windows un `.locks/` que
+    # otro escritor está retirando sigue ocupando el nombre un instante, y da
+    # FileExistsError al crearlo o PermissionError al crear el lock dentro.
+    # La ventana es corta para que una carpeta sin permiso de verdad siga
+    # saliendo con su error y no como un timeout.
+    _HUECO = 1.0
+
+    def _crear_raiz(self) -> None:
+        hasta = time.monotonic() + self._HUECO
+        while True:
+            try:
+                self._lock_root.mkdir(parents=True, exist_ok=True)
+                return
+            except (FileExistsError, PermissionError):
+                if time.monotonic() >= hasta:
+                    raise
+                time.sleep(0.01)
+
     def acquire(self) -> None:
-        self._lock_root.mkdir(parents=True, exist_ok=True)
+        self._crear_raiz()
         deadline = time.monotonic() + self._timeout
+        hueco_hasta = None
         while True:
             try:
                 os.mkdir(self._lock)
                 return
             except FileNotFoundError:
                 # Otro escritor retiró `.locks/` vacío al soltar el suyo.
-                self._lock_root.mkdir(parents=True, exist_ok=True)
+                self._crear_raiz()
+                continue
+            except PermissionError:
+                ahora = time.monotonic()
+                if hueco_hasta is None:
+                    hueco_hasta = ahora + self._HUECO
+                if ahora >= min(hueco_hasta, deadline):
+                    raise
+                time.sleep(0.01)
+                self._crear_raiz()
                 continue
             except OSError as exc:
                 if exc.errno != errno.EEXIST:
