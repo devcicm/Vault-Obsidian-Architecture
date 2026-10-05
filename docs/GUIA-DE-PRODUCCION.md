@@ -53,7 +53,7 @@ está escrita como registro ejecutable y no como recordatorio.
 
 ## Los huecos, escritos
 
-**`sistemas_operativos` — cubierta con hueco.** La CI ejecuta la suite en ubuntu, pero el paseo de INSTALACIÓN fuera del repo solo se ha hecho en Windows. macOS no lo toca nadie. Las instrucciones de instalación están inlined en README.md.
+**`sistemas_operativos` — cubierta con hueco.** La CI declara la suite y las product gates en ubuntu, pero esta rama no ha pasado por la CI. El paseo de INSTALACIÓN fuera del repo se ha hecho de forma recurrente en Windows y una vez a mano en Linux (2026-10-04, wheel 40.35 en python:3.12-slim con usuario sin privilegios: 16/16); en Linux no lo repite ninguna máquina. macOS no lo toca nadie. Las instrucciones de instalación están inlined en README.md.
 
 **`lo_publicado_es_solo_el_estandar` — cubierta con hueco.** Mide el índice de HOY. Lo que ya esté en un commit anterior del historial no lo ve nadie: para eso haría falta recorrer todos los árboles, y este repo nunca ha versionado esos directorios.
 
