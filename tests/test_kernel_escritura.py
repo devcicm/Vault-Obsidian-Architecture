@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import errno
-import os
 from pathlib import Path
 
 import pytest
@@ -33,10 +32,11 @@ def test_encoding_y_newlines_se_delegan_a_open_sin_normalizacion(tmp_path):
     target = tmp_path / "nota.md"
     content = "café\r\nlínea dos\n"
     escritura.escritura_atomica(target, content, encoding="utf-8")
-    # El primitive histórico abría en modo texto sin ``newline=``. En Windows
-    # cada LF conserva la traducción estándar de ``open`` (incluido un CRLF de
-    # entrada, que pasa a CRCRLF); no se normaliza contenido en este nivel.
-    assert target.read_bytes() == content.replace("\n", os.linesep).encode("utf-8")
+    # No se normaliza contenido en este nivel: se deposita byte a byte.
+    # Hasta 2026-10-05 se abría en modo texto sin ``newline=`` y en Windows
+    # cada LF pasaba a CRLF (y un CRLF de entrada a CRCRLF), deshaciendo el LF
+    # que el saneado fija. Ver ``test_escritura_atomica_lf``.
+    assert target.read_bytes() == content.encode("utf-8")
 
 
 @pytest.mark.parametrize(

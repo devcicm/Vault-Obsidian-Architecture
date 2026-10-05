@@ -27,7 +27,9 @@ def _fsync_enabled() -> bool:
 
 def _escribir_temporal(temp: Path, text: str, encoding: str) -> None:
     """Escribe el temporal y sincroniza su descriptor si se solicitó."""
-    with open(temp, "w", encoding=encoding) as handle:
+    # `newline=""`: el texto se deposita tal cual. Sin él, Windows traducía
+    # cada `\n` a `\r\n` y deshacía el LF que el saneado acababa de fijar.
+    with open(temp, "w", encoding=encoding, newline="") as handle:
         handle.write(text)
         if _fsync_enabled():
             handle.flush()
