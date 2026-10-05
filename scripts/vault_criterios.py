@@ -123,6 +123,15 @@ FUNCIONES_CON_DUENO: List[Dict[str, Any]] = [
             "antes de que existiera un escritor único."
         ),
     },
+    {
+        "simbolo": "vinetas_de_lista",
+        "dueño": "scripts/vault_norms_catalog.py",
+        "por_que": (
+            "AP-20 se decidía con la misma regex copiada en tres sitios, y las "
+            "tres compartían el defecto: una viñeta vacía se tragaba la línea "
+            "siguiente y el esqueleto pasaba el guard (v40.35)."
+        ),
+    },
 ]
 
 #: Dónde se buscan definiciones: el código que viaja o que se ejecuta.

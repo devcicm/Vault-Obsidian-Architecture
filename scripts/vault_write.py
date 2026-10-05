@@ -82,7 +82,9 @@ from vault_lib import (
     canonical_utc,
 )
 from vault_norms_catalog import (
+    VINETA_VACIA,
     compute_norm_refs,
+    vinetas_de_lista,
     normalize_status,
     STATUS_VOCAB,
     STATUS_TRANSITIONS,
@@ -849,14 +851,10 @@ def vault_write(
 
     # AP-20 guard: deceptive skeleton — reject if >50% of bullets are empty
 
-    bullets = re.findall(r"^\s*[-*]\s*(.*)", content, re.MULTILINE)
+    bullets = vinetas_de_lista(content)
 
     if bullets:
-        empty_bullets = [
-            b
-            for b in bullets
-            if not b.strip() or b.strip() in ("[]", "[[]]", "-", "[ ]")
-        ]
+        empty_bullets = [b for b in bullets if b in VINETA_VACIA]
 
         if len(empty_bullets) / len(bullets) > 0.5:
             return {

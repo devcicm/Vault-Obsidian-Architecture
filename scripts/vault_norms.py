@@ -62,6 +62,8 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 # en vez de borrarse, porque quitarlo rompería a 26 módulos sin que nada en este
 # fichero lo notara.
 from vault_norms_catalog import (  # noqa: F401
+    VINETA_VACIA,
+    vinetas_de_lista,
     _NORM_BY_CODE,
     DOMAIN_STATUS_VOCABS,
     LIFECYCLE_REGISTRY,
@@ -210,13 +212,9 @@ def vault_norms_scan(path: str) -> Dict[str, Any]:
         _add("AP-11", f"solo {len(real_lines)} línea(s) real(es) — posible skeleton")
 
     # Bullet ratio (AP-20)
-    bullets = re.findall(r"^\s*[-*]\s*(.*)", body, re.MULTILINE)
+    bullets = vinetas_de_lista(body)
     if bullets:
-        empty = [
-            b
-            for b in bullets
-            if not b.strip() or b.strip() in ("[]", "[[]]", "-", "[ ]")
-        ]
+        empty = [b for b in bullets if b in VINETA_VACIA]
         ratio = len(empty) / len(bullets)
         if ratio > 0.5:
             _add("AP-20", f"{int(ratio * 100)}% de bullets vacíos — deceptive skeleton")

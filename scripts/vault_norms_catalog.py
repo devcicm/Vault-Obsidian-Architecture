@@ -3895,6 +3895,24 @@ def _canonical_status(valor):
     return None
 
 
+#: Una viñeta es una **línea** `-` o `*` seguida de blanco o de fin de línea.
+#: superseded_by: este patrón (v40.35) — `^\s*[-*]\s*(.*)`, copiado en tres
+#: sitios: el `\s*` cruzaba el salto de línea, así que una viñeta vacía se
+#: tragaba la línea siguiente y contaba como llena, y `**negrita**` o `---`
+#: pasaban por viñetas. Una lista `- ` / `- [ ]` / `- algo` salía con un 0 %
+#: de vacías en vez del 67 %, y AP-20 no frenaba el esqueleto.
+_VINETA = re.compile(r"^[ \t]*[-*](?:[ \t]+(.*?))?[ \t]*$", re.MULTILINE)
+
+#: Lo que deja una viñeta sin contenido: nada, una casilla o un enlace vacío.
+VINETA_VACIA = ("", "[]", "[[]]", "-", "[ ]")
+
+
+def vinetas_de_lista(texto: str) -> List[str]:
+    """AP-20: el texto de cada viñeta, `""` si está vacía. Dueño único (AP-57):
+    `vault_write` lo usa para frenar y `vault_norms` para auditar."""
+    return [(m.group(1) or "").strip() for m in _VINETA.finditer(texto)]
+
+
 def compute_norm_refs(folder: str, content: str, wiki_links: List[str]) -> List[str]:
     """Las normas que aplican a una nota, deducidas de su carpeta y su cuerpo.
 
@@ -3916,8 +3934,7 @@ def compute_norm_refs(folder: str, content: str, wiki_links: List[str]) -> List[
     if wiki_links:
         refs.update({"AP-14", "AP-21", "AP-22", "SP-02"})
 
-    bullets = re.findall(r"^\s*[-*]\s*(.*)", content, re.MULTILINE)
-    if bullets:
+    if vinetas_de_lista(content):
         refs.add("AP-20")
 
     folder_lower = folder.lower()

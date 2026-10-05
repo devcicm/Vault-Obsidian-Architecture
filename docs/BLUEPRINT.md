@@ -67,7 +67,7 @@ regenera.*
 
 *Registros: `vault_norms.NORM_CATALOG` + `vault_gate.PUERTAS` + `tests/`*
 
-65 de 77 normas tienen puerta o test que las nombre.
+67 de 77 normas tienen puerta o test que las nombre.
 **Es la única capa con baseline**, y por un motivo concreto: las demás se midieron
 en cero el día que se declararon porque sus datos ya existían y solo faltaba
 atarlos. Ésta no. Exigir cero aquí el primer día habría hecho nacer la puerta en
@@ -87,14 +87,14 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-10** — Migración sin plan de rollback | audit | `framework` | — |
 | **AP-11** — Skeleton files — frontmatter válido, contenido vacío | guard | — | `test_envelope_forma.py`, `test_voice.py` |
 | **AP-12** — Frontmatter inconsistente entre notas del mismo tipo | audit | — | — |
-| **AP-13** — Timestamps inválidos o incompletos en frontmatter | audit | — | — |
+| **AP-13** — Timestamps inválidos o incompletos en frontmatter | audit | — | `test_meta_contrato.py` |
 | **AP-14** — Wiki-links rotos o vacíos | guard+audit | — | `test_norms_coherence.py` |
 | **AP-15** — Archivos externos depositados en la raíz del vault | audit | `framework` | `test_vault_norms_audit.py` |
 | **AP-16** — Sin identificador de agente en frontmatter | audit | — | `test_context_memory.py` |
 | **AP-17** — Canonical-shadow duplication | audit | — | `test_normas_de_audit_ejercitadas.py` |
 | **AP-18** — Cross-folder content duplication | audit | — | — |
 | **AP-19** — Shadow indexing | audit | `framework` | — |
-| **AP-20** — Deceptive skeleton (empty-list) | guard | — | — |
+| **AP-20** — Deceptive skeleton (empty-list) | guard | — | `test_ap20_esqueleto_de_lista.py` |
 | **AP-21** — Path-anchored wiki-links | guard+audit | — | `test_ap21_dentro_de_fence.py`, `test_ap21_ruta_necesaria.py`, `test_vault_regex.py` |
 | **AP-22** — Wiki-link vacío — [[]] sin destino | guard+audit | — | `test_norms_coherence.py`, `test_vault_regex.py` |
 | **PAT-1** — Canonical source anchoring | recommended | — | `test_norms_coherence.py` |
@@ -153,7 +153,7 @@ rojo, y una puerta en rojo se desactiva.
 | **CN-03** — Standard status vocabulary — vocabulario canónico de meta.status | audit | `framework` | `test_vault_norms.py`, `test_vault_norms_audit.py`, `test_vault_sanacion.py` |
 | **CN-04** — Note opens with its title — la nota abre con su título como H1 | guard | — | `test_cn04_nota_abre_con_titulo.py` |
 
-Sin puerta ni test (12): `AP-04`, `AP-08`, `AP-12`, `AP-13`, `AP-18`, `AP-20`, `PAT-2`, `PAT-3`, `PAT-4`, `AP-27`, `AP-31`, `PAT-6`.
+Sin puerta ni test (10): `AP-04`, `AP-08`, `AP-12`, `AP-18`, `PAT-2`, `PAT-3`, `PAT-4`, `AP-27`, `AP-31`, `PAT-6`.
 
 ## Capa 5 — Tools → grupos → contrato
 
