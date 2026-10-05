@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.35 — 2026-10-04  
+**Versión:** v40.36 — 2026-10-05  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -7302,6 +7302,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
 | v40.30 | 2026-08-16 | **Cuatro medidas cuyo alcance declarado era más ancho que el que de verdad recorrían, y tres defectos que solo existen fuera de este repo.** El resultado de una medida así no es un error sino un **cero**, que se lee igual que estar limpio: `cli/` llevaba en `ARBOLES_MEDIDOS` desde v40.9 sin contexto declarado, así que `_mapa_modulos()` devolvía `None` y las dos rutas de detección descartaban sus ficheros antes de leer un import; `vault_ciclos` medía el grafo de `scripts/`, de modo que `vault/` —el paquete que existe para imponer fronteras— era el único cuyos ciclos no contaba nadie; y `vault_audit` recorría el disco 25 veces por invocación para leer lo mismo. Los otros tres salieron de instalar `scripts vault cli mcp` **fuera del repo** y ejecutar contra un vault vacío, que es la regla 7 aplicada al propio programa: la autodetección caía a `repo_root_fallback` —«no encontré nada y estoy suponiendo»— y devolvía el directorio del toolkit, así que las escrituras aterrizaban dentro del programa; el servidor MCP escaneaba hacia arriba y registraba tres vaults ajenos **con `VAULT_ROOT` explícito puesto**, un inventario del disco del usuario expuesto al agente como default; y 23 llamadas a `subprocess` en 13 módulos decodificaban con la locale de la máquina mientras el toolkit emite UTF-8, lo que en cp1252 corrompe el acento en silencio y en cp932 tumba la tool entera. Ninguno de los siete podía verse desde dentro: el entorno que generó la medida comparte sus supuestos |
+| v40.36 | 2026-10-05 | **Lo que encontró usar la wheel contra un vault real.** Escritura en LF también en Windows (primitivo atómico e índices de sección); `vault_append` separa el bloque, deja un solo salto final y refresca `updatedAt` (AP-13); una escritura con frontmatter ilegible sale con `FRONTMATTER_PARSE_ERROR` y `vault_read` lo declara (AP-51, AP-52); soltar el último lock retira `.locks/` y `vault_knowledge_save` comparte lock con los demás escritores; `vault_reindex` no muere por el límite de 60 s; `vault tools show` publica los parámetros; el upgrade sella en LF y crea sus carpetas de registro. 4276 tests, 22 puertas |
 | v40.35 | 2026-10-04 | **Producto que un tercero instala y usa sin exponer su disco ni su vault.** Seguridad: el MCP por HTTP exige token y rechaza `Origin`/`Host` ajenos (SP-04), los argumentos MCP se validan contra el schema, `vault_diff` no sale del vault y los envelopes no filtran rutas ni traceback. Identidad: registro de proyectos (AP-63), nombre de fichero con `slugify_strict` (CN-01), `Status` y `ErrorCode` derivados de sus registros (CN-03, AP-52) y H1 obligatorio (CN-04). Un solo escritor de frontmatter en el núcleo (AP-46), escrituras bajo lock entre procesos (F1, CIA) y ningún vault fantasma con `VAULT_ROOT` inexistente (AP-36). La wheel deja fuera la gobernanza del estándar y lleva el servidor MCP. 4238 tests, 22 puertas |
 | v40.34 | 2026-08-19 | **La cadena de valor optimizada con el algoritmo de Musk, sin tocar una regla del vault.** Tres ganancias de infraestructura que cumplen la misma promesa —memoria documental persistente, auditable y gobernada sobre markdown plano— más barata de mantener. **Caché AST** en `vault_arch` y `vault_grafo_import` (clave ruta+mtime+tamaño): el guard que dibuja las fronteras re-parseaba los ~250 ficheros del alcance en cada analyzer, y el que mide los imports 568 veces por ejecución; `test_arquitectura.py` pasa de 155s a 98s y el gate `arquitectura` de 12.8s a 8s. **Batch de git** en `vault_changelog_check`: ~80 subprocess por ejecución se reducen a dos pasadas (`cat-file --batch-check` + `show` múltiple), y el gate `changelog` pasa de 7.7s a 0.4s. **`vault_fix_all`** — una tool nueva que regenera todos los artefactos derivados en el orden correcto (tools-catalog → env-table → baseline de campos → ARQUITECTURA → BLUEPRINT → cifras → índice), cerrando el drift recurrente que dejaba derivados stale tras cada cambio. El README, además, mentía sobre sí mismo: decía v34, 49 normas y 17 carpetas cuando el registro decía v40.33, 74 y 22 — ninguna puerta lo veía porque `vault_doc_counts` vigila cifras y no prosa; corregido. Ninguna regla de ordenar, clasificar ni estructurar la data cambió: es infraestructura pura |
 | v40.33 | 2026-08-19 | **Adapter de modelo LLM: el vault se adapta al que conecta, sin intervención manual.** El estándar funciona con cualquier modelo, pero hasta ahora el budget de contexto era un número fijo (4000 tokens) independiente de la ventana real del modelo. `vault_model_profile` auto-detecta el modelo desde `clientInfo.name` del handshake MCP, resuelve el perfil en `model_profiles.json` y expone el budget correcto. `vault_context_pack` lo consume dinámicamente: claude y cursor reciben 15000 tokens, gpt-4o recibe 8000, deepseek 6000, gemini 4000, y cualquier modelo nuevo recibe un floor de 2000 tokens. La propagación funciona en tres capas: MCP detecta y propaga via `VAULT_MODEL_PROFILE`, la tool la lee via `leer()` del registro de entorno, y el consumer la usa al resolver el budget. El servidor MCP no necesita configuración adicional: el perfil se infiere del nombre del cliente en el handshake. Fix posterior: sincronización de registros derivados (`env-table.json`, `field-compat-baseline.json`, `docs/BLUEPRINT.md`), corrección de encoding UTF-8 en subprocess y registro de entorno vía `leer()` en vez de `os.environ` directo |
@@ -7659,6 +7660,50 @@ temp/
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
 
 ---
+
+### v40.36 — 2026-10-05 `git: pending`
+
+**Lo que encontró usar la wheel contra un vault real.**
+
+v40.35 cerró con la pregunta «¿puede usarlo otra persona?» contestada en un venv
+limpio. Esta versión es la respuesta a usarla de verdad: la wheel instalada contra
+una copia de un vault ajeno de unas 600 notas, en solo lectura sobre el original
+(regla 7). Ninguno de estos fallos lo veía `vault-sandbox/`.
+
+**Escritura.** El primitivo atómico abre con `newline=""` y deposita LF también en
+Windows, y los índices de sección pasan por él: antes cada reindex dejaba CRLF en un
+repo con `eol=lf`. `vault_append` separa el bloque con una línea en blanco, deja la
+nota en un solo salto final —el `end-of-file-fixer` del consumidor ya no ensucia el
+commit siguiente— y refresca `updatedAt` si la nota lo declara (AP-13), con el
+escritor único (AP-46); una nota recién ampliada ya no se audita como obsoleta.
+
+**Errores.** Una escritura bloqueada por frontmatter ilegible sale con
+`FRONTMATTER_PARSE_ERROR` (causa de dominio `FRONTMATTER_ILEGIBLE`) en vez de
+`UNEXPECTED_ERROR`, y `vault_read` declara `frontmatter_error` en vez de devolver un
+frontmatter vacío (AP-51, AP-52). El rechazo previo de `vault run` no ofrece un
+`--force` que no existe, y `doctor`/`status` publican la lista que su pista nombra.
+
+**Concurrencia.** Soltar el último lock de una carpeta retira su `.locks/` vacío, y
+adquirir sobrevive a que otro proceso lo retire a la vez. `vault_knowledge_save`
+tomaba un lock con otro nombre que el de `vault_write`/`vault_append`, así que los
+dos escribían a la vez la misma nota: ahora es el mismo.
+
+**Operación.** `vault_reindex` recorre el vault entero y el límite genérico de 60 s
+lo mataba a mitad de escritura: su límite es `max(VAULT_TOOL_TIMEOUT, 3600)`.
+`vault tools show` publica descripción, grupo y parámetros. El upgrade toma el
+destino del registro y no de la lista de migraciones, crea sus carpetas de registro
+y sella `standard-version.json` en LF. La semilla del runtime viaja con el catálogo
+y una puerta la vigila.
+
+**Normas.** AP-20 (una viñeta vacía no se traga la siguiente), CN-04 (un H1 con BOM
+no recibe un segundo título), AP-34 (las relaciones huérfanas se publican) y AP-63
+(el audit declara las notas que no puede leer). La capa 4 del plano encoge de 13 a
+8 normas sin cobertura.
+
+**Medido** en un worktree limpio y en serie sobre `dd593d0`: 4272 tests, 22 puertas,
+product gates en PASS, smoke en verde y la wheel en un venv limpio (22 pasos de
+consumidor, MCP por stdio y por HTTP). El commit `14ae633` añade 4 tests; la ronda
+sobre el commit del bump se mide antes de darla por cerrada.
 
 ### v40.35 — 2026-10-04 `git: a686fb9`
 
