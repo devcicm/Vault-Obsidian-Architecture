@@ -391,6 +391,27 @@ def frontmatter_degradations() -> List[Dict[str, str]]:
     return list(_FRONTMATTER_SIN_TIPO)
 
 
+class FrontmatterIlegible(ValueError):
+    """La escritura se bloqueó porque el frontmatter resultante no se lee.
+
+    Sigue siendo `ValueError` para que los `except` que ya lo capturaban no
+    cambien. Lleva `causa`, `mensaje` y `datos` —la forma de
+    `vault.kernel.fallos.FalloDeDominio`, leída por pato como la de
+    `IndiceIlegible`— para que `wrap_main` lo traduzca a
+    `FRONTMATTER_PARSE_ERROR`. Medido el 2026-10-05 contra un vault real:
+    `vault_append` sobre una nota con el YAML roto salía `UNEXPECTED_ERROR`,
+    `critical`, con la pista «Revisar el trace log», donde había una nota que
+    corregir.
+    """
+
+    causa = "FRONTMATTER_ILEGIBLE"
+
+    def __init__(self, path: Path, mensaje: str) -> None:
+        super().__init__(mensaje)
+        self.mensaje = mensaje
+        self.datos = {"note": path.name}
+
+
 def _verificar_frontmatter(path: Path, text: str) -> None:
     """Relee el frontmatter que se va a escribir, con el criterio del consumidor.
 
@@ -415,7 +436,7 @@ def _verificar_frontmatter(path: Path, text: str) -> None:
     cuerpo = text.split("\n", 1)[1] if "\n" in text else ""
     cierre = cuerpo.find("\n---")
     if cierre == -1 and not cuerpo.startswith("---"):
-        raise ValueError(
+        raise FrontmatterIlegible(path,
             f"atomic_write bloqueado: '{path.name}' abre frontmatter con '---' y "
             f"nunca lo cierra. El bloque se construyó a mano y nadie releyó el "
             f"resultado (AP-46)."
@@ -429,7 +450,7 @@ def _verificar_frontmatter(path: Path, text: str) -> None:
     try:
         datos = yaml.safe_load(bruto)
     except Exception as exc:
-        raise ValueError(
+        raise FrontmatterIlegible(path,
             f"atomic_write bloqueado: el frontmatter de '{path.name}' no parsea "
             f"como YAML ({type(exc).__name__}: {exc}). Es lo que verá quien lea la "
             f"nota, no lo que creyó escribir la tool (AP-46)."

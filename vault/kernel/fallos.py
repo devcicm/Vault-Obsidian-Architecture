@@ -71,6 +71,10 @@ CAUSAS: Dict[str, str] = {
         "el contenido lleva una credencial con forma reconocible (clave de "
         "nube, token, clave privada). No se escribió nada: un secreto en "
         "una nota viaja con cada copia, backup e índice del vault.",
+    "FRONTMATTER_ILEGIBLE":
+        "el frontmatter que quedaría escrito no se lee como YAML, o abre "
+        "`---` y no lo cierra. No se escribió nada: la nota se corrige a "
+        "mano, no la reescribe una tool que no sabe qué quiso decir.",
     "INDICE_ILEGIBLE":
         "un índice compartido existe pero no se puede leer como JSON. No es lo mismo que no existir: cederlo vacío haría que el guardado borrase sus "
         "entradas y reiniciase sus correlativos.",
