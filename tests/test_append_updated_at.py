@@ -66,3 +66,26 @@ def test_sin_frontmatter_no_se_crea(tmp_path, monkeypatch):
     r = vault_append.vault_append("nota.md", "linea", timestamped=False)
     assert r["ok"] and r["updatedAt"] is None
     assert nota.read_bytes().decode("utf-8") == "cuerpo\n\nlinea\n"
+
+
+# ── «¿Declara la clave?» lo contesta el mismo que la reemplaza (AP-57) ────────
+
+
+def test_el_editor_dice_si_declara_una_clave():
+    from vault.kernel.frontmatter_escritura import Frontmatter
+    fm = Frontmatter.editar("id: n\nupdatedAt: x\ntags:\n- a\n")
+    assert fm.tiene("updatedAt") and fm.tiene("tags")
+    assert not fm.tiene("updated") and not fm.tiene("createdAt")
+
+
+def test_append_no_decide_por_su_cuenta_si_la_clave_existe():
+    """Hasta v40.36 `vault_append` lo miraba con `^updatedAt\s*:` y `set`
+    reemplaza lo que encuentra `_tramo` con `^clave\s*:(\s|$)`: dos criterios
+    para la misma pregunta, y donde discrepan `set` añadiría una segunda línea."""
+    import ast
+    from pathlib import Path
+    fuente = Path(vault_append.__file__).read_text(encoding="utf-8")
+    patrones = [n.value for n in ast.walk(ast.parse(fuente))
+                if isinstance(n, ast.Constant) and isinstance(n.value, str)
+                and "updatedAt" in n.value and "\s" in n.value]
+    assert patrones == []

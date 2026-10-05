@@ -124,10 +124,13 @@ def _refrescar_updated_at(texto: str) -> "tuple[str, Optional[str]]":
     sigue parando `atomic_write_text` con FRONTMATTER_PARSE_ERROR.
     """
     bloque, cuerpo = separar_frontmatter(texto)
-    if bloque is None or not re.search(r"^updatedAt\s*:", bloque, re.MULTILINE):
+    if bloque is None:
+        return texto, None
+    fm = Frontmatter.editar(bloque)
+    if not fm.tiene("updatedAt"):
         return texto, None
     ahora = utcnow()
-    return Frontmatter.editar(bloque).set("updatedAt", ahora).render() + "\n" + cuerpo, ahora
+    return fm.set("updatedAt", ahora).render() + "\n" + cuerpo, ahora
 
 
 def _append_bajo_lock(

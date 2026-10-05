@@ -78,6 +78,12 @@ class Frontmatter:
                 return i, fin
         return None
 
+    def tiene(self, clave: str) -> bool:
+        """Si el bloque declara `clave`, con el mismo criterio con el que `set`
+        decide qué reemplaza. Preguntarlo con otro patrón es AP-57: donde los
+        dos discrepen, `set` añade una segunda línea en vez de reemplazar."""
+        return self._tramo(clave) is not None
+
     # ── Escritura ────────────────────────────────────────────────────────────
 
     def set(
