@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
 > Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-63 más
-> las familias PAT, SP y CN. Por familia: AP 63, CN 3, PAT 6, SP 4.
+> las familias PAT, SP y CN. Por familia: AP 63, CN 4, PAT 6, SP 4.
 > Bilingual document. Full norm catalog: antipatterns AP-01..AP-63 plus the PAT,
-> SP and CN families. By family: AP 63, CN 3, PAT 6, SP 4.
+> SP and CN families. By family: AP 63, CN 4, PAT 6, SP 4.
 
 ---
 
 ## ES
 
-Total de normas registradas: 76 (AP 63, CN 3, PAT 6, SP 4)
+Total de normas registradas: 77 (AP 63, CN 4, PAT 6, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -214,12 +214,12 @@ Nota que pasa el content gate de 3 líneas porque tiene bullets, pero >50% de lo
 ### AP-21: Path-anchored wiki-links
 
 - **Severidad:** critical
-- **Enforcement:** guard
-- **Detectado por:** sin detector declarado
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_audit
 
-[[carpeta/nota]] en lugar de [[nota]]. Obsidian no resuelve paths, solo stems. El link siempre aparece roto en el grafo.
+[[carpeta/nota]] cuando la carpeta no fija la identidad: la ruta no resuelve, o sobra porque el nombre ya es único. Con dos notas del mismo nombre la ruta más corta que desambigua es legítima.
 
-**Prevención:** Siempre [[stem]] o [[stem|título visible]]. vault_section_index genera solo [[stem|título]] desde v25.
+**Prevención:** [[stem]] si el nombre es único; si se repite, la ruta más corta que resuelve a una sola nota (vault_lib.destino_mas_corto).
 
 ### AP-22: Wiki-link vacío -- [[]] sin destino
 
@@ -773,6 +773,16 @@ El campo meta.status (o status en frontmatter) debe usar solo valores de vault_n
 
 **Prevención:** Usar solo valores de STATUS_VOCAB. vault_norms --audit los valida (CN-03).
 
+### CN-04: Note opens with its title -- la nota abre con su título como H1
+
+- **Severidad:** low
+- **Enforcement:** guard
+- **Detectado por:** sin detector declarado
+
+El cuerpo de una nota empieza con su título como encabezado H1. Hasta v40.34 `vault_write`, `vault_knowledge_save` y `vault_ai_decision` lo dejaban solo en el frontmatter, y la nota abierta fuera de Obsidian --un editor de texto, un visor de Markdown, un diff-- empezaba en la primera frase o en una línea de metadatos sin decir qué era. El vault tiene que seguir siendo legible sin la herramienta que lo generó.
+
+**Prevención:** Escribir por las tools: `vault.kernel.contenido.con_titulo` antepone el H1 y respeta uno que ya venga.
+
 ### PAT-1: Canonical source anchoring
 
 - **Severidad:** N/A
@@ -877,7 +887,7 @@ El transporte HTTP/SSE del servidor MCP acepta sesiones sin token, responde con 
 
 ## EN
 
-Total registered norms: 76 (AP 63, CN 3, PAT 6, SP 4)
+Total registered norms: 77 (AP 63, CN 4, PAT 6, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -1082,12 +1092,12 @@ Nota que pasa el content gate de 3 líneas porque tiene bullets, pero >50% de lo
 ### AP-21: Path-anchored wiki-links
 
 - **Severity:** critical
-- **Enforcement:** guard
-- **Detected by:** sin detector declarado
+- **Enforcement:** guard+audit
+- **Detected by:** vault_audit
 
-[[carpeta/nota]] en lugar de [[nota]]. Obsidian no resuelve paths, solo stems. El link siempre aparece roto en el grafo.
+[[carpeta/nota]] cuando la carpeta no fija la identidad: la ruta no resuelve, o sobra porque el nombre ya es único. Con dos notas del mismo nombre la ruta más corta que desambigua es legítima.
 
-**Prevention:** Siempre [[stem]] o [[stem|título visible]]. vault_section_index genera solo [[stem|título]] desde v25.
+**Prevention:** [[stem]] si el nombre es único; si se repite, la ruta más corta que resuelve a una sola nota (vault_lib.destino_mas_corto).
 
 ### AP-22: Wiki-link vacío -- [[]] sin destino
 
@@ -1640,6 +1650,16 @@ Solo las secciones numeradas del registro canónico (vault_registry.SECTIONS, fu
 El campo meta.status (o status en frontmatter) debe usar solo valores de vault_norms.STATUS_VOCAB (fuente única, v38 -- unifica el vocabulario CN-03 original con el ciclo de vida del spec §status): planned | draft | in-progress | reviewed | approved | implemented | verified | deprecated | obsolete | archived | stub | template. Valores fuera del vocabulario rompen filtros de vault_list y vault_audit.
 
 **Prevention:** Usar solo valores de STATUS_VOCAB. vault_norms --audit los valida (CN-03).
+
+### CN-04: Note opens with its title -- la nota abre con su título como H1
+
+- **Severity:** low
+- **Enforcement:** guard
+- **Detected by:** sin detector declarado
+
+El cuerpo de una nota empieza con su título como encabezado H1. Hasta v40.34 `vault_write`, `vault_knowledge_save` y `vault_ai_decision` lo dejaban solo en el frontmatter, y la nota abierta fuera de Obsidian --un editor de texto, un visor de Markdown, un diff-- empezaba en la primera frase o en una línea de metadatos sin decir qué era. El vault tiene que seguir siendo legible sin la herramienta que lo generó.
+
+**Prevention:** Escribir por las tools: `vault.kernel.contenido.con_titulo` antepone el H1 y respeta uno que ya venga.
 
 ### PAT-1: Canonical source anchoring
 
