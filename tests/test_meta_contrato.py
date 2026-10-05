@@ -114,3 +114,21 @@ def test_la_pista_de_missing_agent_nombra_un_flag_que_vault_write_acepta(tmp_pat
     pista = sobre["recovery"]["hint"]
     assert "--meta" in pista and "--agent" not in pista, pista
     assert sobre["recovery"]["action"] == "fix_input"
+
+
+def test_ap13_las_fechas_salen_del_reloj_en_iso_completo(vault_vacio):
+    """AP-13: `createdAt` y `updatedAt` los pone el write path, con fecha,
+    hora y zona; `--meta` no puede colar `ayer` (ver el parametrizado de
+    arriba). Se lee el frontmatter escrito con `yaml.safe_load`."""
+    from datetime import datetime
+
+    r = _escribir({"agent": "probe"})
+    assert r["ok"] is True, r
+    texto = (vault_vacio / r["path"]).read_text(encoding="utf-8")
+    fm = yaml.safe_load(texto.split("---")[1])
+    for campo in ("createdAt", "updatedAt"):
+        # Como lo lee el consumidor: un instante con zona, no una cadena suelta.
+        assert isinstance(fm[campo], datetime) and fm[campo].tzinfo is not None, (
+            "AP-13", campo, fm[campo])
+    rechazo = _escribir({"agent": "probe", "createdAt": "ayer"}, titulo="Otra")
+    assert rechazo["ok"] is False and "AP-13" in rechazo["message"], rechazo
