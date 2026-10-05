@@ -55,6 +55,22 @@ def test_una_semilla_desfasada_rompe_la_puerta_del_catalogo(monkeypatch, tmp_pat
         sys.path.remove(str(scripts))
 
 
+def test_el_rechazo_previo_de_vault_run_no_ofrece_un_force_que_no_existe(monkeypatch, tmp_path, capsys):
+    """Medido con la wheel 40.35: la pista de PREFLIGHT_REJECTED decía «Repetir
+    con --force asume el riesgo», pero `vault run` no tiene `--force`: se pasa a
+    la tool y el pre-flight vuelve a rechazar igual. La pista mandaba al
+    consumidor a un camino cerrado."""
+    vault = tmp_path / "vault"
+    (vault / "00_System").mkdir(parents=True)
+    monkeypatch.setenv("VAULT_ROOT", str(vault))
+    for extra in ([], ["--force"]):
+        codigo = main(["run", "vault_read", "--path", "../fuera/nota.md", *extra])
+        envelope = json.loads(capsys.readouterr().err.strip().splitlines()[-1])
+        assert codigo != 0 and envelope["error_code"] == "PREFLIGHT_REJECTED"
+        assert envelope["blocked"] is True
+        assert "--force" not in envelope["recovery"]["hint"], envelope["recovery"]["hint"]
+
+
 def test_un_runtime_recien_creado_valida_limpio(tmp_path):
     """Medido el 2026-10-01 con la wheel instalada: `vault init` y luego
     `vault_validate` daban VALIDATION_FAILED por `00_System/vault-hub.md`

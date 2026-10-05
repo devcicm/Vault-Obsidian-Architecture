@@ -262,6 +262,13 @@ def cmd_run(args: argparse.Namespace) -> int:
                 "blocked": True,
                 "findings": validation.findings,
             },
+            # La pista del catálogo ofrece `--force`, que es de `cli/vault_cli.py`.
+            # Aquí no existe: se pasaría a la tool y el pre-flight rechazaría igual.
+            pista=(
+                "Revisar `findings`: cada hallazgo dice qué campo y por qué. "
+                "Ninguna escritura ocurrió. Corregir el argumento señalado; "
+                "`vault run` no ofrece forma de saltarse estas guardas."
+            ),
         )
         _emit(error, stream=sys.stderr)
         return EXIT_PREFLIGHT_FAILED
