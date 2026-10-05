@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.34 — 2026-08-19  
+**Versión:** v40.35 — 2026-10-04  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -7302,6 +7302,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
 | v40.30 | 2026-08-16 | **Cuatro medidas cuyo alcance declarado era más ancho que el que de verdad recorrían, y tres defectos que solo existen fuera de este repo.** El resultado de una medida así no es un error sino un **cero**, que se lee igual que estar limpio: `cli/` llevaba en `ARBOLES_MEDIDOS` desde v40.9 sin contexto declarado, así que `_mapa_modulos()` devolvía `None` y las dos rutas de detección descartaban sus ficheros antes de leer un import; `vault_ciclos` medía el grafo de `scripts/`, de modo que `vault/` —el paquete que existe para imponer fronteras— era el único cuyos ciclos no contaba nadie; y `vault_audit` recorría el disco 25 veces por invocación para leer lo mismo. Los otros tres salieron de instalar `scripts vault cli mcp` **fuera del repo** y ejecutar contra un vault vacío, que es la regla 7 aplicada al propio programa: la autodetección caía a `repo_root_fallback` —«no encontré nada y estoy suponiendo»— y devolvía el directorio del toolkit, así que las escrituras aterrizaban dentro del programa; el servidor MCP escaneaba hacia arriba y registraba tres vaults ajenos **con `VAULT_ROOT` explícito puesto**, un inventario del disco del usuario expuesto al agente como default; y 23 llamadas a `subprocess` en 13 módulos decodificaban con la locale de la máquina mientras el toolkit emite UTF-8, lo que en cp1252 corrompe el acento en silencio y en cp932 tumba la tool entera. Ninguno de los siete podía verse desde dentro: el entorno que generó la medida comparte sus supuestos |
+| v40.35 | 2026-10-04 | **Producto que un tercero instala y usa sin exponer su disco ni su vault.** Seguridad: el MCP por HTTP exige token y rechaza `Origin`/`Host` ajenos (SP-04), los argumentos MCP se validan contra el schema, `vault_diff` no sale del vault y los envelopes no filtran rutas ni traceback. Identidad: registro de proyectos (AP-63), nombre de fichero con `slugify_strict` (CN-01), `Status` y `ErrorCode` derivados de sus registros (CN-03, AP-52) y H1 obligatorio (CN-04). Un solo escritor de frontmatter en el núcleo (AP-46), escrituras bajo lock entre procesos (F1, CIA) y ningún vault fantasma con `VAULT_ROOT` inexistente (AP-36). La wheel deja fuera la gobernanza del estándar y lleva el servidor MCP. 4238 tests, 22 puertas |
 | v40.34 | 2026-08-19 | **La cadena de valor optimizada con el algoritmo de Musk, sin tocar una regla del vault.** Tres ganancias de infraestructura que cumplen la misma promesa —memoria documental persistente, auditable y gobernada sobre markdown plano— más barata de mantener. **Caché AST** en `vault_arch` y `vault_grafo_import` (clave ruta+mtime+tamaño): el guard que dibuja las fronteras re-parseaba los ~250 ficheros del alcance en cada analyzer, y el que mide los imports 568 veces por ejecución; `test_arquitectura.py` pasa de 155s a 98s y el gate `arquitectura` de 12.8s a 8s. **Batch de git** en `vault_changelog_check`: ~80 subprocess por ejecución se reducen a dos pasadas (`cat-file --batch-check` + `show` múltiple), y el gate `changelog` pasa de 7.7s a 0.4s. **`vault_fix_all`** — una tool nueva que regenera todos los artefactos derivados en el orden correcto (tools-catalog → env-table → baseline de campos → ARQUITECTURA → BLUEPRINT → cifras → índice), cerrando el drift recurrente que dejaba derivados stale tras cada cambio. El README, además, mentía sobre sí mismo: decía v34, 49 normas y 17 carpetas cuando el registro decía v40.33, 74 y 22 — ninguna puerta lo veía porque `vault_doc_counts` vigila cifras y no prosa; corregido. Ninguna regla de ordenar, clasificar ni estructurar la data cambió: es infraestructura pura |
 | v40.33 | 2026-08-19 | **Adapter de modelo LLM: el vault se adapta al que conecta, sin intervención manual.** El estándar funciona con cualquier modelo, pero hasta ahora el budget de contexto era un número fijo (4000 tokens) independiente de la ventana real del modelo. `vault_model_profile` auto-detecta el modelo desde `clientInfo.name` del handshake MCP, resuelve el perfil en `model_profiles.json` y expone el budget correcto. `vault_context_pack` lo consume dinámicamente: claude y cursor reciben 15000 tokens, gpt-4o recibe 8000, deepseek 6000, gemini 4000, y cualquier modelo nuevo recibe un floor de 2000 tokens. La propagación funciona en tres capas: MCP detecta y propaga via `VAULT_MODEL_PROFILE`, la tool la lee via `leer()` del registro de entorno, y el consumer la usa al resolver el budget. El servidor MCP no necesita configuración adicional: el perfil se infiere del nombre del cliente en el handshake. Fix posterior: sincronización de registros derivados (`env-table.json`, `field-compat-baseline.json`, `docs/BLUEPRINT.md`), corrección de encoding UTF-8 en subprocess y registro de entorno vía `leer()` en vez de `os.environ` directo |
 | v40.32 | 2026-08-16 | **Lo que se publica es solo el estándar, y ahora lo mide algo.** Al preparar la primera publicación del repositorio apareció la promesa que ninguna puerta cubría: en el mismo disco, al lado del toolkit, viven copias de vaults reales de otros proyectos —notas privadas, runbooks con credenciales, datos de clientes— y lo único que las mantenía fuera de git era el `.gitignore`, que es **advisory**: no para un `git add -f`, ni para un directorio hermano que nadie añada al fichero, ni para una reordenación que rompa la cadena de des-ignorados de `vault-sandbox/`. Un fallo ahí no da error: da un commit publicado, y publicado es publicado aunque se borre después. `tests/test_publicacion_limpia.py` mide **el índice de git**, no el disco, y comprueba las dos direcciones —que nada prohibido entre, y que `tool-spec.json` no salga por exceso de exclusión—. Su propio test de autocomprobación cazó el fallo del primer intento: la exención de rutas de ejemplo buscaba `users` en cualquier posición y casaba con el `C:\Users\` del prefijo, o sea eximía toda ruta de Windows; verde y ciego a la vez, que es el defecto que el fichero existe para no cometer. De paso, `docs/SKILLS.md` afirmaba a mano que `CURRENT_VERSION` era **v39.3** —veintiocho versiones de retraso, en el documento que describe a los agentes qué sabe hacer el vault—: `test_version_coherence` declaraba medir «los cinco sitios» y `docs/` no era ninguno, otra vez alcance declarado más ancho que el recorrido. Y el repositorio estrena `SECURITY.md` y `CONTRIBUTING.md`, que cierran el hueco `contrato_con_quien_contribuye` que v40.31 había publicado como `descubierta` |
@@ -7658,6 +7659,43 @@ temp/
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
 
 ---
+
+### v40.35 — 2026-10-04 `git: pending`
+
+**Producto que un tercero instala y usa sin exponer su disco ni su vault.**
+
+La pregunta de cierre cambió de «¿cumple el repo lo que publica?» a «¿puede
+usarlo otra persona?». Contestarla con el criterio del consumidor —wheel limpia,
+venv nuevo, MCP por stdio y por HTTP, vaults ajenos en solo lectura— destapó
+fallos que ninguna puerta veía porque todas medían el repo contra sí mismo.
+
+**Seguridad.** El transporte HTTP/SSE del MCP servía CORS `*` sin autenticación:
+ahora exige `Authorization: Bearer` (`VAULT_MCP_TOKEN` o un token aleatorio
+impreso al arrancar), rechaza `Origin` y `Host` ajenos y responde solo a la
+sesión que pidió (SP-04). Los argumentos MCP se validan contra el `inputSchema`
+antes de lanzar el proceso, `vault_diff` ya no compara ficheros fuera del vault
+y los envelopes de error no publican rutas absolutas ni traceback salvo con
+`VAULT_DEBUG=1`.
+
+**Identidad.** El nombre de un proyecto pasa por un registro (AP-63): las tools
+con `--project` resuelven contra él y una errata ya no funda un proyecto. El
+nombre del fichero sale de `slugify_strict` sin duplicar notas viejas (CN-01),
+`Status` y `ErrorCode` se derivan de `STATUS_VOCAB` y de `ERROR_CATALOG` (CN-03,
+AP-52) y la nota abre con su título como H1 (CN-04).
+
+**Integridad.** Un solo escritor de frontmatter, en el núcleo (AP-46), y un solo
+`yaml_scalar`. `file_lock` excluye de verdad entre procesos y los escritores que
+leen-modifican-escriben lo hacen bajo él (F1, CIA). Con `VAULT_ROOT` apuntando a
+nada ninguna tool se ejecuta, y el rechazo dice qué corregir (AP-36). El grafo se
+refresca nota a nota y el SDD se contrasta por contenido, no solo por la lista de
+normas (AP-47).
+
+**Empaquetado.** La wheel deja fuera la capacidad `gobernanza_del_estandar`,
+derivada del registro y no de una lista, y lleva el servidor MCP para que
+funcione sin checkout. El classifier lo sostiene `vault_produccion`.
+
+**Medido** en un worktree limpio y en serie: 4238 tests, 22 puertas en verde,
+product gates (instalación limpia y memoria e2e) en PASS y smoke 118/118.
 
 ### v40.34 — 2026-08-20 `git: 6d80f0b`
 
