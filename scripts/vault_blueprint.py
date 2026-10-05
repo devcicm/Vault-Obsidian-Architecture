@@ -929,22 +929,12 @@ def freeze(admitir_nuevos: bool = False) -> Dict[str, Any]:
         salida["new_uncovered_norms"] = nuevas
         return salida
 
-    BASELINE.write_text(
-        json.dumps(
-            {
-                "norm": "capa 4 del plano",
-                "description": (
-                    "Normas sin puerta que las haga cumplir ni test que las nombre. "
-                    "Indexada por código de norma. Esta lista solo puede ENCOGER: una "
-                    "norma nueva sin cobertura no se congela, se le escribe el test."
-                ),
-                "uncovered_norms": sorted(descubiertas),
-            },
-            ensure_ascii=False,
-            indent=2,
-        )
-        + "\n",
-        encoding="utf-8",
+    vault_baseline.escribir(
+        BASELINE, "uncovered_norms", "capa 4 del plano",
+        "Normas sin puerta que las haga cumplir ni test que las nombre. "
+        "Indexada por código de norma. Esta lista solo puede ENCOGER: una "
+        "norma nueva sin cobertura no se congela, se le escribe el test.",
+        sorted(descubiertas), extra={"norm": "capa 4 del plano"},
     )
     return {
         "ok": True,

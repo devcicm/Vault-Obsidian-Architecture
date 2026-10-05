@@ -40,6 +40,8 @@ import json
 from pathlib import Path
 from typing import Dict, Iterable, List, Set, Tuple
 
+import vault_baseline
+
 #: Versión del formato de baseline que consume este módulo. La v1 —lista plana
 #: de `módulo:línea`— no se borra: se conserva en la propia baseline bajo
 #: `sites_v1_superseded`, con el motivo escrito (no-derogación).
@@ -171,7 +173,10 @@ def escribir_baseline(
             ),
             "sites": sorted(v1),
         }
-    path.write_text(
-        json.dumps(salida, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    # El fichero lo escribe su dueño (AP-57), que además conserva las claves
+    # que este módulo no conoce, como `objetivo`.
+    vault_baseline.escribir(
+        path, "sites", norma, descripcion, salida.pop("sites"),
+        extra={k: v for k, v in salida.items() if k != "description"},
     )
     return len(sitios)

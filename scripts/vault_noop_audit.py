@@ -41,6 +41,7 @@ from typing import Dict, List
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+import vault_baseline
 from vault_errors import emit_error, wrap_main
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -162,21 +163,11 @@ def freeze(admitir_nuevos: bool = False) -> Dict:
             f"aumentaría la deuda en silencio. Si es deliberado, "
             f"`--freeze --admitir-nuevos`. Tools: {nuevas}",
         )
-    BASELINE_PATH.write_text(
-        json.dumps(
-            {
-                "norm": "AP-37",
-                "description": (
-                    "Deuda conocida de tools con side effects que no exponen "
-                    "indicador de trabajo. Esta lista solo puede ENCOGER."
-                ),
-                "tools": nombres,
-            },
-            ensure_ascii=False,
-            indent=2,
-        )
-        + "\n",
-        encoding="utf-8",
+    vault_baseline.escribir(
+        BASELINE_PATH, "tools", "AP-37",
+        "Deuda conocida de tools con side effects que no exponen "
+        "indicador de trabajo. Esta lista solo puede ENCOGER.",
+        nombres, extra={"norm": "AP-37"},
     )
     return {
         "ok": True,

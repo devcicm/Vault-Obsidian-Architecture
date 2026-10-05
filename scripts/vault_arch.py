@@ -29,6 +29,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import vault_baseline
 import vault_grafo_import
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
@@ -2158,32 +2159,24 @@ def freeze() -> dict:
     vinculos = sorted({
         f"{v['module']}.{v['binding']}" for v in vinculos_congelados()
     })
-    # Lo que el escritor no conoce, se conserva (v40.30). `excepcion_de_alcance`
+    # Lo que el escritor no conoce, se conserva (v40.30): `excepcion_de_alcance`
     # la escribe una persona para dejar dicho por qué la lista creció una vez, y
     # un `--freeze` que la borrase dejaría el fichero indistinguible de uno donde
-    # nadie declaró nada. Es la misma razón por la que una deuda saldada pasa a
-    # `saldada` en vez de desaparecer.
-    conservado: dict = {}
-    if BASELINE_PATH.exists():
-        try:
-            previo = json.loads(BASELINE_PATH.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            previo = {}
-        if isinstance(previo, dict) and "excepcion_de_alcance" in previo:
-            conservado["excepcion_de_alcance"] = previo["excepcion_de_alcance"]
-    BASELINE_PATH.write_text(
-        json.dumps({
-            "note": "Deuda estructural congelada. SOLO PUEDE ENCOGER: un cruce "
-                    "nuevo es una frontera que se rompió y se arregla publicando "
-                    "un puerto, no ampliando esta lista; un vínculo nuevo es "
-                    "AP-49 y se arregla resolviendo tarde con get_vault_root().",
-            "crossings": claves,
+    # nadie declaró nada. Desde v40.36 lo conserva `vault_baseline.escribir`,
+    # que guarda todas las claves ajenas y no solo esa (AP-57).
+    vault_baseline.escribir(
+        BASELINE_PATH, "crossings", "vault_arch",
+        "Deuda estructural congelada. SOLO PUEDE ENCOGER: un cruce "
+        "nuevo es una frontera que se rompió y se arregla publicando "
+        "un puerto, no ampliando esta lista; un vínculo nuevo es "
+        "AP-49 y se arregla resolviendo tarde con get_vault_root().",
+        claves,
+        extra={
             "frozen_bindings": vinculos,
             "duplicate_paths": sorted(d["file"] for d in rutas_duplicadas()),
             "off_port_crossings": fuera_puerto,
-            **conservado,
-        }, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
+        },
+        campo_descripcion="note",
     )
     return {"ok": True, "tool": "vault_arch", "frozen": len(claves),
             "frozen_bindings": len(vinculos),

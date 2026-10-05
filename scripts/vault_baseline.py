@@ -184,7 +184,8 @@ def negativa(tool: str, accion: str, clave_nuevos: str,
 
 def escribir(path: Path, clave: str, norma: str, descripcion: str,
              elementos: Union[Sequence[Any], Mapping[str, Any]],
-             extra: Optional[Dict[str, Any]] = None) -> int:
+             extra: Optional[Dict[str, Any]] = None,
+             campo_descripcion: str = "description") -> int:
     """Escribe la baseline conservando todo lo que este módulo no entiende.
 
     Las claves previas que no sean `clave` ni las del contrato se copian tal
@@ -195,7 +196,9 @@ def escribir(path: Path, clave: str, norma: str, descripcion: str,
     """
     previo = cargar_datos(path, norma)
     salida: Dict[str, Any] = dict(previo)
-    salida["description"] = descripcion
+    # `vault_arch` y `vault_smoke` la llaman `note`; renombrarla ensuciaría su
+    # fichero por lo mismo que `CLAVES_CONOCIDAS` no se unifica a la fuerza.
+    salida[campo_descripcion] = descripcion
     # Un dict se guarda como dict: `changelog-baseline.json` indexa por versión
     # (`tamano_congelado` ya contaba esa forma) y `list()` le dejaría las claves.
     salida[clave] = (dict(sorted(elementos.items())) if isinstance(elementos, Mapping)

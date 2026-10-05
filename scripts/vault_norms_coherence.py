@@ -113,6 +113,7 @@ from typing import Any, Dict, List, Set
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+import vault_baseline
 from vault_errors import emit_error, wrap_main
 from vault_vocabulario import mapa
 
@@ -660,21 +661,11 @@ def freeze(admitir_nuevos: bool = False) -> Dict[str, Any]:
     # acaban discrepando en el caso raro, y el caso raro aquí decide qué se
     # congela (AP-05).
     claims = sorted({c["claim"] for c in resultado["untraceable_claims"]})
-    BASELINE.write_text(
-        json.dumps(
-            {
-                "norm": "AP-55",
-                "description": (
-                    "Afirmaciones de cobertura de NORM_CATALOG que ninguna línea de "
-                    "código respalda nombrando la norma. Solo puede encoger."
-                ),
-                "claims": [{"claim": c} for c in claims],
-            },
-            ensure_ascii=False,
-            indent=2,
-        )
-        + "\n",
-        encoding="utf-8",
+    vault_baseline.escribir(
+        BASELINE, "claims", "AP-55",
+        "Afirmaciones de cobertura de NORM_CATALOG que ninguna línea de "
+        "código respalda nombrando la norma. Solo puede encoger.",
+        [{"claim": c} for c in claims], extra={"norm": "AP-55"},
     )
     return {
         "ok": True,
@@ -696,22 +687,12 @@ def freeze_distincion(admitir_nuevos: bool = False) -> Dict[str, Any]:
             args={"new_norms": nuevas},
         )
     mudas = sorted(resultado["norms_without_distinction"])
-    BASELINE_DISTINCION.write_text(
-        json.dumps(
-            {
-                "norm": "AP-60",
-                "description": (
-                    "Normas de NORM_CATALOG que no declaran de qué se distinguen ni "
-                    "por qué no aplica. Solo puede encoger: se salda escribiendo la "
-                    "distinción, no ampliando esta lista."
-                ),
-                "normas": [{"norm": c} for c in mudas],
-            },
-            ensure_ascii=False,
-            indent=2,
-        )
-        + "\n",
-        encoding="utf-8",
+    vault_baseline.escribir(
+        BASELINE_DISTINCION, "normas", "AP-60",
+        "Normas de NORM_CATALOG que no declaran de qué se distinguen ni "
+        "por qué no aplica. Solo puede encoger: se salda escribiendo la "
+        "distinción, no ampliando esta lista.",
+        [{"norm": c} for c in mudas], extra={"norm": "AP-60"},
     )
     return {
         "ok": True,

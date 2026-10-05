@@ -50,6 +50,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 # de uso. Ver `vault_entorno.py`.
 from vault_entorno import leer as _env
 
+import vault_baseline
 from vault_errors import emit_error, wrap_main
 from vault_mcp_catalog import TOOLS_CATALOG
 
@@ -279,14 +280,11 @@ def freeze() -> Dict[str, Any]:
                               f"la baseline no puede crecer: {len(previa)} -> {len(fallando)}; "
                               f"arregla {r['new_offenders']}"),
                 "action": "freeze", "frozen": 0}
-    BASELINE_PATH.write_text(
-        json.dumps({
-            "norm": "AP-42",
-            "note": "Tools cuyo ejemplo documentado no emite un JSON con `ok`. "
-                    "Esta lista solo puede encoger.",
-            "failing": fallando,
-        }, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
+    vault_baseline.escribir(
+        BASELINE_PATH, "failing", "AP-42",
+        "Tools cuyo ejemplo documentado no emite un JSON con `ok`. "
+        "Esta lista solo puede encoger.",
+        fallando, extra={"norm": "AP-42"}, campo_descripcion="note",
     )
     return {"ok": True, "tool": "vault_smoke", "action": "freeze", "frozen": len(fallando),
             "path": str(BASELINE_PATH.relative_to(REPO_ROOT))}
