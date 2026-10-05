@@ -228,6 +228,44 @@ def sdd_coherence(vault_root: Path) -> dict:
     return envelope
 
 
+_MARCA_TEMPORAL = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z")
+
+
+def sdd_desfase_de_contenido(vault_root: Path) -> list:
+    """Los documentos de `docs/sdd/` que ya no son lo que el generador escribiría.
+
+    `sdd_coherence` mira el rango anunciado y nada más. Medido el 2026-10-04:
+    CN-04 entró al catálogo y AP-21 cambió de enforcement y de prevención, y
+    `04-antipatterns.md` siguió con las dos versiones viejas con el rango
+    intacto —una norma de otra familia no mueve `AP-01..AP-NN`, y reescribir
+    una existente tampoco—. AP-47: lo derivado se contrasta contra el
+    registro entero, no contra la cifra que resume.
+
+    Se regenera en memoria y se compara con el criterio del que escribe
+    (AP-44): el texto pasa por el mismo saneado que `atomic_write_text`
+    —el guion largo sale como `--`— y se ignoran solo la marca temporal y
+    el fin de línea, que no dicen nada del registro.
+    """
+    from vault_encoding import sanitize_content, strip_bom
+
+    sdd_dir = vault_root / SDD_OUTPUT_DIR
+    drift = detect_drift(vault_root)
+
+    def forma(texto: str) -> str:
+        return _MARCA_TEMPORAL.sub("<T>", texto.replace("\r\n", "\n"))
+
+    desfasados = []
+    for fname, generador in GENERATORS.items():
+        destino = sdd_dir / fname
+        if not destino.exists():
+            continue
+        esperado = sanitize_content(strip_bom(generador(vault_root, drift))[0],
+                                    dry_run=False)[0]
+        if forma(esperado) != forma(destino.read_text(encoding="utf-8")):
+            desfasados.append(fname)
+    return desfasados
+
+
 def detect_drift(vault_root: Path) -> dict:
     """Detect drift between vault state and expected invariants."""
     drift = {"version": None, "missing_norms": [], "warnings": []}
@@ -1256,6 +1294,9 @@ def main() -> int:
         # Envelope en JSON y nada más: `--check` es una puerta de CI, y lo que
         # imprime tiene que poder leerlo una tool, no solo una persona.
         envelope = sdd_coherence(vault_root)
+        envelope["content_drift"] = sdd_desfase_de_contenido(vault_root)
+        if envelope["content_drift"]:
+            envelope["ok"] = False
         print(json.dumps(envelope, ensure_ascii=False, indent=2))
         return 0 if envelope["ok"] else 1
 

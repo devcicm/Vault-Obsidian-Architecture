@@ -215,3 +215,30 @@ def test_gaps_md_no_se_pisa_ni_con_force():
     assert "force" not in decision[0], (
         "la preservación de gaps.md volvió a depender de --force"
     )
+
+
+def test_ap47_el_sdd_del_repo_es_lo_que_el_generador_escribiria():
+    """AP-47 sobre el cuerpo entero, no sobre el rango que lo resume.
+
+    CN-04 y la nueva prevención de AP-21 no movían `AP-01..AP-NN`, y
+    `04-antipatterns.md` siguió con las versiones viejas con las puertas en verde.
+    """
+    assert sdd.sdd_desfase_de_contenido(REPO_ROOT) == [], (
+        "docs/sdd/ desfasado del registro — regenera con "
+        "`python scripts/vault_sdd_init.py --bilingual --force --vault-root .`"
+    )
+
+
+def test_ap47_el_desfase_de_contenido_compara_con_el_criterio_del_que_escribe(
+        tmp_path, monkeypatch):
+    """El guion largo sale como `--` al escribir; la fecha y el CRLF no cuentan."""
+    monkeypatch.setattr(sdd, "GENERATORS", {
+        "04-antipatterns.md": lambda r, d: "# A — B\nGenerado: 2026-10-04T01:02:03Z\n",
+    })
+    monkeypatch.setattr(sdd, "detect_drift", lambda r: {})
+    destino = tmp_path / "docs" / "sdd" / "04-antipatterns.md"
+    destino.parent.mkdir(parents=True)
+    destino.write_bytes(b"# A -- B\r\nGenerado: 2025-01-01T00:00:00Z\r\n")
+    assert sdd.sdd_desfase_de_contenido(tmp_path) == []
+    destino.write_text("# A -- C\nGenerado: 2025-01-01T00:00:00Z\n", encoding="utf-8")
+    assert sdd.sdd_desfase_de_contenido(tmp_path) == ["04-antipatterns.md"]
