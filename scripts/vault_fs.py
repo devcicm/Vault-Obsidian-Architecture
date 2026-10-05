@@ -148,6 +148,12 @@ def file_lock(
     while True:
         try:
             os.mkdir(lock_dir)
+        except FileNotFoundError:
+            # Otro proceso soltó el último lock de la carpeta y retiró
+            # `.locks/` vacío entre nuestro `mkdir` del padre y este. Se
+            # vuelve a crear y se compite de nuevo.
+            lock_root.mkdir(parents=True, exist_ok=True)
+            continue
         except FileExistsError:
             try:
                 # La edad sale de owner.json y, si aún no está o no se puede
@@ -239,6 +245,15 @@ def file_lock(
                     suelto.rmdir()
                 except OSError:
                     pass
+            # `.locks/` vacío no se deja atrás: medido el 2026-10-05, un
+            # reindex de un vault real dejaba uno en cada una de sus 68
+            # secciones. `rmdir` solo borra si está vacío; si otro proceso ya
+            # tiene su lock dentro falla y se queda, y quien llegue entre
+            # medias lo recrea (ver `FileNotFoundError` al adquirir).
+            try:
+                lock_root.rmdir()
+            except OSError:
+                pass
         local.release()
 
 
