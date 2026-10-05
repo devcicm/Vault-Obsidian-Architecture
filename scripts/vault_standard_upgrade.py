@@ -25,7 +25,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from vault_registry import standard_folders
+from vault_registry import SUBFOLDERS, standard_folders
 
 # Directorio de las propias tools. No es un side-effect ni una ruta del vault:
 # es el sitio desde donde esta tool invoca a sus vecinas, así que sí se deriva
@@ -552,6 +552,41 @@ def _write_version_file(data: Dict[str, Any]) -> None:
 
 STANDARD_FOLDERS = standard_folders()  # from vault_registry — fuente unica
 
+
+def _estructura_sin_migracion(to_version: str, previstas: List[str] = ()) -> List[str]:
+    """Lo que el registro declara para la versión vigente y no está en el vault.
+
+    `MIGRATIONS` se escribe a mano y solo por versión mayor: una sección que
+    entra con una minor —`21_QA` en v40.35— no la crea ninguna, y el upgrade
+    dejaba el vault sellado en la versión nueva con `vault doctor` diciendo
+    SYSTEM_FILES_MISSING (medido contra un vault v34.1 real, 2026-10-05). El
+    destino de un upgrade a la versión vigente es el registro, así que lo que
+    falte se deriva de él, con las subcarpetas registradas de cada sección
+    nueva, igual que una migración crea las suyas. Hacia una versión anterior
+    no aplica: el registro solo describe la vigente.
+    """
+    if to_version != CURRENT_VERSION:
+        return []
+    raiz = _raiz()
+    secciones = [
+        f for f in standard_folders()
+        if f not in previstas and not (raiz / f).exists()
+    ]
+    return [
+        carpeta
+        for seccion in secciones
+        for carpeta in (seccion, *(s for s in SUBFOLDERS if s.split("/")[0] == seccion))
+        if carpeta not in previstas
+    ]
+
+
+def _crear_carpetas(carpetas: List[str]) -> None:
+    """Como `_apply_migration`: la carpeta y su `.gitkeep`, dentro del vault."""
+    for folder in carpetas:
+        folder_path = _raiz() / folder
+        folder_path.mkdir(parents=True, exist_ok=True)
+        (folder_path / ".gitkeep").touch()
+
 FM_REQUIRED_FIELDS = ("id", "title", "createdAt")
 
 
@@ -901,6 +936,11 @@ def vault_standard_upgrade(
         pendiente_de_sellar = (
             current_applied != to_version and to_version == CURRENT_VERSION
         )
+        faltan = _estructura_sin_migracion(to_version)
+        creadas: List[str] = []
+        if (not dry_run and not check_only) and faltan:
+            _crear_carpetas(faltan)
+            creadas = faltan
         if (not dry_run and not check_only) and pendiente_de_sellar:
             state["applied_version"] = to_version
             state["applied_at"] = utcnow()
@@ -911,17 +951,20 @@ def vault_standard_upgrade(
             "ok": True,
             "action": "version_stamped" if sellado else "none",
             "message": (
-                f"Sin migraciones que aplicar: {current_applied} → {to_version} "
-                "no cambia la estructura. Se sella la versión."
+                f"Sin migraciones que aplicar: {current_applied} → {to_version}. "
+                + (f"Se crean las secciones del registro que faltaban: {', '.join(creadas)}. "
+                   if creadas else "No cambia la estructura. ")
+                + "Se sella la versión."
                 if sellado
                 else (
                     # El caso que antes se resolvía escribiendo: hay salto de
                     # versión menor y nadie ha pedido aplicarlo. Se dice, con el
                     # comando exacto, y se deja la decisión donde estaba.
                     f"Salto de versión menor pendiente de sellar: "
-                    f"{current_applied} → {to_version}. No cambia la estructura "
-                    f"y no se ha escrito nada. Para sellarlo: "
-                    f"--to {to_version}"
+                    f"{current_applied} → {to_version}. "
+                    + (f"Faltan secciones del registro: {', '.join(faltan)}, "
+                       if faltan else "No cambia la estructura ")
+                    + f"y no se ha escrito nada. Para sellarlo: --to {to_version}"
                     if pendiente_de_sellar
                     else f"Vault is up to date at {current_applied}. No migrations needed."
                 )
@@ -932,6 +975,8 @@ def vault_standard_upgrade(
             # Lo que el consumidor necesita para decidir, y que antes solo podía
             # deducir de que la tool ya se lo hubiera hecho.
             "stamp_pending": pendiente_de_sellar and not sellado,
+            "folders_created": creadas,
+            "folders_to_create": [] if creadas else faltan,
         }
         if validate:
             result["compliance"] = _run_compliance_check(current_applied)
@@ -960,6 +1005,11 @@ def vault_standard_upgrade(
             "target_version": to_version,
             "pending_count": len(pending),
             "pending_migrations": pending_details,
+            # Lo que ninguna migración crea y el registro vigente sí exige.
+            "registry_folders_to_create": _estructura_sin_migracion(
+                to_version,
+                [f for d in pending_details for f in d["folders_to_create"]],
+            ),
         }
         if validate:
             result["compliance"] = _run_compliance_check(current_applied)
@@ -978,6 +1028,12 @@ def vault_standard_upgrade(
         all_folders_created.extend(migration_result.get("folders_created", []))
         all_fixes_applied.extend(migration_result.get("fixes_applied", []))
         all_fixes_failed.extend(migration_result.get("fixes_failed", []))
+
+    if not fixes_only:
+        del_registro = _estructura_sin_migracion(to_version, all_folders_created)
+        if not dry_run:
+            _crear_carpetas(del_registro)
+        all_folders_created.extend(del_registro)
 
     if dry_run:
         return {

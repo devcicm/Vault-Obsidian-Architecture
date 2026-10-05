@@ -11,6 +11,7 @@ Ancla dos fallos reales encontrados al cerrar v39:
    necesita como destino.
 """
 
+import json
 import sys
 from pathlib import Path
 
@@ -68,7 +69,12 @@ def test_migracion_v39_crea_17_preferences():
 def test_toda_seccion_del_registro_es_alcanzable_por_migracion():
     """Registro y migraciones no pueden divergir: si una sección existe en el
     registro pero ninguna migración la crea, los vaults preexistentes se
-    quedan sin ella para siempre."""
+    quedan sin ella para siempre.
+
+    Ojo: `base` es el propio registro, así que esta comprobación pasa siempre y
+    no vio `21_QA` (v40.35). La que mide es
+    `test_el_upgrade_deja_la_estructura_que_doctor_exige`; esta se conserva
+    como documentación de la intención."""
     creadas = {
         f.split("/")[0]
         for m in vsu.MIGRATIONS.values()
@@ -176,3 +182,47 @@ def _sellado(root, monkeypatch):
 
     # Idempotente: la segunda llamada ya no tiene nada que sellar.
     assert vsu.vault_standard_upgrade(to_version=vsu.CURRENT_VERSION)["version_stamped"] is False
+
+
+def _vault_sin_qa(root, version):
+    """Un vault con la forma de antes de v40.35: todo menos `21_QA`."""
+    from vault.ciclo_de_vida import producto
+
+    assert producto.inicializar_runtime(root)["ok"]
+    (root / "21_QA").rmdir()
+    vsu._write_version_file({"applied_version": version, "migrations_applied": []})
+
+
+@pytest.mark.parametrize("desde", ["v34.1", "mayor.0"])
+def test_el_upgrade_deja_la_estructura_que_doctor_exige(tmp_path, desde):
+    """Medido el 2026-10-05 contra un vault v34.1 real: `--dry-run` hasta v40.35
+    no creaba `21_QA`. La sección entró en el registro con v40.35, una minor sin
+    migración, y `MIGRATIONS` es una lista escrita a mano: ninguna la creaba, así
+    que tras el upgrade `vault doctor` seguía diciendo SYSTEM_FILES_MISSING. El
+    test de alcanzabilidad de arriba no lo vio porque comparaba el registro
+    consigo mismo (AP-44). Aquí manda el criterio del consumidor: el diagnóstico
+    del runtime instalado, no la lista de migraciones."""
+    import vault_io
+    from vault.ciclo_de_vida import producto
+
+    root = tmp_path / "vault"
+    anterior = vault_io.get_vault_root()
+    vault_io.set_vault_root(root)
+    try:
+        version = f"{vsu.CURRENT_VERSION.split('.')[0]}.0" if desde == "mayor.0" else desde
+        _vault_sin_qa(root, version)
+
+        # Preguntar no crea: lo cuenta.
+        for modo in ({"check_only": True}, {"dry_run": True}):
+            r = vsu.vault_standard_upgrade(to_version=vsu.CURRENT_VERSION, **modo)
+            assert r["ok"], r
+            assert "21_QA" in json.dumps(r), (modo, r)
+            assert not (root / "21_QA").exists(), modo
+
+        r = vsu.vault_standard_upgrade(to_version=vsu.CURRENT_VERSION)
+        assert r["ok"], r
+        assert "21_QA" in r["folders_created"], r
+        diagnostico = producto.diagnosticar_runtime(root)
+        assert "missing" not in diagnostico, diagnostico
+    finally:
+        vault_io.set_vault_root(anterior)
