@@ -63,7 +63,13 @@ def con_titulo(titulo: str, cuerpo: str) -> str:
 
     Un cuerpo que ya abre con un H1 se respeta tal cual: quien lo escribió
     eligió su título. `#etiqueta` no es un encabezado y no cuenta.
+
+    El BOM inicial se descarta antes de mirar: un contenido copiado de un
+    fichero guardado como UTF-8 con BOM abre con `\\ufeff# Título`, el patrón
+    no lo reconocía y `vault_knowledge_save` dejaba dos H1 (regla 7 contra
+    /ans, 2026-10-04). Detrás del frontmatter el BOM no marca nada.
     """
+    cuerpo = cuerpo.lstrip("﻿")
     for linea in cuerpo.splitlines():
         if linea.strip():
             if _H1.match(linea):

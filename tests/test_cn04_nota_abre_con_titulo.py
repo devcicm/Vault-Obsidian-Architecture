@@ -70,6 +70,19 @@ def test_cn04_reescribir_no_duplica_el_h1(tmp_path):
     assert texto.count("# Nota\n") == 1
 
 
+def test_cn04_un_h1_tras_un_bom_no_se_duplica(tmp_path):
+    """Regla 7 contra /ans: un README con BOM abre con `\\ufeff# Título`.
+    Pasado como contenido, `vault_knowledge_save` escribía `# Nota` encima y
+    la nota quedaba con dos H1."""
+    for seccion in ("00_System", "07_Knowledge", "99_Index"):
+        (tmp_path / seccion).mkdir()
+    k = _correr(tmp_path, "vault_knowledge_save.py", "--category", "concept",
+                "--title", "Nota", "--tags", "demo", "--content", "﻿# Mi título\n\n" + CONTENIDO)
+    _, cuerpo = separar_frontmatter((tmp_path / k["path"]).read_text(encoding="utf-8"))
+    assert [ln for ln in cuerpo.splitlines() if ln.startswith("# ")] == ["# Mi título"], cuerpo
+    assert con_titulo("JWT", "﻿# Mi título\n\nx") == "# Mi título\n\nx"
+
+
 def test_cn04_el_dueno_respeta_un_h1_propio_y_no_confunde_etiquetas():
     assert con_titulo("JWT", "Token firmado.\n") == "# JWT\n\nToken firmado.\n"
     assert con_titulo("JWT", "# Mi título\n\nx") == "# Mi título\n\nx"
