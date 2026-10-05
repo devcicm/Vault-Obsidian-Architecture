@@ -49,6 +49,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.frontmatter_parsing import parse_frontmatter_robust  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -161,7 +162,11 @@ def vault_read(path: str) -> Dict[str, Any]:
 
     # Parse frontmatter
 
-    meta, body = parse_frontmatter(content)
+    # AP-51: `parse_frontmatter` devuelve `{}` tanto si la nota no tiene bloque
+    # como si lo tiene y no parsea, y el agente no podía distinguirlos. La forma
+    # robusta del dueño dice cuál de los dos es; el cuerpo es el mismo.
+    meta, body, legible, causa = parse_frontmatter_robust(content)
+    body = body.strip()
 
     # Extract wiki-links
 
@@ -171,7 +176,7 @@ def vault_read(path: str) -> Dict[str, Any]:
 
     history_versions = get_history_versions(note_path)
 
-    return {
+    result = {
         "ok": True,
         "path": path,
         "meta": meta,
@@ -185,6 +190,9 @@ def vault_read(path: str) -> Dict[str, Any]:
             "links": len(wiki_links),
         },
     }
+    if not legible:
+        result["frontmatter_error"] = causa
+    return result
 
 
 def main():
