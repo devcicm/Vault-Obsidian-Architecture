@@ -7661,7 +7661,7 @@ temp/
 
 ---
 
-### v40.36 — 2026-10-05 `git: pending`
+### v40.36 — 2026-10-05 `git: 9aaa45c`
 
 **Lo que encontró usar la wheel contra un vault real.**
 
