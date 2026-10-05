@@ -425,7 +425,9 @@ def fijar_hash(hash_objetivo: Optional[str] = None,
         "date_corrected": bool(fecha_commit and fecha_commit != fecha_vieja),
     }
     if not dry_run:
-        SPEC.write_text(nuevo_texto, encoding="utf-8")
+        # Por bytes: `write_text` traduce a CRLF en Windows y dejaba el
+        # manifiesto entero en CRLF en un repo con eol=lf (v40.36).
+        SPEC.write_bytes(nuevo_texto.encode("utf-8"))
     return {
         "ok": True,
         "tool": "vault_changelog_check",
@@ -473,7 +475,7 @@ def congelar() -> Dict[str, Any]:
                 "es para historia que ya estaba mal, no para estrenar deuda"
             ),
         }
-    BASELINE.write_text(
+    BASELINE.write_bytes((
         json.dumps(
             {
                 "_comment": (
@@ -484,9 +486,8 @@ def congelar() -> Dict[str, Any]:
                 "fechas_divergentes": dict(sorted(nueva.items())),
             },
             indent=2, ensure_ascii=False,
-        ) + "\n",
-        encoding="utf-8",
-    )
+        ) + "\n"
+    ).encode("utf-8"))
     return {
         "ok": True,
         "tool": "vault_changelog_check",

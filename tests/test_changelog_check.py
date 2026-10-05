@@ -13,6 +13,7 @@ siguientes comprueban el guard contra un changelog fabricado en vez de contra el
 real, que está —y debe estar— limpio.
 """
 
+import importlib
 import subprocess
 import sys
 from pathlib import Path
@@ -216,7 +217,7 @@ def test_fijar_hash_no_escribe_en_dry_run(tmp_path, monkeypatch):
     monkeypatch.setattr(C, "SPEC", falso)
     monkeypatch.setitem(sys.modules, "vault_standard_upgrade",
                         type(sys)("vault_standard_upgrade"))
-    monkeypatch.setattr(sys.modules["vault_version"],
+    monkeypatch.setattr(importlib.import_module("vault_version"),
                         "CURRENT_VERSION", "v99.9")
 
     r = C.fijar_hash(dry_run=True)
@@ -239,7 +240,7 @@ def test_fijar_hash_escribe_el_hash_y_la_fecha_reales(tmp_path, monkeypatch):
     monkeypatch.setattr(C, "SPEC", falso)
     monkeypatch.setitem(sys.modules, "vault_standard_upgrade",
                         type(sys)("vault_standard_upgrade"))
-    monkeypatch.setattr(sys.modules["vault_version"],
+    monkeypatch.setattr(importlib.import_module("vault_version"),
                         "CURRENT_VERSION", "v99.9")
 
     head = C._git("rev-parse", "--short", "HEAD")
@@ -252,6 +253,22 @@ def test_fijar_hash_escribe_el_hash_y_la_fecha_reales(tmp_path, monkeypatch):
     assert "pending" not in escrito
 
 
+def test_fijar_hash_conserva_lf(tmp_path, monkeypatch):
+    """Medido el 2026-10-05 al fijar v40.36: en Windows `write_text` dejaba el
+    manifiesto entero en CRLF en la copia de trabajo de un repo con eol=lf."""
+    if not C.hay_git():
+        pytest.skip("sin repositorio git")
+    falso = tmp_path / "manifiesto.md"
+    falso.write_bytes(b"# M\n\n## Changelog\n\n### v99.9 \xe2\x80\x94 1999-01-01 `git: pending`\n\ntexto\n")
+    monkeypatch.setattr(C, "SPEC", falso)
+    monkeypatch.setitem(sys.modules, "vault_standard_upgrade",
+                        type(sys)("vault_standard_upgrade"))
+    monkeypatch.setattr(importlib.import_module("vault_version"),
+                        "CURRENT_VERSION", "v99.9")
+    assert C.fijar_hash()["ok"]
+    assert b"\r\n" not in falso.read_bytes()
+
+
 def test_fijar_hash_no_inventa_nada_si_no_hay_pending(tmp_path, monkeypatch):
     falso = tmp_path / "manifiesto.md"
     falso.write_text(
@@ -261,7 +278,7 @@ def test_fijar_hash_no_inventa_nada_si_no_hay_pending(tmp_path, monkeypatch):
     monkeypatch.setattr(C, "SPEC", falso)
     monkeypatch.setitem(sys.modules, "vault_standard_upgrade",
                         type(sys)("vault_standard_upgrade"))
-    monkeypatch.setattr(sys.modules["vault_version"],
+    monkeypatch.setattr(importlib.import_module("vault_version"),
                         "CURRENT_VERSION", "v99.9")
     if not C.hay_git():
         pytest.skip("sin repositorio git")
