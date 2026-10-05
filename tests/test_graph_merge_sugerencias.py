@@ -188,4 +188,47 @@ def test_ap32_un_predicado_desconocido_no_se_sustituye_por_el_parecido(vault):
     assert desconocido["source"] == "entity"
     assert desconocido["suggestion"] == "depends_on"
     assert desconocido["occurrences"] == 2
-    assert r["stats"]["unknownPredicates"] == 1
+    assert r["stats"]["unknownPredicates"] == 1, "AP-32: el desconocido se cuenta"
+
+
+def test_ap33_un_sinonimo_declarado_se_normaliza_y_no_sale_como_desconocido(vault):
+    """AP-33: `depend_on` declarado en `predicate_synonyms` de la ontología del
+    vault llega a la arista como `depends_on`, sin pasar por `unknownPredicates`.
+    Sin la normalización, el sinónimo legítimo saldría como AP-32."""
+    ontologia = json.loads(
+        (Path(__file__).parent.parent / "scripts" / "vault_ontology.json").read_text(encoding="utf-8"))
+    ontologia["predicate_synonyms"]["depend_on"] = "depends_on"
+    (vault / "00_System" / "vault-ontology.json").write_text(json.dumps(ontologia), encoding="utf-8")
+    _nota(vault, "07_Knowledge/user-service.md", "u", title="U")
+    _nota(vault, "07_Knowledge/orders.md", "o", title="O")
+    (vault / "06_Diagrams" / "entity" / "demo-relations.json").write_text(
+        json.dumps({"project": "demo", "relations": [
+            {"fromEntity": "orders", "toEntity": "user-service", "relationType": "depend_on"}]}),
+        encoding="utf-8",
+    )
+    r, g = _enriquecido(vault)
+    assert [e["predicate"] for e in _entidad(g)] == ["depends_on"], "AP-33"
+    assert g["unknownPredicates"] == [] and r["stats"]["unknownPredicates"] == 0
+
+
+def test_ap34_una_relacion_con_un_extremo_inexistente_se_declara_huerfana(vault):
+    """AP-34: una relación tipada cuyo extremo no es ninguna nota se declara.
+    La arista se conserva marcada como no resuelta —borrarla perdería lo que
+    el autor escribió—, pero hasta v40.35 la lista de huérfanas era una
+    variable local: el manifiesto prometía `unresolved_entities[]` y el
+    consumidor solo veía un contador, sin saber qué relación ni qué extremo."""
+    _nota(vault, "07_Knowledge/orders.md", "o", title="O")
+    (vault / "06_Diagrams" / "entity" / "demo-relations.json").write_text(
+        json.dumps({"project": "demo", "relations": [
+            {"fromEntity": "orders", "toEntity": "nadie-lo-escribio", "relationType": "depends_on"}]}),
+        encoding="utf-8",
+    )
+    r, g = _enriquecido(vault)
+    rel = g["diagnostics"]["entity_relations"]
+    assert rel["unresolved"] == 1 and rel["resolved"] == 0, rel
+    [huerfana] = rel["unresolved_entities"]
+    assert huerfana["missing_endpoints"] == ["nadie-lo-escribio"], huerfana
+    assert huerfana["source_file"] == "06_Diagrams/entity/demo-relations.json"
+    [arista] = _entidad(g)
+    assert arista["endpoint_resolved"] is False
+    assert any("AP-34" in a for a in r["nextActions"]), r["nextActions"]

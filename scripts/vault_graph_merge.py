@@ -431,10 +431,16 @@ def _merge_entity_relations(
     ontology: Dict[str, Any],
     identidades: "_Identidades",
     desconocidos: Optional[Dict[Tuple[str, str, str], Dict]] = None,
+    huerfanas: Optional[List[Dict]] = None,
 ) -> List[Dict]:
-    """Read entity relations and convert to enriched edges."""
+    """Read entity relations and convert to enriched edges.
+
+    `huerfanas` recibe las relaciones con un extremo que no es ninguna nota
+    (AP-34). Hasta v40.35 la lista era local y nadie la leía: el manifiesto
+    prometía `unresolved_entities[]` y la tool solo publicaba el contador.
+    """
     edges: List[Dict] = []
-    unresolved: List[Dict] = []
+    unresolved: List[Dict] = huerfanas if huerfanas is not None else []
     if desconocidos is None:
         desconocidos = {}
 
@@ -521,10 +527,16 @@ def _merge_code_relations(
     ontology: Dict[str, Any],
     identidades: "_Identidades",
     desconocidos: Optional[Dict[Tuple[str, str, str], Dict]] = None,
+    huerfanas: Optional[List[Dict]] = None,
 ) -> List[Dict]:
-    """Read code relations and convert to enriched edges."""
+    """Read code relations and convert to enriched edges.
+
+    `huerfanas` recibe las relaciones con un extremo que no es ninguna nota
+    (AP-34). Hasta v40.35 la lista era local y nadie la leía: el manifiesto
+    prometía `unresolved_entities[]` y la tool solo publicaba el contador.
+    """
     edges: List[Dict] = []
-    unresolved: List[Dict] = []
+    unresolved: List[Dict] = huerfanas if huerfanas is not None else []
     if desconocidos is None:
         desconocidos = {}
 
@@ -679,8 +691,12 @@ def vault_graph_merge(
     # métricas de cada una cuenten relaciones, y después el conjunto.
     wiki_edges = consolidar_aristas(wiki_edges)
     desconocidos: Dict[Tuple[str, str, str], Dict] = {}
-    entity_edges = consolidar_aristas(_merge_entity_relations(ontology, identidades, desconocidos))
-    code_edges = consolidar_aristas(_merge_code_relations(ontology, identidades, desconocidos))
+    huerfanas_entidad: List[Dict] = []
+    huerfanas_codigo: List[Dict] = []
+    entity_edges = consolidar_aristas(
+        _merge_entity_relations(ontology, identidades, desconocidos, huerfanas_entidad))
+    code_edges = consolidar_aristas(
+        _merge_code_relations(ontology, identidades, desconocidos, huerfanas_codigo))
     unknown_predicates = list(desconocidos.values())
 
     all_edges = consolidar_aristas(wiki_edges + entity_edges + code_edges)
@@ -771,11 +787,13 @@ def vault_graph_merge(
                 "total": len(entity_edges),
                 "resolved": resolved_entity,
                 "unresolved": unresolved_entity,
+                "unresolved_entities": huerfanas_entidad,
             },
             "code_relations": {
                 "total": len(code_edges),
                 "resolved": resolved_code,
                 "unresolved": unresolved_code,
+                "unresolved_files": huerfanas_codigo,
             },
             "silo_flags": silo_flags,
         },

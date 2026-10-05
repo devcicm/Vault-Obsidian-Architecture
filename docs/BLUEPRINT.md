@@ -67,7 +67,7 @@ regenera.*
 
 *Registros: `vault_norms.NORM_CATALOG` + `vault_gate.PUERTAS` + `tests/`*
 
-62 de 77 normas tienen puerta o test que las nombre.
+65 de 77 normas tienen puerta o test que las nombre.
 **Es la única capa con baseline**, y por un motivo concreto: las demás se midieron
 en cero el día que se declararon porque sus datos ya existían y solo faltaba
 atarlos. Ésta no. Exigir cero aquí el primer día habría hecho nacer la puerta en
@@ -111,9 +111,9 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-29** — Missing status field — nota sin estado de ciclo de vida | audit | `framework` | — |
 | **AP-30** — Missing CIA classification — nota sin clasificación de la tríada | audit | — | `test_normas_de_audit_ejercitadas.py` |
 | **AP-31** — Grafo sin tipos semanticos — edges sin predicate explícito | audit | — | — |
-| **AP-32** — Relaciones tipadas sin predicate valido en la ontologia | audit | — | — |
-| **AP-33** — Predicado no canonico — sinonimo no normalizado | audit | — | — |
-| **AP-34** — Relacion tipada huerfana — endpoint inexistente en el vault | audit | — | — |
+| **AP-32** — Relaciones tipadas sin predicate valido en la ontologia | audit | — | `test_graph_merge_sugerencias.py` |
+| **AP-33** — Predicado no canonico — sinonimo no normalizado | audit | — | `test_graph_merge_sugerencias.py` |
+| **AP-34** — Relacion tipada huerfana — endpoint inexistente en el vault | audit | — | `test_graph_merge_sugerencias.py` |
 | **AP-35** — Silos de relacion — sistemas de grafos aislados | audit | — | `test_skills_catalogo.py` |
 | **AP-36** — Contención e idempotencia — side-effects fuera del vault o no rastreables | guard+audit | `framework` | `test_ap46_heal.py`, `test_arquitectura.py`, `test_ciclo_de_vida_dominio.py`, `test_consulta_dominio.py`, `test_gobernanza_dominio.py`, `test_grafo_dominio.py`, `test_indices_dominio.py`, `test_mcp_http_seguridad.py`, `test_skills_contract.py`, `test_vault_containment.py`, `test_vault_norms_audit.py` |
 | **AP-37** — No-op silencioso — ok: true sin indicador de trabajo | audit | `noop` | `test_noop_audit.py`, `test_norms_coherence.py`, `test_voice.py` |
@@ -153,7 +153,7 @@ rojo, y una puerta en rojo se desactiva.
 | **CN-03** — Standard status vocabulary — vocabulario canónico de meta.status | audit | `framework` | `test_vault_norms.py`, `test_vault_norms_audit.py`, `test_vault_sanacion.py` |
 | **CN-04** — Note opens with its title — la nota abre con su título como H1 | guard | — | `test_cn04_nota_abre_con_titulo.py` |
 
-Sin puerta ni test (15): `AP-04`, `AP-08`, `AP-12`, `AP-13`, `AP-18`, `AP-20`, `PAT-2`, `PAT-3`, `PAT-4`, `AP-27`, `AP-31`, `AP-32`, `AP-33`, `AP-34`, `PAT-6`.
+Sin puerta ni test (12): `AP-04`, `AP-08`, `AP-12`, `AP-13`, `AP-18`, `AP-20`, `PAT-2`, `PAT-3`, `PAT-4`, `AP-27`, `AP-31`, `PAT-6`.
 
 ## Capa 5 — Tools → grupos → contrato
 
