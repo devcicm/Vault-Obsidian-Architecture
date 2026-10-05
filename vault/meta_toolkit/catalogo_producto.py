@@ -8,7 +8,7 @@ la clasificación necesaria para descubrir una tool desde un wheel instalado.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache
 from importlib import resources
 from typing import Any, Mapping
@@ -28,6 +28,9 @@ class ToolProducto:
     distributable: bool
     legacy_script: str | None
     execution_module: str | None
+    #: El `inputSchema` del catálogo empaquetado: el mismo que valida el
+    #: servidor MCP, así que la CLI no describe otros argumentos que él.
+    esquema: Mapping[str, Any] = field(default_factory=dict)
 
 
 def _naturaleza_por_tool() -> dict[str, str]:
@@ -75,6 +78,7 @@ def catalogo_producto() -> dict[str, ToolProducto]:
             distributable=runtime,
             legacy_script=script or None,
             execution_module=module,
+            esquema=dict(entry.get("inputSchema") or {}),
         )
     return dict(sorted(resultado.items()))
 

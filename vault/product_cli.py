@@ -240,8 +240,28 @@ def cmd_tools_show(args: argparse.Namespace) -> int:
         "distributable": tool.distributable,
         "installed": tool.execution_module is not None,
         "execution_module": tool.execution_module,
+        "description": tool.proposito,
+        "group": tool.grupo,
+        "parameters": _parametros(tool.esquema),
     })
     return 0
+
+
+def _parametros(esquema) -> list[dict[str, Any]]:
+    """Los argumentos que acepta la tool, en el orden del catálogo."""
+    requeridos = set(esquema.get("required", ()))
+    salida = []
+    for nombre, prop in (esquema.get("properties") or {}).items():
+        parametro = {
+            "name": nombre,
+            "type": prop.get("type", "string"),
+            "required": nombre in requeridos,
+            "description": prop.get("description", ""),
+        }
+        if "enum" in prop:
+            parametro["enum"] = list(prop["enum"])
+        salida.append(parametro)
+    return salida
 
 
 def cmd_run(args: argparse.Namespace) -> int:

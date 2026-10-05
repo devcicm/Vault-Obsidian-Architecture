@@ -86,6 +86,24 @@ def test_tools_show_distingue_instalada_no_instalada_y_mantenimiento(monkeypatch
     assert maintenance["installed"] is False
 
 
+def test_tools_show_publica_los_parametros(monkeypatch, capsys):
+    """Medido el 2026-10-05: `tools show` decía si la tool estaba instalada pero
+    no qué argumentos aceptaba, y había que abrir el catálogo o el `--help` del
+    script para saber cómo llamarla. Salen del `inputSchema` empaquetado, el
+    mismo que valida el servidor MCP."""
+    _version(monkeypatch)
+    assert product_cli.main(["tools", "show", "vault_append"]) == 0
+    datos = _json(capsys)
+    assert datos["description"]
+    assert datos["group"]
+    por_nombre = {p["name"]: p for p in datos["parameters"]}
+    assert por_nombre["path"]["required"] is True
+    assert por_nombre["path"]["type"] == "string"
+    assert por_nombre["section"]["required"] is False
+    assert por_nombre["no-timestamp"]["type"] == "boolean"
+    assert all(p["description"] for p in datos["parameters"])
+
+
 def test_tools_show_desconocida_es_controlada(monkeypatch, capsys):
     _version(monkeypatch)
     assert product_cli.main(["tools", "show", "definitely_not_a_real_tool"]) == 3
