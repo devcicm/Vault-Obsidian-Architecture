@@ -31,6 +31,8 @@ import sys
 from vault_errors import emit_error, fuera_de_sesion, wrap_main
 
 from vault_io import assert_within_vault, atomic_write_text, get_vault_root, tomar_lock
+from vault_lib import separar_frontmatter, utcnow
+from vault.kernel.frontmatter_escritura import Frontmatter
 from datetime import datetime, timezone
 
 from pathlib import Path
@@ -111,6 +113,23 @@ def _insertar(texto: str, pos: int, bloque: str) -> str:
     return f"{cabeza}\n\n{despues}" if despues else f"{cabeza}\n"
 
 
+def _refrescar_updated_at(texto: str) -> "tuple[str, Optional[str]]":
+    """AP-13: un append es una escritura, y `updatedAt` sale del reloj.
+
+    Medido el 2026-10-05: la nota recién ampliada conservaba el `updatedAt` de
+    su creación, así que F6 la auditaba como obsoleta y `vault_context_pack`
+    la ordenaba como vieja. Solo se refresca si la nota ya lo declara: append
+    es no destructivo y no le cambia el esquema a una nota ajena —que falte es
+    cosa de F3—. El bloque lo reescribe su dueño (AP-46); un YAML ilegible lo
+    sigue parando `atomic_write_text` con FRONTMATTER_PARSE_ERROR.
+    """
+    bloque, cuerpo = separar_frontmatter(texto)
+    if bloque is None or not re.search(r"^updatedAt\s*:", bloque, re.MULTILINE):
+        return texto, None
+    ahora = utcnow()
+    return Frontmatter.editar(bloque).set("updatedAt", ahora).render() + "\n" + cuerpo, ahora
+
+
 def _append_bajo_lock(
     note_path: Path, path: str, content: str, section: Optional[str], timestamped: bool
 ) -> dict:
@@ -165,6 +184,8 @@ def _append_bajo_lock(
     else:
         existing_content = _insertar(existing_content, len(existing_content), append_text)
 
+    existing_content, updated_at = _refrescar_updated_at(existing_content)
+
     # Write back
 
     atomic_write_text(note_path, existing_content)
@@ -175,6 +196,7 @@ def _append_bajo_lock(
         "appendedLength": len(append_text),
         "section": section,
         "timestamped": timestamped,
+        "updatedAt": updated_at,
         "message": "Content appended successfully",
     }
 
