@@ -213,6 +213,10 @@ CONTEXTS: dict[str, dict] = {
             # verificador que los usa. Declarar y decidir con lo declarado no
             # son el mismo módulo, aunque hayan nacido en el mismo fichero.
             "vault_fundamentals_catalog",
+            # 2026-10-05 — el contrato de campos de una nota. Lee tres registros
+            # del núcleo y nada más; lo consumen quien valida y quien completa.
+            # Vivía como literal dentro de `vault_validate`.
+            "vault_contrato_nota",
             # v40.28 — el tercero. `vault_audit` tiene el fan-out más alto del
             # ranking (8), y dos de sus consumidores solo querían un criterio y
             # una tabla. Que el criterio de «esto es documentación, no una

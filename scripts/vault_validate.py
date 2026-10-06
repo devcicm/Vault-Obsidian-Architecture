@@ -29,8 +29,6 @@ import argparse
 
 import json
 
-import re
-
 import sys
 
 from vault_registry import ORDERED_SECTIONS, es_artefacto_derivado
@@ -40,6 +38,7 @@ from vault_errors import emit_error, wrap_main
 from vault_io import assert_within_vault
 from vault.kernel.frontmatter_parsing import FrontmatterParseError, parse_frontmatter_with_body
 from vault_fundamentals_catalog import cia_valores
+from vault_contrato_nota import errores_de_valor, faltantes
 
 import yaml
 
@@ -93,53 +92,14 @@ def _repo(root=None) -> RepositorioGobernanza:
 
 def _validate_cia_fields(data: Dict[str, Any]) -> List[str]:
 
-    """Validate optional CIA fields if present. Returns list of error messages."""
+    """Validate optional CIA fields if present. Returns list of error messages.
 
-    errors: List[str] = []
+    Lo que se acepta lo dice `vault_contrato_nota.errores_de_valor` —CIA,
+    `dq_validated_at` y `agent` no vacío (F7)—; aquí solo se conserva el nombre
+    para quien ya lo llamaba (no-derogación).
+    """
 
-    if "cia_integrity" in data:
-
-        v = str(data["cia_integrity"]).lower()
-
-        if v not in CIA_INTEGRITY_VALUES:
-
-            errors.append(f"cia_integrity '{v}' must be one of: {sorted(CIA_INTEGRITY_VALUES)}")
-
-    if "cia_availability" in data:
-
-        v = str(data["cia_availability"]).lower()
-
-        if v not in CIA_AVAILABILITY_VALUES:
-
-            errors.append(f"cia_availability '{v}' must be one of: {sorted(CIA_AVAILABILITY_VALUES)}")
-
-    if "cia_sensitivity" in data:
-
-        v = str(data["cia_sensitivity"]).lower()
-
-        if v not in CIA_SENSITIVITY_VALUES:
-
-            errors.append(f"cia_sensitivity '{v}' must be one of: {sorted(CIA_SENSITIVITY_VALUES)}")
-
-    if "dq_validated_at" in data:
-
-        val = str(data["dq_validated_at"])
-
-        if not re.match(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}", val):
-
-            errors.append(f"dq_validated_at '{val}' must be ISO 8601 (YYYY-MM-DDTHH:MM:SS...)")
-
-    # F7 AUTENTICIDAD: agent field (AP-16) — if present, must be non-empty
-
-    if "agent" in data:
-
-        val = str(data["agent"]).strip()
-
-        if not val:
-
-            errors.append("agent field present but empty (F7 AUTENTICIDAD requires non-empty value)")
-
-    return errors
+    return errores_de_valor(data)
 
 
 def validate_frontmatter(note_path: Path) -> Dict[str, Any]:
@@ -221,25 +181,14 @@ def validate_frontmatter(note_path: Path) -> Dict[str, Any]:
         return {"valid": False, "error": "Frontmatter not closed"}
 
 
-    # v37: required fields expanded
-    required = ["id", "title", "createdAt", "updatedAt"]
-
-    # For content notes (not system/index), require traceability fields
-    is_system = rel_path.startswith("00_System/") or rel_path == "00_System"
-
-    if not is_index and not is_system:
-        required += ["cia_integrity", "cia_availability", "cia_sensitivity", "agent"]
-
-    missing = [f for f in required if f not in data]
-    # `tags` se comprobaba tres líneas antes de que `missing` existiera:
-    # `UnboundLocalError` en la primera nota de contenido sin tags, y la tool
-    # entera devolvía UNEXPECTED_ERROR sin validar ni una. Nunca falló en los
-    # tests porque sus notas de fixture siempre llevan tags — el vault de
-    # pruebas, no.
-    if not is_index and not is_system and "tags" not in data:
-        missing.append("tags")
+    # Qué campos exige cada clase de nota —y desde qué versión— lo dice
+    # `vault_contrato_nota` (AP-57). Aquí vivía el literal, con «v37: required
+    # fields expanded» como toda su historia, y nadie más podía preguntar qué
+    # le falta a una nota sin copiarlo.
+    missing = faltantes(data, rel_path)
     if missing:
-        return {"valid": False, "error": f"Missing required fields: {missing}", "data": data}
+        return {"valid": False, "error": f"Missing required fields: {missing}",
+                "missing": missing, "data": data}
 
 
     cia_errors = _validate_cia_fields(data)
