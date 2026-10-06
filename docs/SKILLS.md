@@ -22,11 +22,14 @@ LLM) puede invocar. Cada skill tiene:
 
 ### Skills disponibles
 
-| Skill | Versión | Definición | Entry point | Descripción |
-|---|---|---|---|---|
-| `vault-sdd-init` | v1.0 | `agent/skills/vault-sdd-init/SKILL.md` | `scripts/vault_sdd_init.py` | Inicializa el SDD (Spec-Driven Development documentation) de un vault |
-| `vault-sanacion` | v1.0 | `agent/skills/vault-sanacion/SKILL.md` | `scripts/vault_sanacion.py` | Diagnostica un vault preexistente y devuelve el plan de 12 fases con veredicto y evidencia. **No escribe** |
-| `vault-onboard` | v1.0 | `agent/skills/vault-onboard/SKILL.md` | `scripts/vault_onboard.py` | Puebla un vault desde un proyecto de código que no tiene ninguno |
+| Skill | Versión | Definición | Versiones anteriores | Entry point | Descripción |
+|---|---|---|---|---|---|
+| `vault-sdd-init` | v2.0 | `agent/skills/vault-sdd-init/SKILL.md` | `agent/skills/vault-sdd-init/SKILL-v1.0.md` | `scripts/vault_sdd_init.py` | Inicializa el SDD (Spec-Driven Development documentation) de un vault |
+| `vault-sanacion` | v2.0 | `agent/skills/vault-sanacion/SKILL.md` | `agent/skills/vault-sanacion/SKILL-v1.0.md` | `scripts/vault_sanacion.py` | Diagnostica un vault preexistente y devuelve el plan de 12 fases con veredicto y evidencia. **No escribe** |
+| `vault-onboard` | v2.0 | `agent/skills/vault-onboard/SKILL.md` | `agent/skills/vault-onboard/SKILL-v1.0.md` | `scripts/vault_onboard.py` | Puebla un vault desde un proyecto de código que no tiene ninguno |
+
+Las tres están en la wheel: instalado el paquete, se invocan como
+`vault run vault_<nombre> …` con los mismos argumentos que el script.
 
 Las tres cubren los tres recorridos que el estándar reconoce, y ese es el
 criterio para que exista una skill y no solo una tool: **hay skill donde hay un
@@ -64,7 +67,11 @@ python -m pytest tests/test_vault_sdd_init.py -q
 
 **Para usar la skill en otro repo** hay dos caminos, y la elección importa:
 
-1. **Invocación directa del script** (recomendado) — no se copia nada:
+1. **CLI instalada** (recomendado) — `pip install` del paquete y nada que copiar:
+   ```bash
+   vault run vault_sdd_init --vault-root . --bilingual
+   ```
+   O, desde un checkout del estándar, el script directo:
    ```bash
    python /ruta/al/spec-repo/scripts/vault_sdd_init.py --vault-root . --bilingual
    ```
@@ -86,6 +93,7 @@ python -m pytest tests/test_vault_sdd_init.py -q
 | **Añadir** | Crear `scripts/vault_<x>.py` **primero**, luego `agent/skills/<x>/SKILL.md`, luego la fila en la tabla de arriba, luego el test. Nunca al revés. |
 | **Modificar argumentos** | Cambiar el `argparse` del script y sincronizar `argument-hint` + tabla de argumentos del `SKILL.md`. Divergir aquí es AP-01. |
 | **Retirar** | **No se borra.** Se anota `superseded_by:` conservando el contrato (política de no-derogación). Ver `SKILL_MANIFEST` en `vault_sdd_init.py` como ejemplo real de constante conservada y anotada. |
+| **Versionar** | Una reescritura de la definición sube `version:` en el frontmatter del `SKILL.md` y la columna de arriba, y la definición anterior se queda al lado como `SKILL-v<x>.md` — no se borra. Solo `SKILL.md` se descubre como skill; el archivo es historia. `tests/test_skills_versionadas.py` falla si la versión del frontmatter y la de esta tabla divergen, si una versión sube sin archivar la anterior o si la tabla de argumentos no es exactamente la del `argparse`. |
 | **Verificar alineación** | `python scripts/vault_sdd_init.py --dry-run` reporta `missing_norms` y la versión detectada. Un `missing_norms` no vacío significa que el registro tiene huecos. |
 
 **Contención (AP-36):** `--vault-root` apunta al vault destino y **toda** la
@@ -107,7 +115,7 @@ en este repo resuelve a `vault-sandbox/`.
 **CLI instalada** (`pip install -e .`):
 
 ```bash
-vault tools list                         # todas las 117 tools
+vault tools list                         # todas las tools del catálogo
 vault tools show vault_gobernanza        # detalle de una tool
 vault run vault_audit                   # ejecutar una tool
 ```
@@ -221,7 +229,7 @@ vault-mcp --vault /ruta/al/tu-vault
 
 ---
 
-### `vault-sdd-init` v1.0
+### `vault-sdd-init` v2.0
 
 ```
 +---------------------------------------------+
@@ -315,7 +323,8 @@ python scripts/vault_sdd_init.py --bilingual --force
 
 #### Tests
 
-- `tests/test_vault_sdd_init.py` — 15 tests cubriendo generadores, drift, idempotency.
+- `tests/test_vault_sdd_init.py` — generadores, drift, idempotency.
+- `tests/test_skills_versionadas.py` — versión de la definición ↔ `SKILL_VERSION` del script ↔ esta doc, y tabla de argumentos ↔ `argparse`.
 - `tests/test_skills_contract.py` — contrato definición ↔ entry point ↔ doc.
 
 #### Logo
@@ -347,7 +356,7 @@ LLM) can invoke. Each skill has:
 
 (See table above in ES section.)
 
-### `vault-sdd-init` v1.0
+### `vault-sdd-init` v2.0
 
 #### Purpose
 

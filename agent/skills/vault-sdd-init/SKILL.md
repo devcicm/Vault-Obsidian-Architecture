@@ -1,35 +1,46 @@
 ---
 name: vault-sdd-init
-description: Spec-Driven Development (SDD) documentation initializer. Generates the 14-document SDD specification suite for a project. Use when starting a new project, adding SDD documentation to an existing project, or when the user asks to "initialize SDD" or "create SDD docs".
-allowed-tools: Bash(python *) Read Write Glob Grep
-argument-hint: [--bilingual] [--check] [--dry-run] [--force]
+description: Spec-Driven Development (SDD) documentation initializer. Generates the SDD specification suite for a project under docs/sdd/. Use when starting a new project, adding SDD documentation to an existing project, or when the user asks to "initialize SDD" or "create SDD docs".
+allowed-tools: Bash(python *) Bash(vault *) Read Write Glob Grep
+argument-hint: "[--bilingual] [--check] [--dry-run] [--force] [--vault-root PATH]"
+version: "2.0"
 ---
 
 # vault-sdd-init
 
 Initialize Spec-Driven Development documentation for a project.
 
-Generates the complete 14-file SDD specification suite under `docs/sdd/`:
+Version 2.0. The previous definition is kept next to this one as
+`SKILL-v1.0.md`.
+
+Generates the SDD specification suite under `docs/sdd/`: README.md,
 00-principles.md, 01-state-machines.md, 02-implementation.md, 03-usage.md,
 04-antipatterns.md, 05-reference-matrix.md, 06-documentation-methodology.md,
 07-process-antipatterns.md, 08-roadmap.md, 09-metrics.md, 10-appendices.md,
-README.md, integrity-report.json, gaps.md.
+integrity-report.json and gaps.md. The list is owned by `EXPECTED_OUTPUTS` in
+`vault_sdd_init.py`; `--dry-run` prints it.
 
 ## Usage
 
 ```bash
 # Basic (bilingual Spanish/English)
-python scripts/vault_sdd_init.py --bilingual
+vault run vault_sdd_init --bilingual
 
 # Dry-run (preview without writing)
-python scripts/vault_sdd_init.py --bilingual --dry-run
+vault run vault_sdd_init --bilingual --dry-run
 
-# Force overwrite existing files
-python scripts/vault_sdd_init.py --bilingual --force
+# Staleness gate: exit 1 if docs/sdd/ lags behind the norm registry
+vault run vault_sdd_init --check
+
+# Force regeneration of what is derived (never gaps.md)
+vault run vault_sdd_init --bilingual --force
 
 # Custom vault root
-python scripts/vault_sdd_init.py --vault-root /path/to/vault --bilingual
+vault run vault_sdd_init --vault-root /path/to/vault --bilingual
 ```
+
+`vault run vault_sdd_init …` is the installed CLI (the wheel). From a checkout
+of the standard, `python scripts/vault_sdd_init.py …` takes the same arguments.
 
 ## Arguments
 
@@ -38,8 +49,8 @@ python scripts/vault_sdd_init.py --vault-root /path/to/vault --bilingual
 | `--bilingual` | Generate docs in Spanish and English |
 | `--check` | Compare the range on disk against `NORM_CATALOG`; exit 1 if stale (AP-47) |
 | `--dry-run` | Preview changes without writing |
-| `--force` | Regenerate the 13 derived documents — never overwrites `gaps.md` |
-| `--vault-root` | Custom vault root path |
+| `--force` | Regenerate every derived document — never overwrites `gaps.md` |
+| `--vault-root` | Custom vault root path (default: auto-detect) |
 
 ## Exit codes
 

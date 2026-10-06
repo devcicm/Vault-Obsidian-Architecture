@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """vault_sdd_init — Thin wrapper for the vault-sdd-init skill.
 
-This script is the entry point for the vault-sdd-init skill (v1.0).
+This script is the entry point for the vault-sdd-init skill (`SKILL_VERSION`).
 Skill documentation lives at docs/SKILLS.md (in this repo, NOT in
 a vault folder — the spec repo must not contain vault structure).
 
@@ -44,6 +44,11 @@ SDD_OUTPUT_DIR = "docs/sdd"
 # del módulo). La ubicación vigente de la skill es `agent/skills/` para el
 # descubrimiento por agentes, y `docs/SKILLS.md` para la referencia.
 SKILL_MANIFEST = "00_System/skills/vault-sdd-init.md"
+
+#: Versión de la skill: la misma que declara `agent/skills/vault-sdd-init/SKILL.md`
+#: en su frontmatter, y `tests/test_skills_versionadas.py` falla si divergen.
+#: Hasta el 2026-10-05 eran cuatro «v1.0» escritos a mano en este fichero.
+SKILL_VERSION = "2.0"
 
 EXPECTED_OUTPUTS = [
     "README.md",
@@ -341,8 +346,8 @@ def generate_readme(vault_root: Path, drift: dict) -> str:
 
 - **Vault version:** {version}
 - **Generated at:** {utcnow()}
-- **Skill:** vault-sdd-init v1.0
-- **Total documents:** 14
+- **Skill:** vault-sdd-init v{SKILL_VERSION}
+- **Total documents:** {len(EXPECTED_OUTPUTS)}
 
 ---
 
@@ -368,8 +373,8 @@ def generate_readme(vault_root: Path, drift: dict) -> str:
 
 - **Vault version:** {version}
 - **Generated at:** {utcnow()}
-- **Skill:** vault-sdd-init v1.0
-- **Total documents:** 14
+- **Skill:** vault-sdd-init v{SKILL_VERSION}
+- **Total documents:** {len(EXPECTED_OUTPUTS)}
 """
 
 
@@ -1309,7 +1314,7 @@ def main() -> int:
     def traza(*a):
         print(*a, file=sys.stderr)
 
-    traza(f"vault-sdd-init v1.0")
+    traza(f"vault-sdd-init v{SKILL_VERSION}")
     traza(f"Vault: {vault_root}")
     traza(f"Output: {sdd_dir}")
     traza(f"Bilingual: {args.bilingual}")

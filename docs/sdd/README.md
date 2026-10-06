@@ -27,7 +27,7 @@
 
 - **Vault version:** v40.36
 - **Generated at:** 2026-10-05T21:42:02.000Z
-- **Skill:** vault-sdd-init v1.0
+- **Skill:** vault-sdd-init v2.0
 - **Total documents:** 14
 
 ---
@@ -54,5 +54,5 @@
 
 - **Vault version:** v40.36
 - **Generated at:** 2026-10-05T21:42:02.000Z
-- **Skill:** vault-sdd-init v1.0
+- **Skill:** vault-sdd-init v2.0
 - **Total documents:** 14
