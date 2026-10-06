@@ -53,8 +53,10 @@ FASES = [
     (2, "Inventario: qué hay y qué falta", "vault_audit", None),
     (3, "Estructura: secciones numeradas", "vault_init",
      "qué carpeta suelta corresponde a qué sección"),
-    (4, "Frontmatter mínimo en notas sin él", "vault_write",
-     "de dónde se infiere: ruta, H1, mtime"),
+    # Hasta v40.36 la fase 4 nombraba a `vault_write`, que crea notas pero no
+    # completa el frontmatter de una que ya existe.
+    (4, "Frontmatter mínimo en notas sin él", "vault_frontmatter_completar",
+     "si el valor inferido es el verdadero: cada uno declara su origen (H1, mtime, por defecto)"),
     (5, "Encoding y mojibake", "vault_encoding", None),
     (6, "Normas: pasada de vault_norms --audit", "vault_norms",
      "cuáles son deuda real y cuáles ruido de la tool"),
@@ -247,9 +249,12 @@ def plan_de_sanacion(root=None):
     ))
 
     fases.append(_por_contador(
-        4, _stat("issues", "missingType"),
-        "{n} nota(s) sin `type:` en el frontmatter",
-        "toda nota declara su `type:`",
+        # Hasta v40.36 contaba `missingType`: una nota con `type:` y sin `id:`
+        # la rechaza `vault_validate` y aquí salía limpia. `missingContract` es
+        # la lectura del dueño del contrato, con el parser de `vault_validate`.
+        4, _stat("issues", "missingContract"),
+        "{n} nota(s) con campos del contrato ausentes o con un bloque ilegible",
+        "toda nota lleva los campos que el contrato exige",
     ))
     fases.append(_por_contador(
         5, _medir_encoding(root),

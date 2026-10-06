@@ -103,6 +103,8 @@ from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
 # era la segunda declaración que envejece en silencio.
 from vault.kernel.indices_structural import RESERVED_INDEX_NAMES as _STRUCTURAL_NAMES  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.frontmatter_parsing import FrontmatterParseError, parse_frontmatter_with_body  # noqa: E402
+from vault_contrato_nota import clase_de_nota, faltantes as _faltantes_del_contrato  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -1349,6 +1351,24 @@ def _frontmatter_de(bloque: str) -> Dict[str, Any]:
     return datos
 
 
+def _falta_al_contrato(raw: str, rel: str) -> Optional[Dict[str, Any]]:
+    """Lo que el contrato exige y la nota no lleva, o `None` si no le falta nada.
+
+    Un bloque que no parsea no se adivina: sale con `illegible` y lo repara
+    `vault_frontmatter_heal`. Un derivado no tiene contrato.
+    """
+    if clase_de_nota(rel) == "derivada":
+        return None
+    try:
+        datos, cuerpo = parse_frontmatter_with_body(raw)
+    except FrontmatterParseError:
+        return {"path": rel, "missing": [], "illegible": True}
+    if cuerpo == raw and raw.startswith("---"):
+        return {"path": rel, "missing": [], "illegible": True}
+    faltan = _faltantes_del_contrato(datos or {}, rel)
+    return {"path": rel, "missing": faltan, "illegible": False} if faltan else None
+
+
 def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]]]:
     """AP-16/26/27/29/30: detect notes missing required frontmatter fields.
 
@@ -1362,11 +1382,22 @@ def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]
     missing_cia = []
     missing_updated = []
     missing_frontmatter = []
+    missing_contract = []
     for p in notes:
         raw = _leer_nota(p, errors="strict")
         if raw is None:
             continue
         rel = str(p.relative_to(_raiz())).replace("\\", "/")
+
+        # AP-12 / AP-44 / AP-57: las listas de abajo deciden con criterios
+        # propios qué es derivado, qué es de sistema y qué falta, y una nota con
+        # `type:` y sin `id:` —que `vault_validate` rechaza— no salía en
+        # ninguna. Esta es la lectura del dueño del contrato con el parser de
+        # `vault_validate`; las de abajo se conservan (no-derogación) porque las
+        # pesa la tabla de penalizaciones.
+        contrato = _falta_al_contrato(raw, rel)
+        if contrato:
+            missing_contract.append(contrato)
         # Todo `99_Index/` es artefacto derivado — lo escriben `vault_reindex` y
         # `vault_tags` a partir de las notas, y se regenera entero en cada
         # ejecución. Exigirle tags o `type` a `tag-index.md` pide metadatos a un
@@ -1416,6 +1447,7 @@ def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]
         "missing_cia": missing_cia,
         "missing_updated": missing_updated,
         "missing_frontmatter": missing_frontmatter,
+        "missing_contract": missing_contract,
     }
 
 
@@ -1946,6 +1978,7 @@ def vault_audit(
     missing_cia = meta_issues["missing_cia"]
     missing_updated = meta_issues["missing_updated"]
     missing_frontmatter = meta_issues["missing_frontmatter"]
+    missing_contract = meta_issues["missing_contract"]
 
     # DQ + propagation data (loaded regardless of refresh_dq; only refresh triggers subprocess)
 
@@ -2127,6 +2160,7 @@ def vault_audit(
             "missingCIA": missing_cia,
             "missingUpdated": missing_updated,
             "missingFrontmatter": missing_frontmatter,
+            "missingContract": missing_contract,
             "graphKnowledge": {
                 "ap31_typedRatio": ap31_typed_ratio,
                 "ap34_orphanTypedRelations": ap34_orphan_relations,

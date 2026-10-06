@@ -36,7 +36,7 @@ que perdió información no está sanado, está podado.
 | 1 | Copiar el vault; congelar el original | — | dónde vive la copia (fuera de git si hay datos ajenos) |
 | 2 | Inventario: qué hay y qué falta | `vault_audit` | — |
 | 3 | Estructura: secciones numeradas | `vault_init` | qué carpeta suelta corresponde a qué sección |
-| 4 | Frontmatter mínimo en notas sin él | `vault_write` | de dónde se infiere: ruta, H1, `mtime` |
+| 4 | Frontmatter mínimo en notas sin él | `vault_frontmatter_completar` | si el valor inferido es el verdadero: cada uno declara su origen (H1, `mtime`, por defecto) |
 | 5 | Encoding y mojibake | `vault_encoding` | — |
 | 6 | Normas: pasada de `vault_norms --audit` | `vault_norms` | cuáles son deuda real y cuáles ruido de la tool |
 | 7 | Reubicar lo que está fuera de estructura | `vault_move` | **exige mapa de rollback** (AP-10) |

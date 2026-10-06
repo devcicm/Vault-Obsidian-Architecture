@@ -178,3 +178,51 @@ def test_fase_6_fallo_de_medida_es_unknown(monkeypatch):
 
     assert fase["verdict"] == "unknown"
     assert 6 in plan["phases_unknown"]
+
+
+def test_la_tool_de_cada_fase_es_la_del_documento():
+    """El título se contrastaba; la tool no, y la fase 4 nombraba a `vault_write`.
+
+    Hasta v40.36 la fila 4 del documento y `FASES` decían `vault_write`, que crea
+    notas pero no completa el frontmatter de una que ya existe. El plan mandaba
+    al agente a una tool que no hace la fase.
+    """
+    filas = {}
+    for linea in (REPO_ROOT / "docs" / "MODO-AGENTICO-SANACION.md").read_text(
+            encoding="utf-8").splitlines():
+        celdas = [c.strip() for c in linea.strip().strip("|").split("|")]
+        if len(celdas) == 4 and celdas[0].isdigit():
+            filas[int(celdas[0])] = celdas[2].replace("`", "")
+    for numero, _titulo, tool, _decision in san.FASES:
+        esperado = tool or "—"
+        assert filas[numero] == esperado, (
+            f"fase {numero}: el documento dice {filas[numero]!r} y FASES {tool!r}")
+
+
+def test_la_fase_4_la_escribe_quien_completa_el_contrato():
+    assert san.FASES[3][2] == "vault_frontmatter_completar"
+
+
+def test_la_fase_4_mide_con_el_contrato_no_solo_con_type(tmp_path):
+    """Una nota con `type:` y sin `id:` la rechaza `vault_validate`.
+
+    La fase 4 contaba solo `missingType` del audit: esa nota salía limpia y el
+    plan la daba por sanada. Se mide con el dry-run de quien la completa, cuyo
+    criterio es el del contrato (AP-44).
+    """
+    import vault_init
+    import vault_io
+
+    previa = vault_io.get_vault_root()
+    try:
+        vault_io.set_vault_root(tmp_path)
+        vault_init.vault_init()
+    finally:
+        vault_io.set_vault_root(previa)
+    nota = tmp_path / "07_Knowledge" / "jwt.md"
+    nota.write_bytes(b"---\ntype: knowledge\n---\n\n# JWT\n")
+
+    fase = san.plan_de_sanacion(tmp_path)["phases"][3]
+    assert fase["verdict"] == "applies"
+    assert fase["measured"] >= 1
+    assert vault_io.get_vault_root() == previa
