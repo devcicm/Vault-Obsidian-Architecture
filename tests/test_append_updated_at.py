@@ -79,7 +79,7 @@ def test_el_editor_dice_si_declara_una_clave():
 
 
 def test_append_no_decide_por_su_cuenta_si_la_clave_existe():
-    """Hasta v40.36 `vault_append` lo miraba con `^updatedAt\s*:` y `set`
+    r"""Hasta v40.36 `vault_append` lo miraba con `^updatedAt\s*:` y `set`
     reemplaza lo que encuentra `_tramo` con `^clave\s*:(\s|$)`: dos criterios
     para la misma pregunta, y donde discrepan `set` añadiría una segunda línea."""
     import ast
@@ -87,5 +87,5 @@ def test_append_no_decide_por_su_cuenta_si_la_clave_existe():
     fuente = Path(vault_append.__file__).read_text(encoding="utf-8")
     patrones = [n.value for n in ast.walk(ast.parse(fuente))
                 if isinstance(n, ast.Constant) and isinstance(n.value, str)
-                and "updatedAt" in n.value and "\s" in n.value]
+                and "updatedAt" in n.value and r"\s" in n.value]
     assert patrones == []
