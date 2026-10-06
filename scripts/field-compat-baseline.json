@@ -1,6 +1,6 @@
 {
   "schema": "field-compat/1",
-  "generated": "2026-10-06T01:51:54Z",
+  "generated": "2026-10-06T02:09:18Z",
   "why": "Campos que los repos consumidores pueden leer con garantía. Un campo que sale de aquí sin quedar anotado en superseded_fields rompe a quien lo leía, y por eso lo para una puerta.",
   "stable": {
     "vault_ai_decision": [
@@ -557,6 +557,18 @@
       "wikilinks_unresolved_sample",
       "with_frontmatter",
       "without_frontmatter"
+    ],
+    "vault_frontmatter_completar": [
+      "action",
+      "completed",
+      "completed_count",
+      "hint",
+      "notes_scanned",
+      "ok",
+      "skipped",
+      "skipped_count",
+      "tool",
+      "written_count"
     ],
     "vault_frontmatter_heal": [
       "action",

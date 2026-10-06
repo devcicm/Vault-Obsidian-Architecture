@@ -1292,7 +1292,7 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "message": "La validación terminó y encontró notas, carpetas o índices que no cumplen el contrato.",
         "recovery": {
             "action": "fix_input",
-            "hint": "El detalle está en `invalid` (nota y motivo), `structure.missing` e `indexes.invalid`. Un frontmatter que no parsea se repara con vault_frontmatter_heal; los campos que faltan se completan editando la nota.",
+            "hint": "El detalle está en `invalid` (nota y motivo), `structure.missing` e `indexes.invalid`. Un frontmatter que no parsea se repara con vault_frontmatter_heal; los campos que faltan se completan con vault_frontmatter_completar (dry-run por defecto, --apply para escribir).",
             "docs": None,
         },
     },

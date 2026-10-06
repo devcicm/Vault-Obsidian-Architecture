@@ -89,6 +89,10 @@ Lo que el escritor pone de forma habitual va como anotación (`x-vault-*`), no
 como restricción: un esquema más estricto que el validador reprobaría notas
 que la tool aprueba.
 
+Los campos que faltan se completan con `python scripts/vault_frontmatter_completar.py`
+(dry-run por defecto, `--apply` para escribir), que pone lo que el escritor
+habría puesto y declara el origen de cada valor.
+
 ## Versiones
 
 | Esquema | Requeridos en una nota de contenido | Qué cambió en esa versión |

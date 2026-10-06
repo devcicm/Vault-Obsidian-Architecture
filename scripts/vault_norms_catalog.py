@@ -442,7 +442,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         ),
         "signal": "vault_validate reporta campos faltantes. vault_audit detecta inconsistencias de tipo.",
         "prevention": "vault_write como único punto de creación; nunca editar frontmatter manualmente.",
-        "tools_enforcing": ["vault_write"],
+        "tools_enforcing": ["vault_write", "vault_frontmatter_completar"],
         # `vault_audit` no mide AP-12: mide los campos uno a uno (AP-16, AP-26,
         # AP-27, AP-29, AP-30), cada uno con su penalización. Quien comprueba el
         # bloque completo es `vault_validate.validate_frontmatter`.
@@ -572,7 +572,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         ),
         "signal": "vault_audit reporta notas sin campo agent.",
         "prevention": "vault_write agrega agent: automáticamente. Valores estándar: claude, system, human.",
-        "tools_enforcing": ["vault_write"],
+        "tools_enforcing": ["vault_write", "vault_frontmatter_completar"],
         "tools_detecting": ["vault_audit"],
         "introduced_version": "v20",
     },
@@ -1054,7 +1054,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "Pasar --tags en la tool de escritura. vault_ingest y vault_preferences "
             "los derivan automáticamente del origen y la categoría."
         ),
-        "tools_enforcing": ["vault_ingest", "vault_preferences"],
+        "tools_enforcing": ["vault_ingest", "vault_preferences", "vault_frontmatter_completar"],
         "tools_detecting": ["vault_audit"],
         "introduced_version": "v30",
     },
@@ -1080,7 +1080,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         ),
         "signal": "vault_audit la cuenta en missing_type y penaliza -2 por nota (tope -10).",
         "prevention": "Declarar --type en la escritura; vault_audit lo cuenta en missing_type.",
-        "tools_enforcing": [],
+        "tools_enforcing": ["vault_frontmatter_completar"],
         # `vault_validate` no mira `type`: su lista de campos exigidos no lo
         # incluye. Lo cuenta `vault_audit` en `missing_type`, con peso propio.
         "tools_detecting": ["vault_audit"],
@@ -1104,7 +1104,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "No editar .md a mano (SP-04). Escribir siempre por tool: "
             "atomic_write_text garantiza el bloque."
         ),
-        "tools_enforcing": [],
+        "tools_enforcing": ["vault_frontmatter_completar"],
         "tools_detecting": ["vault_audit", "vault_validate"],
         "distinguido_de": {
             "AP-56": (
@@ -1147,7 +1147,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         ),
         "signal": "vault_audit la cuenta en missing_status y penaliza -1 por nota (tope -10).",
         "prevention": "Declarar --status dentro de STATUS_VOCAB (12 valores).",
-        "tools_enforcing": [],
+        "tools_enforcing": ["vault_frontmatter_completar"],
         "tools_detecting": ["vault_audit", "vault_norms"],
         "introduced_version": "v30",
     },
@@ -1183,7 +1183,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "Declarar los tres ejes en la escritura. vault_ingest asigna "
             "cia_integrity: low a lo ingerido por no estar verificado."
         ),
-        "tools_enforcing": ["vault_ingest"],
+        "tools_enforcing": ["vault_ingest", "vault_frontmatter_completar"],
         # `vault_quality_check` valida los valores CIA **cuando están** (`if
         # "cia_integrity" in fm`); la ausencia, que es lo que AP-30 nombra, no la
         # ve. La cuenta `vault_audit` en `missing_cia`.

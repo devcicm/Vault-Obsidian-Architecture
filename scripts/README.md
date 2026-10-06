@@ -1,13 +1,13 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 119 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
+Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 120 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **157 archivos Python** — 119 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
+- **158 archivos Python** — 120 tools del catálogo MCP (82 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
 - **Saneamiento de índices (v38.1)** — `vault_section_index.py --heal [--root]` regenera índices con formato legacy `[[stem|alias]]` o ausentes; el auto-index post-write se auto-cura si un agente escribe `index.md` a mano
-- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 119 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
+- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 120 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
 - **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault; requiere marcador de CONTENIDO (01_Projects/02_Observability/03_Decisions/.obsidian), no solo 00_System/99_Index (evita el ciclo auto-reforzado de detección); override runtime con `set_vault_root()`/env `VAULT_ROOT`
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
@@ -57,7 +57,7 @@ Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan 
 | [Grupo 30 — Riesgos/Calidad](#grupo-30--riesgoscalidad) | vault_risk_save, vault_privacy_save, vault_ncr_save |
 | [Grupo 31 — Bootstrap](#grupo-31--bootstrap) | vault_init, vault_onboard |
 | [Grupo 32 — Gestión de Carpetas](#grupo-32--gestión-de-carpetas) | vault_folder_registry |
-| [Grupo 33 — Corrección Automática](#grupo-33--corrección-automática) | vault_fix_brackets, vault_graph_fix, vault_frontmatter_heal |
+| [Grupo 33 — Corrección Automática](#grupo-33--corrección-automática) | vault_fix_brackets, vault_graph_fix, vault_frontmatter_heal, vault_frontmatter_completar |
 | [Grupo 34 — Memoria de Contexto](#grupo-34--memoria-de-contexto) | vault_preferences, vault_model_profile, vault_query_parse, vault_subgraph, vault_context_pack, vault_ingest |
 | [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_changelog_check, vault_error_contract, vault_foreign_check, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_doc_staleness, vault_noop_audit, vault_smoke, vault_voice, vault_servicio, vault_blueprint, vault_norms_coherence, vault_criterios, vault_ciclos, vault_kernel, vault_excepcion_declarada, vault_recursos, vault_produccion, vault_esquema, vault_fix_all |
 | [Grupo 36 — Defectos y Cuarentena](#grupo-36--defectos-y-cuarentena) | vault_bug_save, vault_quarantine |
@@ -576,6 +576,24 @@ Dos causas, las dos mecánicas: **escalar sin escapar** (`title: Overview: demo`
 Todo lo demás se reporta y **no se toca**: completar un YAML truncado inventa dato, que es peor que el hueco. Y una reparación se acepta solo si después `yaml.safe_load` devuelve un mapa y ninguna clave que ya se leía cambia de valor — el criterio del consumidor, no el propio (AP-44).
 
 No acepta `--root` (regla 1): el destino sale de la autodetección o de `VAULT_ROOT`.
+
+### `vault_frontmatter_completar.py`
+Pone los campos del **contrato de nota** que faltan (AP-12, AP-16, AP-26, AP-27, AP-28, AP-29, AP-30): los requeridos de la clase de la nota según `vault_contrato_nota` y los recomendados que el escritor pone siempre (`type`, `status`). Una nota sin bloque recibe uno entero. Por defecto es **dry-run**.
+
+```bash
+python vault_frontmatter_completar.py                                  # qué pondría, sin escribir
+python vault_frontmatter_completar.py --apply                          # escribe
+python vault_frontmatter_completar.py --path 07_Knowledge/x.md --apply # una sola nota
+python vault_frontmatter_completar.py --apply --agent claude           # agent explícito
+```
+
+Cada valor sale en el envelope con su `origin` —`uuid4`, `primer_h1`, `nombre_de_fichero`, `updatedAt`, `mtime`, `CIA_TRIAD.default`, `--agent`, `VAULT_AGENT`, `seccion`, `por_defecto`—, porque un campo completado no lo escribió quien hizo la nota y hay que poder distinguirlo al revisar. Los valores por defecto son los de `vault_write`, leídos de sus dueños (`POR_DEFECTO` del contrato y `cia_por_defecto()`), no copiados.
+
+Lo que **no toca**: ningún valor que ya está —ni para corregirlo—, un bloque que no parsea (es de `vault_frontmatter_heal`, y sale en `skipped` con esa pista), los artefactos derivados, las instantáneas y lo que no está en una sección del vault. No escribe si la nota cambió entre leerla y escribirla (AP-54). Tras `--apply`, la nota la aprueba `vault_validate`: ese es el criterio, no el de la tool.
+
+La escritura va por `atomic_write_text`, que deja la nota en LF y sin BOM. En una nota CRLF o con BOM el diff es el fichero entero; cada entrada lo declara en `encoding_normalized` (`["bom", "crlf"]`) para que no se descubra en el commit. Medido sobre una copia del sandbox: 26 notas inválidas → 0, y una segunda pasada escribe 0.
+
+No acepta `--root` (regla 1).
 
 ---
 
@@ -1992,7 +2010,7 @@ El vault expone sus herramientas como un **servidor MCP** que las IAs consumen d
 
 **Archivo:** `../mcp/nodejs/vault-mcp-server.mjs` (~1650 líneas, cero dependencias npm)  
 **Plan:** `../mcp/PLAN.md` — documento de evidencia con 8 fases de implementación
-**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (119 tools)
+**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (120 tools)
 
 Los parámetros que el catálogo publica **se derivan del `argparse` de cada script**,
 no se escriben a mano: el servidor compone `--<param>` literal, así que un param

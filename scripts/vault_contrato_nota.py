@@ -110,6 +110,14 @@ HISTORIA: Dict[str, List[Dict[str, Any]]] = {
              "fuente": "git:f1fc051"}],
 }
 
+#: Lo que el escritor pone cuando nadie dice otra cosa. Estaba como literal en
+#: `vault_write.generate_frontmatter`; quien complete una nota a la que le falta
+#: un campo tiene que poner lo mismo, no un valor propio (AP-57). Los de CIA no
+#: están aquí porque su dueño es `CIA_TRIAD` (`cia_por_defecto`).
+#: `test_los_valores_por_defecto_son_los_del_escritor` compara con lo que
+#: `vault_write` escribe de verdad.
+POR_DEFECTO: Dict[str, Any] = {"status": "draft", "agent": "system", "tags": []}
+
 
 def _numero(version: str) -> int:
     return int(version.lstrip("v").split(".", 1)[0])

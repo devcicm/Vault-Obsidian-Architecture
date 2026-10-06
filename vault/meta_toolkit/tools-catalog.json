@@ -2259,6 +2259,53 @@
         "vault_norms"
       ]
     },
+    "vault_frontmatter_completar": {
+      "name": "vault_frontmatter_completar",
+      "description": "Pone los campos del contrato de nota que faltan (AP-12/16/26/27/28/29/30), con el origen de cada valor; no toca ninguno que ya esté.",
+      "group": "Corrección Automática",
+      "script": "vault_frontmatter_completar.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "apply": {
+            "type": "boolean",
+            "description": "Escribe los campos (default: dry-run)"
+          },
+          "check": {
+            "type": "boolean",
+            "description": "solo mide (por defecto)"
+          },
+          "strict": {
+            "type": "boolean",
+            "description": "Exit 1 si queda algo por completar u omitido"
+          },
+          "path": {
+            "type": "string",
+            "description": "Una sola nota, ruta relativa al vault"
+          },
+          "agent": {
+            "type": "string",
+            "description": "Valor de agent para las notas que no lo llevan (default: VAULT_AGENT o el del escritor)"
+          }
+        },
+        "additionalProperties": false
+      },
+      "guards": [
+        "AP-56: un frontmatter que no parsea no se completa; se manda a vault_frontmatter_heal",
+        "AP-54: no escribe si la nota cambió desde que se leyó"
+      ],
+      "side_effects": [
+        "Reescribe el frontmatter de la nota por atomic_write_text"
+      ],
+      "status": "active",
+      "exposed_via_mcp": true,
+      "execution_module": "vault_toolkit.operations.vault_frontmatter_completar",
+      "related": [
+        "vault_validate",
+        "vault_frontmatter_heal",
+        "vault_esquema"
+      ]
+    },
     "vault_frontmatter_heal": {
       "name": "vault_frontmatter_heal",
       "description": "Repara el frontmatter que existe y no parsea (AP-56): escalar sin escapar y bloque sin cerrar.",
@@ -6985,7 +7032,8 @@
     "Corrección Automática": [
       "vault_fix_brackets",
       "vault_graph_fix",
-      "vault_frontmatter_heal"
+      "vault_frontmatter_heal",
+      "vault_frontmatter_completar"
     ],
     "Versionado": [
       "vault_standard_upgrade",
@@ -8515,7 +8563,7 @@
       "message": "La validación terminó y encontró notas, carpetas o índices que no cumplen el contrato.",
       "recovery": {
         "action": "fix_input",
-        "hint": "El detalle está en `invalid` (nota y motivo), `structure.missing` e `indexes.invalid`. Un frontmatter que no parsea se repara con vault_frontmatter_heal; los campos que faltan se completan editando la nota.",
+        "hint": "El detalle está en `invalid` (nota y motivo), `structure.missing` e `indexes.invalid`. Un frontmatter que no parsea se repara con vault_frontmatter_heal; los campos que faltan se completan con vault_frontmatter_completar (dry-run por defecto, --apply para escribir).",
         "docs": null
       }
     },

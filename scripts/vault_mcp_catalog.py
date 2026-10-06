@@ -446,6 +446,43 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "example": "python vault_frontmatter_heal.py\npython vault_frontmatter_heal.py --apply",
         "related": ["vault_fix_brackets", "vault_validate", "vault_foreign_check"],
     },
+    "vault_frontmatter_completar": {
+        "name": "vault_frontmatter_completar",
+        "script": "vault_frontmatter_completar.py",
+        "group": "Corrección Automática",
+        "purpose": "Pone los campos del contrato de nota que faltan (AP-12/16/26/27/28/29/30), con el origen de cada valor; no toca ninguno que ya esté.",
+        "params": {
+            "apply": {
+                "type": "boolean",
+                "required": False,
+                "description": "Escribe los campos (default: dry-run)",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit 1 si queda algo por completar u omitido",
+                "validators": [],
+            },
+            "path": {
+                "type": "string",
+                "required": False,
+                "description": "Una sola nota, ruta relativa al vault",
+                "validators": ["within_vault"],
+            },
+            "agent": {
+                "type": "string",
+                "required": False,
+                "description": "Valor de agent para las notas que no lo llevan (default: VAULT_AGENT o el del escritor)",
+                "validators": [],
+            },
+        },
+        "guards": ["AP-56: un frontmatter que no parsea no se completa; se manda a vault_frontmatter_heal",
+                   "AP-54: no escribe si la nota cambió desde que se leyó"],
+        "side_effects": ["Reescribe el frontmatter de la nota por atomic_write_text"],
+        "example": "python vault_frontmatter_completar.py\npython vault_frontmatter_completar.py --apply\npython vault_frontmatter_completar.py --path 07_Knowledge/x.md --apply",
+        "related": ["vault_validate", "vault_frontmatter_heal", "vault_esquema"],
+    },
     "vault_delete": {
         "name": "vault_delete",
         "script": "vault_delete.py",
@@ -4575,7 +4612,8 @@ GROUPS: Dict[str, List[str]] = {
     "Release": ["vault_release_save"],
     "Riesgos/Calidad": ["vault_risk_save", "vault_privacy_save", "vault_ncr_save"],
     "Bootstrap": ["vault_init", "vault_onboard"],
-    "Corrección Automática": ["vault_fix_brackets", "vault_graph_fix", "vault_frontmatter_heal"],
+    "Corrección Automática": ["vault_fix_brackets", "vault_graph_fix", "vault_frontmatter_heal",
+                              "vault_frontmatter_completar"],
     "Versionado": ["vault_standard_upgrade", "vault_undo", "vault_history_compact"],
     "Gestión de Carpetas": ["vault_folder_registry"],
     "Memoria de Contexto": [
