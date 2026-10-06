@@ -92,7 +92,7 @@ def test_scripts_usa_el_vault_de_su_repo_y_no_uno_instalado(tmp_path):
         "import vault; print(getattr(vault, 'VIEJO', False))\n"
     )
     env = dict(os.environ, PYTHONPATH=str(tmp_path / "site"))
-    p = subprocess.run([sys.executable, "-c", codigo], capture_output=True, text=True,
+    p = subprocess.run([sys.executable, "-c", codigo], capture_output=True, text=True, encoding="utf-8",
                        env=env, cwd=str(tmp_path), timeout=60)
     assert p.returncode == 0, p.stderr[-600:]
     assert p.stdout.strip() == "False"
