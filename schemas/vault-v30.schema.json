@@ -1,0 +1,319 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "vault-v30.schema.json",
+  "title": "Frontmatter de una nota — estándar v30",
+  "description": "Generado por vault_esquema desde vault_contrato_nota; no se edita a mano. La raíz es el contrato de una nota de contenido; las de 00_System/ usan #/$defs/sistema.",
+  "x-vault-version": "v30",
+  "x-vault-validador": true,
+  "x-vault-indices-exentos": false,
+  "x-vault-recomendados": [],
+  "x-vault-historia": [
+    {
+      "campos": [
+        "agent"
+      ],
+      "cambio": "el escritor pone agent en las notas nuevas",
+      "fuente": "MIGRATIONS:AP-16: add agent: field to new notes"
+    },
+    {
+      "campos": [
+        "id",
+        "title"
+      ],
+      "cambio": "primer validador: id y title obligatorios",
+      "fuente": "git:767a84a"
+    },
+    {
+      "campos": [
+        "cia_integrity",
+        "cia_availability",
+        "cia_sensitivity",
+        "agent",
+        "dq_validated_at"
+      ],
+      "cambio": "si están, el valor CIA pertenece al vocabulario y agent no está vacío",
+      "fuente": "MIGRATIONS:vault_validate: CIA field validation + agent field validation"
+    },
+    {
+      "campos": [
+        "cia_integrity",
+        "cia_availability",
+        "cia_sensitivity",
+        "agent"
+      ],
+      "cambio": "los scripts de escritura ponen CIA y agent",
+      "fuente": "MIGRATIONS:CIA frontmatter obligatorio en 12 scripts de escritura"
+    },
+    {
+      "campos": [
+        "status"
+      ],
+      "cambio": "vocabulario de status auditado (CN-03)",
+      "fuente": "MIGRATIONS:status vocabulary"
+    }
+  ],
+  "type": "object",
+  "required": [
+    "id",
+    "title"
+  ],
+  "properties": {
+    "id": {
+      "x-vault-tipo-esperado": "string",
+      "x-vault-nivel": "requerido",
+      "x-vault-norma": "AP-12"
+    },
+    "title": {
+      "x-vault-tipo-esperado": "string",
+      "x-vault-nivel": "requerido",
+      "x-vault-norma": "AP-12"
+    },
+    "cia_integrity": {
+      "x-vault-tipo-esperado": "string",
+      "x-vault-nivel": "requerido",
+      "x-vault-norma": "AP-30",
+      "type": "string",
+      "pattern": "^([cC][rR][iI][tT][iI][cC][aA][lL]|[hH][iI][gG][hH]|[lL][oO][wW]|[mM][eE][dD][iI][uU][mM])$",
+      "x-vault-valores": [
+        "critical",
+        "high",
+        "low",
+        "medium"
+      ]
+    },
+    "cia_availability": {
+      "x-vault-tipo-esperado": "string",
+      "x-vault-nivel": "requerido",
+      "x-vault-norma": "AP-30",
+      "type": "string",
+      "pattern": "^([hH][iI][gG][hH]|[lL][oO][wW]|[mM][eE][dD][iI][uU][mM])$",
+      "x-vault-valores": [
+        "high",
+        "low",
+        "medium"
+      ]
+    },
+    "cia_sensitivity": {
+      "x-vault-tipo-esperado": "string",
+      "x-vault-nivel": "requerido",
+      "x-vault-norma": "AP-30",
+      "type": "string",
+      "pattern": "^([iI][nN][tT][eE][rR][nN][aA][lL]|[pP][uU][bB][lL][iI][cC]|[rR][eE][sS][tT][rR][iI][cC][tT][eE][dD])$",
+      "x-vault-valores": [
+        "internal",
+        "public",
+        "restricted"
+      ]
+    },
+    "agent": {
+      "x-vault-tipo-esperado": "string",
+      "x-vault-nivel": "requerido",
+      "x-vault-norma": "AP-16",
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "status": {
+      "x-vault-tipo-esperado": "string",
+      "x-vault-nivel": "recomendado",
+      "x-vault-norma": "AP-29",
+      "x-vault-vocabulario-auditado": [
+        "approved",
+        "archived",
+        "deprecated",
+        "draft",
+        "implemented",
+        "in-progress",
+        "obsolete",
+        "planned",
+        "reviewed",
+        "stub",
+        "template",
+        "verified"
+      ]
+    },
+    "dq_validated_at": {
+      "x-vault-tipo-esperado": "string",
+      "x-vault-nivel": "opcional",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "contenido": {
+      "type": "object",
+      "required": [
+        "id",
+        "title"
+      ],
+      "properties": {
+        "id": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "requerido",
+          "x-vault-norma": "AP-12"
+        },
+        "title": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "requerido",
+          "x-vault-norma": "AP-12"
+        },
+        "cia_integrity": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "requerido",
+          "x-vault-norma": "AP-30",
+          "type": "string",
+          "pattern": "^([cC][rR][iI][tT][iI][cC][aA][lL]|[hH][iI][gG][hH]|[lL][oO][wW]|[mM][eE][dD][iI][uU][mM])$",
+          "x-vault-valores": [
+            "critical",
+            "high",
+            "low",
+            "medium"
+          ]
+        },
+        "cia_availability": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "requerido",
+          "x-vault-norma": "AP-30",
+          "type": "string",
+          "pattern": "^([hH][iI][gG][hH]|[lL][oO][wW]|[mM][eE][dD][iI][uU][mM])$",
+          "x-vault-valores": [
+            "high",
+            "low",
+            "medium"
+          ]
+        },
+        "cia_sensitivity": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "requerido",
+          "x-vault-norma": "AP-30",
+          "type": "string",
+          "pattern": "^([iI][nN][tT][eE][rR][nN][aA][lL]|[pP][uU][bB][lL][iI][cC]|[rR][eE][sS][tT][rR][iI][cC][tT][eE][dD])$",
+          "x-vault-valores": [
+            "internal",
+            "public",
+            "restricted"
+          ]
+        },
+        "agent": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "requerido",
+          "x-vault-norma": "AP-16",
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "status": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "recomendado",
+          "x-vault-norma": "AP-29",
+          "x-vault-vocabulario-auditado": [
+            "approved",
+            "archived",
+            "deprecated",
+            "draft",
+            "implemented",
+            "in-progress",
+            "obsolete",
+            "planned",
+            "reviewed",
+            "stub",
+            "template",
+            "verified"
+          ]
+        },
+        "dq_validated_at": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "opcional",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+        }
+      },
+      "additionalProperties": true
+    },
+    "sistema": {
+      "type": "object",
+      "required": [
+        "id",
+        "title"
+      ],
+      "properties": {
+        "id": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "requerido",
+          "x-vault-norma": "AP-12"
+        },
+        "title": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "requerido",
+          "x-vault-norma": "AP-12"
+        },
+        "cia_integrity": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "requerido",
+          "x-vault-norma": "AP-30",
+          "type": "string",
+          "pattern": "^([cC][rR][iI][tT][iI][cC][aA][lL]|[hH][iI][gG][hH]|[lL][oO][wW]|[mM][eE][dD][iI][uU][mM])$",
+          "x-vault-valores": [
+            "critical",
+            "high",
+            "low",
+            "medium"
+          ]
+        },
+        "cia_availability": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "requerido",
+          "x-vault-norma": "AP-30",
+          "type": "string",
+          "pattern": "^([hH][iI][gG][hH]|[lL][oO][wW]|[mM][eE][dD][iI][uU][mM])$",
+          "x-vault-valores": [
+            "high",
+            "low",
+            "medium"
+          ]
+        },
+        "cia_sensitivity": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "requerido",
+          "x-vault-norma": "AP-30",
+          "type": "string",
+          "pattern": "^([iI][nN][tT][eE][rR][nN][aA][lL]|[pP][uU][bB][lL][iI][cC]|[rR][eE][sS][tT][rR][iI][cC][tT][eE][dD])$",
+          "x-vault-valores": [
+            "internal",
+            "public",
+            "restricted"
+          ]
+        },
+        "agent": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "requerido",
+          "x-vault-norma": "AP-16",
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "status": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "recomendado",
+          "x-vault-norma": "AP-29",
+          "x-vault-vocabulario-auditado": [
+            "approved",
+            "archived",
+            "deprecated",
+            "draft",
+            "implemented",
+            "in-progress",
+            "obsolete",
+            "planned",
+            "reviewed",
+            "stub",
+            "template",
+            "verified"
+          ]
+        },
+        "dq_validated_at": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "opcional",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

@@ -35,7 +35,7 @@ Restricciones que son decisión de producto, no limitación pendiente:
 |---|---|---|---|
 | **Escritura → gobernanza** (`escritura_a_gobernanza`) | Lo que el agente captura queda escrito una sola vez, normalizado contra las normas, versionado y auditable después. | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 36, 37 | 85 |
 | **Consulta → contexto** (`consulta_a_contexto`) | Una pregunta del agente se convierte en un paquete de contexto acotado y presupuestado, recorriendo el grafo del vault sin índice externo. | 26, 34 | 9 |
-| **Gobernanza del estándar** (`gobernanza_del_estandar`) | El estándar cumple lo que publica: registro canónico primero, doc derivada, guard que falla si divergen. Ninguna de estas tools toca las notas de un usuario. | 35 | 24 |
+| **Gobernanza del estándar** (`gobernanza_del_estandar`) | El estándar cumple lo que publica: registro canónico primero, doc derivada, guard que falla si divergen. Ninguna de estas tools toca las notas de un usuario. | 35 | 25 |
 
 - **`consulta_a_contexto`** — El grupo 26 (Tokens) cae en el rango 1–33 que `AGENTS.md` atribuye al primer eje, pero sus tres tools viven en el contexto `consulta` y existen para que el paquete quepa en la ventana. El rango es cronológico, no clasificatorio.
 - **`gobernanza_del_estandar`** — Tercera capacidad que `AGENTS.md` no nombraba. Existía desde que se escribió la primera puerta; declararla es lo que impide que sus tools se cuenten como si sirvieran a la memoria del agente.
@@ -60,7 +60,7 @@ regenera.*
 | **Consulta** (`consulta`) | 7 | 11 | base de datos; embeddings; servicio externo |
 | **Ciclo de vida** (`ciclo_de_vida`) | 3 | 9 | — |
 | **Durabilidad** (`durabilidad`) | 4 | 4 | escribir fuera de la raíz del vault (AP-36) |
-| **Meta-toolkit** (`meta_toolkit`) | 6 | 31 | escribir en una sección de contenido: sus artefactos derivados viven en 00_System/ |
+| **Meta-toolkit** (`meta_toolkit`) | 6 | 32 | escribir en una sección de contenido: sus artefactos derivados viven en 00_System/ |
 | **CLI** (`cli`) | 0 | 8 | decidir: traduce argumentos a llamadas y envelopes a salida; la decisión vive en la tool |
 
 ## Capa 4 — Normas → puertas → tests
@@ -159,7 +159,7 @@ Sin puerta ni test (10): `AP-04`, `AP-08`, `AP-12`, `AP-18`, `PAT-2`, `PAT-3`, `
 
 *Registros: `vault_mcp_catalog.TOOLS_CATALOG` + `<vault>/00_System/tool-spec.json`*
 
-118 tools activas en 37 grupos. Toda tool
+119 tools activas en 37 grupos. Toda tool
 del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 `status: archived | internal | orphan` — no se borra, se anota
 (`vault_mcp_catalog.py --check-contracts`).
@@ -185,7 +185,7 @@ del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 | Línea de Tiempo | 1 |
 | Memoria de Contexto | 6 |
 | Migración | 2 |
-| Normas | 24 |
+| Normas | 25 |
 | Observabilidad | 1 |
 | Patrones | 2 |
 | Producción/SRE | 2 |
@@ -248,6 +248,7 @@ falla — no se rellena con el valor más cercano.
 | `vault_env_matrix` | 8 — Infraestructura | escritura_a_gobernanza |
 | `vault_env_save` | 8 — Infraestructura | escritura_a_gobernanza |
 | `vault_error_contract` | 35 — Normas | gobernanza_del_estandar |
+| `vault_esquema` | 35 — Normas | gobernanza_del_estandar |
 | `vault_excepcion_declarada` | 35 — Normas | gobernanza_del_estandar |
 | `vault_fix_all` | 35 — Normas | gobernanza_del_estandar |
 | `vault_fix_brackets` | 33 — Corrección Automática | escritura_a_gobernanza |
@@ -375,7 +376,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 6 | — *sin objetivo* | 5 → 5 → 6 (crece, Δ+1) |
 | `scripts/norms-distincion-baseline.json` | AP-60 — normas que no declaran de qué se distinguen | 0 | — *sin objetivo* | 57 → 0 → 0 (encoge, Δ-57) |
 | `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 | — *sin objetivo* | 47 → 0 (encoge, Δ-47) |
-| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1357 | — *sin objetivo* | 1334 → 1334 → 1334 → 1334 → 1339 → 1357 (crece, Δ+243) |
+| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1368 | — *sin objetivo* | 1334 → 1334 → 1334 → 1334 → 1339 → 1357 (crece, Δ+243) |
 | `scripts/excepcion-declarada-baseline.json` | AP-61 — la excepción declarada no es la que escapa | 0 | ≤ 0 para 2027-06-30 · cada 180 d · gobernanza → **cumple** | 0 → 0 (plana, Δ+0) |
 | `scripts/recursos-baseline.json` | AP-62 — el consumidor cruza para leer un recurso y paga el fan-out | 2 | — *sin objetivo* | — *1 muestra* |
 
@@ -394,4 +395,4 @@ sobre la historia sin que git la respalde (AP-53).
 
 ---
 
-*22 puertas de cierre. Generado por `scripts/vault_blueprint.py`.*
+*23 puertas de cierre. Generado por `scripts/vault_blueprint.py`.*

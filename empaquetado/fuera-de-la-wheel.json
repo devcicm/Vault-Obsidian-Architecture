@@ -15,6 +15,7 @@
     "vault_doc_staleness",
     "vault_doc_sync",
     "vault_error_contract",
+    "vault_esquema",
     "vault_excepcion_declarada",
     "vault_fix_all",
     "vault_foreign_check",

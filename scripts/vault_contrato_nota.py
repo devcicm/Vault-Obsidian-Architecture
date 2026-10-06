@@ -76,7 +76,7 @@ CAMPOS: Dict[str, Dict[str, Any]] = {
     "type": {"tipo": "string", "nivel": "recomendado", "clases": ("contenido",),
              "requerido_desde": None, "norma": "AP-27"},
     "status": {"tipo": "string", "nivel": "recomendado", "clases": ("contenido",),
-               "requerido_desde": None, "norma": "AP-29", "vocabulario": tuple(STATUS_VOCAB)},
+               "requerido_desde": None, "norma": "AP-29", "vocabulario": tuple(sorted(STATUS_VOCAB))},
     "dq_validated_at": {"tipo": "string", "formato": "date-time", "nivel": "opcional",
                         "clases": ("contenido",), "requerido_desde": None,
                         "valores_desde": "v27", "patron": _ISO.pattern},
@@ -91,7 +91,8 @@ HISTORIA: Dict[str, List[Dict[str, Any]]] = {
              "fuente": "MIGRATIONS:AP-16: add agent: field to new notes"}],
     "v25": [{"campos": ["id", "title"], "cambio": "primer validador: id y title obligatorios",
              "fuente": "git:767a84a"}],
-    "v27": [{"campos": ["cia_integrity", "cia_availability", "cia_sensitivity", "agent"],
+    "v27": [{"campos": ["cia_integrity", "cia_availability", "cia_sensitivity", "agent",
+                        "dq_validated_at"],
              "cambio": "si están, el valor CIA pertenece al vocabulario y agent no está vacío",
              "fuente": "MIGRATIONS:vault_validate: CIA field validation + agent field validation"}],
     "v28": [{"campos": ["cia_integrity", "cia_availability", "cia_sensitivity", "agent"],
@@ -103,6 +104,9 @@ HISTORIA: Dict[str, List[Dict[str, Any]]] = {
                         "cia_sensitivity", "agent", "tags"],
              "cambio": ("requeridos; CIA, agent y tags solo en notas de contenido, y los "
                         "índices quedan fuera del contrato. type y status, recomendados"),
+             "fuente": "git:f1fc051"},
+            {"campos": ["type", "status"],
+             "cambio": "el escritor los pone por defecto y vault_audit penaliza su ausencia",
              "fuente": "git:f1fc051"}],
 }
 
@@ -186,3 +190,82 @@ def contrato_de_version(version: str) -> Dict[str, Any]:
 def vocabulario(campo: str) -> Optional[Tuple[str, ...]]:
     d = CAMPOS.get(campo, {})
     return d.get("valores") or d.get("vocabulario")
+
+
+def conocido_desde(campo: str) -> Optional[str]:
+    """La primera versión cuya historia nombra el campo."""
+    for v in sorted(HISTORIA, key=_numero):
+        if any(campo in h["campos"] for h in HISTORIA[v]):
+            return v
+    return None
+
+
+def _sin_mayusculas(valor: str) -> str:
+    return "".join(f"[{c.lower()}{c.upper()}]" if c.isalpha() else re.escape(c) for c in valor)
+
+
+def _propiedad(campo: str, n: int) -> Dict[str, Any]:
+    """La propiedad tal como la juzgaba `vault_validate` en la versión `n`.
+
+    Solo restringe lo que el validador restringía: una propiedad más estricta
+    que él haría que el esquema reprobara notas que la tool aprueba, y el
+    esquema dejaría de ser el contrato para ser una opinión (AP-44). Por eso
+    `id`, `title` o `tags` no llevan `type`: el validador solo mira que estén.
+    Lo que el escritor pone de forma habitual va en `x-vault-tipo-esperado`.
+    """
+    d = CAMPOS[campo]
+    prop: Dict[str, Any] = {"x-vault-tipo-esperado": d["tipo"], "x-vault-nivel": d["nivel"]}
+    if d.get("norma"):
+        prop["x-vault-norma"] = d["norma"]
+    vdesde = d.get("valores_desde")
+    if vdesde and _numero(vdesde) <= n:
+        if "valores" in d:
+            # `vault_validate` compara en minúsculas; un `enum` de JSON Schema
+            # no, así que el patrón acepta cualquier caja.
+            prop["type"] = "string"
+            prop["pattern"] = "^(" + "|".join(_sin_mayusculas(v) for v in d["valores"]) + ")$"
+            prop["x-vault-valores"] = list(d["valores"])
+        if "patron" in d:
+            prop["pattern"] = d["patron"]
+        if d.get("no_vacio"):
+            prop["type"] = "string"
+            prop["pattern"] = r"\S"
+    if "vocabulario" in d and n >= _numero(conocido_desde(campo) or "v99"):
+        prop["x-vault-vocabulario-auditado"] = list(d["vocabulario"])
+    return prop
+
+
+def esquema_json(version: str) -> Dict[str, Any]:
+    """JSON Schema 2020-12 del frontmatter de una nota en esa versión mayor.
+
+    La clase de la nota sale de su ruta, y la ruta no está en el frontmatter:
+    por eso hay un esquema por clase en `$defs` y la raíz es el de contenido,
+    que es el de casi toda nota. Las notas de `00_System/` se validan contra
+    `#/$defs/sistema`; los artefactos derivados quedan fuera desde v37.
+    """
+    c = contrato_de_version(version)
+    n = _numero(c["version"])
+    conocidos = [k for k in CAMPOS if (conocido_desde(k) and _numero(conocido_desde(k)) <= n)]
+    propiedades = {k: _propiedad(k, n) for k in conocidos}
+
+    def clase(nombre: str) -> Dict[str, Any]:
+        return {"type": "object", "required": list(c["requeridos"][nombre]),
+                "properties": propiedades, "additionalProperties": True}
+
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": f"vault-{c['version']}.schema.json",
+        "title": f"Frontmatter de una nota — estándar {c['version']}",
+        "description": (
+            "Generado por vault_esquema desde vault_contrato_nota; no se edita a "
+            "mano. La raíz es el contrato de una nota de contenido; las de "
+            "00_System/ usan #/$defs/sistema."
+        ),
+        "x-vault-version": c["version"],
+        "x-vault-validador": c["validador"],
+        "x-vault-indices-exentos": c["indices_exentos"],
+        "x-vault-recomendados": c["recomendados"],
+        "x-vault-historia": c["historia"],
+        **clase("contenido"),
+        "$defs": {"contenido": clase("contenido"), "sistema": clase("sistema")},
+    }

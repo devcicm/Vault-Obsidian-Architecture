@@ -550,6 +550,10 @@ CONTEXTS: dict[str, dict] = {
             # porque preguntarle al registro qué prometemos sería volver a
             # certificarnos con nuestro propio criterio (AP-44).
             "vault_produccion",
+            # Publica `vault_contrato_nota` como un JSON Schema por versión en
+            # `schemas/`. Meta-toolkit por sujeto: escribe en este repo, no en
+            # ningún vault. El contrato es del núcleo; quien lo serializa, no.
+            "vault_esquema",
             # Genera adaptadores de operaciones desde registros canónicos.
             # Meta-toolkit por sujeto: genera artefactos para la distribución.
             "vault_distribution_sync",

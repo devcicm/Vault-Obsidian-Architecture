@@ -1915,6 +1915,50 @@
         "vault_gate"
       ]
     },
+    "vault_esquema": {
+      "name": "vault_esquema",
+      "description": "Publica el contrato de campos de una nota (vault_contrato_nota) como un JSON Schema 2020-12 por version mayor del estandar, todos al lado en schemas/: un vault que se quedo en v28 se valida contra lo que v28 exigia. Quien consume un vault sin este toolkit no puede importar el contrato Python; puede leer el esquema. Los ficheros son derivados: --check falla si divergen del contrato.",
+      "group": "Normas",
+      "script": "vault_esquema.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "check": {
+            "type": "boolean",
+            "description": "Falla si schemas/ diverge del contrato"
+          },
+          "strict": {
+            "type": "boolean",
+            "description": "Exit 1 si algo diverge"
+          },
+          "sync": {
+            "type": "boolean",
+            "description": "Regenera schemas/ desde el contrato"
+          },
+          "version": {
+            "type": "string",
+            "description": "Imprime el esquema de una version (v21..)"
+          }
+        },
+        "additionalProperties": false
+      },
+      "guards": [
+        "El esquema restringe solo lo que vault_validate restringia en esa version: uno mas estricto reprobaria notas que la tool aprueba (AP-44)",
+        "Antes de v21 no hay migracion registrada y no se publica esquema; de v21 a v24 no habia validador y el esquema lo declara",
+        "Un esquema en schemas/ sin version en el contrato no se borra: se informa en unknown"
+      ],
+      "side_effects": [
+        "schemas/"
+      ],
+      "status": "active",
+      "exposed_via_mcp": false,
+      "execution_module": null,
+      "related": [
+        "vault_validate",
+        "vault_gate",
+        "vault_frontmatter_heal"
+      ]
+    },
     "vault_excepcion_declarada": {
       "name": "vault_excepcion_declarada",
       "description": "AP-61: el handler que captura la excepcion que una libreria declara y deja escapar la que lanza de verdad. RecursionError no hereda de yaml.YAMLError, y el parser de PyYAML es recursivo: doce caracteres de anidamiento en el frontmatter de UNA nota desbordan la pila dentro de safe_load y tumban el barrido entero del vault. vault_lib.parse_frontmatter lo contuvo en su dia; los otros doce sitios que habian copiado el mismo try no se enteraron, uno de ellos vault_foreign_check, que es la tool de la regla 7.",
@@ -6919,6 +6963,7 @@
       "vault_excepcion_declarada",
       "vault_recursos",
       "vault_produccion",
+      "vault_esquema",
       "vault_fix_all"
     ],
     "Producción/SRE": [

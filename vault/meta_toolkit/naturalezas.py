@@ -100,6 +100,9 @@ NATURALEZAS: Dict[str, Dict[str, Any]] = {
             # tiene: las demás miden el repo contra sus propios registros, y
             # esta lo mide contra lo que le promete a quien lo instala.
             "vault_produccion",
+            # Publica el contrato de nota como JSON Schema por versión en
+            # schemas/ del repo; no abre el vault de nadie.
+            "vault_esquema",
             "vault_servicio",
             "vault_smoke", "vault_voice",
             # v40.34. Infraestructura de mantenimiento del propio estándar:

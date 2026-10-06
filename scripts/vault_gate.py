@@ -232,6 +232,14 @@ PUERTAS: List[Dict[str, Any]] = [
                "máquina ejecutara 3.9",
     },
     {
+        "id": "esquemas",
+        "cmd": ["vault_esquema.py", "--check", "--strict"],
+        "mide": "Los JSON Schema de schemas/ son los que el contrato de nota "
+                "produce para cada versión, y ninguno se edita a mano",
+        "fix": "python scripts/vault_esquema.py --sync; si el cambio es del "
+               "contrato, va en vault_contrato_nota con su fuente en HISTORIA",
+    },
+    {
         "id": "doc_staleness",
         "cmd": ["vault_doc_staleness.py", "--check", "--strict"],
         "mide": "Todos los artefactos derivados del vault (data-framework.json, "

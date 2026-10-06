@@ -2977,6 +2977,60 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         ),
         "related": ["vault_arch", "vault_ciclos", "vault_kernel", "vault_blueprint"],
     },
+    "vault_esquema": {
+        "name": "vault_esquema",
+        "script": "vault_esquema.py",
+        "group": "Normas",
+        "purpose": (
+            "Publica el contrato de campos de una nota (vault_contrato_nota) como "
+            "un JSON Schema 2020-12 por version mayor del estandar, todos al lado "
+            "en schemas/: un vault que se quedo en v28 se valida contra lo que v28 "
+            "exigia. Quien consume un vault sin este toolkit no puede importar el "
+            "contrato Python; puede leer el esquema. Los ficheros son derivados: "
+            "--check falla si divergen del contrato."
+        ),
+        "params": {
+            "check": {
+                "type": "boolean",
+                "required": False,
+                "description": "Falla si schemas/ diverge del contrato",
+                "validators": [],
+            },
+            "strict": {
+                "type": "boolean",
+                "required": False,
+                "description": "Exit 1 si algo diverge",
+                "validators": [],
+            },
+            "sync": {
+                "type": "boolean",
+                "required": False,
+                "description": "Regenera schemas/ desde el contrato",
+                "validators": [],
+            },
+            "version": {
+                "type": "string",
+                "required": False,
+                "description": "Imprime el esquema de una version (v21..)",
+                "validators": [],
+            },
+        },
+        "guards": [
+            "El esquema restringe solo lo que vault_validate restringia en esa "
+            "version: uno mas estricto reprobaria notas que la tool aprueba (AP-44)",
+            "Antes de v21 no hay migracion registrada y no se publica esquema; de "
+            "v21 a v24 no habia validador y el esquema lo declara",
+            "Un esquema en schemas/ sin version en el contrato no se borra: se "
+            "informa en unknown",
+        ],
+        "side_effects": ["schemas/"],
+        "example": (
+            "python vault_esquema.py --check --strict\n"
+            "python vault_esquema.py --sync\n"
+            "python vault_esquema.py --version v37"
+        ),
+        "related": ["vault_validate", "vault_gate", "vault_frontmatter_heal"],
+    },
     "vault_produccion": {
         "name": "vault_produccion",
         "script": "vault_produccion.py",
@@ -4514,6 +4568,7 @@ GROUPS: Dict[str, List[str]] = {
         "vault_excepcion_declarada",
         "vault_recursos",
         "vault_produccion",
+        "vault_esquema",
         "vault_fix_all",
     ],
     "Producción/SRE": ["vault_incident_save", "vault_slo_save"],

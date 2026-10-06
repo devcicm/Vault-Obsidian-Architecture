@@ -77,6 +77,12 @@ PASOS: List[Dict[str, Any]] = [
         "por_que": "congela los campos estables del tool-spec en la baseline",
     },
     {
+        "nombre": "esquemas",
+        "script": "vault_esquema.py",
+        "args": ["--sync"],
+        "por_que": "regenera schemas/ desde vault_contrato_nota",
+    },
+    {
         "nombre": "arquitectura",
         "script": "vault_arch.py",
         "args": ["--blueprint"],
