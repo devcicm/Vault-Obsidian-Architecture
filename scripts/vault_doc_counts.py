@@ -44,6 +44,22 @@ HISTORY_MARKERS = (
 )
 
 
+# Fuera de esas secciones también hay historia: «41 de las 88 tools del
+# catálogo no se han ejecutado» es un censo de v39, y el patrón de tools
+# activas la reescribió a 117, 118, 119 y 120 con cada tool nueva. El marcador
+# exime **solo su línea** y exige el motivo; las líneas exentas se publican en
+# `historic_exempt`, para que eximir no sea una forma callada de apagar el guard.
+CIFRA_HISTORICA = re.compile(r"<!--\s*cifra histórica:\s*(\S[^>]*?)\s*-->")
+
+
+def _linea_historica(texto: str, offset: int) -> Optional[str]:
+    """El motivo del marcador en la línea de `offset`, o `None` si no lo hay."""
+    inicio = texto.rfind("\n", 0, offset) + 1
+    fin = texto.find("\n", offset)
+    m = CIFRA_HISTORICA.search(texto[inicio : fin if fin != -1 else len(texto)])
+    return m.group(1) if m else None
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Valores vivos, derivados del registro canónico
 # ─────────────────────────────────────────────────────────────────────────────
@@ -288,6 +304,7 @@ def scan(
     checked = 0
     values: Dict[str, object] = {}
     errors: List[Dict] = []
+    exentas: List[Dict] = []
 
     for fact in COUNTED_FACTS:
         if fact.get("slow") and not include_slow:
@@ -308,6 +325,12 @@ def scan(
                 for m in re.finditer(pattern, body):
                     checked += 1
                     found = int(m.group(1))
+                    motivo = _linea_historica(body, m.start())
+                    if motivo is not None:
+                        exentas.append({"fact": fact["id"], "file": rel,
+                                        "line": _line_of(body, m.start()),
+                                        "claimed": found, "reason": motivo})
+                        continue
                     if found != expected:
                         mismatches.append(
                             {
@@ -327,6 +350,7 @@ def scan(
         "tool": "vault_doc_counts",
         "claims_checked": checked,
         "mismatches": mismatches,
+        "historic_exempt": exentas,
         "values": values,
         "errors": errors,
     }
@@ -356,8 +380,10 @@ def fix(docs: Optional[List[str]] = None, include_slow: bool = True) -> Dict:
             new_body = body
             for pattern in fact["patterns"]:
 
-                def _sub(m):
+                def _sub(m, cuerpo=new_body):
                     if int(m.group(1)) == expected:
+                        return m.group(0)
+                    if _linea_historica(cuerpo, m.start()) is not None:
                         return m.group(0)
                     applied.append(
                         {

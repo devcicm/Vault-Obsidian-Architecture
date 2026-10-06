@@ -2175,6 +2175,8 @@ python vault_doc_counts.py --check --no-slow  # omite el conteo de tests (lanza 
 
 **El changelog y la tabla de versiones quedan fuera del escaneo.** "76 tools" dentro de la entrada de v37 es historia correcta, no drift; reescribirla sería derogar el registro histórico. Los patrones son deliberadamente específicos por el mismo motivo: `"N normas"` a secas también casa con "las 14 normas manuales eliminadas", que es otro hecho. Un patrón laxo produce falsos positivos y el guard acaba desactivado — que es como mueren los guards.
 
+Fuera de esas secciones también hay historia: un censo hecho en una versión concreta («41 de las 120 tools del catálogo no se han ejecutado») casa con el patrón de tools activas, y `--fix` lo reescribió con cada tool nueva hasta que el censo dejó de decir lo que se midió. Una línea así lleva `<!-- cifra histórica: <motivo> -->`: exime solo esa línea, sin motivo no exime, y el envelope la publica en `historic_exempt` para que eximir no sea una forma callada de apagar el guard.
+
 ### `vault_doc_sync.py`
 
 Guard anti-drift de **nombres**. `vault_doc_counts` vigila las cifras; esta vigila que la referencia de tools no se quede atrás del catálogo. Comprueba que toda tool tenga su sección `###`, que toda clave de `GROUPS` tenga su `## Grupo N`, y que el índice tenga exactamente una fila por sección con el ancla resuelta.

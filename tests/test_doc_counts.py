@@ -135,3 +135,45 @@ def test_la_tool_esta_en_el_catalogo_canonico():
     agrupadas = {t for tools in vault_mcp_catalog.GROUPS.values() for t in tools}
     assert "vault_doc_counts" in agrupadas
     assert vault_mcp_catalog.TOOLS_CATALOG["vault_doc_counts"]["group"] == "Normas"
+
+
+def test_una_cifra_historica_marcada_no_se_reescribe_y_se_publica(tmp_path, monkeypatch):
+    """Fuera del changelog también hay historia: un censo hecho en v39.
+
+    «41 de las 88 tools del catálogo no se han ejecutado» es una medida de un
+    momento. El patrón de tools activas la atrapaba y `--fix` la llevó a 117,
+    118, 119 y 120 con cada tool nueva: el censo dejó de decir lo que se midió.
+    El marcador la exime solo a ella, y el envelope la lista para que eximir no
+    sea una forma de esconder deriva viva.
+    """
+    doc = tmp_path / "FAKE.md"
+    texto = ("Hoy: 999 tools activas.\n"
+             "Entonces 41 de las 88 tools del catálogo no se ejecutaban. "
+             "<!-- cifra histórica: censo de v39 -->\n")
+    doc.write_bytes(texto.encode("utf-8"))
+    monkeypatch.setattr(vdc, "REPO_ROOT", tmp_path)
+
+    r = vdc.scan(docs=["FAKE.md"], include_slow=False)
+    assert {m["claimed"] for m in r["mismatches"]} == {999}
+    assert [(e["file"], e["line"], e["claimed"]) for e in r["historic_exempt"]] == [("FAKE.md", 2, 88)]
+
+    vdc.fix(docs=["FAKE.md"], include_slow=False)
+    nuevo = doc.read_text(encoding="utf-8")
+    assert "41 de las 88 tools" in nuevo
+    assert "999" not in nuevo
+
+
+def test_el_marcador_exige_motivo(tmp_path, monkeypatch):
+    """Sin motivo, el marcador es un interruptor para apagar el guard."""
+    doc = tmp_path / "FAKE.md"
+    doc.write_bytes("Son 88 tools del catálogo. <!-- cifra histórica -->\n".encode("utf-8"))
+    monkeypatch.setattr(vdc, "REPO_ROOT", tmp_path)
+
+    r = vdc.scan(docs=["FAKE.md"], include_slow=False)
+    assert [m["claimed"] for m in r["mismatches"]] == [88]
+
+
+def test_las_cifras_historicas_del_manifiesto_son_las_medidas():
+    texto = (REPO_ROOT / "vault-obsidian-architecture.md").read_text(encoding="utf-8")
+    assert "41 de las 88 tools del catálogo" in texto
+    assert "`vault_smoke` recorre las 91 tools del catálogo" in texto
