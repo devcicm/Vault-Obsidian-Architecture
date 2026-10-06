@@ -36,6 +36,8 @@ import shutil
 
 import sys
 
+import vault_contrato_nota
+import vault_fundamentals_catalog
 import vault_tags
 import yaml
 from vault_errors import emit_error, emit_fallo, fuera_de_sesion, wrap_main
@@ -649,7 +651,7 @@ def generate_frontmatter(
     # `meta` salía por el bucle genérico del final y quedaba detrás del CIA y de
     # `agent`. El campo era el mismo pero el orden no, y un formato que depende
     # de por dónde entró el dato no es un formato.
-    fm.set("status", str(meta.pop("status", "draft")), texto=True)
+    fm.set("status", str(meta.pop("status", vault_contrato_nota.POR_DEFECTO["status"])), texto=True)
 
     # Lo que el valor original arrastraba y no era estado (progreso, versión en
     # que se resolvió, fecha) se conserva aquí en vez de perderse al normalizar.
@@ -659,15 +661,16 @@ def generate_frontmatter(
     if norm_refs:
         fm.set("norm_refs", norm_refs)
 
-    # v27 CIA schema — defaults overridable via meta
+    # v27 CIA schema — defaults overridable via meta.
+    # AP-57: los valores por defecto los declaran `CIA_TRIAD` y `POR_DEFECTO`;
+    # hasta v40.36 aquí iban como literales, una segunda copia que coincidía
+    # con `vault_frontmatter_completar` solo mientras nadie tocara el registro.
+    # El orden del bloque es el de siempre (AP-12), no el de `CIA_TRIAD`.
+    cia = vault_fundamentals_catalog.cia_por_defecto()
+    for campo in ("cia_integrity", "cia_availability", "cia_sensitivity"):
+        fm.set(campo, str(meta.pop(campo, cia[campo])), texto=True)
 
-    fm.set("cia_integrity", str(meta.pop("cia_integrity", "medium")), texto=True)
-
-    fm.set("cia_availability", str(meta.pop("cia_availability", "medium")), texto=True)
-
-    fm.set("cia_sensitivity", str(meta.pop("cia_sensitivity", "internal")), texto=True)
-
-    fm.set("agent", str(meta.pop("agent", "system")), texto=True)
+    fm.set("agent", str(meta.pop("agent", vault_contrato_nota.POR_DEFECTO["agent"])), texto=True)
 
     # AP-56 completo. Hasta v40.16 `yaml_scalar` se aplicaba **solo** al
     # título, y todo lo demás salía por aquí concatenado en un f-string —

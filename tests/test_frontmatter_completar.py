@@ -198,6 +198,27 @@ def test_los_valores_por_defecto_son_los_del_escritor():
         assert escrito[campo] == valor
 
 
+def test_el_escritor_lee_los_valores_por_defecto_de_sus_duenos(monkeypatch):
+    """AP-57: la igualdad de arriba la cumplían dos copias que coincidían.
+
+    `vault_write` escribía `"medium"`, `"internal"`, `"system"` y `"draft"`
+    como literales. Si `CIA_TRIAD` o `POR_DEFECTO` cambian, el escritor y
+    `vault_frontmatter_completar` dejan de poner lo mismo sin que nada falle.
+    """
+    import vault_fundamentals_catalog
+    import vault_write
+
+    otros_cia = {"cia_integrity": "high", "cia_availability": "low", "cia_sensitivity": "public"}
+    monkeypatch.setattr(vault_fundamentals_catalog, "cia_por_defecto", lambda: dict(otros_cia))
+    monkeypatch.setattr(contrato, "POR_DEFECTO", {"status": "planned", "agent": "otro", "tags": []})
+
+    bloque = vault_write.generate_frontmatter("x", folder="07_Knowledge")
+    escrito = yaml.safe_load("\n".join(bloque.split("\n")[1:-1]))
+    assert escrito["status"] == "planned" and escrito["agent"] == "otro"
+    for campo, valor in otros_cia.items():
+        assert escrito[campo] == valor
+
+
 @pytest.mark.parametrize("codigo", ["AP-12", "AP-16", "AP-26", "AP-27", "AP-28", "AP-29", "AP-30"])
 def test_las_normas_de_campos_nombran_a_quien_los_completa(codigo):
     norma = next(n for n in NORM_CATALOG if n["code"] == codigo)
