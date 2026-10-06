@@ -4879,6 +4879,16 @@ PARAMS_FIJADOS_POR_LA_SESION = frozenset({"root", "vault-root", "vault_root"})
 _TIPOS_PUBLICABLES = frozenset({"string", "boolean", "array", "integer", "number", "object"})
 
 
+def enum_publicado(prop: Dict[str, Any]) -> Optional[List[Any]]:
+    """Los valores que el esquema admite para `prop`, o None si no los acota.
+
+    En una lista el enum va en `items`; quien lo lea solo en `prop` no lo ve.
+    """
+    if prop.get("type") == "array":
+        return (prop.get("items") or {}).get("enum")
+    return prop.get("enum")
+
+
 def _convert_to_json_schema(py_tool: Dict[str, Any]) -> Dict[str, Any]:
     """Convierte una entrada de TOOLS_CATALOG al formato inputSchema del JSON.
 
@@ -4902,12 +4912,17 @@ def _convert_to_json_schema(py_tool: Dict[str, Any]) -> Dict[str, Any]:
         if "enum" in str(pinfo.get("validators", [])) or any(v.startswith("enum:") for v in pinfo.get("validators", [])):
             for v in pinfo.get("validators", []):
                 if v.startswith("enum:"):
-                    prop["enum"] = v.replace("enum:", "").split(",")
+                    # En una lista el enum restringe cada elemento, no la lista:
+                    # `{"type": "array", "enum": ["01"]}` solo lo cumple un
+                    # valor que sea a la vez lista y "01", o sea ninguno.
+                    destino = prop["items"] if tipo == "array" else prop
+                    tipo_valor = destino["type"]
+                    destino["enum"] = v.replace("enum:", "").split(",")
                     # El enum de un entero son enteros: `["1", "2"]` en un
                     # `integer` es un esquema que ningún valor válido cumple.
-                    if tipo in ("integer", "number"):
-                        convierte = int if tipo == "integer" else float
-                        prop["enum"] = [convierte(e) for e in prop["enum"]]
+                    if tipo_valor in ("integer", "number"):
+                        convierte = int if tipo_valor == "integer" else float
+                        destino["enum"] = [convierte(e) for e in destino["enum"]]
         schema["properties"][pname] = prop
     for restriccion in alternativas_obligatorias(py_tool):
         texto = " | ".join(" + ".join(alt) for alt in restriccion)
@@ -5506,9 +5521,10 @@ def check_params(json_path: Optional[str] = None) -> Dict[str, Any]:
             elecciones = [v[len("enum:"):].split(",")
                           for v in (reales.get(param) or {}).get("validators", [])
                           if v.startswith("enum:")]
-            if not elecciones or "enum" not in prop:
+            enum = enum_publicado(prop)
+            if not elecciones or enum is None:
                 continue
-            ajenos = sorted(set(map(str, prop["enum"])) - set(elecciones[0]))
+            ajenos = sorted(set(map(str, enum)) - set(elecciones[0]))
             if ajenos:
                 result["ok"] = False
                 result["problems"].append({

@@ -205,6 +205,16 @@ def _month_key(date_str: str) -> str:
 
 
 #: Pasos de detección que fallaron en este onboarding. Ver `_registrar_degradacion`.
+#: Códigos que `--skip` acepta: uno por cada `if "NN" not in skip` de
+#: `onboard_project`. Hasta el 2026-10-05 eran texto de la ayuda y el argumento
+#: tomaba cualquier cadena, así que `--skip 07_Knowledge` —el ejemplo de la
+#: skill— no omitía nada sin decirlo (AP-37). Ahora argparse lo rechaza.
+SECCIONES_OMITIBLES = (
+    "01", "02", "03", "04", "05", "06", "07", "08", "09", "11", "13", "14",
+    "15", "16", "17",
+)
+
+
 _DETECCION_DEGRADADA: List[Dict[str, str]] = []
 
 
@@ -2796,8 +2806,10 @@ Ejemplos:
         "--skip",
         nargs="+",
         default=[],
+        choices=SECCIONES_OMITIBLES,
+        metavar="NN",
         help=(
-            "Secciones a omitir: 01 02 03 04 05 06 07 08 09 11 13 14 15 16 17. "
+            f"Secciones a omitir: {' '.join(SECCIONES_OMITIBLES)}. "
             "18/19/20 no aparecen porque no se pueblan nunca: son secciones "
             "dirigidas por eventos y llenarlas al arrancar sería AP-45."
         ),

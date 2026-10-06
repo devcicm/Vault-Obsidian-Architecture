@@ -1169,9 +1169,11 @@ function validarArgumentos(schema, args) {
       // flag: la tool recibía `{"a":1}` como título sin que nadie lo pidiera.
       return `${clave} tiene que ser texto, no un objeto`;
     }
-    if (Array.isArray(prop.enum)) {
-      const fuera = (Array.isArray(valor) ? valor : [valor]).filter((v) => !prop.enum.map(String).includes(String(v)));
-      if (fuera.length) return `${clave}=${fuera.join(",")} fuera de [${prop.enum.join(", ")}]`;
+    // En una lista el enum acota cada elemento y vive en `items`.
+    const enumes = prop.type === "array" ? prop.items?.enum : prop.enum;
+    if (Array.isArray(enumes)) {
+      const fuera = (Array.isArray(valor) ? valor : [valor]).filter((v) => !enumes.map(String).includes(String(v)));
+      if (fuera.length) return `${clave}=${fuera.join(",")} fuera de [${enumes.join(", ")}]`;
     }
   }
   for (const obligatorio of schema.required || []) {

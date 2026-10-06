@@ -21,7 +21,7 @@ SCRIPTS = ROOT / "scripts"
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
-from vault_mcp_catalog import TOOLS_CATALOG  # noqa: E402
+from vault_mcp_catalog import TOOLS_CATALOG, enum_publicado  # noqa: E402
 
 PUBLICADO = json.loads(
     (ROOT / "mcp" / "nodejs" / "tools-catalog.json").read_text(encoding="utf-8")
@@ -55,7 +55,7 @@ def test_hay_choices_no_literales_que_medir():
 def test_cada_choices_se_publica_como_enum(nombre, script, flag):
     prop = PUBLICADO[nombre]["inputSchema"]["properties"].get(flag[2:])
     assert prop is not None, (nombre, flag)
-    assert prop.get("enum"), (nombre, flag, prop)
+    assert enum_publicado(prop), (nombre, flag, prop)
 
 
 @pytest.mark.parametrize("nombre,script,flag", [
@@ -113,4 +113,15 @@ VALIDADOS_EN_LA_FUNCION = [
 @pytest.mark.parametrize("nombre,param", VALIDADOS_EN_LA_FUNCION)
 def test_el_vocabulario_validado_en_la_funcion_se_publica(nombre, param):
     prop = PUBLICADO[nombre]["inputSchema"]["properties"][param]
-    assert prop.get("enum"), (nombre, param, prop)
+    assert enum_publicado(prop), (nombre, param, prop)
+
+
+def test_el_enum_de_una_lista_acota_cada_elemento():
+    """`vault_onboard --skip` fue el primer `nargs="+"` con `choices`, y el
+    enum salió al nivel de la lista: un esquema que ningún valor cumple, porque
+    nada es a la vez lista y `"07"`. En JSON Schema va en `items`."""
+    listas = [(n, k, p) for n, t in PUBLICADO.items()
+              for k, p in t["inputSchema"]["properties"].items() if p.get("type") == "array"]
+    assert [(n, k) for n, k, p in listas if "enum" in p] == []
+    skip = PUBLICADO["vault_onboard"]["inputSchema"]["properties"]["skip"]
+    assert "07" in skip["items"]["enum"] and "07_Knowledge" not in skip["items"]["enum"]

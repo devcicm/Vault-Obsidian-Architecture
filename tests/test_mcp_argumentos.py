@@ -210,6 +210,14 @@ def test_un_choices_por_nombre_se_valida_como_enum(sesion):
     assert "concept" in env["message"], env
 
 
+def test_el_enum_de_una_lista_se_valida_por_elemento(sesion):
+    """El enum de `--skip` vive en `items`: el servidor solo miraba `prop.enum`
+    y dejaba pasar `07_Knowledge`, que argparse rechaza después con exit 2."""
+    fuera = _envelope(sesion.llamar("vault_onboard", {"skip": ["07", "07_Knowledge"]}))
+    assert fuera["error_code"] == "INVALID_ARGS", fuera
+    assert "07_Knowledge" in fuera["message"] and "fuera de" in fuera["message"], fuera
+
+
 def test_un_enum_de_enteros_acepta_el_entero(sesion):
     """El enum `[1..5]` de `--impact` se compara por valor, no por tipo JS: el
     4 pasa la validación y lo que falta después es un obligatorio."""
