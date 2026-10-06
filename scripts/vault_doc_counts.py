@@ -75,6 +75,15 @@ def count_tools_active() -> int:
     return len(_catalog().TOOLS_CATALOG)
 
 
+def count_tools_js_native() -> int:
+    return len(_catalog().NATIVE_JS_TOOLS)
+
+
+def count_tools_python() -> int:
+    """Las del catálogo que no son JS-native: `scripts/` más `vault_gobernanza`, que vive en `vault/`."""
+    return count_tools_active() - count_tools_js_native()
+
+
 def count_groups() -> int:
     return len(_catalog().GROUPS)
 
@@ -177,6 +186,20 @@ COUNTED_FACTS: List[Dict] = [
             # Decía 84 con 86 en el catálogo y ningún patrón la miraba.
             r"--sync`?\s*\((\d+)\s+tools\)",
         ],
+    },
+    {
+        # `scripts/README.md` decía «120 tools (82 Python + 2 JS-native)»: el
+        # total tenía patrón y el desglose no, así que la suma dejó de dar.
+        "id": "tools_python",
+        "description": "Tools del catálogo con implementación Python",
+        "value": count_tools_python,
+        "patterns": [r"\((\d+) Python \+"],
+    },
+    {
+        "id": "tools_js_native",
+        "description": "Tools del catálogo con backend nativo en el servidor MCP",
+        "value": count_tools_js_native,
+        "patterns": [r"(\d+) JS-native"],
     },
     {
         "id": "groups",

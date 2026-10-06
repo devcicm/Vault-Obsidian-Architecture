@@ -177,3 +177,23 @@ def test_las_cifras_historicas_del_manifiesto_son_las_medidas():
     texto = (REPO_ROOT / "vault-obsidian-architecture.md").read_text(encoding="utf-8")
     assert "41 de las 88 tools del catálogo" in texto
     assert "`vault_smoke` recorre las 91 tools del catálogo" in texto
+
+
+def test_el_desglose_python_js_se_vigila(tmp_path, monkeypatch):
+    """`scripts/README.md` decía «120 tools (82 Python + 2 JS-native)».
+
+    El total lo vigilaba un patrón; el desglose, ninguno, y se quedó en una
+    suma que no daba. Las dos partes se derivan del catálogo.
+    """
+    import vault_mcp_catalog
+
+    nativas = len(vault_mcp_catalog.NATIVE_JS_TOOLS)
+    python = len(vault_mcp_catalog.TOOLS_CATALOG) - nativas
+    doc = tmp_path / "FAKE.md"
+    doc.write_bytes(f"(82 Python + {nativas + 5} JS-native)\n".encode("utf-8"))
+    monkeypatch.setattr(vdc, "REPO_ROOT", tmp_path)
+
+    r = vdc.scan(docs=["FAKE.md"], include_slow=False)
+    reclamadas = {(m["claimed"], m["actual"]) for m in r["mismatches"]}
+    assert (82, python) in reclamadas
+    assert (nativas + 5, nativas) in reclamadas
