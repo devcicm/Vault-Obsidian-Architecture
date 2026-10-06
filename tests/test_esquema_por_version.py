@@ -51,7 +51,9 @@ def test_cada_version_exige_lo_de_su_momento():
     assert contrato.esquema_json("v24")["required"] == []
     assert contrato.esquema_json("v30")["required"] == ["id", "title"]
     assert "createdAt" in contrato.esquema_json("v37")["required"]
-    assert contrato.esquema_json("v40.36") == contrato.esquema_json("v40")
+    # Una menor se resuelve a su mayor. Una menor fija y pasada: la vigente
+    # escrita a mano caduca en el bump (AP-47, test_version_coherence).
+    assert contrato.esquema_json("v40.1") == contrato.esquema_json("v40")
     with pytest.raises(ValueError):
         contrato.esquema_json("v12")
 
