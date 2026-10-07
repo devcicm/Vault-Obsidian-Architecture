@@ -93,3 +93,14 @@ def test_es_de_seccion_con_raiz_ve_las_propias_y_sin_raiz_no(tmp_path):
     assert not reg.es_de_seccion("23_Otra/x.md", tmp_path)
     assert not reg.es_de_seccion("22_Scripts.md", tmp_path)
     assert reg.es_de_seccion("07_Knowledge/x.md", tmp_path)
+
+
+def test_la_cache_se_invalida_cuando_el_vault_declara_otra_seccion(tmp_path):
+    """El contrato pregunta por cada nota; la caché no puede esconder un `--add`."""
+    _declarar(tmp_path, [_s("22_Scripts")])
+    assert "30_Clientes" not in reg.secciones_del_vault(tmp_path)
+    _declarar(tmp_path, [_s("22_Scripts"), _s("30_Clientes", "explicacion")])
+    assert "30_Clientes" in reg.secciones_del_vault(tmp_path)
+    # La lista devuelta es nueva: mutarla no envenena la siguiente lectura.
+    reg.secciones_del_vault(tmp_path).clear()
+    assert "22_Scripts" in reg.secciones_del_vault(tmp_path)

@@ -74,3 +74,55 @@ def test_un_registro_roto_es_un_fallo_del_dominio_no_un_vacio(tmp_path):
     with pytest.raises(FalloDeDominio) as e:
         construir(raiz).secciones.ordenadas()
     assert e.value.causa == "INDICE_ILEGIBLE"
+
+
+# ── El contrato de nota: una sección propia es contenido, no `sin_seccion` ──
+
+import os  # noqa: E402
+import subprocess  # noqa: E402
+
+import vault_contrato_nota as contrato  # noqa: E402
+
+_MINIMA = ("---\nid: x\ntitle: X\ncreatedAt: 2026-10-07T00:00:00Z\n"
+           "updatedAt: 2026-10-07T00:00:00Z\n---\n# X\n")
+
+
+def test_la_clase_de_una_nota_de_seccion_propia_es_contenido(tmp_path):
+    raiz = _vault(tmp_path, [_SCRIPTS_SEC])
+    assert contrato.clase_de_nota("22_Scripts/x.md", raiz) == "contenido"
+    assert contrato.clase_de_nota("scripts/x.md", raiz) == "sin_seccion"
+    # Sin raíz no se sabe qué declaró el vault: solo cuentan las del estándar.
+    assert contrato.clase_de_nota("22_Scripts/x.md") == "sin_seccion"
+
+
+def test_a_una_nota_de_seccion_propia_se_le_pide_el_contrato_de_contenido(tmp_path):
+    raiz = _vault(tmp_path, [_SCRIPTS_SEC])
+    datos = {"id": "x", "title": "X", "createdAt": "a", "updatedAt": "b"}
+    assert "type" in contrato.faltantes(datos, "22_Scripts/x.md", raiz=raiz)
+    assert contrato.faltantes(datos, "scripts/x.md", raiz=raiz) == []
+    assert "type" in contrato.campos_requeridos("22_Scripts/x.md", raiz)
+
+
+def _validar(raiz: Path, rel: str) -> dict:
+    proceso = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "vault_validate.py"),
+         "--path", rel, "--check", "frontmatter"],
+        env=dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",
+                 PYTHONIOENCODING="utf-8"),
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        cwd=str(ROOT / "scripts"),
+    )
+    salida = proceso.stdout.strip()
+    assert salida, proceso.stderr
+    return json.loads(salida[salida.index("{"):])
+
+
+def test_vault_validate_juzga_la_seccion_propia_con_su_raiz(tmp_path):
+    raiz = _vault(tmp_path, [_SCRIPTS_SEC])
+    for rel in ("22_Scripts/x.md", "scripts/x.md"):
+        (raiz / rel).parent.mkdir(parents=True, exist_ok=True)
+        (raiz / rel).write_text(_MINIMA, encoding="utf-8")
+    assert _validar(raiz, "scripts/x.md")["ok"] is True
+    propia = _validar(raiz, "22_Scripts/x.md")
+    assert propia["ok"] is False
+    assert "type" in json.dumps(propia)

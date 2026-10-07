@@ -1424,7 +1424,7 @@ def _falta_al_contrato(raw: str, rel: str) -> Optional[Dict[str, Any]]:
         return {"path": rel, "missing": [], "illegible": True}
     if cuerpo == raw and raw.startswith("---"):
         return {"path": rel, "missing": [], "illegible": True}
-    faltan = _faltantes_del_contrato(datos or {}, rel)
+    faltan = _faltantes_del_contrato(datos or {}, rel, raiz=_raiz())
     return {"path": rel, "missing": faltan, "illegible": False} if faltan else None
 
 
@@ -1462,7 +1462,7 @@ def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]
         # de la sección, una nota— y solo los `index.md`, así que
         # `00_System/tool-contracts.md`, declarado en `DERIVED_ARTIFACTS`,
         # salía como nota sin frontmatter.
-        clase = clase_de_nota(rel)
+        clase = clase_de_nota(rel, _raiz())
         is_index = clase == "derivada"
         is_system = clase == "sistema"
         # Los campos de sección (tags, type, status, CIA, agent) solo se piden

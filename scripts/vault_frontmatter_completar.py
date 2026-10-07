@@ -143,7 +143,9 @@ def planificar(nota: Path, rel: str, texto: str, agent: Optional[str] = None
             return None, None, "frontmatter_ilegible"
         fm = Frontmatter.editar(bloque)
 
-    ausentes = faltantes(datos, rel) + [c for c in campos_recomendados(rel) if c not in datos]
+    raiz = get_vault_root()
+    ausentes = (faltantes(datos, rel, raiz=raiz)
+                + [c for c in campos_recomendados(rel, raiz) if c not in datos])
     campos: Dict[str, Dict[str, Any]] = {}
     for campo in ausentes:
         valor, origen = _valor(campo, datos, nota, rel, cuerpo, agent)

@@ -665,7 +665,7 @@ def _run_compliance_check(target_version: str) -> Dict[str, Any]:
             except OSError:
                 continue  # ilegible: no cumple, y no resta a las demás
             datos = parse_frontmatter(text)
-            if datos and not faltantes(datos, rel, contrato):
+            if datos and not faltantes(datos, rel, contrato, raiz=raiz):
                 compliant_md += 1
         frontmatter_compliance = round(compliant_md / total_md, 2)
     else:

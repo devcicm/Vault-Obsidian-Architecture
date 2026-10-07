@@ -906,13 +906,31 @@ def leer_secciones_propias(raiz: Path) -> List[Dict[str, Optional[str]]]:
     return sorted(secciones, key=lambda s: s["folder"])
 
 
+#: `{ruta de secciones.json: (firma, secciones)}`. El contrato pregunta por
+#: cada nota y releer el JSON miles de veces por recorrido no compra nada; la
+#: firma (mtime y tamaño) invalida la entrada en cuanto `vault_section` escribe.
+_SECCIONES_LEIDAS: Dict[str, tuple] = {}
+
+
 def secciones_del_vault(raiz: Path) -> List[str]:
     """Las del estándar más las propias declaradas (activas y retiradas), en orden.
 
     Las retiradas cuentan: sus notas no dejan de ser de sección por haberse
-    retirado la sección para lo nuevo.
+    retirado la sección para lo nuevo. Un fichero roto no se cachea: lanza
+    cada vez (ver `leer_secciones_propias`).
     """
-    return sorted(ORDERED_SECTIONS + [s["folder"] for s in leer_secciones_propias(raiz)])
+    ruta = Path(raiz) / SECCIONES_PROPIAS_RUTA
+    try:
+        st = ruta.stat()
+        firma = (st.st_mtime_ns, st.st_size)
+    except OSError:
+        firma = None
+    previa = _SECCIONES_LEIDAS.get(str(ruta))
+    if previa is not None and previa[0] == firma:
+        return list(previa[1])
+    secciones = sorted(ORDERED_SECTIONS + [s["folder"] for s in leer_secciones_propias(raiz)])
+    _SECCIONES_LEIDAS[str(ruta)] = (firma, tuple(secciones))
+    return secciones
 
 
 def es_de_seccion(ruta_relativa: str, raiz: Optional[Path] = None) -> bool:

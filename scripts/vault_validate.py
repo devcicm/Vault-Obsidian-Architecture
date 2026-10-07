@@ -189,7 +189,7 @@ def validate_frontmatter(note_path: Path, contrato: Optional[str] = None) -> Dic
     # `vault_contrato_nota` (AP-57). Aquí vivía el literal, con «v37: required
     # fields expanded» como toda su historia, y nadie más podía preguntar qué
     # le falta a una nota sin copiarlo.
-    missing = faltantes(data, rel_path, contrato)
+    missing = faltantes(data, rel_path, contrato, raiz=_raiz())
     if missing:
         return {"valid": False, "error": f"Missing required fields: {missing}",
                 "missing": missing, "data": data}

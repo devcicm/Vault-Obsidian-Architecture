@@ -52,6 +52,7 @@ validador vigente aplicando el contrato de entonces.
 """
 
 import re
+from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 from vault_fundamentals_catalog import cia_valores
@@ -178,37 +179,42 @@ def _numero(version: str) -> int:
     return int(version.lstrip("v").split(".", 1)[0])
 
 
-def clase_de_nota(ruta_relativa: str) -> str:
+def clase_de_nota(ruta_relativa: str, raiz: Optional[Path] = None) -> str:
     """`derivada`, `sistema`, `sin_seccion` o `contenido`. La clase decide el conjunto (AP-12).
 
     `sin_seccion` es un `.md` de la raíz o de una carpeta que el registro no
     declara: medido en dos vaults ajenos, `README.md` y `Home.md` se juzgaban
     como contenido y el contrato les pedía la CIA que decide una sección.
+
+    Con `raiz`, una sección propia que ese vault declara (`vault_section`) es
+    contenido como cualquier otra (v41.2). Sin ella solo cuentan las del
+    estándar: quien no dice de qué vault es la ruta no puede saber qué declaró.
     """
     rel = ruta_relativa.replace("\\", "/")
     if es_artefacto_derivado(rel):
         return "derivada"
     if rel == "00_System" or rel.startswith("00_System/"):
         return "sistema"
-    if not es_de_seccion(rel):
+    if not es_de_seccion(rel, raiz):
         return "sin_seccion"
     return "contenido"
 
 
-def campos_requeridos(ruta_relativa: str) -> Tuple[str, ...]:
-    clase = clase_de_nota(ruta_relativa)
+def campos_requeridos(ruta_relativa: str, raiz: Optional[Path] = None) -> Tuple[str, ...]:
+    clase = clase_de_nota(ruta_relativa, raiz)
     return tuple(c for c, d in CAMPOS.items() if d["nivel"] == "requerido" and clase in d["clases"])
 
 
-def campos_recomendados(ruta_relativa: str) -> Tuple[str, ...]:
-    clase = clase_de_nota(ruta_relativa)
+def campos_recomendados(ruta_relativa: str, raiz: Optional[Path] = None) -> Tuple[str, ...]:
+    clase = clase_de_nota(ruta_relativa, raiz)
     return tuple(c for c, d in CAMPOS.items() if d["nivel"] == "recomendado" and clase in d["clases"])
 
 
-def _requeridos_en(ruta_relativa: str, version: str) -> Tuple[str, ...]:
+def _requeridos_en(ruta_relativa: str, version: str,
+                   raiz: Optional[Path] = None) -> Tuple[str, ...]:
     """Los requeridos de la clase de la nota según el contrato de `version`."""
     c = contrato_de_version(version)
-    clase = clase_de_nota(ruta_relativa)
+    clase = clase_de_nota(ruta_relativa, raiz)
     if clase == "derivada":
         # Antes de v37 un índice no tenía excepción: era una nota como otra.
         return () if c["indices_exentos"] else tuple(c["requeridos"]["contenido"])
@@ -219,13 +225,14 @@ def _requeridos_en(ruta_relativa: str, version: str) -> Tuple[str, ...]:
 
 
 def faltantes(datos: Mapping[str, Any], ruta_relativa: str,
-              version: Optional[str] = None) -> List[str]:
+              version: Optional[str] = None, raiz: Optional[Path] = None) -> List[str]:
     """Los requeridos que la nota no lleva, en el orden del contrato.
 
-    Sin `version`, el contrato vigente; con ella, el de esa versión mayor.
+    Sin `version`, el contrato vigente; con ella, el de esa versión mayor. Con
+    `raiz`, las secciones propias de ese vault cuentan (ver `clase_de_nota`).
     """
-    requeridos = (campos_requeridos(ruta_relativa) if version is None
-                  else _requeridos_en(ruta_relativa, version))
+    requeridos = (campos_requeridos(ruta_relativa, raiz) if version is None
+                  else _requeridos_en(ruta_relativa, version, raiz))
     return [c for c in requeridos if c not in datos]
 
 
