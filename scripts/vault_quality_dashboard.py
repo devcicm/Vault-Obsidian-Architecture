@@ -25,7 +25,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from vault_contrato_nota import POR_DEFECTO
 from vault_errors import wrap_main
+from vault_fundamentals_catalog import cia_por_defecto
 from vault_io import atomic_write_text, get_vault_root, write_report
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -195,7 +197,12 @@ def _build_dashboard() -> str:
 
     # ── Build final markdown ──────────────────────────────────────────────────
     # AP-46: el bloque lo escribe su dueño; aquí solo se declaran los campos.
-    frontmatter = (
+    # Hasta v40.36 salía sin CIA ni `agent`: el panel vive en una sección de
+    # contenido y vault_validate lo reprobaba (AP-12, AP-16, AP-30). Los
+    # valores son los de sus dueños, no unos propios (AP-57). `agent` es el
+    # del contrato y no `firmante()`: el panel lo genera el sistema, y leerlo
+    # de Autoría sería un cruce de frontera que vault_arch no admite.
+    fm = (
         Frontmatter()
         .set("title", "Quality Dashboard")
         .set("id", "quality-dashboard")
@@ -204,9 +211,11 @@ def _build_dashboard() -> str:
         .set("tags", ["quality", "dashboard", "qa"])
         .set("type", "observability")
         .set("norm_refs", ["ISO 9001:2015 §9.1"])
-        .render()
-        + "\n"
     )
+    for campo, valor in cia_por_defecto().items():
+        fm.set(campo, valor, texto=True)
+    fm.set("agent", POR_DEFECTO["agent"], texto=True)
+    frontmatter = fm.render() + "\n"
 
     body = "# Quality Dashboard — Resumen Operacional\n\n"
     body += (

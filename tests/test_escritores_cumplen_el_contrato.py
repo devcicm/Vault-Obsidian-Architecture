@@ -35,6 +35,7 @@ ESCRITORES = (
     "vault_preferences",
     "vault_bibliography_save",
     "vault_project",
+    "vault_quality_dashboard",
 )
 
 
