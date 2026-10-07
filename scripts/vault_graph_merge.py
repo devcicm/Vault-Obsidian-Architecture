@@ -30,7 +30,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from vault_regex import RE_WIKILINK  # dueño único del patrón (AP-50)
 
-from vault_errors import emit_error, wrap_main, proyecto_registrado
+from vault_errors import emit_error, emit_fallo, wrap_main, proyecto_registrado
 from vault_version import CURRENT_VERSION  # generator_version de los artefactos (AP-47)
 from vault_io import atomic_write_json, normalize_stem, write_report
 from vault_escaneo_grafo import escanear_wikilinks  # el único escaneo del grafo
@@ -292,7 +292,10 @@ def _build_wiki_link_graph() -> Tuple[Dict[str, Dict], List[Dict], List[Dict], "
 
     # El mismo enumerador que `vault_graph` (AP-44, AP-57): el tramo oculto se
     # mide en la ruta relativa al vault, no en la de la máquina que lo aloja.
-    all_files = notas_en_disco(_raiz(), ORDERED_SECTIONS)
+    # Las secciones son las del vault —estándar y propias— por el puerto del
+    # núcleo; hasta v41.2 se barría `ORDERED_SECTIONS`. Un `secciones.json`
+    # ilegible levanta `FalloDeDominio`, que traduce `vault_graph_merge`.
+    all_files = notas_en_disco(_raiz(), _repo().ctx.secciones.ordenadas())
 
     for p in all_files:
         rel = str(p.relative_to(_raiz())).replace("\\", "/")
@@ -685,7 +688,13 @@ def vault_graph_merge(
     es_del = _proyectos.pertenencia_en(_raiz(), project)
     ontology, ontology_source = _load_ontology()
 
-    nodes, wiki_edges, broken_links, identidades = _build_wiki_link_graph()
+    from vault.kernel.fallos import FalloDeDominio
+
+    try:
+        nodes, wiki_edges, broken_links, identidades = _build_wiki_link_graph()
+    except FalloDeDominio as fallo:
+        # Un registro de secciones ilegible no es un grafo sin las propias (AP-51).
+        return emit_fallo("vault_graph_merge", fallo)
 
     # Una arista por relación (from, predicate, to): por fuente, para que las
     # métricas de cada una cuenten relaciones, y después el conjunto.

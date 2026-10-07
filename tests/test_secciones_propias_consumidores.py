@@ -306,3 +306,33 @@ def test_el_grafo_con_el_registro_roto_falla_en_vez_de_saltarse_las_propias(tmp_
     (raiz / reg.SECCIONES_PROPIAS_RUTA).write_text("{roto", encoding="utf-8")
     informe = _grafo(raiz)
     assert informe["ok"] is False and informe["error_code"] == "DATA_FILE_CORRUPT", informe
+
+
+# ── vault_graph_merge ──
+#
+# El mismo barrido por `ORDERED_SECTIONS` que `vault_graph`: la nota de una
+# sección propia faltaba en `graph-enriched.json`.
+
+def _grafo_enriquecido(raiz: Path):
+    import vault_graph_merge
+    import vault_io
+    vault_io.set_vault_root(raiz)
+    return vault_graph_merge.vault_graph_merge()
+
+
+def test_el_grafo_enriquecido_incluye_la_seccion_propia(tmp_path):
+    raiz = _vault(tmp_path, [_SCRIPTS_SEC], notas=["22_Scripts/deploy.md"])
+    informe = _grafo_enriquecido(raiz)
+    assert informe["ok"] is True, informe
+    grafo = json.loads(
+        (raiz / "99_Index" / "graph-enriched.json").read_text(encoding="utf-8"))
+    nodos = grafo["nodes"]
+    ids = set(nodos) if isinstance(nodos, dict) else {n.get("id") for n in nodos}
+    assert "22_Scripts/deploy.md" in ids, sorted(ids)
+
+
+def test_el_grafo_enriquecido_con_el_registro_roto_falla(tmp_path):
+    raiz = _vault(tmp_path, notas=["07_Knowledge/a.md"])
+    (raiz / reg.SECCIONES_PROPIAS_RUTA).write_text("{roto", encoding="utf-8")
+    informe = _grafo_enriquecido(raiz)
+    assert informe["ok"] is False and informe["error_code"] == "DATA_FILE_CORRUPT", informe
