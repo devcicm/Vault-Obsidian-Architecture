@@ -154,3 +154,58 @@ def test_el_audit_reporta_un_registro_de_secciones_roto_sin_caerse(tmp_path):
     cn02 = _cn02(raiz)
     assert reg.SECCIONES_PROPIAS_RUTA in cn02
     assert "22_Scripts" in cn02
+
+
+# ── vault_write: el destino es una sección del vault (CN-02) ──
+#
+# Hasta v41.2 el catálogo afirmaba que `vault_write` exige un `--folder`
+# canónico y escribía en `scripts/` sin protestar: cobertura declarada sin
+# código detrás (AP-55). Ahora el destino se valida con el criterio de
+# `vault_registry`, y una sección propia activa es un destino como otro.
+
+_CUERPO = ("## Contexto\n\nPrimera línea real sobre el despliegue del servicio.\n"
+           "Segunda línea real que explica el motivo de la decisión.\n"
+           "Tercera línea real con la consecuencia y cómo se verifica.\n")
+
+
+def _escribir(raiz: Path, folder: str) -> dict:
+    proceso = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "vault_write.py"),
+         "--folder", folder, "--title", "Despliegue", "--content", _CUERPO,
+         "--tags", "demo"],
+        env=dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",
+                 VAULT_AGENT="system", PYTHONIOENCODING="utf-8"),
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        cwd=str(ROOT / "scripts"),
+    )
+    salida = proceso.stdout.strip()
+    assert salida, proceso.stderr
+    return json.loads(salida[salida.index("{"):])
+
+
+@pytest.mark.parametrize("folder", ["scripts", "23_Nada", "", "22_Viejo"])
+def test_vault_write_rechaza_un_destino_que_no_es_seccion(tmp_path, folder):
+    raiz = _vault(tmp_path, [{"folder": "22_Viejo", "documentacion": "guia",
+                              "status": "retirada"}])
+    r = _escribir(raiz, folder)
+    assert r["ok"] is False and r["error_code"] == "INVALID_FOLDER", r
+    assert "vault_section" in json.dumps(r, ensure_ascii=False)
+    assert not list(raiz.rglob("despliegue.md"))
+
+
+@pytest.mark.parametrize("folder", ["22_Scripts", "22_Scripts/deploy", "07_Knowledge"])
+def test_vault_write_acepta_seccion_del_estandar_y_propia_activa(tmp_path, folder):
+    raiz = _vault(tmp_path, [_SCRIPTS_SEC])
+    r = _escribir(raiz, folder)
+    assert r["ok"] is True, r
+    assert (raiz / folder / "despliegue.md").is_file()
+
+
+def test_vault_write_con_registro_de_secciones_roto_no_escribe(tmp_path):
+    """Solo un destino que necesita el registro falla; el estándar no lo lee."""
+    raiz = _vault(tmp_path)
+    (raiz / reg.SECCIONES_PROPIAS_RUTA).write_text("{roto", encoding="utf-8")
+    r = _escribir(raiz, "22_Scripts")
+    assert r["ok"] is False and r["error_code"] == "DATA_FILE_CORRUPT", r
+    assert not list(raiz.rglob("despliegue.md"))
+    assert _escribir(raiz, "07_Knowledge")["ok"] is True

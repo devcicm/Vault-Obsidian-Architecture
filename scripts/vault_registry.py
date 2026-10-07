@@ -954,6 +954,30 @@ def es_de_seccion(ruta_relativa: str, raiz: Optional[Path] = None) -> bool:
     return raiz is not None and partes[0] in secciones_del_vault(raiz)
 
 
+def motivo_de_destino_invalido(folder: str, raiz: Path, nueva: bool = True) -> Optional[str]:
+    """Por qué `folder` no admite la nota en el vault de `raiz`; None si la admite (CN-02).
+
+    Son destino las secciones del estándar y las propias que el vault declara.
+    Una propia **retirada** no admite notas nuevas, pero sí actualizar las que
+    ya tiene: siguen siendo de sección (`secciones_del_vault`). Un registro de
+    secciones ilegible lanza ValueError, como `leer_secciones_propias`.
+    """
+    seccion = (folder or "").replace("\\", "/").strip("/").split("/")[0]
+    if not seccion:
+        return "la raíz del vault no es una sección (AP-15)"
+    if seccion in ORDERED_SECTIONS:
+        return None
+    propia = next((s for s in leer_secciones_propias(raiz) if s["folder"] == seccion), None)
+    if propia is None:
+        return (f"{seccion!r} no es una sección del estándar ni una sección propia "
+                f"declarada en {SECCIONES_PROPIAS_RUTA}")
+    if nueva and propia.get("status", "activa") == "retirada":
+        sustituta = propia.get("superseded_by")
+        return (f"la sección propia {seccion!r} está retirada y no admite notas nuevas"
+                + (f"; lo nuevo va a {sustituta!r}" if sustituta else ""))
+    return None
+
+
 def section_documentacion(folder: str) -> str:
     """Clase de documento de una sección (ver `DOCUMENTACION_CLASES`); "" si no es sección."""
     top = folder.replace("\\", "/").split("/")[0]

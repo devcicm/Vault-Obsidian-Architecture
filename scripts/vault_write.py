@@ -91,6 +91,7 @@ from vault_norms_catalog import (
     STATUS_VOCAB,
     STATUS_TRANSITIONS,
 )
+from vault_registry import motivo_de_destino_invalido
 from datetime import datetime, timezone
 
 import uuid
@@ -998,6 +999,20 @@ def vault_write(
             "error": "INVALID_PATH",
             "message": str(exc),
         }
+
+    # CN-02: el destino es una sección del vault —del estándar o propia
+    # declarada—. Hasta v41.2 el catálogo lo afirmaba y aquí no lo miraba
+    # nadie: `--folder scripts` o `--folder ""` escribían sin protestar.
+    try:
+        motivo = motivo_de_destino_invalido(folder, _raiz(), nueva=not vault_path.exists())
+    except ValueError as exc:
+        return emit_error("vault_write", "DATA_FILE_CORRUPT", str(exc))
+    if motivo:
+        return emit_error(
+            "vault_write", "INVALID_FOLDER", f"CN-02: --folder {folder!r}: {motivo}.",
+            pista="Elegir una sección (vault_section --list enseña las del vault) o "
+                  "declarar una propia NN_Nombre con vault_section --add.",
+        )
 
     bloqueo = fuera_de_sesion("vault_write", vault_path)
     if bloqueo:
