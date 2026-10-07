@@ -167,5 +167,7 @@ def test_ap56_vault_log_error_no_admite_claves_por_project(tmp_path):
     texto = (raiz / salida["path"].replace("\\", "/")).read_text(encoding="utf-8")
     fm = yaml.safe_load(texto.split("---")[1])
     assert fm["project"] == hostil
-    assert "status" not in fm
+    # Desde v41 `status` es requerido y el escritor lo pone: la inyección se
+    # mide en que su valor sigue siendo el del contrato, no `active`.
+    assert fm["status"] == "draft"
     assert fm["cia_sensitivity"] == "internal"

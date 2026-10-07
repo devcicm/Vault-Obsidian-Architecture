@@ -210,6 +210,7 @@ def _build_dashboard() -> str:
         .set("updatedAt", now)
         .set("tags", ["quality", "dashboard", "qa"])
         .set("type", "observability")
+        .set("status", POR_DEFECTO["status"])  # requerido desde v41 (AP-29)
         .set("norm_refs", ["ISO 9001:2015 §9.1"])
     )
     for campo, valor in cia_por_defecto().items():

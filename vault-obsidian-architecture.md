@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v40.36 — 2026-10-05  
+**Versión:** v41.0 — 2026-10-07  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -7302,6 +7302,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
 | v40.30 | 2026-08-16 | **Cuatro medidas cuyo alcance declarado era más ancho que el que de verdad recorrían, y tres defectos que solo existen fuera de este repo.** El resultado de una medida así no es un error sino un **cero**, que se lee igual que estar limpio: `cli/` llevaba en `ARBOLES_MEDIDOS` desde v40.9 sin contexto declarado, así que `_mapa_modulos()` devolvía `None` y las dos rutas de detección descartaban sus ficheros antes de leer un import; `vault_ciclos` medía el grafo de `scripts/`, de modo que `vault/` —el paquete que existe para imponer fronteras— era el único cuyos ciclos no contaba nadie; y `vault_audit` recorría el disco 25 veces por invocación para leer lo mismo. Los otros tres salieron de instalar `scripts vault cli mcp` **fuera del repo** y ejecutar contra un vault vacío, que es la regla 7 aplicada al propio programa: la autodetección caía a `repo_root_fallback` —«no encontré nada y estoy suponiendo»— y devolvía el directorio del toolkit, así que las escrituras aterrizaban dentro del programa; el servidor MCP escaneaba hacia arriba y registraba tres vaults ajenos **con `VAULT_ROOT` explícito puesto**, un inventario del disco del usuario expuesto al agente como default; y 23 llamadas a `subprocess` en 13 módulos decodificaban con la locale de la máquina mientras el toolkit emite UTF-8, lo que en cp1252 corrompe el acento en silencio y en cp932 tumba la tool entera. Ninguno de los siete podía verse desde dentro: el entorno que generó la medida comparte sus supuestos |
+| v41.0 | 2026-10-07 | **El contrato de nota es el criterio de lo que se escribe y se valida.** `vault_contrato_nota` es el dueño de los campos de una nota y de su nivel en cada versión desde v18; `vault_validate --contrato vNN` valida contra una versión anterior y cada versión desde v18 publica su JSON Schema en `schemas/`. **Ruptura:** `type` y `status` pasan de recomendados (v37–v40) a requeridos en notas de contenido, por presencia; `vault_frontmatter_completar` los pone. Los seis escritores cumplen el contrato entero; `jsonschema` declarado en el extra dev. 4431 tests, 23 puertas |
 | v40.36 | 2026-10-05 | **Lo que encontró usar la wheel contra un vault real.** Escritura en LF también en Windows (primitivo atómico e índices de sección); `vault_append` separa el bloque, deja un solo salto final y refresca `updatedAt` (AP-13); una escritura con frontmatter ilegible sale con `FRONTMATTER_PARSE_ERROR` y `vault_read` lo declara (AP-51, AP-52); soltar el último lock retira `.locks/` y `vault_knowledge_save` comparte lock con los demás escritores; `vault_reindex` no muere por el límite de 60 s; `vault tools show` publica los parámetros; el upgrade sella en LF y crea sus carpetas de registro. 4276 tests, 22 puertas |
 | v40.35 | 2026-10-04 | **Producto que un tercero instala y usa sin exponer su disco ni su vault.** Seguridad: el MCP por HTTP exige token y rechaza `Origin`/`Host` ajenos (SP-04), los argumentos MCP se validan contra el schema, `vault_diff` no sale del vault y los envelopes no filtran rutas ni traceback. Identidad: registro de proyectos (AP-63), nombre de fichero con `slugify_strict` (CN-01), `Status` y `ErrorCode` derivados de sus registros (CN-03, AP-52) y H1 obligatorio (CN-04). Un solo escritor de frontmatter en el núcleo (AP-46), escrituras bajo lock entre procesos (F1, CIA) y ningún vault fantasma con `VAULT_ROOT` inexistente (AP-36). La wheel deja fuera la gobernanza del estándar y lleva el servidor MCP. 4238 tests, 22 puertas |
 | v40.34 | 2026-08-19 | **La cadena de valor optimizada con el algoritmo de Musk, sin tocar una regla del vault.** Tres ganancias de infraestructura que cumplen la misma promesa —memoria documental persistente, auditable y gobernada sobre markdown plano— más barata de mantener. **Caché AST** en `vault_arch` y `vault_grafo_import` (clave ruta+mtime+tamaño): el guard que dibuja las fronteras re-parseaba los ~250 ficheros del alcance en cada analyzer, y el que mide los imports 568 veces por ejecución; `test_arquitectura.py` pasa de 155s a 98s y el gate `arquitectura` de 12.8s a 8s. **Batch de git** en `vault_changelog_check`: ~80 subprocess por ejecución se reducen a dos pasadas (`cat-file --batch-check` + `show` múltiple), y el gate `changelog` pasa de 7.7s a 0.4s. **`vault_fix_all`** — una tool nueva que regenera todos los artefactos derivados en el orden correcto (tools-catalog → env-table → baseline de campos → ARQUITECTURA → BLUEPRINT → cifras → índice), cerrando el drift recurrente que dejaba derivados stale tras cada cambio. El README, además, mentía sobre sí mismo: decía v34, 49 normas y 17 carpetas cuando el registro decía v40.33, 74 y 22 — ninguna puerta lo veía porque `vault_doc_counts` vigila cifras y no prosa; corregido. Ninguna regla de ordenar, clasificar ni estructurar la data cambió: es infraestructura pura |
@@ -7660,6 +7661,41 @@ temp/
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
 
 ---
+
+### v41.0 — 2026-10-07 `git: pending`
+
+**El contrato de nota es el criterio de lo que se escribe y se valida.**
+
+Hasta v40.36 los campos de una nota estaban repartidos entre `vault_validate`, los
+escritores y la documentación, y cada uno decidía por su cuenta qué era obligatorio.
+Esta versión les da un dueño y lo convierte en contrato versionado.
+
+**Contrato.** `vault_contrato_nota` declara cada campo, su nivel (requerido,
+recomendado u opcional) y desde qué versión lo tiene, con la historia desde v18.
+`vault_validate` lo lee de ahí, y `--contrato vNN` valida un vault contra una versión
+anterior. Cada versión desde v18 publica su JSON Schema en `schemas/`, generado por
+`vault_esquema` y vigilado por una puerta; `x-vault-nivel` es el nivel del campo en
+esa versión, no el vigente. Una menor se resuelve a su mayor.
+
+**Ruptura — por qué es mayor.** `type` y `status` fueron recomendados de v37 a v40 y
+son requeridos en v41 en las notas de contenido (AP-27, AP-29). Se exigen por
+presencia, no por valor: `vault_audit` sigue juzgando el valor. Una nota que en v40
+aprobaba sin ellos en v41 reprueba. La migración `v41` no reescribe notas;
+`vault_frontmatter_completar` pone los campos que falten con el valor del escritor.
+
+**Escritores.** Medidos ejecutando el ejemplo del catálogo de cada uno sobre una copia
+del sandbox, cuatro dejaban notas que el contrato reprueba: `vault_bibliography_save`
+omitía `tags` vacío, `vault_project` no acuñaba `id`, `vault_quality_dashboard` no
+llevaba ni CIA ni `agent`, y a `vault_quality_dashboard` y `vault_log_error` les
+faltaba `status`. Un test exige el contrato entero a los seis escritores, con
+`faltantes` del dueño y no con una lista propia (AP-57).
+
+**Coherencia.** Las listas `missing*` del audit clasifican con los dueños; un `status`
+que `normalize_status` decide no resta en F5; `99_Index/tag-index.md` es artefacto
+derivado; el tamaño de `STATUS_VOCAB` se vigila en los documentos; la fase 4 de
+sanación la escribe `vault_frontmatter_completar`; `AGENTS.md` nombra en la regla 1 las
+tools que aceptan `--root`. `jsonschema` se declara en el extra dev y la suite no lo
+salta. Las tres skills pasan a v2.0 con la v1.0 archivada al lado.
 
 ### v40.36 — 2026-10-05 `git: 9aaa45c`
 

@@ -17,12 +17,17 @@ exigirse tampoco estaba en ningún registro: había que leer el `git log`.
 
 - **requerido** — `vault_validate` reprueba la nota si falta. Es el contrato.
 - **recomendado** — el escritor lo pone siempre y `vault_audit` penaliza su
-  ausencia (AP-27 `type`, AP-29 `status`), pero la nota sigue siendo válida.
-  Subirlo a requerido es una decisión, no un arreglo: medido el 2026-10-05,
-  dieciocho primers del sandbox llevan `type: primer` —`SCAFFOLD_TYPE`, que no
-  pertenece a ninguna sección de `SECTION_TYPES`— y cinco notas llevan un
-  `status` fuera de `STATUS_VOCAB` (`accepted`, `active`) que `normalize_status`
-  lleva al canónico como sinónimo. Un enum cerrado reprobaría las veintitrés.
+  ausencia, pero la nota sigue siendo válida. Fue el nivel de `type` (AP-27) y
+  `status` (AP-29) de v37 a v40 (`recomendado_desde`).
+  En v41 los dos pasan a requeridos **por presencia, no por valor**: AP-12
+  del manifiesto ya contaba `type` entre los obligatorios desde v18, y el
+  validador exigía menos que la norma. El valor no se cierra con un enum
+  porque, medido el 2026-10-05, dieciocho primers del sandbox llevan
+  `type: primer` —`SCAFFOLD_TYPE`, que no pertenece a ninguna sección de
+  `SECTION_TYPES`— y cinco notas llevan un `status` fuera de `STATUS_VOCAB`
+  (`accepted`, `active`) que `normalize_status` lleva al canónico como
+  sinónimo. Un enum cerrado reprobaría las veintitrés; su valor lo sigue
+  juzgando `vault_audit`.
 - **valor** — si el campo está, su valor tiene que pertenecer al vocabulario
   (CIA) o no estar vacío (`agent`).
 
@@ -59,7 +64,7 @@ CLASES = ("derivada", "sistema", "contenido")
 #: `vault_standard_upgrade.MIGRATIONS`, que vive en otro contexto y no se
 #: importa desde el núcleo; `test_la_historia_cubre_las_versiones_de_migrations`
 #: falla si divergen.
-VERSIONES: Tuple[str, ...] = tuple(f"v{n}" for n in range(21, 41))
+VERSIONES: Tuple[str, ...] = tuple(f"v{n}" for n in range(21, 42))
 
 #: Versiones anteriores a `MIGRATIONS` cuyo manifiesto está en git, con el
 #: commit que lo atestigua. `test_las_versiones_previas_son_las_del_manifiesto`
@@ -101,10 +106,12 @@ CAMPOS: Dict[str, Dict[str, Any]] = {
               "requerido_desde": "v37", "valores_desde": "v27", "no_vacio": True, "norma": "AP-16"},
     "tags": {"tipo": "array", "nivel": "requerido", "clases": ("contenido",),
              "requerido_desde": "v37", "normativo_desde": "v18", "norma": "AP-26"},
-    "type": {"tipo": "string", "nivel": "recomendado", "clases": ("contenido",),
-             "requerido_desde": None, "normativo_desde": "v18", "norma": "AP-27"},
-    "status": {"tipo": "string", "nivel": "recomendado", "clases": ("contenido",),
-               "requerido_desde": None, "norma": "AP-29", "vocabulario": tuple(sorted(STATUS_VOCAB))},
+    "type": {"tipo": "string", "nivel": "requerido", "clases": ("contenido",),
+             "requerido_desde": "v41", "recomendado_desde": "v37", "normativo_desde": "v18",
+             "norma": "AP-27"},
+    "status": {"tipo": "string", "nivel": "requerido", "clases": ("contenido",),
+               "requerido_desde": "v41", "recomendado_desde": "v37", "norma": "AP-29",
+               "vocabulario": tuple(sorted(STATUS_VOCAB))},
     "dq_validated_at": {"tipo": "string", "formato": "date-time", "nivel": "opcional",
                         "clases": ("contenido",), "requerido_desde": None,
                         "valores_desde": "v27", "patron": _ISO.pattern},
@@ -143,6 +150,10 @@ HISTORIA: Dict[str, List[Dict[str, Any]]] = {
             {"campos": ["type", "status"],
              "cambio": "el escritor los pone por defecto y vault_audit penaliza su ausencia",
              "fuente": "git:f1fc051"}],
+    "v41": [{"campos": ["type", "status"],
+             "cambio": ("requeridos en notas de contenido, por presencia: el valor lo sigue "
+                        "juzgando vault_audit"),
+             "fuente": "MIGRATIONS:AP-27/AP-29: type y status requeridos en notas de contenido"}],
 }
 
 #: Lo que el escritor pone cuando nadie dice otra cosa. Estaba como literal en
@@ -250,9 +261,18 @@ def contrato_de_version(version: str) -> Dict[str, Any]:
         "indices_exentos": n >= 37,
         "requeridos": requeridos,
         "valores": valores,
-        "recomendados": [c for c, d in CAMPOS.items() if d["nivel"] == "recomendado"] if n >= 37 else [],
+        "recomendados": [c for c, d in CAMPOS.items() if _recomendado_en(d, n, validador)],
         "historia": [h for v, hs in HISTORIA.items() if _numero(v) <= n for h in hs],
     }
+
+
+def _recomendado_en(d: Mapping[str, Any], n: int, validador: bool) -> bool:
+    """Recomendado en `n`: ya lo era y todavía no se exigía."""
+    desde = d.get("recomendado_desde")
+    if not validador or not desde or _numero(desde) > n:
+        return False
+    hasta = d.get("requerido_desde")
+    return not (hasta and _numero(hasta) <= n)
 
 
 def vocabulario(campo: str) -> Optional[Tuple[str, ...]]:

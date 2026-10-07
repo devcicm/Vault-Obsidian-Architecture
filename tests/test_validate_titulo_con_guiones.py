@@ -20,7 +20,7 @@ SCRIPTS = ROOT / "scripts"
 _CAMPOS = (
     "id: 1\ncreatedAt: 2026-01-01T00:00:00Z\nupdatedAt: 2026-01-01T00:00:00Z\n"
     "tags: [demo]\ncia_integrity: medium\ncia_availability: medium\n"
-    "cia_sensitivity: internal\nagent: test\n"
+    "cia_sensitivity: internal\nagent: test\ntype: knowledge\nstatus: draft\n"
 )
 
 

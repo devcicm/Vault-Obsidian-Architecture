@@ -30,12 +30,38 @@ def test_las_tres_clases_de_nota():
     assert contrato.clase_de_nota("07_Knowledge\\jwt.md") == "contenido"
 
 
-def test_los_requeridos_por_clase_son_los_de_v37():
+def test_los_requeridos_por_clase_son_los_de_v41():
     base = {"id", "title", "createdAt", "updatedAt"}
     assert set(contrato.campos_requeridos("00_System/x.md")) == base
     assert set(contrato.campos_requeridos("07_Knowledge/x.md")) == base | {
-        "cia_integrity", "cia_availability", "cia_sensitivity", "agent", "tags"}
+        "cia_integrity", "cia_availability", "cia_sensitivity", "agent", "tags",
+        "type", "status"}
     assert contrato.campos_requeridos("07_Knowledge/index.md") == ()
+
+
+def test_type_y_status_fueron_recomendados_de_v37_a_v40_y_requeridos_en_v41():
+    """AP-27/AP-29: el salto de nivel tiene versión, y la anterior no se reescribe."""
+    for v in ("v37", "v40"):
+        c = contrato.contrato_de_version(v)
+        assert {"type", "status"} <= set(c["recomendados"]), v
+        assert not {"type", "status"} & set(c["requeridos"]["contenido"]), v
+    c = contrato.contrato_de_version("v41")
+    assert {"type", "status"} <= set(c["requeridos"]["contenido"])
+    assert not {"type", "status"} & set(c["recomendados"])
+    # Solo en notas de contenido: una nota de sistema no gana requisitos.
+    assert not {"type", "status"} & set(c["requeridos"]["sistema"])
+
+
+def test_type_y_status_se_exigen_por_presencia_no_por_valor():
+    """`type: primer` (SCAFFOLD_TYPE) y un status sinónimo siguen siendo válidos:
+    el valor lo juzga vault_audit, no el contrato."""
+    datos = {"type": "primer", "status": "accepted"}
+    assert "type" not in contrato.faltantes(datos, "07_Knowledge/x.md")
+    assert "status" not in contrato.faltantes(datos, "07_Knowledge/x.md")
+    assert contrato.errores_de_valor(datos) == []
+    assert {"type", "status"} <= set(contrato.faltantes({}, "07_Knowledge/x.md"))
+    # Con el contrato de v40, su ausencia no la hace inválida.
+    assert not {"type", "status"} & set(contrato.faltantes({}, "07_Knowledge/x.md", "v40"))
 
 
 def test_faltantes_respeta_el_orden_del_contrato():

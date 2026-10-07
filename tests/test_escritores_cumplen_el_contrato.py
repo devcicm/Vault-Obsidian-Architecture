@@ -4,8 +4,8 @@ Medido el 2026-10-07 ejecutando el ejemplo del catálogo de cada tool sobre una
 copia del sandbox: cuatro escritores dejaban notas de contenido que el contrato
 vigente reprueba — `vault_bibliography_save` omitía `tags` vacío,
 `vault_project` no acuñaba `id`, `vault_quality_dashboard` no llevaba ni CIA
-ni `agent`, y con v41 a los dos últimos y a `vault_log_error` les faltaba
-`status`. Ningún test lo veía porque cada uno miraba el campo que arreglaba,
+ni `agent`, y con v41 a `vault_quality_dashboard` y `vault_log_error` les
+faltaba `status`. Ningún test lo veía porque cada uno miraba el campo que arreglaba,
 no el contrato entero.
 
 Se mide con el ejemplo del catálogo y con `faltantes` del dueño del contrato:
@@ -34,6 +34,7 @@ ESCRITORES = (
     "vault_write",
     "vault_preferences",
     "vault_bibliography_save",
+    "vault_log_error",
     "vault_project",
     "vault_quality_dashboard",
 )

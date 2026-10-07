@@ -51,6 +51,7 @@ habría puesto y declara el origen de cada valor.
 | [v38](vault-v38.schema.json) | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags` | — |
 | [v39](vault-v39.schema.json) | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags` | — |
 | [v40](vault-v40.schema.json) | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags` | — |
+| [v41](vault-v41.schema.json) | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags`, `type`, `status` | requeridos en notas de contenido, por presencia: el valor lo sigue juzgando vault_audit |
 
 Hasta v24 no había validador: el contrato de esas versiones es la regla AP-12
 del manifiesto, que exigía los mismos campos a toda nota, de cualquier clase.
@@ -74,6 +75,6 @@ Cualquier versión se valida con el validador vigente:
 | `cia_sensitivity` | requerido | contenido | AP-30 |
 | `agent` | requerido | contenido | AP-16 |
 | `tags` | requerido | contenido | AP-26 |
-| `type` | recomendado | contenido | AP-27 |
-| `status` | recomendado | contenido | AP-29 |
+| `type` | requerido | contenido | AP-27 |
+| `status` | requerido | contenido | AP-29 |
 | `dq_validated_at` | opcional | contenido | — |

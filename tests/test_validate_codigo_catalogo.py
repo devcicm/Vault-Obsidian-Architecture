@@ -59,7 +59,7 @@ def test_ap52_validacion_limpia_no_inventa_codigo(vault):
         "---\nid: buena\ntitle: Buena\ncreatedAt: 2026-10-01T00:00:00Z\n"
         "updatedAt: 2026-10-01T00:00:00Z\ncia_integrity: medium\n"
         "cia_availability: medium\ncia_sensitivity: internal\nagent: test\n"
-        "tags: [demo]\n---\n\ncuerpo\n", encoding="utf-8")
+        "tags: [demo]\ntype: knowledge\nstatus: draft\n---\n\ncuerpo\n", encoding="utf-8")
     rc, r = _validate(vault, "--folder", "07_Knowledge", "--check", "frontmatter")
     assert rc == 0 and r["ok"] is True, r
     assert "error_code" not in r and "recovery" not in r

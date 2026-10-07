@@ -42,6 +42,8 @@ agent: claude
 cia_integrity: high
 cia_availability: high
 cia_sensitivity: internal
+type: knowledge
+status: draft
 ---
 
 Cuerpo de la nota.

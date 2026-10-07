@@ -37,6 +37,7 @@ import re
 
 import sys
 
+from vault_contrato_nota import POR_DEFECTO
 from vault_errors import emit_error, wrap_main, proyecto_registrado
 from vault_lib import utcnow, slugify
 from vault_io import atomic_write_text, get_vault_root, safe_wikilink, write_report
@@ -342,6 +343,8 @@ def vault_log_error(
         .set("title", title, texto=True)
         .set("id", str(uuid.uuid4()))
         .set("type", error_type)
+        # Requerido desde v41 (AP-29); el valor es el del contrato, no uno propio.
+        .set("status", POR_DEFECTO["status"])
         .set("createdAt", utcnow())
         .set("updatedAt", utcnow())
         .set("tags", fm_tags)

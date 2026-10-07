@@ -442,6 +442,23 @@ MIGRATIONS: Dict[str, Dict[str, Any]] = {
             "Ni un fichero se mueve de scripts/, ni un envelope cambia: los consumidores no se enteran",
         ],
     },
+    "v41": {
+        "description": (
+            "Contrato de nota: type y status pasan de recomendados a requeridos en "
+            "las notas de contenido. Sin migracion estructural: ninguna carpeta cambia."
+        ),
+        # Cambia el contrato, no la forma del vault. Las notas que ya existen y no
+        # llevan los dos campos los recibe `vault_frontmatter_completar`, con el
+        # valor que pone el escritor; esta migracion no reescribe notas.
+        "add_folders": [],
+        "update_identity": _live_identity(),
+        "notes": [
+            "AP-27/AP-29: type y status requeridos en notas de contenido",
+            "Por presencia, no por valor: vault_audit sigue juzgando el valor",
+            "vault_validate --contrato vNN valida contra el contrato de cualquier version desde v18",
+            "schemas/: JSON Schema desde v18; de v18 a v24 el contrato es AP-12 del manifiesto",
+        ],
+    },
 }
 
 VERSION_ORDER = [
@@ -467,6 +484,7 @@ VERSION_ORDER = [
     "v38",
     "v39",
     "v40",
+    "v41",
 ]
 
 

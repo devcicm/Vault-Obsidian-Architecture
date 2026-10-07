@@ -54,8 +54,8 @@ def test_el_dry_run_no_escribe_y_lo_dice(vault):
     assert r["written_count"] == 0
     assert nota.read_text(encoding="utf-8") == original
     campos = r["completed"][0]["fields"]
-    assert list(campos) == contrato.faltantes({"id": 1, "title": 1}, "07_Knowledge/jwt.md") + [
-        "type", "status"]
+    assert list(campos) == contrato.faltantes({"id": 1, "title": 1}, "07_Knowledge/jwt.md")
+    assert {"type", "status"} <= set(campos)  # requeridos desde v41
 
 
 def test_tras_aplicar_vault_validate_la_aprueba(vault):
