@@ -7735,7 +7735,7 @@ temp/
 
 ---
 
-### v41.2 — 2026-10-07 `git: pending`
+### v41.2 — 2026-10-07 `git: 136ea7b`
 
 **Un vault puede declarar sus propias secciones, y cada sección dice qué clase de
 documento contiene.**
