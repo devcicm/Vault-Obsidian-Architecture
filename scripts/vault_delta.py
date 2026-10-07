@@ -28,12 +28,15 @@ from typing import Any, Dict, List, Optional, Set
 from vault_errors import emit_error, wrap_main, proyecto_registrado
 from vault_lib import separar_frontmatter, utcnow
 from vault_io import atomic_write_json
-from vault_registry import ORDERED_SECTIONS
+from vault_registry import ORDERED_SECTIONS, secciones_del_vault
 
 
 # Derivado de `vault_registry`, no copiado: la copia literal se quedo en 18
 # secciones y dejaba fuera `17_Preferences`, `18_Bugs`, `19_Audits` y
 # `20_Quarantine` sin que nada fallara.
+# superseded_by: `vault_registry.secciones_del_vault` — solo el estándar; el
+# filtro de notas usa ya las secciones del vault (v41.2). Se conserva el
+# nombre publicado (no-derogación).
 VAULT_SECTIONS = frozenset(ORDERED_SECTIONS)
 
 # Orden canónico de severidad, de mayor a menor. Lo consume el `choices` de
@@ -83,7 +86,11 @@ def _is_vault_note(path: Path) -> bool:
         parts = path.relative_to(_raiz()).parts
     except ValueError:
         return False
-    return len(parts) >= 2 and parts[0] in VAULT_SECTIONS
+    # Las del vault —estándar y propias de `secciones.json`—. Con
+    # `VAULT_SECTIONS` el snapshot de SP-03 no guardaba las propias y un cambio
+    # en ellas no salía en el delta. Un registro roto lanza `ValueError`, que
+    # `vault_delta` traduce antes de recorrer nada.
+    return len(parts) >= 2 and parts[0] in secciones_del_vault(_raiz())
 
 
 def _sha256(content: str) -> str:
@@ -225,6 +232,13 @@ def vault_delta(
     min_risk: Optional[str] = None,
     snapshot_only: bool = False,
 ) -> Dict[str, Any]:
+    # Un `secciones.json` ilegible no es un vault sin secciones propias: el
+    # snapshot y el delta saldrían sin ellas y sin aviso (AP-51).
+    try:
+        secciones_del_vault(_raiz())
+    except ValueError as exc:
+        return emit_error("vault_delta", "DATA_FILE_CORRUPT", str(exc),
+                          pista="corregir 00_System/secciones.json (vault_section --list)")
     current = _collect_current_hashes(project)
 
     # **SP-03** es esta rama: el snapshot que el protocolo pide capturar antes

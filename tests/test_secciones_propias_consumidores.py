@@ -405,3 +405,33 @@ def test_el_rebuild_de_tags_con_el_registro_roto_falla(tmp_path):
     (raiz / reg.SECCIONES_PROPIAS_RUTA).write_text("{roto", encoding="utf-8")
     informe = _tags(raiz).vault_tags_rebuild(dry_run=True)
     assert informe["ok"] is False and informe["error_code"] == "DATA_FILE_CORRUPT", informe
+
+
+# ── vault_delta ──
+#
+# `_is_vault_note` filtraba por `ORDERED_SECTIONS`: el snapshot de SP-03 no
+# guardaba el hash de las notas de una sección propia, así que un cambio en
+# ellas no salía nunca en el delta.
+
+def _delta(raiz: Path, **kw):
+    import vault_delta
+    import vault_io
+    vault_io.set_vault_root(raiz)
+    return vault_delta.vault_delta(**kw)
+
+
+def test_el_delta_ve_la_seccion_propia(tmp_path):
+    raiz = _vault(tmp_path, [_SCRIPTS_SEC], notas=["22_Scripts/deploy.md"])
+    assert _delta(raiz, snapshot_only=True)["notes_hashed"] == 1
+    (raiz / "22_Scripts" / "deploy.md").write_text(
+        "---\ntitle: deploy\n---\n# deploy v2\n", encoding="utf-8")
+    informe = _delta(raiz, dry_run=True)
+    assert informe["ok"] is True, informe
+    assert "22_Scripts/deploy.md" in json.dumps(informe), informe
+
+
+def test_el_delta_con_el_registro_roto_falla(tmp_path):
+    raiz = _vault(tmp_path, notas=["07_Knowledge/a.md"])
+    (raiz / reg.SECCIONES_PROPIAS_RUTA).write_text("{roto", encoding="utf-8")
+    informe = _delta(raiz, dry_run=True)
+    assert informe["ok"] is False and informe["error_code"] == "DATA_FILE_CORRUPT", informe
