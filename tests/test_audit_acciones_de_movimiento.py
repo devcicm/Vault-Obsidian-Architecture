@@ -47,3 +47,21 @@ def test_el_audit_no_cae_con_move_log_y_sin_grafo(tmp_path):
     _vault(tmp_path, con_grafo=False)
     informe = va.vault_audit()
     assert _acciones(informe, "moved_node"), "la nota movida no generó acción"
+
+
+def test_la_nota_borrada_con_entrantes_cita_ap14(tmp_path):
+    """Un nodo borrado que tenía entrantes deja enlaces que no resuelven: AP-14.
+    Hasta v41.2 citaba AP-15, que es material ajeno en la raíz del vault."""
+    _vault(tmp_path, con_grafo=True)
+    acciones = _acciones(va.vault_audit(), "deleted_node")
+    assert acciones
+    assert {a["norm"] for a in acciones} == {"AP-14"}
+
+
+def test_la_nota_movida_cita_ap47(tmp_path):
+    """La acción manda regenerar el grafo, que es un artefacto derivado: AP-47.
+    Hasta v41.2 citaba AP-16, que es el campo `agent` del frontmatter."""
+    _vault(tmp_path, con_grafo=True)
+    acciones = _acciones(va.vault_audit(), "moved_node")
+    assert acciones
+    assert {a["norm"] for a in acciones} == {"AP-47"}

@@ -2394,7 +2394,9 @@ def vault_audit(
                                 f"Crear una nota vacía con el mismo nombre.",
                                 f"Ejecutar `python scripts/vault_graph.py` para limpiar el grafo.",
                             ],
-                            "norm": "AP-15",
+                            # Los entrantes que quedan no resuelven: AP-14. Hasta
+                            # v41.2 citaba AP-15, que es material ajeno en la raíz.
+                            "norm": "AP-14",
                         }
                     )
         except (FileNotFoundError, json.JSONDecodeError, UnicodeDecodeError, OSError):
@@ -2416,7 +2418,9 @@ def vault_audit(
                         "to": move.get("to", ""),
                         "description": f"Nota movida de `{move.get('from', '')}` a `{move.get('to', '')}`.",
                         "command": f"Ejecutar `python scripts/vault_graph.py` para actualizar el grafo.",
-                        "norm": "AP-16",
+                        # El grafo es un artefacto derivado que puede haber quedado
+                        # atrás: AP-47. Hasta v41.2 citaba AP-16 (campo `agent`).
+                        "norm": "AP-47",
                     }
                 )
         except (FileNotFoundError, json.JSONDecodeError, UnicodeDecodeError, OSError):
