@@ -587,12 +587,27 @@ def vault_tags_rebuild(dry_run: bool = False) -> Dict[str, Any]:
     }
 
 
+def _sin_registro() -> Dict[str, Any]:
+    """`INDEX_NOT_FOUND` con la recuperación que de verdad crea el registro.
+
+    La del catálogo es `vault_reindex --graph`, que regenera graph.json y
+    search-index.json pero no `tag-registry.json`: seguirla devolvía el mismo
+    error. El productor del registro es esta tool sin argumentos
+    (`vault_tags_rebuild`), y es a quien apunta `run_tool`.
+    """
+    envelope = emit_error(
+        "vault_tags", "INDEX_NOT_FOUND",
+        "No existe `tag-registry.json`; genéralo ejecutando `vault_tags.py` primero.",
+        pista="Ejecutar vault_tags sin argumentos para generar 00_System/tag-registry.json.",
+    )
+    envelope["recovery"]["tool"] = "vault_tags"
+    envelope["recovery"]["args"] = []
+    return envelope
+
+
 def vault_tags_audit() -> Dict[str, Any]:
     if not _tag_registry().exists():
-        return emit_error(
-            "vault_tags", "INDEX_NOT_FOUND",
-            "No existe `tag-registry.json`; genéralo ejecutando `vault_tags.py` primero.",
-        )
+        return _sin_registro()
 
     try:
         registry = json.loads(_tag_registry().read_text(encoding="utf-8"))
@@ -671,10 +686,7 @@ def vault_tags_suggest(note_path_str: str) -> Dict[str, Any]:
     title = _parse_frontmatter_title(content)
 
     if not _tag_registry().exists():
-        return emit_error(
-            "vault_tags", "INDEX_NOT_FOUND",
-            "No existe `tag-registry.json`; genéralo ejecutando `vault_tags.py` primero.",
-        )
+        return _sin_registro()
 
     try:
         registry = json.loads(_tag_registry().read_text(encoding="utf-8"))
