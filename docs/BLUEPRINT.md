@@ -105,7 +105,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-23** — Note complexity ceiling — nota demasiado larga | audit | `framework` | — |
 | **AP-24** — Bracket imbalance — corchetes sin pareja, anidados o invertidos | guard+audit | — | `test_norms_coherence.py`, `test_vault_norms.py` |
 | **AP-25** — Mermaid diagram syntax errors — nodos/tipos no definidos | audit | — | `test_skills_catalogo.py`, `test_vault_norms.py` |
-| **AP-26** — Missing tags — nota de contenido sin tags | audit | — | `test_context_memory.py` |
+| **AP-26** — Missing tags — nota de contenido sin tags | guard+audit | — | `test_context_memory.py` |
 | **AP-27** — Missing type field — nota sin tipo declarado | audit | — | — |
 | **AP-28** — Missing frontmatter — nota sin bloque YAML | audit | — | `test_ap56_frontmatter_heal.py` |
 | **AP-29** — Missing status field — nota sin estado de ciclo de vida | audit | `framework` | — |

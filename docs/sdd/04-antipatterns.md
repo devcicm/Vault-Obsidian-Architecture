@@ -264,12 +264,12 @@ Diagramas Mermaid con sintaxis inválida: tipos de diagrama no reconocidos (unkn
 ### AP-26: Missing tags -- nota de contenido sin tags
 
 - **Severidad:** medium
-- **Enforcement:** audit
+- **Enforcement:** guard+audit
 - **Detectado por:** vault_audit
 
 Nota de contenido sin campo `tags` o con la lista vacía. Sin tags la nota es invisible para la búsqueda por facetas y no participa en los edges shared_tag del grafo: queda alcanzable solo por wiki-link directo.
 
-**Prevención:** Pasar --tags en la tool de escritura. vault_ingest y vault_preferences los derivan automáticamente del origen y la categoría.
+**Prevención:** vault_write rechaza la nota de contenido sin tags (missing_tags; las de índice y las de 00_System están exentas): se pasan con vault_write --tags. vault_ingest y vault_preferences los derivan del origen y la categoría, y vault_frontmatter_completar los completa en notas que ya existen.
 
 ### AP-27: Missing type field -- nota sin tipo declarado
 
@@ -1142,12 +1142,12 @@ Diagramas Mermaid con sintaxis inválida: tipos de diagrama no reconocidos (unkn
 ### AP-26: Missing tags -- nota de contenido sin tags
 
 - **Severity:** medium
-- **Enforcement:** audit
+- **Enforcement:** guard+audit
 - **Detected by:** vault_audit
 
 Nota de contenido sin campo `tags` o con la lista vacía. Sin tags la nota es invisible para la búsqueda por facetas y no participa en los edges shared_tag del grafo: queda alcanzable solo por wiki-link directo.
 
-**Prevention:** Pasar --tags en la tool de escritura. vault_ingest y vault_preferences los derivan automáticamente del origen y la categoría.
+**Prevention:** vault_write rechaza la nota de contenido sin tags (missing_tags; las de índice y las de 00_System están exentas): se pasan con vault_write --tags. vault_ingest y vault_preferences los derivan del origen y la categoría, y vault_frontmatter_completar los completa en notas que ya existen.
 
 ### AP-27: Missing type field -- nota sin tipo declarado
 

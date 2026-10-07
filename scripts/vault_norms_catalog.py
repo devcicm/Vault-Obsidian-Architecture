@@ -1046,7 +1046,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "type": "antipattern",
         "category": "metadata-completeness",
         "severity": "medium",
-        "enforcement": "audit",
+        "enforcement": "guard+audit",
         "description": (
             "Nota de contenido sin campo `tags` o con la lista vacía. Sin tags la nota "
             "es invisible para la búsqueda por facetas y no participa en los edges "
@@ -1057,10 +1057,13 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "Aparece en el resumen como 'N sin tags AP-26'."
         ),
         "prevention": (
-            "Pasar --tags en la tool de escritura. vault_ingest y vault_preferences "
-            "los derivan automáticamente del origen y la categoría."
+            "vault_write rechaza la nota de contenido sin tags (missing_tags; las de "
+            "índice y las de 00_System están exentas): se pasan con vault_write --tags. "
+            "vault_ingest y vault_preferences los derivan del origen y la categoría, y "
+            "vault_frontmatter_completar los completa en notas que ya existen."
         ),
-        "tools_enforcing": ["vault_ingest", "vault_preferences", "vault_frontmatter_completar"],
+        "tools_enforcing": ["vault_write", "vault_ingest", "vault_preferences",
+                            "vault_frontmatter_completar"],
         "tools_detecting": ["vault_audit"],
         "introduced_version": "v30",
     },

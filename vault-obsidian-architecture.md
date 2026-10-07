@@ -4800,16 +4800,19 @@ citado en una flecha esté definido.
 
 ### AP-26 — Nota de contenido sin tags
 
-**Severidad: medium · Enforcement: audit · Introducida: v30**
+**Severidad: medium · Enforcement: guard+audit · Introducida: v30**
 
 Sin `tags` la nota es invisible para la búsqueda por facetas y no participa en los edges
 `shared_tag` del grafo: queda alcanzable **solo por wiki-link directo**. No está perdida,
 pero solo la encuentra quien ya sabía que estaba ahí, que para una memoria documental es
 casi lo mismo.
 
-**Prevención:** pasar `--tags` en la tool de escritura. `vault_ingest` y `vault_preferences`
-los derivan del origen y la categoría. **Detección:** `vault_audit` la cuenta en
-`missing_tags`, −2 por nota con tope −15.
+**Prevención:** `vault_write` rechaza la nota de contenido sin tags (`missing_tags`; las de
+índice y las de `00_System/` están exentas), así que se pasan con `vault_write --tags`.
+`vault_ingest` y `vault_preferences` los derivan del origen y la categoría, y
+`vault_frontmatter_completar` los completa en notas que ya existen. Hasta v41.2 esta
+línea no nombraba a `vault_write`, que es justo la que la hace cumplir. **Detección:**
+`vault_audit` la cuenta en `missing_tags`, −2 por nota con tope −15.
 
 ---
 
