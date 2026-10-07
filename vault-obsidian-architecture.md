@@ -7663,7 +7663,7 @@ temp/
 
 ---
 
-### v41.1 — 2026-10-07 `git: pending`
+### v41.1 — 2026-10-07 `git: e718f65`
 
 **Qué contrato cumple cada nota y qué notas no pertenecen a ninguna sección.**
 
