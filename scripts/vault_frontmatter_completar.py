@@ -186,7 +186,9 @@ def _escribir(nota: Path, visto: str, nuevo: str) -> Optional[str]:
         except (PermissionError, ValueError) as exc:
             # El escáner de secretos y la verificación del frontmatter de
             # `atomic_write_text` rechazan aquí; se cuenta, no se esconde.
-            return f"escritura_rechazada: {type(exc).__name__}"
+            # Sin la forma `clave: valor`: es una causa del informe, no una
+            # línea de frontmatter, y AP-56 no tiene por qué adivinarlo.
+            return f"escritura_rechazada ({type(exc).__name__})"
     return None
 
 
