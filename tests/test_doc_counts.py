@@ -197,3 +197,22 @@ def test_el_desglose_python_js_se_vigila(tmp_path, monkeypatch):
     reclamadas = {(m["claimed"], m["actual"]) for m in r["mismatches"]}
     assert (82, python) in reclamadas
     assert (nativas + 5, nativas) in reclamadas
+
+
+def test_el_tamano_del_vocabulario_de_status_se_vigila(tmp_path, monkeypatch):
+    """«Vocabulario de `status` (12 valores)» estaba en tres documentos vigilados
+    sin patrón que la midiera: correcta hoy, a mano igual (AP-47)."""
+    from vault_norms_catalog import STATUS_VOCAB
+
+    real = len(STATUS_VOCAB)
+    doc = tmp_path / "FAKE.md"
+    doc.write_bytes((
+        f"| Vocabulario de `status` ({real + 1} valores) | x |\n"
+        f"Fuente única de `STATUS_VOCAB` ({real + 2} valores).\n"
+        f"- **`STATUS_VOCAB` unificado** ({real + 3} valores) como fuente.\n"
+    ).encode("utf-8"))
+    monkeypatch.setattr(vdc, "REPO_ROOT", tmp_path)
+
+    r = vdc.scan(docs=["FAKE.md"], include_slow=False)
+    reclamadas = {(m["claimed"], m["actual"]) for m in r["mismatches"]}
+    assert reclamadas == {(real + 1, real), (real + 2, real), (real + 3, real)}

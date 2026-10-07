@@ -103,6 +103,12 @@ def count_norms_family(prefix: str) -> Callable[[], int]:
     return _count
 
 
+def count_status_vocab() -> int:
+    from vault_norms_catalog import STATUS_VOCAB
+
+    return len(STATUS_VOCAB)
+
+
 def count_sections() -> int:
     import vault_registry
 
@@ -227,6 +233,21 @@ COUNTED_FACTS: List[Dict] = [
         "description": "Antipatrones AP-XX",
         "value": count_norms_family("AP"),
         "patterns": [r"(\d+)\s+antipatrones"],
+    },
+    {
+        # Tres documentos vigilados decían «(12 valores)» sin patrón que lo
+        # midiera. Solo las formas que afirman el tamaño **vigente**: el
+        # manifiesto cita «STATUS_VOCAB unificado (12 valores)» frente a «CN-03
+        # (7 valores)» en la entrada de la versión que lo unificó, y eso es
+        # historia.
+        "id": "status_vocab",
+        "description": "Valores de STATUS_VOCAB",
+        "value": count_status_vocab,
+        "patterns": [
+            r"[Vv]ocabulario de `status` \((\d+) valores\)",
+            r"[Ff]uente única de `STATUS_VOCAB` \((\d+) valores\)",
+            r"`STATUS_VOCAB` unificado\*\* \((\d+) valores\)",
+        ],
     },
     {
         "id": "sections",
