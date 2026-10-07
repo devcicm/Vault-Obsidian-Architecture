@@ -61,7 +61,7 @@
     },
     "agent": {
       "x-vault-tipo-esperado": "string",
-      "x-vault-nivel": "requerido",
+      "x-vault-nivel": "opcional",
       "x-vault-norma": "AP-16"
     },
     "tags": {
@@ -71,7 +71,7 @@
     },
     "type": {
       "x-vault-tipo-esperado": "string",
-      "x-vault-nivel": "recomendado",
+      "x-vault-nivel": "requerido",
       "x-vault-norma": "AP-27"
     }
   },
@@ -110,7 +110,7 @@
         },
         "agent": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "requerido",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-16"
         },
         "tags": {
@@ -120,7 +120,7 @@
         },
         "type": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "recomendado",
+          "x-vault-nivel": "requerido",
           "x-vault-norma": "AP-27"
         }
       },
@@ -159,7 +159,7 @@
         },
         "agent": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "requerido",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-16"
         },
         "tags": {
@@ -169,7 +169,7 @@
         },
         "type": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "recomendado",
+          "x-vault-nivel": "requerido",
           "x-vault-norma": "AP-27"
         }
       },

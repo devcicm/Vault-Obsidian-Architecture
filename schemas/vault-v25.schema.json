@@ -55,27 +55,27 @@
     },
     "createdAt": {
       "x-vault-tipo-esperado": "string",
-      "x-vault-nivel": "requerido",
+      "x-vault-nivel": "opcional",
       "x-vault-norma": "AP-12"
     },
     "updatedAt": {
       "x-vault-tipo-esperado": "string",
-      "x-vault-nivel": "requerido",
+      "x-vault-nivel": "opcional",
       "x-vault-norma": "AP-12"
     },
     "agent": {
       "x-vault-tipo-esperado": "string",
-      "x-vault-nivel": "requerido",
+      "x-vault-nivel": "opcional",
       "x-vault-norma": "AP-16"
     },
     "tags": {
       "x-vault-tipo-esperado": "array",
-      "x-vault-nivel": "requerido",
+      "x-vault-nivel": "opcional",
       "x-vault-norma": "AP-26"
     },
     "type": {
       "x-vault-tipo-esperado": "string",
-      "x-vault-nivel": "recomendado",
+      "x-vault-nivel": "opcional",
       "x-vault-norma": "AP-27"
     }
   },
@@ -100,27 +100,27 @@
         },
         "createdAt": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "requerido",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-12"
         },
         "updatedAt": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "requerido",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-12"
         },
         "agent": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "requerido",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-16"
         },
         "tags": {
           "x-vault-tipo-esperado": "array",
-          "x-vault-nivel": "requerido",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-26"
         },
         "type": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "recomendado",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-27"
         }
       },
@@ -145,27 +145,27 @@
         },
         "createdAt": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "requerido",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-12"
         },
         "updatedAt": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "requerido",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-12"
         },
         "agent": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "requerido",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-16"
         },
         "tags": {
           "x-vault-tipo-esperado": "array",
-          "x-vault-nivel": "requerido",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-26"
         },
         "type": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "recomendado",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-27"
         }
       },

@@ -102,6 +102,18 @@ def test_el_esquema_vigente_da_el_veredicto_de_vault_validate(monkeypatch):
     assert medidas > 10, "el sandbox se quedó sin notas que medir"
 
 
+def test_el_nivel_de_cada_propiedad_es_el_de_su_version():
+    """Un esquema pasado no se reescribe con el nivel vigente (no-derogación)."""
+    def nivel(version, campo):
+        return contrato.esquema_json(version)["properties"][campo]["x-vault-nivel"]
+
+    assert nivel("v30", "createdAt") == "opcional"
+    assert nivel("v37", "createdAt") == "requerido"
+    assert nivel("v20", "type") == "requerido"  # AP-12 del manifiesto
+    assert nivel("v30", "type") == "opcional"
+    assert nivel("v40", "type") == "recomendado"
+
+
 def test_la_caja_del_valor_cia_no_cambia_el_veredicto():
     v = jsonschema.Draft202012Validator(contrato.esquema_json("v40")["properties"]["cia_integrity"])
     assert v.is_valid("HIGH") and v.is_valid("high") and not v.is_valid("higher")

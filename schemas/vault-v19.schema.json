@@ -59,7 +59,7 @@
     },
     "type": {
       "x-vault-tipo-esperado": "string",
-      "x-vault-nivel": "recomendado",
+      "x-vault-nivel": "requerido",
       "x-vault-norma": "AP-27"
     }
   },
@@ -103,7 +103,7 @@
         },
         "type": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "recomendado",
+          "x-vault-nivel": "requerido",
           "x-vault-norma": "AP-27"
         }
       },
@@ -147,7 +147,7 @@
         },
         "type": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "recomendado",
+          "x-vault-nivel": "requerido",
           "x-vault-norma": "AP-27"
         }
       },

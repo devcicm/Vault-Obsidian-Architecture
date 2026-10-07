@@ -83,17 +83,17 @@
     },
     "createdAt": {
       "x-vault-tipo-esperado": "string",
-      "x-vault-nivel": "requerido",
+      "x-vault-nivel": "opcional",
       "x-vault-norma": "AP-12"
     },
     "updatedAt": {
       "x-vault-tipo-esperado": "string",
-      "x-vault-nivel": "requerido",
+      "x-vault-nivel": "opcional",
       "x-vault-norma": "AP-12"
     },
     "cia_integrity": {
       "x-vault-tipo-esperado": "string",
-      "x-vault-nivel": "requerido",
+      "x-vault-nivel": "opcional",
       "x-vault-norma": "AP-30",
       "type": "string",
       "pattern": "^([cC][rR][iI][tT][iI][cC][aA][lL]|[hH][iI][gG][hH]|[lL][oO][wW]|[mM][eE][dD][iI][uU][mM])$",
@@ -106,7 +106,7 @@
     },
     "cia_availability": {
       "x-vault-tipo-esperado": "string",
-      "x-vault-nivel": "requerido",
+      "x-vault-nivel": "opcional",
       "x-vault-norma": "AP-30",
       "type": "string",
       "pattern": "^([hH][iI][gG][hH]|[lL][oO][wW]|[mM][eE][dD][iI][uU][mM])$",
@@ -118,7 +118,7 @@
     },
     "cia_sensitivity": {
       "x-vault-tipo-esperado": "string",
-      "x-vault-nivel": "requerido",
+      "x-vault-nivel": "opcional",
       "x-vault-norma": "AP-30",
       "type": "string",
       "pattern": "^([iI][nN][tT][eE][rR][nN][aA][lL]|[pP][uU][bB][lL][iI][cC]|[rR][eE][sS][tT][rR][iI][cC][tT][eE][dD])$",
@@ -130,24 +130,24 @@
     },
     "agent": {
       "x-vault-tipo-esperado": "string",
-      "x-vault-nivel": "requerido",
+      "x-vault-nivel": "opcional",
       "x-vault-norma": "AP-16",
       "type": "string",
       "pattern": "\\S"
     },
     "tags": {
       "x-vault-tipo-esperado": "array",
-      "x-vault-nivel": "requerido",
+      "x-vault-nivel": "opcional",
       "x-vault-norma": "AP-26"
     },
     "type": {
       "x-vault-tipo-esperado": "string",
-      "x-vault-nivel": "recomendado",
+      "x-vault-nivel": "opcional",
       "x-vault-norma": "AP-27"
     },
     "status": {
       "x-vault-tipo-esperado": "string",
-      "x-vault-nivel": "recomendado",
+      "x-vault-nivel": "opcional",
       "x-vault-norma": "AP-29",
       "x-vault-vocabulario-auditado": [
         "approved",
@@ -191,17 +191,17 @@
         },
         "createdAt": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "requerido",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-12"
         },
         "updatedAt": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "requerido",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-12"
         },
         "cia_integrity": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "requerido",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-30",
           "type": "string",
           "pattern": "^([cC][rR][iI][tT][iI][cC][aA][lL]|[hH][iI][gG][hH]|[lL][oO][wW]|[mM][eE][dD][iI][uU][mM])$",
@@ -214,7 +214,7 @@
         },
         "cia_availability": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "requerido",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-30",
           "type": "string",
           "pattern": "^([hH][iI][gG][hH]|[lL][oO][wW]|[mM][eE][dD][iI][uU][mM])$",
@@ -226,7 +226,7 @@
         },
         "cia_sensitivity": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "requerido",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-30",
           "type": "string",
           "pattern": "^([iI][nN][tT][eE][rR][nN][aA][lL]|[pP][uU][bB][lL][iI][cC]|[rR][eE][sS][tT][rR][iI][cC][tT][eE][dD])$",
@@ -238,24 +238,24 @@
         },
         "agent": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "requerido",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-16",
           "type": "string",
           "pattern": "\\S"
         },
         "tags": {
           "x-vault-tipo-esperado": "array",
-          "x-vault-nivel": "requerido",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-26"
         },
         "type": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "recomendado",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-27"
         },
         "status": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "recomendado",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-29",
           "x-vault-vocabulario-auditado": [
             "approved",
@@ -299,17 +299,17 @@
         },
         "createdAt": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "requerido",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-12"
         },
         "updatedAt": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "requerido",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-12"
         },
         "cia_integrity": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "requerido",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-30",
           "type": "string",
           "pattern": "^([cC][rR][iI][tT][iI][cC][aA][lL]|[hH][iI][gG][hH]|[lL][oO][wW]|[mM][eE][dD][iI][uU][mM])$",
@@ -322,7 +322,7 @@
         },
         "cia_availability": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "requerido",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-30",
           "type": "string",
           "pattern": "^([hH][iI][gG][hH]|[lL][oO][wW]|[mM][eE][dD][iI][uU][mM])$",
@@ -334,7 +334,7 @@
         },
         "cia_sensitivity": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "requerido",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-30",
           "type": "string",
           "pattern": "^([iI][nN][tT][eE][rR][nN][aA][lL]|[pP][uU][bB][lL][iI][cC]|[rR][eE][sS][tT][rR][iI][cC][tT][eE][dD])$",
@@ -346,24 +346,24 @@
         },
         "agent": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "requerido",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-16",
           "type": "string",
           "pattern": "\\S"
         },
         "tags": {
           "x-vault-tipo-esperado": "array",
-          "x-vault-nivel": "requerido",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-26"
         },
         "type": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "recomendado",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-27"
         },
         "status": {
           "x-vault-tipo-esperado": "string",
-          "x-vault-nivel": "recomendado",
+          "x-vault-nivel": "opcional",
           "x-vault-norma": "AP-29",
           "x-vault-vocabulario-auditado": [
             "approved",

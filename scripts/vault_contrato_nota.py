@@ -272,7 +272,18 @@ def _sin_mayusculas(valor: str) -> str:
     return "".join(f"[{c.lower()}{c.upper()}]" if c.isalpha() else re.escape(c) for c in valor)
 
 
-def _propiedad(campo: str, n: int) -> Dict[str, Any]:
+def _nivel_en(campo: str, c: Mapping[str, Any]) -> str:
+    """El nivel del campo en el contrato `c`, no el vigente.
+
+    Escribir el vigente en el esquema de una versión pasada la reescribiría:
+    `createdAt` diría «requerido» en v30, cuando no se exigía hasta v37.
+    """
+    if any(campo in c["requeridos"][clase] for clase in ("sistema", "contenido")):
+        return "requerido"
+    return "recomendado" if campo in c["recomendados"] else "opcional"
+
+
+def _propiedad(campo: str, n: int, c: Mapping[str, Any]) -> Dict[str, Any]:
     """La propiedad tal como la juzgaba `vault_validate` en la versión `n`.
 
     Solo restringe lo que el validador restringía: una propiedad más estricta
@@ -282,7 +293,7 @@ def _propiedad(campo: str, n: int) -> Dict[str, Any]:
     Lo que el escritor pone de forma habitual va en `x-vault-tipo-esperado`.
     """
     d = CAMPOS[campo]
-    prop: Dict[str, Any] = {"x-vault-tipo-esperado": d["tipo"], "x-vault-nivel": d["nivel"]}
+    prop: Dict[str, Any] = {"x-vault-tipo-esperado": d["tipo"], "x-vault-nivel": _nivel_en(campo, c)}
     if d.get("norma"):
         prop["x-vault-norma"] = d["norma"]
     vdesde = d.get("valores_desde")
@@ -314,7 +325,7 @@ def esquema_json(version: str) -> Dict[str, Any]:
     c = contrato_de_version(version)
     n = _numero(c["version"])
     conocidos = [k for k in CAMPOS if (conocido_desde(k) and _numero(conocido_desde(k)) <= n)]
-    propiedades = {k: _propiedad(k, n) for k in conocidos}
+    propiedades = {k: _propiedad(k, n, c) for k in conocidos}
 
     def clase(nombre: str) -> Dict[str, Any]:
         return {"type": "object", "required": list(c["requeridos"][nombre]),
