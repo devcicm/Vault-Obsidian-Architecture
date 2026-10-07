@@ -31,7 +31,7 @@ import json
 
 import sys
 
-from vault_registry import ORDERED_SECTIONS, es_artefacto_derivado
+from vault_registry import ORDERED_SECTIONS, es_artefacto_derivado, secciones_del_vault
 from vault_encoding import strip_bom
 from vault_errors import emit_error, wrap_main
 
@@ -322,13 +322,17 @@ def _notas_del_alcance(folder: Optional[str]) -> List[Path]:
         # frontmatter, que es justo lo que no se les pide: no son notas del
         # vault. En el vault de pruebas eran 13 de las 26 «No frontmatter
         # block», todas de `docs/sdd/`. Qué cuenta como nota lo decide
-        # `ORDERED_SECTIONS` (AP-05), no el disco.
+        # el registro de secciones (AP-05), no el disco: las del estándar y
+        # las propias de `secciones.json`. Hasta v41.2 se barría
+        # `REQUIRED_FOLDERS` y la nota de una sección propia no se validaba
+        # sin `--path`. Un registro ilegible lanza `ValueError`, que
+        # `vault_validate` traduce antes de llegar aquí.
 
         notes = [
 
             n
 
-            for seccion in REQUIRED_FOLDERS
+            for seccion in secciones_del_vault(_raiz())
 
             for n in (_raiz() / seccion).rglob("*.md")
 
@@ -440,6 +444,15 @@ def vault_validate(
         except ValueError as exc:
             return emit_error("vault_validate", "INVALID_VALUE", str(exc),
                               pista=f"una de {VERSIONES_CON_CONTRATO[0]}..{VERSIONES_CON_CONTRATO[-1]}")
+
+    # El barrido sin `--path` ni `--folder` lee el registro de secciones. Uno
+    # ilegible es un fallo, no un informe verde sin las propias (AP-51).
+    if not path and not folder and check in ("frontmatter", "all", "cumplimiento"):
+        try:
+            secciones_del_vault(_raiz())
+        except ValueError as exc:
+            return emit_error("vault_validate", "DATA_FILE_CORRUPT", str(exc),
+                              pista="corregir 00_System/secciones.json (vault_section --list)")
 
     result: Dict[str, Any] = {"ok": True}
 

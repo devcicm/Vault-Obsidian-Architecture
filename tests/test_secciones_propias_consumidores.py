@@ -336,3 +336,40 @@ def test_el_grafo_enriquecido_con_el_registro_roto_falla(tmp_path):
     (raiz / reg.SECCIONES_PROPIAS_RUTA).write_text("{roto", encoding="utf-8")
     informe = _grafo_enriquecido(raiz)
     assert informe["ok"] is False and informe["error_code"] == "DATA_FILE_CORRUPT", informe
+
+
+# ── vault_validate sin --path ──
+#
+# El barrido de `_notas_del_alcance` recorría `REQUIRED_FOLDERS`, que es
+# `ORDERED_SECTIONS`: sin `--path`, la nota de una sección propia no se
+# validaba nunca y el informe salía verde. La comprobación de estructura
+# (`REQUIRED_FOLDERS` debe existir) sí es del estándar y no cambia.
+
+def _validar_todo(raiz: Path, *extra: str) -> dict:
+    proceso = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "vault_validate.py"),
+         "--check", "frontmatter", *extra],
+        env=dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",
+                 PYTHONIOENCODING="utf-8"),
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        cwd=str(ROOT / "scripts"),
+    )
+    salida = proceso.stdout.strip()
+    assert salida, proceso.stderr
+    return json.loads(salida[salida.index("{"):])
+
+
+def test_vault_validate_sin_path_barre_la_seccion_propia(tmp_path):
+    raiz = _vault(tmp_path, [_SCRIPTS_SEC])
+    (raiz / "22_Scripts").mkdir()
+    (raiz / "22_Scripts" / "x.md").write_text(_MINIMA, encoding="utf-8")
+    informe = _validar_todo(raiz)
+    rutas = [i["path"].replace("\\", "/") for i in informe.get("invalid", [])]
+    assert any(r.endswith("22_Scripts/x.md") for r in rutas), informe
+
+
+def test_vault_validate_con_el_registro_roto_falla(tmp_path):
+    raiz = _vault(tmp_path, notas=["07_Knowledge/a.md"])
+    (raiz / reg.SECCIONES_PROPIAS_RUTA).write_text("{roto", encoding="utf-8")
+    informe = _validar_todo(raiz)
+    assert informe["ok"] is False and informe.get("error_code") == "DATA_FILE_CORRUPT", informe
