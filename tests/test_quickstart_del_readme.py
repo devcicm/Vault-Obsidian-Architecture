@@ -56,8 +56,13 @@ def test_el_quick_start_nombra_lo_que_una_escritura_necesita():
 
 def test_los_comandos_del_quick_start_funcionan_en_orden(tmp_path):
     vault = tmp_path / "vault-mi-proyecto"
+    # `vault init` importa el paquete `vault` desde tmp_path: sin la raíz del
+    # repo en PYTHONPATH lo resolvía una wheel instalada, si la había, y medía
+    # esa versión en vez de este código; sin ninguna, caía con stdout vacío.
     env = dict(os.environ, PYTHONIOENCODING="utf-8", VAULT_ROOT=str(vault),
-               VAULT_STRICT_ROOT="1", VAULT_AGENT="claude")
+               VAULT_STRICT_ROOT="1", VAULT_AGENT="claude",
+               PYTHONPATH=os.pathsep.join(
+                   [str(ROOT), *filter(None, [os.environ.get("PYTHONPATH")])]))
     ejecutados = []
     for cmd in _comandos(_quick_start()):
         args = shlex.split(cmd)
