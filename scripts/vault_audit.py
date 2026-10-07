@@ -2378,9 +2378,7 @@ def vault_audit(
     graph_file = _raiz() / "99_Index" / "graph.json"
     if graph_file.exists():
         try:
-            import json as json_module
-
-            graph_data = json_module.loads(graph_file.read_text(encoding="utf-8"))
+            graph_data = json.loads(graph_file.read_text(encoding="utf-8"))
 
             for edge in graph_data.get("edges", []):
                 if edge.get("to") == "__deleted__":
@@ -2406,7 +2404,9 @@ def vault_audit(
     move_log = _system_dir() / "move-log.json"
     if move_log.exists():
         try:
-            move_data = json_module.loads(move_log.read_text(encoding="utf-8"))
+            # `json` del módulo: hasta v41.2 aquí se usaba el `json_module` que
+            # solo importaba el bloque del grafo, y sin graph.json el audit caía.
+            move_data = json.loads(move_log.read_text(encoding="utf-8"))
             for move in move_data[-5:]:
                 next_actions.append(
                     {
