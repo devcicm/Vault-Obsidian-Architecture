@@ -52,7 +52,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import sys
 import uuid
@@ -63,6 +62,7 @@ from typing import Any, Dict, List, Optional, Tuple
 sys.path.insert(0, str(Path(__file__).parent))
 
 from vault_contrato_nota import POR_DEFECTO, campos_recomendados, clase_de_nota, faltantes
+from vault_entorno import leer as _env
 from vault_errors import emit_error, fuera_de_sesion, wrap_main
 from vault_fundamentals_catalog import cia_por_defecto
 from vault_io import assert_within_vault, atomic_write_text, get_vault_root, is_snapshot_path, tomar_lock
@@ -111,8 +111,8 @@ def _valor(campo: str, datos: Dict[str, Any], nota: Path, rel: str, cuerpo: str,
     if campo == "agent":  # AP-16
         if agent:
             return agent, "--agent"
-        if os.environ.get("VAULT_AGENT"):
-            return os.environ["VAULT_AGENT"], "VAULT_AGENT"
+        if _env("VAULT_AGENT"):  # del registro de entorno, no con default propio
+            return _env("VAULT_AGENT"), "VAULT_AGENT"
         return POR_DEFECTO["agent"], "por_defecto"
     if campo == "type":  # AP-27
         return section_default_type(rel.split("/", 1)[0]), "seccion"
