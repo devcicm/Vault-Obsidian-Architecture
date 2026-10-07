@@ -297,6 +297,7 @@ NON_SECTION_ROOT_FOLDERS: Dict[str, str] = {
 DERIVED_ARTIFACTS: Dict[str, str] = {
     "00_System/change-log.md": "vault_change_log",
     "00_System/tool-contracts.md": "vault_compact_contracts",
+    "99_Index/tag-index.md": "vault_tags",
 }
 
 

@@ -120,3 +120,19 @@ def test_la_asimetria_de_disponibilidad_es_del_registro():
     campos = {c["frontmatter_field"]: set(c["values"]) for c in CIA_TRIAD}
     assert "critical" in campos["cia_integrity"]
     assert "critical" not in campos["cia_availability"]
+
+
+def test_el_indice_de_tags_que_escribe_vault_tags_es_derivado():
+    """`99_Index/tag-index.md` lo regenera `vault_tags` entero en cada rebuild.
+
+    No estaba en `DERIVED_ARTIFACTS`, así que el contrato de nota le exigía
+    `id`, `createdAt` y `tags`, y `vault_frontmatter_completar` se los habría
+    puesto a un informe que la siguiente regeneración borra. La ruta se lee del
+    repositorio que la escribe, no se copia.
+    """
+    from vault.indices.repositorio import CARPETA_INDICES, FICHERO_INDICE_ETIQUETAS
+    import vault_contrato_nota
+
+    rel = f"{CARPETA_INDICES}/{FICHERO_INDICE_ETIQUETAS}"
+    assert es_artefacto_derivado(rel)
+    assert vault_contrato_nota.faltantes({}, rel) == []
