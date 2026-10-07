@@ -164,7 +164,8 @@ def test_el_catalogo_generado_trae_las_cuatro_familias():
 SDD_CONSTANTES_BASELINE = {
     "generate_appendices",
     "generate_implementation",
-    "generate_methodology",
+    # generate_methodology salió en v41.1: la tabla de clases de documento
+    # (Diátaxis) la lee de vault_registry; el resto de su prosa sigue fija.
     "generate_metrics",
     "generate_process_antipatterns",
     "generate_reference_matrix",
