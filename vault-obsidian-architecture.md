@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v41.1 — 2026-10-07  
+**Versión:** v41.2 — 2026-10-07  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -7373,6 +7373,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
 | v40.30 | 2026-08-16 | **Cuatro medidas cuyo alcance declarado era más ancho que el que de verdad recorrían, y tres defectos que solo existen fuera de este repo.** El resultado de una medida así no es un error sino un **cero**, que se lee igual que estar limpio: `cli/` llevaba en `ARBOLES_MEDIDOS` desde v40.9 sin contexto declarado, así que `_mapa_modulos()` devolvía `None` y las dos rutas de detección descartaban sus ficheros antes de leer un import; `vault_ciclos` medía el grafo de `scripts/`, de modo que `vault/` —el paquete que existe para imponer fronteras— era el único cuyos ciclos no contaba nadie; y `vault_audit` recorría el disco 25 veces por invocación para leer lo mismo. Los otros tres salieron de instalar `scripts vault cli mcp` **fuera del repo** y ejecutar contra un vault vacío, que es la regla 7 aplicada al propio programa: la autodetección caía a `repo_root_fallback` —«no encontré nada y estoy suponiendo»— y devolvía el directorio del toolkit, así que las escrituras aterrizaban dentro del programa; el servidor MCP escaneaba hacia arriba y registraba tres vaults ajenos **con `VAULT_ROOT` explícito puesto**, un inventario del disco del usuario expuesto al agente como default; y 23 llamadas a `subprocess` en 13 módulos decodificaban con la locale de la máquina mientras el toolkit emite UTF-8, lo que en cp1252 corrompe el acento en silencio y en cp932 tumba la tool entera. Ninguno de los siete podía verse desde dentro: el entorno que generó la medida comparte sus supuestos |
+| v41.2 | 2026-10-07 | **Un vault puede declarar sus propias secciones, y cada sección dice qué clase de documento contiene.** `vault_section` declara, lista y retira secciones propias en `00_System/secciones.json` (rango libre 22–98, clase Diátaxis, tipos admitidos); el registro, el puerto del kernel, el contrato, el audit y los barridos de grafo, validate, tags, delta, completar, graph_fix y section_index las ven. `vault_write` y `vault_move` aplican CN-02 al destino. Normas AP-14/21/22/SP-02, AP-15, AP-26, AP-27 y CN-02 realineadas con el código que las cumple; cuatro deudas halladas, declaradas en el plano. 4605 tests, 23 puertas |
 | v41.1 | 2026-10-07 | **Qué contrato cumple cada nota y qué notas no pertenecen a ninguna sección.** Clase `sin_seccion` en el contrato: un `.md` de la raíz o de una carpeta no registrada lleva identidad y timestamps, no CIA, `agent`, `tags`, `type` ni `status`. `vault_validate --check cumplimiento` informa por nota las versiones del contrato que cumple y lo que le falta para la vigente. `vault_audit` publica `notIntegrated` (notas que solo enlaza un índice) y la acción de las huérfanas deja de citar AP-13. 4463 tests, 23 puertas |
 | v41.0 | 2026-10-07 | **El contrato de nota es el criterio de lo que se escribe y se valida.** `vault_contrato_nota` es el dueño de los campos de una nota y de su nivel en cada versión desde v18; `vault_validate --contrato vNN` valida contra una versión anterior y cada versión desde v18 publica su JSON Schema en `schemas/`. **Ruptura:** `type` y `status` pasan de recomendados (v37–v40) a requeridos en notas de contenido, por presencia; `vault_frontmatter_completar` los pone. Los seis escritores cumplen el contrato entero; `jsonschema` declarado en el extra dev. 4431 tests, 23 puertas |
 | v40.36 | 2026-10-05 | **Lo que encontró usar la wheel contra un vault real.** Escritura en LF también en Windows (primitivo atómico e índices de sección); `vault_append` separa el bloque, deja un solo salto final y refresca `updatedAt` (AP-13); una escritura con frontmatter ilegible sale con `FRONTMATTER_PARSE_ERROR` y `vault_read` lo declara (AP-51, AP-52); soltar el último lock retira `.locks/` y `vault_knowledge_save` comparte lock con los demás escritores; `vault_reindex` no muere por el límite de 60 s; `vault tools show` publica los parámetros; el upgrade sella en LF y crea sus carpetas de registro. 4276 tests, 22 puertas |
@@ -7733,6 +7734,49 @@ temp/
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
 
 ---
+
+### v41.2 — 2026-10-07 `git: pending`
+
+**Un vault puede declarar sus propias secciones, y cada sección dice qué clase de
+documento contiene.**
+
+Hasta v41.1 una carpeta de raíz fuera del registro del estándar solo podía ser CN-02:
+en un vault ajeno, `scripts/` dejaba sus `.md` sin sección y sin remedio.
+
+**Secciones propias.** `vault_registry` lee y valida `00_System/secciones.json`: nombre
+`NN_Nombre` en el rango libre derivado del registro, clase de documento, tipos admitidos
+y estado `activa` o `retirada` (no se borra). `vault_section` (grupo 32) las declara,
+lista las carpetas de raíz sin sección y las retira con `superseded_by`. Un
+`secciones.json` ilegible es `DATA_FILE_CORRUPT`, nunca una lista vacía (AP-51). El
+puerto del kernel, el contrato de nota, `vault_audit` y los barridos de `vault_graph`,
+`vault_graph_merge`, `vault_validate`, `vault_tags`, `vault_delta`,
+`vault_frontmatter_completar`, `vault_graph_fix` y `vault_section_index` las ven; un
+test por AST impide que un barrido nuevo vuelva a usar la lista del estándar (AP-57).
+
+**Clase de documento por sección.** `SECTION_DOCUMENTACION` declara una vez por sección
+su clase en un vocabulario cerrado: las cuatro de Diátaxis más `registro` e `indice`. El
+SDD 06 publica la tabla derivada y dice el hueco: ninguna sección es tutorial.
+
+**CN-02 al escribir y al mover.** `vault_write` solo escribe en una sección del vault y
+ninguna nota nace sin `type`; `vault_move` juzga el destino y el `type` de la nota, y
+`--type` reclasifica.
+
+**Normas que decían otra cosa que su código.** AP-14, AP-21, AP-22 y SP-02 dejan de
+pisarse; AP-15, AP-26 y AP-27 nombran a la tool que las hace cumplir y dejan de recetar
+flags que no existen; CN-02 deja de copiar el registro que manda no copiar. Nada se
+borra: lo precisado queda anotado.
+
+**Correcciones.** `vault_audit` no cae con `move-log.json` y sin `graph.json`, y sus
+acciones de nota borrada y movida citan AP-14 y AP-47. `completar_envelope` conserva la
+pista de un envelope canónico. `vault_tags` sin registro apunta a quien lo crea y
+`total_tagged_notes` cuenta notas distintas (los usos, en `total_tag_uses`).
+`vault_fuente_unica` publica rutas con `/` en todas las plataformas.
+
+**Deuda declarada.** Cuatro hallazgos de la ronda que no se arreglan ahora entran en
+`vault_blueprint.DEUDA_DECLARADA` con su motivo: CN-01/CN-04 solo se miden al escribir,
+AP-17 compara solo la forma del título, el churn del kernel no ve el commit en curso y
+`--meta` decide el orden del frontmatter. `kernel_inestable::vault_registry` se admite en
+la baseline de `vault_kernel` con autorización expresa.
 
 ### v41.1 — 2026-10-07 `git: e718f65`
 
