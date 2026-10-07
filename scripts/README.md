@@ -419,7 +419,11 @@ python vault_validate.py
 python vault_validate.py --check frontmatter
 python vault_validate.py --check structure
 python vault_validate.py --check indexes
+python vault_validate.py --check frontmatter --contrato v30
+python vault_validate.py --check cumplimiento --folder 07_Knowledge
 ```
+
+**Qué contrato cumple cada nota (`--check cumplimiento`).** Un informe, no una validación: no reprueba y no cambia `ok`. Por cada nota da las versiones cuyo contrato cumple (`cumple`), la más alta (`version_mas_alta`) y lo que le falta para el vigente (`falta_para_vigente`); el resumen cuenta notas por versión y campos que faltan. Se publica la lista y no un umbral porque el cumplimiento no es monótono: medido en dos vaults ajenos, una nota con `id` y `title` y nada más cumple de v25 a v36 y no cumple ni v18 ni v37. El juez de cada versión es el mismo de `--contrato`, así que lo que el informe da por cumplido, `--contrato vNN` lo aprueba.
 
 ---
 

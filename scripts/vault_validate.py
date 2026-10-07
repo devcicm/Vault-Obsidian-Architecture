@@ -223,9 +223,95 @@ def check_frontmatter(path: Optional[str], folder: Optional[str],
         return {"valid": [], "invalid": [{"path": path, "error": result["error"]}]}
 
 
+    notes = _notas_del_alcance(folder)
+
+    valid: List[str] = []
+
+    invalid: List[Dict[str, str]] = []
+
+
+    for note in notes:
+
+        result = validate_frontmatter(note, contrato)
+
+        rel = note.relative_to(_raiz()).as_posix()
+
+        if result["valid"]:
+
+            valid.append(rel)
+
+        else:
+
+            invalid.append({"path": rel, "error": result["error"]})
+
+
+    return {"valid": valid, "invalid": invalid}
+
+
+def check_cumplimiento(path: Optional[str], folder: Optional[str]) -> Dict[str, Any]:
+    """Qué contratos cumple cada nota, versión a versión, y qué le falta para el vigente.
+
+    Medido el 2026-10-07 en dos vaults ajenos: el cumplimiento no es monótono
+    —una nota con `id` y `title` cumple de v25 a v36 y ni v18 ni v37— así que
+    se publica la lista de versiones, no un umbral. El juez de cada versión es
+    `validate_frontmatter`, el mismo de `--contrato` (AP-57): un informe que
+    juzgara con criterio propio podría decir «cumple v30» de una nota que
+    `--contrato v30` reprueba.
+
+    Es un informe: no reprueba nada y no cambia `ok`.
+    """
+    notes = [_raiz() / path] if path else _notas_del_alcance(folder)
+    vigente = VERSIONES_CON_CONTRATO[-1]
+    notas: List[Dict[str, Any]] = []
+    cumplen: Dict[str, int] = {v: 0 for v in VERSIONES_CON_CONTRATO}
+    mas_alta: Dict[str, int] = {}
+    faltan: Dict[str, int] = {}
+    derivadas = 0
+    for note in notes:
+        # Un artefacto derivado no tiene contrato desde v37 y el juez lo da por
+        # válido: contarlo inflaba la cifra. Medido en un vault ajeno, 38 de los
+        # 40 «cumple v41» eran `index.md`.
+        if es_artefacto_derivado(note.relative_to(_raiz()).as_posix()):
+            derivadas += 1
+            continue
+        cumple = [v for v in VERSIONES_CON_CONTRATO if validate_frontmatter(note, v)["valid"]]
+        actual = validate_frontmatter(note)
+        falta = list(actual.get("missing") or [])
+        for v in cumple:
+            cumplen[v] += 1
+        alta = cumple[-1] if cumple else None
+        mas_alta[alta or "ninguna"] = mas_alta.get(alta or "ninguna", 0) + 1
+        for campo in falta:
+            faltan[campo] = faltan.get(campo, 0) + 1
+        fila: Dict[str, Any] = {
+            "path": note.relative_to(_raiz()).as_posix(),
+            "cumple": cumple,
+            "version_mas_alta": alta,
+            "cumple_vigente": bool(actual["valid"]),
+            "falta_para_vigente": falta,
+        }
+        if not actual["valid"] and not falta:
+            # No le falta un campo: lo que la reprueba es otra cosa (un valor
+            # fuera de vocabulario, un frontmatter que no se lee).
+            fila["error_vigente"] = actual.get("error")
+        notas.append(fila)
+    return {
+        "vigente": vigente,
+        "total": len(notas),
+        "derivadas_excluidas": derivadas,
+        "cumplen_por_version": cumplen,
+        "por_version_mas_alta": dict(sorted(mas_alta.items())),
+        "faltantes_vigente": dict(sorted(faltan.items(), key=lambda kv: (-kv[1], kv[0]))),
+        "notas": notas,
+    }
+
+
+def _notas_del_alcance(folder: Optional[str]) -> List[Path]:
+    """Las notas que se validan sin `--path`: las de `folder`, o las de las secciones."""
+
     if folder:
 
-        notes = list((_raiz() / folder).rglob("*.md"))
+        return list((_raiz() / folder).rglob("*.md"))
 
     else:
 
@@ -249,28 +335,7 @@ def check_frontmatter(path: Optional[str], folder: Optional[str],
 
         ]
 
-
-    valid: List[str] = []
-
-    invalid: List[Dict[str, str]] = []
-
-
-    for note in notes:
-
-        result = validate_frontmatter(note, contrato)
-
-        rel = note.relative_to(_raiz()).as_posix()
-
-        if result["valid"]:
-
-            valid.append(rel)
-
-        else:
-
-            invalid.append({"path": rel, "error": result["error"]})
-
-
-    return {"valid": valid, "invalid": invalid}
+        return notes
 
 
 def check_structure() -> Dict[str, Any]:
@@ -333,7 +398,9 @@ def vault_validate(
 
         folder: Relative path to a folder — validates all notes inside.
 
-        check:  "frontmatter" | "structure" | "indexes" | "all"
+        check:  "frontmatter" | "structure" | "indexes" | "all" | "cumplimiento"
+                ("cumplimiento" no entra en "all": es un informe por versión,
+                no una validación, y no cambia `ok`)
 
         contrato: versión mayor (`v18`..) cuyo contrato de nota se aplica en
                   vez del vigente. Solo cambia el juicio del frontmatter.
@@ -390,6 +457,11 @@ def vault_validate(
         if fm["invalid"]:
 
             result["ok"] = False
+
+
+    if check == "cumplimiento":
+
+        result["cumplimiento"] = check_cumplimiento(path, folder)
 
 
     if check in ("structure", "all"):
@@ -461,6 +533,8 @@ Ejemplos:
 
   python vault_validate.py --check indexes
 
+  python vault_validate.py --check cumplimiento --folder "07_Knowledge"
+
 
 
 Notas:
@@ -488,11 +562,12 @@ Notas:
 
         "--check",
 
-        choices=["frontmatter", "structure", "indexes", "all"],
+        choices=["frontmatter", "structure", "indexes", "all", "cumplimiento"],
 
         default="all",
 
-        help="What to validate (default: all)",
+        help=("What to validate (default: all). cumplimiento: informe de qué "
+              "contrato de versión cumple cada nota y qué le falta para el vigente"),
 
     )
 

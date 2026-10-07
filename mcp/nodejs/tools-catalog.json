@@ -6734,12 +6734,13 @@
           },
           "check": {
             "type": "string",
-            "description": "What to validate (default: all)",
+            "description": "What to validate (default: all). cumplimiento: informe de qué contrato de versión cumple cada nota y qué le falta para el vigente",
             "enum": [
               "frontmatter",
               "structure",
               "indexes",
-              "all"
+              "all",
+              "cumplimiento"
             ]
           },
           "contrato": {
