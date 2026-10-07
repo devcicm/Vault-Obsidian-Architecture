@@ -40,6 +40,7 @@ from vault_io import (
 )
 
 from vault_registry import SECTIONS as _REGISTRY_SECTIONS
+from vault_registry import secciones_del_vault
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -62,6 +63,9 @@ from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 #: Derivado de `vault_registry.SECTIONS`, no copiado: la lista literal que vivía
 #: aquí se quedó en 18 carpetas y dejaba de escanear cada sección nueva del
 #: estándar sin que nada fallara — AP-05 dentro del propio toolkit.
+#: superseded_by: `vault_registry.secciones_del_vault` — solo el estándar; el
+#: filtro de notas usa ya las secciones del vault (v41.2). Se conserva el
+#: nombre publicado (no-derogación).
 VAULT_SECTIONS = {s["folder"] for s in _REGISTRY_SECTIONS}
 
 #: Se conserva el nombre publicado (no-derogación); el valor sale del dominio.
@@ -124,8 +128,29 @@ def _is_vault_note(path: Path) -> bool:
     Se conserva el nombre porque el módulo lo usa en tres sitios; el criterio ya
     no vive aquí sino en `vault/indices/enumeracion.py`, compartido con la
     reconstrucción del índice de búsqueda (AP-44).
+
+    Las secciones son las del vault —estándar y propias de `secciones.json`—.
+    Hasta v41.2 era `VAULT_SECTIONS`, solo el estándar: las etiquetas de una
+    sección propia no entraban en el registro ni las tocaba el renombrado.
+    `secciones_del_vault` cachea por firma del fichero y lanza `ValueError` si
+    está roto; las entradas públicas lo traducen con `_registro_ilegible`.
     """
-    return es_nota_indexable(path, _raiz(), VAULT_SECTIONS, incluir_indices=False)
+    return es_nota_indexable(path, _raiz(), secciones_del_vault(_raiz()),
+                             incluir_indices=False)
+
+
+def _registro_ilegible() -> Optional[Dict[str, Any]]:
+    """El envelope si `secciones.json` no se lee; `None` si se lee.
+
+    Recorrer el vault con el registro roto daría un informe sin las secciones
+    propias, indistinguible de uno donde no hay ninguna (AP-51).
+    """
+    try:
+        secciones_del_vault(_raiz())
+    except ValueError as exc:
+        return emit_error("vault_tags", "DATA_FILE_CORRUPT", str(exc),
+                          pista="corregir 00_System/secciones.json (vault_section --list)")
+    return None
 
 
 def tags_de_frontmatter(content: str) -> List[str]:
@@ -354,6 +379,9 @@ def vault_tags_backfill_ledger(dry_run: bool = False) -> Dict[str, Any]:
     `created` de la nota donde el término aparece por primera vez, y marca la
     regla como `backfill` para que no se confunda con lo registrado en vivo.
     """
+    fallo = _registro_ilegible()
+    if fallo:
+        return fallo
     indice = _canonical_index()
     vistos: Dict[str, Dict[str, Any]] = {}
     for md in sorted(_raiz().rglob("*.md")):
@@ -520,6 +548,9 @@ def _generate_tag_index_md(tag_map: Dict[str, List[str]], untagged: List[str]) -
 
 
 def vault_tags_rebuild(dry_run: bool = False) -> Dict[str, Any]:
+    fallo = _registro_ilegible()
+    if fallo:
+        return fallo
     tag_map, untagged = _scan_all_notes()
 
     registry = {
@@ -709,6 +740,9 @@ def vault_tags_rename(
     if not old_tag or not new_tag:
         return emit_error("vault_tags", "MISSING_REQUIRED_ARG",
                           "`old_tag` y `new_tag` son obligatorios para renombrar")
+    fallo = _registro_ilegible()
+    if fallo:
+        return fallo
 
     updated_notes: List[str] = []
     skipped: List[str] = []

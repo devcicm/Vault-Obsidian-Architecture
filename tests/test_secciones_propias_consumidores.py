@@ -373,3 +373,35 @@ def test_vault_validate_con_el_registro_roto_falla(tmp_path):
     (raiz / reg.SECCIONES_PROPIAS_RUTA).write_text("{roto", encoding="utf-8")
     informe = _validar_todo(raiz)
     assert informe["ok"] is False and informe.get("error_code") == "DATA_FILE_CORRUPT", informe
+
+
+# ── vault_tags ──
+#
+# `_is_vault_note` filtraba por `VAULT_SECTIONS`, derivado de
+# `vault_registry.SECTIONS`: el estándar y nada más. Las etiquetas de una nota
+# de sección propia no entraban en `tag-registry.json`, el renombrado no la
+# tocaba y el backfill de AP-39 no la veía.
+
+def _tags(raiz: Path):
+    import vault_tags
+    import vault_io
+    vault_io.set_vault_root(raiz)
+    return vault_tags
+
+
+def test_el_registro_de_tags_incluye_la_seccion_propia(tmp_path):
+    raiz = _vault(tmp_path, [_SCRIPTS_SEC])
+    (raiz / "22_Scripts").mkdir()
+    (raiz / "22_Scripts" / "deploy.md").write_text(
+        "---\ntitle: deploy\ntags: [despliegue]\n---\n# deploy\n", encoding="utf-8")
+    informe = _tags(raiz).vault_tags_rebuild(dry_run=False)
+    assert informe["ok"] is True, informe
+    registro = json.loads((raiz / informe["tag_registry"]).read_text(encoding="utf-8"))
+    assert "22_Scripts/deploy.md" in registro["tags"].get("despliegue", {}).get("notes", []), registro
+
+
+def test_el_rebuild_de_tags_con_el_registro_roto_falla(tmp_path):
+    raiz = _vault(tmp_path, notas=["07_Knowledge/a.md"])
+    (raiz / reg.SECCIONES_PROPIAS_RUTA).write_text("{roto", encoding="utf-8")
+    informe = _tags(raiz).vault_tags_rebuild(dry_run=True)
+    assert informe["ok"] is False and informe["error_code"] == "DATA_FILE_CORRUPT", informe
