@@ -31,3 +31,15 @@ def test_cn03_el_enum_no_lleva_una_lista_propia():
     bloque = bloque[: bloque.index("\n)\n")]
     assert "STATUS_VOCAB" in bloque
     assert '"in-progress"' not in bloque
+
+
+def test_la_matriz_de_trazabilidad_no_escribe_el_tamano_a_mano():
+    """La fila de Validez (F5) decía «12 valores» como literal (AP-47)."""
+    from vault_fundamentals import TRACEABILITY_MATRIX
+    from vault_norms_catalog import STATUS_VOCAB
+    import inspect
+    import vault_fundamentals
+
+    fila = next(f for f in TRACEABILITY_MATRIX if f["concept"].startswith("Validez"))
+    assert fila["threshold"] == f"{len(STATUS_VOCAB)} valores"
+    assert '"12 valores"' not in inspect.getsource(vault_fundamentals)

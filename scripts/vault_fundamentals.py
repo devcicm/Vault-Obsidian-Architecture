@@ -31,6 +31,7 @@ from typing import Any, Dict, List, Optional
 
 from vault_errors import emit_error, wrap_main
 from vault_version import CURRENT_VERSION  # generator_version de los artefactos (AP-47)
+from vault_norms_catalog import STATUS_VOCAB  # tamaño del vocabulario en la matriz (AP-47)
 from vault_lib import read_frontmatter, separar_frontmatter, utcnow
 from vault_io import atomic_write_json, atomic_write_text
 SCRIPTS_DIR = Path(__file__).parent
@@ -417,7 +418,7 @@ TRACEABILITY_MATRIX: List[Dict[str, str]] = [
     {"concept": "Consistencia (F2)", "metric": "wiki-links rotos", "threshold": "0", "tool": "vault_audit", "artifact": "99_Index/graph.json", "enforcement": "guard+audit"},
     {"concept": "Completitud (F3)", "metric": "líneas reales de contenido", "threshold": "≥3", "tool": "vault_write", "artifact": "content gate", "enforcement": "guard"},
     {"concept": "Exactitud (F4)", "metric": "coincidencia type ↔ carpeta", "threshold": "100%", "tool": "vault_validate", "artifact": "vault_registry.SECTIONS", "enforcement": "audit (CN-02)"},
-    {"concept": "Validez (F5)", "metric": "status dentro de STATUS_VOCAB", "threshold": "12 valores", "tool": "vault_norms --audit", "artifact": "vault_norms.STATUS_VOCAB", "enforcement": "audit (CN-03)"},
+    {"concept": "Validez (F5)", "metric": "status dentro de STATUS_VOCAB", "threshold": f"{len(STATUS_VOCAB)} valores", "tool": "vault_norms --audit", "artifact": "vault_norms.STATUS_VOCAB", "enforcement": "audit (CN-03)"},
     {"concept": "Oportunidad / Actualidad (F6)", "metric": "antigüedad de updatedAt", "threshold": "30d · 15d si CIA critical|high", "tool": "vault_audit", "artifact": "bloque stale", "enforcement": "audit"},
     {"concept": "Autenticidad (F7)", "metric": "cobertura del campo agent", "threshold": "100%", "tool": "vault_quality_check", "artifact": "frontmatter agent:", "enforcement": "audit (AP-16)"},
     {"concept": "No repudio (F8)", "metric": "entradas en change-log", "threshold": "1 por borrado", "tool": "vault_change_log", "artifact": "00_System/.change-log.json", "enforcement": "audit (SP-01)"},
