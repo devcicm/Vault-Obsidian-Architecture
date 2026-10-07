@@ -402,6 +402,8 @@ def _mover_nota(
 
     old_stem = source.stem
     new_stem = destination.stem
+    # AP-14: mover o renombrar no deja enlaces rotos, porque los `[[nota]]` y
+    # `[[carpeta/nota]]` entrantes se reescriben aquí.
     # Con `/` aunque corra en Windows: es la forma en que Obsidian escribe el
     # enlace anclado, y con `\` el `[[carpeta/nota]]` no se reescribía nunca.
     old_folder = source.parent.relative_to(_raiz()).as_posix()

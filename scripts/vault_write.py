@@ -390,12 +390,12 @@ def _nota_heredada(vault_path: Path, titulo: Optional[str] = None) -> Path:
 
 
 def _check_bracket_balance(content: str) -> Optional[str]:
-    """AP-22 y AP-14: corchetes desbalanceados y wiki-links vacíos.
+    """AP-22 y AP-24: wiki-links vacíos y corchetes desbalanceados.
 
-    AP-22 nombra el `[[]]` vacío y AP-24 los corchetes rotos; los dos son
-    variantes de AP-14, que es la norma que gobierna el enlace que no resuelve.
-    Este es el punto de rechazo en escritura de AP-14 (`tools_enforcing`): más
-    allá de aquí el enlace roto ya es el dato.
+    AP-22 nombra el `[[]]` vacío y AP-24 los corchetes rotos. Hasta v41.2 este
+    docstring los llamaba variantes de AP-14; no lo son: AP-14 es un destino
+    escrito que no resuelve, y aquí no hay destino. La parte de AP-14 en
+    escritura es el aviso `ghost_links` (SP-02), en `_collect_ghost_links`.
     """
     clean = strip_code_blocks(content)
     opens = len(re.findall(r"\[\[", clean))

@@ -147,9 +147,9 @@ Timestamps solo con fecha (2026-05-07), con '...' literal, sin zona horaria o en
 - **Enforcement:** guard+audit
 - **Detectado por:** vault_audit, vault_graph
 
-[[]] vacíos, [[ ]] con espacio, links a notas renombradas/eliminadas, o links con path (AP-21). Dos causas raíz: (a) wrong stem, (b) path-anchored. El agente sigue links que no resuelven.
+El wiki-link tiene un destino escrito que no resuelve a ninguna nota: ni por nombre de fichero, ni por sufijo de ruta, ni por aliases:. La nota destino se renombró o se borró, o nunca existió. El agente sigue links que no llevan a nada. No son AP-14 el [[]] vacío (AP-22), los corchetes desbalanceados (AP-24) ni el [[carpeta/nota]] que resuelve (si la carpeta sobra, o el nombre resuelve a varias notas, es AP-21).
 
-**Prevención:** Solo escribir [[wiki-link]] cuando la nota destino ya existe. vault_search() antes de linkar.
+**Prevención:** Al escribir, SP-02: buscar el destino antes de linkar. Al mover o renombrar, vault_move reescribe los enlaces entrantes [[nota]] y [[carpeta/nota]]. Lo que quede roto lo reportan vault_graph y vault_audit.
 
 ### AP-15: Archivos externos depositados en la raíz del vault
 
@@ -227,9 +227,9 @@ Nota que pasa el content gate de 3 líneas porque tiene bullets, pero >50% de lo
 - **Enforcement:** guard+audit
 - **Detectado por:** vault_audit, vault_fix_brackets
 
-Wiki-link vacío: `[[]]` sin destino, fuera de bloques de código. No hay información que perder, así que la reparación es eliminarlo. vault_write bloquea (hard stop). vault_write también advierte (non-blocking) si [[target]] no existe: ghost_links[].
+Wiki-link vacío: `[[]]` o `[[ ]]` sin destino, fuera de bloques de código. No hay información que perder, así que la reparación es eliminarlo. vault_write bloquea (hard stop). El aviso ghost_links[] por un destino que no existe no es de esta norma sino de SP-02.
 
-**Prevención:** Nunca escribir [[]] vacíos. Verificar que el target exista antes de linkar.
+**Prevención:** Nunca escribir [[]] vacíos: lo que aún no tiene nota destino se escribe en texto plano (SP-02). vault_fix_brackets --only empty elimina los que ya están.
 
 ### AP-23: Note complexity ceiling -- nota demasiado larga
 
@@ -1025,9 +1025,9 @@ Timestamps solo con fecha (2026-05-07), con '...' literal, sin zona horaria o en
 - **Enforcement:** guard+audit
 - **Detected by:** vault_audit, vault_graph
 
-[[]] vacíos, [[ ]] con espacio, links a notas renombradas/eliminadas, o links con path (AP-21). Dos causas raíz: (a) wrong stem, (b) path-anchored. El agente sigue links que no resuelven.
+El wiki-link tiene un destino escrito que no resuelve a ninguna nota: ni por nombre de fichero, ni por sufijo de ruta, ni por aliases:. La nota destino se renombró o se borró, o nunca existió. El agente sigue links que no llevan a nada. No son AP-14 el [[]] vacío (AP-22), los corchetes desbalanceados (AP-24) ni el [[carpeta/nota]] que resuelve (si la carpeta sobra, o el nombre resuelve a varias notas, es AP-21).
 
-**Prevention:** Solo escribir [[wiki-link]] cuando la nota destino ya existe. vault_search() antes de linkar.
+**Prevention:** Al escribir, SP-02: buscar el destino antes de linkar. Al mover o renombrar, vault_move reescribe los enlaces entrantes [[nota]] y [[carpeta/nota]]. Lo que quede roto lo reportan vault_graph y vault_audit.
 
 ### AP-15: Archivos externos depositados en la raíz del vault
 
@@ -1105,9 +1105,9 @@ Nota que pasa el content gate de 3 líneas porque tiene bullets, pero >50% de lo
 - **Enforcement:** guard+audit
 - **Detected by:** vault_audit, vault_fix_brackets
 
-Wiki-link vacío: `[[]]` sin destino, fuera de bloques de código. No hay información que perder, así que la reparación es eliminarlo. vault_write bloquea (hard stop). vault_write también advierte (non-blocking) si [[target]] no existe: ghost_links[].
+Wiki-link vacío: `[[]]` o `[[ ]]` sin destino, fuera de bloques de código. No hay información que perder, así que la reparación es eliminarlo. vault_write bloquea (hard stop). El aviso ghost_links[] por un destino que no existe no es de esta norma sino de SP-02.
 
-**Prevention:** Nunca escribir [[]] vacíos. Verificar que el target exista antes de linkar.
+**Prevention:** Nunca escribir [[]] vacíos: lo que aún no tiene nota destino se escribe en texto plano (SP-02). vault_fix_brackets --only empty elimina los que ya están.
 
 ### AP-23: Note complexity ceiling -- nota demasiado larga
 

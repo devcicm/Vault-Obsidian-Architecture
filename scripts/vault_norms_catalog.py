@@ -478,11 +478,26 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "code": "AP-14",
         "distinguido_de": {
             "AP-21": (
-                "Las dos son wikilinks defectuosos. AP-14 es el link que no resuelve "
-                "a ningún destino. AP-21 resuelve, pero está anclado a una ruta "
-                "concreta, así que se rompe en cuanto la nota se mueve. El "
-                "discriminador es si hoy resuelve: AP-14 ya está roto, AP-21 lo "
-                "estará."
+                "Las dos son wikilinks defectuosos, y el discriminador es a cuántas "
+                "notas resuelve el destino con el criterio de Obsidian —nombre de "
+                "fichero, sufijo de ruta y `aliases:`—. A ninguna: AP-14, el link "
+                "está roto. A una, pero con una carpeta que el nombre solo no "
+                "necesita, o a varias porque falta la carpeta que desambigua: AP-21, "
+                "la forma del enlace no fija la identidad. Un `[[carpeta/nota]]` que "
+                "resuelve a una sola nota cuyo nombre se repite no es ninguna de las "
+                "dos. Solapan en un caso, la ruta escrita que no resuelve a ninguna "
+                "nota: `vault_write` la rechaza como AP-21 (`path_anchored_wikilinks`) "
+                "porque la carpeta es lo que se escribió, y `vault_audit` la cuenta en "
+                "`brokenLinks` como AP-14 porque no tiene destino. Mover la nota no "
+                "rompe ninguna de las dos: `vault_move` reescribe los `[[nota]]` y "
+                "`[[carpeta/nota]]` entrantes."
+            ),
+            "AP-22": (
+                "AP-22 es el `[[]]` o `[[ ]]`: entre los corchetes no hay nombre que "
+                "buscar ni que resolver, y la reparación es borrarlo. AP-14 tiene un "
+                "destino escrito que no resuelve a ninguna nota, y se repara creando "
+                "la nota o corrigiendo el nombre. El discriminador es si entre los "
+                "corchetes hay texto."
             ),
             "AP-25": (
                 "Las dos son referencias que no resuelven. AP-14 vive en el grafo de "
@@ -509,14 +524,30 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "category": "linking",
         "severity": "critical",
         "enforcement": "guard+audit",
+        # Precisada en v41.2. Decía «[[]] vacíos, [[ ]] con espacio, … o links
+        # con path (AP-21). Dos causas raíz: (a) wrong stem, (b) path-anchored»,
+        # y la señal «vault_write rechaza [[]] y [[folder/nota]]». Desde v40.35
+        # un [[carpeta/nota]] que resuelve no está roto (`ruta_necesaria`), el
+        # [[]] es AP-22 y la ruta que sobra es AP-21. El «o vacíos» del nombre
+        # queda por la no-derogación; el vacío lo mide AP-22.
         "description": (
-            "[[]] vacíos, [[ ]] con espacio, links a notas renombradas/eliminadas, "
-            "o links con path (AP-21). Dos causas raíz: (a) wrong stem, (b) path-anchored. "
-            "El agente sigue links que no resuelven."
+            "El wiki-link tiene un destino escrito que no resuelve a ninguna nota: ni "
+            "por nombre de fichero, ni por sufijo de ruta, ni por aliases:. La nota "
+            "destino se renombró o se borró, o nunca existió. El agente sigue links "
+            "que no llevan a nada. No son AP-14 el [[]] vacío (AP-22), los corchetes "
+            "desbalanceados (AP-24) ni el [[carpeta/nota]] que resuelve (si la carpeta "
+            "sobra, o el nombre resuelve a varias notas, es AP-21)."
         ),
-        "signal": "vault_audit reporta brokenLinks[]. vault_write rechaza [[]] y [[folder/nota]].",
-        "prevention": "Solo escribir [[wiki-link]] cuando la nota destino ya existe. vault_search() antes de linkar.",
-        "tools_enforcing": ["vault_write"],
+        "signal": (
+            "vault_audit y vault_graph reportan brokenLinks[] con norm_code AP-14; al "
+            "escribir, vault_write avisa con ghost_links[] sin bloquear (SP-02)."
+        ),
+        "prevention": (
+            "Al escribir, SP-02: buscar el destino antes de linkar. Al mover o "
+            "renombrar, vault_move reescribe los enlaces entrantes [[nota]] y "
+            "[[carpeta/nota]]. Lo que quede roto lo reportan vault_graph y vault_audit."
+        ),
+        "tools_enforcing": ["vault_write", "vault_move"],
         "tools_detecting": ["vault_audit", "vault_graph"],
         "introduced_version": "v19",
     },
@@ -710,11 +741,19 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "code": "AP-21",
         "distinguido_de": {
             "AP-14": (
-                "Las dos son wikilinks defectuosos. AP-14 es el link que no resuelve "
-                "a ningún destino. AP-21 resuelve, pero está anclado a una ruta "
-                "concreta, así que se rompe en cuanto la nota se mueve. El "
-                "discriminador es si hoy resuelve: AP-14 ya está roto, AP-21 lo "
-                "estará."
+                "Las dos son wikilinks defectuosos, y el discriminador es a cuántas "
+                "notas resuelve el destino con el criterio de Obsidian —nombre de "
+                "fichero, sufijo de ruta y `aliases:`—. A ninguna: AP-14, el link "
+                "está roto. A una, pero con una carpeta que el nombre solo no "
+                "necesita, o a varias porque falta la carpeta que desambigua: AP-21, "
+                "la forma del enlace no fija la identidad. Un `[[carpeta/nota]]` que "
+                "resuelve a una sola nota cuyo nombre se repite no es ninguna de las "
+                "dos. Solapan en un caso, la ruta escrita que no resuelve a ninguna "
+                "nota: `vault_write` la rechaza como AP-21 (`path_anchored_wikilinks`) "
+                "porque la carpeta es lo que se escribió, y `vault_audit` la cuenta en "
+                "`brokenLinks` como AP-14 porque no tiene destino. Mover la nota no "
+                "rompe ninguna de las dos: `vault_move` reescribe los `[[nota]]` y "
+                "`[[carpeta/nota]]` entrantes."
             ),
         },
         "name": "Path-anchored wiki-links",
@@ -755,13 +794,17 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "severity": "medium",
         "enforcement": "guard+audit",
         "description": (
-            "Wiki-link vacío: `[[]]` sin destino, fuera de bloques de código. No hay "
-            "información que perder, así que la reparación es eliminarlo. "
-            "vault_write bloquea (hard stop). "
-            "vault_write también advierte (non-blocking) si [[target]] no existe: ghost_links[]."
+            "Wiki-link vacío: `[[]]` o `[[ ]]` sin destino, fuera de bloques de "
+            "código. No hay información que perder, así que la reparación es "
+            "eliminarlo. vault_write bloquea (hard stop). El aviso ghost_links[] por "
+            "un destino que no existe no es de esta norma sino de SP-02."
         ),
         "signal": "vault_write rechaza con error_code: malformed_wikilinks. vault_audit reporta malformedWikilinks[] con norm_code AP-22.",
-        "prevention": "Nunca escribir [[]] vacíos. Verificar que el target exista antes de linkar.",
+        "prevention": (
+            "Nunca escribir [[]] vacíos: lo que aún no tiene nota destino se escribe "
+            "en texto plano (SP-02). vault_fix_brackets --only empty elimina los que "
+            "ya están."
+        ),
         "tools_enforcing": ["vault_write"],
         "tools_detecting": ["vault_audit", "vault_fix_brackets"],
         # El desbalance de corchetes **no** es esta norma, es AP-24. La
@@ -771,6 +814,21 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         # separaba sin ambigüedad. El discriminador es observable, no una
         # cuestión de criterio, y por eso se declara aquí en vez de explicarse.
         "distinguido_de": {
+            "AP-14": (
+                "AP-22 es el `[[]]` o `[[ ]]`: entre los corchetes no hay nombre que "
+                "buscar ni que resolver, y la reparación es borrarlo. AP-14 tiene un "
+                "destino escrito que no resuelve a ninguna nota, y se repara creando "
+                "la nota o corrigiendo el nombre. El discriminador es si entre los "
+                "corchetes hay texto."
+            ),
+            "SP-02": (
+                "SP-02 es el protocolo de buscar el destino antes de escribir el "
+                "enlace, y su aviso es `ghost_links[]`. Un `[[]]` no tiene destino "
+                "que buscar, así que SP-02 no lo previene ni lo avisa: AP-22 lo para "
+                "`vault_write` al escribir (`malformed_wikilinks`) y lo repara "
+                "`vault_fix_brackets`. El discriminador es si hay un nombre que "
+                "verificar."
+            ),
             "AP-24": (
                 "AP-22 es el link vacío `[[]]`: no hay destino que recuperar y la "
                 "reparación no pierde nada. AP-24 es el desbalance —apertura sin "
@@ -3222,6 +3280,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
                 "enlace—. Una se detecta auditando; la otra se cumple o no en el "
                 "momento de escribir, y su incumplimiento solo se ve como AP-14 más "
                 "tarde."
+            ),
+            "AP-22": (
+                "SP-02 es el protocolo de buscar el destino antes de escribir el "
+                "enlace, y su aviso es `ghost_links[]`. Un `[[]]` no tiene destino "
+                "que buscar, así que SP-02 no lo previene ni lo avisa: AP-22 lo para "
+                "`vault_write` al escribir (`malformed_wikilinks`) y lo repara "
+                "`vault_fix_brackets`. El discriminador es si hay un nombre que "
+                "verificar."
             ),
         },
         "name": "Forward-link verification — buscar antes de linkar",

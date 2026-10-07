@@ -88,15 +88,15 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-11** — Skeleton files — frontmatter válido, contenido vacío | guard | — | `test_envelope_forma.py`, `test_voice.py` |
 | **AP-12** — Frontmatter inconsistente entre notas del mismo tipo | audit | — | — |
 | **AP-13** — Timestamps inválidos o incompletos en frontmatter | audit | — | `test_meta_contrato.py` |
-| **AP-14** — Wiki-links rotos o vacíos | guard+audit | — | `test_norms_coherence.py` |
+| **AP-14** — Wiki-links rotos o vacíos | guard+audit | — | `test_normas_enlaces_sin_solape.py`, `test_norms_coherence.py` |
 | **AP-15** — Archivos externos depositados en la raíz del vault | guard+audit | `framework` | `test_normas_sin_registro_a_mano.py`, `test_vault_norms_audit.py` |
 | **AP-16** — Sin identificador de agente en frontmatter | audit | — | `test_context_memory.py` |
 | **AP-17** — Canonical-shadow duplication | audit | — | `test_normas_de_audit_ejercitadas.py` |
 | **AP-18** — Cross-folder content duplication | audit | — | — |
 | **AP-19** — Shadow indexing | audit | `framework` | — |
 | **AP-20** — Deceptive skeleton (empty-list) | guard | — | `test_ap20_esqueleto_de_lista.py` |
-| **AP-21** — Path-anchored wiki-links | guard+audit | — | `test_ap21_dentro_de_fence.py`, `test_ap21_ruta_necesaria.py`, `test_vault_regex.py` |
-| **AP-22** — Wiki-link vacío — [[]] sin destino | guard+audit | — | `test_norms_coherence.py`, `test_vault_regex.py` |
+| **AP-21** — Path-anchored wiki-links | guard+audit | — | `test_ap21_dentro_de_fence.py`, `test_ap21_ruta_necesaria.py`, `test_normas_enlaces_sin_solape.py`, `test_vault_regex.py` |
+| **AP-22** — Wiki-link vacío — [[]] sin destino | guard+audit | — | `test_normas_enlaces_sin_solape.py`, `test_norms_coherence.py`, `test_vault_regex.py` |
 | **PAT-1** — Canonical source anchoring | recommended | — | `test_norms_coherence.py` |
 | **PAT-2** — Stub enrichment gradient | recommended | — | — |
 | **PAT-3** — Duplicate chain resolution | recommended | — | — |
@@ -145,7 +145,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-63** — El nombre de un proyecto como texto libre | guard+audit | — | `test_project_registrado.py`, `test_vault_project.py` |
 | **PAT-6** — Semantic graph enrichment — enriquecimiento periodico del grafo | recommended | — | — |
 | **SP-01** — Delete protocol — change_log obligatorio antes de eliminar | audit | `framework` | `test_vault_norms.py` |
-| **SP-02** — Forward-link verification — buscar antes de linkar | guard | — | `test_vault_norms.py` |
+| **SP-02** — Forward-link verification — buscar antes de linkar | guard | — | `test_normas_enlaces_sin_solape.py`, `test_vault_norms.py` |
 | **SP-03** — Session snapshot pattern — delta antes de operaciones masivas | audit | — | `test_vault_norms.py` |
 | **SP-04** — Sesión MCP por HTTP sin credencial — cualquier proceso local la abre | guard | `produccion` | `test_mcp_http_seguridad.py` |
 | **CN-01** — Kebab-case filenames — nombres de archivo en minúsculas con guiones | guard | — | `test_ap46_escritores_migrados.py`, `test_meta_contrato.py`, `test_vault_norms.py` |

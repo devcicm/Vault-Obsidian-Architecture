@@ -4517,6 +4517,16 @@ El ámbito es `project:` del frontmatter cuando está —lo escribió el autor�
 
 > **v25 — Dos causas raíz distintas:** (a) **wrong stem** — el link apunta a un nombre que no coincide con el stem del archivo destino; se corrige renombrando el link o el archivo. (b) **path-anchored links** (AP-21) — `[[carpeta/nota]]` en lugar de `[[nota]]`; Obsidian no resuelve paths, solo stems. `vault_write` rechaza con `path_anchored_wikilinks` cualquier link con `/`. `vault_section_index` genera solo `[[stem|título]]` para evitar este error en índices automáticos.
 
+> **v41.2 — Alcance precisado (`superseded_by:` AP-21 precisado en v40.35).** La causa (b)
+> de arriba ya no es AP-14: un `[[carpeta/nota]]` que resuelve a una sola nota no está roto,
+> y `vault_audit` no lo cuenta en `brokenLinks`. AP-14 es el destino escrito que no resuelve
+> a **ninguna** nota —por nombre de fichero, sufijo de ruta ni `aliases:`—. El `[[]]` y el
+> `[[ ]]` del síntoma son AP-22; la carpeta que sobra o el nombre que resuelve a varias
+> notas, AP-21. El único caso compartido es la ruta escrita que no resuelve: `vault_write`
+> la rechaza como AP-21 y `vault_audit` la cuenta como AP-14. Al mover o renombrar,
+> `vault_move` reescribe los enlaces entrantes `[[nota]]` y `[[carpeta/nota]]`. El texto
+> de arriba se conserva por la política de no-derogación.
+
 ---
 
 ### AP-15 — Archivos externos depositados en la raíz del vault
@@ -4711,6 +4721,12 @@ proyecto/
 - Guard en `vault_write._check_content_gate`: rechaza si hay `[[\s*]]` (excepto `00_System/`)
 - `vault_audit._detect_malformed_wikilinks`: emite finding con `norm_code: "AP-22"`, `kind: "empty"`, `auto_fixable: True`
 - **`vault_fix_brackets.py --only empty --apply`** (Grupo 33 — Corrección automática): elimina los `[[]]` y colapsa espacios adyacentes. Backup atómico antes de modificar.
+
+> **v41.2 — Qué no es AP-22.** «Cada `[[` debe apuntar a un target real (existente o por
+> crear)» se precisa (`superseded_by: SP-02`): un destino que aún no existe se escribe en
+> texto plano, no como enlace. El aviso `ghost_links[]` de `vault_write` es de SP-02 y el
+> destino escrito que no resuelve es AP-14; AP-22 es solo el enlace sin texto entre los
+> corchetes, que no tiene nombre que verificar.
 
 ---
 
@@ -6804,6 +6820,10 @@ Si no hay resultado, escribir el nombre en **texto plano** hasta que la nota exi
 **Enforcement:** guard no-bloqueante — `vault_write` retorna `ghost_links[]`.
 
 **Señal de violación:** `vault_write` retorna `ghost_links: ["nombre-nota"]`. `vault_audit()` reporta en `issues.brokenLinks` con `norm_code: "AP-14"`.
+
+**Qué no es SP-02:** el `[[]]` vacío no tiene destino que buscar; lo para `vault_write`
+con `malformed_wikilinks` y es AP-22. SP-02 es el protocolo; AP-14, el defecto que deja
+cuando no se cumple.
 
 ---
 
