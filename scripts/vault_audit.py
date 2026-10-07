@@ -2354,7 +2354,11 @@ def vault_audit(
                 }
             )
 
-    # Orphans: notas sin backlinks
+    # Orphans: notas sin backlinks. La norma la declara `PENALIZACIONES` —las
+    # huérfanas son métrica sin norma—; hasta v41.0 aquí se citaba AP-13, que es
+    # de timestamps. Y la receta no ofrece `type: reference` como salida:
+    # `_detect_orphans` no mira el tipo, así que no sacaba a nadie de la lista.
+    norma_huerfanas = next(p["norma"] for p in PENALIZACIONES if p["id"] == "orphans")
     for orph in orphans:
         next_actions.append(
             {
@@ -2362,8 +2366,8 @@ def vault_audit(
                 "category": "orphan",
                 "path": orph.get("path", ""),
                 "description": f"Nota `{orph.get('path', '')}` no tiene wiki-links entrantes — está huérfana.",
-                "command": "Añadir un wiki-link desde otra nota del vault, o marcar la nota como reference (no necesita backlinks).",
-                "norm": "AP-13",
+                "command": "Añadir un wiki-link a esta nota desde otra nota del vault que trate el mismo tema.",
+                "norm": norma_huerfanas,
             }
         )
 
