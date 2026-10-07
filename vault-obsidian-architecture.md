@@ -6847,15 +6847,16 @@ Las CN (Convention Naming) codifican las convenciones de nombres y estructura qu
 ### CN-02 — Numbered folder structure — secciones numeradas como únicos destinos
 
 **Regla:** Solo las secciones del registro canónico `vault_registry.SECTIONS` (fuente
-de verdad única — PAT-1) son destinos válidos para notas del vault. Actualmente 19:
-`00_System, 01_Projects, 02_Observability, 03_Decisions, 04_Sessions, 05_Patterns,
-06_Diagrams, 07_Knowledge, 08_Runbooks, 09_Infrastructure, 10_Migrated, 11_Code,
-12_Bibliography, 13_Flows, 14_Requirements, 15_Tests, 16_AI_Governance,
-17_Preferences, 99_Index`.
+de verdad única — PAT-1) son destinos válidos para notas del vault, más las secciones
+propias que el vault declare (abajo). Cuáles y cuántas son lo dice el registro:
+`vault_section --list` las enseña junto a las propias, y `vault_registry.ORDERED_SECTIONS`
+es la lista del estándar en orden.
 
 **NO duplicar esta lista en docs ni catálogos** — consultarla con
 `vault_folder_registry` o `vault_registry.SECTIONS` (la duplicación causó una
-contradicción real: este documento listaba 13 secciones obsoletas hasta v38.1).
+contradicción real: este documento listaba 13 secciones obsoletas hasta v38.1, y
+hasta v41.2 esta misma regla enumeraba 19 cuando el registro ya tenía más;
+`tests/test_normas_sin_registro_a_mano.py` falla si la copia vuelve).
 
 Crear carpetas ad-hoc o escribir `.md` directamente en la raíz del vault viola CN-02 (y AP-15).
 
