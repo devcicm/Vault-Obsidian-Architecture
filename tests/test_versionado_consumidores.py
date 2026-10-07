@@ -29,13 +29,18 @@ import vault_standard_upgrade as vsu  # noqa: E402
 
 ESTADO = REPO_ROOT / "vault-sandbox" / "00_System" / "standard-version.json"
 
+#: Misma mayor que la vigente y sin su menor: atrasada, pero sin migración
+#: estructural pendiente. Hasta v41.0 era el literal "v40.0", que con la mayor
+#: nueva pasó a tener la migración v41 pendiente y dejó de probar este camino.
+ATRASADA = vsu.CURRENT_VERSION.split(".", 1)[0]
+
 
 @pytest.fixture
 def sandbox_atrasado():
     """Deja el sandbox una menor por detrás y lo restaura pase lo que pase."""
     original = ESTADO.read_bytes()
     d = json.loads(original.decode("utf-8"))
-    d["applied_version"] = "v40.0"
+    d["applied_version"] = ATRASADA
     ESTADO.write_text(json.dumps(d, indent=2) + "\n", encoding="utf-8")
     try:
         yield ESTADO
@@ -77,7 +82,7 @@ def test_check_dice_que_hay_un_sello_pendiente_y_como_hacerlo(sandbox_atrasado):
 
 def test_el_estado_no_avanza_solo_por_preguntar(sandbox_atrasado):
     _correr("--check")
-    assert json.loads(sandbox_atrasado.read_text(encoding="utf-8"))["applied_version"] == "v40.0"
+    assert json.loads(sandbox_atrasado.read_text(encoding="utf-8"))["applied_version"] == ATRASADA
 
 
 def test_sellar_sigue_siendo_posible_cuando_se_pide(sandbox_atrasado):
