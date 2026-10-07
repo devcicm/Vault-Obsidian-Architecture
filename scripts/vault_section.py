@@ -99,7 +99,11 @@ def listar(raiz: Optional[Path] = None) -> Dict[str, Any]:
 
 def anadir(folder: str, documentacion: Optional[str], description: str = "",
            raiz: Optional[Path] = None) -> Dict[str, Any]:
-    """Declara `folder` como sección propia y crea la carpeta si no existe."""
+    """Declara `folder` como sección propia y crea la carpeta si no existe.
+
+    Es la salida de CN-02 para una carpeta que el vault necesita: el nombre y
+    el número los valida `vault_registry`, no esta función.
+    """
     raiz = Path(raiz or get_vault_root())
     if not documentacion:
         return emit_error(TOOL, "MISSING_REQUIRED_ARG",

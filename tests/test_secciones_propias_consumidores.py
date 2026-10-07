@@ -126,3 +126,31 @@ def test_vault_validate_juzga_la_seccion_propia_con_su_raiz(tmp_path):
     propia = _validar(raiz, "22_Scripts/x.md")
     assert propia["ok"] is False
     assert "type" in json.dumps(propia)
+
+
+# ── El audit de CN-02: declarar la sección es la salida de la violación ──
+
+from vault.gobernanza.auditoria_runtime import auditar_runtime  # noqa: E402
+
+
+def _cn02(raiz: Path) -> dict:
+    return {v["path"]: v["detail"] for v in auditar_runtime(raiz)["violations"]
+            if v["norm"] == "CN-02"}
+
+
+def test_el_audit_no_reporta_cn02_de_una_seccion_declarada(tmp_path):
+    raiz = _vault(tmp_path, [_SCRIPTS_SEC], notas=["22_Scripts/a.md", "scripts/b.md"])
+    cn02 = _cn02(raiz)
+    assert "22_Scripts" not in cn02
+    assert "scripts" in cn02
+    # La pista lleva a la salida que ahora existe.
+    assert "vault_section" in cn02["scripts"]
+
+
+def test_el_audit_reporta_un_registro_de_secciones_roto_sin_caerse(tmp_path):
+    """AP-51: ni excepción ni «no hay propias» callado; se nombra el fichero."""
+    raiz = _vault(tmp_path, notas=["22_Scripts/a.md"])
+    (raiz / reg.SECCIONES_PROPIAS_RUTA).write_text("{roto", encoding="utf-8")
+    cn02 = _cn02(raiz)
+    assert reg.SECCIONES_PROPIAS_RUTA in cn02
+    assert "22_Scripts" in cn02

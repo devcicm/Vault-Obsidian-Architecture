@@ -54,7 +54,12 @@ def auditar_runtime(
         read_frontmatter as _leer_frontmatter,
     )
     from vault_norms_catalog import NORM_CATALOG, STATUS_TRANSITIONS, STATUS_VOCAB, normalize_status
-    from vault_registry import NON_SECTION_ROOT_FOLDERS, SECTIONS
+    from vault_registry import (
+        NON_SECTION_ROOT_FOLDERS,
+        SECCIONES_PROPIAS_RUTA,
+        SECTIONS,
+        secciones_del_vault,
+    )
 
     root_allowed = set(NON_SECTION_ROOT_FOLDERS)
     # La semántica del argumento decide si esta auditoría usa la detección del
@@ -62,7 +67,15 @@ def auditar_runtime(
     # con la confianza de una autodetección que no se utilizó.
     root_fue_explicito = root is not None
     root = (root or _raiz()).resolve()
-    canonical_sections = {s["folder"] for s in SECTIONS}
+    # CN-02 cuenta las secciones del estándar y las propias que el vault declara
+    # (`vault_section`). Un `secciones.json` roto no tumba el audit ni se lee
+    # como «no hay propias» (AP-51): se reporta y se sigue con las del estándar.
+    try:
+        canonical_sections = set(secciones_del_vault(root))
+        registro_de_secciones_roto: Optional[str] = None
+    except ValueError as e:
+        canonical_sections = {s["folder"] for s in SECTIONS}
+        registro_de_secciones_roto = str(e)
     violations: List[Dict[str, Any]] = []
 
     def _flag(norm: str, path: str, detail: str) -> None:
@@ -77,6 +90,13 @@ def auditar_runtime(
         )
 
     # ── AP-15 + CN-02: higiene de raíz ────────────────────────────────────────
+    if registro_de_secciones_roto:
+        _flag(
+            "CN-02",
+            SECCIONES_PROPIAS_RUTA,
+            f"{registro_de_secciones_roto}. Hasta repararlo solo cuentan las secciones "
+            f"del estándar y no se contrasta el índice (AP-47).",
+        )
     if root.exists():
         for entry in sorted(root.iterdir()):
             name = entry.name
@@ -88,7 +108,9 @@ def auditar_runtime(
                         "CN-02",
                         name,
                         f"Carpeta '{name}' en la raíz no es una sección canónica "
-                        f"({len(canonical_sections)} secciones válidas en vault_registry).",
+                        f"({len(canonical_sections)} secciones válidas en este vault). "
+                        f"Si el vault la necesita como sección, se declara con nombre "
+                        f"NN_Nombre vía `vault_section --add`.",
                     )
             elif not name.startswith("."):
                 _flag("AP-15", name, f"Archivo suelto '{name}' en la raíz del vault.")
@@ -100,7 +122,9 @@ def auditar_runtime(
     # "cuántas notas hay" darían un desfase que `vault_reindex` no arreglaría
     # nunca, porque no es el que él mide (AP-44). Un solo hallazgo por vault: el
     # desfase es del índice, no de cada nota que falta en él.
-    if root.exists():
+    # Con el registro de secciones roto no se sabe qué notas hay en disco: el
+    # contraste daría un desfase falso, y el fallo ya está reportado arriba.
+    if root.exists() and not registro_de_secciones_roto:
         try:
             from vault.indices.coherencia import coherencia_indice
             from vault.indices.repositorio import RepositorioIndices

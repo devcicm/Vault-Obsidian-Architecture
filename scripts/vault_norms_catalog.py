@@ -3371,11 +3371,15 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "Solo las secciones numeradas del registro canónico (vault_registry.SECTIONS, "
             "fuente de verdad única — PAT-1) son destinos válidos para notas. "
             "Crear carpetas ad-hoc o escribir en la raíz viola este estándar (ver AP-15). "
-            "NO duplicar la lista aquí: consultarla con vault_folder_registry o vault_registry."
+            "NO duplicar la lista aquí: consultarla con vault_folder_registry o vault_registry. "
+            "Desde v41.2 un vault puede declarar secciones propias NN_Nombre en "
+            "00_System/secciones.json con vault_section (números libres del registro, "
+            "vault_registry.NUMEROS_PROPIOS); declaradas cuentan como sección para el "
+            "contrato de nota, el audit y los índices. Lo que no se declara sigue siendo CN-02."
         ),
         "signal": "Carpeta con nombre que no sigue el patrón NN_Nombre en el vault.",
         "prevention": "Elegir la sección más apropiada del vocabulario estándar. AP-15 para raíz del vault.",
-        "tools_enforcing": ["vault_write"],
+        "tools_enforcing": ["vault_write", "vault_section"],
         "tools_detecting": ["vault_section_index", "vault_norms"],
         "introduced_version": "v30",
     },

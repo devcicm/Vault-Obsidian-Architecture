@@ -6859,6 +6859,16 @@ contradicción real: este documento listaba 13 secciones obsoletas hasta v38.1).
 
 Crear carpetas ad-hoc o escribir `.md` directamente en la raíz del vault viola CN-02 (y AP-15).
 
+**Secciones propias (v41.2).** Un vault que necesita una sección que el estándar no
+tiene la **declara** en `00_System/secciones.json` con `vault_section --add NN_Nombre
+--documentacion <clase>`. El número sale del rango libre `vault_registry.NUMEROS_PROPIOS`
+(derivado del registro, no escrito aquí), y la clase de documentación del mismo
+vocabulario que las secciones del estándar. Una vez declarada, cuenta como sección para
+el contrato de nota, el audit y los índices. Retirarla (`--retire`, con
+`--superseded-by` opcional) no borra nada y sus notas siguen siendo de sección. Lo que
+no se declara sigue siendo CN-02, y un `secciones.json` ilegible se reporta como CN-02
+en vez de leerse como «no hay secciones propias».
+
 **Enforcement:** guard+audit — `vault_write` requiere `--folder` canónico;
 `vault_section_index` rechaza raíz/carpetas ad-hoc; `vault_norms --audit` detecta
 carpetas no canónicas retroactivamente.
