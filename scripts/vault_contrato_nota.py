@@ -19,8 +19,10 @@ exigirse tampoco estaba en ningún registro: había que leer el `git log`.
 - **recomendado** — el escritor lo pone siempre y `vault_audit` penaliza su
   ausencia (AP-27 `type`, AP-29 `status`), pero la nota sigue siendo válida.
   Subirlo a requerido es una decisión, no un arreglo: medido el 2026-10-05,
-  dieciocho primers del sandbox llevan `type: primer`, que no es ningún tipo de
-  `SECTION_TYPES`, y cinco notas llevan un `status` fuera de `STATUS_VOCAB`.
+  dieciocho primers del sandbox llevan `type: primer` —`SCAFFOLD_TYPE`, que no
+  pertenece a ninguna sección de `SECTION_TYPES`— y cinco notas llevan un
+  `status` fuera de `STATUS_VOCAB` (`accepted`, `active`) que `normalize_status`
+  lleva al canónico como sinónimo. Un enum cerrado reprobaría las veintitrés.
 - **valor** — si el campo está, su valor tiene que pertenecer al vocabulario
   (CIA) o no estar vacío (`agent`).
 
