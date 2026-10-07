@@ -260,3 +260,18 @@ def test_las_acciones_de_lectura_no_escriben_nada(accion, monkeypatch, tmp_path)
 
     bp.check() if accion == "--check" else bp.capas()
     assert copia.stat().st_mtime_ns == antes
+
+
+@pytest.mark.parametrize("ident", [
+    "cn01_cn04_solo_se_miden_al_escribir",
+    "ap17_compara_solo_la_forma_del_titulo",
+    "churn_del_kernel_no_ve_el_commit_en_curso",
+    "meta_decide_el_orden_del_frontmatter",
+])
+def test_la_deuda_hallada_en_la_ronda_de_v41_2_esta_declarada(ident):
+    """Lo que la ronda de v41.2 halló y no saldó vive en el registro, no solo
+    en un informe o en la memoria de quien lo halló: una deuda escrita en otro
+    sitio no la publica el plano ni la mira la puerta."""
+    d = next((d for d in bp.DEUDA_DECLARADA if d["id"] == ident), None)
+    assert d is not None, f"{ident} no está en DEUDA_DECLARADA"
+    assert d["estado"] == "pendiente"

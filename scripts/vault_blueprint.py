@@ -362,6 +362,95 @@ DEUDA_DECLARADA: List[Dict[str, str]] = [
             "La fachada y el package-dir existen; la deuda es de diseño, no de implementacion."
         ),
     },
+    # Las cuatro siguientes salieron en la ronda de v41.2 (regla 7 sobre copias
+    # de /ans y /vcloud, y revisión de normas). Hasta aquí vivían solo en el
+    # informe de la ronda: deuda escrita fuera del registro, que el plano no
+    # publica y ninguna puerta mira.
+    {
+        "id": "cn01_cn04_solo_se_miden_al_escribir",
+        "estado": "pendiente",
+        "desde": "v41.1",
+        "capa": "4",
+        "que": (
+            "CN-01 (nombre kebab-case) y CN-04 (la nota abre con su título como "
+            "H1) tienen enforcement `guard` y se cumplen solo en el write path: "
+            "`vault_write`, `vault_knowledge_save` y `vault_ai_decision`. Una "
+            "nota escrita por otro camino —un vault preexistente, una edición a "
+            "mano— no la mide nadie después. El docstring de `vault_write.slugify` lo "
+            "dice de CN-01: «ninguna otra tool audita después los nombres ya "
+            "escritos». El único `\"norm\": \"CN-01\"` de `vault_audit` es "
+            "sobre el scaffold, no sobre los nombres de las notas."
+        ),
+        "por_que_no_ahora": (
+            "Medirlas en notas existentes cambia el enforcement a `guard+audit` "
+            "y, si penalizan, el healthIndex de todo vault consumidor. Es una "
+            "decisión de norma, con su tabla de penalizaciones y su contraste "
+            "contra un vault ajeno antes de fijar el peso (regla 7), no un "
+            "arreglo de la tanda."
+        ),
+    },
+    {
+        "id": "ap17_compara_solo_la_forma_del_titulo",
+        "estado": "pendiente",
+        "desde": "v41.1",
+        "capa": "4",
+        "que": (
+            "AP-17 (sombra canónica) se detecta con `SequenceMatcher` ≥ 0.85 "
+            "sobre el texto del título (`vault_audit._detect_canonical_shadow`). "
+            "Dos notas sobre lo mismo con títulos distintos no salen, y dos "
+            "títulos parecidos de cosas distintas solo se separan si "
+            "`_distintos_por_convencion` reconoce la convención. Además, el "
+            "catálogo declara AP-17 con `tools_enforcing` vacío aunque es "
+            "`vault_audit` quien la mide."
+        ),
+        "por_que_no_ahora": (
+            "Ir más allá de la forma pide comparar contenido o identidad "
+            "declarada, que es justo lo que el servicio descarta sin embeddings. "
+            "Hace falta una reformulación decidible, como la que desbloqueó "
+            "AP-05 en v40.15, antes de tocar el detector."
+        ),
+    },
+    {
+        "id": "churn_del_kernel_no_ve_el_commit_en_curso",
+        "estado": "pendiente",
+        "desde": "v41.1",
+        "capa": "7",
+        "que": (
+            "K3 de `vault_kernel` (AP-59) cuenta el churn con `git log`, así que "
+            "la puerta que corre antes de commitear no ve el commit que se está "
+            "haciendo. El que cruza el umbral pasa en verde y el siguiente, "
+            "aunque no toque el módulo, hereda el rojo. Pasó en esta ronda: "
+            "`vault_registry` llegó a churn 23 con umbral 22.85 (mediana 13 × "
+            "1.758) y hubo que admitirlo en `kernel-baseline.json` con "
+            "autorización expresa."
+        ),
+        "por_que_no_ahora": (
+            "Contar el índice (`git diff --cached --name-only`) arregla el "
+            "pre-commit pero hace que la misma medida dé cifras distintas según "
+            "se ejecute antes o después de commitear, y la CI mide después. "
+            "Hay que decidir cuál es la medida canónica antes de cambiar el "
+            "contador."
+        ),
+    },
+    {
+        "id": "meta_decide_el_orden_del_frontmatter",
+        "estado": "pendiente",
+        "desde": "v41.1",
+        "capa": "5",
+        "que": (
+            "En `vault_write`, los campos que llegan por `--meta` se añaden al "
+            "final del frontmatter. Medido el 2026-10-07: con "
+            "`--meta '{\"agent\":\"claude\",\"type\":\"concept\"}'`, `type` sale "
+            "detrás de `agent` y de los tres `cia_*`, y su posición depende de por "
+            "dónde llegó y no de qué campo es."
+        ),
+        "por_que_no_ahora": (
+            "Ningún consumidor que lea con `yaml.safe_load` depende del orden, "
+            "así que no rompe nada. Fijar un orden canónico cambia byte a byte "
+            "la salida de toda nota nueva, y ese orden tiene que salir del "
+            "contrato de nota (`vault_contrato_nota`), no de una lista nueva."
+        ),
+    },
 ]
 
 
