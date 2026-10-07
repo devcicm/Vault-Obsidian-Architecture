@@ -3778,6 +3778,29 @@
         "F2"
       ]
     },
+    "vault_section": {
+      "group": "Gestión de Carpetas",
+      "group_id": 32,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "ok",
+        "written"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency",
+          "validity"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F3"
+      ]
+    },
     "vault_section_index": {
       "group": "Índices",
       "group_id": 15,
@@ -4514,10 +4537,10 @@
     }
   },
   "_counts": {
-    "active": 120,
+    "active": 121,
     "internal": 16,
     "archived": 5,
-    "total": 141,
+    "total": 142,
     "active_groups": 37,
     "schema_version": "1.0"
   }

@@ -399,7 +399,7 @@ CONTEXTS: dict[str, dict] = {
         "prohibe": [],
         "modulos": [
             "vault_master_index", "vault_reindex", "vault_section_index",
-            "vault_tags", "vault_index", "vault_folder_registry",
+            "vault_tags", "vault_index", "vault_folder_registry", "vault_section",
         ],
     },
     "consulta": {

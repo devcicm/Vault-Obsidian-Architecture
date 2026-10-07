@@ -3,8 +3,8 @@
 Vault Obsidian Architecture es un estándar abierto con un toolkit para dar a agentes LLM memoria documental persistente, auditable y gobernada sobre Markdown plano.
 
 [![Version](https://img.shields.io/badge/version-v41.1-blue)](./vault-obsidian-architecture.md)
-[![Tools](https://img.shields.io/badge/tools-120_active-green)](./scripts/)
-[![Scripts](https://img.shields.io/badge/scripts-158_total-lightblue)](./scripts/)
+[![Tools](https://img.shields.io/badge/tools-121_active-green)](./scripts/)
+[![Scripts](https://img.shields.io/badge/scripts-159_total-lightblue)](./scripts/)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow)](./scripts/)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](./LICENSE)
 
@@ -258,7 +258,7 @@ python scripts/vault_audit.py
 
 ## CLI consolidada — `vault`
 
-Las 120 tools bajo un único punto de entrada, con búsqueda, planificación de
+Las 121 tools bajo un único punto de entrada, con búsqueda, planificación de
 concurrencia y guardas de seguridad:
 
 ```bash
@@ -459,7 +459,7 @@ python scripts/vault_norms.py --check-framework    # guard anti-drift registro �
 
 ---
 
-## Las 120 tools activas — 37 grupos
+## Las 121 tools activas — 37 grupos
 
 | Grupo | Tools |
 |---|---|
@@ -494,7 +494,7 @@ python scripts/vault_norms.py --check-framework    # guard anti-drift registro �
 | 29 — Release | `vault_release_save` |
 | 30 — Riesgos y Calidad | `vault_risk_save`, `vault_privacy_save`, `vault_ncr_save` |
 | 31 — Bootstrap | `vault_init`, `vault_onboard` |
-| 32 — Gestión de Carpetas | `vault_folder_registry` |
+| 32 — Gestión de Carpetas | `vault_folder_registry`, `vault_section` |
 | 33 — Corrección automática | `vault_fix_brackets`, `vault_frontmatter_heal`, `vault_graph_fix` |
 | 34 — Memoria de Contexto | `vault_preferences`, `vault_query_parse`, `vault_subgraph`, `vault_context_pack`, `vault_ingest`, `vault_model_profile` |
 | 35 — Normas | `vault_norms`, `vault_arch`, `vault_gate`, `vault_smoke`, `vault_servicio`, `vault_blueprint`, `vault_doc_counts`, `vault_doc_sync`, `vault_blame_audit`, `vault_changelog_check`, `vault_error_contract`, `vault_noop_audit`, `vault_voice`, `vault_norms_coherence`, `vault_criterios`, `vault_ciclos`, `vault_kernel`, `vault_excepcion_declarada`, `vault_recursos`, `vault_produccion`, `vault_foreign_check`, `vault_code_tag` |
@@ -587,7 +587,7 @@ Sistema de control de asistencia con autenticación biométrica.
 
 Contiene:
 - 8 principios de diseño
-- 120 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
+- 121 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
 - 74 normas: 63 antipatrones (AP-01–AP-62), 6 patrones (PAT-1–PAT-6), 3 SP, 3 CN
 - norm_refs auto-embebido en frontmatter + vault_code_tag para etiquetas en código fuente
 - 8 Fundamentos de Datos (F1–F8) con trazabilidad a tools
@@ -616,7 +616,7 @@ Contiene:
 ## Scripts — estructura del repositorio
 
 ```
-scripts/                    ← 158 archivos Python (120 tools del catálogo + 8 archivadas en _archived/ + internas/meta)
+scripts/                    ← 159 archivos Python (121 tools del catálogo + 8 archivadas en _archived/ + internas/meta)
 ├── vault_io.py             — I/O base: _detect_vault_root, assert_within_vault, atomic_write_text/json, file_lock
 ├── vault_errors.py         — wrap_main (timeout 60s), emit_ok, trace log
 ├── vault_write.py          — tool principal de escritura (guards AP-20, AP-21, norm_refs auto-embed)

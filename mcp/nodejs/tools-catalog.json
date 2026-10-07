@@ -5894,6 +5894,63 @@
         "vault_list"
       ]
     },
+    "vault_section": {
+      "name": "vault_section",
+      "description": "Declara, lista y retira las secciones propias de un vault (NN_Nombre en 00_System/secciones.json); lo no declarado sigue siendo CN-02.",
+      "group": "Gestión de Carpetas",
+      "script": "vault_section.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "list": {
+            "type": "boolean",
+            "description": "Listar secciones propias y carpetas de raíz sin sección"
+          },
+          "add": {
+            "type": "string",
+            "description": "Declarar una sección propia NN_Nombre"
+          },
+          "retire": {
+            "type": "string",
+            "description": "Retirar una sección propia sin borrar nada"
+          },
+          "documentacion": {
+            "type": "string",
+            "description": "Clase de documento: tutorial, guia, referencia, explicacion, registro, indice"
+          },
+          "description": {
+            "type": "string",
+            "description": "Qué contiene la sección"
+          },
+          "superseded-by": {
+            "type": "string",
+            "description": "Sección que sustituye a la retirada"
+          },
+          "json": {
+            "type": "boolean",
+            "description": "Salida JSON"
+          }
+        },
+        "additionalProperties": false
+      },
+      "guards": [
+        "Nombre NN_Nombre en el rango libre, sin repetir número",
+        "Un secciones.json ilegible no se reescribe"
+      ],
+      "side_effects": [
+        "Crea/actualiza 00_System/secciones.json",
+        "Crea la carpeta de la sección si no existe"
+      ],
+      "status": "active",
+      "exposed_via_mcp": true,
+      "execution_module": "vault_toolkit.operations.vault_section",
+      "related": [
+        "vault_folder_registry",
+        "vault_audit",
+        "vault_validate"
+      ],
+      "json_flag": true
+    },
     "vault_section_index": {
       "name": "vault_section_index",
       "description": "Genera índice de una sección del vault.",
@@ -7046,7 +7103,8 @@
       "vault_history_compact"
     ],
     "Gestión de Carpetas": [
-      "vault_folder_registry"
+      "vault_folder_registry",
+      "vault_section"
     ],
     "Memoria de Contexto": [
       "vault_preferences",

@@ -15,7 +15,8 @@ NATURALEZAS: Dict[str, Dict[str, Any]] = {
             "vault_folder_registry", "vault_init", "vault_master_index",
             "vault_merge", "vault_migrate_docs", "vault_migrate_rollback",
             "vault_move", "vault_onboard", "vault_reindex", "vault_sanacion",
-            "vault_sdd_init", "vault_section_index", "vault_standard_upgrade",
+            "vault_sdd_init", "vault_section", "vault_section_index",
+            "vault_standard_upgrade",
         ],
     },
     "documentacion": {

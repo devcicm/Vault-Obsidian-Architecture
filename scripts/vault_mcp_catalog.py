@@ -1035,6 +1035,54 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "example": 'python vault_folder_registry.py\npython vault_folder_registry.py --scan\npython vault_folder_registry.py --add "11_Code/tests"',
         "related": ["vault_reindex", "vault_audit"],
     },
+    "vault_section": {
+        "name": "vault_section",
+        "script": "vault_section.py",
+        "group": "Gestión de Carpetas",
+        "purpose": "Declara, lista y retira las secciones propias de un vault (NN_Nombre en 00_System/secciones.json); lo no declarado sigue siendo CN-02.",
+        "params": {
+            "list": {
+                "type": "boolean",
+                "required": False,
+                "description": "Listar secciones propias y carpetas de raíz sin sección",
+                "validators": [],
+            },
+            "add": {
+                "type": "string",
+                "required": False,
+                "description": "Declarar una sección propia NN_Nombre",
+                "validators": [],
+            },
+            "retire": {
+                "type": "string",
+                "required": False,
+                "description": "Retirar una sección propia sin borrar nada",
+                "validators": [],
+            },
+            "documentacion": {
+                "type": "string",
+                "required": False,
+                "description": "Clase de documento: tutorial, guia, referencia, explicacion, registro, indice",
+                "validators": [],
+            },
+            "description": {
+                "type": "string",
+                "required": False,
+                "description": "Qué contiene la sección",
+                "validators": [],
+            },
+            "superseded-by": {
+                "type": "string",
+                "required": False,
+                "description": "Sección que sustituye a la retirada",
+                "validators": [],
+            },
+        },
+        "guards": ["Nombre NN_Nombre en el rango libre, sin repetir número", "Un secciones.json ilegible no se reescribe"],
+        "side_effects": ["Crea/actualiza 00_System/secciones.json", "Crea la carpeta de la sección si no existe"],
+        "example": 'python vault_section.py --list\npython vault_section.py --add 22_Scripts --documentacion referencia --description "Scripts de despliegue"',
+        "related": ["vault_folder_registry", "vault_audit", "vault_validate"],
+    },
     "vault_mermaid_check": {
         "name": "vault_mermaid_check",
         "script": "vault_mermaid_check.py",
@@ -4615,7 +4663,7 @@ GROUPS: Dict[str, List[str]] = {
     "Corrección Automática": ["vault_fix_brackets", "vault_graph_fix", "vault_frontmatter_heal",
                               "vault_frontmatter_completar"],
     "Versionado": ["vault_standard_upgrade", "vault_undo", "vault_history_compact"],
-    "Gestión de Carpetas": ["vault_folder_registry"],
+    "Gestión de Carpetas": ["vault_folder_registry", "vault_section"],
     "Memoria de Contexto": [
         "vault_preferences",
         "vault_model_profile",
