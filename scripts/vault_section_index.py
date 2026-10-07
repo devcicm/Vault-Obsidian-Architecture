@@ -152,8 +152,9 @@ def _ensure_hub_notes(indice_disponible=None) -> None:
         # La tabla del hub listaba 18 secciones escritas a mano: las cuatro
         # más nuevas existían en disco y no aparecían en el índice principal,
         # que es la única página por la que se navega el vault. Se deriva.
-        for section in ORDERED_SECTIONS:
-            desc = section_description(section)
+        # Con las propias que ya estén declaradas cuando nace el hub.
+        for section in secciones_del_vault(get_vault_root()):
+            desc = section_description(section, get_vault_root())
             enlace = enlace_a_indice(f"{section}/index.md", "índice") or f"`{section}/index.md`"
             hub_content += f"| `{section}` | {desc} | {enlace} |\n"
         hub_content += (
@@ -323,7 +324,8 @@ def _renderizador(indice_disponible=None) -> RenderizadorDeIndice:
         return destino_mas_corto(rel, indice)
 
     return RenderizadorDeIndice(
-        describir_seccion=section_description,
+        # Con la raíz, para que una sección propia lleve su descripción.
+        describir_seccion=lambda s: section_description(s, get_vault_root()),
         pista_de_tool=section_tool_hint,
         enlace_seguro=safe_wikilink,
         destino=destino,

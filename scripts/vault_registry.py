@@ -757,11 +757,17 @@ def section_name(folder: str) -> str:
     return sec["name"] if sec else folder
 
 
-def section_description(folder: str) -> str:
+def section_description(folder: str, raiz: Optional[Path] = None) -> str:
     """Descripción de una sección raíz o subcarpeta.
 
     Busca primero en SUBFOLDERS (descripción específica), luego en SECTIONS
     (descripción del padre). Fallback: 'Subcarpeta de {parent}'.
+
+    Con `raiz`, una sección propia aporta la `description` que declara en
+    `secciones.json` (`vault_section --add --description`), o una que dice lo
+    que es si no declara ninguna. Hasta v41.2 caía al fallback y una sección
+    raíz salía como «Subcarpeta de 22_Scripts» en su índice y en el maestro.
+    Sin `raiz`, solo cuentan las del estándar, como en `section_types`.
     """
     folder_key = folder.replace("\\", "/")
     if folder_key in SUBFOLDERS:
@@ -770,6 +776,11 @@ def section_description(folder: str) -> str:
     sec = _SECTION_BY_FOLDER.get(top)
     if sec:
         return sec["description"]
+    if raiz is not None:
+        propia = next((s for s in leer_secciones_propias(raiz) if s["folder"] == top), None)
+        if propia:
+            return (propia.get("description")
+                    or f"Sección propia del vault (documentación: {propia['documentacion']})")
     return f"Subcarpeta de {top}"
 
 

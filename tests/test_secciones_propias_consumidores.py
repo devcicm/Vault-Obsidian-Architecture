@@ -512,3 +512,37 @@ def test_heal_indexes_con_el_registro_roto_falla(tmp_path):
     vault_io.set_vault_root(raiz)
     r = heal_indexes(raiz)
     assert r["ok"] is False and r["error_code"] == "DATA_FILE_CORRUPT", r
+
+
+# ── La descripción de una sección propia ──
+#
+# `section_description` solo conocía el estándar: para una sección propia caía
+# a «Subcarpeta de 22_Scripts», que es falso —es una sección raíz— y se comía
+# la `description` que `vault_section --add` deja declarada. Salía así en el
+# índice de la sección y en la fila del índice maestro.
+
+_SCRIPTS_DESC = dict(_SCRIPTS_SEC, description="Scripts de despliegue")
+
+
+def test_la_descripcion_de_una_seccion_propia_es_la_declarada(tmp_path):
+    raiz = _vault(tmp_path, [_SCRIPTS_DESC])
+    assert reg.section_description("22_Scripts", raiz) == "Scripts de despliegue"
+    assert reg.section_description("07_Knowledge", raiz) == reg.section_description("07_Knowledge")
+
+
+def test_sin_descripcion_declarada_no_se_hace_pasar_por_subcarpeta(tmp_path):
+    raiz = _vault(tmp_path, [_SCRIPTS_SEC])
+    assert "Subcarpeta" not in reg.section_description("22_Scripts", raiz)
+
+
+def test_el_indice_y_el_maestro_usan_la_descripcion_declarada(tmp_path):
+    import vault_io
+    from vault_master_index import vault_master_index
+    raiz = _vault(tmp_path, [_SCRIPTS_DESC], notas=["22_Scripts/deploy.md"])
+    vault_io.set_vault_root(raiz)
+    assert vault_master_index(raiz)["ok"] is True
+    indice = (raiz / "22_Scripts" / "index.md").read_text(encoding="utf-8")
+    maestro = (raiz / "99_Index" / "index.md").read_text(encoding="utf-8")
+    for texto in (indice, maestro):
+        assert "Scripts de despliegue" in texto
+        assert "Subcarpeta de 22_Scripts" not in texto
