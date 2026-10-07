@@ -775,6 +775,19 @@ def es_artefacto_derivado(ruta_relativa: str) -> bool:
     return rel.rsplit("/", 1)[-1].lower() == "index.md" or rel in DERIVED_ARTIFACTS
 
 
+def es_de_seccion(ruta_relativa: str) -> bool:
+    """¿Vive la nota dentro de una carpeta de sección del registro?
+
+    Un `.md` de la raíz (`README.md`, `Home.md`) o de una carpeta que el
+    registro no declara (`docs/`, `scripts/`) no es de ninguna sección, y el
+    contrato no puede exigirle lo que decide la sección: tipo y sensibilidad.
+    El criterio es la primera componente de la ruta, y solo cuenta si hay algo
+    debajo: `07_Knowledge.md` en la raíz no es de `07_Knowledge/`.
+    """
+    partes = ruta_relativa.replace("\\", "/").split("/")
+    return len(partes) > 1 and partes[0] in ORDERED_SECTIONS
+
+
 def section_default_type(folder: str) -> str:
     """El `type:` que el write path escribe para una sección ("" si no aplica).
 

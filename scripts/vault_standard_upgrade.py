@@ -457,6 +457,8 @@ MIGRATIONS: Dict[str, Dict[str, Any]] = {
             "Por presencia, no por valor: vault_audit sigue juzgando el valor",
             "vault_validate --contrato vNN valida contra el contrato de cualquier version desde v18",
             "schemas/: JSON Schema desde v18; de v18 a v24 el contrato es AP-12 del manifiesto",
+            "v41.1 — clase sin_seccion: un .md fuera de toda seccion (README de la raiz, "
+            "carpeta no registrada) lleva identidad y timestamps, sin CIA, agent, tags, type ni status",
         ],
     },
 }

@@ -1465,6 +1465,9 @@ def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]
         clase = clase_de_nota(rel)
         is_index = clase == "derivada"
         is_system = clase == "sistema"
+        # Los campos de sección (tags, type, status, CIA, agent) solo se piden
+        # a las notas de una sección: `sin_seccion` lleva el contrato de sistema.
+        es_de_seccion = clase == "contenido"
 
         fm = {}
         # El bloque lo delimita el kernel, que quita el BOM: con un regex propio
@@ -1478,7 +1481,7 @@ def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]
                 missing_frontmatter.append({"path": rel, "title": p.stem})
             continue
 
-        if not is_index and not is_system:
+        if es_de_seccion:
             tags_val = fm.get("tags", "")
             if not tags_val or tags_val in ("[]", "[ ]", ""):
                 missing_tags.append({"path": rel, "title": fm.get("title", p.stem)})
@@ -1498,7 +1501,7 @@ def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]
             continue
 
         # El contrato exige `agent` solo a las notas de contenido (v37).
-        if not is_system and not fm.get("agent"):
+        if es_de_seccion and not fm.get("agent"):
             missing_agent.append({"path": rel, "title": fm.get("title", p.stem)})
 
         if not fm.get("updatedAt"):

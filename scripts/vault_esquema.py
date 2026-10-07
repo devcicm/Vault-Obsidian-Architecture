@@ -80,7 +80,9 @@ esquema es JSON Schema 2020-12 sobre el frontmatter ya parseado como YAML.
 ## Cómo se usa
 
 La raíz de cada esquema es el contrato de una **nota de contenido**. Las notas
-de `00_System/` se validan contra `#/$defs/sistema`. Desde v37, los artefactos
+de `00_System/` se validan contra `#/$defs/sistema`, y desde v41 un `.md` fuera
+de toda sección —la raíz, o una carpeta que `vault_registry` no declara— contra
+`#/$defs/sin_seccion`. Desde v37, los artefactos
 derivados —todo `index.md` y los que declara `vault_registry.DERIVED_ARTIFACTS`—
 quedan fuera del contrato. La clase sale de la ruta de la nota, que no está en
 el frontmatter: elegirla es de quien valida.

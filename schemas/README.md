@@ -10,7 +10,9 @@ esquema es JSON Schema 2020-12 sobre el frontmatter ya parseado como YAML.
 ## Cómo se usa
 
 La raíz de cada esquema es el contrato de una **nota de contenido**. Las notas
-de `00_System/` se validan contra `#/$defs/sistema`. Desde v37, los artefactos
+de `00_System/` se validan contra `#/$defs/sistema`, y desde v41 un `.md` fuera
+de toda sección —la raíz, o una carpeta que `vault_registry` no declara— contra
+`#/$defs/sin_seccion`. Desde v37, los artefactos
 derivados —todo `index.md` y los que declara `vault_registry.DERIVED_ARTIFACTS`—
 quedan fuera del contrato. La clase sale de la ruta de la nota, que no está en
 el frontmatter: elegirla es de quien valida.
@@ -51,7 +53,7 @@ habría puesto y declara el origen de cada valor.
 | [v38](vault-v38.schema.json) | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags` | — |
 | [v39](vault-v39.schema.json) | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags` | — |
 | [v40](vault-v40.schema.json) | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags` | — |
-| [v41](vault-v41.schema.json) | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags`, `type`, `status` | requeridos en notas de contenido, por presencia: el valor lo sigue juzgando vault_audit |
+| [v41](vault-v41.schema.json) | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags`, `type`, `status` | requeridos en notas de contenido, por presencia: el valor lo sigue juzgando vault_audit; clase sin_seccion: un .md fuera de toda sección lleva identidad y timestamps; CIA, agent, tags, type y status son de las notas de sección |
 
 Hasta v24 no había validador: el contrato de esas versiones es la regla AP-12
 del manifiesto, que exigía los mismos campos a toda nota, de cualquier clase.
@@ -66,10 +68,10 @@ Cualquier versión se valida con el validador vigente:
 
 | Campo | Nivel | Clases | Norma |
 |---|---|---|---|
-| `id` | requerido | sistema, contenido | AP-12 |
-| `title` | requerido | sistema, contenido | AP-12 |
-| `createdAt` | requerido | sistema, contenido | AP-12 |
-| `updatedAt` | requerido | sistema, contenido | AP-12 |
+| `id` | requerido | sistema, sin_seccion, contenido | AP-12 |
+| `title` | requerido | sistema, sin_seccion, contenido | AP-12 |
+| `createdAt` | requerido | sistema, sin_seccion, contenido | AP-12 |
+| `updatedAt` | requerido | sistema, sin_seccion, contenido | AP-12 |
 | `cia_integrity` | requerido | contenido | AP-30 |
 | `cia_availability` | requerido | contenido | AP-30 |
 | `cia_sensitivity` | requerido | contenido | AP-30 |

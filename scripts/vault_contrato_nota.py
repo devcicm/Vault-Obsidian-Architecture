@@ -56,9 +56,14 @@ from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 from vault_fundamentals_catalog import cia_valores
 from vault_norms_catalog import STATUS_VOCAB
-from vault_registry import es_artefacto_derivado
+from vault_registry import es_artefacto_derivado, es_de_seccion
 
-CLASES = ("derivada", "sistema", "contenido")
+CLASES = ("derivada", "sistema", "sin_seccion", "contenido")
+
+#: Primera versión con la clase `sin_seccion`. Antes, un `.md` fuera de toda
+#: sección se juzgaba como contenido, y el contrato de esas versiones lo dice
+#: así: la clase nueva no reescribe lo que el validador exigía entonces.
+SIN_SECCION_DESDE = "v41"
 
 #: Las versiones mayores del estándar con migración registrada. Es la lista de
 #: `vault_standard_upgrade.MIGRATIONS`, que vive en otro contexto y no se
@@ -83,15 +88,15 @@ _ISO = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}")
 #: `clases`: a qué clase de nota se le exige. `requerido_desde`: versión en que
 #: `vault_validate` empezó a reprobar su ausencia (None si no la reprueba).
 CAMPOS: Dict[str, Dict[str, Any]] = {
-    "id": {"tipo": "string", "nivel": "requerido", "clases": ("sistema", "contenido"),
+    "id": {"tipo": "string", "nivel": "requerido", "clases": ("sistema", "sin_seccion", "contenido"),
            "requerido_desde": "v25", "normativo_desde": "v18", "norma": "AP-12"},
-    "title": {"tipo": "string", "nivel": "requerido", "clases": ("sistema", "contenido"),
+    "title": {"tipo": "string", "nivel": "requerido", "clases": ("sistema", "sin_seccion", "contenido"),
               "requerido_desde": "v25", "normativo_desde": "v18", "norma": "AP-12"},
     "createdAt": {"tipo": "string", "formato": "date-time", "nivel": "requerido",
-                  "clases": ("sistema", "contenido"), "requerido_desde": "v37",
+                  "clases": ("sistema", "sin_seccion", "contenido"), "requerido_desde": "v37",
                   "normativo_desde": "v18", "norma": "AP-12"},
     "updatedAt": {"tipo": "string", "formato": "date-time", "nivel": "requerido",
-                  "clases": ("sistema", "contenido"), "requerido_desde": "v37",
+                  "clases": ("sistema", "sin_seccion", "contenido"), "requerido_desde": "v37",
                   "normativo_desde": "v18", "norma": "AP-12"},
     "cia_integrity": {"tipo": "string", "nivel": "requerido", "clases": ("contenido",),
                       "requerido_desde": "v37", "valores_desde": "v27", "norma": "AP-30",
@@ -153,7 +158,11 @@ HISTORIA: Dict[str, List[Dict[str, Any]]] = {
     "v41": [{"campos": ["type", "status"],
              "cambio": ("requeridos en notas de contenido, por presencia: el valor lo sigue "
                         "juzgando vault_audit"),
-             "fuente": "MIGRATIONS:AP-27/AP-29: type y status requeridos en notas de contenido"}],
+             "fuente": "MIGRATIONS:AP-27/AP-29: type y status requeridos en notas de contenido"},
+            {"campos": ["id", "title", "createdAt", "updatedAt"],
+             "cambio": ("clase sin_seccion: un .md fuera de toda sección lleva identidad y "
+                        "timestamps; CIA, agent, tags, type y status son de las notas de sección"),
+             "fuente": "MIGRATIONS:clase sin_seccion: un .md fuera de toda seccion"}],
 }
 
 #: Lo que el escritor pone cuando nadie dice otra cosa. Estaba como literal en
@@ -170,12 +179,19 @@ def _numero(version: str) -> int:
 
 
 def clase_de_nota(ruta_relativa: str) -> str:
-    """`derivada`, `sistema` o `contenido`. La clase decide el conjunto (AP-12)."""
+    """`derivada`, `sistema`, `sin_seccion` o `contenido`. La clase decide el conjunto (AP-12).
+
+    `sin_seccion` es un `.md` de la raíz o de una carpeta que el registro no
+    declara: medido en dos vaults ajenos, `README.md` y `Home.md` se juzgaban
+    como contenido y el contrato les pedía la CIA que decide una sección.
+    """
     rel = ruta_relativa.replace("\\", "/")
     if es_artefacto_derivado(rel):
         return "derivada"
     if rel == "00_System" or rel.startswith("00_System/"):
         return "sistema"
+    if not es_de_seccion(rel):
+        return "sin_seccion"
     return "contenido"
 
 
@@ -196,6 +212,9 @@ def _requeridos_en(ruta_relativa: str, version: str) -> Tuple[str, ...]:
     if clase == "derivada":
         # Antes de v37 un índice no tenía excepción: era una nota como otra.
         return () if c["indices_exentos"] else tuple(c["requeridos"]["contenido"])
+    if clase not in c["requeridos"]:
+        # Una clase que esa versión no conocía: entonces se juzgaba como contenido.
+        return tuple(c["requeridos"]["contenido"])
     return tuple(c["requeridos"][clase])
 
 
@@ -245,12 +264,15 @@ def contrato_de_version(version: str) -> Dict[str, Any]:
         raise ValueError(f"{version}: fuera de {primera}..{ultima}")
     validador = n >= _numero(PRIMER_VALIDADOR)
     requeridos: Dict[str, List[str]] = {"sistema": [], "contenido": []}
+    if n >= _numero(SIN_SECCION_DESDE):
+        requeridos = {"sistema": [], "sin_seccion": [], "contenido": []}
     valores: Dict[str, Dict[str, Any]] = {}
     for campo, d in CAMPOS.items():
         desde = d.get("requerido_desde") if validador else d.get("normativo_desde")
         if desde and _numero(desde) <= n:
             for clase in (d["clases"] if validador else ("sistema", "contenido")):
-                requeridos[clase].append(campo)
+                if clase in requeridos:
+                    requeridos[clase].append(campo)
         vdesde = d.get("valores_desde")
         if vdesde and _numero(vdesde) <= n:
             valores[campo] = {k: d[k] for k in ("valores", "patron", "no_vacio") if k in d}
@@ -359,6 +381,8 @@ def esquema_json(version: str) -> Dict[str, Any]:
             "Generado por vault_esquema desde vault_contrato_nota; no se edita a "
             "mano. La raíz es el contrato de una nota de contenido; las de "
             "00_System/ usan #/$defs/sistema."
+            + (" Un .md fuera de toda sección usa #/$defs/sin_seccion."
+               if "sin_seccion" in c["requeridos"] else "")
         ),
         "x-vault-version": c["version"],
         "x-vault-validador": c["validador"],
@@ -367,5 +391,6 @@ def esquema_json(version: str) -> Dict[str, Any]:
         "x-vault-recomendados": c["recomendados"],
         "x-vault-historia": c["historia"],
         **clase("contenido"),
-        "$defs": {"contenido": clase("contenido"), "sistema": clase("sistema")},
+        "$defs": {nombre: clase(nombre) for nombre in ("contenido", "sistema", "sin_seccion")
+                  if nombre in c["requeridos"]},
     }
