@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Iterator, Sequence
 
 from .contexto import VaultContext
+from .fallos import FalloDeDominio
 
 _SCRIPTS = Path(__file__).resolve().parent.parent.parent / "scripts"
 
@@ -64,10 +65,13 @@ class LectorDisco:
 
 
 class SeccionesDelRegistro:
-    """`vault_registry.ORDERED_SECTIONS`, tras un puerto.
+    """Las secciones de **este** vault, tras un puerto: las del estándar
+    (`vault_registry.ORDERED_SECTIONS`) más las propias que declara en
+    `00_System/secciones.json` (`vault_registry.secciones_del_vault`, v41.2).
 
     La raíz se guarda en la instancia y no se importa: es lo que permite que dos
-    contextos con raíces distintas coexistan en el mismo intérprete.
+    contextos con raíces distintas coexistan en el mismo intérprete, y desde que
+    hay secciones propias, que cada uno vea las suyas.
     """
 
     def __init__(self, raiz: Path) -> None:
@@ -81,7 +85,15 @@ class SeccionesDelRegistro:
         return vault_registry
 
     def ordenadas(self) -> Sequence[str]:
-        return list(self._registro().ORDERED_SECTIONS)
+        """Un `secciones.json` roto es `INDICE_ILEGIBLE`, no una lista sin propias.
+
+        Leerlo como «no hay propias» sacaría sus notas de índices y búsquedas
+        sin que nadie supiera por qué (AP-51).
+        """
+        try:
+            return self._registro().secciones_del_vault(self._raiz)
+        except ValueError as e:
+            raise FalloDeDominio("INDICE_ILEGIBLE", str(e), index="secciones.json") from e
 
     def existe(self, carpeta: str) -> bool:
         return carpeta in self.ordenadas()
@@ -89,8 +101,9 @@ class SeccionesDelRegistro:
     def ruta_de(self, carpeta: str) -> Path:
         if not self.existe(carpeta):
             raise ValueError(
-                f"{carpeta!r} no está en ORDERED_SECTIONS. Las secciones son un "
-                f"vocabulario cerrado; inventar una es AP-05."
+                f"{carpeta!r} no está en ORDERED_SECTIONS ni es una sección propia "
+                f"declarada. Las secciones son un vocabulario cerrado; inventar una "
+                f"es AP-05, y una propia se declara con vault_section."
             )
         return self._raiz / carpeta
 
