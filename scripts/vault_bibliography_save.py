@@ -161,7 +161,9 @@ def vault_bibliography_save(
 
     # Hasta v40.35 iba `json.dumps(tags)` como valor: `Frontmatter` lo citaba
     # y `yaml.safe_load` leía el texto '["a"]', no una lista (AP-26).
-    frontmatter_lines.set("tags", list(tags or []), omitir_vacio=True)
+    # Sin tags se escribe `tags: []`, no se omite: el contrato exige la clave
+    # desde v37 y omitirla dejaba la nota inválida para vault_validate (AP-12).
+    frontmatter_lines.set("tags", list(tags or []))
 
     frontmatter_lines.set("cia_integrity", "medium")
 
