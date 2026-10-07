@@ -409,6 +409,30 @@ def _build_indexes(
     return backlinks, all_stems
 
 
+def _no_necesita_enlaces(rel: str, n: Path) -> bool:
+    """Notas a las que la conectividad no se les pide: el criterio de las huérfanas.
+
+    Lo comparten `_detect_orphans` y `_detect_no_integradas`; dos copias de la
+    misma exclusión acabarían divergiendo (AP-57).
+    """
+    if rel.startswith("00_System"):
+        return True
+
+    # Session notes are inherently orphan — each session is the start
+    # of a new conversation. They are referenced by date, not by other
+    # notes. Excluding them from orphan detection avoids false positives.
+    if rel.startswith("04_Sessions/"):
+        return True
+
+    # Scaffolds (vault_init primers) are placeholders by design —
+    # they don't need inbound links. The user is expected to replace
+    # them with real content; the nextActions block in the audit output
+    # reminds them to do so. Excluding scaffolds avoids false-positive
+    # orphan warnings on a freshly initialized vault.
+    text = _leer_nota(n, errors="replace")
+    return text is not None and es_andamio(text)
+
+
 def _detect_orphans(
     notes: List[Path], backlinks: Dict[str, Set[str]]
 ) -> List[Dict[str, Any]]:
@@ -419,25 +443,10 @@ def _detect_orphans(
     for n in notes:
         rel = str(n.relative_to(_raiz())).replace("\\", "/")
 
-        if rel.startswith("00_System"):
-            continue
-
-        # Session notes are inherently orphan — each session is the start
-        # of a new conversation. They are referenced by date, not by other
-        # notes. Excluding them from orphan detection avoids false positives.
-        if rel.startswith("04_Sessions/"):
-            continue
-
         if backlinks.get(n.stem):
             continue
 
-        # Scaffolds (vault_init primers) are placeholders by design —
-        # they don't need inbound links. The user is expected to replace
-        # them with real content; the nextActions block in the audit output
-        # reminds them to do so. Excluding scaffolds avoids false-positive
-        # orphan warnings on a freshly initialized vault.
-        text = _leer_nota(n, errors="replace")
-        if text is not None and es_andamio(text):
+        if _no_necesita_enlaces(rel, n):
             continue
 
         fm = read_frontmatter(n)
@@ -454,6 +463,56 @@ def _detect_orphans(
 
     return orphans
 
+
+def _detect_no_integradas(
+    notes: List[Path], backlinks: Dict[str, Set[str]], all_notes: List[Path]
+) -> List[Dict[str, Any]]:
+    """Notas listadas en un índice y nada más: ni las cita nadie ni citan a nadie.
+
+    Una nota cuyo único entrante es el de un índice estructural (`index.md`,
+    `_STRUCTURAL_NAMES`) no es huérfana —tiene backlink— pero tampoco está
+    integrada: el vault la enumera sin relacionarla. Medido el 2026-10-07 en un
+    vault ajeno, eran 356 de 510 notas de contenido, invisibles para el audit.
+
+    Integrada = al menos un entrante que no venga de un índice, o al menos un
+    wikilink saliente a otra nota. Disjunta con las huérfanas: sin ningún
+    entrante, la nota ya sale allí. Es medida **recomendada**, sin fila en
+    `PENALIZACIONES`: no mueve `healthScore`.
+    """
+    estructurales = {p.stem for p in all_notes if _is_structural(p)}
+
+    salientes: Dict[str, Set[str]] = defaultdict(set)
+    for destino, origenes in backlinks.items():
+        for origen in origenes:
+            if origen != destino:
+                salientes[origen].add(destino)
+
+    no_integradas = []
+
+    for n in notes:
+        entrantes = backlinks.get(n.stem) or set()
+        if not entrantes:
+            continue  # huérfana: ya la cuenta `_detect_orphans`
+
+        if entrantes - estructurales - {n.stem}:
+            continue
+
+        if salientes.get(n.stem):
+            continue
+
+        rel = str(n.relative_to(_raiz())).replace("\\", "/")
+        if _no_necesita_enlaces(rel, n):
+            continue
+
+        no_integradas.append(
+            {
+                "path": rel,
+                "title": read_frontmatter(n).get("title", n.stem),
+                "linkedFrom": sorted(entrantes),
+            }
+        )
+
+    return no_integradas
 
 def _detect_stale(notes: List[Path]) -> List[Dict[str, Any]]:
     now = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -1952,6 +2011,8 @@ def vault_audit(
 
     orphans = _detect_orphans(content_notes, backlinks)
 
+    no_integradas = _detect_no_integradas(content_notes, backlinks, all_notes)
+
     stale = _detect_stale(content_notes)
 
     stuck_patterns = _detect_stuck_patterns(content_notes)
@@ -2130,6 +2191,8 @@ def vault_audit(
         "stats": {
             "total": len(content_notes),
             "byFolder": dict(sorted(by_folder.items())),
+            # Recomendada, sin penalización: ver `_detect_no_integradas`.
+            "notIntegrated": len(no_integradas),
         },
         # Notas sobre las que el audit NO se pronunció, por no poder leerlas.
         # Va junto al score y no enterrado en `issues` porque no es un hallazgo
@@ -2139,6 +2202,7 @@ def vault_audit(
         "degraded": degradaciones(),
         "issues": {
             "orphans": orphans,
+            "notIntegrated": no_integradas,
             "stale": stale,
             "stuckPatterns": stuck_patterns,
             "staleProjects": stale_projects,
