@@ -216,9 +216,19 @@ python vault_move.py --from "01_Projects/old/note.md" --to "03_Decisions/note.md
 python vault_move.py --folder "01_Projects/old" --to-folder "01_Projects/new"
 python vault_move.py --from "01_Projects/foo.md" --to "03_Decisions/foo.md" --dry-run
 python vault_move.py --impact --from "01_Projects/foo.md" --to "03_Decisions/foo.md"
+python vault_move.py --from "03_Decisions/foo.md" --to "07_Knowledge/foo.md" --type concept
 ```
 
 `--impact` responde "¿a cuántas notas afecta esto?" sin tocar nada; `--dry-run` simula el movimiento completo.
+
+Mover a otra sección es reclasificar, y se juzga con el mismo criterio que `vault_write`
+(CN-02): el destino tiene que ser una sección del vault —del estándar o propia y activa;
+una propia retirada solo admite reordenar lo que ya tiene— y el `type` de la nota tiene
+que poder vivir allí. Si no puede, el movimiento se rechaza con `INVALID_INPUT` y la pista
+enumera los tipos de la sección destino; `--type` (solo con `--from`/`--to`) fija el nuevo
+`type`, refresca `updatedAt` si la nota lo tiene y la respuesta lo publica en
+`reclassified`. `--folder` no reclasifica: comprueba todas las notas antes de mover
+ninguna y, si alguna no encaja, no mueve nada.
 
 ---
 

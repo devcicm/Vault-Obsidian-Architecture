@@ -27,12 +27,18 @@ from vault_errors import emit_error, fuera_de_sesion, mensaje_de, wrap_main
 from vault_io import (
     assert_within_vault, atomic_write_text, file_lock, tomar_lock, write_report,
 )
+from vault_lib import utcnow
+from vault_registry import motivo_de_destino_invalido, section_types, type_misfiled_in
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
+from vault.kernel.frontmatter_parsing import (  # noqa: E402
+    parse_frontmatter_with_body, separar_frontmatter,
+)
 from vault.kernel.indices_structural import es_nombre_reservado  # noqa: E402
 
 
@@ -229,10 +235,110 @@ def update_graph(old_path: str, new_path: str, dry_run: bool = False) -> Dict[st
     return _reescribir_json(_graph_file(), cambiar)
 
 
+def _carpeta_de(ruta: str) -> str:
+    """La carpeta de una ruta relativa del vault, con `/` ("" si está en la raíz)."""
+    ruta = ruta.replace("\\", "/").strip("/")
+    return ruta.rsplit("/", 1)[0] if "/" in ruta else ""
+
+
+def _destino_invalido(origen: str, destino_carpeta: str) -> Optional[Dict[str, Any]]:
+    """CN-02: el envelope si la carpeta destino no es una sección del vault, o None.
+
+    El criterio es el de `vault_write` (`motivo_de_destino_invalido`): mover
+    una nota a una carpeta es escribirla allí. Una sección propia retirada no
+    admite notas que vengan de fuera, pero sí reordenar las que ya tiene.
+    """
+    nueva = origen.replace("\\", "/").split("/")[0] != destino_carpeta.split("/")[0]
+    try:
+        motivo = motivo_de_destino_invalido(destino_carpeta, _raiz(), nueva=nueva)
+    except ValueError as exc:
+        return emit_error("vault_move", "DATA_FILE_CORRUPT", str(exc))
+    if motivo:
+        return emit_error(
+            "vault_move", "INVALID_FOLDER", f"CN-02: destino {destino_carpeta!r}: {motivo}.",
+            pista="Mover a una sección (vault_section --list enseña las del vault) o "
+                  "declarar una propia NN_Nombre con vault_section --add.",
+        )
+    return None
+
+
+def _tipo_de(nota: Path) -> Optional[str]:
+    try:
+        fm, _ = parse_frontmatter_with_body(nota.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError):
+        return None
+    tipo = (fm or {}).get("type")
+    return str(tipo) if tipo else None
+
+
+def _tipo_ajeno(destino_carpeta: str, tipo: str) -> Optional[str]:
+    """Por qué `tipo` no puede vivir en `destino_carpeta`; None si puede (CN-02)."""
+    try:
+        otras = type_misfiled_in(destino_carpeta, tipo, _raiz())
+    except ValueError:
+        return None  # el registro roto ya lo para `_destino_invalido`
+    if not otras:
+        return None
+    seccion = destino_carpeta.split("/")[0]
+    return f"type {tipo!r} pertenece a {', '.join(otras)}, no a {seccion}"
+
+
+def _pista_de_tipo(destino_carpeta: str) -> str:
+    seccion = destino_carpeta.split("/")[0]
+    try:
+        tipos = section_types(seccion, _raiz())
+    except ValueError:
+        tipos = ()
+    validos = ", ".join(tipos) if tipos else "uno que no sea canónico de otra sección"
+    return (f"Mover es reclasificar: pasar --type con un tipo de {seccion} ({validos}), "
+            "o elegir la sección a la que el tipo pertenece.")
+
+
+def _reclasificacion(source: Path, from_path: str, to_path: str,
+                     note_type: Optional[str]):
+    """(envelope de rechazo o None, {"from", "to"} si el tipo cambia o None).
+
+    Hasta 2026-10-07 mover no miraba nada de esto: `03_Decisions/x.md` llegaba
+    a `07_Knowledge/` con `type: decision`, que es justo lo que `vault_write`
+    rechaza, y `--to scripts/x.md` sacaba la nota de toda sección. Ahora el
+    tipo de la nota tiene que poder vivir en el destino, o se cambia con
+    `--type`; cambiarlo en silencio sería decidir por el agente qué es la nota.
+    """
+    destino = _carpeta_de(to_path)
+    rechazo = _destino_invalido(from_path, destino)
+    if rechazo:
+        return rechazo, None
+    actual = _tipo_de(source)
+    if note_type is not None:
+        note_type = note_type.strip()
+        motivo = "--type vacío" if not note_type else _tipo_ajeno(destino, note_type)
+        if motivo:
+            return emit_error("vault_move", "INVALID_INPUT", f"CN-02: {motivo}.",
+                              pista=_pista_de_tipo(destino)), None
+        return None, ({"from": actual, "to": note_type} if note_type != actual else None)
+    motivo = _tipo_ajeno(destino, actual) if actual else None
+    if motivo:
+        return emit_error("vault_move", "INVALID_INPUT",
+                          f"CN-02: {from_path} -> {to_path}: {motivo}.",
+                          pista=_pista_de_tipo(destino)), None
+    return None, None
+
+
+def _escribir_tipo(nota: Path, tipo: str) -> None:
+    """Fija `type` y refresca `updatedAt` (AP-13) por el dueño del bloque (AP-46)."""
+    texto = nota.read_text(encoding="utf-8")
+    bloque, cuerpo = separar_frontmatter(texto)
+    fm = Frontmatter.editar(bloque or "").set("type", tipo, texto=True)
+    if fm.tiene("updatedAt"):
+        fm.set("updatedAt", utcnow())
+    atomic_write_text(nota, fm.render() + "\n" + cuerpo)
+
+
 def move_note(
-    from_path: str, to_path: str, dry_run: bool = False, backup: bool = True
+    from_path: str, to_path: str, dry_run: bool = False, backup: bool = True,
+    note_type: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Mueve una nota a una nueva ubicación."""
+    """Mueve una nota a una nueva ubicación; con `note_type`, la reclasifica."""
     rechazo = _fuera_del_vault(from_path, to_path) or _fuera_de_sesion(from_path, to_path)
     if rechazo:
         return rechazo
@@ -245,8 +351,13 @@ def move_note(
     if destination.exists():
         return emit_error("vault_move", "INVALID_PATH", f"El destino ya existe: {to_path}")
 
+    rechazo, reclasificado = _reclasificacion(source, from_path, to_path, note_type)
+    if rechazo:
+        return rechazo
+
     if dry_run:
-        return _mover_nota(source, destination, from_path, to_path, dry_run, backup)
+        return _mover_nota(source, destination, from_path, to_path, dry_run, backup,
+                           reclasificado)
     # La nota se mueve bajo su lock: un vault_append o vault_write concurrente
     # no puede escribir en el origen mientras desaparece (F1). Si otro escritor
     # la tiene, no se mueve nada y se dice.
@@ -262,12 +373,13 @@ def move_note(
     with lock:
         if not source.exists():
             return emit_error("vault_move", "FILE_NOT_FOUND", f"Archivo no encontrado: {from_path}")
-        return _mover_nota(source, destination, from_path, to_path, dry_run, backup)
+        return _mover_nota(source, destination, from_path, to_path, dry_run, backup,
+                           reclasificado)
 
 
 def _mover_nota(
     source: Path, destination: Path, from_path: str, to_path: str,
-    dry_run: bool, backup: bool,
+    dry_run: bool, backup: bool, reclasificado: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     # Con --dry-run nada toca el disco: ni la carpeta destino, ni los enlaces
     # de otras notas, ni el índice. Medido en v40.34: la simulación reescribía
@@ -285,6 +397,8 @@ def _mover_nota(
             shutil.copy2(source, backup_path)
 
         shutil.move(str(source), str(destination))
+        if reclasificado:
+            _escribir_tipo(destination, reclasificado["to"])
 
     old_stem = source.stem
     new_stem = destination.stem
@@ -362,6 +476,7 @@ def _mover_nota(
         **write_report(),
         "dry_run": dry_run,
         "moved": f"{from_path} -> {to_path}",
+        "reclassified": reclasificado,
         "links_updated": links_updated,
         "files_checked": files_checked,
         "search_index_updated": search_result.get("updated"),
@@ -402,6 +517,10 @@ def move_folder(
     if destination.exists():
         return emit_error("vault_move", "INVALID_PATH", f"El destino ya existe: {to_folder}")
 
+    rechazo = _destino_invalido(from_folder, to_folder.replace("\\", "/").strip("/"))
+    if rechazo:
+        return rechazo
+
     ficheros = sorted(
         f for f in source.rglob("*")
         if f.is_file() and ".history" not in f.parts and ".locks" not in f.parts
@@ -409,6 +528,22 @@ def move_folder(
     indices = [f for f in ficheros if f.suffix == ".md" and es_nombre_reservado(f.name)]
     notas = [f for f in ficheros if f.suffix == ".md" and f not in indices]
     adjuntos = [f for f in ficheros if f.suffix != ".md"]
+
+    # CN-02 entero antes de mover nada: un tipo ajeno a mitad de la carpeta
+    # dejaría la mitad movida. La carpeta no reclasifica; nota a nota, --type.
+    ajenos = []
+    for f in notas:
+        rel = f"{to_folder}/{f.relative_to(source).as_posix()}"
+        tipo = _tipo_de(f)
+        motivo = _tipo_ajeno(_carpeta_de(rel), tipo) if tipo else None
+        if motivo:
+            ajenos.append(f"{f.relative_to(source).as_posix()}: {motivo}")
+    if ajenos:
+        return emit_error(
+            "vault_move", "INVALID_INPUT",
+            f"CN-02: {len(ajenos)} nota(s) no pueden vivir en {to_folder}: {ajenos[:5]}",
+            pista=_pista_de_tipo(to_folder) + " Con --folder no hay --type: moverlas una a una.",
+        )
 
     plan = [(f, f.relative_to(source).as_posix()) for f in notas + adjuntos]
     ocupados = [rel for _, rel in plan if (destination / rel).exists()]
@@ -548,6 +683,10 @@ Ejemplos:
     )
     parser.add_argument("--dry-run", action="store_true", help="Simular sin aplicar")
     parser.add_argument(
+        "--type", dest="note_type", type=str,
+        help="Nuevo type de la nota (con --from/--to): reclasificarla al cambiar de sección",
+    )
+    parser.add_argument(
         "--impact", action="store_true", help="Analizar impacto sin ejecutar"
     )
     parser.add_argument("--json", action="store_true", help="Salida JSON")
@@ -570,12 +709,15 @@ Ejemplos:
         if not args.from_path or not args.to_path:
             return uso_invalido("--impact requiere --from y --to")
         result = check_move_impact(args.from_path, args.to_path)
+    elif args.note_type is not None and not (args.from_path and args.to_path):
+        return uso_invalido("--type solo vale con --from y --to: se reclasifica nota a nota")
     elif args.folder:
         if not args.to_folder:
             return uso_invalido("--folder requiere --to-folder")
         result = move_folder(args.folder, args.to_folder, dry_run=args.dry_run)
     elif args.from_path and args.to_path:
-        result = move_note(args.from_path, args.to_path, dry_run=args.dry_run)
+        result = move_note(args.from_path, args.to_path, dry_run=args.dry_run,
+                           note_type=args.note_type)
     elif args.json:
         return uso_invalido("indica --from y --to, o --folder y --to-folder")
     else:

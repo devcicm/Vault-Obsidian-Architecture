@@ -3379,7 +3379,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         ),
         "signal": "Carpeta con nombre que no sigue el patrón NN_Nombre en el vault.",
         "prevention": "Elegir la sección más apropiada del vocabulario estándar. AP-15 para raíz del vault.",
-        "tools_enforcing": ["vault_write", "vault_section"],
+        "tools_enforcing": ["vault_write", "vault_section", "vault_move"],
         "tools_detecting": ["vault_section_index", "vault_norms"],
         "introduced_version": "v30",
     },

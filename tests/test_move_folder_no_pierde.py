@@ -19,6 +19,9 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
+sys.path.insert(0, str(ROOT))
+
+from vault.durabilidad.snapshot import VOLATILES  # noqa: E402
 
 
 def _mover(raiz: Path, *argv: str) -> dict:
@@ -87,9 +90,11 @@ def test_dry_run_no_toca_el_disco(vault, argv):
     r = _mover(vault, *argv, "--dry-run")
     assert r["ok"] and r["dry_run"], r
     despues = _contenido(vault)
-    traza = "00_System/.tool-trace.json"
-    antes.pop(traza, None)
-    despues.pop(traza, None)
+    # La observabilidad (traza, contador de la voz) la reescribe cualquier
+    # ejecución; el dueño de esa lista es la huella de durabilidad.
+    for volatil in VOLATILES:
+        antes.pop(volatil, None)
+        despues.pop(volatil, None)
     assert despues == antes
     assert not (vault / "07_Knowledge" / "nuevo").exists()
     assert not (vault / "07_Knowledge" / "destino").exists()

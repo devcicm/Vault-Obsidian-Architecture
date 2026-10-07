@@ -6875,7 +6875,14 @@ que el write path deriva de la carpeta. Sin `tipos`, la nota tiene que traer su 
 `vault_write` no deja nacer una nota de sección sin él, porque el contrato de contenido
 lo exige.
 
-**Enforcement:** guard+audit — `vault_write` requiere `--folder` canónico;
+Mover una nota es escribirla en otra carpeta, así que `vault_move` aplica el mismo
+criterio: el destino tiene que ser una sección del vault y el `type` de la nota tiene que
+poder vivir en ella. Si no puede, el movimiento no ocurre hasta que el agente diga qué es
+la nota con `--type`; cambiarlo en silencio sería decidir por él. Con `--folder`, todas
+las notas se comprueban antes de mover ninguna.
+
+**Enforcement:** guard+audit — `vault_write` requiere `--folder` canónico y `vault_move`
+un destino de sección con un `type` que encaje;
 `vault_section_index` rechaza raíz/carpetas ad-hoc; `vault_norms --audit` detecta
 carpetas no canónicas retroactivamente.
 

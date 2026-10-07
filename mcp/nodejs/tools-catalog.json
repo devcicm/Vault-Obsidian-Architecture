@@ -3742,6 +3742,10 @@
             "type": "boolean",
             "description": "Simular sin aplicar"
           },
+          "type": {
+            "type": "string",
+            "description": "Nuevo type de la nota (con --from/--to): reclasificarla al cambiar de sección"
+          },
           "impact": {
             "type": "boolean",
             "description": "Analizar impacto sin ejecutar"
