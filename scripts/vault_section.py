@@ -37,6 +37,7 @@ from vault_registry import (
     ORDERED_SECTIONS,
     SECCIONES_PROPIAS_RUTA,
     leer_secciones_propias,
+    motivo_de_destino_invalido,
     motivo_de_nombre_invalido,
     motivo_de_tipos_invalidos,
     secciones_del_vault,
@@ -95,6 +96,12 @@ def listar(raiz: Optional[Path] = None) -> Dict[str, Any]:
             for s in propias
         ],
         "folders_without_section": sin_seccion,
+        # v41.2. Es lo que busca quien sigue la pista de INVALID_FOLDER, y
+        # `standard` era solo una cifra: lo decide el dueño de CN-02.
+        "writable_sections": [
+            s for s in secciones_del_vault(raiz)
+            if motivo_de_destino_invalido(s, raiz) is None
+        ],
     }
 
 

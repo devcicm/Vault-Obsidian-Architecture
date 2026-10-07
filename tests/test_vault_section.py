@@ -128,6 +128,24 @@ def test_list_publica_propias_y_carpetas_sin_seccion(raiz):
     assert r["free_range"] == list(reg.NUMEROS_PROPIOS)
 
 
+def test_list_nombra_las_secciones_donde_se_puede_escribir(raiz):
+    """Es la pista de `INVALID_FOLDER`. Medido el 2026-10-07 por MCP con el
+    perfil `agente`: `--list` daba `standard: 23` —una cifra— y solo las
+    propias por nombre, así que el agente que seguía la pista no sabía dónde
+    escribir. La lista la decide el dueño de CN-02, no este listado."""
+    _ejecutar(raiz, "--add", "22_Scripts", "--documentacion", "referencia")
+    _ejecutar(raiz, "--add", "23_Viejo", "--documentacion", "referencia")
+    _ejecutar(raiz, "--retire", "23_Viejo", "--superseded-by", "22_Scripts")
+    r = _ejecutar(raiz, "--list")
+    escribibles = r["writable_sections"]
+    assert "07_Knowledge" in escribibles and "22_Scripts" in escribibles
+    assert "23_Viejo" not in escribibles, "una retirada no admite notas nuevas"
+    assert all(reg.motivo_de_destino_invalido(s, raiz) is None for s in escribibles)
+    assert set(escribibles) == {
+        s for s in reg.secciones_del_vault(raiz)
+        if reg.motivo_de_destino_invalido(s, raiz) is None}
+
+
 def test_un_registro_roto_falla_en_voz_alta_y_no_se_reescribe(raiz):
     destino = raiz / reg.SECCIONES_PROPIAS_RUTA
     destino.write_text("{roto", encoding="utf-8")
