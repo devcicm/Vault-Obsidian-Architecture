@@ -34,6 +34,7 @@ ESCRITORES = (
     "vault_write",
     "vault_preferences",
     "vault_bibliography_save",
+    "vault_project",
 )
 
 

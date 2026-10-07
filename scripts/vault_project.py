@@ -44,6 +44,7 @@ import argparse
 import json
 import subprocess
 import sys
+import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -263,11 +264,13 @@ def sanar(apply: bool = False) -> Dict[str, Any]:
 def _ficha_nueva(slug: str, titulo: str, alias: List[str], status: str) -> str:
     # La ficha es una nota de contenido como cualquier otra: hasta v40.34 salía
     # sin autor, tags, CIA ni fechas, y el audit la penalizaba en cuanto se
-    # registraba un proyecto (AP-16, AP-26, AP-30, missing_updated).
+    # registraba un proyecto (AP-16, AP-26, AP-30, missing_updated). Hasta
+    # v40.36, además, sin `id`, que el contrato exige a toda nota (AP-12).
     ahora = utcnow()
     fm = (
         Frontmatter()
         .set("title", titulo, texto=True)
+        .set("id", str(uuid.uuid4()))
         .set("type", "project")
         .set("project", slug, texto=True)
         .set("aliases", alias)
