@@ -1011,8 +1011,9 @@ def vault_write(
         }
 
     # CN-02: el destino es una sección del vault —del estándar o propia
-    # declarada—. Hasta v41.2 el catálogo lo afirmaba y aquí no lo miraba
-    # nadie: `--folder scripts` o `--folder ""` escribían sin protestar.
+    # declarada—, y AP-15: nunca la raíz. Hasta v41.2 el catálogo lo afirmaba
+    # y aquí no lo miraba nadie: `--folder scripts` o `--folder ""` escribían
+    # sin protestar.
     try:
         motivo = motivo_de_destino_invalido(folder, _raiz(), nueva=not vault_path.exists())
     except ValueError as exc:

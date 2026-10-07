@@ -89,7 +89,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-12** — Frontmatter inconsistente entre notas del mismo tipo | audit | — | — |
 | **AP-13** — Timestamps inválidos o incompletos en frontmatter | audit | — | `test_meta_contrato.py` |
 | **AP-14** — Wiki-links rotos o vacíos | guard+audit | — | `test_norms_coherence.py` |
-| **AP-15** — Archivos externos depositados en la raíz del vault | audit | `framework` | `test_vault_norms_audit.py` |
+| **AP-15** — Archivos externos depositados en la raíz del vault | guard+audit | `framework` | `test_normas_sin_registro_a_mano.py`, `test_vault_norms_audit.py` |
 | **AP-16** — Sin identificador de agente en frontmatter | audit | — | `test_context_memory.py` |
 | **AP-17** — Canonical-shadow duplication | audit | — | `test_normas_de_audit_ejercitadas.py` |
 | **AP-18** — Cross-folder content duplication | audit | — | — |

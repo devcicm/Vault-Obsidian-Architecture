@@ -154,12 +154,12 @@ Timestamps solo con fecha (2026-05-07), con '...' literal, sin zona horaria o en
 ### AP-15: Archivos externos depositados en la raíz del vault
 
 - **Severidad:** high
-- **Enforcement:** audit
+- **Enforcement:** guard+audit
 - **Detectado por:** vault_norms
 
 Archivos .md colocados directamente en vault-{nombre}/ en lugar de en secciones numeradas. vault_graph parsea sus [[wiki-links]] como broken links reales del proyecto.
 
-**Prevención:** Layout correcto: vault/ y scripts/ son hermanos, nunca anidados. Solo 00_System…11_Code y 99_Index son destinos válidos.
+**Prevención:** vault_write y vault_move no aceptan la raíz como destino (vault_registry.motivo_de_destino_invalido) y vault_section_index rechaza un --folder en la raíz; vault_norms --audit lista los ficheros sueltos. Las secciones válidas las dice el registro (vault_section --list), no esta línea. El toolkit y el estándar viven fuera del vault, como hermanos de su carpeta.
 
 ### AP-16: Sin identificador de agente en frontmatter
 
@@ -1032,12 +1032,12 @@ Timestamps solo con fecha (2026-05-07), con '...' literal, sin zona horaria o en
 ### AP-15: Archivos externos depositados en la raíz del vault
 
 - **Severity:** high
-- **Enforcement:** audit
+- **Enforcement:** guard+audit
 - **Detected by:** vault_norms
 
 Archivos .md colocados directamente en vault-{nombre}/ en lugar de en secciones numeradas. vault_graph parsea sus [[wiki-links]] como broken links reales del proyecto.
 
-**Prevention:** Layout correcto: vault/ y scripts/ son hermanos, nunca anidados. Solo 00_System…11_Code y 99_Index son destinos válidos.
+**Prevention:** vault_write y vault_move no aceptan la raíz como destino (vault_registry.motivo_de_destino_invalido) y vault_section_index rechaza un --folder en la raíz; vault_norms --audit lista los ficheros sueltos. Las secciones válidas las dice el registro (vault_section --list), no esta línea. El toolkit y el estándar viven fuera del vault, como hermanos de su carpeta.
 
 ### AP-16: Sin identificador de agente en frontmatter
 

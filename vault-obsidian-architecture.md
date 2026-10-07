@@ -4527,9 +4527,17 @@ El ámbito es `project:` del frontmatter cuando está —lo escribió el autor�
 
 **Señal de alarma:** `vault_graph()` reporta `brokenLinks` con destinos como `"nota"`, `"nombre-nota"`, `"img.png"`, `"X"` — todos placeholders de ejemplos del estándar. El archivo `vault_graph.py` (o equivalente) muestra `from: "vault-obsidian-architecture"` como origen de decenas de broken links.
 
-**Regla:** La raíz del vault solo debe contener las carpetas numeradas del estándar (`00_System` … `11_Code`, `99_Index`), `.history/` y `vault-backups/`. **Ningún archivo `.md` suelto en la raíz del vault.** Los scripts del harness deben vivir en un directorio hermano: `vault-{nombre}/` y `scripts/` son carpetas al mismo nivel, no anidadas.
+**Regla:** La raíz del vault solo contiene secciones —las del registro
+(`vault_registry.ORDERED_SECTIONS`) y las propias que el vault declare (CN-02)— y las
+carpetas que no son sección pero el kernel reconoce, como `.history/` o `vault-backups/`
+(la lista es `vault_registry.NON_SECTION_ROOT_FOLDERS`). **Ningún archivo suelto en la
+raíz del vault.** Los scripts del harness deben vivir en un directorio hermano:
+`vault-{nombre}/` y `scripts/` son carpetas al mismo nivel, no anidadas. Hasta v41.2 esta
+regla escribía las secciones como rango a mano y se quedó corta cuando el registro creció;
+`tests/test_normas_sin_registro_a_mano.py` falla si vuelve.
 
-**Layout correcto:**
+**Layout de un proyecto que usa el toolkit** (el vault es una carpeta del proyecto; el
+toolkit y el estándar son hermanos suyos, no hijos):
 ```
 proyecto/
 ├── vault-{nombre}/     ← SOLO contiene carpetas numeradas + .history/
@@ -4541,9 +4549,18 @@ proyecto/
 ```
 
 **Prevención en el estándar:**
-- `vault_graph` y `vault_reindex` filtran activamente archivos fuera de las 23 secciones estándar — los root-level `.md` no se indexan ni se parsean
+- **Guard:** `vault_write` y `vault_move` no aceptan la raíz como destino
+  (`INVALID_FOLDER`, con el criterio único `vault_registry.motivo_de_destino_invalido`), y
+  `vault_section_index` rechaza un `--folder` en la raíz.
+- **Detección:** `vault_norms --audit` lista como AP-15 cada fichero suelto en la raíz, y
+  como CN-02 cada carpeta de raíz que no es sección.
+- **Contención:** `vault_graph` y `vault_reindex` solo enumeran notas que cuelgan de una
+  sección (`vault.kernel.enumeracion.es_nota_indexable`): un `.md` en la raíz no se
+  indexa ni se parsea.
 - Al inicializar un vault: crear la carpeta `vault-{nombre}/` y mover todos los `.md` de especificación y scripts fuera de ella antes de la primera operación
 - `vault_validate(check:"structure")` puede extenderse para detectar `.md` en la raíz del vault y reportarlos como AP-15
+  — *superseded_by: `vault_norms --audit`*, que lo hace desde que la higiene de raíz vive
+  en `vault.gobernanza.auditoria_runtime`; la propuesta se conserva, no se borra.
 
 ---
 

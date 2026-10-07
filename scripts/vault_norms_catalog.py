@@ -540,14 +540,20 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "type": "antipattern",
         "category": "structure",
         "severity": "high",
-        "enforcement": "audit",
+        "enforcement": "guard+audit",
         "description": (
             "Archivos .md colocados directamente en vault-{nombre}/ en lugar de en secciones "
             "numeradas. vault_graph parsea sus [[wiki-links]] como broken links reales del proyecto."
         ),
         "signal": "vault_graph reporta decenas de orphans y broken links falsos.",
-        "prevention": "Layout correcto: vault/ y scripts/ son hermanos, nunca anidados. Solo 00_System…11_Code y 99_Index son destinos válidos.",
-        "tools_enforcing": [],
+        "prevention": (
+            "vault_write y vault_move no aceptan la raíz como destino "
+            "(vault_registry.motivo_de_destino_invalido) y vault_section_index rechaza un "
+            "--folder en la raíz; vault_norms --audit lista los ficheros sueltos. Las "
+            "secciones válidas las dice el registro (vault_section --list), no esta línea. "
+            "El toolkit y el estándar viven fuera del vault, como hermanos de su carpeta."
+        ),
+        "tools_enforcing": ["vault_write", "vault_move", "vault_section_index"],
         "tools_detecting": ["vault_norms"],
         "introduced_version": "v20",
     },

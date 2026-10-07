@@ -242,7 +242,7 @@ def _carpeta_de(ruta: str) -> str:
 
 
 def _destino_invalido(origen: str, destino_carpeta: str) -> Optional[Dict[str, Any]]:
-    """CN-02: el envelope si la carpeta destino no es una sección del vault, o None.
+    """CN-02 y AP-15: el envelope si el destino no es una sección del vault, o None.
 
     El criterio es el de `vault_write` (`motivo_de_destino_invalido`): mover
     una nota a una carpeta es escribirla allí. Una sección propia retirada no

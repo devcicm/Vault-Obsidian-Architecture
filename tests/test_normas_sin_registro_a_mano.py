@@ -16,6 +16,7 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
+from vault_norms_catalog import NORM_CATALOG  # noqa: E402
 from vault_registry import ORDERED_SECTIONS  # noqa: E402
 
 MANIFIESTO = ROOT / "vault-obsidian-architecture.md"
@@ -32,7 +33,7 @@ def _seccion_de_norma(codigo: str) -> str:
     return texto[inicio.start(): inicio.end() + (fin.start() if fin else len(texto))]
 
 
-@pytest.mark.parametrize("codigo", ["CN-02"])
+@pytest.mark.parametrize("codigo", ["CN-02", "AP-15"])
 def test_la_norma_no_enumera_las_secciones_del_registro(codigo):
     cuerpo = _seccion_de_norma(codigo)
     nombradas = sorted(s for s in ORDERED_SECTIONS if s in cuerpo)
@@ -42,7 +43,7 @@ def test_la_norma_no_enumera_las_secciones_del_registro(codigo):
     )
 
 
-@pytest.mark.parametrize("codigo", ["CN-02"])
+@pytest.mark.parametrize("codigo", ["CN-02", "AP-15"])
 def test_la_norma_no_escribe_a_mano_cuantas_secciones_hay(codigo):
     cuerpo = _seccion_de_norma(codigo)
     # En presente: «listaba 13 secciones obsoletas hasta v38.1» es historia.
@@ -51,3 +52,30 @@ def test_la_norma_no_escribe_a_mano_cuantas_secciones_hay(codigo):
         cuerpo,
     )
     assert not cifras, f"{codigo} escribe la cifra del registro a mano: {cifras}"
+
+
+def _entrada(codigo: str) -> dict:
+    return next(n for n in NORM_CATALOG if n["code"] == codigo)
+
+
+#: «00_System…11_Code» es una lista escrita como rango: envejece igual que la
+#: lista entera, y en AP-15 lo hizo cuando el registro pasó de 11_Code.
+_RANGO = re.compile(r"\d\d_[A-Za-z]+\s*(?:…|\.\.\.?)\s*`?\d\d_[A-Za-z]+")
+
+
+@pytest.mark.parametrize("codigo", ["CN-02", "AP-15"])
+def test_el_catalogo_no_escribe_el_registro_como_rango(codigo):
+    n = _entrada(codigo)
+    for campo in ("description", "signal", "prevention"):
+        assert not _RANGO.search(n.get(campo, "")), (
+            f"{codigo}.{campo} escribe las secciones como rango: {n[campo]!r}")
+    cuerpo = _seccion_de_norma(codigo)
+    assert not _RANGO.search(cuerpo), f"{codigo} escribe las secciones como rango"
+
+
+def test_ap15_la_cumplen_las_tools_que_rechazan_la_raiz():
+    """`motivo_de_destino_invalido` rechaza la raíz citando AP-15, y lo usan
+    `vault_write` y `vault_move`; `vault_section_index` tiene su propio guard.
+    Hasta v41.2 el catálogo decía `tools_enforcing: []`."""
+    assert {"vault_write", "vault_move", "vault_section_index"} <= set(
+        _entrada("AP-15")["tools_enforcing"])
