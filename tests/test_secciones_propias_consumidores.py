@@ -241,3 +241,40 @@ def test_sin_tipos_declarados_la_nota_no_nace_sin_type(tmp_path):
     # Actualizar sin --meta conserva el tipo que la nota ya tiene.
     assert _escribir(raiz, "23_Libre")["ok"] is True
     assert _tipo_escrito(raiz, "23_Libre") == "guia"
+
+
+# ── vault_frontmatter_completar ──
+#
+# Barría `ORDERED_SECTIONS` y derivaba el `type` sin la raíz: la nota de una
+# sección propia no se completaba nunca sin `--path`, y con `--path` se quedaba
+# sin `type` aunque la sección declarase sus `tipos`.
+
+def _completar(raiz: Path, **kw):
+    import vault_frontmatter_completar as vfc
+    import vault_io
+    vault_io.set_vault_root(raiz)
+    return vfc.completar(**kw)
+
+
+def _plan_de(informe, rel):
+    return next((c for c in informe.get("completed", informe.get("completadas", []))
+                 if c.get("path") == rel), None)
+
+
+def test_completar_barre_la_seccion_propia(tmp_path):
+    raiz = _vault(tmp_path, [_SCRIPTS_SEC], notas=["22_Scripts/deploy.md"])
+    informe = _completar(raiz)
+    assert _plan_de(informe, "22_Scripts/deploy.md"), informe
+
+
+def test_completar_deriva_el_type_que_declara_la_seccion_propia(tmp_path):
+    raiz = _vault(tmp_path, [_SCRIPTS_SEC], notas=["22_Scripts/deploy.md"])
+    plan = _plan_de(_completar(raiz, path="22_Scripts/deploy.md"), "22_Scripts/deploy.md")
+    assert plan and plan["fields"]["type"]["value"] == "script", plan
+
+
+def test_completar_con_el_registro_roto_falla_en_vez_de_saltarse_las_propias(tmp_path):
+    raiz = _vault(tmp_path, notas=["07_Knowledge/a.md"])
+    (raiz / reg.SECCIONES_PROPIAS_RUTA).write_text("{roto", encoding="utf-8")
+    informe = _completar(raiz)
+    assert informe["ok"] is False and informe["error_code"] == "DATA_FILE_CORRUPT", informe

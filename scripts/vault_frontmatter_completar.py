@@ -38,8 +38,9 @@ aquí uno propio sería una segunda opinión sobre el mismo dato (AP-57).
   encima de un YAML roto sería inventar dónde acaba.
 - **Los artefactos derivados** no tienen contrato, y las **instantáneas**
   (`.history/`) valen por no cambiar.
-- **Lo que no es nota**: solo las secciones de `ORDERED_SECTIONS`, el mismo
-  barrido que `vault_validate`.
+- **Lo que no es nota**: solo las secciones del vault —las del estándar y las
+  propias que declara (`vault_registry.secciones_del_vault`)—. Hasta v41.2
+  barría `ORDERED_SECTIONS` y una sección propia no se completaba nunca.
 
     python scripts/vault_frontmatter_completar.py                 # dry-run
     python scripts/vault_frontmatter_completar.py --apply         # escribe
@@ -67,7 +68,7 @@ from vault_errors import emit_error, fuera_de_sesion, wrap_main
 from vault_fundamentals_catalog import cia_por_defecto
 from vault_io import assert_within_vault, atomic_write_text, get_vault_root, is_snapshot_path, tomar_lock
 from vault_lib import canonical_utc
-from vault_registry import ORDERED_SECTIONS, section_default_type
+from vault_registry import secciones_del_vault, section_default_type
 from vault.kernel.frontmatter_escritura import Frontmatter
 from vault.kernel.frontmatter_parsing import (
     FrontmatterParseError,
@@ -79,9 +80,9 @@ TOOL = "vault_frontmatter_completar"
 _H1 = re.compile(r"^#\s+(.+?)\s*#*\s*$", re.MULTILINE)
 
 
-def _notas(raiz: Path) -> List[Path]:
+def _notas(raiz: Path, secciones: List[str]) -> List[Path]:
     return sorted(
-        n for seccion in ORDERED_SECTIONS for n in (raiz / seccion).rglob("*.md")
+        n for seccion in secciones for n in (raiz / seccion).rglob("*.md")
         if n.is_file() and not is_snapshot_path(n.relative_to(raiz)) and not n.name.startswith("_")
     )
 
@@ -114,8 +115,8 @@ def _valor(campo: str, datos: Dict[str, Any], nota: Path, rel: str, cuerpo: str,
         if _env("VAULT_AGENT"):  # del registro de entorno, no con default propio
             return _env("VAULT_AGENT"), "VAULT_AGENT"
         return POR_DEFECTO["agent"], "por_defecto"
-    if campo == "type":  # AP-27
-        return section_default_type(rel.split("/", 1)[0]), "seccion"
+    if campo == "type":  # AP-27; con la raíz, una sección propia aporta sus `tipos`
+        return section_default_type(rel.split("/", 1)[0], get_vault_root()), "seccion"
     # AP-26 (tags), AP-29 (status)
     return POR_DEFECTO[campo], "por_defecto"
 
@@ -197,6 +198,13 @@ def _escribir(nota: Path, visto: str, nuevo: str) -> Optional[str]:
 def completar(path: Optional[str] = None, apply: bool = False,
               agent: Optional[str] = None) -> Dict[str, Any]:
     raiz = get_vault_root()
+    # Un `secciones.json` roto no se lee como «no hay propias» (AP-51): sus
+    # notas quedarían fuera del barrido y su `type` sin derivar, en silencio.
+    try:
+        secciones = secciones_del_vault(raiz)
+    except ValueError as exc:
+        return emit_error(TOOL, "DATA_FILE_CORRUPT", str(exc),
+                          pista="corregir 00_System/secciones.json (vault_section --list)")
     if path:
         try:
             nota = assert_within_vault(raiz / path, raiz)
@@ -207,7 +215,7 @@ def completar(path: Optional[str] = None, apply: bool = False,
             return {**emit_error(TOOL, "NOTE_NOT_FOUND", f"Note not found: {path}"), "path": path}
         notas = [nota]
     else:
-        notas = _notas(raiz)
+        notas = _notas(raiz, secciones)
 
     completadas: List[Dict[str, Any]] = []
     omitidas: List[Dict[str, Any]] = []
