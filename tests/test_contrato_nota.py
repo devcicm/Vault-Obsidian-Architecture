@@ -79,6 +79,10 @@ def test_cada_hito_de_la_historia_tiene_su_fuente(version):
         if fuente.startswith("MIGRATIONS:"):
             texto = repr(vault_standard_upgrade.MIGRATIONS[version])
             assert fuente.split(":", 1)[1] in texto, (version, fuente)
+        elif fuente.startswith("manifiesto:"):
+            # El texto citado está en el manifiesto de ese commit, palabra por palabra.
+            _, commit, cita = fuente.split(":", 2)
+            assert cita in _manifiesto_en(commit), (version, fuente)
         else:
             assert fuente.startswith("git:"), fuente
             r = subprocess.run(["git", "cat-file", "-e", fuente[4:]], cwd=REPO_ROOT,
@@ -88,6 +92,35 @@ def test_cada_hito_de_la_historia_tiene_su_fuente(version):
             assert r.returncode == 0, fuente
 
 
+def _manifiesto_en(commit):
+    r = subprocess.run(["git", "show", f"{commit}:vault-obsidian-architecture.md"],
+                       cwd=REPO_ROOT, capture_output=True)
+    if r.returncode != 0 and not (REPO_ROOT / ".git").exists():
+        pytest.skip("sin historia de git")
+    assert r.returncode == 0, commit
+    return r.stdout.decode("utf-8", errors="replace")
+
+
+@pytest.mark.parametrize("version", sorted(contrato.PREVIAS))
+def test_las_versiones_previas_son_las_del_manifiesto(version):
+    """Cada commit de PREVIAS es el manifiesto de esa versión, no uno cercano."""
+    banner = f"**Versión:** {version[1:]}.0"
+    assert banner in _manifiesto_en(contrato.PREVIAS[version]), version
+
+
+def test_antes_del_validador_el_contrato_es_ap12_para_toda_nota():
+    """Sin validador, manda el manifiesto, y AP-12 no distinguía clases de nota."""
+    ap12 = ["id", "title", "createdAt", "updatedAt", "tags", "type"]
+    for v in ("v18", "v20", "v21", "v24"):
+        c = contrato.contrato_de_version(v)
+        assert c["origen"] == "manifiesto" and c["validador"] is False, v
+        assert sorted(c["requeridos"]["sistema"]) == sorted(ap12), v
+        assert sorted(c["requeridos"]["contenido"]) == sorted(ap12), v
+    assert contrato.VERSIONES_CON_CONTRATO[0] == "v18"
+    with pytest.raises(ValueError):
+        contrato.contrato_de_version("v17")
+
+
 def test_la_historia_cubre_las_versiones_de_migrations():
     import vault_standard_upgrade
 
@@ -95,9 +128,16 @@ def test_la_historia_cubre_las_versiones_de_migrations():
 
 
 def test_el_contrato_de_una_version_crece_y_no_pierde_campos():
-    """No-derogación aplicada al contrato: un campo exigido no deja de serlo."""
+    """No-derogación aplicada al contrato: un campo exigido no deja de serlo.
+
+    Se mide sobre una sola autoridad, el validador. El paso del manifiesto (v24,
+    seis campos) al primer validador (v25, dos) sí encoge, y es el hecho que la
+    historia declara: el validador exigió menos que la norma durante doce versiones.
+    """
     previo = set()
-    for v in contrato.VERSIONES:
+    for v in contrato.VERSIONES_CON_CONTRATO:
+        if not contrato.contrato_de_version(v)["validador"]:
+            continue
         actual = {c for clase in ("sistema", "contenido")
                   for c in contrato.contrato_de_version(v)["requeridos"][clase]}
         assert previo <= actual, v
@@ -114,6 +154,28 @@ def test_antes_de_v25_no_habia_validador():
     """Declarado, no tapado: v21–v24 no tenían ninguna regla ejecutable."""
     assert contrato.contrato_de_version("v21")["validador"] is False
     assert contrato.contrato_de_version("v25")["validador"] is True
+
+
+def test_validate_mide_contra_el_contrato_de_otra_version(tmp_path, monkeypatch):
+    """`--contrato v30` juzga la nota con lo que exigía v30, no con lo vigente."""
+    import vault_validate
+
+    monkeypatch.setattr(vault_validate, "_raiz", lambda: tmp_path)
+    (tmp_path / "07_Knowledge").mkdir()
+    nota = tmp_path / "07_Knowledge" / "x.md"
+    nota.write_text("---\nid: a\ntitle: x\n---\n", encoding="utf-8")
+    assert vault_validate.validate_frontmatter(nota, contrato="v30")["valid"] is True
+    assert vault_validate.validate_frontmatter(nota)["valid"] is False
+    assert vault_validate.validate_frontmatter(nota, contrato="v20")["valid"] is False
+
+
+def test_validate_rechaza_un_contrato_inexistente(tmp_path, monkeypatch):
+    import vault_validate
+
+    monkeypatch.setattr(vault_validate, "_raiz", lambda: tmp_path)
+    r = vault_validate.vault_validate(None, None, "frontmatter", contrato="v12")
+    assert r["ok"] is False and "v18" in str(r)
+    assert "INVALID_VALUE" in str(r)
 
 
 def test_validate_aplica_el_contrato(tmp_path, monkeypatch):

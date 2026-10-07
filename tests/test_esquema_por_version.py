@@ -29,7 +29,7 @@ def test_schemas_del_repo_al_dia():
 
 def test_un_esquema_editado_a_mano_se_detecta(tmp_path, monkeypatch):
     monkeypatch.setattr(vault_esquema, "CARPETA", tmp_path)
-    assert vault_esquema.sync()["written_count"] == len(contrato.VERSIONES) + 1
+    assert vault_esquema.sync()["written_count"] == len(contrato.VERSIONES_CON_CONTRATO) + 1
     assert vault_esquema.sync()["written_count"] == 0  # AP-37: nada que escribir
     ruta = tmp_path / "vault-v37.schema.json"
     ruta.write_text(ruta.read_text(encoding="utf-8").replace('"createdAt",', ""), encoding="utf-8")
@@ -49,7 +49,10 @@ def test_un_esquema_sin_version_no_se_borra(tmp_path, monkeypatch):
 
 
 def test_cada_version_exige_lo_de_su_momento():
-    assert contrato.esquema_json("v24")["required"] == []
+    # Antes del primer validador, el contrato es AP-12 del manifiesto (x-vault-origen).
+    assert sorted(contrato.esquema_json("v24")["required"]) == sorted(
+        ["id", "title", "type", "createdAt", "updatedAt", "tags"])
+    assert contrato.esquema_json("v24")["x-vault-origen"] == "manifiesto"
     assert contrato.esquema_json("v30")["required"] == ["id", "title"]
     assert "createdAt" in contrato.esquema_json("v37")["required"]
     # Una menor se resuelve a su mayor. Una menor fija y pasada: la vigente

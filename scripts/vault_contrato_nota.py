@@ -26,11 +26,24 @@ exigirse tampoco estaba en ningún registro: había que leer el `git log`.
 - **valor** — si el campo está, su valor tiene que pertenecer al vocabulario
   (CIA) o no estar vacío (`agent`).
 
-## Lo que no está y se declara
+## Dos autoridades, según la versión
 
-`MIGRATIONS` empieza en v21 y `vault_validate` entra en el repo con v25. De
-v21 a v24 no había ninguna regla ejecutable: `contrato_de_version` lo dice con
-`validador: False` en vez de inventarse una que nadie aplicaba.
+`vault_validate` entra en el repo con v25. Antes, el contrato de una nota era
+la regla de AP-12 del manifiesto —«los campos obligatorios (`id`, `title`,
+`type`, `createdAt`, `updatedAt`, `tags`) deben existir en todas las notas»—,
+escrita igual en los manifiestos de v18, v19 y v20 que guarda git (`PREVIAS`)
+y en el de v25. `contrato_de_version` devuelve, para cada versión, lo que
+exigía la autoridad que había: el manifiesto hasta v24 (`origen: manifiesto`,
+`validador: False`) y el validador desde v25 (`origen: validador`). Las dos
+cosas no coinciden, y se declara en vez de igualarlas: de v25 a v36 el
+validador solo exigía `id` y `title`, menos de lo que la norma decía.
+
+De v21 a v24 no hay manifiesto en git: el de v20 y el de v25 escriben la regla
+con el mismo texto, y eso es lo que se aplica entre ambos. Antes de v18 el
+manifiesto no está en el repositorio y no se publica contrato.
+
+Cualquier versión se puede validar hoy con `vault_validate --contrato vNN`: el
+validador vigente aplicando el contrato de entonces.
 """
 
 import re
@@ -48,6 +61,17 @@ CLASES = ("derivada", "sistema", "contenido")
 #: falla si divergen.
 VERSIONES: Tuple[str, ...] = tuple(f"v{n}" for n in range(21, 41))
 
+#: Versiones anteriores a `MIGRATIONS` cuyo manifiesto está en git, con el
+#: commit que lo atestigua. `test_las_versiones_previas_son_las_del_manifiesto`
+#: comprueba que el banner de cada commit dice esa versión.
+PREVIAS: Dict[str, str] = {"v18": "974c2ba", "v19": "5ebb043", "v20": "28b5700"}
+
+#: Todas las versiones con contrato publicado: las previas y las de `MIGRATIONS`.
+VERSIONES_CON_CONTRATO: Tuple[str, ...] = tuple(PREVIAS) + VERSIONES
+
+#: Primera versión con un validador ejecutable en el repo.
+PRIMER_VALIDADOR = "v25"
+
 _ISO = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}")
 
 #: El contrato vigente, campo a campo. El orden es el de `faltantes`.
@@ -55,13 +79,15 @@ _ISO = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}")
 #: `vault_validate` empezó a reprobar su ausencia (None si no la reprueba).
 CAMPOS: Dict[str, Dict[str, Any]] = {
     "id": {"tipo": "string", "nivel": "requerido", "clases": ("sistema", "contenido"),
-           "requerido_desde": "v25", "norma": "AP-12"},
+           "requerido_desde": "v25", "normativo_desde": "v18", "norma": "AP-12"},
     "title": {"tipo": "string", "nivel": "requerido", "clases": ("sistema", "contenido"),
-              "requerido_desde": "v25", "norma": "AP-12"},
+              "requerido_desde": "v25", "normativo_desde": "v18", "norma": "AP-12"},
     "createdAt": {"tipo": "string", "formato": "date-time", "nivel": "requerido",
-                  "clases": ("sistema", "contenido"), "requerido_desde": "v37", "norma": "AP-12"},
+                  "clases": ("sistema", "contenido"), "requerido_desde": "v37",
+                  "normativo_desde": "v18", "norma": "AP-12"},
     "updatedAt": {"tipo": "string", "formato": "date-time", "nivel": "requerido",
-                  "clases": ("sistema", "contenido"), "requerido_desde": "v37", "norma": "AP-12"},
+                  "clases": ("sistema", "contenido"), "requerido_desde": "v37",
+                  "normativo_desde": "v18", "norma": "AP-12"},
     "cia_integrity": {"tipo": "string", "nivel": "requerido", "clases": ("contenido",),
                       "requerido_desde": "v37", "valores_desde": "v27", "norma": "AP-30",
                       "valores": tuple(sorted(cia_valores("cia_integrity")))},
@@ -74,9 +100,9 @@ CAMPOS: Dict[str, Dict[str, Any]] = {
     "agent": {"tipo": "string", "nivel": "requerido", "clases": ("contenido",),
               "requerido_desde": "v37", "valores_desde": "v27", "no_vacio": True, "norma": "AP-16"},
     "tags": {"tipo": "array", "nivel": "requerido", "clases": ("contenido",),
-             "requerido_desde": "v37", "norma": "AP-26"},
+             "requerido_desde": "v37", "normativo_desde": "v18", "norma": "AP-26"},
     "type": {"tipo": "string", "nivel": "recomendado", "clases": ("contenido",),
-             "requerido_desde": None, "norma": "AP-27"},
+             "requerido_desde": None, "normativo_desde": "v18", "norma": "AP-27"},
     "status": {"tipo": "string", "nivel": "recomendado", "clases": ("contenido",),
                "requerido_desde": None, "norma": "AP-29", "vocabulario": tuple(sorted(STATUS_VOCAB))},
     "dq_validated_at": {"tipo": "string", "formato": "date-time", "nivel": "opcional",
@@ -89,9 +115,16 @@ CAMPOS: Dict[str, Dict[str, Any]] = {
 #: o `git:<hash>` cuando la migración no lo dejó escrito. El test comprueba
 #: las dos. Nada de aquí se escribe de memoria.
 HISTORIA: Dict[str, List[Dict[str, Any]]] = {
+    "v18": [{"campos": ["id", "title", "type", "createdAt", "updatedAt", "tags"],
+             "cambio": ("AP-12 en el manifiesto: los seis campos obligatorios en toda nota; "
+                        "ninguna tool lo aplica"),
+             "fuente": ("manifiesto:974c2ba:Los campos obligatorios (`id`, `title`, `type`, "
+                        "`createdAt`, `updatedAt`, `tags`)")}],
     "v21": [{"campos": ["agent"], "cambio": "el escritor pone agent en las notas nuevas",
              "fuente": "MIGRATIONS:AP-16: add agent: field to new notes"}],
-    "v25": [{"campos": ["id", "title"], "cambio": "primer validador: id y title obligatorios",
+    "v25": [{"campos": ["id", "title"],
+             "cambio": ("primer validador: exige id y title, menos que AP-12, que el "
+                        "manifiesto de v25 sigue escribiendo igual"),
              "fuente": "git:767a84a"}],
     "v27": [{"campos": ["cia_integrity", "cia_availability", "cia_sensitivity", "agent",
                         "dq_validated_at"],
@@ -145,16 +178,36 @@ def campos_recomendados(ruta_relativa: str) -> Tuple[str, ...]:
     return tuple(c for c, d in CAMPOS.items() if d["nivel"] == "recomendado" and clase in d["clases"])
 
 
-def faltantes(datos: Mapping[str, Any], ruta_relativa: str) -> List[str]:
-    """Los requeridos que la nota no lleva, en el orden del contrato."""
-    return [c for c in campos_requeridos(ruta_relativa) if c not in datos]
+def _requeridos_en(ruta_relativa: str, version: str) -> Tuple[str, ...]:
+    """Los requeridos de la clase de la nota según el contrato de `version`."""
+    c = contrato_de_version(version)
+    clase = clase_de_nota(ruta_relativa)
+    if clase == "derivada":
+        # Antes de v37 un índice no tenía excepción: era una nota como otra.
+        return () if c["indices_exentos"] else tuple(c["requeridos"]["contenido"])
+    return tuple(c["requeridos"][clase])
 
 
-def errores_de_valor(datos: Mapping[str, Any]) -> List[str]:
-    """Los valores presentes que el contrato rechaza. La ausencia no es un error aquí."""
+def faltantes(datos: Mapping[str, Any], ruta_relativa: str,
+              version: Optional[str] = None) -> List[str]:
+    """Los requeridos que la nota no lleva, en el orden del contrato.
+
+    Sin `version`, el contrato vigente; con ella, el de esa versión mayor.
+    """
+    requeridos = (campos_requeridos(ruta_relativa) if version is None
+                  else _requeridos_en(ruta_relativa, version))
+    return [c for c in requeridos if c not in datos]
+
+
+def errores_de_valor(datos: Mapping[str, Any], version: Optional[str] = None) -> List[str]:
+    """Los valores presentes que el contrato rechaza. La ausencia no es un error aquí.
+
+    Con `version`, solo los campos cuyo valor ya se juzgaba en esa versión.
+    """
+    juzgados = None if version is None else set(contrato_de_version(version)["valores"])
     errores: List[str] = []
     for campo, d in CAMPOS.items():
-        if campo not in datos:
+        if campo not in datos or (juzgados is not None and campo not in juzgados):
             continue
         if "valores" in d:
             v = str(datos[campo]).lower()
@@ -168,27 +221,32 @@ def errores_de_valor(datos: Mapping[str, Any]) -> List[str]:
 
 
 def contrato_de_version(version: str) -> Dict[str, Any]:
-    """El contrato tal como lo aplicaba `vault_validate` en esa versión mayor.
+    """El contrato de una nota en esa versión mayor, según la autoridad de entonces.
 
+    Desde `PRIMER_VALIDADOR`, lo que aplicaba `vault_validate`; antes, lo que
+    la regla AP-12 del manifiesto exigía a toda nota, sin clases (`origen`).
     Acepta `v40.36` y lo lee como `v40`: el contrato no ha cambiado dentro de
     una versión mayor, y si cambia, la historia tendrá que decirlo.
     """
     n = _numero(version)
-    if not _numero(VERSIONES[0]) <= n <= _numero(VERSIONES[-1]):
-        raise ValueError(f"{version}: fuera de {VERSIONES[0]}..{VERSIONES[-1]}")
+    primera, ultima = VERSIONES_CON_CONTRATO[0], VERSIONES_CON_CONTRATO[-1]
+    if not _numero(primera) <= n <= _numero(ultima):
+        raise ValueError(f"{version}: fuera de {primera}..{ultima}")
+    validador = n >= _numero(PRIMER_VALIDADOR)
     requeridos: Dict[str, List[str]] = {"sistema": [], "contenido": []}
     valores: Dict[str, Dict[str, Any]] = {}
     for campo, d in CAMPOS.items():
-        desde = d.get("requerido_desde")
+        desde = d.get("requerido_desde") if validador else d.get("normativo_desde")
         if desde and _numero(desde) <= n:
-            for clase in d["clases"]:
+            for clase in (d["clases"] if validador else ("sistema", "contenido")):
                 requeridos[clase].append(campo)
         vdesde = d.get("valores_desde")
         if vdesde and _numero(vdesde) <= n:
             valores[campo] = {k: d[k] for k in ("valores", "patron", "no_vacio") if k in d}
     return {
         "version": f"v{n}",
-        "validador": n >= _numero("v25"),
+        "validador": validador,
+        "origen": "validador" if validador else "manifiesto",
         "indices_exentos": n >= 37,
         "requeridos": requeridos,
         "valores": valores,
@@ -273,6 +331,7 @@ def esquema_json(version: str) -> Dict[str, Any]:
         ),
         "x-vault-version": c["version"],
         "x-vault-validador": c["validador"],
+        "x-vault-origen": c["origen"],
         "x-vault-indices-exentos": c["indices_exentos"],
         "x-vault-recomendados": c["recomendados"],
         "x-vault-historia": c["historia"],

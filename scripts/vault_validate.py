@@ -38,7 +38,7 @@ from vault_errors import emit_error, wrap_main
 from vault_io import assert_within_vault
 from vault.kernel.frontmatter_parsing import FrontmatterParseError, parse_frontmatter_with_body
 from vault_fundamentals_catalog import cia_valores
-from vault_contrato_nota import errores_de_valor, faltantes
+from vault_contrato_nota import VERSIONES_CON_CONTRATO, contrato_de_version, errores_de_valor, faltantes
 
 import yaml
 
@@ -102,7 +102,7 @@ def _validate_cia_fields(data: Dict[str, Any]) -> List[str]:
     return errores_de_valor(data)
 
 
-def validate_frontmatter(note_path: Path) -> Dict[str, Any]:
+def validate_frontmatter(note_path: Path, contrato: Optional[str] = None) -> Dict[str, Any]:
 
     """Validate YAML frontmatter of a single note. Returns {valid, error?, data?}.
 
@@ -119,6 +119,9 @@ def validate_frontmatter(note_path: Path) -> Dict[str, Any]:
 
     `vault_audit` mide los campos uno por uno como AP-16/26/27/29/30; esa es
     otra medida y no sustituye a esta.
+
+    `contrato` (`v18`..) aplica el contrato de esa versión en vez del vigente:
+    un vault que se quedó en v30 se juzga por lo que v30 exigía.
     """
 
     try:
@@ -141,7 +144,8 @@ def validate_frontmatter(note_path: Path) -> Dict[str, Any]:
 
 
     rel_path = str(note_path.relative_to(_raiz())).replace("\\", "/")
-    is_index = es_artefacto_derivado(rel_path)
+    is_index = es_artefacto_derivado(rel_path) and (
+        contrato is None or contrato_de_version(contrato)["indices_exentos"])
 
     if not content.startswith("---"):
 
@@ -185,13 +189,13 @@ def validate_frontmatter(note_path: Path) -> Dict[str, Any]:
     # `vault_contrato_nota` (AP-57). Aquí vivía el literal, con «v37: required
     # fields expanded» como toda su historia, y nadie más podía preguntar qué
     # le falta a una nota sin copiarlo.
-    missing = faltantes(data, rel_path)
+    missing = faltantes(data, rel_path, contrato)
     if missing:
         return {"valid": False, "error": f"Missing required fields: {missing}",
                 "missing": missing, "data": data}
 
 
-    cia_errors = _validate_cia_fields(data)
+    cia_errors = _validate_cia_fields(data) if contrato is None else errores_de_valor(data, contrato)
 
     if cia_errors:
 
@@ -201,7 +205,8 @@ def validate_frontmatter(note_path: Path) -> Dict[str, Any]:
     return {"valid": True, "data": data}
 
 
-def check_frontmatter(path: Optional[str], folder: Optional[str]) -> Dict[str, Any]:
+def check_frontmatter(path: Optional[str], folder: Optional[str],
+                      contrato: Optional[str] = None) -> Dict[str, Any]:
 
     """Run frontmatter validation on one note, a folder, or the whole vault."""
 
@@ -209,7 +214,7 @@ def check_frontmatter(path: Optional[str], folder: Optional[str]) -> Dict[str, A
 
         note = _raiz() / path
 
-        result = validate_frontmatter(note)
+        result = validate_frontmatter(note, contrato)
 
         if result["valid"]:
 
@@ -252,7 +257,7 @@ def check_frontmatter(path: Optional[str], folder: Optional[str]) -> Dict[str, A
 
     for note in notes:
 
-        result = validate_frontmatter(note)
+        result = validate_frontmatter(note, contrato)
 
         rel = note.relative_to(_raiz()).as_posix()
 
@@ -312,6 +317,8 @@ def vault_validate(
 
     check: str = "all",
 
+    contrato: Optional[str] = None,
+
 ) -> Dict[str, Any]:
 
     """
@@ -327,6 +334,9 @@ def vault_validate(
         folder: Relative path to a folder — validates all notes inside.
 
         check:  "frontmatter" | "structure" | "indexes" | "all"
+
+        contrato: versión mayor (`v18`..) cuyo contrato de nota se aplica en
+                  vez del vigente. Solo cambia el juicio del frontmatter.
 
 
 
@@ -356,12 +366,22 @@ def vault_validate(
             except ValueError as exc:
                 return emit_error("vault_validate", "INVALID_PATH", str(exc))
 
+    if contrato is not None:
+        try:
+            contrato = contrato_de_version(contrato)["version"]
+        except ValueError as exc:
+            return emit_error("vault_validate", "INVALID_VALUE", str(exc),
+                              pista=f"una de {VERSIONES_CON_CONTRATO[0]}..{VERSIONES_CON_CONTRATO[-1]}")
+
     result: Dict[str, Any] = {"ok": True}
+
+    if contrato is not None:
+        result["contract_version"] = contrato
 
 
     if check in ("frontmatter", "all"):
 
-        fm = check_frontmatter(path, folder)
+        fm = check_frontmatter(path, folder, contrato)
 
         result["valid"] = fm["valid"]
 
@@ -476,10 +496,16 @@ Notas:
 
     )
 
+    parser.add_argument(
+        "--contrato",
+        help=("Versión mayor cuyo contrato de nota se aplica (v18..; por defecto, "
+              "el vigente). Ver schemas/README.md"),
+    )
+
 
     args = parser.parse_args()
 
-    result = vault_validate(args.path, args.folder, args.check)
+    result = vault_validate(args.path, args.folder, args.check, args.contrato)
 
     print(json.dumps(result, indent=2, ensure_ascii=False))
 

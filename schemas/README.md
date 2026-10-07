@@ -28,11 +28,14 @@ habría puesto y declara el origen de cada valor.
 
 | Esquema | Requeridos en una nota de contenido | Qué cambió en esa versión |
 |---|---|---|
-| [v21](vault-v21.schema.json) | —, sin validador | el escritor pone agent en las notas nuevas |
-| [v22](vault-v22.schema.json) | —, sin validador | — |
-| [v23](vault-v23.schema.json) | —, sin validador | — |
-| [v24](vault-v24.schema.json) | —, sin validador | — |
-| [v25](vault-v25.schema.json) | `id`, `title` | primer validador: id y title obligatorios |
+| [v18](vault-v18.schema.json) | `id`, `title`, `createdAt`, `updatedAt`, `tags`, `type` (AP-12 del manifiesto; sin validador) | AP-12 en el manifiesto: los seis campos obligatorios en toda nota; ninguna tool lo aplica |
+| [v19](vault-v19.schema.json) | `id`, `title`, `createdAt`, `updatedAt`, `tags`, `type` (AP-12 del manifiesto; sin validador) | — |
+| [v20](vault-v20.schema.json) | `id`, `title`, `createdAt`, `updatedAt`, `tags`, `type` (AP-12 del manifiesto; sin validador) | — |
+| [v21](vault-v21.schema.json) | `id`, `title`, `createdAt`, `updatedAt`, `tags`, `type` (AP-12 del manifiesto; sin validador) | el escritor pone agent en las notas nuevas |
+| [v22](vault-v22.schema.json) | `id`, `title`, `createdAt`, `updatedAt`, `tags`, `type` (AP-12 del manifiesto; sin validador) | — |
+| [v23](vault-v23.schema.json) | `id`, `title`, `createdAt`, `updatedAt`, `tags`, `type` (AP-12 del manifiesto; sin validador) | — |
+| [v24](vault-v24.schema.json) | `id`, `title`, `createdAt`, `updatedAt`, `tags`, `type` (AP-12 del manifiesto; sin validador) | — |
+| [v25](vault-v25.schema.json) | `id`, `title` | primer validador: exige id y title, menos que AP-12, que el manifiesto de v25 sigue escribiendo igual |
 | [v26](vault-v26.schema.json) | `id`, `title` | — |
 | [v27](vault-v27.schema.json) | `id`, `title` | si están, el valor CIA pertenece al vocabulario y agent no está vacío |
 | [v28](vault-v28.schema.json) | `id`, `title` | los scripts de escritura ponen CIA y agent |
@@ -49,7 +52,14 @@ habría puesto y declara el origen de cada valor.
 | [v39](vault-v39.schema.json) | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags` | — |
 | [v40](vault-v40.schema.json) | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags` | — |
 
-Antes de v21 no hay migración registrada y no se publica esquema.
+Hasta v24 no había validador: el contrato de esas versiones es la regla AP-12
+del manifiesto, que exigía los mismos campos a toda nota, de cualquier clase.
+De v21 a v24 no hay manifiesto en git; el de v20 y el de v25 escriben
+la regla igual, y eso es lo que se aplica. Antes de v18 el manifiesto no está
+en el repositorio y no se publica esquema.
+
+Cualquier versión se valida con el validador vigente:
+`python scripts/vault_validate.py --check frontmatter --contrato v30`.
 
 ## Campos del contrato vigente
 

@@ -19,8 +19,9 @@ honesto lo publicado (AP-47).
 
 ## Lo que no cubre, dicho
 
-- Antes de v21 no hay migración registrada, y de v21 a v24 no había validador:
-  esos esquemas declaran `x-vault-validador: false` y no exigen ningún campo.
+- Hasta v24 no había validador: esos esquemas exigen lo que la regla AP-12 del
+  manifiesto decía (`x-vault-origen: manifiesto`, `x-vault-validador: false`).
+  Antes de v18 el manifiesto no está en git y no se publica esquema.
 - La clase de una nota sale de su ruta, que no está en el frontmatter. El
   esquema trae una definición por clase en `$defs`; elegirla es de quien valida.
 
@@ -39,7 +40,8 @@ from typing import Any, Dict
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from vault_contrato_nota import CAMPOS, HISTORIA, VERSIONES, contrato_de_version, esquema_json
+from vault_contrato_nota import (CAMPOS, HISTORIA, PRIMER_VALIDADOR, VERSIONES_CON_CONTRATO,
+                                 contrato_de_version, esquema_json)
 from vault_errors import emit_error, wrap_main
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -56,12 +58,11 @@ def _texto(version: str) -> str:
 
 def _readme() -> str:
     filas = []
-    for v in VERSIONES:
+    for v in VERSIONES_CON_CONTRATO:
         c = contrato_de_version(v)
+        exige = ", ".join(f"`{x}`" for x in c["requeridos"]["contenido"])
         if not c["validador"]:
-            exige = "—, sin validador"
-        else:
-            exige = ", ".join(f"`{x}`" for x in c["requeridos"]["contenido"])
+            exige += " (AP-12 del manifiesto; sin validador)"
         cambios = "; ".join(h["cambio"] for h in HISTORIA.get(v, [])) or "—"
         filas.append(f"| [{v}]({_nombre(v)}) | {exige} | {cambios} |")
     campos = "\n".join(
@@ -99,7 +100,14 @@ habría puesto y declara el origen de cada valor.
 |---|---|---|
 {chr(10).join(filas)}
 
-Antes de v21 no hay migración registrada y no se publica esquema.
+Hasta v24 no había validador: el contrato de esas versiones es la regla AP-12
+del manifiesto, que exigía los mismos campos a toda nota, de cualquier clase.
+De v21 a v24 no hay manifiesto en git; el de v20 y el de {PRIMER_VALIDADOR} escriben
+la regla igual, y eso es lo que se aplica. Antes de v18 el manifiesto no está
+en el repositorio y no se publica esquema.
+
+Cualquier versión se valida con el validador vigente:
+`python scripts/vault_validate.py --check frontmatter --contrato v30`.
 
 ## Campos del contrato vigente
 
@@ -110,7 +118,7 @@ Antes de v21 no hay migración registrada y no se publica esquema.
 
 
 def _esperado() -> Dict[str, str]:
-    salida = {_nombre(v): _texto(v) for v in VERSIONES}
+    salida = {_nombre(v): _texto(v) for v in VERSIONES_CON_CONTRATO}
     salida["README.md"] = _readme()
     return salida
 
@@ -129,7 +137,7 @@ def check() -> Dict[str, Any]:
         "ok": not divergentes and not sobrantes,
         "tool": "vault_esquema",
         "action": "check",
-        "versions": list(VERSIONES),
+        "versions": list(VERSIONES_CON_CONTRATO),
         "stale": divergentes,
         "stale_count": len(divergentes),
         # Un esquema sin versión en el contrato no se borra (no-derogación): se
@@ -149,7 +157,7 @@ def sync() -> Dict[str, Any]:
         ruta.write_text(texto, encoding="utf-8", newline="\n")
         escritos.append(f"schemas/{nombre}")
     return {"ok": True, "tool": "vault_esquema", "action": "sync",
-            "versions": list(VERSIONES),
+            "versions": list(VERSIONES_CON_CONTRATO),
             # AP-37: cuántos ficheros cambiaron en disco. Cero es la respuesta
             # de un `--sync` sobre un `schemas/` al día.
             "written": escritos, "written_count": len(escritos)}
@@ -161,7 +169,7 @@ def main() -> int:
     ap.add_argument("--check", action="store_true", help="Falla si schemas/ diverge del contrato")
     ap.add_argument("--strict", action="store_true", help="Exit 1 si algo diverge")
     ap.add_argument("--sync", action="store_true", help="Regenera schemas/ desde el contrato")
-    ap.add_argument("--version", help="Imprime el esquema de una versión (v21..)")
+    ap.add_argument("--version", help="Imprime el esquema de una versión (v18..)")
     args = ap.parse_args()
 
     if args.sync and args.check:
@@ -174,7 +182,7 @@ def main() -> int:
             r: Dict[str, Any] = esquema_json(args.version)
         except ValueError as exc:
             env = emit_error("vault_esquema", "INVALID_VALUE", str(exc),
-                             pista=f"una de {VERSIONES[0]}..{VERSIONES[-1]}")
+                             pista=f"una de {VERSIONES_CON_CONTRATO[0]}..{VERSIONES_CON_CONTRATO[-1]}")
             print(json.dumps(env, ensure_ascii=False))
             return 1
         print(json.dumps(r, ensure_ascii=False, indent=2))

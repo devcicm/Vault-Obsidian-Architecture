@@ -6741,6 +6741,10 @@
               "indexes",
               "all"
             ]
+          },
+          "contrato": {
+            "type": "string",
+            "description": "Versión mayor cuyo contrato de nota se aplica (v18..; por defecto, el vigente). Ver schemas/README.md"
           }
         },
         "additionalProperties": false

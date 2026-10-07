@@ -5,9 +5,22 @@
   "description": "Generado por vault_esquema desde vault_contrato_nota; no se edita a mano. La raíz es el contrato de una nota de contenido; las de 00_System/ usan #/$defs/sistema.",
   "x-vault-version": "v22",
   "x-vault-validador": false,
+  "x-vault-origen": "manifiesto",
   "x-vault-indices-exentos": false,
   "x-vault-recomendados": [],
   "x-vault-historia": [
+    {
+      "campos": [
+        "id",
+        "title",
+        "type",
+        "createdAt",
+        "updatedAt",
+        "tags"
+      ],
+      "cambio": "AP-12 en el manifiesto: los seis campos obligatorios en toda nota; ninguna tool lo aplica",
+      "fuente": "manifiesto:974c2ba:Los campos obligatorios (`id`, `title`, `type`, `createdAt`, `updatedAt`, `tags`)"
+    },
     {
       "campos": [
         "agent"
@@ -17,36 +30,147 @@
     }
   ],
   "type": "object",
-  "required": [],
+  "required": [
+    "id",
+    "title",
+    "createdAt",
+    "updatedAt",
+    "tags",
+    "type"
+  ],
   "properties": {
+    "id": {
+      "x-vault-tipo-esperado": "string",
+      "x-vault-nivel": "requerido",
+      "x-vault-norma": "AP-12"
+    },
+    "title": {
+      "x-vault-tipo-esperado": "string",
+      "x-vault-nivel": "requerido",
+      "x-vault-norma": "AP-12"
+    },
+    "createdAt": {
+      "x-vault-tipo-esperado": "string",
+      "x-vault-nivel": "requerido",
+      "x-vault-norma": "AP-12"
+    },
+    "updatedAt": {
+      "x-vault-tipo-esperado": "string",
+      "x-vault-nivel": "requerido",
+      "x-vault-norma": "AP-12"
+    },
     "agent": {
       "x-vault-tipo-esperado": "string",
       "x-vault-nivel": "requerido",
       "x-vault-norma": "AP-16"
+    },
+    "tags": {
+      "x-vault-tipo-esperado": "array",
+      "x-vault-nivel": "requerido",
+      "x-vault-norma": "AP-26"
+    },
+    "type": {
+      "x-vault-tipo-esperado": "string",
+      "x-vault-nivel": "recomendado",
+      "x-vault-norma": "AP-27"
     }
   },
   "additionalProperties": true,
   "$defs": {
     "contenido": {
       "type": "object",
-      "required": [],
+      "required": [
+        "id",
+        "title",
+        "createdAt",
+        "updatedAt",
+        "tags",
+        "type"
+      ],
       "properties": {
+        "id": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "requerido",
+          "x-vault-norma": "AP-12"
+        },
+        "title": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "requerido",
+          "x-vault-norma": "AP-12"
+        },
+        "createdAt": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "requerido",
+          "x-vault-norma": "AP-12"
+        },
+        "updatedAt": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "requerido",
+          "x-vault-norma": "AP-12"
+        },
         "agent": {
           "x-vault-tipo-esperado": "string",
           "x-vault-nivel": "requerido",
           "x-vault-norma": "AP-16"
+        },
+        "tags": {
+          "x-vault-tipo-esperado": "array",
+          "x-vault-nivel": "requerido",
+          "x-vault-norma": "AP-26"
+        },
+        "type": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "recomendado",
+          "x-vault-norma": "AP-27"
         }
       },
       "additionalProperties": true
     },
     "sistema": {
       "type": "object",
-      "required": [],
+      "required": [
+        "id",
+        "title",
+        "createdAt",
+        "updatedAt",
+        "tags",
+        "type"
+      ],
       "properties": {
+        "id": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "requerido",
+          "x-vault-norma": "AP-12"
+        },
+        "title": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "requerido",
+          "x-vault-norma": "AP-12"
+        },
+        "createdAt": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "requerido",
+          "x-vault-norma": "AP-12"
+        },
+        "updatedAt": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "requerido",
+          "x-vault-norma": "AP-12"
+        },
         "agent": {
           "x-vault-tipo-esperado": "string",
           "x-vault-nivel": "requerido",
           "x-vault-norma": "AP-16"
+        },
+        "tags": {
+          "x-vault-tipo-esperado": "array",
+          "x-vault-nivel": "requerido",
+          "x-vault-norma": "AP-26"
+        },
+        "type": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "recomendado",
+          "x-vault-norma": "AP-27"
         }
       },
       "additionalProperties": true
