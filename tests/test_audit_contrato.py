@@ -71,3 +71,40 @@ def test_una_nota_completa_no_aparece(vault):
                      b"cia_availability: medium\ncia_sensitivity: internal\n---\n\n# Ok\n")
     assert vault_validate.validate_frontmatter(nota)["valid"] is True
     assert "07_Knowledge/ok.md" not in _contrato(vault)
+
+
+# ── Las listas viejas deciden con el mismo criterio que el contrato (AP-57) ───
+
+
+def _listas(vault):
+    return vault_audit._detect_missing_metadata(sorted(vault.rglob("*.md")))
+
+
+def _rutas(lista):
+    return [e["path"] for e in lista]
+
+
+def test_un_bom_no_esconde_el_frontmatter_a_las_listas_viejas(vault):
+    """`adr-001-mcp-transport.md` del sandbox —BOM y CRLF— salía «sin frontmatter»
+    en `missing_frontmatter` mientras `missing_contract`, con el parser del
+    kernel, le leía todos los campos menos `id`."""
+    (vault / "07_Knowledge" / "bom.md").write_bytes(
+        "﻿---\r\ntitle: B\r\ntags: [a]\r\n---\r\n\r\n# B\r\n".encode("utf-8"))
+    listas = _listas(vault)
+    assert "07_Knowledge/bom.md" not in _rutas(listas["missing_frontmatter"])
+    assert "07_Knowledge/bom.md" not in _rutas(listas["missing_tags"])
+
+
+def test_un_derivado_declarado_no_entra_en_las_listas_viejas(vault):
+    """`00_System/tool-contracts.md` lo escribe `vault_compact_contracts` sin
+    frontmatter; el audit lo contaba como nota sin metadatos."""
+    (vault / "00_System" / "tool-contracts.md").write_bytes(b"# Tool Contracts\n")
+    listas = _listas(vault)
+    assert all("00_System/tool-contracts.md" not in _rutas(v) for v in listas.values())
+
+
+def test_agent_no_se_exige_a_una_nota_de_sistema(vault):
+    """El contrato exige `agent` solo a las notas de contenido (v37)."""
+    (vault / "00_System" / "reglas.md").write_bytes(
+        b"---\ntitle: R\nupdatedAt: 2026-01-01T00:00:00Z\n---\n\n# R\n")
+    assert "00_System/reglas.md" not in _rutas(_listas(vault)["missing_agent"])

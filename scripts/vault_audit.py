@@ -1398,20 +1398,22 @@ def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]
         contrato = _falta_al_contrato(raw, rel)
         if contrato:
             missing_contract.append(contrato)
-        # Todo `99_Index/` es artefacto derivado — lo escriben `vault_reindex` y
-        # `vault_tags` a partir de las notas, y se regenera entero en cada
-        # ejecución. Exigirle tags o `type` a `tag-index.md` pide metadatos a un
-        # informe: se perderían en la siguiente regeneración. Antes solo se
-        # libraban los `index.md`, así que el índice de tags quedaba señalado.
-        is_index = (
-            rel.endswith("/index.md") or rel == "index.md" or rel.startswith("99_Index/")
-        )
-        is_system = rel.startswith("00_System/") or rel == "00_System"
+        # La clase la decide el contrato (AP-57). Aquí había dos criterios
+        # propios: todo `99_Index/` como derivado —que libraba también al primer
+        # de la sección, una nota— y solo los `index.md`, así que
+        # `00_System/tool-contracts.md`, declarado en `DERIVED_ARTIFACTS`,
+        # salía como nota sin frontmatter.
+        clase = clase_de_nota(rel)
+        is_index = clase == "derivada"
+        is_system = clase == "sistema"
 
         fm = {}
-        m = re.match(r"^---\s*\n(.*?)\n---", raw, re.DOTALL)
-        if m:
-            fm = _frontmatter_de(m.group(1))
+        # El bloque lo delimita el kernel, que quita el BOM: con un regex propio
+        # una nota con BOM salía «sin frontmatter» mientras `missing_contract`
+        # le leía los campos (AP-44).
+        bloque, _cuerpo = separar_frontmatter(raw)
+        if bloque is not None:
+            fm = _frontmatter_de(bloque)
         else:
             if not is_index:
                 missing_frontmatter.append({"path": rel, "title": p.stem})
@@ -1433,7 +1435,11 @@ def _detect_missing_metadata(notes: List[Path]) -> Dict[str, List[Dict[str, Any]
             if missing_cia_local:
                 missing_cia.append({"path": rel, "title": fm.get("title", p.stem), "missing": missing_cia_local})
 
-        if not fm.get("agent"):
+        if is_index:
+            continue
+
+        # El contrato exige `agent` solo a las notas de contenido (v37).
+        if not is_system and not fm.get("agent"):
             missing_agent.append({"path": rel, "title": fm.get("title", p.stem)})
 
         if not fm.get("updatedAt"):
