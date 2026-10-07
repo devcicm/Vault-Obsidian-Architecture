@@ -552,11 +552,17 @@ def vault_tags_rebuild(dry_run: bool = False) -> Dict[str, Any]:
     if fallo:
         return fallo
     tag_map, untagged = _scan_all_notes()
+    # Notas distintas, no usos: hasta v41.2 se sumaban las notas de cada tag y
+    # una nota con tres tags contaba tres veces. Los usos siguen publicados en
+    # `total_tag_uses`, que es la cifra que el índice llama «referencias».
+    etiquetadas = len({n for notas in tag_map.values() for n in notas})
+    usos = sum(len(v) for v in tag_map.values())
 
     registry = {
         "updatedAt": utcnow(),
         "total_tags": len(tag_map),
-        "total_tagged_notes": sum(len(v) for v in tag_map.values()),
+        "total_tagged_notes": etiquetadas,
+        "total_tag_uses": usos,
         "total_untagged_notes": len(untagged),
         "tags": {
             tag: {"notes": sorted(paths), "count": len(paths)}
@@ -579,7 +585,8 @@ def vault_tags_rebuild(dry_run: bool = False) -> Dict[str, Any]:
     return {
         "ok": True,
         "total_tags": len(tag_map),
-        "total_tagged_notes": sum(len(v) for v in tag_map.values()),
+        "total_tagged_notes": etiquetadas,
+        "total_tag_uses": usos,
         "total_untagged_notes": len(untagged),
         "tag_registry": str(_tag_registry().relative_to(_raiz())).replace("\\", "/"),
         "tag_index": str(_tag_index_md().relative_to(_raiz())).replace("\\", "/"),
@@ -660,6 +667,7 @@ def vault_tags_audit() -> Dict[str, Any]:
         "health_score": health_score,
         "total_tags": registry.get("total_tags", 0),
         "total_tagged_notes": registry.get("total_tagged_notes", 0),
+        "total_tag_uses": registry.get("total_tag_uses", 0),
         "total_untagged_notes": len(untagged),
         "orphaned_tags": orphaned,
         "near_duplicate_pairs": near_dupes[:10],
