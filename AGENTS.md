@@ -12,7 +12,7 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~6.000 líneas). Fuente normativa. |
 | `scripts/*.py` | ~158 scripts, 120 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (4404 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (4421 tests). Toda norma con guard debe tener test. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
 | `vault-sandbox/` | **Único** vault de pruebas del repo. Todo runtime va aquí. |
@@ -145,8 +145,8 @@ python scripts/vault_fundamentals.py --matrix                # matriz concepto �
 python scripts/vault_mcp_catalog.py --check                  # falla si Python y JSON divergen
 python scripts/vault_mcp_catalog.py --sync                   # regenera el JSON
 
-# Salud del vault de pruebas — sin `--root`: solo lo aceptan las cuatro tools
-# de la regla 1, y en este repo la autodetección ya resuelve `vault-sandbox/`.
+# Salud del vault de pruebas — sin `--root`: solo lo aceptan las tools que
+# nombra la regla 1, y en este repo la autodetección ya resuelve `vault-sandbox/`.
 # Para forzar otro destino, `VAULT_ROOT`.
 python scripts/vault_audit.py                    # healthIndex + healthProfile por familia
 python scripts/vault_quality_check.py --min-score 0.7

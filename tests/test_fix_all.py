@@ -2,7 +2,7 @@
 
 Tres familias:
 
-  1. **El plan es estable**: hay 7 pasos, en orden, y cada uno es una tool que
+  1. **El plan es estable**: los pasos de `PASOS`, en orden, y cada uno es una tool que
      existe y acepta el flag que se le pide (AP-40 aplicado a la orquestación).
   2. **Dry-run no escribe**: `--dry-run` devuelve el plan sin ejecutar nada.
   3. **La ejecución real regenera**: correr `--step N` individual no rompe, y el
@@ -85,11 +85,15 @@ def repo_temporal(tmp_path, monkeypatch):
         )
 
 
-def test_siete_pasos_en_el_orden_canonico():
+def test_los_pasos_en_el_orden_canonico():
+    """La lista se escribe aquí a propósito: un paso nuevo tiene que entrar en
+    el orden que se decida, no colarse. Lo que no se escribe es su número —el
+    «siete» de este test caducó en cuanto entró `esquemas` (AP-47)."""
     assert [p["nombre"] for p in vfa.PASOS] == [
         "tools_catalog",
         "env_table",
         "field_compat",
+        "esquemas",
         "arquitectura",
         "blueprint",
         "doc_counts",
@@ -103,7 +107,7 @@ def test_cada_paso_apunta_a_un_script_que_existe():
         assert script.exists(), f"{paso['script']} no existe en scripts/"
 
 
-@pytest.mark.parametrize("paso", range(1, 8))
+@pytest.mark.parametrize("paso", range(1, len(vfa.PASOS) + 1))
 def test_cada_paso_individual_ejecuta_sin_romper(paso, repo_temporal):
     """Cada paso por separado debe poder ejecutarse (--step N)."""
     r = vfa.fix_all(solo_paso=paso)
@@ -122,8 +126,9 @@ def test_dry_run_no_ejecuta():
 def test_el_conjunto_reporta_todos_los_pasos(repo_temporal):
     """El envelope del conjunto lista cada paso con su resultado."""
     r = vfa.fix_all()
-    assert r["steps_total"] == 7
-    assert r["steps_ok"] == 7, [x["nombre"] for x in r["results"] if not x["ok"]]
+    total = len(vfa.PASOS)
+    assert r["steps_total"] == total
+    assert r["steps_ok"] == total, [x["nombre"] for x in r["results"] if not x["ok"]]
     assert r["steps_failed"] == 0
     assert r["failed"] == []
-    assert len(r["results"]) == 7
+    assert len(r["results"]) == total
