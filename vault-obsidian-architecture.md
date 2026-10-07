@@ -7227,6 +7227,9 @@ PASO 5 — Al cerrar la sesión:
 >   change-log por sí misma (SP-01). La regla 7 —llamar antes a `vault_change_log`—
 >   queda `superseded_by: vault_delete`: hacerlo a mano duplica la entrada.
 > - **Antes de una operación masiva:** `vault_delta --snapshot` (SP-03).
+> - **Para seguir una pista de recuperación:** `vault_section --list` (la de
+>   `INVALID_FOLDER`) y `vault_project --list` (la de `PROJECT_NOT_FOUND`). El
+>   PASO 5 necesita `--project`: `vault_drift_detect` lo exige desde AP-63.
 >
 > La regla 2 nombra las secciones `00_System` … `11_Code` y `99_Index`; desde v41.2
 > un vault declara las suyas en `00_System/secciones.json` y lo que vale es

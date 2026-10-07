@@ -8843,9 +8843,11 @@
       "vault_delta",
       "vault_drift_detect",
       "vault_preferences",
+      "vault_project",
       "vault_read",
       "vault_reindex",
       "vault_search",
+      "vault_section",
       "vault_standard_upgrade",
       "vault_validate",
       "vault_write"

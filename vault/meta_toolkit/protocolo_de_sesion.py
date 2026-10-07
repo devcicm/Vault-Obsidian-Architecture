@@ -106,14 +106,37 @@ PROTOCOLO_DE_SESION: Dict[str, Dict[str, Any]] = {
             },
         ],
     },
+    # Medido el 2026-10-07 con el perfil por MCP: un agente que recibe un error
+    # y sigue su `recovery.tool` necesita poder llamarla. `recupera` nombra el
+    # código del catálogo cuya pista es este paso, y un test lo comprueba.
+    "recuperar": {
+        "titulo": "Para seguir una pista de recuperación",
+        "pasos": [
+            {
+                "tool": "vault_section",
+                "uso": "--list",
+                "para": "ver en qué secciones del vault se puede escribir",
+                "fuente": "ERROR_CATALOG['INVALID_FOLDER'].recovery",
+                "recupera": ["INVALID_FOLDER"],
+            },
+            {
+                "tool": "vault_project",
+                "uso": "--list",
+                "para": "ver los proyectos registrados, que vault_drift_detect exige",
+                "fuente": "ERROR_CATALOG['PROJECT_NOT_FOUND'].recovery",
+                "recupera": ["PROJECT_NOT_FOUND"],
+            },
+        ],
+    },
     "cierre": {
         "titulo": "Al cerrar la sesión",
         "pasos": [
             {
                 "tool": "vault_drift_detect",
-                "uso": "--mode report",
+                "uso": "--project <slug> --mode report",
                 "para": "ver qué cambió en el proyecto sin quedar documentado",
-                "fuente": "manifiesto § Protocolo de inicio de sesión, PASO 5",
+                "fuente": "manifiesto § Protocolo de inicio de sesión, PASO 5; "
+                          "--project obligatorio desde AP-63",
             },
             {
                 "tool": "vault_reindex",

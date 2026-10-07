@@ -71,6 +71,25 @@ def test_el_perfil_agente_puede_recordar_y_escribir():
     assert {_naturaleza(t) for t in tools} >= {"consulta", "documentacion", "custodia"}
 
 
+def test_cada_paso_de_recuperar_es_la_pista_de_su_error():
+    """Un paso que existe para recuperarse de un error declara cuál, y el
+    catálogo de errores manda justo a esa tool: si la pista cambia de tool, el
+    perfil deja de darle al agente lo que necesita para seguirla."""
+    pasos = [p for m, p in _pasos() if p.get("recupera")]
+    assert pasos, "el protocolo no declara cómo recuperarse de ningún error"
+    for paso in pasos:
+        for codigo in paso["recupera"]:
+            recovery = CATALOGO["errors"][codigo]["recovery"]
+            assert recovery["tool"] == paso["tool"], (codigo, recovery)
+
+
+def test_drift_detect_declara_el_proyecto_que_exige():
+    """`--project` es obligatorio desde AP-63; un uso sin él falla con INVALID_ARGS."""
+    usos = [p["uso"] for _, p in _pasos() if p["tool"] == "vault_drift_detect"]
+    assert usos and all("--project" in u for u in usos)
+    assert "project" in CATALOGO["tools"]["vault_drift_detect"]["inputSchema"]["required"]
+
+
 def test_el_catalogo_mcp_publica_los_perfiles():
     assert CATALOGO.get("perfiles") == {p: tools_del_perfil(p) for p in sorted(PERFILES)}
 
