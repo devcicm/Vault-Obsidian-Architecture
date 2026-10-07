@@ -231,3 +231,24 @@ def test_el_barrido_no_marca_una_mencion_historica():
         assert not VERSIONES_EN_DOCS.findall(texto), (
             f"falso positivo sobre una mención histórica: {texto!r}"
         )
+
+
+def test_ningun_documento_se_presenta_con_otra_version_del_estandar():
+    """`scripts/README.md` se presentaba como «v39.0» con el estándar en v40.36.
+
+    El barrido de arriba mira la forma que **afirma** («versión vigente: vX») y
+    esta cabecera tenía otra: el nombre del estándar seguido del número. Recorre
+    los mismos documentos, sin lista, por la razón que ya da este fichero.
+    """
+    forma = re.compile(r"Vault Obsidian Architecture\**\s+v(\d+(?:\.\d+)?)")
+    culpables = []
+    for ruta in _docs_del_repo():
+        texto = ruta.read_text(encoding="utf-8", errors="replace")
+        for m in forma.finditer(texto):
+            if m.group(1) != NUMERO:
+                linea = texto[: m.start()].count("\n") + 1
+                culpables.append(f"{ruta.relative_to(ROOT).as_posix()}:{linea}: v{m.group(1)}")
+    assert not culpables, (
+        "documento presentado con una versión que no es la vigente; quítala "
+        "en vez de actualizarla:\n  " + "\n  ".join(culpables)
+    )

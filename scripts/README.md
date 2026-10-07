@@ -1,6 +1,6 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture v39.0**. Implementan las 120 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
+Scripts Python del estándar **Vault Obsidian Architecture** (versión vigente: `vault_version.CURRENT_VERSION`). Implementan las 120 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
 - **158 archivos Python** — 120 tools del catálogo MCP (118 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición

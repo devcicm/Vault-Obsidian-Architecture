@@ -112,7 +112,7 @@ Si necesitas un dato de estos, léelo del registro — no lo redefinas ni lo cop
 | Vocabulario de `status` (12 valores) | `vault_norms.STATUS_VOCAB` |
 | Fundamentos F1–F8 y dimensiones DQ | `scripts/vault_fundamentals_catalog.py` — hoja del núcleo desde v40.28 (AP-62); `vault_fundamentals` lo reexporta, pero entrar por ahí arrastra el verificador |
 | Tríada CIA, FAIR, V's del Big Data, cobertura ISO, matriz de trazabilidad | `vault_fundamentals_catalog.FRAMEWORK_REGISTRIES` |
-| Versión vigente del estándar (en código) | `vault_version.CURRENT_VERSION` — hoja del núcleo desde v40.28. El banner, la tabla de versiones, el badge y `pyproject.toml` son documentación y los vigila `vault_doc_counts` |
+| Versión vigente del estándar (en código) | `vault_version.CURRENT_VERSION` — hoja del núcleo desde v40.28. El banner, la tabla de versiones, el badge y `pyproject.toml` son documentación y los vigila `tests/test_version_coherence.py` (`vault_doc_counts` vigila cifras, no la versión) |
 | Criterio «esto es documentación del estándar, no una nota» y tabla de penalizaciones | `vault_audit_catalog` — hoja del núcleo desde v40.28 |
 | Gramática de Mermaid (tipos y validadores) | `vault_mermaid_reglas` — hoja del núcleo desde v40.28; `vault_mermaid_check` es el que recorre el vault aplicándola |
 | Causa de un fallo del **dominio** (vocabulario cerrado; cuántas entradas lo dice `CAUSAS`) | `vault/kernel/fallos.py` — `CAUSAS` + `FalloDeDominio`. Hoja del núcleo: sin un solo import fuera de `typing`. El dominio nombra qué pasó; **no** construye el envelope ni conoce `ERROR_CATALOG` |
