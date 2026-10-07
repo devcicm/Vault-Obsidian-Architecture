@@ -1,7 +1,7 @@
 # Vault Obsidian Architecture — Agente LLM con Memoria Documental
 
 **Autor:** CARLOS IVAN CM  
-**Versión:** v41.0 — 2026-10-07  
+**Versión:** v41.1 — 2026-10-07  
 **Aplicable a:** Cualquier agente LLM con acceso a sistema de archivos (Node.js, Python, Go, Rust)
 
 ---
@@ -7302,6 +7302,7 @@ El estándar sigue versionado simplificado `vNN` (entero incremental). Cada vers
 | v38.0 | 2026-07-11 | Robustez de frontmatter: coacción de `datetime`/`date` a ISO en el límite de lectura, sin migración de datos |
 | v38.1 | 2026-07-12 | AP-36 (contención e idempotencia), enforcement `manual` eliminado (43 normas, 0 manual), STATUS_VOCAB unificado, índices sin alias con saneamiento en 3 fases, vault-root lazy, CI estricto |
 | v40.30 | 2026-08-16 | **Cuatro medidas cuyo alcance declarado era más ancho que el que de verdad recorrían, y tres defectos que solo existen fuera de este repo.** El resultado de una medida así no es un error sino un **cero**, que se lee igual que estar limpio: `cli/` llevaba en `ARBOLES_MEDIDOS` desde v40.9 sin contexto declarado, así que `_mapa_modulos()` devolvía `None` y las dos rutas de detección descartaban sus ficheros antes de leer un import; `vault_ciclos` medía el grafo de `scripts/`, de modo que `vault/` —el paquete que existe para imponer fronteras— era el único cuyos ciclos no contaba nadie; y `vault_audit` recorría el disco 25 veces por invocación para leer lo mismo. Los otros tres salieron de instalar `scripts vault cli mcp` **fuera del repo** y ejecutar contra un vault vacío, que es la regla 7 aplicada al propio programa: la autodetección caía a `repo_root_fallback` —«no encontré nada y estoy suponiendo»— y devolvía el directorio del toolkit, así que las escrituras aterrizaban dentro del programa; el servidor MCP escaneaba hacia arriba y registraba tres vaults ajenos **con `VAULT_ROOT` explícito puesto**, un inventario del disco del usuario expuesto al agente como default; y 23 llamadas a `subprocess` en 13 módulos decodificaban con la locale de la máquina mientras el toolkit emite UTF-8, lo que en cp1252 corrompe el acento en silencio y en cp932 tumba la tool entera. Ninguno de los siete podía verse desde dentro: el entorno que generó la medida comparte sus supuestos |
+| v41.1 | 2026-10-07 | **Qué contrato cumple cada nota y qué notas no pertenecen a ninguna sección.** Clase `sin_seccion` en el contrato: un `.md` de la raíz o de una carpeta no registrada lleva identidad y timestamps, no CIA, `agent`, `tags`, `type` ni `status`. `vault_validate --check cumplimiento` informa por nota las versiones del contrato que cumple y lo que le falta para la vigente. `vault_audit` publica `notIntegrated` (notas que solo enlaza un índice) y la acción de las huérfanas deja de citar AP-13. 4463 tests, 23 puertas |
 | v41.0 | 2026-10-07 | **El contrato de nota es el criterio de lo que se escribe y se valida.** `vault_contrato_nota` es el dueño de los campos de una nota y de su nivel en cada versión desde v18; `vault_validate --contrato vNN` valida contra una versión anterior y cada versión desde v18 publica su JSON Schema en `schemas/`. **Ruptura:** `type` y `status` pasan de recomendados (v37–v40) a requeridos en notas de contenido, por presencia; `vault_frontmatter_completar` los pone. Los seis escritores cumplen el contrato entero; `jsonschema` declarado en el extra dev. 4431 tests, 23 puertas |
 | v40.36 | 2026-10-05 | **Lo que encontró usar la wheel contra un vault real.** Escritura en LF también en Windows (primitivo atómico e índices de sección); `vault_append` separa el bloque, deja un solo salto final y refresca `updatedAt` (AP-13); una escritura con frontmatter ilegible sale con `FRONTMATTER_PARSE_ERROR` y `vault_read` lo declara (AP-51, AP-52); soltar el último lock retira `.locks/` y `vault_knowledge_save` comparte lock con los demás escritores; `vault_reindex` no muere por el límite de 60 s; `vault tools show` publica los parámetros; el upgrade sella en LF y crea sus carpetas de registro. 4276 tests, 22 puertas |
 | v40.35 | 2026-10-04 | **Producto que un tercero instala y usa sin exponer su disco ni su vault.** Seguridad: el MCP por HTTP exige token y rechaza `Origin`/`Host` ajenos (SP-04), los argumentos MCP se validan contra el schema, `vault_diff` no sale del vault y los envelopes no filtran rutas ni traceback. Identidad: registro de proyectos (AP-63), nombre de fichero con `slugify_strict` (CN-01), `Status` y `ErrorCode` derivados de sus registros (CN-03, AP-52) y H1 obligatorio (CN-04). Un solo escritor de frontmatter en el núcleo (AP-46), escrituras bajo lock entre procesos (F1, CIA) y ningún vault fantasma con `VAULT_ROOT` inexistente (AP-36). La wheel deja fuera la gobernanza del estándar y lleva el servidor MCP. 4238 tests, 22 puertas |
@@ -7661,6 +7662,34 @@ temp/
 > Solo se corrigen errores factuales (hashes, rutas, conteos) y se añaden las que falten.
 
 ---
+
+### v41.1 — 2026-10-07 `git: pending`
+
+**Qué contrato cumple cada nota y qué notas no pertenecen a ninguna sección.**
+
+v41.0 dio al contrato de nota un dueño y una historia. Medido contra dos vaults
+ajenos en solo lectura, quedaban tres preguntas que el contrato no sabía contestar.
+
+**Notas fuera de toda sección.** Un `README.md` de la raíz o un `.md` dentro de una
+carpeta que el registro no declara se juzgaba como contenido, y el contrato le pedía la
+CIA, el `type` y el `status` que decide una sección. La clase nueva `sin_seccion`
+(`vault_registry.es_de_seccion`, desde v41) le exige identidad y timestamps. Las
+versiones anteriores la siguen juzgando como contenido, que es lo que su validador
+hacía: la clase no reescribe la historia. El JSON Schema de v41 publica
+`#/$defs/sin_seccion`.
+
+**En qué versión se quedó cada nota.** `vault_validate --check cumplimiento` recorre
+las notas y publica, por nota, las versiones cuyo contrato cumple, la más alta y los
+campos que le faltan para la vigente. Se publica la lista y no un umbral porque el
+cumplimiento no es monótono: una nota con `id` y `title` cumple de v25 a v36 y ni v18
+ni v37. El juez es `validate_frontmatter`, el mismo de `--contrato` (AP-57). Es un
+informe: no reprueba ni cambia `ok`, y los artefactos derivados se cuentan aparte.
+
+**Notas enlazadas solo desde un índice.** `vault_audit` publica `notIntegrated`: notas
+cuyo único entrante es estructural y que no enlazan a nada. No son huérfanas para el
+grafo y tampoco están integradas en él. Es una medida, sin penalización. La acción
+recomendada para las huérfanas dejaba de ser cierta: citaba AP-13 y prometía que
+`type: reference` las eximía; ahora pide el enlace desde una nota del mismo tema.
 
 ### v41.0 — 2026-10-07 `git: 75555fa`
 
