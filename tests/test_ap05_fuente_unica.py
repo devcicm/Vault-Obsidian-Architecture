@@ -54,7 +54,7 @@ class TestLoQueVe:
         assert "a.md" in texto and "b.md" in texto
 
     def test_las_notas_salen_con_barra_normal(self, vault):
-        """Medido en /vcloud desde Windows (2026-10-07): `infra\a.md`. Las
+        """Medido en una copia de /ans desde Windows (2026-10-07): `infra\a.md`. Las
         rutas del vault se publican con `/` en todas las plataformas, como
         el resto del toolkit, para que el informe se compare y se enlace."""
         notas = [n for c in fu.medir(vault) for ns in c["valores"].values() for n in ns]
