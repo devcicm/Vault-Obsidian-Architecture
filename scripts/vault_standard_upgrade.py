@@ -20,7 +20,8 @@ import json
 import re
 import sys
 from vault_errors import emit_error, wrap_main
-from vault_lib import utcnow
+from vault_lib import parse_frontmatter, utcnow
+from vault_contrato_nota import clase_de_nota, contrato_de_version, faltantes
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -590,7 +591,16 @@ def _crear_carpetas(carpetas: List[str]) -> None:
         folder_path.mkdir(parents=True, exist_ok=True)
         (folder_path / ".gitkeep").touch()
 
-FM_REQUIRED_FIELDS = ("id", "title", "createdAt")
+def _contrato_aplicable(target_version: str) -> Optional[str]:
+    """La versión de contrato con que se mide un vault en `target_version`.
+
+    `None` —el contrato vigente— si la versión cae fuera de las que tienen
+    contrato registrado: medir contra uno inventado sería peor que no acotarlo.
+    """
+    try:
+        return contrato_de_version(target_version)["version"]
+    except ValueError:
+        return None
 
 
 def _run_compliance_check(target_version: str) -> Dict[str, Any]:
@@ -610,25 +620,33 @@ def _run_compliance_check(target_version: str) -> Dict[str, Any]:
             }
         )
 
-    # 2. Frontmatter compliance
-    md_files = list(_raiz().rglob("*.md"))
-    md_files = [f for f in md_files if not any(p.startswith(".") for p in f.parts)]
+    # 2. Frontmatter compliance (AP-12, AP-57): los campos los dice el contrato
+    # de nota de la versión aplicada, y el frontmatter lo lee el parser del
+    # consumidor (AP-44), que acepta BOM y CRLF. Los índices derivados no son
+    # notas cuando el contrato los exime.
+    contrato = _contrato_aplicable(target_version)
+    raiz = _raiz()
+    md_files = []
+    for f in raiz.rglob("*.md"):
+        relativa = f.relative_to(raiz)
+        if any(p.startswith(".") for p in relativa.parts):
+            continue
+        rel = relativa.as_posix()
+        if clase_de_nota(rel) == "derivada" and not faltantes({}, rel, contrato):
+            continue
+        md_files.append((f, rel))
     total_md = len(md_files)
     compliant_md = 0
 
     if total_md > 0:
-        import re
-
-        for md_path in md_files:
+        for md_path, rel in md_files:
             try:
                 text = md_path.read_text(encoding="utf-8", errors="replace")
-                fm_match = re.match(r"^---\n(.*?)\n---", text, re.DOTALL)
-                if fm_match:
-                    fm_text = fm_match.group(1)
-                    if all(f"{field}:" in fm_text for field in FM_REQUIRED_FIELDS):
-                        compliant_md += 1
-            except Exception:
-                compliant_md -= 1
+            except OSError:
+                continue  # ilegible: no cumple, y no resta a las demás
+            datos = parse_frontmatter(text)
+            if datos and not faltantes(datos, rel, contrato):
+                compliant_md += 1
         frontmatter_compliance = round(compliant_md / total_md, 2)
     else:
         frontmatter_compliance = 1.0
@@ -675,6 +693,7 @@ def _run_compliance_check(target_version: str) -> Dict[str, Any]:
 
     return {
         "applied_version": target_version,
+        "contract_version": contrato or CURRENT_VERSION,
         "compliance_score": compliance_score,
         "folders_ok": folders_ok,
         "missing_folders": missing_folders,
