@@ -8832,5 +8832,21 @@
         "docs": null
       }
     }
+  },
+  "perfiles": {
+    "agente": [
+      "vault_audit",
+      "vault_context_pack",
+      "vault_delete",
+      "vault_delta",
+      "vault_drift_detect",
+      "vault_preferences",
+      "vault_read",
+      "vault_reindex",
+      "vault_search",
+      "vault_standard_upgrade",
+      "vault_validate",
+      "vault_write"
+    ]
   }
 }

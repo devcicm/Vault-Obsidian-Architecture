@@ -7212,6 +7212,29 @@ PASO 5 — Al cerrar la sesión:
      --reason "Duplicate of glossary/jwt.md" --agent claude
    ```
 
+> **v41.2 — El protocolo de sesión es un registro (`superseded_by:`
+> `vault.meta_toolkit.protocolo_de_sesion.PROTOCOLO_DE_SESION`).** Los PASOS 0–5 y
+> las reglas de arriba se conservan por la política de no-derogación, pero el
+> protocolo que se aplica es el del registro, y un test falla si esta sección deja
+> de nombrar una de sus tools. Lo que el texto de v22 no decía:
+>
+> - **Al empezar**, además de los PASOS 0–3: `vault_preferences --context` carga
+>   entero el contexto estable de `17_Preferences/`.
+> - **Para recordar:** `vault_context_pack --query` convierte la pregunta en un
+>   paquete de contexto acotado al presupuesto; `vault_search` comprueba que una
+>   nota existe antes de enlazarla (SP-02) y `vault_read` la lee entera.
+> - **Para borrar:** `vault_delete --path --reason`, que escribe la entrada del
+>   change-log por sí misma (SP-01). La regla 7 —llamar antes a `vault_change_log`—
+>   queda `superseded_by: vault_delete`: hacerlo a mano duplica la entrada.
+> - **Antes de una operación masiva:** `vault_delta --snapshot` (SP-03).
+>
+> La regla 2 nombra las secciones `00_System` … `11_Code` y `99_Index`; desde v41.2
+> un vault declara las suyas en `00_System/secciones.json` y lo que vale es
+> `vault_registry.secciones_del_vault`. La tabla de abajo dice «las 37 tools»: el
+> número vigente lo da el catálogo MCP, y quien no quiera exponerlas todas pide el
+> perfil `agente` —las tools del protocolo, derivadas del registro— en
+> `tools-catalog.json` → `perfiles`.
+
 ### Compatibilidad con harnesses de terceros
 
 El estándar es agnóstico al LLM y al harness. Para adoptar en un harness existente:

@@ -5123,6 +5123,7 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
 
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     from vault.meta_toolkit.naturalezas import NATURALEZAS
+    from vault.meta_toolkit.protocolo_de_sesion import PERFILES, tools_del_perfil
 
     # Derivar execution_module sin dependencia circular (AP-58).
     # A2: toda tool runtime con script tiene execution_module derivado.
@@ -5205,6 +5206,12 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
         # transporte. El `.mjs` no puede importar `ERROR_CATALOG`; lo lee de
         # aquí, y `--check` falla si la copia envejece.
         "errors": errores_para_transporte(),
+        # v41.2 — los perfiles que un cliente MCP puede pedir con
+        # `VAULT_MCP_PERFIL`. Por MCP el agente recibía todas las tools
+        # `runtime` sin guía de cuáles usa una sesión; el perfil `agente` es la
+        # unión de las que nombra `PROTOCOLO_DE_SESION`, y viaja por esta
+        # pasarela porque el `.mjs` no puede importar el registro.
+        "perfiles": {p: tools_del_perfil(p) for p in sorted(PERFILES)},
     }
 
     with open(output_path, "w", encoding="utf-8", newline="\n") as f:

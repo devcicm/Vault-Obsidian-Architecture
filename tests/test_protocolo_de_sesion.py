@@ -1,0 +1,89 @@
+"""El protocolo de sesión del agente es un registro, y el perfil `agente` sale de él.
+
+Medido el 2026-10-07: el protocolo de sesión vivía solo en el manifiesto
+(§ Protocolo de sesión para LLMs remotos, de v22). No nombraba
+`vault_context_pack` ni `vault_preferences` —el camino de recordar, que es la
+mitad de la promesa de `vault_servicio.SERVICIO`, llegó en v39—, mandaba
+llamar `vault_change_log` antes de borrar cuando `vault_delete` ya lo hace
+(SP-01), y por MCP el agente recibía las 96 tools `runtime` sin ninguna guía
+de cuáles usa una sesión. Un concepto que solo existe en el manifiesto no
+existe (regla 3): ahora es `vault.meta_toolkit.protocolo_de_sesion`.
+"""
+
+import json
+import re
+import sys
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "scripts"))
+
+from vault.meta_toolkit.naturalezas import NATURALEZAS  # noqa: E402
+from vault.meta_toolkit.protocolo_de_sesion import (  # noqa: E402
+    PERFILES,
+    PROTOCOLO_DE_SESION,
+    tools_del_perfil,
+)
+
+CATALOGO = json.loads(
+    (ROOT / "mcp" / "nodejs" / "tools-catalog.json").read_text(encoding="utf-8"))
+
+
+def _naturaleza(tool):
+    return next((n for n, d in NATURALEZAS.items() if tool in d["tools"]), None)
+
+
+def _pasos():
+    for momento, datos in PROTOCOLO_DE_SESION.items():
+        for paso in datos["pasos"]:
+            yield momento, paso
+
+
+def test_todo_paso_dice_para_que_y_de_donde_sale():
+    for momento, paso in _pasos():
+        assert paso["tool"].startswith("vault_"), (momento, paso)
+        assert paso["para"].strip(), (momento, paso["tool"])
+        assert paso["fuente"].strip(), (momento, paso["tool"])
+
+
+@pytest.mark.parametrize("perfil", sorted(PERFILES))
+def test_el_perfil_solo_tiene_tools_que_un_agente_puede_llamar(perfil):
+    for tool in tools_del_perfil(perfil):
+        entrada = CATALOGO["tools"].get(tool)
+        assert entrada is not None, f"{tool} no está en el catálogo"
+        assert entrada["exposed_via_mcp"] is True, f"{tool} no se expone por MCP"
+        assert _naturaleza(tool) != "meta_estandar", f"{tool} mide el repo, no el vault"
+
+
+def test_el_perfil_agente_es_el_protocolo_entero():
+    """Derivado, no escrito a mano: cada tool que un paso nombra, y ninguna más."""
+    assert tools_del_perfil("agente") == sorted({p["tool"] for _, p in _pasos()})
+
+
+def test_el_perfil_agente_puede_recordar_y_escribir():
+    """La promesa tiene dos mitades: lo que el agente necesita recordar se le
+    devuelve como contexto, y lo que escribe queda gobernado."""
+    tools = tools_del_perfil("agente")
+    assert "vault_context_pack" in tools
+    assert {_naturaleza(t) for t in tools} >= {"consulta", "documentacion", "custodia"}
+
+
+def test_el_catalogo_mcp_publica_los_perfiles():
+    assert CATALOGO.get("perfiles") == {p: tools_del_perfil(p) for p in sorted(PERFILES)}
+
+
+def test_un_perfil_desconocido_no_devuelve_vacio():
+    with pytest.raises(KeyError):
+        tools_del_perfil("no-existe")
+
+
+def test_el_manifiesto_nombra_cada_tool_del_protocolo():
+    texto = (ROOT / "vault-obsidian-architecture.md").read_text(encoding="utf-8")
+    inicio = texto.index("## Protocolo de sesión para LLMs remotos")
+    seccion = texto[inicio:texto.index("\n## ", inicio + 1)]
+    faltan = sorted({p["tool"] for _, p in _pasos()
+                     if not re.search(rf"\b{p['tool']}\b", seccion)})
+    assert not faltan, f"el manifiesto no nombra: {faltan}"
