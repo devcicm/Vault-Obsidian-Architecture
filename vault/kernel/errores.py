@@ -1939,7 +1939,9 @@ def completar_envelope(tool: str, envelope: Dict[str, Any]) -> Dict[str, Any]:
       catálogo; el sitio no lo pisa, porque es lo que el consumidor lee.
     - `message` del sitio gana sobre el del catálogo, y si no hay, `error`.
     - Un `recovery` en cadena es más específico que el del catálogo y pasa a
-      `recovery.hint`; la `action` sigue saliendo del catálogo.
+      `recovery.hint`; la `action` sigue saliendo del catálogo. Un `recovery`
+      que ya es dict —el envelope salió de `emit_error(..., pista=)`— conserva
+      su `hint`: tirarlo devolvía la pista genérica del catálogo (v41.2).
 
     Un éxito, o un fallo sin `error_code`, se devuelve tal cual: inventarle un
     código sería el defecto que AP-52 persigue.
@@ -1951,6 +1953,8 @@ def completar_envelope(tool: str, envelope: Dict[str, Any]) -> Dict[str, Any]:
     mensaje = mensaje_de(propio)
     propio.pop("message", None)
     recuperacion = propio.pop("recovery", None)
+    if isinstance(recuperacion, dict):
+        recuperacion = recuperacion.get("hint")
     for clave in _ErrorEnvelopeBase.__annotations__:
         propio.pop(clave, None)
     entry = construir_error(

@@ -96,6 +96,20 @@ def test_una_recuperacion_especifica_pasa_a_hint():
     assert env["message"] == "grande"
 
 
+
+def test_completar_un_envelope_ya_canonico_conserva_su_pista():
+    """El CLI de `vault_write` completa todo lo que devuelve; un `emit_error`
+    con `pista=` ya trae `recovery` como dict y su `hint` es la del sitio.
+    Tirarla por no ser cadena devolvía la del catálogo, que para
+    INVALID_FOLDER manda a «la estructura estándar» justo cuando la salida es
+    declarar una sección propia."""
+    from vault_errors import emit_error
+    hecho = emit_error("vault_write", "INVALID_FOLDER", "x", pista="la del sitio")
+    env = completar_envelope("vault_write", hecho)
+    assert problemas_de_forma(env) == []
+    assert env["recovery"]["hint"] == "la del sitio"
+    assert env["recovery"]["action"] == ERROR_CATALOG["INVALID_FOLDER"]["recovery"]["action"]
+
 def test_un_exito_no_se_toca():
     ok = {"ok": True, "written": 1}
     assert completar_envelope("vault_write", ok) is ok
