@@ -18,6 +18,8 @@ NO importa de vault_io ni de ningún otro vault_* — importar desde aquí
 nunca crea dependencias circulares.
 """
 
+import json
+import re
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -820,7 +822,100 @@ def es_artefacto_derivado(ruta_relativa: str) -> bool:
     return rel.rsplit("/", 1)[-1].lower() == "index.md" or rel in DERIVED_ARTIFACTS
 
 
-def es_de_seccion(ruta_relativa: str) -> bool:
+# ──────────────────────────────────────────────────────────────────────────────
+# Secciones propias — las que declara un vault, no el estándar
+# ──────────────────────────────────────────────────────────────────────────────
+#
+# Un vault vivo necesita a veces una sección que el estándar no tiene (`/ans`
+# guarda `scripts/` en la raíz). Hasta v41.1 la única salida era CN-02: o la
+# carpeta encajaba en una de las 23 secciones o era una violación. Una sección
+# propia se **declara** en el vault —no en este fichero, que es del estándar—
+# y desde ese momento cuenta como sección para el contrato, el audit y los
+# índices. Lo que no se declara sigue siendo CN-02.
+#
+# El fichero lo escribe `vault_section`; este módulo solo lo lee y valida. No
+# importa `vault_io` (ver cabecera), así que la raíz se pasa como argumento.
+
+#: Dónde declara un vault sus secciones propias, relativo a su raíz.
+SECCIONES_PROPIAS_RUTA = "00_System/secciones.json"
+
+#: Números libres para secciones propias: del primero que el estándar no usa
+#: (22, tras `21_QA`) al anterior a `99_Index`. Una sección nueva del estándar
+#: tomaría el siguiente número libre *del estándar*, así que el rango se deriva
+#: del registro en vez de escribirse.
+NUMEROS_PROPIOS = (
+    max(int(f[:2]) for f in ORDERED_SECTIONS if f != "99_Index") + 1,
+    int("99_Index"[:2]) - 1,
+)
+
+#: Estado de una sección propia. `retirada` no se borra (no-derogación): sus
+#: notas siguen siendo de sección y `superseded_by` dice adónde va lo nuevo.
+ESTADOS_DE_SECCION = ("activa", "retirada")
+
+_NOMBRE_DE_SECCION = re.compile(r"^(\d{2})_[A-Za-z][A-Za-z0-9_]*$")
+
+
+def motivo_de_nombre_invalido(carpeta: str) -> Optional[str]:
+    """Por qué `carpeta` no puede ser una sección propia; None si puede."""
+    m = _NOMBRE_DE_SECCION.match(carpeta or "")
+    if not m:
+        return "el nombre debe ser NN_Nombre: dos cifras, guion bajo y letras, cifras o guiones bajos"
+    numero = int(m.group(1))
+    if not NUMEROS_PROPIOS[0] <= numero <= NUMEROS_PROPIOS[1]:
+        return (f"el número {numero:02d} no está libre: las secciones propias van del "
+                f"{NUMEROS_PROPIOS[0]:02d} al {NUMEROS_PROPIOS[1]:02d}")
+    if carpeta in ORDERED_SECTIONS:
+        return "ya es una sección del estándar"
+    return None
+
+
+def leer_secciones_propias(raiz: Path) -> List[Dict[str, Optional[str]]]:
+    """Las secciones propias declaradas en el vault de `raiz`, en orden de número.
+
+    Sin fichero devuelve `[]`: un vault sin secciones propias es lo normal. Un
+    fichero que existe y no se puede leer, o una entrada inválida, **lanza
+    ValueError**: devolver `[]` ahí sería decir «no hay secciones propias» de un
+    vault que sí las declaró, y cada nota suya pasaría a violar CN-02 sin que
+    nadie supiera por qué (AP-51).
+    """
+    ruta = Path(raiz) / SECCIONES_PROPIAS_RUTA
+    if not ruta.is_file():
+        return []
+    try:
+        datos = json.loads(ruta.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as e:
+        raise ValueError(f"{SECCIONES_PROPIAS_RUTA} no se puede leer: {e}") from e
+    secciones = datos.get("secciones") if isinstance(datos, dict) else None
+    if not isinstance(secciones, list):
+        raise ValueError(f"{SECCIONES_PROPIAS_RUTA}: falta la lista 'secciones'")
+    vistas = set()
+    for s in secciones:
+        carpeta = s.get("folder") if isinstance(s, dict) else None
+        motivo = motivo_de_nombre_invalido(carpeta)
+        if motivo:
+            raise ValueError(f"{SECCIONES_PROPIAS_RUTA}: {carpeta!r} — {motivo}")
+        if carpeta in vistas or carpeta[:2] in {v[:2] for v in vistas}:
+            raise ValueError(f"{SECCIONES_PROPIAS_RUTA}: {carpeta!r} repite número o nombre")
+        vistas.add(carpeta)
+        if s.get("documentacion") not in DOCUMENTACION_CLASES:
+            raise ValueError(f"{SECCIONES_PROPIAS_RUTA}: {carpeta!r} — 'documentacion' "
+                             f"debe ser una de {', '.join(DOCUMENTACION_CLASES)}")
+        if s.get("status", "activa") not in ESTADOS_DE_SECCION:
+            raise ValueError(f"{SECCIONES_PROPIAS_RUTA}: {carpeta!r} — 'status' debe ser "
+                             f"una de {', '.join(ESTADOS_DE_SECCION)}")
+    return sorted(secciones, key=lambda s: s["folder"])
+
+
+def secciones_del_vault(raiz: Path) -> List[str]:
+    """Las del estándar más las propias declaradas (activas y retiradas), en orden.
+
+    Las retiradas cuentan: sus notas no dejan de ser de sección por haberse
+    retirado la sección para lo nuevo.
+    """
+    return sorted(ORDERED_SECTIONS + [s["folder"] for s in leer_secciones_propias(raiz)])
+
+
+def es_de_seccion(ruta_relativa: str, raiz: Optional[Path] = None) -> bool:
     """¿Vive la nota dentro de una carpeta de sección del registro?
 
     Un `.md` de la raíz (`README.md`, `Home.md`) o de una carpeta que el
@@ -828,9 +923,17 @@ def es_de_seccion(ruta_relativa: str) -> bool:
     contrato no puede exigirle lo que decide la sección: tipo y sensibilidad.
     El criterio es la primera componente de la ruta, y solo cuenta si hay algo
     debajo: `07_Knowledge.md` en la raíz no es de `07_Knowledge/`.
+
+    Con `raiz`, también cuentan las secciones propias que ese vault declara
+    (`leer_secciones_propias`). Sin ella, solo las del estándar: quien no sabe
+    de qué vault es la ruta no puede saber qué secciones declaró.
     """
     partes = ruta_relativa.replace("\\", "/").split("/")
-    return len(partes) > 1 and partes[0] in ORDERED_SECTIONS
+    if len(partes) < 2:
+        return False
+    if partes[0] in ORDERED_SECTIONS:
+        return True
+    return raiz is not None and partes[0] in secciones_del_vault(raiz)
 
 
 def section_documentacion(folder: str) -> str:
