@@ -5922,6 +5922,10 @@
             "type": "string",
             "description": "Qué contiene la sección"
           },
+          "tipos": {
+            "type": "string",
+            "description": "Tipos de nota de la sección, separados por comas; el primero es el que vault_write escribe si la nota no trae type"
+          },
           "superseded-by": {
             "type": "string",
             "description": "Sección que sustituye a la retirada"

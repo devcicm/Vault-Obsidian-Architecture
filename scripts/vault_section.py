@@ -38,6 +38,7 @@ from vault_registry import (
     SECCIONES_PROPIAS_RUTA,
     leer_secciones_propias,
     motivo_de_nombre_invalido,
+    motivo_de_tipos_invalidos,
     secciones_del_vault,
 )
 
@@ -98,7 +99,7 @@ def listar(raiz: Optional[Path] = None) -> Dict[str, Any]:
 
 
 def anadir(folder: str, documentacion: Optional[str], description: str = "",
-           raiz: Optional[Path] = None) -> Dict[str, Any]:
+           raiz: Optional[Path] = None, tipos: Optional[List[str]] = None) -> Dict[str, Any]:
     """Declara `folder` como sección propia y crea la carpeta si no existe.
 
     Es la salida de CN-02 para una carpeta que el vault necesita: el nombre y
@@ -116,6 +117,10 @@ def anadir(folder: str, documentacion: Optional[str], description: str = "",
         return emit_error(TOOL, "INVALID_VALUE",
                           f"--documentacion {documentacion!r}: debe ser una de "
                           + ", ".join(DOCUMENTACION_CLASES))
+    if tipos is not None:
+        motivo = motivo_de_tipos_invalidos(tipos)
+        if motivo:
+            return emit_error(TOOL, "INVALID_VALUE", f"--tipos: {motivo}")
     propias, error = _leer(raiz)
     if error:
         return error
@@ -127,6 +132,8 @@ def anadir(folder: str, documentacion: Optional[str], description: str = "",
     entrada = {"folder": folder, "documentacion": documentacion, "status": "activa"}
     if description:
         entrada["description"] = description
+    if tipos is not None:
+        entrada["tipos"] = tipos
     _guardar(raiz, propias + [entrada])
     carpeta = raiz / folder
     creada = not carpeta.is_dir()
@@ -136,6 +143,7 @@ def anadir(folder: str, documentacion: Optional[str], description: str = "",
         "written": 1,
         "folder": folder,
         "documentacion": documentacion,
+        "tipos": tipos,
         "created_folder": creada,
         "registry": SECCIONES_PROPIAS_RUTA,
     }
@@ -196,13 +204,17 @@ Ejemplos:
     parser.add_argument("--documentacion", type=str,
                         help="Clase de documento: " + ", ".join(DOCUMENTACION_CLASES))
     parser.add_argument("--description", type=str, default="", help="Qué contiene la sección")
+    parser.add_argument("--tipos", type=str,
+                        help="Tipos de nota de la sección, separados por comas; el "
+                             "primero es el que vault_write escribe si la nota no trae type")
     parser.add_argument("--superseded-by", type=str, dest="superseded_by",
                         help="Sección que sustituye a la retirada")
     parser.add_argument("--json", action="store_true", help="Salida JSON")
 
     args = parser.parse_args()
     if args.add:
-        result = anadir(args.add, args.documentacion, args.description)
+        tipos = None if args.tipos is None else [t.strip() for t in args.tipos.split(",")]
+        result = anadir(args.add, args.documentacion, args.description, tipos=tipos)
     elif args.retire:
         result = retirar(args.retire, args.superseded_by)
     else:

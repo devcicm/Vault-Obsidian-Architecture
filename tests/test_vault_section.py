@@ -135,3 +135,18 @@ def test_un_registro_roto_falla_en_voz_alta_y_no_se_reescribe(raiz):
         r = _ejecutar(raiz, *argv)
         assert r["ok"] is False and r["error_code"] == "DATA_FILE_CORRUPT"
     assert destino.read_text(encoding="utf-8") == "{roto"
+
+
+def test_add_declara_los_tipos_de_la_seccion(raiz):
+    r = _ejecutar(raiz, "--add", "22_Scripts", "--documentacion", "referencia",
+                  "--tipos", "script, deploy")
+    assert r["ok"] and r["tipos"] == ["script", "deploy"]
+    assert _registro(raiz)["secciones"][0]["tipos"] == ["script", "deploy"]
+    assert reg.section_default_type("22_Scripts", raiz) == "script"
+
+
+def test_add_con_tipos_invalidos_no_escribe(raiz):
+    r = _ejecutar(raiz, "--add", "22_Scripts", "--documentacion", "guia",
+                  "--tipos", "con espacio")
+    assert r["ok"] is False and r["error_code"] == "INVALID_VALUE"
+    assert not (raiz / reg.SECCIONES_PROPIAS_RUTA).exists()

@@ -6869,6 +6869,12 @@ el contrato de nota, el audit y los índices. Retirarla (`--retire`, con
 no se declara sigue siendo CN-02, y un `secciones.json` ilegible se reporta como CN-02
 en vez de leerse como «no hay secciones propias».
 
+La sección propia declara también sus `tipos` (`--tipos a,b`), que hacen para ella lo
+que `vault_registry.SECTION_TYPES` hace para las del estándar: el primero es el `type`
+que el write path deriva de la carpeta. Sin `tipos`, la nota tiene que traer su `type`;
+`vault_write` no deja nacer una nota de sección sin él, porque el contrato de contenido
+lo exige.
+
 **Enforcement:** guard+audit — `vault_write` requiere `--folder` canónico;
 `vault_section_index` rechaza raíz/carpetas ad-hoc; `vault_norms --audit` detecta
 carpetas no canónicas retroactivamente.

@@ -504,7 +504,7 @@ CAMPOS_DE_META = ("type", "status", "cia_integrity", "cia_availability",
                   "cia_sensitivity", "agent")
 
 
-def problemas_de_meta(meta: Any, folder: str = "") -> List[str]:
+def problemas_de_meta(meta: Any, folder: str = "", raiz: Optional[Path] = None) -> List[str]:
     """Lo que `--meta` no puede decir, antes de escribir nada.
 
     `--meta` es la puerta abierta del frontmatter: el vocabulario de claves es
@@ -559,7 +559,12 @@ def problemas_de_meta(meta: Any, folder: str = "") -> List[str]:
     if isinstance(meta.get("type"), str) and folder:
         from vault_registry import type_misfiled_in
 
-        destino = type_misfiled_in(folder, meta["type"])
+        try:
+            destino = type_misfiled_in(folder, meta["type"], raiz)
+        except ValueError:
+            # `secciones.json` ilegible: el control del destino lo reporta como
+            # DATA_FILE_CORRUPT; decidir aquí sin leerlo sería adivinar.
+            destino = []
         if destino:
             problemas.append(
                 f"type {meta['type']!r} pertenece a {', '.join(destino)}, no a "
@@ -577,6 +582,7 @@ def generate_frontmatter(
     existing_created: Optional[str] = None,
     norm_refs: Optional[List[str]] = None,
     folder: str = "",
+    raiz: Optional[Path] = None,
 ) -> str:
     """El único autor del frontmatter — AP-46, AP-12, AP-13 y CN-02 a la vez.
 
@@ -643,7 +649,7 @@ def generate_frontmatter(
 
     # v37: type auto-deduced from folder if not provided in meta
     if "type" not in meta and folder:
-        deduced = _deduce_type_from_folder(folder)
+        deduced = tipo_por_carpeta(folder, raiz)
         if deduced:
             fm.set("type", deduced)
 
@@ -704,14 +710,18 @@ def generate_frontmatter(
 # write path escribía, valor por valor.
 
 
-def tipo_por_carpeta(folder: str) -> str:
-    """Derive type field value from the vault section folder."""
+def tipo_por_carpeta(folder: str, raiz: Optional[Path] = None) -> str:
+    """Derive type field value from the vault section folder.
+
+    Con `raiz`, una sección propia aporta el primero de los `tipos` que
+    declara (`vault_registry.section_types`); sin ella, solo las del estándar.
+    """
     if not folder:
         return ""
     from vault_registry import section_default_type
 
     top = folder.split("/")[0].split("\\")[0]
-    return section_default_type(top)
+    return section_default_type(top, raiz)
 
 
 #: superseded_by: `tipo_por_carpeta`. Se conserva el nombre privado —nada se
@@ -814,7 +824,7 @@ def vault_write(
     # Antes de tocar nada: un `--meta` que pisa la identidad, imita un campo con
     # una errata o trae un valor fuera de vocabulario se rechaza entero, con
     # todos sus problemas a la vez (CN-01, CN-02, CN-03, AP-13).
-    problemas = problemas_de_meta(meta, folder)
+    problemas = problemas_de_meta(meta, folder, _raiz())
     if problemas:
         return emit_error(
             "vault_write",
@@ -1024,6 +1034,8 @@ def vault_write(
 
     existing_status = None
 
+    existing_type = None
+
     existing_content = ""
 
     # If note exists, backup to history
@@ -1061,6 +1073,7 @@ def vault_write(
         # la forma del campo.
         existing_created = canonical_utc(fm_previo.get("createdAt")) or None
         existing_status = str(fm_previo.get("status") or "") or None
+        existing_type = str(fm_previo.get("type") or "") or None
 
     # Check if note exists in a different folder (auto-move suggestion)
     else:
@@ -1177,8 +1190,24 @@ def vault_write(
     # cualquier agente que lo guardara guardaba una referencia inexistente.
     nota_id = existing_id or str(uuid.uuid4())
 
+    # Contrato de contenido: toda nota de sección lleva `type`, y el write path
+    # lo deriva de la carpeta. Una sección propia sin `tipos` declarados no
+    # tiene de dónde derivarlo: hasta v41.2 la nota nacía sin `type` y
+    # `vault_validate` reprobaba lo que esta misma tool acababa de escribir.
+    # Una actualización conserva el tipo que la nota ya tenía.
+    if "type" not in meta and not tipo_por_carpeta(folder, _raiz()):
+        if not existing_type:
+            return emit_error(
+                "vault_write", "INVALID_INPUT",
+                f"CN-02: la sección de --folder {folder!r} no declara tipos y la nota "
+                "necesitaría un type que nadie le da.",
+                pista="Pasar el tipo con --meta '{\"type\": \"...\"}' o declarar los tipos "
+                      "de la sección (vault_section --add NN_Nombre --tipos a,b).",
+            )
+        meta["type"] = existing_type
+
     frontmatter = generate_frontmatter(
-        title, tags, meta, nota_id, existing_created, norm_refs, folder
+        title, tags, meta, nota_id, existing_created, norm_refs, folder, _raiz()
     )
 
     # CN-04: la nota abre con su título; el dueño respeta un H1 que ya venga.

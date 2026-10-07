@@ -1752,6 +1752,7 @@ declara secciones nuevas en la raíz.
 ```bash
 python vault_section.py --list      # propias, rango libre y carpetas de raíz sin sección
 python vault_section.py --add 22_Scripts --documentacion referencia --description "Scripts de despliegue"
+python vault_section.py --add 23_Clientes --documentacion explicacion --tipos cliente,contrato
 python vault_section.py --retire 22_Scripts --superseded-by 23_Automatizacion
 ```
 
@@ -1759,6 +1760,12 @@ Hasta v41.1 una carpeta de raíz fuera del registro solo podía ser CN-02. Medid
 en un vault ajeno: `/ans` guarda `scripts/` en la raíz y sus `.md` salían como
 notas sin sección. Ahora el vault puede declararla; lo que no declara sigue
 siendo CN-02, y `--list` lo publica en `folders_without_section`.
+
+`--tipos` declara los tipos de nota de la sección, como `SECTION_TYPES` hace con
+las del estándar: el primero es el `type` que `vault_write` escribe cuando la nota
+no lo trae. Una sección sin `tipos` admite notas, pero cada una tiene que traer su
+`type` por `--meta`; si no, `vault_write` la rechaza con `INVALID_INPUT` en vez de
+dejar una nota que el contrato de contenido reprueba.
 
 El número va del primero que el estándar no usa al anterior a `99_Index`, y el
 rango se deriva del registro (`vault_registry.NUMEROS_PROPIOS`), no se escribe.

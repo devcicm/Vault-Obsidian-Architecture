@@ -36,7 +36,7 @@ def _vault(raiz: Path, secciones=None, notas=()) -> Path:
     return raiz
 
 
-_SCRIPTS_SEC = {"folder": "22_Scripts", "documentacion": "referencia"}
+_SCRIPTS_SEC = {"folder": "22_Scripts", "documentacion": "referencia", "tipos": ["script"]}
 
 
 def test_el_puerto_de_secciones_incluye_las_propias(tmp_path):
@@ -168,11 +168,11 @@ _CUERPO = ("## Contexto\n\nPrimera línea real sobre el despliegue del servicio.
            "Tercera línea real con la consecuencia y cómo se verifica.\n")
 
 
-def _escribir(raiz: Path, folder: str) -> dict:
+def _escribir(raiz: Path, folder: str, *extra: str) -> dict:
     proceso = subprocess.run(
         [sys.executable, str(ROOT / "scripts" / "vault_write.py"),
          "--folder", folder, "--title", "Despliegue", "--content", _CUERPO,
-         "--tags", "demo"],
+         "--tags", "demo", *extra],
         env=dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",
                  VAULT_AGENT="system", PYTHONIOENCODING="utf-8"),
         capture_output=True, text=True, encoding="utf-8", errors="replace",
@@ -209,3 +209,35 @@ def test_vault_write_con_registro_de_secciones_roto_no_escribe(tmp_path):
     assert r["ok"] is False and r["error_code"] == "DATA_FILE_CORRUPT", r
     assert not list(raiz.rglob("despliegue.md"))
     assert _escribir(raiz, "07_Knowledge")["ok"] is True
+
+
+# ── El tipo de una nota de sección propia (C3) ──
+#
+# `type` se deriva de la carpeta, y una sección propia no tenía de dónde
+# derivarlo: la nota nacía sin `type` y el contrato de contenido, que lo exige,
+# la reprobaba. La sección declara sus `tipos`; si no lo hace, el tipo se pasa.
+
+def _tipo_escrito(raiz: Path, folder: str) -> object:
+    import yaml
+    texto = (raiz / folder / "despliegue.md").read_text(encoding="utf-8")
+    return yaml.safe_load(texto.split("---")[1]).get("type")
+
+
+def test_vault_write_deriva_el_tipo_que_declara_la_seccion_propia(tmp_path):
+    raiz = _vault(tmp_path, [_SCRIPTS_SEC])
+    assert _escribir(raiz, "22_Scripts")["ok"] is True
+    assert _tipo_escrito(raiz, "22_Scripts") == "script"
+    assert _validar(raiz, "22_Scripts/despliegue.md")["ok"] is True
+
+
+def test_sin_tipos_declarados_la_nota_no_nace_sin_type(tmp_path):
+    raiz = _vault(tmp_path, [{"folder": "23_Libre", "documentacion": "guia"}])
+    r = _escribir(raiz, "23_Libre")
+    assert r["ok"] is False and r["error_code"] == "INVALID_INPUT", r
+    assert "tipos" in json.dumps(r, ensure_ascii=False)
+    assert not list(raiz.rglob("despliegue.md"))
+    assert _escribir(raiz, "23_Libre", "--meta", '{"type": "guia"}')["ok"] is True
+    assert _tipo_escrito(raiz, "23_Libre") == "guia"
+    # Actualizar sin --meta conserva el tipo que la nota ya tiene.
+    assert _escribir(raiz, "23_Libre")["ok"] is True
+    assert _tipo_escrito(raiz, "23_Libre") == "guia"

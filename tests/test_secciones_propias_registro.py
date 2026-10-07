@@ -86,6 +86,26 @@ def test_un_registro_roto_falla_en_voz_alta(tmp_path, contenido, parte):
         reg.leer_secciones_propias(tmp_path)
 
 
+def test_una_propia_declara_sus_tipos_y_el_primero_es_el_que_se_escribe(tmp_path):
+    """Sin `tipos`, una nota de la sección propia nacía sin `type` y el contrato
+    de contenido la reprobaba: el write path suspendiendo lo que escribía."""
+    _declarar(tmp_path, [_s("22_Scripts", tipos=["script", "deploy"]), _s("23_Libre")])
+    assert reg.section_types("22_Scripts", tmp_path) == ("script", "deploy")
+    assert reg.section_default_type("22_Scripts", tmp_path) == "script"
+    assert reg.section_default_type("23_Libre", tmp_path) == ""
+    # Sin raíz no se sabe qué declaró el vault.
+    assert reg.section_default_type("22_Scripts") == ""
+    assert reg.type_misfiled_in("22_Scripts/x", "deploy", tmp_path) == []
+    assert reg.type_misfiled_in("22_Scripts/x", "decision", tmp_path) == ["03_Decisions"]
+
+
+@pytest.mark.parametrize("tipos", ["script", [], [""], ["con espacio"], [3]])
+def test_unos_tipos_mal_declarados_fallan_en_voz_alta(tmp_path, tipos):
+    _declarar(tmp_path, [_s("22_Scripts", tipos=tipos)])
+    with pytest.raises(ValueError, match="tipos"):
+        reg.leer_secciones_propias(tmp_path)
+
+
 def test_es_de_seccion_con_raiz_ve_las_propias_y_sin_raiz_no(tmp_path):
     _declarar(tmp_path, [_s("22_Scripts")])
     assert reg.es_de_seccion("22_Scripts/deploy.md", tmp_path)

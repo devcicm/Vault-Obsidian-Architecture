@@ -855,6 +855,25 @@ ESTADOS_DE_SECCION = ("activa", "retirada")
 _NOMBRE_DE_SECCION = re.compile(r"^(\d{2})_[A-Za-z][A-Za-z0-9_]*$")
 
 
+_TIPO_DE_NOTA = re.compile(r"^[a-z][a-z0-9_-]*$")
+
+
+def motivo_de_tipos_invalidos(tipos) -> Optional[str]:
+    """Por qué `tipos` no vale como lista de tipos de una sección propia; None si vale.
+
+    Es el equivalente propio de `SECTION_TYPES[seccion]`: el primero es el que
+    el write path escribe cuando la nota no trae `type`. Una cadena suelta no
+    se acepta como lista de un elemento, porque `"script"` iterado son seis.
+    """
+    if not isinstance(tipos, list) or not tipos:
+        return "'tipos' debe ser una lista no vacía"
+    malos = [t for t in tipos if not isinstance(t, str) or not _TIPO_DE_NOTA.match(t)]
+    if malos:
+        return (f"'tipos' {malos!r}: cada tipo va en minúsculas, empieza por letra "
+                "y solo lleva letras, cifras, '-' o '_'")
+    return None
+
+
 def motivo_de_nombre_invalido(carpeta: str) -> Optional[str]:
     """Por qué `carpeta` no puede ser una sección propia; None si puede."""
     m = _NOMBRE_DE_SECCION.match(carpeta or "")
@@ -900,6 +919,10 @@ def leer_secciones_propias(raiz: Path) -> List[Dict[str, Optional[str]]]:
         if s.get("documentacion") not in DOCUMENTACION_CLASES:
             raise ValueError(f"{SECCIONES_PROPIAS_RUTA}: {carpeta!r} — 'documentacion' "
                              f"debe ser una de {', '.join(DOCUMENTACION_CLASES)}")
+        if "tipos" in s:
+            motivo = motivo_de_tipos_invalidos(s["tipos"])
+            if motivo:
+                raise ValueError(f"{SECCIONES_PROPIAS_RUTA}: {carpeta!r} — {motivo}")
         if s.get("status", "activa") not in ESTADOS_DE_SECCION:
             raise ValueError(f"{SECCIONES_PROPIAS_RUTA}: {carpeta!r} — 'status' debe ser "
                              f"una de {', '.join(ESTADOS_DE_SECCION)}")
@@ -984,7 +1007,7 @@ def section_documentacion(folder: str) -> str:
     return SECTION_DOCUMENTACION.get(top, ("", ""))[0]
 
 
-def section_default_type(folder: str) -> str:
+def section_default_type(folder: str, raiz: Optional[Path] = None) -> str:
     """El `type:` que el write path escribe para una sección ("" si no aplica).
 
     Existía como cuarta copia dentro de `vault_write`, y esa copia ya se había
@@ -992,13 +1015,22 @@ def section_default_type(folder: str) -> str:
     nota escrita ahí salía sin `type:` y `vault_audit` la reprobaba — el
     estándar suspendiendo lo que su propio write path acababa de escribir.
     """
-    tipos = section_types(folder)
+    tipos = section_types(folder, raiz)
     return tipos[0] if tipos else ""
 
 
-def section_types(folder: str) -> tuple:
-    """Tipos canónicos de una sección. Vacío si la sección no está registrada."""
-    return SECTION_TYPES.get(folder.replace("\\", "/").split("/")[0], ())
+def section_types(folder: str, raiz: Optional[Path] = None) -> tuple:
+    """Tipos canónicos de una sección. Vacío si la sección no está registrada.
+
+    Con `raiz`, una sección propia aporta los `tipos` que declara en
+    `secciones.json` (vacío si no declara ninguno). Sin ella, solo cuentan las
+    del estándar, por la misma razón que en `es_de_seccion`.
+    """
+    top = folder.replace("\\", "/").split("/")[0]
+    if top in SECTION_TYPES or raiz is None:
+        return SECTION_TYPES.get(top, ())
+    propia = next((s for s in leer_secciones_propias(raiz) if s["folder"] == top), None)
+    return tuple(propia.get("tipos") or ()) if propia else ()
 
 
 def sections_for_type(note_type: str) -> List[str]:
@@ -1011,7 +1043,7 @@ def sections_for_type(note_type: str) -> List[str]:
     return [f for f, tipos in SECTION_TYPES.items() if t in tipos] if t else []
 
 
-def type_misfiled_in(folder: str, note_type: str) -> List[str]:
+def type_misfiled_in(folder: str, note_type: str, raiz: Optional[Path] = None) -> List[str]:
     """Secciones a las que ese tipo pertenece, si NO pertenece a `folder`.
 
     Es la única señal que se puede dar sin cerrar el vocabulario: un tipo
@@ -1023,7 +1055,7 @@ def type_misfiled_in(folder: str, note_type: str) -> List[str]:
     if not t or t == SCAFFOLD_TYPE:
         return []
     top = folder.replace("\\", "/").split("/")[0]
-    if t in section_types(top):
+    if t in section_types(top, raiz):
         return []
     return [s for s in sections_for_type(t) if s != top]
 
