@@ -26,7 +26,7 @@ sys.path.insert(0, str(SCRIPTS))
 from vault_norms_catalog import NORM_CATALOG  # noqa: E402
 
 MANIFIESTO = ROOT / "vault-obsidian-architecture.md"
-NORMAS = ["AP-26"]
+NORMAS = ["AP-26", "AP-27"]
 
 
 def _entrada(codigo: str) -> dict:

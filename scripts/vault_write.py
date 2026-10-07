@@ -1191,8 +1191,8 @@ def vault_write(
     # cualquier agente que lo guardara guardaba una referencia inexistente.
     nota_id = existing_id or str(uuid.uuid4())
 
-    # Contrato de contenido: toda nota de sección lleva `type`, y el write path
-    # lo deriva de la carpeta. Una sección propia sin `tipos` declarados no
+    # Contrato de contenido (AP-27): toda nota de sección lleva `type`, y el
+    # write path lo deriva de la carpeta. Una sección propia sin `tipos` declarados no
     # tiene de dónde derivarlo: hasta v41.2 la nota nacía sin `type` y
     # `vault_validate` reprobaba lo que esta misma tool acababa de escribir.
     # Una actualización conserva el tipo que la nota ya tenía.

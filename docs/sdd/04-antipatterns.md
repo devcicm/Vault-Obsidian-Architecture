@@ -274,12 +274,12 @@ Nota de contenido sin campo `tags` o con la lista vacía. Sin tags la nota es in
 ### AP-27: Missing type field -- nota sin tipo declarado
 
 - **Severidad:** medium
-- **Enforcement:** audit
-- **Detectado por:** vault_audit
+- **Enforcement:** guard+audit
+- **Detectado por:** vault_audit, vault_validate
 
 Nota sin campo `type`. El tipo es lo que ancla la nota a su sección canónica (CN-02): sin él no se puede verificar la coincidencia type ↔ carpeta que sostiene la dimensión de exactitud (F4).
 
-**Prevención:** Declarar --type en la escritura; vault_audit lo cuenta en missing_type.
+**Prevención:** vault_write deriva el type de la sección (vault_registry.section_default_type; en una sección propia, el primero de sus tipos declarados) o lo toma de vault_write --meta '{"type": ...}', y rechaza la nota que no tiene de dónde sacarlo. vault_move --type lo cambia al reclasificar, y vault_frontmatter_completar lo completa en notas que ya existen.
 
 ### AP-28: Missing frontmatter -- nota sin bloque YAML
 
@@ -1152,12 +1152,12 @@ Nota de contenido sin campo `tags` o con la lista vacía. Sin tags la nota es in
 ### AP-27: Missing type field -- nota sin tipo declarado
 
 - **Severity:** medium
-- **Enforcement:** audit
-- **Detected by:** vault_audit
+- **Enforcement:** guard+audit
+- **Detected by:** vault_audit, vault_validate
 
 Nota sin campo `type`. El tipo es lo que ancla la nota a su sección canónica (CN-02): sin él no se puede verificar la coincidencia type ↔ carpeta que sostiene la dimensión de exactitud (F4).
 
-**Prevention:** Declarar --type en la escritura; vault_audit lo cuenta en missing_type.
+**Prevention:** vault_write deriva el type de la sección (vault_registry.section_default_type; en una sección propia, el primero de sus tipos declarados) o lo toma de vault_write --meta '{"type": ...}', y rechaza la nota que no tiene de dónde sacarlo. vault_move --type lo cambia al reclasificar, y vault_frontmatter_completar lo completa en notas que ya existen.
 
 ### AP-28: Missing frontmatter -- nota sin bloque YAML
 

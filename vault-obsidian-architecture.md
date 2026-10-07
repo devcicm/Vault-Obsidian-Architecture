@@ -4818,15 +4818,22 @@ línea no nombraba a `vault_write`, que es justo la que la hace cumplir. **Detec
 
 ### AP-27 — Nota sin tipo declarado
 
-**Severidad: medium · Enforcement: audit · Introducida: v30**
+**Severidad: medium · Enforcement: guard+audit · Introducida: v30**
 
 El campo `type` es lo que ancla la nota a su sección canónica (CN-02). Sin él no se puede
 verificar la coincidencia `type` ↔ carpeta, y esa comprobación es la que sostiene la
 dimensión de **exactitud** (F4). Una nota sin tipo no se puede declarar mal colocada
 porque no hay contra qué compararla.
 
-**Prevención:** declarar `--type` al escribir; `vault_validate` lo comprueba contra el
-registro. **Detección:** `vault_audit`, `missing_type`, −2 por nota con tope −10.
+**Prevención:** `vault_write` deriva el `type` de la sección
+(`vault_registry.section_default_type`; en una sección propia, el primero de sus `tipos`
+declarados) o lo toma de `vault_write --meta '{"type": …}'`, y rechaza la nota que no
+tiene de dónde sacarlo. `vault_move --type` lo cambia al reclasificar (CN-02), y
+`vault_frontmatter_completar` lo completa en notas que ya existen. Hasta v41.2 esta línea
+recetaba un `--type` de escritura que `vault_write` nunca tuvo. **Detección:**
+`vault_validate` lo exige desde el contrato v41 y lo reporta entre los campos que faltan;
+`vault_audit` lo cuenta en `missing_type`, −2 por nota con tope −10. El ajuste
+`type` ↔ carpeta no es de AP-27 sino de CN-02.
 
 ---
 

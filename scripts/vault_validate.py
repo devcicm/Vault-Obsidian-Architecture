@@ -188,7 +188,8 @@ def validate_frontmatter(note_path: Path, contrato: Optional[str] = None) -> Dic
     # Qué campos exige cada clase de nota —y desde qué versión— lo dice
     # `vault_contrato_nota` (AP-57). Aquí vivía el literal, con «v37: required
     # fields expanded» como toda su historia, y nadie más podía preguntar qué
-    # le falta a una nota sin copiarlo.
+    # le falta a una nota sin copiarlo. Desde v41 entre ellos está `type`
+    # (AP-27): esta es la detección que el catálogo le atribuye.
     missing = faltantes(data, rel_path, contrato, raiz=_raiz())
     if missing:
         return {"valid": False, "error": f"Missing required fields: {missing}",
