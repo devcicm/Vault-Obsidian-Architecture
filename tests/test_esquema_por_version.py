@@ -10,6 +10,7 @@ import json
 import sys
 from pathlib import Path
 
+import jsonschema  # declarada en el extra dev: si falta, falla — no se salta
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -81,7 +82,6 @@ def _notas_del_sandbox():
 
 
 def test_el_esquema_vigente_da_el_veredicto_de_vault_validate(monkeypatch):
-    jsonschema = pytest.importorskip("jsonschema")
     import vault_validate
 
     raiz = REPO_ROOT / "vault-sandbox"
@@ -100,6 +100,5 @@ def test_el_esquema_vigente_da_el_veredicto_de_vault_validate(monkeypatch):
 
 
 def test_la_caja_del_valor_cia_no_cambia_el_veredicto():
-    jsonschema = pytest.importorskip("jsonschema")
     v = jsonschema.Draft202012Validator(contrato.esquema_json("v40")["properties"]["cia_integrity"])
     assert v.is_valid("HIGH") and v.is_valid("high") and not v.is_valid("higher")
