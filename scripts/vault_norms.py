@@ -563,7 +563,7 @@ Ejemplos:
     args = parser.parse_args()
 
     if args.heal_ap46:
-        # `--root` ya lo acepta esta tool (es una de las cuatro de la regla 1).
+        # `--root` ya lo acepta esta tool (es una de las que escriben, en la regla 1).
         # El heal escribe, así que el default es el informe: `--apply-heal` es
         # una segunda afirmación explícita, no un matiz de la primera.
         result = heal_ap46(Path(args.root) if args.root else None,
