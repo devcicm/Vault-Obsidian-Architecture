@@ -41,6 +41,7 @@ from vault_registry import (
     ORDERED_SECTIONS,
     section_description,
     comando_de_tool,
+    secciones_del_vault,
     section_tool_hint,
 )
 
@@ -273,13 +274,15 @@ def _nota_de_comandos() -> str:
 
 
 def _collect_notes(section_path: Path, include_subdirs: bool) -> List[Dict[str, Any]]:
-    """Adaptador: el recorrido vive en el dominio de Índices."""
-    from vault_registry import SECTIONS as _SECTIONS
+    """Adaptador: el recorrido vive en el dominio de Índices.
 
+    Las secciones son las del vault: con `vault_registry.SECTIONS`, el índice
+    de una sección propia salía vacío aunque tuviera notas (hasta v41.2).
+    """
     return recolectar_notas(
         get_vault_root(),
         section_path,
-        [s["folder"] for s in _SECTIONS],
+        secciones_del_vault(get_vault_root()),
         include_subdirs,
         parse_frontmatter,
     )
@@ -294,7 +297,7 @@ def _indices_de_una_regeneracion_completa(vroot: Path) -> set:
     """Los `index.md` que `vault_master_index` escribe en una pasada: el de
     cada sección con carpeta en disco y el suyo propio."""
     return {"99_Index/index.md"} | {
-        f"{s}/index.md" for s in ORDERED_SECTIONS if (vroot / s).is_dir()}
+        f"{s}/index.md" for s in secciones_del_vault(vroot) if (vroot / s).is_dir()}
 
 
 def _indices_disponibles(vroot: Path, previstos: set):
@@ -376,16 +379,25 @@ def vault_section_index(
             ),
             "detail": "folder no puede ser la raíz del vault (CN-02/AP-15); usar una sección canónica, ej. 01_Projects",
         }
-    from vault_registry import SECTIONS as _SECTIONS
+    # CN-02: una sección es la del estándar o la propia declarada en
+    # `secciones.json`. Hasta v41.2 se aceptaba solo `vault_registry.SECTIONS`
+    # y el índice de una sección propia se rechazaba, también cuando lo pedía
+    # `vault_master_index`, que ya las recorre. Un registro ilegible es un
+    # fallo, no un rechazo de la carpeta (AP-51).
+    try:
+        secciones = secciones_del_vault(get_vault_root())
+    except ValueError as exc:
+        return emit_error("vault_section_index", "DATA_FILE_CORRUPT", str(exc),
+                          pista="corregir 00_System/secciones.json (vault_section --list)")
 
-    if folder.split("/")[0] not in {s["folder"] for s in _SECTIONS}:
+    if folder.split("/")[0] not in secciones:
         return {
             **emit_error(
                 "vault_section_index",
                 "INVALID_FOLDER",
-                f"'{folder.split('/')[0]}' no es una sección canónica del registro (CN-02)",
+                f"'{folder.split('/')[0]}' no es una sección del vault: ni del estándar ni propia declarada (CN-02)",
             ),
-            "detail": f"'{folder.split('/')[0]}' no es una sección canónica del registro (CN-02)",
+            "detail": f"'{folder.split('/')[0]}' no es una sección del vault: ni del estándar ni propia declarada (CN-02)",
         }
 
     # Ensure the hub notes exist (idempotent — only creates on first call).
@@ -509,13 +521,19 @@ def heal_indexes(root: Optional[Path] = None) -> Dict[str, Any]:
     Idempotente (AP-36): correrlo N veces converge al mismo estado.
     """
     from vault_io import get_vault_root
-    from vault_registry import SECTIONS
 
     vroot = (root or get_vault_root()).resolve()
     healed: List[Dict[str, str]] = []
     skipped = 0
-    for s in SECTIONS:
-        folder = s["folder"]
+    # Las del vault, también las propias: hasta v41.2 era `SECTIONS` y el
+    # índice ausente de una sección propia no se reparaba nunca. Sanear con el
+    # registro ilegible dejaría fuera las propias en silencio (AP-51).
+    try:
+        secciones = secciones_del_vault(vroot)
+    except ValueError as exc:
+        return emit_error("vault_section_index", "DATA_FILE_CORRUPT", str(exc),
+                          pista="corregir 00_System/secciones.json (vault_section --list)")
+    for folder in secciones:
         sec_path = vroot / folder
         if not sec_path.is_dir() or folder in ("00_System", "10_Migrated", "99_Index"):
             continue

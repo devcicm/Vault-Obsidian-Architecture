@@ -458,3 +458,57 @@ def test_el_stub_con_el_registro_roto_no_se_crea_y_lo_dice(tmp_path):
     r = _create_stub(raiz, "deploy", ["07_Knowledge/a.md"], {"category": "no_match"})
     assert r["created"] is False and r["reason"] == "sections_registry_unreadable", r
     assert not list(raiz.rglob("stubs/deploy.md"))
+
+
+# ── vault_section_index ──
+#
+# El guard de CN-02 aceptaba solo `vault_registry.SECTIONS`: el índice de una
+# sección propia se rechazaba con INVALID_FOLDER, y `vault_master_index`, que
+# ya recorre las secciones del vault, recibía ese rechazo por cada propia.
+# `heal_indexes` tampoco las miraba.
+
+def _indexar(raiz: Path, folder: str):
+    import vault_io
+    from vault_section_index import vault_section_index
+    vault_io.set_vault_root(raiz)
+    return vault_section_index(folder)
+
+
+def test_el_indice_de_una_seccion_propia_se_genera_con_sus_notas(tmp_path):
+    raiz = _vault(tmp_path, [_SCRIPTS_SEC], notas=["22_Scripts/deploy.md"])
+    r = _indexar(raiz, "22_Scripts")
+    assert r["ok"] is True, r
+    assert r["noteCount"] == 1, r
+    assert "deploy" in (raiz / "22_Scripts" / "index.md").read_text(encoding="utf-8")
+
+
+def test_el_indice_sigue_rechazando_una_carpeta_no_declarada(tmp_path):
+    raiz = _vault(tmp_path, [_SCRIPTS_SEC], notas=["scripts/b.md"])
+    r = _indexar(raiz, "scripts")
+    assert r["ok"] is False and r["error_code"] == "INVALID_FOLDER", r
+
+
+def test_el_indice_con_el_registro_roto_falla(tmp_path):
+    raiz = _vault(tmp_path, notas=["07_Knowledge/a.md"])
+    (raiz / reg.SECCIONES_PROPIAS_RUTA).write_text("{roto", encoding="utf-8")
+    r = _indexar(raiz, "07_Knowledge")
+    assert r["ok"] is False and r["error_code"] == "DATA_FILE_CORRUPT", r
+
+
+def test_heal_indexes_repara_el_indice_de_una_seccion_propia(tmp_path):
+    import vault_io
+    from vault_section_index import heal_indexes
+    raiz = _vault(tmp_path, [_SCRIPTS_SEC], notas=["22_Scripts/deploy.md"])
+    vault_io.set_vault_root(raiz)
+    r = heal_indexes(raiz)
+    assert {"index": "22_Scripts/index.md", "reason": "missing", "ok": "True"} in r["healed"], r
+
+
+def test_heal_indexes_con_el_registro_roto_falla(tmp_path):
+    import vault_io
+    from vault_section_index import heal_indexes
+    raiz = _vault(tmp_path, notas=["07_Knowledge/a.md"])
+    (raiz / reg.SECCIONES_PROPIAS_RUTA).write_text("{roto", encoding="utf-8")
+    vault_io.set_vault_root(raiz)
+    r = heal_indexes(raiz)
+    assert r["ok"] is False and r["error_code"] == "DATA_FILE_CORRUPT", r
