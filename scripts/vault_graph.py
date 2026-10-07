@@ -194,12 +194,22 @@ def vault_graph() -> Dict[str, Any]:
 
     nodes = {}  # path -> {title, type, tags, aliases, links}
 
-    # Scan only notes inside the 13 standard vault sections
+    # Las secciones del vault —las del estándar y las propias de
+    # `secciones.json`— salen del puerto del núcleo. Hasta v41.2 se barría
+    # `ORDERED_SECTIONS` y la nota de una sección propia no era nodo: quien la
+    # enlazaba la veía como destino roto. Un registro ilegible es un fallo,
+    # no un grafo sin las propias (AP-51).
+    from vault.kernel.fallos import FalloDeDominio
+
+    try:
+        secciones = _repo().ctx.secciones.ordenadas()
+    except FalloDeDominio as fallo:
+        return emit_fallo("vault_graph", fallo)
 
     # El enumerador del núcleo (AP-44, AP-57): el tramo oculto se mide en la
     # ruta relativa al vault. Con `p.parts` absoluto, un vault colgado de
     # `~/.claude/` salía con cero nodos y sin error.
-    all_files = notas_en_disco(_raiz(), ORDERED_SECTIONS)
+    all_files = notas_en_disco(_raiz(), secciones)
 
     # Leer el disco es de este productor; parsear el frontmatter, indexar los
     # nombres y resolver los enlaces es del escaneo único que comparte con

@@ -278,3 +278,31 @@ def test_completar_con_el_registro_roto_falla_en_vez_de_saltarse_las_propias(tmp
     (raiz / reg.SECCIONES_PROPIAS_RUTA).write_text("{roto", encoding="utf-8")
     informe = _completar(raiz)
     assert informe["ok"] is False and informe["error_code"] == "DATA_FILE_CORRUPT", informe
+
+
+# ── vault_graph ──
+#
+# Barría `ORDERED_SECTIONS`: la nota de una sección propia no era nodo de
+# `graph.json`, así que sus enlaces no contaban y quien la enlazaba la veía
+# como destino roto.
+
+def _grafo(raiz: Path):
+    import vault_graph
+    import vault_io
+    vault_io.set_vault_root(raiz)
+    return vault_graph.vault_graph()
+
+
+def test_el_grafo_incluye_la_seccion_propia(tmp_path):
+    raiz = _vault(tmp_path, [_SCRIPTS_SEC], notas=["22_Scripts/deploy.md"])
+    informe = _grafo(raiz)
+    assert informe["ok"] is True, informe
+    grafo = json.loads((raiz / "99_Index" / "graph.json").read_text(encoding="utf-8"))
+    assert "22_Scripts/deploy.md" in grafo["nodes"], sorted(grafo["nodes"])
+
+
+def test_el_grafo_con_el_registro_roto_falla_en_vez_de_saltarse_las_propias(tmp_path):
+    raiz = _vault(tmp_path, notas=["07_Knowledge/a.md"])
+    (raiz / reg.SECCIONES_PROPIAS_RUTA).write_text("{roto", encoding="utf-8")
+    informe = _grafo(raiz)
+    assert informe["ok"] is False and informe["error_code"] == "DATA_FILE_CORRUPT", informe
