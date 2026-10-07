@@ -435,3 +435,26 @@ def test_el_delta_con_el_registro_roto_falla(tmp_path):
     (raiz / reg.SECCIONES_PROPIAS_RUTA).write_text("{roto", encoding="utf-8")
     informe = _delta(raiz, dry_run=True)
     assert informe["ok"] is False and informe["error_code"] == "DATA_FILE_CORRUPT", informe
+
+
+# ── vault_graph_fix: la colisión del stub ──
+#
+# `_stub_already_exists` miraba `ORDERED_SECTIONS` para no crear un stub con el
+# nombre de una nota real. Con la nota en una sección propia, la colisión no se
+# veía y el stub nacía con un nombre que ya tenía dueño (AP-17).
+
+def test_el_stub_no_se_crea_si_la_nota_vive_en_una_seccion_propia(tmp_path):
+    from vault_graph_fix import _create_stub
+    raiz = _vault(tmp_path, [_SCRIPTS_SEC], notas=["22_Scripts/deploy.md"])
+    r = _create_stub(raiz, "deploy", ["07_Knowledge/a.md"], {"category": "no_match"})
+    assert r["created"] is False and r["reason"] == "already_exists", r
+    assert not list(raiz.rglob("stubs/deploy.md"))
+
+
+def test_el_stub_con_el_registro_roto_no_se_crea_y_lo_dice(tmp_path):
+    from vault_graph_fix import _create_stub
+    raiz = _vault(tmp_path, notas=["07_Knowledge/a.md"])
+    (raiz / reg.SECCIONES_PROPIAS_RUTA).write_text("{roto", encoding="utf-8")
+    r = _create_stub(raiz, "deploy", ["07_Knowledge/a.md"], {"category": "no_match"})
+    assert r["created"] is False and r["reason"] == "sections_registry_unreadable", r
+    assert not list(raiz.rglob("stubs/deploy.md"))

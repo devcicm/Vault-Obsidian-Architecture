@@ -49,7 +49,7 @@ from vault_io import (
     is_snapshot_path,  # dueño único de qué es una instantánea (AP-57)
     normalize_stem,
 )
-from vault_registry import ORDERED_SECTIONS
+from vault_registry import secciones_del_vault
 from vault_regex import (
     RE_WIKILINK,
     RE_WIKILINK_CON_ALIAS,
@@ -974,8 +974,11 @@ def _stub_already_exists(root: Path, target_stem: str) -> bool:
     # nota real vivía en `14_Requirements` o en cualquiera de las cuatro de
     # v39, la colisión no se veía y el stub se creaba encima de contenido real.
     # Es el peor sitio posible para una lista incompleta — la comprobación
-    # existe precisamente para no pisar nada.
-    for sub in ORDERED_SECTIONS:
+    # existe precisamente para no pisar nada. Por eso son las secciones del
+    # vault y no `ORDERED_SECTIONS`: hasta v41.2 una nota de sección propia no
+    # se veía y el stub nacía con un nombre que ya tenía dueño (AP-17). Un
+    # `secciones.json` roto lanza `ValueError`; `_create_stub` lo traduce.
+    for sub in secciones_del_vault(root):
         if (root / sub / f"{target_stem}.md").exists():
             return True
     return False
@@ -988,7 +991,14 @@ def _create_stub(
     classification: dict[str, Any],
 ) -> dict[str, Any]:
     """Create an empty stub note flagging it as a graph-fix artifact."""
-    if _stub_already_exists(root, target_stem):
+    try:
+        existe = _stub_already_exists(root, target_stem)
+    except ValueError as exc:
+        # Sin el registro de secciones no se sabe si el nombre tiene dueño: no
+        # se crea, y se dice por qué en vez de pasar por «ya existe» (AP-51).
+        return {"stem": target_stem, "created": False,
+                "reason": "sections_registry_unreadable", "error": str(exc)}
+    if existe:
         return {"stem": target_stem, "created": False, "reason": "already_exists"}
 
     stubs_dir = root / _STUBS_DIR
