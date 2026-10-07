@@ -12,7 +12,7 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~6.000 líneas). Fuente normativa. |
 | `scripts/*.py` | ~158 scripts, 120 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (4463 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (4470 tests). Toda norma con guard debe tener test. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
 | `vault-sandbox/` | **Único** vault de pruebas del repo. Todo runtime va aquí. |
@@ -110,6 +110,7 @@ Si necesitas un dato de estos, léelo del registro — no lo redefinas ni lo cop
 | Normas AP/PAT/SP/CN y su enforcement | `scripts/vault_norms_catalog.py` — **hoja del núcleo desde v40.27**. Importa de aquí si solo necesitas el dato; `vault_norms` sigue reexportándolo, pero entrar por la fachada arrastra el motor y sus once dependencias |
 | Dirección de cada frontera entre contextos | `vault_arch.PRESUPUESTO_DE_CRUCES` (un par nuevo bloquea la puerta) |
 | Vocabulario de `status` (12 valores) | `vault_norms.STATUS_VOCAB` |
+| Clase de documento de cada sección (Diátaxis + `registro` + `indice`) | `vault_registry.SECTION_DOCUMENTACION`; el SDD `06-documentation-methodology.md` la publica derivada |
 | Fundamentos F1–F8 y dimensiones DQ | `scripts/vault_fundamentals_catalog.py` — hoja del núcleo desde v40.28 (AP-62); `vault_fundamentals` lo reexporta, pero entrar por ahí arrastra el verificador |
 | Tríada CIA, FAIR, V's del Big Data, cobertura ISO | `vault_fundamentals_catalog.FRAMEWORK_REGISTRIES` |
 | Matriz de trazabilidad concepto → métrica → tool | `vault_fundamentals.TRACEABILITY_MATRIX` — no está en el catálogo hoja ni en `FRAMEWORK_REGISTRIES` |

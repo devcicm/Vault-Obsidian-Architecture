@@ -848,9 +848,30 @@ def generate_reference_matrix(vault_root: Path, drift: dict) -> str:
 """
 
 
+def _tabla_documentacion() -> str:
+    """Tabla sección → clase de documento, derivada de `vault_registry`.
+
+    Escrita a mano aquí envejecería como envejeció la tabla de schemas de
+    arriba; se genera para que el SDD diga lo que el registro declara.
+    """
+    from vault_registry import (DIATAXIS, DOCUMENTACION_CLASES, SECTION_DOCUMENTACION,
+                                section_name)
+
+    filas = ["| Sección | Nombre | Clase | Por qué |", "|---|---|---|---|"]
+    for carpeta, (clase, motivo) in SECTION_DOCUMENTACION.items():
+        filas.append(f"| `{carpeta}` | {section_name(carpeta)} | {clase} | {motivo} |")
+    sin = [c for c in DIATAXIS if c not in {v[0] for v in SECTION_DOCUMENTACION.values()}]
+    clases = "\n".join(f"- **{c}** — {d}" for c, d in DOCUMENTACION_CLASES.items())
+    hueco = (f"\n\nClases de Diátaxis sin ninguna sección: {', '.join(sin)}." if sin else "")
+    return clases + "\n\n" + "\n".join(filas) + hueco
+
+
 def generate_methodology(vault_root: Path, drift: dict) -> str:
     """Generate 06-documentation-methodology.md (bilingual, the 'science')."""
-    return """# Documentation Methodology — Metodología de Documentación
+    return _METODOLOGIA.replace("{TABLA_DOCUMENTACION}", _tabla_documentacion())
+
+
+_METODOLOGIA = """# Documentation Methodology — Metodología de Documentación
 
 > ES arriba, EN abajo. Reglas duras para frontmatter, guidelines para contenido.
 
@@ -902,6 +923,13 @@ def generate_methodology(vault_root: Path, drift: dict) -> str:
 | NCR | id, title, severity, status |
 | Risk | id, title, level, treatment |
 
+### Clase de documento por sección (Diátaxis)
+
+Fuente: `vault_registry.SECTION_DOCUMENTACION`. Una nota hereda la clase de su
+sección; escribir en una sección una nota de otra clase es colocarla mal.
+
+{TABLA_DOCUMENTACION}
+
 ### Estructura mínima (guideline)
 
 - Pattern: ## Contexto, ## Implementación, ## Trade-offs, ## Evolución
@@ -925,6 +953,10 @@ def generate_methodology(vault_root: Path, drift: dict) -> str:
 ### Canonical schema per type (hard rule)
 
 (See table above in ES section.)
+
+### Document class per section (Diátaxis)
+
+(See table above in ES section: `vault_registry.SECTION_DOCUMENTACION`.)
 
 ### Minimum structure (guideline)
 

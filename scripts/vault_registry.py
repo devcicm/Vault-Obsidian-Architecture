@@ -346,6 +346,51 @@ SECTION_TYPES: Dict[str, tuple] = {
 #: `migration-report`, `vault_code_map` escribe `code-map`) más los que se
 #: midieron en vaults reales.
 
+#: **Qué clase de documento es una sección**, con el vocabulario de Diátaxis
+#: (tutorial, guía, referencia, explicación) más dos clases que Diátaxis no
+#: cubre porque no son documentación escrita para leerse de corrido: `registro`
+#: —lo que ocurrió, anotado cuando ocurrió— e `indice` —navegación derivada—.
+#: Cada sección declara una sola clase y el motivo, sacado de su `description`.
+#: Ninguna sección es `tutorial`: se publica el hueco en vez de forzar una.
+DOCUMENTACION_CLASES: Dict[str, str] = {
+    "tutorial": "aprender haciendo: un recorrido guiado de principio a fin",
+    "guia": "resolver una tarea concreta: pasos para quien ya sabe qué quiere",
+    "referencia": "consultar un dato: descripción exacta de lo que hay",
+    "explicacion": "entender por qué: contexto, decisiones y alternativas",
+    "registro": "lo que ocurrió, anotado cuando ocurrió (fuera de Diátaxis)",
+    "indice": "navegación derivada que regenera una tool (fuera de Diátaxis)",
+}
+
+#: Las cuatro clases que son Diátaxis; las otras dos se publican aparte.
+DIATAXIS = ("tutorial", "guia", "referencia", "explicacion")
+
+SECTION_DOCUMENTACION: Dict[str, tuple] = {
+    "00_System": ("referencia", "identidad, reglas y configuración que el agente consulta"),
+    "01_Projects": ("explicacion", "estado y contexto de cada proyecto: por qué está como está"),
+    "02_Observability": ("registro", "errores, alertas e incidentes según ocurren"),
+    "03_Decisions": ("explicacion", "un ADR explica por qué se eligió una opción y no otra"),
+    "04_Sessions": ("registro", "diario de sesión: lo que se hizo, en su fecha"),
+    "05_Patterns": ("guia", "cómo resolver un problema que se repite"),
+    "06_Diagrams": ("explicacion", "representación visual para entender una estructura"),
+    "07_Knowledge": ("explicacion", "conocimiento técnico y conceptual"),
+    "08_Runbooks": ("guia", "procedimientos operativos paso a paso"),
+    "09_Infrastructure": ("referencia", "inventario de infraestructura, entornos y configuración"),
+    "10_Migrated": ("registro", "lo importado se conserva como llegó; su cuadrante es el de su origen"),
+    "11_Code": ("referencia", "mapa de módulos de código y sus relaciones"),
+    "12_Bibliography": ("referencia", "fuentes externas consultadas"),
+    "13_Flows": ("explicacion", "flujos, pipelines y ciclos de vida: cómo encaja el proceso"),
+    "14_Requirements": ("referencia", "requerimientos (ISO 29148): lo que el sistema debe cumplir"),
+    "15_Tests": ("referencia", "casos de prueba y resultados (ISO 29119)"),
+    "16_AI_Governance": ("registro", "decisiones y auditorías de agentes IA, en su fecha (ISO 42001)"),
+    "17_Preferences": ("referencia", "contexto estable que el agente consulta en cada tarea"),
+    "18_Bugs": ("registro", "se puebla cuando aparece un bug"),
+    "19_Audits": ("registro", "se puebla al ejecutar una auditoría"),
+    "20_Quarantine": ("registro", "se puebla cuando algo entra en cuarentena"),
+    "21_QA": ("registro", "eventos de calidad: ejecuciones, métricas y reportes"),
+    "99_Index": ("indice", "índices de navegación que regeneran las tools"),
+}
+
+
 #: `type:` de las notas andamio que crea `vault_init`. No pertenecen a ninguna
 #: sección: son la misma nota repetida en todas, y por eso se eximen en vez de
 #: añadirse a cada familia. `vault_audit` ya las eximía; los otros dos auditores
@@ -786,6 +831,12 @@ def es_de_seccion(ruta_relativa: str) -> bool:
     """
     partes = ruta_relativa.replace("\\", "/").split("/")
     return len(partes) > 1 and partes[0] in ORDERED_SECTIONS
+
+
+def section_documentacion(folder: str) -> str:
+    """Clase de documento de una sección (ver `DOCUMENTACION_CLASES`); "" si no es sección."""
+    top = folder.replace("\\", "/").split("/")[0]
+    return SECTION_DOCUMENTACION.get(top, ("", ""))[0]
 
 
 def section_default_type(folder: str) -> str:

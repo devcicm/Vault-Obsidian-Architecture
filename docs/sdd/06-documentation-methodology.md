@@ -50,6 +50,46 @@
 | NCR | id, title, severity, status |
 | Risk | id, title, level, treatment |
 
+### Clase de documento por sección (Diátaxis)
+
+Fuente: `vault_registry.SECTION_DOCUMENTACION`. Una nota hereda la clase de su
+sección; escribir en una sección una nota de otra clase es colocarla mal.
+
+- **tutorial** -- aprender haciendo: un recorrido guiado de principio a fin
+- **guia** -- resolver una tarea concreta: pasos para quien ya sabe qué quiere
+- **referencia** -- consultar un dato: descripción exacta de lo que hay
+- **explicacion** -- entender por qué: contexto, decisiones y alternativas
+- **registro** -- lo que ocurrió, anotado cuando ocurrió (fuera de Diátaxis)
+- **indice** -- navegación derivada que regenera una tool (fuera de Diátaxis)
+
+| Sección | Nombre | Clase | Por qué |
+|---|---|---|---|
+| `00_System` | Sistema | referencia | identidad, reglas y configuración que el agente consulta |
+| `01_Projects` | Proyectos | explicacion | estado y contexto de cada proyecto: por qué está como está |
+| `02_Observability` | Observabilidad | registro | errores, alertas e incidentes según ocurren |
+| `03_Decisions` | Decisiones | explicacion | un ADR explica por qué se eligió una opción y no otra |
+| `04_Sessions` | Sesiones | registro | diario de sesión: lo que se hizo, en su fecha |
+| `05_Patterns` | Patrones | guia | cómo resolver un problema que se repite |
+| `06_Diagrams` | Diagramas | explicacion | representación visual para entender una estructura |
+| `07_Knowledge` | Conocimiento | explicacion | conocimiento técnico y conceptual |
+| `08_Runbooks` | Runbooks | guia | procedimientos operativos paso a paso |
+| `09_Infrastructure` | Infraestructura | referencia | inventario de infraestructura, entornos y configuración |
+| `10_Migrated` | Migrados | registro | lo importado se conserva como llegó; su cuadrante es el de su origen |
+| `11_Code` | Código | referencia | mapa de módulos de código y sus relaciones |
+| `12_Bibliography` | Bibliografía | referencia | fuentes externas consultadas |
+| `13_Flows` | Flujos | explicacion | flujos, pipelines y ciclos de vida: cómo encaja el proceso |
+| `14_Requirements` | Requerimientos | referencia | requerimientos (ISO 29148): lo que el sistema debe cumplir |
+| `15_Tests` | Tests | referencia | casos de prueba y resultados (ISO 29119) |
+| `16_AI_Governance` | IA Governance | registro | decisiones y auditorías de agentes IA, en su fecha (ISO 42001) |
+| `17_Preferences` | Preferencias | referencia | contexto estable que el agente consulta en cada tarea |
+| `18_Bugs` | Bugs | registro | se puebla cuando aparece un bug |
+| `19_Audits` | Auditorías | registro | se puebla al ejecutar una auditoría |
+| `20_Quarantine` | Cuarentena | registro | se puebla cuando algo entra en cuarentena |
+| `21_QA` | QA | registro | eventos de calidad: ejecuciones, métricas y reportes |
+| `99_Index` | Índices | indice | índices de navegación que regeneran las tools |
+
+Clases de Diátaxis sin ninguna sección: tutorial.
+
 ### Estructura mínima (guideline)
 
 - Pattern: ## Contexto, ## Implementación, ## Trade-offs, ## Evolución
@@ -73,6 +113,10 @@
 ### Canonical schema per type (hard rule)
 
 (See table above in ES section.)
+
+### Document class per section (Diátaxis)
+
+(See table above in ES section: `vault_registry.SECTION_DOCUMENTACION`.)
 
 ### Minimum structure (guideline)
 
