@@ -53,6 +53,14 @@ class TestLoQueVe:
         texto = "\n".join(fu.report(vault)["report"])
         assert "a.md" in texto and "b.md" in texto
 
+    def test_las_notas_salen_con_barra_normal(self, vault):
+        """Medido en /vcloud desde Windows (2026-10-07): `infra\a.md`. Las
+        rutas del vault se publican con `/` en todas las plataformas, como
+        el resto del toolkit, para que el informe se compare y se enlace."""
+        notas = [n for c in fu.medir(vault) for ns in c["valores"].values() for n in ns]
+        assert notas and all("\\" not in n for n in notas)
+        assert "infra/a.md" in notas
+
     def test_semver_divergente_es_conflicto(self, tmp_path):
         _nota(tmp_path / "s/a.md", "---\nproject: p\n---\n\npve_version: 9.1.1\n")
         _nota(tmp_path / "s/b.md", "---\nproject: p\n---\n\npve_version: 8.4.16\n")

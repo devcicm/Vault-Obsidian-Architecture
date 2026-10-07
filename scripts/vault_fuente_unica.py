@@ -170,8 +170,10 @@ def medir(raiz: Optional[Path] = None) -> List[Dict[str, Any]]:
             llave = (ambito, clave)
             tipos[llave] = tipo
             notas = visto[llave][valor]
-            if str(rel) not in notas:
-                notas.append(str(rel))
+            # Con `/` en todas las plataformas: `str(rel)` en Windows publicaba
+            # `infra\a.md`, que no se compara con la ruta de ninguna otra tool.
+            if rel.as_posix() not in notas:
+                notas.append(rel.as_posix())
 
     conflictos = []
     for (ambito, clave), valores in sorted(visto.items()):
