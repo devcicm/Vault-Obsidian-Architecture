@@ -105,3 +105,15 @@ def test_un_valor_inventado_si_resta():
     """El conjunto no puede volverse un colador."""
     score, motivos = q._score_validity({"status": "aprobadisimo"})
     assert score < 1.0 and motivos
+
+
+@pytest.mark.parametrize("valor", ["accepted", "Accepted", "approved (v2)"])
+def test_un_status_que_el_dueno_normaliza_no_resta(valor):
+    """`normalize_status` lleva `accepted` a `approved` (sinónimo) y CN-03 lo
+    acepta, pero F5 lo penalizaba: su lista de heredados era una segunda tabla
+    de sinónimos, escrita a mano, que no coincide con la del dueño (AP-57).
+    Las cuatro ADR del sandbox perdían un cuarto de punto por el estado
+    estándar de un ADR."""
+    from vault_norms_catalog import normalize_status
+    assert normalize_status(valor)[0] is not None
+    assert q._score_validity({"status": valor}) == (1.0, [])

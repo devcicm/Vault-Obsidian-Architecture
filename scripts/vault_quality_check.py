@@ -55,7 +55,7 @@ from vault_io import atomic_write_json, file_lock, normalize_stem, write_report
 # para por qué el modelo singular no era ampliable, solo sustituible.
 from vault_registry import SCAFFOLD_TYPE, SECTION_TYPES, type_misfiled_in
 from vault_fundamentals_catalog import cia_valores
-from vault_norms_catalog import STATUS_VOCAB
+from vault_norms_catalog import STATUS_VOCAB, normalize_status
 # El vocabulario se declara una vez y se consume, no se copia. Ver
 # `vault_vocabulario.py` para el registro y su contexto dueño.
 from vault_vocabulario import opciones as _opciones
@@ -284,7 +284,11 @@ def _score_validity(fm: Dict[str, str]) -> Tuple[float, List[str]]:
             errors.append(f"validity: cia_sensitivity '{v}' invalid")
     if "status" in fm:
         v = fm["status"].lower().replace("-", "_")
-        if v not in STATUS_VALUES:
+        # Lo que el dueño normaliza (sinónimo, calificador) es válido: CN-03 ya
+        # lo acepta, y la lista de heredados no puede ser una segunda tabla de
+        # sinónimos que penalice `accepted` (AP-57). Los heredados que el dueño
+        # no decide siguen tolerados (no-derogación).
+        if v not in STATUS_VALUES and normalize_status(fm["status"])[0] is None:
             errors.append(f"validity: status '{fm['status']}' not in known values")
     if "type" in fm:
         v = fm["type"].lower()
