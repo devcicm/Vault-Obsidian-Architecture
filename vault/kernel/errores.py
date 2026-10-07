@@ -190,12 +190,18 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
     "INVALID_FOLDER": {
         "category": "validation",
         "severity": "error",
-        "message": "La carpeta destino no pertenece a la estructura estándar del vault.",
+        "message": "La carpeta destino no es una sección del vault.",
+        # v41.2: mandaba a `vault_audit` y a «una carpeta de la estructura
+        # estándar». Desde las secciones propias, la que enseña dónde se puede
+        # escribir es `vault_section --list`, que es lo que ya decía la pista
+        # de cada sitio que emite este código.
         "recovery": {
             "action": "run_tool",
-            "tool": "vault_audit",
-            "args": [],
-            "hint": "Usar una carpeta de la estructura estándar (01_Projects, 03_Decisions, 05_Patterns, etc.).",
+            "tool": "vault_section",
+            "args": ["--list"],
+            "hint": "Elegir una sección del vault (vault_section --list enseña las del "
+                    "estándar y las propias) o declarar una propia NN_Nombre con "
+                    "vault_section --add.",
             "docs": "vault-obsidian-architecture.md §Estructura de carpetas",
         },
     },
