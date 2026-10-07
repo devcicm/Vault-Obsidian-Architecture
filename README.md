@@ -158,6 +158,11 @@ sudo ln -sf "$(pwd)/mcp/nodejs/vault-mcp-server.mjs" /usr/local/bin/vault-mcp
 python -m vault.install --mcp
 ```
 
+Para un agente, añade `VAULT_MCP_PERFIL=agente` al `env` de la entrada MCP: el
+servidor ofrece y acepta solo las tools del protocolo de sesión —orientarse,
+recordar, escribir, borrar y cerrar—, derivadas de
+`vault.meta_toolkit.protocolo_de_sesion`. Sin ella expone el catálogo entero.
+
 **Desinstalar:**
 
 ```bash

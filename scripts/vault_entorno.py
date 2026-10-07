@@ -179,6 +179,15 @@ VARIABLES: Dict[str, Variable] = {
             "(`Authorization: Bearer`). Si falta, se genera uno por arranque. "
             "Solo la lee el `.mjs`; stdio no la usa.",
         ),
+        # v41.2. Vacía es el catálogo entero, que es lo que recibía todo
+        # cliente hasta ahora; un nombre que no está en `perfiles` no arranca,
+        # porque caer al catálogo entero sería exponer lo que se pidió no exponer.
+        Variable(
+            "VAULT_MCP_PERFIL", "texto", "", "meta_toolkit",
+            "Perfil de tools que el servidor MCP expone y acepta (`agente`: las "
+            "del protocolo de sesión, de `tools-catalog.json` → `perfiles`). "
+            "Vacía, todas las expuestas por MCP. Solo la lee el `.mjs`.",
+        ),
         Variable(
             "VAULT_MCP_PYTHON", "ruta", None, "meta_toolkit",
             "Intérprete con el que el servidor MCP lanza las tools. Vacía, "

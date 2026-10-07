@@ -105,6 +105,12 @@ let VAULT_SCAN_ROOTS = process.env.VAULT_SCAN_ROOTS
       : []);
 let SSE_PORT = 0;
 let LOG_LEVEL = process.env.VAULT_MCP_LOG || envDefault("VAULT_MCP_LOG");
+// v41.2 — el subconjunto del catálogo que se le da a este cliente. Los perfiles
+// los deriva `vault.meta_toolkit.protocolo_de_sesion` y llegan por la pasarela
+// (`tools-catalog.json` → `perfiles`); aquí solo se aplican. Vacía: todo.
+const PERFIL = process.env.VAULT_MCP_PERFIL || envDefault("VAULT_MCP_PERFIL");
+let PERFILES = {};
+let TOOLS_DEL_PERFIL = null;
 
 const VAULT_REGISTRY = new Map();
 const sessions = new Map();
@@ -131,6 +137,7 @@ function loadCatalog() {
     TOOLS_CATALOG = data.tools || {};
     TOOL_GROUPS = data.groups || {};
     ERROR_CATALOG = data.errors || {};
+    PERFILES = data.perfiles || {};
     if (Array.isArray(data.js_native_tools)) JS_NATIVE_TOOLS = new Set(data.js_native_tools);
     // El catálogo describe el repo entero; la instalación lleva solo el
     // producto. Ofrecer una tool cuyo script no viajó sería prometer algo que
@@ -145,6 +152,20 @@ function loadCatalog() {
   } catch (e) {
     log("warn", `Could not load catalog from ${CATALOG_PATH}: ${e.message}. Tools/list will be empty.`);
   }
+}
+
+// Un perfil desconocido no degrada al catálogo entero: lanza, y `main()` sale.
+function aplicarPerfil() {
+  if (!PERFIL) return;
+  if (!Object.prototype.hasOwnProperty.call(PERFILES, PERFIL)) {
+    const conocidos = Object.keys(PERFILES).join(", ") || "ninguno";
+    throw new Error(
+      `VAULT_MCP_PERFIL=${PERFIL} no es un perfil de tools-catalog.json ` +
+      `(perfiles: ${conocidos}).`,
+    );
+  }
+  TOOLS_DEL_PERFIL = new Set(PERFILES[PERFIL]);
+  log("info", `Perfil ${PERFIL}: ${TOOLS_DEL_PERFIL.size} tools`);
 }
 
 function detectVaultRoot() {
@@ -961,6 +982,7 @@ async function handleToolsList() {
   // para vault_smoke y vault_spec_validate, pero no en el MCP del agente.
   const tools = Object.values(TOOLS_CATALOG)
     .filter(t => t.exposed_via_mcp !== false)
+    .filter(t => !TOOLS_DEL_PERFIL || TOOLS_DEL_PERFIL.has(t.name))
     .map(t => ({
       name: t.name,
       description: t.description,
@@ -1079,6 +1101,13 @@ function comprobarLlamada(name, args) {
   const tool = Object.prototype.hasOwnProperty.call(TOOLS_CATALOG, name) ? TOOLS_CATALOG[name] : null;
   if (!tool || tool.exposed_via_mcp === false) {
     return { code: "tool_not_found", message: `Tool '${name}' not found.` };
+  }
+  // Lo que `tools/list` no ofreció a este cliente tampoco se ejecuta (AP-40).
+  if (TOOLS_DEL_PERFIL && !TOOLS_DEL_PERFIL.has(name)) {
+    return {
+      code: "tool_not_found",
+      message: `Tool '${name}' no está en el perfil '${PERFIL}' (VAULT_MCP_PERFIL).`,
+    };
   }
   const error = validarArgumentos(tool.inputSchema || { properties: {} }, args)
     || validarAlternativas(tool.requires_one_of || [], args);
@@ -2173,6 +2202,7 @@ function main() {
   parseArgs();
   loadCatalog();
   try {
+    aplicarPerfil();
     detectVaultRoot();
   } catch (e) {
     log("error", e.message);

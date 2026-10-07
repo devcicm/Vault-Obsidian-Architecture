@@ -2082,6 +2082,11 @@ VAULT_MCP_TOKEN=<secreto> node mcp/nodejs/vault-mcp-server.mjs --port 3000
 # → http://localhost:3000/sse con 'Authorization: Bearer <secreto>' (SP-04)
 # Sin VAULT_MCP_TOKEN se genera un token por arranque y se imprime por stderr.
 # Se rechaza toda petición con cabecera Origin o con un Host que no sea 127.0.0.1/localhost.
+
+# Perfil de agente: tools/list y tools/call se limitan a las tools del protocolo
+# de sesión (vault.meta_toolkit.protocolo_de_sesion → tools-catalog.json "perfiles").
+# Sin la variable, el catálogo expuesto entero; un perfil desconocido no arranca.
+VAULT_MCP_PERFIL=agente node mcp/nodejs/vault-mcp-server.mjs
 ```
 
 ### Capas del monolito
