@@ -7662,7 +7662,7 @@ temp/
 
 ---
 
-### v41.0 — 2026-10-07 `git: pending`
+### v41.0 — 2026-10-07 `git: 75555fa`
 
 **El contrato de nota es el criterio de lo que se escribe y se valida.**
 
