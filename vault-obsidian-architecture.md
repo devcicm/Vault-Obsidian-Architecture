@@ -4433,7 +4433,8 @@ opciones evaluadas no es un ADR».
 desde v19 y el catálogo declaraba la norma `cobertura_descubierta`. Ahora la mitad que
 la nota declara tiene detector: una nota con `files:` —el mismo campo que lee
 `vault_arquitectura_en`— está **desfasada** si alguno de esos ficheros tiene un commit
-posterior a su `updatedAt`.
+posterior a su `updatedAt` y a su `revisado_en` —el campo opcional del contrato v41 donde
+queda una revisión que confirmó la nota sin cambiar el texto—.
 
 ```bash
 python scripts/vault_drift_detect.py --project <slug> --mode vigencia

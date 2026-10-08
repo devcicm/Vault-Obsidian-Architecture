@@ -333,7 +333,9 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         ),
         "prevention": (
             "Declarar en `files:` los ficheros que la nota documenta y pasar "
-            "`vault_drift_detect --mode vigencia` al cerrar la sesión. Agregar "
+            "`vault_drift_detect --mode vigencia` al cerrar la sesión. Quien "
+            "comprueba que una nota sigue siendo cierta sin cambiarla lo deja en "
+            "`revisado_en:` (contrato v41), que cuenta como acompañar al cambio. Agregar "
             "campo version_pinned al frontmatter con la versión referenciada."
         ),
         "tools_enforcing": [],

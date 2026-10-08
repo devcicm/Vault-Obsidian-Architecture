@@ -135,9 +135,10 @@ CAMPOS: Dict[str, Dict[str, Any]] = {
     # La última vez que alguien comprobó que la nota sigue siendo cierta, la
     # cambiara o no. `updatedAt` solo se mueve si el texto cambia; sin este
     # campo, revisar una nota y confirmarla no deja rastro. Fecha o fecha y hora.
+    # Lo lee `vault_drift_detect --mode vigencia` (AP-08).
     "revisado_en": {"tipo": "string", "formato": "date", "nivel": "opcional",
                     "clases": ("contenido",), "requerido_desde": None,
-                    "valores_desde": "v41", "patron": r"^\d{4}-\d{2}-\d{2}"},
+                    "valores_desde": "v41", "norma": "AP-08", "patron": r"^\d{4}-\d{2}-\d{2}"},
 }
 
 #: Cuándo cambió el contrato y quién lo atestigua. `fuente` es

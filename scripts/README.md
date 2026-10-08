@@ -1107,7 +1107,7 @@ Sobre git, el snapshot anota `repo.synced_commit` en la ficha del proyecto: es e
 | `report` | Último comando antes de cerrar sesión |
 | `vigencia` | Notas que no acompañaron al cambio de su código (AP-08), solo lectura y solo git |
 
-`--mode vigencia` (v41.3) compara el `updatedAt` de cada nota del proyecto con el último commit que tocó los ficheros que la nota declara en `files:`, y lista en `desfasadas` las que quedaron por detrás. La relación nota → código la declara la nota; no se adivina por el nombre. `sin_files` cuenta las notas que no declaran su código y `sin_historia` las que declaran ficheros que git no conoce. Las notas con `superseded_by:` o en estado `deprecated`, `obsolete`, `archived`, `stub` o `template` no se juzgan. Sin git sale `GIT_UNAVAILABLE`.
+`--mode vigencia` (v41.3) compara el `updatedAt` de cada nota del proyecto con el último commit que tocó los ficheros que la nota declara en `files:`, y lista en `desfasadas` las que quedaron por detrás. Una revisión que confirmó la nota sin cambiar el texto se anota en `revisado_en:` (contrato v41) y cuenta como acompañar al cambio. La relación nota → código la declara la nota; no se adivina por el nombre. `sin_files` cuenta las notas que no declaran su código y `sin_historia` las que declaran ficheros que git no conoce. Las notas con `superseded_by:` o en estado `deprecated`, `obsolete`, `archived`, `stub` o `template` no se juzgan. Sin git sale `GIT_UNAVAILABLE`.
 
 ```bash
 python vault_drift_detect.py --project mi-api --mode vigencia

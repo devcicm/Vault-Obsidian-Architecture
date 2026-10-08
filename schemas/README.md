@@ -82,4 +82,4 @@ Cualquier versión se valida con el validador vigente:
 | `dq_validated_at` | opcional | contenido | — |
 | `vigente_desde` | opcional | contenido | — |
 | `responsable` | opcional | contenido | — |
-| `revisado_en` | opcional | contenido | — |
+| `revisado_en` | opcional | contenido | AP-08 |

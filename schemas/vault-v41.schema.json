@@ -245,6 +245,7 @@
     "revisado_en": {
       "x-vault-tipo-esperado": "string",
       "x-vault-nivel": "opcional",
+      "x-vault-norma": "AP-08",
       "pattern": "^\\d{4}-\\d{2}-\\d{2}"
     }
   },
@@ -377,6 +378,7 @@
         "revisado_en": {
           "x-vault-tipo-esperado": "string",
           "x-vault-nivel": "opcional",
+          "x-vault-norma": "AP-08",
           "pattern": "^\\d{4}-\\d{2}-\\d{2}"
         }
       },
@@ -502,6 +504,7 @@
         "revisado_en": {
           "x-vault-tipo-esperado": "string",
           "x-vault-nivel": "opcional",
+          "x-vault-norma": "AP-08",
           "pattern": "^\\d{4}-\\d{2}-\\d{2}"
         }
       },
@@ -627,6 +630,7 @@
         "revisado_en": {
           "x-vault-tipo-esperado": "string",
           "x-vault-nivel": "opcional",
+          "x-vault-norma": "AP-08",
           "pattern": "^\\d{4}-\\d{2}-\\d{2}"
         }
       },

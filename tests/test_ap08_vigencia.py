@@ -119,3 +119,17 @@ def test_ap08_los_estados_sin_vigencia_son_del_vocabulario():
     import vault_drift_detect
     from vault_norms_catalog import STATUS_VOCAB
     assert vault_drift_detect._ESTADOS_SIN_VIGENCIA <= set(STATUS_VOCAB)
+
+
+def test_ap08_revisar_una_nota_sin_cambiarla_la_devuelve_a_vigente(tmp_path):
+    """`updatedAt` solo se mueve si el texto cambia. Quien comprueba que la
+    nota sigue siendo cierta lo deja en `revisado_en` (contrato v41), y esa
+    revisión cuenta como acompañar al cambio del código."""
+    raiz, _ = _proyecto(tmp_path)
+    base = "project: demo\nstatus: active\nupdatedAt: 2026-01-01T00:00:00Z\nfiles:\n  - nuevo.py"
+    _nota(raiz, "revisada", base + "\nrevisado_en: 2026-04-01")
+    _nota(raiz, "revisada-antes", base + "\nrevisado_en: 2026-02-01")
+    rc, r = _tool(raiz, "vault_drift_detect", "--project", "demo", "--mode", "vigencia")
+    assert rc == 0, r
+    assert [d["path"] for d in r["desfasadas"]] == ["07_Knowledge/revisada-antes.md"], r
+    assert r["summary"]["vigentes"] == 1

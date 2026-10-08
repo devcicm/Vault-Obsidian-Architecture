@@ -89,7 +89,7 @@ ADRs (Architecture Decision Records) sin secciones Contexto, Decisión y Consecu
 
 Notas que mencionan versiones específicas de librerías, APIs o protocolos que ya fueron actualizadas, sin indicar que el contenido puede estar desactualizado.
 
-**Prevención:** Declarar en `files:` los ficheros que la nota documenta y pasar `vault_drift_detect --mode vigencia` al cerrar la sesión. Agregar campo version_pinned al frontmatter con la versión referenciada.
+**Prevención:** Declarar en `files:` los ficheros que la nota documenta y pasar `vault_drift_detect --mode vigencia` al cerrar la sesión. Quien comprueba que una nota sigue siendo cierta sin cambiarla lo deja en `revisado_en:` (contrato v41), que cuenta como acompañar al cambio. Agregar campo version_pinned al frontmatter con la versión referenciada.
 
 ### AP-09: Runbooks fuera de estructura
 
@@ -967,7 +967,7 @@ ADRs (Architecture Decision Records) sin secciones Contexto, Decisión y Consecu
 
 Notas que mencionan versiones específicas de librerías, APIs o protocolos que ya fueron actualizadas, sin indicar que el contenido puede estar desactualizado.
 
-**Prevention:** Declarar en `files:` los ficheros que la nota documenta y pasar `vault_drift_detect --mode vigencia` al cerrar la sesión. Agregar campo version_pinned al frontmatter con la versión referenciada.
+**Prevention:** Declarar en `files:` los ficheros que la nota documenta y pasar `vault_drift_detect --mode vigencia` al cerrar la sesión. Quien comprueba que una nota sigue siendo cierta sin cambiarla lo deja en `revisado_en:` (contrato v41), que cuenta como acompañar al cambio. Agregar campo version_pinned al frontmatter con la versión referenciada.
 
 ### AP-09: Runbooks fuera de estructura
 

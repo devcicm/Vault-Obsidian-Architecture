@@ -789,7 +789,12 @@ def vault_drift_vigencia(path: str, project: str) -> Dict[str, Any]:
         if not files:
             sin_files.append(rel)
             continue
-        nota_dt = _en_utc(_parse_iso(str(fm.get("updatedAt") or fm.get("createdAt") or "")))
+        # La nota acompaña a su código desde la última vez que alguien la tocó
+        # o comprobó que seguía siendo cierta: `revisado_en` (contrato v41)
+        # deja rastro de una revisión que no cambió el texto.
+        escrita = _en_utc(_parse_iso(str(fm.get("updatedAt") or fm.get("createdAt") or "")))
+        revisada = _en_utc(_parse_iso(str(fm.get("revisado_en") or "")))
+        nota_dt = max((f for f in (escrita, revisada) if f is not None), default=None)
         cambio = _ultimo_cambio(repo, files)
         if cambio is None:
             # Un `files:` que git no conoce —renombrado, borrado o mal
@@ -801,6 +806,7 @@ def vault_drift_vigencia(path: str, project: str) -> Dict[str, Any]:
             desfasadas.append({
                 "path": rel,
                 "updatedAt": fm.get("updatedAt"),
+                "revisado_en": fm.get("revisado_en"),
                 "files": files,
                 "ultimo_cambio": cambio["fecha"],
                 "commit": cambio["commit"],
