@@ -49,6 +49,7 @@ en el guard: medir con el criterio propio en vez de con el del consumidor.
 import argparse
 import ast
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Dict, List
@@ -165,6 +166,53 @@ def offenders() -> List[Dict]:
     return fuera
 
 
+#: Un `catch` cuyo cuerpo solo tiene blancos o comentarios: en JS es el
+#: `except Exception: pass` de arriba, y el AST de Python no lo ve.
+_CATCH_JS = re.compile(
+    r"catch\s*(?:\([^)]*\))?\s*\{((?:\s|/\*.*?\*/|//[^\n]*)*)\}", re.S)
+
+#: Ficheros JS del repo que el detector mide. Lo que no es código del repo
+#: —dependencias, artefactos de build, directorios ocultos— queda fuera.
+_JS_SUFIJOS = {".mjs", ".js", ".cjs"}
+_JS_FUERA = {"node_modules", "build", "dist"}
+
+
+def catch_silenciosos_js(raiz: Path = REPO_ROOT) -> List[Dict]:
+    """AP-51 en la frontera JS: `catch` que se traga el fallo sin decir por qué.
+
+    Hasta v41.2 el servidor MCP tenía once `catch (_) {}` y ningún guard los
+    medía, porque `offenders()` solo lee Python. Aquí no hay baseline: la deuda
+    se saldó entera antes de nacer el detector, así que **tolerancia cero**.
+
+    Un `catch` vacío o con solo comentarios es legítimo cuando dice por qué con
+    `AP-51:` en el comentario —caer a un error declarado, probar el siguiente
+    candidato—. Lo que no se admite es el silencio sin motivo. Alcance
+    declarado: es un detector por texto, así que salta las menciones en
+    comentarios `//` de la misma línea pero no ve un `catch` que devuelva
+    `[]` con cuerpo no vacío; eso sigue siendo cosa de revisión.
+    """
+    fuera: List[Dict] = []
+    for path in sorted(raiz.rglob("*")):
+        if path.suffix not in _JS_SUFIJOS or not path.is_file():
+            continue
+        relativa = path.relative_to(raiz)
+        if any(p in _JS_FUERA or p.startswith(".") for p in relativa.parts[:-1]):
+            continue
+        texto = path.read_text(encoding="utf-8", errors="replace")
+        for m in _CATCH_JS.finditer(texto):
+            inicio_linea = texto.rfind("\n", 0, m.start()) + 1
+            if "//" in texto[inicio_linea:m.start()]:
+                continue  # una mención en un comentario, no código
+            if "AP-51:" in m.group(1):
+                continue
+            fuera.append({
+                "file": relativa.as_posix(),
+                "line": texto.count("\n", 0, m.start()) + 1,
+                "code": m.group(0)[:80],
+            })
+    return fuera
+
+
 def load_baseline() -> List[str]:
     """Las claves congeladas, ordenadas.
 
@@ -193,10 +241,13 @@ def scan() -> Dict:
 
     nuevos = sorted(firmas - baseline)      # deuda que CRECIÓ: es un fallo
     resueltos = sorted(baseline - firmas)   # deuda saldada: hay que recongelar
+    js = catch_silenciosos_js()
 
     return {
         # `ok` solo mira los nuevos: la deuda histórica no bloquea, pero no crece.
-        "ok": not nuevos,
+        # La frontera JS no tiene baseline: cualquier sitio es un fallo.
+        "ok": not nuevos and not js,
+        "js_silent_catches": js,
         "tool": "vault_blame_audit",
         "norm": "AP-51",
         "schema": esquema,

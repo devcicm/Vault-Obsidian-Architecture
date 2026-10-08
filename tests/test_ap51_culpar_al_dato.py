@@ -158,3 +158,37 @@ def test_freeze_no_se_ejecuta_por_error_al_solo_comprobar(tmp_path, monkeypatch)
     antes = destino.read_bytes()
     blame.scan()
     assert destino.read_bytes() == antes
+
+
+# --- La frontera JS (v41.2): el AST de Python no ve el `.mjs` ---------------
+
+@pytest.mark.parametrize("fuente,esperado,motivo", [
+    ("try { f(); } catch (_) {}", True, "vacío"),
+    ("try { f(); } catch { }", True, "vacío sin binding"),
+    ("try { f(); } catch (_) { /* skip */ }", True, "un comentario sin motivo"),
+    ("try { f(); } catch (_) {\n  // nada\n}", True, "comentario de línea sin motivo"),
+    ("try { f(); } catch (_) { /* AP-51: cae al error de abajo */ }", False, "declara por qué"),
+    ("try { f(); } catch (e) { log(\"warn\", e); }", False, "expone el fallo"),
+    ("try { f(); } catch (e) { throw e; }", False, "propaga"),
+    ("// antes era `catch (_) {}` y se tragaba el fallo", False, "mención en un comentario"),
+])
+def test_ap51_el_detector_js_distingue_silencio_de_motivo(tmp_path, fuente, esperado, motivo):
+    (tmp_path / "srv.mjs").write_text(fuente + "\n", encoding="utf-8")
+    assert bool(blame.catch_silenciosos_js(tmp_path)) is esperado, motivo
+
+
+def test_ap51_el_detector_js_no_mide_dependencias(tmp_path):
+    (tmp_path / "node_modules" / "x").mkdir(parents=True)
+    (tmp_path / "node_modules" / "x" / "i.js").write_text("try{}catch(_){}\n", encoding="utf-8")
+    assert blame.catch_silenciosos_js(tmp_path) == []
+
+
+def test_ap51_la_frontera_js_no_tiene_deuda_y_bloquea_la_puerta(tmp_path, monkeypatch):
+    """Sin baseline: el servidor quedó en cero y un sitio nuevo tumba `ok`."""
+    assert blame.catch_silenciosos_js() == []
+    (tmp_path / "srv.mjs").write_text("try { f(); } catch (_) {}\n", encoding="utf-8")
+    original = blame.catch_silenciosos_js
+    monkeypatch.setattr(blame, "catch_silenciosos_js", lambda: original(tmp_path))
+    resultado = blame.scan()
+    assert resultado["ok"] is False
+    assert [o["file"] for o in resultado["js_silent_catches"]] == ["srv.mjs"]

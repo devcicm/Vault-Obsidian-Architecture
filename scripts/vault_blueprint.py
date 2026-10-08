@@ -227,10 +227,25 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     },
     {
         "id": "catch_vacios_en_el_servidor_mjs",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "v41.2",
+        "sostenida_por": [
+            "tests/test_ap51_culpar_al_dato.py::test_ap51_el_detector_js_distingue_silencio_de_motivo",
+            "tests/test_ap51_culpar_al_dato.py::test_ap51_la_frontera_js_no_tiene_deuda_y_bloquea_la_puerta",
+            "tests/test_mcp_descubrimiento.py::test_un_recuento_parcial_de_notas_se_declara",
+            "tests/test_mcp_guard_enlaces.py::test_un_directorio_ilegible_no_se_publica_como_nota_inexistente",
+        ],
         "desde": "v40.9",
         "capa": "7",
-        "que": "11 `catch (_) {}` en `mcp/nodejs/vault-mcp-server.mjs` (AP-51 en JS).",
+        "que": (
+            "11 `catch (_) {}` en `mcp/nodejs/vault-mcp-server.mjs` (AP-51 en JS). "
+            "v41.2 los midió uno a uno: los que convertían un fallo en un vacío "
+            "—traza, sello de versión, backup, recuento del registro, mapa de "
+            "enlaces— ahora lo exponen; los legítimos —caer a un error declarado, "
+            "probar el siguiente candidato— lo dicen con `AP-51:`. "
+            "`vault_blame_audit.catch_silenciosos_js` mide la frontera JS sin "
+            "baseline, con tolerancia cero."
+        ),
         "por_que_no_ahora": (
             "Los tres audits con baseline miden AST de Python. Un detector de "
             "JavaScript es otro proyecto, y fingir que el alcance lo cubre sería el "
