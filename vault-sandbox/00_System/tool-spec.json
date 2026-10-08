@@ -1723,8 +1723,8 @@
       "group_id": 33,
       "status": "active",
       "required_args": [
-        "by",
-        "path"
+        "--by",
+        "--path"
       ],
       "declared_returns": [
         "action",
