@@ -82,3 +82,25 @@ def test_un_vault_viejo_orienta_con_una_salida_dentro_del_perfil(tmp_path):
     assert r["ok"], r
     assert {"tool": "vault_validate", "error_code": "FOLDER_NOT_FOUND",
             "recovery_tool": "vault_standard_upgrade"} in r["hallazgos"], r
+
+
+def test_un_titulo_repetido_no_cuenta_como_fallo_de_ranking(tmp_path):
+    """Medido en una copia de /ans: los tres «no sale primera» eran dos notas
+    con el mismo `title:` y puntuación casi igual. Preguntar por ese título es
+    ambiguo; el banco lo separa en vez de culpar al ranking."""
+    vault = banco._init_vault(tmp_path / "vault")
+    a = banco.Agente(vault)
+    try:
+        cuerpo = "\n".join(f"Registro de cambios del servicio, entrada {i}." for i in range(4))
+        assert banco._escribir(a, "07_Knowledge", "Registro de cambios", cuerpo)["ok"] is True
+        # El estándar no deja escribir el duplicado (`note_moved`); un vault
+        # heredado lo trae con otro nombre de fichero, como /ans.
+        (vault / "05_Patterns" / "CHANGELOG_SERVICIO.md").write_text(
+            '---\ntitle: "Registro de cambios"\n---\n\n# Registro de cambios\n\n' + cuerpo + "\n",
+            encoding="utf-8")
+        assert a("vault_reindex", {})["ok"] is True
+        r = banco.recuerdo_preexistente(a, vault)
+    finally:
+        a.cerrar()
+    assert r["ambiguas"] >= 2, r
+    assert r["acierto_primera_sin_ambiguas"] == 1.0, r

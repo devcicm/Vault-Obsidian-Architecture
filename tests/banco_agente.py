@@ -290,7 +290,12 @@ def cerrar(agente: Agente, repo: Path, slug: str = "banco-proyecto") -> dict:
 
 
 def recuerdo_preexistente(agente: Agente, vault: Path) -> dict:
-    """Título → context_pack sobre notas que el banco no escribió. Métrica, no veredicto."""
+    """Título → context_pack sobre notas que el banco no escribió. Métrica, no veredicto.
+
+    Un título que llevan varias notas es una pregunta ambigua: que la buscada
+    salga segunda tras su gemela no es un fallo del ranking. Medido en una copia
+    de /ans, eran los tres casos de «no sale primera». Se cuentan aparte y la
+    cifra cruda se conserva."""
     candidatas = []
     for f in sorted(vault.rglob("*.md")):
         rel = f.relative_to(vault).as_posix()
@@ -300,6 +305,8 @@ def recuerdo_preexistente(agente: Agente, vault: Path) -> dict:
         titulo = (fm or {}).get("title")
         if isinstance(titulo, str) and len(titulo.split()) >= 2:
             candidatas.append((rel, titulo))
+    repetidos = {t for t in (c[1] for c in candidatas)
+                 if sum(1 for _, otro in candidatas if otro == t) > 1}
     paso = max(1, len(candidatas) // MUESTRA_AJENA)
     muestra = candidatas[::paso][:MUESTRA_AJENA]
     filas = []
@@ -309,13 +316,18 @@ def recuerdo_preexistente(agente: Agente, vault: Path) -> dict:
         busca = agente("vault_search", {"query": titulo})
         filas.append({"path": rel, "titulo": titulo, "pack_ok": pack.get("ok") is True,
                       "en_pack": rel in incluidas, "primera": incluidas[:1] == [rel],
-                      "en_search": rel in [x.get("path") for x in busca.get("results", [])]})
+                      "en_search": rel in [x.get("path") for x in busca.get("results", [])],
+                      "titulo_repetido": titulo in repetidos})
     n = len(filas) or 1
+    claras = [f for f in filas if not f["titulo_repetido"]]
     return {
         "candidatas": len(candidatas),
         "muestra": len(filas),
         "recall_pack": round(sum(f["en_pack"] for f in filas) / n, 3),
         "acierto_primera": round(sum(f["primera"] for f in filas) / n, 3),
+        "ambiguas": len(filas) - len(claras),
+        "acierto_primera_sin_ambiguas": round(
+            sum(f["primera"] for f in claras) / (len(claras) or 1), 3),
         "recall_search": round(sum(f["en_search"] for f in filas) / n, 3),
         "fallos": [f for f in filas if not f["en_pack"]],
     }
