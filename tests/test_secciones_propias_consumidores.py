@@ -599,3 +599,67 @@ def test_la_ingesta_con_el_registro_roto_no_escribe(tmp_path):
     assert r["ok"] is False and r["error_code"] == "DATA_FILE_CORRUPT", r
     assert not (raiz / "22_Scripts").exists()
     assert _ingerir(raiz, "07_Knowledge")["ok"] is True
+
+
+# ── La consulta reconoce la sección propia que la pregunta nombra ──
+#
+# Medido el 2026-10-08: «notas en 22_Scripts sobre deploy», sobre un vault que
+# la había dado de alta, salía con `sections_named: []` y `sections:
+# ["08_Runbooks"]` —por la pista léxica de «deploy»—. La fachada inyectaba
+# `standard_folders()` al parser, así que nombrar la sección propia no filtraba
+# nada y `vault_context_pack` buscaba en el sitio equivocado.
+
+def _consultar(raiz: Path, tool: str, pregunta: str) -> dict:
+    proceso = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / f"{tool}.py"), "--query", pregunta],
+        env=dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",
+                 PYTHONIOENCODING="utf-8"),
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        cwd=str(ROOT / "scripts"),
+    )
+    salida = proceso.stdout.strip()
+    assert salida, proceso.stderr
+    return json.loads(salida[salida.index("{"):])
+
+
+def test_la_consulta_reconoce_la_seccion_propia_nombrada(tmp_path):
+    raiz = _vault(tmp_path, [_SCRIPTS_SEC])
+    r = _consultar(raiz, "vault_query_parse", "notas en 22_Scripts sobre deploy")
+    assert r["ok"] is True, r
+    assert r["structured"]["sections_named"] == ["22_Scripts"], r["structured"]
+    assert r["structured"]["sections"][0] == "22_Scripts"
+
+
+def test_la_consulta_no_reconoce_una_carpeta_no_declarada(tmp_path):
+    raiz = _vault(tmp_path)
+    r = _consultar(raiz, "vault_query_parse", "notas en 22_Scripts sobre deploy")
+    assert r["ok"] is True and r["structured"]["sections_named"] == [], r
+
+
+def test_la_consulta_con_el_registro_roto_falla_en_vez_de_ignorar_las_propias(tmp_path):
+    raiz = _vault(tmp_path)
+    (raiz / reg.SECCIONES_PROPIAS_RUTA).write_text("{roto", encoding="utf-8")
+    r = _consultar(raiz, "vault_query_parse", "notas en 22_Scripts")
+    assert r["ok"] is False and r["error_code"] == "DATA_FILE_CORRUPT", r
+
+
+def test_el_contexto_filtra_por_la_seccion_propia_nombrada(tmp_path):
+    raiz = _vault(tmp_path, [_SCRIPTS_SEC],
+                  notas=["22_Scripts/copia-rsync.md", "07_Knowledge/rsync-teoria.md"])
+    for rel in ("22_Scripts/copia-rsync.md", "07_Knowledge/rsync-teoria.md"):
+        p = raiz / rel
+        p.write_text(p.read_text(encoding="utf-8") + "\nrsync sincroniza el NAS.\n",
+                     encoding="utf-8")
+    reindex = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "vault_reindex.py")],
+        env=dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",
+                 PYTHONIOENCODING="utf-8"),
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        cwd=str(ROOT / "scripts"),
+    )
+    assert reindex.returncode == 0, reindex.stdout + reindex.stderr
+    r = _consultar(raiz, "vault_context_pack", "rsync en 22_Scripts")
+    assert r["ok"] is True, r
+    rutas = [n["path"] for n in r["included"]]
+    assert "22_Scripts/copia-rsync.md" in rutas, r
+    assert "07_Knowledge/rsync-teoria.md" not in rutas, rutas

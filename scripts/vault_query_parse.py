@@ -13,16 +13,26 @@ import json
 import sys
 
 from vault_errors import wrap_main
-from vault_registry import standard_folders
+from vault_io import get_vault_root
+from vault_registry import secciones_del_vault
 from vault.consulta.query_parse import *  # noqa: F401,F403 - compatibilidad de imports
 from vault.consulta.query_parse import vault_query_parse as _stable_query_parse
 
 
 def vault_query_parse(query, now=None):
-    """Compatibilidad histórica con el registro de secciones del checkout."""
-    return _stable_query_parse(
-        query, now=now, available_sections=list(standard_folders())
-    )
+    """Compatibilidad histórica con el registro de secciones del checkout.
+
+    Las secciones son las del vault, no solo las del estándar (CN-02). Hasta
+    v41.2 se inyectaba `standard_folders()`: una pregunta que nombraba una
+    sección propia dada de alta no filtraba por ella y la pista léxica la
+    mandaba a otra. Un `secciones.json` ilegible es un fallo, no «no hay
+    propias» (AP-51).
+    """
+    try:
+        secciones = secciones_del_vault(get_vault_root())
+    except ValueError as exc:
+        return {"ok": False, "error_code": "DATA_FILE_CORRUPT", "error": str(exc)}
+    return _stable_query_parse(query, now=now, available_sections=secciones)
 
 
 def main() -> int:
