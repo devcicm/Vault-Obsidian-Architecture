@@ -663,8 +663,13 @@ Documenta un runbook operacional en `08_Runbooks/`.
 
 ```bash
 python vault_runbook_save.py --project mi-api --title "Deploy a Producción" --category deploy \
-  --content "# Deploy\n\n## Pasos\n1. ..."
+  --trigger "Release etiquetada en main" \
+  --steps '[{"step":"Construir la imagen","command":"docker build -t mi-api ."},{"step":"Desplegar","command":"kubectl apply -f k8s/"}]' \
+  --estimated_time "15 min"
 ```
+
+`--steps` es un array JSON de objetos con `step` y, opcionales, `command` y `note`.
+Hasta v41.3 este ejemplo usaba `--content`, que la tool no acepta (`allow_abbrev=False`): fallaba con `INVALID_ARGS`, y `vault_doc_sync` no lo veía porque el comando estaba partido con `\`.
 
 | `--category` | Carpeta |
 |---|---|
@@ -695,10 +700,16 @@ Documenta un componente de infraestructura en `09_Infrastructure/`.
 
 ```bash
 python vault_infra_save.py --project mi-api --name "server-01" --type server \
-  --ip "192.168.1.10" --environment production --description "Servidor principal"
+  --description "Servidor principal" --config '{"ip":"192.168.1.10","os":"Debian 12"}' \
+  --location homelab
 python vault_infra_save.py --project mi-api --name "postgres" --type database \
-  --port 5432 --environment production
+  --description "Base de datos principal" --config '{"ip":"192.168.1.30","port":5432}' \
+  --connections '[{"to":"server-01","protocol":"TCP","port":5432}]'
 ```
+
+La IP, el puerto y el resto de datos del componente van en `--config` (objeto JSON); el
+entorno no es un flag de esta tool —lo documenta `vault_env_save`—.
+Hasta v41.3 este ejemplo usaba `--ip`, `--port` y `--environment`, que la tool no acepta (`allow_abbrev=False`): fallaba con `INVALID_ARGS`, y `vault_doc_sync` no lo veía porque el comando estaba partido con `\`.
 
 | `--type` | Carpeta |
 |---|---|
@@ -726,8 +737,10 @@ Documenta variables de entorno por ambiente en `01_Projects/{project}/envs.md`. 
 
 ```bash
 python vault_env_save.py --project mi-api --environment production \
-  --variables '[{"name":"DATABASE_URL","description":"Conexión a PostgreSQL","sensitive":true}]'
+  --vars '[{"name":"DATABASE_URL","description":"Conexión a PostgreSQL","required":true,"sensitive":true,"provider":"k8s-secret"}]'
 ```
+
+Hasta v41.3 este ejemplo usaba `--variables` en vez de `--vars`, que la tool no acepta (`allow_abbrev=False`): fallaba con `INVALID_ARGS`, y `vault_doc_sync` no lo veía porque el comando estaba partido con `\`.
 
 ---
 
@@ -792,9 +805,13 @@ python vault_timeline.py --project mi-api --from "2026-05-01" --to "2026-05-09"
 Actualiza el estado actual del proyecto en `01_Projects/{project}/status.md`.
 
 ```bash
-python vault_project_status.py --project mi-api --status active \
-  --summary "Deploy v1.4 completado" --blockers "Pendiente review de seguridad"
+python vault_project_status.py --project mi-api --status en_produccion \
+  --summary "Deploy v1.4 completado; pendiente review de seguridad"
 ```
+
+`--status` acepta `en_desarrollo`, `en_revision`, `bloqueado`, `completado`, `archivado` y
+`en_produccion`; `--files` lista los ficheros modificados.
+Hasta v41.3 este ejemplo usaba `--blockers` y `--status active`, que la tool no acepta (`allow_abbrev=False`): fallaba con `INVALID_ARGS`, y `vault_doc_sync` no lo veía porque el comando estaba partido con `\`.
 
 ---
 
@@ -803,8 +820,11 @@ Genera o actualiza `01_Projects/{project}/overview.md` con stack, dependencias y
 
 ```bash
 python vault_project_overview.py --project mi-api \
-  --description "API REST de pagos" --stack "Python,FastAPI,PostgreSQL"
+  --description "API REST de pagos" --runtime "Python 3.12" \
+  --extra_sections '{"Stack":"FastAPI, PostgreSQL"}'
 ```
+
+Hasta v41.3 este ejemplo usaba `--stack`, que la tool no acepta (`allow_abbrev=False`): fallaba con `INVALID_ARGS`, y `vault_doc_sync` no lo veía porque el comando estaba partido con `\`.
 
 ---
 
@@ -1143,19 +1163,24 @@ Documenta requerimientos funcionales y no funcionales en `14_Requirements/` (ISO
 
 ```bash
 python vault_requirement_save.py --project mi-api --title "REQ-001 Auth" \
-  --type functional --priority high \
-  --content "El sistema debe autenticar usuarios via JWT con expiración de 24h."
+  --type functional --priority must-have \
+  --description "El sistema debe autenticar usuarios via JWT con expiración de 24h." \
+  --acceptance_criteria '["Un token caducado devuelve 401"]'
 
 python vault_requirement_save.py --project mi-api --title "REQ-NF-001 Latencia" \
-  --type non_functional --priority medium \
-  --content "El endpoint /api/payments debe responder en < 200ms en P99."
+  --type non-functional --priority should-have \
+  --description "El endpoint /api/payments debe responder en < 200ms en P99."
 ```
 
 | `--type` | Descripción |
 |---|---|
 | `functional` | Comportamiento del sistema |
-| `non_functional` | Calidad, rendimiento, seguridad |
+| `non-functional` | Calidad, rendimiento, seguridad |
 | `constraint` | Restricciones técnicas o de negocio |
+| `assumption` | Supuestos de los que depende el requerimiento |
+
+`--priority` es MoSCoW: `must-have`, `should-have`, `nice-to-have`, `wont-have`.
+Hasta v41.3 este ejemplo usaba `--content`, `--priority high`/`medium` y `--type non_functional`, que la tool no acepta (`allow_abbrev=False`): fallaba con `INVALID_ARGS`, y `vault_doc_sync` no lo veía porque el comando estaba partido con `\`.
 
 ---
 
@@ -1166,12 +1191,17 @@ Documenta casos de test en `15_Tests/` (ISO 29119).
 
 ```bash
 python vault_test_save.py --project mi-api --title "TC-001 Login exitoso" \
-  --test_type unit --status passed \
-  --content "**Given** credenciales válidas\n**When** POST /login\n**Then** 200 + JWT"
+  --test_type unit --status pass \
+  --description "Login con credenciales válidas" \
+  --preconditions "Usuario registrado" --expected_result "200 + JWT"
 
 python vault_test_save.py --project mi-api --title "TC-E2E-001 Flujo de pago" \
-  --test_type e2e --status pending --content "..."
+  --test_type e2e --status not_run --description "Pago completo con tarjeta de prueba" \
+  --steps '[{"step":1,"action":"POST /checkout","expected":"201"}]'
 ```
+
+`--status` sale del vocabulario `test_result`: `not_run`, `pass`, `fail`, `blocked`, `skip`.
+Hasta v41.3 este ejemplo usaba `--content` y `--status passed`/`pending`, que la tool no acepta (`allow_abbrev=False`): fallaba con `INVALID_ARGS`, y `vault_doc_sync` no lo veía porque el comando estaba partido con `\`.
 
 | `--test_type` | Carpeta |
 |---|---|
@@ -1187,15 +1217,18 @@ Registra planes de test, métricas, reportes y estrategias QA en `21_QA/` (ISO 9
 
 ```bash
 python vault_qa_save.py --project mi-api --title "Q1 2026 Test Plan" \
-  --qa_type test-plan --status draft \
-  --content "# Test Plan Q1 2026\n\n## Scope\n..."
+  --type test-plan --status draft \
+  --description "Alcance: API de pagos; criterios de salida en la sección de calidad"
 
 python vault_qa_save.py --project mi-api --title "QA Metrics Q1" \
-  --qa_type qa-metrics --status reviewed \
-  --content "# QA Metrics Q1 2026\n\n## Coverage\n..."
+  --type qa-metrics --status review \
+  --description "Cobertura y defectos del primer trimestre" --coverage-target 80
 ```
 
-| `--qa_type` | Descripción |
+`--status`: `draft`, `review`, `approved`, `published`, `archived`.
+Hasta v41.3 este ejemplo usaba `--qa_type` en vez de `--type`, `--content` y `--status reviewed`, que la tool no acepta (`allow_abbrev=False`): fallaba con `INVALID_ARGS`, y `vault_doc_sync` no lo veía porque el comando estaba partido con `\`.
+
+| `--type` | Descripción |
 |---|---|
 | `test-plan` | Plan de pruebas |
 | `qa-metrics` | Métricas de calidad |
@@ -1221,19 +1254,29 @@ Registra decisiones tomadas por agentes IA en `16_AI_Governance/decisions/` (ISO
 ```bash
 python vault_ai_decision.py --project mi-api \
   --title "Usar GPT-4 para clasificación de tickets" \
-  --decision "Seleccionar GPT-4 sobre modelos locales por precisión" \
+  --decision_type algorithm \
+  --description "Seleccionar GPT-4 sobre modelos locales por precisión" \
   --rationale "Benchmark interno: 94% vs 81% accuracy" \
-  --agent claude --risk medium
+  --impact_level high
 ```
 
 | Parámetro | Descripción |
 |---|---|
-| `--title` | Título de la decisión |
-| `--decision` | Qué se decidió |
-| `--rationale` | Por qué se tomó la decisión |
-| `--agent` | Agente que tomó la decisión |
-| `--risk` | `low \| medium \| high` |
-| `--alternatives` | Alternativas consideradas |
+| `--project` | Proyecto registrado (obligatorio) |
+| `--title` | Título de la decisión (obligatorio) |
+| `--decision_type` | `architectural \| security \| data-model \| algorithm \| configuration \| process` (obligatorio) |
+| `--description` | Qué se decidió (obligatorio) |
+| `--rationale` | Por qué se tomó la decisión (obligatorio) |
+| `--alternatives` | Array JSON de alternativas consideradas |
+| `--risks` | Array JSON de riesgos identificados |
+| `--impact_level` | `low \| medium \| high \| critical` (por defecto `medium`) |
+| `--reversible` / `--no-reversible` | Si se puede revertir (por defecto sí) |
+| `--human_approved` | Flag: una persona la revisó y aprobó; la nota nace `approved` en vez de `draft` |
+| `--related_code` | Ficheros relacionados, separados por comas |
+| `--tags` | Tags adicionales |
+
+Hasta v41.3 este ejemplo usaba `--decision`, `--agent` y `--risk`, que la tool no acepta
+(`allow_abbrev=False`): el ejemplo fallaba con `INVALID_ARGS`.
 
 ---
 

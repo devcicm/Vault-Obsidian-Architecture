@@ -118,6 +118,11 @@ RE_COMANDO = re.compile(
     r"python\s+(?:scripts/)?([a-z0-9_]+\.py)((?:\s+--?[a-zA-Z0-9_-]+(?:[ =][^\s`|#]+)?)*)"
 )
 RE_FLAG_USADO = re.compile(r"(?<![\w-])--[a-zA-Z][a-zA-Z0-9_-]*")
+# La invocación sin sus flags: los flags los lee `_flags_de_receta`, que
+# tokeniza respetando comillas. `RE_COMANDO` paraba en el primer valor entre
+# comillas con espacios —`--title "Q1 2026 Test Plan"`— y todo flag posterior
+# quedaba sin medir (v41.3). Se conserva: lo citan los tests y otros módulos.
+RE_INVOCACION = re.compile(r"python\s+(?:scripts/)?([a-z0-9_]+\.py)")
 RE_FLAG_DECLARADO = re.compile(r"""add_argument\(\s*["'](--[a-zA-Z][a-zA-Z0-9_-]*)["']""")
 
 
@@ -131,7 +136,40 @@ def _flags_declarados(script: Path) -> set:
     hacia el lado que se nota.
     """
     src = script.read_bytes().decode("utf-8", "replace")
-    return set(RE_FLAG_DECLARADO.findall(src))
+    declarados = set(RE_FLAG_DECLARADO.findall(src))
+    if "BooleanOptionalAction" in src:
+        declarados |= {"--no-" + f[2:] for f in declarados}
+    return declarados
+
+
+def lineas_logicas(texto: str) -> List[tuple]:
+    """`(número de la primera línea, línea)` con las continuaciones unidas.
+
+    El shell une una línea que acaba en `\\` con la siguiente antes de
+    ejecutarla, y quien copia un ejemplo de varias líneas ejecuta la línea
+    unida. Medir línea a línea veía solo el primer trozo: los flags de las
+    siguientes no se comprobaban nunca. Medido en v41.3: nueve ejemplos de
+    `scripts/README.md` con flags que su tool rechaza —`--decision` en
+    `vault_ai_decision`, `--ip` en `vault_infra_save`, `--content` en
+    `vault_qa_save`…—, todos
+    partidos con `\\` y todos en verde (AP-44: el guard leía el documento
+    como un fichero de texto, no como lo lee el shell).
+    """
+    salida: List[tuple] = []
+    inicio, partes = None, []
+    for numero, linea in enumerate(texto.splitlines(), 1):
+        if inicio is None:
+            inicio = numero
+        recortada = linea.rstrip()
+        if recortada.endswith("\\"):
+            partes.append(recortada[:-1])
+            continue
+        partes.append(linea)
+        salida.append((inicio, " ".join(partes)))
+        inicio, partes = None, []
+    if partes:
+        salida.append((inicio, " ".join(partes)))
+    return salida
 
 
 def comandos_publicados() -> List[Dict]:
@@ -141,10 +179,10 @@ def comandos_publicados() -> List[Dict]:
         ruta = REPO_ROOT / doc
         if not ruta.exists():
             continue
-        for numero, linea in enumerate(
-            ruta.read_bytes().decode("utf-8", "replace").splitlines(), 1
+        for numero, linea in lineas_logicas(
+            ruta.read_bytes().decode("utf-8", "replace")
         ):
-            for m in RE_COMANDO.finditer(linea):
+            for m in RE_INVOCACION.finditer(linea):
                 # El grupo ya no trae el prefijo: se ancla siempre en scripts/.
                 script = REPO_ROOT / "scripts" / m.group(1)
                 donde = f"{doc}:{numero}"
@@ -153,8 +191,8 @@ def comandos_publicados() -> List[Dict]:
                                      "detail": f"{donde} — scripts/{m.group(1)} no existe"})
                     continue
                 declarados = _flags_declarados(script)
-                for flag in RE_FLAG_USADO.findall(m.group(2)):
-                    if flag not in declarados:
+                for flag in _flags_de_receta(linea[m.end():]):
+                    if flag not in declarados and flag != "--help":
                         problems.append({
                             "kind": "flag_no_aceptado",
                             "detail": f"{donde} — {m.group(1)} no acepta {flag}",
