@@ -42,7 +42,7 @@ está escrita como registro ejecutable y no como recordatorio.
 | `instalacion_fuera_del_repo` | ¿Funciona copiado fuera de este repositorio? | ✅ cubierta | tests/test_portabilidad_v4030.py + README.md (instrucciones de instalación inlined) |
 | `material_ajeno` | ¿Se ha medido contra material que este repo no generó? | ✅ cubierta | vault_foreign_check --root <vault ajeno>, o --self-test sin uno a mano |
 | `sistemas_operativos` | ¿Se ejecuta en los sistemas donde se dice que corre? | ✅ cubierta | matriz os de la CI (ubuntu-latest, windows-latest) |
-| `superficie_expuesta` | ¿Está escrito qué expone y a quién, donde lo lee quien instala? | ✅ cubierta | tests/test_mcp_http_seguridad.py (servidor real por HTTP) + README.md |
+| `superficie_expuesta` | ¿Está escrito qué expone y a quién, donde lo lee quien instala? | ✅ cubierta | tests/test_mcp_http_seguridad.py (servidor real por HTTP) + tests/test_token_service_seguridad.py (servicio de tokens real) + README.md |
 | `ergonomia_de_entrada` | ¿Se invoca como un programa o como un montón de scripts? | ✅ cubierta | vault/meta_toolkit/tools-catalog.json + empaquetado/fuera-de-la-wheel.json + `vault run` en tests/clean_install_gate.py |
 | `mcp_requiere_checkout` | ¿Se puede instalar el servidor MCP con un solo comando de pip/npm? | ✅ cubierta | pyproject.toml (package data) + vault mcp-path + tests/test_mcp_instalado.py + tests/clean_install_gate.py |
 | `contrato_con_quien_contribuye` | ¿Sabe alguien de fuera cómo aportar o cómo reportar un fallo? | ✅ cubierta | README.md (sección «Estado del proyecto») |
