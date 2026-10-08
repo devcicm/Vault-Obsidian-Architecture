@@ -181,7 +181,7 @@ function detectVaultRoot() {
         VAULT_ROOT = process.cwd();
         return VAULT_ROOT;
       }
-    } catch (_) { /* cae al error */ }
+    } catch (_) { /* AP-51: cae al error declarado de abajo */ }
     throw new Error(
       "No hay vault: define VAULT_ROOT (o lanza el servidor desde la carpeta del vault). " +
       "`vault mcp-path` imprime la configuración del cliente.",
@@ -197,7 +197,7 @@ function detectVaultRoot() {
       const entries = readdirSync(dir);
       const markers = entries.filter(e => MARKERS.includes(e));
       if (markers.length >= 2) { VAULT_ROOT = dir; return dir; }
-    } catch (_) { /* skip */ }
+    } catch (_) { /* AP-51: un candidato ilegible no es un vault; el respaldo de abajo es explícito */ }
   }
   VAULT_ROOT = join(REPO_ROOT, "vault-sandbox");
   return VAULT_ROOT;
@@ -913,7 +913,10 @@ async function scanMdFiles(dir) {
         results.push(e.name);
       }
     }
-  } catch (_) { /* dir doesn't exist */ }
+  } catch (e) {
+    // AP-51: una carpeta ausente es una lista vacía legítima; ilegible no.
+    if (!(e && e.code === "ENOENT")) throw e;
+  }
   return results;
 }
 
@@ -1312,7 +1315,7 @@ function detectPython() {
       PYTHON_CMD = cmd;
       log("info", `Python detected: ${cmd}`);
       return cmd;
-    } catch (_) { /* try next */ }
+    } catch (_) { /* AP-51: se prueba el siguiente; si no hay ninguno se avisa abajo */ }
   }
   PYTHON_CMD = "python";
   log("warn", "No Python found on PATH. Python-backed tools will fail.");
@@ -1401,7 +1404,7 @@ function executePythonTool(scriptPath, args, vaultRoot, session, schema, modoJso
       const raw = stdout.trim();
       let envelope = null;
       if (raw) {
-        try { envelope = JSON.parse(raw); } catch { /* no habla el protocolo */ }
+        try { envelope = JSON.parse(raw); } catch { /* AP-51: no habla el protocolo; un envelope null se trata abajo */ }
       }
 
       // Un exit != 0 NO implica que no haya diagnóstico: las puertas `--strict`
@@ -1728,7 +1731,7 @@ function startSSE(port) {
             // Solo a la sesión que preguntó. Antes se reenviaba a toda sesión
             // abierta sobre el mismo vault: el resultado de una llamada no es
             // un evento del vault, es la respuesta a quien la hizo.
-            try { session.res.write(`data: ${out}\n\n`); } catch (_) { /* sesión cerrada */ }
+            try { session.res.write(`data: ${out}\n\n`); } catch (_) { /* AP-51: sesión cerrada; la respuesta ya salió por HTTP */ }
           } else {
             res.writeHead(202);
             res.end();
@@ -1905,21 +1908,22 @@ function guardMermaidSyntax(content) {
 let _stemPathCache = null;
 let _stemPathCacheRoot = null;
 
+// Sin `catch`: un `readdir` que falla se propaga y no se cachea. Antes un
+// `catch (_) {}` guardaba un mapa parcial y el guard de notas referenciadas
+// acusaba a la nota de enlazar a otra inexistente (AP-51).
 function buildStemPathMap(vaultRoot) {
   if (_stemPathCache && _stemPathCacheRoot === vaultRoot) return _stemPathCache;
   const map = new Map();
-  try {
-    const files = readdirSync(vaultRoot, { recursive: true });
-    for (const f of files) {
-      const name = typeof f === "string" ? f : f.name || String(f);
-      if (!name.endsWith(".md")) continue;
-      const relPath = name.replace(/\\/g, "/");
-      const stem = normalizeStem(relPath.replace(/\.md$/, ""));
-      const nameOnly = normalizeStem(relPath.split("/").pop().replace(/\.md$/, ""));
-      if (stem) map.set(stem, relPath);
-      if (nameOnly && nameOnly !== stem) map.set(nameOnly, relPath);
-    }
-  } catch (_) { /* vault root not accessible */ }
+  const files = readdirSync(vaultRoot, { recursive: true });
+  for (const f of files) {
+    const name = typeof f === "string" ? f : f.name || String(f);
+    if (!name.endsWith(".md")) continue;
+    const relPath = name.replace(/\\/g, "/");
+    const stem = normalizeStem(relPath.replace(/\.md$/, ""));
+    const nameOnly = normalizeStem(relPath.split("/").pop().replace(/\.md$/, ""));
+    if (stem) map.set(stem, relPath);
+    if (nameOnly && nameOnly !== stem) map.set(nameOnly, relPath);
+  }
   _stemPathCache = map;
   _stemPathCacheRoot = vaultRoot;
   return map;
@@ -1935,7 +1939,14 @@ function guardReferencedNotes(content, vaultRoot) {
   const errors = [];
   if (links.length === 0) return { ok: true, errors: [], total_links: 0, broken: 0, reason: null };
 
-  const stemMap = buildStemPathMap(vaultRoot);
+  let stemMap;
+  try {
+    stemMap = buildStemPathMap(vaultRoot);
+  } catch (e) {
+    const reason = String(e && e.code || e && e.message || e);
+    return { ok: false, errors: [{ error: "vault_unreadable", reason }], total_links: links.length, broken: 0,
+      reason: `no se pudo recorrer el vault para resolver los enlaces (${reason})` };
+  }
   for (const link of links) {
     const stem = normalizeStem(link);
     const found = stemMap.get(stem);
