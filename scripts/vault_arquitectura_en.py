@@ -328,7 +328,9 @@ def estado_en(inv: Inventario, rel: str, punto: Dict[str, Any]) -> Dict[str, Any
         if _sustituta_ya_regia(inv, ruta, punto, escrita=escrita):
             return {**r, "estado": "retirada", "motivo": "sustituida"}
     if canon in RETIRADOS:
-        return {**r, "estado": "retirada", "motivo": f"status:{canon}"}
+        # El valor ya va en `status`; repetirlo dentro del motivo lo hacía
+        # pasar por una emisión de frontmatter escrita a mano (AP-38).
+        return {**r, "estado": "retirada", "motivo": "status"}
     if canon is None:
         return {**r, "estado": "vigente" if not datos.get("status") else "indeterminada",
                 "motivo": "sin status" if not datos.get("status") else "status desconocido"}

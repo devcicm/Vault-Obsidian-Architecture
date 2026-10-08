@@ -168,6 +168,14 @@ def test_ap63_el_proyecto_se_resuelve_antes_de_filtrar(raiz):
     assert _ejecutar(raiz, "--fecha", "2026-02-15", "--project", "Demo")["project"] == "demo"
 
 
+def test_retirada_por_status_lo_dice_en_motivo_y_el_valor_en_status(raiz):
+    _nota(raiz, "03_Decisions/adr-cola.md", "title: Cola\ntype: adr\nproject: demo\n"
+          "status: deprecated\ncreatedAt: '2026-01-02T00:00:00Z'")
+    r = _ejecutar(raiz, "--fecha", "2026-02-15")
+    (cola,) = [e for e in r["retiradas"] if e["path"] == "03_Decisions/adr-cola.md"]
+    assert (cola["motivo"], cola["status"]) == ("status", "deprecated"), cola
+
+
 def test_es_solo_lectura(raiz):
     def huella():
         return {p.relative_to(raiz).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
