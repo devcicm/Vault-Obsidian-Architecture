@@ -424,9 +424,11 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "sobre el texto del título (`vault_audit._detect_canonical_shadow`). "
             "Dos notas sobre lo mismo con títulos distintos no salen, y dos "
             "títulos parecidos de cosas distintas solo se separan si "
-            "`_distintos_por_convencion` reconoce la convención. Además, el "
-            "catálogo declara AP-17 con `tools_enforcing` vacío aunque es "
-            "`vault_audit` quien la mide."
+            "`_distintos_por_convencion` reconoce la convención. La atribución "
+            "que esta entrada también reclamaba ya estaba bien y se corrigió "
+            "aquí en v41.2: el catálogo declara `tools_detecting: "
+            "['vault_audit']`, quien mide, y `tools_enforcing: "
+            "['vault_supersede']`, quien sana. Lo pendiente es solo la medida."
         ),
         "por_que_no_ahora": (
             "Ir más allá de la forma pide comparar contenido o identidad "

@@ -321,3 +321,19 @@ def test_lo_que_v40_23_cerro_consta_como_saldado(ident):
     d = next(d for d in bp.DEUDA_DECLARADA if d["id"] == ident)
     assert d["estado"] == "saldada"
     assert d["saldada_en"] == "v40.23"
+
+
+def test_la_deuda_de_ap17_no_afirma_lo_que_el_catalogo_desmiente():
+    """Medido el 2026-10-08: la entrada decía que el catálogo declaraba AP-17
+    «con `tools_enforcing` vacío aunque es `vault_audit` quien la mide», y el
+    catálogo ya tenía `tools_detecting: ['vault_audit']` —quien mide— y
+    `tools_enforcing: ['vault_supersede']` —quien sana—. Una deuda que afirma
+    un hueco ya cerrado manda a arreglar lo que no está roto."""
+    import vault_norms_catalog as cat
+
+    ap17 = next(n for n in cat.NORM_CATALOG if n["code"] == "AP-17")
+    assert "vault_audit" in ap17["tools_detecting"]
+    d = next(d for d in bp.DEUDA_DECLARADA
+             if d["id"] == "ap17_compara_solo_la_forma_del_titulo")
+    if "`tools_enforcing` vacío" in d["que"]:
+        assert not ap17["tools_enforcing"], "la deuda afirma un hueco que no existe"
