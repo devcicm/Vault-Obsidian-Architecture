@@ -77,9 +77,9 @@ Archivos de template (SLOs, métricas, alertas, ADRs) que existen en el vault pe
 - **Enforcement:** audit
 - **Detectado por:** vault_norms
 
-ADRs (Architecture Decision Records) sin secciones Contexto, Opciones evaluadas y Consecuencias. Un ADR sin estas secciones no aporta valor de auditoría.
+ADRs (Architecture Decision Records) sin secciones Contexto, Decisión y Consecuencias. Un ADR sin estas secciones no aporta valor de auditoría. Opciones evaluadas se recomienda y no se exige desde v41.3: medido contra un vault ajeno (regla 7), ocho de diez ADR reales registran el porqué sin esa sección. El criterio tiene dueño en `vault.kernel.contenido` (`es_adr`, `secciones_adr_faltantes`) y lo leen el scan y la auditoría.
 
-**Prevención:** Usar vault_write con template de ADR completo. vault_audit puede extenderse para validar secciones.
+**Prevención:** Escribir el ADR desde `vault.kernel.contenido.plantilla_adr()` (Contexto, Opciones, Decisión, Consecuencias), la misma que propone la guía de vault_audit.
 
 ### AP-08: Documentación anclada a versiones obsoletas
 
@@ -675,7 +675,7 @@ Medido en v40.20 sobre este repo, con la lista **bien elegida** --los cuatro de 
 
 La norma no exige que el núcleo sea perfecto: exige que su pertenencia sea **derivable y contrastada**, y que la distancia entre lo declarado y lo medido se publique en vez de suponerse cero.
 
-**Prevención:** `vault_kernel --check --strict` (puerta 18) mide tres invariantes. **K1** --el núcleo no depende del dominio-- no se reimplementa: se delega en `vault_arch.dependencias_del_kernel()`, porque una tool que mide su propia pureza con su propio criterio es AP-44 cometido en el sitio que existe para detectarlo. **K2** --fan-in alto, fan-out bajo-- sale del dueño único del grafo de imports (`vault_grafo_import`), no de un parser propio. **K3** --estabilidad-- del churn de git, y sin historia disponible emite `desconocido` y nunca `0`: un cero fabricado saldría verde por no haber mirado (AP-51).
+**Prevención:** `vault_kernel --check --strict` (puerta 18) mide tres invariantes. **K1** --el núcleo no depende del dominio-- no se reimplementa: se delega en `vault_arch.dependencias_del_kernel()`, porque una tool que mide su propia pureza con su propio criterio es AP-44 cometido en el sitio que existe para detectarlo. **K2** --fan-in alto, fan-out bajo-- sale del dueño único del grafo de imports (`vault_grafo_import`), no de un parser propio. **K3** --estabilidad-- del churn de git, y sin historia disponible emite `desconocido` y nunca `0`: un cero fabricado saldría verde por no haber mirado (AP-51). Desde v41.3 el churn cuenta **commits que cambian el comportamiento** --funciones, clases, nombres--, leídos con `ast`; un commit que solo añade entradas a una tabla, o reescribe un docstring o un comentario, no mueve al módulo para quien lo importa. Núcleo y dominio se miden con la misma vara, y el churn bruto se publica al lado (`raw_churn`) sin decidir nada.
 
 Los umbrales **se derivan del escalón** de la distribución --la mayor caída relativa-- y se publican en el envelope con su ratio en cada ejecución. Escribirlos a mano sería AP-47 en la tool que persigue los números a mano; por eso la baseline congela la **pertenencia** (qué módulo incumple qué invariante) y no el umbral, que puede oscilar al crecer el repo.
 
@@ -955,9 +955,9 @@ Archivos de template (SLOs, métricas, alertas, ADRs) que existen en el vault pe
 - **Enforcement:** audit
 - **Detected by:** vault_norms
 
-ADRs (Architecture Decision Records) sin secciones Contexto, Opciones evaluadas y Consecuencias. Un ADR sin estas secciones no aporta valor de auditoría.
+ADRs (Architecture Decision Records) sin secciones Contexto, Decisión y Consecuencias. Un ADR sin estas secciones no aporta valor de auditoría. Opciones evaluadas se recomienda y no se exige desde v41.3: medido contra un vault ajeno (regla 7), ocho de diez ADR reales registran el porqué sin esa sección. El criterio tiene dueño en `vault.kernel.contenido` (`es_adr`, `secciones_adr_faltantes`) y lo leen el scan y la auditoría.
 
-**Prevention:** Usar vault_write con template de ADR completo. vault_audit puede extenderse para validar secciones.
+**Prevention:** Escribir el ADR desde `vault.kernel.contenido.plantilla_adr()` (Contexto, Opciones, Decisión, Consecuencias), la misma que propone la guía de vault_audit.
 
 ### AP-08: Documentación anclada a versiones obsoletas
 
@@ -1553,7 +1553,7 @@ Medido en v40.20 sobre este repo, con la lista **bien elegida** --los cuatro de 
 
 La norma no exige que el núcleo sea perfecto: exige que su pertenencia sea **derivable y contrastada**, y que la distancia entre lo declarado y lo medido se publique en vez de suponerse cero.
 
-**Prevention:** `vault_kernel --check --strict` (puerta 18) mide tres invariantes. **K1** --el núcleo no depende del dominio-- no se reimplementa: se delega en `vault_arch.dependencias_del_kernel()`, porque una tool que mide su propia pureza con su propio criterio es AP-44 cometido en el sitio que existe para detectarlo. **K2** --fan-in alto, fan-out bajo-- sale del dueño único del grafo de imports (`vault_grafo_import`), no de un parser propio. **K3** --estabilidad-- del churn de git, y sin historia disponible emite `desconocido` y nunca `0`: un cero fabricado saldría verde por no haber mirado (AP-51).
+**Prevention:** `vault_kernel --check --strict` (puerta 18) mide tres invariantes. **K1** --el núcleo no depende del dominio-- no se reimplementa: se delega en `vault_arch.dependencias_del_kernel()`, porque una tool que mide su propia pureza con su propio criterio es AP-44 cometido en el sitio que existe para detectarlo. **K2** --fan-in alto, fan-out bajo-- sale del dueño único del grafo de imports (`vault_grafo_import`), no de un parser propio. **K3** --estabilidad-- del churn de git, y sin historia disponible emite `desconocido` y nunca `0`: un cero fabricado saldría verde por no haber mirado (AP-51). Desde v41.3 el churn cuenta **commits que cambian el comportamiento** --funciones, clases, nombres--, leídos con `ast`; un commit que solo añade entradas a una tabla, o reescribe un docstring o un comentario, no mueve al módulo para quien lo importa. Núcleo y dominio se miden con la misma vara, y el churn bruto se publica al lado (`raw_churn`) sin decidir nada.
 
 Los umbrales **se derivan del escalón** de la distribución --la mayor caída relativa-- y se publican en el envelope con su ratio en cada ejecución. Escribirlos a mano sería AP-47 en la tool que persigue los números a mano; por eso la baseline congela la **pertenencia** (qué módulo incumple qué invariante) y no el umbral, que puede oscilar al crecer el repo.
 

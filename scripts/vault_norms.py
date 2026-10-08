@@ -53,6 +53,7 @@ from vault_version import CURRENT_VERSION  # generator_version de los artefactos
 from vault_io import atomic_write_json, file_lock, normalize_stem
 from vault_lib import parse_frontmatter, separar_frontmatter
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
+from vault.kernel.contenido import es_adr, secciones_adr_faltantes  # noqa: E402
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -279,25 +280,14 @@ def vault_norms_scan(path: str) -> Dict[str, Any]:
             _add("AP-22", f"corchetes desbalanceados ({opens} vs {closes})")
 
     # Folder-specific checks
-    if "03_Decisions" in rel or "adr" in rel.lower():
-        sections = re.findall(r"^#{1,3}\s+(.+)", body, re.MULTILINE)
-        section_names = [s.lower() for s in sections]
-        missing = [
-            s
-            for s in (
-                "contexto",
-                "context",
-                "opciones",
-                "options",
-                "consecuencias",
-                "consequences",
-            )
-            if not any(s in n for n in section_names)
-        ]
-        if missing:
-            _add(
-                "AP-07", f"ADR posiblemente incompleto (secciones faltantes detectadas)"
-            )
+    # AP-07 con el criterio del dueño (v41.3). Hasta aquí decidía por la
+    # subcadena `adr` en la ruta —`07_Knowledge/padre.md` era un ADR— y exigía
+    # a la vez «contexto» y «context», así que un ADR completo en castellano
+    # salía siempre incompleto. Los stubs y plantillas se rigen por AP-03.
+    if es_adr(rel, fm.get("type", "")) and fm.get("status", "").lower() not in ("stub", "template"):
+        faltan = secciones_adr_faltantes(body)
+        if faltan:
+            _add("AP-07", f"ADR incompleto: faltan {', '.join(faltan)}")
 
     # La sección es `08_Runbooks`; aquí se comparaba contra `06_Runbooks`, que
     # no existe. La condición era por tanto siempre cierta: un runbook guardado

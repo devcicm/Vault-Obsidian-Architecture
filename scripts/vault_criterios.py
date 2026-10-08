@@ -157,6 +157,24 @@ FUNCIONES_CON_DUENO: List[Dict[str, Any]] = [
             "`crear_carpeta_de_locks` tolera: los dos lados viven juntos."
         ),
     },
+    {
+        "simbolo": "es_adr",
+        "dueño": "vault/kernel/contenido.py",
+        "por_que": (
+            "Qué nota es un ADR se decidía por la subcadena `adr` en la ruta en "
+            "el scan y por `type` en la auditoría: `07_Knowledge/padre.md` era "
+            "un ADR para uno y no para el otro (v41.3)."
+        ),
+    },
+    {
+        "simbolo": "secciones_adr_faltantes",
+        "dueño": "vault/kernel/contenido.py",
+        "por_que": (
+            "Cuatro listas de secciones de AP-07 que no coincidían; la del scan "
+            "exigía «contexto» y «context» a la vez, y un ADR completo en "
+            "castellano salía siempre incompleto (v41.3)."
+        ),
+    },
 ]
 
 #: Dónde se buscan definiciones: el código que viaja o que se ejecuta.

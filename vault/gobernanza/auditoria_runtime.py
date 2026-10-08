@@ -13,11 +13,17 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 from ..kernel import construir
-from ..kernel.contenido import cuerpo_sin_marcadores
+from ..kernel.contenido import (
+    TIPOS_ADR,
+    cuerpo_sin_marcadores,
+    es_adr,
+    secciones_adr_faltantes,
+)
 from .repositorio import RepositorioGobernanza
 
 _ES_PRIMER = re.compile(r"^\d{2}-\d{2}_.*-primer$")
-_ADR_TYPES = ("decision", "adr")
+#: superseded_by: `vault.kernel.contenido.TIPOS_ADR` (v41.3). Nombre conservado.
+_ADR_TYPES = TIPOS_ADR
 _VAULT_ARTIFACT_NAMES = ("00_System", "99_Index", "vault-backups", ".history")
 _CONTAMINATION_DEPTH = 2
 
@@ -252,24 +258,13 @@ def auditar_runtime(
         # Consecuencias" no las mejora — las deforma. Una nota queda fuera solo
         # si DECLARA un `type` ajeno a la decisión; sin `type` sigue tratándose
         # como ADR, para que omitir el campo no sea la vía de escape del guard.
-        es_adr = note_type in _ADR_TYPES or not note_type or stem.startswith("adr-")
+        # Qué es un ADR y qué secciones le faltan lo decide el dueño desde v41.3
+        # (AP-57): el scan de `vault_norms` decidía otra cosa con otra lista.
         if (
-            rel.startswith("03_Decisions/")
-            and stem != "index"
-            and es_adr
+            es_adr(rel, note_type, stem)
             and status not in ("stub", "template")  # stubs se rigen por AP-03
         ):
-            required = {
-                "Contexto": "context",
-                "Decisión": "decisi",
-                "Consecuencias": "consecuen|consequence",
-            }
-            lower_body = body.lower()
-            missing = [
-                name
-                for name, pat in required.items()
-                if not re.search(rf"^#+.*({pat})", lower_body, re.MULTILINE | re.IGNORECASE)
-            ]
+            missing = secciones_adr_faltantes(body)
             if missing or not status:
                 problems = []
                 if missing:

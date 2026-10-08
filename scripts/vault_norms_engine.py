@@ -98,13 +98,13 @@ _es_instantanea = is_snapshot_path
 _ES_PRIMER = re.compile(r"^\d{2}-\d{2}_.*-primer$")
 
 
+# La hoja reusable es la dueña. El nombre público histórico se conserva.
+from vault.kernel.contenido import TIPOS_ADR, cuerpo_sin_marcadores
+
 #: Valores de `type` que identifican una decisión arquitectónica, y por tanto
 #: obligan a la estructura Contexto / Decisión / Consecuencias de AP-07.
-_ADR_TYPES = ("decision", "adr")
-
-
-# La hoja reusable es la dueña. El nombre público histórico se conserva.
-from vault.kernel.contenido import cuerpo_sin_marcadores
+#: superseded_by: `vault.kernel.contenido.TIPOS_ADR` (v41.3). Nombre conservado.
+_ADR_TYPES = TIPOS_ADR
 
 
 #: superseded_by: `cuerpo_sin_marcadores`. El nombre privado no se borra —la

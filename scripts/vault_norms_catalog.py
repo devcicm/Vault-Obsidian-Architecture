@@ -284,11 +284,23 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "severity": "medium",
         "enforcement": "audit",
         "description": (
-            "ADRs (Architecture Decision Records) sin secciones Contexto, Opciones evaluadas "
-            "y Consecuencias. Un ADR sin estas secciones no aporta valor de auditoría."
+            "ADRs (Architecture Decision Records) sin secciones Contexto, Decisión "
+            "y Consecuencias. Un ADR sin estas secciones no aporta valor de auditoría. "
+            "Opciones evaluadas se recomienda y no se exige desde v41.3: medido contra "
+            "un vault ajeno (regla 7), ocho de diez ADR reales registran el porqué sin "
+            "esa sección. El criterio tiene dueño en `vault.kernel.contenido` "
+            "(`es_adr`, `secciones_adr_faltantes`) y lo leen el scan y la auditoría."
         ),
-        "signal": "Notas en 03_Decisions/ sin secciones ## Contexto, ## Opciones, ## Consecuencias.",
-        "prevention": "Usar vault_write con template de ADR completo. vault_audit puede extenderse para validar secciones.",
+        "signal": (
+            "Nota de 03_Decisions/ —sin `type` o con `type: adr|decision`, que no sea "
+            "índice ni primer— sin un encabezado que nombre Contexto, Decisión y "
+            "Consecuencias (castellano o inglés, sin importar tildes)."
+        ),
+        "prevention": (
+            "Escribir el ADR desde `vault.kernel.contenido.plantilla_adr()` "
+            "(Contexto, Opciones, Decisión, Consecuencias), la misma que propone "
+            "la guía de vault_audit."
+        ),
         "tools_enforcing": [],
         "tools_detecting": ["vault_norms"],
         "introduced_version": "v19",

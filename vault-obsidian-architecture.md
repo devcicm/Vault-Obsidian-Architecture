@@ -4392,6 +4392,26 @@ El ámbito es `project:` del frontmatter cuando está —lo escribió el autor�
 - El template `03_Decisions/adr-template.md` hace obligatorias las secciones de opciones y consecuencias — usarlo siempre
 - `vault_audit()`: penalizar ADRs con <4 secciones de contenido (`##`) como "incompleto"
 
+**Criterio ejecutable (v41.3).** La regla de arriba se conserva como aspiración. Lo que
+el guard **exige** —y lo mismo en el scan de `vault_norms` y en la auditoría, que hasta
+v41.2 decidían con cuatro listas distintas— es Contexto, Decisión y Consecuencias. Las
+opciones evaluadas pasan a **recomendadas**: medido contra un vault ajeno (regla 7), ocho
+de diez ADR reales registran el porqué sin esa sección, y exigirla habría marcado como
+incompletas decisiones que sí lo explican. El criterio tiene un dueño,
+`vault.kernel.contenido`:
+
+- **Qué es un ADR** (`es_adr`): una nota de `03_Decisions/` sin `type` o con
+  `type: adr|decision`, que no sea el índice ni un primer de sección. Una ruta que solo
+  contiene «adr» en otra sección no es una decisión; omitir `type` no es la vía de escape.
+- **Qué le falta** (`secciones_adr_faltantes`): un encabezado que nombre cada sección,
+  en castellano o en inglés y sin importar tildes. «Contexto detectado» es Contexto; una
+  palabra en el cuerpo no es una sección.
+- **La plantilla** (`plantilla_adr`): Contexto, Opciones, Decisión, Consecuencias. La
+  propone la guía de `vault_audit` y cumple su propio criterio, con un test que lo vigila.
+
+*superseded_by* (en lo que el guard exige, no en lo que el estándar aconseja): «un ADR sin
+opciones evaluadas no es un ADR».
+
 ---
 
 ### AP-08 — Documentación anclada a versiones obsoletas
