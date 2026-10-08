@@ -150,7 +150,7 @@ def _cuerpo(marca: str) -> str:
 def _escribir(agente: Agente, folder: str, titulo: str, cuerpo: str) -> dict:
     return agente("vault_write", {
         "folder": folder, "title": titulo, "content": cuerpo,
-        "tags": ["banco"], "meta": json.dumps({"agent": AGENTE}),
+        "tags": ["banco"], "agent": AGENTE,
     })
 
 

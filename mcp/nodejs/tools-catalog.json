@@ -6896,6 +6896,10 @@
           "scan-path": {
             "type": "string",
             "description": "Directory to scan for .md files and write each one to --folder (obligatorio uno de: title + content | scan-path)"
+          },
+          "agent": {
+            "type": "string",
+            "description": "Agente que firma la nota (AP-16)"
           }
         },
         "required": [

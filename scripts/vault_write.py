@@ -971,11 +971,11 @@ def vault_write(
                 "norm_code": "AP-16",
                 "norm_name": "Missing agent attribution",
                 "message": "AP-16: agent field required for content notes. "
-                "Set --meta '{\"agent\":\"my-agent\"}' or VAULT_AGENT env var. "
+                "Set --agent my-agent or VAULT_AGENT env var. "
                 "System notes (00_System/) exempt.",
-                # La pista del catálogo dice `--agent`, que esta tool no declara:
-                # seguirla daría INVALID_ARGS. Aquí el agente viaja en `--meta`.
-                "recovery": "Pasar --meta '{\"agent\":\"<nombre>\"}' o exportar VAULT_AGENT.",
+                # `--agent` existe desde 2026-10-07; antes esta pista mandaba a
+                # `--meta` porque la del catálogo daba INVALID_ARGS.
+                "recovery": "Pasar --agent <nombre> o exportar VAULT_AGENT.",
             }
 
     # Determine filename and validate path stays inside vault
@@ -1367,6 +1367,10 @@ Notas:
         help="Directory to scan for .md files and write each one to --folder",
     )
 
+    # AP-16: la pista de `missing_agent` dice `--agent`, y las tools de
+    # escritura hermanas lo declaran. Gana al `agent` de --meta.
+    parser.add_argument("--agent", help="Agente que firma la nota (AP-16)")
+
     args = parser.parse_args()
 
     # --scan-path mode: scan directory for .md files
@@ -1395,6 +1399,8 @@ Notas:
         if args.meta_file:
             with open(args.meta_file, "r", encoding="utf-8") as f:
                 meta = json.load(f)
+        if args.agent:
+            meta = {**(meta or {}), "agent": args.agent}
 
         for md_file in md_files:
             try:
@@ -1500,6 +1506,8 @@ Notas:
     if args.meta_file:
         with open(args.meta_file, "r", encoding="utf-8") as f:
             meta = json.load(f)
+    if args.agent:
+        meta = {**(meta or {}), "agent": args.agent}
 
     # D5: los guards de contenido devuelven el envelope a mano; sale canónico.
     result = completar_envelope(
