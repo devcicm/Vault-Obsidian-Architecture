@@ -3767,6 +3767,21 @@ STATUS_TRANSITIONS = {
 }
 
 
+def regimen_de_estado(status: str) -> str:
+    """`abierto`, `cerrado` o `terminal`, derivado de STATUS_TRANSITIONS.
+
+    Abierto es `draft` o un estado con arista directa a `draft`; terminal, uno
+    sin salida; cerrado, el resto. Se calcula en vez de listarse para que una
+    arista nueva en el grafo cambie el régimen sin que nadie copie la decisión
+    (AP-57): la correlación con el versionado vive en
+    `vault_registry.modo_de_version`.
+    """
+    salidas = STATUS_TRANSITIONS[status]
+    if status == "draft" or "draft" in salidas:
+        return "abierto"
+    return "cerrado" if salidas else "terminal"
+
+
 #: Vocabularios de dominio (AP-38).
 #:
 #: El censo del parque atribuía los 54 estados a agentes descuidados. Falso: el
