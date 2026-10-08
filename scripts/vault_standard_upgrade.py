@@ -459,6 +459,8 @@ MIGRATIONS: Dict[str, Dict[str, Any]] = {
             "schemas/: JSON Schema desde v18; de v18 a v24 el contrato es AP-12 del manifiesto",
             "v41.1 — clase sin_seccion: un .md fuera de toda seccion (README de la raiz, "
             "carpeta no registrada) lleva identidad y timestamps, sin CIA, agent, tags, type ni status",
+            "vigente_desde (opcional): version del proyecto desde la que rige una nota de "
+            "arquitectura; el fin de su vigencia sale de superseded_by o del status",
         ],
     },
 }

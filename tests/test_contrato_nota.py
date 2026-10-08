@@ -215,3 +215,16 @@ def test_validate_aplica_el_contrato(tmp_path, monkeypatch):
     r = vault_validate.validate_frontmatter(nota)
     assert r["valid"] is False
     assert r["missing"] == contrato.faltantes(r["data"], "07_Knowledge/x.md")
+
+
+def test_vigente_desde_es_opcional_y_entra_en_v41():
+    """La máquina del tiempo de arquitectura (`vault_arquitectura_en`) lee
+    `vigente_desde:` —la versión del proyecto desde la que rige una nota—, así
+    que el campo tiene que estar en el contrato antes que en la tool. Opcional:
+    una nota sin él no deja de ser válida, cae en «indeterminada»."""
+    assert contrato.CAMPOS["vigente_desde"]["nivel"] == "opcional"
+    assert contrato.conocido_desde("vigente_desde") == "v41"
+    assert "vigente_desde" not in contrato.faltantes({}, "05_Patterns/architecture/x.md")
+    assert "vigente_desde" not in contrato.contrato_de_version("v41")["recomendados"]
+    assert "vigente_desde" in contrato.esquema_json("v41")["properties"]
+    assert "vigente_desde" not in contrato.esquema_json("v40")["properties"]

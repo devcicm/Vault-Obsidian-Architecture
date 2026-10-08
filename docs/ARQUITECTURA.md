@@ -2,7 +2,7 @@
 
 > Documento derivado. Se genera con `python scripts/vault_arch.py --blueprint`; la fuente es `CONTEXTS` en `scripts/vault_arch.py`. No se edita a mano.
 
-**10 contextos**, **168 módulos** clasificados, **37 fronteras cruzadas** pendientes de publicar puerto.
+**10 contextos**, **169 módulos** clasificados, **37 fronteras cruzadas** pendientes de publicar puerto.
 
 ## Los límites
 
@@ -150,7 +150,7 @@ Fronteras que hoy cruza (3), deuda declarada:
 
 - **Lenguaje ubicuo:** versión, migración, sanación, arranque
 - **Puertos publicados:** `CURRENT_VERSION` → `vault_standard_upgrade:CURRENT_VERSION`, `inicializar` → `vault_init:vault_init`, `migrar` → `vault_standard_upgrade:vault_standard_upgrade`
-- **Módulos (9):** `vault_history_compact`, `vault_init`, `vault_migrate_docs`, `vault_migrate_rollback`, `vault_onboard`, `vault_propagate`, `vault_sanacion`, `vault_sdd_init`, `vault_standard_upgrade`
+- **Módulos (10):** `vault_arquitectura_en`, `vault_history_compact`, `vault_init`, `vault_migrate_docs`, `vault_migrate_rollback`, `vault_onboard`, `vault_propagate`, `vault_sanacion`, `vault_sdd_init`, `vault_standard_upgrade`
 
 Fronteras que hoy cruza (12), deuda declarada:
 

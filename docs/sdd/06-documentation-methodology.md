@@ -158,6 +158,7 @@ El vault declara la versión que aplica en `00_System/standard-version.json` (`v
 | v37 | validador | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags` | el escritor los pone por defecto y vault_audit penaliza su ausencia | `git` |
 | v41 | validador | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags`, `type`, `status` | requeridos en notas de contenido, por presencia: el valor lo sigue juzgando vault_audit | `MIGRATIONS` |
 | v41 | validador | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags`, `type`, `status` | clase sin_seccion: un .md fuera de toda sección lleva identidad y timestamps; CIA, agent, tags, type y status son de las notas de sección | `MIGRATIONS` |
+| v41 | validador | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags`, `type`, `status` | opcional: la versión del proyecto desde la que rige una nota de arquitectura; el fin sale de superseded_by o del status | `MIGRATIONS` |
 
 ### Estructura mínima (guideline)
 

@@ -102,6 +102,13 @@
       ],
       "cambio": "clase sin_seccion: un .md fuera de toda sección lleva identidad y timestamps; CIA, agent, tags, type y status son de las notas de sección",
       "fuente": "MIGRATIONS:clase sin_seccion: un .md fuera de toda seccion"
+    },
+    {
+      "campos": [
+        "vigente_desde"
+      ],
+      "cambio": "opcional: la versión del proyecto desde la que rige una nota de arquitectura; el fin sale de superseded_by o del status",
+      "fuente": "MIGRATIONS:vigente_desde (opcional): version del proyecto"
     }
   ],
   "type": "object",
@@ -216,6 +223,10 @@
       "x-vault-tipo-esperado": "string",
       "x-vault-nivel": "opcional",
       "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+    },
+    "vigente_desde": {
+      "x-vault-tipo-esperado": "string",
+      "x-vault-nivel": "opcional"
     }
   },
   "additionalProperties": true,
@@ -333,6 +344,10 @@
           "x-vault-tipo-esperado": "string",
           "x-vault-nivel": "opcional",
           "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+        },
+        "vigente_desde": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "opcional"
         }
       },
       "additionalProperties": true
@@ -443,6 +458,10 @@
           "x-vault-tipo-esperado": "string",
           "x-vault-nivel": "opcional",
           "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+        },
+        "vigente_desde": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "opcional"
         }
       },
       "additionalProperties": true
@@ -553,6 +572,10 @@
           "x-vault-tipo-esperado": "string",
           "x-vault-nivel": "opcional",
           "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+        },
+        "vigente_desde": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "opcional"
         }
       },
       "additionalProperties": true

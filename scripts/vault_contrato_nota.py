@@ -121,6 +121,12 @@ CAMPOS: Dict[str, Dict[str, Any]] = {
     "dq_validated_at": {"tipo": "string", "formato": "date-time", "nivel": "opcional",
                         "clases": ("contenido",), "requerido_desde": None,
                         "valores_desde": "v27", "patron": _ISO.pattern},
+    # La versión del proyecto desde la que rige una nota de arquitectura. La lee
+    # `vault_arquitectura_en`; sin valor, la nota cae en «indeterminada» y no
+    # deja de ser válida. El fin de su vigencia no se escribe: sale de
+    # `superseded_by` o del status.
+    "vigente_desde": {"tipo": "string", "nivel": "opcional", "clases": ("contenido",),
+                      "requerido_desde": None},
 }
 
 #: Cuándo cambió el contrato y quién lo atestigua. `fuente` es
@@ -163,7 +169,11 @@ HISTORIA: Dict[str, List[Dict[str, Any]]] = {
             {"campos": ["id", "title", "createdAt", "updatedAt"],
              "cambio": ("clase sin_seccion: un .md fuera de toda sección lleva identidad y "
                         "timestamps; CIA, agent, tags, type y status son de las notas de sección"),
-             "fuente": "MIGRATIONS:clase sin_seccion: un .md fuera de toda seccion"}],
+             "fuente": "MIGRATIONS:clase sin_seccion: un .md fuera de toda seccion"},
+            {"campos": ["vigente_desde"],
+             "cambio": ("opcional: la versión del proyecto desde la que rige una nota de "
+                        "arquitectura; el fin sale de superseded_by o del status"),
+             "fuente": "MIGRATIONS:vigente_desde (opcional): version del proyecto"}],
 }
 
 #: Lo que el escritor pone cuando nadie dice otra cosa. Estaba como literal en
