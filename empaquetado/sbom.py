@@ -162,7 +162,7 @@ def inventario(doc: Dict[str, Any]) -> List[Dict[str, str]]:
 
 
 def main(argv: Optional[List[str]] = None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0], allow_abbrev=False)
     ap.add_argument("--salida", help="fichero donde escribir el SBOM (por defecto, stdout)")
     ap.add_argument("--inventario", action="store_true",
                     help="emite solo el inventario de licencias")
