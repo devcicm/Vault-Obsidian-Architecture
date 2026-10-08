@@ -275,3 +275,49 @@ def test_la_deuda_hallada_en_la_ronda_de_v41_2_esta_declarada(ident):
     d = next((d for d in bp.DEUDA_DECLARADA if d["id"] == ident), None)
     assert d is not None, f"{ident} no está en DEUDA_DECLARADA"
     assert d["estado"] == "pendiente"
+
+
+# ── Una deuda saldada nombra la prueba que la sostiene ──────────────────────
+
+def test_toda_deuda_saldada_nombra_el_test_que_la_sostiene():
+    """`saldada` sin una prueba que falle si vuelve es una afirmación, no un dato.
+
+    Medido el 2026-10-08: dos entradas seguían `pendiente` aunque v40.23 las
+    había cerrado, y nada lo podía ver porque ninguna saldada apuntaba a su
+    test. La dirección contraria es igual de cara: marcar saldada sin test
+    es la forma cómoda de dar por cerrado.
+    """
+    for d in bp.DEUDA_DECLARADA:
+        if d["estado"] != "saldada":
+            continue
+        refs = d.get("sostenida_por") or []
+        assert refs, f"{d['id']}: saldada sin `sostenida_por`"
+        for ref in refs:
+            assert bp._test_existe(ref), f"{d['id']}: {ref} no existe"
+
+
+def test_el_check_muerde_sobre_una_saldada_sin_sosten(monkeypatch):
+    monkeypatch.setattr(bp, "DEUDA_DECLARADA", [
+        {"id": "x", "capa": "5", "que": "q", "por_que_no_ahora": "p",
+         "estado": "saldada", "saldada_en": "v0.2", "desde": "v0.1"}])
+    assert any(p["kind"] == "deuda_saldada_sin_sosten" for p in bp.check()["problems"])
+
+
+def test_el_check_muerde_sobre_un_sosten_que_no_existe(monkeypatch):
+    monkeypatch.setattr(bp, "DEUDA_DECLARADA", [
+        {"id": "x", "capa": "5", "que": "q", "por_que_no_ahora": "p",
+         "estado": "saldada", "saldada_en": "v0.2", "desde": "v0.1",
+         "sostenida_por": ["tests/test_blueprint.py::test_que_no_existe"]}])
+    assert any(p["kind"] == "deuda_saldada_sin_sosten" for p in bp.check()["problems"])
+
+
+@pytest.mark.parametrize("ident", [
+    "handler_amplio_en_el_registro_de_la_cli",
+    "recursion_error_en_parsers",
+])
+def test_lo_que_v40_23_cerro_consta_como_saldado(ident):
+    """`_leer_spec` distingue ausente de ilegible y AP-61 contiene el
+    `RecursionError` desde 77981b5; el registro decía `pendiente`."""
+    d = next(d for d in bp.DEUDA_DECLARADA if d["id"] == ident)
+    assert d["estado"] == "saldada"
+    assert d["saldada_en"] == "v40.23"

@@ -78,11 +78,14 @@ ESTADOS_DE_DEUDA = ("pendiente", "saldada")
 #: que nadie la comprueba — y el día que una entrada se saldara, la forma natural
 #: de anotarlo habría sido borrarla, que es exactamente cómo un registro de deuda
 #: deja de servir para nada.
-DEUDA_DECLARADA: List[Dict[str, str]] = [
+DEUDA_DECLARADA: List[Dict[str, Any]] = [
     {
         "id": "envelopes_del_dominio_sin_error_code",
         "estado": "saldada",
         "saldada_en": "v40.29",
+        "sostenida_por": [
+            "tests/test_ap52_contrato_de_error.py::test_la_deuda_de_ap52_esta_saldada",
+        ],
         "desde": "v40.9",
         "capa": "5",
         "que": (
@@ -113,14 +116,22 @@ DEUDA_DECLARADA: List[Dict[str, str]] = [
     },
     {
         "id": "handler_amplio_en_el_registro_de_la_cli",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "v40.23",
+        "sostenida_por": [
+            "tests/test_cli_package.py::test_un_spec_ilegible_no_se_confunde_con_uno_ausente",
+            "tests/test_cli_package.py::test_con_el_contrato_ilegible_la_validacion_falla_cerrado",
+        ],
         "desde": "v40.9",
         "capa": "5",
         "que": (
             "`cli/registry.py::_load_spec` responde a un `except Exception` con un "
             "vacío indistinguible: un `tool-spec.json` ilegible se presenta como "
             "un catálogo sin entradas (AP-51). Destapado por el mismo ensanche de "
-            "alcance de v40.9 y congelado en `blame-baseline.json`."
+            "alcance de v40.9 y congelado en `blame-baseline.json`. v40.23 "
+            "(77981b5) lo cerró con `_leer_spec`, que distingue `ausente`, "
+            "`ilegible` y `legible`, y `spec_status` lo expone a `cli doctor`; "
+            "el registro siguió diciendo `pendiente` hasta que se midió en v41.2."
         ),
         "por_que_no_ahora": (
             "Distinguir «no hay spec» de «la spec no se pudo leer» cambia lo que "
@@ -176,13 +187,20 @@ DEUDA_DECLARADA: List[Dict[str, str]] = [
     },
     {
         "id": "recursion_error_en_parsers",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "v40.23",
+        "sostenida_por": [
+            "tests/test_excepcion_declarada.py::test_ninguna_tool_cae_con_un_frontmatter_muy_anidado",
+        ],
         "desde": "v40.9",
         "capa": "5",
         "que": (
             "`RecursionError` escapa a `except yaml.YAMLError` en 4 parsers: no es "
             "subclase. Reproducido a 400 corchetes anidados. El peor caso es "
-            "`vault_foreign_check`, que es la tool de la regla 7."
+            "`vault_foreign_check`, que es la tool de la regla 7. v40.23 "
+            "(77981b5) lo cerró con AP-61 y su puerta `vault_excepcion_declarada`, "
+            "y el test ejecuta el dato hostil contra los parsers reales, "
+            "`vault_foreign_check` incluido."
         ),
         "por_que_no_ahora": (
             "Es un arreglo de robustez con su propia norma candidata; entra en la "
@@ -229,6 +247,10 @@ DEUDA_DECLARADA: List[Dict[str, str]] = [
         "id": "baselines_sin_objetivo_ni_pendiente",
         "estado": "saldada",
         "saldada_en": "v40.24",
+        "sostenida_por": [
+            "tests/test_baseline.py::test_un_numero_suelto_no_es_un_objetivo",
+            "tests/test_baseline.py::test_la_pendiente_no_esta_escrita_en_ningun_fichero",
+        ],
         "desde": "v40.20",
         "capa": "7",
         "que": (
@@ -278,6 +300,9 @@ DEUDA_DECLARADA: List[Dict[str, str]] = [
         "id": "vault_norms_es_un_modulo_dios",
         "estado": "saldada",
         "saldada_en": "v40.27",
+        "sostenida_por": [
+            "tests/test_arquitectura.py::test_el_catalogo_de_normas_es_una_hoja_del_nucleo",
+        ],
         "desde": "v40.20",
         "capa": "7",
         "que": (
@@ -452,6 +477,24 @@ DEUDA_DECLARADA: List[Dict[str, str]] = [
         ),
     },
 ]
+
+
+def _test_existe(ref: str) -> bool:
+    """`tests/fichero.py::test_x` existe como función en ese fichero.
+
+    Se mira el AST y no el texto: un nombre en un comentario o en un docstring
+    no sostiene nada.
+    """
+    ruta, _, nombre = ref.partition("::")
+    fichero = REPO_ROOT / ruta
+    if not nombre or not fichero.is_file():
+        return False
+    try:
+        arbol = ast.parse(fichero.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, SyntaxError):
+        return False
+    return any(isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name == nombre
+               for n in ast.walk(arbol))
 
 
 # ── Lectura de los registros (todo por puerto, nada reimplementado) ──────────
@@ -966,6 +1009,20 @@ def check(strict: bool = False) -> Dict[str, Any]:
                 {"kind": "deuda_saldada_sin_version",
                  "detail": f"{d['id']}: saldada sin `saldada_en`"}
             )
+        # La versión dice cuándo; el test dice que sigue siendo verdad. Sin él,
+        # `saldada` es una afirmación que nada vuelve a comprobar, y la
+        # dirección contraria también pasó: dos entradas siguieron `pendiente`
+        # desde v40.23 porque ninguna saldada apuntaba a su prueba.
+        if estado == "saldada":
+            refs = d.get("sostenida_por") or []
+            rotas = [r for r in refs if not _test_existe(r)]
+            if not refs or rotas:
+                problemas.append(
+                    {"kind": "deuda_saldada_sin_sosten",
+                     "detail": f"{d['id']}: " + (
+                         f"`sostenida_por` apunta a tests que no existen: {rotas}"
+                         if rotas else "saldada sin `sostenida_por`")}
+                )
 
     ok = not problemas
     resultado = {
