@@ -48,12 +48,27 @@ def _invalidos(tool: str, args) -> list:
         return [f"{tool}: no hay scripts/{tool}.py"]
     flags, subs = argparse_params(script.name), _subcomandos(script)
     malos = []
+    # El token que sigue a un flag con valor es ese valor, no un subcomando:
+    # así lo lee argparse. Medido el 2026-10-07 con DRIFT_SNAPSHOT_MISSING
+    # (`--mode snapshot`), la primera recuperación que fija un valor literal.
+    espera = None
     for a in args:
+        if espera is not None:
+            enum = [v[5:].split(",") for v in espera.get("validators", [])
+                    if v.startswith("enum:")]
+            if isinstance(a, str) and not a.startswith(("<", "--")) and enum and a not in enum[0]:
+                malos.append(f"{tool} {a} (fuera de {enum[0]})")
+            espera = None
+            if not (isinstance(a, str) and a.startswith("--")):
+                continue
         if not isinstance(a, str) or a.startswith("<"):
             continue  # marcador del valor que pone quien obedece
         if a.startswith("--"):
-            if a[2:].split("=")[0] not in flags:
+            nombre = a[2:].split("=")[0]
+            if nombre not in flags:
                 malos.append(f"{tool} {a}")
+            elif "=" not in a and flags[nombre].get("type") != "boolean":
+                espera = flags[nombre]
         elif a not in subs:
             malos.append(f"{tool} {a} (ni flag ni subcomando)")
     return malos
@@ -97,3 +112,13 @@ def test_spec_load_error_manda_a_quien_escribe_el_contrato():
     pista = ERROR_CATALOG["SPEC_LOAD_ERROR"]["recovery"]["hint"]
     assert "vault_manifest.py --bootstrap" in pista
     assert "bootstrap" in argparse_params("vault_manifest.py")
+
+
+@pytest.mark.parametrize("tool,args,roto", [
+    ("vault_drift_detect", ["--project", "<project>", "--mode", "snapshot"], False),
+    ("vault_drift_detect", ["--mode", "instantanea"], True),   # fuera del enum
+    ("vault_reindex", ["--graph", "todo"], True),             # un booleano no lleva valor
+    ("vault_reindex", ["--graph"], False),
+])
+def test_el_valor_de_un_flag_se_lee_como_lo_lee_argparse(tool, args, roto):
+    assert bool(_invalidos(tool, args)) is roto, _invalidos(tool, args)
