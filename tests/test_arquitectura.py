@@ -421,8 +421,8 @@ def test_el_kernel_declara_sus_ganchos_con_motivo():
     con los anteriores: no son ganchos del write path sino **lecturas perezosas
     y de solo ida** de los registros canónicos de Gobernanza. Copiar aquí esos
     valores sería el AP-50 que el registro existe para cerrar, y mudarlo a
-    Gobernanza no elimina el cruce: lo mueve, porque `vault_log_error` es
-    kernel y consume la escala de severidad.
+    Gobernanza no elimina el cruce: lo mueve, porque lo leen Autoría, Consulta
+    y Grafo, y Consulta → Gobernanza no está en el presupuesto de cruces.
     """
     ganchos_del_write_path = {
         # v40.17: el escaneo de secretos bajó con el mecanismo a `vault_fs`.

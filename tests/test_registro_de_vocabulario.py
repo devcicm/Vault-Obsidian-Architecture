@@ -209,8 +209,8 @@ def test_gobernanza_publica_sus_registros_canonicos():
 def test_el_cruce_del_registro_al_dominio_esta_declarado():
     """El kernel no depende del dominio; cuando lo hace, lo dice y por qué.
 
-    Mudarlo a Gobernanza no eliminaría el cruce, lo movería: `vault_log_error`
-    es kernel y consume la escala de severidad.
+    Mudarlo a Gobernanza no eliminaría el cruce, lo movería: lo leen Autoría,
+    Consulta y Grafo, y Consulta → Gobernanza no está en el presupuesto.
     """
     for destino in ("vault_norms_catalog", "vault_fundamentals"):
         clave = ("vault_vocabulario", destino)

@@ -74,6 +74,16 @@ def test_un_modulo_del_kernel_sin_consumidores_se_reporta(monkeypatch):
     assert _de(m, "kernel_sin_consumidores") == {"huerfano"}
 
 
+def test_ap59_vault_log_error_salio_del_nucleo_y_su_deuda_tambien():
+    """El caso real del test anterior, saldado (v41.3). No era núcleo: es una tool
+    que escribe notas de observabilidad, del oficio de `vault_slo_save`. Vive en
+    Autoría, y la deuda congelada por estar declarada en el núcleo sin
+    consumidores sale de la baseline en vez de quedarse como sitio fantasma."""
+    import vault_arch
+    assert "vault_log_error" not in vault_arch.CONTEXTS[K.KERNEL]["modulos"]
+    assert "vault_log_error" in vault_arch.CONTEXTS["autoria"]["modulos"]
+    assert not [s for s in K._baseline() if s.endswith("::vault_log_error")]
+
 def test_un_modulo_de_dominio_por_encima_del_escalon_se_reporta(monkeypatch):
     """El otro lado de AP-59: es núcleo y no está declarado.
 

@@ -157,7 +157,7 @@ CONTEXTS: dict[str, dict] = {
         "prohibe": ["depender de cualquier contexto de dominio"],
         "modulos": [
             "vault_io", "vault_errors", "vault_lib", "vault_regex",
-            "vault_encoding", "vault_registry", "vault_log_error",
+            "vault_encoding", "vault_registry",
             "vault_errors_catalog", "vault_errors_trace",
             "vault_entorno", "vault_vocabulario",
             # v40.30 — cómo se lee la salida de un proceso hijo. Hoja: no
@@ -260,6 +260,12 @@ CONTEXTS: dict[str, dict] = {
             "vault_delete", "vault_undo",
             "vault_timeline", "vault_project_overview", "vault_project_status",
             "vault_qa_save", "vault_project",
+            # v41.3 — estaba declarada en el núcleo desde el principio y AP-59
+            # lo midió en v40.20: fan-in cero, ningún consumidor. Es una tool
+            # que escribe notas de observabilidad, del mismo oficio que
+            # `vault_slo_save` o `vault_incident_save`. Solo importa módulos
+            # del núcleo, así que mudarla no estrena ningún cruce.
+            "vault_log_error",
         ],
     },
     "grafo": {
@@ -1101,8 +1107,9 @@ GANCHOS_DEL_KERNEL: dict[tuple[str, str], str] = {
         "Gobernanza. El registro de vocabularios los declara con `derivado_de` "
         "y los pide al llamarse: copiarlos aquí sería exactamente el AP-05 que "
         "este módulo existe para cerrar. La alternativa —mudarlo a Gobernanza— "
-        "no elimina el cruce, lo mueve: `vault_log_error` es kernel y consume "
-        "la escala de severidad. Se declara el cruce en vez de disimularlo."
+        "no elimina el cruce, lo mueve: lo leen Autoría, Consulta y Grafo, y "
+        "Consulta → Gobernanza no está en el presupuesto de cruces. Se declara "
+        "el cruce en vez de disimularlo."
     ),
     ("vault_vocabulario", "vault_fundamentals"): (
         "Los tres campos CIA salen de `CIA_TRIAD` por `cia_valores()`. Import "
