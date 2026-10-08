@@ -36,7 +36,7 @@ import re
 
 import sys
 
-from vault_registry import ORDERED_SECTIONS, section_description
+from vault_registry import ORDERED_SECTIONS, section_description, secciones_del_vault
 from vault_errors import emit_error, wrap_main
 from vault_lib import parse_frontmatter as _parse_frontmatter
 from vault_lib import separar_frontmatter
@@ -59,6 +59,8 @@ from vault_io import get_vault_root
 # Doce descripciones escritas a mano que ya no coincidían con ninguna del
 # registro, y diez secciones sin entrada. Duplicar el texto no daba nada: aquí
 # solo se muestra.
+# superseded_by: `section_description(carpeta, raiz)` sobre `secciones_del_vault`
+# (v41.2), que ve también las secciones propias. Se conserva por quien lo importe.
 FOLDER_DESCRIPTIONS = {f: section_description(f) for f in ORDERED_SECTIONS}
 
 
@@ -203,6 +205,16 @@ def vault_list(folder: Optional[str] = None, status: Optional[str] = None, limit
 
         # Return root structure
 
+        # Las secciones del vault, no solo las del estándar (CN-02): hasta
+        # v41.2 una sección propia salía con `description: ""` aunque la
+        # declarase. Una carpeta que no es sección sigue sin descripción, y un
+        # `secciones.json` ilegible es un fallo, no «no hay propias» (AP-51).
+        raiz = get_vault_root()
+        try:
+            secciones = set(secciones_del_vault(raiz))
+        except ValueError as exc:
+            return emit_error("vault_list", "DATA_FILE_CORRUPT", str(exc))
+
         folders = []
 
         for item in sorted(get_vault_root().iterdir()):
@@ -225,7 +237,8 @@ def vault_list(folder: Optional[str] = None, status: Optional[str] = None, limit
 
                         "icon": FOLDER_ICONS.get(item.name, "📂"),
 
-                        "description": FOLDER_DESCRIPTIONS.get(item.name, ""),
+                        "description": (section_description(item.name, raiz)
+                                        if item.name in secciones else ""),
 
                         "noteCount": note_count,
 

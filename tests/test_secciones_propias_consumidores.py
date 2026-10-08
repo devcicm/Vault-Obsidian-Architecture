@@ -663,3 +663,39 @@ def test_el_contexto_filtra_por_la_seccion_propia_nombrada(tmp_path):
     rutas = [n["path"] for n in r["included"]]
     assert "22_Scripts/copia-rsync.md" in rutas, r
     assert "07_Knowledge/rsync-teoria.md" not in rutas, rutas
+
+
+# ── El listado de la raíz describe la sección propia ──
+#
+# Medido el 2026-10-08: `vault_list` sin `--folder` enseñaba `22_Scripts` con
+# `description: ""` aunque `vault_section --add --description` la había
+# declarado. Las descripciones salían de `ORDERED_SECTIONS` sin más.
+
+def _listar(raiz: Path) -> dict:
+    proceso = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "vault_list.py")],
+        env=dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",
+                 PYTHONIOENCODING="utf-8"),
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        cwd=str(ROOT / "scripts"),
+    )
+    salida = proceso.stdout.strip()
+    assert salida, proceso.stderr
+    return json.loads(salida[salida.index("{"):])
+
+
+def test_el_listado_describe_la_seccion_propia_con_lo_declarado(tmp_path):
+    raiz = _vault(tmp_path, [_SCRIPTS_DESC], notas=["22_Scripts/deploy.md", "scripts/x.md"])
+    r = _listar(raiz)
+    assert r["ok"] is True, r
+    por_nombre = {f["name"]: f for f in r["folders"]}
+    assert por_nombre["22_Scripts"]["description"] == "Scripts de despliegue"
+    assert por_nombre["07_Knowledge"]["description"] == reg.section_description("07_Knowledge")
+    assert por_nombre["scripts"]["description"] == ""
+
+
+def test_el_listado_con_el_registro_roto_falla(tmp_path):
+    raiz = _vault(tmp_path)
+    (raiz / reg.SECCIONES_PROPIAS_RUTA).write_text("{roto", encoding="utf-8")
+    r = _listar(raiz)
+    assert r["ok"] is False and r["error_code"] == "DATA_FILE_CORRUPT", r
