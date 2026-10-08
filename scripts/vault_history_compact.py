@@ -58,9 +58,15 @@ def _note_stem_from_history_filename(filename: str) -> str:
 
 
 def _parse_history_filename(filename: str) -> Dict[str, Any]:
-    """Parse metadata from a .history/ filename."""
+    """Parse metadata from a .history/ filename.
+
+    Lee las dos formas que escribe `vault_undo._guardar_version_actual`:
+    `{stem}-{ts}.md` y, con dos versiones en el mismo segundo, `{stem}-{ts}-{n}.md`.
+    Sin la segunda, esa versión salía sin fecha y con `-n` pegado al stem: otra
+    nota para quien agrupa. `secuencia` ordena las del mismo segundo.
+    """
     without_ext = filename[:-3]
-    match = re.search(r"-(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2})$", without_ext)
+    match = re.search(r"-(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2})(?:-(\d+))?$", without_ext)
     if match:
         timestamp_str = match.group(1)
         stem = without_ext[:match.start()]
@@ -68,8 +74,9 @@ def _parse_history_filename(filename: str) -> Dict[str, Any]:
             ts = datetime.strptime(timestamp_str, "%Y-%m-%dT%H-%M-%S").replace(tzinfo=timezone.utc)
         except ValueError:
             ts = None
-        return {"stem": stem, "timestamp": ts, "timestamp_str": timestamp_str}
-    return {"stem": without_ext, "timestamp": None, "timestamp_str": ""}
+        return {"stem": stem, "timestamp": ts, "timestamp_str": timestamp_str,
+                "secuencia": int(match.group(2) or 0)}
+    return {"stem": without_ext, "timestamp": None, "timestamp_str": "", "secuencia": 0}
 
 
 def get_notes_with_history() -> Dict[str, List[Dict[str, Any]]]:
@@ -89,11 +96,13 @@ def get_notes_with_history() -> Dict[str, List[Dict[str, Any]]]:
         grouped[key].append({
             "filename": f.name,
             "timestamp": meta["timestamp"],
+            "secuencia": meta["secuencia"],
             "size_bytes": f.stat().st_size,
         })
 
     for versions in grouped.values():
-        versions.sort(key=lambda x: (x["timestamp"] or datetime.min.replace(tzinfo=timezone.utc)), reverse=True)
+        versions.sort(key=lambda x: (x["timestamp"] or datetime.min.replace(tzinfo=timezone.utc),
+                                     x["secuencia"]), reverse=True)
 
     return grouped
 
