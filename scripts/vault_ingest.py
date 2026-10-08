@@ -379,15 +379,27 @@ def vault_ingest(
             "forbidden": sorted(FORBIDDEN_SECTIONS),
         }
 
+    # CN-02 con el criterio del dueño, el mismo que `vault_write`. Hasta v41.2
+    # se comparaba con `standard_folders()` y una sección propia dada de alta
+    # con `vault_section --add` devolvía UNKNOWN_SECTION: admitía notas por
+    # una tool de escritura y no por la otra.
     try:
-        from vault_registry import standard_folders
+        from vault_registry import motivo_de_destino_invalido, secciones_del_vault
 
-        if section not in standard_folders():
+        motivo = motivo_de_destino_invalido(section, _raiz())
+        if motivo:
             return {"ok": False, "error_code": "UNKNOWN_SECTION",
-                    "error": f"'{section}' no es una sección del estándar",
-                    "valid": list(standard_folders())}
+                    "error": (f"CN-02: --section {section!r}: {motivo}. Las secciones del "
+                              "vault las enseña vault_section --list; una propia se "
+                              "declara con vault_section --add"),
+                    "valid": [s for s in secciones_del_vault(_raiz())
+                              if s not in FORBIDDEN_SECTIONS
+                              and motivo_de_destino_invalido(s, _raiz()) is None]}
     except ImportError:
         pass
+    except ValueError as exc:
+        # Un `secciones.json` ilegible no se lee como «no hay propias» (AP-51).
+        return {"ok": False, "error_code": "DATA_FILE_CORRUPT", "error": str(exc)}
 
     # ── etapa 1: pre-vuelo, obligatorio ──────────────────────────────────────
     preflight = _preflight(text, source)

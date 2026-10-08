@@ -546,3 +546,56 @@ def test_el_indice_y_el_maestro_usan_la_descripcion_declarada(tmp_path):
     for texto in (indice, maestro):
         assert "Scripts de despliegue" in texto
         assert "Subcarpeta de 22_Scripts" not in texto
+
+
+# ── La ingesta admite la sección propia (CN-02) ──
+#
+# Medido el 2026-10-08: `vault_ingest --section 22_Scripts` sobre un vault que
+# la tenía dada de alta con `vault_section --add` devolvía `UNKNOWN_SECTION`
+# («no es una sección del estándar»). La ingesta comparaba contra
+# `standard_folders()` y no contra el vault, así que una sección propia admitía
+# notas por `vault_write` y no por la otra tool que escribe contenido.
+
+_FUENTE = ("# Copia nocturna\n\nEl script de copia se lanza desde cron cada noche "
+           "y sincroniza el directorio de datos con rsync hacia el NAS.\n")
+
+
+def _ingerir(raiz: Path, section: str) -> dict:
+    proceso = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "vault_ingest.py"),
+         "--text", _FUENTE, "--section", section, "--commit"],
+        env=dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",
+                 VAULT_AGENT="system", PYTHONIOENCODING="utf-8"),
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        cwd=str(ROOT / "scripts"),
+    )
+    salida = proceso.stdout.strip()
+    assert salida, proceso.stderr
+    return json.loads(salida[salida.index("{"):])
+
+
+def test_la_ingesta_escribe_en_una_seccion_propia_activa(tmp_path):
+    raiz = _vault(tmp_path, [_SCRIPTS_SEC])
+    r = _ingerir(raiz, "22_Scripts")
+    assert r["ok"] is True, r
+    assert r["written"] and all(p.startswith("22_Scripts/") for p in r["written"])
+    assert (raiz / r["written"][0]).is_file()
+
+
+@pytest.mark.parametrize("section", ["scripts", "23_Nada", "22_Viejo"])
+def test_la_ingesta_rechaza_lo_no_declarado_y_lo_retirado(tmp_path, section):
+    raiz = _vault(tmp_path, [{"folder": "22_Viejo", "documentacion": "guia",
+                              "status": "retirada"}])
+    r = _ingerir(raiz, section)
+    assert r["ok"] is False and r["error_code"] == "UNKNOWN_SECTION", r
+    assert "vault_section" in json.dumps(r, ensure_ascii=False)
+    assert not (raiz / section).exists() or not list((raiz / section).rglob("*.md"))
+
+
+def test_la_ingesta_con_el_registro_roto_no_escribe(tmp_path):
+    raiz = _vault(tmp_path)
+    (raiz / reg.SECCIONES_PROPIAS_RUTA).write_text("{roto", encoding="utf-8")
+    r = _ingerir(raiz, "22_Scripts")
+    assert r["ok"] is False and r["error_code"] == "DATA_FILE_CORRUPT", r
+    assert not (raiz / "22_Scripts").exists()
+    assert _ingerir(raiz, "07_Knowledge")["ok"] is True
