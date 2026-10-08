@@ -772,9 +772,11 @@ def vault_drift_detect(
 
     if snap is None and not use_git:
         return {
-            **emit_error("vault_drift_detect", "INDEX_NOT_FOUND",
+            **emit_error("vault_drift_detect", "DRIFT_SNAPSHOT_MISSING",
                          "No snapshot found and repo has no git. Run --mode snapshot first."),
-            "hint": f'python vault_drift_detect.py --path "{path}" --project "{project}" --mode snapshot',
+            # Sin la ruta del repo (S4): con el proyecto enlazado no hace falta,
+            # y sin enlazar la pide MISSING_REQUIRED_ARG con su propia pista.
+            "hint": f'python vault_drift_detect.py --project "{project}" --mode snapshot',
         }
 
     since_timestamp = snap["timestamp"] if snap else utcnow()

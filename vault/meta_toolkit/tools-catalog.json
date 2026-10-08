@@ -7390,6 +7390,23 @@
         "docs": null
       }
     },
+    "DRIFT_SNAPSHOT_MISSING": {
+      "category": "not_found",
+      "severity": "warning",
+      "message": "No hay snapshot del repo con el que comparar, y el repo no tiene git.",
+      "recovery": {
+        "action": "run_tool",
+        "tool": "vault_drift_detect",
+        "args": [
+          "--project",
+          "<project>",
+          "--mode",
+          "snapshot"
+        ],
+        "hint": "Tomar el snapshot con --mode snapshot al empezar a trabajar en el proyecto; el --mode report del cierre compara contra él.",
+        "docs": "vault-obsidian-architecture.md §AP-63"
+      }
+    },
     "EMPTY_QUERY": {
       "category": "validation",
       "severity": "error",

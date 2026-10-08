@@ -118,6 +118,21 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": "vault-obsidian-architecture.md §Grupo 10 — Indexación",
         },
     },
+    # 2026-10-07: `vault_drift_detect --mode report` sin snapshot sobre un repo
+    # sin git salía como INDEX_NOT_FOUND, y su recuperación (`vault_reindex`)
+    # no crea el snapshot que falta: el agente la seguía y seguía igual.
+    "DRIFT_SNAPSHOT_MISSING": {
+        "category": "not_found",
+        "severity": "warning",
+        "message": "No hay snapshot del repo con el que comparar, y el repo no tiene git.",
+        "recovery": {
+            "action": "run_tool",
+            "tool": "vault_drift_detect",
+            "args": ["--project", "<project>", "--mode", "snapshot"],
+            "hint": "Tomar el snapshot con --mode snapshot al empezar a trabajar en el proyecto; el --mode report del cierre compara contra él.",
+            "docs": "vault-obsidian-architecture.md §AP-63",
+        },
+    },
     "HISTORY_NOT_FOUND": {
         "category": "infrastructure",
         "severity": "warning",
