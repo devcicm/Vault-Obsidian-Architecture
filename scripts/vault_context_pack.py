@@ -58,8 +58,18 @@ W_CIA = 0.10
 
 # Una nota deprecada o revocada sigue siendo recuperable —no se borra nada—
 # pero no debe desplazar a la vigente que la reemplazó.
+# superseded_by: PENALIZACION_POR_STATUS + penalizacion() (2026-10-07). Era un
+# vocabulario copiado: `superseded` y `revoked` no están en STATUS_VOCAB y
+# `obsolete`, que sí, no pesaba. Se conserva como lectura del valor crudo que
+# un vault heredado pueda traer escrito.
 STATUS_PENALTY: Dict[str, float] = {
     "deprecated": 0.4, "superseded": 0.3, "revoked": 0.2, "archived": 0.5,
+}
+
+# Claves del vocabulario canónico, que normaliza su dueño (`normalize_status`).
+# `obsolete` pesa como `deprecated`: el vocabulario no distingue más entre los dos.
+PENALIZACION_POR_STATUS: Dict[str, float] = {
+    "deprecated": 0.4, "obsolete": 0.4, "archived": 0.5,
 }
 
 RECENCY_HALFLIFE_DAYS = 90.0
@@ -74,6 +84,7 @@ from vault.kernel import construir  # noqa: E402
 # El vocabulario se declara una vez y se consume, no se copia. Ver
 # `vault_vocabulario.py` para el registro y su contexto dueno.
 from vault_vocabulario import peso as _peso
+from vault_norms_catalog import normalize_status
 
 CIA_WEIGHT: Dict[str, float] = _peso("severidad")
 
@@ -128,6 +139,25 @@ def _days_since(timestamp: str, now: datetime) -> Optional[float]:
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=timezone.utc)
     return max(0.0, (now - parsed).total_seconds() / 86400.0)
+
+
+def penalizacion(frontmatter: Dict[str, Any]) -> float:
+    """Factor del rerank para una nota que ya no es la vigente (AP-17).
+
+    Una nota anotada con `superseded_by:` —lo que la sanación escribe en vez de
+    borrar la gemela— pesa como `superseded`: sin esto la anotación no cambiaba
+    nada y la gemela competía de igual a igual con su canónica. El `status` se
+    lee normalizado por su dueño; si no es canónico, por su valor crudo."""
+    factores = []
+    if str(frontmatter.get("superseded_by") or "").strip():
+        factores.append(STATUS_PENALTY["superseded"])
+    crudo = str(frontmatter.get("status") or "").strip().lower()
+    if crudo:
+        canonico = normalize_status(crudo)[0]
+        factor = PENALIZACION_POR_STATUS.get(canonico) or STATUS_PENALTY.get(crudo)
+        if factor:
+            factores.append(factor)
+    return min(factores, default=1.0)
 
 
 def _recency_score(timestamp: str, now: datetime) -> float:
@@ -301,9 +331,8 @@ def vault_context_pack(
 
         score = W_LEXICAL * lex + W_GRAPH * graph + W_RECENCY * recency + W_CIA * cia
         status = str(frontmatter.get("status", "")).lower()
-        penalty = STATUS_PENALTY.get(status)
-        if penalty:
-            score *= penalty
+        penalty = penalizacion(frontmatter)
+        score *= penalty
 
         if score < min_score:
             continue
@@ -314,7 +343,7 @@ def vault_context_pack(
             "score": round(score, 4),
             "signals": {"lexical": round(lex, 4), "graph": round(graph, 4),
                         "recency": round(recency, 4), "cia": cia,
-                        "status_penalty": penalty or 1.0},
+                        "status_penalty": penalty},
             "status": status,
             "updatedAt": updated,
             "via": graph_via.get(path),

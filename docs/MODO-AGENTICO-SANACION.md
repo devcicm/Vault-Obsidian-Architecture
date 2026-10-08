@@ -90,6 +90,16 @@ El `type` sí se deriva, pero del **uso mayoritario que la propia carpeta ya
 tiene**, no de una tabla inventada. Si `02_Observability/errors/` tiene 34 notas
 con `type: error`, la 35ª es un `error`.
 
+### Un título duplicado se sana anotando, y el anotado deja de competir
+
+Medido en una copia de /ans (2026-10-07): las únicas notas que
+`vault_context_pack` no ponía primeras al preguntar por su título eran pares
+con el mismo `title:` —una curada y su copia migrada—, que `vault_audit` lista
+como AP-17. Cuál es la canónica no lo decide ninguna tool. Una vez decidido, la
+otra **no se borra**: se le escribe `superseded_by: "[[canónica]]"`, y desde
+entonces el rerank la pesa como sustituida (`vault_context_pack.penalizacion`).
+Antes de ese cambio la anotación no movía nada y las dos competían a la par.
+
 ### Una métrica que empeora al medir mejor no es una regresión
 
 `stale` subió de 167 a 185. Las 26 notas que no tenían frontmatter no eran
