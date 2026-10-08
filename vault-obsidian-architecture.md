@@ -359,23 +359,31 @@ código fuente (@vault: tag)
 
 Referencia única y con formato canónico de cita. Las citas locales en cada grupo de tools se mantienen; esta tabla las consolida.
 
-| ID | Norma | Cláusula / alcance | Implementado por | Tools |
-|---|---|---|---|---|
-| **ISO-25010** | ISO/IEC 25010:2023 | Modelo de calidad de producto | scoring multidimensional y no conformidades | `vault_quality_check`, `vault_ncr_save` |
-| **ISO-42001** | ISO/IEC 42001:2023 | Gobernanza de decisiones asistidas por IA | `16_AI_Governance/` | `vault_ai_decision` |
-| **ISO-29148** | ISO/IEC/IEEE 29148:2018 | Especificación y trazabilidad de requerimientos | `14_Requirements/` | `vault_requirement_save` |
-| **ISO-29119** | ISO/IEC/IEEE 29119-3:2021 | Documentación de pruebas | `15_Tests/` enlazado a requerimientos | `vault_test_save`, `vault_test_runner` |
-| **ISO-20000** | ISO/IEC 20000-1:2018 | Gestión de incidentes y niveles de servicio | `02_Observability/incidents/`, SLOs | `vault_incident_save`, `vault_slo_save` |
-| **ISO-22301** | ISO 22301:2019 | Continuidad y recuperación | backups Merkle, restore verificable, runbooks de rollback | `vault_backup`, `vault_restore`, `vault_runbook_save` |
-| **ISO-12207** | ISO/IEC/IEEE 12207:2017 | Procesos de release y entornos | registro de releases y matriz de entornos | `vault_release_save`, `vault_env_matrix` |
-| **ISO-31000** | ISO 31000:2018 | Identificación, evaluación y tratamiento de riesgos | `02_Observability/risks/` | `vault_risk_save` |
-| **ISO-27001** | ISO/IEC 27001:2022 | Controles de seguridad de la información | escaneo de secretos, `cia_sensitivity`, directivas `DS-` | `vault_security_scan`, `vault_env_save` |
-| **ISO-27005** | ISO/IEC 27005:2022 | Riesgo de seguridad de la información | asignación automática de CIA por tipo e impacto | `vault_risk_save` |
-| **ISO-27701** | ISO/IEC 27701:2019 | Tratamiento de datos personales (GDPR Art. 30 y 35) | `09_Infrastructure/privacy/` con DPIA automática | `vault_privacy_save` |
-| **ISO-9001** | ISO 9001:2015 | §9.2 Auditoría interna · §10.2 No conformidad y acción correctiva | NCR con 5-Whys y verificación de eficacia | `vault_ncr_save`, `vault_audit` |
-| **ISO-8601** | ISO 8601 | Formato de marcas temporales | todo timestamp es UTC `YYYY-MM-DDTHH:mm:ss.sssZ` (AP-13) | `vault_write`, `vault_validate` |
-| **OWASP-T10** | OWASP Top 10 2021 | Las 10 vulnerabilidades más críticas de aplicaciones web | escaneo con mapeo A01–A10, hallazgos con CWE | `vault_security_scan` |
-| **OWASP-API** | OWASP API Security 2023 | Las 10 vulnerabilidades más críticas de APIs | hallazgos con API-specific CWE, campos `owasp_category` + `cwe_id` | `vault_security_scan`, `vault_log_error` |
+**Alineación, no certificación.** Una certificación la emite un tercero sobre una organización; un toolkit no puede tenerla ni darla. Cada fila dice qué cláusula aplica y con qué tool, y el registro (`vault_fundamentals_catalog.ISO_COVERAGE`) declara su `cobertura`: `clausula` si las tools ejercen la cláusula citada, `parcial` si solo una parte, con el `hueco` escrito. `vault_norms --check-framework` falla si una tool citada deja de existir o si una cobertura parcial calla su hueco: una ISO sin ejecutor se lee como cumplimiento y no la ejerce nadie.
+
+| ID | Norma | Cláusula / alcance | Implementado por | Tools | Cobertura |
+|---|---|---|---|---|---|
+| **ISO-25010** | ISO/IEC 25010:2023 | Modelo de calidad de producto | scoring multidimensional y no conformidades | `vault_quality_check`, `vault_ncr_save` | parcial |
+| **ISO-42001** | ISO/IEC 42001:2023 | Gobernanza de decisiones asistidas por IA | `16_AI_Governance/` | `vault_ai_decision` | parcial |
+| **ISO-29148** | ISO/IEC/IEEE 29148:2018 | Especificación y trazabilidad de requerimientos | `14_Requirements/` | `vault_requirement_save` | clausula |
+| **ISO-29119** | ISO/IEC/IEEE 29119-3:2021 | Documentación de pruebas | `15_Tests/` enlazado a requerimientos | `vault_test_save`, `vault_test_runner` | clausula |
+| **ISO-20000** | ISO/IEC 20000-1:2018 | Gestión de incidentes y niveles de servicio | `02_Observability/incidents/`, SLOs | `vault_incident_save`, `vault_slo_save` | parcial |
+| **ISO-22301** | ISO 22301:2019 | Continuidad y recuperación | backups Merkle, restore verificable, runbooks de rollback | `vault_backup`, `vault_restore`, `vault_runbook_save` | parcial |
+| **ISO-12207** | ISO/IEC/IEEE 12207:2017 | Procesos de release y entornos | registro de releases y matriz de entornos | `vault_release_save`, `vault_env_matrix` | parcial |
+| **ISO-31000** | ISO 31000:2018 | Identificación, evaluación y tratamiento de riesgos | `02_Observability/risks/` | `vault_risk_save` | clausula |
+| **ISO-27001** | ISO/IEC 27001:2022 | Controles de seguridad de la información | escaneo de secretos, `cia_sensitivity`, directivas `DS-` | `vault_security_scan`, `vault_env_save` | parcial |
+| **ISO-27005** | ISO/IEC 27005:2022 | Riesgo de seguridad de la información | asignación automática de CIA por tipo e impacto | `vault_risk_save` | clausula |
+| **ISO-27701** | ISO/IEC 27701:2019 | Tratamiento de datos personales (GDPR Art. 30 y 35) | `09_Infrastructure/privacy/` con DPIA automática | `vault_privacy_save` | parcial |
+| **ISO-9001** | ISO 9001:2015 | §9.2 Auditoría interna · §10.2 No conformidad y acción correctiva | NCR con 5-Whys y verificación de eficacia | `vault_ncr_save`, `vault_audit` | clausula |
+| **ISO-8601** | ISO 8601 | Formato de marcas temporales | todo timestamp es UTC `YYYY-MM-DDTHH:mm:ss.sssZ` (AP-13) | `vault_write`, `vault_validate`, `vault_lib` | clausula |
+| **ISO-15489** | ISO 15489-1:2016 | Autenticidad, integridad y disposición sin destrucción de los registros | no-derogación con `superseded_by:`, `.history/`, `responsable` (AP-64) | `vault_supersede`, `vault_norms`, `vault_arquitectura_en` | parcial |
+| **ISO-23081** | ISO 23081-1:2017 | Metadatos del registro | contrato de nota versionado publicado como JSON Schema | `vault_contrato_nota`, `vault_esquema` | clausula |
+| **ISO-42010** | ISO/IEC/IEEE 42010:2022 | Decisiones de arquitectura y su razonamiento | ADR con AP-07 y AP-64; arquitectura en una fecha o versión | `vault_norms`, `vault_arquitectura_en` | parcial |
+| **ISO-15289** | ISO/IEC/IEEE 15289:2019 | Tipo y contenido de cada ítem de información | `SECTION_DOCUMENTACION` con ejes de trazabilidad y versión | `vault_registry`, `vault_contrato_nota` | clausula |
+| **ISO-25051** | ISO/IEC 25051:2014 | Afirmaciones verificables de la documentación de producto | cada promesa al consumidor con su ejecutor | `vault_produccion` | parcial |
+| **ISO-23894** | ISO/IEC 23894:2023 | Riesgo de entrada no confiable en la memoria del agente | pre-vuelo anti-poison no desactivable | `vault_ingest` | parcial |
+| **OWASP-T10** | OWASP Top 10 2021 | Las 10 vulnerabilidades más críticas de aplicaciones web | escaneo con mapeo A01–A10, hallazgos con CWE | `vault_security_scan` | — |
+| **OWASP-API** | OWASP API Security 2023 | Las 10 vulnerabilidades más críticas de APIs | hallazgos con API-specific CWE, campos `owasp_category` + `cwe_id` | `vault_security_scan`, `vault_log_error` | — |
 
 ---
 

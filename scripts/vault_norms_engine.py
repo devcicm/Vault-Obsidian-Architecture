@@ -243,9 +243,10 @@ def framework_drift_check(spec_path: Optional[Path] = None) -> Dict[str, Any]:
     # cómodo en vez de con el del lector, que busca la sección.
     encabezados = set(re.findall(r"^#{2,4}\s+((?:AP|PAT|SP|CN)-\d+)", text, re.M))
     sin_seccion = [n["code"] for n in NORM_CATALOG if n["code"] not in encabezados]
+    iso = iso_coverage_check()
 
     return {
-        "ok": not missing and not sin_seccion,
+        "ok": not missing and not sin_seccion and iso["ok"],
         "tool": "vault_norms.framework_drift",
         "spec": spec.name,
         "total_ids": sum(len(e) for e in FRAMEWORK_REGISTRIES.values()),
@@ -253,6 +254,38 @@ def framework_drift_check(spec_path: Optional[Path] = None) -> Dict[str, Any]:
         "missing": missing,
         "norms_total": len(NORM_CATALOG),
         "norms_without_section": sin_seccion,
+        "iso_tools_inexistentes": iso["tools_inexistentes"],
+        "iso_cobertura_invalida": iso["cobertura_invalida"],
+    }
+
+
+def iso_coverage_check(scripts_dir: Optional[Path] = None) -> Dict[str, Any]:
+    """Toda norma ISO del registro la aplica algo que existe, y dice cuánto.
+
+    Una ISO citada sin tool viva es la misma promesa sin ejecutor que
+    `vault_produccion` caza en la documentación de producto: se lee como
+    cumplimiento y no la ejerce nadie. La existencia se mide por el fichero de
+    la tool, no por su mención. `parcial` sin `hueco` es una cobertura que
+    calla lo que falta, y cuenta como inválida.
+    """
+    from vault_fundamentals_catalog import ISO_COBERTURAS, ISO_COVERAGE
+
+    scripts_dir = Path(scripts_dir) if scripts_dir else Path(__file__).resolve().parent
+    inexistentes = [
+        {"id": e["id"], "tool": t}
+        for e in ISO_COVERAGE for t in e.get("tools", [])
+        if not (scripts_dir / f"{t}.py").is_file()
+    ]
+    invalida = [
+        e["id"] for e in ISO_COVERAGE
+        if e.get("cobertura") not in ISO_COBERTURAS
+        or not e.get("tools")
+        or (e.get("cobertura") == "parcial" and not str(e.get("hueco") or "").strip())
+    ]
+    return {
+        "ok": not inexistentes and not invalida,
+        "tools_inexistentes": inexistentes,
+        "cobertura_invalida": invalida,
     }
 
 # ─── AP-46: heal del frontmatter que una tool escribió y nadie releyó ─────────

@@ -526,13 +526,17 @@ def export_framework() -> Dict[str, Any]:
         "",
         "## Cobertura de normas ISO",
         "",
-        "| ID | Norma | Cláusula | Implementado por | Tools |",
-        "|---|---|---|---|---|",
+        "Alineación, no certificación: una certificación la emite un tercero sobre",
+        "una organización. `parcial` dice en `Hueco` lo que el toolkit no aplica.",
+        "",
+        "| ID | Norma | Cláusula | Implementado por | Tools | Cobertura | Hueco |",
+        "|---|---|---|---|---|---|---|",
     ]
     for i in ISO_COVERAGE:
         lines.append(
             f"| {i['id']} | {i['norm']} | {i['clause']} | {i['implemented_by']} | "
-            f"{', '.join(f'`{t}`' for t in i['tools'])} |"
+            f"{', '.join(f'`{t}`' for t in i['tools'])} | {i['cobertura']} | "
+            f"{i.get('hueco', '')} |"
         )
 
     lines += [

@@ -461,6 +461,12 @@ BIGDATA_VS: List[Dict[str, Any]] = [
 ]
 
 
+#: Cuánto de la norma aplica el toolkit. `clausula`: la cláusula citada la
+#: ejercen las tools listadas. `parcial`: solo una parte, y `hueco` dice cuál
+#: falta. Ninguna entrada certifica nada: el registro es alineación, y una
+#: certificación la emite un tercero sobre una organización, no un toolkit.
+ISO_COBERTURAS = ("clausula", "parcial")
+
 ISO_COVERAGE: List[Dict[str, Any]] = [
     {
         "id": "ISO-25010",
@@ -469,6 +475,8 @@ ISO_COVERAGE: List[Dict[str, Any]] = [
         "clause": "Modelo de calidad de producto",
         "implemented_by": "Scoring multidimensional de calidad y no conformidades",
         "tools": ["vault_quality_check", "vault_ncr_save"],
+        "cobertura": "parcial",
+        "hueco": "Mide la calidad de las notas del vault, no las características del producto software que documentan.",
     },
     {
         "id": "ISO-42001",
@@ -477,6 +485,8 @@ ISO_COVERAGE: List[Dict[str, Any]] = [
         "clause": "Gobernanza de decisiones asistidas por IA",
         "implemented_by": "16_AI_Governance/ — registro de decisiones de IA con responsable y alcance",
         "tools": ["vault_ai_decision"],
+        "cobertura": "parcial",
+        "hueco": "Registra decisiones asistidas por IA; el sistema de gestión (política, roles, revisión por la dirección) es de la organización.",
     },
     {
         "id": "ISO-29148",
@@ -485,6 +495,7 @@ ISO_COVERAGE: List[Dict[str, Any]] = [
         "clause": "Especificación y trazabilidad de requerimientos",
         "implemented_by": "14_Requirements/ — requerimientos con criterios de aceptación",
         "tools": ["vault_requirement_save"],
+        "cobertura": "clausula",
     },
     {
         "id": "ISO-29119",
@@ -493,6 +504,7 @@ ISO_COVERAGE: List[Dict[str, Any]] = [
         "clause": "Documentación de pruebas",
         "implemented_by": "15_Tests/ — casos de prueba enlazados a requerimientos",
         "tools": ["vault_test_save", "vault_test_runner"],
+        "cobertura": "clausula",
     },
     {
         "id": "ISO-20000",
@@ -501,6 +513,8 @@ ISO_COVERAGE: List[Dict[str, Any]] = [
         "clause": "Gestión de incidentes y niveles de servicio",
         "implemented_by": "02_Observability/incidents/ y SLOs de producción",
         "tools": ["vault_incident_save", "vault_slo_save"],
+        "cobertura": "parcial",
+        "hueco": "Registra incidentes y SLO; el resto del sistema de gestión del servicio (catálogo, cambios, capacidad) no.",
     },
     {
         "id": "ISO-22301",
@@ -509,6 +523,8 @@ ISO_COVERAGE: List[Dict[str, Any]] = [
         "clause": "Continuidad y recuperación",
         "implemented_by": "Backups con manifiesto Merkle, restore verificable y runbooks de rollback",
         "tools": ["vault_backup", "vault_restore", "vault_runbook_save"],
+        "cobertura": "parcial",
+        "hueco": "Backup y restore verificable; el análisis de impacto y el plan de continuidad son de la organización.",
     },
     {
         "id": "ISO-12207",
@@ -517,6 +533,8 @@ ISO_COVERAGE: List[Dict[str, Any]] = [
         "clause": "Procesos de release y entornos",
         "implemented_by": "Registro de releases y matriz de entornos",
         "tools": ["vault_release_save", "vault_env_matrix"],
+        "cobertura": "parcial",
+        "hueco": "Cubre release y entornos; los demás procesos del ciclo de vida no.",
     },
     {
         "id": "ISO-31000",
@@ -525,6 +543,7 @@ ISO_COVERAGE: List[Dict[str, Any]] = [
         "clause": "Identificación, evaluación y tratamiento de riesgos",
         "implemented_by": "02_Observability/risks/ con score likelihood × impact",
         "tools": ["vault_risk_save"],
+        "cobertura": "clausula",
     },
     {
         "id": "ISO-27001",
@@ -533,6 +552,8 @@ ISO_COVERAGE: List[Dict[str, Any]] = [
         "clause": "Controles de seguridad de la información",
         "implemented_by": "Escaneo de secretos, clasificación cia_sensitivity y directivas DS-",
         "tools": ["vault_security_scan", "vault_env_save"],
+        "cobertura": "parcial",
+        "hueco": "Escaneo de secretos y clasificación CIA; el SGSI y los controles del Anexo A en su conjunto no.",
     },
     {
         "id": "ISO-27005",
@@ -541,6 +562,7 @@ ISO_COVERAGE: List[Dict[str, Any]] = [
         "clause": "Riesgo de seguridad de la información",
         "implemented_by": "Asignación automática de CIA por tipo y nivel de impacto del riesgo",
         "tools": ["vault_risk_save"],
+        "cobertura": "clausula",
     },
     {
         "id": "ISO-27701",
@@ -549,6 +571,8 @@ ISO_COVERAGE: List[Dict[str, Any]] = [
         "clause": "Tratamiento de datos personales (con GDPR Art. 30 y 35)",
         "implemented_by": "09_Infrastructure/privacy/ con detección automática de DPIA",
         "tools": ["vault_privacy_save"],
+        "cobertura": "parcial",
+        "hueco": "Registro de tratamientos y DPIA; los controles del sistema de gestión de privacidad no.",
     },
     {
         "id": "ISO-9001",
@@ -557,6 +581,7 @@ ISO_COVERAGE: List[Dict[str, Any]] = [
         "clause": "§9.2 Auditoría interna · §10.2 No conformidad y acción correctiva",
         "implemented_by": "NCR con ID auto-generado, 5-Whys y verificación de eficacia",
         "tools": ["vault_ncr_save", "vault_audit"],
+        "cobertura": "clausula",
     },
     {
         "id": "ISO-8601",
@@ -565,6 +590,68 @@ ISO_COVERAGE: List[Dict[str, Any]] = [
         "clause": "Formato de marcas temporales",
         "implemented_by": "Todo timestamp del vault es UTC en formato YYYY-MM-DDTHH:mm:ss.sssZ (AP-13)",
         "tools": ["vault_write", "vault_validate", "vault_lib"],
+        "cobertura": "clausula",
+    },
+    # ── v41.3: normas aplicadas por un mecanismo que ya existía ─────────────
+    # Cada entrada nombra tools vivas; `--check-framework` falla si una deja
+    # de existir. Ninguna entra por estar citada en un documento.
+    {
+        "id": "ISO-15489",
+        "norm": "ISO 15489-1:2016",
+        "title": "Records management — Concepts and principles",
+        "clause": "Autenticidad, fiabilidad, integridad y usabilidad de los registros; disposición sin destrucción",
+        "implemented_by": "No-derogación con `superseded_by:`, versiones en `.history/` y `responsable` de cada decisión cerrada (AP-64)",
+        "tools": ["vault_supersede", "vault_norms", "vault_arquitectura_en"],
+        "cobertura": "parcial",
+        "hueco": "No hay calendario de conservación ni disposición final: el estándar no destruye registros, y quien deba hacerlo lo decide fuera.",
+    },
+    {
+        "id": "ISO-23081",
+        "norm": "ISO 23081-1:2017",
+        "title": "Records management processes — Metadata for records",
+        "clause": "Metadatos del registro: quién, cuándo, bajo qué régimen y con qué relación a otros registros",
+        "implemented_by": "Contrato de nota versionado (`responsable`, `revisado_en`, `superseded_by`, `agent`) publicado como JSON Schema",
+        "tools": ["vault_contrato_nota", "vault_esquema"],
+        "cobertura": "clausula",
+    },
+    {
+        "id": "ISO-42010",
+        "norm": "ISO/IEC/IEEE 42010:2022",
+        "title": "Architecture description",
+        "clause": "Decisiones de arquitectura y su razonamiento, y la descripción de la arquitectura en el tiempo",
+        "implemented_by": "ADR con secciones exigidas (AP-07) y responsable (AP-64); arquitectura vigente en una fecha o versión",
+        "tools": ["vault_norms", "vault_arquitectura_en"],
+        "cobertura": "parcial",
+        "hueco": "Los puntos de vista e intereses (viewpoints, concerns) no se declaran ni se miden.",
+    },
+    {
+        "id": "ISO-15289",
+        "norm": "ISO/IEC/IEEE 15289:2019",
+        "title": "Content of life-cycle information items (documentation)",
+        "clause": "Tipo de cada ítem de información y el contenido que se le exige",
+        "implemented_by": "`SECTION_DOCUMENTACION`: clase de documento por sección, con su eje de trazabilidad y su modo de versión",
+        "tools": ["vault_registry", "vault_contrato_nota"],
+        "cobertura": "clausula",
+    },
+    {
+        "id": "ISO-25051",
+        "norm": "ISO/IEC 25051:2014",
+        "title": "Requirements for quality of Ready to Use Software Product (RUSP)",
+        "clause": "Las afirmaciones de la documentación de producto son verificables",
+        "implemented_by": "Cada promesa al consumidor —versión mínima, dependencias, plataforma, red— declara quién la ejerce o por qué no",
+        "tools": ["vault_produccion"],
+        "cobertura": "parcial",
+        "hueco": "No hay evaluación de conformidad por un tercero: el registro prueba que existe un ejecutor, no que pase.",
+    },
+    {
+        "id": "ISO-23894",
+        "norm": "ISO/IEC 23894:2023",
+        "title": "Artificial intelligence — Guidance on risk management",
+        "clause": "Tratamiento del riesgo de entrada no confiable en la memoria de un agente",
+        "implemented_by": "Pre-vuelo anti-poison no desactivable antes de escribir lo ingerido (`cli/safety.py`)",
+        "tools": ["vault_ingest"],
+        "cobertura": "parcial",
+        "hueco": "Trata un riesgo identificado; el proceso completo de identificación y revisión de riesgos de IA no está registrado.",
     },
 ]
 
