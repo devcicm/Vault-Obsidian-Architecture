@@ -653,6 +653,16 @@ ISO_COVERAGE: List[Dict[str, Any]] = [
         "cobertura": "parcial",
         "hueco": "Trata un riesgo identificado; el proceso completo de identificación y revisión de riesgos de IA no está registrado.",
     },
+    {
+        "id": "ISO-42005",
+        "norm": "ISO/IEC 42005:2025",
+        "title": "Artificial intelligence — AI system impact assessment",
+        "clause": "A quién afecta una decisión de IA de impacto alto",
+        "implemented_by": "`--affected` e `impact_assessment` en la decisión; AP-65 audita las de impacto `critical`/`high` sin evaluación completa",
+        "tools": ["vault_ai_decision", "vault_norms"],
+        "cobertura": "parcial",
+        "hueco": "Registra a quién afecta; la probabilidad, la severidad por afectado y la mitigación de la evaluación completa no se registran.",
+    },
 ]
 
 

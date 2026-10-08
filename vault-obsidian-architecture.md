@@ -382,6 +382,7 @@ Referencia única y con formato canónico de cita. Las citas locales en cada gru
 | **ISO-15289** | ISO/IEC/IEEE 15289:2019 | Tipo y contenido de cada ítem de información | `SECTION_DOCUMENTACION` con ejes de trazabilidad y versión | `vault_registry`, `vault_contrato_nota` | clausula |
 | **ISO-25051** | ISO/IEC 25051:2014 | Afirmaciones verificables de la documentación de producto | cada promesa al consumidor con su ejecutor | `vault_produccion` | parcial |
 | **ISO-23894** | ISO/IEC 23894:2023 | Riesgo de entrada no confiable en la memoria del agente | pre-vuelo anti-poison no desactivable | `vault_ingest` | parcial |
+| **ISO-42005** | ISO/IEC 42005:2025 | A quién afecta una decisión de IA de impacto alto | `--affected` + `impact_assessment`; AP-65 | `vault_ai_decision`, `vault_norms` | parcial |
 | **OWASP-T10** | OWASP Top 10 2021 | Las 10 vulnerabilidades más críticas de aplicaciones web | escaneo con mapeo A01–A10, hallazgos con CWE | `vault_security_scan` | — |
 | **OWASP-API** | OWASP API Security 2023 | Las 10 vulnerabilidades más críticas de APIs | hallazgos con API-specific CWE, campos `owasp_category` + `cwe_id` | `vault_security_scan`, `vault_log_error` | — |
 
@@ -3524,7 +3525,7 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **78 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **79 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -6861,6 +6862,45 @@ revisado_en: 2026-10-08
 una persona: solo que no es el agente que la escribió. Solo mira los ADR de `03_Decisions/`;
 las decisiones de IA de `16_AI_Governance/` llevan su propio `human_approved`
 (`vault_ai_decision`).
+
+### AP-65 — Decisión de IA de impacto alto sin evaluación de impacto
+
+**Enforcement:** `audit` · **Severidad:** medium · **Introducido:** v41.3
+**Audit:** `python scripts/vault_norms.py --audit` · **Criterio:** `vault.kernel.contenido.falta_de_evaluacion_de_impacto`
+
+**Síntoma.** Una decisión de IA `critical` o `high` registra qué se decidió y por qué, pero no
+a quién afecta. Hasta v41.3 `vault_ai_decision` no tenía dónde escribirlo.
+
+**Por qué importa.** ISO/IEC 42001 pide el registro de la decisión; ISO/IEC 42005 añade la
+evaluación de impacto: quién carga con el coste. Un agente que consulta una decisión de
+impacto alto sin esa parte sabe por qué se tomó, pero no a quién tiene que avisar si la
+revierte o la extiende.
+
+**Señal.** Una nota de `16_AI_Governance/` que no es plantilla, con `impact_level` en los
+dos niveles más altos de la escala `severidad` (`critical`, `high`) y con `impact_assessment`
+distinto de `completa`, o sin él. Una decisión anterior a v41.3 no lo declara y se marca: que
+no lo declare no dice que alguien la evaluase. Los niveles los decide
+`niveles_de_impacto_exigidos` sobre el registro de `vault_vocabulario`; ni la tool ni los
+detectores cortan la escala por su cuenta.
+
+**Prevención.** Registrar la decisión con `--affected`:
+
+```bash
+python scripts/vault_ai_decision.py --project mi-api --title "Rotar tokens cada hora" \
+  --decision_type security --impact_level high \
+  --description "..." --rationale "..." \
+  --affected '["usuarios finales - reautenticación cada hora"]'
+```
+
+La nota declara `impact_assessment: completa` y lleva una sección «Evaluacion de Impacto» con
+la lista. Sin `--affected`, la tool escribe igual —un registro incompleto vale más que
+ninguno— con `impact_assessment: pendiente` y lo dice en el `hint` del envelope.
+
+**Lo que verde no prueba.** La norma sabe que la nota nombra a quién afecta, no que la
+evaluación sea buena: la probabilidad, la severidad por afectado y la mitigación que pide
+42005 no se miden. Contrastada en solo lectura contra los vaults ajenos y los trece
+consumidores (regla 7, 2026-10-08): ninguno tiene decisiones de IA con `impact_level`, así
+que el detector no se ha ejercido sobre material real.
 
 ---
 

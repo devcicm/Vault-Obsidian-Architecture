@@ -72,6 +72,10 @@
             "items": {
               "type": "string"
             }
+          },
+          "affected": {
+            "type": "string",
+            "description": "JSON array of who the decision affects (ISO/IEC 42005): [\"end users - lose session on deploy\"]. Without it, a decision of the two highest impact levels is written with impact_assessment: pendiente (AP-65)"
           }
         },
         "required": [

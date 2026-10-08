@@ -1249,7 +1249,8 @@ python vault_quality_dashboard.py --check
 ## Grupo 21 — IA Governance
 
 ### `vault_ai_decision.py`
-Registra decisiones tomadas por agentes IA en `16_AI_Governance/decisions/` (ISO 42001).
+Registra decisiones tomadas por agentes IA en `16_AI_Governance/decisions/` (ISO 42001), y a
+quién afectan las de impacto alto (ISO 42005, AP-65).
 
 ```bash
 python vault_ai_decision.py --project mi-api \
@@ -1257,7 +1258,8 @@ python vault_ai_decision.py --project mi-api \
   --decision_type algorithm \
   --description "Seleccionar GPT-4 sobre modelos locales por precisión" \
   --rationale "Benchmark interno: 94% vs 81% accuracy" \
-  --impact_level high
+  --impact_level high \
+  --affected '["equipo de soporte - revisa la cola con otra prioridad"]'
 ```
 
 | Parámetro | Descripción |
@@ -1270,6 +1272,7 @@ python vault_ai_decision.py --project mi-api \
 | `--alternatives` | Array JSON de alternativas consideradas |
 | `--risks` | Array JSON de riesgos identificados |
 | `--impact_level` | `low \| medium \| high \| critical` (por defecto `medium`) |
+| `--affected` | Array JSON de a quién afecta. Sin él, `high` y `critical` quedan con `impact_assessment: pendiente` |
 | `--reversible` / `--no-reversible` | Si se puede revertir (por defecto sí) |
 | `--human_approved` | Flag: una persona la revisó y aprobó; la nota nace `approved` en vez de `draft` |
 | `--related_code` | Ficheros relacionados, separados por comas |
@@ -2192,7 +2195,7 @@ VAULT_MCP_PERFIL=agente node mcp/nodejs/vault-mcp-server.mjs
 
 ### `vault_norms.py`
 
-Registro canónico de las 78 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
+Registro canónico de las 79 normas del estándar (AP-XX anti-patrones, PAT-X patrones, SP-XX protocolo de sesión, CN-XX convenciones) y su enforcement. Fuente única de `STATUS_VOCAB` (12 valores).
 
 **Desde v40.26 son tres ficheros y una sola tool.** Eran 5.158 líneas que hacían de catálogo, de motor y de fachada a la vez, con el 60% del fichero ocupado por una constante. Ahora `vault_norms_catalog.py` tiene los datos —`NORM_CATALOG` y el vocabulario de estado, sin leer el vault, sin escribir nada y sin importar ninguna tool—, `vault_norms_engine.py` tiene el motor de `--audit`, el drift del marco y el heal de AP-46, y este módulo se queda con la fachada de datos, la CLI y la **reexportación** de todo lo que el repo consumía antes. Esa reexportación es el punto: la superficie externa real son siete símbolos y los tests usan cinco privados más, así que reexportarlos hace que **ningún llamador se toque** y el diff se lea como movimiento puro. Recortar de paso la superficie que usan los tests habría mezclado dos cambios y hecho imposible saber cuál rompió qué.
 

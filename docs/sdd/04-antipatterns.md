@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
-> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-64 más
-> las familias PAT, SP y CN. Por familia: AP 64, CN 4, PAT 6, SP 4.
-> Bilingual document. Full norm catalog: antipatterns AP-01..AP-64 plus the PAT,
-> SP and CN families. By family: AP 64, CN 4, PAT 6, SP 4.
+> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-65 más
+> las familias PAT, SP y CN. Por familia: AP 65, CN 4, PAT 6, SP 4.
+> Bilingual document. Full norm catalog: antipatterns AP-01..AP-65 plus the PAT,
+> SP and CN families. By family: AP 65, CN 4, PAT 6, SP 4.
 
 ---
 
 ## ES
 
-Total de normas registradas: 78 (AP 64, CN 4, PAT 6, SP 4)
+Total de normas registradas: 79 (AP 65, CN 4, PAT 6, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -79,7 +79,7 @@ Archivos de template (SLOs, métricas, alertas, ADRs) que existen en el vault pe
 
 ADRs (Architecture Decision Records) sin secciones Contexto, Decisión y Consecuencias. Un ADR sin estas secciones no aporta valor de auditoría. Opciones evaluadas se recomienda y no se exige desde v41.3: medido contra un vault ajeno (regla 7), ocho de diez ADR reales registran el porqué sin esa sección. El criterio tiene dueño en `vault.kernel.contenido` (`es_adr`, `secciones_adr_faltantes`) y lo leen el scan y la auditoría.
 
-**Prevención:** Escribir el ADR desde `vault.kernel.contenido.plantilla_adr()` (Contexto, Opciones, Decisión, Consecuencias), la misma que propone la guía de vault_audit.
+**Prevención:** Escribir el ADR desde `vault.kernel.contenido.plantilla_adr()` (Contexto, Opciones, Decisión, Consecuencias), la misma que propone la guía de vault_audit, con el frontmatter de `meta_adr()` (`type: adr`, `status: draft`).
 
 ### AP-08: Documentación anclada a versiones obsoletas
 
@@ -753,9 +753,23 @@ Un ADR aprobado es lo que un agente consulta antes de actuar: "esto se decidió 
 
 El criterio tiene dueño en `vault.kernel.contenido.falta_de_responsable` y lo leen el scan y la auditoría. El régimen del estado lo deriva `vault_registry.regimen_de_estado`, así que `accepted` cuenta como `approved`.
 
-**Prevención:** Al cerrar una decisión, escribir `responsable:` con la persona que responde de ella (campo opcional del contrato v41). Un agente puede redactar el ADR y dejarlo en `draft` o `review`; aprobarlo con su propio nombre como responsable es lo que la norma marca.
+**Prevención:** Al cerrar una decisión, escribir `responsable:` con la persona que responde de ella (campo opcional del contrato v41). Un agente puede redactar el ADR y dejarlo en `draft` o `review`; aprobarlo con su propio nombre como responsable es lo que la norma marca. La guía de vault_audit propone el ADR con `meta_adr()` --en `draft`, sin `responsable` de relleno, que pasaría la norma sin nadie detrás--.
 
 Límites declarados: la norma no puede saber si el valor de `responsable` es de verdad una persona --solo que no es el agente que la escribió--, y solo mira los ADR de `03_Decisions/`; las decisiones de IA de `16_AI_Governance/` llevan su propio `human_approved`.
+
+### AP-65: Decisión de IA de impacto alto sin evaluación de impacto
+
+- **Severidad:** medium
+- **Enforcement:** audit
+- **Detectado por:** vault_norms
+
+ISO/IEC 42001 pide registrar qué decidió un sistema de IA y por qué; ISO/IEC 42005 añade a quién afecta. `vault_ai_decision` registraba lo primero y no tenía dónde escribir lo segundo: una decisión `critical` quedaba con su porqué y sin el coste que reparte. Desde v41.3 la tool acepta `--affected` y declara `impact_assessment` (`completa`, `pendiente` o `no_exigida`).
+
+El criterio tiene dueño en `vault.kernel.contenido.falta_de_evaluacion_de_impacto` --con su ámbito y los niveles que exigen evaluación, `niveles_de_impacto_exigidos` sobre la escala `severidad` de `vault_vocabulario`-- y lo leen la tool al escribir, el scan y la auditoría.
+
+**Prevención:** Al registrar una decisión de impacto alto, pasar `--affected` con a quién afecta y cómo: `vault_ai_decision ... --impact_level high --affected '["usuarios finales - pierden la sesión al desplegar"]'`. Sin él la nota se escribe igual --un registro incompleto vale más que ninguno-- con `impact_assessment: pendiente`, y el envelope lo dice en `hint`.
+
+Límites declarados: la norma sabe que la nota nombra afectados, no que la evaluación sea buena; la evaluación completa de 42005 (probabilidad, severidad por afectado, mitigación) no se mide. Contrastada en solo lectura contra los vaults ajenos y las copias de los trece consumidores (regla 7, 2026-10-08): ninguno tiene decisiones de IA con `impact_level`, así que el contraste no ejerció el detector sobre material real.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
@@ -901,7 +915,7 @@ El transporte HTTP/SSE del servidor MCP acepta sesiones sin token, responde con 
 
 ## EN
 
-Total registered norms: 78 (AP 64, CN 4, PAT 6, SP 4)
+Total registered norms: 79 (AP 65, CN 4, PAT 6, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -971,7 +985,7 @@ Archivos de template (SLOs, métricas, alertas, ADRs) que existen en el vault pe
 
 ADRs (Architecture Decision Records) sin secciones Contexto, Decisión y Consecuencias. Un ADR sin estas secciones no aporta valor de auditoría. Opciones evaluadas se recomienda y no se exige desde v41.3: medido contra un vault ajeno (regla 7), ocho de diez ADR reales registran el porqué sin esa sección. El criterio tiene dueño en `vault.kernel.contenido` (`es_adr`, `secciones_adr_faltantes`) y lo leen el scan y la auditoría.
 
-**Prevention:** Escribir el ADR desde `vault.kernel.contenido.plantilla_adr()` (Contexto, Opciones, Decisión, Consecuencias), la misma que propone la guía de vault_audit.
+**Prevention:** Escribir el ADR desde `vault.kernel.contenido.plantilla_adr()` (Contexto, Opciones, Decisión, Consecuencias), la misma que propone la guía de vault_audit, con el frontmatter de `meta_adr()` (`type: adr`, `status: draft`).
 
 ### AP-08: Documentación anclada a versiones obsoletas
 
@@ -1645,9 +1659,23 @@ Un ADR aprobado es lo que un agente consulta antes de actuar: "esto se decidió 
 
 El criterio tiene dueño en `vault.kernel.contenido.falta_de_responsable` y lo leen el scan y la auditoría. El régimen del estado lo deriva `vault_registry.regimen_de_estado`, así que `accepted` cuenta como `approved`.
 
-**Prevention:** Al cerrar una decisión, escribir `responsable:` con la persona que responde de ella (campo opcional del contrato v41). Un agente puede redactar el ADR y dejarlo en `draft` o `review`; aprobarlo con su propio nombre como responsable es lo que la norma marca.
+**Prevention:** Al cerrar una decisión, escribir `responsable:` con la persona que responde de ella (campo opcional del contrato v41). Un agente puede redactar el ADR y dejarlo en `draft` o `review`; aprobarlo con su propio nombre como responsable es lo que la norma marca. La guía de vault_audit propone el ADR con `meta_adr()` --en `draft`, sin `responsable` de relleno, que pasaría la norma sin nadie detrás--.
 
 Límites declarados: la norma no puede saber si el valor de `responsable` es de verdad una persona --solo que no es el agente que la escribió--, y solo mira los ADR de `03_Decisions/`; las decisiones de IA de `16_AI_Governance/` llevan su propio `human_approved`.
+
+### AP-65: Decisión de IA de impacto alto sin evaluación de impacto
+
+- **Severity:** medium
+- **Enforcement:** audit
+- **Detected by:** vault_norms
+
+ISO/IEC 42001 pide registrar qué decidió un sistema de IA y por qué; ISO/IEC 42005 añade a quién afecta. `vault_ai_decision` registraba lo primero y no tenía dónde escribir lo segundo: una decisión `critical` quedaba con su porqué y sin el coste que reparte. Desde v41.3 la tool acepta `--affected` y declara `impact_assessment` (`completa`, `pendiente` o `no_exigida`).
+
+El criterio tiene dueño en `vault.kernel.contenido.falta_de_evaluacion_de_impacto` --con su ámbito y los niveles que exigen evaluación, `niveles_de_impacto_exigidos` sobre la escala `severidad` de `vault_vocabulario`-- y lo leen la tool al escribir, el scan y la auditoría.
+
+**Prevention:** Al registrar una decisión de impacto alto, pasar `--affected` con a quién afecta y cómo: `vault_ai_decision ... --impact_level high --affected '["usuarios finales - pierden la sesión al desplegar"]'`. Sin él la nota se escribe igual --un registro incompleto vale más que ninguno-- con `impact_assessment: pendiente`, y el envelope lo dice en `hint`.
+
+Límites declarados: la norma sabe que la nota nombra afectados, no que la evaluación sea buena; la evaluación completa de 42005 (probabilidad, severidad por afectado, mitigación) no se mide. Contrastada en solo lectura contra los vaults ajenos y las copias de los trece consumidores (regla 7, 2026-10-08): ninguno tiene decisiones de IA con `impact_level`, así que el contraste no ejerció el detector sobre material real.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 

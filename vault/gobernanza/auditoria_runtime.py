@@ -17,7 +17,9 @@ from ..kernel.contenido import (
     TIPOS_ADR,
     cuerpo_sin_marcadores,
     es_adr,
+    falta_de_evaluacion_de_impacto,
     falta_de_responsable,
+    niveles_de_impacto_exigidos,
     secciones_adr_faltantes,
 )
 from .repositorio import RepositorioGobernanza
@@ -61,6 +63,7 @@ def auditar_runtime(
         read_frontmatter as _leer_frontmatter,
     )
     from vault_norms_catalog import NORM_CATALOG, STATUS_TRANSITIONS, STATUS_VOCAB, normalize_status
+    from vault_vocabulario import valores as _vocabulario
     from vault_registry import (
         NON_SECTION_ROOT_FOLDERS,
         SECCIONES_PROPIAS_RUTA,
@@ -285,6 +288,14 @@ def auditar_runtime(
                     fm, regimen_de_estado(canonico, STATUS_TRANSITIONS))
                 if motivo:
                     _flag("AP-64", rel, motivo[:1].upper() + motivo[1:] + ".")
+
+        # ── AP-65: decisión de IA de impacto alto sin evaluación de impacto ──
+        # ISO/IEC 42005. Los niveles exigidos son los dos más altos de la
+        # escala `severidad`, la misma que usa `vault_ai_decision` al escribir.
+        motivo = falta_de_evaluacion_de_impacto(
+            rel, fm, niveles_de_impacto_exigidos(_vocabulario("severidad")))
+        if motivo:
+            _flag("AP-65", rel, motivo[:1].upper() + motivo[1:] + ".")
 
         # ── AP-06: templates sin instancias (sin inbound links) ──────────────
         if note_type == "template" or "template" in [str(t).lower() for t in fm.get("tags", []) or []]:

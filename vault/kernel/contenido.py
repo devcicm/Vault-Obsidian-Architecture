@@ -217,3 +217,64 @@ def meta_adr() -> dict:
     """
     return {"type": "adr", "status": "draft"}
 
+
+# ── AP-65: decisión de IA de impacto alto sin evaluación de impacto ────────
+#
+# ISO/IEC 42001 pide registrar qué decidió un sistema de IA y por qué; ISO/IEC
+# 42005 añade a quién afecta. `vault_ai_decision` registraba lo primero y no
+# lo segundo. La escala de impacto es la `severidad` de `vault_vocabulario` y
+# quien llama pasa los niveles que exigen evaluación, para que esta hoja siga
+# sin importar a nadie.
+
+#: Dónde viven las decisiones de IA (`vault_ai_decision`). El ámbito es del
+#: criterio, no de cada detector: dos detectores con su propio prefijo son
+#: dos criterios (AP-57).
+SECCION_DECISIONES_IA = "16_AI_Governance"
+
+#: Lo que una decisión de IA declara en `impact_assessment`.
+EVALUACION_ESTADOS = ("no_exigida", "completa", "pendiente")
+
+
+def niveles_de_impacto_exigidos(escala) -> tuple:
+    """Los niveles que exigen evaluación: los dos más altos de `escala`.
+
+    `escala` va de mayor a menor, como la declara `vault_vocabulario`
+    (`severidad`). Quien escribe y quien audita llaman aquí con la misma
+    escala; ninguno corta la lista por su cuenta.
+    """
+    return tuple(escala[:2])
+
+
+def estado_de_evaluacion(impact_level: str, affected, exigidos) -> str:
+    """`completa` si nombra a quién afecta; `pendiente` si se exigía y no lo hace.
+
+    Una decisión de impacto alto que no dice a quién afecta registra el qué y
+    el porqué, pero no el coste para otros. No se rechaza al escribir —un
+    registro incompleto vale más que ninguno—; se declara, y AP-65 lo audita.
+    """
+    if [a for a in (affected or []) if str(a).strip()]:
+        return "completa"
+    return "pendiente" if str(impact_level or "").strip().lower() in exigidos else "no_exigida"
+
+
+def falta_de_evaluacion_de_impacto(rel: str, fm, exigidos) -> str:
+    """AP-65: por qué esta decisión de IA no tiene su evaluación de impacto.
+
+    Devuelve el motivo, o `""` si no hay falta. Solo mira notas de
+    `16_AI_Governance/` que declaran `impact_level` en uno de los niveles
+    `exigidos` y no son plantilla. Es
+    falta todo `impact_assessment` distinto de `completa`, también su
+    ausencia: una decisión escrita antes de v41.3 no lo declara, y que no lo
+    declare no dice que alguien la evaluase.
+    """
+    fm = fm or {}
+    if str(rel or "").replace("\\", "/").split("/", 1)[0] != SECCION_DECISIONES_IA:
+        return ""
+    nivel = str(fm.get("impact_level") or "").strip().lower()
+    if nivel not in exigidos or str(fm.get("status") or "").strip().lower() == "template":
+        return ""
+    estado = str(fm.get("impact_assessment") or "").strip().lower()
+    if estado == "completa":
+        return ""
+    return (f"decisión de IA de impacto `{nivel}` sin evaluación de impacto completa "
+            f"(`impact_assessment: {estado or '—'}`): no dice a quién afecta")

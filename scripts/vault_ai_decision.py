@@ -69,14 +69,27 @@ from vault_vocabulario import opciones as _opciones
 #: porque el índice en esta lista **es** el nivel de impacto.
 IMPACT_LEVELS = list(reversed(_opciones("severidad")))
 
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
-from vault.kernel.contenido import con_titulo  # noqa: E402
+from vault.kernel.contenido import (  # noqa: E402
+    con_titulo,
+    estado_de_evaluacion as _estado_de_evaluacion,
+    niveles_de_impacto_exigidos,
+)
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 from vault.autoria.frontmatter import firmante as _agente  # noqa: E402
+
+#: ISO/IEC 42005:2025 — evaluación de impacto de un sistema de IA: a quién
+#: afecta la decisión, además de qué decide. Los niveles que la exigen los
+#: decide el kernel sobre la escala del registro, igual que al auditar AP-65.
+EVALUACION_EXIGIDA = niveles_de_impacto_exigidos(_opciones("severidad"))
+
+
+def estado_de_evaluacion(impact_level: str, affected: Optional[List[str]]) -> str:
+    """El estado de `impact_assessment` con la escala de este módulo (AP-65)."""
+    return _estado_de_evaluacion(impact_level, affected, EVALUACION_EXIGIDA)
 
 
 def _raiz() -> Path:
@@ -150,6 +163,7 @@ def vault_ai_decision(
     human_approved: bool = False,
     related_code: Optional[List[str]] = None,
     tags: Optional[List[str]] = None,
+    affected: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     es_del = _proyectos.pertenencia_en(_raiz(), project)
     if decision_type not in DECISION_TYPES:
@@ -159,6 +173,9 @@ def vault_ai_decision(
         return emit_error("vault_ai_decision", "INVALID_VALUE", f"impact_level '{impact_level}' not valid. Use: {IMPACT_LEVELS}")
 
     safe_project = slugify(project)
+
+    affected = [str(a).strip() for a in (affected or []) if str(a).strip()]
+    evaluacion = estado_de_evaluacion(impact_level, affected)
 
     title_slug = slugify(title)
 
@@ -214,6 +231,7 @@ def vault_ai_decision(
             .set("impact_level", impact_level)
             .set("human_approved", bool(human_approved))
             .set("reversible", bool(reversible))
+            .set("impact_assessment", evaluacion)
             .set("createdAt", now)
             .set("updatedAt", now)
             .set("tags", list(dict.fromkeys(tags_list)), omitir_vacio=True)
@@ -260,6 +278,18 @@ def vault_ai_decision(
 
             body_sections.append("\n".join(lines))
 
+        if evaluacion != "no_exigida":
+            lines = ["## Evaluacion de Impacto\n"]
+            if affected:
+                lines.append("A quién afecta:\n")
+                lines.extend(f"- {a}" for a in affected)
+            else:
+                lines.append(
+                    f"Impacto `{impact_level}` sin afectados declarados: la decisión "
+                    "dice qué y por qué, no a quién le cuesta (ISO/IEC 42005, AP-65)."
+                )
+            body_sections.append("\n".join(lines))
+
         if related_code:
             lines = ["## Codigo Relacionado\n"]
 
@@ -288,6 +318,7 @@ def vault_ai_decision(
             "impact_level": impact_level,
             "human_approved": human_approved,
             "reversible": reversible,
+            "impact_assessment": evaluacion,
             "relPath": str(note_path.relative_to(_raiz())).replace("\\", "/"),
             "updatedAt": now,
         }
@@ -301,6 +332,11 @@ def vault_ai_decision(
         "path": str(note_path.relative_to(_raiz())).replace("\\", "/"),
         "decision_id": decision_id,
         "impact_level": impact_level,
+        "impact_assessment": evaluacion,
+        **({"hint": (
+            f"Impacto {impact_level} sin --affected: la evaluación de impacto "
+            "queda pendiente (ISO/IEC 42005, AP-65). Añade a quién afecta."
+        )} if evaluacion == "pendiente" else {}),
         "action": "created",
     }
 
@@ -325,6 +361,10 @@ Examples:
 
 
 
+  python vault_ai_decision.py --project "mi-api" --title "Rotate tokens hourly" --decision_type security --description "Access tokens expire after one hour" --rationale "Limits the window of a leaked token" --impact_level high --affected '["end users - re-authenticate every hour"]'
+
+
+
 Notes:
 
   - decision_type: architectural | security | data-model | algorithm | configuration | process
@@ -338,6 +378,8 @@ Notes:
   - decision_id is auto-generated as AID-001, AID-002, etc. per project
 
   - --related_code accepts comma-separated file paths
+
+  - --affected (ISO/IEC 42005): impact high/critical without it writes impact_assessment: pendiente (AP-65)
 
 """,
         allow_abbrev=False,
@@ -389,6 +431,18 @@ Notes:
 
     parser.add_argument("--tags", nargs="*", help="Additional tags")
 
+    parser.add_argument(
+        "--affected",
+        # Literal y no f-string: `vault_mcp_catalog` lee el help sin ejecutar
+        # el módulo, y uno calculado llegaba al schema MCP como "".
+        help=(
+            'JSON array of who the decision affects (ISO/IEC 42005): '
+            '["end users - lose session on deploy"]. Without it, a decision '
+            "of the two highest impact levels is written with "
+            "impact_assessment: pendiente (AP-65)"
+        ),
+    )
+
     args = parser.parse_args()
 
     def parse_json_arg(val: Optional[str], name: str) -> Optional[Any]:
@@ -414,6 +468,8 @@ Notes:
 
     risks = parse_json_arg(args.risks, "risks")
 
+    affected = parse_json_arg(args.affected, "affected")
+
     result = vault_ai_decision(
         project=args.project,
         title=args.title,
@@ -427,6 +483,7 @@ Notes:
         human_approved=args.human_approved,
         related_code=related_code_list,
         tags=args.tags,
+        affected=affected,
     )
 
     print(json.dumps(result, indent=2, ensure_ascii=False))
