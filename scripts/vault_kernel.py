@@ -23,7 +23,9 @@ como núcleo. Nadie los había visto porque nadie miraba.
   propio criterio.
 - **K2 — fan-in alto, fan-out bajo.** Del dueño único del grafo,
   `vault_grafo_import`. Esta tool no parsea un solo `import`.
-- **K3 — estabilidad.** Churn de `git log`, contra la mediana del dominio
+- **K3 — estabilidad.** Churn de `git log` **sobre comportamiento** (v41.3:
+  un commit que solo cambia datos, docstrings o comentarios no cuenta; ver
+  `huella_de_comportamiento`), contra la mediana del dominio
   **separada por el ratio que la propia cola alta deja ver** (v40.23). Contra
   la mediana pelada, un módulo del núcleo cruzaba el umbral por seguir vivo —el
   churn es acumulado y nunca baja—, y eso mide edad, no forma. Sin historia de
@@ -56,7 +58,10 @@ que la lista declarada no contradice a la forma medida.
 """
 
 import argparse
+import ast
+import hashlib
 import json
+import os
 import statistics
 import subprocess
 
@@ -130,8 +135,12 @@ def _hay_historia() -> bool:
     return True
 
 
-#: Recuento de commits por módulo, de una sola pasada. `None` = aún sin leer.
+#: Commits que cambiaron el **comportamiento** de cada módulo (v41.3).
+#: `None` = aún sin leer.
 _CHURN: Optional[Dict[str, int]] = None
+#: Commits que tocaron el fichero, sea lo que sea lo que cambiaran. Se
+#: publica al lado del anterior y no decide nada.
+_CHURN_BRUTO: Optional[Dict[str, int]] = None
 
 
 def _churn_de_todos() -> Optional[Dict[str, int]]:
@@ -159,18 +168,182 @@ def _churn_de_todos() -> Optional[Dict[str, int]]:
 
 
 def churn(modulo: str) -> Optional[int]:
-    """Commits que tocaron `scripts/<modulo>.py`. `None` = desconocido (AP-51).
+    """Commits que cambiaron el comportamiento de `scripts/<modulo>.py`.
+    `None` = desconocido (AP-51).
 
     Un módulo que existe y nunca se tocó cuenta 0; uno cuya historia no se pudo
     leer cuenta `None`. La diferencia es toda la norma: el 0 fabricado saldría
-    verde por no haber mirado.
+    verde por no haber mirado. Qué cuenta como comportamiento lo dice
+    `huella_de_comportamiento`; el recuento de todo commit es `churn_bruto`.
     """
     global _CHURN
     if _CHURN is None:
-        _CHURN = _churn_de_todos()
+        _CHURN = _churn_de_comportamiento()
     if _CHURN is None:
         return None
     return _CHURN.get(modulo, 0)
+
+
+def churn_bruto(modulo: str) -> Optional[int]:
+    """Commits que tocaron `scripts/<modulo>.py`, cambiaran lo que cambiaran.
+
+    Era la medida de K3 hasta v41.2. Se sigue publicando para que la distancia
+    entre las dos cifras —cuánto se mueve un módulo solo en sus datos— quede a
+    la vista y no se pueda esconder dentro del criterio.
+    """
+    global _CHURN_BRUTO
+    if _CHURN_BRUTO is None:
+        _CHURN_BRUTO = _churn_de_todos()
+    if _CHURN_BRUTO is None:
+        return None
+    return _CHURN_BRUTO.get(modulo, 0)
+
+
+# ── K3 sobre comportamiento: qué commits cambian el módulo y no solo sus datos ─
+#
+# v41.3. El churn bruto cuenta **cualquier** commit que toca el fichero, y eso
+# convertía a un registro en inestable por hacer lo que es: crecer.
+# `vault_norms_catalog` llegó a 23 commits contra un umbral de 23,24 y cada
+# norma nueva lo habría cruzado, aunque 17 de esos 23 solo añadían o
+# corregían entradas de `NORM_CATALOG` sin tocar una línea de lo que el
+# catálogo **hace**. La norma afirma que el núcleo se mueve menos que lo que
+# sostiene; lo que sus consumidores sufren al moverse es el comportamiento —sus
+# funciones, sus clases, sus nombres—, no el contenido de una tabla.
+#
+# El criterio es del consumidor (AP-44), no de esta tool: la huella sale de
+# `ast`, la misma lectura que hace el intérprete. Comentarios, docstrings y el
+# **valor** de una asignación literal de nivel de módulo no cuentan; el
+# **nombre** de esa asignación sí, así que crear o retirar una constante es un
+# cambio. Un `re.compile`, una comprensión o cualquier llamada no son literales
+# y cuentan siempre. Se aplica a los dos lados de la comparación —núcleo y
+# dominio— con la misma vara: medir el núcleo en comportamiento contra un
+# dominio en bruto sería regalarle margen.
+#
+# Qué NO ve: un literal que gobierna comportamiento (un umbral escrito como
+# número) cambia sin contar. Es la frontera que la propia norma ya traza entre
+# declarar y decidir, y el churn bruto sigue publicándose al lado.
+
+
+def _es_literal(nodo: ast.AST) -> bool:
+    if isinstance(nodo, ast.Constant):
+        return True
+    if isinstance(nodo, (ast.List, ast.Tuple, ast.Set)):
+        return all(_es_literal(e) for e in nodo.elts)
+    if isinstance(nodo, ast.Dict):
+        return (all(k is None or _es_literal(k) for k in nodo.keys)
+                and all(_es_literal(v) for v in nodo.values))
+    if isinstance(nodo, ast.UnaryOp):
+        return _es_literal(nodo.operand)
+    return False
+
+
+def _es_docstring(sentencia: ast.AST) -> bool:
+    return (isinstance(sentencia, ast.Expr)
+            and isinstance(sentencia.value, ast.Constant)
+            and isinstance(sentencia.value.value, str))
+
+
+def huella_de_comportamiento(fuente: bytes) -> str:
+    """Lo que un commit tiene que cambiar para contar en K3. Pura.
+
+    Un fichero que no parsea devuelve el hash de sus bytes: cualquier cambio
+    suyo cuenta, que es la lectura conservadora.
+    """
+    try:
+        arbol = ast.parse(fuente)
+    except (SyntaxError, ValueError):
+        return "bytes:" + hashlib.sha256(fuente).hexdigest()
+    partes: List[str] = []
+    for s in arbol.body:
+        if _es_docstring(s):
+            continue
+        if isinstance(s, ast.Assign) and _es_literal(s.value):
+            partes.append("dato:" + "|".join(ast.dump(t) for t in s.targets))
+            continue
+        if isinstance(s, ast.AnnAssign) and s.value is not None and _es_literal(s.value):
+            partes.append("dato:" + ast.dump(s.target))
+            continue
+        for n in ast.walk(s):
+            if (isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+                    and n.body and _es_docstring(n.body[0])):
+                n.body = n.body[1:] or [ast.Pass()]
+        partes.append(ast.dump(s))
+    return hashlib.sha256("\n".join(partes).encode("utf-8")).hexdigest()
+
+
+def _cambios_de_todos() -> Optional[List[Tuple[str, str, str]]]:
+    """`(módulo, blob_antes, blob_después)` por commit, de un solo `git log`."""
+    r = subprocess.run(
+        ["git", "log", "--format=%H", "--raw", "--no-abbrev", "--", "scripts"],
+        cwd=RAIZ_REPO, capture_output=True, text=True, encoding="utf-8",
+        errors="replace",
+    )
+    if r.returncode != 0:
+        return None
+    cambios: List[Tuple[str, str, str]] = []
+    for linea in r.stdout.splitlines():
+        if not linea.startswith(":"):
+            continue
+        meta, _, rutas = linea.partition("\t")
+        ruta = rutas.split("\t")[-1]
+        campos = meta.split()
+        if (len(campos) >= 4 and ruta.startswith("scripts/")
+                and ruta.endswith(".py") and ruta.count("/") == 1):
+            cambios.append((ruta[len("scripts/"):-len(".py")], campos[2], campos[3]))
+    return cambios
+
+
+def _leer_blobs(ids: Sequence[str]) -> Optional[Dict[str, bytes]]:
+    """Todos los blobs por un único `git cat-file --batch`."""
+    entrada = "".join(f"{i}\n" for i in ids).encode("ascii")
+    r = subprocess.run(["git", "cat-file", "--batch"], cwd=RAIZ_REPO,
+                       input=entrada, capture_output=True)
+    if r.returncode != 0:
+        return None
+    salida, pos, blobs = r.stdout, 0, {}
+    for i in ids:
+        fin = salida.index(b"\n", pos)
+        cabecera = salida[pos:fin].split()
+        pos = fin + 1
+        if len(cabecera) < 3 or cabecera[-1] == b"missing":
+            return None
+        n = int(cabecera[2])
+        blobs[i] = salida[pos:pos + n]
+        pos += n + 1
+    return blobs
+
+
+def _huellas(blobs: Dict[str, bytes]) -> Dict[str, str]:
+    """En paralelo: parsear ~2.400 versiones en serie cuesta ~15 s, más que el
+    resto de la tanda de puertas. Si el pool no arranca, en serie: más lento,
+    nunca un resultado distinto."""
+    ids = sorted(blobs)
+    try:
+        from concurrent.futures import ProcessPoolExecutor
+        with ProcessPoolExecutor(max_workers=min(8, os.cpu_count() or 1)) as pool:
+            valores = list(pool.map(huella_de_comportamiento,
+                                    (blobs[i] for i in ids), chunksize=32))
+    except (OSError, RuntimeError):
+        valores = [huella_de_comportamiento(blobs[i]) for i in ids]
+    return dict(zip(ids, valores))
+
+
+def _churn_de_comportamiento() -> Optional[Dict[str, int]]:
+    cambios = _cambios_de_todos()
+    if cambios is None:
+        return None
+    # El blob nulo de git —el «antes» de un alta, el «después» de una baja—
+    # se reconoce por ser todo ceros, no por su longitud: SHA-256 lo alarga.
+    ids = sorted({b for _, a, d in cambios for b in (a, d) if set(b) != {"0"}})
+    blobs = _leer_blobs(ids)
+    if blobs is None:
+        return None
+    huella = _huellas(blobs)
+    cuenta: Dict[str, int] = {}
+    for modulo, antes, despues in cambios:
+        if huella.get(antes) != huella.get(despues):
+            cuenta[modulo] = cuenta.get(modulo, 0) + 1
+    return cuenta
 
 
 # ── La medida ────────────────────────────────────────────────────────────────
@@ -249,6 +422,7 @@ def medir() -> Dict[str, Any]:
     con_historia = _hay_historia()
     churns = {m: (churn(m) if con_historia else None)
               for m in kernel + dominio}
+    brutos = {m: (churn_bruto(m) if con_historia else None) for m in kernel}
     del_dominio = [c for m in dominio if (c := churns.get(m)) is not None]
     mediana = statistics.median(del_dominio) if del_dominio else None
     # K3 también deriva su umbral, como K2 y el fan-in. Hasta v40.23 comparaba
@@ -364,6 +538,8 @@ def medir() -> Dict[str, Any]:
         "fan_in": {m: len(fi.get(m, ())) for m in kernel},
         "fan_out": {m: len(fo.get(m, ())) for m in kernel},
         "churn": {m: churns.get(m) for m in kernel},
+        "churn_bruto": brutos,
+        "churn_criterio": "comportamiento",
         "modules": len(G),
     }
 
@@ -419,6 +595,8 @@ def check() -> Dict[str, Any]:
         "threshold_churn": m["umbral_churn"],
         "threshold_churn_ratio": m["umbral_churn_ratio"],
         "fan_in": m["fan_in"], "fan_out": m["fan_out"], "churn": m["churn"],
+        "churn_criterion": m["churn_criterio"],
+        "raw_churn": m["churn_bruto"],
         "findings": m["hallazgos"],
         "findings_total": len(firmas),
         "informational": m["informativos"],

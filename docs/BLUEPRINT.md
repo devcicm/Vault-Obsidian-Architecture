@@ -381,7 +381,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `scripts/blueprint-baseline.json` | capa 4 — norma sin puerta ni test | 8 | — *sin objetivo* | 16 → 15 → 14 → 13 → 13 → 8 (encoge, Δ-8) |
 | `scripts/criterios-baseline.json` | AP-57 | 9 | — *sin objetivo* | 10 → 9 → 9 → 9 (encoge, Δ-1) |
 | `scripts/ciclos-baseline.json` | AP-58 — ciclo esquivado con import diferido | 5 | — *sin objetivo* | 30 → 30 → 15 → 14 → 7 → 5 (encoge, Δ-25) |
-| `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 5 | — *sin objetivo* | 5 → 5 → 6 → 6 → 5 (plana, Δ+0) |
+| `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 4 | — *sin objetivo* | 5 → 5 → 6 → 6 → 5 (plana, Δ+0) |
 | `scripts/norms-distincion-baseline.json` | AP-60 — normas que no declaran de qué se distinguen | 0 | — *sin objetivo* | 57 → 0 → 0 (encoge, Δ-57) |
 | `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 | — *sin objetivo* | 47 → 0 (encoge, Δ-47) |
 | `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1410 | — *sin objetivo* | 1357 → 1368 → 1378 → 1380 → 1389 → 1410 (crece, Δ+190) |

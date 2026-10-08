@@ -4,7 +4,6 @@
   "kernel_impuro::vault_io",
   "kernel_inestable::vault_errors",
   "kernel_inestable::vault_io",
-  "kernel_inestable::vault_lib",
-  "kernel_inestable::vault_registry"
+  "kernel_inestable::vault_lib"
  ]
 }

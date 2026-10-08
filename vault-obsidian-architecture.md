@@ -6546,7 +6546,7 @@ fan-out bajo. **K3** — el núcleo se mueve menos que lo que sostiene.
 núcleo con su propio criterio se certifica a sí misma: sería **AP-44 cometido exactamente
 donde existe para detectarlo**. K1 se delega en `vault_arch.dependencias_del_kernel()`, que ya
 lo hacía bien, y K2 sale del dueño único del grafo de imports (`vault_grafo_import`), no de un
-parser propio — un test falla si `vault_kernel` llega a importar `ast`. K1 además **es
+parser propio — un test falla si `vault_kernel` llega a importar `ast` (*superseded_by* v41.3: el test falla si lee un nodo `ast.Import`/`ast.ImportFrom`, porque K3 usa `ast` para otra cosa). K1 además **es
 bloqueante y no baselinable**: si el núcleo pasa a depender del dominio dejó de ser núcleo, y
 una baseline que se lo tragase convertiría la frontera en una sugerencia.
 
@@ -6562,6 +6562,8 @@ congela la **pertenencia** —qué módulo incumple qué invariante— y nunca e
 mundo, verde respecto a una historia que no se llegó a leer. Es AP-51, y la distinción se
 prueba en las dos direcciones: un módulo que existe y nunca se tocó cuenta 0; uno cuya
 historia no se pudo leer cuenta `desconocido`.
+
+**K3 mide comportamiento, no el crecimiento de un registro (v41.3).** Contar todo commit que toca el fichero convertía a un registro en inestable por hacer lo que es: crecer. `vault_norms_catalog` llegó a 23 commits contra un umbral de 23,24, y 17 de ellos solo cambiaban datos del catálogo. Desde v41.3 un commit cuenta si cambia la huella de comportamiento del módulo —su árbol `ast` sin docstrings, comentarios ni el **valor** de una asignación literal de nivel de módulo; el **nombre** de esa asignación sí cuenta—. Núcleo y dominio se miden con la misma vara, y el churn bruto se publica al lado (`raw_churn`) para que la distancia entre las dos cifras quede a la vista. Lo que no ve: un literal que gobierna comportamiento, como un umbral escrito como número.
 
 **Distinguida de AP-57.** AP-57 habla de un **criterio escrito dos veces sin dueño**. AP-59
 habla de una **pertenencia afirmada y no contrastada**: no hay copia ninguna, hay una sola

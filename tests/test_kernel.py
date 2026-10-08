@@ -176,6 +176,75 @@ def test_un_modulo_sin_commits_cuenta_cero_y_no_desconocido():
     assert K.churn("modulo_que_jamas_existio") == 0
 
 
+# ── 2b. K3 sobre comportamiento (v41.3): los datos de un registro no cuentan ─
+
+_BASE = b'"""Doc."""\nTABLA = {"a": 1}\n\ndef f(x):\n    """Hace f."""\n    return x + 1\n'
+
+
+def test_ap59_k3_la_huella_ignora_datos_docstrings_y_comentarios():
+    """Lo que un registro hace al crecer —una entrada más en su tabla, un
+    docstring reescrito— no es moverse para quien lo importa."""
+    h = K.huella_de_comportamiento
+    assert h(_BASE) == h(_BASE.replace(b'{"a": 1}', b'{"a": 1, "b": 2}'))
+    assert h(_BASE) == h(_BASE.replace(b"Hace f.", b"Suma uno.") + b"# nota\n")
+    assert h(_BASE) == h(_BASE.replace(b'"""Doc."""', b'"""Otro doc."""'))
+
+
+def test_ap59_k3_la_huella_ve_nombres_funciones_y_valores_calculados():
+    h = K.huella_de_comportamiento
+    assert h(_BASE) != h(_BASE.replace(b"TABLA", b"TABLA2")), "renombrar una constante es un cambio"
+    assert h(_BASE) != h(_BASE.replace(b"x + 1", b"x + 2"))
+    assert h(_BASE) != h(_BASE + b"PATRON = re.compile('x')\n"), "un valor calculado no es un literal"
+    assert h(b"def (:\n") != h(b"def (:\n "), "lo que no parsea cuenta por bytes"
+
+
+def _git(repo, *args):
+    import subprocess
+    subprocess.run(["git", *args], cwd=repo, check=True, capture_output=True,
+                   env={**__import__("os").environ, "GIT_AUTHOR_NAME": "t",
+                        "GIT_AUTHOR_EMAIL": "t@t", "GIT_COMMITTER_NAME": "t",
+                        "GIT_COMMITTER_EMAIL": "t@t"})
+
+
+def test_ap59_k3_un_commit_solo_de_datos_no_cuenta_y_uno_de_codigo_si(monkeypatch, tmp_path):
+    """Cuatro commits sobre el mismo módulo: alta, entrada nueva en la tabla,
+    docstring y cambio de función. El bruto cuenta los cuatro; K3, el alta y la
+    función. Era `vault_norms_catalog`: 23 commits brutos, 6 de comportamiento."""
+    repo = tmp_path / "repo"
+    (repo / "scripts").mkdir(parents=True)
+    _git(repo, "init", "-q")
+    fichero = repo / "scripts" / "m.py"
+    for i, contenido in enumerate((
+        _BASE,
+        _BASE.replace(b'{"a": 1}', b'{"a": 1, "b": 2}'),
+        _BASE.replace(b'{"a": 1}', b'{"a": 1, "b": 2}').replace(b"Hace f.", b"Suma."),
+        _BASE.replace(b'{"a": 1}', b'{"a": 1, "b": 2}').replace(b"x + 1", b"x - 1"),
+    )):
+        fichero.write_bytes(contenido)
+        _git(repo, "add", "-A")
+        _git(repo, "commit", "-q", "-m", f"c{i}")
+    monkeypatch.setattr(K, "RAIZ_REPO", repo)
+    monkeypatch.setattr(K, "_CHURN", None)
+    monkeypatch.setattr(K, "_CHURN_BRUTO", None)
+    assert K.churn_bruto("m") == 4
+    assert K.churn("m") == 2
+
+
+def test_ap59_k3_publica_las_dos_cifras_y_mide_al_dominio_con_la_misma_vara(monkeypatch):
+    """El bruto no decide, pero se ve: esconder la distancia entre las dos
+    cifras dentro del criterio sería un umbral ajustado para pasar. Y el
+    dominio se mide igual que el núcleo: núcleo en comportamiento contra
+    dominio en bruto le regalaría margen."""
+    _monta(monkeypatch, {"nucleo": set(), "a": {"nucleo"}, "b": {"nucleo"}},
+           ["nucleo"], ["a", "b"], churns={"nucleo": 1, "a": 3, "b": 5})
+    monkeypatch.setattr(K, "churn_bruto", lambda m: 30)
+    m = K.medir()
+    assert m["churn"] == {"nucleo": 1} and m["churn_bruto"] == {"nucleo": 30}
+    assert m["churn_criterio"] == "comportamiento"
+    assert m["churn_mediana_dominio"] == 4, "el dominio se midió en bruto"
+    assert not _de(m, "kernel_inestable"), "el bruto decidió"
+
+
 # ── 3. El umbral publicado es el aplicado ───────────────────────────────────
 
 def test_el_escalon_es_la_mayor_caida_relativa_y_no_la_caida_a_cero():
@@ -228,9 +297,17 @@ def test_vault_kernel_no_parsea_imports_por_su_cuenta():
     } | {
         n.module for n in ast.walk(arbol) if isinstance(n, ast.ImportFrom) and n.module
     }
-    assert "ast" not in importados, (
-        "vault_kernel importó `ast`: el grafo de imports tiene dueño en "
-        "`vault_grafo_import` y esto es AP-44 en la tool que traza el núcleo"
+    # Hasta v41.2 se prohibía importar `ast`. Desde v41.3 K3 lo necesita para
+    # la huella de comportamiento, que no lee imports: lo prohibido sigue
+    # siendo lo mismo —tocar un nodo de import—, ahora nombrado con precisión.
+    nodos_de_import = {
+        n.attr for n in ast.walk(arbol)
+        if isinstance(n, ast.Attribute) and isinstance(n.value, ast.Name)
+        and n.value.id == "ast" and n.attr in ("Import", "ImportFrom")
+    }
+    assert not nodos_de_import, (
+        f"vault_kernel lee {sorted(nodos_de_import)}: el grafo de imports tiene "
+        "dueño en `vault_grafo_import` y esto es AP-44 en la tool que traza el núcleo"
     )
     assert "vault_grafo_import" in importados
 
