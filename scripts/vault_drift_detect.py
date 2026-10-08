@@ -37,6 +37,9 @@ Usage:
     # Con el repo enlazado (vault_project --link), --path sobra (AP-63, P4)
     python vault_drift_detect.py --project "ans" --mode snapshot
 
+    # AP-08: notas con `files:` cuyo código cambió después de su updatedAt
+    python vault_drift_detect.py --project "ans" --mode vigencia
+
 Un snapshot sobre git anota `repo.synced_commit` en la ficha del proyecto: es
 el punto hasta el que el vault documenta el código, el que lee
 `vault_project --sync-status`.
@@ -56,8 +59,9 @@ import vault_subproceso
 
 import sys
 
-from vault_errors import emit_error, wrap_main, proyecto_registrado
-from vault_lib import slugify_strict, utcnow
+from vault_errors import emit_error, emit_fallo, wrap_main, proyecto_registrado
+from vault_lib import parse_frontmatter, slugify_strict, utcnow
+from vault_norms_catalog import normalize_status
 from datetime import datetime, timezone
 
 from pathlib import Path
@@ -66,7 +70,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
-from vault_io import atomic_write_json, atomic_write_text
+from vault_io import atomic_write_json, atomic_write_text, is_snapshot_path
 
 
 TRACK_EXTENSIONS = {
@@ -228,6 +232,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
 from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
+from vault.kernel.enumeracion import notas_en_disco  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -698,6 +703,133 @@ def _find_coverage(
     return documented, undocumented
 
 
+# ─── AP-08: notas que no acompañaron al cambio ───────────────────────────────
+
+#: Estados canónicos (`STATUS_VOCAB`) cuyo contenido ya no se afirma vigente:
+#: que su código cambie después es lo esperado, no un desfase. Una nota
+#: reemplazada se reconoce por `superseded_by:`, que no es un `status`.
+_ESTADOS_SIN_VIGENCIA = frozenset({"deprecated", "obsolete", "archived", "stub", "template"})
+
+
+def _en_utc(dt: Optional[datetime]) -> Optional[datetime]:
+    """Una fecha sin zona (`updatedAt: 2026-01-01`) se lee en UTC: comparar
+    una ingenua con una con zona lanza TypeError."""
+    if dt is not None and dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+def _ultimo_cambio(repo: Path, ficheros: List[str]) -> Optional[Dict[str, str]]:
+    """El commit más reciente que tocó alguno de `ficheros` en `repo`."""
+    try:
+        r = vault_subproceso.ejecutar(
+            ["git", "log", "-1", "--format=%H%x09%cI", "--", *ficheros],
+            cwd=str(repo), capture_output=True, timeout=30,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return None
+    linea = (r.stdout or "").strip() if r.returncode == 0 else ""
+    if not linea:
+        return None
+    commit, fecha = linea.split("\t", 1)
+    return {"commit": commit, "fecha": fecha}
+
+
+def vault_drift_vigencia(path: str, project: str) -> Dict[str, Any]:
+    """AP-08: notas del proyecto cuyo código cambió después de su `updatedAt`.
+
+    La señal es la que el manifiesto escribe desde v19 —«el `updatedAt` de la
+    nota es muy anterior al de los archivos de código relacionados»— y que
+    ninguna tool medía. La relación nota → código no se adivina por el nombre
+    del fichero, como hace `report`: la declara la nota en `files:`, el mismo
+    campo que lee `vault_arquitectura_en`. Una nota sin `files:` no se juzga;
+    se cuenta, para que el silencio no pase por vigencia.
+
+    Solo lectura: ni el vault ni el repo se tocan.
+    """
+    repo = Path(path).resolve()
+    if not _has_git(repo):
+        return emit_error(
+            "vault_drift_detect", "GIT_UNAVAILABLE",
+            f"--mode vigencia necesita un repo git: {repo.name} no lo es",
+            pista="La fecha del último cambio de un fichero la da su historia; "
+                  "sin git no hay de dónde leerla.",
+        )
+    from vault.kernel.fallos import FalloDeDominio
+
+    try:
+        secciones = _repo().ctx.secciones.ordenadas()
+    except FalloDeDominio as fallo:
+        return emit_fallo("vault_drift_detect", fallo)
+    raiz = _raiz()
+    # El predicado único de pertenencia (AP-63, P3), no un `==` propio.
+    es_del = _proyectos.pertenencia_en(raiz, project)
+    desfasadas: List[Dict[str, Any]] = []
+    vigentes = 0
+    sin_files: List[str] = []
+    sin_historia: List[Dict[str, Any]] = []
+    for nota in sorted(notas_en_disco(raiz, secciones, incluir_indices=False)):
+        rel = nota.relative_to(raiz).as_posix()
+        if is_snapshot_path(rel):
+            continue
+        try:
+            fm = parse_frontmatter(nota.read_text(encoding="utf-8-sig"))
+        except (OSError, UnicodeDecodeError):
+            continue
+        if not es_del(fm.get("project")):
+            continue
+        if fm.get("superseded_by"):
+            continue
+        if normalize_status(str(fm.get("status") or ""))[0] in _ESTADOS_SIN_VIGENCIA:
+            continue
+        files = fm.get("files")
+        if isinstance(files, str):
+            files = [files]
+        files = [str(f).strip() for f in (files or []) if str(f).strip()]
+        if not files:
+            sin_files.append(rel)
+            continue
+        nota_dt = _en_utc(_parse_iso(str(fm.get("updatedAt") or fm.get("createdAt") or "")))
+        cambio = _ultimo_cambio(repo, files)
+        if cambio is None:
+            # Un `files:` que git no conoce —renombrado, borrado o mal
+            # escrito— no es una nota vigente: es una relación rota.
+            sin_historia.append({"path": rel, "files": files})
+            continue
+        cambio_dt = _en_utc(_parse_iso(cambio["fecha"]))
+        if nota_dt is None or (cambio_dt is not None and cambio_dt > nota_dt):
+            desfasadas.append({
+                "path": rel,
+                "updatedAt": fm.get("updatedAt"),
+                "files": files,
+                "ultimo_cambio": cambio["fecha"],
+                "commit": cambio["commit"],
+            })
+        else:
+            vigentes += 1
+    return {
+        "ok": True,
+        "mode": "vigencia",
+        "norm": "AP-08",
+        "project": project,
+        "desfasadas": desfasadas,
+        "summary": {
+            "desfasadas": len(desfasadas),
+            "vigentes": vigentes,
+            "sin_files": len(sin_files),
+            "sin_historia": len(sin_historia),
+        },
+        "sin_files": sin_files,
+        "sin_historia": sin_historia,
+        "action_required": bool(desfasadas or sin_historia),
+        "criterio": (
+            "Una nota con `files:` está desfasada si algún fichero cambió en git "
+            "después de su `updatedAt`. Sin `files:` no se juzga; un `files:` "
+            "sin historia en git se lista aparte."
+        ),
+    }
+
+
 # ─── Main tool function ───────────────────────────────────────────────────────
 
 
@@ -711,6 +843,9 @@ def vault_drift_detect(
 
     if not scan_path.exists():
         return emit_error("vault_drift_detect", "FILE_NOT_FOUND", f"Path not found: {path}")
+
+    if mode == "vigencia":
+        return vault_drift_vigencia(str(scan_path), project)
 
     exts = set(extensions) if extensions else TRACK_EXTENSIONS
 
@@ -897,9 +1032,10 @@ Notas:
 
     parser.add_argument(
         "--mode",
-        choices=["snapshot", "status", "report"],
+        choices=["snapshot", "status", "report", "vigencia"],
         default="report",
-        help="snapshot: save baseline | status: list changes | report: changes + vault coverage",
+        help="snapshot: save baseline | status: list changes | report: changes + vault coverage"
+        " | vigencia: notas con `files:` cuyo codigo cambio despues de su updatedAt (AP-08)",
     )
 
     parser.add_argument(

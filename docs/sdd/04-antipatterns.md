@@ -85,11 +85,11 @@ ADRs (Architecture Decision Records) sin secciones Contexto, Decisión y Consecu
 
 - **Severidad:** medium
 - **Enforcement:** audit
-- **Detectado por:** sin detector -- Ninguna tool la detecta. Declaraba `vault_drift_detect`, que no lee versiones del cuerpo de la nota. La propia `prevention` lo dice en condicional --"vault_audit puede alertar"-- y ese condicional lleva desde v19 sin resolverse.
+- **Detectado por:** vault_drift_detect
 
 Notas que mencionan versiones específicas de librerías, APIs o protocolos que ya fueron actualizadas, sin indicar que el contenido puede estar desactualizado.
 
-**Prevención:** Agregar campo version_pinned al frontmatter con la versión referenciada. vault_audit puede alertar.
+**Prevención:** Declarar en `files:` los ficheros que la nota documenta y pasar `vault_drift_detect --mode vigencia` al cerrar la sesión. Agregar campo version_pinned al frontmatter con la versión referenciada.
 
 ### AP-09: Runbooks fuera de estructura
 
@@ -963,11 +963,11 @@ ADRs (Architecture Decision Records) sin secciones Contexto, Decisión y Consecu
 
 - **Severity:** medium
 - **Enforcement:** audit
-- **Detected by:** sin detector -- Ninguna tool la detecta. Declaraba `vault_drift_detect`, que no lee versiones del cuerpo de la nota. La propia `prevention` lo dice en condicional --"vault_audit puede alertar"-- y ese condicional lleva desde v19 sin resolverse.
+- **Detected by:** vault_drift_detect
 
 Notas que mencionan versiones específicas de librerías, APIs o protocolos que ya fueron actualizadas, sin indicar que el contenido puede estar desactualizado.
 
-**Prevention:** Agregar campo version_pinned al frontmatter con la versión referenciada. vault_audit puede alertar.
+**Prevention:** Declarar en `files:` los ficheros que la nota documenta y pasar `vault_drift_detect --mode vigencia` al cerrar la sesión. Agregar campo version_pinned al frontmatter con la versión referenciada.
 
 ### AP-09: Runbooks fuera de estructura
 

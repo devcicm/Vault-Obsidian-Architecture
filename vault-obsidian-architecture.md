@@ -4429,6 +4429,24 @@ opciones evaluadas no es un ADR».
 - `vault_audit()` detecta notas stale (>30 días sin actualización) — penaliza con −1, fuerza revisión
 - Al inicio de cada sesión en un proyecto: `vault_timeline(project:"X", from:"hace-30-dias")` para ver qué cambió y qué docs pueden estar desactualizadas
 
+**Criterio ejecutable (v41.3).** La señal de alarma de arriba se medía en condicional
+desde v19 y el catálogo declaraba la norma `cobertura_descubierta`. Ahora la mitad que
+la nota declara tiene detector: una nota con `files:` —el mismo campo que lee
+`vault_arquitectura_en`— está **desfasada** si alguno de esos ficheros tiene un commit
+posterior a su `updatedAt`.
+
+```bash
+python scripts/vault_drift_detect.py --project <slug> --mode vigencia
+```
+
+Solo lectura. La pertenencia al proyecto la decide el predicado único
+`vault.kernel.proyectos.pertenencia`; las notas con `superseded_by:` o en un estado sin
+vigencia (`deprecated`, `obsolete`, `archived`, `stub`, `template`) no se juzgan. Lo
+que no se puede juzgar no se calla: `sin_files` lista las notas que no declaran su
+código, y `sin_historia` las que declaran ficheros que git no conoce —renombrados,
+borrados o mal escritos—. La otra mitad de la señal, el número de versión escrito en
+el cuerpo, sigue sin detector, y por eso el catálogo la declara `cobertura_parcial`.
+
 ---
 
 ### AP-09 — Runbooks fuera de estructura

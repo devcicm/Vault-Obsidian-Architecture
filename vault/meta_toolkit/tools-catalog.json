@@ -1752,11 +1752,12 @@
           },
           "mode": {
             "type": "string",
-            "description": "snapshot: save baseline | status: list changes | report: changes + vault coverage",
+            "description": "snapshot: save baseline | status: list changes | report: changes + vault coverage | vigencia: notas con `files:` cuyo codigo cambio despues de su updatedAt (AP-08)",
             "enum": [
               "snapshot",
               "status",
-              "report"
+              "report",
+              "vigencia"
             ]
           },
           "extensions": {

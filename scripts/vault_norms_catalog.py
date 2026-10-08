@@ -325,15 +325,28 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "Notas que mencionan versiones específicas de librerías, APIs o protocolos que ya "
             "fueron actualizadas, sin indicar que el contenido puede estar desactualizado."
         ),
-        "signal": "Notas con versiones hardcodeadas (v1.2.3) y updatedAt > 90 días.",
-        "prevention": "Agregar campo version_pinned al frontmatter con la versión referenciada. vault_audit puede alertar.",
+        "signal": (
+            "Notas con versiones hardcodeadas (v1.2.3) y updatedAt > 90 días. "
+            "Desde v41.3, ejecutable: una nota que declara su código en `files:` "
+            "y cuyo `updatedAt` es anterior al último commit que tocó esos "
+            "ficheros (`vault_drift_detect --mode vigencia`)."
+        ),
+        "prevention": (
+            "Declarar en `files:` los ficheros que la nota documenta y pasar "
+            "`vault_drift_detect --mode vigencia` al cerrar la sesión. Agregar "
+            "campo version_pinned al frontmatter con la versión referenciada."
+        ),
         "tools_enforcing": [],
-        "tools_detecting": [],
-        "cobertura_descubierta": (
-            "Ninguna tool la detecta. Declaraba `vault_drift_detect`, que no lee "
-            "versiones del cuerpo de la nota. La propia `prevention` lo dice en "
-            "condicional —«vault_audit puede alertar»— y ese condicional lleva desde "
-            "v19 sin resolverse."
+        "tools_detecting": ["vault_drift_detect"],
+        "cobertura_parcial": (
+            "Estuvo descubierta hasta v41.3. `vault_drift_detect --mode vigencia` "
+            "mide **la mitad que la nota declara**: compara su `updatedAt` con el "
+            "último commit de los ficheros que lista en `files:`, y cuenta aparte "
+            "las notas sin `files:` y los `files:` que git no conoce, para que el "
+            "silencio no pase por vigencia. Sigue sin medir la otra mitad de la "
+            "señal —el número de versión escrito en el cuerpo— y la nota que "
+            "documenta código sin declararlo: la relación no se adivina por el "
+            "nombre del fichero."
         ),
         "introduced_version": "v19",
     },
