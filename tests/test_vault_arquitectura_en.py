@@ -167,3 +167,16 @@ def test_es_solo_lectura(raiz):
     antes = huella()
     _ejecutar(raiz, "--desde", "2026-01-01", "--hasta", "2026-12-31")
     assert huella() == antes
+
+
+def test_un_error_solo_toca_la_traza(raiz):
+    """Regla 7 contra /ans: un `VERSION_NOT_FOUND` cambió la huella de la copia. Lo
+    único que escribe es la traza de `emit_error`; ninguna nota."""
+    def huella():
+        return {p.relative_to(raiz).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+                for p in raiz.rglob("*") if p.is_file()}
+    antes = huella()
+    assert _ejecutar(raiz, "--version", "v9.9")["error_code"] == "VERSION_NOT_FOUND"
+    despues = huella()
+    cambiados = {k for k in antes.keys() | despues.keys() if antes.get(k) != despues.get(k)}
+    assert cambiados <= {"00_System/.tool-trace.json"}, cambiados

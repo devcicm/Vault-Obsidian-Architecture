@@ -38,7 +38,10 @@ Lo que no se puede decidir no se adivina: una nota sin fecha de creación ni
     python scripts/vault_arquitectura_en.py --version v1.5 --project ans
     python scripts/vault_arquitectura_en.py --desde v1.0 --hasta v1.5 --project ans
 
-Solo lectura. No acepta `--root` (regla 1): el vault sale de `vault_io.get_vault_root()`.
+No escribe notas. No acepta `--root` (regla 1): el vault sale de `vault_io.get_vault_root()`.
+Un error deja su entrada en `00_System/.tool-trace.json`, como en toda tool que emite por
+`emit_error`: medido en la regla 7 contra la copia de /ans, que cambió de huella con un
+`VERSION_NOT_FOUND`. Para medir un vault ajeno, sobre una copia.
 """
 
 from __future__ import annotations
