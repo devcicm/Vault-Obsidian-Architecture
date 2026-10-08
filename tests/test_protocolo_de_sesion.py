@@ -24,6 +24,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from vault.meta_toolkit.naturalezas import NATURALEZAS  # noqa: E402
 from vault.meta_toolkit.protocolo_de_sesion import (  # noqa: E402
     PERFILES,
+    PISTAS_FUERA_DEL_PERFIL,
     PROTOCOLO_DE_SESION,
     tools_del_perfil,
 )
@@ -106,3 +107,37 @@ def test_el_manifiesto_nombra_cada_tool_del_protocolo():
     faltan = sorted({p["tool"] for _, p in _pasos()
                      if not re.search(rf"\b{p['tool']}\b", seccion)})
     assert not faltan, f"el manifiesto no nombra: {faltan}"
+
+
+def _pistas_fuera_del_perfil():
+    perfil = set(tools_del_perfil("agente"))
+    return {
+        codigo for codigo, entrada in CATALOGO["errors"].items()
+        if (tool := (entrada.get("recovery") or {}).get("tool"))
+        and not tool.startswith("<") and tool not in perfil
+    }
+
+
+def test_toda_pista_fuera_del_perfil_esta_clasificada():
+    """Medido el 2026-10-07: cuatro códigos mandan a tools que el perfil no
+    tiene. Cada uno declara por qué el agente no lo recibe; uno nuevo falla
+    hasta que se decida si su tool entra en el perfil o su pista cambia."""
+    declaradas = set(PISTAS_FUERA_DEL_PERFIL)
+    medidas = _pistas_fuera_del_perfil()
+    assert medidas - declaradas == set(), f"sin clasificar: {sorted(medidas - declaradas)}"
+    assert declaradas - medidas == set(), f"ya no salen del perfil: {sorted(declaradas - medidas)}"
+    assert all(m.strip() for m in PISTAS_FUERA_DEL_PERFIL.values())
+
+
+def test_ninguna_tool_del_perfil_emite_una_pista_que_no_puede_seguir():
+    """Descarte por texto, no confirmación: si el script de una tool del
+    perfil nombra el código, o una causa del dominio que se traduce a él, la
+    clasificación de arriba es falsa. Lo que emita un módulo importado sin
+    nombrar el código no lo ve."""
+    from vault.kernel.errores import MAPA_DE_FALLOS
+
+    for codigo in PISTAS_FUERA_DEL_PERFIL:
+        nombres = {codigo} | {c for c, d in MAPA_DE_FALLOS.items() if d == codigo}
+        for tool in tools_del_perfil("agente"):
+            texto = (ROOT / "scripts" / f"{tool}.py").read_text(encoding="utf-8")
+            assert not any(f'"{n}"' in texto for n in nombres), (tool, codigo)

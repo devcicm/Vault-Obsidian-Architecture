@@ -155,6 +155,20 @@ PROTOCOLO_DE_SESION: Dict[str, Dict[str, Any]] = {
 }
 
 
+#: Códigos del catálogo cuya `recovery.tool` no está en el perfil `agente`, con
+#: el motivo por el que un agente que solo tiene el perfil no los recibe.
+#: Medido el 2026-10-07; un test falla si aparece uno sin clasificar o si uno
+#: de estos deja de salir del perfil. Si una tool del perfil empieza a emitir
+#: alguno, la respuesta es meter su tool en `recuperar` o cambiar la pista.
+PISTAS_FUERA_DEL_PERFIL: Dict[str, str] = {
+    "AP19_SHADOW_INDEX": "declarado en el catálogo y sin emisor: ninguna tool lo devuelve",
+    "BACKUP_NOT_FOUND": "lo traduce BACKUP_NO_ENCONTRADO, de vault.durabilidad "
+                        "(restaurar y verificar snapshots), fuera del perfil",
+    "CIRCULAR_WIKILINK": "declarado en el catálogo y sin emisor: ninguna tool lo devuelve",
+    "SERVICE_UNAVAILABLE": "lo emiten vault_token_counter y vault_fix_all, fuera del perfil",
+}
+
+
 def _tools_del_protocolo() -> List[str]:
     return sorted({p["tool"] for m in PROTOCOLO_DE_SESION.values() for p in m["pasos"]})
 
