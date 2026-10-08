@@ -104,6 +104,20 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
             "docs": "vault-obsidian-architecture.md §Grupo 10 — Indexación",
         },
     },
+    # 2026-10-07: `vault_reindex --check` devolvía `status: index_stale` sin
+    # código, y el agente que decide por `recovery.action` no tenía salida.
+    "INDEX_STALE": {
+        "category": "infrastructure",
+        "severity": "warning",
+        "message": "El índice no refleja las notas que hay en disco o no se puede leer (AP-47).",
+        "recovery": {
+            "action": "run_tool",
+            "tool": "vault_reindex",
+            "args": ["--graph"],
+            "hint": "Ejecutar vault_reindex --graph para reconstruir search-index.json y graph.json desde el disco; el detalle está en missing_in_index y stale_in_index.",
+            "docs": "vault-obsidian-architecture.md §Grupo 10 — Indexación",
+        },
+    },
     "HISTORY_NOT_FOUND": {
         "category": "infrastructure",
         "severity": "warning",

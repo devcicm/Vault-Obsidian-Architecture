@@ -7672,6 +7672,20 @@
         "docs": "vault-obsidian-architecture.md §Grupo 10 — Indexación"
       }
     },
+    "INDEX_STALE": {
+      "category": "infrastructure",
+      "severity": "warning",
+      "message": "El índice no refleja las notas que hay en disco o no se puede leer (AP-47).",
+      "recovery": {
+        "action": "run_tool",
+        "tool": "vault_reindex",
+        "args": [
+          "--graph"
+        ],
+        "hint": "Ejecutar vault_reindex --graph para reconstruir search-index.json y graph.json desde el disco; el detalle está en missing_in_index y stale_in_index.",
+        "docs": "vault-obsidian-architecture.md §Grupo 10 — Indexación"
+      }
+    },
     "INDEX_UPDATE_ERROR": {
       "category": "io",
       "severity": "warning",

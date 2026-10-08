@@ -40,6 +40,7 @@ from vault.indices.enumeracion import notas_en_disco  # noqa: E402
 from vault.indices.reconstruccion import ServicioReindex  # noqa: E402
 from vault.indices.repositorio import RepositorioIndices  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.errores import completar_envelope  # noqa: E402
 
 
 def _repo(root=None) -> RepositorioIndices:
@@ -196,6 +197,17 @@ Notas:
         informe["tool"] = "vault_reindex"
         if not informe["ok"]:
             informe["action"] = "python vault_reindex.py"
+            # AP-52: la medida se conserva entera; el código es por lo que
+            # decide el agente (`action` es texto para una persona).
+            # Ausente, corrupto o desfasado: los tres los rehace la
+            # reconstrucción, que es derivada del disco.
+            informe["error_code"] = (
+                "INDEX_NOT_FOUND" if informe["status"] == "index_missing"
+                else "INDEX_STALE")
+            informe["message"] = (
+                f"Índice {informe['status']}: {informe['on_disk']} nota(s) en disco, "
+                f"{informe['indexed']} indexada(s).")
+            informe = completar_envelope("vault_reindex", informe)
         print(json.dumps(informe, indent=2, ensure_ascii=False))
         return 0 if informe["ok"] else 1
 
