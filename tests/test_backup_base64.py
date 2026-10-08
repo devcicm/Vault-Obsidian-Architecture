@@ -16,9 +16,14 @@ Lo que salió al escribir estos tests, y no antes:
   mismo módulo.
 """
 
+import contextlib
+import getpass
 import importlib.util
 import json
+import os
 import shutil
+import subprocess
+import sys
 import zlib
 from base64 import b64decode, b64encode
 from pathlib import Path
@@ -211,3 +216,44 @@ def test_el_sello_de_version_tiene_un_solo_lector_en_el_servidor():
     dos seguirían diciendo `unknown`."""
     texto = (REPO_ROOT / "mcp" / "nodejs" / "vault-mcp-server.mjs").read_text(encoding="utf-8")
     assert texto.count('"standard-version.json"') == 1, texto.count('"standard-version.json"')
+
+
+@contextlib.contextmanager
+def _ilegible(directorio: Path):
+    """El directorio deja de poder listarse, de verdad, y se restaura al salir.
+
+    Windows: `icacls /deny <usuario>:(RD)`; POSIX: `chmod 000`. Si el sistema
+    no lo permite —root, un FS sin ACL— el test se salta en vez de mentir.
+    """
+    if sys.platform == "win32":
+        usuario = getpass.getuser()
+        subprocess.run(["icacls", str(directorio), "/deny", f"{usuario}:(RD)"],
+                       capture_output=True, check=False)
+        restaurar = lambda: subprocess.run(  # noqa: E731
+            ["icacls", str(directorio), "/remove:d", usuario], capture_output=True, check=False)
+    else:
+        os.chmod(directorio, 0)
+        restaurar = lambda: os.chmod(directorio, 0o755)  # noqa: E731
+    try:
+        try:
+            os.listdir(directorio)
+        except PermissionError:
+            yield
+        else:
+            pytest.skip("no se pudo hacer ilegible el directorio en este sistema")
+    finally:
+        restaurar()
+
+
+def test_un_directorio_ilegible_se_declara_en_el_backup(vault):
+    """AP-51. `collectAllFiles` se tragaba el fallo de `readdir` con
+    `catch (_) {}`: un directorio que no se podía listar desaparecía del backup
+    y el envelope salía con `degraded: []`. Es el mismo arreglo que el backup ya
+    hacía para un fichero ilegible, que no llegaba a los directorios."""
+    cerrado = vault / "07_Knowledge" / "cerrado"
+    cerrado.mkdir(parents=True, exist_ok=True)
+    (cerrado / "dentro.md").write_text("# Dentro\n", encoding="utf-8")
+    with _ilegible(cerrado):
+        env = _llamar(vault, "vault_backup_base64", {"label": "dir-ilegible"})
+    rutas = [d["path"] for d in env["degraded"]]
+    assert "07_Knowledge/cerrado" in rutas, env["degraded"]

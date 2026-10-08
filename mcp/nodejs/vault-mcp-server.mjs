@@ -24,7 +24,7 @@ import { spawn, execSync } from "node:child_process";
 import { readFile, readdir, stat, writeFile, mkdir, rename, rmdir } from "node:fs/promises";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
-import { resolve, basename, dirname, join, sep, isAbsolute } from "node:path";
+import { resolve, basename, dirname, join, sep, isAbsolute, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { deflateSync, inflateSync } from "node:zlib";
 import { createWriteStream, createReadStream } from "node:fs";
@@ -704,7 +704,8 @@ async function jsNativeBackupBase64(args, vaultRoot) {
   const backupDir = join(vaultRoot, "vault-backups");
   await mkdir(backupDir, { recursive: true });
 
-  const files = await collectAllFiles(vaultRoot);
+  const unreadableDirs = [];
+  const files = await collectAllFiles(vaultRoot, unreadableDirs);
   const entries = [];
   // Un fichero que no se puede leer se salta —un backup no puede caerse porque
   // algo esté bloqueado— pero **no en silencio**: `catch (_) {}` convertía un
@@ -712,7 +713,7 @@ async function jsNativeBackupBase64(args, vaultRoot) {
   // fallo posible en la tool cuyo trabajo entero es que no se pierda nada.
   // Es el mismo arreglo que v39.3 hizo en `vault_audit` y `vault_onboard`:
   // saltar sigue siendo correcto, lo que no vale es que el envelope no lo diga.
-  const degraded = [];
+  const degraded = [...unreadableDirs];
   for (const relPath of files) {
     const fullPath = join(vaultRoot, relPath);
     try {
@@ -855,7 +856,10 @@ async function jsNativeRestoreBase64(args, vaultRoot) {
   };
 }
 
-async function collectAllFiles(dir) {
+// `fallos`, si se pasa, recibe cada directorio que no se pudo listar, con la
+// ruta relativa a `base`. Sin él el recorrido seguía igual pero en silencio:
+// `catch (_) {}` hacía desaparecer el directorio entero del backup (AP-51).
+async function collectAllFiles(dir, fallos = null, base = dir) {
   const results = [];
   const SKIP = new Set([".git", "node_modules", "__pycache__", ".history", ".locks", "vault-backups", ".vault-fix-backup"]);
   try {
@@ -864,13 +868,16 @@ async function collectAllFiles(dir) {
       if (e.name.startsWith(".") || SKIP.has(e.name)) continue;
       const full = join(dir, e.name);
       if (e.isDirectory()) {
-        const sub = await collectAllFiles(full);
+        const sub = await collectAllFiles(full, fallos, base);
         results.push(...sub.map(s => join(e.name, s)));
       } else {
         results.push(e.name);
       }
     }
-  } catch (_) {}
+  } catch (e) {
+    if (!fallos) throw e;
+    fallos.push({ path: relative(base, dir).split(sep).join("/") || ".", reason: String(e && e.code || e && e.message || e) });
+  }
   return results;
 }
 
