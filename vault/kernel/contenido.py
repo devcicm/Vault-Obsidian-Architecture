@@ -205,3 +205,15 @@ def falta_de_responsable(fm, regimen: str) -> str:
         return (f"el responsable es el mismo agente que la escribió ({agente}): "
                 "una decisión cerrada la responde una persona")
     return ""
+
+
+def meta_adr() -> dict:
+    """El frontmatter con que se propone escribir un ADR (AP-07, AP-64).
+
+    Nace en `draft`: quien lo redacta —persona o agente— no lo aprueba al
+    escribirlo. Al cerrarlo se añade `responsable:` con la persona que responde
+    de su porqué. La plantilla no lo rellena: un valor de relleno pasaría AP-64
+    sin que nadie respondiera de nada.
+    """
+    return {"type": "adr", "status": "draft"}
+

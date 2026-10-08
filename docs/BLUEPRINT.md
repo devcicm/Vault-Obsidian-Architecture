@@ -67,7 +67,7 @@ regenera.*
 
 *Registros: `vault_norms.NORM_CATALOG` + `vault_gate.PUERTAS` + `tests/`*
 
-69 de 78 normas tienen puerta o test que las nombre.
+70 de 79 normas tienen puerta o test que las nombre.
 **Es la única capa con baseline**, y por un motivo concreto: las demás se midieron
 en cero el día que se declararon porque sus datos ya existían y solo faltaba
 atarlos. Ésta no. Exigir cero aquí el primer día habría hecho nacer la puerta en
@@ -143,7 +143,8 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-61** — El guard cae con el dato que vino a medir | guard+audit | `excepcion_declarada` | `test_excepcion_declarada.py` |
 | **AP-62** — El consumidor paga el fan-out del productor | guard+audit | `arquitectura`, `recursos` | `test_recursos.py` |
 | **AP-63** — El nombre de un proyecto como texto libre | guard+audit | — | `test_project_registrado.py`, `test_vault_project.py` |
-| **AP-64** — Decisión cerrada sin responsable | audit | `framework` | `test_ap64_responsable.py` |
+| **AP-64** — Decisión cerrada sin responsable | audit | `framework` | `test_ap64_responsable.py`, `test_iso42005_impacto.py` |
+| **AP-65** — Decisión de IA de impacto alto sin evaluación de impacto | audit | `framework` | `test_iso42005_impacto.py` |
 | **PAT-6** — Semantic graph enrichment — enriquecimiento periodico del grafo | recommended | — | — |
 | **SP-01** — Delete protocol — change_log obligatorio antes de eliminar | audit | `framework` | `test_vault_norms.py` |
 | **SP-02** — Forward-link verification — buscar antes de linkar | guard | — | `test_normas_enlaces_sin_solape.py`, `test_vault_norms.py` |

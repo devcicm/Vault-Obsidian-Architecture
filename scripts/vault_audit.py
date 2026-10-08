@@ -103,7 +103,7 @@ from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
 # era la segunda declaración que envejece en silencio.
 from vault.kernel.indices_structural import RESERVED_INDEX_NAMES as _STRUCTURAL_NAMES  # noqa: E402
 from vault.kernel import construir  # noqa: E402
-from vault.kernel.contenido import plantilla_adr  # noqa: E402
+from vault.kernel.contenido import meta_adr, plantilla_adr  # noqa: E402
 from vault.kernel.frontmatter_parsing import FrontmatterParseError, parse_frontmatter_with_body  # noqa: E402
 from vault_contrato_nota import clase_de_nota, faltantes as _faltantes_del_contrato  # noqa: E402
 
@@ -1653,11 +1653,17 @@ def _get_roadmap_for_populated_vault(content_notes: List[Path]) -> List[Dict[str
             {
                 "priority": "high",
                 "category": "guidance",
-                "description": "Registra tus decisiones arquitectónicas (ADRs). Mínimo 2 para mostrar el proceso.",
-                # La plantilla sale del dueño de AP-07: escrita aquí a mano,
-                # proponía «Decision» y el criterio pedía otra lista (v41.3).
+                "description": (
+                    "Registra tus decisiones arquitectónicas (ADRs). Mínimo 2 para mostrar el proceso. "
+                    "Nacen en `draft`; al aprobarlas, añade `responsable:` con la persona que "
+                    "responde de su porqué (AP-64)."
+                ),
+                # Plantilla y frontmatter salen del dueño de AP-07/AP-64: escrita
+                # aquí a mano, proponía «Decision» y el criterio pedía otra lista
+                # (v41.3), y nada decía quién responde de la decisión.
                 "command": "python scripts/vault_write.py --folder 03_Decisions --title 'ADR-001 ...' --content '"
-                + plantilla_adr().rstrip("\n").replace("\n", "\\n") + "'",
+                + plantilla_adr().rstrip("\n").replace("\n", "\\n") + "' --meta '"
+                + json.dumps(meta_adr()) + "'",
             }
         )
     if by_folder.get("08_Runbooks", 0) < 1:

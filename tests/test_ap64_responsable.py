@@ -87,3 +87,20 @@ def test_ap64_catalogo_y_contrato():
         assert vecina in ap64["distinguido_de"]
         assert "AP-64" in norma_por_codigo(vecina)["distinguido_de"]
     assert CAMPOS["responsable"]["norma"] == "AP-64"
+
+
+def test_ap64_la_plantilla_propone_draft_y_la_guia_nombra_al_responsable():
+    """La guía de vault_audit propone el ADR en `draft` —quien lo redacta no lo
+    aprueba al escribirlo— y dice qué falta al aprobarlo. La plantilla no
+    rellena `responsable`: un valor de relleno pasaría AP-64 sin nadie detrás."""
+    import json
+    import vault_audit
+    from vault.kernel.contenido import TIPOS_ADR, falta_de_responsable, meta_adr
+    meta = meta_adr()
+    assert meta["type"] in TIPOS_ADR and meta["status"] == "draft"
+    assert "responsable" not in meta
+    assert falta_de_responsable(meta, "abierto") == ""
+    (adr,) = [a for a in vault_audit._get_roadmap_for_populated_vault([])
+              if "03_Decisions" in a["command"]]
+    assert "responsable" in adr["description"] and "AP-64" in adr["description"]
+    assert "--meta '" + json.dumps(meta) + "'" in adr["command"]

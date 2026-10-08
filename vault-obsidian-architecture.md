@@ -6837,7 +6837,9 @@ la norma no lleva su propia lista de estados.
 **Prevención.** Al cerrar una decisión, escribir `responsable:` con la persona que responde
 de ella. Es un campo opcional del contrato v41, junto a `revisado_en:` (AP-08). Un agente
 puede redactar el ADR y dejarlo en `draft`; aprobarlo con su propio nombre como responsable
-es lo que la norma marca.
+es lo que la norma marca. La guía de `vault_audit` propone el ADR con la plantilla y el
+frontmatter del dueño (`plantilla_adr()`, `meta_adr()`): nace en `draft` y sin `responsable`
+de relleno, que pasaría la norma sin que nadie respondiera de nada.
 
 ```yaml
 type: adr

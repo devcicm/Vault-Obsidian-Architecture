@@ -305,7 +305,8 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "prevention": (
             "Escribir el ADR desde `vault.kernel.contenido.plantilla_adr()` "
             "(Contexto, Opciones, Decisión, Consecuencias), la misma que propone "
-            "la guía de vault_audit."
+            "la guía de vault_audit, con el frontmatter de `meta_adr()` "
+            "(`type: adr`, `status: draft`)."
         ),
         "tools_enforcing": [],
         "tools_detecting": ["vault_norms"],
@@ -3285,7 +3286,9 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "Al cerrar una decisión, escribir `responsable:` con la persona que "
             "responde de ella (campo opcional del contrato v41). Un agente "
             "puede redactar el ADR y dejarlo en `draft` o `review`; aprobarlo "
-            "con su propio nombre como responsable es lo que la norma marca.\n\n"
+            "con su propio nombre como responsable es lo que la norma marca. "
+            "La guía de vault_audit propone el ADR con `meta_adr()` —en `draft`, "
+            "sin `responsable` de relleno, que pasaría la norma sin nadie detrás—.\n\n"
             "Límites declarados: la norma no puede saber si el valor de "
             "`responsable` es de verdad una persona —solo que no es el agente "
             "que la escribió—, y solo mira los ADR de `03_Decisions/`; las "
