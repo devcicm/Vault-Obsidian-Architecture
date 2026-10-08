@@ -2016,7 +2016,24 @@ class TraceLog {
   static async _appendJson(entry, path) {
     try {
       let entries = [];
-      try { entries = JSON.parse(await readFile(path, "utf-8")); } catch (_) {}
+      // AP-51: «no hay traza» y «no se pudo leer» no son lo mismo. Con
+      // `catch (_) {}` una traza corrupta se tomaba por vacía y la escritura
+      // de abajo la sobrescribía con una sola entrada: el historial de
+      // mutaciones se perdía sin aviso. Ausente es legítimo; ilegible se
+      // aparta con otro nombre —nada se borra— y se empieza una nueva. Si ni
+      // apartarla se puede, el `catch` de fuera avisa y no se escribe nada.
+      try {
+        entries = JSON.parse(await readFile(path, "utf-8"));
+        if (!Array.isArray(entries)) throw new Error("la traza no es una lista");
+      } catch (e) {
+        if (e && e.code !== "ENOENT") {
+          const aparte = `${path}.corrupt-${Date.now()}`;
+          await rename(path, aparte);
+          log("warn", "Trace JSON log ilegible: se conserva aparte y se empieza otra",
+              { aparte: basename(aparte), error: String(e && e.message || e) });
+        }
+        entries = [];
+      }
       entries.push(entry);
       if (entries.length > 1000) entries = entries.slice(-500);
       await writeFile(path, JSON.stringify(entries, null, 2));

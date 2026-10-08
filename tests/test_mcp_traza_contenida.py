@@ -83,3 +83,22 @@ def test_sin_00_system_no_se_siembra(tmp_path):
     finally:
         s.cerrar()
     assert not (vacio / "00_System").exists()
+
+
+def test_una_traza_ilegible_se_conserva_y_no_se_sobrescribe(vault):
+    """AP-51 en el `.mjs`. Medido el 2026-10-08: `_appendJson` leía con
+    `catch (_) {}`, así que una traza corrupta se tomaba por «no hay entradas»
+    y la siguiente llamada la sobrescribía con una sola. El historial de
+    mutaciones del vault se perdía sin un aviso. Nada se borra: la ilegible se
+    aparta con otro nombre y se empieza una nueva."""
+    traza = vault / "00_System" / TRAZA
+    traza.write_text("[{\"tool\": \"anterior\"", encoding="utf-8")
+    s = SesionMCP(vault)
+    try:
+        s.llamar("vault_health", {})
+    finally:
+        s.cerrar()
+    apartadas = list((vault / "00_System").glob(TRAZA + ".corrupt-*"))
+    assert len(apartadas) == 1, "la traza ilegible no se conservó"
+    assert apartadas[0].read_text(encoding="utf-8") == "[{\"tool\": \"anterior\""
+    assert [e["tool"] for e in json.loads(traza.read_text(encoding="utf-8"))] == ["vault_health"]
