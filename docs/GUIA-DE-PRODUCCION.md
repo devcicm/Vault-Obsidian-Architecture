@@ -50,12 +50,15 @@ está escrita como registro ejecutable y no como recordatorio.
 | `wheel_instalada_funciona` | ¿Funciona la wheel instalada en un venv limpio fuera del repo? | ✅ cubierta | tests/run_product_gates.py (clean_install + memory_e2e) + job 'product-gates' en vault-ci.yml |
 | `madurez_declarada` | ¿El grado de madurez publicado lo sostiene este registro? | ✅ cubierta | vault_produccion._madurez_coherente + tests/test_produccion.py |
 | `wheel_sin_gobernanza` | ¿Lo que instalo es el producto, o también las herramientas que miden este repo? | ✅ cubierta | empaquetado/construir.py + vault_servicio --check (invariante 11) + tests/clean_install_gate.py |
+| `memoria_para_agentes` | ¿Un agente LLM que solo ve el MCP consigue orientarse, escribir, recordar, recuperarse y borrar? | ✅ cubierta | tests/banco_agente.py (sesión MCP con VAULT_MCP_PERFIL=agente) + tests/test_banco_agente.py |
 
 ## Los huecos, escritos
 
 **`sistemas_operativos` — cubierta con hueco.** La CI declara la suite y las product gates en ubuntu, pero esta rama no ha pasado por la CI. El paseo de INSTALACIÓN fuera del repo se ha hecho de forma recurrente en Windows y una vez a mano en Linux (2026-10-04, wheel 40.35 en python:3.12-slim con usuario sin privilegios: 16/16); en Linux no lo repite ninguna máquina. macOS no lo toca nadie. Las instrucciones de instalación están inlined en README.md.
 
 **`lo_publicado_es_solo_el_estandar` — cubierta con hueco.** Mide el índice de HOY. Lo que ya esté en un commit anterior del historial no lo ve nadie: para eso haría falta recorrer todos los árboles, y este repo nunca ha versionado esos directorios.
+
+**`memoria_para_agentes` — cubierta con hueco.** La suite ejerce las cinco tareas sobre un vault que crea el propio repo. El recuerdo sobre notas preexistentes de un vault ajeno (--copiar-de, regla 7) es una medida que se ejecuta a mano sobre copias y se reporta; no la repite la CI. Sin Node en el PATH el test se salta, y esta rama no ha pasado por la CI.
 
 ## Qué NO demuestra el verde
 

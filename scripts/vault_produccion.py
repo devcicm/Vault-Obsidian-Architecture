@@ -248,6 +248,19 @@ def _wheel_probada_sin_la_fuente() -> bool:
     return True
 
 
+def _banco_de_agente() -> bool:
+    """El banco habla con el servidor MCP con el perfil `agente` y la suite lo
+    ejecuta tarea por tarea. Que pase lo dice su ejecución; aquí se mide que el
+    ejecutor exista y ejerza lo que la promesa dice, no un servidor cualquiera."""
+    banco = RAIZ / "tests" / "banco_agente.py"
+    test = RAIZ / "tests" / "test_banco_agente.py"
+    if not banco.is_file() or not test.is_file():
+        return False
+    texto = banco.read_text(encoding="utf-8")
+    return ('"VAULT_MCP_PERFIL": PERFIL' in texto
+            and "banco.correr(" in test.read_text(encoding="utf-8"))
+
+
 #: El registro. **Fuente única**: la guía de `docs/` se deriva de aquí y se
 #: regenera con `--guia`; lo que se escriba a mano allí se pierde.
 #:
@@ -495,6 +508,31 @@ PREGUNTAS: List[Dict[str, Any]] = [
             "tests/clean_install_gate.py"
         ),
         "estado": "cubierta",
+    },
+    {
+        "id": "memoria_para_agentes",
+        "pregunta": "¿Un agente LLM que solo ve el MCP consigue orientarse, escribir, recordar, recuperarse y borrar?",
+        "promesa": "El servicio: memoria documental persistente, auditable y gobernada para un agente",
+        "por_que": (
+            "Las demás filas miden la instalación; ninguna, el servicio. "
+            "Medido el 2026-10-07 al construir el banco con el perfil agente: "
+            "la pista de INVALID_FOLDER no nombraba ninguna sección, una "
+            "sección inferida por una palabra escondía la nota pedida por su "
+            "título (recuerdo de 0,84 y 0,88 sobre copias de /vcloud y /ans), "
+            "validate mandaba a reparar frontmatter por carpetas ausentes y "
+            "reindex --check salía en rojo sin error_code. Todo verde en las "
+            "puertas: las puertas miran el repo, no al agente."
+        ),
+        "ejerce": _banco_de_agente,
+        "quien": "tests/banco_agente.py (sesión MCP con VAULT_MCP_PERFIL=agente) + tests/test_banco_agente.py",
+        "estado": "cubierta",
+        "hueco_conocido": (
+            "La suite ejerce las cinco tareas sobre un vault que crea el propio "
+            "repo. El recuerdo sobre notas preexistentes de un vault ajeno "
+            "(--copiar-de, regla 7) es una medida que se ejecuta a mano sobre "
+            "copias y se reporta; no la repite la CI. Sin Node en el PATH el "
+            "test se salta, y esta rama no ha pasado por la CI."
+        ),
     },
 ]
 

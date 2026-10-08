@@ -298,3 +298,23 @@ def test_la_wheel_probada_exige_venv_y_fuente_retirada(tmp_path, monkeypatch):
     monkeypatch.setattr(vp, "RAIZ", tmp_path)
     # Declarar la ausencia en el informe no es retirar la fuente.
     assert not vp._wheel_probada_sin_la_fuente()
+
+
+def test_memoria_para_agentes_exige_el_perfil_y_la_ejecucion(tmp_path, monkeypatch):
+    """Un banco que hablara con el servidor entero, o un test que no lo
+    ejecutara, no ejerce la promesa del agente: el predicado tiene que caer."""
+    (tmp_path / "tests").mkdir()
+    banco = (vp.RAIZ / "tests" / "banco_agente.py").read_text(encoding="utf-8")
+    test = (vp.RAIZ / "tests" / "test_banco_agente.py").read_text(encoding="utf-8")
+    monkeypatch.setattr(vp, "RAIZ", tmp_path)
+
+    def con(b, t):
+        (tmp_path / "tests" / "banco_agente.py").write_text(b, encoding="utf-8")
+        (tmp_path / "tests" / "test_banco_agente.py").write_text(t, encoding="utf-8")
+        return vp._banco_de_agente()
+
+    assert con(banco, test)
+    assert not con(banco.replace('"VAULT_MCP_PERFIL": PERFIL', "{}"), test)
+    assert not con(banco, test.replace("banco.correr(", "dict("))
+    (tmp_path / "tests" / "test_banco_agente.py").unlink()
+    assert not vp._banco_de_agente()
