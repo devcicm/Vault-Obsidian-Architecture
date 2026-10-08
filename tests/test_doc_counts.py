@@ -219,12 +219,16 @@ def test_el_tamano_del_vocabulario_de_status_se_vigila(tmp_path, monkeypatch):
 
 
 def test_el_desglose_de_normas_por_familia_se_vigila(tmp_path, monkeypatch):
-    """`README.md` decía «74 normas: 65 antipatrones (AP-01–AP-62), 6 patrones
-    (PAT-1–PAT-6), 3 SP, 3 CN» con 79 en el catálogo (v41.3).
+    """`README.md` decía «74 normas: 65 antipatrones», con el rango de la
+    familia acabando en 62, «3 SP, 3 CN» y 79 normas en el catálogo (v41.3).
 
     El patrón de antipatrones lo vigilaba y `--fix` lo subió a 65; el total con
     dos puntos, el rango y las dos últimas familias no tenían patrón, así que la
     frase quedó a medio derivar: una cifra corregida al lado de cuatro que no.
+
+    Los códigos de la frase se arman con `format`: escritos literales en el
+    cuerpo de un test, la capa 4 del plano los cuenta como cobertura de esas
+    normas, y este test no prueba ninguna de ellas.
     """
     from vault_norms_catalog import NORM_CATALOG
 
@@ -235,9 +239,8 @@ def test_el_desglose_de_normas_por_familia_se_vigila(tmp_path, monkeypatch):
         return max(int(c.split("-")[1]) for c in familia(p))
 
     doc = tmp_path / "FAKE.md"
-    doc.write_bytes(
-        "- 74 normas: 65 antipatrones (AP-01–AP-62), 5 patrones (PAT-1–PAT-5), 3 SP, 3 CN\n"
-        .encode("utf-8"))
+    linea = "- 74 normas: 65 antipatrones ({a}-01–{a}-62), 5 patrones ({p}-1–{p}-5), 3 SP, 3 CN\n"
+    doc.write_bytes(linea.format(a="AP", p="PAT").encode("utf-8"))
     monkeypatch.setattr(vdc, "REPO_ROOT", tmp_path)
 
     r = vdc.scan(docs=["FAKE.md"], include_slow=False)
