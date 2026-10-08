@@ -264,9 +264,11 @@ Notas:
 
     parser.add_argument("--project", type=proyecto_registrado("vault_project_status"), required=True)
 
-    parser.add_argument("--status", required=True, choices=VALID_STATES)
+    parser.add_argument("--status", required=True, choices=VALID_STATES,
+                        help="Nuevo estado del proyecto")
 
-    parser.add_argument("--summary", required=True)
+    parser.add_argument("--summary", required=True,
+                        help="Resumen del cambio; va a status.md y a una entrada de changelog.md")
 
     parser.add_argument("--files", nargs="*", help="Modified files")
 

@@ -299,8 +299,10 @@ def serve(host: str, port: int) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Vault token usage HTTP service", allow_abbrev=False)
-    parser.add_argument("--host", default=DEFAULT_HOST)
-    parser.add_argument("--port", type=int, default=DEFAULT_PORT)
+    parser.add_argument("--host", default=DEFAULT_HOST,
+                        help=f"Interfaz de escucha (default: {DEFAULT_HOST})")
+    parser.add_argument("--port", type=int, default=DEFAULT_PORT,
+                        help=f"Puerto de escucha (default: {DEFAULT_PORT})")
     args = parser.parse_args()
     return serve(args.host, args.port)
 

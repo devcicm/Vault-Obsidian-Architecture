@@ -69,6 +69,19 @@ def test_la_descripcion_es_la_ayuda_de_la_cli(nombre, script, param):
     declarada = (TOOLS_CATALOG[nombre].get("params", {}).get(param) or {}).get("description")
     if declarada:
         return  # la escrita a mano gana a propósito (reconciled_params)
-    r = subprocess.run([sys.executable, str(SCRIPTS / script), "--help"],
-                       capture_output=True, text=True, encoding="utf-8", timeout=120)
-    assert _sin_blancos(descripcion) in _sin_blancos(r.stdout), (nombre, param, descripcion)
+    assert _sin_blancos(descripcion) in _sin_blancos(_ayuda_de_la_cli(script)), (
+        nombre, param, descripcion)
+
+
+def _ayuda_de_la_cli(script: str) -> str:
+    """El `--help` del script y, si tiene subcomandos, el de cada uno: la
+    ayuda de `vault_token_counter serve --port` solo sale en el segundo."""
+    def _help(*args):
+        return subprocess.run([sys.executable, str(SCRIPTS / script), *args, "--help"],
+                              capture_output=True, text=True, encoding="utf-8",
+                              timeout=120).stdout
+
+    raiz = _help()
+    m = re.search(r"^usage:[^{]*\{([\w,-]+)\}", raiz, re.MULTILINE)
+    subcomandos = m.group(1).split(",") if m else []
+    return raiz + "".join(_help(sub) for sub in subcomandos)

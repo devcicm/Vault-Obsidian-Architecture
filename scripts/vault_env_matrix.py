@@ -308,16 +308,26 @@ Ejemplos:
         allow_abbrev=False,
     )
     parser.add_argument("--project", type=proyecto_registrado("vault_env_matrix"), required=True)
-    parser.add_argument("--env", required=True, choices=list(ENV_PROFILES.keys()))
-    parser.add_argument("--services", default="[]")
-    parser.add_argument("--features", default="{}")
-    parser.add_argument("--env_vars", default="[]")
-    parser.add_argument("--runtime", default="")
-    parser.add_argument("--region", default="")
-    parser.add_argument("--scale", default="")
-    parser.add_argument("--deploy_procedure", default="")
-    parser.add_argument("--rollback_procedure", default="")
-    parser.add_argument("--agent", default="claude")
+    parser.add_argument("--env", required=True, choices=list(ENV_PROFILES.keys()),
+                        help="Entorno documentado; fija su perfil (sensibilidad CIA, política de datos, escala típica)")
+    parser.add_argument("--services", default="[]",
+                        help="Array JSON de servicios del entorno, p. ej. '[\"api\",\"postgres\"]'")
+    parser.add_argument("--features", default="{}",
+                        help="Objeto JSON de feature flags a true/false, p. ej. '{\"payments\":true}'")
+    parser.add_argument("--env_vars", default="[]",
+                        help="Array JSON de NOMBRES de variables de entorno, nunca sus valores; se agrupan por clase (secret, connection, feature_flag, logging, tuning, config)")
+    parser.add_argument("--runtime", default="",
+                        help="Runtime del entorno, p. ej. 'Node.js 20 LTS'")
+    parser.add_argument("--region", default="",
+                        help="Región o zona, p. ej. 'us-east-1'")
+    parser.add_argument("--scale", default="",
+                        help="Escala del entorno; vacío usa la típica del perfil de --env")
+    parser.add_argument("--deploy_procedure", default="",
+                        help="Procedimiento de despliegue en este entorno (markdown); vacío queda pendiente")
+    parser.add_argument("--rollback_procedure", default="",
+                        help="Cómo revertir un despliegue en este entorno (markdown); vacío queda pendiente")
+    parser.add_argument("--agent", default="claude",
+                        help="Agente que firma la nota (default: claude)")
 
     args = parser.parse_args()
     try:

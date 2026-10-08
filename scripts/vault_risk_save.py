@@ -307,17 +307,27 @@ Ejemplos:
     parser.add_argument("--title", required=True)
     parser.add_argument(
         "--risk_type", default="operational", choices=list(RISK_TYPES.keys())
-    )
-    parser.add_argument("--likelihood", type=int, default=3, choices=[1, 2, 3, 4, 5])
+    ,
+                        help="Clase de riesgo (default: operational)")
+    parser.add_argument("--likelihood", type=int, default=3, choices=[1, 2, 3, 4, 5],
+                        help="Probabilidad 1–5 (default: 3); score = probabilidad × impacto")
     parser.add_argument("--impact", type=int, default=3, choices=[1, 2, 3, 4, 5])
-    parser.add_argument("--threat", default="")
-    parser.add_argument("--vulnerability", default="")
-    parser.add_argument("--affected_assets", default="[]")
-    parser.add_argument("--treatment", default="mitigate", choices=VALID_TREATMENTS)
-    parser.add_argument("--controls", default="[]")
-    parser.add_argument("--status", default="open", choices=VALID_STATUS)
-    parser.add_argument("--owner", default="")
-    parser.add_argument("--agent", default="claude")
+    parser.add_argument("--threat", default="",
+                        help="Amenaza: evento o agente que puede explotar la vulnerabilidad")
+    parser.add_argument("--vulnerability", default="",
+                        help="Debilidad que permite que la amenaza se materialice")
+    parser.add_argument("--affected_assets", default="[]",
+                        help="Array JSON de activos afectados")
+    parser.add_argument("--treatment", default="mitigate", choices=VALID_TREATMENTS,
+                        help="Tratamiento del riesgo (default: mitigate)")
+    parser.add_argument("--controls", default="[]",
+                        help="Array JSON de controles; cada uno sale como casilla por marcar")
+    parser.add_argument("--status", default="open", choices=VALID_STATUS,
+                        help="Estado del riesgo (default: open)")
+    parser.add_argument("--owner", default="",
+                        help="Propietario del riesgo; vacío lo deja sin asignar")
+    parser.add_argument("--agent", default="claude",
+                        help="Agente que firma la nota (default: claude)")
 
     args = parser.parse_args()
     try:

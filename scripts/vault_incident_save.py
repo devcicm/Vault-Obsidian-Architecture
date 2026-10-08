@@ -299,20 +299,30 @@ Ejemplos:
 """,
         allow_abbrev=False,
     )
-    parser.add_argument("--project", type=proyecto_registrado("vault_incident_save"), required=True)
+    parser.add_argument("--project", type=proyecto_registrado("vault_incident_save"), required=True,
+                        help="Proyecto registrado al que pertenece el incidente")
     parser.add_argument("--title", required=True)
     parser.add_argument("--severity", default="P3", choices=_opciones("prioridad"))
-    parser.add_argument("--status", default="detected", choices=VALID_STATUS)
-    parser.add_argument("--detected_at")
-    parser.add_argument("--resolved_at")
-    parser.add_argument("--impact", default="")
-    parser.add_argument("--root_cause", default="")
+    parser.add_argument("--status", default="detected", choices=VALID_STATUS,
+                        help="Fase del ciclo de vida del incidente (default: detected)")
+    parser.add_argument("--detected_at",
+                        help="Momento de detección en ISO 8601, p. ej. 2026-06-01T14:30:00Z; por defecto, ahora. Su fecha encabeza el nombre de la nota")
+    parser.add_argument("--resolved_at",
+                        help="Momento de resolución en ISO 8601; con --detected_at calcula el MTTR. Vacío deja el incidente en curso")
+    parser.add_argument("--impact", default="",
+                        help="Impacto en usuarios y negocio (markdown); vacío queda pendiente")
+    parser.add_argument("--root_cause", default="",
+                        help="Causa raíz (markdown); vacío queda pendiente de análisis")
     parser.add_argument("--timeline", default="[]")
     parser.add_argument("--action_items", default="[]")
-    parser.add_argument("--affected_services", default="[]")
-    parser.add_argument("--rto", default="")
-    parser.add_argument("--rpo", default="")
-    parser.add_argument("--agent", default="claude")
+    parser.add_argument("--affected_services", default="[]",
+                        help="Array JSON de servicios afectados, p. ej. '[\"checkout\",\"api\"]'")
+    parser.add_argument("--rto", default="",
+                        help="RTO objetivo; vacío usa el objetivo de resolución de la severidad")
+    parser.add_argument("--rpo", default="",
+                        help="RPO objetivo, p. ej. '15 min'")
+    parser.add_argument("--agent", default="claude",
+                        help="Agente que firma la nota (default: claude)")
 
     args = parser.parse_args()
     try:

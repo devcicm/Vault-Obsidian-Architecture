@@ -316,25 +316,37 @@ Ejemplos:
         allow_abbrev=False,
     )
     parser.add_argument("--project", type=proyecto_registrado("vault_privacy_save"), required=True)
-    parser.add_argument("--title", required=True)
-    parser.add_argument("--purpose", required=True)
+    parser.add_argument("--title", required=True,
+                        help="Nombre de la actividad de tratamiento; da nombre a la nota")
+    parser.add_argument("--purpose", required=True,
+                        help="Finalidad del tratamiento (GDPR Art. 30)")
     parser.add_argument(
         "--legal_basis", required=True, choices=list(LEGAL_BASES.keys())
-    )
-    parser.add_argument("--pii_categories", default="[]")
-    parser.add_argument("--retention_period", default="")
-    parser.add_argument("--data_subjects", default="[]")
+    ,
+                        help="Base legal del tratamiento (GDPR Art. 6)")
+    parser.add_argument("--pii_categories", default="[]",
+                        help=f"Array JSON de categorías de datos personales; con descripción estándar: {', '.join(PII_CATEGORIES)}")
+    parser.add_argument("--retention_period", default="",
+                        help="Plazo de conservación, p. ej. 'Mientras la cuenta esté activa + 2 años'")
+    parser.add_argument("--data_subjects", default="[]",
+                        help=f"Array JSON de interesados; solo admite: {', '.join(DATA_SUBJECTS)}")
     parser.add_argument("--third_parties", default="[]")
     parser.add_argument(
         "--transfers_outside_eu", type=lambda x: x.lower() == "true", default=False
-    )
+    ,
+                        help="'true' si hay transferencias fuera de la UE/EEE (default: false)")
     parser.add_argument(
         "--dpia_required", type=lambda x: x.lower() == "true", default=None
-    )
-    parser.add_argument("--controller", default="")
-    parser.add_argument("--processor", default="")
-    parser.add_argument("--status", default="active", choices=VALID_STATUS)
-    parser.add_argument("--agent", default="claude")
+    ,
+                        help="'true' o 'false'; sin él se decide por las categorías y los interesados (GDPR Art. 35)")
+    parser.add_argument("--controller", default="",
+                        help="Responsable del tratamiento; vacío queda pendiente")
+    parser.add_argument("--processor", default="",
+                        help="Encargado del tratamiento; vacío es el mismo responsable")
+    parser.add_argument("--status", default="active", choices=VALID_STATUS,
+                        help="Estado de la actividad (default: active)")
+    parser.add_argument("--agent", default="claude",
+                        help="Agente que firma la nota (default: claude)")
 
     args = parser.parse_args()
     try:

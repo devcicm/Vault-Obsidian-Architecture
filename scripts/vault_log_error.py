@@ -411,13 +411,15 @@ Notas:
 
     parser.add_argument("--description", required=True)
 
-    parser.add_argument("--context", default="")
+    parser.add_argument("--context", default="",
+                        help="Contexto del evento (markdown); se añade como sección «Contexto»")
 
     parser.add_argument("--severity", default="medium", choices=SEVERITIES)
 
     parser.add_argument("--project", type=proyecto_registrado("vault_log_error"), default="")
 
-    parser.add_argument("--mitigation", default="")
+    parser.add_argument("--mitigation", default="",
+                        help="Mitigación aplicada o propuesta (markdown); se añade como sección «Mitigación»")
 
     parser.add_argument("--meta", help="Additional metadata as JSON")
 

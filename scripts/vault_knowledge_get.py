@@ -25,8 +25,10 @@ def vault_knowledge_get(query: str, category: Optional[str] = None,
 def main() -> int:
     parser = argparse.ArgumentParser(description="Vault Knowledge Get Tool", allow_abbrev=False)
     parser.add_argument("--query", required=True)
-    parser.add_argument("--category")
-    parser.add_argument("--project", type=proyecto_registrado("vault_knowledge_get"))
+    parser.add_argument("--category",
+                        help="Solo notas cuya category: coincida (sin distinguir mayúsculas)")
+    parser.add_argument("--project", type=proyecto_registrado("vault_knowledge_get"),
+                        help="Solo notas del proyecto registrado; acepta su nombre o un alias")
     parser.add_argument("--limit", type=int, default=10)
     args = parser.parse_args()
     result = recuperar_conocimiento(get_vault_root(), args.query, args.category,

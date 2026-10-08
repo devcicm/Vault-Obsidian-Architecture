@@ -1803,7 +1803,7 @@
           },
           "env": {
             "type": "string",
-            "description": "",
+            "description": "Entorno documentado; fija su perfil (sensibilidad CIA, política de datos, escala típica)",
             "enum": [
               "dev",
               "staging",
@@ -1814,39 +1814,39 @@
           },
           "services": {
             "type": "string",
-            "description": ""
+            "description": "Array JSON de servicios del entorno, p. ej. '[\"api\",\"postgres\"]'"
           },
           "features": {
             "type": "string",
-            "description": ""
+            "description": "Objeto JSON de feature flags a true/false, p. ej. '{\"payments\":true}'"
           },
           "env_vars": {
             "type": "string",
-            "description": ""
+            "description": "Array JSON de NOMBRES de variables de entorno, nunca sus valores; se agrupan por clase (secret, connection, feature_flag, logging, tuning, config)"
           },
           "runtime": {
             "type": "string",
-            "description": ""
+            "description": "Runtime del entorno, p. ej. 'Node.js 20 LTS'"
           },
           "region": {
             "type": "string",
-            "description": ""
+            "description": "Región o zona, p. ej. 'us-east-1'"
           },
           "scale": {
             "type": "string",
-            "description": ""
+            "description": "Escala del entorno; vacío usa la típica del perfil de --env"
           },
           "deploy_procedure": {
             "type": "string",
-            "description": ""
+            "description": "Procedimiento de despliegue en este entorno (markdown); vacío queda pendiente"
           },
           "rollback_procedure": {
             "type": "string",
-            "description": ""
+            "description": "Cómo revertir un despliegue en este entorno (markdown); vacío queda pendiente"
           },
           "agent": {
             "type": "string",
-            "description": ""
+            "description": "Agente que firma la nota (default: claude)"
           }
         },
         "required": [
@@ -2839,7 +2839,7 @@
         "properties": {
           "project": {
             "type": "string",
-            "description": ""
+            "description": "Proyecto registrado al que pertenece el incidente"
           },
           "title": {
             "type": "string",
@@ -2857,7 +2857,7 @@
           },
           "status": {
             "type": "string",
-            "description": "",
+            "description": "Fase del ciclo de vida del incidente (default: detected)",
             "enum": [
               "detected",
               "investigating",
@@ -2870,19 +2870,19 @@
           },
           "detected_at": {
             "type": "string",
-            "description": ""
+            "description": "Momento de detección en ISO 8601, p. ej. 2026-06-01T14:30:00Z; por defecto, ahora. Su fecha encabeza el nombre de la nota"
           },
           "resolved_at": {
             "type": "string",
-            "description": ""
+            "description": "Momento de resolución en ISO 8601; con --detected_at calcula el MTTR. Vacío deja el incidente en curso"
           },
           "impact": {
             "type": "string",
-            "description": ""
+            "description": "Impacto en usuarios y negocio (markdown); vacío queda pendiente"
           },
           "root_cause": {
             "type": "string",
-            "description": ""
+            "description": "Causa raíz (markdown); vacío queda pendiente de análisis"
           },
           "timeline": {
             "type": "string",
@@ -2894,19 +2894,19 @@
           },
           "affected_services": {
             "type": "string",
-            "description": ""
+            "description": "Array JSON de servicios afectados, p. ej. '[\"checkout\",\"api\"]'"
           },
           "rto": {
             "type": "string",
-            "description": ""
+            "description": "RTO objetivo; vacío usa el objetivo de resolución de la severidad"
           },
           "rpo": {
             "type": "string",
-            "description": ""
+            "description": "RPO objetivo, p. ej. '15 min'"
           },
           "agent": {
             "type": "string",
-            "description": ""
+            "description": "Agente que firma la nota (default: claude)"
           }
         },
         "required": [
@@ -3270,11 +3270,11 @@
           },
           "category": {
             "type": "string",
-            "description": ""
+            "description": "Solo notas cuya category: coincida (sin distinguir mayúsculas)"
           },
           "project": {
             "type": "string",
-            "description": ""
+            "description": "Solo notas del proyecto registrado; acepta su nombre o un alias"
           },
           "limit": {
             "type": "integer",
@@ -3327,7 +3327,7 @@
           },
           "project": {
             "type": "string",
-            "description": ""
+            "description": "Proyecto registrado de la nota; una nota con el mismo título y otro proyecto da IDENTITY_CONFLICT"
           },
           "tags": {
             "type": "array",
@@ -3338,7 +3338,7 @@
           },
           "related": {
             "type": "array",
-            "description": "",
+            "description": "Notas relacionadas: van a related: y como wikilinks en «Relacionado»",
             "items": {
               "type": "string"
             }
@@ -3440,7 +3440,7 @@
           },
           "context": {
             "type": "string",
-            "description": ""
+            "description": "Contexto del evento (markdown); se añade como sección «Contexto»"
           },
           "severity": {
             "type": "string",
@@ -3459,7 +3459,7 @@
           },
           "mitigation": {
             "type": "string",
-            "description": ""
+            "description": "Mitigación aplicada o propuesta (markdown); se añade como sección «Mitigación»"
           },
           "meta": {
             "type": "string",
@@ -3843,7 +3843,7 @@
           },
           "ncr_type": {
             "type": "string",
-            "description": "",
+            "description": "Clase de no conformidad (default: process)",
             "enum": [
               "product",
               "process",
@@ -3884,19 +3884,19 @@
           },
           "immediate_action": {
             "type": "string",
-            "description": ""
+            "description": "Acción inmediata de contención (markdown); vacío queda pendiente"
           },
           "corrective_actions": {
             "type": "string",
-            "description": ""
+            "description": "Array JSON de acciones correctivas sobre la causa raíz; cada una sale como casilla por marcar"
           },
           "target_date": {
             "type": "string",
-            "description": ""
+            "description": "Fecha límite para cerrar la NCR, p. ej. 2026-07-15"
           },
           "status": {
             "type": "string",
-            "description": "",
+            "description": "Estado de la NCR (default: open)",
             "enum": [
               "open",
               "in_progress",
@@ -3907,15 +3907,15 @@
           },
           "owner": {
             "type": "string",
-            "description": ""
+            "description": "Responsable de la NCR; vacío la deja sin asignar"
           },
           "related_requirement": {
             "type": "string",
-            "description": ""
+            "description": "Requisito incumplido, p. ej. su id o nota"
           },
           "agent": {
             "type": "string",
-            "description": ""
+            "description": "Agente que firma la nota (default: claude)"
           }
         },
         "required": [
@@ -4477,15 +4477,15 @@
           },
           "title": {
             "type": "string",
-            "description": ""
+            "description": "Nombre de la actividad de tratamiento; da nombre a la nota"
           },
           "purpose": {
             "type": "string",
-            "description": ""
+            "description": "Finalidad del tratamiento (GDPR Art. 30)"
           },
           "legal_basis": {
             "type": "string",
-            "description": "",
+            "description": "Base legal del tratamiento (GDPR Art. 6)",
             "enum": [
               "consent",
               "contract",
@@ -4497,15 +4497,15 @@
           },
           "pii_categories": {
             "type": "string",
-            "description": ""
+            "description": "Array JSON de categorías de datos personales; con descripción estándar: name, email, phone, address, national_id, financial, health, biometric, location, behavioral, device_id, ip_address, credentials, professional, sensitive"
           },
           "retention_period": {
             "type": "string",
-            "description": ""
+            "description": "Plazo de conservación, p. ej. 'Mientras la cuenta esté activa + 2 años'"
           },
           "data_subjects": {
             "type": "string",
-            "description": ""
+            "description": "Array JSON de interesados; solo admite: customers, employees, contractors, minors, prospects, partners"
           },
           "third_parties": {
             "type": "string",
@@ -4513,23 +4513,23 @@
           },
           "transfers_outside_eu": {
             "type": "string",
-            "description": ""
+            "description": "'true' si hay transferencias fuera de la UE/EEE (default: false)"
           },
           "dpia_required": {
             "type": "string",
-            "description": ""
+            "description": "'true' o 'false'; sin él se decide por las categorías y los interesados (GDPR Art. 35)"
           },
           "controller": {
             "type": "string",
-            "description": ""
+            "description": "Responsable del tratamiento; vacío queda pendiente"
           },
           "processor": {
             "type": "string",
-            "description": ""
+            "description": "Encargado del tratamiento; vacío es el mismo responsable"
           },
           "status": {
             "type": "string",
-            "description": "",
+            "description": "Estado de la actividad (default: active)",
             "enum": [
               "active",
               "under_review",
@@ -4539,7 +4539,7 @@
           },
           "agent": {
             "type": "string",
-            "description": ""
+            "description": "Agente que firma la nota (default: claude)"
           }
         },
         "required": [
@@ -4786,7 +4786,7 @@
           },
           "status": {
             "type": "string",
-            "description": "",
+            "description": "Nuevo estado del proyecto",
             "enum": [
               "en_desarrollo",
               "en_revision",
@@ -4798,7 +4798,7 @@
           },
           "summary": {
             "type": "string",
-            "description": ""
+            "description": "Resumen del cambio; va a status.md y a una entrada de changelog.md"
           },
           "files": {
             "type": "array",
@@ -5372,7 +5372,7 @@
           },
           "type": {
             "type": "string",
-            "description": "",
+            "description": "Tipo de release (default: minor)",
             "enum": [
               "major",
               "minor",
@@ -5383,7 +5383,7 @@
           },
           "status": {
             "type": "string",
-            "description": "",
+            "description": "Estado del release (default: planned)",
             "enum": [
               "planned",
               "in_progress",
@@ -5398,31 +5398,31 @@
           },
           "deploy_steps": {
             "type": "string",
-            "description": ""
+            "description": "Array JSON de pasos de despliegue, en orden"
           },
           "rollback_steps": {
             "type": "string",
-            "description": ""
+            "description": "Array JSON de pasos para revertir; vacío queda pendiente"
           },
           "smoke_tests": {
             "type": "string",
-            "description": ""
+            "description": "Array JSON de comprobaciones tras el despliegue, p. ej. '[\"GET /health → 200\"]'"
           },
           "breaking_changes": {
             "type": "string",
-            "description": ""
+            "description": "Array JSON de cambios incompatibles; se marcan BREAKING en el changelog"
           },
           "migrations": {
             "type": "string",
-            "description": ""
+            "description": "Array JSON de migraciones requeridas"
           },
           "deploy_at": {
             "type": "string",
-            "description": ""
+            "description": "Momento del despliegue en ISO 8601; por defecto, ahora"
           },
           "agent": {
             "type": "string",
-            "description": ""
+            "description": "Agente que firma la nota (default: claude)"
           }
         },
         "required": [
@@ -5626,7 +5626,7 @@
           },
           "risk_type": {
             "type": "string",
-            "description": "",
+            "description": "Clase de riesgo (default: operational)",
             "enum": [
               "security",
               "operational",
@@ -5638,7 +5638,7 @@
           },
           "likelihood": {
             "type": "integer",
-            "description": "",
+            "description": "Probabilidad 1–5 (default: 3); score = probabilidad × impacto",
             "enum": [
               1,
               2,
@@ -5660,19 +5660,19 @@
           },
           "threat": {
             "type": "string",
-            "description": ""
+            "description": "Amenaza: evento o agente que puede explotar la vulnerabilidad"
           },
           "vulnerability": {
             "type": "string",
-            "description": ""
+            "description": "Debilidad que permite que la amenaza se materialice"
           },
           "affected_assets": {
             "type": "string",
-            "description": ""
+            "description": "Array JSON de activos afectados"
           },
           "treatment": {
             "type": "string",
-            "description": "",
+            "description": "Tratamiento del riesgo (default: mitigate)",
             "enum": [
               "accept",
               "mitigate",
@@ -5682,11 +5682,11 @@
           },
           "controls": {
             "type": "string",
-            "description": ""
+            "description": "Array JSON de controles; cada uno sale como casilla por marcar"
           },
           "status": {
             "type": "string",
-            "description": "",
+            "description": "Estado del riesgo (default: open)",
             "enum": [
               "open",
               "in_treatment",
@@ -5696,11 +5696,11 @@
           },
           "owner": {
             "type": "string",
-            "description": ""
+            "description": "Propietario del riesgo; vacío lo deja sin asignar"
           },
           "agent": {
             "type": "string",
-            "description": ""
+            "description": "Agente que firma la nota (default: claude)"
           }
         },
         "required": [
@@ -6166,11 +6166,11 @@
           },
           "service": {
             "type": "string",
-            "description": ""
+            "description": "Servicio al que aplica el SLO; forma parte del nombre de la nota"
           },
           "slo_type": {
             "type": "string",
-            "description": "",
+            "description": "Tipo de SLI; fija la unidad por defecto y si el objetivo es mínimo o máximo",
             "enum": [
               "availability",
               "latency",
@@ -6187,11 +6187,11 @@
           },
           "unit": {
             "type": "string",
-            "description": ""
+            "description": "Unidad del objetivo, p. ej. ms; vacío usa la de --slo_type"
           },
           "window": {
             "type": "string",
-            "description": "",
+            "description": "Ventana de medición (default: 30d)",
             "enum": [
               "7d",
               "14d",
@@ -6203,7 +6203,7 @@
           },
           "percentile": {
             "type": "string",
-            "description": ""
+            "description": "Percentil del SLI, p. ej. p95"
           },
           "description": {
             "type": "string",
@@ -6211,19 +6211,19 @@
           },
           "alert_threshold": {
             "type": "number",
-            "description": ""
+            "description": "Umbral de alerta; por defecto, el objetivo con un margen según su dirección"
           },
           "data_source": {
             "type": "string",
-            "description": ""
+            "description": "Fuente del SLI: URL de dashboard o consulta de métrica"
           },
           "consequence": {
             "type": "string",
-            "description": ""
+            "description": "Consecuencias contractuales si se incumple (SLA)"
           },
           "agent": {
             "type": "string",
-            "description": ""
+            "description": "Agente que firma la nota (default: claude)"
           }
         },
         "required": [
@@ -6688,15 +6688,15 @@
         "properties": {
           "port": {
             "type": "integer",
-            "description": ""
+            "description": "Puerto del servicio de tokens (default: 8765)"
           },
           "flow-id": {
             "type": "string",
-            "description": ""
+            "description": "Identificador del flujo cuyos tokens se cuentan"
           },
           "operation": {
             "type": "string",
-            "description": ""
+            "description": "Operación del flujo, p. ej. el nombre de la tarea"
           },
           "budget": {
             "type": "string",
@@ -6708,19 +6708,19 @@
           },
           "source": {
             "type": "string",
-            "description": ""
+            "description": "Origen del evento (default: agent)"
           },
           "phase": {
             "type": "string",
-            "description": ""
+            "description": "Fase del flujo en la que ocurre el evento"
           },
           "tool": {
             "type": "string",
-            "description": ""
+            "description": "Tool del evento; agrupa los totales en by_tool"
           },
           "direction": {
             "type": "string",
-            "description": "",
+            "description": "Sentido de los tokens: input, output y tool suman a su total (default: unknown)",
             "enum": [
               "input",
               "output",
@@ -6730,7 +6730,7 @@
           },
           "note": {
             "type": "string",
-            "description": ""
+            "description": "Nota libre sobre el evento"
           },
           "tokens": {
             "type": "integer",
@@ -6767,11 +6767,11 @@
         "properties": {
           "host": {
             "type": "string",
-            "description": ""
+            "description": "Interfaz de escucha (default: 127.0.0.1)"
           },
           "port": {
             "type": "integer",
-            "description": ""
+            "description": "Puerto de escucha (default: 8765)"
           }
         },
         "additionalProperties": false

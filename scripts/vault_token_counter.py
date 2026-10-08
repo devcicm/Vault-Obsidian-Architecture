@@ -249,26 +249,36 @@ Operational rule:
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_start = sub.add_parser("start-service", allow_abbrev=False)
-    p_start.add_argument("--port", type=int, default=DEFAULT_PORT)
+    p_start.add_argument("--port", type=int, default=DEFAULT_PORT,
+                        help=f"Puerto del servicio de tokens (default: {DEFAULT_PORT})")
     sub.add_parser("stop-service", allow_abbrev=False)
     sub.add_parser("status", allow_abbrev=False)
     p_serve = sub.add_parser("serve", allow_abbrev=False)
-    p_serve.add_argument("--port", type=int, default=DEFAULT_PORT)
+    p_serve.add_argument("--port", type=int, default=DEFAULT_PORT,
+                        help=f"Puerto del servicio de tokens (default: {DEFAULT_PORT})")
     sub.add_parser("self-test", allow_abbrev=False)
 
     p_begin = sub.add_parser("begin", allow_abbrev=False)
-    p_begin.add_argument("--flow-id", required=True)
-    p_begin.add_argument("--operation", default="")
+    p_begin.add_argument("--flow-id", required=True,
+                        help="Identificador del flujo cuyos tokens se cuentan")
+    p_begin.add_argument("--operation", default="",
+                        help="Operación del flujo, p. ej. el nombre de la tarea")
     p_begin.add_argument("--budget", help="JSON budget metadata (CLI only: @file:path), e.g. '{\"max_tokens\":100000}'")
 
     p_event = sub.add_parser("event", allow_abbrev=False)
-    p_event.add_argument("--flow-id", required=True)
+    p_event.add_argument("--flow-id", required=True,
+                        help="Identificador del flujo cuyos tokens se cuentan")
     p_event.add_argument("--text", required=True, help="Text to count (CLI only: @file:path)")
-    p_event.add_argument("--source", default="agent")
-    p_event.add_argument("--phase", default="")
-    p_event.add_argument("--tool", default="")
-    p_event.add_argument("--direction", choices=["input", "output", "tool", "unknown"], default="unknown")
-    p_event.add_argument("--note", default="")
+    p_event.add_argument("--source", default="agent",
+                        help="Origen del evento (default: agent)")
+    p_event.add_argument("--phase", default="",
+                        help="Fase del flujo en la que ocurre el evento")
+    p_event.add_argument("--tool", default="",
+                        help="Tool del evento; agrupa los totales en by_tool")
+    p_event.add_argument("--direction", choices=["input", "output", "tool", "unknown"], default="unknown",
+                        help="Sentido de los tokens: input, output y tool suman a su total (default: unknown)")
+    p_event.add_argument("--note", default="",
+                        help="Nota libre sobre el evento")
     p_event.add_argument("--tokens", type=int, help="Explicit token count if known from provider")
     p_event.add_argument("--store-text", action="store_true", help="Persist raw text; default stores only token metadata")
 
@@ -276,10 +286,12 @@ Operational rule:
     p_count.add_argument("--text", required=True, help="Text to count (CLI only: @file:path)")
 
     p_report = sub.add_parser("report", allow_abbrev=False)
-    p_report.add_argument("--flow-id", required=True)
+    p_report.add_argument("--flow-id", required=True,
+                        help="Identificador del flujo cuyos tokens se cuentan")
 
     p_end = sub.add_parser("end", allow_abbrev=False)
-    p_end.add_argument("--flow-id", required=True)
+    p_end.add_argument("--flow-id", required=True,
+                        help="Identificador del flujo cuyos tokens se cuentan")
 
     args = parser.parse_args()
 

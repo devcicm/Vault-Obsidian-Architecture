@@ -39,9 +39,11 @@ def main() -> int:
     parser.add_argument("--category", required=True, choices=CATEGORIES)
     parser.add_argument("--title")
     parser.add_argument("--content")
-    parser.add_argument("--project", type=proyecto_registrado("vault_knowledge_save"))
+    parser.add_argument("--project", type=proyecto_registrado("vault_knowledge_save"),
+                        help="Proyecto registrado de la nota; una nota con el mismo título y otro proyecto da IDENTITY_CONFLICT")
     parser.add_argument("--tags", nargs="*")
-    parser.add_argument("--related", nargs="*")
+    parser.add_argument("--related", nargs="*",
+                        help="Notas relacionadas: van a related: y como wikilinks en «Relacionado»")
     parser.add_argument("--scan-path")
     args = parser.parse_args()
     if args.scan_path:

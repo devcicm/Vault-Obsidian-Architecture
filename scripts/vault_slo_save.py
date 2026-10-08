@@ -350,17 +350,26 @@ Ejemplos:
         allow_abbrev=False,
     )
     parser.add_argument("--project", type=proyecto_registrado("vault_slo_save"), required=True)
-    parser.add_argument("--service", required=True)
-    parser.add_argument("--slo_type", required=True, choices=list(SLO_TYPES.keys()))
+    parser.add_argument("--service", required=True,
+                        help="Servicio al que aplica el SLO; forma parte del nombre de la nota")
+    parser.add_argument("--slo_type", required=True, choices=list(SLO_TYPES.keys()),
+                        help="Tipo de SLI; fija la unidad por defecto y si el objetivo es mínimo o máximo")
     parser.add_argument("--target", required=True, type=float)
-    parser.add_argument("--unit", default=None)
-    parser.add_argument("--window", default="30d", choices=list(VALID_WINDOWS.keys()))
-    parser.add_argument("--percentile", default="")
+    parser.add_argument("--unit", default=None,
+                        help="Unidad del objetivo, p. ej. ms; vacío usa la de --slo_type")
+    parser.add_argument("--window", default="30d", choices=list(VALID_WINDOWS.keys()),
+                        help="Ventana de medición (default: 30d)")
+    parser.add_argument("--percentile", default="",
+                        help="Percentil del SLI, p. ej. p95")
     parser.add_argument("--description", default="")
-    parser.add_argument("--alert_threshold", type=float, default=None)
-    parser.add_argument("--data_source", default="")
-    parser.add_argument("--consequence", default="")
-    parser.add_argument("--agent", default="claude")
+    parser.add_argument("--alert_threshold", type=float, default=None,
+                        help="Umbral de alerta; por defecto, el objetivo con un margen según su dirección")
+    parser.add_argument("--data_source", default="",
+                        help="Fuente del SLI: URL de dashboard o consulta de métrica")
+    parser.add_argument("--consequence", default="",
+                        help="Consecuencias contractuales si se incumple (SLA)")
+    parser.add_argument("--agent", default="claude",
+                        help="Agente que firma la nota (default: claude)")
 
     args = parser.parse_args()
     result = vault_slo_save(

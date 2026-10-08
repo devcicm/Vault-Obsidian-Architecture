@@ -290,16 +290,25 @@ Ejemplos:
         dest="release_type",
         default="minor",
         choices=list(RELEASE_TYPES.keys()),
+        help="Tipo de release (default: minor)",
     )
-    parser.add_argument("--status", default="planned", choices=VALID_STATUS)
+    parser.add_argument("--status", default="planned", choices=VALID_STATUS,
+                        help="Estado del release (default: planned)")
     parser.add_argument("--changes", default="[]")
-    parser.add_argument("--deploy_steps", default="[]")
-    parser.add_argument("--rollback_steps", default="[]")
-    parser.add_argument("--smoke_tests", default="[]")
-    parser.add_argument("--breaking_changes", default="[]")
-    parser.add_argument("--migrations", default="[]")
-    parser.add_argument("--deploy_at", default=None)
-    parser.add_argument("--agent", default="claude")
+    parser.add_argument("--deploy_steps", default="[]",
+                        help="Array JSON de pasos de despliegue, en orden")
+    parser.add_argument("--rollback_steps", default="[]",
+                        help="Array JSON de pasos para revertir; vacío queda pendiente")
+    parser.add_argument("--smoke_tests", default="[]",
+                        help="Array JSON de comprobaciones tras el despliegue, p. ej. '[\"GET /health → 200\"]'")
+    parser.add_argument("--breaking_changes", default="[]",
+                        help="Array JSON de cambios incompatibles; se marcan BREAKING en el changelog")
+    parser.add_argument("--migrations", default="[]",
+                        help="Array JSON de migraciones requeridas")
+    parser.add_argument("--deploy_at", default=None,
+                        help="Momento del despliegue en ISO 8601; por defecto, ahora")
+    parser.add_argument("--agent", default="claude",
+                        help="Agente que firma la nota (default: claude)")
 
     args = parser.parse_args()
     try:

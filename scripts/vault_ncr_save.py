@@ -292,20 +292,28 @@ Ejemplos:
     )
     parser.add_argument("--project", type=proyecto_registrado("vault_ncr_save"), required=True)
     parser.add_argument("--title", required=True)
-    parser.add_argument("--ncr_type", default="process", choices=list(NCR_TYPES.keys()))
+    parser.add_argument("--ncr_type", default="process", choices=list(NCR_TYPES.keys()),
+                        help="Clase de no conformidad (default: process)")
     parser.add_argument(
         "--severity", default="major", choices=list(SEVERITY_LEVELS.keys())
     )
     parser.add_argument("--detected_by", default="internal", choices=DETECTED_BY)
     parser.add_argument("--description", default="")
     parser.add_argument("--root_cause", default="")
-    parser.add_argument("--immediate_action", default="")
-    parser.add_argument("--corrective_actions", default="[]")
-    parser.add_argument("--target_date", default="")
-    parser.add_argument("--status", default="open", choices=VALID_STATUS)
-    parser.add_argument("--owner", default="")
-    parser.add_argument("--related_requirement", default="")
-    parser.add_argument("--agent", default="claude")
+    parser.add_argument("--immediate_action", default="",
+                        help="Acción inmediata de contención (markdown); vacío queda pendiente")
+    parser.add_argument("--corrective_actions", default="[]",
+                        help="Array JSON de acciones correctivas sobre la causa raíz; cada una sale como casilla por marcar")
+    parser.add_argument("--target_date", default="",
+                        help="Fecha límite para cerrar la NCR, p. ej. 2026-07-15")
+    parser.add_argument("--status", default="open", choices=VALID_STATUS,
+                        help="Estado de la NCR (default: open)")
+    parser.add_argument("--owner", default="",
+                        help="Responsable de la NCR; vacío la deja sin asignar")
+    parser.add_argument("--related_requirement", default="",
+                        help="Requisito incumplido, p. ej. su id o nota")
+    parser.add_argument("--agent", default="claude",
+                        help="Agente que firma la nota (default: claude)")
 
     args = parser.parse_args()
     try:
