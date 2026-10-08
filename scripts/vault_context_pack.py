@@ -223,16 +223,21 @@ def vault_context_pack(
     terms = structured["phrases"] + structured["terms"] + structured["tags"]
     lexical: Dict[str, Dict[str, Any]] = {}
     search_error: Optional[str] = None
+    # Solo la sección que la pregunta nombra filtra. Hasta v41.2 también lo
+    # hacía la inferida por una palabra («diagrama» → 13_Flows), y bastaba con
+    # que esa sección devolviera algo para esconder la nota de otra: medido
+    # con tests/banco_agente.py en /vcloud y /ans (regla 7).
+    named = structured.get("sections_named", [])
     if terms:
-        section = structured["sections"][0] if structured["sections"] else None
+        section = named[0] if named else None
         found = vault_search(" ".join(terms[:8]), folder=section)
         if not found.get("ok"):
             search_error = mensaje_de(found)
         for hit in found.get("results", []):
             lexical[hit["path"]] = hit
-        # Una sección inferida por pista léxica es una apuesta, no un filtro
-        # duro: si no devuelve nada, se reintenta sin ella antes que responder
-        # "no hay contexto" teniendo el vault la nota en otra sección.
+        # Ni la nombrada se queda sin respuesta: si no devuelve nada, se
+        # reintenta sin ella antes que responder "no hay contexto" teniendo el
+        # vault la nota en otra sección.
         if section and not lexical:
             for hit in vault_search(" ".join(terms[:8])).get("results", []):
                 lexical[hit["path"]] = hit
@@ -278,7 +283,7 @@ def vault_context_pack(
         if structured["status"]:
             if str(frontmatter.get("status", "")).lower() not in structured["status"]:
                 continue
-        if structured["sections"] and path.split("/")[0] not in structured["sections"]:
+        if named and path.split("/")[0] not in named:
             # Solo excluye si el grafo tampoco lo justifica: una nota de otra
             # sección conectada directamente al tema sí es contexto legítimo.
             if graph_rel.get(path, 0.0) < 0.5:

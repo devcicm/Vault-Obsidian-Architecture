@@ -259,7 +259,10 @@ def vault_query_parse(
                              "why": f"pista léxica '{hint}'"})
 
     # Sección nombrada literalmente ("en 07_Knowledge") manda sobre las pistas.
+    named: List[str] = []
     for section in valid_sections:
+        if _fold(section) in folded:
+            named.append(section)
         if _fold(section) in folded and section not in sections:
             sections.insert(0, section)
             evidence.append({"field": "sections", "value": section,
@@ -324,6 +327,9 @@ def vault_query_parse(
         "tags": tags,
         "seeds": seeds,
         "sections": list(dict.fromkeys(sections)),
+        # v41.2. Las que la pregunta nombra; el resto de `sections` sale de una
+        # pista léxica y es una apuesta, no un filtro (vault_context_pack).
+        "sections_named": sorted(named),
         "status": list(dict.fromkeys(statuses)),
         "intent": intent,
         "hops": hops,
