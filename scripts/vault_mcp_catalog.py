@@ -4478,6 +4478,50 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "example": 'python vault_quarantine.py --add "07_Knowledge/rara.md" --reason "Sin frontmatter y origen desconocido" --agent claude\npython vault_quarantine.py --list',
         "related": ["vault_merge", "vault_security_scan", "vault_move"],
     },
+    "vault_arquitectura_en": {
+        "name": "vault_arquitectura_en",
+        "script": "vault_arquitectura_en.py",
+        "group": "Memoria de Contexto",
+        "purpose": "La arquitectura de un proyecto vista en una fecha o versión, o lo que cambió entre dos: qué notas regían, su texto entonces (desde .history/) y sus files:. Solo lectura.",
+        "params": {
+            "fecha": {
+                "type": "string",
+                "required": False,
+                "description": "YYYY-MM-DD: qué arquitectura regía al final de ese día",
+                "validators": [],
+            },
+            "version": {
+                "type": "string",
+                "required": False,
+                "description": "vX.Y[.Z]: qué regía en esa versión (fecha de su nota de release, o vigente_desde:)",
+                "validators": [],
+            },
+            "desde": {
+                "type": "string",
+                "required": False,
+                "description": "Inicio del rango: fecha o versión",
+                "validators": [],
+            },
+            "hasta": {
+                "type": "string",
+                "required": False,
+                "description": "Fin del rango: fecha o versión",
+                "validators": [],
+            },
+            "project": {
+                "type": "string",
+                "required": False,
+                "description": "Limita a las notas y releases de ese proyecto",
+                "validators": [],
+            },
+        },
+        "guards": ["Solo lectura: no escribe nada en el vault",
+                   "La fecha de una versión guardada sale de su nombre en .history/, nunca del mtime",
+                   "Lo indecidible sale en indeterminadas: no se adivina"],
+        "side_effects": [],
+        "example": "python vault_arquitectura_en.py --fecha 2026-05-03\npython vault_arquitectura_en.py --desde v1.0 --hasta v1.5 --project demo",
+        "related": ["vault_undo", "vault_supersede", "vault_release_save", "vault_context_pack"],
+    },
     "vault_subgraph": {
         "name": "vault_subgraph",
         "script": "vault_subgraph.py",
@@ -4709,6 +4753,7 @@ GROUPS: Dict[str, List[str]] = {
         "vault_subgraph",
         "vault_context_pack",
         "vault_ingest",
+        "vault_arquitectura_en",
     ],
     # Grupo 36 (v39) — el ciclo del defecto y la retención sin borrado. Ambas
     # secciones salen de medir el parque real, no de un diseño a priori.

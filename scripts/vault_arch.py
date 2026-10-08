@@ -443,6 +443,7 @@ CONTEXTS: dict[str, dict] = {
             "vault_init", "vault_onboard", "vault_standard_upgrade",
             "vault_sanacion", "vault_migrate_docs", "vault_migrate_rollback",
             "vault_propagate", "vault_sdd_init", "vault_history_compact",
+            "vault_arquitectura_en",
         ],
     },
     "durabilidad": {

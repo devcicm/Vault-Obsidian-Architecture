@@ -3,8 +3,8 @@
 Vault Obsidian Architecture es un estándar abierto con un toolkit para dar a agentes LLM memoria documental persistente, auditable y gobernada sobre Markdown plano.
 
 [![Version](https://img.shields.io/badge/version-v41.2-blue)](./vault-obsidian-architecture.md)
-[![Tools](https://img.shields.io/badge/tools-122_active-green)](./scripts/)
-[![Scripts](https://img.shields.io/badge/scripts-160_total-lightblue)](./scripts/)
+[![Tools](https://img.shields.io/badge/tools-123_active-green)](./scripts/)
+[![Scripts](https://img.shields.io/badge/scripts-161_total-lightblue)](./scripts/)
 [![Python](https://img.shields.io/badge/python-3.9+-yellow)](./scripts/)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](./LICENSE)
 
@@ -263,7 +263,7 @@ python scripts/vault_audit.py
 
 ## CLI consolidada — `vault`
 
-Las 122 tools bajo un único punto de entrada, con búsqueda, planificación de
+Las 123 tools bajo un único punto de entrada, con búsqueda, planificación de
 concurrencia y guardas de seguridad:
 
 ```bash
@@ -464,7 +464,7 @@ python scripts/vault_norms.py --check-framework    # guard anti-drift registro �
 
 ---
 
-## Las 122 tools activas — 37 grupos
+## Las 123 tools activas — 37 grupos
 
 | Grupo | Tools |
 |---|---|
@@ -592,7 +592,7 @@ Sistema de control de asistencia con autenticación biométrica.
 
 Contiene:
 - 8 principios de diseño
-- 122 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
+- 123 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
 - 74 normas: 63 antipatrones (AP-01–AP-62), 6 patrones (PAT-1–PAT-6), 3 SP, 3 CN
 - norm_refs auto-embebido en frontmatter + vault_code_tag para etiquetas en código fuente
 - 8 Fundamentos de Datos (F1–F8) con trazabilidad a tools
@@ -621,7 +621,7 @@ Contiene:
 ## Scripts — estructura del repositorio
 
 ```
-scripts/                    ← 160 archivos Python (122 tools del catálogo + 8 archivadas en _archived/ + internas/meta)
+scripts/                    ← 161 archivos Python (123 tools del catálogo + 8 archivadas en _archived/ + internas/meta)
 ├── vault_io.py             — I/O base: _detect_vault_root, assert_within_vault, atomic_write_text/json, file_lock
 ├── vault_errors.py         — wrap_main (timeout 60s), emit_ok, trace log
 ├── vault_write.py          — tool principal de escritura (guards AP-20, AP-21, norm_refs auto-embed)

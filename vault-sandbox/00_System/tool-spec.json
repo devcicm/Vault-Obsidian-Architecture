@@ -996,6 +996,49 @@
         "F6"
       ]
     },
+    "vault_arquitectura_en": {
+      "group": "Memoria de Contexto",
+      "group_id": 34,
+      "status": "active",
+      "required_args": [],
+      "declared_returns": [
+        "al_final",
+        "cambiaron",
+        "criterio",
+        "desde",
+        "entraron",
+        "error",
+        "error_code",
+        "eventos",
+        "hasta",
+        "ilegibles",
+        "indeterminadas",
+        "modo",
+        "notas_de_arquitectura",
+        "ok",
+        "project",
+        "propuestas",
+        "punto",
+        "retiradas",
+        "salieron",
+        "tool",
+        "vigentes"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "timeliness",
+          "consistency"
+        ],
+        "cia_scope": [
+          "availability"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F2",
+        "F3"
+      ]
+    },
     "vault_create": {
       "group": "Core (legacy)",
       "group_id": 0,
@@ -4571,10 +4614,10 @@
     }
   },
   "_counts": {
-    "active": 122,
+    "active": 123,
     "internal": 16,
     "archived": 5,
-    "total": 143,
+    "total": 144,
     "active_groups": 37,
     "schema_version": "1.0"
   }

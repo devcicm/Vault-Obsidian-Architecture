@@ -197,6 +197,53 @@
         "vault_mcp_catalog"
       ]
     },
+    "vault_arquitectura_en": {
+      "name": "vault_arquitectura_en",
+      "description": "La arquitectura de un proyecto vista en una fecha o versión, o lo que cambió entre dos: qué notas regían, su texto entonces (desde .history/) y sus files:. Solo lectura.",
+      "group": "Memoria de Contexto",
+      "script": "vault_arquitectura_en.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "fecha": {
+            "type": "string",
+            "description": "YYYY-MM-DD: qué arquitectura regía al final de ese día"
+          },
+          "version": {
+            "type": "string",
+            "description": "vX.Y[.Z]: qué regía en esa versión (fecha de su nota de release, o vigente_desde:)"
+          },
+          "desde": {
+            "type": "string",
+            "description": "Inicio del rango: fecha o versión"
+          },
+          "hasta": {
+            "type": "string",
+            "description": "Fin del rango: fecha o versión"
+          },
+          "project": {
+            "type": "string",
+            "description": "Limita a las notas y releases de ese proyecto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "guards": [
+        "Solo lectura: no escribe nada en el vault",
+        "La fecha de una versión guardada sale de su nombre en .history/, nunca del mtime",
+        "Lo indecidible sale en indeterminadas: no se adivina"
+      ],
+      "side_effects": [],
+      "status": "active",
+      "exposed_via_mcp": true,
+      "execution_module": "vault_toolkit.operations.vault_arquitectura_en",
+      "related": [
+        "vault_undo",
+        "vault_supersede",
+        "vault_release_save",
+        "vault_context_pack"
+      ]
+    },
     "vault_audit": {
       "name": "vault_audit",
       "description": "Evalua la salud del vault y genera nextActions. `healthScore` se conserva tal cual (lo leen los consumidores) pero satura en 0; la lectura que discrimina es `healthIndex` + `healthProfile`, seis familias normalizadas cada una contra su propio tope.",
@@ -7173,7 +7220,8 @@
       "vault_query_parse",
       "vault_subgraph",
       "vault_context_pack",
-      "vault_ingest"
+      "vault_ingest",
+      "vault_arquitectura_en"
     ],
     "Defectos y Cuarentena": [
       "vault_bug_save",
