@@ -866,9 +866,66 @@ def _tabla_documentacion() -> str:
     return clases + "\n\n" + "\n".join(filas) + hueco
 
 
+def _tabla_ejes() -> str:
+    """Ejes de trazabilidad y versionado, y su correlación con estado y versión.
+
+    Las cuatro tablas salen de registros: `vault_registry` (ejes y modos),
+    `vault_norms_catalog` (régimen de cada estado, derivado de las
+    transiciones) y `vault_contrato_nota` (contrato por versión del estándar).
+    """
+    from vault_contrato_nota import HISTORIA, contrato_de_version
+    from vault_norms_catalog import STATUS_TRANSITIONS
+    from vault_registry import regimen_de_estado
+    from vault_registry import (EJES_DOCUMENTACION, MODOS_DE_VERSION, REGIMENES_DE_ESTADO,
+                                modo_de_version)
+
+    def _lista(xs):
+        return ", ".join(f"`{x}`" for x in xs) or "wikilink en el cuerpo"
+
+    ejes = ["| Clase | Se traza con | Campos | Tools | Versionado mientras está abierta |",
+            "|---|---|---|---|---|"]
+    for clase, e in EJES_DOCUMENTACION.items():
+        ejes.append(f"| {clase} | {e['traza']} | {_lista(e['campos'])} | "
+                    f"{', '.join(e['tools'])} | {e['version']} |")
+    modos = ["| Modo | Qué significa | Tools | Enforcement |", "|---|---|---|---|"]
+    for modo, m in MODOS_DE_VERSION.items():
+        modos.append(f"| {modo} | {m['que']} | {', '.join(m['tools'])} | {m['enforcement']} |")
+    regimenes = "\n".join(f"- **{r}** — {d}" for r, d in REGIMENES_DE_ESTADO.items())
+    clases = list(EJES_DOCUMENTACION)
+    estados = ["| status | Régimen | " + " | ".join(clases) + " |",
+               "|---|---|" + "---|" * len(clases)]
+    for status in STATUS_TRANSITIONS:
+        r = regimen_de_estado(status, STATUS_TRANSITIONS)
+        estados.append(f"| `{status}` | {r} | "
+                       + " | ".join(modo_de_version(c, r) for c in clases) + " |")
+    versiones = ["| Versión | Autoridad | Requeridos en notas de contenido | Qué cambió | Fuente |",
+                 "|---|---|---|---|---|"]
+    for v, cambios in HISTORIA.items():
+        c = contrato_de_version(v)
+        req = ", ".join(f"`{x}`" for x in c["requeridos"]["contenido"])
+        for h in cambios:
+            versiones.append(f"| {v} | {c['origen']} | {req} | {h['cambio']} | "
+                             f"`{h['fuente'].split(':', 1)[0]}` |")
+    return "\n\n".join([
+        "#### Eje de trazabilidad y eje de versionado, por clase\n\n" + "\n".join(ejes),
+        "#### Modos de versionado\n\n" + "\n".join(modos),
+        "#### Correlación estado → versionado\n\n"
+        "El régimen de cada `status` se deriva de `STATUS_TRANSITIONS`:\n\n" + regimenes
+        + "\n\n" + "\n".join(estados),
+        "#### Correlación versión del estándar → contrato de nota\n\n"
+        "El vault declara la versión que aplica en `00_System/standard-version.json` "
+        "(`vault_standard_upgrade`), que lo mide contra el contrato de esa versión. "
+        "`vault_validate --check cumplimiento` publica qué versiones cumple cada nota, "
+        "y `vault_validate --contrato vNN` aplica el de una versión concreta. Solo se "
+        "listan las versiones en que el contrato cambió; fuente: "
+        "`vault_contrato_nota.HISTORIA`.\n\n" + "\n".join(versiones),
+    ])
+
+
 def generate_methodology(vault_root: Path, drift: dict) -> str:
     """Generate 06-documentation-methodology.md (bilingual, the 'science')."""
-    return _METODOLOGIA.replace("{TABLA_DOCUMENTACION}", _tabla_documentacion())
+    return (_METODOLOGIA.replace("{TABLA_DOCUMENTACION}", _tabla_documentacion())
+            .replace("{EJES_DOCUMENTACION}", _tabla_ejes()))
 
 
 _METODOLOGIA = """# Documentation Methodology — Metodología de Documentación
@@ -901,7 +958,8 @@ _METODOLOGIA = """# Documentation Methodology — Metodología de Documentación
 
 **Principio 5: Conectividad explícita** — Las relaciones son first-class.
 - Wiki-links como tejido conectivo.
-- `relacionado_con:` en frontmatter cuando aplica.
+- Los campos de traza de cada clase (ver «Trazabilidad, versionado…»); `relacionado_con:`
+  figuraba aquí y ninguna tool lo escribe.
 - Cross-references en lugar de duplicación.
 
 **Principio 6: Evolución documentada** — Cada cambio tiene historia.
@@ -930,6 +988,15 @@ sección; escribir en una sección una nota de otra clase es colocarla mal.
 
 {TABLA_DOCUMENTACION}
 
+### Trazabilidad, versionado y su correlación con estado y versión
+
+Fuente: `vault_registry.EJES_DOCUMENTACION` y `MODOS_DE_VERSION`. Cada clase de
+documento declara con qué se traza —los campos son los que escriben las tools
+nombradas— y cómo se versiona. El estado de la nota puede endurecer ese modo, y
+la versión del estándar fija qué contrato de frontmatter se le exige.
+
+{EJES_DOCUMENTACION}
+
 ### Estructura mínima (guideline)
 
 - Pattern: ## Contexto, ## Implementación, ## Trade-offs, ## Evolución
@@ -957,6 +1024,12 @@ sección; escribir en una sección una nota de otra clase es colocarla mal.
 ### Document class per section (Diátaxis)
 
 (See table above in ES section: `vault_registry.SECTION_DOCUMENTACION`.)
+
+### Traceability, versioning and their correlation with status and version
+
+(See tables above in ES section: `vault_registry.EJES_DOCUMENTACION`,
+`MODOS_DE_VERSION`, `vault_registry.regimen_de_estado` and
+`vault_contrato_nota.HISTORIA`.)
 
 ### Minimum structure (guideline)
 

@@ -12,7 +12,7 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~6.000 líneas). Fuente normativa. |
 | `scripts/*.py` | ~160 scripts, 122 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (4694 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (4703 tests). Toda norma con guard debe tener test. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
 | `vault-sandbox/` | **Único** vault de pruebas del repo. Todo runtime va aquí. |
@@ -111,6 +111,7 @@ Si necesitas un dato de estos, léelo del registro — no lo redefinas ni lo cop
 | Dirección de cada frontera entre contextos | `vault_arch.PRESUPUESTO_DE_CRUCES` (un par nuevo bloquea la puerta) |
 | Vocabulario de `status` (12 valores) | `vault_norms.STATUS_VOCAB` |
 | Clase de documento de cada sección (Diátaxis + `registro` + `indice`) | `vault_registry.SECTION_DOCUMENTACION`; el SDD `06-documentation-methodology.md` la publica derivada |
+| Ejes de trazabilidad y versionado por clase de documento, y su correlación con el `status` | `vault_registry.EJES_DOCUMENTACION` + `MODOS_DE_VERSION` + `modo_de_version`; el régimen de cada estado lo deriva `vault_registry.regimen_de_estado` de `vault_norms_catalog.STATUS_TRANSITIONS`. El SDD 06 los publica derivados, con la correlación versión → contrato de `vault_contrato_nota.HISTORIA` |
 | Fundamentos F1–F8 y dimensiones DQ | `scripts/vault_fundamentals_catalog.py` — hoja del núcleo desde v40.28 (AP-62); `vault_fundamentals` lo reexporta, pero entrar por ahí arrastra el verificador |
 | Tríada CIA, FAIR, V's del Big Data, cobertura ISO | `vault_fundamentals_catalog.FRAMEWORK_REGISTRIES` |
 | Matriz de trazabilidad concepto → métrica → tool | `vault_fundamentals.TRACEABILITY_MATRIX` — no está en el catálogo hoja ni en `FRAMEWORK_REGISTRIES` |

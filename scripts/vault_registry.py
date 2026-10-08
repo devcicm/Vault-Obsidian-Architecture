@@ -21,7 +21,7 @@ nunca crea dependencias circulares.
 import json
 import re
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Iterable, List, Mapping, Optional
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Secciones canónicas — orden, nombre y descripción
@@ -391,6 +391,99 @@ SECTION_DOCUMENTACION: Dict[str, tuple] = {
     "21_QA": ("registro", "eventos de calidad: ejecuciones, métricas y reportes"),
     "99_Index": ("indice", "índices de navegación que regeneran las tools"),
 }
+
+#: **Eje de versionado: cómo cambia una nota sin perder lo que fue.** Cada modo
+#: nombra las tools que lo realizan y cuánto obliga: `guard` si la tool lo hace
+#: siempre, `recommended` si existe la vía pero nada impide tomar otra. El test
+#: comprueba que cada tool está en el catálogo MCP; un modo sin tool viva sería
+#: documentación sin código (regla 3).
+MODOS_DE_VERSION: Dict[str, dict] = {
+    "historia": {"que": "se reescribe en su sitio y la versión anterior queda en .history/",
+                 "tools": ("vault_write", "vault_history_compact"), "enforcement": "guard"},
+    "anexado": {"que": "solo se añade al final; lo ya escrito no se reescribe",
+                "tools": ("vault_append",), "enforcement": "recommended"},
+    "sustitucion": {"que": "la versión nueva es otra nota y la anterior declara superseded_by",
+                    "tools": ("vault_supersede",), "enforcement": "recommended"},
+    "regenerado": {"que": "artefacto derivado: se regenera desde las notas y no se versiona",
+                   "tools": ("vault_section_index",), "enforcement": "guard"},
+    "inmutable": {"que": "estado terminal: ni se reescribe ni se sustituye, queda como hecho",
+                  "tools": ("vault_write",), "enforcement": "recommended"},
+}
+
+#: **Ejes de trazabilidad y versionado por clase de documento.** `traza` dice
+#: con qué se enlaza una nota de esa clase y por qué campos de frontmatter; los
+#: campos son los que **escriben** las tools nombradas —el test lo comprueba en
+#: su código—, no los que el SDD prometía: `relacionado_con:` y
+#: `lifecycle_state:` figuraban en él y ninguna tool los escribe. Un `campos`
+#: vacío significa que la traza va por wikilink en el cuerpo. `version` es el
+#: modo de `MODOS_DE_VERSION` mientras la nota está abierta; el estado puede
+#: endurecerlo (`modo_de_version`).
+EJES_DOCUMENTACION: Dict[str, dict] = {
+    "tutorial": {"traza": "la referencia que enseña a usar, por wikilink",
+                 "campos": (), "tools": ("vault_write",), "version": "historia"},
+    "guia": {"traza": "los patrones relacionados, los ficheros que toca y el disparador del runbook",
+             "campos": ("relatedPatterns", "files", "trigger"),
+             "tools": ("vault_pattern_save", "vault_runbook_save"), "version": "historia"},
+    "referencia": {"traza": ("el requisito por su identificador y el test que lo verifica; "
+                             "el código relacionado va en el cuerpo y en el índice, no en "
+                             "el frontmatter"),
+                   "campos": ("req_id", "related_requirement"),
+                   "tools": ("vault_requirement_save", "vault_test_save"),
+                   "version": "historia"},
+    "explicacion": {"traza": "las notas relacionadas y la que la sustituye cuando la decisión cambia",
+                    "campos": ("related", "superseded_by"),
+                    "tools": ("vault_ingest", "vault_supersede"), "version": "historia"},
+    "registro": {"traza": "su fecha y el test que verifica la corrección",
+                 "campos": ("createdAt", "verified_by"),
+                 "tools": ("vault_bug_save",), "version": "anexado"},
+    "indice": {"traza": "las notas de las que se deriva, al regenerarse",
+               "campos": (), "tools": ("vault_section_index",), "version": "regenerado"},
+}
+
+#: **Correlación estado → versionado.** El régimen de un `status` no se declara
+#: aquí: lo deriva `regimen_de_estado` de `vault_norms_catalog.STATUS_TRANSITIONS`.
+#: Un estado `abierto` puede volver a `draft`, así que se edita con el modo de su
+#: clase; uno `cerrado` ya no puede, y cambiar su contenido es una versión nueva;
+#: uno `terminal` no tiene salida.
+REGIMENES_DE_ESTADO: Dict[str, str] = {
+    "abierto": "puede volver a draft: se edita con el modo de su clase",
+    "cerrado": "ya no vuelve a draft: un cambio de contenido es una nota nueva",
+    "terminal": "sin transiciones de salida: queda como hecho",
+}
+
+
+def regimen_de_estado(status: str,
+                      transiciones: Mapping[str, Iterable[str]]) -> str:
+    """El régimen de `status`, derivado de sus transiciones de salida (AP-57).
+
+    Las transiciones se reciben en vez de importarse: el dueño es
+    `vault_norms_catalog.STATUS_TRANSITIONS` y este registro sigue sin
+    depender de nadie. Vivía en `vault_norms_catalog` y la puerta del núcleo
+    (AP-59) lo marcó: tocar el catálogo de normas para una función derivada
+    lo sacaba de su escalón de churn.
+    """
+    salidas = tuple(transiciones[status])
+    if status == "draft" or "draft" in salidas:
+        return "abierto"
+    return "cerrado" if salidas else "terminal"
+
+
+def modo_de_version(clase: str, regimen: str) -> str:
+    """El modo de versionado de una nota de `clase` en un estado de `regimen`.
+
+    Lo anexado y lo regenerado no dependen del estado: un registro cerrado se
+    sigue anexando y un índice se sigue regenerando. El resto se endurece al
+    cerrarse —una nota aprobada no vuelve a draft, así que su cambio es otra
+    nota— y se congela al llegar a un estado terminal.
+    """
+    base = EJES_DOCUMENTACION[clase]["version"]
+    if base in ("anexado", "regenerado") or regimen == "abierto":
+        return base
+    if regimen == "cerrado":
+        return "sustitucion"
+    if regimen == "terminal":
+        return "inmutable"
+    raise ValueError(f"régimen desconocido: {regimen}")
 
 
 #: `type:` de las notas andamio que crea `vault_init`. No pertenecen a ninguna

@@ -28,7 +28,8 @@
 
 **Principio 5: Conectividad explícita** -- Las relaciones son first-class.
 - Wiki-links como tejido conectivo.
-- `relacionado_con:` en frontmatter cuando aplica.
+- Los campos de traza de cada clase (ver "Trazabilidad, versionado…"); `relacionado_con:`
+  figuraba aquí y ninguna tool lo escribe.
 - Cross-references en lugar de duplicación.
 
 **Principio 6: Evolución documentada** -- Cada cambio tiene historia.
@@ -90,6 +91,74 @@ sección; escribir en una sección una nota de otra clase es colocarla mal.
 
 Clases de Diátaxis sin ninguna sección: tutorial.
 
+### Trazabilidad, versionado y su correlación con estado y versión
+
+Fuente: `vault_registry.EJES_DOCUMENTACION` y `MODOS_DE_VERSION`. Cada clase de
+documento declara con qué se traza --los campos son los que escriben las tools
+nombradas-- y cómo se versiona. El estado de la nota puede endurecer ese modo, y
+la versión del estándar fija qué contrato de frontmatter se le exige.
+
+#### Eje de trazabilidad y eje de versionado, por clase
+
+| Clase | Se traza con | Campos | Tools | Versionado mientras está abierta |
+|---|---|---|---|---|
+| tutorial | la referencia que enseña a usar, por wikilink | wikilink en el cuerpo | vault_write | historia |
+| guia | los patrones relacionados, los ficheros que toca y el disparador del runbook | `relatedPatterns`, `files`, `trigger` | vault_pattern_save, vault_runbook_save | historia |
+| referencia | el requisito por su identificador y el test que lo verifica; el código relacionado va en el cuerpo y en el índice, no en el frontmatter | `req_id`, `related_requirement` | vault_requirement_save, vault_test_save | historia |
+| explicacion | las notas relacionadas y la que la sustituye cuando la decisión cambia | `related`, `superseded_by` | vault_ingest, vault_supersede | historia |
+| registro | su fecha y el test que verifica la corrección | `createdAt`, `verified_by` | vault_bug_save | anexado |
+| indice | las notas de las que se deriva, al regenerarse | wikilink en el cuerpo | vault_section_index | regenerado |
+
+#### Modos de versionado
+
+| Modo | Qué significa | Tools | Enforcement |
+|---|---|---|---|
+| historia | se reescribe en su sitio y la versión anterior queda en .history/ | vault_write, vault_history_compact | guard |
+| anexado | solo se añade al final; lo ya escrito no se reescribe | vault_append | recommended |
+| sustitucion | la versión nueva es otra nota y la anterior declara superseded_by | vault_supersede | recommended |
+| regenerado | artefacto derivado: se regenera desde las notas y no se versiona | vault_section_index | guard |
+| inmutable | estado terminal: ni se reescribe ni se sustituye, queda como hecho | vault_write | recommended |
+
+#### Correlación estado → versionado
+
+El régimen de cada `status` se deriva de `STATUS_TRANSITIONS`:
+
+- **abierto** -- puede volver a draft: se edita con el modo de su clase
+- **cerrado** -- ya no vuelve a draft: un cambio de contenido es una nota nueva
+- **terminal** -- sin transiciones de salida: queda como hecho
+
+| status | Régimen | tutorial | guia | referencia | explicacion | registro | indice |
+|---|---|---|---|---|---|---|---|
+| `planned` | abierto | historia | historia | historia | historia | anexado | regenerado |
+| `draft` | abierto | historia | historia | historia | historia | anexado | regenerado |
+| `in-progress` | abierto | historia | historia | historia | historia | anexado | regenerado |
+| `reviewed` | abierto | historia | historia | historia | historia | anexado | regenerado |
+| `approved` | cerrado | sustitucion | sustitucion | sustitucion | sustitucion | anexado | regenerado |
+| `implemented` | cerrado | sustitucion | sustitucion | sustitucion | sustitucion | anexado | regenerado |
+| `verified` | cerrado | sustitucion | sustitucion | sustitucion | sustitucion | anexado | regenerado |
+| `deprecated` | cerrado | sustitucion | sustitucion | sustitucion | sustitucion | anexado | regenerado |
+| `obsolete` | cerrado | sustitucion | sustitucion | sustitucion | sustitucion | anexado | regenerado |
+| `archived` | terminal | inmutable | inmutable | inmutable | inmutable | anexado | regenerado |
+| `stub` | abierto | historia | historia | historia | historia | anexado | regenerado |
+| `template` | cerrado | sustitucion | sustitucion | sustitucion | sustitucion | anexado | regenerado |
+
+#### Correlación versión del estándar → contrato de nota
+
+El vault declara la versión que aplica en `00_System/standard-version.json` (`vault_standard_upgrade`), que lo mide contra el contrato de esa versión. `vault_validate --check cumplimiento` publica qué versiones cumple cada nota, y `vault_validate --contrato vNN` aplica el de una versión concreta. Solo se listan las versiones en que el contrato cambió; fuente: `vault_contrato_nota.HISTORIA`.
+
+| Versión | Autoridad | Requeridos en notas de contenido | Qué cambió | Fuente |
+|---|---|---|---|---|
+| v18 | manifiesto | `id`, `title`, `createdAt`, `updatedAt`, `tags`, `type` | AP-12 en el manifiesto: los seis campos obligatorios en toda nota; ninguna tool lo aplica | `manifiesto` |
+| v21 | manifiesto | `id`, `title`, `createdAt`, `updatedAt`, `tags`, `type` | el escritor pone agent en las notas nuevas | `MIGRATIONS` |
+| v25 | validador | `id`, `title` | primer validador: exige id y title, menos que AP-12, que el manifiesto de v25 sigue escribiendo igual | `git` |
+| v27 | validador | `id`, `title` | si están, el valor CIA pertenece al vocabulario y agent no está vacío | `MIGRATIONS` |
+| v28 | validador | `id`, `title` | los scripts de escritura ponen CIA y agent | `MIGRATIONS` |
+| v30 | validador | `id`, `title` | vocabulario de status auditado (CN-03) | `MIGRATIONS` |
+| v37 | validador | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags` | requeridos; CIA, agent y tags solo en notas de contenido, y los índices quedan fuera del contrato. type y status, recomendados | `git` |
+| v37 | validador | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags` | el escritor los pone por defecto y vault_audit penaliza su ausencia | `git` |
+| v41 | validador | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags`, `type`, `status` | requeridos en notas de contenido, por presencia: el valor lo sigue juzgando vault_audit | `MIGRATIONS` |
+| v41 | validador | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags`, `type`, `status` | clase sin_seccion: un .md fuera de toda sección lleva identidad y timestamps; CIA, agent, tags, type y status son de las notas de sección | `MIGRATIONS` |
+
 ### Estructura mínima (guideline)
 
 - Pattern: ## Contexto, ## Implementación, ## Trade-offs, ## Evolución
@@ -117,6 +186,12 @@ Clases de Diátaxis sin ninguna sección: tutorial.
 ### Document class per section (Diátaxis)
 
 (See table above in ES section: `vault_registry.SECTION_DOCUMENTACION`.)
+
+### Traceability, versioning and their correlation with status and version
+
+(See tables above in ES section: `vault_registry.EJES_DOCUMENTACION`,
+`MODOS_DE_VERSION`, `vault_registry.regimen_de_estado` and
+`vault_contrato_nota.HISTORIA`.)
 
 ### Minimum structure (guideline)
 
