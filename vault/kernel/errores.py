@@ -933,9 +933,13 @@ ERROR_CATALOG: Dict[str, Dict[str, Any]] = {
         "category": "io",
         "severity": "warning",
         "message": "No se pudo actualizar el índice de sección tras la escritura; la nota sí se escribió.",
+        # 2026-10-07: era `run_tool` sin `tool`, con pista a vault_section_index,
+        # que no toca el grafo; y `_auto_grafo` emite este mismo código.
         "recovery": {
             "action": "run_tool",
-            "hint": "Ejecutar vault_section_index para regenerar el índice.",
+            "tool": "vault_reindex",
+            "args": ["--graph"],
+            "hint": "Ejecutar vault_reindex --graph: rehace los índices de sección, la búsqueda y el grafo desde el disco.",
             "docs": None,
         },
     },

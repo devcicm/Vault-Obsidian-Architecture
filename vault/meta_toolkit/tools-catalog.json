@@ -7226,7 +7226,11 @@
       "message": "No se pudo actualizar el índice de sección tras la escritura; la nota sí se escribió.",
       "recovery": {
         "action": "run_tool",
-        "hint": "Ejecutar vault_section_index para regenerar el índice.",
+        "tool": "vault_reindex",
+        "args": [
+          "--graph"
+        ],
+        "hint": "Ejecutar vault_reindex --graph: rehace los índices de sección, la búsqueda y el grafo desde el disco.",
         "docs": null
       }
     },
