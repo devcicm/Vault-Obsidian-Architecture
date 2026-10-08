@@ -89,16 +89,14 @@ def vault_reindex(
     dry_run: bool = False, rebuild_graph: bool = False, root=None
 ) -> Dict[str, Any]:
     repo = _repo(root)
-    lock_target = repo.indice_busqueda
-    with file_lock(lock_target, timeout=30.0):
-        result = ServicioReindex(repo, parse_frontmatter).reconstruir(dry_run=dry_run)
-
-    if rebuild_graph and not dry_run:
-        result["graph"] = _rehacer_grafo()
 
     # Los índices de sección y el maestro se rehacen para que la navegación no
     # quede apuntando a lo anterior. Va en el adaptador y no en el dominio
     # porque es orquestación entre tools, no una regla del contexto.
+    # Van ANTES de la búsqueda y del grafo (AP-47, medido el 2026-10-07): son
+    # notas, y un `index.md` que faltaba se escribía después de construir
+    # search-index.json y quedaba sin indexar hasta una segunda pasada.
+    navegacion: Dict[str, Any] = {}
     if not dry_run:
         try:
             from vault_master_index import vault_master_index
@@ -108,10 +106,18 @@ def vault_reindex(
                 if section not in ("00_System", "99_Index"):
                     vault_section_index(section)
             vault_master_index()
-            result["indexes_rebuilt"] = True
+            navegacion["indexes_rebuilt"] = True
         except Exception as e:
-            result["index_warning"] = str(e)
+            navegacion["index_warning"] = str(e)
 
+    lock_target = repo.indice_busqueda
+    with file_lock(lock_target, timeout=30.0):
+        result = ServicioReindex(repo, parse_frontmatter).reconstruir(dry_run=dry_run)
+
+    if rebuild_graph and not dry_run:
+        result["graph"] = _rehacer_grafo()
+
+    result.update(navegacion)
     return result
 
 
