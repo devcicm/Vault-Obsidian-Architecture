@@ -238,35 +238,51 @@ function discoverVaults(searchRoots) {
             const name = e.name;
             if (!found.has(name)) {
               const version = readStandardVersion(full);
-              let notes = 0;
-              try { notes = countMdFiles(full); } catch (_) {}
-              found.set(name, { name, path: full, version, notes, markers, lastSeen: new Date().toISOString() });
+              const ilegibles = [];
+              const notes = countMdFiles(full, ilegibles);
+              const info = { name, path: full, version, notes, markers, lastSeen: new Date().toISOString() };
+              if (ilegibles.length) {
+                info.notes_incomplete = ilegibles.length;
+                log("warn", "recuento de notas parcial", { vault: name, unreadable_dirs: ilegibles.length });
+              }
+              found.set(name, info);
             }
           }
-        } catch (_) {}
+        } catch (e) {
+          log("debug", "candidato a vault ilegible", { dir: full, error: String(e && e.code || e && e.message || e) });
+        }
       }
       scan(full, depth + 1);
     }
   }
 
   for (const root of searchRoots) {
-    try { scan(resolve(root), 0); } catch (_) {}
+    try { scan(resolve(root), 0); } catch (e) {
+      log("warn", "raíz de búsqueda de vaults ilegible", { root, error: String(e && e.code || e && e.message || e) });
+    }
   }
 
   return found;
 }
 
-function countMdFiles(dir) {
-  let count = 0;
+// Un directorio que no se puede listar se anota en `fallos`: antes un
+// `catch (_) {}` lo contaba como cero notas y el registro publicaba un
+// recuento parcial como si fuera completo (AP-51).
+function countMdFiles(dir, fallos = []) {
+  let entries;
   try {
-    const entries = readdirSync(dir, { withFileTypes: true });
-    for (const e of entries) {
-      if (e.name.startsWith(".") || e.name === "node_modules") continue;
-      const full = join(dir, e.name);
-      if (e.isDirectory()) { count += countMdFiles(full); }
-      else if (e.name.endsWith(".md")) { count++; }
-    }
-  } catch (_) {}
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch (e) {
+    fallos.push({ dir, reason: String(e && e.code || e && e.message || e) });
+    return 0;
+  }
+  let count = 0;
+  for (const e of entries) {
+    if (e.name.startsWith(".") || e.name === "node_modules") continue;
+    const full = join(dir, e.name);
+    if (e.isDirectory()) { count += countMdFiles(full, fallos); }
+    else if (e.name.endsWith(".md")) { count++; }
+  }
   return count;
 }
 
@@ -280,6 +296,8 @@ function refreshVaultRegistry() {
       const existing = VAULT_REGISTRY.get(name);
       existing.version = info.version;
       existing.notes = info.notes;
+      if (info.notes_incomplete) existing.notes_incomplete = info.notes_incomplete;
+      else delete existing.notes_incomplete;
       existing.lastSeen = info.lastSeen;
     }
   }
@@ -1044,7 +1062,7 @@ async function handleToolsCall(params, session) {
 
     if (name === "vault_registry") {
       return { content: [{ type: "text", text: JSON.stringify({
-        ok: true, vaults: [...VAULT_REGISTRY.values()].map(v => ({ name: v.name, version: v.version, notes: v.notes, path: v.path, lastSeen: v.lastSeen }))
+        ok: true, vaults: [...VAULT_REGISTRY.values()].map(v => ({ name: v.name, version: v.version, notes: v.notes, ...(v.notes_incomplete ? { notes_incomplete: v.notes_incomplete } : {}), path: v.path, lastSeen: v.lastSeen }))
       }, null, 2) }] };
     }
 
@@ -1620,7 +1638,7 @@ function startSSE(port) {
       if (vaultName === "all") {
         const vaults = {};
         for (const [name, info] of VAULT_REGISTRY) {
-          vaults[name] = { version: info.version, notes: info.notes, path: info.path, lastSeen: info.lastSeen };
+          vaults[name] = { version: info.version, notes: info.notes, ...(info.notes_incomplete ? { notes_incomplete: info.notes_incomplete } : {}), path: info.path, lastSeen: info.lastSeen };
         }
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({
@@ -2126,7 +2144,7 @@ async function handleResourcesRead(params, session) {
       case "vault://registry": {
         const vaults = {};
         for (const [name, info] of VAULT_REGISTRY) {
-          vaults[name] = { version: info.version, notes: info.notes, path: info.path, lastSeen: info.lastSeen };
+          vaults[name] = { version: info.version, notes: info.notes, ...(info.notes_incomplete ? { notes_incomplete: info.notes_incomplete } : {}), path: info.path, lastSeen: info.lastSeen };
         }
         return { contents: [{ uri, mimeType: "application/json", text: JSON.stringify({
           default_vault: detectVaultRoot(), registered: VAULT_REGISTRY.size, vaults
