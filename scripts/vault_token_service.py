@@ -2,9 +2,11 @@
 """Local token usage service for vault documentation flows."""
 
 import argparse
+import hmac
 import json
 import os
 import re
+import secrets
 import sys
 import threading
 from datetime import datetime, timezone
@@ -21,6 +23,9 @@ from vault_io import atomic_write_json, file_lock
 SCRIPTS_DIR = Path(__file__).resolve().parent
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8765
+# SP-04: sin esta variable el servicio genera el token al arrancar y lo deja
+# en `_token_file()`, de donde lo lee el cliente.
+ENV_TOKEN = "VAULT_TOKEN_SERVICE_TOKEN"
 
 
 
@@ -54,6 +59,22 @@ def _pid_file() -> Path:
 
 def _port_file() -> Path:
     return _repo().puerto_servicio_tokens
+
+
+def _token_file() -> Path:
+    return _repo().token_servicio_tokens
+
+
+def token_del_cliente() -> str:
+    """El token con el que un cliente se presenta: el de la variable de
+    entorno o, si no hay, el que el servicio dejó al arrancar."""
+    token = os.environ.get(ENV_TOKEN, "").strip()
+    if token:
+        return token
+    try:
+        return _token_file().read_text(encoding="utf-8").strip()
+    except OSError:
+        return ""
 
 
 def estimate_tokens(text: str) -> int:
@@ -220,7 +241,31 @@ def service_status() -> Dict[str, Any]:
 
 
 class TokenHandler(BaseHTTPRequestHandler):
+    """SP-04: toda ruta exige `Authorization: Bearer` y rechaza a un
+    navegador (`Origin`) y un `Host` ajeno (DNS rebinding). Un servidor sin
+    `token` no atiende a nadie: el default es cerrado."""
+
     server_version = "VaultTokenService/1.0"
+
+    def _autorizado(self) -> bool:
+        # SP-04: Origin → 403, Host ajeno → 403, sin Bearer válido → 401.
+        if self.headers.get("Origin") is not None:
+            self._send(403, {"ok": False, "error": "origin_rejected"})
+            return False
+        host, port = self.server.server_address[:2]
+        validos = {f"127.0.0.1:{port}", f"localhost:{port}"}
+        if host not in ("", "0.0.0.0", "::"):
+            validos.add(f"{host}:{port}")
+        if (self.headers.get("Host") or "").lower() not in validos:
+            self._send(403, {"ok": False, "error": "host_rejected"})
+            return False
+        esperado = getattr(self.server, "token", "") or ""
+        cabecera = self.headers.get("Authorization") or ""
+        dado = cabecera[7:] if cabecera.startswith("Bearer ") else ""
+        if not esperado or not hmac.compare_digest(dado.encode("utf-8"), esperado.encode("utf-8")):
+            self._send(401, {"ok": False, "error": "unauthorized"})
+            return False
+        return True
 
     def _send(self, status: int, data: Dict[str, Any]) -> None:
         body = json.dumps(data, ensure_ascii=False).encode("utf-8")
@@ -240,6 +285,8 @@ class TokenHandler(BaseHTTPRequestHandler):
             return False, {"error": str(exc)}
 
     def do_GET(self) -> None:
+        if not self._autorizado():
+            return
         parsed = urlparse(self.path)
         if parsed.path == "/status":
             self._send(200, service_status())
@@ -252,6 +299,8 @@ class TokenHandler(BaseHTTPRequestHandler):
         self._send(404, {"ok": False, "error": "not_found"})
 
     def do_POST(self) -> None:
+        if not self._autorizado():
+            return
         parsed = urlparse(self.path)
         ok, payload = self._payload()
         if not ok:
@@ -283,13 +332,22 @@ def serve(host: str, port: int) -> int:
     _pid_file().write_text(str(os.getpid()), encoding="utf-8")
     _port_file().write_text(str(port), encoding="utf-8")
     server = ThreadingHTTPServer((host, port), TokenHandler)
+    server.token = os.environ.get(ENV_TOKEN, "").strip()
+    if not server.token:
+        # Generado, no fijo: solo lo conoce quien puede leer el vault.
+        server.token = secrets.token_urlsafe(32)
+        _token_file().write_text(server.token, encoding="utf-8")
+        try:
+            os.chmod(_token_file(), 0o600)
+        except OSError:
+            pass
     try:
         server.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
         server.server_close()
-        for file in (_pid_file(), _port_file()):
+        for file in (_pid_file(), _port_file(), _token_file()):
             try:
                 file.unlink()
             except OSError:

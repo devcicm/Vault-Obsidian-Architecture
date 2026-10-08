@@ -66,6 +66,12 @@ class RepositorioConsulta:
         return self._ctx.ruta(CARPETA_SISTEMA, SUBCARPETA_USO_TOKENS, "token-service.port")
 
     @property
+    def token_servicio_tokens(self) -> Path:
+        """Credencial del servicio (SP-04): junto al puerto, dentro del vault,
+        para que solo la lea quien ya puede leer el vault."""
+        return self._ctx.ruta(CARPETA_SISTEMA, SUBCARPETA_USO_TOKENS, "token-service.token")
+
+    @property
     def fichero_tokens(self) -> Path:
         return self._ctx.ruta(CARPETA_SISTEMA, FICHERO_TOKENS)
 

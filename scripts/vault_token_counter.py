@@ -4,6 +4,7 @@
 import argparse
 import json
 import os
+import secrets
 import subprocess
 import sys
 import time
@@ -18,11 +19,13 @@ from vault_errors import emit_error, wrap_main
 from vault_token_service import (
     DEFAULT_HOST,
     DEFAULT_PORT,
+    ENV_TOKEN,
     TokenHandler,
     _port_file,
     _usage_dir,
     estimate_tokens,
     serve,
+    token_del_cliente,
 )
 
 
@@ -42,7 +45,7 @@ def _base_url(port: Optional[int] = None) -> str:
 
 def _request(method: str, path: str, payload: Optional[Dict[str, Any]] = None, port: Optional[int] = None) -> Dict[str, Any]:
     data = None
-    headers = {}
+    headers = {"Authorization": f"Bearer {token_del_cliente()}"}  # SP-04
     if payload is not None:
         data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         headers["Content-Type"] = "application/json"
@@ -177,6 +180,11 @@ def end(flow_id: str, port: Optional[int] = None) -> Dict[str, Any]:
 def self_test() -> Dict[str, Any]:
     port = DEFAULT_PORT + 1
     server = ThreadingHTTPServer((DEFAULT_HOST, port), TokenHandler)
+    # El servidor en proceso no escribe el fichero del token: se lo pasa al
+    # cliente por la variable, y la deja como estaba al salir.
+    server.token = secrets.token_urlsafe(32)
+    previo = os.environ.get(ENV_TOKEN)
+    os.environ[ENV_TOKEN] = server.token
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
@@ -197,6 +205,10 @@ def self_test() -> Dict[str, Any]:
         ended = end("self-test", port=port)
         return {"ok": True, "started": started, "event": ev, "report": rep, "ended": ended}
     finally:
+        if previo is None:
+            os.environ.pop(ENV_TOKEN, None)
+        else:
+            os.environ[ENV_TOKEN] = previo
         server.shutdown()
         server.server_close()
 

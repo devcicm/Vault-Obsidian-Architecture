@@ -98,6 +98,9 @@ EXENCIONES: Dict[str, str] = {
         "no el catálogo de errores del vault.",
     "vault_token_service.py::TokenHandler.do_POST":
         "cuerpo de una respuesta HTTP, mismo caso.",
+    "vault_token_service.py::TokenHandler._autorizado":
+        "cuerpo del 401/403 de SP-04, mismo caso: lo que dice el rechazo es el "
+        "código de estado, y lo lee un cliente HTTP, no un consumidor del catálogo.",
 }
 
 

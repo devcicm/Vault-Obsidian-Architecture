@@ -50,7 +50,8 @@ def test_security_md_no_afirma_lo_que_el_codigo_no_hace():
         "tiempo constante": "timingSafeEqual(" in servidor,
         "cabecera `Origin`": "rechazar(403" in servidor,
         "--allow-network": "NETWORK_DISABLED" in ingest,
-        "**no autentica**": "Authorization" not in tokens and 'DEFAULT_HOST = "127.0.0.1"' in tokens,
+        "VAULT_TOKEN_SERVICE_TOKEN": 'ENV_TOKEN = "VAULT_TOKEN_SERVICE_TOKEN"' in tokens
+        and "hmac.compare_digest(" in tokens and 'DEFAULT_HOST = "127.0.0.1"' in tokens,
         "VAULT_DEBUG=1": "incluir_traceback: bool = False" in errores,
     }
     for frase, cierto in afirmaciones.items():

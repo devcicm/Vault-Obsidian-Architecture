@@ -60,9 +60,13 @@ Lo que sigue lo hace el código hoy; cada punto tiene su guard o su test.
   pasa; lo descargado pasa por el mismo pre-vuelo. No hay base
   de datos, embeddings ni servicio externo.
 - **Servicio de tokens** (`vault_token_service`, grupo 26): escucha en
-  `127.0.0.1` por defecto y **no autentica**. `--host` permite abrirlo a otra
-  interfaz; hacerlo lo expone a cualquiera que la alcance. No lo abras fuera
-  de la máquina.
+  `127.0.0.1` por defecto y aplica la misma SP-04 que el MCP: exige
+  `Authorization: Bearer` —de `VAULT_TOKEN_SERVICE_TOKEN` o generado al
+  arrancar y guardado dentro del vault, junto al fichero de puerto, de donde
+  lo lee `vault_token_counter`— y rechaza `Origin` y `Host` ajenos. Quien
+  puede leer el vault puede usarlo. `--host` permite abrirlo a otra
+  interfaz; el token sigue siendo exigido, pero viaja sin cifrar: no lo
+  abras fuera de la máquina.
 
 Lo que está fuera: el contenido de las notas es del usuario. El toolkit no
 cifra el vault; protegerlo en disco es cosa del sistema donde vive.

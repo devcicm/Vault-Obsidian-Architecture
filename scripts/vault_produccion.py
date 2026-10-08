@@ -376,17 +376,27 @@ PREGUNTAS: List[Dict[str, Any]] = [
     {
         "id": "superficie_expuesta",
         "pregunta": "¿Está escrito qué expone y a quién, donde lo lee quien instala?",
-        "promesa": "El servidor MCP por HTTP es local y exige token, sin Origin ni Host ajenos",
+        "promesa": (
+            "El servidor MCP por HTTP y el servicio de tokens son locales y "
+            "exigen token, sin Origin ni Host ajenos"
+        ),
         "por_que": (
             "Hasta v40.34 esta fila prometía «local y sin autenticación» y lo "
             "llamaba correcto como diseño. No lo era: el navegador del usuario "
             "también vive en 127.0.0.1, y con CORS `*` cualquier página abría "
             "/sse y llamaba a vault_delete. SP-04 es la corrección, y se ejerce "
-            "con el servidor real por HTTP, no leyendo el README."
+            "con el servidor real por HTTP, no leyendo el README. Hasta v41.2 "
+            "SECURITY.md declaraba el servicio de tokens «no autentica» y esta "
+            "fila no lo miraba: declarar el hueco no lo cerraba."
         ),
         "ejerce": lambda: _existe("tests/test_mcp_http_seguridad.py")
-        and "tokenValido" in (RAIZ / "mcp" / "nodejs" / "vault-mcp-server.mjs").read_text(encoding="utf-8"),
-        "quien": "tests/test_mcp_http_seguridad.py (servidor real por HTTP) + README.md",
+        and "tokenValido" in (RAIZ / "mcp" / "nodejs" / "vault-mcp-server.mjs").read_text(encoding="utf-8")
+        and _existe("tests/test_token_service_seguridad.py")
+        and "_autorizado" in (RAIZ / "scripts" / "vault_token_service.py").read_text(encoding="utf-8"),
+        "quien": (
+            "tests/test_mcp_http_seguridad.py (servidor real por HTTP) + "
+            "tests/test_token_service_seguridad.py (servicio de tokens real) + README.md"
+        ),
         "estado": "cubierta",
     },
     {

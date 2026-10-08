@@ -7002,12 +7002,19 @@ imprime una vez por stderr: el default es cerrado. Además:
 
 stdio no abre puerto y no cambia.
 
+**Alcance (v41.3):** la regla vale para todo servicio HTTP local del toolkit, no solo para el MCP.
+`vault_token_service` (grupo 26) atendía `/status`, `/flows/<id>` y `POST /stop` sin credencial y
+aceptaba JSON con cualquier `Content-Type`: un formulario de cualquier página lo apagaba. Hoy aplica
+las mismas tres comprobaciones —`Origin` → 403, `Host` ajeno → 403, sin `Bearer` válido → 401—
+con el token de `VAULT_TOKEN_SERVICE_TOKEN` o uno generado al arrancar, que deja dentro del vault
+junto al fichero de puerto para que `vault_token_counter` lo lea.
+
 **Por qué:** escuchar en `127.0.0.1` no aislaba nada. El navegador del usuario también vive ahí, y
 con `Access-Control-Allow-Origin: *` cualquier página podía abrir `/sse`, leer el `sessionId` del
 primer evento e invocar `vault_delete` por `POST /message`.
 
 **Enforcement:** guard. `tests/test_mcp_http_seguridad.py` lo ejerce contra el servidor real por
-HTTP, y `vault_produccion` (promesa `superficie_expuesta`) falla si esa promesa se queda sin ejecutor.
+HTTP, `tests/test_token_service_seguridad.py` contra el servicio de tokens real, y `vault_produccion` (promesa `superficie_expuesta`) falla si esa promesa se queda sin ejecutor.
 
 **Señal de violación:** `GET /sse` sin token devuelve 200, o una respuesta lleva
 `Access-Control-Allow-Origin`.
