@@ -96,9 +96,15 @@ def test_el_autor_del_bloque_no_deja_que_meta_lo_pise():
 
 def test_la_pista_de_missing_agent_nombra_un_flag_que_vault_write_acepta(tmp_path):
     """Medido el 2026-10-04 desde la wheel: la pista decía `--agent`, que
-    `vault_write` no declara; seguirla daba INVALID_ARGS (AP-16)."""
+    `vault_write` no declara; seguirla daba INVALID_ARGS (AP-16).
+
+    Desde 77818b8 (2026-10-07) `vault_write` declara `--agent` y la pista lo
+    nombra. Lo que este test protege no es qué flag, sino que el nombrado
+    exista: se comprueba contra el argparse del script, criterio del
+    consumidor, y no contra un literal."""
     import json
     import os
+    import re
     import subprocess
 
     (tmp_path / "01_Projects").mkdir()
@@ -112,7 +118,10 @@ def test_la_pista_de_missing_agent_nombra_un_flag_que_vault_write_acepta(tmp_pat
     sobre = json.loads(r.stdout)
     assert sobre["error_code"] == "missing_agent", sobre
     pista = sobre["recovery"]["hint"]
-    assert "--meta" in pista and "--agent" not in pista, pista
+    from vault_mcp_catalog import argparse_params
+    citados = re.findall(r"--([a-z][\w-]*)", pista)
+    assert citados, pista
+    assert set(citados) <= set(argparse_params("vault_write.py")), pista
     assert sobre["recovery"]["action"] == "fix_input"
 
 
