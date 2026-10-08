@@ -203,6 +203,21 @@ function detectVaultRoot() {
   return VAULT_ROOT;
 }
 
+// La versión aplicada del estándar, con un solo lector: eran tres copias con
+// `catch (_) {}`, y ausente y corrupto salían los dos `unknown` (AP-51, AP-57).
+// Ausente es legítimo —un vault sin sellar—; ilegible no lo es, sale
+// `unreadable` y se avisa.
+function readStandardVersion(root) {
+  try {
+    const vd = JSON.parse(readFileSync(join(root, "00_System", "standard-version.json"), "utf-8"));
+    return vd.applied_version || "unknown";
+  } catch (e) {
+    if (e && e.code === "ENOENT") return "unknown";
+    log("warn", "standard-version.json ilegible", { vault: basename(root), error: String(e && e.message || e) });
+    return "unreadable";
+  }
+}
+
 function discoverVaults(searchRoots) {
   const found = new Map();
   const MARKERS = ["00_System", "01_Projects", "99_Index", ".obsidian"];
@@ -222,12 +237,7 @@ function discoverVaults(searchRoots) {
           if (markers.length >= 2) {
             const name = e.name;
             if (!found.has(name)) {
-              let version = "unknown";
-              try {
-                const vf = join(full, "00_System", "standard-version.json");
-                const vd = JSON.parse(readFileSync(vf, "utf-8"));
-                version = vd.applied_version || "unknown";
-              } catch (_) {}
+              const version = readStandardVersion(full);
               let notes = 0;
               try { notes = countMdFiles(full); } catch (_) {}
               found.set(name, { name, path: full, version, notes, markers, lastSeen: new Date().toISOString() });
@@ -275,12 +285,7 @@ function refreshVaultRegistry() {
   }
   if (VAULT_ROOT && ![...VAULT_REGISTRY.values()].some(v => v.path === VAULT_ROOT)) {
     const name = VAULT_ROOT.split(/[/\\]/).pop();
-    let version = "unknown";
-    try {
-      const vf = join(VAULT_ROOT, "00_System", "standard-version.json");
-      const vd = JSON.parse(readFileSync(vf, "utf-8"));
-      version = vd.applied_version || "unknown";
-    } catch (_) {}
+    const version = readStandardVersion(VAULT_ROOT);
     VAULT_REGISTRY.set(name, { name, path: VAULT_ROOT, version, notes: 0, markers: [], lastSeen: new Date().toISOString(), _default: true });
   }
 }
@@ -718,12 +723,7 @@ async function jsNativeBackupBase64(args, vaultRoot) {
     }
   }
 
-  let version = "unknown";
-  try {
-    const vf = join(vaultRoot, "00_System", "standard-version.json");
-    const vd = JSON.parse(await readFile(vf, "utf-8"));
-    version = vd.applied_version || "unknown";
-  } catch (_) {}
+  const version = readStandardVersion(vaultRoot);
 
   const manifest = {
     vault_name: vaultRoot.split(/[/\\]/).pop(),

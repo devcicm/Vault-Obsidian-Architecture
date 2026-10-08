@@ -195,3 +195,19 @@ def test_un_manifiesto_sin_fecha_es_un_backup_invalido(vault):
     env = _llamar(vault, "vault_restore_base64", {"path": str(ruta), "confirm": "true"})
     assert env["ok"] is False and env["error_code"] == "BACKUP_MANIFEST_INVALID", env
     assert env["causa"] == "sin_manifiesto"
+
+
+def test_un_sello_de_version_ilegible_no_sale_como_desconocido(vault):
+    """AP-51. `standard-version.json` se leía en tres sitios del `.mjs` con
+    `catch (_) {}`: ausente y corrupto salían los dos `unknown`, y el manifiesto
+    de un backup no distinguía un vault sin sellar de un sello roto."""
+    (vault / "00_System" / "standard-version.json").write_text("{roto", encoding="utf-8")
+    env = _llamar(vault, "vault_backup_base64", {"label": "sello"})
+    assert env["manifest"]["version"] == "unreadable", env["manifest"]
+
+
+def test_el_sello_de_version_tiene_un_solo_lector_en_el_servidor():
+    """Tres copias del mismo criterio son AP-57: se arreglaría una y las otras
+    dos seguirían diciendo `unknown`."""
+    texto = (REPO_ROOT / "mcp" / "nodejs" / "vault-mcp-server.mjs").read_text(encoding="utf-8")
+    assert texto.count('"standard-version.json"') == 1, texto.count('"standard-version.json"')
