@@ -17,7 +17,7 @@ pytestmark = pytest.mark.skipif(
     shutil.which("node") is None, reason="el banco habla con el servidor MCP por Node"
 )
 
-TAREAS = ("orientar", "escribir", "recuperarse", "recordar", "borrar")
+TAREAS = ("orientar", "escribir", "recuperarse", "recordar", "borrar", "cerrar")
 
 
 @pytest.fixture(scope="module")

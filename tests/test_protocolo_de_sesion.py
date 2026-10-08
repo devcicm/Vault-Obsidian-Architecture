@@ -141,3 +141,20 @@ def test_ninguna_tool_del_perfil_emite_una_pista_que_no_puede_seguir():
         for tool in tools_del_perfil("agente"):
             texto = (ROOT / "scripts" / f"{tool}.py").read_text(encoding="utf-8")
             assert not any(f'"{n}"' in texto for n in nombres), (tool, codigo)
+
+
+def test_un_paso_con_un_valor_del_agente_declara_cuando_aplica():
+    """Medido el 2026-10-07: el cierre pedía `vault_drift_detect --project
+    <slug>` sin decir que solo aplica a un proyecto con repo enlazado, y sin
+    un snapshot tomado al empezar el report de un repo sin git no tenía con
+    qué comparar. Un paso que necesita un valor que solo el agente conoce
+    dice cuándo se da."""
+    for momento, paso in _pasos():
+        if "<" in paso["uso"]:
+            assert paso.get("cuando", "").strip(), (momento, paso["tool"])
+
+
+def test_el_drift_del_cierre_tiene_su_snapshot_al_empezar():
+    inicio = [p for p in PROTOCOLO_DE_SESION["inicio"]["pasos"]
+              if p["tool"] == "vault_drift_detect"]
+    assert inicio and all("--mode snapshot" in p["uso"] for p in inicio)

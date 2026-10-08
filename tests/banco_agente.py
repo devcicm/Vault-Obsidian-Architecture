@@ -87,12 +87,14 @@ class Agente:
                               "error_code": env.get("error_code")})
         return env
 
-    def args_de_uso(self, tool: str, uso: str) -> dict:
+    def args_de_uso(self, tool: str, uso: str, valores: dict = None) -> dict:
         """`--check structure` → {check: "structure"}; un flag booleano → True.
 
-        Devuelve None si el paso pide un valor que solo el agente conoce."""
+        `valores` da los que solo el agente conoce (`{"<slug>": "x"}`); sin
+        ellos, un paso que pide uno devuelve None."""
         props = self.esquemas[tool].get("properties", {})
-        tokens, args, i = uso.split(), {}, 0
+        tokens = [(valores or {}).get(tok, tok) for tok in uso.split()]
+        args, i = {}, 0
         while i < len(tokens):
             clave = tokens[i].lstrip("-")
             valor = tokens[i + 1] if i + 1 < len(tokens) else None
@@ -159,6 +161,9 @@ def _escribir(agente: Agente, folder: str, titulo: str, cuerpo: str) -> dict:
 def orientar(agente: Agente, perfil: set) -> dict:
     pasos, hallazgos = [], []
     for paso in PROTOCOLO_DE_SESION["inicio"]["pasos"]:
+        if paso.get("cuando"):  # lo mide `cerrar`, con el proyecto que pide
+            pasos.append({"tool": paso["tool"], "ok": True, "condicional": True})
+            continue
         args = agente.args_de_uso(paso["tool"], paso["uso"])
         if args is None:
             pasos.append({"tool": paso["tool"], "ok": False, "por_que": "uso sin derivar"})
@@ -253,6 +258,37 @@ def borrar(agente: Agente, vault: Path, path: str, marca: str) -> dict:
     return {"ok": all(r.values()), **r}
 
 
+def cerrar(agente: Agente, repo: Path, slug: str = "banco-proyecto") -> dict:
+    """Una sesión sobre un proyecto: los pasos condicionales de `inicio`, un
+    cambio en el repo sin documentar y los de `cierre`, todos desde el uso
+    que declara el protocolo. El report tiene que ver el cambio."""
+    repo.mkdir(parents=True, exist_ok=True)
+    (repo / "modulo.py").write_text("x = 1\n", encoding="utf-8")
+    alta = [agente("vault_project", {"add": slug}),
+            agente("vault_project", {"link": slug, "path": str(repo)})]
+    if not all(e.get("ok") is True for e in alta):
+        return {"ok": False, "alta": alta}
+    pasos = []
+
+    def dar(momento, filtro):
+        for paso in PROTOCOLO_DE_SESION[momento]["pasos"]:
+            if not filtro(paso):
+                continue
+            args = agente.args_de_uso(paso["tool"], paso["uso"], {"<slug>": slug})
+            env = agente(paso["tool"], args) if args is not None else {}
+            pasos.append({"momento": momento, "tool": paso["tool"],
+                          "ok": env.get("ok") is True, "error_code": env.get("error_code")})
+            if paso["tool"] == "vault_drift_detect" and "report" in paso["uso"]:
+                pasos[-1]["cambio_visto"] = "nuevo.py" in [
+                    u.get("file") for u in env.get("undocumented", [])]
+
+    dar("inicio", lambda p: p.get("cuando"))
+    (repo / "nuevo.py").write_text("y = 2\n", encoding="utf-8")
+    dar("cierre", lambda p: True)
+    return {"ok": bool(pasos) and all(p["ok"] and p.get("cambio_visto", True) for p in pasos),
+            "pasos": pasos}
+
+
 def recuerdo_preexistente(agente: Agente, vault: Path) -> dict:
     """Título → context_pack sobre notas que el banco no escribió. Métrica, no veredicto."""
     candidatas = []
@@ -315,6 +351,7 @@ def correr(vault: Path, ajeno: bool = False) -> dict:
         else:
             informe["tareas"]["recordar"] = {"ok": False, "por_que": "no se escribió"}
             informe["tareas"]["borrar"] = {"ok": False, "por_que": "no se escribió"}
+        informe["tareas"]["cerrar"] = cerrar(b, vault.parent / "repo-del-banco")
     finally:
         b.cerrar()
     informe["ok"] = informe["perfil_expuesto"] and all(

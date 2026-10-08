@@ -7230,6 +7230,11 @@ PASO 5 — Al cerrar la sesión:
 > - **Para seguir una pista de recuperación:** `vault_section --list` (la de
 >   `INVALID_FOLDER`) y `vault_project --list` (la de `PROJECT_NOT_FOUND`). El
 >   PASO 5 necesita `--project`: `vault_drift_detect` lo exige desde AP-63.
+> - **Solo en una sesión sobre un proyecto con repo enlazado** (`vault_project --add`
+>   y `--link`): al empezar, `vault_drift_detect --project <slug> --mode snapshot`;
+>   sin ese snapshot, el `--mode report` del PASO 5 sobre un repo sin git no tiene
+>   con qué comparar y devuelve `DRIFT_SNAPSHOT_MISSING`. El registro lo declara en
+>   el campo `cuando` de los dos pasos.
 >
 > La regla 2 nombra las secciones `00_System` … `11_Code` y `99_Index`; desde v41.2
 > un vault declara las suyas en `00_System/secciones.json` y lo que vale es

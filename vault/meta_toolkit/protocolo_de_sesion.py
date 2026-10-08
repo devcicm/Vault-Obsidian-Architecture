@@ -5,6 +5,8 @@ LLMs remotos, de v22): no nombraba el camino de recordar —`vault_context_pack`
 `vault_preferences`, de v39— y por MCP el agente recibía todas las tools `runtime`
 sin saber cuáles usa una sesión. Aquí cada paso declara la tool, para qué sirve y
 de dónde sale; el manifiesto lo describe y un test falla si deja de nombrar una.
+Un paso que necesita un valor que solo el agente conoce (`<slug>`) declara en
+`cuando` en qué sesiones se da.
 
 Un perfil es un subconjunto del catálogo que un cliente MCP puede pedir
 (`VAULT_MCP_PERFIL`). **No se escribe a mano**: `agente` es la unión de las tools
@@ -47,6 +49,15 @@ PROTOCOLO_DE_SESION: Dict[str, Dict[str, Any]] = {
                 "uso": "--context",
                 "para": "cargar entero el contexto estable del usuario: cómo quiere que se trabaje",
                 "fuente": "manifiesto § 17_Preferences: «se carga entera al inicio de sesión» (v39)",
+            },
+            {
+                "tool": "vault_drift_detect",
+                "uso": "--project <slug> --mode snapshot",
+                "para": "fijar el estado del repo contra el que el cierre mide el drift",
+                "fuente": "vault_drift_detect --mode snapshot: «Run with --mode report at "
+                          "end of session»; ERROR_CATALOG['DRIFT_SNAPSHOT_MISSING']",
+                "cuando": "la sesión trabaja sobre un proyecto registrado con su repo enlazado "
+                          "(vault_project --add / --link)",
             },
         ],
     },
@@ -137,6 +148,8 @@ PROTOCOLO_DE_SESION: Dict[str, Dict[str, Any]] = {
                 "para": "ver qué cambió en el proyecto sin quedar documentado",
                 "fuente": "manifiesto § Protocolo de inicio de sesión, PASO 5; "
                           "--project obligatorio desde AP-63",
+                "cuando": "la sesión trabaja sobre un proyecto registrado con su repo enlazado "
+                          "(vault_project --add / --link)",
             },
             {
                 "tool": "vault_reindex",
