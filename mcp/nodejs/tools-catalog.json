@@ -4946,7 +4946,14 @@
           },
           "status": {
             "type": "string",
-            "description": "Estado: draft | review | approved | published | archived"
+            "description": "Estado: draft | review | approved | published | archived",
+            "enum": [
+              "draft",
+              "review",
+              "approved",
+              "published",
+              "archived"
+            ]
           },
           "tags": {
             "type": "array",

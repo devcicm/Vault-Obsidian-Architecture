@@ -50,6 +50,13 @@ from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 QA_TYPES = ["test-plan", "qa-metrics", "qa-report", "qa-strategy", "coverage-report"]
 
+# Ciclo de un documento QA. Dos de los cinco (`review`, `published`) no son
+# canónicos: aterrizan en `status` por `DOMAIN_STATUS_VOCABS["vault_qa_save"]`
+# y el valor se conserva en `qa_state` (AP-38). Hasta v41.3 la tupla vivía
+# escrita en la validación y en el help, sin registro detrás: los dos valores
+# pasaban la validación y morían en `status_frontmatter_lines`.
+QA_STATUSES = ["draft", "review", "approved", "published", "archived"]
+
 
 def _raiz() -> Path:
     return _repo().raiz
@@ -109,11 +116,11 @@ def vault_qa_save(
             f"type '{qa_type}' not valid. Use: {QA_TYPES}",
         )
 
-    if status not in ("draft", "review", "approved", "published", "archived"):
+    if status not in QA_STATUSES:
         return emit_error(
             "vault_qa_save",
             "INVALID_VALUE",
-            f"status '{status}' not valid. Use: draft, review, approved, published, archived",
+            f"status '{status}' not valid. Use: {QA_STATUSES}",
         )
 
     safe_project = slugify(project)
@@ -281,7 +288,8 @@ Status:
     parser.add_argument(
         "--status",
         default="draft",
-        help="Status: draft, review, approved, published, archived (default: draft)",
+        choices=QA_STATUSES,
+        help=f"Status: {QA_STATUSES} (default: draft)",
     )
     parser.add_argument("--tags", nargs="*", help="Additional tags")
 

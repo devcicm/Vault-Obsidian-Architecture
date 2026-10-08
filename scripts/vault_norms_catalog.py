@@ -3969,6 +3969,18 @@ DOMAIN_STATUS_VOCABS = {
     "vault_runbook_save": ("runbook_state", {
         "active": "implemented",
     }),
+    # `vault_qa_save` anunciaba y validaba cinco estados sin registrarlos aquí:
+    # `review` y `published` no son canónicos, así que pasaban su validación y
+    # `status_frontmatter_lines` los rechazaba después con UNEXPECTED_ERROR
+    # crítico (v41.3). Un informe QA publicado es uno aprobado y distribuido:
+    # `approved`, como `wont_fix` de un bug; el valor de dominio lo conserva.
+    "vault_qa_save": ("qa_state", {
+        "draft": "draft",
+        "review": "reviewed",
+        "approved": "approved",
+        "published": "approved",
+        "archived": "archived",
+    }),
     "vault_project_status": ("project_state", {
         "en_desarrollo": "in-progress",
         "en_revision": "reviewed",

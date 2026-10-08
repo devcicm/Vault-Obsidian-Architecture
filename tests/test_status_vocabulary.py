@@ -259,3 +259,68 @@ def test_toda_tool_con_vocabulario_local_esta_declarada_en_el_registro():
     assert not sospechosas, (
         f"vocabularios de estado no declarados en DOMAIN_STATUS_VOCABS: {sospechosas}"
     )
+
+
+# ── Lo que la CLI anuncia, el registro lo resuelve ───────────────────────────
+
+
+class _Parser(Exception):
+    def __init__(self, parser):
+        self.parser = parser
+
+
+def _status_anunciado(script: Path):
+    """Las opciones de `--status` tal y como las lee argparse, no un regex."""
+    import argparse
+    import importlib
+
+    modulo = importlib.import_module(script.stem)
+
+    def capturar(self, *a, **k):
+        raise _Parser(self)
+
+    original = argparse.ArgumentParser.parse_args
+    argparse.ArgumentParser.parse_args = capturar
+    try:
+        modulo.main()
+    except _Parser as p:
+        for accion in p.parser._actions:
+            if "--status" in accion.option_strings:
+                return accion.choices
+        return None
+    finally:
+        argparse.ArgumentParser.parse_args = original
+    pytest.fail(f"{script.stem}.main() no construyó su parser")
+
+
+TOOLS_CON_STATUS_DE_DOMINIO = sorted(
+    s for s in SCRIPTS
+    if "status_frontmatter_lines(" in s.read_text(encoding="utf-8", errors="replace")
+    and '"--status"' in s.read_text(encoding="utf-8", errors="replace")
+)
+
+
+@pytest.mark.parametrize("script", TOOLS_CON_STATUS_DE_DOMINIO, ids=lambda s: s.stem)
+def test_todo_status_que_la_cli_anuncia_resuelve_en_el_registro(script):
+    """v41.3: `vault_qa_save --status review` moría con UNEXPECTED_ERROR crítico.
+
+    La tool anunciaba cinco estados y validaba los cinco; dos de ellos
+    (`review`, `published`) no estaban ni en STATUS_VOCAB ni en un vocabulario
+    de dominio registrado, así que `status_frontmatter_lines` los rechazaba
+    después de que la tool los diera por buenos. El ejemplo publicado en
+    `scripts/README.md` usaba justo uno de ellos.
+
+    Un `--status` sin `choices` es texto libre por diseño (`vault_infra_save`)
+    y no tiene lista que comprobar; uno que valida a mano contra una tupla sí
+    la tiene, así que no se acepta: tiene que declararla como `choices`.
+    """
+    fuente = script.read_text(encoding="utf-8", errors="replace")
+    choices = _status_anunciado(script)
+    if choices is None:
+        assert "status not in (" not in fuente, (
+            f"{script.stem} valida --status contra una tupla escrita a mano: "
+            "decláralo como choices para que se pueda medir"
+        )
+        return
+    rotos = [c for c in choices if split_domain_status(script.stem, c)[0] is None]
+    assert not rotos, f"{script.stem} anuncia --status {rotos}, que el registro rechaza"
