@@ -102,3 +102,19 @@ def test_una_traza_ilegible_se_conserva_y_no_se_sobrescribe(vault):
     assert len(apartadas) == 1, "la traza ilegible no se conservó"
     assert apartadas[0].read_text(encoding="utf-8") == "[{\"tool\": \"anterior\""
     assert [e["tool"] for e in json.loads(traza.read_text(encoding="utf-8"))] == ["vault_health"]
+
+
+def test_el_recurso_no_publica_una_traza_ilegible_como_vacia(vault):
+    """`vault://traceability/mutations` respondía `count: 0` a una traza
+    corrupta: indistinguible de un vault sin mutaciones (AP-51). Y el error no
+    lleva la ruta absoluta: el recurso lo lee un cliente, no el dueño del disco."""
+    (vault / "00_System" / TRAZA).write_text("{roto", encoding="utf-8")
+    s = SesionMCP(vault)
+    try:
+        recurso = s._pedir("resources/read", {"uri": "vault://traceability/mutations"})
+    finally:
+        s.cerrar()
+    texto = recurso["result"]["contents"][0]["text"]
+    publicado = json.loads(texto)
+    assert publicado.get("ok") is False and publicado.get("error_code") == "DATA_FILE_CORRUPT", publicado
+    assert str(vault) not in texto

@@ -2128,7 +2128,22 @@ async function handleResourcesRead(params, session) {
       case "vault://traceability/mutations": {
         let entries = [];
         const vaultRoot = session?.vaultRoot || resolveVaultRoot(session?.sessionId);
-        try { entries = JSON.parse(await readFile(tracePaths(vaultRoot).json, "utf-8")); } catch (_) {}
+        // AP-51: una traza ilegible no se publica como `count: 0`, que es lo
+        // que dice un vault sin mutaciones. El error no lleva la ruta: lo lee
+        // un cliente del servidor, no el dueño del disco.
+        try {
+          entries = JSON.parse(await readFile(tracePaths(vaultRoot).json, "utf-8"));
+          if (!Array.isArray(entries)) throw new Error("la traza no es una lista");
+        } catch (e) {
+          if (e && e.code !== "ENOENT") {
+            const motivo = e.code || (e instanceof SyntaxError ? "JSON inválido" : e.message);
+            return { contents: [{ uri, mimeType: "application/json", text: JSON.stringify({
+              ok: false, error_code: "DATA_FILE_CORRUPT",
+              error: `La traza de mutaciones del vault no se pudo leer (${motivo}).`,
+            }, null, 2) }] };
+          }
+          entries = [];
+        }
         return { contents: [{ uri, mimeType: "application/json", text: JSON.stringify({ count: entries.length, entries: entries.slice(-50) }, null, 2) }] };
       }
       case "vault://catalog": {
