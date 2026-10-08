@@ -197,6 +197,7 @@ def _get_active_notes(
 from vault_lib import (
     destino_mas_corto,
     indice_de_nombres,
+    inventario_de_nombres,
     read_frontmatter,
     resolver_wikilink,
     separar_frontmatter,
@@ -775,8 +776,36 @@ def _distintos_por_convencion(titulo_a: str, titulo_b: str) -> Optional[str]:
     return None
 
 
-def _detect_canonical_shadow(notes: List[Path]) -> List[Dict[str, Any]]:
-    """AP-17: detect pairs of notes with fuzzy title similarity >85% (SequenceMatcher ratio)."""
+def _sustituida_por(
+    rel: str, fm: Dict[str, Any], indice: Dict[str, List[str]]
+) -> str:
+    """La nota a la que `superseded_by:` lleva desde `rel`, o "" si no lleva a una.
+
+    AP-17 sanado: la anotación es la decisión de cuál manda (procedimiento de
+    sanación). Se resuelve como la resuelve Obsidian (AP-44) —por nombre de
+    fichero y `aliases:`, nunca por `title:`— con el dueño del criterio,
+    `vault_lib.resolver_wikilink`. Un destino roto o ambiguo no resuelve:
+    elegir uno sería inventar la decisión que la nota no tomó.
+    """
+    valor = fm.get("superseded_by")
+    if not isinstance(valor, str) or not valor.strip():
+        return ""
+    bruto = valor.strip()
+    if bruto.startswith("[[") and bruto.endswith("]]"):
+        bruto = bruto[2:-2]
+    destino, _candidatos = resolver_wikilink(bruto, Path(rel), indice)
+    return destino
+
+
+def _detect_canonical_shadow(
+    notes: List[Path], resueltos: Optional[List[Dict[str, Any]]] = None
+) -> List[Dict[str, Any]]:
+    """AP-17: detect pairs of notes with fuzzy title similarity >85% (SequenceMatcher ratio).
+
+    Un par en el que una nota declara `superseded_by:` hacia la otra ya está
+    decidido: no es deuda, y si se pasa `resueltos` se publica ahí para que
+    la sanación se vea en vez de desaparecer.
+    """
 
     # Exclude structural files — identical names across sections are by design, not duplicates
 
@@ -785,6 +814,8 @@ def _detect_canonical_shadow(notes: List[Path]) -> List[Dict[str, Any]]:
     pairs = []
 
     items = []
+
+    sustituciones: Dict[str, Dict[str, Any]] = {}
 
     for n in notes:
         if n.stem.lower() in _EXCLUDED_STEMS:
@@ -818,6 +849,12 @@ def _detect_canonical_shadow(notes: List[Path]) -> List[Dict[str, Any]]:
 
         items.append((rel, title))
 
+        sustituciones[rel] = fm
+
+    relativas, alias_por_ruta = inventario_de_nombres(_raiz(), is_snapshot_path)
+    indice = indice_de_nombres(relativas, alias_por_ruta)
+    destino_de = {rel: _sustituida_por(rel, fm, indice) for rel, fm in sustituciones.items()}
+
     seen: set = set()
 
     for i in range(len(items)):
@@ -837,15 +874,31 @@ def _detect_canonical_shadow(notes: List[Path]) -> List[Dict[str, Any]]:
                 if key not in seen:
                     seen.add(key)
 
-                    pairs.append(
-                        {
-                            "noteA": rel_a,
-                            "noteB": rel_b,
-                            "titleA": title_a,
-                            "titleB": title_b,
-                            "similarity": round(ratio, 3),
-                        }
-                    )
+                    # Resuelto si una lleva a la otra, o si las dos llevan a la
+                    # misma tercera: ninguna de las dos compite ya.
+                    comun = destino_de.get(rel_a) or ""
+                    if comun and comun == destino_de.get(rel_b):
+                        if resueltos is not None:
+                            resueltos.append({"sustituidas": [rel_a, rel_b],
+                                              "canonica": comun,
+                                              "similarity": round(ratio, 3)})
+                        continue
+                    for sus, can in ((rel_a, rel_b), (rel_b, rel_a)):
+                        if destino_de.get(sus) == can:
+                            if resueltos is not None:
+                                resueltos.append({"sustituidas": [sus], "canonica": can,
+                                                  "similarity": round(ratio, 3)})
+                            break
+                    else:
+                        pairs.append(
+                            {
+                                "noteA": rel_a,
+                                "noteB": rel_b,
+                                "titleA": title_a,
+                                "titleB": title_b,
+                                "similarity": round(ratio, 3),
+                            }
+                        )
 
     return pairs
 
@@ -2028,7 +2081,8 @@ def vault_audit(
 
     ambiguous_links = _detect_ambiguous_links(all_notes, all_stems, barrido=barrido)
 
-    canonical_shadow = _detect_canonical_shadow(content_notes)
+    canonical_shadow_resuelto: List[Dict[str, Any]] = []
+    canonical_shadow = _detect_canonical_shadow(content_notes, resueltos=canonical_shadow_resuelto)
 
     cross_folder_dupes = _detect_cross_folder_duplicates(content_notes)
 
@@ -2212,6 +2266,10 @@ def vault_audit(
             "brokenLinks": [{"norm_code": "AP-14", **e} for e in broken_links],
             "ambiguousLinks": [{"norm_code": "AP-21", **e} for e in ambiguous_links],
             "canonicalShadow": [{"norm_code": "AP-17", **e} for e in canonical_shadow],
+            # Pares que una `superseded_by:` ya decidió: se publican y no pesan.
+            "canonicalShadowResolved": [
+                {"norm_code": "AP-17", **e} for e in canonical_shadow_resuelto
+            ],
             "crossFolderDuplicates": [
                 {"norm_code": "AP-18", **e} for e in cross_folder_dupes
             ],

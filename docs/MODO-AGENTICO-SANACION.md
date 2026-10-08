@@ -100,6 +100,13 @@ otra **no se borra**: se le escribe `superseded_by: "[[canónica]]"`, y desde
 entonces el rerank la pesa como sustituida (`vault_context_pack.penalizacion`).
 Antes de ese cambio la anotación no movía nada y las dos competían a la par.
 
+`vault_audit` lee la misma anotación: el par sale de `canonicalShadow` y pasa a
+`canonicalShadowResolved`, sin penalización, si una nota lleva a la otra —o las
+dos a la misma tercera—. El enlace se resuelve como lo resuelve Obsidian, por
+nombre de fichero y `aliases:`; uno roto o ambiguo no resuelve el par. En la
+copia de /ans, las siete anotaciones resolvieron ocho pares (104 → 103 y el par
+entre las dos gemelas de la misma guía).
+
 ### Una métrica que empeora al medir mejor no es una regresión
 
 `stale` subió de 167 a 185. Las 26 notas que no tenían frontmatter no eran
