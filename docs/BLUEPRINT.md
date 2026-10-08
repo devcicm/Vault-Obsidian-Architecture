@@ -67,7 +67,7 @@ regenera.*
 
 *Registros: `vault_norms.NORM_CATALOG` + `vault_gate.PUERTAS` + `tests/`*
 
-68 de 77 normas tienen puerta o test que las nombre.
+69 de 78 normas tienen puerta o test que las nombre.
 **Es la única capa con baseline**, y por un motivo concreto: las demás se midieron
 en cero el día que se declararon porque sus datos ya existían y solo faltaba
 atarlos. Ésta no. Exigir cero aquí el primer día habría hecho nacer la puerta en
@@ -81,7 +81,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-04** — Features aspiracionales documentadas como implementadas | audit | — | — |
 | **AP-05** — Múltiples fuentes de verdad para el mismo dato | audit | `fuente_unica` | `test_ap05_fuente_unica.py`, `test_ap46_editores.py`, `test_blueprint.py`, `test_js_native_frontera.py`, `test_norms_coherence.py` |
 | **AP-06** — Templates sin instancias reales | audit | `framework` | — |
-| **AP-07** — ADRs incompletos | audit | `framework` | `test_ap07_criterio_adr.py`, `test_vault_norms_audit.py` |
+| **AP-07** — ADRs incompletos | audit | `framework` | `test_ap07_criterio_adr.py`, `test_ap64_responsable.py`, `test_vault_norms_audit.py` |
 | **AP-08** — Documentación anclada a versiones obsoletas | audit | — | `test_ap08_vigencia.py` |
 | **AP-09** — Runbooks fuera de estructura | audit | `framework` | `test_vault_norms_audit.py` |
 | **AP-10** — Migración sin plan de rollback | audit | `framework` | — |
@@ -90,7 +90,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-13** — Timestamps inválidos o incompletos en frontmatter | audit | — | `test_meta_contrato.py` |
 | **AP-14** — Wiki-links rotos o vacíos | guard+audit | — | `test_audit_acciones_de_movimiento.py`, `test_normas_enlaces_sin_solape.py`, `test_norms_coherence.py` |
 | **AP-15** — Archivos externos depositados en la raíz del vault | guard+audit | `framework` | `test_normas_sin_registro_a_mano.py`, `test_vault_norms_audit.py` |
-| **AP-16** — Sin identificador de agente en frontmatter | audit | — | `test_context_memory.py` |
+| **AP-16** — Sin identificador de agente en frontmatter | audit | — | `test_ap64_responsable.py`, `test_context_memory.py` |
 | **AP-17** — Canonical-shadow duplication | audit | — | `test_normas_de_audit_ejercitadas.py` |
 | **AP-18** — Cross-folder content duplication | audit | — | — |
 | **AP-19** — Shadow indexing | audit | `framework` | — |
@@ -143,6 +143,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-61** — El guard cae con el dato que vino a medir | guard+audit | `excepcion_declarada` | `test_excepcion_declarada.py` |
 | **AP-62** — El consumidor paga el fan-out del productor | guard+audit | `arquitectura`, `recursos` | `test_recursos.py` |
 | **AP-63** — El nombre de un proyecto como texto libre | guard+audit | — | `test_project_registrado.py`, `test_vault_project.py` |
+| **AP-64** — Decisión cerrada sin responsable | audit | `framework` | `test_ap64_responsable.py` |
 | **PAT-6** — Semantic graph enrichment — enriquecimiento periodico del grafo | recommended | — | — |
 | **SP-01** — Delete protocol — change_log obligatorio antes de eliminar | audit | `framework` | `test_vault_norms.py` |
 | **SP-02** — Forward-link verification — buscar antes de linkar | guard | — | `test_normas_enlaces_sin_solape.py`, `test_vault_norms.py` |

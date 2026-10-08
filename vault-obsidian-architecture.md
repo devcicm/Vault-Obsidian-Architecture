@@ -3516,7 +3516,7 @@ Mantiene `00_System/tag-registry.json`: escanea todos los frontmatter, acumula `
 
 #### `vault_norms(list?, show?, scan?, apply?, rebuild?)`
 
-Catálogo embebido de las **77 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
+Catálogo embebido de las **78 normas** del estándar (44 AP + 6 PAT + 3 SP + 3 CN), con la numeración de antipatrones contigua de `AP-01` a `AP-44`. Fuente de verdad: `NORM_CATALOG` en `vault_norms.py`. Proyección: `00_System/norm-registry.json`.
 
 > **AP-26..AP-30 (v39):** completitud de frontmatter — tags, `type`, bloque YAML, `status` y clasificación CIA. Estaban **aplicados por `vault_audit` desde v30** (penalizan el health score y tienen etiqueta propia en su salida) pero nunca se registraron en el catálogo: `vault_norms --list` no los mostraba. El hueco lo detectó el chequeo de contiguidad de `vault_sdd_init` al dejar de estar clavado en `AP-01..AP-25`. Registrados sin alterar el comportamiento del audit.
 
@@ -6806,6 +6806,51 @@ modo que queda fuera de git sin depender del `.gitignore` del vault.
 la escritura todavía puede fundar un fantasma, que el audit verá después. El audit lee el
 frontmatter (`project:` y sus variantes de clave) y no el cuerpo, así que un nombre citado en
 prosa no cuenta — que es lo que impide contar como proyectos los ejemplos de este manifiesto.
+
+### AP-64 — Decisión cerrada sin responsable
+
+**Enforcement:** `audit` · **Severidad:** medium · **Introducido:** v41.3
+**Audit:** `python scripts/vault_norms.py --audit` · **Criterio:** `vault.kernel.contenido.falta_de_responsable`
+
+**Síntoma.** Un ADR aprobado —lo que un agente consulta antes de actuar: «esto se decidió así
+y por esto»— no dice quién responde de su porqué. O lo dice, y es el mismo agente que lo
+escribió.
+
+**Por qué importa.** Sin responsable, el agente que consulta no distingue una decisión que
+tomó una persona de una que otro agente redactó y dio por buena. AP-07 garantiza que el
+porqué está escrito; AP-16, que se sabe quién escribió la nota. Ninguna de las dos dice
+quién **responde**, y una decisión cerrada es justo la nota en la que esa pregunta importa.
+Medido en solo lectura contra un vault consumidor (regla 7, 2026-10-08): ninguno de sus ADR
+aceptados declara quién responde de él, y la mayoría tampoco declara `agent`.
+
+**Señal.** Un ADR —la misma definición que AP-07 (`es_adr`)— cuyo `status`, normalizado, está
+en régimen `cerrado` (`approved`, `accepted` como sinónimo, `verified`, `implemented`…) y no
+es `template`, y que:
+
+- no tiene `responsable:` en el frontmatter, o
+- tiene `responsable:` igual a su `agent:` cuando ese agente no es `human`.
+
+Un ADR en `draft` o `review` aún se discute, y uno `archived` ya no se consulta como
+vigente: ninguno de los dos se marca. El régimen lo deriva `vault_registry.regimen_de_estado`;
+la norma no lleva su propia lista de estados.
+
+**Prevención.** Al cerrar una decisión, escribir `responsable:` con la persona que responde
+de ella. Es un campo opcional del contrato v41, junto a `revisado_en:` (AP-08). Un agente
+puede redactar el ADR y dejarlo en `draft`; aprobarlo con su propio nombre como responsable
+es lo que la norma marca.
+
+```yaml
+type: adr
+status: approved
+agent: claude          # quién lo escribió (AP-16)
+responsable: Ana Ruiz  # quién responde de su porqué (AP-64)
+revisado_en: 2026-10-08
+```
+
+**Lo que verde no prueba.** La norma no puede saber si el valor de `responsable` es de verdad
+una persona: solo que no es el agente que la escribió. Solo mira los ADR de `03_Decisions/`;
+las decisiones de IA de `16_AI_Governance/` llevan su propio `human_approved`
+(`vault_ai_decision`).
 
 ---
 

@@ -81,5 +81,5 @@ Cualquier versión se valida con el validador vigente:
 | `status` | requerido | contenido | AP-29 |
 | `dq_validated_at` | opcional | contenido | — |
 | `vigente_desde` | opcional | contenido | — |
-| `responsable` | opcional | contenido | — |
+| `responsable` | opcional | contenido | AP-64 |
 | `revisado_en` | opcional | contenido | AP-08 |

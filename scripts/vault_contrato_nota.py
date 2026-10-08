@@ -131,7 +131,8 @@ CAMPOS: Dict[str, Dict[str, Any]] = {
     # es `agent`, que dice quién la escribió: un agente redacta un ADR y una
     # persona lo firma.
     "responsable": {"tipo": "string", "nivel": "opcional", "clases": ("contenido",),
-                    "requerido_desde": None, "valores_desde": "v41", "no_vacio": True},
+                    "requerido_desde": None, "valores_desde": "v41", "no_vacio": True,
+                    "norma": "AP-64"},
     # La última vez que alguien comprobó que la nota sigue siendo cierta, la
     # cambiara o no. `updatedAt` solo se mueve si el texto cambia; sin este
     # campo, revisar una nota y confirmarla no deja rastro. Fecha o fecha y hora.

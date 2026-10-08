@@ -239,6 +239,7 @@
     "responsable": {
       "x-vault-tipo-esperado": "string",
       "x-vault-nivel": "opcional",
+      "x-vault-norma": "AP-64",
       "type": "string",
       "pattern": "\\S"
     },
@@ -372,6 +373,7 @@
         "responsable": {
           "x-vault-tipo-esperado": "string",
           "x-vault-nivel": "opcional",
+          "x-vault-norma": "AP-64",
           "type": "string",
           "pattern": "\\S"
         },
@@ -498,6 +500,7 @@
         "responsable": {
           "x-vault-tipo-esperado": "string",
           "x-vault-nivel": "opcional",
+          "x-vault-norma": "AP-64",
           "type": "string",
           "pattern": "\\S"
         },
@@ -624,6 +627,7 @@
         "responsable": {
           "x-vault-tipo-esperado": "string",
           "x-vault-nivel": "opcional",
+          "x-vault-norma": "AP-64",
           "type": "string",
           "pattern": "\\S"
         },

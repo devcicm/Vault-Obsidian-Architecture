@@ -17,6 +17,7 @@ from ..kernel.contenido import (
     TIPOS_ADR,
     cuerpo_sin_marcadores,
     es_adr,
+    falta_de_responsable,
     secciones_adr_faltantes,
 )
 from .repositorio import RepositorioGobernanza
@@ -64,6 +65,7 @@ def auditar_runtime(
         NON_SECTION_ROOT_FOLDERS,
         SECCIONES_PROPIAS_RUTA,
         SECTIONS,
+        regimen_de_estado,
         secciones_del_vault,
     )
 
@@ -272,6 +274,17 @@ def auditar_runtime(
                 if not status:
                     problems.append("sin campo status")
                 _flag("AP-07", rel, "ADR incompleto — " + "; ".join(problems) + ".")
+
+        # ── AP-64: decisión cerrada sin quien responda de su porqué ──────────
+        # El criterio es del dueño (`falta_de_responsable`); el régimen sale
+        # del estado canónico, así que `accepted` cuenta como `approved`.
+        if es_adr(rel, note_type, stem):
+            canonico = normalize_status(status)[0] if status else None
+            if canonico in STATUS_TRANSITIONS:
+                motivo = falta_de_responsable(
+                    fm, regimen_de_estado(canonico, STATUS_TRANSITIONS))
+                if motivo:
+                    _flag("AP-64", rel, motivo[:1].upper() + motivo[1:] + ".")
 
         # ── AP-06: templates sin instancias (sin inbound links) ──────────────
         if note_type == "template" or "template" in [str(t).lower() for t in fm.get("tags", []) or []]:

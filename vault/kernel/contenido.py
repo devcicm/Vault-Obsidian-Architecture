@@ -168,3 +168,40 @@ def plantilla_adr() -> str:
     obligatorias = [n for n, _ in SECCIONES_ADR]
     orden = obligatorias[:1] + [n for n, _ in SECCIONES_ADR_RECOMENDADAS] + obligatorias[1:]
     return "\n\n".join(f"## {s}" for s in orden) + "\n"
+
+
+# ── AP-64: quién responde del porqué de una decisión cerrada ───────────────
+#
+# Un ADR aprobado es lo que un agente consulta antes de actuar. Si nadie
+# responde de él, el agente no distingue una decisión que tomó una persona de
+# una que otro agente escribió y dio por buena. Medido contra /ans (regla 7,
+# 2026-10-08): ninguno de sus ADR aceptados declara quién responde de él.
+#
+# El régimen del estado no se decide aquí: lo deriva
+# `vault_registry.regimen_de_estado` y lo pasa quien llama, para que esta hoja
+# siga sin importar a nadie.
+
+#: El único valor estándar de `agent` (AP-16) que es una persona.
+AGENTE_HUMANO = "human"
+
+
+def falta_de_responsable(fm, regimen: str) -> str:
+    """AP-64: por qué esta decisión cerrada no tiene quien responda de ella.
+
+    Devuelve el motivo, o `""` si no hay falta. Solo se exige a una decisión
+    en régimen `cerrado` que no sea plantilla: una abierta aún se discute y una
+    terminal ya no se consulta como vigente. Es falta no declarar
+    `responsable`, y también declarar como responsable al mismo agente no
+    humano que la escribió: eso es firmarse el propio porqué.
+    """
+    fm = fm or {}
+    if regimen != "cerrado" or str(fm.get("status") or "").strip().lower() == "template":
+        return ""
+    responsable = " ".join(str(fm.get("responsable") or "").split()).lower()
+    if not responsable:
+        return "decisión cerrada sin `responsable`: nadie responde de su porqué"
+    agente = str(fm.get("agent") or "").strip().lower()
+    if agente and agente != AGENTE_HUMANO and responsable == agente:
+        return (f"el responsable es el mismo agente que la escribió ({agente}): "
+                "una decisión cerrada la responde una persona")
+    return ""

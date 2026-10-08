@@ -1,15 +1,15 @@
 # Antipatterns -- Antipatrones
 
-> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-63 más
-> las familias PAT, SP y CN. Por familia: AP 63, CN 4, PAT 6, SP 4.
-> Bilingual document. Full norm catalog: antipatterns AP-01..AP-63 plus the PAT,
-> SP and CN families. By family: AP 63, CN 4, PAT 6, SP 4.
+> Documento bilingüe. Catálogo de normas completo: antipatrones AP-01..AP-64 más
+> las familias PAT, SP y CN. Por familia: AP 64, CN 4, PAT 6, SP 4.
+> Bilingual document. Full norm catalog: antipatterns AP-01..AP-64 plus the PAT,
+> SP and CN families. By family: AP 64, CN 4, PAT 6, SP 4.
 
 ---
 
 ## ES
 
-Total de normas registradas: 77 (AP 63, CN 4, PAT 6, SP 4)
+Total de normas registradas: 78 (AP 64, CN 4, PAT 6, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -743,6 +743,20 @@ El registro existe sin que nadie lo declare: la carpeta `01_Projects/<slug>/` re
 
 Límites declarados: las tools con `--project` todavía no pasan por el resolutor, así que la escritura sigue pudiendo fundar un fantasma que el audit verá después; y el audit no mira el cuerpo de las notas, donde los ejemplos del manifiesto citan nombres que no son proyectos.
 
+### AP-64: Decisión cerrada sin responsable
+
+- **Severidad:** medium
+- **Enforcement:** audit
+- **Detectado por:** vault_norms
+
+Un ADR aprobado es lo que un agente consulta antes de actuar: "esto se decidió así y por esto". Si nadie responde de ese porqué, el agente no distingue una decisión que tomó una persona de una que otro agente escribió y dio por buena. Medido en solo lectura contra un vault consumidor (regla 7, 2026-10-08): ninguno de sus ADR aceptados declara quién responde de él, y la mayoría tampoco declara `agent`.
+
+El criterio tiene dueño en `vault.kernel.contenido.falta_de_responsable` y lo leen el scan y la auditoría. El régimen del estado lo deriva `vault_registry.regimen_de_estado`, así que `accepted` cuenta como `approved`.
+
+**Prevención:** Al cerrar una decisión, escribir `responsable:` con la persona que responde de ella (campo opcional del contrato v41). Un agente puede redactar el ADR y dejarlo en `draft` o `review`; aprobarlo con su propio nombre como responsable es lo que la norma marca.
+
+Límites declarados: la norma no puede saber si el valor de `responsable` es de verdad una persona --solo que no es el agente que la escribió--, y solo mira los ADR de `03_Decisions/`; las decisiones de IA de `16_AI_Governance/` llevan su propio `human_approved`.
+
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 
 - **Severidad:** high
@@ -887,7 +901,7 @@ El transporte HTTP/SSE del servidor MCP acepta sesiones sin token, responde con 
 
 ## EN
 
-Total registered norms: 77 (AP 63, CN 4, PAT 6, SP 4)
+Total registered norms: 78 (AP 64, CN 4, PAT 6, SP 4)
 
 ### AP-01: Documentación alucinada
 
@@ -1620,6 +1634,20 @@ El registro existe sin que nadie lo declare: la carpeta `01_Projects/<slug>/` re
 **Prevention:** `vault_project` es la puerta de entrada: `--add` registra y rechaza un alias que ya es de otro proyecto, `--resolve` devuelve el slug o el código de error, `--audit` lista fantasmas y claves no canónicas sin escribir nada. La ruta local va a `00_System/.local/project-paths.json`, con su propio `.gitignore`: es de una máquina, no del proyecto.
 
 Límites declarados: las tools con `--project` todavía no pasan por el resolutor, así que la escritura sigue pudiendo fundar un fantasma que el audit verá después; y el audit no mira el cuerpo de las notas, donde los ejemplos del manifiesto citan nombres que no son proyectos.
+
+### AP-64: Decisión cerrada sin responsable
+
+- **Severity:** medium
+- **Enforcement:** audit
+- **Detected by:** vault_norms
+
+Un ADR aprobado es lo que un agente consulta antes de actuar: "esto se decidió así y por esto". Si nadie responde de ese porqué, el agente no distingue una decisión que tomó una persona de una que otro agente escribió y dio por buena. Medido en solo lectura contra un vault consumidor (regla 7, 2026-10-08): ninguno de sus ADR aceptados declara quién responde de él, y la mayoría tampoco declara `agent`.
+
+El criterio tiene dueño en `vault.kernel.contenido.falta_de_responsable` y lo leen el scan y la auditoría. El régimen del estado lo deriva `vault_registry.regimen_de_estado`, así que `accepted` cuenta como `approved`.
+
+**Prevention:** Al cerrar una decisión, escribir `responsable:` con la persona que responde de ella (campo opcional del contrato v41). Un agente puede redactar el ADR y dejarlo en `draft` o `review`; aprobarlo con su propio nombre como responsable es lo que la norma marca.
+
+Límites declarados: la norma no puede saber si el valor de `responsable` es de verdad una persona --solo que no es el agente que la escribió--, y solo mira los ADR de `03_Decisions/`; las decisiones de IA de `16_AI_Governance/` llevan su propio `human_approved`.
 
 ### CN-01: Kebab-case filenames -- nombres de archivo en minúsculas con guiones
 

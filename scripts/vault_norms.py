@@ -53,7 +53,8 @@ from vault_version import CURRENT_VERSION  # generator_version de los artefactos
 from vault_io import atomic_write_json, file_lock, normalize_stem
 from vault_lib import parse_frontmatter, separar_frontmatter
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
-from vault.kernel.contenido import es_adr, secciones_adr_faltantes  # noqa: E402
+from vault.kernel.contenido import es_adr, falta_de_responsable, secciones_adr_faltantes  # noqa: E402
+from vault_registry import regimen_de_estado  # noqa: E402
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -288,6 +289,14 @@ def vault_norms_scan(path: str) -> Dict[str, Any]:
         faltan = secciones_adr_faltantes(body)
         if faltan:
             _add("AP-07", f"ADR incompleto: faltan {', '.join(faltan)}")
+    # AP-64 con el mismo dueño que la auditoría: el régimen sale del estado
+    # canónico, así que un `accepted` cuenta como `approved` (cerrado).
+    if es_adr(rel, fm.get("type", "")):
+        canonico = normalize_status(str(fm.get("status") or ""))[0] if fm.get("status") else None
+        if canonico in STATUS_TRANSITIONS:
+            motivo = falta_de_responsable(fm, regimen_de_estado(canonico, STATUS_TRANSITIONS))
+            if motivo:
+                _add("AP-64", motivo)
 
     # La sección es `08_Runbooks`; aquí se comparaba contra `06_Runbooks`, que
     # no existe. La condición era por tanto siempre cierta: un runbook guardado
