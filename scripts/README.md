@@ -1,13 +1,13 @@
 # Vault Scripts
 
-Scripts Python del estándar **Vault Obsidian Architecture** (versión vigente: `vault_version.CURRENT_VERSION`). Implementan las 121 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
+Scripts Python del estándar **Vault Obsidian Architecture** (versión vigente: `vault_version.CURRENT_VERSION`). Implementan las 122 tools activas del vault como ejecutables CLI independientes + módulo de observabilidad + MCP server monolith.
 
-- **159 archivos Python** — 121 tools del catálogo MCP (119 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
+- **160 archivos Python** — 122 tools del catálogo MCP (120 Python + 2 JS-native backup/restore base64) + 8 archivadas en `_archived/` + meta/spec + bibliotecas internas
 - **AP-36 (v38.1, reforzado en v39)** — contención e idempotencia: todo side-effect (backups, traces, locks, stubs) vive DENTRO del vault; rutas derivadas de `get_vault_root()`, nunca de `__file__` ni CWD. `vault_norms.py --audit` lo verifica hasta **2 niveles** por encima del vault (el punto ciego del patrón `parent.parent.parent`) y reporta si la raíz se detectó por suposición
 - **Contrato de tools (v39)** — `tool-spec.json` vive en **`<vault>/00_System/`**, resuelto por `vault_io.tool_spec_path()`. `resolve_tool_spec()` mantiene `scripts/tool-spec.json` como fallback de solo lectura para vaults no migrados
 - **`VAULT_STRICT_ROOT` (v39)** — si la detección de raíz tendría que caer a la raíz del repo, lanza `RuntimeError` en vez de adivinar. Inspecciona la rama que resolvió con `vault_io.vault_root_origin()` / `vault_root_is_confident()`
 - **Saneamiento de índices (v38.1)** — `vault_section_index.py --heal [--root]` regenera índices con formato legacy `[[stem|alias]]` o ausentes; el auto-index post-write se auto-cura si un agente escribe `index.md` a mano
-- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 121 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
+- **MCP Server:** `../mcp/nodejs/vault-mcp-server.mjs` — monolito Node.js que expone las 122 tools via MCP Protocol (JSON-RPC 2.0) con transporte dual stdio + SSE/HTTP. Catálogo canónico generado desde `vault_mcp_catalog.py --sync`
 - **Python 3.9+** requerido — sin dependencias externas obligatorias
 - **VAULT_ROOT** auto-detectado por `vault_io.py` — soporta layouts consumer-repo (`scripts/` + `vault-foo/`) y scripts-inside-vault; requiere marcador de CONTENIDO (01_Projects/02_Observability/03_Decisions/.obsidian), no solo 00_System/99_Index (evita el ciclo auto-reforzado de detección); override runtime con `set_vault_root()`/env `VAULT_ROOT`
 - **Timeout automático** — todas las tools terminan en ≤60s (configurable via `VAULT_TOOL_TIMEOUT` env var)
@@ -57,7 +57,7 @@ Scripts Python del estándar **Vault Obsidian Architecture** (versión vigente: 
 | [Grupo 30 — Riesgos/Calidad](#grupo-30--riesgoscalidad) | vault_risk_save, vault_privacy_save, vault_ncr_save |
 | [Grupo 31 — Bootstrap](#grupo-31--bootstrap) | vault_init, vault_onboard |
 | [Grupo 32 — Gestión de Carpetas](#grupo-32--gestión-de-carpetas) | vault_folder_registry, vault_section |
-| [Grupo 33 — Corrección Automática](#grupo-33--corrección-automática) | vault_fix_brackets, vault_graph_fix, vault_frontmatter_heal, vault_frontmatter_completar |
+| [Grupo 33 — Corrección Automática](#grupo-33--corrección-automática) | vault_fix_brackets, vault_graph_fix, vault_frontmatter_heal, vault_frontmatter_completar, vault_supersede |
 | [Grupo 34 — Memoria de Contexto](#grupo-34--memoria-de-contexto) | vault_preferences, vault_model_profile, vault_query_parse, vault_subgraph, vault_context_pack, vault_ingest |
 | [Grupo 35 — Normas](#grupo-35--normas) | vault_norms, vault_arch, vault_blame_audit, vault_changelog_check, vault_error_contract, vault_foreign_check, vault_gate, vault_code_tag, vault_doc_counts, vault_doc_sync, vault_doc_staleness, vault_noop_audit, vault_smoke, vault_voice, vault_servicio, vault_blueprint, vault_norms_coherence, vault_criterios, vault_ciclos, vault_kernel, vault_excepcion_declarada, vault_recursos, vault_produccion, vault_esquema, vault_fix_all |
 | [Grupo 36 — Defectos y Cuarentena](#grupo-36--defectos-y-cuarentena) | vault_bug_save, vault_quarantine |
@@ -608,6 +608,21 @@ Lo que **no toca**: ningún valor que ya está —ni para corregirlo—, un bloq
 La escritura va por `atomic_write_text`, que deja la nota en LF y sin BOM. En una nota CRLF o con BOM el diff es el fichero entero; cada entrada lo declara en `encoding_normalized` (`["bom", "crlf"]`) para que no se descubra en el commit. Medido sobre una copia del sandbox: 26 notas inválidas → 0, y una segunda pasada escribe 0.
 
 No acepta `--root` (regla 1).
+
+### `vault_supersede.py`
+Anota `superseded_by:` en una nota que **ya existe** sin tocar su cuerpo. Es el paso que el procedimiento de sanación prescribe para un título repetido (AP-17): la sustituida no se borra, declara cuál manda. Por defecto es **dry-run**.
+
+```bash
+python vault_supersede.py --path 10_Migrated/GUIA.md --by guia                 # qué escribiría
+python vault_supersede.py --path 10_Migrated/GUIA.md --by "[[guia]]" --apply   # escribe
+python vault_supersede.py --path 10_Migrated/GUIA.md --by 07_Knowledge/guia --apply --replace
+```
+
+Cuál de las dos manda **no lo decide la tool**: lo dice `--by`. La tool comprueba que esa decisión se lea después igual que la leen `vault_audit` y `vault_context_pack`, con el mismo dueño (`vault_lib.resolver_sustitucion`): `--by` se resuelve como un wikilink, por nombre de fichero y `aliases:`, nunca por `title:` (AP-44). Un `--by` roto sale `NOTE_NOT_FOUND`; uno ambiguo, `INVALID_VALUE` con los `candidates` y la pista de escribirlo con la carpeta. Rechaza también la nota a sí misma y el ciclo (la canónica ya declara que la sustituye esta).
+
+Una `superseded_by` distinta ya escrita es una decisión tomada y no se pisa sin `--replace`; la misma no se reescribe (`already: true`, `written: false`). El valor escrito es el enlace más corto que resuelve a una sola nota. Tras `--apply`, `vault_audit` cuenta el par en `canonicalShadowResolved` en vez de en la deuda AP-17, y `vault_context_pack` deja de dar a la sustituida como candidata.
+
+No escribe si la nota cambió entre leerla y escribirla (AP-54). La escritura va por `atomic_write_text` (LF sin BOM); una nota CRLF o con BOM lo declara en `encoding_normalized`. No acepta `--root` (regla 1).
 
 ---
 
@@ -2059,7 +2074,7 @@ El vault expone sus herramientas como un **servidor MCP** que las IAs consumen d
 
 **Archivo:** `../mcp/nodejs/vault-mcp-server.mjs` (~1650 líneas, cero dependencias npm)  
 **Plan:** `../mcp/PLAN.md` — documento de evidencia con 8 fases de implementación
-**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (121 tools)
+**Catálogo:** `../mcp/nodejs/tools-catalog.json` — generado desde `vault_mcp_catalog.py --sync` (122 tools)
 
 Los parámetros que el catálogo publica **se derivan del `argparse` de cada script**,
 no se escriben a mano: el servidor compone `--<param>` literal, así que un param
@@ -2229,7 +2244,7 @@ python vault_doc_counts.py --check --no-slow  # omite el conteo de tests (lanza 
 
 **El changelog y la tabla de versiones quedan fuera del escaneo.** "76 tools" dentro de la entrada de v37 es historia correcta, no drift; reescribirla sería derogar el registro histórico. Los patrones son deliberadamente específicos por el mismo motivo: `"N normas"` a secas también casa con "las 14 normas manuales eliminadas", que es otro hecho. Un patrón laxo produce falsos positivos y el guard acaba desactivado — que es como mueren los guards.
 
-Fuera de esas secciones también hay historia: un censo hecho en una versión concreta («41 de las 121 tools del catálogo no se han ejecutado») casa con el patrón de tools activas, y `--fix` lo reescribió con cada tool nueva hasta que el censo dejó de decir lo que se midió. Una línea así lleva `<!-- cifra histórica: <motivo> -->`: exime solo esa línea, sin motivo no exime, y el envelope la publica en `historic_exempt` para que eximir no sea una forma callada de apagar el guard.
+Fuera de esas secciones también hay historia: un censo hecho en una versión concreta («41 de las 122 tools del catálogo no se han ejecutado») casa con el patrón de tools activas, y `--fix` lo reescribió con cada tool nueva hasta que el censo dejó de decir lo que se midió. Una línea así lleva `<!-- cifra histórica: <motivo> -->`: exime solo esa línea, sin motivo no exime, y el envelope la publica en `historic_exempt` para que eximir no sea una forma callada de apagar el guard.
 
 ### `vault_doc_sync.py`
 

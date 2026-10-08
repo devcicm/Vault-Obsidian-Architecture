@@ -6382,6 +6382,54 @@
         "vault_context_pack"
       ]
     },
+    "vault_supersede": {
+      "name": "vault_supersede",
+      "description": "Anota superseded_by en una nota que ya existe sin tocar su cuerpo: la sustituida no se borra, declara cuál manda (AP-17).",
+      "group": "Corrección Automática",
+      "script": "vault_supersede.py",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "La nota sustituida, ruta relativa al vault"
+          },
+          "by": {
+            "type": "string",
+            "description": "La nota que manda, como wikilink: nombre de fichero, alias o ruta (nunca title:)"
+          },
+          "apply": {
+            "type": "boolean",
+            "description": "Escribe la anotación (default: dry-run)"
+          },
+          "replace": {
+            "type": "boolean",
+            "description": "Sustituye una superseded_by distinta ya escrita"
+          }
+        },
+        "required": [
+          "path",
+          "by"
+        ],
+        "additionalProperties": false
+      },
+      "guards": [
+        "AP-44: --by se resuelve por nombre de fichero y aliases, nunca por title:",
+        "Rechaza --by roto, ambiguo, a sí misma o que cierra un ciclo",
+        "AP-54: no escribe si la nota cambió desde que se leyó"
+      ],
+      "side_effects": [
+        "Reescribe el frontmatter de la nota por atomic_write_text; el cuerpo no cambia"
+      ],
+      "status": "active",
+      "exposed_via_mcp": true,
+      "execution_module": "vault_toolkit.operations.vault_supersede",
+      "related": [
+        "vault_audit",
+        "vault_context_pack",
+        "vault_frontmatter_completar"
+      ]
+    },
     "vault_tags": {
       "name": "vault_tags",
       "description": "Registro canónico de tags, auditoría de orphans y near-dupes, y bitácora append-only del vocabulario introducido (AP-39).",
@@ -7107,7 +7155,8 @@
       "vault_fix_brackets",
       "vault_graph_fix",
       "vault_frontmatter_heal",
-      "vault_frontmatter_completar"
+      "vault_frontmatter_completar",
+      "vault_supersede"
     ],
     "Versionado": [
       "vault_standard_upgrade",

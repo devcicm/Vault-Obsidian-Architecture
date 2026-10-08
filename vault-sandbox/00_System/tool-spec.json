@@ -1718,6 +1718,40 @@
         "F3"
       ]
     },
+    "vault_supersede": {
+      "group": "Corrección Automática",
+      "group_id": 33,
+      "status": "active",
+      "required_args": [
+        "by",
+        "path"
+      ],
+      "declared_returns": [
+        "action",
+        "already",
+        "canonical",
+        "ok",
+        "path",
+        "previous",
+        "superseded_by",
+        "tool",
+        "written"
+      ],
+      "dq": {
+        "dq_dimensions": [
+          "consistency",
+          "uniqueness"
+        ],
+        "cia_scope": [
+          "integrity"
+        ],
+        "propagation_aware": false
+      },
+      "fundamentals": [
+        "F2",
+        "F3"
+      ]
+    },
     "vault_fuente_unica": {
       "group": "Salud del Vault",
       "group_id": 6,
@@ -4537,10 +4571,10 @@
     }
   },
   "_counts": {
-    "active": 121,
+    "active": 122,
     "internal": 16,
     "archived": 5,
-    "total": 142,
+    "total": 143,
     "active_groups": 37,
     "schema_version": "1.0"
   }

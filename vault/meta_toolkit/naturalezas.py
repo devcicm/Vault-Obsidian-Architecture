@@ -56,6 +56,7 @@ NATURALEZAS: Dict[str, Dict[str, Any]] = {
             "vault_backup_list", "vault_code_sync", "vault_delta",
             "vault_delete", "vault_drift_detect", "vault_fix_brackets",
             "vault_frontmatter_heal", "vault_frontmatter_completar", "vault_fuente_unica",
+            "vault_supersede",
             "vault_fundamentals",
             "vault_gobernanza", "vault_graph_fix", "vault_graph_inspect",
             "vault_graph_merge", "vault_history_compact", "vault_mermaid_check",

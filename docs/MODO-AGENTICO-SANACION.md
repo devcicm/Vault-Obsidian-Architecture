@@ -96,7 +96,8 @@ Medido en una copia de /ans (2026-10-07): las únicas notas que
 `vault_context_pack` no ponía primeras al preguntar por su título eran pares
 con el mismo `title:` —una curada y su copia migrada—, que `vault_audit` lista
 como AP-17. Cuál es la canónica no lo decide ninguna tool. Una vez decidido, la
-otra **no se borra**: se le escribe `superseded_by: "[[canónica]]"`, y desde
+otra **no se borra**: se le escribe `superseded_by: "[[canónica]]"` con
+`vault_supersede --path <sustituida> --by <canónica> --apply`, y desde
 entonces el rerank la pesa como sustituida (`vault_context_pack.penalizacion`).
 Antes de ese cambio la anotación no movía nada y las dos competían a la par.
 

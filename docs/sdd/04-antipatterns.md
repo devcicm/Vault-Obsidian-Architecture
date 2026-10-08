@@ -179,7 +179,7 @@ Nota sin campo agent: en el frontmatter. Sin este campo es imposible auditar qu�
 
 Par de notas con SequenceMatcher ratio ≥ 0.85 en títulos. Típicamente una nota thin creada cuando ya existía la canónica rica. Penalización vault_audit: −2 por par.
 
-**Prevención:** PAT-3: buscar con vault_search() antes de crear. Si existe una nota similar, enriquecer en lugar de crear.
+**Prevención:** PAT-3: buscar con vault_search() antes de crear. Si existe una nota similar, enriquecer en lugar de crear. Si ya existen las dos, vault_supersede anota superseded_by en la que no manda, sin borrarla.
 
 ### AP-18: Cross-folder content duplication
 
@@ -1057,7 +1057,7 @@ Nota sin campo agent: en el frontmatter. Sin este campo es imposible auditar qu�
 
 Par de notas con SequenceMatcher ratio ≥ 0.85 en títulos. Típicamente una nota thin creada cuando ya existía la canónica rica. Penalización vault_audit: −2 por par.
 
-**Prevention:** PAT-3: buscar con vault_search() antes de crear. Si existe una nota similar, enriquecer en lugar de crear.
+**Prevention:** PAT-3: buscar con vault_search() antes de crear. Si existe una nota similar, enriquecer en lugar de crear. Si ya existen las dos, vault_supersede anota superseded_by en la que no manda, sin borrarla.
 
 ### AP-18: Cross-folder content duplication
 

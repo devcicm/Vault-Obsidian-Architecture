@@ -33,7 +33,7 @@ Restricciones que son decisión de producto, no limitación pendiente:
 
 | Capacidad | Resultado | Grupos | Tools |
 |---|---|---|---|
-| **Escritura → gobernanza** (`escritura_a_gobernanza`) | Lo que el agente captura queda escrito una sola vez, normalizado contra las normas, versionado y auditable después. | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 36, 37 | 87 |
+| **Escritura → gobernanza** (`escritura_a_gobernanza`) | Lo que el agente captura queda escrito una sola vez, normalizado contra las normas, versionado y auditable después. | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 36, 37 | 88 |
 | **Consulta → contexto** (`consulta_a_contexto`) | Una pregunta del agente se convierte en un paquete de contexto acotado y presupuestado, recorriendo el grafo del vault sin índice externo. | 26, 34 | 9 |
 | **Gobernanza del estándar** (`gobernanza_del_estandar`) | El estándar cumple lo que publica: registro canónico primero, doc derivada, guard que falla si divergen. Ninguna de estas tools toca las notas de un usuario. | 35 | 25 |
 
@@ -53,7 +53,7 @@ regenera.*
 | Contexto | Puertos | Módulos | Prohíbe |
 |---|---|---|---|
 | **Kernel** (`kernel`) | 4 | 24 | depender de cualquier contexto de dominio |
-| **Autoría** (`autoria`) | 7 | 44 | — |
+| **Autoría** (`autoria`) | 7 | 45 | — |
 | **Grafo** (`grafo`) | 4 | 15 | — |
 | **Gobernanza** (`gobernanza`) | 21 | 13 | — |
 | **Índices** (`indices`) | 9 | 7 | — |
@@ -159,7 +159,7 @@ Sin puerta ni test (10): `AP-04`, `AP-08`, `AP-12`, `AP-18`, `PAT-2`, `PAT-3`, `
 
 *Registros: `vault_mcp_catalog.TOOLS_CATALOG` + `<vault>/00_System/tool-spec.json`*
 
-121 tools activas en 37 grupos. Toda tool
+122 tools activas en 37 grupos. Toda tool
 del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 `status: archived | internal | orphan` — no se borra, se anota
 (`vault_mcp_catalog.py --check-contracts`).
@@ -172,7 +172,7 @@ del catálogo tiene entrada de contrato y toda entrada sin catálogo declara
 | Change Log | 2 |
 | Conocimiento | 2 |
 | Core | 8 |
-| Corrección Automática | 4 |
+| Corrección Automática | 5 |
 | Código | 5 |
 | Data Quality | 2 |
 | Defectos y Cuarentena | 2 |
@@ -325,6 +325,7 @@ falla — no se rellena con el valor más cercano.
 | `vault_smoke` | 35 — Normas | gobernanza_del_estandar |
 | `vault_standard_upgrade` | 22 — Versionado | escritura_a_gobernanza |
 | `vault_subgraph` | 34 — Memoria de Contexto | consulta_a_contexto |
+| `vault_supersede` | 33 — Corrección Automática | escritura_a_gobernanza |
 | `vault_tags` | 27 — Session Delta y Tags | escritura_a_gobernanza |
 | `vault_test_save` | 20 — Tests | escritura_a_gobernanza |
 | `vault_timeline` | 10 — Línea de Tiempo | escritura_a_gobernanza |
@@ -382,7 +383,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 6 | — *sin objetivo* | 5 → 5 → 6 → 6 (crece, Δ+1) |
 | `scripts/norms-distincion-baseline.json` | AP-60 — normas que no declaran de qué se distinguen | 0 | — *sin objetivo* | 57 → 0 → 0 (encoge, Δ-57) |
 | `scripts/norms-coherence-baseline.json` | AP-55 — C2, afirmación sin traza | 0 | — *sin objetivo* | 47 → 0 (encoge, Δ-47) |
-| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1380 | — *sin objetivo* | 1334 → 1339 → 1357 → 1368 → 1378 → 1380 (crece, Δ+212) |
+| `scripts/field-compat-baseline.json` | contrato de campos con los consumidores | 1389 | — *sin objetivo* | 1334 → 1339 → 1357 → 1368 → 1378 → 1380 (crece, Δ+212) |
 | `scripts/excepcion-declarada-baseline.json` | AP-61 — la excepción declarada no es la que escapa | 0 | ≤ 0 para 2027-06-30 · cada 180 d · gobernanza → **cumple** | 0 → 0 (plana, Δ+0) |
 | `scripts/recursos-baseline.json` | AP-62 — el consumidor cruza para leer un recurso y paga el fan-out | 2 | — *sin objetivo* | — *1 muestra* |
 

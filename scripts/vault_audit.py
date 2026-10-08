@@ -199,6 +199,7 @@ from vault_lib import (
     indice_de_nombres,
     inventario_de_nombres,
     read_frontmatter,
+    resolver_sustitucion,
     resolver_wikilink,
     separar_frontmatter,
 )
@@ -784,17 +785,10 @@ def _sustituida_por(
     AP-17 sanado: la anotación es la decisión de cuál manda (procedimiento de
     sanación). Se resuelve como la resuelve Obsidian (AP-44) —por nombre de
     fichero y `aliases:`, nunca por `title:`— con el dueño del criterio,
-    `vault_lib.resolver_wikilink`. Un destino roto o ambiguo no resuelve:
+    `vault_lib.resolver_sustitucion`. Un destino roto o ambiguo no resuelve:
     elegir uno sería inventar la decisión que la nota no tomó.
     """
-    valor = fm.get("superseded_by")
-    if not isinstance(valor, str) or not valor.strip():
-        return ""
-    bruto = valor.strip()
-    if bruto.startswith("[[") and bruto.endswith("]]"):
-        bruto = bruto[2:-2]
-    destino, _candidatos = resolver_wikilink(bruto, Path(rel), indice)
-    return destino
+    return resolver_sustitucion(fm.get("superseded_by"), Path(rel), indice)[0]
 
 
 def _detect_canonical_shadow(

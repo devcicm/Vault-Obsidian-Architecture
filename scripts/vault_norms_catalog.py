@@ -645,8 +645,12 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "Penalización vault_audit: −2 por par."
         ),
         "signal": "vault_audit reporta canonicalShadow[] con similarity ≥ 0.85.",
-        "prevention": "PAT-3: buscar con vault_search() antes de crear. Si existe una nota similar, enriquecer en lugar de crear.",
-        "tools_enforcing": [],
+        "prevention": (
+            "PAT-3: buscar con vault_search() antes de crear. Si existe una nota similar, "
+            "enriquecer en lugar de crear. Si ya existen las dos, vault_supersede anota "
+            "superseded_by en la que no manda, sin borrarla."
+        ),
+        "tools_enforcing": ["vault_supersede"],
         "tools_detecting": ["vault_audit"],
         "introduced_version": "v25",
     },

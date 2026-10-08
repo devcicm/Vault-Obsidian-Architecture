@@ -438,6 +438,27 @@ def resolver_wikilink(
     return (candidatos[0] if len(candidatos) == 1 else "", list(candidatos))
 
 
+
+def resolver_sustitucion(
+    valor: Any, desde: "Path | None", indice: Dict[str, List[str]]
+) -> Tuple[str, List[str]]:
+    """`(ruta, candidatos)` del `superseded_by:` de una nota, como un wikilink.
+
+    **Dueño canónico del criterio (AP-57).** Lo leen quien escribe la
+    anotación (`vault_supersede`) y quien la salda (`vault_audit`, AP-17): si
+    cada uno la leyera a su manera, la tool escribiría una decisión que el audit
+    no ve. Acepta `[[destino]]` y el destino desnudo; resuelve con
+    `resolver_wikilink`, así que un `title:` no resuelve (AP-44) y un destino
+    ambiguo sale sin ruta.
+    """
+    if not isinstance(valor, str) or not valor.strip():
+        return "", []
+    bruto = valor.strip()
+    if bruto.startswith("[[") and bruto.endswith("]]"):
+        bruto = bruto[2:-2]
+    return resolver_wikilink(bruto, desde, indice)
+
+
 def ruta_necesaria(bruto: str, desde: "Path | None", indice: Dict[str, List[str]]) -> bool:
     """AP-21 precisado: ¿la carpeta de `[[carpeta/nota]]` fija una identidad?
 

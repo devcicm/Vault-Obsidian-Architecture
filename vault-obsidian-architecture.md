@@ -4634,6 +4634,15 @@ proyecto/
 > describen una **variante**, no un rol dentro del mismo contrato. Ampliar la lista
 > hasta que no quede ningún par sería apagar la norma, no afinarla.
 
+> **Resolución sin borrar.** La que no manda se anota con `vault_supersede --path
+> <sombra> --by <canónica> --apply`: escribe `superseded_by:` sin tocar el cuerpo,
+> resolviendo `--by` por nombre de fichero y `aliases:` (nunca por `title:`), y
+> rechaza el enlace roto, el ambiguo y el ciclo. Desde entonces `vault_audit`
+> cuenta el par en `canonicalShadowResolved`, sin penalización, y
+> `vault_context_pack` deja de dar la sombra como candidata. Mover la sombra a
+> `10_Migrated/`, como dice la prevención de arriba, sigue siendo válido; la
+> anotación es lo que hace que el movimiento no haga falta para dejar de competir.
+
 ---
 
 ### AP-18 — Cross-folder content duplication

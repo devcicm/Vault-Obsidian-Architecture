@@ -483,6 +483,44 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         "example": "python vault_frontmatter_completar.py\npython vault_frontmatter_completar.py --apply\npython vault_frontmatter_completar.py --path 07_Knowledge/x.md --apply",
         "related": ["vault_validate", "vault_frontmatter_heal", "vault_esquema"],
     },
+    "vault_supersede": {
+        "name": "vault_supersede",
+        "script": "vault_supersede.py",
+        "group": "Corrección Automática",
+        "purpose": "Anota superseded_by en una nota que ya existe sin tocar su cuerpo: la sustituida no se borra, declara cuál manda (AP-17).",
+        "params": {
+            "path": {
+                "type": "string",
+                "required": True,
+                "description": "La nota sustituida, ruta relativa al vault",
+                "validators": ["within_vault"],
+            },
+            "by": {
+                "type": "string",
+                "required": True,
+                "description": "La nota que manda, como wikilink: nombre de fichero, alias o ruta (nunca title:)",
+                "validators": [],
+            },
+            "apply": {
+                "type": "boolean",
+                "required": False,
+                "description": "Escribe la anotación (default: dry-run)",
+                "validators": [],
+            },
+            "replace": {
+                "type": "boolean",
+                "required": False,
+                "description": "Sustituye una superseded_by distinta ya escrita",
+                "validators": [],
+            },
+        },
+        "guards": ["AP-44: --by se resuelve por nombre de fichero y aliases, nunca por title:",
+                   "Rechaza --by roto, ambiguo, a sí misma o que cierra un ciclo",
+                   "AP-54: no escribe si la nota cambió desde que se leyó"],
+        "side_effects": ["Reescribe el frontmatter de la nota por atomic_write_text; el cuerpo no cambia"],
+        "example": "python vault_supersede.py --path 10_Migrated/GUIA.md --by guia\npython vault_supersede.py --path 10_Migrated/GUIA.md --by \"[[guia]]\" --apply",
+        "related": ["vault_audit", "vault_context_pack", "vault_frontmatter_completar"],
+    },
     "vault_delete": {
         "name": "vault_delete",
         "script": "vault_delete.py",
@@ -4661,7 +4699,7 @@ GROUPS: Dict[str, List[str]] = {
     "Riesgos/Calidad": ["vault_risk_save", "vault_privacy_save", "vault_ncr_save"],
     "Bootstrap": ["vault_init", "vault_onboard"],
     "Corrección Automática": ["vault_fix_brackets", "vault_graph_fix", "vault_frontmatter_heal",
-                              "vault_frontmatter_completar"],
+                              "vault_frontmatter_completar", "vault_supersede"],
     "Versionado": ["vault_standard_upgrade", "vault_undo", "vault_history_compact"],
     "Gestión de Carpetas": ["vault_folder_registry", "vault_section"],
     "Memoria de Contexto": [
