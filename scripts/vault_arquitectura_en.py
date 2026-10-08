@@ -56,7 +56,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from vault_errors import emit_error, wrap_main
+from vault_errors import emit_error, proyecto_registrado, wrap_main
 from vault_history_compact import _parse_history_filename
 from vault_io import get_vault_root, is_snapshot_path
 from vault_lib import Config, indice_de_nombres, resolver_sustitucion
@@ -460,7 +460,11 @@ def main() -> int:
     ap.add_argument("--version", help="vX.Y[.Z]: qué regía en esa versión del proyecto")
     ap.add_argument("--desde", help="inicio del rango: fecha o versión")
     ap.add_argument("--hasta", help="fin del rango: fecha o versión")
-    ap.add_argument("--project", help="limita a las notas y releases de ese proyecto")
+    # AP-63: el nombre se resuelve antes de filtrar. Sin resolver, un alias o
+    # una errata devolvían una arquitectura vacía con ok: true, indistinguible
+    # de un proyecto que no decidió nada.
+    ap.add_argument("--project", type=proyecto_registrado(TOOL),
+                    help="limita a las notas y releases de ese proyecto")
     args = ap.parse_args()
     r = arquitectura_en(fecha=args.fecha, version=args.version, desde=args.desde,
                         hasta=args.hasta, project=args.project)

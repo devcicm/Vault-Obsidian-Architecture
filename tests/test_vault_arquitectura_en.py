@@ -55,7 +55,7 @@ def _paths(grupo):
 @pytest.fixture
 def raiz(tmp_path):
     raiz = tmp_path / "vault"
-    for s in ("00_System", "03_Decisions", "05_Patterns/architecture", "07_Knowledge",
+    for s in ("00_System", "01_Projects/demo", "03_Decisions", "05_Patterns/architecture", "07_Knowledge",
               "08_Runbooks/deploy", ".history"):
         (raiz / s).mkdir(parents=True)
     _release(raiz, "v1.0", "2026-01-10")
@@ -158,6 +158,14 @@ def test_primers_y_notas_que_no_son_de_arquitectura_no_cuentan(raiz):
 def test_entradas_invalidas(raiz, argv, codigo):
     r = _ejecutar(raiz, *argv)
     assert r["ok"] is False and r["error_code"] == codigo, r
+
+
+def test_ap63_el_proyecto_se_resuelve_antes_de_filtrar(raiz):
+    """Un nombre que no es proyecto no devuelve una arquitectura vacía con
+    ok: true: falla como en toda tool con --project."""
+    r = _ejecutar(raiz, "--fecha", "2026-02-15", "--project", "demoo")
+    assert r["ok"] is False and r["error_code"] == "PROJECT_NOT_FOUND", r
+    assert _ejecutar(raiz, "--fecha", "2026-02-15", "--project", "Demo")["project"] == "demo"
 
 
 def test_es_solo_lectura(raiz):
