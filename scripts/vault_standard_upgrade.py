@@ -461,6 +461,8 @@ MIGRATIONS: Dict[str, Dict[str, Any]] = {
             "carpeta no registrada) lleva identidad y timestamps, sin CIA, agent, tags, type ni status",
             "vigente_desde (opcional): version del proyecto desde la que rige una nota de "
             "arquitectura; el fin de su vigencia sale de superseded_by o del status",
+            "responsable y revisado_en (opcionales): quien responde del contenido de la nota "
+            "y cuando se comprobo por ultima vez que sigue siendo cierta",
         ],
     },
 }

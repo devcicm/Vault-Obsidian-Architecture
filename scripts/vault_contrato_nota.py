@@ -127,6 +127,17 @@ CAMPOS: Dict[str, Dict[str, Any]] = {
     # `superseded_by` o del status.
     "vigente_desde": {"tipo": "string", "nivel": "opcional", "clases": ("contenido",),
                       "requerido_desde": None},
+    # Quién responde del contenido de la nota —del porqué, en una decisión—. No
+    # es `agent`, que dice quién la escribió: un agente redacta un ADR y una
+    # persona lo firma.
+    "responsable": {"tipo": "string", "nivel": "opcional", "clases": ("contenido",),
+                    "requerido_desde": None, "valores_desde": "v41", "no_vacio": True},
+    # La última vez que alguien comprobó que la nota sigue siendo cierta, la
+    # cambiara o no. `updatedAt` solo se mueve si el texto cambia; sin este
+    # campo, revisar una nota y confirmarla no deja rastro. Fecha o fecha y hora.
+    "revisado_en": {"tipo": "string", "formato": "date", "nivel": "opcional",
+                    "clases": ("contenido",), "requerido_desde": None,
+                    "valores_desde": "v41", "patron": r"^\d{4}-\d{2}-\d{2}"},
 }
 
 #: Cuándo cambió el contrato y quién lo atestigua. `fuente` es
@@ -173,7 +184,11 @@ HISTORIA: Dict[str, List[Dict[str, Any]]] = {
             {"campos": ["vigente_desde"],
              "cambio": ("opcional: la versión del proyecto desde la que rige una nota de "
                         "arquitectura; el fin sale de superseded_by o del status"),
-             "fuente": "MIGRATIONS:vigente_desde (opcional): version del proyecto"}],
+             "fuente": "MIGRATIONS:vigente_desde (opcional): version del proyecto"},
+            {"campos": ["responsable", "revisado_en"],
+             "cambio": ("opcionales: quién responde del contenido y cuándo se comprobó por "
+                        "última vez; si están, responsable no vacío y revisado_en con fecha ISO"),
+             "fuente": "MIGRATIONS:responsable y revisado_en (opcionales)"}],
 }
 
 #: Lo que el escritor pone cuando nadie dice otra cosa. Estaba como literal en

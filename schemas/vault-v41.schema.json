@@ -109,6 +109,14 @@
       ],
       "cambio": "opcional: la versión del proyecto desde la que rige una nota de arquitectura; el fin sale de superseded_by o del status",
       "fuente": "MIGRATIONS:vigente_desde (opcional): version del proyecto"
+    },
+    {
+      "campos": [
+        "responsable",
+        "revisado_en"
+      ],
+      "cambio": "opcionales: quién responde del contenido y cuándo se comprobó por última vez; si están, responsable no vacío y revisado_en con fecha ISO",
+      "fuente": "MIGRATIONS:responsable y revisado_en (opcionales)"
     }
   ],
   "type": "object",
@@ -227,6 +235,17 @@
     "vigente_desde": {
       "x-vault-tipo-esperado": "string",
       "x-vault-nivel": "opcional"
+    },
+    "responsable": {
+      "x-vault-tipo-esperado": "string",
+      "x-vault-nivel": "opcional",
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "revisado_en": {
+      "x-vault-tipo-esperado": "string",
+      "x-vault-nivel": "opcional",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}"
     }
   },
   "additionalProperties": true,
@@ -348,6 +367,17 @@
         "vigente_desde": {
           "x-vault-tipo-esperado": "string",
           "x-vault-nivel": "opcional"
+        },
+        "responsable": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "opcional",
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "revisado_en": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "opcional",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}"
         }
       },
       "additionalProperties": true
@@ -462,6 +492,17 @@
         "vigente_desde": {
           "x-vault-tipo-esperado": "string",
           "x-vault-nivel": "opcional"
+        },
+        "responsable": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "opcional",
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "revisado_en": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "opcional",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}"
         }
       },
       "additionalProperties": true
@@ -576,6 +617,17 @@
         "vigente_desde": {
           "x-vault-tipo-esperado": "string",
           "x-vault-nivel": "opcional"
+        },
+        "responsable": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "opcional",
+          "type": "string",
+          "pattern": "\\S"
+        },
+        "revisado_en": {
+          "x-vault-tipo-esperado": "string",
+          "x-vault-nivel": "opcional",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}"
         }
       },
       "additionalProperties": true

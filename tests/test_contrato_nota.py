@@ -228,3 +228,22 @@ def test_vigente_desde_es_opcional_y_entra_en_v41():
     assert "vigente_desde" not in contrato.contrato_de_version("v41")["recomendados"]
     assert "vigente_desde" in contrato.esquema_json("v41")["properties"]
     assert "vigente_desde" not in contrato.esquema_json("v40")["properties"]
+
+
+def test_responsable_y_revisado_en_son_opcionales_y_entran_en_v41():
+    """`agent` dice quién escribió la nota; `responsable`, quién responde de lo
+    que dice; `revisado_en`, cuándo se comprobó por última vez que sigue siendo
+    cierta. Opcionales: su ausencia no reprueba, su valor sí."""
+    for campo in ("responsable", "revisado_en"):
+        assert contrato.CAMPOS[campo]["nivel"] == "opcional"
+        assert contrato.conocido_desde(campo) == "v41"
+        assert campo not in contrato.faltantes({}, "03_Decisions/adr-001.md")
+        assert campo in contrato.esquema_json("v41")["properties"]
+        assert campo not in contrato.esquema_json("v40")["properties"]
+    assert contrato.errores_de_valor({"responsable": "Ana", "revisado_en": "2026-10-08"}) == []
+    assert contrato.errores_de_valor({"revisado_en": "2026-10-08T10:00:00Z"}) == []
+    errores = contrato.errores_de_valor({"responsable": "  ", "revisado_en": "ayer"})
+    assert any(e.startswith("responsable") for e in errores), errores
+    assert any(e.startswith("revisado_en") for e in errores), errores
+    # Un contrato anterior no juzga el valor de un campo que no conocía.
+    assert contrato.errores_de_valor({"responsable": ""}, version="v40") == []

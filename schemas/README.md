@@ -53,7 +53,7 @@ habría puesto y declara el origen de cada valor.
 | [v38](vault-v38.schema.json) | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags` | — |
 | [v39](vault-v39.schema.json) | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags` | — |
 | [v40](vault-v40.schema.json) | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags` | — |
-| [v41](vault-v41.schema.json) | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags`, `type`, `status` | requeridos en notas de contenido, por presencia: el valor lo sigue juzgando vault_audit; clase sin_seccion: un .md fuera de toda sección lleva identidad y timestamps; CIA, agent, tags, type y status son de las notas de sección; opcional: la versión del proyecto desde la que rige una nota de arquitectura; el fin sale de superseded_by o del status |
+| [v41](vault-v41.schema.json) | `id`, `title`, `createdAt`, `updatedAt`, `cia_integrity`, `cia_availability`, `cia_sensitivity`, `agent`, `tags`, `type`, `status` | requeridos en notas de contenido, por presencia: el valor lo sigue juzgando vault_audit; clase sin_seccion: un .md fuera de toda sección lleva identidad y timestamps; CIA, agent, tags, type y status son de las notas de sección; opcional: la versión del proyecto desde la que rige una nota de arquitectura; el fin sale de superseded_by o del status; opcionales: quién responde del contenido y cuándo se comprobó por última vez; si están, responsable no vacío y revisado_en con fecha ISO |
 
 Hasta v24 no había validador: el contrato de esas versiones es la regla AP-12
 del manifiesto, que exigía los mismos campos a toda nota, de cualquier clase.
@@ -81,3 +81,5 @@ Cualquier versión se valida con el validador vigente:
 | `status` | requerido | contenido | AP-29 |
 | `dq_validated_at` | opcional | contenido | — |
 | `vigente_desde` | opcional | contenido | — |
+| `responsable` | opcional | contenido | — |
+| `revisado_en` | opcional | contenido | — |
