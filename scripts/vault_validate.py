@@ -517,8 +517,18 @@ def vault_validate(
         solo_indices_ausentes = (
             len(partes) == 1 and indices
             and all(i.endswith("(missing)") for i in indices))
-        result["error_code"] = (
-            "INDEX_NOT_FOUND" if solo_indices_ausentes else "VALIDATION_FAILED")
+        # Solo carpetas del estándar ausentes —un vault de una versión vieja,
+        # medido en /vcloud el 2026-10-07— también la tiene: la de
+        # FOLDER_NOT_FOUND, que las nombra y las crea sin tocar notas.
+        solo_carpetas_ausentes = (
+            len(partes) == 1
+            and bool((result.get("structure") or {}).get("missing")))
+        if solo_indices_ausentes:
+            result["error_code"] = "INDEX_NOT_FOUND"
+        elif solo_carpetas_ausentes:
+            result["error_code"] = "FOLDER_NOT_FOUND"
+        else:
+            result["error_code"] = "VALIDATION_FAILED"
         result["message"] = "Validación con problemas: " + ", ".join(partes) + "."
         result = completar_envelope("vault_validate", result)
 

@@ -99,3 +99,52 @@ def test_notas_invalidas_y_sin_indices_sigue_siendo_validation_failed(vault):
     assert r["indexes"]["invalid"] and r["invalid"], r
     assert r["error_code"] == "VALIDATION_FAILED", (
         "reindexar no arregla una nota rota: el código no puede prometerlo")
+
+
+def test_solo_carpetas_ausentes_recibe_la_recuperacion_que_las_crea(tmp_path):
+    """Medido el 2026-10-07 con `tests/banco_agente.py` sobre una copia de
+    /vcloud (regla 7): a un vault de v32 le faltaban cuatro carpetas del
+    estándar y `vault_validate --check structure` daba VALIDATION_FAILED con la
+    pista de reparar frontmatter, que no crea ninguna. FOLDER_NOT_FOUND manda a
+    `vault_standard_upgrade --check`, que las nombra; la tool sin `--check` las
+    crea, y la validación tiene que quedar limpia."""
+    import shutil
+
+    from vault.ciclo_de_vida import producto
+
+    raiz = tmp_path / "runtime"
+    assert producto.inicializar_runtime(raiz)["ok"]
+    shutil.rmtree(raiz / "21_QA")
+    rc, r = _validate(raiz, "--check", "structure")
+    assert r["error_code"] == "FOLDER_NOT_FOUND", r
+    assert r["structure"]["missing"] == ["21_QA"], "el detalle de la medida se conserva"
+
+    rec = r["recovery"]
+    assert (rec["action"], rec["tool"]) == ("run_tool", "vault_standard_upgrade"), rec
+    env = dict(os.environ, VAULT_ROOT=str(raiz), VAULT_STRICT_ROOT="1",
+               PYTHONIOENCODING="utf-8")
+
+    def upgrade(*argv):
+        p = subprocess.run(
+            [sys.executable, str(SCRIPTS / f"{rec['tool']}.py"), *argv],
+            env=env, capture_output=True, text=True, encoding="utf-8",
+            errors="replace", cwd=str(tmp_path), timeout=300)
+        assert p.returncode == 0, p.stderr[-1000:]
+        salida = p.stdout.strip()
+        return json.loads(salida[salida.index("{"):])
+
+    assert "21_QA" in upgrade(*rec["args"])["folders_to_create"]
+    assert not (raiz / "21_QA").exists(), "--check no escribe"
+    assert "21_QA" in upgrade()["folders_created"]
+
+    rc, r = _validate(raiz, "--check", "structure")
+    assert rc == 0 and r["ok"] is True, r
+
+
+def test_carpetas_ausentes_y_notas_invalidas_sigue_siendo_validation_failed(vault):
+    (vault / "07_Knowledge" / "rota.md").write_text(
+        "---\ntitle: [sin cerrar\n---\n\ncuerpo\n", encoding="utf-8")
+    rc, r = _validate(vault, "--check", "all")
+    assert r["structure"]["missing"] and r["invalid"], r
+    assert r["error_code"] == "VALIDATION_FAILED", (
+        "crear carpetas no arregla una nota rota: el código no puede prometerlo")
