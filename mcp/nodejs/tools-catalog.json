@@ -18,7 +18,7 @@
           },
           "decision_type": {
             "type": "string",
-            "description": "",
+            "description": "Decision type: ['architectural', 'security', 'data-model', 'algorithm', 'configuration', 'process']",
             "enum": [
               "architectural",
               "security",
@@ -46,7 +46,7 @@
           },
           "impact_level": {
             "type": "string",
-            "description": "",
+            "description": "Impact level (default: medium): ['low', 'medium', 'high', 'critical']",
             "enum": [
               "low",
               "medium",
@@ -387,7 +387,7 @@
           },
           "source_type": {
             "type": "string",
-            "description": "",
+            "description": "Source type: ['web', 'paper', 'docs', 'api', 'book']",
             "enum": [
               "web",
               "paper",
@@ -667,7 +667,7 @@
         "properties": {
           "action": {
             "type": "string",
-            "description": "",
+            "description": "Action to record: ['created', 'updated', 'deleted', 'moved']",
             "enum": [
               "created",
               "updated",
@@ -896,7 +896,7 @@
           },
           "iso_type": {
             "type": "string",
-            "description": ""
+            "description": "ISO/IEC 12207 component type: ['module', 'component', 'service', 'library', 'script']"
           },
           "exports": {
             "type": "string",
@@ -1038,7 +1038,7 @@
           },
           "relation_type": {
             "type": "string",
-            "description": "",
+            "description": "Relation type: ['imports', 'extends', 'implements', 'calls', 'uses', 're-exports', 'depends_on']",
             "enum": [
               "imports",
               "extends",
@@ -1051,7 +1051,7 @@
           },
           "cardinality": {
             "type": "string",
-            "description": "",
+            "description": "Cardinality: ['1:1', '1:N', 'N:1', 'N:M']",
             "enum": [
               "1:1",
               "1:N",
@@ -2983,7 +2983,7 @@
           },
           "type": {
             "type": "string",
-            "description": "",
+            "description": "Component type: ['server', 'vm', 'container', 'service', 'database', 'queue', 'storage', 'proxy', 'loadbalancer', 'network', 'firewall', 'cdn', 'pipeline', 'secret']",
             "enum": [
               "server",
               "vm",
@@ -3015,7 +3015,7 @@
           },
           "location": {
             "type": "string",
-            "description": "",
+            "description": "Location: ['local', 'homelab', 'vps', 'cloud-aws', 'cloud-gcp', 'cloud-azure', 'cloud-other', 'datacenter', 'hybrid']",
             "enum": [
               "local",
               "homelab",
@@ -3110,7 +3110,7 @@
           },
           "max-chars": {
             "type": "integer",
-            "description": ""
+            "description": "Tope de caracteres de la fuente, igual para --file/--stdin/--text/--url (default: 5000000)"
           },
           "tags": {
             "type": "array",
@@ -4289,7 +4289,7 @@
           },
           "type": {
             "type": "string",
-            "description": "",
+            "description": "Pattern type: ['design', 'architecture', 'code', 'integration']",
             "enum": [
               "design",
               "architecture",
@@ -4299,7 +4299,7 @@
           },
           "status": {
             "type": "string",
-            "description": "",
+            "description": "Pattern status: ['planificado', 'en_progreso', 'implementado', 'deprecado', 'refactoring']",
             "enum": [
               "planificado",
               "en_progreso",
@@ -5302,7 +5302,7 @@
           },
           "relation_type": {
             "type": "string",
-            "description": "",
+            "description": "Relation type: ['has_one', 'has_many', 'belongs_to', 'many_to_many', 'implements', 'extends', 'depends_on', 'uses', 'calls', 'owns', 'aggregates']",
             "enum": [
               "has_one",
               "has_many",
@@ -5331,7 +5331,7 @@
           },
           "entity_type": {
             "type": "string",
-            "description": ""
+            "description": "Entity type: ['database', 'module', 'service', 'class', 'api', 'component']"
           }
         },
         "required": [
@@ -5465,7 +5465,7 @@
           },
           "type": {
             "type": "string",
-            "description": "",
+            "description": "Requirement type: ['functional', 'non-functional', 'constraint', 'assumption']",
             "enum": [
               "functional",
               "non-functional",
@@ -5735,7 +5735,7 @@
           },
           "outcome": {
             "type": "string",
-            "description": "",
+            "description": "Outcome: ['success', 'failed', 'partial']",
             "enum": [
               "success",
               "failed",
@@ -5796,7 +5796,7 @@
           },
           "category": {
             "type": "string",
-            "description": "",
+            "description": "Category: ['deploy', 'debug', 'setup', 'rollback', 'maintenance', 'pipeline', 'incident']",
             "enum": [
               "deploy",
               "debug",
@@ -6075,7 +6075,7 @@
           },
           "categories": {
             "type": "array",
-            "description": "",
+            "description": "Categories to scan: ['secrets', 'injection', 'command_injection', 'xss', 'auth', 'crypto', 'path_traversal', 'ssrf', 'xxe', 'deserialize', 'prototype_pollution', 'redos', 'config', 'dependencies']",
             "items": {
               "type": "string"
             }
@@ -6560,7 +6560,7 @@
           },
           "test_type": {
             "type": "string",
-            "description": "",
+            "description": "Test type: ['unit', 'integration', 'e2e', 'performance', 'security', 'acceptance']",
             "enum": [
               "unit",
               "integration",
@@ -6596,7 +6596,7 @@
           },
           "status": {
             "type": "string",
-            "description": "",
+            "description": "Test status (default: not_run): ['not_run', 'pass', 'fail', 'blocked', 'skip']",
             "enum": [
               "not_run",
               "pass",
@@ -6659,7 +6659,7 @@
           },
           "sources": {
             "type": "string",
-            "description": ""
+            "description": "Sources: ['sessions', 'changelog', 'decisions', 'errors', 'patterns', 'infra', 'knowledge', 'dependencies', 'runbooks'] (comma-separated)"
           },
           "limit": {
             "type": "integer",

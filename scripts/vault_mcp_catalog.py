@@ -4959,12 +4959,19 @@ def _elecciones_del_modulo(script: str, expresion: Any) -> List[str]:
     argparse. Sin `except`: un script que no se importa es un fallo de la
     sincronización, no un enum vacío que la haga pasar en verde.
     """
+    return [str(v) for v in _evaluar_en_el_modulo(script, expresion)]
+
+
+def _evaluar_en_el_modulo(script: str, expresion: Any) -> Any:
+    """Valor de una expresión de `add_argument` en el módulo que la escribe.
+
+    Un solo sitio para los dos campos que se calculan: `choices=` y `help=`.
+    """
     import ast
     import importlib
 
     modulo = importlib.import_module(Path(script).stem)
-    valores = eval(compile(ast.Expression(expresion), script, "eval"), vars(modulo))
-    return [str(v) for v in valores]
+    return eval(compile(ast.Expression(expresion), script, "eval"), vars(modulo))
 
 
 def argparse_params(script: str) -> Dict[str, Dict[str, Any]]:
@@ -5030,10 +5037,20 @@ def argparse_params(script: str) -> Dict[str, Dict[str, Any]]:
         elif elecciones is not None:
             opciones = _elecciones_del_modulo(script, elecciones)
 
+        # Una ayuda calculada —`f"Tope de nodos (default: {DEFAULT_MAX_NODES})"`—
+        # salía como `""` hasta v41.3: 21 params publicados sin descripción,
+        # justo los que llevan el default o el vocabulario del registro. Se
+        # evalúa como `choices`, con el mismo criterio del consumidor.
+        ayuda = kw.get("help")
+        if ayuda is not None and not isinstance(ayuda, ast.Constant):
+            ayuda = str(_evaluar_en_el_modulo(script, ayuda))
+        else:
+            ayuda = _const("help") or ""
+
         params[largos[0][2:]] = {
             "type": tipo,
             "required": _const("required") is True,
-            "description": _const("help") or "",
+            "description": ayuda,
             "validators": [f"enum:{','.join(opciones)}"] if opciones else [],
         }
         if items:
