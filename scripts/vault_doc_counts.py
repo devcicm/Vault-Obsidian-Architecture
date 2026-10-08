@@ -103,6 +103,31 @@ def count_norms_family(prefix: str) -> Callable[[], int]:
     return _count
 
 
+def ultimo_de_familia(prefix: str) -> Callable[[], int]:
+    """Número del último código de la familia: el extremo de «AP-01–AP-65».
+
+    No es el conteo: una familia con huecos tendría el rango más largo que el
+    número de normas, y la frase afirma las dos cosas por separado.
+    """
+    def _ultimo() -> int:
+        from vault_norms_catalog import NORM_CATALOG
+
+        return max(int(n["code"].split("-")[1]) for n in NORM_CATALOG
+                   if n["code"].startswith(f"{prefix}-"))
+
+    return _ultimo
+
+
+#: El manifiesto se mide desde aquí y no desde `REPO_ROOT`, que los tests
+#: redirigen a un directorio temporal para escanear documentos falsos.
+_MANIFIESTO = Path(__file__).resolve().parent.parent / "vault-obsidian-architecture.md"
+
+
+def count_spec_kilolineas() -> int:
+    """Tamaño del manifiesto en miles de líneas, la precisión que promete «~6000 líneas»."""
+    return round(len(_MANIFIESTO.read_bytes().decode("utf-8").splitlines()) / 1000)
+
+
 def count_status_vocab() -> int:
     from vault_norms_catalog import STATUS_VOCAB
 
@@ -223,6 +248,9 @@ COUNTED_FACTS: List[Dict] = [
             r"catálogo de\s+(\d+)\s+normas",
             r"(\d+)\s+normas AP/PAT/SP/CN",
             r"(\d+)\s+normas del catálogo",
+            # `README.md` abría el desglose con «74 normas:» y ningún patrón lo
+            # miraba: --fix subió los antipatrones y dejó el total (v41.3).
+            r"(\d+)\s+normas:",
             # NO se vigila "las N normas" a secas: el manifiesto dice "las 14
             # normas manuales" hablando de las que dejaron de serlo. Es otro
             # hecho, y además histórico.
@@ -233,6 +261,47 @@ COUNTED_FACTS: List[Dict] = [
         "description": "Antipatrones AP-XX",
         "value": count_norms_family("AP"),
         "patterns": [r"(\d+)\s+antipatrones"],
+    },
+    # El resto del desglose de `README.md` («6 patrones (PAT-1–PAT-6), 3 SP,
+    # 3 CN») y los extremos de los rangos. Hasta v41.3 solo el número de
+    # antipatrones tenía patrón, así que la frase quedaba a medio derivar.
+    {
+        "id": "norms_ap_ultimo",
+        "description": "Último código AP-XX del catálogo",
+        "value": ultimo_de_familia("AP"),
+        "patterns": [r"AP-01[–-]AP-(\d+)"],
+    },
+    {
+        "id": "norms_pat",
+        "description": "Patrones PAT-X",
+        "value": count_norms_family("PAT"),
+        "patterns": [r"(\d+)\s+patrones \(PAT"],
+    },
+    {
+        "id": "norms_pat_ultimo",
+        "description": "Último código PAT-X del catálogo",
+        "value": ultimo_de_familia("PAT"),
+        "patterns": [r"PAT-1[–-]PAT-(\d+)"],
+    },
+    {
+        "id": "norms_sp",
+        "description": "Normas SP-XX de protocolo de sesión",
+        "value": count_norms_family("SP"),
+        "patterns": [r"(\d+) SP, \d+ CN"],
+    },
+    {
+        "id": "norms_cn",
+        "description": "Convenciones CN-XX",
+        "value": count_norms_family("CN"),
+        "patterns": [r"\d+ SP, (\d+) CN"],
+    },
+    {
+        # «~6000 líneas» en `README.md` y «~6.000» en `AGENTS.md` con 11.110
+        # en el fichero: aproximada, pero escrita a mano igual (AP-47).
+        "id": "spec_kilolineas",
+        "description": "Miles de líneas del manifiesto",
+        "value": count_spec_kilolineas,
+        "patterns": [r"~(\d+)\.000 líneas", r"~(\d+)000 líneas"],
     },
     {
         # Tres documentos vigilados decían «(12 valores)» sin patrón que lo

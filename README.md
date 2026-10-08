@@ -588,12 +588,12 @@ Sistema de control de asistencia con autenticación biométrica.
 
 ## La especificación completa
 
-**[vault-obsidian-architecture.md](./vault-obsidian-architecture.md)** — v40.33, ~6000 líneas.
+**[vault-obsidian-architecture.md](./vault-obsidian-architecture.md)** — ~11000 líneas.
 
 Contiene:
 - 8 principios de diseño
 - 123 tools con contratos exactos (parámetros, retorno, error codes, cuándo usar)
-- 74 normas: 65 antipatrones (AP-01–AP-62), 6 patrones (PAT-1–PAT-6), 3 SP, 3 CN
+- 79 normas: 65 antipatrones (AP-01–AP-65), 6 patrones (PAT-1–PAT-6), 4 SP, 4 CN
 - norm_refs auto-embebido en frontmatter + vault_code_tag para etiquetas en código fuente
 - 8 Fundamentos de Datos (F1–F8) con trazabilidad a tools
 - CIA schema completo con semántica por tipo de nota
@@ -613,7 +613,7 @@ Contiene:
 - Protocolo de inicialización corregido con comandos exactos
 - Protocolo de sesión para LLMs remotos (Claude API, GPT, Gemini, DeepSeek)
 - Sistema de versionado con migraciones automáticas (v19 → v40)
-- Changelog completo (v1 → v40.33)
+- Changelog completo, desde v1
 - Compatibilidad con Obsidian Desktop
 
 ---

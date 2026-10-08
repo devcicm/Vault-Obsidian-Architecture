@@ -216,3 +216,51 @@ def test_el_tamano_del_vocabulario_de_status_se_vigila(tmp_path, monkeypatch):
     r = vdc.scan(docs=["FAKE.md"], include_slow=False)
     reclamadas = {(m["claimed"], m["actual"]) for m in r["mismatches"]}
     assert reclamadas == {(real + 1, real), (real + 2, real), (real + 3, real)}
+
+
+def test_el_desglose_de_normas_por_familia_se_vigila(tmp_path, monkeypatch):
+    """`README.md` decía «74 normas: 65 antipatrones (AP-01–AP-62), 6 patrones
+    (PAT-1–PAT-6), 3 SP, 3 CN» con 79 en el catálogo (v41.3).
+
+    El patrón de antipatrones lo vigilaba y `--fix` lo subió a 65; el total con
+    dos puntos, el rango y las dos últimas familias no tenían patrón, así que la
+    frase quedó a medio derivar: una cifra corregida al lado de cuatro que no.
+    """
+    from vault_norms_catalog import NORM_CATALOG
+
+    def familia(p):
+        return [n["code"] for n in NORM_CATALOG if n["code"].startswith(p + "-")]
+
+    def ultimo(p):
+        return max(int(c.split("-")[1]) for c in familia(p))
+
+    doc = tmp_path / "FAKE.md"
+    doc.write_bytes(
+        "- 74 normas: 65 antipatrones (AP-01–AP-62), 5 patrones (PAT-1–PAT-5), 3 SP, 3 CN\n"
+        .encode("utf-8"))
+    monkeypatch.setattr(vdc, "REPO_ROOT", tmp_path)
+
+    r = vdc.scan(docs=["FAKE.md"], include_slow=False)
+    reclamadas = {(m["fact"], m["claimed"], m["actual"]) for m in r["mismatches"]}
+    esperadas = {
+        ("norms_total", 74, len(NORM_CATALOG)),
+        ("norms_ap_ultimo", 62, ultimo("AP")),
+        ("norms_pat", 5, len(familia("PAT"))),
+        ("norms_pat_ultimo", 5, ultimo("PAT")),
+        ("norms_sp", 3, len(familia("SP"))),
+        ("norms_cn", 3, len(familia("CN"))),
+    }
+    assert {e for e in esperadas if e[1] != e[2]} <= reclamadas, reclamadas
+
+
+def test_el_tamano_del_manifiesto_se_vigila_en_miles(tmp_path, monkeypatch):
+    """«~6000 líneas» con 11.110 en el fichero: se publica en miles, que es la
+    precisión que la frase promete, y se deriva del fichero."""
+    real = vdc.count_spec_kilolineas()
+    doc = tmp_path / "FAKE.md"
+    doc.write_bytes(f"— ~{real + 5}000 líneas. y (~{real + 6}.000 líneas)\n".encode("utf-8"))
+    monkeypatch.setattr(vdc, "REPO_ROOT", tmp_path)
+
+    r = vdc.scan(docs=["FAKE.md"], include_slow=False)
+    reclamadas = {(m["claimed"], m["actual"]) for m in r["mismatches"]}
+    assert reclamadas == {(real + 5, real), (real + 6, real)}

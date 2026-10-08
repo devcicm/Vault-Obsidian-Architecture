@@ -252,3 +252,39 @@ def test_ningun_documento_se_presenta_con_otra_version_del_estandar():
         "documento presentado con una versión que no es la vigente; quítala "
         "en vez de actualizarla:\n  " + "\n  ".join(culpables)
     )
+
+
+#: Otras dos formas de presentarse con una versión, las dos en `README.md`
+#: diciendo v40.33 con el estándar en v41.2: el enlace al manifiesto seguido
+#: de su versión y el alcance del changelog. Ninguna afirma «vigente», así que
+#: el barrido de arriba no las veía.
+FORMAS_DE_PRESENTACION = (
+    re.compile(r"vault-obsidian-architecture\.md\)\**\s+—\s+v(\d+\.\d+)"),
+    re.compile(r"[Cc]hangelog completo \(v1 → v(\d+\.\d+)\)"),
+)
+
+
+def test_ningun_documento_presenta_el_manifiesto_con_otra_version():
+    culpables = []
+    for ruta in _docs_del_repo():
+        texto = ruta.read_text(encoding="utf-8", errors="replace")
+        for forma in FORMAS_DE_PRESENTACION:
+            for m in forma.finditer(texto):
+                if m.group(1) != NUMERO:
+                    linea = texto[: m.start()].count("\n") + 1
+                    culpables.append(f"{ruta.relative_to(ROOT).as_posix()}:{linea}: v{m.group(1)}")
+    assert not culpables, (
+        "el manifiesto se presenta con una versión que no es la vigente; quítala "
+        "en vez de actualizarla:\n  " + "\n  ".join(culpables)
+    )
+
+
+def test_las_formas_de_presentacion_cazan_su_caso():
+    """Las dos cadenas reales que las motivaron; sin esto el test de arriba
+    podría estar verde por no mirar (AP-44)."""
+    casos = [
+        "**[vault-obsidian-architecture.md](./vault-obsidian-architecture.md)** — v40.33, ~6000 líneas.",
+        "- Changelog completo (v1 → v40.33)",
+    ]
+    for forma, caso in zip(FORMAS_DE_PRESENTACION, casos):
+        assert forma.findall(caso) == ["40.33"], caso
