@@ -126,6 +126,22 @@ jobs:
       - name: Run product gates
         run: python tests/run_product_gates.py
 
+      # ISO/IEC 5962 (SPDX) + ISO/IEC 5230 (inventario de licencias). La wheel
+      # se instala para que versión y licencia de cada dependencia se midan
+      # de sus metadatos; sin licencia afirmada, el paso falla.
+      - name: SBOM SPDX and license inventory
+        shell: bash
+        run: |
+          python -m pip install dist/*.whl
+          python empaquetado/sbom.py --salida dist/sbom.spdx.json
+          python empaquetado/sbom.py --inventario
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: dist/sbom.spdx.json
+
   lint:
     name: Lint Python
     runs-on: ubuntu-latest

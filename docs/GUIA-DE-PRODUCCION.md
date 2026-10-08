@@ -51,6 +51,8 @@ está escrita como registro ejecutable y no como recordatorio.
 | `madurez_declarada` | ¿El grado de madurez publicado lo sostiene este registro? | ✅ cubierta | vault_produccion._madurez_coherente + tests/test_produccion.py |
 | `wheel_sin_gobernanza` | ¿Lo que instalo es el producto, o también las herramientas que miden este repo? | ✅ cubierta | empaquetado/construir.py + vault_servicio --check (invariante 11) + tests/clean_install_gate.py |
 | `memoria_para_agentes` | ¿Un agente LLM que solo ve el MCP consigue orientarse, escribir, recordar, recuperarse y borrar? | ✅ cubierta | tests/banco_agente.py (sesión MCP con VAULT_MCP_PERFIL=agente) + tests/test_banco_agente.py |
+| `sbom_y_licencias` | ¿Sabe quien instala qué paquetes recibe y bajo qué licencia? | ✅ cubierta | empaquetado/sbom.py en el job product-gates de la CI + tests/test_sbom.py |
+| `politica_de_vulnerabilidades` | ¿Sabe quien encuentra un fallo de seguridad por dónde avisar sin publicarlo? | ✅ cubierta | SECURITY.md (secciones de SECCIONES_SECURITY) + tests/test_produccion_iso.py |
 
 ## Los huecos, escritos
 
@@ -59,6 +61,10 @@ está escrita como registro ejecutable y no como recordatorio.
 **`lo_publicado_es_solo_el_estandar` — cubierta con hueco.** Mide el índice de HOY. Lo que ya esté en un commit anterior del historial no lo ve nadie: para eso haría falta recorrer todos los árboles, y este repo nunca ha versionado esos directorios.
 
 **`memoria_para_agentes` — cubierta con hueco.** La suite ejerce las cinco tareas sobre un vault que crea el propio repo. El recuerdo sobre notas preexistentes de un vault ajeno (--copiar-de, regla 7) es una medida que se ejecuta a mano sobre copias y se reporta; no la repite la CI. Sin Node en el PATH el test se salta, y esta rama no ha pasado por la CI.
+
+**`sbom_y_licencias` — cubierta con hueco.** El SBOM se publica como artefacto de la CI, no viaja dentro de la wheel. Cubre las dependencias directas; las transitivas no, porque PyYAML no tiene. Esta rama no ha pasado por la CI.
+
+**`politica_de_vulnerabilidades` — cubierta con hueco.** El canal es el reporte privado de vulnerabilidades de GitHub, y solo funciona si el dueño lo activa en la configuración del repositorio; desde aquí no se puede comprobar.
 
 ## Qué NO demuestra el verde
 

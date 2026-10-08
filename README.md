@@ -108,7 +108,7 @@ ninguna puerta veía — el paquete prometía Python 3.9 y ninguna máquina ejec
 3.9. Tú ves lo que el proyecto no puede verse.
 
 Cómo reportar y enviar PR: abrir un issue o pull request en el repo.
-Fallos de **seguridad** en privado: contactar directamente, no en el repo público.
+Fallos de **seguridad** en privado, nunca en un issue: [SECURITY.md](SECURITY.md) dice por dónde.
 
 ---
 

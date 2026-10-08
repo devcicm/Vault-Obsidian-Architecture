@@ -261,6 +261,33 @@ def _banco_de_agente() -> bool:
             and "banco.correr(" in test.read_text(encoding="utf-8"))
 
 
+def _sbom_en_la_ci() -> bool:
+    """La CI genera el SBOM tras instalar la wheel y lo publica, y la suite
+    comprueba que el generador mide en vez de suponer. Que el documento sea
+    correcto lo dice tests/test_sbom.py; aquí, que alguien lo produzca."""
+    ci = RAIZ / ".github" / "workflows" / "vault-ci.yml"
+    if not (ci.is_file() and _existe("empaquetado/sbom.py") and _existe("tests/test_sbom.py")):
+        return False
+    texto = ci.read_text(encoding="utf-8")
+    return ("python empaquetado/sbom.py --salida dist/sbom.spdx.json" in texto
+            and "python empaquetado/sbom.py --inventario" in texto
+            and "actions/upload-artifact" in texto)
+
+
+#: Secciones que SECURITY.md tiene que tener para que quien encuentra un fallo
+#: sepa qué versión se arregla, por dónde avisar y qué esperar (ISO/IEC 29147).
+SECCIONES_SECURITY = ("## Versiones soportadas", "## Cómo reportar", "## Qué esperar",
+                      "## Superficie expuesta")
+
+
+def _politica_de_vulnerabilidades() -> bool:
+    ruta = RAIZ / "SECURITY.md"
+    if not ruta.is_file():
+        return False
+    texto = ruta.read_text(encoding="utf-8")
+    return all(s in texto for s in SECCIONES_SECURITY) and "/security/advisories/new" in texto
+
+
 #: El registro. **Fuente única**: la guía de `docs/` se deriva de aquí y se
 #: regenera con `--guia`; lo que se escriba a mano allí se pierde.
 #:
@@ -532,6 +559,45 @@ PREGUNTAS: List[Dict[str, Any]] = [
             "(--copiar-de, regla 7) es una medida que se ejecuta a mano sobre "
             "copias y se reporta; no la repite la CI. Sin Node en el PATH el "
             "test se salta, y esta rama no ha pasado por la CI."
+        ),
+    },
+    {
+        "id": "sbom_y_licencias",
+        "pregunta": "¿Sabe quien instala qué paquetes recibe y bajo qué licencia?",
+        "promesa": "Un SBOM SPDX (ISO/IEC 5962) con el inventario de licencias (ISO/IEC 5230) de cada build",
+        "por_que": (
+            "Quien redistribuye la wheel acepta las licencias de todo lo que "
+            "trae. Hasta v41.3 la única forma de saberlo era leer "
+            "pyproject.toml a mano, y la licencia de la dependencia ni siquiera "
+            "estaba ahí: está en sus metadatos. Un inventario escrito a mano "
+            "envejece en la dirección cómoda, como cualquier cifra (AP-47)."
+        ),
+        "ejerce": _sbom_en_la_ci,
+        "quien": "empaquetado/sbom.py en el job product-gates de la CI + tests/test_sbom.py",
+        "estado": "cubierta",
+        "hueco_conocido": (
+            "El SBOM se publica como artefacto de la CI, no viaja dentro de la "
+            "wheel. Cubre las dependencias directas; las transitivas no, porque "
+            "PyYAML no tiene. Esta rama no ha pasado por la CI."
+        ),
+    },
+    {
+        "id": "politica_de_vulnerabilidades",
+        "pregunta": "¿Sabe quien encuentra un fallo de seguridad por dónde avisar sin publicarlo?",
+        "promesa": "SECURITY.md: versiones soportadas, canal privado y qué esperar (ISO/IEC 29147)",
+        "por_que": (
+            "El README decía «contactar directamente» sin decir cómo. Un fallo "
+            "del servidor MCP por HTTP —el que expone el vault a la red local— "
+            "acabaría en un issue público, que es el peor sitio donde puede "
+            "aparecer antes de tener arreglo."
+        ),
+        "ejerce": _politica_de_vulnerabilidades,
+        "quien": "SECURITY.md (secciones de SECCIONES_SECURITY) + tests/test_produccion_iso.py",
+        "estado": "cubierta",
+        "hueco_conocido": (
+            "El canal es el reporte privado de vulnerabilidades de GitHub, y "
+            "solo funciona si el dueño lo activa en la configuración del "
+            "repositorio; desde aquí no se puede comprobar."
         ),
     },
 ]
