@@ -209,6 +209,12 @@ def _truncate_to_tokens(text: str, max_tokens: int) -> tuple[str, bool]:
                 break
             out.append(line)
             used += cost
+        if not out:  # una sola línea enorme: se recorta por palabras
+            for palabra in text.split():
+                if estimate_tokens(" ".join(out + [palabra])) > max_tokens:
+                    break
+                out.append(palabra)
+            return " ".join(out) + " …", True
         return "\n".join(out) + "\n…", True
     return "\n\n".join(out) + "\n\n…", True
 
