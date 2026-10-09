@@ -94,7 +94,8 @@ def _graph_file() -> Path:
 
 
 def _move_log() -> Path:
-    return _repo().dir_sistema / "move-log.json"
+    # La declara y la escribe Grafo, su dueño (deuda #3, residuo, 2026-10-08).
+    return _repo().bitacora_movimientos
 
 
 #: Espera máxima por el lock de una nota o de un índice. La misma que
@@ -128,19 +129,14 @@ def load_move_log() -> List[Dict[str, Any]]:
 
 
 def save_move_log(log: List[Dict[str, Any]]) -> None:
-    """Guarda el historial de movimientos."""
-    _system_dir().mkdir(parents=True, exist_ok=True)
-    atomic_write_text(_move_log(), json.dumps(log, indent=2, ensure_ascii=False))
+    """Guarda el historial de movimientos. Lo escribe Grafo, su dueño."""
+    _repo().escribir_bitacora_movimientos(log)
 
 
 def append_move_log(record: Dict[str, Any]) -> None:
     """Añade una entrada al historial bajo su lock: dos moves en paralelo no se
-    comen la entrada del otro (F1)."""
-    _system_dir().mkdir(parents=True, exist_ok=True)
-    with file_lock(_move_log(), timeout=_LOCK_TIMEOUT):
-        log = load_move_log()
-        log.append(record)
-        save_move_log(log)
+    comen la entrada del otro (F1). El lock y la escritura son del dueño."""
+    _repo().anotar_movimiento(record, timeout=_LOCK_TIMEOUT)
 
 
 def update_wiki_links_in_file(

@@ -60,7 +60,6 @@
   "system_writes": [
     ".change-log.json <- vault_change_log",
     ".tool-tokens.json <- vault_errors_trace",
-    "move-log.json <- vault_move",
     "propagation-queue.json <- vault_propagate",
     "tag-registry.json <- vault_init"
   ]

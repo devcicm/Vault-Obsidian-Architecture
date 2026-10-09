@@ -956,10 +956,20 @@ def sin_clasificar() -> list[str]:
 #: Hasta v41.3 incluía `write_report`, que lee el ledger de escrituras
 #: (`vault_ledger`) y no escribe nada. `replace` sigue, pero no se decide por
 #: el nombre: lo filtra `llamada_de_escritura`, porque también es `str.replace`.
+#:
+#: `escribir` y `escribir_json` son el puerto `Escritor` del kernel
+#: (`ctx.escritor`), desde 2026-10-08: el residuo de la deuda #3 se saldó
+#: mudando escrituras de `00_System/` al repositorio del dueño, que escribe por
+#: el puerto, y una escritura que la guarda no viera al mudarse quedaría
+#: escondida, no ordenada. Medido ese día: añadirlas no estrenó ningún hallazgo.
 _LLAMADAS_DE_ESCRITURA = frozenset({
     "write_text", "write_bytes", "mkdir", "touch", "rename", "replace",
     "unlink", "rmtree", "atomic_write_text", "atomic_write_json",
+    "escribir", "escribir_json",
 })
+
+#: Las escrituras cuyo destino es el primer argumento y no el receptor.
+_ESCRITURAS_POR_ARGUMENTO = ("atomic_write", "escribir")
 
 
 def llamada_de_escritura(nodo: ast.AST) -> str | None:
@@ -1281,7 +1291,7 @@ def escrituras_de_sistema_en(arbol: ast.AST, props: dict | None = None) -> list[
         if not llamada:
             continue
         fn = nodo.func
-        if llamada.startswith("atomic_write") or not isinstance(fn, ast.Attribute):
+        if llamada.startswith(_ESCRITURAS_POR_ARGUMENTO) or not isinstance(fn, ast.Attribute):
             objetivo = nodo.args[0] if nodo.args else None
         else:
             objetivo = fn.value

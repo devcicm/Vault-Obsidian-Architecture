@@ -99,6 +99,24 @@ class RepositorioAutoria:
         return RepositorioGrafo(self._ctx).grafo
 
     @property
+    def bitacora_movimientos(self) -> Path:
+        """`move-log.json` es de Grafo: Autoría lo pide, no lo declara."""
+        from ..grafo.repositorio import RepositorioGrafo
+
+        return RepositorioGrafo(self._ctx).bitacora_movimientos
+
+    def escribir_bitacora_movimientos(self, registros: list) -> None:
+        from ..grafo.repositorio import RepositorioGrafo
+
+        RepositorioGrafo(self._ctx).escribir_bitacora_movimientos(registros)
+
+    def anotar_movimiento(self, registro: dict, timeout: float = 10.0) -> None:
+        """`vault_move` anota por aquí; escribe el dueño (deuda #3, residuo)."""
+        from ..grafo.repositorio import RepositorioGrafo
+
+        RepositorioGrafo(self._ctx).anotar_movimiento(registro, timeout=timeout)
+
+    @property
     def indice_hashes(self) -> Path:
         from ..indices.repositorio import RepositorioIndices
 

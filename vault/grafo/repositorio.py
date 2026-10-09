@@ -90,6 +90,28 @@ class RepositorioGrafo:
     def bitacora_movimientos(self) -> Path:
         return self._ctx.ruta(CARPETA_SISTEMA, FICHERO_BITACORA_MOVIMIENTOS)
 
+    def escribir_bitacora_movimientos(self, registros: list) -> None:
+        """Único escritor de `move-log.json`: el dueño (deuda #3, residuo).
+
+        Hasta 2026-10-08 lo escribía `vault_move`, de Autoría, con la ruta
+        literal. Autoría delega aquí por `RepositorioAutoria`, que ya cablea
+        Grafo (par `autoria → grafo` del presupuesto).
+        """
+        self._ctx.escritor.escribir(
+            self.bitacora_movimientos,
+            json.dumps(registros, indent=2, ensure_ascii=False))
+
+    def anotar_movimiento(self, registro: dict, timeout: float = 10.0) -> None:
+        """Añade una entrada bajo el lock de la bitácora: dos moves en
+        paralelo no se comen la entrada del otro (F1). Un JSON corrupto no se
+        sobrescribe: el error sube, como hacía `vault_move.load_move_log`."""
+        ruta = self.bitacora_movimientos
+        with self._ctx.escritor.bloquear(ruta, timeout=timeout):
+            registros = (json.loads(ruta.read_text(encoding="utf-8"))
+                         if ruta.exists() else [])
+            registros.append(registro)
+            self.escribir_bitacora_movimientos(registros)
+
     @property
     def bitacora_cambios(self) -> Path:
         """La bitácora es de Gobernanza. `vault_impact` la lee, no la define."""
