@@ -194,7 +194,12 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "por_que_no_ahora": (
             "Exige antes sanear `_LLAMADAS_DE_ESCRITURA` —incluye `replace`, que "
             "captura `str.replace`, y `write_report`, que no escribe— y una decisión "
-            "de diseño que nadie ha tomado: de quién es `00_System`."
+            "de diseño que nadie ha tomado: de quién es `00_System`. (El "
+            "saneado está hecho en v41.3: `vault_arch.llamada_de_escritura` es "
+            "la única definición de «escribe» de las dos guardas, `write_report` "
+            "salió de la lista y `replace` se decide por la forma —de 640 "
+            "llamadas que contaban en `scripts/`, 336 no escribían—. Queda la "
+            "decisión de dueño, que es del usuario.)"
         ),
     },
     {

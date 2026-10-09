@@ -952,10 +952,43 @@ def sin_clasificar() -> list[str]:
 
 #: Lo que cuenta como escribir. `mkdir` entra: crear una sección de contenido
 #: es tocar el vault del usuario aunque no se deje un byte dentro.
+#:
+#: Hasta v41.3 incluía `write_report`, que lee el ledger de escrituras
+#: (`vault_ledger`) y no escribe nada. `replace` sigue, pero no se decide por
+#: el nombre: lo filtra `llamada_de_escritura`, porque también es `str.replace`.
 _LLAMADAS_DE_ESCRITURA = frozenset({
     "write_text", "write_bytes", "mkdir", "touch", "rename", "replace",
-    "unlink", "rmtree", "atomic_write_text", "atomic_write_json", "write_report",
+    "unlink", "rmtree", "atomic_write_text", "atomic_write_json",
 })
+
+
+def llamada_de_escritura(nodo: ast.AST) -> str | None:
+    """El nombre de la escritura que hace esta llamada, o None si no escribe.
+
+    Única definición de «escribe» para las guardas de este módulo. `replace` se
+    decide por la forma y no por el nombre: `str.replace(viejo, nuevo[, n])`
+    lleva dos o más argumentos; `Path.replace(destino)` lleva uno —y si va
+    con nombre, se llama `target`, no `tzinfo` como el de `datetime`—, y
+    `os.replace(origen, destino)` se reconoce por el receptor.
+    """
+    if not isinstance(nodo, ast.Call):
+        return None
+    fn = nodo.func
+    nombre = fn.attr if isinstance(fn, ast.Attribute) else (
+        fn.id if isinstance(fn, ast.Name) else None)
+    if nombre not in _LLAMADAS_DE_ESCRITURA:
+        return None
+    if nombre == "replace":
+        if not isinstance(fn, ast.Attribute):
+            return None
+        es_os = isinstance(fn.value, ast.Name) and fn.value.id == "os"
+        if not es_os and len(nodo.args) + len(nodo.keywords) != 1:
+            return None
+        # `datetime.replace(tzinfo=...)` también lleva uno; el de `Path` solo
+        # puede llamarse `target`.
+        if any(k.arg != "target" for k in nodo.keywords):
+            return None
+    return nombre
 
 
 def _secciones_de_contenido() -> set[str]:
@@ -1475,11 +1508,8 @@ def escrituras_sin_lock(rutas: list[Path] | None = None) -> list[dict]:
                     continue
                 for stmt in handler.body:
                     for c in ast.walk(stmt):
-                        if not isinstance(c, ast.Call):
-                            continue
-                        nombre = (c.func.attr if isinstance(c.func, ast.Attribute)
-                                  else getattr(c.func, "id", None))
-                        if nombre in _LLAMADAS_DE_ESCRITURA:
+                        nombre = llamada_de_escritura(c)
+                        if nombre:
                             hallazgos.append({
                                 "module": mod,
                                 "line": c.lineno,
@@ -1521,13 +1551,10 @@ def escrituras_prohibidas() -> list[dict]:
         arbol = _ast_de(ruta)
         desechables = _nombres_desechables(arbol)
         for nodo in ast.walk(arbol):
-            if not isinstance(nodo, ast.Call):
+            nombre = llamada_de_escritura(nodo)
+            if not nombre:
                 continue
             fn = nodo.func
-            nombre = fn.attr if isinstance(fn, ast.Attribute) else (
-                fn.id if isinstance(fn, ast.Name) else None)
-            if nombre not in _LLAMADAS_DE_ESCRITURA:
-                continue
             objetivo = fn.value if isinstance(fn, ast.Attribute) else (
                 nodo.args[0] if nodo.args else None)
             if _nombre_base(objetivo) in desechables:
