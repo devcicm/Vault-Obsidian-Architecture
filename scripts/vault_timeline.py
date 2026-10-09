@@ -79,6 +79,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
+from vault.kernel.frontmatter_parsing import campos_de_texto  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -96,31 +97,11 @@ def _index_file() -> Path:
 
 
 def parse_frontmatter(content: str) -> Dict[str, Any]:
-    frontmatter_match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
-
-    if not frontmatter_match:
-        return {}
-
-    meta = {}
-
-    for line in frontmatter_match.group(1).split("\n"):
-        if ":" in line:
-            key, value = line.split(":", 1)
-
-            key = key.strip()
-
-            value = value.strip().strip("\"'")
-
-            if value.startswith("[") or value.startswith("{"):
-                try:
-                    value = json.loads(value)
-
-                except json.JSONDecodeError:
-                    pass
-
-            meta[key] = value
-
-    return meta
+    # AP-44 (2026-10-08, deuda #5): leía por líneas con `split(":", 1)` y un
+    # `json.loads` para las listas en flujo; una lista en bloque o un título
+    # `>-` salían mal. El nombre se conserva; la lectura es la del kernel, en
+    # texto porque la línea de tiempo corta las fechas con `[:10]`.
+    return campos_de_texto(content)
 
 
 def matches_query(text: str, query: str) -> bool:

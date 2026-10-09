@@ -213,7 +213,11 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "desde": "v40.9",
         "capa": "5",
         "que": (
-            "8 parsers de frontmatter distintos; `vault_write.slugify` no delega en "
+            "8 parsers de frontmatter distintos (esa parte, saldada en v41.2: al "
+            "medirla eran once lectores por líneas en diez módulos, y todos "
+            "delegan en `vault/kernel/frontmatter_parsing.cargar_bloque_tolerante`; "
+            "`vault_criterios.medir_lecturas` hace fallar la puerta AP-57 ante uno "
+            "nuevo); `vault_write.slugify` no delega en "
             "`vault_lib` aunque 20 módulos sí (esa parte, saldada en v40.35: delega "
             "en `slugify_strict` y el slug viejo queda solo para encontrar notas "
             "ya escritas); 6 aliases de v40.8 con el nombre viejo "
@@ -222,7 +226,9 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         ),
         "por_que_no_ahora": (
             "Es AP-50 acumulado y se salda unificando, no parcheando: hacerlo a "
-            "medias deja nueve parsers en vez de ocho."
+            "medias deja nueve parsers en vez de ocho. Quedan los aliases y el "
+            "`--agent` por defecto, y lo segundo cambia lo que reciben los "
+            "clientes MCP: lo decide el usuario, no esta tanda."
         ),
     },
     {

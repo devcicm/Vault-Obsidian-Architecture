@@ -289,6 +289,10 @@ from vault.kernel.frontmatter_parsing import yaml_scalar  # noqa: E402,F401
 from vault.kernel.frontmatter_parsing import valor_de_frontmatter  # noqa: E402,F401
 # AP-57 (2026-10-01): dónde acaba el bloque lo decide el kernel, por líneas.
 from vault.kernel.frontmatter_parsing import separar_frontmatter  # noqa: E402,F401
+# AP-44 (2026-10-08): leer un campo suelto también lo decide el kernel (deuda #5).
+from vault.kernel.frontmatter_parsing import (  # noqa: E402,F401
+    cargar_bloque_tolerante, campos_de_texto,
+)
 
 
 def serialize_frontmatter(frontmatter: Dict[str, Any]) -> str:

@@ -15,10 +15,9 @@ Usage:
 
 import argparse
 import json
-import re
 import sys
 from vault_errors import emit_error, wrap_main, proyecto_registrado
-from vault_lib import utcnow, slugify
+from vault_lib import utcnow, slugify, campos_de_texto
 import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -225,13 +224,13 @@ def vault_code_module(
     if note_path.exists():
         with open(note_path, "r", encoding="utf-8") as f:
             content = f.read()
-        frontmatter_match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
-        if frontmatter_match:
-            for line in frontmatter_match.group(1).split("\n"):
-                if line.startswith("id:"):
-                    existing_id = line.split(":", 1)[1].strip()
-                elif line.startswith("createdAt:"):
-                    created_at = line.split(":", 1)[1].strip()
+        # AP-44 (deuda #5): en texto, para volver a escribir lo que había; por
+        # líneas, un `createdAt` entre comillas se reescribía con ellas dentro.
+        previos = campos_de_texto(content)
+        if isinstance(previos.get("id"), str):
+            existing_id = previos["id"]
+        if isinstance(previos.get("createdAt"), str):
+            created_at = previos["createdAt"]
         action = "updated"
     else:
         action = "created"

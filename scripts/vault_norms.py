@@ -51,7 +51,7 @@ import sys
 from vault_errors import emit_error, wrap_main
 from vault_version import CURRENT_VERSION  # generator_version de los artefactos (AP-47)
 from vault_io import atomic_write_json, file_lock, normalize_stem
-from vault_lib import parse_frontmatter, separar_frontmatter
+from vault_lib import cargar_bloque_tolerante, parse_frontmatter, separar_frontmatter
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 from vault.kernel.contenido import (  # noqa: E402
     es_adr,
@@ -196,12 +196,10 @@ def vault_norms_scan(path: str) -> Dict[str, Any]:
 
     # Frontmatter checks
     bloque, cuerpo = separar_frontmatter(content)
-    fm: Dict[str, str] = {}
-    if bloque is not None:
-        for line in bloque.splitlines():
-            if ":" in line:
-                k, _, v = line.partition(":")
-                fm[k.strip()] = v.strip().strip("\"'")
+    # AP-44 (deuda #5): los campos los lee el kernel; aquí solo se mira presencia.
+    fm: Dict[str, Any] = (
+        cargar_bloque_tolerante(bloque, texto=True)[0] if bloque is not None else {}
+    )
 
     if not fm.get("agent"):
         _add("AP-16", "campo agent ausente en frontmatter")

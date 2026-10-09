@@ -30,7 +30,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from vault_errors import emit_error, wrap_main
 from vault_lib import utcnow, parse_frontmatter_with_body
-from vault_lib import separar_frontmatter
+from vault_lib import campos_de_texto
 from vault_io import (
     atomic_write_json,
     atomic_write_text,
@@ -178,13 +178,9 @@ _parse_frontmatter_tags = tags_de_frontmatter
 
 
 def _parse_frontmatter_title(content: str) -> str:
-    bloque, _ = separar_frontmatter(content)
-    if bloque is None:
-        return ""
-    for line in bloque.splitlines():
-        if line.startswith("title:"):
-            return line.split(":", 1)[1].strip().strip("\"'")
-    return ""
+    # AP-44: un `title: >-` en bloque salía como `>-` leído por líneas.
+    titulo = campos_de_texto(content).get("title", "")
+    return titulo if isinstance(titulo, str) else ""
 
 
 # ───────────────────────────── AP-39 — vocabulario con memoria ──────────────
@@ -392,11 +388,8 @@ def vault_tags_backfill_ledger(dry_run: bool = False) -> Dict[str, Any]:
         except (OSError, UnicodeDecodeError):
             continue
         rel = str(md.relative_to(_raiz())).replace("\\", "/")
-        agente = ""
-        for linea in (separar_frontmatter(contenido)[0] or "").splitlines():
-            if linea.startswith("agent:"):
-                agente = linea.split(":", 1)[1].strip().strip("\"'")
-                break
+        agente = campos_de_texto(contenido).get("agent", "")
+        agente = agente if isinstance(agente, str) else ""
         for crudo in _parse_frontmatter_tags(contenido):
             resuelto, regla = resolve_tag(crudo, indice)
             if regla != "new" or not resuelto or resuelto in vistos:

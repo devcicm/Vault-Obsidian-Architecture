@@ -105,6 +105,7 @@ from vault.kernel.indices_structural import RESERVED_INDEX_NAMES as _STRUCTURAL_
 from vault.kernel import construir  # noqa: E402
 from vault.kernel.contenido import meta_adr, plantilla_adr  # noqa: E402
 from vault.kernel.frontmatter_parsing import FrontmatterParseError, parse_frontmatter_with_body  # noqa: E402
+from vault.kernel.frontmatter_parsing import cargar_bloque_tolerante  # noqa: E402
 from vault_contrato_nota import clase_de_nota, faltantes as _faltantes_del_contrato  # noqa: E402
 
 
@@ -1425,37 +1426,20 @@ def _frontmatter_de(bloque: str) -> Dict[str, Any]:
     en bloque es la forma que escriben `vault_write` y `vault_tags`, así que el
     audit no veía lo que el propio estándar produce.
 
-    Se usa YAML primero. El regex se conserva como red: `yaml.safe_load` devuelve
-    `{}` ante un frontmatter mal formado (un `title:` con dos puntos sin comillas
-    basta), y en ese caso leer algo por líneas es mejor que declarar la nota
-    entera sin metadatos.
+    YAML primero y, si lo rechaza (un `title:` con dos puntos sin comillas
+    basta), lectura por líneas: leer algo es mejor que declarar la nota entera
+    sin metadatos. Desde 2026-10-08 (deuda #5) las dos mitades las decide el
+    kernel —`cargar_bloque_tolerante`—, que es quien ya lee para el resto.
     """
-    datos: Dict[str, Any] = {}
-    try:
-        import yaml
-
-        cargado = yaml.safe_load(bloque)
-        if isinstance(cargado, dict):
-            # A texto los tipos que YAML materializa y `json.dumps` no sabe
-            # escribir: `date: 2026-07-12` sin comillas llega como
-            # `datetime.date` y reventaba la serialización del informe entero.
-            # El audit solo mira presencia y título, así que el texto basta.
-            datos = {
-                k: (v if isinstance(v, (str, int, float, bool, list, dict)) else str(v))
-                for k, v in cargado.items()
-                if v is not None
-            }
-    except Exception:
-        datos = {}
-
-    if datos:
-        return datos
-
-    for line in bloque.split("\n"):
-        kv = re.match(r"^(\w[\w_-]*):\s*(.+)$", line)
-        if kv:
-            datos[kv.group(1)] = kv.group(2).strip()
-    return datos
+    cargado, _degradado = cargar_bloque_tolerante(bloque)
+    # A texto los tipos que YAML materializa y `json.dumps` no sabe escribir:
+    # reventaban la serialización del informe entero. El audit solo mira
+    # presencia y título, así que el texto basta.
+    return {
+        k: (v if isinstance(v, (str, int, float, bool, list, dict)) else str(v))
+        for k, v in cargado.items()
+        if v is not None
+    }
 
 
 def _falta_al_contrato(raw: str, rel: str) -> Optional[Dict[str, Any]]:
@@ -2635,7 +2619,7 @@ def _audit_external_path(path: Path) -> Dict[str, Any]:
 
             continue
 
-        bloque, _ = separar_frontmatter(content)
+        bloque, cuerpo = separar_frontmatter(content)
 
         if bloque is None:
             no_frontmatter.append(str(md_file))
@@ -2644,20 +2628,17 @@ def _audit_external_path(path: Path) -> Dict[str, Any]:
 
             continue
 
-        has_title = False
+        # AP-44 (deuda #5): el título lo lee el kernel; por líneas, un `>-`
+        # contaba como título y una línea `title:` dentro de un bloque no.
+        titulo = cargar_bloque_tolerante(bloque, texto=True)[0].get("title")
+        has_title = isinstance(titulo, str) and bool(titulo.strip())
 
-        for line in bloque.splitlines():
-            if line.lower().startswith("title:") and line.split(":", 1)[1].strip():
-                has_title = True
-
-                break
-
-        # also check for a # heading
+        # also check for a # heading — en el cuerpo: hasta 2026-10-08 se leía
+        # `parts[2]`, que dejó de existir al migrar `split("---")`, y una nota
+        # sin `title:` hacía caer la auditoría entera con NameError.
 
         if not has_title:
-            import re as _re
-
-            if _re.search(r"^#\s+.+", parts[2], _re.MULTILINE):
+            if re.search(r"^#\s+.+", cuerpo, re.MULTILINE):
                 has_title = True
 
         if not has_title:

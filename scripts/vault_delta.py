@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 from vault_errors import emit_error, wrap_main, proyecto_registrado
-from vault_lib import separar_frontmatter, utcnow
+from vault_lib import campos_de_texto, utcnow
 from vault_io import atomic_write_json
 from vault_registry import ORDERED_SECTIONS, secciones_del_vault
 
@@ -102,12 +102,10 @@ def _read_cia_integrity(path: Path) -> str:
         content = path.read_text(encoding="utf-8", errors="ignore")
         if not content.startswith("---"):
             return "medium"
-        bloque, _ = separar_frontmatter(content)
-        if bloque is None:
-            return "medium"
-        for line in bloque.splitlines():
-            if line.startswith("cia_integrity:"):
-                return line.split(":", 1)[1].strip().strip("\"'")
+        # AP-44 (deuda #5): el campo lo lee el kernel, no un split por líneas.
+        valor = campos_de_texto(content).get("cia_integrity")
+        if isinstance(valor, str):
+            return valor
     except Exception as exc:
         emit_error("vault_delta", "INTEGRITY_PARSE_ERROR", str(exc))
     return "medium"

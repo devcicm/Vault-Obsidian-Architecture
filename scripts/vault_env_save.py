@@ -29,7 +29,7 @@ import re
 import sys
 
 from vault_errors import emit_error, wrap_main, proyecto_registrado
-from vault_lib import yaml_scalar, slugify_strict, utcnow
+from vault_lib import yaml_scalar, slugify_strict, utcnow, campos_de_texto
 from datetime import datetime, timezone
 from vault_io import atomic_write_text, assert_within_vault, write_report
 
@@ -171,12 +171,11 @@ def vault_env_save(
         with open(envs_path, "r", encoding="utf-8") as f:
             content = f.read()
 
-        frontmatter_match = re.match(r"^---\n(.*?)\n---\n", content, re.DOTALL)
+        # AP-44 (deuda #5): la descripción la lee el kernel, no un split por líneas.
+        previa = campos_de_texto(content).get("description", "")
 
-        if frontmatter_match:
-            for line in frontmatter_match.group(1).split("\n"):
-                if line.startswith("description:"):
-                    existing_description = line.split(":", 1)[1].strip().strip("\"'")
+        if isinstance(previa, str):
+            existing_description = previa
 
         existing_envs = parse_envs_file(content)
 

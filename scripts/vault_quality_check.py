@@ -45,7 +45,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from vault_errors import wrap_main
-from vault_lib import separar_frontmatter, utcnow
+from vault_lib import cargar_bloque_tolerante, separar_frontmatter, utcnow
 from vault_io import atomic_write_json, file_lock, normalize_stem, write_report
 
 
@@ -194,11 +194,17 @@ def _read_frontmatter_raw(path: Path) -> Tuple[Dict[str, str], str]:
     bloque, cuerpo = separar_frontmatter(content)
     if bloque is None:
         return {}, content
-    fm: Dict[str, str] = {}
-    for line in bloque.splitlines():
-        if ":" in line:
-            k, _, v = line.partition(":")
-            fm[k.strip()] = v.strip().strip("\"'")
+    # AP-44 (deuda #5): los campos los lee el kernel —YAML, y por líneas solo
+    # si YAML lo rechaza—. Leído aquí por líneas, una lista de tags en bloque
+    # salía vacía y un `title: >-` salía como `>-`. Los puntuadores esperan
+    # texto, así que una lista se une y un mapa se resume.
+    campos, _degradado = cargar_bloque_tolerante(bloque, texto=True)
+    fm: Dict[str, str] = {
+        str(k): (", ".join(str(x) for x in v) if isinstance(v, list)
+                 else json.dumps(v, ensure_ascii=False) if isinstance(v, dict)
+                 else str(v))
+        for k, v in campos.items()
+    }
     return fm, cuerpo
 
 

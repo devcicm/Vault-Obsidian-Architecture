@@ -615,6 +615,92 @@ def medir_montajes(raiz: Path = None) -> List[Dict[str, str]]:
     return hallazgos
 
 
+#: Quién lee un campo del frontmatter (2026-10-08, deuda #5). Medido al abrir
+#: la deuda: once funciones en diez módulos recorrían el bloque línea a línea y
+#: cortaban cada una por `":"`. Ninguna veía una lista en bloque, un título
+#: `>-` ni las comillas de un valor, que `yaml.safe_load` sí ve (AP-44): un
+#: `createdAt` entre comillas volvía a escribirse con ellas dentro.
+LECTURA_CON_DUENO = {
+    "criterio": "lectura_de_frontmatter",
+    "senal": 'bucle por las líneas del bloque que corta en ":"',
+    "dueño": "vault/kernel/frontmatter_parsing.py:cargar_bloque_tolerante",
+}
+
+
+def _recorre_lineas(n: ast.AST) -> bool:
+    """`for … in x.splitlines()` o `x.split("\\n")`."""
+    return (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+            and (n.func.attr == "splitlines"
+                 or (n.func.attr == "split" and n.args
+                     and isinstance(n.args[0], ast.Constant)
+                     and n.args[0].value == "\n")))
+
+
+def _corta_clave(n: ast.AST) -> bool:
+    """`x.split(":", …)` o `x.partition(":")`."""
+    return (isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+            and n.func.attr in ("split", "partition") and n.args
+            and isinstance(n.args[0], ast.Constant) and n.args[0].value == ":")
+
+
+def _toca_frontmatter(f: ast.AST) -> bool:
+    """La función tiene el bloque: lo separa, lo busca con `^---` o lo nombra."""
+    if "frontmatter" in f.name.lower():
+        return True
+    for n in ast.walk(f):
+        if ((isinstance(n, ast.Name) and n.id == "separar_frontmatter")
+                or (isinstance(n, ast.Attribute) and n.attr == "separar_frontmatter")
+                or (isinstance(n, ast.Constant) and isinstance(n.value, str)
+                    and n.value.startswith("^---"))):
+            return True
+    return False
+
+
+def medir_lecturas(raiz: Path = None) -> List[Dict[str, str]]:
+    """AP-44: funciones que leen campos del frontmatter por líneas fuera del dueño.
+
+    La señal son **dos** piezas: un bucle por las líneas con un corte en `":"`
+    dentro, y que la función tenga el bloque de frontmatter. El bucle solo
+    también es el de leer un `.env` o una tabla; el bloque solo es el de quien
+    delega.
+
+    Alcance declarado: un regex por línea (`re.match(r"^(\\w+):", l)`) decide lo
+    mismo y no se ve, igual que un bloque recibido ya separado en una función
+    sin `frontmatter` en el nombre. Queda fuera por diseño quien repara un
+    bloque que YAML rechaza —`vault_frontmatter_heal`—: para él la línea es la
+    unidad, porque YAML no le da otra. `_archived/` no se ejecuta.
+    """
+    raiz = raiz or REPO
+    dueño = LECTURA_CON_DUENO["dueño"].split(":")[0]
+    hallazgos: List[Dict[str, str]] = []
+    for zona in _ZONAS_DE_DEFINICION:
+        for p in sorted((raiz / zona).rglob("*.py")):
+            if "__pycache__" in p.parts or "_archived" in p.parts:
+                continue
+            rel = p.relative_to(raiz).as_posix()
+            if rel == dueño:
+                continue
+            try:
+                arbol = ast.parse(p.read_text(encoding="utf-8"))
+            except (OSError, SyntaxError, UnicodeDecodeError):
+                continue  # `medir` ya lo reporta como `_no_parsea`
+            for f in ast.walk(arbol):
+                if not isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    continue
+                lee = any(isinstance(b, ast.For) and _recorre_lineas(b.iter)
+                          and any(_corta_clave(x) for x in ast.walk(b))
+                          for b in ast.walk(f))
+                if lee and _toca_frontmatter(f):
+                    hallazgos.append({
+                        "modulo": rel,
+                        "criterio": LECTURA_CON_DUENO["criterio"],
+                        "senal": f"{f.name}: {LECTURA_CON_DUENO['senal']}",
+                        "dueño": LECTURA_CON_DUENO["dueño"],
+                    })
+                    break  # la firma es por módulo
+    return hallazgos
+
+
 # ── La medida de las fronteras ───────────────────────────────────────────────
 
 REPO = Path(__file__).resolve().parent.parent
@@ -770,7 +856,7 @@ def _baseline() -> List[str]:
 
 def check() -> Dict[str, Any]:
     hallazgos = (medir() + medir_fronteras() + medir_definiciones()
-                 + medir_particiones() + medir_montajes())
+                 + medir_particiones() + medir_montajes() + medir_lecturas())
     firmas = {_firma(h) for h in hallazgos}
     base = set(_baseline())
     nuevos = sorted(firmas - base)
@@ -812,7 +898,7 @@ def check() -> Dict[str, Any]:
 
 def freeze(admitir_nuevos: bool = False) -> Dict[str, Any]:
     hallazgos = (medir() + medir_fronteras() + medir_definiciones()
-                 + medir_particiones() + medir_montajes())
+                 + medir_particiones() + medir_montajes() + medir_lecturas())
     firmas = sorted({_firma(h) for h in hallazgos})
     base = set(_baseline())
     nuevos = sorted(set(firmas) - base)

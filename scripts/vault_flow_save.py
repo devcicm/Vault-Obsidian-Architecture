@@ -38,12 +38,10 @@ import argparse
 
 import json
 
-import re
-
 import sys
 
 from vault_errors import emit_error, wrap_main, proyecto_registrado
-from vault_lib import yaml_scalar, slugify_strict, utcnow
+from vault_lib import yaml_scalar, slugify_strict, utcnow, campos_de_texto
 from datetime import datetime, timezone
 from vault_io import atomic_write_text, assert_within_vault, write_report
 import uuid
@@ -136,15 +134,15 @@ def vault_flow_save(
         with open(note_path, "r", encoding="utf-8") as f:
             existing = f.read()
 
-        m = re.match(r"^---\n(.*?)\n---", existing, re.DOTALL)
+        # AP-44 (deuda #5): en texto, para volver a escribir lo que había; por
+        # líneas, un `createdAt` entre comillas se reescribía con ellas dentro.
+        previos = campos_de_texto(existing)
 
-        if m:
-            for line in m.group(1).split("\n"):
-                if line.startswith("id:"):
-                    note_id = line.split(":", 1)[1].strip()
+        if isinstance(previos.get("id"), str):
+            note_id = previos["id"]
 
-                elif line.startswith("createdAt:"):
-                    created_at = line.split(":", 1)[1].strip()
+        if isinstance(previos.get("createdAt"), str):
+            created_at = previos["createdAt"]
 
         action = "updated"
 

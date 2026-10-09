@@ -167,6 +167,64 @@ def _cargar_bloque(bloque: str) -> Dict[str, Any]:
         raise FrontmatterParseError(f"anidamiento excesivo en frontmatter") from exc
 
 
+#: Una clave de primer nivel con valor en la misma línea. Es la red de
+#: `cargar_bloque_tolerante` y nada más: un bloque que YAML acepta nunca se
+#: lee con esto.
+_LINEA_CLAVE_VALOR = re.compile(r"^(\w[\w-]*):[ \t]*(.+?)[ \t]*$")
+
+
+def cargar_bloque_tolerante(bloque: str, texto: bool = False) -> Tuple[Dict[str, Any], bool]:
+    """`(campos, degradado)`: el bloque como lo lee el consumidor, sin lanzar.
+
+    Única lectura de campos sueltos del frontmatter (AP-44, AP-57; deuda #5).
+    Hasta 2026-10-08, once funciones leían claves con `split(":", 1)` línea a
+    línea: un título `>-` salía como `>-`, una lista de tags en bloque como
+    texto vacío y un valor entre comillas con las comillas dentro.
+
+    Se lee con YAML. Solo si YAML rechaza el bloque —o no es un dict— se cae a
+    las líneas `clave: valor` de primer nivel, con las comillas que las
+    envuelven quitadas, y `degradado` lo dice: leer algo es mejor que declarar
+    la nota sin metadatos, pero quien cuenta notas ilegibles tiene que poder
+    distinguirlo.
+
+    `texto=True` lee con la misma gramática pero sin resolver tipos
+    (`yaml.BaseLoader`): todo escalar llega como lo escribió el autor, así que
+    quien vuelve a escribir un valor —`createdAt` al actualizar una nota— no
+    cambia `...000Z` por `+00:00`. Las listas y los mapas siguen siéndolo.
+    """
+    try:
+        if texto:
+            cargado = yaml.load(bloque, Loader=yaml.BaseLoader)  # noqa: S506 — BaseLoader no construye objetos
+            cargado = {} if cargado is None or cargado == "" else cargado
+        else:
+            cargado = _cargar_bloque(bloque)
+        if isinstance(cargado, dict):
+            return cargado, False
+    except (FrontmatterParseError, yaml.YAMLError, RecursionError):
+        pass
+    datos: Dict[str, Any] = {}
+    for linea in bloque.splitlines():
+        kv = _LINEA_CLAVE_VALOR.match(linea)
+        if kv:
+            valor = kv.group(2)
+            if len(valor) >= 2 and valor[0] == valor[-1] and valor[0] in "\"'":
+                valor = valor[1:-1]
+            datos[kv.group(1)] = valor
+    return datos, True
+
+
+def campos_de_texto(content: str) -> Dict[str, Any]:
+    """Los campos de una nota tal como los escribió el autor; `{}` sin bloque.
+
+    Para quien lee un campo suelto —el `title`, el `createdAt` que va a volver
+    a escribir— y no necesita saber si la lectura fue degradada.
+    """
+    bloque, _ = separar_frontmatter(content)
+    if bloque is None:
+        return {}
+    return cargar_bloque_tolerante(bloque, texto=True)[0]
+
+
 def _coerce_dates(obj: Any) -> Any:
     """Convierte datetime/date a string ISO. Idempotente."""
     if isinstance(obj, (datetime, date)):

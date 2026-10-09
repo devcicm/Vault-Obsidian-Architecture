@@ -48,7 +48,7 @@ from typing import Any, Dict, List, Optional
 from vault_io import atomic_write_text, get_vault_root, normalize_stem, tomar_lock, write_report
 from vault_undo import _guardar_version_actual
 
-from vault_lib import separar_frontmatter
+from vault_lib import campos_de_texto, separar_frontmatter
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 
 
@@ -89,12 +89,11 @@ def _note_updated_at(path: Path) -> str:
     try:
         content = _read_note(path)
 
-        bloque, _ = separar_frontmatter(content)
+        # AP-44 (deuda #5): el campo lo lee el kernel, no un split por líneas.
+        valor = campos_de_texto(content).get("updatedAt")
 
-        if bloque is not None:
-            for line in bloque.splitlines():
-                if line.startswith("updatedAt:"):
-                    return line.split(":", 1)[1].strip().strip("\"'")
+        if isinstance(valor, str):
+            return valor
 
     except Exception as exc:
         emit_error("vault_merge", "UPDATED_AT_PARSE_ERROR", str(exc))
