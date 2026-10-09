@@ -15,7 +15,6 @@ Usage:
 
 import argparse
 import json
-import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -26,6 +25,8 @@ from vault_io import get_vault_root
 from vault_lib import Config, utcnow
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from vault.kernel import historia  # noqa: E402
 
 
 DEFAULT_KEEP = 10
@@ -65,18 +66,9 @@ def _parse_history_filename(filename: str) -> Dict[str, Any]:
     Sin la segunda, esa versión salía sin fecha y con `-n` pegado al stem: otra
     nota para quien agrupa. `secuencia` ordena las del mismo segundo.
     """
-    without_ext = filename[:-3]
-    match = re.search(r"-(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2})(?:-(\d+))?$", without_ext)
-    if match:
-        timestamp_str = match.group(1)
-        stem = without_ext[:match.start()]
-        try:
-            ts = datetime.strptime(timestamp_str, "%Y-%m-%dT%H-%M-%S").replace(tzinfo=timezone.utc)
-        except ValueError:
-            ts = None
-        return {"stem": stem, "timestamp": ts, "timestamp_str": timestamp_str,
-                "secuencia": int(match.group(2) or 0)}
-    return {"stem": without_ext, "timestamp": None, "timestamp_str": "", "secuencia": 0}
+    # superseded_by: vault.kernel.historia.parsear (v41.3). Se conserva la
+    # función porque `vault_arquitectura_en` y los tests la llaman.
+    return historia.parsear(filename)
 
 
 def get_notes_with_history() -> Dict[str, List[Dict[str, Any]]]:

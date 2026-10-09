@@ -28,6 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel import historia  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -45,16 +46,13 @@ def _history_dir() -> Path:
 
 
 def get_history(note_path: Path) -> List[str]:
-    """Get all historical versions sorted newest first."""
-    if not _history_dir().exists():
-        return []
-    note_name = note_path.stem
-    rel_parent = str(note_path.parent.relative_to(_raiz().resolve()))
-    folder_prefix = rel_parent.replace("\\", "__").replace("/", "__")
-    prefix = f"{folder_prefix}__{note_name}-"
-    versions = [f.name for f in _history_dir().iterdir() if f.is_file() and f.name.startswith(prefix)]
-    versions.sort(reverse=True)
-    return versions
+    """Get all historical versions sorted newest first.
+
+    Delega en `vault.kernel.historia` (v41.3): el prefijo casaba también con
+    las versiones de `stem-otra.md`.
+    """
+    rel = note_path.resolve().relative_to(_raiz().resolve()).as_posix()
+    return [v["filename"] for v in historia.versiones(_history_dir(), rel)]
 
 
 def _compute_hash(path: Path) -> Dict[str, Any]:

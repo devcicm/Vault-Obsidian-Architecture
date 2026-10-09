@@ -109,6 +109,7 @@ from vault_entorno import leer as _env
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel import historia  # noqa: E402
 from vault.kernel.contenido import con_titulo  # noqa: E402
 from vault.kernel.errores import completar_envelope  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
@@ -1059,13 +1060,12 @@ def vault_write(
     # If note exists, backup to history
 
     if vault_path.exists():
-        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
-
-        history_filename = (
-            f"{folder.replace('/', '__')}__{slugify(title)}-{timestamp}.md"
-        )
-
-        history_path = _history_dir() / history_filename
+        # El nombre sale del fichero, no de `slugify(title)`: una nota heredada
+        # (`_nota_heredada`) tiene otro stem, y su versión quedaba donde ni
+        # `vault_undo` ni `vault_diff` la buscan. Y dos escrituras en el mismo
+        # segundo ya no se pisan (v41.3, `vault.kernel.historia`).
+        history_path = historia.nombre_libre(
+            _history_dir(), vault_path.relative_to(_raiz()).as_posix())
 
         _history_dir().mkdir(parents=True, exist_ok=True)
 

@@ -49,6 +49,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel import historia  # noqa: E402
 from vault.kernel.frontmatter_parsing import parse_frontmatter_robust  # noqa: E402
 
 
@@ -95,33 +96,14 @@ def extract_wiki_links(content: str) -> List[str]:
 
 
 def get_history_versions(note_path: Path) -> List[str]:
-    """Get list of historical versions in .history/"""
+    """Get list of historical versions in .history/ (las 10 más recientes).
 
-    if not _history_dir().exists():
-        return []
-
-    note_name = note_path.stem  # filename without extension
-
-    folder_prefix = str(note_path.parent.relative_to(_raiz())).replace("/", "__")
-
-    versions = []
-
-    for history_file in _history_dir().iterdir():
-        if history_file.is_file() and note_name in history_file.stem:
-            # Check if this version matches our note
-
-            prefix = f"{folder_prefix}__{note_name}-"
-
-            if history_file.stem.startswith(
-                prefix.replace("-", "_").replace("__", "__")
-            ):
-                versions.append(history_file.name)
-
-    # Sort by date (most recent first)
-
-    versions.sort(reverse=True)
-
-    return versions[:10]  # Return last 10 versions
+    Delega en `vault.kernel.historia` (v41.3). Aquí se buscaba el stem como
+    subcadena del nombre y se ordenaba alfabéticamente: `a.md` recibía las
+    versiones de `casa.md`.
+    """
+    rel = note_path.relative_to(_raiz()).as_posix()
+    return [v["filename"] for v in historia.versiones(_history_dir(), rel)][:10]
 
 
 def vault_read(path: str) -> Dict[str, Any]:

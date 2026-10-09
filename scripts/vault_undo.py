@@ -30,6 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel import historia  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -58,36 +59,28 @@ def _ruta_fuera_del_vault(path: str) -> Optional[Dict[str, Any]]:
 
 
 def get_history_versions(note_path: str) -> List[Dict[str, Any]]:
-    """Return sorted list of version metadata for a note (newest first)."""
-    history_dir = _history_dir()
-    if not history_dir.exists():
-        return []
+    """Return sorted list of version metadata for a note (newest first).
 
+    Delega en `vault.kernel.historia` (v41.3): el prefijo `carpeta__stem-` que
+    filtraba aquí también casaba con las versiones de `stem-otra.md`, y el orden
+    por mtime lo deshace cualquier copia del vault.
+    """
     note_path_obj = _raiz() / note_path
     if not note_path_obj.exists():
         return []
-
-    folder = str(note_path_obj.parent.relative_to(_raiz())).replace("\\", "/")
-    stem = note_path_obj.stem
-
-    folder_prefix = folder.replace("/", "__")
-    prefix = f"{folder_prefix}__{stem}-"
-
+    rel = note_path_obj.relative_to(_raiz()).as_posix()
     versions: List[Dict[str, Any]] = []
-    for f in history_dir.iterdir():
-        if not f.is_file() or not f.name.startswith(prefix):
-            continue
+    for v in historia.versiones(_history_dir(), rel):
         try:
-            mtime = datetime.fromtimestamp(f.stat().st_mtime, tz=timezone.utc)
+            st = v["path"].stat()
         except OSError:
             continue
         versions.append({
-            "filename": f.name,
-            "size_bytes": f.stat().st_size,
-            "modified": mtime.isoformat(),
+            "filename": v["filename"],
+            "size_bytes": st.st_size,
+            "modified": datetime.fromtimestamp(st.st_mtime, tz=timezone.utc).isoformat(),
+            "timestamp": v["timestamp"].isoformat(),
         })
-
-    versions.sort(key=lambda x: x["modified"], reverse=True)
     return versions
 
 
@@ -102,15 +95,9 @@ def _guardar_version_actual(note_path: Path) -> str:
     que la versión tapada pasa a ser la más reciente y otro `--force` la
     devuelve. Devuelve el nombre del fichero guardado.
     """
-    folder = note_path.parent.relative_to(_raiz()).as_posix()
-    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
-    base = f"{folder.replace('/', '__')}__{note_path.stem}-{timestamp}"
-    destino = _history_dir() / f"{base}.md"
-    n = 1
-    while destino.exists():
-        # Dos versiones en el mismo segundo: la segunda no pisa a la primera.
-        destino = _history_dir() / f"{base}-{n}.md"
-        n += 1
+    # Dos versiones en el mismo segundo: la segunda no pisa a la primera.
+    destino = historia.nombre_libre(_history_dir(),
+                                    note_path.relative_to(_raiz()).as_posix())
     _history_dir().mkdir(parents=True, exist_ok=True)
     atomic_write_text(destino, note_path.read_text(encoding="utf-8", errors="replace"))
     return destino.name
@@ -215,7 +202,7 @@ def vault_undo(
             "dry_run": dry_run,
         }
     else:
-        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
+        timestamp = datetime.now(timezone.utc).strftime(historia.FORMATO)
         stem = note_path.stem
         restored_name = f"{stem}-restored-{timestamp}.md"
         restored_path = note_path.parent / restored_name
