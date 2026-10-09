@@ -1199,6 +1199,15 @@ SUBRUTAS_DE_SISTEMA_SIN_REPOSITORIO: dict[str, dict] = {
         "dueno": "consulta",
         "por_que": "Lo escribe `vault_mcp_context`, que existe para la consulta.",
     },
+    "tool-spec.json": {
+        "dueno": "meta_toolkit",
+        "por_que": "Lo escribe solo `vault_manifest --bootstrap`, por "
+                   "`vault_io.tool_spec_path()`; `vault_mcp_catalog`, "
+                   "`vault_compact_contracts`, `vault_sdd_init` y los "
+                   "`vault_spec_*` lo leen. Medido y declarado el 2026-10-09; la "
+                   "guarda sigue sin ver esa escritura (la ruta sale de otro "
+                   "módulo), y `fronteras_de_escritura_por_contexto` lo declara.",
+    },
 }
 
 #: Funciones del repo que devuelven `<vault>/00_System` sin decirlo literal.

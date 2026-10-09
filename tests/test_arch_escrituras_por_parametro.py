@@ -11,8 +11,10 @@ declara en vez de dar la frontera por cubierta entera:
   `"*"`, que la guarda no reporta porque es «crear la carpeta».
 
 El caso medido el 2026-10-09 es real: `vault_manifest --bootstrap` escribe
-`00_System/tool-spec.json` con `atomic_write_json(tool_spec_path())`, la ruta
-sale de `vault_io`, y esa subruta no tiene dueño en `duenos_de_sistema`.
+`00_System/tool-spec.json` con `atomic_write_json(tool_spec_path())` y la ruta
+sale de `vault_io`. Desde ese mismo día la subruta tiene dueño declarado
+(meta_toolkit, su único escritor), pero la guarda sigue sin ver la escritura:
+el dueño se declaró, el límite no se cerró.
 
 Estos tests no piden que el límite exista: lo fijan. El día que la guarda siga
 la ruta, fallarán, y quien lo consiga tendrá que actualizar la declaración en
@@ -57,11 +59,13 @@ def bootstrap():
     assert _subrutas(fuente) == ["*"]
 
 
-def test_el_caso_medido_tool_spec_no_tiene_dueno_ni_escritor_visible():
+def test_el_caso_medido_tool_spec_tiene_dueno_pero_escritor_invisible():
     fuente = (ROOT / "scripts" / "vault_manifest.py").read_text(encoding="utf-8")
     assert "spec_file = tool_spec_path()" in fuente
     assert "atomic_write_json(spec_file, spec)" in fuente
-    assert "tool-spec.json" not in vault_arch.duenos_de_sistema()
+    # Dueño = único escritor (criterio de la deuda #3): el que lo escribe.
+    assert vault_arch.duenos_de_sistema()["tool-spec.json"] == "meta_toolkit"
+    assert "vault_manifest" in vault_arch.CONTEXTS["meta_toolkit"]["modulos"]
     vistas = {e["path"] for e in vault_arch.escrituras_de_sistema()
               if e["module"] == "vault_manifest"}
     assert "tool-spec.json" not in vistas
