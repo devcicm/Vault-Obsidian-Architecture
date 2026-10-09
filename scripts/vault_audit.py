@@ -700,6 +700,8 @@ def _detect_broken_links(
     # to a file at that relative path. The audit was treating them as broken
     # because stem-only normalization doesn't match the full path.
     all_paths: Set[str] = set()
+    relativas: List[str] = []
+    alias_por_ruta: Dict[str, List[str]] = {}
     for n in (_barrido_md() if barrido is None else barrido):
         if not _is_snapshot(n):
             rel = str(n.relative_to(_raiz())).replace("\\", "/")
@@ -707,6 +709,13 @@ def _detect_broken_links(
             all_paths.add(rel.lower())
             if rel.lower().endswith(".md"):
                 all_paths.add(rel[:-3].lower())
+            relativas.append(rel)
+            alias_por_ruta[rel] = _aliases_de(n)
+    # `[[nota#Sección]]` y `[[../carpeta/nota]]` salían rotos aunque Obsidian los
+    # abre (AP-44, medido el 2026-10-09): el ancla entraba en la clave y la ruta
+    # relativa no se resolvía contra la carpeta de la nota. Lo resuelve el dueño
+    # canónico (AP-57), sumado a lo de arriba: solo quita rotos falsos.
+    indice = indice_de_nombres(relativas, alias_por_ruta)
 
     for n in notes:
         rel = str(n.relative_to(_raiz())).replace("\\", "/")
@@ -729,6 +738,9 @@ def _detect_broken_links(
             # at this path (case-insensitive).
             link_normalized = link.lower().replace("\\", "/")
             if link_normalized in all_paths:
+                continue
+
+            if resolver_wikilink(link, Path(rel), indice)[1]:
                 continue
 
             broken.append({"from": rel, "link": link})
