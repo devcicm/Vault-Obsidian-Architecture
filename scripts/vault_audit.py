@@ -830,10 +830,71 @@ def _sustituida_por(
     return resolver_sustitucion(fm.get("superseded_by"), Path(rel), indice)[0]
 
 
+def _lista_de_texto(valor: Any) -> List[str]:
+    """Un campo de frontmatter que admite texto o lista, como lista de texto."""
+    if isinstance(valor, str):
+        valor = [valor]
+    if not isinstance(valor, list):
+        return []
+    return [v.strip() for v in valor if isinstance(v, str) and v.strip()]
+
+
+def _identidad_declarada(n: Path, fm: Dict[str, Any]) -> Tuple[Set[str], frozenset]:
+    """Los nombres a los que responde la nota y el código que declara documentar.
+
+    Los nombres son los de Obsidian (AP-44): el nombre de fichero y `aliases:`,
+    nunca `title:`. `files:` se compara como conjunto, sin `./` ni mayúsculas.
+    """
+    nombres = {n.stem.lower()} | {a.lower() for a in _lista_de_texto(fm.get("aliases"))}
+    ficheros = frozenset(
+        re.sub(r"^\./", "", f.replace("\\", "/")).lower()
+        for f in _lista_de_texto(fm.get("files"))
+    )
+    return nombres, ficheros
+
+
+def _sombra_por_identidad(a: Tuple[Set[str], frozenset, Set[str]],
+                          b: Tuple[Set[str], frozenset, Set[str]]) -> Optional[str]:
+    """AP-17 por identidad declarada: `alias`, `files` o None.
+
+    `alias`: un alias de una es el nombre de fichero o un alias de la otra, así
+    que `[[ese nombre]]` ya no sabe a cuál lleva. Dos ficheros con el mismo
+    nombre en carpetas distintas **no** cuentan aquí: eso es AP-21, y lo mide
+    `_detect_ambiguous_links` sobre el enlace que lo sufre. `files`: el mismo
+    conjunto no vacío de código documentado por las dos.
+    """
+    nombres_a, ficheros_a, alias_a = a
+    nombres_b, ficheros_b, alias_b = b
+    if (alias_a & nombres_b) or (alias_b & nombres_a):
+        return "alias"
+    if ficheros_a and ficheros_a == ficheros_b:
+        return "files"
+    return None
+
+
+def _separar_por_peso(
+    pares: List[Dict[str, Any]]
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """AP-17: (pares que pesan, pares informativos).
+
+    Pesa el `motivo` que ya pesaba —`titulo`—. Los de identidad declarada
+    (`alias`, `files`) se publican sin peso hasta que la regla 7 dé un dato
+    con el que fijarlo: medidos el 2026-10-09 contra ocho consumidores, cero.
+    """
+    pesan = [p for p in pares if p.get("motivo") == "titulo"]
+    return pesan, [p for p in pares if p.get("motivo") != "titulo"]
+
+
 def _detect_canonical_shadow(
     notes: List[Path], resueltos: Optional[List[Dict[str, Any]]] = None
 ) -> List[Dict[str, Any]]:
     """AP-17: detect pairs of notes with fuzzy title similarity >85% (SequenceMatcher ratio).
+
+    Desde v41.3 también por identidad declarada (deuda
+    `ap17_compara_solo_la_forma_del_titulo`): dos notas que responden al mismo
+    nombre o que documentan el mismo conjunto de `files:` son sombra aunque sus
+    títulos no se parezcan. Cada par publica su `motivo` —`titulo`, `alias` o
+    `files`—, y el título manda cuando hay varios porque es el que ya se medía.
 
     Un par en el que una nota declara `superseded_by:` hacia la otra ya está
     decidido: no es deuda, y si se pasa `resueltos` se publica ahí para que
@@ -849,6 +910,8 @@ def _detect_canonical_shadow(
     items = []
 
     sustituciones: Dict[str, Dict[str, Any]] = {}
+
+    identidad: Dict[str, Tuple[Set[str], frozenset, Set[str]]] = {}
 
     for n in notes:
         if n.stem.lower() in _EXCLUDED_STEMS:
@@ -884,6 +947,9 @@ def _detect_canonical_shadow(
 
         sustituciones[rel] = fm
 
+        nombres, ficheros = _identidad_declarada(n, fm)
+        identidad[rel] = (nombres, ficheros, nombres - {n.stem.lower()})
+
     relativas, alias_por_ruta = inventario_de_nombres(_raiz(), is_snapshot_path)
     indice = indice_de_nombres(relativas, alias_por_ruta)
     destino_de = {rel: _sustituida_por(rel, fm, indice) for rel, fm in sustituciones.items()}
@@ -896,12 +962,15 @@ def _detect_canonical_shadow(
 
             rel_b, title_b = items[j]
 
-            if _distintos_por_convencion(title_a, title_b):
-                continue
-
             ratio = SequenceMatcher(None, title_a, title_b).ratio()
 
-            if ratio >= 0.85:
+            motivo = None
+            if ratio >= 0.85 and not _distintos_por_convencion(title_a, title_b):
+                motivo = "titulo"
+            else:
+                motivo = _sombra_por_identidad(identidad[rel_a], identidad[rel_b])
+
+            if motivo:
                 key = tuple(sorted([rel_a, rel_b]))
 
                 if key not in seen:
@@ -930,6 +999,7 @@ def _detect_canonical_shadow(
                                 "titleA": title_a,
                                 "titleB": title_b,
                                 "similarity": round(ratio, 3),
+                                "motivo": motivo,
                             }
                         )
 
@@ -2109,7 +2179,8 @@ def vault_audit(
     ambiguous_links = _detect_ambiguous_links(all_notes, all_stems, barrido=barrido)
 
     canonical_shadow_resuelto: List[Dict[str, Any]] = []
-    canonical_shadow = _detect_canonical_shadow(content_notes, resueltos=canonical_shadow_resuelto)
+    canonical_shadow, canonical_shadow_identidad = _separar_por_peso(
+        _detect_canonical_shadow(content_notes, resueltos=canonical_shadow_resuelto))
 
     cross_folder_dupes = _detect_cross_folder_duplicates(content_notes)
 
@@ -2214,6 +2285,9 @@ def vault_audit(
     if canonical_shadow:
         summary_parts.append(f"{len(canonical_shadow)} pares AP-17")
 
+    if canonical_shadow_identidad:
+        summary_parts.append(f"{len(canonical_shadow_identidad)} pares AP-17 por identidad")
+
     if cross_folder_dupes:
         summary_parts.append(f"{len(cross_folder_dupes)} duplicados AP-18")
 
@@ -2301,6 +2375,12 @@ def vault_audit(
             # Pares que una `superseded_by:` ya decidió: se publican y no pesan.
             "canonicalShadowResolved": [
                 {"norm_code": "AP-17", **e} for e in canonical_shadow_resuelto
+            ],
+            # AP-17 por identidad declarada se informa y no pesa, como AP-02:
+            # medida contra las copias de ocho consumidores dio cero, y un
+            # peso no se fija sin ningún dato que lo calibre.
+            "canonicalShadowIdentity": [
+                {"norm_code": "AP-17", **e} for e in canonical_shadow_identidad
             ],
             "crossFolderDuplicates": [
                 {"norm_code": "AP-18", **e} for e in cross_folder_dupes

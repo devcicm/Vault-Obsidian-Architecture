@@ -690,9 +690,15 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "description": (
             "Par de notas con SequenceMatcher ratio ≥ 0.85 en títulos. "
             "Típicamente una nota thin creada cuando ya existía la canónica rica. "
-            "Penalización vault_audit: −2 por par."
+            "Penalización vault_audit: −2 por par. Desde v41.3 también la "
+            "identidad declarada: un `aliases:` que es el nombre de fichero o "
+            "el alias de otra nota, o el mismo conjunto de `files:`."
         ),
-        "signal": "vault_audit reporta canonicalShadow[] con similarity ≥ 0.85.",
+        "signal": (
+            "vault_audit reporta canonicalShadow[] con similarity ≥ 0.85 "
+            "(motivo `titulo`, pesa) y canonicalShadowIdentity[] (motivo "
+            "`alias` o `files`, informativo)."
+        ),
         "prevention": (
             "PAT-3: buscar con vault_search() antes de crear. Si existe una nota similar, "
             "enriquecer en lugar de crear. Si ya existen las dos, vault_supersede anota "
@@ -700,6 +706,16 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         ),
         "tools_enforcing": ["vault_supersede"],
         "tools_detecting": ["vault_audit"],
+        "cobertura_parcial": (
+            "`vault_audit._detect_canonical_shadow` mide dos formas decidibles: "
+            "la del título (`SequenceMatcher` ≥ 0.85) y, desde v41.3, la "
+            "identidad que la nota declara —`aliases:` y `files:`, con el "
+            "criterio de resolución de Obsidian (AP-44)—. Lo que sigue sin "
+            "medir son dos notas sobre lo mismo con títulos, nombres y código "
+            "distintos: verlo pide comparar contenido, que el servicio descarta "
+            "sin embeddings. La identidad se informa sin pesar: contra las "
+            "copias de ocho consumidores dio cero pares."
+        ),
         "introduced_version": "v25",
     },
     {

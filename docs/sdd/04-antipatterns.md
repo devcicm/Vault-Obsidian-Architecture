@@ -177,7 +177,7 @@ Nota sin campo agent: en el frontmatter. Sin este campo es imposible auditar qu�
 - **Enforcement:** audit
 - **Detectado por:** vault_audit
 
-Par de notas con SequenceMatcher ratio ≥ 0.85 en títulos. Típicamente una nota thin creada cuando ya existía la canónica rica. Penalización vault_audit: −2 por par.
+Par de notas con SequenceMatcher ratio ≥ 0.85 en títulos. Típicamente una nota thin creada cuando ya existía la canónica rica. Penalización vault_audit: −2 por par. Desde v41.3 también la identidad declarada: un `aliases:` que es el nombre de fichero o el alias de otra nota, o el mismo conjunto de `files:`.
 
 **Prevención:** PAT-3: buscar con vault_search() antes de crear. Si existe una nota similar, enriquecer en lugar de crear. Si ya existen las dos, vault_supersede anota superseded_by en la que no manda, sin borrarla.
 
@@ -1083,7 +1083,7 @@ Nota sin campo agent: en el frontmatter. Sin este campo es imposible auditar qu�
 - **Enforcement:** audit
 - **Detected by:** vault_audit
 
-Par de notas con SequenceMatcher ratio ≥ 0.85 en títulos. Típicamente una nota thin creada cuando ya existía la canónica rica. Penalización vault_audit: −2 por par.
+Par de notas con SequenceMatcher ratio ≥ 0.85 en títulos. Típicamente una nota thin creada cuando ya existía la canónica rica. Penalización vault_audit: −2 por par. Desde v41.3 también la identidad declarada: un `aliases:` que es el nombre de fichero o el alias de otra nota, o el mismo conjunto de `files:`.
 
 **Prevention:** PAT-3: buscar con vault_search() antes de crear. Si existe una nota similar, enriquecer en lugar de crear. Si ya existen las dos, vault_supersede anota superseded_by en la que no manda, sin borrarla.
 

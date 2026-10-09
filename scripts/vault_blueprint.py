@@ -510,7 +510,14 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     },
     {
         "id": "ap17_compara_solo_la_forma_del_titulo",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "v41.3",
+        "sostenida_por": [
+            "tests/test_ap17_identidad_declarada.py::test_un_alias_que_es_el_nombre_de_otra_nota_es_sombra",
+            "tests/test_ap17_identidad_declarada.py::test_el_mismo_conjunto_de_files_es_sombra_y_uno_distinto_no",
+            "tests/test_ap17_identidad_declarada.py::test_el_title_no_es_identidad",
+            "tests/test_ap17_identidad_declarada.py::test_la_identidad_se_publica_sin_peso_y_el_titulo_sigue_pesando",
+        ],
         "desde": "v41.1",
         "capa": "4",
         "que": (
@@ -522,7 +529,19 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "que esta entrada también reclamaba ya estaba bien y se corrigió "
             "aquí en v41.3: el catálogo declara `tools_detecting: "
             "['vault_audit']`, quien mide, y `tools_enforcing: "
-            "['vault_supersede']`, quien sana. Lo pendiente es solo la medida."
+            "['vault_supersede']`, quien sana. Lo pendiente es solo la medida. "
+            "(Saldada en v41.3 con la reformulación decidible: se compara la "
+            "identidad que la nota **declara** —un `aliases:` que es el nombre "
+            "de fichero o el alias de otra, o el mismo conjunto de `files:`—, "
+            "con el criterio de resolución de Obsidian. Cada par publica su "
+            "`motivo`. Regla 7, 2026-10-09, solo lectura y hash intacto: "
+            "contra las copias de /ans, /vcloud, builderx, electron, synesis, "
+            "smart-pos-cr, ecommerce y grooming-scheduler, 0 pares por `alias` "
+            "o `files` y los de `titulo` sin cambio (112, 1, 0, 1, 0, 2, 9, "
+            "13). Sin un solo acierto no hay dato con el que fijar un peso, así "
+            "que `canonicalShadowIdentity` se informa sin pesar, como AP-02. "
+            "Lo que sigue sin medir —el mismo tema con identidad distinta— lo "
+            "declara la `cobertura_parcial` de AP-17.)"
         ),
         "por_que_no_ahora": (
             "Ir más allá de la forma pide comparar contenido o identidad "
