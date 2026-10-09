@@ -157,7 +157,15 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "general: el catálogo la declara `cobertura_parcial`, porque la "
             "divergencia en prosa, la de valores sin tipo y la del sinónimo "
             "(`ip:` frente a `direccion_ip:`) siguen sin medirlas nadie. La "
-            "entrada sigue pendiente por las otras tres, no por AP-05 ni AP-02."
+            "entrada sigue pendiente por las otras tres, no por AP-05 ni AP-02. "
+            "(Avance de v41.3: AP-08 pasó a `cobertura_parcial` con "
+            "`vault_drift_detect --mode vigencia`, y AP-01 también, en el mismo "
+            "modo: un `files:` que no está en el disco del repo sale en "
+            "`codigo_inexistente`. Medido contra la copia de /ans: con la base "
+            "buena, 0 AP-01 y 7 AP-08; con `--path` en la raíz, las 7 salían "
+            "AP-01, y por eso la respuesta lleva una `pista` cuando no resuelve "
+            "ninguno. Queda AP-04 entera, y de AP-01 y AP-08 la parte escrita "
+            "en prosa.)"
         ),
         "por_que_no_ahora": (
             "AP-05 tuvo su tanda en v40.15, y lo que la desbloqueó no fue "

@@ -735,6 +735,28 @@ def _ultimo_cambio(repo: Path, ficheros: List[str]) -> Optional[Dict[str, str]]:
     return {"commit": commit, "fecha": fecha}
 
 
+def _codigo_inexistente(repo: Path, ficheros: List[str]) -> List[str]:
+    """AP-01, la parte decidible: los `files:` que no existen en el repo.
+
+    Una nota que declara documentar un fichero ausente describe código que no
+    existe. Se mira el disco y no git: un fichero sin commit existe aunque
+    `_ultimo_cambio` no lo encuentre, y uno borrado del disco ya no es código
+    del repo aunque su historia siga ahí. Lo que la nota afirme en prosa no se
+    mide —eso no es decidible sin interpretarla.
+    """
+    ausentes = []
+    for f in ficheros:
+        destino = (repo / f).resolve()
+        try:
+            destino.relative_to(repo)
+        except ValueError:
+            # Fuera del repo no es una afirmación sobre su código.
+            continue
+        if not destino.exists():
+            ausentes.append(f)
+    return ausentes
+
+
 def vault_drift_vigencia(path: str, project: str) -> Dict[str, Any]:
     """AP-08: notas del proyecto cuyo código cambió después de su `updatedAt`.
 
@@ -768,6 +790,8 @@ def vault_drift_vigencia(path: str, project: str) -> Dict[str, Any]:
     vigentes = 0
     sin_files: List[str] = []
     sin_historia: List[Dict[str, Any]] = []
+    codigo_inexistente: List[Dict[str, Any]] = []
+    resueltos = 0
     for nota in sorted(notas_en_disco(raiz, secciones, incluir_indices=False)):
         rel = nota.relative_to(raiz).as_posix()
         if is_snapshot_path(rel):
@@ -795,6 +819,11 @@ def vault_drift_vigencia(path: str, project: str) -> Dict[str, Any]:
         escrita = _en_utc(_parse_iso(str(fm.get("updatedAt") or fm.get("createdAt") or "")))
         revisada = _en_utc(_parse_iso(str(fm.get("revisado_en") or "")))
         nota_dt = max((f for f in (escrita, revisada) if f is not None), default=None)
+        ausentes = _codigo_inexistente(repo, files)
+        resueltos += len(files) - len(ausentes)
+        if ausentes:
+            codigo_inexistente.append({"path": rel, "norm": "AP-01",
+                                       "inexistentes": ausentes})
         cambio = _ultimo_cambio(repo, files)
         if cambio is None:
             # Un `files:` que git no conoce —renombrado, borrado o mal
@@ -813,7 +842,7 @@ def vault_drift_vigencia(path: str, project: str) -> Dict[str, Any]:
             })
         else:
             vigentes += 1
-    return {
+    resultado: Dict[str, Any] = {
         "ok": True,
         "mode": "vigencia",
         "norm": "AP-08",
@@ -824,16 +853,29 @@ def vault_drift_vigencia(path: str, project: str) -> Dict[str, Any]:
             "vigentes": vigentes,
             "sin_files": len(sin_files),
             "sin_historia": len(sin_historia),
+            "codigo_inexistente": len(codigo_inexistente),
         },
         "sin_files": sin_files,
         "sin_historia": sin_historia,
-        "action_required": bool(desfasadas or sin_historia),
+        "codigo_inexistente": codigo_inexistente,
+        "action_required": bool(desfasadas or sin_historia or codigo_inexistente),
         "criterio": (
             "Una nota con `files:` está desfasada si algún fichero cambió en git "
             "después de su `updatedAt`. Sin `files:` no se juzga; un `files:` "
-            "sin historia en git se lista aparte."
+            "sin historia en git se lista aparte. Un `files:` que no existe en "
+            "el disco del repo es AP-01: la nota describe código "
+            "inexistente."
         ),
     }
+    if codigo_inexistente and resueltos == 0:
+        # Medido en la regla 7: con la base equivocada, todo `files:` sale
+        # ausente. La lista se publica igual; la pista dice qué mirar antes.
+        resultado["pista"] = (
+            "Ningún `files:` existe bajo la ruta medida: comprueba que `--path` "
+            "es la carpeta desde la que la nota escribe sus rutas antes de dar "
+            "por inexistente el código."
+        )
+    return resultado
 
 
 # ─── Main tool function ───────────────────────────────────────────────────────

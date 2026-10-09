@@ -15,7 +15,7 @@ Total de normas registradas: 79 (AP 65, CN 4, PAT 6, SP 4)
 
 - **Severidad:** high
 - **Enforcement:** audit
-- **Detectado por:** sin detector -- Ninguna tool la detecta. Declaraba `vault_drift_detect`, que mide lo contrario: cambios en el código que la documentación no recoge. AP-01 es documentación que describe código inexistente, y para verla haría falta resolver cada referencia contra el repo.
+- **Detectado por:** vault_drift_detect
 
 Documentar herramientas, endpoints, funciones o comportamientos que no existen en el código real. El agente genera información convincente pero incorrecta.
 
@@ -921,7 +921,7 @@ Total registered norms: 79 (AP 65, CN 4, PAT 6, SP 4)
 
 - **Severity:** high
 - **Enforcement:** audit
-- **Detected by:** sin detector -- Ninguna tool la detecta. Declaraba `vault_drift_detect`, que mide lo contrario: cambios en el código que la documentación no recoge. AP-01 es documentación que describe código inexistente, y para verla haría falta resolver cada referencia contra el repo.
+- **Detected by:** vault_drift_detect
 
 Documentar herramientas, endpoints, funciones o comportamientos que no existen en el código real. El agente genera información convincente pero incorrecta.
 

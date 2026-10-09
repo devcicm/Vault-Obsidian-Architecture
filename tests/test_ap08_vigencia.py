@@ -87,7 +87,9 @@ def test_ap08_vigencia_nombra_la_nota_que_no_acompano_al_cambio(tmp_path):
     assert r["sin_files"] == ["01_Projects/demo/project.md", "07_Knowledge/sin-files.md"]
     assert [d["path"] for d in r["sin_historia"]] == ["07_Knowledge/rota.md"]
     assert r["summary"] == {"desfasadas": 1, "vigentes": 1, "sin_files": 2,
-                            "sin_historia": 1}
+                            "sin_historia": 1, "codigo_inexistente": 1}
+    # `rota.md` apunta a un fichero que no existe: además es AP-01.
+    assert [d["path"] for d in r["codigo_inexistente"]] == ["07_Knowledge/rota.md"]
     assert r["action_required"] is True
 
 

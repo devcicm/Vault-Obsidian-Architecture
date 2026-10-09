@@ -4285,6 +4285,15 @@ agente → vault_backup(label:"pre-migration-proyecto-x")   ← Fase 0: punto de
 - Al hacer `vault_audit()`, revisar manualmente cualquier nota en `07_Knowledge/apis/` que mencione funciones no encontradas con `fs_search`
 - Antes de documentar una tool: `cmd_exec("grep -r 'nombreFuncion' src/")` — si no existe, no documentar como implementada
 
+**Criterio ejecutable (v41.3).** Entera, AP-01 no es decidible: saber si la función que
+describe la prosa existe exige interpretar la prosa. Una parte sí lo es, y la nota ya la
+declara: `files:` dice qué ficheros documenta. `vault_drift_detect --mode vigencia` lista
+en `codigo_inexistente`, con la norma nombrada, cada nota que declara un fichero que no
+está en el disco del repo. Si no resuelve ni uno, añade una `pista`: medido contra un
+vault ajeno, un `--path` equivocado hacía salir como inexistente todo el código, y con la
+base buena salía cero. La referencia en prosa y la firma que no coincide siguen sin
+detector; por eso el catálogo la declara `cobertura_parcial`.
+
 ---
 
 ### AP-02 — Proliferación de versiones del mismo documento

@@ -67,12 +67,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "Referencias a scripts/tools que no existen en el repo; funciones con firmas que no coinciden con el código.",
         "prevention": "Verificar existencia real antes de documentar. vault_read + grep sobre el código fuente.",
         "tools_enforcing": [],
-        "tools_detecting": [],
-        "cobertura_descubierta": (
-            "Ninguna tool la detecta. Declaraba `vault_drift_detect`, que mide lo "
-            "contrario: cambios en el código que la documentación no recoge. AP-01 es "
-            "documentación que describe código inexistente, y para verla haría falta "
-            "resolver cada referencia contra el repo."
+        "tools_detecting": ["vault_drift_detect"],
+        "cobertura_parcial": (
+            "Estuvo descubierta hasta v41.3. `vault_drift_detect --mode vigencia` "
+            "mide **la parte que la nota declara**: un fichero listado en `files:` "
+            "que no existe en el repo sale en `codigo_inexistente` con la norma "
+            "nombrada. Sigue sin medir la referencia escrita en prosa —un script, "
+            "endpoint o función citado en el cuerpo— y la firma que no coincide: "
+            "verlas exige interpretar el texto, no resolver una ruta declarada."
         ),
         "introduced_version": "v19",
     },
