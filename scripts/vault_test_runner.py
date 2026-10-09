@@ -157,6 +157,24 @@ def _run_script(script: str, args: List[str], vault_root: Optional[Path] = None,
         return 1, "", str(e)
 
 
+def _copiar_codigo(vault_dir: Path) -> Path:
+    """Copia `scripts/` dentro del vault temporal y, a su lado, `normas/`.
+
+    Desde la deuda #10 el catálogo de normas carga sus paquetes de la carpeta
+    hermana de la suya (`vault_norms_catalog.RAIZ_NORMAS`): `scripts/` y
+    `normas/` en el checkout, `_impl/` y `normas/` en la wheel. Copiar solo
+    `scripts/` dejaba a cada tool sin poder importarse —`FileNotFoundError` en
+    `normas/AP-65/norma.py`— y el contrato fallaba por el despliegue de la
+    prueba, no por la tool. Se copia la misma relación que el catálogo espera.
+    """
+    tmp_scripts = vault_dir / "scripts"
+    shutil.copytree(str(SCRIPTS_DIR), str(tmp_scripts))
+    normas = SCRIPTS_DIR.resolve().parent / "normas"
+    if normas.is_dir():
+        shutil.copytree(str(normas), str(vault_dir / "normas"))
+    return tmp_scripts
+
+
 def _entorno(vault_dir: Path) -> Dict[str, str]:
     """El entorno de cada tool bajo prueba: el vault temporal y el código del repo.
 
@@ -288,8 +306,7 @@ def _run_contracts_in_vault(vault_dir: Path) -> Dict[str, Any]:
     # Simpler: set env var VAULT_SMOKE_ROOT and patch scripts at test time.
     # Since scripts use Path(__file__).parent.parent, we symlink or copy scripts into vault_dir/scripts.
     # Easiest: copy scripts into temp vault, run from there.
-    tmp_scripts = vault_dir / "scripts"
-    shutil.copytree(str(SCRIPTS_DIR), str(tmp_scripts))
+    tmp_scripts = _copiar_codigo(vault_dir)
 
     env = _entorno(vault_dir)
 
@@ -371,8 +388,7 @@ def _run_errors_in_vault(vault_dir: Path) -> Dict[str, Any]:
     for folder in ["00_System", "01_Projects", "02_Observability/errors"]:
         (vault_dir / folder).mkdir(parents=True, exist_ok=True)
 
-    tmp_scripts = vault_dir / "scripts"
-    shutil.copytree(str(SCRIPTS_DIR), str(tmp_scripts))
+    tmp_scripts = _copiar_codigo(vault_dir)
 
     passed, failed, errors = 0, 0, []
 
