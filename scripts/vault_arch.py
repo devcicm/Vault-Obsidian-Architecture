@@ -1121,6 +1121,19 @@ SUBRUTAS_DE_SISTEMA_SIN_REPOSITORIO: dict[str, dict] = {
         "por_que": "La traza de cada llamada la escribe `vault_errors_trace`, "
                    "que sirve a todas las tools y por eso vive en el kernel.",
     },
+    ".tool-tokens.json": {
+        "dueno": KERNEL,
+        "por_que": "El contador lo anota y lo reinicia `vault_errors_trace` "
+                   "(`FICHERO_TOKENS`). Hasta 2026-10-08 lo declaraba Consulta, "
+                   "que solo lo lee; lo reexporta anotado en `SUPERSEDED`.",
+    },
+    "scanner-degraded.jsonl": {
+        "dueno": KERNEL,
+        "por_que": "Lo anexa `vault_io` cuando el escáner de secretos se degrada, "
+                   "fuera del write path a propósito. Salió el 2026-10-08, al "
+                   "resolver la guarda las constantes del módulo: antes la "
+                   "escritura se veía como subruta dinámica y no se medía.",
+    },
     ".voice-counter": {
         "dueno": "autoria",
         "por_que": "Contador de `vault/autoria/voz.py`; nadie más lo escribe.",
@@ -1132,8 +1145,8 @@ SUBRUTAS_DE_SISTEMA_SIN_REPOSITORIO: dict[str, dict] = {
     "change-log.md": {
         "dueno": "autoria",
         "por_que": "La vista legible que escribe `vault_change_log`. Su par "
-                   "`.change-log.json` lo declara gobernanza en su repositorio, "
-                   "y ese cruce está en la baseline, no resuelto aquí.",
+                   "`.change-log.json` lo declara gobernanza en su repositorio "
+                   "y, desde 2026-10-08, también lo escribe ella.",
     },
     "vault-ontology.json": {
         "dueno": "ciclo_de_vida",
@@ -1202,7 +1215,7 @@ def duenos_de_sistema() -> dict[str, str]:
     return duenos
 
 
-def _subruta_de_sistema(nodo, nombres, funciones, props, prof=0):
+def _subruta_de_sistema(nodo, nombres, funciones, props, prof=0, consts=None):
     """La primera componente bajo `00_System/` a la que apunta `nodo`.
 
     `"*"` es la carpeta misma (un `mkdir`), y `None` que no es una ruta de
@@ -1219,11 +1232,15 @@ def _subruta_de_sistema(nodo, nombres, funciones, props, prof=0):
     if isinstance(nodo, ast.BinOp) and isinstance(nodo.op, ast.Div):
         if isinstance(nodo.right, ast.Constant) and nodo.right.value == CARPETA_SISTEMA:
             return "*"
-        izq = _subruta_de_sistema(nodo.left, nombres, funciones, props, prof + 1)
+        izq = _subruta_de_sistema(nodo.left, nombres, funciones, props, prof + 1, consts)
         if izq != "*":
             return izq
         if isinstance(nodo.right, ast.Constant) and isinstance(nodo.right.value, str):
             return nodo.right.value.split("/")[0]
+        # Una constante del propio módulo es tan literal como el literal: si no
+        # se resolviera, mudar `"x.json"` a `FICHERO_X` escondería la escritura.
+        if isinstance(nodo.right, ast.Name) and (consts or {}).get(nodo.right.id):
+            return consts[nodo.right.id].split("/")[0]
         return None  # la subruta es dinámica: no se decide
     if isinstance(nodo, ast.Name):
         return nombres.get(nodo.id)
@@ -1233,7 +1250,7 @@ def _subruta_de_sistema(nodo, nombres, funciones, props, prof=0):
         if nodo.attr in props:
             return props[nodo.attr]
         if nodo.attr == "parent":
-            return _subruta_de_sistema(nodo.value, nombres, funciones, props, prof + 1)
+            return _subruta_de_sistema(nodo.value, nombres, funciones, props, prof + 1, consts)
         return None
     if isinstance(nodo, ast.Call):
         fn = nodo.func
@@ -1246,7 +1263,7 @@ def _subruta_de_sistema(nodo, nombres, funciones, props, prof=0):
                   if isinstance(a, ast.Constant) and isinstance(a.value, str)]
             if cs and cs[0] == CARPETA_SISTEMA:
                 return cs[1].split("/")[0] if len(cs) > 1 else "*"
-            base = (_subruta_de_sistema(fn.value, nombres, funciones, props, prof + 1)
+            base = (_subruta_de_sistema(fn.value, nombres, funciones, props, prof + 1, consts)
                     if isinstance(fn, ast.Attribute) else None)
             if base == "*":
                 return cs[0].split("/")[0] if cs else None
@@ -1254,8 +1271,19 @@ def _subruta_de_sistema(nodo, nombres, funciones, props, prof=0):
         if isinstance(fn, ast.Name) and fn.id in funciones:
             return funciones[fn.id]
         if nombre in ("with_suffix", "with_name", "resolve") and isinstance(fn, ast.Attribute):
-            return _subruta_de_sistema(fn.value, nombres, funciones, props, prof + 1)
+            return _subruta_de_sistema(fn.value, nombres, funciones, props, prof + 1, consts)
     return None
+
+
+def _constantes_de_texto(arbol: ast.AST) -> dict[str, str]:
+    """`NOMBRE = "texto"` del nivel de módulo: lo que el módulo fija y no cambia."""
+    cuerpo = arbol.body if isinstance(arbol, ast.Module) else []
+    return {
+        n.targets[0].id: n.value.value for n in cuerpo
+        if isinstance(n, ast.Assign) and len(n.targets) == 1
+        and isinstance(n.targets[0], ast.Name)
+        and isinstance(n.value, ast.Constant) and isinstance(n.value.value, str)
+    }
 
 
 def escrituras_de_sistema_en(arbol: ast.AST, props: dict | None = None) -> list[tuple]:
@@ -1271,17 +1299,18 @@ def escrituras_de_sistema_en(arbol: ast.AST, props: dict | None = None) -> list[
         props = _propiedades_de_sistema()[0]
     nombres: dict[str, str] = {}
     funciones: dict[str, str] = {}
+    consts = _constantes_de_texto(arbol)
     for _ in range(3):
         for nodo in ast.walk(arbol):
             if (isinstance(nodo, ast.Assign) and len(nodo.targets) == 1
                     and isinstance(nodo.targets[0], ast.Name)):
-                s = _subruta_de_sistema(nodo.value, nombres, funciones, props)
+                s = _subruta_de_sistema(nodo.value, nombres, funciones, props, consts=consts)
                 if s:
                     nombres.setdefault(nodo.targets[0].id, s)
             elif isinstance(nodo, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 for r in ast.walk(nodo):
                     if isinstance(r, ast.Return) and r.value is not None:
-                        s = _subruta_de_sistema(r.value, nombres, funciones, props)
+                        s = _subruta_de_sistema(r.value, nombres, funciones, props, consts=consts)
                         if s:
                             funciones.setdefault(nodo.name, s)
     desechables = _nombres_desechables(arbol)
@@ -1297,7 +1326,7 @@ def escrituras_de_sistema_en(arbol: ast.AST, props: dict | None = None) -> list[
             objetivo = fn.value
         if objetivo is None or _nombre_base(objetivo) in desechables:
             continue
-        s = _subruta_de_sistema(objetivo, nombres, funciones, props)
+        s = _subruta_de_sistema(objetivo, nombres, funciones, props, consts=consts)
         if s:
             hallazgos.append((nodo.lineno, llamada, s))
     return hallazgos

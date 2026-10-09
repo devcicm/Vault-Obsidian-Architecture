@@ -33,8 +33,23 @@ def trace_file() -> Path:
     return get_vault_root() / "00_System" / ".tool-trace.json"
 
 
+#: El contador de tokens es del kernel: aquí se anota y aquí se reinicia (deuda
+#: #3, residuo, 2026-10-08). Hasta esa fecha lo declaraba Consulta, que solo lo
+#: lee y lo reiniciaba; `vault.consulta.repositorio.FICHERO_TOKENS` lo reexporta.
+FICHERO_TOKENS = ".tool-tokens.json"
+
+
 def tokens_file() -> Path:
-    return get_vault_root() / "00_System" / ".tool-tokens.json"
+    return get_vault_root() / "00_System" / FICHERO_TOKENS
+
+
+def reiniciar_tokens() -> bool:
+    """Borra el contador; True si había uno. Lo pide `vault_tokens --reset`."""
+    tkf = tokens_file()
+    if not tkf.exists():
+        return False
+    tkf.unlink()
+    return True
 
 
 TRACE_MAX_ENTRIES = 500

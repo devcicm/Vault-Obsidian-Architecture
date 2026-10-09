@@ -20,7 +20,30 @@ CARPETA_SISTEMA = "00_System"
 CARPETA_PREFERENCIAS = "17_Preferences"
 SUBCARPETA_USO_TOKENS = "token-usage"
 
-FICHERO_TOKENS = ".tool-tokens.json"
+_SCRIPTS = Path(__file__).resolve().parent.parent.parent / "scripts"
+
+#: Nombres que este módulo publicaba y ya no declara, con quién los declara ahora.
+#: No-derogación: siguen importables (`__getattr__`), pero el valor es del dueño.
+SUPERSEDED = {
+    "FICHERO_TOKENS": {
+        "superseded_by": "vault_errors_trace.FICHERO_TOKENS",
+        "why": "El contador de tokens lo escribe el kernel; Consulta solo lo lee "
+               "(deuda #3, residuo, 2026-10-08: dueño = único escritor).",
+    },
+}
+
+
+def _contador_de_tokens():
+    """`vault_errors_trace`, importado tarde: `vault/` no exige `scripts/` al importar."""
+    from vault_toolkit.loading import import_toolkit_module
+
+    return import_toolkit_module("vault_errors_trace", legacy_scripts=_SCRIPTS)
+
+
+def __getattr__(nombre: str):
+    if nombre == "FICHERO_TOKENS":
+        return _contador_de_tokens().FICHERO_TOKENS
+    raise AttributeError(f"module {__name__!r} has no attribute {nombre!r}")
 FICHERO_CONTRATOS_JSON = "tool-contracts.json"
 FICHERO_CONTRATOS_MD = "tool-contracts.md"
 
@@ -73,7 +96,8 @@ class RepositorioConsulta:
 
     @property
     def fichero_tokens(self) -> Path:
-        return self._ctx.ruta(CARPETA_SISTEMA, FICHERO_TOKENS)
+        """Se lee aquí; lo declara y lo escribe el kernel (`vault_errors_trace`)."""
+        return self._ctx.ruta(CARPETA_SISTEMA, _contador_de_tokens().FICHERO_TOKENS)
 
     @property
     def contratos_json(self) -> Path:

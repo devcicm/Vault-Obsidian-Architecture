@@ -57,7 +57,5 @@
     "por_que": "La lista creció en uno, y la regla dice que solo puede encoger. La excepción se declara aquí en vez de aplicarse en silencio. El cruce no es nuevo: existe desde que existe la CLI. Lo nuevo es que se pueda contar. `cli/` estaba en ARBOLES_MEDIDOS desde v40.9, pero CONTEXTS no declaraba un contexto `cli`, así que _mapa_modulos() devolvía None para sus ficheros y las dos rutas de detección los descartaban con `if origen is None: continue` antes de leer un import. Ampliar el alcance de una medida saca a la luz deuda que ya estaba; contarla como deuda nueva presionaría en la dirección contraria — dejar el punto ciego para no ensuciar la cifra.",
     "no_es_precedente": "Solo vale para deuda preexistente que un ensanche de alcance hace visible por primera vez, y con el sitio nombrado uno a uno. Un cruce escrito después de v40.30 se arregla publicando el puerto."
   },
-  "system_writes": [
-    ".tool-tokens.json <- vault_errors_trace"
-  ]
+  "system_writes": []
 }

@@ -189,6 +189,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "sostenida_por": [
             "tests/test_arch_escrituras_de_sistema.py::test_un_contexto_que_escribe_la_subruta_de_otro_es_un_cruce",
             "tests/test_arch_escrituras_de_sistema.py::test_la_puerta_frena_un_cruce_nuevo_y_no_los_congelados",
+            "tests/test_sistema_un_solo_escritor.py::test_la_subruta_la_escribe_solo_su_dueno",
         ],
         "desde": "v40.9",
         "capa": "3",
@@ -201,7 +202,12 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "declara, con motivo, las seis que ninguno declara. "
             "`escrituras_de_sistema_ajenas` bloquea la puerta ante un cruce "
             "nuevo; los cinco que ya existían quedaron en `system_writes` de "
-            "`arch-baseline.json`, que solo encoge. Cobertura: no ve rutas que "
+            "`arch-baseline.json`, que solo encoge. Residuo saldado en v41.3 con "
+            "el criterio «dueño = único escritor», decidido el 2026-10-08: el "
+            "dueño expone la escritura y el otro contexto delega por un par que "
+            "ya estaba en el presupuesto; `.tool-tokens.json` pasó al kernel, "
+            "que es quien lo escribe, y Consulta lo reexporta anotado. "
+            "`system_writes` quedó vacío con el fichero en pie. Cobertura: no ve rutas que "
             "llegan por parámetro desde otro módulo ni subrutas calculadas, y "
             "falla del lado de no marcar.)"
         ),

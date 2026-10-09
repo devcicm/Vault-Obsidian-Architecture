@@ -49,7 +49,8 @@ def test_la_escritura_por_el_puerto_cuenta_y_apunta_a_su_primer_argumento():
 
 
 @pytest.mark.parametrize("subruta", ["move-log.json", ".change-log.json",
-                                     "propagation-queue.json", "tag-registry.json"])
+                                     "propagation-queue.json", "tag-registry.json",
+                                     ".tool-tokens.json", "scanner-degraded.jsonl"])
 def test_la_subruta_la_escribe_solo_su_dueno(subruta):
     dueno = vault_arch.duenos_de_sistema()[subruta]
     assert _escritores(subruta) == {dueno}
@@ -118,3 +119,43 @@ def test_el_registro_de_etiquetas_se_siembra_por_indices_sin_pisarlo(tmp_path):
     assert json.loads(ruta.read_text(encoding="utf-8")) == {"version": "v1.0"}
     assert ciclo.sembrar_registro_etiquetas({"version": "otra"}) is False
     assert json.loads(ruta.read_text(encoding="utf-8")) == {"version": "v1.0"}
+
+
+def test_una_constante_del_modulo_no_esconde_la_subruta():
+    """Mudar el literal a una constante no puede sacar la escritura de la vista."""
+    arbol = ast.parse(
+        "FICHERO = '.tool-tokens.json'\n"
+        "def fichero():\n"
+        "    return raiz() / '00_System' / FICHERO\n"
+        "def f():\n"
+        "    fichero().write_text('[]')\n"
+    )
+    assert [s for _l, _c, s in vault_arch.escrituras_de_sistema_en(arbol, {})] == [
+        ".tool-tokens.json"]
+
+
+def test_el_contador_de_tokens_es_del_kernel_y_consulta_lo_reexporta(tmp_path):
+    import vault_errors_trace
+    from vault.consulta import repositorio as consulta
+    from vault.kernel import construir
+
+    assert vault_arch.duenos_de_sistema()[".tool-tokens.json"] == vault_arch.KERNEL
+    # No-derogación: el nombre que consulta publicaba sigue importable.
+    assert consulta.FICHERO_TOKENS == vault_errors_trace.FICHERO_TOKENS
+    repo = consulta.RepositorioConsulta(construir(tmp_path))
+    assert repo.fichero_tokens.name == vault_errors_trace.FICHERO_TOKENS
+
+
+def test_reiniciar_el_contador_lo_hace_el_kernel(tmp_path, monkeypatch):
+    import vault_errors_trace
+    import vault_tokens
+
+    monkeypatch.setenv("VAULT_ROOT", str(tmp_path))
+    fichero = tmp_path / "00_System" / vault_errors_trace.FICHERO_TOKENS
+    monkeypatch.setattr(vault_errors_trace, "tokens_file", lambda: fichero)
+    fichero.parent.mkdir(parents=True)
+    fichero.write_text("[]", encoding="utf-8")
+    assert vault_errors_trace.reiniciar_tokens() is True
+    assert not fichero.exists()
+    assert vault_errors_trace.reiniciar_tokens() is False
+    assert "reiniciar_tokens" in vault_tokens.vault_tokens.__code__.co_names

@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main, emit_error
+from vault_errors_trace import reiniciar_tokens
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -108,8 +109,8 @@ def vault_tokens(
     reset: bool = False,
 ) -> Dict[str, Any]:
     if reset:
-        if _tokens_file().exists():
-            _tokens_file().unlink()
+        # El contador lo escribe el kernel, su dueño; Consulta solo lo lee.
+        reiniciar_tokens()
         return {"ok": True, "action": "reset", "message": "Token log cleared."}
 
     entries = _load_entries(since)

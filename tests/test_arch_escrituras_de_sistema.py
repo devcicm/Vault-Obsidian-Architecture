@@ -79,7 +79,9 @@ def test_un_contexto_que_escribe_la_subruta_de_otro_es_un_cruce():
 def test_la_puerta_frena_un_cruce_nuevo_y_no_los_congelados(monkeypatch):
     r = vault_arch.check()
     assert r["new_system_writes"] == []
-    assert r["system_writes_baseline"] >= r["system_writes_total"] > 0
+    # Residuo saldado en v41.3: cada subruta la escribe solo su dueño, y la
+    # baseline encogió a cero con la clave en pie.
+    assert r["system_writes_baseline"] == r["system_writes_total"] == 0
 
     real = vault_arch.escrituras_de_sistema
     monkeypatch.setattr(vault_arch, "escrituras_de_sistema", lambda: real() + [
