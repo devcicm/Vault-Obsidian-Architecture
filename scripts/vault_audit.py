@@ -480,8 +480,10 @@ def _detect_convenciones_cn01_cn04(
     sea su propio `slugify_strict`; CN-04, `abre_con_h1` sobre el cuerpo.
 
     Medida **informativa**: sin fila en `PENALIZACIONES`, no mueve
-    `healthScore`. Regla 7 (2026-10-08, copias): /ans 110 y 253 de 530 notas,
-    /vcloud 19 y 0 de 109. Si penaliza lo decide el usuario.
+    `healthScore`. La medida contra vaults ajenos (regla 7) se publica, con
+    fecha, solo en la entrada `cn01_cn04_solo_se_miden_al_escribir` de
+    `vault_blueprint.DEUDA_DECLARADA`: copiarla aquí es AP-47. Si penaliza lo
+    decide el usuario.
 
     Los andamios de `vault_init` quedan fuera: su nombre
     (`00-01_projects-primer`) lo fija el propio estándar y ningún consumidor

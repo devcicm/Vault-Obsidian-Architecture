@@ -481,7 +481,8 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "hecha en v41.3: `vault_audit._detect_convenciones_cn01_cn04` las "
             "publica en `issues.cn01NotKebab`/`cn04NoTitle`, sin peso, con el "
             "criterio de `slugify_strict` y `abre_con_h1`. Regla 7, 2026-10-08, "
-            "sobre copias: /ans 94 y 253 de 527 notas, /vcloud 1 y 0 de 108. De "
+            "sobre copias, repetida igual sobre copias nuevas el 2026-10-08: /ans 94 "
+            "y 253 de 527 notas, /vcloud 1 y 0 de 108. De "
             "las 253 de /ans, 137 son de `11_Code`: `vault_code_module` y otros "
             "escritores del estándar no pasan por `con_titulo`.)"
         ),

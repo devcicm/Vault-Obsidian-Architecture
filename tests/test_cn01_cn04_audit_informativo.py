@@ -1,9 +1,9 @@
 """CN-01 y CN-04 se miden también en las notas ya escritas (deuda #13).
 
 Hasta v41.2 solo las cumplía el write path —`slugify` y `con_titulo`—, y una
-nota que llegaba por otro camino no la medía nadie. Regla 7, 2026-10-08, solo
-lectura sobre copias: /ans (vault-ans) 530 notas, 110 nombres fuera de CN-01 y
-253 sin H1; /vcloud 109 notas, 19 y 0.
+nota que llegaba por otro camino no la medía nadie. La medida contra vaults
+ajenos (regla 7) está fechada en un solo sitio: la entrada
+`cn01_cn04_solo_se_miden_al_escribir` del plano.
 
 La medida es **informativa**: sale en `issues` y en `stats`, sin fila en
 `PENALIZACIONES`, así que no mueve `healthScore` ni `healthIndex`. Si penaliza
@@ -76,3 +76,23 @@ def test_cn01_cn04_no_mueven_la_salud(tmp_path):
     despues = va.vault_audit()
     assert despues["issues"]["cn01NotKebab"] == [] and despues["issues"]["cn04NoTitle"] == []
     assert (antes["healthScore"], antes["healthIndex"]) == (despues["healthScore"], despues["healthIndex"])
+
+
+def test_la_cifra_de_la_regla_7_vive_solo_en_el_plano():
+    """La medida fechada contra los vaults ajenos se escribe en un sitio (AP-47).
+
+    Hasta 2026-10-08 había tres copias: el docstring de la función decía
+    «/ans 110 y 253 de 530», el de este módulo igual y la entrada del plano
+    «94 y 253 de 527». La nueva medida de ese día sobre copias da la del
+    plano; las otras dos eran la de antes de arreglar los escritores.
+    """
+    import re
+
+    import vault_blueprint as vb
+
+    cifra = re.compile(r"/(?:ans|vcloud)\b[^.]*?\d+ y \d+")
+    assert not cifra.search(va._detect_convenciones_cn01_cn04.__doc__ or "")
+    assert not cifra.search(__doc__ or "")
+    entrada = next(d for d in vb.DEUDA_DECLARADA
+                   if d["id"] == "cn01_cn04_solo_se_miden_al_escribir")
+    assert cifra.search(entrada["que"])
