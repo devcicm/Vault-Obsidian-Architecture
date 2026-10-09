@@ -373,6 +373,8 @@ def _build_indexes(
         stem_map[_normalize(n.stem)] = n.stem
 
     all_stems: Set[str] = set()
+    relativas: List[str] = []
+    alias_por_ruta: Dict[str, List[str]] = {}
 
     for n in (_barrido_md() if barrido is None else barrido):
         # `.history` era la unica exclusion; `vault-backups/` y `.trash/` entraban,
@@ -381,22 +383,41 @@ def _build_indexes(
         # dentro del vault, asi que todo barrido debe saber distinguirlos.
         if not _is_snapshot(n):
             all_stems.add(_normalize(n.stem))
-            # Register folder/stem paths: [[section/note]] resolves even if stem alone not unique
-            try:
-                rel = n.relative_to(_raiz())
-                if len(rel.parts) >= 2:
-                    folder_stem = "".join(list(rel.parts[:-1])) + rel.stem
-                    all_stems.add(_normalize(folder_stem))
-            except ValueError:
-                pass
             # Obsidian resuelve `[[X]]` por nombre de fichero O por `aliases:`,
             # nunca por `title:`. Sin leer los alias, el audit declaraba roto todo
             # enlace que usara el nombre legible de una nota — 46 instancias en el
             # vault de BuilderX que Obsidian abre sin problema. Un contador que
             # no modela la resolucion real del lector manda a reescribir enlaces
             # que funcionan.
-            for alias in _aliases_de(n):
+            aliases = _aliases_de(n)
+            # Register folder/stem paths: [[section/note]] resolves even if stem alone not unique
+            try:
+                rel = n.relative_to(_raiz())
+                if len(rel.parts) >= 2:
+                    folder_stem = "".join(list(rel.parts[:-1])) + rel.stem
+                    all_stems.add(_normalize(folder_stem))
+                relativas.append(rel.as_posix())
+                alias_por_ruta[rel.as_posix()] = aliases
+            except ValueError:
+                pass
+            for alias in aliases:
                 all_stems.add(_normalize(alias))
+
+    # Los backlinks se resuelven con el mismo criterio que decide si un enlace
+    # está roto (AP-44). Hasta 2026-10-09 solo emparejaban el nombre de fichero
+    # normalizado, así que `[[Nombre Legible]]` (alias), `[[carpeta/nota]]` y
+    # `[[nota#sección]]` salían «no rotos» y a la vez sin destino: la nota
+    # enlazada, huérfana. El criterio es el del dueño, `resolver_wikilink`
+    # (AP-57), y se **suma** al emparejamiento de siempre: el arreglo solo
+    # quita huérfanas falsas, no estrena ninguna. Un destino ambiguo cuenta para
+    # todas sus candidatas, como ya hacía la clave por nombre.
+    indice = indice_de_nombres(relativas, alias_por_ruta)
+    ruta_a_stem: Dict[str, str] = {}
+    for n in notes:
+        try:
+            ruta_a_stem[n.relative_to(_raiz()).as_posix()] = n.stem
+        except ValueError:
+            pass
 
     backlinks: Dict[str, Set[str]] = defaultdict(set)
 
@@ -405,11 +426,20 @@ def _build_indexes(
         if content is None:
             continue
 
+        try:
+            desde: Optional[Path] = Path(n.relative_to(_raiz()).as_posix())
+        except ValueError:
+            desde = None
+
         for link in _extract_wiki_links(content, known=all_stems):
             target_key = _normalize(link)
 
             if target_key in stem_map:
                 backlinks[stem_map[target_key]].add(n.stem)
+
+            for candidata in resolver_wikilink(link, desde, indice)[1]:
+                if candidata in ruta_a_stem:
+                    backlinks[ruta_a_stem[candidata]].add(n.stem)
 
     return backlinks, all_stems
 

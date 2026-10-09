@@ -650,6 +650,32 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "final; una nota sin esos campos en `meta` no cambia un byte."
         ),
     },
+    {
+        "id": "backlinks_del_audit_indexados_por_nombre",
+        "estado": "pendiente",
+        "desde": "v41.3",
+        "capa": "5",
+        "que": (
+            "`vault_audit._build_indexes` indexa los backlinks por **nombre de "
+            "fichero**, no por ruta: dos notas homónimas en carpetas distintas "
+            "comparten entrantes, y un enlace que fija una de ellas con su "
+            "carpeta deja a la otra «enlazada» también. Es un falso verde en "
+            "`orphans` y en `notIntegrated`. Medido el 2026-10-09 en una copia "
+            "de /ans: `[[code/playbook-versioning]]` resuelve a "
+            "`05_Patterns/code/playbook-versioning.md` y saca de huérfanas a "
+            "`11_Code/ans/playbook-versioning.md`, que no enlaza nadie."
+        ),
+        "por_que_no_ahora": (
+            "Pasar la clave a ruta cambia la forma del índice que leen "
+            "`_detect_orphans`, `_detect_no_integradas` y cinco ficheros de "
+            "tests, y es un arreglo distinto del que la destapó: m155 hizo que "
+            "los backlinks resolvieran alias, carpeta y ancla como Obsidian "
+            "(AP-44), y con eso el caso homónimo se hizo visible. El test "
+            "`tests/test_audit_backlinks_como_obsidian.py::"
+            "test_limite_declarado_los_homonimos_comparten_entrantes` fija el "
+            "límite y falla el día que se salde."
+        ),
+    },
 ]
 
 
