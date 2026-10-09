@@ -687,7 +687,13 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     },
     {
         "id": "backlinks_del_audit_indexados_por_nombre",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "v41.3",
+        "sostenida_por": [
+            "tests/test_audit_backlinks_como_obsidian.py::test_los_homonimos_no_comparten_entrantes",
+            "tests/test_audit_backlinks_como_obsidian.py::test_un_enlace_ambiguo_cuenta_para_todas_las_homonimas",
+            "tests/test_audit_backlinks_como_obsidian.py::test_una_nota_unica_conserva_su_clave_por_nombre",
+        ],
         "desde": "v41.3",
         "capa": "5",
         "que": (
@@ -708,7 +714,21 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "(AP-44), y con eso el caso homónimo se hizo visible. El test "
             "`tests/test_audit_backlinks_como_obsidian.py::"
             "test_limite_declarado_los_homonimos_comparten_entrantes` fija el "
-            "límite y falla el día que se salde."
+            "límite y falla el día que se salde. (Saldada en v41.3, "
+            "2026-10-09, sin cambiar la forma del índice para nadie más: "
+            "`vault_audit._claves_de_nota` indexa por nombre a la nota única y "
+            "por ruta a cada homónima, también como origen, y los detectores "
+            "leen con `_clave_de`. Un enlace ambiguo sigue contando para todas "
+            "las candidatas. Regla 7 sobre copias nuevas, hash de los "
+            "originales intacto: /ans, huérfanas 2 → 2 y no integradas "
+            "271 → 274 —`10_Migrated/direct/claude-code-setup.md`, "
+            "`10_Migrated/excluded/codex-guide.md` y "
+            "`11_Code/ans/playbook-versioning.md`, sin ningún wikilink "
+            "saliente y citadas solo por su `index.md`: se integraban con los "
+            "salientes de su gemela—; /vcloud, sin cambios (12 y 2); "
+            "healthIndex igual en los dos. La medida de arriba erraba en un "
+            "punto: a `playbook-versioning` sí la cita un índice, así que el "
+            "falso verde era de `notIntegrated`, no de `orphans`.)"
         ),
     },
 ]

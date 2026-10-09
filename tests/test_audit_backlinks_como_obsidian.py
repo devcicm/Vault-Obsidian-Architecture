@@ -65,11 +65,7 @@ def test_el_backlink_lleva_al_origen(tmp_path):
     assert backlinks["destino"] == {"origen"}
 
 
-def test_limite_declarado_los_homonimos_comparten_entrantes(tmp_path):
-    """Deuda `backlinks_del_audit_indexados_por_nombre`: la clave es el nombre.
-
-    Cuando el índice pase a ruta, este test falla y la deuda se salda.
-    """
+def _homonimas(tmp_path: Path, origen: str) -> Path:
     import vault_io
 
     root = tmp_path / "v"
@@ -77,12 +73,41 @@ def test_limite_declarado_los_homonimos_comparten_entrantes(tmp_path):
         (root / sec).mkdir(parents=True)
     (root / "05_Patterns/code/homonima.md").write_text(FM + "# A\n", encoding="utf-8")
     (root / "11_Code/ans/homonima.md").write_text(FM + "# B\n", encoding="utf-8")
-    (root / "05_Patterns/origen.md").write_text(FM + "# O\n\n[[code/homonima]]\n",
+    (root / "05_Patterns/origen.md").write_text(FM + f"# O\n\n{origen}\n",
                                                 encoding="utf-8")
     vault_io.set_vault_root(root)
+    return root
+
+
+def test_los_homonimos_no_comparten_entrantes(tmp_path):
+    """Deuda `backlinks_del_audit_indexados_por_nombre`, saldada.
+
+    El enlace que fija una homónima con su carpeta no saca a la otra de
+    huérfanas. Hasta el 2026-10-09 la clave era el nombre y las dos compartían
+    entrantes (medido en /ans con `[[code/playbook-versioning]]`).
+    """
+    _homonimas(tmp_path, "[[code/homonima]]")
     r = va.vault_audit()
     huerfanas = {o["path"] for o in r["issues"]["orphans"]}
-    assert "11_Code/ans/homonima.md" not in huerfanas
+    assert "11_Code/ans/homonima.md" in huerfanas
+    assert "05_Patterns/code/homonima.md" not in huerfanas
+
+
+def test_un_enlace_ambiguo_cuenta_para_todas_las_homonimas(tmp_path):
+    """`[[homonima]]` sin carpeta: el audit no elige por Obsidian."""
+    _homonimas(tmp_path, "[[homonima]]")
+    r = va.vault_audit()
+    huerfanas = {o["path"] for o in r["issues"]["orphans"]}
+    assert not {"11_Code/ans/homonima.md", "05_Patterns/code/homonima.md"} & huerfanas
+
+
+def test_una_nota_unica_conserva_su_clave_por_nombre(tmp_path):
+    """La forma del índice no cambia para lo que no es homónimo."""
+    _homonimas(tmp_path, "[[code/homonima]]")
+    notas = sorted((tmp_path / "v").rglob("*.md"))
+    backlinks, _ = va._build_indexes(notas)
+    assert "homonima" not in backlinks
+    assert backlinks["05_Patterns/code/homonima.md"] == {"origen"}
 
 
 def test_un_enlace_roto_sigue_sin_backlink(tmp_path):

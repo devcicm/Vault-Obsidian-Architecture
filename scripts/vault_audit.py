@@ -357,6 +357,44 @@ def _aliases_de(p: Path) -> List[str]:
     return [a for a in raw if isinstance(a, str) and a.strip()]
 
 
+def _claves_de_nota(notes: List[Path]) -> Dict[Path, str]:
+    """La clave de cada nota en el índice de backlinks: su nombre, o su ruta.
+
+    Una nota de nombre único se indexa por su nombre, como siempre: la forma
+    del índice no cambia para ella. Dos homónimas —mismo nombre normalizado en
+    carpetas distintas— se indexan cada una por su ruta relativa, y así un
+    enlace que fija una con su carpeta no saca a la otra de huérfanas (deuda
+    `backlinks_del_audit_indexados_por_nombre`, saldada el 2026-10-09). Los
+    llamadores leen la clave con `_clave_de`, nunca con `n.stem` a pelo.
+    """
+    cuenta: Dict[str, int] = defaultdict(int)
+    for n in notes:
+        cuenta[_normalize(n.stem)] += 1
+    claves: Dict[Path, str] = {}
+    for n in notes:
+        if cuenta[_normalize(n.stem)] > 1:
+            try:
+                claves[n] = n.relative_to(_raiz()).as_posix()
+                continue
+            except ValueError:
+                pass
+        claves[n] = n.stem
+    return claves
+
+
+def _clave_de(n: Path, backlinks: Dict[str, Set[str]]) -> str:
+    """La clave de `n` en un índice ya construido: la ruta si está, si no el nombre.
+
+    Una homónima nunca se guarda por nombre, así que una sin entrantes cae al
+    nombre y no encuentra nada: sigue siendo huérfana, que es lo que es.
+    """
+    try:
+        rel = n.relative_to(_raiz()).as_posix()
+    except ValueError:
+        return n.stem
+    return rel if rel in backlinks else n.stem
+
+
 def _build_indexes(
     notes: List[Path], barrido: Optional[List[Path]] = None
 ) -> Tuple[Dict[str, Set[str]], Set[str]]:
@@ -368,10 +406,11 @@ def _build_indexes(
     pasa y así el disco se lee una vez en vez de cuatro.
     """
 
-    stem_map: Dict[str, str] = {}
-
-    for n in notes:
-        stem_map[_normalize(n.stem)] = n.stem
+    claves = _claves_de_nota(notes)
+    # Solo los nombres únicos se emparejan por nombre: el de un homónimo no
+    # dice a cuál de los dos apunta, y eso lo decide `resolver_wikilink`.
+    stem_map: Dict[str, str] = {
+        _normalize(n.stem): n.stem for n in notes if claves[n] == n.stem}
 
     all_stems: Set[str] = set()
     relativas: List[str] = []
@@ -416,7 +455,7 @@ def _build_indexes(
     ruta_a_stem: Dict[str, str] = {}
     for n in notes:
         try:
-            ruta_a_stem[n.relative_to(_raiz()).as_posix()] = n.stem
+            ruta_a_stem[n.relative_to(_raiz()).as_posix()] = claves[n]
         except ValueError:
             pass
 
@@ -436,11 +475,11 @@ def _build_indexes(
             target_key = _normalize(link)
 
             if target_key in stem_map:
-                backlinks[stem_map[target_key]].add(n.stem)
+                backlinks[stem_map[target_key]].add(claves[n])
 
             for candidata in resolver_wikilink(link, desde, indice)[1]:
                 if candidata in ruta_a_stem:
-                    backlinks[ruta_a_stem[candidata]].add(n.stem)
+                    backlinks[ruta_a_stem[candidata]].add(claves[n])
 
     return backlinks, all_stems
 
@@ -479,7 +518,7 @@ def _detect_orphans(
     for n in notes:
         rel = str(n.relative_to(_raiz())).replace("\\", "/")
 
-        if backlinks.get(n.stem):
+        if backlinks.get(_clave_de(n, backlinks)):
             continue
 
         if _no_necesita_enlaces(rel, n):
@@ -551,7 +590,8 @@ def _detect_no_integradas(
     entrante, la nota ya sale allí. Es medida **recomendada**, sin fila en
     `PENALIZACIONES`: no mueve `healthScore`.
     """
-    estructurales = {p.stem for p in all_notes if _is_structural(p)}
+    claves = _claves_de_nota(all_notes)
+    estructurales = {claves[p] for p in all_notes if _is_structural(p)}
 
     salientes: Dict[str, Set[str]] = defaultdict(set)
     for destino, origenes in backlinks.items():
@@ -562,14 +602,15 @@ def _detect_no_integradas(
     no_integradas = []
 
     for n in notes:
-        entrantes = backlinks.get(n.stem) or set()
+        clave = claves.get(n) or _clave_de(n, backlinks)
+        entrantes = backlinks.get(clave) or set()
         if not entrantes:
             continue  # huérfana: ya la cuenta `_detect_orphans`
 
-        if entrantes - estructurales - {n.stem}:
+        if entrantes - estructurales - {clave}:
             continue
 
-        if salientes.get(n.stem):
+        if salientes.get(clave):
             continue
 
         rel = str(n.relative_to(_raiz())).replace("\\", "/")
@@ -604,8 +645,8 @@ def _nucleo_del_vault(
 
     `vault_kernel` traza el núcleo del repo sobre el grafo de imports; aquí el
     grafo es el de **enlaces**. Se mide por **ruta**, no por nombre: dos
-    homónimas no suman sus entrantes (el índice de backlinks sí lo hace, ver
-    `backlinks_del_audit_indexados_por_nombre`). El criterio de resolución es
+    homónimas no suman sus entrantes (el índice de backlinks tampoco, desde
+    que `_claves_de_nota` las separa). El criterio de resolución es
     el del dueño canónico (AP-57) y el del umbral, `escalon`, el mismo que usa
     `vault_kernel`: una sola definición de «alto».
 
