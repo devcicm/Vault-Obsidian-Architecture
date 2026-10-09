@@ -267,32 +267,58 @@ def validar_objetivo(objetivo: Any) -> List[str]:
     return problemas
 
 
-def objetivo_de(path: Path, norma: str) -> Optional[Dict[str, Any]]:
+def _objetivo_en(datos: Dict[str, Any], clave: Optional[str]) -> Any:
+    """El objetivo de `clave`: el suyo en `objetivos_por_clave`, o el del fichero.
+
+    Un fichero puede congelar dos baselines —`arch-baseline.json` lleva
+    `crossings` y `off_port_crossings`— y un solo `objetivo` les obligaba a
+    compartir meta. `objetivos_por_clave` le da a cada una la suya; sin él, el
+    `objetivo` del fichero sigue valiendo para todas, como hasta ahora.
+    """
+    por_clave = datos.get("objetivos_por_clave")
+    if clave is not None and isinstance(por_clave, dict) and clave in por_clave:
+        return por_clave[clave]
+    return datos.get("objetivo")
+
+
+def objetivo_de(path: Path, norma: str,
+                clave: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """El `objetivo` declarado, o `None` si esta baseline no declara ninguno.
 
     `None` no es un fallo: una baseline sin objetivo es una deuda que nadie se
     ha comprometido a encoger todavía, y eso se publica como tal en vez de
     inventarse una fecha.
     """
-    return cargar_datos(path, norma).get("objetivo")
+    return _objetivo_en(cargar_datos(path, norma), clave)
 
 
 def estado_objetivo(path: Path, clave: str, norma: str,
                     hoy: Optional[date] = None) -> Dict[str, Any]:
     """Si esta baseline cumple lo que se comprometió a cumplir.
 
-    Tres respuestas distintas y ninguna se confunde con las otras:
-    `sin_objetivo` (no hay compromiso), `cumple` / `incumple` (lo hay y se mide
-    contra el tamaño real), `vencido` (la fecha pasó). Un `sin_objetivo` que
+    Respuestas distintas y ninguna se confunde con las otras:
+    `sin_objetivo` (no hay compromiso), `no_aplica` (no es deuda, y lo dice con
+    su motivo), `cumple` / `en_plazo` (lo hay y se mide contra el tamaño real),
+    `vencido` (la fecha pasó). Un `sin_objetivo` que
     saliera como `cumple` haría que no comprometerse fuese la opción cómoda.
     """
     hoy = hoy or date.today()
     datos = cargar_datos(path, norma)
-    objetivo = datos.get("objetivo")
+    objetivo = _objetivo_en(datos, clave)
     # `tamano_congelado` y no `len(cargar(...))`: hay una baseline cuyo valor es
     # un dict de listas, y exigir lista aquí la dejaría fuera del contrato justo
     # por ser la única que puede crecer.
     tamano = tamano_congelado(datos.get(clave))
+    # Una baseline que no es deuda —el contrato de campos crece por diseño— lo
+    # declara con su motivo. Sin esto solo podía publicarse `sin objetivo`, que
+    # se lee como un compromiso pendiente, o llevar una meta de encoger falsa.
+    if objetivo is None and "sin_objetivo_porque" in datos:
+        motivo = datos["sin_objetivo_porque"]
+        if isinstance(motivo, str) and motivo.strip():
+            return {"estado": "no_aplica", "tamano": tamano, "objetivo": None,
+                    "motivo": motivo.strip(), "problemas": []}
+        return {"estado": "objetivo_invalido", "tamano": tamano, "objetivo": None,
+                "problemas": ["`sin_objetivo_porque` debe decir por qué, no estar en blanco"]}
     if objetivo is None:
         return {"estado": "sin_objetivo", "tamano": tamano, "objetivo": None,
                 "problemas": []}

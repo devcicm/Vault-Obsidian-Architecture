@@ -192,6 +192,39 @@ def test_un_objetivo_a_medias_se_publica_como_invalido_y_no_como_cumplido(tmp_pa
     assert e["estado"] == "objetivo_invalido" and e["problemas"]
 
 
+_COMPLETO = {"tamano": 0, "fecha_limite": "2027-06-30",
+             "cadencia_dias": 180, "dueno": "meta_toolkit"}
+
+
+def test_dos_baselines_en_un_fichero_tienen_cada_una_su_objetivo(tmp_path):
+    """`arch-baseline.json` congela `crossings` y `off_port_crossings`: un solo
+    `objetivo` por fichero les obligaba a compartir meta, y entonces una de las
+    dos llevaría un compromiso que nadie decidió para ella."""
+    p = tmp_path / "b.json"
+    p.write_text(json.dumps({
+        "a": ["x"] * 5, "b": ["y"] * 2,
+        "objetivos_por_clave": {"a": {**_COMPLETO, "tamano": 3},
+                                "b": {**_COMPLETO, "tamano": 2}},
+    }), encoding="utf-8")
+    hoy = date(2026, 10, 9)
+    assert B.estado_objetivo(p, "a", "X", hoy=hoy)["estado"] == "en_plazo"
+    assert B.estado_objetivo(p, "b", "X", hoy=hoy)["estado"] == "cumple"
+    assert B.objetivo_de(p, "X", clave="a")["tamano"] == 3
+
+
+def test_una_baseline_que_no_es_deuda_lo_declara_con_motivo(tmp_path):
+    """El contrato de campos crece por diseño: un objetivo de encoger sería
+    falso, y `sin objetivo` lo publicaría como compromiso pendiente."""
+    p = tmp_path / "b.json"
+    p.write_text(json.dumps({"stable": {"t": ["f"]},
+                             "sin_objetivo_porque": "es el contrato, crece"}),
+                 encoding="utf-8")
+    e = B.estado_objetivo(p, "stable", "X")
+    assert e["estado"] == "no_aplica" and e["motivo"] == "es el contrato, crece"
+    p.write_text(json.dumps({"stable": {}, "sin_objetivo_porque": "  "}), encoding="utf-8")
+    assert B.estado_objetivo(p, "stable", "X")["estado"] == "objetivo_invalido"
+
+
 def test_los_objetivos_declarados_en_el_repo_son_validos():
     """Contraste contra el material real: un objetivo inválido en el repo sería
     peor que ninguno, porque el plano lo publicaría como declarado."""
@@ -200,7 +233,7 @@ def test_los_objetivos_declarados_en_el_repo_son_validos():
         ruta = BP.SCRIPTS_DIR / fichero
         if not ruta.exists():
             continue
-        objetivo = B.objetivo_de(ruta, norma)
+        objetivo = B.objetivo_de(ruta, norma, clave=_clave)
         if objetivo is not None:
             assert B.validar_objetivo(objetivo) == [], fichero
 

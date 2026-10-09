@@ -1088,6 +1088,8 @@ def _objetivo(ruta: Path, clave: str, norma: str) -> str:
     e = vault_baseline.estado_objetivo(ruta, clave, norma)
     if e["estado"] == "sin_objetivo":
         return "— *sin objetivo*"
+    if e["estado"] == "no_aplica":
+        return f"— *no aplica*: {e['motivo']}"
     if e["estado"] == "objetivo_invalido":
         return "⚠ inválido: " + "; ".join(e["problemas"])
     o = e["objetivo"]
