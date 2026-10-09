@@ -1204,9 +1204,9 @@ SUBRUTAS_DE_SISTEMA_SIN_REPOSITORIO: dict[str, dict] = {
         "por_que": "Lo escribe solo `vault_manifest --bootstrap`, por "
                    "`vault_io.tool_spec_path()`; `vault_mcp_catalog`, "
                    "`vault_compact_contracts`, `vault_sdd_init` y los "
-                   "`vault_spec_*` lo leen. Medido y declarado el 2026-10-09; la "
-                   "guarda sigue sin ver esa escritura (la ruta sale de otro "
-                   "módulo), y `fronteras_de_escritura_por_contexto` lo declara.",
+                   "`vault_spec_*` lo leen. Medido y declarado el 2026-10-09. "
+                   "Desde v41.3 la guarda ve esa escritura: sigue un nivel la "
+                   "función importada cuyo `return` es ruta literal.",
     },
 }
 
@@ -1308,6 +1308,14 @@ def _subruta_de_sistema(nodo, nombres, funciones, props, prof=0, consts=None):
         fn = nodo.func
         nombre = fn.attr if isinstance(fn, ast.Attribute) else (
             fn.id if isinstance(fn, ast.Name) else None)
+        # Lo que se sabe de la función —del módulo o importada un nivel— gana
+        # al colapso por nombre: `tool_spec_path` es la carpeta solo cuando no
+        # se sabe de dónde viene.
+        if isinstance(fn, ast.Name) and fn.id in funciones:
+            return funciones[fn.id]
+        if (isinstance(fn, ast.Attribute) and isinstance(fn.value, ast.Name)
+                and f"{fn.value.id}.{fn.attr}" in funciones):
+            return funciones[f"{fn.value.id}.{fn.attr}"]
         if nombre in _FUNCIONES_DE_SISTEMA:
             return "*"
         if nombre in ("ruta", "joinpath"):
@@ -1320,8 +1328,6 @@ def _subruta_de_sistema(nodo, nombres, funciones, props, prof=0, consts=None):
             if base == "*":
                 return cs[0].split("/")[0] if cs else None
             return base
-        if isinstance(fn, ast.Name) and fn.id in funciones:
-            return funciones[fn.id]
         if nombre in ("with_suffix", "with_name", "resolve") and isinstance(fn, ast.Attribute):
             return _subruta_de_sistema(fn.value, nombres, funciones, props, prof + 1, consts)
     return None
@@ -1338,19 +1344,37 @@ def _constantes_de_texto(arbol: ast.AST) -> dict[str, str]:
     }
 
 
-def escrituras_de_sistema_en(arbol: ast.AST, props: dict | None = None) -> list[tuple]:
-    """`(línea, llamada, subruta)` de cada escritura bajo `00_System/` del árbol.
+def _nombres_de_modulo(ruta: Path) -> list[str]:
+    """Cómo se importa un módulo medido: `vault_io`, `scripts.vault_io`, `vault.kernel.x`."""
+    rel = ruta.resolve().relative_to(REPO_ROOT).with_suffix("")
+    punteado = ".".join(rel.parts)
+    return [rel.name, punteado] if rel.parts[0] == "scripts" else [punteado]
 
-    Sigue el dato por asignaciones de nombre y por el `return` de funciones del
-    propio módulo, con un punto fijo corto. No ve rutas que llegan por parámetro
-    desde otro módulo ni subrutas calculadas: esa cobertura está declarada en la
-    deuda `fronteras_de_escritura_por_contexto`, y el fallo es del lado de no
-    marcar.
+
+def _funciones_importadas(arbol: ast.AST, externas: dict[str, dict[str, str]]) -> dict[str, str]:
+    """Nombre local → subruta, para lo que el módulo importa de otro módulo medido.
+
+    `from m import f [as g]` da `g`; `import m [as a]` da `a.f` por cada `f`
+    de `m`. Solo resuelve funciones cuyo `return` en su propio módulo ya es una
+    ruta literal de `00_System/`: un nivel, sin seguir la cadena.
     """
-    if props is None:
-        props = _propiedades_de_sistema()[0]
+    vistas: dict[str, str] = {}
+    for nodo in ast.walk(arbol):
+        if isinstance(nodo, ast.ImportFrom) and nodo.module and not nodo.level:
+            funcs = externas.get(nodo.module, {})
+            for a in nodo.names:
+                if a.name in funcs:
+                    vistas[a.asname or a.name] = funcs[a.name]
+        elif isinstance(nodo, ast.Import):
+            for a in nodo.names:
+                for f_, sub in externas.get(a.name, {}).items():
+                    vistas[f"{a.asname or a.name}.{f_}"] = sub
+    return vistas
+
+
+def _resolver_modulo(arbol: ast.AST, props: dict, funciones: dict[str, str]) -> dict[str, str]:
+    """Punto fijo corto: nombres y `return` de funciones que apuntan a `00_System/`."""
     nombres: dict[str, str] = {}
-    funciones: dict[str, str] = {}
     consts = _constantes_de_texto(arbol)
     for _ in range(3):
         for nodo in ast.walk(arbol):
@@ -1365,6 +1389,55 @@ def escrituras_de_sistema_en(arbol: ast.AST, props: dict | None = None) -> list[
                         s = _subruta_de_sistema(r.value, nombres, funciones, props, consts=consts)
                         if s:
                             funciones.setdefault(nodo.name, s)
+    return nombres
+
+
+def funciones_de_sistema_del_repo(props: dict | None = None) -> dict[str, dict[str, str]]:
+    """Módulo → {función → subruta} de las funciones cuyo `return` es una ruta
+    literal bajo `00_System/`, en todo el alcance medido.
+
+    `"*"` no entra: que una función devuelva la carpeta ya lo dice el nombre
+    (`_FUNCIONES_DE_SISTEMA`), y guardarlo solo serviría para colapsar igual.
+    """
+    if props is None:
+        props = _propiedades_de_sistema()[0]
+    indice: dict[str, dict[str, str]] = {}
+    for ruta in arboles_medidos():
+        try:
+            arbol = _ast_de(ruta)
+        except SyntaxError:
+            continue
+        funciones: dict[str, str] = {}
+        _resolver_modulo(arbol, props, funciones)
+        literales = {
+            n.name: funciones[n.name] for n in getattr(arbol, "body", [])
+            if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
+            and funciones.get(n.name, "*") != "*"
+        }
+        if literales:
+            for nombre in _nombres_de_modulo(ruta):
+                indice[nombre] = literales
+    return indice
+
+
+def escrituras_de_sistema_en(arbol: ast.AST, props: dict | None = None,
+                             externas: dict[str, dict[str, str]] | None = None) -> list[tuple]:
+    """`(línea, llamada, subruta)` de cada escritura bajo `00_System/` del árbol.
+
+    Sigue el dato por asignaciones de nombre y por el `return` de funciones del
+    propio módulo, con un punto fijo corto, y —si se le pasa `externas`, el
+    índice de `funciones_de_sistema_del_repo`— un nivel más: la función
+    importada de otro módulo cuyo `return` allí es una ruta literal (desde
+    v41.3; así se ve `vault_manifest` escribiendo `tool-spec.json`). No ve rutas
+    que llegan por parámetro ni las calculadas a más de un nivel: esa cobertura
+    está declarada en la deuda `fronteras_de_escritura_por_contexto`, y el fallo
+    es del lado de no marcar.
+    """
+    if props is None:
+        props = _propiedades_de_sistema()[0]
+    funciones: dict[str, str] = _funciones_importadas(arbol, externas or {})
+    consts = _constantes_de_texto(arbol)
+    nombres = _resolver_modulo(arbol, props, funciones)
     desechables = _nombres_desechables(arbol)
     hallazgos = []
     for nodo in ast.walk(arbol):
@@ -1391,6 +1464,7 @@ def escrituras_de_sistema() -> list[dict]:
     nadie en particular, es la raíz del sistema.
     """
     props = _propiedades_de_sistema()[0]
+    externas = funciones_de_sistema_del_repo(props)
     dominio = _modulos_dominio()
     hallazgos = []
     for ruta in arboles_medidos():
@@ -1401,7 +1475,7 @@ def escrituras_de_sistema() -> list[dict]:
             arbol = _ast_de(ruta)
         except SyntaxError:
             continue
-        for linea, _llamada, s in escrituras_de_sistema_en(arbol, props):
+        for linea, _llamada, s in escrituras_de_sistema_en(arbol, props, externas):
             if s != "*":
                 hallazgos.append({"module": clave.removesuffix(".py"),
                                   "context": ctx or None, "path": s, "line": linea})

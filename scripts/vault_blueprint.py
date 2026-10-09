@@ -207,7 +207,8 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "tests/test_arch_escrituras_de_sistema.py::test_un_contexto_que_escribe_la_subruta_de_otro_es_un_cruce",
             "tests/test_arch_escrituras_de_sistema.py::test_la_puerta_frena_un_cruce_nuevo_y_no_los_congelados",
             "tests/test_sistema_un_solo_escritor.py::test_la_subruta_la_escribe_solo_su_dueno",
-            "tests/test_arch_escrituras_por_parametro.py::test_el_caso_medido_tool_spec_tiene_dueno_pero_escritor_invisible",
+            "tests/test_arch_escrituras_por_parametro.py::test_el_caso_medido_tool_spec_tiene_dueno_y_escritor_visible",
+            "tests/test_arch_escrituras_por_parametro.py::test_la_funcion_importada_se_resuelve_un_nivel",
         ],
         "desde": "v40.9",
         "capa": "3",
@@ -233,11 +234,17 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "`vault_io`, la subruta colapsa a «la carpeta» y no se reporta. "
             "Ese mismo día `tool-spec.json` recibió dueño declarado en "
             "`SUBRUTAS_DE_SISTEMA_SIN_REPOSITORIO` (meta_toolkit, su único "
-            "escritor); la escritura sigue invisible para la guarda. Un "
-            "helper de nombre neutro que recibe la ruta tampoco se ve; uno que "
-            "se llama como una escritura, sí. "
-            "`tests/test_arch_escrituras_por_parametro.py` fija el límite para "
-            "que quien lo cubra tenga que corregir esta declaración.)"
+            "escritor). Desde v41.3 la guarda la ve: `funciones_de_sistema_del_repo` "
+            "indexa las funciones cuyo `return` es ruta literal de `00_System/` "
+            "y `escrituras_de_sistema_en` las resuelve un nivel en quien las "
+            "importa (`from m import f` o `m.f()`); medido ese día, no "
+            "apareció ningún cruce nuevo. Sigue fuera: la ruta que llega por "
+            "parámetro a un helper de nombre neutro (uno que se llama como una "
+            "escritura sí se ve), la función sin import que la resuelva y la "
+            "ruta calculada a más de un nivel. "
+            "`tests/test_arch_escrituras_por_parametro.py` fija lo que se ve y "
+            "lo que no, para que quien lo amplíe tenga que corregir esta "
+            "declaración.)"
         ),
         "por_que_no_ahora": (
             "Exige antes sanear `_LLAMADAS_DE_ESCRITURA` —incluye `replace`, que "
