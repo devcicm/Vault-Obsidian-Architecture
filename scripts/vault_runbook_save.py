@@ -55,6 +55,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.contenido import con_titulo  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 from vault.autoria.frontmatter import firmante as _agente  # noqa: E402
 
@@ -180,7 +181,7 @@ def vault_runbook_save(
         "## Historial de Ejecuciones\n\n*Sin ejecuciones registradas.*"
     )
 
-    final_content = frontmatter.render() + "\n\n" + "\n\n".join(body_sections)
+    final_content = frontmatter.render() + "\n\n" + con_titulo(title, "\n\n".join(body_sections))
 
     folder.mkdir(parents=True, exist_ok=True)
 

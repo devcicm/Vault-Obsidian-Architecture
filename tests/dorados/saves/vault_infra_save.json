@@ -12,5 +12,5 @@
     "updated": "<BEST-EFFORT>",
     "written": "<BEST-EFFORT>"
   },
-  "nota": "---\ntitle: servidor-de-índices\nid: <UUID>\ntype: server\nlocation: local\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ncia_integrity: high\ncia_availability: high\ncia_sensitivity: internal\nagent: system\n---\n\n## Descripción\n\nMáquina que sirve los índices.\n\n\n## Configuración\n\n- **cpu**: `4`"
+  "nota": "---\ntitle: servidor-de-índices\nid: <UUID>\ntype: server\nlocation: local\ncreatedAt: <FECHA>\nupdatedAt: <FECHA>\ncia_integrity: high\ncia_availability: high\ncia_sensitivity: internal\nagent: system\n---\n\n# servidor-de-índices\n\n## Descripción\n\nMáquina que sirve los índices.\n\n\n## Configuración\n\n- **cpu**: `4`"
 }

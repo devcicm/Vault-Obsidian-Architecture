@@ -71,6 +71,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.contenido import con_titulo  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
@@ -285,7 +286,7 @@ def vault_pattern_save(
 
     body_sections.append(f"\n---\n*Última actualización: {timestamp}*")
 
-    final_content = "\n\n".join([frontmatter.render()] + body_sections)
+    final_content = frontmatter.render() + "\n\n" + con_titulo(name, "\n\n".join(body_sections))
 
     pattern_path.parent.mkdir(parents=True, exist_ok=True)
 

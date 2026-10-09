@@ -51,6 +51,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
+from vault.kernel.contenido import con_titulo  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
@@ -268,7 +269,7 @@ def save_infra_map(
 
     cuerpo = "\n## Network Map\n\n```mermaid\n" + mermaid_content + "\n```\n"
 
-    atomic_write_text(map_path, frontmatter.render() + "\n" + cuerpo)
+    atomic_write_text(map_path, frontmatter.render() + "\n\n" + con_titulo("Infrastructure Map", cuerpo))
 
     return map_path
 
@@ -440,7 +441,7 @@ def vault_infra_save(
 
         body_sections.append("\n".join(conn_content))
 
-    final_content = frontmatter.render() + "\n\n" + "\n\n".join(body_sections)
+    final_content = frontmatter.render() + "\n\n" + con_titulo(name, "\n\n".join(body_sections))
 
     folder.mkdir(parents=True, exist_ok=True)
 

@@ -80,6 +80,7 @@ from vault_entorno import leer as _env
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.contenido import con_titulo  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
@@ -260,7 +261,7 @@ def vault_bug_save(
         cuerpo.append(f"## Ciclo\n\n{fases}")
 
         note_path.parent.mkdir(parents=True, exist_ok=True)
-        atomic_write_text(note_path, frontmatter.render() + "\n\n" + "\n\n".join(cuerpo))
+        atomic_write_text(note_path, frontmatter.render() + "\n\n" + con_titulo(title, "\n\n".join(cuerpo)))
 
         rel = str(note_path.relative_to(_raiz())).replace("\\", "/")
         index["bugs"].append({

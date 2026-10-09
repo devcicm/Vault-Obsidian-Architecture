@@ -55,6 +55,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
+from vault.kernel.contenido import con_titulo  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
@@ -260,7 +261,7 @@ def vault_test_save(
 
         body_sections.append(f"## Estado\n\n**Estado:** {status_line}")
 
-        final_content = frontmatter.render() + "\n\n" + "\n\n".join(body_sections)
+        final_content = frontmatter.render() + "\n\n" + con_titulo(title, "\n\n".join(body_sections))
 
         note_path.parent.mkdir(parents=True, exist_ok=True)
 

@@ -56,6 +56,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.contenido import con_titulo  # noqa: E402
 from vault.autoria.frontmatter import Frontmatter  # noqa: E402
 
 
@@ -234,7 +235,7 @@ def vault_flow_save(
 
         body.append("\n".join(step_rows))
 
-    final_content = frontmatter.render() + "\n\n" + "\n\n".join(body)
+    final_content = frontmatter.render() + "\n\n" + con_titulo(name, "\n\n".join(body))
 
     flow_dir.mkdir(parents=True, exist_ok=True)
 

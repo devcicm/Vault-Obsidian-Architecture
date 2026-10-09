@@ -446,9 +446,15 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     # publica y ninguna puerta mira.
     {
         "id": "cn01_cn04_solo_se_miden_al_escribir",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "v41.2",
+        "sostenida_por": [
+            "tests/test_cn01_cn04_audit_informativo.py::test_cn01_cn04_se_publican_sin_peso",
+            "tests/test_cn01_cn04_audit_informativo.py::test_cn01_cn04_no_mueven_la_salud",
+            "tests/test_cn04_escritores_con_titulo.py::test_la_nota_que_crea_el_escritor_abre_con_h1",
+        ],
         "desde": "v41.1",
-        "capa": "4",
+        "capa": "7",
         "que": (
             "CN-01 (nombre kebab-case) y CN-04 (la nota abre con su título como "
             "H1) tienen enforcement `guard` y se cumplen solo en el write path: "
@@ -472,7 +478,13 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "contra un vault ajeno antes de fijar el peso (regla 7), no un "
             "arreglo de la tanda. Queda: decidir el peso —lo decide el "
             "usuario— y que los escritores que no aplican `con_titulo` lo "
-            "hagan, que cambia su salida."
+            "hagan, que cambia su salida. (Decidido el 2026-10-08: sin peso; "
+            "la medida sigue informativa. Y los diez escritores que creaban la "
+            "nota sin H1 —bug, code_module, diagram, flow, test, requirement, "
+            "infra_save, infra_map, pattern y runbook— pasan por `con_titulo`; "
+            "sus dorados cambian solo en esa línea. `vault_onboard` ya escribía "
+            "el H1 en sus plantillas y `vault_undo` restaura el contenido tal "
+            "cual, que es lo que debe hacer.)"
         ),
     },
     {

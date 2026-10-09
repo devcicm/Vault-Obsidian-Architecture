@@ -36,6 +36,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
 from vault.grafo.enlace_codigo import link_vault  # noqa: E402
 from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
+from vault.kernel.contenido import con_titulo  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 
 
@@ -425,7 +426,7 @@ def vault_code_module(
     if notes:
         body_sections.append(f"## Notas\n\n{notes}")
 
-    final_content = "\n".join(frontmatter) + "\n\n" + "\n\n".join(body_sections)
+    final_content = "\n".join(frontmatter) + "\n\n" + con_titulo(Path(file_path).name, "\n\n".join(body_sections))
 
     note_path.parent.mkdir(parents=True, exist_ok=True)
     atomic_write_text(note_path, final_content)

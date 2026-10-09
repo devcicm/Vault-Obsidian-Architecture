@@ -49,6 +49,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.grafo.repositorio import RepositorioGrafo  # noqa: E402
 from vault.kernel import construir, proyectos as _proyectos  # noqa: E402
+from vault.kernel.contenido import con_titulo  # noqa: E402
 from vault.kernel.frontmatter_escritura import Frontmatter  # noqa: E402
 
 
@@ -255,12 +256,13 @@ def vault_infra_map(
         .render()
     ]
 
-    frontmatter.append("\n## Network Map\n\n```mermaid\n" + mermaid_content + "\n```\n")
+    frontmatter.append(con_titulo(
+        "Infrastructure Map","## Network Map\n\n```mermaid\n" + mermaid_content + "\n```\n"))
 
     # Escritura atómica: era el único sitio que escribía una nota con
     # `open(..., "w")` directo — sin saneado de encoding, sin temp+replace y
     # sin quedar registrada en el ledger de AP-37.
-    atomic_write_text(map_path, "\n".join(frontmatter))
+    atomic_write_text(map_path, "\n\n".join(frontmatter))
 
     return {
         "ok": True,
