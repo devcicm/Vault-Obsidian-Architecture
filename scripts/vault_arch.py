@@ -950,6 +950,49 @@ def sin_clasificar() -> list[str]:
     return [m for m in _modulos_en_disco() if m not in mapa]
 
 
+# ── El puente `scripts/` → `_impl/` (deuda #12) ─────────────────────────────
+
+def tiene_hogar(arbol: ast.AST, contexto: str) -> bool:
+    """¿El módulo importa algo del paquete de su propio contexto?
+
+    ADR-0002 declara el puente transitorio: se va cuando el código de
+    `scripts/` viva en `vault/<contexto>/`. El criterio es sintáctico a
+    propósito —un `from vault.<contexto>…` en cualquier sitio del fichero— y
+    dice menos de lo que parece: importar un repositorio es empezar a delegar,
+    no haber migrado. Distingue «aún no ha empezado» de «ya tiene dónde ir»,
+    que es lo que hacía falta para que un módulo nuevo no entrara con toda su
+    lógica en `scripts/` sin que nadie lo notara.
+    """
+    prefijo = f"vault.{contexto}"
+    for nodo in ast.walk(arbol):
+        if isinstance(nodo, ast.ImportFrom) and nodo.module and (
+                nodo.module == prefijo or nodo.module.startswith(prefijo + ".")):
+            return True
+        if isinstance(nodo, ast.Import) and any(
+                a.name == prefijo or a.name.startswith(prefijo + ".")
+                for a in nodo.names):
+            return True
+    return False
+
+
+def modulos_sin_hogar() -> list[str]:
+    """Módulos de `scripts/` que no importan nada de `vault/<su contexto>/`.
+
+    Es la cifra de la deuda #12, derivada en vez de escrita. Un contexto sin
+    paquete en `vault/` no puede dar hogar a nadie y no cuenta: esos módulos
+    no tienen adónde migrar todavía, y contarlos sería medir otra cosa.
+    """
+    paquetes = {d.name for d in DOMINIO_DIR.iterdir() if d.is_dir()} if DOMINIO_DIR.exists() else set()
+    sin_hogar = []
+    for modulo in _modulos_en_disco():
+        ctx = contexto_de(modulo)
+        if ctx not in paquetes:
+            continue
+        if not tiene_hogar(_ast_de(SCRIPTS_DIR / f"{modulo}.py"), ctx):
+            sin_hogar.append(modulo)
+    return sin_hogar
+
+
 #: Lo que cuenta como escribir. `mkdir` entra: crear una sección de contenido
 #: es tocar el vault del usuario aunque no se deje un byte dentro.
 #:
@@ -2395,6 +2438,14 @@ def check(strict: bool = False) -> dict:
     sis_nuevas = sorted(claves_s - base_sis)
     sis_saldadas = sorted(base_sis - claves_s)
 
+    # Deuda #12 — el puente de ADR-0002. Con baseline: los módulos que ya
+    # estaban en `scripts/` sin hogar arrancan congelados y solo encogen; uno
+    # nuevo bloquea, porque su sitio es `vault/<contexto>/` desde el principio.
+    base_puente = set(_leer_baseline().get("bridge_modules", []))
+    puente = set(modulos_sin_hogar())
+    puente_nuevos = sorted(puente - base_puente)
+    puente_saldados = sorted(base_puente - puente)
+
     return {
         "ok": not nuevos and not huerfanos and not ausentes and not vinc_nuevos
               and not sin_presupuesto
@@ -2402,9 +2453,10 @@ def check(strict: bool = False) -> dict:
               and not kernel_sin_declarar and not nombre_crudo and not rotos
               and not puerto_nuevos and not entorno_sin_registro
               and not copias_vocab and not vocab_sin_dueno
-              and not entorno_desfasado and not sis_nuevas
+              and not entorno_desfasado and not sis_nuevas and not puente_nuevos
               and not (strict and (saldados or vinc_saldados or rutas_saldadas
-                                   or puerto_saldados or sis_saldadas)),
+                                   or puerto_saldados or sis_saldadas
+                                   or puente_saldados)),
         "tool": "vault_arch",
         "contexts": len(CONTEXTS),
         "modules": len(_mapa_modulos()),
@@ -2487,6 +2539,11 @@ def check(strict: bool = False) -> dict:
         "new_system_writes": sis_nuevas,
         "settled_system_writes": sis_saldadas,
         "foreign_system_writes": ajenas_sis,
+        # Deuda #12 — módulos de `scripts/` sin hogar en `vault/<contexto>/`.
+        "bridge_modules_total": len(puente),
+        "bridge_modules_baseline": len(base_puente),
+        "new_bridge_modules": puente_nuevos,
+        "settled_bridge_modules": puente_saldados,
         "crossings": actuales,
     }
 
@@ -2517,6 +2574,7 @@ def freeze() -> dict:
             "off_port_crossings": fuera_puerto,
             "system_writes": sorted({_clave_escritura_de_sistema(e)
                                      for e in escrituras_de_sistema_ajenas()}),
+            "bridge_modules": modulos_sin_hogar(),
         },
         campo_descripcion="note",
     )

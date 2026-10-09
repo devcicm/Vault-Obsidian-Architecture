@@ -470,7 +470,13 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "package-dir que mapea `scripts/` → `vault_toolkit/_impl/`. "
             "ADR-0002 formaliza el puente: fachada de re-export + package-dir. "
             "La deuda es transitoria: desaparece cuando `scripts/` migre a "
-            "`vault/<contexto>/` y el puente ya no sea necesario."
+            "`vault/<contexto>/` y el puente ya no sea necesario. (Avance de "
+            "v41.3, 2026-10-09: la cifra ya no se escribe a mano. "
+            "`vault_arch.modulos_sin_hogar` cuenta los módulos de `scripts/` "
+            "que no importan nada de `vault/<su contexto>/`, la capa 3 la "
+            "publica derivada y la baseline `bridge_modules` de "
+            "`arch-baseline.json` la congela: solo encoge, y un módulo nuevo "
+            "sin hogar bloquea `vault_arch --check`.)"
         ),
         "por_que_no_ahora": (
             "Transitorio hasta migrar scripts → vault/<contexto>, ADR-0002. "
@@ -801,6 +807,7 @@ def capas() -> Dict[str, Any]:
             }
             for ctx, datos in r["arch"].CONTEXTS.items()
         },
+        "3_puente_sin_hogar": len(r["arch"].modulos_sin_hogar()),
         "4_normas": cobertura,
         "5_tools": {
             "total": len(traza),
@@ -884,6 +891,11 @@ def blueprint() -> str:
     for ctx, datos in c["3_contextos"].items():
         prohibe = "; ".join(datos["prohibe"]) or "—"
         A(f"| **{datos['titulo']}** (`{ctx}`) | {datos['puertos']} | {datos['modulos']} | {prohibe} |")
+    A("")
+    A(f"**Puente de ADR-0002:** {c['3_puente_sin_hogar']} módulos de `scripts/` no importan "
+      "nada de `vault/<su contexto>/` (`vault_arch.modulos_sin_hogar`). La cifra solo "
+      "encoge: un módulo nuevo sin hogar bloquea `vault_arch --check`. Importar del "
+      "contexto es empezar a delegar, no haber migrado.")
     A("")
 
     # ── Capa 4 ──
