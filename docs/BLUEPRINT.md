@@ -69,7 +69,7 @@ regenera.*
 
 *Registros: `vault_norms.NORM_CATALOG` + `vault_gate.PUERTAS` + `tests/`*
 
-70 de 79 normas tienen puerta o test que las nombre.
+75 de 79 normas tienen puerta o test que las nombre.
 **Es la única capa con baseline**, y por un motivo concreto: las demás se midieron
 en cero el día que se declararon porque sus datos ya existían y solo faltaba
 atarlos. Ésta no. Exigir cero aquí el primer día habría hecho nacer la puerta en
@@ -88,13 +88,13 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-09** — Runbooks fuera de estructura | audit | `framework` | `test_vault_norms_audit.py` |
 | **AP-10** — Migración sin plan de rollback | audit | `framework` | — |
 | **AP-11** — Skeleton files — frontmatter válido, contenido vacío | guard | — | `test_envelope_forma.py`, `test_voice.py` |
-| **AP-12** — Frontmatter inconsistente entre notas del mismo tipo | audit | — | — |
+| **AP-12** — Frontmatter inconsistente entre notas del mismo tipo | audit | — | `test_capa4_audit_ejercitada.py` |
 | **AP-13** — Timestamps inválidos o incompletos en frontmatter | audit | — | `test_meta_contrato.py` |
 | **AP-14** — Wiki-links rotos o vacíos | guard+audit | — | `test_audit_acciones_de_movimiento.py`, `test_normas_enlaces_sin_solape.py`, `test_norms_coherence.py` |
 | **AP-15** — Archivos externos depositados en la raíz del vault | guard+audit | `framework` | `test_normas_sin_registro_a_mano.py`, `test_vault_norms_audit.py` |
 | **AP-16** — Sin identificador de agente en frontmatter | audit | — | `test_ap64_responsable.py`, `test_context_memory.py` |
 | **AP-17** — Canonical-shadow duplication | audit | — | `test_blueprint.py`, `test_normas_de_audit_ejercitadas.py` |
-| **AP-18** — Cross-folder content duplication | audit | — | — |
+| **AP-18** — Cross-folder content duplication | audit | — | `test_capa4_audit_ejercitada.py` |
 | **AP-19** — Shadow indexing | audit | `framework` | — |
 | **AP-20** — Deceptive skeleton (empty-list) | guard | — | `test_ap20_esqueleto_de_lista.py` |
 | **AP-21** — Path-anchored wiki-links | guard+audit | — | `test_ap21_dentro_de_fence.py`, `test_ap21_ruta_necesaria.py`, `test_normas_enlaces_sin_solape.py`, `test_vault_regex.py` |
@@ -108,11 +108,11 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-24** — Bracket imbalance — corchetes sin pareja, anidados o invertidos | guard+audit | — | `test_norms_coherence.py`, `test_vault_norms.py` |
 | **AP-25** — Mermaid diagram syntax errors — nodos/tipos no definidos | audit | — | `test_skills_catalogo.py`, `test_vault_norms.py` |
 | **AP-26** — Missing tags — nota de contenido sin tags | guard+audit | — | `test_context_memory.py` |
-| **AP-27** — Missing type field — nota sin tipo declarado | guard+audit | — | — |
+| **AP-27** — Missing type field — nota sin tipo declarado | guard+audit | — | `test_capa4_audit_ejercitada.py` |
 | **AP-28** — Missing frontmatter — nota sin bloque YAML | audit | — | `test_ap56_frontmatter_heal.py` |
 | **AP-29** — Missing status field — nota sin estado de ciclo de vida | audit | `framework` | — |
 | **AP-30** — Missing CIA classification — nota sin clasificación de la tríada | audit | — | `test_normas_de_audit_ejercitadas.py` |
-| **AP-31** — Grafo sin tipos semanticos — edges sin predicate explícito | audit | — | — |
+| **AP-31** — Grafo sin tipos semanticos — edges sin predicate explícito | audit | — | `test_capa4_audit_ejercitada.py` |
 | **AP-32** — Relaciones tipadas sin predicate valido en la ontologia | audit | — | `test_graph_merge_sugerencias.py` |
 | **AP-33** — Predicado no canonico — sinonimo no normalizado | audit | — | `test_graph_merge_sugerencias.py` |
 | **AP-34** — Relacion tipada huerfana — endpoint inexistente en el vault | audit | — | `test_graph_merge_sugerencias.py` |
@@ -147,7 +147,7 @@ rojo, y una puerta en rojo se desactiva.
 | **AP-63** — El nombre de un proyecto como texto libre | guard+audit | — | `test_project_registrado.py`, `test_vault_project.py` |
 | **AP-64** — Decisión cerrada sin responsable | audit | `framework` | `test_ap64_responsable.py`, `test_iso42005_impacto.py`, `test_normas_paquete.py` |
 | **AP-65** — Decisión de IA de impacto alto sin evaluación de impacto | audit | `framework` | `test_iso42005_impacto.py`, `test_normas_paquete.py` |
-| **PAT-6** — Semantic graph enrichment — enriquecimiento periodico del grafo | recommended | — | — |
+| **PAT-6** — Semantic graph enrichment — enriquecimiento periodico del grafo | recommended | — | `test_capa4_audit_ejercitada.py` |
 | **SP-01** — Delete protocol — change_log obligatorio antes de eliminar | audit | `framework` | `test_vault_norms.py` |
 | **SP-02** — Forward-link verification — buscar antes de linkar | guard | — | `test_normas_enlaces_sin_solape.py`, `test_vault_norms.py` |
 | **SP-03** — Session snapshot pattern — delta antes de operaciones masivas | audit | — | `test_vault_norms.py` |
@@ -157,7 +157,7 @@ rojo, y una puerta en rojo se desactiva.
 | **CN-03** — Standard status vocabulary — vocabulario canónico de meta.status | audit | `framework` | `test_vault_norms.py`, `test_vault_norms_audit.py`, `test_vault_sanacion.py` |
 | **CN-04** — Note opens with its title — la nota abre con su título como H1 | guard | — | `test_cn01_cn04_audit_informativo.py`, `test_cn04_escritores_con_titulo.py`, `test_cn04_nota_abre_con_titulo.py` |
 
-Sin puerta ni test (9): `AP-04`, `AP-12`, `AP-18`, `PAT-2`, `PAT-3`, `PAT-4`, `AP-27`, `AP-31`, `PAT-6`.
+Sin puerta ni test (4): `AP-04`, `PAT-2`, `PAT-3`, `PAT-4`.
 
 ## Capa 5 — Tools → grupos → contrato
 
@@ -385,7 +385,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | `scripts/error-contract-baseline.json` | AP-52 | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_error_contract → **cumple** | 110 → 110 → 0 → 9 → 0 → 0 (encoge, Δ-158) |
 | `scripts/noop-baseline.json` | AP-37 | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_noop_audit → **cumple** | 0 → 0 → 0 → 0 (plana, Δ+0) |
 | `scripts/smoke-baseline.json` | AP-42 | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_smoke → **cumple** | 0 → 0 (plana, Δ+0) |
-| `scripts/blueprint-baseline.json` | capa 4 — norma sin puerta ni test | 8 | ≤ 4 para 2027-03-31 · cada 90 d · meta_toolkit — vault_blueprint → **en_plazo** | 15 → 14 → 13 → 13 → 8 → 8 (encoge, Δ-8) |
+| `scripts/blueprint-baseline.json` | capa 4 — norma sin puerta ni test | 3 | ≤ 4 para 2027-03-31 · cada 90 d · meta_toolkit — vault_blueprint → **cumple** | 14 → 13 → 13 → 8 → 8 → 3 (encoge, Δ-13) |
 | `scripts/criterios-baseline.json` | AP-57 | 9 | ≤ 6 para 2027-03-31 · cada 90 d · meta_toolkit — vault_criterios → **en_plazo** | 10 → 9 → 9 → 9 → 9 (encoge, Δ-1) |
 | `scripts/ciclos-baseline.json` | AP-58 — ciclo esquivado con import diferido | 5 | ≤ 2 para 2027-03-31 · cada 90 d · meta_toolkit — vault_ciclos → **en_plazo** | 30 → 15 → 14 → 7 → 5 → 5 (encoge, Δ-25) |
 | `scripts/kernel-baseline.json` | AP-59 — núcleo declarado sin contraste | 4 | ≤ 2 para 2027-03-31 · cada 90 d · meta_toolkit — vault_kernel → **en_plazo** | 5 → 6 → 6 → 5 → 4 → 4 (encoge, Δ-1) |
