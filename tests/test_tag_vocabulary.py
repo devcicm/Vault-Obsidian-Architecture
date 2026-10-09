@@ -161,7 +161,7 @@ def test_record_new_tags_guarda_quien_cuando_y_donde(ledger):
         [{"tag": "kubernetes", "raw": "Kubernetes", "note": "07_Knowledge/k.md", "agent": "claude"}]
     )
     assert n == 1
-    entradas = vault_tags._load_ledger()["entries"]
+    entradas = vault_tags.load_ledger()["entries"]
     assert len(entradas) == 1
     e = entradas[0]
     assert e["tag"] == "kubernetes"
@@ -174,7 +174,7 @@ def test_record_new_tags_guarda_quien_cuando_y_donde(ledger):
 def test_la_bitacora_conserva_la_primera_introduccion(ledger):
     vault_tags.record_new_tags([{"tag": "k8s", "note": "a.md", "agent": "sesion-1"}])
     vault_tags.record_new_tags([{"tag": "k8s", "note": "b.md", "agent": "sesion-2"}])
-    entradas = vault_tags._load_ledger()["entries"]
+    entradas = vault_tags.load_ledger()["entries"]
     assert len(entradas) == 1, "un término se introduce una sola vez"
     assert entradas[0]["introduced_by"] == "sesion-1"
     assert entradas[0]["first_note"] == "a.md"
@@ -183,12 +183,12 @@ def test_la_bitacora_conserva_la_primera_introduccion(ledger):
 def test_la_bitacora_es_append_only(ledger):
     vault_tags.record_new_tags([{"tag": "uno", "note": "a.md", "agent": "x"}])
     vault_tags.record_new_tags([{"tag": "dos", "note": "b.md", "agent": "x"}])
-    assert [e["tag"] for e in vault_tags._load_ledger()["entries"]] == ["uno", "dos"]
+    assert [e["tag"] for e in vault_tags.load_ledger()["entries"]] == ["uno", "dos"]
 
 
 def test_agente_desconocido_no_pierde_la_entrada(ledger):
     vault_tags.record_new_tags([{"tag": "huerfano", "note": "a.md", "agent": ""}])
-    assert vault_tags._load_ledger()["entries"][0]["introduced_by"] == "unknown"
+    assert vault_tags.load_ledger()["entries"][0]["introduced_by"] == "unknown"
 
 
 def test_record_new_tags_sin_terminos_no_crea_el_archivo(ledger):

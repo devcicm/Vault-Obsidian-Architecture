@@ -226,9 +226,16 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     },
     {
         "id": "parsers_de_frontmatter_divergentes",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "v41.2",
+        "sostenida_por": [
+            "tests/test_frontmatter_lector_unico.py::test_ap57_hoy_nadie_lee_el_frontmatter_a_mano",
+            "tests/test_vault_write_slug_canonico.py::test_la_nota_nueva_usa_el_slug_canonico",
+            "tests/test_aliases_superseded_sin_uso.py::test_nadie_lee_los_nombres_superseded",
+            "tests/test_aliases_superseded_sin_uso.py::test_los_nombres_viejos_siguen_definidos_y_anotados",
+        ],
         "desde": "v40.9",
-        "capa": "5",
+        "capa": "7",
         "que": (
             "8 parsers de frontmatter distintos (esa parte, saldada en v41.2: al "
             "medirla eran once lectores por líneas en diez módulos, y todos "
@@ -238,14 +245,22 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "`vault_lib` aunque 20 módulos sí (esa parte, saldada en v40.35: delega "
             "en `slugify_strict` y el slug viejo queda solo para encontrar notas "
             "ya escritas); 6 aliases de v40.8 con el nombre viejo "
-            "aún en uso; `--agent default=\"claude\"` en 6 tools frente al AP-16 que "
+            "aún en uso (esa parte, saldada en v41.2: el repo lee solo los "
+            "nombres canónicos y los viejos siguen definidos con su "
+            "`superseded_by:`, sin derogarse); `--agent default=\"claude\"` en 6 tools frente al AP-16 que "
             "`vault_bug_save` exige."
         ),
         "por_que_no_ahora": (
             "Es AP-50 acumulado y se salda unificando, no parcheando: hacerlo a "
             "medias deja nueve parsers en vez de ocho. Quedan los aliases y el "
             "`--agent` por defecto, y lo segundo cambia lo que reciben los "
-            "clientes MCP: lo decide el usuario, no esta tanda."
+            "clientes MCP: lo decide el usuario, no esta tanda. (Decidido el "
+            "2026-10-08: el default se mantiene. Medido ese día, ya son 13 tools "
+            "con `default=\"claude\"`, no 6; cambiarlo alteraría lo que "
+            "reciben los clientes MCP que no pasan `--agent`, y `vault_bug_save` "
+            "sigue exigiéndolo donde la atribución es parte del defecto. Esa "
+            "parte queda decidida. Los aliases se migraron ese mismo día, y con "
+            "ello la entrada se salda.)"
         ),
     },
     {

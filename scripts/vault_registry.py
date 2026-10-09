@@ -342,7 +342,7 @@ SECTION_TYPES: Dict[str, tuple] = {
 }
 
 #: **El primer elemento no es decorativo: es el que escribe el write path.**
-#: `vault_write._deduce_type_from_folder` deriva de aquí, así que reordenar una
+#: `vault_write.tipo_por_carpeta` deriva de aquí, así que reordenar una
 #: familia cambia lo que se escribe en disco. Los demás elementos son los tipos
 #: que ese mismo estándar produce por otras vías (`vault_migrate_docs` escribe
 #: `migration-report`, `vault_code_map` escribe `code-map`) más los que se

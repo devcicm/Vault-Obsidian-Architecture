@@ -47,25 +47,25 @@ def _repo(root=None) -> RepositorioIndices:
     return RepositorioIndices(construir(root))
 
 
-def _notas_en_disco(root=None) -> List[Path]:
+def notas_indexables(root=None) -> List[Path]:
     """Las notas que la reconstrucción indexaría, con SU mismo criterio.
 
-    Se conserva el nombre porque hay tests y tools que lo importan
-    (no-derogación); el criterio ya no vive aquí sino en el dominio.
+    Nombre público desde v40.9: `vault_sanacion` la llamaba por el nombre
+    privado, que es una frontera cruzada por detrás. No se llama
+    `notas_en_disco` porque ese nombre ya lo ocupa la función del dominio que
+    este módulo importa, y dos cosas distintas con el mismo nombre en el mismo
+    fichero es la confusión que sigue. El criterio no vive aquí sino en el
+    dominio.
     """
     repo = _repo(root)
     return notas_en_disco(repo.raiz, repo.ctx.secciones.ordenadas())
 
 
-def notas_indexables(root=None) -> List[Path]:
-    """Las notas que la reconstrucción indexaría. Nombre público desde v40.9.
-
-    `vault_sanacion` la llamaba por el nombre privado, que es una frontera
-    cruzada por detrás. No se llama `notas_en_disco` porque ese nombre ya lo
-    ocupa la función del dominio que este módulo importa, y dos cosas distintas
-    con el mismo nombre en el mismo fichero es la confusión que sigue.
-    """
-    return _notas_en_disco(root)
+#: superseded_by: `notas_indexables`. Se conserva el nombre —hubo tests y tools
+#: que lo importaban— con el mismo contrato (no-derogación). Hasta v41.3 el
+#: cuerpo vivía aquí y el nombre público delegaba en el privado.
+def _notas_en_disco(root=None) -> List[Path]:
+    return notas_indexables(root)
 
 
 def index_coherence(root=None) -> Dict[str, Any]:

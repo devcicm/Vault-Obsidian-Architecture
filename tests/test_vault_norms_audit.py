@@ -47,7 +47,7 @@ def _sync_index(root: Path) -> None:
     """
     import json
 
-    from vault_reindex import _notas_en_disco
+    from vault_reindex import notas_indexables
 
     (root / "99_Index").mkdir(parents=True, exist_ok=True)
     (root / "99_Index" / "search-index.json").write_text(
@@ -55,7 +55,7 @@ def _sync_index(root: Path) -> None:
             {
                 "notes": [
                     {"path": str(p.relative_to(root)).replace("\\", "/")}
-                    for p in _notas_en_disco(root)
+                    for p in notas_indexables(root)
                 ]
             }
         ),

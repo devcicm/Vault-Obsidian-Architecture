@@ -368,7 +368,7 @@ def test_el_tipo_que_escribe_el_write_path_sale_del_registro():
     import vault_write
 
     for folder in vault_registry.ORDERED_SECTIONS:
-        assert vault_write._deduce_type_from_folder(folder) == (
+        assert vault_write.tipo_por_carpeta(folder) == (
             vault_registry.section_default_type(folder)
         ), f"{folder}: el write path no deriva del registro"
         assert vault_registry.section_default_type(folder), (

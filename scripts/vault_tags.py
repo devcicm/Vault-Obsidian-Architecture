@@ -135,7 +135,7 @@ def _is_vault_note(path: Path) -> bool:
     `secciones_del_vault` cachea por firma del fichero y lanza `ValueError` si
     está roto; las entradas públicas lo traducen con `_registro_ilegible`.
     """
-    return es_nota_indexable(path, _raiz(), secciones_del_vault(_raiz()),
+    return es_nota_indexable(path, raiz(), secciones_del_vault(raiz()),
                              incluir_indices=False)
 
 
@@ -146,7 +146,7 @@ def _registro_ilegible() -> Optional[Dict[str, Any]]:
     propias, indistinguible de uno donde no hay ninguna (AP-51).
     """
     try:
-        secciones_del_vault(_raiz())
+        secciones_del_vault(raiz())
     except ValueError as exc:
         return emit_error("vault_tags", "DATA_FILE_CORRUPT", str(exc),
                           pista="corregir 00_System/secciones.json (vault_section --list)")
@@ -278,7 +278,7 @@ def record_new_tags(
     _vocab_dir().mkdir(parents=True, exist_ok=True)
     ahora = utcnow()
     with file_lock(_tag_ledger()):
-        ledger = _load_ledger()
+        ledger = load_ledger()
         ya = {e["tag"] for e in ledger["entries"]}
         nuevos = 0
         for t in terminos:
@@ -380,17 +380,17 @@ def vault_tags_backfill_ledger(dry_run: bool = False) -> Dict[str, Any]:
         return fallo
     indice = _canonical_index()
     vistos: Dict[str, Dict[str, Any]] = {}
-    for md in sorted(_raiz().rglob("*.md")):
+    for md in sorted(raiz().rglob("*.md")):
         if not _is_vault_note(md):
             continue
         try:
             contenido = md.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
             continue
-        rel = str(md.relative_to(_raiz())).replace("\\", "/")
+        rel = str(md.relative_to(raiz())).replace("\\", "/")
         agente = campos_de_texto(contenido).get("agent", "")
         agente = agente if isinstance(agente, str) else ""
-        for crudo in _parse_frontmatter_tags(contenido):
+        for crudo in tags_de_frontmatter(contenido):
             resuelto, regla = resolve_tag(crudo, indice)
             if regla != "new" or not resuelto or resuelto in vistos:
                 continue
@@ -403,7 +403,7 @@ def vault_tags_backfill_ledger(dry_run: bool = False) -> Dict[str, Any]:
             }
 
     if dry_run:
-        ya = {e["tag"] for e in _load_ledger()["entries"]}
+        ya = {e["tag"] for e in load_ledger()["entries"]}
         pendientes = [t for t in sorted(vistos) if t not in ya]
         return {
             "ok": True,
@@ -420,13 +420,13 @@ def vault_tags_backfill_ledger(dry_run: bool = False) -> Dict[str, Any]:
         "written": anotados,
         "recorded": anotados,
         "scanned_terms": len(vistos),
-        "path": str(_tag_ledger().relative_to(_raiz())).replace("\\", "/"),
+        "path": str(_tag_ledger().relative_to(raiz())).replace("\\", "/"),
     }
 
 
 def vault_tags_ledger() -> Dict[str, Any]:
     """Lee la bitácora de vocabulario (AP-39)."""
-    ledger = _load_ledger()
+    ledger = load_ledger()
     entradas = ledger.get("entries", [])
     por_agente: Dict[str, int] = {}
     for e in entradas:
@@ -435,7 +435,7 @@ def vault_tags_ledger() -> Dict[str, Any]:
         )
     return {
         "ok": True,
-        "path": str(_tag_ledger().relative_to(_raiz())).replace("\\", "/"),
+        "path": str(_tag_ledger().relative_to(raiz())).replace("\\", "/"),
         "introduced_total": len(entradas),
         "canonical_total": len(set(canonical_tags())),
         "by_agent": dict(sorted(por_agente.items(), key=lambda kv: -kv[1])),
@@ -482,15 +482,15 @@ def _scan_all_notes() -> Tuple[Dict[str, List[str]], List[str]]:
     tag_map: Dict[str, List[str]] = defaultdict(list)
     untagged: List[str] = []
 
-    for note_path in sorted(_raiz().rglob("*.md")):
+    for note_path in sorted(raiz().rglob("*.md")):
         if not _is_vault_note(note_path):
             continue
         try:
             content = note_path.read_text(encoding="utf-8", errors="ignore")
         except (PermissionError, OSError):
             continue
-        rel = str(note_path.relative_to(_raiz())).replace("\\", "/")
-        tags = _parse_frontmatter_tags(content)
+        rel = str(note_path.relative_to(raiz())).replace("\\", "/")
+        tags = tags_de_frontmatter(content)
         if tags:
             for tag in tags:
                 tag_map[tag].append(rel)
@@ -567,8 +567,8 @@ def vault_tags_rebuild(dry_run: bool = False) -> Dict[str, Any]:
     tag_index_content = _generate_tag_index_md(tag_map, untagged)
 
     if not dry_run:
-        _raiz().joinpath("00_System").mkdir(parents=True, exist_ok=True)
-        _raiz().joinpath("99_Index").mkdir(parents=True, exist_ok=True)
+        raiz().joinpath("00_System").mkdir(parents=True, exist_ok=True)
+        raiz().joinpath("99_Index").mkdir(parents=True, exist_ok=True)
         # Lock the paired writes so concurrent rebuilds cannot interleave and leave
         # the registry (JSON) and the human index (MD) describing different states.
         with file_lock(_tag_registry()):
@@ -581,8 +581,8 @@ def vault_tags_rebuild(dry_run: bool = False) -> Dict[str, Any]:
         "total_tagged_notes": etiquetadas,
         "total_tag_uses": usos,
         "total_untagged_notes": len(untagged),
-        "tag_registry": str(_tag_registry().relative_to(_raiz())).replace("\\", "/"),
-        "tag_index": str(_tag_index_md().relative_to(_raiz())).replace("\\", "/"),
+        "tag_registry": str(_tag_registry().relative_to(raiz())).replace("\\", "/"),
+        "tag_index": str(_tag_index_md().relative_to(raiz())).replace("\\", "/"),
         "dry_run": dry_run,
     }
 
@@ -676,14 +676,14 @@ def vault_tags_audit() -> Dict[str, Any]:
 
 
 def vault_tags_suggest(note_path_str: str) -> Dict[str, Any]:
-    note_path = _raiz() / Path(note_path_str)
+    note_path = raiz() / Path(note_path_str)
     try:
         content = note_path.read_text(encoding="utf-8", errors="ignore")
     except (FileNotFoundError, PermissionError) as e:
         return emit_error("vault_tags", "FILE_READ_ERROR",
                           f"No se pudo leer el registro de tags: {e}", exception=e)
 
-    existing_tags = set(_parse_frontmatter_tags(content))
+    existing_tags = set(tags_de_frontmatter(content))
     title = _parse_frontmatter_title(content)
 
     if not _tag_registry().exists():
@@ -760,7 +760,7 @@ def vault_tags_rename(
     updated_notes: List[str] = []
     skipped: List[str] = []
 
-    for note_path in _raiz().rglob("*.md"):
+    for note_path in raiz().rglob("*.md"):
         if not _is_vault_note(note_path):
             continue
         try:
@@ -769,7 +769,7 @@ def vault_tags_rename(
             skipped.append(str(note_path))
             continue
 
-        tags = _parse_frontmatter_tags(content)
+        tags = tags_de_frontmatter(content)
         if old_tag not in tags:
             continue
 
@@ -786,7 +786,7 @@ def vault_tags_rename(
             flags=re.MULTILINE,
         )
         if new_content != content:
-            rel = str(note_path.relative_to(_raiz())).replace("\\", "/")
+            rel = str(note_path.relative_to(raiz())).replace("\\", "/")
             if not dry_run:
                 atomic_write_text(note_path, new_content)
             updated_notes.append(rel)

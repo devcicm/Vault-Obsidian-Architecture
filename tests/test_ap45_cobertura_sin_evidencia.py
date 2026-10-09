@@ -158,7 +158,7 @@ def test_nada_dentro_de_una_instantanea_se_reporta(tmp_path):
     ],
 )
 def test_cuerpos_que_no_afirman_nada(cuerpo):
-    assert vault_norms._cuerpo_sin_marcadores(cuerpo) == ""
+    assert vault_norms.cuerpo_sin_marcadores(cuerpo) == ""
 
 
 def test_una_frase_que_empieza_por_un_marcador_sigue_siendo_contenido():
@@ -175,8 +175,8 @@ def test_una_frase_que_empieza_por_un_marcador_sigue_siendo_contenido():
     en énfasis de principio a fin.
     """
     frase = "Pendiente de revisar el retry, pero el flujo ya está descrito arriba."
-    assert vault_norms._cuerpo_sin_marcadores(frase) == frase
-    assert vault_norms._cuerpo_sin_marcadores("_Pendiente. Leer el README._") == ""
+    assert vault_norms.cuerpo_sin_marcadores(frase) == frase
+    assert vault_norms.cuerpo_sin_marcadores("_Pendiente. Leer el README._") == ""
 
 
 @pytest.mark.parametrize(
@@ -189,4 +189,4 @@ def test_una_frase_que_empieza_por_un_marcador_sigue_siendo_contenido():
     ],
 )
 def test_cuerpos_que_si_afirman_algo(cuerpo):
-    assert vault_norms._cuerpo_sin_marcadores(cuerpo) != ""
+    assert vault_norms.cuerpo_sin_marcadores(cuerpo) != ""

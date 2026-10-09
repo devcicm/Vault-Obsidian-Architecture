@@ -177,13 +177,13 @@ def test_no_se_escriben_notas_sin_evidencia(vault):
     for nota in (v).rglob("*.md"):
         cuerpo = nota.read_text(encoding="utf-8").split("---", 2)[-1]
         import vault_lib
-        from vault_norms import _cuerpo_sin_marcadores
+        from vault_norms import cuerpo_sin_marcadores
 
         if nota.parent.name in ("18_Bugs", "19_Audits", "20_Quarantine"):
             continue
         if "template" in nota.read_text(encoding="utf-8")[:400] or nota.stem == "index":
             continue
-        assert vault_lib.extract_wikilinks(cuerpo) or _cuerpo_sin_marcadores(cuerpo), (
+        assert vault_lib.extract_wikilinks(cuerpo) or cuerpo_sin_marcadores(cuerpo), (
             f"{nota.name} no afirma nada ni enlaza con nada"
         )
     assert "skipped_no_evidence" in salida
