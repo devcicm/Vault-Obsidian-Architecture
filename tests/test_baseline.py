@@ -106,6 +106,28 @@ def test_se_escribe_con_lf_aunque_el_sistema_sea_windows(tmp_path):
     assert b"\r\n" not in p.read_bytes()
 
 
+@pytest.mark.parametrize("sangria", [1, 2, 4])
+def test_recongelar_conserva_la_sangria_del_fichero(tmp_path, sangria):
+    """Diez de las catorce baselines van con sangría 2 y `escribir` las
+    reescribía con 1: un `--freeze` de una sola firma sacaba el fichero entero
+    en el diff, que es el ruido que el LF de arriba existe para quitar.
+    Medido al congelar `system_writes` en `arch-baseline.json` (820bab7)."""
+    p = tmp_path / "b.json"
+    previo = {"note": "d", "sitios": ["a"], "otra": {"x": [1, 2]}}
+    p.write_text(json.dumps(previo, ensure_ascii=False, indent=sangria) + "\n",
+                 encoding="utf-8", newline="\n")
+    B.escribir(p, "sitios", "AP-XX", "d", ["a", "b"], campo_descripcion="note")
+    esperado = dict(previo, sitios=["a", "b"])
+    assert p.read_text(encoding="utf-8") == json.dumps(
+        esperado, ensure_ascii=False, indent=sangria) + "\n"
+
+
+def test_una_baseline_nueva_se_escribe_con_la_sangria_de_siempre(tmp_path):
+    p = tmp_path / "nueva.json"
+    B.escribir(p, "sitios", "AP-XX", "d", ["a"])
+    assert p.read_text(encoding="utf-8").startswith('{\n "')
+
+
 # ── La negativa a crecer ─────────────────────────────────────────────────────
 
 def test_la_negativa_lista_siempre_los_nuevos():

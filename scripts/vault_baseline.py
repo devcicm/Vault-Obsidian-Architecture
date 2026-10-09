@@ -208,9 +208,30 @@ def escribir(path: Path, clave: str, norma: str, descripcion: str,
     # `newline="\n"` explícito: en Windows el default traduce a CRLF y la
     # baseline saldría entera en el diff cada vez que se recongela, escondiendo
     # el único dato que importa —qué firma entró o salió— dentro del ruido.
-    path.write_text(json.dumps(salida, ensure_ascii=False, indent=1) + "\n",
+    # Por lo mismo, la sangría es la que el fichero ya tenía.
+    path.write_text(json.dumps(salida, ensure_ascii=False, indent=_sangria_de(path)) + "\n",
                     encoding="utf-8", newline="\n")
     return len(elementos)
+
+
+#: La sangría de una baseline que aún no existe.
+SANGRIA_POR_DEFECTO = 1
+
+
+def _sangria_de(path: Path) -> int:
+    """La sangría con la que está escrito `path`, o la de siempre si no existe.
+
+    Hasta 2026-10-09 se reescribía todo con 1, y diez de las catorce baselines del
+    repo van con 2: congelar una sola firma sacaba el fichero entero en el
+    diff. Se mide en la primera línea indentada, que en un `json.dumps` es
+    siempre la del primer nivel.
+    """
+    try:
+        texto = path.read_text(encoding="utf-8")
+    except OSError:
+        return SANGRIA_POR_DEFECTO
+    m = re.search(r"\n( +)\S", texto)
+    return len(m.group(1)) if m else SANGRIA_POR_DEFECTO
 
 
 # ── El contrato de `objetivo` ────────────────────────────────────────────────
