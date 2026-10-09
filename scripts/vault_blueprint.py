@@ -191,7 +191,9 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "(En v41.3 AP-08 y AP-01 la encontraron en `files:`, que la nota "
             "declara. AP-04 no: su señal decidible es la misma que la de AP-01 "
             "y el discriminador —la intención— no está en ningún campo; el "
-            "motivo queda en su `cobertura_descubierta`.)"
+            "motivo queda en su `cobertura_descubierta`. El 2026-10-09 se midió "
+            "la última hipótesis, la historia del `status` en git, y dio señal "
+            "nula en /ans; la cifra vive en esa misma `cobertura_descubierta`.)"
         ),
     },
     {

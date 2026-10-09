@@ -205,7 +205,13 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "como AP-01 en `codigo_inexistente`, y lo que separa las dos normas "
             "es la intención (planeada frente a inventada), que no está escrita "
             "en ningún campo. Nombrarla AP-04 también sería contar el mismo "
-            "hallazgo dos veces con un criterio adivinado."
+            "hallazgo dos veces con un criterio adivinado. La hipótesis de que "
+            "la intención quedara escrita en la **historia** del `status` —una "
+            "nota entregada que en git tuvo antes un estado planificado— se "
+            "midió el 2026-10-09 contra la copia de /ans, la única con git, "
+            "normalizando con `normalize_status`: 12 notas entregadas, las 12 "
+            "con historia, ninguna con un estado previo de la clase planificada. "
+            "Señal nula: queda descubierta por eso, no por no haberla probado."
         ),
         "introduced_version": "v19",
     },
