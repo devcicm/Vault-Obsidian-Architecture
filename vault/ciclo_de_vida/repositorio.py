@@ -76,6 +76,12 @@ class RepositorioCicloDeVida:
 
         return RepositorioIndices(self._ctx).indice_busqueda
 
+    def sembrar_registro_etiquetas(self, datos: dict) -> bool:
+        """La semilla de `tag-registry.json` la escribe Índices, su dueño."""
+        from ..indices.repositorio import RepositorioIndices
+
+        return RepositorioIndices(self._ctx).sembrar_registro_etiquetas(datos)
+
     # ── Lectura tolerante ────────────────────────────────────────────────────
 
     def relativa(self, ruta: Path) -> str:

@@ -58,7 +58,6 @@
     "no_es_precedente": "Solo vale para deuda preexistente que un ensanche de alcance hace visible por primera vez, y con el sitio nombrado uno a uno. Un cruce escrito después de v40.30 se arregla publicando el puerto."
   },
   "system_writes": [
-    ".tool-tokens.json <- vault_errors_trace",
-    "tag-registry.json <- vault_init"
+    ".tool-tokens.json <- vault_errors_trace"
   ]
 }

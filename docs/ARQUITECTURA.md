@@ -167,7 +167,7 @@ Fronteras que hoy cruza (12), deuda declarada:
 | `vault_sanacion` | `vault/gobernanza` | Gobernanza |
 | `vault_standard_upgrade` | `vault_mcp_catalog` | Meta-toolkit |
 | `vault_standard_upgrade` | `vault_section_index` | Índices |
-| `vault/ciclo_de_vida/repositorio.py` | `vault/indices` | Índices |
+| `vault/ciclo_de_vida/repositorio.py` | `vault/indices` (2 imports) | Índices |
 
 ## Durabilidad
 

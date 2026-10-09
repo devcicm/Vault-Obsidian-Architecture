@@ -48,7 +48,8 @@ def test_la_escritura_por_el_puerto_cuenta_y_apunta_a_su_primer_argumento():
         "move-log.json"]
 
 
-@pytest.mark.parametrize("subruta", ["move-log.json", ".change-log.json", "propagation-queue.json"])
+@pytest.mark.parametrize("subruta", ["move-log.json", ".change-log.json",
+                                     "propagation-queue.json", "tag-registry.json"])
 def test_la_subruta_la_escribe_solo_su_dueno(subruta):
     dueno = vault_arch.duenos_de_sistema()[subruta]
     assert _escritores(subruta) == {dueno}
@@ -101,3 +102,19 @@ def test_vault_audit_solo_lee_la_cola_de_propagacion():
     assert "vault_audit" not in {
         e["module"] for e in vault_arch.escrituras_de_sistema()
         if e["path"] == "propagation-queue.json"}
+
+
+def test_el_registro_de_etiquetas_se_siembra_por_indices_sin_pisarlo(tmp_path):
+    """`vault_init` siembra el registro solo si no existe; la semilla la
+    escribe Índices, su dueño, y nunca pisa el que `vault_tags` ya generó."""
+    from vault.ciclo_de_vida.repositorio import RepositorioCicloDeVida
+    from vault.indices.repositorio import RepositorioIndices
+    from vault.kernel import construir
+
+    ctx = construir(tmp_path)
+    ciclo = RepositorioCicloDeVida(ctx)
+    assert ciclo.sembrar_registro_etiquetas({"version": "v1.0"}) is True
+    ruta = RepositorioIndices(ctx).registro_etiquetas
+    assert json.loads(ruta.read_text(encoding="utf-8")) == {"version": "v1.0"}
+    assert ciclo.sembrar_registro_etiquetas({"version": "otra"}) is False
+    assert json.loads(ruta.read_text(encoding="utf-8")) == {"version": "v1.0"}

@@ -93,6 +93,19 @@ class RepositorioIndices:
     def registro_etiquetas(self) -> Path:
         return self._ctx.ruta(CARPETA_SISTEMA, FICHERO_REGISTRO_ETIQUETAS)
 
+    def sembrar_registro_etiquetas(self, datos: dict) -> bool:
+        """Escribe el registro solo si no existe; True si lo escribió.
+
+        Hasta 2026-10-08 la semilla la escribía `vault_init`, de Ciclo de vida,
+        con la ruta literal. El dueño es Índices —`vault_tags` lo regenera— y
+        Ciclo de vida delega por el par `ciclo_de_vida → indices` del
+        presupuesto (deuda #3, residuo). Nunca pisa el que ya hay.
+        """
+        if self.registro_etiquetas.exists():
+            return False
+        self._ctx.escritor.escribir_json(self.registro_etiquetas, datos)
+        return True
+
     @property
     def bitacora_etiquetas(self) -> Path:
         return self.dir_vocabulario / FICHERO_BITACORA_ETIQUETAS

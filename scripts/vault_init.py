@@ -35,7 +35,7 @@ from typing import Any, Dict
 
 from vault_errors import emit_error, wrap_main
 from vault_standard_upgrade import version_conocida
-from vault_io import atomic_write_json, atomic_write_text, write_report
+from vault_io import atomic_write_text, write_report
 from vault_lib import utcnow
 from vault_version import CURRENT_VERSION
 from vault_registry import (
@@ -357,23 +357,21 @@ def vault_init(
             )
 
     # Step 4.5: write tag-registry.json with canonical tags
-    tag_registry_path = _raiz() / "00_System" / "tag-registry.json"
-    if not tag_registry_path.exists():
-        tag_registry = {
-            "version": "v1.0",
-            "generated_at": utcnow(),
-            "canonical_tags": {
-                "project": ["ans", "builderx", "homelab"],
-                "section": ["flow", "pattern", "runbook", "code", "diagram", "infrastructure", "knowledge", "decision", "test", "requirement", "alert", "metric", "slo", "incident"],
-                "domain": ["mcp", "toon", "ansible", "ssh", "proxmox", "docker", "deploy", "pipeline", "ci-cd", "mikrotik", "runner", "proxy", "vault"],
-                "type": ["dataflow", "lifecycle", "workflow", "pipeline-flow", "architecture", "concept", "api", "config", "guide", "reference"],
-                "quality": ["verified", "stub", "draft", "informacion-decrepita", "deprecated"],
-                "migration": ["migrated", "direct", "indirect", "excluded"],
-                "agent": ["deepseek", "mavis", "opencode", "system", "vault_init"],
-            },
-        }
-        tag_registry_path.parent.mkdir(parents=True, exist_ok=True)
-        atomic_write_json(tag_registry_path, tag_registry)
+    # La escribe Índices, su dueño, y solo si no existe (deuda #3, residuo).
+    tag_registry = {
+        "version": "v1.0",
+        "generated_at": utcnow(),
+        "canonical_tags": {
+            "project": ["ans", "builderx", "homelab"],
+            "section": ["flow", "pattern", "runbook", "code", "diagram", "infrastructure", "knowledge", "decision", "test", "requirement", "alert", "metric", "slo", "incident"],
+            "domain": ["mcp", "toon", "ansible", "ssh", "proxmox", "docker", "deploy", "pipeline", "ci-cd", "mikrotik", "runner", "proxy", "vault"],
+            "type": ["dataflow", "lifecycle", "workflow", "pipeline-flow", "architecture", "concept", "api", "config", "guide", "reference"],
+            "quality": ["verified", "stub", "draft", "informacion-decrepita", "deprecated"],
+            "migration": ["migrated", "direct", "indirect", "excluded"],
+            "agent": ["deepseek", "mavis", "opencode", "system", "vault_init"],
+        },
+    }
+    if _repo().sembrar_registro_etiquetas(tag_registry):
         result["steps"].append({"step": "tag_registry", "output": "tag-registry.json created"})
 
     # Step 4.6: write ontology.json into the vault (copy from scripts/vault_ontology.json)
