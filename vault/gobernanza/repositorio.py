@@ -98,6 +98,19 @@ class RepositorioGobernanza:
     def bitacora_cambios(self) -> Path:
         return self._ctx.ruta(CARPETA_SISTEMA, FICHERO_BITACORA_CAMBIOS)
 
+    def escribir_bitacora_cambios(self, entradas: list) -> None:
+        """Único escritor de `.change-log.json`: el dueño (deuda #3, residuo).
+
+        Hasta 2026-10-08 lo escribía `vault_change_log`, de Autoría, con
+        `atomic_write_text`. Autoría delega aquí por el par `autoria →
+        gobernanza`, permanente en el presupuesto; los lectores
+        (`vault_fundamentals`, `vault_quality_check`) no cambian.
+        """
+        self._ctx.escritor.escribir(
+            self.bitacora_cambios,
+            json.dumps(entradas, indent=2, ensure_ascii=False),
+        )
+
     @property
     def fundamentos_json(self) -> Path:
         return self._ctx.ruta(CARPETA_SISTEMA, FICHERO_FUNDAMENTOS_JSON)

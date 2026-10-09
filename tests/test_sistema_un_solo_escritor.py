@@ -48,7 +48,7 @@ def test_la_escritura_por_el_puerto_cuenta_y_apunta_a_su_primer_argumento():
         "move-log.json"]
 
 
-@pytest.mark.parametrize("subruta", ["move-log.json"])
+@pytest.mark.parametrize("subruta", ["move-log.json", ".change-log.json"])
 def test_la_subruta_la_escribe_solo_su_dueno(subruta):
     dueno = vault_arch.duenos_de_sistema()[subruta]
     assert _escritores(subruta) == {dueno}
@@ -68,4 +68,15 @@ def test_la_bitacora_de_movimientos_se_anota_por_el_dueno(tmp_path):
     assert json.loads(texto) == [{"from": "a.md", "to": "b.md"},
                                  {"from": "b.md", "to": "c.md"}]
     # El formato es contrato con el disco del usuario: el de siempre.
+    assert texto == json.dumps(json.loads(texto), indent=2, ensure_ascii=False)
+
+
+def test_la_bitacora_de_cambios_la_escribe_gobernanza(tmp_path):
+    from vault.gobernanza.repositorio import RepositorioGobernanza
+    from vault.kernel import construir
+
+    repo = RepositorioGobernanza(construir(tmp_path))
+    repo.escribir_bitacora_cambios([{"action": "create", "path": "a.md"}])
+    texto = repo.bitacora_cambios.read_text(encoding="utf-8")
+    assert json.loads(texto) == [{"action": "create", "path": "a.md"}]
     assert texto == json.dumps(json.loads(texto), indent=2, ensure_ascii=False)

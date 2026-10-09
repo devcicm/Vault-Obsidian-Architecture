@@ -114,9 +114,7 @@ def _read_json_log() -> List[Dict[str, Any]]:
 
 
 def _write_json_log(entries: List[Dict[str, Any]]) -> None:
-    _system_dir().mkdir(parents=True, exist_ok=True)
-
-    atomic_write_text(_log_json(), json.dumps(entries, indent=2, ensure_ascii=False))
+    RepositorioGobernanza(construir()).escribir_bitacora_cambios(entries)
 
 
 def _append_md_log(entry: Dict[str, Any]) -> None:
