@@ -647,8 +647,14 @@ def generate_frontmatter(
     if tags:
         fm.set("tags", tags)
 
-    # v37: type auto-deduced from folder if not provided in meta
-    if "type" not in meta and folder:
+    # v37: type auto-deduced from folder if not provided in meta.
+    # v41.2 (deuda #16): el `type` de `meta` sale en este mismo hueco. Antes
+    # caía en el bucle genérico del final, detrás de `agent`, y el mismo campo
+    # tenía dos posiciones según por dónde llegara.
+    if "type" in meta:
+        valor = meta.pop("type")
+        fm.set("type", valor, texto=isinstance(valor, str))
+    elif folder:
         deduced = tipo_por_carpeta(folder, raiz)
         if deduced:
             fm.set("type", deduced)
@@ -678,6 +684,17 @@ def generate_frontmatter(
         fm.set(campo, str(meta.pop(campo, cia[campo])), texto=True)
 
     fm.set("agent", str(meta.pop("agent", vault_contrato_nota.POR_DEFECTO["agent"])), texto=True)
+
+    # Deuda #16: el resto de campos del contrato que lleguen por `meta`
+    # —`vigente_desde`, `responsable`, `revisado_en`…— salen en el orden de
+    # `vault_contrato_nota.CAMPOS`, antes de lo ajeno al contrato. El orden lo
+    # declara el contrato; aquí no se escribe una lista nueva (AP-57). Lo que
+    # el write path ya emitió arriba conserva su posición de siempre (AP-12):
+    # una nota sin estos campos en `meta` no cambia un byte.
+    for campo in vault_contrato_nota.CAMPOS:
+        if campo in meta:
+            valor = meta.pop(campo)
+            fm.set(campo, valor, texto=isinstance(valor, str))
 
     # AP-56 completo. Hasta v40.16 `yaml_scalar` se aplicaba **solo** al
     # título, y todo lo demás salía por aquí concatenado en un f-string —

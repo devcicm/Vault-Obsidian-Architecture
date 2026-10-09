@@ -274,7 +274,8 @@ def test_la_deuda_hallada_en_la_ronda_de_v41_2_esta_declarada(ident):
     sitio no la publica el plano ni la mira la puerta."""
     d = next((d for d in bp.DEUDA_DECLARADA if d["id"] == ident), None)
     assert d is not None, f"{ident} no está en DEUDA_DECLARADA"
-    assert d["estado"] == "pendiente"
+    # Saldarla no la borra: pasa a `saldada` con la prueba que la sostiene.
+    assert d["estado"] == "pendiente" or d.get("sostenida_por"), d["estado"]
 
 
 # ── Una deuda saldada nombra la prueba que la sostiene ──────────────────────

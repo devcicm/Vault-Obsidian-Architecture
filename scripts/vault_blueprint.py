@@ -482,7 +482,13 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     },
     {
         "id": "meta_decide_el_orden_del_frontmatter",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "v41.2",
+        "sostenida_por": [
+            "tests/test_orden_frontmatter_contrato.py::test_type_por_meta_sale_donde_el_type_deducido",
+            "tests/test_orden_frontmatter_contrato.py::test_los_campos_del_contrato_siguen_a_campos_y_los_ajenos_van_al_final",
+            "tests/test_orden_frontmatter_contrato.py::test_sin_campos_del_contrato_en_meta_la_salida_no_cambia",
+        ],
         "desde": "v41.1",
         "capa": "5",
         "que": (
@@ -496,7 +502,11 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "Ningún consumidor que lea con `yaml.safe_load` depende del orden, "
             "así que no rompe nada. Fijar un orden canónico cambia byte a byte "
             "la salida de toda nota nueva, y ese orden tiene que salir del "
-            "contrato de nota (`vault_contrato_nota`), no de una lista nueva."
+            "contrato de nota (`vault_contrato_nota`), no de una lista nueva. "
+            "Saldada en v41.2 con el orden mínimo que eligió el usuario: el "
+            "`type` de `meta` ocupa el hueco del deducido, el resto de campos de "
+            "`CAMPOS` sale tras `agent` en su orden y lo ajeno al contrato al "
+            "final; una nota sin esos campos en `meta` no cambia un byte."
         ),
     },
 ]
