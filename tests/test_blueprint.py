@@ -338,3 +338,42 @@ def test_la_deuda_de_ap17_no_afirma_lo_que_el_catalogo_desmiente():
              if d["id"] == "ap17_compara_solo_la_forma_del_titulo")
     if "`tools_enforcing` vacío" in d["que"]:
         assert not ap17["tools_enforcing"], "la deuda afirma un hueco que no existe"
+
+
+# ── Una deuda no se salda en una versión ya publicada ───────────────────────
+
+def _primer_commit_del_test(ref: str) -> str:
+    """Fecha del primer commit que escribió el test `fichero::nombre`."""
+    import subprocess
+
+    fichero, _, nombre = ref.partition("::")
+    fechas = subprocess.run(
+        ["git", "log", "--reverse", "--format=%ad", "--date=short",
+         "-S", f"def {nombre.split('[')[0]}(", "--", fichero],
+        cwd=REPO_ROOT, capture_output=True, text=True, encoding="utf-8").stdout.split()
+    if not fechas:
+        pytest.skip(f"sin historia git para {ref}")
+    return fechas[0]
+
+
+def test_la_version_que_salda_una_deuda_ya_contenia_su_test():
+    """Medido el 2026-10-09: seis entradas cerradas el 2026-10-08 decían
+    `saldada_en: v41.2`, y v41.2 se publicó el 2026-10-07. El trabajo sin
+    publicar se nombra con la versión siguiente —«v41.3» en el manifiesto y en
+    el catálogo—, así que el plano atribuía a v41.2 lo que v41.2 no contenía.
+
+    El criterio no es la fecha en que el registro anota el cierre: v40.23
+    arregló el handler de la CLI y el registro no lo reconoció hasta octubre,
+    y eso es legítimo. Es que la versión nombrada contenga ya la prueba que la
+    sostiene. La fecha de la versión sale del changelog y la del test, de git."""
+    import vault_changelog_check as chg
+
+    publicadas = {e["version"]: e["fecha"] for e in chg.entradas()}
+    for d in bp.DEUDA_DECLARADA:
+        version = d.get("saldada_en")
+        if d["estado"] != "saldada" or version not in publicadas:
+            continue
+        ultimo = max(_primer_commit_del_test(r) for r in d["sostenida_por"])
+        assert ultimo <= publicadas[version], (
+            f"{d['id']}: dice {version} (publicada el {publicadas[version]}) y "
+            f"su test es del {ultimo}")

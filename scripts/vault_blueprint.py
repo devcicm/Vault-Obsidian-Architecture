@@ -131,7 +131,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "alcance de v40.9 y congelado en `blame-baseline.json`. v40.23 "
             "(77981b5) lo cerró con `_leer_spec`, que distingue `ausente`, "
             "`ilegible` y `legible`, y `spec_status` lo expone a `cli doctor`; "
-            "el registro siguió diciendo `pendiente` hasta que se midió en v41.2."
+            "el registro siguió diciendo `pendiente` hasta que se midió en v41.3."
         ),
         "por_que_no_ahora": (
             "Distinguir «no hay spec» de «la spec no se pudo leer» cambia lo que "
@@ -185,7 +185,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     {
         "id": "fronteras_de_escritura_por_contexto",
         "estado": "saldada",
-        "saldada_en": "v41.2",
+        "saldada_en": "v41.3",
         "sostenida_por": [
             "tests/test_arch_escrituras_de_sistema.py::test_un_contexto_que_escribe_la_subruta_de_otro_es_un_cruce",
             "tests/test_arch_escrituras_de_sistema.py::test_la_puerta_frena_un_cruce_nuevo_y_no_los_congelados",
@@ -241,7 +241,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     {
         "id": "parsers_de_frontmatter_divergentes",
         "estado": "saldada",
-        "saldada_en": "v41.2",
+        "saldada_en": "v41.3",
         "sostenida_por": [
             "tests/test_frontmatter_lector_unico.py::test_ap57_hoy_nadie_lee_el_frontmatter_a_mano",
             "tests/test_vault_write_slug_canonico.py::test_la_nota_nueva_usa_el_slug_canonico",
@@ -251,7 +251,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "desde": "v40.9",
         "capa": "7",
         "que": (
-            "8 parsers de frontmatter distintos (esa parte, saldada en v41.2: al "
+            "8 parsers de frontmatter distintos (esa parte, saldada en v41.3: al "
             "medirla eran once lectores por líneas en diez módulos, y todos "
             "delegan en `vault/kernel/frontmatter_parsing.cargar_bloque_tolerante`; "
             "`vault_criterios.medir_lecturas` hace fallar la puerta AP-57 ante uno "
@@ -259,7 +259,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "`vault_lib` aunque 20 módulos sí (esa parte, saldada en v40.35: delega "
             "en `slugify_strict` y el slug viejo queda solo para encontrar notas "
             "ya escritas); 6 aliases de v40.8 con el nombre viejo "
-            "aún en uso (esa parte, saldada en v41.2: el repo lee solo los "
+            "aún en uso (esa parte, saldada en v41.3: el repo lee solo los "
             "nombres canónicos y los viejos siguen definidos con su "
             "`superseded_by:`, sin derogarse); `--agent default=\"claude\"` en 6 tools frente al AP-16 que "
             "`vault_bug_save` exige."
@@ -280,7 +280,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     {
         "id": "catch_vacios_en_el_servidor_mjs",
         "estado": "saldada",
-        "saldada_en": "v41.2",
+        "saldada_en": "v41.3",
         "sostenida_por": [
             "tests/test_ap51_culpar_al_dato.py::test_ap51_el_detector_js_distingue_silencio_de_motivo",
             "tests/test_ap51_culpar_al_dato.py::test_ap51_la_frontera_js_no_tiene_deuda_y_bloquea_la_puerta",
@@ -291,7 +291,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "capa": "7",
         "que": (
             "11 `catch (_) {}` en `mcp/nodejs/vault-mcp-server.mjs` (AP-51 en JS). "
-            "v41.2 los midió uno a uno: los que convertían un fallo en un vacío "
+            "v41.3 los midió uno a uno: los que convertían un fallo en un vacío "
             "—traza, sello de versión, backup, recuento del registro, mapa de "
             "enlaces— ahora lo exponen; los legítimos —caer a un error declarado, "
             "probar el siguiente candidato— lo dicen con `AP-51:`. "
@@ -461,7 +461,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     {
         "id": "cn01_cn04_solo_se_miden_al_escribir",
         "estado": "saldada",
-        "saldada_en": "v41.2",
+        "saldada_en": "v41.3",
         "sostenida_por": [
             "tests/test_cn01_cn04_audit_informativo.py::test_cn01_cn04_se_publican_sin_peso",
             "tests/test_cn01_cn04_audit_informativo.py::test_cn01_cn04_no_mueven_la_salud",
@@ -478,7 +478,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "dice de CN-01: «ninguna otra tool audita después los nombres ya "
             "escritos». El único `\"norm\": \"CN-01\"` de `vault_audit` es "
             "sobre el scaffold, no sobre los nombres de las notas. (La medida, "
-            "hecha en v41.2: `vault_audit._detect_convenciones_cn01_cn04` las "
+            "hecha en v41.3: `vault_audit._detect_convenciones_cn01_cn04` las "
             "publica en `issues.cn01NotKebab`/`cn04NoTitle`, sin peso, con el "
             "criterio de `slugify_strict` y `abre_con_h1`. Regla 7, 2026-10-08, "
             "sobre copias: /ans 94 y 253 de 527 notas, /vcloud 1 y 0 de 108. De "
@@ -513,7 +513,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "títulos parecidos de cosas distintas solo se separan si "
             "`_distintos_por_convencion` reconoce la convención. La atribución "
             "que esta entrada también reclamaba ya estaba bien y se corrigió "
-            "aquí en v41.2: el catálogo declara `tools_detecting: "
+            "aquí en v41.3: el catálogo declara `tools_detecting: "
             "['vault_audit']`, quien mide, y `tools_enforcing: "
             "['vault_supersede']`, quien sana. Lo pendiente es solo la medida."
         ),
@@ -527,7 +527,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     {
         "id": "churn_del_kernel_no_ve_el_commit_en_curso",
         "estado": "saldada",
-        "saldada_en": "v41.2",
+        "saldada_en": "v41.3",
         "sostenida_por": [
             "tests/test_kernel_aviso_del_indice.py::test_el_commit_que_cruza_el_umbral_se_avisa_antes_de_hacerse",
             "tests/test_kernel_aviso_del_indice.py::test_la_cifra_canonica_no_cuenta_el_indice",
@@ -558,7 +558,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     {
         "id": "meta_decide_el_orden_del_frontmatter",
         "estado": "saldada",
-        "saldada_en": "v41.2",
+        "saldada_en": "v41.3",
         "sostenida_por": [
             "tests/test_orden_frontmatter_contrato.py::test_type_por_meta_sale_donde_el_type_deducido",
             "tests/test_orden_frontmatter_contrato.py::test_los_campos_del_contrato_siguen_a_campos_y_los_ajenos_van_al_final",
@@ -578,7 +578,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "así que no rompe nada. Fijar un orden canónico cambia byte a byte "
             "la salida de toda nota nueva, y ese orden tiene que salir del "
             "contrato de nota (`vault_contrato_nota`), no de una lista nueva. "
-            "Saldada en v41.2 con el orden mínimo que eligió el usuario: el "
+            "Saldada en v41.3 con el orden mínimo que eligió el usuario: el "
             "`type` de `meta` ocupa el hueco del deducido, el resto de campos de "
             "`CAMPOS` sale tras `agent` en su orden y lo ajeno al contrato al "
             "final; una nota sin esos campos en `meta` no cambia un byte."
