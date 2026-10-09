@@ -975,18 +975,37 @@ def tiene_hogar(arbol: ast.AST, contexto: str) -> bool:
     return False
 
 
+FUERA_DE_LA_WHEEL = REPO_ROOT / "empaquetado" / "fuera-de-la-wheel.json"
+
+
+def _modulos_fuera_de_la_wheel() -> list[str]:
+    """La lista derivada; sin ella (repo parcial) no se excluye nada, y la
+    cifra sale más alta, nunca más baja que la real."""
+    try:
+        return json.loads(FUERA_DE_LA_WHEEL.read_text(encoding="utf-8")).get("modulos", [])
+    except FileNotFoundError:
+        return []
+
+
 def modulos_sin_hogar() -> list[str]:
     """Módulos de `scripts/` que no importan nada de `vault/<su contexto>/`.
 
     Es la cifra de la deuda #12, derivada en vez de escrita. Un contexto sin
     paquete en `vault/` no puede dar hogar a nadie y no cuenta: esos módulos
     no tienen adónde migrar todavía, y contarlos sería medir otra cosa.
+
+    Tampoco cuenta lo que la wheel no lleva (`empaquetado/fuera-de-la-wheel.json`,
+    derivado de la capacidad «gobernanza del estándar»): el puente mapea
+    `scripts/` a `vault_toolkit/_impl/`, y un módulo que no viaja no lo cruza.
+    Se lee la pasarela —el JSON que usa `empaquetado/construir.py`— y no
+    `vault_servicio`, que es quien la deriva y la vigila.
     """
     paquetes = {d.name for d in DOMINIO_DIR.iterdir() if d.is_dir()} if DOMINIO_DIR.exists() else set()
+    fuera = set(_modulos_fuera_de_la_wheel())
     sin_hogar = []
     for modulo in _modulos_en_disco():
         ctx = contexto_de(modulo)
-        if ctx not in paquetes:
+        if ctx not in paquetes or modulo in fuera:
             continue
         if not tiene_hogar(_ast_de(SCRIPTS_DIR / f"{modulo}.py"), ctx):
             sin_hogar.append(modulo)

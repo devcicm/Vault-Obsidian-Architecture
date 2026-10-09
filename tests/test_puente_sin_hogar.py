@@ -113,3 +113,15 @@ def test_el_ledger_vive_en_el_kernel_y_scripts_lo_reexporta():
         assert getattr(vault_ledger, nombre) is getattr(ledger, nombre), nombre
     ledger.write_ledger_reset()
     assert vault_io.write_report()["written"] == 0
+
+
+def test_lo_que_no_viaja_en_la_wheel_no_cuenta_como_puente():
+    """El puente de ADR-0002 existe para la wheel: mapea `scripts/` a
+    `vault_toolkit/_impl/`. Un módulo que la wheel excluye
+    (`empaquetado/fuera-de-la-wheel.json`, derivado de la capacidad
+    «gobernanza del estándar») no cruza ese puente, y contarlo inflaba la
+    deuda #12 con módulos que no tienen que migrar para que el puente caiga."""
+    fuera = set(json.loads((ROOT / "empaquetado" / "fuera-de-la-wheel.json")
+                           .read_text(encoding="utf-8"))["modulos"])
+    assert fuera, "la lista de exclusión está vacía: el test no probaría nada"
+    assert not fuera & set(vault_arch.modulos_sin_hogar())

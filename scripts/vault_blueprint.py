@@ -554,7 +554,12 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "Segunda, el mismo 2026-10-09: `vault_ledger`, el contador "
             "thread-local de AP-37, vive en `vault/kernel/ledger.py` y la "
             "fachada reexporta el mismo `threading.local`, también sus nombres "
-            "privados, porque `vault_io` los reexporta a su vez.)"
+            "privados, porque `vault_io` los reexporta a su vez. Medida "
+            "corregida el mismo día: la cifra contaba también los módulos que "
+            "la wheel no lleva —`empaquetado/fuera-de-la-wheel.json`, la "
+            "gobernanza del estándar—, que no cruzan el puente porque no "
+            "viajan; excluidos, la baseline perdió 22 entradas sin ganar "
+            "ninguna.)"
         ),
         "por_que_no_ahora": (
             "Transitorio hasta migrar scripts → vault/<contexto>, ADR-0002. "
