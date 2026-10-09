@@ -3,5 +3,12 @@
  "sitios": [
   "vault_standard_upgrade->vault_mcp_catalog",
   "vault_voice->vault_mcp_catalog"
- ]
+ ],
+ "objetivo": {
+  "tamano": 0,
+  "fecha_limite": "2027-03-31",
+  "cadencia_dias": 90,
+  "dueno": "meta_toolkit — vault_recursos",
+  "por_que": "Propuesta medida aprobada por el usuario el 2026-10-09. Medido: 2; estable desde que nació."
+ }
 }

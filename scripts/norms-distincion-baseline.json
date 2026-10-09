@@ -1,5 +1,12 @@
 {
   "norm": "AP-60",
   "description": "Normas de NORM_CATALOG que no declaran de qué se distinguen ni por qué no aplica. Solo puede encoger: se salda escribiendo la distinción, no ampliando esta lista.",
-  "normas": []
+  "normas": [],
+  "objetivo": {
+    "tamano": 0,
+    "fecha_limite": "2027-06-30",
+    "cadencia_dias": 180,
+    "dueno": "meta_toolkit — vault_norms_distincion",
+    "por_que": "Propuesta medida aprobada por el usuario el 2026-10-09. Medido: 0 desde 2026-08-14; el objetivo es que siga vacía."
+  }
 }

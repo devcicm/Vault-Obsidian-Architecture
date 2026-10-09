@@ -376,7 +376,13 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     },
     {
         "id": "baselines_sin_objetivo_asignado",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "v41.3",
+        "sostenida_por": [
+            "tests/test_baseline.py::test_ninguna_baseline_del_repo_queda_sin_compromiso",
+            "tests/test_baseline.py::test_dos_baselines_en_un_fichero_tienen_cada_una_su_objetivo",
+            "tests/test_baseline.py::test_una_baseline_que_no_es_deuda_lo_declara_con_motivo",
+        ],
         "desde": "v40.24",
         "capa": "7",
         "que": (
@@ -385,7 +391,13 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "no es una decisión, es lo que la propia baseline ya decía: nació "
             "vacía y el objetivo es que siga vacía. Las demás publican `— sin "
             "objetivo` en la capa 6, que es el estado honesto y no se confunde "
-            "con `cumple`."
+            "con `cumple`. (Saldada en v41.3, 2026-10-09: el usuario aprobó una "
+            "propuesta medida —tamaño actual e historia en git de cada baseline— "
+            "y cada una declara tamaño, fecha, cadencia y dueño; la capa 6 los "
+            "publica. Para escribirlos hubo que ampliar el contrato: "
+            "`objetivos_por_clave` cuando un fichero congela dos baselines, y "
+            "`sin_objetivo_porque` para el contrato de campos, que crece por "
+            "diseño y se publica como `no_aplica` en vez de con una meta falsa.)"
         ),
         "por_que_no_ahora": (
             "A cuánto debe encoger cada baseline y para cuándo es un "

@@ -10,5 +10,12 @@
     "PAT-3",
     "PAT-4",
     "PAT-6"
-  ]
+  ],
+  "objetivo": {
+    "tamano": 4,
+    "fecha_limite": "2027-03-31",
+    "cadencia_dias": 90,
+    "dueno": "meta_toolkit — vault_blueprint",
+    "por_que": "Propuesta medida aprobada por el usuario el 2026-10-09. Medido: 8 normas sin puerta ni test; bajó de 16 a 8."
+  }
 }

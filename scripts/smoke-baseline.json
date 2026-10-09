@@ -1,5 +1,12 @@
 {
   "norm": "AP-42",
   "note": "Tools cuyo ejemplo documentado no emite un JSON con `ok`. Esta lista solo puede encoger.",
-  "failing": []
+  "failing": [],
+  "objetivo": {
+    "tamano": 0,
+    "fecha_limite": "2027-06-30",
+    "cadencia_dias": 180,
+    "dueno": "meta_toolkit — vault_smoke",
+    "por_que": "Propuesta medida aprobada por el usuario el 2026-10-09. Medido: 0 desde que nació; el objetivo es que siga vacía."
+  }
 }

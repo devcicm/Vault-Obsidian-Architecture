@@ -228,5 +228,12 @@
       "vault_write.py:738",
       "vault_write.py:846"
     ]
+  },
+  "objetivo": {
+    "tamano": 20,
+    "fecha_limite": "2027-03-31",
+    "cadencia_dias": 90,
+    "dueno": "meta_toolkit — vault_blame_audit",
+    "por_que": "Propuesta medida aprobada por el usuario el 2026-10-09. Medido: 33; bajó de 86 a 33."
   }
 }

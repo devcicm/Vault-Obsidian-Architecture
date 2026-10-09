@@ -320,3 +320,19 @@ def test_el_dueno_no_importa_ninguna_tool():
         for linea in cuerpo.splitlines():
             if linea.startswith(("import ", "from ")):
                 assert "vault_" not in linea, f"{hoja}: {linea}"
+
+
+def test_ninguna_baseline_del_repo_queda_sin_compromiso():
+    """Deuda #8: cada baseline declara a cuánto encoge, para cuándo y quién lo
+    revisa, o por qué no aplica. Las cifras las aprobó el usuario el 2026-10-09
+    sobre una propuesta medida; no se derivan de nada y por eso están escritas."""
+    import vault_blueprint as BP
+    sin = []
+    for fichero, clave, norma in BP._BASELINES:
+        ruta = BP.SCRIPTS_DIR / fichero
+        if not ruta.exists():
+            continue
+        e = B.estado_objetivo(ruta, clave, norma)
+        if e["estado"] in ("sin_objetivo", "objetivo_invalido"):
+            sin.append(f"{fichero}:{clave}")
+    assert sin == []

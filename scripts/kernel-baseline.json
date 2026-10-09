@@ -5,5 +5,12 @@
   "kernel_inestable::vault_errors",
   "kernel_inestable::vault_io",
   "kernel_inestable::vault_lib"
- ]
+ ],
+ "objetivo": {
+  "tamano": 2,
+  "fecha_limite": "2027-03-31",
+  "cadencia_dias": 90,
+  "dueno": "meta_toolkit — vault_kernel",
+  "por_que": "Propuesta medida aprobada por el usuario el 2026-10-09. Medido: 4; bajó de 6 a 4."
+ }
 }

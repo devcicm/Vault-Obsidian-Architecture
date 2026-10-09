@@ -6,5 +6,12 @@
   "vault_manifest->vault_spec_memory",
   "vault_section_index->vault_io",
   "vault_spec_memory->vault_manifest"
- ]
+ ],
+ "objetivo": {
+  "tamano": 2,
+  "fecha_limite": "2027-03-31",
+  "cadencia_dias": 90,
+  "dueno": "meta_toolkit — vault_ciclos",
+  "por_que": "Propuesta medida aprobada por el usuario el 2026-10-09. Medido: 5; bajó de 30 a 5."
+ }
 }

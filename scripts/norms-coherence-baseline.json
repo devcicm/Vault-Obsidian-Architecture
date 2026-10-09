@@ -1,5 +1,12 @@
 {
   "norm": "AP-55",
   "description": "Afirmaciones de cobertura de NORM_CATALOG que ninguna línea de código respalda nombrando la norma. Solo puede encoger. Nació con 47 en v40.10 y quedó en cero en v40.11, saldada afirmación a afirmación: reatribuyendo la que se aplicaba en otra tool, nombrando la norma en la función que la cumple, o retirando la cobertura y declarando `cobertura_descubierta` con el motivo escrito. La lista vacía se conserva a propósito: es lo que distingue una deuda saldada de una medida retirada.",
-  "claims": []
+  "claims": [],
+  "objetivo": {
+    "tamano": 0,
+    "fecha_limite": "2027-06-30",
+    "cadencia_dias": 180,
+    "dueno": "meta_toolkit — vault_norms_coherence",
+    "por_que": "Propuesta medida aprobada por el usuario el 2026-10-09. Medido: 0 desde 2026-08-12; el objetivo es que siga vacía."
+  }
 }

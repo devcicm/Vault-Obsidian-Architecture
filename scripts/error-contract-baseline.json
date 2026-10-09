@@ -13,5 +13,12 @@
       "sites",
       "superseded_by"
     ]
+  },
+  "objetivo": {
+    "tamano": 0,
+    "fecha_limite": "2027-06-30",
+    "cadencia_dias": 180,
+    "dueno": "meta_toolkit — vault_error_contract",
+    "por_que": "Propuesta medida aprobada por el usuario el 2026-10-09. Medido: 0 desde 2026-08-15; el objetivo es que siga vacía."
   }
 }

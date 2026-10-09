@@ -127,5 +127,21 @@
     "vault_token_counter",
     "vault_version",
     "vault_vocabulario"
-  ]
+  ],
+  "objetivos_por_clave": {
+    "crossings": {
+      "tamano": 30,
+      "fecha_limite": "2027-03-31",
+      "cadencia_dias": 90,
+      "dueno": "meta_toolkit — vault_arch",
+      "por_que": "Propuesta medida aprobada por el usuario el 2026-10-09. Medido: 37 cruces; subió de 34 a 37 desde septiembre, así que el objetivo frena la subida antes de pedir bajada."
+    },
+    "off_port_crossings": {
+      "tamano": 4,
+      "fecha_limite": "2027-03-31",
+      "cadencia_dias": 90,
+      "dueno": "meta_toolkit — vault_arch",
+      "por_que": "Propuesta medida aprobada por el usuario el 2026-10-09. Medido: 8; bajó de 12 a 8 desde agosto."
+    }
+  }
 }
