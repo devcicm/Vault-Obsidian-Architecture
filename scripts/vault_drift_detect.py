@@ -51,6 +51,8 @@ import hashlib
 
 import json
 
+import os
+
 import re
 
 import subprocess
@@ -71,6 +73,10 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 
 from vault_io import atomic_write_json, atomic_write_text, is_snapshot_path
+
+from vault_registry import section_documentacion
+
+from vault_audit_catalog import es_documentacion_del_estandar
 
 
 TRACK_EXTENSIONS = {
@@ -757,6 +763,59 @@ def _codigo_inexistente(repo: Path, ficheros: List[str]) -> List[str]:
     return ausentes
 
 
+#: Una ruta de código citada entre backticks en el cuerpo: al menos una
+#: carpeta y una extensión de código. Sin carpeta (`pago.py`) no se mide: el
+#: nombre suelto no dice desde dónde resolverlo.
+_RE_RUTA_EN_PROSA = re.compile(
+    r"`((?:\./)?[\w.@-]+(?:/[\w.@-]+)+\."
+    r"(?:py|pyi|ts|tsx|js|jsx|mjs|cjs|go|rs|java|kt|cs|swift|rb|php|c|h|cpp"
+    r"|vue|svelte|sh|ps1|sql|ya?ml|toml))(?::\d+)?`"
+)
+_RE_BLOQUE_DE_CODIGO = re.compile(r"```[\s\S]*?```")
+#: Clases de documento (`vault_registry.SECTION_DOCUMENTACION`) que cuentan lo
+#: que había en su fecha o navegan: no afirman que el código siga ahí.
+_CLASES_SIN_AFIRMACION = frozenset({"registro", "indice"})
+#: Carpetas que no son código del repo al buscar un nombre de fichero.
+_PODAR_AL_BUSCAR = frozenset({".git", "node_modules", ".venv", "venv", "__pycache__"})
+
+
+def _nombres_de_fichero(repo: Path) -> Set[str]:
+    """Los nombres de fichero del repo, para separar «otra base» de «no existe»."""
+    nombres: Set[str] = set()
+    for _dir, carpetas, ficheros in os.walk(repo):
+        carpetas[:] = [c for c in carpetas if c not in _PODAR_AL_BUSCAR]
+        nombres.update(ficheros)
+    return nombres
+
+
+def _prosa_inexistente(
+    repo: Path, raiz: Path, texto: str, nombres: Set[str]
+) -> Tuple[List[str], int]:
+    """AP-01 en prosa: (rutas citadas que no existen, rutas de base ambigua).
+
+    Lo que va en un bloque de código muestra, no afirma, y se quita antes.
+    Una ruta ausente cuyo nombre de fichero sí está en otro sitio del repo
+    se cuenta como base ambigua y no se nombra: con la base equivocada todo
+    sale ausente, que es lo que la regla 7 midió en `files:` y la `pista`
+    ya advierte.
+    """
+    inexistentes: List[str] = []
+    ambiguas = 0
+    vistas: Set[str] = set()
+    for m in _RE_RUTA_EN_PROSA.finditer(_RE_BLOQUE_DE_CODIGO.sub("", texto)):
+        ruta = m.group(1)
+        if ruta in vistas:
+            continue
+        vistas.add(ruta)
+        if _codigo_inexistente(repo, [ruta]) == [] or (raiz / ruta).exists():
+            continue
+        if Path(ruta).name in nombres:
+            ambiguas += 1
+        else:
+            inexistentes.append(ruta)
+    return inexistentes, ambiguas
+
+
 def vault_drift_vigencia(path: str, project: str) -> Dict[str, Any]:
     """AP-08: notas del proyecto cuyo código cambió después de su `updatedAt`.
 
@@ -766,6 +825,12 @@ def vault_drift_vigencia(path: str, project: str) -> Dict[str, Any]:
     del fichero, como hace `report`: la declara la nota en `files:`, el mismo
     campo que lee `vault_arquitectura_en`. Una nota sin `files:` no se juzga;
     se cuenta, para que el silencio no pase por vigencia.
+
+    AP-01 en prosa (v41.3): las rutas de código citadas entre backticks en el
+    cuerpo que no existen salen en `prosa_inexistente`, fuera de
+    `action_required` —informa, no exige: la regla 7 dio ausencias reales
+    junto a rutas de otro repo indistinguibles—. Las notas de clase
+    `registro`/`indice` y la documentación del estándar no se miden.
 
     Solo lectura: ni el vault ni el repo se tocan.
     """
@@ -791,13 +856,17 @@ def vault_drift_vigencia(path: str, project: str) -> Dict[str, Any]:
     sin_files: List[str] = []
     sin_historia: List[Dict[str, Any]] = []
     codigo_inexistente: List[Dict[str, Any]] = []
+    prosa_inexistente: List[Dict[str, Any]] = []
+    prosa_base_ambigua = 0
+    nombres: Optional[Set[str]] = None
     resueltos = 0
     for nota in sorted(notas_en_disco(raiz, secciones, incluir_indices=False)):
         rel = nota.relative_to(raiz).as_posix()
         if is_snapshot_path(rel):
             continue
         try:
-            fm = parse_frontmatter(nota.read_text(encoding="utf-8-sig"))
+            texto = nota.read_text(encoding="utf-8-sig")
+            fm = parse_frontmatter(texto)
         except (OSError, UnicodeDecodeError):
             continue
         if not es_del(fm.get("project")):
@@ -806,6 +875,15 @@ def vault_drift_vigencia(path: str, project: str) -> Dict[str, Any]:
             continue
         if normalize_status(str(fm.get("status") or ""))[0] in _ESTADOS_SIN_VIGENCIA:
             continue
+        if (section_documentacion(rel) not in _CLASES_SIN_AFIRMACION
+                and not es_documentacion_del_estandar(rel, texto)):
+            if nombres is None:
+                nombres = _nombres_de_fichero(repo)
+            ausentes_prosa, ambiguas = _prosa_inexistente(repo, raiz, texto, nombres)
+            prosa_base_ambigua += ambiguas
+            if ausentes_prosa:
+                prosa_inexistente.append({"path": rel, "norm": "AP-01",
+                                          "inexistentes": ausentes_prosa})
         files = fm.get("files")
         if isinstance(files, str):
             files = [files]
@@ -854,10 +932,13 @@ def vault_drift_vigencia(path: str, project: str) -> Dict[str, Any]:
             "sin_files": len(sin_files),
             "sin_historia": len(sin_historia),
             "codigo_inexistente": len(codigo_inexistente),
+            "prosa_inexistente": len(prosa_inexistente),
+            "prosa_base_ambigua": prosa_base_ambigua,
         },
         "sin_files": sin_files,
         "sin_historia": sin_historia,
         "codigo_inexistente": codigo_inexistente,
+        "prosa_inexistente": prosa_inexistente,
         "action_required": bool(desfasadas or sin_historia or codigo_inexistente),
         "criterio": (
             "Una nota con `files:` está desfasada si algún fichero cambió en git "

@@ -72,9 +72,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "Estuvo descubierta hasta v41.3. `vault_drift_detect --mode vigencia` "
             "mide **la parte que la nota declara**: un fichero listado en `files:` "
             "que no existe en el repo sale en `codigo_inexistente` con la norma "
-            "nombrada. Sigue sin medir la referencia escrita en prosa —un script, "
-            "endpoint o función citado en el cuerpo— y la firma que no coincide: "
-            "verlas exige interpretar el texto, no resolver una ruta declarada."
+            "nombrada. Desde v41.3 mide también la ruta de código citada entre "
+            "backticks en el cuerpo, que sale en `prosa_inexistente` sin entrar "
+            "en `action_required`: fuera quedan los bloques de código, las notas "
+            "de clase `registro`/`indice`, la documentación del estándar y la "
+            "ruta cuyo nombre de fichero sí está en otro sitio del repo, que se "
+            "cuenta aparte como base ambigua. Sigue sin medir lo que no es una "
+            "ruta —un endpoint o una función citados en el cuerpo— y la firma que "
+            "no coincide: verlas exige interpretar el texto."
         ),
         "introduced_version": "v19",
     },
