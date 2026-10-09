@@ -93,3 +93,23 @@ def test_el_piloto_vive_en_el_kernel_y_scripts_lo_reexporta():
     assert vault_subproceso.ejecutar is subproceso.ejecutar
     assert vault_subproceso.sitios_sin_codificacion is subproceso.sitios_sin_codificacion
     assert (vault_subproceso.CODIFICACION, vault_subproceso.ERRORES) == ("utf-8", "replace")
+
+
+def test_el_ledger_vive_en_el_kernel_y_scripts_lo_reexporta():
+    """Segunda migración (2026-10-09): `vault_ledger`, hoja del kernel.
+
+    El contador es thread-local: la fachada tiene que reexportar **el mismo**
+    `threading.local`, o `vault_io` y `vault_errors` contarían en dos libros.
+    """
+    import vault_io
+    import vault_ledger
+    from vault.kernel import ledger
+
+    assert "vault_ledger" not in vault_arch.modulos_sin_hogar()
+    assert vault_ledger._write_ledger is ledger._write_ledger
+    assert vault_io._write_ledger is ledger._write_ledger
+    for nombre in ("write_report", "write_ledger_reset", "record_raw_write",
+                   "_record_write", "_ledger", "_NO_ES_TRABAJO"):
+        assert getattr(vault_ledger, nombre) is getattr(ledger, nombre), nombre
+    ledger.write_ledger_reset()
+    assert vault_io.write_report()["written"] == 0

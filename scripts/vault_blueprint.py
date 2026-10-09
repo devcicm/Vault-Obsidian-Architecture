@@ -531,7 +531,11 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "sin hogar bloquea `vault_arch --check`. Primera migración, para "
             "probar que el puente aguanta: `vault_subproceso`, hoja del kernel, "
             "vive en `vault/kernel/subproceso.py` y `scripts/` conserva el "
-            "nombre como fachada; la wheel limpia lo importa desde `_impl`.)"
+            "nombre como fachada; la wheel limpia lo importa desde `_impl`. "
+            "Segunda, el mismo 2026-10-09: `vault_ledger`, el contador "
+            "thread-local de AP-37, vive en `vault/kernel/ledger.py` y la "
+            "fachada reexporta el mismo `threading.local`, también sus nombres "
+            "privados, porque `vault_io` los reexporta a su vez.)"
         ),
         "por_que_no_ahora": (
             "Transitorio hasta migrar scripts → vault/<contexto>, ADR-0002. "

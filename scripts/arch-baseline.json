@@ -97,7 +97,6 @@
     "vault_history_compact",
     "vault_index",
     "vault_kernel",
-    "vault_ledger",
     "vault_link_safety",
     "vault_list",
     "vault_log_error",
