@@ -244,9 +244,13 @@ def framework_drift_check(spec_path: Optional[Path] = None) -> Dict[str, Any]:
     encabezados = set(re.findall(r"^#{2,4}\s+((?:AP|PAT|SP|CN)-\d+)", text, re.M))
     sin_seccion = [n["code"] for n in NORM_CATALOG if n["code"] not in encabezados]
     iso = iso_coverage_check()
+    # La norma como paquete (deuda #10): la forma de `normas/<código>/` la
+    # mide el catálogo, que es quien la carga; aquí solo se publica y pesa.
+    from vault_norms_catalog import NORMAS_EN_PAQUETE, forma_de_paquetes
+    paquetes = {"cargados": list(NORMAS_EN_PAQUETE), "problemas": forma_de_paquetes()}
 
     return {
-        "ok": not missing and not sin_seccion and iso["ok"],
+        "ok": not missing and not sin_seccion and iso["ok"] and not paquetes["problemas"],
         "tool": "vault_norms.framework_drift",
         "spec": spec.name,
         "total_ids": sum(len(e) for e in FRAMEWORK_REGISTRIES.values()),
@@ -256,6 +260,7 @@ def framework_drift_check(spec_path: Optional[Path] = None) -> Dict[str, Any]:
         "norms_without_section": sin_seccion,
         "iso_tools_inexistentes": iso["tools_inexistentes"],
         "iso_cobertura_invalida": iso["cobertura_invalida"],
+        "paquetes_de_norma": paquetes,
     }
 
 

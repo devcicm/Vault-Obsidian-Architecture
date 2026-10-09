@@ -439,7 +439,21 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
         "por_que_no_ahora": (
             "Migra por atrición, no de golpe: 71 normas movidas en una tanda "
             "serían 71 oportunidades de perder un matiz. Empieza por las que se "
-            "escriban a partir de ahora."
+            "escriban a partir de ahora.\n\n"
+            "(Avance de v41.3, fecha: 2026-10-09.) La infraestructura existe y "
+            "tiene piloto: AP-65, la última norma del catálogo, vive en "
+            "`normas/AP-65/` con `norma.py`, `porque.md` y su test. "
+            "`vault_norms_catalog` la carga en su sitio de siempre —el catálogo "
+            "y el registro que reconstruye `vault_norms --rebuild` no cambiaron "
+            "ni un byte, salvo la fecha—; `--check-framework` falla si un "
+            "paquete pierde una cara, declara otro código, no lo carga el "
+            "catálogo o cita en `porque.md` una cara `ruta::símbolo` que no "
+            "existe; `normas/` viaja en la wheel y lo comprueba "
+            "`clean_install_gate`. Lo que no tiene el piloto, y se declara: "
+            "`guard.py` y `heal.py` propios. Su criterio sigue con su dueño en "
+            "el kernel y AP-65 no tiene heal, porque nadie puede escribir por "
+            "otro a quién afecta una decisión. Queda la migración del resto, "
+            "una norma cada vez."
         ),
     },
     {

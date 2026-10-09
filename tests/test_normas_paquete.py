@@ -1,0 +1,154 @@
+"""La norma como paquete: `normas/<código>/` (deuda #10, piloto AP-65).
+
+El ciclo del repo —síntoma → norma → guard+audit+heal → test— vivía en cuatro
+listas que solo sincronizaba la memoria de quien las tocaba. Un paquete junta
+las caras de una norma en una carpeta: `norma.py` con la entrada del catálogo,
+`porque.md` con las rutas de las caras que la cumplen y un `test_*.py`.
+
+`vault_norms_catalog` sigue siendo la fuente única: carga el paquete en el
+mismo sitio que ocupaba la entrada, así que `NORM_CATALOG` no cambia ni de orden
+ni de contenido. Lo que comprueba la guarda de forma lo publica
+`vault_norms --check-framework`, que ya es puerta: no hace falta una nueva.
+
+Los tests del paquete los ejecuta este fichero. La CI y el `Makefile` corren
+`pytest tests/`, y un test que vive fuera de `tests/` sin que nadie lo invoque
+es la promesa sin ejecutor que `vault_produccion` existe para cazar.
+"""
+
+from __future__ import annotations
+
+import importlib.util
+import inspect
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[1]
+SCRIPTS = ROOT / "scripts"
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
+
+import vault_norms_catalog as cat  # noqa: E402
+
+NORMAS = ROOT / "normas"
+
+
+def _paquetes():
+    return sorted(p for p in NORMAS.iterdir() if p.is_dir() and not p.name.startswith(("_", ".")))
+
+
+def test_el_piloto_ap65_vive_en_su_paquete():
+    assert "AP-65" in cat.NORMAS_EN_PAQUETE
+    assert (NORMAS / "AP-65" / "norma.py").is_file()
+    # La entrada ya no está escrita en el catálogo: un código en dos sitios es
+    # la copia que el paquete viene a quitar.
+    fuente = (SCRIPTS / "vault_norms_catalog.py").read_text(encoding="utf-8")
+    assert '"code": "AP-65"' not in fuente
+
+
+def test_el_catalogo_no_cambia_de_orden_ni_de_contenido():
+    codigos = [n["code"] for n in cat.NORM_CATALOG]
+    assert len(codigos) == len(set(codigos))
+    # Sitio de siempre: tras AP-64 y antes del primer patrón. El patrón no se
+    # nombra: un código escrito en un test cuenta como cobertura en la capa 4
+    # de `vault_blueprint`, y esta mención de pasada la habría inventado.
+    i = codigos.index("AP-65")
+    assert codigos[i - 1] == "AP-64"
+    assert cat.NORM_CATALOG[i + 1]["type"] == "pattern"
+    ap65 = cat.norma_por_codigo("AP-65")
+    assert ap65["introduced_version"] == "v41.3"
+    assert ap65["tools_detecting"] == ["vault_norms"]
+    assert "AP-64" in ap65["distinguido_de"]
+
+
+def test_la_forma_de_los_paquetes_del_repo_es_valida():
+    assert cat.forma_de_paquetes() == []
+
+
+@pytest.mark.parametrize("falta", ["norma.py", "porque.md", "test_x_norma.py"])
+def test_la_guarda_ve_la_cara_que_falta(tmp_path, falta):
+    paquete = tmp_path / "AP-99"
+    paquete.mkdir()
+    (paquete / "norma.py").write_text('NORMA = {"code": "AP-99"}\n', encoding="utf-8")
+    (paquete / "porque.md").write_text("# AP-99\n", encoding="utf-8")
+    (paquete / "test_x_norma.py").write_text("def test_x():\n    pass\n", encoding="utf-8")
+    (paquete / falta).unlink()
+    problemas = cat.forma_de_paquetes(tmp_path, cargadas=("AP-99",), raiz_repo=ROOT)
+    assert problemas and all(p["paquete"] == "AP-99" for p in problemas)
+
+
+def test_en_la_wheel_no_se_exige_el_test_que_no_viaja(tmp_path):
+    """La wheel lleva `norma.py` y `porque.md`; el test lo ejecuta el repo."""
+    paquete = tmp_path / "AP-99"
+    paquete.mkdir()
+    (paquete / "norma.py").write_text('NORMA = {"code": "AP-99"}\n', encoding="utf-8")
+    (paquete / "porque.md").write_text("# AP-99\n", encoding="utf-8")
+    assert cat.forma_de_paquetes(tmp_path, cargadas=("AP-99",)) == []
+
+
+def test_la_guarda_ve_el_codigo_que_no_es_su_carpeta(tmp_path):
+    paquete = tmp_path / "AP-99"
+    paquete.mkdir()
+    (paquete / "norma.py").write_text('NORMA = {"code": "AP-98"}\n', encoding="utf-8")
+    (paquete / "porque.md").write_text("# AP-99\n", encoding="utf-8")
+    (paquete / "test_x_norma.py").write_text("def test_x():\n    pass\n", encoding="utf-8")
+    problemas = cat.forma_de_paquetes(tmp_path, cargadas=("AP-99",))
+    assert any("AP-98" in p["problema"] for p in problemas)
+
+
+def test_la_guarda_ve_el_paquete_que_nadie_carga(tmp_path):
+    """Una carpeta que el catálogo no nombra es una norma que no existe para
+    nadie: ni la audita `vault_norms` ni la ve `--check-framework`."""
+    paquete = tmp_path / "AP-99"
+    paquete.mkdir()
+    (paquete / "norma.py").write_text('NORMA = {"code": "AP-99"}\n', encoding="utf-8")
+    (paquete / "porque.md").write_text("# AP-99\n", encoding="utf-8")
+    (paquete / "test_x_norma.py").write_text("def test_x():\n    pass\n", encoding="utf-8")
+    problemas = cat.forma_de_paquetes(tmp_path, cargadas=())
+    assert [p["paquete"] for p in problemas] == ["AP-99"]
+
+
+def test_la_guarda_ve_la_cara_citada_que_no_existe(tmp_path):
+    """`porque.md` cita las caras como `ruta::símbolo`; una que no existe es
+    AP-01 cometido en la documentación de la propia norma."""
+    paquete = tmp_path / "AP-99"
+    paquete.mkdir()
+    (paquete / "norma.py").write_text('NORMA = {"code": "AP-99"}\n', encoding="utf-8")
+    (paquete / "porque.md").write_text(
+        "- criterio: `vault/kernel/contenido.py::no_existe_nunca`\n", encoding="utf-8")
+    (paquete / "test_x_norma.py").write_text("def test_x():\n    pass\n", encoding="utf-8")
+    problemas = cat.forma_de_paquetes(tmp_path, cargadas=("AP-99",), raiz_repo=ROOT)
+    assert any("no_existe_nunca" in p["problema"] for p in problemas)
+
+
+def test_el_check_framework_publica_la_forma():
+    r = subprocess.run(
+        [sys.executable, str(SCRIPTS / "vault_norms.py"), "--check-framework"],
+        capture_output=True, text=True, encoding="utf-8", cwd=ROOT,
+    )
+    datos = json.loads(r.stdout)
+    assert datos["paquetes_de_norma"] == {"cargados": list(cat.NORMAS_EN_PAQUETE),
+                                          "problemas": []}
+
+
+def _tests_de_paquete():
+    for paquete in _paquetes():
+        for fichero in sorted(paquete.glob("test_*.py")):
+            spec = importlib.util.spec_from_file_location(
+                f"_norma_{paquete.name.replace('-', '_')}_{fichero.stem}", fichero)
+            modulo = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(modulo)
+            for nombre, funcion in inspect.getmembers(modulo, inspect.isfunction):
+                if nombre.startswith("test_") and funcion.__module__ == modulo.__name__:
+                    yield pytest.param(funcion, id=f"{paquete.name}::{nombre}")
+
+
+@pytest.mark.parametrize("funcion", list(_tests_de_paquete()))
+def test_los_tests_de_cada_paquete(funcion):
+    # Sin fixtures a propósito: el paquete se ejecuta igual desde aquí que con
+    # `pytest normas/`, y la guarda de forma no tiene que conocer conftest.
+    assert not inspect.signature(funcion).parameters
+    funcion()

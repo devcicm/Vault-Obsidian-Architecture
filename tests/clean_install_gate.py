@@ -266,6 +266,23 @@ def main(*, gate: str = "CLEAN_INSTALL_GATE") -> int:
         if public_version.returncode or public_version.stdout.strip() != installed_version.stdout.strip():
             _fail(f"vault --version differs from metadata: {public_version.stderr}\n{public_version.stdout}")
 
+        # deuda #10: vault_norms_catalog viaja en la wheel y carga las normas en
+        # paquete de vault_toolkit/normas/. Si no entraran, fallaría el import
+        # de toda tool que lea el catálogo, no solo el de vault_norms.
+        normas = _run(
+            [str(python), "-I", "-c", (
+                "import sys, vault_toolkit._impl as i; "
+                "sys.path.insert(0, list(i.__path__)[0]); "
+                "import vault_norms_catalog as c; "
+                "assert c.NORMAS_EN_PAQUETE and all(c.norma_por_codigo(x) for x in c.NORMAS_EN_PAQUETE); "
+                "print(c.RAIZ_NORMAS)"
+            )],
+            cwd=work,
+            env=clean_env,
+        )
+        if normas.returncode or "vault_toolkit" not in normas.stdout:
+            _fail(f"las normas en paquete no viajan en la wheel: {normas.stderr}\n{normas.stdout}")
+
         listed = _json_output(_run([str(vault), "tools", "list"], cwd=work, env=clean_env), "vault tools list")
         listed_by_name = {entry.get("name"): entry for entry in listed.get("tools", [])}
         if listed_by_name.get("vault_query_parse", {}).get("installed") is not True:

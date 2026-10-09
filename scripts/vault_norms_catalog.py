@@ -24,9 +24,105 @@ creado un cruce donde no hay ninguno.
 from __future__ import annotations
 
 
+import ast
 import re
 from enum import Enum
-from typing import Any, Dict, List
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Sequence
+
+# ─── La norma como paquete (deuda #10, piloto AP-65) ──────────────────────────
+#
+# Una norma puede vivir en `normas/<código>/` en vez de escrita aquí: `norma.py`
+# con la entrada, `porque.md` con las rutas de las caras que la cumplen y un
+# `test_*.py` (los ejecuta `tests/test_normas_paquete.py`). Este módulo sigue
+# siendo la fuente única: la carga en el sitio que ocupaba, así que
+# `NORM_CATALOG` no cambia de orden. Se lee con `ast.literal_eval` y no se
+# importa —el catálogo es hoja y un `norma.py` con código no lo sería—, y la
+# ruta sale de este fichero porque en la wheel `_impl/` y `normas/` son
+# hermanas igual que `scripts/` y `normas/` en el checkout.
+
+#: Carpeta de los paquetes de norma, junto a la de este módulo.
+RAIZ_NORMAS = Path(__file__).resolve().parent.parent / "normas"
+
+#: Códigos que el catálogo carga desde su paquete, en el orden en que los carga.
+NORMAS_EN_PAQUETE: List[str] = []
+
+#: Una cara citada en `porque.md`: `ruta/del/fichero.py::símbolo`.
+_RE_CARA = re.compile(r"`([\w./-]+\.py)::(\w+)`")
+
+
+def _leer_norma(fichero: Path) -> Dict[str, Any]:
+    """La asignación `NORMA = {...}` de un `norma.py`, sin ejecutarlo."""
+    arbol = ast.parse(fichero.read_text(encoding="utf-8"), filename=str(fichero))
+    for nodo in arbol.body:
+        if (isinstance(nodo, ast.Assign) and len(nodo.targets) == 1
+                and isinstance(nodo.targets[0], ast.Name)
+                and nodo.targets[0].id == "NORMA"):
+            return ast.literal_eval(nodo.value)
+    raise ValueError(f"{fichero}: no declara NORMA")
+
+
+def _desde_paquete(code: str) -> Dict[str, Any]:
+    """La entrada de `code`, leída de su paquete. Si falta, el import falla:
+    un catálogo al que le falta una norma en silencio es peor que ninguno."""
+    NORMAS_EN_PAQUETE.append(code)
+    return _leer_norma(RAIZ_NORMAS / code / "norma.py")
+
+
+def forma_de_paquetes(raiz: Optional[Path] = None,
+                      cargadas: Optional[Sequence[str]] = None,
+                      raiz_repo: Optional[Path] = None) -> List[Dict[str, str]]:
+    """Qué paquetes de norma no tienen la forma declarada.
+
+    Falla si falta `norma.py`, `porque.md` o un `test_*.py`; si el `code` no es
+    el nombre de la carpeta; si la carpeta no la carga el catálogo, o la carga
+    dos veces; y si `porque.md` cita una cara `ruta::símbolo` que no existe.
+
+    El test y las caras solo se exigen con `raiz_repo`, que es el checkout: la
+    wheel no lleva ni los `test_*.py` ni el código de gobernanza que citan, y
+    exigirlos allí daría un problema que no lo es.
+    """
+    raiz = Path(raiz) if raiz else RAIZ_NORMAS
+    cargadas = list(NORMAS_EN_PAQUETE if cargadas is None else cargadas)
+    if raiz_repo is None and raiz == RAIZ_NORMAS and (raiz.parent / "scripts").is_dir():
+        raiz_repo = raiz.parent
+    problemas: List[Dict[str, str]] = []
+
+    def falta(paquete: str, problema: str) -> None:
+        problemas.append({"paquete": paquete, "problema": problema})
+
+    carpetas = sorted(p for p in raiz.iterdir()
+                      if p.is_dir() and not p.name.startswith(("_", "."))) if raiz.is_dir() else []
+    for carpeta in carpetas:
+        nombre = carpeta.name
+        if cargadas.count(nombre) != 1:
+            falta(nombre, f"el catálogo la carga {cargadas.count(nombre)} veces, no una")
+        for cara in ("norma.py", "porque.md"):
+            if not (carpeta / cara).is_file():
+                falta(nombre, f"falta {cara}")
+        if raiz_repo is not None and not list(carpeta.glob("test_*.py")):
+            falta(nombre, "falta un test_*.py")
+        if (carpeta / "norma.py").is_file():
+            try:
+                code = _leer_norma(carpeta / "norma.py").get("code")
+            except (SyntaxError, ValueError) as exc:
+                falta(nombre, f"norma.py ilegible: {exc}")
+            else:
+                if code != nombre:
+                    falta(nombre, f"declara {code} en la carpeta {nombre}")
+        if raiz_repo is not None and (carpeta / "porque.md").is_file():
+            texto = (carpeta / "porque.md").read_text(encoding="utf-8")
+            for ruta, simbolo in _RE_CARA.findall(texto):
+                fichero = Path(raiz_repo) / ruta
+                fuente = fichero.read_text(encoding="utf-8") if fichero.is_file() else ""
+                if not re.search(rf"^\s*(?:def|class)\s+{simbolo}\b|^{simbolo}\s*=",
+                                 fuente, re.M):
+                    falta(nombre, f"porque.md cita {ruta}::{simbolo}, que no existe")
+    nombres = {c.name for c in carpetas}
+    for code in sorted(set(cargadas) - nombres):
+        falta(code, "el catálogo la carga y no tiene carpeta")
+    return problemas
+
 
 # ─── Catálogo canónico (fuente de verdad) ──────────────────────────────────────
 #
@@ -3361,59 +3457,7 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         },
         "introduced_version": "v41.3",
     },
-    {
-        "code": "AP-65",
-        "name": "Decisión de IA de impacto alto sin evaluación de impacto",
-        "type": "antipattern",
-        "category": "process",
-        "severity": "medium",
-        "enforcement": "audit",
-        "description": (
-            "ISO/IEC 42001 pide registrar qué decidió un sistema de IA y por "
-            "qué; ISO/IEC 42005 añade a quién afecta. `vault_ai_decision` "
-            "registraba lo primero y no tenía dónde escribir lo segundo: una "
-            "decisión `critical` quedaba con su porqué y sin el coste que "
-            "reparte. Desde v41.3 la tool acepta `--affected` y declara "
-            "`impact_assessment` (`completa`, `pendiente` o `no_exigida`).\n\n"
-            "El criterio tiene dueño en `vault.kernel.contenido."
-            "falta_de_evaluacion_de_impacto` —con su ámbito y los niveles que "
-            "exigen evaluación, `niveles_de_impacto_exigidos` sobre la escala "
-            "`severidad` de `vault_vocabulario`— y lo leen la tool al escribir, "
-            "el scan y la auditoría."
-        ),
-        "signal": (
-            "Nota de `16_AI_Governance/` con `impact_level` en los dos niveles "
-            "más altos de la escala (`critical`, `high`), que no sea plantilla, "
-            "y cuyo `impact_assessment` no sea `completa` —también si no lo "
-            "declara—."
-        ),
-        "prevention": (
-            "Al registrar una decisión de impacto alto, pasar `--affected` con "
-            "a quién afecta y cómo: `vault_ai_decision ... --impact_level high "
-            "--affected '[\"usuarios finales - pierden la sesión al desplegar\"]'`. "
-            "Sin él la nota se escribe igual —un registro incompleto vale más "
-            "que ninguno— con `impact_assessment: pendiente`, y el envelope lo "
-            "dice en `hint`.\n\n"
-            "Límites declarados: la norma sabe que la nota nombra afectados, no "
-            "que la evaluación sea buena; la evaluación completa de 42005 "
-            "(probabilidad, severidad por afectado, mitigación) no se mide. "
-            "Contrastada en solo lectura contra los vaults ajenos y las copias "
-            "de los trece consumidores (regla 7, 2026-10-08): ninguno tiene "
-            "decisiones de IA con `impact_level`, así que el contraste no "
-            "ejerció el detector sobre material real."
-        ),
-        "tools_enforcing": [],
-        "tools_detecting": ["vault_norms"],
-        "distinguido_de": {
-            "AP-64": (
-                "AP-64 pregunta quién responde de un ADR cerrado; AP-65, a quién "
-                "afecta una decisión de IA de impacto alto. Una decisión de IA "
-                "aprobada por una persona (`human_approved`) puede seguir sin "
-                "decir a quién le cuesta."
-            ),
-        },
-        "introduced_version": "v41.3",
-    },
+    _desde_paquete("AP-65"),
     # ── Patrón PAT-6 ───────────────────────────────────────────────────────────
     {
         "code": "PAT-6",
