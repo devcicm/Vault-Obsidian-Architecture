@@ -86,7 +86,10 @@ def invocation(tool: str) -> Optional[List[str]]:
             return None
         # `posix=False` conserva las comillas de los valores: hay que quitarlas
         # a mano, porque en POSIX el ejemplo con `\n` embebido se destroza.
-        partes = [p[1:-1] if len(p) > 1 and p[0] == p[-1] == '"' else p for p in partes]
+        # Las simples también: es como se escribe un JSON en una shell, y hasta
+        # 2026-10-08 le llegaban a la tool pegadas al valor.
+        partes = [p[1:-1] if len(p) > 1 and p[0] == p[-1] and p[0] in "\"'" else p
+                  for p in partes]
         return _con_json(script, [sys.executable, str(SCRIPTS_DIR / script)] + partes[2:])
     return [sys.executable, str(SCRIPTS_DIR / script), "--help"]
 

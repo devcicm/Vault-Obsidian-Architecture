@@ -89,7 +89,7 @@
       },
       "guards": [],
       "side_effects": [
-        "Crea nota en 03_Decisions/"
+        "Crea nota en 16_AI_Governance/decisions/"
       ],
       "status": "active",
       "exposed_via_mcp": true,

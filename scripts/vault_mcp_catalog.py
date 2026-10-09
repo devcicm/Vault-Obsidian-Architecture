@@ -1588,7 +1588,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Crea nota en 05_Patterns/"],
-        "example": 'python vault_pattern_save.py --project "mi-api" --name "Repository" --type "architectural" --status "implemented" --description "Abstraccion de acceso a datos"',
+        "example": 'python vault_pattern_save.py --project "mi-api" --name "Repository" --type "architecture" --status "implementado" --description "Abstraccion de acceso a datos"',
         "related": ["vault_pattern_list", "vault_code_module"],
     },
     "vault_pattern_list": {
@@ -1612,7 +1612,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": [],
-        "example": 'python vault_pattern_list.py\npython vault_pattern_list.py --type "architectural"',
+        "example": 'python vault_pattern_list.py\npython vault_pattern_list.py --type "architecture"',
         "related": ["vault_pattern_save", "vault_search"],
     },
     "vault_knowledge_save": {
@@ -1788,7 +1788,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": ["No guardar secrets en texto plano"],
         "side_effects": ["Crea nota en 09_Infrastructure/{project}/"],
-        "example": 'python vault_env_save.py --project "mi-api" --environment "prod" --vars "DB_HOST=localhost"',
+        "example": 'python vault_env_save.py --project "mi-api" --environment "prod" --vars \'[{"name": "DB_HOST", "default": "localhost"}]\'',
         "related": ["vault_env_matrix", "vault_infra_save"],
     },
     "vault_env_matrix": {
@@ -1848,7 +1848,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Crea nota en 09_Infrastructure/{project}/"],
-        "example": 'python vault_infra_save.py --name "prod-cluster" --type "compute" --description "Cluster productivo" --config "region=us-east-1"',
+        "example": 'python vault_infra_save.py --name "prod-cluster" --type "server" --description "Cluster productivo" --config \'{"region": "us-east-1"}\'',
         "related": ["vault_infra_map", "vault_env_save"],
     },
     "vault_infra_map": {
@@ -2312,8 +2312,8 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             },
         },
         "guards": [],
-        "side_effects": ["Crea nota en 03_Decisions/"],
-        "example": 'python vault_ai_decision.py --project "mi-api" --title "Elegir PostgreSQL" --decision_type "architecture" --description "Motor de datos del servicio" --rationale "Garantias ACID"',
+        "side_effects": ["Crea nota en 16_AI_Governance/decisions/"],
+        "example": 'python vault_ai_decision.py --project "mi-api" --title "Elegir PostgreSQL" --decision_type "architectural" --description "Motor de datos del servicio" --rationale "Garantias ACID"',
         "related": ["vault_norms", "vault_audit"],
     },
     "vault_norms": {
@@ -3725,7 +3725,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Crea nota en 01_Projects/{project}/requirements/"],
-        "example": 'python vault_requirement_save.py --project "mi-api" --title "Auth" --description "Login de usuario" --type "functional" --priority "high"',
+        "example": 'python vault_requirement_save.py --project "mi-api" --title "Auth" --description "Login de usuario" --type "functional" --priority "must-have"',
         "related": ["vault_test_save", "vault_audit"],
     },
     "vault_test_save": {
@@ -3803,7 +3803,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": [],
         "side_effects": ["Crea nota en 08_Runbooks/{project}/"],
-        "example": 'python vault_runbook_save.py --project "mi-api" --title "Deploy" --trigger "manual" --category "deploy" --steps "1. Build"',
+        "example": 'python vault_runbook_save.py --project "mi-api" --title "Deploy" --trigger "manual" --category "deploy" --steps \'[{"step": "Build"}, {"step": "Publicar"}]\'',
         "related": ["vault_runbook_log", "vault_incident_save"],
     },
     "vault_runbook_log": {
