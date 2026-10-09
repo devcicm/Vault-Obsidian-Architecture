@@ -922,9 +922,22 @@ def _tabla_ejes() -> str:
     ])
 
 
+def _tabla_schema() -> str:
+    """La tabla de schema por tipo, derivada de lo que escribe cada escritor."""
+    from vault_registry import SCHEMA_POR_TIPO, prometido_sin_escritor
+
+    filas = ["| Tipo | Frontmatter obligatorio | Escritor | Prometido sin escritor |",
+             "|---|---|---|---|"]
+    for tipo, s in SCHEMA_POR_TIPO.items():
+        sin = ", ".join(f"`{c}`" for c in prometido_sin_escritor(tipo)) or "ninguno"
+        filas.append(f"| {tipo} | {', '.join(s['prometido'])} | {s['escritor']} | {sin} |")
+    return "\n".join(filas)
+
+
 def generate_methodology(vault_root: Path, drift: dict) -> str:
     """Generate 06-documentation-methodology.md (bilingual, the 'science')."""
     return (_METODOLOGIA.replace("{TABLA_DOCUMENTACION}", _tabla_documentacion())
+            .replace("{SCHEMA_POR_TIPO}", _tabla_schema())
             .replace("{EJES_DOCUMENTACION}", _tabla_ejes()))
 
 
@@ -968,18 +981,13 @@ _METODOLOGIA = """# Documentation Methodology — Metodología de Documentación
 
 ### Schema canónico por tipo (regla dura)
 
-| Tipo | Frontmatter obligatorio |
-|---|---|
-| Pattern | id, title, status, lifecycle_state |
-| Requirement | id, title, status, priority |
-| Test | id, title, status, coverage |
-| Runbook | id, title, status, last_run |
-| ADR | id, title, status, date |
-| Incident | id, title, severity, status |
-| Session | id, title, date, duration |
-| SLO | id, title, sli_type, status |
-| NCR | id, title, severity, status |
-| Risk | id, title, level, treatment |
+Fuente: `vault_registry.SCHEMA_POR_TIPO`. La columna de lo obligatorio conserva
+lo que esta tabla exigía cuando se escribía a mano; la última dice qué de eso no
+escribe el escritor del tipo, medido sobre la nota que deja. Un campo prometido
+sin escritor no se exige a nadie: queda publicado hasta que una tool lo escriba
+o se anote su `superseded_by`.
+
+{SCHEMA_POR_TIPO}
 
 ### Clase de documento por sección (Diátaxis)
 

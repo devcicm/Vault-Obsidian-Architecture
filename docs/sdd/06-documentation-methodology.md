@@ -38,18 +38,24 @@
 
 ### Schema canónico por tipo (regla dura)
 
-| Tipo | Frontmatter obligatorio |
-|---|---|
-| Pattern | id, title, status, lifecycle_state |
-| Requirement | id, title, status, priority |
-| Test | id, title, status, coverage |
-| Runbook | id, title, status, last_run |
-| ADR | id, title, status, date |
-| Incident | id, title, severity, status |
-| Session | id, title, date, duration |
-| SLO | id, title, sli_type, status |
-| NCR | id, title, severity, status |
-| Risk | id, title, level, treatment |
+Fuente: `vault_registry.SCHEMA_POR_TIPO`. La columna de lo obligatorio conserva
+lo que esta tabla exigía cuando se escribía a mano; la última dice qué de eso no
+escribe el escritor del tipo, medido sobre la nota que deja. Un campo prometido
+sin escritor no se exige a nadie: queda publicado hasta que una tool lo escriba
+o se anote su `superseded_by`.
+
+| Tipo | Frontmatter obligatorio | Escritor | Prometido sin escritor |
+|---|---|---|---|
+| Pattern | id, title, status, lifecycle_state | vault_pattern_save | `lifecycle_state` |
+| Requirement | id, title, status, priority | vault_requirement_save | ninguno |
+| Test | id, title, status, coverage | vault_test_save | `coverage` |
+| Runbook | id, title, status, last_run | vault_runbook_save | `last_run` |
+| ADR | id, title, status, date | vault_write | `date` |
+| Incident | id, title, severity, status | vault_incident_save | ninguno |
+| Session | id, title, date, duration | vault_write | `date`, `duration` |
+| SLO | id, title, sli_type, status | vault_slo_save | `sli_type`, `status` |
+| NCR | id, title, severity, status | vault_ncr_save | ninguno |
+| Risk | id, title, level, treatment | vault_risk_save | ninguno |
 
 ### Clase de documento por sección (Diátaxis)
 

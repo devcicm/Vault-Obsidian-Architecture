@@ -486,6 +486,103 @@ def modo_de_version(clase: str, regimen: str) -> str:
     raise ValueError(f"régimen desconocido: {regimen}")
 
 
+
+#: **Schema por tipo, medido sobre lo que se escribe (v41.3).** La tabla
+#: «Schema canónico por tipo (regla dura)» del SDD 06 estaba escrita a mano y
+#: no tenía registro detrás. `prometido` conserva lo que exigía —no se deroga—;
+#: `escribe` es el frontmatter que deja `escritor`, medido con `yaml.safe_load`
+#: (AP-44): para los `*_save`, sobre sus dorados de caracterización; para ADR y
+#: Session, que no tienen escritor propio, ejecutando `vault_write`. Lo
+#: prometido que nadie escribe lo deriva `prometido_sin_escritor` y el SDD lo
+#: publica marcado. `tests/test_schema_por_tipo.py` falla si `escribe` diverge
+#: de lo que el escritor deja de verdad.
+SCHEMA_POR_TIPO: Dict[str, dict] = {
+    "Pattern": {
+        "escritor": "vault_pattern_save",
+        "prometido": ("id", "title", "status", "lifecycle_state"),
+        "escribe": ("agent", "cia_availability", "cia_integrity", "cia_sensitivity",
+                    "createdAt", "id", "pattern_state", "project", "status", "title",
+                    "type", "updatedAt"),
+    },
+    "Requirement": {
+        "escritor": "vault_requirement_save",
+        "prometido": ("id", "title", "status", "priority"),
+        "escribe": ("agent", "cia_availability", "cia_integrity", "cia_sensitivity",
+                    "createdAt", "id", "priority", "project", "req_id", "req_type",
+                    "status", "tags", "title", "updatedAt"),
+    },
+    "Test": {
+        "escritor": "vault_test_save",
+        "prometido": ("id", "title", "status", "coverage"),
+        "escribe": ("agent", "cia_availability", "cia_integrity", "cia_sensitivity",
+                    "createdAt", "id", "project", "status", "tags", "test_id",
+                    "test_result", "test_type", "title", "updatedAt"),
+    },
+    "Runbook": {
+        "escritor": "vault_runbook_save",
+        "prometido": ("id", "title", "status", "last_run"),
+        "escribe": ("agent", "category", "cia_availability", "cia_integrity",
+                    "cia_sensitivity", "createdAt", "executions", "id", "project",
+                    "runbook_state", "status", "tags", "title", "trigger", "type",
+                    "updatedAt"),
+    },
+    "ADR": {
+        "escritor": "vault_write",
+        "prometido": ("id", "title", "status", "date"),
+        "escribe": ("agent", "cia_availability", "cia_integrity", "cia_sensitivity",
+                    "createdAt", "id", "norm_refs", "status", "tags", "title", "type",
+                    "updatedAt"),
+    },
+    "Incident": {
+        "escritor": "vault_incident_save",
+        "prometido": ("id", "title", "severity", "status"),
+        "escribe": ("agent", "cia_availability", "cia_integrity", "cia_sensitivity",
+                    "createdAt", "detected_at", "id", "incident_state", "iso_bcm",
+                    "iso_standard", "mttr", "norm_refs", "project", "resolved_at",
+                    "severity", "status", "tags", "title", "updatedAt"),
+    },
+    "Session": {
+        "escritor": "vault_write",
+        "prometido": ("id", "title", "date", "duration"),
+        "escribe": ("agent", "cia_availability", "cia_integrity", "cia_sensitivity",
+                    "createdAt", "id", "norm_refs", "status", "tags", "title", "type",
+                    "updatedAt"),
+    },
+    "SLO": {
+        "escritor": "vault_slo_save",
+        "prometido": ("id", "title", "sli_type", "status"),
+        "escribe": ("agent", "alert_threshold", "cia_availability", "cia_integrity",
+                    "cia_sensitivity", "createdAt", "id", "iso_quality", "iso_standard",
+                    "norm_refs", "project", "service", "slo_type", "tags", "target",
+                    "title", "unit", "updatedAt", "window"),
+    },
+    "NCR": {
+        "escritor": "vault_ncr_save",
+        "prometido": ("id", "title", "severity", "status"),
+        "escribe": ("agent", "cia_availability", "cia_integrity", "cia_sensitivity",
+                    "corrective_actions_count", "createdAt", "detected_by", "id",
+                    "iso_standard", "ncr_id", "ncr_state", "ncr_type", "norm_refs",
+                    "owner", "project", "severity", "status", "tags", "target_date",
+                    "title", "updatedAt"),
+    },
+    "Risk": {
+        "escritor": "vault_risk_save",
+        "prometido": ("id", "title", "level", "treatment"),
+        "escribe": ("agent", "cia_availability", "cia_integrity", "cia_sensitivity",
+                    "createdAt", "id", "impact", "iso_security_risk", "iso_standard",
+                    "level", "likelihood", "norm_refs", "owner", "project", "risk_state",
+                    "risk_type", "score", "status", "tags", "title", "treatment",
+                    "updatedAt"),
+    },
+}
+
+
+def prometido_sin_escritor(tipo: str) -> tuple:
+    """Los campos que el SDD exige a `tipo` y que su escritor no escribe."""
+    s = SCHEMA_POR_TIPO[tipo]
+    return tuple(c for c in s["prometido"] if c not in s["escribe"])
+
+
 #: `type:` de las notas andamio que crea `vault_init`. No pertenecen a ninguna
 #: sección: son la misma nota repetida en todas, y por eso se eximen en vez de
 #: añadirse a cada familia. `vault_audit` ya las eximía; los otros dos auditores
