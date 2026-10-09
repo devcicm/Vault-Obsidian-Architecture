@@ -379,7 +379,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 
 | Baseline | Norma | Congelado | Objetivo | Pendiente |
 |---|---|---|---|---|
-| `scripts/arch-baseline.json` | cruces entre contextos | 37 | ≤ 30 para 2027-03-31 · cada 90 d · meta_toolkit — vault_arch → **en_plazo** | 37 → 37 → 37 → 37 → 37 → 37 (encoge, Δ-5) |
+| `scripts/arch-baseline.json` | cruces entre contextos | 37 | ≤ 30 para 2027-03-31 · cada 90 d · meta_toolkit — vault_arch → **en_plazo** | 37 → 37 → 37 → 37 → 37 → 37 (crece, Δ+2) |
 | `scripts/arch-baseline.json` | cruces fuera de puerto | 8 | ≤ 4 para 2027-03-31 · cada 90 d · meta_toolkit — vault_arch → **en_plazo** | 8 → 8 → 8 → 8 → 8 → 8 (encoge, Δ-4) |
 | `scripts/blame-baseline.json` | AP-51 | 33 | ≤ 20 para 2027-03-31 · cada 90 d · meta_toolkit — vault_blame_audit → **en_plazo** | 84 → 83 → 45 → 33 → 33 → 33 (encoge, Δ-53) |
 | `scripts/error-contract-baseline.json` | AP-52 | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_error_contract → **cumple** | 110 → 110 → 0 → 9 → 0 → 0 (encoge, Δ-158) |
