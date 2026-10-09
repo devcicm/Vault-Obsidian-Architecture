@@ -242,11 +242,19 @@ def test_el_check_del_catalogo_ve_una_version_desfasada(tmp_path, monkeypatch):
 
 
 def test_el_dueno_no_importa_ningun_vault():
-    """Módulo hoja (AP-62): si algún día necesita el toolkit, pierde el sitio."""
-    arbol = ast.parse((REPO / "scripts" / "vault_subproceso.py").read_text(encoding="utf-8"))
+    """Módulo hoja (AP-62): si algún día necesita el toolkit, pierde el sitio.
+
+    El dueño vive en `vault/kernel/subproceso.py` desde 2026-10-09 (deuda #12);
+    `scripts/vault_subproceso.py` es su fachada y solo puede importarlo a él.
+    """
+    arbol = ast.parse((REPO / "vault" / "kernel" / "subproceso.py").read_text(encoding="utf-8"))
     for nodo in ast.walk(arbol):
         if isinstance(nodo, ast.ImportFrom) and nodo.module:
             assert not nodo.module.startswith("vault"), nodo.module
         if isinstance(nodo, ast.Import):
             for alias in nodo.names:
                 assert not alias.name.startswith("vault"), alias.name
+    fachada = ast.parse((REPO / "scripts" / "vault_subproceso.py").read_text(encoding="utf-8"))
+    desde_vault = {n.module for n in ast.walk(fachada)
+                   if isinstance(n, ast.ImportFrom) and (n.module or "").startswith("vault")}
+    assert desde_vault == {"vault.kernel.subproceso"}

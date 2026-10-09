@@ -122,7 +122,6 @@
     "vault_spec_catalog_check",
     "vault_spec_generate_catalog",
     "vault_subgraph",
-    "vault_subproceso",
     "vault_supersede",
     "vault_test_runner",
     "vault_token_counter",

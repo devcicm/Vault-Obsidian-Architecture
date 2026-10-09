@@ -476,7 +476,10 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "que no importan nada de `vault/<su contexto>/`, la capa 3 la "
             "publica derivada y la baseline `bridge_modules` de "
             "`arch-baseline.json` la congela: solo encoge, y un módulo nuevo "
-            "sin hogar bloquea `vault_arch --check`.)"
+            "sin hogar bloquea `vault_arch --check`. Primera migración, para "
+            "probar que el puente aguanta: `vault_subproceso`, hoja del kernel, "
+            "vive en `vault/kernel/subproceso.py` y `scripts/` conserva el "
+            "nombre como fachada; la wheel limpia lo importa desde `_impl`.)"
         ),
         "por_que_no_ahora": (
             "Transitorio hasta migrar scripts → vault/<contexto>, ADR-0002. "

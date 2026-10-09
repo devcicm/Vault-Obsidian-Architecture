@@ -61,3 +61,18 @@ def test_el_plano_publica_la_cifra_derivada():
 
     texto = vault_blueprint.blueprint()
     assert f"{len(vault_arch.modulos_sin_hogar())} módulos de `scripts/`" in texto
+
+
+def test_el_piloto_vive_en_el_kernel_y_scripts_lo_reexporta():
+    """Primera migración (2026-10-09): `vault_subproceso`, hoja del kernel.
+
+    El dueño pasa a `vault/kernel/subproceso.py`; el nombre de `scripts/` se
+    conserva como fachada (no-derogación) y es el mismo objeto, no una copia.
+    """
+    import vault_subproceso
+    from vault.kernel import subproceso
+
+    assert "vault_subproceso" not in vault_arch.modulos_sin_hogar()
+    assert vault_subproceso.ejecutar is subproceso.ejecutar
+    assert vault_subproceso.sitios_sin_codificacion is subproceso.sitios_sin_codificacion
+    assert (vault_subproceso.CODIFICACION, vault_subproceso.ERRORES) == ("utf-8", "replace")
