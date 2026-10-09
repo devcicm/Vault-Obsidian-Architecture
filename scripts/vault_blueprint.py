@@ -578,7 +578,16 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "una tool siguen el alias hasta el dueño por un solo sitio, "
             "`vault_grafo_import.fuente_de`. `vault_version` sigue fuera: "
             "`cli/` ejecuta su fichero con `spec_from_file_location` para no "
-            "tocar `sys.path`, y un alias no tiene `CURRENT_VERSION`.)"
+            "tocar `sys.path`, y un alias no tiene `CURRENT_VERSION`. "
+            "Lote C, 2026-10-09: `vault_entorno` al kernel —el motivo que lo "
+            "dejó fuera del lote A no se sostuvo al medirlo: el `.mjs` y "
+            "`env-table.json` lo nombran en prosa y la tabla se deriva por "
+            "import—. Lo que queda son cadenas: `vault/` solo importa de "
+            "`scripts/` por `vault/kernel/adaptadores.py`, así que un módulo "
+            "con dependencias en `scripts/` no migra como alias sin reescribir "
+            "sus imports; las raíces que las bloquean son `vault_norms_catalog` "
+            "(`__file__` para `normas/` y tests que leen su fuente: punto de "
+            "la deuda #10), `vault_version` y `vault_grafo_import`.)"
         ),
         "por_que_no_ahora": (
             "Transitorio hasta migrar scripts → vault/<contexto>, ADR-0002. "

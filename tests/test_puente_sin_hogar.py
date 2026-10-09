@@ -203,3 +203,19 @@ def test_lote_b_un_alias_ejecutado_como_script_corre_el_main_del_dueno(tmp_path)
     r = subprocess.run([sys.executable, str(ROOT / "scripts" / "vault_secret_scan.py"),
                         str(nota), "--json"], capture_output=True, text=True, encoding="utf-8")
     assert r.returncode == 2, "argparse del dueño no corrió"
+
+
+def test_lote_c_vault_entorno_vive_en_el_kernel():
+    """Lote C de la deuda #12 (2026-10-09): `vault_entorno`, el registro de
+    variables de entorno, es hoja sin `__file__` ni lectores de su fuente por
+    ruta; el `.mjs` y `env-table.json` solo lo nombran en prosa, y la tabla se
+    sigue derivando por import (`vault_arch --sync-env`)."""
+    import importlib
+
+    import vault_grafo_import as gi
+
+    assert "vault_entorno" not in set(vault_arch.modulos_sin_hogar())
+    assert (importlib.import_module("vault_entorno")
+            is importlib.import_module("vault.kernel.entorno"))
+    assert gi.fuente_de("vault_entorno") == (ROOT / "vault" / "kernel" / "entorno.py").resolve()
+    assert "VAULT_ROOT" in importlib.import_module("vault_entorno").VARIABLES
