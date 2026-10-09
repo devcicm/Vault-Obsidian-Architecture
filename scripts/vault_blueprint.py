@@ -476,7 +476,10 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "`guard.py` y `heal.py` propios. Su criterio sigue con su dueño en "
             "el kernel y AP-65 no tiene heal, porque nadie puede escribir por "
             "otro a quién afecta una decisión. Queda la migración del resto, "
-            "una norma cada vez."
+            "una norma cada vez. (2026-10-09: AP-64, la anterior a la piloto, "
+            "vive en `normas/AP-64/`; el catálogo serializado sale idéntico al "
+            "de antes de moverla y sus tests de `tests/` siguen donde estaban. "
+            "Cuántas van lo publica `vault_norms_catalog.NORMAS_EN_PAQUETE`.)"
         ),
     },
     {

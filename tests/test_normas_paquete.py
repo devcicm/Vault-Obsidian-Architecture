@@ -49,6 +49,20 @@ def test_el_piloto_ap65_vive_en_su_paquete():
     assert '"code": "AP-65"' not in fuente
 
 
+def test_ap64_es_la_segunda_en_migrar_y_conserva_su_sitio():
+    """La migración sigue por atrición: AP-64, la anterior a la piloto.
+
+    Mismo sitio en `NORM_CATALOG` —justo antes de la piloto— y la entrada
+    escrita en el catálogo desaparece: el código vive en un solo sitio.
+    """
+    assert cat.NORMAS_EN_PAQUETE[:2] == ["AP-64", "AP-65"]
+    fuente = (SCRIPTS / "vault_norms_catalog.py").read_text(encoding="utf-8")
+    assert '"code": "AP-64"' not in fuente
+    codigos = [n["code"] for n in cat.NORM_CATALOG]
+    assert codigos.index("AP-64") + 1 == codigos.index("AP-65")
+    assert cat.norma_por_codigo("AP-64")["introduced_version"] == "v41.3"
+
+
 def test_el_catalogo_no_cambia_de_orden_ni_de_contenido():
     codigos = [n["code"] for n in cat.NORM_CATALOG]
     assert len(codigos) == len(set(codigos))
