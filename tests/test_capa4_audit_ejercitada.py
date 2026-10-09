@@ -132,3 +132,46 @@ def test_pat6_un_grafo_recien_enriquecido_no_esta_viejo(tmp_path):
     datos["metadata"]["merged_at"] = datetime.now(timezone.utc).isoformat()
     enriquecido.write_text(json.dumps(datos), encoding="utf-8")
     assert not va._detect_graph_knowledge_antipatterns()["ap35_silo_flags"]["graph_enriched_stale"], "PAT-6"
+
+
+def test_pat3_la_sombra_resuelta_sale_de_canonical_shadow(tmp_path):
+    """PAT-3: su señal es «canonicalShadow reducido después de aplicar».
+
+    Aplicarlo sin borrar (no-derogación) es anotar `superseded_by:` en la
+    sombra hacia la canónica: el par deja de ser deuda y queda publicado en
+    `resueltos`, de modo que la sanación se ve en vez de desaparecer."""
+    root = _vault(tmp_path)
+    canonica = _nota(root, "07_Knowledge/gateway-de-pagos.md", "title: Gateway de pagos")
+    sombra = _nota(root, "08_Learning/gateway-de-pago.md", "title: Gateway de pago")
+    antes = va._detect_canonical_shadow([canonica, sombra])
+    assert len(antes) == 1, "PAT-3: el par no aparece antes de aplicar"
+
+    _nota(root, "08_Learning/gateway-de-pago.md",
+          'title: Gateway de pago\nsuperseded_by: "[[07_Knowledge/gateway-de-pagos]]"')
+    resueltos = []
+    despues = va._detect_canonical_shadow([canonica, sombra], resueltos=resueltos)
+    assert despues == [], "PAT-3: canonicalShadow no se reduce tras aplicar"
+    assert resueltos and resueltos[0]["canonica"] == "07_Knowledge/gateway-de-pagos.md"
+
+
+def test_pat4_snapshot_y_report_distinguen_cero_regresiones_de_una(tmp_path, monkeypatch):
+    """PAT-4: fase 1 (snapshot) y fase 4 (report) con `vault_drift_detect`.
+
+    La señal del patrón —cero regresiones entre snapshot y estado final— solo
+    se puede leer si el report dice cero cuando nada cambió y no cero cuando
+    algo cambió. Se ejercita sobre una carpeta sin git (backend por hash)."""
+    import vault_drift_detect as dd
+
+    _vault(tmp_path)
+    codigo = tmp_path / "src"
+    codigo.mkdir()
+    (codigo / "a.py").write_text("x = 1\n", encoding="utf-8")
+    monkeypatch.setattr(dd, "_has_git", lambda p: False)
+
+    assert dd.vault_drift_detect(str(codigo), "pat4", mode="snapshot")["ok"]
+    sin_cambio = dd.vault_drift_detect(str(codigo), "pat4", mode="report")
+    assert sin_cambio["summary"]["total_changed"] == 0, "PAT-4: regresión inventada"
+
+    (codigo / "a.py").write_text("x = 2\n", encoding="utf-8")
+    con_cambio = dd.vault_drift_detect(str(codigo), "pat4", mode="report")
+    assert con_cambio["summary"]["modified"] == 1, "PAT-4: el report no ve el cambio"
