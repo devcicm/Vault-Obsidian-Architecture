@@ -25,12 +25,9 @@ módulo dependa de él para cargar.
 """
 
 import importlib
-import json
 import os
 import sys
 import threading
-import time
-import uuid
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Callable, Dict, Iterator
@@ -145,7 +142,6 @@ def file_lock(
     lock_root, lock_dir = bloqueo.rutas_de_lock(target)
     bloqueo.crear_carpeta_de_locks(lock_root)
     clave = str(lock_dir)
-    deadline = time.time() + timeout
 
     if _held(clave):
         yield lock_dir
@@ -156,87 +152,14 @@ def file_lock(
     if not acquired:
         raise TimeoutError(f"Timeout waiting for in-process lock: {lock_dir}")
 
-    # Quién es el dueño de ESTA toma. Al soltar se comprueba antes de borrar:
-    # un lock robado por caducado ya es de otro, y borrarlo dejaba entrar a un
-    # tercero con el ladrón todavía dentro (medido en v40.34, ver
-    # tests/test_file_lock_entre_procesos.py).
-    token = uuid.uuid4().hex
-    hueco = bloqueo.HuecoDeBorrado()
-    while True:
-        try:
-            os.mkdir(lock_dir)
-        except FileNotFoundError:
-            # Otro proceso soltó el último lock de la carpeta y retiró
-            # `.locks/` vacío entre nuestro `mkdir` del padre y este. Se
-            # vuelve a crear y se compite de nuevo.
-            try:
-                bloqueo.crear_carpeta_de_locks(lock_root)
-            except OSError:
-                local.release()
-                raise
-            continue
-        except PermissionError:
-            # El mismo retiro visto un instante antes: `.locks/` está en
-            # borrado pendiente (ver `HUECO_BORRADO_PENDIENTE`).
-            if time.time() >= deadline or not hueco.reintentar():
-                local.release()
-                raise
-            try:
-                bloqueo.crear_carpeta_de_locks(lock_root)
-            except OSError:
-                local.release()
-                raise
-            continue
-        except FileExistsError:
-            try:
-                # La edad sale de owner.json y, si aún no está o no se puede
-                # leer, del directorio. `mkdir` y `owner.json` son dos pasos:
-                # tratar el hueco entre ambos como caducado era robar el lock
-                # a un dueño vivo de milisegundos.
-                try:
-                    owner_data = json.loads((lock_dir / "owner.json").read_text(encoding="utf-8"))
-                    age = time.time() - float(owner_data.get("createdAt", 0))
-                except (OSError, ValueError, TypeError, AttributeError):
-                    age = time.time() - lock_dir.stat().st_mtime
-                if age > stale_after:
-                    # Steal-by-rename: atomically move the stale lock aside before
-                    # removing it. Deleting lock_dir in place is a TOCTOU race — a
-                    # second process that also saw the lock as stale could unlink the
-                    # owner.json / rmdir the lock that a THIRD process just re-acquired,
-                    # silently breaking mutual exclusion. os.replace is atomic and fails
-                    # (OSError) if another process already stole or the owner released,
-                    # so only the winner of the rename owns the cleanup.
-                    steal = lock_root / f"{target.name}.stale.{os.getpid()}.{uuid.uuid4().hex[:8]}"
-                    try:
-                        os.replace(lock_dir, steal)
-                    except OSError:
-                        # Someone else stole it or it was released — just retry acquire.
-                        time.sleep(0.05)
-                        continue
-                    try:
-                        for child in steal.iterdir():
-                            child.unlink()
-                        steal.rmdir()
-                    except OSError:
-                        pass
-                    continue
-            except OSError:
-                pass
-            if time.time() >= deadline:
-                local.release()
-                raise TimeoutError(f"Timeout waiting for lock: {lock_dir}")
-            time.sleep(0.05)
-            continue
-        try:
-            (lock_dir / "owner.json").write_text(
-                json.dumps({"pid": os.getpid(), "createdAt": time.time(), "token": token}),
-                encoding="utf-8",
-            )
-            break
-        except OSError:
-            # Solo si lock_dir ya no está: lo dio por caducado alguien con un
-            # reloj muy desviado. Se vuelve a competir desde cero.
-            continue
+    # El bucle entre procesos —huérfanos, `owner.json`, token— es el de
+    # `vault.kernel.bloqueo.adquirir` (v41.3): `_FileLock` toma el mismo lock y
+    # tenía el suyo, sin recuperar huérfanos.
+    try:
+        token = bloqueo.adquirir(target, timeout, caduca_tras=stale_after)
+    except BaseException:
+        local.release()
+        raise
 
     if not hasattr(_HELD_LOCKS, "keys"):
         _HELD_LOCKS.keys = set()
@@ -245,41 +168,7 @@ def file_lock(
         yield lock_dir
     finally:
         _HELD_LOCKS.keys.discard(clave)
-        try:
-            owner = json.loads((lock_dir / "owner.json").read_text(encoding="utf-8"))
-            mio = isinstance(owner, dict) and owner.get("token") == token
-        except (OSError, ValueError):
-            mio = False
-        if mio:
-            # Apartarlo con un rename atómico antes de vaciarlo: mientras se
-            # borra, nadie lo ve como tomado ni como suyo.
-            # En Windows el rename falla con PermissionError mientras otro
-            # proceso tiene owner.json abierto para medirle la edad. Es
-            # transitorio; rendirse a la primera dejaba el lock tomado hasta
-            # que caducara (medido: 120 s de espera para todos los demás).
-            suelto = lock_root / f"{target.name}.released.{token[:8]}"
-            hasta = time.time() + 5.0
-            while True:
-                try:
-                    os.replace(lock_dir, suelto)
-                    break
-                except PermissionError:
-                    if time.time() >= hasta:
-                        suelto = None
-                        break
-                    time.sleep(0.01)
-                except OSError:
-                    suelto = None
-                    break
-            if suelto is not None:
-                try:
-                    for child in suelto.iterdir():
-                        child.unlink()
-                    suelto.rmdir()
-                except OSError:
-                    pass
-            # `.locks/` vacío no se deja atrás (ver `retirar_carpeta_si_vacia`).
-            bloqueo.retirar_carpeta_si_vacia(lock_root)
+        bloqueo.soltar(target, token)
         local.release()
 
 

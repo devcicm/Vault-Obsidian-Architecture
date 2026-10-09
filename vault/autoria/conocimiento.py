@@ -8,9 +8,6 @@ Por eso esta frontera recibe la raíz explícitamente y no importa ``scripts``.
 
 from __future__ import annotations
 
-import errno
-import os
-import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -19,12 +16,7 @@ from typing import Any, Callable, Dict, List, Mapping, Optional, Union
 import yaml
 
 from .frontmatter import Frontmatter, firmante
-from ..kernel.bloqueo import (
-    HuecoDeBorrado,
-    crear_carpeta_de_locks,
-    retirar_carpeta_si_vacia,
-    rutas_de_lock,
-)
+from ..kernel.bloqueo import adquirir, rutas_de_lock, soltar
 from ..kernel.contenido import con_titulo
 from ..kernel.errores import construir_error
 from ..kernel.escritura import escritura_atomica
@@ -64,10 +56,11 @@ def _contained(root: Path, path: Path) -> Path:
 class _FileLock:
     """Bloqueo exclusivo por nota: el mismo lock que `vault_fs.file_lock`.
 
-    Crea .locks/<nombre>.md.lock dentro del vault. Ruta, alta de `.locks/` y
-    su retirada vienen de `vault.kernel.bloqueo`, compartidas con
-    `vault_fs.file_lock`: escritas aquí por separado divergieron dos veces
-    (dd593d0, ad5b10b). Este módulo no importa `scripts/`.
+    Crea .locks/<nombre>.md.lock dentro del vault. Ruta, alta de `.locks/`,
+    retirada y, desde v41.3, el bucle de adquisición vienen de
+    `vault.kernel.bloqueo`, compartidos con `vault_fs.file_lock`: escritos aquí
+    por separado divergieron tres veces (dd593d0, ad5b10b y el bucle sin
+    recuperación de huérfanos). Este módulo no importa `scripts/`.
     """
 
     def __init__(self, note_path: Path, timeout: float = 30.0) -> None:
@@ -76,38 +69,17 @@ class _FileLock:
         self._timeout = timeout
 
     def acquire(self) -> None:
-        crear_carpeta_de_locks(self._lock_root)
-        deadline = time.monotonic() + self._timeout
-        hueco = HuecoDeBorrado()
-        while True:
-            try:
-                os.mkdir(self._lock)
-                return
-            except FileNotFoundError:
-                # Otro escritor retiró `.locks/` vacío al soltar el suyo.
-                crear_carpeta_de_locks(self._lock_root)
-                continue
-            except PermissionError:
-                # El mismo retiro visto un instante antes (borrado pendiente).
-                if time.monotonic() >= deadline or not hueco.reintentar():
-                    raise
-                crear_carpeta_de_locks(self._lock_root)
-                continue
-            except OSError as exc:
-                if exc.errno != errno.EEXIST:
-                    raise
-                if time.monotonic() >= deadline:
-                    raise TimeoutError(
-                        f"timeout acquiring lock for {self._note_path} after {self._timeout}s"
-                    )
-                time.sleep(0.05)
+        # El bucle es `vault.kernel.bloqueo.adquirir` (v41.3): el que había
+        # aquí no recuperaba un lock huérfano ni escribía `owner.json`.
+        try:
+            self._token = adquirir(self._note_path, self._timeout)
+        except TimeoutError:
+            raise TimeoutError(
+                f"timeout acquiring lock for {self._note_path} after {self._timeout}s"
+            ) from None
 
     def release(self) -> None:
-        try:
-            os.rmdir(self._lock)
-        except OSError:
-            pass
-        retirar_carpeta_si_vacia(self._lock_root)
+        soltar(self._note_path, getattr(self, "_token", ""))
 
     def __enter__(self) -> "_FileLock":
         self.acquire()

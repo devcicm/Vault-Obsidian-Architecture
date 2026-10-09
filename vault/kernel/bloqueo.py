@@ -6,15 +6,18 @@ nota. Hasta v40.36 cada uno escribía estas piezas por su cuenta y divergieron
 dos veces: dd593d0 (cada uno nombraba el directorio a su manera y los dos
 escribían a la vez) y ad5b10b (el hueco del borrado pendiente hubo que
 arreglarlo en los dos sitios). Lo que tiene que ser igual en ambos vive aquí;
-la política de cada tomador —caducidad, `owner.json`, reentrancia por hilo—
-sigue en el suyo.
+desde v41.3 también el bucle de adquisición, con la caducidad y `owner.json`
+(`adquirir`/`soltar`). La reentrancia por hilo sigue en `vault_fs`.
 
 Hoja del núcleo: solo stdlib.
 """
 
 from __future__ import annotations
 
+import json
+import os
 import time
+import uuid
 from pathlib import Path
 from typing import Tuple
 
@@ -83,3 +86,123 @@ def retirar_carpeta_si_vacia(raiz: Path) -> bool:
     except OSError:
         return False
     return True
+
+
+#: Edad a partir de la cual un lock se da por huérfano: su dueño murió dentro.
+CADUCA_TRAS = 120.0
+
+
+def _edad(lock_dir: Path) -> float:
+    """Segundos desde que se tomó `lock_dir`, por `owner.json` o por el mtime.
+
+    `mkdir` y `owner.json` son dos pasos: tratar el hueco entre ambos como
+    caducado era robar el lock a un dueño vivo de milisegundos.
+    """
+    try:
+        dueno = json.loads((lock_dir / "owner.json").read_text(encoding="utf-8"))
+        return time.time() - float(dueno.get("createdAt", 0))
+    except (OSError, ValueError, TypeError, AttributeError):
+        return time.time() - lock_dir.stat().st_mtime
+
+
+def _vaciar(carpeta: Path) -> None:
+    try:
+        for hijo in carpeta.iterdir():
+            hijo.unlink()
+        carpeta.rmdir()
+    except OSError:
+        pass
+
+
+def adquirir(objetivo: Path, timeout: float, caduca_tras: float = CADUCA_TRAS) -> str:
+    """Toma el lock de `objetivo` entre procesos y devuelve el token de esta toma.
+
+    El único bucle de adquisición: hasta v41.2 había uno en cada tomador, y el de
+    `_FileLock` no recuperaba huérfanos ni escribía `owner.json`. Lanza
+    `TimeoutError` si no llega a tiempo y deja escapar el `PermissionError` de
+    una carpeta en la que de verdad no se puede escribir.
+    """
+    raiz, lock_dir = rutas_de_lock(objetivo)
+    crear_carpeta_de_locks(raiz)
+    limite = time.monotonic() + timeout
+    token = uuid.uuid4().hex
+    hueco = HuecoDeBorrado()
+    while True:
+        try:
+            os.mkdir(lock_dir)
+        except FileNotFoundError:
+            # Otro proceso soltó el último lock y retiró `.locks/` vacío.
+            crear_carpeta_de_locks(raiz)
+            continue
+        except PermissionError:
+            # El mismo retiro visto un instante antes (borrado pendiente).
+            if time.monotonic() >= limite or not hueco.reintentar():
+                raise
+            crear_carpeta_de_locks(raiz)
+            continue
+        except FileExistsError:
+            try:
+                if _edad(lock_dir) > caduca_tras:
+                    # Robo por rename: borrarlo en su sitio deja que un segundo
+                    # ladrón borre el lock que un tercero acaba de tomar.
+                    # `os.replace` es atómico y solo uno lo gana.
+                    robado = raiz / f"{objetivo.name}.stale.{os.getpid()}.{uuid.uuid4().hex[:8]}"
+                    try:
+                        os.replace(lock_dir, robado)
+                    except OSError:
+                        time.sleep(0.05)
+                        continue
+                    _vaciar(robado)
+                    continue
+            except OSError:
+                pass
+            if time.monotonic() >= limite:
+                raise TimeoutError(f"Timeout waiting for lock: {lock_dir}")
+            time.sleep(0.05)
+            continue
+        try:
+            (lock_dir / "owner.json").write_text(
+                json.dumps({"pid": os.getpid(), "createdAt": time.time(), "token": token}),
+                encoding="utf-8",
+            )
+            return token
+        except OSError:
+            # Solo si `lock_dir` ya no está: lo dio por caducado alguien con un
+            # reloj muy desviado. Se vuelve a competir desde cero.
+            continue
+
+
+def soltar(objetivo: Path, token: str) -> None:
+    """Suelta el lock de `objetivo` solo si sigue siendo de la toma `token`.
+
+    Un lock robado por caducado ya es de otro, y borrarlo dejaba entrar a un
+    tercero con el ladrón todavía dentro (v40.34).
+    """
+    raiz, lock_dir = rutas_de_lock(objetivo)
+    try:
+        dueno = json.loads((lock_dir / "owner.json").read_text(encoding="utf-8"))
+        mio = isinstance(dueno, dict) and dueno.get("token") == token
+    except (OSError, ValueError):
+        mio = False
+    if mio:
+        # Apartarlo con un rename atómico antes de vaciarlo. En Windows el rename
+        # falla con PermissionError mientras otro proceso tiene `owner.json`
+        # abierto para medirle la edad; es transitorio, y rendirse a la primera
+        # dejaba el lock tomado hasta que caducara.
+        suelto = raiz / f"{objetivo.name}.released.{token[:8]}"
+        hasta = time.monotonic() + 5.0
+        while True:
+            try:
+                os.replace(lock_dir, suelto)
+                break
+            except PermissionError:
+                if time.monotonic() >= hasta:
+                    suelto = None
+                    break
+                time.sleep(0.01)
+            except OSError:
+                suelto = None
+                break
+        if suelto is not None:
+            _vaciar(suelto)
+    retirar_carpeta_si_vacia(raiz)
