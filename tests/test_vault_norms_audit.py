@@ -290,8 +290,11 @@ def test_heal_indexes_fixes_legacy_alias(tmp_path):
 
     root = _make_vault(tmp_path)
     _note(root / "01_Projects" / "demo.md", "title: Demo\nstatus: implemented", "# Demo")
+    # Con la marca del generador, como todo índice legado real: medido en la
+    # copia de /ans, los índices con este formato la llevan (v41.3).
     (root / "01_Projects" / "index.md").write_text(
-        "# idx\n\n| Nota | Tipo |\n|---|---|\n| [[demo|Demo — x/y]] | note |\n",
+        "# idx\n\n> Generado automáticamente · 2026-01-01\n\n"
+        "| Nota | Tipo |\n|---|---|\n| [[demo|Demo — x/y]] | note |\n",
         encoding="utf-8",
     )
     try:
@@ -324,8 +327,14 @@ def test_manual_index_write_self_heals(tmp_path):
     try:
         vault_io.set_vault_root(root)
         idx = root / "01_Projects" / "index.md"
-        atomic_write_text(idx, "# x\n\n| [[demo|Demo — y]] | note |\n")
+        # Un índice generado y retocado a mano se regenera…
+        atomic_write_text(idx, "# x\n\n> Generado automáticamente · 2026-01-01\n\n"
+                               "| [[demo|Demo — y]] | note |\n")
         text = idx.read_text(encoding="utf-8")
         assert "[[demo|" not in text and "[[demo]]" in text
+        # …y uno sin la marca no es del generador: se conserva tal cual (v41.3).
+        propio = "# x\n\n| [[demo|Demo y]] | note |\n"
+        atomic_write_text(idx, propio)
+        assert idx.read_text(encoding="utf-8") == propio
     finally:
         vault_io.reset_vault_root()

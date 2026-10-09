@@ -167,6 +167,35 @@ def migaja(
     return linea + "  ·  " + indice(f"{partes[0]}/index.md", partes[0])
 
 
+#: La línea que distingue un índice generado de uno escrito a mano. La lleva
+#: todo `index.md` que escribe el generador desde v25 (767a84a), y por eso es
+#: el criterio para decidir si la cascada puede reescribirlo.
+MARCA_DE_GENERADO = "Generado automáticamente"
+
+
+def es_indice_generado(texto: str) -> bool:
+    """¿Lo escribió el generador? Un fichero vacío no tiene nada que perder."""
+    return not texto.strip() or MARCA_DE_GENERADO in texto
+
+
+def indice_de_la_carpeta(carpeta: Path) -> Optional[Path]:
+    """El índice que ya hay en `carpeta`, sea `index.md`, `INDEX.md` o `Index.md`.
+
+    Se busca sin distinguir mayúsculas: en Windows y macOS son el mismo fichero,
+    y escribir `index.md` sobre un `INDEX.md` lo renombra. Si hay varios —un
+    sistema de ficheros que sí distingue—, gana el que se llama `index.md`.
+    """
+    try:
+        candidatos = sorted(p for p in carpeta.iterdir()
+                            if p.is_file() and p.name.lower() == "index.md")
+    except OSError:
+        return None
+    if not candidatos:
+        return None
+    exacto = [p for p in candidatos if p.name == "index.md"]
+    return (exacto or candidatos)[0]
+
+
 class RenderizadorDeIndice:
     """Convierte una lista de notas en el markdown de `index.md`.
 
@@ -212,7 +241,7 @@ class RenderizadorDeIndice:
             "",
             migaja(clave, self._indice_disponible),
             f"> **Propósito:** {descripcion}",
-            f"> Generado automáticamente · {ahora} · {len(notas)} nota(s)",
+            f"> {MARCA_DE_GENERADO} · {ahora} · {len(notas)} nota(s)",
             "",
         ]
 

@@ -49,6 +49,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vault.indices.seccion import (  # noqa: E402
     RE_ALIAS_EN_TABLA,
     RenderizadorDeIndice,
+    es_indice_generado,
+    indice_de_la_carpeta,
     migaja,
     recolectar_notas,
 )
@@ -346,6 +348,24 @@ def _build_index_content(
 
 
 
+def _indice_a_escribir(carpeta: Path) -> Optional[Path]:
+    """Dónde regenerar el índice de `carpeta`, o `None` si el que hay es ajeno.
+
+    Hasta v41.2 se escribía `carpeta/index.md` sin mirar: un índice escrito a
+    mano se perdía, y un `INDEX.md` acababa renombrado en un sistema de ficheros
+    que no distingue mayúsculas. Ahora el generador solo reescribe lo que lleva
+    su marca, y conserva el nombre que el fichero ya tenía.
+    """
+    existente = indice_de_la_carpeta(carpeta)
+    if existente is None:
+        return carpeta / "index.md"
+    try:
+        texto = existente.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    return existente if es_indice_generado(texto) else None
+
+
 def vault_section_index(
     folder: str, include_subdirs: bool = True, regeneracion_completa: bool = False
 ) -> Dict[str, Any]:
@@ -436,6 +456,7 @@ def vault_section_index(
 
     now = utcnow()
     notes = _collect_notes(section_path, include_subdirs)
+    preservados: List[str] = []
 
     # Discover immediate subdirectories (for subdir listing in index)
     subdir_folders: List[str] = []
@@ -457,7 +478,12 @@ def vault_section_index(
 
             # Generate sub-section index (no nested subdirs to avoid deep recursion)
             sub_notes = _collect_notes(sub, include_subdirs=True)
-            sub_index = sub / "index.md"
+            sub_index = _indice_a_escribir(sub)
+            if sub_index is None:
+                ajeno = indice_de_la_carpeta(sub)
+                preservados.append(str(ajeno.relative_to(vroot)).replace("\\", "/"))
+                subdir_indexes.append(preservados[-1])
+                continue
             assert_within_vault(sub_index, vroot)
             # Leaf lock on the index file itself: serializes concurrent regens of
             # this same sub-index (two notes in the section written at once). Safe
@@ -475,23 +501,29 @@ def vault_section_index(
             )
 
     # Write main section index — includes subdir listing
-    index_path = section_path / "index.md"
-    assert_within_vault(index_path, vroot)
-    # Leaf lock (see sub-index note above): serialize concurrent regens of this
-    # section index; deadlock-free because index.md is skipped by _auto_section_index.
-    with file_lock(index_path):
-        contenido = _build_index_content(
-            folder, notes, now, subdirs=subdir_folders or None,
-            indice_disponible=indice_disponible,
-        )
-        record_raw_write(index_path, contenido)
-        escritura_atomica(index_path, contenido)
+    index_path = _indice_a_escribir(section_path)
+    if index_path is None:
+        index_path = indice_de_la_carpeta(section_path)
+        preservados.append(str(index_path.relative_to(vroot)).replace("\\", "/"))
+    else:
+        assert_within_vault(index_path, vroot)
+        # Leaf lock (see sub-index note above): serialize concurrent regens of this
+        # section index; deadlock-free because index.md is skipped by _auto_section_index.
+        with file_lock(index_path):
+            contenido = _build_index_content(
+                folder, notes, now, subdirs=subdir_folders or None,
+                indice_disponible=indice_disponible,
+            )
+            record_raw_write(index_path, contenido)
+            escritura_atomica(index_path, contenido)
 
     return {
         "ok": True,
         "hub_warning": aviso_hub,
         **write_report(),
         "path": str(index_path.relative_to(vroot)).replace("\\", "/"),
+        # Índices que no llevan la marca del generador: se conservan tal cual.
+        "indice_ajeno_preservado": preservados,
         "noteCount": len(notes),
         "is_empty": len(notes) == 0,
         "subdirIndexes": subdir_indexes,
@@ -550,7 +582,9 @@ def heal_indexes(root: Optional[Path] = None) -> Dict[str, Any]:
                 except (OSError, UnicodeDecodeError):
                     reason = "unreadable"
                 else:
-                    if RE_ALIAS_IN_INDEX_TABLE.search(text):
+                    # Un índice escrito a mano no se «sana»: la regeneración lo
+                    # conservaría igual y aquí saldría como reparado sin serlo.
+                    if es_indice_generado(text) and RE_ALIAS_IN_INDEX_TABLE.search(text):
                         reason = "legacy_alias_format"
             if reason is None:
                 skipped += 1
