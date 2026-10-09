@@ -90,6 +90,17 @@ class RepositorioGobernanza:
     def cola_propagacion(self) -> Path:
         return self._ctx.ruta(CARPETA_SISTEMA, FICHERO_COLA_PROPAGACION)
 
+    def escribir_cola_propagacion(self, datos: dict, timeout: float = 30.0) -> None:
+        """Único escritor de `propagation-queue.json`: el dueño (deuda #3, residuo).
+
+        Hasta 2026-10-08 lo escribía `vault_propagate`, de Ciclo de vida, con
+        `atomic_write_json` bajo `file_lock`. Ciclo de vida delega aquí por el
+        par `ciclo_de_vida → gobernanza`, permanente en el presupuesto. El lock
+        y su espera son los de siempre; `vault_audit` solo la lee.
+        """
+        with self._ctx.escritor.bloquear(self.cola_propagacion, timeout):
+            self._ctx.escritor.escribir_json(self.cola_propagacion, datos)
+
     @property
     def instantanea_sesion(self) -> Path:
         return self._ctx.ruta(CARPETA_SISTEMA, FICHERO_INSTANTANEA_SESION)

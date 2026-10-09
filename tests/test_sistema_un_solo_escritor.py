@@ -48,7 +48,7 @@ def test_la_escritura_por_el_puerto_cuenta_y_apunta_a_su_primer_argumento():
         "move-log.json"]
 
 
-@pytest.mark.parametrize("subruta", ["move-log.json", ".change-log.json"])
+@pytest.mark.parametrize("subruta", ["move-log.json", ".change-log.json", "propagation-queue.json"])
 def test_la_subruta_la_escribe_solo_su_dueno(subruta):
     dueno = vault_arch.duenos_de_sistema()[subruta]
     assert _escritores(subruta) == {dueno}
@@ -80,3 +80,24 @@ def test_la_bitacora_de_cambios_la_escribe_gobernanza(tmp_path):
     texto = repo.bitacora_cambios.read_text(encoding="utf-8")
     assert json.loads(texto) == [{"action": "create", "path": "a.md"}]
     assert texto == json.dumps(json.loads(texto), indent=2, ensure_ascii=False)
+
+
+def test_la_cola_de_propagacion_la_escribe_gobernanza(tmp_path):
+    from vault.gobernanza.repositorio import RepositorioGobernanza
+    from vault.kernel import construir
+
+    repo = RepositorioGobernanza(construir(tmp_path))
+    datos = {"updated_at": "2026-10-08T00:00:00Z", "pending": [{"path": "a.md"}]}
+    repo.escribir_cola_propagacion(datos)
+    texto = repo.cola_propagacion.read_text(encoding="utf-8")
+    assert json.loads(texto) == datos
+    assert texto == json.dumps(datos, indent=2, ensure_ascii=False)
+
+
+def test_vault_audit_solo_lee_la_cola_de_propagacion():
+    """El comentario de Ciclo de vida decía que `vault_audit` también la
+    escribía; medido el 2026-10-08, solo la lee. Si un día la escribe, la
+    guarda lo verá como escritor y este test lo dirá antes."""
+    assert "vault_audit" not in {
+        e["module"] for e in vault_arch.escrituras_de_sistema()
+        if e["path"] == "propagation-queue.json"}

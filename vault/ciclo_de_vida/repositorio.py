@@ -4,9 +4,11 @@ Cuatro vínculos los contaba el guard de AP-49 y cuatro más no, por derivar de
 ellos sin nombrar `VAULT_ROOT`: `STAGING_DIR = MIGRATED_DIR / "_staging"`,
 `VERSION_FILE`, `IDENTITY_FILE` y `PROPAGATION_QUEUE`.
 
-`propagation-queue.json` la escribe también `vault_audit`, que es de Gobernanza.
-No se unifica aquí a propósito: el fichero es de Gobernanza —quien lo declara es
-`RepositorioGobernanza.cola_propagacion`— y `vault_propagate` lo recibe de allí.
+`propagation-queue.json` la lee también `vault_audit`, que es de Gobernanza
+(hasta 2026-10-08 aquí ponía «la escribe»; medido, solo la lee). No se unifica
+aquí a propósito: el fichero es de Gobernanza —quien lo declara es
+`RepositorioGobernanza.cola_propagacion`, y desde esa fecha también su único
+escritor— y `vault_propagate` lo recibe de allí.
 Declararlo dos veces sería AP-05 recién estrenado en el refactor que existe para
 cerrarlo.
 """

@@ -35,7 +35,7 @@ from vault_errors import emit_error, mensaje_de, wrap_main
 from vault_lib import separar_frontmatter, utcnow
 from vault_impact import vault_impact
 from vault_io import (
-    assert_within_vault, atomic_write_json, atomic_write_text, file_lock,
+    assert_within_vault, atomic_write_text,
     tomar_lock, write_report,
 )
 
@@ -76,7 +76,9 @@ def _system_dir() -> Path:
 def _propagation_queue() -> Path:
     """La cola no es de Ciclo de vida: se recibe del contexto que la declara.
 
-    `vault_audit` (Gobernanza) escribe en el mismo fichero. Que la ubicacion
+    `vault_audit` (Gobernanza) lee el mismo fichero —medido el 2026-10-08:
+    lo lee, no lo escribe— y la escritura la hace el dueño,
+    `RepositorioGobernanza.escribir_cola_propagacion`. Que la ubicacion
     venga de `RepositorioGobernanza` y no de una constante propia es
     deliberado — dos sitios decidiendo donde vive la cola es AP-05, y el dia
     que se mueva solo se enteraria uno.
@@ -101,10 +103,8 @@ def _read_propagation_queue() -> Dict[str, Any]:
 
 
 def _write_propagation_queue(data: Dict[str, Any]) -> None:
-    _system_dir().mkdir(parents=True, exist_ok=True)
     data["updated_at"] = utcnow()
-    with file_lock(_propagation_queue(), timeout=30.0):
-        atomic_write_json(_propagation_queue(), data)
+    RepositorioGobernanza(construir()).escribir_cola_propagacion(data, timeout=30.0)
 
 
 #: Espera máxima por el lock de una nota; la misma que vault_write y vault_append.
