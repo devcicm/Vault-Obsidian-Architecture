@@ -207,6 +207,7 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "tests/test_arch_escrituras_de_sistema.py::test_un_contexto_que_escribe_la_subruta_de_otro_es_un_cruce",
             "tests/test_arch_escrituras_de_sistema.py::test_la_puerta_frena_un_cruce_nuevo_y_no_los_congelados",
             "tests/test_sistema_un_solo_escritor.py::test_la_subruta_la_escribe_solo_su_dueno",
+            "tests/test_arch_escrituras_por_parametro.py::test_el_caso_medido_tool_spec_no_tiene_dueno_ni_escritor_visible",
         ],
         "desde": "v40.9",
         "capa": "3",
@@ -226,7 +227,15 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "que es quien lo escribe, y Consulta lo reexporta anotado. "
             "`system_writes` quedó vacío con el fichero en pie. Cobertura: no ve rutas que "
             "llegan por parámetro desde otro módulo ni subrutas calculadas, y "
-            "falla del lado de no marcar.)"
+            "falla del lado de no marcar. Caso medido el 2026-10-09: "
+            "`vault_manifest --bootstrap` escribe `00_System/tool-spec.json` "
+            "con `atomic_write_json(tool_spec_path())`; la ruta sale de "
+            "`vault_io`, la subruta colapsa a «la carpeta» y no se reporta, y "
+            "`tool-spec.json` no tiene dueño entre las subrutas registradas. Un "
+            "helper de nombre neutro que recibe la ruta tampoco se ve; uno que "
+            "se llama como una escritura, sí. "
+            "`tests/test_arch_escrituras_por_parametro.py` fija el límite para "
+            "que quien lo cubra tenga que corregir esta declaración.)"
         ),
         "por_que_no_ahora": (
             "Exige antes sanear `_LLAMADAS_DE_ESCRITURA` —incluye `replace`, que "
