@@ -5245,8 +5245,8 @@ def sync_to_json(output_path: Optional[str] = None) -> str:
             return f"vault_toolkit.operations.{stem}"
         return None
 
-    # Tools gobernanza/meta/internal no se exponen via MCP.
-    GRUPOS_NO_EXPUESTOS = {"Normas", "meta"}
+    # Tools de gobernanza del estándar, internal o archived no se exponen via MCP.
+    GRUPOS_NO_EXPUESTOS = set(grupos_no_expuestos())
     STATUS_NO_EXPUESTO = {"internal", "archived", "orphan"}
 
     tools_json = {}
@@ -5537,6 +5537,39 @@ def mapa_de_grupos() -> Dict[str, Dict[str, Any]]:
         for t in tools
     }
 
+
+# Citas retiradas del conjunto de grupos no expuestos (no-derogación).
+GRUPOS_NO_EXPUESTOS_RETIRADOS: Dict[str, Dict[str, str]] = {
+    "meta": {
+        "superseded_by": "grupos_no_expuestos() — CAPACIDADES['gobernanza_del_estandar']",
+        "why": (
+            "«meta» no es un grupo de GROUPS: solo es el `group` que vault_manifest "
+            "pone a seis tools `internal` del tool-spec, que ya se ocultan por su "
+            "status. La cita no excluía nada (medido en v41.2)."
+        ),
+        "since": "v41.3",
+    },
+}
+
+
+def grupos_no_expuestos() -> List[str]:
+    """Grupos de `GROUPS` que no se exponen a MCP, derivados de la capacidad.
+
+    Son los de `CAPACIDADES['gobernanza_del_estandar']`: miden este repo y no las
+    notas de nadie, así que un agente que usa el vault no tiene para qué
+    llamarlos. Hasta v41.2 era un conjunto escrito a mano que citaba un grupo
+    inexistente; ahora un grupo que entre o salga de la capacidad cambia la
+    exposición sin tocar este fichero. Los datos se leen de la hoja
+    `vault.meta_toolkit.capacidades` y no de `vault_servicio`, que importa este
+    módulo (AP-58).
+    """
+    raiz = str(Path(__file__).resolve().parent.parent)
+    if raiz not in sys.path:
+        sys.path.insert(0, raiz)
+    from vault.meta_toolkit.capacidades import CAPACIDADES
+
+    ids = set(CAPACIDADES["gobernanza_del_estandar"]["grupos"])
+    return sorted({d["name"] for d in mapa_de_grupos().values() if d["id"] in ids})
 
 def check_contracts(spec_path: Optional[str] = None) -> Dict[str, Any]:
     """Guard catálogo ↔ `tool-spec.json`.

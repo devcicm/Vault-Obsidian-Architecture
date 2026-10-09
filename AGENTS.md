@@ -12,7 +12,7 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | `vault-obsidian-architecture.md` | **El manifiesto.** Representación pública del estándar (~11.000 líneas). Fuente normativa. |
 | `scripts/*.py` | ~161 scripts, 123 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
-| `tests/` | Suite pytest (5108 tests). Toda norma con guard debe tener test. |
+| `tests/` | Suite pytest (5113 tests). Toda norma con guard debe tener test. |
 | `normas/` | Normas como paquete (`normas/<código>/`: `norma.py`, `porque.md`, `test_*.py`). Las carga `vault_norms_catalog` en su sitio del catálogo; la forma la vigila `--check-framework`. Piloto: AP-65. |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
@@ -23,7 +23,8 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 
 ## El servicio y sus tres capacidades
 
-**Fuente única: `scripts/vault_servicio.py`** (`SERVICIO` + `CAPACIDADES`). Lo de aquí
+**Fuente única: `scripts/vault_servicio.py`** (`SERVICIO` + `CAPACIDADES`, cuyos datos viven
+en la hoja `vault/meta_toolkit/capacidades.py` desde v41.3 por AP-58). Lo de aquí
 abajo es la lectura en prosa de ese registro, no una segunda declaración: si divergen,
 manda el registro y esta sección se corrige. Qué capacidad realiza cada grupo lo dice
 `python scripts/vault_servicio.py --trace`, y una puerta falla si algún grupo se queda
