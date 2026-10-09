@@ -516,7 +516,19 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "/vcloud, 106 notas, umbral 26 (ratio 1.444), una nota núcleo, "
             "`09_Infrastructure/network-topology.md`. Sigue pendiente lo que la "
             "medida habilita y no hace todavía: la prioridad en "
-            "`vault_context_pack`, el orden de la sanación y cualquier peso.)"
+            "`vault_context_pack`, el orden de la sanación y cualquier peso. "
+            "Medida y descartada, 2026-10-09: la prioridad en el paquete —las "
+            "candidatas del núcleo entran primero cuando la ventana no cabe, "
+            "sin traer ninguna que la consulta no recuperó— se implementó y se "
+            "midió con recall título → paquete sobre copias nuevas, y **baja** "
+            "el recall: /vcloud a 500 tokens de 1.0 a 0.76; /ans a 800 de 0.96 "
+            "a 0.92 y a 500 de 0.84 a 0.80; la nota buscada en primera "
+            "posición cae en los dos (vcloud de 1.0 a 0.76–0.80, ans de 0.84 a "
+            "0.72). La causa es la del corte: el núcleo es una nota-hub que el "
+            "grafo trae como candidata a casi toda consulta, y adelantarla "
+            "desplaza a la que la consulta buscaba. Revertida, como pedía el "
+            "criterio fijado antes de medir. Lo que queda habilitado es "
+            "orden de sanación o peso, y ninguno se mide todavía.)"
         ),
     },
     {
