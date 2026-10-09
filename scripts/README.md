@@ -2826,7 +2826,10 @@ python vault_kernel.py --check                     # las tres invariantes y los 
 python vault_kernel.py --check --strict            # exit 1 si aparece un hallazgo nuevo (puerta 18)
 python vault_kernel.py --trace vault_context_pack  # si toco esto, ¿qué se cae?
 python vault_kernel.py --freeze                    # baseline; solo puede encoger
+python vault_kernel.py --aviso-indice              # ¿el commit en curso cruza K3? avisa, nunca falla
 ```
+
+**K3 no ve el commit que se está haciendo, y eso se avisa en vez de medirse (v41.3).** El churn sale de `git log`, así que la puerta que corre antes de commitear no cuenta el commit en curso: el que cruza el umbral pasa en verde y el siguiente hereda el rojo. Contar el índice dentro de la medida haría que la misma cifra cambiase según se ejecute antes o después de commitear, y la CI mide después. La cifra canónica sigue siendo la de `git log`; `--aviso-indice` lee lo stageado con el mismo criterio de comportamiento y el pre-commit lo imprime como aviso, sin bloquear.
 
 **Lo caro no es equivocarse de lista: es que todo lo que se apoya en ella hereda el error en silencio.** Un módulo declarado núcleo sin serlo queda eximido por `vault_arch` de reglas que sí debería cumplir, y sale verde. Uno que lo es sin estar declarado propaga cada cambio hacia arriba sin que nadie lo trate como un cambio de núcleo. En ambos casos el verde es correcto **respecto a un mapa equivocado**, que es la peor clase de verde.
 

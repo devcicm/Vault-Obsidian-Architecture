@@ -280,8 +280,18 @@ def _cambios_de_todos() -> Optional[List[Tuple[str, str, str]]]:
     )
     if r.returncode != 0:
         return None
+    return _cambios_de_raw(r.stdout)
+
+
+def _cambios_de_raw(salida: str) -> List[Tuple[str, str, str]]:
+    """`(módulo, blob_antes, blob_después)` de una salida `--raw --no-abbrev`.
+
+    Una sola lectura para la historia y para el índice: si cada una parseara
+    el formato por su cuenta, el aviso del pre-commit podría contar un cambio
+    que la medida canónica no cuenta, o al revés.
+    """
     cambios: List[Tuple[str, str, str]] = []
-    for linea in r.stdout.splitlines():
+    for linea in salida.splitlines():
         if not linea.startswith(":"):
             continue
         meta, _, rutas = linea.partition("\t")
@@ -544,6 +554,76 @@ def medir() -> Dict[str, Any]:
     }
 
 
+# ── K3 sobre el commit en curso: aviso, no medida ─────────────────────────────
+#
+# Deuda #15, decidida el 2026-10-08. `churn()` cuenta con `git log` y por eso
+# la puerta que corre antes de commitear no ve el commit que se está haciendo:
+# el que cruza el umbral pasa en verde y el siguiente —aunque no toque el
+# módulo— hereda el rojo. Contar el índice dentro de `churn()` lo arreglaría a
+# costa de que la misma medida diera cifras distintas antes y después de
+# commitear, y la CI mide después. Así que la cifra canónica no cambia: el
+# índice se lee aparte, con el mismo criterio de comportamiento, y solo para
+# avisar a quien commitea de que va a cruzar el umbral.
+
+
+def _cambios_del_indice() -> Optional[List[Tuple[str, str, str]]]:
+    r = subprocess.run(
+        ["git", "diff", "--cached", "--raw", "--no-abbrev", "--", "scripts"],
+        cwd=RAIZ_REPO, capture_output=True, text=True, encoding="utf-8",
+        errors="replace",
+    )
+    if r.returncode != 0:
+        return None
+    return _cambios_de_raw(r.stdout)
+
+
+def aviso_del_indice() -> Dict[str, Any]:
+    """Módulos del kernel que el commit en curso haría cruzar el umbral de K3.
+
+    Solo lectura y nunca bloquea: es un aviso del pre-commit, no una puerta.
+    Un módulo que ya está por encima no se repite aquí —ese ya lo ve la
+    puerta—; el aviso es para el que **cruza** con este commit.
+    """
+    base = {"tool": "vault_kernel", "action": "aviso_indice"}
+    cambios = _cambios_del_indice()
+    if cambios is None:
+        return {**base, "ok": True, "avisos": [], "indice_leido": False,
+                "hint": "no se pudo leer el índice de git: sin aviso, y eso "
+                        "no dice que el commit no cruce el umbral"}
+    m = medir()
+    kernel = set(m["kernel"])
+    umbral = m["umbral_churn"]
+    del_kernel = [c for c in cambios if c[0] in kernel]
+    ids = sorted({b for _, a, d in del_kernel for b in (a, d) if set(b) != {"0"}})
+    blobs = _leer_blobs(ids) if ids else {}
+    if blobs is None:
+        return {**base, "ok": True, "avisos": [], "indice_leido": False,
+                "hint": "no se pudieron leer los blobs del índice: sin aviso, "
+                        "y eso no dice que el commit no cruce el umbral"}
+    huella = {i: huella_de_comportamiento(b) for i, b in blobs.items()}
+    avisos: List[Dict[str, Any]] = []
+    for modulo, antes, despues in del_kernel:
+        if huella.get(antes) == huella.get(despues):
+            continue
+        c = m["churn"].get(modulo)
+        if c is None or umbral is None or not (c < umbral <= c + 1):
+            continue
+        avisos.append({
+            "module": modulo, "churn": c, "churn_tras_el_commit": c + 1,
+            "umbral_churn": umbral,
+            "why": (f"este commit cambia el comportamiento de un módulo del "
+                    f"núcleo y lo lleva de {c} a {c + 1} ≥ {umbral}: la "
+                    "puerta pasa ahora y el commit siguiente heredará el rojo"),
+        })
+    return {
+        **base, "ok": True, "avisos": avisos, "indice_leido": True,
+        "hint": ("Aviso, no medida: la cifra canónica de K3 sigue siendo la "
+                 "de `git log`, la que mide la CI después del commit. Si el "
+                 "módulo de verdad tiene que cambiar, el arreglo es darle "
+                 "forma de núcleo o sacarlo del kernel, no ampliar la baseline."),
+    }
+
+
 def firma(h: Dict[str, Any]) -> str:
     """Indexada por **nombre de módulo**, no por línea ni por hash de código.
 
@@ -707,6 +787,9 @@ def main() -> int:
                     help="camino más corto de un módulo hasta el núcleo")
     ap.add_argument("--freeze", action="store_true")
     ap.add_argument("--admitir-nuevos", action="store_true")
+    ap.add_argument("--aviso-indice", action="store_true",
+                    help="avisa si el commit en curso haría cruzar el umbral "
+                         "de K3 a un módulo del núcleo; nunca falla")
     args = ap.parse_args()
 
     if args.freeze and (args.check or args.trace):
@@ -716,6 +799,9 @@ def main() -> int:
         print(json.dumps(env, ensure_ascii=False))
         return 1
 
+    if args.aviso_indice:
+        print(json.dumps(aviso_del_indice(), ensure_ascii=False))
+        return 0
     if args.trace:
         r = trace(args.trace)
     elif args.freeze:

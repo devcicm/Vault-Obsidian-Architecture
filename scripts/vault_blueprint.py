@@ -500,7 +500,13 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     },
     {
         "id": "churn_del_kernel_no_ve_el_commit_en_curso",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "v41.2",
+        "sostenida_por": [
+            "tests/test_kernel_aviso_del_indice.py::test_el_commit_que_cruza_el_umbral_se_avisa_antes_de_hacerse",
+            "tests/test_kernel_aviso_del_indice.py::test_la_cifra_canonica_no_cuenta_el_indice",
+            "tests/test_kernel_aviso_del_indice.py::test_el_pre_commit_pide_el_aviso_y_no_bloquea",
+        ],
         "desde": "v41.1",
         "capa": "7",
         "que": (
@@ -517,7 +523,10 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "pre-commit pero hace que la misma medida dé cifras distintas según "
             "se ejecute antes o después de commitear, y la CI mide después. "
             "Hay que decidir cuál es la medida canónica antes de cambiar el "
-            "contador."
+            "contador. (Decidido el 2026-10-08: la canónica es la de `git "
+            "log`, la que mide la CI. `vault_kernel --aviso-indice` lee el "
+            "índice con el mismo criterio de comportamiento y el pre-commit "
+            "avisa del cruce sin bloquear ni cambiar la cifra publicada.)"
         ),
     },
     {

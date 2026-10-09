@@ -62,3 +62,7 @@ if [ -n "$skipped" ]; then
     echo "[pre-commit] sin stagear; NO se añaden:$skipped" >&2
 fi
 echo "[pre-commit] Artefactos derivados al día."
+
+# K3 (AP-59) cuenta el churn con `git log` y no ve este commit: se avisa si
+# lo va a cruzar. La cifra canónica no cambia y el aviso nunca bloquea.
+python scripts/vault_kernel.py --aviso-indice 2>/dev/null | python -c "import json,sys; [print('[pre-commit] AVISO K3:', a['why'], file=sys.stderr) for a in json.load(sys.stdin).get('avisos', [])]" || true

@@ -3232,6 +3232,10 @@
           "admitir-nuevos": {
             "type": "boolean",
             "description": "Permite congelar hallazgos sin precedente"
+          },
+          "aviso-indice": {
+            "type": "boolean",
+            "description": "avisa si el commit en curso haría cruzar el umbral de K3 a un módulo del núcleo; nunca falla"
           }
         },
         "additionalProperties": false

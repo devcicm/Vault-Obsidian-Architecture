@@ -50,8 +50,11 @@ def test_hook_resuelve_checkout_convencional_y_worktree(tmp_path):
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
     python_spy = bin_dir / "python"
+    # Solo `vault_fix_all`: desde v41.3 el hook también pide el aviso de K3
+    # (`vault_kernel --aviso-indice`), y ese no es lo que se mide aquí.
     python_spy.write_text(
-        "#!/bin/sh\nprintf '%s|%s\\n' \"$(git rev-parse --show-toplevel)\" "
+        "#!/bin/sh\ncase \"$*\" in *vault_fix_all*) ;; *) exit 0;; esac\n"
+        "printf '%s|%s\\n' \"$(git rev-parse --show-toplevel)\" "
         "\"$(git rev-parse --show-prefix)\" >> \"$HOOK_PROBE\"\n",
         encoding="utf-8",
     )
@@ -110,6 +113,7 @@ def test_hook_solo_stagea_lo_que_regenero_sobre_ficheros_limpios(tmp_path):
     spy = bin_dir / "python"
     spy.write_text(
         "#!/bin/sh\ncase \"$*\" in *--dry-run*) exit 0;; esac\n"
+        "case \"$*\" in *vault_fix_all*) ;; *) exit 0;; esac\n"
         "echo regenerado >> derivado.txt\necho regenerado >> mixto.txt\n",
         encoding="utf-8",
     )
