@@ -782,6 +782,7 @@ def capas() -> Dict[str, Any]:
     servicio = r["servicio"]
     traza = servicio.trazabilidad()
     cobertura = cobertura_de_normas()
+    sin_hogar = r["arch"].modulos_sin_hogar()
 
     tools_por_grupo: Dict[str, int] = {}
     for fila in traza:
@@ -807,10 +808,13 @@ def capas() -> Dict[str, Any]:
                 "puertos": len(datos["puertos"]),
                 "modulos": len(datos["modulos"]),
                 "prohibe": datos["prohibe"],
+                # Puente de ADR-0002 (deuda #12): módulos del contexto que no
+                # importan nada de `vault/<ctx>/`. Va dentro de la capa —es una
+                # cifra de contextos— y no como capa propia, que rompería las siete.
+                "sin_hogar": sum(1 for m in sin_hogar if r["arch"].contexto_de(m) == ctx),
             }
             for ctx, datos in r["arch"].CONTEXTS.items()
         },
-        "3_puente_sin_hogar": len(r["arch"].modulos_sin_hogar()),
         "4_normas": cobertura,
         "5_tools": {
             "total": len(traza),
@@ -889,13 +893,13 @@ def blueprint() -> str:
     A("documentos con dos sujetos, y fundirlos habría hecho un solo documento que nadie")
     A("regenera.*")
     A("")
-    A("| Contexto | Puertos | Módulos | Prohíbe |")
+    A("| Contexto | Puertos | Módulos | Sin hogar | Prohíbe |")
     A("|---|---|---|---|")
     for ctx, datos in c["3_contextos"].items():
         prohibe = "; ".join(datos["prohibe"]) or "—"
-        A(f"| **{datos['titulo']}** (`{ctx}`) | {datos['puertos']} | {datos['modulos']} | {prohibe} |")
+        A(f"| **{datos['titulo']}** (`{ctx}`) | {datos['puertos']} | {datos['modulos']} | {datos['sin_hogar']} | {prohibe} |")
     A("")
-    A(f"**Puente de ADR-0002:** {c['3_puente_sin_hogar']} módulos de `scripts/` no importan "
+    A(f"**Puente de ADR-0002:** {sum(d['sin_hogar'] for d in c['3_contextos'].values())} módulos de `scripts/` no importan "
       "nada de `vault/<su contexto>/` (`vault_arch.modulos_sin_hogar`). La cifra solo "
       "encoge: un módulo nuevo sin hogar bloquea `vault_arch --check`. Importar del "
       "contexto es empezar a delegar, no haber migrado.")

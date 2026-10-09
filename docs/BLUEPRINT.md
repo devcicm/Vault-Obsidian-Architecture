@@ -50,18 +50,18 @@ capacidad tiene al menos una tool viva (`vault_servicio.py --check --strict`).
 documentos con dos sujetos, y fundirlos habría hecho un solo documento que nadie
 regenera.*
 
-| Contexto | Puertos | Módulos | Prohíbe |
+| Contexto | Puertos | Módulos | Sin hogar | Prohíbe |
 |---|---|---|---|
-| **Kernel** (`kernel`) | 4 | 23 | depender de cualquier contexto de dominio |
-| **Autoría** (`autoria`) | 7 | 46 | — |
-| **Grafo** (`grafo`) | 4 | 15 | — |
-| **Gobernanza** (`gobernanza`) | 21 | 13 | — |
-| **Índices** (`indices`) | 9 | 7 | — |
-| **Consulta** (`consulta`) | 7 | 11 | base de datos; embeddings; servicio externo |
-| **Ciclo de vida** (`ciclo_de_vida`) | 3 | 10 | — |
-| **Durabilidad** (`durabilidad`) | 4 | 4 | escribir fuera de la raíz del vault (AP-36) |
-| **Meta-toolkit** (`meta_toolkit`) | 6 | 32 | escribir en una sección de contenido: sus artefactos derivados viven en 00_System/ |
-| **CLI** (`cli`) | 0 | 8 | decidir: traduce argumentos a llamadas y envelopes a salida; la decisión vive en la tool |
+| **Kernel** (`kernel`) | 4 | 23 | 17 | depender de cualquier contexto de dominio |
+| **Autoría** (`autoria`) | 7 | 46 | 10 | — |
+| **Grafo** (`grafo`) | 4 | 15 | 4 | — |
+| **Gobernanza** (`gobernanza`) | 21 | 13 | 4 | — |
+| **Índices** (`indices`) | 9 | 7 | 2 | — |
+| **Consulta** (`consulta`) | 7 | 11 | 2 | base de datos; embeddings; servicio externo |
+| **Ciclo de vida** (`ciclo_de_vida`) | 3 | 10 | 3 | — |
+| **Durabilidad** (`durabilidad`) | 4 | 4 | 0 | escribir fuera de la raíz del vault (AP-36) |
+| **Meta-toolkit** (`meta_toolkit`) | 6 | 32 | 26 | escribir en una sección de contenido: sus artefactos derivados viven en 00_System/ |
+| **CLI** (`cli`) | 0 | 8 | 0 | decidir: traduce argumentos a llamadas y envelopes a salida; la decisión vive en la tool |
 
 **Puente de ADR-0002:** 68 módulos de `scripts/` no importan nada de `vault/<su contexto>/` (`vault_arch.modulos_sin_hogar`). La cifra solo encoge: un módulo nuevo sin hogar bloquea `vault_arch --check`. Importar del contexto es empezar a delegar, no haber migrado.
 
@@ -377,7 +377,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 | Baseline | Norma | Congelado | Objetivo | Pendiente |
 |---|---|---|---|---|
 | `scripts/arch-baseline.json` | cruces entre contextos | 37 | — *sin objetivo* | 37 → 37 → 37 → 37 → 37 → 37 (encoge, Δ-25) |
-| `scripts/arch-baseline.json` | cruces fuera de puerto | 8 | — *sin objetivo* | 8 → 8 → 8 → 8 → 8 → 8 (encoge, Δ-5) |
+| `scripts/arch-baseline.json` | cruces fuera de puerto | 8 | — *sin objetivo* | 8 → 8 → 8 → 8 → 8 → 8 (encoge, Δ-4) |
 | `scripts/blame-baseline.json` | AP-51 | 33 | — *sin objetivo* | 87 → 84 → 83 → 45 → 33 → 33 (encoge, Δ-53) |
 | `scripts/error-contract-baseline.json` | AP-52 | 0 | — *sin objetivo* | 158 → 110 → 110 → 0 → 9 → 0 (encoge, Δ-158) |
 | `scripts/noop-baseline.json` | AP-37 | 0 | — *sin objetivo* | 0 → 0 → 0 (plana, Δ+0) |

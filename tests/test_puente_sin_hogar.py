@@ -63,6 +63,23 @@ def test_el_plano_publica_la_cifra_derivada():
     assert f"{len(vault_arch.modulos_sin_hogar())} módulos de `scripts/`" in texto
 
 
+def test_la_cifra_vive_dentro_de_la_capa_3_y_no_estrena_capa():
+    """m150 la publicó como octava clave de `capas()` y rompió las siete capas
+    del plano. La cifra es de contextos: cada contexto dice cuántos de sus
+    módulos siguen sin hogar, y la suma es la cifra del puente."""
+    import vault_blueprint
+
+    c = vault_blueprint.capas()
+    assert len(c) == 7 and "3_puente_sin_hogar" not in c
+    por_contexto = {ctx: d["sin_hogar"] for ctx, d in c["3_contextos"].items()}
+    assert sum(por_contexto.values()) == len(vault_arch.modulos_sin_hogar())
+    esperado = {}
+    for modulo in vault_arch.modulos_sin_hogar():
+        ctx = vault_arch.contexto_de(modulo)
+        esperado[ctx] = esperado.get(ctx, 0) + 1
+    assert {k: v for k, v in por_contexto.items() if v} == esperado
+
+
 def test_el_piloto_vive_en_el_kernel_y_scripts_lo_reexporta():
     """Primera migración (2026-10-09): `vault_subproceso`, hoja del kernel.
 
