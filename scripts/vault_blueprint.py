@@ -569,7 +569,16 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "motivo: `vault_norms_catalog` y `vault_entorno` (otros módulos y "
             "tests leen su fuente por ruta), `vault_grafo_import` (usa "
             "`__file__`), `vault_secret_scan` (lo leen por ruta tres tests y "
-            "`vault_standard_upgrade`) y `vault_version` (lo lee `cli/`).)"
+            "`vault_standard_upgrade`) y `vault_version` (lo lee `cli/`). "
+            "Lote B, 2026-10-09: `vault_secret_scan` a gobernanza. Lo que lo "
+            "frenaba no eran los lectores —`vault_standard_upgrade` solo lo "
+            "nombra en una cadena— sino que es CLI: un alias en `sys.modules` "
+            "no ejecuta el `__main__` del dueño, así que el alias de una tool "
+            "con CLI lo delega con `runpy`. Los guards que leen el fuente de "
+            "una tool siguen el alias hasta el dueño por un solo sitio, "
+            "`vault_grafo_import.fuente_de`. `vault_version` sigue fuera: "
+            "`cli/` ejecuta su fichero con `spec_from_file_location` para no "
+            "tocar `sys.path`, y un alias no tiene `CURRENT_VERSION`.)"
         ),
         "por_que_no_ahora": (
             "Transitorio hasta migrar scripts → vault/<contexto>, ADR-0002. "

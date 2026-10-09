@@ -74,7 +74,8 @@ def _dueno_del_alias(ruta: Path) -> str | None:
     """El módulo dueño si `ruta` es un alias del puente, o None.
 
     La forma del alias es la de la deuda #12: `import vault.<ctx>.<n> as _dueno`
-    seguido de `sys.modules[__name__] = _dueno`. Se reconoce por esa
+    seguido de `sys.modules[__name__] = _dueno`, al nivel del módulo o en la
+    rama `else` del alias de una tool con CLI. Se reconoce por esa
     asignación, no por el nombre del fichero: un módulo que solo importa de
     `vault/` delega, pero sigue teniendo código propio.
     """
@@ -83,7 +84,9 @@ def _dueno_del_alias(ruta: Path) -> str | None:
     except (OSError, SyntaxError):
         return None
     ligados: Dict[str, str] = {}
-    for nodo in arbol.body:
+    # `ast.walk` y no `arbol.body`: el alias de una tool con CLI va dentro de
+    # `if __name__ == "__main__": ... else: ...` (runpy en una rama).
+    for nodo in ast.walk(arbol):
         if isinstance(nodo, ast.Import):
             for a in nodo.names:
                 if a.asname and a.name.startswith("vault."):

@@ -357,9 +357,12 @@ CONTEXTS: dict[str, dict] = {
             "validar_mermaid": "vault_mermaid_check:validate_mermaid",
             # El gancho de secretos lo llama el write path del kernel: es la
             # única forma que tiene gobernanza de intervenir antes de que una
-            # escritura ocurra, así que es frontera de pleno derecho.
-            "gancho_de_secretos": "vault_secret_scan:vault_write_hook",
-            "hay_hallazgos_bloqueantes": "vault_secret_scan:has_blocking_findings",
+            # escritura ocurra, así que es frontera de pleno derecho. Desde el
+            # lote B de la deuda #12 (2026-10-09) el símbolo vive en
+            # `vault/gobernanza/secret_scan`; `vault_secret_scan` es su alias y
+            # un puerto se declara donde el símbolo vive (v40.17).
+            "gancho_de_secretos": "vault/gobernanza/secret_scan:vault_write_hook",
+            "hay_hallazgos_bloqueantes": "vault/gobernanza/secret_scan:has_blocking_findings",
         },
         "prohibe": [],
         "modulos": [

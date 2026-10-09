@@ -176,3 +176,30 @@ def test_los_guards_que_leen_el_fuente_siguen_el_alias_hasta_el_dueno():
     assert "AP-44" in nc._fuente("vault_mermaid_reglas")
     assert not [c for c in vault_arch.copias_de_vocabulario()
                 if "fundamentals_catalog" in str(c.get("module", c))]
+
+
+def test_lote_b_un_alias_ejecutado_como_script_corre_el_main_del_dueno(tmp_path):
+    """Lote B de la deuda #12 (2026-10-09): `vault_secret_scan` es hoja pero
+    también CLI. Un alias en `sys.modules` no ejecuta el `__main__` del dueño
+    —el dueño se carga con su propio nombre—, así que el alias de una tool con
+    CLI lo delega con `runpy`. Se prueba por las dos puertas: import y script."""
+    import importlib
+    import subprocess
+
+    assert "vault_secret_scan" not in set(vault_arch.modulos_sin_hogar())
+    assert (importlib.import_module("vault_secret_scan")
+            is importlib.import_module("vault.gobernanza.secret_scan"))
+
+    import vault_grafo_import as gi
+
+    assert gi.fuente_de("vault_secret_scan") == (
+        ROOT / "vault" / "gobernanza" / "secret_scan.py").resolve()
+
+    nota = tmp_path / "n.md"
+    nota.write_text("api_key = 'AKIAABCDEFGHIJKLMNOP'\n", encoding="utf-8")
+    r = subprocess.run([sys.executable, str(ROOT / "scripts" / "vault_secret_scan.py"),
+                        str(nota)], capture_output=True, text=True, encoding="utf-8")
+    assert "potential secret" in r.stdout, (r.returncode, r.stdout, r.stderr)
+    r = subprocess.run([sys.executable, str(ROOT / "scripts" / "vault_secret_scan.py"),
+                        str(nota), "--json"], capture_output=True, text=True, encoding="utf-8")
+    assert r.returncode == 2, "argparse del dueño no corrió"

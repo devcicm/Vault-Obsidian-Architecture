@@ -90,7 +90,6 @@
     "vault_registry",
     "vault_runbook_log",
     "vault_sanacion",
-    "vault_secret_scan",
     "vault_section",
     "vault_spec_catalog_check",
     "vault_spec_generate_catalog",
