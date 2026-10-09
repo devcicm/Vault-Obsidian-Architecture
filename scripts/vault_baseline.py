@@ -340,6 +340,35 @@ def estado_objetivo(path: Path, clave: str, norma: str,
 
 # ── La pendiente, derivada de git ────────────────────────────────────────────
 
+def _tamano_en_curso(path: Path, rel: str, clave: str) -> Optional[int]:
+    """El tamaño del fichero en disco si difiere del de HEAD; si no, `None`.
+
+    Se compara el contenido, no la fecha: un fichero tocado sin cambios no es un
+    cambio en curso. Un fichero ilegible tampoco aporta punto —inventar su tamaño
+    sería escribir historia—, y lo dirá quien lo cargue con `cargar`.
+    """
+    try:
+        en_disco = path.read_bytes()
+    except OSError:
+        return None
+    try:
+        head = vault_subproceso.ejecutar(["git", "show", f"HEAD:{rel}"], cwd=REPO_ROOT,
+                                         capture_output=True, timeout=30, check=False)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    def _sin_cr(texto: str) -> str:
+        return texto.replace("\r\n", "\n")
+    if head.returncode == 0 and _sin_cr(head.stdout) == _sin_cr(
+            en_disco.decode("utf-8", "replace")):
+        return None
+    try:
+        datos = json.loads(en_disco.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    valor = datos.get(clave) if isinstance(datos, dict) else None
+    return None if valor is None else tamano_congelado(valor)
+
+
 def pendiente(path: Path, clave: str, norma: str, ultimos: int = 20) -> Dict[str, Any]:
     """Cómo ha cambiado el tamaño de esta baseline, commit a commit.
 
@@ -350,9 +379,15 @@ def pendiente(path: Path, clave: str, norma: str, ultimos: int = 20) -> Dict[str
     como «esta deuda nunca se movió».
     """
     rel = path.relative_to(REPO_ROOT).as_posix()
+    # El cambio en curso cuenta como un punto, y entonces git aporta uno menos.
+    # Sin esto, el plano regenerado antes del commit que toca la baseline dejaba
+    # de estar al día justo después: la ventana de `git log -N` se desplazaba un
+    # commit y la serie empezaba en otro sitio (m166 existió solo para eso).
+    en_curso = _tamano_en_curso(path, rel, clave)
     try:
         salida = vault_subproceso.ejecutar(
-            ["git", "log", f"-{ultimos}", "--format=%H %cs", "--", rel],
+            ["git", "log", f"-{ultimos - (1 if en_curso is not None else 0)}",
+             "--format=%H %cs", "--", rel],
             cwd=REPO_ROOT, capture_output=True, timeout=30, check=False)
     except (OSError, subprocess.SubprocessError) as e:
         return {"disponible": False, "motivo": f"git no ejecutable: {e}", "serie": []}
@@ -379,6 +414,9 @@ def pendiente(path: Path, clave: str, norma: str, ultimos: int = 20) -> Dict[str
             serie.append({"commit": commit[:7], "fecha": fecha.strip(),
                           "tamano": tamano_congelado(valor)})
     serie.reverse()  # del más viejo al más nuevo, que es como se lee una pendiente
+    if en_curso is not None:
+        serie.append({"commit": "en_curso", "fecha": date.today().isoformat(),
+                      "tamano": en_curso})
     delta = (serie[-1]["tamano"] - serie[0]["tamano"]) if len(serie) > 1 else None
     return {"disponible": True, "norma": norma, "serie": serie,
             "muestras": len(serie), "delta": delta,

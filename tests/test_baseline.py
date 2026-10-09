@@ -272,6 +272,47 @@ def test_sin_git_la_pendiente_lo_dice_en_vez_de_devolver_serie_vacia(monkeypatch
     assert r["disponible"] is False and r["serie"] == []
 
 
+def _repo_con_historia(tmp_path, tamanos):
+    import subprocess
+    def git(*a):
+        subprocess.run(["git", *a], cwd=tmp_path, check=True, capture_output=True)
+    git("init", "-q")
+    git("config", "user.email", "t@t")
+    git("config", "user.name", "t")
+    ruta = tmp_path / "b.json"
+    for n in tamanos:
+        ruta.write_text(json.dumps({"sitios": list(range(n))}), encoding="utf-8")
+        git("add", "b.json")
+        git("commit", "-q", "-m", f"t{n}")
+    return ruta, git
+
+
+def test_la_pendiente_es_la_misma_antes_y_despues_del_commit(tmp_path, monkeypatch):
+    """m166 existió solo para esto: el commit que tocaba una baseline desplazaba
+    la ventana de `git log -N` y el plano regenerado antes del commit dejaba de
+    estar al día después. Con el cambio en curso contado como un punto, la
+    ventana es la misma en los dos lados del commit."""
+    ruta, git = _repo_con_historia(tmp_path, [9, 8, 7, 6, 5])
+    monkeypatch.setattr(B, "REPO_ROOT", tmp_path)
+    ruta.write_text(json.dumps({"sitios": [1, 2]}), encoding="utf-8")
+    antes = B.pendiente(ruta, "sitios", "AP-XX", ultimos=4)
+    git("add", "b.json")
+    git("commit", "-q", "-m", "t2")
+    despues = B.pendiente(ruta, "sitios", "AP-XX", ultimos=4)
+    assert [x["tamano"] for x in antes["serie"]] == [7, 6, 5, 2]
+    assert [x["tamano"] for x in antes["serie"]] == [x["tamano"] for x in despues["serie"]]
+    assert antes["delta"] == despues["delta"]
+    assert antes["serie"][-1]["commit"] == "en_curso"
+
+
+def test_sin_cambio_en_curso_no_se_inventa_un_punto(tmp_path, monkeypatch):
+    ruta, _git = _repo_con_historia(tmp_path, [3, 2])
+    monkeypatch.setattr(B, "REPO_ROOT", tmp_path)
+    r = B.pendiente(ruta, "sitios", "AP-XX", ultimos=5)
+    assert [x["tamano"] for x in r["serie"]] == [3, 2]
+    assert all(x["commit"] != "en_curso" for x in r["serie"])
+
+
 # ── La duplicación que esto vino a cerrar ────────────────────────────────────
 
 def test_ningun_guard_conserva_su_propia_carga_de_baseline():
