@@ -486,7 +486,20 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "una norma cada vez. (2026-10-09: AP-64, la anterior a la piloto, "
             "vive en `normas/AP-64/`; el catálogo serializado sale idéntico al "
             "de antes de moverla y sus tests de `tests/` siguen donde estaban. "
-            "Cuántas van lo publica `vault_norms_catalog.NORMAS_EN_PAQUETE`.)"
+            "Cuántas van lo publica `vault_norms_catalog.NORMAS_EN_PAQUETE`.) "
+            "(2026-10-09, m183–m186: el resto migró por familias —patrones, "
+            "protocolos y convenciones en un lote; AP en tres tramos—. "
+            "`NORM_CATALOG` ya no escribe ninguna entrada: toda norma la carga "
+            "`_desde_paquete`, el catálogo serializado sale idéntico byte a "
+            "byte al de antes del primer lote y `--rebuild` no escribe nada. "
+            "Las caras de `porque.md` se derivaron al migrar, no se "
+            "escribieron, y donde una tool declarada no tiene función que "
+            "nombre la norma lo dice en vez de inventarla. Lo que sigue "
+            "pendiente es lo que el piloto ya declaraba: `guard.py` y "
+            "`heal.py` propios. El criterio de cada norma sigue con su dueño "
+            "en `scripts/` o `vault/`, y moverlo a la carpeta sería la "
+            "segunda copia que el paquete viene a quitar, así que esta deuda "
+            "no se salda solo por haber migrado las entradas.)"
         ),
     },
     {

@@ -13,7 +13,7 @@ vaults. Es spec + toolkit. Confundir ambas cosas es el error más caro que se pu
 | `scripts/*.py` | ~161 scripts, 123 tools activas en 37 grupos. Sin dependencias fuera de stdlib + PyYAML. |
 | `scripts/README.md` | Referencia de tools por grupo, con ejemplos de CLI. |
 | `tests/` | Suite pytest (5289 tests). Toda norma con guard debe tener test. |
-| `normas/` | Normas como paquete (`normas/<código>/`: `norma.py`, `porque.md`, `test_*.py`). Las carga `vault_norms_catalog` en su sitio del catálogo; la forma la vigila `--check-framework`. Piloto: AP-65. |
+| `normas/` | Normas como paquete (`normas/<código>/`: `norma.py`, `porque.md`, `test_*.py`). Las carga `vault_norms_catalog` en su sitio del catálogo; la forma la vigila `--check-framework`. Desde m186 toda norma vive aquí (cuántas, `NORMAS_EN_PAQUETE`); `guard.py`/`heal.py` propios siguen pendientes (deuda #10). |
 | `cli/` | CLI consolidada + `safety.py` (guards anti-poison, `scan_content`). |
 | `mcp/nodejs/` | Servidor MCP monolítico + `tools-catalog.json` (sincronizado desde Python). |
 | `vault-sandbox/` | **Único** vault de pruebas del repo. Todo runtime va aquí. |
