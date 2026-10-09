@@ -551,7 +551,9 @@ def _parse_iso(ts: str) -> Optional[datetime]:
     ts = ts.replace("Z", "+00:00")
 
     try:
-        return datetime.fromisoformat(ts)
+        # Con zona siempre: un vault ajeno escribe `updatedAt: 2026-01-01`, y
+        # compararla con el `since` del snapshot lanzaba TypeError (regla 7).
+        return _en_utc(datetime.fromisoformat(ts))
 
     except ValueError:
         try:
