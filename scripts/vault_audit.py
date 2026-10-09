@@ -105,6 +105,7 @@ from vault.kernel.indices_structural import RESERVED_INDEX_NAMES as _STRUCTURAL_
 from vault.kernel import construir  # noqa: E402
 from vault.kernel.contenido import abre_con_h1, meta_adr, plantilla_adr  # noqa: E402
 from vault.kernel.normalizacion import slugify_strict  # noqa: E402
+from vault.kernel.escalon import escalon  # noqa: E402
 from vault.kernel.frontmatter_parsing import FrontmatterParseError, parse_frontmatter_with_body  # noqa: E402
 from vault.kernel.frontmatter_parsing import cargar_bloque_tolerante  # noqa: E402
 from vault_contrato_nota import clase_de_nota, faltantes as _faltantes_del_contrato  # noqa: E402
@@ -584,6 +585,65 @@ def _detect_no_integradas(
         )
 
     return no_integradas
+
+
+_CRITERIO_DEL_NUCLEO = (
+    "fan-in = notas de contenido distintas que citan a cada nota, resuelto como "
+    "Obsidian (vault_lib.resolver_wikilink: nombre, aliases, sufijo de carpeta; "
+    "nunca title). Un índice estructural no cuenta: enumerar no es citar. Un "
+    "enlace ambiguo no cuenta para nadie. Umbral = escalón de vault.kernel.escalon, "
+    "el mismo de vault_kernel. Informativo, sin peso."
+)
+
+
+def _nucleo_del_vault(
+    notes: List[Path], all_stems: Optional[Set[str]] = None,
+    barrido: Optional[List[Path]] = None,
+) -> Dict[str, Any]:
+    """Las notas por encima del escalón de fan-in: el núcleo del vault (deuda #11).
+
+    `vault_kernel` traza el núcleo del repo sobre el grafo de imports; aquí el
+    grafo es el de **enlaces**. Se mide por **ruta**, no por nombre: dos
+    homónimas no suman sus entrantes (el índice de backlinks sí lo hace, ver
+    `backlinks_del_audit_indexados_por_nombre`). El criterio de resolución es
+    el del dueño canónico (AP-57) y el del umbral, `escalon`, el mismo que usa
+    `vault_kernel`: una sola definición de «alto».
+
+    Lo que **no** dice: que el núcleo sea lo importante. Es lo más citado, y un
+    vault puede citar mucho una nota de convenciones. Por eso no pesa: es un
+    orden posible para `vault_context_pack` y la sanación, a decidir aparte.
+    Sin escalón no hay núcleo, y no se fabrica uno.
+    """
+    relativas: List[str] = []
+    alias_por_ruta: Dict[str, List[str]] = {}
+    for n in (_barrido_md() if barrido is None else barrido):
+        if _is_snapshot(n):
+            continue
+        rel = n.relative_to(_raiz()).as_posix()
+        relativas.append(rel)
+        alias_por_ruta[rel] = _aliases_de(n)
+    indice = indice_de_nombres(relativas, alias_por_ruta)
+
+    contenido = {n.relative_to(_raiz()).as_posix(): n for n in notes}
+    entrantes: Dict[str, Set[str]] = {rel: set() for rel in contenido}
+    for rel, n in contenido.items():
+        texto = _leer_nota(n)
+        if texto is None or es_documentacion_del_estandar(rel, texto):
+            continue
+        for link in _extract_wiki_links(texto, known=all_stems):
+            destino, _ = resolver_wikilink(link, Path(rel), indice)
+            if destino in entrantes and destino != rel:
+                entrantes[destino].add(rel)
+
+    fan_in = {rel: len(origenes) for rel, origenes in entrantes.items()}
+    umbral, ratio = escalon(list(fan_in.values()))
+    nucleo = [] if umbral is None else sorted(
+        ({"path": rel, "fanIn": f} for rel, f in fan_in.items() if f >= umbral),
+        key=lambda e: (-e["fanIn"], e["path"]),
+    )
+    return {"threshold": umbral, "ratio": ratio, "notes": nucleo,
+            "criterion": _CRITERIO_DEL_NUCLEO}
+
 
 def _detect_stale(notes: List[Path]) -> List[Dict[str, Any]]:
     now = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -2206,6 +2266,8 @@ def vault_audit(
 
     no_integradas = _detect_no_integradas(content_notes, backlinks, all_notes)
 
+    nucleo = _nucleo_del_vault(content_notes, all_stems, barrido=barrido)
+
     cn01_no_kebab, cn04_sin_titulo = _detect_convenciones_cn01_cn04(content_notes)
 
     stale = _detect_stale(content_notes)
@@ -2388,11 +2450,17 @@ def vault_audit(
         "healthProfile": salud["healthProfile"],
         # Qué restó cada cosa. Antes había que leerse la función para saberlo.
         "penalties": salud["penalties"],
+        # El núcleo del vault por fan-in de enlaces (deuda #11). Informativo:
+        # fuera de `healthProfile`, que itera familias con peso, y sin fila en
+        # `PENALIZACIONES`. Ver `_nucleo_del_vault`.
+        "vaultCore": nucleo,
         "stats": {
             "total": len(content_notes),
             "byFolder": dict(sorted(by_folder.items())),
             # Recomendada, sin penalización: ver `_detect_no_integradas`.
             "notIntegrated": len(no_integradas),
+            # Informativa, sin peso: ver `_nucleo_del_vault`.
+            "vaultCore": len(nucleo["notes"]),
             # Informativas, sin peso: ver `_detect_convenciones_cn01_cn04`.
             "cn01NotKebab": len(cn01_no_kebab),
             "cn04NoTitle": len(cn04_sin_titulo),

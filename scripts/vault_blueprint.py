@@ -471,7 +471,19 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "Declarado sin fecha por decisión de alcance. El núcleo de un vault "
             "no se deriva del grafo de imports sino del de enlaces, y esa medida "
             "hay que contrastarla contra un vault ajeno antes de creérsela "
-            "(regla 7)."
+            "(regla 7). (Avance de v41.3, 2026-10-09: la medida existe y es "
+            "informativa. `vault_audit._nucleo_del_vault` cuenta el fan-in de "
+            "cada nota desde notas de contenido distintas, resuelto como "
+            "Obsidian —nombre, `aliases:`, sufijo de carpeta, nunca `title:`—, "
+            "y corta con el mismo escalón que `vault_kernel`, que pasa a "
+            "`vault/kernel/escalon.py` para tener un solo dueño; sale en "
+            "`vaultCore` sin fila en `PENALIZACIONES`. Regla 7 sobre copias "
+            "nuevas, hash de los originales intacto: /ans, 527 notas, umbral "
+            "29 (ratio 1.933), una nota núcleo, `01_Projects/ans/overview.md`; "
+            "/vcloud, 106 notas, umbral 26 (ratio 1.444), una nota núcleo, "
+            "`09_Infrastructure/network-topology.md`. Sigue pendiente lo que la "
+            "medida habilita y no hace todavía: la prioridad en "
+            "`vault_context_pack`, el orden de la sanación y cualquier peso.)"
         ),
     },
     {
