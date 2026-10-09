@@ -55,7 +55,10 @@ def test_ap64_es_la_segunda_en_migrar_y_conserva_su_sitio():
     Mismo sitio en `NORM_CATALOG` —justo antes de la piloto— y la entrada
     escrita en el catálogo desaparece: el código vive en un solo sitio.
     """
-    assert cat.NORMAS_EN_PAQUETE[:2] == ["AP-64", "AP-65"]
+    # Desde el lote PAT+SP+CN (2026-10-09) ya no son las dos primeras de la
+    # lista: `NORMAS_EN_PAQUETE` sigue el orden del catálogo, no el de llegada.
+    i = cat.NORMAS_EN_PAQUETE.index("AP-64")
+    assert cat.NORMAS_EN_PAQUETE[i + 1] == "AP-65"
     fuente = (SCRIPTS / "vault_norms_catalog.py").read_text(encoding="utf-8")
     assert '"code": "AP-64"' not in fuente
     codigos = [n["code"] for n in cat.NORM_CATALOG]
@@ -76,6 +79,21 @@ def test_el_catalogo_no_cambia_de_orden_ni_de_contenido():
     assert ap65["introduced_version"] == "v41.3"
     assert ap65["tools_detecting"] == ["vault_norms"]
     assert "AP-64" in ap65["distinguido_de"]
+
+
+def test_todo_paquete_carga_en_el_orden_del_catalogo_y_sale_del_fuente():
+    """Deuda #10 por lotes: cada norma migrada vive en un solo sitio.
+
+    Sin nombrar códigos: uno escrito aquí contaría como cobertura en la capa 4
+    de `vault_blueprint`, y migrar no es ejercitar la norma.
+    """
+    codigos = [n["code"] for n in cat.NORM_CATALOG]
+    posiciones = [codigos.index(c) for c in cat.NORMAS_EN_PAQUETE]
+    assert posiciones == sorted(posiciones)
+    fuente = (SCRIPTS / "vault_norms_catalog.py").read_text(encoding="utf-8")
+    escritas = [c for c in cat.NORMAS_EN_PAQUETE if f'"code": "{c}"' in fuente]
+    assert escritas == []
+    assert [p.name for p in _paquetes()] == sorted(cat.NORMAS_EN_PAQUETE)
 
 
 def test_la_forma_de_los_paquetes_del_repo_es_valida():
