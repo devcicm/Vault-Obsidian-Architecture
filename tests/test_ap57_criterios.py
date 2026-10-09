@@ -33,8 +33,13 @@ def test_cada_criterio_declara_dueno_simbolo_senales_y_motivo():
 
 def test_el_dueno_declarado_existe_y_define_su_simbolo():
     """Un dueño que no existe convierte la norma en una promesa (AP-45)."""
+    # El dueño puede vivir en `vault/` con un alias en `scripts/` (deuda #12):
+    # leer el alias vería dos asignaciones y ningún símbolo. Se lee el fuente
+    # al que el alias lleva, igual que los guards (`fuente_de`, m180).
+    import vault_grafo_import
+
     for c in vc.CRITERIOS_CON_DUENO:
-        mod = RAIZ / "scripts" / f"{c['dueño']}.py"
+        mod = vault_grafo_import.fuente_de(c["dueño"])
         assert mod.exists(), f"dueño inexistente: {c['dueño']}"
         arbol = ast.parse(mod.read_text(encoding="utf-8"))
         definidos = {n.name for n in ast.walk(arbol)
