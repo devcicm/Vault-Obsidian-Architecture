@@ -1910,8 +1910,8 @@ def escrituras_sin_lock(rutas: list[Path] | None = None) -> list[dict]:
     """
     hallazgos: list[dict] = []
     for ruta in (rutas if rutas is not None
-                 else [SCRIPTS_DIR / f"{m}.py" for m in _modulos_en_disco()]):
-        mod = ruta.stem
+                 else [vault_grafo_import.fuente_de(m) for m in _modulos_en_disco()]):
+        mod = vault_grafo_import.nombre_de(ruta)
         try:
             arbol = _ast_de(ruta)
         except SyntaxError:
@@ -2231,7 +2231,7 @@ def lecturas_de_entorno_sin_registro() -> list[dict]:
 
     hallazgos: list[dict] = []
     for ruta in arboles_medidos():
-        if ruta.stem in _COPIAS_DE_ENTORNO_LEGITIMAS:
+        if vault_grafo_import.nombre_de(ruta) in _COPIAS_DE_ENTORNO_LEGITIMAS:
             continue
         try:
             arbol = _ast_de(ruta)
@@ -2403,7 +2403,8 @@ def copias_de_vocabulario() -> list[dict]:
 
     hallazgos: list[dict] = []
     for ruta in arboles_medidos():
-        if ruta.stem in fuentes:
+        # El dueño migrado (deuda #12) se reconoce por el nombre de su alias.
+        if vault_grafo_import.nombre_de(ruta) in fuentes:
             continue
         try:
             arbol = _ast_de(ruta)

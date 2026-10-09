@@ -125,3 +125,54 @@ def test_lo_que_no_viaja_en_la_wheel_no_cuenta_como_puente():
                            .read_text(encoding="utf-8"))["modulos"])
     assert fuera, "la lista de exclusión está vacía: el test no probaría nada"
     assert not fuera & set(vault_arch.modulos_sin_hogar())
+
+
+LOTE_A = {
+    "vault_audit_catalog": "vault.kernel.audit_catalog",
+    "vault_fundamentals_catalog": "vault.kernel.fundamentals_catalog",
+    "vault_mermaid_reglas": "vault.kernel.mermaid_reglas",
+    "vault_security_rules": "vault.gobernanza.security_rules",
+}
+
+
+def test_el_lote_a_es_alias_del_dueno_y_no_una_copia(monkeypatch):
+    """Lote A de la deuda #12 (2026-10-09): hojas sin `__file__` ni lectores
+    del fuente por ruta. A diferencia de las dos primeras migraciones, el
+    nombre de `scripts/` es un alias en `sys.modules`: `import vault_x`
+    devuelve el módulo del dueño, y un monkeypatch sobre él lo ve el dueño."""
+    import importlib
+
+    sin_hogar = set(vault_arch.modulos_sin_hogar())
+    for viejo, dueno in LOTE_A.items():
+        assert viejo not in sin_hogar, viejo
+        assert importlib.import_module(viejo) is importlib.import_module(dueno), viejo
+        assert not (ROOT / "vault" / dueno.split(".")[1] / f"{viejo}.py").exists()
+
+    import vault_audit_catalog
+    from vault.kernel import audit_catalog
+
+    monkeypatch.setattr(vault_audit_catalog, "_SONDA_DEL_ALIAS", 1, raising=False)
+    assert audit_catalog._SONDA_DEL_ALIAS == 1
+
+
+def test_los_guards_que_leen_el_fuente_siguen_el_alias_hasta_el_dueno():
+    """Un alias en `sys.modules` no tiene código: leer `scripts/<m>.py` como
+    fuente de la tool dejó a `vault_norms_coherence` sin la traza de AP-44 en
+    `vault_mermaid_reglas`, y a `vault_arch` sin reconocer como dueño de
+    vocabulario a `vault/kernel/fundamentals_catalog.py`. Un solo sitio
+    resuelve el alias (AP-57): `vault_grafo_import.fuente_de`."""
+    import vault_grafo_import as gi
+
+    for viejo, dueno in LOTE_A.items():
+        esperado = ROOT.joinpath(*dueno.split(".")).with_suffix(".py").resolve()
+        assert gi.fuente_de(viejo) == esperado, viejo
+        assert gi.nombre_de(esperado) == viejo, viejo
+    # Un módulo que no es alias se resuelve a sí mismo.
+    assert gi.fuente_de("vault_arch") == (ROOT / "scripts" / "vault_arch.py").resolve()
+    assert gi.nombre_de(ROOT / "scripts" / "vault_arch.py") == "vault_arch"
+
+    import vault_norms_coherence as nc
+
+    assert "AP-44" in nc._fuente("vault_mermaid_reglas")
+    assert not [c for c in vault_arch.copias_de_vocabulario()
+                if "fundamentals_catalog" in str(c.get("module", c))]

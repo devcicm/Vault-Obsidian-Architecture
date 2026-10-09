@@ -559,7 +559,17 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "la wheel no lleva —`empaquetado/fuera-de-la-wheel.json`, la "
             "gobernanza del estándar—, que no cruzan el puente porque no "
             "viajan; excluidos, la baseline perdió 22 entradas sin ganar "
-            "ninguna.)"
+            "ninguna. Lote A, 2026-10-09: cuatro hojas sin `__file__` ni "
+            "lectores del fuente por ruta —`vault_audit_catalog`, "
+            "`vault_fundamentals_catalog` y `vault_mermaid_reglas` al kernel, "
+            "`vault_security_rules` a gobernanza—, ya como alias en "
+            "`sys.modules` y no como fachada que reexporta, para que un "
+            "monkeypatch sobre el nombre viejo lo vea el dueño; wheel limpia "
+            "y `run_product_gates` en verde. Quedan fuera del lote, con "
+            "motivo: `vault_norms_catalog` y `vault_entorno` (otros módulos y "
+            "tests leen su fuente por ruta), `vault_grafo_import` (usa "
+            "`__file__`), `vault_secret_scan` (lo leen por ruta tres tests y "
+            "`vault_standard_upgrade`) y `vault_version` (lo lee `cli/`).)"
         ),
         "por_que_no_ahora": (
             "Transitorio hasta migrar scripts → vault/<contexto>, ADR-0002. "

@@ -114,6 +114,7 @@ from typing import Any, Dict, List, Set
 sys.path.insert(0, str(Path(__file__).parent))
 
 import vault_baseline
+import vault_grafo_import
 from vault_errors import emit_error, wrap_main
 from vault_vocabulario import mapa
 
@@ -221,7 +222,8 @@ def _fuente(tool: str) -> str:
     traza sigue sola; si un módulo deja de importarse, deja de contar, que es
     justo lo que debe pasar.
     """
-    ruta = SCRIPTS_DIR / f"{tool}.py"
+    # Un alias del puente (deuda #12) no tiene código: se lee el dueño.
+    ruta = vault_grafo_import.fuente_de(tool)
     if not ruta.is_file():
         return ""
     fuente = ruta.read_text(encoding="utf-8", errors="ignore")
@@ -237,7 +239,7 @@ def _fuente(tool: str) -> str:
         # `vault_io`. Importar a otro no es partirse en él.
         if not nodo.module.startswith(f"{tool}_"):
             continue
-        parte = SCRIPTS_DIR / f"{nodo.module}.py"
+        parte = vault_grafo_import.fuente_de(nodo.module)
         if parte.is_file():
             fuente += "\n" + parte.read_text(encoding="utf-8", errors="ignore")
     return fuente
@@ -329,7 +331,8 @@ def _codigos_que_compiten_por_hallazgo() -> Dict[str, Set[str]]:
     salida: Dict[str, Set[str]] = {}
     for ruta in sorted(SCRIPTS_DIR.glob("vault_*.py")):
         try:
-            arbol = ast.parse(ruta.read_text(encoding="utf-8", errors="ignore"))
+            arbol = ast.parse(vault_grafo_import.fuente_de(ruta.stem)
+                              .read_text(encoding="utf-8", errors="ignore"))
         except SyntaxError:
             continue
         for func in ast.walk(arbol):

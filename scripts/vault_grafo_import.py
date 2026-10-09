@@ -70,6 +70,80 @@ def modulos() -> Set[str]:
     return {p.stem for p in DIRECTORIO.glob("*.py")}
 
 
+def _dueno_del_alias(ruta: Path) -> str | None:
+    """El módulo dueño si `ruta` es un alias del puente, o None.
+
+    La forma del alias es la de la deuda #12: `import vault.<ctx>.<n> as _dueno`
+    seguido de `sys.modules[__name__] = _dueno`. Se reconoce por esa
+    asignación, no por el nombre del fichero: un módulo que solo importa de
+    `vault/` delega, pero sigue teniendo código propio.
+    """
+    try:
+        arbol = ast.parse(ruta.read_text(encoding="utf-8", errors="ignore"))
+    except (OSError, SyntaxError):
+        return None
+    ligados: Dict[str, str] = {}
+    for nodo in arbol.body:
+        if isinstance(nodo, ast.Import):
+            for a in nodo.names:
+                if a.asname and a.name.startswith("vault."):
+                    ligados[a.asname] = a.name
+        elif isinstance(nodo, ast.Assign) and isinstance(nodo.value, ast.Name):
+            for t in nodo.targets:
+                if (isinstance(t, ast.Subscript)
+                        and ast.unparse(t) == "sys.modules[__name__]"
+                        and nodo.value.id in ligados):
+                    return ligados[nodo.value.id]
+    return None
+
+
+def _ruta_de_paquete(dueno: str) -> Path | None:
+    """`vault.kernel.x` → su fichero: en el checkout, junto a `scripts/`;
+    instalado, donde lo encuentre el import, sin importarlo."""
+    candidato = DIRECTORIO.parent.joinpath(*dueno.split(".")).with_suffix(".py")
+    if candidato.is_file():
+        return candidato.resolve()
+    import importlib.util
+
+    try:
+        spec = importlib.util.find_spec(dueno)
+    except (ImportError, ValueError):
+        return None
+    return Path(spec.origin).resolve() if spec and spec.origin else None
+
+
+@lru_cache(maxsize=1)
+def _puente() -> Dict[str, Path]:
+    """Alias de `scripts/` → fichero de su dueño. Se deriva del disco."""
+    out: Dict[str, Path] = {}
+    for p in DIRECTORIO.glob("*.py"):
+        dueno = _dueno_del_alias(p)
+        destino = _ruta_de_paquete(dueno) if dueno else None
+        if destino is not None:
+            out[p.stem] = destino
+    return out
+
+
+def fuente_de(modulo: str) -> Path:
+    """El fichero que tiene el código de `modulo` (nombre de `scripts/`).
+
+    Tras la deuda #12 un nombre de `scripts/` puede ser un alias sin código; un
+    guard que lea `scripts/<m>.py` como fuente mide el alias y no al dueño. Un
+    solo sitio resuelve eso (AP-57) y los guards lo consultan.
+    """
+    return _puente().get(modulo, (DIRECTORIO / f"{modulo}.py").resolve())
+
+
+def nombre_de(ruta: Path) -> str:
+    """El nombre de `scripts/` por el que se conoce a `ruta`: el del alias si
+    `ruta` es el dueño de uno, o su propio nombre."""
+    ruta = Path(ruta).resolve()
+    for alias, dueno in _puente().items():
+        if dueno == ruta:
+            return alias
+    return ruta.stem
+
+
 def _nombres_importados(nodo: ast.AST, proyeccion: str) -> Iterable[str]:
     """Los nombres que este nodo de import trae, según la proyección.
 
