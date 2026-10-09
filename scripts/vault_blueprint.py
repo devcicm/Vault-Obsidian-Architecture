@@ -175,7 +175,11 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "clave de un `clave: valor`—. Eso quita la semántica de en medio y "
             "deja una parte decidible, que es la que se mide; el resto se "
             "declara en vez de darse por cubierto. Las tres que quedan siguen "
-            "sin una reformulación equivalente, y ninguna es `critical`."
+            "sin una reformulación equivalente, y ninguna es `critical`. "
+            "(En v41.3 AP-08 y AP-01 la encontraron en `files:`, que la nota "
+            "declara. AP-04 no: su señal decidible es la misma que la de AP-01 "
+            "y el discriminador —la intención— no está en ningún campo; el "
+            "motivo queda en su `cobertura_descubierta`.)"
         ),
     },
     {

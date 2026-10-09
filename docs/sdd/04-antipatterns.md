@@ -45,7 +45,7 @@ Nota con contenido real pero incompleto (≥3 líneas reales) sin fecha de expan
 
 - **Severidad:** high
 - **Enforcement:** audit
-- **Detectado por:** sin detector -- Ninguna tool la detecta. `vault_drift_detect` compara hashes y git; distinguir "lo describe en presente" de "ya está deployado" exige leer el cuerpo de la nota contra el estado real, que hoy no hace nadie.
+- **Detectado por:** sin detector -- Ninguna tool la detecta. `vault_drift_detect` compara hashes y git; distinguir "lo describe en presente" de "ya está deployado" exige leer el cuerpo de la nota contra el estado real, que hoy no hace nadie. Probado en v41.3 al reformular AP-01: la única señal decidible --la nota declara en `files:` un fichero que no está en el repo-- ya sale como AP-01 en `codigo_inexistente`, y lo que separa las dos normas es la intención (planeada frente a inventada), que no está escrita en ningún campo. Nombrarla AP-04 también sería contar el mismo hallazgo dos veces con un criterio adivinado.
 
 Documentar comportamientos futuros o planeados como si ya existieran. Confunde al agente sobre el estado real del sistema.
 
@@ -951,7 +951,7 @@ Nota con contenido real pero incompleto (≥3 líneas reales) sin fecha de expan
 
 - **Severity:** high
 - **Enforcement:** audit
-- **Detected by:** sin detector -- Ninguna tool la detecta. `vault_drift_detect` compara hashes y git; distinguir "lo describe en presente" de "ya está deployado" exige leer el cuerpo de la nota contra el estado real, que hoy no hace nadie.
+- **Detected by:** sin detector -- Ninguna tool la detecta. `vault_drift_detect` compara hashes y git; distinguir "lo describe en presente" de "ya está deployado" exige leer el cuerpo de la nota contra el estado real, que hoy no hace nadie. Probado en v41.3 al reformular AP-01: la única señal decidible --la nota declara en `files:` un fichero que no está en el repo-- ya sale como AP-01 en `codigo_inexistente`, y lo que separa las dos normas es la intención (planeada frente a inventada), que no está escrita en ningún campo. Nombrarla AP-04 también sería contar el mismo hallazgo dos veces con un criterio adivinado.
 
 Documentar comportamientos futuros o planeados como si ya existieran. Confunde al agente sobre el estado real del sistema.
 
