@@ -1093,6 +1093,246 @@ def _nombres_desechables(arbol: ast.AST) -> set[str]:
     return desechables
 
 
+# ── Quién escribe cada subruta de 00_System (deuda #3, v41.3) ────────────────
+
+CARPETA_SISTEMA = "00_System"
+
+#: Las subrutas de `00_System/` que ningún repositorio de dominio declara.
+#:
+#: El dueño del resto lo declaran los `FICHERO_*` de `vault/<ctx>/repositorio.py`
+#: y se deriva (`_duenos_por_repositorio`); copiarlo aquí sería AP-05. Lo que
+#: sigue no tiene repositorio que lo declare, y el dueño se fijó con un solo
+#: criterio, para no inventar: **el único contexto que lo escribía** al medirlo
+#: (2026-10-08). Un test exige que ninguna entrada de aquí aparezca también en
+#: un repositorio.
+SUBRUTAS_DE_SISTEMA_SIN_REPOSITORIO: dict[str, dict] = {
+    ".tool-trace.json": {
+        "dueno": KERNEL,
+        "por_que": "La traza de cada llamada la escribe `vault_errors_trace`, "
+                   "que sirve a todas las tools y por eso vive en el kernel.",
+    },
+    ".voice-counter": {
+        "dueno": "autoria",
+        "por_que": "Contador de `vault/autoria/voz.py`; nadie más lo escribe.",
+    },
+    ".trash": {
+        "dueno": "autoria",
+        "por_que": "La papelera de `vault_move`, único que mueve notas a ella.",
+    },
+    "change-log.md": {
+        "dueno": "autoria",
+        "por_que": "La vista legible que escribe `vault_change_log`. Su par "
+                   "`.change-log.json` lo declara gobernanza en su repositorio, "
+                   "y ese cruce está en la baseline, no resuelto aquí.",
+    },
+    "vault-ontology.json": {
+        "dueno": "ciclo_de_vida",
+        "por_que": "Lo siembra `vault_init` al crear el vault y nadie lo reescribe.",
+    },
+    "vault_context.json": {
+        "dueno": "consulta",
+        "por_que": "Lo escribe `vault_mcp_context`, que existe para la consulta.",
+    },
+}
+
+#: Funciones del repo que devuelven `<vault>/00_System` sin decirlo literal.
+_FUNCIONES_DE_SISTEMA = frozenset({
+    "_system_dir", "system_dir", "dir_sistema", "sistema", "_sistema",
+    "_sys_dir", "tool_spec_path",
+})
+
+
+def _propiedades_de_sistema() -> tuple[dict[str, str], dict[str, str]]:
+    """Lo que declaran los repositorios: propiedad → subruta y subruta → dueño.
+
+    Se lee la forma que usan todos —``return self.ctx.ruta(CARPETA_SISTEMA,
+    FICHERO_X)``—, resolviendo las constantes del propio módulo. Una propiedad
+    que en dos módulos apuntase a subrutas distintas no se usa para resolver
+    escrituras: sería adivinar.
+    """
+    props: dict[str, set[str]] = {}
+    duenos: dict[str, str] = {}
+    for src in sorted(DOMINIO_DIR.glob("*/*.py")):
+        arbol = _ast_de(src)
+        consts = {
+            n.targets[0].id: n.value.value for n in arbol.body
+            if isinstance(n, ast.Assign) and len(n.targets) == 1
+            and isinstance(n.targets[0], ast.Name)
+            and isinstance(n.value, ast.Constant) and isinstance(n.value.value, str)
+        }
+        for fn in ast.walk(arbol):
+            if not isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            for r in ast.walk(fn):
+                if not (isinstance(r, ast.Return) and isinstance(r.value, ast.Call)
+                        and isinstance(r.value.func, ast.Attribute)
+                        and r.value.func.attr == "ruta"):
+                    continue
+                vals = [consts.get(a.id) if isinstance(a, ast.Name)
+                        else (a.value if isinstance(a, ast.Constant) else None)
+                        for a in r.value.args]
+                if len(vals) > 1 and vals[0] == CARPETA_SISTEMA and vals[1]:
+                    subruta = vals[1].split("/")[0]
+                    props.setdefault(fn.name, set()).add(subruta)
+                    if src.name == "repositorio.py":
+                        duenos.setdefault(subruta, src.parent.name)
+    unicas = {p: next(iter(s)) for p, s in props.items() if len(s) == 1}
+    return unicas, duenos
+
+
+def _duenos_por_repositorio() -> dict[str, str]:
+    return _propiedades_de_sistema()[1]
+
+
+def duenos_de_sistema() -> dict[str, str]:
+    """Subruta de `00_System/` → contexto dueño: lo derivado más lo declarado."""
+    duenos = dict(_duenos_por_repositorio())
+    for subruta, entrada in SUBRUTAS_DE_SISTEMA_SIN_REPOSITORIO.items():
+        duenos.setdefault(subruta, entrada["dueno"])
+    return duenos
+
+
+def _subruta_de_sistema(nodo, nombres, funciones, props, prof=0):
+    """La primera componente bajo `00_System/` a la que apunta `nodo`.
+
+    `"*"` es la carpeta misma (un `mkdir`), y `None` que no es una ruta de
+    sistema o que no se puede decidir sin ejecutar.
+    """
+    if prof > 6:
+        return None
+    if isinstance(nodo, ast.Constant) and isinstance(nodo.value, str):
+        if nodo.value == CARPETA_SISTEMA:
+            return "*"
+        if nodo.value.startswith(CARPETA_SISTEMA + "/"):
+            return nodo.value[len(CARPETA_SISTEMA) + 1:].split("/")[0] or "*"
+        return None
+    if isinstance(nodo, ast.BinOp) and isinstance(nodo.op, ast.Div):
+        if isinstance(nodo.right, ast.Constant) and nodo.right.value == CARPETA_SISTEMA:
+            return "*"
+        izq = _subruta_de_sistema(nodo.left, nombres, funciones, props, prof + 1)
+        if izq != "*":
+            return izq
+        if isinstance(nodo.right, ast.Constant) and isinstance(nodo.right.value, str):
+            return nodo.right.value.split("/")[0]
+        return None  # la subruta es dinámica: no se decide
+    if isinstance(nodo, ast.Name):
+        return nombres.get(nodo.id)
+    if isinstance(nodo, ast.Attribute):
+        if nodo.attr in _FUNCIONES_DE_SISTEMA:
+            return "*"
+        if nodo.attr in props:
+            return props[nodo.attr]
+        if nodo.attr == "parent":
+            return _subruta_de_sistema(nodo.value, nombres, funciones, props, prof + 1)
+        return None
+    if isinstance(nodo, ast.Call):
+        fn = nodo.func
+        nombre = fn.attr if isinstance(fn, ast.Attribute) else (
+            fn.id if isinstance(fn, ast.Name) else None)
+        if nombre in _FUNCIONES_DE_SISTEMA:
+            return "*"
+        if nombre in ("ruta", "joinpath"):
+            cs = [a.value for a in nodo.args
+                  if isinstance(a, ast.Constant) and isinstance(a.value, str)]
+            if cs and cs[0] == CARPETA_SISTEMA:
+                return cs[1].split("/")[0] if len(cs) > 1 else "*"
+            base = (_subruta_de_sistema(fn.value, nombres, funciones, props, prof + 1)
+                    if isinstance(fn, ast.Attribute) else None)
+            if base == "*":
+                return cs[0].split("/")[0] if cs else None
+            return base
+        if isinstance(fn, ast.Name) and fn.id in funciones:
+            return funciones[fn.id]
+        if nombre in ("with_suffix", "with_name", "resolve") and isinstance(fn, ast.Attribute):
+            return _subruta_de_sistema(fn.value, nombres, funciones, props, prof + 1)
+    return None
+
+
+def escrituras_de_sistema_en(arbol: ast.AST, props: dict | None = None) -> list[tuple]:
+    """`(línea, llamada, subruta)` de cada escritura bajo `00_System/` del árbol.
+
+    Sigue el dato por asignaciones de nombre y por el `return` de funciones del
+    propio módulo, con un punto fijo corto. No ve rutas que llegan por parámetro
+    desde otro módulo ni subrutas calculadas: esa cobertura está declarada en la
+    deuda `fronteras_de_escritura_por_contexto`, y el fallo es del lado de no
+    marcar.
+    """
+    if props is None:
+        props = _propiedades_de_sistema()[0]
+    nombres: dict[str, str] = {}
+    funciones: dict[str, str] = {}
+    for _ in range(3):
+        for nodo in ast.walk(arbol):
+            if (isinstance(nodo, ast.Assign) and len(nodo.targets) == 1
+                    and isinstance(nodo.targets[0], ast.Name)):
+                s = _subruta_de_sistema(nodo.value, nombres, funciones, props)
+                if s:
+                    nombres.setdefault(nodo.targets[0].id, s)
+            elif isinstance(nodo, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                for r in ast.walk(nodo):
+                    if isinstance(r, ast.Return) and r.value is not None:
+                        s = _subruta_de_sistema(r.value, nombres, funciones, props)
+                        if s:
+                            funciones.setdefault(nodo.name, s)
+    desechables = _nombres_desechables(arbol)
+    hallazgos = []
+    for nodo in ast.walk(arbol):
+        llamada = llamada_de_escritura(nodo)
+        if not llamada:
+            continue
+        fn = nodo.func
+        if llamada.startswith("atomic_write") or not isinstance(fn, ast.Attribute):
+            objetivo = nodo.args[0] if nodo.args else None
+        else:
+            objetivo = fn.value
+        if objetivo is None or _nombre_base(objetivo) in desechables:
+            continue
+        s = _subruta_de_sistema(objetivo, nombres, funciones, props)
+        if s:
+            hallazgos.append((nodo.lineno, llamada, s))
+    return hallazgos
+
+
+def escrituras_de_sistema() -> list[dict]:
+    """Toda escritura con subruta decidible bajo `00_System/`, con su contexto.
+
+    `"*"` —crear la carpeta— no se reporta: la crean seis contextos y no es de
+    nadie en particular, es la raíz del sistema.
+    """
+    props = _propiedades_de_sistema()[0]
+    dominio = _modulos_dominio()
+    hallazgos = []
+    for ruta in arboles_medidos():
+        clave = clave_de_modulo(ruta)
+        ctx = (dominio.get(clave) if clave.startswith("vault/")
+               else contexto_de(Path(clave).stem))
+        try:
+            arbol = _ast_de(ruta)
+        except SyntaxError:
+            continue
+        for linea, _llamada, s in escrituras_de_sistema_en(arbol, props):
+            if s != "*":
+                hallazgos.append({"module": clave.removesuffix(".py"),
+                                  "context": ctx or None, "path": s, "line": linea})
+    return hallazgos
+
+
+def escrituras_de_sistema_ajenas(escrituras: list[dict] | None = None) -> list[dict]:
+    """Las escrituras de un contexto en una subruta que no es suya, o sin dueño."""
+    duenos = duenos_de_sistema()
+    if escrituras is None:
+        escrituras = escrituras_de_sistema()
+    return [
+        {**e, "owner": duenos.get(e["path"])}
+        for e in escrituras
+        if duenos.get(e["path"]) != e["context"]
+    ]
+
+
+def _clave_escritura_de_sistema(e: dict) -> str:
+    return f"{e['path']} <- {e['module']}"
+
+
 #: Los tres puntos en los que el kernel llama HACIA el dominio, con su motivo.
 #:
 #: El kernel declara «no depender de ningún contexto de dominio» y sin embargo
@@ -2107,6 +2347,15 @@ def check(strict: bool = False) -> dict:
     sin_presupuesto = pares_sin_presupuesto()
     presupuesto_huerfano = presupuesto_de_cruces_huerfano()
 
+    # Quién escribe cada subruta de `00_System/` (deuda #3, v41.3). Con
+    # baseline por decisión del usuario (2026-10-08): los cruces que ya
+    # existían arrancan congelados y solo encogen; uno nuevo bloquea.
+    base_sis = set(_leer_baseline().get("system_writes", []))
+    ajenas_sis = escrituras_de_sistema_ajenas()
+    claves_s = {_clave_escritura_de_sistema(e) for e in ajenas_sis}
+    sis_nuevas = sorted(claves_s - base_sis)
+    sis_saldadas = sorted(base_sis - claves_s)
+
     return {
         "ok": not nuevos and not huerfanos and not ausentes and not vinc_nuevos
               and not sin_presupuesto
@@ -2114,9 +2363,9 @@ def check(strict: bool = False) -> dict:
               and not kernel_sin_declarar and not nombre_crudo and not rotos
               and not puerto_nuevos and not entorno_sin_registro
               and not copias_vocab and not vocab_sin_dueno
-              and not entorno_desfasado
+              and not entorno_desfasado and not sis_nuevas
               and not (strict and (saldados or vinc_saldados or rutas_saldadas
-                                   or puerto_saldados)),
+                                   or puerto_saldados or sis_saldadas)),
         "tool": "vault_arch",
         "contexts": len(CONTEXTS),
         "modules": len(_mapa_modulos()),
@@ -2191,6 +2440,14 @@ def check(strict: bool = False) -> dict:
         "frozen_bindings_baseline": len(base_vinc),
         "new_frozen_bindings": vinc_nuevos,
         "settled_frozen_bindings": vinc_saldados,
+        # Deuda #3 — un contexto que escribe la subruta de `00_System/` de otro.
+        # Por clave `subruta <- módulo`, como las demás baselines por clave.
+        "system_paths_owned": len(duenos_de_sistema()),
+        "system_writes_total": len(claves_s),
+        "system_writes_baseline": len(base_sis),
+        "new_system_writes": sis_nuevas,
+        "settled_system_writes": sis_saldadas,
+        "foreign_system_writes": ajenas_sis,
         "crossings": actuales,
     }
 
@@ -2219,6 +2476,8 @@ def freeze() -> dict:
             "frozen_bindings": vinculos,
             "duplicate_paths": sorted(d["file"] for d in rutas_duplicadas()),
             "off_port_crossings": fuera_puerto,
+            "system_writes": sorted({_clave_escritura_de_sistema(e)
+                                     for e in escrituras_de_sistema_ajenas()}),
         },
         campo_descripcion="note",
     )

@@ -184,12 +184,26 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     },
     {
         "id": "fronteras_de_escritura_por_contexto",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "v41.2",
+        "sostenida_por": [
+            "tests/test_arch_escrituras_de_sistema.py::test_un_contexto_que_escribe_la_subruta_de_otro_es_un_cruce",
+            "tests/test_arch_escrituras_de_sistema.py::test_la_puerta_frena_un_cruce_nuevo_y_no_los_congelados",
+        ],
         "desde": "v40.9",
         "capa": "3",
         "que": (
             "Ningún guard dice qué contexto puede escribir dónde. `00_System` lo "
-            "escriben hoy seis contextos."
+            "escriben hoy seis contextos. (Cerrada con la decisión del usuario "
+            "del 2026-10-08, «registro de subrutas»: `vault_arch.duenos_de_sistema` "
+            "deriva el dueño de cada subruta de los `FICHERO_*` de los "
+            "repositorios de dominio, y `SUBRUTAS_DE_SISTEMA_SIN_REPOSITORIO` "
+            "declara, con motivo, las seis que ninguno declara. "
+            "`escrituras_de_sistema_ajenas` bloquea la puerta ante un cruce "
+            "nuevo; los cinco que ya existían quedaron en `system_writes` de "
+            "`arch-baseline.json`, que solo encoge. Cobertura: no ve rutas que "
+            "llegan por parámetro desde otro módulo ni subrutas calculadas, y "
+            "falla del lado de no marcar.)"
         ),
         "por_que_no_ahora": (
             "Exige antes sanear `_LLAMADAS_DE_ESCRITURA` —incluye `replace`, que "
