@@ -118,7 +118,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
             "Actualiza search-index.json",
             "Regenera section index",
         ],
-        "example": 'python vault_write.py --folder "01_Projects/mi-api" --title "Overview" --content "# Overview\\n\\nAPI REST" --tags "api backend"',
+        "example": 'python vault_write.py --folder "01_Projects/mi-api" --title "Overview" --content "@file:overview.md" --tags api backend --agent mi-agente',
         "related": ["vault_read", "vault_append", "vault_audit"],
     },
     "vault_read": {
@@ -1758,7 +1758,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": ["Confirmar antes de sobreescribir"],
         "side_effects": ["Sobreescribe archivos del vault"],
-        "example": 'python vault_restore.py --backup_name "2026-06-24_120000"\npython vault_restore.py --backup_name "2026-06-24_120000" --confirm "yes"',
+        "example": 'python vault_restore.py --backup_name "2026-06-24_120000" --confirm true\npython vault_restore.py --backup_name "2026-06-24_120000"',
         "related": ["vault_backup", "vault_backup_list"],
     },
     "vault_env_save": {
@@ -4148,7 +4148,7 @@ TOOLS_CATALOG: Dict[str, Dict[str, Any]] = {
         },
         "guards": ["Confirmar antes de revertir"],
         "side_effects": ["Revierte archivos migrados"],
-        "example": 'python vault_migrate_rollback.py --report_path "19_Audits/migrations/2026-06-24-001.json"\npython vault_migrate_rollback.py --report_path "19_Audits/migrations/2026-06-24-001.json" --confirm "yes"',
+        "example": 'python vault_migrate_rollback.py --report_path "19_Audits/migrations/2026-06-24-001.json"\npython vault_migrate_rollback.py --report_path "19_Audits/migrations/2026-06-24-001.json" --confirm true',
         "related": ["vault_migrate_docs", "vault_backup"],
     },
     "vault_bibliography_save": {

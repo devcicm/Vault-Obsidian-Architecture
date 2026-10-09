@@ -164,3 +164,72 @@ def test_vault_smoke_esta_en_el_catalogo_de_tools():
 def test_la_baseline_en_disco_declara_su_norma():
     datos = json.loads((SCRIPTS / "smoke-baseline.json").read_text(encoding="utf-8"))
     assert datos["norm"] == "AP-42"
+
+
+# ── Un ejemplo que la propia tool rechaza por argumentos no aprueba ──────────
+
+class _Proc:
+    def __init__(self, stdout):
+        self.stdout, self.stderr, self.returncode = stdout, "", 1
+
+
+def _con_salida(monkeypatch, envelope):
+    monkeypatch.setattr(smoke, "invocation", lambda t: ["python", "x.py"])
+    monkeypatch.setattr(smoke.subprocess, "run",
+                        lambda *a, **k: _Proc(json.dumps(envelope)))
+
+
+def test_un_ejemplo_rechazado_por_argumentos_no_aprueba(monkeypatch):
+    """AP-42: un `ok: false` de entrada inválida es el ejemplo roto, no el rechazo educado.
+
+    Hasta m136 (2026-10-08) el smoke daba por buenos seis ejemplos que la
+    propia tool rechazaba por argumentos: quien los copiaba no tenía otro.
+    El conjunto se deriva de `ERROR_CATALOG` —categoría `validation` con
+    `recovery.action == fix_input`—, no se escribe a mano.
+    """
+    _con_salida(monkeypatch, {"ok": False, "error_code": "INVALID_ARGS",
+                              "error": "flag desconocido"})
+    r = smoke.run_one("vault_sintetica")
+    assert not r["ok"], r
+    assert r["error_code"] == "INVALID_ARGS"
+    assert "INVALID_ARGS" in smoke.RECHAZOS_DE_ENTRADA
+
+
+def test_un_ok_false_que_no_es_de_entrada_sigue_aprobando(monkeypatch):
+    _con_salida(monkeypatch, {"ok": False, "error_code": "NOT_FOUND",
+                              "error": "la nota no existe en el sandbox"})
+    r = smoke.run_one("vault_sintetica")
+    assert r["ok"], r
+    assert r["tool_ok"] is False
+
+
+def test_los_veredictos_exentos_estan_declarados_con_motivo():
+    for codigo, motivo in smoke.VEREDICTOS.items():
+        assert codigo not in smoke.RECHAZOS_DE_ENTRADA
+        assert len(motivo) > 20
+
+
+def test_ningun_ejemplo_confirma_con_un_valor_que_la_cli_lee_como_falso():
+    """`--confirm "yes"` lo parsea `lambda x: x.lower() == "true"` como falso.
+
+    `vault_restore` y `vault_migrate_rollback` lo documentaban hasta
+    2026-10-08: el de rollback ejecutaba en silencio la vista previa en vez
+    del rollback que el ejemplo prometía.
+    """
+    import re
+
+    for tool, entrada in TOOLS_CATALOG.items():
+        for valor in re.findall(r"--confirm\s+(\S+)", entrada.get("example") or ""):
+            assert valor.strip("\"'") in ("true", "false"), (tool, valor)
+
+
+@pytest.mark.parametrize("tool", ["vault_restore", "vault_write"])
+def test_los_ejemplos_que_la_tool_rechazaba_pasan_el_smoke(tool):
+    """Medido el 2026-10-08 al activar `RECHAZOS_DE_ENTRADA`.
+
+    `vault_restore` empezaba por la línea sin confirmar (MISSING_REQUIRED_ARG);
+    `vault_write` pasaba un contenido de una línea que AP-11 rechaza, y que con
+    un `\n` literal en una shell no puede ser de tres.
+    """
+    r = smoke.smoke([tool])
+    assert r["ok"], r["failures"]

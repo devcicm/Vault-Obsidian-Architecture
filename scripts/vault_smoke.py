@@ -20,6 +20,12 @@ formado es un aprobado — el ejemplo del catálogo apunta a rutas que el sandbo
 no tiene, y rechazarlas educadamente es exactamente el contrato. Lo que se
 persigue es el fallo mudo: el traceback, el stdout vacío, el cuelgue.
 
+Con una excepción (2026-10-08): si el rechazo es **de la entrada** —el
+`error_code` pide `fix_input` en una categoría que juzga el argv, no el estado
+del vault—, el ejemplo está roto para quien lo copie, tenga el vault que tenga.
+Medido sobre las 123 tools ese día: de 48 `ok: false`, 45 eran del sandbox
+(`not_found`, `infrastructure`) y tres de la entrada. Ver `RECHAZOS_DE_ENTRADA`.
+
 La invocación no se escribe a mano: se toma del `example` del catálogo, que es
 lo que la documentación le promete al usuario. Si el ejemplo documentado no
 corre, el defecto es real aunque la tool funcione con otros argumentos.
@@ -68,6 +74,40 @@ SMOKE_TIMEOUT = _env("VAULT_SMOKE_TIMEOUT")
 SIN_SMOKE = {
     "vault_token_service": "servicio HTTP: no retorna por diseño",
 }
+
+
+#: Categorías cuyo `fix_input` juzga el argv: `validation` (un valor fuera de
+#: vocabulario, un argumento que falta) y `governance` (el contenido pasado
+#: incumple una norma, p. ej. AP-11). `not_found` e `infrastructure` también
+#: piden `fix_input` a veces, pero dependen del vault: `mi-api` no está dado de
+#: alta en el sandbox y en el vault de quien copia el ejemplo sí.
+_CATEGORIAS_DE_ENTRADA = ("validation", "governance")
+
+#: Códigos de esas categorías que son el **veredicto** de la tool, no un
+#: rechazo de su entrada. Declarados con su motivo, como `SIN_SMOKE`.
+VEREDICTOS = {
+    "VALIDATION_FAILED": "es el resultado de vault_validate sobre la nota: "
+                         "la tool hizo su trabajo y encontró problemas",
+}
+
+
+def _rechazos_de_entrada() -> frozenset:
+    """AP-42: los códigos con los que una tool rechaza el ejemplo que la documenta.
+
+    Se derivan de `ERROR_CATALOG` y no se escriben a mano: un código nuevo de
+    validación entra solo.
+    """
+    from vault_errors import ERROR_CATALOG
+
+    return frozenset(
+        codigo for codigo, d in ERROR_CATALOG.items()
+        if d.get("category") in _CATEGORIAS_DE_ENTRADA
+        and (d.get("recovery") or {}).get("action") == "fix_input"
+        and codigo not in VEREDICTOS
+    )
+
+
+RECHAZOS_DE_ENTRADA = _rechazos_de_entrada()
 
 
 def invocation(tool: str) -> Optional[List[str]]:
@@ -179,9 +219,16 @@ def run_one(tool: str) -> Dict[str, Any]:
     if not isinstance(datos, dict) or "ok" not in datos:
         return {"tool": tool, "ok": False, "problem": "JSON sin campo `ok`",
                 "detail": str(sorted(datos)[:8]) if isinstance(datos, dict) else type(datos).__name__}
+    codigo = datos.get("error_code")
+    if datos["ok"] is False and codigo in RECHAZOS_DE_ENTRADA:
+        # AP-42: la propia tool rechaza el ejemplo que la documenta.
+        return {"tool": tool, "ok": False, "problem": "el ejemplo lo rechaza la propia tool",
+                "error_code": codigo,
+                "detail": str(datos.get("message") or datos.get("error") or "")[:300],
+                "exit_code": proc.returncode}
     # Los campos devueltos viajan con el resultado para que `--contract` pueda
     # contrastarlos sin volver a ejecutar las 91 tools.
-    return {"tool": tool, "ok": True, "tool_ok": datos["ok"],
+    return {"tool": tool, "ok": True, "tool_ok": datos["ok"], "error_code": codigo,
             "returned": sorted(datos), "exit_code": proc.returncode}
 
 
