@@ -103,7 +103,8 @@ from vault.gobernanza.repositorio import RepositorioGobernanza  # noqa: E402
 # era la segunda declaración que envejece en silencio.
 from vault.kernel.indices_structural import RESERVED_INDEX_NAMES as _STRUCTURAL_NAMES  # noqa: E402
 from vault.kernel import construir  # noqa: E402
-from vault.kernel.contenido import meta_adr, plantilla_adr  # noqa: E402
+from vault.kernel.contenido import abre_con_h1, meta_adr, plantilla_adr  # noqa: E402
+from vault.kernel.normalizacion import slugify_strict  # noqa: E402
 from vault.kernel.frontmatter_parsing import FrontmatterParseError, parse_frontmatter_with_body  # noqa: E402
 from vault.kernel.frontmatter_parsing import cargar_bloque_tolerante  # noqa: E402
 from vault_contrato_nota import clase_de_nota, faltantes as _faltantes_del_contrato  # noqa: E402
@@ -466,6 +467,40 @@ def _detect_orphans(
         )
 
     return orphans
+
+
+def _detect_convenciones_cn01_cn04(
+    notes: List[Path],
+) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """CN-01 y CN-04 sobre las notas ya escritas, sin peso (deuda #13).
+
+    Hasta v41.2 las dos se cumplían solo en el write path —`slugify` y
+    `con_titulo`— y una nota escrita por otro camino no la medía nadie. Los
+    criterios son esos mismos, no unos nuevos (AP-57): CN-01 es que el nombre
+    sea su propio `slugify_strict`; CN-04, `abre_con_h1` sobre el cuerpo.
+
+    Medida **informativa**: sin fila en `PENALIZACIONES`, no mueve
+    `healthScore`. Regla 7 (2026-10-08, copias): /ans 110 y 253 de 530 notas,
+    /vcloud 19 y 0 de 109. Si penaliza lo decide el usuario.
+
+    Los andamios de `vault_init` quedan fuera: su nombre
+    (`00-01_projects-primer`) lo fija el propio estándar y ningún consumidor
+    puede cambiarlo sin romper sus enlaces.
+    """
+    cn01: List[Dict[str, Any]] = []
+    cn04: List[Dict[str, Any]] = []
+    for n in notes:
+        texto = _leer_nota(n, errors="replace")
+        if texto is None or es_andamio(texto):
+            continue
+        rel = str(n.relative_to(_raiz())).replace("\\", "/")
+        if slugify_strict(n.stem) != n.stem:
+            cn01.append({"norm_code": "CN-01", "path": rel,
+                         "esperado": f"{slugify_strict(n.stem) or n.stem}.md"})
+        _bloque, cuerpo = separar_frontmatter(texto)
+        if not abre_con_h1(cuerpo or ""):
+            cn04.append({"norm_code": "CN-04", "path": rel})
+    return cn01, cn04
 
 
 def _detect_no_integradas(
@@ -2057,6 +2092,8 @@ def vault_audit(
 
     no_integradas = _detect_no_integradas(content_notes, backlinks, all_notes)
 
+    cn01_no_kebab, cn04_sin_titulo = _detect_convenciones_cn01_cn04(content_notes)
+
     stale = _detect_stale(content_notes)
 
     stuck_patterns = _detect_stuck_patterns(content_notes)
@@ -2238,6 +2275,9 @@ def vault_audit(
             "byFolder": dict(sorted(by_folder.items())),
             # Recomendada, sin penalización: ver `_detect_no_integradas`.
             "notIntegrated": len(no_integradas),
+            # Informativas, sin peso: ver `_detect_convenciones_cn01_cn04`.
+            "cn01NotKebab": len(cn01_no_kebab),
+            "cn04NoTitle": len(cn04_sin_titulo),
         },
         # Notas sobre las que el audit NO se pronunció, por no poder leerlas.
         # Va junto al score y no enterrado en `issues` porque no es un hallazgo
@@ -2248,6 +2288,8 @@ def vault_audit(
         "issues": {
             "orphans": orphans,
             "notIntegrated": no_integradas,
+            "cn01NotKebab": cn01_no_kebab,
+            "cn04NoTitle": cn04_sin_titulo,
             "stale": stale,
             "stuckPatterns": stuck_patterns,
             "staleProjects": stale_projects,

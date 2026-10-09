@@ -425,14 +425,22 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "mano— no la mide nadie después. El docstring de `vault_write.slugify` lo "
             "dice de CN-01: «ninguna otra tool audita después los nombres ya "
             "escritos». El único `\"norm\": \"CN-01\"` de `vault_audit` es "
-            "sobre el scaffold, no sobre los nombres de las notas."
+            "sobre el scaffold, no sobre los nombres de las notas. (La medida, "
+            "hecha en v41.2: `vault_audit._detect_convenciones_cn01_cn04` las "
+            "publica en `issues.cn01NotKebab`/`cn04NoTitle`, sin peso, con el "
+            "criterio de `slugify_strict` y `abre_con_h1`. Regla 7, 2026-10-08, "
+            "sobre copias: /ans 94 y 253 de 527 notas, /vcloud 1 y 0 de 108. De "
+            "las 253 de /ans, 137 son de `11_Code`: `vault_code_module` y otros "
+            "escritores del estándar no pasan por `con_titulo`.)"
         ),
         "por_que_no_ahora": (
             "Medirlas en notas existentes cambia el enforcement a `guard+audit` "
             "y, si penalizan, el healthIndex de todo vault consumidor. Es una "
             "decisión de norma, con su tabla de penalizaciones y su contraste "
             "contra un vault ajeno antes de fijar el peso (regla 7), no un "
-            "arreglo de la tanda."
+            "arreglo de la tanda. Queda: decidir el peso —lo decide el "
+            "usuario— y que los escritores que no aplican `con_titulo` lo "
+            "hagan, que cambia su salida."
         ),
     },
     {

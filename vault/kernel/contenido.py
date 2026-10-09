@@ -52,6 +52,20 @@ def cuerpo_sin_marcadores(body: str) -> str:
 _H1 = re.compile(r"^ {0,3}#[ \t]+\S")
 
 
+def abre_con_h1(cuerpo: str) -> bool:
+    """CN-04, el criterio: la primera línea con texto del cuerpo es un H1.
+
+    Lo usan quien escribe (`con_titulo`) y quien audita lo ya escrito
+    (`vault_audit`, desde v41.2): un solo criterio, para que una nota que el
+    write path da por titulada no salga sin título en la auditoría (AP-57).
+    El BOM inicial no cuenta y `#etiqueta` no es un encabezado.
+    """
+    for linea in (cuerpo or "").lstrip("﻿").splitlines():
+        if linea.strip():
+            return bool(_H1.match(linea))
+    return False
+
+
 def con_titulo(titulo: str, cuerpo: str) -> str:
     """CN-04: el cuerpo de una nota abre con su título como H1.
 
@@ -71,11 +85,8 @@ def con_titulo(titulo: str, cuerpo: str) -> str:
     /ans, 2026-10-04). Detrás del frontmatter el BOM no marca nada.
     """
     cuerpo = cuerpo.lstrip("﻿")
-    for linea in cuerpo.splitlines():
-        if linea.strip():
-            if _H1.match(linea):
-                return cuerpo
-            break
+    if abre_con_h1(cuerpo):
+        return cuerpo
     titulo = " ".join(str(titulo or "").split())
     if not titulo:
         return cuerpo

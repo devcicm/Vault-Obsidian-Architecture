@@ -775,7 +775,7 @@ Límites declarados: la norma sabe que la nota nombra afectados, no que la evalu
 
 - **Severidad:** high
 - **Enforcement:** guard
-- **Detectado por:** sin detector declarado
+- **Detectado por:** vault_audit
 
 Los archivos .md del vault deben usar kebab-case: minúsculas, palabras separadas por guiones, sin espacios ni caracteres especiales. vault_write aplica slugify() automáticamente al título para generar el filename. Ej: 'ADR-001 Auth Decision' → adr-001-auth-decision.md.
 
@@ -805,7 +805,7 @@ El campo meta.status (o status en frontmatter) debe usar solo valores de vault_n
 
 - **Severidad:** low
 - **Enforcement:** guard
-- **Detectado por:** sin detector declarado
+- **Detectado por:** vault_audit
 
 El cuerpo de una nota empieza con su título como encabezado H1. Hasta v40.34 `vault_write`, `vault_knowledge_save` y `vault_ai_decision` lo dejaban solo en el frontmatter, y la nota abierta fuera de Obsidian --un editor de texto, un visor de Markdown, un diff-- empezaba en la primera frase o en una línea de metadatos sin decir qué era. El vault tiene que seguir siendo legible sin la herramienta que lo generó.
 
@@ -1681,7 +1681,7 @@ Límites declarados: la norma sabe que la nota nombra afectados, no que la evalu
 
 - **Severity:** high
 - **Enforcement:** guard
-- **Detected by:** sin detector declarado
+- **Detected by:** vault_audit
 
 Los archivos .md del vault deben usar kebab-case: minúsculas, palabras separadas por guiones, sin espacios ni caracteres especiales. vault_write aplica slugify() automáticamente al título para generar el filename. Ej: 'ADR-001 Auth Decision' → adr-001-auth-decision.md.
 
@@ -1711,7 +1711,7 @@ El campo meta.status (o status en frontmatter) debe usar solo valores de vault_n
 
 - **Severity:** low
 - **Enforcement:** guard
-- **Detected by:** sin detector declarado
+- **Detected by:** vault_audit
 
 El cuerpo de una nota empieza con su título como encabezado H1. Hasta v40.34 `vault_write`, `vault_knowledge_save` y `vault_ai_decision` lo dejaban solo en el frontmatter, y la nota abierta fuera de Obsidian --un editor de texto, un visor de Markdown, un diff-- empezaba en la primera frase o en una línea de metadatos sin decir qué era. El vault tiene que seguir siendo legible sin la herramienta que lo generó.
 

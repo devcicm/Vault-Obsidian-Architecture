@@ -3590,10 +3590,11 @@ NORM_CATALOG: List[Dict[str, Any]] = [
         "signal": "Archivos con espacios, mayúsculas o caracteres especiales en el nombre.",
         "prevention": "Siempre usar vault_write para crear notas. Nunca crear archivos .md directamente.",
         "tools_enforcing": ["vault_write"],
-        # Ninguna tool audita los nombres de fichero ya escritos: `vault_validate`
-        # no los mira. El guard de escritura sí existe (`slugify`), y por eso el
-        # enforcement es `guard` y no `guard+audit`.
-        "tools_detecting": [],
+        # Hasta v41.2 ninguna tool auditaba los nombres ya escritos. Desde
+        # entonces `vault_audit` los mide con el criterio de `slugify`
+        # (`issues.cn01NotKebab`), sin peso: el enforcement sigue `guard` hasta
+        # que el usuario decida si penaliza (deuda #13).
+        "tools_detecting": ["vault_audit"],
         "introduced_version": "v30",
     },
     {
@@ -3707,7 +3708,10 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "H1 y respeta uno que ya venga."
         ),
         "tools_enforcing": ["vault_write", "vault_knowledge_save", "vault_ai_decision"],
-        "tools_detecting": [],
+        # v41.2: `vault_audit` lo mide en las notas ya escritas, con el mismo
+        # criterio (`abre_con_h1`), en `issues.cn04NoTitle` y sin peso. El
+        # enforcement sigue `guard` hasta que el usuario decida si penaliza.
+        "tools_detecting": ["vault_audit"],
         "introduced_version": "v40.35",
     },
 ]

@@ -323,9 +323,9 @@ def _tag_suggestions(new_tags: List[str]) -> List[Dict[str, Any]]:
 def slugify(title: str) -> str:
     """CN-01: el filename en kebab-case, derivado del título y no recibido.
 
-    Aquí se cumple CN-01 entera: ninguna otra tool audita después los nombres
-    ya escritos, así que si esto no normaliza, nada lo corrige. Por eso el
-    enforcement de CN-01 es `guard` y no `guard+audit`.
+    Aquí se cumple CN-01 entera: si esto no normaliza, nada lo corrige. Desde
+    v41.2 `vault_audit` mide los nombres ya escritos con este mismo criterio,
+    pero solo informa, sin peso; por eso el enforcement de CN-01 sigue `guard`.
 
     Delega en el dueño canónico, `slugify_strict` (v40.35). Hasta v40.34 este
     módulo derivaba su propio slug con `sanitize_filename(...).lower()`, que
