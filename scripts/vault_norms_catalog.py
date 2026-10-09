@@ -374,7 +374,14 @@ NORM_CATALOG: List[Dict[str, Any]] = [
             "silencio no pase por vigencia. Sigue sin medir la otra mitad de la "
             "señal —el número de versión escrito en el cuerpo— y la nota que "
             "documenta código sin declararlo: la relación no se adivina por el "
-            "nombre del fichero."
+            "nombre del fichero. La vía decidible para el cuerpo era el "
+            "`version_pinned:` que pide la `prevention`, cruzado con el "
+            "manifiesto del repo declarado; medido el 2026-10-09 en las copias "
+            "de ocho vaults consumidores, ninguna nota lo declara, y los "
+            "`version:` que sí aparecen son la versión de la propia nota "
+            "(`v1.01`), no la de un paquete. Un detector sobre un universo vacío "
+            "saldría verde sin medir nada (AP-60), así que no se escribe hasta "
+            "que alguna tool emita el campo."
         ),
         "introduced_version": "v19",
     },

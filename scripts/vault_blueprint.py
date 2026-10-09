@@ -193,7 +193,10 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "y el discriminador —la intención— no está en ningún campo; el "
             "motivo queda en su `cobertura_descubierta`. El 2026-10-09 se midió "
             "la última hipótesis, la historia del `status` en git, y dio señal "
-            "nula en /ans; la cifra vive en esa misma `cobertura_descubierta`.)"
+            "nula en /ans; la cifra vive en esa misma `cobertura_descubierta`. "
+            "La parte en prosa de AP-08 tampoco: el `version_pinned:` que la "
+            "haría decidible no lo declara ninguna nota de las copias medidas, "
+            "y el motivo queda en su `cobertura_parcial`.)"
         ),
     },
     {
