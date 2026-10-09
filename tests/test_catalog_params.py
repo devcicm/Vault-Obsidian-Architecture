@@ -181,8 +181,12 @@ def test_el_audit_de_normas_conoce_ap40():
     **verificada** en el motor. Leer los dos ficheros concatenados habría
     dejado pasar el caso en que AP-40 se declara y nadie la mide.
     """
-    catalogo = (SCRIPTS / "vault_norms_catalog.py").read_text(encoding="utf-8")
-    assert '"AP-40"' in catalogo
+    # Desde m185 (deuda #10) la entrada vive en `normas/AP-40/` y el fuente
+    # del catálogo solo dice `_desde_paquete("AP-40")`: buscar la cadena ahí
+    # seguiría pasando sin que nada la declarase. Declarada es servida.
+    import vault_norms_catalog
+
+    assert vault_norms_catalog.norma_por_codigo("AP-40")["code"] == "AP-40"
 
     motor = (SCRIPTS / "vault_norms_engine.py").read_text(encoding="utf-8")
     assert '"AP-40"' in motor
