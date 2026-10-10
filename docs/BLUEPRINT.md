@@ -52,7 +52,7 @@ regenera.*
 
 | Contexto | Puertos | Módulos | Sin hogar | Prohíbe |
 |---|---|---|---|
-| **Kernel** (`kernel`) | 4 | 23 | 11 | depender de cualquier contexto de dominio |
+| **Kernel** (`kernel`) | 4 | 23 | 10 | depender de cualquier contexto de dominio |
 | **Autoría** (`autoria`) | 7 | 46 | 4 | — |
 | **Grafo** (`grafo`) | 4 | 15 | 2 | — |
 | **Gobernanza** (`gobernanza`) | 21 | 13 | 1 | — |
@@ -63,7 +63,7 @@ regenera.*
 | **Meta-toolkit** (`meta_toolkit`) | 6 | 32 | 4 | escribir en una sección de contenido: sus artefactos derivados viven en 00_System/ |
 | **CLI** (`cli`) | 0 | 8 | 0 | decidir: traduce argumentos a llamadas y envelopes a salida; la decisión vive en la tool |
 
-**Puente de ADR-0002:** 27 módulos de `scripts/` no importan nada de `vault/<su contexto>/` (`vault_arch.modulos_sin_hogar`). La cifra solo encoge: un módulo nuevo sin hogar bloquea `vault_arch --check`. Importar del contexto es empezar a delegar, no haber migrado.
+**Puente de ADR-0002:** 26 módulos de `scripts/` no importan nada de `vault/<su contexto>/` (`vault_arch.modulos_sin_hogar`). La cifra solo encoge: un módulo nuevo sin hogar bloquea `vault_arch --check`. Importar del contexto es empezar a delegar, no haber migrado.
 
 ## Capa 4 — Normas → puertas → tests
 
@@ -383,7 +383,7 @@ porque una entrada borrada no se distingue de una que nadie volvió a mirar.
 
 | Baseline | Norma | Congelado | Objetivo | Pendiente |
 |---|---|---|---|---|
-| `scripts/arch-baseline.json` | cruces entre contextos | 37 | ≤ 30 para 2027-03-31 · cada 90 d · meta_toolkit — vault_arch → **en_plazo** | 37 → 37 → 37 → 37 → 37 → 37 (crece, Δ+2) |
+| `scripts/arch-baseline.json` | cruces entre contextos | 37 | ≤ 30 para 2027-03-31 · cada 90 d · meta_toolkit — vault_arch → **en_plazo** | 37 → 37 → 37 → 37 → 37 → 37 (crece, Δ+1) |
 | `scripts/arch-baseline.json` | cruces fuera de puerto | 8 | ≤ 4 para 2027-03-31 · cada 90 d · meta_toolkit — vault_arch → **en_plazo** | 8 → 8 → 8 → 8 → 8 → 8 (plana, Δ+0) |
 | `scripts/blame-baseline.json` | AP-51 | 33 | ≤ 20 para 2027-03-31 · cada 90 d · meta_toolkit — vault_blame_audit → **en_plazo** | 84 → 83 → 45 → 33 → 33 → 33 (encoge, Δ-53) |
 | `scripts/error-contract-baseline.json` | AP-52 | 0 | ≤ 0 para 2027-06-30 · cada 180 d · meta_toolkit — vault_error_contract → **cumple** | 110 → 110 → 0 → 9 → 0 → 0 (encoge, Δ-158) |

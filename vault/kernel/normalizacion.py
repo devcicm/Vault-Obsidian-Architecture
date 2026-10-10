@@ -27,6 +27,7 @@ import unicodedata
 from typing import Any, Optional
 
 __all__ = [
+    "UNIONES_ORTOGRAFICAS", "es_union_ortografica",
     "fold_accents", "plegar_diacriticos_latinos", "slugify", "slugify_strict",
     "clave_de_equivalencia", "equivalentes", "clave_de_nombre",
 ]
@@ -136,3 +137,24 @@ def clave_de_nombre(nombre: Any) -> str:
     for separador in ("-", "_", " ", "."):
         texto = texto.replace(separador, "")
     return texto
+
+
+#: ZWNJ y ZWJ son invisibles para quien escribe en latín y ortografía para quien
+#: lee persa, árabe, las escrituras índicas o una secuencia de emoji
+#: («می + ZWNJ + خواهم», «क् + ZWJ + ष», «👩 + ZWJ + 💻»). Se conservan solo entre
+#: dos caracteres de una escritura que une: letra, marca o símbolo fuera del
+#: bloque latino. Entre letras latinas o junto a un espacio no unen nada y son
+#: el invisible que el saneador quita y el pre-flight anti-poison bloquea
+#: («pass + ZWJ + word»). Un solo dueño para los dos (AP-57): hasta 2026-10-10
+#: el saneador los borraba siempre y el pre-flight los bloqueaba siempre.
+UNIONES_ORTOGRAFICAS = frozenset({"\u200c", "\u200d"})
+
+
+def _une_escritura(caracter: str) -> bool:
+    return ord(caracter) > 0x24F and unicodedata.category(caracter)[0] in "LMS"
+
+
+def es_union_ortografica(texto: str, i: int) -> bool:
+    """¿El ZWNJ/ZWJ en ``texto[i]`` forma parte de la palabra que lo rodea?"""
+    return (texto[i] in UNIONES_ORTOGRAFICAS and 0 < i < len(texto) - 1
+            and _une_escritura(texto[i - 1]) and _une_escritura(texto[i + 1]))

@@ -18,6 +18,12 @@ import unicodedata
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
+# `vault_regex` primero: en el checkout es quien hace importable `vault/`. Sin él,
+# un `vault` instalado en site-packages —otra versión— gana al del repo (medido
+# el 2026-10-10: ImportError al importar `vault_io` desde `scripts/`).
+import vault_regex  # noqa: F401,E402
+from vault.kernel.normalizacion import UNIONES_ORTOGRAFICAS, es_union_ortografica  # noqa: E402
+
 # Caracteres de control válidos (solo LF, CR, TAB)
 VALID_CONTROL_CHARS = {"\n", "\r", "\t"}
 
@@ -73,25 +79,9 @@ INVISIBLE_CHARS = [
     ("\u2064", "invisible plus"),
 ]
 
-#: AP-44: ZWNJ y ZWJ son invisibles para quien escribe en latín y ortografía
-#: para quien lee persa, árabe, las escrituras índicas o una secuencia de emoji
-#: («می + ZWNJ + خواهم», «क् + ZWJ + ष», «👩 + ZWJ + 💻»). Hasta 2026-10-10 se
-#: borraban siempre, y la nota decía otra cosa con ok:true (medido como
-#: consumidor). Se conservan solo entre
-#: dos caracteres de una escritura que une: letra, marca o símbolo fuera del
-#: bloque latino. Entre letras latinas o junto a un espacio no unen nada y siguen
-#: siendo el invisible que esto existe para quitar («pass + ZWJ + word»).
-UNIONES_ORTOGRAFICAS = frozenset({"\u200c", "\u200d"})
-
-
-def _une_escritura(caracter: str) -> bool:
-    return ord(caracter) > 0x24F and unicodedata.category(caracter)[0] in "LMS"
-
-
-def es_union_ortografica(texto: str, i: int) -> bool:
-    """¿El ZWNJ/ZWJ en `texto[i]` forma parte de la palabra que lo rodea?"""
-    return (texto[i] in UNIONES_ORTOGRAFICAS and 0 < i < len(texto) - 1
-            and _une_escritura(texto[i - 1]) and _une_escritura(texto[i + 1]))
+#: AP-44: ZWNJ y ZWJ pueden ser ortografía (persa, índicas, emoji) y no basura.
+#: El criterio vive en su dueño, `vault.kernel.normalizacion` (AP-57), que es
+#: también el que consulta el pre-flight anti-poison.
 
 
 def _quitar(texto: str, caracter: str) -> Tuple[str, int]:

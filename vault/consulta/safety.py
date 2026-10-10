@@ -11,6 +11,7 @@ import unicodedata
 from dataclasses import dataclass
 from typing import Any, Dict, List, Tuple
 
+from vault.kernel.normalizacion import es_union_ortografica
 from vault.kernel.regex import strip_code_blocks
 
 _INJECTION_PATTERNS: List[Tuple[str, str, str]] = [
@@ -117,7 +118,11 @@ def scan_content(text: str, field_name: str = "content") -> List[Finding]:
             ))
 
     invisible_hits: Dict[str, int] = {}
-    for ch in text:
+    for i, ch in enumerate(text):
+        # Un ZWNJ/ZWJ que une una palabra persa, índica o un emoji es lo que el
+        # lector ve, no algo que se le esconde (AP-57: decide su dueño).
+        if ch in _INVISIBLE and es_union_ortografica(text, i):
+            continue
         if ch in _INVISIBLE:
             invisible_hits[_INVISIBLE[ch]] = invisible_hits.get(_INVISIBLE[ch], 0) + 1
         elif ord(ch) in _TAG_BLOCK:
