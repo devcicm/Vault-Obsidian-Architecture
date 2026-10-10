@@ -447,6 +447,12 @@ def move_note(
     if not source.exists():
         return emit_error("vault_move", "FILE_NOT_FOUND", f"Archivo no encontrado: {from_path}")
 
+    # AP-36: una nota movida sigue siendo una nota. `--to n.txt` o sin extensión
+    # la sacaba de todo lector con `ok: true` (medido como consumidor, 2026-10-10).
+    if source.suffix.lower() == ".md" and destination.suffix.lower() != ".md":
+        return emit_error("vault_move", "INVALID_PATH",
+                          f"AP-36: el destino de una nota tiene que ser .md: {to_path}")
+
     if destination.exists():
         return emit_error("vault_move", "INVALID_PATH", f"El destino ya existe: {to_path}")
 
