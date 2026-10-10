@@ -40,6 +40,21 @@ def _paquetes():
     return sorted(p for p in NORMAS.iterdir() if p.is_dir() and not p.name.startswith(("_", ".")))
 
 
+def _anunciada_en_su_version(code: str) -> bool:
+    """La entrada de changelog de su `introduced_version` nombra la norma.
+
+    Escribir aquí la versión en que entró caducaba en el bump: mientras fue la
+    corriente, `test_version_coherence` la cazó con razón (AP-47). El hecho
+    histórico se comprueba contra el changelog, que es donde está escrito.
+    """
+    version = cat.norma_por_codigo(code)["introduced_version"]
+    manifiesto = (ROOT / "vault-obsidian-architecture.md").read_text(encoding="utf-8")
+    cabecera = f"\n### {version} — "
+    assert cabecera in manifiesto, f"{code}: {version} no tiene entrada de changelog"
+    entrada = manifiesto.split(cabecera, 1)[1].split("\n### v", 1)[0]
+    return code in entrada
+
+
 def test_el_piloto_ap65_vive_en_su_paquete():
     assert "AP-65" in cat.NORMAS_EN_PAQUETE
     assert (NORMAS / "AP-65" / "norma.py").is_file()
@@ -63,7 +78,7 @@ def test_ap64_es_la_segunda_en_migrar_y_conserva_su_sitio():
     assert '"code": "AP-64"' not in fuente
     codigos = [n["code"] for n in cat.NORM_CATALOG]
     assert codigos.index("AP-64") + 1 == codigos.index("AP-65")
-    assert cat.norma_por_codigo("AP-64")["introduced_version"] == "v41.3"
+    assert _anunciada_en_su_version("AP-64")
 
 
 def test_el_catalogo_no_cambia_de_orden_ni_de_contenido():
@@ -76,7 +91,7 @@ def test_el_catalogo_no_cambia_de_orden_ni_de_contenido():
     assert codigos[i - 1] == "AP-64"
     assert cat.NORM_CATALOG[i + 1]["type"] == "pattern"
     ap65 = cat.norma_por_codigo("AP-65")
-    assert ap65["introduced_version"] == "v41.3"
+    assert _anunciada_en_su_version("AP-65")
     assert ap65["tools_detecting"] == ["vault_norms"]
     assert "AP-64" in ap65["distinguido_de"]
 
