@@ -504,7 +504,13 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
     },
     {
         "id": "el_vault_no_tiene_kernel_declarado",
-        "estado": "pendiente",
+        "estado": "saldada",
+        "saldada_en": "v41.4",
+        "sostenida_por": [
+            "tests/test_sanacion_orden_por_nucleo.py::test_la_fase_8_repara_primero_las_notas_del_nucleo",
+            "tests/test_sanacion_orden_por_nucleo.py::test_sin_nucleo_el_orden_es_por_enlaces_rotos_y_lo_dice",
+            "tests/test_sanacion_orden_por_nucleo.py::test_el_plan_sigue_siendo_de_solo_lectura",
+        ],
         "desde": "v40.20",
         "capa": "7",
         "que": (
@@ -541,7 +547,18 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "grafo trae como candidata a casi toda consulta, y adelantarla "
             "desplaza a la que la consulta buscaba. Revertida, como pedía el "
             "criterio fijado antes de medir. Lo que queda habilitado es "
-            "orden de sanación o peso, y ninguno se mide todavía.)"
+            "orden de sanación o peso, y ninguno se mide todavía. Saldada, "
+            "2026-10-09, con las tres salidas decididas: la prioridad en el "
+            "paquete, descartada por medida (arriba); el peso en el "
+            "`healthIndex`, descartado por el usuario; y el orden de la "
+            "sanación, hecho: la fase 8 de `vault_sanacion` publica `order` "
+            "—las notas de `vaultCore` con enlaces rotos primero, luego por "
+            "fan-in y por enlaces rotos— y `order_criterion`, sin escribir "
+            "nada ni decidir qué enlace es nota ausente. Regla 7 sobre las "
+            "mismas copias, hash intacto antes y después: en /ans (18 notas "
+            "con rotos) y /vcloud (6) la única nota núcleo no tiene enlaces "
+            "rotos, así que allí el orden coincide hoy con el recuento; el "
+            "criterio existe y se declara, no cambia nada en esos dos vaults.)"
         ),
     },
     {

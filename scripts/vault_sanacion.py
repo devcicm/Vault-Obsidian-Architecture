@@ -34,6 +34,7 @@ Uso:
 import argparse
 import json
 import sys
+from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -113,6 +114,42 @@ def _medir_audit(root):
         # sola llamada a `plan_de_sanacion()` reapuntase el vault de quien la
         # invocó. Read-only significa también no dejar rastro en el proceso.
         vault_io.set_vault_root(previa)
+
+
+#: Criterio del orden de la fase 8 (deuda #11), publicado con el orden.
+_CRITERIO_DEL_ORDEN = (
+    "primero las notas de `vaultCore` (fan-in sobre el escalón, medido por "
+    "`vault_audit`), de más a menos citada; después el resto, de más a menos "
+    "enlaces rotos; a igualdad, por ruta"
+)
+
+
+def _orden_de_reparacion(audit):
+    """Las notas con enlaces rotos, en el orden en que conviene repararlas.
+
+    De lo que `vaultCore` habilitaba, la prioridad en `vault_context_pack` se
+    midió y bajó el recall, y el peso en el `healthIndex` lo descartó el
+    usuario; el orden de la sanación es lo que queda. Una nota del núcleo es la
+    puerta por la que se lee medio vault: un enlace roto ahí lo encuentra todo
+    el que entra. Solo se ordena la evidencia del audit: qué enlace es una nota
+    ausente y qué un símbolo de código sigue sin ser automatizable. `None` si
+    el audit no midió los enlaces —no se ordena lo que no se midió—.
+    """
+    issues = audit.get("issues") if isinstance(audit, dict) else None
+    rotos = issues.get("brokenLinks") if isinstance(issues, dict) else None
+    if not isinstance(rotos, list):
+        return None
+    nucleo = audit.get("vaultCore") if isinstance(audit.get("vaultCore"), dict) else {}
+    fan_in = {e["path"]: e["fanIn"] for e in nucleo.get("notes") or []}
+    por_nota = Counter(e.get("from") for e in rotos if isinstance(e, dict) and e.get("from"))
+    filas = []
+    for ruta, n in por_nota.items():
+        fila = {"path": ruta, "brokenLinks": n, "core": ruta in fan_in}
+        if ruta in fan_in:
+            fila["fanIn"] = fan_in[ruta]
+        filas.append(fila)
+    filas.sort(key=lambda e: (not e["core"], -e.get("fanIn", 0), -e["brokenLinks"], e["path"]))
+    return filas
 
 
 def _medir_normas(root):
@@ -281,11 +318,17 @@ def plan_de_sanacion(root=None):
         "{n} nota(s) fuera de la estructura — exige mapa de rollback (AP-10)",
         "ninguna nota fuera de estructura",
     ))
-    fases.append(_por_contador(
+    fase_8 = _por_contador(
         8, _stat("issues", "brokenLinks"),
-        "{n} enlace(s) roto(s); clasifica antes de reparar",
+        "{n} enlace(s) roto(s); clasifica antes de reparar, empezando por el "
+        "núcleo del vault",
         "sin enlaces rotos",
-    ))
+    )
+    orden = _orden_de_reparacion(audit)
+    if fase_8["verdict"] == "applies" and orden:
+        fase_8["order"] = orden
+        fase_8["order_criterion"] = _CRITERIO_DEL_ORDEN
+    fases.append(fase_8)
     fases.append(_por_contador(
         9, _stat("issues", "mermaidErrors"),
         "{n} diagrama(s) que no compilan",
