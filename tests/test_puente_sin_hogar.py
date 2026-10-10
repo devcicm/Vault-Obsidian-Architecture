@@ -338,6 +338,52 @@ def test_lote_f_ninguna_cara_de_norma_cita_el_alias(modulo, dueno):
         assert viejo not in cara.read_text(encoding="utf-8"), cara
 
 
+
+LOTE_H = [
+    ("vault_errors_trace", "vault/kernel/errors_trace.py", False),
+    ("vault_fix_brackets", "vault/autoria/fix_brackets.py", True),
+    ("vault_graph_inspect", "vault/grafo/graph_inspect.py", True),
+    ("vault_sanacion", "vault/ciclo_de_vida/sanacion.py", True),
+    ("vault_spec_generate_catalog", "vault/meta_toolkit/spec_generate_catalog.py", True),
+]
+
+
+@pytest.mark.parametrize("modulo,dueno,cli", LOTE_H)
+def test_lote_h_los_cinco_con_firmas_en_baselines_migran(modulo, dueno, cli):
+    """Lote H de la deuda #12 (2026-10-10): los cinco que tenían sitios en las
+    baselines de AP-51 (blame) y AP-57 (criterios) o cruces en la de
+    arquitectura. Migran porque la clave sigue al alias (m234, m245): sus firmas
+    no salen como deuda nueva ni sus cruces como saldados."""
+    import importlib
+    import subprocess
+
+    import vault_grafo_import as gi
+
+    assert modulo not in set(vault_arch.modulos_sin_hogar())
+    nombre = dueno[:-3].replace("/", ".")
+    assert importlib.import_module(modulo) is importlib.import_module(nombre)
+    assert gi.fuente_de(modulo) == (ROOT / dueno).resolve()
+    assert vault_arch.clave_de_modulo(ROOT / dueno) == f"{modulo}.py"
+    if cli:
+        r = subprocess.run([sys.executable, str(ROOT / "scripts" / f"{modulo}.py"), "--help"],
+                           capture_output=True, text=True, encoding="utf-8", timeout=120)
+        assert r.returncode == 0 and "usage" in r.stdout.lower(), r.stderr[-300:]
+
+
+def test_lote_h_el_cruce_de_sanacion_sigue_medido():
+    claves = {f"{c['module']} -> {c['symbol']}" for c in vault_arch.cruces_fuera_de_puerto()}
+    assert "vault_sanacion -> vault_reindex.notas_indexables" in claves
+
+
+def test_spec_generate_catalog_lee_el_catalogo_donde_vive():
+    """Leía `vault_mcp_catalog.py` junto a `__file__`, que tras migrar es
+    `vault/meta_toolkit/`: el fichero no está ahí. Se deriva con `fuente_de`."""
+    import vault_grafo_import as gi
+    import vault_spec_generate_catalog as g
+
+    assert g._CATALOGO == gi.fuente_de("vault_mcp_catalog")
+    assert g._CATALOGO.is_file()
+
 def test_la_clave_de_baseline_de_un_dueno_es_la_de_su_alias():
     """Las baselines por firma de sitio y la de cruces se indexan por el nombre
     de `scripts/`. Migrar un módulo con entradas las re-clavaba —la ruta del

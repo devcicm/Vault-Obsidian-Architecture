@@ -684,7 +684,14 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "nuevo. Es la misma traba que la de las cinco firmas de las "
             "baselines de AP-51 y AP-57: la clave tiene que seguir al alias. "
             "Desde que la sigue —`vault_arch.alias_de_dueno`—, `vault_subgraph` "
-            "migra a `vault/consulta/subgraph.py` con su cruce intacto.)"
+            "migra a `vault/consulta/subgraph.py` con su cruce intacto.)\n\n"
+            "(Lote H, 2026-10-10: los cinco con sitios en baselines —errors_trace "
+            "al kernel, fix_brackets a autoría, graph_inspect a grafo, sanacion a "
+            "ciclo de vida y spec_generate_catalog a meta_toolkit— migran sin "
+            "re-clavar nada: blame y criterios ya indexaban por el alias, y "
+            "`cruces_fuera_de_puerto` pasó a hacerlo al destapar que medía los "
+            "dueños por `ruta.stem` (m245). Las caras de AP-22 y AP-24 citan "
+            "`vault/autoria/fix_brackets.py`.)"
         ),
         "por_que_no_ahora": (
             "Transitorio hasta migrar scripts → vault/<contexto>, ADR-0002. "

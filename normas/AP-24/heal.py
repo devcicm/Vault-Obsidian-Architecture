@@ -7,6 +7,6 @@ sale de derivarlo.
 """
 
 HEAL = [
-    'scripts/vault_fix_brackets.py::_analyze_note',
-    'scripts/vault_fix_brackets.py::main',
+    'vault/autoria/fix_brackets.py::_analyze_note',
+    'vault/autoria/fix_brackets.py::main',
 ]

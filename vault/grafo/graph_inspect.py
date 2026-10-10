@@ -43,7 +43,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-sys.path.insert(0, str(Path(__file__).parent))
 from vault_io import get_vault_root, normalize_stem
 from vault_lib import indice_de_nombres, ruta_necesaria
 from vault_regex import (

@@ -54,7 +54,7 @@ def test_las_caras_en_disco_son_las_derivadas():
 def test_ap22_y_ap24_las_repara_fix_brackets():
     assert cat.tools_healing("AP-22") == ["vault_fix_brackets"]
     heal = _datos(NORMAS / "AP-22" / "heal.py")["HEAL"]
-    assert heal and all(c.startswith("scripts/vault_fix_brackets.py::") for c in heal)
+    assert heal and all(c.startswith("vault/autoria/fix_brackets.py::") for c in heal)
     assert "vault_fix_brackets" in cat.tools_healing("AP-24")
 
 

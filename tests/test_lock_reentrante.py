@@ -217,7 +217,7 @@ def test_el_trace_descarta_en_vez_de_escribir_sin_lock():
     No basta con que el detector diga cero: se comprueba que el handler no
     tiene ninguna llamada, no que el detector sepa mirarlo.
     """
-    fuente = (RAIZ / "scripts" / "vault_errors_trace.py").read_text(encoding="utf-8")
+    fuente = (RAIZ / "vault" / "kernel" / "errors_trace.py").read_text(encoding="utf-8")
     arbol = ast.parse(fuente)
     fn = next(n for n in ast.walk(arbol)
               if isinstance(n, ast.FunctionDef) and n.name == "log_trace")
@@ -249,7 +249,7 @@ def test_el_trace_no_pasa_por_el_saneado_que_lo_vuelve_a_escribir():
     —`guarda_secretos`—. El saneado ya no está ahí que desactivar, así que lo
     que se comprueba es que el trace no vuelva a pedir la política entera.
     """
-    fuente = (RAIZ / "scripts" / "vault_errors_trace.py").read_text(encoding="utf-8")
+    fuente = (RAIZ / "vault" / "kernel" / "errors_trace.py").read_text(encoding="utf-8")
     arbol = ast.parse(fuente)
     nombres = [
         getattr(n.func, "id", None)

@@ -26,8 +26,11 @@ from pathlib import Path
 
 from vault_errors import wrap_main
 from vault_io import resolve_tool_spec, tool_spec_path
+import vault_grafo_import
 
-_HERE = Path(__file__).resolve().parent
+# El catálogo se lee y se escribe donde vive su código, que tras la deuda #12
+# puede no ser `scripts/` (AP-44).
+_CATALOGO = vault_grafo_import.fuente_de("vault_mcp_catalog")
 
 
 def _load_spec() -> dict:
@@ -41,7 +44,7 @@ def _load_spec() -> dict:
 
 
 def _load_catalog_source() -> str:
-    return (_HERE / "vault_mcp_catalog.py").read_text(encoding="utf-8")
+    return _CATALOGO.read_text(encoding="utf-8")
 
 
 def _extract_dict_from_source(source: str, var_name: str) -> dict:
@@ -164,7 +167,7 @@ def main() -> int:
     rendered = render_python(catalog)
 
     if args.check:
-        current = (_HERE / "vault_mcp_catalog.py").read_text(encoding="utf-8")
+        current = _CATALOGO.read_text(encoding="utf-8")
         print(f"Generated size: {len(rendered)} chars, {rendered.count(chr(10))} lines")
         print(f"Current size:   {len(current)} chars, {current.count(chr(10))} lines")
         generated_tools = {
@@ -179,7 +182,7 @@ def main() -> int:
         return 0
 
     if args.write:
-        out_path = _HERE / "vault_mcp_catalog.py"
+        out_path = _CATALOGO
         out_path.write_text(rendered, encoding="utf-8")
         print(f"Wrote {len(rendered)} chars to {out_path}")
         return 0

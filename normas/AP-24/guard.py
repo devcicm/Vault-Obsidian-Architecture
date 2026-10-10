@@ -10,8 +10,8 @@ de derivarlo; se regenera con `vault_norms_engine.escribir_caras_derivadas`.
 GUARD = [
     'scripts/vault_write.py::_check_content_gate',
     'scripts/vault_write.py::_content_gate_reason',
-    'scripts/vault_fix_brackets.py::_analyze_note',
-    'scripts/vault_fix_brackets.py::main',
+    'vault/autoria/fix_brackets.py::_analyze_note',
+    'vault/autoria/fix_brackets.py::main',
     'scripts/vault_audit.py::_detect_malformed_wikilinks',
     'scripts/vault_audit.py::vault_audit',
 ]

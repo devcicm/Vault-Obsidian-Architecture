@@ -14,6 +14,6 @@ GUARD = [
     'scripts/vault_write.py::vault_write',
     'scripts/vault_audit.py::_detect_malformed_wikilinks',
     'scripts/vault_audit.py::vault_audit',
-    'scripts/vault_fix_brackets.py::_analyze_note',
-    'scripts/vault_fix_brackets.py::main',
+    'vault/autoria/fix_brackets.py::_analyze_note',
+    'vault/autoria/fix_brackets.py::main',
 ]
