@@ -73,6 +73,40 @@ INVISIBLE_CHARS = [
     ("\u2064", "invisible plus"),
 ]
 
+#: AP-44: ZWNJ y ZWJ son invisibles para quien escribe en latín y ortografía
+#: para quien lee persa, árabe, las escrituras índicas o una secuencia de emoji
+#: («می + ZWNJ + خواهم», «क् + ZWJ + ष», «👩 + ZWJ + 💻»). Hasta 2026-10-10 se
+#: borraban siempre, y la nota decía otra cosa con ok:true (medido como
+#: consumidor). Se conservan solo entre
+#: dos caracteres de una escritura que une: letra, marca o símbolo fuera del
+#: bloque latino. Entre letras latinas o junto a un espacio no unen nada y siguen
+#: siendo el invisible que esto existe para quitar («pass + ZWJ + word»).
+UNIONES_ORTOGRAFICAS = frozenset({"\u200c", "\u200d"})
+
+
+def _une_escritura(caracter: str) -> bool:
+    return ord(caracter) > 0x24F and unicodedata.category(caracter)[0] in "LMS"
+
+
+def es_union_ortografica(texto: str, i: int) -> bool:
+    """¿El ZWNJ/ZWJ en `texto[i]` forma parte de la palabra que lo rodea?"""
+    return (texto[i] in UNIONES_ORTOGRAFICAS and 0 < i < len(texto) - 1
+            and _une_escritura(texto[i - 1]) and _une_escritura(texto[i + 1]))
+
+
+def _quitar(texto: str, caracter: str) -> Tuple[str, int]:
+    """Quita `caracter` de `texto` salvo donde es unión ortográfica."""
+    if caracter not in UNIONES_ORTOGRAFICAS:
+        return texto.replace(caracter, ""), texto.count(caracter)
+    partes, quitados = [], 0
+    for i, c in enumerate(texto):
+        if c == caracter and not es_union_ortografica(texto, i):
+            quitados += 1
+            continue
+        partes.append(c)
+    return "".join(partes), quitados
+
+
 # Caracteres inválidos para nombres de archivo por SO
 INVALID_FILENAME_CHARS = r'[<>:"/\\|?*\x00-\x1f]'
 
@@ -210,7 +244,9 @@ def remove_invisible_chars(text: str) -> Tuple[str, List[Dict[str, str]]]:
 
     for char, name in INVISIBLE_CHARS:
         if char in result:
-            count = result.count(char)
+            result, count = _quitar(result, char)
+            if not count:
+                continue
             fixes.append(
                 {
                     "type": "invisible_char",
@@ -219,7 +255,6 @@ def remove_invisible_chars(text: str) -> Tuple[str, List[Dict[str, str]]]:
                     "count": count,
                 }
             )
-            result = result.replace(char, "")
 
     return result, fixes
 
@@ -480,7 +515,7 @@ def detect_issues(text: str) -> List[Dict[str, Any]]:
 
     # Detectar caracteres invisibles
     for char, _nombre in INVISIBLE_CHARS:
-        if char in text:
+        if char in text and _quitar(text, char)[1]:
             issues.append(
                 {
                     "type": "invisible_char",
