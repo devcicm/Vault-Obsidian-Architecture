@@ -57,6 +57,7 @@ from vault.kernel.fallos import FalloDeDominio
 from vault.kernel.indices_structural import DISPOSITIVOS_WINDOWS, es_dispositivo_windows
 from vault_raiz import (  # noqa: F401  (reexport deliberado)
     LOW_CONFIDENCE_ORIGINS,
+    RaizNoIdentificada,
     escritura_admitida,
     get_vault_root,
     rebound_constants,
@@ -330,17 +331,20 @@ def _rechazar_raiz_insegura(path: Path) -> None:
         return
     raiz = get_vault_root().resolve()
     if vault_root_origin() == "env_inexistente":
-        raise PermissionError(
+        raise RaizNoIdentificada(
             f"VAULT_ROOT apunta a '{raiz}', que no es un directorio. Escribir "
             "ahí crearía un vault fantasma. Revisa la variable (¿está sin "
             "expandir?) o crea el directorio y ejecuta vault_init."
         )
-    raise PermissionError(
+    # La salida era «o crea un directorio 'vault-<nombre>/'»: con la wheel
+    # instalada eso es junto al toolkit, dentro de site-packages (medido como
+    # consumidor, 2026-10-10). La receta que vale en los dos casos es VAULT_ROOT.
+    raise RaizNoIdentificada(
         f"No se identificó ningún vault: la raíz activa es {raiz}, elegida por "
         f"`{vault_root_origin()}`, que significa «no encontré nada y estoy "
         "suponiendo». Escribir aquí sembraría artefactos de vault dentro del "
-        "propio toolkit. Exporta VAULT_ROOT=<ruta del vault>, o crea un "
-        "directorio 'vault-<nombre>/'. Para volver al comportamiento anterior, "
+        "propio toolkit. Exporta VAULT_ROOT=<ruta del vault>; para uno nuevo, "
+        "`vault init <ruta>` lo crea. Para volver al comportamiento anterior, "
         "VAULT_PERMISSIVE_ROOT=1."
     )
 

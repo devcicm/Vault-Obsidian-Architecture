@@ -233,6 +233,17 @@ def vault_root_is_confident() -> bool:
 
 
 
+class RaizNoIdentificada(PermissionError):
+    """La escritura se rechaza porque no se sabe cuál es el vault (AP-36).
+
+    AP-51: hasta 2026-10-10 salía como un `PermissionError` sin más, y el sobre
+    decía PERMISSION_DENIED con la receta de revisar los permisos del disco,
+    que no tenían nada que arreglar. La subclase deja que `vault_errors` la
+    traduzca a VAULT_NOT_FOUND y sigue siendo `PermissionError` para quien la
+    captura así (no-derogación).
+    """
+
+
 def escritura_admitida(path, *, confiada: Optional[bool] = None,
                        raiz: Optional[Path] = None) -> bool:
     """¿Se puede escribir en `path` sin saber de verdad cuál es el vault? (AP-36)

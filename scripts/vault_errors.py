@@ -40,7 +40,7 @@ if str(_REPO_ROOT) not in sys.path:
 # La configuración se lee del registro único, no con un default por punto
 # de uso. Ver `vault_entorno.py`.
 from vault_entorno import leer as _env
-from vault_raiz import get_vault_root, vault_root_origin
+from vault_raiz import RaizNoIdentificada, get_vault_root, vault_root_origin
 from typing import Any, Callable, Dict, List, Optional
 
 from vault_errors_catalog import (
@@ -75,6 +75,10 @@ def _map_exception_to_code(e: BaseException) -> str:
     UNEXPECTED_ERROR sin distinguir. Añadir aquí cuando se descubra
     una excepción que el consumidor necesita identificar.
     """
+    # Antes que PermissionError, de la que hereda: no saber cuál es el vault
+    # no es un problema de permisos (AP-51).
+    if isinstance(e, RaizNoIdentificada):
+        return "VAULT_NOT_FOUND"
     if isinstance(e, PermissionError):
         return "PERMISSION_DENIED"
     if isinstance(e, OSError):
