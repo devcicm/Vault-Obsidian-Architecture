@@ -8,9 +8,9 @@ de derivarlo; se regenera con `vault_norms_engine.escribir_caras_derivadas`.
 """
 
 GUARD = [
-    'scripts/vault_fuente_unica.py::medir',
-    'scripts/vault_fuente_unica.py::_baseline',
-    'scripts/vault_fuente_unica.py::check',
-    'scripts/vault_fuente_unica.py::freeze',
-    'scripts/vault_fuente_unica.py::main',
+    'vault/gobernanza/fuente_unica.py::medir',
+    'vault/gobernanza/fuente_unica.py::_baseline',
+    'vault/gobernanza/fuente_unica.py::check',
+    'vault/gobernanza/fuente_unica.py::freeze',
+    'vault/gobernanza/fuente_unica.py::main',
 ]

@@ -691,7 +691,14 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "re-clavar nada: blame y criterios ya indexaban por el alias, y "
             "`cruces_fuera_de_puerto` pasó a hacerlo al destapar que medía los "
             "dueños por `ruta.stem` (m245). Las caras de AP-22 y AP-24 citan "
-            "`vault/autoria/fix_brackets.py`.)"
+            "`vault/autoria/fix_brackets.py`.)\n\n"
+            "(Lote G, 2026-10-10: mcp, spec_catalog_check y test_runner a "
+            "meta_toolkit, fuente_unica a gobernanza y token_counter a consulta. "
+            "Sus `SCRIPTS_DIR` y baselines se derivaban de `__file__`; ahora salen "
+            "de `vault_grafo_import.DIRECTORIO`, que es `scripts/` en el checkout y "
+            "`_impl/` en la wheel. Antes, m248 hizo que los tests de propiedad "
+            "leyeran al dueño con `codigo_de`. Las caras de AP-05 citan "
+            "`vault/gobernanza/fuente_unica.py`. Quedan las nueve raíces del kernel.)"
         ),
         "por_que_no_ahora": (
             "Transitorio hasta migrar scripts → vault/<contexto>, ADR-0002. "

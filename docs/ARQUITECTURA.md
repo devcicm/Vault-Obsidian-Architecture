@@ -40,7 +40,6 @@ graph TD
     grafo -.->|cruce| autoria
     consulta -.->|cruce| autoria
     kernel -.->|cruce| autoria
-    meta_toolkit -.->|cruce| consulta
     gobernanza -.->|cruce| meta_toolkit
     gobernanza -.->|cruce| autoria
     ciclo_de_vida -.->|cruce| indices
@@ -58,6 +57,7 @@ graph TD
     gobernanza -.->|cruce| indices
     grafo -.->|cruce| gobernanza
     indices -.->|cruce| grafo
+    meta_toolkit -.->|cruce| consulta
 ```
 
 ## Kernel
@@ -188,11 +188,11 @@ Fronteras que hoy cruza (6), deuda declarada:
 | Módulo | Importa | Contexto destino |
 |---|---|---|
 | `vault_blueprint` | `vault_norms` | Gobernanza |
-| `vault_mcp` | `vault_mcp_context` | Consulta |
 | `vault_norms_coherence` | `vault_norms` | Gobernanza |
 | `vault_spec_memory` | `vault/ciclo_de_vida` | Ciclo de vida |
 | `vault_spec_memory` | `vault/gobernanza` | Gobernanza |
 | `vault/meta_toolkit/catalog_adapter.py` | `vault/gobernanza` | Gobernanza |
+| `vault_mcp` | `vault_mcp_context` | Consulta |
 
 ## CLI
 

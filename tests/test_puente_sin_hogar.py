@@ -535,3 +535,35 @@ def test_el_escaner_de_la_cli_mira_el_codigo_del_dueno():
     assert {("vault_index.py", "RC-01"), ("vault_index.py", "RC-04")} <= codigos, codigos
     todos = analyzer.scan(min_severity="low")["issues"]
     assert ("vault_secret_scan.py", "PY-02") in {(i["file"], i["code"]) for i in todos}
+
+
+LOTE_G = [
+    ("vault_mcp", "vault/meta_toolkit/mcp.py", "SCRIPTS_DIR", ""),
+    ("vault_spec_catalog_check", "vault/meta_toolkit/spec_catalog_check.py",
+     "FIELDS_BASELINE", "field-compat-baseline.json"),
+    ("vault_test_runner", "vault/meta_toolkit/test_runner.py", "SCRIPTS_DIR", ""),
+    ("vault_fuente_unica", "vault/gobernanza/fuente_unica.py", "BASELINE", "fuente-unica-baseline.json"),
+    ("vault_token_counter", "vault/consulta/token_counter.py", "SCRIPTS_DIR", ""),
+]
+
+
+@pytest.mark.parametrize("modulo,dueno,ruta,fichero", LOTE_G)
+def test_lote_g_migra_y_sus_rutas_salen_del_puente(modulo, dueno, ruta, fichero):
+    """Lote G de la deuda #12 (2026-10-10). Estos cinco derivaban `SCRIPTS_DIR` o
+    su baseline de `__file__`; en `vault/<ctx>/` eso apuntaría al contexto, no a
+    `scripts/` (ni a `_impl/` en la wheel). Las rutas salen de
+    `vault_grafo_import.DIRECTORIO`, y el alias sigue arrancando como CLI."""
+    import importlib
+    import subprocess
+
+    import vault_grafo_import as gi
+
+    assert modulo not in set(vault_arch.modulos_sin_hogar())
+    m = importlib.import_module(modulo)
+    assert m is importlib.import_module(dueno[:-3].replace("/", "."))
+    assert gi.fuente_de(modulo) == (ROOT / dueno).resolve()
+    assert getattr(m, ruta) == gi.DIRECTORIO / fichero if fichero else getattr(m, ruta) == gi.DIRECTORIO
+    assert "__file__" not in (ROOT / dueno).read_text(encoding="utf-8").split("def ", 1)[0]
+    r = subprocess.run([sys.executable, str(ROOT / "scripts" / f"{modulo}.py"), "--help"],
+                       capture_output=True, text=True, encoding="utf-8", timeout=120)
+    assert r.returncode == 0 and "usage" in r.stdout.lower(), r.stderr[-300:]

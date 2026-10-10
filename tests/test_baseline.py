@@ -20,6 +20,7 @@ RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ / "scripts"))
 
 import vault_baseline as B  # noqa: E402
+import vault_grafo_import as gi  # noqa: E402
 
 
 # ── Carga ────────────────────────────────────────────────────────────────────
@@ -326,7 +327,7 @@ def test_ningun_guard_conserva_su_propia_carga_de_baseline():
     migrados = ["vault_criterios", "vault_ciclos", "vault_kernel",
                 "vault_fuente_unica", "vault_excepcion_declarada"]
     for modulo in migrados:
-        fuente = (RAIZ / "scripts" / f"{modulo}.py").read_text(encoding="utf-8")
+        fuente = gi.codigo_de(RAIZ / "scripts" / f"{modulo}.py").read_text(encoding="utf-8")
         assert "BASELINE.read_text" not in fuente, modulo
         assert "BASELINE.write_text" not in fuente, modulo
         assert "vault_baseline" in fuente, modulo
@@ -357,7 +358,7 @@ def test_el_dueno_no_importa_ninguna_tool():
     # Y que la hoja siga siendo hoja: si algún día importa el toolkit, esta
     # exención pasa a tapar justo la dependencia que el test vigila.
     for hoja in HOJAS_DEL_KERNEL:
-        cuerpo = (RAIZ / "scripts" / f"{hoja}.py").read_text(encoding="utf-8")
+        cuerpo = gi.codigo_de(RAIZ / "scripts" / f"{hoja}.py").read_text(encoding="utf-8")
         for linea in cuerpo.splitlines():
             if linea.startswith(("import ", "from ")):
                 assert "vault_" not in linea, f"{hoja}: {linea}"
