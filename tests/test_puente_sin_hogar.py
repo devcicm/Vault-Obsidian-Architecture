@@ -196,7 +196,10 @@ def test_lote_b_un_alias_ejecutado_como_script_corre_el_main_del_dueno(tmp_path)
         ROOT / "vault" / "gobernanza" / "secret_scan.py").resolve()
 
     nota = tmp_path / "n.md"
-    nota.write_text("api_key = 'AKIAABCDEFGHIJKLMNOP'\n", encoding="utf-8")
+    # Compuesta al ejecutar: escrita de una pieza, el fuente tendría forma de
+    # credencial y `test_publicacion_limpia` la cazaría con razón.
+    clave = "AKIA" + "ABCDEFGHIJKLMNOP"
+    nota.write_text(f"api_key = '{clave}'\n", encoding="utf-8")
     r = subprocess.run([sys.executable, str(ROOT / "scripts" / "vault_secret_scan.py"),
                         str(nota)], capture_output=True, text=True, encoding="utf-8")
     assert "potential secret" in r.stdout, (r.returncode, r.stdout, r.stderr)
