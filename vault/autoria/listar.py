@@ -201,6 +201,13 @@ def vault_list(folder: Optional[str] = None, status: Optional[str] = None, limit
 
     """
 
+    # AP-51: `--limit 0` devolvía una nota con ok:true —el corte se miraba
+    # después de añadirla— y `-3` lo mismo. Un límite no positivo no tiene
+    # lectura legítima, así que es un error y no un listado que lo ignora.
+    if limit < 1:
+        return emit_error("vault_list", "INVALID_INPUT",
+                          f"--limit debe ser un entero positivo (recibido: {limit}).")
+
     if folder is None:
 
         # Return root structure
