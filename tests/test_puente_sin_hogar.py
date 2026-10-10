@@ -372,3 +372,13 @@ def test_el_contrato_compacto_de_una_tool_migrada_se_lee_en_el_dueno():
     for alias in gi._puente():
         c = cc.introspect_tool(alias)
         assert c is None or "alias de `vault." not in c["description"], alias
+
+
+def test_el_bootstrap_del_manifest_lee_los_obligatorios_en_el_dueno():
+    """`vault_manifest._bootstrap_spec` introspeccionaba `scripts/<tool>.py`
+    por ruta y, tras migrar, publicaba `required_args: []` para `vault_append`
+    —que exige `--path` y `--content`—. Mismo arreglo que el contrato compacto."""
+    import vault_manifest as vm
+
+    tools = vm._bootstrap_spec()["tools"]
+    assert {"--path", "--content"} <= set(tools["vault_append"]["required_args"])

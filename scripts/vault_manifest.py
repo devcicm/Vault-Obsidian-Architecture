@@ -46,6 +46,7 @@ from vault_io import (  # noqa: E402
 )
 from vault_errors import emit_error, wrap_main
 from vault_version import CURRENT_VERSION  # generator_version de los artefactos (AP-47)
+import vault_grafo_import  # noqa: E402
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Tool status registry
@@ -572,6 +573,9 @@ def _bootstrap_spec() -> Dict[str, Any]:
         required_args: List[str] = []
         script_path = SCRIPTS_DIR / f"{name}.py"
         if script_path.exists():
+            # Deuda #12: el nombre puede ser un alias sin código; los
+            # obligatorios se leen en el dueño (AP-44).
+            script_path = vault_grafo_import.fuente_de(name)
             try:
                 src = script_path.read_text(encoding="utf-8", errors="replace")
                 required_args = _extract_required_flags(src)
