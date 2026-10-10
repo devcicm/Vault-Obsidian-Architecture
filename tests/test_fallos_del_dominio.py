@@ -38,9 +38,26 @@ def test_el_dominio_no_conoce_el_catalogo_de_errores():
     resueltos porque un import diferido dentro de una función acopla igual: es
     AP-58 aplicado a esta frontera.
     """
+    # Desde la deuda #12 (lotes D y E, 2026-10-10) `vault/` también aloja
+    # tools: el dueño de un alias de `scripts/` que se ejecuta como programa
+    # (`if __name__ == "__main__"` en el nivel del módulo). Ese módulo ES la
+    # tool y traduce; el resto de `vault/` sigue siendo dominio. La identidad
+    # sale del puente (`nombre_de`) y del árbol sintáctico, no de una lista.
+    import ast
+
+    import vault_grafo_import
+
+    def _es_programa(arbol: ast.Module) -> bool:
+        return any(isinstance(n, ast.If) and "__main__" in ast.unparse(n.test)
+                   for n in arbol.body)
+
     culpables = []
     for ruta in (REPO_ROOT / "vault").rglob("*.py"):
-        for linea in ruta.read_text(encoding="utf-8").splitlines():
+        texto = ruta.read_text(encoding="utf-8")
+        if (vault_grafo_import.nombre_de(ruta) != ruta.stem
+                and _es_programa(ast.parse(texto))):
+            continue
+        for linea in texto.splitlines():
             desnuda = linea.strip()
             if not desnuda.startswith(("import ", "from ")):
                 continue  # la prosa puede nombrarlo: explicar dónde vive la
