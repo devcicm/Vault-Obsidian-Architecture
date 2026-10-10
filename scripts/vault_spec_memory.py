@@ -34,6 +34,7 @@ SCRIPTS_DIR = Path(__file__).parent
 
 from vault_errors import emit_error, wrap_main
 from vault_io import resolve_tool_spec  # noqa: E402
+import vault_grafo_import  # noqa: E402
 PYTHON = sys.executable
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -215,7 +216,9 @@ def _extract_error_codes(source: str) -> List[str]:
 
 
 def _read_source(name: str) -> Optional[str]:
-    p = SCRIPTS_DIR / f"{name}.py"
+    # Deuda #12: `scripts/<name>.py` puede ser un alias sin código; la fuente
+    # es la del dueño (AP-44). Que la tool exista se sigue mirando en scripts/.
+    p = vault_grafo_import.fuente_de(name) if (SCRIPTS_DIR / f"{name}.py").exists()         else SCRIPTS_DIR / f"{name}.py"
     try:
         return p.read_text(encoding="utf-8", errors="replace") if p.exists() else None
     except Exception:

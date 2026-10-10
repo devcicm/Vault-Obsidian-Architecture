@@ -382,3 +382,15 @@ def test_el_bootstrap_del_manifest_lee_los_obligatorios_en_el_dueno():
 
     tools = vm._bootstrap_spec()["tools"]
     assert {"--path", "--content"} <= set(tools["vault_append"]["required_args"])
+
+
+def test_la_memoria_de_spec_lee_la_fuente_en_el_dueno():
+    """`vault_spec_memory._read_source` leía el alias: la descripción, los
+    argumentos y los `error_code` de una tool migrada salían del docstring del
+    alias —«alias de `vault.autoria.append`»— y vacíos (medido 2026-10-10)."""
+    import vault_spec_memory as sm
+
+    fuente = sm._read_source("vault_append")
+    assert "alias de `vault." not in sm._get_description(fuente)
+    obligatorios, _ = sm._extract_args(fuente)
+    assert obligatorios, "vault_append exige --path y --content"
