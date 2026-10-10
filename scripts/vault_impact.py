@@ -77,6 +77,14 @@ from vault_vocabulario import opciones as _opciones, rango as _rango
 CIA_WEIGHT: Dict[str, int] = _rango("severidad")
 
 
+class _GrafoIlegible(Exception):
+    """El grafo existe y no se pudo leer; lleva el código del catálogo."""
+
+    def __init__(self, codigo: str, detalle: str) -> None:
+        super().__init__(detalle)
+        self.codigo = codigo
+
+
 def _load_graph(predicate_filter: Optional[List[str]] = None) -> Optional[Dict[str, Any]]:
     """El grafo de consulta, opcionalmente filtrado por predicado.
 
@@ -84,17 +92,19 @@ def _load_graph(predicate_filter: Optional[List[str]] = None) -> Optional[Dict[s
     cuando era más viejo que el básico, y las notas escritas después del
     último `vault_graph_merge` no tenían impacto. El criterio es ahora el de
     `vault_subgraph`, porque los dos piden al mismo dueño (AP-57).
+
+    `None` es solo que no hay grafo. AP-51: hasta 2026-10-10 un `graph.json`
+    corrupto también devolvía `None` y salía como INDEX_NOT_FOUND; ahora
+    lanza `_GrafoIlegible` con la causa real, como `vault_subgraph`.
     """
     try:
         data = grafo_para_consulta(_repo())
         if data is None:
             return None
     except (json.JSONDecodeError, UnicodeDecodeError, OSError) as exc:
-        emit_error("vault_impact", "GRAPH_LOAD_ERROR", str(exc))
-        return None
+        raise _GrafoIlegible("GRAPH_LOAD_ERROR", f"{_graph_file()}: {exc}") from exc
     except Exception as exc:
-        emit_error("vault_impact", "UNEXPECTED_ERROR", str(exc))
-        return None
+        raise _GrafoIlegible("UNEXPECTED_ERROR", f"{type(exc).__name__}: {exc}") from exc
 
     if predicate_filter:
         predicate_set = set(predicate_filter)
@@ -192,7 +202,10 @@ def vault_impact(
             "summary": "No changed notes provided",
         }
 
-    graph = _load_graph(predicate_filter=predicate_filter)
+    try:
+        graph = _load_graph(predicate_filter=predicate_filter)
+    except _GrafoIlegible as exc:
+        return emit_error("vault_impact", exc.codigo, str(exc))
     if graph is None:
         return {
             **emit_error("vault_impact", "INDEX_NOT_FOUND",
