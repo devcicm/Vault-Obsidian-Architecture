@@ -7928,7 +7928,7 @@ temp/
 
 ---
 
-### v41.3 — 2026-10-09 `git: pending`
+### v41.3 — 2026-10-09 `git: f526e3c`
 
 **El agente tiene protocolo de sesión, cada norma vive en su paquete y el puente de
 ADR-0002 empieza a caer por lotes.**
