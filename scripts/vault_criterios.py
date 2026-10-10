@@ -58,6 +58,7 @@ from typing import Any, Dict, List
 sys.path.insert(0, str(Path(__file__).parent))
 
 import vault_baseline
+import vault_grafo_import
 from vault_errors import emit_error, wrap_main
 
 BASELINE = Path(__file__).parent / "criterios-baseline.json"
@@ -396,6 +397,10 @@ def medir() -> List[Dict[str, str]]:
     hallazgos: List[Dict[str, str]] = []
     for p in _modulos():
         nombre = p.stem
+        # Deuda #12: un nombre de `scripts/` puede ser un alias sin código. Se
+        # mide la fuente del dueño con la clave del alias; leer el alias dejaba
+        # fuera de la medida a todo módulo migrado (AP-44).
+        p = vault_grafo_import.fuente_de(nombre)
         try:
             arbol = ast.parse(p.read_text(encoding="utf-8"))
         except (OSError, SyntaxError, UnicodeDecodeError):

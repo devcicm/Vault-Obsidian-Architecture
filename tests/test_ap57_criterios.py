@@ -234,3 +234,19 @@ def test_una_baseline_corrupta_no_se_lee_como_vacia(tmp_path, monkeypatch):
     monkeypatch.setattr(vc, "BASELINE", rota)
     with pytest.raises(RuntimeError, match="corrupta"):
         vc._baseline()
+
+
+def test_un_modulo_migrado_se_mide_en_su_dueno_y_no_en_el_alias():
+    """Deuda #12: tras migrar, `scripts/<m>.py` es un alias sin código y sin el
+    literal `*.md`, así que `medir` lo saltaba entero. Medido el 2026-10-10:
+    siete módulos que clasifican notas (`vault_graph_fix`, `vault_list`,
+    `vault_merge`…) habían salido de la medida de AP-57 sin que el alcance
+    publicado lo dijera. Se lee la fuente del dueño, con la clave del alias."""
+    import vault_grafo_import
+
+    vc.medir()
+    medidos = set(vc._ALCANCE["medidos"])
+    for alias in vault_grafo_import._puente():
+        fuente = vault_grafo_import.fuente_de(alias).read_text(encoding="utf-8")
+        if '"*.md"' in fuente or "'*.md'" in fuente:
+            assert alias in medidos, alias
