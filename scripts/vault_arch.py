@@ -112,7 +112,20 @@ def clave_de_modulo(ruta: Path) -> str:
         return ruta.name
     if rel.parent == Path("scripts"):
         return ruta.name
-    return rel.as_posix()
+    # Deuda #12: el dueño de un alias de `scripts/` conserva la clave del alias.
+    # Con la ruta, migrar un módulo con entradas las re-clavaba y salían como
+    # deuda nueva más deuda resuelta; el nombre público es la identidad que la
+    # no-derogación conserva.
+    alias = alias_de_dueno(ruta)
+    return f"{alias}.py" if alias else rel.as_posix()
+
+
+def alias_de_dueno(ruta: Path) -> str | None:
+    """El nombre de `scripts/` cuyo alias lleva a `ruta`, o None si no es dueño
+    de ninguno. Lo decide `vault_grafo_import`, que deriva el puente del disco."""
+    ruta = Path(ruta).resolve()
+    alias = vault_grafo_import.nombre_de(ruta)
+    return alias if vault_grafo_import.fuente_de(alias) == ruta else None
 
 
 #: El paquete de dominio. El guard nació mirando solo `scripts/`, con lo que el
@@ -828,6 +841,9 @@ def cruces() -> list[dict]:
             continue
         ruta = DOMINIO_DIR / clave[len("vault/"):]
         rel = ruta.relative_to(DOMINIO_DIR)
+        # El cruce de un dueño se clava con el nombre de su alias, igual que
+        # `clave_de_modulo`: migrarlo no estrena un cruce que ya estaba.
+        clave = alias_de_dueno(ruta) or clave
         for destino_mod in sorted(_importaciones(ruta)):
             destino = mapa.get(destino_mod)
             if destino is None or destino == origen or destino == KERNEL:

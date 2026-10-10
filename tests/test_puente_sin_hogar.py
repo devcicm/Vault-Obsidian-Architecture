@@ -336,3 +336,21 @@ def test_lote_f_ninguna_cara_de_norma_cita_el_alias(modulo, dueno):
     viejo = f"scripts/{modulo}.py::"
     for cara in (ROOT / "normas").glob("*/*.py"):
         assert viejo not in cara.read_text(encoding="utf-8"), cara
+
+
+def test_la_clave_de_baseline_de_un_dueno_es_la_de_su_alias():
+    """Las baselines por firma de sitio y la de cruces se indexan por el nombre
+    de `scripts/`. Migrar un módulo con entradas las re-clavaba —la ruta del
+    dueño en vez del nombre— y salían como deuda nueva más deuda resuelta: lo
+    que dejó a `vault_subgraph` fuera del lote F. El nombre público del alias es
+    la identidad que conserva la no-derogación, y la clave lo sigue."""
+    import vault_grafo_import as gi
+
+    dueno = gi.fuente_de("vault_graph_fix")
+    assert dueno != (ROOT / "scripts" / "vault_graph_fix.py").resolve()
+    assert vault_arch.clave_de_modulo(dueno) == "vault_graph_fix.py"
+    # Un módulo de `vault/` que no es dueño de un alias conserva su ruta.
+    repo = ROOT / "vault" / "grafo" / "repositorio.py"
+    assert vault_arch.clave_de_modulo(repo) == "vault/grafo/repositorio.py"
+    duenos = {p.relative_to(ROOT.resolve()).as_posix() for p in gi._puente().values()}
+    assert not [c for c in vault_arch.cruces() if c["from"] in duenos]
