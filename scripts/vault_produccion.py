@@ -136,12 +136,22 @@ def _hay_dependencias_declaradas() -> bool:
     módulos —`vault_write` entre ellos— la importan sin `except ImportError`.
     """
     proj = (RAIZ / "pyproject.toml").read_text(encoding="utf-8")
-    duros = [
-        p.name for p in sorted((RAIZ / "scripts").glob("*.py"))
+    duros = _importadores_duros_de_yaml()
+    return (not duros) or ("PyYAML" in proj or "pyyaml" in proj.lower())
+
+
+def _importadores_duros_de_yaml() -> List[str]:
+    """Los módulos que hacen `import yaml` sin reserva, en los dos árboles que
+    viajan en la wheel. Hasta la deuda #12 bastaba con `scripts/`; desde que
+    una tool migrada deja allí un alias sin código, su `import yaml` vive en
+    `vault/` y medir solo `scripts/` lo perdía (AP-44)."""
+    fuentes = sorted((RAIZ / "scripts").glob("*.py")) + sorted(
+        p for p in (RAIZ / "vault").rglob("*.py") if "__pycache__" not in p.parts)
+    return [
+        p.relative_to(RAIZ).as_posix() for p in fuentes
         if re.search(r"^import yaml\b", p.read_text(encoding="utf-8", errors="replace"),
                      flags=re.M)
     ]
-    return (not duros) or ("PyYAML" in proj or "pyyaml" in proj.lower())
 
 
 #: Lo que el classifier de `pyproject.toml` puede afirmar. «Production/Stable»

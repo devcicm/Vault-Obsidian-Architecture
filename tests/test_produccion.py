@@ -318,3 +318,13 @@ def test_memoria_para_agentes_exige_el_perfil_y_la_ejecucion(tmp_path, monkeypat
     assert not con(banco, test.replace("banco.correr(", "dict("))
     (tmp_path / "tests" / "test_banco_agente.py").unlink()
     assert not vp._banco_de_agente()
+
+
+def test_la_dependencia_dura_de_pyyaml_se_mide_tambien_en_vault():
+    """La promesa de PyYAML se medía solo en `scripts/*.py`. Tras la deuda #12
+    el código de una tool migrada vive en `vault/` y su alias no importa nada:
+    `vault/autoria/frontmatter_heal.py` hace `import yaml` sin reserva y la
+    medida no lo veía. Viajan los dos árboles en la wheel; se miden los dos."""
+    duros = vp._importadores_duros_de_yaml()
+    assert "vault/autoria/frontmatter_heal.py" in duros, duros
+    assert "scripts/vault_write.py" in duros
