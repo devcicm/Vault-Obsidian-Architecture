@@ -36,6 +36,8 @@ import shutil
 
 import sys
 
+import unicodedata
+
 import vault_contrato_nota
 import vault_fundamentals_catalog
 import vault_tags
@@ -389,6 +391,32 @@ def _nota_heredada(vault_path: Path, titulo: Optional[str] = None) -> Path:
         if candidato.is_file() and candidato.name.lower() == nombre:
             return candidato
     return vault_path
+
+
+def _forma_de_titulo(titulo: str) -> str:
+    """Lo que no cambia de nota: mayúsculas, espacios repetidos y forma Unicode."""
+    return " ".join(unicodedata.normalize("NFC", titulo).split()).casefold()
+
+
+def _titulo_en_conflicto(vault_path: Path, titulo: str) -> Optional[str]:
+    """AP-02: el título de la nota que ya ocupa `vault_path`, si es OTRO.
+
+    None si no hay nota, si su frontmatter no declara `title` (una nota ajena
+    o heredada: no hay con qué comparar y se conserva el comportamiento de
+    actualizarla) o si el título es el mismo salvo `_forma_de_titulo`.
+    """
+    if not vault_path.is_file():
+        return None
+    try:
+        previo, _ = parse_frontmatter_with_body(vault_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError):
+        return None
+    actual = (previo or {}).get("title")
+    if not isinstance(actual, str) or not actual.strip():
+        return None
+    if _forma_de_titulo(actual) == _forma_de_titulo(titulo):
+        return None
+    return actual
 
 
 def _check_bracket_balance(content: str) -> Optional[str]:
@@ -1057,6 +1085,21 @@ def vault_write(
     existing_type = None
 
     existing_content = ""
+
+    # AP-02: el slug no es la identidad entera. «Café con leche» y
+    # «cafe-con-leche» dan el mismo fichero, y la segunda escritura reemplazaba
+    # a la primera —título incluido— con `ok: true` (medido como consumidor,
+    # 2026-10-10). Otro título es otra nota: se rechaza antes de tocar nada.
+    titulo_previo = _titulo_en_conflicto(vault_path, title)
+    if titulo_previo is not None:
+        return emit_error(
+            "vault_write", "IDENTITY_CONFLICT",
+            f"AP-02: '{vault_path.relative_to(_raiz()).as_posix()}' ya es la nota "
+            f"«{titulo_previo}»; «{title}» produce el mismo nombre de fichero y la "
+            "reemplazaría.",
+            pista="Para actualizar esa nota, escribir con su mismo título; para "
+                  "crear otra, elegir un título que no produzca el mismo slug.",
+        )
 
     # If note exists, backup to history
 
