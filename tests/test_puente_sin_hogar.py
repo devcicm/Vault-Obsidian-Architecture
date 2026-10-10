@@ -377,6 +377,24 @@ def test_subgraph_migra_a_consulta_y_su_cruce_conserva_la_clave():
                        capture_output=True, text=True, encoding="utf-8", timeout=120)
     assert r.returncode == 0 and "--seeds" in r.stdout, r.stderr[-300:]
 
+
+def test_un_cruce_fuera_de_puerto_de_un_dueno_se_mide_con_su_alias(tmp_path, monkeypatch):
+    """`cruces_fuera_de_puerto` buscaba el contexto del módulo por `ruta.stem`:
+    un dueño migrado (`vault/ciclo_de_vida/sanacion.py`) no está en el mapa con
+    ese nombre y sus cruces dejaban de medirse. Lo destapó el lote H, al dar por
+    saldado `vault_sanacion -> vault_reindex.notas_indexables` sin que nadie lo
+    hubiera saldado. La clave es la del alias, como en `cruces()` (AP-44)."""
+    dueno = tmp_path / "sanacion.py"
+    dueno.write_text("import vault_reindex\nvault_reindex.notas_indexables\n",
+                     encoding="utf-8")
+    monkeypatch.setattr(vault_arch, "arboles_medidos", lambda: [dueno])
+    monkeypatch.setattr(vault_arch, "alias_de_dueno",
+                        lambda r: "vault_sanacion" if r == dueno else None)
+    cruces = vault_arch.cruces_fuera_de_puerto()
+    assert {"module": "vault_sanacion", "from_context": "ciclo_de_vida",
+            "to_context": vault_arch.contexto_de("vault_reindex"),
+            "symbol": "vault_reindex.notas_indexables"} in cruces, cruces
+
 def test_el_contrato_compacto_de_una_tool_migrada_se_lee_en_el_dueno():
     """`vault_compact_contracts.introspect_tool` leía `scripts/<tool>.py` por
     ruta: tras migrar, el contrato que recibe el agente decía «alias de …» como

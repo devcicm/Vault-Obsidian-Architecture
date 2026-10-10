@@ -2178,7 +2178,11 @@ def cruces_fuera_de_puerto() -> list[dict]:
     mapa = _mapa_modulos()
     fuera: list[dict] = []
     for ruta in arboles_medidos():
-        origen = mapa.get(ruta.stem)
+        # Deuda #12: el dueño migrado responde por el nombre de su alias, que es
+        # el que está en el mapa y en la baseline; por `ruta.stem` no estaba en
+        # ninguno y sus cruces dejaban de medirse (AP-44).
+        nombre = alias_de_dueno(ruta) or ruta.stem
+        origen = mapa.get(nombre)
         if origen is None:
             continue
         try:
@@ -2186,7 +2190,7 @@ def cruces_fuera_de_puerto() -> list[dict]:
         except SyntaxError:
             continue
 
-        def _anotar(modulo: str, simbolo: str) -> None:
+        def _anotar(modulo: str, simbolo: str, nombre: str = nombre) -> None:
             destino = mapa.get(modulo.split(".")[0])
             if destino is None or destino == origen or destino == KERNEL:
                 return
@@ -2194,7 +2198,7 @@ def cruces_fuera_de_puerto() -> list[dict]:
                 return
             fuera.append(
                 {
-                    "module": ruta.stem,
+                    "module": nombre,
                     "from_context": origen,
                     "to_context": destino,
                     "symbol": f"{modulo}.{simbolo}",

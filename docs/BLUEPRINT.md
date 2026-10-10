@@ -52,18 +52,18 @@ regenera.*
 
 | Contexto | Puertos | Módulos | Sin hogar | Prohíbe |
 |---|---|---|---|
-| **Kernel** (`kernel`) | 4 | 23 | 10 | depender de cualquier contexto de dominio |
-| **Autoría** (`autoria`) | 7 | 46 | 1 | — |
-| **Grafo** (`grafo`) | 4 | 15 | 1 | — |
+| **Kernel** (`kernel`) | 4 | 23 | 9 | depender de cualquier contexto de dominio |
+| **Autoría** (`autoria`) | 7 | 46 | 0 | — |
+| **Grafo** (`grafo`) | 4 | 15 | 0 | — |
 | **Gobernanza** (`gobernanza`) | 21 | 13 | 1 | — |
 | **Índices** (`indices`) | 9 | 7 | 0 | — |
 | **Consulta** (`consulta`) | 7 | 11 | 1 | base de datos; embeddings; servicio externo |
-| **Ciclo de vida** (`ciclo_de_vida`) | 3 | 10 | 1 | — |
+| **Ciclo de vida** (`ciclo_de_vida`) | 3 | 10 | 0 | — |
 | **Durabilidad** (`durabilidad`) | 4 | 4 | 0 | escribir fuera de la raíz del vault (AP-36) |
-| **Meta-toolkit** (`meta_toolkit`) | 6 | 32 | 4 | escribir en una sección de contenido: sus artefactos derivados viven en 00_System/ |
+| **Meta-toolkit** (`meta_toolkit`) | 6 | 32 | 3 | escribir en una sección de contenido: sus artefactos derivados viven en 00_System/ |
 | **CLI** (`cli`) | 0 | 8 | 0 | decidir: traduce argumentos a llamadas y envelopes a salida; la decisión vive en la tool |
 
-**Puente de ADR-0002:** 19 módulos de `scripts/` no importan nada de `vault/<su contexto>/` (`vault_arch.modulos_sin_hogar`). La cifra solo encoge: un módulo nuevo sin hogar bloquea `vault_arch --check`. Importar del contexto es empezar a delegar, no haber migrado.
+**Puente de ADR-0002:** 14 módulos de `scripts/` no importan nada de `vault/<su contexto>/` (`vault_arch.modulos_sin_hogar`). La cifra solo encoge: un módulo nuevo sin hogar bloquea `vault_arch --check`. Importar del contexto es empezar a delegar, no haber migrado.
 
 ## Capa 4 — Normas → puertas → tests
 
