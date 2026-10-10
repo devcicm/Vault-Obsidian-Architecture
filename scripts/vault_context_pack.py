@@ -247,6 +247,13 @@ def vault_context_pack(
     if budget_tokens <= 0:
         return {"ok": False, "error_code": "INVALID_BUDGET",
                 "error": "El presupuesto de tokens debe ser positivo"}
+    # AP-51: los otros dos topes, igual que el presupuesto. `--top-k 0` daba un
+    # paquete vacío con ok:true —indistinguible de «nada relevante»— y un
+    # negativo cortaba `candidates[:-1]`, todas menos la última.
+    for nombre, valor in (("--top-k", top_k), ("--excerpt-tokens", excerpt_tokens)):
+        if valor < 1:
+            return emit_error("vault_context_pack", "INVALID_INPUT",
+                              f"{nombre} debe ser un entero positivo (recibido: {valor}).")
 
     now = now or datetime.now(timezone.utc)
 
