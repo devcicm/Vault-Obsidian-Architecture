@@ -250,3 +250,25 @@ def test_el_envelope_lleva_los_campos_que_su_pista_nombra(tmp_path, capsys, monk
     assert error["state"] == "STANDARD_INCOMPATIBLE", error
     assert error.get("compatibility") == "unsupported_newer", error
     assert error.get("standard_version") == "v999.0", error
+
+
+def test_doctor_dice_como_regenerar_standard_version_ap51(tmp_path, capsys, monkeypatch):
+    """Medido como consumidor el 2026-10-10: con `standard-version.json` borrado o
+    corrupto, doctor decía qué faltaba y no cómo recuperarlo, aunque
+    `vault_standard_upgrade --init <versión>` lo regenera en los dos casos
+    (comprobado). La pista nombra el comando y el envelope trae la versión que
+    hay que pasarle, `expected_version`, que es la del estándar instalado."""
+    monkeypatch.setattr("vault.product_cli.toolkit_version", lambda: "test")
+    root = tmp_path / "runtime"
+    assert producto.inicializar_runtime(root)["ok"]
+    version = root / "00_System" / "standard-version.json"
+    esperada = producto.cargar_seed().standard_version
+    for contenido in (None, "{roto"):
+        if contenido is None:
+            version.unlink()
+        else:
+            version.write_text(contenido, encoding="utf-8")
+        assert main(["doctor", str(root)]) != 0
+        error = json.loads(capsys.readouterr().err)
+        assert "vault_standard_upgrade --init" in error["recovery"]["hint"], error
+        assert error.get("expected_version") == esperada, error

@@ -218,14 +218,17 @@ def diagnosticar_runtime(target: str | Path) -> dict[str, Any]:
         return {"ok": False, "state": "NOT_RUNTIME", "runtime": str(root)}
     version_path = _version_path(root)
     if not version_path.exists():
-        return {"ok": False, "state": "STANDARD_VERSION_MISSING", "runtime": str(root)}
+        # `expected_version`: la que la pista pide pasar a `--init` (AP-51).
+        return {"ok": False, "state": "STANDARD_VERSION_MISSING", "runtime": str(root),
+                "expected_version": seed.standard_version}
     try:
         version_data = json.loads(version_path.read_text(encoding="utf-8"))
         version = version_data["applied_version"]
         if not isinstance(version, str):
             raise ValueError("applied_version inválida")
     except (OSError, json.JSONDecodeError, KeyError, ValueError) as exc:
-        return {"ok": False, "state": "STANDARD_VERSION_INVALID", "runtime": str(root), "detail": str(exc)}
+        return {"ok": False, "state": "STANDARD_VERSION_INVALID", "runtime": str(root), "detail": str(exc),
+                "expected_version": seed.standard_version}
     missing = [section for section in seed.sections if not (root / section).is_dir()]
     if missing:
         return {"ok": False, "state": "SYSTEM_FILES_MISSING", "runtime": str(root), "missing": missing}

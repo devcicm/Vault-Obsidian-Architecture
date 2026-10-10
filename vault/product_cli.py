@@ -160,15 +160,21 @@ _CICLO_DE_VIDA = {
         "VAULT_NOT_FOUND",
         "La ruta no es un directorio: indica la raíz de un runtime.",
     ),
+    # AP-51: hasta 2026-10-10 estas dos pistas decían qué faltaba y no cómo
+    # recuperarlo; `--init` lo regenera en los dos casos (medido como consumidor).
     "STANDARD_VERSION_MISSING": (
         "VERSION_READ_ERROR",
         "Falta 00_System/standard-version.json: el directorio no es un runtime "
-        "creado por `vault init`, o se borró ese fichero.",
+        "creado por `vault init`, o se borró ese fichero. Si es un runtime, "
+        "`VAULT_ROOT=<runtime> vault run vault_standard_upgrade --init "
+        "<expected_version>` lo regenera.",
     ),
     "STANDARD_VERSION_INVALID": (
         "VERSION_READ_ERROR",
         "00_System/standard-version.json no se puede leer; el detalle está en "
-        "`message`.",
+        "`message`. `VAULT_ROOT=<runtime> vault run vault_standard_upgrade "
+        "--init <expected_version>` lo reescribe (el historial de migraciones "
+        "ilegible no se recupera).",
     ),
     "SYSTEM_FILES_MISSING": (
         "FOLDER_NOT_FOUND",
@@ -208,7 +214,7 @@ def _error(state: str, detail: str, exit_code: int,
 #: Campos del diagnóstico que las pistas de `_CICLO_DE_VIDA` nombran o de los que
 #: depende elegir entre sus ramas. La ruta del runtime no viaja: la puso el
 #: propio consumidor, y los envelopes no publican rutas absolutas.
-_CAMPOS_DEL_DIAGNOSTICO = ("missing", "standard_version", "compatibility")
+_CAMPOS_DEL_DIAGNOSTICO = ("missing", "standard_version", "compatibility", "expected_version")
 
 
 def cmd_tools_list(_: argparse.Namespace) -> int:
