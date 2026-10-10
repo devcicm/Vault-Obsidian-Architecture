@@ -13,6 +13,6 @@ que nombra AP-28 en su cuerpo dentro de una tool que el catálogo declara, o un
 `test_*` de `tests/` que la ejercita con el criterio de la capa 4.
 `vault_norms --check-framework` falla si alguna deja de existir.
 
-- **Aplica** (`tools_enforcing`): `scripts/vault_frontmatter_completar.py::planificar`.
+- **Aplica** (`tools_enforcing`): `vault/autoria/frontmatter_completar.py::planificar`.
 - **Detecta** (`tools_detecting`): `scripts/vault_audit.py::vault_audit`; `vault_validate` (ninguna función de `scripts/vault_validate.py` nombra AP-28 en su cuerpo).
 - **Tests** (`tests/`, criterio de la capa 4): `tests/test_ap56_frontmatter_heal.py::test_ap56_y_ap28_se_distinguen_en_las_dos_direcciones`.

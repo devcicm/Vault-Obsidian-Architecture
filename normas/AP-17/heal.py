@@ -7,5 +7,5 @@ sale de derivarlo.
 """
 
 HEAL = [
-    'scripts/vault_supersede.py::supersede',
+    'vault/autoria/supersede.py::supersede',
 ]

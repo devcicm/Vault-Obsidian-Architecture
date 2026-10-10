@@ -7,5 +7,5 @@ sale de derivarlo.
 """
 
 HEAL = [
-    'scripts/vault_graph_fix.py::_process_note',
+    'vault/grafo/graph_fix.py::_process_note',
 ]

@@ -13,6 +13,6 @@ que nombra AP-26 en su cuerpo dentro de una tool que el catálogo declara, o un
 `test_*` de `tests/` que la ejercita con el criterio de la capa 4.
 `vault_norms --check-framework` falla si alguna deja de existir.
 
-- **Aplica** (`tools_enforcing`): `scripts/vault_write.py::vault_write`; `scripts/vault_ingest.py::_build_note`; `scripts/vault_preferences.py::vault_preferences_set`; `scripts/vault_frontmatter_completar.py::_valor`.
+- **Aplica** (`tools_enforcing`): `scripts/vault_write.py::vault_write`; `scripts/vault_ingest.py::_build_note`; `scripts/vault_preferences.py::vault_preferences_set`; `vault/autoria/frontmatter_completar.py::_valor`.
 - **Detecta** (`tools_detecting`): `scripts/vault_audit.py::vault_audit`.
 - **Tests** (`tests/`, criterio de la capa 4): `tests/test_context_memory.py::test_lo_ingerido_entra_como_borrador_y_baja_integridad`.

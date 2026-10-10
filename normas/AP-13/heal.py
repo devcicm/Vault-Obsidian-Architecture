@@ -7,5 +7,5 @@ sale de derivarlo.
 """
 
 HEAL = [
-    'scripts/vault_frontmatter_completar.py::_valor',
+    'vault/autoria/frontmatter_completar.py::_valor',
 ]

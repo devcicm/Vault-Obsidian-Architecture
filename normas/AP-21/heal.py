@@ -7,5 +7,5 @@ sale de derivarlo.
 """
 
 HEAL = [
-    'scripts/vault_graph_fix.py::_fix_path_anchored',
+    'vault/grafo/graph_fix.py::_fix_path_anchored',
 ]

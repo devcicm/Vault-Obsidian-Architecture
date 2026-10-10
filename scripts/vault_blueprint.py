@@ -674,7 +674,15 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "a índices como `registro_de_secciones` y env_matrix a grafo—; el "
             "alias corre su `main` con `runpy`. Los tests de AP-46 y del barrido "
             "de secciones leían la ruta del alias y ahora siguen al dueño, y las "
-            "caras de CN-02 citan `vault/indices/registro_de_secciones.py`.)"
+            "caras de CN-02 citan `vault/indices/registro_de_secciones.py`.)\n\n"
+            "(Lote F, 2026-10-10: seis migran —history_compact y arquitectura_en "
+            "a ciclo de vida, graph_fix a grafo, supersede, frontmatter_completar "
+            "y frontmatter_heal a autoría—, y las caras de las catorce normas que "
+            "los citaban apuntan al dueño. `vault_subgraph` se quedó en "
+            "`scripts/`: su cruce hacia `vault/grafo` está en la baseline con la "
+            "clave del nombre de `scripts/`, y moverlo lo re-clavaba como cruce "
+            "nuevo. Es la misma traba que la de las cinco firmas de las "
+            "baselines de AP-51 y AP-57: la clave tiene que seguir al alias.)"
         ),
         "por_que_no_ahora": (
             "Transitorio hasta migrar scripts → vault/<contexto>, ADR-0002. "

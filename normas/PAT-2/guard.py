@@ -8,6 +8,6 @@ de derivarlo; se regenera con `vault_norms_engine.escribir_caras_derivadas`.
 """
 
 GUARD = [
-    'scripts/vault_graph_fix.py::_create_stub',
+    'vault/grafo/graph_fix.py::_create_stub',
     'scripts/vault_audit.py::_detect_stubs_sin_plazo',
 ]

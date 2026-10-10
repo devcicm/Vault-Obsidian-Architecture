@@ -156,7 +156,11 @@ def test_vault_graph_fix_no_lleva_su_propia_lista_de_instantaneas():
     inflaba una métrica — reparaba dentro de una instantánea congelada, que es
     dejar de serlo.
     """
-    src = (RAIZ / "scripts" / "vault_graph_fix.py").read_text(encoding="utf-8")
+    import vault_grafo_import
+
+    # Desde el lote F de la deuda #12 el código vive en el dueño: el alias de
+    # `scripts/` no importa nada, así que se sigue con `fuente_de` (AP-44).
+    src = vault_grafo_import.fuente_de("vault_graph_fix").read_text(encoding="utf-8")
     assert vc._importa(ast.parse(src), "vault_io", "is_snapshot_path")
 
 

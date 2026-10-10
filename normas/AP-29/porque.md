@@ -13,6 +13,6 @@ que nombra AP-29 en su cuerpo dentro de una tool que el catálogo declara, o un
 `test_*` de `tests/` que la ejercita con el criterio de la capa 4.
 `vault_norms --check-framework` falla si alguna deja de existir.
 
-- **Aplica** (`tools_enforcing`): `scripts/vault_frontmatter_completar.py::_valor`.
+- **Aplica** (`tools_enforcing`): `vault/autoria/frontmatter_completar.py::_valor`.
 - **Detecta** (`tools_detecting`): `scripts/vault_audit.py::vault_audit`; `vault_norms` (ninguna función de `scripts/vault_norms.py` nombra AP-29 en su cuerpo).
 - **Tests** (`tests/`): ninguno la ejercita en el cuerpo de un `test_*`.

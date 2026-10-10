@@ -7,6 +7,6 @@ sale de derivarlo.
 """
 
 HEAL = [
-    'scripts/vault_frontmatter_heal.py::heal',
-    'scripts/vault_frontmatter_heal.py::main',
+    'vault/autoria/frontmatter_heal.py::heal',
+    'vault/autoria/frontmatter_heal.py::main',
 ]

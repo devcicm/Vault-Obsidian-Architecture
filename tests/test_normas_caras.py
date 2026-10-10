@@ -60,9 +60,9 @@ def test_ap22_y_ap24_las_repara_fix_brackets():
 
 def test_ap14_la_repara_graph_fix_en_la_funcion_que_reescribe_el_enlace():
     heal = _datos(NORMAS / "AP-14" / "heal.py")["HEAL"]
-    assert "scripts/vault_graph_fix.py::_process_note" in heal
+    assert "vault/grafo/graph_fix.py::_process_note" in heal
     heal21 = _datos(NORMAS / "AP-21" / "heal.py")["HEAL"]
-    assert "scripts/vault_graph_fix.py::_fix_path_anchored" in heal21
+    assert "vault/grafo/graph_fix.py::_fix_path_anchored" in heal21
 
 
 def test_ap65_no_tiene_heal_y_lo_dice():

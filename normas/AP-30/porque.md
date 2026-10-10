@@ -13,6 +13,6 @@ que nombra AP-30 en su cuerpo dentro de una tool que el catálogo declara, o un
 `test_*` de `tests/` que la ejercita con el criterio de la capa 4.
 `vault_norms --check-framework` falla si alguna deja de existir.
 
-- **Aplica** (`tools_enforcing`): `scripts/vault_ingest.py::_build_note`; `scripts/vault_frontmatter_completar.py::_valor`.
+- **Aplica** (`tools_enforcing`): `scripts/vault_ingest.py::_build_note`; `vault/autoria/frontmatter_completar.py::_valor`.
 - **Detecta** (`tools_detecting`): `scripts/vault_audit.py::vault_audit`.
 - **Tests** (`tests/`, criterio de la capa 4): `tests/test_normas_de_audit_ejercitadas.py::test_ap30_ve_la_nota_sin_clasificacion_cia`.

@@ -9,6 +9,6 @@ de derivarlo; se regenera con `vault_norms_engine.escribir_caras_derivadas`.
 
 GUARD = [
     'scripts/vault_ingest.py::_build_note',
-    'scripts/vault_frontmatter_completar.py::_valor',
+    'vault/autoria/frontmatter_completar.py::_valor',
     'scripts/vault_audit.py::vault_audit',
 ]

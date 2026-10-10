@@ -13,7 +13,7 @@ GUARD = [
     'scripts/vault_audit.py::_detect_missing_metadata',
     'scripts/vault_audit.py::vault_audit',
     'scripts/vault_audit.py::_audit_external_path',
-    'scripts/vault_graph_fix.py::_add_stems',
+    'vault/grafo/graph_fix.py::_add_stems',
     'scripts/vault_norms.py::vault_norms_scan',
     'scripts/vault_norms.py::vault_norms_apply',
 ]

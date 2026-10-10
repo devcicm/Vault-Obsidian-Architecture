@@ -11,6 +11,6 @@ GUARD = [
     'scripts/vault_write.py::vault_write',
     'scripts/vault_ingest.py::_build_note',
     'scripts/vault_preferences.py::vault_preferences_set',
-    'scripts/vault_frontmatter_completar.py::_valor',
+    'vault/autoria/frontmatter_completar.py::_valor',
     'scripts/vault_audit.py::vault_audit',
 ]

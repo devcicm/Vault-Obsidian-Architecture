@@ -297,3 +297,42 @@ def test_el_esquema_mcp_de_una_tool_migrada_se_lee_en_el_dueno(modulo, dueno):
     assert params, f"{modulo}: argparse_params vacío, leyó el alias"
     assert all(f'"--{p.replace("_", "-")}"' in texto or f'"--{p}"' in texto
                for p in params), params
+
+
+LOTE_F = [
+    ("vault_history_compact", "vault/ciclo_de_vida/history_compact.py"),
+    ("vault_arquitectura_en", "vault/ciclo_de_vida/arquitectura_en.py"),
+    ("vault_graph_fix", "vault/grafo/graph_fix.py"),
+    ("vault_supersede", "vault/autoria/supersede.py"),
+    ("vault_frontmatter_completar", "vault/autoria/frontmatter_completar.py"),
+    ("vault_frontmatter_heal", "vault/autoria/frontmatter_heal.py"),
+]
+
+
+@pytest.mark.parametrize("modulo,dueno", LOTE_F)
+def test_lote_f_seis_tools_migran_y_el_alias_corre_su_main(modulo, dueno):
+    """Lote F de la deuda #12 (2026-10-10). `vault_subgraph` se quedó fuera: su
+    cruce hacia `vault/grafo` está en la baseline con la clave del nombre de
+    `scripts/`, y moverlo lo habría re-clavado como cruce nuevo. Las caras de
+    las normas que citan a estos seis apuntan ya al dueño."""
+    import importlib
+    import subprocess
+
+    import vault_grafo_import as gi
+
+    assert modulo not in set(vault_arch.modulos_sin_hogar())
+    nombre = dueno[:-3].replace("/", ".")
+    assert importlib.import_module(modulo) is importlib.import_module(nombre)
+    assert gi.fuente_de(modulo) == (ROOT / dueno).resolve()
+    r = subprocess.run([sys.executable, str(ROOT / "scripts" / f"{modulo}.py"), "--help"],
+                       capture_output=True, text=True, encoding="utf-8", timeout=120)
+    assert r.returncode == 0 and "usage" in r.stdout.lower(), r.stderr[-300:]
+
+
+@pytest.mark.parametrize("modulo,dueno", LOTE_F)
+def test_lote_f_ninguna_cara_de_norma_cita_el_alias(modulo, dueno):
+    """Una cara que cita `scripts/<m>.py::símbolo` apunta a un fichero sin el
+    símbolo tras la migración: tiene que citar al dueño."""
+    viejo = f"scripts/{modulo}.py::"
+    for cara in (ROOT / "normas").glob("*/*.py"):
+        assert viejo not in cara.read_text(encoding="utf-8"), cara
