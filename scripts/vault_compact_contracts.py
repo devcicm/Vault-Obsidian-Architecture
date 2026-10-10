@@ -38,6 +38,7 @@ from vault.kernel import construir  # noqa: E402
 # `vault_vocabulario.py` para el registro y su contexto dueño.
 from vault_vocabulario import opciones as _opciones
 from vault_entorno import leer as leer_entorno
+import vault_grafo_import  # noqa: E402
 
 
 def _repo(root=None) -> RepositorioConsulta:
@@ -423,9 +424,11 @@ def _extract_argparse_args(source: str) -> tuple:
 
 def introspect_tool(name: str) -> Optional[Dict[str, Any]]:
     """Introspect a vault script and return its contract dict."""
-    path = SCRIPTS_DIR / f"{name}.py"
-    if not path.exists():
+    if not (SCRIPTS_DIR / f"{name}.py").exists():
         return None
+    # Deuda #12: `scripts/<name>.py` puede ser un alias sin código; el contrato
+    # se lee en el dueño, o el agente recibiría «alias de …» y ningún argumento.
+    path = vault_grafo_import.fuente_de(name)
 
     try:
         source = path.read_text(encoding="utf-8", errors="replace")

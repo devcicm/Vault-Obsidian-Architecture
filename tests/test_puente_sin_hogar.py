@@ -354,3 +354,21 @@ def test_la_clave_de_baseline_de_un_dueno_es_la_de_su_alias():
     assert vault_arch.clave_de_modulo(repo) == "vault/grafo/repositorio.py"
     duenos = {p.relative_to(ROOT.resolve()).as_posix() for p in gi._puente().values()}
     assert not [c for c in vault_arch.cruces() if c["from"] in duenos]
+
+
+def test_el_contrato_compacto_de_una_tool_migrada_se_lee_en_el_dueno():
+    """`vault_compact_contracts.introspect_tool` leía `scripts/<tool>.py` por
+    ruta: tras migrar, el contrato que recibe el agente decía «alias de …» como
+    descripción y ningún argumento obligatorio (medido el 2026-10-10 con
+    `vault_append`, que exige `--path` y `--content`). Sigue el alias con
+    `fuente_de`, como un import (AP-44)."""
+    import vault_compact_contracts as cc
+    import vault_grafo_import as gi
+
+    c = cc.introspect_tool("vault_append")
+    assert "alias de" not in c["description"], c["description"]
+    obligatorios = {a["flag"] for a in c["required_args"]}
+    assert {"--path", "--content"} <= obligatorios, obligatorios
+    for alias in gi._puente():
+        c = cc.introspect_tool(alias)
+        assert c is None or "alias de `vault." not in c["description"], alias
