@@ -45,6 +45,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from vault.autoria.repositorio import RepositorioAutoria  # noqa: E402
 from vault.kernel import construir  # noqa: E402
+from vault.kernel.normalizacion import fold_accents  # noqa: E402
+from vault_io import assert_within_vault  # noqa: E402
 
 
 def _raiz() -> Path:
@@ -61,28 +63,46 @@ def _index_file() -> Path:
     return _repo().indice_busqueda
 
 
+def _forma(texto: str) -> str:
+    """AP-44: la forma con que se compara texto — sin acentos ni mayúsculas.
+
+    Hasta 2026-10-10 era `.lower()`: «cancion» no encontraba «Canción» ni
+    «CONFIGURACION» a «configuración» (medido como consumidor).
+    """
+    return fold_accents(texto or "").casefold()
+
+
+def _en_carpeta(ruta: str, folder: str) -> bool:
+    """La carpeta es un componente de la ruta, no un prefijo de texto."""
+    folder = folder.strip("/")
+    return ruta == folder or ruta.startswith(folder + "/")
+
+
 def score_note(note: Dict[str, Any], query: str, folder: Optional[str], tag: Optional[str]) -> float:
 
     """Calculate weighted search score for a note."""
 
-    if folder and not note.get("path", "").startswith(folder):
+    if folder and not _en_carpeta(note.get("path", ""), folder):
 
         return 0
 
 
-    if tag and tag not in note.get("tags", []):
+    # AP-44: la tag se compara con la normalización con que `vault_write` la
+    # guardó; `--tag Música` no encontraba la `musica` que él mismo escribió.
+    forma = _repo().forma_de_etiqueta if tag else None
+    if tag and forma(tag) not in {forma(str(t)) for t in note.get("tags", [])}:
 
         return 0
 
 
-    query_lower = query.lower()
+    query_lower = _forma(query)
 
     query_words = query_lower.split()
 
 
     score = 0
 
-    title_lower = note.get("title", "").lower()
+    title_lower = _forma(note.get("title", ""))
 
 
     # Title matches (weight ×4)
@@ -102,7 +122,7 @@ def score_note(note: Dict[str, Any], query: str, folder: Optional[str], tag: Opt
 
     for tag_item in note.get("tags", []):
 
-        tag_lower = tag_item.lower()
+        tag_lower = _forma(str(tag_item))
 
         if query_lower in tag_lower:
 
@@ -117,7 +137,7 @@ def score_note(note: Dict[str, Any], query: str, folder: Optional[str], tag: Opt
 
     # Preview/body matches (weight ×1)
 
-    preview_lower = note.get("preview", "").lower()
+    preview_lower = _forma(note.get("preview", ""))
 
     if query_lower in preview_lower:
 
@@ -156,6 +176,25 @@ def vault_search(query: str, folder: Optional[str] = None, tag: Optional[str] = 
         Dict with results ordered by score
 
     """
+
+    # AP-37: una consulta vacía no es una búsqueda; devolvía el vault entero.
+    if not (query or "").strip():
+        return {**emit_error("vault_search", "INVALID_INPUT", "--query vacío."),
+                "query": query, "results": []}
+
+    # Una carpeta que no existe o sale del vault respondía 0 resultados con
+    # ok:true, indistinguible de «no hay coincidencias» (AP-51).
+    if folder:
+        carpeta = _raiz() / folder.strip("/")
+        try:
+            assert_within_vault(carpeta, _raiz())
+        except ValueError as exc:
+            return {**emit_error("vault_search", "INVALID_PATH", str(exc)),
+                    "query": query, "results": []}
+        if not carpeta.is_dir():
+            return {**emit_error("vault_search", "FOLDER_NOT_FOUND",
+                                 f"No existe la carpeta: {folder}"),
+                    "query": query, "results": []}
 
     try:
 
@@ -236,6 +275,12 @@ def vault_search(query: str, folder: Optional[str] = None, tag: Optional[str] = 
         "tag": tag,
 
         "total": len(results),
+
+        # AP-37: el recorte a 20 se declara; antes `total` era lo devuelto y
+        # nada decía cuántas coincidencias quedaban fuera.
+        "matched": len(scored_notes),
+
+        "truncated": len(scored_notes) > len(results),
 
         "results": results,
 

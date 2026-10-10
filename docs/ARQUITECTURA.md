@@ -86,7 +86,7 @@ Fronteras que hoy cruza (5), deuda declarada:
 | `vault_change_log` | `vault/gobernanza` | Gobernanza |
 | `vault_voice` | `vault_mcp_catalog` | Meta-toolkit |
 | `vault_write` | `vault_tags` | Índices |
-| `vault/autoria/repositorio.py` | `vault/indices` (3 imports) | Índices |
+| `vault/autoria/repositorio.py` | `vault/indices` (4 imports) | Índices |
 | `vault/autoria/repositorio.py` | `vault/grafo` (4 imports) | Grafo |
 
 ## Grafo

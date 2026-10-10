@@ -92,6 +92,18 @@ class RepositorioAutoria:
 
         return RepositorioIndices(self._ctx).registro_etiquetas
 
+    def forma_de_etiqueta(self, crudo: str) -> str:
+        """La forma con que Índices guarda una etiqueta (AP-44, AP-57).
+
+        `vault_search` compara `--tag` contra lo que `vault_write` escribió; con
+        su propio `.lower()` «Música» no encontraba la `musica` del escritor.
+        El criterio tiene un solo dueño y se lee por el repositorio, que ya
+        cruza a Índices, en vez de abrir un cruce por consumidor.
+        """
+        from ..indices.vocabulario import normalizar_etiqueta
+
+        return normalizar_etiqueta(crudo)
+
     @property
     def grafo(self) -> Path:
         from ..grafo.repositorio import RepositorioGrafo
