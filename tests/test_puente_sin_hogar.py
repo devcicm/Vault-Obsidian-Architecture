@@ -19,6 +19,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT))
@@ -222,3 +224,29 @@ def test_lote_c_vault_entorno_vive_en_el_kernel():
             is importlib.import_module("vault.kernel.entorno"))
     assert gi.fuente_de("vault_entorno") == (ROOT / "vault" / "kernel" / "entorno.py").resolve()
     assert "VAULT_ROOT" in importlib.import_module("vault_entorno").VARIABLES
+
+
+LOTE_D = [
+    ("vault_link_safety", "vault/grafo/link_safety.py"),
+    ("vault_escaneo_grafo", "vault/kernel/escaneo_grafo.py"),
+    ("vault_firma_sitio", "vault/meta_toolkit/firma_sitio.py"),
+    ("vault_index", "vault/indices/indice.py"),
+]
+
+
+@pytest.mark.parametrize("modulo,dueno", LOTE_D)
+def test_lote_d_cuatro_hojas_con_dependencias_solo_del_kernel(modulo, dueno):
+    """Lote D de la deuda #12 (2026-10-10): hojas sin `__file__` cuyas
+    dependencias en `scripts/` son del kernel, lo único que un módulo de
+    `vault/<ctx>/` puede importar sin cruzar frontera. Ningún lector de su
+    fuente por ruta: `vault_restore` nombra `vault_index.py` en la instalación
+    del usuario, y ese fichero sigue existiendo como alias que corre el
+    `__main__` del dueño."""
+    import importlib
+
+    import vault_grafo_import as gi
+
+    assert modulo not in set(vault_arch.modulos_sin_hogar())
+    nombre = dueno[:-3].replace("/", ".")
+    assert importlib.import_module(modulo) is importlib.import_module(nombre)
+    assert gi.fuente_de(modulo) == (ROOT / dueno).resolve()

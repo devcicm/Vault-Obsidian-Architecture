@@ -62,3 +62,15 @@ def test_las_recetas_exhibidas_siguen_exhibidas():
         textos = [t for _, t in vds._literales(tree)]
         assert any(tool in t and flag in vds._flags_de_receta(t.split(tool, 1)[1].removeprefix(".py"))
                    for t in textos), (rel, tool, flag)
+
+
+def test_los_flags_de_una_tool_migrada_se_leen_en_el_dueno(tmp_path):
+    """Una tool migrada deja en `scripts/` un alias que no declara ningún
+    `add_argument` (deuda #12). Quien la ejecuta corre el parser del dueño, así
+    que sus flags se leen ahí —`fuente_de`, el criterio del import—, no en el
+    fichero del alias: si no, toda receta de una tool migrada sale rota."""
+    alias = ROOT / "scripts" / "vault_index.py"
+    assert "add_argument" not in alias.read_text(encoding="utf-8")
+    assert {"--index", "--readme", "--output"} <= vds._flags_declarados(alias)
+    sitios = _detectar(tmp_path, 'A = "vault_index --index --output x.md"\n')
+    assert sitios == []

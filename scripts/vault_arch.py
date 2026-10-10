@@ -2015,10 +2015,15 @@ def fantasmas() -> list[str]:
 
 
 def _ruta_de_modulo(modulo: str) -> Path:
-    """Ruta de un módulo publicado, ya sea script o paquete de dominio."""
+    """Ruta de un módulo publicado, ya sea script o paquete de dominio.
+
+    Un script migrado es un alias en `sys.modules` (deuda #12): importarlo da el
+    dueño de `vault/<ctx>/`, así que es el dueño lo que se lee. Leer el fichero
+    del alias —que no define nada— daba por roto un puerto que sí existe.
+    """
     if modulo.startswith("vault/"):
         return REPO_ROOT / f"{modulo}.py"
-    return SCRIPTS_DIR / f"{modulo}.py"
+    return vault_grafo_import.fuente_de(modulo)
 
 
 def _es_modulo_del_contexto(modulo: str, contexto: str) -> bool:

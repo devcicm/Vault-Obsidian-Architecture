@@ -60,6 +60,7 @@ from typing import Dict, List
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import vault_grafo_import  # noqa: E402
 from vault_errors import emit_error  # noqa: E402
 from vault_mcp_catalog import GROUPS, TOOLS_CATALOG  # noqa: E402
 
@@ -134,7 +135,13 @@ def _flags_declarados(script: Path) -> set:
     en el vault. Un parser construido en una función auxiliar que este regex no
     vea daría un falso positivo, no un falso negativo — el guard se equivocaría
     hacia el lado que se nota.
+
+    Un script migrado es un alias en `sys.modules` (deuda #12) que no declara
+    nada: quien lo ejecuta corre el parser del dueño, así que se lee el dueño
+    con `vault_grafo_import.fuente_de`, el criterio del import (AP-44).
     """
+    if script.parent.resolve() == (REPO_ROOT / "scripts").resolve():
+        script = vault_grafo_import.fuente_de(script.stem)
     src = script.read_bytes().decode("utf-8", "replace")
     declarados = set(RE_FLAG_DECLARADO.findall(src))
     if "BooleanOptionalAction" in src:
@@ -301,11 +308,7 @@ def recetas_en_codigo(raices=None, repo_root: Path = None) -> List[Dict]:
                     if previa and (previa[-1].startswith("--") or previa[-1] in VERBOS_CON_TOOL):
                         continue
                     if m.group(1) not in flags_cache:
-                        src = script.read_bytes().decode("utf-8", "replace")
-                        declarados = set(RE_FLAG_DECLARADO.findall(src))
-                        if "BooleanOptionalAction" in src:
-                            declarados |= {"--no-" + f[2:] for f in declarados}
-                        flags_cache[m.group(1)] = declarados
+                        flags_cache[m.group(1)] = _flags_declarados(script)
                     for flag in _flags_de_receta(texto[m.end():]):
                         if flag in flags_cache[m.group(1)] or flag == "--help":
                             continue

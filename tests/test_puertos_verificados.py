@@ -94,6 +94,19 @@ def test_el_check_no_reporta_puertos_rotos():
     assert arch.check(strict=True)["broken_ports"] == []
 
 
+def test_un_puerto_sobre_un_alias_se_lee_en_el_dueno():
+    """Un módulo migrado deja en `scripts/` un alias en `sys.modules`: quien
+    importa `vault_link_safety` recibe el dueño de `vault/grafo/`. El puerto se
+    resuelve con ese mismo criterio —el del consumidor, AP-44— y no leyendo el
+    fichero del alias, que no define nada y daba el puerto por roto (deuda #12)."""
+    import vault_grafo_import
+
+    ruta = arch._ruta_de_modulo("vault_link_safety")
+    assert ruta == vault_grafo_import.fuente_de("vault_link_safety")
+    assert "vault" in ruta.parts and "scripts" not in ruta.parts, ruta
+    assert "validate_wikilinks" in arch._simbolos_de_nivel_superior("vault_link_safety")
+
+
 def test_la_puerta_muerde_de_verdad(monkeypatch):
     """Sin esto, el test anterior solo dice que la función devuelve `[]`."""
     inventado = dict(arch.CONTEXTS)
