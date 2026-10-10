@@ -135,6 +135,13 @@ def vault_read(path: str) -> Dict[str, Any]:
     if not note_path.exists():
         return {**emit_error("vault_read", "NOTE_NOT_FOUND", f"Note not found: {path}"), "path": path}
 
+    # AP-51: un directorio no es una nota. Hasta 2026-10-10 su lectura salía
+    # como PERMISSION_DENIED (el PermissionError de Windows), y el agente
+    # buscaba un problema de permisos donde había una ruta equivocada.
+    if note_path.is_dir():
+        return {**emit_error("vault_read", "INVALID_PATH",
+                             f"Not a note: {path} (is a directory; use vault_list)"), "path": path}
+
     # AP-51: el `path` del sobre es la identidad de la nota, no el eco de la
     # petición. Hasta 2026-10-10 `./07_Knowledge//Nota.md` o `07_knowledge/nota.MD`
     # volvían tal cual: dos identidades para una nota (medido como consumidor).
