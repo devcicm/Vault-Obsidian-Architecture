@@ -22,6 +22,7 @@ from typing import Any, Dict
 from vault_errors import emit_error, fuera_de_sesion, wrap_main
 from vault_entorno import agente_por_defecto
 from vault_io import assert_within_vault, atomic_write_json, atomic_write_text
+from vault_registry import es_artefacto_derivado
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -170,6 +171,18 @@ def vault_delete(
         return emit_error(
             "vault_delete", "INVALID_PATH",
             f"'{path}' no es una nota (.md); vault_delete solo elimina notas.",
+        )
+
+    # AP-47: el `index.md` de una sección lo rehace su generador; borrarlo con
+    # ok:true dejaba la sección sin índice hasta la siguiente escritura
+    # (medido como consumidor, 2026-10-10). La ruta se resuelve antes de
+    # clasificarla, para que `x/../07_Knowledge/index.md` no esquive el criterio.
+    relativa = note_path.resolve().relative_to(vault_root.resolve()).as_posix()
+    if es_artefacto_derivado(relativa):
+        return emit_error(
+            "vault_delete", "INVALID_PATH",
+            f"AP-47: '{path}' es un artefacto derivado (lo rehace su generador); "
+            "vault_delete solo elimina notas.",
         )
 
     if not note_path.exists():
