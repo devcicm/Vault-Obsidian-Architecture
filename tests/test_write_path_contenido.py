@@ -79,7 +79,7 @@ def test_el_primitive_estable_es_el_unico_sitio_de_escritura_cruda():
     el test de arriba existe para cazar, escondida detrás de su propia excepción.
     """
     fuente = (REPO_ROOT / "vault" / "kernel" / "escritura.py").read_text(encoding="utf-8")
-    legacy = (SCRIPTS / "vault_fs.py").read_text(encoding="utf-8")
+    legacy = gi.codigo_de(SCRIPTS / "vault_fs.py").read_text(encoding="utf-8")
     assert _escrituras_crudas(legacy) == 0
     assert _escrituras_crudas(fuente) == 1
     cuerpo = fuente.split("def _escribir_temporal", 1)[1].split("\ndef ", 1)[0]

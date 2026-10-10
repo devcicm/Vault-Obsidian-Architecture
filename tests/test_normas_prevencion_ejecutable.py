@@ -28,6 +28,8 @@ from vault_norms_catalog import NORM_CATALOG  # noqa: E402
 MANIFIESTO = ROOT / "vault-obsidian-architecture.md"
 NORMAS = ["AP-26", "AP-27"]
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def _entrada(codigo: str) -> dict:
     return next(n for n in NORM_CATALOG if n["code"] == codigo)
@@ -47,7 +49,7 @@ def _prevencion_del_manifiesto(codigo: str) -> str:
 
 def _acepta(tool: str, flag: str) -> bool:
     fuente = SCRIPTS / f"{tool}.py"
-    return fuente.is_file() and f'"{flag}"' in fuente.read_text(encoding="utf-8")
+    return fuente.is_file() and f'"{flag}"' in gi.codigo_de(fuente).read_text(encoding="utf-8")
 
 
 @pytest.mark.parametrize("codigo", NORMAS)

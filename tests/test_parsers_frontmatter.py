@@ -34,6 +34,8 @@ MODULOS = [
 
 #: El parser que había, tal cual estaba escrito en los seis módulos. Se conserva
 #: aquí —y solo aquí— para poder medir la diferencia; no lo llama ninguna tool.
+
+import vault_grafo_import as gi  # noqa: E402
 def _regex_de_antes(content: str) -> dict:
     m = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
     if not m:
@@ -98,5 +100,5 @@ def test_el_regex_de_antes_leia_todo_valor_como_texto():
 def test_ninguno_de_los_seis_conserva_el_regex_de_frontmatter():
     """Que la copia no vuelva: seis cuerpos iguales es como empezó esto (AP-57)."""
     for modulo in MODULOS + ["vault_read"]:
-        fuente = (RAIZ / "scripts" / f"{modulo}.py").read_text(encoding="utf-8")
+        fuente = gi.codigo_de(RAIZ / "scripts" / f"{modulo}.py").read_text(encoding="utf-8")
         assert r'r"^---\n(.*?)\n---"' not in fuente, modulo

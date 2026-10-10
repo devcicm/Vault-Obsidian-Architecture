@@ -37,9 +37,11 @@ from vault_mcp_catalog import argparse_params  # noqa: E402
 #: palabra (`_detect_vault_root()`) o es una llamada no es el nombre de una tool.
 CITA = re.compile(r"(?<![\w.])(vault_[a-z0-9_]+)(?:\.py)?(?!\w|\()((?:\s+--[a-z][\w-]*)*)")
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def _subcomandos(script: Path) -> set:
-    return set(re.findall(r'add_parser\(\s*"([^"]+)"', script.read_text(encoding="utf-8")))
+    return set(re.findall(r'add_parser\(\s*"([^"]+)"', gi.codigo_de(script).read_text(encoding="utf-8")))
 
 
 def _invalidos(tool: str, args) -> list:

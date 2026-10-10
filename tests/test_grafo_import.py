@@ -193,8 +193,30 @@ def test_codigo_de_resuelve_el_alias_a_su_dueno_y_deja_lo_demas():
     assert G.codigo_de(G.DIRECTORIO / "vault_audit.py") == (G.DIRECTORIO / "vault_audit.py").resolve()
     fuera = raiz / "cli" / "analyzer.py"
     assert G.codigo_de(fuera) == fuera
+    # Un dato que vive en scripts/ no es un alias de nada.
+    dato = G.DIRECTORIO / "arch-baseline.json"
+    assert G.codigo_de(dato) == dato
     # Todo alias que el puente conoce resuelve a un fichero con código.
     for nombre, dueno in G._puente().items():
         assert G.codigo_de(G.DIRECTORIO / f"{nombre}.py") == dueno
         assert any(isinstance(n, (ast.FunctionDef, ast.ClassDef, ast.Assign))
                    for n in ast.parse(dueno.read_text(encoding="utf-8")).body), nombre
+
+
+def test_ningun_test_lee_un_script_por_ruta_sin_seguir_al_alias():
+    """m250: medio centenar de tests leían `scripts/<m>.py` por ruta. Con la deuda
+    #12 un nombre de `scripts/` puede ser un alias sin código, y el test pasaba
+    midiendo nada. La forma directa —la ruta a `scripts/` entre paréntesis y
+    leída en la misma expresión— tiene que pasar por `codigo_de`. La indirecta (la ruta en una variable) no la ve
+    este regex: se declara, no se da por cubierta."""
+    import re
+
+    directo = re.compile(
+        r"(?<!codigo_de)\(([^()]*?(?:\"scripts\"|\bSCRIPTS(?:_DIR)?\b)[^()]*?)\)\.read_text\(")
+    culpables = []
+    for f in sorted((G.DIRECTORIO.parent / "tests").glob("test_*.py")):
+        for n, linea in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+            m = directo.search(linea)
+            if m and not re.search(r"\.(json|md|txt|toml|ya?ml)\b", m.group(1)):
+                culpables.append(f"{f.name}:{n}")
+    assert culpables == [], culpables

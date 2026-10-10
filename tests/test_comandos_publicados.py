@@ -34,6 +34,8 @@ import vault_doc_sync as vds  # noqa: E402
 
 TOOLS_DE_SALUD = ("vault_audit.py", "vault_quality_check.py")
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def test_ningun_comando_publicado_usa_un_flag_que_su_tool_rechaza():
     problemas = vds.comandos_publicados()
@@ -109,7 +111,7 @@ def test_el_generador_no_escribe_un_flag_que_su_tool_rechaza():
     generador, así que es ahí donde se mide: un `--flag` nuevo en esa cadena
     tiene que fallar el día que se escribe, no el día que se copia.
     """
-    fuente = (REPO_ROOT / "scripts" / "vault_section_index.py").read_text(
+    fuente = gi.codigo_de(REPO_ROOT / "scripts" / "vault_section_index.py").read_text(
         encoding="utf-8"
     )
     revisados = 0

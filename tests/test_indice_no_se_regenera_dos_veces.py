@@ -45,6 +45,8 @@ CULPABLES = {
     ],
 }
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def _ejecutar(raiz: Path, script: str, *argv: str):
     return subprocess.run(
@@ -69,7 +71,7 @@ def vault(tmp_path):
 def test_ninguno_llama_al_indice_a_mano():
     """El refuerzo vive en el write path; repetirlo aquí es la duplicación."""
     for script in CULPABLES:
-        fuente = (SCRIPTS / f"{script}.py").read_text(encoding="utf-8")
+        fuente = gi.codigo_de(SCRIPTS / f"{script}.py").read_text(encoding="utf-8")
         codigo = "\n".join(
             l for l in fuente.splitlines() if not l.lstrip().startswith("#")
         )

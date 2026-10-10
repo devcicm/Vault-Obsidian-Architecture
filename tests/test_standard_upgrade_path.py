@@ -23,6 +23,8 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 import vault_registry  # noqa: E402
 import vault_standard_upgrade as vsu  # noqa: E402
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def test_current_version_resuelve_indice():
     """CURRENT_VERSION debe ser localizable aunque traiga minor."""
@@ -125,7 +127,7 @@ def test_un_fallo_resuelto_no_queda_fijado_en_el_registro():
     Con el `if` anterior, una migración sin fallos no sobrescribía la clave, y
     el vault seguía declarando un error ya corregido, versión tras versión.
     """
-    fuente = (vsu.SCRIPTS_DIR / "vault_standard_upgrade.py").read_text(encoding="utf-8")
+    fuente = gi.codigo_de(vsu.SCRIPTS_DIR / "vault_standard_upgrade.py").read_text(encoding="utf-8")
     assert 'state["fixes_failed"] = all_fixes_failed' in fuente
     assert "if all_fixes_failed:" not in fuente
 

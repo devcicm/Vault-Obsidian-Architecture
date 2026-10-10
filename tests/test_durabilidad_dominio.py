@@ -30,6 +30,8 @@ from vault.kernel import construir  # noqa: E402
 
 # ── Las entidades: sin disco, sin vault, sin contexto ────────────────────────
 
+import vault_grafo_import as gi  # noqa: E402
+
 def test_una_entidad_del_dominio_no_necesita_nada_del_mundo():
     """Si hiciera falta un vault para probar esto, no sería dominio."""
     b = Backup(name="vault-2026-01-01-000000-x", label="x", noteCount=3)
@@ -214,7 +216,7 @@ def test_el_adaptador_no_decide_nada():
     """
     import ast
 
-    fuente = (REPO_ROOT / "scripts" / "vault_backup_list.py").read_text(encoding="utf-8")
+    fuente = gi.codigo_de(REPO_ROOT / "scripts" / "vault_backup_list.py").read_text(encoding="utf-8")
     arbol = ast.parse(fuente)
 
     llamadas = {

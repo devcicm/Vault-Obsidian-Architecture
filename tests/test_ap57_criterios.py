@@ -17,6 +17,8 @@ sys.path.insert(0, str(RAIZ / "scripts"))
 
 import vault_criterios as vc  # noqa: E402
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def _arbol(src: str) -> ast.AST:
     return ast.parse(src)
@@ -165,7 +167,7 @@ def test_vault_graph_fix_no_lleva_su_propia_lista_de_instantaneas():
 
 
 def test_vault_foreign_check_consulta_a_los_tres_duenos():
-    src = (RAIZ / "scripts" / "vault_foreign_check.py").read_text(encoding="utf-8")
+    src = gi.codigo_de(RAIZ / "scripts" / "vault_foreign_check.py").read_text(encoding="utf-8")
     arbol = ast.parse(src)
     for c in vc.CRITERIOS_CON_DUENO:
         assert vc._importa(arbol, c["dueño"], c["simbolo"]), c["criterio"]

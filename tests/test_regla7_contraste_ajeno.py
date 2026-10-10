@@ -56,6 +56,8 @@ TITULOS = [
     ("migrate_docs", yaml_scalar("Migration Report - Mi: Proy")),
 ]
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 @pytest.mark.parametrize("etiqueta,titulo", TITULOS[1:])
 def test_el_titulo_compuesto_sobrevive_a_yaml(etiqueta, titulo):
@@ -83,7 +85,7 @@ def test_ningun_titulo_se_interpola_sin_escapar(modulo, fragmento):
     Interpolar un dato en `title:` sin pasarlo por `yaml_scalar` es el defecto,
     no el símbolo concreto que lo dispara: mañana será un `#`, o un `@`.
     """
-    fuente = (REPO_ROOT / "scripts" / modulo).read_text(encoding="utf-8")
+    fuente = gi.codigo_de(REPO_ROOT / "scripts" / modulo).read_text(encoding="utf-8")
     assert fragmento not in fuente, (
         f"{modulo} vuelve a componer el título sin escapar — "
         "compón la cadena y pásala entera por yaml_scalar()"

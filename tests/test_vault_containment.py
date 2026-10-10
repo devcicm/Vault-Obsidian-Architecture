@@ -247,7 +247,7 @@ def test_restore_never_wipes_the_backup_directory():
 
 
 def test_restore_no_longer_uses_the_grandparent_pattern():
-    source = (SCRIPTS / "vault_restore.py").read_text(encoding="utf-8")
+    source = gi.codigo_de(SCRIPTS / "vault_restore.py").read_text(encoding="utf-8")
     assert "BACKUP_ROOT = Path(__file__).parent.parent.parent" not in source
 
 

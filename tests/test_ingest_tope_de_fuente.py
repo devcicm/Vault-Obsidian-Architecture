@@ -31,6 +31,8 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def _corre(tmp_path, *argv, entrada=None):
     # Hasta v40.34 no se creaba: vault_init lo rechazaba y vault_ingest sembraba
@@ -50,7 +52,7 @@ def test_el_tope_por_defecto_esta_declarado_y_no_escrito_a_mano():
     import vault_ingest
 
     assert isinstance(vault_ingest.DEFAULT_MAX_CHARS, int)
-    fuente = (REPO_ROOT / "scripts" / "vault_ingest.py").read_text(encoding="utf-8")
+    fuente = gi.codigo_de(REPO_ROOT / "scripts" / "vault_ingest.py").read_text(encoding="utf-8")
     assert "response.read(5_000_000)" not in fuente, (
         "el tope de red sigue escrito a mano en vez de derivar del declarado")
 

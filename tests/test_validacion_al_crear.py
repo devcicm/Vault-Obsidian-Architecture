@@ -25,6 +25,8 @@ import vault_io
 import vault_write
 from vault_lib import indice_de_destinos, resolver_destino_wikilink
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 @pytest.fixture
 def vault(tmp_path, monkeypatch):
@@ -126,7 +128,7 @@ class TestDuenosCanonicos:
     def test_vault_write_y_foreign_check_consultan_al_dueno(self):
         """AP-57: la copia se salda importando, no congelando."""
         for mod in ("vault_write", "vault_foreign_check"):
-            src = (Path(__file__).parent.parent / "scripts" / f"{mod}.py").read_text(
+            src = gi.codigo_de(Path(__file__).parent.parent / "scripts" / f"{mod}.py").read_text(
                 encoding="utf-8")
             assert "resolver_destino_wikilink" in src, mod
             assert "indice_de_destinos" in src, mod

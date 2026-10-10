@@ -32,6 +32,8 @@ from vault.meta_toolkit.protocolo_de_sesion import (  # noqa: E402
 CATALOGO = json.loads(
     (ROOT / "mcp" / "nodejs" / "tools-catalog.json").read_text(encoding="utf-8"))
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def _naturaleza(tool):
     return next((n for n, d in NATURALEZAS.items() if tool in d["tools"]), None)
@@ -139,7 +141,7 @@ def test_ninguna_tool_del_perfil_emite_una_pista_que_no_puede_seguir():
     for codigo in PISTAS_FUERA_DEL_PERFIL:
         nombres = {codigo} | {c for c, d in MAPA_DE_FALLOS.items() if d == codigo}
         for tool in tools_del_perfil("agente"):
-            texto = (ROOT / "scripts" / f"{tool}.py").read_text(encoding="utf-8")
+            texto = gi.codigo_de(ROOT / "scripts" / f"{tool}.py").read_text(encoding="utf-8")
             assert not any(f'"{n}"' in texto for n in nombres), (tool, codigo)
 
 

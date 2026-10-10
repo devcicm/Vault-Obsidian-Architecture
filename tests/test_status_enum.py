@@ -8,6 +8,8 @@ sys.path.insert(0, str(RAIZ / "scripts"))
 
 from vault_norms_catalog import STATUS_VOCAB, Status, normalize_status  # noqa: E402
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def test_cn03_el_enum_y_el_vocabulario_son_el_mismo_conjunto():
     assert {s.value for s in Status} == STATUS_VOCAB
@@ -26,7 +28,7 @@ def test_cn03_normalizar_devuelve_un_valor_del_enum():
 
 def test_cn03_el_enum_no_lleva_una_lista_propia():
     """Si alguien escribe los doce valores a mano, el set deja de ser el dueño."""
-    fuente = (RAIZ / "scripts" / "vault_norms_catalog.py").read_text(encoding="utf-8")
+    fuente = gi.codigo_de(RAIZ / "scripts" / "vault_norms_catalog.py").read_text(encoding="utf-8")
     bloque = fuente[fuente.index("Status = Enum("):]
     bloque = bloque[: bloque.index("\n)\n")]
     assert "STATUS_VOCAB" in bloque

@@ -88,6 +88,8 @@ CASOS = [
     ),
 ]
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 @pytest.mark.parametrize("fuente,marcado,motivo", CASOS)
 def test_deteccion(fuente, marcado, motivo, tmp_path, monkeypatch):
@@ -137,7 +139,7 @@ def test_toda_exencion_apunta_a_una_funcion_que_existe():
         modulo, qualname = clave.split("::", 1)
         ruta = REPO_ROOT / "scripts" / modulo
         assert ruta.exists(), f"{clave}: el módulo ya no existe"
-        arbol = _ast.parse(ruta.read_text(encoding="utf-8"))
+        arbol = _ast.parse(gi.codigo_de(ruta).read_text(encoding="utf-8"))
         vivos = set(mapa_de_qualnames(arbol).values())
         assert qualname in vivos, f"{clave}: la función ya no existe"
 
@@ -324,7 +326,7 @@ def test_el_detector_no_se_mide_por_texto():
     Un detector por texto contaría los ejemplos de este mismo fichero y los de
     la docstring de la tool, que describen la infracción para explicarla.
     """
-    fuente = (REPO_ROOT / "scripts" / "vault_error_contract.py").read_text(encoding="utf-8")
+    fuente = gi.codigo_de(REPO_ROOT / "scripts" / "vault_error_contract.py").read_text(encoding="utf-8")
     arbol = ast.parse(fuente)
     usa_ast = any(
         isinstance(n, ast.Attribute) and isinstance(n.value, ast.Name) and n.value.id == "ast"

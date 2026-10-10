@@ -32,6 +32,8 @@ from vault_io import indice_compartido  # noqa: E402
 
 HILOS = 12
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def _anadir(destino: Path, n: int) -> None:
     with indice_compartido(destino, {"entradas": []}) as indice:
@@ -144,7 +146,7 @@ def test_los_ocho_consumen_el_tramo_exclusivo(script):
     "se ejecuta". Es el mismo error que AP-44 describe, cometido en el test.
     """
     arbol = ast.parse(
-        (REPO_ROOT / "scripts" / f"{script}.py").read_text(
+        gi.codigo_de(REPO_ROOT / "scripts" / f"{script}.py").read_text(
             encoding="utf-8", errors="replace"
         )
     )
@@ -162,7 +164,7 @@ def test_lo_huerfano_queda_anotado_y_no_borrado(script):
     de hacerlo pasar sería borrar los helpers, que es justo lo que la política
     de no-derogación prohíbe.
     """
-    fuente = (REPO_ROOT / "scripts" / f"{script}.py").read_text(
+    fuente = gi.codigo_de(REPO_ROOT / "scripts" / f"{script}.py").read_text(
         encoding="utf-8", errors="replace"
     )
     arbol = ast.parse(fuente)

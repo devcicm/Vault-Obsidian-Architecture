@@ -31,6 +31,8 @@ from vault_mcp_catalog import GROUPS, TOOLS_CATALOG  # noqa: E402
 
 # ── La skill está publicada ───────────────────────────────────────────────────
 
+import vault_grafo_import as gi  # noqa: E402
+
 def _entry_points_de_skills():
     """Entry point de cada `agent/skills/<x>/SKILL.md`, por convención de nombre."""
     return {
@@ -207,7 +209,7 @@ def test_gaps_md_no_se_pisa_ni_con_force():
     `and not args.force` estaba en la línea que decide, y un `--force` para
     refrescar el rango se llevó por delante 85 hallazgos redactados a mano.
     """
-    fuente = (SCRIPTS / "vault_sdd_init.py").read_text(encoding="utf-8")
+    fuente = gi.codigo_de(SCRIPTS / "vault_sdd_init.py").read_text(encoding="utf-8")
     decision = [
         ln for ln in fuente.splitlines()
         if "gaps_path.exists()" in ln and not ln.lstrip().startswith("#")

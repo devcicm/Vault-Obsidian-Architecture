@@ -28,6 +28,8 @@ import vault_changelog_check as C  # noqa: E402
 
 # ── El barrido ve algo ───────────────────────────────────────────────────────
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def test_el_barrido_reconoce_las_entradas_del_manifiesto():
     """Sin esto, todo lo demás pasaría por no mirar (AP-44)."""
@@ -195,7 +197,7 @@ def test_usa_la_fecha_de_autoria():
     en entradas que nadie tocó — y el arreglo sería anotarlas en la baseline,
     o sea normalizar la mentira.
     """
-    fuente = (RAIZ / "scripts" / "vault_changelog_check.py").read_text(
+    fuente = gi.codigo_de(RAIZ / "scripts" / "vault_changelog_check.py").read_text(
         encoding="utf-8")
     assert "%as" in fuente
     assert '"--format=%cs"' not in fuente

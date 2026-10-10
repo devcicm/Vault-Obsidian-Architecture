@@ -35,6 +35,8 @@ import vault_kernel as K  # noqa: E402
 
 # ── Utillaje: un grafo sintético con la respuesta conocida ───────────────────
 
+import vault_grafo_import as gi  # noqa: E402
+
 def _monta(monkeypatch, grafo, kernel, dominio, churns=None, historia=True):
     """Sustituye las tres fuentes de `medir()`: grafo, contextos y git.
 
@@ -291,7 +293,7 @@ def test_vault_kernel_no_parsea_imports_por_su_cuenta():
     """La regresión cara. Si esta tool se hace su propio parser vuelve a haber
     dos definiciones de «qué importa este módulo», y la que decide la pureza del
     núcleo sería la que nadie contrasta — AP-57 dentro de AP-59."""
-    arbol = ast.parse((RAIZ / "scripts" / "vault_kernel.py").read_text(encoding="utf-8"))
+    arbol = ast.parse(gi.codigo_de(RAIZ / "scripts" / "vault_kernel.py").read_text(encoding="utf-8"))
     importados = {
         a.name for n in ast.walk(arbol) if isinstance(n, ast.Import) for a in n.names
     } | {

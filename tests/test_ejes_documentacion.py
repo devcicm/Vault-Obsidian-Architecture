@@ -21,6 +21,8 @@ from vault_mcp_catalog import TOOLS_CATALOG  # noqa: E402
 from vault_norms_catalog import STATUS_TRANSITIONS, STATUS_VOCAB  # noqa: E402
 from vault_registry import regimen_de_estado as _regimen  # noqa: E402
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def regimen_de_estado(status):
     return _regimen(status, STATUS_TRANSITIONS)
@@ -51,7 +53,7 @@ def test_cada_campo_de_traza_lo_escribe_alguna_de_sus_tools():
     """AP-44: el campo se busca en el código que escribe, no en lo que el SDD promete."""
     for clase, e in reg.EJES_DOCUMENTACION.items():
         fuentes = "".join(
-            (REPO_ROOT / "scripts" / TOOLS_CATALOG[t]["script"]).read_text(encoding="utf-8")
+            gi.codigo_de(REPO_ROOT / "scripts" / TOOLS_CATALOG[t]["script"]).read_text(encoding="utf-8")
             for t in e["tools"])
         for campo in e["campos"]:
             assert f'"{campo}"' in fuentes, (clase, campo)

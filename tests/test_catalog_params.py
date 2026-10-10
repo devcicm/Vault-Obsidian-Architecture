@@ -23,6 +23,8 @@ import vault_norms  # noqa: E402
 
 # ── Extracción desde argparse ────────────────────────────────────────────────
 
+import vault_grafo_import as gi  # noqa: E402
+
 def test_argparse_params_lee_los_flags_reales_de_un_script():
     params = cat.argparse_params("vault_impact.py")
     assert "changed" in params, "el flag que la CLI sí acepta"
@@ -188,7 +190,7 @@ def test_el_audit_de_normas_conoce_ap40():
 
     assert vault_norms_catalog.norma_por_codigo("AP-40")["code"] == "AP-40"
 
-    motor = (SCRIPTS / "vault_norms_engine.py").read_text(encoding="utf-8")
+    motor = gi.codigo_de(SCRIPTS / "vault_norms_engine.py").read_text(encoding="utf-8")
     assert '"AP-40"' in motor
     assert "check_params" in motor
 
@@ -196,5 +198,5 @@ def test_el_audit_de_normas_conoce_ap40():
 def test_el_schema_json_se_deriva_no_se_copia():
     """Si alguien vuelve a construir el schema desde `params` sin conciliar,
     la divergencia regresa entera y en silencio."""
-    fuente = (SCRIPTS / "vault_mcp_catalog.py").read_text(encoding="utf-8")
+    fuente = gi.codigo_de(SCRIPTS / "vault_mcp_catalog.py").read_text(encoding="utf-8")
     assert "reconciled_params(py_tool)" in fuente

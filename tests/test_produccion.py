@@ -20,6 +20,8 @@ sys.path.insert(0, str(RAIZ / "scripts"))
 
 import vault_produccion as vp  # noqa: E402
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def test_el_registro_esta_bien_formado():
     """Cada fila declara promesa, motivo, ejecutor y estado conocido."""
@@ -177,7 +179,7 @@ def test_el_dueno_es_una_hoja():
     criterio (AP-44), que es justo el fallo del que nace esta tool.
     """
     import ast
-    arbol = ast.parse((RAIZ / "scripts" / "vault_produccion.py").read_text(encoding="utf-8"))
+    arbol = ast.parse(gi.codigo_de(RAIZ / "scripts" / "vault_produccion.py").read_text(encoding="utf-8"))
     permitidos = {"vault_errors"}
     for nodo in ast.walk(arbol):
         nombres = []

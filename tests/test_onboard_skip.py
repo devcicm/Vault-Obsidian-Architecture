@@ -18,6 +18,8 @@ if str(SCRIPTS) not in sys.path:
 
 import vault_onboard  # noqa: E402
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def test_un_valor_que_no_omite_nada_se_rechaza():
     p = subprocess.run(
@@ -30,7 +32,7 @@ def test_un_valor_que_no_omite_nada_se_rechaza():
 
 def test_las_secciones_omitibles_son_las_que_el_onboard_comprueba():
     """La lista de `choices` y los `if "NN" not in skip` no pueden divergir."""
-    arbol = ast.parse((SCRIPTS / "vault_onboard.py").read_text(encoding="utf-8"))
+    arbol = ast.parse(gi.codigo_de(SCRIPTS / "vault_onboard.py").read_text(encoding="utf-8"))
     comprobadas = {
         n.left.value for n in ast.walk(arbol)
         if isinstance(n, ast.Compare) and isinstance(n.left, ast.Constant)

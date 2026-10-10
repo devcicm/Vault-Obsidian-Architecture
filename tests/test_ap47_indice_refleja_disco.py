@@ -28,6 +28,8 @@ sys.path.insert(0, str(SCRIPTS))
 import vault_norms  # noqa: E402
 import vault_reindex  # noqa: E402
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def _vault(tmp_path, notas, indexadas=None, grafo=None):
     """Vault mínimo: notas en disco y un índice que dice lo que se le pida."""
@@ -167,6 +169,6 @@ def test_comprobar_y_reconstruir_usan_el_mismo_criterio():
     assert not otros, f"más de un sitio enumera notas indexables: {otros}"
 
     # Y el adaptador no puede recuperar su copia por la puerta de atrás.
-    fuente = (SCRIPTS / "vault_reindex.py").read_text(encoding="utf-8")
+    fuente = gi.codigo_de(SCRIPTS / "vault_reindex.py").read_text(encoding="utf-8")
     assert 'rglob("*.md")' not in fuente
     assert "def _is_vault_note" not in fuente

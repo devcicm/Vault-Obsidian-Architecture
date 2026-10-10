@@ -24,6 +24,8 @@ for _ruta in (ROOT / "scripts", ROOT):
 
 import yaml  # noqa: E402
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def _frontmatter(path: Path) -> dict:
     texto = path.read_text(encoding="utf-8")
@@ -80,7 +82,7 @@ def test_pat2_el_audit_ve_el_stub_sin_plazo_y_el_vencido(tmp_path, monkeypatch):
 def test_pat2_el_audit_publica_la_clave_sin_pesarla():
     import vault_audit_catalog
 
-    fuente = (ROOT / "scripts" / "vault_audit.py").read_text(encoding="utf-8")
+    fuente = gi.codigo_de(ROOT / "scripts" / "vault_audit.py").read_text(encoding="utf-8")
     assert '"stubsSinPlazo"' in fuente
     assert not [p for p in vault_audit_catalog.PENALIZACIONES
                 if "stub" in str(p).lower() and "plazo" in str(p).lower()]

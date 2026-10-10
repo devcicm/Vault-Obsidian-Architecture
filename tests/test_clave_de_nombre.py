@@ -28,6 +28,8 @@ IGUALES = [
     ("v1.2", "v12"),
 ]
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 @pytest.mark.parametrize("a,b", DISTINTOS)
 def test_ap17_nombres_distintos_no_comparten_id(a, b):
@@ -51,7 +53,7 @@ def test_ap17_el_respaldo_de_vault_lib_coincide_con_el_nucleo():
     import re
     import unicodedata
 
-    fuente = (REPO / "scripts" / "vault_lib.py").read_text(encoding="utf-8")
+    fuente = gi.codigo_de(REPO / "scripts" / "vault_lib.py").read_text(encoding="utf-8")
     defs = [n for n in ast.parse(fuente).body
             if isinstance(n, ast.FunctionDef) and n.name in ("fold_accents", "clave_de_nombre")]
     assert len(defs) == 2

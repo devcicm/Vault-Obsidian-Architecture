@@ -35,6 +35,8 @@ import vault_norms_catalog as cat  # noqa: E402
 
 NORMAS = ROOT / "normas"
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def _paquetes():
     return sorted(p for p in NORMAS.iterdir() if p.is_dir() and not p.name.startswith(("_", ".")))
@@ -60,7 +62,7 @@ def test_el_piloto_ap65_vive_en_su_paquete():
     assert (NORMAS / "AP-65" / "norma.py").is_file()
     # La entrada ya no está escrita en el catálogo: un código en dos sitios es
     # la copia que el paquete viene a quitar.
-    fuente = (SCRIPTS / "vault_norms_catalog.py").read_text(encoding="utf-8")
+    fuente = gi.codigo_de(SCRIPTS / "vault_norms_catalog.py").read_text(encoding="utf-8")
     assert '"code": "AP-65"' not in fuente
 
 
@@ -74,7 +76,7 @@ def test_ap64_es_la_segunda_en_migrar_y_conserva_su_sitio():
     # lista: `NORMAS_EN_PAQUETE` sigue el orden del catálogo, no el de llegada.
     i = cat.NORMAS_EN_PAQUETE.index("AP-64")
     assert cat.NORMAS_EN_PAQUETE[i + 1] == "AP-65"
-    fuente = (SCRIPTS / "vault_norms_catalog.py").read_text(encoding="utf-8")
+    fuente = gi.codigo_de(SCRIPTS / "vault_norms_catalog.py").read_text(encoding="utf-8")
     assert '"code": "AP-64"' not in fuente
     codigos = [n["code"] for n in cat.NORM_CATALOG]
     assert codigos.index("AP-64") + 1 == codigos.index("AP-65")
@@ -105,7 +107,7 @@ def test_todo_paquete_carga_en_el_orden_del_catalogo_y_sale_del_fuente():
     codigos = [n["code"] for n in cat.NORM_CATALOG]
     posiciones = [codigos.index(c) for c in cat.NORMAS_EN_PAQUETE]
     assert posiciones == sorted(posiciones)
-    fuente = (SCRIPTS / "vault_norms_catalog.py").read_text(encoding="utf-8")
+    fuente = gi.codigo_de(SCRIPTS / "vault_norms_catalog.py").read_text(encoding="utf-8")
     escritas = [c for c in cat.NORMAS_EN_PAQUETE if f'"code": "{c}"' in fuente]
     assert escritas == []
     assert [p.name for p in _paquetes()] == sorted(cat.NORMAS_EN_PAQUETE)

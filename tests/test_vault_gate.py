@@ -30,6 +30,8 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 import vault_gate  # noqa: E402
 import vault_mcp_catalog  # noqa: E402
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def test_toda_puerta_del_registro_esta_en_el_checklist():
     """La comprobación que hace `--check-doc`, corrida como test.
@@ -90,7 +92,7 @@ def test_no_reimplementa_ninguna_comprobacion():
     tools en prosa — medir el texto crudo daría un falso positivo, que es
     exactamente el AP-44 que este repo ya se comió una vez.
     """
-    arbol = ast.parse((REPO_ROOT / "scripts" / "vault_gate.py").read_text(encoding="utf-8"))
+    arbol = ast.parse(gi.codigo_de(REPO_ROOT / "scripts" / "vault_gate.py").read_text(encoding="utf-8"))
     importados = set()
     for nodo in ast.walk(arbol):
         if isinstance(nodo, ast.Import):
@@ -223,7 +225,7 @@ def test_la_corrida_no_hereda_el_limite_por_defecto_de_wrap_main():
     assert vault_gate.limite_total() >= len(vault_gate.PUERTAS) * vault_gate.LIMITE_POR_PUERTA
     assert vault_gate.limite_total() > vault_errors.TOOL_TIMEOUT_SECONDS
 
-    arbol = ast.parse((REPO_ROOT / "scripts" / "vault_gate.py").read_text(encoding="utf-8"))
+    arbol = ast.parse(gi.codigo_de(REPO_ROOT / "scripts" / "vault_gate.py").read_text(encoding="utf-8"))
     llamadas = [n for n in ast.walk(arbol) if isinstance(n, ast.Call)
                 and getattr(n.func, "id", None) == "wrap_main"]
     assert llamadas, "vault_gate ya no se envuelve con wrap_main"

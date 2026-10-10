@@ -31,6 +31,8 @@ from vault_lib import fold_accents, slugify, slugify_strict  # noqa: E402
 
 # ── Comportamiento ────────────────────────────────────────────────────────────
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 @pytest.mark.parametrize(
     "titulo,esperado",
@@ -173,7 +175,7 @@ def test_el_respaldo_de_vault_lib_no_diverge_del_kernel():
 
     from vault.kernel import normalizacion as kernel
 
-    fuente = (REPO_ROOT / "scripts" / "vault_lib.py").read_text(encoding="utf-8")
+    fuente = gi.codigo_de(REPO_ROOT / "scripts" / "vault_lib.py").read_text(encoding="utf-8")
     arbol = ast.parse(fuente)
     nombres = {"fold_accents", "slugify", "slugify_strict"}
     defs = [n for n in arbol.body if isinstance(n, ast.FunctionDef) and n.name in nombres]

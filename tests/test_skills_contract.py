@@ -21,6 +21,8 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import vault_sdd_init as sdd  # noqa: E402
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def _skill_files():
     return sorted(SKILLS_DIR.glob("*/SKILL.md"))
@@ -64,7 +66,7 @@ def test_entry_point_existe(skill_path):
 def test_argumentos_documentados_existen_en_el_script(skill_path):
     """Todo --flag citado en el SKILL.md debe estar en el argparse real."""
     nombre = skill_path.parent.name.replace("-", "_")
-    script = (REPO_ROOT / "scripts" / f"{nombre}.py").read_text(encoding="utf-8")
+    script = gi.codigo_de(REPO_ROOT / "scripts" / f"{nombre}.py").read_text(encoding="utf-8")
     documentados = set(re.findall(r"`(--[a-z][a-z0-9-]*)`", skill_path.read_text(encoding="utf-8")))
     for flag in documentados:
         assert f'"{flag}"' in script, (
@@ -113,7 +115,7 @@ def test_drift_detecta_huecos_de_contiguidad():
 
 def test_skill_manifest_anotado_no_borrado():
     """No-derogación: la constante muerta se anota, no se elimina."""
-    src = (REPO_ROOT / "scripts" / "vault_sdd_init.py").read_text(encoding="utf-8")
+    src = gi.codigo_de(REPO_ROOT / "scripts" / "vault_sdd_init.py").read_text(encoding="utf-8")
     assert "SKILL_MANIFEST" in src
     assert "superseded_by:" in src, (
         "SKILL_MANIFEST quedó sin anotar: una constante sin uso y sin nota "

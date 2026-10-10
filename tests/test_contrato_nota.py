@@ -21,6 +21,8 @@ if str(SCRIPTS) not in sys.path:
 
 import vault_contrato_nota as contrato  # noqa: E402
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def test_las_tres_clases_de_nota():
     assert contrato.clase_de_nota("99_Index/index.md") == "derivada"
@@ -75,7 +77,7 @@ def test_el_vocabulario_cia_sale_del_registro_y_no_se_copia():
 
     for campo in ("cia_integrity", "cia_availability", "cia_sensitivity"):
         assert set(contrato.CAMPOS[campo]["valores"]) == cia_valores(campo)
-    arbol = ast.parse((SCRIPTS / "vault_contrato_nota.py").read_text(encoding="utf-8"))
+    arbol = ast.parse(gi.codigo_de(SCRIPTS / "vault_contrato_nota.py").read_text(encoding="utf-8"))
     literales = {n.value for n in ast.walk(arbol) if isinstance(n, ast.Constant)}
     assert "critical" not in literales and "confidential" not in literales
 
@@ -88,7 +90,7 @@ def test_errores_de_valor():
 
 def test_validate_no_escribe_su_propia_lista():
     """AP-57: el literal con los campos ya no vive en el validador."""
-    arbol = ast.parse((SCRIPTS / "vault_validate.py").read_text(encoding="utf-8"))
+    arbol = ast.parse(gi.codigo_de(SCRIPTS / "vault_validate.py").read_text(encoding="utf-8"))
     for nodo in ast.walk(arbol):
         if isinstance(nodo, (ast.List, ast.Tuple, ast.Set)):
             valores = {e.value for e in nodo.elts if isinstance(e, ast.Constant)}

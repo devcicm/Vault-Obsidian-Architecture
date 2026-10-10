@@ -173,7 +173,7 @@ def test_ningun_save_construye_el_frontmatter_a_mano():
     )
     culpables = []
     for save in SAVES:
-        source = (REPO_ROOT / "scripts" / f"{save}.py").read_text(encoding="utf-8")
+        source = gi.codigo_de(REPO_ROOT / "scripts" / f"{save}.py").read_text(encoding="utf-8")
         if 'Frontmatter(' not in source and not _usa_escritor_canonico(source, stable):
             culpables.append(save)
     assert not culpables, (

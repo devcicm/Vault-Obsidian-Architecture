@@ -27,13 +27,15 @@ PUBLICADO = json.loads(
     (ROOT / "mcp" / "nodejs" / "tools-catalog.json").read_text(encoding="utf-8")
 )["tools"]
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def _sitios_con_choices():
     for nombre, tool in sorted(TOOLS_CATALOG.items()):
         script = tool.get("script")
         if nombre not in PUBLICADO or not script or not (SCRIPTS / script).is_file():
             continue
-        arbol = ast.parse((SCRIPTS / script).read_text(encoding="utf-8"))
+        arbol = ast.parse(gi.codigo_de(SCRIPTS / script).read_text(encoding="utf-8"))
         for nodo in ast.walk(arbol):
             if not (isinstance(nodo, ast.Call) and getattr(nodo.func, "attr", "") == "add_argument"):
                 continue

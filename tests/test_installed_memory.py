@@ -14,6 +14,8 @@ from vault.meta_toolkit.resolucion_producto import INSTALLED, resolver_producto
 
 ROOT = Path(__file__).resolve().parents[1]
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def _runtime(tmp_path: Path) -> Path:
     root = tmp_path / "runtime"
@@ -77,15 +79,15 @@ def test_implementacion_estable_no_importa_el_checkout_ni_scripts():
 
 def test_adaptadores_legacy_delegan_hacia_el_owner_estable():
     for script in ("vault_knowledge_save.py", "vault_knowledge_get.py"):
-        source = (ROOT / "scripts" / script).read_text(encoding="utf-8")
+        source = gi.codigo_de(ROOT / "scripts" / script).read_text(encoding="utf-8")
         assert "vault.autoria.conocimiento" in source
 
 
 def test_el_mecanismo_atomico_es_un_primitive_compartido_y_no_otro_write_path():
     stable = (ROOT / "vault" / "autoria" / "conocimiento.py").read_text(encoding="utf-8")
     primitive = (ROOT / "vault" / "kernel" / "escritura.py").read_text(encoding="utf-8")
-    legacy_fs = (ROOT / "scripts" / "vault_fs.py").read_text(encoding="utf-8")
-    legacy_adapter = (ROOT / "scripts" / "vault_knowledge_save.py").read_text(
+    legacy_fs = gi.codigo_de(ROOT / "scripts" / "vault_fs.py").read_text(encoding="utf-8")
+    legacy_adapter = gi.codigo_de(ROOT / "scripts" / "vault_knowledge_save.py").read_text(
         encoding="utf-8"
     )
     assert "from ..kernel.escritura import escritura_atomica" in stable
@@ -101,7 +103,7 @@ def test_vault_fs_no_redefine_el_primitive_atomico_estable():
     legacy_fs = ROOT / "scripts" / "vault_fs.py"
     names = {
         node.name
-        for node in ast.walk(ast.parse(legacy_fs.read_text(encoding="utf-8")))
+        for node in ast.walk(ast.parse(gi.codigo_de(legacy_fs).read_text(encoding="utf-8")))
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
     }
     assert not names & {"escritura_atomica", "_escribir_temporal", "_fsync_si_procede"}

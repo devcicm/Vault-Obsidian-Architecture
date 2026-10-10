@@ -22,6 +22,8 @@ import vault_norms  # noqa: E402
 
 # ── Normalización ────────────────────────────────────────────────────────────
 
+import vault_grafo_import as gi  # noqa: E402
+
 @pytest.mark.parametrize(
     "crudo,esperado",
     [
@@ -216,7 +218,7 @@ def test_ap39_declara_las_tools_que_lo_detectan():
 def test_vault_write_llama_al_registro_de_vocabulario():
     """El guard: si alguien quita la llamada, la memoria del vocabulario muere
     en silencio — igual que murió la sugerencia rota durante versiones."""
-    fuente = (SCRIPTS / "vault_write.py").read_text(encoding="utf-8")
+    fuente = gi.codigo_de(SCRIPTS / "vault_write.py").read_text(encoding="utf-8")
     assert "vault_tags.apply_vocabulary" in fuente
     assert "vault_tags.record_new_tags" in fuente
 
@@ -224,7 +226,7 @@ def test_vault_write_llama_al_registro_de_vocabulario():
 def test_vault_write_no_lee_la_clave_muerta_del_tag_registry():
     # Solo código: el comentario que explica el defecto cita la clave a propósito.
     codigo = "\n".join(
-        l for l in (SCRIPTS / "vault_write.py").read_text(encoding="utf-8").splitlines()
+        l for l in gi.codigo_de(SCRIPTS / "vault_write.py").read_text(encoding="utf-8").splitlines()
         if not l.lstrip().startswith("#")
     )
     assert 'registry.get("tags"' not in codigo
@@ -241,5 +243,5 @@ def test_las_secciones_de_vault_tags_salen_del_registro_no_de_una_lista():
 def test_un_solo_lector_del_campo_tags():
     """Dos parsers del mismo campo discrepando es lo que hizo que el audit
     reportara términos que el heal no podía tocar."""
-    fuente = (SCRIPTS / "vault_tags.py").read_text(encoding="utf-8")
+    fuente = gi.codigo_de(SCRIPTS / "vault_tags.py").read_text(encoding="utf-8")
     assert "parse_frontmatter_with_body" in fuente

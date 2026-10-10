@@ -32,6 +32,8 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 import vault_arch  # noqa: E402
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def _subrutas(fuente: str) -> list[str]:
     return [s for _, _, s in vault_arch.escrituras_de_sistema_en(ast.parse(fuente))]
@@ -101,7 +103,7 @@ def test_el_indice_solo_guarda_rutas_literales():
 
 
 def test_el_caso_medido_tool_spec_tiene_dueno_y_escritor_visible():
-    fuente = (ROOT / "scripts" / "vault_manifest.py").read_text(encoding="utf-8")
+    fuente = gi.codigo_de(ROOT / "scripts" / "vault_manifest.py").read_text(encoding="utf-8")
     assert "spec_file = tool_spec_path()" in fuente
     assert "atomic_write_json(spec_file, spec)" in fuente
     # Dueño = único escritor (criterio de la deuda #3): el que lo escribe.

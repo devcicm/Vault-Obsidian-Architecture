@@ -17,6 +17,8 @@ if str(SCRIPTS) not in sys.path:
 
 import vault_produccion  # noqa: E402
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def _fila(id_):
     (f,) = [f for f in vault_produccion.medir()["filas"] if f["id"] == id_]
@@ -41,8 +43,8 @@ def test_sin_security_md_la_promesa_queda_sin_ejecutor(tmp_path, monkeypatch):
 def test_security_md_no_afirma_lo_que_el_codigo_no_hace():
     texto = (ROOT / "SECURITY.md").read_text(encoding="utf-8")
     servidor = (ROOT / "mcp" / "nodejs" / "vault-mcp-server.mjs").read_text(encoding="utf-8")
-    ingest = (SCRIPTS / "vault_ingest.py").read_text(encoding="utf-8")
-    tokens = (SCRIPTS / "vault_token_service.py").read_text(encoding="utf-8")
+    ingest = gi.codigo_de(SCRIPTS / "vault_ingest.py").read_text(encoding="utf-8")
+    tokens = gi.codigo_de(SCRIPTS / "vault_token_service.py").read_text(encoding="utf-8")
     errores = (ROOT / "vault" / "kernel" / "errores.py").read_text(encoding="utf-8")
     afirmaciones = {
         "127.0.0.1": 'server.listen(port, "127.0.0.1"' in servidor,

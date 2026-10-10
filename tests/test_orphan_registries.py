@@ -50,6 +50,8 @@ REGISTROS = [
     ("vault_diagram_save.py", "DIAGRAM_TYPES"),
 ]
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def _lecturas(script: Path, nombre: str) -> int:
     """Cuántas veces se LEE el nombre (asignarlo no cuenta como consumirlo)."""
@@ -157,5 +159,5 @@ def test_los_guiones_del_registro_se_normalizan_todos():
 
 def test_los_choices_de_min_risk_salen_del_registro():
     """El `choices` de argparse no puede ser una segunda lista escrita a mano."""
-    fuente = (SCRIPTS_DIR / "vault_delta.py").read_text(encoding="utf-8")
+    fuente = gi.codigo_de(SCRIPTS_DIR / "vault_delta.py").read_text(encoding="utf-8")
     assert "choices=MIN_RISK_ORDER" in fuente

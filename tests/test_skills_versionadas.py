@@ -27,6 +27,8 @@ if str(SCRIPTS) not in sys.path:
 SKILLS = sorted(SKILLS_DIR.glob("*/SKILL.md"))
 IDS = [p.parent.name for p in SKILLS]
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def _frontmatter(texto: str) -> dict:
     import yaml
@@ -41,7 +43,7 @@ def _version(ruta: Path) -> str:
 
 
 def _flags_del_argparse(script: Path) -> set:
-    arbol = ast.parse(script.read_text(encoding="utf-8"))
+    arbol = ast.parse(gi.codigo_de(script).read_text(encoding="utf-8"))
     flags = set()
     for nodo in ast.walk(arbol):
         if isinstance(nodo, ast.Call) and getattr(nodo.func, "attr", "") == "add_argument":

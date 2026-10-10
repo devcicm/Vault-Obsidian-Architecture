@@ -33,6 +33,8 @@ REPO = pathlib.Path(__file__).resolve().parent.parent
 
 # --- Fallo 1: escribir sobre una raíz que nadie identificó ---------------------
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 def test_la_bandera_permisiva_esta_declarada():
     """Una variable de entorno que nadie declaró es la que este registro impide."""
@@ -113,7 +115,7 @@ def test_el_marcador_del_mjs_es_el_mismo_que_usa_python():
     Python decide `spec_repo_sandbox` con ese mismo fichero. Dos criterios para
     la misma pregunta es AP-57 cruzando una frontera de lenguaje.
     """
-    raiz = (REPO / "scripts" / "vault_raiz.py").read_text(encoding="utf-8")
+    raiz = gi.codigo_de(REPO / "scripts" / "vault_raiz.py").read_text(encoding="utf-8")
     assert "vault-obsidian-architecture.md" in raiz
 
 
@@ -254,7 +256,7 @@ def test_el_dueno_no_importa_ningun_vault():
         if isinstance(nodo, ast.Import):
             for alias in nodo.names:
                 assert not alias.name.startswith("vault"), alias.name
-    fachada = ast.parse((REPO / "scripts" / "vault_subproceso.py").read_text(encoding="utf-8"))
+    fachada = ast.parse(gi.codigo_de(REPO / "scripts" / "vault_subproceso.py").read_text(encoding="utf-8"))
     desde_vault = {n.module for n in ast.walk(fachada)
                    if isinstance(n, ast.ImportFrom) and (n.module or "").startswith("vault")}
     assert desde_vault == {"vault.kernel.subproceso"}

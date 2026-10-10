@@ -347,7 +347,7 @@ def test_el_dueno_no_importa_ninguna_tool():
     sin que nadie lo note, este test ha dejado de decir algo.
     """
     HOJAS_DEL_KERNEL = {"vault_subproceso"}
-    fuente = (RAIZ / "scripts" / "vault_baseline.py").read_text(encoding="utf-8")
+    fuente = gi.codigo_de(RAIZ / "scripts" / "vault_baseline.py").read_text(encoding="utf-8")
     for linea in fuente.splitlines():
         if not linea.startswith(("import ", "from ")):
             continue

@@ -26,6 +26,8 @@ if str(SCRIPTS) not in sys.path:
 import vault_voice as voz  # noqa: E402
 from vault_norms import NORM_CATALOG  # noqa: E402
 
+import vault_grafo_import as gi  # noqa: E402
+
 
 @pytest.fixture(autouse=True)
 def voz_encendida(monkeypatch):
@@ -140,7 +142,7 @@ def test_una_tool_real_devuelve_vault_says(tmp_path):
 
 def test_el_enganche_vive_en_el_punto_por_el_que_pasan_todas_las_tools():
     """Si esto se mueve a las tools una a una, la cobertura se degrada en silencio."""
-    fuente = (SCRIPTS / "vault_errors.py").read_text(encoding="utf-8")
+    fuente = gi.codigo_de(SCRIPTS / "vault_errors.py").read_text(encoding="utf-8")
     assert "_inject_voice" in fuente
     assert "_inject_voice(data, tool_name, writes)" in fuente
 

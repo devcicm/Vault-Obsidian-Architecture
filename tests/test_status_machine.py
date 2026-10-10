@@ -39,6 +39,8 @@ CUERPO = (
 
 # ── El guard, contra el vault de pruebas ─────────────────────────────────────
 
+import vault_grafo_import as gi  # noqa: E402
+
 def _escribir(vault: Path, titulo: str, status=None, tags="test"):
     cmd = [
         sys.executable, str(SCRIPTS / "vault_write.py"),
@@ -231,13 +233,13 @@ def test_ap41_esta_en_el_catalogo_con_enforcement_real():
 def test_la_maquina_tiene_un_consumidor_fuera_de_los_tests():
     """Lo que falló durante una versión entera: la tabla existía y solo la leía
     su propio test. Si esta importación desaparece, la norma vuelve a ser prosa."""
-    fuente = (SCRIPTS / "vault_write.py").read_text(encoding="utf-8")
+    fuente = gi.codigo_de(SCRIPTS / "vault_write.py").read_text(encoding="utf-8")
     assert "STATUS_TRANSITIONS" in fuente
 
 
 def test_el_frontmatter_previo_se_lee_donde_la_nota_existe():
     """El defecto original: la extracción vivía en la rama del `else`."""
-    codigo = (SCRIPTS / "vault_write.py").read_text(encoding="utf-8")
+    codigo = gi.codigo_de(SCRIPTS / "vault_write.py").read_text(encoding="utf-8")
     assert "existing_status = str(fm_previo.get" in codigo
     assert "parse_frontmatter_with_body(existing_content)" in codigo
 
