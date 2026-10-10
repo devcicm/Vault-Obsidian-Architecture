@@ -340,6 +340,36 @@ def _leer_nota(p: Path, *, errors: str = "ignore", binario: bool = False):
         return None
 
 
+#: Artefactos JSON que el runtime necesita aunque el audit no los puntúe:
+#: rotos, `vault status` da el vault por inválido y el grafo deja de servir.
+_ARTEFACTOS_DEL_RUNTIME = ("00_System/standard-version.json", "99_Index/graph.json")
+
+
+def _leer_artefacto_json(p: Path) -> Optional[Any]:
+    """Parsea un artefacto JSON del vault; si está roto, lo **registra**.
+
+    AP-37: cada lector de artefacto hacía `except ...: pass` o `return None`, y
+    un `graph.json` o un `standard-version.json` corruptos salían como un vault
+    con `healthIndex` 95 y `degraded: []` (medido como consumidor, 2026-10-10).
+    Ausente sigue siendo `None` sin registro: no tenerlo no es estar roto.
+    """
+    if not p.exists():
+        return None
+    texto = _leer_nota(p)
+    if texto is None:
+        return None
+    try:
+        return json.loads(texto)
+    except json.JSONDecodeError as exc:
+        try:
+            rel = p.relative_to(_raiz()).as_posix()
+        except ValueError:
+            rel = str(p)
+        if not any(d["path"] == rel for d in _LECTURAS_FALLIDAS):
+            _LECTURAS_FALLIDAS.append({"path": rel, "error": f"JSONDecodeError: {exc}"})
+        return None
+
+
 def _aliases_de(p: Path) -> List[str]:
     """Alias declarados en el frontmatter, tolerando forma escalar.
 
@@ -1999,14 +2029,8 @@ def _get_roadmap_for_populated_vault(content_notes: List[Path]) -> List[Dict[str
 
 
 def _read_quality_index() -> Optional[Dict[str, Any]]:
-    if not _quality_index().exists():
-        return None
-
-    try:
-        return json.loads(_quality_index().read_text(encoding="utf-8"))
-
-    except Exception:
-        return None
+    qi = _leer_artefacto_json(_quality_index())
+    return qi if isinstance(qi, dict) else None
 
 
 def _dq_is_stale(qi: Dict[str, Any]) -> bool:
@@ -2226,13 +2250,8 @@ def _cia_score_penalty(
 def _read_tag_health() -> Optional[Dict[str, Any]]:
     """Load tag-registry.json and return tag health summary. Returns None if registry absent."""
 
-    if not _tag_registry().exists():
-        return None
-
-    try:
-        registry = json.loads(_tag_registry().read_text(encoding="utf-8"))
-
-    except Exception:
+    registry = _leer_artefacto_json(_tag_registry())
+    if not isinstance(registry, dict):
         return None
 
     tags = registry.get("tags", {})
@@ -2316,6 +2335,8 @@ def vault_audit(
     # una segunda llamada en el mismo intérprete arrastraría las degradaciones de
     # la primera y las contaría dos veces.
     _reset_degradacion()
+    for artefacto in _ARTEFACTOS_DEL_RUNTIME:
+        _leer_artefacto_json(_raiz() / artefacto)
 
     # content_notes: notas reales (excluye index.md/README.md)
 
