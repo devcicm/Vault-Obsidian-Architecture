@@ -441,6 +441,23 @@ def test_un_cruce_fuera_de_puerto_de_un_dueno_se_mide_con_su_alias(tmp_path, mon
             "to_context": vault_arch.contexto_de("vault_reindex"),
             "symbol": "vault_reindex.notas_indexables"} in cruces, cruces
 
+
+def test_las_guardas_de_ap49_leen_el_codigo_del_dueno(tmp_path, monkeypatch):
+    """`usos_del_nombre_congelado` y `vinculos_congelados` (AP-49) parseaban
+    `scripts/<m>.py`; tras migrar ese fichero es un alias sin código y un
+    `from vault_io import VAULT_ROOT` en el dueño pasaba la puerta dura sin
+    medirse. Leen el dueño con `fuente_de`, como un import (AP-44)."""
+    import vault_grafo_import as gi
+
+    dueno = tmp_path / "dueno.py"
+    dueno.write_text('from vault_io import VAULT_ROOT\nX = VAULT_ROOT / "a"\n',
+                     encoding="utf-8")
+    monkeypatch.setattr(vault_arch, "_modulos_en_disco", lambda: ["vault_falso"])
+    monkeypatch.setattr(gi, "fuente_de",
+                        lambda m: dueno if m == "vault_falso" else ROOT / "scripts" / f"{m}.py")
+    assert [h["module"] for h in vault_arch.usos_del_nombre_congelado()] == ["vault_falso"]
+    assert [h["binding"] for h in vault_arch.vinculos_congelados()] == ["X"]
+
 def test_el_contrato_compacto_de_una_tool_migrada_se_lee_en_el_dueno():
     """`vault_compact_contracts.introspect_tool` leía `scripts/<tool>.py` por
     ruta: tras migrar, el contrato que recibe el agente decía «alias de …» como

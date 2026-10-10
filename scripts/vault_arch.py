@@ -889,7 +889,8 @@ def usos_del_nombre_congelado() -> list[dict]:
     """
     hallazgos = []
     for nombre in sorted(_modulos_en_disco()):
-        ruta = SCRIPTS_DIR / f"{nombre}.py"
+        # Deuda #12: el código de un módulo migrado es el del dueño (AP-44).
+        ruta = vault_grafo_import.fuente_de(nombre)
         try:
             arbol = _ast_de(ruta)
         except SyntaxError:
@@ -916,7 +917,7 @@ def vinculos_congelados() -> list[dict]:
     """
     hallazgos = []
     for nombre in _modulos_en_disco():
-        ruta = SCRIPTS_DIR / f"{nombre}.py"
+        ruta = vault_grafo_import.fuente_de(nombre)
         try:
             arbol = _ast_de(ruta)
         except SyntaxError:
