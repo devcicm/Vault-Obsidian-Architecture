@@ -32,8 +32,14 @@ RE_HOME = re.compile(r"^~[/\\]")
 INVISIBLE_CHARS = re.compile(
     r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]"
 )
+#: Hasta 2026-10-10 el primero era `---\s*\n` en cualquier punto del valor, y
+#: `vault run vault_write` rechazaba toda regla horizontal markdown como
+#: «inyección» (medido como consumidor). No protegía nada: `vault_write`
+#: antepone el `# título` al contenido, así que ese `---` nunca abre el
+#: frontmatter, y el dueño del criterio anti-poison —`vault.consulta.safety`—
+#: no lo tiene por patrón (AP-57). Lo comprueba
+#: tests/test_preflight_markdown_legitimo.py.
 POISON_PATTERNS = [
-    re.compile(r"---\s*\n"),
     re.compile(r"\[\[\[|\]\]\]"),
     re.compile(r"vault://[^/\s]+/"),
 ]
