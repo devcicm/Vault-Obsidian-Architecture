@@ -32,6 +32,7 @@ from .registry import GUARDED_ARTIFACTS, SCRIPTS_DIR
 # que nada avisara. `scripts/` lo pone en `sys.path` el punto de entrada
 # (`cli/__main__.py`); `.registry` dejó de hacerlo en f1132aa.
 from vault_vocabulario import rango  # noqa: E402
+import vault_grafo_import  # noqa: E402
 
 # `mayor_primero=False` y `base=0`: aquí el número es la posición en la lista
 # —`critical` es 0— porque el filtro compara `> limit` para descartar lo menos
@@ -473,7 +474,9 @@ def unsafe_artifacts(tools: Optional[List[str]] = None) -> Dict[str, List[str]]:
     for path in targets:
         if not path.exists():
             continue
-        for issue in scan_file(path):
+        # Deuda #12: el alias de `scripts/` no escribe nada; el código que
+        # escribe es el del dueño, y se reporta con el nombre de la tool (AP-44).
+        for issue in scan_file(vault_grafo_import.fuente_de(path.stem)):
             if issue.code in ("RC-01", "RC-04") and issue.artifact:
                 found.setdefault(issue.artifact, [])
                 if path.stem not in found[issue.artifact]:

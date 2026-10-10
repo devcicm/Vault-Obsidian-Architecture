@@ -404,3 +404,17 @@ def test_validar_el_spec_de_una_tool_migrada_mide_al_dueno():
 
     r = sv.validate_tool("vault_append", {"required_args": ["--path", "--content"]})
     assert not [d for d in r["drifts"] if "path" in str(d) or "content" in str(d)], r
+
+
+def test_el_escaner_de_carreras_mira_el_codigo_del_dueno():
+    """`cli.analyzer.unsafe_artifacts` escaneaba `scripts/<tool>.py`: tras
+    migrar, el alias no escribe nada y su dueño desaparecía del escáner. Medido
+    el 2026-10-10: `vault_index` escribe `99_Index/search-index.json` sin lock y
+    el scheduler lo daba por seguro en paralelo. Se escanea el dueño y se
+    reporta con el nombre de la tool."""
+    from cli import analyzer
+
+    sin_lock = analyzer.unsafe_artifacts()
+    assert "vault_index" in sin_lock.get("99_Index/search-index.json", []), sin_lock
+    assert "vault_index" in analyzer.unsafe_artifacts(["vault_index"]).get(
+        "99_Index/search-index.json", [])
