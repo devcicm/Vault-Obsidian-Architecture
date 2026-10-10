@@ -10,6 +10,8 @@ Nombres completos (con .md):
 
 from __future__ import annotations
 
+import re
+from pathlib import PurePosixPath
 from typing import Optional
 
 RESERVED_INDEX_NAMES: frozenset[str] = frozenset({"index.md", "readme.md"})
@@ -79,3 +81,38 @@ def es_nombre_reservado(nombre: str) -> bool:
     nombre de un título pregunta aquí antes de escribir (AP-57: un solo dueño).
     """
     return motivo_de_reserva(nombre) is not None
+
+
+#: Argumentos que nombran una ruta del vault. Se reconocen por subcadena del
+#: nombre (`folder`, `to_path`, `output_dir`…), igual en `cli/safety` y en el
+#: pre-flight de `vault run`: dos listas eran dos criterios (AP-57).
+ARGUMENTOS_DE_RUTA: tuple = ("folder", "path", "file", "output", "dest", "target", "source", "dir")
+
+#: Prefijo con el que `vault_write --content` lee el contenido de un fichero.
+#: Lo que sigue es una ruta, y se mide como tal.
+PREFIJO_FICHERO = "@file:"
+
+_UNIDAD = re.compile(r"^[A-Za-z]:")
+
+
+def es_argumento_de_ruta(nombre: str) -> bool:
+    """True si el argumento ``nombre`` nombra una ruta (por subcadena, sin mayúsculas)."""
+    clave = nombre.lower().lstrip("-").replace("-", "_")
+    return any(pista in clave for pista in ARGUMENTOS_DE_RUTA)
+
+
+def motivo_de_ruta_insegura(ruta: str) -> Optional[str]:
+    """``"absolute"``, ``"traversal"`` o None para una ruta que el vault recibe.
+
+    AP-36: una ruta relativa al vault no empieza por raíz, unidad ni `~`, y
+    ninguna de sus partes es `..`. Se mide en las dos sintaxis a la vez, porque
+    el vault viaja entre sistemas: `C:x` y una ruta UNC son absolutas en Windows
+    aunque `PurePosixPath` no lo sepa.
+    """
+    crudo = str(ruta).strip()
+    unificado = crudo.replace("\\", "/")
+    if unificado.startswith(("/", "~")) or _UNIDAD.match(crudo):
+        return "absolute"
+    if ".." in PurePosixPath(unificado).parts:
+        return "traversal"
+    return None

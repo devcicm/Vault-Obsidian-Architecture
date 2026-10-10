@@ -26,9 +26,24 @@ from .base import (
     GobernanzaBase,
 )
 
-RE_VAULT_ABSOLUTE = re.compile(r"^[A-Za-z]:[/\\]")
-RE_PARENT_TRAVERSAL = re.compile(r"\.\.(\\|/)")
-RE_HOME = re.compile(r"^~[/\\]")
+from vault.kernel.indices_structural import (
+    PREFIJO_FICHERO,
+    es_argumento_de_ruta,
+    motivo_de_ruta_insegura,
+)
+
+#: Hasta 2026-10-10 había aquí tres regex aplicadas a `str(args)`. La de ruta
+#: absoluta iba anclada con `^` sobre un texto que empieza por `{` y no saltaba
+#: nunca —`--folder C:/x` y `@file:<absoluta>` pasaban—; la de traversal
+#: buscaba `../` en cualquier valor y rechazaba un enlace markdown relativo del
+#: contenido; la de `~` no la usaba nadie. Ahora se mide cada argumento que es
+#: una ruta con el dueño del criterio (AP-36, AP-57). Lo comprueba
+#: tests/test_preflight_rutas_por_argumento.py.
+_KIND_DE_MOTIVO = {"absolute": "absolute_path", "traversal": "parent_traversal"}
+_MENSAJE_DE_MOTIVO = {
+    "absolute": "Ruta absoluta detectada en argumento '{}'",
+    "traversal": "Traversal a directorio padre detectado en argumento '{}'",
+}
 INVISIBLE_CHARS = re.compile(
     r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]"
 )
@@ -67,21 +82,22 @@ class GobernanzaCLI(GobernanzaBase):
         """Validaciones específicas de la CLI."""
         findings = []
 
-        args_str = str(args)
-
-        if RE_VAULT_ABSOLUTE.search(args_str):
-            findings.append({
-                "rule": "AP-36",
-                "kind": "absolute_path",
-                "message": "Ruta absoluta detectada en argumentos",
-            })
-
-        if RE_PARENT_TRAVERSAL.search(args_str):
-            findings.append({
-                "rule": "AP-36",
-                "kind": "parent_traversal",
-                "message": "Traversal a directorio padre detectado",
-            })
+        for key, value in args.items():
+            if not isinstance(value, str):
+                continue
+            if value.startswith(PREFIJO_FICHERO):
+                ruta = value[len(PREFIJO_FICHERO):]
+            elif es_argumento_de_ruta(key):
+                ruta = value
+            else:
+                continue
+            motivo = motivo_de_ruta_insegura(ruta)
+            if motivo:
+                findings.append({
+                    "rule": "AP-36",
+                    "kind": _KIND_DE_MOTIVO[motivo],
+                    "message": _MENSAJE_DE_MOTIVO[motivo].format(key),
+                })
 
         for key, value in args.items():
             if isinstance(value, str):

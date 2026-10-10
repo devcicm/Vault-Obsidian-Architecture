@@ -62,7 +62,9 @@ from vault.consulta.safety import (
 )  # noqa: E402,F401
 
 
-_PATH_ARGS = ("folder", "path", "file", "output", "dest", "target", "source", "dir")
+# AP-57: la lista de argumentos que son rutas tiene un dueño, el mismo que usa
+# el pre-flight de `vault run` (vault.gobernanza.cli_gobernanza).
+from vault.kernel.indices_structural import ARGUMENTOS_DE_RUTA as _PATH_ARGS  # noqa: E402
 
 
 def check_path_arg(name: str, value: str, vault_root: Path) -> List[Finding]:
