@@ -25,7 +25,8 @@ from vault_regex import RE_WIKILINK  # dueño único del patrón (AP-50)
 
 from vault_errors import emit_error, fuera_de_sesion, mensaje_de, wrap_main
 from vault_io import (
-    assert_within_vault, atomic_write_text, file_lock, tomar_lock, write_report,
+    assert_within_vault, atomic_write_text, file_lock, refrescar_grafo, tomar_lock,
+    write_report,
 )
 from vault_lib import utcnow
 from vault_registry import motivo_de_destino_invalido, section_types, type_misfiled_in
@@ -195,6 +196,19 @@ def update_graph(old_path: str, new_path: str, dry_run: bool = False) -> Dict[st
     """Actualiza graph.json con la nueva ubicación."""
     if not _graph_file().exists():
         return {"updated": False, "reason": "graph not found"}
+
+    # AP-47: el grafo de hoy guarda `nodes` como dict indexado por ruta, y quien
+    # sabe poner y quitar una nota en él es el refresco (`vault_io.refrescar_grafo`,
+    # dueño `vault.grafo.refresco`), con el criterio de la reconstrucción. Hasta
+    # aquí el bucle de abajo, escrito para las formas legacy, recorría ese dict con
+    # `enumerate` y reventaba en cada move (medido como consumidor, 2026-10-10).
+    nodes = json.loads(_graph_file().read_text(encoding="utf-8")).get("nodes")
+    if isinstance(nodes, dict):
+        if dry_run:
+            return {"updated": old_path in nodes}
+        refresco = refrescar_grafo(_raiz() / new_path, _raiz() / old_path)
+        return {"updated": bool(refresco.get("refreshed")),
+                **({"reason": refresco["reason"]} if refresco.get("reason") else {})}
 
     old_stem = Path(old_path).stem
     new_stem = Path(new_path).stem
