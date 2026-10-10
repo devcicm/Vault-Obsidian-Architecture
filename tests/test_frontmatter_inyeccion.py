@@ -75,15 +75,27 @@ def raiz(tmp_path):
 
 @pytest.mark.parametrize("carga", CARGAS)
 def test_vault_write_conserva_el_valor_sin_inyectar_claves(raiz, carga):
+    # CN-01 (2026-10-10): un título con salto de línea no nombra ninguna nota
+    # visible y se rechaza antes de escribir; la carga sigue viajando por
+    # `extra` y `aliases`, que es donde se mide la inyección.
+    multilinea = "\n" in carga
+    if multilinea:
+        rechazo = _ejecutar(
+            raiz, "vault_write.py", "--folder", "07_Knowledge", "--title", carga,
+            "--content", CUERPO, "--tags", "t1",
+        )
+        assert rechazo["ok"] is False and rechazo["error_code"] == "INVALID_INPUT", rechazo
+        assert not list((raiz / "07_Knowledge").glob("*.md"))
+    titulo = "Carga multilinea" if multilinea else carga
     env = _ejecutar(
-        raiz, "vault_write.py", "--folder", "07_Knowledge", "--title", carga,
+        raiz, "vault_write.py", "--folder", "07_Knowledge", "--title", titulo,
         "--content", CUERPO, "--tags", "t1",
         "--meta", json.dumps({"agent": "pytest", "aliases": [carga], "extra": carga}),
     )
     assert env["ok"] is True, env
     fm = _frontmatter(raiz / env["path"])
     assert "inyectada" not in fm and "b" not in fm
-    assert fm["title"] == carga
+    assert fm["title"] == titulo
     assert fm["extra"] == carga
     assert fm["aliases"] == [carga]
 

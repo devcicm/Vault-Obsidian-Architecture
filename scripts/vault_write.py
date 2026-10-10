@@ -393,6 +393,27 @@ def _nota_heredada(vault_path: Path, titulo: Optional[str] = None) -> Path:
     return vault_path
 
 
+def _titulo_sin_nombre(titulo: str) -> Optional[str]:
+    """CN-01: por qué este título no puede nombrar una nota visible, o None.
+
+    Medido como consumidor el 2026-10-10: «..» daba `...md`, que Obsidian oculta
+    por empezar en punto; «   » y «-» caían a `untitled.md`, un nombre que nadie
+    eligió y que comparten todos los títulos sin letras; «a⏎b» metía el salto
+    de línea en `title:`. `!!!` conserva el nombre heredado que documenta
+    `slugify`: lo que se rechaza es el nombre oculto o inventado, no el raro.
+    """
+    if not titulo.strip():
+        return "el título está vacío"
+    if any(unicodedata.category(c) == "Cc" for c in titulo):
+        return "el título contiene caracteres de control (salto de línea, tabulador…)"
+    slug = slugify(titulo)
+    if slug.startswith("."):
+        return f"produce '{slug}.md', que Obsidian oculta por empezar en punto"
+    if slug == "untitled" and _forma_de_titulo(titulo) != "untitled":
+        return "no contiene ningún carácter que pueda nombrar la nota"
+    return None
+
+
 def _forma_de_titulo(titulo: str) -> str:
     """Lo que no cambia de nota: mayúsculas, espacios repetidos y forma Unicode."""
     return " ".join(unicodedata.normalize("NFC", titulo).split()).casefold()
@@ -867,6 +888,14 @@ def vault_write(
     """
 
     tags = tags or []
+
+    # CN-01: los bordes en blanco no son parte del título, y un título que no
+    # puede nombrar una nota visible se rechaza antes de escribir nada.
+    title = (title or "").strip()
+    motivo = _titulo_sin_nombre(title)
+    if motivo:
+        return emit_error("vault_write", "INVALID_INPUT", f"CN-01: {motivo}.",
+                          pista="Usar un título con al menos una letra o cifra, en una línea.")
 
     # Antes de tocar nada: un `--meta` que pisa la identidad, imita un campo con
     # una errata o trae un valor fuera de vocabulario se rechaza entero, con
