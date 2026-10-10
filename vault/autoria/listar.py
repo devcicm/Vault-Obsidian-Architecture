@@ -40,6 +40,7 @@ from vault_registry import ORDERED_SECTIONS, section_description, secciones_del_
 from vault_errors import emit_error, wrap_main
 from vault_lib import parse_frontmatter as _parse_frontmatter
 from vault_lib import separar_frontmatter
+from vault_norms_catalog import STATUS_VOCAB, normalize_status
 
 from datetime import datetime
 
@@ -280,6 +281,25 @@ def vault_list(folder: Optional[str] = None, status: Optional[str] = None, limit
 
 
 
+    # CN-03: el filtro compara estados canónicos. Hasta 2026-10-10 comparaba
+    # el texto crudo: `--status inventado` daba cero notas con ok:true y
+    # `--status implementado` —el ejemplo del `--help`— no veía `implemented`.
+    # Un estado que no se puede decidir se rechaza (contrato de
+    # normalize_status), salvo que aparezca literal en alguna nota: en un vault
+    # ajeno esas notas son las que hay que encontrar para sanarlo.
+    canonico = None
+    fuera_de_vocabulario = False
+    if status:
+        canonico = normalize_status(status)[0]
+        fuera_de_vocabulario = canonico is None
+
+    def _coincide(valor) -> bool:
+        if not status:
+            return True
+        if fuera_de_vocabulario:
+            return str(valor or "").strip() == status.strip()
+        return normalize_status(valor)[0] == canonico
+
     notes = []
 
     for note_path in sorted(folder_path.rglob("*.md"), key=lambda p: os.path.getmtime(p), reverse=True):
@@ -288,7 +308,7 @@ def vault_list(folder: Optional[str] = None, status: Optional[str] = None, limit
 
 
 
-        if status and meta.get("status") != status:
+        if not _coincide(meta.get("status")):
 
             continue
 
@@ -324,7 +344,17 @@ def vault_list(folder: Optional[str] = None, status: Optional[str] = None, limit
 
 
 
-    return {"ok": True, "type": "notes", "folder": folder, "total": len(notes), "limit": limit, "notes": notes}
+    if fuera_de_vocabulario and not notes:
+        return {**emit_error(
+            "vault_list", "INVALID_INPUT",
+            f"--status '{status}' no es un estado del vocabulario ni aparece en ninguna nota de "
+            f"{folder}. Valores admitidos: {', '.join(sorted(STATUS_VOCAB))}."), "path": folder}
+
+    resultado = {"ok": True, "type": "notes", "folder": folder, "total": len(notes), "limit": limit, "notes": notes}
+    if status:
+        resultado["status"] = canonico or status
+        resultado["status_fuera_de_vocabulario"] = fuera_de_vocabulario
+    return resultado
 
 
 
