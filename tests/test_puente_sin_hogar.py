@@ -439,3 +439,18 @@ def test_el_escaner_de_carreras_mira_el_codigo_del_dueno():
     assert "vault_index" in sin_lock.get("99_Index/search-index.json", []), sin_lock
     assert "vault_index" in analyzer.unsafe_artifacts(["vault_index"]).get(
         "99_Index/search-index.json", [])
+
+
+def test_el_escaner_de_la_cli_mira_el_codigo_del_dueno():
+    """`vault scan` (`analyzer.scan`) analizaba el alias de `scripts/`, que no
+    tiene código: medido el 2026-10-10, cero hallazgos donde los dueños tienen
+    tres —RC-01 y RC-04 en `vault_index`, PY-02 en `vault_secret_scan`—. Se
+    escanea el dueño y el hallazgo lleva el nombre de la tool, que es también el
+    que deciden las exenciones por nombre (`_META_FILES`) (AP-44)."""
+    from cli import analyzer
+
+    r = analyzer.scan([ROOT / "scripts" / "vault_index.py"], min_severity="low")
+    codigos = {(i["file"], i["code"]) for i in r["issues"]}
+    assert {("vault_index.py", "RC-01"), ("vault_index.py", "RC-04")} <= codigos, codigos
+    todos = analyzer.scan(min_severity="low")["issues"]
+    assert ("vault_secret_scan.py", "PY-02") in {(i["file"], i["code"]) for i in todos}

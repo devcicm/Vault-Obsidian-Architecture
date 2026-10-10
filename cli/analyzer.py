@@ -161,9 +161,9 @@ def _mentions_guarded(text: str) -> Optional[str]:
 
 
 class _Scanner(ast.NodeVisitor):
-    def __init__(self, path: Path, source: str) -> None:
+    def __init__(self, path: Path, source: str, name: Optional[str] = None) -> None:
         self.path = path
-        self.name = path.name
+        self.name = name or path.name
         self.lines = source.splitlines()
         self.issues: List[Issue] = []
         self._func_stack: List[ast.AST] = []
@@ -379,7 +379,7 @@ class _Scanner(ast.NodeVisitor):
         self.generic_visit(node)
 
 
-def _check_ghost_references(path: Path, source: str) -> List[Issue]:
+def _check_ghost_references(path: Path, source: str, name: str) -> List[Issue]:
     """AP-01/AP-04: menciones a scripts vault_*.py que no existen."""
     issues: List[Issue] = []
     lines = source.splitlines()
@@ -402,7 +402,7 @@ def _check_ghost_references(path: Path, source: str) -> List[Issue]:
         if _suppressed(lines, lineno, "AP-01"):
             continue
         issues.append(Issue(
-            code="AP-01", file=path.name, line=lineno,
+            code="AP-01", file=name, line=lineno,
             severity=CHECKS["AP-01"]["severity"], kind="antipattern",
             message=f"referencia a '{name}.py', que no existe en scripts/ "
                     "ni en _archived/",
@@ -411,7 +411,7 @@ def _check_ghost_references(path: Path, source: str) -> List[Issue]:
     return issues
 
 
-def _check_entry_point(path: Path, source: str) -> List[Issue]:
+def _check_entry_point(path: Path, source: str, name: str) -> List[Issue]:
     """PY-02: __main__ que no pasa por wrap_main (sin timeout ni trace)."""
     if "__main__" not in source or "argparse" not in source:
         return []
@@ -423,7 +423,7 @@ def _check_entry_point(path: Path, source: str) -> List[Issue]:
     if _suppressed(lines, lineno, "PY-02"):
         return []
     return [Issue(
-        code="PY-02", file=path.name, line=lineno,
+        code="PY-02", file=name, line=lineno,
         severity=CHECKS["PY-02"]["severity"], kind="antipattern",
         message="entry point sin wrap_main(): la tool queda sin timeout, sin "
                 "envelope de error uniforme y sin registro en el trace log",
@@ -431,26 +431,39 @@ def _check_entry_point(path: Path, source: str) -> List[Issue]:
     )]
 
 
+def _fuente(path: Path) -> Path:
+    """El código que se analiza de `path`. Deuda #12: un `scripts/<tool>.py`
+    migrado es un alias sin código; el código es el del dueño (AP-44)."""
+    if path.parent.resolve() == SCRIPTS_DIR.resolve():
+        return vault_grafo_import.fuente_de(path.stem)
+    return path
+
+
 def scan_file(path: Path) -> List[Issue]:
-    """Analiza un script. Un fallo de sintaxis se reporta, no se traga."""
+    """Analiza un script. Un fallo de sintaxis se reporta, no se traga.
+
+    El hallazgo lleva el nombre de `path` —el de la tool— aunque se lea el
+    dueño, y es ese nombre el que deciden las exenciones de `_META_FILES`."""
+    name = path.name
+    path = _fuente(path)
     try:
         source = path.read_text(encoding="utf-8", errors="replace")
     except OSError as exc:
-        return [Issue("PY-01", path.name, 0, "high", "antipattern",
+        return [Issue("PY-01", name, 0, "high", "antipattern",
                       f"no se pudo leer: {exc}")]
 
     issues: List[Issue] = []
     try:
         tree = ast.parse(source, filename=str(path))
     except SyntaxError as exc:
-        return [Issue("PY-01", path.name, exc.lineno or 0, "critical", "antipattern",
+        return [Issue("PY-01", name, exc.lineno or 0, "critical", "antipattern",
                       f"error de sintaxis: {exc.msg}")]
 
-    scanner = _Scanner(path, source)
+    scanner = _Scanner(path, source, name)
     scanner.visit(tree)
     issues.extend(scanner.issues)
-    issues.extend(_check_ghost_references(path, source))
-    issues.extend(_check_entry_point(path, source))
+    issues.extend(_check_ghost_references(path, source, name))
+    issues.extend(_check_entry_point(path, source, name))
     return issues
 
 
@@ -474,9 +487,9 @@ def unsafe_artifacts(tools: Optional[List[str]] = None) -> Dict[str, List[str]]:
     for path in targets:
         if not path.exists():
             continue
-        # Deuda #12: el alias de `scripts/` no escribe nada; el código que
-        # escribe es el del dueño, y se reporta con el nombre de la tool (AP-44).
-        for issue in scan_file(vault_grafo_import.fuente_de(path.stem)):
+        # Deuda #12: el alias de `scripts/` no escribe nada; `scan_file` lee
+        # el código del dueño y lo reporta con el nombre de la tool (AP-44).
+        for issue in scan_file(path):
             if issue.code in ("RC-01", "RC-04") and issue.artifact:
                 found.setdefault(issue.artifact, [])
                 if path.stem not in found[issue.artifact]:
