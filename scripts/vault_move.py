@@ -14,12 +14,14 @@ Usage:
 
 import argparse
 import json
+import posixpath
 import re
 import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
+from urllib.parse import quote, unquote
 
 from vault_regex import RE_WIKILINK  # dueño único del patrón (AP-50)
 
@@ -28,7 +30,7 @@ from vault_io import (
     assert_within_vault, atomic_write_text, file_lock, refrescar_grafo, tomar_lock,
     write_report,
 )
-from vault_lib import utcnow
+from vault_lib import indice_de_nombres, resolver_wikilink, utcnow
 from vault_registry import motivo_de_destino_invalido, section_types, type_misfiled_in
 
 
@@ -140,32 +142,119 @@ def append_move_log(record: Dict[str, Any]) -> None:
     _repo().anotar_movimiento(record, timeout=_LOCK_TIMEOUT)
 
 
+#: Un wikilink entero, con su `!` de incrustación: el interior se parte a mano
+#: porque la barra escapada de una celda de tabla no es un separador que el patrón del
+#: dueño (`vault_regex`) conozca, y la reescritura tiene que conservarlo.
+_RE_WIKILINK_ENTERO = re.compile(r"(!?)\[\[([^\]\[]+?)\]\]")
+#: Destino de un enlace markdown: `[texto](destino)`.
+_RE_ENLACE_MD = re.compile(r"(\]\()([^)\s]+)(\))")
+_RE_ESQUEMA = re.compile(r"[a-z][a-z0-9+.-]*:", re.IGNORECASE)
+_BARRA = chr(92)
+
+
+def _sin_md(ruta: str) -> str:
+    return ruta[:-3] if ruta.lower().endswith(".md") else ruta
+
+
+def _destino_nuevo(escrito: str, desde: str, new_rel: str) -> str:
+    """El destino que sustituye a `escrito`, en su misma forma.
+
+    Desnudo sigue desnudo, con carpeta lleva la ruta nueva desde la raíz y
+    relativo (`./`, `../`) sigue relativo a la nota que enlaza.
+    """
+    sufijo = escrito[-3:] if escrito.lower().endswith(".md") else ""
+    nuevo = _sin_md(new_rel)
+    if escrito.startswith(("./", "../")):
+        nuevo = posixpath.relpath(nuevo, posixpath.dirname(desde) or ".")
+        if not nuevo.startswith(".."):
+            nuevo = "./" + nuevo
+    elif "/" not in escrito:
+        nuevo = posixpath.basename(nuevo)
+    return nuevo + sufijo
+
+
 def update_wiki_links_in_file(
-    file_path: Path, old_stem: str, new_stem: str, old_folder: str, new_folder: str,
+    file_path: Path, old_rel: str, new_rel: str, indice: Dict[str, List[str]],
     dry_run: bool = False,
 ) -> Dict[str, Any]:
-    """Actualiza los wiki-links en un archivo. Con `dry_run`, solo los cuenta."""
+    """Reescribe en `file_path` todo enlace que resuelve a `old_rel`.
+
+    AP-14 con el criterio del consumidor (AP-44): un enlace apunta a la nota
+    movida si Obsidian lo resuelve a ella, y eso lo decide el dueño
+    (`vault_lib.resolver_wikilink` sobre `indice_de_nombres`, AP-57), no tres
+    `replace` literales. Hasta aquí siete de nueve formas corrientes —alias,
+    ancla, mayúsculas, `.md`, enlace markdown, barra escapada de tabla— quedaban rotas
+    con `links_pending: []` (medido como consumidor, 2026-10-10). Se conservan
+    el ancla, el alias, el `!` y el `.md`. Un enlace que resuelve a varias
+    notas no se toca: elegir una sería inventar la identidad, y se devuelve en
+    `ambiguous`. Con `dry_run`, solo cuenta.
+    """
     content = file_path.read_text(encoding="utf-8")
-    original = content
-
-    old_link = f"[[{old_stem}]]"
-    new_link = f"[[{new_stem}]]"
-    content = content.replace(old_link, new_link)
-
-    old_link_with_path = f"[[{old_folder}/{old_stem}]]"
-    new_link_with_path = f"[[{new_folder}/{new_stem}]]"
-    content = content.replace(old_link_with_path, new_link_with_path)
-
-    old_alias = f"[[{old_folder}/{old_stem}|"
-    new_alias = f"[[{new_folder}/{new_stem}|"
-    content = content.replace(old_alias, new_alias)
-
-    if content != original:
+    desde = file_path.relative_to(_raiz()).as_posix()
+    nuevo_contenido, _, ambiguo = _reescribir_enlaces(content, desde, old_rel, new_rel, indice)
+    # Por diferencia de texto y no por enlaces casados: `[[b]]` sigue siendo
+    # `[[b]]` si solo cambia la carpeta, y reescribir la nota igual dispara su
+    # índice de sección, que recreaba la carpeta de origen de un move --folder.
+    if nuevo_contenido != content:
         if not dry_run:
-            atomic_write_text(file_path, content)
-        return {"updated": not dry_run, "links_changed": True}
+            atomic_write_text(file_path, nuevo_contenido)
+        return {"updated": not dry_run, "links_changed": True, "ambiguous": ambiguo}
 
-    return {"updated": False, "links_changed": False}
+    return {"updated": False, "links_changed": False, "ambiguous": ambiguo}
+
+
+def _reescribir_enlaces(
+    content: str, desde: str, old_rel: str, new_rel: str, indice: Dict[str, List[str]],
+):
+    """`(texto, enlaces que resuelven a old_rel, hubo alguno ambiguo)`. Puro."""
+    ambiguo = False
+    cambios = 0
+
+    def wikilink(m: "re.Match[str]") -> str:
+        nonlocal ambiguo, cambios
+        interior = m.group(2)
+        corte = next((i for i, c in enumerate(interior) if c in "#|"), len(interior))
+        destino, resto = interior[:corte], interior[corte:]
+        escape = ""
+        if destino.endswith(_BARRA) and resto.startswith("|"):
+            destino, escape = destino[:-1], _BARRA
+        ruta, candidatos = resolver_wikilink(destino, Path(desde), indice)
+        if ruta != old_rel:
+            ambiguo = ambiguo or (not ruta and old_rel in candidatos)
+            return m.group(0)
+        cambios += 1
+        nuevo = _destino_nuevo(destino.strip(), desde, new_rel)
+        return f"{m.group(1)}[[{nuevo}{escape}{resto}]]"
+
+    def enlace_md(m: "re.Match[str]") -> str:
+        nonlocal ambiguo, cambios
+        href = m.group(2)
+        ruta_href, almohadilla, ancla = href.partition("#")
+        if _RE_ESQUEMA.match(href) or not ruta_href.lower().endswith(".md"):
+            return m.group(0)
+        claro = unquote(ruta_href)
+        if claro.startswith("/"):
+            junto = posixpath.normpath(claro.lstrip("/"))
+        else:
+            junto = posixpath.normpath(posixpath.join(posixpath.dirname(desde), claro))
+        if junto == old_rel:
+            nuevo = new_rel if claro.startswith("/") else posixpath.relpath(
+                new_rel, posixpath.dirname(desde) or ".")
+            nuevo = ("/" + nuevo) if claro.startswith("/") else nuevo
+        else:
+            # Formato «ruta más corta» de Obsidian: se resuelve como un wikilink.
+            ruta, candidatos = resolver_wikilink(claro, Path(desde), indice)
+            if ruta != old_rel:
+                ambiguo = ambiguo or (not ruta and old_rel in candidatos)
+                return m.group(0)
+            nuevo = _destino_nuevo(claro, desde, new_rel)
+        cambios += 1
+        if "%" in ruta_href:
+            nuevo = quote(nuevo, safe="/.-_~")
+        return f"{m.group(1)}{nuevo}{almohadilla}{ancla}{m.group(3)}"
+
+    texto = _RE_ENLACE_MD.sub(enlace_md, _RE_WIKILINK_ENTERO.sub(wikilink, content))
+    return texto, cambios, ambiguo
 
 
 def update_search_index(old_path: str, new_path: str, dry_run: bool = False) -> Dict[str, Any]:
@@ -411,21 +500,23 @@ def _mover_nota(
             _escribir_tipo(destination, reclasificado["to"])
 
     old_stem = source.stem
-    new_stem = destination.stem
-    # AP-14: mover o renombrar no deja enlaces rotos, porque los `[[nota]]` y
-    # `[[carpeta/nota]]` entrantes se reescriben aquí.
+    # AP-14: mover o renombrar no deja enlaces rotos, porque todo enlace que
+    # Obsidian resuelve a la nota se reescribe aquí. La resolución es contra el
+    # vault de ANTES del movimiento: el índice lleva el origen y no el destino.
     # Con `/` aunque corra en Windows: es la forma en que Obsidian escribe el
     # enlace anclado, y con `\` el `[[carpeta/nota]]` no se reescribía nunca.
-    old_folder = source.parent.relative_to(_raiz()).as_posix()
-    new_folder = destination.parent.relative_to(_raiz()).as_posix()
+    old_rel = source.relative_to(_raiz()).as_posix()
+    new_rel = destination.relative_to(_raiz()).as_posix()
+    notas = [md for md in _raiz().rglob("*.md") if ".history" not in md.parts]
+    universo = {md.relative_to(_raiz()).as_posix() for md in notas} - {new_rel} | {old_rel}
+    indice = indice_de_nombres(sorted(universo))
 
     links_updated = 0
     files_checked = 0
     links_pending: List[str] = []
+    links_ambiguous: List[str] = []
 
-    for md in _raiz().rglob("*.md"):
-        if ".history" in str(md):
-            continue
+    for md in notas:
         if md == destination:
             continue
 
@@ -433,9 +524,9 @@ def _mover_nota(
         # Sonda sin lock: casi ninguna nota enlaza a la movida, y tomar un lock
         # por cada nota del vault sería caro. Solo las que cambian se reescriben,
         # y se releen bajo su lock para no escribir encima de un append (F1).
-        sonda = update_wiki_links_in_file(
-            md, old_stem, new_stem, old_folder, new_folder, dry_run=True
-        )
+        sonda = update_wiki_links_in_file(md, old_rel, new_rel, indice, dry_run=True)
+        if sonda.get("ambiguous"):
+            links_ambiguous.append(md.relative_to(_raiz()).as_posix())
         if not sonda.get("links_changed"):
             continue
         if dry_run:
@@ -446,9 +537,7 @@ def _mover_nota(
             links_pending.append(md.relative_to(_raiz()).as_posix())
             continue
         with nota_lock:
-            result = update_wiki_links_in_file(
-                md, old_stem, new_stem, old_folder, new_folder, dry_run=False
-            )
+            result = update_wiki_links_in_file(md, old_rel, new_rel, indice, dry_run=False)
         if result.get("links_changed"):
             links_updated += 1
 
@@ -494,6 +583,9 @@ def _mover_nota(
         "search_index_updated": search_result.get("updated"),
         "graph_updated": graph_result.get("updated"),
         "links_pending": links_pending,
+        # Notas con un enlace que resuelve a la movida y a otra a la vez: no se
+        # reescribe porque elegir sería inventar la identidad (AP-17).
+        "links_ambiguous": links_ambiguous,
         "degraded": degraded,
         "next": "vault_reindex --graph" if degraded else None,
         "record": move_record,
@@ -636,15 +728,16 @@ def check_move_impact(from_path: str, to_path: str) -> Dict[str, Any]:
         return emit_error("vault_move", "FILE_NOT_FOUND", f"Archivo no encontrado: {from_path}")
 
     content = source.read_text(encoding="utf-8")
-    old_stem = source.stem
-    old_folder = source.parent.relative_to(_raiz()).as_posix()
+    old_rel = source.relative_to(_raiz()).as_posix()
 
     wiki_links = RE_WIKILINK.findall(content)
 
+    # El mismo criterio con el que `_mover_nota` reescribe (AP-57): el impacto
+    # que se anuncia es el que el movimiento va a tener.
+    notas = [md for md in _raiz().rglob("*.md") if ".history" not in md.parts]
+    indice = indice_de_nombres(sorted(md.relative_to(_raiz()).as_posix() for md in notas))
     backlinks = []
-    for md in _raiz().rglob("*.md"):
-        if ".history" in str(md):
-            continue
+    for md in notas:
         if md == source:
             continue
 
@@ -653,11 +746,9 @@ def check_move_impact(from_path: str, to_path: str) -> Dict[str, Any]:
         except (UnicodeDecodeError, PermissionError, OSError):
             continue
 
-        if (
-            f"[[{old_stem}]]" in md_content
-            or f"[[{old_folder}/{old_stem}]]" in md_content
-        ):
-            backlinks.append(md.relative_to(_raiz()).as_posix())
+        rel = md.relative_to(_raiz()).as_posix()
+        if _reescribir_enlaces(md_content, rel, old_rel, old_rel, indice)[1]:
+            backlinks.append(rel)
 
     return {
         "ok": True,
