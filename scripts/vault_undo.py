@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import emit_error, emit_fallo, wrap_main
+from vault_entorno import agente_por_defecto
 from vault_io import assert_within_vault, atomic_write_text, tomar_lock
 from vault_lib import utcnow
 
@@ -302,8 +303,8 @@ Notas:
                         help="Sobrescribir la nota actual en lugar de crear copia")
     parser.add_argument("--dry-run", action="store_true",
                         help="Solo reportar lo que haria, sin escribir nada")
-    parser.add_argument("--agent", default="claude",
-                        help="Nombre del agente para change-log (default: claude)")
+    parser.add_argument("--agent", default=agente_por_defecto(),
+                        help="Nombre del agente para change-log (default: VAULT_AGENT o claude)")
 
     args = parser.parse_args()
 

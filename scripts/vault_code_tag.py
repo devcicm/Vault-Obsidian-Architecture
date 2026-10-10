@@ -43,6 +43,7 @@ import re
 import sys
 import threading
 from vault_errors import emit_error, mensaje_de, wrap_main
+from vault_entorno import agente_por_defecto
 from vault_io import atomic_write_json, write_report, resolve_input_path, file_lock
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -630,7 +631,7 @@ Formatos de comentario por extensión:
     parser.add_argument("--description", default="", help="Descripción detallada del tag")
     parser.add_argument("--files",       nargs="*", help="Lista de archivos para --define (aplica inmediatamente)")
     parser.add_argument("--prefix",      help="Filtrar --list por prefijo (ej: cr, impl, bus)")
-    parser.add_argument("--agent",       default="claude", help="Agente que ejecuta la operación")
+    parser.add_argument("--agent",       default=agente_por_defecto(), help="Agente que ejecuta la operación")
 
     args = parser.parse_args()
 

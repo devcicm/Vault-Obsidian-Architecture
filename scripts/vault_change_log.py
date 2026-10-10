@@ -49,6 +49,7 @@ import subprocess
 import sys
 
 from vault_errors import emit_error, mensaje_de, wrap_main, proyecto_registrado
+from vault_entorno import agente_por_defecto
 from vault_lib import utcnow
 from vault_io import atomic_write_text, file_lock
 import uuid
@@ -376,7 +377,7 @@ Notas:
     )
 
     parser.add_argument(
-        "--agent", default="claude", help="Agent name (default: claude)"
+        "--agent", default=agente_por_defecto(), help="Agent name (default: VAULT_AGENT o claude)"
     )
 
     parser.add_argument(

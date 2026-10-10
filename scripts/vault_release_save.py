@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from vault_errors import wrap_main, proyecto_registrado
+from vault_entorno import agente_por_defecto
 from vault_lib import yaml_scalar, slugify_strict, utcnow
 from vault_io import assert_within_vault, atomic_write_text, file_lock, get_vault_root, write_report
 from vault_norms_catalog import compute_norm_refs, status_frontmatter_lines
@@ -307,8 +308,8 @@ Ejemplos:
                         help="Array JSON de migraciones requeridas")
     parser.add_argument("--deploy_at", default=None,
                         help="Momento del despliegue en ISO 8601; por defecto, ahora")
-    parser.add_argument("--agent", default="claude",
-                        help="Agente que firma la nota (default: claude)")
+    parser.add_argument("--agent", default=agente_por_defecto(),
+                        help="Agente que firma la nota (default: VAULT_AGENT o claude)")
 
     args = parser.parse_args()
     try:

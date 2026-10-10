@@ -42,6 +42,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from vault_errors import emit_error, wrap_main
+from vault_entorno import agente_por_defecto
 from vault_lib import slugify_strict, utcnow
 from vault_io import assert_within_vault, atomic_write_text, normalize_stem
 from vault_norms_catalog import compute_norm_refs
@@ -2801,7 +2802,7 @@ Ejemplos:
     parser.add_argument("--max-modules", dest="max_modules", type=int, default=20)
     parser.add_argument("--lang", dest="lang_hint")
     parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--agent", default="claude")
+    parser.add_argument("--agent", default=agente_por_defecto())
     parser.add_argument(
         "--skip",
         nargs="+",

@@ -693,7 +693,7 @@
           },
           "agent": {
             "type": "string",
-            "description": "Agent name (default: claude)"
+            "description": "Agent name (default: VAULT_AGENT o claude)"
           },
           "propagate": {
             "type": "string",
@@ -1338,7 +1338,7 @@
           },
           "agent": {
             "type": "string",
-            "description": "Nombre del agente (default: claude)"
+            "description": "Nombre del agente (default: VAULT_AGENT o claude)"
           },
           "trash-only": {
             "type": "boolean",
@@ -1847,7 +1847,7 @@
           },
           "agent": {
             "type": "string",
-            "description": "Agente que firma la nota (default: claude)"
+            "description": "Agente que firma la nota (default: VAULT_AGENT o claude)"
           }
         },
         "required": [
@@ -2907,7 +2907,7 @@
           },
           "agent": {
             "type": "string",
-            "description": "Agente que firma la nota (default: claude)"
+            "description": "Agente que firma la nota (default: VAULT_AGENT o claude)"
           }
         },
         "required": [
@@ -3920,7 +3920,7 @@
           },
           "agent": {
             "type": "string",
-            "description": "Agente que firma la nota (default: claude)"
+            "description": "Agente que firma la nota (default: VAULT_AGENT o claude)"
           }
         },
         "required": [
@@ -4544,7 +4544,7 @@
           },
           "agent": {
             "type": "string",
-            "description": "Agente que firma la nota (default: claude)"
+            "description": "Agente que firma la nota (default: VAULT_AGENT o claude)"
           }
         },
         "required": [
@@ -5427,7 +5427,7 @@
           },
           "agent": {
             "type": "string",
-            "description": "Agente que firma la nota (default: claude)"
+            "description": "Agente que firma la nota (default: VAULT_AGENT o claude)"
           }
         },
         "required": [
@@ -5705,7 +5705,7 @@
           },
           "agent": {
             "type": "string",
-            "description": "Agente que firma la nota (default: claude)"
+            "description": "Agente que firma la nota (default: VAULT_AGENT o claude)"
           }
         },
         "required": [
@@ -6228,7 +6228,7 @@
           },
           "agent": {
             "type": "string",
-            "description": "Agente que firma la nota (default: claude)"
+            "description": "Agente que firma la nota (default: VAULT_AGENT o claude)"
           }
         },
         "required": [
@@ -6318,7 +6318,7 @@
           },
           "agent": {
             "type": "string",
-            "description": "Agent name for audit trail (default: claude)"
+            "description": "Agent name for audit trail (default: VAULT_AGENT o claude)"
           },
           "set-profile": {
             "type": "string",
@@ -6864,7 +6864,7 @@
           },
           "agent": {
             "type": "string",
-            "description": "Nombre del agente para change-log (default: claude)"
+            "description": "Nombre del agente para change-log (default: VAULT_AGENT o claude)"
           }
         },
         "additionalProperties": false

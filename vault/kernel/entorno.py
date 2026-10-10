@@ -247,6 +247,21 @@ def leer(nombre: str) -> Any:
         return var.default
 
 
+#: Quién firma cuando ni `--agent` ni `VAULT_AGENT` lo dicen. Es el default
+#: que trece tools escribían a mano; se conserva su valor (no-derogación).
+AGENTE_HISTORICO = "claude"
+
+
+def agente_por_defecto() -> str:
+    """El default de todo `--agent`: `VAULT_AGENT`, y si falta, el histórico (AP-16).
+
+    Hasta 2026-10-10 cada argparse decía `default="claude"` y no leía la
+    variable que el registro declara para eso: con `VAULT_AGENT` exportada, la
+    nota la firmaba el agente y el change-log de su borrado, `claude`.
+    """
+    return leer("VAULT_AGENT") or AGENTE_HISTORICO
+
+
 def tabla() -> list[dict]:
     """El registro como datos, para `--env` y para el `.mjs`."""
     return [

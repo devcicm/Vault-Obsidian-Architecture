@@ -20,6 +20,7 @@ import json
 import re
 import sys
 from vault_errors import emit_error, wrap_main
+from vault_entorno import agente_por_defecto
 from vault_lib import parse_frontmatter, utcnow
 from vault_contrato_nota import clase_de_nota, contrato_de_version, faltantes
 from datetime import datetime, timezone
@@ -1179,7 +1180,7 @@ Ejemplos:
         help="Initialize standard-version.json with given version",
     )
     parser.add_argument(
-        "--agent", default="claude", help="Agent name for audit trail (default: claude)"
+        "--agent", default=agente_por_defecto(), help="Agent name for audit trail (default: VAULT_AGENT o claude)"
     )
     parser.add_argument(
         "--set-profile",

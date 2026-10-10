@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 from vault_errors import emit_error, fuera_de_sesion, wrap_main
+from vault_entorno import agente_por_defecto
 from vault_io import assert_within_vault, atomic_write_json, atomic_write_text
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -280,7 +281,7 @@ Notas:
     )
     parser.add_argument("--path", required=True, help="Ruta relativa al vault de la nota a eliminar")
     parser.add_argument("--reason", required=True, help="Motivo de eliminacion (SP-01)")
-    parser.add_argument("--agent", default="claude", help="Nombre del agente (default: claude)")
+    parser.add_argument("--agent", default=agente_por_defecto(), help="Nombre del agente (default: VAULT_AGENT o claude)")
     parser.add_argument("--trash-only", action="store_true",
                         help="Solo mover a 20_Quarantine/ en vez de eliminar")
     parser.add_argument("--dry-run", action="store_true",
