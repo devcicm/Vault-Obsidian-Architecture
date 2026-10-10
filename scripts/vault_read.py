@@ -102,7 +102,9 @@ def get_history_versions(note_path: Path) -> List[str]:
     subcadena del nombre y se ordenaba alfabéticamente: `a.md` recibía las
     versiones de `casa.md`.
     """
-    rel = note_path.relative_to(_raiz()).as_posix()
+    # Resueltas las dos: con la grafía cruda (`./`, `..`, otra caja en Windows,
+    # la raíz en forma 8.3) la clave no casaba y salía `[]` con ok:true (AP-51).
+    rel = note_path.resolve().relative_to(_raiz().resolve()).as_posix()
     return [v["filename"] for v in historia.versiones(_history_dir(), rel)][:10]
 
 
@@ -125,15 +127,19 @@ def vault_read(path: str) -> Dict[str, Any]:
 
     """
 
-    note_path = _raiz() / path
-
     try:
-        assert_within_vault(note_path, _raiz())
+        note_path = assert_within_vault(_raiz() / path, _raiz())
     except ValueError as exc:
         return {"ok": False, "error_code": "INVALID_PATH", "error": str(exc)}
 
     if not note_path.exists():
         return {**emit_error("vault_read", "NOTE_NOT_FOUND", f"Note not found: {path}"), "path": path}
+
+    # AP-51: el `path` del sobre es la identidad de la nota, no el eco de la
+    # petición. Hasta 2026-10-10 `./07_Knowledge//Nota.md` o `07_knowledge/nota.MD`
+    # volvían tal cual: dos identidades para una nota (medido como consumidor).
+    # La ruta resuelta trae la caja real del disco en Windows.
+    canonica = note_path.relative_to(_raiz().resolve()).as_posix()
 
     # Use decode_safely for proper encoding detection with fallback
     bytes_content = note_path.read_bytes()
@@ -160,7 +166,7 @@ def vault_read(path: str) -> Dict[str, Any]:
 
     result = {
         "ok": True,
-        "path": path,
+        "path": canonica,
         "meta": meta,
         "body": body,
         "wikiLinks": wiki_links,
