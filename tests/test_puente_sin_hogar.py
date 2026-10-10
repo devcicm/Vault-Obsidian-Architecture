@@ -356,6 +356,27 @@ def test_la_clave_de_baseline_de_un_dueno_es_la_de_su_alias():
     assert not [c for c in vault_arch.cruces() if c["from"] in duenos]
 
 
+
+def test_subgraph_migra_a_consulta_y_su_cruce_conserva_la_clave():
+    """`vault_subgraph` se quedó fuera del lote F porque migrarlo re-clavaba su
+    cruce `vault_subgraph -> vault/grafo` (está en la baseline) como cruce nuevo.
+    Con la clave del dueño siguiendo al alias, migra a `vault/consulta/` y el
+    cruce sigue siendo el mismo, ni nuevo ni resuelto."""
+    import importlib
+    import subprocess
+
+    import vault_grafo_import as gi
+
+    assert "vault_subgraph" not in set(vault_arch.modulos_sin_hogar())
+    assert importlib.import_module("vault_subgraph") is importlib.import_module(
+        "vault.consulta.subgraph")
+    assert gi.fuente_de("vault_subgraph") == (ROOT / "vault/consulta/subgraph.py").resolve()
+    claves = {f"{c['from']} -> {c['to']}" for c in vault_arch.cruces()}
+    assert "vault_subgraph -> vault/grafo" in claves
+    r = subprocess.run([sys.executable, str(ROOT / "scripts" / "vault_subgraph.py"), "--help"],
+                       capture_output=True, text=True, encoding="utf-8", timeout=120)
+    assert r.returncode == 0 and "--seeds" in r.stdout, r.stderr[-300:]
+
 def test_el_contrato_compacto_de_una_tool_migrada_se_lee_en_el_dueno():
     """`vault_compact_contracts.introspect_tool` leía `scripts/<tool>.py` por
     ruta: tras migrar, el contrato que recibe el agente decía «alias de …» como

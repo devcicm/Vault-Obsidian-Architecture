@@ -682,7 +682,9 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "`scripts/`: su cruce hacia `vault/grafo` está en la baseline con la "
             "clave del nombre de `scripts/`, y moverlo lo re-clavaba como cruce "
             "nuevo. Es la misma traba que la de las cinco firmas de las "
-            "baselines de AP-51 y AP-57: la clave tiene que seguir al alias.)"
+            "baselines de AP-51 y AP-57: la clave tiene que seguir al alias. "
+            "Desde que la sigue —`vault_arch.alias_de_dueno`—, `vault_subgraph` "
+            "migra a `vault/consulta/subgraph.py` con su cruce intacto.)"
         ),
         "por_que_no_ahora": (
             "Transitorio hasta migrar scripts → vault/<contexto>, ADR-0002. "

@@ -49,12 +49,12 @@ graph TD
     ciclo_de_vida -.->|cruce| gobernanza
     meta_toolkit -.->|cruce| ciclo_de_vida
     ciclo_de_vida -.->|cruce| meta_toolkit
-    consulta -.->|cruce| grafo
     autoria -.->|cruce| meta_toolkit
     autoria -.->|cruce| indices
     cli -.->|cruce| meta_toolkit
     autoria -.->|cruce| grafo
     consulta -.->|cruce| ciclo_de_vida
+    consulta -.->|cruce| grafo
     gobernanza -.->|cruce| indices
     grafo -.->|cruce| gobernanza
     indices -.->|cruce| grafo
@@ -143,8 +143,8 @@ Fronteras que hoy cruza (3), deuda declarada:
 | Módulo | Importa | Contexto destino |
 |---|---|---|
 | `vault_context_pack` | `vault_search` | Autoría |
-| `vault_subgraph` | `vault/grafo` (3 imports) | Grafo |
 | `vault/consulta/repositorio.py` | `vault/ciclo_de_vida` | Ciclo de vida |
+| `vault_subgraph` | `vault/grafo` (3 imports) | Grafo |
 
 ## Ciclo de vida
 
