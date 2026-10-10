@@ -118,20 +118,59 @@ def test_ninguna_anotacion_pep604_se_evalua_al_definir():
     )
 
 
+_CAPTURAN_IMPORT = {"ImportError", "ModuleNotFoundError", "Exception", "BaseException"}
+
+
+def _imports_con_alternativa(arbol: ast.AST) -> set[int]:
+    """Los `id()` de los imports escritos dentro de un `try` cuyo `except`
+    captura `ImportError`: ese módulo tiene un camino para el piso, y el que
+    falte lo dice el propio código (`vault_drift_detect` declara el
+    `pyproject.toml` como no leído en vez de romper). Esconder el import tras
+    `importlib` lo sacaría también de la medida, pero mintiendo; escribir la
+    alternativa es la salida honesta y por eso es la única que se acepta."""
+    def captura(h: ast.ExceptHandler) -> bool:
+        if h.type is None:
+            return True
+        tipos = h.type.elts if isinstance(h.type, ast.Tuple) else [h.type]
+        return any(isinstance(t, ast.Name) and t.id in _CAPTURAN_IMPORT for t in tipos)
+
+    protegidos: set[int] = set()
+    for nodo in ast.walk(arbol):
+        if isinstance(nodo, ast.Try) and any(captura(h) for h in nodo.handlers):
+            for sent in nodo.body:
+                protegidos.update(id(n) for n in ast.walk(sent)
+                                  if isinstance(n, (ast.Import, ast.ImportFrom)))
+    return protegidos
+
+
+def test_el_import_con_alternativa_se_acepta_y_el_desnudo_no():
+    con = ast.parse("try:\n    import tomllib\nexcept ImportError:\n    tomllib = None\n")
+    sin = ast.parse("import tomllib\n")
+    otro = ast.parse("try:\n    import tomllib\nexcept KeyError:\n    pass\n")
+    assert len(_imports_con_alternativa(con)) == 1
+    assert _imports_con_alternativa(sin) == set()
+    assert _imports_con_alternativa(otro) == set()
+
+
 def test_ninguna_api_de_stdlib_es_posterior_al_piso():
     """Lo que no ve ningún parser: una función que no existía en 3.9.
 
     Alcance declarado: solo los nombres de `POSTERIORES_A_39`, y solo escritos
     literalmente. Una API alcanzada por `getattr` o por un nombre construido no
     la ve, igual que `vault_criterios` declara que no ve la copia sintáctica.
+    Un import con alternativa escrita para `ImportError` no cuenta: el módulo
+    sí arranca en el piso (ver `_imports_con_alternativa`).
     """
     piso = piso_declarado()
     culpables = []
     for ruta in _ficheros():
         arbol = ast.parse(ruta.read_text(encoding="utf-8", errors="replace"))
         rel = ruta.relative_to(RAIZ).as_posix()
+        protegidos = _imports_con_alternativa(arbol)
         for nodo in ast.walk(arbol):
             if isinstance(nodo, (ast.Import, ast.ImportFrom)):
+                if id(nodo) in protegidos:
+                    continue
                 nombres = [a.name for a in nodo.names]
                 if isinstance(nodo, ast.ImportFrom) and nodo.module:
                     nombres.append(nodo.module)
