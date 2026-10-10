@@ -21,7 +21,9 @@ from typing import Any, Dict
 
 from vault_errors import emit_error, fuera_de_sesion, wrap_main
 from vault_entorno import agente_por_defecto
-from vault_io import assert_within_vault, atomic_write_json, atomic_write_text
+from vault_io import (
+    assert_within_vault, atomic_write_json, atomic_write_text, refrescar_indice_de_seccion,
+)
 from vault_registry import es_artefacto_derivado
 from vault_move import notas_que_enlazan
 
@@ -243,6 +245,9 @@ def vault_delete(
             trash_dest = _trash_dir() / f"{stem}_{counter}.md"
             counter += 1
         shutil.move(str(note_path), str(trash_dest))
+        # AP-47: quitarla de su sección la saca del `index.md`, que solo se
+        # rehacía al escribir (medido como consumidor, 2026-10-10).
+        seccion = refrescar_indice_de_seccion(note_path)
         return {
             "ok": True,
             "action": "moved_to_quarantine",
@@ -250,11 +255,13 @@ def vault_delete(
             "quarantined_to": str(trash_dest.relative_to(vault_root)).replace("\\", "/"),
             "sp01_status": sp01_note,
             "inbound_links": entrantes,
+            "section_index": seccion,
             "search_index": _indice_tras_borrar(rel_path),
         }
     else:
         guardada = _guardar_lo_que_se_borra(note_path, rel_path)
         note_path.unlink()
+        seccion = refrescar_indice_de_seccion(note_path)
         return {
             "ok": True,
             "action": "deleted",
@@ -265,6 +272,7 @@ def vault_delete(
                 "restore": f'vault_undo --restore "{rel_path}"',
             },
             "inbound_links": entrantes,
+            "section_index": seccion,
             "search_index": _indice_tras_borrar(rel_path),
         }
 

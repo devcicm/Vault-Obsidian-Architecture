@@ -546,6 +546,49 @@ def _skip_auto_index() -> frozenset:
 _SKIP_AUTO_INDEX = _skip_auto_index()
 
 
+def _seccion_con_indice(path: Path) -> Optional[str]:
+    """La sección cuyo `index.md` lista a `path`, o None si no tiene.
+
+    Fuera: lo que no es `.md`, lo que está fuera del vault, la raíz y las
+    secciones de sistema (`_SKIP_AUTO_INDEX`). Un solo criterio para quien
+    pone la nota en el índice al escribir y quien la saca al quitarla.
+    """
+    if path.suffix != ".md":
+        return None
+    try:
+        rel = path.relative_to(get_vault_root())
+    except ValueError:
+        return None  # path outside vault root
+    parts = rel.parts
+    if len(parts) < 2 or parts[0] in _SKIP_AUTO_INDEX:
+        return None
+    return parts[0]
+
+
+def refrescar_indice_de_seccion(path: Path) -> Dict[str, Any]:
+    """Rehace el `index.md` de la sección de `path` tras quitarla (AP-47).
+
+    `_auto_section_index` solo se dispara al escribir: borrar o mover una
+    nota la dejaba listada en el índice de su sección hasta la siguiente
+    escritura allí (medido como consumidor, 2026-10-10). La nota ya no
+    existe, así que no se toca el índice de búsqueda: de eso se ocupa quien
+    borra. El fallo se devuelve con su motivo, no se calla.
+    """
+    section = _seccion_con_indice(path)
+    if section is None:
+        return {"ok": True, "section": None, "updated": False}
+    from vault_section_index import vault_section_index  # lazy, ídem
+
+    try:
+        vault_section_index(section)
+    except Exception as exc:  # el borrado ya ocurrió: se informa, no se deshace
+        from vault_errors import emit_error  # lazy, como en _auto_section_index
+
+        return {**emit_error("refrescar_indice_de_seccion", "AUTO_INDEX_ERROR", str(exc)),
+                "section": section, "updated": False}
+    return {"ok": True, "section": section, "updated": True}
+
+
 def _auto_section_index(path: Path) -> None:
     """Auto-trigger section index update after writing any vault .md note.
 
@@ -555,17 +598,8 @@ def _auto_section_index(path: Path) -> None:
     Skips: non-.md files, index.md itself, system/index sections, paths outside vault.
     Uses lazy import to avoid circular dependency with vault_section_index.
     """
-    if path.suffix != ".md":
-        return
-    try:
-        rel = path.relative_to(get_vault_root())
-    except ValueError:
-        return  # path outside vault root
-    parts = rel.parts
-    if len(parts) < 2:
-        return
-    section = parts[0]
-    if section in _SKIP_AUTO_INDEX:
+    section = _seccion_con_indice(path)
+    if section is None:
         return
     try:
         from vault_section_index import (

@@ -27,8 +27,8 @@ from vault_regex import RE_WIKILINK  # dueño único del patrón (AP-50)
 
 from vault_errors import emit_error, fuera_de_sesion, mensaje_de, wrap_main
 from vault_io import (
-    assert_within_vault, atomic_write_text, file_lock, refrescar_grafo, tomar_lock,
-    write_report,
+    assert_within_vault, atomic_write_text, file_lock, refrescar_grafo,
+    refrescar_indice_de_seccion, tomar_lock, write_report,
 )
 from vault_lib import indice_de_nombres, resolver_wikilink, utcnow
 from vault_registry import motivo_de_destino_invalido, section_types, type_misfiled_in
@@ -435,9 +435,14 @@ def _escribir_tipo(nota: Path, tipo: str) -> None:
 
 def move_note(
     from_path: str, to_path: str, dry_run: bool = False, backup: bool = True,
-    note_type: Optional[str] = None,
+    note_type: Optional[str] = None, refrescar_secciones: bool = True,
 ) -> Dict[str, Any]:
-    """Mueve una nota a una nueva ubicación; con `note_type`, la reclasifica."""
+    """Mueve una nota a una nueva ubicación; con `note_type`, la reclasifica.
+
+    `refrescar_secciones=False` lo pasa `move_folder`, que rehace los índices
+    de sección una sola vez al final: nota a nota, el índice de la carpeta de
+    origen se regeneraba antes de vaciarla y la carpeta quedaba en pie.
+    """
     rechazo = _fuera_del_vault(from_path, to_path) or _fuera_de_sesion(from_path, to_path)
     if rechazo:
         return rechazo
@@ -462,7 +467,7 @@ def move_note(
 
     if dry_run:
         return _mover_nota(source, destination, from_path, to_path, dry_run, backup,
-                           reclasificado)
+                           reclasificado, refrescar_secciones)
     # La nota se mueve bajo su lock: un vault_append o vault_write concurrente
     # no puede escribir en el origen mientras desaparece (F1). Si otro escritor
     # la tiene, no se mueve nada y se dice.
@@ -479,12 +484,13 @@ def move_note(
         if not source.exists():
             return emit_error("vault_move", "FILE_NOT_FOUND", f"Archivo no encontrado: {from_path}")
         return _mover_nota(source, destination, from_path, to_path, dry_run, backup,
-                           reclasificado)
+                           reclasificado, refrescar_secciones)
 
 
 def _mover_nota(
     source: Path, destination: Path, from_path: str, to_path: str,
     dry_run: bool, backup: bool, reclasificado: Optional[Dict[str, Any]] = None,
+    refrescar_secciones: bool = True,
 ) -> Dict[str, Any]:
     # Con --dry-run nada toca el disco: ni la carpeta destino, ni los enlaces
     # de otras notas, ni el índice. Medido en v40.34: la simulación reescribía
@@ -565,6 +571,17 @@ def _mover_nota(
 
     search_result = _safe("search-index", lambda: update_search_index(from_path, to_path, dry_run))
     graph_result = _safe("graph", lambda: update_graph(from_path, to_path, dry_run))
+    # AP-47: `shutil.move` no pasa por el write path, así que ningún índice de
+    # sección se enteraba: la nota seguía listada en el de origen (medido como
+    # consumidor, 2026-10-10). Se rehacen origen y destino, una vez cada uno.
+    secciones: List[Dict[str, Any]] = []
+    if not dry_run and refrescar_secciones:
+        for ruta in dict.fromkeys((source, destination)):
+            hecho = refrescar_indice_de_seccion(ruta)
+            if hecho.get("section") and hecho["section"] not in {x["section"] for x in secciones}:
+                secciones.append(hecho)
+            if not hecho.get("ok"):
+                degraded.append(f"section-index: {hecho.get('section')}: {hecho.get('message')}")
 
     move_record = {
         "from": from_path,
@@ -588,6 +605,7 @@ def _mover_nota(
         "files_checked": files_checked,
         "search_index_updated": search_result.get("updated"),
         "graph_updated": graph_result.get("updated"),
+        "section_index": secciones,
         "links_pending": links_pending,
         # Notas con un enlace que resuelve a la movida y a otra a la vez: no se
         # reescribe porque elegir sería inventar la identidad (AP-17).
@@ -669,7 +687,8 @@ def move_folder(
         origen = f"{from_folder}/{rel}"
         nuevo = f"{to_folder}/{rel}"
         if f.suffix == ".md":
-            result = move_note(origen, nuevo, dry_run=dry_run, backup=False)
+            result = move_note(origen, nuevo, dry_run=dry_run, backup=False,
+                               refrescar_secciones=False)
             if not result.get("ok"):
                 # El plan se comprobó entero; si aun así falla, se para aquí con
                 # lo ya movido declarado, y el origen conserva el resto.
@@ -711,10 +730,21 @@ def move_folder(
             except OSError:
                 pass
 
+    # AP-47: los índices de sección, una vez y con la carpeta ya vaciada. Se
+    # nombra un `index.md` de cada carpeta para que el criterio de sección sea
+    # el de `refrescar_indice_de_seccion`, exista o no la carpeta todavía.
+    secciones: List[Dict[str, Any]] = []
+    if not dry_run:
+        for carpeta in dict.fromkeys((source, destination)):
+            hecho = refrescar_indice_de_seccion(carpeta / "index.md")
+            if hecho.get("section") and hecho["section"] not in {x["section"] for x in secciones}:
+                secciones.append(hecho)
+
     return {
         "ok": True,
         **write_report(),
         "dry_run": dry_run,
+        "section_index": secciones,
         "notes_moved": len(notes_moved),
         "details": notes_moved,
         "attachments_moved": attachments_moved,
