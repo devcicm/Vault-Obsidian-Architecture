@@ -51,7 +51,7 @@ from typing import Any, Dict, List, Optional
 
 # Configuration
 
-from vault_io import get_vault_root
+from vault_io import assert_within_vault, get_vault_root
 
 
 # Folder descriptions
@@ -256,7 +256,16 @@ def vault_list(folder: Optional[str] = None, status: Optional[str] = None, limit
 
     # List notes in folder
 
-    folder_path = get_vault_root() / folder
+    # AP-36: leer fuera del vault es el mismo escape que escribir fuera. Hasta
+    # 2026-10-10 `--folder ../afuera` listaba la carpeta hermana con ok:true;
+    # solo lo paraba el pre-flight de `vault run`, no el script que ejecuta MCP.
+    # Se lista desde la ruta resuelta, para que el `path` de cada nota salga
+    # canónico y no con los `..` que trajo la petición.
+    raiz = get_vault_root().resolve()
+    try:
+        folder_path = assert_within_vault(get_vault_root() / folder, get_vault_root())
+    except ValueError as exc:
+        return {**emit_error("vault_list", "INVALID_PATH", str(exc)), "path": folder}
 
     if not folder_path.exists():
 
@@ -282,7 +291,7 @@ def vault_list(folder: Optional[str] = None, status: Optional[str] = None, limit
 
             {
 
-                "path": note_path.relative_to(get_vault_root()).as_posix(),
+                "path": note_path.relative_to(raiz).as_posix(),
 
                 "title": meta.get("title", note_path.stem),
 
