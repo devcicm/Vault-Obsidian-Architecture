@@ -71,6 +71,12 @@ def vault_append(
 
     """
 
+    # AP-37: sin nada que añadir no hay append. Medido como consumidor el
+    # 2026-10-10: `--content ""` devolvía ok:true y `"   "` dejaba líneas en blanco.
+    if not (content or "").strip():
+        return {**emit_error("vault_append", "INVALID_INPUT",
+                             "--content vacío: no hay nada que añadir."), "path": path}
+
     note_path = get_vault_root() / path
 
     try:
@@ -166,12 +172,16 @@ def _append_bajo_lock(
 
     # If section specified, find and append within that section
 
+    section_created = False
     if section:
-        # Look for the section heading
+        # AP-46: la sección es la línea de encabezado exacta. Hasta 2026-10-10
+        # se buscaba `## Notas` como texto, y casaba «## Notas finales» y
+        # «### Notas»: el contenido iba a otra sección con ok:true.
 
-        section_pattern = rf"(## {re.escape(section.lstrip('# ').strip())})"
+        nombre = section.lstrip("# ").strip()
+        section_pattern = rf"^## {re.escape(nombre)}[ \t]*$"
 
-        section_match = re.search(section_pattern, existing_content)
+        section_match = re.search(section_pattern, existing_content, re.MULTILINE)
 
         if section_match:
             # Find the position right after the section heading
@@ -193,9 +203,13 @@ def _append_bajo_lock(
             existing_content = _insertar(existing_content, insert_pos, append_text)
 
         else:
-            # Section not found, append at end
+            # Section not found, append at end — bajo su encabezado. Sin él, el
+            # texto caía en la última sección de la nota mientras el sobre
+            # anunciaba la pedida (medido como consumidor, 2026-10-10).
 
-            existing_content = _insertar(existing_content, len(existing_content), append_text)
+            existing_content = _insertar(
+                existing_content, len(existing_content), f"## {nombre}\n\n{append_text.lstrip(chr(10))}")
+            section_created = True
 
     else:
         existing_content = _insertar(existing_content, len(existing_content), append_text)
@@ -211,6 +225,7 @@ def _append_bajo_lock(
         "path": path,
         "appendedLength": len(append_text),
         "section": section,
+        "section_created": section_created,
         "timestamped": timestamped,
         "updatedAt": updated_at,
         "message": "Content appended successfully",
