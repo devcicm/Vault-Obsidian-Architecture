@@ -23,6 +23,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import vault_grafo_import
 from vault_version import CURRENT_VERSION
 from vault_registry import runtime_seed_projection
 
@@ -4981,6 +4982,10 @@ def argparse_params(script: str) -> Dict[str, Dict[str, Any]]:
     ruta = Path(__file__).resolve().parent / script
     if not script or not ruta.is_file():
         return {}
+    # Tras la deuda #12 `scripts/<tool>.py` puede ser un alias sin un solo
+    # `add_argument`: leerlo publicaba un esquema vacío. Se sigue el alias con
+    # `fuente_de`, el criterio del import (AP-44).
+    ruta = vault_grafo_import.fuente_de(ruta.stem)
     try:
         arbol = ast.parse(ruta.read_text(encoding="utf-8"))
     except (OSError, SyntaxError):

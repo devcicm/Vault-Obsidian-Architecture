@@ -668,7 +668,13 @@ DEUDA_DECLARADA: List[Dict[str, Any]] = [
             "sin puerto; los cruces no se movieron. Lo destapó la guarda de "
             "puertos, que leía el fichero del alias y dio por roto "
             "`resolver_wikilink`: ahora sigue el alias con `fuente_de`, como "
-            "un import.)"
+            "un import.)\n\n"
+            "(Lote E, 2026-10-10: ocho tools con CLI migran —append, list, "
+            "log_error, merge, project_status y runbook_log a autoría, section "
+            "a índices como `registro_de_secciones` y env_matrix a grafo—; el "
+            "alias corre su `main` con `runpy`. Los tests de AP-46 y del barrido "
+            "de secciones leían la ruta del alias y ahora siguen al dueño, y las "
+            "caras de CN-02 citan `vault/indices/registro_de_secciones.py`.)"
         ),
         "por_que_no_ahora": (
             "Transitorio hasta migrar scripts → vault/<contexto>, ADR-0002. "

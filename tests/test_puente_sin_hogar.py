@@ -250,3 +250,50 @@ def test_lote_d_cuatro_hojas_con_dependencias_solo_del_kernel(modulo, dueno):
     nombre = dueno[:-3].replace("/", ".")
     assert importlib.import_module(modulo) is importlib.import_module(nombre)
     assert gi.fuente_de(modulo) == (ROOT / dueno).resolve()
+
+
+LOTE_E = [
+    ("vault_append", "vault/autoria/append.py"),
+    ("vault_list", "vault/autoria/listar.py"),
+    ("vault_log_error", "vault/autoria/log_error.py"),
+    ("vault_merge", "vault/autoria/merge.py"),
+    ("vault_project_status", "vault/autoria/project_status.py"),
+    ("vault_runbook_log", "vault/autoria/runbook_log.py"),
+    ("vault_section", "vault/indices/registro_de_secciones.py"),
+    ("vault_env_matrix", "vault/grafo/env_matrix.py"),
+]
+
+
+@pytest.mark.parametrize("modulo,dueno", LOTE_E)
+def test_lote_e_ocho_tools_con_cli_migran_y_el_alias_corre_su_main(modulo, dueno):
+    """Lote E de la deuda #12 (2026-10-10): ocho tools con CLI, sin `__file__`,
+    cuyas dependencias en `scripts/` son del kernel o de su contexto
+    (`vault_merge` toma `vault_undo`, también de autoría). Sus lectores por ruta
+    las ejecutan como script, y el alias delega el `__main__` con `runpy`."""
+    import importlib
+    import subprocess
+
+    import vault_grafo_import as gi
+
+    assert modulo not in set(vault_arch.modulos_sin_hogar())
+    nombre = dueno[:-3].replace("/", ".")
+    assert importlib.import_module(modulo) is importlib.import_module(nombre)
+    assert gi.fuente_de(modulo) == (ROOT / dueno).resolve()
+    r = subprocess.run([sys.executable, str(ROOT / "scripts" / f"{modulo}.py"), "--help"],
+                       capture_output=True, text=True, encoding="utf-8", timeout=120)
+    assert r.returncode == 0 and "usage" in r.stdout.lower(), r.stderr[-300:]
+
+
+@pytest.mark.parametrize("modulo,dueno", LOTE_E)
+def test_el_esquema_mcp_de_una_tool_migrada_se_lee_en_el_dueno(modulo, dueno):
+    """`vault_mcp_catalog.argparse_params` leía `scripts/<tool>.py` por ruta y,
+    tras migrar, encontraba el alias sin un solo `add_argument`: el esquema MCP
+    se habría publicado vacío y el servidor rechazaría las llamadas válidas.
+    Sigue el alias con `fuente_de`, como un import (AP-44)."""
+    import vault_mcp_catalog as cat
+
+    params = cat.argparse_params(f"{modulo}.py")
+    texto = (ROOT / dueno).read_text(encoding="utf-8")
+    assert params, f"{modulo}: argparse_params vacío, leyó el alias"
+    assert all(f'"--{p.replace("_", "-")}"' in texto or f'"--{p}"' in texto
+               for p in params), params

@@ -1,0 +1,235 @@
+#!/usr/bin/env python3
+
+"""
+
+Vault Runbook Log Tool — Log runbook execution
+
+
+
+Logs a runbook execution with outcome (success, failed, partial).
+
+Appends to the runbook's execution history section and increments counter.
+
+
+
+Usage:
+
+    python vault_runbook_log.py --path "08_Runbooks/deploy/ans-deploy.md" --outcome "success" --notes "All steps completed"
+
+    python vault_runbook_log.py --path "08_Runbooks/debug/mi-api-memory-leak.md" --outcome "partial" --duration "25 min" --notes "Leak still present after restart"
+
+"""
+
+import argparse
+
+import json
+
+import re
+
+import sys
+
+from vault_errors import emit_error, wrap_main
+from vault_lib import parse_frontmatter as _parse_frontmatter
+
+from datetime import datetime, timezone
+
+from pathlib import Path
+
+from typing import Any, Dict, Optional
+
+
+from vault_io import atomic_write_text, get_vault_root, tomar_lock, write_report
+
+#: Espera máxima por el lock de la nota; la misma que vault_write y vault_append.
+_LOCK_TIMEOUT = 10.0
+
+
+OUTCOMES = ["success", "failed", "partial"]
+
+OUTCOME_ICONS = {"success": "✅", "failed": "❌", "partial": "⚠️"}
+
+
+def parse_frontmatter(content: str) -> Dict[str, Any]:
+    """Frontmatter de una nota. Delega en el dueño canónico (AP-44/AP-57).
+
+    Hasta v40.23 esto era un regex línea a línea, copiado en seis módulos. Medido
+    sobre el corpus de `vault-sandbox/` (126 notas), devolvía `{{}}` —"esta nota no
+    tiene frontmatter"— en **110** de ellas: el patrón `^---
+` no casa `---
+`
+    ni sobrevive al BOM que dejan los editores de Windows, y ambas cosas están en
+    el material real. Además leía todo valor como texto: `evergreen: true` salía
+    `'true'`, que es verdadero como cadena aun cuando el dato diga lo contrario.
+    `vault_lib.parse_frontmatter` hace BOM-strip, YAML de verdad, normaliza fechas
+    y contiene `RecursionError` (AP-61).
+    """
+    return _parse_frontmatter(content)
+def update_frontmatter_value(content: str, key: str, value: Any) -> str:
+    lines = content.split("\n")
+
+    updated = False
+
+    for i, line in enumerate(lines):
+        if line.startswith(f"{key}:"):
+            lines[i] = f"{key}: {value}"
+
+            updated = True
+
+            break
+
+    if not updated:
+        for i, line in enumerate(lines):
+            if line.startswith("---") and i > 0:
+                lines.insert(i + 1, f"{key}: {value}")
+
+                break
+
+    return "\n".join(lines)
+
+
+def vault_runbook_log(
+    path: str,
+    outcome: str,
+    notes: Optional[str] = None,
+    duration: Optional[str] = None,
+) -> Dict[str, Any]:
+    outcome = outcome.lower()
+
+    if outcome not in OUTCOMES:
+        return emit_error("vault_runbook_log", "INVALID_VALUE", f"Outcome inválido: {outcome}. Válidos: {OUTCOMES}")
+
+    note_path = get_vault_root() / path
+
+    if not note_path.exists():
+        return emit_error("vault_runbook_log", "NOTE_NOT_FOUND", f"Runbook not found: {path}")
+
+    # Lectura, entrada nueva, contador y escritura bajo el lock de la nota (F1):
+    # sin él, dos ejecuciones registradas a la vez se pisaban y la segunda
+    # borraba la entrada de la primera con los dos envelopes en ok: true.
+    lock = tomar_lock(note_path, _LOCK_TIMEOUT)
+    if lock is None:
+        return {
+            **emit_error(
+                "vault_runbook_log", "NOTE_LOCKED",
+                f"Otro escritor tiene {path}; la ejecución no se registró.",
+            ),
+            "path": path,
+        }
+    with lock:
+        return _registrar_bajo_lock(note_path, path, outcome, notes, duration)
+
+
+def _registrar_bajo_lock(
+    note_path: Path, path: str, outcome: str,
+    notes: Optional[str], duration: Optional[str],
+) -> Dict[str, Any]:
+    with open(note_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    meta = parse_frontmatter(content)
+
+    executions = int(meta.get("executions", 0)) + 1
+
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")
+
+    icon = OUTCOME_ICONS.get(outcome, "❓")
+
+    log_entry = f"- {icon} **{outcome.upper()}** — {timestamp}"
+
+    if duration:
+        log_entry += f" ({duration})"
+
+    if notes:
+        log_entry += f"\n  - {notes}"
+
+    history_pattern = r"(## Historial de Ejecuciones\n\n)(.*?)(?=\n## |\Z)"
+
+    history_match = re.search(history_pattern, content, re.DOTALL)
+
+    if history_match:
+        existing = history_match.group(2).strip()
+
+        if "Sin ejecuciones registradas." in existing:
+            new_history = log_entry
+
+        else:
+            new_history = existing + "\n" + log_entry
+
+        content = re.sub(
+            history_pattern,
+            r"\1" + new_history + r"\n",
+            content,
+            flags=re.DOTALL,
+        )
+
+    else:
+        content += f"\n\n## Historial de Ejecuciones\n\n{log_entry}\n"
+
+    content = update_frontmatter_value(content, "executions", executions)
+
+    # atomic_write_* y no `open(..., "w")`: el escaneo de secretos, el
+    # saneado de encoding y el temp+replace viven ahí. Escribir en crudo los
+    # esquivaba los tres (AP-36) y dejaba la nota a medias si el proceso moría.
+    atomic_write_text(note_path, content)
+
+    return {
+        "ok": True,
+        **write_report(),
+        "path": path,
+        "outcome": outcome,
+        "executionNumber": executions,
+        "message": f"Execution #{executions} logged as {outcome}",
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Vault Runbook Log Tool",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+
+Ejemplos:
+
+  python vault_runbook_log.py --path "08_Runbooks/deploy/ans-deploy.md" --outcome "success" --notes "All steps completed"
+
+  python vault_runbook_log.py --path "08_Runbooks/debug/mi-api-memory-leak.md" --outcome "partial" --duration "25 min" --notes "Leak still present"
+
+  python vault_runbook_log.py --path "08_Runbooks/setup/node-installation.md" --outcome "failed" --notes "Missing dependency"
+
+  python vault_runbook_log.py --path "08_Runbooks/deploy/ans-deploy.md" --outcome "success" --duration "10 min"
+
+
+
+Notas:
+
+  - VAULT_ROOT se detecta automaticamente desde la ubicacion del script
+
+  - Outcomes validos: success, failed, partial
+
+  - Incrementa automaticamente el contador de ejecuciones en el frontmatter
+
+""",
+        allow_abbrev=False,
+    )
+
+    parser.add_argument(
+        "--path", required=True, help="Path to runbook (relative to vault root)"
+    )
+
+    parser.add_argument("--outcome", choices=OUTCOMES, required=True, help=f"Outcome: {OUTCOMES}")
+
+    parser.add_argument("--notes", help="Execution notes")
+
+    parser.add_argument("--duration", help="Duration (e.g., '25 min')")
+
+    args = parser.parse_args()
+
+    result = vault_runbook_log(args.path, args.outcome, args.notes, args.duration)
+
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+
+    return 0 if result["ok"] else 1
+
+
+if __name__ == "__main__":
+    sys.exit(wrap_main(main, "vault_runbook_log"))

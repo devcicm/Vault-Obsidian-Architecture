@@ -10,8 +10,8 @@ de derivarlo; se regenera con `vault_norms_engine.escribir_caras_derivadas`.
 GUARD = [
     'scripts/vault_write.py::problemas_de_meta',
     'scripts/vault_write.py::vault_write',
-    'scripts/vault_section.py::listar',
-    'scripts/vault_section.py::main',
+    'vault/indices/registro_de_secciones.py::listar',
+    'vault/indices/registro_de_secciones.py::main',
     'scripts/vault_move.py::_destino_invalido',
     'scripts/vault_move.py::_reclasificacion',
     'scripts/vault_move.py::move_folder',

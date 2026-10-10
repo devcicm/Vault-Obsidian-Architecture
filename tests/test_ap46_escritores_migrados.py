@@ -58,7 +58,11 @@ MIGRADOS = {
 def _fuente(modulo: str) -> Path:
     if "/" in modulo:
         return ROOT / f"{modulo}.py"
-    return ROOT / "scripts" / f"{modulo}.py"
+    # Una tool migrada es un alias en `sys.modules` (deuda #12): el escritor
+    # que se mide es el dueño, al que lleva el import.
+    import vault_grafo_import
+
+    return vault_grafo_import.fuente_de(modulo)
 
 
 @pytest.fixture

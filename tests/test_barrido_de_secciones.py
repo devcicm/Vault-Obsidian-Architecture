@@ -46,13 +46,13 @@ PERMITIDOS = {
         "función superseded_by notas_en_disco; ya no la llama el barrido",
     "scripts/vault_init.py::<module>":
         "andamiaje: las carpetas que crea un vault nuevo son las del estándar",
-    "scripts/vault_list.py::<module>":
+    "vault/autoria/listar.py::<module>":
         "descripciones del estándar para el listado de carpetas",
     "scripts/vault_onboard.py::vault_onboard":
         "índices de las secciones que el onboarding puebla, todas del estándar",
-    "scripts/vault_section.py::listar":
+    "vault/indices/registro_de_secciones.py::listar":
         "separa en el listado las del estándar de las propias",
-    "scripts/vault_section.py::retirar":
+    "vault/indices/registro_de_secciones.py::retirar":
         "una sección del estándar no se retira",
     "scripts/vault_section_index.py::recetas_de_la_nota_de_comandos":
         "recetas `tool_hint`: solo el estándar declara receta",
